@@ -1,0 +1,447 @@
+# SPEC-015 内核注册表与 Capability 契约
+
+## 状态
+
+- 状态: 已确认作为 Core Kernel 功能，细节继续规划。
+- 映射需求: `REQ-007`, `REQ-010`, `REQ-015`, `REQ-016`, `REQ-018`。
+- 目标: 定义 Core Kernel 的最小注册表、模块身份、contribution descriptor、capability 检查和 registry 只读查询契约。
+- 非目标: 错误对象、diagnostic 和 report shell 由 `SPEC-016-kernel-errors-diagnostics-reports.md` 定义。
+
+## 问题定义
+
+微内核必须允许内部模块和未来插件把能力“挂进来”，例如命令、selector、验证器、技巧定义、迁移器、导入器、导出器和模板。但接入点必须稳定、可拒绝、可测试。没有统一注册表时，每个模块都会发明自己的入口；没有 capability 时，调用方能做什么会变成隐式约定。
+
+本 spec 只解决:
+
+- 模块如何声明身份。
+- 模块如何注册贡献点。
+- 内核如何判断贡献点是否可接受。
+- 内核如何判断调用方是否有 capability。
+- 外部模块如何读取只读 registry summary。
+
+错误 code、diagnostic 和 report issue 的字段由 `SPEC-016` 统一定义。本 spec 可以返回 `KernelError`，但不拥有 `KernelError` 的结构。
+
+## 设计结论
+
+第一阶段采用 “Kernel Registry + Static Internal Capability”。
+
+- Registry: Core Kernel 维护最小注册表，只登记稳定 contribution descriptor 和 handler 引用。
+- Capability: MVP 使用静态内部 capability 授权；未来第三方插件由 `Extension Host` 基于 manifest 过滤和代理。
+- Runtime: MVP 只接受 `builtin` 和 `internal-module`。第三方 `javascript-typescript`、`lua` 和 `native` runtime 一律 unsupported。
+- Boundary: 注册表不是插件市场、不是权限 UI、不是第三方沙箱、不是写入通道。
+
+## 适用范围
+
+本 spec 约束:
+
+- `KernelRegistry`。
+- `KernelContribution`。
+- `KernelCapability`。
+- `KernelModuleIdentity`。
+- registry summary 和 query。
+- 内部模块注册、查询、拒绝和 capability 检查规则。
+
+本 spec 不约束:
+
+- `KernelError`、`KernelDiagnostic`、`KernelReport` 结构。
+- 第三方插件包下载、安装、更新、签名和审核。
+- 第三方 JS/TS、Lua 或 native 沙箱实现。
+- Tauri/Rust 原生权限。
+- UI 面板插件生命周期。
+- 网络权限、云服务权限和账号权限。
+
+## 第一性原则
+
+- EXPLICIT-CONTRIBUTION: 所有扩展能力必须显式注册。
+- STABLE-ID: 注册项 ID 是长期 API，不能随 UI 文案变化。
+- LEAST-CAPABILITY: 模块只获得它声明并被授予的最小 capability。
+- DENY-BY-DEFAULT: 未注册、未授权、不兼容或未知贡献点默认拒绝。
+- SUMMARY-ONLY-READ: 外部模块只能读取 registry summary，不能拿到 handler 或可变对象。
+- CORE-SMALL: 插件发现、运行时、沙箱和市场不进入 Core Kernel。
+
+## 强制规则
+
+- KRC-001: 所有命令、selector、hard validator、technique definition、migration、importer/exporter descriptor 和 template descriptor 必须通过 `KernelRegistry` 注册。
+- KRC-002: 注册项必须声明 `id`、`kind`、`sourceModuleId`、`apiVersion`、`requiredCapabilities`、`status` 和 `titleKey`。
+- KRC-003: 注册项 ID 不得重复；重复注册必须返回 `registry-duplicate-id`，不得覆盖已有注册项。
+- KRC-004: MVP 注册来源只允许 `builtin` 和 `internal-module`；`javascript-typescript`、`lua` 和 `native` 第三方运行时必须返回 `runtime-unsupported`。
+- KRC-005: 注册项 API version 必须与 Core Kernel 兼容；不兼容必须返回 `api-version-incompatible`。
+- KRC-006: capability 检查必须在命令执行、selector 调用、注册贡献点和未来插件代理前执行。
+- KRC-007: 缺失 capability 必须返回 `capability-denied`，不得静默降级为 unknown error。
+- KRC-008: 注册表变化必须递增 `registryVersion` 并发布 `kernel.registry.changed`。
+- KRC-009: 注册表只保存 descriptor 和 handler 引用，不保存 React 组件、SVG/VexFlow 对象、Web Audio 节点、Tauri 文件句柄或可变 `ScoreDocument`。
+- KRC-010: 注册表查询必须返回只读 summary，不得泄露 handler、可变内部对象或私有实现状态。
+- KRC-011: 注册表不是写入通道；任何修改 `ScoreDocument` 的能力仍必须走语义命令、导入结果或迁移入口。
+- KRC-012: 未来第三方插件不得直接访问 `KernelRegistry` 可变接口，必须由 `Extension Host` 代理注册。
+- KRC-013: 注册 capability 与执行 capability 必须分离；拥有 `command:register`、`validator:register` 或 `exporter:register` 不得隐式获得 `command:execute`、`score:read` 或文件权限。
+- KRC-014: MVP 采用两级信任模型: `trusted-core` 用于随应用发布的 `builtin/internal-module`，允许启动期 `CoreModuleRegistration` 直接注册；`external-plugin` 用于未来第三方插件，必须通过 `Extension Host` 和受控 facade 协作。
+- KRC-015: `runtime`、`trustLevel` 和 capability 是三个独立概念；`runtime = "internal-module"` 不自动获得全部权限，`trustLevel = "trusted-core"` 也不绕过 registry、apiVersion 或 capability 校验。
+- KRC-016: `trusted-core` 身份只能来自静态 `KernelStartupModuleManifest`；模块运行时、插件 manifest 或用户配置不得自我声明为可信核心模块。
+- KRC-017: `KernelStartupModuleManifest` 只能引用应用内已编译绑定的 `CoreModuleRegistrationEntryId`，不得引用任意文件路径、URL、脚本字符串或动态 import 表达式。
+
+## 数据结构草案
+
+本节是后续实现的编码输入。每个结构都必须保留注释，说明用途和边界。
+
+```ts
+/**
+ * Core Kernel API version.
+ *
+ * 用途:
+ * - 判断内部模块和未来插件是否兼容当前内核公开接口。
+ * - 不等于应用版本，也不等于 `.bgp` schema version。
+ */
+export type KernelApiVersion = string
+
+/**
+ * 模块 ID。
+ *
+ * 用途:
+ * - 标识注册项来源。
+ * - 用于 capability 检查、错误归因、report 归因和未来插件禁用。
+ */
+export type ModuleId = string
+
+/**
+ * 内核模块身份。
+ *
+ * 用途:
+ * - 描述一个调用方或贡献方是谁。
+ * - MVP 只接受 `builtin` 和 `internal-module`。
+ */
+export interface KernelModuleIdentity {
+  moduleId: ModuleId
+  displayNameKey: string
+  trustLevel: KernelModuleTrustLevel
+  runtime: KernelModuleRuntime
+  apiVersion: KernelApiVersion
+}
+
+/**
+ * 内核模块信任级别。
+ *
+ * 用途:
+ * - 区分调用方是否属于随应用发布的可信核心模块。
+ * - 决定模块能否走启动期 `CoreModuleRegistration` 直接注册。
+ * - trustLevel 由 Core Kernel 或 Extension Host 分配，不允许插件 manifest 自行声明。
+ *
+ * 边界:
+ * - 这不是用户授权 UI，也不是操作系统权限。
+ * - MVP 只使用两级，不设计 semi-trusted、partner、marketplace 等中间等级。
+ */
+export type KernelModuleTrustLevel =
+  | "trusted-core"
+  | "external-plugin"
+
+/**
+ * 内核启动模块清单。
+ *
+ * 用途:
+ * - 作为 MVP 阶段 `trusted-core` 模块的唯一来源。
+ * - 在 Core Kernel 启动时生成可信模块身份、capability grant 和注册顺序。
+ * - 该清单随应用源码或打包产物发布，必须被版本控制和测试覆盖。
+ *
+ * 边界:
+ * - 这不是第三方插件 manifest。
+ * - 不允许用户安装的插件、外部文件或运行时模块自我追加到该清单。
+ */
+export interface KernelStartupModuleManifest {
+  schemaVersion: string
+  modules: TrustedCoreModuleDeclaration[]
+}
+
+/**
+ * 可信核心模块声明。
+ *
+ * 用途:
+ * - 声明一个随应用发布的内置或内部模块。
+ * - registrationEntryId 指向应用内已编译、已绑定的 `CoreModuleRegistration` 工厂。
+ *
+ * 边界:
+ * - `trustLevel` 固定为 `trusted-core`。
+ * - `runtime` 只能是 `builtin` 或 `internal-module`。
+ * - registrationEntryId 不是文件路径、URL、脚本字符串或动态 import 表达式。
+ */
+export interface TrustedCoreModuleDeclaration {
+  moduleId: ModuleId
+  displayNameKey: string
+  trustLevel: "trusted-core"
+  runtime: "builtin" | "internal-module"
+  apiVersion: KernelApiVersion
+  capabilities: KernelCapability[]
+  registrationEntryId: CoreModuleRegistrationEntryId
+}
+
+export type CoreModuleRegistrationEntryId = string
+
+/**
+ * 模块运行时。
+ *
+ * 用途:
+ * - 区分内置模块、内部模块和未来第三方插件运行时。
+ * - MVP 只允许前两项注册贡献点。
+ * - runtime 只描述模块如何加载或执行，不代表权限或信任级别。
+ */
+export type KernelModuleRuntime =
+  | "builtin"
+  | "internal-module"
+  | "javascript-typescript"
+  | "lua"
+  | "native"
+
+/**
+ * 内核 capability。
+ *
+ * 用途:
+ * - 声明模块可以访问哪些 Core Kernel API。
+ * - 这不是 OS 权限，也不是 Tauri 权限，只约束谱面内核边界。
+ */
+export interface KernelCapability {
+  id: KernelCapabilityId
+  scope?: string
+}
+
+/**
+ * 内核 capability ID。
+ *
+ * 用途:
+ * - 作为测试和插件 manifest 可引用的稳定权限名。
+ */
+export type KernelCapabilityId =
+  | "score:read"
+  | "score:write"
+  | "command:register"
+  | "command:execute"
+  | "selector:register"
+  | "selector:execute"
+  | "validator:register"
+  | "technique:register"
+  | "importer:register"
+  | "exporter:register"
+  | "template:register"
+  | "migration:register"
+  | "event:subscribe"
+  | "diagnostic:create"
+  | "report:create"
+  | "registry:read"
+  | "registry:register"
+
+/**
+ * capability 授权结果。
+ *
+ * 用途:
+ * - 让调用方获得稳定拒绝原因。
+ * - 供测试断言权限边界。
+ *
+ * 边界:
+ * - `KernelError` 的字段结构由 SPEC-016 定义。
+ */
+export type CapabilityCheckResult =
+  | { ok: true }
+  | { ok: false; error: KernelError }
+
+/**
+ * 注册项 ID。
+ *
+ * 用途:
+ * - 作为命令、selector、validator、technique、importer/exporter descriptor 等贡献点的稳定标识。
+ */
+export type ContributionId = string
+
+/**
+ * 注册项类型。
+ *
+ * 用途:
+ * - 表示该贡献点属于哪类内核扩展。
+ */
+export type ContributionKind =
+  | "command"
+  | "selector"
+  | "hard-validator"
+  | "technique-definition"
+  | "migration"
+  | "importer-descriptor"
+  | "exporter-descriptor"
+  | "template-descriptor"
+
+/**
+ * 注册项状态。
+ *
+ * 用途:
+ * - 表示能力是否可用。
+ * - MVP 可以只使用 `active` 和 `disabled`。
+ */
+export type ContributionStatus =
+  | "active"
+  | "disabled"
+  | "unsupported"
+  | "incompatible"
+
+/**
+ * 内核注册项。
+ *
+ * 用途:
+ * - 描述一个可被 Core Kernel 发现和检查的贡献点。
+ * - descriptor 可被 UI、命令面板、导入导出菜单和测试读取。
+ *
+ * 边界:
+ * - 不保存 React、SVG、VexFlow、Web Audio、Tauri 文件对象或可变 `ScoreDocument`。
+ */
+export interface KernelContribution<TDescriptor = unknown> {
+  id: ContributionId
+  kind: ContributionKind
+  titleKey: string
+  descriptionKey?: string
+  sourceModuleId: ModuleId
+  apiVersion: KernelApiVersion
+  requiredCapabilities: KernelCapability[]
+  status: ContributionStatus
+  descriptor: TDescriptor
+}
+
+/**
+ * 注册结果。
+ *
+ * 用途:
+ * - 统一表达贡献点注册成功或失败。
+ * - 成功时返回新的 registryVersion。
+ *
+ * 边界:
+ * - 失败错误对象结构由 SPEC-016 定义。
+ */
+export type RegistryResult =
+  | { ok: true; contributionId: ContributionId; registryVersion: number }
+  | { ok: false; error: KernelError }
+
+/**
+ * 注册表查询。
+ *
+ * 用途:
+ * - 让模块按 kind、来源或状态读取只读摘要。
+ */
+export interface RegistryQuery {
+  kind?: ContributionKind
+  sourceModuleId?: ModuleId
+  status?: ContributionStatus
+}
+
+/**
+ * 注册表摘要。
+ *
+ * 用途:
+ * - 给 UI、Extension Host 和测试读取贡献点目录。
+ * - 不泄露 handler 或可变内部对象。
+ */
+export interface RegistrySummary {
+  registryVersion: number
+  contributions: KernelContributionSummary[]
+}
+
+/**
+ * 注册项摘要。
+ *
+ * 用途:
+ * - 作为 registry summary 中可公开读取的最小 contribution 信息。
+ */
+export interface KernelContributionSummary {
+  id: ContributionId
+  kind: ContributionKind
+  titleKey: string
+  sourceModuleId: ModuleId
+  apiVersion: KernelApiVersion
+  status: ContributionStatus
+}
+
+/**
+ * Core Kernel 注册表。
+ *
+ * 用途:
+ * - 管理内核可发现贡献点。
+ * - 提供显式注册、只读查询和 capability 检查入口。
+ */
+export interface KernelRegistry {
+  register<TDescriptor>(
+    identity: KernelModuleIdentity,
+    contribution: KernelContribution<TDescriptor>
+  ): RegistryResult
+  getSummary(query?: RegistryQuery): RegistrySummary
+  requireCapability(
+    identity: KernelModuleIdentity,
+    required: KernelCapability[]
+  ): CapabilityCheckResult
+}
+```
+
+## MVP 注册项集合
+
+MVP 必须至少通过 registry 管理以下贡献点:
+
+- `core.commands`: `core.createScore`、`core.insertNote`、`core.setFret`、`core.addTechnique` 等命令定义。
+- `core.selectors`: `selectDocumentMetadata`、`selectSerializableScore`、`selectMeasureRange` 等 selector。
+- `core.hard-validators`: schema、ID、引用、duration、tuning、single-note MVP 限制等 hard validator。
+- `core.guitar-techniques`: `slide`、`bend`、`vibrato` technique definition。
+- `core.migrations`: `.bgp` schema migration entries。
+- `core.importers`: 原生 `.bgp` 打开和自动恢复入口 descriptor。
+- `core.exporters`: PDF 和 PNG exporter descriptor。
+- `core.templates`: 标准 6 弦 4/4 吉他谱模板 descriptor。
+
+MVP 不允许以下注册项来源:
+
+- 第三方 JavaScript/TypeScript 插件。
+- Lua 插件。
+- Native 动态库插件。
+- 运行时下载的远程插件。
+- 未声明 module identity 的匿名贡献点。
+
+## 边界行为
+
+- Duplicate contribution: 返回 `registry-duplicate-id`，保持原注册项不变。
+- Unsupported runtime: 返回 `runtime-unsupported`，不得执行入口代码。
+- Capability denied: 返回 `capability-denied`，不得继续执行 handler。
+- API incompatible: 返回 `api-version-incompatible`，不得注册贡献点。
+- Disabled contribution: 返回 `contribution-disabled`，不得静默跳过。
+- Unknown contribution: 返回对应 unknown/unsupported 错误，不得猜测替代贡献点。
+
+## 与其它 spec 的关系
+
+- `SPEC-003-command-system.md`: CommandDefinition 必须通过 registry 注册，命令执行前做 capability 检查。
+- `SPEC-005-guitar-techniques.md`: TechniqueDefinition 通过 registry 注册，技巧数据仍保存为 `TechniqueAnnotation`。
+- `SPEC-009-extension-api.md`: Extension Host 读取插件 manifest 后，未来通过 registry 代理注册贡献点；MVP 只允许 internal-module。
+- `SPEC-011-internationalization.md`: 注册项标题和描述必须使用 i18n key。
+- `SPEC-014-kernel-snapshot-events.md`: 注册表变化必须发布 `kernel.registry.changed`。
+- `SPEC-016-kernel-errors-diagnostics-reports.md`: 注册和 capability 失败时的错误对象由该 spec 定义。
+
+## MVP 必须做
+
+- 定义 `KernelRegistry`。
+- 定义 `KernelCapability`。
+- 定义 `KernelModuleIdentity`。
+- 为命令、selector、hard validator、technique、migration、importer/exporter descriptor 和 template descriptor 建立注册入口。
+- 拒绝重复注册、未知 kind、unsupported runtime、api version 不兼容和 capability 不足。
+- 注册表变化后更新 `registryVersion` 并发布事件。
+- registry summary 不泄露 handler、React 组件、SVG/VexFlow 对象、Web Audio 节点、Tauri 文件对象或可变 `ScoreDocument`。
+
+## MVP 不做
+
+- 不做第三方插件安装。
+- 不做插件市场。
+- 不做远程插件下载。
+- 不做插件签名审核。
+- 不做第三方 JS/TS、Lua 或 native 插件运行。
+- 不做 UI 面板插件注册。
+- 不做网络权限。
+- 不把 Tauri/Rust 权限合并到 Core Kernel capability。
+
+## 测试要求
+
+- [ ] AC-015-01: 重复注册同一 command id 返回 `registry-duplicate-id`。
+- [ ] AC-015-02: 注册 unsupported runtime 的贡献点返回 `runtime-unsupported`。
+- [ ] AC-015-03: api version 不兼容时返回 `api-version-incompatible`。
+- [ ] AC-015-04: capability 不足时返回 `capability-denied`，handler 不执行。
+- [ ] AC-015-05: 注册表变化后 `registryVersion` 递增，并发布 `kernel.registry.changed`。
+- [ ] AC-015-06: registry summary 不包含 handler、React 组件、SVG/VexFlow 对象、Web Audio 节点、Tauri 文件对象或可变 `ScoreDocument`。
+- [ ] AC-015-07: 拥有 `command:register` 的模块不能因此执行写命令；执行写命令仍需要 `command:execute`。
+- [ ] AC-015-08: `KernelModuleIdentity.trustLevel = "trusted-core"` 的模块可以在启动期使用 `CoreModuleRegistration`，但重复注册、apiVersion 不兼容或 capability 不足时仍被拒绝。
+- [ ] AC-015-09: `KernelModuleIdentity.trustLevel = "external-plugin"` 的模块不能调用启动期直接注册入口，只能通过 `Extension Host` 代理注册。
+- [ ] AC-015-10: 不在 `KernelStartupModuleManifest` 中的模块即使 runtime 为 `internal-module`，也不能获得 `trusted-core` 身份。
+- [ ] AC-015-11: `KernelStartupModuleManifest` 中包含文件路径、URL、脚本字符串或未知 `registrationEntryId` 时，内核启动必须失败并返回稳定 registry/module 错误。
