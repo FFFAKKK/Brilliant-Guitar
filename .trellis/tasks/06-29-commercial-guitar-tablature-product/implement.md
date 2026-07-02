@@ -25,7 +25,7 @@
 - [x] 确认外部可变 `ScoreDocument` 副本方案已拒绝。
 - [x] 确认 Core Kernel 注册表和 capability 作为独立内核功能，继续按 `SPEC-015` 细化。
 - [x] 确认 Core Kernel 错误、diagnostic 和 report 作为独立内核功能，继续按 `SPEC-016` 细化。
-- [ ] 先完成第一阶段 Core Kernel 9 类机制总规划，再继续注册表 handler 注销、运行时卸载、插件热插拔和权限 UI 等生命周期细节。
+- [x] 确认 Core Kernel V1 先落地 9 类机制；官方内置 UI 模块作为第一个可信模块/官方插件验证内核协作；第三方插件生命周期治理后置。
 - [x] 确认第一阶段 Core Kernel 最小边界采用 9 类机制: 文档模型、命令边界、事务历史、地址范围、硬验证、文件语义、快照事件、注册能力、错误报告。
 - [ ] 架构确认后再确认项目目录结构。
 - [ ] 将稳定 spec 同步到 `.trellis/spec/`。
