@@ -235,7 +235,7 @@ npm run tauri build
 - [ ] 用户确认 PRD 当前版本。
 - [x] 用户确认第一条纵向切片。
 - [ ] 等待当前规划送审结果；审核意见返回前不进入实现、不运行 `task.py start`。
-- [ ] 用户确认第一阶段 Core Kernel 最小边界后，`design.md` 无阻塞开放问题。
+- [x] 用户确认第一阶段 Core Kernel 最小边界后，`design.md` 无阻塞开放问题。
 - [ ] 注册表 handler 注销/卸载、插件热插拔和可信模块禁用已记录为后置细节，不阻塞当前内核总规划。
 - [ ] `implement.md` 的阶段顺序被接受。
 - [ ] Trellis Phase 1 质量门禁通过。
