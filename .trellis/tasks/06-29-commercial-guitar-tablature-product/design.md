@@ -50,7 +50,7 @@
 8. 注册表与能力边界。
 9. 错误、diagnostic 和 report 契约。
 
-注册表 handler 注销、运行时卸载、热插拔、插件禁用和权限 UI 属于第三方插件生命周期治理细节，不进入当前 Core Kernel 实现规划；Kernel V1 只保留 registry/capability 的最小静态注册边界，保证未来 Extension Host 可以接入。Core Kernel 完成后，先建设官方内置 UI 模块作为第一个可信模块/官方插件，用它验证谱面显示以及 snapshot、semantic command、event、registry/capability 的模块协作链路；第三方插件安装、启停、卸载、热插拔和权限 UI 后置到该官方 UI 模块可用之后再规划。
+注册表 handler 注销、运行时卸载、热插拔、插件禁用和权限 UI 属于第三方插件生命周期治理细节，不进入当前 Core Kernel 实现规划；Kernel V1 只保留 registry/capability 的最小静态注册边界，保证未来 Extension Host 可以接入。Core Kernel 完成后，会继续建设多个由官方随应用发布的内置可信模块，这些模块通过 registry/capability 与 Core Kernel 协作；具体模块清单、模块数量和拆分方式后续再规划。UI 模块只是官方内置模块中的一类，不被写死为第一个、唯一插件或固定顺序；第三方插件安装、启停、卸载、热插拔和权限 UI 仍然后置。
 
 内核禁止:
 
@@ -229,5 +229,5 @@
 - 外部可变 `ScoreDocument` 副本方案已拒绝；这类方案与微内核设计相悖。外部模块只能生成非谱面事实的派生模型，最终写入仍走内核受控入口。
 - Core Kernel 的注册表与 capability 已确认作为独立内核功能，继续按 `SPEC-015` 细化。
 - Core Kernel 的错误、diagnostic 和 report 已确认作为独立内核功能，继续按 `SPEC-016` 细化。
-- 注册表 handler 注销/卸载、第三方插件热插拔、可信模块禁用和权限 UI 后置到 Core Kernel 完成并具备官方内置 UI 模块之后再规划；该 UI 模块先作为第一个可信模块/官方插件验证内核协作链路，这些生命周期治理能力不作为当前内核总规划和 Kernel V1 实现阻塞项。
+- 注册表 handler 注销/卸载、第三方插件热插拔、可信模块禁用和权限 UI 后置到 Core Kernel 完成并开始建设多个官方内置可信模块之后再规划；官方内置模块会有多个，UI 模块只是其中一类，具体模块清单、数量和拆分方式后续再确定，这些生命周期治理能力不作为当前内核总规划和 Kernel V1 实现阻塞项。
 - 项目目录结构暂不确认，待内核边界、模块拆分和构建边界确认后再决定。
