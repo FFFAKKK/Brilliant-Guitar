@@ -25,7 +25,7 @@
 - [x] 确认外部可变 `ScoreDocument` 副本方案已拒绝。
 - [x] 确认 Core Kernel 注册表和 capability 作为独立内核功能，继续按 `SPEC-015` 细化。
 - [x] 确认 Core Kernel 错误、diagnostic 和 report 作为独立内核功能，继续按 `SPEC-016` 细化。
-- [x] 确认 Core Kernel V1 先落地 9 类机制；后续会建设多个官方内置可信模块并通过 registry/capability 与内核协作，具体模块清单、数量和拆分方式后续规划；第三方插件生命周期治理后置。
+- [x] 确认 Core Kernel V1 先落地 9 类机制；后续会建设多个官方内置可信模块并通过 registry/capability 与内核协作，具体模块清单、数量和拆分方式后续规划；未来第三方插件只能启动前配置，运行时热插拔、运行中启停和卸载不作为规划目标。
 - [x] 确认第一阶段 Core Kernel 最小边界采用 9 类机制: 文档模型、命令边界、事务历史、地址范围、硬验证、文件语义、快照事件、注册能力、错误报告。
 - [ ] 架构确认后再确认项目目录结构。
 - [ ] 将稳定 spec 同步到 `.trellis/spec/`。
@@ -100,6 +100,7 @@
 - [ ] 拒绝重复注册、未知 kind、unsupported runtime、api version 不兼容和 capability 不足。
 - [ ] 注册表变化后递增 `registryVersion` 并发布 `kernel.registry.changed`。
 - [ ] 确保 registry summary 不泄露 handler、React 组件、SVG/VexFlow 对象、Web Audio 节点、Tauri 文件对象或可变 `ScoreDocument`。
+- [ ] 定义 registry 启动期注册边界: 应用进入 ready 状态后不得为第三方插件新增、卸载、启用、禁用或热插拔 handler。
 - [ ] 建立重复注册、capability denied、api version incompatible 和 unsupported runtime 测试。
 
 ### 6. 内核错误、Diagnostic 和 Report
@@ -181,6 +182,7 @@
 - [ ] 校验 `KernelStartupModuleManifest` 中的 runtime、apiVersion、capabilities 和 `registrationEntryId`。
 - [ ] 拒绝清单中的外部路径、URL、脚本字符串、动态 import 或未知 `registrationEntryId`。
 - [ ] 确保插件 manifest 不能声明或提升自身 trust level。
+- [ ] 定义未来第三方插件安装、移除、启用和禁用配置只能在启动前生效；运行中插件集合变更返回 unsupported 或 restart-required。
 - [ ] MVP 只接受 `runtime = "internal-module"`。
 - [ ] 拒绝第三方 JS/TS、Lua 或 native 插件 manifest，并返回明确 unsupported。
 - [ ] 实现内部命令、验证器、导入器、导出器和模板注册接口。
@@ -236,6 +238,6 @@ npm run tauri build
 - [x] 用户确认第一条纵向切片。
 - [ ] 等待当前规划送审结果；审核意见返回前不进入实现、不运行 `task.py start`。
 - [x] 用户确认第一阶段 Core Kernel 最小边界后，`design.md` 无阻塞开放问题。
-- [x] 注册表 handler 注销/卸载、插件热插拔和可信模块禁用已记录为后置细节，不阻塞当前内核总规划。
+- [x] 注册表 handler 运行时注销/卸载、插件热插拔、运行中启停和卸载已明确不作为稳定性目标；未来插件配置变更通过重启生效，不阻塞当前内核总规划。
 - [ ] `implement.md` 的阶段顺序被接受。
 - [ ] Trellis Phase 1 质量门禁通过。

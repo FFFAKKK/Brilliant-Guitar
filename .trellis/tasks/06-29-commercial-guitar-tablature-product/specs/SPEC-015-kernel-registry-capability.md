@@ -26,7 +26,7 @@
 第一阶段采用 “Kernel Registry + Static Internal Capability”。
 
 - Registry: Core Kernel 维护最小注册表，只登记稳定 contribution descriptor 和 handler 引用。
-- Capability: MVP 使用静态内部 capability 授权；未来第三方插件由 `Extension Host` 基于 manifest 过滤和代理。
+- Capability: MVP 使用静态内部 capability 授权；未来第三方插件由 `Extension Host` 在应用启动期基于 manifest 过滤和代理。
 - Runtime: MVP 只接受 `builtin` 和 `internal-module`。第三方 `javascript-typescript`、`lua` 和 `native` runtime 一律 unsupported。
 - Boundary: 注册表不是插件市场、不是权限 UI、不是第三方沙箱、不是写入通道。
 
@@ -57,6 +57,7 @@
 - LEAST-CAPABILITY: 模块只获得它声明并被授予的最小 capability。
 - DENY-BY-DEFAULT: 未注册、未授权、不兼容或未知贡献点默认拒绝。
 - SUMMARY-ONLY-READ: 外部模块只能读取 registry summary，不能拿到 handler 或可变对象。
+- STARTUP-ONLY-PLUGIN-CHANGES: 第三方插件安装、移除、启用和禁用配置只能在应用启动前完成，运行中插件集合不得热插拔。
 - CORE-SMALL: 插件发现、运行时、沙箱和市场不进入 Core Kernel。
 
 ## 强制规则
@@ -78,6 +79,7 @@
 - KRC-015: `runtime`、`trustLevel` 和 capability 是三个独立概念；`runtime = "internal-module"` 不自动获得全部权限，`trustLevel = "trusted-core"` 也不绕过 registry、apiVersion 或 capability 校验。
 - KRC-016: `trusted-core` 身份只能来自静态 `KernelStartupModuleManifest`；模块运行时、插件 manifest 或用户配置不得自我声明为可信核心模块。
 - KRC-017: `KernelStartupModuleManifest` 只能引用应用内已编译绑定的 `CoreModuleRegistrationEntryId`，不得引用任意文件路径、URL、脚本字符串或动态 import 表达式。
+- KRC-018: 未来第三方插件的安装、移除、启用和禁用配置必须在应用启动前完成；`Extension Host` 只能在启动期发现、校验并代理注册第三方贡献点，应用进入 ready 状态后不得新增、卸载、启用、禁用或热插拔第三方插件，相关变更必须要求重启后生效。
 
 ## 数据结构草案
 
@@ -98,7 +100,7 @@ export type KernelApiVersion = string
  *
  * 用途:
  * - 标识注册项来源。
- * - 用于 capability 检查、错误归因、report 归因和未来插件禁用。
+ * - 用于 capability 检查、错误归因、report 归因和未来插件配置状态归因。
  */
 export type ModuleId = string
 
@@ -406,7 +408,7 @@ MVP 不允许以下注册项来源:
 
 - `SPEC-003-command-system.md`: CommandDefinition 必须通过 registry 注册，命令执行前做 capability 检查。
 - `SPEC-005-guitar-techniques.md`: TechniqueDefinition 通过 registry 注册，技巧数据仍保存为 `TechniqueAnnotation`。
-- `SPEC-009-extension-api.md`: Extension Host 读取插件 manifest 后，未来通过 registry 代理注册贡献点；MVP 只允许 internal-module。
+- `SPEC-009-extension-api.md`: Extension Host 在应用启动期读取插件 manifest 后，未来通过 registry 代理注册贡献点；MVP 只允许 internal-module。
 - `SPEC-011-internationalization.md`: 注册项标题和描述必须使用 i18n key。
 - `SPEC-014-kernel-snapshot-events.md`: 注册表变化必须发布 `kernel.registry.changed`。
 - `SPEC-016-kernel-errors-diagnostics-reports.md`: 注册和 capability 失败时的错误对象由该 spec 定义。
@@ -428,6 +430,7 @@ MVP 不允许以下注册项来源:
 - 不做远程插件下载。
 - 不做插件签名审核。
 - 不做第三方 JS/TS、Lua 或 native 插件运行。
+- 不做运行中新增、卸载、启用、禁用或热插拔第三方插件。
 - 不做 UI 面板插件注册。
 - 不做网络权限。
 - 不把 Tauri/Rust 权限合并到 Core Kernel capability。
@@ -445,3 +448,4 @@ MVP 不允许以下注册项来源:
 - [ ] AC-015-09: `KernelModuleIdentity.trustLevel = "external-plugin"` 的模块不能调用启动期直接注册入口，只能通过 `Extension Host` 代理注册。
 - [ ] AC-015-10: 不在 `KernelStartupModuleManifest` 中的模块即使 runtime 为 `internal-module`，也不能获得 `trusted-core` 身份。
 - [ ] AC-015-11: `KernelStartupModuleManifest` 中包含文件路径、URL、脚本字符串或未知 `registrationEntryId` 时，内核启动必须失败并返回稳定 registry/module 错误。
+- [ ] AC-015-12: 应用进入 ready 状态后，第三方插件新增、卸载、启用、禁用或热插拔请求不会改变当前 registry handler 集合，并返回 unsupported 或 restart-required 类稳定错误。

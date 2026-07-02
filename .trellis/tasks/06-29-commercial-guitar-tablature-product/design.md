@@ -50,7 +50,7 @@
 8. 注册表与能力边界。
 9. 错误、diagnostic 和 report 契约。
 
-注册表 handler 注销、运行时卸载、热插拔、插件禁用和权限 UI 属于第三方插件生命周期治理细节，不进入当前 Core Kernel 实现规划；Kernel V1 只保留 registry/capability 的最小静态注册边界，保证未来 Extension Host 可以接入。Core Kernel 完成后，会继续建设多个由官方随应用发布的内置可信模块，这些模块通过 registry/capability 与 Core Kernel 协作；具体模块清单、模块数量和拆分方式后续再规划。UI 模块只是官方内置模块中的一类，不被写死为第一个、唯一插件或固定顺序；第三方插件安装、启停、卸载、热插拔和权限 UI 仍然后置。
+注册表 handler 注销、运行时卸载、运行时热插拔、运行中插件启用/禁用和权限 UI 不进入当前 Core Kernel 实现规划；Kernel V1 只保留 registry/capability 的最小静态注册边界，保证未来 Extension Host 可以接入。Core Kernel 完成后，会继续建设多个由官方随应用发布的内置可信模块，这些模块通过 registry/capability 与 Core Kernel 协作；具体模块清单、模块数量和拆分方式后续再规划。UI 模块只是官方内置模块中的一类，不被写死为第一个、唯一插件或固定顺序。未来第三方插件的安装、移除、启用和禁用配置只能在应用启动前完成，由 Extension Host 在启动期发现和代理注册；运行时热插拔、运行中卸载和启停不作为规划目标。
 
 内核禁止:
 
@@ -176,6 +176,7 @@
 - 信任模型: MVP 只采用两级，随应用发布的 `builtin/internal-module` 为 `trusted-core`，未来第三方插件为 `external-plugin`。
 - 可信来源: `trusted-core` 只能来自静态 `KernelStartupModuleManifest`，清单随应用源码或打包产物发布。
 - 协作模型: `trusted-core` 模块通过启动期 `CoreModuleRegistration` 直接注册贡献点和 handler；`external-plugin` 模块必须通过 `Extension Host` 获得受控 `PluginKernelFacade`。
+- 生命周期: 第三方插件安装、移除、启用和禁用配置必须在应用启动前完成；应用进入 ready 状态后不得新增、卸载、启用、禁用或热插拔第三方插件，变更需要重启后生效。
 - 身份边界: `runtime`、`trustLevel` 和 capability 独立判断；运行时类型不自动获得权限，可信级别也不绕过 registry 校验。
 - 启动顺序: Core Kernel 先校验 `KernelStartupModuleManifest`，再解析已编译绑定的 `CoreModuleRegistrationEntryId`，最后调用 `KernelRegistry` 注册贡献点。
 - 读取: 插件只能通过 snapshot 或 selector 读取谱面。
@@ -183,7 +184,7 @@
 - 事件: 未来第三方插件只能订阅由 `Extension Host` 过滤后的事件。
 - 报告: 插件导入、导出、验证和异常必须输出标准 report、diagnostic 或 `KernelError`。
 - 权限: 注册权限与执行权限分离；能注册贡献点不等于能执行写命令或访问文件。
-- 禁止: 不执行第三方 JS/TS、Lua 或 native 插件代码；插件不得直接访问可变文档对象；启动清单不得引用外部路径、URL、脚本字符串或动态 import。
+- 禁止: 不执行第三方 JS/TS、Lua 或 native 插件代码；插件不得直接访问可变文档对象；启动清单不得引用外部路径、URL、脚本字符串或动态 import；应用运行中不得改变第三方插件集合。
 
 ## 第一条纵向切片
 
@@ -229,5 +230,5 @@
 - 外部可变 `ScoreDocument` 副本方案已拒绝；这类方案与微内核设计相悖。外部模块只能生成非谱面事实的派生模型，最终写入仍走内核受控入口。
 - Core Kernel 的注册表与 capability 已确认作为独立内核功能，继续按 `SPEC-015` 细化。
 - Core Kernel 的错误、diagnostic 和 report 已确认作为独立内核功能，继续按 `SPEC-016` 细化。
-- 注册表 handler 注销/卸载、第三方插件热插拔、可信模块禁用和权限 UI 后置到 Core Kernel 完成并开始建设多个官方内置可信模块之后再规划；官方内置模块会有多个，UI 模块只是其中一类，具体模块清单、数量和拆分方式后续再确定，这些生命周期治理能力不作为当前内核总规划和 Kernel V1 实现阻塞项。
+- 注册表 handler 运行时注销/卸载、第三方插件热插拔、运行中启用/禁用和运行中卸载已明确不作为稳定性目标；未来第三方插件配置变更必须启动前完成并通过重启生效。可信官方内置模块会有多个，UI 模块只是其中一类，具体模块清单、数量和拆分方式后续再确定，这些生命周期治理能力不作为当前内核总规划和 Kernel V1 实现阻塞项。
 - 项目目录结构暂不确认，待内核边界、模块拆分和构建边界确认后再决定。
