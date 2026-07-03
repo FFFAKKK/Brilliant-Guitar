@@ -533,22 +533,35 @@ MVP 限制:
 - 每 beat 单音或休止。
 - 不做和弦、多轨、变拍号、歌词、复杂理论标注。
 
-### 7. Selection / Cursor Service
+### 7. Editor Session Service
 
-作用: 把“用户当前在谱面哪里编辑”变成内核级稳定状态。
+作用: 在 Core Kernel 外维护“用户当前在谱面哪里编辑”的会话状态，并把光标、选区和输入焦点解析成内核可接受的语义命令或命令目标。
 
 负责:
 
-- 当前小节、beat、弦、音符槽位。
-- 选区范围。
-- 输入目标定位。
-- 命令前置条件判断。
+- 当前小节、beat、弦、音符槽位等谱面光标状态。
+- 当前选区、高亮、鼠标拖选和编辑模式。
+- 把临时光标/选区解析为 `ScoreAddress`、`ScorePoint`、`ScoreRange`、`CommandTarget` 或语义命令 payload。
+- 调用内核已注册命令，并让真正修改谱面的操作进入事务、验证、undo/redo 和事件链路。
 
 价值:
 
-- UI 可以换，但光标语义不变。
-- 命令回放可以复现编辑步骤。
-- 插件未来也能基于选区工作。
+- Core Kernel 不保存 UI 当前光标、当前选区、鼠标拖拽、编辑模式或播放光标。
+- 命令回放回放的是语义命令，不回放纯 UI 光标移动。
+- 插件未来如需基于选区工作，也只能通过外部 facade/session context 获得已解析目标，再提交已注册语义命令。
+
+Core Kernel 只负责:
+
+- 定义 `EntityId`、`ScoreAddress`、`ScorePoint`、`ScoreRange` 和 `CommandTarget`。
+- 校验命令目标是否合法。
+- 接收外部模块提交的已注册语义命令。
+- 保护 `ScoreDocument` 事务一致性。
+
+禁止:
+
+- 把当前光标、当前选区、高亮、鼠标拖拽或编辑模式写入 Core Kernel 状态。
+- 把光标移动、选区高亮或鼠标拖选发布为 Core Kernel 文档事件。
+- 让 UI、插件或导入器绕过命令注册表直接修改 `ScoreDocument`。
 
 ### 8. Validation & Diagnostics
 
