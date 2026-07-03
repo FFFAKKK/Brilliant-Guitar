@@ -246,11 +246,11 @@ npm run tauri build
 
 ## 进入实现前检查
 
-- [ ] 用户确认 PRD 当前版本。
+- [x] 用户确认 PRD 当前版本。
 - [x] 用户确认第一条纵向切片。
 - [x] 当前规划已完成送审，结论为有条件通过。
-- [ ] 完成送审提出的 3 项防误读修订后，再运行 `task.py start`。
+- [x] 完成送审提出的 3 项防误读修订后，再运行 `task.py start`。
 - [x] 用户确认第一阶段 Core Kernel 最小边界后，`design.md` 无阻塞开放问题。
 - [x] 注册表 handler 运行时注销/卸载、插件热插拔、运行中启停和卸载已明确不作为稳定性目标；未来插件配置变更通过重启生效，不阻塞当前内核总规划。
 - [x] `implement.md` 已明确当前启动入口为 `Pure Core Kernel V1 only`，后续 UI、渲染、播放、持久化和导出只作为路线图保留。
-- [ ] Trellis Phase 1 质量门禁通过。
+- [x] Trellis Phase 1 质量门禁通过。
