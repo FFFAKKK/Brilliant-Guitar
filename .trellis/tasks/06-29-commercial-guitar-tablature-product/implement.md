@@ -97,7 +97,7 @@
 - [ ] 定义 `KernelRegistry`、`KernelContribution`、`ContributionKind`、`ContributionStatus` 和 `RegistrySummary`。
 - [ ] 定义 `KernelModuleIdentity`、`KernelModuleTrustLevel`、`KernelModuleRuntime`、`KernelCapability` 和 `CapabilityCheckResult`。
 - [ ] 定义 `KernelStartupModuleManifest`、`TrustedCoreModuleDeclaration` 和 `CoreModuleRegistrationEntryId`。
-- [ ] 将 `runtime`、`trustLevel` 和 capability 独立判断；`runtime = "internal-module"` 不自动获得全部权限，`trustLevel = "trusted-core"` 不绕过 registry 校验。
+- [ ] 将 `origin`、`runtime`、`trustLevel` 和 capability 独立判断；`origin = "official"`、`runtime = "internal-module"` 或 `trustLevel = "system-trusted"` 都不自动获得全部权限，也不绕过 registry 校验。
 - [ ] 为 command、selector、hard validator、technique definition、migration、importer/exporter descriptor 和 template descriptor 建立注册入口。
 - [ ] 拒绝重复注册、未知 kind、unsupported runtime、api version 不兼容和 capability 不足。
 - [ ] 注册表变化后递增 `registryVersion` 并发布 `kernel.registry.changed`。
@@ -173,27 +173,22 @@
 - [ ] 实现 PNG 导出。
 - [ ] 建立 Windows 字体、DPI、页面尺寸和可读性 smoke test。
 
-### 12. 扩展系统边界
+### 12. 统一注册协议内核基础
 
-- [ ] 实现内部插件注册表。
-- [ ] 定义 `PluginManifest`、`PluginRuntime`、权限声明和贡献点类型。
-- [ ] 定义 `CoreModuleRegistration`，用于可信 `builtin/internal-module` 启动期直接注册贡献点和 handler。
-- [ ] 定义 `PluginKernelFacade`，用于未来第三方插件，包含 read、commands、registry、events 和 reports 五类受控接口。
-- [ ] 实现两级信任模型: `trusted-core` 用于随应用发布的 `builtin/internal-module`，`external-plugin` 用于未来第三方插件。
-- [ ] 实现静态 `KernelStartupModuleManifest`，作为 `trusted-core` 模块的唯一来源。
-- [ ] 校验 `KernelStartupModuleManifest` 中的 runtime、apiVersion、capabilities 和 `registrationEntryId`。
+- [ ] 实现 `KernelRegistry`、`KernelCapability`、`KernelModuleIdentity` 和贡献点 descriptor。
+- [ ] 定义 `ModuleOrigin`、`KernelModuleTrustLevel`、`KernelModuleRuntime`，明确来源不决定权限，权限由启动前授权和 capability 决定。
+- [ ] 定义 `KernelStartupModuleManifest`，作为 Pure Core Kernel V1 的唯一启动期模块来源。
+- [ ] 定义 `CoreModuleRegistration`，让官方/内置模块在启动期按统一注册协议注册贡献点和 handler。
+- [ ] 校验 `KernelStartupModuleManifest` 中的 origin、runtime、trustLevel、apiVersion、capabilities 和 `registrationEntryId`。
 - [ ] 拒绝清单中的外部路径、URL、脚本字符串、动态 import 或未知 `registrationEntryId`。
-- [ ] 确保插件 manifest 不能声明或提升自身 trust level。
-- [ ] 定义未来第三方插件安装、移除、启用和禁用配置只能在启动前生效；运行中插件集合变更返回 unsupported 或 restart-required。
-- [ ] MVP 只接受 `runtime = "internal-module"`。
-- [ ] 拒绝第三方 JS/TS、Lua 或 native 插件 manifest，并返回明确 unsupported。
-- [ ] 实现内部命令、验证器、导入器、导出器和模板注册接口。
-- [ ] 确保内部模块直接注册时仍走 `KernelRegistry` 校验，不直接获取可变 `ScoreDocument`。
+- [ ] V1 只接受随应用发布的 `builtin` 和 `internal-module`；未来第三方模块可在启动前授权后进入同一注册协议，但不进入 Pure Core Kernel V1 实现。
+- [ ] 不实现真实 `Extension Host`、真实 `PluginKernelFacade`、第三方插件 manifest 读取、第三方插件安装/启用/禁用/卸载、事件过滤代理或 JS/TS/Lua/native 插件运行时。
+- [ ] 实现内部命令、selector、hard validator、technique definition、migration、导入器/导出器 descriptor 和模板 descriptor 注册接口。
+- [ ] 确保所有模块直接注册时仍走 `KernelRegistry` 校验，不直接获取可变 `ScoreDocument`。
 - [ ] 区分注册权限和执行权限，例如 `command:register` 不等于 `command:execute`。
-- [ ] 确保插件修改文档必须通过命令事务和 undo/redo。
-- [ ] 确保插件事件订阅通过 `Extension Host` 过滤，未来第三方插件不能直接订阅裸 `KernelEventBus`。
-- [ ] 建立插件异常隔离测试，插件错误不能导致主程序崩溃或文档损坏。
-- [ ] 建立未知插件私有数据 round-trip 测试。
+- [ ] 确保模块修改文档必须通过命令事务和 undo/redo。
+- [ ] 建立重复注册、unsupported runtime、apiVersion 不兼容、capability denied 和 registry summary 不泄露 handler 的测试。
+- [ ] 建立内部模块注册命令后通过命令系统执行并进入 undo/redo 的测试。
 
 ### 13. 国际化
 

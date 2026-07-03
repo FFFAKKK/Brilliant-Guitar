@@ -4,8 +4,8 @@
 
 - 状态: 已确认方向
 - 合并目标: 最终 PRD 的扩展性要求
-- 当前结论: 模块化和插件系统可行；产品架构采用微内核式 Core Kernel + 用户态服务模块。未来第三方产品层谱面插件优先采用 JavaScript/TypeScript；MVP 先实现内部扩展点，不开放任意第三方插件运行。
-- 用户决策: Lua 和 native 插件后置，native 只在性能或系统能力确有需要时开放；MVP 不执行任意第三方 JS/TS、Lua 或 native 代码。
+- 当前结论: 模块化和插件系统可行；产品架构采用微内核式 Core Kernel + 用户态服务模块。长期插件体验向 VS Code 看齐，但底层所有模块统一通过 registry、capability、snapshot、semantic command、event 和 report 与内核协作。
+- 用户决策: 官方模块和第三方模块使用同一套注册流程；来源与权限解耦，未来第三方模块可以在启动前被授予高权限并替换官方 UI、渲染、导入导出等模块。Lua 和 native 插件后置，native 只在性能或系统能力确有需要时开放；MVP 不执行任意第三方 JS/TS、Lua 或 native 代码。
 
 ## 用户价值
 
@@ -15,7 +15,7 @@
 
 ### 产品视角
 
-模块化插件要解决的是“用户和开发者能按自己的工作流扩展软件，但核心谱面和文件资产不被破坏”。用户真正需要的是可发现的命令、可安装或内置的导入导出能力、可运行的批量编辑和可配置为下次启动禁用的问题插件，而不是第一阶段就拥有复杂插件商店或运行时热插拔能力。
+模块化插件要解决的是“用户和开发者能按自己的工作流扩展软件，但核心谱面和文件资产不被破坏”。长期体验应接近 VS Code: 插件安装和管理简单，manifest 声明 contribution，TypeScript 优先，权限声明清晰，能贡献命令、菜单、快捷键、面板、导入导出器、验证器、渲染器和教学工具。第一阶段不做复杂插件商店或运行时热插拔能力，只先把统一注册协议和内核能力边界打稳。
 
 必要场景:
 
@@ -26,40 +26,53 @@
 
 ### 业务逻辑视角
 
+所有模块与内核协作必须先收敛到同一个注册流程:
+
+1. 启动前发现或声明模块。
+2. 生成 `KernelModuleIdentity`，包含来源、运行时、信任级别和 API version。
+3. 按启动前配置或授权策略授予 capability。
+4. 提交 contribution descriptor。
+5. 通过 `KernelRegistry.register(...)` 注册 descriptor 和 handler。
+
+官方模块和第三方模块的差异只存在于注册前的发现、校验、授权和能力分配阶段；一旦进入注册阶段，必须遵守同一套 descriptor、capability、命令、snapshot、事件和 report 契约。
+
 插件与内核协作必须围绕五条受控通道:
 
-1. 注册通道: 插件通过 `Extension Host` 把 contribution descriptor 注册到 `KernelRegistry`。
+1. 注册通道: 模块通过统一注册协议把 contribution descriptor 注册到 `KernelRegistry`。
 2. 读取通道: 插件通过 snapshot 或 selector 读取谱面，不持有可变 `ScoreDocument`。
 3. 写入通道: 插件通过已注册语义命令提交修改，进入事务、验证、undo/redo 和事件流。
-4. 事件通道: 插件通过 `Extension Host` 订阅过滤后的内核事件，不能直接订阅裸 `KernelEventBus`。
+4. 事件通道: V1 内部模块按内核事件规则订阅；未来第三方插件通过后续插件平台过滤后的事件订阅，不能直接订阅裸 `KernelEventBus`。
 5. 报告通道: 插件导入、导出、迁移、验证和异常必须输出标准 report、diagnostic 或 `KernelError`。
 
 业务规则:
 
-- 插件必须声明 manifest、apiVersion、runtime、permissions 和 contributes。
-- 插件只能获得被授予的最小 capability。
+- 模块来源 `origin` 只说明 official 或 third-party，不决定权限高低。
+- 模块能力由启动前授权和 capability 决定；official 不天然绕过规则，third-party 未来也可以被授予高权限。
+- 插件必须声明 manifest、apiVersion、runtime、permissions 和 contributes；Pure Core Kernel V1 不读取真实第三方插件 manifest，只实现统一注册协议的内核基础。
+- 插件只能获得被授予的 capability。
 - 插件异常必须被隔离；未来第三方插件的禁用只能写入下次启动配置，当前运行期不得卸载 handler、改变已注册贡献点集合或热插拔插件。
 - 应用进入 ready 状态后，第三方插件新增、移除、启用、禁用或热插拔请求必须返回 `restart-required` 或 `unsupported-at-runtime` 类稳定结果。
 - 插件私有数据必须按插件 ID 命名空间隔离。
 
 ### 技术实现视角
 
-插件与内核采用两级信任模型和双层协作模型: 可信内核内置模块走启动期轻量直接注册，未来第三方插件走 `Extension Host` 提供的受控 `PluginKernelFacade`。
+插件与内核采用“统一注册协议 + 来源与权限解耦”的模型。官方模块和未来第三方模块最终都通过 `KernelRegistry` 注册 contribution；不同来源的模块只是在启动前发现、校验、授权和加载方式上不同。
 
 协作边界:
 
-- `CoreModuleRegistration` 用于 `trustLevel = "trusted-core"` 的 `builtin` 和可信 `internal-module`，在启动期把 contribution descriptor 和 handler 直接注册进 `KernelRegistry`，避免热路径经过完整插件代理。
-- `trusted-core` 只能由静态 `KernelStartupModuleManifest` 声明；该清单随应用源码或打包产物发布，不接受插件或用户配置追加。
-- `Extension Host` 负责第三方或非可信插件的 manifest 读取、runtime/API version/permissions 校验、插件上下文创建、registry 代理注册、事件过滤和异常捕获。
+- `CoreModuleRegistration` 是 Pure Core Kernel V1 的启动期注册形态，用于随应用发布的 `builtin/internal-module`。
+- `KernelStartupModuleManifest` 是 Pure Core Kernel V1 的唯一启动期模块来源；V1 清单只引用应用内已编译绑定的 `CoreModuleRegistrationEntryId`。
+- 未来第三方插件平台可以把已安装、已校验、已授权的第三方模块映射到同一套 `KernelModuleIdentity`、capability 和 contribution descriptor，再进入统一注册流程。
+- `Extension Host`、第三方 manifest 读取、插件上下文创建、事件过滤代理和第三方异常隔离属于未来插件平台，不进入 Pure Core Kernel V1。
 - `Core Kernel` 只暴露稳定的命令、读取、注册表、事件和 report 契约。
 - 插件 API 不暴露 React、VexFlow、SVG DOM、Web Audio、Tauri 文件对象或可变文档。
 - MVP 内部模块可以同进程直接注册 handler，但必须使用同一套 contribution descriptor、capability、语义命令、snapshot/selector 和 report 契约。
-- `runtime`、`trustLevel` 和 capability 独立建模；运行时类型不自动获得权限，可信级别也不绕过 registry 校验。
+- `origin`、`runtime`、`trustLevel` 和 capability 独立建模；来源、运行时类型和可信级别都不自动获得权限，也不绕过 registry 校验。
 - `KernelStartupModuleManifest` 只能引用应用内已编译绑定的 `CoreModuleRegistrationEntryId`，不能引用外部路径、URL、脚本字符串或动态 import。
 
 可测试性:
 
-- manifest 校验测试。
+- 启动期模块清单校验测试。
 - capability denied 测试。
 - 内部模块启动期直接注册测试。
 - 插件通过 selector 读取测试。
@@ -81,7 +94,8 @@ MVP 不需要完整第三方插件平台，也不应该让可信内核模块为�
 - 远程插件仓库。
 - UI 面板插件。
 - native 动态库插件。
-- 内部模块热路径强制走 `Extension Host` 代理。
+- 真实 `Extension Host`、真实 `PluginKernelFacade` 和第三方插件 manifest 读取。
+- 内部模块热路径强制走未来插件平台代理。
 
 ## 扩展目标
 
@@ -104,13 +118,15 @@ MVP 不需要完整第三方插件平台，也不应该让可信内核模块为�
 - 可注册的文档验证器。
 - 可注册的模板生成器。
 - 可注册的菜单/命令入口。
-- 插件元数据 manifest。
+- 启动期模块清单和模块身份。
 - 插件 API 版本号。
 - 插件私有数据命名空间。
 
 MVP 可暂不开放:
 
 - 第三方 JavaScript/TypeScript 插件安装或任意代码执行。
+- 真实第三方 `PluginManifest` 读取和校验。
+- 真实 `Extension Host` 或 `PluginKernelFacade`。
 - 插件市场。
 - 付费插件或商业插件市场。
 - 原生动态库插件。
@@ -141,17 +157,17 @@ MVP 推荐做到 Level 0 到 Level 2 的内部实现边界，第三方开放后�
 - REQ-007-F03: 导入器、导出器、验证器、模板生成器都必须通过注册表注册。
 - REQ-007-F04: 插件私有数据必须按插件 ID 命名空间隔离。
 - REQ-007-F05: 插件在下次启动被禁用或缺失时，核心谱面必须仍能打开、显示、播放和保存；运行中禁用请求不得改变当前进程已注册的 handler 集合。
-- REQ-007-F06: Tauri/Rust 原生插件只用于核心团队维护的系统能力，不等同于开放给用户的谱面插件。
+- REQ-007-F06: Tauri/Rust 原生能力第一阶段只用于核心团队维护的系统能力；未来是否开放 native 第三方模块必须单独评审。
 - REQ-007-F07: 插件和内部模块读取谱面必须通过内核快照或 selector，不能持有可变文档对象。
 - REQ-007-F08: 插件和内部模块写入谱面必须通过内核命令事务，不能绕过 undo/redo、验证器和事件流。
 - REQ-007-F09: 插件和内部模块写入谱面只能提交已注册语义命令，不能提交任意 patch、JSON path、字段替换、数组 splice 或脚本式写入。
-- REQ-007-F10: 未来第三方插件不得直接调用 Core Kernel 可变接口，必须通过 `Extension Host` 提供的受控 facade 与内核协作。
+- REQ-007-F10: 所有模块最终都必须通过统一注册协议进入 `KernelRegistry`；官方和第三方模块的差异只在启动前发现、校验、授权和能力分配阶段。
 - REQ-007-F11: MVP 内部模块可以使用启动期 `CoreModuleRegistration` 直接注册贡献点和 handler，但必须遵守同一套 contribution descriptor、capability、语义命令、snapshot/selector 和 report 契约。
 - REQ-007-F12: 注册权限必须与执行权限分离；能注册命令、验证器、导入器或导出器，不等于能执行写命令、读取谱面或访问文件。
-- REQ-007-F13: MVP 正式采用两级信任模型；随应用发布的 `builtin/internal-module` 为 `trusted-core`，未来第三方插件为 `external-plugin`。
-- REQ-007-F14: 插件 manifest 不得声明或提升自身 trust level；trustLevel 只能由 Core Kernel 启动配置、打包清单或 Extension Host 分配。
-- REQ-007-F15: `trusted-core` 模块必须出现在静态 `KernelStartupModuleManifest` 中；不在清单中的模块即使 runtime 为 `internal-module` 也不能获得可信核心身份。
-- REQ-007-F16: `KernelStartupModuleManifest` 不得引用外部文件路径、URL、脚本字符串或动态 import 作为可信模块注册入口。
+- REQ-007-F13: `origin`、`runtime`、`trustLevel` 和 capability 必须独立建模；official 不天然拥有全部权限，third-party 未来也可以经启动前授权获得高权限。
+- REQ-007-F14: 插件 manifest 不得自我声明或提升 trustLevel/capability；trustLevel 和 capability 只能由启动前授权、打包清单、开发者模式或未来插件平台分配。
+- REQ-007-F15: Pure Core Kernel V1 的模块必须出现在静态 `KernelStartupModuleManifest` 中；未来第三方模块也必须在启动前完成授权和注册准备，运行中不得加入。
+- REQ-007-F16: V1 的 `KernelStartupModuleManifest` 不得引用外部文件路径、URL、脚本字符串或动态 import 作为可信模块注册入口；未来第三方安装源和签名策略后置单独设计。
 
 ## 安全与稳定要求
 
@@ -165,9 +181,10 @@ MVP 推荐做到 Level 0 到 Level 2 的内部实现边界，第三方开放后�
 
 ## 行为契约
 
-- `PluginManifest` 至少包含 id、name、version、apiVersion、runtime、permissions、entrypoints。
-- `PluginManifest` 必须声明 `contributes`，说明插件贡献命令、验证器、导入器、导出器、模板或面板。
-- MVP 插件 manifest 的 `runtime` 只能是 `internal-module`。
+- `KernelStartupModuleManifest` 是 Pure Core Kernel V1 的唯一模块来源。
+- 未来 `PluginManifest` 至少包含 id、name、version、apiVersion、runtime、permissions、entrypoints 和 contributes，但不进入 Pure Core Kernel V1 实现。
+- 未来 `PluginManifest` 必须声明 `contributes`，说明插件贡献命令、验证器、导入器、导出器、模板或面板。
+- V1 模块 runtime 只能是 `builtin` 或 `internal-module`。
 - 插件命令必须可被命令面板发现。
 - 插件修改文档前必须拿到可撤销事务。
 - 插件导入器必须返回标准 `ImportReport`。
@@ -179,6 +196,7 @@ MVP 推荐做到 Level 0 到 Level 2 的内部实现边界，第三方开放后�
 - 不做无沙箱的任意 JavaScript/Native 插件运行。
 - 不做插件商店。
 - 不承诺跨版本插件永远兼容。
+- 不做真实第三方 `Extension Host`、`PluginKernelFacade` 或插件管理 UI。
 
 ## 验收标准
 
@@ -189,4 +207,4 @@ MVP 推荐做到 Level 0 到 Level 2 的内部实现边界，第三方开放后�
 
 ## 开放问题
 
-- 无。未来第三方产品层谱面插件优先采用 JavaScript/TypeScript；MVP 只开放内部模块插件和 API 边界。
+- 无。长期插件体验向 VS Code 看齐；官方和第三方模块最终使用同一注册流程，来源与权限解耦。Pure Core Kernel V1 只实现统一注册协议、内置模块静态注册和 capability 检查，不实现真实第三方插件平台。
