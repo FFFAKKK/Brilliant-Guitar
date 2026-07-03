@@ -51,7 +51,7 @@
 8. 注册表与能力边界。
 9. 错误、diagnostic 和 report 契约。
 
-注册表 handler 注销、运行时卸载、运行时热插拔、运行中插件启用/禁用和权限 UI 不进入当前 Core Kernel 实现规划；Kernel V1 只保留 registry/capability 的最小静态注册边界，保证未来 Extension Host 可以接入。Core Kernel 完成后，会继续建设多个由官方随应用发布的内置可信模块，这些模块通过 registry/capability 与 Core Kernel 协作；具体模块清单、模块数量和拆分方式后续再规划。UI 模块只是官方内置模块中的一类，不被写死为第一个、唯一插件或固定顺序。未来第三方插件的安装、移除、启用和禁用配置只能在应用启动前完成，由 Extension Host 在启动期发现和代理注册；运行时热插拔、运行中卸载和启停不作为规划目标。
+注册表 handler 注销、运行时卸载、运行时热插拔、运行中插件启用/禁用和权限 UI 不进入当前 Core Kernel 实现规划；Kernel V1 只保留统一注册协议、registry/capability 和启动期静态模块清单，保证未来插件平台或 Extension Host 可以把第三方模块映射进同一注册流程。Core Kernel 完成后，会继续建设多个由官方随应用发布的内置模块，这些模块通过 registry/capability 与 Core Kernel 协作；具体模块清单、模块数量和拆分方式后续再规划。UI 模块只是官方内置模块中的一类，不被写死为第一个、唯一插件或固定顺序。未来第三方插件的安装、移除、启用和禁用配置只能在应用启动前完成；运行时热插拔、运行中卸载和启停不作为规划目标。
 
 ### Pure Core Kernel V1 Boundary
 
@@ -99,7 +99,8 @@ Pure Core Kernel V1 必须能在无 UI、无浏览器 DOM、无 Tauri、无 VexF
 推荐设计见 `specs/SPEC-015-kernel-registry-capability.md`。第一阶段建议采用:
 
 - Kernel Registry: 只登记稳定贡献点 descriptor，不负责第三方插件发现、安装、沙箱或 UI 生命周期。
-- Static Internal Capability: MVP 对 `builtin` 和 `internal-module` 做静态 capability 检查，为未来 Extension Host 代理第三方插件预留边界。
+- Unified Startup Registration: 所有官方模块和未来第三方模块最终都以 `KernelModuleIdentity + capability + contribution descriptor + handler` 的形式进入 registry。
+- Static Capability: MVP 对启动期 `builtin` 和 `internal-module` 做静态 capability 检查，为未来第三方模块经启动前授权后进入同一注册协议预留边界。
 - Summary-only Registry: 外部模块只能读取只读 registry summary，不能拿到 handler、React 组件、VexFlow 对象或可变 `ScoreDocument`。
 - Command-only Write: 注册表不是写入通道；修改谱面仍走语义命令、导入结果或迁移结果。
 
@@ -175,23 +176,22 @@ Pure Core Kernel V1 必须能在无 UI、无浏览器 DOM、无 Tauri、无 VexF
 - 第二阶段: 只规划 Guitar Pro 导入，其它外部导入后置，Guitar Pro 导出长期后置。
 - 约束: 导入器必须输出 `ImportReport`；导出器必须输出 `ExportReport`；导入结果必须通过内核验证器。
 
-### Extension Host Module
+### Unified Module Registration / Future Extension Host
 
-- MVP: 内部插件注册表和内部扩展点。
+- MVP: 统一注册协议、内部扩展点和启动期静态模块清单。
 - 贡献点: commands、validators、importers、exporters、templates。
-- 运行时: MVP 只接受 `internal-module`。
-- 信任模型: MVP 只采用两级，随应用发布的 `builtin/internal-module` 为 `trusted-core`，未来第三方插件为 `external-plugin`。
-- 可信来源: `trusted-core` 只能来自静态 `KernelStartupModuleManifest`，清单随应用源码或打包产物发布。
-- 协作模型: `trusted-core` 模块通过启动期 `CoreModuleRegistration` 直接注册贡献点和 handler；`external-plugin` 模块必须通过 `Extension Host` 获得受控 `PluginKernelFacade`。
+- 运行时: Pure Core Kernel V1 只接受随应用发布的 `builtin` 和 `internal-module`。
+- 身份模型: `origin`、`runtime`、`trustLevel` 和 capability 独立判断；`origin = official` 不天然拥有全部权限，未来 `origin = third-party` 也可以经启动前授权成为 `system-trusted`。
+- 启动来源: V1 模块只能来自静态 `KernelStartupModuleManifest`，清单随应用源码或打包产物发布。
+- 协作模型: 所有模块最终都通过 `KernelRegistry.register(...)` 注册 contribution descriptor 和 handler；未来 Extension Host 只是第三方模块进入统一注册协议前的启动期发现、校验、授权和 facade 适配层。
 - 生命周期: 第三方插件安装、移除、启用和禁用配置必须在应用启动前完成；应用进入 ready 状态后不得新增、卸载、启用、禁用或热插拔第三方插件，变更需要重启后生效。
-- 身份边界: `runtime`、`trustLevel` 和 capability 独立判断；运行时类型不自动获得权限，可信级别也不绕过 registry 校验。
 - 启动顺序: Core Kernel 先校验 `KernelStartupModuleManifest`，再解析已编译绑定的 `CoreModuleRegistrationEntryId`，最后调用 `KernelRegistry` 注册贡献点。
 - 读取: 插件只能通过 snapshot 或 selector 读取谱面。
 - 写入: 插件只能提交已注册语义命令，进入事务、验证、undo/redo 和事件流。
-- 事件: 未来第三方插件只能订阅由 `Extension Host` 过滤后的事件。
+- 事件: V1 内部模块遵守内核事件规则；未来第三方插件只能订阅由 Extension Host 按 capability 过滤后的事件。
 - 报告: 插件导入、导出、验证和异常必须输出标准 report、diagnostic 或 `KernelError`。
 - 权限: 注册权限与执行权限分离；能注册贡献点不等于能执行写命令或访问文件。
-- 禁止: 不执行第三方 JS/TS、Lua 或 native 插件代码；插件不得直接访问可变文档对象；启动清单不得引用外部路径、URL、脚本字符串或动态 import；应用运行中不得改变第三方插件集合。
+- 禁止: V1 不执行第三方 JS/TS、Lua 或 native 插件代码；插件不得直接访问可变文档对象；启动清单不得引用外部路径、URL、脚本字符串或动态 import；应用运行中不得改变第三方插件集合。
 
 ## 第一条纵向切片
 
@@ -237,6 +237,6 @@ Pure Core Kernel V1 必须能在无 UI、无浏览器 DOM、无 Tauri、无 VexF
 - 外部可变 `ScoreDocument` 副本方案已拒绝；这类方案与微内核设计相悖。外部模块只能生成非谱面事实的派生模型，最终写入仍走内核受控入口。
 - Core Kernel 的注册表与 capability 已确认作为独立内核功能，继续按 `SPEC-015` 细化。
 - Core Kernel 的错误、diagnostic 和 report 已确认作为独立内核功能，继续按 `SPEC-016` 细化。
-- 注册表 handler 运行时注销/卸载、第三方插件热插拔、运行中启用/禁用和运行中卸载已明确不作为稳定性目标；未来第三方插件配置变更必须启动前完成并通过重启生效。可信官方内置模块会有多个，UI 模块只是其中一类，具体模块清单、数量和拆分方式后续再确定，这些生命周期治理能力不作为当前内核总规划和 Kernel V1 实现阻塞项。
+- 注册表 handler 运行时注销/卸载、第三方插件热插拔、运行中启用/禁用和运行中卸载已明确不作为稳定性目标；未来第三方插件配置变更必须启动前完成并通过重启生效。官方随应用发布的内置模块会有多个，UI 模块只是其中一类，具体模块清单、数量和拆分方式后续再确定；官方和第三方的权限模型不再按来源二分，最终都收敛到同一套注册协议，这些生命周期治理能力不作为当前内核总规划和 Kernel V1 实现阻塞项。
 - 外部工程目录结构、monorepo 方案、`apps/desktop` 和 `packages/*` 拆分不属于当前 Core Kernel 规划阶段；这些只在后续工程脚手架阶段根据已确认内核边界和模块协作方式重新评估，不作为当前内核规划阻塞项。
 - 当前设计文档无阻塞开放问题；进入实现前仍需用户审核最终规划稿并明确批准。

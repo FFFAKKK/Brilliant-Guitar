@@ -33,7 +33,7 @@
 - 架构原则已确认: 可以按当前产品需求重新设计架构，而不是在旧设计基础上修补；整体采用类似操作系统的微内核式 Core Kernel + 用户态服务模块结构。
 - Core Kernel 构想已确认: 内核负责关键谱面能力并对外提供稳定接口，渲染、播放、导入导出、UI、桌面壳、内部扩展和未来插件都以模块形式与内核协作。
 - 微内核取舍已确认: 架构可以参照操作系统微内核思想，接受少量性能损耗，以换取更强的架构稳定性、可维护性和扩展性。
-- 未来第三方插件语言已确认: 产品层谱面插件优先采用 JavaScript/TypeScript；MVP 只实现内部插件注册表和 API 边界，不开放任意第三方代码执行。Lua 和 native 插件后置，native 只在性能或系统能力确有需要时开放。
+- 模块化插件模型已确认: 长期向 VS Code 式插件体验演进，官方模块和未来第三方模块使用同一套启动期注册协议；`origin`、`runtime`、`trustLevel` 和 capability 解耦，第三方模块未来可经启动前授权获得高权限并替换官方 UI、渲染、导入导出等模块。Pure Core Kernel V1 只实现官方/内置启动期注册基础，不执行任意第三方 JS/TS、Lua 或 native 代码。
 - MVP 乐器与编辑范围已确认: 先把六线谱、五线谱基础功能和吉他功能做好，再做贝斯、鼓、键盘、复杂编曲和其它生态能力。
 - MVP 吉他技巧范围已确认: 技巧必须分类，第一阶段先覆盖 P0 最高频技巧，后续再扩展低频和复杂技巧。
 - MVP 技巧范围已确认: 第一条编码闭环先覆盖 3 个 `Core Loop` 技巧: `slide`、`bend`、`vibrato`；`hammer-on`、`pull-off`、`palm mute` 保持为 P0 后续增强，不阻塞第一条闭环。
@@ -139,9 +139,9 @@
 - 谱面数据是唯一业务真相。UI 坐标、布局坐标、SVG/VexFlow 坐标、PDF/PNG 页面坐标和播放光标都必须通过快照、selector、resolver 或 layout primitives 从 `ScoreDocument` 派生；用户点击或快捷键输入必须先由外部编辑/布局模块转换为 `ScoreAddress | ScorePoint | ScoreRange` 或合法语义命令，再进入内核事务。
 - 原生文件扩展名采用 `.bgp`；当前文件策略为“GP8 式单文件体验 + 开放包结构”。
 - 第一阶段 `.bgp` 不加密、不做文件密码锁、不做 DRM；核心谱面语义必须保持可审查、可测试和可迁移。
-- MVP 默认支持内部插件注册表和扩展点，不开放第三方插件安装。
-- Tauri/Rust 插件默认只用于系统能力；谱面插件生态默认由产品层 Extension Host 管理。
-- 未来第三方谱面插件默认采用 JavaScript/TypeScript 包和类型契约；MVP 只允许 `internal-module` 运行时，不执行第三方 JS/TS、Lua 或 native 代码。
+- MVP 默认支持统一注册协议的内核基础和内部扩展点，不开放真实第三方插件安装、manifest 读取或代码执行。
+- Tauri/Rust 插件默认只用于系统能力；谱面插件生态未来由产品层插件平台或 Extension Host 在启动前发现、校验、授权并映射到统一注册协议。
+- 未来第三方谱面插件默认采用 JavaScript/TypeScript 包和类型契约；官方与第三方的差异只存在于注册前发现、校验、授权和加载阶段，进入内核后都必须遵守同一套 registry、capability、command、snapshot、event 和 report 契约。
 - MVP 第一实现阶段默认只交付吉他核心闭环: 吉他轨道、六线谱、基础五线谱同步、基础排版、P0 高频吉他技巧、播放校对、保存与导出。
 - MVP 第一条编码闭环中的技巧实现范围只要求 3 个 `Core Loop` 技巧: `slide`、`bend`、`vibrato`；`hammer-on`、`pull-off`、`palm mute` 保持为 P0 后续增强。
 - 架构保留多轨、多乐器和多弦数扩展点，但第一实现阶段 UI、测试和验收只覆盖标准 6 弦吉他；7/8 弦吉他、贝斯、鼓、键盘和完整乐队编曲不作为第一实现阶段的验收门槛。
@@ -426,13 +426,13 @@ P0 类别包括连接与连奏、音高变化与表情、延音闷音与噪音�
 
 ### DEC-P030: 未来第三方插件优先语言采用什么？
 
-结论: 未来第三方插件优先采用 JavaScript/TypeScript；MVP 只做内部插件注册表和 API 边界，不开放任意第三方代码执行。Lua 和 native 插件后置，native 只在性能或系统能力确有需要时开放。
+结论: 未来第三方插件优先采用 JavaScript/TypeScript；Pure Core Kernel V1 只做统一注册协议和官方/内置启动期注册基础，不读取真实第三方 `PluginManifest`，也不开放任意第三方代码执行。Lua 和 native 插件后置，native 只在性能或系统能力确有需要时开放。
 
 原因: 项目技术栈已是 Tauri + TypeScript/React，JS/TS 插件最容易复用类型、命令系统、schema、文档和开源社区资源；但安全上必须先有权限、隔离和版本边界，不能直接开放无沙箱脚本。
 
 取舍: JS/TS 对开源生态和 AI 辅助开发友好，但沙箱与权限设计必须认真做；Lua 更轻量但生态和类型契约弱；native 性能强但安全、跨平台和崩溃隔离风险最高。
 
-实现约束: `PluginManifest` 必须显式声明运行时。MVP 只支持 `internal-module` 运行时；未来 JS/TS 插件必须先完成权限声明、沙箱隔离、API version、异常隔离、禁用机制和兼容测试后才能开放。
+实现约束: `PluginManifest` 是未来 VS Code 式插件平台的 manifest 草案，不是 Pure Core Kernel V1 的实现项或验收门槛。V1 只支持 `builtin` 与 `internal-module` 运行时；未来 JS/TS 插件必须先完成权限声明、沙箱隔离、API version、异常隔离、启动前授权、禁用配置、兼容测试和统一注册协议映射后才能开放。
 
 ### DEC-P031: 开源优先和不商业化路线怎么定？
 
@@ -612,9 +612,9 @@ MVP 包结构建议: `.bgp` 是单文件开放 zip 包，至少包含 `manifest.
 
 ### DEC-K046: Core Kernel 的注册表和 capability 应该如何设计？
 
-推荐答案: 第一阶段采用“Kernel Registry + Static Internal Capability”的模型。Core Kernel 保留最小 `KernelRegistry`、`KernelCapability` 和 `KernelModuleIdentity`；命令、selector、hard validator、technique definition、migration、importer/exporter descriptor 和 template descriptor 都必须通过 registry 显式注册。第三方插件发现、manifest 文件读取、沙箱、启动前安装/移除/启用/禁用配置、市场、权限 UI、签名和审核不进入 Core Kernel，仍属于外部 `Extension Host` 或后续服务；运行时热插拔、运行中启用/禁用和卸载不作为规划目标。
+推荐答案: 第一阶段采用“Kernel Registry + Unified Startup Registration + Static Capability”的模型。Core Kernel 保留最小 `KernelRegistry`、`KernelCapability` 和 `KernelModuleIdentity`；命令、selector、hard validator、technique definition、migration、importer/exporter descriptor 和 template descriptor 都必须通过 registry 显式注册。所有官方模块和未来第三方模块最终都收敛到 `KernelModuleIdentity + capability + contribution descriptor + handler` 注册协议；第三方插件发现、manifest 文件读取、沙箱、启动前安装/移除/启用/禁用配置、市场、权限 UI、签名和审核不进入 Core Kernel，属于未来插件平台或 `Extension Host`；运行时热插拔、运行中启用/禁用和卸载不作为规划目标。
 
-实现约束: 每个注册项必须声明稳定 `id`、`kind`、`sourceModuleId`、`apiVersion`、`requiredCapabilities`、`status` 和 `titleKey`。MVP 只允许 `builtin` 与 `internal-module` 贡献点，拒绝第三方 JS/TS、Lua 和 native 运行时。注册表拒绝重复 ID、未知 contribution kind、不兼容 API version 和缺失 capability；注册表变化必须递增 `registryVersion` 并发布 `kernel.registry.changed`。registry summary 不得泄露 handler、React 组件、VexFlow 对象、Web Audio 节点、Tauri 文件对象或可变 `ScoreDocument`。
+实现约束: 每个注册项必须声明稳定 `id`、`kind`、`sourceModuleId`、`apiVersion`、`requiredCapabilities`、`status` 和 `titleKey`；每个模块身份必须声明 `origin`、`runtime`、`trustLevel`、`apiVersion` 和 capability。Pure Core Kernel V1 只从静态 `KernelStartupModuleManifest` 接受随应用发布的 `builtin` 与 `internal-module`，拒绝第三方 JS/TS、Lua 和 native 运行时；未来第三方模块可在启动前授权后映射进同一注册协议。注册表拒绝重复 ID、未知 contribution kind、不兼容 API version 和缺失 capability；注册表变化必须递增 `registryVersion` 并发布 `kernel.registry.changed`。registry summary 不得泄露 handler、React 组件、VexFlow 对象、Web Audio 节点、Tauri 文件对象或可变 `ScoreDocument`。
 
 取舍: 该方案会增加注册元数据和权限检查成本；但它能让内置模块和未来插件都通过同一套内核 ABI 扩展系统能力。如果完全不做注册表和 capability，MVP 代码会更快，但后续每个模块都会变成隐式入口。
 
@@ -628,15 +628,15 @@ MVP 包结构建议: `.bgp` 是单文件开放 zip 包，至少包含 `manifest.
 
 ### DEC-K048: 未来模块化插件如何与 Core Kernel 协作？
 
-结论: 采用两级信任模型和双层协作模型。随应用发布的 `builtin/internal-module` 标记为 `trusted-core`，通过启动期 `CoreModuleRegistration` 直接注册贡献点和 handler，避免热路径经过完整插件代理；未来第三方插件标记为 `external-plugin`，只能在应用启动前完成安装、移除、启用和禁用配置，并通过启动期 `Extension Host` 提供的 `PluginKernelFacade` 与内核协作，被收束到注册、读取、写入、事件和报告五条通道。
+结论: 采用“统一注册协议 + 来源与权限解耦”的模块协作模型。官方模块和未来第三方模块最终都以 `KernelModuleIdentity + capability + contribution descriptor + handler` 的形式进入 `KernelRegistry`；差异只存在于启动前发现、校验、授权和加载阶段。Pure Core Kernel V1 使用 `KernelStartupModuleManifest` 和 `CoreModuleRegistration` 直接注册随应用发布的 `builtin/internal-module`；未来第三方插件只能在应用启动前完成安装、移除、启用和禁用配置，再由插件平台或 `Extension Host` 映射进同一注册协议。`PluginKernelFacade` 是未来第三方插件平台的受控 facade 草案，不属于 V1 实现项。
 
 产品视角: 用户需要的是可扩展能力和稳定文件资产。插件可以新增命令、验证器、导入器、导出器、模板和未来面板，但不能因为一个插件出错就破坏谱面、文件或主程序。
 
-业务逻辑视角: 内置和可信内部模块必须先出现在静态 `KernelStartupModuleManifest` 中，再在启动期提交 `CoreModuleRegistration`，由 `KernelRegistry` 校验 module identity、trustLevel、apiVersion、registration capability 和 contribution descriptor，成功后直接绑定 handler。未来第三方插件集合必须在应用启动前由用户配置或插件管理配置确定，启动时由 `Extension Host` 读取 manifest，校验 apiVersion、runtime、permissions 和 contributes，并分配 `trustLevel = "external-plugin"` 后代理注册贡献点。应用运行中不得新增、卸载、启用、禁用或热插拔第三方插件，相关变更需要重启后生效。插件 manifest、用户配置和运行时模块不得自我声明或提升 trust level。读取谱面只能走 snapshot/selector；修改谱面只能提交已注册语义命令；订阅事件只能拿到过滤后的事件；导入、导出、验证和异常必须输出标准 report、diagnostic 或 `KernelError`。
+业务逻辑视角: V1 模块必须先出现在静态 `KernelStartupModuleManifest` 中，再在启动期提交 `CoreModuleRegistration`，由 `KernelRegistry` 校验 module identity、origin、runtime、trustLevel、apiVersion、registration capability 和 contribution descriptor，成功后绑定 handler。未来第三方插件集合必须在应用启动前由用户配置或插件管理配置确定，启动时由插件平台或 `Extension Host` 读取 manifest，完成安装来源、apiVersion、runtime、permissions、contributes、签名/开发者模式和用户授权校验，再把第三方模块映射成同一套 `KernelModuleIdentity`、capability 和 contribution descriptor。应用运行中不得新增、卸载、启用、禁用或热插拔第三方插件，相关变更需要重启后生效。插件 manifest、用户配置和运行时模块不得自我声明或提升 trust level。读取谱面只能走 snapshot/selector；修改谱面只能提交已注册语义命令；订阅事件只能拿到按 capability 过滤后的事件；导入、导出、验证和异常必须输出标准 report、diagnostic 或 `KernelError`。
 
-技术实现视角: `KernelModuleIdentity` 增加 `trustLevel`，可取 `trusted-core` 或 `external-plugin`；`runtime`、`trustLevel` 和 capability 独立建模。`KernelStartupModuleManifest` 是 `trusted-core` 的唯一来源，只能引用应用内已编译绑定的 `CoreModuleRegistrationEntryId`，不能引用外部路径、URL、脚本字符串或动态 import。`CoreModuleRegistration` 服务可信内核模块的启动期直接注册；`PluginKernelFacade` 服务未来第三方插件，至少包含 `read`、`commands`、`registry`、`events` 和 `reports` 五类受控接口。Kernel Registry 不提供第三方插件运行时 unregister、enable、disable 或 hotplug 入口；应用进入 ready 状态后，插件集合变更只能返回 unsupported/restart-required 类稳定错误。两者都不得暴露可变 `ScoreDocument`、内部 delta、patch、JSON path、React、VexFlow、SVG DOM、Web Audio 或 Tauri 文件对象。注册权限必须与执行权限分离，例如 `command:register` 不等于 `command:execute`。
+技术实现视角: `KernelModuleIdentity` 必须包含 `origin = "official" | "third-party"`、`runtime`、`trustLevel = "system-trusted" | "sandboxed"`、`apiVersion` 和 capability；`origin`、`runtime`、`trustLevel` 和 capability 独立建模，来源和运行时都不自动获得权限。`KernelStartupModuleManifest` 是 Pure Core Kernel V1 的唯一模块来源，只能引用应用内已编译绑定的 `CoreModuleRegistrationEntryId`，不能引用外部路径、URL、脚本字符串或动态 import。`CoreModuleRegistration` 是 V1 的启动期注册形态；未来 `PluginKernelFacade` 至少包含 `read`、`commands`、`registry`、`events` 和 `reports` 五类受控接口，但只是第三方插件平台草案。Kernel Registry 不提供第三方插件运行时 unregister、enable、disable 或 hotplug 入口；应用进入 ready 状态后，插件集合变更只能返回 `unsupported-at-runtime` / `restart-required` 类稳定错误。任何模块都不得暴露可变 `ScoreDocument`、内部 delta、patch、JSON path、React、VexFlow、SVG DOM、Web Audio 或 Tauri 文件对象。注册权限必须与执行权限分离，例如 `command:register` 不等于 `command:execute`。
 
-反过度设计视角: MVP 不做真实第三方 JS/TS 沙箱、插件安装器、插件市场、权限 UI、UI 面板插件、native 动态库插件，也不设计 semi-trusted、partner、marketplace-reviewed 等中间等级。运行时热插拔、运行中启用/禁用和卸载不后置为目标能力，而是稳定性原则上不支持；未来插件配置变更通过重启生效。第一阶段只需要两级信任、内部模块按 contribution 契约接入，并证明“读走 snapshot、写走 command、贡献点走 registry、错误走 report”这条链路成立。
+反过度设计视角: MVP 不做真实第三方 JS/TS 沙箱、插件安装器、插件市场、权限 UI、UI 面板插件、native 动态库插件，也不设计 marketplace-reviewed、partner、semi-trusted 等额外等级。运行时热插拔、运行中启用/禁用和卸载不后置为目标能力，而是稳定性原则上不支持；未来插件配置变更通过重启生效。第一阶段只需要把统一注册协议、静态 capability、启动期模块清单和 `CoreModuleRegistration` 做薄，并证明“读走 snapshot、写走 command、贡献点走 registry、错误走 report”这条链路成立。
 
 ## 当前阻塞开放问题
 

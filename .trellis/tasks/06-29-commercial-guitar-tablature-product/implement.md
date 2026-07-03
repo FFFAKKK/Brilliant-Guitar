@@ -25,7 +25,7 @@
 - [x] 确认外部可变 `ScoreDocument` 副本方案已拒绝。
 - [x] 确认 Core Kernel 注册表和 capability 作为独立内核功能，继续按 `SPEC-015` 细化。
 - [x] 确认 Core Kernel 错误、diagnostic 和 report 作为独立内核功能，继续按 `SPEC-016` 细化。
-- [x] 确认 Core Kernel V1 先落地 9 类机制；后续会建设多个官方内置可信模块并通过 registry/capability 与内核协作，具体模块清单、数量和拆分方式后续规划；未来第三方插件只能启动前配置，运行时热插拔、运行中启停和卸载不作为规划目标。
+- [x] 确认 Core Kernel V1 先落地 9 类机制；后续会建设多个官方随应用发布的内置模块并通过 registry/capability 与内核协作，具体模块清单、数量和拆分方式后续规划；官方和第三方模块最终使用同一套注册协议，来源与权限解耦；未来第三方插件只能启动前配置，运行时热插拔、运行中启停和卸载不作为规划目标。
 - [x] 确认第一阶段 Core Kernel 最小边界采用 9 类机制: 文档模型、命令边界、事务历史、地址范围、硬验证、文件语义、快照事件、注册能力、错误报告。
 - [x] 确认外部工程目录结构不是当前 Core Kernel 规划阶段事项；`apps/desktop`、`packages/*`、monorepo 或 workspace 拆分后置到工程脚手架阶段。
 - [x] 确认首个实现里程碑为 Pure Core Kernel V1: 纯 TypeScript 内核，无 UI、无 Tauri、无 VexFlow、无 Web Audio、无 PDF/PNG 真实导出。
@@ -96,7 +96,7 @@
 
 - [ ] 定义 `KernelRegistry`、`KernelContribution`、`ContributionKind`、`ContributionStatus` 和 `RegistrySummary`。
 - [ ] 定义 `KernelModuleIdentity`、`KernelModuleTrustLevel`、`KernelModuleRuntime`、`KernelCapability` 和 `CapabilityCheckResult`。
-- [ ] 定义 `KernelStartupModuleManifest`、`TrustedCoreModuleDeclaration` 和 `CoreModuleRegistrationEntryId`。
+- [ ] 定义 `KernelStartupModuleManifest`、`StartupModuleDeclaration` 和 `CoreModuleRegistrationEntryId`。
 - [ ] 将 `origin`、`runtime`、`trustLevel` 和 capability 独立判断；`origin = "official"`、`runtime = "internal-module"` 或 `trustLevel = "system-trusted"` 都不自动获得全部权限，也不绕过 registry 校验。
 - [ ] 为 command、selector、hard validator、technique definition、migration、importer/exporter descriptor 和 template descriptor 建立注册入口。
 - [ ] 拒绝重复注册、未知 kind、unsupported runtime、api version 不兼容和 capability 不足。

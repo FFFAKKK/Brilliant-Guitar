@@ -14,7 +14,7 @@
 
 ## 内核总规划优先级
 
-当前阶段先完成 Core Kernel V1 的 9 类机制规划和实现，不把注册表 handler 运行时注销、运行时卸载、第三方插件运行中启停、热插拔、插件运行中禁用、权限 UI 等生命周期治理放入当前内核实现。Core Kernel 完成后会继续建设多个由官方随应用发布的内置可信模块，这些模块通过 registry/capability 与内核协作，用于验证 snapshot、semantic command、event、registry/capability 等协作链路；具体模块清单、数量和拆分方式后续再规划。UI 模块只是官方内置模块中的一类，不被写死为第一个、唯一插件或固定顺序。未来第三方插件的安装、移除、启用和禁用配置必须在应用启动前完成，由 Extension Host 在启动期发现、校验并代理注册；运行时热插拔、运行中启停和卸载不作为规划目标。
+当前阶段先完成 Core Kernel V1 的 9 类机制规划和实现，不把注册表 handler 运行时注销、运行时卸载、第三方插件运行中启停、热插拔、插件运行中禁用、权限 UI 等生命周期治理放入当前内核实现。Core Kernel 完成后会继续建设多个由官方随应用发布的内置模块，这些模块通过 registry/capability 与内核协作，用于验证 snapshot、semantic command、event、registry/capability 等协作链路；具体模块清单、数量和拆分方式后续再规划。UI 模块只是官方内置模块中的一类，不被写死为第一个、唯一插件或固定顺序。未来第三方插件的安装、移除、启用和禁用配置必须在应用启动前完成，由未来插件平台或 Extension Host 在启动期发现、校验、授权并映射进同一注册协议；运行时热插拔、运行中启停和卸载不作为规划目标。
 
 内核总规划按以下 9 类机制收敛:
 
@@ -32,7 +32,7 @@
 
 后置到内核总规划完成后再讨论:
 
-- 启动前第三方插件安装、移除、启用和禁用配置如何由 Extension Host 管理。
+- 启动前第三方插件安装、移除、启用和禁用配置如何由未来插件平台或 Extension Host 管理。
 - 插件配置变更后的重启提示、兼容性报告和降级策略。
 - 第三方插件隔离恢复和异常降级。
 - 权限 UI、插件市场、签名、审核和插件生命周期治理。
@@ -40,7 +40,7 @@
 明确不作为目标:
 
 - 注册表 handler 运行时注销或卸载。
-- `trusted-core` 模块运行时禁用。
+- 系统级模块运行时禁用。
 - 第三方插件运行中启用、停用、卸载或热插拔。
 
 ### 内核保留 1: 谱面核心对象模型
@@ -295,7 +295,7 @@
 - 完整日志产品。
 - 隐私脱敏策略 UI。
 
-第三方插件启动期发现、manifest、沙箱、市场、签名、审核和权限 UI 属于 `Extension Host`；诊断包打包、上传、远程上报和隐私过滤产品化属于后续 `Diagnostics Package Service`。
+第三方插件启动期发现、manifest、沙箱、市场、签名、审核和权限 UI 属于未来插件平台或 `Extension Host`；诊断包打包、上传、远程上报和隐私过滤产品化属于后续 `Diagnostics Package Service`。
 
 ## 从微内核移出的功能
 
@@ -309,7 +309,7 @@
 - `Persistence Service`: zip 读写、自动保存、崩溃恢复、文件系统路径。
 - `Export Service`: PDF/PNG 生成、页面尺寸、字体嵌入。
 - `Import Service`: Guitar Pro 解析、能力映射、降级报告细节。
-- `Extension Host`: 插件启动期发现、运行时、沙箱、manifest 读取、权限 UI。
+- `Extension Host`: 未来第三方插件启动期发现、运行时、沙箱、manifest 读取、权限 UI 和统一注册协议映射。
 - `Analysis Service`: 可演奏性分析、指法建议、教学提示。第一阶段不实现，仅作为后续候选外部服务。
 - `Diagnostics Package Service`: 日志收集、诊断包生成和隐私过滤。
 
@@ -362,7 +362,7 @@ flowchart TB
     Persistence["Persistence Service\n.bgp 读写、自动保存、崩溃恢复"]
     Exporter["Export Service\nPDF / PNG 导出"]
     Importer["Import Service\n第二阶段 Guitar Pro best-effort 导入"]
-    ExtHost["Extension Host\n内部模块 MVP、未来 JS/TS 插件沙箱"]
+    ExtHost["Future Extension Host\n第三方启动期适配、授权、沙箱"]
     DiagnosticsSvc["Diagnostics Package Service\n错误上下文、日志、诊断包"]
   end
 
@@ -792,14 +792,14 @@ MVP:
 
 ### 20. Extension Host
 
-作用: 未来插件生态的运行和隔离层。
+作用: 未来 VS Code 式插件生态的启动期发现、授权、运行和隔离层，并把第三方模块映射进 Core Kernel 的统一注册协议。
 
 MVP:
 
-- 内部模块 manifest。
-- 内部贡献点注册。
-- API version 字段。
-- 插件私有数据命名空间。
+- Pure Core Kernel V1 不实现真实 Extension Host。
+- V1 只实现 `KernelStartupModuleManifest`、`CoreModuleRegistration`、统一注册协议和 API version 字段。
+- V1 内部模块可同进程注册贡献点，但仍必须通过 registry/capability 校验。
+- 插件私有数据命名空间只保留数据模型和 round-trip 约束。
 
 后续:
 
@@ -807,10 +807,13 @@ MVP:
 - 权限声明。
 - 启动前插件启用/禁用配置。
 - 异常隔离。
+- 第三方 `PluginManifest` 读取、校验、授权和 capability 分配。
+- 第三方模块映射为 `KernelModuleIdentity + capability + contribution descriptor + handler`。
 
 禁止:
 
 - MVP 不执行第三方 JS/TS、Lua 或 native 代码。
+- 应用 ready 后不新增、卸载、启用、禁用或热插拔第三方插件。
 
 ### 21. Diagnostics Package Service
 
