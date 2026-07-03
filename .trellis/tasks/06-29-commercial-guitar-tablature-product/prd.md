@@ -478,7 +478,7 @@ P0 类别包括连接与连奏、音高变化与表情、延音闷音与噪音�
 
 原因: 本项目的目标是非常模块化、可维护、可扩展，并且需要长期维护。谱面文件、撤销重做、导入导出、播放校对、渲染和插件都依赖同一份音乐语义；如果 UI、渲染库或单个功能模块变成事实来源，后续保存、迁移、测试和插件扩展都会失控。
 
-实现约束: Core Kernel 负责谱面核心对象模型、命令系统调用边界、事务历史、文档地址/范围模型、硬一致性验证、`.bgp` 语义契约/迁移入口、快照、事件、内核注册表、capability 和基础错误/报告类型；React UI、活动光标会话状态、Tauri、VexFlow/SVG、Web Audio、PDF/PNG、导入导出实现和未来插件运行时都只能通过内核公开接口协作，不能直接修改可变谱面对象。
+实现约束: Core Kernel 负责谱面核心对象模型、命令系统调用边界、事务历史、文档地址/范围模型、硬一致性验证、`.bgp` 语义契约/迁移入口、快照、事件、内核注册表、capability 和基础错误/报告类型；React UI、活动光标会话状态、Tauri、VexFlow/SVG、Web Audio、PDF/PNG、导入导出实现和未来插件运行时都只能通过内核公开接口协作，不能直接修改可变谱面对象。导入/导出在内核中最多表现为外部贡献点的抽象 descriptor、capability 和 report 外壳；PDF、PNG、Guitar Pro 和 `.bgp` 物理读写的具体能力必须放在用户态服务模块。
 
 取舍: 这种架构前期会多一些内核 API、命令、注册表、快照和事件设计成本，并可能牺牲少量直接调用性能；但能换来可测试、可迁移、可扩展和长期维护。如果采用 UI 先行的简单架构，MVP 可能更快出现界面，但后续很容易在文件兼容、undo/redo、导入导出和插件生态上返工。
 
@@ -488,7 +488,7 @@ P0 类别包括连接与连奏、音高变化与表情、延音闷音与噪音�
 
 结论: 第一阶段 Core Kernel 的最小边界已确认采用 9 类机制。这九类功能目前足够支撑 MVP 内核规划，后续如果要推翻或增减第一版边界，需要作为新的架构决策单独评审。
 
-边界: 第一阶段内核至少包含 `ScoreDocument` 核心对象模型、逐弦明确音高的调弦结构、通用 `TechniqueAnnotation`、`CommandBus`、事务、undo/redo、命令回放、文档地址/范围模型、命令目标校验、硬一致性验证、diagnostic、`.bgp` schema/序列化/迁移入口、快照、事件、内核注册表、capability manifest、基础错误类型、`ImportReport` 和 `ExportReport` 外壳类型；排除 React UI、活动光标/选区会话状态、具体技巧定义和 UI、VexFlow/SVG 适配器、Web Audio 播放实现、PDF/PNG 具体实现、Guitar Pro 导入实现、第三方插件运行时和 Tauri 文件系统实现。
+边界: 第一阶段内核至少包含 `ScoreDocument` 核心对象模型、逐弦明确音高的调弦结构、通用 `TechniqueAnnotation`、`CommandBus`、事务、undo/redo、命令回放、文档地址/范围模型、命令目标校验、硬一致性验证、diagnostic、`.bgp` schema/序列化/迁移入口、快照、事件、内核注册表、capability manifest、外部 import/export 抽象 descriptor、基础错误类型、`ImportReport` 和 `ExportReport` 外壳类型；排除 React UI、活动光标/选区会话状态、具体技巧定义和 UI、VexFlow/SVG 适配器、Web Audio 播放实现、PDF/PNG 具体实现、PDF/PNG 具体 registry handler、Guitar Pro 导入实现、`.bgp` 物理文件 IO、第三方插件运行时和 Tauri 文件系统实现。
 
 9 类机制为: 谱面核心对象模型、命令系统调用边界、事务/历史/一致性边界、文档地址和范围模型、硬一致性验证、`.bgp` 语义契约和迁移入口、快照/事件/模块通信协议、注册表与能力边界、错误/diagnostic/report 契约。
 
@@ -500,7 +500,7 @@ P0 类别包括连接与连奏、音高变化与表情、延音闷音与噪音�
 
 结论: 第一阶段先把纯 Core Kernel 做好。Pure Kernel V1 必须是纯 TypeScript 内核能力，可在无 UI、无 Tauri、无 VexFlow、无 Web Audio、无 PDF/PNG、无浏览器 DOM 的环境下通过测试；桌面壳、React 工作台、渲染、播放、持久化物理 IO、导出和导入都必须等纯内核验收通过后再进入实现。
 
-边界: Pure Kernel V1 只实现 9 类内核机制: `ScoreDocument` 对象模型、语义命令、事务/undo/redo、地址/范围、硬验证、`.bgp` 语义 schema/迁移入口、snapshot/selector/event、registry/capability、error/diagnostic/report 外壳。它可以定义 `ImportReport`、`ExportReport` 等 report 类型，但不实现真实 Guitar Pro 导入、PDF/PNG 导出或桌面文件系统读写。
+边界: Pure Kernel V1 只实现 9 类内核机制: `ScoreDocument` 对象模型、语义命令、事务/undo/redo、地址/范围、硬验证、`.bgp` 语义 schema/迁移入口、snapshot/selector/event、registry/capability、error/diagnostic/report 外壳。它可以定义外部 import/export 抽象 descriptor、`ImportReport`、`ExportReport` 等 report 类型，但不实现、不注册真实 Guitar Pro 导入、PDF/PNG 导出、`.bgp` 物理读写或桌面文件系统能力。
 
 验收: Pure Kernel V1 必须通过 fixture 谱面验证、命令提交与 rollback、细粒度 undo/redo、命令回放、schema round-trip、迁移入口、snapshot/selector 只读性、事件顺序、registry/capability、错误/report 隐私边界和 unsupported feature 测试。
 
@@ -612,7 +612,9 @@ MVP 包结构建议: `.bgp` 是单文件开放 zip 包，至少包含 `manifest.
 
 ### DEC-K046: Core Kernel 的注册表和 capability 应该如何设计？
 
-推荐答案: 第一阶段采用“Kernel Registry + Unified Startup Registration + Static Capability”的模型。Core Kernel 保留最小 `KernelRegistry`、`KernelCapability` 和 `KernelModuleIdentity`；命令、selector、hard validator、technique definition、migration、importer/exporter descriptor 和 template descriptor 都必须通过 registry 显式注册。所有官方模块和未来第三方模块最终都收敛到 `KernelModuleIdentity + capability + contribution descriptor + handler` 注册协议；第三方插件发现、manifest 文件读取、沙箱、启动前安装/移除/启用/禁用配置、市场、权限 UI、签名和审核不进入 Core Kernel，属于未来插件平台或 `Extension Host`；运行时热插拔、运行中启用/禁用和卸载不作为规划目标。
+推荐答案: 第一阶段采用“Kernel Registry + Unified Startup Registration + Static Capability”的模型。Core Kernel 保留最小 `KernelRegistry`、`KernelCapability` 和 `KernelModuleIdentity`；命令、selector、hard validator、technique definition、migration、外部 import/export 抽象 descriptor 和 template descriptor 都必须通过 registry 显式注册。所有官方模块和未来第三方模块最终都收敛到 `KernelModuleIdentity + capability + contribution descriptor + handler` 注册协议；第三方插件发现、manifest 文件读取、沙箱、启动前安装/移除/启用/禁用配置、市场、权限 UI、签名和审核不进入 Core Kernel，属于未来插件平台或 `Extension Host`；运行时热插拔、运行中启用/禁用和卸载不作为规划目标。
+
+导入/导出 descriptor 只用于声明外部模块贡献点的格式 id、显示信息、capability、API version 和 unsupported 状态。Pure Core Kernel V1 不注册 PDF、PNG、Guitar Pro 或 `.bgp` 物理 IO 的具体 descriptor/handler，不引入任何格式解析、生成、zip、字体或文件系统依赖。
 
 实现约束: 每个注册项必须声明稳定 `id`、`kind`、`sourceModuleId`、`apiVersion`、`requiredCapabilities`、`status` 和 `titleKey`；每个模块身份必须声明 `origin`、`runtime`、`trustLevel`、`apiVersion` 和 capability。Pure Core Kernel V1 只从静态 `KernelStartupModuleManifest` 接受随应用发布的 `builtin` 与 `internal-module`，拒绝第三方 JS/TS、Lua 和 native 运行时；未来第三方模块可在启动前授权后映射进同一注册协议。注册表拒绝重复 ID、未知 contribution kind、不兼容 API version 和缺失 capability；注册表变化必须递增 `registryVersion` 并发布 `kernel.registry.changed`。registry summary 不得泄露 handler、React 组件、VexFlow 对象、Web Audio 节点、Tauri 文件对象或可变 `ScoreDocument`。
 
@@ -630,7 +632,7 @@ MVP 包结构建议: `.bgp` 是单文件开放 zip 包，至少包含 `manifest.
 
 结论: 采用“统一注册协议 + 来源与权限解耦”的模块协作模型。官方模块和未来第三方模块最终都以 `KernelModuleIdentity + capability + contribution descriptor + handler` 的形式进入 `KernelRegistry`；差异只存在于启动前发现、校验、授权和加载阶段。Pure Core Kernel V1 使用 `KernelStartupModuleManifest` 和 `CoreModuleRegistration` 直接注册随应用发布的 `builtin/internal-module`；未来第三方插件只能在应用启动前完成安装、移除、启用和禁用配置，再由插件平台或 `Extension Host` 映射进同一注册协议。`PluginKernelFacade` 是未来第三方插件平台的受控 facade 草案，不属于 V1 实现项。
 
-产品视角: 用户需要的是可扩展能力和稳定文件资产。插件可以新增命令、验证器、导入器、导出器、模板和未来面板，但不能因为一个插件出错就破坏谱面、文件或主程序。
+产品视角: 用户需要的是可扩展能力和稳定文件资产。插件可以新增命令、验证器、外部导入/导出贡献点、模板和未来面板，但不能因为一个插件出错就破坏谱面、文件或主程序。
 
 业务逻辑视角: V1 模块必须先出现在静态 `KernelStartupModuleManifest` 中，再在启动期提交 `CoreModuleRegistration`，由 `KernelRegistry` 校验 module identity、origin、runtime、trustLevel、apiVersion、registration capability 和 contribution descriptor，成功后绑定 handler。未来第三方插件集合必须在应用启动前由用户配置或插件管理配置确定，启动时由插件平台或 `Extension Host` 读取 manifest，完成安装来源、apiVersion、runtime、permissions、contributes、签名/开发者模式和用户授权校验，再把第三方模块映射成同一套 `KernelModuleIdentity`、capability 和 contribution descriptor。应用运行中不得新增、卸载、启用、禁用或热插拔第三方插件，相关变更需要重启后生效。插件 manifest、用户配置和运行时模块不得自我声明或提升 trust level。读取谱面只能走 snapshot/selector；修改谱面只能提交已注册语义命令；订阅事件只能拿到按 capability 过滤后的事件；导入、导出、验证和异常必须输出标准 report、diagnostic 或 `KernelError`。
 

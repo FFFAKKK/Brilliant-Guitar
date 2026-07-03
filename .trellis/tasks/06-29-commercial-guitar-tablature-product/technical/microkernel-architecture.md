@@ -253,7 +253,7 @@
 - 注册 hard validator。
 - 注册 technique definition。
 - 注册 migration。
-- 注册 importer/exporter 的内核级入口描述。
+- 注册外部 import/export 贡献点的抽象 descriptor；不注册 PDF、PNG、Guitar Pro 或 `.bgp` 物理 IO 的具体 handler。
 - 注册 template descriptor。
 - 校验 API version。
 - 校验 capability。
@@ -281,6 +281,7 @@
 - 定义 `KernelIssueTarget` 和 `KernelIssueSource`。
 - 定义 `KernelReport`、`KernelReportIssue` 和 `KernelReportSummary`。
 - 定义 `ImportReport`、`ExportReport`、`MigrationReport`、`ValidationReport` 和恢复报告外壳。
+- 这些 report 只定义结构和隐私边界；具体导入/导出模块负责生成报告内容。
 - 为命令、schema、迁移、导入、导出、注册、capability 和模块异常提供稳定错误 code。
 - 将模块异常转换为 `module-error` diagnostic 或 report issue。
 - 确保用户可见文本只通过 i18n key 表达。
@@ -307,7 +308,7 @@
 - `Renderer Service`: SVG、VexFlow、overlay、截图渲染。
 - `Playback Service`: 播放事件编译、Web Audio、节拍器、播放光标。
 - `Persistence Service`: zip 读写、自动保存、崩溃恢复、文件系统路径。
-- `Export Service`: PDF/PNG 生成、页面尺寸、字体嵌入。
+- `Export Service`: PDF/PNG 生成、页面尺寸、字体嵌入和文件输出。
 - `Import Service`: Guitar Pro 解析、能力映射、降级报告细节。
 - `Extension Host`: 未来第三方插件启动期发现、运行时、沙箱、manifest 读取、权限 UI 和统一注册协议映射。
 - `Analysis Service`: 可演奏性分析、指法建议、教学提示。第一阶段不实现，仅作为后续候选外部服务。
@@ -662,7 +663,7 @@ Core Kernel 只负责:
 
 - 注册命令。
 - 注册验证器。
-- 注册导入器和导出器。
+- 注册外部导入/导出贡献点 descriptor；不拥有具体格式实现。
 - 注册模板。
 - 声明模块 capability。
 - 校验 API version 和权限。
@@ -761,6 +762,8 @@ MVP:
 
 作用: 生成用户可交付文件。
 
+定位: 用户态服务模块，不属于 Core Kernel。
+
 MVP 负责:
 
 - PDF 导出。
@@ -779,6 +782,8 @@ MVP 负责:
 ### 19. Import Service
 
 作用: 把外部格式转换为内核可验证文档。
+
+定位: 用户态服务模块，不属于 Core Kernel。
 
 MVP:
 

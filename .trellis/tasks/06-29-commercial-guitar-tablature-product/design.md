@@ -35,9 +35,9 @@
 - 文档地址和范围: `ScoreAddress`、`ScorePoint`、`ScoreRange` 和命令目标校验。当前 UI 光标、选区高亮、鼠标拖选和临时 `ScoreCoordinate` 属于 `Editor Session Service` 或 `Layout Module`，不属于微内核。
 - 文件契约: `.bgp` schema、manifest、score JSON、schema version、迁移入口。
 - 快照和查询: `DocumentSnapshot`、`KernelReadApi`、受控 selector、可序列化 snapshot。
-- 事件和注册表: 提交后 `KernelEventBus`、`KernelRegistry`、内部命令、selector、hard validator、technique definition、migration、导入器/导出器 descriptor、模板 descriptor 和未来插件贡献点。
+- 事件和注册表: 提交后 `KernelEventBus`、`KernelRegistry`、内部命令、selector、hard validator、technique definition、migration、外部导入/导出贡献点的抽象 descriptor、模板 descriptor 和未来插件贡献点。
 - 能力边界: `KernelCapability`、module identity、API version 和 capability 检查。
-- 错误、诊断和报告: `KernelError`、`KernelDiagnostic`、`KernelReport`、`ImportReport`、`ExportReport`、`MigrationReport`、`ValidationReport` 和 report issue 基础类型。
+- 错误、诊断和报告: `KernelError`、`KernelDiagnostic`、`KernelReport`、`ImportReport`、`ExportReport`、`MigrationReport`、`ValidationReport` 和 report issue 基础类型；导入/导出 report 是外部模块复用的报告壳，不表示内核实现具体格式。
 
 第一阶段 Core Kernel 先按 9 类机制完成整体规划:
 
@@ -57,11 +57,14 @@
 
 第一实现里程碑先交付纯内核。该里程碑只包含 9 类 Core Kernel 机制和测试，不包含桌面壳、React UI、VexFlow/SVG 渲染、Web Audio 播放、PDF/PNG 真实导出、Guitar Pro 导入、Tauri 文件系统或第三方插件运行时。
 
+Pure Core Kernel V1 可以定义外部导入/导出贡献点的抽象 descriptor 类型、capability 检查和 report 外壳，但不得注册 PDF、PNG、Guitar Pro 或 `.bgp` 物理读写的具体 descriptor/handler。`.bgp` schema、manifest 语义和迁移入口属于内核；zip 读写、文件路径、自动保存恢复、PDF/PNG 页面生成和 Guitar Pro 解析都属于外部用户态服务模块。
+
 Pure Core Kernel V1 必须能在无 UI、无浏览器 DOM、无 Tauri、无 VexFlow、无 Web Audio 的 TypeScript 测试环境中运行。验收以 fixture、命令回放、schema round-trip、migration、snapshot/selector、event、registry/capability、error/report 和 unsupported feature 测试为准；UI 截图、播放声音和导出文件不作为该阶段验收项。
 
 内核禁止:
 
 - 依赖 React、Tauri、VexFlow、SVG DOM、Web Audio、PDF/PNG 库或具体文件选择器。
+- 引入 PDF/PNG 生成器、Guitar Pro 解析器、zip 文件 IO、字体嵌入或平台文件系统实现。
 - 保存 VexFlow 对象、DOM 节点、组件状态或播放引擎状态。
 - 把 UI 坐标、SVG 坐标、VexFlow 坐标、PDF/PNG 页面坐标或播放光标状态写入 `.bgp` 当作谱面语义。
 - 解析屏幕坐标、布局坐标、SVG/VexFlow 坐标、鼠标拖选、缩放滚动或 hit testing。
@@ -103,6 +106,7 @@ Pure Core Kernel V1 必须能在无 UI、无浏览器 DOM、无 Tauri、无 VexF
 - Static Capability: MVP 对启动期 `builtin` 和 `internal-module` 做静态 capability 检查，为未来第三方模块经启动前授权后进入同一注册协议预留边界。
 - Summary-only Registry: 外部模块只能读取只读 registry summary，不能拿到 handler、React 组件、VexFlow 对象或可变 `ScoreDocument`。
 - Command-only Write: 注册表不是写入通道；修改谱面仍走语义命令、导入结果或迁移结果。
+- Abstract Format Contributions: 导入/导出 descriptor 只声明外部模块能力、格式 id、capability 和 unsupported 状态；PDF、PNG、Guitar Pro 和 `.bgp` 物理 IO 的具体实现不进入 Core Kernel。
 
 明确不放进 Core Kernel:
 
@@ -118,7 +122,7 @@ Pure Core Kernel V1 必须能在无 UI、无浏览器 DOM、无 Tauri、无 VexF
 
 - Structured Error: 命令、注册、权限、schema、迁移、导入导出和模块异常统一转成 `KernelError`。
 - Diagnostic: 文档验证、unsupported、模块异常和事件处理器失败使用可定位 `KernelDiagnostic`。
-- Shared Report Shell: `ImportReport`、`ExportReport`、`MigrationReport`、`ValidationReport` 和恢复报告复用 `KernelReport` 与 `KernelReportIssue`。
+- Shared Report Shell: `ImportReport`、`ExportReport`、`MigrationReport`、`ValidationReport` 和恢复报告复用 `KernelReport` 与 `KernelReportIssue`；具体导入/导出模块生成报告内容，内核只定义结构化外壳和隐私边界。
 - I18n Message: 用户可见文本只通过 `messageKey` 解析。
 - Privacy by Default: report 默认不包含用户谱面正文、访问令牌、本机隐私路径或第三方密钥。
 
@@ -171,15 +175,16 @@ Pure Core Kernel V1 必须能在无 UI、无浏览器 DOM、无 Tauri、无 VexF
 
 ### Import / Export Modules
 
-- MVP 打开: 原生 `.bgp` 和自动保存恢复文件。
-- MVP 导出: PDF + PNG。
+- 模块定位: 用户态服务模块，不属于 Core Kernel。它们读取内核 snapshot/selector，提交语义命令、导入结果或迁移结果，并输出标准 report。
+- 第一阶段产品闭环打开: 原生 `.bgp` 和自动保存恢复文件，由 `Persistence Service` 负责物理 IO。
+- 第一阶段产品闭环导出: PDF + PNG，由 `Export Service` 负责页面生成、字体和文件输出。
 - 第二阶段: 只规划 Guitar Pro 导入，其它外部导入后置，Guitar Pro 导出长期后置。
-- 约束: 导入器必须输出 `ImportReport`；导出器必须输出 `ExportReport`；导入结果必须通过内核验证器。
+- 约束: 导入器必须输出 `ImportReport`；导出器必须输出 `ExportReport`；导入结果必须通过内核验证器。内核只提供抽象 descriptor、capability 和 report 契约，不包含 PDF/PNG/Guitar Pro 的具体实现。
 
 ### Unified Module Registration / Future Extension Host
 
 - MVP: 统一注册协议、内部扩展点和启动期静态模块清单。
-- 贡献点: commands、validators、importers、exporters、templates。
+- 贡献点: commands、validators、外部 import/export descriptor、templates。
 - 运行时: Pure Core Kernel V1 只接受随应用发布的 `builtin` 和 `internal-module`。
 - 身份模型: `origin`、`runtime`、`trustLevel` 和 capability 独立判断；`origin = official` 不天然拥有全部权限，未来 `origin = third-party` 也可以经启动前授权成为 `system-trusted`。
 - 启动来源: V1 模块只能来自静态 `KernelStartupModuleManifest`，清单随应用源码或打包产物发布。

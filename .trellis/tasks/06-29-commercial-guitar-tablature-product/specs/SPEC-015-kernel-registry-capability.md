@@ -9,7 +9,9 @@
 
 ## 问题定义
 
-微内核必须允许内部模块和未来插件把能力“挂进来”，例如命令、selector、验证器、技巧定义、迁移器、导入器、导出器和模板。但接入点必须稳定、可拒绝、可测试。没有统一注册表时，每个模块都会发明自己的入口；没有 capability 时，调用方能做什么会变成隐式约定。
+微内核必须允许内部模块和未来插件把能力“挂进来”，例如命令、selector、验证器、技巧定义、迁移器、外部导入/导出贡献点和模板。但接入点必须稳定、可拒绝、可测试。没有统一注册表时，每个模块都会发明自己的入口；没有 capability 时，调用方能做什么会变成隐式约定。
+
+导入/导出在本 spec 中只表示外部模块可声明的抽象贡献点，不表示 Core Kernel 拥有 PDF、PNG、Guitar Pro 或 `.bgp` 物理读写实现。Core Kernel 可以校验这些贡献点的元数据、capability 和 API version，但具体格式解析、生成、文件 IO、页面模型、字体嵌入和降级策略都属于外部服务模块。
 
 本 spec 只解决:
 
@@ -63,10 +65,11 @@
 - STARTUP-ONLY-PLUGIN-CHANGES: 第三方插件安装、移除、启用和禁用配置只能在应用启动前完成；运行中插件集合不得新增、移除、启用、禁用或热插拔。
 - ORIGIN-NOT-PERMISSION: 模块来源只描述 provenance，不决定权限高低。
 - CORE-SMALL: 插件发现、运行时、沙箱和市场不进入 Core Kernel。
+- FORMAT-IMPLEMENTATION-OUTSIDE-KERNEL: PDF、PNG、Guitar Pro 和 `.bgp` 物理文件读写不进入 Core Kernel，内核只保留抽象贡献点、schema/迁移语义和报告契约。
 
 ## 强制规则
 
-- KRC-001: 所有命令、selector、hard validator、technique definition、migration、importer/exporter descriptor 和 template descriptor 必须通过 `KernelRegistry` 注册。
+- KRC-001: 所有命令、selector、hard validator、technique definition、migration、外部 import/export descriptor 和 template descriptor 必须通过 `KernelRegistry` 注册。
 - KRC-002: 注册项必须声明 `id`、`kind`、`sourceModuleId`、`apiVersion`、`requiredCapabilities`、`status` 和 `titleKey`。
 - KRC-003: 注册项 ID 不得重复；重复注册必须返回 `registry-duplicate-id`，不得覆盖已有注册项。
 - KRC-004: MVP 注册运行时只允许 `builtin` 和 `internal-module`；`javascript-typescript`、`lua` 和 `native` 第三方运行时必须返回 `runtime-unsupported`。
@@ -84,6 +87,7 @@
 - KRC-016: Pure Core Kernel V1 的模块身份只能来自静态 `KernelStartupModuleManifest`；模块运行时、插件 manifest 或用户配置不得在运行中自我追加或提升权限。
 - KRC-017: V1 `KernelStartupModuleManifest` 只能引用应用内已编译绑定的 `CoreModuleRegistrationEntryId`，不得引用任意文件路径、URL、脚本字符串或动态 import 表达式。
 - KRC-018: 未来第三方插件的安装、移除、启用和禁用配置必须在应用启动前完成；后续插件平台只能在启动期发现、校验、授权并把第三方贡献点映射进统一注册协议，应用进入 ready 状态后不得新增、卸载、启用、禁用或热插拔第三方插件，运行中生命周期变更请求不得改变当前 registry handler set，相关变更只能写入下次启动配置或返回 `restart-required` / `unsupported-at-runtime`。
+- KRC-019: `importer-descriptor` 和 `exporter-descriptor` 只能描述外部模块贡献点的元数据和能力要求。Pure Core Kernel V1 不得注册 PDF、PNG、Guitar Pro 或 `.bgp` 物理读写的具体 descriptor/handler，不得引入格式解析器、PDF/PNG 生成库、zip 文件 IO、字体嵌入或页面渲染依赖。
 
 ## 数据结构草案
 
@@ -270,7 +274,7 @@ export type CapabilityCheckResult =
  * 注册项 ID。
  *
  * 用途:
- * - 作为命令、selector、validator、technique、importer/exporter descriptor 等贡献点的稳定标识。
+ * - 作为命令、selector、validator、technique、外部 import/export descriptor 等贡献点的稳定标识。
  */
 export type ContributionId = string
 
@@ -279,6 +283,8 @@ export type ContributionId = string
  *
  * 用途:
  * - 表示该贡献点属于哪类内核扩展。
+ * - `importer-descriptor` 和 `exporter-descriptor` 只描述外部模块能力，
+ *   不代表 Core Kernel 拥有具体格式解析或生成实现。
  */
 export type ContributionKind =
   | "command"
@@ -309,10 +315,10 @@ export type ContributionStatus =
  *
  * 用途:
  * - 描述一个可被 Core Kernel 发现和检查的贡献点。
- * - descriptor 可被 UI、命令面板、导入导出菜单和测试读取。
+ * - descriptor 可被 UI、命令面板、外部导入导出菜单和测试读取。
  *
  * 边界:
- * - 不保存 React、SVG、VexFlow、Web Audio、Tauri 文件对象或可变 `ScoreDocument`。
+ * - 不保存 React、SVG、VexFlow、Web Audio、Tauri 文件对象、格式解析器、PDF/PNG 生成器或可变 `ScoreDocument`。
  */
 export interface KernelContribution<TDescriptor = unknown> {
   id: ContributionId
@@ -408,9 +414,9 @@ MVP 必须至少通过 registry 管理以下贡献点:
 - `core.hard-validators`: schema、ID、引用、duration、tuning、single-note MVP 限制等 hard validator。
 - `core.guitar-techniques`: `slide`、`bend`、`vibrato` technique definition。
 - `core.migrations`: `.bgp` schema migration entries。
-- `core.importers`: 原生 `.bgp` 打开和自动恢复入口 descriptor。
-- `core.exporters`: PDF 和 PNG exporter descriptor。
 - `core.templates`: 标准 6 弦 4/4 吉他谱模板 descriptor。
+
+MVP registry 可以定义 `importer-descriptor` 和 `exporter-descriptor` 这两类抽象 contribution kind，但 Pure Core Kernel V1 不要求、也不允许注册具体格式条目。原生 `.bgp` 打开/保存和自动恢复属于后续 `Persistence Service`，PDF/PNG 属于后续 `Export Service`，Guitar Pro 属于后续 `Import Service`。
 
 MVP 不允许以下注册项来源:
 
@@ -445,10 +451,11 @@ MVP 不允许以下注册项来源:
 - 定义 `KernelModuleIdentity`。
 - 定义 `ModuleOrigin`。
 - 定义 `KernelStartupModuleManifest` 和 `CoreModuleRegistration`。
-- 为命令、selector、hard validator、technique、migration、importer/exporter descriptor 和 template descriptor 建立注册入口。
+- 为命令、selector、hard validator、technique、migration、外部 import/export descriptor 和 template descriptor 建立注册入口。
 - 拒绝重复注册、未知 kind、unsupported runtime、api version 不兼容和 capability 不足。
 - 注册表变化后更新 `registryVersion` 并发布事件。
 - registry summary 不泄露 handler、React 组件、SVG/VexFlow 对象、Web Audio 节点、Tauri 文件对象或可变 `ScoreDocument`。
+- Pure Core Kernel V1 不注册 PDF、PNG、Guitar Pro 或 `.bgp` 物理读写的具体 descriptor/handler，只验证抽象 descriptor 的注册、拒绝、summary 和 capability 行为。
 
 ## MVP 不做
 
@@ -459,6 +466,8 @@ MVP 不允许以下注册项来源:
 - 不做第三方 JS/TS、Lua 或 native 插件运行。
 - 不做运行中新增、卸载、启用、禁用或热插拔第三方插件；运行中生命周期变更请求不得改变当前 registry handler set。
 - 不做 UI 面板插件注册。
+- 不做 PDF/PNG 真实导出、Guitar Pro 导入或 `.bgp` 物理文件 IO 的具体注册项和 handler。
+- 不引入 PDF/PNG、Guitar Pro、zip 文件 IO、字体嵌入或页面渲染依赖。
 - 不做网络权限。
 - 不把 Tauri/Rust 权限合并到 Core Kernel capability。
 
