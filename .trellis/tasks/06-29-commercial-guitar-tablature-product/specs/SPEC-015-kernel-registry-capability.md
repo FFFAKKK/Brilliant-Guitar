@@ -57,7 +57,7 @@
 - LEAST-CAPABILITY: 模块只获得它声明并被授予的最小 capability。
 - DENY-BY-DEFAULT: 未注册、未授权、不兼容或未知贡献点默认拒绝。
 - SUMMARY-ONLY-READ: 外部模块只能读取 registry summary，不能拿到 handler 或可变对象。
-- STARTUP-ONLY-PLUGIN-CHANGES: 第三方插件安装、移除、启用和禁用配置只能在应用启动前完成，运行中插件集合不得热插拔。
+- STARTUP-ONLY-PLUGIN-CHANGES: 第三方插件安装、移除、启用和禁用配置只能在应用启动前完成；运行中插件集合不得新增、移除、启用、禁用或热插拔。
 - CORE-SMALL: 插件发现、运行时、沙箱和市场不进入 Core Kernel。
 
 ## 强制规则
@@ -79,7 +79,7 @@
 - KRC-015: `runtime`、`trustLevel` 和 capability 是三个独立概念；`runtime = "internal-module"` 不自动获得全部权限，`trustLevel = "trusted-core"` 也不绕过 registry、apiVersion 或 capability 校验。
 - KRC-016: `trusted-core` 身份只能来自静态 `KernelStartupModuleManifest`；模块运行时、插件 manifest 或用户配置不得自我声明为可信核心模块。
 - KRC-017: `KernelStartupModuleManifest` 只能引用应用内已编译绑定的 `CoreModuleRegistrationEntryId`，不得引用任意文件路径、URL、脚本字符串或动态 import 表达式。
-- KRC-018: 未来第三方插件的安装、移除、启用和禁用配置必须在应用启动前完成；`Extension Host` 只能在启动期发现、校验并代理注册第三方贡献点，应用进入 ready 状态后不得新增、卸载、启用、禁用或热插拔第三方插件，相关变更必须要求重启后生效。
+- KRC-018: 未来第三方插件的安装、移除、启用和禁用配置必须在应用启动前完成；`Extension Host` 只能在启动期发现、校验并代理注册第三方贡献点，应用进入 ready 状态后不得新增、卸载、启用、禁用或热插拔第三方插件，运行中生命周期变更请求不得改变当前 registry handler set，相关变更只能写入下次启动配置或返回 `restart-required` / `unsupported-at-runtime`。
 
 ## 数据结构草案
 
@@ -270,8 +270,9 @@ export type ContributionKind =
  * 注册项状态。
  *
  * 用途:
- * - 表示能力是否可用。
+ * - 表示单个贡献点是否可用。
  * - MVP 可以只使用 `active` 和 `disabled`。
+ * - `disabled` 只描述当前注册项状态，不表示运行中允许禁用、卸载或热插拔第三方插件。
  */
 export type ContributionStatus =
   | "active"
@@ -401,7 +402,7 @@ MVP 不允许以下注册项来源:
 - Unsupported runtime: 返回 `runtime-unsupported`，不得执行入口代码。
 - Capability denied: 返回 `capability-denied`，不得继续执行 handler。
 - API incompatible: 返回 `api-version-incompatible`，不得注册贡献点。
-- Disabled contribution: 返回 `contribution-disabled`，不得静默跳过。
+- Disabled contribution: 返回 `contribution-disabled`，不得静默跳过；该状态不得作为运行中卸载 handler 或热插拔第三方插件的入口。
 - Unknown contribution: 返回对应 unknown/unsupported 错误，不得猜测替代贡献点。
 
 ## 与其它 spec 的关系
@@ -430,7 +431,7 @@ MVP 不允许以下注册项来源:
 - 不做远程插件下载。
 - 不做插件签名审核。
 - 不做第三方 JS/TS、Lua 或 native 插件运行。
-- 不做运行中新增、卸载、启用、禁用或热插拔第三方插件。
+- 不做运行中新增、卸载、启用、禁用或热插拔第三方插件；运行中生命周期变更请求不得改变当前 registry handler set。
 - 不做 UI 面板插件注册。
 - 不做网络权限。
 - 不把 Tauri/Rust 权限合并到 Core Kernel capability。
@@ -448,4 +449,4 @@ MVP 不允许以下注册项来源:
 - [ ] AC-015-09: `KernelModuleIdentity.trustLevel = "external-plugin"` 的模块不能调用启动期直接注册入口，只能通过 `Extension Host` 代理注册。
 - [ ] AC-015-10: 不在 `KernelStartupModuleManifest` 中的模块即使 runtime 为 `internal-module`，也不能获得 `trusted-core` 身份。
 - [ ] AC-015-11: `KernelStartupModuleManifest` 中包含文件路径、URL、脚本字符串或未知 `registrationEntryId` 时，内核启动必须失败并返回稳定 registry/module 错误。
-- [ ] AC-015-12: 应用进入 ready 状态后，第三方插件新增、卸载、启用、禁用或热插拔请求不会改变当前 registry handler 集合，并返回 unsupported 或 restart-required 类稳定错误。
+- [ ] AC-015-12: 应用进入 ready 状态后，第三方插件新增、卸载、启用、禁用或热插拔请求不会改变当前 registry handler set，并返回 `unsupported-at-runtime` 或 `restart-required` 类稳定错误。
