@@ -2,7 +2,7 @@
 
 ## 状态
 
-- 状态: 已确认作为 Core Kernel 功能，细节继续规划。
+- 状态: 已收敛；实现细节以本 spec 的强制规则、测试要求和 `implement.md` 为准。
 - 映射需求: `REQ-007`, `REQ-010`, `REQ-015`, `REQ-016`, `REQ-018`。
 - 目标: 定义 Core Kernel 的最小注册表、模块身份、contribution descriptor、capability 检查和 registry 只读查询契约。
 - 非目标: 错误对象、diagnostic 和 report shell 由 `SPEC-016-kernel-errors-diagnostics-reports.md` 定义。

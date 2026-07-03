@@ -12,7 +12,7 @@
 
 ## 当前决策状态
 
-- 状态: 已确认作为 Core Kernel 功能，细节继续规划。
+- 状态: 已收敛；实现细节以验收标准、对应 spec 和 `implement.md` 为准。
 - 推荐方案: 将“注册表与 capability”作为独立内核功能，不与错误处理/report 合并。
 - 对应 spec: `specs/SPEC-015-kernel-registry-capability.md`。
 - 关联错误契约: 注册和 capability 失败时返回的结构化错误由 `REQ-019` / `SPEC-016` 定义。
