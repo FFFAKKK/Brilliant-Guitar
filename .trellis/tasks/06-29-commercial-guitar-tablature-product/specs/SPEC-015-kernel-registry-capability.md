@@ -50,7 +50,7 @@
 
 - `KernelError`、`KernelDiagnostic`、`KernelReport` 结构。
 - 第三方插件包下载、安装、更新、签名和审核。
-- 第三方 JS/TS、Lua 或 native 沙箱实现。
+- 第三方 TypeScript 插件运行时、编译产物、Lua 或 native 沙箱实现。
 - Tauri/Rust 原生权限。
 - UI 面板插件生命周期。
 - 网络权限、云服务权限和账号权限。
@@ -420,7 +420,7 @@ MVP registry 可以定义 `importer-descriptor` 和 `exporter-descriptor` 这两
 
 MVP 不允许以下注册项来源:
 
-- 第三方 JavaScript/TypeScript 插件。
+- 第三方 TypeScript 插件运行时或其编译产物。
 - Lua 插件。
 - Native 动态库插件。
 - 运行时下载的远程插件。
@@ -463,7 +463,7 @@ MVP 不允许以下注册项来源:
 - 不做插件市场。
 - 不做远程插件下载。
 - 不做插件签名审核。
-- 不做第三方 JS/TS、Lua 或 native 插件运行。
+- 不做第三方 TypeScript 插件运行时、编译产物执行、Lua 或 native 插件运行。
 - 不做运行中新增、卸载、启用、禁用或热插拔第三方插件；运行中生命周期变更请求不得改变当前 registry handler set。
 - 不做 UI 面板插件注册。
 - 不做 PDF/PNG 真实导出、Guitar Pro 导入或 `.bgp` 物理文件 IO 的具体注册项和 handler。

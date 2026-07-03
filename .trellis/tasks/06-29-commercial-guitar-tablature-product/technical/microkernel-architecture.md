@@ -812,7 +812,7 @@ MVP:
 
 后续:
 
-- JS/TS 插件沙箱。
+- 第三方 TypeScript 插件沙箱。
 - 权限声明。
 - 启动前插件启用/禁用配置。
 - 异常隔离。
@@ -821,7 +821,7 @@ MVP:
 
 禁止:
 
-- MVP 不执行第三方 JS/TS、Lua 或 native 代码。
+- MVP 不执行第三方 TypeScript 插件运行时、编译产物、Lua 或 native 代码。
 - 应用 ready 后不新增、卸载、启用、禁用或热插拔第三方插件。
 
 ### 21. Diagnostics Package Service

@@ -10,9 +10,9 @@
 
 本 spec 约束产品层插件，即围绕 Core Kernel、命令、导入导出、验证器、模板和 UI 扩展点工作的插件。
 
-长期插件体验向 VS Code 看齐: 插件安装和管理简单，manifest 声明 contribution，TypeScript 优先，权限声明清晰，开发者能贡献命令、菜单、快捷键、面板、导入导出器、验证器、渲染器和教学工具。底层协作仍采用微内核边界: 统一注册、capability、snapshot、semantic command、event 和 report。
+长期插件体验向 VS Code 看齐: 插件安装和管理简单，manifest 声明 contribution，公开插件 API 统一以 TypeScript 为准，权限声明清晰，开发者能贡献命令、菜单、快捷键、面板、导入导出器、验证器、渲染器和教学工具。底层协作仍采用微内核边界: 统一注册、capability、snapshot、semantic command、event 和 report。
 
-未来公开的第三方产品层插件优先采用 JavaScript/TypeScript 包和类型契约。Pure Core Kernel V1 只实现统一注册协议的内核基础和官方/内置模块启动期注册，不执行第三方 JS/TS、Lua 或 native 代码，也不实现真实 `Extension Host` 或 `PluginKernelFacade`。
+未来公开的第三方产品层插件统一采用 TypeScript 源码、SDK、类型契约、示例和兼容测试；发布包可包含编译后的 JavaScript 产物，但必须通过 TypeScript 类型契约和 manifest 校验。Pure Core Kernel V1 只实现统一注册协议的内核基础和官方/内置模块启动期注册，不执行第三方 TypeScript 插件运行时、编译产物、Lua 或 native 代码，也不实现真实 `Extension Host` 或 `PluginKernelFacade`。
 
 不约束 Tauri/Rust 原生插件。原生插件属于应用壳和系统能力，只能由核心团队维护。
 
@@ -39,7 +39,7 @@
 - EXT-009: 插件异常必须被捕获；未来第三方插件只能被标记为下次启动禁用，当前运行期不得因此卸载 handler、改变已注册贡献点集合或热插拔插件。
 - EXT-010: MVP 不允许无沙箱第三方脚本或 native 动态库插件。
 - EXT-011: Pure Core Kernel V1 只接受 `runtime = "builtin" | "internal-module"` 的启动期模块；未来 `PluginManifest` 必须声明 `runtime`，但真实第三方 manifest 读取和校验不进入 V1。
-- EXT-012: 未来第三方 JS/TS 插件开放前，必须具备权限声明、沙箱隔离、API version、异常隔离、启动前禁用配置机制和兼容测试。
+- EXT-012: 未来第三方 TypeScript 插件开放前，必须具备权限声明、沙箱隔离、API version、异常隔离、启动前禁用配置机制和兼容测试；发布包可包含编译后的 JavaScript 产物，但必须通过 TypeScript 类型契约和 manifest 校验。
 - EXT-013: 插件 API 只能暴露 Core Kernel 的稳定公开接口，不得暴露 React 组件、VexFlow 对象、SVG DOM、Web Audio 节点或 Tauri 文件系统内部实现。
 - EXT-014: 插件贡献点必须通过内核注册表注册，不能在运行时绕过注册表注入主程序能力。
 - EXT-015: 插件写入谱面只能提交已注册语义命令，不能提交任意 patch、JSON path、字段替换、数组 splice 或脚本式写入。
@@ -275,7 +275,7 @@ export interface PluginReportFacade {
 - 付费插件或商业插件市场。
 - 真实第三方 `PluginManifest` 读取、校验或加载。
 - 真实 `Extension Host` 或 `PluginKernelFacade` 实现。
-- 第三方 JavaScript/TypeScript 包执行。
+- 第三方 TypeScript 插件运行时或其编译产物执行。
 - 任意 JavaScript 执行。
 - Lua 插件。
 - Native 动态库插件。

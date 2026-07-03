@@ -33,7 +33,7 @@
 - 架构原则已确认: 可以按当前产品需求重新设计架构，而不是在旧设计基础上修补；整体采用类似操作系统的微内核式 Core Kernel + 用户态服务模块结构。
 - Core Kernel 构想已确认: 内核负责关键谱面能力并对外提供稳定接口，渲染、播放、导入导出、UI、桌面壳、内部扩展和未来插件都以模块形式与内核协作。
 - 微内核取舍已确认: 架构可以参照操作系统微内核思想，接受少量性能损耗，以换取更强的架构稳定性、可维护性和扩展性。
-- 模块化插件模型已确认: 长期向 VS Code 式插件体验演进，官方模块和未来第三方模块使用同一套启动期注册协议；`origin`、`runtime`、`trustLevel` 和 capability 解耦，第三方模块未来可经启动前授权获得高权限并替换官方 UI、渲染、导入导出等模块。Pure Core Kernel V1 只实现官方/内置启动期注册基础，不执行任意第三方 JS/TS、Lua 或 native 代码。
+- 模块化插件模型已确认: 长期向 VS Code 式插件体验演进，官方模块和未来第三方模块使用同一套启动期注册协议；`origin`、`runtime`、`trustLevel` 和 capability 解耦，第三方模块未来可经启动前授权获得高权限并替换官方 UI、渲染、导入导出等模块。未来公开第三方插件统一采用 TypeScript，发布包可包含编译后的 JavaScript 产物；Pure Core Kernel V1 只实现官方/内置启动期注册基础，不执行任意第三方 TypeScript 插件运行时、编译产物、Lua 或 native 代码。
 - MVP 乐器与编辑范围已确认: 先把六线谱、五线谱基础功能和吉他功能做好，再做贝斯、鼓、键盘、复杂编曲和其它生态能力。
 - MVP 吉他技巧范围已确认: 技巧必须分类，第一阶段先覆盖 P0 最高频技巧，后续再扩展低频和复杂技巧。
 - MVP 技巧范围已确认: 第一条编码闭环先覆盖 3 个 `Core Loop` 技巧: `slide`、`bend`、`vibrato`；`hammer-on`、`pull-off`、`palm mute` 保持为 P0 后续增强，不阻塞第一条闭环。
@@ -141,7 +141,7 @@
 - 第一阶段 `.bgp` 不加密、不做文件密码锁、不做 DRM；核心谱面语义必须保持可审查、可测试和可迁移。
 - MVP 默认支持统一注册协议的内核基础和内部扩展点，不开放真实第三方插件安装、manifest 读取或代码执行。
 - Tauri/Rust 插件默认只用于系统能力；谱面插件生态未来由产品层插件平台或 Extension Host 在启动前发现、校验、授权并映射到统一注册协议。
-- 未来第三方谱面插件默认采用 JavaScript/TypeScript 包和类型契约；官方与第三方的差异只存在于注册前发现、校验、授权和加载阶段，进入内核后都必须遵守同一套 registry、capability、command、snapshot、event 和 report 契约。
+- 未来公开第三方谱面插件统一采用 TypeScript 源码、SDK、类型契约、示例和兼容测试；发布包可包含编译后的 JavaScript 产物，但必须通过 TypeScript 类型契约和 manifest 校验。官方与第三方的差异只存在于注册前发现、校验、授权和加载阶段，进入内核后都必须遵守同一套 registry、capability、command、snapshot、event 和 report 契约。
 - MVP 第一实现阶段默认只交付吉他核心闭环: 吉他轨道、六线谱、基础五线谱同步、基础排版、P0 高频吉他技巧、播放校对、保存与导出。
 - MVP 第一条编码闭环中的技巧实现范围只要求 3 个 `Core Loop` 技巧: `slide`、`bend`、`vibrato`；`hammer-on`、`pull-off`、`palm mute` 保持为 P0 后续增强。
 - 架构保留多轨、多乐器和多弦数扩展点，但第一实现阶段 UI、测试和验收只覆盖标准 6 弦吉他；7/8 弦吉他、贝斯、鼓、键盘和完整乐队编曲不作为第一实现阶段的验收门槛。
@@ -426,13 +426,13 @@ P0 类别包括连接与连奏、音高变化与表情、延音闷音与噪音�
 
 ### DEC-P030: 未来第三方插件优先语言采用什么？
 
-结论: 未来第三方插件优先采用 JavaScript/TypeScript；Pure Core Kernel V1 只做统一注册协议和官方/内置启动期注册基础，不读取真实第三方 `PluginManifest`，也不开放任意第三方代码执行。Lua 和 native 插件后置，native 只在性能或系统能力确有需要时开放。
+结论: 未来公开第三方插件统一采用 TypeScript；插件源码、SDK、类型契约、示例和兼容测试以 TypeScript 为准，发布包可包含编译后的 JavaScript 产物。Pure Core Kernel V1 只做统一注册协议和官方/内置启动期注册基础，不读取真实第三方 `PluginManifest`，也不开放任意第三方代码执行。Lua 和 native 不作为公开插件语言；native 只允许作为官方/内置系统能力或未来单独评审的外部进程能力。
 
-原因: 项目技术栈已是 Tauri + TypeScript/React，JS/TS 插件最容易复用类型、命令系统、schema、文档和开源社区资源；但安全上必须先有权限、隔离和版本边界，不能直接开放无沙箱脚本。
+原因: 项目技术栈已是 Tauri + TypeScript/React，统一 TypeScript 插件能最大化复用类型、命令系统、schema、文档和开源社区资源，并降低第三方插件误用 command payload、snapshot、capability 和 report 契约的概率；但安全上仍必须先有权限、隔离和版本边界，不能直接开放无沙箱脚本。
 
-取舍: JS/TS 对开源生态和 AI 辅助开发友好，但沙箱与权限设计必须认真做；Lua 更轻量但生态和类型契约弱；native 性能强但安全、跨平台和崩溃隔离风险最高。
+取舍: TypeScript 对开源生态、AI 辅助开发和长期维护最友好，但会要求插件作者进入我们的类型与构建体系；Lua 更轻量但生态和类型契约弱；native 性能强但安全、跨平台和崩溃隔离风险最高。
 
-实现约束: `PluginManifest` 是未来 VS Code 式插件平台的 manifest 草案，不是 Pure Core Kernel V1 的实现项或验收门槛。V1 只支持 `builtin` 与 `internal-module` 运行时；未来 JS/TS 插件必须先完成权限声明、沙箱隔离、API version、异常隔离、启动前授权、禁用配置、兼容测试和统一注册协议映射后才能开放。
+实现约束: `PluginManifest` 是未来 VS Code 式插件平台的 manifest 草案，不是 Pure Core Kernel V1 的实现项或验收门槛。V1 只支持 `builtin` 与 `internal-module` 运行时；未来 TypeScript 插件必须先完成权限声明、沙箱隔离、API version、异常隔离、启动前授权、禁用配置、兼容测试和统一注册协议映射后才能开放。
 
 ### DEC-P031: 开源优先和不商业化路线怎么定？
 
@@ -616,7 +616,7 @@ MVP 包结构建议: `.bgp` 是单文件开放 zip 包，至少包含 `manifest.
 
 导入/导出 descriptor 只用于声明外部模块贡献点的格式 id、显示信息、capability、API version 和 unsupported 状态。Pure Core Kernel V1 不注册 PDF、PNG、Guitar Pro 或 `.bgp` 物理 IO 的具体 descriptor/handler，不引入任何格式解析、生成、zip、字体或文件系统依赖。
 
-实现约束: 每个注册项必须声明稳定 `id`、`kind`、`sourceModuleId`、`apiVersion`、`requiredCapabilities`、`status` 和 `titleKey`；每个模块身份必须声明 `origin`、`runtime`、`trustLevel`、`apiVersion` 和 capability。Pure Core Kernel V1 只从静态 `KernelStartupModuleManifest` 接受随应用发布的 `builtin` 与 `internal-module`，拒绝第三方 JS/TS、Lua 和 native 运行时；未来第三方模块可在启动前授权后映射进同一注册协议。注册表拒绝重复 ID、未知 contribution kind、不兼容 API version 和缺失 capability；注册表变化必须递增 `registryVersion` 并发布 `kernel.registry.changed`。registry summary 不得泄露 handler、React 组件、VexFlow 对象、Web Audio 节点、Tauri 文件对象或可变 `ScoreDocument`。
+实现约束: 每个注册项必须声明稳定 `id`、`kind`、`sourceModuleId`、`apiVersion`、`requiredCapabilities`、`status` 和 `titleKey`；每个模块身份必须声明 `origin`、`runtime`、`trustLevel`、`apiVersion` 和 capability。Pure Core Kernel V1 只从静态 `KernelStartupModuleManifest` 接受随应用发布的 `builtin` 与 `internal-module`，拒绝第三方 TypeScript 插件运行时、编译产物、Lua 和 native 运行时；未来第三方模块可在启动前授权后映射进同一注册协议。注册表拒绝重复 ID、未知 contribution kind、不兼容 API version 和缺失 capability；注册表变化必须递增 `registryVersion` 并发布 `kernel.registry.changed`。registry summary 不得泄露 handler、React 组件、VexFlow 对象、Web Audio 节点、Tauri 文件对象或可变 `ScoreDocument`。
 
 取舍: 该方案会增加注册元数据和权限检查成本；但它能让内置模块和未来插件都通过同一套内核 ABI 扩展系统能力。如果完全不做注册表和 capability，MVP 代码会更快，但后续每个模块都会变成隐式入口。
 
@@ -638,7 +638,7 @@ MVP 包结构建议: `.bgp` 是单文件开放 zip 包，至少包含 `manifest.
 
 技术实现视角: `KernelModuleIdentity` 必须包含 `origin = "official" | "third-party"`、`runtime`、`trustLevel = "system-trusted" | "sandboxed"`、`apiVersion` 和 capability；`origin`、`runtime`、`trustLevel` 和 capability 独立建模，来源和运行时都不自动获得权限。`KernelStartupModuleManifest` 是 Pure Core Kernel V1 的唯一模块来源，只能引用应用内已编译绑定的 `CoreModuleRegistrationEntryId`，不能引用外部路径、URL、脚本字符串或动态 import。`CoreModuleRegistration` 是 V1 的启动期注册形态；未来 `PluginKernelFacade` 至少包含 `read`、`commands`、`registry`、`events` 和 `reports` 五类受控接口，但只是第三方插件平台草案。Kernel Registry 不提供第三方插件运行时 unregister、enable、disable 或 hotplug 入口；应用进入 ready 状态后，插件集合变更只能返回 `unsupported-at-runtime` / `restart-required` 类稳定错误。任何模块都不得暴露可变 `ScoreDocument`、内部 delta、patch、JSON path、React、VexFlow、SVG DOM、Web Audio 或 Tauri 文件对象。注册权限必须与执行权限分离，例如 `command:register` 不等于 `command:execute`。
 
-反过度设计视角: MVP 不做真实第三方 JS/TS 沙箱、插件安装器、插件市场、权限 UI、UI 面板插件、native 动态库插件，也不设计 marketplace-reviewed、partner、semi-trusted 等额外等级。运行时热插拔、运行中启用/禁用和卸载不后置为目标能力，而是稳定性原则上不支持；未来插件配置变更通过重启生效。第一阶段只需要把统一注册协议、静态 capability、启动期模块清单和 `CoreModuleRegistration` 做薄，并证明“读走 snapshot、写走 command、贡献点走 registry、错误走 report”这条链路成立。
+反过度设计视角: MVP 不做真实第三方 TypeScript 沙箱、插件安装器、插件市场、权限 UI、UI 面板插件、native 动态库插件，也不设计 marketplace-reviewed、partner、semi-trusted 等额外等级。运行时热插拔、运行中启用/禁用和卸载不后置为目标能力，而是稳定性原则上不支持；未来插件配置变更通过重启生效。第一阶段只需要把统一注册协议、静态 capability、启动期模块清单和 `CoreModuleRegistration` 做薄，并证明“读走 snapshot、写走 command、贡献点走 registry、错误走 report”这条链路成立。
 
 ## 当前阻塞开放问题
 

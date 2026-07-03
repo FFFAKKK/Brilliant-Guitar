@@ -126,7 +126,7 @@ MVP 不需要把 registry 做成完整插件平台。当前阶段应避免:
 
 - 错误对象、diagnostic、report shell 的字段设计；这些属于 `REQ-019`。
 - 第三方插件安装、下载、市场、签名和审核。
-- JS/TS、Lua 或 native 第三方运行时沙箱。
+- 第三方 TypeScript 插件运行时、编译产物、Lua 或 native 第三方运行时沙箱。
 - Tauri/Rust 原生权限系统。
 - UI 插件面板生命周期。
 
@@ -134,7 +134,7 @@ MVP 不需要把 registry 做成完整插件平台。当前阶段应避免:
 
 - Core Kernel 提供统一 `KernelRegistry`，用于登记命令、selector、hard validator、technique definition、migration、importer/exporter descriptor 和 template descriptor。
 - 每个注册项必须有稳定 `id`、`kind`、`sourceModuleId`、`apiVersion`、`requiredCapabilities`、`status` 和 `titleKey`。
-- MVP 只接受 `builtin` 和 `internal-module` 来源，不接受第三方 JS/TS、Lua 或 native 插件贡献点。
+- MVP 只接受 `builtin` 和 `internal-module` 来源，不接受第三方 TypeScript 插件运行时、编译产物、Lua 或 native 插件贡献点。
 - 注册表拒绝重复 ID、未知 contribution kind、unsupported runtime、不兼容 API version 和缺失 capability。
 - capability 检查必须发生在命令执行、selector 调用、注册贡献点和未来插件代理之前。
 - 注册权限必须与执行权限分离；例如拥有 `command:register` 不代表拥有 `command:execute`。
@@ -153,7 +153,7 @@ MVP 不需要把 registry 做成完整插件平台。当前阶段应避免:
 - 不做远程插件下载。
 - 不做运行中新增、卸载、启用、禁用或热插拔第三方插件。
 - 不做插件签名、审核和权限 UI。
-- 不执行第三方 JS/TS、Lua 或 native 插件代码。
+- 不执行第三方 TypeScript 插件运行时、编译产物、Lua 或 native 插件代码。
 - 不允许模块运行时随意注入 UI 面板、React 组件、VexFlow 对象、Web Audio 节点或 Tauri 文件对象。
 - 不把 OS 文件权限、Tauri 权限或浏览器沙箱权限混入 Core Kernel capability。
 

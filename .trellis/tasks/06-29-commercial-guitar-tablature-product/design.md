@@ -112,7 +112,7 @@ Pure Core Kernel V1 必须能在无 UI、无浏览器 DOM、无 Tauri、无 VexF
 
 - 第三方插件安装。
 - 插件市场。
-- JS/TS、Lua 或 native 第三方插件运行时。
+- 第三方 TypeScript 插件运行时、编译产物执行、Lua 或 native 第三方插件运行时。
 - 插件签名、审核和权限 UI。
 - Tauri/Rust 原生权限系统。
 
@@ -196,7 +196,7 @@ Pure Core Kernel V1 必须能在无 UI、无浏览器 DOM、无 Tauri、无 VexF
 - 事件: V1 内部模块遵守内核事件规则；未来第三方插件只能订阅由 Extension Host 按 capability 过滤后的事件。
 - 报告: 插件导入、导出、验证和异常必须输出标准 report、diagnostic 或 `KernelError`。
 - 权限: 注册权限与执行权限分离；能注册贡献点不等于能执行写命令或访问文件。
-- 禁止: V1 不执行第三方 JS/TS、Lua 或 native 插件代码；插件不得直接访问可变文档对象；启动清单不得引用外部路径、URL、脚本字符串或动态 import；应用运行中不得改变第三方插件集合。
+- 禁止: V1 不执行第三方 TypeScript 插件运行时、编译产物、Lua 或 native 插件代码；插件不得直接访问可变文档对象；启动清单不得引用外部路径、URL、脚本字符串或动态 import；应用运行中不得改变第三方插件集合。
 
 ## 第一条纵向切片
 

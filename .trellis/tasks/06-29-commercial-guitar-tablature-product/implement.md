@@ -19,7 +19,7 @@
 - [x] 确认长期维护为项目原则，必须从始至终执行。
 - [x] 确认 MVP 渲染目标: 自研布局模型 + SVG 首发渲染目标。
 - [x] 确认 VexFlow 作为 MVP SVG 渲染适配器。
-- [x] 确认未来第三方插件优先语言: JavaScript/TypeScript；MVP 不开放第三方代码执行。
+- [x] 确认未来公开第三方插件统一语言: TypeScript；发布包可包含编译后的 JavaScript 产物；MVP 不开放第三方代码执行。
 - [x] 确认软件架构原则: 微内核式 Core Kernel + 用户态服务模块。
 - [x] 确认命令系统边界: 对外只暴露语义命令，内部 patch/delta 只作为事务、undo/redo 和回放实现细节。
 - [x] 确认 undo/redo 粒度: MVP 采用细粒度历史模型，每个成功可撤销语义命令默认一个 `HistoryEntry`，不做复杂智能合并。
@@ -119,7 +119,7 @@
 - [ ] 校验 `KernelStartupModuleManifest` 中的 origin、runtime、trustLevel、apiVersion、capabilities 和 `registrationEntryId`。
 - [ ] 拒绝清单中的外部路径、URL、脚本字符串、动态 import 或未知 `registrationEntryId`。
 - [ ] V1 只接受随应用发布的 `builtin` 和 `internal-module`；未来第三方模块可在启动前授权后进入同一注册协议，但不进入 Pure Core Kernel V1 实现。
-- [ ] 不实现真实 `Extension Host`、真实 `PluginKernelFacade`、第三方插件 manifest 读取、第三方插件安装/启用/禁用/卸载、事件过滤代理或 JS/TS/Lua/native 插件运行时。
+- [ ] 不实现真实 `Extension Host`、真实 `PluginKernelFacade`、第三方插件 manifest 读取、第三方插件安装/启用/禁用/卸载、事件过滤代理、第三方 TypeScript 插件运行时、编译产物执行、Lua 或 native 插件运行时。
 - [ ] 实现内部命令、selector、hard validator、technique definition、migration、外部 import/export 抽象 descriptor 和模板 descriptor 注册接口。
 - [ ] 添加测试，证明 Pure Core Kernel V1 不包含 PDF/PNG/Guitar Pro/`.bgp` 物理 IO 的具体 descriptor/handler，也不引入相关解析、生成或文件系统依赖。
 - [ ] 确保所有模块直接注册时仍走 `KernelRegistry` 校验，不直接获取可变 `ScoreDocument`。

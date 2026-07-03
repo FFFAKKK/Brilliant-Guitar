@@ -180,7 +180,7 @@ Pure Core Kernel V1 验收通过前，不进入 React UI、Tauri 桌面壳、Vex
 
 - MVP 只支持内部模块注册和 API 边界。
 - 负责读取内部 manifest、校验 API version、注册贡献点、隔离异常。
-- 第三方 JS/TS、Lua、native 插件运行后置。
+- 第三方 TypeScript 插件运行时、编译产物执行、Lua 和 native 插件运行后置。
 - 插件修改文档必须提交命令事务。
 
 ## 模块协作协议
