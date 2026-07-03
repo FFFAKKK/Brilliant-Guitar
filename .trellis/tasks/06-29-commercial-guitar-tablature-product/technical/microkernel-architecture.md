@@ -132,13 +132,11 @@
 
 内核定义:
 
-- `DocumentAddress`
-- `TrackAddress`
-- `MeasureAddress`
-- `BeatAddress`
-- `StringAddress`
-- `NoteAddress`
-- `DocumentRange`
+- `EntityId`
+- `ScoreAddress`
+- `ScorePoint`
+- `ScoreRange`
+- `CommandTarget`
 
 内核负责:
 
@@ -157,7 +155,7 @@
 
 ### 内核保留 5: 硬一致性验证
 
-微内核只保留“破坏文档正确性就不能通过”的硬验证。
+微内核只保留“破坏文档正确性就不能通过”的硬验证。硬一致性验证不是音乐质量判断，也不是可演奏性分析；它只回答一个问题: 当前 `ScoreDocument` 是否仍然结构合法、引用完整、可保存、可迁移、可回放，并且能被外部渲染、播放、导入/导出模块安全消费。
 
 内核验证:
 
