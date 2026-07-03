@@ -76,6 +76,7 @@
 - MVP 歌词/理论标注范围已确认: 第一阶段不支持歌词、和声分析、罗马数字和简谱；只保留标题、作者、tempo、4/4 拍号和可选的简单段落标记。
 - MVP 文件保护范围已确认: 第一阶段不做文件密码锁、加密保存或 DRM；`.bgp` 保持开放包结构，便于开源验证、调试、迁移和测试。
 - MVP 默认语言策略已确认: 首次启动跟随系统语言；中文系统使用 `zh-CN`，其它系统使用 `en-US`；用户手动选择后保存偏好并优先于系统语言。
+- Core Kernel V1 交付顺序已确认: 先完成纯内核，不碰 UI、Tauri、VexFlow、Web Audio、PDF/PNG 或 Guitar Pro 导入；纯内核必须能在无浏览器、无桌面壳环境下用 TypeScript 测试验证。
 
 ## 文档体系
 
@@ -494,6 +495,16 @@ P0 类别包括连接与连奏、音高变化与表情、延音闷音与噪音�
 原因: 这个边界能让第一条 4 小节 riff 闭环可运行，同时保护后续插件化、文件兼容和模块替换能力。
 
 取舍: 如果内核更薄，MVP 代码可能更快，但扩展能力容易散落到模块里；如果内核更厚，第一阶段设计成本更高，也可能把本应属于模块的实现细节过早固定。
+
+### DEC-037: Core Kernel V1 首个实现里程碑采用纯内核交付
+
+结论: 第一阶段先把纯 Core Kernel 做好。Pure Kernel V1 必须是纯 TypeScript 内核能力，可在无 UI、无 Tauri、无 VexFlow、无 Web Audio、无 PDF/PNG、无浏览器 DOM 的环境下通过测试；桌面壳、React 工作台、渲染、播放、持久化物理 IO、导出和导入都必须等纯内核验收通过后再进入实现。
+
+边界: Pure Kernel V1 只实现 9 类内核机制: `ScoreDocument` 对象模型、语义命令、事务/undo/redo、地址/范围、硬验证、`.bgp` 语义 schema/迁移入口、snapshot/selector/event、registry/capability、error/diagnostic/report 外壳。它可以定义 `ImportReport`、`ExportReport` 等 report 类型，但不实现真实 Guitar Pro 导入、PDF/PNG 导出或桌面文件系统读写。
+
+验收: Pure Kernel V1 必须通过 fixture 谱面验证、命令提交与 rollback、细粒度 undo/redo、命令回放、schema round-trip、迁移入口、snapshot/selector 只读性、事件顺序、registry/capability、错误/report 隐私边界和 unsupported feature 测试。
+
+取舍: 先做纯内核会推迟可视化界面，但能最早验证长期资产: 谱面数据、命令事务、验证、文件语义、事件和扩展边界。如果先做 UI，短期更容易演示，但核心模型不稳时会在保存、撤销、导出、插件和迁移上反复返工。
 
 ## 当前最高优先级开放问题
 

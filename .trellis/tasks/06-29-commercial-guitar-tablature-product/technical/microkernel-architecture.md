@@ -326,6 +326,8 @@
 - migration 测试。
 - unsupported feature 测试。
 
+Pure Core Kernel V1 是第一实现里程碑。它只交付内核机制和测试，不交付桌面壳、React UI、VexFlow/SVG 渲染、Web Audio 播放、PDF/PNG 真实导出、Guitar Pro 导入、Tauri 文件系统或第三方插件运行时。后续用户态服务模块必须在该里程碑验收通过后再进入实现。
+
 ## 总体架构图
 
 ```mermaid

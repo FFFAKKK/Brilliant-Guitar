@@ -7,6 +7,7 @@
 - 当前架构决策: 采用参照操作系统微内核思想的 Core Kernel + 用户态服务模块架构。内核负责谱面真相、命令事务、验证、版本化契约和模块协作接口；UI、渲染、播放、导入导出、桌面壳和未来插件都作为模块或适配器与内核协作。
 - 详细架构图: `technical/microkernel-architecture.md`。
 - 当前阶段边界: 当前仍是 Core Kernel 规划阶段。本文件只定义内核边界、模块协作原则和依赖方向；外部工程目录结构、monorepo 方案、`apps/desktop` 和 `packages/*` 拆分不属于当前阶段。
+- 首个实现里程碑: Pure Core Kernel V1。先实现纯 TypeScript 内核和内核测试；桌面壳、UI、渲染、播放、持久化物理 IO、导出和导入均后置。
 - 目录状态: 目录结构仍未确认，必须等工程脚手架阶段从已确认内核边界、测试边界、构建方式和发布方式反推，不得反过来限制当前内核规划。
 
 ## 需求反推的架构原则
@@ -116,6 +117,8 @@ flowchart TD
 - Guitar Pro 导入实现。
 - 第三方插件运行时。
 - Tauri 文件系统和窗口系统实现。
+
+Pure Core Kernel V1 验收通过前，不进入 React UI、Tauri 桌面壳、VexFlow/SVG 渲染、Web Audio 播放、PDF/PNG 真实导出、Guitar Pro 导入或第三方插件运行时实现。
 
 ## 外围模块
 

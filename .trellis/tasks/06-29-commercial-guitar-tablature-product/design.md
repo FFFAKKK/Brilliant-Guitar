@@ -7,6 +7,7 @@
 - 已确认技术栈: Tauri 2 + TypeScript + React + Vite。
 - 首发平台: Windows 桌面。
 - 架构原则: 参照操作系统微内核思想的 Core Kernel + 用户态服务模块。当前只规划 Core Kernel 边界；外部工程目录结构属于后续脚手架阶段，不是当前内核规划事项。
+- 首个实现里程碑: Pure Core Kernel V1，纯 TypeScript、无 UI、无 Tauri、无 VexFlow、无 Web Audio、无 PDF/PNG。
 
 ## 设计目标
 
@@ -51,6 +52,12 @@
 9. 错误、diagnostic 和 report 契约。
 
 注册表 handler 注销、运行时卸载、运行时热插拔、运行中插件启用/禁用和权限 UI 不进入当前 Core Kernel 实现规划；Kernel V1 只保留 registry/capability 的最小静态注册边界，保证未来 Extension Host 可以接入。Core Kernel 完成后，会继续建设多个由官方随应用发布的内置可信模块，这些模块通过 registry/capability 与 Core Kernel 协作；具体模块清单、模块数量和拆分方式后续再规划。UI 模块只是官方内置模块中的一类，不被写死为第一个、唯一插件或固定顺序。未来第三方插件的安装、移除、启用和禁用配置只能在应用启动前完成，由 Extension Host 在启动期发现和代理注册；运行时热插拔、运行中卸载和启停不作为规划目标。
+
+### Pure Core Kernel V1 Boundary
+
+第一实现里程碑先交付纯内核。该里程碑只包含 9 类 Core Kernel 机制和测试，不包含桌面壳、React UI、VexFlow/SVG 渲染、Web Audio 播放、PDF/PNG 真实导出、Guitar Pro 导入、Tauri 文件系统或第三方插件运行时。
+
+Pure Core Kernel V1 必须能在无 UI、无浏览器 DOM、无 Tauri、无 VexFlow、无 Web Audio 的 TypeScript 测试环境中运行。验收以 fixture、命令回放、schema round-trip、migration、snapshot/selector、event、registry/capability、error/report 和 unsupported feature 测试为准；UI 截图、播放声音和导出文件不作为该阶段验收项。
 
 内核禁止:
 

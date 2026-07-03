@@ -4,7 +4,7 @@
 
 - 阶段: Phase 1 planning
 - 前置条件: PRD、需求文档、技术设计经用户确认后，才能进入 `task.py start` 和代码实现。
-- 实现策略: 先做一条纵向 MVP 闭环，再扩展功能面。
+- 实现策略: 先交付 Pure Core Kernel V1；纯内核测试通过后，再进入桌面壳、UI、渲染、播放、持久化和导出闭环。
 
 ## 实现顺序
 
@@ -28,16 +28,18 @@
 - [x] 确认 Core Kernel V1 先落地 9 类机制；后续会建设多个官方内置可信模块并通过 registry/capability 与内核协作，具体模块清单、数量和拆分方式后续规划；未来第三方插件只能启动前配置，运行时热插拔、运行中启停和卸载不作为规划目标。
 - [x] 确认第一阶段 Core Kernel 最小边界采用 9 类机制: 文档模型、命令边界、事务历史、地址范围、硬验证、文件语义、快照事件、注册能力、错误报告。
 - [x] 确认外部工程目录结构不是当前 Core Kernel 规划阶段事项；`apps/desktop`、`packages/*`、monorepo 或 workspace 拆分后置到工程脚手架阶段。
+- [x] 确认首个实现里程碑为 Pure Core Kernel V1: 纯 TypeScript 内核，无 UI、无 Tauri、无 VexFlow、无 Web Audio、无 PDF/PNG 真实导出。
 - [ ] 将稳定 spec 同步到 `.trellis/spec/`。
 - [x] 将长期维护原则同步到 `.trellis/spec/guides/`。
 
-### 1. 工程脚手架
+### 1. Pure Core Kernel V1 验收边界
 
-- [ ] 创建 Tauri 2 + React + TypeScript + Vite 应用。
-- [ ] 配置严格 TypeScript、ESLint、格式化、Vitest、Playwright。
-- [ ] 根据已确认 Core Kernel 和模块协作边界建立工程目录；该决策属于脚手架阶段，不属于当前内核规划阶段。
-- [ ] 物理隔离 core-kernel、workbench-ui、desktop-shell、layout、renderer、playback、persistence、import-export、extension-api、fixtures/tests 等边界。
-- [ ] 建立 Windows 本地运行和打包命令。
+- [ ] 建立只服务 Core Kernel 的最小 TypeScript 测试执行环境；不得引入 React、Tauri、VexFlow、Web Audio、PDF/PNG 库或浏览器 DOM 作为内核运行依赖。
+- [ ] Pure Kernel V1 只实现 9 类内核机制: 文档模型、命令边界、事务历史、地址范围、硬验证、文件语义、快照事件、注册能力、错误报告。
+- [ ] 使用标准 6 弦 4 小节 riff fixture 验证内核闭环，不依赖 UI 点击、渲染截图、音频播放或文件选择器。
+- [ ] 建立内核级测试: fixture 验证、命令提交/rollback、细粒度 undo/redo、命令回放、schema round-trip、migration、snapshot/selector 只读性、事件顺序、registry/capability、error/report 隐私边界和 unsupported feature。
+- [ ] 在 Pure Kernel V1 测试全部通过前，不进入 Tauri/React 桌面壳、VexFlow/SVG 渲染、Web Audio 播放、PDF/PNG 导出、Guitar Pro 导入或第三方插件运行时实现。
+- [ ] 桌面工程脚手架、外部目录结构和 workspace/monorepo 拆分在 Pure Kernel V1 通过后再确认。
 
 ### 2. 领域模型与文件 schema
 
