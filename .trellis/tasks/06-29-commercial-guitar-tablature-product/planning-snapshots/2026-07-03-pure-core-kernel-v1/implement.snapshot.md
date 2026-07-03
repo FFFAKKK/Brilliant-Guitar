@@ -5,9 +5,6 @@
 - 阶段: Phase 1 planning
 - 前置条件: PRD、需求文档、技术设计经用户确认后，才能进入 `task.py start` 和代码实现。
 - 实现策略: 先交付 Pure Core Kernel V1；纯内核测试通过后，再进入桌面壳、UI、渲染、播放、持久化和导出闭环。
-- 当前 `task.py start` 入口: `Pure Core Kernel V1 only`。本次启动只允许实现纯 TypeScript Core Kernel、fixture、schema、命令、事务、验证、快照、事件、registry/capability 和 error/report 测试。
-- 当前禁止提前实现: React/Tauri 桌面壳、编辑器 UI、VexFlow/SVG 渲染、Web Audio 播放、真实 `.bgp` 文件系统 IO、PDF/PNG 真实导出、Guitar Pro 导入、真实 Extension Host 或第三方插件运行时。
-- 阶段规划归档: `planning-snapshots/2026-07-03-pure-core-kernel-v1/` 保存本次收敛前的 PRD、design 和 implement 快照；快照只用于追溯，不是当前执行入口。
 
 ## 实现顺序
 
@@ -108,7 +105,75 @@
 - [ ] 定义 registry 启动期注册边界: 应用进入 ready 状态后不得为第三方插件新增、卸载、启用、禁用或热插拔 handler。
 - [ ] 建立重复注册、capability denied、api version incompatible 和 unsupported runtime 测试。
 
-### 6. 统一注册协议内核基础
+### 6. 内核错误、Diagnostic 和 Report
+
+- [ ] 定义 `KernelError`、`KernelDiagnostic`、`KernelIssueTarget` 和 `KernelIssueSource`。
+- [ ] 定义 `KernelReport`、`KernelReportIssue`、`KernelReportSummary`、`ImportReport`、`ExportReport`、`MigrationReport`、`ValidationReport` 和 `RecoveryReport` 外壳。
+- [ ] 为 command、schema、migration、import、export、registry、capability 和 module exception 建立稳定错误 code。
+- [ ] 确保所有用户可见错误文本只通过 i18n key 渲染。
+- [ ] 确保 hard validation diagnostic 能定位到 `ScoreAddress` 或 `ScoreRange`。
+- [ ] 捕获模块异常并转换为 `module-error` diagnostic 或 report issue。
+- [ ] 确保 report 默认不包含用户谱面正文、访问令牌或本机隐私路径。
+- [ ] 建立 module exception、report 复用、diagnostic 定位和 report 隐私测试。
+
+### 7. 编辑器 UI
+
+- [ ] 实现主窗口、菜单、工具栏、谱面视图、属性面板。
+- [ ] 实现新建标准 6 弦吉他谱。
+- [ ] 实现单轨信息显示，且不提供轨道管理入口。
+- [ ] 实现键盘优先的 4 小节 riff 输入路径。
+- [ ] 实现谱面光标，至少定位到小节、beat、弦和音符槽位。
+- [ ] 实现时值、弦号、品号、休止、移动、删除、撤销/重做、播放校对的基础快捷键。
+- [ ] 实现时值键、数字品号输入和方向键弦间/拍间移动。
+- [ ] 实现四分/八分/十六分和基础休止输入；附点、三连音、变拍号和多 voice 返回 unsupported。
+- [ ] 实现 3 个 Core Loop 技巧的键盘输入入口或命令面板入口。
+- [ ] 实现鼠标辅助定位和选择。
+- [ ] 明确不把自由文本谱解析作为第一阶段主输入。
+- [ ] 明确不把 MIDI 输入、MIDI 录入、MIDI 导入或虚拟指板点选输入纳入第一阶段阻塞项。
+- [ ] 建立键盘-only 核心路径 Playwright 测试。
+
+### 8. 谱面渲染
+
+- [ ] 实现布局模型。
+- [ ] 集成并锁定 VexFlow 依赖版本。
+- [ ] 实现 `VexFlowRendererAdapter`。
+- [ ] 实现自定义 SVG overlay，用于 Core Loop 技巧、选区、播放光标和编辑辅助。
+- [ ] 实现 SVG 六线谱渲染和 hit testing。
+- [ ] 实现基础五线谱派生显示。
+- [ ] 实现 3 个 Core Loop 技巧的基础 SVG 显示。
+- [ ] 验证修改六线谱品号后五线谱同步更新。
+- [ ] 建立布局 primitives 与 SVG DOM 解耦测试。
+- [ ] 建立 hit testing 坐标链路测试，证明 `ViewCoordinate -> LayoutPrimitive -> ScoreAddress/ScorePoint/ScoreRange 或 semantic payload -> semantic command -> ScoreDocument` 可回放且不绕过内核。
+- [ ] 记录未来抽取 `Positioning Service` 的触发条件: 多页、多轨、多声部、复杂选区、多渲染后端或导出预览定位复杂度明显上升。
+- [ ] 建立 VexFlow 渲染 smoke test 和版本锁定检查。
+
+### 9. 播放校对
+
+- [ ] 实现文档快照到播放事件的转换。
+- [ ] 实现开始、暂停、继续和停止。
+- [ ] 实现基础速度控制。
+- [ ] 实现节拍器开关。
+- [ ] 实现播放光标或当前 beat/note 高亮。
+- [ ] 实现基础合成音色或占位吉他音色。
+- [ ] 保证播放层不修改文档。
+- [ ] 建立播放事件生成测试和播放层只读快照测试。
+
+### 10. 保存、打开、自动保存
+
+- [ ] 实现 `.bgp` 写入。
+- [ ] 实现 `.bgp` 读取。
+- [ ] 实现保存前和打开后的 schema 校验。
+- [ ] 实现基础自动保存和恢复提示。
+- [ ] 建立 round-trip 测试。
+
+### 11. PDF/PNG 导出
+
+- [ ] 实现导出服务接口。
+- [ ] 实现 PDF 导出。
+- [ ] 实现 PNG 导出。
+- [ ] 建立 Windows 字体、DPI、页面尺寸和可读性 smoke test。
+
+### 12. 统一注册协议内核基础
 
 - [ ] 实现 `KernelRegistry`、`KernelCapability`、`KernelModuleIdentity` 和贡献点 descriptor。
 - [ ] 定义 `ModuleOrigin`、`KernelModuleTrustLevel`、`KernelModuleRuntime`，明确来源不决定权限，权限由启动前授权和 capability 决定。
@@ -125,79 +190,7 @@
 - [ ] 建立重复注册、unsupported runtime、apiVersion 不兼容、capability denied 和 registry summary 不泄露 handler 的测试。
 - [ ] 建立内部模块注册命令后通过命令系统执行并进入 undo/redo 的测试。
 
-### 7. 内核错误、Diagnostic 和 Report
-
-- [ ] 定义 `KernelError`、`KernelDiagnostic`、`KernelIssueTarget` 和 `KernelIssueSource`。
-- [ ] 定义 `KernelReport`、`KernelReportIssue`、`KernelReportSummary`、`ImportReport`、`ExportReport`、`MigrationReport`、`ValidationReport` 和 `RecoveryReport` 外壳。
-- [ ] 为 command、schema、migration、import、export、registry、capability 和 module exception 建立稳定错误 code。
-- [ ] 确保所有用户可见错误文本只通过 i18n key 渲染。
-- [ ] 确保 hard validation diagnostic 能定位到 `ScoreAddress` 或 `ScoreRange`。
-- [ ] 捕获模块异常并转换为 `module-error` diagnostic 或 report issue。
-- [ ] 确保 report 默认不包含用户谱面正文、访问令牌或本机隐私路径。
-- [ ] 建立 module exception、report 复用、diagnostic 定位和 report 隐私测试。
-
-## 后续阶段路线图
-
-以下清单用于保留全项目路线，不属于本次 `task.py start` 范围。Pure Core Kernel V1 测试全部通过，并经用户明确批准后，才能启动这些阶段。
-
-### Later 1. 编辑器 UI
-
-- [ ] 实现主窗口、菜单、工具栏、谱面视图、属性面板。
-- [ ] 实现新建标准 6 弦吉他谱。
-- [ ] 实现单轨信息显示，且不提供轨道管理入口。
-- [ ] 实现键盘优先的 4 小节 riff 输入路径。
-- [ ] 实现谱面光标，至少定位到小节、beat、弦和音符槽位。
-- [ ] 实现时值、弦号、品号、休止、移动、删除、撤销/重做、播放校对的基础快捷键。
-- [ ] 实现时值键、数字品号输入和方向键弦间/拍间移动。
-- [ ] 实现四分/八分/十六分和基础休止输入；附点、三连音、变拍号和多 voice 返回 unsupported。
-- [ ] 实现 3 个 Core Loop 技巧的键盘输入入口或命令面板入口。
-- [ ] 实现鼠标辅助定位和选择。
-- [ ] 明确不把自由文本谱解析作为第一阶段主输入。
-- [ ] 明确不把 MIDI 输入、MIDI 录入、MIDI 导入或虚拟指板点选输入纳入第一阶段阻塞项。
-- [ ] 建立键盘-only 核心路径 Playwright 测试。
-
-### Later 2. 谱面渲染
-
-- [ ] 实现布局模型。
-- [ ] 集成并锁定 VexFlow 依赖版本。
-- [ ] 实现 `VexFlowRendererAdapter`。
-- [ ] 实现自定义 SVG overlay，用于 Core Loop 技巧、选区、播放光标和编辑辅助。
-- [ ] 实现 SVG 六线谱渲染和 hit testing。
-- [ ] 实现基础五线谱派生显示。
-- [ ] 实现 3 个 Core Loop 技巧的基础 SVG 显示。
-- [ ] 验证修改六线谱品号后五线谱同步更新。
-- [ ] 建立布局 primitives 与 SVG DOM 解耦测试。
-- [ ] 建立 hit testing 坐标链路测试，证明 `ViewCoordinate -> LayoutPrimitive -> ScoreAddress/ScorePoint/ScoreRange 或 semantic payload -> semantic command -> ScoreDocument` 可回放且不绕过内核。
-- [ ] 记录未来抽取 `Positioning Service` 的触发条件: 多页、多轨、多声部、复杂选区、多渲染后端或导出预览定位复杂度明显上升。
-- [ ] 建立 VexFlow 渲染 smoke test 和版本锁定检查。
-
-### Later 3. 播放校对
-
-- [ ] 实现文档快照到播放事件的转换。
-- [ ] 实现开始、暂停、继续和停止。
-- [ ] 实现基础速度控制。
-- [ ] 实现节拍器开关。
-- [ ] 实现播放光标或当前 beat/note 高亮。
-- [ ] 实现基础合成音色或占位吉他音色。
-- [ ] 保证播放层不修改文档。
-- [ ] 建立播放事件生成测试和播放层只读快照测试。
-
-### Later 4. 保存、打开、自动保存
-
-- [ ] 实现 `.bgp` 写入。
-- [ ] 实现 `.bgp` 读取。
-- [ ] 实现保存前和打开后的 schema 校验。
-- [ ] 实现基础自动保存和恢复提示。
-- [ ] 建立 round-trip 测试。
-
-### Later 5. PDF/PNG 导出
-
-- [ ] 实现导出服务接口。
-- [ ] 实现 PDF 导出。
-- [ ] 实现 PNG 导出。
-- [ ] 建立 Windows 字体、DPI、页面尺寸和可读性 smoke test。
-
-### Later 6. 国际化
+### 13. 国际化
 
 - [ ] 建立 `zh-CN` 和 `en-US` 字典。
 - [ ] 所有用户可见文本使用 i18n key。
@@ -205,7 +198,7 @@
 - [ ] 实现 locale 解析顺序: 已保存用户偏好 -> 受支持系统语言 -> `en-US` fallback。
 - [ ] 提供测试和截图验证可用的 locale override。
 
-### Later 7. 完整产品质量门禁
+### 14. 质量门禁
 
 - [ ] 类型检查通过。
 - [ ] 单元测试通过。
@@ -219,16 +212,11 @@
 
 ## 预计验证命令
 
-具体命令以脚手架落地后的 `package.json` 为准。Pure Core Kernel V1 只需要纯 TypeScript 内核验证命令，预计至少包含:
+具体命令以脚手架落地后的 `package.json` 为准，预计至少包含:
 
 ```powershell
 npm run typecheck
 npm test
-```
-
-后续 UI、桌面壳、渲染和打包阶段再引入:
-
-```powershell
 npm run test:e2e
 npm run tauri build
 ```
@@ -245,9 +233,8 @@ npm run tauri build
 
 - [ ] 用户确认 PRD 当前版本。
 - [x] 用户确认第一条纵向切片。
-- [x] 当前规划已完成送审，结论为有条件通过。
-- [ ] 完成送审提出的 3 项防误读修订后，再运行 `task.py start`。
+- [ ] 等待当前规划送审结果；审核意见返回前不进入实现、不运行 `task.py start`。
 - [x] 用户确认第一阶段 Core Kernel 最小边界后，`design.md` 无阻塞开放问题。
 - [x] 注册表 handler 运行时注销/卸载、插件热插拔、运行中启停和卸载已明确不作为稳定性目标；未来插件配置变更通过重启生效，不阻塞当前内核总规划。
-- [x] `implement.md` 已明确当前启动入口为 `Pure Core Kernel V1 only`，后续 UI、渲染、播放、持久化和导出只作为路线图保留。
+- [x] `implement.md` 的阶段顺序被接受，首个实现里程碑为 Pure Core Kernel V1。
 - [ ] Trellis Phase 1 质量门禁通过。
