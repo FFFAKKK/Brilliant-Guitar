@@ -27,7 +27,7 @@
 - [x] 确认 Core Kernel 错误、diagnostic 和 report 作为独立内核功能，继续按 `SPEC-016` 细化。
 - [x] 确认 Core Kernel V1 先落地 9 类机制；后续会建设多个官方内置可信模块并通过 registry/capability 与内核协作，具体模块清单、数量和拆分方式后续规划；未来第三方插件只能启动前配置，运行时热插拔、运行中启停和卸载不作为规划目标。
 - [x] 确认第一阶段 Core Kernel 最小边界采用 9 类机制: 文档模型、命令边界、事务历史、地址范围、硬验证、文件语义、快照事件、注册能力、错误报告。
-- [ ] 架构确认后再确认项目目录结构。
+- [x] 确认外部工程目录结构不是当前 Core Kernel 规划阶段事项；`apps/desktop`、`packages/*`、monorepo 或 workspace 拆分后置到工程脚手架阶段。
 - [ ] 将稳定 spec 同步到 `.trellis/spec/`。
 - [x] 将长期维护原则同步到 `.trellis/spec/guides/`。
 
@@ -35,7 +35,7 @@
 
 - [ ] 创建 Tauri 2 + React + TypeScript + Vite 应用。
 - [ ] 配置严格 TypeScript、ESLint、格式化、Vitest、Playwright。
-- [ ] 按确认后的 Core Kernel 和模块边界建立目录；具体目录结构未确认前，不提前锁死为 `src/*` 或 workspace packages。
+- [ ] 根据已确认 Core Kernel 和模块协作边界建立工程目录；该决策属于脚手架阶段，不属于当前内核规划阶段。
 - [ ] 物理隔离 core-kernel、workbench-ui、desktop-shell、layout、renderer、playback、persistence、import-export、extension-api、fixtures/tests 等边界。
 - [ ] 建立 Windows 本地运行和打包命令。
 
