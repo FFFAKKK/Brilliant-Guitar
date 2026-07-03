@@ -33,7 +33,7 @@
 - [x] 确认具体导入/导出格式能力不属于 Core Kernel；Pure Core Kernel V1 只保留外部 import/export 抽象 descriptor、capability 和 report 外壳，不注册 PDF/PNG/Guitar Pro/`.bgp` 物理 IO 的具体 handler。
 - [x] 确认外部工程目录结构不是当前 Core Kernel 规划阶段事项；`apps/desktop`、`packages/*`、monorepo 或 workspace 拆分后置到工程脚手架阶段。
 - [x] 确认首个实现里程碑为 Pure Core Kernel V1: 纯 TypeScript 内核，无 UI、无 Tauri、无 VexFlow、无 Web Audio、无 PDF/PNG 真实导出。
-- [ ] 将稳定 spec 同步到 `.trellis/spec/`。
+- [x] 将稳定 spec 同步到 `.trellis/spec/`。
 - [x] 将长期维护原则同步到 `.trellis/spec/guides/`。
 
 ### 1. Pure Core Kernel V1 验收边界
