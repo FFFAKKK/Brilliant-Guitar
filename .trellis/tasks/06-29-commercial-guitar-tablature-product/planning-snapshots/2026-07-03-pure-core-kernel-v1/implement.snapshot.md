@@ -5,6 +5,9 @@
 - 阶段: Phase 1 planning
 - 前置条件: PRD、需求文档、技术设计经用户确认后，才能进入 `task.py start` 和代码实现。
 - 实现策略: 先交付 Pure Core Kernel V1；纯内核测试通过后，再进入桌面壳、UI、渲染、播放、持久化和导出闭环。
+- 当前 `task.py start` 入口: `Pure Core Kernel V1 only`。本次启动只允许实现纯 TypeScript Core Kernel、fixture、schema、命令、事务、验证、快照、事件、registry/capability 和 error/report 测试。
+- 当前禁止提前实现: React/Tauri 桌面壳、编辑器 UI、VexFlow/SVG 渲染、Web Audio 播放、真实 `.bgp` 文件系统 IO、PDF/PNG 真实导出、Guitar Pro 导入、PDF/PNG/Guitar Pro/`.bgp` 物理 IO 的具体 registry descriptor/handler、真实 Extension Host 或第三方插件运行时。
+- 阶段规划归档: `planning-snapshots/2026-07-03-pure-core-kernel-v1/` 保存 Pure Core Kernel V1 当前收敛后的 PRD、design 和 implement 快照；每个阶段只保留一份快照并覆盖刷新。快照只用于追溯，不是当前执行入口。
 
 ## 实现顺序
 
@@ -16,7 +19,7 @@
 - [x] 确认长期维护为项目原则，必须从始至终执行。
 - [x] 确认 MVP 渲染目标: 自研布局模型 + SVG 首发渲染目标。
 - [x] 确认 VexFlow 作为 MVP SVG 渲染适配器。
-- [x] 确认未来第三方插件优先语言: JavaScript/TypeScript；MVP 不开放第三方代码执行。
+- [x] 确认未来公开第三方插件统一语言: TypeScript；发布包可包含编译后的 JavaScript 产物；MVP 不开放第三方代码执行。
 - [x] 确认软件架构原则: 微内核式 Core Kernel + 用户态服务模块。
 - [x] 确认命令系统边界: 对外只暴露语义命令，内部 patch/delta 只作为事务、undo/redo 和回放实现细节。
 - [x] 确认 undo/redo 粒度: MVP 采用细粒度历史模型，每个成功可撤销语义命令默认一个 `HistoryEntry`，不做复杂智能合并。
@@ -27,6 +30,7 @@
 - [x] 确认 Core Kernel 错误、diagnostic 和 report 作为独立内核功能，继续按 `SPEC-016` 细化。
 - [x] 确认 Core Kernel V1 先落地 9 类机制；后续会建设多个官方随应用发布的内置模块并通过 registry/capability 与内核协作，具体模块清单、数量和拆分方式后续规划；官方和第三方模块最终使用同一套注册协议，来源与权限解耦；未来第三方插件只能启动前配置，运行时热插拔、运行中启停和卸载不作为规划目标。
 - [x] 确认第一阶段 Core Kernel 最小边界采用 9 类机制: 文档模型、命令边界、事务历史、地址范围、硬验证、文件语义、快照事件、注册能力、错误报告。
+- [x] 确认具体导入/导出格式能力不属于 Core Kernel；Pure Core Kernel V1 只保留外部 import/export 抽象 descriptor、capability 和 report 外壳，不注册 PDF/PNG/Guitar Pro/`.bgp` 物理 IO 的具体 handler。
 - [x] 确认外部工程目录结构不是当前 Core Kernel 规划阶段事项；`apps/desktop`、`packages/*`、monorepo 或 workspace 拆分后置到工程脚手架阶段。
 - [x] 确认首个实现里程碑为 Pure Core Kernel V1: 纯 TypeScript 内核，无 UI、无 Tauri、无 VexFlow、无 Web Audio、无 PDF/PNG 真实导出。
 - [ ] 将稳定 spec 同步到 `.trellis/spec/`。
@@ -36,6 +40,7 @@
 
 - [ ] 建立只服务 Core Kernel 的最小 TypeScript 测试执行环境；不得引入 React、Tauri、VexFlow、Web Audio、PDF/PNG 库或浏览器 DOM 作为内核运行依赖。
 - [ ] Pure Kernel V1 只实现 9 类内核机制: 文档模型、命令边界、事务历史、地址范围、硬验证、文件语义、快照事件、注册能力、错误报告。
+- [ ] Pure Kernel V1 可以定义外部 import/export descriptor 的类型、注册校验和 summary 行为，但不得注册 PDF、PNG、Guitar Pro 或 `.bgp` 物理文件 IO 的具体 contribution/handler。
 - [ ] 使用标准 6 弦 4 小节 riff fixture 验证内核闭环，不依赖 UI 点击、渲染截图、音频播放或文件选择器。
 - [ ] 建立内核级测试: fixture 验证、命令提交/rollback、细粒度 undo/redo、命令回放、schema round-trip、migration、snapshot/selector 只读性、事件顺序、registry/capability、error/report 隐私边界和 unsupported feature。
 - [ ] 在 Pure Kernel V1 测试全部通过前，不进入 Tauri/React 桌面壳、VexFlow/SVG 渲染、Web Audio 播放、PDF/PNG 导出、Guitar Pro 导入或第三方插件运行时实现。
@@ -98,14 +103,32 @@
 - [ ] 定义 `KernelModuleIdentity`、`KernelModuleTrustLevel`、`KernelModuleRuntime`、`KernelCapability` 和 `CapabilityCheckResult`。
 - [ ] 定义 `KernelStartupModuleManifest`、`StartupModuleDeclaration` 和 `CoreModuleRegistrationEntryId`。
 - [ ] 将 `origin`、`runtime`、`trustLevel` 和 capability 独立判断；`origin = "official"`、`runtime = "internal-module"` 或 `trustLevel = "system-trusted"` 都不自动获得全部权限，也不绕过 registry 校验。
-- [ ] 为 command、selector、hard validator、technique definition、migration、importer/exporter descriptor 和 template descriptor 建立注册入口。
+- [ ] 为 command、selector、hard validator、technique definition、migration、外部 import/export 抽象 descriptor 和 template descriptor 建立注册入口。
 - [ ] 拒绝重复注册、未知 kind、unsupported runtime、api version 不兼容和 capability 不足。
 - [ ] 注册表变化后递增 `registryVersion` 并发布 `kernel.registry.changed`。
 - [ ] 确保 registry summary 不泄露 handler、React 组件、SVG/VexFlow 对象、Web Audio 节点、Tauri 文件对象或可变 `ScoreDocument`。
 - [ ] 定义 registry 启动期注册边界: 应用进入 ready 状态后不得为第三方插件新增、卸载、启用、禁用或热插拔 handler。
 - [ ] 建立重复注册、capability denied、api version incompatible 和 unsupported runtime 测试。
 
-### 6. 内核错误、Diagnostic 和 Report
+### 6. 统一注册协议内核基础
+
+- [ ] 实现 `KernelRegistry`、`KernelCapability`、`KernelModuleIdentity` 和贡献点 descriptor。
+- [ ] 定义 `ModuleOrigin`、`KernelModuleTrustLevel`、`KernelModuleRuntime`，明确来源不决定权限，权限由启动前授权和 capability 决定。
+- [ ] 定义 `KernelStartupModuleManifest`，作为 Pure Core Kernel V1 的唯一启动期模块来源。
+- [ ] 定义 `CoreModuleRegistration`，让官方/内置模块在启动期按统一注册协议注册贡献点和 handler。
+- [ ] 校验 `KernelStartupModuleManifest` 中的 origin、runtime、trustLevel、apiVersion、capabilities 和 `registrationEntryId`。
+- [ ] 拒绝清单中的外部路径、URL、脚本字符串、动态 import 或未知 `registrationEntryId`。
+- [ ] V1 只接受随应用发布的 `builtin` 和 `internal-module`；未来第三方模块可在启动前授权后进入同一注册协议，但不进入 Pure Core Kernel V1 实现。
+- [ ] 不实现真实 `Extension Host`、真实 `PluginKernelFacade`、第三方插件 manifest 读取、第三方插件安装/启用/禁用/卸载、事件过滤代理、第三方 TypeScript 插件运行时、编译产物执行、Lua 或 native 插件运行时。
+- [ ] 实现内部命令、selector、hard validator、technique definition、migration、外部 import/export 抽象 descriptor 和模板 descriptor 注册接口。
+- [ ] 添加测试，证明 Pure Core Kernel V1 不包含 PDF/PNG/Guitar Pro/`.bgp` 物理 IO 的具体 descriptor/handler，也不引入相关解析、生成或文件系统依赖。
+- [ ] 确保所有模块直接注册时仍走 `KernelRegistry` 校验，不直接获取可变 `ScoreDocument`。
+- [ ] 区分注册权限和执行权限，例如 `command:register` 不等于 `command:execute`。
+- [ ] 确保模块修改文档必须通过命令事务和 undo/redo。
+- [ ] 建立重复注册、unsupported runtime、apiVersion 不兼容、capability denied 和 registry summary 不泄露 handler 的测试。
+- [ ] 建立内部模块注册命令后通过命令系统执行并进入 undo/redo 的测试。
+
+### 7. 内核错误、Diagnostic 和 Report
 
 - [ ] 定义 `KernelError`、`KernelDiagnostic`、`KernelIssueTarget` 和 `KernelIssueSource`。
 - [ ] 定义 `KernelReport`、`KernelReportIssue`、`KernelReportSummary`、`ImportReport`、`ExportReport`、`MigrationReport`、`ValidationReport` 和 `RecoveryReport` 外壳。
@@ -116,7 +139,11 @@
 - [ ] 确保 report 默认不包含用户谱面正文、访问令牌或本机隐私路径。
 - [ ] 建立 module exception、report 复用、diagnostic 定位和 report 隐私测试。
 
-### 7. 编辑器 UI
+## 后续阶段路线图
+
+以下清单用于保留全项目路线，不属于本次 `task.py start` 范围。Pure Core Kernel V1 测试全部通过，并经用户明确批准后，才能启动这些阶段。
+
+### Later 1. 编辑器 UI
 
 - [ ] 实现主窗口、菜单、工具栏、谱面视图、属性面板。
 - [ ] 实现新建标准 6 弦吉他谱。
@@ -132,7 +159,7 @@
 - [ ] 明确不把 MIDI 输入、MIDI 录入、MIDI 导入或虚拟指板点选输入纳入第一阶段阻塞项。
 - [ ] 建立键盘-only 核心路径 Playwright 测试。
 
-### 8. 谱面渲染
+### Later 2. 谱面渲染
 
 - [ ] 实现布局模型。
 - [ ] 集成并锁定 VexFlow 依赖版本。
@@ -147,7 +174,7 @@
 - [ ] 记录未来抽取 `Positioning Service` 的触发条件: 多页、多轨、多声部、复杂选区、多渲染后端或导出预览定位复杂度明显上升。
 - [ ] 建立 VexFlow 渲染 smoke test 和版本锁定检查。
 
-### 9. 播放校对
+### Later 3. 播放校对
 
 - [ ] 实现文档快照到播放事件的转换。
 - [ ] 实现开始、暂停、继续和停止。
@@ -158,7 +185,7 @@
 - [ ] 保证播放层不修改文档。
 - [ ] 建立播放事件生成测试和播放层只读快照测试。
 
-### 10. 保存、打开、自动保存
+### Later 4. 保存、打开、自动保存
 
 - [ ] 实现 `.bgp` 写入。
 - [ ] 实现 `.bgp` 读取。
@@ -166,31 +193,14 @@
 - [ ] 实现基础自动保存和恢复提示。
 - [ ] 建立 round-trip 测试。
 
-### 11. PDF/PNG 导出
+### Later 5. PDF/PNG 导出
 
 - [ ] 实现导出服务接口。
 - [ ] 实现 PDF 导出。
 - [ ] 实现 PNG 导出。
 - [ ] 建立 Windows 字体、DPI、页面尺寸和可读性 smoke test。
 
-### 12. 统一注册协议内核基础
-
-- [ ] 实现 `KernelRegistry`、`KernelCapability`、`KernelModuleIdentity` 和贡献点 descriptor。
-- [ ] 定义 `ModuleOrigin`、`KernelModuleTrustLevel`、`KernelModuleRuntime`，明确来源不决定权限，权限由启动前授权和 capability 决定。
-- [ ] 定义 `KernelStartupModuleManifest`，作为 Pure Core Kernel V1 的唯一启动期模块来源。
-- [ ] 定义 `CoreModuleRegistration`，让官方/内置模块在启动期按统一注册协议注册贡献点和 handler。
-- [ ] 校验 `KernelStartupModuleManifest` 中的 origin、runtime、trustLevel、apiVersion、capabilities 和 `registrationEntryId`。
-- [ ] 拒绝清单中的外部路径、URL、脚本字符串、动态 import 或未知 `registrationEntryId`。
-- [ ] V1 只接受随应用发布的 `builtin` 和 `internal-module`；未来第三方模块可在启动前授权后进入同一注册协议，但不进入 Pure Core Kernel V1 实现。
-- [ ] 不实现真实 `Extension Host`、真实 `PluginKernelFacade`、第三方插件 manifest 读取、第三方插件安装/启用/禁用/卸载、事件过滤代理或 JS/TS/Lua/native 插件运行时。
-- [ ] 实现内部命令、selector、hard validator、technique definition、migration、导入器/导出器 descriptor 和模板 descriptor 注册接口。
-- [ ] 确保所有模块直接注册时仍走 `KernelRegistry` 校验，不直接获取可变 `ScoreDocument`。
-- [ ] 区分注册权限和执行权限，例如 `command:register` 不等于 `command:execute`。
-- [ ] 确保模块修改文档必须通过命令事务和 undo/redo。
-- [ ] 建立重复注册、unsupported runtime、apiVersion 不兼容、capability denied 和 registry summary 不泄露 handler 的测试。
-- [ ] 建立内部模块注册命令后通过命令系统执行并进入 undo/redo 的测试。
-
-### 13. 国际化
+### Later 6. 国际化
 
 - [ ] 建立 `zh-CN` 和 `en-US` 字典。
 - [ ] 所有用户可见文本使用 i18n key。
@@ -198,7 +208,7 @@
 - [ ] 实现 locale 解析顺序: 已保存用户偏好 -> 受支持系统语言 -> `en-US` fallback。
 - [ ] 提供测试和截图验证可用的 locale override。
 
-### 14. 质量门禁
+### Later 7. 完整产品质量门禁
 
 - [ ] 类型检查通过。
 - [ ] 单元测试通过。
@@ -212,11 +222,16 @@
 
 ## 预计验证命令
 
-具体命令以脚手架落地后的 `package.json` 为准，预计至少包含:
+具体命令以脚手架落地后的 `package.json` 为准。Pure Core Kernel V1 只需要纯 TypeScript 内核验证命令，预计至少包含:
 
 ```powershell
 npm run typecheck
 npm test
+```
+
+后续 UI、桌面壳、渲染和打包阶段再引入:
+
+```powershell
 npm run test:e2e
 npm run tauri build
 ```
@@ -231,10 +246,11 @@ npm run tauri build
 
 ## 进入实现前检查
 
-- [ ] 用户确认 PRD 当前版本。
+- [x] 用户确认 PRD 当前版本。
 - [x] 用户确认第一条纵向切片。
-- [ ] 等待当前规划送审结果；审核意见返回前不进入实现、不运行 `task.py start`。
+- [x] 当前规划已完成送审，结论为有条件通过。
+- [x] 完成送审提出的 3 项防误读修订后，再运行 `task.py start`。
 - [x] 用户确认第一阶段 Core Kernel 最小边界后，`design.md` 无阻塞开放问题。
 - [x] 注册表 handler 运行时注销/卸载、插件热插拔、运行中启停和卸载已明确不作为稳定性目标；未来插件配置变更通过重启生效，不阻塞当前内核总规划。
-- [x] `implement.md` 的阶段顺序被接受，首个实现里程碑为 Pure Core Kernel V1。
-- [ ] Trellis Phase 1 质量门禁通过。
+- [x] `implement.md` 已明确当前启动入口为 `Pure Core Kernel V1 only`，后续 UI、渲染、播放、持久化和导出只作为路线图保留。
+- [x] Trellis Phase 1 质量门禁通过。

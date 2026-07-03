@@ -7,7 +7,7 @@
 - 实现策略: 先交付 Pure Core Kernel V1；纯内核测试通过后，再进入桌面壳、UI、渲染、播放、持久化和导出闭环。
 - 当前 `task.py start` 入口: `Pure Core Kernel V1 only`。本次启动只允许实现纯 TypeScript Core Kernel、fixture、schema、命令、事务、验证、快照、事件、registry/capability 和 error/report 测试。
 - 当前禁止提前实现: React/Tauri 桌面壳、编辑器 UI、VexFlow/SVG 渲染、Web Audio 播放、真实 `.bgp` 文件系统 IO、PDF/PNG 真实导出、Guitar Pro 导入、PDF/PNG/Guitar Pro/`.bgp` 物理 IO 的具体 registry descriptor/handler、真实 Extension Host 或第三方插件运行时。
-- 阶段规划归档: `planning-snapshots/2026-07-03-pure-core-kernel-v1/` 保存本次收敛前的 PRD、design 和 implement 快照；快照只用于追溯，不是当前执行入口。
+- 阶段规划归档: `planning-snapshots/2026-07-03-pure-core-kernel-v1/` 保存 Pure Core Kernel V1 当前收敛后的 PRD、design 和 implement 快照；每个阶段只保留一份快照并覆盖刷新。快照只用于追溯，不是当前执行入口。
 
 ## 实现顺序
 
