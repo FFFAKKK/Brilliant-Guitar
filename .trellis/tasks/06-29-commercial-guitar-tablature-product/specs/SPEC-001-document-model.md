@@ -23,7 +23,7 @@
 - 允许等长基础休止。
 - 支持 3 个 Core Loop 技巧的结构化字段: `slide`、`bend`、`vibrato`。
 
-## 时间模型
+## 音乐时间模型
 
 - 音乐时间必须使用整数 tick。
 - `ticksPerQuarter = 960`。
@@ -32,6 +32,12 @@
 - eighth duration: `480`。
 - sixteenth duration: `240`。
 - 第一阶段所有 `Beat` 的 `tickOffset + durationTicks` 不得超出所在小节长度。
+- `NoteEvent.durationTicks` 和 `RestEvent.durationTicks` 必须与所属 `Beat.durationTicks` 一致。
+- 音乐时间模型属于 `ScoreDocument` 谱面核心对象模型，不是播放引擎。
+- Core Kernel 负责音乐逻辑时间、小节长度计算和 duration 硬验证。
+- Playback Module 负责把音乐 tick 转换为真实毫秒调度、Web Audio 时间、节拍器声音和播放光标 tick。
+- UI 时间线、布局横向位置、SVG/VexFlow 坐标、PDF/PNG 页面坐标都只能从音乐时间和布局模型派生，不得写回 `ScoreDocument` 成为谱面事实。
+- MVP 不支持 tempo map、变拍号、附点、三连音、多声部对齐、swing/humanize、MIDI clock 或 DAW transport。
 
 ## 核心数据结构草案
 
@@ -114,6 +120,36 @@ export interface TimeSignature {
 }
 
 /**
+ * 音乐逻辑 tick。
+ *
+ * 用途:
+ * - 表达谱面内部的时间位置，例如 beat 在小节内的起点。
+ * - 保证编辑、验证、播放事件生成、布局和导出共享同一套时间单位。
+ * - 不表示真实毫秒、Web Audio `currentTime` 或 UI 动画时间。
+ */
+export type Tick = number
+
+/**
+ * 音乐逻辑持续时间。
+ *
+ * 用途:
+ * - 表达 note、rest、beat 和 measure 的持续 tick。
+ * - MVP 只接受四分、八分、十六分及等长休止对应的 tick 值。
+ */
+export type DurationTicks = number
+
+/**
+ * 谱面音乐时间基准。
+ *
+ * 用途:
+ * - 定义从音乐时值到整数 tick 的换算基础。
+ * - MVP 固定 `ticksPerQuarter = 960`，为未来附点、三连音和更细分节奏保留精度。
+ */
+export interface MusicalTimebase {
+  ticksPerQuarter: 960
+}
+
+/**
  * 乐曲级结构。
  *
  * 用途:
@@ -122,7 +158,7 @@ export interface TimeSignature {
  */
 export interface Score {
   /** 整数 tick 时间基准，MVP 固定为 960。 */
-  timebase: { ticksPerQuarter: 960 }
+  timebase: MusicalTimebase
   /** MVP 固定 tempo；tempo map 后置。 */
   globalTempo: Tempo
   /** MVP 固定 4/4；变拍号后置。 */
@@ -229,7 +265,7 @@ export const STANDARD_GUITAR_TUNING: InstrumentTuning = {
 export interface Measure {
   id: string
   index: number
-  durationTicks: number
+  durationTicks: DurationTicks
   voices: Voice[]
 }
 
@@ -254,8 +290,8 @@ export interface Voice {
  */
 export interface Beat {
   id: string
-  tickOffset: number
-  durationTicks: number
+  tickOffset: Tick
+  durationTicks: DurationTicks
   event: NoteEvent | RestEvent
 }
 
@@ -276,7 +312,7 @@ export interface NoteEvent {
   /** 由调弦和品号推导并保存的明确音高，例如 `C4`。 */
   pitch: ScientificPitch
   /** 音符持续 tick，必须与所属 beat 一致。 */
-  durationTicks: number
+  durationTicks: DurationTicks
   /** 结构化技巧注解。具体技巧定义由 TechniqueRegistry 注册。 */
   techniques: TechniqueAnnotation[]
 }
@@ -290,7 +326,7 @@ export interface NoteEvent {
  */
 export interface RestEvent {
   id: string
-  durationTicks: number
+  durationTicks: DurationTicks
 }
 
 /**

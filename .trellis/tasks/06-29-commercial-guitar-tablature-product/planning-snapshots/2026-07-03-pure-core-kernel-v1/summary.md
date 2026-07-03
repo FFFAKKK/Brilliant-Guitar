@@ -3,6 +3,7 @@
 - Snapshot date: 2026-07-03
 - Stage: `Pure Core Kernel V1`
 - Purpose: preserve the latest reviewed planning state for the `Pure Core Kernel V1` stage. This stage keeps one snapshot set only; refreshing this folder overwrites the previous snapshot for the same stage.
+- Latest refresh: includes the approved Kernel Musical Time Model decision as part of the score document model, not as a tenth kernel mechanism.
 
 ## Snapshot Files
 

@@ -24,6 +24,7 @@
 - [x] 确认命令系统边界: 对外只暴露语义命令，内部 patch/delta 只作为事务、undo/redo 和回放实现细节。
 - [x] 确认 undo/redo 粒度: MVP 采用细粒度历史模型，每个成功可撤销语义命令默认一个 `HistoryEntry`，不做复杂智能合并。
 - [x] 确认谱面数据根本原则: 所有操作服务 `ScoreDocument`，布局坐标、屏幕坐标、导出页面坐标和播放光标都从谱面快照派生。
+- [x] 确认内核音乐时间模型属于谱面核心对象模型: Core Kernel 管理整数 tick、duration、小节长度和节奏位置；真实毫秒播放时钟、Web Audio 调度、节拍器声音和播放光标 tick 属于外部模块。
 - [x] 确认 Core Kernel 快照、selector、事件总线和模块通信协议采用 `SPEC-014` 模型。
 - [x] 确认外部可变 `ScoreDocument` 副本方案已拒绝。
 - [x] 确认 Core Kernel 注册表和 capability 作为独立内核功能，继续按 `SPEC-015` 细化。
@@ -52,7 +53,10 @@
 - [ ] 在内核中定义 `EntityId`、`ScoreAddress`、`ScorePoint`、`ScoreRange` 和 `CommandTarget`，明确它们服务 `ScoreDocument` 而不是替代谱面数据。
 - [ ] 在编辑/布局模块中定义临时 `ScoreCoordinate`、`ViewCoordinate` 和 hit testing 解析链路，不把这些坐标类型暴露为内核写入 API。
 - [ ] MVP 不单独创建 `Positioning Service` 包；在 `Layout Module + Editor Session Service` 中保持可抽取边界，并记录未来抽取条件。
-- [ ] 定义整数 tick 时间模型，`ticksPerQuarter = 960`。
+- [ ] 定义内核音乐时间模型: `Tick`、`DurationTicks`、`MusicalTimebase` 和 `ticksPerQuarter = 960`。
+- [ ] 定义 4/4 小节长度 `3840` tick，并提供四分 `960`、八分 `480`、十六分 `240` 和等长休止的稳定 duration 常量或等价纯函数。
+- [ ] 验证 `Beat.tickOffset + Beat.durationTicks` 不超出所属小节长度，并验证 `NoteEvent.durationTicks` / `RestEvent.durationTicks` 与所属 beat 一致。
+- [ ] 明确真实毫秒调度、Web Audio `currentTime`、节拍器声音、播放光标高频 tick、UI 时间线和渲染坐标不属于 Core Kernel 音乐时间模型。
 - [ ] 限制第一阶段验证器只接受 4/4、固定 tempo、单 track、单 voice、四分/八分/十六分和等长休止。
 - [ ] 禁止第一阶段 UI 和命令系统暴露轨道添加、删除、重命名、排序、多轨列表或 track mute/solo。
 - [ ] 禁止第一阶段 UI 和 schema 暴露歌词、自由文本框、和声分析、罗马数字或简谱视图。

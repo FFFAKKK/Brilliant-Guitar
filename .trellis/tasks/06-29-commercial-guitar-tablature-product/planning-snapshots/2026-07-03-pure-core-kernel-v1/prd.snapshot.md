@@ -43,6 +43,7 @@
 - undo/redo 粒度已确认: 第一阶段先采用细粒度历史模型，每个成功的可撤销语义命令默认对应一个 `HistoryEntry`；`undo` 和 `redo` 一次只回退或重做一个历史条目，不做复杂智能合并，以优先保证 MVP 基本功能稳定、可测试、可回放。
 - 文档地址/范围模型重新设计授权已确认: 用户允许重新设计该内核功能，不必遵守当前可选字段版 `DocumentAddress` 草案；已新增研究文档 `research/document-address-range-design-patterns.md` 对比相关设计模式。
 - 谱面数据根本原则已确认: 所有操作都必须服务 `ScoreDocument` 谱面数据；排版、布局坐标、屏幕坐标、播放光标和导出页面坐标都只能从谱面数据派生，不得成为独立事实来源。
+- 内核音乐时间模型已确认: 只保存静态谱面数据会让打谱软件停留在静态文档层；Core Kernel 必须拥有乐谱的音乐逻辑时间模型，用整数 tick 表达 beat、duration、小节长度和节奏位置，让编辑、验证、播放事件生成、布局和导出共享同一套节奏真相。真实毫秒调度、Web Audio 时钟、节拍器声音和播放光标高频 tick 属于外部 Playback/UI 模块。
 - 坐标解析边界已确认: Core Kernel 不负责屏幕坐标、布局坐标、SVG/VexFlow 坐标或 hit testing；内核只负责谱面语义地址/范围、命令目标校验和谱面数据事务。外部编辑、布局和渲染模块通过公开接口把用户坐标解析为合法语义目标后再调用内核。
 - 坐标解析模块化策略已确认: 坐标解析作为外部模块能力；MVP 先不单独拆包，由 `Layout Module + Editor Session Service` 承担，后续在多页、多轨、多声部、复杂选区或多渲染后端复杂度上升后抽出专门 `Positioning Service`。
 - 硬一致性验证边界已确认: Core Kernel 第一阶段只保留硬一致性验证和基础 diagnostic；软一致性、可演奏性分析、指法建议、教学提示、风格检查、难度评分和兼容性评分暂不需要，不进入 MVP。
@@ -639,6 +640,18 @@ MVP 包结构建议: `.bgp` 是单文件开放 zip 包，至少包含 `manifest.
 技术实现视角: `KernelModuleIdentity` 必须包含 `origin = "official" | "third-party"`、`runtime`、`trustLevel = "system-trusted" | "sandboxed"`、`apiVersion` 和 capability；`origin`、`runtime`、`trustLevel` 和 capability 独立建模，来源和运行时都不自动获得权限。`KernelStartupModuleManifest` 是 Pure Core Kernel V1 的唯一模块来源，只能引用应用内已编译绑定的 `CoreModuleRegistrationEntryId`，不能引用外部路径、URL、脚本字符串或动态 import。`CoreModuleRegistration` 是 V1 的启动期注册形态；未来 `PluginKernelFacade` 至少包含 `read`、`commands`、`registry`、`events` 和 `reports` 五类受控接口，但只是第三方插件平台草案。Kernel Registry 不提供第三方插件运行时 unregister、enable、disable 或 hotplug 入口；应用进入 ready 状态后，插件集合变更只能返回 `unsupported-at-runtime` / `restart-required` 类稳定错误。任何模块都不得暴露可变 `ScoreDocument`、内部 delta、patch、JSON path、React、VexFlow、SVG DOM、Web Audio 或 Tauri 文件对象。注册权限必须与执行权限分离，例如 `command:register` 不等于 `command:execute`。
 
 反过度设计视角: MVP 不做真实第三方 TypeScript 沙箱、插件安装器、插件市场、权限 UI、UI 面板插件、native 动态库插件，也不设计 marketplace-reviewed、partner、semi-trusted 等额外等级。运行时热插拔、运行中启用/禁用和卸载不后置为目标能力，而是稳定性原则上不支持；未来插件配置变更通过重启生效。第一阶段只需要把统一注册协议、静态 capability、启动期模块清单和 `CoreModuleRegistration` 做薄，并证明“读走 snapshot、写走 command、贡献点走 registry、错误走 report”这条链路成立。
+
+### DEC-K049: Core Kernel 是否需要音乐时间模型？
+
+结论: 需要。音乐时间模型属于 `ScoreDocument` 谱面核心对象模型的一部分，不新增第十类内核机制。Core Kernel V1 必须用整数 tick 表示谱面的逻辑时间，至少定义 `ticksPerQuarter = 960`、4/4 小节长度 `3840`、四分/八分/十六分和等长休止 duration、beat 的 `tickOffset` 与 `durationTicks` 校验。这样谱面不只是静态字段集合，而是可以被播放、渲染、导出和后续插件一致解释的时间化音乐数据。
+
+产品视角: 用户写谱后需要播放校对、节拍感、播放光标和导出结果都与谱面节奏一致。没有统一音乐时间模型，软件只能像静态图文编辑器；有统一音乐时间模型，编辑器、播放和导出才能围绕同一首“会动的谱子”工作。
+
+业务逻辑视角: 谱面命令必须能在明确小节、beat 和 duration 上操作；硬验证必须能拒绝小节时值溢出、不完整小节、非法 duration、unsupported tempo map、unsupported time signature 和同一 beat 多音。播放模块只能从 snapshot 派生播放事件，不能反过来把自己的毫秒时钟写回 `ScoreDocument`。
+
+技术实现视角: 内核只拥有音乐逻辑时间，例如 `Tick`、`DurationTicks`、`MusicalTimebase`、小节长度计算和 duration 验证。真实 wall-clock time、Web Audio `currentTime`、节拍器声音调度、播放光标高频 tick、UI 时间线和渲染坐标都属于外部模块。未来 tempo map、变拍号、附点、三连音和多 voice 可以通过扩展字段与迁移演进，但 V1 hard validator 必须明确返回 unsupported。
+
+反过度设计视角: 当前阶段不做完整乐理时间引擎、量化器、swing/humanize、tempo automation、实时录音、MIDI clock、采样级调度或 DAW 式 transport。V1 只需要足够支撑 4 小节标准 6 弦 riff 的确定性 tick 模型和测试，避免把播放引擎复杂度提前塞进内核。
 
 ## 当前阻塞开放问题
 

@@ -29,6 +29,7 @@
 内核是谱面真相和模块协作的唯一核心。所有操作都服务 `ScoreDocument` 谱面数据；布局坐标、屏幕坐标、导出页面坐标和播放光标都只能从谱面快照派生。它应该尽量小，只保留影响一致性、兼容性和长期维护的能力。我们可以接受少量 API 边界和快照成本，换取架构稳定性和扩展性。它负责:
 
 - 谱面文档模型: `ScoreDocument`、track、measure、beat、note/rest、technique、tuning、metadata。
+- 音乐时间模型: 属于谱面文档模型的一部分，用整数 tick 管理 beat、duration、小节长度和节奏位置；它让静态谱面数据成为可播放、可校对、可布局、可导出的时间化音乐数据。
 - MVP 验证: 4/4、固定 tempo、单 track、单 voice、四分/八分/十六分、基础休止、每 beat 单音。
 - 软分析边界: 第一阶段不做软一致性、可演奏性分析、指法建议、教学提示、风格检查或难度评分；这些能力不阻塞 MVP。
 - 命令事务: 新建谱、设置元数据、添加小节、输入音符、设置弦号/品号、设置技巧、删除、undo/redo。对外只暴露语义命令；patch/delta 只作为内核内部事务和历史实现细节。MVP 采用细粒度历史模型，每个成功可撤销语义命令默认生成一个 `HistoryEntry`，不做复杂智能合并。
@@ -41,7 +42,7 @@
 
 第一阶段 Core Kernel 先按 9 类机制完成整体规划:
 
-1. 谱面核心对象模型。
+1. 谱面核心对象模型，包括音乐时间模型。
 2. 命令系统调用边界。
 3. 事务、历史和一致性边界。
 4. 文档地址和范围模型。
@@ -61,12 +62,15 @@ Pure Core Kernel V1 可以定义外部导入/导出贡献点的抽象 descriptor
 
 Pure Core Kernel V1 必须能在无 UI、无浏览器 DOM、无 Tauri、无 VexFlow、无 Web Audio 的 TypeScript 测试环境中运行。验收以 fixture、命令回放、schema round-trip、migration、snapshot/selector、event、registry/capability、error/report 和 unsupported feature 测试为准；UI 截图、播放声音和导出文件不作为该阶段验收项。
 
+音乐时间边界: Core Kernel V1 拥有音乐逻辑时间，不拥有真实播放时钟。内核必须定义 `ticksPerQuarter = 960`、4/4 小节 `3840` tick、四分/八分/十六分与基础休止 duration、beat `tickOffset` 和 `durationTicks` 的硬验证；Playback Module 负责把 snapshot 中的音乐时间转换成真实毫秒调度、Web Audio 时间、节拍器声音和播放光标 tick。
+
 内核禁止:
 
 - 依赖 React、Tauri、VexFlow、SVG DOM、Web Audio、PDF/PNG 库或具体文件选择器。
 - 引入 PDF/PNG 生成器、Guitar Pro 解析器、zip 文件 IO、字体嵌入或平台文件系统实现。
 - 保存 VexFlow 对象、DOM 节点、组件状态或播放引擎状态。
 - 把 UI 坐标、SVG 坐标、VexFlow 坐标、PDF/PNG 页面坐标或播放光标状态写入 `.bgp` 当作谱面语义。
+- 把 Web Audio `currentTime`、真实毫秒播放调度、节拍器输出状态或 DAW transport 状态写入 `ScoreDocument`。
 - 解析屏幕坐标、布局坐标、SVG/VexFlow 坐标、鼠标拖选、缩放滚动或 hit testing。
 - 让任何模块绕过命令事务修改文档。
 - 暴露任意 patch、JSON path、字段替换或脚本式写入命令。
@@ -238,6 +242,7 @@ Pure Core Kernel V1 必须能在无 UI、无浏览器 DOM、无 Tauri、无 VexF
 ## 已确认设计决策与非阻塞项
 
 - 第一阶段 Core Kernel 的最小边界已确认采用本文推荐的 9 类机制，与 `prd.md` 的 `DEC-K036` 保持一致。
+- 音乐时间模型已确认属于谱面核心对象模型，不新增第十类内核机制；Core Kernel 拥有 tick、duration、小节长度和节奏位置，真实播放时钟和播放光标 tick 属于外部 Playback/UI 模块。
 - Core Kernel 的快照、selector、事件总线和模块通信协议已确认采用 `SPEC-014` 模型。
 - 外部可变 `ScoreDocument` 副本方案已拒绝；这类方案与微内核设计相悖。外部模块只能生成非谱面事实的派生模型，最终写入仍走内核受控入口。
 - Core Kernel 的注册表与 capability 已确认作为独立内核功能，继续按 `SPEC-015` 细化。
