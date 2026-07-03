@@ -3,7 +3,7 @@
   "name": "commercial-guitar-tablature-product",
   "title": "工业级开源吉他打谱软件需求定义",
   "description": "以产品经理视角定义一款面向吉他手的工业级、开源、可扩展打谱软件。需求阶段采用每个需求一个文档，最终合并 PRD 的方式推进。",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": "product-planning",
   "package": null,
