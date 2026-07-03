@@ -31,6 +31,8 @@
 - [x] 确认 Core Kernel 错误、diagnostic 和 report 作为独立内核功能，继续按 `SPEC-016` 细化。
 - [x] 确认 Core Kernel V1 先落地 9 类机制；后续会建设多个官方随应用发布的内置模块并通过 registry/capability 与内核协作，具体模块清单、数量和拆分方式后续规划；官方和第三方模块最终使用同一套注册协议，来源与权限解耦；未来第三方插件只能启动前配置，运行时热插拔、运行中启停和卸载不作为规划目标。
 - [x] 确认第一阶段 Core Kernel 最小边界采用 9 类机制: 文档模型、命令边界、事务历史、地址范围、硬验证、文件语义、快照事件、注册能力、错误报告。
+- [x] 确认 Core Kernel V1 边界计数规则: 9 类机制不变；音乐时间模型归属谱面核心对象模型，不新增第十类内核机制。未来新增内核能力必须先映射到 9 类机制之一，无法映射时必须经过单独规划审查。
+- [x] 确认 Core Kernel 扩展准入规则: 只有跨模块共享、无法外置而不制造第二谱面真相、且能通过 schema/command/validator/migration/snapshot/registry/error 等契约测试的能力才能进入内核；UI 会话、布局渲染、音频调度、物理导入导出 IO、插件发现/生命周期和分析建议保持外部模块。
 - [x] 确认具体导入/导出格式能力不属于 Core Kernel；Pure Core Kernel V1 只保留外部 import/export 抽象 descriptor、capability 和 report 外壳，不注册 PDF/PNG/Guitar Pro/`.bgp` 物理 IO 的具体 handler。
 - [x] 确认外部工程目录结构不是当前 Core Kernel 规划阶段事项；`apps/desktop`、`packages/*`、monorepo 或 workspace 拆分后置到工程脚手架阶段。
 - [x] 确认首个实现里程碑为 Pure Core Kernel V1: 纯 TypeScript 内核，无 UI、无 Tauri、无 VexFlow、无 Web Audio、无 PDF/PNG 真实导出。
@@ -41,6 +43,7 @@
 
 - [ ] 建立只服务 Core Kernel 的最小 TypeScript 测试执行环境；不得引入 React、Tauri、VexFlow、Web Audio、PDF/PNG 库或浏览器 DOM 作为内核运行依赖。
 - [ ] Pure Kernel V1 只实现 9 类内核机制: 文档模型、命令边界、事务历史、地址范围、硬验证、文件语义、快照事件、注册能力、错误报告。
+- [ ] 实现任何新增内核概念前，必须先证明它属于 9 类机制之一；音乐时间模型只能作为 `ScoreDocument` 子能力落地，不得实现为第十类内核服务。
 - [ ] Pure Kernel V1 可以定义外部 import/export descriptor 的类型、注册校验和 summary 行为，但不得注册 PDF、PNG、Guitar Pro 或 `.bgp` 物理文件 IO 的具体 contribution/handler。
 - [ ] 使用标准 6 弦 4 小节 riff fixture 验证内核闭环，不依赖 UI 点击、渲染截图、音频播放或文件选择器。
 - [ ] 建立内核级测试: fixture 验证、命令提交/rollback、细粒度 undo/redo、命令回放、schema round-trip、migration、snapshot/selector 只读性、事件顺序、registry/capability、error/report 隐私边界和 unsupported feature。

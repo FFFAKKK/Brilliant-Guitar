@@ -18,6 +18,7 @@ Pure Core Kernel V1 is not the desktop app. It must be testable without React, T
 - [ ] Confirm the current task is implementing `Pure Core Kernel V1 only`.
 - [ ] Read every guide in this directory before touching Core Kernel code.
 - [ ] Identify which of the 9 kernel mechanisms the change touches.
+- [ ] Confirm new domain concepts map to one of the 9 mechanisms; do not silently create a tenth kernel mechanism.
 - [ ] Confirm all score mutations go through semantic commands.
 - [ ] Confirm all read paths use snapshot or selector contracts.
 - [ ] Confirm no UI, rendering, audio, desktop shell, physical file IO, or third-party plugin runtime dependency is introduced.
@@ -52,5 +53,5 @@ Before finishing Core Kernel work, verify:
 - [ ] Capability checks happen before command execution, selector access, and contribution registration.
 - [ ] Kernel errors, diagnostics, and reports use stable codes and `messageKey`.
 - [ ] `.bgp` semantic schema and migration entry points stay independent from physical zip/file IO.
+- [ ] Any newly added kernel concept is documented as part of one of the 9 mechanisms or has an approved boundary decision.
 - [ ] Tests cover the 4-measure standard 6-string guitar riff fixture and unsupported MVP boundaries.
-

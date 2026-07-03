@@ -20,6 +20,14 @@ Pure Core Kernel V1 contains exactly these mechanism groups:
 - Registry and capability boundary.
 - Error, diagnostic, and report shells.
 
+## Kernel Boundary Contract
+
+- The V1 mechanism count is intentionally fixed at 9. A new field, data shape, or sub-model inside an existing mechanism does not create a new kernel mechanism group.
+- The musical time model belongs to the score document model. It is not a tenth kernel mechanism, not a playback clock service, and not a UI timeline service.
+- Future kernel expansion must first map to one of the 9 mechanism groups. If it cannot map cleanly, it requires a separate planning review before it can enter the kernel.
+- A capability may enter the kernel only when it is a shared foundation for multiple modules, cannot remain external without creating a second score truth, and can be expressed as testable schema, command, validator, migration, snapshot/event, registry/capability, or error/report contracts.
+- A capability must stay outside the kernel when it is mainly UI session state, layout/rendering behavior, audio scheduling, physical import/export IO, plugin discovery/lifecycle, analysis/advice, or product workflow.
+
 ## Allowed Dependencies
 
 - TypeScript standard language/runtime features.
