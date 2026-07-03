@@ -346,7 +346,7 @@ flowchart TB
     Cmd["Command & Transaction Manager\n命令总线、事务、undo/redo、命令回放"]
     Doc["Document Store\nScoreDocument、音符、休止、技巧、调弦、元数据"]
     Address["Address / Range Model\n文档地址、范围、命令目标校验"]
-    Validator["Validation & Diagnostics\nschema 验证、MVP 范围验证、错误定位"]
+    Validator["Hard Validation\nschema 验证、MVP 范围验证、验证问题数据"]
     Schema["Schema & Migration Contract\n.bgp schema、manifest、迁移入口"]
     Snapshot["Snapshot / Query Service\n不可变快照、selector、派生读模型"]
     Events["Event Bus\n命令事件、文档变更、诊断更新"]
@@ -562,7 +562,7 @@ Core Kernel 只负责:
 - 把光标移动、选区高亮或鼠标拖选发布为 Core Kernel 文档事件。
 - 让 UI、插件或导入器绕过命令注册表直接修改 `ScoreDocument`。
 
-### 8. Validation & Diagnostics
+### 8. Hard Validation
 
 作用: 保护谱面一致性和用户文件安全。
 
@@ -570,9 +570,15 @@ Core Kernel 只负责:
 
 - `.bgp` schema 验证。
 - MVP 能力范围验证。
-- unsupported 能力诊断。
-- 错误位置定位。
-- 用户可理解错误消息。
+- unsupported 能力识别。
+- 验证失败目标收集，例如 `ScoreAddress` 或 `ScoreRange`。
+- 产出 `ValidationResult` / `ValidationReport` 所需的 issue 数据。
+
+边界:
+
+- Hard Validation 只判断文档是否结构合法、引用完整、可保存、可迁移、可回放。
+- Hard Validation 不拥有 `KernelError`、`KernelDiagnostic`、`KernelReportIssue` 的结构定义。
+- 用户可见错误文本、severity、messageKey、report issue 格式和隐私边界由 `Error / Diagnostic / Report Contracts` 定义。
 
 示例:
 
