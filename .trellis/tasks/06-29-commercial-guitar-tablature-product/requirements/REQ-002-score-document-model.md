@@ -9,7 +9,7 @@
 - 当前结论: `scoreData` 分为 `timeline + events + techniques`；不再拆出独立 `ScoreStructure`，小节、节奏槽位和 tick 位置统一由 `ScoreTimeline` 表达。
 - 当前结论: 休止符不设计独立 `RestData` 或 `rests` 集合；休止符只是特殊的谱面事件类型，与有声音符共享时间字段。
 - 当前结论: 技巧按一到多个有声音符生效，使用有序 `targetNoteIds` 表达；Core Kernel K1 只定义通用 `TechniqueData` 与 `TechniqueDefinition` 注册框架，`test.slide`、`test.bend`、`test.vibrato` 只是第一批测试用技巧定义，不是写死在内核里的技巧枚举。
-- 当前结论: 弦号、品号、六线谱演奏位置和吉他指法映射不属于 Core Kernel K1 主模型，后续由官方吉他谱模块或第三方模块保存和处理。
+- 当前结论: 弦号、品号、六线谱演奏位置和吉他指法映射不属于 Core Kernel K1 主模型；其保存方式后续在官方吉他谱模块或第三方模块规划阶段单独设计。
 - 当前结论: 原生文件扩展名采用 `.bgp`，物理形态为单文件开放包结构；Core Kernel K1 只定义语义 schema 和迁移入口，不实现物理文件 IO。
 - 关键开放问题: 无。MVP 和弦能力已确认后置；K1 技巧系统已收敛为注册框架，`test.slide`、`test.bend`、`test.vibrato` 仅作为框架测试定义；`hammer-on`、`pull-off`、`palm mute` 保持为 P0 后续增强。
 
@@ -27,7 +27,7 @@
 - 稳定 ID: 文档、小节、节奏槽位、事件、技巧和资源必须有稳定标识，便于撤销、插件、差异比较和测试回放。
 - 可迁移: 每个文件必须记录 schema version，升级时必须进入迁移入口并产生迁移报告。
 - 可验证: 保存前、打开后、命令回放后都能运行文档完整性检查。
-- 可扩展但不提前承诺: 模型可以保留未来多乐器、多声部、多拍号、复杂时值和模块私有数据的演进空间，但第一阶段验证器和验收只接受 K1 范围。
+- 可扩展但不提前承诺: Core Kernel K1 不定义模块私有数据持久化位置，不预设 `ScoreDocument.extensions`、`.bgp/extensions` 或 `moduleData`；未来多乐器、多声部、多拍号、复杂时值和模块私有数据必须在对应模块规划阶段单独设计，第一阶段验证器和验收只接受 K1 范围。
 
 ## K1 核心结构
 
@@ -74,7 +74,7 @@ interface ScoreData {
 - `meter.numerator` / `meter.denominator`: K1 只支持 `4/4`。
 - `tuning`: 当 `scoreType = "guitar-tab"` 时必填，必须保存为 6 个明确绝对音高，顺序为低音弦到高音弦；例如标准 6 弦吉他低到高为 `E2 A2 D3 G3 B3 E4`；不得把 `EADGBE` 作为核心数据。
 
-说明: `tuning` 是音乐元数据，不代表 Core Kernel K1 保存弦号、品号或指法位置。弦品映射必须由后续吉他谱模块保存。
+说明: `tuning` 是音乐元数据，不代表 Core Kernel K1 保存弦号、品号或指法位置。弦品映射如何保存由后续吉他谱模块规划阶段单独决定。
 
 ### 时间轴
 
@@ -302,7 +302,7 @@ interface K1TestSlideParams {
 - [ ] AC-002-05: 给定同一 `RhythmSlot` 上多个有声 note，第一阶段验证器返回明确的 `unsupported-multiple-notes-in-slot`，且不会保存为有效 K1 谱面。
 - [ ] AC-002-06: 给定 `rest` 事件，核心模型能按同一套 `ScoreEvent` 时间规则保存和验证，不需要独立 `RestData`。
 - [ ] AC-002-07: 给定已注册的 `test.slide`、`test.bend`、`test.vibrato` 测试技巧定义，模型能保存结构化参数和有序 `targetNoteIds`，并拒绝未注册定义、无效参数、指向 rest 或不存在 note 的技巧目标。
-- [ ] AC-002-08: 给定缺失吉他谱模块私有数据的文件，核心谱面仍可打开、验证、播放可识别音高和节奏；但核心不得承诺还原用户原始弦号/品号。
+- [ ] AC-002-08: 给定只包含 K1 核心数据、缺失吉他谱模块私有数据的文件，核心谱面仍可打开、验证、播放可识别音高和节奏；但核心不得承诺还原用户原始弦号/品号，也不得要求 K1 已定义模块私有数据存储位置。
 - [ ] AC-002-09: 给定 `scoreType = "guitar-tab"` 且缺失调弦、调弦不是 6 个音高或包含非法音高的文件，验证器返回稳定 diagnostic。
 
 ## 开放问题

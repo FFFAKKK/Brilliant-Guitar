@@ -59,4 +59,4 @@ Do not import or depend on:
 - Physical zip reading/writing, file paths, atomic save, autosave recovery, and recent files belong to future persistence modules.
 - UI cursor, selection, mouse drag state, playback cursor tick, layout coordinates, and rendered page coordinates are external session or layout state.
 - External modules may derive read models from snapshots, but they cannot own or write back mutable `ScoreDocument` copies.
-- External guitar modules may store module-owned `noteId -> string/fret` mappings in a future module data contract. Those mappings must not be required K1 core schema fields.
+- Future guitar modules may define `noteId -> string/fret` mappings only in a later module-planning phase. Pure Core Kernel V1 does not define their persistence location or module-private data contract, and those mappings must not be required K1 core schema fields.

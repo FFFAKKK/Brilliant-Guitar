@@ -32,7 +32,7 @@
 - 音乐时间模型: 属于谱面文档模型的一部分，用整数 tick 管理 `RhythmSlot`、duration、小节长度和节奏位置；它让静态谱面数据成为可播放、可校对、可布局、可导出的时间化音乐数据。
 - MVP 验证: 4/4、固定 tempo、单声部事件流、四分/八分/十六分、基础休止、每个 `RhythmSlot` 一个 `ScoreEvent`。
 - 软分析边界: 第一阶段不做软一致性、可演奏性分析、指法建议、教学提示、风格检查或难度评分；这些能力不阻塞 MVP。
-- 命令事务: 新建谱、设置元数据、添加小节、输入 note/rest、设置绝对音高/时值、设置技巧、删除、undo/redo。对外只暴露语义命令；patch/delta 只作为内核内部事务和历史实现细节。弦号/品号输入由后续吉他谱模块转换并保存模块私有映射，不作为 Core Kernel K1 命令。MVP 采用细粒度历史模型，每个成功可撤销语义命令默认生成一个 `HistoryEntry`，不做复杂智能合并。
+- 命令事务: 新建谱、设置元数据、添加小节、输入 note/rest、设置绝对音高/时值、设置技巧、删除、undo/redo。对外只暴露语义命令；patch/delta 只作为内核内部事务和历史实现细节。弦号/品号输入由后续吉他谱模块转换为核心可理解的绝对音高和事件操作；弦品映射如何持久化不属于 Core Kernel K1 命令或存储规划。MVP 采用细粒度历史模型，每个成功可撤销语义命令默认生成一个 `HistoryEntry`，不做复杂智能合并。
 - 文档地址和范围: `ScoreAddress`、`ScorePoint`、`ScoreRange` 和命令目标校验。当前 UI 光标、选区高亮、鼠标拖选和临时 `ScoreCoordinate` 属于 `Editor Session Service` 或 `Layout Module`，不属于微内核。
 - 文件契约: `.bgp` schema、manifest、score JSON、schema version、迁移入口。
 - 快照和查询: `DocumentSnapshot`、`KernelReadApi`、受控 selector、可序列化 snapshot。
@@ -70,7 +70,7 @@ Pure Core Kernel V1 必须能在无 UI、无浏览器 DOM、无 Tauri、无 VexF
 
 谱面核心对象模型边界: `ScoreDocument` 顶层只包含 `metadata` 和 `scoreData`。`metadata.document` 保存标题、作者、版权、schema version、创建/修改时间和应用版本；`metadata.music` 保存 `scoreType = "guitar-tab"`、`ticksPerQuarter = 960`、全局 tempo、4/4 拍号和 6 个明确 `AbsolutePitch` 形式的必填调弦。`scoreData.timeline` 同时表达小节、`RhythmSlot` 结构和 tick 位置，不再拆出独立 `ScoreStructure`；`RhythmSlot` 是事件槽位，不等同于音乐理论中的 beat。`scoreData.events` 保存 `kind = "note" | "rest"` 的谱面事件，事件只引用 `slotId`，起始时间和持续时间从所属 `RhythmSlot` 派生；休止符只是特殊事件类型，不使用独立 `RestData`。`scoreData.techniques` 使用 `definitionId + targetNoteIds + params` 表达技巧，具体技巧通过 `TechniqueDefinition` 注册，`slide`、`bend`、`vibrato` 只是 K1 测试技巧定义。Core Kernel K1 只保存绝对音高和音乐时间，弦号、品号、指法位置和六线谱表现数据属于外部吉他谱模块。
 
-吉他模块边界: 只读取 Core Kernel K1 数据时，可以还原音高、节奏、技巧语义和基础播放/渲染输入，但不能承诺还原用户原始弦号/品号。后续官方吉他谱模块必须保存自己的 `noteId -> string/fret` 映射，并通过命令或模块数据持久化机制与内核协作；这些映射不得成为 K1 核心 schema 的必填字段。
+吉他模块边界: 只读取 Core Kernel K1 数据时，可以还原音高、节奏、技巧语义和基础播放/渲染输入，但不能承诺还原用户原始弦号/品号。Core Kernel K1 不定义 `noteId -> string/fret`、`ScoreDocument.extensions`、`.bgp/extensions`、`moduleData` 或任何模块私有数据持久化位置；这些内容延后到官方吉他谱模块规划阶段单独设计，并且不得成为 K1 核心 schema 的必填字段。
 
 内核禁止:
 

@@ -56,7 +56,7 @@
 - [ ] 定义 `DocumentMetadata`、`MusicMetadata`、`ScoreTimeline`、`MeasureTimeSpan`、`RhythmSlot`、`ScoreEvent`、`SoundNoteEvent`、`RestNoteEvent`、`AbsolutePitch` 和持久化 `TechniqueData`；`TechniqueDefinition` 只作为运行时 registry contribution 定义，不进入 `ScoreDocument` 或 `.bgp`。
 - [ ] 明确 `MusicMetadata.tuning` 在 `scoreType = "guitar-tab"` 时必填，必须为低到高 6 个合法 `AbsolutePitch`；拒绝 `EADGBE` 这类模糊调弦文本作为核心数据。
 - [ ] 明确 `AbsolutePitch` 使用 `step + accidental + octave` 结构，保留 enharmonic spelling；MIDI number 只能作为派生数据。
-- [ ] 明确 Core Kernel K1 不定义 `Track`、`Voice`、`GuitarTabData`、`stringNumber`、`fret` 或弦品映射作为核心谱面字段。
+- [ ] 明确 Core Kernel K1 不定义 `Track`、`Voice`、`GuitarTabData`、`stringNumber`、`fret`、弦品映射、`ScoreDocument.extensions`、`.bgp/extensions` 或 `moduleData` 作为核心谱面字段或模块私有数据存储契约。
 - [ ] 在内核中定义 `EntityId`、`ScoreAddress`、`ScorePoint`、`ScoreRange` 和 `CommandTarget`，明确它们服务 `ScoreDocument` 而不是替代谱面数据。
 - [ ] 在编辑/布局模块中定义临时 `ScoreCoordinate`、`ViewCoordinate` 和 hit testing 解析链路，不把这些坐标类型暴露为内核写入 API。
 - [ ] MVP 不单独创建 `Positioning Service` 包；在 `Layout Module + Editor Session Service` 中保持可抽取边界，并记录未来抽取条件。
@@ -81,7 +81,7 @@
 - [ ] 建立最小 fixture 谱库。
 - [ ] 实现文档验证器。
 - [ ] 为 unsupported score type、time signature、tempo map、voice count、duration、slot 未排序、slot 重叠、slot gap、同 slot 多 note、断裂引用和非法技巧目标建立验证器测试。
-- [ ] 明确弦号、品号、指法位置和六线谱演奏位置由后续吉他谱模块保存；Pure Core Kernel V1 不建立非法弦号/品号验证器测试。
+- [ ] 明确弦号、品号、指法位置和六线谱演奏位置由后续吉他谱模块规划；Pure Core Kernel V1 不定义其持久化位置，不建立非法弦号/品号验证器测试。
 - [ ] 明确不实现软一致性、可演奏性分析、指法建议、教学提示、风格检查和难度评分；测试计划不得把它们作为 MVP 阻塞项。
 
 ### 3. 命令系统

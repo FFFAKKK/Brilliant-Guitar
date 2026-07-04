@@ -20,7 +20,7 @@ Core Kernel K1 保持抽象、简洁、可迁移:
 - 有声音符以绝对音高为核心事实。
 - 休止符只是特殊 `ScoreEvent`，不使用独立 `RestData`。
 - 技巧通过注册定义解释，不写死成内核枚举。
-- 吉他弦号、品号、指法位置、六线谱行号和 `GuitarTabData` 不属于 Core Kernel K1 主模型。
+- 吉他弦号、品号、指法位置、六线谱行号、`GuitarTabData` 和模块私有数据持久化位置不属于 Core Kernel K1 主模型。
 
 ## MVP 模型范围
 
@@ -310,7 +310,7 @@ export interface K1TestSlideParams {
 
 ## 第一阶段不做
 
-- 不在 Core Kernel K1 中定义 `Track`、`Voice`、`GuitarTabData`、`stringNumber`、`fret` 或弦品映射作为核心谱面字段。
+- 不在 Core Kernel K1 中定义 `Track`、`Voice`、`GuitarTabData`、`stringNumber`、`fret`、弦品映射、`ScoreDocument.extensions`、`.bgp/extensions` 或 `moduleData` 作为核心谱面字段或模块私有数据存储契约。
 - 不做 7/8 弦吉他验证通过。
 - 不做贝斯、鼓、键盘或多乐器总谱。
 - 不做多轨编辑验收。

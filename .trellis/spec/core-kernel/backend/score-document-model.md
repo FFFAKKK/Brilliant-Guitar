@@ -30,7 +30,7 @@ export interface ScoreData {
 }
 ```
 
-The kernel must not define `Track`, `Voice`, `GuitarTabData`, `stringNumber`, or `fret` as required K1 score-truth fields. Those concerns belong to external modules, especially the future official guitar-tab module.
+The kernel must not define `Track`, `Voice`, `GuitarTabData`, `stringNumber`, `fret`, or a module-private storage location as K1 score-truth fields. Those concerns belong to external modules, especially the future official guitar-tab module, and must be planned after the core model is stable.
 
 ## Metadata Contracts
 
@@ -315,7 +315,9 @@ Core Kernel V1 does not store guitar string/fret placement:
 - No `setFret` or `setString` command in the K1 core implementation.
 - No validation that depends on a note's guitar string/fret position.
 
-The future official guitar-tab module may persist `noteId -> string/fret` mappings and use tuning metadata to convert between positions and absolute pitches. That module data must not become a required K1 core field.
+Pure Core Kernel V1 does not define where future guitar-tab module data is persisted. It must not introduce `ScoreDocument.extensions`, `.bgp/extensions`, `moduleData`, or any other module-private storage contract for `noteId -> string/fret` mappings in K1.
+
+Future guitar-tab storage can be planned when the official guitar-tab module is designed. That future storage must not become a required K1 core field.
 
 Consequence: A file containing only K1 core data can preserve pitch and rhythm, but it cannot promise to restore the user's original string/fret choice. That is an intentional boundary, not a kernel defect.
 
@@ -323,8 +325,9 @@ Consequence: A file containing only K1 core data can preserve pitch and rhythm, 
 
 - Every persisted score document must include `schemaVersion`.
 - Schema evolution must go through migration entry points and migration reports.
-- Unknown extension data must be namespaced and must not prevent the recognized core score from opening.
-- The model may reserve extension points for future instruments, module-private data, multi-voice, multi-meter, and advanced techniques, but the V1 hard validator must reject unsupported values explicitly.
+- K1 does not define module-private data persistence, extension folders, or extension payload semantics.
+- Future instruments, module-private data, multi-voice, multi-meter, and advanced techniques require separate planning before entering any schema contract.
+- The V1 hard validator must reject unsupported core values explicitly.
 
 ## Forbidden Model Shortcuts
 
