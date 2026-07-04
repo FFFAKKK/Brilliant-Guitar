@@ -76,6 +76,8 @@
 - KER-008: fatal severity 只表示当前操作无法安全继续，不等同于应用必须退出。
 - KER-009: report issue 不得要求 UI 必须显示全部 details；UI 可以只显示 messageKey 和摘要。
 - KER-010: source 字段只用于诊断归因，不得用于 capability 授权。
+- KER-011: `KernelErrorCode` 只表达操作级失败；谱面 hard validation 的细粒度原因必须使用 `ValidationDiagnosticCode`，不得为了每个验证规则扩张 `KernelErrorCode`。
+- KER-012: 如果命令因 hard validation 失败而 rollback，外层 `KernelError.code` 应使用 `command-validation-failed`，同时在 `KernelDiagnostic.code` 中保留具体 `ValidationDiagnosticCode`。
 
 ## 数据结构草案
 
@@ -120,6 +122,27 @@ export type KernelErrorCode =
   | "module-error"
   | "unsupported"
   | "internal-error"
+
+/**
+ * 谱面验证 diagnostic code。
+ *
+ * 用途:
+ * - 表达 hard validation 的细粒度原因。
+ * - 例如 `rhythm-slot-gap`、`technique-definition-missing`、`pitch-octave-out-of-range`。
+ *
+ * 边界:
+ * - 具体 code 由对应验证 spec 定义，例如 `SPEC-001-document-model.md`。
+ * - 不得把所有验证细码加入 `KernelErrorCode`；操作级错误和验证原因必须分层。
+ */
+export type ValidationDiagnosticCode = string
+
+/**
+ * issue code。
+ *
+ * 用途:
+ * - 让 diagnostic 和 report issue 可以同时表达操作级错误和验证细节。
+ */
+export type KernelIssueCode = KernelErrorCode | ValidationDiagnosticCode
 
 /**
  * 内核错误。
@@ -172,7 +195,7 @@ export interface KernelIssueSource {
  */
 export interface KernelDiagnostic {
   id: string
-  code: KernelErrorCode | string
+  code: KernelIssueCode
   severity: KernelSeverity
   messageKey: string
   target?: KernelIssueTarget
@@ -214,7 +237,7 @@ export type KernelReportStatus =
  * - 让不同 report 使用同一套问题字段。
  */
 export interface KernelReportIssue {
-  code: KernelErrorCode | string
+  code: KernelIssueCode
   severity: KernelSeverity
   messageKey: string
   target?: KernelIssueTarget
@@ -325,7 +348,7 @@ export interface RecoveryReportDetails {
 ## 错误和边界行为
 
 - Command payload invalid: 返回 `command-payload-invalid`，不得进入事务 commit。
-- Command validation failed: 返回 `command-validation-failed`，事务 rollback，不产生 undo 条目。
+- Command validation failed: 返回 `command-validation-failed`，事务 rollback，不产生 undo 条目；同时返回定位到具体谱面目标的 `ValidationDiagnosticCode`。
 - Schema invalid: 返回 `schema-invalid`，打开或保存入口必须中止。
 - Migration failed: 返回 `migration-failed`，并输出 `MigrationReport`。
 - Import failed: 返回 `import-failed`，并输出 `ImportReport`。
