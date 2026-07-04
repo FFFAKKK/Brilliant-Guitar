@@ -643,7 +643,7 @@ MVP 包结构建议: `.bgp` 是单文件开放 zip 包，至少包含 `manifest.
 
 ### DEC-K049: Core Kernel 是否需要音乐时间模型？
 
-结论: 需要。音乐时间模型属于 `ScoreDocument` 谱面核心对象模型的一部分，不新增第十类内核机制。Core Kernel V1 必须用整数 tick 表示谱面的逻辑时间，至少定义 `ticksPerQuarter = 960`、4/4 小节长度 `3840`、四分/八分/十六分和等长休止 duration、`RhythmSlot.startTick` 与 `RhythmSlot.durationTicks` 校验。这样谱面不只是静态字段集合，而是可以被播放、渲染、导出和后续插件一致解释的时间化音乐数据。
+结论: 需要。音乐时间模型属于 `ScoreDocument` 谱面核心对象模型的一部分，不新增第十类内核机制。Core Kernel V1 必须用整数 tick 表示谱面的逻辑时间，至少定义 `ticksPerQuarter = 960`、4/4 小节长度 `3840`、四分/八分/十六分和等长休止 duration、`MeasureTimeSpan.startTick`、`RhythmSlot.startOffsetTicks` 与 `RhythmSlot.durationTicks` 校验；`MeasureTimeSpan.startTick` 是全曲绝对 tick，`RhythmSlot.startOffsetTicks` 是小节内 offset，slot 全曲绝对 tick 只能派生。这样谱面不只是静态字段集合，而是可以被播放、渲染、导出和后续插件一致解释的时间化音乐数据。
 
 产品视角: 用户写谱后需要播放校对、节拍感、播放光标和导出结果都与谱面节奏一致。没有统一音乐时间模型，软件只能像静态图文编辑器；有统一音乐时间模型，编辑器、播放和导出才能围绕同一首“会动的谱子”工作。
 

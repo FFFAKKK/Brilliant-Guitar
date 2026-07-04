@@ -154,7 +154,7 @@ export interface MeasureTimeSpan {
 
 export interface RhythmSlot {
   id: string
-  startTick: Tick
+  startOffsetTicks: Tick
   durationTicks: DurationTicks
 }
 ```
@@ -164,10 +164,13 @@ export interface RhythmSlot {
 - 4/4 小节长度为 `3840` tick。
 - `RhythmSlot` 表示可放置一个谱面事件的节奏槽位，不等同于音乐理论中的 beat。
 - `ScoreTimeline` 同时表达小节/槽位结构和 tick 位置，不再拆出独立 `ScoreStructure`。
+- `MeasureTimeSpan.startTick` 表示小节在整首谱中的绝对 tick。
+- `RhythmSlot.startOffsetTicks` 表示 slot 相对所属小节起点的偏移，不是全曲绝对 tick。
+- slot 的全曲绝对 tick 必须由 `measure.startTick + slot.startOffsetTicks` 派生，不得作为独立真相保存。
 - 一个小节内所有 `RhythmSlot.durationTicks` 总和必须等于小节 `durationTicks`。
-- `RhythmSlot.startTick + RhythmSlot.durationTicks` 不得超出所属小节范围。
-- 同一小节内的 `RhythmSlot[]` 必须按 `startTick` 递增排列。
-- 相邻 slot 必须连续，满足 `next.startTick === current.startTick + current.durationTicks`。
+- `RhythmSlot.startOffsetTicks + RhythmSlot.durationTicks` 不得超出所属小节时值。
+- 同一小节内的 `RhythmSlot[]` 必须按 `startOffsetTicks` 递增排列。
+- 相邻 slot 必须连续，满足 `next.startOffsetTicks === current.startOffsetTicks + current.durationTicks`。
 - slot 不得重叠，不得留空洞。
 - 第一个 slot 必须从小节起点开始，最后一个 slot 必须刚好结束在小节终点。
 - 每个 `RhythmSlot.durationTicks` 必须大于 `0`，且必须属于 K1 允许集合: `960`、`480`、`240`。

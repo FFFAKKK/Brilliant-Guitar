@@ -62,7 +62,7 @@
 - [ ] MVP 不单独创建 `Positioning Service` 包；在 `Layout Module + Editor Session Service` 中保持可抽取边界，并记录未来抽取条件。
 - [ ] 定义内核音乐时间模型: `Tick`、`DurationTicks`、`MusicalTimebase` 和 `ticksPerQuarter = 960`。
 - [ ] 定义 4/4 小节长度 `3840` tick，并提供四分 `960`、八分 `480`、十六分 `240` 和等长休止的稳定 duration 常量或等价纯函数。
-- [ ] 验证每个小节的 slot 总时值等于小节长度，验证 `RhythmSlot.startTick + RhythmSlot.durationTicks` 不超出所属小节范围，验证 slot 按 `startTick` 递增、相邻 slot 无重叠无 gap、首尾刚好贴合小节边界，并禁止 `ScoreEvent` 重复保存 `startTick` 或 `durationTicks`。
+- [ ] 验证每个小节的 slot 总时值等于小节长度，验证 `RhythmSlot.startOffsetTicks + RhythmSlot.durationTicks` 不超出所属小节时值，验证 slot 按 `startOffsetTicks` 递增、相邻 slot 无重叠无 gap、首尾刚好贴合小节边界，并禁止 `ScoreEvent` 重复保存 `startTick` 或 `durationTicks`。
 - [ ] 明确真实毫秒调度、Web Audio `currentTime`、节拍器声音、播放光标高频 tick、UI 时间线和渲染坐标不属于 Core Kernel 音乐时间模型。
 - [ ] 限制第一阶段验证器只接受 4/4、固定 tempo、单声部事件流、四分/八分/十六分和等长休止。
 - [ ] 禁止第一阶段 UI 和命令系统暴露轨道添加、删除、重命名、排序、多轨列表或 track mute/solo。

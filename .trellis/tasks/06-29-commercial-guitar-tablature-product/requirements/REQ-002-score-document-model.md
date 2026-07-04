@@ -95,7 +95,7 @@ interface MeasureTimeSpan {
 
 interface RhythmSlot {
   id: string
-  startTick: Tick
+  startOffsetTicks: Tick
   durationTicks: DurationTicks
 }
 ```
@@ -104,8 +104,11 @@ interface RhythmSlot {
 
 - `timeline` 负责小节和节奏槽位的顺序与时间位置。
 - `RhythmSlot` 表示可放置一个谱面事件的节奏槽位，不等同于音乐理论中的 beat；beat 只保留为用户界面或乐理解释词汇。
-- 时间真相只保存在 `RhythmSlot.startTick` 和 `RhythmSlot.durationTicks`；`ScoreEvent` 不再重复保存起始 tick 或持续 tick。
-- 同一小节内的 `RhythmSlot[]` 必须按 `startTick` 递增排列，不得重叠，不得留空洞。
+- `MeasureTimeSpan.startTick` 表示小节在整首谱中的绝对 tick。
+- `RhythmSlot.startOffsetTicks` 表示 slot 相对所属小节起点的偏移，不是全曲绝对 tick。
+- slot 的全曲绝对 tick 必须由 `measure.startTick + slot.startOffsetTicks` 派生，不得作为独立真相保存。
+- 时间真相只保存在 `MeasureTimeSpan.startTick`、`RhythmSlot.startOffsetTicks` 和 `RhythmSlot.durationTicks`；`ScoreEvent` 不再重复保存起始 tick 或持续 tick。
+- 同一小节内的 `RhythmSlot[]` 必须按 `startOffsetTicks` 递增排列，不得重叠，不得留空洞。
 - 第一个 `RhythmSlot` 必须从小节起点开始，最后一个 `RhythmSlot` 必须刚好结束在小节终点。
 - 每个 `RhythmSlot.durationTicks` 必须大于 `0`，且必须属于 K1 允许时值集合: `960`、`480`、`240`。
 - K1 不支持复杂反复、跳转、Da Capo 或播放顺序重排。
@@ -210,7 +213,7 @@ type TechniqueParamValidationResult =
 - REQ-002-F02: `ScoreDocument` 必须采用 `metadata + scoreData` 顶层结构。
 - REQ-002-F03: `metadata.document` 必须能保存标题、作者、版权、创建时间、修改时间、schema version 和应用版本。
 - REQ-002-F04: `metadata.music` 必须能保存 `scoreType`、`ticksPerQuarter = 960`、全局固定 tempo、4/4 拍号和明确音高形式的默认调弦。
-- REQ-002-F05: `scoreData.timeline` 必须表达 4/4 小节、`RhythmSlot` 节奏槽位、起始 tick 和持续 tick。
+- REQ-002-F05: `scoreData.timeline` 必须表达 4/4 小节、`RhythmSlot` 节奏槽位、小节绝对 tick、slot 小节内 offset 和持续 tick。
 - REQ-002-F06: 第一实现阶段时值只要求四分、八分、十六分音符和等长休止。
 - REQ-002-F07: 第一实现阶段每个 `RhythmSlot` 只能包含一个 `ScoreEvent`，其 `kind` 只能是 `note` 或 `rest`。
 - REQ-002-F08: `SoundNoteEvent` 必须保存绝对音高和所属 `slotId`；起始时间与持续时间由所属 `RhythmSlot` 提供，不得保存 `stringNumber`、`fret` 或 guitar-tab 专属位置字段。
@@ -248,8 +251,8 @@ type TechniqueParamValidationResult =
   - sixteenth: `240`
 - 第一阶段允许休止时值同上。
 - `ScoreTimeline` 中每个小节的 slot 总时值必须等于小节 `durationTicks`。
-- `RhythmSlot.startTick + RhythmSlot.durationTicks` 不得超出所属小节范围。
-- 同一小节内 `RhythmSlot` 必须按 `startTick` 严格递增，且相邻 slot 必须满足 `next.startTick === current.startTick + current.durationTicks`。
+- `RhythmSlot.startOffsetTicks + RhythmSlot.durationTicks` 不得超出所属小节时值。
+- 同一小节内 `RhythmSlot` 必须按 `startOffsetTicks` 严格递增，且相邻 slot 必须满足 `next.startOffsetTicks === current.startOffsetTicks + current.durationTicks`。
 - 如果 slot 未排序，验证器必须返回 `rhythm-slot-order-invalid`。
 - 如果 slot 发生重叠，验证器必须返回 `rhythm-slot-overlap`。
 - 如果 slot 之间存在 gap，或第一个 slot 没有从小节起点开始，验证器必须返回 `rhythm-slot-gap`。

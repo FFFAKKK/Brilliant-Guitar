@@ -88,8 +88,11 @@ V1 does not implement track management, guitar string/fret persistence, multi-vo
 - Sixteenth duration is `240`.
 - `ScoreTimeline` owns measure and rhythm slot order plus tick placement.
 - A measure's rhythm slot durations must sum exactly to the measure duration.
-- `slot.startTick + slot.durationTicks` must not exceed the owning measure range.
-- Within each measure, rhythm slots must be sorted by `startTick` ascending, must not overlap, and must not leave gaps.
+- `MeasureTimeSpan.startTick` is the absolute tick of the measure in the whole score.
+- `RhythmSlot.startOffsetTicks` is relative to the owning measure start, not an absolute score tick.
+- The absolute tick for a rhythm slot is derived as `measure.startTick + slot.startOffsetTicks`.
+- `slot.startOffsetTicks + slot.durationTicks` must not exceed the owning measure duration.
+- Within each measure, rhythm slots must be sorted by `startOffsetTicks` ascending, must not overlap, and must not leave gaps.
 - The first rhythm slot must start at the measure boundary, and the final rhythm slot must end exactly at the measure end.
 - Each rhythm slot duration must be positive and must be one of the V1 supported durations: `960`, `480`, or `240`.
 - The rhythm slot is the only time truth for the event in that slot; `ScoreEvent` must not duplicate `startTick` or `durationTicks`.
@@ -125,7 +128,7 @@ export interface MeasureTimeSpan {
 
 export interface RhythmSlot {
   id: string
-  startTick: Tick
+  startOffsetTicks: Tick
   durationTicks: DurationTicks
 }
 
@@ -173,11 +176,11 @@ Validation matrix:
 | total measure duration below expected length | `measure-duration-underflow` |
 | total measure duration above expected length | `measure-duration-overflow` |
 | slot duration is `0`, negative, or not in the supported V1 duration set | `unsupported-duration` |
-| slots are not sorted by ascending `startTick` | `rhythm-slot-order-invalid` |
+| slots are not sorted by ascending `startOffsetTicks` | `rhythm-slot-order-invalid` |
 | a slot starts before the previous slot ends | `rhythm-slot-overlap` |
 | a slot starts after the previous slot ends, or the first slot does not start at the measure boundary | `rhythm-slot-gap` |
 | final slot does not end exactly at the measure end | `measure-duration-underflow` or `measure-duration-overflow` |
-| `slot.startTick + slot.durationTicks` exceeds measure range | `measure-duration-overflow` or targeted duration diagnostic |
+| `slot.startOffsetTicks + slot.durationTicks` exceeds measure duration | `measure-duration-overflow` or targeted duration diagnostic |
 | slot has zero events | targeted missing-event diagnostic |
 | slot has multiple events | `unsupported-multiple-notes-in-slot` or targeted slot-cardinality diagnostic |
 | technique targets a rest or missing note | targeted technique-target diagnostic |
@@ -212,7 +215,7 @@ Wrong vs correct:
 score.playback = { currentTimeMs: 1234, cursorTick: 960 }
 
 // Correct: storing musical time only; playback derives runtime state from snapshots.
-slot.startTick = 960
+slot.startOffsetTicks = 960
 slot.durationTicks = 480
 ```
 

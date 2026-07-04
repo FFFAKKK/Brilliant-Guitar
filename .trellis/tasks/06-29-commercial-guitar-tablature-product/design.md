@@ -66,7 +66,7 @@ Pure Core Kernel V1 可以定义外部导入/导出贡献点的抽象 descriptor
 
 Pure Core Kernel V1 必须能在无 UI、无浏览器 DOM、无 Tauri、无 VexFlow、无 Web Audio 的 TypeScript 测试环境中运行。验收以 fixture、命令回放、schema round-trip、migration、snapshot/selector、event、registry/capability、error/report 和 unsupported feature 测试为准；UI 截图、播放声音和导出文件不作为该阶段验收项。
 
-音乐时间边界: Core Kernel V1 拥有音乐逻辑时间，不拥有真实播放时钟。内核必须定义 `ticksPerQuarter = 960`、4/4 小节 `3840` tick、四分/八分/十六分与基础休止 duration、`RhythmSlot.startTick` 和 `RhythmSlot.durationTicks` 的硬验证；Playback Module 负责把 snapshot 中的音乐时间转换成真实毫秒调度、Web Audio 时间、节拍器声音和播放光标 tick。
+音乐时间边界: Core Kernel V1 拥有音乐逻辑时间，不拥有真实播放时钟。内核必须定义 `ticksPerQuarter = 960`、4/4 小节 `3840` tick、四分/八分/十六分与基础休止 duration、`MeasureTimeSpan.startTick`、`RhythmSlot.startOffsetTicks` 和 `RhythmSlot.durationTicks` 的硬验证；`MeasureTimeSpan.startTick` 是全曲绝对 tick，`RhythmSlot.startOffsetTicks` 是小节内 offset，slot 全曲绝对 tick 只能由二者相加派生。Playback Module 负责把 snapshot 中的音乐时间转换成真实毫秒调度、Web Audio 时间、节拍器声音和播放光标 tick。
 
 谱面核心对象模型边界: `ScoreDocument` 顶层只包含 `metadata` 和 `scoreData`。`metadata.document` 保存标题、作者、版权、schema version、创建/修改时间和应用版本；`metadata.music` 保存 `scoreType = "guitar-tab"`、`ticksPerQuarter = 960`、全局 tempo、4/4 拍号和 6 个明确 `AbsolutePitch` 形式的必填调弦。`scoreData.timeline` 同时表达小节、`RhythmSlot` 结构和 tick 位置，不再拆出独立 `ScoreStructure`；`RhythmSlot` 是事件槽位，不等同于音乐理论中的 beat。`scoreData.events` 保存 `kind = "note" | "rest"` 的谱面事件，事件只引用 `slotId`，起始时间和持续时间从所属 `RhythmSlot` 派生；休止符只是特殊事件类型，不使用独立 `RestData`。`scoreData.techniques` 使用 `definitionId + targetNoteIds + params` 表达技巧，具体技巧通过 `TechniqueDefinition` 注册，`slide`、`bend`、`vibrato` 只是 K1 测试技巧定义。Core Kernel K1 只保存绝对音高和音乐时间，弦号、品号、指法位置和六线谱表现数据属于外部吉他谱模块。
 
