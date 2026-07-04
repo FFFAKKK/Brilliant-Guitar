@@ -89,6 +89,9 @@ V1 does not implement track management, guitar string/fret persistence, multi-vo
 - `ScoreTimeline` owns measure and rhythm slot order plus tick placement.
 - A measure's rhythm slot durations must sum exactly to the measure duration.
 - `slot.startTick + slot.durationTicks` must not exceed the owning measure range.
+- Within each measure, rhythm slots must be sorted by `startTick` ascending, must not overlap, and must not leave gaps.
+- The first rhythm slot must start at the measure boundary, and the final rhythm slot must end exactly at the measure end.
+- Each rhythm slot duration must be positive and must be one of the V1 supported durations: `960`, `480`, or `240`.
 - The rhythm slot is the only time truth for the event in that slot; `ScoreEvent` must not duplicate `startTick` or `durationTicks`.
 - Musical time belongs to the `ScoreDocument` domain model. It is not a playback engine.
 - Core Kernel owns musical ticks, duration constants, measure-length calculation, and hard validation of rhythmic structure.
@@ -169,6 +172,11 @@ Validation matrix:
 | unsupported duration value | `unsupported-duration` |
 | total measure duration below expected length | `measure-duration-underflow` |
 | total measure duration above expected length | `measure-duration-overflow` |
+| slot duration is `0`, negative, or not in the supported V1 duration set | `unsupported-duration` |
+| slots are not sorted by ascending `startTick` | `rhythm-slot-order-invalid` |
+| a slot starts before the previous slot ends | `rhythm-slot-overlap` |
+| a slot starts after the previous slot ends, or the first slot does not start at the measure boundary | `rhythm-slot-gap` |
+| final slot does not end exactly at the measure end | `measure-duration-underflow` or `measure-duration-overflow` |
 | `slot.startTick + slot.durationTicks` exceeds measure range | `measure-duration-overflow` or targeted duration diagnostic |
 | slot has zero events | targeted missing-event diagnostic |
 | slot has multiple events | `unsupported-multiple-notes-in-slot` or targeted slot-cardinality diagnostic |
@@ -183,6 +191,8 @@ Good/base/bad cases:
 - Good: a 4/4 measure containing four quarter rhythm slots at offsets `0`, `960`, `1920`, and `2880`.
 - Base: a 4/4 measure containing eighth and sixteenth rhythm slots whose summed duration is exactly `3840`.
 - Good: a rest is stored as one `ScoreEvent` with `kind = "rest"` that references a rhythm slot.
+- Bad: two rhythm slots both start at `0`, even if their durations sum to `3840`.
+- Bad: a measure with slots at `0..960` and `1920..2880`, because the `960..1920` range is a gap.
 - Bad: a rhythm slot starting at `3720` with duration `240`, because it exceeds the 4/4 measure length.
 - Bad: a note event with its own persisted `durationTicks`; event time must come from its referenced slot.
 - Bad: a technique target references a rest event.
@@ -192,7 +202,7 @@ Tests must assert:
 - The standard 4-measure fixture uses `ticksPerQuarter = 960`.
 - A `guitar-tab` fixture stores exactly 6 explicit tuning pitches low to high.
 - Each supported duration round-trips through schema serialization.
-- Measure underflow, overflow, unsupported duration, unsupported tempo map, unsupported time signature, invalid pitch, invalid tuning, missing event, multiple events, and invalid technique targets produce stable diagnostics.
+- Measure underflow, overflow, unsupported duration, rhythm slot ordering, overlap, gap, unsupported tempo map, unsupported time signature, invalid pitch, invalid tuning, missing event, multiple events, and invalid technique targets produce stable diagnostics.
 - Playback event generation, when implemented outside the kernel, consumes snapshot musical ticks and does not mutate `ScoreDocument`.
 
 Wrong vs correct:

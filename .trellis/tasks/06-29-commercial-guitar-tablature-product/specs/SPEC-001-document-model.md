@@ -166,6 +166,11 @@ export interface RhythmSlot {
 - `ScoreTimeline` 同时表达小节/槽位结构和 tick 位置，不再拆出独立 `ScoreStructure`。
 - 一个小节内所有 `RhythmSlot.durationTicks` 总和必须等于小节 `durationTicks`。
 - `RhythmSlot.startTick + RhythmSlot.durationTicks` 不得超出所属小节范围。
+- 同一小节内的 `RhythmSlot[]` 必须按 `startTick` 递增排列。
+- 相邻 slot 必须连续，满足 `next.startTick === current.startTick + current.durationTicks`。
+- slot 不得重叠，不得留空洞。
+- 第一个 slot 必须从小节起点开始，最后一个 slot 必须刚好结束在小节终点。
+- 每个 `RhythmSlot.durationTicks` 必须大于 `0`，且必须属于 K1 允许集合: `960`、`480`、`240`。
 - `ScoreEvent` 不得重复保存 `startTick` 或 `durationTicks`；事件时间必须从所属 `RhythmSlot` 派生。
 - Playback Module 负责把音乐 tick 转成真实毫秒调度、Web Audio 时间、节拍器声音和播放光标 tick。
 - UI 时间线、布局横向位置、SVG/VexFlow 坐标、PDF/PNG 页面坐标都只能派生，不得写回 `ScoreDocument`。
@@ -262,6 +267,9 @@ export type TechniqueParamValidationResult =
 - `unsupported-time-signature`
 - `unsupported-tempo-map`
 - `unsupported-duration`
+- `rhythm-slot-order-invalid`
+- `rhythm-slot-overlap`
+- `rhythm-slot-gap`
 - `measure-duration-underflow`
 - `measure-duration-overflow`
 - `unsupported-multiple-notes-in-slot`
@@ -289,6 +297,7 @@ export type TechniqueParamValidationResult =
 
 - 最小 fixture: 4 小节、4/4、标准 6 弦调弦、固定 tempo、单声部事件流。
 - fixture 必须包含四分、八分、十六分和基础休止。
+- 验证器测试必须覆盖 slot 未排序、slot 重叠、slot 留空洞、slot duration 为 `0`、slot duration 为负数和 unsupported duration。
 - fixture 不包含同 slot 多音或和弦；验证器测试必须覆盖同 slot 多音返回 `unsupported-multiple-notes-in-slot`。
 - fixture 必须注册并使用 `slide`、`bend`、`vibrato` 三个测试技巧定义。
 - round-trip 测试必须证明 ID、节奏、绝对音高、技巧和元数据不丢失。

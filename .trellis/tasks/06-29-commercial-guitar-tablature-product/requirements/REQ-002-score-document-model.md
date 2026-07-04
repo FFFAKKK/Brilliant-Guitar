@@ -105,6 +105,9 @@ interface RhythmSlot {
 - `timeline` 负责小节和节奏槽位的顺序与时间位置。
 - `RhythmSlot` 表示可放置一个谱面事件的节奏槽位，不等同于音乐理论中的 beat；beat 只保留为用户界面或乐理解释词汇。
 - 时间真相只保存在 `RhythmSlot.startTick` 和 `RhythmSlot.durationTicks`；`ScoreEvent` 不再重复保存起始 tick 或持续 tick。
+- 同一小节内的 `RhythmSlot[]` 必须按 `startTick` 递增排列，不得重叠，不得留空洞。
+- 第一个 `RhythmSlot` 必须从小节起点开始，最后一个 `RhythmSlot` 必须刚好结束在小节终点。
+- 每个 `RhythmSlot.durationTicks` 必须大于 `0`，且必须属于 K1 允许时值集合: `960`、`480`、`240`。
 - K1 不支持复杂反复、跳转、Da Capo 或播放顺序重排。
 - 如果未来逻辑结构和实际时间展开发生分离，再单独规划结构模型，不在 K1 里提前拆分。
 
@@ -246,6 +249,11 @@ type TechniqueParamValidationResult =
 - 第一阶段允许休止时值同上。
 - `ScoreTimeline` 中每个小节的 slot 总时值必须等于小节 `durationTicks`。
 - `RhythmSlot.startTick + RhythmSlot.durationTicks` 不得超出所属小节范围。
+- 同一小节内 `RhythmSlot` 必须按 `startTick` 严格递增，且相邻 slot 必须满足 `next.startTick === current.startTick + current.durationTicks`。
+- 如果 slot 未排序，验证器必须返回 `rhythm-slot-order-invalid`。
+- 如果 slot 发生重叠，验证器必须返回 `rhythm-slot-overlap`。
+- 如果 slot 之间存在 gap，或第一个 slot 没有从小节起点开始，验证器必须返回 `rhythm-slot-gap`。
+- 如果 slot duration 为 `0`、负数或不属于 `960 / 480 / 240`，验证器必须返回 `unsupported-duration`。
 - `ScoreEvent` 不得保存独立 `startTick` 或 `durationTicks`；事件时间必须从所属 `RhythmSlot` 派生。
 - `ScoreEvent.slotId` 必须引用存在的 `RhythmSlot`。
 - K1 每个 `RhythmSlot` 只能关联一个 `ScoreEvent`。
@@ -260,6 +268,7 @@ type TechniqueParamValidationResult =
 - [ ] AC-002-01: 给定一个 K1 `ScoreDocument`，模型能保存 `metadata.document`、`metadata.music` 和 `scoreData`，且 `scoreType` 为 `guitar-tab`。
 - [ ] AC-002-02: 给定 `EADGBE` 这类模糊调弦文本，验证器拒绝或迁移为明确音高列表，不得作为核心数据保存。
 - [ ] AC-002-03: 给定 4/4 小节时值不完整或超出的文件，验证器能报告稳定 code、位置和原因。
+- [ ] AC-002-03B: 给定未排序、重叠、留空洞或非法 duration 的 `RhythmSlot[]`，验证器能报告稳定 code、位置和原因。
 - [ ] AC-002-04: 给定三连音、附点、变拍号、多 voice 或 tempo map 输入，第一阶段验证器返回明确 unsupported 错误。
 - [ ] AC-002-05: 给定同一 `RhythmSlot` 上多个有声 note，第一阶段验证器返回明确的 `unsupported-multiple-notes-in-slot`，且不会保存为有效 K1 谱面。
 - [ ] AC-002-06: 给定 `rest` 事件，核心模型能按同一套 `ScoreEvent` 时间规则保存和验证，不需要独立 `RestData`。
