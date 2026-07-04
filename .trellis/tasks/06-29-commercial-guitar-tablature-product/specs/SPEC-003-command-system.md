@@ -30,7 +30,7 @@
 2. 校验 command id 是否已注册。
 3. 校验 payload schema。
 4. 校验调用方 capability。
-5. 校验 `DocumentAddress` 或 `DocumentRange` 是否存在且可编辑。
+5. 校验 `CommandTarget` 是否存在且可编辑。
 6. 校验命令前置条件。
 7. 在隔离 draft 中生成并应用内部 delta。
 8. 对结果运行硬一致性验证。
@@ -105,6 +105,36 @@ export interface CommandEnvelope<TPayload = unknown> {
 }
 
 /**
+ * 命令目标。
+ *
+ * 用途:
+ * - 表达命令要作用到的谱面语义位置或范围。
+ * - 让命令系统只围绕 `ScoreDocument` 的领域实体工作。
+ *
+ * 边界:
+ * - `ScoreAddress`、`ScorePoint` 和 `ScoreRange` 由文档地址/范围模型定义。
+ * - 具体命令也可以在 payload schema 中声明语义目标对象，但必须先被解析为谱面领域目标。
+ * - 旧的泛文档地址/范围草案已废弃，不属于 Pure Core Kernel V1 实现输入。
+ */
+export type CommandTarget = ScoreAddress | ScorePoint | ScoreRange | CommandSemanticTarget
+
+/**
+ * 命令专用语义目标。
+ *
+ * 用途:
+ * - 承载无法直接用地址、点或范围表达的命令目标。
+ * - 例如未来某条命令可能使用结构化 payload 描述插入意图。
+ *
+ * 边界:
+ * - 必须由该命令的 payload schema 明确约束。
+ * - 不得退化为 JSON Patch、JSON path、字段替换或任意对象脚本。
+ */
+export interface CommandSemanticTarget {
+  kind: string
+  [field: string]: unknown
+}
+
+/**
  * 命令定义。
  *
  * 用途:
@@ -147,7 +177,7 @@ export interface CommandContext {
   readonly source: CommandSource
   read: KernelReadApi
   draft: KernelDraftApi
-  validateTarget: (target: DocumentAddress | DocumentRange) => CommandDiagnostic[]
+  validateTarget: (target: CommandTarget) => CommandDiagnostic[]
 }
 
 /**
@@ -254,7 +284,7 @@ export interface HistoryEntry {
 export interface CommandError {
   code: CommandErrorCode
   messageKey: string
-  location?: DocumentAddress | DocumentRange
+  location?: CommandTarget
   details?: Record<string, unknown>
 }
 
@@ -280,7 +310,7 @@ export interface CommandDiagnostic {
   severity: "info" | "warning" | "error"
   code: string
   messageKey: string
-  location?: DocumentAddress | DocumentRange
+  location?: CommandTarget
 }
 
 /**
