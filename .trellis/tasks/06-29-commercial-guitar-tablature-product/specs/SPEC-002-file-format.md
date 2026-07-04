@@ -19,7 +19,6 @@ Core Kernel 负责:
 - schema version 和兼容矩阵。
 - 迁移器注册和迁移入口。
 - `MigrationReport` 基础结构。
-- 未知扩展命名空间保留规则。
 - 打开后、保存前、迁移后的硬一致性验证入口。
 
 Core Kernel 不负责:
@@ -34,7 +33,7 @@ Core Kernel 不负责:
 
 ## 包结构
 
-MVP `.bgp` 必须是单文件开放 zip 包。第一阶段至少包含:
+MVP `.bgp` 的长期形态必须是单文件开放 zip 包。Pure Core Kernel V1 只定义包内语义文件契约；第一阶段内核实现只需要处理以下两个语义入口的 JSON schema、schema version、migration 入口和纯 JSON round-trip:
 
 ```text
 project.bgp
@@ -42,7 +41,7 @@ project.bgp
   score.json
 ```
 
-第一阶段可以保留以下目录约定:
+以下目录属于后续物理包、资源和插件阶段规划，不属于 Pure Core Kernel V1 实现项或验收项:
 
 ```text
 project.bgp
@@ -56,7 +55,7 @@ project.bgp
 - `manifest.json`: 文件包级元数据、版本、资源索引和兼容信息。
 - `score.json`: `ScoreDocument` 根对象，是谱面语义事实来源。
 - `assets/`: 未来图片、音频、字体或其它资源，不作为 MVP 必需内容。
-- Pure Core Kernel V1 不定义 `extensions/`、插件私有数据命名空间或模块私有数据持久化位置；这些内容后续按具体模块单独规划。
+- `extensions/`: 未来插件或模块私有数据位置草案；Pure Core Kernel V1 不定义该目录、插件私有数据命名空间、扩展数据保留协议或模块私有数据持久化位置。
 - `preview/`: 未来缩略图或预览缓存，不作为谱面事实来源。
 
 ## manifest.json 契约
@@ -71,7 +70,7 @@ project.bgp
 - 创建时间和最后保存时间。
 - 主谱面入口，MVP 固定为 `score.json`。
 - 资源索引，MVP 可为空数组。
-- 扩展命名空间摘要，MVP 可为空对象。
+- 扩展命名空间摘要属于后续插件/物理包阶段；Pure Core Kernel V1 不要求在 `manifest.json` 中定义该字段。
 
 禁止事项:
 
@@ -143,7 +142,7 @@ project.bgp
 
 - 绕过 Core Kernel schema、迁移和验证契约。
 - 直接修改 `score.json` 语义字段。
-- 静默丢弃未知扩展数据。
+- 在后续启用 `extensions/` 契约后静默丢弃已声明的扩展数据。
 - 把物理 IO 细节写入 `ScoreDocument`。
 
 ## MVP 不做
@@ -164,5 +163,5 @@ project.bgp
 - 保存前、打开后、迁移后必须运行硬一致性验证。
 - 未来 schema version 文件必须安全失败并给出可读错误。
 - 一旦存在旧 schema fixture，迁移器必须覆盖旧版本到当前版本的测试。
-- 未知扩展命名空间 round-trip 后不得静默丢失。
+- `extensions/` 目录、未知扩展命名空间和插件私有数据 round-trip 属于后续 Persistence/插件阶段验收，不属于 Pure Core Kernel V1。
 - 损坏 zip、缺失 `manifest.json`、缺失 `score.json`、schema version 不匹配必须返回结构化错误。

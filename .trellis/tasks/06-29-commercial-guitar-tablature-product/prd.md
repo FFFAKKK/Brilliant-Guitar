@@ -567,17 +567,17 @@ P0 类别包括连接与连奏、音高变化与表情、延音闷音与噪音�
 
 ### DEC-K042: `.bgp` 语义契约和迁移入口是否属于 Core Kernel？
 
-定义: `.bgp` 语义契约是指文件包内哪些内容代表正式谱面数据、版本字段如何声明、`manifest.json` 和 `score.json` 的语义是什么、旧 schema 如何迁移到当前 schema、未来版本如何安全失败，以及未知扩展数据如何保留。它不是物理文件 IO，不包括打开文件对话框、zip 压缩、文件路径、自动保存目录或原子写入实现。
+定义: `.bgp` 语义契约是指文件包内哪些内容代表正式谱面数据、版本字段如何声明、`manifest.json` 和 `score.json` 的语义是什么、旧 schema 如何迁移到当前 schema，以及未来版本如何安全失败。它不是物理文件 IO，不包括打开文件对话框、zip 压缩、文件路径、自动保存目录、原子写入实现或插件私有数据保留协议。
 
-结论: `.bgp` 语义契约和迁移入口属于 Core Kernel；物理读写属于外部 `Persistence Service`。内核负责 `manifest.json` 语义、`score.json` schema、schema version、兼容矩阵、迁移器注册、`MigrationReport`、未知扩展命名空间保留规则、打开后/保存前验证入口。`Persistence Service` 负责 zip 包读写、文件系统路径、原子保存、备份、自动保存、崩溃恢复、最近文件列表和损坏文件读取保护。
+结论: `.bgp` 语义契约和迁移入口属于 Core Kernel；物理读写属于外部 `Persistence Service`。Pure Core Kernel V1 只负责 `manifest.json` 语义、`score.json` schema、schema version、兼容矩阵、迁移器注册、`MigrationReport`、打开后/保存前验证入口和纯 JSON round-trip；不定义 `extensions/`、扩展数据保留协议或插件私有数据持久化协议。`Persistence Service` 负责 zip 包读写、文件系统路径、原子保存、备份、自动保存、崩溃恢复、最近文件列表和损坏文件读取保护。
 
-MVP 包结构建议: `.bgp` 是单文件开放 zip 包，至少包含 `manifest.json` 和 `score.json`；`assets/`、`extensions/`、`preview/` 可以作为目录约定保留。`manifest.json` 至少声明格式标识、format/schema version、创建应用版本、最后保存应用版本、资源索引和可选扩展命名空间摘要；`score.json` 承载 `ScoreDocument`，不得包含 VexFlow、SVG DOM、屏幕坐标、播放引擎状态或 UI 会话状态。
+MVP 包结构建议: `.bgp` 的长期形态是单文件开放 zip 包，至少包含 `manifest.json` 和 `score.json`；Pure Core Kernel V1 只验证这两个语义入口。`assets/`、`extensions/`、`preview/` 属于后续物理包、资源和插件阶段规划，不作为 K1 实现项或验收项。`manifest.json` 至少声明格式标识、format/schema version、创建应用版本、最后保存应用版本和资源索引；`score.json` 承载 `ScoreDocument`，不得包含 VexFlow、SVG DOM、屏幕坐标、播放引擎状态或 UI 会话状态。
 
 原因: 文件格式是用户长期作品资产的核心契约。把语义契约和迁移入口放在内核里，能保证保存、打开、自动恢复、导入映射、命令回放和未来插件都围绕同一份谱面语义演进；把物理 IO 放在 Persistence 外部模块，则能保持内核不依赖 Tauri、文件系统、zip 库和平台路径。
 
-实现约束: `.bgp` 第一阶段保持开放、可解包、可审查，不加密、不做文件密码锁、不做 DRM。保存前、打开后、迁移后必须运行硬一致性验证。遇到未来 schema version 必须安全失败并给出可读错误；遇到旧 schema version 必须通过迁移器或兼容读取路径，且迁移必须输出 `MigrationReport`。未知插件私有数据不得被静默丢弃，必须 round-trip 保留或明确报告无法保留。
+实现约束: `.bgp` 第一阶段保持开放、可解包、可审查，不加密、不做文件密码锁、不做 DRM。保存前、打开后、迁移后必须运行硬一致性验证。遇到未来 schema version 必须安全失败并给出可读错误；遇到旧 schema version 必须通过迁移器或兼容读取路径，且迁移必须输出 `MigrationReport`。未知插件私有数据 round-trip 保留规则延后到 Persistence/插件阶段定义，不属于 Pure Core Kernel V1。
 
-取舍: 让内核拥有文件语义契约会增加 schema、fixture、迁移和兼容测试成本，但能保护用户作品和长期维护。若把文件语义完全放到 Persistence，短期实现更快，但文件格式会被 IO 细节污染，后续迁移、插件数据保留和跨模块一致性更难保证。
+取舍: 让内核拥有文件语义契约会增加 schema、fixture、迁移和兼容测试成本，但能保护用户作品和长期维护。若把文件语义完全放到 Persistence，短期实现更快，但文件格式会被 IO 细节污染，后续迁移和跨模块一致性更难保证。插件数据保留是重要的长期能力，但不进入当前 K1 内核交付。
 
 ### DEC-K043: Core Kernel 的快照、事件和模块通信协议应该如何设计？
 
