@@ -35,7 +35,7 @@ Core Kernel K1 保持抽象、简洁、可迁移:
 - `ScoreEvent.kind` 只能是 `note` 或 `rest`。
 - 允许时值: 四分 `960`、八分 `480`、十六分 `240`。
 - 基础休止使用 `ScoreEvent.kind = "rest"`。
-- K1 技巧能力是通用注册框架；`slide`、`bend`、`vibrato` 只是测试技巧定义。
+- K1 技巧能力是通用注册框架；`test.slide`、`test.bend`、`test.vibrato` 只是测试技巧定义。
 
 ## 核心数据结构
 
@@ -248,6 +248,23 @@ export type TechniqueParamValidator = (
 export type TechniqueParamValidationResult =
   | { ok: true }
   | { ok: false; code: "technique-params-invalid"; details?: JsonObject }
+
+export type K1TestTechniqueDefinitionId =
+  | "test.bend"
+  | "test.vibrato"
+  | "test.slide"
+
+export interface K1TestBendParams {
+  semitones: 1 | 2
+}
+
+export interface K1TestVibratoParams {
+  width: "narrow" | "wide"
+}
+
+export interface K1TestSlideParams {
+  slideKind: "shift" | "legato"
+}
 ```
 
 规则:
@@ -261,7 +278,11 @@ export type TechniqueParamValidationResult =
 - 如果持久化文档中的 `TechniqueData.definitionId` 无法解析到已注册定义，验证器必须返回 `technique-definition-missing`。
 - 技巧定义负责目标数量、目标顺序和参数校验。
 - `params` 必须是 JSON 可序列化结构，不得使用 `unknown` 逃避校验。
-- K1 用 `slide`、`bend`、`vibrato` 作为测试技巧定义，证明注册、验证、保存、重开、撤销/重做和 fixture round-trip 可用；它们不是 Core Kernel 硬编码枚举。
+- K1 用 `test.slide`、`test.bend`、`test.vibrato` 作为测试技巧定义，证明注册、验证、保存、重开、撤销/重做和 fixture round-trip 可用；它们不是 Core Kernel 硬编码枚举。
+- K1 测试技巧使用稳定英文 registry id 和参数，不得使用中文作为可编码字段、参数值、definition id 或错误码。
+- `test.bend` 只能作用于 1 个有声音符，只接受 `params = { semitones: 1 }` 或 `params = { semitones: 2 }`。
+- `test.vibrato` 只能作用于 1 个有声音符，只接受 `params = { width: "narrow" }` 或 `params = { width: "wide" }`。
+- `test.slide` 只能作用于 2 个有序有声音符，两个目标 note id 不得相同，第二个目标 note 在音乐时间上必须晚于第一个目标 note，只接受 `params = { slideKind: "shift" }` 或 `params = { slideKind: "legato" }`。
 
 ## 强制验证
 
@@ -308,6 +329,6 @@ export type TechniqueParamValidationResult =
 - fixture 必须包含四分、八分、十六分和基础休止。
 - 验证器测试必须覆盖 slot 未排序、slot 重叠、slot 留空洞、slot duration 为 `0`、slot duration 为负数和 unsupported duration。
 - fixture 不包含同 slot 多音或和弦；验证器测试必须覆盖同 slot 多音返回 `unsupported-multiple-notes-in-slot`。
-- fixture 必须注册并使用 `slide`、`bend`、`vibrato` 三个测试技巧定义。
+- fixture 必须注册并使用 `test.slide`、`test.bend`、`test.vibrato` 三个测试技巧定义。
 - round-trip 测试必须证明 ID、节奏、绝对音高、技巧和元数据不丢失。
 - 测试不得依赖 React、Tauri、VexFlow、Web Audio、PDF/PNG 库、文件系统或吉他弦品映射。

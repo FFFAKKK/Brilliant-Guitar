@@ -71,8 +71,10 @@
 - [ ] 定义通用技巧注册框架: `TechniqueData.definitionId` 引用已注册 `TechniqueDefinition`，`targetNoteIds` 是有序有声音符数组，`params` 必须是 JSON 可序列化结构。
 - [ ] 确保 `TechniqueData` 是纯数据，只能包含 ID、目标音符引用和 JSON `params`；不得包含 validator、callback、closure、class、显示 handler、播放 handler、渲染 handler 或模块代码。
 - [ ] 确保 `TechniqueDefinition`、`TechniqueTargetRule` 和 `TechniqueParamValidator` 只存在于运行时 registry，不写入 `score.json`、持久化 fixture、migration 输出或可持久化 snapshot。
-- [ ] 注册 `slide`、`bend`、`vibrato` 作为 K1 测试技巧定义，验证技巧注册、目标数量、参数校验、保存、重开、撤销/重做和 fixture round-trip；不得把这 3 个技巧写死为 Core Kernel 枚举。
-- [ ] 定义测试技巧目标规则: `bend` 和 `vibrato` 测试定义只接受 1 个目标 note，`slide` 测试定义只接受 2 个有序目标 note；任何技巧不得指向 rest。
+- [ ] 注册 `test.slide`、`test.bend`、`test.vibrato` 作为 K1 启动期测试技巧定义，验证技巧注册、目标数量、目标顺序、参数校验、保存、重开、撤销/重做和 fixture round-trip；不得把这 3 个技巧写死为 Core Kernel 枚举。
+- [ ] 定义测试技巧目标规则: `test.bend` 和 `test.vibrato` 只接受 1 个目标 note，`test.slide` 只接受 2 个有序目标 note，且两个目标 note id 不得相同、第二个目标 note 必须晚于第一个；任何技巧不得指向 rest。
+- [ ] 定义测试技巧参数规则: `test.bend.params.semitones` 只能是 `1 | 2`，`test.vibrato.params.width` 只能是 `"narrow" | "wide"`，`test.slide.params.slideKind` 只能是 `"shift" | "legato"`；非法参数必须返回 `technique-params-invalid`。
+- [ ] 确保技巧 definition id、参数字段、参数值、错误码和序列化字段都使用英文稳定标识；中文名称只通过 i18n 或 UI 显示层提供。
 - [ ] 定义 `.bgp` 包结构和 `manifest.json`、`score.json` schema。
 - [ ] 定义 `MigrationReport`、schema version 兼容矩阵、迁移器注册入口和未知扩展数据保留规则。
 - [ ] 明确 `.bgp` 第一阶段不加密、不做文件密码锁、不做 DRM，测试工具可解包检查核心语义。
@@ -90,7 +92,7 @@
 - [ ] 确保 `undo` 和 `redo` 一次只移动一个历史条目；MVP 不做时间窗口合并、宏命令合并或跨命令智能压缩。
 - [ ] 为每个命令定义稳定 command id、payload schema、capability、错误码和 i18n label key。
 - [ ] 实现新建谱、设置元数据、添加小节、输入 note/rest、设置绝对音高、设置时值、添加技巧。
-- [ ] 实现注册技巧定义的添加、删除、保存、重开和撤销/重做；K1 用 `slide`、`bend`、`vibrato` 三个测试定义覆盖该流程。
+- [ ] 实现注册技巧定义的添加、删除、保存、重开和撤销/重做；K1 用 `test.slide`、`test.bend`、`test.vibrato` 三个测试定义覆盖该流程。
 - [ ] 添加测试，证明 UI、内部模块和未来插件 API 不能提交任意 patch 类命令。
 - [ ] 为每个命令建立单元测试和回放测试。
 - [ ] 添加测试，证明连续执行 `insertNote -> setNotePitch -> addTechnique` 后，三次 undo 会逐步撤销技巧、音高修改和插入音符。

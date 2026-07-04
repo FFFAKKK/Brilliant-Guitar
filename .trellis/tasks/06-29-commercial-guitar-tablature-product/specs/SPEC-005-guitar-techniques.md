@@ -14,7 +14,7 @@
 
 - Core Kernel K1 只保存通用 `TechniqueData`。
 - 具体技巧必须通过 `TechniqueDefinition` 注册。
-- `slide`、`bend`、`vibrato` 是 K1 测试技巧定义，用于证明技巧框架可用，不是内核硬编码枚举。
+- `test.slide`、`test.bend`、`test.vibrato` 是 K1 测试技巧定义，用于证明技巧框架可用，不是内核硬编码枚举。
 - 技巧目标只允许指向一个或多个有声音符。
 - 技巧不得指向 `rest`。
 - 技巧参数必须是 JSON 可序列化结构，并由注册定义校验。
@@ -38,9 +38,9 @@ export type TechniqueCategory =
 
 K1 测试至少注册 3 个技巧定义:
 
-- `slide`: `legato`，有序 2 个目标 note。
-- `bend`: `pitch_expression`，1 个目标 note。
-- `vibrato`: `pitch_expression`，1 个目标 note。
+- `test.slide`: `legato`，有序 2 个目标 note。
+- `test.bend`: `pitch_expression`，1 个目标 note。
+- `test.vibrato`: `pitch_expression`，1 个目标 note。
 
 这些定义必须能验证:
 
@@ -103,6 +103,23 @@ export type TechniqueParamValidator = (
 export type TechniqueParamValidationResult =
   | { ok: true }
   | { ok: false; code: "technique-params-invalid"; details?: JsonObject }
+
+export type K1TestTechniqueDefinitionId =
+  | "test.bend"
+  | "test.vibrato"
+  | "test.slide"
+
+export interface K1TestBendParams {
+  semitones: 1 | 2
+}
+
+export interface K1TestVibratoParams {
+  width: "narrow" | "wide"
+}
+
+export interface K1TestSlideParams {
+  slideKind: "shift" | "legato"
+}
 ```
 
 规则:
@@ -113,13 +130,14 @@ export type TechniqueParamValidationResult =
 - 未注册 `definitionId` 必须产生 `technique-definition-missing`。
 - `targetNoteIds.length` 不符合定义必须产生 `technique-target-count-invalid`。
 - `params` 不符合定义必须产生 `technique-params-invalid`。
+- K1 测试技巧的 definition id、参数字段、参数值、错误码和序列化字段必须使用英文稳定标识；中文名称只允许存在于 i18n 或 UI 显示层。
 - 未知技巧数据的保留策略由 schema/迁移和 report 规划继续约束；K1 不因为未知技巧执行外部代码。
 
 ## K1 测试定义建议
 
 ```ts
 export const testSlideDefinition: TechniqueDefinition = {
-  id: "slide",
+  id: "test.slide",
   category: "legato",
   targetRule: { minNotes: 2, maxNotes: 2, ordered: true, allowRest: false },
   parameterSchemaVersion: "1",
@@ -128,7 +146,7 @@ export const testSlideDefinition: TechniqueDefinition = {
 }
 
 export const testBendDefinition: TechniqueDefinition = {
-  id: "bend",
+  id: "test.bend",
   category: "pitch_expression",
   targetRule: { minNotes: 1, maxNotes: 1, ordered: false, allowRest: false },
   parameterSchemaVersion: "1",
@@ -137,7 +155,7 @@ export const testBendDefinition: TechniqueDefinition = {
 }
 
 export const testVibratoDefinition: TechniqueDefinition = {
-  id: "vibrato",
+  id: "test.vibrato",
   category: "pitch_expression",
   targetRule: { minNotes: 1, maxNotes: 1, ordered: false, allowRest: false },
   parameterSchemaVersion: "1",
@@ -146,11 +164,11 @@ export const testVibratoDefinition: TechniqueDefinition = {
 }
 ```
 
-最小参数契约可以保持很薄:
+最小参数契约保持很薄，但必须可测试，不能永远校验通过:
 
-- `slide`: 允许空参数；目标顺序表示 from -> to。
-- `bend`: 至少能表达目标音程，例如 `{ "semitones": 1 }`。
-- `vibrato`: 允许空参数或基础强度字段；具体播放效果后置。
+- `test.slide`: 只接受 `{ "slideKind": "shift" }` 或 `{ "slideKind": "legato" }`；必须有 2 个不同目标 note，且第二个目标 note 在音乐时间上晚于第一个。
+- `test.bend`: 只接受 `{ "semitones": 1 }` 或 `{ "semitones": 2 }`。
+- `test.vibrato`: 只接受 `{ "width": "narrow" }` 或 `{ "width": "wide" }`。
 
 ## 强制规则
 
@@ -158,7 +176,7 @@ export const testVibratoDefinition: TechniqueDefinition = {
 - TECH-002: 技巧必须绑定明确目标。
 - TECH-003: 技巧目标只能是有声 note。
 - TECH-004: 技巧定义必须通过 registry 注册。
-- TECH-005: `slide`、`bend`、`vibrato` 只能作为 K1 测试定义进入内核，不能成为封闭技巧枚举。
+- TECH-005: `test.slide`、`test.bend`、`test.vibrato` 只能作为 K1 测试定义进入内核，不能成为封闭技巧枚举。
 - TECH-006: 技巧字段必须能被后续渲染、播放、导入导出层读取并降级说明。
 - TECH-007: 后续技巧候选不得作为 Pure Core Kernel V1 阻塞项。
 - TECH-008: `chord` target 后置到和弦能力进入范围后再加入，K1 不支持。
@@ -167,10 +185,12 @@ export const testVibratoDefinition: TechniqueDefinition = {
 
 ## 测试要求
 
-- [ ] AC-SPEC-005-01: K1 可以注册 `slide`、`bend`、`vibrato` 三个测试技巧定义。
+- [ ] AC-SPEC-005-01: K1 可以注册 `test.slide`、`test.bend`、`test.vibrato` 三个测试技巧定义。
 - [ ] AC-SPEC-005-02: `TechniqueData.definitionId` 未注册时产生稳定 diagnostic。
 - [ ] AC-SPEC-005-03: 技巧目标指向 rest 或不存在 note 时产生稳定 diagnostic。
 - [ ] AC-SPEC-005-04: 技巧目标数量不符合定义时产生稳定 diagnostic。
 - [ ] AC-SPEC-005-05: 技巧 params 不符合定义时产生稳定 diagnostic。
+- [ ] AC-SPEC-005-05B: `test.bend`、`test.vibrato` 和 `test.slide` 的非法参数值会返回 `technique-params-invalid`，合法参数值能通过校验。
+- [ ] AC-SPEC-005-05C: `test.slide` 的两个目标 note id 相同或时间顺序错误时产生稳定 diagnostic。
 - [ ] AC-SPEC-005-06: fixture round-trip 后技巧 `id`、`definitionId`、`targetNoteIds` 和 `params` 不丢失。
 - [ ] AC-SPEC-005-07: undo/redo 能按命令粒度撤销和恢复技巧数据。

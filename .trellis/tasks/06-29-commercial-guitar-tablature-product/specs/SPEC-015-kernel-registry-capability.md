@@ -412,7 +412,7 @@ MVP 必须至少通过 registry 管理以下贡献点:
 - `core.commands`: `core.createScore`、`core.insertNote`、`core.setFret`、`core.addTechnique` 等命令定义。
 - `core.selectors`: `selectDocumentMetadata`、`selectSerializableScore`、`selectMeasureRange` 等 selector。
 - `core.hard-validators`: schema、ID、引用、duration、tuning、single-note MVP 限制等 hard validator。
-- `core.guitar-techniques`: `slide`、`bend`、`vibrato` technique definition。
+- `core.guitar-techniques`: `test.slide`、`test.bend`、`test.vibrato` technique definition。
 - `core.migrations`: `.bgp` schema migration entries。
 - `core.templates`: 标准 6 弦 4/4 吉他谱模板 descriptor。
 

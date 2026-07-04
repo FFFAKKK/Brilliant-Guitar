@@ -8,10 +8,10 @@
 - 当前结论: `metadata` 分为文档元数据和音乐元数据；文档元数据描述作品和文件身份，音乐元数据描述 tempo、拍号、timebase、谱面类型和调弦等音乐基础事实。
 - 当前结论: `scoreData` 分为 `timeline + events + techniques`；不再拆出独立 `ScoreStructure`，小节、节奏槽位和 tick 位置统一由 `ScoreTimeline` 表达。
 - 当前结论: 休止符不设计独立 `RestData` 或 `rests` 集合；休止符只是特殊的谱面事件类型，与有声音符共享时间字段。
-- 当前结论: 技巧按一到多个有声音符生效，使用有序 `targetNoteIds` 表达；Core Kernel K1 只定义通用 `TechniqueData` 与 `TechniqueDefinition` 注册框架，`slide`、`bend`、`vibrato` 只是第一批测试用技巧定义，不是写死在内核里的技巧枚举。
+- 当前结论: 技巧按一到多个有声音符生效，使用有序 `targetNoteIds` 表达；Core Kernel K1 只定义通用 `TechniqueData` 与 `TechniqueDefinition` 注册框架，`test.slide`、`test.bend`、`test.vibrato` 只是第一批测试用技巧定义，不是写死在内核里的技巧枚举。
 - 当前结论: 弦号、品号、六线谱演奏位置和吉他指法映射不属于 Core Kernel K1 主模型，后续由官方吉他谱模块或第三方模块保存和处理。
 - 当前结论: 原生文件扩展名采用 `.bgp`，物理形态为单文件开放包结构；Core Kernel K1 只定义语义 schema 和迁移入口，不实现物理文件 IO。
-- 关键开放问题: 无。MVP 和弦能力已确认后置；K1 技巧系统已收敛为注册框架，`slide`、`bend`、`vibrato` 仅作为框架测试定义；`hammer-on`、`pull-off`、`palm mute` 保持为 P0 后续增强。
+- 关键开放问题: 无。MVP 和弦能力已确认后置；K1 技巧系统已收敛为注册框架，`test.slide`、`test.bend`、`test.vibrato` 仅作为框架测试定义；`hammer-on`、`pull-off`、`palm mute` 保持为 P0 后续增强。
 
 ## 用户价值
 
@@ -178,7 +178,7 @@ interface TechniqueData {
   params: JsonObject
 }
 
-// 运行时 registry 贡献点；不得序列化进 ScoreDocument 或 .bgp。
+// Runtime registry contribution only: never persisted in ScoreDocument or .bgp.
 interface TechniqueDefinition {
   id: string
   targetRule: {
@@ -197,6 +197,23 @@ type TechniqueParamValidator = (
 type TechniqueParamValidationResult =
   | { ok: true }
   | { ok: false; code: "technique-params-invalid"; details?: JsonObject }
+
+type K1TestTechniqueDefinitionId =
+  | "test.bend"
+  | "test.vibrato"
+  | "test.slide"
+
+interface K1TestBendParams {
+  semitones: 1 | 2
+}
+
+interface K1TestVibratoParams {
+  width: "narrow" | "wide"
+}
+
+interface K1TestSlideParams {
+  slideKind: "shift" | "legato"
+}
 ```
 
 规则:
@@ -209,8 +226,12 @@ type TechniqueParamValidationResult =
 - `TechniqueDefinition` 通过运行时 registry 解析，不得写入 `.bgp` 包数据、`score.json`、持久化 fixture 或 migration 输出。
 - 打开或验证持久化谱面时，如果 `TechniqueData.definitionId` 无法解析到已注册定义，验证器必须返回 `technique-definition-missing`。
 - 技巧定义负责声明目标音符数量、是否有序、参数校验规则和显示/播放/导出所需的语义边界。
-- `slide`、`bend`、`vibrato` 是 K1 测试用技巧定义，用于证明技巧注册、参数校验、保存、重开、撤销/重做和 fixture round-trip 可用；它们不是内核硬编码枚举。
+- `test.slide`、`test.bend`、`test.vibrato` 是 K1 测试用技巧定义，用于证明技巧注册、参数校验、保存、重开、撤销/重做和 fixture round-trip 可用；它们不是内核硬编码枚举。
 - 技巧参数必须是 JSON 可序列化的结构化数据，不得只是显示标签，也不得使用 `unknown` 逃避校验。
+- K1 测试技巧使用稳定英文 registry id 和参数，不得使用中文作为可编码字段、参数值、definition id 或错误码。
+- `test.bend` 只能作用于 1 个有声音符，只接受 `params = { semitones: 1 }` 或 `params = { semitones: 2 }`。
+- `test.vibrato` 只能作用于 1 个有声音符，只接受 `params = { width: "narrow" }` 或 `params = { width: "wide" }`。
+- `test.slide` 只能作用于 2 个有序有声音符，两个目标 note id 不得相同，第二个目标 note 在音乐时间上必须晚于第一个目标 note，只接受 `params = { slideKind: "shift" }` 或 `params = { slideKind: "legato" }`。
 
 ## MVP 必须满足
 
@@ -223,7 +244,7 @@ type TechniqueParamValidationResult =
 - REQ-002-F07: 第一实现阶段每个 `RhythmSlot` 只能包含一个 `ScoreEvent`，其 `kind` 只能是 `note` 或 `rest`。
 - REQ-002-F08: `SoundNoteEvent` 必须保存绝对音高和所属 `slotId`；起始时间与持续时间由所属 `RhythmSlot` 提供，不得保存 `stringNumber`、`fret` 或 guitar-tab 专属位置字段。
 - REQ-002-F09: `RestNoteEvent` 必须能表达基础休止，但不得引入独立 `RestData` 或 `rests` 集合。
-- REQ-002-F10: `TechniqueData` 必须以 `definitionId + targetNoteIds + params` 表达技巧；K1 必须提供技巧定义注册和校验框架，`slide`、`bend`、`vibrato` 只作为第一批测试定义。
+- REQ-002-F10: `TechniqueData` 必须以 `definitionId + targetNoteIds + params` 表达技巧；K1 必须提供技巧定义注册和校验框架，`test.slide`、`test.bend`、`test.vibrato` 只作为第一批测试定义。
 - REQ-002-F11: 文档必须有验证器，至少能发现小节时值不满或超出、无效 timebase、unsupported 拍号、unsupported tempo map、无效时值、非法音高、非法调弦、断裂引用、同 slot 多 note 和技巧目标非法。
 - REQ-002-F12: 第一实现阶段必须支持六线谱视图和基础五线谱视图从同一核心事件模型派生；六线谱弦品位置由外部吉他谱模块负责。
 - REQ-002-F13: 保存为 `.bgp` 文件时，文档模型必须能写入 `manifest.json` 和核心谱面数据，并记录 schema version、应用版本和兼容范围。
@@ -280,10 +301,10 @@ type TechniqueParamValidationResult =
 - [ ] AC-002-04: 给定三连音、附点、变拍号、多 voice 或 tempo map 输入，第一阶段验证器返回明确 unsupported 错误。
 - [ ] AC-002-05: 给定同一 `RhythmSlot` 上多个有声 note，第一阶段验证器返回明确的 `unsupported-multiple-notes-in-slot`，且不会保存为有效 K1 谱面。
 - [ ] AC-002-06: 给定 `rest` 事件，核心模型能按同一套 `ScoreEvent` 时间规则保存和验证，不需要独立 `RestData`。
-- [ ] AC-002-07: 给定已注册的 `slide`、`bend`、`vibrato` 测试技巧定义，模型能保存结构化参数和有序 `targetNoteIds`，并拒绝未注册定义、无效参数、指向 rest 或不存在 note 的技巧目标。
+- [ ] AC-002-07: 给定已注册的 `test.slide`、`test.bend`、`test.vibrato` 测试技巧定义，模型能保存结构化参数和有序 `targetNoteIds`，并拒绝未注册定义、无效参数、指向 rest 或不存在 note 的技巧目标。
 - [ ] AC-002-08: 给定缺失吉他谱模块私有数据的文件，核心谱面仍可打开、验证、播放可识别音高和节奏；但核心不得承诺还原用户原始弦号/品号。
 - [ ] AC-002-09: 给定 `scoreType = "guitar-tab"` 且缺失调弦、调弦不是 6 个音高或包含非法音高的文件，验证器返回稳定 diagnostic。
 
 ## 开放问题
 
-- 无。MVP 和弦能力已确认后置；K1 技巧系统已确认采用注册框架；`slide`、`bend`、`vibrato` 只是框架测试定义，`hammer-on`、`pull-off`、`palm mute` 保持为 P0 后续增强。
+- 无。MVP 和弦能力已确认后置；K1 技巧系统已确认采用注册框架；`test.slide`、`test.bend`、`test.vibrato` 只是框架测试定义，`hammer-on`、`pull-off`、`palm mute` 保持为 P0 后续增强。

@@ -74,7 +74,7 @@ Core Kernel V1 supports the 4-measure guitar core-loop fixture:
 - `ScoreEvent.kind` is either `note` or `rest`.
 - Allowed durations: quarter, eighth, sixteenth.
 - Basic equal-length rests represented as `ScoreEvent.kind = "rest"`.
-- Generic registered technique framework. K1 tests use `slide`, `bend`, and `vibrato` as registered test technique definitions.
+- Generic registered technique framework. K1 tests use startup-registered `test.slide`, `test.bend`, and `test.vibrato` definitions to exercise slide, bend, and vibrato technique semantics.
 
 V1 does not implement track management, guitar string/fret persistence, multi-voice editing, chords, tempo maps, changing time signatures, dotted rhythms, tuplets, MIDI input, playback scheduling, rendering, or physical file IO.
 
@@ -223,7 +223,7 @@ slot.durationTicks = 480
 
 Techniques must be structured semantic data, not display-only labels.
 
-Core Kernel K1 owns the generic technique framework and validation contract. Concrete techniques are registered definitions; they must not be hardcoded as a kernel enum. `slide`, `bend`, and `vibrato` are K1 test technique definitions used to verify the framework, not the full built-in technique catalog.
+Core Kernel K1 owns the generic technique framework and validation contract. Concrete techniques are registered definitions; they must not be hardcoded as a kernel enum. `test.slide`, `test.bend`, and `test.vibrato` are K1 startup-registered test technique definitions used to verify the framework, not the full built-in technique catalog.
 
 Only `TechniqueData` is persisted inside `ScoreDocument` and `.bgp` `score.json`. `TechniqueDefinition`, `TechniqueTargetRule`, and `TechniqueParamValidator` are runtime registry contributions only. They may contain functions and handlers, so they must never be serialized into `ScoreDocument`, `score.json`, fixtures as score data, snapshots intended for persistence, or migration input/output. When opening or validating a persisted document, the kernel resolves `TechniqueData.definitionId` against the runtime registry and reports `technique-definition-missing` if no definition is registered.
 
@@ -269,6 +269,23 @@ export interface TechniqueTargetRule {
   ordered: boolean
   allowRest: false
 }
+
+export type K1TestTechniqueDefinitionId =
+  | "test.bend"
+  | "test.vibrato"
+  | "test.slide"
+
+export interface K1TestBendParams {
+  semitones: 1 | 2
+}
+
+export interface K1TestVibratoParams {
+  width: "narrow" | "wide"
+}
+
+export interface K1TestSlideParams {
+  slideKind: "shift" | "legato"
+}
 ```
 
 Rules:
@@ -282,7 +299,11 @@ Rules:
 - A registered definition owns target count, target ordering, and parameter validation.
 - Techniques must not target `rest` events.
 - Technique parameters must be structured enough for future rendering, playback, export, and validation to interpret consistently.
-- K1 test definitions should include `bend` and `vibrato` as one-note techniques and `slide` as an ordered two-note technique.
+- K1 test definitions use stable English registry ids and params. They are test definitions only, not a closed kernel enum and not the full guitar technique catalog.
+- `test.bend` must target exactly one sound note and accept only `params = { semitones: 1 }` or `params = { semitones: 2 }`.
+- `test.vibrato` must target exactly one sound note and accept only `params = { width: "narrow" }` or `params = { width: "wide" }`.
+- `test.slide` must target exactly two ordered sound notes, the two target note ids must be different, the second target note must occur after the first in musical time, and params must be `{ slideKind: "shift" }` or `{ slideKind: "legato" }`.
+- Test technique ids, param names, param values, diagnostic codes, and serialized fields must be English stable identifiers; localized display names belong to i18n resources or UI modules, not persisted technique data.
 
 ## Guitar Module Boundary
 

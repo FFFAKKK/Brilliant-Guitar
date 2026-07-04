@@ -18,7 +18,7 @@ V1 registry may accept descriptors and handlers for:
 
 Import/export descriptors are metadata and capability declarations only. They do not mean Core Kernel implements PDF, PNG, Guitar Pro, or physical `.bgp` IO.
 
-Technique definitions are also registry contributions. Core Kernel K1 must not hardcode concrete technique names as a closed enum in `TechniqueData`; a persisted technique references a registered `TechniqueDefinition.id`, and the registered definition owns target count, target ordering, and params validation. K1 may ship `slide`, `bend`, and `vibrato` as startup-registered test definitions to verify the framework.
+Technique definitions are also registry contributions. Core Kernel K1 must not hardcode concrete technique names as a closed enum in `TechniqueData`; a persisted technique references a registered `TechniqueDefinition.id`, and the registered definition owns target count, target ordering, and params validation. K1 may ship `test.slide`, `test.bend`, and `test.vibrato` as startup-registered test definitions to verify the framework.
 
 ## Module Identity
 
