@@ -168,7 +168,7 @@ interface AbsolutePitch {
 
 ### 技巧数据
 
-技巧不塞进音符对象里，独立保存在 `TechniqueData[]`:
+技巧不塞进音符对象里，独立保存在 `TechniqueData[]`。`TechniqueData` 是唯一写入 `ScoreDocument` 和 `.bgp` `score.json` 的技巧数据；`TechniqueDefinition`、`TechniqueTargetRule` 和 `TechniqueParamValidator` 只存在于运行时注册表，不属于可持久化谱面数据:
 
 ```typescript
 interface TechniqueData {
@@ -178,6 +178,7 @@ interface TechniqueData {
   params: JsonObject
 }
 
+// 运行时 registry 贡献点；不得序列化进 ScoreDocument 或 .bgp。
 interface TechniqueDefinition {
   id: string
   targetRule: {
@@ -203,6 +204,10 @@ type TechniqueParamValidationResult =
 - 技巧只能作用于有声音符，不能作用于 rest。
 - `targetNoteIds` 是有序数组。
 - `definitionId` 必须引用已注册的 `TechniqueDefinition`。
+- `TechniqueData` 必须保持纯数据，只能包含 ID、目标音符引用和 JSON 可序列化 `params`。
+- `TechniqueData` 不得包含 validator、callback、closure、class、显示 handler、播放 handler、渲染 handler 或模块代码。
+- `TechniqueDefinition` 通过运行时 registry 解析，不得写入 `.bgp` 包数据、`score.json`、持久化 fixture 或 migration 输出。
+- 打开或验证持久化谱面时，如果 `TechniqueData.definitionId` 无法解析到已注册定义，验证器必须返回 `technique-definition-missing`。
 - 技巧定义负责声明目标音符数量、是否有序、参数校验规则和显示/播放/导出所需的语义边界。
 - `slide`、`bend`、`vibrato` 是 K1 测试用技巧定义，用于证明技巧注册、参数校验、保存、重开、撤销/重做和 fixture round-trip 可用；它们不是内核硬编码枚举。
 - 技巧参数必须是 JSON 可序列化的结构化数据，不得只是显示标签，也不得使用 `unknown` 逃避校验。

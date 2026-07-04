@@ -219,6 +219,7 @@ export type JsonValue =
 
 export type JsonObject = { [key: string]: JsonValue }
 
+// Persisted score data: pure JSON-compatible semantic technique usage.
 export interface TechniqueData {
   id: string
   definitionId: string
@@ -226,6 +227,7 @@ export interface TechniqueData {
   params: JsonObject
 }
 
+// Runtime registry contribution only: never persisted in ScoreDocument or .bgp.
 export interface TechniqueDefinition {
   id: string
   targetRule: TechniqueTargetRule
@@ -253,6 +255,10 @@ export type TechniqueParamValidationResult =
 - `TechniqueData.definitionId` 必须引用已注册 `TechniqueDefinition`。
 - `targetNoteIds` 是有序数组。
 - 技巧只能作用于有声音符，不能作用于 `rest`。
+- `TechniqueData` 是唯一写入 `ScoreDocument` 和 `.bgp` `score.json` 的技巧数据，必须保持纯数据。
+- `TechniqueData` 不得包含 validator、callback、closure、class、显示 handler、播放 handler、渲染 handler 或模块代码。
+- `TechniqueDefinition`、`TechniqueTargetRule` 和 `TechniqueParamValidator` 只存在于运行时 registry，不得写入 `.bgp` 包数据、`score.json`、持久化 fixture 或 migration 输出。
+- 如果持久化文档中的 `TechniqueData.definitionId` 无法解析到已注册定义，验证器必须返回 `technique-definition-missing`。
 - 技巧定义负责目标数量、目标顺序和参数校验。
 - `params` 必须是 JSON 可序列化结构，不得使用 `unknown` 逃避校验。
 - K1 用 `slide`、`bend`、`vibrato` 作为测试技巧定义，证明注册、验证、保存、重开、撤销/重做和 fixture round-trip 可用；它们不是 Core Kernel 硬编码枚举。

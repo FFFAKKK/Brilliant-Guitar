@@ -225,6 +225,8 @@ Techniques must be structured semantic data, not display-only labels.
 
 Core Kernel K1 owns the generic technique framework and validation contract. Concrete techniques are registered definitions; they must not be hardcoded as a kernel enum. `slide`, `bend`, and `vibrato` are K1 test technique definitions used to verify the framework, not the full built-in technique catalog.
 
+Only `TechniqueData` is persisted inside `ScoreDocument` and `.bgp` `score.json`. `TechniqueDefinition`, `TechniqueTargetRule`, and `TechniqueParamValidator` are runtime registry contributions only. They may contain functions and handlers, so they must never be serialized into `ScoreDocument`, `score.json`, fixtures as score data, snapshots intended for persistence, or migration input/output. When opening or validating a persisted document, the kernel resolves `TechniqueData.definitionId` against the runtime registry and reports `technique-definition-missing` if no definition is registered.
+
 Use this type shape or an equivalent stricter shape:
 
 ```typescript
@@ -238,6 +240,7 @@ export type JsonValue =
 
 export type JsonObject = { [key: string]: JsonValue }
 
+// Persisted score data: pure JSON-compatible semantic technique usage.
 export interface TechniqueData {
   id: string
   definitionId: string
@@ -245,6 +248,7 @@ export interface TechniqueData {
   params: JsonObject
 }
 
+// Runtime registry contribution only: never persisted in ScoreDocument or .bgp.
 export interface TechniqueDefinition {
   id: string
   targetRule: TechniqueTargetRule
@@ -272,6 +276,9 @@ Rules:
 - Techniques may target one or more sound note events.
 - `targetNoteIds` is ordered.
 - `definitionId` must reference a registered `TechniqueDefinition`.
+- `TechniqueData` must remain pure data: IDs, target note references, and JSON-serializable params only.
+- `TechniqueData` must not contain validators, callbacks, closures, classes, display handlers, playback handlers, renderer handlers, or module code.
+- `TechniqueDefinition` is resolved from the runtime registry and must not be written into `.bgp` package data.
 - A registered definition owns target count, target ordering, and parameter validation.
 - Techniques must not target `rest` events.
 - Technique parameters must be structured enough for future rendering, playback, export, and validation to interpret consistently.

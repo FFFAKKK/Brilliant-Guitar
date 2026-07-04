@@ -53,7 +53,7 @@
 ### 2. 领域模型与文件 schema
 
 - [ ] 定义 `ScoreDocument = metadata + scoreData`，其中 `metadata = document + music`，`scoreData = timeline + events + techniques`。
-- [ ] 定义 `DocumentMetadata`、`MusicMetadata`、`ScoreTimeline`、`MeasureTimeSpan`、`RhythmSlot`、`ScoreEvent`、`SoundNoteEvent`、`RestNoteEvent`、`AbsolutePitch`、`TechniqueData` 和 `TechniqueDefinition`。
+- [ ] 定义 `DocumentMetadata`、`MusicMetadata`、`ScoreTimeline`、`MeasureTimeSpan`、`RhythmSlot`、`ScoreEvent`、`SoundNoteEvent`、`RestNoteEvent`、`AbsolutePitch` 和持久化 `TechniqueData`；`TechniqueDefinition` 只作为运行时 registry contribution 定义，不进入 `ScoreDocument` 或 `.bgp`。
 - [ ] 明确 `MusicMetadata.tuning` 在 `scoreType = "guitar-tab"` 时必填，必须为低到高 6 个合法 `AbsolutePitch`；拒绝 `EADGBE` 这类模糊调弦文本作为核心数据。
 - [ ] 明确 `AbsolutePitch` 使用 `step + accidental + octave` 结构，保留 enharmonic spelling；MIDI number 只能作为派生数据。
 - [ ] 明确 Core Kernel K1 不定义 `Track`、`Voice`、`GuitarTabData`、`stringNumber`、`fret` 或弦品映射作为核心谱面字段。
@@ -69,6 +69,8 @@
 - [ ] 禁止第一阶段 UI 和 schema 暴露歌词、自由文本框、和声分析、罗马数字或简谱视图。
 - [ ] 验证器拒绝同一 `RhythmSlot` 上多个有声 `note` 事件、和弦图或和弦名输入，并返回明确 unsupported。
 - [ ] 定义通用技巧注册框架: `TechniqueData.definitionId` 引用已注册 `TechniqueDefinition`，`targetNoteIds` 是有序有声音符数组，`params` 必须是 JSON 可序列化结构。
+- [ ] 确保 `TechniqueData` 是纯数据，只能包含 ID、目标音符引用和 JSON `params`；不得包含 validator、callback、closure、class、显示 handler、播放 handler、渲染 handler 或模块代码。
+- [ ] 确保 `TechniqueDefinition`、`TechniqueTargetRule` 和 `TechniqueParamValidator` 只存在于运行时 registry，不写入 `score.json`、持久化 fixture、migration 输出或可持久化 snapshot。
 - [ ] 注册 `slide`、`bend`、`vibrato` 作为 K1 测试技巧定义，验证技巧注册、目标数量、参数校验、保存、重开、撤销/重做和 fixture round-trip；不得把这 3 个技巧写死为 Core Kernel 枚举。
 - [ ] 定义测试技巧目标规则: `bend` 和 `vibrato` 测试定义只接受 1 个目标 note，`slide` 测试定义只接受 2 个有序目标 note；任何技巧不得指向 rest。
 - [ ] 定义 `.bgp` 包结构和 `manifest.json`、`score.json` schema。
