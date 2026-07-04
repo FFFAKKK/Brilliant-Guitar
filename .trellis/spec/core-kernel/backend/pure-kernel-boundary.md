@@ -27,6 +27,7 @@ Pure Core Kernel V1 contains exactly these mechanism groups:
 - Future kernel expansion must first map to one of the 9 mechanism groups. If it cannot map cleanly, it requires a separate planning review before it can enter the kernel.
 - A capability may enter the kernel only when it is a shared foundation for multiple modules, cannot remain external without creating a second score truth, and can be expressed as testable schema, command, validator, migration, snapshot/event, registry/capability, or error/report contracts.
 - A capability must stay outside the kernel when it is mainly UI session state, layout/rendering behavior, audio scheduling, physical import/export IO, plugin discovery/lifecycle, analysis/advice, or product workflow.
+- Guitar string/fret placement, tablature fingering maps, and rendered staff positions stay outside Core Kernel K1. The kernel may store absolute pitch and music metadata tuning, but it must not make string/fret placement part of the core score truth.
 
 ## Allowed Dependencies
 
@@ -58,3 +59,4 @@ Do not import or depend on:
 - Physical zip reading/writing, file paths, atomic save, autosave recovery, and recent files belong to future persistence modules.
 - UI cursor, selection, mouse drag state, playback cursor tick, layout coordinates, and rendered page coordinates are external session or layout state.
 - External modules may derive read models from snapshots, but they cannot own or write back mutable `ScoreDocument` copies.
+- External guitar modules may store module-owned `noteId -> string/fret` mappings in a future module data contract. Those mappings must not be required K1 core schema fields.

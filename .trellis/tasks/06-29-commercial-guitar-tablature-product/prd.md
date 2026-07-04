@@ -37,9 +37,9 @@
 - MVP 乐器与编辑范围已确认: 先把六线谱、五线谱基础功能和吉他功能做好，再做贝斯、鼓、键盘、复杂编曲和其它生态能力。
 - MVP 吉他技巧范围已确认: 技巧必须分类，第一阶段先覆盖 P0 最高频技巧，后续再扩展低频和复杂技巧。
 - MVP 技巧范围已确认: 第一条编码闭环先覆盖 3 个 `Core Loop` 技巧: `slide`、`bend`、`vibrato`；`hammer-on`、`pull-off`、`palm mute` 保持为 P0 后续增强，不阻塞第一条闭环。
-- 微内核数据结构决策已确认: 调弦必须逐弦保存为明确音高，例如标准 6 弦吉他低到高 `E2 A2 D3 G3 B3 E4`，不得把 `EADGBE` 作为核心数据。
-- 技巧扩展决策已确认: 微内核保存通用 `TechniqueAnnotation`，具体技巧通过 `TechniqueRegistry` 注册；后续新增技巧不得散落硬编码到 UI、渲染、播放和导出层。
-- 命令系统边界已确认: Core Kernel 对外只暴露语义命令，例如 `insertNote`、`setFret`、`addTechnique`；底层 patch、JSON path、字段替换和数组操作只能作为内核内部事务、undo/redo 和回放实现细节，不得成为 UI、插件、导入器或外部 API 的写入入口。
+- 微内核数据结构决策已确认: `ScoreDocument` 顶层收敛为 `metadata + scoreData`；`metadata.music.tuning` 必须保存明确音高，例如标准 6 弦吉他低到高 `E2 A2 D3 G3 B3 E4`，不得把 `EADGBE` 作为核心数据。
+- 技巧扩展决策已确认: 微内核保存结构化 `TechniqueData`，技巧通过有序 `targetNoteIds` 作用于一到多个有声音符；后续新增技巧不得散落硬编码到 UI、渲染、播放和导出层。
+- 命令系统边界已确认: Core Kernel 对外只暴露语义命令，例如 `insertNote`、`insertRest`、`setNotePitch`、`setDuration`、`addTechnique`；底层 patch、JSON path、字段替换和数组操作只能作为内核内部事务、undo/redo 和回放实现细节，不得成为 UI、插件、导入器或外部 API 的写入入口。弦号/品号输入由后续吉他谱模块处理，不属于 Pure Core Kernel K1 命令。
 - undo/redo 粒度已确认: 第一阶段先采用细粒度历史模型，每个成功的可撤销语义命令默认对应一个 `HistoryEntry`；`undo` 和 `redo` 一次只回退或重做一个历史条目，不做复杂智能合并，以优先保证 MVP 基本功能稳定、可测试、可回放。
 - 文档地址/范围模型重新设计授权已确认: 用户允许重新设计该内核功能，不必遵守当前可选字段版 `DocumentAddress` 草案；已新增研究文档 `research/document-address-range-design-patterns.md` 对比相关设计模式。
 - 谱面数据根本原则已确认: 所有操作都必须服务 `ScoreDocument` 谱面数据；排版、布局坐标、屏幕坐标、播放光标和导出页面坐标都只能从谱面数据派生，不得成为独立事实来源。
@@ -71,9 +71,9 @@
 - MVP 播放校对范围已确认: 第一阶段只做最基本播放校对，包括合成播放、开始/暂停/继续/停止、播放光标、节拍器、基础速度控制，以及从文档快照生成播放事件；不做真实采样音色、音频轨、混音、导出音频或复杂技巧音色模拟。
 - MVP 编辑输入优先级已确认: 第一阶段先做键盘优先输入；MIDI 输入、MIDI 录入、MIDI 导入和其它外部演奏输入后置。
 - MVP 键盘输入模型已确认: 采用“谱面光标 + 时值键 + 数字品号输入 + 弦间/拍间方向键移动 + 技巧快捷键/命令面板”的 Guitar Pro 式高效输入模型；自由文本谱解析不作为主输入。
-- MVP 节奏与复音复杂度已确认: 第一阶段只支持 4/4、单轨单声部、固定 tempo、基础休止、四分/八分/十六分音符和单音输入；三连音、附点节奏、跨小节延音线、多声部同轨、变拍号、同 beat 多音和复杂节奏谱后置。
+- MVP 节奏与复音复杂度已确认: 第一阶段只支持 4/4、单声部事件流、固定 tempo、基础休止、四分/八分/十六分音符和单音输入；三连音、附点节奏、跨小节延音线、多声部同轨、变拍号、同 beat 多音和复杂节奏谱后置。
 - MVP 和弦能力已确认: 第一阶段不做和弦，MVP 只要求单音 + 休止；同 beat 多音、和弦图、和弦名自动识别、和弦库、扫弦/琶音节奏细节和复杂和声分析后置。
-- MVP 轨道管理已确认: 第一阶段只做一个标准 6 弦吉他轨道，不暴露轨道添加、删除、重命名、排序 UI；领域模型保留未来多轨字段。
+- MVP 轨道管理已确认: 第一阶段产品闭环只提供一个默认吉他谱上下文，不暴露轨道添加、删除、重命名、排序 UI；Core Kernel K1 不定义 `Track` 主实体，未来多轨作为外部模块或后续模型演进单独规划。
 - MVP 歌词/理论标注范围已确认: 第一阶段不支持歌词、和声分析、罗马数字和简谱；只保留标题、作者、tempo、4/4 拍号和可选的简单段落标记。
 - MVP 文件保护范围已确认: 第一阶段不做文件密码锁、加密保存或 DRM；`.bgp` 保持开放包结构，便于开源验证、调试、迁移和测试。
 - MVP 默认语言策略已确认: 首次启动跟随系统语言；中文系统使用 `zh-CN`，其它系统使用 `en-US`；用户手动选择后保存偏好并优先于系统语言。
@@ -159,7 +159,7 @@
 - MVP 播放校对默认服务“检查节奏、音高和输入错误”，不把练习系统、DAW、真实录音/视频同步作为第一阶段目标。
 - MVP 编辑输入默认以键盘为主路径，必须能完成 4 小节 riff 的时值、弦号、品号、休止、移动、删除、撤销/重做和 Core Loop 技巧输入；鼠标选择可作为辅助，虚拟指板和 MIDI 不作为第一阶段阻塞项。
 - MVP 键盘输入模型默认采用谱面光标、时值键、数字品号输入、方向键移动弦/拍、技巧快捷键和命令面板；不把自由文本谱解析作为主输入。
-- MVP 节奏默认限制为 4/4、固定 tempo、单轨单声部、四分/八分/十六分音符、基础休止和单音输入；领域模型可预留更复杂节奏与和弦能力，但第一阶段验证器、UI、播放和导出不以复杂节奏或同 beat 多音为验收门槛。
+- MVP 节奏默认限制为 4/4、固定 tempo、单声部事件流、四分/八分/十六分音符、基础休止和单音输入；领域模型可预留更复杂节奏与和弦能力，但第一阶段验证器、UI、播放和导出不以复杂节奏或同 beat 多音为验收门槛。
 - MVP 谱面文字默认只覆盖元数据和可选简单段落标记；歌词、任意文本框、和声分析、罗马数字和简谱后置。
 - MVP 即使是开源验证版本，也必须采用商业软件质量门禁: 文档评审、类型检查、自动化测试、文件兼容测试、导入导出回归、安全检查、性能基准、崩溃恢复验证和发布清单。
 
@@ -213,7 +213,7 @@ P0 类别包括连接与连奏、音高变化与表情、延音闷音与噪音�
 
 原因: 6 弦吉他覆盖最高频用户和教学场景，能让第一阶段专注六线谱、五线谱同步、P0 技巧、播放校对和导出闭环。7/8 弦会扩大调弦、指板、品位范围、技巧验证、测试谱库和 UI 状态组合。
 
-实现约束: 文档模型可以保留 `stringCount` 和 `tuning` 这类未来扩展字段，但第一阶段验证器、默认模板、编辑 UI、测试谱库和验收标准只接受 6 弦吉他。任何 7/8 弦导入、创建或编辑入口都不得作为第一阶段交付项。
+实现约束: `metadata.music.tuning` 可以保存当前吉他谱默认调弦的明确音高列表，但弦号、品号、`stringCount`、`fretRange` 和指法位置映射不属于 Pure Core Kernel K1 主模型。第一阶段验证器、默认模板、编辑 UI、测试谱库和验收标准只接受标准 6 弦吉他产品上下文；任何 7/8 弦导入、创建或编辑入口都不得作为第一阶段交付项。
 
 ### DEC-P007: 原生文件格式采用哪种策略？
 
@@ -353,17 +353,17 @@ P0 类别包括连接与连奏、音高变化与表情、延音闷音与噪音�
 
 取舍: 如果采用自由文本输入，复制粘贴和快速草稿会更方便，但解析、错误恢复、五线谱同步和技巧结构化会复杂；如果采用纯点击输入，新手更直观，但专业效率和测试确定性较弱。
 
-实现约束: 光标必须能定位到小节、beat、弦和音符槽位；时值切换、数字品号输入、方向键移动、技巧添加、删除、撤销/重做和播放校对都必须映射为稳定命令。自由文本谱解析、MIDI 输入和虚拟指板输入不作为第一阶段验收门槛。
+实现约束: 光标必须能定位到小节、beat、弦和音符槽位；时值切换、数字品号输入、方向键移动、技巧添加、删除、撤销/重做和播放校对都必须映射为稳定命令或吉他模块到核心命令的稳定转换。自由文本谱解析、MIDI 输入和虚拟指板输入不作为第一阶段验收门槛。Pure Core Kernel K1 本身只接收绝对音高和音乐时间，不保存弦号/品号。
 
 ### DEC-P023: MVP 节奏与复音复杂度第一阶段做到什么程度？
 
-结论: 第一阶段只支持 4/4、单轨单声部、固定 tempo、基础休止、四分/八分/十六分音符和单音输入；三连音、附点节奏、跨小节延音线、多声部同轨、变拍号、同 beat 多音和复杂节奏谱后置。
+结论: 第一阶段只支持 4/4、单声部事件流、固定 tempo、基础休止、四分/八分/十六分音符和单音输入；三连音、附点节奏、跨小节延音线、多声部同轨、变拍号、同 beat 多音和复杂节奏谱后置。
 
 原因: 这能支撑第一条 4 小节 riff 的编辑、五线谱同步、播放校对和 PDF/PNG 导出，同时把领域模型、布局、VexFlow 适配和播放事件的复杂度控制在可验证范围内。
 
 取舍: 如果第一阶段支持三连音、附点和多声部，谱面表现更接近商业软件，但会明显增加输入、校验、渲染、播放和回归测试复杂度；如果节奏范围过窄，MVP 更稳，但演示谱的音乐表现力会弱。
 
-实现约束: 第一阶段验证器只接受 4/4、固定 tempo、单 voice、四分/八分/十六分、基础休止和每 beat 单音。领域模型可以保留 tick、voice、timeSignature 等扩展字段，但 UI、fixture、播放、VexFlow 适配和 PDF/PNG 验收不得依赖三连音、附点、跨小节延音线、多声部、同 beat 多音或变拍号。
+实现约束: 第一阶段验证器只接受 4/4、固定 tempo、单声部事件流、四分/八分/十六分、基础休止和每 beat 一个 `ScoreEvent`。领域模型可以保留 tick、timeSignature 等扩展字段，但 UI、fixture、播放、VexFlow 适配和 PDF/PNG 验收不得依赖三连音、附点、跨小节延音线、多声部、同 beat 多音或变拍号。
 
 ### DEC-P024: MVP 和弦能力第一阶段做到什么程度？
 
@@ -373,7 +373,7 @@ P0 类别包括连接与连奏、音高变化与表情、延音闷音与噪音�
 
 取舍: 后置和弦会降低第一版谱例的音乐表现力，但显著降低实现风险；如果第一阶段做和弦，产品更像真实吉他谱，但会扩大模型、渲染、播放和测试复杂度。
 
-实现约束: 第一阶段每个 beat 只能包含一个 note 或一个 rest；如果输入同一 beat 多个 note、和弦图、和弦名或扫弦/琶音细节，验证器和 UI 必须返回明确 unsupported。
+实现约束: 第一阶段每个 beat 只能包含一个 `ScoreEvent`，其 `kind` 只能是 `note` 或 `rest`；休止符只是特殊谱面事件，不使用独立 `RestData`。如果输入同一 beat 多个有声 note、和弦图、和弦名或扫弦/琶音细节，验证器和 UI 必须返回明确 unsupported。
 
 ### DEC-P025: MVP 第一条闭环的吉他技巧是否继续保留 6 个？
 
@@ -387,13 +387,13 @@ P0 类别包括连接与连奏、音高变化与表情、延音闷音与噪音�
 
 ### DEC-P026: MVP 第一阶段是否暴露轨道管理？
 
-结论: 第一阶段不暴露轨道添加、删除、重命名和排序 UI，只保留一个标准 6 弦吉他轨道；领域模型保留未来多轨字段。这样能避免与“单轨单声部”范围冲突。
+结论: 第一阶段不暴露轨道添加、删除、重命名和排序 UI，只保留一个默认吉他谱产品上下文；Core Kernel K1 不定义 `Track` 主实体，也不要求核心 schema 保留 `tracks` 数组。这样能避免把未来多轨提前塞进内核。
 
-原因: 当前文档里 `REQ-008` 仍有轨道添加/删除/重命名/排序能力，但 `REQ-002`、`REQ-011` 已经把第一阶段收敛为单轨。这个问题会影响 UI、命令系统、文件 schema、测试和未来多轨兼容。
+原因: 当前文档里 `REQ-008` 仍有轨道添加/删除/重命名/排序能力，但 `REQ-002`、`REQ-011` 已经把第一阶段收敛为一个默认吉他谱上下文。这个问题会影响 UI、命令系统、文件 schema、测试和未来多轨兼容。
 
-取舍: 如果第一阶段做轨道管理，产品更像完整编辑器，但会牵出多轨数据、轨道选择、播放同步和 UI 状态；如果不做，MVP 更稳，但第一版只能编辑一个吉他轨。
+取舍: 如果第一阶段做轨道管理，产品更像完整编辑器，但会牵出多轨数据、轨道选择、播放同步和 UI 状态；如果不做，MVP 更稳，但第一版只能编辑一个默认吉他谱上下文。
 
-实现约束: `Guitar Core Loop` 只允许一个 track；轨道列表 UI、添加轨道、删除轨道、重命名轨道、排序轨道、mute/solo 都不得作为第一阶段可执行命令或验收项。文件 schema 可以保留 `tracks` 数组或未来多轨字段，但第一阶段验证器只接受一个标准 6 弦吉他轨道。
+实现约束: `Guitar Core Loop` 不提供轨道列表 UI、添加轨道、删除轨道、重命名轨道、排序轨道、mute/solo，也不得把这些作为第一阶段可执行命令或验收项。Core Kernel K1 schema 不要求 `tracks` 数组；未来多轨必须作为后续模型演进或外部模块能力单独规划。
 
 ### DEC-P027: MVP 第一阶段是否支持歌词、和声分析、罗马数字或简谱？
 
@@ -489,7 +489,7 @@ P0 类别包括连接与连奏、音高变化与表情、延音闷音与噪音�
 
 结论: 第一阶段 Core Kernel 的最小边界已确认采用 9 类机制。这九类功能目前足够支撑 MVP 内核规划，后续如果要推翻或增减第一版边界，需要作为新的架构决策单独评审。
 
-边界: 第一阶段内核至少包含 `ScoreDocument` 核心对象模型、逐弦明确音高的调弦结构、通用 `TechniqueAnnotation`、`CommandBus`、事务、undo/redo、命令回放、文档地址/范围模型、命令目标校验、硬一致性验证、diagnostic、`.bgp` schema/序列化/迁移入口、快照、事件、内核注册表、capability manifest、外部 import/export 抽象 descriptor、基础错误类型、`ImportReport` 和 `ExportReport` 外壳类型；排除 React UI、活动光标/选区会话状态、具体技巧定义和 UI、VexFlow/SVG 适配器、Web Audio 播放实现、PDF/PNG 具体实现、PDF/PNG 具体 registry handler、Guitar Pro 导入实现、`.bgp` 物理文件 IO、第三方插件运行时和 Tauri 文件系统实现。
+边界: 第一阶段内核至少包含 `ScoreDocument = metadata + scoreData` 核心对象模型、文档元数据、音乐元数据、明确音高形式的调弦元数据、`ScoreTimeline`、`ScoreEvent`、结构化 `TechniqueData`、`CommandBus`、事务、undo/redo、命令回放、文档地址/范围模型、命令目标校验、硬一致性验证、diagnostic、`.bgp` schema/序列化/迁移入口、快照、事件、内核注册表、capability manifest、外部 import/export 抽象 descriptor、基础错误类型、`ImportReport` 和 `ExportReport` 外壳类型；排除 React UI、活动光标/选区会话状态、弦号/品号/吉他指法映射、具体技巧 UI、VexFlow/SVG 适配器、Web Audio 播放实现、PDF/PNG 具体实现、PDF/PNG 具体 registry handler、Guitar Pro 导入实现、`.bgp` 物理文件 IO、第三方插件运行时和 Tauri 文件系统实现。
 
 9 类机制为: 谱面核心对象模型、命令系统调用边界、事务/历史/一致性边界、文档地址和范围模型、硬一致性验证、`.bgp` 语义契约和迁移入口、快照/事件/模块通信协议、注册表与能力边界、错误/diagnostic/report 契约。
 
@@ -513,7 +513,7 @@ P0 类别包括连接与连奏、音高变化与表情、延音闷音与噪音�
 
 结论: 采用语义命令作为唯一对外写入接口。patch、JSON path、字段替换、数组 splice 等底层变更只能作为 Core Kernel 内部 delta，用于事务、undo/redo、命令回放、调试和性能优化。
 
-原因: 语义命令表达用户或模块意图，例如 `insertNote`、`setFret`、`setDuration`、`addTechnique`、`transposeRange`。这能让内核集中处理音乐规则、目标校验、权限、错误提示、撤销重做、命令面板、快捷键和插件 API。如果对外暴露 patch 命令，插件和 UI 很容易绕过领域规则，后续 schema 演进、文件兼容和测试回放都会失控。
+原因: 语义命令表达用户或模块意图，例如 `insertNote`、`insertRest`、`setNotePitch`、`setDuration`、`addTechnique`、`transposeRange`。这能让内核集中处理音乐规则、目标校验、权限、错误提示、撤销重做、命令面板、快捷键和插件 API。如果对外暴露 patch 命令，插件和 UI 很容易绕过领域规则，后续 schema 演进、文件兼容和测试回放都会失控。
 
 实现约束: UI、快捷键、导入器、内部模块和未来第三方插件都只能提交已注册的语义命令；Core Kernel 负责把语义命令编译为内部 delta，并在 commit 前运行硬一致性验证。不得实现 `patchDocument`、`replaceJsonPath`、`setField`、`spliceArray`、`runScript` 或任意字段路径写入作为公开命令。
 
@@ -523,9 +523,9 @@ P0 类别包括连接与连奏、音高变化与表情、延音闷音与噪音�
 
 结论: 第一阶段采用细粒度 do/undo 模型。每个成功的可撤销语义命令默认生成一个 `HistoryEntry`；`undo` 一次回退一个 `HistoryEntry`，`redo` 一次重做一个 `HistoryEntry`。MVP 先不做复杂历史合并、宏命令合并、时间窗口合并或跨命令智能压缩。
 
-原因: 当前最重要的是先把 MVP 基本功能做好。细粒度历史最容易实现、最容易测试，也最适合命令回放和错误定位。对于第一条 4 小节 riff 闭环，稳定的 `insertNote -> setFret -> addTechnique -> undo -> redo` 行为比“撤销一步自动猜用户意图”更重要。
+原因: 当前最重要的是先把 MVP 基本功能做好。细粒度历史最容易实现、最容易测试，也最适合命令回放和错误定位。对于第一条 4 小节 riff 闭环，稳定的 `insertNote -> setNotePitch -> addTechnique -> undo -> redo` 行为比“撤销一步自动猜用户意图”更重要。
 
-实现约束: `insertNote`、`insertRest`、`setString`、`setFret`、`setDuration`、`addTechnique`、`removeTechnique`、`deleteRange` 等成功写命令都必须各自生成独立历史条目。失败命令不得产生历史条目。批量命令只有在命令本身是显式语义动作时才可以作为一个原子 `HistoryEntry`，例如未来 `transposeRange`；不得把多个普通用户操作偷偷合并成一个历史条目。
+实现约束: `insertNote`、`insertRest`、`setNotePitch`、`setDuration`、`addTechnique`、`removeTechnique`、`deleteRange` 等 Core Kernel K1 成功写命令都必须各自生成独立历史条目。失败命令不得产生历史条目。`setString`、`setFret` 属于后续吉他谱模块命令或模块到核心命令的转换，不属于 Pure Core Kernel K1。批量命令只有在命令本身是显式语义动作时才可以作为一个原子 `HistoryEntry`，例如未来 `transposeRange`；不得把多个普通用户操作偷偷合并成一个历史条目。
 
 取舍: 细粒度 undo/redo 会让撤销步数更多，部分连续输入体验不如智能合并顺滑；但它显著降低实现复杂度，减少历史状态歧义，并让 MVP 更快进入稳定闭环。后续如果需要合并规则，必须单独设计可测试的 `historyMergePolicy`，不能在第一阶段隐式加入。
 
@@ -533,9 +533,9 @@ P0 类别包括连接与连奏、音高变化与表情、延音闷音与噪音�
 
 结论: 采用“谱面数据根本原则 + 稳定 ID + 强类型目标 + 领域点/范围”的混合模型，废弃当前可选字段版 `DocumentAddress`。Core Kernel 只负责 `ScoreAddress`、`ScorePoint`、`ScoreRange`、`CommandTarget`、目标校验和谱面数据事务；UI、布局、渲染和编辑会话模块可以使用临时 `ScoreCoordinate` 表达第几小节、第几拍、第几弦等显示/交互坐标，但必须在外部解析为内核语义目标后再提交命令。布局坐标、屏幕坐标、PDF/PNG 页面坐标和播放光标都只能从 `ScoreDocument` 快照派生，不得反向成为谱面数据。
 
-原因: 研究对比了 JSON Pointer/JSON Patch、Slate Path/Point/Range、ProseMirror position mapping、DOM/LSP Range、Identity Field 和 MusicXML 的标识方式。我们的需求不是纯 JSON patch，也不是纯文本编辑器位置，而是长期可维护的谱面领域引用。稳定 ID 能避免插入、删除、重排导致目标漂移；强类型地址能让 `setFret` 只能指向 note、`insertNote` 只能指向 beat/point、`transposeRange` 只能指向 range。把谱面数据放在根本位置，可以避免 UI、渲染、导出或播放模块各自维护一份“看起来正确但语义不一致”的影子状态。
+原因: 研究对比了 JSON Pointer/JSON Patch、Slate Path/Point/Range、ProseMirror position mapping、DOM/LSP Range、Identity Field 和 MusicXML 的标识方式。我们的需求不是纯 JSON patch，也不是纯文本编辑器位置，而是长期可维护的谱面领域引用。稳定 ID 能避免插入、删除、重排导致目标漂移；强类型地址能让 `setNotePitch` 只能指向有声 note、`insertNote` 只能指向 beat/point、`transposeRange` 只能指向 range。把谱面数据放在根本位置，可以避免 UI、渲染、导出或播放模块各自维护一份“看起来正确但语义不一致”的影子状态。
 
-实现约束: 第一阶段内核必须定义 `EntityId`、`ScoreAddress`、`ScorePoint`、`ScoreRange` 和 `CommandTarget`，并实现 `resolveAddress`、`validateTarget`。`ScoreCoordinate`、`ViewCoordinate`、`LayoutCoordinate` 和 hit testing 属于外部编辑/布局模块的临时定位协议，不属于内核写入 API。内部 delta 可以继续使用 `InternalDocumentPath` 或 JSON Pointer，但不得暴露给 UI、插件、导入器或外部 API。旧的 `DocumentAddress { trackId; measureId?; voiceId?; beatId?; noteId? }` 不得作为最终实现输入。点击命中流程必须是 `ViewCoordinate -> LayoutPrimitive hit test -> ScoreAddress/ScorePoint/ScoreRange 或语义 payload -> semantic command -> ScoreDocument transaction`；渲染或布局层不得直接修改谱面文档。
+实现约束: 第一阶段内核必须定义 `EntityId`、`ScoreAddress`、`ScorePoint`、`ScoreRange` 和 `CommandTarget`，并实现 `resolveAddress`、`validateTarget`。`ScoreCoordinate`、`ViewCoordinate`、`LayoutCoordinate` 和 hit testing 属于外部编辑/布局模块的临时定位协议，不属于内核写入 API。内部 delta 可以继续使用 `InternalDocumentPath` 或 JSON Pointer，但不得暴露给 UI、插件、导入器或外部 API。旧的 `DocumentAddress { trackId; measureId?; voiceId?; beatId?; noteId? }` 不得作为最终实现输入；K1 地址应围绕 timeline、beat、event 和 technique 等核心实体。点击命中流程必须是 `ViewCoordinate -> LayoutPrimitive hit test -> ScoreAddress/ScorePoint/ScoreRange 或语义 payload -> semantic command -> ScoreDocument transaction`；渲染或布局层不得直接修改谱面文档。
 
 取舍: 该模型比可选字段地址更啰嗦，且需要维护 ID 索引、地址解析和目标类型校验；但它能显著减少歧义，提升命令系统、技巧系统、诊断定位、插件 API、undo/redo 和 AI 编码结果的确定性。若继续使用可选字段模型，MVP 初期代码更短，但后续会更容易出现非法地址组合和命令目标误用。
 
@@ -555,7 +555,7 @@ P0 类别包括连接与连奏、音高变化与表情、延音闷音与噪音�
 
 定义: 硬一致性验证是内核的“不可破坏文档正确性”闸门。它不负责判断谱子好不好听、难不难弹、指法是否优秀，也不负责教学建议；它只判断 `ScoreDocument` 是否仍然是结构合法、引用完整、可保存、可回放、可迁移、可被渲染/播放模块消费的谱面数据。
 
-结论: Core Kernel 第一阶段只保留硬一致性验证和基础 diagnostic。硬验证至少覆盖 schema version 合法、稳定 ID 唯一、引用地址存在、track/measure/voice/beat/note/rest 层级合法、标准 6 弦调弦合法、弦号/品号/音高一致、duration/tick 合法、4/4 小节长度合法、note/rest 互斥、单 beat 单音 MVP 限制、技巧注解结构合法、命令目标存在、保存前/打开后/命令回放后都能通过验证。
+结论: Core Kernel 第一阶段只保留硬一致性验证和基础 diagnostic。硬验证至少覆盖 schema version 合法、稳定 ID 唯一、引用地址存在、`metadata + scoreData` 结构合法、timeline/beat/event/technique 引用合法、明确音高形式的调弦元数据合法、duration/tick 合法、4/4 小节长度合法、每 beat 一个 `ScoreEvent`、单 beat 单有声 note MVP 限制、技巧 `targetNoteIds` 只指向有声 note、命令目标存在、保存前/打开后/命令回放后都能通过验证。弦号、品号和指法可演奏性不属于 Core Kernel K1 硬验证。
 
 不放进内核且不进入 MVP: 软一致性、可演奏性分析、指法建议、难度评分、教学提示、风格检查、编曲建议、导入兼容性评分、UI 是否显示 unsupported 的具体方式。这里列出可演奏性分析是为了明确排除，不是把它纳入内核；后续如果这些能力有价值，可以作为外部 `Analysis Service`、`Teaching Service` 或 UI 能力重新立项；当前阶段不做，也不为第一条 MVP 闭环建立专门软验证服务。
 

@@ -52,25 +52,29 @@
 
 ### 2. 领域模型与文件 schema
 
-- [ ] 定义 `ScoreDocument`、`Track`、`Measure`、`Beat`、`NoteEvent`、`Technique`、`Tuning`、`Metadata`。
+- [ ] 定义 `ScoreDocument = metadata + scoreData`，其中 `metadata = document + music`，`scoreData = timeline + events + techniques`。
+- [ ] 定义 `DocumentMetadata`、`MusicMetadata`、`ScoreTimeline`、`MeasureTimeSpan`、`BeatTimeSpan`、`ScoreEvent`、`SoundNoteEvent`、`RestNoteEvent` 和 `TechniqueData`。
+- [ ] 明确 Core Kernel K1 不定义 `Track`、`Voice`、`GuitarTabData`、`stringNumber`、`fret` 或弦品映射作为核心谱面字段。
 - [ ] 在内核中定义 `EntityId`、`ScoreAddress`、`ScorePoint`、`ScoreRange` 和 `CommandTarget`，明确它们服务 `ScoreDocument` 而不是替代谱面数据。
 - [ ] 在编辑/布局模块中定义临时 `ScoreCoordinate`、`ViewCoordinate` 和 hit testing 解析链路，不把这些坐标类型暴露为内核写入 API。
 - [ ] MVP 不单独创建 `Positioning Service` 包；在 `Layout Module + Editor Session Service` 中保持可抽取边界，并记录未来抽取条件。
 - [ ] 定义内核音乐时间模型: `Tick`、`DurationTicks`、`MusicalTimebase` 和 `ticksPerQuarter = 960`。
 - [ ] 定义 4/4 小节长度 `3840` tick，并提供四分 `960`、八分 `480`、十六分 `240` 和等长休止的稳定 duration 常量或等价纯函数。
-- [ ] 验证 `Beat.tickOffset + Beat.durationTicks` 不超出所属小节长度，并验证 `NoteEvent.durationTicks` / `RestEvent.durationTicks` 与所属 beat 一致。
+- [ ] 验证每个小节的 beat 总时值等于小节长度，验证 `BeatTimeSpan.startTick + BeatTimeSpan.durationTicks` 不超出所属小节范围，并验证 `ScoreEvent.durationTicks` 与所属 beat 一致。
 - [ ] 明确真实毫秒调度、Web Audio `currentTime`、节拍器声音、播放光标高频 tick、UI 时间线和渲染坐标不属于 Core Kernel 音乐时间模型。
-- [ ] 限制第一阶段验证器只接受 4/4、固定 tempo、单 track、单 voice、四分/八分/十六分和等长休止。
+- [ ] 限制第一阶段验证器只接受 4/4、固定 tempo、单声部事件流、四分/八分/十六分和等长休止。
 - [ ] 禁止第一阶段 UI 和命令系统暴露轨道添加、删除、重命名、排序、多轨列表或 track mute/solo。
 - [ ] 禁止第一阶段 UI 和 schema 暴露歌词、自由文本框、和声分析、罗马数字或简谱视图。
-- [ ] 验证器拒绝同一 beat 上多个 `NoteEvent`、和弦图或和弦名输入，并返回明确 unsupported。
+- [ ] 验证器拒绝同一 beat 上多个有声 `note` 事件、和弦图或和弦名输入，并返回明确 unsupported。
 - [ ] 定义 3 个 Core Loop 技巧类型: `slide`、`bend`、`vibrato`；预留 `hammer-on`、`pull-off`、`palm mute` 为 P0 后续增强。
+- [ ] 定义技巧目标为有序 `targetNoteIds`；`bend` 和 `vibrato` 在 K1 只接受 1 个目标 note，`slide` 在 K1 只接受 2 个目标 note；技巧不得指向 rest。
 - [ ] 定义 `.bgp` 包结构和 `manifest.json`、`score.json` schema。
 - [ ] 定义 `MigrationReport`、schema version 兼容矩阵、迁移器注册入口和未知扩展数据保留规则。
 - [ ] 明确 `.bgp` 第一阶段不加密、不做文件密码锁、不做 DRM，测试工具可解包检查核心语义。
 - [ ] 建立最小 fixture 谱库。
 - [ ] 实现文档验证器。
-- [ ] 为 unsupported string count、time signature、tempo map、voice count、duration、非法弦号/品号建立验证器测试。
+- [ ] 为 unsupported score type、time signature、tempo map、voice count、duration、同 beat 多 note、断裂引用和非法技巧目标建立验证器测试。
+- [ ] 明确弦号、品号、指法位置和六线谱演奏位置由后续吉他谱模块保存；Pure Core Kernel V1 不建立非法弦号/品号验证器测试。
 - [ ] 明确不实现软一致性、可演奏性分析、指法建议、教学提示、风格检查和难度评分；测试计划不得把它们作为 MVP 阻塞项。
 
 ### 3. 命令系统
@@ -80,11 +84,11 @@
 - [ ] 实现细粒度历史模型: 每个成功可撤销语义命令生成一个独立 `HistoryEntry`。
 - [ ] 确保 `undo` 和 `redo` 一次只移动一个历史条目；MVP 不做时间窗口合并、宏命令合并或跨命令智能压缩。
 - [ ] 为每个命令定义稳定 command id、payload schema、capability、错误码和 i18n label key。
-- [ ] 实现新建谱、设置元数据、添加小节、输入音符、设置弦号/品号、添加技巧。
+- [ ] 实现新建谱、设置元数据、添加小节、输入 note/rest、设置绝对音高、设置时值、添加技巧。
 - [ ] 实现 3 个 Core Loop 技巧的添加、删除、保存、重开和撤销/重做。
 - [ ] 添加测试，证明 UI、内部模块和未来插件 API 不能提交任意 patch 类命令。
 - [ ] 为每个命令建立单元测试和回放测试。
-- [ ] 添加测试，证明连续执行 `insertNote -> setFret -> addTechnique` 后，三次 undo 会逐步撤销技巧、品号修改和插入音符。
+- [ ] 添加测试，证明连续执行 `insertNote -> setNotePitch -> addTechnique` 后，三次 undo 会逐步撤销技巧、音高修改和插入音符。
 - [ ] 添加测试，证明失败命令、unsupported 命令和验证失败命令不会增加 undo stack 条目。
 
 ### 4. 内核快照、事件和模块通信协议

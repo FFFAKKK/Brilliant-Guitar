@@ -28,11 +28,11 @@
 
 内核是谱面真相和模块协作的唯一核心。所有操作都服务 `ScoreDocument` 谱面数据；布局坐标、屏幕坐标、导出页面坐标和播放光标都只能从谱面快照派生。它应该尽量小，只保留影响一致性、兼容性和长期维护的能力。我们可以接受少量 API 边界和快照成本，换取架构稳定性和扩展性。它负责:
 
-- 谱面文档模型: `ScoreDocument`、track、measure、beat、note/rest、technique、tuning、metadata。
+- 谱面文档模型: `ScoreDocument = metadata + scoreData`；`metadata = document + music`；`scoreData = timeline + events + techniques`。Core Kernel K1 不把 track、voice、弦号、品号或 `GuitarTabData` 写入谱面核心对象模型。
 - 音乐时间模型: 属于谱面文档模型的一部分，用整数 tick 管理 beat、duration、小节长度和节奏位置；它让静态谱面数据成为可播放、可校对、可布局、可导出的时间化音乐数据。
-- MVP 验证: 4/4、固定 tempo、单 track、单 voice、四分/八分/十六分、基础休止、每 beat 单音。
+- MVP 验证: 4/4、固定 tempo、单声部事件流、四分/八分/十六分、基础休止、每 beat 一个 `ScoreEvent`。
 - 软分析边界: 第一阶段不做软一致性、可演奏性分析、指法建议、教学提示、风格检查或难度评分；这些能力不阻塞 MVP。
-- 命令事务: 新建谱、设置元数据、添加小节、输入音符、设置弦号/品号、设置技巧、删除、undo/redo。对外只暴露语义命令；patch/delta 只作为内核内部事务和历史实现细节。MVP 采用细粒度历史模型，每个成功可撤销语义命令默认生成一个 `HistoryEntry`，不做复杂智能合并。
+- 命令事务: 新建谱、设置元数据、添加小节、输入 note/rest、设置绝对音高/时值、设置技巧、删除、undo/redo。对外只暴露语义命令；patch/delta 只作为内核内部事务和历史实现细节。弦号/品号输入由后续吉他谱模块转换并保存模块私有映射，不作为 Core Kernel K1 命令。MVP 采用细粒度历史模型，每个成功可撤销语义命令默认生成一个 `HistoryEntry`，不做复杂智能合并。
 - 文档地址和范围: `ScoreAddress`、`ScorePoint`、`ScoreRange` 和命令目标校验。当前 UI 光标、选区高亮、鼠标拖选和临时 `ScoreCoordinate` 属于 `Editor Session Service` 或 `Layout Module`，不属于微内核。
 - 文件契约: `.bgp` schema、manifest、score JSON、schema version、迁移入口。
 - 快照和查询: `DocumentSnapshot`、`KernelReadApi`、受控 selector、可序列化 snapshot。
@@ -67,6 +67,10 @@ Pure Core Kernel V1 可以定义外部导入/导出贡献点的抽象 descriptor
 Pure Core Kernel V1 必须能在无 UI、无浏览器 DOM、无 Tauri、无 VexFlow、无 Web Audio 的 TypeScript 测试环境中运行。验收以 fixture、命令回放、schema round-trip、migration、snapshot/selector、event、registry/capability、error/report 和 unsupported feature 测试为准；UI 截图、播放声音和导出文件不作为该阶段验收项。
 
 音乐时间边界: Core Kernel V1 拥有音乐逻辑时间，不拥有真实播放时钟。内核必须定义 `ticksPerQuarter = 960`、4/4 小节 `3840` tick、四分/八分/十六分与基础休止 duration、beat `tickOffset` 和 `durationTicks` 的硬验证；Playback Module 负责把 snapshot 中的音乐时间转换成真实毫秒调度、Web Audio 时间、节拍器声音和播放光标 tick。
+
+谱面核心对象模型边界: `ScoreDocument` 顶层只包含 `metadata` 和 `scoreData`。`metadata.document` 保存标题、作者、版权、schema version、创建/修改时间和应用版本；`metadata.music` 保存 `scoreType = "guitar-tab"`、`ticksPerQuarter = 960`、全局 tempo、4/4 拍号和明确音高形式的调弦。`scoreData.timeline` 同时表达小节/beat 结构和 tick 位置，不再拆出独立 `ScoreStructure`；`scoreData.events` 保存 `kind = "note" | "rest"` 的谱面事件，休止符只是特殊事件类型，不使用独立 `RestData`；`scoreData.techniques` 使用有序 `targetNoteIds` 表达技巧作用范围。Core Kernel K1 只保存绝对音高和音乐时间，弦号、品号、指法位置和六线谱表现数据属于外部吉他谱模块。
+
+吉他模块边界: 只读取 Core Kernel K1 数据时，可以还原音高、节奏、技巧语义和基础播放/渲染输入，但不能承诺还原用户原始弦号/品号。后续官方吉他谱模块必须保存自己的 `noteId -> string/fret` 映射，并通过命令或模块数据持久化机制与内核协作；这些映射不得成为 K1 核心 schema 的必填字段。
 
 内核禁止:
 
@@ -213,7 +217,7 @@ Pure Core Kernel V1 必须能在无 UI、无浏览器 DOM、无 Tauri、无 VexF
 覆盖范围:
 
 - UI: 新建谱、谱面编辑视图、保存、打开、导出入口。
-- 内核: 一个标准 6 弦调弦轨道、4 小节、4/4、固定 tempo、单 voice、四分/八分/十六分、基础休止和单音输入。
+- 内核: 一个 `guitar-tab` 类型 `ScoreDocument`、明确音高形式的音乐元数据调弦、4 小节、4/4、固定 tempo、单声部事件流、四分/八分/十六分、基础休止和单音输入；不在 Core Kernel K1 保存轨道实体、弦号或品号。
 - 输入: 谱面光标、时值键、数字品号、方向键移动、技巧快捷键或命令面板、删除、undo/redo。
 - 技巧: 3 个 Core Loop 技巧，`slide`、`bend`、`vibrato`；`hammer-on`、`pull-off`、`palm mute` 保持为 P0 后续增强。
 - 渲染: 六线谱可编辑，五线谱同步显示基础音高和节奏。
