@@ -34,7 +34,7 @@
 - 标准 6 弦吉他六线谱渲染。
 - 基础五线谱派生显示。
 - 4/4 小节线、四分/八分/十六分节奏、单音、基础休止、品号、弦线、标题/作者/tempo/拍号/小节编号和可选简单段落标记。
-- 3 个 Core Loop 技巧的显示入口: `slide`、`bend`、`vibrato`。
+- 3 个 K1 测试技巧定义的显示入口: `test.slide`、`test.bend`、`test.vibrato`；用户可见名称由 i18n/UI 映射。
 - 选择框、编辑光标、播放光标和基础 hit testing。
 - PDF/PNG 导出所需的页面和缩放信息。
 
@@ -76,9 +76,9 @@
 
 - 布局层必须能在无 UI 环境下测试。
 - 同一 `Guitar Core Loop` fixture 必须能生成稳定布局 primitives。
-- 修改六线谱品号后，五线谱派生显示和布局输出必须同步变化。
+- 后续吉他谱模块修改六线谱品号并转换为核心绝对音高变更后，五线谱派生显示和布局输出必须同步变化；Pure Core Kernel V1 不保存品号。
 - 同一点击命中结果必须能稳定解析为 `ScoreAddress`、`ScorePoint`、`ScoreRange` 或合法语义 payload，并通过语义命令修改 `ScoreDocument`。
 - SVG 渲染 smoke test 必须能证明主要元素非空。
-- VexFlow 渲染 smoke test 必须覆盖标准 6 弦六线谱、基础五线谱和 3 个 Core Loop 技巧 overlay。
+- VexFlow 渲染 smoke test 必须覆盖标准 6 弦六线谱、基础五线谱和 3 个 K1 测试技巧定义的 overlay。
 - PDF/PNG 导出 smoke test 必须能证明输出可读。
 - 大谱性能基准后置，但第一阶段必须记录至少一个扩展性风险。

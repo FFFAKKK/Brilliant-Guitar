@@ -14,7 +14,7 @@
 
 ## 核心决策
 
-- 对外命令表达“用户或模块想做什么”，例如 `insertNote`、`setFret`、`addTechnique`。
+- 对外命令表达“用户或模块想做什么”，例如 `insertNote`、`setNotePitch`、`addTechnique`。
 - 内部 delta 表达“文档实际怎么变化”，例如字段替换、数组插入、删除或整段快照替换。
 - 外部模块不得提交任意 patch。
 - 内核可以把语义命令编译为内部 delta，用于事务、undo/redo、回放、调试和性能优化。
@@ -45,9 +45,9 @@
 - `undo` 一次只回退一个 `HistoryEntry`。
 - `redo` 一次只重做一个 `HistoryEntry`。
 - 失败命令不得生成 `HistoryEntry`。
-- `insertNote`、`insertRest`、`setString`、`setFret`、`setDuration`、`addTechnique`、`removeTechnique`、`deleteRange` 都必须是独立历史条目。
+- `insertNote`、`insertRest`、`setNotePitch`、`setDuration`、`addTechnique`、`removeTechnique`、`deleteRange` 都必须是独立历史条目。
 - 显式批量语义命令可以作为一个原子历史条目，例如 `transposeRange`；前提是它本身是用户或模块提交的一个命令，而不是内核偷偷合并多个普通操作。
-- 连续品号输入、连续方向键移动、连续技巧添加等智能合并策略后置，不属于 MVP。
+- 连续音高输入、连续方向键移动、连续技巧添加等智能合并策略后置，不属于 MVP。
 - 后续如果引入合并，必须通过显式 `historyMergePolicy` 定义，并为每条合并规则提供测试。
 
 ## 数据结构草案
@@ -307,8 +307,7 @@ export interface CommandBus {
 - `core.ensureMeasures`: 创建或补齐第一条 4 小节 riff 所需小节。
 - `core.insertNote`: 在目标 beat 和弦上插入单音。
 - `core.insertRest`: 在目标 beat 插入等长休止。
-- `core.setString`: 修改音符弦号，并按调弦重新验证音高。
-- `core.setFret`: 修改音符品号，并按调弦重新推导和保存 `pitch`。
+- `core.setNotePitch`: 修改有声音符的绝对音高。
 - `core.setDuration`: 修改音符或休止时值。
 - `core.addTechnique`: 添加结构化技巧注解。
 - `core.removeTechnique`: 删除结构化技巧注解。
@@ -367,15 +366,15 @@ export interface CommandBus {
 ## 测试要求
 
 - [ ] AC-003-01: 任意 UI 写入路径都能追踪到一个稳定语义 command id。
-- [ ] AC-003-02: 对同一初始文档回放 `insertNote -> setFret -> addTechnique -> undo -> redo` 后，结果稳定一致。
-- [ ] AC-003-03: `setFret` 会同步更新 `pitch`，且弦号、品号、调弦和音高验证一致。
-- [ ] AC-003-04: 非法品号命令返回错误并保持文档不变。
+- [ ] AC-003-02: 对同一初始文档回放 `insertNote -> setNotePitch -> addTechnique -> undo -> redo` 后，结果稳定一致。
+- [ ] AC-003-03: `setNotePitch` 只修改核心绝对音高，不接收弦号、品号或吉他指法位置。
+- [ ] AC-003-04: 非法音高、非法时值或非法命令目标返回错误并保持文档不变。
 - [ ] AC-003-05: 未注册命令返回 `command-unknown`。
 - [ ] AC-003-06: 外部模块提交 patch 类命令时返回 `command-unsupported` 或 `command-unknown`。
 - [ ] AC-003-07: 失败事务不改变 undo stack 和 redo stack。
 - [ ] AC-003-08: 连续撤销 20 次编辑后，谱面回到准确历史状态。
 - [ ] AC-003-09: 内部模块执行 `transposeRange` 后，undo 能恢复执行前状态。
 - [ ] AC-003-10: 命令回放测试能在无 UI、无 Tauri、无 VexFlow 环境下运行。
-- [ ] AC-003-11: 连续执行 `insertNote -> setFret -> addTechnique` 后，undo 三次必须逐步撤销技巧、品号修改和插入音符。
+- [ ] AC-003-11: 连续执行 `insertNote -> setNotePitch -> addTechnique` 后，undo 三次必须逐步撤销技巧、音高修改和插入音符。
 - [ ] AC-003-12: 连续执行多个成功写命令时，undo stack 条目数量必须等于成功的可撤销语义命令数量。
 - [ ] AC-003-13: 非法命令、unsupported 命令和验证失败命令不得增加 undo stack 条目。

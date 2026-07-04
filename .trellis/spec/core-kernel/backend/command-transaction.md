@@ -47,7 +47,6 @@ Internal deltas must never become:
 
 - A successful command changes the document, increments document version, creates events, and updates history if undoable.
 - A failing command leaves the document, dirty state, events, and undo stack unchanged.
-- `insertNote -> setFret -> addTechnique` can be undone in three visible steps.
+- `insertNote -> setNotePitch -> addTechnique` can be undone in three visible steps.
 - Unsupported patch-like command IDs are rejected.
 - Command replay produces the same score state from the same starting document.
-

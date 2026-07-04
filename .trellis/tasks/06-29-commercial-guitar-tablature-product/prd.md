@@ -36,7 +36,7 @@
 - 模块化插件模型已确认: 长期向 VS Code 式插件体验演进，官方模块和未来第三方模块使用同一套启动期注册协议；`origin`、`runtime`、`trustLevel` 和 capability 解耦，第三方模块未来可经启动前授权获得高权限并替换官方 UI、渲染、导入导出等模块。未来公开第三方插件统一采用 TypeScript，发布包可包含编译后的 JavaScript 产物；Pure Core Kernel V1 只实现官方/内置启动期注册基础，不执行任意第三方 TypeScript 插件运行时、编译产物、Lua 或 native 代码。
 - MVP 乐器与编辑范围已确认: 先把六线谱、五线谱基础功能和吉他功能做好，再做贝斯、鼓、键盘、复杂编曲和其它生态能力。
 - MVP 吉他技巧范围已确认: 技巧必须分类，第一阶段先覆盖 P0 最高频技巧，后续再扩展低频和复杂技巧。
-- MVP 技巧范围已确认: 第一条编码闭环先用 3 个测试技巧定义验证技巧框架: `slide`、`bend`、`vibrato`；`hammer-on`、`pull-off`、`palm mute` 保持为 P0 后续增强，不阻塞第一条闭环。
+- MVP 技巧范围已确认: 第一条编码闭环先用 3 个测试技巧定义验证技巧框架: `test.slide`、`test.bend`、`test.vibrato`；用户可见名称由 i18n/UI 映射为 slide、bend、vibrato；`hammer-on`、`pull-off`、`palm mute` 保持为 P0 后续增强，不阻塞第一条闭环。
 - 微内核数据结构决策已确认: `ScoreDocument` 顶层收敛为 `metadata + scoreData`；`metadata.music.tuning` 在 `scoreType = "guitar-tab"` 时必须保存低到高 6 个明确 `AbsolutePitch`，例如标准 6 弦吉他低到高 `E2 A2 D3 G3 B3 E4`，不得把 `EADGBE` 作为核心数据。
 - 技巧扩展决策已确认: 微内核保存结构化 `TechniqueData`，技巧通过 `definitionId + 有序 targetNoteIds + params` 作用于一到多个有声音符；具体技巧通过 `TechniqueDefinition` 注册，后续新增技巧不得散落硬编码到 UI、渲染、播放和导出层。
 - 命令系统边界已确认: Core Kernel 对外只暴露语义命令，例如 `insertNote`、`insertRest`、`setNotePitch`、`setDuration`、`addTechnique`；底层 patch、JSON path、字段替换和数组操作只能作为内核内部事务、undo/redo 和回放实现细节，不得成为 UI、插件、导入器或外部 API 的写入入口。弦号/品号输入由后续吉他谱模块处理，不属于 Pure Core Kernel K1 命令。
@@ -144,8 +144,8 @@
 - Tauri/Rust 插件默认只用于系统能力；谱面插件生态未来由产品层插件平台或 Extension Host 在启动前发现、校验、授权并映射到统一注册协议。
 - 未来公开第三方谱面插件统一采用 TypeScript 源码、SDK、类型契约、示例和兼容测试；发布包可包含编译后的 JavaScript 产物，但必须通过 TypeScript 类型契约和 manifest 校验。官方与第三方的差异只存在于注册前发现、校验、授权和加载阶段，进入内核后都必须遵守同一套 registry、capability、command、snapshot、event 和 report 契约。
 - MVP 第一实现阶段默认只交付吉他核心闭环: 吉他轨道、六线谱、基础五线谱同步、基础排版、P0 高频吉他技巧、播放校对、保存与导出。
-- MVP 第一条编码闭环中的技巧框架测试范围只要求 3 个测试技巧定义: `slide`、`bend`、`vibrato`；`hammer-on`、`pull-off`、`palm mute` 保持为 P0 后续增强。
-- 架构保留多轨、多乐器和多弦数扩展点，但第一实现阶段 UI、测试和验收只覆盖标准 6 弦吉他；7/8 弦吉他、贝斯、鼓、键盘和完整乐队编曲不作为第一实现阶段的验收门槛。
+- MVP 第一条编码闭环中的技巧框架测试范围只要求 3 个测试技巧定义: `test.slide`、`test.bend`、`test.vibrato`；用户可见名称由 i18n/UI 映射为 slide、bend、vibrato；`hammer-on`、`pull-off`、`palm mute` 保持为 P0 后续增强。
+- Pure Core Kernel K1 不预留 `tracks` 数组、多轨字段、多乐器字段或多弦数字段作为核心 schema；未来多轨、多乐器和多弦数必须单独规划。第一实现阶段 UI、测试和验收只覆盖标准 6 弦吉他产品上下文；7/8 弦吉他、贝斯、鼓、键盘和完整乐队编曲不作为第一实现阶段的验收门槛。
 - 第一实现阶段不暴露轨道管理 UI；用户只能编辑默认标准 6 弦吉他轨道。
 - MVP 第一阶段默认支持 `zh-CN` 和 `en-US`，所有用户可见文本必须通过 i18n key 管理。
 - 默认语言解析顺序为已保存用户偏好、受支持系统语言、`en-US` fallback；测试和截图必须能显式固定 locale。
@@ -157,7 +157,7 @@
 - MVP 渲染层默认采用 `VexFlowRendererAdapter`，但 VexFlow 对象不得写入 `.bgp`、领域模型、命令系统或 hit testing 唯一真相。
 - MVP 播放层默认只读文档快照，从领域模型生成播放事件，驱动基础合成播放、播放光标、节拍器和速度控制；播放不得修改谱面文档。
 - MVP 播放校对默认服务“检查节奏、音高和输入错误”，不把练习系统、DAW、真实录音/视频同步作为第一阶段目标。
-- MVP 编辑输入默认以键盘为主路径，必须能完成 4 小节 riff 的时值、弦号、品号、休止、移动、删除、撤销/重做和 Core Loop 技巧输入；鼠标选择可作为辅助，虚拟指板和 MIDI 不作为第一阶段阻塞项。
+- MVP 编辑输入默认以键盘为主路径，产品闭环必须能完成 4 小节 riff 的时值、弦号、品号、休止、移动、删除、撤销/重做和技巧输入；Pure Core Kernel V1 只验收由吉他谱模块转换后的绝对音高、音乐时间和 `test.*` 技巧命令；鼠标选择可作为辅助，虚拟指板和 MIDI 不作为第一阶段阻塞项。
 - MVP 键盘输入模型默认采用谱面光标、时值键、数字品号输入、方向键移动弦/拍、技巧快捷键和命令面板；不把自由文本谱解析作为主输入。
 - MVP 节奏默认限制为 4/4、固定 tempo、单声部事件流、四分/八分/十六分音符、基础休止和单音输入；领域模型可预留更复杂节奏与和弦能力，但第一阶段验证器、UI、播放和导出不以复杂节奏或同 slot 多音为验收门槛。
 - MVP 谱面文字默认只覆盖元数据和可选简单段落标记；歌词、任意文本框、和声分析、罗马数字和简谱后置。
@@ -309,11 +309,11 @@ P0 类别包括连接与连奏、音高变化与表情、延音闷音与噪音�
 
 ### DEC-P018: MVP 纵向切片中 P0 吉他技巧的最小集合是什么？
 
-结论: 已由 DEC-P025 修订。第一条编码闭环先用 3 个高频技巧作为技巧注册框架测试定义: `slide`、`bend`、`vibrato`。
+结论: 已由 DEC-P025 修订。第一条编码闭环先用 3 个高频技巧作为技巧注册框架测试定义: `test.slide`、`test.bend`、`test.vibrato`。用户可见名称由 i18n/UI 映射为 slide、bend、vibrato。
 
 原因: 这 3 个技巧能先证明技巧模型、显示、保存、重开和导出链路成立，同时避开 `hammer-on`/`pull-off` 的 note-to-note 关系和 `palm mute` 的范围型语义。
 
-实现约束: `slide`、`bend`、`vibrato` 定义为第一条编码闭环的测试技巧定义，必须通过统一 `TechniqueDefinition` 注册，支持结构化存储、显示、保存、重新打开、撤销/重做、基础导出降级说明和 fixture 测试。它们不是 Core Kernel 硬编码枚举。`hammer-on`、`pull-off`、`palm mute` 保持为 P0 后续增强；其它常见技巧后置为 `P0 Extended` 或 `P1`，不阻塞第一条 MVP 闭环。
+实现约束: `test.slide`、`test.bend`、`test.vibrato` 定义为第一条编码闭环的测试技巧定义，必须通过统一 `TechniqueDefinition` 注册，支持结构化存储、保存、重新打开、撤销/重做、基础后续派生语义和 fixture 测试。它们不是 Core Kernel 硬编码枚举；slide、bend、vibrato 只是用户可见/音乐术语名称。`hammer-on`、`pull-off`、`palm mute` 保持为 P0 后续增强；其它常见技巧后置为 `P0 Extended` 或 `P1`，不阻塞第一条 MVP 闭环。
 
 ### DEC-P019: MVP 渲染层是否采用 VexFlow 作为第一版渲染适配器？
 
@@ -343,7 +343,7 @@ P0 类别包括连接与连奏、音高变化与表情、延音闷音与噪音�
 
 取舍: 如果优先鼠标/虚拟指板，新手更容易上手，界面演示更直观，但输入效率、快捷键体系和自动化测试会变弱；如果键盘优先，学习成本更高，但更符合长期专业工具和可维护实现。
 
-实现约束: 用户必须能只靠键盘完成第一条 4 小节 riff 的时值、弦号、品号、休止、移动、删除、撤销/重做、播放校对和 3 个 Core Loop 技巧输入。鼠标选择可以辅助命中和定位；虚拟指板、MIDI 设备、实时录入和外部 MIDI 文件导入不作为第一阶段验收门槛。
+实现约束: 用户必须能只靠键盘完成第一条 4 小节 riff 的时值、弦号、品号、休止、移动、删除、撤销/重做、播放校对和 3 个测试技巧输入。弦号/品号输入属于后续吉他谱模块到核心绝对音高命令的转换，不属于 Pure Core Kernel K1 命令。鼠标选择可以辅助命中和定位；虚拟指板、MIDI 设备、实时录入和外部 MIDI 文件导入不作为第一阶段验收门槛。
 
 ### DEC-P022: MVP 键盘输入模型采用哪一种？
 
@@ -377,13 +377,13 @@ P0 类别包括连接与连奏、音高变化与表情、延音闷音与噪音�
 
 ### DEC-P025: MVP 第一条闭环的吉他技巧是否继续保留 6 个？
 
-结论: 第一条编码闭环先收缩为 3 个测试技巧定义: `slide`、`bend`、`vibrato`；`hammer-on`、`pull-off` 和 `palm mute` 保留在 P0 后续增强。这样仍能验证技巧注册框架、显示、保存、重开和导出，但减少 note-to-note 关系和范围型技巧复杂度。
+结论: 第一条编码闭环先收缩为 3 个测试技巧定义: `test.slide`、`test.bend`、`test.vibrato`；用户可见名称由 i18n/UI 映射为 slide、bend、vibrato；`hammer-on`、`pull-off` 和 `palm mute` 保留在 P0 后续增强。这样仍能验证技巧注册框架、保存、重开和后续派生语义，但减少 note-to-note 关系和范围型技巧复杂度。
 
 原因: 在已经把和弦后置后，下一块主要复杂度是 6 个技巧同时进入 MVP。把第一条闭环压到 3 个，能让领域模型、渲染和命令系统更快稳定。
 
 取舍: 保留 6 个技巧更像真实吉他谱，但开发风险更高；先做 3 个会让 MVP 表现力弱一些，但后续扩展路径清晰。
 
-实现约束: `slide`、`bend`、`vibrato` 是第一条编码闭环的测试技巧定义验收项；`hammer-on`、`pull-off`、`palm_mute` 不得出现在第一条闭环的必过测试中，但模型与 UI 设计应保留它们的后续扩展位置。
+实现约束: `test.slide`、`test.bend`、`test.vibrato` 是第一条编码闭环的测试技巧定义验收项；`hammer-on`、`pull-off`、`palm_mute` 不得出现在第一条闭环的必过测试中，但模型与 UI 设计应保留它们的后续扩展位置。
 
 ### DEC-P026: MVP 第一阶段是否暴露轨道管理？
 

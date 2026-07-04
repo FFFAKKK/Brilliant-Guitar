@@ -560,7 +560,7 @@ sequenceDiagram
   participant Layout as Layout Module
   participant Playback as Playback Module
 
-  UI->>Cmd: submit(core.setFret)
+  UI->>Cmd: submit(core.setNotePitch)
   Cmd->>Kernel: begin transaction
   Kernel->>Kernel: validate target and hard consistency
   Kernel->>Kernel: commit documentVersion + 1

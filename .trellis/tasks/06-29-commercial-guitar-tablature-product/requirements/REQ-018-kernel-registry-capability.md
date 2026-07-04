@@ -138,9 +138,8 @@ MVP 不需要把 registry 做成完整插件平台。当前阶段应避免:
 - 注册表拒绝重复 ID、未知 contribution kind、unsupported runtime、不兼容 API version 和缺失 capability。
 - capability 检查必须发生在命令执行、selector 调用、注册贡献点和未来插件代理之前。
 - 注册权限必须与执行权限分离；例如拥有 `command:register` 不代表拥有 `command:execute`。
-- MVP 采用两级信任模型: `trusted-core` 用于随应用发布的 `builtin/internal-module`，`external-plugin` 用于未来第三方插件。
-- `runtime`、`trustLevel` 和 capability 必须独立判断；任何一个字段都不能单独绕过另外两个检查。
-- `trusted-core` 身份只能来自静态 `KernelStartupModuleManifest`，不能由插件 manifest、用户配置或运行时模块自我声明。
+- MVP 采用来源与权限解耦模型: `origin`、`runtime`、`trustLevel` 和 capability 必须独立判断；任何一个字段都不能单独绕过另外几个检查。
+- V1 的 `system-trusted` 内部模块只能来自静态 `KernelStartupModuleManifest` 或应用打包清单，不能由插件 manifest、用户配置或运行时模块自我声明。
 - `KernelStartupModuleManifest` 只能引用应用内已编译绑定的 `CoreModuleRegistrationEntryId`，不能引用任意文件路径、URL、脚本字符串或动态 import。
 - 注册表变化必须递增 `registryVersion` 并发布 `kernel.registry.changed`。
 - 注册表 summary 只能暴露只读 descriptor 摘要，不能泄露 handler、React 组件、SVG/VexFlow 对象、Web Audio 节点、Tauri 文件对象或可变 `ScoreDocument`。
@@ -178,9 +177,9 @@ MVP 不需要把 registry 做成完整插件平台。当前阶段应避免:
 - [ ] AC-018-07: registry summary 不包含 handler、React 组件、SVG/VexFlow 对象、Web Audio 节点、Tauri 文件对象或可变 `ScoreDocument`。
 - [ ] AC-018-08: 模块不能通过注册表直接修改 `ScoreDocument`；写入仍必须走语义命令、导入入口或迁移入口。
 - [ ] AC-018-09: 拥有 `command:register` capability 的模块不能因此自动执行写命令；执行写命令仍需要 `command:execute`。
-- [ ] AC-018-10: `trusted-core` 模块可以在启动期走 `CoreModuleRegistration`，但 capability 不足、apiVersion 不兼容或重复注册时仍被拒绝。
-- [ ] AC-018-11: `external-plugin` 模块不能调用启动期直接注册入口，只能通过 `Extension Host` 代理注册。
-- [ ] AC-018-12: 不在 `KernelStartupModuleManifest` 中的模块不能获得 `trusted-core` 身份。
+- [ ] AC-018-10: V1 `system-trusted` 内部模块可以在启动期走 `CoreModuleRegistration`，但 capability 不足、apiVersion 不兼容或重复注册时仍被拒绝。
+- [ ] AC-018-11: 未来第三方模块不能调用 V1 内部模块直接注册入口，只能通过未来 `Extension Host` 或等价启动期适配层代理注册。
+- [ ] AC-018-12: 不在 `KernelStartupModuleManifest` 或应用打包清单中的 V1 模块不能获得 `system-trusted` 身份。
 - [ ] AC-018-13: `KernelStartupModuleManifest` 包含未知 `registrationEntryId`、文件路径、URL 或脚本字符串时，注册表初始化失败并返回稳定错误。
 - [ ] AC-018-14: 应用进入 ready 状态后，第三方插件新增、卸载、启用、禁用或热插拔请求必须被拒绝或提示重启生效，不得改变当前 registry handler 集合。
 

@@ -68,7 +68,7 @@ Pure Core Kernel V1 必须能在无 UI、无浏览器 DOM、无 Tauri、无 VexF
 
 音乐时间边界: Core Kernel V1 拥有音乐逻辑时间，不拥有真实播放时钟。内核必须定义 `ticksPerQuarter = 960`、4/4 小节 `3840` tick、四分/八分/十六分与基础休止 duration、`MeasureTimeSpan.startTick`、`RhythmSlot.startOffsetTicks` 和 `RhythmSlot.durationTicks` 的硬验证；`MeasureTimeSpan.startTick` 是全曲绝对 tick，`RhythmSlot.startOffsetTicks` 是小节内 offset，slot 全曲绝对 tick 只能由二者相加派生。Playback Module 负责把 snapshot 中的音乐时间转换成真实毫秒调度、Web Audio 时间、节拍器声音和播放光标 tick。
 
-谱面核心对象模型边界: `ScoreDocument` 顶层只包含 `metadata` 和 `scoreData`。`metadata.document` 保存标题、作者、版权、schema version、创建/修改时间和应用版本；`metadata.music` 保存 `scoreType = "guitar-tab"`、`ticksPerQuarter = 960`、全局 tempo、4/4 拍号和 6 个明确 `AbsolutePitch` 形式的必填调弦。`scoreData.timeline` 同时表达小节、`RhythmSlot` 结构和 tick 位置，不再拆出独立 `ScoreStructure`；`RhythmSlot` 是事件槽位，不等同于音乐理论中的 beat。`scoreData.events` 保存 `kind = "note" | "rest"` 的谱面事件，事件只引用 `slotId`，起始时间和持续时间从所属 `RhythmSlot` 派生；休止符只是特殊事件类型，不使用独立 `RestData`。`scoreData.techniques` 使用 `definitionId + targetNoteIds + params` 表达技巧，具体技巧通过 `TechniqueDefinition` 注册，`slide`、`bend`、`vibrato` 只是 K1 测试技巧定义。Core Kernel K1 只保存绝对音高和音乐时间，弦号、品号、指法位置和六线谱表现数据属于外部吉他谱模块。
+谱面核心对象模型边界: `ScoreDocument` 顶层只包含 `metadata` 和 `scoreData`。`metadata.document` 保存标题、作者、版权、schema version、创建/修改时间和应用版本；`metadata.music` 保存 `scoreType = "guitar-tab"`、`ticksPerQuarter = 960`、全局 tempo、4/4 拍号和 6 个明确 `AbsolutePitch` 形式的必填调弦。`scoreData.timeline` 同时表达小节、`RhythmSlot` 结构和 tick 位置，不再拆出独立 `ScoreStructure`；`RhythmSlot` 是事件槽位，不等同于音乐理论中的 beat。`scoreData.events` 保存 `kind = "note" | "rest"` 的谱面事件，事件只引用 `slotId`，起始时间和持续时间从所属 `RhythmSlot` 派生；休止符只是特殊事件类型，不使用独立 `RestData`。`scoreData.techniques` 使用 `definitionId + targetNoteIds + params` 表达技巧，具体技巧通过 `TechniqueDefinition` 注册，`test.slide`、`test.bend`、`test.vibrato` 只是 K1 测试技巧定义。Core Kernel K1 只保存绝对音高和音乐时间，弦号、品号、指法位置和六线谱表现数据属于外部吉他谱模块。
 
 吉他模块边界: 只读取 Core Kernel K1 数据时，可以还原音高、节奏、技巧语义和基础播放/渲染输入，但不能承诺还原用户原始弦号/品号。Core Kernel K1 不定义 `noteId -> string/fret`、`ScoreDocument.extensions`、`.bgp/extensions`、`moduleData` 或任何模块私有数据持久化位置；这些内容延后到官方吉他谱模块规划阶段单独设计，并且不得成为 K1 核心 schema 的必填字段。
 
@@ -219,7 +219,7 @@ Pure Core Kernel V1 必须能在无 UI、无浏览器 DOM、无 Tauri、无 VexF
 - UI: 新建谱、谱面编辑视图、保存、打开、导出入口。
 - 内核: 一个 `guitar-tab` 类型 `ScoreDocument`、明确音高形式的音乐元数据调弦、4 小节、4/4、固定 tempo、单声部事件流、四分/八分/十六分、基础休止和单音输入；不在 Core Kernel K1 保存轨道实体、弦号或品号。
 - 输入: 谱面光标、时值键、数字品号、方向键移动、技巧快捷键或命令面板、删除、undo/redo。
-- 技巧: K1 先实现通用技巧注册框架，并用 `slide`、`bend`、`vibrato` 三个测试技巧定义验证保存、重开、撤销/重做、渲染/播放/导出派生语义；`hammer-on`、`pull-off`、`palm mute` 保持为 P0 后续增强。
+- 技巧: K1 先实现通用技巧注册框架，并用 `test.slide`、`test.bend`、`test.vibrato` 三个测试技巧定义验证保存、重开、撤销/重做和后续渲染/播放/导出可派生语义；`hammer-on`、`pull-off`、`palm mute` 保持为 P0 后续增强。
 - 渲染: 六线谱可编辑，五线谱同步显示基础音高和节奏。
 - 渲染适配: VexFlow 绘制基础五线谱/六线谱，自定义 SVG overlay 补齐编辑辅助和 Core Loop 技巧显示。
 - 播放: 合成播放、开始/暂停/继续/停止、播放光标、节拍器、基础速度控制。

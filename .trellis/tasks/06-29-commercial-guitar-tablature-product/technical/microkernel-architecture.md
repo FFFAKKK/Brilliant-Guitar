@@ -49,10 +49,10 @@
 
 它定义:
 
-- 谱面文档、track、measure、beat、note/rest 的基础结构。
-- 吉他弦号、品号、调弦和音高关系的核心表示。
+- `ScoreDocument = metadata + scoreData`、`ScoreTimeline`、`MeasureTimeSpan`、`RhythmSlot`、`ScoreEvent` 和 note/rest 的基础结构。
+- 绝对音高、音乐时间、调弦音乐元数据和音高关系的核心表示；吉他弦号、品号和指法位置属于外部吉他谱模块。
 - 调弦必须逐弦保存为明确科学音高，例如标准 6 弦吉他低到高 `E2 A2 D3 G3 B3 E4`，不得把 `EADGBE` 作为核心数据。
-- 技巧数据的最小可序列化表达，例如 `TechniqueData`；具体 `slide`、`bend`、`vibrato` 测试定义由 `TechniqueDefinition` 通过 registry 注册。
+- 技巧数据的最小可序列化表达，例如 `TechniqueData`；具体 `test.slide`、`test.bend`、`test.vibrato` 测试定义由 `TechniqueDefinition` 通过 registry 注册。
 - 元数据的核心字段，例如 title、author、tempo、time signature。
 
 不放入内核:
@@ -68,13 +68,13 @@
 
 微内核提供唯一写入入口，类似操作系统 syscall。
 
-所有修改必须通过语义命令。语义命令表达“要做什么”，例如输入音符、修改品号、添加技巧；patch/delta 表达“文档字段怎么变”，只能由内核内部生成和消费。
+所有修改必须通过语义命令。语义命令表达“要做什么”，例如输入音符、设置绝对音高、添加技巧；patch/delta 表达“文档字段怎么变”，只能由内核内部生成和消费。
 
 对外允许的典型语义命令:
 
 - `createScore`
 - `insertNote`
-- `setFret`
+- `setNotePitch`
 - `setDuration`
 - `addTechnique`
 - `deleteRange`
@@ -161,7 +161,7 @@
 
 - schema 合法。
 - 引用地址存在。
-- 弦号、品号、duration、tick 合法。
+- `AbsolutePitch`、duration、tick、调弦、slot/event 引用合法。
 - 小节时值总量在当前 MVP 规则下可验证。
 - note/rest 不出现互斥冲突。
 - 技巧参数结构合法。
@@ -187,7 +187,7 @@
 - `score.json` schema。
 - schema version。
 - 迁移入口和迁移注册。
-- 插件私有数据命名空间规则。
+- K1 不定义插件私有数据命名空间、模块私有数据持久化位置或 extension payload 语义；这些内容后续按模块单独规划。
 
 移出内核:
 
@@ -500,7 +500,7 @@ MVP 范围:
 
 - `createScore`
 - `insertNote`
-- `setFret`
+- `setNotePitch`
 - `setDuration`
 - `addTechnique`
 - `deleteSelection`
@@ -520,7 +520,7 @@ MVP 范围:
 负责:
 
 - `ScoreDocument`。
-- track、measure、beat、note/rest。
+- `metadata + scoreData`、measure、RhythmSlot、note/rest。
 - 6 弦调弦。
 - 吉他技巧。
 - 标题、作者、tempo、4/4 拍号、段落标记。
@@ -585,7 +585,7 @@ Core Kernel 只负责:
 - 同一 slot 多个 note: unsupported。
 - 7 弦吉他: unsupported in MVP。
 - 非 4/4 拍号: unsupported in MVP。
-- 非法品号或弦号: validation error。
+- 非法绝对音高、非法调弦、非法时值或非法 slot/event 引用: validation error。
 
 ### 9. Schema & Migration Contract
 
@@ -808,7 +808,7 @@ MVP:
 - Pure Core Kernel V1 不实现真实 Extension Host。
 - V1 只实现 `KernelStartupModuleManifest`、`CoreModuleRegistration`、统一注册协议和 API version 字段。
 - V1 内部模块可同进程注册贡献点，但仍必须通过 registry/capability 校验。
-- 插件私有数据命名空间只保留数据模型和 round-trip 约束。
+- Pure Core Kernel V1 不定义插件私有数据命名空间或 round-trip 约束；未来模块私有数据存储在对应模块规划阶段单独设计。
 
 后续:
 

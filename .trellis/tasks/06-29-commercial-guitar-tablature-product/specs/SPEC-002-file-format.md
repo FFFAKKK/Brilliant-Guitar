@@ -56,7 +56,7 @@ project.bgp
 - `manifest.json`: 文件包级元数据、版本、资源索引和兼容信息。
 - `score.json`: `ScoreDocument` 根对象，是谱面语义事实来源。
 - `assets/`: 未来图片、音频、字体或其它资源，不作为 MVP 必需内容。
-- `extensions/`: 未来插件私有数据命名空间，不作为 MVP 第三方插件执行入口。
+- Pure Core Kernel V1 不定义 `extensions/`、插件私有数据命名空间或模块私有数据持久化位置；这些内容后续按具体模块单独规划。
 - `preview/`: 未来缩略图或预览缓存，不作为谱面事实来源。
 
 ## manifest.json 契约

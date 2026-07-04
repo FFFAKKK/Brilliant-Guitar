@@ -260,7 +260,7 @@ export interface PluginReportFacade {
 - `KernelStartupModuleManifest` 和 `CoreModuleRegistration` 数据结构。
 - `KernelModuleIdentity` 中的 origin、runtime、trustLevel 和 apiVersion 字段。
 - `CoreModuleRegistration` 类型边界。
-- 插件私有数据命名空间。
+- Pure Core Kernel V1 不定义插件私有数据命名空间或模块私有数据持久化位置；未来扩展数据存储在对应模块规划阶段单独设计。
 - API 版本字段。
 
 文档级未来草案:

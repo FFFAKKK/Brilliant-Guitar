@@ -22,7 +22,7 @@
 - 插件语言决策: 未来公开第三方产品层谱面插件统一采用 TypeScript；发布包可包含编译后的 JavaScript 产物。MVP 只做内部插件注册表和 API 边界，不开放任意第三方代码执行。Lua 和 native 不作为公开插件语言。
 - MVP 范围决策: 先把六线谱、五线谱的基本功能和吉他功能做好，再做其它乐器、复杂编曲、插件市场、云能力等后续能力。
 - 吉他技巧决策: 技巧必须分类；第一阶段先覆盖 P0 最高频技巧，P1/P2 后置。
-- MVP 技巧集合决策: 第一条编码闭环先做 3 个 `Core Loop` 技巧: `slide`、`bend`、`vibrato`；`hammer-on`、`pull-off`、`palm mute` 保持为 P0 后续增强，不阻塞第一条闭环。
+- MVP 技巧集合决策: 第一条编码闭环先做 3 个 K1 测试技巧定义: `test.slide`、`test.bend`、`test.vibrato`；用户可见名称由 i18n/UI 映射为 slide、bend、vibrato；`hammer-on`、`pull-off`、`palm mute` 保持为 P0 后续增强，不阻塞第一条闭环。
 - 调弦数据结构决策: 调弦必须逐弦保存为明确科学音高，标准 6 弦吉他低到高为 `E2 A2 D3 G3 B3 E4`，不得把 `EADGBE` 作为核心数据。
 - 技巧注册器决策: 微内核保存通用 `TechniqueData`，具体技巧由 `TechniqueDefinition` 通过 registry 注册；新增技巧不得散落硬编码到 UI、渲染、播放和导出层。
 - 国际化决策: 后续要支持语言切换；当前阶段先做简体中文和英文。
@@ -69,7 +69,7 @@
 - 主技术路线: Tauri 2 + TypeScript/React/Vite + 严格领域模型 + 可验证文件格式。
 - 核心架构原则: 微内核式 Core Kernel + 用户态服务模块。内核负责谱面真相、命令事务、验证、`.bgp` schema/迁移、事件、注册表、capability 和诊断契约；UI、渲染、播放、导入导出、桌面壳和未来插件都作为模块与内核协作。
 - 核心对象模型策略: 调弦属于微内核核心语义，但必须按每根弦的 `ScientificPitch` 保存；技巧的可序列化注解属于核心语义，具体技巧定义、显示、播放、参数 schema 和互斥规则属于 `Guitar Technique Module`。
-- 命令系统策略: Core Kernel 对外只暴露语义命令，例如 `insertNote`、`setFret`、`addTechnique`；patch、JSON path、字段替换和数组操作只允许作为内核内部 delta，用于事务、undo/redo 和回放，不得作为 UI、插件、导入器或外部 API 的写入入口。
+- 命令系统策略: Core Kernel 对外只暴露语义命令，例如 `insertNote`、`setNotePitch`、`addTechnique`；patch、JSON path、字段替换和数组操作只允许作为内核内部 delta，用于事务、undo/redo 和回放，不得作为 UI、插件、导入器或外部 API 的写入入口。`setString`、`setFret` 属于后续吉他谱模块命令或模块到核心命令的转换，不属于 Pure Core Kernel K1。
 - undo/redo 粒度策略: MVP 先做细粒度 do/undo。每个成功可撤销语义命令默认生成一个 `HistoryEntry`；`undo` 和 `redo` 一次只移动一个历史条目；不做复杂历史合并、时间窗口合并、宏命令合并或跨命令智能压缩。
 - 谱面数据根本策略: 所有操作都服务 `ScoreDocument` 谱面数据；布局坐标、屏幕坐标、PDF/PNG 页面坐标和播放光标都从谱面快照派生，不能成为独立事实来源。
 - 文档地址/范围策略: 用户允许重新设计该内核功能，不必遵守当前可选字段版 `DocumentAddress` 草案。当前研究推荐“稳定 ID + 强类型目标 + 领域点/范围”: 核心命令、技巧、诊断和插件 API 使用 `ScoreAddress | ScorePoint | ScoreRange`；UI 坐标使用临时 `ScoreCoordinate`，必须在编辑/布局模块转换为内核目标后才能写入。
@@ -81,19 +81,19 @@
 - 目录结构策略: `apps/desktop` + `packages/*` 只能作为候选结构，不是当前已确认实现约束。
 - 插件策略: MVP 先做内部扩展点和插件注册表，第三方插件安装、插件市场和 native 插件后置。
 - 插件语言策略: 未来第三方谱面插件统一采用 TypeScript 源码、SDK、类型契约、示例和兼容测试；发布包可包含编译后的 JavaScript 产物；MVP 只允许 `internal-module` 运行时，不执行第三方 TypeScript 插件运行时、编译产物、Lua 或 native 代码。
-- 插件与内核协作策略: 采用两级信任模型和双层协作模型。随应用发布的 `builtin/internal-module` 为 `trusted-core`，且只能由静态 `KernelStartupModuleManifest` 声明；清单只能引用应用内已编译绑定的 `CoreModuleRegistrationEntryId`，不能引用外部路径、URL、脚本字符串或动态 import。可信模块通过启动期 `CoreModuleRegistration` 直接注册贡献点和 handler，避免热路径经过完整插件代理；未来第三方插件为 `external-plugin`，通过 `Extension Host` 提供的 `PluginKernelFacade` 走注册、读取、写入、事件和报告五条通道。`runtime`、`trustLevel` 和 capability 独立建模，注册权限与执行权限分离，例如 `command:register` 不等于 `command:execute`。
+- 插件与内核协作策略: 采用统一注册协议和来源/权限解耦模型。随应用发布的 `builtin/internal-module` 只能由静态 `KernelStartupModuleManifest` 声明；清单只能引用应用内已编译绑定的 `CoreModuleRegistrationEntryId`，不能引用外部路径、URL、脚本字符串或动态 import。内部模块通过启动期 `CoreModuleRegistration` 直接注册贡献点和 handler；未来第三方插件只能在应用启动前配置，并由未来 `Extension Host` 映射进同一注册协议。`origin`、`runtime`、`trustLevel` 和 capability 独立建模，注册权限与执行权限分离，例如 `command:register` 不等于 `command:execute`。
 - Guitar Pro 8 技术结论: 官方未公开完整技术栈；只能确认产品形态和功能复杂度，不能把非官方 C++ 信息当作本项目必须照抄的依据。
-- MVP 第一阶段: 标准 6 弦吉他、六线谱编辑、基础五线谱同步、基础播放校对、保存/打开/导出。架构可预留多轨、多乐器和多弦数扩展点，但第一阶段不以 7/8 弦吉他、贝斯、鼓、键盘为验收门槛。
+- MVP 第一阶段: 标准 6 弦吉他产品上下文、六线谱编辑、基础五线谱同步、基础播放校对、保存/打开/导出。Pure Core Kernel K1 不预留 `tracks` 数组、多轨字段、多乐器字段或多弦数字段作为核心 schema；这些能力后续单独规划。
 - 轨道策略: 第一阶段 UI、命令系统、测试和验收只面向一个默认吉他轨道；多轨管理后置。
-- Core Loop 技巧集合: `slide`、`bend`、`vibrato`。P0 后续增强: `hammer-on`、`pull-off`、`palm mute`。其它常见技巧作为 `P0 Extended` 或 `P1` 后置。
+- K1 测试技巧集合: `test.slide`、`test.bend`、`test.vibrato`。用户可见名称由 i18n/UI 映射为 slide、bend、vibrato。P0 后续增强: `hammer-on`、`pull-off`、`palm mute`。其它常见技巧作为 `P0 Extended` 或 `P1` 后置。
 - 语言策略: 用户可见文本走 i18n key；技巧名称支持中文显示名和英文术语；缺失翻译 fallback 到英文。
 - 默认语言策略: locale 解析顺序为已保存用户偏好、受支持系统语言、`en-US` fallback；测试和截图必须能显式固定 locale。
 - 导出策略: 第一阶段 PDF + PNG；SVG、MusicXML、MIDI、音频、教学网页包和 Guitar Pro 格式后置。
 - 渲染策略: 谱面视图第一阶段使用 SVG，但 SVG 导出后置；PDF/PNG 导出可复用布局模型和 SVG 渲染结果。
 - VexFlow 策略: VexFlow 只位于 `VexFlowRendererAdapter`，不得进入领域模型、`.bgp`、命令系统或 hit testing 唯一真相；依赖版本必须锁定并进入渲染回归测试。
 - 播放策略: 播放层只读文档快照，从领域模型生成播放事件；MVP 只验证节奏、音高和输入错误校对，不把练习系统、DAW、真实录音或视频同步作为第一阶段目标。
-- 输入策略: 键盘是 MVP 主输入路径，必须覆盖 4 小节 riff 的时值、弦号、品号、休止、移动、删除、撤销/重做、播放校对和 3 个 Core Loop 技巧输入；鼠标选择可辅助，虚拟指板和 MIDI 不作为第一阶段阻塞项。
-- 键盘模型策略: 光标定位到小节、beat、弦和音符槽位；时值键、数字品号、方向键、技巧快捷键和命令面板都必须触发稳定命令。
+- 输入策略: 键盘是 MVP 主输入路径，产品闭环必须覆盖 4 小节 riff 的时值、弦号、品号、休止、移动、删除、撤销/重做、播放校对和 3 个测试技巧输入；Pure Core Kernel V1 只验收由吉他谱模块转换后的绝对音高、音乐时间和 `test.*` 技巧命令；鼠标选择可辅助，虚拟指板和 MIDI 不作为第一阶段阻塞项。
+- 键盘模型策略: 产品层光标可定位到小节、节奏槽位、弦和音符槽位；时值键、数字品号、方向键、技巧快捷键和命令面板都必须触发稳定命令或吉他谱模块到核心语义命令的稳定转换。Core Kernel K1 不保存弦号/品号。
 - 节奏策略: 领域模型可保留 tick、voice、timeSignature 等扩展点，但第一阶段验证器、UI、fixture、播放、VexFlow 适配和 PDF/PNG 验收只覆盖 4/4、固定 tempo、单 voice、四分/八分/十六分和基础休止。
 - 和弦策略: 第一阶段每个 `RhythmSlot` 只能包含一个 note 或一个 rest；同 slot 多音、和弦图、和弦名和扫弦/琶音命令必须返回明确 unsupported。
 - 谱面文字策略: 第一阶段只处理元数据文本和可选简单段落标记；歌词、自由文本框、和声分析、罗马数字和简谱后置。

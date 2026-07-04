@@ -29,7 +29,7 @@
 - `commands`: 语义命令总线、事务、内部 delta、undo/redo、命令回放。
 - `address-range`: 文档地址、范围和命令目标校验；当前 UI 光标和选区会话状态属于外部编辑会话服务。
 - `validation`: 文档验证、unsupported 诊断、错误定位。
-- `file-contract`: `.bgp` schema、manifest、迁移入口、插件私有数据命名空间。
+- `file-contract`: `.bgp` schema、manifest、迁移入口和兼容矩阵；Pure Core Kernel V1 不定义插件私有数据命名空间。
 - `snapshot-query`: 只读 `DocumentSnapshot`、受控 selector、可序列化 snapshot。
 - `registry`: 命令、验证器、导入器、导出器、模板、selector 和内部模块贡献点。
 - `events`: 文档加载、文档变更、命令执行、历史状态、诊断、脏状态、注册表和迁移完成事件。
@@ -98,19 +98,21 @@ MVP 只需要支持 `runtime = "internal-module"`。第三方 TypeScript 插件�
 
 核心结论: 采用两级信任模型和双层协作模型。可信内核内置模块通过启动期 `CoreModuleRegistration` 轻量直接注册；未来第三方插件只能在应用启动前完成安装、移除、启用和禁用配置，并在启动期通过 `Extension Host` 获得受控 `PluginKernelFacade`。两者共享 contribution descriptor、capability、语义命令、snapshot/selector 和 report 契约，但不强迫可信内核模块走完整插件代理。
 
-两级信任模型:
+来源与权限解耦模型:
 
-- `trusted-core`: 随应用发布的 `builtin/internal-module`，由 Core Kernel 启动配置或打包清单确认，允许启动期直接注册。
-- `external-plugin`: 未来第三方插件，由 Extension Host 在应用启动期加载和隔离，只能通过 facade 注册、读取、提交命令、订阅事件和报告错误；运行中不得热插拔。
+- `origin`: 描述模块来源，例如 `official` 或未来 `third-party`。
+- `runtime`: 描述模块如何加载或执行，例如 V1 的 `internal-module`。
+- `trustLevel`: 描述启动前授权后的信任级别，例如 `system-trusted` 或 `sandboxed`。
+- `capability`: 描述模块实际可以注册、读取、执行或报告哪些能力。
 
-`trustLevel`、`runtime` 和 capability 必须分开。`runtime` 描述模块如何加载或执行；`trustLevel` 描述它是否属于可信核心；capability 描述它具体能做什么。任何一级都不能单独绕过其他检查。
+`origin`、`runtime`、`trustLevel` 和 capability 必须分开。来源和运行时都不自动获得权限；未来第三方模块也可以在启动前授权后获得高权限，但仍必须通过同一注册协议和 capability 检查。
 
-可信核心模块来源:
+V1 启动期模块来源:
 
-- `trusted-core` 只能来自静态 `KernelStartupModuleManifest`。
+- V1 的 `system-trusted` 内部模块只能来自静态 `KernelStartupModuleManifest` 或应用打包清单。
 - 该清单随应用源码或打包产物发布，必须被版本控制、代码审查和测试覆盖。
 - 清单只引用应用内已编译绑定的 `CoreModuleRegistrationEntryId`，不引用外部文件路径、URL、脚本字符串或动态 import。
-- 插件 manifest、用户配置和运行时模块不能把自己追加为可信核心模块。
+- 插件 manifest、用户配置和运行时模块不能把自己追加为 `system-trusted` 模块。
 
 ### 产品视角
 
@@ -130,7 +132,7 @@ MVP 只需要支持 `runtime = "internal-module"`。第三方 TypeScript 插件�
 1. Core Kernel 启动 registry。
 2. Core Kernel 读取静态 `KernelStartupModuleManifest`。
 3. Core Kernel 校验清单 schema、runtime、apiVersion、capability 和 `registrationEntryId`。
-4. Core Kernel 为清单中的 `builtin/internal-module` 分配 `trustLevel = "trusted-core"`。
+4. Core Kernel 为清单中的 `builtin/internal-module` 分配启动前授权确定的 `trustLevel`，V1 内置模块通常为 `system-trusted`。
 5. `registrationEntryId` 解析到已编译绑定的 `CoreModuleRegistration` 工厂。
 6. registry 校验 module identity、trustLevel、apiVersion、registration capability 和 contribution descriptor。
 7. 成功后直接绑定 handler 引用，并冻结或进入 ready 状态。
@@ -140,7 +142,7 @@ MVP 只需要支持 `runtime = "internal-module"`。第三方 TypeScript 插件�
 1. 用户或插件管理配置在应用启动前确定已安装、启用和禁用的第三方插件集合。
 2. 应用启动期 `Extension Host` 读取 `PluginManifest`。
 3. `Extension Host` 校验 plugin id、apiVersion、runtime、permissions 和 contributes。
-4. `Extension Host` 忽略或拒绝 manifest 中的自声明 trustLevel、`CoreModuleRegistrationEntryId` 或动态可信入口，并创建 `trustLevel = "external-plugin"` 的 `KernelModuleIdentity` 和 capability grant。
+4. `Extension Host` 忽略或拒绝 manifest 中的自声明 trustLevel、`CoreModuleRegistrationEntryId` 或动态可信入口，并根据启动前授权创建 `KernelModuleIdentity` 和 capability grant。
 5. 插件贡献点通过 `KernelRegistry` 注册为 command、validator、importer、exporter、template 或后续 panel descriptor。
 6. 插件读取谱面时调用 snapshot 或 selector。
 7. 插件修改谱面时提交已注册语义命令。
@@ -408,5 +410,5 @@ Tauri 官方插件机制适合扩展应用原生能力，例如文件系统、�
 - [ ] 模块边界能支持不用改领域模型就新增一个只读分析器。
 - [ ] 插件不能直接改谱面对象，只能提交语义命令事务。
 - [ ] 插件不能获得任意 patch 或字段路径写入能力。
-- [ ] 插件被启动前配置为禁用或缺失后，用户文件仍可打开并保留插件私有数据。
+- [ ] 插件被启动前配置为禁用或缺失后，核心谱面仍可打开；Pure Core Kernel V1 不承诺解释或保留插件私有数据。
 - [ ] MVP 文档明确第三方插件安装不是第一版必须项。

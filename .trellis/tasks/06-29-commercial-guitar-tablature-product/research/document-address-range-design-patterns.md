@@ -334,8 +334,7 @@ export type CommandTarget = ScoreAddress | ScoreRange
 
 ## 命令目标规则
 
-- `setFret`: 只接受 `ScoreAddress.kind = "note"`。
-- `setString`: 只接受 `note`。
+- `setNotePitch`: 只接受 `ScoreAddress.kind = "note"`。
 - `setDuration`: 接受 `note` 或 `rest`。
 - `insertNote`: 接受 `beat` 或 `ScorePoint`，MVP 可以先用 `beat`。
 - `insertRest`: 接受 `beat` 或 `ScorePoint`，MVP 可以先用 `beat`。

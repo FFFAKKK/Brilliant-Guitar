@@ -19,7 +19,7 @@
 - 内核必须稳定且尽量小: 内核 API 比模块内部实现更保守，所有破坏性变更都要有版本、迁移和测试。
 - 模块必须可替换: VexFlow、Web Audio、PDF/PNG 导出实现、Tauri 壳层和未来插件运行时都可以替换，不得成为谱面事实来源。
 - 所有写操作必须事务化: UI、快捷键、导入器、模板、内部插件和未来第三方插件都只能通过命令事务修改文档。
-- 对外写入必须语义化: 外部模块只能提交 `insertNote`、`setFret`、`addTechnique` 这类语义命令；patch、JSON path、字段替换和数组操作只允许作为内核内部 delta。
+- 对外写入必须语义化: 外部模块只能提交 `insertNote`、`setNotePitch`、`addTechnique` 这类语义命令；patch、JSON path、字段替换和数组操作只允许作为内核内部 delta。`setFret` 属于后续吉他谱模块命令或模块到核心命令的转换，不属于 Pure Core Kernel K1。
 - 读操作必须快照化: 渲染、播放、导出、分析和插件读取稳定快照或 selector，不直接持有可变文档对象。
 - 架构从第一天服务扩展性，但第三方代码执行后置: MVP 只做内部模块注册和 API 边界，不开放任意第三方插件运行。
 - 可以接受微内核带来的少量性能成本: 优先换取架构稳定性、模块替换能力、插件边界和长期维护能力；性能补偿通过增量快照、结构共享、批量命令、缓存失效和局部性能模块解决。
@@ -77,8 +77,8 @@ flowchart TD
 - 编辑事务和历史: transaction、rollback、dirty state、undo/redo、命令回放和批量命令合并。MVP 采用细粒度历史模型，每个成功可撤销语义命令默认生成一个 `HistoryEntry`，复杂历史合并后置。
 - 文档地址和范围模型: `ScoreAddress`、`ScorePoint`、`ScoreRange` 和命令目标校验；活动光标、选区高亮、鼠标拖选状态和临时 `ScoreCoordinate` 属于 `Editor Session Service` 或 `Layout Module`。
 - 语义目标协议: 内核只承认从谱面数据解析出的语义目标；`ViewCoordinate`、`LayoutCoordinate`、SVG/VexFlow 坐标和 hit testing 由外部模块处理，外部模块只能把解析后的 `ScoreAddress | ScorePoint | ScoreRange` 或合法语义 payload 提交给命令系统。
-- 硬一致性验证和诊断: schema 合法、引用地址存在、弦号/品号/duration/tick 合法、note/rest 互斥、技巧参数结构合法；软一致性、可演奏性分析、教学提示、风格检查和难度评分不进入 MVP。
-- 文件格式契约: `.bgp` 包结构、`manifest.json`、`score.json`、schema version、迁移入口、兼容矩阵和插件私有数据命名空间。
+- 硬一致性验证和诊断: schema 合法、引用地址存在、`AbsolutePitch`、调弦、duration、tick、slot/event 引用合法、note/rest 互斥、技巧参数结构合法；弦号/品号合法性属于后续吉他谱模块；软一致性、可演奏性分析、教学提示、风格检查和难度评分不进入 MVP。
+- 文件格式契约: `.bgp` 包结构、`manifest.json`、`score.json`、schema version、迁移入口和兼容矩阵。Pure Core Kernel V1 不定义插件私有数据命名空间或模块私有数据持久化位置。
 - 查询和快照: 为渲染、播放、导出、分析和插件提供只读快照或 selector。
 - 事件系统: 命令执行、文档加载、文档变更、历史状态变化、诊断更新、脏状态变化、注册表变化和迁移完成通知。UI 光标、选区高亮、鼠标拖拽和播放光标 tick 属于外部服务事件，不属于 Core Kernel 事件。
 - 注册表和能力管理: 命令、验证器、导入器、导出器、模板和未来插件贡献点注册；API version、capability 和权限校验。
@@ -143,7 +143,7 @@ Pure Core Kernel V1 验收通过前，不进入 React UI、Tauri 桌面壳、Vex
 - 布局 primitives 必须独立于 SVG DOM、VexFlow 对象、React 状态和浏览器事件。
 - 布局坐标是从 `ScoreDocument` 快照派生的视图坐标，不得写回为谱面事实。
 - 负责外部坐标解析: 把 `ViewCoordinate` 或 `LayoutCoordinate` 通过 hit testing 解析为可提交给内核的语义目标候选。
-- 示例: 鼠标点击六线谱第 3 小节第 2 拍第 4 弦时，布局模块解析为对应 `ScoreAddress` 或插入用 `ScorePoint`，UI 再提交 `insertNote` 或 `setFret` 命令。
+- 示例: 鼠标点击六线谱第 3 小节第 2 拍第 4 弦时，布局模块解析为对应吉他谱模块语义目标；后续吉他谱模块把弦/品输入转换为核心可接受的 `insertNote` 或 `setNotePitch` 命令。Pure Core Kernel K1 不保存弦号/品号。
 - MVP 不单独拆 `Positioning Service`；坐标解析先由 `Layout Module + Editor Session Service` 协作承担。未来当多页、多轨、多声部、复杂选区或多渲染后端让定位逻辑膨胀时，再抽出独立 `Positioning Service`。
 - PDF/PNG、SVG 视图和未来 Canvas/WebGL 必须复用同一布局语义。
 
@@ -231,7 +231,7 @@ packages/
 - [ ] 渲染、播放、导出和分析只读取快照或 selector。
 - [ ] `.bgp` 文件格式、schema version 和迁移入口从第一阶段进入测试。
 - [ ] 任意核心模块都能用 fixture 在无 UI 环境下测试。
-- [ ] 禁用插件后，核心谱面仍可打开，并保留插件私有数据。
+- [ ] 缺失后续模块私有数据时，核心谱面仍可打开并验证核心音高、节奏、事件和技巧语义；Pure Core Kernel V1 不承诺保留或解释插件私有数据。
 - [ ] 目录结构确认时必须能追溯到本文件定义的内核和模块边界。
 
 ## 横切质量属性
