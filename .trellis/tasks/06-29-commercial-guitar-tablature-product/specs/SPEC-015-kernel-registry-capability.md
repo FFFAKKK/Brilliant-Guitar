@@ -438,7 +438,7 @@ MVP 不允许以下注册项来源:
 ## 与其它 spec 的关系
 
 - `SPEC-003-command-system.md`: CommandDefinition 必须通过 registry 注册，命令执行前做 capability 检查。
-- `SPEC-005-guitar-techniques.md`: TechniqueDefinition 通过 registry 注册，技巧数据仍保存为 `TechniqueAnnotation`。
+- `SPEC-005-guitar-techniques.md`: `TechniqueDefinition` 通过 registry 注册，持久化技巧数据保存为 `TechniqueData` 并通过 `definitionId` 引用已注册定义。
 - `SPEC-009-extension-api.md`: 未来插件平台在应用启动期读取插件 manifest、完成授权后，把第三方模块映射进同一套 registry 注册协议；MVP 只允许 `builtin` 和 `internal-module`。
 - `SPEC-011-internationalization.md`: 注册项标题和描述必须使用 i18n key。
 - `SPEC-014-kernel-snapshot-events.md`: 注册表变化必须发布 `kernel.registry.changed`。

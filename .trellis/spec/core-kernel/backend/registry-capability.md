@@ -18,6 +18,8 @@ V1 registry may accept descriptors and handlers for:
 
 Import/export descriptors are metadata and capability declarations only. They do not mean Core Kernel implements PDF, PNG, Guitar Pro, or physical `.bgp` IO.
 
+Technique definitions are also registry contributions. Core Kernel K1 must not hardcode concrete technique names as a closed enum in `TechniqueData`; a persisted technique references a registered `TechniqueDefinition.id`, and the registered definition owns target count, target ordering, and params validation. K1 may ship `slide`, `bend`, and `vibrato` as startup-registered test definitions to verify the framework.
+
 ## Module Identity
 
 Module identity must model these concepts independently:
@@ -51,5 +53,5 @@ Runtime plugin changes are not supported. After the app is ready, third-party pl
 - Registration capability and execution capability are separate.
 - Missing capability must return a stable structured error such as `capability-denied`.
 - Duplicate IDs, unknown contribution kinds, unsupported runtime, incompatible API version, and missing capability must be rejected.
+- A `TechniqueData.definitionId` that does not resolve to a registered technique definition must be rejected with a stable diagnostic.
 - Registry summary must be read-only and must not expose handlers, mutable objects, React components, VexFlow objects, Web Audio nodes, Tauri objects, or `ScoreDocument` references.
-

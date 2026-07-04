@@ -27,7 +27,7 @@ Pure Core Kernel V1 contains exactly these mechanism groups:
 - Future kernel expansion must first map to one of the 9 mechanism groups. If it cannot map cleanly, it requires a separate planning review before it can enter the kernel.
 - A capability may enter the kernel only when it is a shared foundation for multiple modules, cannot remain external without creating a second score truth, and can be expressed as testable schema, command, validator, migration, snapshot/event, registry/capability, or error/report contracts.
 - A capability must stay outside the kernel when it is mainly UI session state, layout/rendering behavior, audio scheduling, physical import/export IO, plugin discovery/lifecycle, analysis/advice, or product workflow.
-- Guitar string/fret placement, tablature fingering maps, and rendered staff positions stay outside Core Kernel K1. The kernel may store absolute pitch and music metadata tuning, but it must not make string/fret placement part of the core score truth.
+- Guitar string/fret placement, tablature fingering maps, and rendered staff positions stay outside Core Kernel K1. The kernel stores absolute pitch and, for `scoreType = "guitar-tab"`, required 6-string music metadata tuning, but it must not make string/fret placement part of the core score truth.
 
 ## Allowed Dependencies
 

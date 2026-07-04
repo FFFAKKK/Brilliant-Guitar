@@ -55,7 +55,7 @@ Required or reserved document metadata fields:
 - `timebase.ticksPerQuarter`: V1 must be `960`.
 - `tempo.bpm`: V1 supports one global fixed tempo only.
 - `meter.numerator` / `meter.denominator`: V1 supports `4/4` only.
-- `tuning`: V1 may store the current guitar score tuning as explicit scientific pitches, low to high `E2 A2 D3 G3 B3 E4`.
+- `tuning`: required when `scoreType = "guitar-tab"`; it must contain exactly 6 explicit `AbsolutePitch` values, low to high. Standard guitar tuning is `E2 A2 D3 G3 B3 E4`.
 
 Tuning is music metadata. It does not mean the kernel owns string/fret placement. Do not store tuning as ambiguous `EADGBE`; use explicit pitches.
 
@@ -68,13 +68,13 @@ Core Kernel V1 supports the 4-measure guitar core-loop fixture:
 - `ticksPerQuarter = 960`.
 - Global fixed tempo.
 - Global 4/4 time signature.
-- Optional explicit tuning metadata for the current guitar score profile.
+- Required explicit tuning metadata for the current guitar score profile.
 - One abstract score event stream.
-- Each beat contains exactly one `ScoreEvent`.
+- Each rhythm slot contains exactly one `ScoreEvent`.
 - `ScoreEvent.kind` is either `note` or `rest`.
 - Allowed durations: quarter, eighth, sixteenth.
 - Basic equal-length rests represented as `ScoreEvent.kind = "rest"`.
-- Core Loop techniques: `slide`, `bend`, `vibrato`.
+- Generic registered technique framework. K1 tests use `slide`, `bend`, and `vibrato` as registered test technique definitions.
 
 V1 does not implement track management, guitar string/fret persistence, multi-voice editing, chords, tempo maps, changing time signatures, dotted rhythms, tuplets, MIDI input, playback scheduling, rendering, or physical file IO.
 
@@ -86,10 +86,10 @@ V1 does not implement track management, guitar string/fret persistence, multi-vo
 - Quarter duration is `960`.
 - Eighth duration is `480`.
 - Sixteenth duration is `240`.
-- `ScoreTimeline` owns measure and beat order plus tick placement.
-- A measure's beat durations must sum exactly to the measure duration.
-- `beat.startTick + beat.durationTicks` must not exceed the owning measure range.
-- `ScoreEvent.durationTicks` must match the owning beat duration.
+- `ScoreTimeline` owns measure and rhythm slot order plus tick placement.
+- A measure's rhythm slot durations must sum exactly to the measure duration.
+- `slot.startTick + slot.durationTicks` must not exceed the owning measure range.
+- The rhythm slot is the only time truth for the event in that slot; `ScoreEvent` must not duplicate `startTick` or `durationTicks`.
 - Musical time belongs to the `ScoreDocument` domain model. It is not a playback engine.
 - Core Kernel owns musical ticks, duration constants, measure-length calculation, and hard validation of rhythmic structure.
 - Playback modules own wall-clock scheduling, Web Audio time, metronome sound, and playback cursor ticks derived from snapshots.
@@ -117,10 +117,10 @@ export interface MeasureTimeSpan {
   order: number
   startTick: Tick
   durationTicks: DurationTicks
-  beats: BeatTimeSpan[]
+  slots: RhythmSlot[]
 }
 
-export interface BeatTimeSpan {
+export interface RhythmSlot {
   id: string
   startTick: Tick
   durationTicks: DurationTicks
@@ -130,9 +130,7 @@ export type ScoreEvent = SoundNoteEvent | RestNoteEvent
 
 export interface BaseScoreEvent {
   id: string
-  beatId: string
-  startTick: Tick
-  durationTicks: DurationTicks
+  slotId: string
 }
 
 export interface SoundNoteEvent extends BaseScoreEvent {
@@ -143,38 +141,58 @@ export interface SoundNoteEvent extends BaseScoreEvent {
 export interface RestNoteEvent extends BaseScoreEvent {
   kind: "rest"
 }
+
+export type PitchStep = "C" | "D" | "E" | "F" | "G" | "A" | "B"
+export type PitchAccidental = "flat" | "natural" | "sharp"
+
+export interface AbsolutePitch {
+  step: PitchStep
+  accidental: PitchAccidental
+  octave: number
+}
 ```
+
+`AbsolutePitch` is the canonical K1 pitch form. K1 octave range is `0..8`. The model preserves enharmonic spelling, so `A#3` and `Bb3` are different persisted spellings even when they derive to the same MIDI number. MIDI pitch is derived data and must not replace `AbsolutePitch` as the persisted core value.
 
 Validation matrix:
 
 | Condition | Required result |
 |-----------|-----------------|
 | `timebase.ticksPerQuarter !== 960` | reject with stable validation diagnostic |
+| `scoreType = "guitar-tab"` and tuning is missing | `tuning-missing` |
+| guitar tuning length is not 6 | `tuning-string-count-invalid` |
+| tuning contains invalid pitch | `tuning-pitch-invalid` |
+| invalid pitch step | `pitch-step-invalid` |
+| invalid pitch accidental | `pitch-accidental-invalid` |
+| pitch octave outside `0..8` | `pitch-octave-out-of-range` |
 | unsupported time signature | `unsupported-time-signature` |
 | unsupported duration value | `unsupported-duration` |
 | total measure duration below expected length | `measure-duration-underflow` |
 | total measure duration above expected length | `measure-duration-overflow` |
-| `beat.startTick + beat.durationTicks` exceeds measure range | `measure-duration-overflow` or targeted duration diagnostic |
-| event duration differs from owning beat duration | targeted duration diagnostic |
-| beat has zero events | targeted missing-event diagnostic |
-| beat has multiple events | `unsupported-multiple-notes-in-beat` or targeted beat-cardinality diagnostic |
+| `slot.startTick + slot.durationTicks` exceeds measure range | `measure-duration-overflow` or targeted duration diagnostic |
+| slot has zero events | targeted missing-event diagnostic |
+| slot has multiple events | `unsupported-multiple-notes-in-slot` or targeted slot-cardinality diagnostic |
 | technique targets a rest or missing note | targeted technique-target diagnostic |
+| technique definition is not registered | `technique-definition-missing` |
+| technique target count violates its definition | `technique-target-count-invalid` |
+| technique params fail registered definition validation | `technique-params-invalid` |
 | tempo map or measure-level tempo override appears in V1 data | `unsupported-tempo-map` |
 
 Good/base/bad cases:
 
-- Good: a 4/4 measure containing four quarter beats at offsets `0`, `960`, `1920`, and `2880`.
-- Base: a 4/4 measure containing eighth and sixteenth beats whose summed duration is exactly `3840`.
-- Good: a rest is stored as one `ScoreEvent` with `kind = "rest"` and the same duration as its beat.
-- Bad: a beat starting at `3720` with duration `240`, because it exceeds the 4/4 measure length.
-- Bad: a note event with `durationTicks = 480` inside a beat with `durationTicks = 960`.
+- Good: a 4/4 measure containing four quarter rhythm slots at offsets `0`, `960`, `1920`, and `2880`.
+- Base: a 4/4 measure containing eighth and sixteenth rhythm slots whose summed duration is exactly `3840`.
+- Good: a rest is stored as one `ScoreEvent` with `kind = "rest"` that references a rhythm slot.
+- Bad: a rhythm slot starting at `3720` with duration `240`, because it exceeds the 4/4 measure length.
+- Bad: a note event with its own persisted `durationTicks`; event time must come from its referenced slot.
 - Bad: a technique target references a rest event.
 
 Tests must assert:
 
 - The standard 4-measure fixture uses `ticksPerQuarter = 960`.
+- A `guitar-tab` fixture stores exactly 6 explicit tuning pitches low to high.
 - Each supported duration round-trips through schema serialization.
-- Measure underflow, overflow, unsupported duration, unsupported tempo map, unsupported time signature, event duration mismatch, missing event, multiple events, and invalid technique targets produce stable diagnostics.
+- Measure underflow, overflow, unsupported duration, unsupported tempo map, unsupported time signature, invalid pitch, invalid tuning, missing event, multiple events, and invalid technique targets produce stable diagnostics.
 - Playback event generation, when implemented outside the kernel, consumes snapshot musical ticks and does not mutate `ScoreDocument`.
 
 Wrong vs correct:
@@ -184,22 +202,55 @@ Wrong vs correct:
 score.playback = { currentTimeMs: 1234, cursorTick: 960 }
 
 // Correct: storing musical time only; playback derives runtime state from snapshots.
-beat.startTick = 960
-beat.durationTicks = 480
+slot.startTick = 960
+slot.durationTicks = 480
 ```
 
 ## Technique Contracts
 
-Core Loop techniques must be structured semantic data, not display-only labels.
+Techniques must be structured semantic data, not display-only labels.
+
+Core Kernel K1 owns the generic technique framework and validation contract. Concrete techniques are registered definitions; they must not be hardcoded as a kernel enum. `slide`, `bend`, and `vibrato` are K1 test technique definitions used to verify the framework, not the full built-in technique catalog.
 
 Use this type shape or an equivalent stricter shape:
 
 ```typescript
+export type JsonValue =
+  | null
+  | boolean
+  | number
+  | string
+  | JsonValue[]
+  | { [key: string]: JsonValue }
+
+export type JsonObject = { [key: string]: JsonValue }
+
 export interface TechniqueData {
   id: string
-  type: "slide" | "bend" | "vibrato"
+  definitionId: string
   targetNoteIds: string[]
-  params: Record<string, unknown>
+  params: JsonObject
+}
+
+export interface TechniqueDefinition {
+  id: string
+  targetRule: TechniqueTargetRule
+  validateParams: TechniqueParamValidator
+}
+
+export type TechniqueParamValidator = (
+  params: JsonObject,
+) => TechniqueParamValidationResult
+
+export type TechniqueParamValidationResult =
+  | { ok: true }
+  | { ok: false; code: "technique-params-invalid"; details?: JsonObject }
+
+export interface TechniqueTargetRule {
+  minNotes: number
+  maxNotes: number
+  ordered: boolean
+  allowRest: false
 }
 ```
 
@@ -207,11 +258,11 @@ Rules:
 
 - Techniques may target one or more sound note events.
 - `targetNoteIds` is ordered.
-- `bend` targets exactly one note in V1.
-- `vibrato` targets exactly one note in V1.
-- `slide` targets exactly two notes in V1; order means from -> to.
+- `definitionId` must reference a registered `TechniqueDefinition`.
+- A registered definition owns target count, target ordering, and parameter validation.
 - Techniques must not target `rest` events.
 - Technique parameters must be structured enough for future rendering, playback, export, and validation to interpret consistently.
+- K1 test definitions should include `bend` and `vibrato` as one-note techniques and `slide` as an ordered two-note technique.
 
 ## Guitar Module Boundary
 
@@ -237,8 +288,9 @@ Consequence: A file containing only K1 core data can preserve pitch and rhythm, 
 ## Forbidden Model Shortcuts
 
 - Do not store tuning as ambiguous `EADGBE`; use explicit pitches.
+- Do not store `guitar-tab` tuning as optional in K1; it is required and must contain exactly 6 explicit pitches.
 - Do not store UI coordinates, layout coordinates, VexFlow coordinates, DOM IDs, playback cursor state, or export page coordinates as score truth.
 - Do not store guitar string/fret placement in `SoundNoteEvent`.
 - Do not represent Guitar Pro compatibility, PDF/PNG output, playback audio, or UI state as required kernel schema fields.
-- Do not treat `TechniqueData` as a display-only label; Core Loop techniques must carry structured parameters where needed.
-- Do not allow same-beat multiple notes, chords, multiple voices, 7/8-string guitars, tempo maps, tuplets, dotted rhythms, or changing time signatures to pass V1 validation.
+- Do not treat `TechniqueData` as a display-only label; technique definitions must validate structured parameters where needed.
+- Do not allow same-slot multiple notes, chords, multiple voices, 7/8-string guitars, tempo maps, tuplets, dotted rhythms, or changing time signatures to pass V1 validation.

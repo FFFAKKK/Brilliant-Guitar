@@ -52,7 +52,7 @@
 - 谱面文档、track、measure、beat、note/rest 的基础结构。
 - 吉他弦号、品号、调弦和音高关系的核心表示。
 - 调弦必须逐弦保存为明确科学音高，例如标准 6 弦吉他低到高 `E2 A2 D3 G3 B3 E4`，不得把 `EADGBE` 作为核心数据。
-- 技巧数据的最小可序列化表达，例如 `TechniqueAnnotation`；具体 `slide`、`bend`、`vibrato` 定义由技巧注册器注册。
+- 技巧数据的最小可序列化表达，例如 `TechniqueData`；具体 `slide`、`bend`、`vibrato` 测试定义由 `TechniqueDefinition` 通过 registry 注册。
 - 元数据的核心字段，例如 title、author、tempo、time signature。
 
 不放入内核:
@@ -529,7 +529,7 @@ MVP 限制:
 
 - 一个标准 6 弦吉他轨道。
 - 单 voice。
-- 每 beat 单音或休止。
+- 每个 `RhythmSlot` 单音或休止。
 - 不做和弦、多轨、变拍号、歌词、复杂理论标注。
 
 ### 7. Editor Session Service
@@ -582,7 +582,7 @@ Core Kernel 只负责:
 
 示例:
 
-- 同一 beat 多个 note: unsupported。
+- 同一 slot 多个 note: unsupported。
 - 7 弦吉他: unsupported in MVP。
 - 非 4/4 拍号: unsupported in MVP。
 - 非法品号或弦号: validation error。

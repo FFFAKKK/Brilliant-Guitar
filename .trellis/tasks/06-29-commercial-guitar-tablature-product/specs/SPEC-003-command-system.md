@@ -362,7 +362,7 @@ export interface CommandBus {
 - 不做协同编辑 command log 同步。
 - 不做用户可编辑内部 delta。
 - 不做轨道添加、删除、重命名、排序、mute/solo 命令。
-- 不做同 beat 多音、和弦图、和弦名或扫弦/琶音命令。
+- 不做同 slot 多音、和弦图、和弦名或扫弦/琶音命令。
 
 ## 测试要求
 
