@@ -34,8 +34,8 @@
 - EXT-004: 插件命令必须进入 undo/redo 历史。
 - EXT-005: 模块和未来插件必须声明稳定 `id`、`version`、`apiVersion`、`permissions`、`contributes`；Pure Core Kernel V1 的声明来源是 `KernelStartupModuleManifest`，未来第三方插件的声明来源是后续 `PluginManifest`。
 - EXT-006: 插件贡献点必须显式注册，不能运行时随意注入主程序。
-- EXT-007: 插件私有数据必须使用插件 ID 作为命名空间。
-- EXT-008: 缺失插件时，主程序必须保留该插件私有数据。
+- EXT-007: 后续插件平台中，插件私有数据必须使用插件 ID 作为命名空间；Pure Core Kernel V1 不定义插件私有数据命名空间。
+- EXT-008: 后续插件平台中，缺失插件时主程序必须保留该插件私有数据；Pure Core Kernel V1 不实现插件私有数据保留或 round-trip。
 - EXT-009: 插件异常必须被捕获；未来第三方插件只能被标记为下次启动禁用，当前运行期不得因此卸载 handler、改变已注册贡献点集合或热插拔插件。
 - EXT-010: MVP 不允许无沙箱第三方脚本或 native 动态库插件。
 - EXT-011: Pure Core Kernel V1 只接受 `runtime = "builtin" | "internal-module"` 的启动期模块；未来 `PluginManifest` 必须声明 `runtime`，但真实第三方 manifest 读取和校验不进入 V1。
@@ -285,9 +285,9 @@ export interface PluginReportFacade {
 ## Pure Core Kernel V1 测试要求
 
 - [ ] AC-009-01: 注册一个内部验证器后，验证结果能显示来源插件 ID。
-- [ ] AC-009-02: 注册一个内部导出器后，导出菜单能发现该导出器。
+- [ ] AC-009-02: 注册一个内部抽象 exporter descriptor 后，registry summary 能发现该 descriptor；不得实现 UI 发现逻辑或真实导出 handler。
 - [ ] AC-009-03: 内部插件执行批量移调命令后，undo 能恢复执行前状态。
-- [ ] AC-009-04: 打开含未知插件私有数据的文件后，保存不会丢失该数据。
+- [ ] AC-009-04: Pure Core Kernel V1 不定义插件私有数据命名空间、`extensions/` 数据保留或未知插件数据 round-trip。
 - [ ] AC-009-05: 插件抛出异常时，主程序不崩溃，并记录插件错误。
 - [ ] AC-009-06: V1 启动期注册拒绝 `runtime = "javascript-typescript" | "lua" | "native"`，并给出明确 unsupported 错误。
 - [ ] AC-009-07: 模块 origin 不自动授予 capability；official 模块缺少 capability 时同样被拒绝。
@@ -306,3 +306,4 @@ export interface PluginReportFacade {
 - [ ] AC-009-F02: 第三方 system-trusted 模块可以替换官方 UI 或渲染模块，但仍不能直接获取可变 `ScoreDocument`。
 - [ ] AC-009-F03: 第三方插件通过未来 `PluginKernelFacade` 读取 snapshot 时不会获得可变 `ScoreDocument`。
 - [ ] AC-009-F04: 第三方插件通过未来 `PluginKernelFacade` 提交写命令后，该命令进入 undo/redo 历史并带 module id 来源。
+- [ ] AC-009-F05: 打开含未知插件私有数据的文件后，后续 Persistence/插件平台必须能保留或明确报告无法保留该数据。
