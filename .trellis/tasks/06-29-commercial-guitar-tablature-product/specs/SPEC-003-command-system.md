@@ -335,8 +335,8 @@ export interface CommandBus {
 - `core.createScore`: 创建标准 6 弦吉他谱。
 - `core.setDocumentMetadata`: 设置标题、作者等元数据。
 - `core.ensureMeasures`: 创建或补齐第一条 4 小节 riff 所需小节。
-- `core.insertNote`: 在目标 beat 和弦上插入单音。
-- `core.insertRest`: 在目标 beat 插入等长休止。
+- `core.insertNote`: 在目标 `RhythmSlot` 或 `ScorePoint` 插入单个有声音符事件。
+- `core.insertRest`: 在目标 `RhythmSlot` 或 `ScorePoint` 插入单个休止事件。
 - `core.setNotePitch`: 修改有声音符的绝对音高。
 - `core.setDuration`: 修改音符或休止时值。
 - `core.addTechnique`: 添加结构化技巧注解。
