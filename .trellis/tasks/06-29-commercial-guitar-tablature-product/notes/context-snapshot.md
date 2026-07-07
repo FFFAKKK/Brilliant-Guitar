@@ -101,7 +101,7 @@
 - Guitar Pro 兼容策略: 导入必须输出 `ImportReport`，无法支持的轨道、技巧、排版、音色、自动化和音频轨必须明确列入报告；导入结果必须进入 `.bgp` 领域模型并通过验证器。
 - 文件策略: GP8 式单文件体验 + 开放包结构；第一阶段不做私有黑盒文件格式。
 - 原生文件策略: `.bgp` 单文件开放包，内部通过 `manifest.json` 和 `score.json` 承载核心信息。
-- `.bgp` 语义契约策略: `.bgp` 包内语义、`manifest.json`、`score.json` schema、schema version、兼容矩阵、迁移入口、`MigrationReport` 和未知扩展数据保留规则属于 Core Kernel；真实 zip 读写、文件路径、原子保存、自动保存、崩溃恢复和最近文件列表属于外部 `Persistence Service`。
+- `.bgp` 语义契约策略: `.bgp` 包内语义、`manifest.json`、`score.json` schema、schema version、兼容矩阵、迁移入口和 `MigrationReport` 属于 Core Kernel；Pure Core Kernel V1 不定义扩展数据保留协议，`extensions/` 与插件私有数据 round-trip 延后到 Persistence/插件阶段；真实 zip 读写、文件路径、原子保存、自动保存、崩溃恢复和最近文件列表属于外部 `Persistence Service`。
 - 快照/事件/模块通信策略: 已确认采用 `Snapshot / Selector + Post-Commit Event Bus + Command-only write`。外部模块通过只读 `DocumentSnapshot` 或 selector 读取状态；内核只在事务 commit 后发布文档加载、文档变化、命令执行、历史状态、诊断、脏状态、注册表和迁移完成事件；UI 光标、选区高亮、鼠标拖拽、播放光标 tick、SVG DOM、VexFlow 对象和 Web Audio 节点事件不属于 Core Kernel。
 - 外部副本策略: 已拒绝“打开文件时复制一份外部可变 `ScoreDocument` 副本给模块随意操作，保存时再写回 Core Kernel”的方案，因为它与微内核设计思路相悖。外部模块只能从 snapshot/selector 派生布局 primitives、播放事件、导出页面模型、分析报告或导入中间模型等非谱面事实数据；最终写入仍必须走语义命令、导入结果或迁移入口。
 - 注册表/capability 策略: 已确认作为独立 Core Kernel 功能，当前推荐采用 `Kernel Registry + Static Internal Capability`。Core Kernel 保留最小注册表、module identity、API version 和 capability 检查；第三方插件发现、安装、沙箱、市场、权限 UI、签名和审核属于外部 `Extension Host` 或后续服务。

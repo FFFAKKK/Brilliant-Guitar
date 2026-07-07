@@ -76,7 +76,7 @@
 - [ ] 定义测试技巧参数规则: `test.bend.params.semitones` 只能是 `1 | 2`，`test.vibrato.params.width` 只能是 `"narrow" | "wide"`，`test.slide.params.slideKind` 只能是 `"shift" | "legato"`；非法参数必须返回 `technique-params-invalid`。
 - [ ] 确保技巧 definition id、参数字段、参数值、错误码和序列化字段都使用英文稳定标识；中文名称只通过 i18n 或 UI 显示层提供。
 - [ ] 定义 `.bgp` 包结构和 `manifest.json`、`score.json` schema。
-- [ ] 定义 `MigrationReport`、schema version 兼容矩阵、迁移器注册入口和未知扩展数据保留规则。
+- [ ] 定义 `MigrationReport`、schema version 兼容矩阵和迁移器注册入口；Pure Core Kernel V1 不定义扩展数据保留协议，`extensions/` 与插件私有数据 round-trip 延后到 Persistence/插件阶段。
 - [ ] 明确 `.bgp` 第一阶段不加密、不做文件密码锁、不做 DRM，测试工具可解包检查核心语义。
 - [ ] 建立最小 fixture 谱库。
 - [ ] 实现文档验证器。
