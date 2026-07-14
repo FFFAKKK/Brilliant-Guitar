@@ -10,6 +10,8 @@ type BoundaryViolation = {
   readonly kind: "external-module" | "escapes-core";
 };
 
+const NON_LITERAL_SPECIFIER = "<non-literal>";
+
 function readModuleSpecifier(node: ts.Node): string | undefined {
   if (
     (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
@@ -26,17 +28,21 @@ function readModuleSpecifier(node: ts.Node): string | undefined {
   ) {
     return node.moduleReference.expression.text;
   }
-  if (ts.isCallExpression(node) && node.arguments.length === 1) {
-    const argument = node.arguments[0];
+  if (ts.isImportTypeNode(node)) {
+    return ts.isLiteralTypeNode(node.argument) &&
+      ts.isStringLiteralLike(node.argument.literal)
+      ? node.argument.literal.text
+      : NON_LITERAL_SPECIFIER;
+  }
+  if (ts.isCallExpression(node)) {
     const dynamicImport = node.expression.kind === ts.SyntaxKind.ImportKeyword;
     const commonJsRequire =
       ts.isIdentifier(node.expression) && node.expression.text === "require";
-    if (
-      argument !== undefined &&
-      (dynamicImport || commonJsRequire) &&
-      ts.isStringLiteralLike(argument)
-    ) {
-      return argument.text;
+    if (dynamicImport || commonJsRequire) {
+      const argument = node.arguments[0];
+      return argument !== undefined && ts.isStringLiteralLike(argument)
+        ? argument.text
+        : NON_LITERAL_SPECIFIER;
     }
   }
   return undefined;
@@ -81,7 +87,7 @@ function scanSource(
   return violations;
 }
 
-test("dependency scanner detects external, builtin, dynamic, require, and escaping imports", () => {
+test("dependency scanner fails closed for every forbidden module reference form", () => {
   const coreRoot = resolve("virtual", "src", "core-kernel");
   const fileName = resolve(coreRoot, "codec", "sample.ts");
   const sourceText = [
@@ -89,7 +95,13 @@ test("dependency scanner detects external, builtin, dynamic, require, and escapi
     'export * from "../../guitar-domain/index";',
     'const fs = require("node:fs");',
     'void import("vexflow");',
+    'const moduleName = "react";',
+    'void import(moduleName, { with: { type: "json" } });',
+    'const builtin = "node:fs";',
+    'require(builtin);',
+    'type ReactType = import("react").ComponentType<unknown>;',
     'import type { Fraction } from "../domain/fraction";',
+    'type FractionType = import("../domain/fraction").Fraction;',
   ].join("\n");
 
   assert.deepEqual(
@@ -102,6 +114,9 @@ test("dependency scanner detects external, builtin, dynamic, require, and escapi
       { kind: "escapes-core", specifier: "../../guitar-domain/index" },
       { kind: "external-module", specifier: "node:fs" },
       { kind: "external-module", specifier: "vexflow" },
+      { kind: "external-module", specifier: "<non-literal>" },
+      { kind: "external-module", specifier: "<non-literal>" },
+      { kind: "external-module", specifier: "react" },
     ],
   );
 });
