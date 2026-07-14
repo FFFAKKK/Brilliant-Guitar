@@ -17,12 +17,12 @@
 
 ## Repository Baseline Status
 
-- 任务状态：`in_progress`；规划父任务继续保留在 `review`，等待本子任务正式验收。
+- 任务状态：`review`；规划父任务继续保留在 `review`，等待用户完成本子任务的人工验收。
 - 当前分支：`codex/k1-1-core-foundation`。
-- 当前工作区包含 K1-1 代码、测试、稳定规范和产品文档同步的未提交变更。
-- 当前 Git `HEAD` 仍是换轨前基线；干净工作区或仅阅读提交历史的操作者尚不能获得本轮完整新模型。
-- Trellis 当前任务指针已指向本子任务 `.trellis/tasks/07-13-k1-1-core-foundation`；本轮文档收口不新建任务，任务状态以 `task.json = in_progress` 为准。
-- 用户已批准分阶段提交计划；正式验收前仍不得把当前工作区描述为正式仓库基线。
+- 当前分支已按“文档合同与归档”“候选实现及必要修正”“测试/公共 API/最终验收”三个审查边界形成提交序列。
+- 当前分支 `HEAD` 已包含新的 K1-1 合同、实现和测试；干净检出该分支能够获得完整新模型。
+- Trellis 当前任务指针已指向本子任务 `.trellis/tasks/07-13-k1-1-core-foundation`；本轮未新建其他任务，任务状态以 `task.json = review` 为准。
+- 本轮结果尚未合并到主分支；在用户人工验收前，不把它描述为主线正式基线。
 
 ## Requirements
 
@@ -54,10 +54,19 @@
 - [x] K1C-AC-003: 通用 schema 能表达首版吉他、双 Staff 钢琴、多 Part、和弦、附点和 time modification。
 - [x] K1C-AC-004: malformed JSON、错误字段、错误 union kind 和 future schema version 安全返回稳定 decode 诊断。
 - [x] K1C-AC-005: Core 语义验证覆盖全局 ID、引用、measure 全覆盖、voice 时值和 extension 信封。
-- [ ] K1C-AC-006: `ScoreFeatureProfile` 通过 `ScoreSupportResult.status` 明确区分 `supported`、`invalid` 和 `unsupported`，并保持诊断类型与状态一致。
+- [x] K1C-AC-006: `ScoreFeatureProfile` 通过 `ScoreSupportResult.status` 明确区分 `supported`、`invalid` 和 `unsupported`，并保持诊断类型与状态一致。
 - [x] K1C-AC-007: 未知 ExtensionBlock 深层 payload 经过 encode/decode 后语义等价。
 - [x] K1C-AC-008: 生产入口不导出 fixture、clone helper、测试 technique 定义，也没有违禁依赖。
-- [ ] K1C-AC-009: 从新进程运行 `npm run typecheck`、`npm run build`、`npm test` 与 `git diff --check` 全部通过，并如实记录 LF→CRLF 警告。
-- [ ] K1C-AC-010: 提交用户 Core Block 验收并停止，不创建或实施 Guitar Domain 代码。
-- [ ] K1C-AC-011: 补充多 Voice unsupported、两小节内容乱序、跨实体 ID 冲突、sequence start/duration、meter 和 NoteValue base 边界测试；已存在行为不重复建设。
-- [ ] K1C-AC-012: 变更至少按“文档合同与归档”“候选实现及必要修正”“测试/公共 API/最终验收”三个可审查提交边界组织；是否 squash 留到发布前决定。
+- [x] K1C-AC-009: 从新进程运行 `npm run typecheck`、`npm run build`、`npm test` 与 `git diff --check` 全部通过，并如实记录 LF→CRLF 警告。
+- [x] K1C-AC-010: 提交用户 Core Block 验收并停止，不创建或实施 Guitar Domain 代码。
+- [x] K1C-AC-011: 补充多 Voice unsupported、两小节内容乱序、跨实体 ID 冲突、sequence start/duration、meter 和 NoteValue base 边界测试；已存在行为不重复建设。
+- [x] K1C-AC-012: 变更至少按“文档合同与归档”“候选实现及必要修正”“测试/公共 API/最终验收”三个可审查提交边界组织；是否 squash 留到发布前决定。
+
+## Verification Record
+
+- `ScoreSupportResult` 行为测试先观察到旧 `ok` 合同导致 3 个断言失败，再以最小实现转为 4/4 通过。
+- 缺口边界定向测试 15/15 通过；未证明 `ScoreDocument`、codec 或 semantic validator 存在缺陷，因此没有对核心谱面类型做整理式重构。
+- 2026-07-14 从新进程运行 `npm run typecheck`、`npm run build` 和 `npm test`，全部成功；完整测试为 40/40。
+- `git diff --check` 与 `git diff --cached --check` 均以退出码 0 完成。Git 在暂存 LF 文件时报告 LF→CRLF 工作区转换提示，该提示不是 diff check 失败。
+- 生产源码未出现旧 tick/slot 持久化路径、调试绕过、Guitar Domain 或 K1-2 实现。
+- `score-feature-profile.ts` 保持单文件：公开合同与验证器当前处于同一依赖边界，拆分不构成验收价值。

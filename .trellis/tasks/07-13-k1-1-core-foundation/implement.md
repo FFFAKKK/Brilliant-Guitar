@@ -57,3 +57,11 @@ Node test runner 在受限沙箱中可能以 `spawn EPERM` 失败；这属于运
 3. 缺口测试、公共 API 与最终验收状态。
 
 提交边界用于审查与回滚；发布前是否 squash 另行决定。
+
+## Execution Result
+
+- 文档合同与旧规范归档已独立提交。
+- K1-1 候选实现与三态 `ScoreSupportResult` 已独立提交；核心谱面类型未因无失败证据而改写。
+- 缺口测试、公共 API 复核与最终验收状态作为第三个提交边界。
+- 最终检查：`typecheck` 通过、独立 `build` 通过、完整测试 40/40、工作区与暂存区 diff check 退出码均为 0。
+- 已停止在 Core Block 人工审核门，不进入 Guitar Domain 或 K1-2。
