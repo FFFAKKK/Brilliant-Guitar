@@ -5,6 +5,8 @@
 - 状态: 草案
 - 映射需求: `REQ-007`
 - 目标: 为模块化软件和未来插件生态定义可实现、可测试、可控的扩展边界。
+- 当前约束: 本文件是未来插件平台路线图，不是 K1-1/K1-4 实现契约；K1-4 必须先通过 `SPEC-015` 重规划门。
+- 数据边界: `ScoreDocument.extensions` 已由 Core K1-1 定义为 score/part-owned 纯数据信封；它不等于插件安装、发现、registry 或执行 API。
 
 ## 适用范围
 
@@ -34,8 +36,8 @@
 - EXT-004: 插件命令必须进入 undo/redo 历史。
 - EXT-005: 模块和未来插件必须声明稳定 `id`、`version`、`apiVersion`、`permissions`、`contributes`；Pure Core Kernel V1 的声明来源是 `KernelStartupModuleManifest`，未来第三方插件的声明来源是后续 `PluginManifest`。
 - EXT-006: 插件贡献点必须显式注册，不能运行时随意注入主程序。
-- EXT-007: 后续插件平台中，插件私有数据必须使用插件 ID 作为命名空间；Pure Core Kernel V1 不定义插件私有数据命名空间。
-- EXT-008: 后续插件平台中，缺失插件时主程序必须保留该插件私有数据；Pure Core Kernel V1 不实现插件私有数据保留或 round-trip。
+- EXT-007: 后续插件平台若使用 ScoreDocument ExtensionBlock，必须分配稳定 reverse-domain namespace 并遵守 score/part owner；物理资源存储另行规划。
+- EXT-008: Core K1-1 必须保真未知 ExtensionBlock 的 JsonValue 语义；领域模块/插件缺失时不得静默丢弃。物理资源和字节级保真不在该承诺内。
 - EXT-009: 插件异常必须被捕获；未来第三方插件只能被标记为下次启动禁用，当前运行期不得因此卸载 handler、改变已注册贡献点集合或热插拔插件。
 - EXT-010: MVP 不允许无沙箱第三方脚本或 native 动态库插件。
 - EXT-011: Pure Core Kernel V1 只接受 `runtime = "builtin" | "internal-module"` 的启动期模块；未来 `PluginManifest` 必须声明 `runtime`，但真实第三方 manifest 读取和校验不进入 V1。
@@ -260,7 +262,7 @@ export interface PluginReportFacade {
 - `KernelStartupModuleManifest` 和 `CoreModuleRegistration` 数据结构。
 - `KernelModuleIdentity` 中的 origin、runtime、trustLevel 和 apiVersion 字段。
 - `CoreModuleRegistration` 类型边界。
-- Pure Core Kernel V1 不定义插件私有数据命名空间或模块私有数据持久化位置；未来扩展数据存储在对应模块规划阶段单独设计。
+- Core K1-1 定义通用 ExtensionBlock namespace/owner/payload 信封并保真未知 JsonValue；具体领域 payload 和物理资源位置由对应模块单独设计。
 - API 版本字段。
 
 文档级未来草案:
@@ -287,7 +289,7 @@ export interface PluginReportFacade {
 - [ ] AC-009-01: 注册一个内部验证器后，验证结果能显示来源插件 ID。
 - [ ] AC-009-02: 注册一个内部抽象 exporter descriptor 后，registry summary 能发现该 descriptor；不得实现 UI 发现逻辑或真实导出 handler。
 - [ ] AC-009-03: 内部插件执行批量移调命令后，undo 能恢复执行前状态。
-- [ ] AC-009-04: Pure Core Kernel V1 不定义插件私有数据命名空间、`extensions/` 数据保留或未知插件数据 round-trip。
+- [ ] AC-009-04: Core 保真未知 score/part ExtensionBlock 的 JsonValue 语义；不承诺物理 `extensions/` 目录、插件资源或字节级 round-trip。
 - [ ] AC-009-05: 插件抛出异常时，主程序不崩溃，并记录插件错误。
 - [ ] AC-009-06: V1 启动期注册拒绝 `runtime = "javascript-typescript" | "lua" | "native"`，并给出明确 unsupported 错误。
 - [ ] AC-009-07: 模块 origin 不自动授予 capability；official 模块缺少 capability 时同样被拒绝。
@@ -306,4 +308,4 @@ export interface PluginReportFacade {
 - [ ] AC-009-F02: 第三方 system-trusted 模块可以替换官方 UI 或渲染模块，但仍不能直接获取可变 `ScoreDocument`。
 - [ ] AC-009-F03: 第三方插件通过未来 `PluginKernelFacade` 读取 snapshot 时不会获得可变 `ScoreDocument`。
 - [ ] AC-009-F04: 第三方插件通过未来 `PluginKernelFacade` 提交写命令后，该命令进入 undo/redo 历史并带 module id 来源。
-- [ ] AC-009-F05: 打开含未知插件私有数据的文件后，后续 Persistence/插件平台必须能保留或明确报告无法保留该数据。
+- [ ] AC-009-F05: 打开含未知 ExtensionBlock 的文件后必须语义保留；若未来物理插件资源无法保留，Persistence/插件平台必须明确报告。

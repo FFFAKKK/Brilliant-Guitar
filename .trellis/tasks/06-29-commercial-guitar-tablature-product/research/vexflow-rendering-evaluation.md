@@ -52,7 +52,7 @@ VexFlow 更偏渲染库，不是完整交互式打谱编辑器。选区、光标
 
 ### 3. 高频吉他技巧可能需要 overlay 或自定义扩展
 
-Core Loop 用户可见技巧名称 `slide`、`bend`、`vibrato` 对应 K1 测试定义 `test.slide`、`test.bend`、`test.vibrato`；后续 P0 增强的 `hammer-on`、`pull-off`、`palm mute` 不一定都能用 VexFlow 默认视觉语义直接满足我们的产品需求。第一阶段应允许自定义 overlay 绘制。
+Core Loop 计划优先显示 `slide`、`bend`、`vibrato`，其稳定领域 ID 与 payload 等待 Guitar Domain 规范；后续 `hammer-on`、`pull-off`、`palm mute` 不一定都能用 VexFlow 默认视觉语义满足产品需求，因此渲染层应允许自定义 overlay。
 
 ### 4. 长期维护要求必须固定版本
 

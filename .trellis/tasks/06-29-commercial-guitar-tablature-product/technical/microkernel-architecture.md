@@ -1,5 +1,10 @@
 # 微内核架构图与模块职责
 
+> **当前模型基线（2026-07-13）：** K1-1 的唯一决策源是
+> `07-13-k1-1-foundation-replanning/design.md`，活动字段契约位于
+> `.trellis/spec/core-kernel/`。本文的命令、registry、report 和模块协作章节是
+> 待分块复审的架构路线图，不可覆盖 `brilliant-score-1`。
+
 ## 架构结论
 
 `Brilliant Guitar` 采用参照操作系统微内核思想的软件架构。核心原则是: 内核只保留最关键、最稳定、最需要一致性的能力；其它功能作为用户态服务模块围绕内核工作。
@@ -14,17 +19,17 @@
 
 ## 内核总规划优先级
 
-当前阶段先完成 Core Kernel V1 的 9 类机制规划和实现，不把注册表 handler 运行时注销、运行时卸载、第三方插件运行中启停、热插拔、插件运行中禁用、权限 UI 等生命周期治理放入当前内核实现。Core Kernel 完成后会继续建设多个由官方随应用发布的内置模块，这些模块通过 registry/capability 与内核协作，用于验证 snapshot、semantic command、event、registry/capability 等协作链路；具体模块清单、数量和拆分方式后续再规划。UI 模块只是官方内置模块中的一类，不被写死为第一个、唯一插件或固定顺序。未来第三方插件的安装、移除、启用和禁用配置必须在应用启动前完成，由未来插件平台或 Extension Host 在启动期发现、校验、授权并映射进同一注册协议；运行时热插拔、运行中启停和卸载不作为规划目标。
+Core Kernel V1 仍用 9 类机制整理路线图，但按 K1-1 至 K1-6 分块规划、实施和评审。当前只评审 K1-1 Core Foundation；Guitar Domain、commands/history、snapshot/events、registry/capability 与 reports/migration 都有独立门禁。注册表 handler 运行时注销、第三方插件运行中启停、热插拔、权限 UI 等生命周期治理不进入当前实现；未来插件平台也不得反向要求 K1-1 预建执行基础设施。
 
 内核总规划按以下 9 类机制收敛:
 
 | 序号 | 内核机制 | 解决的问题 | MVP 只保留 |
 | --- | --- | --- | --- |
-| 1 | 谱面核心对象模型 | 定义唯一谱面事实 | `ScoreDocument`、单轨 6 弦、明确调弦、基础音符/休止/技巧注解 |
+| 1 | 谱面核心对象模型 | 定义唯一谱面事实 | `ScoreDocument`、Part/Staff/Voice/Event、Fraction/NoteValue、WrittenPitch、ExtensionBlock |
 | 2 | 命令系统调用边界 | 统一写入口 | 语义命令、payload schema、内部 delta 不外露 |
 | 3 | 事务、历史和一致性边界 | 保证写入可回滚可回放 | 细粒度 undo/redo、dirty state、command replay |
 | 4 | 文档地址和范围模型 | 统一命令目标语言 | 稳定 ID、`ScoreAddress`、`ScorePoint`、`ScoreRange` |
-| 5 | 硬一致性验证 | 防止文件和文档被写坏 | schema、引用、时值、弦/品/音高、MVP 范围验证 |
+| 5 | 验证边界 | 防止文档被写坏并区分产品支持面 | decode、Core semantic validation、ScoreFeatureProfile；吉他语义由 Guitar Domain 验证 |
 | 6 | `.bgp` 语义契约和迁移入口 | 保护长期文件资产 | manifest/score schema、schema version、migration/report 入口 |
 | 7 | 快照、事件和模块通信协议 | 让外部模块低耦合协作 | 只读 snapshot/selector、提交后事件、command-only write |
 | 8 | 注册表与能力边界 | 管理贡献点和模块权限 | registry、capability、module identity、静态可信启动清单 |
@@ -49,11 +54,13 @@
 
 它定义:
 
-- `ScoreDocument = metadata + scoreData`、`ScoreTimeline`、`MeasureTimeSpan`、`RhythmSlot`、`ScoreEvent` 和 note/rest 的基础结构。
-- 绝对音高、音乐时间、调弦音乐元数据和音高关系的核心表示；吉他弦号、品号和指法位置属于外部吉他谱模块。
-- 调弦必须逐弦保存为明确科学音高，例如标准 6 弦吉他低到高 `E2 A2 D3 G3 B3 E4`，不得把 `EADGBE` 作为核心数据。
-- 技巧数据的最小可序列化表达，例如 `TechniqueData`；具体 `test.slide`、`test.bend`、`test.vibrato` 测试定义由 `TechniqueDefinition` 通过 registry 注册。
-- 元数据的核心字段，例如 title、author、tempo、time signature。
+- `ScoreDocument = metadata + measureDefinitions + parts + extensions` 与 Part/Staff/Voice/Event/Note 所有权结构。
+- 规范化 `Fraction + NoteValue` 的精确音乐时间；事件位置、tick、毫秒和布局时间全部派生。
+- WrittenPitch 与 Part transposition；SoundingPitch 确定性派生。
+- score/part-owned `ExtensionBlock` 信封与未知 JsonValue 语义保真；Core 不解释 Guitar payload。
+- 文档元数据、全谱小节顺序、meter 与 tempo 等跨领域事实。
+
+标准 6 弦调弦、弦号、品号、指法位置和吉他技巧由后续 Guitar Domain 在 Part-owned extension 中定义，不是 Core 字段或 K1-1 registry contribution。
 
 不放入内核:
 
@@ -68,7 +75,7 @@
 
 微内核提供唯一写入入口，类似操作系统 syscall。
 
-所有修改必须通过语义命令。语义命令表达“要做什么”，例如输入音符、设置绝对音高、添加技巧；patch/delta 表达“文档字段怎么变”，只能由内核内部生成和消费。
+所有修改必须通过语义命令。Core 命令表达“要做什么”，例如输入 note/rest、设置 WrittenPitch 或 NoteValue；Guitar Domain 后续提供弦品和技巧领域命令。patch/delta 表达“文档字段怎么变”，只能由内核内部生成和消费。该命令集合必须在 K1-2 基于 `brilliant-score-1` 重新设计。
 
 对外允许的典型语义命令:
 
@@ -161,10 +168,10 @@
 
 - schema 合法。
 - 引用地址存在。
-- `AbsolutePitch`、duration、tick、调弦、slot/event 引用合法。
-- 小节时值总量在当前 MVP 规则下可验证。
-- note/rest 不出现互斥冲突。
-- 技巧参数结构合法。
+- WrittenPitch、transposition、Fraction/NoteValue、measure coverage、Staff/Voice/Event 引用与 ExtensionBlock 信封合法。
+- 小节序列起点和精确时值总量不越界。
+- Core semantic validity 与 `ScoreFeatureProfile` 支持面分别报告。
+- 调弦、弦品和吉他技巧 payload 由 Guitar Domain codec/validator 负责。
 
 移出内核:
 
@@ -301,7 +308,7 @@
 复审后，以下功能明确不属于微内核:
 
 - `Editor Session Service`: 当前光标、选区高亮、鼠标拖选、编辑模式。
-- `Guitar Technique Module`: 具体技巧定义、参数 schema、互斥规则、显示语义、播放语义和技巧选择 UI。
+- `Guitar Domain`: Part-owned GuitarExtension 的调弦、弦品映射、技巧 payload、参数/引用/互斥验证，以及显示与播放语义。
 - `Layout Service`: 页面、系统、小节、hit area、布局缓存。
 - `Renderer Service`: SVG、VexFlow、overlay、截图渲染。
 - `Playback Service`: 播放事件编译、Web Audio、节拍器、播放光标。
@@ -344,9 +351,9 @@ flowchart TB
   subgraph Kernel["Microkernel: Brilliant Guitar Core"]
     API["Kernel API Boundary\n命令、查询、事件、注册、错误"]
     Cmd["Command & Transaction Manager\n命令总线、事务、undo/redo、命令回放"]
-    Doc["Document Store\nScoreDocument、音符、休止、技巧、调弦、元数据"]
+    Doc["Document Store\nScoreDocument、Part/Staff/Voice/Event、扩展信封"]
     Address["Address / Range Model\n文档地址、范围、命令目标校验"]
-    Validator["Hard Validation\nschema 验证、MVP 范围验证、验证问题数据"]
+    Validator["Validation Pipeline\ndecode、Core semantic、ScoreFeatureProfile"]
     Schema["Schema & Migration Contract\n.bgp schema、manifest、迁移入口"]
     Snapshot["Snapshot / Query Service\n不可变快照、selector、派生读模型"]
     Events["Event Bus\n命令事件、文档变更、诊断更新"]
@@ -355,6 +362,7 @@ flowchart TB
   end
 
   subgraph Services["用户态服务模块"]
+    Guitar["Guitar Domain\n调弦、弦品、吉他技巧扩展语义"]
     Layout["Layout Service\n页面、系统、小节、音符、技巧、hit area primitives"]
     Renderer["Renderer Service\nSVG 视图、VexFlowRendererAdapter、自定义 overlay"]
     Playback["Playback Service\n播放事件、节拍器、速度控制、Web Audio adapter"]
@@ -383,6 +391,10 @@ flowchart TB
 
   Snapshot --> Layout --> Renderer --> UI
   Snapshot --> Playback --> UI
+  Snapshot --> Guitar
+  Guitar --> API
+  Guitar --> Layout
+  Guitar --> Playback
   Persistence --> API
   Exporter --> Snapshot
   Exporter --> Layout
@@ -462,7 +474,7 @@ flowchart TB
 
 MVP 范围:
 
-- 支持 4 小节 riff 的单音、休止、移动、删除和 3 个 Core Loop 技巧输入。
+- 支持 4 小节 riff 的单音、休止、移动和删除；slide、bend、vibrato 等首批技巧输入在 Guitar Domain 契约确认后接入。
 - MIDI、虚拟指板、自由文本谱解析后置。
 
 ### 4. Core Kernel API Boundary
@@ -520,17 +532,15 @@ MVP 范围:
 负责:
 
 - `ScoreDocument`。
-- `metadata + scoreData`、measure、RhythmSlot、note/rest。
-- 6 弦调弦。
-- 吉他技巧。
-- 标题、作者、tempo、4/4 拍号、段落标记。
+- `metadata + measureDefinitions + parts + extensions`。
+- Part/Staff/Voice/Event/Note、Fraction/NoteValue 与 WrittenPitch/transposition。
+- 标题、作者、tempo、meter 和扩展信封。
 
 MVP 限制:
 
-- 一个标准 6 弦吉他轨道。
-- 单 voice。
-- 每个 `RhythmSlot` 单音或休止。
-- 不做和弦、多轨、变拍号、歌词、复杂理论标注。
+- 当前 K1 profile 支持一个 Part、一个 Staff、每小节一个 Voice。
+- 每个 Event 是休止或单 Note；通用 schema 中合法和弦由 profile 报告 unsupported。
+- 当前 profile 不支持弱起、非 4/4、附点、连音比例或复杂理论标注。
 
 ### 7. Editor Session Service
 
@@ -582,10 +592,11 @@ Core Kernel 只负责:
 
 示例:
 
-- 同一 slot 多个 note: unsupported。
+- Event 中多个 note（合法和弦）: 当前 profile 返回 `unsupported.chord`。
 - 7 弦吉他: unsupported in MVP。
 - 非 4/4 拍号: unsupported in MVP。
-- 非法绝对音高、非法调弦、非法时值或非法 slot/event 引用: validation error。
+- 非法 WrittenPitch、Fraction/NoteValue、measure coverage 或 Staff/Voice/Event 引用: Core semantic diagnostic。
+- 非法调弦、弦品或吉他技巧 payload: Guitar Domain diagnostic。
 
 ### 9. Schema & Migration Contract
 

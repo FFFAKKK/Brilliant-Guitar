@@ -1,196 +1,60 @@
-# SPEC-005 吉他技巧注册框架
+# SPEC-005 Guitar Domain 技巧重规划门
 
-## 状态
+> **状态：BLOCKED / NOT EXECUTABLE。** 吉他技巧不属于 Core K1-1；须在独立 Guitar Domain / Block 2 任务中设计。本文件不批准旧 Core 技巧 registry。
 
-- 状态: 已确认 Core Kernel K1 技巧框架边界。
-- 映射需求: `REQ-002`、`REQ-003`、`REQ-011`、`SPEC-015`。
-- 目标: 定义技巧如何作为结构化、可注册、可验证的数据进入 Core Kernel，而不是固定某几个硬编码技巧。
+## 1. Scope / Trigger
 
-## 适用范围
+当产品准备保存、编辑、验证、渲染或播放 slide、bend、vibrato、hammer-on、pull-off、palm mute 等吉他技巧时触发。
 
-本 spec 当前只约束 Pure Core Kernel V1 的技巧数据契约和测试技巧定义。UI 输入、SVG/VexFlow 显示、真实播放效果、导出排版和完整吉他技巧库属于后续外部模块实现。
+## 2. Signatures
 
-## 设计原则
+当前只确定承载边界：
 
-- Core Kernel K1 只保存通用 `TechniqueData`。
-- 具体技巧必须通过 `TechniqueDefinition` 注册。
-- `test.slide`、`test.bend`、`test.vibrato` 是 K1 测试技巧定义，用于证明技巧框架可用，不是内核硬编码枚举。
-- 技巧目标只允许指向一个或多个有声音符。
-- 技巧不得指向 `rest`。
-- 技巧参数必须是 JSON 可序列化结构，并由注册定义校验。
-- 新增技巧不得散落硬编码到 UI、渲染、播放或导出层。
-
-## 技巧分类
-
-分类用于产品规划、UI 分组和文档组织，不是 Core Kernel K1 持久化技巧枚举。
-
-```ts
-export type TechniqueCategory =
-  | "legato"
-  | "pitch_expression"
-  | "sustain_mute_noise"
-  | "attack_dynamics"
-  | "harmonics"
-  | "chord_rhythm"
-```
-
-## K1 测试技巧定义
-
-K1 测试至少注册 3 个技巧定义:
-
-- `test.slide`: `legato`，有序 2 个目标 note。
-- `test.bend`: `pitch_expression`，1 个目标 note。
-- `test.vibrato`: `pitch_expression`，1 个目标 note。
-
-这些定义必须能验证:
-
-- registry 注册。
-- target note 存在。
-- target 不能是 rest。
-- target 数量符合定义。
-- `params` 通过定义校验。
-- 保存、重开、迁移入口、撤销/重做和 fixture round-trip 不丢失数据。
-
-## 后续技巧候选
-
-以下候选不阻塞 Pure Core Kernel V1:
-
-- P0 Follow-up: `hammer_on`、`pull_off`、`palm_mute`。
-- P0 Extended: `release`、`let_ring`、`dead_note`、`ghost_note`、`accent`、`staccato`、`pick_stroke_up`、`pick_stroke_down`、`natural_harmonic`、`arpeggio`。
-- P1: `pre_bend`、`grace_note`、`tremolo_picking`、`artificial_harmonic`、`legato_slide`。
-- P2: `tapping`、`pinch_harmonic`、`tapped_harmonic`、`whammy_bar_curve`、`sweep_picking`、`rasgueado`、`classical_right_hand_fingering`、`multi_step_bend_curve`。
-
-## 数据契约
-
-```ts
-export type JsonValue =
-  | null
-  | boolean
-  | number
-  | string
-  | JsonValue[]
-  | { [key: string]: JsonValue }
-
-export type JsonObject = { [key: string]: JsonValue }
-
-export interface TechniqueData {
-  id: string
-  definitionId: string
-  targetNoteIds: string[]
-  params: JsonObject
-}
-
-export interface TechniqueDefinition {
-  id: string
-  category: TechniqueCategory
-  targetRule: TechniqueTargetRule
-  parameterSchemaVersion: string
-  validateParams: TechniqueParamValidator
-  displayKey?: string
-}
-
-export interface TechniqueTargetRule {
-  minNotes: number
-  maxNotes: number
-  ordered: boolean
-  allowRest: false
-}
-
-export type TechniqueParamValidator = (
-  params: JsonObject,
-) => TechniqueParamValidationResult
-
-export type TechniqueParamValidationResult =
-  | { ok: true }
-  | { ok: false; code: "technique-params-invalid"; details?: JsonObject }
-
-export type K1TestTechniqueDefinitionId =
-  | "test.bend"
-  | "test.vibrato"
-  | "test.slide"
-
-export interface K1TestBendParams {
-  semitones: 1 | 2
-}
-
-export interface K1TestVibratoParams {
-  width: "narrow" | "wide"
-}
-
-export interface K1TestSlideParams {
-  slideKind: "shift" | "legato"
+```typescript
+interface ExtensionBlock {
+  readonly namespace: string
+  readonly schemaVersion: number
+  readonly owner: { readonly kind: "part"; readonly partId: string }
+  readonly payload: JsonObject
 }
 ```
 
-规则:
+GuitarExtension namespace、payload、技巧 ID、参数 schema 与跨 Note 引用尚未批准。
 
-- `definitionId` 是技巧稳定身份，不随 UI 语言变化。
-- `TechniqueDefinition` 必须通过 `KernelRegistry` 注册，注册入口遵守 `SPEC-015-kernel-registry-capability.md`。
-- 重复 `definitionId` 必须被拒绝。
-- 未注册 `definitionId` 必须产生 `technique-definition-missing`。
-- `targetNoteIds.length` 不符合定义必须产生 `technique-target-count-invalid`。
-- `params` 不符合定义必须产生 `technique-params-invalid`。
-- K1 测试技巧的 definition id、参数字段、参数值、错误码和序列化字段必须使用英文稳定标识；中文名称只允许存在于 i18n 或 UI 显示层。
-- 未知技巧数据的保留策略由 schema/迁移和 report 规划继续约束；K1 不因为未知技巧执行外部代码。
+## 3. Contracts
 
-## K1 测试定义建议
+- 调弦、弦品映射和吉他技巧属于同一 Part-owned Guitar Domain，不进入 Core Note/Event/metadata。
+- 领域模块负责 strict decode、semantic validation、版本兼容和 `guitar.*` diagnostics。
+- Core 只验证 ExtensionBlock 信封并保真未知 JsonValue。
+- 技巧持久化必须是纯数据，不得包含 callback、class、renderer、player 或模块代码。
+- UI 名称、渲染、播放与导出从稳定领域语义派生，不各自维护第二份技巧事实。
+- 是否需要 registry 是 Block 2/K1-4 的独立决策，不能从旧测试定义继承。
 
-```ts
-export const testSlideDefinition: TechniqueDefinition = {
-  id: "test.slide",
-  category: "legato",
-  targetRule: { minNotes: 2, maxNotes: 2, ordered: true, allowRest: false },
-  parameterSchemaVersion: "1",
-  validateParams: validateSlideParams,
-  displayKey: "technique.slide",
-}
+## 4. Validation & Error Matrix
 
-export const testBendDefinition: TechniqueDefinition = {
-  id: "test.bend",
-  category: "pitch_expression",
-  targetRule: { minNotes: 1, maxNotes: 1, ordered: false, allowRest: false },
-  parameterSchemaVersion: "1",
-  validateParams: validateBendParams,
-  displayKey: "technique.bend",
-}
+| Layer | Owns |
+|---|---|
+| Core envelope | namespace/version/owner/payload JsonValue |
+| Guitar decode | known GuitarExtension shape and version |
+| Guitar semantic | tuning, string/fret, Note references, technique params/relations |
+| Product profile | first-release supported technique set and UI policy |
 
-export const testVibratoDefinition: TechniqueDefinition = {
-  id: "test.vibrato",
-  category: "pitch_expression",
-  targetRule: { minNotes: 1, maxNotes: 1, ordered: false, allowRest: false },
-  parameterSchemaVersion: "1",
-  validateParams: validateVibratoParams,
-  displayKey: "technique.vibrato",
-}
+## 5. Good / Base / Bad Cases
+
+- Good：已知 GuitarExtension 技巧 round-trip 后 ID、目标 Note 和参数语义不变。
+- Base：未知新技巧或新版 payload 可由 Core 保真并由 Guitar Domain 明确降级。
+- Bad：Core 直接解析 bend 参数，或渲染层单独持久化 slide 关系。
+
+## 6. Tests Required
+
+Block 2 必须覆盖 tuning、string/fret、技巧引用与参数、未知/新版 payload、语义 round-trip、Core 无解释边界以及保存/重开。命令与 undo/redo 测试待 K1-2 接口批准后补充。
+
+## 7. Wrong vs Correct
+
+```typescript
+// Wrong: add guitar fields to Core note.
+note.fret = 7
+
+// Correct direction: Guitar Domain owns a versioned Part extension.
+guitarDomain.updatePlacement(partExtension, noteId, { stringNumber: 2, fret: 7 })
 ```
-
-最小参数契约保持很薄，但必须可测试，不能永远校验通过:
-
-- `test.slide`: 只接受 `{ "slideKind": "shift" }` 或 `{ "slideKind": "legato" }`；必须有 2 个不同目标 note，且第二个目标 note 在音乐时间上晚于第一个。
-- `test.bend`: 只接受 `{ "semitones": 1 }` 或 `{ "semitones": 2 }`。
-- `test.vibrato`: 只接受 `{ "width": "narrow" }` 或 `{ "width": "wide" }`。
-
-## 强制规则
-
-- TECH-001: 技巧不得只作为文本保存。
-- TECH-002: 技巧必须绑定明确目标。
-- TECH-003: 技巧目标只能是有声 note。
-- TECH-004: 技巧定义必须通过 registry 注册。
-- TECH-005: `test.slide`、`test.bend`、`test.vibrato` 只能作为 K1 测试定义进入内核，不能成为封闭技巧枚举。
-- TECH-006: 技巧字段必须能被后续渲染、播放、导入导出层读取并降级说明。
-- TECH-007: 后续技巧候选不得作为 Pure Core Kernel V1 阻塞项。
-- TECH-008: `chord` target 后置到和弦能力进入范围后再加入，K1 不支持。
-- TECH-009: 新增技巧必须通过 `KernelRegistry.register` 注册，不得通过硬编码分支散落在 UI、渲染、播放和导出层。
-- TECH-010: 注册能力和执行能力分离；能注册技巧定义不等于能修改谱面。
-
-## 测试要求
-
-- [ ] AC-SPEC-005-01: K1 可以注册 `test.slide`、`test.bend`、`test.vibrato` 三个测试技巧定义。
-- [ ] AC-SPEC-005-02: `TechniqueData.definitionId` 未注册时产生稳定 diagnostic。
-- [ ] AC-SPEC-005-03: 技巧目标指向 rest 或不存在 note 时产生稳定 diagnostic。
-- [ ] AC-SPEC-005-04: 技巧目标数量不符合定义时产生稳定 diagnostic。
-- [ ] AC-SPEC-005-05: 技巧 params 不符合定义时产生稳定 diagnostic。
-- [ ] AC-SPEC-005-05B: `test.bend`、`test.vibrato` 和 `test.slide` 的非法参数值会返回 `technique-params-invalid`，合法参数值能通过校验。
-- [ ] AC-SPEC-005-05C: `test.slide` 的两个目标 note id 相同或时间顺序错误时产生稳定 diagnostic。
-- [ ] AC-SPEC-005-06: fixture round-trip 后技巧 `id`、`definitionId`、`targetNoteIds` 和 `params` 不丢失。
-- [ ] AC-SPEC-005-07: undo/redo 能按命令粒度撤销和恢复技巧数据。

@@ -1,52 +1,16 @@
 # Command and Transaction
 
-## Core Rule
+> **Later-stage replanning boundary:** K1-1 exposes no mutation API. K1-2 is
+> blocked until K1-1 review and a separate executable command specification.
 
-All score writes go through registered semantic commands.
+The future command system must preserve these boundaries:
 
-External callers must not mutate `ScoreDocument` directly and must not submit arbitrary patch operations, JSON paths, field replacements, array splices, or script-like write requests.
+- semantic commands are the only public write path;
+- public patch, JSON path, field replacement, array splice, script, and mutable whole-document replacement are forbidden;
+- targets derive from current measure/part/staff/voice/event/note IDs, not retired slot/tick addresses;
+- failure and rollback leave document, extensions, version, history, dirty state, and events unchanged;
+- unknown ExtensionBlocks survive command, undo, redo, and replay paths;
+- Core commands own general score facts while Guitar Domain owns tuning/string/fret/technique semantics;
+- concrete envelopes, target/range types, deltas, history entries, errors, and command IDs require K1-2 review.
 
-## Command Lifecycle
-
-Every write command must follow this order:
-
-1. Receive a `CommandEnvelope`.
-2. Verify the command ID is registered.
-3. Validate the payload schema.
-4. Check caller capability.
-5. Validate the command target address or range.
-6. Check command preconditions.
-7. Apply internal deltas to an isolated draft.
-8. Run hard validation on the resulting document.
-9. Commit on success.
-10. Roll back on failure and return structured errors.
-
-## Undo and Redo
-
-- V1 uses fine-grained history.
-- Each successful undoable semantic command creates one `HistoryEntry`.
-- `undo` moves back one history entry.
-- `redo` reapplies one history entry.
-- Failed, unsupported, or rolled-back commands must not create history entries.
-- Redo stack is cleared after a new successful command.
-- Intelligent merge policies, time-window merges, macro coalescing, and cross-command compression are out of scope for V1.
-
-## Internal Delta Boundary
-
-Internal deltas may exist for transaction, history, replay, and debugging implementation.
-
-Internal deltas must never become:
-
-- Public plugin API.
-- UI write API.
-- Importer write API.
-- Event payload.
-- `.bgp` semantic schema.
-
-## Required Command Tests
-
-- A successful command changes the document, increments document version, creates events, and updates history if undoable.
-- A failing command leaves the document, dirty state, events, and undo stack unchanged.
-- `insertNote -> setNotePitch -> addTechnique` can be undone in three visible steps.
-- Unsupported patch-like command IDs are rejected.
-- Command replay produces the same score state from the same starting document.
+The product-level replanning gate is `.trellis/tasks/06-29-commercial-guitar-tablature-product/specs/SPEC-003-command-system.md`. No implementation may start from the archived draft.

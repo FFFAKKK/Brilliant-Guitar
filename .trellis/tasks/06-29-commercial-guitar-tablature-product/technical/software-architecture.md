@@ -6,6 +6,7 @@
 - 作用: 定义后续实现的核心边界、模块协作方式、依赖方向和架构验收标准。
 - 当前架构决策: 采用参照操作系统微内核思想的 Core Kernel + 用户态服务模块架构。内核负责谱面真相、命令事务、验证、版本化契约和模块协作接口；UI、渲染、播放、导入导出、桌面壳和未来插件都作为模块或适配器与内核协作。
 - 详细架构图: `technical/microkernel-architecture.md`。
+- 当前数据模型: `07-13-k1-1-foundation-replanning/design.md` 与 `.trellis/spec/core-kernel/`；K1-2 以后仍须分块重规划。
 - 当前阶段边界: 当前仍是 Core Kernel 规划阶段。本文件只定义内核边界、模块协作原则和依赖方向；外部工程目录结构、monorepo 方案、`apps/desktop` 和 `packages/*` 拆分不属于当前阶段。
 - 首个实现里程碑: Pure Core Kernel V1。先实现纯 TypeScript 内核和内核测试；桌面壳、UI、渲染、播放、持久化物理 IO、导出和导入均后置。
 - 目录状态: 目录结构仍未确认，必须等工程脚手架阶段从已确认内核边界、测试边界、构建方式和发布方式反推，不得反过来限制当前内核规划。
@@ -77,7 +78,7 @@ flowchart TD
 - 编辑事务和历史: transaction、rollback、dirty state、undo/redo、命令回放和批量命令合并。MVP 采用细粒度历史模型，每个成功可撤销语义命令默认生成一个 `HistoryEntry`，复杂历史合并后置。
 - 文档地址和范围模型: `ScoreAddress`、`ScorePoint`、`ScoreRange` 和命令目标校验；活动光标、选区高亮、鼠标拖选状态和临时 `ScoreCoordinate` 属于 `Editor Session Service` 或 `Layout Module`。
 - 语义目标协议: 内核只承认从谱面数据解析出的语义目标；`ViewCoordinate`、`LayoutCoordinate`、SVG/VexFlow 坐标和 hit testing 由外部模块处理，外部模块只能把解析后的 `ScoreAddress | ScorePoint | ScoreRange` 或合法语义 payload 提交给命令系统。
-- 硬一致性验证和诊断: schema 合法、引用地址存在、`AbsolutePitch`、调弦、duration、tick、slot/event 引用合法、note/rest 互斥、技巧参数结构合法；弦号/品号合法性属于后续吉他谱模块；软一致性、可演奏性分析、教学提示、风格检查和难度评分不进入 MVP。
+- 验证和诊断: strict decode 检查输入形状，Core semantic validation 检查 ID、measure coverage、Part/Staff/Voice/Event 引用、Fraction/NoteValue、WrittenPitch/transposition 与 ExtensionBlock 信封，ScoreFeatureProfile 报告产品不支持项；调弦、弦品和技巧 payload 由后续 Guitar Domain 验证。软一致性、可演奏性分析、教学提示、风格检查和难度评分不进入 MVP。
 - 文件格式契约: `.bgp` 包结构、`manifest.json`、`score.json`、schema version、迁移入口和兼容矩阵。Pure Core Kernel V1 不定义插件私有数据命名空间或模块私有数据持久化位置。
 - 查询和快照: 为渲染、播放、导出、分析和插件提供只读快照或 selector。
 - 事件系统: 命令执行、文档加载、文档变更、历史状态变化、诊断更新、脏状态变化、注册表变化和迁移完成通知。UI 光标、选区高亮、鼠标拖拽和播放光标 tick 属于外部服务事件，不属于 Core Kernel 事件。
@@ -231,7 +232,7 @@ packages/
 - [ ] 渲染、播放、导出和分析只读取快照或 selector。
 - [ ] `.bgp` 文件格式、schema version 和迁移入口从第一阶段进入测试。
 - [ ] 任意核心模块都能用 fixture 在无 UI 环境下测试。
-- [ ] 缺失后续模块私有数据时，核心谱面仍可打开并验证核心音高、节奏、事件和技巧语义；Pure Core Kernel V1 不承诺保留或解释插件私有数据。
+- [ ] 缺失领域模块时，Core 仍能打开并验证通用谱面语义，且必须语义保真未知 score/part ExtensionBlock；Core 不解释领域 payload，也不承诺物理资源或字节级保真。
 - [ ] 目录结构确认时必须能追溯到本文件定义的内核和模块边界。
 
 ## 横切质量属性

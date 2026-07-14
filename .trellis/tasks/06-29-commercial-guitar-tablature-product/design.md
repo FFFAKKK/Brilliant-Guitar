@@ -2,12 +2,14 @@
 
 ## 状态
 
-- 阶段: Phase 1 planning
+- 阶段: Core K1-1 review；其余产品模块保持 planning
 - 目标: 为第一条可运行 MVP 闭环提供需求反推的技术设计骨架。
 - 已确认技术栈: Tauri 2 + TypeScript + React + Vite。
 - 首发平台: Windows 桌面。
 - 架构原则: 参照操作系统微内核思想的 Core Kernel + 用户态服务模块。当前只规划 Core Kernel 边界；外部工程目录结构属于后续脚手架阶段，不是当前内核规划事项。
 - 首个实现里程碑: Pure Core Kernel V1，纯 TypeScript、无 UI、无 Tauri、无 VexFlow、无 Web Audio、无 PDF/PNG。
+- K1-1 当前唯一模型决策源: `../07-13-k1-1-foundation-replanning/design.md`；字段级契约以 `.trellis/spec/core-kernel/` 为准。
+- 本文中的 K1-2、registry、report 与产品模块协作只代表路线图；必须在 K1-1 评审完成后分别刷新，不能直接据此实现。
 
 ## 设计目标
 
@@ -28,19 +30,19 @@
 
 内核是谱面真相和模块协作的唯一核心。所有操作都服务 `ScoreDocument` 谱面数据；布局坐标、屏幕坐标、导出页面坐标和播放光标都只能从谱面快照派生。它应该尽量小，只保留影响一致性、兼容性和长期维护的能力。我们可以接受少量 API 边界和快照成本，换取架构稳定性和扩展性。它负责:
 
-- 谱面文档模型: `ScoreDocument = metadata + scoreData`；`metadata = document + music`；`scoreData = timeline + events + techniques`。Core Kernel K1 不把 track、voice、弦号、品号或 `GuitarTabData` 写入谱面核心对象模型。
-- 音乐时间模型: 属于谱面文档模型的一部分，用整数 tick 管理 `RhythmSlot`、duration、小节长度和节奏位置；它让静态谱面数据成为可播放、可校对、可布局、可导出的时间化音乐数据。
-- MVP 验证: 4/4、固定 tempo、单声部事件流、四分/八分/十六分、基础休止、每个 `RhythmSlot` 一个 `ScoreEvent`。
+- 谱面文档模型: `ScoreDocument` 由 `metadata + measureDefinitions + parts + extensions` 组成；通用骨架是 `Part -> Staff -> 每小节 Voice -> 有序 Event -> Note`。Core 不保存弦号、品号或吉他技巧语义。
+- 音乐时间模型: 持久化规范化 `Fraction + NoteValue`，事件位置由 Voice 序列精确推导；tick、PPQ、毫秒和布局时间由适配层派生。
+- MVP 验证: Core semantic validation 与 `ScoreFeatureProfile` 分离。通用 schema 可表达多 Part/Staff/Voice、和弦和未来节奏；首个 profile 只支持 4/4、固定 tempo、一个 Part/Staff、每小节一个 Voice、四分/八分/十六分、基础休止和单音。
 - 软分析边界: 第一阶段不做软一致性、可演奏性分析、指法建议、教学提示、风格检查或难度评分；这些能力不阻塞 MVP。
-- 命令事务: 新建谱、设置元数据、添加小节、输入 note/rest、设置绝对音高/时值、设置技巧、删除、undo/redo。对外只暴露语义命令；patch/delta 只作为内核内部事务和历史实现细节。弦号/品号输入由后续吉他谱模块转换为核心可理解的绝对音高和事件操作；弦品映射如何持久化不属于 Core Kernel K1 命令或存储规划。MVP 采用细粒度历史模型，每个成功可撤销语义命令默认生成一个 `HistoryEntry`，不做复杂智能合并。
+- 命令事务路线图: 未来命令面向 measure/part/staff/voice/event/note 稳定 ID，处理新建谱、元数据、小节、note/rest、书写音高、时值、删除和 undo/redo；patch/delta 只作内部实现。吉他技巧命令属于后续 Guitar Domain，不是 Core K1-2 的默认命令。完整命令契约必须在 K1-1 评审后重规划。
 - 文档地址和范围: `ScoreAddress`、`ScorePoint`、`ScoreRange` 和命令目标校验。当前 UI 光标、选区高亮、鼠标拖选和临时 `ScoreCoordinate` 属于 `Editor Session Service` 或 `Layout Module`，不属于微内核。
 - 文件契约: `.bgp` schema、manifest、score JSON、schema version、迁移入口。
 - 快照和查询: `DocumentSnapshot`、`KernelReadApi`、受控 selector、可序列化 snapshot。
-- 事件和注册表: 提交后 `KernelEventBus`、`KernelRegistry`、内部命令、selector、hard validator、technique definition、migration、外部导入/导出贡献点的抽象 descriptor、模板 descriptor 和未来插件贡献点。
+- 事件和注册表路线图: 提交后事件、内部命令、selector、validator、migration、抽象导入/导出 descriptor、模板 descriptor 与未来贡献点；`ExtensionBlock` 不是 registry，吉他技巧也不预设为 Core registry contribution。K1-3/K1-4 必须单独刷新。
 - 能力边界: `KernelCapability`、module identity、API version 和 capability 检查。
 - 错误、诊断和报告: `KernelError`、`KernelDiagnostic`、`KernelReport`、`ImportReport`、`ExportReport`、`MigrationReport`、`ValidationReport` 和 report issue 基础类型；导入/导出 report 是外部模块复用的报告壳，不表示内核实现具体格式。
 
-第一阶段 Core Kernel 先按 9 类机制完成整体规划:
+Core Kernel 路线图仍按 9 类机制分类，但按任务分块实施；当前 K1-1 只交付第 1 类所需模型、codec、semantic/profile validation 与诊断，不把 9 类机制一次性实现:
 
 1. 谱面核心对象模型，包括音乐时间模型。
 2. 命令系统调用边界。
@@ -60,17 +62,17 @@
 
 ### Pure Core Kernel V1 Boundary
 
-第一实现里程碑先交付纯内核。该里程碑只包含 9 类 Core Kernel 机制和测试，不包含桌面壳、React UI、VexFlow/SVG 渲染、Web Audio 播放、PDF/PNG 真实导出、Guitar Pro 导入、Tauri 文件系统或第三方插件运行时。
+Pure Core Kernel V1 最终覆盖上述 9 类机制，但必须按 K1-1 至 K1-6 逐块评审。当前子任务只交付 K1-1，不包含命令/history、snapshot/events、registry/capability、通用 report/migration，更不包含桌面壳、React UI、VexFlow/SVG 渲染、Web Audio 播放、PDF/PNG 真实导出、Guitar Pro 导入、Tauri 文件系统或第三方插件运行时。
 
 Pure Core Kernel V1 可以定义外部导入/导出贡献点的抽象 descriptor 类型、capability 检查和 report 外壳，但不得注册 PDF、PNG、Guitar Pro 或 `.bgp` 物理读写的具体 descriptor/handler。`.bgp` schema、manifest 语义和迁移入口属于内核；zip 读写、文件路径、自动保存恢复、PDF/PNG 页面生成和 Guitar Pro 解析都属于外部用户态服务模块。
 
-Pure Core Kernel V1 必须能在无 UI、无浏览器 DOM、无 Tauri、无 VexFlow、无 Web Audio 的 TypeScript 测试环境中运行。验收以 fixture、命令回放、schema round-trip、migration、snapshot/selector、event、registry/capability、error/report 和 unsupported feature 测试为准；UI 截图、播放声音和导出文件不作为该阶段验收项。
+每个 Pure Core Kernel 分块必须能在无 UI、无浏览器 DOM、无 Tauri、无 VexFlow、无 Web Audio 的 TypeScript 测试环境中运行。K1-1 当前验收只覆盖 exact-time、schema/codec round-trip、semantic/profile validation、unknown ExtensionBlock 保真、诊断与公共导出边界；后续机制由各自任务验收。
 
-音乐时间边界: Core Kernel V1 拥有音乐逻辑时间，不拥有真实播放时钟。内核必须定义 `ticksPerQuarter = 960`、4/4 小节 `3840` tick、四分/八分/十六分与基础休止 duration、`MeasureTimeSpan.startTick`、`RhythmSlot.startOffsetTicks` 和 `RhythmSlot.durationTicks` 的硬验证；`MeasureTimeSpan.startTick` 是全曲绝对 tick，`RhythmSlot.startOffsetTicks` 是小节内 offset，slot 全曲绝对 tick 只能由二者相加派生。Playback Module 负责把 snapshot 中的音乐时间转换成真实毫秒调度、Web Audio 时间、节拍器声音和播放光标 tick。
+音乐时间边界: Core 持久化规范化 `Fraction` 与 `NoteValue`，小节有效时长来自 meter/pickup，事件位置来自 Voice.sequence 的起点与前序时值之和。PPQ/tick、毫秒调度、Web Audio 时间、节拍器声音和播放光标都是 Playback/Layout adapter 派生数据，不写回 `ScoreDocument`。
 
-谱面核心对象模型边界: `ScoreDocument` 顶层只包含 `metadata` 和 `scoreData`。`metadata.document` 保存标题、作者、版权、schema version、创建/修改时间和应用版本；`metadata.music` 保存 `scoreType = "guitar-tab"`、`ticksPerQuarter = 960`、全局 tempo、4/4 拍号和 6 个明确 `AbsolutePitch` 形式的必填调弦。`scoreData.timeline` 同时表达小节、`RhythmSlot` 结构和 tick 位置，不再拆出独立 `ScoreStructure`；`RhythmSlot` 是事件槽位，不等同于音乐理论中的 beat。`scoreData.events` 保存 `kind = "note" | "rest"` 的谱面事件，事件只引用 `slotId`，起始时间和持续时间从所属 `RhythmSlot` 派生；休止符只是特殊事件类型，不使用独立 `RestData`。`scoreData.techniques` 使用 `definitionId + targetNoteIds + params` 表达技巧，具体技巧通过 `TechniqueDefinition` 注册，`test.slide`、`test.bend`、`test.vibrato` 只是 K1 测试技巧定义。Core Kernel K1 只保存绝对音高和音乐时间，弦号、品号、指法位置和六线谱表现数据属于外部吉他谱模块。
+谱面核心对象模型边界: `ScoreDocument` 顶层包含 `schemaVersion`、`id`、`metadata`、全谱 `measureDefinitions`、`parts` 与 `extensions`。Part 拥有 Staff、每小节内容与 Voice；Voice 的有序 Event 保存 `NoteValue` 和 rest/notes 内容。Note 只保存 WrittenPitch，SoundingPitch 由 Part transposition 派生。调弦、弦品位置与吉他技巧不进入 Core 字段。
 
-吉他模块边界: 只读取 Core Kernel K1 数据时，可以还原音高、节奏、技巧语义和基础播放/渲染输入，但不能承诺还原用户原始弦号/品号。Core Kernel K1 不定义 `noteId -> string/fret`、`ScoreDocument.extensions`、`.bgp/extensions`、`moduleData` 或任何模块私有数据持久化位置；这些内容延后到官方吉他谱模块规划阶段单独设计，并且不得成为 K1 核心 schema 的必填字段。
+吉他模块边界: Core K1-1 通过 score/part-owned `ExtensionBlock` 语义保真地保存未知 JSON payload，但不解释 payload。后续 Guitar Domain 在 Part-owned extension 中定义调弦、noteId 到弦品位置及吉他技巧；其 namespace、版本、codec、验证和迁移必须在 Block 2 单独设计。
 
 内核禁止:
 
@@ -217,9 +219,9 @@ Pure Core Kernel V1 必须能在无 UI、无浏览器 DOM、无 Tauri、无 VexF
 覆盖范围:
 
 - UI: 新建谱、谱面编辑视图、保存、打开、导出入口。
-- 内核: 一个 `guitar-tab` 类型 `ScoreDocument`、明确音高形式的音乐元数据调弦、4 小节、4/4、固定 tempo、单声部事件流、四分/八分/十六分、基础休止和单音输入；不在 Core Kernel K1 保存轨道实体、弦号或品号。
+- 内核: 一个 `brilliant-score-1` 文档、4 个全谱小节、一个吉他 Part/Staff、每小节一个 Voice、4/4、固定 tempo、四分/八分/十六分、基础休止与单音；吉他使用书写到实际 `-7/-12` transposition，具体调弦与弦品位置后续放入 Part-owned GuitarExtension。
 - 输入: 谱面光标、时值键、数字品号、方向键移动、技巧快捷键或命令面板、删除、undo/redo。
-- 技巧: K1 先实现通用技巧注册框架，并用 `test.slide`、`test.bend`、`test.vibrato` 三个测试技巧定义验证保存、重开、撤销/重做和后续渲染/播放/导出可派生语义；`hammer-on`、`pull-off`、`palm mute` 保持为 P0 后续增强。
+- 技巧: 不属于 Core K1-1。后续 Guitar Domain 先确定扩展 payload 与领域命令，再选择 slide、bend、vibrato 等 P0 样例验证保存、重开、撤销/重做和渲染/播放派生；不得沿用旧的 Core 测试技巧 registry 作为既定前提。
 - 渲染: 六线谱可编辑，五线谱同步显示基础音高和节奏。
 - 渲染适配: VexFlow 绘制基础五线谱/六线谱，自定义 SVG overlay 补齐编辑辅助和 Core Loop 技巧显示。
 - 播放: 合成播放、开始/暂停/继续/停止、播放光标、节拍器、基础速度控制。
@@ -249,12 +251,12 @@ Pure Core Kernel V1 必须能在无 UI、无浏览器 DOM、无 Tauri、无 VexF
 
 ## 已确认设计决策与非阻塞项
 
-- 第一阶段 Core Kernel 的最小边界已确认采用本文推荐的 9 类机制，与 `prd.md` 的 `DEC-K036` 保持一致。
-- 音乐时间模型已确认属于谱面核心对象模型，不新增第十类内核机制；Core Kernel 拥有 tick、duration、小节长度和节奏位置，真实播放时钟和播放光标 tick 属于外部 Playback/UI 模块。
-- Core Kernel 的快照、selector、事件总线和模块通信协议已确认采用 `SPEC-014` 模型。
+- Core Kernel 路线图仍使用 9 类机制分类，但必须按 K1-1 至 K1-6 分块评审，不能一次性交付或把后续机制倒灌进 K1-1。
+- 音乐时间模型属于谱面核心对象模型，不新增第十类机制；Core 持久化 Fraction/NoteValue，tick/PPQ、真实播放时钟和播放光标由外部 adapter 派生。
+- 快照、selector、事件总线与模块通信必须通过新的 `SPEC-014` K1-3 重规划门，旧详细模型已归档。
 - 外部可变 `ScoreDocument` 副本方案已拒绝；这类方案与微内核设计相悖。外部模块只能生成非谱面事实的派生模型，最终写入仍走内核受控入口。
-- Core Kernel 的注册表与 capability 已确认作为独立内核功能，继续按 `SPEC-015` 细化。
-- Core Kernel 的错误、diagnostic 和 report 已确认作为独立内核功能，继续按 `SPEC-016` 细化。
+- Registry/capability 是否保留以及保留哪些 contribution 必须通过 `SPEC-015` K1-4 重规划门证明。
+- K1-1 diagnostics 已确认；operation errors、report 与 migration 通过 `SPEC-016` K1-5 重规划门补充。
 - 注册表 handler 运行时注销/卸载、第三方插件热插拔、运行中启用/禁用和运行中卸载已明确不作为稳定性目标；未来第三方插件配置变更必须启动前完成并通过重启生效。官方随应用发布的内置模块会有多个，UI 模块只是其中一类，具体模块清单、数量和拆分方式后续再确定；官方和第三方的权限模型不再按来源二分，最终都收敛到同一套注册协议，这些生命周期治理能力不作为当前内核总规划和 Kernel V1 实现阻塞项。
 - 外部工程目录结构、monorepo 方案、`apps/desktop` 和 `packages/*` 拆分不属于当前 Core Kernel 规划阶段；这些只在后续工程脚手架阶段根据已确认内核边界和模块协作方式重新评估，不作为当前内核规划阻塞项。
 - 当前设计文档无阻塞开放问题；进入实现前仍需用户审核最终规划稿并明确批准。

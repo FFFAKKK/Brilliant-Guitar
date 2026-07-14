@@ -5,6 +5,7 @@
 - 状态: 已确认第一阶段边界。
 - 映射需求: `REQ-009`, `REQ-016`, `REQ-015`。
 - 适用范围: 第一阶段 `.bgp` 原生文件、保存/打开、自动保存恢复、schema version 和迁移入口。
+- 当前实现边界: K1-1 只定义 `score.json` 中 `brilliant-score-1` 的语义 codec 与 ExtensionBlock 保真；物理包、manifest 和 migration/report 等待 K1-5/Persistence 规划。
 
 ## 目标
 
@@ -55,7 +56,7 @@ project.bgp
 - `manifest.json`: 文件包级元数据、版本、资源索引和兼容信息。
 - `score.json`: `ScoreDocument` 根对象，是谱面语义事实来源。
 - `assets/`: 未来图片、音频、字体或其它资源，不作为 MVP 必需内容。
-- `extensions/`: 未来插件或模块私有数据位置草案；Pure Core Kernel V1 不定义该目录、插件私有数据命名空间、扩展数据保留协议或模块私有数据持久化位置。
+- `extensions/`: 未来物理包附加数据位置草案；K1-1 不定义该目录。它与 `score.json` 内已批准的 `ScoreDocument.extensions`/ExtensionBlock 不是同一契约。
 - `preview/`: 未来缩略图或预览缓存，不作为谱面事实来源。
 
 ## manifest.json 契约
@@ -163,5 +164,5 @@ project.bgp
 - 保存前、打开后、迁移后必须运行硬一致性验证。
 - 未来 schema version 文件必须安全失败并给出可读错误。
 - 一旦存在旧 schema fixture，迁移器必须覆盖旧版本到当前版本的测试。
-- `extensions/` 目录、未知扩展命名空间和插件私有数据 round-trip 属于后续 Persistence/插件阶段验收，不属于 Pure Core Kernel V1。
+- 物理 `extensions/` 目录与非 JSON 资源 round-trip 属于后续 Persistence/插件阶段；`score.json` 内未知 score/part ExtensionBlock 的 JsonValue 语义 round-trip 已是 Core K1-1 验收项。
 - 损坏 zip、缺失 `manifest.json`、缺失 `score.json`、schema version 不匹配必须返回结构化错误。

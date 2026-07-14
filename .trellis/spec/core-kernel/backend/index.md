@@ -1,5 +1,8 @@
 # Core Kernel Backend Guidelines
 
+> **Current K1-1 stage (2026-07-13):** Implement only score document/exact
+> time, schema/codec, semantic/profile validation, and diagnostics.
+
 > Coding rules for the Pure Core Kernel V1 implementation.
 
 ---
@@ -17,10 +20,9 @@ Pure Core Kernel V1 is not the desktop app. It must be testable without React, T
 - [ ] Read the active task artifacts: `prd.md`, `design.md`, and `implement.md`.
 - [ ] Confirm the current task is implementing `Pure Core Kernel V1 only`.
 - [ ] Read every guide in this directory before touching Core Kernel code.
-- [ ] Identify which of the 9 kernel mechanisms the change touches.
+- [ ] Identify which staged kernel mechanisms the active task touches.
 - [ ] Confirm new domain concepts map to one of the 9 mechanisms; do not silently create a tenth kernel mechanism.
-- [ ] Confirm all score mutations go through semantic commands.
-- [ ] Confirm all read paths use snapshot or selector contracts.
+- [ ] Confirm K1-1 adds no public mutation or read API; later write/read tasks must use commands and snapshots/selectors.
 - [ ] Confirm no UI, rendering, audio, desktop shell, physical file IO, or third-party plugin runtime dependency is introduced.
 - [ ] Confirm tests can run in a pure TypeScript environment.
 
@@ -31,27 +33,26 @@ Pure Core Kernel V1 is not the desktop app. It must be testable without React, T
 | Guide | Purpose | Status |
 |-------|---------|--------|
 | [Pure Kernel Boundary](./pure-kernel-boundary.md) | What Core Kernel V1 may and may not contain | Stable |
-| [Score Document Model](./score-document-model.md) | Score truth, MVP musical scope, schema constraints | Stable |
-| [Command and Transaction](./command-transaction.md) | Semantic commands, transactions, undo/redo, replay | Stable |
-| [Snapshot and Events](./snapshot-events.md) | Read API, selectors, post-commit events, cache invalidation | Stable |
-| [Registry and Capability](./registry-capability.md) | Module identity, static registration, capability checks | Stable |
-| [Errors and Reports](./errors-reports.md) | Structured errors, diagnostics, reports, privacy | Stable |
+| [Score Document Model](./score-document-model.md) | `brilliant-score-1`, exact time, pitch, extensions, validation | K1-1 authoritative |
+| [Command and Transaction](./command-transaction.md) | K1-2 replanning boundary; no current API | Later |
+| [Snapshot and Events](./snapshot-events.md) | K1-3 replanning boundary; no current API | Later |
+| [Registry and Capability](./registry-capability.md) | Explicit K1-1 deferral and later redesign boundary | Later |
+| [Errors and Reports](./errors-reports.md) | K1-1 diagnostics; general reports later | Staged |
 | [Quality Guidelines](./quality-guidelines.md) | Required tests and forbidden shortcuts | Stable |
 
 ---
 
 ## Quality Check
 
-Before finishing Core Kernel work, verify:
+Before finishing K1-1, verify:
 
 - [ ] `ScoreDocument` remains the only score truth.
-- [ ] Public writes are command-only; no public patch, JSON path, mutable draft, or field replacement API exists.
-- [ ] Command failures roll back and do not create undo entries.
-- [ ] Snapshot and selector results cannot mutate kernel state.
-- [ ] Events are post-commit facts and do not contain mutable documents or internal deltas.
-- [ ] Registry summaries never expose handlers or mutable objects.
-- [ ] Capability checks happen before command execution, selector access, and contribution registration.
-- [ ] Kernel errors, diagnostics, and reports use stable codes and `messageKey`.
-- [ ] `.bgp` semantic schema and migration entry points stay independent from physical zip/file IO.
+- [ ] Measure order, event order/time, and sounding pitch each have one truth source.
+- [ ] Fraction/NoteValue arithmetic is exact and overflow-safe.
+- [ ] Decode, semantic validation, and feature-profile validation are separate.
+- [ ] Unknown ExtensionBlock payload survives semantic round-trip.
+- [ ] Core does not interpret guitar payloads or expose test assets.
+- [ ] Diagnostics use stable codes, messageKeys, paths, and deterministic ordering.
+- [ ] Semantic schema/codec stays independent from physical zip/file IO.
 - [ ] Any newly added kernel concept is documented as part of one of the 9 mechanisms or has an approved boundary decision.
-- [ ] Tests cover the 4-measure standard 6-string guitar riff fixture and unsupported MVP boundaries.
+- [ ] Tests cover the Core loop fixture and semantic-valid-but-profile-unsupported boundaries.

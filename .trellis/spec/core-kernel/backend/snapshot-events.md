@@ -1,45 +1,16 @@
 # Snapshot and Events
 
-## Core Rule
+> **Later-stage replanning boundary:** K1-1 exposes no snapshot, selector, or
+> event API. K1-3 is blocked until the K1-2 transaction boundary is approved.
 
-Reading is snapshot or selector based. Writing is command based. Events are post-commit facts.
+The future read/notification system must preserve these boundaries:
 
-Snapshot, selector, and event APIs must never become write channels.
+- no caller receives a mutable ScoreDocument or write-back copy;
+- selectors are pure reads over `brilliant-score-1` and do not create a second score truth;
+- events describe committed facts and are absent for failed/rolled-back commands;
+- event payloads use stable IDs/version correlation and never expose internal deltas or mutable documents;
+- handler failure is isolated and synchronous write reentrancy is forbidden;
+- playback tick/cursor, layout coordinates, UI selection, and Guitar UI state remain external service events;
+- Core preserves unknown ExtensionBlock data but does not interpret domain payloads in generic selectors.
 
-## Snapshot Rules
-
-- Core Kernel must expose a read-only `KernelReadApi`.
-- `DocumentSnapshot` must include `documentId`, `schemaVersion`, `documentVersion`, `snapshotId`, and creation timestamp.
-- Snapshot data must be immutable from the caller perspective.
-- External snapshot mutation attempts must not affect kernel state.
-- A full snapshot implementation is acceptable for V1 if it preserves the read-only contract.
-
-## Selector Rules
-
-- Selectors must be pure reads.
-- Selector results must include source `documentVersion`.
-- Selectors must not modify document, history, diagnostics, registry, dirty state, or module caches.
-- Built-in selectors must cover serializable score data, measure ranges, entity lookup, diagnostics, history state, dirty state, and registry summary.
-
-## Event Rules
-
-- Kernel events are emitted only after a transaction commits.
-- Failed, rejected, rolled-back, or unsupported commands must not publish `kernel.document.changed`.
-- Event payloads must not include mutable `ScoreDocument`, internal deltas, React components, SVG/VexFlow objects, Web Audio nodes, Tauri file objects, or file-system handles.
-- Event handlers must be isolated. Handler exceptions must produce diagnostics or module reports and must not roll back committed score transactions.
-- Event dispatch must not allow synchronous reentrant command submission.
-
-## External State Boundary
-
-These do not belong to Core Kernel events:
-
-- UI cursor.
-- Selection highlight.
-- Mouse drag state.
-- Playback cursor tick.
-- SVG DOM events.
-- VexFlow object lifecycle.
-- Web Audio node events.
-
-External modules may derive layout primitives, hit areas, playback events, export page models, thumbnails, analysis reports, or import intermediate models from snapshots. These derived models are not `ScoreDocument` copies and cannot be written back as authoritative score state.
-
+The product-level replanning gate is `.trellis/tasks/06-29-commercial-guitar-tablature-product/specs/SPEC-014-kernel-snapshot-events.md`. Concrete APIs and codes require K1-3 review.

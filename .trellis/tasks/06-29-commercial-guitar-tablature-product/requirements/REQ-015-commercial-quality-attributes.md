@@ -44,7 +44,7 @@
 
 ## 健壮性要求
 
-- Core Kernel K1 必须发现非法 `AbsolutePitch`、调弦、时值、小节结构、slot/event 引用和技巧组合；非法弦号/品号属于后续吉他谱模块验证，不属于 Pure Core Kernel V1 硬验证。
+- Core K1-1 必须通过 strict decode、semantic validation 与 ScoreFeatureProfile 区分畸形输入、损坏语义和合法但暂不支持的数据；Core 覆盖 WrittenPitch/transposition、Fraction/NoteValue、measure coverage、Part/Staff/Voice/Event 引用和 ExtensionBlock 信封，Guitar Domain 覆盖调弦、弦品与技巧 payload。
 - 损坏原生文件必须给出可读错误，不得导致应用崩溃。
 - 文件版本过新时必须阻止错误打开，并说明当前软件不支持该版本。
 - 导出失败必须保留原谱面状态，不得污染当前文档。

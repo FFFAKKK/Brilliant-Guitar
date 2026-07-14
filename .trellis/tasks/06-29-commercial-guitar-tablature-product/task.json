@@ -18,7 +18,9 @@
   "commit": null,
   "pr_url": null,
   "subtasks": [],
-  "children": [],
+  "children": [
+    "07-07-pure-core-kernel-v1"
+  ],
   "parent": null,
   "relatedFiles": [
     ".trellis/tasks/06-29-commercial-guitar-tablature-product/prd.md",
