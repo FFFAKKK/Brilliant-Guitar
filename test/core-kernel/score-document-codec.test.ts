@@ -209,3 +209,51 @@ test("codec rejects sparse arrays instead of silently changing their meaning", (
     ],
   });
 });
+
+test("codec reports structural sparse-array holes as invalid JSON values", () => {
+  const api = coreKernel as unknown as Record<string, unknown>;
+  const decode = api.decodeScoreDocument as (value: unknown) => DecodeResult;
+
+  const topLevel = cloneCoreScoreFixture() as unknown as { parts: unknown[] };
+  topLevel.parts = new Array<unknown>(1);
+  assert.deepEqual(decode(topLevel), {
+    ok: false,
+    diagnostics: [
+      {
+        code: "decode.json-value",
+        messageKey: "core.decode.json-value",
+        path: ["parts", 0],
+      },
+    ],
+  });
+
+  const nested = cloneCoreScoreFixture() as unknown as {
+    parts: Array<{
+      measureContents: Array<{
+        voices: Array<{ sequence: { events: unknown[] } }>;
+      }>;
+    }>;
+  };
+  nested.parts[0]!.measureContents[0]!.voices[0]!.sequence.events =
+    new Array<unknown>(1);
+  assert.deepEqual(decode(nested), {
+    ok: false,
+    diagnostics: [
+      {
+        code: "decode.json-value",
+        messageKey: "core.decode.json-value",
+        path: [
+          "parts",
+          0,
+          "measureContents",
+          0,
+          "voices",
+          0,
+          "sequence",
+          "events",
+          0,
+        ],
+      },
+    ],
+  });
+});

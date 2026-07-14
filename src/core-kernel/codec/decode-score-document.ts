@@ -146,7 +146,13 @@ function decodeArray<T>(
   const output: T[] = [];
   let valid = true;
   for (let index = 0; index < input.length; index += 1) {
-    const decoded = decodeItem(input[index], [...path, index], context);
+    const itemPath = [...path, index];
+    if (!Object.prototype.hasOwnProperty.call(input, index)) {
+      context.add("decode.json-value", itemPath);
+      valid = false;
+      continue;
+    }
+    const decoded = decodeItem(input[index], itemPath, context);
     if (decoded === undefined) {
       valid = false;
     } else {
