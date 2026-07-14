@@ -11,6 +11,7 @@ type Diagnostic = {
   readonly code: string;
   readonly messageKey: string;
   readonly path: readonly (string | number)[];
+  readonly details?: Readonly<Record<string, unknown>>;
 };
 type DecodeResult =
   | { readonly ok: true; readonly value: unknown }
@@ -256,4 +257,80 @@ test("codec reports structural sparse-array holes as invalid JSON values", () =>
       },
     ],
   });
+});
+
+test("codec covers required, type, and finite-number diagnostic contracts", () => {
+  const api = coreKernel as unknown as Record<string, unknown>;
+  const decode = api.decodeScoreDocument as (value: unknown) => DecodeResult;
+
+  const missingId = cloneCoreScoreFixture() as unknown as Record<string, unknown>;
+  delete missingId.id;
+  assert.deepEqual(decode(missingId), {
+    ok: false,
+    diagnostics: [
+      {
+        code: "decode.required-field",
+        messageKey: "core.decode.required-field",
+        path: ["id"],
+        details: { field: "id" },
+      },
+    ],
+  });
+
+  const wrongId = cloneCoreScoreFixture() as unknown as Record<string, unknown>;
+  wrongId.id = 42;
+  assert.deepEqual(decode(wrongId), {
+    ok: false,
+    diagnostics: [
+      {
+        code: "decode.type",
+        messageKey: "core.decode.type",
+        path: ["id"],
+        details: { expected: "string" },
+      },
+    ],
+  });
+
+  const nonFinite = cloneCoreScoreFixture() as unknown as {
+    metadata: { tempo: { bpm: number } };
+  };
+  nonFinite.metadata.tempo.bpm = Number.NaN;
+  assert.deepEqual(decode(nonFinite), {
+    ok: false,
+    diagnostics: [
+      {
+        code: "decode.non-finite-number",
+        messageKey: "core.decode.non-finite-number",
+        path: ["metadata", "tempo", "bpm"],
+      },
+    ],
+  });
+});
+
+test("encoder converts JSON stringify failure into a stable diagnostic", () => {
+  const api = coreKernel as unknown as Record<string, unknown>;
+  const encode = api.encodeScoreDocumentJson as (value: unknown) => EncodeResult;
+  const descriptor = Object.getOwnPropertyDescriptor(JSON, "stringify");
+  assert.ok(descriptor);
+
+  Object.defineProperty(JSON, "stringify", {
+    ...descriptor,
+    value: (): never => {
+      throw new Error("synthetic stringify failure");
+    },
+  });
+  try {
+    assert.deepEqual(encode(createCoreScoreFixture()), {
+      ok: false,
+      diagnostics: [
+        {
+          code: "decode.encode-failed",
+          messageKey: "core.decode.encode-failed",
+          path: [],
+        },
+      ],
+    });
+  } finally {
+    Object.defineProperty(JSON, "stringify", descriptor);
+  }
 });
