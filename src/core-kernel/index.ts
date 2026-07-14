@@ -13,3 +13,14 @@ export const PURE_CORE_KERNEL_V1_SCOPE = {
     "plugin-runtime",
   ],
 } as const;
+
+export * from "./domain/fraction";
+export * from "./domain/extensions";
+export * from "./domain/musical-time";
+export * from "./domain/pitch";
+export * from "./domain/score-document";
+export * from "./codec/decode-score-document";
+export * from "./codec/score-json";
+export * from "./validation/diagnostics";
+export * from "./validation/validate-score-semantics";
+export * from "./profiles/score-feature-profile";
