@@ -1,55 +1,71 @@
-# SPEC-003 命令系统、事务与回放重规划门
+# SPEC-003 命令系统、事务、历史与回放
 
-> **状态：PLANNING GATE / NOT EXECUTABLE。** K1-1 正式分支基线已于 `30894e2` 完成。现在允许建立 K1-2 独立规划任务，但本文件仍只约束重规划边界，不批准具体命令 API 或生产实现。
+> **状态：K1-2 EXECUTABLE / APPROVED 2026-07-15。** K1-1 正式代码基线为 `30894e2`。本规范批准 K1-2 的 Core 命令、事务、版本、history、undo/redo 与确定性命令回放；任何扩大到 K1-3/K1-4/Guitar/UI/IO 的行为仍需独立规划。
 
 ## 1. Scope / Trigger
 
-当准备实现任何 ScoreDocument 写入、事务、history、undo/redo 或 replay 时触发本门禁。旧 SPEC-003 已归档，不得直接实现。
+任何 ScoreDocument 写入、事务、history、undo/redo 或 replay 必须遵守本规范。旧 SPEC-003 草案已归档，不得作为兼容 API 实现。
 
 ## 2. Signatures
 
-最终签名尚未批准。重规划至少需要定义：
+稳定目标语言为：
 
 ```typescript
 type ScoreEntityTarget =
+  | { readonly kind: "document"; readonly documentId: string }
   | { readonly kind: "measure"; readonly measureId: string }
   | { readonly kind: "part"; readonly partId: string }
   | { readonly kind: "staff"; readonly staffId: string }
   | { readonly kind: "voice"; readonly voiceId: string }
   | { readonly kind: "event"; readonly eventId: string }
   | { readonly kind: "note"; readonly noteId: string }
+
+type SequenceAnchor =
+  | { readonly kind: "start" }
+  | { readonly kind: "after-event"; readonly eventId: string }
 ```
 
-该示例只固定目标语言方向，不固定最终 CommandEnvelope、payload 或 public export。
+插入使用 `voiceId + SequenceAnchor`；after-event 必须唯一属于目标 Voice。完整 ScorePoint/ScoreRange、跨 Voice/Measure 范围属于 K1-3。
 
 ## 3. Contracts
 
-- 所有 Core 写入通过语义命令；公开 API 不接受 patch、JSON path、splice 或任意脚本。
-- 命令定位使用 `brilliant-score-1` 的稳定实体 ID，不使用退役 slot/tick 地址。
-- 内部 delta 不泄漏，失败命令不改变文档、版本、dirty state、history 或事件。
-- 一个成功可撤销命令默认产生一个 HistoryEntry；合并策略不进入首版。
+- 所有 Core 写入通过 `CommandBus.submit(unknown)` 严格解码的语义命令；公开 API 不接受 patch、JSON path、splice、任意脚本或整文档替换。
+- envelope 固定四字段：`commandVersion: 1`、`commandId`、强类型 target、严格 payload；额外字段与畸形 union 必须拒绝。
+- K1-2 静态目录只包含六个 built-in：set metadata、set WrittenPitch、set NoteValue、insert notes event、insert rest event、remove event；不提供动态注册。
+- 新 Event/Note ID 全部由调用者提供，不使用时间、随机数、tick、slot 或数组位置生成。
+- handler 只产生内部强类型 forward/inverse mutation；公开、持久化和 replay 均不暴露 mutation。
+- 先在隔离 candidate 应用 mutation，再运行 semantic validation，成功后原子 commit。
+- semantic invalid 硬失败并保留原始 `semantic.*` diagnostics；semantic valid/profile unsupported 允许提交并返回完整 unsupported 分类。
+- 设置为现值是 no-op：版本、history、redo 均不变化。
+- documentVersion 从 0 开始；commit、undo、redo 各递增一次，失败/no-op 不递增；溢出原子拒绝。
+- 一个 committed command 对应一个内部 HistoryEntry；不保存时间戳、随机 ID 或整文档快照。
+- undo/redo 在隔离 candidate 应用 inverse/forward 并重新做 semantic/profile 验证；新 committed command 清 redo，失败/no-op 不清。
+- replay 只重放命令 envelope，使用实时 submit 同一流程；不重放 mutation 或完整操作日志。
 - Core 命令只修改通用谱面事实；调弦、弦品和吉他技巧由 Guitar Domain 命令解释并受控更新其 Part-owned extension。
-- 最终 K1-2 必须明确 extension payload 更新如何保持未知 namespace 不变。
+- 未知 ExtensionBlock 和所有非目标子树必须在成功、失败、undo、redo、replay 中原样保留。
+- K1-2 不拥有 dirty state、snapshot、selector、post-commit event、Registry/Capability 或 general report。
 
 ## 4. Validation & Error Matrix
 
 | Failure | Required behavior |
 |---|---|
 | malformed command payload | fail before mutation with stable operation error |
-| missing entity target | fail before mutation; preserve all state |
+| missing/mismatched entity target | fail before mutation; preserve all state |
+| missing/wrong-owner anchor | fail before mutation; preserve all state |
 | resulting Core semantic failure | rollback and preserve concrete `semantic.*` diagnostics |
-| resulting profile unsupported | task must explicitly decide command policy; never relabel as corrupt |
-| Guitar payload failure | return owning `guitar.*` diagnostics; Core does not reinterpret |
+| resulting profile unsupported | commit and return complete `unsupported.*` classification |
+| version overflow/internal mutation error | stable privacy-safe failure; preserve all state |
+| empty undo/redo or history invariant failure | stable history failure; preserve all state |
 
 ## 5. Good / Base / Bad Cases
 
 - Good：按 voice/event/note ID 插入或修改通用事件，并可精确 undo/redo/replay。
-- Base：合法但当前 profile 不支持的和弦命令有明确产品策略，且不破坏 schema。
+- Base：插入双 Note Event 合法提交并返回 `unsupported.chord`，且不破坏 schema。
 - Bad：命令直接写 `startTick`、替换任意 JSON path 或丢弃未知 ExtensionBlock。
 
 ## 6. Tests Required
 
-正式 K1-2 计划必须覆盖 payload 拒绝、事务回滚、history 粒度、undo/redo、确定性 replay、未知扩展保留、公开 patch 拒绝和失败零副作用。
+K1-2 必须覆盖严格 envelope/payload 拒绝、实体与 anchor 解析、六命令 committed/no-op/rejected、事务回滚、版本溢出、history 粒度、多步 undo/redo、redo invalidation、确定性 replay、caller alias 隔离、未知扩展保留、公开边界和失败零副作用。最终门禁为 `npm run typecheck`、`npm run build`、`npm test`、`git diff --check`。
 
 ## 7. Wrong vs Correct
 

@@ -1,0 +1,88 @@
+# K1-2 Implementation Plan
+
+All production behavior follows behavioral RED → minimum GREEN → focused regression. Compiler/import failures do not count as RED. Each slice must preserve the frozen K1-1 model and validation contracts.
+
+## Slice 0 — Planning and Task Gate
+
+- [x] Rewrite `prd.md` with approved requirements and exclusions.
+- [x] Add `design.md` with exact contracts, data flow, invariants, and alternatives.
+- [x] Add this implementation checklist.
+- [x] Synchronize active command/transaction spec and product SPEC-003.
+- [ ] Validate planning artifacts and commit them separately.
+- [ ] Start the existing Trellis task; do not create another task.
+
+Rollback: documentation-only revert; no production state exists.
+
+## Slice 1 — Strict Public Contracts and Decoder
+
+- [ ] RED: strict command tests for six valid envelopes plus wrong version, unknown ID, extra envelope/payload fields, wrong target kind, malformed unions, sparse arrays, non-finite numbers, patch-like input, and caller aliasing.
+- [ ] GREEN: add `src/core-kernel/commands/contracts.ts`, strict decoding helpers, and closed command decoder.
+- [ ] Define the frozen internal `CORE_COMMAND_DEFINITIONS` catalog with no dynamic registration API.
+- [ ] Verify target and payload types reuse K1-1 ScoreDocument domain types.
+- [ ] Run focused command codec tests and typecheck.
+
+Rollback point: contracts/decoder can be removed without touching K1-1.
+
+## Slice 2 — Resolver and Typed Mutation Algebra
+
+- [ ] RED: entity resolver tests for document/measure/part/staff/voice/event/note, missing/duplicate IDs, and anchor start/missing/duplicate/wrong owner.
+- [ ] RED: exact immutable apply tests for metadata, WrittenPitch, NoteValue, insert, and remove forward/inverse pairs.
+- [ ] GREEN: implement stable-ID resolver and internal closed mutation types/application.
+- [ ] Prove untargeted subtree and deep ExtensionBlock identity-by-value preservation.
+- [ ] Run focused resolver/mutation tests and typecheck.
+
+Rollback point: internal modules are not publicly exported and can be replaced independently.
+
+## Slice 3 — Atomic Submit and Versioning
+
+- [ ] RED: bus initialization cloning/validation; six command committed/rejected paths; replace no-op paths; semantic-invalid rollback; profile-unsupported chord commit; handler/mutation exception privacy; version overflow.
+- [ ] GREEN: implement isolated candidate transaction pipeline and one-time atomic commit.
+- [ ] Reuse the K1-1 semantic validator and feature-profile classifier; do not duplicate their rules.
+- [ ] Add an internal deterministic test seam for injected handler/mutation failure without exposing it from the public index.
+- [ ] Run focused transaction tests, K1-1 regressions, and typecheck.
+
+Rollback point: remove CommandBus export; K1-1 public surface remains unchanged.
+
+## Slice 4 — History / Undo / Redo
+
+- [ ] RED: one-entry-per-commit, no history for rejection/no-op, multi-step undo/redo, empty stacks, redo invalidation, and redo preservation after rejection/no-op.
+- [ ] RED: history invariant failure is atomic; every successful undo/redo revalidates semantics and returns support classification.
+- [ ] GREEN: implement internal HistoryEntry, deterministic sequence, and atomic stack transitions using stored typed mutations.
+- [ ] Confirm HistoryEntry, mutations, and current document are not public exports.
+- [ ] Run focused history tests and typecheck.
+
+Rollback point: history is internal; submit can be retained or reverted as one module boundary.
+
+## Slice 5 — Deterministic Replay and Ownership
+
+- [ ] RED: repeated replay deep equality for final document, version sequence, and result classification; stop-on-rejection behavior; detached returned document.
+- [ ] RED: caller mutation of initial document and previously submitted payload cannot alter bus/history/replay results.
+- [ ] RED: deep unknown ExtensionBlock survival across submit rejection, commit, undo, redo, and replay.
+- [ ] GREEN: implement replay by invoking the same isolated submit transition used by CommandBus.
+- [ ] Search production code for `Date`, `Math.random`, tick/slot/path/splice/patch, and accidental mutable getters.
+- [ ] Run focused replay/ownership tests and typecheck.
+
+Rollback point: replay is an additive wrapper over the transaction engine.
+
+## Slice 6 — Public Boundary and Full Verification
+
+- [ ] RED/GREEN: extend public API boundary tests for approved exports and forbidden internals/K1-3/K1-4 APIs.
+- [ ] Extend forbidden dependency tests to cover all new command modules.
+- [ ] Update Core spec indexes/quality checklist if implementation reveals stable conventions; do not broaden scope.
+- [ ] Run `npm run typecheck`.
+- [ ] Run `npm run build`.
+- [ ] Run `npm test` in an environment that permits subprocess spawning.
+- [ ] Run `git diff --check`.
+- [ ] Run Trellis task validation/check, review the complete diff, and commit implementation separately from planning.
+
+## Review Gates
+
+- Gate A: planning artifacts and specs are internally consistent before `task.py start`.
+- Gate B: each slice has observed behavioral RED evidence before production code.
+- Gate C: no frozen K1-1 contract changed.
+- Gate D: public surface contains no internal mutation/history/document getter or later-block API.
+- Gate E: all full validation commands pass before completion is claimed.
+
+## Stop Conditions
+
+Stop and return to planning if any slice requires a persisted schema change, K1-1 diagnostic rename, mutable document exposure, full range model, snapshot/event API, registry/capability, Guitar semantics, UI/IO integration, or a public generic patch mechanism.

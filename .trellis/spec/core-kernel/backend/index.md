@@ -1,7 +1,7 @@
 # Core Kernel Backend Guidelines
 
-> **Current K1-1 stage (2026-07-13):** Implement only score document/exact
-> time, schema/codec, semantic/profile validation, and diagnostics.
+> **Current K1-2 stage (2026-07-15):** K1-1 score/document validation remains
+> frozen while the approved command/transaction/history block is implemented.
 
 > Coding rules for the Pure Core Kernel V1 implementation.
 
@@ -34,7 +34,7 @@ Pure Core Kernel V1 is not the desktop app. It must be testable without React, T
 |-------|---------|--------|
 | [Pure Kernel Boundary](./pure-kernel-boundary.md) | What Core Kernel V1 may and may not contain | Stable |
 | [Score Document Model](./score-document-model.md) | `brilliant-score-1`, exact time, pitch, extensions, validation | K1-1 authoritative |
-| [Command and Transaction](./command-transaction.md) | K1-2 replanning boundary; no current API | Later |
+| [Command and Transaction](./command-transaction.md) | K1-2 executable command/transaction/history/replay contract | Active |
 | [Snapshot and Events](./snapshot-events.md) | K1-3 replanning boundary; no current API | Later |
 | [Registry and Capability](./registry-capability.md) | Explicit K1-1 deferral and later redesign boundary | Later |
 | [Errors and Reports](./errors-reports.md) | K1-1 diagnostics; general reports later | Staged |
@@ -44,7 +44,7 @@ Pure Core Kernel V1 is not the desktop app. It must be testable without React, T
 
 ## Quality Check
 
-Before finishing K1-1, verify:
+Before finishing Core Kernel work, verify the frozen K1-1 rules plus the active task contract:
 
 - [ ] `ScoreDocument` remains the only score truth.
 - [ ] Measure order, event order/time, and sounding pitch each have one truth source.
