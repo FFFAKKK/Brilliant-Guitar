@@ -3,17 +3,42 @@
 > **Authoritative K1-2 contract (2026-07-15):** this guide defines the executable
 > Pure Core write boundary over the frozen `brilliant-score-1` model.
 
-## Public Write Boundary
+## Scenario: K1-2 Semantic Command Runtime
 
-- `CommandBus.submit(input: unknown)` is the only K1-2 score write entry.
-- Public patch, JSON path, field replacement, array splice, script, and mutable whole-document replacement are forbidden.
-- Public targets use stable document/measure/part/staff/voice/event/note IDs. They never use tick, slot, collection index, or persisted offset.
-- Insert commands target one Voice and use `SequenceAnchor = start | after-event`. The referenced event must belong uniquely to that Voice.
-- Full `ScorePoint` / `ScoreRange` and cross-Voice/cross-Measure range operations belong to K1-3.
+### 1. Scope / Trigger
 
-## Envelope and Closed Command Set
+Apply this contract to every Core ScoreDocument write, transaction, version change, history transition, undo/redo, or deterministic command replay.
 
-Every envelope contains exactly `commandVersion: 1`, `commandId`, a typed target, and a strict payload. The closed built-in set is:
+K1-2 does not own full ScorePoint/ScoreRange, dirty state, snapshots/selectors, post-commit events, general reports, Registry/Capability, Guitar commands, UI, playback, or physical IO.
+
+### 2. Signatures
+
+```typescript
+type ScoreEntityTarget =
+  | { readonly kind: "document"; readonly documentId: string }
+  | { readonly kind: "measure"; readonly measureId: string }
+  | { readonly kind: "part"; readonly partId: string }
+  | { readonly kind: "staff"; readonly staffId: string }
+  | { readonly kind: "voice"; readonly voiceId: string }
+  | { readonly kind: "event"; readonly eventId: string }
+  | { readonly kind: "note"; readonly noteId: string }
+
+type SequenceAnchor =
+  | { readonly kind: "start" }
+  | { readonly kind: "after-event"; readonly eventId: string }
+
+CommandBus.create(initialDocument: ScoreDocument): CommandBusCreationResult
+CommandBus.submit(input: unknown): CommandResult
+CommandBus.undo(): CommandResult
+CommandBus.redo(): CommandResult
+
+replayCoreCommands(
+  initialDocument: ScoreDocument,
+  acceptedCommands: readonly unknown[],
+): ReplayCoreCommandsResult
+```
+
+Every envelope has exactly `commandVersion: 1`, `commandId`, `target`, and `payload`. The deeply frozen built-in catalog contains only:
 
 - `core.document.set-metadata`
 - `core.note.set-written-pitch`
@@ -22,39 +47,83 @@ Every envelope contains exactly `commandVersion: 1`, `commandId`, a typed target
 - `core.voice.insert-rest-event`
 - `core.event.remove`
 
-Inserted Event and Note IDs are caller supplied. Core must not derive IDs from time, randomness, position, tick, or array index. K1-2 has no dynamic register/unregister API; registry and capability belong to K1-4.
+Every CommandResult contains status, documentVersion, undoDepth, and redoDepth. Committed/no-op results contain ScoreSupportResult; rejected results contain one closed CommandFailure.
 
-## Transaction Contract
+### 3. Contracts
 
-- A bus deep-clones and semantically validates initialization state and never retains caller-owned mutable references.
-- Handlers prepare internal typed forward/inverse mutations only: metadata replacement, WrittenPitch replacement, NoteValue replacement, or one Voice/anchor Event insert/remove.
-- Mutations are not public and are not a persistence/replay format.
-- Forward mutation is applied to an isolated candidate. Core semantic validation runs before atomic state replacement.
-- Semantic-invalid candidates reject with unchanged `semantic.*` diagnostics.
-- Semantic-valid/profile-unsupported candidates commit and return the complete `ScoreSupportResult` such as `unsupported.chord`.
-- Setting a replace-command value to its current deep-equal value is `no-op`: no version, history, or redo change.
-- Unexpected handler/mutation errors collapse to a privacy-safe stable failure and never expose exception text, source, path, stack, or mutation data.
+- `submit(unknown)` is the only K1-2 write entry. Public patch, JSON path, field replacement, splice, script, and mutable whole-document replacement are forbidden.
+- Targets use stable IDs, never tick, slot, collection index, or persisted offset. Insertions use one Voice plus start/after-event; after-event must belong uniquely to that Voice.
+- Inserted Event/Note IDs are caller supplied. Core never derives identity from time, randomness, position, tick, or array index.
+- The command catalog is static. Dynamic register/unregister and externally supplied handlers belong to later Registry/Capability work.
+- Initialization clones and semantically validates its document. Strict command decode constructs detached plain values and retains no caller references.
+- Unknown decode must not execute getters, input array methods, iterators, or coercion hooks. Read own data descriptors, reject extra/sparse/accessor properties, and copy accepted arrays into new plain arrays.
+- Handlers prepare internal typed forward/inverse mutations only: metadata, WrittenPitch, NoteValue, or one Voice/anchor Event insert/remove. Mutations are neither public nor a persistence/replay format.
+- Forward/inverse application creates an isolated candidate. Semantic validation runs before atomic state replacement; profile classification runs only for the valid candidate/current document.
+- Semantic-invalid candidates reject with original `semantic.*` diagnostics. Semantic-valid/profile-unsupported candidates commit with complete unsupported classification.
+- Deep-equal replacement is no-op: no version/history/redo change.
+- Runtime version starts at 0. Each committed submit/undo/redo increments once; rejection/no-op does not. Unsafe-integer overflow rejects atomically.
+- One committed submit creates one internal HistoryEntry containing deterministic sequence, detached command, and detached forward/inverse mutations. No timestamps, random IDs, dirty/event state, or document snapshots.
+- Undo/redo apply one inverse/forward mutation to an isolated candidate, rerun semantic/profile validation, and atomically move one entry. A new committed submit clears redo; rejection/no-op preserves it.
+- Replay feeds envelopes through the live submit transition, stops at rejection, and never accepts mutations, active state, snapshots, or a submit/undo/redo log.
+- Unknown ExtensionBlock payloads and every untargeted subtree remain deeply equal across commit, rejection, undo, redo, and replay.
+- Unexpected errors collapse to stable privacy-safe failures with no exception text, source, file path, stack, raw input, or mutation data.
 
-## Version and History
+### 4. Validation & Error Matrix
 
-- New runtime version is 0. Each committed submit, undo, and redo increments exactly once; rejection/no-op does not increment. Unsafe-integer overflow rejects atomically.
-- One committed command creates one internal HistoryEntry. Rejected/no-op operations create none.
-- History stores a detached command, deterministic safe-integer sequence, and detached forward/inverse mutations. It stores no timestamps, random IDs, dirty state, events, or whole-document snapshots.
-- Undo/redo apply one inverse/forward mutation to an isolated candidate and rerun semantic validation/profile classification before atomically moving the entry between stacks.
-- A new committed command after undo clears redo. Rejected/no-op submissions preserve redo.
+| Condition | Required result | State effect |
+|---|---|---|
+| malformed/extra/accessor/sparse envelope or payload | `command.invalid-envelope` | none |
+| safe-integer version other than 1 | `command.unsupported-version` | none |
+| unknown command ID | `command.unknown-id` | none |
+| target kind mismatch / missing target | `command.target-mismatch` / `command.target-not-found` | none |
+| anchor missing / belongs to another Voice | `command.anchor-not-found` / `command.anchor-wrong-owner` | none |
+| candidate semantic-invalid | `command.semantic-invalid` + original diagnostics | none |
+| candidate semantic-valid/profile-unsupported | committed + full unsupported result | version +1, one history entry |
+| replacement equals current value | no-op + current support | none |
+| version overflow / unexpected internal error | stable overflow/internal failure | none |
+| empty undo/redo / corrupt history transition | stable history failure | none |
 
-## Replay and Preservation
+### 5. Good / Base / Bad Cases
 
-- `replayCoreCommands(initialDocument, acceptedCommands)` feeds command envelopes through the same decode/resolve/transaction/validation path as live submit.
-- Replay does not accept internal mutations, active bus state, snapshots, or a submit/undo/redo operation log.
-- Identical initial documents and command sequences produce deeply equal final documents, version sequences, and result classifications without clock/random dependencies.
-- Replay returns a detached final document and cannot replace an active bus document wholesale.
-- Unknown score-owned/part-owned ExtensionBlock payloads and every untargeted subtree survive commit, rejection, undo, redo, and replay.
+- Good: set one Note WrittenPitch by noteId, commit one history entry, then undo/redo with one version increment each.
+- Base: insert a semantic-valid two-Note Event and commit with `unsupported.chord`.
+- Base: replay the same initial document and command sequence twice and obtain deep-equal documents, versions, and classifications.
+- Bad: accept `startTick`, `/parts/0/...`, array-index targeting, public patch, or a payload with extra fields.
+- Bad: execute an anchor getter or an input array's overridden `map`/iterator while deciding to reject malformed input.
+- Bad: reject legal profile-unsupported data as corrupt, expose an internal mutation, or retain a caller-owned payload reference.
 
-## Stable Result and Failure Boundary
+### 6. Tests Required
 
-Every result reports status, documentVersion, undoDepth, and redoDepth. Committed/no-op results include support classification; rejected results include a closed privacy-safe failure.
+- Assert six valid commands plus wrong version, unknown ID, extra fields, wrong target, malformed unions, sparse arrays, non-finite values, accessors, poisoned array methods, and patch-like input.
+- Assert all seven entity target kinds resolve internally; missing/duplicate targets and missing/duplicate/wrong-owner anchors never choose the first array match.
+- Assert committed/no-op/rejected replacement behavior, exact insert/remove mutations, semantic-invalid rollback, and `unsupported.chord` commit.
+- Assert handler/application exception privacy, version overflow, and history invariant failure preserve the exact state object and stack depths.
+- Assert one entry per commit, deterministic history sequences, no snapshots/timestamps, multi-step undo/redo, empty stacks, and redo invalidation/preservation.
+- Assert forward/inverse round trips, undo/redo semantic revalidation, caller-alias isolation, deterministic replay, and deep ExtensionBlock preservation on every path.
+- Assert public exports omit catalog, codec, resolver, mutation, runtime state/history, mutable document getters, patch APIs, and K1-3/K1-4 APIs.
+- Run `npm run typecheck`, `npm run build`, `npm test`, and `git diff --check`.
 
-Failure coverage includes malformed envelope/payload/version, unknown command ID, target mismatch/not found, anchor missing/wrong owner, semantic invalidity, version overflow, internal failure, empty undo/redo, and history invariant failure.
+### 7. Wrong vs Correct
 
-K1-2 does not own dirty state, snapshots/selectors, post-commit events, general reports, Registry/Capability, Guitar commands, UI, playback, or physical IO.
+```typescript
+// Wrong: executes a method owned by untrusted input before rejecting extras.
+const keys = inputArray.map((_, index) => String(index))
+
+// Correct: inspect own data descriptors, reject extras/accessors, then copy.
+const descriptor = Object.getOwnPropertyDescriptor(inputArray, String(index))
+if (descriptor === undefined || !("value" in descriptor)) return invalid
+decoded.push(descriptor.value)
+```
+
+```typescript
+// Wrong: leaks storage shape and an unstable address.
+submit({ op: "replace", path: "/parts/0/measureContents/0" })
+
+// Correct: versioned semantic command with stable identity.
+submit({
+  commandVersion: 1,
+  commandId: "core.note.set-written-pitch",
+  target: { kind: "note", noteId },
+  payload: { writtenPitch },
+})
+```

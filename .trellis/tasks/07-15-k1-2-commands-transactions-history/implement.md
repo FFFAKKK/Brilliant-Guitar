@@ -8,72 +8,72 @@ All production behavior follows behavioral RED → minimum GREEN → focused reg
 - [x] Add `design.md` with exact contracts, data flow, invariants, and alternatives.
 - [x] Add this implementation checklist.
 - [x] Synchronize active command/transaction spec and product SPEC-003.
-- [ ] Validate planning artifacts and commit them separately.
-- [ ] Start the existing Trellis task; do not create another task.
+- [x] Validate planning artifacts and commit them separately.
+- [x] Start the existing Trellis task; do not create another task.
 
 Rollback: documentation-only revert; no production state exists.
 
 ## Slice 1 — Strict Public Contracts and Decoder
 
-- [ ] RED: strict command tests for six valid envelopes plus wrong version, unknown ID, extra envelope/payload fields, wrong target kind, malformed unions, sparse arrays, non-finite numbers, patch-like input, and caller aliasing.
-- [ ] GREEN: add `src/core-kernel/commands/contracts.ts`, strict decoding helpers, and closed command decoder.
-- [ ] Define the frozen internal `CORE_COMMAND_DEFINITIONS` catalog with no dynamic registration API.
-- [ ] Verify target and payload types reuse K1-1 ScoreDocument domain types.
-- [ ] Run focused command codec tests and typecheck.
+- [x] RED: strict command tests for six valid envelopes plus wrong version, unknown ID, extra envelope/payload fields, wrong target kind, malformed unions, sparse arrays, non-finite numbers, patch-like input, and caller aliasing.
+- [x] GREEN: add `src/core-kernel/commands/contracts.ts`, strict decoding helpers, and closed command decoder.
+- [x] Define the frozen internal `CORE_COMMAND_DEFINITIONS` catalog with no dynamic registration API.
+- [x] Verify target and payload types reuse K1-1 ScoreDocument domain types.
+- [x] Run focused command codec tests and typecheck.
 
 Rollback point: contracts/decoder can be removed without touching K1-1.
 
 ## Slice 2 — Resolver and Typed Mutation Algebra
 
-- [ ] RED: entity resolver tests for document/measure/part/staff/voice/event/note, missing/duplicate IDs, and anchor start/missing/duplicate/wrong owner.
-- [ ] RED: exact immutable apply tests for metadata, WrittenPitch, NoteValue, insert, and remove forward/inverse pairs.
-- [ ] GREEN: implement stable-ID resolver and internal closed mutation types/application.
-- [ ] Prove untargeted subtree and deep ExtensionBlock identity-by-value preservation.
-- [ ] Run focused resolver/mutation tests and typecheck.
+- [x] RED: entity resolver tests for document/measure/part/staff/voice/event/note, missing/duplicate IDs, and anchor start/missing/duplicate/wrong owner.
+- [x] RED: exact immutable apply tests for metadata, WrittenPitch, NoteValue, insert, and remove forward/inverse pairs.
+- [x] GREEN: implement stable-ID resolver and internal closed mutation types/application.
+- [x] Prove untargeted subtree and deep ExtensionBlock identity-by-value preservation.
+- [x] Run focused resolver/mutation tests and typecheck.
 
 Rollback point: internal modules are not publicly exported and can be replaced independently.
 
 ## Slice 3 — Atomic Submit and Versioning
 
-- [ ] RED: bus initialization cloning/validation; six command committed/rejected paths; replace no-op paths; semantic-invalid rollback; profile-unsupported chord commit; handler/mutation exception privacy; version overflow.
-- [ ] GREEN: implement isolated candidate transaction pipeline and one-time atomic commit.
-- [ ] Reuse the K1-1 semantic validator and feature-profile classifier; do not duplicate their rules.
-- [ ] Add an internal deterministic test seam for injected handler/mutation failure without exposing it from the public index.
-- [ ] Run focused transaction tests, K1-1 regressions, and typecheck.
+- [x] RED: bus initialization cloning/validation; six command committed/rejected paths; replace no-op paths; semantic-invalid rollback; profile-unsupported chord commit; handler/mutation exception privacy; version overflow.
+- [x] GREEN: implement isolated candidate transaction pipeline and one-time atomic commit.
+- [x] Reuse the K1-1 semantic validator and feature-profile classifier; do not duplicate their rules.
+- [x] Add an internal deterministic test seam for injected handler/mutation failure without exposing it from the public index.
+- [x] Run focused transaction tests, K1-1 regressions, and typecheck.
 
 Rollback point: remove CommandBus export; K1-1 public surface remains unchanged.
 
 ## Slice 4 — History / Undo / Redo
 
-- [ ] RED: one-entry-per-commit, no history for rejection/no-op, multi-step undo/redo, empty stacks, redo invalidation, and redo preservation after rejection/no-op.
-- [ ] RED: history invariant failure is atomic; every successful undo/redo revalidates semantics and returns support classification.
-- [ ] GREEN: implement internal HistoryEntry, deterministic sequence, and atomic stack transitions using stored typed mutations.
-- [ ] Confirm HistoryEntry, mutations, and current document are not public exports.
-- [ ] Run focused history tests and typecheck.
+- [x] RED: one-entry-per-commit, no history for rejection/no-op, multi-step undo/redo, empty stacks, redo invalidation, and redo preservation after rejection/no-op.
+- [x] RED: history invariant failure is atomic; every successful undo/redo revalidates semantics and returns support classification.
+- [x] GREEN: implement internal HistoryEntry, deterministic sequence, and atomic stack transitions using stored typed mutations.
+- [x] Confirm HistoryEntry, mutations, and current document are not public exports.
+- [x] Run focused history tests and typecheck.
 
 Rollback point: history is internal; submit can be retained or reverted as one module boundary.
 
 ## Slice 5 — Deterministic Replay and Ownership
 
-- [ ] RED: repeated replay deep equality for final document, version sequence, and result classification; stop-on-rejection behavior; detached returned document.
-- [ ] RED: caller mutation of initial document and previously submitted payload cannot alter bus/history/replay results.
-- [ ] RED: deep unknown ExtensionBlock survival across submit rejection, commit, undo, redo, and replay.
-- [ ] GREEN: implement replay by invoking the same isolated submit transition used by CommandBus.
-- [ ] Search production code for `Date`, `Math.random`, tick/slot/path/splice/patch, and accidental mutable getters.
-- [ ] Run focused replay/ownership tests and typecheck.
+- [x] RED: repeated replay deep equality for final document, version sequence, and result classification; stop-on-rejection behavior; detached returned document.
+- [x] RED: caller mutation of initial document and previously submitted payload cannot alter bus/history/replay results.
+- [x] RED: deep unknown ExtensionBlock survival across submit rejection, commit, undo, redo, and replay.
+- [x] GREEN: implement replay by invoking the same isolated submit transition used by CommandBus.
+- [x] Search production code for `Date`, `Math.random`, tick/slot/path/splice/patch, and accidental mutable getters.
+- [x] Run focused replay/ownership tests and typecheck.
 
 Rollback point: replay is an additive wrapper over the transaction engine.
 
 ## Slice 6 — Public Boundary and Full Verification
 
-- [ ] RED/GREEN: extend public API boundary tests for approved exports and forbidden internals/K1-3/K1-4 APIs.
-- [ ] Extend forbidden dependency tests to cover all new command modules.
-- [ ] Update Core spec indexes/quality checklist if implementation reveals stable conventions; do not broaden scope.
-- [ ] Run `npm run typecheck`.
-- [ ] Run `npm run build`.
-- [ ] Run `npm test` in an environment that permits subprocess spawning.
-- [ ] Run `git diff --check`.
-- [ ] Run Trellis task validation/check, review the complete diff, and commit implementation separately from planning.
+- [x] RED/GREEN: extend public API boundary tests for approved exports and forbidden internals/K1-3/K1-4 APIs.
+- [x] Extend forbidden dependency tests to cover all new command modules.
+- [x] Update Core spec indexes/quality checklist if implementation reveals stable conventions; do not broaden scope.
+- [x] Run `npm run typecheck`.
+- [x] Run `npm run build`.
+- [x] Run `npm test` in an environment that permits subprocess spawning.
+- [x] Run `git diff --check`.
+- [x] Run Trellis task validation/check, review the complete diff, and commit implementation separately from planning.
 
 ## Review Gates
 

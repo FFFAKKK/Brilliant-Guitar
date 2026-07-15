@@ -2,7 +2,7 @@
 
 ## 1. Ownership Boundary
 
-K1-2 adds one of the nine planned Core mechanisms: Commands / Transactions / History. It consumes the frozen K1-1 ScoreDocument, strict domain predicates, semantic validator, and `CORE_SCORE_FEATURE_PROFILE`. It does not change persisted schema and does not add read snapshots, events, registries, Guitar semantics, UI, IO, or a generic report framework.
+K1-2 adds one of the nine planned Core mechanisms: Commands / Transactions / History. It consumes the frozen K1-1 ScoreDocument, strict domain predicates, semantic validator, and `K1_SCORE_FEATURE_PROFILE`. It does not change persisted schema and does not add read snapshots, events, registries, Guitar semantics, UI, IO, or a generic report framework.
 
 The public write surface is `CommandBus.submit(input: unknown)`, `undo()`, and `redo()`. No method returns the active mutable ScoreDocument. Tests may import internal transition modules directly, but `src/core-kernel/index.ts` exports only the approved public contracts.
 
@@ -83,7 +83,7 @@ Decoder failures may include a privacy-safe structured path and reason enum, nev
 
 ## 3. Static Command Catalog
 
-`CORE_COMMAND_DEFINITIONS` is an internal frozen tuple keyed by the six command IDs. Each definition owns expected target kind, strict payload decoder, and handler. There is no `register`, `unregister`, dynamic import, capability check, or externally supplied handler in K1-2.
+`CORE_COMMAND_DEFINITIONS` is an internal deeply frozen catalog keyed by the six command IDs and expected target kinds. The public command-ID type derives from this catalog; exhaustive decoder and mutation-handler switches consume the same closed ID set. There is no `register`, `unregister`, dynamic import, capability check, or externally supplied handler in K1-2.
 
 The catalog is the single source of truth for dispatch. Exhaustive switches and `never` checks protect command and mutation additions from partial implementation.
 
@@ -112,7 +112,7 @@ Internal-only `CoreMutation` is closed to:
 
 Every handler returns a `PreparedMutation` containing `forward`, `inverse`, and `changed`. It never mutates live state. Mutations are neither JSON patch nor a public persistence format.
 
-Replacing values stores deep-cloned before/after values. Insert/remove store deep-cloned event values and stable owners/anchors. Mutation application rebuilds only the target path and preserves every untargeted subtree and extension payload.
+Replacing values stores deep-cloned before/after values. Insert/remove store deep-cloned event values and stable owners/anchors. Mutation application creates a detached candidate and changes only the resolved target field or Voice event sequence; every untargeted subtree and extension payload remains deeply equal.
 
 ## 6. Transaction State Machine
 

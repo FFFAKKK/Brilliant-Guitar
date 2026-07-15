@@ -24,3 +24,6 @@ export * from "./codec/score-json";
 export * from "./validation/diagnostics";
 export * from "./validation/validate-score-semantics";
 export * from "./profiles/score-feature-profile";
+export * from "./commands/contracts";
+export * from "./commands/command-bus";
+export * from "./commands/replay";

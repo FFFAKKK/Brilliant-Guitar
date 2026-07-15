@@ -21,6 +21,7 @@ Every production behavior starts with a compiling behavioral RED test. Compiler/
 ## Current K1-2 Required Tests
 
 - Strict six-command envelope/payload decoding and public patch rejection.
+- Unknown command decoding never executes accessor properties, input array methods/iterators, or coercion hooks before rejection.
 - Stable target/anchor resolution without public array/tick/slot addressing.
 - Atomic commit/no-op/rejection, version overflow, and privacy-safe internal failure.
 - Semantic-invalid rollback versus semantic-valid/profile-unsupported commit.
