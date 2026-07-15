@@ -1,7 +1,7 @@
 # Core Kernel Quality Guidelines
 
-> **Authoritative staged quality gate (2026-07-15):** K1-1 foundation tests
-> remain frozen regressions; K1-2 adds only the command/runtime groups below.
+> **Authoritative staged quality gate (2026-07-15):** K1-1 and K1-2 tests
+> remain frozen regressions; K1-3 adds only the address/read/checkpoint/event groups below after approval.
 
 ## Current K1-1 Required Tests
 
@@ -33,6 +33,19 @@ Every production behavior starts with a compiling behavioral RED test. Compiler/
 - Deep unknown ExtensionBlock preservation across all transaction/history/replay paths.
 - Public export and forbidden-dependency boundaries excluding K1-3/K1-4 APIs.
 
-Snapshot/event, registry/capability, general report, migration, Guitar Domain, UI, playback, and IO tests remain later tasks and must not be pulled into K1-2.
+## Planned K1-3 Required Tests
+
+- Seven stable address kinds and strict rejection of getter/extra/index/path/tick/coordinate inputs.
+- Global Measure, Part Measure, and Voice Event inclusive range normalization, order, missing endpoint, and owner mismatch.
+- Version-correlated deep-frozen detached snapshots and old-snapshot stability after later commits.
+- Metadata/entity/ownership/range/history/dirty selector purity and closed export boundary.
+- Initial/edit/save/async-save/undo/redo/branch exact dirty checkpoint behavior.
+- Exact zero/one/two event counts, document-before-dirty order, affected IDs, and payload deep freeze/privacy.
+- Subscriber registration order, dispatch snapshot, duplicate subscription, idempotent unsubscribe, handler isolation, and read-during-callback.
+- Reentrant submit/undo/redo/markPersisted and event-sequence overflow atomic rejection.
+- Replay remains detached and event/checkpoint-session-free.
+- Deep unknown ExtensionBlock preservation and K1-4/K1-5/Guitar/UI/IO/internal API exclusion.
+
+Registry/capability, general report, migration, Guitar Domain, UI, playback, and IO tests remain later tasks and must not be pulled into K1-3.
 
 Retired aggregate V1 checklists are archived under `.trellis/archive/core-kernel/`, not a completion gate for K1-1.

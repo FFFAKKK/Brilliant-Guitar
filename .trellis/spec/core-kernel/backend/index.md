@@ -1,7 +1,7 @@
 # Core Kernel Backend Guidelines
 
-> **Current K1-2 stage (2026-07-15):** K1-1 score/document validation remains
-> frozen while the approved command/transaction/history block is implemented.
+> **Current K1-3 planning stage (2026-07-15):** K1-1 and K1-2 are accepted
+> foundations; K1-3 is a final planning candidate awaiting user review.
 
 > Coding rules for the Pure Core Kernel V1 implementation.
 
@@ -22,7 +22,7 @@ Pure Core Kernel V1 is not the desktop app. It must be testable without React, T
 - [ ] Read every guide in this directory before touching Core Kernel code.
 - [ ] Identify which staged kernel mechanisms the active task touches.
 - [ ] Confirm new domain concepts map to one of the 9 mechanisms; do not silently create a tenth kernel mechanism.
-- [ ] Confirm K1-1 adds no public mutation or read API; later write/read tasks must use commands and snapshots/selectors.
+- [ ] Confirm writes use the accepted K1-2 command boundary and K1-3 reads/events follow `snapshot-events.md`.
 - [ ] Confirm no UI, rendering, audio, desktop shell, physical file IO, or third-party plugin runtime dependency is introduced.
 - [ ] Confirm tests can run in a pure TypeScript environment.
 
@@ -35,7 +35,7 @@ Pure Core Kernel V1 is not the desktop app. It must be testable without React, T
 | [Pure Kernel Boundary](./pure-kernel-boundary.md) | What Core Kernel V1 may and may not contain | Stable |
 | [Score Document Model](./score-document-model.md) | `brilliant-score-1`, exact time, pitch, extensions, validation | K1-1 authoritative |
 | [Command and Transaction](./command-transaction.md) | K1-2 executable command/transaction/history/replay contract | Active |
-| [Snapshot and Events](./snapshot-events.md) | K1-3 replanning boundary; no current API | Later |
+| [Snapshot and Events](./snapshot-events.md) | K1-3 address/read/checkpoint/event final planning contract | Review gate |
 | [Registry and Capability](./registry-capability.md) | Explicit K1-1 deferral and later redesign boundary | Later |
 | [Errors and Reports](./errors-reports.md) | K1-1 diagnostics; general reports later | Staged |
 | [Quality Guidelines](./quality-guidelines.md) | Required tests and forbidden shortcuts | Stable |

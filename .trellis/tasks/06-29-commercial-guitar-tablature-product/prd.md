@@ -3,12 +3,12 @@
 ## 状态
 
 - Trellis task: `06-29-commercial-guitar-tablature-product`
-- 当前阶段: Core K1-2 P1 修复与独立复验；产品其余阶段保持规划态
+- 当前阶段: Core K1-3 地址/快照/selector/event 规划；产品其余阶段保持规划态
 - 创建日期: 2026-06-29
 - 负责人: ATOM
 - 文档策略: 每个需求先写独立文档，最终再合并为收敛后的 PRD。
 - 当前 Core 基线: K1-1 已在 `30894e2` 正式验收；`.trellis/spec/core-kernel/` 是活动代码契约。本文较早的决策记录若与其冲突，以活动规范与独立 Block 任务为准。
-- 当前交付状态: `07-15-k1-2-commands-transactions-history` 已完成主体实现，正处理首轮独立验收发现的 P1 并等待复验；K1-3、Guitar Domain、registry 和通用 report 仍需分别重规划。
+- 当前交付状态: K1-2 已完成 P1 修复、独立复验并归档；`07-15-k1-3-address-snapshots-selectors-events` 正在 planning。Guitar Domain、registry 和通用 report 仍需分别重规划。
 
 ## 产品目标
 
@@ -583,11 +583,11 @@ MVP 包结构建议: `.bgp` 的长期形态是单文件开放 zip 包，至少�
 
 ### DEC-K043: Core Kernel 的快照、事件和模块通信协议应该如何设计？
 
-结论: 确认采用“Snapshot / Selector + Post-Commit Event Bus + Command-only write”的内核通信模型。写入只能通过 `CommandBus.submit`、`CommandBus.undo` 或 `CommandBus.redo`；读取只能通过只读 `DocumentSnapshot` 或受控 selector；通知只发布提交后的事实事件，例如 `kernel.document.loaded`、`kernel.document.changed`、`kernel.command.executed`、`kernel.history.changed`、`kernel.diagnostics.changed`、`kernel.dirty-state.changed`、`kernel.registry.changed` 和 `kernel.migration.completed`。模块之间不得共享可变对象，不得通过事件总线发送自定义写命令，不得把 React、SVG、VexFlow、Web Audio、Tauri 文件对象或 UI 会话状态塞进内核事件。
+结论（2026-07-15 K1-3 收敛）: 采用“冻结 Snapshot / 六个纯 Selector + 两个 Post-Commit/Session Fact + Command-only score write”。谱面写入仍只有 `CommandBus.submit/undo/redo`；`markPersisted` 只更新精确 clean checkpoint。读取由 `CommandBus.read()` 返回 snapshot、history depths 和 dirty。K1-3 只发布 `core.document.committed` 与 `core.session.dirty-state-changed`，不包含 load、diagnostics、history、registry 或 migration 事件族。
 
 原因: 这个功能决定外部模块如何围绕同一份谱面真相协作。渲染、播放、导出、自动保存、导入、内部扩展和未来插件都需要读取状态和响应变化；如果它们直接互相调用或共享可变 `ScoreDocument`，微内核边界会很快失效。采用只读快照、受控 selector 和提交后事件，可以让模块缓存、刷新、播放事件重建、保存和诊断都依赖稳定的 `documentVersion` 和 `eventSequence`，同时保持内核小而稳定。
 
-实现约束: `DocumentSnapshot` 必须包含 `documentId`、`schemaVersion`、`documentVersion`、`snapshotId` 和创建时间；selector 必须是纯读操作并返回来源 `documentVersion`；事件必须在事务 commit 后发布，失败或回滚命令不得发布 `kernel.document.changed`；事件 payload 不得包含完整可变文档或内部 delta operation；事件处理器异常不得回滚已提交事务；事件分发期间不得重入提交命令；UI 光标、选区高亮、鼠标拖拽、播放光标 tick、SVG DOM 和 Web Audio 节点事件不属于 Core Kernel，分别属于外部 `Editor Session Service`、`Layout Module`、`Renderer Module` 或 `Playback Module`。
+实现约束: Snapshot 身份仅为 `documentId + schemaVersion + documentVersion`，不得包含 snapshotId 或创建时间；snapshot/selector 运行时深冻结并保留未知 ExtensionBlock。事件在 commit 后按安全 sequence 发布，失败/no-op/rollback 零事件，handler 异常隔离，写入/markPersisted 同步重入稳定拒绝，sequence overflow 在接纳 candidate 前原子拒绝。payload 不得包含可变文档、内部 delta/history、handler、raw error、文件路径、UI/布局/播放/Guitar/Registry/Report 对象。详细合同以独立 K1-3 任务与 SPEC-014 为准。
 
 取舍: 这种方案会增加快照、selector、事件 envelope、版本号和缓存失效测试的设计成本，也会有少量对象分配和 API 调用开销；但它能换来模块低耦合、可测试、可替换和插件 API 的长期稳定。如果直接让模块互相调用或共享内部对象，MVP 可能少写一些接口，但后续 VexFlow 替换、播放引擎替换、导出复用、插件权限和文件迁移都会变得脆弱。
 

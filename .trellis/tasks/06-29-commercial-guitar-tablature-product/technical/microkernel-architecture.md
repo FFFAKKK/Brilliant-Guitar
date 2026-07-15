@@ -215,14 +215,10 @@ Core Kernel V1 仍用 9 类机制整理路线图，但按 K1-1 至 K1-6 分块�
 - 只读 `DocumentSnapshot`。
 - 受控 selector。
 - 提交后 `KernelEventBus`。
-- `kernel.document.loaded`。
-- `kernel.document.changed`。
-- `kernel.command.executed`。
-- `kernel.history.changed`。
-- `kernel.diagnostics.changed`。
-- `kernel.dirty-state.changed`。
-- `kernel.registry.changed`。
-- `kernel.migration.completed`。
+- `core.document.committed`。
+- `core.session.dirty-state-changed`。
+
+K1-3 不提供 load/history/diagnostics/registry/migration 事件；这些事实分别由初始化调用方、read selector、K1-4、K1-5 或外部模块负责。
 
 移出内核:
 
@@ -621,12 +617,11 @@ Core Kernel 只负责:
 
 负责:
 
-- `DocumentSnapshot`，包含 `documentId`、`schemaVersion`、`documentVersion`、`snapshotId` 和创建时间。
-- `KernelReadApi`。
-- 纯读 selector。
-- selector 结果版本标记。
-- 可序列化 snapshot，供 `.bgp` 保存使用。
-- 按小节、范围或实体读取的优化入口。
+- `DocumentSnapshot`，身份仅为 `documentId`、`schemaVersion`、`documentVersion`。
+- `CommandBus.read()` 原子返回 snapshot、history depths 与 dirty。
+- metadata/entity/ownership/range/history/dirty 六个纯 selector。
+- 全局 Measure、Part Measure、Voice Event 三类分层范围。
+- `markPersisted` 精确保存点合同；实际 `.bgp` 序列化和 IO 属于 Persistence。
 
 使用方:
 
@@ -649,14 +644,10 @@ Core Kernel 只负责:
 
 负责:
 
-- 文档加载事件。
-- 文档变更事件。
-- 命令执行事件。
-- 历史状态变化事件。
-- 诊断更新事件。
-- 脏状态变化事件。
-- 注册表变化事件。
-- 迁移完成事件。
+- K1-3 成功 submit/undo/redo 的 `core.document.committed`。
+- K1-3 dirty 布尔变化时的 `core.session.dirty-state-changed`。
+- 确定性 event sequence、稳定 ID/版本关联、订阅快照、handler 隔离与同步写入重入拒绝。
+- Registry、diagnostic/report 与 migration 事实只能由 K1-4/K1-5 等后续分块独立批准；文档初始加载由外部初始化调用方负责，不伪造 K1-3 commit 事件。
 
 价值:
 

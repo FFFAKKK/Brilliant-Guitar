@@ -2,14 +2,14 @@
 
 ## 状态
 
-- 阶段: Core K1-2 P1 修复与独立复验；其余产品模块保持 planning
+- 阶段: Core K1-3 地址/快照/selector/event 规划；其余产品模块保持 planning
 - 目标: 为第一条可运行 MVP 闭环提供需求反推的技术设计骨架。
 - 已确认技术栈: Tauri 2 + TypeScript + React + Vite。
 - 首发平台: Windows 桌面。
 - 架构原则: 参照操作系统微内核思想的 Core Kernel + 用户态服务模块。当前只规划 Core Kernel 边界；外部工程目录结构属于后续脚手架阶段，不是当前内核规划事项。
 - 首个实现里程碑: Pure Core Kernel V1，纯 TypeScript、无 UI、无 Tauri、无 VexFlow、无 Web Audio、无 PDF/PNG。
-- K1-1 模型决策源: `../07-13-k1-1-foundation-replanning/design.md`；K1-2 执行源: `../07-15-k1-2-commands-transactions-history/design.md`。字段级与行为级契约以 `.trellis/spec/core-kernel/` 为准。
-- 本文中的 K1-3、registry、report 与产品模块协作只代表路线图；必须在 K1-2 独立验收后分别刷新，不能直接据此实现。
+- K1-1 模型决策源: `../07-13-k1-1-foundation-replanning/design.md`；K1-2 执行源已归档；K1-3 规划源为 `../07-15-k1-3-address-snapshots-selectors-events/`。字段级与行为级契约以 `.trellis/spec/core-kernel/` 为准。
+- 本文中的 registry、report 与产品模块协作只代表路线图；K1-3 的具体合同由独立任务审核，不能直接从父路线图实现。
 
 ## 设计目标
 
@@ -37,8 +37,8 @@
 - 命令事务路线图: 未来命令面向 measure/part/staff/voice/event/note 稳定 ID，处理新建谱、元数据、小节、note/rest、书写音高、时值、删除和 undo/redo；patch/delta 只作内部实现。吉他技巧命令属于后续 Guitar Domain，不是 Core K1-2 的默认命令。完整命令契约必须在 K1-1 评审后重规划。
 - 文档地址和范围: `ScoreAddress`、`ScorePoint`、`ScoreRange` 和命令目标校验。当前 UI 光标、选区高亮、鼠标拖选和临时 `ScoreCoordinate` 属于 `Editor Session Service` 或 `Layout Module`，不属于微内核。
 - 文件契约: `.bgp` schema、manifest、score JSON、schema version、迁移入口。
-- 快照和查询: `DocumentSnapshot`、`KernelReadApi`、受控 selector、可序列化 snapshot。
-- 事件和注册表路线图: 提交后事件、内部命令、selector、validator、migration、抽象导入/导出 descriptor、模板 descriptor 与未来贡献点；`ExtensionBlock` 不是 registry，吉他技巧也不预设为 Core registry contribution。K1-3/K1-4 必须单独刷新。
+- 快照和查询: `CommandBus.read()` 返回深冻结 `DocumentSnapshot`、history depths、dirty；六个 selector 与分层 range 提供受控读取，物理序列化属于 Persistence。
+- 事件和注册表路线图: K1-3 只提供 document-committed 与 dirty-state-changed 两个事实；registry/validator/migration/descriptor 等贡献与通知由 K1-4/K1-5 分别重规划。`ExtensionBlock` 不是 registry，吉他技巧不预设为 Core registry contribution。
 - 能力边界: `KernelCapability`、module identity、API version 和 capability 检查。
 - 错误、诊断和报告: `KernelError`、`KernelDiagnostic`、`KernelReport`、`ImportReport`、`ExportReport`、`MigrationReport`、`ValidationReport` 和 report issue 基础类型；导入/导出 report 是外部模块复用的报告壳，不表示内核实现具体格式。
 
@@ -62,7 +62,7 @@ Core Kernel 路线图仍按 9 类机制分类，但按任务分块实施；当�
 
 ### Pure Core Kernel V1 Boundary
 
-Pure Core Kernel V1 最终覆盖上述 9 类机制，但必须按 K1-1 至 K1-6 逐块评审。当前子任务只交付 K1-1，不包含命令/history、snapshot/events、registry/capability、通用 report/migration，更不包含桌面壳、React UI、VexFlow/SVG 渲染、Web Audio 播放、PDF/PNG 真实导出、Guitar Pro 导入、Tauri 文件系统或第三方插件运行时。
+Pure Core Kernel V1 最终覆盖上述 9 类机制，但必须按 K1-1 至 K1-6 逐块评审。K1-1 与 K1-2 已验收；K1-3 正在最终规划审核，K1-4/K1-5 仍阻塞。任何当前分块都不包含桌面壳、React UI、VexFlow/SVG 渲染、Web Audio 播放、PDF/PNG 真实导出、Guitar Pro 导入、Tauri 文件系统或第三方插件运行时。
 
 Pure Core Kernel V1 可以定义外部导入/导出贡献点的抽象 descriptor 类型、capability 检查和 report 外壳，但不得注册 PDF、PNG、Guitar Pro 或 `.bgp` 物理读写的具体 descriptor/handler。`.bgp` schema、manifest 语义和迁移入口属于内核；zip 读写、文件路径、自动保存恢复、PDF/PNG 页面生成和 Guitar Pro 解析都属于外部用户态服务模块。
 
@@ -91,12 +91,12 @@ Pure Core Kernel V1 可以定义外部导入/导出贡献点的抽象 descriptor
 
 推荐设计见 `specs/SPEC-014-kernel-snapshot-events.md`。第一阶段建议采用:
 
-- Snapshot / Selector: 外部模块只读 `DocumentSnapshot` 或 selector 结果；每次读取都带 `documentVersion`。
-- Post-Commit Event: 内核只发布已经 commit 的事实事件，例如文档加载、文档变化、命令执行、历史状态、诊断、脏状态、注册表和迁移完成。
+- Snapshot / Selector: `CommandBus.read()` 返回携带 `documentVersion` 的 `DocumentSnapshot`、history depths 与 dirty；selector 结果由输入 snapshot/read state 的版本关联。
+- Post-Commit Event: K1-3 只发布 committed submit/undo/redo 的 `core.document.committed`，以及 dirty 布尔变化时的 `core.session.dirty-state-changed`；其他事实必须由后续分块单独批准。
 - Command-only write: event 和 snapshot 都不是写入口，任何修改仍然必须回到语义命令。
-- Cache invalidation: 渲染、播放、导出和自动保存根据 `documentVersion`、selector 结果版本和事件类型失效缓存。
-- Error isolation: 事件处理器异常不得回滚已提交事务；内核记录 diagnostic 或模块错误报告。
-- No reentrancy: 事件分发期间不得直接重入提交命令，需要后续写入时由外部调度队列在事件分发结束后提交。
+- Cache invalidation: 渲染、播放、导出和自动保存根据来源 `documentVersion` 与事件类型失效缓存。
+- Error isolation: 事件处理器异常不得回滚已提交事务或阻止后续 handler；结构化模块错误报告由 K1-5 定义。
+- No reentrancy: 事件分发期间 submit/undo/redo/markPersisted 稳定拒绝；Core 不创建隐式延迟事务，外部需要后续写入时只能在回调结束后显式调度。
 - Derived read models: 外部模块可以基于 snapshot 创建布局 primitives、hit areas、播放事件、导出页面模型、缩略图、分析报告或导入中间模型；这些派生数据不是 `ScoreDocument` 副本，不能保存为权威谱面，也不能整体写回内核。
 
 明确不放进内核事件:

@@ -1,9 +1,9 @@
 # Core Kernel Guidelines
 
-> **Current staged workflow (2026-07-15):** Each task implements one approved
-> mechanism block. K1-2 now owns commands/transactions/history/replay only.
+> **Current staged workflow (2026-07-15):** K1-2 is accepted and archived.
+> K1-3 address/read/checkpoint/event planning is complete-candidate but remains non-executable until user review.
 
-For K1-2, read `backend/score-document-model.md`, `backend/command-transaction.md`, and all staged boundary/diagnostic/quality guides. The K1-1 model and validation contracts remain frozen. K1-2 does not implement snapshots/events, registry/capability, general reports, migrations, Guitar Domain, UI, playback, or physical IO.
+For K1-3, read `backend/score-document-model.md`, `backend/command-transaction.md`, `backend/snapshot-events.md`, and all staged boundary/diagnostic/quality guides. K1-1 and K1-2 contracts remain frozen except for the two explicitly additive K1-3 event-boundary command failures. Registry/capability, general reports, migrations, Guitar Domain, UI, playback, layout, and physical IO remain later work.
 
 The K1-1 data path is `unknown -> decode -> semantic validation -> ScoreFeatureProfile`. Unknown extension data must survive semantic round-trip.
 
@@ -26,7 +26,7 @@ The detailed rules live under `backend/` because the kernel is a non-UI, non-des
 - [ ] Read the shared [Long-Term Maintenance Guide](../guides/long-term-maintenance-guide.md).
 - [ ] Confirm the change does not introduce UI, Tauri, VexFlow, Web Audio, PDF/PNG, Guitar Pro, physical file IO, or third-party plugin runtime behavior.
 - [ ] For tasks that expose editable writes, confirm the active K1-2 semantic command/transaction/history boundary.
-- [ ] For tasks that expose public reads, confirm snapshot/selector boundaries; K1-1 exposes no read API.
+- [ ] For tasks that expose public reads or committed notifications, confirm the approved K1-3 snapshot/selector/checkpoint/event boundary.
 
 ---
 

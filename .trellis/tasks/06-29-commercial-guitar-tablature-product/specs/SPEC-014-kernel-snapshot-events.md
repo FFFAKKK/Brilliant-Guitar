@@ -1,44 +1,61 @@
-# SPEC-014 内核快照、事件与模块通信重规划门
+# SPEC-014 内核地址、快照、Selector、Dirty 与事件合同
 
-> **状态：BLOCKED / NOT EXECUTABLE。** K1-3 等待 K1-2 事务边界完成。本文件只保留不可违反的方向。
+> **状态：K1-3 FINAL PLANNING CANDIDATE / NOT EXECUTABLE。** 独立任务 `07-15-k1-3-address-snapshots-selectors-events` 是详细权威；用户审核三份规划文档前不得编码。
 
 ## 1. Scope / Trigger
 
-当准备公开只读文档、selector 或提交后通知时触发。旧 snapshot/event 细节已归档。
+当 Core 公开稳定地址/范围、只读状态、保存点或提交后通知时触发。
 
 ## 2. Signatures
 
-最终 `DocumentSnapshot`、selector 与 event envelope 尚未批准；必须直接承载或引用 `brilliant-score-1`，不能建立平行谱面模型。
+- `ScoreAddress` 复用 K1-2 七类稳定实体目标。
+- `ScorePoint/ScoreRange` 仅包含全局 Measure、Part Measure、Voice Event 三类分层点/闭区间。
+- `CommandBus.read()` 返回冻结的 snapshot、history depths 与 dirty。
+- snapshot 身份仅为 `documentId + schemaVersion + documentVersion`。
+- `CommandBus.markPersisted({ documentId, documentVersion })` 标记实际保存版本。
+- 六个 selector：metadata、entity、ownership、range、history、dirty。
+- 两个事件：`core.document.committed` 与 `core.session.dirty-state-changed`。
 
 ## 3. Contracts
 
-- 调用方不得获得能修改内核状态的 ScoreDocument 引用或可回写副本。
-- selector 是纯读函数，派生布局、播放、导出和 Guitar 读模型。
-- 事件只在事务提交后发布；失败/rollback 不发布 document-changed。
-- 事件 payload 使用稳定实体 ID 和版本，不泄漏内部 delta、可变文档或 handler。
-- 播放 tick、光标、布局坐标和 Guitar UI 状态属于外部服务事件。
-- ExtensionBlock 可以作为文档快照数据保留，但 Core selector 不解释未知 payload。
+- Snapshot/selector 运行时深冻结、脱离活动文档并保留未知 ExtensionBlock。
+- range 反向端点规范化；跨 Part/Voice 伪线性范围拒绝。
+- dirty 使用精确历史状态身份，不用单调 `documentVersion` 或整文档哈希判断。
+- 成功 submit/undo/redo 发布一个 document fact；dirty 布尔变化才发布 dirty fact。
+- 事件同步按注册顺序分发，handler 失败隔离，写入/markPersisted 同步重入拒绝。
+- event overflow 在接纳 candidate 前拒绝，失败路径所有状态不变。
+- payload 只含稳定 ID/版本/原因/命令类型，不泄漏内部 delta、history、文档、handler 或 raw error。
 
 ## 4. Validation & Error Matrix
 
-可变状态泄漏、失败命令发事件、事件重入写入、handler 异常传播和 payload 隐私泄漏都必须有稳定拒绝或隔离行为。
+地址/范围/read/checkpoint/event 的 malformed、missing、wrong-owner、reentrant、overflow 与 invariant failure 都返回封闭 code；现有 CommandFailure 只增加 `event.reentrant-write` 和 `event.sequence-overflow`。
 
 ## 5. Good / Base / Bad Cases
 
-- Good：提交成功后 snapshot 版本与 event 版本一致。
-- Base：Guitar Domain 从 snapshot 解码自己的 Part extension。
-- Bad：事件携带可变 ScoreDocument、内部 delta 或高频播放 tick。
+- Good：异步保存 V1 后当前已到 V2，markPersisted(V1) 保持当前 dirty，undo 回 V1 后 clean。
+- Good：提交从 clean 到 dirty，先发 document sequence N，再发 dirty sequence N+1。
+- Base：Guitar Domain 从冻结 snapshot 解码自己的 Part extension。
+- Bad：snapshot 有随机 ID/时间；事件携带可变 ScoreDocument、内部 delta 或高频播放 tick。
 
 ## 6. Tests Required
 
-不可变性、selector 纯度、提交顺序、失败零事件、handler 隔离、重入保护、版本关联和未知扩展保留。
+七类地址、三类范围、反向规范化、不可变性、六 selector 纯度、异步 checkpoint、提交/dirty 顺序、失败零事件、handler 隔离、订阅快照、重入/overflow、版本关联和未知扩展保留。
 
 ## 7. Wrong vs Correct
 
 ```typescript
 // Wrong
-event.payload.document = mutableDocument
+const wrong = { payload: { document: mutableDocument } }
 
 // Correct direction
-event.payload = { documentId, documentVersion, changedEntityIds }
+const correct = {
+  eventVersion: 1,
+  eventSequence,
+  eventType: "core.document.committed",
+  documentId,
+  documentVersion,
+  cause,
+  commandId,
+  affectedEntities,
+}
 ```

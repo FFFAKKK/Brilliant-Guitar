@@ -1,16 +1,34 @@
-# Snapshot and Events
+# Address, Snapshot, Selectors, Checkpoint, and Events
 
-> **Later-stage replanning boundary:** K1-1 exposes no snapshot, selector, or
-> event API. K1-3 is blocked until the K1-2 transaction boundary is approved.
+> **K1-3 final planning candidate (2026-07-15):** K1-2 is accepted and archived.
+> This contract remains non-executable until the user approves the K1-3 PRD/design/implement set and the task is started.
 
-The future read/notification system must preserve these boundaries:
+## Address and Range
 
-- no caller receives a mutable ScoreDocument or write-back copy;
-- selectors are pure reads over `brilliant-score-1` and do not create a second score truth;
-- events describe committed facts and are absent for failed/rolled-back commands;
-- event payloads use stable IDs/version correlation and never expose internal deltas or mutable documents;
-- handler failure is isolated and synchronous write reentrancy is forbidden;
-- playback tick/cursor, layout coordinates, UI selection, and Guitar UI state remain external service events;
-- Core preserves unknown ExtensionBlock data but does not interpret domain payloads in generic selectors.
+- `ScoreAddress` reuses the seven-kind K1-2 stable target union.
+- `ScorePoint` supports global Measure, Part-scoped Measure, and Voice-scoped Event points.
+- Inclusive ranges use matching hierarchical point kinds, normalize reverse endpoints, use `measureDefinitions` or Voice Event order, and reject arbitrary cross-Part/cross-Voice linear ranges.
+- Public indexes, paths, ticks, layout/screen coordinates, UI direction, and Guitar string/fret are forbidden.
 
-The product-level replanning gate is `.trellis/tasks/06-29-commercial-guitar-tablature-product/specs/SPEC-014-kernel-snapshot-events.md`. Concrete APIs and codes require K1-3 review.
+## Read and Checkpoint
+
+- `CommandBus.read()` returns one atomic frozen `{ snapshot, history, dirty }` result.
+- Snapshot identity is exactly document ID, schema version, and document version; there is no snapshot ID or creation time.
+- Snapshots and selector results are detached and deeply frozen, preserve unknown ExtensionBlock JSON, and cannot be written back wholesale.
+- The six selectors are metadata, entity, ownership, range, history state, and dirty state.
+- `markPersisted({ documentId, documentVersion })` marks the actual asynchronously saved history state clean; it performs no IO or document hashing.
+
+## Events
+
+- Successful submit/undo/redo emits one `core.document.committed` fact.
+- `core.session.dirty-state-changed` emits only when the dirty boolean toggles.
+- Rejected/no-op/empty-history/rollback/failed-checkpoint operations emit nothing.
+- Events use a safe deterministic sequence, stable IDs and document version; they contain no clock/random ID, mutable document, mutation, HistoryEntry, handler, raw error, path, or UI/layout/playback object.
+- Document fact precedes dirty fact when both occur.
+- Handlers run synchronously in registration order over a subscriber snapshot; failures are isolated and unsubscribe is idempotent.
+- Read/subscribe are permitted in callbacks; submit/undo/redo/markPersisted reject synchronous reentrancy.
+- Event sequence capacity is checked before accepting the candidate transition.
+
+## Later Boundaries
+
+Registry/Capability and dynamic contributions are K1-4. General error/report and subscriber-exception reporting are K1-5. Playback, layout, UI, Guitar semantics, autosave policy, physical IO, and persisted event logs remain external/later work.

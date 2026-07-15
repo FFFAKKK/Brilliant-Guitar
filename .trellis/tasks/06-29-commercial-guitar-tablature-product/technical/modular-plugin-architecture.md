@@ -30,9 +30,9 @@
 - `address-range`: 文档地址、范围和命令目标校验；当前 UI 光标和选区会话状态属于外部编辑会话服务。
 - `validation`: 文档验证、unsupported 诊断、错误定位。
 - `file-contract`: `.bgp` schema、manifest、迁移入口和兼容矩阵；Pure Core Kernel V1 不定义插件私有数据命名空间。
-- `snapshot-query`: 只读 `DocumentSnapshot`、受控 selector、可序列化 snapshot。
+- `snapshot-query`: `CommandBus.read()` 的深冻结 `DocumentSnapshot` 与六个受控 selector；物理序列化由 Persistence 负责。
 - `registry`: 命令、验证器、导入器、导出器、模板、selector 和内部模块贡献点。
-- `events`: 文档加载、文档变更、命令执行、历史状态、诊断、脏状态、注册表和迁移完成事件。
+- `events`: K1-3 只提供 document-committed 与 dirty-state-changed；其他模块事实由后续分块或 Extension Host 过滤协议定义。
 - `capabilities`: 模块或插件的能力声明、权限和 API 版本。
 - `errors-reports`: `KernelError`、`KernelDiagnostic`、`KernelReport`、`ImportReport`、`ExportReport` 和 `MigrationReport` 外壳。
 
@@ -217,6 +217,12 @@ export interface PluginReportFacade {
   createReport(report: KernelReport): void
 }
 ```
+
+该 `PluginReadFacade`、`SnapshotScope` 与动态 `SelectorId` 仅是未来第三方 SDK
+代理草案，不属于 K1-3 Core 公共导出。K1-3 的实际读取原语固定为
+`CommandBus.read()`、完整深冻结 `DocumentSnapshot` 和六个封闭纯 selector；
+未来 facade 只能在 capability 约束下映射到已批准 Core 原语或后续独立批准的
+Registry contribution。
 
 依赖方向:
 

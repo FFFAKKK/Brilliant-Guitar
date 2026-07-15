@@ -2,10 +2,10 @@
 
 ## Status
 
-- Phase: staged execution; K1-2 is the active implementation/acceptance block.
+- Phase: staged execution; K1-2 is accepted/archived and K1-3 is the active planning block.
 - K1-1 was formally accepted at baseline `30894e2`; its model and validation contracts remain frozen.
 - This parent plan no longer defines K1-1 or K1-2 executable details; their independent child artifacts and active Core specs are authoritative.
-- K1-3 and later chunks remain blocked until K1-2 passes independent re-acceptance and each later block receives a separate plan refresh.
+- K1-3 implementation remains blocked until its independent PRD/design/implement review; K1-4 and later blocks require their own plan refresh.
 
 ## Global Rules for Every Implementation Round
 
@@ -106,23 +106,25 @@ Purpose: provide safe read APIs and post-commit notification without exposing mu
 
 Subfeatures:
 
-- Address/range model: define semantic address, point, range, and entity lookup.
-- Snapshot API: return immutable `DocumentSnapshot` with versions and metadata.
-- Deep-readonly runtime behavior: external mutation attempts must not affect kernel state.
-- Selectors: metadata, full score, serializable score, measure range, entity lookup, diagnostics, history state, dirty state, registry summary.
-- Event envelope: stable event id, sequence, source, document version, command/request correlation.
-- Event bus: subscribe/publish with handler isolation.
-- Event generation: successful command, undo, redo, document load, diagnostics, dirty state, history, registry, migration.
-- Reentrancy guard: event handlers cannot synchronously submit commands through the current dispatch stack.
-- Event payload boundary: no full mutable document, internal delta, React, VexFlow, Web Audio, Tauri, file-system object.
+- Address/range: reuse seven stable entity targets and add only hierarchical global Measure, Part Measure, and Voice Event inclusive ranges.
+- Atomic read: `CommandBus.read()` returns deeply frozen versioned snapshot, history depths, and dirty without a mutable document channel.
+- Selectors: exactly metadata, entity, ownership, range, history, and dirty.
+- Checkpoint: `markPersisted(documentId + documentVersion)` maps async save completion to the exact history state.
+- Events: exactly document-committed plus dirty-state-changed, with deterministic sequence/version/cause/affected targets.
+- Isolation: registration-order subscriber snapshot, per-handler exception boundary, idempotent unsubscribe, synchronous write/checkpoint reentrancy rejection, and pre-commit sequence-overflow rejection.
+- Event/read payload boundary: no mutable document, internal delta/history/cache/index, clock/random ID, React, VexFlow, Web Audio, Tauri, file-system, Guitar, Registry, or report object.
+- Authoritative task: `.trellis/tasks/07-15-k1-3-address-snapshots-selectors-events/`; this parent summary is not executable by itself.
 
 Expected files:
 
 - `src/core-kernel/read/*`
 - `src/core-kernel/events/*`
+- `src/core-kernel/session/*`
 - `src/core-kernel/domain/address.ts`
-- `test/core-kernel/read/*`
-- `test/core-kernel/events/*`
+- `test/core-kernel/address-range.test.ts`
+- `test/core-kernel/read-system.test.ts`
+- `test/core-kernel/dirty-checkpoint.test.ts`
+- `test/core-kernel/event-system.test.ts`
 
 Validation:
 
@@ -204,7 +206,7 @@ Subfeatures:
 - Full fixture path: a general 4-measure score validates, serializes, snapshots, and participates in command flows; GuitarExtension is added only through its separately approved fixture.
 - Command path: insert note, set WrittenPitch/NoteValue, undo/redo, and prove unknown extension preservation.
 - Read path: snapshot and selectors reflect committed state and cannot mutate kernel state.
-- Event path: transaction result events match event bus events.
+- Event path: post-commit facts correlate by document version and cause with accepted submit/undo/redo/checkpoint transitions.
 - Registry path: only contribution kinds justified and approved by K1-4 are registered; technique registration is not assumed.
 - Error/report path: failure cases return stable codes and privacy-safe details.
 - Unsupported boundary path: semantic-valid future schema features are reported by ScoreFeatureProfile rather than corrupted; truly invalid data fails decode/semantic validation.
@@ -227,4 +229,4 @@ Completion gate:
 
 ## Current Execution Recommendation
 
-Finish K1-2 repair and independent re-acceptance on `07-15-k1-2-commands-transactions-history`. Treat that child task plus `command-transaction.md` as authoritative. Do not start K1-3, Guitar Domain commands, Registry/Capability, or UI integration until K1-2 is explicitly accepted.
+Plan K1-3 on `07-15-k1-3-address-snapshots-selectors-events` against the accepted K1-2 runtime. Do not start K1-3 implementation, Guitar Domain commands, Registry/Capability, or UI integration until the K1-3 planning artifacts are explicitly reviewed and the task is started.

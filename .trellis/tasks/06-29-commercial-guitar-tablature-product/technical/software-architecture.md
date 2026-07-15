@@ -81,7 +81,7 @@ flowchart TD
 - 验证和诊断: strict decode 检查输入形状，Core semantic validation 检查 ID、measure coverage、Part/Staff/Voice/Event 引用、Fraction/NoteValue、WrittenPitch/transposition 与 ExtensionBlock 信封，ScoreFeatureProfile 报告产品不支持项；调弦、弦品和技巧 payload 由后续 Guitar Domain 验证。软一致性、可演奏性分析、教学提示、风格检查和难度评分不进入 MVP。
 - 文件格式契约: `.bgp` 包结构、`manifest.json`、`score.json`、schema version、迁移入口和兼容矩阵。Pure Core Kernel V1 不定义插件私有数据命名空间或模块私有数据持久化位置。
 - 查询和快照: 为渲染、播放、导出、分析和插件提供只读快照或 selector。
-- 事件系统: 命令执行、文档加载、文档变更、历史状态变化、诊断更新、脏状态变化、注册表变化和迁移完成通知。UI 光标、选区高亮、鼠标拖拽和播放光标 tick 属于外部服务事件，不属于 Core Kernel 事件。
+- 事件系统: K1-3 只提供 committed submit/undo/redo 与 dirty 布尔变化事实；Registry、diagnostic/report、migration 等通知须由后续分块独立批准，文档加载由外部初始化调用方负责。UI 光标、选区高亮、鼠标拖拽和播放光标 tick 属于外部服务事件，不属于 Core Kernel 事件。
 - 注册表和能力管理: 命令、验证器、导入器、导出器、模板和未来插件贡献点注册；API version、capability 和权限校验。
 - 错误、诊断和报告模型: 内核错误、用户可理解错误、diagnostic、`ImportReport`、`ExportReport`、`MigrationReport` 和 `ValidationReport` 基础类型。
 - 可测试核心: fixture 验证、命令回放、undo/redo、round-trip、迁移和 unsupported feature 测试。
@@ -189,9 +189,9 @@ Pure Core Kernel V1 验收通过前，不进入 React UI、Tauri 桌面壳、Vex
 模块之间不得共享可变内部对象，必须通过明确协议协作。详细契约见 `specs/SPEC-014-kernel-snapshot-events.md`。
 
 - Command: 写操作入口，必须是可验证、可撤销、可回放的语义命令；patch 只能作为内核内部 delta。
-- Query/Selector: 只读状态读取入口，必须返回带 `documentVersion` 的稳定结构；selector 必须是纯读操作。
-- Snapshot: 渲染、播放、导出、分析和插件使用的不可变视图，必须包含 `documentId`、`schemaVersion`、`documentVersion`、`snapshotId` 和创建时间。
-- Event: 事务 commit 后发布的事实通知，包括文档加载、文档变更、命令执行、历史状态、诊断、脏状态、注册表和迁移完成；失败或 rollback 命令不得发布文档变更事件。
+- Query/Selector: `CommandBus.read()` 返回 snapshot、history depths、dirty；六个 selector 只读且以 `documentVersion` 关联。
+- Snapshot: 渲染、播放、导出、分析和未来插件使用的深冻结视图，身份仅为 `documentId`、`schemaVersion`、`documentVersion`，无随机 ID/时间。
+- Event: K1-3 只发布成功 submit/undo/redo 的 document-committed 与 dirty 布尔变化事实；失败、no-op 或 rollback 零事件。Registry/Migration/Report 事件不得提前混入。
 - Registry: 内部命令、验证器、导入器、导出器、模板、selector 和未来插件贡献点。
 - Report: 导入、导出、验证、迁移和错误恢复必须有结构化报告。
 - Capability Manifest: 模块或插件声明自己能做什么、需要什么权限、兼容哪个 API 版本。

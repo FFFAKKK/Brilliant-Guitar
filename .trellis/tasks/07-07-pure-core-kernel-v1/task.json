@@ -20,7 +20,8 @@
   "subtasks": [],
   "children": [
     "07-13-k1-1-foundation-replanning",
-    "07-15-k1-2-commands-transactions-history"
+    "07-15-k1-2-commands-transactions-history",
+    "07-15-k1-3-address-snapshots-selectors-events"
   ],
   "parent": "06-29-commercial-guitar-tablature-product",
   "relatedFiles": [

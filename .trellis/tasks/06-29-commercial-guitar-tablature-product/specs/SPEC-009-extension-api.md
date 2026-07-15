@@ -140,7 +140,7 @@ Pure Core Kernel V1 使用启动期直接注册:
 未来第三方插件平台也必须收敛到五条受控通道:
 
 - 注册通道: `Extension Host -> KernelRegistry`。
-- 读取通道: `Extension Host -> KernelReadApi -> snapshot/selector`。
+- 读取通道: `Extension Host -> capability-scoped facade -> CommandBus.read()/closed pure selectors`。
 - 写入通道: `Extension Host -> CommandBus.submit`。
 - 事件通道: `Extension Host -> filtered KernelEvent`。
 - 报告通道: `Extension Host -> KernelDiagnostic/KernelReport`。
@@ -203,6 +203,11 @@ export interface PluginReportFacade {
   createReport(report: KernelReport): void
 }
 ```
+
+这里的 `PluginReadFacade`、`SnapshotScope` 和动态 `SelectorId` 是未来第三方 SDK
+草案，不是 K1-3 Core API。当前 K1-3 只提供 `CommandBus.read()`、完整不可变
+`DocumentSnapshot` 与六个封闭纯 selector；未来 facade 必须把授权请求映射到这些
+已批准原语，或映射到后续独立批准的 Registry contribution，不能反向扩大 K1-3。
 
 协作规则:
 

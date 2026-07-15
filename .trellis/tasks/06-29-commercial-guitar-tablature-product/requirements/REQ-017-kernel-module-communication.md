@@ -12,17 +12,18 @@
 
 ## 当前决策状态
 
-- 状态: 已确认核心通信模型；外部可变 `ScoreDocument` 副本方案已拒绝。
+- 状态: K1-3 最终规划候选；外部可变 `ScoreDocument` 副本方案已拒绝，用户已批准五项范围决策。
 - 已确认方案: `Snapshot / Selector + Post-Commit Event Bus + Command-only write`。
 - 对应 spec: `specs/SPEC-014-kernel-snapshot-events.md`。
 
 ## MVP 必须满足
 
-- Core Kernel 提供只读 `DocumentSnapshot`。
-- Core Kernel 提供受控 selector，读取结果必须带 `documentVersion`。
+- Core Kernel 通过 `CommandBus.read()` 提供深冻结 `DocumentSnapshot`、history depths 和 dirty。
+- Core Kernel 只提供 metadata、entity、ownership、range、history、dirty 六个 selector。
+- Core Kernel 通过 `markPersisted(documentId + documentVersion)` 建立精确 clean checkpoint。
 - 所有谱面写入仍然只能通过语义命令。
-- 成功事务 commit 后发布稳定内核事件。
-- 失败、rollback 或 unsupported 命令不得发布文档变更事件。
+- 成功 submit/undo/redo 发布一个 document-committed；dirty 布尔变化发布一个 dirty-state-changed。
+- rejected、no-op 或 rollback 命令不得发布 K1-3 事件；semantic-valid、Profile unsupported 但按 K1-2 合同 committed 的命令必须发布 `core.document.committed`。
 - 渲染、播放、导出、自动保存和内部模块只能通过 snapshot/selector 读取谱面状态。
 - 事件处理器异常不能回滚已经成功的谱面事务。
 - 事件分发期间不能重入提交命令。
@@ -43,22 +44,22 @@
 
 ## 行为契约
 
-- 读取契约: 模块读取谱面必须调用 `KernelReadApi.getSnapshot` 或 selector，不能直接读取可变 `ScoreDocument`。
+- 读取契约: 模块读取谱面必须调用 `CommandBus.read()` 或六个 selector，不能直接读取可变 `ScoreDocument`。
 - 写入契约: 模块修改谱面必须提交已注册语义命令，不能通过事件、snapshot 或内部 delta 写入。
 - 事件契约: 内核事件只描述已经发生的事实，不代表请求、命令或待处理任务。
-- 版本契约: snapshot、selector 结果和事件必须携带 `documentVersion`，模块缓存以版本失效。
-- 异常契约: 事件订阅者失败时，内核记录诊断或模块错误报告，但不破坏已提交事务。
+- 版本契约: snapshot 和事件携带 `documentVersion`；selector 结果由其输入 snapshot/read state 的 `documentVersion` 关联，模块缓存以该来源版本失效。
+- 异常契约: K1-3 隔离事件订阅者失败并禁止 raw exception 逃逸；结构化模块错误报告由 K1-5 定义。
 - 边界契约: UI 会话状态、布局派生模型、播放派生事件和导出页面模型都属于外部模块，不进入 Core Kernel。
 - 派生数据契约: 外部派生数据只能用于布局、播放、导出、分析、预览或导入中间处理；最终改变谱面时必须转换为语义命令序列、`ImportResult` 或内核迁移结果，并经过内核验证和事务提交。
 
 ## 验收标准
 
 - [ ] AC-017-01: 外部模块拿到 snapshot 后尝试修改对象，不会改变内核 `ScoreDocument`。
-- [ ] AC-017-02: 成功执行 `insertNote` 后，文档版本递增，渲染和播放模块能根据事件失效缓存。
-- [ ] AC-017-03: 失败命令不会触发 `kernel.document.changed`，也不会改变 undo stack。
-- [ ] AC-017-04: 保存 `.bgp` 时使用可序列化 snapshot 或 selector，不读取 UI、SVG、VexFlow 或播放状态。
-- [ ] AC-017-05: 事件订阅者抛出异常时，谱面事务仍保持已提交，并产生可诊断错误。
-- [ ] AC-017-06: 事件分发期间直接提交命令会被拒绝或延迟，不允许同步重入修改。
+- [ ] AC-017-02: 成功插入 Event 后文档版本递增并发布一个 `core.document.committed`，受影响实体使用稳定 ID。
+- [ ] AC-017-03: 失败/no-op 命令不发布 K1-3 事件，也不改变 documentVersion/history/dirty。
+- [ ] AC-017-04: Persistence 保存明确版本的冻结 snapshot；成功后用该版本调用 markPersisted，不读取 UI/渲染/播放状态。
+- [ ] AC-017-05: 事件订阅者抛出异常时，谱面事务保持已提交，后续 handler 继续执行，raw exception 不逃逸。
+- [ ] AC-017-06: 事件分发期间 submit/undo/redo/markPersisted 稳定拒绝，不允许同步重入或延迟成隐式事务。
 - [ ] AC-017-07: UI 光标或选区变化不会触发 Core Kernel 文档变更事件。
 - [ ] AC-017-08: 播放事件可以从 snapshot/selector 重新生成，不依赖 React 或 SVG 状态。
 - [ ] AC-017-09: 布局 primitives 可以从 snapshot/selector 重新生成，不依赖可变文档对象。

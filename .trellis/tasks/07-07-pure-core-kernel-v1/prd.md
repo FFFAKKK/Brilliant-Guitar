@@ -4,7 +4,7 @@
 
 把现有 `Pure Core Kernel V1` 总规划收敛成一个可执行、可验收、可分块推进的内核实现任务。
 
-本任务是 Pure Core Kernel V1 路线图父任务。K1-1 原方案已被 `07-13-k1-1-foundation-replanning` 取代；独立子任务 `07-13-k1-1-core-foundation` 已在 `30894e2` 完成实现、P1 修复与正式验收。K1-2 已按独立任务 `07-15-k1-2-commands-transactions-history` 实施，当前因首轮独立验收发现的小范围 P1 处于修复/复验；K1-3 与后续 Block 继续阻塞并需要各自审核。
+本任务是 Pure Core Kernel V1 路线图父任务。K1-1 已在 `30894e2` 正式验收；K1-2 已完成 P1 修复、独立复验并归档。K1-3 现由独立任务 `07-15-k1-3-address-snapshots-selectors-events` 进入 planning；K1-3 规划审核前不得编码，K1-4 与后续 Block 继续阻塞并需要各自审核。
 
 ## Source Documents
 
@@ -80,16 +80,13 @@
 
 小功能:
 
-- `EntityId` / `ScoreAddress` / `ScorePoint` / `ScoreRange`: 定义谱面语义定位模型。
-- `KernelReadApi`: 提供只读内核读取入口。
-- `DocumentSnapshot`: 带 `documentId`、`schemaVersion`、`documentVersion`、`snapshotId` 和创建时间。
-- 快照只读保护: 外部修改 snapshot 不得改变内核状态。
-- built-in selectors: 覆盖 metadata、full score、serializable score、measure range、entity lookup、diagnostics、history state、dirty state、registry summary。
-- `KernelEvent` envelope: 定义事件 ID、顺序、来源、版本和 payload 边界。
-- `KernelEventBus`: 支持订阅和内部发布。
-- post-commit events: 成功命令、undo/redo、文档加载、诊断、历史、脏状态、注册表、迁移后发布事实事件。
-- 事件隔离: handler 异常不能回滚已提交事务。
-- 禁止重入: 事件分发期间不能同步提交新命令。
+- `ScoreAddress` 复用 K1-2 七类实体目标；`ScorePoint/ScoreRange` 采用全局 Measure、Part Measure、Voice Event 三类分层闭区间。
+- `CommandBus.read()`: 原子返回冻结 `DocumentSnapshot`、history depths 和 dirty；snapshot 身份仅为文档/schema/documentVersion。
+- 六个 built-in selectors: metadata、entity lookup、ownership、range、history state、dirty state。
+- `CommandBus.markPersisted`: 用实际保存的 documentVersion 建立精确 clean checkpoint，支持异步保存竞态，不执行 IO/哈希。
+- 两个事件: 成功 submit/undo/redo 的 `core.document.committed`，以及 dirty 布尔变化时的 `core.session.dirty-state-changed`。
+- 事件按确定性 sequence 同步分发；handler 隔离、订阅快照、幂等 unsubscribe、写入/markPersisted 重入拒绝和提交前 overflow 检查。
+- 详细合同以 `07-15-k1-3-address-snapshots-selectors-events` 为准；旧 snapshotId/时间、宽 selector 和 load/history/registry/migration 事件不进入 K1-3。
 
 ### K1-4: 注册表、capability 与启动期内部模块注册
 

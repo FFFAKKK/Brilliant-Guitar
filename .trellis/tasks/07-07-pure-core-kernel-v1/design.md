@@ -2,12 +2,12 @@
 
 ## Status
 
-- Phase: staged execution; K1-2 is in independent acceptance repair/review.
+- Phase: staged execution; K1-2 is accepted/archived and K1-3 is in planning.
 - Parent task: `06-29-commercial-guitar-tablature-product`.
 - Implementation target: pure TypeScript Core Kernel only.
 - K1-1 authority: `.trellis/tasks/07-13-k1-1-foundation-replanning/design.md` and `.trellis/spec/core-kernel/backend/score-document-model.md`.
-- K1-2 authority: `.trellis/tasks/07-15-k1-2-commands-transactions-history/design.md` and `.trellis/spec/core-kernel/backend/command-transaction.md`.
-- K1-3 and later architecture sections below remain roadmap sketches and require separate review against completed earlier blocks.
+- K1-2 authority: `.trellis/tasks/archive/2026-07/07-15-k1-2-commands-transactions-history/design.md` and `.trellis/spec/core-kernel/backend/command-transaction.md`.
+- K1-3 authority while planning: `.trellis/tasks/07-15-k1-3-address-snapshots-selectors-events/`; K1-4 and later sections remain roadmap sketches.
 
 ## Design Principle
 
@@ -94,8 +94,8 @@ Failure at any K1-2 step preserves document, version, undo stack, and redo stack
 ### Read Flow
 
 ```text
-KernelReadApi
-  -> immutable DocumentSnapshot
+CommandBus.read()
+  -> immutable DocumentSnapshot + history depths + dirty
   -> pure selector
   -> caller-derived layout/playback/export/cache data
 ```
@@ -265,7 +265,8 @@ No implementation chunk should change unrelated future UI, renderer, playback, p
 ## Current Review Gate
 
 - K1-1 is the accepted frozen foundation at `30894e2`.
-- K1-2 remains `in_progress` until the focused P1 repair and documentation sync pass independent re-acceptance; K1-3 must not start now.
-- K1-3 through K1-5 each require a new or refreshed task/spec review against the completed earlier blocks.
+- K1-2 passed focused P1 repair and independent re-acceptance and is archived under `.trellis/tasks/archive/2026-07/07-15-k1-2-commands-transactions-history/`.
+- K1-3 may proceed in planning only on `07-15-k1-3-address-snapshots-selectors-events`; implementation remains blocked until its final PRD/design/implement set is explicitly reviewed and the task is started.
+- K1-4 and K1-5 each require a new or refreshed task/spec review against the completed earlier blocks.
 - Guitar Domain Block 2 is independent from Core K1-2 and must define its Part-owned extension before guitar commands or technique semantics are implemented.
 - Before any later implementation, load `trellis-before-dev`, re-read the relevant active specs, and confirm the task is approved; archived drafts are never execution sources.
