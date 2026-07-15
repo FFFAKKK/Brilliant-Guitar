@@ -85,7 +85,7 @@ Rollback point: replay is an additive wrapper over the transaction engine.
 - [x] GREEN: inspect the array length descriptor and actual own-key count before iterating dense indexes.
 - [x] Synchronize the independent K1-2 task, active Core specs, parent roadmap, and product SPEC-016 without expanding K1-2.
 - [x] Re-run focused regressions, full quality gates, and Trellis validation/check.
-- [ ] Receive independent manual re-acceptance before archiving K1-2 or starting K1-3.
+- [x] Receive independent manual re-acceptance before archiving K1-2 or starting K1-3.
 
 ## Review Gates
 

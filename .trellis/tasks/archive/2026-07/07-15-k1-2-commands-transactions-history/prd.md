@@ -57,23 +57,23 @@ Stable failure coverage includes invalid envelope/payload/version, unknown comma
 
 ## Acceptance Criteria
 
-- [ ] Six strict command contracts compile and reject unknown/extra/malformed input before mutation.
-- [ ] document/note/event/voice command targets resolve by stable ID; measure/part/staff target resolution is covered internally for the shared target language.
-- [ ] Anchor lookup rejects missing, duplicate, and wrong-Voice event ownership without changing state.
-- [ ] Each command has committed/rejected coverage; three replace commands have no-op coverage; exact forward/inverse behavior is verified.
-- [ ] A semantic-valid two-note chord insertion commits and returns `unsupported.chord`.
-- [ ] Semantic-invalid candidates, handler/internal failures, and version overflow preserve document, version, undo depth, and redo depth.
-- [ ] One committed command creates one history entry; rejected/no-op operations create none and do not clear redo.
-- [ ] Multi-step undo/redo, empty stacks, redo invalidation, and failed/no-op redo preservation pass.
-- [ ] Forward/inverse round trips are deeply equal and every committed undo/redo result passes semantic validation.
-- [ ] Deep unknown extensions survive successful, failed, undo, redo, and replay paths.
-- [ ] Mutating initialization objects or submitted payloads after the call cannot affect bus state/history.
-- [ ] Repeated replay returns deeply equal final documents, version sequences, and result classifications without clock/random dependencies.
-- [ ] Public export tests prove absence of mutation/history/patch/mutable-document/K1-3/K1-4 APIs.
-- [ ] The default K1 Profile is deeply frozen; attempted tampering cannot change replay support classification.
-- [ ] Unexpected undo/redo failures never throw, preserve exact state, and return `history.invariant-violation`.
-- [ ] A maximum-length sparse array rejects without reading `length` through an access hook or iterating declared holes.
-- [ ] `npm run typecheck`, `npm run build`, `npm test`, and `git diff --check` pass in an environment that permits Node test subprocesses.
+- [x] Six strict command contracts compile and reject unknown/extra/malformed input before mutation.
+- [x] document/note/event/voice command targets resolve by stable ID; measure/part/staff target resolution is covered internally for the shared target language.
+- [x] Anchor lookup rejects missing, duplicate, and wrong-Voice event ownership without changing state.
+- [x] Each command has committed/rejected coverage; three replace commands have no-op coverage; exact forward/inverse behavior is verified.
+- [x] A semantic-valid two-note chord insertion commits and returns `unsupported.chord`.
+- [x] Semantic-invalid candidates, handler/internal failures, and version overflow preserve document, version, undo depth, and redo depth.
+- [x] One committed command creates one history entry; rejected/no-op operations create none and do not clear redo.
+- [x] Multi-step undo/redo, empty stacks, redo invalidation, and failed/no-op redo preservation pass.
+- [x] Forward/inverse round trips are deeply equal and every committed undo/redo result passes semantic validation.
+- [x] Deep unknown extensions survive successful, failed, undo, redo, and replay paths.
+- [x] Mutating initialization objects or submitted payloads after the call cannot affect bus state/history.
+- [x] Repeated replay returns deeply equal final documents, version sequences, and result classifications without clock/random dependencies.
+- [x] Public export tests prove absence of mutation/history/patch/mutable-document/K1-3/K1-4 APIs.
+- [x] The default K1 Profile is deeply frozen; attempted tampering cannot change replay support classification.
+- [x] Unexpected undo/redo failures never throw, preserve exact state, and return `history.invariant-violation`.
+- [x] A maximum-length sparse array rejects without reading `length` through an access hook or iterating declared holes.
+- [x] `npm run typecheck`, `npm run build`, `npm test`, and `git diff --check` pass in an environment that permits Node test subprocesses.
 
 ## Out of Scope
 

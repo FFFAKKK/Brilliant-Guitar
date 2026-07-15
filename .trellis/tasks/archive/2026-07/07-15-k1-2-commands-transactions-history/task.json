@@ -3,7 +3,7 @@
   "name": "k1-2-commands-transactions-history",
   "title": "K1-2 Commands / Transactions / History 实现",
   "description": "基于 K1-1 正式谱面模型实现严格语义命令、原子事务、版本、细粒度历史、undo/redo 与确定性回放。",
-  "status": "in_progress",
+  "status": "completed",
   "dev_type": null,
   "scope": "Pure Core commands, transactions, version, history, undo/redo, replay",
   "package": "core-kernel",
@@ -11,7 +11,7 @@
   "creator": "ATOM",
   "assignee": "ATOM",
   "createdAt": "2026-07-15",
-  "completedAt": null,
+  "completedAt": "2026-07-15",
   "branch": "codex/k1-2-commands-transactions-history",
   "base_branch": "codex/k1-1-core-foundation",
   "worktree_path": null,
@@ -21,6 +21,6 @@
   "children": [],
   "parent": "07-07-pure-core-kernel-v1",
   "relatedFiles": [],
-  "notes": "First independent acceptance returned two code-level P1 defects plus documentation closure. Focused repair and automated verification are complete; keep in_progress until independent re-acceptance. Do not start K1-3 from this task.",
+  "notes": "Independent re-acceptance approved after focused P1 repair and automated verification. K1-2 may be archived; K1-3 planning may begin, but implementation still requires its own reviewed plan and start gate.",
   "meta": {}
 }
