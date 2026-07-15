@@ -375,6 +375,78 @@ test("subscriber snapshots isolate lifecycle changes, duplicates, and failures",
   });
 });
 
+test("asynchronous subscriber rejections are isolated without stopping later handlers", async () => {
+  const bus = requireBus();
+  assert.equal(bus.submit(setMetadata("Seed async dirty")).status, "committed");
+  const calls: string[] = [];
+  const unhandledRejections: unknown[] = [];
+  let thenableObserved = false;
+  const onUnhandledRejection = (reason: unknown) => {
+    unhandledRejections.push(reason);
+  };
+  process.on("unhandledRejection", onUnhandledRejection);
+
+  try {
+    requireSubscription(
+      bus.subscribe(async () => {
+        calls.push("async-throw");
+        throw new Error("async subscriber detail must stay isolated");
+      }),
+    );
+    requireSubscription(
+      bus.subscribe(() => {
+        calls.push("promise-reject");
+        return Promise.reject(
+          new Error("rejected subscriber detail must stay isolated"),
+        );
+      }),
+    );
+    requireSubscription(
+      bus.subscribe(() => {
+        calls.push("thenable");
+        return {
+          then(
+            _resolve: (value: unknown) => void,
+            reject: (reason: unknown) => void,
+          ): void {
+            thenableObserved = true;
+            reject(new Error("thenable detail must stay isolated"));
+          },
+        };
+      }),
+    );
+    requireSubscription(
+      bus.subscribe(() => {
+        calls.push("later");
+      }),
+    );
+
+    const result = bus.submit(setPitch("D"));
+    assert.equal(result.status, "committed");
+    assert.deepEqual(calls, [
+      "async-throw",
+      "promise-reject",
+      "thenable",
+      "later",
+    ]);
+    assert.equal(requireRead(bus).snapshot.documentVersion, 2);
+
+    await new Promise<void>((resolve) => setImmediate(resolve));
+
+    assert.equal(thenableObserved, true);
+    assert.deepEqual(unhandledRejections, []);
+    assert.deepEqual(calls, [
+      "async-throw",
+      "promise-reject",
+      "thenable",
+      "later",
+    ]);
+    assert.equal(requireRead(bus).snapshot.documentVersion, 2);
+  } finally {
+    process.removeListener("unhandledRejection", onUnhandledRejection);
+  }
+});
+
 test("event callbacks allow reads but reject every reentrant write", () => {
   const bus = requireBus();
   const events: KernelEvent[] = [];

@@ -41,7 +41,7 @@ Every production behavior starts with a compiling behavioral RED test. Compiler/
 - Metadata/entity/ownership/range/history/dirty selector purity and closed export boundary.
 - Initial/edit/save/async-save/undo/redo/branch exact dirty checkpoint behavior.
 - Exact zero/one/two event counts, document-before-dirty order, affected IDs, and payload deep freeze/privacy.
-- Subscriber registration order, dispatch snapshot, duplicate subscription, idempotent unsubscribe, handler isolation, and read-during-callback.
+- Subscriber registration order, dispatch snapshot, duplicate subscription, idempotent unsubscribe, handler isolation, and read-during-callback. Isolation tests cover synchronous `throw`, `async` throw, direct `Promise.reject()`, custom thenables, later-handler continuation, and absence of `unhandledRejection`.
 - Reentrant submit/undo/redo/markPersisted and event-sequence overflow atomic rejection.
 - Replay remains detached and event/checkpoint-session-free.
 - Deep unknown ExtensionBlock preservation and K1-4/K1-5/Guitar/UI/IO/internal API exclusion.

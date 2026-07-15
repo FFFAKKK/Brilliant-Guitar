@@ -2,7 +2,6 @@ import type { ScoreDocument } from "../domain/score-document";
 import type {
   EventSubscriptionResult,
   KernelEvent,
-  KernelEventHandler,
 } from "../events/contracts";
 import type {
   CommandBusCreationFailure,
@@ -35,7 +34,7 @@ export type CommandBusCreationResult =
 const COMMAND_BUS_CONSTRUCTION_TOKEN = Symbol("CommandBusConstructionToken");
 
 interface SubscriberRecord {
-  readonly handler: KernelEventHandler;
+  readonly handler: (event: KernelEvent) => unknown;
 }
 
 export class CommandBus {
@@ -117,7 +116,7 @@ export class CommandBus {
       };
     }
     const record: SubscriberRecord = {
-      handler: handler as KernelEventHandler,
+      handler: handler as SubscriberRecord["handler"],
     };
     this.#subscribers.push(record);
     let active = true;
@@ -164,7 +163,12 @@ export class CommandBus {
         const handlers = this.#subscribers.map(({ handler }) => handler);
         for (const handler of handlers) {
           try {
-            handler(event);
+            const result = handler(event);
+            if (result !== undefined) {
+              void Promise.resolve(result).catch(() => {
+                // Asynchronous subscriber failures are isolated as well.
+              });
+            }
           } catch {
             // Subscriber exceptions are isolated from committed session state.
           }

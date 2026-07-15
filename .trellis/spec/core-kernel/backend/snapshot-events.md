@@ -26,8 +26,23 @@
 - Events use a safe deterministic sequence, stable IDs and document version; they contain no clock/random ID, mutable document, mutation, HistoryEntry, handler, raw error, path, or UI/layout/playback object.
 - Document fact precedes dirty fact when both occur.
 - Handlers run synchronously in registration order over a subscriber snapshot; failures are isolated and unsubscribe is idempotent.
+- JavaScript handlers may still return a Promise/thenable even though the public callback contract is synchronous. Dispatch must observe that return value and attach rejection isolation without awaiting it; synchronous `throw` and asynchronous rejection must neither stop later handlers nor become `unhandledRejection`.
 - Read/subscribe are permitted in callbacks; submit/undo/redo/markPersisted reject synchronous reentrancy.
 - Event sequence capacity is checked before accepting the candidate transition.
+
+The required isolation pattern captures the return value inside the per-handler
+`try/catch` and immediately consumes a possible rejection:
+
+```typescript
+const result = handler(event)
+if (result !== undefined) {
+  void Promise.resolve(result).catch(() => {})
+}
+```
+
+Awaiting the result is forbidden because it would change synchronous dispatch
+order. Calling only `handler(event)` inside `try/catch` is insufficient because
+that boundary cannot catch a later Promise rejection.
 
 ## Later Boundaries
 
