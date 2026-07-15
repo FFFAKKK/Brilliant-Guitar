@@ -29,6 +29,32 @@ export interface KernelReadState {
   readonly dirty: boolean;
 }
 
+export interface PersistedCheckpoint {
+  readonly documentId: string;
+  readonly documentVersion: number;
+}
+
+export type CheckpointFailure =
+  | { readonly code: "checkpoint.invalid" }
+  | { readonly code: "checkpoint.document-mismatch" }
+  | { readonly code: "checkpoint.version-unavailable" }
+  | { readonly code: "checkpoint.invariant-violation" }
+  | { readonly code: "event.reentrant-write" }
+  | { readonly code: "event.sequence-overflow" };
+
+export type MarkPersistedResult =
+  | {
+      readonly status: "updated" | "no-op";
+      readonly documentVersion: number;
+      readonly dirty: boolean;
+    }
+  | {
+      readonly status: "rejected";
+      readonly documentVersion: number;
+      readonly dirty: boolean;
+      readonly failure: CheckpointFailure;
+    };
+
 export type SelectedScoreEntity =
   | { readonly kind: "document"; readonly value: ScoreDocument }
   | { readonly kind: "measure"; readonly value: MeasureDefinition }

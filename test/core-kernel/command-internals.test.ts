@@ -16,6 +16,11 @@ import {
   type CommandRuntimeState,
 } from "../../src/core-kernel/commands/runtime";
 import {
+  createReadSessionState,
+  markPersistedCheckpoint,
+  recordCommittedVersion,
+} from "../../src/core-kernel/read/session-state";
+import {
   resolveScoreEntityTarget,
   resolveSequenceAnchor,
 } from "../../src/core-kernel/commands/target-resolver";
@@ -541,6 +546,95 @@ test("history entries use deterministic sequences and contain no document snapsh
     assert.equal("document" in entry, false);
     assert.equal("timestamp" in entry, false);
     assert.equal("snapshot" in entry, false);
+  });
+});
+
+test("committed document versions copy only deterministic content-state identities", () => {
+  const initial = requireRuntime();
+  const initialReadState = createReadSessionState();
+  const committed = submitCommand(initial, pitchCommand("D"));
+  assert.equal(committed.result.status, "committed");
+
+  const firstRecord = recordCommittedVersion(
+    committed.state,
+    initialReadState,
+  );
+  assert.equal(firstRecord.ok, true);
+  if (!firstRecord.ok) {
+    return;
+  }
+  assert.notStrictEqual(
+    firstRecord.state.stateIdentityByDocumentVersion,
+    initialReadState.stateIdentityByDocumentVersion,
+  );
+  assert.deepEqual(
+    [...initialReadState.stateIdentityByDocumentVersion.entries()],
+    [[0, 0]],
+  );
+  assert.deepEqual(
+    [...firstRecord.state.stateIdentityByDocumentVersion.entries()],
+    [
+      [0, 0],
+      [1, 1],
+    ],
+  );
+
+  const undone = undoCommand(committed.state);
+  assert.equal(undone.result.status, "committed");
+  const secondRecord = recordCommittedVersion(undone.state, firstRecord.state);
+  assert.equal(secondRecord.ok, true);
+  if (!secondRecord.ok) {
+    return;
+  }
+  assert.deepEqual(
+    [...secondRecord.state.stateIdentityByDocumentVersion.entries()],
+    [
+      [0, 0],
+      [1, 1],
+      [2, 0],
+    ],
+  );
+  assert.equal(
+    [...secondRecord.state.stateIdentityByDocumentVersion.values()].every(
+      (identity) => typeof identity === "number",
+    ),
+    true,
+  );
+
+  const checkpoint = markPersistedCheckpoint(
+    undone.state,
+    secondRecord.state,
+    { documentId: "score-1", documentVersion: 1 },
+  );
+  assert.equal(checkpoint.result.status, "updated");
+  assert.equal(checkpoint.state.cleanStateIdentity, 1);
+  assert.strictEqual(
+    checkpoint.state.stateIdentityByDocumentVersion,
+    secondRecord.state.stateIdentityByDocumentVersion,
+  );
+});
+
+test("checkpoint integration collapses unexpected map failures without state adoption", () => {
+  const commandState = requireRuntime();
+  const readState = {
+    ...createReadSessionState(),
+    stateIdentityByDocumentVersion: {
+      get(): never {
+        throw new Error("private checkpoint failure");
+      },
+    } as unknown as ReadonlyMap<number, number>,
+  };
+
+  const transition = markPersistedCheckpoint(commandState, readState, {
+    documentId: "score-1",
+    documentVersion: 0,
+  });
+  assert.strictEqual(transition.state, readState);
+  assert.deepEqual(transition.result, {
+    status: "rejected",
+    documentVersion: 0,
+    dirty: false,
+    failure: { code: "checkpoint.invariant-violation" },
   });
 });
 

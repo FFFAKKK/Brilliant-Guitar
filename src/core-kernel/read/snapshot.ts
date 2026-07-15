@@ -6,14 +6,11 @@ import type {
 } from "./contracts";
 import { deepFreezeValue } from "./deep-freeze";
 import type { ReadSessionState } from "./session-state";
+import { contentStateIdentity } from "./session-state";
 
 export interface ReadTransition {
   readonly state: ReadSessionState;
   readonly result: ReadResult<KernelReadState>;
-}
-
-function currentContentStateIdentity(state: CommandRuntimeState): number {
-  return state.undoStack[state.undoStack.length - 1]?.sequence ?? 0;
 }
 
 function createSnapshot(state: CommandRuntimeState): DocumentSnapshot {
@@ -57,8 +54,7 @@ export function readKernelState(
         redoDepth: commandState.redoStack.length,
       },
       dirty:
-        currentContentStateIdentity(commandState) !==
-        readState.cleanStateIdentity,
+        contentStateIdentity(commandState) !== readState.cleanStateIdentity,
     });
     return { state: nextReadState, result: { ok: true, value } };
   } catch {
