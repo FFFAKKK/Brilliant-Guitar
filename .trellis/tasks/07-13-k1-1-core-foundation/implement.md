@@ -63,5 +63,6 @@ Node test runner 在受限沙箱中可能以 `spawn EPERM` 失败；这属于运
 - 文档合同与旧规范归档已独立提交。
 - K1-1 候选实现与三态 `ScoreSupportResult` 已独立提交；核心谱面类型未因无失败证据而改写。
 - 缺口测试、公共 API 复核与最终验收状态作为第三个提交边界。
-- 最终检查：`typecheck` 通过、独立 `build` 通过、完整测试 40/40、工作区与暂存区 diff check 退出码均为 0。
-- 已停止在 Core Block 人工审核门，不进入 Guitar Domain 或 K1-2。
+- 最终检查：`typecheck` 通过、独立 `build` 通过、完整测试 49/49、diff check 退出码为 0。
+- 四个 P1 修复提交已 fast-forward 合入 K1-1 原分支，最终固定基线为 `30894e2`。
+- 人工验收已经通过；K1-1 到此关闭，只允许下一独立 Block 进入规划门，不自动进入实现。

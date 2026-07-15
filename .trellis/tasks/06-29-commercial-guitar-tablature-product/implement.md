@@ -2,12 +2,12 @@
 
 ## 当前状态
 
-- 阶段：Core K1-1 代码与文档评审。
-- 当前实现子任务：`07-13-k1-1-core-foundation`，状态 `review`。
+- 阶段：Core K1-1 正式基线完成；K1-2 独立规划准备。
+- K1-1 实现子任务：`07-13-k1-1-core-foundation`，最终验收通过并进入关闭流程。
 - K1-1 决策源：`07-13-k1-1-foundation-replanning/design.md`。
 - 活动代码契约：`.trellis/spec/core-kernel/`。
-- K1-1 代码、测试和本轮文档收口仍是工作区未提交变更；当前 Git `HEAD` 仍代表旧基线。
-- 未经用户评审确认，不创建提交，不启动 Guitar Domain 或 K1-2。
+- K1-1 修复分支已于 2026-07-15 fast-forward 合入 `codex/k1-1-core-foundation`，正式分支基线为 `30894e2f395779f4fff970b458690765d45a393d`，相对 `master` 为 `0 behind / 7 ahead`。
+- 最终验收为 49/49 tests、三个 P1 全部关闭、无新增 P0/P1/P2。现在允许创建 K1-2 独立规划任务；K1-2 规划审核通过前不得写生产代码。
 
 旧的“一次实现全部九类机制”计划已归档至 `.trellis/archive/core-kernel/2026-06-29-retired-product-implementation-plan.md`。它只能用于追溯，不能作为当前执行清单。
 
@@ -35,8 +35,10 @@
 - [x] 稳定 diagnostics、测试 fixture 与公共导出边界测试。
 - [x] 活动稳定规范移除旧契约并建立明确 archive。
 - [x] 产品上层文档同步至 `brilliant-score-1`。
-- [ ] 用户完成代码与文档评审。
-- [ ] 用户确认一次性提交计划后形成正式 Git 基线。
+- [x] 按“文档合同与归档”“Core 候选实现”“测试与验收”形成三个可审查提交边界。
+- [x] 用户完成代码与文档评审。
+- [x] P1 修复 fast-forward 合入 K1-1 原分支并形成正式分支基线。
+- [x] 合入后重新运行 typecheck、build、49/49 tests 与 diff check。
 
 K1-1 不包含命令/history、snapshot/events、registry/capability、通用 report/migration、物理 `.bgp` IO 或 GuitarExtension。
 
@@ -56,7 +58,7 @@ K1-1 不包含命令/history、snapshot/events、registry/capability、通用 re
 
 ### K1-2：Commands / Transactions / History
 
-必须先创建并审核刷新计划。至少重新确认：
+K1-1 正式基线前置条件已经满足。现在必须创建并审核独立刷新计划；规划通过前仍不可执行下列 API 或生产代码。至少重新确认：
 
 - 命令目标使用 measure/part/staff/voice/event/note 稳定 ID。
 - Core 命令处理通用谱面事实；吉他弦品和技巧命令由 Guitar Domain 提供并转换为受控扩展变更。

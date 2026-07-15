@@ -4,7 +4,7 @@
 
 把现有 `Pure Core Kernel V1` 总规划收敛成一个可执行、可验收、可分块推进的内核实现任务。
 
-本任务是 Pure Core Kernel V1 路线图父任务。K1-1 原方案已被 `07-13-k1-1-foundation-replanning` 取代并获用户批准；独立子任务 `07-13-k1-1-core-foundation` 的实现与文档当前处于 review。K1-2 及以后仍需各自重新审核后才能启动。
+本任务是 Pure Core Kernel V1 路线图父任务。K1-1 原方案已被 `07-13-k1-1-foundation-replanning` 取代；独立子任务 `07-13-k1-1-core-foundation` 已在 `30894e2` 完成实现、P1 修复与正式验收。K1-2 现在允许进入独立规划，但其设计与实施计划审核通过前不得启动编码；后续 Block 同样需要各自审核。
 
 ## Source Documents
 

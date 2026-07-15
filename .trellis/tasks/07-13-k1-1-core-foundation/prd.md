@@ -2,7 +2,7 @@
 
 ## Goal
 
-以当前未提交的 K1-1 候选实现为基准，收口批准设计、稳定规范、产品文档与公开行为合同，补齐已审计确认的边界测试，并且只修改失败测试证明有缺陷的生产代码。
+以当前分支已形成提交序列的 K1-1 候选实现为基准，收口批准设计、稳定规范、产品文档与公开行为合同，补齐已审计确认的边界测试，并且只修改失败测试证明有缺陷的生产代码。
 
 本子任务只交付 Core Kernel。它完成并通过人工验收后，才能另建并启动 Guitar Domain 子任务。
 
@@ -17,12 +17,12 @@
 
 ## Repository Baseline Status
 
-- 任务状态：`review`；规划父任务继续保留在 `review`，等待用户完成本子任务的人工验收。
+- 任务状态：最终验收通过，进入完成归档；规划父任务的 K1-1 交付目标已经满足。
 - 当前分支：`codex/k1-1-core-foundation`。
 - 当前分支已按“文档合同与归档”“候选实现及必要修正”“测试/公共 API/最终验收”三个审查边界形成提交序列。
-- 当前分支 `HEAD` 已包含新的 K1-1 合同、实现和测试；干净检出该分支能够获得完整新模型。
-- Trellis 当前任务指针已指向本子任务 `.trellis/tasks/07-13-k1-1-core-foundation`；本轮未新建其他任务，任务状态以 `task.json = review` 为准。
-- 本轮结果尚未合并到主分支；在用户人工验收前，不把它描述为主线正式基线。
+- 修复分支已 fast-forward 合入，当前 K1-1 正式分支基线为 `30894e2f395779f4fff970b458690765d45a393d`；干净检出该分支能够获得完整模型与 49 项测试。
+- 最终验收任务 `07-14-k1-1-core-foundation-acceptance` 判定通过，三个 P1 全部关闭。
+- 本基线尚未合入 `master` 或发布；“正式基线”指经审核的 K1-1 分支基线，不等同于产品发布。
 
 ## Requirements
 
@@ -66,7 +66,8 @@
 
 - `ScoreSupportResult` 行为测试先观察到旧 `ok` 合同导致 3 个断言失败，再以最小实现转为 4/4 通过。
 - 缺口边界定向测试 15/15 通过；未证明 `ScoreDocument`、codec 或 semantic validator 存在缺陷，因此没有对核心谱面类型做整理式重构。
-- 2026-07-14 从新进程运行 `npm run typecheck`、`npm run build` 和 `npm test`，全部成功；完整测试为 40/40。
+- 2026-07-15 在修复 fast-forward 后从新进程运行 `npm run typecheck`、`npm run build` 和 `npm test`，全部成功；完整测试为 49/49。
 - `git diff --check` 与 `git diff --cached --check` 均以退出码 0 完成。Git 在暂存 LF 文件时报告 LF→CRLF 工作区转换提示，该提示不是 diff check 失败。
 - 生产源码未出现旧 tick/slot 持久化路径、调试绕过、Guitar Domain 或 K1-2 实现。
 - `score-feature-profile.ts` 保持单文件：公开合同与验证器当前处于同一依赖边界，拆分不构成验收价值。
+- `K1A-FIND-001`～`003` 已通过 `ed3605f`、`0bc11e6`、`511e243`、`30894e2` 关闭；没有计划外生产模型修改。
