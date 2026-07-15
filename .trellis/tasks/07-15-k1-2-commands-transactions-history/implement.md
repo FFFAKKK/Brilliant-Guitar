@@ -75,6 +75,18 @@ Rollback point: replay is an additive wrapper over the transaction engine.
 - [x] Run `git diff --check`.
 - [x] Run Trellis task validation/check, review the complete diff, and commit implementation separately from planning.
 
+## Slice 7 — Independent Acceptance Repair
+
+- [x] RED: prove the exported default Profile and its nested values are not runtime-frozen and attempted mutation changes chord replay classification.
+- [x] RED: prove undo/redo do not convert an unexpected support-classification failure to an atomic history failure.
+- [x] RED: prove a maximum-length sparse array reaches the decoder's declared-length loop before actual key cardinality is checked.
+- [x] GREEN: deeply freeze the default K1 Profile without changing custom-profile or K1-1 validation semantics.
+- [x] GREEN: wrap complete undo/redo transition bodies and map unexpected failures to `history.invariant-violation` with the original state.
+- [x] GREEN: inspect the array length descriptor and actual own-key count before iterating dense indexes.
+- [x] Synchronize the independent K1-2 task, active Core specs, parent roadmap, and product SPEC-016 without expanding K1-2.
+- [x] Re-run focused regressions, full quality gates, and Trellis validation/check.
+- [ ] Receive independent manual re-acceptance before archiving K1-2 or starting K1-3.
+
 ## Review Gates
 
 - Gate A: planning artifacts and specs are internally consistent before `task.py start`.

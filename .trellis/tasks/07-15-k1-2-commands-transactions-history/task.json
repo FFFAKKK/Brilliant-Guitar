@@ -7,7 +7,7 @@
   "dev_type": null,
   "scope": "Pure Core commands, transactions, version, history, undo/redo, replay",
   "package": "core-kernel",
-  "priority": "P2",
+  "priority": "P1",
   "creator": "ATOM",
   "assignee": "ATOM",
   "createdAt": "2026-07-15",
@@ -21,6 +21,6 @@
   "children": [],
   "parent": "07-07-pure-core-kernel-v1",
   "relatedFiles": [],
-  "notes": "Implementation and automated verification complete; keep in_progress until independent manual acceptance. Do not start K1-3 from this task.",
+  "notes": "First independent acceptance returned two code-level P1 defects plus documentation closure. Focused repair and automated verification are complete; keep in_progress until independent re-acceptance. Do not start K1-3 from this task.",
   "meta": {}
 }

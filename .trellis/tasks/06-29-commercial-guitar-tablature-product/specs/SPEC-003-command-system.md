@@ -31,15 +31,17 @@ type SequenceAnchor =
 
 - 所有 Core 写入通过 `CommandBus.submit(unknown)` 严格解码的语义命令；公开 API 不接受 patch、JSON path、splice、任意脚本或整文档替换。
 - envelope 固定四字段：`commandVersion: 1`、`commandId`、强类型 target、严格 payload；额外字段与畸形 union 必须拒绝。
+- 数组 payload 先读取 own `length` 数据描述符与实际 own keys；若 own-key 数不等于 `length + 1`，必须在遍历声明索引前快速拒绝。
 - K1-2 静态目录只包含六个 built-in：set metadata、set WrittenPitch、set NoteValue、insert notes event、insert rest event、remove event；不提供动态注册。
 - 新 Event/Note ID 全部由调用者提供，不使用时间、随机数、tick、slot 或数组位置生成。
 - handler 只产生内部强类型 forward/inverse mutation；公开、持久化和 replay 均不暴露 mutation。
 - 先在隔离 candidate 应用 mutation，再运行 semantic validation，成功后原子 commit。
 - semantic invalid 硬失败并保留原始 `semantic.*` diagnostics；semantic valid/profile unsupported 允许提交并返回完整 unsupported 分类。
+- 默认 `K1_SCORE_FEATURE_PROFILE` 及嵌套 constraints、meters/meter 项、NoteValue 允许值数组在运行时深度冻结；外部篡改不得改变实时或 replay 分类。
 - 设置为现值是 no-op：版本、history、redo 均不变化。
 - documentVersion 从 0 开始；commit、undo、redo 各递增一次，失败/no-op 不递增；溢出原子拒绝。
 - 一个 committed command 对应一个内部 HistoryEntry；不保存时间戳、随机 ID 或整文档快照。
-- undo/redo 在隔离 candidate 应用 inverse/forward 并重新做 semantic/profile 验证；新 committed command 清 redo，失败/no-op 不清。
+- undo/redo 在隔离 candidate 应用 inverse/forward 并重新做 semantic/profile 验证；完整 mutation/validation/classification 路径必须有总异常边界，意外失败保持原状态并返回 `history.invariant-violation`。新 committed command 清 redo，失败/no-op 不清。
 - replay 只重放命令 envelope，使用实时 submit 同一流程；不重放 mutation 或完整操作日志。
 - Core 命令只修改通用谱面事实；调弦、弦品和吉他技巧由 Guitar Domain 命令解释并受控更新其 Part-owned extension。
 - 未知 ExtensionBlock 和所有非目标子树必须在成功、失败、undo、redo、replay 中原样保留。
@@ -65,7 +67,7 @@ type SequenceAnchor =
 
 ## 6. Tests Required
 
-K1-2 必须覆盖严格 envelope/payload 拒绝、实体与 anchor 解析、六命令 committed/no-op/rejected、事务回滚、版本溢出、history 粒度、多步 undo/redo、redo invalidation、确定性 replay、caller alias 隔离、未知扩展保留、公开边界和失败零副作用。最终门禁为 `npm run typecheck`、`npm run build`、`npm test`、`git diff --check`。
+K1-2 必须覆盖严格 envelope/payload 拒绝、巨大稀疏数组快速拒绝、实体与 anchor 解析、六命令 committed/no-op/rejected、事务回滚、版本溢出、history 粒度、多步 undo/redo、undo/redo 意外异常收口、redo invalidation、默认 Profile 深度冻结、篡改后 replay 分类稳定、caller alias 隔离、未知扩展保留、公开边界和失败零副作用。最终门禁为 `npm run typecheck`、`npm run build`、`npm test`、`git diff --check`。
 
 ## 7. Wrong vs Correct
 

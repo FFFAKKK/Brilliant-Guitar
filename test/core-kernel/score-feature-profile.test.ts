@@ -40,6 +40,27 @@ test("the first K1 feature profile accepts the supported single-voice score", ()
   });
 });
 
+test("the default K1 feature profile is deeply frozen", () => {
+  const { profile } = getApi();
+  const typedProfile = profile as {
+    readonly partCount: object;
+    readonly staffCountPerPart: object;
+    readonly voiceCountPerMeasure: object;
+    readonly meters: readonly object[];
+    readonly noteValueBases: readonly number[];
+    readonly noteValueDots: readonly number[];
+  };
+
+  assert.equal(Object.isFrozen(typedProfile), true);
+  assert.equal(Object.isFrozen(typedProfile.partCount), true);
+  assert.equal(Object.isFrozen(typedProfile.staffCountPerPart), true);
+  assert.equal(Object.isFrozen(typedProfile.voiceCountPerMeasure), true);
+  assert.equal(Object.isFrozen(typedProfile.meters), true);
+  assert.equal(Object.isFrozen(typedProfile.meters[0]), true);
+  assert.equal(Object.isFrozen(typedProfile.noteValueBases), true);
+  assert.equal(Object.isFrozen(typedProfile.noteValueDots), true);
+});
+
 test("the profile result distinguishes semantic-invalid data", () => {
   const { validate, profile } = getApi();
   const document = cloneCoreScoreFixture() as unknown as {

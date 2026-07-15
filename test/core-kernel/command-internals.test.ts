@@ -228,6 +228,41 @@ test("strict command decoding rejects sparse arrays, non-finite values, getters,
   assert.equal(poisonedArrayMethodCalled, false);
 });
 
+test("strict command decoding rejects huge sparse arrays before length-proportional work", () => {
+  const sparseAuthors: unknown[] = [];
+  sparseAuthors.length = 0xffff_ffff;
+  let lengthReads = 0;
+  const guardedSparseAuthors = new Proxy(sparseAuthors, {
+    get(target, property, receiver): unknown {
+      if (property === "length") {
+        lengthReads += 1;
+        throw new Error("array length must be read from its data descriptor");
+      }
+      return Reflect.get(target, property, receiver);
+    },
+  });
+
+  const decoded = decodeCoreCommand(
+    envelope(
+      "core.document.set-metadata",
+      { kind: "document", documentId: "score-1" },
+      {
+        metadata: {
+          title: "Huge sparse input",
+          authors: guardedSparseAuthors,
+          tempo: { bpm: 120 },
+        },
+      },
+    ),
+  );
+
+  assert.deepEqual(decoded, {
+    ok: false,
+    failure: { code: "command.invalid-envelope" },
+  });
+  assert.equal(lengthReads, 0);
+});
+
 test("the shared resolver covers every stable entity target and rejects duplicates", () => {
   const document = cloneCoreScoreFixture();
   const targets: readonly [ScoreEntityTarget, string][] = [
@@ -453,6 +488,39 @@ test("history corruption rejects undo atomically and no-op/rejection create no e
       redoFailure.result.failure.code,
     "history.invariant-violation",
   );
+});
+
+test("unexpected undo and redo errors collapse to atomic history failures", () => {
+  const initial = requireRuntime();
+  const committed = submitCommand(initial, pitchCommand("D"));
+  assert.equal(committed.result.status, "committed");
+
+  const failingHooks = {
+    classify(): never {
+      throw new Error("private history failure");
+    },
+  };
+  const undoFailure = undoCommand(committed.state, failingHooks);
+  assert.equal(undoFailure.state, committed.state);
+  assert.deepEqual(undoFailure.result, {
+    status: "rejected",
+    documentVersion: 1,
+    failure: { code: "history.invariant-violation" },
+    undoDepth: 1,
+    redoDepth: 0,
+  });
+
+  const undone = undoCommand(committed.state);
+  assert.equal(undone.result.status, "committed");
+  const redoFailure = redoCommand(undone.state, failingHooks);
+  assert.equal(redoFailure.state, undone.state);
+  assert.deepEqual(redoFailure.result, {
+    status: "rejected",
+    documentVersion: 2,
+    failure: { code: "history.invariant-violation" },
+    undoDepth: 0,
+    redoDepth: 1,
+  });
 });
 
 test("history entries use deterministic sequences and contain no document snapshots", () => {

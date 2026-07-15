@@ -2,11 +2,12 @@
 
 ## Status
 
-- Phase: staged execution; K1-1 replacement child is in review.
+- Phase: staged execution; K1-2 is in independent acceptance repair/review.
 - Parent task: `06-29-commercial-guitar-tablature-product`.
 - Implementation target: pure TypeScript Core Kernel only.
 - K1-1 authority: `.trellis/tasks/07-13-k1-1-foundation-replanning/design.md` and `.trellis/spec/core-kernel/backend/score-document-model.md`.
-- K1-2 and later architecture sections below remain roadmap sketches and require separate review against completed `brilliant-score-1`.
+- K1-2 authority: `.trellis/tasks/07-15-k1-2-commands-transactions-history/design.md` and `.trellis/spec/core-kernel/backend/command-transaction.md`.
+- K1-3 and later architecture sections below remain roadmap sketches and require separate review against completed earlier blocks.
 
 ## Design Principle
 
@@ -77,20 +78,18 @@ This structure is a planning target, not a command to create every file in the f
 ### Write Flow
 
 ```text
-CommandEnvelope
+K1-2 CommandEnvelope
   -> command id lookup
   -> payload validation
-  -> capability check
   -> target/precondition validation
   -> isolated draft
-  -> internal delta
+  -> internal typed mutation
   -> hard validation
   -> commit
   -> history entry
-  -> post-commit events
 ```
 
-Failure at any step rolls back and must not mutate document state, dirty state, event output, undo stack, or redo stack.
+Failure at any K1-2 step preserves document, version, undo stack, and redo stack. Capability checks belong to K1-4; dirty state and post-commit events belong to K1-3 and are not part of the current transaction.
 
 ### Read Flow
 
@@ -174,14 +173,14 @@ Why after K1-1: commands need stable domain entities and validation.
 
 Deliverables:
 
-- refreshed command specification against measure/part/staff/voice/event/note IDs
-- command definitions for general score facts only; GuitarExtension commands remain Guitar Domain work
-- command bus
-- internal delta
-- rollback
-- undo/redo
-- replay tests
-- unknown ExtensionBlock preservation across every command/history path
+- strict `submit(unknown)` envelope/payload decoder with stable entity IDs and Voice anchors
+- a closed static catalog containing exactly the six approved general-score commands
+- internal typed forward/inverse mutations with isolated candidate commit/rollback
+- documentVersion plus fine-grained history and atomic undo/redo
+- deterministic command replay through the live submit path
+- runtime-deep-frozen default ScoreFeatureProfile and bounded hostile sparse-array rejection
+- unknown ExtensionBlock and caller-ownership preservation across every command/history/replay path
+- no address/range, dirty/events, Registry/Capability, Guitar command, UI, or IO API
 
 ### K1-3: Snapshot, Selectors, Events
 
@@ -265,7 +264,8 @@ No implementation chunk should change unrelated future UI, renderer, playback, p
 
 ## Current Review Gate
 
-- K1-1 child code and documentation are in review; no further implementation chunk starts now.
-- K1-2 through K1-5 each require a new or refreshed task/spec review against `brilliant-score-1`.
+- K1-1 is the accepted frozen foundation at `30894e2`.
+- K1-2 remains `in_progress` until the focused P1 repair and documentation sync pass independent re-acceptance; K1-3 must not start now.
+- K1-3 through K1-5 each require a new or refreshed task/spec review against the completed earlier blocks.
 - Guitar Domain Block 2 is independent from Core K1-2 and must define its Part-owned extension before guitar commands or technique semantics are implemented.
 - Before any later implementation, load `trellis-before-dev`, re-read the relevant active specs, and confirm the task is approved; archived drafts are never execution sources.

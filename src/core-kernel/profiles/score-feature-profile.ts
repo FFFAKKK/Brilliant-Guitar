@@ -52,20 +52,32 @@ export type ScoreSupportResult =
       readonly diagnostics: readonly SemanticDiagnostic[];
     };
 
-export const K1_SCORE_FEATURE_PROFILE: ScoreFeatureProfile = {
+const K1_PART_COUNT = Object.freeze({ minimum: 1, maximum: 1 });
+const K1_STAFF_COUNT_PER_PART = Object.freeze({ minimum: 1, maximum: 1 });
+const K1_VOICE_COUNT_PER_MEASURE = Object.freeze({
+  minimum: 1,
+  maximum: 1,
+});
+const K1_METERS: readonly Meter[] = Object.freeze([
+  Object.freeze({ numerator: 4, denominator: 4 }),
+]);
+const K1_NOTE_VALUE_BASES: readonly NoteValueBase[] = Object.freeze([4, 8, 16]);
+const K1_NOTE_VALUE_DOTS: readonly NoteValueDots[] = Object.freeze([0]);
+
+export const K1_SCORE_FEATURE_PROFILE: ScoreFeatureProfile = Object.freeze({
   id: "brilliant-guitar.k1",
-  partCount: { minimum: 1, maximum: 1 },
-  staffCountPerPart: { minimum: 1, maximum: 1 },
-  voiceCountPerMeasure: { minimum: 1, maximum: 1 },
-  meters: [{ numerator: 4, denominator: 4 }],
+  partCount: K1_PART_COUNT,
+  staffCountPerPart: K1_STAFF_COUNT_PER_PART,
+  voiceCountPerMeasure: K1_VOICE_COUNT_PER_MEASURE,
+  meters: K1_METERS,
   allowPickup: false,
   requireSequenceStartAtZero: true,
   requireCompleteMeasure: true,
-  noteValueBases: [4, 8, 16],
-  noteValueDots: [0],
+  noteValueBases: K1_NOTE_VALUE_BASES,
+  noteValueDots: K1_NOTE_VALUE_DOTS,
   allowTimeModification: false,
   maximumNotesPerEvent: 1,
-};
+});
 
 function withinCardinality(
   value: number,

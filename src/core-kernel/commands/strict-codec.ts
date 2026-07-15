@@ -64,20 +64,24 @@ function denseArray(value: unknown): readonly unknown[] | undefined {
   if (!Array.isArray(value)) {
     return undefined;
   }
-  const allowedKeys = new Set<string>(["length"]);
-  for (let index = 0; index < value.length; index += 1) {
-    allowedKeys.add(String(index));
-  }
+  const lengthDescriptor = Object.getOwnPropertyDescriptor(value, "length");
   if (
-    Reflect.ownKeys(value).some(
-      (key) => typeof key !== "string" || !allowedKeys.has(key),
-    )
+    lengthDescriptor === undefined ||
+    !("value" in lengthDescriptor) ||
+    typeof lengthDescriptor.value !== "number" ||
+    !Number.isSafeInteger(lengthDescriptor.value) ||
+    lengthDescriptor.value < 0
   ) {
+    return undefined;
+  }
+  const length = lengthDescriptor.value;
+  const ownKeys = Reflect.ownKeys(value);
+  if (ownKeys.length !== length + 1) {
     return undefined;
   }
 
   const decoded: unknown[] = [];
-  for (let index = 0; index < value.length; index += 1) {
+  for (let index = 0; index < length; index += 1) {
     const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
     if (
       descriptor === undefined ||

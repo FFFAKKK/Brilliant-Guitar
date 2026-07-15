@@ -56,14 +56,15 @@ Every CommandResult contains status, documentVersion, undoDepth, and redoDepth. 
 - Inserted Event/Note IDs are caller supplied. Core never derives identity from time, randomness, position, tick, or array index.
 - The command catalog is static. Dynamic register/unregister and externally supplied handlers belong to later Registry/Capability work.
 - Initialization clones and semantically validates its document. Strict command decode constructs detached plain values and retains no caller references.
-- Unknown decode must not execute getters, input array methods, iterators, or coercion hooks. Read own data descriptors, reject extra/sparse/accessor properties, and copy accepted arrays into new plain arrays.
+- Unknown decode must not execute getters, input array methods, iterators, or coercion hooks. Read own data descriptors, reject extra/sparse/accessor properties, and copy accepted arrays into new plain arrays. For arrays, read the own `length` data descriptor and actual own keys first; if `ownKeys.length !== length + 1`, reject before traversing declared indexes.
 - Handlers prepare internal typed forward/inverse mutations only: metadata, WrittenPitch, NoteValue, or one Voice/anchor Event insert/remove. Mutations are neither public nor a persistence/replay format.
 - Forward/inverse application creates an isolated candidate. Semantic validation runs before atomic state replacement; profile classification runs only for the valid candidate/current document.
 - Semantic-invalid candidates reject with original `semantic.*` diagnostics. Semantic-valid/profile-unsupported candidates commit with complete unsupported classification.
+- The exported default K1 ScoreFeatureProfile is deeply frozen at runtime, including nested constraints, meters/meter entries, and NoteValue allowed-value arrays. External code cannot change live or replay classification policy.
 - Deep-equal replacement is no-op: no version/history/redo change.
 - Runtime version starts at 0. Each committed submit/undo/redo increments once; rejection/no-op does not. Unsafe-integer overflow rejects atomically.
 - One committed submit creates one internal HistoryEntry containing deterministic sequence, detached command, and detached forward/inverse mutations. No timestamps, random IDs, dirty/event state, or document snapshots.
-- Undo/redo apply one inverse/forward mutation to an isolated candidate, rerun semantic/profile validation, and atomically move one entry. A new committed submit clears redo; rejection/no-op preserves it.
+- Undo/redo apply one inverse/forward mutation to an isolated candidate, rerun semantic/profile validation, and atomically move one entry. Their complete application/validation/classification paths have a final exception boundary; unexpected failures preserve the original state and return `history.invariant-violation`. A new committed submit clears redo; rejection/no-op preserves it.
 - Replay feeds envelopes through the live submit transition, stops at rejection, and never accepts mutations, active state, snapshots, or a submit/undo/redo log.
 - Unknown ExtensionBlock payloads and every untargeted subtree remain deeply equal across commit, rejection, undo, redo, and replay.
 - Unexpected errors collapse to stable privacy-safe failures with no exception text, source, file path, stack, raw input, or mutation data.
@@ -95,11 +96,13 @@ Every CommandResult contains status, documentVersion, undoDepth, and redoDepth. 
 ### 6. Tests Required
 
 - Assert six valid commands plus wrong version, unknown ID, extra fields, wrong target, malformed unions, sparse arrays, non-finite values, accessors, poisoned array methods, and patch-like input.
+- Assert a maximum-length sparse array rejects from descriptor/own-key cardinality before declared-index traversal.
 - Assert all seven entity target kinds resolve internally; missing/duplicate targets and missing/duplicate/wrong-owner anchors never choose the first array match.
 - Assert committed/no-op/rejected replacement behavior, exact insert/remove mutations, semantic-invalid rollback, and `unsupported.chord` commit.
 - Assert handler/application exception privacy, version overflow, and history invariant failure preserve the exact state object and stack depths.
 - Assert one entry per commit, deterministic history sequences, no snapshots/timestamps, multi-step undo/redo, empty stacks, and redo invalidation/preservation.
 - Assert forward/inverse round trips, undo/redo semantic revalidation, caller-alias isolation, deterministic replay, and deep ExtensionBlock preservation on every path.
+- Assert the default Profile is deeply frozen, tampering attempts cannot change replay classification, and unexpected undo/redo exceptions never escape or mutate state.
 - Assert public exports omit catalog, codec, resolver, mutation, runtime state/history, mutable document getters, patch APIs, and K1-3/K1-4 APIs.
 - Run `npm run typecheck`, `npm run build`, `npm test`, and `git diff --check`.
 

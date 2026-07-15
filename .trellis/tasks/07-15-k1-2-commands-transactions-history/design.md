@@ -34,7 +34,7 @@ Every command envelope has exactly four fields: `commandVersion`, `commandId`, `
 | `core.voice.insert-rest-event` | voice | `{ anchor, event: Rest RhythmicEvent }` |
 | `core.event.remove` | event | `{}` |
 
-Inserted event shape uses the existing `RhythmicEvent` fields and exact `content.kind`; inserted IDs remain caller supplied. Strict codecs reject prototype surprises, sparse arrays, non-finite numbers, extra fields, wrong union kinds, wrong target kinds, and invalid domain values.
+Inserted event shape uses the existing `RhythmicEvent` fields and exact `content.kind`; inserted IDs remain caller supplied. Strict codecs reject prototype surprises, sparse arrays, non-finite numbers, extra fields, wrong union kinds, wrong target kinds, and invalid domain values. Array decode reads the own `length` data descriptor and `Reflect.ownKeys()` first; if the own-key count cannot represent a dense array, it rejects before any index traversal proportional to the declared length.
 
 The result union is:
 
@@ -124,6 +124,8 @@ document + documentVersion + nextHistorySequence + undoStack + redoStack
 
 Initialization deep-clones the caller document and validates Core semantics. A factory result rejects invalid initialization without constructing a usable bus.
 
+The exported `K1_SCORE_FEATURE_PROFILE` is a runtime-deep-frozen policy value, including cardinality constraints, the meter array and meter entries, and allowed NoteValue arrays. Live submit, undo/redo, and replay therefore observe one immutable default classification policy.
+
 Submit flow:
 
 ```text
@@ -154,7 +156,7 @@ An internal `HistoryEntry` stores:
 
 It stores no timestamp, random ID, dirty flag, event, caller reference, or whole before/after document snapshot.
 
-Undo peeks one undo entry, checks version/history invariants, applies its inverse to a detached candidate, validates/classifies, then atomically moves the same entry to redo and increments version once. Redo mirrors this using forward mutation. If applying stored history unexpectedly fails, the current document and both stacks remain unchanged and `history.invariant-violation` is returned.
+Undo peeks one undo entry, checks version/history invariants, applies its inverse to a detached candidate, validates/classifies, then atomically moves the same entry to redo and increments version once. Redo mirrors this using forward mutation. Both complete transition bodies have a final exception boundary covering mutation application, semantic validation, and profile classification. If stored history or an unexpected dependency fails, the current document and both stacks remain unchanged and `history.invariant-violation` is returned without exposing the exception.
 
 Only a new committed submit clears redo. Rejections and no-ops leave it intact.
 
@@ -175,6 +177,7 @@ A successful replay result contains a detached final ScoreDocument, final docume
 | profile unsupported candidate | committed + unsupported | +1 | +1 | cleared | candidate |
 | internal/overflow failure | rejected | same | same | same | same |
 | empty undo/redo | rejected | same | same | same | same |
+| unexpected undo/redo exception | rejected + history invariant | same | same | same | same |
 | valid undo/redo | committed | +1 | moved one | moved one | candidate |
 
 ## 10. Alternatives Rejected

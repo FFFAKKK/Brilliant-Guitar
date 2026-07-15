@@ -36,6 +36,7 @@ export type CreateCommandRuntimeResult =
 export interface CommandRuntimeHooks {
   readonly beforePrepare?: () => void;
   readonly beforeApply?: () => void;
+  readonly classify?: typeof validateScoreFeatureProfile;
 }
 
 export interface CommandTransition {
@@ -89,6 +90,7 @@ function committed(
   document: ScoreDocument,
   undoStack: readonly HistoryEntry[],
   redoStack: readonly HistoryEntry[],
+  hooks: CommandRuntimeHooks,
 ): CommandTransition {
   const nextState: CommandRuntimeState = {
     ...state,
@@ -97,12 +99,13 @@ function committed(
     undoStack,
     redoStack,
   };
+  const support = (hooks.classify ?? validateScoreFeatureProfile)(document);
   return {
     state: nextState,
     result: {
       status: "committed",
       documentVersion: nextState.documentVersion,
-      support: validateScoreFeatureProfile(document),
+      support,
       ...depths(nextState),
     },
   };
@@ -201,6 +204,7 @@ export function submitCommand(
       applied.document,
       [...state.undoStack, entry],
       [],
+      hooks,
     );
     return transition;
   } catch {
@@ -212,48 +216,64 @@ function entryIsValid(entry: HistoryEntry | undefined): entry is HistoryEntry {
   return entry !== undefined && validHistorySequence(entry.sequence);
 }
 
-export function undoCommand(state: CommandRuntimeState): CommandTransition {
-  const entry = state.undoStack[state.undoStack.length - 1];
-  if (entry === undefined) {
-    return rejected(state, { code: "history.empty-undo" });
-  }
-  if (!entryIsValid(entry)) {
+export function undoCommand(
+  state: CommandRuntimeState,
+  hooks: CommandRuntimeHooks = {},
+): CommandTransition {
+  try {
+    const entry = state.undoStack[state.undoStack.length - 1];
+    if (entry === undefined) {
+      return rejected(state, { code: "history.empty-undo" });
+    }
+    if (!entryIsValid(entry)) {
+      return rejected(state, { code: "history.invariant-violation" });
+    }
+    if (!canIncrementVersion(state)) {
+      return rejected(state, { code: "command.version-overflow" });
+    }
+    const applied = applyCoreMutation(state.document, entry.inverse);
+    if (!applied.ok || !validateScoreDocumentSemantics(applied.document).ok) {
+      return rejected(state, { code: "history.invariant-violation" });
+    }
+    return committed(
+      state,
+      applied.document,
+      state.undoStack.slice(0, -1),
+      [...state.redoStack, entry],
+      hooks,
+    );
+  } catch {
     return rejected(state, { code: "history.invariant-violation" });
   }
-  if (!canIncrementVersion(state)) {
-    return rejected(state, { code: "command.version-overflow" });
-  }
-  const applied = applyCoreMutation(state.document, entry.inverse);
-  if (!applied.ok || !validateScoreDocumentSemantics(applied.document).ok) {
-    return rejected(state, { code: "history.invariant-violation" });
-  }
-  return committed(
-    state,
-    applied.document,
-    state.undoStack.slice(0, -1),
-    [...state.redoStack, entry],
-  );
 }
 
-export function redoCommand(state: CommandRuntimeState): CommandTransition {
-  const entry = state.redoStack[state.redoStack.length - 1];
-  if (entry === undefined) {
-    return rejected(state, { code: "history.empty-redo" });
-  }
-  if (!entryIsValid(entry)) {
+export function redoCommand(
+  state: CommandRuntimeState,
+  hooks: CommandRuntimeHooks = {},
+): CommandTransition {
+  try {
+    const entry = state.redoStack[state.redoStack.length - 1];
+    if (entry === undefined) {
+      return rejected(state, { code: "history.empty-redo" });
+    }
+    if (!entryIsValid(entry)) {
+      return rejected(state, { code: "history.invariant-violation" });
+    }
+    if (!canIncrementVersion(state)) {
+      return rejected(state, { code: "command.version-overflow" });
+    }
+    const applied = applyCoreMutation(state.document, entry.forward);
+    if (!applied.ok || !validateScoreDocumentSemantics(applied.document).ok) {
+      return rejected(state, { code: "history.invariant-violation" });
+    }
+    return committed(
+      state,
+      applied.document,
+      [...state.undoStack, entry],
+      state.redoStack.slice(0, -1),
+      hooks,
+    );
+  } catch {
     return rejected(state, { code: "history.invariant-violation" });
   }
-  if (!canIncrementVersion(state)) {
-    return rejected(state, { code: "command.version-overflow" });
-  }
-  const applied = applyCoreMutation(state.document, entry.forward);
-  if (!applied.ok || !validateScoreDocumentSemantics(applied.document).ok) {
-    return rejected(state, { code: "history.invariant-violation" });
-  }
-  return committed(
-    state,
-    applied.document,
-    [...state.undoStack, entry],
-    state.redoStack.slice(0, -1),
-  );
 }

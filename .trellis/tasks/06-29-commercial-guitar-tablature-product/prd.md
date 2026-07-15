@@ -3,12 +3,12 @@
 ## 状态
 
 - Trellis task: `06-29-commercial-guitar-tablature-product`
-- 当前阶段: Core K1-1 实现与文档评审；产品其余阶段保持规划态
+- 当前阶段: Core K1-2 P1 修复与独立复验；产品其余阶段保持规划态
 - 创建日期: 2026-06-29
 - 负责人: ATOM
 - 文档策略: 每个需求先写独立文档，最终再合并为收敛后的 PRD。
-- 当前 Core 基线: K1-1 已按 `07-13-k1-1-foundation-replanning/design.md` 换轨；`.trellis/spec/core-kernel/` 是活动代码契约。本文较早的决策记录若与其冲突，以新基线为准。
-- 当前交付状态: `07-13-k1-1-core-foundation` 处于 `review`；K1-2、Guitar Domain、registry 和通用 report 仍需分别重规划。
+- 当前 Core 基线: K1-1 已在 `30894e2` 正式验收；`.trellis/spec/core-kernel/` 是活动代码契约。本文较早的决策记录若与其冲突，以活动规范与独立 Block 任务为准。
+- 当前交付状态: `07-15-k1-2-commands-transactions-history` 已完成主体实现，正处理首轮独立验收发现的 P1 并等待复验；K1-3、Guitar Domain、registry 和通用 report 仍需分别重规划。
 
 ## 产品目标
 

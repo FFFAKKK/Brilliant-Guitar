@@ -1,7 +1,7 @@
 # Core Kernel Quality Guidelines
 
-> **Authoritative K1-1 quality gate (2026-07-13):** Only the test groups below
-> are completion requirements for the current score-foundation task.
+> **Authoritative staged quality gate (2026-07-15):** K1-1 foundation tests
+> remain frozen regressions; K1-2 adds only the command/runtime groups below.
 
 ## Current K1-1 Required Tests
 
@@ -22,11 +22,14 @@ Every production behavior starts with a compiling behavioral RED test. Compiler/
 
 - Strict six-command envelope/payload decoding and public patch rejection.
 - Unknown command decoding never executes accessor properties, input array methods/iterators, or coercion hooks before rejection.
+- Maximum-length sparse command arrays reject from descriptor/own-key cardinality before any declared-length traversal.
 - Stable target/anchor resolution without public array/tick/slot addressing.
 - Atomic commit/no-op/rejection, version overflow, and privacy-safe internal failure.
 - Semantic-invalid rollback versus semantic-valid/profile-unsupported commit.
 - One-entry history, multi-step undo/redo, empty stacks, and redo invalidation/preservation.
 - Deterministic command replay, detached ownership, and no time/random dependencies.
+- Runtime-deep-frozen default ScoreFeatureProfile and replay classification stability under attempted external tampering.
+- Total undo/redo exception conversion to atomic `history.invariant-violation` results.
 - Deep unknown ExtensionBlock preservation across all transaction/history/replay paths.
 - Public export and forbidden-dependency boundaries excluding K1-3/K1-4 APIs.
 

@@ -2,9 +2,10 @@
 
 ## Status
 
-- Phase: approved for implementation.
+- Phase: implementation repair after the first independent acceptance review.
 - Baseline: K1-1 formal code baseline `30894e2`; implementation starts from the current approved branch HEAD.
 - Scope owner: Pure Core Kernel V1 command, transaction, version, history, undo/redo, and deterministic replay mechanisms only.
+- Gate: K1-2 remains `in_progress`; K1-3 must not start until the repaired branch passes independent re-acceptance.
 
 ## Goal
 
@@ -29,6 +30,9 @@ Provide the only public Core write path for `brilliant-score-1`: strictly decode
 - **K1-2-REQ-015 — Extension preservation:** unknown score-owned and part-owned ExtensionBlock payloads and all untargeted subtrees remain deeply equal through commit, rejection, undo, redo, and replay.
 - **K1-2-REQ-016 — Privacy-safe failures:** failures contain stable codes and structured diagnostics/details only; they never include raw exceptions, source text, file paths, stack traces, or internal mutations.
 - **K1-2-REQ-017 — Public boundary:** public exports include command contracts, results, `CommandBus`, and replay only. Internal mutations, history entries, live mutable state, patch APIs, K1-3 snapshots/selectors/events, and K1-4 registry/capability remain unexported.
+- **K1-2-REQ-018 — Immutable default support policy:** the exported default K1 ScoreFeatureProfile and every nested constraint, meter, and allowed-value array are frozen at runtime so external code cannot change live/replay classification.
+- **K1-2-REQ-019 — Total history exception boundary:** unexpected undo/redo application, validation, or support-classification exceptions return the original state with `history.invariant-violation`; raw exceptions never escape.
+- **K1-2-REQ-020 — Sparse-array resource bound:** strict array decoding reads the own `length` data descriptor and actual own keys first; an impossible dense-key count rejects before any traversal proportional to the declared length.
 
 ## Built-in Command Set
 
@@ -66,6 +70,9 @@ Stable failure coverage includes invalid envelope/payload/version, unknown comma
 - [ ] Mutating initialization objects or submitted payloads after the call cannot affect bus state/history.
 - [ ] Repeated replay returns deeply equal final documents, version sequences, and result classifications without clock/random dependencies.
 - [ ] Public export tests prove absence of mutation/history/patch/mutable-document/K1-3/K1-4 APIs.
+- [ ] The default K1 Profile is deeply frozen; attempted tampering cannot change replay support classification.
+- [ ] Unexpected undo/redo failures never throw, preserve exact state, and return `history.invariant-violation`.
+- [ ] A maximum-length sparse array rejects without reading `length` through an access hook or iterating declared holes.
 - [ ] `npm run typecheck`, `npm run build`, `npm test`, and `git diff --check` pass in an environment that permits Node test subprocesses.
 
 ## Out of Scope

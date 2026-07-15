@@ -547,6 +547,45 @@ test("deterministic replay uses submit semantics and returns detached documents"
   }
 });
 
+test("attempted default-profile tampering cannot change replay classification", () => {
+  const api = coreKernel as unknown as {
+    readonly K1_SCORE_FEATURE_PROFILE: {
+      readonly maximumNotesPerEvent: number;
+    };
+  };
+  const { replay } = getCommandApi();
+  const initial = incompleteFixture();
+  const commands = [insertChord()];
+  const before = replay(initial, commands);
+  assert.equal(before.status, "replayed");
+  if (before.status !== "replayed") {
+    return;
+  }
+  assert.deepEqual(
+    before.results[0]?.support?.diagnostics.map(({ code }) => code),
+    ["unsupported.chord"],
+  );
+
+  const originalMaximum = api.K1_SCORE_FEATURE_PROFILE.maximumNotesPerEvent;
+  try {
+    assert.equal(
+      Reflect.set(
+        api.K1_SCORE_FEATURE_PROFILE,
+        "maximumNotesPerEvent",
+        2,
+      ),
+      false,
+    );
+    assert.deepEqual(replay(initial, commands), before);
+  } finally {
+    Reflect.set(
+      api.K1_SCORE_FEATURE_PROFILE,
+      "maximumNotesPerEvent",
+      originalMaximum,
+    );
+  }
+});
+
 test("replay preserves no-op classification without inventing a version", () => {
   const result = getCommandApi().replay(cloneCoreScoreFixture(), [
     setPitch("C"),

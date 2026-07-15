@@ -2,14 +2,14 @@
 
 ## 状态
 
-- 阶段: Core K1-1 review；其余产品模块保持 planning
+- 阶段: Core K1-2 P1 修复与独立复验；其余产品模块保持 planning
 - 目标: 为第一条可运行 MVP 闭环提供需求反推的技术设计骨架。
 - 已确认技术栈: Tauri 2 + TypeScript + React + Vite。
 - 首发平台: Windows 桌面。
 - 架构原则: 参照操作系统微内核思想的 Core Kernel + 用户态服务模块。当前只规划 Core Kernel 边界；外部工程目录结构属于后续脚手架阶段，不是当前内核规划事项。
 - 首个实现里程碑: Pure Core Kernel V1，纯 TypeScript、无 UI、无 Tauri、无 VexFlow、无 Web Audio、无 PDF/PNG。
-- K1-1 当前唯一模型决策源: `../07-13-k1-1-foundation-replanning/design.md`；字段级契约以 `.trellis/spec/core-kernel/` 为准。
-- 本文中的 K1-2、registry、report 与产品模块协作只代表路线图；必须在 K1-1 评审完成后分别刷新，不能直接据此实现。
+- K1-1 模型决策源: `../07-13-k1-1-foundation-replanning/design.md`；K1-2 执行源: `../07-15-k1-2-commands-transactions-history/design.md`。字段级与行为级契约以 `.trellis/spec/core-kernel/` 为准。
+- 本文中的 K1-3、registry、report 与产品模块协作只代表路线图；必须在 K1-2 独立验收后分别刷新，不能直接据此实现。
 
 ## 设计目标
 

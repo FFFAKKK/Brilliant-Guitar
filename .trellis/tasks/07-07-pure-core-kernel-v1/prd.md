@@ -4,7 +4,7 @@
 
 把现有 `Pure Core Kernel V1` 总规划收敛成一个可执行、可验收、可分块推进的内核实现任务。
 
-本任务是 Pure Core Kernel V1 路线图父任务。K1-1 原方案已被 `07-13-k1-1-foundation-replanning` 取代；独立子任务 `07-13-k1-1-core-foundation` 已在 `30894e2` 完成实现、P1 修复与正式验收。K1-2 现在允许进入独立规划，但其设计与实施计划审核通过前不得启动编码；后续 Block 同样需要各自审核。
+本任务是 Pure Core Kernel V1 路线图父任务。K1-1 原方案已被 `07-13-k1-1-foundation-replanning` 取代；独立子任务 `07-13-k1-1-core-foundation` 已在 `30894e2` 完成实现、P1 修复与正式验收。K1-2 已按独立任务 `07-15-k1-2-commands-transactions-history` 实施，当前因首轮独立验收发现的小范围 P1 处于修复/复验；K1-3 与后续 Block 继续阻塞并需要各自审核。
 
 ## Source Documents
 
@@ -64,17 +64,15 @@
 
 小功能:
 
-- `CommandEnvelope` / `CommandDefinition` / `CommandBus`: 定义语义命令接口。
-- 命令注册和 payload 校验: 拒绝未知命令和非法 payload。
-- capability 检查入口: 命令执行前必须检查权限。
-- `CommandTarget`: 将写入目标限制为谱面语义地址、点、范围或明确 payload。
-- 内部 delta: 可用于 commit、rollback、undo/redo 和回放，但不得暴露给公开 API。
-- 事务提交: 成功后递增版本、更新 dirty state、产生事件。
-- 事务回滚: 失败、unsupported 或验证失败时文档、历史和事件保持不变。
-- 细粒度历史: 每个成功可撤销语义命令生成一个 `HistoryEntry`。
-- `undo` / `redo`: 一次只移动一个历史条目，不做智能合并。
-- 命令回放: 同一初始状态和命令序列必须得到同一文档状态。
-- MVP 命令集合: 至少规划 `core.createScore`、`core.setDocumentMetadata`、`core.ensureMeasures`、`core.insertNote`、`core.insertRest`、`core.setNotePitch`、`core.setDuration`、`core.addTechnique`、`core.removeTechnique`、`core.deleteRange`、`core.undo`、`core.redo`。
+- `CommandBus.submit(unknown)`: 严格解码四字段 envelope、稳定实体 ID target 和 Voice event anchor。
+- 静态封闭目录: 只含 set metadata、set WrittenPitch、set NoteValue、insert Notes Event、insert Rest Event、remove Event 六个 built-in，不接入 registry/capability。
+- 内部 typed forward/inverse mutation: 只用于隔离 candidate、commit、rollback 和细粒度 history，不公开、不持久化。
+- 事务提交: semantic-invalid 原子拒绝；semantic-valid/profile-unsupported 允许提交并返回完整分类。
+- 版本与 history: commit、undo、redo 各递增一次；no-op/rejected 不改变版本、history 或 redo。
+- `undo` / `redo`: 一次只移动一个历史条目，重新验证 semantic/profile；意外异常收口为 `history.invariant-violation`。
+- 命令回放: 同一初始状态和命令序列走实时 submit 同一流程并得到深度相等结果。
+- 确定性加固: 默认 K1 Profile 运行时深度冻结；巨大稀疏数组在声明长度遍历前快速拒绝。
+- 边界: create score、measure add/remove、delete/transpose range、完整 address/range、dirty state/events、Guitar 命令与 Registry/Capability 不进入 K1-2。
 
 ### K1-3: 地址/范围、只读快照、selector 与事件协议
 
@@ -148,7 +146,7 @@
 - K1-REQ-004: Musical time must persist canonical exact Fraction/NoteValue; tick, PPQ, milliseconds, and layout time are derived adapter data.
 - K1-REQ-005: WrittenPitch is persisted; SoundingPitch is derived from explicit Part transposition without losing enharmonic spelling.
 - K1-REQ-006: K1 must provide hard validation for supported and unsupported MVP boundaries.
-- K1-REQ-007: All score writes must go through registered semantic commands, not public patch/JSON path/field replacement APIs.
+- K1-REQ-007: All K1-2 score writes must go through the closed strictly decoded semantic command catalog, not public patch/JSON path/field replacement or dynamic registration APIs.
 - K1-REQ-008: Successful undoable semantic commands must create exactly one `HistoryEntry` by default; failed commands must not affect history.
 - K1-REQ-009: Reads must use immutable snapshots or selectors; public APIs must not expose mutable `ScoreDocument`.
 - K1-REQ-010: Kernel events must be post-commit facts and must not carry mutable documents or internal deltas.
@@ -191,3 +189,4 @@
 ## Resolved Decision
 
 - OD-K1-001 resolved on 2026-07-13: implement the replanned K1-1 Core foundation first through child task `07-13-k1-1-core-foundation`; stop for review before Guitar Domain or K1-2.
+- OD-K1-002 resolved on 2026-07-15: K1-2 executable scope is owned by `07-15-k1-2-commands-transactions-history` and `command-transaction.md`; later roadmap drafts cannot enlarge its six-command/static-catalog boundary.

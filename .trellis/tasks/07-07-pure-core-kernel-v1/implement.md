@@ -2,10 +2,10 @@
 
 ## Status
 
-- Phase: staged execution.
-- K1-1 replanning was approved on 2026-07-13 and the implementation child `07-13-k1-1-core-foundation` is now in review.
-- This parent plan no longer defines K1-1 fields; the child artifacts and stable Core specs are authoritative.
-- K1-2 and later chunks remain blocked on K1-1 review and require separate plan refresh before start.
+- Phase: staged execution; K1-2 is the active implementation/acceptance block.
+- K1-1 was formally accepted at baseline `30894e2`; its model and validation contracts remain frozen.
+- This parent plan no longer defines K1-1 or K1-2 executable details; their independent child artifacts and active Core specs are authoritative.
+- K1-3 and later chunks remain blocked until K1-2 passes independent re-acceptance and each later block receives a separate plan refresh.
 
 ## Global Rules for Every Implementation Round
 
@@ -64,7 +64,7 @@ npm run typecheck
 npm test
 ```
 
-Rollback point: revert only the Core foundation child changes; Guitar Domain and K1-2 are not started.
+Rollback point: revert only the Core foundation child changes; later blocks remain independently revertible.
 
 ## Chunk K1-2: Commands, Transactions, History, Replay
 
@@ -72,23 +72,23 @@ Purpose: make semantic commands the only write path and establish undo/redo corr
 
 Subfeatures:
 
-- Command contracts: refresh `CommandEnvelope`, `CommandDefinition`, `CommandBus`, `CommandSource`, and `CommandTarget` against measure/part/staff/voice/event/note IDs.
-- Command registry bridge: commands are registered, not hardcoded as ad hoc functions.
-- Payload validation: invalid payloads fail before mutation.
-- Internal delta: internal-only mutation record for commit/rollback/history.
-- Transaction isolation: failed command leaves document, dirty state, events, undo stack, and redo stack unchanged.
-- Fine-grained history: one successful undoable command creates one `HistoryEntry`.
-- Undo/redo: move one history entry at a time.
-- Replay: deterministic command sequence from same starting state.
-- Core semantic commands: create score, metadata, ensure measures, insert note/rest, set WrittenPitch, set NoteValue, delete range, undo, redo. Guitar tuning/string/fret/technique commands belong to Guitar Domain and require its approved extension schema.
-- Extension preservation: every mutation, rollback, undo, redo, and replay must preserve unknown ExtensionBlocks it does not own.
-- Patch rejection: patch/JSON path/script-like commands are not public write APIs.
+- Strict public entry: `CommandBus.submit(unknown)` decodes versioned semantic envelopes, stable entity-ID targets, and Voice event anchors; patch/JSON path/splice/script inputs are rejected.
+- Closed static catalog: exactly six built-ins — set metadata, set WrittenPitch, set NoteValue, insert Notes Event, insert Rest Event, and remove Event. K1-2 has no registry bridge or dynamic registration.
+- Atomic typed mutation: internal forward/inverse mutations run on an isolated candidate before semantic validation and one-time commit.
+- Semantic/profile split: semantic-invalid rejects; semantic-valid/profile-unsupported commits with complete classification.
+- Version/history: committed submit/undo/redo increments `documentVersion` once; one command creates one fine-grained HistoryEntry; no-op/rejected operations preserve version/history/redo.
+- Undo/redo: one entry moves atomically, revalidates semantic/profile state, and converts unexpected exceptions to `history.invariant-violation` without state change.
+- Deterministic replay: the same initial document and command sequence use the live submit path and produce deeply equal results.
+- Runtime policy hardening: the default K1 ScoreFeatureProfile is deeply frozen, and hostile huge sparse arrays reject before declared-length traversal.
+- Extension/ownership preservation: caller mutation and unknown ExtensionBlocks cannot alter or be lost from runtime/history/replay state.
+- Explicit exclusions: create score, measure add/remove, delete/transpose range, full address/range, dirty state/events, Guitar commands, Registry/Capability, UI, and IO remain later work.
 
 Expected files:
 
 - `src/core-kernel/commands/*`
-- `src/core-kernel/domain/address.ts`
-- `test/core-kernel/commands/*`
+- `src/core-kernel/profiles/score-feature-profile.ts`
+- `test/core-kernel/command-system.test.ts`
+- `test/core-kernel/command-internals.test.ts`
 - updates to `src/core-kernel/index.ts`
 
 Validation:
@@ -98,7 +98,7 @@ npm run typecheck
 npm test
 ```
 
-Rollback point: revert command/history files and tests; keep K1-1 intact.
+Rollback point: revert command/history/profile-hardening files and tests; keep frozen K1-1 schema/codec/validation intact.
 
 ## Chunk K1-3: Address, Snapshot, Selectors, Events
 
@@ -225,15 +225,6 @@ Completion gate:
 - run `trellis-check` before final completion
 - review whether `.trellis/spec/` needs updates before commit
 
-## First Implementation Recommendation
+## Current Execution Recommendation
 
-Start with `K1-1: Score Model, Schema, Validation`.
-
-Reason:
-
-- It is the root contract.
-- It removes ambiguity before command design.
-- It prevents legacy guitar-specific command vocabulary such as `setFret` / `setString` from leaking into core.
-- It gives every later chunk a real fixture and validator to work against.
-
-Do not start `K1-2` until K1-1 review is approved, the documentation closure is accepted, and a refreshed K1-2 task/spec is approved.
+Finish K1-2 repair and independent re-acceptance on `07-15-k1-2-commands-transactions-history`. Treat that child task plus `command-transaction.md` as authoritative. Do not start K1-3, Guitar Domain commands, Registry/Capability, or UI integration until K1-2 is explicitly accepted.

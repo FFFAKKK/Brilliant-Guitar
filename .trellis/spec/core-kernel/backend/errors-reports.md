@@ -1,7 +1,7 @@
 # Errors and Reports
 
-> **Authoritative K1-1 scope (2026-07-13):** K1-1 implements stable
-> diagnostics only. General operation errors and report shells remain K1-5.
+> **Authoritative staged scope (2026-07-15):** K1-1 diagnostics and the closed
+> K1-2 CommandFailure contract are active. General operation/report shells remain K1-5.
 
 ## Current Diagnostic Contract
 
@@ -12,7 +12,7 @@ Each diagnostic contains stable `code`, `messageKey`, structured `(string | numb
 - `unsupported.*`: semantic-valid data outside ScoreFeatureProfile.
 - `guitar.*`: reserved for the later Guitar Domain; Core K1-1 never emits it.
 
-Ordinary malformed input returns result objects and must not leak untyped exceptions. Identical input produces deterministic diagnostic ordering. General `KernelError`, command rollback errors, validation/migration/import/export/recovery reports, and module-exception conversion remain later work.
+Ordinary malformed input returns result objects and must not leak untyped exceptions. Identical input produces deterministic diagnostic ordering. K1-2 command/transaction/history failures are the closed result contract in `command-transaction.md`; they do not create a general report framework. General `KernelError`, validation/migration/import/export/recovery reports, and module-exception conversion remain later work.
 
 ## Scenario: K1-1 Validation Pipeline Diagnostics
 
