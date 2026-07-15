@@ -73,3 +73,37 @@ Approved and implemented strict Core commands, atomic transactions, document ver
 ### Next Steps
 
 - None - task complete
+
+
+## Session 3: K1-2 P1 acceptance repair
+
+**Date**: 2026-07-15
+**Task**: K1-2 P1 acceptance repair
+**Branch**: `codex/k1-2-commands-transactions-history`
+
+### Summary
+
+Deep-froze the default K1 feature profile, added total undo/redo exception conversion, bounded huge sparse-array rejection, added regressions, and synchronized active K1-2/parent/product documentation. Automated gates pass; task remains in_progress for independent re-acceptance and K1-3 stays blocked.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b62a838` | (see git log) |
+| `aa007c7` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
