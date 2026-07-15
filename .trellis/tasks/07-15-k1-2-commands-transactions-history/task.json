@@ -15,12 +15,12 @@
   "branch": "codex/k1-2-commands-transactions-history",
   "base_branch": "codex/k1-1-core-foundation",
   "worktree_path": null,
-  "commit": null,
+  "commit": "cd078c1",
   "pr_url": null,
   "subtasks": [],
   "children": [],
   "parent": "07-07-pure-core-kernel-v1",
   "relatedFiles": [],
-  "notes": "",
+  "notes": "Implementation and automated verification complete; keep in_progress until independent manual acceptance. Do not start K1-3 from this task.",
   "meta": {}
 }
