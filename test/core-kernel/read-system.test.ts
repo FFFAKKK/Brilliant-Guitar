@@ -7,6 +7,12 @@ import {
   type KernelReadState,
   type ReadResult,
   type ScoreDocument,
+  selectDirtyState,
+  selectHistoryState,
+  selectScoreEntity,
+  selectScoreEntityOwnership,
+  selectScoreMetadata,
+  selectScoreRange,
 } from "../../src/core-kernel/index";
 import { cloneCoreScoreFixture } from "./fixtures/core-score";
 
@@ -116,4 +122,150 @@ test("old snapshots stay stable after commits while current read state advances"
   assert.equal(unchanged.snapshot.documentVersion, 1);
   assert.deepEqual(unchanged.history, { undoDepth: 1, redoDepth: 0 });
   assert.equal(noteStep(unchanged), "D");
+});
+
+test("entity and ownership selectors cover every stable address kind", () => {
+  const state = requireRead(requireBus());
+  const cases = [
+    {
+      address: { kind: "document", documentId: "score-1" },
+      entityKind: "document",
+      ownership: { entityKind: "document", documentId: "score-1" },
+    },
+    {
+      address: { kind: "measure", measureId: "measure-1" },
+      entityKind: "measure",
+      ownership: { entityKind: "measure", documentId: "score-1" },
+    },
+    {
+      address: { kind: "part", partId: "part-1" },
+      entityKind: "part",
+      ownership: { entityKind: "part", documentId: "score-1" },
+    },
+    {
+      address: { kind: "staff", staffId: "staff-1" },
+      entityKind: "staff",
+      ownership: {
+        entityKind: "staff",
+        documentId: "score-1",
+        partId: "part-1",
+      },
+    },
+    {
+      address: { kind: "voice", voiceId: "voice-1" },
+      entityKind: "voice",
+      ownership: {
+        entityKind: "voice",
+        documentId: "score-1",
+        partId: "part-1",
+        measureId: "measure-1",
+      },
+    },
+    {
+      address: { kind: "event", eventId: "event-1" },
+      entityKind: "event",
+      ownership: {
+        entityKind: "event",
+        documentId: "score-1",
+        partId: "part-1",
+        measureId: "measure-1",
+        voiceId: "voice-1",
+      },
+    },
+    {
+      address: { kind: "note", noteId: "note-1" },
+      entityKind: "note",
+      ownership: {
+        entityKind: "note",
+        documentId: "score-1",
+        partId: "part-1",
+        measureId: "measure-1",
+        voiceId: "voice-1",
+        eventId: "event-1",
+      },
+    },
+  ] as const;
+
+  for (const entry of cases) {
+    const selected = selectScoreEntity(state.snapshot, entry.address);
+    assert.equal(selected.ok, true);
+    if (selected.ok) {
+      assert.equal(selected.value.kind, entry.entityKind);
+      assert.equal(Object.isFrozen(selected), true);
+      assert.equal(Object.isFrozen(selected.value), true);
+      assert.equal(Object.isFrozen(selected.value.value), true);
+    }
+    assert.deepEqual(
+      selectScoreEntityOwnership(state.snapshot, entry.address),
+      { ok: true, value: entry.ownership },
+    );
+  }
+
+  assert.deepEqual(
+    selectScoreEntity(state.snapshot, { kind: "note", noteId: "missing" }),
+    { ok: false, failure: { code: "read.entity-not-found" } },
+  );
+  assert.deepEqual(
+    selectScoreEntity(state.snapshot, { kind: "note", noteId: "note-1", index: 0 }),
+    { ok: false, failure: { code: "read.invalid-address" } },
+  );
+});
+
+test("metadata, history, and dirty selectors are frozen deterministic reads", () => {
+  const bus = requireBus();
+  assert.equal(setPitch(bus, "D").status, "committed");
+  const state = requireRead(bus);
+
+  const metadata = selectScoreMetadata(state.snapshot);
+  assert.deepEqual(metadata, {
+    ok: true,
+    value: state.snapshot.document.metadata,
+  });
+  assert.equal(Object.isFrozen(metadata), true);
+  assert.deepEqual(selectScoreMetadata(state.snapshot), metadata);
+  assert.deepEqual(selectHistoryState(state), {
+    ok: true,
+    value: { undoDepth: 1, redoDepth: 0 },
+  });
+  assert.deepEqual(selectDirtyState(state), { ok: true, value: true });
+});
+
+test("all built-in selectors are repeatable immutable pure reads", () => {
+  const bus = requireBus();
+  const state = requireRead(bus);
+  const calls = [
+    () => selectScoreMetadata(state.snapshot),
+    () =>
+      selectScoreEntity(state.snapshot, {
+        kind: "note",
+        noteId: "note-1",
+      }),
+    () =>
+      selectScoreEntityOwnership(state.snapshot, {
+        kind: "note",
+        noteId: "note-1",
+      }),
+    () =>
+      selectScoreRange(state.snapshot, {
+        kind: "measure-range",
+        start: { kind: "measure", measureId: "measure-1" },
+        end: { kind: "measure", measureId: "measure-1" },
+      }),
+    () => selectHistoryState(state),
+    () => selectDirtyState(state),
+  ] as const;
+
+  for (const call of calls) {
+    const first = call();
+    const second = call();
+    assert.deepEqual(second, first);
+    assert.equal(Object.isFrozen(first), true);
+    assert.equal(
+      Reflect.set(first as unknown as Record<string, unknown>, "ok", false),
+      false,
+    );
+  }
+
+  assert.equal(requireRead(bus).snapshot.document.metadata.title, "Core fixture");
+  assert.equal(noteStep(requireRead(bus)), "C");
 });

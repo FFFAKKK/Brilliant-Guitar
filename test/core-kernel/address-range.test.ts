@@ -2,9 +2,15 @@ import { test } from "node:test";
 import assert = require("node:assert/strict");
 
 import type {
+  DocumentSnapshot,
   ScoreAddress,
+  ScoreDocument,
   ScorePoint,
   ScoreRange,
+} from "../../src/core-kernel/index";
+import {
+  CommandBus,
+  selectScoreRange,
 } from "../../src/core-kernel/index";
 import {
   decodePersistedCheckpoint,
@@ -12,6 +18,45 @@ import {
   decodeScorePoint,
   decodeScoreRange,
 } from "../../src/core-kernel/read/address-codec";
+import { cloneCoreScoreFixture } from "./fixtures/core-score";
+
+function createRangeSnapshot(): DocumentSnapshot {
+  const document = cloneCoreScoreFixture();
+  const secondMeasure = {
+    id: "measure-2",
+    meter: { numerator: 4, denominator: 4 as const },
+  };
+  (document.measureDefinitions as unknown[]).push(secondMeasure);
+
+  const part = document.parts[0]!;
+  const firstContent = part.measureContents[0]!;
+  const secondContent = structuredClone(firstContent);
+  (secondContent as { measureId: string }).measureId = "measure-2";
+  const secondVoice = secondContent.voices[0]!;
+  (secondVoice as { id: string }).id = "voice-2";
+  secondVoice.sequence.events.forEach((event, index) => {
+    (event as { id: string }).id = `event-${index + 5}`;
+    if (event.content.kind === "notes") {
+      (event.content.notes[0] as { id: string }).id = "note-2";
+    }
+  });
+  (part as unknown as { measureContents: unknown[] }).measureContents = [
+    secondContent,
+    firstContent,
+  ];
+
+  const created = CommandBus.create(document as ScoreDocument);
+  assert.equal(created.ok, true);
+  if (!created.ok) {
+    throw new Error("expected valid range fixture");
+  }
+  const read = created.value.read();
+  assert.equal(read.ok, true);
+  if (!read.ok) {
+    throw new Error("expected range fixture snapshot");
+  }
+  return read.value.snapshot;
+}
 
 test("public score address, point, and range contracts use stable identities", () => {
   const address: ScoreAddress = { kind: "note", noteId: "note-1" };
@@ -175,4 +220,112 @@ test("strict address decoding never invokes getters or proxy property reads", ()
     value: { kind: "note", noteId: "note-1" },
   });
   assert.equal(proxyReads, 0);
+});
+
+test("hierarchical ranges normalize reverse endpoints in musical order", () => {
+  const snapshot = createRangeSnapshot();
+
+  const measures = selectScoreRange(snapshot, {
+    kind: "measure-range",
+    start: { kind: "measure", measureId: "measure-2" },
+    end: { kind: "measure", measureId: "measure-1" },
+  });
+  assert.equal(measures.ok, true);
+  if (measures.ok && measures.value.kind === "measure-range") {
+    assert.deepEqual(
+      measures.value.measures.map(({ id }) => id),
+      ["measure-1", "measure-2"],
+    );
+    assert.equal(measures.value.normalized.start.measureId, "measure-1");
+    assert.equal(Object.isFrozen(measures.value), true);
+  }
+
+  const contents = selectScoreRange(snapshot, {
+    kind: "part-measure-range",
+    start: {
+      kind: "part-measure",
+      partId: "part-1",
+      measureId: "measure-2",
+    },
+    end: {
+      kind: "part-measure",
+      partId: "part-1",
+      measureId: "measure-1",
+    },
+  });
+  assert.equal(contents.ok, true);
+  if (contents.ok && contents.value.kind === "part-measure-range") {
+    assert.deepEqual(
+      contents.value.measureContents.map(({ measureId }) => measureId),
+      ["measure-1", "measure-2"],
+    );
+    assert.equal(contents.value.normalized.start.measureId, "measure-1");
+  }
+
+  const events = selectScoreRange(snapshot, {
+    kind: "voice-event-range",
+    start: { kind: "voice-event", voiceId: "voice-1", eventId: "event-4" },
+    end: { kind: "voice-event", voiceId: "voice-1", eventId: "event-1" },
+  });
+  assert.equal(events.ok, true);
+  if (events.ok && events.value.kind === "voice-event-range") {
+    assert.deepEqual(
+      events.value.events.map(({ id }) => id),
+      ["event-1", "event-2", "event-3", "event-4"],
+    );
+    assert.equal(events.value.normalized.start.eventId, "event-1");
+  }
+});
+
+test("range selection rejects malformed, missing, and owner-mismatched endpoints", () => {
+  const snapshot = createRangeSnapshot();
+
+  assert.deepEqual(
+    selectScoreRange(snapshot, {
+      kind: "measure-range",
+      start: { kind: "measure", measureId: "measure-1" },
+      end: { kind: "voice-event", voiceId: "voice-1", eventId: "event-1" },
+    }),
+    { ok: false, failure: { code: "read.invalid-range" } },
+  );
+  assert.deepEqual(
+    selectScoreRange(snapshot, {
+      kind: "measure-range",
+      start: { kind: "measure", measureId: "measure-1" },
+      end: { kind: "measure", measureId: "missing" },
+    }),
+    { ok: false, failure: { code: "read.range-endpoint-not-found" } },
+  );
+  assert.deepEqual(
+    selectScoreRange(snapshot, {
+      kind: "part-measure-range",
+      start: {
+        kind: "part-measure",
+        partId: "part-1",
+        measureId: "measure-1",
+      },
+      end: {
+        kind: "part-measure",
+        partId: "part-2",
+        measureId: "measure-2",
+      },
+    }),
+    { ok: false, failure: { code: "read.range-owner-mismatch" } },
+  );
+  assert.deepEqual(
+    selectScoreRange(snapshot, {
+      kind: "voice-event-range",
+      start: { kind: "voice-event", voiceId: "voice-1", eventId: "event-1" },
+      end: { kind: "voice-event", voiceId: "voice-2", eventId: "event-5" },
+    }),
+    { ok: false, failure: { code: "read.range-owner-mismatch" } },
+  );
+  assert.deepEqual(
+    selectScoreRange(snapshot, {
+      kind: "voice-event-range",
+      start: { kind: "voice-event", voiceId: "voice-1", eventId: "event-1" },
+      end: { kind: "voice-event", voiceId: "voice-1", eventId: "event-5" },
+    }),
+    { ok: false, failure: { code: "read.range-owner-mismatch" } },
+  );
 });

@@ -1,5 +1,15 @@
-import type { ScoreDocumentSchemaVersion } from "../domain/score-document";
-import type { ScoreDocument } from "../domain/score-document";
+import type { ScoreRange } from "../domain/address";
+import type {
+  MeasureDefinition,
+  Part,
+  PartMeasureContent,
+  RhythmicEvent,
+  ScoreDocument,
+  ScoreDocumentSchemaVersion,
+  ScoreNote,
+  StaffDefinition,
+  Voice,
+} from "../domain/score-document";
 
 export interface DocumentSnapshot {
   readonly documentId: string;
@@ -18,6 +28,72 @@ export interface KernelReadState {
   readonly history: KernelHistoryState;
   readonly dirty: boolean;
 }
+
+export type SelectedScoreEntity =
+  | { readonly kind: "document"; readonly value: ScoreDocument }
+  | { readonly kind: "measure"; readonly value: MeasureDefinition }
+  | { readonly kind: "part"; readonly value: Part }
+  | { readonly kind: "staff"; readonly value: StaffDefinition }
+  | { readonly kind: "voice"; readonly value: Voice }
+  | { readonly kind: "event"; readonly value: RhythmicEvent }
+  | { readonly kind: "note"; readonly value: ScoreNote };
+
+export type ScoreEntityOwnership =
+  | { readonly entityKind: "document"; readonly documentId: string }
+  | { readonly entityKind: "measure"; readonly documentId: string }
+  | { readonly entityKind: "part"; readonly documentId: string }
+  | {
+      readonly entityKind: "staff";
+      readonly documentId: string;
+      readonly partId: string;
+    }
+  | {
+      readonly entityKind: "voice";
+      readonly documentId: string;
+      readonly partId: string;
+      readonly measureId: string;
+    }
+  | {
+      readonly entityKind: "event";
+      readonly documentId: string;
+      readonly partId: string;
+      readonly measureId: string;
+      readonly voiceId: string;
+    }
+  | {
+      readonly entityKind: "note";
+      readonly documentId: string;
+      readonly partId: string;
+      readonly measureId: string;
+      readonly voiceId: string;
+      readonly eventId: string;
+    };
+
+export type ScoreRangeSelection =
+  | {
+      readonly kind: "measure-range";
+      readonly normalized: Extract<
+        ScoreRange,
+        { readonly kind: "measure-range" }
+      >;
+      readonly measures: readonly MeasureDefinition[];
+    }
+  | {
+      readonly kind: "part-measure-range";
+      readonly normalized: Extract<
+        ScoreRange,
+        { readonly kind: "part-measure-range" }
+      >;
+      readonly measureContents: readonly PartMeasureContent[];
+    }
+  | {
+      readonly kind: "voice-event-range";
+      readonly normalized: Extract<
+        ScoreRange,
+        { readonly kind: "voice-event-range" }
+      >;
+      readonly events: readonly RhythmicEvent[];
+    };
 
 export type ReadFailure =
   | { readonly code: "read.invalid-address" }
