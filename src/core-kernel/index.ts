@@ -19,6 +19,7 @@ export * from "./domain/extensions";
 export * from "./domain/musical-time";
 export * from "./domain/pitch";
 export * from "./domain/score-document";
+export * from "./domain/address";
 export * from "./codec/decode-score-document";
 export * from "./codec/score-json";
 export * from "./validation/diagnostics";
