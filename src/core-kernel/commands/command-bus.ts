@@ -1,24 +1,32 @@
 import type { ScoreDocument } from "../domain/score-document";
 import type {
+  EventSubscriptionResult,
+  KernelEvent,
+  KernelEventHandler,
+} from "../events/contracts";
+import type {
   CommandBusCreationFailure,
   CommandResult,
 } from "./contracts";
 import {
   createCommandRuntime,
-  redoCommand,
-  submitCommand,
-  undoCommand,
   type CommandRuntimeState,
 } from "./runtime";
 import type { KernelReadState, ReadResult } from "../read/contracts";
 import type { MarkPersistedResult } from "../read/contracts";
 import {
-  createReadSessionState,
-  markPersistedCheckpoint,
-  recordCommittedVersion,
-  type ReadSessionState,
+  contentStateIdentity,
 } from "../read/session-state";
-import { readKernelState } from "../read/snapshot";
+import {
+  createKernelSessionState,
+  markKernelSessionPersisted,
+  readKernelSession,
+  redoKernelSession,
+  submitKernelSession,
+  undoKernelSession,
+  type KernelCommandSessionTransition,
+  type KernelSessionState,
+} from "../session/runtime";
 
 export type CommandBusCreationResult =
   | { readonly ok: true; readonly value: CommandBus }
@@ -26,9 +34,14 @@ export type CommandBusCreationResult =
 
 const COMMAND_BUS_CONSTRUCTION_TOKEN = Symbol("CommandBusConstructionToken");
 
+interface SubscriberRecord {
+  readonly handler: KernelEventHandler;
+}
+
 export class CommandBus {
-  #commandState: CommandRuntimeState;
-  #readState: ReadSessionState;
+  #sessionState: KernelSessionState;
+  #subscribers: SubscriberRecord[] = [];
+  #dispatching = false;
 
   private constructor(
     token: typeof COMMAND_BUS_CONSTRUCTION_TOKEN,
@@ -37,8 +50,7 @@ export class CommandBus {
     if (token !== COMMAND_BUS_CONSTRUCTION_TOKEN) {
       throw new TypeError("CommandBus must be created with CommandBus.create");
     }
-    this.#commandState = state;
-    this.#readState = createReadSessionState();
+    this.#sessionState = createKernelSessionState(state);
   }
 
   static create(initialDocument: ScoreDocument): CommandBusCreationResult {
@@ -52,67 +64,114 @@ export class CommandBus {
   }
 
   submit(input: unknown): CommandResult {
-    const transition = submitCommand(this.#commandState, input);
-    return this.#adoptCommandTransition(
-      transition,
-      "command.internal-error",
+    if (this.#dispatching) {
+      return this.#reentrantCommandResult();
+    }
+    return this.#adoptAndDispatch(
+      submitKernelSession(this.#sessionState, input),
     );
   }
 
   undo(): CommandResult {
-    const transition = undoCommand(this.#commandState);
-    return this.#adoptCommandTransition(
-      transition,
-      "history.invariant-violation",
-    );
+    if (this.#dispatching) {
+      return this.#reentrantCommandResult();
+    }
+    return this.#adoptAndDispatch(undoKernelSession(this.#sessionState));
   }
 
   redo(): CommandResult {
-    const transition = redoCommand(this.#commandState);
-    return this.#adoptCommandTransition(
-      transition,
-      "history.invariant-violation",
-    );
+    if (this.#dispatching) {
+      return this.#reentrantCommandResult();
+    }
+    return this.#adoptAndDispatch(redoKernelSession(this.#sessionState));
   }
 
   markPersisted(input: unknown): MarkPersistedResult {
-    const transition = markPersistedCheckpoint(
-      this.#commandState,
-      this.#readState,
-      input,
-    );
-    this.#readState = transition.state;
+    if (this.#dispatching) {
+      return {
+        status: "rejected",
+        documentVersion: this.#sessionState.commandState.documentVersion,
+        dirty:
+          contentStateIdentity(this.#sessionState.commandState) !==
+          this.#sessionState.readState.cleanStateIdentity,
+        failure: { code: "event.reentrant-write" },
+      };
+    }
+    const transition = markKernelSessionPersisted(this.#sessionState, input);
+    this.#sessionState = transition.state;
+    this.#dispatch(transition.events);
     return transition.result;
   }
 
   read(): ReadResult<KernelReadState> {
-    const transition = readKernelState(this.#commandState, this.#readState);
-    this.#readState = transition.state;
+    const transition = readKernelSession(this.#sessionState);
+    this.#sessionState = transition.state;
     return transition.result;
   }
 
-  #adoptCommandTransition(
-    transition: ReturnType<
-      typeof submitCommand | typeof undoCommand | typeof redoCommand
-    >,
-    integrationFailure: "command.internal-error" | "history.invariant-violation",
-  ): CommandResult {
-    if (transition.result.status !== "committed") {
-      this.#commandState = transition.state;
-      return transition.result;
-    }
-    const recorded = recordCommittedVersion(transition.state, this.#readState);
-    if (!recorded.ok) {
+  subscribe(handler: unknown): EventSubscriptionResult {
+    if (typeof handler !== "function") {
       return {
         status: "rejected",
-        documentVersion: this.#commandState.documentVersion,
-        undoDepth: this.#commandState.undoStack.length,
-        redoDepth: this.#commandState.redoStack.length,
-        failure: { code: integrationFailure },
+        failure: { code: "event.invalid-handler" },
       };
     }
-    this.#commandState = transition.state;
-    this.#readState = recorded.state;
+    const record: SubscriberRecord = {
+      handler: handler as KernelEventHandler,
+    };
+    this.#subscribers.push(record);
+    let active = true;
+    return {
+      status: "subscribed",
+      unsubscribe: () => {
+        if (!active) {
+          return;
+        }
+        active = false;
+        const index = this.#subscribers.indexOf(record);
+        if (index >= 0) {
+          this.#subscribers.splice(index, 1);
+        }
+      },
+    };
+  }
+
+  #reentrantCommandResult(): CommandResult {
+    return {
+      status: "rejected",
+      documentVersion: this.#sessionState.commandState.documentVersion,
+      undoDepth: this.#sessionState.commandState.undoStack.length,
+      redoDepth: this.#sessionState.commandState.redoStack.length,
+      failure: { code: "event.reentrant-write" },
+    };
+  }
+
+  #adoptAndDispatch(
+    transition: KernelCommandSessionTransition,
+  ): CommandResult {
+    this.#sessionState = transition.state;
+    this.#dispatch(transition.events);
     return transition.result;
+  }
+
+  #dispatch(events: readonly KernelEvent[]): void {
+    if (events.length === 0) {
+      return;
+    }
+    this.#dispatching = true;
+    try {
+      for (const event of events) {
+        const handlers = this.#subscribers.map(({ handler }) => handler);
+        for (const handler of handlers) {
+          try {
+            handler(event);
+          } catch {
+            // Subscriber exceptions are isolated from committed session state.
+          }
+        }
+      }
+    } finally {
+      this.#dispatching = false;
+    }
   }
 }

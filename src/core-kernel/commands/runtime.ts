@@ -29,6 +29,12 @@ export interface CommandRuntimeState {
   readonly redoStack: readonly HistoryEntry[];
 }
 
+export interface CommittedOperation {
+  readonly cause: "submit" | "undo" | "redo";
+  readonly command: CoreCommandEnvelope;
+  readonly effectiveMutation: CoreMutation;
+}
+
 export type CreateCommandRuntimeResult =
   | { readonly ok: true; readonly state: CommandRuntimeState }
   | { readonly ok: false; readonly failure: CommandBusCreationFailure };
@@ -42,6 +48,7 @@ export interface CommandRuntimeHooks {
 export interface CommandTransition {
   readonly state: CommandRuntimeState;
   readonly result: CommandResult;
+  readonly committed?: CommittedOperation;
 }
 
 function cloneValue<T>(value: T): T {
@@ -91,6 +98,7 @@ function committed(
   undoStack: readonly HistoryEntry[],
   redoStack: readonly HistoryEntry[],
   hooks: CommandRuntimeHooks,
+  operation: CommittedOperation,
 ): CommandTransition {
   const nextState: CommandRuntimeState = {
     ...state,
@@ -108,6 +116,7 @@ function committed(
       support,
       ...depths(nextState),
     },
+    committed: cloneValue(operation),
   };
 }
 
@@ -205,6 +214,11 @@ export function submitCommand(
       [...state.undoStack, entry],
       [],
       hooks,
+      {
+        cause: "submit",
+        command: decoded.value,
+        effectiveMutation: prepared.forward,
+      },
     );
     return transition;
   } catch {
@@ -241,6 +255,11 @@ export function undoCommand(
       state.undoStack.slice(0, -1),
       [...state.redoStack, entry],
       hooks,
+      {
+        cause: "undo",
+        command: entry.command,
+        effectiveMutation: entry.inverse,
+      },
     );
   } catch {
     return rejected(state, { code: "history.invariant-violation" });
@@ -272,6 +291,11 @@ export function redoCommand(
       [...state.undoStack, entry],
       state.redoStack.slice(0, -1),
       hooks,
+      {
+        cause: "redo",
+        command: entry.command,
+        effectiveMutation: entry.forward,
+      },
     );
   } catch {
     return rejected(state, { code: "history.invariant-violation" });

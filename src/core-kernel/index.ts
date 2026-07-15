@@ -30,3 +30,4 @@ export * from "./commands/command-bus";
 export * from "./commands/replay";
 export * from "./read/contracts";
 export * from "./read/selectors";
+export * from "./events/contracts";

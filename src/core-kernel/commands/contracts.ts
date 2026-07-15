@@ -104,7 +104,9 @@ export type CommandFailure =
   | { readonly code: "command.internal-error" }
   | { readonly code: "history.empty-undo" }
   | { readonly code: "history.empty-redo" }
-  | { readonly code: "history.invariant-violation" };
+  | { readonly code: "history.invariant-violation" }
+  | { readonly code: "event.reentrant-write" }
+  | { readonly code: "event.sequence-overflow" };
 
 export type CommandResult =
   | {

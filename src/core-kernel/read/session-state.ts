@@ -45,7 +45,7 @@ export function recordCommittedVersion(
     return {
       ok: true,
       state: {
-        ...readState,
+        cleanStateIdentity: readState.cleanStateIdentity,
         stateIdentityByDocumentVersion,
       },
     };

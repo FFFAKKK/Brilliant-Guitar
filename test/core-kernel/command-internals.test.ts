@@ -21,6 +21,13 @@ import {
   recordCommittedVersion,
 } from "../../src/core-kernel/read/session-state";
 import {
+  createKernelSessionState,
+  markKernelSessionPersisted,
+  redoKernelSession,
+  submitKernelSession,
+  undoKernelSession,
+} from "../../src/core-kernel/session/runtime";
+import {
   resolveScoreEntityTarget,
   resolveSequenceAnchor,
 } from "../../src/core-kernel/commands/target-resolver";
@@ -549,6 +556,31 @@ test("history entries use deterministic sequences and contain no document snapsh
   });
 });
 
+test("only committed command transitions expose private effective operation facts", () => {
+  const initial = requireRuntime();
+  const submitted = submitCommand(initial, pitchCommand("D"));
+  assert.equal(submitted.result.status, "committed");
+  assert.equal(submitted.committed?.cause, "submit");
+  assert.equal(submitted.committed?.command.commandId, "core.note.set-written-pitch");
+  assert.equal(submitted.committed?.effectiveMutation.kind, "replace-written-pitch");
+
+  const noOp = submitCommand(submitted.state, pitchCommand("D"));
+  const rejected = submitCommand(submitted.state, { commandVersion: 1 });
+  assert.equal(noOp.committed, undefined);
+  assert.equal(rejected.committed, undefined);
+
+  const undone = undoCommand(submitted.state);
+  assert.equal(undone.result.status, "committed");
+  assert.equal(undone.committed?.cause, "undo");
+  assert.equal(undone.committed?.command.commandId, "core.note.set-written-pitch");
+  assert.deepEqual(undone.committed?.effectiveMutation, submitted.state.undoStack[0]?.inverse);
+
+  const redone = redoCommand(undone.state);
+  assert.equal(redone.result.status, "committed");
+  assert.equal(redone.committed?.cause, "redo");
+  assert.deepEqual(redone.committed?.effectiveMutation, submitted.state.undoStack[0]?.forward);
+});
+
 test("committed document versions copy only deterministic content-state identities", () => {
   const initial = requireRuntime();
   const initialReadState = createReadSessionState();
@@ -636,6 +668,117 @@ test("checkpoint integration collapses unexpected map failures without state ado
     dirty: false,
     failure: { code: "checkpoint.invariant-violation" },
   });
+});
+
+test("event sequence preflight rejects submit, history, and checkpoint candidates atomically", () => {
+  const initialCommandState = requireRuntime();
+  const initialSession = createKernelSessionState(initialCommandState);
+  const maximum = Number.MAX_SAFE_INTEGER;
+
+  const full = { ...initialSession, lastEventSequence: maximum };
+  const oneOrMoreOverflow = submitKernelSession(full, metadataCommand("One"));
+  assert.equal(oneOrMoreOverflow.result.status, "rejected");
+  if (oneOrMoreOverflow.result.status === "rejected") {
+    assert.equal(oneOrMoreOverflow.result.failure.code, "event.sequence-overflow");
+  }
+  assert.strictEqual(oneOrMoreOverflow.state, full);
+  assert.deepEqual(oneOrMoreOverflow.events, []);
+
+  const oneSlot = { ...initialSession, lastEventSequence: maximum - 1 };
+  const twoFactOverflow = submitKernelSession(oneSlot, metadataCommand("Two"));
+  assert.equal(twoFactOverflow.result.status, "rejected");
+  if (twoFactOverflow.result.status === "rejected") {
+    assert.equal(twoFactOverflow.result.failure.code, "event.sequence-overflow");
+  }
+  assert.strictEqual(twoFactOverflow.state, oneSlot);
+  assert.deepEqual(twoFactOverflow.events, []);
+
+  const madeDirty = submitKernelSession(initialSession, metadataCommand("Dirty"));
+  assert.equal(madeDirty.result.status, "committed");
+  const noSlotDirty = { ...madeDirty.state, lastEventSequence: maximum };
+  const oneFactOverflow = submitKernelSession(noSlotDirty, pitchCommand("D"));
+  assert.equal(oneFactOverflow.result.status, "rejected");
+  if (oneFactOverflow.result.status === "rejected") {
+    assert.equal(oneFactOverflow.result.failure.code, "event.sequence-overflow");
+  }
+  assert.strictEqual(oneFactOverflow.state, noSlotDirty);
+  assert.deepEqual(oneFactOverflow.events, []);
+
+  const finalSlot = { ...madeDirty.state, lastEventSequence: maximum - 1 };
+  const consumesFinal = submitKernelSession(finalSlot, pitchCommand("D"));
+  assert.equal(consumesFinal.result.status, "committed");
+  assert.equal(consumesFinal.events.length, 1);
+  assert.equal(consumesFinal.events[0]?.eventSequence, maximum);
+  assert.equal(consumesFinal.state.lastEventSequence, maximum);
+
+  const undoOverflowState = { ...madeDirty.state, lastEventSequence: maximum - 1 };
+  const undoOverflow = undoKernelSession(undoOverflowState);
+  assert.equal(undoOverflow.result.status, "rejected");
+  if (undoOverflow.result.status === "rejected") {
+    assert.equal(undoOverflow.result.failure.code, "event.sequence-overflow");
+  }
+  assert.strictEqual(undoOverflow.state, undoOverflowState);
+  assert.deepEqual(undoOverflow.events, []);
+
+  const undone = undoKernelSession(madeDirty.state);
+  assert.equal(undone.result.status, "committed");
+  const redoOverflowState = { ...undone.state, lastEventSequence: maximum - 1 };
+  const redoOverflow = redoKernelSession(redoOverflowState);
+  assert.equal(redoOverflow.result.status, "rejected");
+  if (redoOverflow.result.status === "rejected") {
+    assert.equal(redoOverflow.result.failure.code, "event.sequence-overflow");
+  }
+  assert.strictEqual(redoOverflow.state, redoOverflowState);
+  assert.deepEqual(redoOverflow.events, []);
+
+  const twiceDirty = submitKernelSession(madeDirty.state, pitchCommand("D"));
+  assert.equal(twiceDirty.result.status, "committed");
+  const undoOneFactState = {
+    ...twiceDirty.state,
+    lastEventSequence: maximum,
+  };
+  const undoOneFactOverflow = undoKernelSession(undoOneFactState);
+  assert.equal(undoOneFactOverflow.result.status, "rejected");
+  if (undoOneFactOverflow.result.status === "rejected") {
+    assert.equal(
+      undoOneFactOverflow.result.failure.code,
+      "event.sequence-overflow",
+    );
+  }
+  assert.strictEqual(undoOneFactOverflow.state, undoOneFactState);
+  assert.deepEqual(undoOneFactOverflow.events, []);
+
+  const onceUndone = undoKernelSession(twiceDirty.state);
+  assert.equal(onceUndone.result.status, "committed");
+  const redoOneFactState = {
+    ...onceUndone.state,
+    lastEventSequence: maximum,
+  };
+  const redoOneFactOverflow = redoKernelSession(redoOneFactState);
+  assert.equal(redoOneFactOverflow.result.status, "rejected");
+  if (redoOneFactOverflow.result.status === "rejected") {
+    assert.equal(
+      redoOneFactOverflow.result.failure.code,
+      "event.sequence-overflow",
+    );
+  }
+  assert.strictEqual(redoOneFactOverflow.state, redoOneFactState);
+  assert.deepEqual(redoOneFactOverflow.events, []);
+
+  const checkpointOverflowState = {
+    ...madeDirty.state,
+    lastEventSequence: maximum,
+  };
+  const checkpointOverflow = markKernelSessionPersisted(
+    checkpointOverflowState,
+    { documentId: "score-1", documentVersion: 1 },
+  );
+  assert.equal(checkpointOverflow.result.status, "rejected");
+  if (checkpointOverflow.result.status === "rejected") {
+    assert.equal(checkpointOverflow.result.failure.code, "event.sequence-overflow");
+  }
+  assert.strictEqual(checkpointOverflow.state, checkpointOverflowState);
+  assert.deepEqual(checkpointOverflow.events, []);
 });
 
 test("deep unknown extensions survive commit, rejection, undo, and redo", () => {

@@ -31,6 +31,9 @@ interface CommandBusLike {
   submit(input: unknown): CommandResult;
   undo(): CommandResult;
   redo(): CommandResult;
+  read(): unknown;
+  markPersisted(input: unknown): unknown;
+  subscribe(handler: unknown): unknown;
 }
 
 type CommandBusConstructor = {
@@ -195,10 +198,17 @@ function assertRejected(
   assert.equal(result.redoDepth, redoDepth);
 }
 
-test("CommandBus exposes the strict K1-2 entry points", () => {
+test("CommandBus preserves K1-2 writes and adds only K1-3 read/session entry points", () => {
   const { CommandBus, replay } = getCommandApi();
   assert.equal(typeof CommandBus.create, "function");
   assert.equal(typeof replay, "function");
+  const bus = createBus();
+  assert.equal(typeof bus.submit, "function");
+  assert.equal(typeof bus.undo, "function");
+  assert.equal(typeof bus.redo, "function");
+  assert.equal(typeof bus.read, "function");
+  assert.equal(typeof bus.markPersisted, "function");
+  assert.equal(typeof bus.subscribe, "function");
 });
 
 test("public command contracts expose versioned stable targets and anchors", () => {
