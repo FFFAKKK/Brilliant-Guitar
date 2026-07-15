@@ -28,3 +28,4 @@ export * from "./profiles/score-feature-profile";
 export * from "./commands/contracts";
 export * from "./commands/command-bus";
 export * from "./commands/replay";
+export * from "./read/contracts";

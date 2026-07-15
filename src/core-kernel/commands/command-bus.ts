@@ -10,6 +10,12 @@ import {
   undoCommand,
   type CommandRuntimeState,
 } from "./runtime";
+import type { KernelReadState, ReadResult } from "../read/contracts";
+import {
+  createReadSessionState,
+  type ReadSessionState,
+} from "../read/session-state";
+import { readKernelState } from "../read/snapshot";
 
 export type CommandBusCreationResult =
   | { readonly ok: true; readonly value: CommandBus }
@@ -18,7 +24,8 @@ export type CommandBusCreationResult =
 const COMMAND_BUS_CONSTRUCTION_TOKEN = Symbol("CommandBusConstructionToken");
 
 export class CommandBus {
-  #state: CommandRuntimeState;
+  #commandState: CommandRuntimeState;
+  #readState: ReadSessionState;
 
   private constructor(
     token: typeof COMMAND_BUS_CONSTRUCTION_TOKEN,
@@ -27,7 +34,8 @@ export class CommandBus {
     if (token !== COMMAND_BUS_CONSTRUCTION_TOKEN) {
       throw new TypeError("CommandBus must be created with CommandBus.create");
     }
-    this.#state = state;
+    this.#commandState = state;
+    this.#readState = createReadSessionState();
   }
 
   static create(initialDocument: ScoreDocument): CommandBusCreationResult {
@@ -41,20 +49,26 @@ export class CommandBus {
   }
 
   submit(input: unknown): CommandResult {
-    const transition = submitCommand(this.#state, input);
-    this.#state = transition.state;
+    const transition = submitCommand(this.#commandState, input);
+    this.#commandState = transition.state;
     return transition.result;
   }
 
   undo(): CommandResult {
-    const transition = undoCommand(this.#state);
-    this.#state = transition.state;
+    const transition = undoCommand(this.#commandState);
+    this.#commandState = transition.state;
     return transition.result;
   }
 
   redo(): CommandResult {
-    const transition = redoCommand(this.#state);
-    this.#state = transition.state;
+    const transition = redoCommand(this.#commandState);
+    this.#commandState = transition.state;
+    return transition.result;
+  }
+
+  read(): ReadResult<KernelReadState> {
+    const transition = readKernelState(this.#commandState, this.#readState);
+    this.#readState = transition.state;
     return transition.result;
   }
 }
