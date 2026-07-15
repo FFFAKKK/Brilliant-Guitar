@@ -1,7 +1,7 @@
 # Core Kernel Quality Guidelines
 
 > **Authoritative staged quality gate (2026-07-15):** K1-1 and K1-2 tests
-> remain frozen regressions; K1-3 adds only the address/read/checkpoint/event groups below after approval.
+> remain frozen regressions; the K1-3 candidate adds only the address/read/checkpoint/event groups below and awaits independent acceptance.
 
 ## Current K1-1 Required Tests
 
@@ -33,7 +33,7 @@ Every production behavior starts with a compiling behavioral RED test. Compiler/
 - Deep unknown ExtensionBlock preservation across all transaction/history/replay paths.
 - Public export and forbidden-dependency boundaries excluding K1-3/K1-4 APIs.
 
-## Planned K1-3 Required Tests
+## K1-3 Required Tests
 
 - Seven stable address kinds and strict rejection of getter/extra/index/path/tick/coordinate inputs.
 - Global Measure, Part Measure, and Voice Event inclusive range normalization, order, missing endpoint, and owner mismatch.

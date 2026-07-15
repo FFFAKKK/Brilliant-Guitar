@@ -1,7 +1,7 @@
 # Core Kernel Backend Guidelines
 
-> **Current K1-3 planning stage (2026-07-15):** K1-1 and K1-2 are accepted
-> foundations; K1-3 is a final planning candidate awaiting user review.
+> **Current K1-3 candidate stage (2026-07-15):** K1-1 and K1-2 are accepted
+> foundations; K1-3 is implemented on its active branch and awaits independent final acceptance.
 
 > Coding rules for the Pure Core Kernel V1 implementation.
 
@@ -35,7 +35,7 @@ Pure Core Kernel V1 is not the desktop app. It must be testable without React, T
 | [Pure Kernel Boundary](./pure-kernel-boundary.md) | What Core Kernel V1 may and may not contain | Stable |
 | [Score Document Model](./score-document-model.md) | `brilliant-score-1`, exact time, pitch, extensions, validation | K1-1 authoritative |
 | [Command and Transaction](./command-transaction.md) | K1-2 executable command/transaction/history/replay contract | Active |
-| [Snapshot and Events](./snapshot-events.md) | K1-3 address/read/checkpoint/event final planning contract | Review gate |
+| [Snapshot and Events](./snapshot-events.md) | K1-3 address/read/checkpoint/event implementation contract | Acceptance gate |
 | [Registry and Capability](./registry-capability.md) | Explicit K1-1 deferral and later redesign boundary | Later |
 | [Errors and Reports](./errors-reports.md) | K1-1 diagnostics; general reports later | Staged |
 | [Quality Guidelines](./quality-guidelines.md) | Required tests and forbidden shortcuts | Stable |

@@ -1,7 +1,7 @@
 # Core Kernel Guidelines
 
-> **Current staged workflow (2026-07-15):** K1-2 is accepted and archived.
-> K1-3 address/read/checkpoint/event planning is complete-candidate but remains non-executable until user review.
+> **Current staged workflow (2026-07-15):** K1-1 and K1-2 are accepted.
+> K1-3 address/read/checkpoint/event implementation is a completed candidate on its active branch and remains subject to independent final acceptance.
 
 For K1-3, read `backend/score-document-model.md`, `backend/command-transaction.md`, `backend/snapshot-events.md`, and all staged boundary/diagnostic/quality guides. K1-1 and K1-2 contracts remain frozen except for the two explicitly additive K1-3 event-boundary command failures. Registry/capability, general reports, migrations, Guitar Domain, UI, playback, layout, and physical IO remain later work.
 

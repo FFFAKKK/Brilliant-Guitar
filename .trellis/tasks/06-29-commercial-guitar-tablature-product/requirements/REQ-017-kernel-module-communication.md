@@ -12,7 +12,7 @@
 
 ## 当前决策状态
 
-- 状态: K1-3 最终规划候选；外部可变 `ScoreDocument` 副本方案已拒绝，用户已批准五项范围决策。
+- 状态: K1-3 候选实现已完成、等待独立最终验收；外部可变 `ScoreDocument` 副本方案已拒绝，用户已批准五项范围决策。
 - 已确认方案: `Snapshot / Selector + Post-Commit Event Bus + Command-only write`。
 - 对应 spec: `specs/SPEC-014-kernel-snapshot-events.md`。
 

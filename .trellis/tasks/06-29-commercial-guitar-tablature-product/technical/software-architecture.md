@@ -6,8 +6,8 @@
 - 作用: 定义后续实现的核心边界、模块协作方式、依赖方向和架构验收标准。
 - 当前架构决策: 采用参照操作系统微内核思想的 Core Kernel + 用户态服务模块架构。内核负责谱面真相、命令事务、验证、版本化契约和模块协作接口；UI、渲染、播放、导入导出、桌面壳和未来插件都作为模块或适配器与内核协作。
 - 详细架构图: `technical/microkernel-architecture.md`。
-- 当前数据模型: `07-13-k1-1-foundation-replanning/design.md` 与 `.trellis/spec/core-kernel/`；K1-2 以后仍须分块重规划。
-- 当前阶段边界: 当前仍是 Core Kernel 规划阶段。本文件只定义内核边界、模块协作原则和依赖方向；外部工程目录结构、monorepo 方案、`apps/desktop` 和 `packages/*` 拆分不属于当前阶段。
+- 当前数据模型: `07-13-k1-1-foundation-replanning/design.md` 与 `.trellis/spec/core-kernel/`；K1-1/K1-2 已验收，K1-3 候选实现等待独立最终验收，后续分块仍须重规划。
+- 当前阶段边界: 当前是 Pure Core Kernel 分块实施阶段。本文件只定义内核边界、模块协作原则和依赖方向；外部工程目录结构、monorepo 方案、`apps/desktop` 和 `packages/*` 拆分不属于当前阶段。
 - 首个实现里程碑: Pure Core Kernel V1。先实现纯 TypeScript 内核和内核测试；桌面壳、UI、渲染、播放、持久化物理 IO、导出和导入均后置。
 - 目录状态: 目录结构仍未确认，必须等工程脚手架阶段从已确认内核边界、测试边界、构建方式和发布方式反推，不得反过来限制当前内核规划。
 
@@ -73,7 +73,7 @@ flowchart TD
 
 ### 内核负责
 
-- 谱面真相管理: `ScoreDocument`、track、measure、beat、note/rest、technique、tuning、metadata、section marker。
+- 谱面真相管理: `ScoreDocument = schemaVersion + id + metadata + measureDefinitions + parts + extensions`，通用结构为 `Part -> Staff -> Voice -> Event -> Note`；吉他 tuning/technique 由后续 Part-owned extension 定义。
 - 唯一写入入口: 所有编辑动作都通过语义命令系统进入，模块不得直接修改可变文档，也不得提交任意 patch。
 - 编辑事务和历史: transaction、rollback、dirty state、undo/redo、命令回放和批量命令合并。MVP 采用细粒度历史模型，每个成功可撤销语义命令默认生成一个 `HistoryEntry`，复杂历史合并后置。
 - 文档地址和范围模型: `ScoreAddress`、`ScorePoint`、`ScoreRange` 和命令目标校验；活动光标、选区高亮、鼠标拖选状态和临时 `ScoreCoordinate` 属于 `Editor Session Service` 或 `Layout Module`。
@@ -106,7 +106,7 @@ flowchart TD
 - `CommandBus`、语义命令定义、内部 delta、事务、undo/redo、命令回放。
 - 语义地址、范围模型和命令目标校验。
 - `.bgp` schema、序列化契约、迁移入口。
-- `EventBus`、`KernelRegistry`、`KernelCapability`、`KernelError`、`KernelDiagnostic`、`KernelReport` 和 capability manifest 基础结构。
+- K1-3 的封闭 snapshot/selectors、`CommandBus.subscribe()` 与两个事件类型；Registry/Capability 和通用 Error/Report 必须等待 K1-4/K1-5 独立批准。
 - `ImportReport`、`ExportReport`、unsupported diagnostic 基础结构。
 
 第一阶段推荐内核排除:

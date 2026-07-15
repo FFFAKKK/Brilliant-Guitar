@@ -1,6 +1,6 @@
 # SPEC-014 内核地址、快照、Selector、Dirty 与事件合同
 
-> **状态：K1-3 FINAL PLANNING CANDIDATE / NOT EXECUTABLE。** 独立任务 `07-15-k1-3-address-snapshots-selectors-events` 是详细权威；用户审核三份规划文档前不得编码。
+> **状态：K1-3 IMPLEMENTATION CANDIDATE / PENDING FINAL ACCEPTANCE。** 独立任务 `07-15-k1-3-address-snapshots-selectors-events` 是详细权威；候选实现已完成，尚未经过独立最终验收。
 
 ## 1. Scope / Trigger
 

@@ -2,10 +2,10 @@
 
 ## Status
 
-- Phase: staged execution; K1-2 is accepted/archived and K1-3 is the active planning block.
+- Phase: staged execution; K1-2 is accepted/archived and K1-3 is the active candidate awaiting independent acceptance.
 - K1-1 was formally accepted at baseline `30894e2`; its model and validation contracts remain frozen.
 - This parent plan no longer defines K1-1 or K1-2 executable details; their independent child artifacts and active Core specs are authoritative.
-- K1-3 implementation remains blocked until its independent PRD/design/implement review; K1-4 and later blocks require their own plan refresh.
+- K1-3 implementation followed its approved independent PRD/design/implement set and is complete-candidate; K1-4 and later blocks require their own plan refresh and remain blocked.
 
 ## Global Rules for Every Implementation Round
 
@@ -229,4 +229,4 @@ Completion gate:
 
 ## Current Execution Recommendation
 
-Plan K1-3 on `07-15-k1-3-address-snapshots-selectors-events` against the accepted K1-2 runtime. Do not start K1-3 implementation, Guitar Domain commands, Registry/Capability, or UI integration until the K1-3 planning artifacts are explicitly reviewed and the task is started.
+Hold K1-3 on `07-15-k1-3-address-snapshots-selectors-events` for independent final acceptance. Do not start Guitar Domain commands, Registry/Capability, K1-4/K1-5, or UI integration from this parent plan.

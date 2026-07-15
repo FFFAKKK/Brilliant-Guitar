@@ -2,10 +2,10 @@
 
 ## Status and Authority
 
-- Status: planning complete candidate; not executable until user review.
+- Status: implementation complete candidate; independent final acceptance is pending.
 - Base: accepted K1-2 implementation `b62a838` and active `brilliant-score-1` contracts.
 - This design implements the approved requirements in `prd.md`; it does not reopen K1-1/K1-2 semantics.
-- `.trellis/spec/core-kernel/backend/snapshot-events.md` is the compact active contract after this planning set is approved.
+- `.trellis/spec/core-kernel/backend/snapshot-events.md` is the compact active contract synchronized from this authoritative task.
 
 ## Design Principles
 

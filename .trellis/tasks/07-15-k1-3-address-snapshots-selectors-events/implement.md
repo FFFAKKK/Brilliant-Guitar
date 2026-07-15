@@ -1,5 +1,7 @@
 # K1-3 Address / Snapshots / Selectors / Events Implementation Plan
 
+> **Execution status (2026-07-15):** Tasks 1-5 are implemented in independent commits; Task 6 documentation and full-gate evidence are being closed. The task remains `in_progress` pending independent final acceptance.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: load `trellis-before-dev`, then use `superpowers:executing-plans` in inline mode. Execute one task at a time, keep every reviewer gate, and do not dispatch implementation/check sub-agents.
 
 **Goal:** Add stable hierarchical score addressing, immutable versioned reads, exact dirty checkpoints, and deterministic isolated post-commit events to the accepted K1-2 CommandBus without changing persisted score or command/history semantics.
@@ -35,7 +37,7 @@
 - Consumes: K1-2 `ScoreEntityTarget`; `ScoreDocument`, `Part`, `Voice`, and stable IDs.
 - Produces: `ScoreAddress`, `ScorePoint`, `ScoreRange`; private `decodeScoreAddress`, `decodeScorePoint`, `decodeScoreRange`, and `decodePersistedCheckpoint` used by later tasks.
 
-- [ ] **Step 1: Add failing compile-time/public type coverage**
+- [x] **Step 1: Add failing compile-time/public type coverage**
 
 Create the test file with typed examples for every approved point/range and no obsolete vocabulary:
 
@@ -61,7 +63,7 @@ assert.equal(address.kind, "note");
 assert.equal(range.kind, "voice-event-range");
 ```
 
-- [ ] **Step 2: Run typecheck and observe the missing contracts**
+- [x] **Step 2: Run typecheck and observe the missing contracts**
 
 Run:
 
@@ -71,7 +73,7 @@ npm run typecheck
 
 Expected: FAIL because `ScoreAddress`, `ScorePoint`, and `ScoreRange` are not exported.
 
-- [ ] **Step 3: Define the exact public unions**
+- [x] **Step 3: Define the exact public unions**
 
 Implement `domain/address.ts` exactly as approved:
 
@@ -99,7 +101,7 @@ export type ScoreRange =
 
 Export only this domain module from `src/core-kernel/index.ts`.
 
-- [ ] **Step 4: Add hostile-input decoder tests**
+- [x] **Step 4: Add hostile-input decoder tests**
 
 Import the private codec directly and assert these exact classifications:
 
@@ -129,7 +131,7 @@ for (const input of [
 
 Also create proxy/getter inputs and assert getters are never invoked.
 
-- [ ] **Step 5: Implement strict exact-record decoding**
+- [x] **Step 5: Implement strict exact-record decoding**
 
 Use `Reflect.ownKeys`, data-property descriptors, exact key sets, non-empty strings, and closed kind switches. Do not import or expose K1-2's private codec helpers. Return only:
 
@@ -141,7 +143,7 @@ type DecodeResult<T> =
 
 `decodePersistedCheckpoint` accepts exactly `documentId` and a non-negative safe `documentVersion`.
 
-- [ ] **Step 6: Run targeted tests**
+- [x] **Step 6: Run targeted tests**
 
 Run:
 
@@ -152,7 +154,7 @@ node --test dist/test/core-kernel/address-range.test.js
 
 Expected: PASS; no getter is invoked and obsolete/index/path shapes reject.
 
-- [ ] **Step 7: Commit Task 1**
+- [x] **Step 7: Commit Task 1**
 
 ```powershell
 git add src/core-kernel/domain/address.ts src/core-kernel/read/address-codec.ts src/core-kernel/index.ts test/core-kernel/address-range.test.ts
@@ -180,7 +182,7 @@ git commit -m "feat(core): add stable score address and range contracts"
 - Consumes: validated private `CommandRuntimeState` and K1-2 history depths.
 - Produces: `DocumentSnapshot`, `KernelHistoryState`, `KernelReadState`, `ReadFailure`, `ReadResult<T>`, `CommandBus.read()` and private read-session initialization/cache.
 
-- [ ] **Step 1: Write failing snapshot/read tests**
+- [x] **Step 1: Write failing snapshot/read tests**
 
 Cover initial V0, commit V1, old-snapshot retention, no-op/rejected version stability, deep unknown ExtensionBlock data, and recursive freeze:
 
@@ -206,7 +208,7 @@ assert.equal(first.value.snapshot.document.parts[0]!.measureContents[0]!
 
 Attempt `Reflect.set` at metadata, nested note, array, and ExtensionBlock payload levels and assert `false` plus unchanged live behavior.
 
-- [ ] **Step 2: Run the test and observe missing read API**
+- [x] **Step 2: Run the test and observe missing read API**
 
 ```powershell
 npm run typecheck
@@ -214,7 +216,7 @@ npm run typecheck
 
 Expected: FAIL because `CommandBus.read` and read contracts do not exist.
 
-- [ ] **Step 3: Implement read contracts and deep freeze**
+- [x] **Step 3: Implement read contracts and deep freeze**
 
 Add the exact interfaces/failures from `design.md`. Implement a private recursive freeze over Core-owned structured-cloned arrays/plain objects:
 
@@ -234,7 +236,7 @@ export function deepFreezeValue<T>(value: T, seen = new WeakSet<object>()): T {
 
 Keep this helper private; Core snapshots contain validated plain data, not caller getters.
 
-- [ ] **Step 4: Implement snapshot cache and initial read-session state**
+- [x] **Step 4: Implement snapshot cache and initial read-session state**
 
 Initialize:
 
@@ -248,7 +250,7 @@ Initialize:
 
 Build snapshots with `structuredClone(commandState.document)`, deep-freeze the clone and envelope, and cache only the current version. On failure return `read.invariant-violation` and preserve the previous cache/state.
 
-- [ ] **Step 5: Add `CommandBus.read()` without changing writes**
+- [x] **Step 5: Add `CommandBus.read()` without changing writes**
 
 Extend construction to initialize private read-session state. Add:
 
@@ -267,7 +269,7 @@ command/read fields explicit; Task 5 moves them into the approved private
 composed session runtime. Do not add `getDocument` or a mutable document
 property.
 
-- [ ] **Step 6: Run targeted read and K1-2 regression tests**
+- [x] **Step 6: Run targeted read and K1-2 regression tests**
 
 ```powershell
 npm run build
@@ -277,7 +279,7 @@ node --test dist/test/core-kernel/command-system.test.js
 
 Expected: PASS; K1-2 write behavior is unchanged.
 
-- [ ] **Step 7: Commit Task 2**
+- [x] **Step 7: Commit Task 2**
 
 ```powershell
 git add src/core-kernel/read src/core-kernel/commands/command-bus.ts src/core-kernel/index.ts test/core-kernel/read-system.test.ts
@@ -304,7 +306,7 @@ git commit -m "feat(core): add immutable versioned read snapshots"
 - Consumes: `DocumentSnapshot`, `KernelReadState`, strict address/range decoders, `measureDefinitions`, Part contents, and Voice sequences.
 - Produces: the exact six selectors and their frozen result unions.
 
-- [ ] **Step 1: Write failing seven-entity and ownership tests**
+- [x] **Step 1: Write failing seven-entity and ownership tests**
 
 For every address kind assert value and structural owner chain. Representative deep case:
 
@@ -331,7 +333,7 @@ assert.deepEqual(
 
 Assert a missing ID returns `read.entity-not-found` and malformed address returns `read.invalid-address`.
 
-- [ ] **Step 2: Write failing range normalization/order tests**
+- [x] **Step 2: Write failing range normalization/order tests**
 
 Create at least two Measures and deliberately reverse one Part's `measureContents` storage. Assert:
 
@@ -351,7 +353,7 @@ if (result.ok && result.value.kind === "part-measure-range") {
 
 Add exact failures for missing endpoints, cross-kind endpoints, different Part IDs, different Voice IDs, and an Event owned by another Voice.
 
-- [ ] **Step 3: Run targeted tests and observe missing selectors**
+- [x] **Step 3: Run targeted tests and observe missing selectors**
 
 ```powershell
 npm run typecheck
@@ -359,7 +361,7 @@ npm run typecheck
 
 Expected: FAIL on missing selector exports/types.
 
-- [ ] **Step 4: Build the private per-snapshot index**
+- [x] **Step 4: Build the private per-snapshot index**
 
 Traverse in this order: document; `measureDefinitions`; Parts; Part staves; each Part's contents joined to global Measure order; Voices; Events; Notes. Store selected frozen values plus structural owner IDs. Reject duplicate/missing data as `read.invariant-violation` even though Core-produced snapshots should already be semantically valid.
 
@@ -371,15 +373,15 @@ const INDEX_BY_SNAPSHOT = new WeakMap<DocumentSnapshot, EntityIndex>();
 
 Do not attach indexes to snapshots or export them.
 
-- [ ] **Step 5: Implement the six pure selectors**
+- [x] **Step 5: Implement the six pure selectors**
 
 Every selector wraps its body in a total exception boundary and returns `ReadResult<T>`. `selectScoreRange` normalizes inclusive endpoint indexes and slices through `endIndex + 1`. It returns frozen result envelopes referencing only the frozen snapshot graph.
 
-- [ ] **Step 6: Prove purity and repeatability**
+- [x] **Step 6: Prove purity and repeatability**
 
 Call every selector twice on the same snapshot and assert deep equality. Mutate returned envelopes with `Reflect.set` and assert failure/no live-state effect. Do not assert index or snapshot object-reference identity.
 
-- [ ] **Step 7: Run targeted tests**
+- [x] **Step 7: Run targeted tests**
 
 ```powershell
 npm run build
@@ -389,7 +391,7 @@ node --test dist/test/core-kernel/read-system.test.js
 
 Expected: PASS with deterministic order and exact failures.
 
-- [ ] **Step 8: Commit Task 3**
+- [x] **Step 8: Commit Task 3**
 
 ```powershell
 git add src/core-kernel/read src/core-kernel/index.ts test/core-kernel/address-range.test.ts test/core-kernel/read-system.test.ts
@@ -415,7 +417,7 @@ git commit -m "feat(core): add pure score snapshot selectors"
 - Consumes: K1-2 `HistoryEntry.sequence`, undo/redo stacks, document versions, and strict checkpoint decoder.
 - Produces: `PersistedCheckpoint`, `CheckpointFailure`, `MarkPersistedResult`, version-to-content-state mapping, exact dirty state, and `CommandBus.markPersisted(input: unknown)`.
 
-- [ ] **Step 1: Write the failing clean/dirty state machine test**
+- [x] **Step 1: Write the failing clean/dirty state machine test**
 
 ```typescript
 const bus = requireBus();
@@ -433,11 +435,11 @@ assert.equal(bus.redo().status, "committed");
 assert.equal(requireRead(bus).dirty, true);
 ```
 
-- [ ] **Step 2: Write the failing asynchronous-save test**
+- [x] **Step 2: Write the failing asynchronous-save test**
 
 Capture V1, commit V2, then mark V1 persisted. Assert the result is `updated` with current `documentVersion: 2` and `dirty: true`; undo to V1's content identity and assert clean. This prevents marking unsaved V2 clean.
 
-- [ ] **Step 3: Write branch and rejection tests**
+- [x] **Step 3: Write branch and rejection tests**
 
 Cover:
 
@@ -463,7 +465,7 @@ if (unavailableVersion.status === "rejected") {
 
 Also test malformed/extra/getter input, same-checkpoint no-op, no-op/rejected commands preserving dirty, and a new branch that recreates equal content but remains dirty.
 
-- [ ] **Step 4: Run tests and observe missing checkpoint behavior**
+- [x] **Step 4: Run tests and observe missing checkpoint behavior**
 
 ```powershell
 npm run typecheck
@@ -471,7 +473,7 @@ npm run typecheck
 
 Expected: FAIL on `markPersisted` and checkpoint contracts.
 
-- [ ] **Step 5: Implement content-state identity and version map**
+- [x] **Step 5: Implement content-state identity and version map**
 
 Use only:
 
@@ -485,11 +487,11 @@ Record `{documentVersion -> contentStateIdentity}` only after an accepted commit
 Never mutate the previous Map in place: construct the copied Map inside the
 detached candidate and adopt it only with the full accepted session transition.
 
-- [ ] **Step 6: Implement atomic `markPersisted`**
+- [x] **Step 6: Implement atomic `markPersisted`**
 
 Strictly decode input, verify document ID and known version, then replace only the clean identity. Return `updated` when identity changes and `no-op` otherwise. Catch unexpected failures as `checkpoint.invariant-violation`; no public raw exception.
 
-- [ ] **Step 7: Run dirty and K1-2 history tests**
+- [x] **Step 7: Run dirty and K1-2 history tests**
 
 ```powershell
 npm run build
@@ -500,7 +502,7 @@ node --test dist/test/core-kernel/command-internals.test.js
 
 Expected: PASS; undo/redo versions remain K1-2 monotonic and dirty follows content identity instead.
 
-- [ ] **Step 8: Commit Task 4**
+- [x] **Step 8: Commit Task 4**
 
 ```powershell
 git add src/core-kernel/read src/core-kernel/commands test/core-kernel/dirty-checkpoint.test.ts test/core-kernel/command-internals.test.ts
@@ -533,7 +535,7 @@ git commit -m "feat(core): add exact persisted dirty checkpoint"
 - Consumes: isolated K1-2 `CommandTransition`, effective private mutation, checkpoint transition, read-session state.
 - Produces: `KernelEvent`, subscription contracts, internal committed-operation facts, candidate event preflight, synchronous dispatch, and stable reentrant/overflow failures.
 
-- [ ] **Step 1: Write failing event count and order tests**
+- [x] **Step 1: Write failing event count and order tests**
 
 Subscribe, commit from initial clean state, and assert exactly:
 
@@ -554,7 +556,7 @@ Event that K1 Profile classifies `unsupported.chord`; because K1-2 commits it,
 assert the normal committed fact(s) are emitted and the unsupported support
 classification is unchanged.
 
-- [ ] **Step 2: Write affected-target and payload-boundary tests**
+- [x] **Step 2: Write affected-target and payload-boundary tests**
 
 Assert metadata/pitch/value commands expose only their original target. Insert
 orders Voice, Event, then Notes because Voice is the original target. Remove
@@ -563,15 +565,15 @@ target. Undo/redo reuse the exact original affected set. Recursively assert
 payload freeze and absence of `document`, `mutation`, `history`, `handler`,
 `timestamp`, `path`, and UI/runtime objects.
 
-- [ ] **Step 3: Write subscriber lifecycle/isolation tests**
+- [x] **Step 3: Write subscriber lifecycle/isolation tests**
 
 Register three handlers, make the first subscribe another handler, make the second unsubscribe, and make one throw. Assert the current dispatch uses the original registration snapshot, later events use the changed list, duplicate handler registrations are independent, unsubscribe is idempotent, later handlers still run, and the committed result/state remain valid.
 
-- [ ] **Step 4: Write reentrancy tests through the real CommandBus**
+- [x] **Step 4: Write reentrancy tests through the real CommandBus**
 
 Inside a callback call `read`, `submit`, `undo`, `redo`, and `markPersisted`. Assert read succeeds at the committed version while every write/checkpoint returns a rejection with `event.reentrant-write`, changes no state, and emits no nested facts.
 
-- [ ] **Step 5: Write internal event-overflow atomicity test**
+- [x] **Step 5: Write internal event-overflow atomicity test**
 
 Use private `session/runtime.ts` with `lastEventSequence` set to
 `Number.MAX_SAFE_INTEGER` to prove any one-fact transition rejects. Set it to
@@ -590,7 +592,7 @@ assert.deepEqual(transition.events, []);
 
 Repeat for undo/redo and a checkpoint dirty toggle. The public constructor must not expose a test option.
 
-- [ ] **Step 6: Run tests and observe missing event contracts**
+- [x] **Step 6: Run tests and observe missing event contracts**
 
 ```powershell
 npm run typecheck
@@ -598,7 +600,7 @@ npm run typecheck
 
 Expected: FAIL on event imports, subscribe method, and additive failure variants.
 
-- [ ] **Step 7: Add internal committed-operation facts**
+- [x] **Step 7: Add internal committed-operation facts**
 
 Extend only private runtime transitions:
 
@@ -612,7 +614,7 @@ interface CommittedOperation {
 
 Rejected/no-op transitions omit it. Replay ignores it. Do not add it to any public result or index export.
 
-- [ ] **Step 8: Implement event fact construction and sequence reservation**
+- [x] **Step 8: Implement event fact construction and sequence reservation**
 
 Build the two exact public event variants from committed facts/session state.
 Deduplicate affected addresses by `kind + stable ID`. Deep-freeze before
@@ -622,7 +624,7 @@ command/checkpoint state, assign the inclusive sequence interval, then store the
 interval upper bound only on acceptance. Build and freeze the complete event
 array while the command/read/checkpoint candidate is still detached.
 
-- [ ] **Step 9: Implement private session runtime**
+- [x] **Step 9: Implement private session runtime**
 
 Compose command state, read-session state, and `lastEventSequence`. A session
 transition returns `{ state, result, events }`. Candidate rejection returns the
@@ -634,11 +636,11 @@ integration maps to `command.internal-error`, undo/redo integration to
 `checkpoint.invariant-violation`. Only safe-counter exhaustion maps to
 `event.sequence-overflow`.
 
-- [ ] **Step 10: Implement CommandBus subscriptions and dispatch guard**
+- [x] **Step 10: Implement CommandBus subscriptions and dispatch guard**
 
 Store private subscriber records and a private dispatching boolean. `subscribe` validates functions and returns an idempotent closure. For each operation, reject reentrancy before calling session runtime; adopt the successful session state before dispatch; copy handlers; catch each handler separately; clear the guard in `finally`.
 
-- [ ] **Step 11: Add only the two CommandFailure variants**
+- [x] **Step 11: Add only the two CommandFailure variants**
 
 ```typescript
 | { readonly code: "event.reentrant-write" }
@@ -647,7 +649,7 @@ Store private subscriber records and a private dispatching boolean. `subscribe` 
 
 Do not rename, widen, or wrap existing K1-2 failures.
 
-- [ ] **Step 12: Run targeted event/session regressions**
+- [x] **Step 12: Run targeted event/session regressions**
 
 ```powershell
 npm run build
@@ -659,7 +661,7 @@ node --test dist/test/core-kernel/command-internals.test.js
 
 Expected: PASS; handler throws do not escape and replay tests remain unchanged.
 
-- [ ] **Step 13: Commit Task 5**
+- [x] **Step 13: Commit Task 5**
 
 ```powershell
 git add src/core-kernel/events src/core-kernel/session src/core-kernel/commands src/core-kernel/index.ts test/core-kernel/event-system.test.ts test/core-kernel/dirty-checkpoint.test.ts test/core-kernel/command-system.test.ts test/core-kernel/command-internals.test.ts
@@ -698,7 +700,7 @@ git commit -m "feat(core): add deterministic post-commit events"
 - Consumes: all completed K1-3 behavior and public exports.
 - Produces: one non-conflicting active contract set and the final evidence package for independent review.
 
-- [ ] **Step 1: Make the public export test fail closed**
+- [x] **Step 1: Make the public export test fail closed**
 
 Update the exact runtime export list for approved selector functions and keep a forbidden list containing at least:
 
@@ -715,7 +717,7 @@ Update the exact runtime export list for approved selector functions and keep a 
 
 Inspect the public index text and assert it does not export private codec/index/runtime/fact/session modules.
 
-- [ ] **Step 2: Run boundary tests before final export cleanup**
+- [x] **Step 2: Run boundary tests before final export cleanup**
 
 ```powershell
 npm run build
@@ -725,7 +727,7 @@ node --test dist/test/core-kernel/forbidden-dependency-boundary.test.js
 
 Expected: FAIL until index exports/private module references match the approved list.
 
-- [ ] **Step 3: Finalize public exports**
+- [x] **Step 3: Finalize public exports**
 
 Export public types/functions only from:
 
@@ -738,13 +740,13 @@ export * from "./events/contracts";
 
 Do not export event publishing, internal codecs, session runtime, freeze/cache/index helpers, K1-2 internal transition facts, or mutable state access.
 
-- [ ] **Step 4: Synchronize active planning/spec documents**
+- [x] **Step 4: Synchronize active planning/spec documents**
 
 Replace old claims that snapshots require `snapshotId`/created time, that K1-3 includes serializable/diagnostic/registry selectors, or that it emits load/history/registry/migration events. State that the independent K1-3 task is authoritative and that implementation remains subject to final acceptance.
 
 Do not edit historical `planning-snapshots/` or archived tasks; they are evidence, not active contracts.
 
-- [ ] **Step 5: Run focused K1-3 tests together**
+- [x] **Step 5: Run focused K1-3 tests together**
 
 ```powershell
 npm run build
@@ -753,7 +755,7 @@ node --test dist/test/core-kernel/address-range.test.js dist/test/core-kernel/re
 
 Expected: all K1-3 tests PASS.
 
-- [ ] **Step 6: Run the complete quality gate**
+- [x] **Step 6: Run the complete quality gate**
 
 ```powershell
 npm run typecheck
@@ -765,7 +767,7 @@ python ./.trellis/scripts/task.py validate 07-15-k1-3-address-snapshots-selector
 
 Expected: all commands exit 0. If Node spawn fails with sandbox `EPERM`, rerun the same commands in the approved environment and record that evidence; do not reinterpret it as a test failure or silently skip it.
 
-- [ ] **Step 7: Confirm clean scope and exact baseline**
+- [x] **Step 7: Confirm clean scope and exact baseline**
 
 ```powershell
 git status --short --branch
@@ -775,7 +777,7 @@ git diff --check
 
 Expected: only K1-3 production/tests/spec planning files plus known user-owned `.trellis/maintenance/`; no UI/IO/Guitar/K1-4/K1-5 implementation.
 
-- [ ] **Step 8: Commit Task 6**
+- [x] **Step 8: Commit Task 6**
 
 ```powershell
 git add src/core-kernel test/core-kernel '.trellis/spec/core-kernel/index.md' '.trellis/spec/core-kernel/backend/index.md' '.trellis/spec/core-kernel/backend/pure-kernel-boundary.md' '.trellis/spec/core-kernel/backend/quality-guidelines.md' '.trellis/spec/core-kernel/backend/snapshot-events.md' '.trellis/tasks/06-29-commercial-guitar-tablature-product/specs/SPEC-009-extension-api.md' '.trellis/tasks/06-29-commercial-guitar-tablature-product/specs/SPEC-014-kernel-snapshot-events.md' '.trellis/tasks/06-29-commercial-guitar-tablature-product/prd.md' '.trellis/tasks/06-29-commercial-guitar-tablature-product/design.md' '.trellis/tasks/06-29-commercial-guitar-tablature-product/technical/microkernel-architecture.md' '.trellis/tasks/06-29-commercial-guitar-tablature-product/technical/modular-plugin-architecture.md' '.trellis/tasks/06-29-commercial-guitar-tablature-product/technical/software-architecture.md' '.trellis/tasks/06-29-commercial-guitar-tablature-product/requirements/REQ-017-kernel-module-communication.md' '.trellis/tasks/07-07-pure-core-kernel-v1/prd.md' '.trellis/tasks/07-07-pure-core-kernel-v1/design.md' '.trellis/tasks/07-07-pure-core-kernel-v1/implement.md' '.trellis/tasks/07-07-pure-core-kernel-v1/task.json' '.trellis/tasks/07-15-k1-3-address-snapshots-selectors-events'
@@ -788,7 +790,7 @@ Before committing, inspect the staged list and explicitly exclude `.trellis/main
 
 ---
 
-## Final Review Checklist Before `task.py start`
+## Approved Planning Gate Record
 
 Requirement coverage:
 
@@ -800,15 +802,15 @@ Requirement coverage:
 | `K1-3-REQ-012..015` | Task 5 event/session runtime | PRD AC-005; event tests |
 | `K1-3-REQ-016..019` | Task 5 compatibility; Task 6 boundaries/specs | PRD AC-006/007; full regression/boundary gate |
 
-- [ ] `prd.md` contains no unresolved question, duplicated brainstorm section, or placeholder.
-- [ ] `design.md` defines every public type, method, ordering rule, failure family, state transition, and privacy boundary referenced by implementation.
-- [ ] Every requirement `K1-3-REQ-001..019` maps to at least one implementation task and acceptance test.
-- [ ] No task requires a mutable document getter, public event publisher, whole-document history snapshot, wall clock, random ID, or dynamic registry.
-- [ ] Async save cannot mark a later unsaved version clean.
-- [ ] Event overflow cannot commit without its required facts.
-- [ ] K1-2 replay remains event/session-free and deterministic.
-- [ ] Active parent/product/Core specs defer to the independent K1-3 authority and contain no conflicting old API.
-- [ ] User has reviewed and explicitly approved `prd.md`, `design.md`, and `implement.md`.
+- [x] `prd.md` contains no unresolved question, duplicated brainstorm section, or placeholder.
+- [x] `design.md` defines every public type, method, ordering rule, failure family, state transition, and privacy boundary referenced by implementation.
+- [x] Every requirement `K1-3-REQ-001..019` maps to at least one implementation task and acceptance test.
+- [x] No task requires a mutable document getter, public event publisher, whole-document history snapshot, wall clock, random ID, or dynamic registry.
+- [x] Async save cannot mark a later unsaved version clean.
+- [x] Event overflow cannot commit without its required facts.
+- [x] K1-2 replay remains event/session-free and deterministic.
+- [x] Active parent/product/Core specs defer to the independent K1-3 authority and contain no conflicting old API.
+- [x] User has reviewed and explicitly approved `prd.md`, `design.md`, and `implement.md`.
 
-Do not run `task.py start`, implement production code, stage, or commit the
-planning set until the user completes the final planning review.
+The user approved this planning gate before `task.py start`. The resulting
+implementation remains a candidate until independent final acceptance.

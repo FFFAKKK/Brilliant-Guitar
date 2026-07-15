@@ -4,7 +4,7 @@
 
 把现有 `Pure Core Kernel V1` 总规划收敛成一个可执行、可验收、可分块推进的内核实现任务。
 
-本任务是 Pure Core Kernel V1 路线图父任务。K1-1 已在 `30894e2` 正式验收；K1-2 已完成 P1 修复、独立复验并归档。K1-3 现由独立任务 `07-15-k1-3-address-snapshots-selectors-events` 进入 planning；K1-3 规划审核前不得编码，K1-4 与后续 Block 继续阻塞并需要各自审核。
+本任务是 Pure Core Kernel V1 路线图父任务。K1-1 已在 `30894e2` 正式验收；K1-2 已完成 P1 修复、独立复验并归档。K1-3 独立任务 `07-15-k1-3-address-snapshots-selectors-events` 已形成候选实现并等待独立最终验收；K1-4 与后续 Block 继续阻塞并需要各自审核。
 
 ## Source Documents
 

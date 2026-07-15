@@ -2,14 +2,14 @@
 
 ## 状态
 
-- 阶段: Core K1-3 地址/快照/selector/event 规划；其余产品模块保持 planning
+- 阶段: Core K1-3 地址/快照/selector/event 候选实现收口；其余产品模块保持 planning
 - 目标: 为第一条可运行 MVP 闭环提供需求反推的技术设计骨架。
 - 已确认技术栈: Tauri 2 + TypeScript + React + Vite。
 - 首发平台: Windows 桌面。
-- 架构原则: 参照操作系统微内核思想的 Core Kernel + 用户态服务模块。当前只规划 Core Kernel 边界；外部工程目录结构属于后续脚手架阶段，不是当前内核规划事项。
+- 架构原则: 参照操作系统微内核思想的 Core Kernel + 用户态服务模块。当前只实施 Pure Core Kernel 的已批准分块；外部工程目录结构属于后续脚手架阶段，不是当前内核事项。
 - 首个实现里程碑: Pure Core Kernel V1，纯 TypeScript、无 UI、无 Tauri、无 VexFlow、无 Web Audio、无 PDF/PNG。
-- K1-1 模型决策源: `../07-13-k1-1-foundation-replanning/design.md`；K1-2 执行源已归档；K1-3 规划源为 `../07-15-k1-3-address-snapshots-selectors-events/`。字段级与行为级契约以 `.trellis/spec/core-kernel/` 为准。
-- 本文中的 registry、report 与产品模块协作只代表路线图；K1-3 的具体合同由独立任务审核，不能直接从父路线图实现。
+- K1-1 模型决策源: `../07-13-k1-1-foundation-replanning/design.md`；K1-2 执行源已归档；K1-3 权威源为 `../07-15-k1-3-address-snapshots-selectors-events/`，其候选实现等待独立最终验收。字段级与行为级契约以 `.trellis/spec/core-kernel/` 为准。
+- 本文中的 registry、report 与产品模块协作只代表路线图；不得反向扩大已实现的 K1-3 封闭合同。
 
 ## 设计目标
 
@@ -34,7 +34,7 @@
 - 音乐时间模型: 持久化规范化 `Fraction + NoteValue`，事件位置由 Voice 序列精确推导；tick、PPQ、毫秒和布局时间由适配层派生。
 - MVP 验证: Core semantic validation 与 `ScoreFeatureProfile` 分离。通用 schema 可表达多 Part/Staff/Voice、和弦和未来节奏；首个 profile 只支持 4/4、固定 tempo、一个 Part/Staff、每小节一个 Voice、四分/八分/十六分、基础休止和单音。
 - 软分析边界: 第一阶段不做软一致性、可演奏性分析、指法建议、教学提示、风格检查或难度评分；这些能力不阻塞 MVP。
-- 命令事务路线图: 未来命令面向 measure/part/staff/voice/event/note 稳定 ID，处理新建谱、元数据、小节、note/rest、书写音高、时值、删除和 undo/redo；patch/delta 只作内部实现。吉他技巧命令属于后续 Guitar Domain，不是 Core K1-2 的默认命令。完整命令契约必须在 K1-1 评审后重规划。
+- 命令事务: 已验收 K1-2 通过六个封闭命令处理 metadata、WrittenPitch、NoteValue、Voice Event 插入/删除和 undo/redo；patch/delta 只作内部实现。新建谱、小节增删、范围编辑和吉他技巧命令属于后续独立分块。
 - 文档地址和范围: `ScoreAddress`、`ScorePoint`、`ScoreRange` 和命令目标校验。当前 UI 光标、选区高亮、鼠标拖选和临时 `ScoreCoordinate` 属于 `Editor Session Service` 或 `Layout Module`，不属于微内核。
 - 文件契约: `.bgp` schema、manifest、score JSON、schema version、迁移入口。
 - 快照和查询: `CommandBus.read()` 返回深冻结 `DocumentSnapshot`、history depths、dirty；六个 selector 与分层 range 提供受控读取，物理序列化属于 Persistence。
@@ -62,7 +62,7 @@ Core Kernel 路线图仍按 9 类机制分类，但按任务分块实施；当�
 
 ### Pure Core Kernel V1 Boundary
 
-Pure Core Kernel V1 最终覆盖上述 9 类机制，但必须按 K1-1 至 K1-6 逐块评审。K1-1 与 K1-2 已验收；K1-3 正在最终规划审核，K1-4/K1-5 仍阻塞。任何当前分块都不包含桌面壳、React UI、VexFlow/SVG 渲染、Web Audio 播放、PDF/PNG 真实导出、Guitar Pro 导入、Tauri 文件系统或第三方插件运行时。
+Pure Core Kernel V1 最终覆盖上述 9 类机制，但必须按 K1-1 至 K1-6 逐块评审。K1-1 与 K1-2 已验收；K1-3 候选实现已完成并等待独立最终验收，K1-4/K1-5 仍阻塞。任何当前分块都不包含桌面壳、React UI、VexFlow/SVG 渲染、Web Audio 播放、PDF/PNG 真实导出、Guitar Pro 导入、Tauri 文件系统或第三方插件运行时。
 
 Pure Core Kernel V1 可以定义外部导入/导出贡献点的抽象 descriptor 类型、capability 检查和 report 外壳，但不得注册 PDF、PNG、Guitar Pro 或 `.bgp` 物理读写的具体 descriptor/handler。`.bgp` schema、manifest 语义和迁移入口属于内核；zip 读写、文件路径、自动保存恢复、PDF/PNG 页面生成和 Guitar Pro 解析都属于外部用户态服务模块。
 
@@ -89,7 +89,7 @@ Pure Core Kernel V1 可以定义外部导入/导出贡献点的抽象 descriptor
 
 ### Kernel Snapshot / Event Protocol
 
-推荐设计见 `specs/SPEC-014-kernel-snapshot-events.md`。第一阶段建议采用:
+当前合同见 `specs/SPEC-014-kernel-snapshot-events.md`。K1-3 候选实现采用:
 
 - Snapshot / Selector: `CommandBus.read()` 返回携带 `documentVersion` 的 `DocumentSnapshot`、history depths 与 dirty；selector 结果由输入 snapshot/read state 的版本关联。
 - Post-Commit Event: K1-3 只发布 committed submit/undo/redo 的 `core.document.committed`，以及 dirty 布尔变化时的 `core.session.dirty-state-changed`；其他事实必须由后续分块单独批准。
@@ -253,10 +253,10 @@ Pure Core Kernel V1 可以定义外部导入/导出贡献点的抽象 descriptor
 
 - Core Kernel 路线图仍使用 9 类机制分类，但必须按 K1-1 至 K1-6 分块评审，不能一次性交付或把后续机制倒灌进 K1-1。
 - 音乐时间模型属于谱面核心对象模型，不新增第十类机制；Core 持久化 Fraction/NoteValue，tick/PPQ、真实播放时钟和播放光标由外部 adapter 派生。
-- 快照、selector、事件总线与模块通信必须通过新的 `SPEC-014` K1-3 重规划门，旧详细模型已归档。
+- 快照、selector、事件订阅与模块通信遵守 `SPEC-014` 和独立 K1-3 权威任务，旧详细模型已归档。
 - 外部可变 `ScoreDocument` 副本方案已拒绝；这类方案与微内核设计相悖。外部模块只能生成非谱面事实的派生模型，最终写入仍走内核受控入口。
 - Registry/capability 是否保留以及保留哪些 contribution 必须通过 `SPEC-015` K1-4 重规划门证明。
 - K1-1 diagnostics 已确认；operation errors、report 与 migration 通过 `SPEC-016` K1-5 重规划门补充。
 - 注册表 handler 运行时注销/卸载、第三方插件热插拔、运行中启用/禁用和运行中卸载已明确不作为稳定性目标；未来第三方插件配置变更必须启动前完成并通过重启生效。官方随应用发布的内置模块会有多个，UI 模块只是其中一类，具体模块清单、数量和拆分方式后续再确定；官方和第三方的权限模型不再按来源二分，最终都收敛到同一套注册协议，这些生命周期治理能力不作为当前内核总规划和 Kernel V1 实现阻塞项。
 - 外部工程目录结构、monorepo 方案、`apps/desktop` 和 `packages/*` 拆分不属于当前 Core Kernel 规划阶段；这些只在后续工程脚手架阶段根据已确认内核边界和模块协作方式重新评估，不作为当前内核规划阻塞项。
-- 当前设计文档无阻塞开放问题；进入实现前仍需用户审核最终规划稿并明确批准。
+- 当前设计文档无阻塞开放问题；K1-3 已形成候选实现，尚待独立最终验收，后续 K1-4/K1-5 仍须分别批准后才能实施。

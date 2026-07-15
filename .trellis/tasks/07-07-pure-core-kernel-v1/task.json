@@ -5,7 +5,7 @@
   "description": "把现有 Pure Core Kernel V1 总规划收敛为可执行的分块实现计划；本任务只规划纯 TypeScript Core Kernel，不启动 UI、Tauri、渲染、播放、真实文件 IO 或第三方插件运行时。",
   "status": "in_progress",
   "dev_type": null,
-  "scope": "core-kernel-planning",
+  "scope": "core-kernel-staged-execution",
   "package": "core-kernel",
   "priority": "P2",
   "creator": "ATOM",
@@ -42,5 +42,8 @@
     ".trellis/spec/core-kernel/backend/quality-guidelines.md"
   ],
   "notes": "按用户要求，一个大的内核功能一个大的内核功能推进；每个大功能必须说明作用、子功能作用、验收和边界。",
-  "meta": {}
+  "meta": {
+    "k1_3_status": "implementation_candidate_pending_acceptance",
+    "k1_3_task": "07-15-k1-3-address-snapshots-selectors-events"
+  }
 }

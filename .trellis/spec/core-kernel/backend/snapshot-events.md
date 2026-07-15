@@ -1,7 +1,7 @@
 # Address, Snapshot, Selectors, Checkpoint, and Events
 
-> **K1-3 final planning candidate (2026-07-15):** K1-2 is accepted and archived.
-> This contract remains non-executable until the user approves the K1-3 PRD/design/implement set and the task is started.
+> **K1-3 implementation candidate (2026-07-15):** K1-2 is accepted and archived.
+> The independent `07-15-k1-3-address-snapshots-selectors-events` task is authoritative; its implementation is complete-candidate and remains subject to independent final acceptance.
 
 ## Address and Range
 

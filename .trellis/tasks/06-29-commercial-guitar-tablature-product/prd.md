@@ -3,12 +3,12 @@
 ## 状态
 
 - Trellis task: `06-29-commercial-guitar-tablature-product`
-- 当前阶段: Core K1-3 地址/快照/selector/event 规划；产品其余阶段保持规划态
+- 当前阶段: Core K1-3 地址/快照/selector/event 候选实现收口；产品其余阶段保持规划态
 - 创建日期: 2026-06-29
 - 负责人: ATOM
 - 文档策略: 每个需求先写独立文档，最终再合并为收敛后的 PRD。
 - 当前 Core 基线: K1-1 已在 `30894e2` 正式验收；`.trellis/spec/core-kernel/` 是活动代码契约。本文较早的决策记录若与其冲突，以活动规范与独立 Block 任务为准。
-- 当前交付状态: K1-2 已完成 P1 修复、独立复验并归档；`07-15-k1-3-address-snapshots-selectors-events` 正在 planning。Guitar Domain、registry 和通用 report 仍需分别重规划。
+- 当前交付状态: K1-2 已完成 P1 修复、独立复验并归档；`07-15-k1-3-address-snapshots-selectors-events` 候选实现已完成并等待独立最终验收。Guitar Domain、registry 和通用 report 仍需分别重规划。
 
 ## 产品目标
 

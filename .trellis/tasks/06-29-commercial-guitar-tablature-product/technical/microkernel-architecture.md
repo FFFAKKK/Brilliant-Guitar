@@ -1,9 +1,6 @@
 # 微内核架构图与模块职责
 
-> **当前模型基线（2026-07-13）：** K1-1 的唯一决策源是
-> `07-13-k1-1-foundation-replanning/design.md`，活动字段契约位于
-> `.trellis/spec/core-kernel/`。本文的命令、registry、report 和模块协作章节是
-> 待分块复审的架构路线图，不可覆盖 `brilliant-score-1`。
+> **当前模型基线（2026-07-15）：** K1-1/K1-2 已验收，K1-3 候选实现已完成并等待独立最终验收；活动契约位于 `.trellis/spec/core-kernel/`。本文的 registry、report 和后续模块协作章节仍是待分块复审的架构路线图，不可覆盖已实现合同。
 
 ## 架构结论
 
@@ -19,7 +16,7 @@
 
 ## 内核总规划优先级
 
-Core Kernel V1 仍用 9 类机制整理路线图，但按 K1-1 至 K1-6 分块规划、实施和评审。当前只评审 K1-1 Core Foundation；Guitar Domain、commands/history、snapshot/events、registry/capability 与 reports/migration 都有独立门禁。注册表 handler 运行时注销、第三方插件运行中启停、热插拔、权限 UI 等生命周期治理不进入当前实现；未来插件平台也不得反向要求 K1-1 预建执行基础设施。
+Core Kernel V1 仍用 9 类机制整理路线图，但按 K1-1 至 K1-6 分块规划、实施和评审。K1-1/K1-2 已验收，K1-3 候选实现等待独立最终验收；Guitar Domain、registry/capability 与 reports/migration 仍有各自门禁。注册表 handler 运行时注销、第三方插件运行中启停、热插拔、权限 UI 等生命周期治理不进入当前实现；未来插件平台也不得反向要求已完成分块预建执行基础设施。
 
 内核总规划按以下 9 类机制收敛:
 
@@ -214,7 +211,7 @@ Core Kernel V1 仍用 9 类机制整理路线图，但按 K1-1 至 K1-6 分块�
 
 - 只读 `DocumentSnapshot`。
 - 受控 selector。
-- 提交后 `KernelEventBus`。
+- `CommandBus.subscribe()` 订阅提交后事实；发布器保持私有。
 - `core.document.committed`。
 - `core.session.dirty-state-changed`。
 
@@ -352,7 +349,7 @@ flowchart TB
     Validator["Validation Pipeline\ndecode、Core semantic、ScoreFeatureProfile"]
     Schema["Schema & Migration Contract\n.bgp schema、manifest、迁移入口"]
     Snapshot["Snapshot / Query Service\n不可变快照、selector、派生读模型"]
-    Events["Event Bus\n命令事件、文档变更、诊断更新"]
+    Events["Event Delivery\ndocument committed、dirty changed"]
     Registry["Registry & Capability Manager\n贡献点注册、模块能力、API version"]
     Reports["Error / Diagnostic / Report Contracts\nKernelError、Diagnostic、ReportIssue"]
   end
@@ -638,7 +635,7 @@ Core Kernel 只负责:
 - 把 React、SVG、VexFlow、Web Audio、Tauri 文件句柄或 UI 会话状态放进 snapshot。
 - 通过 selector 修改文档、历史、诊断、脏状态或注册表。
 
-### 11. Event Bus
+### 11. Event Delivery
 
 作用: 让模块知道内核发生了什么，而不是直接耦合。
 

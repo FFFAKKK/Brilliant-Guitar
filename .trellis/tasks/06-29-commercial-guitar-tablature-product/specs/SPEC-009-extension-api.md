@@ -6,6 +6,7 @@
 - 映射需求: `REQ-007`
 - 目标: 为模块化软件和未来插件生态定义可实现、可测试、可控的扩展边界。
 - 当前约束: 本文件是未来插件平台路线图，不是 K1-1/K1-4 实现契约；K1-4 必须先通过 `SPEC-015` 重规划门。
+- K1-3 边界: 当前候选实现只提供 `CommandBus.read()`、六个封闭 selector、`CommandBus.subscribe()` 与两个事件类型；不存在公开 `KernelEventBus`、动态 selector/event 注册或第三方直连发布器。
 - 数据边界: `ScoreDocument.extensions` 已由 Core K1-1 定义为 score/part-owned 纯数据信封；它不等于插件安装、发现、registry 或执行 API。
 
 ## 适用范围
@@ -48,7 +49,7 @@
 - EXT-016: 插件贡献点注册和 capability 检查必须遵守 `SPEC-015-kernel-registry-capability.md`；错误对象和 report 外壳必须遵守 `SPEC-016-kernel-errors-diagnostics-reports.md`。
 - EXT-017: 未来第三方插件不得直接调用 Core Kernel 可变接口；经过启动前安装、校验和授权后，也必须收敛到同一套 contribution descriptor、capability、snapshot、semantic command、event 和 report 契约。
 - EXT-018: MVP 内部模块可以使用启动期 `CoreModuleRegistration` 直接注册贡献点和 handler，但必须遵守同一套 contribution descriptor、capability、语义命令、snapshot/selector 和 report 契约。
-- EXT-019: MVP 内部模块事件订阅遵守 `SPEC-014`；未来第三方插件事件订阅必须由 `Extension Host` 按 capability 过滤，第三方插件不得直接订阅裸 `KernelEventBus`。
+- EXT-019: MVP 内部模块事件订阅遵守 `SPEC-014`；未来第三方插件事件订阅必须由 `Extension Host` 按 capability 过滤，第三方插件不得直接调用 Core 的 `CommandBus.subscribe()` 或接触私有发布器。
 - EXT-020: 注册权限必须与执行权限分离；例如 `command:register` 不等于 `command:execute`，`exporter:register` 不等于任意文件写权限。
 - EXT-021: 模块来源与权限解耦；`origin = official | third-party` 只描述来源，模块实际权限由启动前授权和 capability 决定。
 - EXT-022: 插件 manifest 不得声明或提升自身 trust level/capability；trustLevel 和 capability 只能由 Core Kernel 启动配置、打包清单、开发者模式或未来插件平台分配。

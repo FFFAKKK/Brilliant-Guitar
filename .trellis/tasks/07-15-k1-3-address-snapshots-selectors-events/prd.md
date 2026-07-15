@@ -2,11 +2,11 @@
 
 ## Status
 
-- Phase: planning complete candidate; implementation is not authorized.
+- Phase: implementation complete candidate; independent final acceptance is pending.
 - Base: independently accepted K1-2 implementation `b62a838`, archived by `fcc7707`.
 - Branch: `codex/k1-3-address-snapshots-selectors-events`.
-- Authority after approval: this task's `prd.md`, `design.md`, and `implement.md`, plus `.trellis/spec/core-kernel/backend/snapshot-events.md`.
-- Gate: the user must review the final three planning artifacts before `task.py start` or any K1-3 code change.
+- Authority: this task's `prd.md`, `design.md`, and `implement.md`, plus `.trellis/spec/core-kernel/backend/snapshot-events.md`.
+- Gate: implementation is complete-candidate; the task remains `in_progress` until an independent final acceptance fixes the accepted HEAD.
 
 ## Goal and User Value
 
@@ -60,13 +60,13 @@ Add the Pure Core read and committed-notification boundary over the frozen `bril
 
 ## Acceptance Criteria
 
-- [ ] **AC-001 (REQ-001..004):** all seven addresses resolve by stable ID; hierarchical ranges normalize in `measureDefinitions`/Voice event order; malformed, missing, wrong-owner, cross-kind, cross-Part, and cross-Voice cases return exact failures.
-- [ ] **AC-002 (REQ-005..009):** initial/committed/undo/redo snapshots have exact version correlation, are deeply frozen and detached, preserve unknown extensions, and expose no snapshot ID/time/cache identity contract.
-- [ ] **AC-003 (REQ-007..009):** the six approved selectors are pure, closed, deterministic, version-correlated, and return no writable CommandBus reference.
-- [ ] **AC-004 (REQ-010..011):** initial, edit, save, async-save, undo, redo, no-op, rejection, and history-branch cases prove exact dirty/clean behavior without hashing or IO.
-- [ ] **AC-005 (REQ-012..015):** event count, ordering, cause, affected targets, deep freeze, handler order/isolation, subscription snapshot semantics, unsubscribe idempotence, reentrant writes, and sequence overflow match the contracts exactly.
-- [ ] **AC-006 (REQ-016..019):** K1-1/K1-2 tests retain their meaning; replay emits no session events; public exports contain no K1-4/K1-5/Guitar/UI/IO/dynamic-registration or internal state API.
-- [ ] **AC-007:** `npm run typecheck`, `npm run build`, `npm test`, `git diff --check`, Trellis validation, and forbidden-dependency checks pass before implementation acceptance. Any sandbox `spawn EPERM` is rerun in the approved environment.
+- [x] **AC-001 (REQ-001..004):** all seven addresses resolve by stable ID; hierarchical ranges normalize in `measureDefinitions`/Voice event order; malformed, missing, wrong-owner, cross-kind, cross-Part, and cross-Voice cases return exact failures.
+- [x] **AC-002 (REQ-005..009):** initial/committed/undo/redo snapshots have exact version correlation, are deeply frozen and detached, preserve unknown extensions, and expose no snapshot ID/time/cache identity contract.
+- [x] **AC-003 (REQ-007..009):** the six approved selectors are pure, closed, deterministic, version-correlated, and return no writable CommandBus reference.
+- [x] **AC-004 (REQ-010..011):** initial, edit, save, async-save, undo, redo, no-op, rejection, and history-branch cases prove exact dirty/clean behavior without hashing or IO.
+- [x] **AC-005 (REQ-012..015):** event count, ordering, cause, affected targets, deep freeze, handler order/isolation, subscription snapshot semantics, unsubscribe idempotence, reentrant writes, and sequence overflow match the contracts exactly.
+- [x] **AC-006 (REQ-016..019):** K1-1/K1-2 tests retain their meaning; replay emits no session events; public exports contain no K1-4/K1-5/Guitar/UI/IO/dynamic-registration or internal state API.
+- [x] **AC-007:** `npm run typecheck`, `npm run build`, `npm test`, `git diff --check`, Trellis validation, and forbidden-dependency checks pass before implementation acceptance. Any sandbox `spawn EPERM` is rerun in the approved environment.
 
 ## Out of Scope
 

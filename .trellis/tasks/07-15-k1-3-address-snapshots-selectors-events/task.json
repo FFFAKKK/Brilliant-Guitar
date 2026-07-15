@@ -3,7 +3,7 @@
   "name": "k1-3-address-snapshots-selectors-events",
   "title": "K1-3 Address / Snapshots / Selectors / Events 规划",
   "description": "",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": null,
@@ -22,5 +22,8 @@
   "parent": "07-07-pure-core-kernel-v1",
   "relatedFiles": [],
   "notes": "",
-  "meta": {}
+  "meta": {
+    "candidate_status": "implementation_complete_pending_independent_acceptance",
+    "user_owned_maintenance_excluded": true
+  }
 }
