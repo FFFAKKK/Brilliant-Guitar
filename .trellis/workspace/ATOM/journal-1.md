@@ -39,3 +39,37 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 2: K1-2 commands transactions history implementation
+
+**Date**: 2026-07-15
+**Task**: K1-2 commands transactions history implementation
+**Branch**: `codex/k1-2-commands-transactions-history`
+
+### Summary
+
+Approved and implemented strict Core commands, atomic transactions, document versioning, typed history, undo/redo, and deterministic replay; 73 tests pass; awaiting independent manual acceptance.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c433840` | (see git log) |
+| `cd078c1` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
