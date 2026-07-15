@@ -107,3 +107,43 @@ Deep-froze the default K1 feature profile, added total undo/redo exception conve
 ### Next Steps
 
 - None - task complete
+
+
+## Session 4: Complete K1-3 address snapshots selectors and events
+
+**Date**: 2026-07-15
+**Task**: Complete K1-3 address snapshots selectors and events
+**Branch**: `codex/k1-3-address-snapshots-selectors-events`
+
+### Summary
+
+Implemented and independently accepted K1-3 stable addresses, immutable snapshots, pure selectors, exact dirty checkpoints, deterministic post-commit events, async subscriber rejection isolation, boundary tests, and synchronized Core specifications.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `145423d82827048518e2097971dc901a5af400f6` | (see git log) |
+| `bb51d366419a7c003875024e1bd75b256526171a` | (see git log) |
+| `59a2e3c13a0c942c26ade385d90d48a67a887089` | (see git log) |
+| `3d60ef16608110115c3f52ffeeb58168dd6eb613` | (see git log) |
+| `a09046910f374129b7ea02bfc4c1f56ad084a887` | (see git log) |
+| `1ad62ba4223d13b04093e7d8edc5442777b0bbb8` | (see git log) |
+| `5790b3f65ec2c87a1403b12ce89076d00547de15` | (see git log) |
+| `b29af80cf3b2c04c13129f01e4b1823548b223ee` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
