@@ -1,6 +1,6 @@
 # SPEC-015 内核注册表与 Capability 重规划门
 
-> **状态：BLOCKED / NOT EXECUTABLE。** K1-4 等待 K1-2/K1-3 公共契约稳定后重规划。旧 contribution 清单不再有效。
+> **状态：PLANNING ONLY / NOT EXECUTABLE。** K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 验收，K1-4 的规划前置条件已满足；但 K1-4 合同尚未批准。必须先创建并审核独立 PRD/design/implement，重新决定 contribution 种类、错误归属和是否需要 registry change event。REQ-018 与本文件后续清单目前都只是规划输入，不能直接编码。
 
 ## 1. Scope / Trigger
 

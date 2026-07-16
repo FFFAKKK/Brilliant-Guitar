@@ -1,5 +1,7 @@
 # REQ-018 内核注册表与能力边界
 
+> **状态：PLANNING INPUT / NOT EXECUTABLE。** K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 验收，但 K1-4 合同尚未收敛。本文的 contribution kinds、`kernel.registry.changed`、错误名称、接口和验收项均为候选输入；只有未来经用户审核通过的 K1-4 PRD/design/implement 才能授权实现。
+
 ## 用户价值
 
 `Brilliant Guitar` 需要长期扩展命令、selector、验证器、技巧、导入器、导出器、模板和未来插件能力，但这些能力不能靠模块随意注入主程序。用户最终感知到的是:
@@ -12,10 +14,10 @@
 
 ## 当前决策状态
 
-- 状态: 已收敛；实现细节以验收标准、对应 spec 和 `implement.md` 为准。
-- 推荐方案: 将“注册表与 capability”作为独立内核功能，不与错误处理/report 合并。
+- 状态: 未收敛、不可执行；仅作为 K1-4 独立规划输入。
+- 候选方向: 评估“注册表与 capability”是否应作为独立内核功能，以及它与 K1-5 错误/report 的最小边界；不得把本文件的旧结论视为批准结果。
 - 对应 spec: `specs/SPEC-015-kernel-registry-capability.md`。
-- 关联错误契约: 注册和 capability 失败时返回的结构化错误由 `REQ-019` / `SPEC-016` 定义。
+- 关联错误契约: 注册和 capability 失败是否复用 K1-5、由谁拥有具体错误 code，必须在 K1-4/K1-5 规划中重新决定。
 
 ## 规划审核视角
 

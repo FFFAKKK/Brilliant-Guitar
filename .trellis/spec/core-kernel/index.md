@@ -1,9 +1,9 @@
 # Core Kernel Guidelines
 
-> **Current staged workflow (2026-07-15):** K1-1 and K1-2 are accepted.
-> K1-3 address/read/checkpoint/event implementation is a completed candidate on its active branch and remains subject to independent final acceptance.
+> **Current staged workflow (2026-07-16):** K1-1, K1-2, and K1-3 are accepted.
+> K1-3 address/read/checkpoint/event contracts are fixed at code baseline `7369eeac60fecea66c2c9164c04439625c2d78b0` with 102/102 tests passing.
 
-For K1-3, read `backend/score-document-model.md`, `backend/command-transaction.md`, `backend/snapshot-events.md`, and all staged boundary/diagnostic/quality guides. K1-1 and K1-2 contracts remain frozen except for the two explicitly additive K1-3 event-boundary command failures. Registry/capability, general reports, migrations, Guitar Domain, UI, playback, layout, and physical IO remain later work.
+For changes that consume K1-3, read `backend/score-document-model.md`, `backend/command-transaction.md`, `backend/snapshot-events.md`, and all staged boundary/diagnostic/quality guides. K1-1 through K1-3 contracts are frozen. Registry/capability planning may now start from the accepted K1-3 baseline, but K1-4 implementation still requires an independently approved PRD/design/implement set. General reports, migrations, Guitar Domain, UI, playback, layout, and physical IO remain later work.
 
 The K1-1 data path is `unknown -> decode -> semantic validation -> ScoreFeatureProfile`. Unknown extension data must survive semantic round-trip.
 

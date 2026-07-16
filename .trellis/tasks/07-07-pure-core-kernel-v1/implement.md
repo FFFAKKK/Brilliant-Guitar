@@ -2,10 +2,10 @@
 
 ## Status
 
-- Phase: staged execution; K1-2 is accepted/archived and K1-3 is the active candidate awaiting independent acceptance.
+- Phase: staged execution; K1-1 through K1-3 are accepted/archived. The next authorized action is K1-4 planning, not K1-4 implementation.
 - K1-1 was formally accepted at baseline `30894e2`; its model and validation contracts remain frozen.
 - This parent plan no longer defines K1-1 or K1-2 executable details; their independent child artifacts and active Core specs are authoritative.
-- K1-3 implementation followed its approved independent PRD/design/implement set and is complete-candidate; K1-4 and later blocks require their own plan refresh and remain blocked.
+- K1-3 implementation followed its approved independent PRD/design/implement set and was accepted at `7369eeac60fecea66c2c9164c04439625c2d78b0` with 102/102 tests passing. K1-4 and later blocks require their own plan refresh; only K1-4 planning is now unblocked.
 
 ## Global Rules for Every Implementation Round
 
@@ -111,9 +111,9 @@ Subfeatures:
 - Selectors: exactly metadata, entity, ownership, range, history, and dirty.
 - Checkpoint: `markPersisted(documentId + documentVersion)` maps async save completion to the exact history state.
 - Events: exactly document-committed plus dirty-state-changed, with deterministic sequence/version/cause/affected targets.
-- Isolation: registration-order subscriber snapshot, per-handler exception boundary, idempotent unsubscribe, synchronous write/checkpoint reentrancy rejection, and pre-commit sequence-overflow rejection.
+- Isolation: registration-order subscriber snapshot, per-handler synchronous-throw and asynchronous-rejection boundary, idempotent unsubscribe, synchronous write/checkpoint reentrancy rejection, and pre-commit sequence-overflow rejection.
 - Event/read payload boundary: no mutable document, internal delta/history/cache/index, clock/random ID, React, VexFlow, Web Audio, Tauri, file-system, Guitar, Registry, or report object.
-- Authoritative task: `.trellis/tasks/07-15-k1-3-address-snapshots-selectors-events/`; this parent summary is not executable by itself.
+- Authoritative task: `.trellis/tasks/archive/2026-07/07-15-k1-3-address-snapshots-selectors-events/`; this parent summary is not executable by itself.
 
 Expected files:
 
@@ -136,6 +136,8 @@ npm test
 Rollback point: revert read/event files and tests; keep K1-1 and K1-2 intact.
 
 ## Chunk K1-4: Registry and Capability
+
+> **PLANNING INPUT ONLY / NOT EXECUTABLE.** The lists below are hypotheses from the parent roadmap, not an approved K1-4 contract. A new K1-4 task must re-decide the necessary contribution kinds, ownership of registry/capability failures versus K1-5, and whether any registry-change event is needed before production code may be written.
 
 Purpose: make extension points explicit and enforce permission boundaries without adding real third-party plugin runtime.
 
@@ -229,4 +231,4 @@ Completion gate:
 
 ## Current Execution Recommendation
 
-Hold K1-3 on `07-15-k1-3-address-snapshots-selectors-events` for independent final acceptance. Do not start Guitar Domain commands, Registry/Capability, K1-4/K1-5, or UI integration from this parent plan.
+K1-3 is accepted and archived at `7369eeac60fecea66c2c9164c04439625c2d78b0`. To begin K1-4, create a new branch whose name starts with `codex/k1-4-` from the accepted K1-3 baseline plus this Gate-closure documentation; do not reuse the current `codex/k1-2-commands-transactions-history` branch name. Create and review an independent K1-4 PRD/design/implement set before writing Registry/Capability production code. Do not start Guitar Domain commands, K1-5, or UI integration from this parent plan.

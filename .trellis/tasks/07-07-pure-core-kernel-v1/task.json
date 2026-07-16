@@ -43,7 +43,10 @@
   ],
   "notes": "按用户要求，一个大的内核功能一个大的内核功能推进；每个大功能必须说明作用、子功能作用、验收和边界。",
   "meta": {
-    "k1_3_status": "implementation_candidate_pending_acceptance",
-    "k1_3_task": "07-15-k1-3-address-snapshots-selectors-events"
+    "k1_3_status": "accepted_archived",
+    "k1_3_task": "07-15-k1-3-address-snapshots-selectors-events",
+    "k1_3_baseline": "7369eeac60fecea66c2c9164c04439625c2d78b0",
+    "k1_3_test_count": 102,
+    "k1_4_status": "planning_unblocked_implementation_blocked"
   }
 }

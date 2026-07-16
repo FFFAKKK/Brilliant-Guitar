@@ -15,7 +15,7 @@
   "branch": "codex/k1-3-address-snapshots-selectors-events",
   "base_branch": "codex/k1-2-commands-transactions-history",
   "worktree_path": null,
-  "commit": null,
+  "commit": "7369eeac60fecea66c2c9164c04439625c2d78b0",
   "pr_url": null,
   "subtasks": [],
   "children": [],
@@ -23,7 +23,10 @@
   "relatedFiles": [],
   "notes": "",
   "meta": {
-    "candidate_status": "implementation_complete_pending_independent_acceptance",
+    "acceptance_status": "accepted",
+    "accepted_at": "2026-07-16",
+    "accepted_baseline": "7369eeac60fecea66c2c9164c04439625c2d78b0",
+    "acceptance_test_count": 102,
     "user_owned_maintenance_excluded": true
   }
 }

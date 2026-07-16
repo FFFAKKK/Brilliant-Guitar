@@ -2,11 +2,12 @@
 
 ## Status
 
-- Phase: implementation complete candidate; independent final acceptance is pending.
+- Phase: independently accepted and archived.
 - Base: independently accepted K1-2 implementation `b62a838`, archived by `fcc7707`.
 - Branch: `codex/k1-3-address-snapshots-selectors-events`.
+- Accepted code baseline: `7369eeac60fecea66c2c9164c04439625c2d78b0`.
 - Authority: this task's `prd.md`, `design.md`, and `implement.md`, plus `.trellis/spec/core-kernel/backend/snapshot-events.md`.
-- Gate: implementation is complete-candidate; the task remains `in_progress` until an independent final acceptance fixes the accepted HEAD.
+- Gate: independent acceptance passed on 2026-07-16 with `npm run typecheck`, `npm run build`, 102/102 tests, `git diff --check`, and Trellis context validation all passing. No P0/P1 remained.
 
 ## Goal and User Value
 

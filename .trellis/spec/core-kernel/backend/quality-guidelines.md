@@ -1,7 +1,7 @@
 # Core Kernel Quality Guidelines
 
-> **Authoritative staged quality gate (2026-07-15):** K1-1 and K1-2 tests
-> remain frozen regressions; the K1-3 candidate adds only the address/read/checkpoint/event groups below and awaits independent acceptance.
+> **Authoritative staged quality gate (2026-07-16):** K1-1 through K1-3 tests
+> are frozen regressions. K1-3 acceptance at `7369eeac60fecea66c2c9164c04439625c2d78b0` passed 102/102 tests.
 
 ## Current K1-1 Required Tests
 

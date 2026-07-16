@@ -121,29 +121,39 @@ Implemented and independently accepted K1-3 stable addresses, immutable snapshot
 
 ### Main Changes
 
-(Add details)
+- Added stable score addresses and hierarchical inclusive ranges over Measure, Part/Measure, and Voice/Event identities.
+- Added deeply immutable versioned snapshots, six pure selectors, and exact persisted dirty checkpoints without changing `brilliant-score-1`.
+- Added deterministic post-commit/session events, reentrancy and sequence-overflow guards, and synchronous plus asynchronous subscriber-failure isolation.
+- Synchronized Core, parent, and product contracts; archived K1-3 after independent acceptance.
 
 ### Git Commits
 
 | Hash | Message |
 |------|---------|
-| `145423d82827048518e2097971dc901a5af400f6` | (see git log) |
-| `bb51d366419a7c003875024e1bd75b256526171a` | (see git log) |
-| `59a2e3c13a0c942c26ade385d90d48a67a887089` | (see git log) |
-| `3d60ef16608110115c3f52ffeeb58168dd6eb613` | (see git log) |
-| `a09046910f374129b7ea02bfc4c1f56ad084a887` | (see git log) |
-| `1ad62ba4223d13b04093e7d8edc5442777b0bbb8` | (see git log) |
-| `5790b3f65ec2c87a1403b12ce89076d00547de15` | (see git log) |
-| `b29af80cf3b2c04c13129f01e4b1823548b223ee` | (see git log) |
+| `145423d82827048518e2097971dc901a5af400f6` | `docs(core): approve k1-3 read and event plan` |
+| `bb51d366419a7c003875024e1bd75b256526171a` | `feat(core): add stable score address and range contracts` |
+| `59a2e3c13a0c942c26ade385d90d48a67a887089` | `feat(core): add immutable versioned read snapshots` |
+| `3d60ef16608110115c3f52ffeeb58168dd6eb613` | `feat(core): add pure score snapshot selectors` |
+| `a09046910f374129b7ea02bfc4c1f56ad084a887` | `feat(core): add exact persisted dirty checkpoint` |
+| `1ad62ba4223d13b04093e7d8edc5442777b0bbb8` | `feat(core): add deterministic post-commit events` |
+| `5790b3f65ec2c87a1403b12ce89076d00547de15` | `docs(core): close k1-3 read and event contracts` |
+| `b29af80cf3b2c04c13129f01e4b1823548b223ee` | `fix(core): isolate async subscriber rejections` |
 
 ### Testing
 
-- [OK] (Add test results)
+- [OK] `npm run typecheck`
+- [OK] `npm run build`
+- [OK] `npm test`: 102/102 passing in the approved environment
+- [OK] `git diff --check`
+- [OK] Trellis context validation; only user-owned `.trellis/maintenance/` remained untracked
 
 ### Status
 
-[OK] **Completed**
+[OK] **Independently accepted and archived**
+
+Accepted code baseline: `7369eeac60fecea66c2c9164c04439625c2d78b0`.
 
 ### Next Steps
 
-- None - task complete
+- Close the K1-3 documentation Gate against the accepted baseline.
+- K1-4 may enter independent planning on a new `codex/k1-4-*` branch; no Registry/Capability production implementation is authorized until its PRD/design/implement set is approved.

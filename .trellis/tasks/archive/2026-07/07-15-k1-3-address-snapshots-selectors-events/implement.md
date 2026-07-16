@@ -1,6 +1,6 @@
 # K1-3 Address / Snapshots / Selectors / Events Implementation Plan
 
-> **Execution status (2026-07-15):** Tasks 1-5 are implemented in independent commits; Task 6 documentation and full-gate evidence are being closed. The task remains `in_progress` pending independent final acceptance.
+> **Final status (2026-07-16):** Tasks 1-6 and the asynchronous-subscriber P1 repair were independently accepted and archived. The fixed code baseline is `7369eeac60fecea66c2c9164c04439625c2d78b0`; typecheck, build, 102/102 tests, diff check, and Trellis validation passed.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: load `trellis-before-dev`, then use `superpowers:executing-plans` in inline mode. Execute one task at a time, keep every reviewer gate, and do not dispatch implementation/check sub-agents.
 
@@ -742,7 +742,7 @@ Do not export event publishing, internal codecs, session runtime, freeze/cache/i
 
 - [x] **Step 4: Synchronize active planning/spec documents**
 
-Replace old claims that snapshots require `snapshotId`/created time, that K1-3 includes serializable/diagnostic/registry selectors, or that it emits load/history/registry/migration events. State that the independent K1-3 task is authoritative and that implementation remains subject to final acceptance.
+Replace old claims that snapshots require `snapshotId`/created time, that K1-3 includes serializable/diagnostic/registry selectors, or that it emits load/history/registry/migration events. State that the independent K1-3 task is authoritative and, after acceptance, record its fixed baseline and final evidence.
 
 Do not edit historical `planning-snapshots/` or archived tasks; they are evidence, not active contracts.
 
@@ -812,5 +812,6 @@ Requirement coverage:
 - [x] Active parent/product/Core specs defer to the independent K1-3 authority and contain no conflicting old API.
 - [x] User has reviewed and explicitly approved `prd.md`, `design.md`, and `implement.md`.
 
-The user approved this planning gate before `task.py start`. The resulting
-implementation remains a candidate until independent final acceptance.
+The user approved this planning gate before `task.py start`. Independent final
+acceptance subsequently fixed `7369eeac60fecea66c2c9164c04439625c2d78b0`
+as the accepted K1-3 code baseline with 102/102 tests passing.

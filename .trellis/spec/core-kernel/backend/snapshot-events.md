@@ -1,7 +1,7 @@
 # Address, Snapshot, Selectors, Checkpoint, and Events
 
-> **K1-3 implementation candidate (2026-07-15):** K1-2 is accepted and archived.
-> The independent `07-15-k1-3-address-snapshots-selectors-events` task is authoritative; its implementation is complete-candidate and remains subject to independent final acceptance.
+> **Accepted K1-3 contract (2026-07-16):** The archived independent
+> `07-15-k1-3-address-snapshots-selectors-events` task is authoritative. Its fixed code baseline is `7369eeac60fecea66c2c9164c04439625c2d78b0`; typecheck, build, 102/102 tests, diff check, and Trellis validation passed.
 
 ## Address and Range
 

@@ -1,7 +1,7 @@
 # Registry and Capability
 
-> **Authoritative stage boundary (2026-07-13):** Registry and capability are
-> later Core V1 work and must not be implemented by K1-1.
+> **Authoritative K1-4 planning boundary (2026-07-16):** K1-3 is accepted at
+> `7369eeac60fecea66c2c9164c04439625c2d78b0`, so K1-4 planning may start. Registry/capability implementation remains unauthorized until an independent K1-4 PRD/design/implement set is reviewed and approved.
 
 K1-1 contains no KernelRegistry, technique-definition registry, extension registration/discovery, module identity, trust/capability checks, startup manifests, dynamic imports, or plugin lifecycle.
 

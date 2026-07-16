@@ -2,12 +2,12 @@
 
 ## Status
 
-- Phase: staged execution; K1-2 is accepted/archived and K1-3 is an implemented candidate pending independent acceptance.
+- Phase: staged execution; K1-1 through K1-3 are accepted/archived, and K1-4 is planning-only until its own contracts are approved.
 - Parent task: `06-29-commercial-guitar-tablature-product`.
 - Implementation target: pure TypeScript Core Kernel only.
 - K1-1 authority: `.trellis/tasks/07-13-k1-1-foundation-replanning/design.md` and `.trellis/spec/core-kernel/backend/score-document-model.md`.
 - K1-2 authority: `.trellis/tasks/archive/2026-07/07-15-k1-2-commands-transactions-history/design.md` and `.trellis/spec/core-kernel/backend/command-transaction.md`.
-- K1-3 authority: `.trellis/tasks/07-15-k1-3-address-snapshots-selectors-events/`; K1-4 and later sections remain roadmap sketches.
+- K1-3 authority: `.trellis/tasks/archive/2026-07/07-15-k1-3-address-snapshots-selectors-events/`, accepted at `7369eeac60fecea66c2c9164c04439625c2d78b0`; K1-4 and later sections remain roadmap sketches.
 
 ## Design Principle
 
@@ -265,7 +265,7 @@ No implementation chunk should change unrelated future UI, renderer, playback, p
 
 - K1-1 is the accepted frozen foundation at `30894e2`.
 - K1-2 passed focused P1 repair and independent re-acceptance and is archived under `.trellis/tasks/archive/2026-07/07-15-k1-2-commands-transactions-history/`.
-- K1-3 candidate implementation is complete on `07-15-k1-3-address-snapshots-selectors-events` and remains in progress until independent final acceptance.
-- K1-4 and K1-5 each require a new or refreshed task/spec review against the completed earlier blocks.
+- K1-3 passed independent acceptance at `7369eeac60fecea66c2c9164c04439625c2d78b0`, is archived, and has 102/102 passing tests.
+- K1-4 planning may start from the accepted K1-3 baseline, but contribution kinds, error ownership, and any registry-change event remain undecided until a new K1-4 task/spec review is approved. K1-5 remains separately blocked.
 - Guitar Domain Block 2 is independent from Core K1-2 and must define its Part-owned extension before guitar commands or technique semantics are implemented.
 - Before any later implementation, load `trellis-before-dev`, re-read the relevant active specs, and confirm the task is approved; archived drafts are never execution sources.

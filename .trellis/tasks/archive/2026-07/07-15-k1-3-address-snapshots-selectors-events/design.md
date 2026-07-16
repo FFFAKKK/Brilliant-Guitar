@@ -2,7 +2,7 @@
 
 ## Status and Authority
 
-- Status: implementation complete candidate; independent final acceptance is pending.
+- Status: independently accepted and archived at code baseline `7369eeac60fecea66c2c9164c04439625c2d78b0`.
 - Base: accepted K1-2 implementation `b62a838` and active `brilliant-score-1` contracts.
 - This design implements the approved requirements in `prd.md`; it does not reopen K1-1/K1-2 semantics.
 - `.trellis/spec/core-kernel/backend/snapshot-events.md` is the compact active contract synchronized from this authoritative task.
