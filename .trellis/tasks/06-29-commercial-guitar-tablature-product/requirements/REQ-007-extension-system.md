@@ -26,47 +26,47 @@
 
 ### 业务逻辑视角
 
-所有模块与内核协作必须先收敛到同一个注册流程:
+K1-4 official module 与未来第三方插件分阶段协作。当前批准流程是:
 
-1. 启动前发现或声明模块。
-2. 生成 `KernelModuleIdentity`，包含来源、运行时、信任级别和 API version。
-3. 按启动前配置或授权策略授予 capability。
-4. 提交 contribution descriptor。
-5. 通过 `KernelRegistry.register(...)` 注册 descriptor 和 handler。
+1. trusted Host 声明完整静态 manifest 与 compiled bindings。
+2. 严格生成并校验 `KernelModuleIdentity`、API version 和 capability。
+3. candidate 绑定现有六个 command 与六个 selector adapter。
+4. 全部成功后原子返回 frozen Registry。
+5. 内部模块通过 capability-scoped gateway 调用既有 Core API。
 
-官方模块和第三方模块的差异只存在于注册前的发现、校验、授权和能力分配阶段；一旦进入注册阶段，必须遵守同一套 descriptor、capability、命令、snapshot、事件和 report 契约。
+第三方发现、校验、授权、registration adapter 和 facade 属于未来 Extension Host；不能把 K1-4 当成任意插件注册入口。
 
 插件与内核协作必须围绕五条受控通道:
 
-1. 注册通道: 模块通过统一注册协议把 contribution descriptor 注册到 `KernelRegistry`。
+1. 注册通道: K1-4 只有 trusted Host startup factory；未来插件注册通道另行批准。
 2. 读取通道: 插件通过 snapshot 或 selector 读取谱面，不持有可变 `ScoreDocument`。
 3. 写入通道: 插件通过已注册语义命令提交修改，进入事务、验证、undo/redo 和事件流。
 4. 事件通道: V1 内部模块按内核事件规则订阅；未来第三方插件通过后续插件平台过滤后的事件订阅，不能直接订阅裸 `KernelEventBus`。
-5. 报告通道: 插件导入、导出、迁移、验证和异常必须输出标准 report、diagnostic 或 `KernelError`。
+5. 报告通道: 未来插件导入、导出、迁移、验证和异常必须输出标准 report/diagnostic；具体合同属于 K1-5/Extension Host。
 
 业务规则:
 
 - 模块来源 `origin` 只说明 official 或 third-party，不决定权限高低。
-- 模块能力由启动前授权和 capability 决定；official 不天然绕过规则，third-party 未来也可以被授予高权限。
-- 插件必须声明 manifest、apiVersion、runtime、permissions 和 contributes；Pure Core Kernel V1 不读取真实第三方插件 manifest，只实现统一注册协议的内核基础。
+- 模块能力由 trusted Host capability grant 决定；official 不天然绕过规则，third-party 授权模型另行规划。
+- 未来插件必须声明 manifest、apiVersion、runtime、permissions 和 contributes；K1-4 不读取真实第三方插件 manifest，也不实现通用 registration handler。
 - 插件只能获得被授予的 capability。
 - 插件异常必须被隔离；未来第三方插件的禁用只能写入下次启动配置，当前运行期不得卸载 handler、改变已注册贡献点集合或热插拔插件。
-- 应用进入 ready 状态后，第三方插件新增、移除、启用、禁用或热插拔请求必须返回 `restart-required` 或 `unsupported-at-runtime` 类稳定结果。
+- K1-4 ready Registry 没有生命周期 mutation API；第三方 `restart-required` 等结果由未来 Extension Host 定义。
 - 插件私有数据必须按插件 ID 命名空间隔离。
 
 ### 技术实现视角
 
-插件与内核采用“统一注册协议 + 来源与权限解耦”的模型。官方模块和未来第三方模块最终都通过 `KernelRegistry` 注册 contribution；不同来源的模块只是在启动前发现、校验、授权和加载方式上不同。
+插件与内核采用分阶段模型。K1-4 只允许 trusted Host 原子创建 official command/selector Registry 并为内部模块发放 gateway；未来第三方 contribution、发现、授权和 Core 映射必须由 Extension Host 独立批准。
 
 协作边界:
 
-- `CoreModuleRegistration` 是 Pure Core Kernel V1 的启动期注册形态，用于随应用发布的 `builtin/internal-module`。
-- `KernelStartupModuleManifest` 是 Pure Core Kernel V1 的唯一启动期模块来源；V1 清单只引用应用内已编译绑定的 `CoreModuleRegistrationEntryId`。
-- 未来第三方插件平台可以把已安装、已校验、已授权的第三方模块映射到同一套 `KernelModuleIdentity`、capability 和 contribution descriptor，再进入统一注册流程。
+- `KernelStartupModuleManifest` 是 K1-4 唯一启动期模块来源，只引用 `core.commands.v1` 与 `core.selectors.v1` 私有 compiled binding。
+- K1-4 只绑定现有六个 command 与六个 selector adapter，并通过 `KernelModuleGateway` 授权调用。
+- 未来第三方插件平台可以研究把已安装、已校验、已授权的模块映射到受控 facade；新增 contribution kind 或 registration adapter 必须独立批准。
 - `Extension Host`、第三方 manifest 读取、插件上下文创建、事件过滤代理和第三方异常隔离属于未来插件平台，不进入 Pure Core Kernel V1。
-- `Core Kernel` 只暴露稳定的命令、读取、注册表、事件和 report 契约。
+- `Core Kernel` 在 K1-4 只暴露已批准的命令、读取、frozen Registry/gateway 和事件契约；report 属于 K1-5。
 - 插件 API 不暴露 React、VexFlow、SVG DOM、Web Audio、Tauri 文件对象或可变文档。
-- MVP 内部模块可以同进程直接注册 handler，但必须使用同一套 contribution descriptor、capability、语义命令、snapshot/selector 和 report 契约。
+- K1-4 内部模块可以同进程运行，但不能直接注册 handler；它只能使用 Host 创建的 capability-scoped gateway。
 - `origin`、`runtime`、`trustLevel` 和 capability 独立建模；来源、运行时类型和可信级别都不自动获得权限，也不绕过 registry 校验。
 - `KernelStartupModuleManifest` 只能引用应用内已编译绑定的 `CoreModuleRegistrationEntryId`，不能引用外部路径、URL、脚本字符串或动态 import。
 
@@ -74,7 +74,7 @@
 
 - 启动期模块清单校验测试。
 - capability denied 测试。
-- 内部模块启动期直接注册测试。
+- Host 原子 startup 与内部模块 gateway 测试。
 - 插件通过 selector 读取测试。
 - 插件命令进入 undo/redo 测试。
 - 插件异常隔离测试。
@@ -154,16 +154,16 @@ MVP 推荐做到 Level 0 到 Level 2 的内部实现边界，第三方开放后�
 
 - REQ-007-F01: Core Kernel 必须独立于 UI、渲染、播放、导入导出、文件系统、桌面壳和插件运行时。
 - REQ-007-F02: 所有编辑动作必须通过命令系统进入文档事务。
-- REQ-007-F03: 导入器、导出器、验证器、模板生成器都必须通过注册表注册。
+- REQ-007-F03: 导入器、导出器、验证器、模板生成器如何注册属于未来 Extension Host/领域任务；K1-4 Registry 不支持这些 kind。
 - REQ-007-F04: 插件私有数据必须按插件 ID 命名空间隔离。
 - REQ-007-F05: 插件在下次启动被禁用或缺失时，核心谱面必须仍能打开、显示、播放和保存；运行中禁用请求不得改变当前进程已注册的 handler 集合。
 - REQ-007-F06: Tauri/Rust 原生能力第一阶段只用于核心团队维护的系统能力；未来是否开放 native 第三方模块必须单独评审。
 - REQ-007-F07: 插件和内部模块读取谱面必须通过内核快照或 selector，不能持有可变文档对象。
 - REQ-007-F08: 插件和内部模块写入谱面必须通过内核命令事务，不能绕过 undo/redo、验证器和事件流。
 - REQ-007-F09: 插件和内部模块写入谱面只能提交已注册语义命令，不能提交任意 patch、JSON path、字段替换、数组 splice 或脚本式写入。
-- REQ-007-F10: 所有模块最终都必须通过统一注册协议进入 `KernelRegistry`；官方和第三方模块的差异只在启动前发现、校验、授权和能力分配阶段。
-- REQ-007-F11: MVP 内部模块可以使用启动期 `CoreModuleRegistration` 直接注册贡献点和 handler，但必须遵守同一套 contribution descriptor、capability、语义命令、snapshot/selector 和 report 契约。
-- REQ-007-F12: 注册权限必须与执行权限分离；能注册命令、验证器、导入器或导出器，不等于能执行写命令、读取谱面或访问文件。
+- REQ-007-F10: K1-4 official module 通过 manifest/frozen Registry/gateway 协作；未来第三方是否复用该协议必须独立评审。
+- REQ-007-F11: K1-4 内部模块只能通过 Host 创建的 gateway 使用既有 command/selector/read/event adapter，不获得公开 registration 或 handler。
+- REQ-007-F12: K1-4 七个 capability 互不蕴含；未来验证器、导入器、导出器与文件权限另行定义。
 - REQ-007-F13: `origin`、`runtime`、`trustLevel` 和 capability 必须独立建模；official 不天然拥有全部权限，third-party 未来也可以经启动前授权获得高权限。
 - REQ-007-F14: 插件 manifest 不得自我声明或提升 trustLevel/capability；trustLevel 和 capability 只能由启动前授权、打包清单、开发者模式或未来插件平台分配。
 - REQ-007-F15: Pure Core Kernel V1 的模块必须出现在静态 `KernelStartupModuleManifest` 中；未来第三方模块也必须在启动前完成授权和注册准备，运行中不得加入。

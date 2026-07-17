@@ -1,46 +1,74 @@
-# SPEC-015 内核注册表与 Capability 重规划门
+# SPEC-015 内核注册表与 Capability
 
-> **状态：PLANNING ONLY / NOT EXECUTABLE。** K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 验收，K1-4 的规划前置条件已满足；但 K1-4 合同尚未批准。必须先创建并审核独立 PRD/design/implement，重新决定 contribution 种类、错误归属和是否需要 registry change event。REQ-018 与本文件后续清单目前都只是规划输入，不能直接编码。
+> **状态：K1-4 规划已批准（2026-07-17），生产实现尚未启动。** 权威规划为
+> `.trellis/tasks/07-16-k1-4-registry-capability-startup-registration/`。
+> 实现前仍须完成活动文档收口、切换到独立 `codex/k1-4-*` 分支并显式启动 Trellis 任务。
 
 ## 1. Scope / Trigger
 
-当两个以上模块需要通过稳定身份贡献命令、selector、validator、migration 或外部格式 descriptor，且直接静态组合不足以满足边界时触发。
+K1-4 为随应用编译的官方 Core 模块提供启动期静态登记、贡献摘要和 capability-scoped gateway。首批只登记现有六个 command 和六个 K1-3 selector；贡献类型固定为 `command | selector`。
+
+K1-4 不实现 validator、technique、migration、import/export、template、Guitar Domain、通用 report、第三方运行时或插件生命周期。`ExtensionBlock` 与 `ScoreFeatureProfile` 均不是权限或可执行贡献。
 
 ## 2. Signatures
 
-最终 Registry、ModuleIdentity、Capability、StartupManifest 与 ContributionKind 尚未批准。不得从旧文件复制类型。
+公开合同由 `KernelModuleIdentity`、七个 `KernelCapability`、版本 1 的静态 manifest、`createKernelRegistry(unknown)`、只读 `KernelRegistry`、`KernelModuleGateway`、最小 `RegistrySummary`、六个稳定 selector request 以及封闭的 startup/access result union 组成。
+
+模块身份维度独立：
+
+- `origin = official | third-party`
+- `runtime = builtin | internal-module | javascript-typescript`
+- `trustLevel = system-trusted | sandboxed`
+- `apiVersion = 1`
+
+K1-4 只接受 manifest 绑定的 `official + builtin/internal-module + system-trusted`。
+
+七个 capability 固定为：`registry:read`、`command:register`、`selector:register`、`command:execute`、`selector:execute`、`score:read`、`event:subscribe`。
 
 ## 3. Contracts
 
-- `ExtensionBlock` 是持久化纯数据，不是 registry contribution 或插件实例。
-- `ScoreFeatureProfile` 是产品支持策略，不是权限 capability。
-- contribution 必须由真实跨模块协作需求证明，不能为未来插件平台预建空泛类型。
-- origin、runtime、trust 与 capability 独立；官方来源不自动获得全部权限。
-- V1 若保留 registry，只允许启动期静态 builtin/internal-module 组合，不执行第三方代码。
-- 注册权限与执行权限分离，summary 不泄漏 handler 或可变文档。
-- 吉他技巧是否需要注册表由 Guitar Domain 和 K1-4 共同证明；不得默认恢复旧 Core 技巧定义。
+- Core Host 一次提交完整 manifest；严格解码与 compiled binding 在隔离 candidate 中完成，成功才返回已经冻结的 ready Registry，失败不返回半成品。
+- compiled registration entry 只有 `core.commands.v1` 与 `core.selectors.v1`，只绑定现有六个命令与六个 selector；不接受任意 handler 或新语义。
+- capability 互不蕴含；登记、执行、读取、summary、订阅分别授权。startup/freeze 与 `markPersisted` 是 Host-only。
+- Gateway 先解析 contribution 和 caller，再授权，最后委托现有 `CommandBus`、selector、read、subscribe。委托后的 `CommandResult`、`ReadResult` 与订阅行为原样透传。
+- 现有 direct `CommandBus`/selector 保留为 trusted Core Host API；模块正常集成面是 gateway。
+- ready Registry 无公开 builder/register/seal/unregister/replace，无 runtime mutation、`registryVersion` 或 `kernel.registry.changed`；K1-3 事件 union 不变。
+- Summary 只含 manifest version、按 moduleId 排序的 moduleId/apiVersion，以及按 kind/id 排序的 contribution 公共元数据；深冻结、脱离内部状态，不泄露 grant、origin/runtime/trust、handler、index、Registry 或谱面。
+- `moduleId` 不进入 command envelope、history、replay 或 K1-3 event。
+- K1-4 自有封闭、隐私安全的 startup/access failure；K1-5 只能映射，不能改名或改义。
 
 ## 4. Validation & Error Matrix
 
-重复 ID、未知 kind、API version 不兼容、unsupported runtime、capability denied 和启动后动态变更必须有稳定行为；具体 code 在 K1-4/K1-5 联合评审后批准。
+| 输入/操作 | 必须拒绝 | 结果 |
+| --- | --- | --- |
+| manifest | 额外/缺失字段、accessor、稀疏数组、无效有限值 | `registry.invalid-startup-input` |
+| module | duplicate id、unsupported origin/runtime/trust、API mismatch | 对应 startup failure |
+| binding/contribution | entry 不存在/owner 不匹配、duplicate id、capability 缺失、descriptor/handler 不匹配 | 对应 startup failure |
+| gateway | 畸形调用、module/contribution 不存在、kind 不匹配、capability 缺失 | 对应 access failure |
+| 任意意外异常 | startup/gateway 全边界 | `registry.internal-error`，所有既有状态不变 |
 
 ## 5. Good / Base / Bad Cases
 
-- Good：已批准的 command/selector contribution 在启动期注册并通过 capability 执行。
-- Base：应用内静态组合若已足够，则 K1-4 可以缩减 registry，而不是为数量目标增加抽象。
-- Bad：把 ExtensionBlock namespace 当成可执行插件，或注册旧测试技巧只为证明 registry 存在。
+- Good：获 `command:execute` 的模块通过 gateway 调用现有命令，并拿到完全相同的提交/no-op/rejected 结果。
+- Good：获 `score:read + selector:execute` 的模块调用六个 selector；重复 summary 深度相等且冻结。
+- Base：可信 Core Host 继续直接使用已验收 `CommandBus` 与 selector。
+- Bad：只获 `command:register` 的模块执行命令，必须 capability denied。
+- Bad：接收第三方脚本、任意 handler、动态 kind、局部 Registry 或运行期替换。
 
 ## 6. Tests Required
 
-正式 K1-4 必须覆盖 contribution 必要性、重复/版本/runtime/capability 拒绝、静态启动边界、summary 隐私和无第三方执行依赖。
+必须覆盖 strict decode、身份/版本/重复/capability/handler mismatch、原子 startup、冻结与确定排序、summary 隐私、六命令/六 selector parity、读写订阅权限矩阵、异常收口、失败零状态变化、history/replay/event 无 module attribution、公共导出和 forbidden dependency；最终执行 typecheck、build、完整测试、diff check 与 Trellis validation。
 
 ## 7. Wrong vs Correct
 
 ```typescript
 // Wrong
-registry.execute(extensionBlock.payload)
+registry.register(runtimePluginHandler)
+eventBus.publish({ type: "kernel.registry.changed" })
 
-// Correct direction
-const payload = domainDecoder.decode(extensionBlock)
-registry.executeApprovedContribution(contributionId, authorizedInput)
+// Correct
+const created = createKernelRegistry(CORE_KERNEL_STARTUP_MANIFEST)
+const gateway = created.ok
+  ? created.registry.createGateway(moduleId, commandBus)
+  : created
 ```

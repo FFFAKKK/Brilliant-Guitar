@@ -2,12 +2,13 @@
 
 ## Status
 
-- Phase: staged execution; K1-1 through K1-3 are accepted/archived, and K1-4 is planning-only until its own contracts are approved.
+- Phase: staged execution; K1-1 through K1-3 are accepted/archived, and the K1-4 planning package was approved on 2026-07-17. Production implementation remains gated on the dedicated branch and explicit task start.
 - Parent task: `06-29-commercial-guitar-tablature-product`.
 - Implementation target: pure TypeScript Core Kernel only.
-- K1-1 authority: `.trellis/tasks/07-13-k1-1-foundation-replanning/design.md` and `.trellis/spec/core-kernel/backend/score-document-model.md`.
+- K1-1 authority: `.trellis/tasks/archive/2026-07/07-13-k1-1-foundation-replanning/design.md` and `.trellis/spec/core-kernel/backend/score-document-model.md`.
 - K1-2 authority: `.trellis/tasks/archive/2026-07/07-15-k1-2-commands-transactions-history/design.md` and `.trellis/spec/core-kernel/backend/command-transaction.md`.
-- K1-3 authority: `.trellis/tasks/archive/2026-07/07-15-k1-3-address-snapshots-selectors-events/`, accepted at `7369eeac60fecea66c2c9164c04439625c2d78b0`; K1-4 and later sections remain roadmap sketches.
+- K1-3 authority: `.trellis/tasks/archive/2026-07/07-15-k1-3-address-snapshots-selectors-events/`, accepted at `7369eeac60fecea66c2c9164c04439625c2d78b0`.
+- K1-4 authority: `.trellis/tasks/07-16-k1-4-registry-capability-startup-registration/` and `.trellis/spec/core-kernel/backend/registry-capability.md`; K1-5 and later remain roadmap sketches.
 
 ## Design Principle
 
@@ -106,13 +107,14 @@ No caller may receive a mutable `ScoreDocument`.
 
 ```text
 KernelStartupModuleManifest
-  -> CoreModuleRegistration
-  -> KernelRegistry validation
-  -> contribution descriptor + handler stored internally
-  -> read-only registry summary exposed
+  -> strict decode + compiled binding lookup
+  -> isolated candidate validation
+  -> frozen ready KernelRegistry or stable failure
+  -> capability-scoped gateway
+  -> existing CommandBus / selector / read / subscribe
 ```
 
-V1 accepts only startup-time `builtin/internal-module` registrations. Runtime plugin changes are unsupported.
+K1-4 accepts only manifest-bound official, system-trusted `builtin/internal-module` registrations. It binds exactly six command and six selector adapters; runtime plugin changes and arbitrary handlers are unsupported.
 
 ## Boundary Decisions
 
@@ -196,18 +198,17 @@ Deliverables:
 
 ### K1-4: Registry and Capability
 
-Why after command/read contracts exist: only proven cross-module contributions may enter registry; the exact contribution set must be justified against completed command/read contracts.
+Why after command/read contracts exist: K1-4 authorizes and delegates to proven K1-2/K1-3 behavior instead of inventing a second execution path.
 
 Deliverables:
 
-- registry
-- module identity
-- capability checks
-- startup manifest
-- core module registration
-- registry summary
-- explicit proof for every retained contribution kind
-- no default Core technique-definition contribution and no retired test-technique registration
+- atomic startup-only frozen Registry
+- independent module identity dimensions and seven non-implying capabilities
+- exactly `command | selector` contributions for the existing six commands and six selectors
+- capability-scoped gateway with trusted-host parity
+- deterministic, detached, minimal Registry summary
+- closed K1-4 startup/access failures and total exception boundaries
+- no Registry version/event, history/event attribution, third-party runtime, technique, validator, migration, format, template, Guitar, or K1-5 report contribution
 
 ### K1-5: Errors, Reports, Migration Shell
 
@@ -266,6 +267,6 @@ No implementation chunk should change unrelated future UI, renderer, playback, p
 - K1-1 is the accepted frozen foundation at `30894e2`.
 - K1-2 passed focused P1 repair and independent re-acceptance and is archived under `.trellis/tasks/archive/2026-07/07-15-k1-2-commands-transactions-history/`.
 - K1-3 passed independent acceptance at `7369eeac60fecea66c2c9164c04439625c2d78b0`, is archived, and has 102/102 passing tests.
-- K1-4 planning may start from the accepted K1-3 baseline, but contribution kinds, error ownership, and any registry-change event remain undecided until a new K1-4 task/spec review is approved. K1-5 remains separately blocked.
+- K1-4 planning was approved on 2026-07-17. Its production work may start only after this document closure is committed, a dedicated `codex/k1-4-*` branch is created, and the Trellis task is explicitly started. K1-5 remains separately blocked.
 - Guitar Domain Block 2 is independent from Core K1-2 and must define its Part-owned extension before guitar commands or technique semantics are implemented.
 - Before any later implementation, load `trellis-before-dev`, re-read the relevant active specs, and confirm the task is approved; archived drafts are never execution sources.

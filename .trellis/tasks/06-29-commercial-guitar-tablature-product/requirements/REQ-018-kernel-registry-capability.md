@@ -1,72 +1,72 @@
 # REQ-018 内核注册表与能力边界
 
-> **状态：PLANNING INPUT / NOT EXECUTABLE。** K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 验收，但 K1-4 合同尚未收敛。本文的 contribution kinds、`kernel.registry.changed`、错误名称、接口和验收项均为候选输入；只有未来经用户审核通过的 K1-4 PRD/design/implement 才能授权实现。
+> **状态：APPROVED K1-4 PLANNING / IMPLEMENTATION NOT STARTED（2026-07-17）。** 权威 PRD、设计与实施计划位于 `.trellis/tasks/07-16-k1-4-registry-capability-startup-registration/`。实现仍须等待活动文档收口、独立 `codex/k1-4-*` 分支和显式 Trellis task start。
 
 ## 用户价值
 
-`Brilliant Guitar` 需要长期扩展命令、selector、验证器、技巧、导入器、导出器、模板和未来插件能力，但这些能力不能靠模块随意注入主程序。用户最终感知到的是:
+`Brilliant Guitar` 需要让官方模块发现并调用现有命令和 selector，但不能靠模块随意注入主程序。K1-4 为此建立稳定身份、静态 capability 与确定性目录，同时保护 K1-2/K1-3 的事务、历史、读取和事件合同。用户最终感知到的是:
 
 - 新增功能行为可预测，不会因为模块暗中接入导致谱面损坏。
-- 内置模块和未来插件都有清晰的接入边界。
+- 内置模块具有清晰、可测试的接入边界。
 - 不支持的贡献点会被明确拒绝，而不是沉默失败。
-- 后续开放第三方插件时，API version、能力声明和权限边界已有基础。
+- 后续规划第三方插件时，可复用 API version、身份维度和能力边界，而不把第三方执行带入 K1-4。
 - 毕业设计版本能够解释“模块化扩展不是随意调用，而是受内核契约治理”。
 
 ## 当前决策状态
 
-- 状态: 未收敛、不可执行；仅作为 K1-4 独立规划输入。
-- 候选方向: 评估“注册表与 capability”是否应作为独立内核功能，以及它与 K1-5 错误/report 的最小边界；不得把本文件的旧结论视为批准结果。
+- 状态: K1-4 规划已于 2026-07-17 获用户批准；生产实现未启动。
+- 批准方向: 启动期原子 frozen Registry、`command | selector` 两类贡献、七个互不蕴含的 capability、capability-scoped gateway、最小 summary 和 K1-4 本地失败合同。
 - 对应 spec: `specs/SPEC-015-kernel-registry-capability.md`。
-- 关联错误契约: 注册和 capability 失败是否复用 K1-5、由谁拥有具体错误 code，必须在 K1-4/K1-5 规划中重新决定。
+- 关联错误契约: K1-4 拥有封闭 startup/access failure union；K1-5 可映射但不得改名或改义。
 
 ## 规划审核视角
 
 ### 产品视角
 
-这个模块解决“软件如何长期扩展但不失控”的问题。用户不会直接操作注册表，但会感受到命令、技巧、导入器、导出器、模板和未来插件都能稳定接入，不会因为某个模块暗中注入能力导致文件损坏或功能行为不一致。
+这个模块解决“官方模块如何调用已验收 Core 能力但不获得隐式权限”的问题。用户不会直接操作注册表，但会从稳定、可预测的命令和查询行为中受益。
 
 核心使用场景:
 
-- 启动软件时加载内置命令、selector、验证器、技巧定义和导入导出 descriptor。
-- UI 或命令面板读取 registry summary，知道当前有哪些可用命令或导出能力。
+- 启动软件时一次性登记现有六个命令和六个 selector adapter。
+- 获 `registry:read` 的官方模块读取最小 summary，知道当前有哪些已批准贡献。
 - 内部模块调用内核 API 前先通过 capability 检查。
-- 未来 Extension Host 在应用启动期代理第三方插件注册贡献点。
+- trusted Core Host 可继续直接调用既有 `CommandBus` 和 selector。
 
 MVP 真正必要的功能:
 
-- 内置贡献点显式注册。
-- API version 检查。
-- capability 检查。
-- 只读 registry summary。
-- 注册变化事件。
+- 一次性静态 manifest 与 compiled registration binding。
+- API version、identity 和 capability 检查。
+- capability-scoped gateway。
+- 确定排序、深冻结且隐私安全的只读 summary。
+- 全异常边界和失败零状态变化。
 
 ### 业务逻辑视角
 
 业务流程:
 
-1. Core Kernel 创建 registry。
-2. 内置模块声明 `KernelModuleIdentity`。
-3. 内置模块提交 contribution descriptor。
-4. registry 检查 kind、ID、runtime、API version 和 capability。
-5. 成功则登记贡献点并递增 `registryVersion`；失败则返回结构化错误。
-6. 外部模块只能读取 summary，不能拿到 handler 或可变对象。
+1. Core Host 提交完整静态 manifest。
+2. factory 严格解码 manifest 并解析仅有的两个 compiled registration entry。
+3. candidate 检查 module identity、API version、registration capability、contribution ID 与 handler/descriptor 匹配。
+4. 全部成功后一次性返回 frozen ready Registry；任一失败不返回半成品。
+5. Registry 为 manifest-declared module 创建 gateway。
+6. gateway 解析 contribution、检查 caller capability，再委托现有 CommandBus/selector/read/subscribe。
 
 业务规则:
 
-- contribution id 必须稳定且唯一。
-- MVP 只允许 `builtin` 和 `internal-module`。
-- 缺少 capability 时必须拒绝。
-- registry 不是谱面写入口，任何写入仍走语义命令、导入入口或迁移入口。
-- 未来第三方插件的安装、移除、启用和禁用配置必须在应用启动前完成；应用运行中不得新增、卸载、启用、禁用或热插拔第三方插件。
+- module/contribution id 必须稳定且唯一，结果排序不依赖 manifest 顺序。
+- K1-4 只接受 manifest-bound `official + builtin/internal-module + system-trusted`。
+- capability 互不蕴含；缺少任一 required capability 必须拒绝。
+- registry 不是谱面写入口；所有写入仍走现有语义命令事务。
+- ready Registry 不提供 register、unregister、replace、seal、enable、disable 或 hotplug。
 
 边界条件和异常情况:
 
 - 重复 ID。
-- 未知 contribution kind。
+- 非 `command | selector` contribution kind。
 - unsupported runtime。
 - API version 不兼容。
-- contribution disabled。
-- 注册项 descriptor 不完整。
+- compiled entry 不存在或 owner 不匹配。
+- 注册项 descriptor 不完整或与 handler 不匹配。
 - handler 存在但 summary 不得泄露 handler。
 
 ### 技术实现视角
@@ -74,8 +74,8 @@ MVP 真正必要的功能:
 模块边界:
 
 - 属于 Core Kernel。
-- 可以依赖 `SPEC-016` 的 `KernelError` 返回失败原因。
-- 不拥有 `KernelError` 结构、diagnostic 生命周期或 report 生成规则。
+- K1-4 自有 closed startup/access failure；K1-5 可映射但不能重定义。
+- 不拥有通用 `KernelError`、diagnostic 生命周期或 report 生成规则。
 - 不依赖 React、Tauri、VexFlow、Web Audio、文件系统或 UI 组件。
 
 核心数据模型:
@@ -83,24 +83,24 @@ MVP 真正必要的功能:
 - `KernelRegistry`。
 - `KernelModuleIdentity`。
 - `KernelCapability`。
-- `KernelContribution`。
+- `command | selector` contribution summary。
 - `RegistrySummary`。
-- `registryVersion`。
+- `KernelModuleGateway`。
 
 接口契约:
 
-- `register(identity, contribution)`。
-- `getSummary(query)`。
-- `requireCapability(identity, required)`。
+- `createKernelRegistry(manifest: unknown)`。
+- `KernelRegistry.createGateway(moduleId, commandBus)`。
+- gateway 的 `summary/read/select/submit/undo/redo/subscribe`。
 
 可测试性:
 
-- 重复注册测试。
+- 原子 startup 与重复 ID 测试。
 - unsupported runtime 测试。
 - API version 不兼容测试。
 - capability denied 测试。
-- summary 不泄露 handler 测试。
-- registryVersion 和事件测试。
+- summary 冻结、确定排序和隐私测试。
+- authorized parity、denied preservation 与无 Registry event 测试。
 
 ### 反过度设计视角
 
@@ -127,6 +127,8 @@ MVP 不需要把 registry 做成完整插件平台。当前阶段应避免:
 本需求不解决:
 
 - 错误对象、diagnostic、report shell 的字段设计；这些属于 `REQ-019`。
+- hard validator、technique definition、migration、import/export descriptor 或 template descriptor 注册。
+- Guitar Domain 命令、技巧 schema 或领域 payload 解释。
 - 第三方插件安装、下载、市场、签名和审核。
 - 第三方 TypeScript 插件运行时、编译产物、Lua 或 native 第三方运行时沙箱。
 - Tauri/Rust 原生权限系统。
@@ -134,18 +136,18 @@ MVP 不需要把 registry 做成完整插件平台。当前阶段应避免:
 
 ## MVP 必须满足
 
-- Core Kernel 提供统一 `KernelRegistry`，用于登记命令、selector、hard validator、technique definition、migration、importer/exporter descriptor 和 template descriptor。
-- 每个注册项必须有稳定 `id`、`kind`、`sourceModuleId`、`apiVersion`、`requiredCapabilities`、`status` 和 `titleKey`。
-- MVP 只接受 `builtin` 和 `internal-module` 来源，不接受第三方 TypeScript 插件运行时、编译产物、Lua 或 native 插件贡献点。
-- 注册表拒绝重复 ID、未知 contribution kind、unsupported runtime、不兼容 API version 和缺失 capability。
-- capability 检查必须发生在命令执行、selector 调用、注册贡献点和未来插件代理之前。
+- Core Kernel 提供一次性 `createKernelRegistry(unknown)`，只登记现有六个 command 与六个 selector adapter。
+- 每个 summary contribution 必须有稳定 `id`、`kind`、`sourceModuleId`、`apiVersion`、`requiredCapabilities` 和 `titleKey`；command 另有 `targetKind`，selector 另有 `inputKind`。
+- K1-4 只接受 manifest-bound `official` + `builtin/internal-module` + `system-trusted`，拒绝第三方 TypeScript、Lua、native 或任意外部执行入口。
+- 注册表拒绝畸形 manifest、重复 ID、非批准 kind、unsupported identity、不兼容 API version、缺失 capability、unknown/misowned binding 和 descriptor/handler mismatch。
+- capability 检查必须发生在 summary、命令执行、selector 调用、读取和事件订阅之前。
 - 注册权限必须与执行权限分离；例如拥有 `command:register` 不代表拥有 `command:execute`。
 - MVP 采用来源与权限解耦模型: `origin`、`runtime`、`trustLevel` 和 capability 必须独立判断；任何一个字段都不能单独绕过另外几个检查。
-- V1 的 `system-trusted` 内部模块只能来自静态 `KernelStartupModuleManifest` 或应用打包清单，不能由插件 manifest、用户配置或运行时模块自我声明。
+- V1 的 `system-trusted` 内部模块只能来自静态 `KernelStartupModuleManifest` 与 compiled binding，不能由插件 manifest、用户配置或运行时模块自我声明。
 - `KernelStartupModuleManifest` 只能引用应用内已编译绑定的 `CoreModuleRegistrationEntryId`，不能引用任意文件路径、URL、脚本字符串或动态 import。
-- 注册表变化必须递增 `registryVersion` 并发布 `kernel.registry.changed`。
-- 注册表 summary 只能暴露只读 descriptor 摘要，不能泄露 handler、React 组件、SVG/VexFlow 对象、Web Audio 节点、Tauri 文件对象或可变 `ScoreDocument`。
-- 所有写能力仍必须通过语义命令、导入入口或迁移入口，不允许通过注册表绕过命令事务。
+- ready Registry 不可变，不定义 `registryVersion` 或 `kernel.registry.changed`，且不修改 K1-3 event union。
+- 注册表 summary 只暴露批准白名单，确定排序、深冻结并脱离内部状态；不能泄露 granted capability、trust、handler、private index、Registry 或可变 `ScoreDocument`。
+- 所有写能力仍必须通过现有语义命令，不允许通过注册表绕过命令事务。
 
 ## MVP 不做
 
@@ -157,41 +159,48 @@ MVP 不需要把 registry 做成完整插件平台。当前阶段应避免:
 - 不执行第三方 TypeScript 插件运行时、编译产物、Lua 或 native 插件代码。
 - 不允许模块运行时随意注入 UI 面板、React 组件、VexFlow 对象、Web Audio 节点或 Tauri 文件对象。
 - 不把 OS 文件权限、Tauri 权限或浏览器沙箱权限混入 Core Kernel capability。
+- 不做 mutable Registry、query DSL、status 字段、runtime counter 或 Registry change event。
+- 不把 moduleId 写入 command envelope、history、replay 或 K1-3 events。
 
 ## 行为契约
 
-- 注册契约: 所有贡献点必须通过 `KernelRegistry` 显式注册，禁止 monkey patch 主程序能力。
+- 启动契约: Core Host 一次提交完整 manifest；candidate 全部验证成功后才返回 frozen ready Registry，失败不得暴露部分状态。
+- 贡献契约: 只有 compiled `core.commands.v1` 与 `core.selectors.v1` 可绑定现有十二个 adapter，禁止任意 handler 或 monkey patch。
 - 命名契约: 内置能力使用 `core.*` 或 `core.<domain>.*` 命名空间；内部模块使用稳定 module id 命名空间。
 - 能力契约: 调用方只获得自己声明并被授予的 capability；缺失 capability 必须被拒绝。
-- 权限分离契约: 注册贡献点、执行命令、读取谱面、订阅事件、创建 report 必须是不同 capability，不能互相隐式包含。
+- 权限分离契约: summary、注册、执行命令、执行 selector、读取谱面、订阅事件使用七个固定 capability，不能互相隐式包含；report 不属于 K1-4。
 - 版本契约: 注册项和调用方必须声明 API version；不兼容时拒绝注册或拒绝调用。
 - 只读契约: registry summary 是目录，不是 handler 泄露口。
-- 写入契约: registry 不是写入通道；修改谱面仍必须走语义命令、导入结果或迁移结果。
+- 委托契约: 授权后原样返回既有 `CommandResult`、`ReadResult` 与订阅结果，不创建第二套事务、读取或事件语义。
+- 写入契约: registry 不是写入通道；修改谱面仍必须走既有语义命令事务。
+- 失败契约: K1-4 全入口收口异常，返回封闭隐私安全 failure；任何拒绝或内部异常都保持文档、版本、history、dirty、事件、订阅和 Registry 状态不变。
 
 ## 验收标准
 
-- [ ] AC-018-01: 注册重复 command id 时，注册表返回 `registry-duplicate-id`，原注册项不被覆盖。
-- [ ] AC-018-02: 未声明 `command:execute` capability 的模块执行写命令时，返回 `capability-denied`。
-- [ ] AC-018-03: 不兼容 API version 的内部模块注册贡献点时，返回 `api-version-incompatible`。
-- [ ] AC-018-04: MVP 拒绝 `runtime = "javascript-typescript"` 的第三方插件贡献点注册。
-- [ ] AC-018-05: 注册表变化会增加 `registryVersion` 并触发 `kernel.registry.changed`。
-- [ ] AC-018-06: command、selector、validator、technique、importer/exporter descriptor 和 template descriptor 都能通过 registry summary 查询。
-- [ ] AC-018-07: registry summary 不包含 handler、React 组件、SVG/VexFlow 对象、Web Audio 节点、Tauri 文件对象或可变 `ScoreDocument`。
-- [ ] AC-018-08: 模块不能通过注册表直接修改 `ScoreDocument`；写入仍必须走语义命令、导入入口或迁移入口。
-- [ ] AC-018-09: 拥有 `command:register` capability 的模块不能因此自动执行写命令；执行写命令仍需要 `command:execute`。
-- [ ] AC-018-10: V1 `system-trusted` 内部模块可以在启动期走 `CoreModuleRegistration`，但 capability 不足、apiVersion 不兼容或重复注册时仍被拒绝。
-- [ ] AC-018-11: 未来第三方模块不能调用 V1 内部模块直接注册入口，只能通过未来 `Extension Host` 或等价启动期适配层代理注册。
-- [ ] AC-018-12: 不在 `KernelStartupModuleManifest` 或应用打包清单中的 V1 模块不能获得 `system-trusted` 身份。
-- [ ] AC-018-13: `KernelStartupModuleManifest` 包含未知 `registrationEntryId`、文件路径、URL 或脚本字符串时，注册表初始化失败并返回稳定错误。
-- [ ] AC-018-14: 应用进入 ready 状态后，第三方插件新增、卸载、启用、禁用或热插拔请求必须被拒绝或提示重启生效，不得改变当前 registry handler 集合。
+- [x] AC-018-01: K1-4 PRD/design/implement 决策完整并于 2026-07-17 获用户批准。
+- [ ] AC-018-02: 默认 manifest 精确登记六个 command 与六个 selector，无其他 kind 或 arbitrary handler。
+- [ ] AC-018-03: manifest strict decode 快速拒绝 extra/missing field、accessor、sparse array、路径/URL/脚本和畸形有限值，且不抛异常。
+- [ ] AC-018-04: startup duplicate/version/runtime/trust/capability/binding/handler failure 保持 all-or-nothing。
+- [ ] AC-018-05: ready Registry 无 public register/unregister/replace/seal、runtime counter 或 Registry event。
+- [ ] AC-018-06: summary 按批准规则确定排序、深冻结、脱离内部状态并满足隐私白名单。
+- [ ] AC-018-07: gateway 的 submit/undo/redo/read/select/subscribe 权限矩阵正确，授权结果与 trusted-host 调用完全一致。
+- [ ] AC-018-08: 拒绝与意外异常零状态变化，并转换为封闭隐私安全 failure。
+- [ ] AC-018-09: `command:register` 不隐含 `command:execute`，任一 capability 都不隐含其他 capability。
+- [ ] AC-018-10: history、replay、K1-3 events 无 module attribution，K1-3 event union 不变。
+- [ ] AC-018-11: 公共导出无 handler、mutable Registry、patch、第二写入路径、第三方 runtime 或 K1-5 API。
+- [ ] AC-018-12: typecheck、build、完整测试、forbidden dependency、diff check 与 Trellis validation 全部通过。
 
 ## 已确认决策
 
 - DEC-018-01: “内核注册表与 capability”作为 Core Kernel 功能实现。
 - DEC-018-02: 该功能独立规划和实现，不与错误、diagnostic、report 合并。
-- DEC-018-03: 该功能可以返回 `KernelError`，但不拥有错误结构、diagnostic 生命周期或 report 生成规则。
-- DEC-018-04: 注册表生命周期采用稳定优先策略；可信内部模块在启动期静态注册，未来第三方插件也只能在应用启动前完成安装、移除、启用和禁用配置，由 `Extension Host` 在启动期发现、校验并代理注册，运行时插件集合变更需要重启后生效。
+- DEC-018-03: K1-4 拥有本地 startup/access failure union，但不拥有通用 KernelError、diagnostic 生命周期或 report 生成规则；K1-5 只能映射。
+- DEC-018-04: contribution kind 固定为 `command | selector`，只绑定既有六命令和六 selector。
+- DEC-018-05: Registry 一次性原子创建且 ready 后冻结；没有 runtime version 或 change event。
+- DEC-018-06: module identity 的 origin/runtime/trust/apiVersion/capability 独立，K1-4 仅接受 manifest-bound official trusted builtin/internal module。
+- DEC-018-07: 七个 capability 固定且互不蕴含，模块调用通过 gateway，trusted Core Host direct API 保留。
+- DEC-018-08: hard validator、technique、migration、import/export、template、Guitar Domain、K1-5 report 和第三方 runtime 均不进入 K1-4。
 
 ## 后续待规划问题
 
-- 暂无。`OQ-018-02` 已由 `DEC-018-04` 收敛。
+- 暂无。生产实现若要求改变 K1-1/K1-2/K1-3 合同，必须停止并重新规划。

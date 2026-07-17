@@ -4,7 +4,7 @@
 
 把现有 `Pure Core Kernel V1` 总规划收敛成一个可执行、可验收、可分块推进的内核实现任务。
 
-本任务是 Pure Core Kernel V1 路线图父任务。K1-1 已在 `30894e2` 正式验收；K1-2 已完成 P1 修复、独立复验并归档；K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 独立验收并归档，102/102 测试通过。K1-4 现在只解除“可以创建独立规划任务”的前置阻塞，其生产实现仍需等待 K1-4 PRD/design/implement 审核通过。
+本任务是 Pure Core Kernel V1 路线图父任务。K1-1 已在 `30894e2` 正式验收；K1-2 已完成 P1 修复、独立复验并归档；K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 独立验收并归档，102/102 测试通过。K1-4 PRD/design/implement 已于 2026-07-17 获用户批准；生产实现仍须等待文档收口提交、独立 `codex/k1-4-*` 分支和显式 Trellis task start。
 
 ## Source Documents
 
@@ -86,23 +86,23 @@
 - `CommandBus.markPersisted`: 用实际保存的 documentVersion 建立精确 clean checkpoint，支持异步保存竞态，不执行 IO/哈希。
 - 两个事件: 成功 submit/undo/redo 的 `core.document.committed`，以及 dirty 布尔变化时的 `core.session.dirty-state-changed`。
 - 事件按确定性 sequence 同步分发；handler 隔离、订阅快照、幂等 unsubscribe、写入/markPersisted 重入拒绝和提交前 overflow 检查。
-- 详细合同以 `07-15-k1-3-address-snapshots-selectors-events` 为准；旧 snapshotId/时间、宽 selector 和 load/history/registry/migration 事件不进入 K1-3。
+- 详细合同以 `.trellis/tasks/archive/2026-07/07-15-k1-3-address-snapshots-selectors-events/` 为准；旧 snapshotId/时间、宽 selector 和 load/history/registry/migration 事件不进入 K1-3。
 
 ### K1-4: 注册表、capability 与启动期内部模块注册
 
-作用: 建立内核扩展点和权限边界，让内置模块和未来插件最终收敛到同一套注册协议，但 V1 不执行第三方插件代码。
+作用: 为官方内置模块建立启动期静态贡献目录和权限边界，让模块通过受控 gateway 调用既有命令与 selector，但不执行第三方插件代码。
 
 小功能:
 
-- `KernelRegistry`: 注册命令、selector、hard validator、technique definition、migration、抽象 import/export descriptor、template descriptor。
-- contribution descriptor: 记录稳定 id、kind、source module、api version、required capabilities、status、titleKey。
-- `KernelModuleIdentity`: 独立建模 `origin`、`runtime`、`trustLevel`、`apiVersion` 和 capabilities。
-- capability 检查: 注册权限和执行权限分离。
-- `KernelStartupModuleManifest`: V1 唯一启动期模块来源，只接受随应用发布的 `builtin/internal-module`。
-- `CoreModuleRegistration`: 内置模块按统一协议注册贡献点和 handler。
-- registry summary: 只读摘要，不泄露 handler、可变对象、React、VexFlow、Web Audio、Tauri 或 `ScoreDocument`。
-- Registry 不再以 K1-1 的测试技巧为前置条件；具体吉他技巧由后续 Guitar Domain 解释，K1-4 必须在新模型上单独重审。
-- unsupported 插件边界: 明确运行时 hotplug、第三方 manifest 读取、第三方 TypeScript 执行、Lua/native 执行都不进入 V1。
+- `KernelRegistry`: 一次性严格解码完整 manifest，隔离验证后原子返回 frozen ready Registry；失败无部分状态。
+- contribution kind 固定为 `command | selector`，默认只绑定现有六个 Core command 与六个 K1-3 selector adapter。
+- `KernelModuleIdentity`: 独立建模 `moduleId`、origin、runtime、trust level、API version 与 immutable capabilities；K1-4 只接受 manifest-bound official trusted builtin/internal module。
+- 七个 capability 固定且互不蕴含；登记、命令执行、selector 执行、读取、summary 与事件订阅分别授权。
+- `KernelModuleGateway`: 先解析与授权，再委托既有 CommandBus/selector/read/subscribe；trusted Core Host direct API 保留。
+- registry summary: 最小白名单、确定排序、深冻结且脱离内部状态，不泄露 grant/trust/handler/index/Registry 或 mutable document。
+- Registry ready 后无 public mutation、`registryVersion` 或 `kernel.registry.changed`，moduleId 不进入 command/history/replay/K1-3 event。
+- hard validator、technique、migration、import/export、template、Guitar Domain、K1-5 report 与第三方运行时明确不进入 K1-4。
+- 详细权威为 `.trellis/tasks/07-16-k1-4-registry-capability-startup-registration/` 与 `.trellis/spec/core-kernel/backend/registry-capability.md`。
 
 ### K1-5: 错误、diagnostic、report 与迁移入口
 
@@ -147,7 +147,7 @@
 - K1-REQ-008: Successful undoable semantic commands must create exactly one `HistoryEntry` by default; failed commands must not affect history.
 - K1-REQ-009: Reads must use immutable snapshots or selectors; public APIs must not expose mutable `ScoreDocument`.
 - K1-REQ-010: Kernel events must be post-commit facts and must not carry mutable documents or internal deltas.
-- K1-REQ-011: Registry/capability remains later staged work and must be redesigned against completed K1-1 rather than imported into K1-1 early.
+- K1-REQ-011: The approved K1-4 Registry/capability block must remain startup-only, immutable, command/selector-only, and compatible with frozen K1-1 through K1-3 contracts.
 - K1-REQ-012: Error, diagnostic, report, and migration results must use stable codes, `messageKey`, structured details, and privacy-safe payloads.
 
 ### Planning Requirements

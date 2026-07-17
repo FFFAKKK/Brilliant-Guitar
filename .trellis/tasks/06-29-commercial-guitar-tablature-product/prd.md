@@ -3,12 +3,12 @@
 ## 状态
 
 - Trellis task: `06-29-commercial-guitar-tablature-product`
-- 当前阶段: Core K1-3 Gate 已正式收口；下一步仅允许创建 K1-4 独立规划任务，产品其余阶段保持规划态
+- 当前阶段: Core K1-3 Gate 已正式收口；K1-4 独立规划已于 2026-07-17 获批准，生产实现尚未启动，产品其余阶段保持规划态
 - 创建日期: 2026-06-29
 - 负责人: ATOM
 - 文档策略: 每个需求先写独立文档，最终再合并为收敛后的 PRD。
 - 当前 Core 基线: K1-1 已在 `30894e2` 正式验收；K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 正式验收并通过 102/102 测试；`.trellis/spec/core-kernel/` 是活动代码契约。本文较早的决策记录若与其冲突，以活动规范与独立 Block 任务为准。
-- 当前交付状态: K1-2、K1-3 均已完成独立复验并归档。K1-4 的 contribution 种类、错误归属和 registry change event 尚未收敛，只能作为规划输入；Guitar Domain 和通用 report 仍需分别重规划。
+- 当前交付状态: K1-2、K1-3 均已完成独立复验并归档。K1-4 已固定 command/selector 两类贡献、K1-4 本地失败合同以及无 registry version/change event；实现仍须进入独立分支并显式启动任务。Guitar Domain 和通用 report 仍需分别重规划。
 
 ## 产品目标
 
@@ -50,7 +50,7 @@
 - 坐标解析模块化策略已确认: 坐标解析作为外部模块能力；MVP 先不单独拆包，由 `Layout Module + Editor Session Service` 承担，后续在多页、多轨、多声部、复杂选区或多渲染后端复杂度上升后抽出专门 `Positioning Service`。
 - 验证边界已确认: Core 分为 strict decode、semantic validation 与 ScoreFeatureProfile；吉他 payload 由 Guitar Domain 验证。软一致性、可演奏性分析、指法建议、教学提示、风格检查和难度评分暂不进入 MVP。
 - `.bgp` 语义契约边界已确认: `.bgp` 的包内语义、`manifest.json`、`score.json` schema、schema version、兼容矩阵、迁移入口和 `MigrationReport` 属于 Core Kernel；真实 zip 读写、文件路径、原子保存、自动保存、崩溃恢复和最近文件列表属于外部 `Persistence Service`。
-- 内核注册表与 capability 已确认: `KernelRegistry`、module identity、API version、contribution descriptor 和 capability 检查作为独立 Core Kernel 功能继续规划。
+- 内核注册表与 capability 已确认: K1-4 采用启动期原子 frozen Registry、七个固定 capability、command/selector adapter 和 capability-scoped gateway；完整权威为独立 K1-4 任务。
 - 内核错误、diagnostic 与 report 已确认: `KernelError`、`KernelDiagnostic`、`KernelReport`、`KernelReportIssue`、`ImportReport`、`ExportReport`、`MigrationReport` 和 `ValidationReport` 作为独立 Core Kernel 功能继续规划。
 - 国际化范围已确认: 后续要支持语言切换，第一阶段先支持简体中文和英文。
 - MVP 导出范围已确认: 第一阶段先做 PDF + PNG，SVG 后置。
@@ -615,11 +615,9 @@ MVP 包结构建议: `.bgp` 的长期形态是单文件开放 zip 包，至少�
 
 ### DEC-K046: Core Kernel 的注册表和 capability 应该如何设计？
 
-推荐答案: 第一阶段采用“Kernel Registry + Unified Startup Registration + Static Capability”的模型。Core Kernel 保留最小 `KernelRegistry`、`KernelCapability` 和 `KernelModuleIdentity`；命令、selector、hard validator、technique definition、migration、外部 import/export 抽象 descriptor 和 template descriptor 都必须通过 registry 显式注册。所有官方模块和未来第三方模块最终都收敛到 `KernelModuleIdentity + capability + contribution descriptor + handler` 注册协议；第三方插件发现、manifest 文件读取、沙箱、启动前安装/移除/启用/禁用配置、市场、权限 UI、签名和审核不进入 Core Kernel，属于未来插件平台或 `Extension Host`；运行时热插拔、运行中启用/禁用和卸载不作为规划目标。
+批准答案（2026-07-17）: K1-4 采用“Atomic Startup Registry + Static Capability + Module Gateway”。Core Kernel 保留最小 `KernelRegistry`、`KernelCapability` 和 `KernelModuleIdentity`，但本块只允许 `command | selector` 两类 contribution，并且只绑定现有六个 Core command 与六个 K1-3 selector adapter。hard validator、technique、migration、外部 import/export descriptor、template、Guitar Domain 和通用 report 均不进入 K1-4。
 
-导入/导出 descriptor 只用于声明外部模块贡献点的格式 id、显示信息、capability、API version 和 unsupported 状态。Pure Core Kernel V1 不注册 PDF、PNG、Guitar Pro 或 `.bgp` 物理 IO 的具体 descriptor/handler，不引入任何格式解析、生成、zip、字体或文件系统依赖。
-
-实现约束: 每个注册项必须声明稳定 `id`、`kind`、`sourceModuleId`、`apiVersion`、`requiredCapabilities`、`status` 和 `titleKey`；每个模块身份必须声明 `origin`、`runtime`、`trustLevel`、`apiVersion` 和 capability。Pure Core Kernel V1 只从静态 `KernelStartupModuleManifest` 接受随应用发布的 `builtin` 与 `internal-module`，拒绝第三方 TypeScript 插件运行时、编译产物、Lua 和 native 运行时；未来第三方模块可在启动前授权后映射进同一注册协议。注册表拒绝重复 ID、未知 contribution kind、不兼容 API version 和缺失 capability；注册表变化必须递增 `registryVersion` 并发布 `kernel.registry.changed`。registry summary 不得泄露 handler、React 组件、VexFlow 对象、Web Audio 节点、Tauri 文件对象或可变 `ScoreDocument`。
+实现约束: Core Host 一次提交完整静态 manifest；严格解码、identity/capability 检查和 compiled binding 在隔离 candidate 中全部成功后才返回 frozen ready Registry。K1-4 只接受 manifest-bound `official + builtin/internal-module + system-trusted`；七个 capability 互不蕴含。模块通过 gateway 授权后委托既有 CommandBus/selector/read/subscribe，trusted Core Host direct API 保留。summary 只暴露确定排序、深冻结的批准元数据白名单。ready Registry 不提供 mutation API、`registryVersion` 或 `kernel.registry.changed`，moduleId 不写入 command/history/replay/K1-3 event。
 
 取舍: 该方案会增加注册元数据和权限检查成本；但它能让内置模块和未来插件都通过同一套内核 ABI 扩展系统能力。如果完全不做注册表和 capability，MVP 代码会更快，但后续每个模块都会变成隐式入口。
 
@@ -633,15 +631,15 @@ MVP 包结构建议: `.bgp` 的长期形态是单文件开放 zip 包，至少�
 
 ### DEC-K048: 未来模块化插件如何与 Core Kernel 协作？
 
-结论: 采用“统一注册协议 + 来源与权限解耦”的模块协作模型。官方模块和未来第三方模块最终都以 `KernelModuleIdentity + capability + contribution descriptor + handler` 的形式进入 `KernelRegistry`；差异只存在于启动前发现、校验、授权和加载阶段。Pure Core Kernel V1 使用 `KernelStartupModuleManifest` 和 `CoreModuleRegistration` 直接注册随应用发布的 `builtin/internal-module`；未来第三方插件只能在应用启动前完成安装、移除、启用和禁用配置，再由插件平台或 `Extension Host` 映射进同一注册协议。`PluginKernelFacade` 是未来第三方插件平台的受控 facade 草案，不属于 V1 实现项。
+结论: K1-4 只解决随应用编译的官方模块，通过静态 manifest 与 compiled binding 形成统一身份/capability/gateway 协作面。未来第三方插件如何发现、授权、代理和扩展 contribution kind 必须由独立 Extension Host 规划证明；不得把该长期方向当成 K1-4 已实现 ABI。`PluginKernelFacade` 仍只是未来草案。
 
-产品视角: 用户需要的是可扩展能力和稳定文件资产。插件可以新增命令、验证器、外部导入/导出贡献点、模板和未来面板，但不能因为一个插件出错就破坏谱面、文件或主程序。
+产品视角: 用户需要的是可扩展能力和稳定文件资产。K1-4 先证明官方模块调用现有命令/selector 不会绕过事务或读取边界；未来插件新增验证器、格式、模板或面板必须另行规划。
 
-业务逻辑视角: V1 模块必须先出现在静态 `KernelStartupModuleManifest` 中，再在启动期提交 `CoreModuleRegistration`，由 `KernelRegistry` 校验 module identity、origin、runtime、trustLevel、apiVersion、registration capability 和 contribution descriptor，成功后绑定 handler。未来第三方插件集合必须在应用启动前由用户配置或插件管理配置确定，启动时由插件平台或 `Extension Host` 读取 manifest，完成安装来源、apiVersion、runtime、permissions、contributes、签名/开发者模式和用户授权校验，再把第三方模块映射成同一套 `KernelModuleIdentity`、capability 和 contribution descriptor。应用运行中不得新增、卸载、启用、禁用或热插拔第三方插件，相关变更需要重启后生效。插件 manifest、用户配置和运行时模块不得自我声明或提升 trust level。读取谱面只能走 snapshot/selector；修改谱面只能提交已注册语义命令；订阅事件只能拿到按 capability 过滤后的事件；导入、导出、验证和异常必须输出标准 report、diagnostic 或 `KernelError`。
+业务逻辑视角: K1-4 模块必须先出现在静态 `KernelStartupModuleManifest` 中，并引用应用内已编译绑定的 `core.commands.v1` 或 `core.selectors.v1`；candidate 全部验证成功后才生成 frozen Registry。consumer gateway 根据七个 capability 分别授权 summary、命令、selector、read 和 subscribe。未来第三方发现、签名、用户授权、安装/启停与代理注册全部留给 Extension Host。
 
-技术实现视角: `KernelModuleIdentity` 必须包含 `origin = "official" | "third-party"`、`runtime`、`trustLevel = "system-trusted" | "sandboxed"`、`apiVersion` 和 capability；`origin`、`runtime`、`trustLevel` 和 capability 独立建模，来源和运行时都不自动获得权限。`KernelStartupModuleManifest` 是 Pure Core Kernel V1 的唯一模块来源，只能引用应用内已编译绑定的 `CoreModuleRegistrationEntryId`，不能引用外部路径、URL、脚本字符串或动态 import。`CoreModuleRegistration` 是 V1 的启动期注册形态；未来 `PluginKernelFacade` 至少包含 `read`、`commands`、`registry`、`events` 和 `reports` 五类受控接口，但只是第三方插件平台草案。Kernel Registry 不提供第三方插件运行时 unregister、enable、disable 或 hotplug 入口；应用进入 ready 状态后，插件集合变更只能返回 `unsupported-at-runtime` / `restart-required` 类稳定错误。任何模块都不得暴露可变 `ScoreDocument`、内部 delta、patch、JSON path、React、VexFlow、SVG DOM、Web Audio 或 Tauri 文件对象。注册权限必须与执行权限分离，例如 `command:register` 不等于 `command:execute`。
+技术实现视角: `KernelModuleIdentity` 的 origin/runtime/trustLevel/apiVersion/capability 独立建模，K1-4 仅接受 manifest-bound official trusted builtin/internal module。factory 与 gateway 都有封闭、隐私安全的 K1-4 failure 和总异常边界。ready Registry 无 register/unregister/enable/disable/hotplug/version/event；任何模块都不得获得可变 `ScoreDocument`、内部 delta、patch、React、VexFlow、Web Audio 或 Tauri 对象。未来 facade 不属于本块公共导出。
 
-反过度设计视角: MVP 不做真实第三方 TypeScript 沙箱、插件安装器、插件市场、权限 UI、UI 面板插件、native 动态库插件，也不设计 marketplace-reviewed、partner、semi-trusted 等额外等级。运行时热插拔、运行中启用/禁用和卸载不后置为目标能力，而是稳定性原则上不支持；未来插件配置变更通过重启生效。第一阶段只需要把统一注册协议、静态 capability、启动期模块清单和 `CoreModuleRegistration` 做薄，并证明“读走 snapshot、写走 command、贡献点走 registry、错误走 report”这条链路成立。
+反过度设计视角: K1-4 不做第三方沙箱、安装器、市场、权限 UI、面板插件、native 动态库或额外 trust 等级，也不预建 validator/technique/migration/import/export/template contribution。只证明“manifest 原子启动、模块经 capability gateway 调用现有 command/selector/read/event”成立。
 
 ### DEC-K049: Core Kernel 是否需要音乐时间模型？
 

@@ -1,6 +1,6 @@
 # 模块化与插件架构可行性
 
-> **当前 Core 边界（2026-07-15）：** K1-3 候选实现只公开封闭 snapshot/selectors、`CommandBus.subscribe()` 和两个事件类型，发布器与 handler 记录保持私有；动态 registry/capability 和第三方代理属于 K1-4/插件平台后续工作。
+> **当前 Core 边界（2026-07-17）：** K1-3 已正式验收并通过 102/102 测试，只公开封闭 snapshot/selectors、`CommandBus.subscribe()` 和两个事件类型。K1-4 command/selector-only startup Registry 规划已批准但实现未启动；第三方代理与新增 contribution kind 仍须独立批准。
 
 ## 结论
 
@@ -33,7 +33,7 @@
 - `validation`: 文档验证、unsupported 诊断、错误定位。
 - `file-contract`: `.bgp` schema、manifest、迁移入口和兼容矩阵；Pure Core Kernel V1 不定义插件私有数据命名空间。
 - `snapshot-query`: `CommandBus.read()` 的深冻结 `DocumentSnapshot` 与六个受控 selector；物理序列化由 Persistence 负责。
-- `registry`: 命令、验证器、导入器、导出器、模板、selector 和内部模块贡献点。
+- `registry`: K1-4 只含现有六命令与六 selector adapter 的启动期 frozen 目录；其他贡献点属于后续路线图。
 - `events`: K1-3 只提供 document-committed 与 dirty-state-changed；其他模块事实由后续分块或 Extension Host 过滤协议定义。
 - `capabilities`: 模块或插件的能力声明、权限和 API 版本。
 - `errors-reports`: `KernelError`、`KernelDiagnostic`、`KernelReport`、`ImportReport`、`ExportReport` 和 `MigrationReport` 外壳。
@@ -98,7 +98,7 @@ MVP 只需要支持 `runtime = "internal-module"`。第三方 TypeScript 插件�
 
 ## 插件与内核协作模型
 
-核心结论: 采用两级信任模型和双层协作模型。可信内核内置模块通过启动期 `CoreModuleRegistration` 轻量直接注册；未来第三方插件只能在应用启动前完成安装、移除、启用和禁用配置，并在启动期通过 `Extension Host` 获得受控 `PluginKernelFacade`。两者共享 contribution descriptor、capability、语义命令、snapshot/selector 和 report 契约，但不强迫可信内核模块走完整插件代理。
+核心结论: K1-4 采用可信 Host 原子创建 Registry、官方模块通过 capability-scoped gateway 调用既有 Core 能力的模型；compiled registration binding 保持私有，不提供模块自注册接口。未来第三方插件是否及如何映射到 Core 必须由独立 `Extension Host` 规划决定，不能把长期 facade 草案当成 K1-4 ABI。
 
 来源与权限解耦模型:
 
@@ -107,11 +107,11 @@ MVP 只需要支持 `runtime = "internal-module"`。第三方 TypeScript 插件�
 - `trustLevel`: 描述启动前授权后的信任级别，例如 `system-trusted` 或 `sandboxed`。
 - `capability`: 描述模块实际可以注册、读取、执行或报告哪些能力。
 
-`origin`、`runtime`、`trustLevel` 和 capability 必须分开。来源和运行时都不自动获得权限；未来第三方模块也可以在启动前授权后获得高权限，但仍必须通过同一注册协议和 capability 检查。
+`origin`、`runtime`、`trustLevel` 和 capability 必须分开。来源和运行时都不自动获得权限；K1-4 仅接受 manifest-bound official + builtin/internal-module + system-trusted。未来第三方授权模型另行规划。
 
 V1 启动期模块来源:
 
-- V1 的 `system-trusted` 内部模块只能来自静态 `KernelStartupModuleManifest` 或应用打包清单。
+- K1-4 的 `system-trusted` 内部模块只能来自静态 `KernelStartupModuleManifest` 与应用内 compiled binding。
 - 该清单随应用源码或打包产物发布，必须被版本控制、代码审查和测试覆盖。
 - 清单只引用应用内已编译绑定的 `CoreModuleRegistrationEntryId`，不引用外部文件路径、URL、脚本字符串或动态 import。
 - 插件 manifest、用户配置和运行时模块不能把自己追加为 `system-trusted` 模块。
@@ -131,13 +131,12 @@ V1 启动期模块来源:
 
 可信内核模块:
 
-1. Core Kernel 启动 registry。
-2. Core Kernel 读取静态 `KernelStartupModuleManifest`。
-3. Core Kernel 校验清单 schema、runtime、apiVersion、capability 和 `registrationEntryId`。
-4. Core Kernel 为清单中的 `builtin/internal-module` 分配启动前授权确定的 `trustLevel`，V1 内置模块通常为 `system-trusted`。
-5. `registrationEntryId` 解析到已编译绑定的 `CoreModuleRegistration` 工厂。
-6. registry 校验 module identity、trustLevel、apiVersion、registration capability 和 contribution descriptor。
-7. 成功后直接绑定 handler 引用，并冻结或进入 ready 状态。
+1. Core Host 向 `createKernelRegistry(unknown)` 提交完整静态 manifest。
+2. strict codec 拒绝畸形 shape、accessor、sparse array、路径/URL/脚本与无效值。
+3. 私有 `registrationEntryId` 只解析 `core.commands.v1` 与 `core.selectors.v1` compiled binding。
+4. candidate 校验 module identity、apiVersion、registration capability、ID 与 descriptor/handler 匹配。
+5. 全部成功才返回 frozen ready Registry；失败无部分状态。
+6. manifest-declared consumer 取得 gateway，按 capability 授权后调用既有 command/selector/read/subscribe。
 
 未来第三方插件:
 
@@ -145,7 +144,7 @@ V1 启动期模块来源:
 2. 应用启动期 `Extension Host` 读取 `PluginManifest`。
 3. `Extension Host` 校验 plugin id、apiVersion、runtime、permissions 和 contributes。
 4. `Extension Host` 忽略或拒绝 manifest 中的自声明 trustLevel、`CoreModuleRegistrationEntryId` 或动态可信入口，并根据启动前授权创建 `KernelModuleIdentity` 和 capability grant。
-5. 插件贡献点通过 `KernelRegistry` 注册为 command、validator、importer、exporter、template 或后续 panel descriptor。
+5. 插件 contribution 由未来 Extension Host 任务定义；不得假定当前 K1-4 Registry 接受 validator、importer、exporter、template 或 panel。
 6. 插件读取谱面时调用 snapshot 或 selector。
 7. 插件修改谱面时提交已注册语义命令。
 8. 插件订阅事件时只接收 `Extension Host` 过滤后的事件。
@@ -158,23 +157,21 @@ V1 启动期模块来源:
 - 插件不得直接调用 Core 的 `CommandBus.subscribe()` 或接触私有事件发布器。
 - 插件不得直接访问 `KernelRegistry` 可变接口；第三方插件注册必须由 `Extension Host` 代理。
 - 插件不得在应用运行中新增、卸载、启用、禁用或热插拔；插件集合变更必须重启后生效。
-- 所有插件写入都必须能归因到 plugin id，并进入 undo/redo。
+- 所有未来插件写入都必须进入 undo/redo；来源归因应进入未来 operation/report 记录，不得把 plugin/module id 塞进 K1-4 command envelope、HistoryEntry 或 K1-3 event。
 - 注册权限和执行权限必须分离；例如 `command:register` 不等于 `command:execute`。
 
 ### 技术实现视角
 
-建议的可信内核模块注册接口:
+K1-4 已批准的可信内部模块入口是 Host 创建与模块 gateway，而不是公开注册接口:
 
 ```ts
-export interface CoreModuleRegistration {
-  identity: KernelModuleIdentity
-  capabilities: KernelCapability[]
-  contributions: KernelContribution[]
-  register(registry: KernelRegistry): RegistryResult[]
-}
+const created = createKernelRegistry(CORE_KERNEL_STARTUP_MANIFEST)
+const gateway = created.ok
+  ? created.registry.createGateway(moduleId, commandBus)
+  : created
 ```
 
-建议的第三方插件协作接口:
+以下第三方插件协作接口仅是未来 Extension Host 草案，不是 K1-4 公共合同:
 
 ```ts
 export interface PluginKernelFacade {
@@ -228,33 +225,33 @@ Registry contribution。
 
 依赖方向:
 
-- Trusted internal module -> CoreModuleRegistration -> KernelRegistry。
+- Trusted internal module -> KernelModuleGateway -> accepted Core APIs。
 - Third-party plugin -> Extension Host facade -> Core Kernel public API。
 - Core Kernel 不依赖插件实现、插件 runtime、React、Tauri、VexFlow 或 Web Audio。
 - Extension Host 可以依赖 Core Kernel public API，但不能获得可变 `ScoreDocument`。
 
 测试重点:
 
-- 内部模块启动期直接注册不经过 Extension Host 代理，但仍通过 `KernelRegistry` 校验。
+- 内部模块不经过 Extension Host；可信 Host 通过原子 factory 绑定 compiled contributions，模块仍通过 Registry gateway 校验。
 - 第三方插件无 `score:read` 时不能读取 snapshot。
 - 第三方插件无 `command:execute` 时不能提交命令。
-- 第三方插件注册贡献点时必须由 Extension Host 代理到 `KernelRegistry`。
+- 第三方插件注册贡献点的代理与 Core 映射由未来 Extension Host 任务决定，不能直接使用 K1-4 私有 binding。
 - 插件命令执行后 undo/redo 可恢复。
 - 插件异常转换为 diagnostic/report，不影响已提交事务。
 - 插件事件订阅只收到授权事件。
 
 ### 反过度设计视角
 
-MVP 不实现真实第三方运行时，也不把内部模块热路径强制塞进完整插件代理。第一阶段使用 `CoreModuleRegistration` 验证 registry、capability、command、snapshot 和 report 边界；保留 `PluginKernelFacade` 类型作为未来第三方插件的受控 API。
+K1-4 不实现真实第三方运行时，也不公开模块 register。它只验证 command/selector Registry、七个 capability、gateway、snapshot/command/event parity；`PluginKernelFacade` 仍是未来文档草案，不进入 K1-4 导出。
 
 当前阶段保留:
 
 - `internal-module` runtime。
-- `CoreModuleRegistration`。
-- manifest 类型。
+- 一次性 manifest 与私有 compiled binding。
 - capability 检查。
-- `PluginKernelFacade` 类型边界，但不强制用于可信内核模块热路径。
-- 内部命令、验证器、导入器、导出器、模板贡献点。
+- `KernelModuleGateway`。
+- 现有六个 command 与六个 selector adapter。
+- 最小 frozen Registry summary 与 K1-4 本地 failure。
 
 当前阶段后置的插件生态能力:
 

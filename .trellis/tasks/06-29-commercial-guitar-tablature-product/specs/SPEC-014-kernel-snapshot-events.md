@@ -1,6 +1,6 @@
 # SPEC-014 内核地址、快照、Selector、Dirty 与事件合同
 
-> **状态：K1-3 IMPLEMENTATION CANDIDATE / PENDING FINAL ACCEPTANCE。** 独立任务 `07-15-k1-3-address-snapshots-selectors-events` 是详细权威；候选实现已完成，尚未经过独立最终验收。
+> **状态：K1-3 ACCEPTED / ARCHIVED（2026-07-16）。** 详细权威为 `.trellis/tasks/archive/2026-07/07-15-k1-3-address-snapshots-selectors-events/`；固定验收基线为 `7369eeac60fecea66c2c9164c04439625c2d78b0`，typecheck、build、102/102 tests、diff check 与 Trellis 校验通过。K1-4 规划已于 2026-07-17 批准但生产实现未启动，且不得扩大本事件合同。
 
 ## 1. Scope / Trigger
 
@@ -22,7 +22,7 @@
 - range 反向端点规范化；跨 Part/Voice 伪线性范围拒绝。
 - dirty 使用精确历史状态身份，不用单调 `documentVersion` 或整文档哈希判断。
 - 成功 submit/undo/redo 发布一个 document fact；dirty 布尔变化才发布 dirty fact。
-- 事件同步按注册顺序分发，handler 失败隔离，写入/markPersisted 同步重入拒绝。
+- 事件同步按注册顺序分发；handler 同步 throw 与返回 Promise/thenable 后的异步 rejection 均被隔离，不回滚已提交状态、不阻止后续 handler、也不产生未处理 rejection；写入/markPersisted 同步重入拒绝。
 - event overflow 在接纳 candidate 前拒绝，失败路径所有状态不变。
 - payload 只含稳定 ID/版本/原因/命令类型，不泄漏内部 delta、history、文档、handler 或 raw error。
 
@@ -39,7 +39,7 @@
 
 ## 6. Tests Required
 
-七类地址、三类范围、反向规范化、不可变性、六 selector 纯度、异步 checkpoint、提交/dirty 顺序、失败零事件、handler 隔离、订阅快照、重入/overflow、版本关联和未知扩展保留。
+七类地址、三类范围、反向规范化、不可变性、六 selector 纯度、异步 checkpoint、提交/dirty 顺序、失败零事件、handler 同步 throw/异步 rejection 隔离、无未处理 rejection、订阅快照、重入/overflow、版本关联和未知扩展保留。
 
 ## 7. Wrong vs Correct
 

@@ -1,6 +1,6 @@
 # 微内核架构图与模块职责
 
-> **当前模型基线（2026-07-15）：** K1-1/K1-2 已验收，K1-3 候选实现已完成并等待独立最终验收；活动契约位于 `.trellis/spec/core-kernel/`。本文的 registry、report 和后续模块协作章节仍是待分块复审的架构路线图，不可覆盖已实现合同。
+> **当前模型基线（2026-07-17）：** K1-1 至 K1-3 已验收；K1-3 固定基线为 `7369eeac60fecea66c2c9164c04439625c2d78b0`，102/102 测试通过。K1-4 规划已批准但实现未启动，权威为独立任务与 `.trellis/spec/core-kernel/backend/registry-capability.md`；report 和第三方模块章节仍是后续路线图。
 
 ## 架构结论
 
@@ -16,7 +16,7 @@
 
 ## 内核总规划优先级
 
-Core Kernel V1 仍用 9 类机制整理路线图，但按 K1-1 至 K1-6 分块规划、实施和评审。K1-1/K1-2 已验收，K1-3 候选实现等待独立最终验收；Guitar Domain、registry/capability 与 reports/migration 仍有各自门禁。注册表 handler 运行时注销、第三方插件运行中启停、热插拔、权限 UI 等生命周期治理不进入当前实现；未来插件平台也不得反向要求已完成分块预建执行基础设施。
+Core Kernel V1 仍用 9 类机制整理路线图，但按 K1-1 至 K1-6 分块规划、实施和评审。K1-1 至 K1-3 已验收归档；K1-4 command/selector-only Registry 规划已批准但实现须独立启动，Guitar Domain 与 reports/migration 仍有各自门禁。注册表 handler 运行时注销、第三方插件运行中启停、热插拔、权限 UI 等生命周期治理不进入当前实现；未来插件平台也不得反向要求已完成分块预建执行基础设施。
 
 内核总规划按以下 9 类机制收敛:
 
@@ -215,7 +215,7 @@ Core Kernel V1 仍用 9 类机制整理路线图，但按 K1-1 至 K1-6 分块�
 - `core.document.committed`。
 - `core.session.dirty-state-changed`。
 
-K1-3 不提供 load/history/diagnostics/registry/migration 事件；这些事实分别由初始化调用方、read selector、K1-4、K1-5 或外部模块负责。
+K1-3 不提供 load/history/diagnostics/registry/migration 事件；K1-4 已明确不新增 Registry event，其他事实分别由初始化调用方、read selector、K1-5 或外部模块负责。
 
 移出内核:
 
@@ -241,22 +241,18 @@ K1-3 不提供 load/history/diagnostics/registry/migration 事件；这些事实
 
 ### 内核保留 8: 内核注册表与能力边界
 
-微内核负责最小注册表和能力检查。
+微内核在 K1-4 只负责官方模块的启动期静态 Registry、能力检查和 gateway 委托。
 
 内核负责:
 
-- `KernelRegistry`。
-- 注册 command handler。
-- 注册 selector。
-- 注册 hard validator。
-- 注册 technique definition。
-- 注册 migration。
-- 注册外部 import/export 贡献点的抽象 descriptor；不注册 PDF、PNG、Guitar Pro 或 `.bgp` 物理 IO 的具体 handler。
-- 注册 template descriptor。
-- 校验 API version。
-- 校验 capability。
-- 阻止模块拿到可变文档对象。
-- 在注册表变化后递增 `registryVersion` 并发布 `kernel.registry.changed`。
+- 一次性严格解码完整 `KernelStartupModuleManifest`，隔离验证后原子返回 frozen ready `KernelRegistry`。
+- 通过两个 compiled entry 绑定现有六个 command 与六个 K1-3 selector adapter；贡献 kind 固定为 `command | selector`。
+- 独立校验 module origin/runtime/trust/API version 与七个互不蕴含的 capability。
+- 为 manifest-declared consumer 创建 capability-scoped gateway，授权后委托既有 CommandBus/selector/read/subscribe。
+- 提供确定排序、深冻结且隐私白名单化的 Registry summary。
+- 收口 startup/access 异常并保证失败零状态变化。
+- 阻止模块拿到可变文档或第二条写入路径。
+- ready 后不变更 Registry，不维护 runtime version，不发布 Registry event。
 
 移出内核:
 
@@ -267,6 +263,7 @@ K1-3 不提供 load/history/diagnostics/registry/migration 事件；这些事实
 - 插件 UI 面板生命周期。
 - 插件签名和审核。
 - 插件权限 UI。
+- hard validator、technique、migration、import/export descriptor、template、Guitar Domain 和 K1-5 report contribution。
 
 ### 内核保留 9: 错误、Diagnostic 和 Report 契约
 
@@ -643,7 +640,7 @@ Core Kernel 只负责:
 
 - K1-3 成功 submit/undo/redo 的 `core.document.committed`。
 - K1-3 dirty 布尔变化时的 `core.session.dirty-state-changed`。
-- 确定性 event sequence、稳定 ID/版本关联、订阅快照、handler 隔离与同步写入重入拒绝。
+- 确定性 event sequence、稳定 ID/版本关联、订阅快照、handler 同步 throw/异步 rejection 隔离与同步写入重入拒绝。
 - Registry、diagnostic/report 与 migration 事实只能由 K1-4/K1-5 等后续分块独立批准；文档初始加载由外部初始化调用方负责，不伪造 K1-3 commit 事件。
 
 价值:
@@ -660,21 +657,21 @@ Core Kernel 只负责:
 
 ### 12. Registry & Capability Manager
 
-作用: 管理模块和未来插件贡献点。
+作用: 管理官方内置模块对既有 command/selector 的启动期目录与调用权限。
 
 负责:
 
-- 注册命令。
-- 注册验证器。
-- 注册外部导入/导出贡献点 descriptor；不拥有具体格式实现。
-- 注册模板。
-- 声明模块 capability。
-- 校验 API version 和权限。
+- 原子创建 frozen Registry。
+- 绑定现有六命令和六 selector adapter。
+- 校验 module identity、API version 和七个 capability。
+- 通过 gateway 委托既有 read/select/submit/undo/redo/subscribe。
+- 返回最小、确定、隐私安全的 summary 与封闭失败。
 
 MVP:
 
-- 只允许内部模块注册。
+- 只接受 manifest-bound official trusted builtin/internal module。
 - 不开放第三方代码执行。
+- 不开放其他 contribution kind、runtime mutation、Registry version/event 或 module history attribution。
 
 ### 13. Error / Diagnostic / Report Contracts
 
@@ -805,8 +802,8 @@ MVP:
 MVP:
 
 - Pure Core Kernel V1 不实现真实 Extension Host。
-- V1 只实现 `KernelStartupModuleManifest`、`CoreModuleRegistration`、统一注册协议和 API version 字段。
-- V1 内部模块可同进程注册贡献点，但仍必须通过 registry/capability 校验。
+- K1-4 只实现静态 `KernelStartupModuleManifest`、私有 compiled registration binding、frozen Registry、七个 capability 与模块 gateway。
+- K1-4 内部模块只能调用现有 command/selector/read/event adapter；不提供公开 register 或第三方代理。
 - Pure Core Kernel V1 不定义插件私有数据命名空间或 round-trip 约束；未来模块私有数据存储在对应模块规划阶段单独设计。
 
 后续:

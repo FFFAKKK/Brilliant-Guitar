@@ -36,7 +36,7 @@ Pure Core Kernel V1 is not the desktop app. It must be testable without React, T
 | [Score Document Model](./score-document-model.md) | `brilliant-score-1`, exact time, pitch, extensions, validation | K1-1 authoritative |
 | [Command and Transaction](./command-transaction.md) | K1-2 executable command/transaction/history/replay contract | Active |
 | [Snapshot and Events](./snapshot-events.md) | K1-3 address/read/checkpoint/event implementation contract | K1-3 authoritative |
-| [Registry and Capability](./registry-capability.md) | Explicit K1-1 deferral and later redesign boundary | Later |
+| [Registry and Capability](./registry-capability.md) | Approved K1-4 startup Registry/gateway planning contract | Approved plan |
 | [Errors and Reports](./errors-reports.md) | K1-1 diagnostics; general reports later | Staged |
 | [Quality Guidelines](./quality-guidelines.md) | Required tests and forbidden shortcuts | Stable |
 

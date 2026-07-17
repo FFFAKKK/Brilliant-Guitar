@@ -2,12 +2,12 @@
 
 ## 当前状态
 
-- 阶段：Core K1-1、K1-2、K1-3 已正式验收并归档；下一步仅允许 K1-4 独立规划。
+- 阶段：Core K1-1、K1-2、K1-3 已正式验收并归档；K1-4 独立规划已于 2026-07-17 获批准，生产实现未启动。
 - K1-3 验收基线：`7369eeac60fecea66c2c9164c04439625c2d78b0`，typecheck、build、102/102 tests、diff check 与 Trellis 校验通过。
 - K1-3 决策源：`.trellis/tasks/archive/2026-07/07-15-k1-3-address-snapshots-selectors-events/`。
 - 活动代码契约：`.trellis/spec/core-kernel/`。
 - 当前集成分支仍名为 `codex/k1-2-commands-transactions-history`，它只承载 Gate 收口，不是 K1-4 分支。启动 K1-4 时必须从当前已收口基线新建 `codex/k1-4-*` 分支。
-- K1-4 的 PRD/design/implement 审核通过前不得写 Registry/Capability 生产代码。
+- K1-4 的 PRD/design/implement 已审核通过；仍须先提交文档收口、创建独立 K1-4 分支并显式启动 Trellis 任务，之后才能写生产代码。
 
 旧的“一次实现全部九类机制”计划已归档至 `.trellis/archive/core-kernel/2026-06-29-retired-product-implementation-plan.md`。它只能用于追溯，不能作为当前执行清单。
 
@@ -73,9 +73,9 @@ K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 正式验收并归档。�
 
 ### K1-4：Registry / Capability
 
-> **仅允许规划，禁止直接实现。** 必须在新的 K1-4 任务中重新决定 contribution 种类、错误合同归属以及是否需要 registry change event。REQ-018 中的既有清单只能作为规划输入，不能直接编码。
+> **规划已批准，生产实现未启动。** 权威执行源为 `.trellis/tasks/07-16-k1-4-registry-capability-startup-registration/implement.md`。只有完成文档提交、切换 `codex/k1-4-registry-capability-startup-registration` 并显式 task start 后，操作者才能按其 TDD 步骤实施。
 
-必须重新判断每种 contribution 是否真的需要进入 Core。`ExtensionBlock` 是持久化信封，不是 registry contribution；吉他技巧不是默认 Core technique-definition contribution。不得为了兼容旧测试草案重新引入 `test.*` 技巧注册。
+批准范围固定为启动期原子 frozen Registry、command/selector 两类既有 adapter、七个 capability、模块 gateway、最小 summary 和 K1-4 本地失败合同；无 Registry version/event、module attribution、其他 contribution kind、第三方 runtime、Guitar Domain 或 K1-5 report。
 
 ### K1-5：Errors / Reports / Migration
 

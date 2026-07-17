@@ -6,7 +6,7 @@
 - 作用: 定义后续实现的核心边界、模块协作方式、依赖方向和架构验收标准。
 - 当前架构决策: 采用参照操作系统微内核思想的 Core Kernel + 用户态服务模块架构。内核负责谱面真相、命令事务、验证、版本化契约和模块协作接口；UI、渲染、播放、导入导出、桌面壳和未来插件都作为模块或适配器与内核协作。
 - 详细架构图: `technical/microkernel-architecture.md`。
-- 当前数据模型: `07-13-k1-1-foundation-replanning/design.md` 与 `.trellis/spec/core-kernel/`；K1-1/K1-2 已验收，K1-3 候选实现等待独立最终验收，后续分块仍须重规划。
+- 当前数据模型: `.trellis/tasks/archive/2026-07/07-13-k1-1-foundation-replanning/design.md` 与 `.trellis/spec/core-kernel/`；K1-1 至 K1-3 已验收，K1-3 固定基线为 `7369eeac60fecea66c2c9164c04439625c2d78b0`、102/102 测试通过。K1-4 规划已于 2026-07-17 批准但实现未启动；后续分块仍须重规划并审核。
 - 当前阶段边界: 当前是 Pure Core Kernel 分块实施阶段。本文件只定义内核边界、模块协作原则和依赖方向；外部工程目录结构、monorepo 方案、`apps/desktop` 和 `packages/*` 拆分不属于当前阶段。
 - 首个实现里程碑: Pure Core Kernel V1。先实现纯 TypeScript 内核和内核测试；桌面壳、UI、渲染、播放、持久化物理 IO、导出和导入均后置。
 - 目录状态: 目录结构仍未确认，必须等工程脚手架阶段从已确认内核边界、测试边界、构建方式和发布方式反推，不得反过来限制当前内核规划。
@@ -81,8 +81,8 @@ flowchart TD
 - 验证和诊断: strict decode 检查输入形状，Core semantic validation 检查 ID、measure coverage、Part/Staff/Voice/Event 引用、Fraction/NoteValue、WrittenPitch/transposition 与 ExtensionBlock 信封，ScoreFeatureProfile 报告产品不支持项；调弦、弦品和技巧 payload 由后续 Guitar Domain 验证。软一致性、可演奏性分析、教学提示、风格检查和难度评分不进入 MVP。
 - 文件格式契约: `.bgp` 包结构、`manifest.json`、`score.json`、schema version、迁移入口和兼容矩阵。Pure Core Kernel V1 不定义插件私有数据命名空间或模块私有数据持久化位置。
 - 查询和快照: 为渲染、播放、导出、分析和插件提供只读快照或 selector。
-- 事件系统: K1-3 只提供 committed submit/undo/redo 与 dirty 布尔变化事实；Registry、diagnostic/report、migration 等通知须由后续分块独立批准，文档加载由外部初始化调用方负责。UI 光标、选区高亮、鼠标拖拽和播放光标 tick 属于外部服务事件，不属于 Core Kernel 事件。
-- 注册表和能力管理: 命令、验证器、导入器、导出器、模板和未来插件贡献点注册；API version、capability 和权限校验。
+- 事件系统: K1-3 只提供 committed submit/undo/redo 与 dirty 布尔变化事实；K1-4 不新增 Registry event，diagnostic/report、migration 等通知须由后续分块独立批准，文档加载由外部初始化调用方负责。UI 光标、选区高亮、鼠标拖拽和播放光标 tick 属于外部服务事件，不属于 Core Kernel 事件。
+- 注册表和能力管理: K1-4 只登记现有六命令和六 selector adapter，原子冻结，使用七个 capability 与 module gateway；validator、格式、模板和未来插件贡献点后置。
 - 错误、诊断和报告模型: 内核错误、用户可理解错误、diagnostic、`ImportReport`、`ExportReport`、`MigrationReport` 和 `ValidationReport` 基础类型。
 - 可测试核心: fixture 验证、命令回放、undo/redo、round-trip、迁移和 unsupported feature 测试。
 
@@ -106,7 +106,7 @@ flowchart TD
 - `CommandBus`、语义命令定义、内部 delta、事务、undo/redo、命令回放。
 - 语义地址、范围模型和命令目标校验。
 - `.bgp` schema、序列化契约、迁移入口。
-- K1-3 的封闭 snapshot/selectors、`CommandBus.subscribe()` 与两个事件类型；Registry/Capability 和通用 Error/Report 必须等待 K1-4/K1-5 独立批准。
+- K1-3 的封闭 snapshot/selectors、`CommandBus.subscribe()` 与两个事件类型；K1-4 Registry/Capability 规划已批准但实现未启动，通用 Error/Report 仍等待 K1-5 独立批准。
 - `ImportReport`、`ExportReport`、unsupported diagnostic 基础结构。
 
 第一阶段推荐内核排除:
@@ -192,11 +192,11 @@ Pure Core Kernel V1 验收通过前，不进入 React UI、Tauri 桌面壳、Vex
 - Query/Selector: `CommandBus.read()` 返回 snapshot、history depths、dirty；六个 selector 只读且以 `documentVersion` 关联。
 - Snapshot: 渲染、播放、导出、分析和未来插件使用的深冻结视图，身份仅为 `documentId`、`schemaVersion`、`documentVersion`，无随机 ID/时间。
 - Event: K1-3 只发布成功 submit/undo/redo 的 document-committed 与 dirty 布尔变化事实；失败、no-op 或 rollback 零事件。Registry/Migration/Report 事件不得提前混入。
-- Registry: 内部命令、验证器、导入器、导出器、模板、selector 和未来插件贡献点。
+- Registry: K1-4 仅有现有 command/selector adapter 的启动期目录；更广贡献点属于未来独立规划。
 - Report: 导入、导出、验证、迁移和错误恢复必须有结构化报告。
-- Capability Manifest: 模块或插件声明自己能做什么、需要什么权限、兼容哪个 API 版本。
+- Capability Manifest: trusted Host 为官方模块声明身份、七个 capability 与兼容 API 版本；模块不能自授权。
 
-注册表和 capability 的详细契约见 `specs/SPEC-015-kernel-registry-capability.md`。错误、diagnostic 和 report 的详细契约见 `specs/SPEC-016-kernel-errors-diagnostics-reports.md`。Core Kernel 只负责最小注册表、能力检查和结构化失败表达；第三方插件发现、安装、沙箱、签名、审核、插件市场和权限 UI 属于外部 `Extension Host` 或后续服务。
+注册表和 capability 的详细契约见 `specs/SPEC-015-kernel-registry-capability.md`。错误、diagnostic 和 report 的详细契约见 `specs/SPEC-016-kernel-errors-diagnostics-reports.md`。K1-4 只负责 command/selector-only frozen Registry、能力 gateway 和本地结构化失败；第三方插件发现、安装、沙箱、签名、审核、插件市场、权限 UI 与新增 contribution kind 属于外部 `Extension Host` 或后续任务。
 
 禁止事项:
 

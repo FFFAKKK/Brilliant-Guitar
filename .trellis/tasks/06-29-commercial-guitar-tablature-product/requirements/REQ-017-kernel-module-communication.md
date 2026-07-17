@@ -12,7 +12,7 @@
 
 ## 当前决策状态
 
-- 状态: K1-3 候选实现已完成、等待独立最终验收；外部可变 `ScoreDocument` 副本方案已拒绝，用户已批准五项范围决策。
+- 状态: K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 正式验收并归档，102/102 测试通过；外部可变 `ScoreDocument` 副本方案已拒绝。K1-4 规划已于 2026-07-17 批准但生产实现未启动，且不得扩大 K1-3 读取/事件合同。
 - 已确认方案: `Snapshot / Selector + Post-Commit Event Bus + Command-only write`。
 - 对应 spec: `specs/SPEC-014-kernel-snapshot-events.md`。
 
@@ -48,7 +48,7 @@
 - 写入契约: 模块修改谱面必须提交已注册语义命令，不能通过事件、snapshot 或内部 delta 写入。
 - 事件契约: 内核事件只描述已经发生的事实，不代表请求、命令或待处理任务。
 - 版本契约: snapshot 和事件携带 `documentVersion`；selector 结果由其输入 snapshot/read state 的 `documentVersion` 关联，模块缓存以该来源版本失效。
-- 异常契约: K1-3 隔离事件订阅者失败并禁止 raw exception 逃逸；结构化模块错误报告由 K1-5 定义。
+- 异常契约: K1-3 隔离事件订阅者同步 throw 与 Promise/thenable 异步 rejection，禁止 raw exception 或未处理 rejection 逃逸；结构化模块错误报告由 K1-5 定义。
 - 边界契约: UI 会话状态、布局派生模型、播放派生事件和导出页面模型都属于外部模块，不进入 Core Kernel。
 - 派生数据契约: 外部派生数据只能用于布局、播放、导出、分析、预览或导入中间处理；最终改变谱面时必须转换为语义命令序列、`ImportResult` 或内核迁移结果，并经过内核验证和事务提交。
 
@@ -58,7 +58,7 @@
 - [ ] AC-017-02: 成功插入 Event 后文档版本递增并发布一个 `core.document.committed`，受影响实体使用稳定 ID。
 - [ ] AC-017-03: 失败/no-op 命令不发布 K1-3 事件，也不改变 documentVersion/history/dirty。
 - [ ] AC-017-04: Persistence 保存明确版本的冻结 snapshot；成功后用该版本调用 markPersisted，不读取 UI/渲染/播放状态。
-- [ ] AC-017-05: 事件订阅者抛出异常时，谱面事务保持已提交，后续 handler 继续执行，raw exception 不逃逸。
+- [ ] AC-017-05: 事件订阅者同步 throw 或返回 Promise/thenable 后异步 rejection 时，谱面事务保持已提交，后续 handler 继续执行，raw exception 与未处理 rejection 均不逃逸。
 - [ ] AC-017-06: 事件分发期间 submit/undo/redo/markPersisted 稳定拒绝，不允许同步重入或延迟成隐式事务。
 - [ ] AC-017-07: UI 光标或选区变化不会触发 Core Kernel 文档变更事件。
 - [ ] AC-017-08: 播放事件可以从 snapshot/selector 重新生成，不依赖 React 或 SVG 状态。

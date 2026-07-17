@@ -2,14 +2,14 @@
 
 ## 状态
 
-- 阶段: Core K1-3 地址/快照/selector/event 候选实现收口；其余产品模块保持 planning
+- 阶段: Core K1-3 已正式验收并归档；K1-4 独立规划已于 2026-07-17 获批准但生产实现未启动，产品其余阶段保持 planning
 - 目标: 为第一条可运行 MVP 闭环提供需求反推的技术设计骨架。
 - 已确认技术栈: Tauri 2 + TypeScript + React + Vite。
 - 首发平台: Windows 桌面。
 - 架构原则: 参照操作系统微内核思想的 Core Kernel + 用户态服务模块。当前只实施 Pure Core Kernel 的已批准分块；外部工程目录结构属于后续脚手架阶段，不是当前内核事项。
 - 首个实现里程碑: Pure Core Kernel V1，纯 TypeScript、无 UI、无 Tauri、无 VexFlow、无 Web Audio、无 PDF/PNG。
-- K1-1 模型决策源: `../07-13-k1-1-foundation-replanning/design.md`；K1-2 执行源已归档；K1-3 权威源为 `../07-15-k1-3-address-snapshots-selectors-events/`，其候选实现等待独立最终验收。字段级与行为级契约以 `.trellis/spec/core-kernel/` 为准。
-- 本文中的 registry、report 与产品模块协作只代表路线图；不得反向扩大已实现的 K1-3 封闭合同。
+- K1-1 模型决策源: `.trellis/tasks/archive/2026-07/07-13-k1-1-foundation-replanning/design.md`；K1-2 执行源已归档；K1-3 权威源为 `.trellis/tasks/archive/2026-07/07-15-k1-3-address-snapshots-selectors-events/`，已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 正式验收并通过 102/102 测试。字段级与行为级契约以 `.trellis/spec/core-kernel/` 为准。
+- K1-4 Registry 合同以独立任务和活动 SPEC-015 为准；report 与更广插件协作仍只是路线图，不得反向扩大 K1-3 或 K1-4 封闭合同。
 
 ## 设计目标
 
@@ -38,7 +38,7 @@
 - 文档地址和范围: `ScoreAddress`、`ScorePoint`、`ScoreRange` 和命令目标校验。当前 UI 光标、选区高亮、鼠标拖选和临时 `ScoreCoordinate` 属于 `Editor Session Service` 或 `Layout Module`，不属于微内核。
 - 文件契约: `.bgp` schema、manifest、score JSON、schema version、迁移入口。
 - 快照和查询: `CommandBus.read()` 返回深冻结 `DocumentSnapshot`、history depths、dirty；六个 selector 与分层 range 提供受控读取，物理序列化属于 Persistence。
-- 事件和注册表路线图: K1-3 只提供 document-committed 与 dirty-state-changed 两个事实；registry/validator/migration/descriptor 等贡献与通知由 K1-4/K1-5 分别重规划。`ExtensionBlock` 不是 registry，吉他技巧不预设为 Core registry contribution。
+- 事件和注册表: K1-3 只提供 document-committed 与 dirty-state-changed 两个事实；K1-4 只登记现有 command/selector adapter，且不新增 Registry event。validator/migration/descriptor/report 由后续块重规划；`ExtensionBlock` 不是 registry。
 - 能力边界: `KernelCapability`、module identity、API version 和 capability 检查。
 - 错误、诊断和报告: `KernelError`、`KernelDiagnostic`、`KernelReport`、`ImportReport`、`ExportReport`、`MigrationReport`、`ValidationReport` 和 report issue 基础类型；导入/导出 report 是外部模块复用的报告壳，不表示内核实现具体格式。
 
@@ -62,7 +62,7 @@ Core Kernel 路线图仍按 9 类机制分类，但按任务分块实施；当�
 
 ### Pure Core Kernel V1 Boundary
 
-Pure Core Kernel V1 最终覆盖上述 9 类机制，但必须按 K1-1 至 K1-6 逐块评审。K1-1 与 K1-2 已验收；K1-3 候选实现已完成并等待独立最终验收，K1-4/K1-5 仍阻塞。任何当前分块都不包含桌面壳、React UI、VexFlow/SVG 渲染、Web Audio 播放、PDF/PNG 真实导出、Guitar Pro 导入、Tauri 文件系统或第三方插件运行时。
+Pure Core Kernel V1 最终覆盖上述 9 类机制，但必须按 K1-1 至 K1-6 逐块评审。K1-1 至 K1-3 已验收归档；K1-4 规划已批准但须在独立分支显式启动，K1-5 仍阻塞。任何当前分块都不包含桌面壳、React UI、VexFlow/SVG 渲染、Web Audio 播放、PDF/PNG 真实导出、Guitar Pro 导入、Tauri 文件系统或第三方插件运行时。
 
 Pure Core Kernel V1 可以定义外部导入/导出贡献点的抽象 descriptor 类型、capability 检查和 report 外壳，但不得注册 PDF、PNG、Guitar Pro 或 `.bgp` 物理读写的具体 descriptor/handler。`.bgp` schema、manifest 语义和迁移入口属于内核；zip 读写、文件路径、自动保存恢复、PDF/PNG 页面生成和 Guitar Pro 解析都属于外部用户态服务模块。
 
@@ -89,13 +89,13 @@ Pure Core Kernel V1 可以定义外部导入/导出贡献点的抽象 descriptor
 
 ### Kernel Snapshot / Event Protocol
 
-当前合同见 `specs/SPEC-014-kernel-snapshot-events.md`。K1-3 候选实现采用:
+当前已验收合同见 `specs/SPEC-014-kernel-snapshot-events.md`。K1-3 采用:
 
 - Snapshot / Selector: `CommandBus.read()` 返回携带 `documentVersion` 的 `DocumentSnapshot`、history depths 与 dirty；selector 结果由输入 snapshot/read state 的版本关联。
 - Post-Commit Event: K1-3 只发布 committed submit/undo/redo 的 `core.document.committed`，以及 dirty 布尔变化时的 `core.session.dirty-state-changed`；其他事实必须由后续分块单独批准。
 - Command-only write: event 和 snapshot 都不是写入口，任何修改仍然必须回到语义命令。
 - Cache invalidation: 渲染、播放、导出和自动保存根据来源 `documentVersion` 与事件类型失效缓存。
-- Error isolation: 事件处理器异常不得回滚已提交事务或阻止后续 handler；结构化模块错误报告由 K1-5 定义。
+- Error isolation: 事件处理器同步 throw 或返回 Promise/thenable 后异步 rejection 均不得回滚已提交事务、阻止后续 handler 或产生未处理 rejection；结构化模块错误报告由 K1-5 定义。
 - No reentrancy: 事件分发期间 submit/undo/redo/markPersisted 稳定拒绝；Core 不创建隐式延迟事务，外部需要后续写入时只能在回调结束后显式调度。
 - Derived read models: 外部模块可以基于 snapshot 创建布局 primitives、hit areas、播放事件、导出页面模型、缩略图、分析报告或导入中间模型；这些派生数据不是 `ScoreDocument` 副本，不能保存为权威谱面，也不能整体写回内核。
 
@@ -113,14 +113,14 @@ Pure Core Kernel V1 可以定义外部导入/导出贡献点的抽象 descriptor
 
 ### Kernel Registry / Capability Protocol
 
-推荐设计见 `specs/SPEC-015-kernel-registry-capability.md`。第一阶段建议采用:
+批准设计见 `specs/SPEC-015-kernel-registry-capability.md` 与独立 K1-4 任务:
 
-- Kernel Registry: 只登记稳定贡献点 descriptor，不负责第三方插件发现、安装、沙箱或 UI 生命周期。
-- Unified Startup Registration: 所有官方模块和未来第三方模块最终都以 `KernelModuleIdentity + capability + contribution descriptor + handler` 的形式进入 registry。
-- Static Capability: MVP 对启动期 `builtin` 和 `internal-module` 做静态 capability 检查，为未来第三方模块经启动前授权后进入同一注册协议预留边界。
-- Summary-only Registry: 外部模块只能读取只读 registry summary，不能拿到 handler、React 组件、VexFlow 对象或可变 `ScoreDocument`。
-- Command-only Write: 注册表不是写入通道；修改谱面仍走语义命令、导入结果或迁移结果。
-- Abstract Format Contributions: 导入/导出 descriptor 只声明外部模块能力、格式 id、capability 和 unsupported 状态；PDF、PNG、Guitar Pro 和 `.bgp` 物理 IO 的具体实现不进入 Core Kernel。
+- Atomic Startup Registry: 完整 manifest 严格解码、compiled binding 与 candidate 验证全部成功后，才返回 frozen ready Registry。
+- Closed Contributions: 只登记现有六个 command 与六个 K1-3 selector adapter；不接受 arbitrary handler 或其他 kind。
+- Static Capability Gateway: 七个 capability 互不蕴含，模块先授权再委托既有 CommandBus/selector/read/subscribe；trusted Core Host direct API 保留。
+- Minimal Summary: 只读、确定排序、深冻结、脱离内部状态，不泄露 grants、trust、handler、index、Registry 或可变 `ScoreDocument`。
+- Command-only Write: Registry 不产生第二写入路径；修改谱面仍走既有语义命令事务。
+- Immutable Runtime: ready 后无 mutation API、`registryVersion` 或 Registry event；moduleId 不进入 history/replay/K1-3 events。
 
 明确不放进 Core Kernel:
 
@@ -193,18 +193,18 @@ Pure Core Kernel V1 可以定义外部导入/导出贡献点的抽象 descriptor
 - 第一阶段产品闭环打开: 原生 `.bgp` 和自动保存恢复文件，由 `Persistence Service` 负责物理 IO。
 - 第一阶段产品闭环导出: PDF + PNG，由 `Export Service` 负责页面生成、字体和文件输出。
 - 第二阶段: 只规划 Guitar Pro 导入，其它外部导入后置，Guitar Pro 导出长期后置。
-- 约束: 导入器必须输出 `ImportReport`；导出器必须输出 `ExportReport`；导入结果必须通过内核验证器。内核只提供抽象 descriptor、capability 和 report 契约，不包含 PDF/PNG/Guitar Pro 的具体实现。
+- 约束: 导入器必须输出 `ImportReport`；导出器必须输出 `ExportReport`；导入结果必须通过内核验证器。抽象 format descriptor 与 report 契约属于 K1-5/后续独立规划，不在 K1-4；Core 不包含 PDF/PNG/Guitar Pro 的具体实现。
 
 ### Unified Module Registration / Future Extension Host
 
-- MVP: 统一注册协议、内部扩展点和启动期静态模块清单。
-- 贡献点: commands、validators、外部 import/export descriptor、templates。
-- 运行时: Pure Core Kernel V1 只接受随应用发布的 `builtin` 和 `internal-module`。
-- 身份模型: `origin`、`runtime`、`trustLevel` 和 capability 独立判断；`origin = official` 不天然拥有全部权限，未来 `origin = third-party` 也可以经启动前授权成为 `system-trusted`。
-- 启动来源: V1 模块只能来自静态 `KernelStartupModuleManifest`，清单随应用源码或打包产物发布。
-- 协作模型: 所有模块最终都通过 `KernelRegistry.register(...)` 注册 contribution descriptor 和 handler；未来 Extension Host 只是第三方模块进入统一注册协议前的启动期发现、校验、授权和 facade 适配层。
+- K1-4: official module 的启动期静态 manifest、私有 compiled binding、frozen Registry 与 module gateway。
+- 贡献点: 只含现有六个 commands 与六个 selectors；validators、format descriptors、templates 后置。
+- 运行时: K1-4 只接受 manifest-bound `official + builtin/internal-module + system-trusted`。
+- 身份模型: `origin`、`runtime`、`trustLevel` 和 capability 独立判断；`origin = official` 不天然拥有全部权限，third-party 授权另行规划。
+- 启动来源: K1-4 模块只能来自静态 `KernelStartupModuleManifest` 与应用内 compiled binding。
+- 协作模型: trusted Host 原子创建 Registry，内部模块只接收 capability gateway；未来 Extension Host 的第三方发现、授权、registration adapter 和 facade 必须单独设计。
 - 生命周期: 第三方插件安装、移除、启用和禁用配置必须在应用启动前完成；应用进入 ready 状态后不得新增、卸载、启用、禁用或热插拔第三方插件，变更需要重启后生效。
-- 启动顺序: Core Kernel 先校验 `KernelStartupModuleManifest`，再解析已编译绑定的 `CoreModuleRegistrationEntryId`，最后调用 `KernelRegistry` 注册贡献点。
+- 启动顺序: Core Host 一次提交 `KernelStartupModuleManifest`，解析两个私有 compiled registration entry 并在隔离 candidate 中验证；全部成功后原子返回 frozen `KernelRegistry`，模块只接收 gateway。
 - 读取: 插件只能通过 snapshot 或 selector 读取谱面。
 - 写入: 插件只能提交已注册语义命令，进入事务、验证、undo/redo 和事件流。
 - 事件: V1 内部模块遵守内核事件规则；未来第三方插件只能订阅由 Extension Host 按 capability 过滤后的事件。
@@ -253,10 +253,10 @@ Pure Core Kernel V1 可以定义外部导入/导出贡献点的抽象 descriptor
 
 - Core Kernel 路线图仍使用 9 类机制分类，但必须按 K1-1 至 K1-6 分块评审，不能一次性交付或把后续机制倒灌进 K1-1。
 - 音乐时间模型属于谱面核心对象模型，不新增第十类机制；Core 持久化 Fraction/NoteValue，tick/PPQ、真实播放时钟和播放光标由外部 adapter 派生。
-- 快照、selector、事件订阅与模块通信遵守 `SPEC-014` 和独立 K1-3 权威任务，旧详细模型已归档。
+- 快照、selector、事件订阅与模块通信遵守 `SPEC-014` 和 `.trellis/tasks/archive/2026-07/07-15-k1-3-address-snapshots-selectors-events/`，旧详细模型已归档。
 - 外部可变 `ScoreDocument` 副本方案已拒绝；这类方案与微内核设计相悖。外部模块只能生成非谱面事实的派生模型，最终写入仍走内核受控入口。
-- Registry/capability 是否保留以及保留哪些 contribution 必须通过 `SPEC-015` K1-4 重规划门证明。
+- Registry/capability 已通过 `SPEC-015` 与独立 K1-4 规划收敛为 command/selector-only startup Registry；生产实现尚待独立分支和显式 task start。
 - K1-1 diagnostics 已确认；operation errors、report 与 migration 通过 `SPEC-016` K1-5 重规划门补充。
 - 注册表 handler 运行时注销/卸载、第三方插件热插拔、运行中启用/禁用和运行中卸载已明确不作为稳定性目标；未来第三方插件配置变更必须启动前完成并通过重启生效。官方随应用发布的内置模块会有多个，UI 模块只是其中一类，具体模块清单、数量和拆分方式后续再确定；官方和第三方的权限模型不再按来源二分，最终都收敛到同一套注册协议，这些生命周期治理能力不作为当前内核总规划和 Kernel V1 实现阻塞项。
 - 外部工程目录结构、monorepo 方案、`apps/desktop` 和 `packages/*` 拆分不属于当前 Core Kernel 规划阶段；这些只在后续工程脚手架阶段根据已确认内核边界和模块协作方式重新评估，不作为当前内核规划阻塞项。
-- 当前设计文档无阻塞开放问题；K1-3 已形成候选实现，尚待独立最终验收，后续 K1-4/K1-5 仍须分别批准后才能实施。
+- 当前设计文档无阻塞开放问题；K1-3 已正式验收归档，K1-4 规划已于 2026-07-17 获批准但实现未启动，K1-5 仍须独立规划获批。

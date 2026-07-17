@@ -2,10 +2,10 @@
 
 ## Status
 
-- Phase: staged execution; K1-1 through K1-3 are accepted/archived. The next authorized action is K1-4 planning, not K1-4 implementation.
+- Phase: staged execution; K1-1 through K1-3 are accepted/archived. K1-4 planning was approved on 2026-07-17; implementation remains gated on the documentation commit, dedicated branch, and explicit task start.
 - K1-1 was formally accepted at baseline `30894e2`; its model and validation contracts remain frozen.
 - This parent plan no longer defines K1-1 or K1-2 executable details; their independent child artifacts and active Core specs are authoritative.
-- K1-3 implementation followed its approved independent PRD/design/implement set and was accepted at `7369eeac60fecea66c2c9164c04439625c2d78b0` with 102/102 tests passing. K1-4 and later blocks require their own plan refresh; only K1-4 planning is now unblocked.
+- K1-3 implementation followed its approved independent PRD/design/implement set and was accepted at `7369eeac60fecea66c2c9164c04439625c2d78b0` with 102/102 tests passing. K1-4 execution authority is its approved independent task; K1-5 and later blocks still require their own plan refresh.
 
 ## Global Rules for Every Implementation Round
 
@@ -47,7 +47,7 @@ Rollback point: revert only boundary/harness changes.
 
 Purpose: implement the score truth model that every later command, snapshot, event, registry, report, and migration path depends on.
 
-Authoritative execution is `.trellis/tasks/07-13-k1-1-core-foundation/implement.md` Step 1–9. It replaces the unpublished tick/slot draft with exact Fraction/NoteValue, general Part/Staff/Voice/Event schema, WrittenPitch plus transposition, ExtensionBlock, strict codec, semantic validation, ScoreFeatureProfile, test-only fixtures, and public-boundary checks.
+Authoritative execution is `.trellis/tasks/archive/2026-07/07-13-k1-1-core-foundation/implement.md` Step 1–9. It replaces the unpublished tick/slot draft with exact Fraction/NoteValue, general Part/Staff/Voice/Event schema, WrittenPitch plus transposition, ExtensionBlock, strict codec, semantic validation, ScoreFeatureProfile, test-only fixtures, and public-boundary checks.
 
 Expected files:
 
@@ -137,21 +137,19 @@ Rollback point: revert read/event files and tests; keep K1-1 and K1-2 intact.
 
 ## Chunk K1-4: Registry and Capability
 
-> **PLANNING INPUT ONLY / NOT EXECUTABLE.** The lists below are hypotheses from the parent roadmap, not an approved K1-4 contract. A new K1-4 task must re-decide the necessary contribution kinds, ownership of registry/capability failures versus K1-5, and whether any registry-change event is needed before production code may be written.
+> **APPROVED PLAN / IMPLEMENTATION NOT STARTED.** Execute only `.trellis/tasks/07-16-k1-4-registry-capability-startup-registration/implement.md`, after the documentation closure commit, dedicated `codex/k1-4-registry-capability-startup-registration` branch, and explicit Trellis task start.
 
 Purpose: make extension points explicit and enforce permission boundaries without adding real third-party plugin runtime.
 
 Subfeatures:
 
-- Registry core: register contribution descriptors and internal handlers.
-- Contribution kinds: decide from proven K1-2/K1-3 consumers; command, selector, validator, migration, descriptors, or templates are candidates rather than a pre-approved fixed list.
-- Module identity: model origin, runtime, trust level, API version, capabilities independently.
-- Capability checks: registration permission and execution permission are separate.
-- Startup manifest: accept only static `builtin/internal-module` registrations in V1.
-- Core module registration: bind app-shipped internal registrations.
-- Registry summary: expose read-only metadata only.
-- Negative behavior: duplicate ID, unknown kind, unsupported runtime, API version mismatch, capability denied.
-- Negative boundary: do not restore the retired Core test-technique registry; Guitar Domain data does not become executable merely because it is stored in an ExtensionBlock.
+- Atomic startup: strict unknown decode, compiled binding lookup, isolated validation, and all-or-nothing frozen ready Registry.
+- Contribution kinds: exactly existing six commands and six selectors; no arbitrary handler or speculative kind.
+- Module identity and capability: independent dimensions, seven exact non-implying capabilities, manifest-bound trusted official builtin/internal modules only.
+- Gateway: authorize then delegate submit/undo/redo/read/select/subscribe to accepted K1-2/K1-3 APIs with result parity.
+- Summary: deterministic, deeply frozen, detached, minimal and privacy-safe.
+- Failure: closed K1-4 startup/access unions, total exception boundaries, zero prior-state mutation on reject/internal error.
+- Negative boundary: no Registry mutation/version/event, module attribution in history/events, third-party runtime, validator/technique/migration/format/template/Guitar/K1-5 contribution.
 
 Expected files:
 
