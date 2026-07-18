@@ -2,7 +2,7 @@
 
 > **K1-4 implementation in progress (2026-07-18):** the decision-complete package is
 > `.trellis/tasks/07-16-k1-4-registry-capability-startup-registration/`.
-> Tasks 1–4 completed at `029fb5c`, `2766008`, `95fe452`, and `1df9b37`; the Task 4 baseline passes 117/117 tests. Tasks 5–6 remain pending.
+> Tasks 1–5 completed at `029fb5c`, `2766008`, `95fe452`, `1df9b37`, and `66a39bb`; the Task 5 baseline passes 123/123 tests. Task 6 remains pending.
 > K1-1 through K1-3 remain frozen inputs.
 
 ## 1. Scope / Trigger

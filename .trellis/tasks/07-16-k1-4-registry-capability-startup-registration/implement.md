@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript 5.8, Node test runner, existing Core strict-codec/deep-freeze patterns, no runtime dependencies.
 
-**Current status:** Tasks 1–4 completed at `029fb5c`, `2766008`, `95fe452`, and `1df9b37`, with 117/117 tests passing at the Task 4 baseline. Task 5 is the next implementation slice; Task 6 remains pending.
+**Current status:** Tasks 1–5 completed at `029fb5c`, `2766008`, `95fe452`, `1df9b37`, and `66a39bb`, with 123/123 tests passing at the Task 5 baseline. Task 6 is the next and final implementation slice.
 
 ## Global Constraints
 
@@ -357,27 +357,27 @@ git commit -m "feat(core): authorize registered selector access"
 - Produces gateway `submit`, `undo`, `redo`, and `subscribe` methods.
 - Delegates to existing `CommandBus` only; no new mutation/history/event type is introduced.
 
-- [ ] **Step 1: Add red command authorization and parity tests**
+- [x] **Step 1: Add red command authorization and parity tests**
 
 Use equivalent direct/gateway buses and a module with `command:execute`. Submit committed, no-op, semantic-rejected, malformed, and unknown-ID commands; assert nested gateway values deeply equal direct `CommandResult`, final read states match, and events match exactly.
 
 Add denied command module tests proving no changes to documentVersion, undoDepth, redoDepth, dirty, or events. Add undo/redo parity and a manifest without `core.commands.v1` proving a recognized Core command returns `registry.contribution-not-found` before bus mutation.
 
-- [ ] **Step 2: Add red subscription tests**
+- [x] **Step 2: Add red subscription tests**
 
 Assert `event:subscribe` is independently required. For an authorized module, assert invalid handlers preserve `{ status: "rejected", failure: { code: "event.invalid-handler" } }`, subscriber order and unsubscribe remain unchanged, and synchronous throw plus Promise/thenable rejection stay isolated.
 
-- [ ] **Step 3: Implement command methods**
+- [x] **Step 3: Implement command methods**
 
 For `submit`, check `command:execute`, use the existing internal decoder to distinguish a recognized valid `CoreCommandId`, require its registered command contribution, then call `CommandBus.submit(input)`. If the canonical command decoder rejects malformed/unknown input, delegate after capability authorization so K1-2 retains ownership of the command failure code.
 
 For `undo`/`redo`, check `command:execute` then delegate. Wrap only Registry authorization/internal failures; never rewrite `CommandResult`.
 
-- [ ] **Step 4: Implement subscription delegation**
+- [x] **Step 4: Implement subscription delegation**
 
 Check `event:subscribe`, then return the unchanged result of `CommandBus.subscribe(handler)`. Do not wrap handlers, add module fields, filter the two accepted internal events, publish Registry events, or alter the CommandBus subscriber collection.
 
-- [ ] **Step 5: Verify full gateway integration**
+- [x] **Step 5: Verify full gateway integration**
 
 Run: `npm run build`
 
@@ -385,7 +385,7 @@ Run: `node --test dist/test/core-kernel/registry-gateway.test.js dist/test/core-
 
 Expected: all tests pass; direct and gateway paths are deeply equal.
 
-- [ ] **Step 6: Commit command/event integration**
+- [x] **Step 6: Commit command/event integration**
 
 ```powershell
 git add src/core-kernel/registry/runtime.ts test/core-kernel/registry-gateway.test.ts
