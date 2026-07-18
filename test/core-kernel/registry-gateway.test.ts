@@ -11,6 +11,18 @@ import {
   type KernelModuleGatewayCreationResult,
   type KernelRegistry,
 } from "../../src/core-kernel/registry/runtime";
+import type {
+  KernelReadState,
+  ReadResult,
+} from "../../src/core-kernel/read/contracts";
+import {
+  selectDirtyState,
+  selectHistoryState,
+  selectScoreEntity,
+  selectScoreEntityOwnership,
+  selectScoreMetadata,
+  selectScoreRange,
+} from "../../src/core-kernel/read/selectors";
 import { cloneCoreScoreFixture } from "./fixtures/core-score";
 
 function assertDeeplyFrozen(value: unknown): void {
@@ -116,6 +128,57 @@ function createGatewayDynamically(
     commandBus: unknown,
   ) => KernelModuleGatewayCreationResult;
   return createGateway.call(registry, moduleId, commandBus);
+}
+
+type TestManifest = ReturnType<typeof createManifest>;
+
+function addConsumerModule(
+  manifest: TestManifest,
+  moduleId: string,
+  capabilities: string[],
+): void {
+  manifest.modules.push({
+    moduleId,
+    origin: "official",
+    runtime: "internal-module",
+    trustLevel: "system-trusted",
+    apiVersion: 1,
+    capabilities,
+    registrationEntryIds: [],
+  });
+}
+
+function createSelectorManifest(
+  includeSelectorRegistration: boolean = true,
+): TestManifest {
+  const manifest = createManifest(false, false);
+  const selectorOwner = manifest.modules.find(
+    ({ moduleId }) => moduleId === "core.selectors",
+  );
+  if (selectorOwner === undefined) {
+    throw new Error("expected core.selectors fixture module");
+  }
+  selectorOwner.registrationEntryIds = includeSelectorRegistration
+    ? ["core.selectors.v1"]
+    : [];
+  addConsumerModule(manifest, "internal.selector-full", [
+    "score:read",
+    "selector:execute",
+  ]);
+  addConsumerModule(manifest, "internal.selector-execute-only", [
+    "selector:execute",
+  ]);
+  addConsumerModule(manifest, "internal.selector-read-only", ["score:read"]);
+  addConsumerModule(manifest, "internal.selector-none", []);
+  return manifest;
+}
+
+function requireReadState(bus: CommandBus): KernelReadState {
+  const read = bus.read();
+  if (!read.ok) {
+    throw new Error(`expected a valid read state: ${read.failure.code}`);
+  }
+  return read.value;
 }
 
 function requireGateway(
@@ -292,4 +355,252 @@ test("gateway read authorizes independently and preserves the accepted ReadResul
     status: "rejected",
     failure: { code: "registry.internal-error" },
   });
+});
+
+test("selector dispatch checks both capabilities before decoding input", () => {
+  const registry = requireRegistry(createSelectorManifest());
+  const bus = requireBus();
+  const full = requireGateway(registry, "internal.selector-full", bus);
+  const executeOnly = requireGateway(
+    registry,
+    "internal.selector-execute-only",
+    bus,
+  );
+  const readOnly = requireGateway(
+    registry,
+    "internal.selector-read-only",
+    bus,
+  );
+  const none = requireGateway(registry, "internal.selector-none", bus);
+  let getterCalls = 0;
+  const poisonedRequest = {};
+  Object.defineProperty(poisonedRequest, "selectorId", {
+    enumerable: true,
+    get(): never {
+      getterCalls += 1;
+      throw new Error("selector input getter must not execute");
+    },
+  });
+
+  assert.deepEqual(executeOnly.select(poisonedRequest), {
+    status: "rejected",
+    failure: {
+      code: "registry.capability-denied",
+      moduleId: "internal.selector-execute-only",
+      capability: "score:read",
+    },
+  });
+  assert.deepEqual(readOnly.select(poisonedRequest), {
+    status: "rejected",
+    failure: {
+      code: "registry.capability-denied",
+      moduleId: "internal.selector-read-only",
+      capability: "selector:execute",
+    },
+  });
+  assert.deepEqual(none.select(poisonedRequest), {
+    status: "rejected",
+    failure: {
+      code: "registry.capability-denied",
+      moduleId: "internal.selector-none",
+      capability: "score:read",
+    },
+  });
+  assert.equal(getterCalls, 0);
+  assert.deepEqual(full.select(poisonedRequest), {
+    status: "rejected",
+    failure: { code: "registry.invalid-invocation" },
+  });
+  assert.equal(getterCalls, 0);
+});
+
+test("authorized selector dispatch matches all six direct selectors", () => {
+  const registry = requireRegistry(createSelectorManifest());
+  const directBus = requireBus();
+  const gatewayBus = requireBus();
+  const directState = requireReadState(directBus);
+  const originalRead = gatewayBus.read.bind(gatewayBus);
+  let gatewayReadCalls = 0;
+  Object.defineProperty(gatewayBus, "read", {
+    configurable: true,
+    value(): ReadResult<KernelReadState> {
+      gatewayReadCalls += 1;
+      return originalRead();
+    },
+  });
+  const gateway = requireGateway(
+    registry,
+    "internal.selector-full",
+    gatewayBus,
+  );
+  const noteAddress = { kind: "note", noteId: "note-1" } as const;
+  const measureRange = {
+    kind: "measure-range",
+    start: { kind: "measure", measureId: "measure-1" },
+    end: { kind: "measure", measureId: "measure-1" },
+  } as const;
+
+  assert.deepEqual(
+    gateway.select({
+      selectorId: "core.selector.score-metadata",
+    }),
+    {
+      status: "authorized",
+      value: selectScoreMetadata(directState.snapshot),
+    },
+  );
+  assert.deepEqual(
+    gateway.select({
+      selectorId: "core.selector.score-entity",
+      address: noteAddress,
+    }),
+    {
+      status: "authorized",
+      value: selectScoreEntity(directState.snapshot, noteAddress),
+    },
+  );
+  assert.deepEqual(
+    gateway.select({
+      selectorId: "core.selector.score-entity-ownership",
+      address: noteAddress,
+    }),
+    {
+      status: "authorized",
+      value: selectScoreEntityOwnership(directState.snapshot, noteAddress),
+    },
+  );
+  assert.deepEqual(
+    gateway.select({
+      selectorId: "core.selector.score-range",
+      range: measureRange,
+    }),
+    {
+      status: "authorized",
+      value: selectScoreRange(directState.snapshot, measureRange),
+    },
+  );
+  assert.deepEqual(
+    gateway.select({
+      selectorId: "core.selector.history-state",
+    }),
+    {
+      status: "authorized",
+      value: selectHistoryState(directState),
+    },
+  );
+  assert.deepEqual(
+    gateway.select({
+      selectorId: "core.selector.dirty-state",
+    }),
+    {
+      status: "authorized",
+      value: selectDirtyState(directState),
+    },
+  );
+  assert.equal(gatewayReadCalls, 6);
+});
+
+test("selector requests are exact and require a registered selector contribution", () => {
+  const registered = requireRegistry(createSelectorManifest());
+  const registeredGateway = requireGateway(
+    registered,
+    "internal.selector-full",
+    requireBus(),
+  );
+  const invalidRequests: readonly unknown[] = [
+    undefined,
+    {},
+    { selectorId: "core.selector.score-entity" },
+    { selectorId: "core.selector.score-metadata", extra: true },
+    { selectorId: "core.selector.missing" },
+    { selectorId: "core.document.set-metadata" },
+    new Proxy(
+      {},
+      {
+        ownKeys(): never {
+          throw new Error("proxy failure must not escape");
+        },
+      },
+    ),
+  ];
+  for (const request of invalidRequests) {
+    assert.deepEqual(registeredGateway.select(request), {
+      status: "rejected",
+      failure: { code: "registry.invalid-invocation" },
+    });
+  }
+
+  const missing = requireRegistry(createSelectorManifest(false));
+  const missingGateway = requireGateway(
+    missing,
+    "internal.selector-full",
+    requireBus(),
+  );
+  assert.deepEqual(
+    missingGateway.select({
+      selectorId: "core.selector.score-metadata",
+    }),
+    {
+      status: "rejected",
+      failure: {
+        code: "registry.contribution-not-found",
+        contributionId: "core.selector.score-metadata",
+      },
+    },
+  );
+});
+
+test("selector dispatch preserves read failures and contains read exceptions", () => {
+  const registry = requireRegistry(createSelectorManifest());
+  const readFailure: ReadResult<KernelReadState> = {
+    ok: false,
+    failure: { code: "read.invalid-snapshot" },
+  };
+  const failingBus = requireBus();
+  let failingReadCalls = 0;
+  Object.defineProperty(failingBus, "read", {
+    configurable: true,
+    value(): ReadResult<KernelReadState> {
+      failingReadCalls += 1;
+      return readFailure;
+    },
+  });
+  const failingGateway = requireGateway(
+    registry,
+    "internal.selector-full",
+    failingBus,
+  );
+  const failed = failingGateway.select({
+    selectorId: "core.selector.score-metadata",
+  });
+  assert.equal(failed.status, "authorized");
+  if (failed.status === "authorized") {
+    assert.equal(failed.value, readFailure);
+  }
+  assert.equal(failingReadCalls, 1);
+
+  const throwingBus = requireBus();
+  let throwingReadCalls = 0;
+  Object.defineProperty(throwingBus, "read", {
+    configurable: true,
+    value(): never {
+      throwingReadCalls += 1;
+      throw new Error("raw selector read error must not escape");
+    },
+  });
+  const throwingGateway = requireGateway(
+    registry,
+    "internal.selector-full",
+    throwingBus,
+  );
+  assert.deepEqual(
+    throwingGateway.select({
+      selectorId: "core.selector.score-metadata",
+    }),
+    {
+      status: "rejected",
+      failure: { code: "registry.internal-error" },
+    },
+  );
+  assert.equal(throwingReadCalls, 1);
 });

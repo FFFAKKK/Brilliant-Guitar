@@ -1,4 +1,5 @@
 import type {
+  CoreSelectorRequest,
   KernelCapability,
   KernelModuleOrigin,
   KernelModuleRuntime,
@@ -259,5 +260,64 @@ export function decodeKernelStartupManifest(
     };
   } catch {
     return invalidStartupInput();
+  }
+}
+
+function readDataProperty(
+  record: ExactDataRecord,
+  key: string,
+): unknown {
+  const descriptor = Object.getOwnPropertyDescriptor(record, key);
+  return descriptor !== undefined && "value" in descriptor
+    ? descriptor.value
+    : undefined;
+}
+
+export function decodeCoreSelectorRequest(
+  input: unknown,
+): CoreSelectorRequest | undefined {
+  try {
+    const noArgument = readExactDataRecord(input, ["selectorId"]);
+    if (noArgument !== undefined) {
+      const selectorId = readDataProperty(noArgument, "selectorId");
+      if (
+        selectorId === "core.selector.score-metadata" ||
+        selectorId === "core.selector.history-state" ||
+        selectorId === "core.selector.dirty-state"
+      ) {
+        return { selectorId };
+      }
+      return undefined;
+    }
+
+    const addressRequest = readExactDataRecord(input, [
+      "selectorId",
+      "address",
+    ]);
+    if (addressRequest !== undefined) {
+      const selectorId = readDataProperty(addressRequest, "selectorId");
+      const address = readDataProperty(addressRequest, "address");
+      if (
+        selectorId === "core.selector.score-entity" ||
+        selectorId === "core.selector.score-entity-ownership"
+      ) {
+        return { selectorId, address };
+      }
+      return undefined;
+    }
+
+    const rangeRequest = readExactDataRecord(input, ["selectorId", "range"]);
+    if (rangeRequest !== undefined) {
+      const selectorId = readDataProperty(rangeRequest, "selectorId");
+      if (selectorId === "core.selector.score-range") {
+        return {
+          selectorId,
+          range: readDataProperty(rangeRequest, "range"),
+        };
+      }
+    }
+    return undefined;
+  } catch {
+    return undefined;
   }
 }

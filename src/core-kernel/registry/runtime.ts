@@ -1,7 +1,15 @@
 import { CORE_COMMAND_DEFINITIONS } from "../commands/catalog";
 import { CommandBus } from "../commands/command-bus";
+import type { ScoreMetadata } from "../domain/score-document";
 import { deepFreezeValue } from "../read/deep-freeze";
-import type { KernelReadState, ReadResult } from "../read/contracts";
+import type {
+  KernelHistoryState,
+  KernelReadState,
+  ReadResult,
+  ScoreEntityOwnership,
+  ScoreRangeSelection,
+  SelectedScoreEntity,
+} from "../read/contracts";
 import {
   CORE_COMPILED_REGISTRATION_ENTRIES,
   type CompiledCommandContribution,
@@ -13,6 +21,8 @@ import {
 } from "./builtins";
 import type {
   CoreSelectorId,
+  CoreSelectorRequest,
+  CoreSelectorResult,
   KernelGatewayResult,
   KernelCapability,
   KernelRegistryAccessFailure,
@@ -21,6 +31,7 @@ import type {
   RegistrySummary,
 } from "./contracts";
 import {
+  decodeCoreSelectorRequest,
   decodeKernelStartupManifest,
   isSafeRegistryId,
   readDenseArray,
@@ -170,6 +181,104 @@ export class KernelModuleGateway {
       return gatewayRejected({ code: "registry.internal-error" });
     }
   }
+
+  select(
+    input: Extract<
+      CoreSelectorRequest,
+      { readonly selectorId: "core.selector.score-metadata" }
+    >,
+  ): KernelGatewayResult<ReadResult<ScoreMetadata>>;
+  select(
+    input: Extract<
+      CoreSelectorRequest,
+      { readonly selectorId: "core.selector.score-entity" }
+    >,
+  ): KernelGatewayResult<ReadResult<SelectedScoreEntity>>;
+  select(
+    input: Extract<
+      CoreSelectorRequest,
+      { readonly selectorId: "core.selector.score-entity-ownership" }
+    >,
+  ): KernelGatewayResult<ReadResult<ScoreEntityOwnership>>;
+  select(
+    input: Extract<
+      CoreSelectorRequest,
+      { readonly selectorId: "core.selector.score-range" }
+    >,
+  ): KernelGatewayResult<ReadResult<ScoreRangeSelection>>;
+  select(
+    input: Extract<
+      CoreSelectorRequest,
+      { readonly selectorId: "core.selector.history-state" }
+    >,
+  ): KernelGatewayResult<ReadResult<KernelHistoryState>>;
+  select(
+    input: Extract<
+      CoreSelectorRequest,
+      { readonly selectorId: "core.selector.dirty-state" }
+    >,
+  ): KernelGatewayResult<ReadResult<boolean>>;
+  select(input: unknown): KernelGatewayResult<CoreSelectorResult>;
+  select(input: unknown): KernelGatewayResult<CoreSelectorResult> {
+    try {
+      const state = GATEWAY_STATES.get(this);
+      if (state === undefined) {
+        return gatewayRejected({ code: "registry.invalid-invocation" });
+      }
+      const methodDenied = requireCapabilities(state.module, [
+        "score:read",
+        "selector:execute",
+      ]);
+      if (methodDenied !== undefined) {
+        return gatewayRejected(methodDenied);
+      }
+      const request = decodeCoreSelectorRequest(input);
+      if (request === undefined) {
+        return gatewayRejected({ code: "registry.invalid-invocation" });
+      }
+      const contribution = state.registry.contributions.find(
+        ({ descriptor }) => descriptor.id === request.selectorId,
+      );
+      if (contribution === undefined) {
+        return gatewayRejected({
+          code: "registry.contribution-not-found",
+          contributionId: request.selectorId,
+        });
+      }
+      if (!isSelectorContribution(contribution)) {
+        return gatewayRejected({
+          code: "registry.contribution-kind-mismatch",
+          contributionId: request.selectorId,
+        });
+      }
+      const contributionDenied = requireCapabilities(
+        state.module,
+        contribution.descriptor.requiredCapabilities,
+      );
+      if (contributionDenied !== undefined) {
+        return gatewayRejected(contributionDenied);
+      }
+      const read = state.commandBus.read();
+      if (!read.ok) {
+        return { status: "authorized", value: read };
+      }
+      return {
+        status: "authorized",
+        value:
+          contribution.inputKind === "snapshot"
+            ? contribution.selector(read.value.snapshot, request)
+            : contribution.selector(read.value, request),
+      };
+    } catch {
+      return gatewayRejected({ code: "registry.internal-error" });
+    }
+  }
+}
+
+function isSelectorContribution(
+  contribution: CoreCompiledContribution,
+): contribution is CompiledSelectorContribution {
+  return contribution.descriptor.kind === "selector";
 }
 
 function gatewayRejected<T>(
