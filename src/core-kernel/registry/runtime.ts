@@ -1,5 +1,7 @@
 import { CORE_COMMAND_DEFINITIONS } from "../commands/catalog";
+import { CommandBus } from "../commands/command-bus";
 import { deepFreezeValue } from "../read/deep-freeze";
+import type { KernelReadState, ReadResult } from "../read/contracts";
 import {
   CORE_COMPILED_REGISTRATION_ENTRIES,
   type CompiledCommandContribution,
@@ -11,9 +13,12 @@ import {
 } from "./builtins";
 import type {
   CoreSelectorId,
+  KernelGatewayResult,
   KernelCapability,
   KernelRegistryAccessFailure,
   KernelRegistryStartupFailure,
+  RegistryContributionSummary,
+  RegistrySummary,
 } from "./contracts";
 import {
   decodeKernelStartupManifest,
@@ -55,12 +60,27 @@ export type KernelModuleGatewayCreationResult =
 
 const REGISTRY_CONSTRUCTION_TOKEN = Symbol("KernelRegistry construction");
 const GATEWAY_CONSTRUCTION_TOKEN = Symbol("KernelModuleGateway construction");
-const REGISTRY_STATES = new WeakMap<KernelRegistry, RegistryCandidateState>();
+
+interface KernelRegistryState extends RegistryCandidateState {
+  readonly summary: RegistrySummary;
+}
+
+interface KernelModuleGatewayState {
+  readonly module: NormalizedRegistryModule;
+  readonly registry: KernelRegistryState;
+  readonly commandBus: CommandBus;
+}
+
+const REGISTRY_STATES = new WeakMap<KernelRegistry, KernelRegistryState>();
+const GATEWAY_STATES = new WeakMap<
+  KernelModuleGateway,
+  KernelModuleGatewayState
+>();
 
 export class KernelRegistry {
   private constructor(
     token: typeof REGISTRY_CONSTRUCTION_TOKEN,
-    state: RegistryCandidateState,
+    state: KernelRegistryState,
   ) {
     if (token !== REGISTRY_CONSTRUCTION_TOKEN || state === undefined) {
       throw new TypeError("KernelRegistry cannot be constructed directly");
@@ -68,15 +88,110 @@ export class KernelRegistry {
     REGISTRY_STATES.set(this, state);
     Object.freeze(this);
   }
+
+  createGateway(
+    moduleId: string,
+    commandBus: CommandBus,
+  ): KernelModuleGatewayCreationResult {
+    try {
+      const state = REGISTRY_STATES.get(this);
+      if (
+        state === undefined ||
+        !isSafeRegistryId(moduleId) ||
+        !(commandBus instanceof CommandBus)
+      ) {
+        return {
+          ok: false,
+          failure: { code: "registry.invalid-invocation" },
+        };
+      }
+      const module = state.modules.find(
+        (candidate) => candidate.moduleId === moduleId,
+      );
+      if (module === undefined) {
+        return {
+          ok: false,
+          failure: { code: "registry.module-not-found", moduleId },
+        };
+      }
+      return {
+        ok: true,
+        gateway: constructGateway({ module, registry: state, commandBus }),
+      };
+    } catch {
+      return { ok: false, failure: { code: "registry.internal-error" } };
+    }
+  }
 }
 
 export class KernelModuleGateway {
-  private constructor(token: typeof GATEWAY_CONSTRUCTION_TOKEN) {
-    if (token !== GATEWAY_CONSTRUCTION_TOKEN) {
+  private constructor(
+    token: typeof GATEWAY_CONSTRUCTION_TOKEN,
+    state: KernelModuleGatewayState,
+  ) {
+    if (token !== GATEWAY_CONSTRUCTION_TOKEN || state === undefined) {
       throw new TypeError("KernelModuleGateway cannot be constructed directly");
     }
+    GATEWAY_STATES.set(this, state);
     Object.freeze(this);
   }
+
+  summary(): KernelGatewayResult<RegistrySummary> {
+    try {
+      const state = GATEWAY_STATES.get(this);
+      if (state === undefined) {
+        return gatewayRejected({ code: "registry.invalid-invocation" });
+      }
+      const denied = requireCapabilities(state.module, ["registry:read"]);
+      if (denied !== undefined) {
+        return gatewayRejected(denied);
+      }
+      return {
+        status: "authorized",
+        value: deepFreezeValue(structuredClone(state.registry.summary)),
+      };
+    } catch {
+      return gatewayRejected({ code: "registry.internal-error" });
+    }
+  }
+
+  read(): KernelGatewayResult<ReadResult<KernelReadState>> {
+    try {
+      const state = GATEWAY_STATES.get(this);
+      if (state === undefined) {
+        return gatewayRejected({ code: "registry.invalid-invocation" });
+      }
+      const denied = requireCapabilities(state.module, ["score:read"]);
+      if (denied !== undefined) {
+        return gatewayRejected(denied);
+      }
+      return { status: "authorized", value: state.commandBus.read() };
+    } catch {
+      return gatewayRejected({ code: "registry.internal-error" });
+    }
+  }
+}
+
+function gatewayRejected<T>(
+  failure: KernelRegistryAccessFailure,
+): KernelGatewayResult<T> {
+  return { status: "rejected", failure };
+}
+
+function requireCapabilities(
+  module: NormalizedRegistryModule,
+  required: readonly KernelCapability[],
+): KernelRegistryAccessFailure | undefined {
+  for (const capability of required) {
+    if (!module.capabilities.includes(capability)) {
+      return {
+        code: "registry.capability-denied",
+        moduleId: module.moduleId,
+        capability,
+      };
+    }
+  }
+  return undefined;
 }
 
 function startupFailure(
@@ -452,6 +567,49 @@ function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
 }
 
+function createContributionSummary(
+  contribution: CoreCompiledContribution,
+): RegistryContributionSummary {
+  const descriptor = contribution.descriptor;
+  const common = {
+    id: descriptor.id,
+    sourceModuleId: descriptor.sourceModuleId,
+    apiVersion: 1 as const,
+    requiredCapabilities: [...descriptor.requiredCapabilities],
+    titleKey: descriptor.titleKey,
+  };
+  return descriptor.kind === "command"
+    ? {
+        ...common,
+        kind: "command",
+        targetKind: descriptor.targetKind,
+      }
+    : {
+        ...common,
+        kind: "selector",
+        inputKind: descriptor.inputKind,
+      };
+}
+
+function createRegistryState(
+  candidate: RegistryCandidateState,
+): KernelRegistryState {
+  const summary: RegistrySummary = {
+    startupManifestVersion: 1,
+    modules: candidate.modules.map(({ moduleId, apiVersion }) => ({
+      moduleId,
+      apiVersion,
+    })),
+    contributions: candidate.contributions.map(createContributionSummary),
+  };
+  return deepFreezeValue({
+    startupManifestVersion: candidate.startupManifestVersion,
+    modules: candidate.modules,
+    contributions: candidate.contributions,
+    summary,
+  });
+}
+
 function buildRegistryCandidateUnchecked(
   manifest: DecodedKernelStartupManifest,
   compiledRegistrationEntries: unknown,
@@ -544,8 +702,15 @@ export function buildRegistryCandidate(
 function constructRegistry(state: RegistryCandidateState): KernelRegistry {
   return Reflect.construct(KernelRegistry, [
     REGISTRY_CONSTRUCTION_TOKEN,
-    state,
+    createRegistryState(state),
   ]) as KernelRegistry;
+}
+
+function constructGateway(state: KernelModuleGatewayState): KernelModuleGateway {
+  return Reflect.construct(KernelModuleGateway, [
+    GATEWAY_CONSTRUCTION_TOKEN,
+    state,
+  ]) as KernelModuleGateway;
 }
 
 export function createKernelRegistry(
