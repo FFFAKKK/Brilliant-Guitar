@@ -3,7 +3,7 @@
 ## Status
 
 - Phase: implementation in progress on `codex/k1-4-registry-capability-startup-registration`.
-- Task 1 was completed at `029fb5cd411c5ca643939b42fa13948c1d5e4543`; Task 2 was completed at `27660082ca5382d9bbac70319107e3aeff1edf96` with 110/110 tests passing. Tasks 3–6 remain pending.
+- Tasks 1–3 were completed at `029fb5cd411c5ca643939b42fa13948c1d5e4543`, `27660082ca5382d9bbac70319107e3aeff1edf96`, and `95fe452c9088fe3d22d8f9f3592aa73e6d10891e`, with 113/113 tests passing at the Task 3 baseline. Tasks 4–6 remain pending.
 - K1-3 was accepted and archived at `7369eeac60fecea66c2c9164c04439625c2d78b0` with 102/102 tests passing.
 
 ## Goal

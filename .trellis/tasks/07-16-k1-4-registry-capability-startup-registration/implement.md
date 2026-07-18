@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript 5.8, Node test runner, existing Core strict-codec/deep-freeze patterns, no runtime dependencies.
 
-**Current status:** Task 1 completed at `029fb5c`. Task 2 completed at `2766008` with 110/110 tests passing. Task 3 is the next implementation slice; Tasks 4–6 remain pending.
+**Current status:** Tasks 1–3 completed at `029fb5c`, `2766008`, and `95fe452`, with 113/113 tests passing at the Task 3 baseline. Task 4 is the next implementation slice; Tasks 5–6 remain pending.
 
 ## Global Constraints
 
@@ -238,7 +238,7 @@ git commit -m "feat(core): add atomic registry startup"
 - Produces `KernelRegistry.createGateway(moduleId, commandBus)` and `KernelModuleGateway.summary/read`.
 - Produces `KernelGatewayResult<T>` nesting without changing `ReadResult`.
 
-- [ ] **Step 1: Add deterministic summary tests**
+- [x] **Step 1: Add deterministic summary tests**
 
 Create a manifest that reverses modules and entry IDs, plus a zero-contribution consumer module `internal.reader` with `registry:read` and `score:read`. Assert both orderings yield the same summary: modules sorted by ID and exactly 12 contributions sorted by kind+ID.
 
@@ -248,11 +248,11 @@ Assert every summary object/array and `requiredCapabilities` array is frozen, re
 ["handler", "origin", "runtime", "trustLevel", "capabilities", "registryVersion"]
 ```
 
-- [ ] **Step 2: Add gateway capability tests before methods exist**
+- [x] **Step 2: Add gateway capability tests before methods exist**
 
 Use `internal.reader` and an unprivileged `internal.none` module. Assert unknown module creation returns `registry.module-not-found`, `internal.none.summary()` returns `registry.capability-denied`, and `internal.reader.read()` nests the same result as direct `CommandBus.read()` on an equivalent bus.
 
-- [ ] **Step 3: Implement immutable state and gateway creation**
+- [x] **Step 3: Implement immutable state and gateway creation**
 
 Store private frozen arrays, not publicly reachable mutable `Map`/`Set` values. Prebuild a private frozen summary. `createGateway` finds the module by exact ID, captures its frozen identity and the supplied bus, and catches unexpected errors.
 
@@ -278,7 +278,7 @@ function requireCapabilities(
 
 `summary()` requires `registry:read`; `read()` requires `score:read`. Return a detached deep-frozen summary and nest the unchanged `bus.read()` result.
 
-- [ ] **Step 4: Verify summary/gateway slice**
+- [x] **Step 4: Verify summary/gateway slice**
 
 Run: `npm run build`
 
@@ -286,7 +286,7 @@ Run: `node --test dist/test/core-kernel/registry-contracts.test.js dist/test/cor
 
 Expected: all tests pass.
 
-- [ ] **Step 5: Commit the summary/gateway slice**
+- [x] **Step 5: Commit the summary/gateway slice**
 
 ```powershell
 git add src/core-kernel/registry/runtime.ts test/core-kernel/registry-contracts.test.ts test/core-kernel/registry-gateway.test.ts

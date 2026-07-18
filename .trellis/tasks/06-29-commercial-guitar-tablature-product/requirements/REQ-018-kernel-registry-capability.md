@@ -1,6 +1,6 @@
 # REQ-018 内核注册表与能力边界
 
-> **状态：K1-4 IMPLEMENTATION IN PROGRESS（2026-07-18）。** 权威 PRD、设计与实施计划位于 `.trellis/tasks/07-16-k1-4-registry-capability-startup-registration/`。Tasks 1–2 已在 `029fb5c`、`2766008` 完成，Task 2 基线通过 110/110 测试；Tasks 3–6 待完成。
+> **状态：K1-4 IMPLEMENTATION IN PROGRESS（2026-07-18）。** 权威 PRD、设计与实施计划位于 `.trellis/tasks/07-16-k1-4-registry-capability-startup-registration/`。Tasks 1–3 已在 `029fb5c`、`2766008`、`95fe452` 完成，Task 3 基线通过 113/113 测试；Tasks 4–6 待完成。
 
 ## 用户价值
 
@@ -14,7 +14,7 @@
 
 ## 当前决策状态
 
-- 状态: K1-4 规划已于 2026-07-17 获用户批准；实现进行中，Tasks 1–2 已完成，Tasks 3–6 待完成。
+- 状态: K1-4 规划已于 2026-07-17 获用户批准；实现进行中，Tasks 1–3 已完成，Tasks 4–6 待完成。
 - 批准方向: 启动期原子 frozen Registry、`command | selector` 两类贡献、七个互不蕴含的 capability、capability-scoped gateway、最小 summary 和 K1-4 本地失败合同。
 - 对应 spec: `specs/SPEC-015-kernel-registry-capability.md`。
 - 关联错误契约: K1-4 拥有封闭 startup/access failure union；K1-5 可映射但不得改名或改义。
