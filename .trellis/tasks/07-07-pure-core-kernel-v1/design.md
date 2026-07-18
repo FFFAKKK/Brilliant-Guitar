@@ -2,7 +2,7 @@
 
 ## Status
 
-- Phase: staged execution; K1-1 through K1-3 are accepted/archived, and the K1-4 planning package was approved on 2026-07-17. Production implementation remains gated on the dedicated branch and explicit task start.
+- Phase: staged execution; K1-1 through K1-3 are accepted/archived. The K1-4 implementation candidate completes all six approved tasks, passes 123/123 tests, and awaits independent acceptance.
 - Parent task: `06-29-commercial-guitar-tablature-product`.
 - Implementation target: pure TypeScript Core Kernel only.
 - K1-1 authority: `.trellis/tasks/archive/2026-07/07-13-k1-1-foundation-replanning/design.md` and `.trellis/spec/core-kernel/backend/score-document-model.md`.
@@ -267,6 +267,6 @@ No implementation chunk should change unrelated future UI, renderer, playback, p
 - K1-1 is the accepted frozen foundation at `30894e2`.
 - K1-2 passed focused P1 repair and independent re-acceptance and is archived under `.trellis/tasks/archive/2026-07/07-15-k1-2-commands-transactions-history/`.
 - K1-3 passed independent acceptance at `7369eeac60fecea66c2c9164c04439625c2d78b0`, is archived, and has 102/102 passing tests.
-- K1-4 planning was approved on 2026-07-17. Its production work may start only after this document closure is committed, a dedicated `codex/k1-4-*` branch is created, and the Trellis task is explicitly started. K1-5 remains separately blocked.
+- K1-4 implementation is complete on `codex/k1-4-registry-capability-startup-registration` and awaits independent acceptance. K1-5 remains separately blocked.
 - Guitar Domain Block 2 is independent from Core K1-2 and must define its Part-owned extension before guitar commands or technique semantics are implemented.
 - Before any later implementation, load `trellis-before-dev`, re-read the relevant active specs, and confirm the task is approved; archived drafts are never execution sources.

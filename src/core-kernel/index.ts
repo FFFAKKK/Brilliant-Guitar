@@ -31,3 +31,35 @@ export * from "./commands/replay";
 export * from "./read/contracts";
 export * from "./read/selectors";
 export * from "./events/contracts";
+
+export { CORE_KERNEL_STARTUP_MANIFEST } from "./registry/builtins";
+export {
+  createKernelRegistry,
+  KernelModuleGateway,
+  KernelRegistry,
+} from "./registry/runtime";
+export type {
+  CoreModuleRegistrationEntryId,
+  CoreSelectorId,
+  CoreSelectorRequest,
+  CoreSelectorResult,
+  KernelCapability,
+  KernelGatewayResult,
+  KernelModuleIdentity,
+  KernelModuleOrigin,
+  KernelModuleRuntime,
+  KernelRegistryAccessFailure,
+  KernelRegistryApiVersion,
+  KernelRegistryStartupFailure,
+  KernelStartupManifestVersion,
+  KernelStartupModuleDeclaration,
+  KernelStartupModuleManifest,
+  KernelTrustLevel,
+  RegistryContributionSummary,
+  RegistryModuleSummary,
+  RegistrySummary,
+} from "./registry/contracts";
+export type {
+  KernelModuleGatewayCreationResult,
+  KernelRegistryCreationResult,
+} from "./registry/runtime";

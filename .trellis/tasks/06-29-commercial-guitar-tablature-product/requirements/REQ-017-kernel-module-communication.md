@@ -12,7 +12,7 @@
 
 ## 当前决策状态
 
-- 状态: K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 正式验收并归档，102/102 测试通过；外部可变 `ScoreDocument` 副本方案已拒绝。K1-4 规划已于 2026-07-17 批准但生产实现未启动，且不得扩大 K1-3 读取/事件合同。
+- 状态: K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 正式验收并归档，102/102 测试通过；外部可变 `ScoreDocument` 副本方案已拒绝。K1-4 实施候选已完成并等待独立验收，且未扩大 K1-3 读取/事件合同。
 - 已确认方案: `Snapshot / Selector + Post-Commit Event Bus + Command-only write`。
 - 对应 spec: `specs/SPEC-014-kernel-snapshot-events.md`。
 

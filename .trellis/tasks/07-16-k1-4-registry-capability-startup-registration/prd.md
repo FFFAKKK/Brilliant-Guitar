@@ -2,8 +2,8 @@
 
 ## Status
 
-- Phase: implementation in progress on `codex/k1-4-registry-capability-startup-registration`.
-- Tasks 1–5 were completed at `029fb5cd411c5ca643939b42fa13948c1d5e4543`, `27660082ca5382d9bbac70319107e3aeff1edf96`, `95fe452c9088fe3d22d8f9f3592aa73e6d10891e`, `1df9b3756f08b5839e9019d80aa46401a005ed0f`, and `66a39bb4645585d086bd3586cc8dfea8bb1f6348`, with 123/123 tests passing at the Task 5 baseline. Task 6 remains pending.
+- Phase: implementation candidate complete on `codex/k1-4-registry-capability-startup-registration`; independent acceptance pending.
+- Tasks 1–6 are complete, with 123/123 tests passing at the final implementation candidate.
 - K1-3 was accepted and archived at `7369eeac60fecea66c2c9164c04439625c2d78b0` with 102/102 tests passing.
 
 ## Goal
@@ -61,16 +61,16 @@ Define the minimum deterministic Core Kernel mechanism for startup-time internal
 ## Acceptance Criteria
 
 - [x] `prd.md`, `design.md`, and `implement.md` form a decision-complete K1-4 contract and were approved by the user on 2026-07-17 before production code starts.
-- [ ] Every approved contribution kind names a concrete current or immediately-following consumer; speculative kinds are excluded.
-- [ ] The default startup manifest registers exactly six command adapters and six selector adapters; no arbitrary handler or contribution kind is accepted.
-- [ ] Strict startup decoding rejects malformed shape, sparse arrays, accessors, unsupported identities, duplicate IDs, unknown compiled entries, incompatible API versions, missing registration capabilities, and handler/descriptor mismatch without throwing.
-- [ ] Startup composition, duplicate/version/runtime/capability rejection, freeze behavior, summary privacy, and deterministic ordering have testable contracts.
-- [ ] Reordering an equivalent manifest yields a deeply equal summary and identical gateway behavior.
-- [ ] Every denied or internal-error gateway path preserves document, version, history, dirty state, event sequence, subscriptions, and Registry state.
-- [ ] Authorized submit/undo/redo/read/select/subscribe return the accepted K1-2/K1-3 result contracts unchanged inside the gateway result.
-- [ ] Repeated summary reads are deeply equal and deeply frozen, and contain no granted capabilities, trust policy, handler, internal index, Registry, or mutable score data.
-- [ ] The plan explicitly preserves the K1-2 command transaction path and K1-3 snapshot/event boundaries.
-- [ ] History, replay, and K1-3 events remain deeply equal to trusted-host execution and contain no module attribution or Registry event.
-- [ ] The plan assigns K1-4 failure ownership without implementing K1-5 reports or leaking raw exceptions.
-- [ ] Public-boundary tests prove that handlers, mutable registry state, score mutation shortcuts, third-party runtimes, and post-start mutation APIs are not exported.
-- [ ] Final validation includes `npm run typecheck`, `npm run build`, `npm test`, `git diff --check`, forbidden-dependency checks, and Trellis task validation.
+- [x] Every approved contribution kind names a concrete current or immediately-following consumer; speculative kinds are excluded.
+- [x] The default startup manifest registers exactly six command adapters and six selector adapters; no arbitrary handler or contribution kind is accepted.
+- [x] Strict startup decoding rejects malformed shape, sparse arrays, accessors, unsupported identities, duplicate IDs, unknown compiled entries, incompatible API versions, missing registration capabilities, and handler/descriptor mismatch without throwing.
+- [x] Startup composition, duplicate/version/runtime/capability rejection, freeze behavior, summary privacy, and deterministic ordering have testable contracts.
+- [x] Reordering an equivalent manifest yields a deeply equal summary and identical gateway behavior.
+- [x] Every denied or internal-error gateway path preserves document, version, history, dirty state, event sequence, subscriptions, and Registry state.
+- [x] Authorized submit/undo/redo/read/select/subscribe return the accepted K1-2/K1-3 result contracts unchanged inside the gateway result.
+- [x] Repeated summary reads are deeply equal and deeply frozen, and contain no granted capabilities, trust policy, handler, internal index, Registry, or mutable score data.
+- [x] The plan explicitly preserves the K1-2 command transaction path and K1-3 snapshot/event boundaries.
+- [x] History, replay, and K1-3 events remain deeply equal to trusted-host execution and contain no module attribution or Registry event.
+- [x] The plan assigns K1-4 failure ownership without implementing K1-5 reports or leaking raw exceptions.
+- [x] Public-boundary tests prove that handlers, mutable registry state, score mutation shortcuts, third-party runtimes, and post-start mutation APIs are not exported.
+- [x] Final validation includes `npm run typecheck`, `npm run build`, `npm test`, `git diff --check`, forbidden-dependency checks, and Trellis task validation.

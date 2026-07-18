@@ -1,7 +1,7 @@
 # Core Kernel Backend Guidelines
 
 > **Current K1-4 implementation stage (2026-07-18):** K1-1 through K1-3 are accepted
-> foundations. K1-4 Tasks 1–5 are fixed at `029fb5c`, `2766008`, `95fe452`, `1df9b37`, and `66a39bb`; Task 6 remains pending.
+> foundations. The K1-4 implementation candidate completes Tasks 1–6, passes 123/123 tests, and awaits independent acceptance.
 
 > Coding rules for the Pure Core Kernel V1 implementation.
 
@@ -36,7 +36,7 @@ Pure Core Kernel V1 is not the desktop app. It must be testable without React, T
 | [Score Document Model](./score-document-model.md) | `brilliant-score-1`, exact time, pitch, extensions, validation | K1-1 authoritative |
 | [Command and Transaction](./command-transaction.md) | K1-2 executable command/transaction/history/replay contract | Active |
 | [Snapshot and Events](./snapshot-events.md) | K1-3 address/read/checkpoint/event implementation contract | K1-3 authoritative |
-| [Registry and Capability](./registry-capability.md) | Approved K1-4 startup Registry/gateway implementation contract | In progress |
+| [Registry and Capability](./registry-capability.md) | Approved K1-4 startup Registry/gateway implementation contract | Implementation candidate complete; acceptance pending |
 | [Errors and Reports](./errors-reports.md) | K1-1 diagnostics; general reports later | Staged |
 | [Quality Guidelines](./quality-guidelines.md) | Required tests and forbidden shortcuts | Stable |
 

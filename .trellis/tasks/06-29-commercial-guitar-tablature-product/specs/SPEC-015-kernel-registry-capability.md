@@ -1,8 +1,8 @@
 # SPEC-015 内核注册表与 Capability
 
-> **状态：K1-4 实现进行中（2026-07-18）。** 权威规划为
+> **状态：K1-4 实施候选已完成，等待独立验收（2026-07-18）。** 权威规划为
 > `.trellis/tasks/07-16-k1-4-registry-capability-startup-registration/`。
-> Tasks 1–5 已在 `029fb5c`、`2766008`、`95fe452`、`1df9b37`、`66a39bb` 完成，Task 5 基线通过 123/123 测试；Task 6 待完成。
+> Tasks 1–6 已完成，候选实现通过 123/123 测试；K1-5 仍保持阻塞。
 
 ## 1. Scope / Trigger
 

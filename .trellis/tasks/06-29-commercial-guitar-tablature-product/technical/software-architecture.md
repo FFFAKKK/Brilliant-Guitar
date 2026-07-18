@@ -6,7 +6,7 @@
 - 作用: 定义后续实现的核心边界、模块协作方式、依赖方向和架构验收标准。
 - 当前架构决策: 采用参照操作系统微内核思想的 Core Kernel + 用户态服务模块架构。内核负责谱面真相、命令事务、验证、版本化契约和模块协作接口；UI、渲染、播放、导入导出、桌面壳和未来插件都作为模块或适配器与内核协作。
 - 详细架构图: `technical/microkernel-architecture.md`。
-- 当前数据模型: `.trellis/tasks/archive/2026-07/07-13-k1-1-foundation-replanning/design.md` 与 `.trellis/spec/core-kernel/`；K1-1 至 K1-3 已验收，K1-3 固定基线为 `7369eeac60fecea66c2c9164c04439625c2d78b0`、102/102 测试通过。K1-4 规划已于 2026-07-17 批准但实现未启动；后续分块仍须重规划并审核。
+- 当前数据模型: `.trellis/tasks/archive/2026-07/07-13-k1-1-foundation-replanning/design.md` 与 `.trellis/spec/core-kernel/`；K1-1 至 K1-3 已验收，K1-3 固定基线为 `7369eeac60fecea66c2c9164c04439625c2d78b0`、102/102 测试通过。K1-4 实施候选已完成并通过 123/123 测试，等待独立验收；后续分块仍须重规划并审核。
 - 当前阶段边界: 当前是 Pure Core Kernel 分块实施阶段。本文件只定义内核边界、模块协作原则和依赖方向；外部工程目录结构、monorepo 方案、`apps/desktop` 和 `packages/*` 拆分不属于当前阶段。
 - 首个实现里程碑: Pure Core Kernel V1。先实现纯 TypeScript 内核和内核测试；桌面壳、UI、渲染、播放、持久化物理 IO、导出和导入均后置。
 - 目录状态: 目录结构仍未确认，必须等工程脚手架阶段从已确认内核边界、测试边界、构建方式和发布方式反推，不得反过来限制当前内核规划。
@@ -106,7 +106,7 @@ flowchart TD
 - `CommandBus`、语义命令定义、内部 delta、事务、undo/redo、命令回放。
 - 语义地址、范围模型和命令目标校验。
 - `.bgp` schema、序列化契约、迁移入口。
-- K1-3 的封闭 snapshot/selectors、`CommandBus.subscribe()` 与两个事件类型；K1-4 Registry/Capability 规划已批准但实现未启动，通用 Error/Report 仍等待 K1-5 独立批准。
+- K1-3 的封闭 snapshot/selectors、`CommandBus.subscribe()` 与两个事件类型；K1-4 Registry/Capability 实施候选已完成并等待独立验收，通用 Error/Report 仍等待 K1-5 独立批准。
 - `ImportReport`、`ExportReport`、unsupported diagnostic 基础结构。
 
 第一阶段推荐内核排除:

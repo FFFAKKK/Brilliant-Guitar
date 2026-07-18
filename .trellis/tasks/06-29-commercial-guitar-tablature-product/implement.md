@@ -2,12 +2,12 @@
 
 ## 当前状态
 
-- 阶段：Core K1-1、K1-2、K1-3 已正式验收并归档；K1-4 独立规划已于 2026-07-17 获批准，生产实现未启动。
+- 阶段：Core K1-1、K1-2、K1-3 已正式验收并归档；K1-4 实施候选已完成并通过 123/123 测试，等待独立验收。
 - K1-3 验收基线：`7369eeac60fecea66c2c9164c04439625c2d78b0`，typecheck、build、102/102 tests、diff check 与 Trellis 校验通过。
 - K1-3 决策源：`.trellis/tasks/archive/2026-07/07-15-k1-3-address-snapshots-selectors-events/`。
 - 活动代码契约：`.trellis/spec/core-kernel/`。
-- 当前集成分支仍名为 `codex/k1-2-commands-transactions-history`，它只承载 Gate 收口，不是 K1-4 分支。启动 K1-4 时必须从当前已收口基线新建 `codex/k1-4-*` 分支。
-- K1-4 的 PRD/design/implement 已审核通过；仍须先提交文档收口、创建独立 K1-4 分支并显式启动 Trellis 任务，之后才能写生产代码。
+- 当前实施分支为 `codex/k1-4-registry-capability-startup-registration`；Tasks 1–6 已完成。
+- K1-4 的 PRD/design/implement 已审核通过并据此完成实施候选；下一步是独立验收，不得直接进入 K1-5。
 
 旧的“一次实现全部九类机制”计划已归档至 `.trellis/archive/core-kernel/2026-06-29-retired-product-implementation-plan.md`。它只能用于追溯，不能作为当前执行清单。
 
@@ -71,9 +71,9 @@ K1-2 已独立验收并归档；其稳定合同包括：
 
 K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 正式验收并归档。已固定文档版本、不可变 snapshot、六个纯 selector、精确 dirty checkpoint、两种提交后事件、同步/异步 handler 隔离和重入规则；事件不泄漏可变 `ScoreDocument` 或领域私有 payload 解释权。
 
-### K1-4：Registry / Capability
+### 实施候选已完成：K1-4 Registry / Capability
 
-> **规划已批准，生产实现未启动。** 权威执行源为 `.trellis/tasks/07-16-k1-4-registry-capability-startup-registration/implement.md`。只有完成文档提交、切换 `codex/k1-4-registry-capability-startup-registration` 并显式 task start 后，操作者才能按其 TDD 步骤实施。
+> **Tasks 1–6 已完成，等待独立验收。** 权威执行与验收输入为 `.trellis/tasks/07-16-k1-4-registry-capability-startup-registration/`；当前候选通过 123/123 测试，正式验收前不得启动 K1-5。
 
 批准范围固定为启动期原子 frozen Registry、command/selector 两类既有 adapter、七个 capability、模块 gateway、最小 summary 和 K1-4 本地失败合同；无 Registry version/event、module attribution、其他 contribution kind、第三方 runtime、Guitar Domain 或 K1-5 report。
 

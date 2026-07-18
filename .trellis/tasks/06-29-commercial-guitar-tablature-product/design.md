@@ -2,7 +2,7 @@
 
 ## 状态
 
-- 阶段: Core K1-3 已正式验收并归档；K1-4 独立规划已于 2026-07-17 获批准但生产实现未启动，产品其余阶段保持 planning
+- 阶段: Core K1-3 已正式验收并归档；K1-4 实施候选已完成并通过 123/123 测试，等待独立验收；产品其余阶段保持 planning
 - 目标: 为第一条可运行 MVP 闭环提供需求反推的技术设计骨架。
 - 已确认技术栈: Tauri 2 + TypeScript + React + Vite。
 - 首发平台: Windows 桌面。
@@ -62,7 +62,7 @@ Core Kernel 路线图仍按 9 类机制分类，但按任务分块实施；当�
 
 ### Pure Core Kernel V1 Boundary
 
-Pure Core Kernel V1 最终覆盖上述 9 类机制，但必须按 K1-1 至 K1-6 逐块评审。K1-1 至 K1-3 已验收归档；K1-4 规划已批准但须在独立分支显式启动，K1-5 仍阻塞。任何当前分块都不包含桌面壳、React UI、VexFlow/SVG 渲染、Web Audio 播放、PDF/PNG 真实导出、Guitar Pro 导入、Tauri 文件系统或第三方插件运行时。
+Pure Core Kernel V1 最终覆盖上述 9 类机制，但必须按 K1-1 至 K1-6 逐块评审。K1-1 至 K1-3 已验收归档；K1-4 实施候选已在独立分支完成并等待独立验收，K1-5 仍阻塞。任何当前分块都不包含桌面壳、React UI、VexFlow/SVG 渲染、Web Audio 播放、PDF/PNG 真实导出、Guitar Pro 导入、Tauri 文件系统或第三方插件运行时。
 
 Pure Core Kernel V1 可以定义外部导入/导出贡献点的抽象 descriptor 类型、capability 检查和 report 外壳，但不得注册 PDF、PNG、Guitar Pro 或 `.bgp` 物理读写的具体 descriptor/handler。`.bgp` schema、manifest 语义和迁移入口属于内核；zip 读写、文件路径、自动保存恢复、PDF/PNG 页面生成和 Guitar Pro 解析都属于外部用户态服务模块。
 
@@ -255,8 +255,8 @@ Pure Core Kernel V1 可以定义外部导入/导出贡献点的抽象 descriptor
 - 音乐时间模型属于谱面核心对象模型，不新增第十类机制；Core 持久化 Fraction/NoteValue，tick/PPQ、真实播放时钟和播放光标由外部 adapter 派生。
 - 快照、selector、事件订阅与模块通信遵守 `SPEC-014` 和 `.trellis/tasks/archive/2026-07/07-15-k1-3-address-snapshots-selectors-events/`，旧详细模型已归档。
 - 外部可变 `ScoreDocument` 副本方案已拒绝；这类方案与微内核设计相悖。外部模块只能生成非谱面事实的派生模型，最终写入仍走内核受控入口。
-- Registry/capability 已通过 `SPEC-015` 与独立 K1-4 规划收敛为 command/selector-only startup Registry；生产实现尚待独立分支和显式 task start。
+- Registry/capability 已通过 `SPEC-015` 与独立 K1-4 任务实现为 command/selector-only startup Registry；实施候选等待独立验收。
 - K1-1 diagnostics 已确认；operation errors、report 与 migration 通过 `SPEC-016` K1-5 重规划门补充。
 - 注册表 handler 运行时注销/卸载、第三方插件热插拔、运行中启用/禁用和运行中卸载已明确不作为稳定性目标；未来第三方插件配置变更必须启动前完成并通过重启生效。官方随应用发布的内置模块会有多个，UI 模块只是其中一类，具体模块清单、数量和拆分方式后续再确定；官方和第三方的权限模型不再按来源二分，最终都收敛到同一套注册协议，这些生命周期治理能力不作为当前内核总规划和 Kernel V1 实现阻塞项。
 - 外部工程目录结构、monorepo 方案、`apps/desktop` 和 `packages/*` 拆分不属于当前 Core Kernel 规划阶段；这些只在后续工程脚手架阶段根据已确认内核边界和模块协作方式重新评估，不作为当前内核规划阻塞项。
-- 当前设计文档无阻塞开放问题；K1-3 已正式验收归档，K1-4 规划已于 2026-07-17 获批准但实现未启动，K1-5 仍须独立规划获批。
+- 当前设计文档无阻塞开放问题；K1-3 已正式验收归档，K1-4 实施候选已完成并等待独立验收，K1-5 仍须独立规划获批。

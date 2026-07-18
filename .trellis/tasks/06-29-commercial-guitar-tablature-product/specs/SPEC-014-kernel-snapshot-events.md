@@ -1,6 +1,6 @@
 # SPEC-014 内核地址、快照、Selector、Dirty 与事件合同
 
-> **状态：K1-3 ACCEPTED / ARCHIVED（2026-07-16）。** 详细权威为 `.trellis/tasks/archive/2026-07/07-15-k1-3-address-snapshots-selectors-events/`；固定验收基线为 `7369eeac60fecea66c2c9164c04439625c2d78b0`，typecheck、build、102/102 tests、diff check 与 Trellis 校验通过。K1-4 规划已于 2026-07-17 批准但生产实现未启动，且不得扩大本事件合同。
+> **状态：K1-3 ACCEPTED / ARCHIVED（2026-07-16）。** 详细权威为 `.trellis/tasks/archive/2026-07/07-15-k1-3-address-snapshots-selectors-events/`；固定验收基线为 `7369eeac60fecea66c2c9164c04439625c2d78b0`，typecheck、build、102/102 tests、diff check 与 Trellis 校验通过。K1-4 实施候选已完成并等待独立验收，且未扩大本事件合同。
 
 ## 1. Scope / Trigger
 

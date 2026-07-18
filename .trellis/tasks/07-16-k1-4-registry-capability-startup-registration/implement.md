@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript 5.8, Node test runner, existing Core strict-codec/deep-freeze patterns, no runtime dependencies.
 
-**Current status:** Tasks 1–5 completed at `029fb5c`, `2766008`, `95fe452`, `1df9b37`, and `66a39bb`, with 123/123 tests passing at the Task 5 baseline. Task 6 is the next and final implementation slice.
+**Current status:** Tasks 1–6 are complete on `codex/k1-4-registry-capability-startup-registration`; the implementation candidate passes 123/123 tests and awaits independent acceptance.
 
 ## Global Constraints
 
@@ -421,7 +421,7 @@ git commit -m "feat(core): authorize command and event gateway access"
 - Public TypeScript contracts: only the approved registry/identity/capability/summary/request/result types.
 - No internal compiled entries, codecs, private state, handler maps, mutation APIs, Registry events/versions, reports, or speculative contribution types.
 
-- [ ] **Step 1: Update the public export allowlist test first**
+- [x] **Step 1: Update the public export allowlist test first**
 
 Add the four runtime exports to the exact sorted allowlist. Extend the forbidden names with:
 
@@ -448,7 +448,7 @@ Add the four runtime exports to the exact sorted allowlist. Extend the forbidden
 
 Assert `src/core-kernel/index.ts` does not re-export `registry/builtins` wholesale, `registry/strict-codec`, or private runtime state.
 
-- [ ] **Step 2: Export only the approved boundary and make the test green**
+- [x] **Step 2: Export only the approved boundary and make the test green**
 
 Use named runtime exports and type exports; do not use `export *` from files that contain private compiled symbols.
 
@@ -458,11 +458,11 @@ Run: `node --test dist/test/core-kernel/public-api-boundary.test.js dist/test/co
 
 Expected: both tests pass.
 
-- [ ] **Step 3: Synchronize active planning/spec documents**
+- [x] **Step 3: Synchronize active planning/spec documents**
 
 Record the final approved K1-4 contract: exactly command+selector contributions, seven capabilities, atomic immutable startup, minimal summary, local failures, no registryVersion/event, no history/event module attribution, and implementation baseline/status. Remove superseded broad candidate claims from active documents; do not rewrite archived snapshots or retired drafts.
 
-- [ ] **Step 4: Run focused and full verification**
+- [x] **Step 4: Run focused and full verification**
 
 Run: `npm run typecheck`
 
@@ -486,7 +486,7 @@ Expected: `All validations passed`.
 
 Run a final `rg` scan proving no active executable document still requires validator/technique/migration/import/export/template contributions, `registryVersion`, or `kernel.registry.changed` for K1-4.
 
-- [ ] **Step 5: Review the complete diff before the acceptance commit**
+- [x] **Step 5: Review the complete diff before the acceptance commit**
 
 Confirm no changes under score model/codec/validation except imports required by Registry types; no K1-2 mutation/history/replay structure changes; no K1-3 event union changes; no archived task or `.trellis/maintenance/` changes.
 
@@ -496,7 +496,7 @@ git diff --stat
 git diff --check
 ```
 
-- [ ] **Step 6: Commit the public/spec closure**
+- [x] **Step 6: Commit the public/spec closure**
 
 ```powershell
 git add src/core-kernel/index.ts test/core-kernel/public-api-boundary.test.ts .trellis/spec/core-kernel/backend/registry-capability.md .trellis/spec/core-kernel/backend/pure-kernel-boundary.md .trellis/tasks/06-29-commercial-guitar-tablature-product/specs/SPEC-015-kernel-registry-capability.md .trellis/tasks/06-29-commercial-guitar-tablature-product/requirements/REQ-018-kernel-registry-capability.md .trellis/tasks/06-29-commercial-guitar-tablature-product/specs/SPEC-009-extension-api.md .trellis/tasks/06-29-commercial-guitar-tablature-product/prd.md .trellis/tasks/06-29-commercial-guitar-tablature-product/design.md .trellis/tasks/06-29-commercial-guitar-tablature-product/implement.md .trellis/tasks/06-29-commercial-guitar-tablature-product/technical/microkernel-architecture.md .trellis/tasks/06-29-commercial-guitar-tablature-product/technical/modular-plugin-architecture.md .trellis/tasks/06-29-commercial-guitar-tablature-product/technical/software-architecture.md .trellis/tasks/07-07-pure-core-kernel-v1/prd.md .trellis/tasks/07-07-pure-core-kernel-v1/design.md .trellis/tasks/07-07-pure-core-kernel-v1/implement.md .trellis/tasks/07-16-k1-4-registry-capability-startup-registration/prd.md .trellis/tasks/07-16-k1-4-registry-capability-startup-registration/design.md .trellis/tasks/07-16-k1-4-registry-capability-startup-registration/implement.md

@@ -5,7 +5,7 @@
 - 状态: 草案
 - 映射需求: `REQ-007`
 - 目标: 为模块化软件和未来插件生态定义可实现、可测试、可控的扩展边界。
-- 当前约束: 本文件是未来插件平台路线图，不是 K1-4 实现契约；K1-4 已于 2026-07-17 通过 `SPEC-015` 收敛为 command/selector-only startup Registry，生产实现尚未启动。
+- 当前约束: 本文件是未来插件平台路线图，不是 K1-4 实现契约；K1-4 已通过 `SPEC-015` 实现 command/selector-only startup Registry 候选并等待独立验收。
 - K1-3/K1-4 边界: K1-3 已验收并通过 102/102 测试，只提供 `CommandBus.read()`、六个封闭 selector、`CommandBus.subscribe()` 与两个事件类型。批准的 K1-4 只增加官方模块的 frozen Registry/gateway，不开放第三方执行、动态 selector/event、Registry mutation/event 或第三方直连发布器。
 - 数据边界: `ScoreDocument.extensions` 已由 Core K1-1 定义为 score/part-owned 纯数据信封；它不等于插件安装、发现、registry 或执行 API。
 
@@ -284,17 +284,17 @@ K1-4 必须做:
 
 ## Pure Core Kernel V1 测试要求
 
-- [ ] AC-009-01: K1-4 默认 manifest 只绑定现有六个 command 与六个 selector adapter，不接受 validator/exporter/template 等未来 kind。
-- [ ] AC-009-02: startup manifest 严格解码、identity/API/capability/binding 校验与 handler match 全部原子完成，失败无部分 Registry。
-- [ ] AC-009-03: K1-4 拒绝 `javascript-typescript`、third-party、sandboxed、路径、URL、脚本、dynamic import 与 arbitrary handler。
-- [ ] AC-009-04: module origin 不自动授予 capability；official module 缺少 capability 时同样被拒绝。
-- [ ] AC-009-05: `command:register` 不隐含 `command:execute`，七个 K1-4 capability 互不蕴含。
-- [ ] AC-009-06: authorized gateway 的 command/selector/read/subscribe 结果与 trusted-host API 相同；拒绝与异常保持所有 K1-2/K1-3 状态。
-- [ ] AC-009-07: Registry summary 确定排序、深冻结、脱离内部状态且不泄露 grant/trust/handler/index/Registry/mutable document。
-- [ ] AC-009-08: ready Registry 无 public mutation、runtime version 或 Registry event。
-- [ ] AC-009-09: command envelope、history、replay 与 K1-3 event 不含 module/plugin attribution。
-- [ ] AC-009-10: Core 保真未知 score/part ExtensionBlock 的 JsonValue 语义；不承诺物理插件资源或字节级 round-trip。
-- [ ] AC-009-11: K1-4 不读取真实第三方 `PluginManifest`，也不导出 `PluginKernelFacade` 或 public registration handler。
+- [x] AC-009-01: K1-4 默认 manifest 只绑定现有六个 command 与六个 selector adapter，不接受 validator/exporter/template 等未来 kind。
+- [x] AC-009-02: startup manifest 严格解码、identity/API/capability/binding 校验与 handler match 全部原子完成，失败无部分 Registry。
+- [x] AC-009-03: K1-4 拒绝 `javascript-typescript`、third-party、sandboxed、路径、URL、脚本、dynamic import 与 arbitrary handler。
+- [x] AC-009-04: module origin 不自动授予 capability；official module 缺少 capability 时同样被拒绝。
+- [x] AC-009-05: `command:register` 不隐含 `command:execute`，七个 K1-4 capability 互不蕴含。
+- [x] AC-009-06: authorized gateway 的 command/selector/read/subscribe 结果与 trusted-host API 相同；拒绝与异常保持所有 K1-2/K1-3 状态。
+- [x] AC-009-07: Registry summary 确定排序、深冻结、脱离内部状态且不泄露 grant/trust/handler/index/Registry/mutable document。
+- [x] AC-009-08: ready Registry 无 public mutation、runtime version 或 Registry event。
+- [x] AC-009-09: command envelope、history、replay 与 K1-3 event 不含 module/plugin attribution。
+- [x] AC-009-10: Core 保真未知 score/part ExtensionBlock 的 JsonValue 语义；不承诺物理插件资源或字节级 round-trip。
+- [x] AC-009-11: K1-4 不读取真实第三方 `PluginManifest`，也不导出 `PluginKernelFacade` 或 public registration handler。
 
 ## 后续插件平台测试要求
 

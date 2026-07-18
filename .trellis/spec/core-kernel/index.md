@@ -1,9 +1,9 @@
 # Core Kernel Guidelines
 
-> **Current staged workflow (2026-07-18):** K1-1, K1-2, and K1-3 are accepted; K1-4 implementation is in progress.
+> **Current staged workflow (2026-07-18):** K1-1, K1-2, and K1-3 are accepted; the K1-4 implementation candidate is complete and awaits independent acceptance.
 > K1-3 address/read/checkpoint/event contracts are fixed at code baseline `7369eeac60fecea66c2c9164c04439625c2d78b0` with 102/102 tests passing.
 
-For changes that consume K1-3, read `backend/score-document-model.md`, `backend/command-transaction.md`, `backend/snapshot-events.md`, and all staged boundary/diagnostic/quality guides. K1-1 through K1-3 contracts are frozen. The approved K1-4 task is implementing the startup-only Registry: Tasks 1–5 are fixed at `029fb5c`, `2766008`, `95fe452`, `1df9b37`, and `66a39bb`, with 123/123 tests at the Task 5 baseline; Task 6 remains pending. General reports, migrations, Guitar Domain, UI, playback, layout, and physical IO remain later work.
+For changes that consume K1-3, read `backend/score-document-model.md`, `backend/command-transaction.md`, `backend/snapshot-events.md`, and all staged boundary/diagnostic/quality guides. K1-1 through K1-3 contracts are frozen. The K1-4 startup-only Registry implementation candidate completes all six approved tasks with 123/123 tests passing and awaits independent acceptance. General reports, migrations, Guitar Domain, UI, playback, layout, and physical IO remain later work.
 
 The K1-1 data path is `unknown -> decode -> semantic validation -> ScoreFeatureProfile`. Unknown extension data must survive semantic round-trip.
 

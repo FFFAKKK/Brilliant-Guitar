@@ -3,12 +3,12 @@
 ## 状态
 
 - Trellis task: `06-29-commercial-guitar-tablature-product`
-- 当前阶段: Core K1-3 Gate 已正式收口；K1-4 独立规划已于 2026-07-17 获批准，生产实现尚未启动，产品其余阶段保持规划态
+- 当前阶段: Core K1-3 Gate 已正式收口；K1-4 实施候选已完成并通过 123/123 测试，等待独立验收；产品其余阶段保持规划态
 - 创建日期: 2026-06-29
 - 负责人: ATOM
 - 文档策略: 每个需求先写独立文档，最终再合并为收敛后的 PRD。
 - 当前 Core 基线: K1-1 已在 `30894e2` 正式验收；K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 正式验收并通过 102/102 测试；`.trellis/spec/core-kernel/` 是活动代码契约。本文较早的决策记录若与其冲突，以活动规范与独立 Block 任务为准。
-- 当前交付状态: K1-2、K1-3 均已完成独立复验并归档。K1-4 已固定 command/selector 两类贡献、K1-4 本地失败合同以及无 registry version/change event；实现仍须进入独立分支并显式启动任务。Guitar Domain 和通用 report 仍需分别重规划。
+- 当前交付状态: K1-2、K1-3 均已完成独立复验并归档。K1-4 已在 `codex/k1-4-registry-capability-startup-registration` 完成 command/selector 两类贡献、K1-4 本地失败合同以及无 registry version/change event 的实施候选；正式验收前不进入 K1-5。Guitar Domain 和通用 report 仍需分别重规划。
 
 ## 产品目标
 

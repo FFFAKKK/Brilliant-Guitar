@@ -23,7 +23,7 @@
   "relatedFiles": [],
   "notes": "",
   "meta": {
-    "implementation_stage": "task_6_pending",
+    "implementation_stage": "acceptance_pending",
     "task_1_commit": "029fb5cd411c5ca643939b42fa13948c1d5e4543",
     "task_1_test_count": 104,
     "task_2_commit": "27660082ca5382d9bbac70319107e3aeff1edf96",
@@ -34,6 +34,7 @@
     "task_4_test_count": 117,
     "task_5_commit": "66a39bb4645585d086bd3586cc8dfea8bb1f6348",
     "task_5_test_count": 123,
-    "remaining_tasks": [6]
+    "task_6_test_count": 123,
+    "remaining_tasks": []
   }
 }

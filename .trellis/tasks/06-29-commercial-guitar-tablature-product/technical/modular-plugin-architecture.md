@@ -1,6 +1,6 @@
 # 模块化与插件架构可行性
 
-> **当前 Core 边界（2026-07-17）：** K1-3 已正式验收并通过 102/102 测试，只公开封闭 snapshot/selectors、`CommandBus.subscribe()` 和两个事件类型。K1-4 command/selector-only startup Registry 规划已批准但实现未启动；第三方代理与新增 contribution kind 仍须独立批准。
+> **当前 Core 边界（2026-07-18）：** K1-3 已正式验收并通过 102/102 测试，只公开封闭 snapshot/selectors、`CommandBus.subscribe()` 和两个事件类型。K1-4 command/selector-only startup Registry 实施候选已完成并通过 123/123 测试，等待独立验收；第三方代理与新增 contribution kind 仍须独立批准。
 
 ## 结论
 

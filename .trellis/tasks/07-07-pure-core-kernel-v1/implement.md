@@ -2,7 +2,7 @@
 
 ## Status
 
-- Phase: staged execution; K1-1 through K1-3 are accepted/archived. K1-4 planning was approved on 2026-07-17; implementation remains gated on the documentation commit, dedicated branch, and explicit task start.
+- Phase: staged execution; K1-1 through K1-3 are accepted/archived. The K1-4 implementation candidate completes all six approved tasks, passes 123/123 tests, and awaits independent acceptance.
 - K1-1 was formally accepted at baseline `30894e2`; its model and validation contracts remain frozen.
 - This parent plan no longer defines K1-1 or K1-2 executable details; their independent child artifacts and active Core specs are authoritative.
 - K1-3 implementation followed its approved independent PRD/design/implement set and was accepted at `7369eeac60fecea66c2c9164c04439625c2d78b0` with 102/102 tests passing. K1-4 execution authority is its approved independent task; K1-5 and later blocks still require their own plan refresh.
@@ -137,7 +137,7 @@ Rollback point: revert read/event files and tests; keep K1-1 and K1-2 intact.
 
 ## Chunk K1-4: Registry and Capability
 
-> **APPROVED PLAN / IMPLEMENTATION NOT STARTED.** Execute only `.trellis/tasks/07-16-k1-4-registry-capability-startup-registration/implement.md`, after the documentation closure commit, dedicated `codex/k1-4-registry-capability-startup-registration` branch, and explicit Trellis task start.
+> **IMPLEMENTATION CANDIDATE COMPLETE / ACCEPTANCE PENDING.** Tasks 1–6 were executed only from `.trellis/tasks/07-16-k1-4-registry-capability-startup-registration/implement.md` on `codex/k1-4-registry-capability-startup-registration`.
 
 Purpose: make extension points explicit and enforce permission boundaries without adding real third-party plugin runtime.
 
@@ -229,4 +229,4 @@ Completion gate:
 
 ## Current Execution Recommendation
 
-K1-3 is accepted and archived at `7369eeac60fecea66c2c9164c04439625c2d78b0`. To begin K1-4, create a new branch whose name starts with `codex/k1-4-` from the accepted K1-3 baseline plus this Gate-closure documentation; do not reuse the current `codex/k1-2-commands-transactions-history` branch name. Create and review an independent K1-4 PRD/design/implement set before writing Registry/Capability production code. Do not start Guitar Domain commands, K1-5, or UI integration from this parent plan.
+K1-3 is accepted and archived at `7369eeac60fecea66c2c9164c04439625c2d78b0`. The K1-4 implementation candidate is complete on its dedicated branch with 123/123 tests passing. The next action is independent K1-4 acceptance; do not start Guitar Domain commands, K1-5, or UI integration from this parent plan.
