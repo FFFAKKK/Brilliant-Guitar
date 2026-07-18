@@ -12,7 +12,7 @@
   "assignee": "ATOM",
   "createdAt": "2026-07-16",
   "completedAt": null,
-  "branch": null,
+  "branch": "codex/k1-4-registry-capability-startup-registration",
   "base_branch": "codex/k1-2-commands-transactions-history",
   "worktree_path": null,
   "commit": null,
@@ -22,5 +22,10 @@
   "parent": null,
   "relatedFiles": [],
   "notes": "",
-  "meta": {}
+  "meta": {
+    "implementation_stage": "task_2_pending",
+    "task_1_commit": "029fb5cd411c5ca643939b42fa13948c1d5e4543",
+    "task_1_test_count": 104,
+    "remaining_tasks": [2, 3, 4, 5, 6]
+  }
 }

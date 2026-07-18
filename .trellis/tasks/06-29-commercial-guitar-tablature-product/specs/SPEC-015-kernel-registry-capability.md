@@ -1,8 +1,8 @@
 # SPEC-015 内核注册表与 Capability
 
-> **状态：K1-4 规划已批准（2026-07-17），生产实现尚未启动。** 权威规划为
+> **状态：K1-4 实现进行中（2026-07-18）。** 权威规划为
 > `.trellis/tasks/07-16-k1-4-registry-capability-startup-registration/`。
-> 实现前仍须完成活动文档收口、切换到独立 `codex/k1-4-*` 分支并显式启动 Trellis 任务。
+> Task 1 已在 `029fb5c` 完成并通过 104/104 测试；Tasks 2–6 待完成。
 
 ## 1. Scope / Trigger
 
@@ -22,6 +22,8 @@ K1-4 不实现 validator、technique、migration、import/export、template、Gu
 - `apiVersion = 1`
 
 K1-4 只接受 manifest 绑定的 `official + builtin/internal-module + system-trusted`。
+
+manifest 提供的 module/registration-entry ID 长度为 1–128，并匹配 `^[a-z0-9]+(?:[.-][a-z0-9]+)*$`；不安全 ID 返回 invalid startup input，格式安全但未编译的 entry 返回专用 not-found failure。
 
 七个 capability 固定为：`registry:read`、`command:register`、`selector:register`、`command:execute`、`selector:execute`、`score:read`、`event:subscribe`。
 

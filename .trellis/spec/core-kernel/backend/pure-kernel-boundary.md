@@ -3,9 +3,9 @@
 > **Authoritative staged boundary (2026-07-16):** The Core V1 roadmap still
 > classifies nine mechanisms, but each task implements only its approved block.
 
-## Current Accepted K1-3 / Approved K1-4 Plan Stage
+## Current Accepted K1-3 / K1-4 Implementation Stage
 
-K1-1 score document/exact time, semantic schema/codec, hard validation, feature-profile validation, and diagnostics are the frozen foundation. Accepted K1-2 adds the closed six-command write boundary, atomic transactions, documentVersion, fine-grained history, undo/redo, and deterministic command replay. Accepted K1-3 adds stable address/range, deeply immutable reads, exact dirty checkpoints, and two deterministic committed/session facts at baseline `7369eeac60fecea66c2c9164c04439625c2d78b0`. The K1-4 plan approved on 2026-07-17 adds only a startup-frozen command/selector Registry and capability gateway; its production implementation has not started. General reports and migrations remain later tasks.
+K1-1 score document/exact time, semantic schema/codec, hard validation, feature-profile validation, and diagnostics are the frozen foundation. Accepted K1-2 adds the closed six-command write boundary, atomic transactions, documentVersion, fine-grained history, undo/redo, and deterministic command replay. Accepted K1-3 adds stable address/range, deeply immutable reads, exact dirty checkpoints, and two deterministic committed/session facts at baseline `7369eeac60fecea66c2c9164c04439625c2d78b0`. K1-4 implementation is in progress: Task 1 completed at `029fb5c` with 104/104 tests, and Tasks 2–6 remain pending. It adds only a startup-frozen command/selector Registry and capability gateway. General reports and migrations remain later tasks.
 
 `ExtensionBlock` belongs to the score document/schema mechanism. It stores pure JSON-compatible data and does not create a registry, plugin runtime, capability system, or tenth mechanism.
 

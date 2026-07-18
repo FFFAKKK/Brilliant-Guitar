@@ -3,7 +3,7 @@
 ## Status and authority
 
 - This document is the approved K1-4 technical contract. The user approved `prd.md`, this file, and `implement.md` together on 2026-07-17.
-- Implementation remains blocked until active documents are synchronized, work moves to a dedicated `codex/k1-4-*` branch, and the Trellis task is explicitly started.
+- Implementation is in progress on `codex/k1-4-registry-capability-startup-registration`; Task 1 completed at `029fb5c` with 104/104 tests, while Tasks 2–6 remain pending.
 - K1-1 through K1-3 remain frozen compatibility inputs. K1-4 may add Registry/Gateway APIs but cannot change score persistence, command envelopes, mutation/history, replay, snapshots, selectors, or document/session events.
 - Active Core and product Registry specifications must be synchronized to this task after approval; older broad contribution and registry-change-event lists are superseded.
 
@@ -46,13 +46,17 @@ export type CoreModuleRegistrationEntryId =
   | "core.commands.v1"
   | "core.selectors.v1";
 
-export interface KernelStartupModuleDeclaration {
+export interface KernelModuleIdentity {
   readonly moduleId: string;
   readonly origin: KernelModuleOrigin;
   readonly runtime: KernelModuleRuntime;
   readonly trustLevel: KernelTrustLevel;
   readonly apiVersion: KernelRegistryApiVersion;
   readonly capabilities: readonly KernelCapability[];
+}
+
+export interface KernelStartupModuleDeclaration
+  extends KernelModuleIdentity {
   readonly registrationEntryIds: readonly CoreModuleRegistrationEntryId[];
 }
 
@@ -246,12 +250,14 @@ The Registry is returned only to the trusted Host. Internal modules receive only
 
 ### Atomic startup
 
-1. `createKernelRegistry` decodes `manifest` using exact fields, own data properties, dense arrays, finite values, and closed unions. Getter/proxy failures become `registry.invalid-startup-input`.
+1. `createKernelRegistry` decodes `manifest` using exact fields, own data properties, dense arrays, finite values, and closed unions. Manifest-supplied IDs must be 1–128 lowercase ASCII namespace characters matching `^[a-z0-9]+(?:[.-][a-z0-9]+)*$`; getter/proxy or unsafe-ID failures become `registry.invalid-startup-input`.
 2. It rejects duplicate module IDs, duplicate capabilities/entry IDs, unsupported identity combinations, and API version mismatch.
 3. Each registration entry ID resolves against the private compiled table and must be owned by the declaring module. The declaring module must have the contribution kind's registration capability.
 4. Candidate contributions are validated for descriptor/handler agreement and global ID uniqueness.
 5. Modules are sorted by `moduleId`; contributions are sorted by `kind` then `id`. Private arrays and the detached summary are deep-frozen.
 6. Only after every check succeeds is a `KernelRegistry` constructed. Catch-all failure returns `registry.internal-error` and no Registry.
+
+Candidate validation is a pure package-internal seam `buildRegistryCandidate(manifest, compiledRegistrationEntries)`. The public factory always supplies the frozen built-in table; tests may supply malformed internal fixtures to cover duplicate/invalid/handler-mismatch/internal failure branches. The seam and fixtures are never exported from `src/core-kernel/index.ts`.
 
 ### Gateway construction and capability order
 

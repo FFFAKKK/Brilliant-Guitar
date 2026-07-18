@@ -2,8 +2,8 @@
 
 ## Status
 
-- Phase: planning package approved by the user on 2026-07-17.
-- Production implementation remains gated on active-document synchronization, a dedicated `codex/k1-4-*` branch, and explicit Trellis task start; approval of this plan does not authorize implementation on the current K1-2 branch.
+- Phase: implementation in progress on `codex/k1-4-registry-capability-startup-registration`.
+- Task 1 was completed at `029fb5cd411c5ca643939b42fa13948c1d5e4543` with 104/104 tests passing; Tasks 2–6 remain pending.
 - K1-3 was accepted and archived at `7369eeac60fecea66c2c9164c04439625c2d78b0` with 102/102 tests passing.
 
 ## Goal
@@ -46,6 +46,7 @@ Define the minimum deterministic Core Kernel mechanism for startup-time internal
 - Summary never exposes granted capabilities, origin, runtime, trust level, handler references, private indexes, or the registry object itself. `registry:read` authorizes directory access only and cannot infer or elevate permissions.
 - Registry APIs never expose a second score-write path or mutable `ScoreDocument`; every authorized write still uses the accepted semantic command transaction.
 - Stable caller-supplied IDs and deterministic ordering are mandatory. Registry code cannot depend on time, randomness, file paths, process state, React, VexFlow, Web Audio, or Tauri.
+- Manifest-supplied module and registration-entry IDs are 1–128 characters and match `^[a-z0-9]+(?:[.-][a-z0-9]+)*$`. Unsafe/path/URL/control/script-like IDs return `registry.invalid-startup-input`; a safe but uncompiled entry ID returns `registry.registration-entry-not-found`.
 - `moduleId` is used only for Registry lookup, capability checks, safe rejection details, and summary source metadata. It is not added to command envelopes, HistoryEntry, undo/redo, replay, or K1-3 events; future K1-5 attribution must use a separate operation/report record.
 
 ## Out of Scope

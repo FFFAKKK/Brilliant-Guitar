@@ -1,9 +1,9 @@
 # Registry and Capability
 
-> **Approved K1-4 contract (2026-07-17):** the decision-complete planning package is
+> **K1-4 implementation in progress (2026-07-18):** the decision-complete package is
 > `.trellis/tasks/07-16-k1-4-registry-capability-startup-registration/`.
-> Production implementation has not started; it requires a dedicated `codex/k1-4-*`
-> branch and explicit Trellis task start. K1-1 through K1-3 remain frozen inputs.
+> Task 1 completed at `029fb5c` with 104/104 tests; Tasks 2–6 remain pending.
+> K1-1 through K1-3 remain frozen inputs.
 
 ## 1. Scope / Trigger
 
@@ -47,12 +47,12 @@ class KernelRegistry {
 
 class KernelModuleGateway {
   summary(): KernelGatewayResult<RegistrySummary>;
-  read(): KernelGatewayResult<ReadResult<DocumentSnapshot>>;
+  read(): KernelGatewayResult<ReadResult<KernelReadState>>;
   select(request: unknown): KernelGatewayResult<CoreSelectorResult>;
   submit(command: unknown): KernelGatewayResult<CommandResult>;
   undo(): KernelGatewayResult<CommandResult>;
   redo(): KernelGatewayResult<CommandResult>;
-  subscribe(handler: KernelEventHandler): KernelGatewayResult<KernelUnsubscribe>;
+  subscribe(handler: unknown): KernelGatewayResult<EventSubscriptionResult>;
 }
 ```
 
@@ -62,6 +62,8 @@ The complete type definitions, six `CoreSelectorId` values, startup/access failu
 
 - `createKernelRegistry` strictly decodes the complete manifest, resolves only compiled `core.commands.v1` and `core.selectors.v1` bindings in isolated candidate state, and returns either one frozen ready Registry or a stable failure. Failure exposes no partial Registry.
 - K1-4 accepts only manifest-bound `official` + (`builtin` or `internal-module`) + `system-trusted` identities. A module cannot self-assign identity, trust, registration entries, or capabilities.
+- `KernelModuleIdentity` owns moduleId/origin/runtime/trustLevel/apiVersion/capabilities; `KernelStartupModuleDeclaration` extends it only with registration-entry bindings.
+- Manifest-supplied module/entry IDs are 1–128 characters matching `^[a-z0-9]+(?:[.-][a-z0-9]+)*$`. Unsafe IDs are invalid startup input; safe unknown entry IDs retain the dedicated not-found failure.
 - No capability implies another. `command:execute` covers submit/undo/redo; selector dispatch requires `selector:execute` plus `score:read`; summary and subscription require their own capabilities. Startup assembly and `markPersisted` are Host-only.
 - The default manifest binds exactly the accepted six Core commands and six K1-3 selectors. Adapters authorize and delegate to existing `CommandBus`, selector, read, and subscription behavior; they do not create a second transaction, selector, event, or write path.
 - Direct `CommandBus` and selector APIs remain trusted Core Host compatibility APIs. Internal modules use `KernelModuleGateway`.
@@ -69,6 +71,7 @@ The complete type definitions, six `CoreSelectorId` values, startup/access failu
 - `RegistrySummary` contains only `startupManifestVersion: 1`, modules sorted by `moduleId` with `moduleId/apiVersion`, and contributions sorted by `kind/id` with approved public metadata. It is detached, deeply frozen, and omits grants, trust, handlers, indexes, Registry objects, and score data.
 - `moduleId` is Registry authorization/summary metadata only. It is not added to command envelopes, history, replay, or K1-3 events.
 - Every entrypoint catches unexpected exceptions and returns a closed privacy-safe failure. Denied/internal paths preserve document, version, history, dirty state, event sequence, subscriptions, and Registry state.
+- `buildRegistryCandidate(manifest, compiledRegistrationEntries)` is package-internal and exists only to make corrupted compiled-table branches testable; production always supplies the frozen built-in table and the seam is not a public Core export.
 
 ## 4. Validation / Error Matrix
 

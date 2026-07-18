@@ -8,6 +8,8 @@
 
 **Tech Stack:** TypeScript 5.8, Node test runner, existing Core strict-codec/deep-freeze patterns, no runtime dependencies.
 
+**Current status:** Task 1 completed at `029fb5c` with 104/104 tests passing. Task 2 is the next implementation slice; Tasks 3–6 remain pending.
+
 ## Global Constraints
 
 - User approval of `prd.md`, `design.md`, and this plan was recorded on 2026-07-17; do not begin production work until active documents are synchronized, the dedicated K1-4 branch exists, and the Trellis task is explicitly started.
@@ -34,7 +36,7 @@
 - Produces `CORE_KERNEL_STARTUP_MANIFEST` with modules `core.commands` and `core.selectors`.
 - Produces internal compiled entries `core.commands.v1` and `core.selectors.v1`; this symbol is not exported from the Core public root.
 
-- [ ] **Step 1: Write the failing catalog contract test**
+- [x] **Step 1: Write the failing catalog contract test**
 
 ```typescript
 import { test } from "node:test";
@@ -75,13 +77,13 @@ test("default startup manifest is deeply frozen and owns two compiled entries", 
 });
 ```
 
-- [ ] **Step 2: Confirm the test is red**
+- [x] **Step 2: Confirm the test is red**
 
 Run: `npm run typecheck`
 
 Expected: FAIL because `src/core-kernel/registry/builtins.ts` does not exist.
 
-- [ ] **Step 3: Add the exact contract unions and built-in descriptors**
+- [x] **Step 3: Add the exact contract unions and built-in descriptors**
 
 Implement the signatures in `design.md` verbatim. Build command entries from `CORE_COMMAND_DEFINITIONS`; define selector entries with these exact metadata values:
 
@@ -111,7 +113,7 @@ const COMMAND_TITLE_KEYS = {
 
 Deep-freeze the public manifest and every descriptor/array. Keep compiled selector functions and command definitions inside non-public entry records.
 
-- [ ] **Step 4: Verify catalog contracts**
+- [x] **Step 4: Verify catalog contracts**
 
 Run: `npm run build`
 
@@ -119,7 +121,7 @@ Run: `node --test dist/test/core-kernel/registry-contracts.test.js`
 
 Expected: PASS, one test.
 
-- [ ] **Step 5: Commit the contract slice**
+- [x] **Step 5: Commit the contract slice**
 
 ```powershell
 git add src/core-kernel/registry/contracts.ts src/core-kernel/registry/builtins.ts test/core-kernel/registry-contracts.test.ts
@@ -134,6 +136,8 @@ git commit -m "feat(core): define k1-4 registry contracts"
 
 - Create: `src/core-kernel/registry/strict-codec.ts`
 - Create: `src/core-kernel/registry/runtime.ts`
+- Modify: `src/core-kernel/registry/contracts.ts`
+- Modify: `src/core-kernel/registry/builtins.ts`
 - Modify: `test/core-kernel/registry-contracts.test.ts`
 
 **Interfaces:**
@@ -143,7 +147,7 @@ git commit -m "feat(core): define k1-4 registry contracts"
 
 - [ ] **Step 1: Add the strict-rejection matrix before the factory exists**
 
-Add table-driven tests for `undefined`, primitives, extra/missing fields, wrong versions/unions, empty IDs, duplicate capabilities/entry IDs/module IDs, accessors, throwing proxies, and sparse arrays. Include the sparse-array fast-fail shape:
+Add table-driven tests for `undefined`, primitives, extra/missing fields, wrong versions/unions, empty/unsafe/overlength IDs, duplicate capabilities/entry IDs/module IDs, accessors, throwing proxies, and sparse arrays. Safe unknown registration-entry IDs must reach `registry.registration-entry-not-found`; unsafe path/URL/control/script-like IDs must fail as `registry.invalid-startup-input`. Include the sparse-array fast-fail shape:
 
 ```typescript
 const sparseModules: unknown[] = [];
@@ -173,9 +177,9 @@ Add focused assertions for:
 
 - [ ] **Step 2: Confirm red state**
 
-Run: `npm run typecheck`
+Run: `npm run build`, then the focused Registry test through a temporary test-only dynamic loader.
 
-Expected: FAIL because `createKernelRegistry` and `KernelRegistry` are not implemented.
+Expected: build succeeds and the behavioral test fails because `createKernelRegistry` / `KernelRegistry` are unavailable; compiler/import errors do not count as RED.
 
 - [ ] **Step 3: Implement fail-closed manifest decoding**
 
@@ -202,7 +206,7 @@ export function createKernelRegistry(manifest: unknown): KernelRegistryCreationR
 }
 ```
 
-Use a private construction token. Resolve each entry only from the compiled table; require owner equality and `command:register` or `selector:register`; reject global duplicate contribution IDs and descriptor/handler kind mismatch. Construct no Registry before all checks finish.
+Use a private construction token. Resolve each entry only from the compiled table; require owner equality and `command:register` or `selector:register`; reject global duplicate contribution IDs and descriptor/handler kind mismatch. Construct no Registry before all checks finish. Keep a package-internal pure `buildRegistryCandidate(manifest, compiledRegistrationEntries)` seam so tests can inject malformed compiled fixtures and cover duplicate-contribution, invalid-contribution, handler-mismatch, and internal-error branches; the public factory always passes the frozen built-in table.
 
 - [ ] **Step 5: Verify focused factory behavior and unchanged prior tests**
 

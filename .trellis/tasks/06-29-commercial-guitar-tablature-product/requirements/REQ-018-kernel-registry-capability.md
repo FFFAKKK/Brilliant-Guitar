@@ -1,6 +1,6 @@
 # REQ-018 内核注册表与能力边界
 
-> **状态：APPROVED K1-4 PLANNING / IMPLEMENTATION NOT STARTED（2026-07-17）。** 权威 PRD、设计与实施计划位于 `.trellis/tasks/07-16-k1-4-registry-capability-startup-registration/`。实现仍须等待活动文档收口、独立 `codex/k1-4-*` 分支和显式 Trellis task start。
+> **状态：K1-4 IMPLEMENTATION IN PROGRESS（2026-07-18）。** 权威 PRD、设计与实施计划位于 `.trellis/tasks/07-16-k1-4-registry-capability-startup-registration/`。Task 1 已在 `029fb5c` 完成并通过 104/104 测试；Tasks 2–6 待完成。
 
 ## 用户价值
 
@@ -14,7 +14,7 @@
 
 ## 当前决策状态
 
-- 状态: K1-4 规划已于 2026-07-17 获用户批准；生产实现未启动。
+- 状态: K1-4 规划已于 2026-07-17 获用户批准；实现进行中，Task 1 已完成，Tasks 2–6 待完成。
 - 批准方向: 启动期原子 frozen Registry、`command | selector` 两类贡献、七个互不蕴含的 capability、capability-scoped gateway、最小 summary 和 K1-4 本地失败合同。
 - 对应 spec: `specs/SPEC-015-kernel-registry-capability.md`。
 - 关联错误契约: K1-4 拥有封闭 startup/access failure union；K1-5 可映射但不得改名或改义。
@@ -53,7 +53,7 @@ MVP 真正必要的功能:
 
 业务规则:
 
-- module/contribution id 必须稳定且唯一，结果排序不依赖 manifest 顺序。
+- module/contribution id 必须稳定且唯一，结果排序不依赖 manifest 顺序；manifest 提供的 module/entry id 长度为 1–128，并匹配 `^[a-z0-9]+(?:[.-][a-z0-9]+)*$`。
 - K1-4 只接受 manifest-bound `official + builtin/internal-module + system-trusted`。
 - capability 互不蕴含；缺少任一 required capability 必须拒绝。
 - registry 不是谱面写入口；所有写入仍走现有语义命令事务。
