@@ -2,7 +2,7 @@
 
 > **状态：K1-4 实现进行中（2026-07-18）。** 权威规划为
 > `.trellis/tasks/07-16-k1-4-registry-capability-startup-registration/`。
-> Task 1 已在 `029fb5c` 完成并通过 104/104 测试；Tasks 2–6 待完成。
+> Tasks 1–2 已在 `029fb5c`、`2766008` 完成，Task 2 基线通过 110/110 测试；Tasks 3–6 待完成。
 
 ## 1. Scope / Trigger
 

@@ -1,7 +1,7 @@
 # Core Kernel Backend Guidelines
 
 > **Current K1-4 implementation stage (2026-07-18):** K1-1 through K1-3 are accepted
-> foundations. K1-4 Task 1 is fixed at `029fb5c`; Tasks 2–6 remain pending.
+> foundations. K1-4 Tasks 1–2 are fixed at `029fb5c` and `2766008`; Tasks 3–6 remain pending.
 
 > Coding rules for the Pure Core Kernel V1 implementation.
 

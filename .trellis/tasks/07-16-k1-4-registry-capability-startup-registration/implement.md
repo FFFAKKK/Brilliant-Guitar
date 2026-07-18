@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript 5.8, Node test runner, existing Core strict-codec/deep-freeze patterns, no runtime dependencies.
 
-**Current status:** Task 1 completed at `029fb5c` with 104/104 tests passing. Task 2 is the next implementation slice; Tasks 3–6 remain pending.
+**Current status:** Task 1 completed at `029fb5c`. Task 2 completed at `2766008` with 110/110 tests passing. Task 3 is the next implementation slice; Tasks 4–6 remain pending.
 
 ## Global Constraints
 
@@ -145,7 +145,7 @@ git commit -m "feat(core): define k1-4 registry contracts"
 - Consumes `KernelStartupModuleManifest`, compiled entry IDs, and startup failures from Task 1.
 - Produces `createKernelRegistry(manifest: unknown): KernelRegistryCreationResult` and opaque `KernelRegistry` candidate state.
 
-- [ ] **Step 1: Add the strict-rejection matrix before the factory exists**
+- [x] **Step 1: Add the strict-rejection matrix before the factory exists**
 
 Add table-driven tests for `undefined`, primitives, extra/missing fields, wrong versions/unions, empty/unsafe/overlength IDs, duplicate capabilities/entry IDs/module IDs, accessors, throwing proxies, and sparse arrays. Safe unknown registration-entry IDs must reach `registry.registration-entry-not-found`; unsafe path/URL/control/script-like IDs must fail as `registry.invalid-startup-input`. Include the sparse-array fast-fail shape:
 
@@ -175,19 +175,19 @@ Add focused assertions for:
 "registry.capability-denied"
 ```
 
-- [ ] **Step 2: Confirm red state**
+- [x] **Step 2: Confirm red state**
 
 Run: `npm run build`, then the focused Registry test through a temporary test-only dynamic loader.
 
 Expected: build succeeds and the behavioral test fails because `createKernelRegistry` / `KernelRegistry` are unavailable; compiler/import errors do not count as RED.
 
-- [ ] **Step 3: Implement fail-closed manifest decoding**
+- [x] **Step 3: Implement fail-closed manifest decoding**
 
 Reuse the K1-2 strict-codec rules without importing its private helpers: inspect own property descriptors, require enumerable data properties and exact keys, inspect `Reflect.ownKeys()` before iterating declared array length, reject holes/extra keys, clone accepted values, and wrap the full decoder in `try/catch`.
 
 Normalize accepted module capabilities and registration IDs lexically. Reject duplicate values before normalization. Do not retain the caller's manifest or arrays.
 
-- [ ] **Step 4: Implement candidate validation and all-or-nothing construction**
+- [x] **Step 4: Implement candidate validation and all-or-nothing construction**
 
 In `createKernelRegistry`:
 
@@ -208,7 +208,7 @@ export function createKernelRegistry(manifest: unknown): KernelRegistryCreationR
 
 Use a private construction token. Resolve each entry only from the compiled table; require owner equality and `command:register` or `selector:register`; reject global duplicate contribution IDs and descriptor/handler kind mismatch. Construct no Registry before all checks finish. Keep a package-internal pure `buildRegistryCandidate(manifest, compiledRegistrationEntries)` seam so tests can inject malformed compiled fixtures and cover duplicate-contribution, invalid-contribution, handler-mismatch, and internal-error branches; the public factory always passes the frozen built-in table.
 
-- [ ] **Step 5: Verify focused factory behavior and unchanged prior tests**
+- [x] **Step 5: Verify focused factory behavior and unchanged prior tests**
 
 Run: `npm run build`
 
@@ -216,7 +216,7 @@ Run: `node --test dist/test/core-kernel/registry-contracts.test.js dist/test/cor
 
 Expected: all focused, command, and read tests pass.
 
-- [ ] **Step 6: Commit the atomic factory slice**
+- [x] **Step 6: Commit the atomic factory slice**
 
 ```powershell
 git add src/core-kernel/registry/strict-codec.ts src/core-kernel/registry/runtime.ts test/core-kernel/registry-contracts.test.ts
