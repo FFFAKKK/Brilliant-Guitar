@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript 5.8, Node test runner, existing Core strict-codec/deep-freeze patterns, no runtime dependencies.
 
-**Current status:** Tasks 1–3 completed at `029fb5c`, `2766008`, and `95fe452`, with 113/113 tests passing at the Task 3 baseline. Task 4 is the next implementation slice; Tasks 5–6 remain pending.
+**Current status:** Tasks 1–4 completed at `029fb5c`, `2766008`, `95fe452`, and `1df9b37`, with 117/117 tests passing at the Task 4 baseline. Task 5 is the next implementation slice; Task 6 remains pending.
 
 ## Global Constraints
 
@@ -308,13 +308,13 @@ git commit -m "feat(core): expose capability scoped registry summary"
 - Consumes the six existing selector functions and current `KernelReadState`.
 - Produces strict `KernelModuleGateway.select(input: unknown): KernelGatewayResult<CoreSelectorResult>` with six typed overloads.
 
-- [ ] **Step 1: Add red tests for all selectors and authorization order**
+- [x] **Step 1: Add red tests for all selectors and authorization order**
 
 Declare modules with: both selector capabilities, only `selector:execute`, only `score:read`, and neither. Assert both capabilities are required and the first missing capability is deterministic.
 
 For the fully authorized module, compare each gateway result to direct selector execution for metadata, entity, ownership, range, history, and dirty. Add invalid request, extra-field, unknown selector, command-ID-as-selector, and manifest-without-selector-entry cases.
 
-- [ ] **Step 2: Confirm red state**
+- [x] **Step 2: Confirm red state**
 
 Run: `npm run build`
 
@@ -322,13 +322,13 @@ Run: `node --test dist/test/core-kernel/registry-gateway.test.js`
 
 Expected: FAIL because `select` is absent.
 
-- [ ] **Step 3: Implement strict selector-request dispatch**
+- [x] **Step 3: Implement strict selector-request dispatch**
 
 Decode exact request keys by selector ID. Check method capabilities before decoding. Resolve the contribution and require `kind === "selector"`; return `registry.contribution-not-found`, `registry.contribution-kind-mismatch`, or `registry.invalid-invocation` as appropriate.
 
 Call `commandBus.read()` once. Route snapshot selectors to `read.value.snapshot` and read-state selectors to the full `read.value`. If `CommandBus.read()` returns failure, return that unchanged as the authorized selector result. Call only the private built-in selector adapter and catch unexpected exceptions as `registry.internal-error`.
 
-- [ ] **Step 4: Verify selector parity**
+- [x] **Step 4: Verify selector parity**
 
 Run: `npm run build`
 
@@ -336,7 +336,7 @@ Run: `node --test dist/test/core-kernel/registry-gateway.test.js dist/test/core-
 
 Expected: all tests pass and direct selector fixtures remain unchanged.
 
-- [ ] **Step 5: Commit selector dispatch**
+- [x] **Step 5: Commit selector dispatch**
 
 ```powershell
 git add src/core-kernel/registry/strict-codec.ts src/core-kernel/registry/runtime.ts test/core-kernel/registry-gateway.test.ts
