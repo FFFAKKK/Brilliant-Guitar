@@ -1,6 +1,9 @@
 import { CORE_COMMAND_DEFINITIONS } from "../commands/catalog";
 import { CommandBus } from "../commands/command-bus";
+import type { CommandResult } from "../commands/contracts";
+import { decodeCoreCommand } from "../commands/strict-codec";
 import type { ScoreMetadata } from "../domain/score-document";
+import type { EventSubscriptionResult } from "../events/contracts";
 import { deepFreezeValue } from "../read/deep-freeze";
 import type {
   KernelHistoryState,
@@ -182,6 +185,100 @@ export class KernelModuleGateway {
     }
   }
 
+  submit(input: unknown): KernelGatewayResult<CommandResult> {
+    try {
+      const state = GATEWAY_STATES.get(this);
+      if (state === undefined) {
+        return gatewayRejected({ code: "registry.invalid-invocation" });
+      }
+      const methodDenied = requireCapabilities(state.module, [
+        "command:execute",
+      ]);
+      if (methodDenied !== undefined) {
+        return gatewayRejected(methodDenied);
+      }
+      const decoded = decodeCoreCommand(input);
+      if (decoded.ok) {
+        const contribution = state.registry.contributions.find(
+          ({ descriptor }) => descriptor.id === decoded.value.commandId,
+        );
+        if (contribution === undefined) {
+          return gatewayRejected({
+            code: "registry.contribution-not-found",
+            contributionId: decoded.value.commandId,
+          });
+        }
+        if (!isCommandContribution(contribution)) {
+          return gatewayRejected({
+            code: "registry.contribution-kind-mismatch",
+            contributionId: decoded.value.commandId,
+          });
+        }
+        const contributionDenied = requireCapabilities(
+          state.module,
+          contribution.descriptor.requiredCapabilities,
+        );
+        if (contributionDenied !== undefined) {
+          return gatewayRejected(contributionDenied);
+        }
+      }
+      return { status: "authorized", value: state.commandBus.submit(input) };
+    } catch {
+      return gatewayRejected({ code: "registry.internal-error" });
+    }
+  }
+
+  undo(): KernelGatewayResult<CommandResult> {
+    try {
+      const state = GATEWAY_STATES.get(this);
+      if (state === undefined) {
+        return gatewayRejected({ code: "registry.invalid-invocation" });
+      }
+      const denied = requireCapabilities(state.module, ["command:execute"]);
+      if (denied !== undefined) {
+        return gatewayRejected(denied);
+      }
+      return { status: "authorized", value: state.commandBus.undo() };
+    } catch {
+      return gatewayRejected({ code: "registry.internal-error" });
+    }
+  }
+
+  redo(): KernelGatewayResult<CommandResult> {
+    try {
+      const state = GATEWAY_STATES.get(this);
+      if (state === undefined) {
+        return gatewayRejected({ code: "registry.invalid-invocation" });
+      }
+      const denied = requireCapabilities(state.module, ["command:execute"]);
+      if (denied !== undefined) {
+        return gatewayRejected(denied);
+      }
+      return { status: "authorized", value: state.commandBus.redo() };
+    } catch {
+      return gatewayRejected({ code: "registry.internal-error" });
+    }
+  }
+
+  subscribe(handler: unknown): KernelGatewayResult<EventSubscriptionResult> {
+    try {
+      const state = GATEWAY_STATES.get(this);
+      if (state === undefined) {
+        return gatewayRejected({ code: "registry.invalid-invocation" });
+      }
+      const denied = requireCapabilities(state.module, ["event:subscribe"]);
+      if (denied !== undefined) {
+        return gatewayRejected(denied);
+      }
+      return {
+        status: "authorized",
+        value: state.commandBus.subscribe(handler),
+      };
+    } catch {
+      return gatewayRejected({ code: "registry.internal-error" });
+    }
+  }
+
   select(
     input: Extract<
       CoreSelectorRequest,
@@ -273,6 +370,12 @@ export class KernelModuleGateway {
       return gatewayRejected({ code: "registry.internal-error" });
     }
   }
+}
+
+function isCommandContribution(
+  contribution: CoreCompiledContribution,
+): contribution is CompiledCommandContribution {
+  return contribution.descriptor.kind === "command";
 }
 
 function isSelectorContribution(

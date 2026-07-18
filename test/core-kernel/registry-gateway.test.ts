@@ -2,6 +2,10 @@ import { test } from "node:test";
 import assert = require("node:assert/strict");
 
 import { CommandBus } from "../../src/core-kernel/commands/command-bus";
+import type {
+  EventSubscriptionResult,
+  KernelEvent,
+} from "../../src/core-kernel/events/contracts";
 import {
   CORE_COMPILED_REGISTRATION_ENTRIES,
 } from "../../src/core-kernel/registry/builtins";
@@ -171,6 +175,79 @@ function createSelectorManifest(
   addConsumerModule(manifest, "internal.selector-read-only", ["score:read"]);
   addConsumerModule(manifest, "internal.selector-none", []);
   return manifest;
+}
+
+function createCommandEventManifest(
+  includeCommandRegistration: boolean = true,
+): TestManifest {
+  const manifest = createManifest(false, false);
+  const commandOwner = manifest.modules.find(
+    ({ moduleId }) => moduleId === "core.commands",
+  );
+  if (commandOwner === undefined) {
+    throw new Error("expected core.commands fixture module");
+  }
+  commandOwner.registrationEntryIds = includeCommandRegistration
+    ? ["core.commands.v1"]
+    : [];
+  addConsumerModule(manifest, "internal.command-full", ["command:execute"]);
+  addConsumerModule(manifest, "internal.command-none", []);
+  addConsumerModule(manifest, "internal.events", ["event:subscribe"]);
+  addConsumerModule(manifest, "internal.events-none", []);
+  return manifest;
+}
+
+function command(
+  commandId: string,
+  target: unknown,
+  payload: unknown,
+): unknown {
+  return { commandVersion: 1, commandId, target, payload };
+}
+
+function setPitch(step: "C" | "D"): unknown {
+  return command(
+    "core.note.set-written-pitch",
+    { kind: "note", noteId: "note-1" },
+    { writtenPitch: { step, alter: 0, octave: 4 } },
+  );
+}
+
+function setMetadata(title: string): unknown {
+  return command(
+    "core.document.set-metadata",
+    { kind: "document", documentId: "score-1" },
+    {
+      metadata: {
+        title,
+        authors: ["Brilliant Guitar"],
+        tempo: { bpm: 120 },
+      },
+    },
+  );
+}
+
+function setNoteValue(base: 2 | 4): unknown {
+  return command(
+    "core.event.set-note-value",
+    { kind: "event", eventId: "event-1" },
+    { noteValue: { base, dots: 0 } },
+  );
+}
+
+function requireSubscription(
+  result: EventSubscriptionResult,
+): () => void {
+  if (result.status !== "subscribed") {
+    throw new Error(`expected subscription: ${result.failure.code}`);
+  }
+  return result.unsubscribe;
+}
+
+function collectEvents(bus: CommandBus): KernelEvent[] {
+  const events: KernelEvent[] = [];
+  requireSubscription(bus.subscribe((event: KernelEvent) => events.push(event)));
+  return events;
 }
 
 function requireReadState(bus: CommandBus): KernelReadState {
@@ -603,4 +680,314 @@ test("selector dispatch preserves read failures and contains read exceptions", (
     },
   );
   assert.equal(throwingReadCalls, 1);
+});
+
+test("authorized command gateway preserves direct results, state, and events", () => {
+  const registry = requireRegistry(createCommandEventManifest());
+  const cases: readonly (readonly [string, unknown])[] = [
+    ["committed", setPitch("D")],
+    ["no-op", setPitch("C")],
+    ["semantic-rejected", setNoteValue(2)],
+    ["malformed", { commandVersion: 1 }],
+    [
+      "unknown-id",
+      command(
+        "core.command.missing",
+        { kind: "note", noteId: "note-1" },
+        { writtenPitch: { step: "D", alter: 0, octave: 4 } },
+      ),
+    ],
+  ];
+
+  for (const [label, input] of cases) {
+    const directBus = requireBus();
+    const gatewayBus = requireBus();
+    const directEvents = collectEvents(directBus);
+    const gatewayEvents = collectEvents(gatewayBus);
+    const gateway = requireGateway(
+      registry,
+      "internal.command-full",
+      gatewayBus,
+    );
+
+    const direct = directBus.submit(input);
+    const throughGateway = gateway.submit(input);
+    assert.deepEqual(
+      throughGateway,
+      { status: "authorized", value: direct },
+      label,
+    );
+    assert.deepEqual(
+      requireReadState(gatewayBus),
+      requireReadState(directBus),
+      label,
+    );
+    assert.deepEqual(gatewayEvents, directEvents, label);
+  }
+});
+
+test("command authorization and registered contribution checks precede mutation", () => {
+  const registry = requireRegistry(createCommandEventManifest());
+  const deniedBus = requireBus();
+  const deniedEvents = collectEvents(deniedBus);
+  const denied = requireGateway(
+    registry,
+    "internal.command-none",
+    deniedBus,
+  );
+  const before = requireReadState(deniedBus);
+  let ownKeyReads = 0;
+  const poisonedInput = new Proxy(
+    {},
+    {
+      ownKeys(): never {
+        ownKeyReads += 1;
+        throw new Error("denied command input must not be decoded");
+      },
+    },
+  );
+  const deniedFailure = {
+    status: "rejected",
+    failure: {
+      code: "registry.capability-denied",
+      moduleId: "internal.command-none",
+      capability: "command:execute",
+    },
+  };
+
+  assert.deepEqual(denied.submit(poisonedInput), deniedFailure);
+  assert.deepEqual(denied.undo(), deniedFailure);
+  assert.deepEqual(denied.redo(), deniedFailure);
+  assert.equal(ownKeyReads, 0);
+  assert.deepEqual(requireReadState(deniedBus), before);
+  assert.deepEqual(deniedEvents, []);
+
+  const missingRegistry = requireRegistry(createCommandEventManifest(false));
+  const missingBus = requireBus();
+  const missingEvents = collectEvents(missingBus);
+  const missing = requireGateway(
+    missingRegistry,
+    "internal.command-full",
+    missingBus,
+  );
+  const missingBefore = requireReadState(missingBus);
+
+  assert.deepEqual(missing.submit(setPitch("D")), {
+    status: "rejected",
+    failure: {
+      code: "registry.contribution-not-found",
+      contributionId: "core.note.set-written-pitch",
+    },
+  });
+  assert.deepEqual(requireReadState(missingBus), missingBefore);
+  assert.deepEqual(missingEvents, []);
+
+  const malformed = missing.submit({ commandVersion: 1 });
+  assert.equal(malformed.status, "authorized");
+  assert.equal(malformed.value?.status, "rejected");
+  if (malformed.value?.status === "rejected") {
+    assert.deepEqual(malformed.value.failure, {
+      code: "command.invalid-envelope",
+    });
+  }
+  const unknown = missing.submit(
+    command("core.command.missing", { kind: "note", noteId: "note-1" }, {}),
+  );
+  assert.equal(unknown.status, "authorized");
+  assert.equal(unknown.value?.status, "rejected");
+  if (unknown.value?.status === "rejected") {
+    assert.deepEqual(unknown.value.failure, { code: "command.unknown-id" });
+  }
+  assert.deepEqual(requireReadState(missingBus), missingBefore);
+  assert.deepEqual(missingEvents, []);
+});
+
+test("gateway undo and redo remain deeply equal to trusted host history", () => {
+  const registry = requireRegistry(createCommandEventManifest());
+  const directBus = requireBus();
+  const gatewayBus = requireBus();
+  const directEvents = collectEvents(directBus);
+  const gatewayEvents = collectEvents(gatewayBus);
+  const gateway = requireGateway(
+    registry,
+    "internal.command-full",
+    gatewayBus,
+  );
+
+  const directSubmit = directBus.submit(setPitch("D"));
+  assert.deepEqual(gateway.submit(setPitch("D")), {
+    status: "authorized",
+    value: directSubmit,
+  });
+
+  const directUndo = directBus.undo();
+  assert.deepEqual(gateway.undo(), {
+    status: "authorized",
+    value: directUndo,
+  });
+  assert.deepEqual(requireReadState(gatewayBus), requireReadState(directBus));
+
+  const directRedo = directBus.redo();
+  assert.deepEqual(gateway.redo(), {
+    status: "authorized",
+    value: directRedo,
+  });
+  assert.deepEqual(requireReadState(gatewayBus), requireReadState(directBus));
+  assert.deepEqual(gatewayEvents, directEvents);
+  assert.equal(JSON.stringify(gatewayEvents).includes("moduleId"), false);
+});
+
+test("event gateway independently preserves validation, order, and unsubscribe", () => {
+  const registry = requireRegistry(createCommandEventManifest());
+  const bus = requireBus();
+  const authorized = requireGateway(registry, "internal.events", bus);
+  const denied = requireGateway(registry, "internal.events-none", bus);
+
+  assert.deepEqual(denied.subscribe(null), {
+    status: "rejected",
+    failure: {
+      code: "registry.capability-denied",
+      moduleId: "internal.events-none",
+      capability: "event:subscribe",
+    },
+  });
+  assert.deepEqual(authorized.subscribe(null), {
+    status: "authorized",
+    value: {
+      status: "rejected",
+      failure: { code: "event.invalid-handler" },
+    },
+  });
+
+  assert.equal(bus.submit(setMetadata("Seed dirty")).status, "committed");
+  const calls: string[] = [];
+  const first = authorized.subscribe(() => calls.push("first"));
+  const second = authorized.subscribe(() => calls.push("second"));
+  assert.equal(first.status, "authorized");
+  assert.equal(second.status, "authorized");
+  if (first.status !== "authorized" || second.status !== "authorized") {
+    return;
+  }
+  const unsubscribeFirst = requireSubscription(first.value);
+  const unsubscribeSecond = requireSubscription(second.value);
+
+  assert.equal(bus.submit(setPitch("D")).status, "committed");
+  assert.deepEqual(calls, ["first", "second"]);
+  unsubscribeFirst();
+  unsubscribeFirst();
+  assert.equal(bus.submit(setMetadata("Next")).status, "committed");
+  assert.deepEqual(calls, ["first", "second", "second"]);
+  unsubscribeSecond();
+});
+
+test("event gateway retains synchronous, Promise, and thenable isolation", async () => {
+  const registry = requireRegistry(createCommandEventManifest());
+  const bus = requireBus();
+  assert.equal(bus.submit(setMetadata("Seed async dirty")).status, "committed");
+  const gateway = requireGateway(registry, "internal.events", bus);
+  const calls: string[] = [];
+  const unhandledRejections: unknown[] = [];
+  let thenableObserved = false;
+  const onUnhandledRejection = (reason: unknown) => {
+    unhandledRejections.push(reason);
+  };
+  process.on("unhandledRejection", onUnhandledRejection);
+
+  try {
+    const handlers: readonly (() => unknown)[] = [
+      () => {
+        calls.push("sync-throw");
+        throw new Error("sync gateway subscriber must stay isolated");
+      },
+      async () => {
+        calls.push("async-throw");
+        throw new Error("async gateway subscriber must stay isolated");
+      },
+      () => {
+        calls.push("promise-reject");
+        return Promise.reject(
+          new Error("gateway subscriber rejection must stay isolated"),
+        );
+      },
+      () => {
+        calls.push("thenable");
+        return {
+          then(
+            _resolve: (value: unknown) => void,
+            reject: (reason: unknown) => void,
+          ): void {
+            thenableObserved = true;
+            reject(new Error("gateway thenable must stay isolated"));
+          },
+        };
+      },
+      () => {
+        calls.push("later");
+      },
+    ];
+    for (const handler of handlers) {
+      const subscribed = gateway.subscribe(handler);
+      assert.equal(subscribed.status, "authorized");
+      if (subscribed.status === "authorized") {
+        requireSubscription(subscribed.value);
+      }
+    }
+
+    assert.equal(bus.submit(setPitch("D")).status, "committed");
+    assert.deepEqual(calls, [
+      "sync-throw",
+      "async-throw",
+      "promise-reject",
+      "thenable",
+      "later",
+    ]);
+    assert.equal(requireReadState(bus).snapshot.documentVersion, 2);
+
+    await new Promise<void>((resolve) => setImmediate(resolve));
+
+    assert.equal(thenableObserved, true);
+    assert.deepEqual(unhandledRejections, []);
+    assert.equal(requireReadState(bus).snapshot.documentVersion, 2);
+  } finally {
+    process.removeListener("unhandledRejection", onUnhandledRejection);
+  }
+});
+
+test("command and subscription gateway exceptions collapse to Registry failures", () => {
+  const registry = requireRegistry(createCommandEventManifest());
+
+  for (const [method, invoke] of [
+    [
+      "submit",
+      (gateway: KernelModuleGateway) => gateway.submit(setPitch("D")),
+    ],
+    ["undo", (gateway: KernelModuleGateway) => gateway.undo()],
+    ["redo", (gateway: KernelModuleGateway) => gateway.redo()],
+  ] as const) {
+    const bus = requireBus();
+    Object.defineProperty(bus, method, {
+      configurable: true,
+      value(): never {
+        throw new Error("raw CommandBus failure must not escape");
+      },
+    });
+    const gateway = requireGateway(registry, "internal.command-full", bus);
+    assert.deepEqual(invoke(gateway), {
+      status: "rejected",
+      failure: { code: "registry.internal-error" },
+    });
+  }
+
+  const eventBus = requireBus();
+  Object.defineProperty(eventBus, "subscribe", {
+    configurable: true,
+    value(): never {
+      throw new Error("raw subscription failure must not escape");
+    },
+  });
+  const eventGateway = requireGateway(registry, "internal.events", eventBus);
+  assert.deepEqual(eventGateway.subscribe(() => {}), {
+    status: "rejected",
+    failure: { code: "registry.internal-error" },
+  });
 });
