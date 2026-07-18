@@ -1,13 +1,7 @@
-import type { CommandBus } from "../commands/command-bus";
-import type {
-  CommandResult,
-  ScoreEntityTarget,
-} from "../commands/contracts";
+import type { ScoreEntityTarget } from "../commands/contracts";
 import type { ScoreMetadata } from "../domain/score-document";
-import type { EventSubscriptionResult } from "../events/contracts";
 import type {
   KernelHistoryState,
-  KernelReadState,
   ReadResult,
   ScoreEntityOwnership,
   ScoreRangeSelection,
@@ -37,13 +31,17 @@ export type CoreModuleRegistrationEntryId =
   | "core.commands.v1"
   | "core.selectors.v1";
 
-export interface KernelStartupModuleDeclaration {
+export interface KernelModuleIdentity {
   readonly moduleId: string;
   readonly origin: KernelModuleOrigin;
   readonly runtime: KernelModuleRuntime;
   readonly trustLevel: KernelTrustLevel;
   readonly apiVersion: KernelRegistryApiVersion;
   readonly capabilities: readonly KernelCapability[];
+}
+
+export interface KernelStartupModuleDeclaration
+  extends KernelModuleIdentity {
   readonly registrationEntryIds: readonly CoreModuleRegistrationEntryId[];
 }
 
@@ -176,64 +174,3 @@ export type KernelRegistryAccessFailure =
 export type KernelGatewayResult<T> =
   | { readonly status: "authorized"; readonly value: T }
   | { readonly status: "rejected"; readonly failure: KernelRegistryAccessFailure };
-
-export interface KernelModuleGateway {
-  summary(): KernelGatewayResult<RegistrySummary>;
-  read(): KernelGatewayResult<ReadResult<KernelReadState>>;
-  submit(input: unknown): KernelGatewayResult<CommandResult>;
-  undo(): KernelGatewayResult<CommandResult>;
-  redo(): KernelGatewayResult<CommandResult>;
-  select(
-    input: Extract<
-      CoreSelectorRequest,
-      { readonly selectorId: "core.selector.score-metadata" }
-    >,
-  ): KernelGatewayResult<ReadResult<ScoreMetadata>>;
-  select(
-    input: Extract<
-      CoreSelectorRequest,
-      { readonly selectorId: "core.selector.score-entity" }
-    >,
-  ): KernelGatewayResult<ReadResult<SelectedScoreEntity>>;
-  select(
-    input: Extract<
-      CoreSelectorRequest,
-      { readonly selectorId: "core.selector.score-entity-ownership" }
-    >,
-  ): KernelGatewayResult<ReadResult<ScoreEntityOwnership>>;
-  select(
-    input: Extract<
-      CoreSelectorRequest,
-      { readonly selectorId: "core.selector.score-range" }
-    >,
-  ): KernelGatewayResult<ReadResult<ScoreRangeSelection>>;
-  select(
-    input: Extract<
-      CoreSelectorRequest,
-      { readonly selectorId: "core.selector.history-state" }
-    >,
-  ): KernelGatewayResult<ReadResult<KernelHistoryState>>;
-  select(
-    input: Extract<
-      CoreSelectorRequest,
-      { readonly selectorId: "core.selector.dirty-state" }
-    >,
-  ): KernelGatewayResult<ReadResult<boolean>>;
-  select(input: unknown): KernelGatewayResult<CoreSelectorResult>;
-  subscribe(handler: unknown): KernelGatewayResult<EventSubscriptionResult>;
-}
-
-export interface KernelRegistry {
-  createGateway(
-    moduleId: string,
-    commandBus: CommandBus,
-  ): KernelModuleGatewayCreationResult;
-}
-
-export type KernelRegistryCreationResult =
-  | { readonly ok: true; readonly registry: KernelRegistry }
-  | { readonly ok: false; readonly failure: KernelRegistryStartupFailure };
-
-export type KernelModuleGatewayCreationResult =
-  | { readonly ok: true; readonly gateway: KernelModuleGateway }
-  | { readonly ok: false; readonly failure: KernelRegistryAccessFailure };

@@ -30,43 +30,6 @@ const COMMAND_TITLE_KEYS: Readonly<Record<CoreCommandId, string>> = {
   "core.event.remove": "core.command.remove-event.title",
 };
 
-const CORE_SELECTOR_DEFINITIONS = [
-  [
-    "core.selector.score-metadata",
-    "snapshot",
-    "core.selector.score-metadata.title",
-  ],
-  [
-    "core.selector.score-entity",
-    "snapshot",
-    "core.selector.score-entity.title",
-  ],
-  [
-    "core.selector.score-entity-ownership",
-    "snapshot",
-    "core.selector.score-entity-ownership.title",
-  ],
-  [
-    "core.selector.score-range",
-    "snapshot",
-    "core.selector.score-range.title",
-  ],
-  [
-    "core.selector.history-state",
-    "read-state",
-    "core.selector.history-state.title",
-  ],
-  [
-    "core.selector.dirty-state",
-    "read-state",
-    "core.selector.dirty-state.title",
-  ],
-] as const satisfies readonly (readonly [
-  CoreSelectorId,
-  "snapshot" | "read-state",
-  string,
-])[];
-
 const COMMAND_REQUIRED_CAPABILITIES = deepFreezeValue([
   "command:execute",
 ] as const);
@@ -84,70 +47,101 @@ type SelectorContributionDescriptor = Extract<
   RegistryContributionSummary,
   { readonly kind: "selector" }
 >;
+type SnapshotSelectorDescriptor = SelectorContributionDescriptor & {
+  readonly inputKind: "snapshot";
+};
+type ReadStateSelectorDescriptor = SelectorContributionDescriptor & {
+  readonly inputKind: "read-state";
+};
 
 export interface CompiledCommandContribution {
   readonly descriptor: CommandContributionDescriptor;
   readonly commandDefinition: CoreCommandDefinition;
 }
 
-export type CompiledSelectorHandler = (
-  input: DocumentSnapshot | KernelReadState,
+export type CompiledSnapshotSelectorHandler = (
+  input: DocumentSnapshot,
   request: CoreSelectorRequest,
 ) => CoreSelectorResult;
 
-export interface CompiledSelectorContribution {
-  readonly descriptor: SelectorContributionDescriptor;
-  readonly selector: CompiledSelectorHandler;
+export type CompiledReadStateSelectorHandler = (
+  input: KernelReadState,
+  request: CoreSelectorRequest,
+) => CoreSelectorResult;
+
+export interface CompiledSnapshotSelectorContribution {
+  readonly descriptor: SnapshotSelectorDescriptor;
+  readonly inputKind: "snapshot";
+  readonly selector: CompiledSnapshotSelectorHandler;
 }
+
+export interface CompiledReadStateSelectorContribution {
+  readonly descriptor: ReadStateSelectorDescriptor;
+  readonly inputKind: "read-state";
+  readonly selector: CompiledReadStateSelectorHandler;
+}
+
+export type CompiledSelectorContribution =
+  | CompiledSnapshotSelectorContribution
+  | CompiledReadStateSelectorContribution;
 
 export type CoreCompiledContribution =
   | CompiledCommandContribution
   | CompiledSelectorContribution;
 
-export interface CoreCompiledRegistrationEntry {
-  readonly registrationEntryId: CoreModuleRegistrationEntryId;
-  readonly ownerModuleId: string;
-  readonly kind: "command" | "selector";
-  readonly contributions: readonly CoreCompiledContribution[];
+export type CoreCompiledRegistrationEntry =
+  | {
+      readonly registrationEntryId: CoreModuleRegistrationEntryId;
+      readonly ownerModuleId: string;
+      readonly kind: "command";
+      readonly contributions: readonly CompiledCommandContribution[];
+    }
+  | {
+      readonly registrationEntryId: CoreModuleRegistrationEntryId;
+      readonly ownerModuleId: string;
+      readonly kind: "selector";
+      readonly contributions: readonly CompiledSelectorContribution[];
+    };
+
+function snapshotSelector(
+  id: CoreSelectorId,
+  titleKey: string,
+  selector: CompiledSnapshotSelectorHandler,
+): CompiledSnapshotSelectorContribution {
+  return {
+    descriptor: {
+      id,
+      kind: "selector",
+      sourceModuleId: "core.selectors",
+      apiVersion: 1,
+      requiredCapabilities: SELECTOR_REQUIRED_CAPABILITIES,
+      titleKey,
+      inputKind: "snapshot",
+    },
+    inputKind: "snapshot",
+    selector,
+  };
 }
 
-function asSnapshot(
-  input: DocumentSnapshot | KernelReadState,
-): DocumentSnapshot {
-  return "snapshot" in input ? input.snapshot : input;
+function readStateSelector(
+  id: CoreSelectorId,
+  titleKey: string,
+  selector: CompiledReadStateSelectorHandler,
+): CompiledReadStateSelectorContribution {
+  return {
+    descriptor: {
+      id,
+      kind: "selector",
+      sourceModuleId: "core.selectors",
+      apiVersion: 1,
+      requiredCapabilities: SELECTOR_REQUIRED_CAPABILITIES,
+      titleKey,
+      inputKind: "read-state",
+    },
+    inputKind: "read-state",
+    selector,
+  };
 }
-
-const CORE_SELECTOR_HANDLERS: Readonly<
-  Record<CoreSelectorId, CompiledSelectorHandler>
-> = {
-  "core.selector.score-metadata": (input) =>
-    selectScoreMetadata(asSnapshot(input)),
-  "core.selector.score-entity": (input, request) =>
-    selectScoreEntity(
-      asSnapshot(input),
-      request.selectorId === "core.selector.score-entity"
-        ? request.address
-        : undefined,
-    ),
-  "core.selector.score-entity-ownership": (input, request) =>
-    selectScoreEntityOwnership(
-      asSnapshot(input),
-      request.selectorId === "core.selector.score-entity-ownership"
-        ? request.address
-        : undefined,
-    ),
-  "core.selector.score-range": (input, request) =>
-    selectScoreRange(
-      asSnapshot(input),
-      request.selectorId === "core.selector.score-range"
-        ? request.range
-        : undefined,
-    ),
-  "core.selector.history-state": (input) =>
-    selectHistoryState(input as KernelReadState),
-  "core.selector.dirty-state": (input) =>
-    selectDirtyState(input as KernelReadState),
-};
 
 const CORE_COMMAND_CONTRIBUTIONS: readonly CompiledCommandContribution[] =
   deepFreezeValue(
@@ -167,18 +161,56 @@ const CORE_COMMAND_CONTRIBUTIONS: readonly CompiledCommandContribution[] =
 
 const CORE_SELECTOR_CONTRIBUTIONS: readonly CompiledSelectorContribution[] =
   deepFreezeValue(
-    CORE_SELECTOR_DEFINITIONS.map(([id, inputKind, titleKey]) => ({
-      descriptor: {
-        id,
-        kind: "selector" as const,
-        sourceModuleId: "core.selectors",
-        apiVersion: 1 as const,
-        requiredCapabilities: SELECTOR_REQUIRED_CAPABILITIES,
-        titleKey,
-        inputKind,
-      },
-      selector: CORE_SELECTOR_HANDLERS[id],
-    })),
+    [
+      snapshotSelector(
+        "core.selector.score-metadata",
+        "core.selector.score-metadata.title",
+        (input) => selectScoreMetadata(input),
+      ),
+      snapshotSelector(
+        "core.selector.score-entity",
+        "core.selector.score-entity.title",
+        (input, request) =>
+          selectScoreEntity(
+            input,
+            request.selectorId === "core.selector.score-entity"
+              ? request.address
+              : undefined,
+          ),
+      ),
+      snapshotSelector(
+        "core.selector.score-entity-ownership",
+        "core.selector.score-entity-ownership.title",
+        (input, request) =>
+          selectScoreEntityOwnership(
+            input,
+            request.selectorId === "core.selector.score-entity-ownership"
+              ? request.address
+              : undefined,
+          ),
+      ),
+      snapshotSelector(
+        "core.selector.score-range",
+        "core.selector.score-range.title",
+        (input, request) =>
+          selectScoreRange(
+            input,
+            request.selectorId === "core.selector.score-range"
+              ? request.range
+              : undefined,
+          ),
+      ),
+      readStateSelector(
+        "core.selector.history-state",
+        "core.selector.history-state.title",
+        (input) => selectHistoryState(input),
+      ),
+      readStateSelector(
+        "core.selector.dirty-state",
+        "core.selector.dirty-state.title",
+        (input) => selectDirtyState(input),
+      ),
+    ],
   );
 
 export const CORE_COMPILED_REGISTRATION_ENTRIES: readonly CoreCompiledRegistrationEntry[] =
