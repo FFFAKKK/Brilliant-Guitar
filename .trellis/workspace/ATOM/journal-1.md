@@ -157,3 +157,37 @@ Accepted code baseline: `7369eeac60fecea66c2c9164c04439625c2d78b0`.
 
 - Close the K1-3 documentation Gate against the accepted baseline.
 - K1-4 may enter independent planning on a new `codex/k1-4-*` branch; no Registry/Capability production implementation is authorized until its PRD/design/implement set is approved.
+
+
+## Session 5: K1-4 acceptance closure
+
+**Date**: 2026-07-19
+**Task**: K1-4 acceptance closure
+**Branch**: `codex/k1-4-registry-capability-startup-registration`
+
+### Summary
+
+Recorded 94766a0 as the accepted K1-4 baseline, synchronized active Core and parent status, and archived the K1-4 task after 125/125 tests passed.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `94766a0` | (see git log) |
+| `b2a0c95` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
