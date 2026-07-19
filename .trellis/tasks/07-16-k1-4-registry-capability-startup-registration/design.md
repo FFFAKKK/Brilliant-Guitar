@@ -3,7 +3,7 @@
 ## Status and authority
 
 - This document is the approved K1-4 technical contract. The user approved `prd.md`, this file, and `implement.md` together on 2026-07-17.
-- The implementation candidate is complete on `codex/k1-4-registry-capability-startup-registration`; Tasks 1–6 plus acceptance repairs pass 125/125 tests and await independent acceptance.
+- K1-4 is accepted at `94766a0930c05e5339c44f667deaf02116af1c0c`; Tasks 1–6 plus acceptance repairs pass 125/125 tests, with independent technical acceptance completed on 2026-07-19.
 - K1-1 through K1-3 remain frozen compatibility inputs. K1-4 may add Registry/Gateway APIs but cannot change score persistence, command envelopes, mutation/history, replay, snapshots, selectors, or document/session events.
 - Active Core and product Registry specifications must be synchronized to this task after approval; older broad contribution and registry-change-event lists are superseded.
 

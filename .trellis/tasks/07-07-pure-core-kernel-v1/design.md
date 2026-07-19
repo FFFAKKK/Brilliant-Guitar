@@ -2,13 +2,13 @@
 
 ## Status
 
-- Phase: staged execution; K1-1 through K1-3 are accepted/archived. The K1-4 implementation candidate completes all six approved tasks and acceptance repairs, passes 125/125 tests, and awaits independent acceptance.
+- Phase: staged execution; K1-1 through K1-4 are accepted/archived. K1-4 is fixed at `94766a0930c05e5339c44f667deaf02116af1c0c` with 125/125 tests passing.
 - Parent task: `06-29-commercial-guitar-tablature-product`.
 - Implementation target: pure TypeScript Core Kernel only.
 - K1-1 authority: `.trellis/tasks/archive/2026-07/07-13-k1-1-foundation-replanning/design.md` and `.trellis/spec/core-kernel/backend/score-document-model.md`.
 - K1-2 authority: `.trellis/tasks/archive/2026-07/07-15-k1-2-commands-transactions-history/design.md` and `.trellis/spec/core-kernel/backend/command-transaction.md`.
 - K1-3 authority: `.trellis/tasks/archive/2026-07/07-15-k1-3-address-snapshots-selectors-events/`, accepted at `7369eeac60fecea66c2c9164c04439625c2d78b0`.
-- K1-4 authority: `.trellis/tasks/07-16-k1-4-registry-capability-startup-registration/` and `.trellis/spec/core-kernel/backend/registry-capability.md`; K1-5 and later remain roadmap sketches.
+- K1-4 authority: `.trellis/tasks/archive/2026-07/07-16-k1-4-registry-capability-startup-registration/` and `.trellis/spec/core-kernel/backend/registry-capability.md`; K1-5 and later remain roadmap sketches.
 
 ## Design Principle
 
@@ -267,6 +267,6 @@ No implementation chunk should change unrelated future UI, renderer, playback, p
 - K1-1 is the accepted frozen foundation at `30894e2`.
 - K1-2 passed focused P1 repair and independent re-acceptance and is archived under `.trellis/tasks/archive/2026-07/07-15-k1-2-commands-transactions-history/`.
 - K1-3 passed independent acceptance at `7369eeac60fecea66c2c9164c04439625c2d78b0`, is archived, and has 102/102 passing tests.
-- K1-4 implementation is complete on `codex/k1-4-registry-capability-startup-registration` and awaits independent acceptance. K1-5 remains separately blocked.
+- K1-4 passed independent acceptance at `94766a0930c05e5339c44f667deaf02116af1c0c` and is archived. K1-5 has not started.
 - Guitar Domain Block 2 is independent from Core K1-2 and must define its Part-owned extension before guitar commands or technique semantics are implemented.
 - Before any later implementation, load `trellis-before-dev`, re-read the relevant active specs, and confirm the task is approved; archived drafts are never execution sources.

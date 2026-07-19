@@ -2,8 +2,8 @@
 
 ## Status
 
-- Phase: implementation candidate complete on `codex/k1-4-registry-capability-startup-registration`; independent acceptance pending.
-- Tasks 1–6 and the acceptance repairs are complete, with 125/125 tests passing at the current implementation candidate.
+- Phase: accepted at `94766a0930c05e5339c44f667deaf02116af1c0c`; independent technical acceptance passed on 2026-07-19.
+- Tasks 1–6 and the acceptance repairs are complete, with 125/125 tests passing at the accepted baseline.
 - K1-3 was accepted and archived at `7369eeac60fecea66c2c9164c04439625c2d78b0` with 102/102 tests passing.
 
 ## Goal

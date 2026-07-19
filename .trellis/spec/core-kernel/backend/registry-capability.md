@@ -1,8 +1,8 @@
 # Registry and Capability
 
-> **K1-4 implementation candidate complete (2026-07-18):** the decision-complete package is
-> `.trellis/tasks/07-16-k1-4-registry-capability-startup-registration/`.
-> Tasks 1–6 and the acceptance repairs are complete; the candidate passes 125/125 tests and awaits independent acceptance.
+> **K1-4 accepted (2026-07-19):** the archived decision-complete package is
+> `.trellis/tasks/archive/2026-07/07-16-k1-4-registry-capability-startup-registration/`.
+> The accepted baseline is `94766a0930c05e5339c44f667deaf02116af1c0c`; 125/125 tests pass.
 > K1-1 through K1-3 remain frozen inputs.
 
 ## 1. Scope / Trigger

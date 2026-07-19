@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript 5.8, Node test runner, existing Core strict-codec/deep-freeze patterns, no runtime dependencies.
 
-**Current status:** Tasks 1–6 and the acceptance repairs are complete on `codex/k1-4-registry-capability-startup-registration`; the implementation candidate passes 125/125 tests and awaits independent acceptance.
+**Current status:** Tasks 1–6 and the acceptance repairs are accepted at `94766a0930c05e5339c44f667deaf02116af1c0c`; 125/125 tests pass and independent technical acceptance completed on 2026-07-19.
 
 ## Global Constraints
 
@@ -503,4 +503,4 @@ git add src/core-kernel/index.ts test/core-kernel/public-api-boundary.test.ts .t
 git commit -m "docs(core): close k1-4 registry contract"
 ```
 
-Do not start K1-5, Guitar Domain, Extension Host, UI integration, or K1-4 acceptance archival in this implementation task. K1-4 requires an independent acceptance review after the implementation branch is complete.
+This implementation task does not start K1-5, Guitar Domain, Extension Host, or UI integration. K1-4 passed its required independent acceptance review at `94766a0930c05e5339c44f667deaf02116af1c0c` and is ready for archival.
