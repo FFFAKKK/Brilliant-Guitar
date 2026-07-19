@@ -2,7 +2,7 @@
 
 > **K1-4 implementation candidate complete (2026-07-18):** the decision-complete package is
 > `.trellis/tasks/07-16-k1-4-registry-capability-startup-registration/`.
-> Tasks 1–6 are complete; the candidate passes 123/123 tests and awaits independent acceptance.
+> Tasks 1–6 and the acceptance repairs are complete; the candidate passes 125/125 tests and awaits independent acceptance.
 > K1-1 through K1-3 remain frozen inputs.
 
 ## 1. Scope / Trigger
@@ -61,6 +61,7 @@ The complete type definitions, six `CoreSelectorId` values, startup/access failu
 ## 3. Contracts
 
 - `createKernelRegistry` strictly decodes the complete manifest, resolves only compiled `core.commands.v1` and `core.selectors.v1` bindings in isolated candidate state, and returns either one frozen ready Registry or a stable failure. Failure exposes no partial Registry.
+- Exact record decoding copies only enumerable own `descriptor.value` fields into detached plain records. Ordinary Proxy `get` traps are never invoked after validation; accessors or failing Proxy meta-operations reject without escaping.
 - K1-4 accepts only manifest-bound `official` + (`builtin` or `internal-module`) + `system-trusted` identities. A module cannot self-assign identity, trust, registration entries, or capabilities.
 - `KernelModuleIdentity` owns moduleId/origin/runtime/trustLevel/apiVersion/capabilities; `KernelStartupModuleDeclaration` extends it only with registration-entry bindings.
 - Manifest-supplied module/entry IDs are 1–128 characters matching `^[a-z0-9]+(?:[.-][a-z0-9]+)*$`. Unsafe IDs are invalid startup input; safe unknown entry IDs retain the dedicated not-found failure.
@@ -81,7 +82,7 @@ The complete type definitions, six `CoreSelectorId` values, startup/access failu
 | Binding | unknown entry or wrong owner | `registry.registration-entry-not-found` / `registry.registration-owner-mismatch` |
 | Identity | duplicate module, unsupported origin/runtime/trust, API mismatch | corresponding `registry.*` startup failure |
 | Contribution | duplicate ID, missing registration capability, malformed descriptor, handler mismatch | corresponding `registry.*` startup failure |
-| Gateway invocation | malformed request, unknown module/contribution, wrong kind | corresponding closed access failure |
+| Gateway invocation | malformed request, unknown module/contribution | corresponding closed access failure |
 | Authorization | required capability absent | `registry.capability-denied` |
 | Unexpected exception | any startup or gateway boundary | `registry.internal-error`; prior state unchanged |
 
@@ -98,8 +99,8 @@ Startup and access failure unions are owned by K1-4. K1-5 may map them into late
 
 ## 6. Tests Required
 
-- Strict unknown decoding, accessor/sparse-array rejection, duplicate and API/runtime/trust/capability failures, and total exception boundaries.
-- Atomic startup, deterministic manifest reordering, deep freeze/detachment, summary ordering/privacy, and no post-ready mutation API.
+- Strict unknown decoding, accessor/sparse-array rejection, zero ordinary Proxy `get` execution, stable descriptor values, duplicate and API/runtime/trust/capability failures, and total exception boundaries.
+- Atomic startup, deterministic manifest reordering with equal summary and gateway read behavior, deep freeze/detachment, summary ordering/privacy, and no post-ready mutation API.
 - Exactly six command and six selector adapters; authorized result parity with trusted-host calls.
 - Denied/invalid/internal gateway paths preserve all accepted K1-2/K1-3 state.
 - Submit/undo/redo/read/select/subscribe capability matrices, handler throw/rejection isolation, and event/history/replay parity without module attribution.

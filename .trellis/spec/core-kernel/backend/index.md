@@ -1,7 +1,7 @@
 # Core Kernel Backend Guidelines
 
 > **Current K1-4 implementation stage (2026-07-18):** K1-1 through K1-3 are accepted
-> foundations. The K1-4 implementation candidate completes Tasks 1–6, passes 123/123 tests, and awaits independent acceptance.
+> foundations. The K1-4 implementation candidate completes Tasks 1–6 and acceptance repairs, passes 125/125 tests, and awaits independent acceptance.
 
 > Coding rules for the Pure Core Kernel V1 implementation.
 

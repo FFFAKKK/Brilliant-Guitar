@@ -302,6 +302,8 @@ test("equivalent startup order yields one detached frozen privacy-safe summary",
   const second = reversedGateway.summary();
   const repeated = forwardGateway.summary();
 
+  assert.deepEqual(forwardGateway.read(), reversedGateway.read());
+
   assert.equal(first.status, "authorized");
   assert.equal(second.status, "authorized");
   assert.equal(repeated.status, "authorized");

@@ -2,7 +2,7 @@
 
 ## 当前状态
 
-- 阶段：Core K1-1、K1-2、K1-3 已正式验收并归档；K1-4 实施候选已完成并通过 123/123 测试，等待独立验收。
+- 阶段：Core K1-1、K1-2、K1-3 已正式验收并归档；K1-4 实施候选及验收修复已完成并通过 125/125 测试，等待独立验收。
 - K1-3 验收基线：`7369eeac60fecea66c2c9164c04439625c2d78b0`，typecheck、build、102/102 tests、diff check 与 Trellis 校验通过。
 - K1-3 决策源：`.trellis/tasks/archive/2026-07/07-15-k1-3-address-snapshots-selectors-events/`。
 - 活动代码契约：`.trellis/spec/core-kernel/`。
@@ -73,7 +73,7 @@ K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 正式验收并归档。�
 
 ### 实施候选已完成：K1-4 Registry / Capability
 
-> **Tasks 1–6 已完成，等待独立验收。** 权威执行与验收输入为 `.trellis/tasks/07-16-k1-4-registry-capability-startup-registration/`；当前候选通过 123/123 测试，正式验收前不得启动 K1-5。
+> **Tasks 1–6 与验收修复已完成，等待独立验收。** 权威执行与验收输入为 `.trellis/tasks/07-16-k1-4-registry-capability-startup-registration/`；当前候选通过 125/125 测试，正式验收前不得启动 K1-5。
 
 批准范围固定为启动期原子 frozen Registry、command/selector 两类既有 adapter、七个 capability、模块 gateway、最小 summary 和 K1-4 本地失败合同；无 Registry version/event、module attribution、其他 contribution kind、第三方 runtime、Guitar Domain 或 K1-5 report。
 

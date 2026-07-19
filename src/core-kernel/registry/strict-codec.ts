@@ -66,6 +66,7 @@ export function readExactDataRecord(
   ) {
     return undefined;
   }
+  const decoded: Record<string, unknown> = {};
   for (const key of expectedKeys) {
     const descriptor = Object.getOwnPropertyDescriptor(value, key);
     if (
@@ -75,8 +76,9 @@ export function readExactDataRecord(
     ) {
       return undefined;
     }
+    decoded[key] = descriptor.value;
   }
-  return value as ExactDataRecord;
+  return decoded;
 }
 
 export function readDenseArray(value: unknown): readonly unknown[] | undefined {

@@ -200,17 +200,13 @@ export class KernelModuleGateway {
       const decoded = decodeCoreCommand(input);
       if (decoded.ok) {
         const contribution = state.registry.contributions.find(
-          ({ descriptor }) => descriptor.id === decoded.value.commandId,
+          (candidate): candidate is CompiledCommandContribution =>
+            isCommandContribution(candidate) &&
+            candidate.descriptor.id === decoded.value.commandId,
         );
         if (contribution === undefined) {
           return gatewayRejected({
             code: "registry.contribution-not-found",
-            contributionId: decoded.value.commandId,
-          });
-        }
-        if (!isCommandContribution(contribution)) {
-          return gatewayRejected({
-            code: "registry.contribution-kind-mismatch",
             contributionId: decoded.value.commandId,
           });
         }
@@ -334,17 +330,13 @@ export class KernelModuleGateway {
         return gatewayRejected({ code: "registry.invalid-invocation" });
       }
       const contribution = state.registry.contributions.find(
-        ({ descriptor }) => descriptor.id === request.selectorId,
+        (candidate): candidate is CompiledSelectorContribution =>
+          isSelectorContribution(candidate) &&
+          candidate.descriptor.id === request.selectorId,
       );
       if (contribution === undefined) {
         return gatewayRejected({
           code: "registry.contribution-not-found",
-          contributionId: request.selectorId,
-        });
-      }
-      if (!isSelectorContribution(contribution)) {
-        return gatewayRejected({
-          code: "registry.contribution-kind-mismatch",
           contributionId: request.selectorId,
         });
       }

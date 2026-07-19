@@ -5,7 +5,7 @@
 
 ## Current Accepted K1-3 / K1-4 Implementation Stage
 
-K1-1 score document/exact time, semantic schema/codec, hard validation, feature-profile validation, and diagnostics are the frozen foundation. Accepted K1-2 adds the closed six-command write boundary, atomic transactions, documentVersion, fine-grained history, undo/redo, and deterministic command replay. Accepted K1-3 adds stable address/range, deeply immutable reads, exact dirty checkpoints, and two deterministic committed/session facts at baseline `7369eeac60fecea66c2c9164c04439625c2d78b0`. The K1-4 implementation candidate is complete with 123/123 tests passing and awaits independent acceptance. It adds only a startup-frozen command/selector Registry and capability gateway. General reports and migrations remain later tasks.
+K1-1 score document/exact time, semantic schema/codec, hard validation, feature-profile validation, and diagnostics are the frozen foundation. Accepted K1-2 adds the closed six-command write boundary, atomic transactions, documentVersion, fine-grained history, undo/redo, and deterministic command replay. Accepted K1-3 adds stable address/range, deeply immutable reads, exact dirty checkpoints, and two deterministic committed/session facts at baseline `7369eeac60fecea66c2c9164c04439625c2d78b0`. The K1-4 implementation candidate and acceptance repairs are complete with 125/125 tests passing and await independent acceptance. It adds only a startup-frozen command/selector Registry and capability gateway. General reports and migrations remain later tasks.
 
 `ExtensionBlock` belongs to the score document/schema mechanism. It stores pure JSON-compatible data and does not create a registry, plugin runtime, capability system, or tenth mechanism.
 

@@ -3,7 +3,7 @@
 ## Status
 
 - Phase: implementation candidate complete on `codex/k1-4-registry-capability-startup-registration`; independent acceptance pending.
-- Tasks 1–6 are complete, with 123/123 tests passing at the final implementation candidate.
+- Tasks 1–6 and the acceptance repairs are complete, with 125/125 tests passing at the current implementation candidate.
 - K1-3 was accepted and archived at `7369eeac60fecea66c2c9164c04439625c2d78b0` with 102/102 tests passing.
 
 ## Goal
@@ -35,7 +35,7 @@ Define the minimum deterministic Core Kernel mechanism for startup-time internal
 - Registry startup uses one public all-or-nothing factory. The Core Host submits the complete manifest and compiled registration bindings; validation and handler binding occur in isolated candidate state, and success returns an already-frozen ready registry plus module gateways.
 - A failed startup returns no usable or partially populated registry. Public APIs expose no mutable builder, incremental `register`, `seal`, `unregister`, `replace`, or post-ready mutation operation; private temporary assembly structures are implementation details only.
 - K1-4 owns closed, privacy-safe startup and gateway failure unions. Startup codes cover invalid input, missing compiled registration entries, duplicate module/contribution IDs, unsupported origin/runtime/trust, incompatible API version, denied capability, invalid contribution, descriptor/handler mismatch, and internal error.
-- Gateway codes cover invalid invocation, unknown module, unknown contribution, contribution-kind mismatch, denied capability, and internal error. Every K1-4 entrypoint catches unexpected exceptions and preserves the prior `CommandBus` state.
+- Gateway codes cover invalid invocation, unknown module, unknown contribution, denied capability, and internal error. Startup validation plus disjoint command/selector ID sets make contribution-kind mismatch unreachable in a ready Registry, so it is not part of the public access failure union. Every K1-4 entrypoint catches unexpected exceptions and preserves the prior `CommandBus` state.
 - After authorization and adapter dispatch, the accepted `CommandResult`, `ReadResult`, and event-subscription result pass through unchanged. K1-5 may map K1-4 codes into future `KernelError` or report issues but may not rename or reinterpret them.
 - Failure payloads contain stable IDs and finite structured values only; they never contain raw exceptions, stack traces, source, file paths, handlers, registry internals, credentials, or mutable documents.
 - K1-4 has no monotonic `registryVersion` and publishes no `kernel.registry.changed` event. The accepted K1-3 `KernelEvent` union remains closed and document/session-scoped.

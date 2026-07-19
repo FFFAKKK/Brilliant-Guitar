@@ -161,10 +161,6 @@ export type KernelRegistryAccessFailure =
       readonly contributionId: string;
     }
   | {
-      readonly code: "registry.contribution-kind-mismatch";
-      readonly contributionId: string;
-    }
-  | {
       readonly code: "registry.capability-denied";
       readonly moduleId: string;
       readonly capability: KernelCapability;

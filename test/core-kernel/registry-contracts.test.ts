@@ -411,6 +411,41 @@ test("strict manifest codec rejects malformed structures without throwing", () =
   );
 });
 
+test("strict manifest codec never invokes a root Proxy get trap", () => {
+  let getCalls = 0;
+  const manifest = new Proxy(createMutableManifest(), {
+    get(): never {
+      getCalls += 1;
+      throw new Error("root get trap must not run");
+    },
+  });
+
+  const created = createKernelRegistry(manifest);
+
+  assert.equal(created.ok, true);
+  assert.equal(getCalls, 0);
+});
+
+test("strict manifest codec retains nested Proxy descriptor values", () => {
+  const manifest = createMutableManifest();
+  const module = manifest.modules[0]!;
+  let moduleIdGetCalls = 0;
+  manifest.modules[0] = new Proxy(module, {
+    get(target, property, receiver): unknown {
+      if (property === "moduleId") {
+        moduleIdGetCalls += 1;
+        return moduleIdGetCalls === 1 ? "core.commands" : "../unsafe";
+      }
+      return Reflect.get(target, property, receiver);
+    },
+  });
+
+  const created = createKernelRegistry(manifest);
+
+  assert.equal(created.ok, true);
+  assert.equal(moduleIdGetCalls, 0);
+});
+
 test("manifest IDs use a finite safe namespace while safe unknown entries stay diagnosable", () => {
   for (const moduleId of [
     "",

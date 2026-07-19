@@ -2,7 +2,7 @@
 
 ## Status
 
-- Phase: staged execution; K1-1 through K1-3 are accepted/archived. The K1-4 implementation candidate completes all six approved tasks, passes 123/123 tests, and awaits independent acceptance.
+- Phase: staged execution; K1-1 through K1-3 are accepted/archived. The K1-4 implementation candidate completes all six approved tasks and acceptance repairs, passes 125/125 tests, and awaits independent acceptance.
 - K1-1 was formally accepted at baseline `30894e2`; its model and validation contracts remain frozen.
 - This parent plan no longer defines K1-1 or K1-2 executable details; their independent child artifacts and active Core specs are authoritative.
 - K1-3 implementation followed its approved independent PRD/design/implement set and was accepted at `7369eeac60fecea66c2c9164c04439625c2d78b0` with 102/102 tests passing. K1-4 execution authority is its approved independent task; K1-5 and later blocks still require their own plan refresh.
@@ -229,4 +229,4 @@ Completion gate:
 
 ## Current Execution Recommendation
 
-K1-3 is accepted and archived at `7369eeac60fecea66c2c9164c04439625c2d78b0`. The K1-4 implementation candidate is complete on its dedicated branch with 123/123 tests passing. The next action is independent K1-4 acceptance; do not start Guitar Domain commands, K1-5, or UI integration from this parent plan.
+K1-3 is accepted and archived at `7369eeac60fecea66c2c9164c04439625c2d78b0`. The K1-4 implementation candidate and acceptance repairs are complete on its dedicated branch with 125/125 tests passing. The next action is independent K1-4 acceptance; do not start Guitar Domain commands, K1-5, or UI integration from this parent plan.

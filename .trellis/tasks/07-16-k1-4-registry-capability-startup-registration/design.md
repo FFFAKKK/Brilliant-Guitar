@@ -3,7 +3,7 @@
 ## Status and authority
 
 - This document is the approved K1-4 technical contract. The user approved `prd.md`, this file, and `implement.md` together on 2026-07-17.
-- The implementation candidate is complete on `codex/k1-4-registry-capability-startup-registration`; Tasks 1–6 pass 123/123 tests and await independent acceptance.
+- The implementation candidate is complete on `codex/k1-4-registry-capability-startup-registration`; Tasks 1–6 plus acceptance repairs pass 125/125 tests and await independent acceptance.
 - K1-1 through K1-3 remain frozen compatibility inputs. K1-4 may add Registry/Gateway APIs but cannot change score persistence, command envelopes, mutation/history, replay, snapshots, selectors, or document/session events.
 - Active Core and product Registry specifications must be synchronized to this task after approval; older broad contribution and registry-change-event lists are superseded.
 
@@ -194,10 +194,6 @@ export type KernelRegistryAccessFailure =
       readonly contributionId: string;
     }
   | {
-      readonly code: "registry.contribution-kind-mismatch";
-      readonly contributionId: string;
-    }
-  | {
       readonly code: "registry.capability-denied";
       readonly moduleId: string;
       readonly capability: KernelCapability;
@@ -250,7 +246,7 @@ The Registry is returned only to the trusted Host. Internal modules receive only
 
 ### Atomic startup
 
-1. `createKernelRegistry` decodes `manifest` using exact fields, own data properties, dense arrays, finite values, and closed unions. Manifest-supplied IDs must be 1–128 lowercase ASCII namespace characters matching `^[a-z0-9]+(?:[.-][a-z0-9]+)*$`; getter/proxy or unsafe-ID failures become `registry.invalid-startup-input`.
+1. `createKernelRegistry` decodes `manifest` using exact fields, own data properties, dense arrays, finite values, and closed unions. Accepted records are detached from `descriptor.value`, so ordinary Proxy `get` traps are never invoked after validation; accessors, failing Proxy meta-operations, and unsafe IDs become `registry.invalid-startup-input`. Manifest-supplied IDs must be 1–128 lowercase ASCII namespace characters matching `^[a-z0-9]+(?:[.-][a-z0-9]+)*$`.
 2. It rejects duplicate module IDs, duplicate capabilities/entry IDs, unsupported identity combinations, and API version mismatch.
 3. Each registration entry ID resolves against the private compiled table and must be owned by the declaring module. The declaring module must have the contribution kind's registration capability.
 4. Candidate contributions are validated for descriptor/handler agreement and global ID uniqueness.
@@ -266,7 +262,7 @@ Candidate validation is a pure package-internal seam `buildRegistryCandidate(man
 Every gateway call applies this order:
 
 1. Check the method-level capability before decoding attacker-controlled invocation input.
-2. Resolve the registered contribution and verify its kind and complete required-capability list.
+2. Resolve the registered contribution and verify its complete required-capability list. Startup validation and disjoint command/selector IDs guarantee the resolved kind; no runtime kind-mismatch failure is exposed.
 3. Delegate to the existing trusted-host API.
 4. Return the existing result nested in `KernelGatewayResult` without rewriting it.
 5. Convert unexpected exceptions to `registry.internal-error` without state changes or raw error leakage.
@@ -300,8 +296,8 @@ Every gateway call applies this order:
 
 ## Test design
 
-- Contract/codec tests cover exact fields, dense arrays, accessors/proxies, duplicates, version/identity/capability/entry failures, deterministic normalization, and total exception boundaries.
+- Contract/codec tests cover exact fields, dense arrays, accessors/proxies, zero ordinary Proxy `get` execution, stable descriptor values, duplicates, version/identity/capability/entry failures, deterministic normalization, and total exception boundaries.
 - Summary tests assert the exact two default modules, six commands, six selectors, ordering, deep freeze, detached reads, and forbidden policy/handler fields.
-- Gateway tests use manifest-declared consumer modules with focused capability sets to prove every allowed and denied method independently.
+- Gateway tests use manifest-declared consumer modules with focused capability sets to prove every allowed and denied method independently, including equal `read()` behavior under equivalent manifest reordering.
 - Integration tests compare direct and authorized gateway submit/undo/redo/read/select/subscribe behavior, including no-op/rejected commands, reentrant writes, handler isolation, and no module attribution.
 - Public-boundary tests pin new exports and forbid compiled handler tables, codecs, mutable registry APIs, registry events/versions, K1-5 types, and speculative contribution kinds.

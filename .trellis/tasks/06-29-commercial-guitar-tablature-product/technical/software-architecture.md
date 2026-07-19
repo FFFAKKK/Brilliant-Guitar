@@ -6,7 +6,7 @@
 - 作用: 定义后续实现的核心边界、模块协作方式、依赖方向和架构验收标准。
 - 当前架构决策: 采用参照操作系统微内核思想的 Core Kernel + 用户态服务模块架构。内核负责谱面真相、命令事务、验证、版本化契约和模块协作接口；UI、渲染、播放、导入导出、桌面壳和未来插件都作为模块或适配器与内核协作。
 - 详细架构图: `technical/microkernel-architecture.md`。
-- 当前数据模型: `.trellis/tasks/archive/2026-07/07-13-k1-1-foundation-replanning/design.md` 与 `.trellis/spec/core-kernel/`；K1-1 至 K1-3 已验收，K1-3 固定基线为 `7369eeac60fecea66c2c9164c04439625c2d78b0`、102/102 测试通过。K1-4 实施候选已完成并通过 123/123 测试，等待独立验收；后续分块仍须重规划并审核。
+- 当前数据模型: `.trellis/tasks/archive/2026-07/07-13-k1-1-foundation-replanning/design.md` 与 `.trellis/spec/core-kernel/`；K1-1 至 K1-3 已验收，K1-3 固定基线为 `7369eeac60fecea66c2c9164c04439625c2d78b0`、102/102 测试通过。K1-4 实施候选及验收修复已完成并通过 125/125 测试，等待独立验收；后续分块仍须重规划并审核。
 - 当前阶段边界: 当前是 Pure Core Kernel 分块实施阶段。本文件只定义内核边界、模块协作原则和依赖方向；外部工程目录结构、monorepo 方案、`apps/desktop` 和 `packages/*` 拆分不属于当前阶段。
 - 首个实现里程碑: Pure Core Kernel V1。先实现纯 TypeScript 内核和内核测试；桌面壳、UI、渲染、播放、持久化物理 IO、导出和导入均后置。
 - 目录状态: 目录结构仍未确认，必须等工程脚手架阶段从已确认内核边界、测试边界、构建方式和发布方式反推，不得反过来限制当前内核规划。

@@ -171,4 +171,19 @@ test("Core exports only formal production APIs and no retired test vocabulary", 
   ].forEach((privateRegistryBoundary) =>
     assert.equal(publicIndex.includes(privateRegistryBoundary), false),
   );
+
+  const registryContracts = readFileSync(
+    resolve(process.cwd(), "src", "core-kernel", "registry", "contracts.ts"),
+    "utf8",
+  );
+  const registryRuntime = readFileSync(
+    resolve(process.cwd(), "src", "core-kernel", "registry", "runtime.ts"),
+    "utf8",
+  );
+  for (const registrySource of [registryContracts, registryRuntime]) {
+    assert.equal(
+      registrySource.includes('"registry.contribution-kind-mismatch"'),
+      false,
+    );
+  }
 });

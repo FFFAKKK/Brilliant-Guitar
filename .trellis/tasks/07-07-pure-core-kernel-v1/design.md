@@ -2,7 +2,7 @@
 
 ## Status
 
-- Phase: staged execution; K1-1 through K1-3 are accepted/archived. The K1-4 implementation candidate completes all six approved tasks, passes 123/123 tests, and awaits independent acceptance.
+- Phase: staged execution; K1-1 through K1-3 are accepted/archived. The K1-4 implementation candidate completes all six approved tasks and acceptance repairs, passes 125/125 tests, and awaits independent acceptance.
 - Parent task: `06-29-commercial-guitar-tablature-product`.
 - Implementation target: pure TypeScript Core Kernel only.
 - K1-1 authority: `.trellis/tasks/archive/2026-07/07-13-k1-1-foundation-replanning/design.md` and `.trellis/spec/core-kernel/backend/score-document-model.md`.

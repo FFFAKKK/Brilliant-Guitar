@@ -1,6 +1,6 @@
 # REQ-018 内核注册表与能力边界
 
-> **状态：K1-4 IMPLEMENTATION CANDIDATE COMPLETE / ACCEPTANCE PENDING（2026-07-18）。** 权威 PRD、设计与实施计划位于 `.trellis/tasks/07-16-k1-4-registry-capability-startup-registration/`。Tasks 1–6 已完成，候选实现通过 123/123 测试；K1-5 仍保持阻塞。
+> **状态：K1-4 IMPLEMENTATION CANDIDATE COMPLETE / ACCEPTANCE PENDING（2026-07-19）。** 权威 PRD、设计与实施计划位于 `.trellis/tasks/07-16-k1-4-registry-capability-startup-registration/`。Tasks 1–6 与验收修复已完成，候选实现通过 125/125 测试；K1-5 仍保持阻塞。
 
 ## 用户价值
 
@@ -14,7 +14,7 @@
 
 ## 当前决策状态
 
-- 状态: K1-4 规划已于 2026-07-17 获用户批准；Tasks 1–6 的实施候选已完成并通过 123/123 测试，等待独立验收。
+- 状态: K1-4 规划已于 2026-07-17 获用户批准；Tasks 1–6 与验收修复已完成并通过 125/125 测试，等待独立验收。
 - 批准方向: 启动期原子 frozen Registry、`command | selector` 两类贡献、七个互不蕴含的 capability、capability-scoped gateway、最小 summary 和 K1-4 本地失败合同。
 - 对应 spec: `specs/SPEC-015-kernel-registry-capability.md`。
 - 关联错误契约: K1-4 拥有封闭 startup/access failure union；K1-5 可映射但不得改名或改义。
@@ -139,7 +139,7 @@ MVP 不需要把 registry 做成完整插件平台。当前阶段应避免:
 - Core Kernel 提供一次性 `createKernelRegistry(unknown)`，只登记现有六个 command 与六个 selector adapter。
 - 每个 summary contribution 必须有稳定 `id`、`kind`、`sourceModuleId`、`apiVersion`、`requiredCapabilities` 和 `titleKey`；command 另有 `targetKind`，selector 另有 `inputKind`。
 - K1-4 只接受 manifest-bound `official` + `builtin/internal-module` + `system-trusted`，拒绝第三方 TypeScript、Lua、native 或任意外部执行入口。
-- 注册表拒绝畸形 manifest、重复 ID、非批准 kind、unsupported identity、不兼容 API version、缺失 capability、unknown/misowned binding 和 descriptor/handler mismatch。
+- 注册表拒绝畸形 manifest、重复 ID、非批准 kind、unsupported identity、不兼容 API version、缺失 capability、unknown/misowned binding 和 descriptor/handler mismatch；strict decoder 必须复制 own data descriptor 的稳定值，验证后不得执行 Proxy 普通属性读取。
 - capability 检查必须发生在 summary、命令执行、selector 调用、读取和事件订阅之前。
 - 注册权限必须与执行权限分离；例如拥有 `command:register` 不代表拥有 `command:execute`。
 - MVP 采用来源与权限解耦模型: `origin`、`runtime`、`trustLevel` 和 capability 必须独立判断；任何一个字段都不能单独绕过另外几个检查。
@@ -179,7 +179,7 @@ MVP 不需要把 registry 做成完整插件平台。当前阶段应避免:
 
 - [x] AC-018-01: K1-4 PRD/design/implement 决策完整并于 2026-07-17 获用户批准。
 - [ ] AC-018-02: 默认 manifest 精确登记六个 command 与六个 selector，无其他 kind 或 arbitrary handler。
-- [ ] AC-018-03: manifest strict decode 快速拒绝 extra/missing field、accessor、sparse array、路径/URL/脚本和畸形有限值，且不抛异常。
+- [ ] AC-018-03: manifest strict decode 快速拒绝 extra/missing field、accessor、sparse array、路径/URL/脚本和畸形有限值，不执行 Proxy 普通 `get` trap，且不抛异常。
 - [ ] AC-018-04: startup duplicate/version/runtime/trust/capability/binding/handler failure 保持 all-or-nothing。
 - [ ] AC-018-05: ready Registry 无 public register/unregister/replace/seal、runtime counter 或 Registry event。
 - [ ] AC-018-06: summary 按批准规则确定排序、深冻结、脱离内部状态并满足隐私白名单。

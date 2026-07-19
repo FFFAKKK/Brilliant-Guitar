@@ -1,8 +1,8 @@
 # SPEC-015 内核注册表与 Capability
 
-> **状态：K1-4 实施候选已完成，等待独立验收（2026-07-18）。** 权威规划为
+> **状态：K1-4 实施候选已完成，等待独立验收（2026-07-19）。** 权威规划为
 > `.trellis/tasks/07-16-k1-4-registry-capability-startup-registration/`。
-> Tasks 1–6 已完成，候选实现通过 123/123 测试；K1-5 仍保持阻塞。
+> Tasks 1–6 与验收修复已完成，候选实现通过 125/125 测试；K1-5 仍保持阻塞。
 
 ## 1. Scope / Trigger
 
@@ -30,6 +30,7 @@ manifest 提供的 module/registration-entry ID 长度为 1–128，并匹配 `^
 ## 3. Contracts
 
 - Core Host 一次提交完整 manifest；严格解码与 compiled binding 在隔离 candidate 中完成，成功才返回已经冻结的 ready Registry，失败不返回半成品。
+- strict decoder 只把 enumerable own `descriptor.value` 复制到脱离调用方的普通对象；验证后不得执行 Proxy 的普通 `get` trap，accessor 或失败的 Proxy 元操作必须安全拒绝。
 - compiled registration entry 只有 `core.commands.v1` 与 `core.selectors.v1`，只绑定现有六个命令与六个 selector；不接受任意 handler 或新语义。
 - capability 互不蕴含；登记、执行、读取、summary、订阅分别授权。startup/freeze 与 `markPersisted` 是 Host-only。
 - Gateway 先解析 contribution 和 caller，再授权，最后委托现有 `CommandBus`、selector、read、subscribe。委托后的 `CommandResult`、`ReadResult` 与订阅行为原样透传。
@@ -46,7 +47,7 @@ manifest 提供的 module/registration-entry ID 长度为 1–128，并匹配 `^
 | manifest | 额外/缺失字段、accessor、稀疏数组、无效有限值 | `registry.invalid-startup-input` |
 | module | duplicate id、unsupported origin/runtime/trust、API mismatch | 对应 startup failure |
 | binding/contribution | entry 不存在/owner 不匹配、duplicate id、capability 缺失、descriptor/handler 不匹配 | 对应 startup failure |
-| gateway | 畸形调用、module/contribution 不存在、kind 不匹配、capability 缺失 | 对应 access failure |
+| gateway | 畸形调用、module/contribution 不存在、capability 缺失 | 对应 access failure |
 | 任意意外异常 | startup/gateway 全边界 | `registry.internal-error`，所有既有状态不变 |
 
 ## 5. Good / Base / Bad Cases
@@ -59,7 +60,7 @@ manifest 提供的 module/registration-entry ID 长度为 1–128，并匹配 `^
 
 ## 6. Tests Required
 
-必须覆盖 strict decode、身份/版本/重复/capability/handler mismatch、原子 startup、冻结与确定排序、summary 隐私、六命令/六 selector parity、读写订阅权限矩阵、异常收口、失败零状态变化、history/replay/event 无 module attribution、公共导出和 forbidden dependency；最终执行 typecheck、build、完整测试、diff check 与 Trellis validation。
+必须覆盖 strict decode、Proxy 零普通属性读取与稳定 descriptor 值、身份/版本/重复/capability/handler mismatch、原子 startup、冻结与确定排序、等价 manifest 重排后的 summary/gateway 行为、summary 隐私、六命令/六 selector parity、读写订阅权限矩阵、异常收口、失败零状态变化、history/replay/event 无 module attribution、公共导出和 forbidden dependency；最终执行 typecheck、build、完整测试、diff check 与 Trellis validation。
 
 ## 7. Wrong vs Correct
 

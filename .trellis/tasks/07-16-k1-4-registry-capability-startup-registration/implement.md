@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript 5.8, Node test runner, existing Core strict-codec/deep-freeze patterns, no runtime dependencies.
 
-**Current status:** Tasks 1–6 are complete on `codex/k1-4-registry-capability-startup-registration`; the implementation candidate passes 123/123 tests and awaits independent acceptance.
+**Current status:** Tasks 1–6 and the acceptance repairs are complete on `codex/k1-4-registry-capability-startup-registration`; the implementation candidate passes 125/125 tests and awaits independent acceptance.
 
 ## Global Constraints
 
@@ -324,7 +324,7 @@ Expected: FAIL because `select` is absent.
 
 - [x] **Step 3: Implement strict selector-request dispatch**
 
-Decode exact request keys by selector ID. Check method capabilities before decoding. Resolve the contribution and require `kind === "selector"`; return `registry.contribution-not-found`, `registry.contribution-kind-mismatch`, or `registry.invalid-invocation` as appropriate.
+Decode exact request keys by selector ID. Check method capabilities before decoding. Resolve only the registered selector contribution; startup validation and disjoint command/selector IDs make a ready-Registry kind mismatch unreachable. Return `registry.contribution-not-found` or `registry.invalid-invocation` as appropriate.
 
 Call `commandBus.read()` once. Route snapshot selectors to `read.value.snapshot` and read-state selectors to the full `read.value`. If `CommandBus.read()` returns failure, return that unchanged as the authorized selector result. Call only the private built-in selector adapter and catch unexpected exceptions as `registry.internal-error`.
 
