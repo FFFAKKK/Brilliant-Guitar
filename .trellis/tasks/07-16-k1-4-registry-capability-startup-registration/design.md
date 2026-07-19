@@ -298,6 +298,6 @@ Every gateway call applies this order:
 
 - Contract/codec tests cover exact fields, dense arrays, accessors/proxies, zero ordinary Proxy `get` execution, stable descriptor values, duplicates, version/identity/capability/entry failures, deterministic normalization, and total exception boundaries.
 - Summary tests assert the exact two default modules, six commands, six selectors, ordering, deep freeze, detached reads, and forbidden policy/handler fields.
-- Gateway tests use manifest-declared consumer modules with focused capability sets to prove every allowed and denied method independently, including equal `read()` behavior under equivalent manifest reordering.
+- Gateway tests use manifest-declared consumer modules with focused capability sets to prove every allowed and denied method independently, including representative command and selector behavior under equivalent manifest reordering.
 - Integration tests compare direct and authorized gateway submit/undo/redo/read/select/subscribe behavior, including no-op/rejected commands, reentrant writes, handler isolation, and no module attribution.
 - Public-boundary tests pin new exports and forbid compiled handler tables, codecs, mutable registry APIs, registry events/versions, K1-5 types, and speculative contribution kinds.

@@ -100,7 +100,7 @@ Startup and access failure unions are owned by K1-4. K1-5 may map them into late
 ## 6. Tests Required
 
 - Strict unknown decoding, accessor/sparse-array rejection, zero ordinary Proxy `get` execution, stable descriptor values, duplicate and API/runtime/trust/capability failures, and total exception boundaries.
-- Atomic startup, deterministic manifest reordering with equal summary and gateway read behavior, deep freeze/detachment, summary ordering/privacy, and no post-ready mutation API.
+- Atomic startup, deterministic manifest reordering with equal summary and representative command and selector gateway behavior, deep freeze/detachment, summary ordering/privacy, and no post-ready mutation API.
 - Exactly six command and six selector adapters; authorized result parity with trusted-host calls.
 - Denied/invalid/internal gateway paths preserve all accepted K1-2/K1-3 state.
 - Submit/undo/redo/read/select/subscribe capability matrices, handler throw/rejection isolation, and event/history/replay parity without module attribution.

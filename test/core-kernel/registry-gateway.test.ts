@@ -51,7 +51,11 @@ function requireBus(): CommandBus {
   return created.value;
 }
 
-function createManifest(includeUnprivileged: boolean, reversed: boolean): {
+function createManifest(
+  includeUnprivileged: boolean,
+  reversed: boolean,
+  readerCapabilities: readonly string[] = ["score:read", "registry:read"],
+): {
   startupManifestVersion: number;
   modules: Array<{
     moduleId: string;
@@ -88,7 +92,7 @@ function createManifest(includeUnprivileged: boolean, reversed: boolean): {
       runtime: "internal-module",
       trustLevel: "system-trusted",
       apiVersion: 1,
-      capabilities: ["score:read", "registry:read"],
+      capabilities: [...readerCapabilities],
       registrationEntryIds: [],
     },
   ];
@@ -286,23 +290,61 @@ function expectedContributionSummaries(): readonly unknown[] {
   });
 }
 
-test("equivalent startup order yields one detached frozen privacy-safe summary", () => {
-  const forward = requireRegistry(createManifest(false, false));
-  const reversedManifest = createManifest(false, true);
+test("equivalent startup order preserves summary and representative gateway dispatch", () => {
+  const dispatchCapabilities = [
+    "command:execute",
+    "registry:read",
+    "score:read",
+    "selector:execute",
+  ];
+  const forward = requireRegistry(
+    createManifest(false, false, dispatchCapabilities),
+  );
+  const reversedManifest = createManifest(false, true, dispatchCapabilities);
   const reversed = requireRegistry(reversedManifest);
   reversedManifest.modules[0]!.moduleId = "tampered.after.startup";
 
-  const forwardGateway = requireGateway(forward, "internal.reader", requireBus());
+  const forwardBus = requireBus();
+  const reversedBus = requireBus();
+  const forwardEvents = collectEvents(forwardBus);
+  const reversedEvents = collectEvents(reversedBus);
+  const forwardGateway = requireGateway(forward, "internal.reader", forwardBus);
   const reversedGateway = requireGateway(
     reversed,
     "internal.reader",
-    requireBus(),
+    reversedBus,
   );
   const first = forwardGateway.summary();
   const second = reversedGateway.summary();
   const repeated = forwardGateway.summary();
 
-  assert.deepEqual(forwardGateway.read(), reversedGateway.read());
+  const forwardSubmit = forwardGateway.submit(setPitch("D"));
+  const reversedSubmit = reversedGateway.submit(setPitch("D"));
+  assert.equal(forwardSubmit.status, "authorized");
+  assert.equal(reversedSubmit.status, "authorized");
+  assert.deepEqual(forwardSubmit, reversedSubmit);
+  const forwardState = requireReadState(forwardBus);
+  const reversedState = requireReadState(reversedBus);
+  assert.deepEqual(
+    forwardState.snapshot.document,
+    reversedState.snapshot.document,
+  );
+  assert.equal(
+    forwardState.snapshot.documentVersion,
+    reversedState.snapshot.documentVersion,
+  );
+  assert.deepEqual(forwardState.history, reversedState.history);
+  assert.equal(forwardState.dirty, reversedState.dirty);
+  assert.deepEqual(forwardEvents, reversedEvents);
+
+  const selectorRequest = {
+    selectorId: "core.selector.score-metadata",
+  } as const;
+  const forwardSelection = forwardGateway.select(selectorRequest);
+  const reversedSelection = reversedGateway.select(selectorRequest);
+  assert.equal(forwardSelection.status, "authorized");
+  assert.equal(reversedSelection.status, "authorized");
+  assert.deepEqual(forwardSelection, reversedSelection);
 
   assert.equal(first.status, "authorized");
   assert.equal(second.status, "authorized");
