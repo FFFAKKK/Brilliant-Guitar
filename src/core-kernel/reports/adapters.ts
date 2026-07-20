@@ -4,6 +4,14 @@ import {
   createReportKernelIssue,
 } from "../errors/kernel-error";
 import type { JsonObject } from "../domain/extensions";
+import { deepFreezeValue } from "../read/deep-freeze";
+import type { CommandFailure } from "../commands/contracts";
+import type { EventSubscriptionResult } from "../events/contracts";
+import type { CheckpointFailure, ReadFailure } from "../read/contracts";
+import type {
+  KernelRegistryAccessFailure,
+  KernelRegistryStartupFailure,
+} from "../registry/contracts";
 import type {
   Diagnostic,
   DiagnosticCode,
@@ -14,8 +22,14 @@ import type {
   KernelIssueSource,
 } from "./contracts";
 import {
+  decodeCheckpointFailure,
+  decodeCommandFailure,
   decodeDiagnosticInput,
+  decodeEventSubscriptionFailure,
   decodeModuleIssueSource,
+  decodeReadFailure,
+  decodeRegistryAccessFailure,
+  decodeRegistryStartupFailure,
 } from "./strict-codec";
 
 interface DiagnosticIssueFactoryInput {
@@ -91,5 +105,215 @@ export function createModuleInternalIssue(
       : createModuleKernelIssue({ source: decoded });
   } catch {
     return reportFailure("report.internal-error");
+  }
+}
+
+function invalidFailureArray(): readonly KernelIssue[] {
+  return deepFreezeValue([reportFailure("report.invalid-input")]);
+}
+
+function internalFailureArray(): readonly KernelIssue[] {
+  return deepFreezeValue([reportFailure("report.internal-error")]);
+}
+
+function operationIssue(
+  code: Exclude<
+    KernelIssue["code"],
+    | "module.internal-error"
+    | "migration.invalid-input"
+    | "migration.unsupported-source-version"
+    | "migration.semantic-invalid"
+    | "migration.internal-error"
+    | "report.invalid-input"
+    | "report.internal-error"
+  >,
+  subsystem: Extract<KernelIssueSource, { readonly kind: "core" }>["subsystem"],
+  details?: JsonObject,
+): KernelIssue {
+  return createOperationKernelIssue({
+    code,
+    source: { kind: "core", subsystem },
+    ...(details === undefined ? {} : { details }),
+  });
+}
+
+function freezeIssueArray(issues: readonly KernelIssue[]): readonly KernelIssue[] {
+  return deepFreezeValue([...issues]);
+}
+
+function assertNever(value: never): never {
+  throw new Error(`unreachable issue mapping: ${String(value)}`);
+}
+
+export function mapCommandFailureToKernelIssues(
+  failure: CommandFailure,
+): readonly KernelIssue[] {
+  try {
+    const decoded = decodeCommandFailure(failure);
+    if (decoded === undefined) {
+      return invalidFailureArray();
+    }
+    if (decoded.code === "command.semantic-invalid") {
+      const diagnosticIssues = decoded.diagnostics.map(
+        mapDiagnosticToKernelIssue,
+      );
+      if (
+        diagnosticIssues.some(
+          (issue) =>
+            issue.code === "report.invalid-input" ||
+            issue.code === "report.internal-error",
+        )
+      ) {
+        return invalidFailureArray();
+      }
+      return freezeIssueArray([
+        operationIssue(decoded.code, "command"),
+        ...diagnosticIssues,
+      ]);
+    }
+    const subsystem = decoded.code.startsWith("event.")
+      ? "event"
+      : "command";
+    return freezeIssueArray([operationIssue(decoded.code, subsystem)]);
+  } catch {
+    return internalFailureArray();
+  }
+}
+
+export function mapCheckpointFailureToKernelIssues(
+  failure: CheckpointFailure,
+): readonly KernelIssue[] {
+  try {
+    const decoded = decodeCheckpointFailure(failure);
+    if (decoded === undefined) {
+      return invalidFailureArray();
+    }
+    const subsystem = decoded.code.startsWith("event.") ? "event" : "session";
+    return freezeIssueArray([operationIssue(decoded.code, subsystem)]);
+  } catch {
+    return internalFailureArray();
+  }
+}
+
+export function mapReadFailureToKernelIssues(
+  failure: ReadFailure,
+): readonly KernelIssue[] {
+  try {
+    const decoded = decodeReadFailure(failure);
+    return decoded === undefined
+      ? invalidFailureArray()
+      : freezeIssueArray([operationIssue(decoded.code, "read")]);
+  } catch {
+    return internalFailureArray();
+  }
+}
+
+export function mapEventSubscriptionFailureToKernelIssues(
+  failure: Extract<EventSubscriptionResult, { readonly status: "rejected" }>[
+    "failure"
+  ],
+): readonly KernelIssue[] {
+  try {
+    const decoded = decodeEventSubscriptionFailure(failure);
+    return decoded === undefined
+      ? invalidFailureArray()
+      : freezeIssueArray([operationIssue(decoded.code, "event")]);
+  } catch {
+    return internalFailureArray();
+  }
+}
+
+export function mapRegistryStartupFailureToKernelIssues(
+  failure: KernelRegistryStartupFailure,
+): readonly KernelIssue[] {
+  try {
+    const decoded = decodeRegistryStartupFailure(failure);
+    if (decoded === undefined) {
+      return invalidFailureArray();
+    }
+    switch (decoded.code) {
+      case "registry.invalid-startup-input":
+      case "registry.internal-error":
+        return freezeIssueArray([operationIssue(decoded.code, "registry")]);
+      case "registry.registration-entry-not-found":
+      case "registry.invalid-contribution":
+        return freezeIssueArray([
+          operationIssue(decoded.code, "registry", {
+            registrationEntryId: decoded.registrationEntryId,
+          }),
+        ]);
+      case "registry.registration-owner-mismatch":
+        return freezeIssueArray([
+          operationIssue(decoded.code, "registry", {
+            registrationEntryId: decoded.registrationEntryId,
+            moduleId: decoded.moduleId,
+          }),
+        ]);
+      case "registry.duplicate-module-id":
+      case "registry.unsupported-origin":
+      case "registry.unsupported-runtime":
+      case "registry.unsupported-trust-level":
+      case "registry.api-version-incompatible":
+        return freezeIssueArray([
+          operationIssue(decoded.code, "registry", {
+            moduleId: decoded.moduleId,
+          }),
+        ]);
+      case "registry.duplicate-contribution-id":
+      case "registry.handler-mismatch":
+        return freezeIssueArray([
+          operationIssue(decoded.code, "registry", {
+            contributionId: decoded.contributionId,
+          }),
+        ]);
+      case "registry.capability-denied":
+        return freezeIssueArray([
+          operationIssue(decoded.code, "registry", {
+            moduleId: decoded.moduleId,
+            capability: decoded.capability,
+          }),
+        ]);
+    }
+    return assertNever(decoded);
+  } catch {
+    return internalFailureArray();
+  }
+}
+
+export function mapRegistryAccessFailureToKernelIssues(
+  failure: KernelRegistryAccessFailure,
+): readonly KernelIssue[] {
+  try {
+    const decoded = decodeRegistryAccessFailure(failure);
+    if (decoded === undefined) {
+      return invalidFailureArray();
+    }
+    switch (decoded.code) {
+      case "registry.invalid-invocation":
+      case "registry.internal-error":
+        return freezeIssueArray([operationIssue(decoded.code, "registry")]);
+      case "registry.module-not-found":
+        return freezeIssueArray([
+          operationIssue(decoded.code, "registry", {
+            moduleId: decoded.moduleId,
+          }),
+        ]);
+      case "registry.contribution-not-found":
+        return freezeIssueArray([
+          operationIssue(decoded.code, "registry", {
+            contributionId: decoded.contributionId,
+          }),
+        ]);
+      case "registry.capability-denied":
+        return freezeIssueArray([
+          operationIssue(decoded.code, "registry", {
+            moduleId: decoded.moduleId,
+            capability: decoded.capability,
+          }),
+        ]);
+    }
+    return assertNever(decoded);
+  } catch {
+    return internalFailureArray();
   }
 }

@@ -1,9 +1,17 @@
 import type { JsonObject, JsonValue } from "../domain/extensions";
+import type { CommandFailure } from "../commands/contracts";
+import type { EventSubscriptionResult } from "../events/contracts";
+import type { CheckpointFailure, ReadFailure } from "../read/contracts";
 import {
   isSafeRegistryId,
   readDenseArray,
   readExactDataRecord,
 } from "../registry/strict-codec";
+import type {
+  KernelCapability,
+  KernelRegistryAccessFailure,
+  KernelRegistryStartupFailure,
+} from "../registry/contracts";
 import type {
   Diagnostic,
   DiagnosticCode,
@@ -64,6 +72,52 @@ const DIAGNOSTIC_CODES = new Set<string>([
   "unsupported.staff-count",
   "unsupported.time-modification",
   "unsupported.voice-count",
+]);
+
+const COMMAND_CODE_ONLY_FAILURES = new Set<string>([
+  "command.invalid-envelope",
+  "command.unsupported-version",
+  "command.unknown-id",
+  "command.target-mismatch",
+  "command.target-not-found",
+  "command.anchor-not-found",
+  "command.anchor-wrong-owner",
+  "command.version-overflow",
+  "command.internal-error",
+  "history.empty-undo",
+  "history.empty-redo",
+  "history.invariant-violation",
+  "event.reentrant-write",
+  "event.sequence-overflow",
+]);
+
+const CHECKPOINT_FAILURE_CODES = new Set<string>([
+  "checkpoint.invalid",
+  "checkpoint.document-mismatch",
+  "checkpoint.version-unavailable",
+  "checkpoint.invariant-violation",
+  "event.reentrant-write",
+  "event.sequence-overflow",
+]);
+
+const READ_FAILURE_CODES = new Set<string>([
+  "read.invalid-address",
+  "read.entity-not-found",
+  "read.invalid-range",
+  "read.range-endpoint-not-found",
+  "read.range-owner-mismatch",
+  "read.invalid-snapshot",
+  "read.invariant-violation",
+]);
+
+const KERNEL_CAPABILITIES = new Set<string>([
+  "registry:read",
+  "command:register",
+  "selector:register",
+  "command:execute",
+  "selector:execute",
+  "score:read",
+  "event:subscribe",
 ]);
 
 function isDiagnosticCode(value: unknown): value is DiagnosticCode {
@@ -233,6 +287,250 @@ export function decodeModuleIssueSource(
       moduleId: record.moduleId,
       contributionId: record.contributionId,
     };
+  } catch {
+    return undefined;
+  }
+}
+
+function decodeCodeOnlyFailure<Failure extends { readonly code: string }>(
+  input: unknown,
+  acceptedCodes: ReadonlySet<string>,
+): Failure | undefined {
+  const record = readExactDataRecord(input, ["code"]);
+  return record !== undefined &&
+    typeof record.code === "string" &&
+    acceptedCodes.has(record.code)
+    ? ({ code: record.code } as Failure)
+    : undefined;
+}
+
+export function decodeCommandFailure(
+  input: unknown,
+): CommandFailure | undefined {
+  try {
+    const codeOnly = decodeCodeOnlyFailure<CommandFailure>(
+      input,
+      COMMAND_CODE_ONLY_FAILURES,
+    );
+    if (codeOnly !== undefined) {
+      return codeOnly;
+    }
+    const record = readExactDataRecord(input, ["code", "diagnostics"]);
+    const values = readDenseArray(record?.diagnostics);
+    if (
+      record === undefined ||
+      record.code !== "command.semantic-invalid" ||
+      values === undefined
+    ) {
+      return undefined;
+    }
+    const diagnostics: Extract<
+      CommandFailure,
+      { readonly code: "command.semantic-invalid" }
+    >["diagnostics"][number][] = [];
+    for (const value of values) {
+      const diagnostic = decodeDiagnosticInput(value);
+      if (
+        diagnostic === undefined ||
+        !diagnostic.code.startsWith("semantic.")
+      ) {
+        return undefined;
+      }
+      diagnostics.push(diagnostic as (typeof diagnostics)[number]);
+    }
+    return { code: "command.semantic-invalid", diagnostics };
+  } catch {
+    return undefined;
+  }
+}
+
+export function decodeCheckpointFailure(
+  input: unknown,
+): CheckpointFailure | undefined {
+  try {
+    return decodeCodeOnlyFailure<CheckpointFailure>(
+      input,
+      CHECKPOINT_FAILURE_CODES,
+    );
+  } catch {
+    return undefined;
+  }
+}
+
+export function decodeReadFailure(input: unknown): ReadFailure | undefined {
+  try {
+    return decodeCodeOnlyFailure<ReadFailure>(input, READ_FAILURE_CODES);
+  } catch {
+    return undefined;
+  }
+}
+
+type EventSubscriptionFailure = Extract<
+  EventSubscriptionResult,
+  { readonly status: "rejected" }
+>["failure"];
+
+export function decodeEventSubscriptionFailure(
+  input: unknown,
+): EventSubscriptionFailure | undefined {
+  try {
+    return decodeCodeOnlyFailure<EventSubscriptionFailure>(
+      input,
+      new Set(["event.invalid-handler"]),
+    );
+  } catch {
+    return undefined;
+  }
+}
+
+function decodeSafeId(value: unknown): string | undefined {
+  return isSafeRegistryId(value) ? value : undefined;
+}
+
+function decodeCapability(value: unknown): KernelCapability | undefined {
+  return typeof value === "string" && KERNEL_CAPABILITIES.has(value)
+    ? (value as KernelCapability)
+    : undefined;
+}
+
+export function decodeRegistryStartupFailure(
+  input: unknown,
+): KernelRegistryStartupFailure | undefined {
+  try {
+    const codeOnly = readExactDataRecord(input, ["code"]);
+    if (
+      codeOnly?.code === "registry.invalid-startup-input" ||
+      codeOnly?.code === "registry.internal-error"
+    ) {
+      return { code: codeOnly.code };
+    }
+
+    const registration = readExactDataRecord(input, [
+      "code",
+      "registrationEntryId",
+    ]);
+    const registrationEntryId = decodeSafeId(registration?.registrationEntryId);
+    if (
+      registrationEntryId !== undefined &&
+      (registration?.code === "registry.registration-entry-not-found" ||
+        registration?.code === "registry.invalid-contribution")
+    ) {
+      return { code: registration.code, registrationEntryId };
+    }
+
+    const owner = readExactDataRecord(input, [
+      "code",
+      "registrationEntryId",
+      "moduleId",
+    ]);
+    const ownerRegistrationEntryId = decodeSafeId(owner?.registrationEntryId);
+    const ownerModuleId = decodeSafeId(owner?.moduleId);
+    if (
+      owner?.code === "registry.registration-owner-mismatch" &&
+      ownerRegistrationEntryId !== undefined &&
+      ownerModuleId !== undefined
+    ) {
+      return {
+        code: "registry.registration-owner-mismatch",
+        registrationEntryId: ownerRegistrationEntryId,
+        moduleId: ownerModuleId,
+      };
+    }
+
+    const module = readExactDataRecord(input, ["code", "moduleId"]);
+    const moduleId = decodeSafeId(module?.moduleId);
+    if (moduleId !== undefined) {
+      switch (module?.code) {
+        case "registry.duplicate-module-id":
+        case "registry.unsupported-origin":
+        case "registry.unsupported-runtime":
+        case "registry.unsupported-trust-level":
+        case "registry.api-version-incompatible":
+          return { code: module.code, moduleId };
+      }
+    }
+
+    const contribution = readExactDataRecord(input, [
+      "code",
+      "contributionId",
+    ]);
+    const contributionId = decodeSafeId(contribution?.contributionId);
+    if (contributionId !== undefined) {
+      if (contribution?.code === "registry.duplicate-contribution-id") {
+        return { code: contribution.code, contributionId };
+      }
+      if (contribution?.code === "registry.handler-mismatch") {
+        return { code: contribution.code, contributionId };
+      }
+    }
+
+    const capabilityRecord = readExactDataRecord(input, [
+      "code",
+      "moduleId",
+      "capability",
+    ]);
+    const capabilityModuleId = decodeSafeId(capabilityRecord?.moduleId);
+    const capability = decodeCapability(capabilityRecord?.capability);
+    return capabilityRecord?.code === "registry.capability-denied" &&
+      capabilityModuleId !== undefined &&
+      capability !== undefined
+      ? {
+          code: "registry.capability-denied",
+          moduleId: capabilityModuleId,
+          capability,
+        }
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export function decodeRegistryAccessFailure(
+  input: unknown,
+): KernelRegistryAccessFailure | undefined {
+  try {
+    const codeOnly = readExactDataRecord(input, ["code"]);
+    if (
+      codeOnly?.code === "registry.invalid-invocation" ||
+      codeOnly?.code === "registry.internal-error"
+    ) {
+      return { code: codeOnly.code };
+    }
+
+    const module = readExactDataRecord(input, ["code", "moduleId"]);
+    const moduleId = decodeSafeId(module?.moduleId);
+    if (module?.code === "registry.module-not-found" && moduleId !== undefined) {
+      return { code: "registry.module-not-found", moduleId };
+    }
+
+    const contribution = readExactDataRecord(input, [
+      "code",
+      "contributionId",
+    ]);
+    const contributionId = decodeSafeId(contribution?.contributionId);
+    if (
+      contribution?.code === "registry.contribution-not-found" &&
+      contributionId !== undefined
+    ) {
+      return { code: "registry.contribution-not-found", contributionId };
+    }
+
+    const capabilityRecord = readExactDataRecord(input, [
+      "code",
+      "moduleId",
+      "capability",
+    ]);
+    const capabilityModuleId = decodeSafeId(capabilityRecord?.moduleId);
+    const capability = decodeCapability(capabilityRecord?.capability);
+    return capabilityRecord?.code === "registry.capability-denied" &&
+      capabilityModuleId !== undefined &&
+      capability !== undefined
+      ? {
+          code: "registry.capability-denied",
+          moduleId: capabilityModuleId,
+          capability,
+        }
+      : undefined;
   } catch {
     return undefined;
   }
