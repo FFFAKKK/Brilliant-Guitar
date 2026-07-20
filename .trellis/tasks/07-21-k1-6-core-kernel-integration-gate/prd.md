@@ -1,6 +1,6 @@
 # K1-6 Core Kernel Integration Gate
 
-> **Status: PLANNING ONLY / IMPLEMENTATION NOT AUTHORIZED.** K1-5 implementation baseline `51fa2177cbd25dea53f1ebaf23bd8b8426471589` was independently accepted at documentation baseline `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` on 2026-07-21 with 161/161 tests passing. K1-6 planning starts after acceptance closure and active-document convergence at `321064d`; no production implementation may begin until this PRD, `design.md`, and `implement.md` receive explicit user approval.
+> **Status: DECISIONS APPROVED / FINAL PLAN REVIEW PENDING / IMPLEMENTATION NOT AUTHORIZED.** K1-5 implementation baseline `51fa2177cbd25dea53f1ebaf23bd8b8426471589` was independently accepted at documentation baseline `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` on 2026-07-21 with 161/161 tests passing. K1-6 planning starts after acceptance closure and active-document convergence at `321064d`; the user approved `DEC-K1-6-001` through `DEC-K1-6-005` on 2026-07-21. No implementation may begin until this PRD, `design.md`, and `implement.md` receive explicit final approval.
 
 ## Goal
 
@@ -13,6 +13,8 @@ Prove that the accepted K1-1 through K1-5 contracts operate as one deterministic
 - K1-3: stable address/range, immutable snapshots, selectors, persisted checkpoints, dirty state, post-commit events, and handler isolation.
 - K1-4: startup-only frozen Registry/Capability, approved command/selector contributions, gateways, and privacy-safe startup/access failures.
 - K1-5: internal OO error families, public data-only `KernelIssue`/`KernelReport`, exhaustive adapters, validation reports, and detached current-schema migration.
+- Repository evidence: the shared `test/core-kernel/fixtures/core-score.ts` fixture has one measure and remains unchanged; K1-6 therefore owns a separate four-measure fixture.
+- Repository evidence: no accepted Guitar Domain implementation exists under `src/` or `test/`; Guitar Domain remains a future independent prerequisite and is excluded.
 
 ## Provisional Scope
 
@@ -56,13 +58,13 @@ Prove that the accepted K1-1 through K1-5 contracts operate as one deterministic
 - [ ] AC-K1-6-009: `npm run typecheck`, `npm run build`, full `npm test`, deterministic integration repeats, `git diff --check`, and Trellis validation all pass in the approved environment.
 - [ ] AC-K1-6-010: active Core/parent/product documents record the final fixed baseline and no stale stage status; K1-6 is not marked accepted until a separate reviewer approves it.
 
-## Decisions Requiring User Approval
+## Approved Decisions
 
-- **DEC-K1-6-001 — Gate shape:** recommended default is integration-test-and-documentation only; production code changes are permitted only as separately reviewed defect repairs.
-- **DEC-K1-6-002 — Fixture count:** recommended default is one canonical four-measure fixture plus small focused negative fixtures, avoiding a large parallel fixture framework.
-- **DEC-K1-6-003 — Guitar prerequisite:** recommended default is to exclude Guitar Domain from K1-6 because no accepted Guitar Domain prerequisite is currently recorded; add it later through its own integration gate.
-- **DEC-K1-6-004 — Repeatability gate:** recommended default is to run the canonical end-to-end flow at least twice in one test and compare the full observable result trace deeply.
-- **DEC-K1-6-005 — Defect handling:** recommended default is stop-and-replan for any public-contract/schema change; private implementation defects may be fixed only after a focused repair plan and explicit implementation authorization.
+- [x] **DEC-K1-6-001 — Gate shape:** integration-test-and-documentation only; production code changes are permitted only as separately reviewed defect repairs.
+- [x] **DEC-K1-6-002 — Fixture count:** one canonical four-measure fixture plus small focused negative clones; no large parallel fixture framework.
+- [x] **DEC-K1-6-003 — Guitar prerequisite:** exclude Guitar Domain because no accepted implementation prerequisite exists; integrate it later through its own gate.
+- [x] **DEC-K1-6-004 — Repeatability gate:** run the canonical end-to-end flow twice from fresh inputs and deeply compare the full observable trace.
+- [x] **DEC-K1-6-005 — Defect handling:** stop and replan for any public-contract/schema change; private implementation defects require a focused repair plan and explicit implementation authorization.
 
 ## Notes
 
