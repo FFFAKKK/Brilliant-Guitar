@@ -1,0 +1,30 @@
+{
+  "id": "k1-6-core-kernel-integration-gate",
+  "name": "k1-6-core-kernel-integration-gate",
+  "title": "K1-6 Core Kernel Integration Gate",
+  "description": "",
+  "status": "planning",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "ATOM",
+  "assignee": "ATOM",
+  "createdAt": "2026-07-21",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "codex/k1-5-errors-diagnostics-reports-migration",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "Planning only. K1-5 accepted and archived; K1-6 implementation is not authorized until PRD/design/implement receive explicit user approval.",
+  "meta": {
+    "planning_base_commit": "321064d",
+    "k1_5_implementation_commit": "51fa2177cbd25dea53f1ebaf23bd8b8426471589",
+    "k1_5_acceptance_documentation_commit": "ed801a9fa1a69222188c3ca04ee243b48d7a92d2"
+  }
+}
