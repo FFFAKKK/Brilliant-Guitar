@@ -63,3 +63,37 @@ export type {
   KernelModuleGatewayCreationResult,
   KernelRegistryCreationResult,
 } from "./registry/runtime";
+
+export {
+  createModuleInternalIssue,
+  mapCheckpointFailureToKernelIssues,
+  mapCommandFailureToKernelIssues,
+  mapDiagnosticToKernelIssue,
+  mapEventSubscriptionFailureToKernelIssues,
+  mapReadFailureToKernelIssues,
+  mapRegistryAccessFailureToKernelIssues,
+  mapRegistryStartupFailureToKernelIssues,
+} from "./reports/adapters";
+export { createKernelValidationReport } from "./reports/validation-report";
+export type {
+  CoreIssueSubsystem,
+  EventSubscriptionFailure,
+  KernelIssue,
+  KernelIssueCode,
+  KernelIssueLocation,
+  KernelIssueSource,
+  KernelReport,
+  KernelReportKind,
+  KernelReportStatus,
+  KernelReportSummary,
+  KernelSeverity,
+  MigrationFailureCode,
+  MigrationReport,
+  ModuleFailureCode,
+  ReportFailureCode,
+} from "./reports/contracts";
+export { migrateScoreDocument } from "./migration/migrate-score-document";
+export type {
+  MigrationFailure,
+  MigrationResult,
+} from "./migration/contracts";

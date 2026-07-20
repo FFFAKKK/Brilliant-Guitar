@@ -129,6 +129,29 @@ test("Core production sources have no forbidden dependencies", () => {
   assert.deepEqual(violations, []);
 });
 
+test("migration compatibility entry has no session registry or physical IO dependency", () => {
+  const entry = readFileSync(
+    resolve(
+      process.cwd(),
+      "src",
+      "core-kernel",
+      "migration",
+      "migrate-score-document.ts",
+    ),
+    "utf8",
+  );
+  for (const forbidden of [
+    "../commands/",
+    "../session/",
+    "../events/",
+    "../registry/runtime",
+    '"node:fs"',
+    '"node:path"',
+  ]) {
+    assert.equal(entry.includes(forbidden), false);
+  }
+});
+
 function listTypeScriptFiles(root: string): readonly string[] {
   return readdirSync(root, { withFileTypes: true })
     .flatMap((entry) => {
