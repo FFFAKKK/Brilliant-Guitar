@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript 5.8, Node.js test runner, existing `structuredClone`, `deepFreezeValue`, K1-1 codec/semantic validator, K1-4 descriptor-first strict-codec helpers, no new runtime dependencies.
 
-**Current status:** Tasks 0–9 and acceptance repair AR-1 are implemented on `codex/k1-5-errors-diagnostics-reports-migration`. The implementation baseline is `51fa2177cbd25dea53f1ebaf23bd8b8426471589`; the fresh full gate passes 161/161 tests and the focused K1-5 gate passes 39/39. Independent acceptance is pending, so this is not an accepted baseline and K1-6 remains blocked.
+**Current status:** ACCEPTED / ARCHIVE READY (2026-07-21). Tasks 0–9 and acceptance repair AR-1 are implemented on `codex/k1-5-errors-diagnostics-reports-migration`. The implementation baseline is `51fa2177cbd25dea53f1ebaf23bd8b8426471589`; independent acceptance fixed the documentation baseline at `ed801a9fa1a69222188c3ca04ee243b48d7a92d2`. The fresh full gate passes 161/161 tests and the focused K1-5 gate passes 39/39. K1-6 planning is unlocked; production implementation remains separately gated.
 
 ## Global Constraints
 
@@ -776,7 +776,7 @@ git commit -m "feat(core): expose k1-5 report and migration api"
 **Interfaces:**
 
 - Consumes actual implemented APIs and fresh test evidence.
-- Produces one consistent active contract marked implementation candidate / independent acceptance pending.
+- Historically produced the pre-acceptance candidate contract; the final accepted state is recorded at the top of this plan.
 - Does not edit historical snapshots, retired specs or archived K1-1 through K1-4 task decisions.
 
 - [x] **Step 1: Replace stale K1-5 blocked/draft claims**
@@ -792,8 +792,8 @@ For each public adapter/report/migration entry, record scope, signature, invaria
 Use wording equivalent to:
 
 ```text
-K1-5 implementation candidate complete; independent acceptance pending.
-K1-6 remains blocked until K1-5 receives a separate acceptance baseline.
+K1-5 candidate ready for independent review.
+K1-6 remains gated until that review returns a separate acceptance baseline.
 ```
 
 Insert the actual implementation HEAD and fresh test count only after Task 9 verification. Do not reuse `94766a0` or 125/125 as K1-5 evidence.
@@ -826,7 +826,7 @@ git commit -m "docs(core): synchronize k1-5 candidate contracts"
 
 **Interfaces:**
 
-- Produces the implementation candidate and evidence package for an independent reviewer.
+- Produces the pre-acceptance candidate and evidence package that was independently accepted on 2026-07-21.
 - Does not archive the task, mark K1-5 accepted or unlock K1-6.
 
 - [x] **Step 1: Run all static and build gates**
@@ -890,7 +890,7 @@ Report:
 - public API additions;
 - frozen exclusions;
 - dirty/untracked paths intentionally preserved;
-- explicit statement that K1-6 remains blocked.
+- explicit pre-acceptance statement that K1-6 remained gated at candidate handoff.
 
 Do not call `task.py finish`, archive K1-5, update an accepted baseline or begin K1-6 until the independent reviewer returns an acceptance verdict.
 
@@ -900,7 +900,7 @@ Do not call `task.py finish`, archive K1-5, update an accepted baseline or begin
 - [x] Strictly support the real `{ code }` and `{ code, diagnostics }` creation-failure shapes; preserve the outer issue and semantic diagnostic order from actual `CommandBus.create()` and replay failures.
 - [x] Replace open `Set<string>`/non-exhaustive fixture arrays with compiler-exhaustive records for diagnostic, command, CommandBus creation, checkpoint, read, event, Registry startup and Registry access code families.
 - [x] Prove the exhaustiveness gate by temporarily adding a diagnostic/command union member and observing the expected typecheck failure before reverting the probe.
-- [x] Synchronize the authoritative PRD, design, implementation record, active Core spec, parent task and product REQ/SPEC while keeping K1-5 acceptance pending and K1-6 blocked.
+- [x] Synchronize the authoritative PRD, design, implementation record, active Core spec, parent task and product REQ/SPEC for candidate handoff; final acceptance was recorded separately on 2026-07-21.
 - [x] Run the complete fresh gate, record the repair implementation commit/test count, and hand the new candidate baseline to an independent reviewer.
 
 **Stage 4 rollback point:** revert candidate-evidence/docs commit, Task 8 docs commit and Task 7 public export commit. Earlier internal K1-5 stages remain testable; reverting all four stages restores the accepted K1-4 public surface without persisted-data migration.

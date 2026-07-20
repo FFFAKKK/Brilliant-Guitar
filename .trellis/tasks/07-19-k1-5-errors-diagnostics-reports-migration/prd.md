@@ -1,6 +1,6 @@
 # K1-5 Errors Diagnostics Reports Migration
 
-> **Status: IMPLEMENTATION CANDIDATE COMPLETE / INDEPENDENT ACCEPTANCE PENDING.** 实施候选基线为 `51fa2177cbd25dea53f1ebaf23bd8b8426471589`；2026-07-20 完整门禁通过 161/161 tests。该提交不是 accepted baseline，K1-6 继续阻塞。
+> **Status: ACCEPTED / ARCHIVE READY（2026-07-21）.** K1-5 实现基线为 `51fa2177cbd25dea53f1ebaf23bd8b8426471589`；独立审计在文档修正版 `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` 上通过。fresh `typecheck`、`build`、161/161 tests、`git diff --check` 与 Trellis validation 均通过。K1-6 规划已解锁，但生产实现仍需独立批准。
 
 ## Goal
 
@@ -118,5 +118,5 @@
 ## Notes
 
 - 2026-07-20：用户批准三份 K1-5 规划文档后，操作者已在 `codex/k1-5-errors-diagnostics-reports-migration` 启动实施；当前 Trellis task 为 `in_progress / acceptance_pending`。
-- “实施前创建独立 K1-5 分支”是规划阶段的历史启动条件，现已满足。当前修复仍以已验收 K1-4 为祖先；K1-5 在独立复验前不得标记 accepted，K1-6 继续阻塞。
+- “实施前创建独立 K1-5 分支”是规划阶段的历史启动条件，现已满足。K1-5 已在 `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` 通过独立复验；K1-6 只解锁规划，生产实现仍需单独授权。
 - 所有非 K1-5 的用户自有未跟踪目录（包括 `.trellis/maintenance/`、DVA/Codex theme 任务与 `codex theme/`）均不属于本任务，不得修改、清理、移动或纳入提交。

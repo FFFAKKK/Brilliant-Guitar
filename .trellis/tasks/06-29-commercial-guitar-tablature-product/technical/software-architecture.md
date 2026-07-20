@@ -6,7 +6,7 @@
 - 作用: 定义后续实现的核心边界、模块协作方式、依赖方向和架构验收标准。
 - 当前架构决策: 采用参照操作系统微内核思想的 Core Kernel + 用户态服务模块架构。内核负责谱面真相、命令事务、验证、版本化契约和模块协作接口；UI、渲染、播放、导入导出、桌面壳和未来插件都作为模块或适配器与内核协作。
 - 详细架构图: `technical/microkernel-architecture.md`。
-- 当前 Core 状态: K1-1～K1-4 已验收归档；K1-5 implementation candidate `51fa2177cbd25dea53f1ebaf23bd8b8426471589` 已完成并通过 161/161 测试，等待独立验收；K1-6 继续阻塞。权威合同位于 `.trellis/spec/core-kernel/`，后续分块仍须独立规划并审核。
+- 当前 Core 状态: K1-1～K1-5 已验收归档；K1-5 实现基线 `51fa2177cbd25dea53f1ebaf23bd8b8426471589` 已于 2026-07-21 在文档基线 `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` 通过独立验收，161/161 测试通过；K1-6 规划已解锁，生产实现尚未授权。权威合同位于 `.trellis/spec/core-kernel/`，后续分块仍须独立规划并审核。
 - 当前阶段边界: 当前是 Pure Core Kernel 分块实施阶段。本文件只定义内核边界、模块协作原则和依赖方向；外部工程目录结构、monorepo 方案、`apps/desktop` 和 `packages/*` 拆分不属于当前阶段。
 - 首个实现里程碑: Pure Core Kernel V1。先实现纯 TypeScript 内核和内核测试；桌面壳、UI、渲染、播放、持久化物理 IO、导出和导入均后置。
 - 目录状态: 目录结构仍未确认，必须等工程脚手架阶段从已确认内核边界、测试边界、构建方式和发布方式反推，不得反过来限制当前内核规划。
@@ -106,7 +106,7 @@ flowchart TD
 - `CommandBus`、语义命令定义、内部 delta、事务、undo/redo、命令回放。
 - 语义地址、范围模型和命令目标校验。
 - `brilliant-score-1` schema/codec，以及 K1-5 已实现的纯内存 current-schema compatibility 入口；物理 `.bgp`/manifest/文件 IO 后置。
-- K1-3 的封闭 snapshot/selectors、`CommandBus.subscribe()` 与两个事件类型；K1-4 Registry/Capability 已验收归档；K1-5 Issue/Report/migration implementation candidate 已完成并等待独立验收。
+- K1-3 的封闭 snapshot/selectors、`CommandBus.subscribe()` 与两个事件类型；K1-4 Registry/Capability 与 K1-5 Issue/Report/migration 均已验收归档。
 - K1-1 diagnostics 与 K1-5 `KernelIssue`、validation/migration `KernelReport` 基础；import/export/recovery 专属报告后置。
 
 第一阶段推荐内核排除:

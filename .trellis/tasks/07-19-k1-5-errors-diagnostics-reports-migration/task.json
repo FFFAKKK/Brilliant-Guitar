@@ -21,10 +21,11 @@
   "children": [],
   "parent": null,
   "relatedFiles": [],
-  "notes": "K1-5 implementation candidate complete; independent acceptance pending. K1-6 remains blocked.",
+  "notes": "K1-5 independently accepted on 2026-07-21. K1-6 planning is unlocked; production implementation remains separately gated.",
   "meta": {
-    "implementation_stage": "acceptance_pending",
+    "implementation_stage": "accepted",
     "implementation_commit": "51fa2177cbd25dea53f1ebaf23bd8b8426471589",
+    "acceptance_documentation_commit": "ed801a9fa1a69222188c3ca04ee243b48d7a92d2",
     "focused_test_count": 39,
     "full_test_count": 161
   }

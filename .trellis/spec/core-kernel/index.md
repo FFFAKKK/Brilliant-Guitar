@@ -1,7 +1,7 @@
 # Core Kernel Guidelines
 
 > **Current staged workflow (2026-07-20):** K1-1 through K1-4 are accepted and archived.
-> K1-5 implementation candidate `51fa2177cbd25dea53f1ebaf23bd8b8426471589` is complete with 161/161 tests passing and awaits independent acceptance. K1-6 remains blocked.
+> K1-5 implementation baseline `51fa2177cbd25dea53f1ebaf23bd8b8426471589` was independently accepted at documentation baseline `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` on 2026-07-21 with 161/161 tests passing. K1-6 planning is unlocked; production implementation remains separately gated.
 
 For changes that consume the accepted kernel, read `backend/score-document-model.md`, `backend/command-transaction.md`, `backend/snapshot-events.md`, `backend/registry-capability.md`, `backend/errors-reports.md`, and all staged boundary/diagnostic/quality guides. K1-1 through K1-4 contracts are frozen. The K1-5 candidate adds internal error families, public issue/report data, validation reports, and in-memory current-schema migration compatibility. Physical `.bgp` packaging, manifest, file IO, real legacy migration steps, Guitar Domain, UI, playback, and layout remain later work.
 

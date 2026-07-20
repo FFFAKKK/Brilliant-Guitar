@@ -1,8 +1,8 @@
 # Errors and Reports
 
-> **Current stage (2026-07-20):** K1-5 implementation candidate complete at
-> `51fa2177cbd25dea53f1ebaf23bd8b8426471589`; the fresh full gate passes 161/161 tests.
-> Independent acceptance is pending, so K1-6 remains blocked.
+> **Accepted stage (2026-07-21):** K1-5 implementation baseline
+> `51fa2177cbd25dea53f1ebaf23bd8b8426471589` was independently accepted at documentation baseline
+> `ed801a9fa1a69222188c3ca04ee243b48d7a92d2`; the fresh full gate passes 161/161 tests. K1-6 planning is unlocked, while production implementation remains separately gated.
 
 ## Current Diagnostic Contract
 

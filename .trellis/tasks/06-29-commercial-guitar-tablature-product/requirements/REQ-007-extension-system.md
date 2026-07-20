@@ -4,7 +4,7 @@
 
 - 状态: 已确认方向
 - 合并目标: 最终 PRD 的扩展性要求
-- 当前 Core 状态: K1-1～K1-4 已验收归档；K1-5 implementation candidate `51fa2177cbd25dea53f1ebaf23bd8b8426471589` 已完成并通过 161/161 测试，等待独立验收；K1-6 继续阻塞。
+- 当前 Core 状态: K1-1～K1-5 已验收归档；K1-5 实现基线 `51fa2177cbd25dea53f1ebaf23bd8b8426471589` 已于 2026-07-21 在文档基线 `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` 通过独立验收，161/161 测试通过；K1-6 规划已解锁，生产实现尚未授权。
 - 当前结论: 模块化和插件系统可行；产品架构采用微内核式 Core Kernel + 用户态服务模块。长期插件体验向 VS Code 看齐，但底层所有模块统一通过 registry、capability、snapshot、semantic command、event 和 report 与内核协作。
 - 用户决策: 官方模块和第三方模块使用同一套注册流程；来源与权限解耦，未来第三方模块可以在启动前被授予高权限并替换官方 UI、渲染、导入导出等模块。未来公开第三方插件统一采用 TypeScript；插件发布包可包含编译后的 JavaScript 产物，但源码、SDK、类型契约、示例和兼容测试以 TypeScript 为准。Lua 和 native 不作为公开插件语言；native 只允许作为官方/内置系统能力或未来单独评审的外部进程能力；MVP 不执行任意第三方 TypeScript 插件运行时、编译产物、Lua 或 native 代码。
 
@@ -43,7 +43,7 @@ K1-4 official module 与未来第三方插件分阶段协作。当前批准流�
 2. 读取通道: 插件通过 snapshot 或 selector 读取谱面，不持有可变 `ScoreDocument`。
 3. 写入通道: 插件通过已注册语义命令提交修改，进入事务、验证、undo/redo 和事件流。
 4. 事件通道: V1 内部模块按内核事件规则订阅；未来第三方插件通过后续插件平台过滤后的事件订阅，不能直接订阅裸 `KernelEventBus`。
-5. 报告通道: 当前 K1-5 candidate 只提供 `Diagnostic`、`KernelIssue` 和 validation/migration `KernelReport` 基础；未来插件 importer/exporter 的专属 report 与 ingress 必须由对应真实模块和 Extension Host 独立批准。
+5. 报告通道: 已验收 K1-5 只提供 `Diagnostic`、`KernelIssue` 和 validation/migration `KernelReport` 基础；未来插件 importer/exporter 的专属 report 与 ingress 必须由对应真实模块和 Extension Host 独立批准。
 
 业务规则:
 
@@ -65,7 +65,7 @@ K1-4 official module 与未来第三方插件分阶段协作。当前批准流�
 - K1-4 只绑定现有六个 command 与六个 selector adapter，并通过 `KernelModuleGateway` 授权调用。
 - 未来第三方插件平台可以研究把已安装、已校验、已授权的模块映射到受控 facade；新增 contribution kind 或 registration adapter 必须独立批准。
 - `Extension Host`、第三方 manifest 读取、插件上下文创建、事件过滤代理和第三方异常隔离属于未来插件平台，不进入 Pure Core Kernel V1。
-- `Core Kernel` 的 K1-4 已验收命令、读取、frozen Registry/gateway 和事件契约保持不变；K1-5 candidate 只增加 validation/migration issue/report 数据 API，不增加插件 report ingress。
+- `Core Kernel` 的 K1-4 已验收命令、读取、frozen Registry/gateway 和事件契约保持不变；已验收 K1-5 只增加 validation/migration issue/report 数据 API，不增加插件 report ingress。
 - 插件 API 不暴露 React、VexFlow、SVG DOM、Web Audio、Tauri 文件对象或可变文档。
 - K1-4 内部模块可以同进程运行，但不能直接注册 handler；它只能使用 Host 创建的 capability-scoped gateway。
 - `origin`、`runtime`、`trustLevel` 和 capability 独立建模；来源、运行时类型和可信级别都不自动获得权限，也不绕过 registry 校验。

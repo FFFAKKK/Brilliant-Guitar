@@ -1,7 +1,7 @@
 # SPEC-016 内核错误、Issue、Report 与迁移兼容边界
 
-> **状态：K1-5 IMPLEMENTATION CANDIDATE / INDEPENDENT ACCEPTANCE PENDING。**
-> 实施候选基线 `51fa2177cbd25dea53f1ebaf23bd8b8426471589` 已通过 161/161 测试；K1-1～K1-4 的 diagnostics/failure union 保持不变，K1-6 在 K1-5 形成独立验收基线前继续阻塞。
+> **状态：K1-5 ACCEPTED / ARCHIVED（2026-07-21）。**
+> 实现基线 `51fa2177cbd25dea53f1ebaf23bd8b8426471589` 已在文档基线 `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` 通过独立验收，161/161 测试通过；K1-1～K1-4 的 diagnostics/failure union 保持不变。K1-6 规划已解锁，生产实现尚未授权。
 
 ## 1. Scope / Trigger
 
@@ -82,5 +82,5 @@ report 派生计数、全部 migration 路径、unknown ExtensionBlock 与 Comma
 
 ## 7. Candidate Gate
 
-当前只能声明：`K1-5 implementation candidate complete; independent acceptance pending.`
-实施候选基线为 `51fa2177cbd25dea53f1ebaf23bd8b8426471589`，完整测试为 161/161；不得提前标记 accepted 或开启 K1-6。
+当前正式结论：`K1-5 accepted and archived.`
+实现基线为 `51fa2177cbd25dea53f1ebaf23bd8b8426471589`，独立验收文档基线为 `ed801a9fa1a69222188c3ca04ee243b48d7a92d2`，完整测试为 161/161；K1-6 只解锁规划，生产实现仍需独立批准。

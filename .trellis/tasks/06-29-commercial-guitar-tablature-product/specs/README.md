@@ -2,9 +2,9 @@
 
 ## 状态
 
-- 状态: K1-1～K1-4 已验收归档；K1-5 implementation candidate `51fa2177cbd25dea53f1ebaf23bd8b8426471589` 已完成并通过 161/161 测试，等待独立验收；K1-6 继续阻塞。
+- 状态: K1-1～K1-5 已验收归档；K1-5 实现基线 `51fa2177cbd25dea53f1ebaf23bd8b8426471589` 已于 2026-07-21 在文档基线 `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` 通过独立验收，161/161 测试通过；K1-6 规划已解锁，生产实现尚未授权。
 - 作用: 定义后续 spec 的拆分方式。
-- 注意: `SPEC-001` 是当前模型的产品投影，字段级契约在 `.trellis/spec/core-kernel/`；`SPEC-003`、`SPEC-014`、`SPEC-015` 已分别由 K1-2/K1-3/K1-4 验收合同落实，`SPEC-016` 对应 K1-5 candidate。未验收或标记为未来路线图的段落不能据此实现 API。
+- 注意: `SPEC-001` 是当前模型的产品投影，字段级契约在 `.trellis/spec/core-kernel/`；`SPEC-003`、`SPEC-014`、`SPEC-015`、`SPEC-016` 已分别由 K1-2/K1-3/K1-4/K1-5 验收合同落实。未验收或标记为未来路线图的段落不能据此实现 API。
 
 ## Spec 拆分原则
 
@@ -31,7 +31,7 @@
 - `SPEC-013-long-term-maintenance.md`: 长期维护原则、版本演进、`.bgp` 兼容、schema 迁移、回归测试和发布纪律。
 - `SPEC-014-kernel-snapshot-events.md`: 已验收的 K1-3 快照、selector 与事件合同。
 - `SPEC-015-kernel-registry-capability.md`: 已验收的 K1-4 registry/capability 合同。
-- `SPEC-016-kernel-errors-diagnostics-reports.md`: K1-1 diagnostics 与 K1-5 candidate 的 errors/issues/reports/current-schema migration 合同。
+- `SPEC-016-kernel-errors-diagnostics-reports.md`: K1-1 diagnostics 与已验收 K1-5 errors/issues/reports/current-schema migration 合同。
 
 ## Spec 完成标准
 

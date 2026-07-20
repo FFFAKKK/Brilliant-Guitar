@@ -2,7 +2,7 @@
 
 > **Current Core implementation stage (2026-07-20):** K1-1 through K1-4 are accepted foundations.
 > K1-4 is fixed at `94766a0930c05e5339c44f667deaf02116af1c0c` with 125/125 tests passing.
-> K1-5 implementation candidate is complete at `51fa2177cbd25dea53f1ebaf23bd8b8426471589` with 161/161 tests passing; independent acceptance is pending, so K1-6 remains blocked.
+> K1-5 implementation baseline `51fa2177cbd25dea53f1ebaf23bd8b8426471589` was independently accepted at documentation baseline `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` on 2026-07-21 with 161/161 tests passing. K1-6 planning is unlocked; production implementation remains separately gated.
 
 > Coding rules for the Pure Core Kernel V1 implementation.
 
@@ -54,8 +54,8 @@ Before finishing Core Kernel work, verify the frozen K1-1 rules plus the active 
 - [ ] Unknown ExtensionBlock payload survives semantic round-trip.
 - [ ] Core does not interpret guitar payloads or expose test assets.
 - [ ] Diagnostics use stable codes, messageKeys, paths, and deterministic ordering.
-- [ ] K1-5 adapters preserve accepted failure facts, reports derive status/summary, and migration stays detached from CommandBus state.
-- [ ] K1-5 public output contains no raw Error fields, ID/time metadata, dynamic migration registry, physical IO, or unapproved report kinds.
+- [x] K1-5 adapters preserve accepted failure facts, reports derive status/summary, and migration stays detached from CommandBus state.
+- [x] K1-5 public output contains no raw Error fields, ID/time metadata, dynamic migration registry, physical IO, or unapproved report kinds.
 - [ ] Semantic schema/codec stays independent from physical zip/file IO.
 - [ ] Any newly added kernel concept is documented as part of one of the 9 mechanisms or has an approved boundary decision.
 - [ ] Tests cover the Core loop fixture and semantic-valid-but-profile-unsupported boundaries.

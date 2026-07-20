@@ -1,6 +1,6 @@
 # K1-5 Errors Diagnostics Reports Migration — Design
 
-> **Status: IMPLEMENTATION CANDIDATE COMPLETE / INDEPENDENT ACCEPTANCE PENDING.** Candidate implementation baseline: `51fa2177cbd25dea53f1ebaf23bd8b8426471589`; the fresh 2026-07-20 full gate passed 161/161 tests. This is not an accepted baseline and K1-6 remains blocked.
+> **Status: ACCEPTED / ARCHIVE READY (2026-07-21).** Implementation baseline: `51fa2177cbd25dea53f1ebaf23bd8b8426471589`; independently accepted documentation baseline: `ed801a9fa1a69222188c3ca04ee243b48d7a92d2`. Fresh typecheck, build, 161/161 tests, diff check, and Trellis validation pass. K1-6 planning is unlocked; production implementation remains separately gated.
 
 ## 1. Context and Authority
 

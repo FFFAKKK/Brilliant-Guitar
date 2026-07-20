@@ -1,7 +1,7 @@
 # REQ-019 内核错误、Diagnostic 与 Report 契约
 
-> **状态：K1-5 IMPLEMENTATION CANDIDATE / INDEPENDENT ACCEPTANCE PENDING。**
-> 实施候选基线 `51fa2177cbd25dea53f1ebaf23bd8b8426471589` 已通过 161/161 测试；K1-1～K1-4 既有 failure/result 合同保持不变，K1-6 在独立验收前继续阻塞。
+> **状态：K1-5 ACCEPTED / ARCHIVED（2026-07-21）。**
+> 实现基线 `51fa2177cbd25dea53f1ebaf23bd8b8426471589` 已在文档基线 `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` 通过独立验收，161/161 测试通过；K1-1～K1-4 既有 failure/result 合同保持不变。K1-6 规划已解锁，生产实现尚未授权。
 
 ## 用户价值
 
@@ -177,4 +177,4 @@ MVP 不需要完整观测平台。当前阶段应避免:
 
 ## 当前状态
 
-K1-5 implementation candidate `51fa2177cbd25dea53f1ebaf23bd8b8426471589` complete；完整门禁 161/161 tests 通过，独立验收 pending。在正式 accepted baseline 形成前不得启动 K1-6。
+K1-5 实现基线 `51fa2177cbd25dea53f1ebaf23bd8b8426471589` 已在文档基线 `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` 通过独立验收；完整门禁 161/161 tests 通过。K1-6 只解锁规划，生产实现仍需单独批准。
