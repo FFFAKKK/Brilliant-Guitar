@@ -88,7 +88,7 @@ MVP 真正必要的功能:
 
 接口契约:
 
-- 命令、checkpoint、read、event 与 registry 失败保持原 result，并可显式映射为 Issue 数组。
+- CommandBus 创建/回放创建、命令、checkpoint、read、event 与 registry 失败保持原 result，并可显式映射为 Issue 数组。
 - `createKernelValidationReport` 把 K1-1 diagnostics 投影为新的 validation `KernelReport`。
 - `migrateScoreDocument` 只输出 `not-required | rejected` 与 `MigrationReport`。
 - 所有用户可见文本通过 `messageKey` 进入 i18n。
@@ -167,7 +167,7 @@ MVP 不需要完整观测平台。当前阶段应避免:
 - [ ] AC-019-04: validation 与 migration report 复用同一套 `KernelIssue`、派生 summary/status 和隐私边界。
 - [ ] AC-019-05: 显式 module wrapper 把异常边界归一化为 `module.internal-error` Issue，不泄露异常文本。
 - [ ] AC-019-06: report 默认不包含用户谱面正文、访问令牌或本机隐私路径。
-- [ ] AC-019-07: K1-1 diagnostics、command/history、checkpoint/read/event、registry/capability 与 migration 失败都能映射到稳定 code。
+- [ ] AC-019-07: K1-1 diagnostics、CommandBus create/replay creation failure、command/history、checkpoint/read/event、registry/capability 与 migration 失败都能映射到稳定 code；带 diagnostics 的创建失败必须保留外层 code 和全部 semantic diagnostics 原顺序。
 
 ## 已确认决策
 

@@ -126,7 +126,7 @@ type KernelIssueLocation =
   | { readonly kind: "score-range"; readonly range: ScoreRange }
 ```
 
-`KernelIssueCode` is the closed union of K1-1 diagnostic codes, accepted K1-2/K1-3/K1-4 failure codes, and the K1-5-native `report.*`, `module.internal-error`, and `migration.*` codes. `messageKey` and severity are derived from code: `unsupported.*` is warning, `*.internal-error` and `*.invariant-violation` are fatal, and other current failures are errors.
+`KernelIssueCode` is the closed union of K1-1 diagnostic codes, accepted K1-2/K1-3/K1-4 failure codes, and the K1-5-native `report.*`, `module.internal-error`, and `migration.*` codes. K1-2 coverage explicitly includes both `CommandFailure["code"]` and `CommandBusCreationFailure["code"]`. `messageKey` and severity are derived from code: `unsupported.*` is warning, `*.internal-error` and `*.invariant-violation` are fatal, and other current failures are errors.
 
 `source` is either a fixed Core subsystem or a K1-4-safe module/contribution identity. It provides attribution only and never performs capability authorization. Location is a closed diagnostic path/address/range union with no file path, URL, or free-text form. No public issue contains raw `Error.message`, stack, cause, score prose, tokens, secrets, private absolute paths, or plugin source.
 
@@ -137,6 +137,7 @@ type KernelIssueLocation =
 ```typescript
 mapDiagnosticToKernelIssue(diagnostic: Diagnostic): KernelIssue
 mapCommandFailureToKernelIssues(failure: CommandFailure): readonly KernelIssue[]
+mapCommandBusCreationFailureToKernelIssues(failure: CommandBusCreationFailure): readonly KernelIssue[]
 mapCheckpointFailureToKernelIssues(failure: CheckpointFailure): readonly KernelIssue[]
 mapReadFailureToKernelIssues(failure: ReadFailure): readonly KernelIssue[]
 mapEventSubscriptionFailureToKernelIssues(failure: EventSubscriptionFailure): readonly KernelIssue[]
@@ -152,6 +153,8 @@ The authoritative failure unions stay in `command-transaction.md`, `snapshot-eve
 - Decode records descriptor-first with exact own enumerable data fields and never invoke accessors or Proxy `get` traps.
 - Preserve accepted codes, diagnostic path/details, and deterministic ordering.
 - `command.semantic-invalid` emits the operation issue first, followed by every concrete semantic issue.
+- `command.invalid-initial-document` accepts only the real exact forms `{ code }` and `{ code, diagnostics }`; the diagnostic form emits the outer creation issue first, followed by every semantic issue in original order. This covers both `CommandBus.create()` and replay creation rejection.
+- Every diagnostic/failure code lookup table is compiler-exhaustive via `Record<UnionCode, true>` or an equivalent `Exclude<UnionCode, ListedCode> = never` proof. `satisfies readonly Failure[]` alone is not an exhaustiveness gate.
 - Registry details use a per-code allowlist; adapters never spread an input failure object.
 - Malformed runtime values return one `report.invalid-input`; unexpected adapter failures return one `report.internal-error`.
 - Arrays and all nested output values are detached and deeply frozen.
@@ -222,7 +225,8 @@ Unknown `ExtensionBlock` JSON remains deeply equal. Repeated execution is determ
 
 ## K1-5 Required Tests and Exclusions
 
-- Exhaust every accepted failure code and assert exact source/details mapping.
+- Exhaust every accepted failure code and assert exact source/details mapping; compile-time code tables must fail when any diagnostic, command, creation, checkpoint, read, event, registry-startup, or registry-access union gains an unlisted member.
+- Exercise actual invalid `CommandBus.create()` and replay results and assert `command.invalid-initial-document` precedes all semantic diagnostics.
 - Cover getters, Proxies, extra fields, cycles, sparse arrays, and post-call mutation.
 - Cover completed/warning/error/fatal report states, exact counts, and deep freeze.
 - Cover every migration matrix row, unknown extensions, determinism, and CommandBus isolation.

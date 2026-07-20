@@ -7,7 +7,7 @@
 K1-5 is additive over these accepted contracts:
 
 - K1-1: `Diagnostic`, decode/semantic/profile code unions, deterministic paths/details, `ValidationReport`, `ScoreDocument`, codec and validators.
-- K1-2: `CommandFailure`, `CommandResult`, history and replay.
+- K1-2: `CommandFailure`, `CommandBusCreationFailure`, `CommandResult`, history and replay.
 - K1-3: address/range, read/checkpoint/event failures, snapshot/dirty/event isolation.
 - K1-4: startup-only Registry/Capability and its startup/access failures, accepted at `94766a0930c05e5339c44f667deaf02116af1c0c`.
 
@@ -17,7 +17,7 @@ The existing subsystem failures remain their owners' public result contracts. K1
 
 ```text
 K1-1 Diagnostic --------------------+
-K1-2 Command/History Failure -------+
+K1-2 Creation/Command/History Failure+
 K1-3 Read/Checkpoint/Event Failure -+--> typed allowlist adapters
 K1-4 Registry Failure --------------+              |
                                                     v
@@ -89,6 +89,7 @@ type EventSubscriptionFailure = Extract<
 type KernelIssueCode =
   | DiagnosticCode
   | CommandFailure["code"]
+  | CommandBusCreationFailure["code"]
   | CheckpointFailure["code"]
   | ReadFailure["code"]
   | EventSubscriptionFailure["code"]
@@ -244,6 +245,9 @@ Adapters are additive, side-effect-free and subsystem-specific. Proposed public 
 ```typescript
 mapDiagnosticToKernelIssue(diagnostic: Diagnostic): KernelIssue;
 mapCommandFailureToKernelIssues(failure: CommandFailure): readonly KernelIssue[];
+mapCommandBusCreationFailureToKernelIssues(
+  failure: CommandBusCreationFailure,
+): readonly KernelIssue[];
 mapCheckpointFailureToKernelIssues(failure: CheckpointFailure): readonly KernelIssue[];
 mapReadFailureToKernelIssues(failure: ReadFailure): readonly KernelIssue[];
 mapEventSubscriptionFailureToKernelIssues(
@@ -269,6 +273,8 @@ Adapter rules:
 - Map code prefix/owner to a fixed Core subsystem source.
 - Preserve existing diagnostic path/details through an isolated clone.
 - `command.semantic-invalid` returns the operation issue first, then one issue per diagnostic in original order.
+- `command.invalid-initial-document` accepts the exact runtime shapes `{ code }` and `{ code, diagnostics }`; the diagnostic form returns the outer creation issue first, then every semantic diagnostic in original order. Actual `CommandBus.create()` and replay failures use this adapter.
+- Every diagnostic and failure code table is compiler-exhaustive (`Record<UnionCode, true>` or an equivalent `never` proof); a typed array that only proves its listed members are valid is not sufficient.
 - Results are detached, deeply frozen arrays.
 - Public signatures remain strongly typed, but runtime implementations validate descriptor values without invoking accessors or Proxy `get` traps.
 - Malformed runtime values return one `report.invalid-input` error issue with Core `report` source.
@@ -401,15 +407,16 @@ The public index must not export:
 
 ### Contracts and OO boundary
 
-- Compile-time closed code coverage and exact messageKey typing.
+- Compile-time closed code coverage and exact messageKey typing, including exhaustive code-table proofs for every diagnostic/failure family.
 - Code-derived severity tests for warning/error/fatal families.
 - Public export proves internal classes are unavailable.
 - Internal tests prove family classes share conversion behavior without leaking Error fields.
 
 ### Adapters and privacy
 
-- Every union member from K1-1 through K1-4 maps to exact code/source/details.
-- Nested semantic diagnostics preserve order and full safe fields.
+- Every union member from K1-1 through K1-4 maps to exact code/source/details, including `CommandBusCreationFailure`.
+- Nested semantic diagnostics preserve order and full safe fields for command semantic rejection and invalid CommandBus initial documents.
+- Actual `CommandBus.create()` and replay invalid-initial-document results map to the outer creation issue followed by their semantic diagnostics.
 - Extra properties, raw Error properties, getters and Proxies do not escape or execute unexpectedly.
 - Outputs are detached and deeply frozen.
 

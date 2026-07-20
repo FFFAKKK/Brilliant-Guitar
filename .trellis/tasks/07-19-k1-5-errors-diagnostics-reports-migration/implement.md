@@ -91,7 +91,7 @@ Expected: all commands pass before the first K1-5 RED test. Record the exact tes
 
 **Interfaces:**
 
-- Consumes existing `DiagnosticCode`, `CommandFailure`, `CheckpointFailure`, `ReadFailure`, `EventSubscriptionResult`, `KernelRegistryStartupFailure`, `KernelRegistryAccessFailure`, `DiagnosticPath`, `ScoreAddress`, `ScoreRange`, and `JsonObject`.
+- Consumes existing `DiagnosticCode`, `CommandFailure`, `CommandBusCreationFailure`, `CheckpointFailure`, `ReadFailure`, `EventSubscriptionResult`, `KernelRegistryStartupFailure`, `KernelRegistryAccessFailure`, `DiagnosticPath`, `ScoreAddress`, `ScoreRange`, and `JsonObject`.
 - Produces public data types `KernelIssueCode`, `KernelSeverity`, `KernelIssueLocation`, `CoreIssueSubsystem`, `KernelIssueSource`, `KernelIssue`, `KernelReportKind`, `KernelReportStatus`, `KernelReportSummary`, `KernelReport`, and `MigrationReport`.
 - Produces internal factories `createOperationKernelIssue`, `createMigrationKernelIssue`, `createModuleKernelIssue`, and `createReportKernelIssue`; no class is exported from the Core public root.
 
@@ -345,8 +345,8 @@ git commit -m "feat(core): add safe issue adapters"
 
 **Interfaces:**
 
-- Consumes all K1-2/K1-3/K1-4 failure unions exactly as currently exported.
-- Produces the six subsystem mapping functions listed in `design.md`; the event failure input type is derived from the rejected branch of `EventSubscriptionResult` rather than changing K1-3 contracts.
+- Consumes all K1-2/K1-3/K1-4 failure unions exactly as currently exported, including the K1-2 `CommandBusCreationFailure` returned by creation and replay.
+- Produces the seven subsystem mapping functions listed in `design.md`; the event failure input type is derived from the rejected branch of `EventSubscriptionResult` rather than changing K1-3 contracts.
 - Every function returns a detached frozen issue array; nested diagnostic failures return operation issue first.
 
 - [x] **Step 1: Write table-driven RED tests for every failure code**
@@ -356,6 +356,7 @@ Create explicit fixtures for every member of:
 ```typescript
 type ExistingFailure =
   | CommandFailure
+  | CommandBusCreationFailure
   | CheckpointFailure
   | ReadFailure
   | Extract<EventSubscriptionResult, { status: "rejected" }>["failure"]
@@ -709,6 +710,7 @@ Add expected runtime keys for:
   "createKernelValidationReport",
   "createModuleInternalIssue",
   "mapCheckpointFailureToKernelIssues",
+  "mapCommandBusCreationFailureToKernelIssues",
   "mapCommandFailureToKernelIssues",
   "mapDiagnosticToKernelIssue",
   "mapEventSubscriptionFailureToKernelIssues",
@@ -891,5 +893,14 @@ Report:
 - explicit statement that K1-6 remains blocked.
 
 Do not call `task.py finish`, archive K1-5, update an accepted baseline or begin K1-6 until the independent reviewer returns an acceptance verdict.
+
+### Acceptance Repair AR-1: Close creation-failure and exhaustiveness gaps
+
+- [x] Add `CommandBusCreationFailure["code"]` to `KernelIssueCode` and export `mapCommandBusCreationFailureToKernelIssues`.
+- [x] Strictly support the real `{ code }` and `{ code, diagnostics }` creation-failure shapes; preserve the outer issue and semantic diagnostic order from actual `CommandBus.create()` and replay failures.
+- [x] Replace open `Set<string>`/non-exhaustive fixture arrays with compiler-exhaustive records for diagnostic, command, CommandBus creation, checkpoint, read, event, Registry startup and Registry access code families.
+- [x] Prove the exhaustiveness gate by temporarily adding a diagnostic/command union member and observing the expected typecheck failure before reverting the probe.
+- [x] Synchronize the authoritative PRD, design, implementation record, active Core spec, parent task and product REQ/SPEC while keeping K1-5 acceptance pending and K1-6 blocked.
+- [ ] Run the complete fresh gate, record the repair implementation commit/test count, and hand the new candidate baseline to an independent reviewer.
 
 **Stage 4 rollback point:** revert candidate-evidence/docs commit, Task 8 docs commit and Task 7 public export commit. Earlier internal K1-5 stages remain testable; reverting all four stages restores the accepted K1-4 public surface without persisted-data migration.

@@ -5,7 +5,10 @@ import {
 } from "../errors/kernel-error";
 import type { JsonObject } from "../domain/extensions";
 import { deepFreezeValue } from "../read/deep-freeze";
-import type { CommandFailure } from "../commands/contracts";
+import type {
+  CommandBusCreationFailure,
+  CommandFailure,
+} from "../commands/contracts";
 import type { EventSubscriptionResult } from "../events/contracts";
 import type { CheckpointFailure, ReadFailure } from "../read/contracts";
 import type {
@@ -23,6 +26,7 @@ import type {
 } from "./contracts";
 import {
   decodeCheckpointFailure,
+  decodeCommandBusCreationFailure,
   decodeCommandFailure,
   decodeDiagnosticInput,
   decodeEventSubscriptionFailure,
@@ -175,6 +179,40 @@ export function mapCommandFailureToKernelIssues(
       ? "event"
       : "command";
     return freezeIssueArray([operationIssue(decoded.code, subsystem)]);
+  } catch {
+    return internalFailureArray();
+  }
+}
+
+export function mapCommandBusCreationFailureToKernelIssues(
+  failure: CommandBusCreationFailure,
+): readonly KernelIssue[] {
+  try {
+    const decoded = decodeCommandBusCreationFailure(failure);
+    if (decoded === undefined) {
+      return invalidFailureArray();
+    }
+    if (!("diagnostics" in decoded)) {
+      return freezeIssueArray([
+        operationIssue(decoded.code, "command"),
+      ]);
+    }
+    const diagnosticIssues = decoded.diagnostics.map(
+      mapDiagnosticToKernelIssue,
+    );
+    if (
+      diagnosticIssues.some(
+        (issue) =>
+          issue.code === "report.invalid-input" ||
+          issue.code === "report.internal-error",
+      )
+    ) {
+      return invalidFailureArray();
+    }
+    return freezeIssueArray([
+      operationIssue(decoded.code, "command"),
+      ...diagnosticIssues,
+    ]);
   } catch {
     return internalFailureArray();
   }

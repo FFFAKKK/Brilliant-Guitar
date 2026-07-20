@@ -1,7 +1,9 @@
 import { test } from "node:test";
 import assert = require("node:assert/strict");
 
+import { CommandBus } from "../../src/core-kernel/commands/command-bus";
 import type { CommandFailure } from "../../src/core-kernel/commands/contracts";
+import { replayCoreCommands } from "../../src/core-kernel/commands/replay";
 import type { EventSubscriptionResult } from "../../src/core-kernel/events/contracts";
 import type {
   CheckpointFailure,
@@ -9,6 +11,7 @@ import type {
 } from "../../src/core-kernel/read/contracts";
 import {
   mapCheckpointFailureToKernelIssues,
+  mapCommandBusCreationFailureToKernelIssues,
   mapCommandFailureToKernelIssues,
   mapEventSubscriptionFailureToKernelIssues,
   mapReadFailureToKernelIssues,
@@ -23,11 +26,26 @@ import type {
   KernelRegistryAccessFailure,
   KernelRegistryStartupFailure,
 } from "../../src/core-kernel/registry/contracts";
+import { cloneCoreScoreFixture } from "./fixtures/core-score";
 
 type EventSubscriptionFailure = Extract<
   EventSubscriptionResult,
   { readonly status: "rejected" }
 >["failure"];
+
+type FailureByCode<Failure extends { readonly code: string }> = {
+  readonly [Code in Failure["code"]]: Extract<
+    Failure,
+    { readonly code: Code }
+  >;
+};
+
+type FailureFixtureByCode<Failure extends { readonly code: string }> = {
+  readonly [Code in Failure["code"]]: {
+    readonly failure: Extract<Failure, { readonly code: Code }>;
+    readonly details?: Readonly<Record<string, unknown>>;
+  };
+};
 
 function assertDeeplyFrozen(value: unknown): void {
   if (value === null || typeof value !== "object") {
@@ -66,27 +84,28 @@ function assertSingleMappedIssue(
 test("command and history adapters cover every accepted failure code", () => {
   const commandSource = { kind: "core", subsystem: "command" } as const;
   const eventSource = { kind: "core", subsystem: "event" } as const;
-  const fixtures = [
-    { code: "command.invalid-envelope" },
-    { code: "command.unsupported-version" },
-    { code: "command.unknown-id" },
-    { code: "command.target-mismatch" },
-    { code: "command.target-not-found" },
-    { code: "command.anchor-not-found" },
-    { code: "command.anchor-wrong-owner" },
-    { code: "command.version-overflow" },
-    { code: "command.internal-error" },
-    { code: "history.empty-undo" },
-    { code: "history.empty-redo" },
-    { code: "history.invariant-violation" },
-    { code: "event.reentrant-write" },
-    { code: "event.sequence-overflow" },
-  ] satisfies readonly Exclude<
+  type CodeOnlyCommandFailure = Exclude<
     CommandFailure,
     { readonly code: "command.semantic-invalid" }
-  >[];
+  >;
+  const fixtures = {
+    "command.invalid-envelope": { code: "command.invalid-envelope" },
+    "command.unsupported-version": { code: "command.unsupported-version" },
+    "command.unknown-id": { code: "command.unknown-id" },
+    "command.target-mismatch": { code: "command.target-mismatch" },
+    "command.target-not-found": { code: "command.target-not-found" },
+    "command.anchor-not-found": { code: "command.anchor-not-found" },
+    "command.anchor-wrong-owner": { code: "command.anchor-wrong-owner" },
+    "command.version-overflow": { code: "command.version-overflow" },
+    "command.internal-error": { code: "command.internal-error" },
+    "history.empty-undo": { code: "history.empty-undo" },
+    "history.empty-redo": { code: "history.empty-redo" },
+    "history.invariant-violation": { code: "history.invariant-violation" },
+    "event.reentrant-write": { code: "event.reentrant-write" },
+    "event.sequence-overflow": { code: "event.sequence-overflow" },
+  } satisfies FailureByCode<CodeOnlyCommandFailure>;
 
-  for (const failure of fixtures) {
+  for (const failure of Object.values(fixtures)) {
     assertSingleMappedIssue(mapCommandFailureToKernelIssues(failure), {
       failure,
       source: failure.code.startsWith("event.") ? eventSource : commandSource,
@@ -132,17 +151,57 @@ test("semantic command failure preserves operation-first diagnostic order", () =
   assertDeeplyFrozen(issues);
 });
 
-test("checkpoint adapter covers every accepted failure code", () => {
-  const fixtures = [
-    { code: "checkpoint.invalid" },
-    { code: "checkpoint.document-mismatch" },
-    { code: "checkpoint.version-unavailable" },
-    { code: "checkpoint.invariant-violation" },
-    { code: "event.reentrant-write" },
-    { code: "event.sequence-overflow" },
-  ] satisfies readonly CheckpointFailure[];
+test("command bus creation and replay failures preserve semantic diagnostics", () => {
+  const invalid = cloneCoreScoreFixture();
+  (invalid.metadata.tempo as { bpm: number }).bpm = -1;
 
-  for (const failure of fixtures) {
+  const created = CommandBus.create(invalid);
+  assert.equal(created.ok, false);
+  if (created.ok) {
+    return;
+  }
+  const creationIssues = mapCommandBusCreationFailureToKernelIssues(
+    created.failure,
+  );
+  assert.deepEqual(
+    creationIssues.map((issue) => issue.code),
+    ["command.invalid-initial-document", "semantic.tempo-invalid"],
+  );
+
+  const replayed = replayCoreCommands(invalid, []);
+  assert.equal(replayed.status, "invalid-initial-document");
+  if (replayed.status !== "invalid-initial-document") {
+    return;
+  }
+  assert.deepEqual(
+    mapCommandBusCreationFailureToKernelIssues(replayed.failure),
+    creationIssues,
+  );
+  assertDeeplyFrozen(creationIssues);
+});
+
+test("command bus creation failure supports its code-only runtime shape", () => {
+  const issues = mapCommandBusCreationFailureToKernelIssues({
+    code: "command.invalid-initial-document",
+  });
+
+  assert.deepEqual(issues.map((issue) => issue.code), [
+    "command.invalid-initial-document",
+  ]);
+  assertDeeplyFrozen(issues);
+});
+
+test("checkpoint adapter covers every accepted failure code", () => {
+  const fixtures = {
+    "checkpoint.invalid": { code: "checkpoint.invalid" },
+    "checkpoint.document-mismatch": { code: "checkpoint.document-mismatch" },
+    "checkpoint.version-unavailable": { code: "checkpoint.version-unavailable" },
+    "checkpoint.invariant-violation": { code: "checkpoint.invariant-violation" },
+    "event.reentrant-write": { code: "event.reentrant-write" },
+    "event.sequence-overflow": { code: "event.sequence-overflow" },
+  } satisfies FailureByCode<CheckpointFailure>;
+
+  for (const failure of Object.values(fixtures)) {
     assertSingleMappedIssue(mapCheckpointFailureToKernelIssues(failure), {
       failure,
       source: failure.code.startsWith("event.")
@@ -153,17 +212,17 @@ test("checkpoint adapter covers every accepted failure code", () => {
 });
 
 test("read adapter covers every accepted failure code", () => {
-  const fixtures = [
-    { code: "read.invalid-address" },
-    { code: "read.entity-not-found" },
-    { code: "read.invalid-range" },
-    { code: "read.range-endpoint-not-found" },
-    { code: "read.range-owner-mismatch" },
-    { code: "read.invalid-snapshot" },
-    { code: "read.invariant-violation" },
-  ] satisfies readonly ReadFailure[];
+  const fixtures = {
+    "read.invalid-address": { code: "read.invalid-address" },
+    "read.entity-not-found": { code: "read.entity-not-found" },
+    "read.invalid-range": { code: "read.invalid-range" },
+    "read.range-endpoint-not-found": { code: "read.range-endpoint-not-found" },
+    "read.range-owner-mismatch": { code: "read.range-owner-mismatch" },
+    "read.invalid-snapshot": { code: "read.invalid-snapshot" },
+    "read.invariant-violation": { code: "read.invariant-violation" },
+  } satisfies FailureByCode<ReadFailure>;
 
-  for (const failure of fixtures) {
+  for (const failure of Object.values(fixtures)) {
     assertSingleMappedIssue(mapReadFailureToKernelIssues(failure), {
       failure,
       source: { kind: "core", subsystem: "read" },
@@ -172,29 +231,33 @@ test("read adapter covers every accepted failure code", () => {
 });
 
 test("event subscription adapter covers its accepted failure code", () => {
-  const failure = {
-    code: "event.invalid-handler",
-  } satisfies EventSubscriptionFailure;
-  assertSingleMappedIssue(
-    mapEventSubscriptionFailureToKernelIssues(failure),
-    {
-      failure,
-      source: { kind: "core", subsystem: "event" },
-    },
-  );
+  const fixtures = {
+    "event.invalid-handler": { code: "event.invalid-handler" },
+  } satisfies FailureByCode<EventSubscriptionFailure>;
+  for (const failure of Object.values(fixtures)) {
+    assertSingleMappedIssue(
+      mapEventSubscriptionFailureToKernelIssues(failure),
+      {
+        failure,
+        source: { kind: "core", subsystem: "event" },
+      },
+    );
+  }
 });
 
 test("registry startup adapter uses exact per-code detail allowlists", () => {
-  const fixtures = [
-    { failure: { code: "registry.invalid-startup-input" } },
-    {
+  const fixtures = {
+    "registry.invalid-startup-input": {
+      failure: { code: "registry.invalid-startup-input" },
+    },
+    "registry.registration-entry-not-found": {
       failure: {
         code: "registry.registration-entry-not-found",
         registrationEntryId: "core.missing.v1",
       },
       details: { registrationEntryId: "core.missing.v1" },
     },
-    {
+    "registry.registration-owner-mismatch": {
       failure: {
         code: "registry.registration-owner-mismatch",
         registrationEntryId: "core.commands.v1",
@@ -205,40 +268,40 @@ test("registry startup adapter uses exact per-code detail allowlists", () => {
         moduleId: "core.selectors",
       },
     },
-    {
+    "registry.duplicate-module-id": {
       failure: { code: "registry.duplicate-module-id", moduleId: "core.commands" },
       details: { moduleId: "core.commands" },
     },
-    {
+    "registry.duplicate-contribution-id": {
       failure: {
         code: "registry.duplicate-contribution-id",
         contributionId: "core.selector.score-metadata",
       },
       details: { contributionId: "core.selector.score-metadata" },
     },
-    {
+    "registry.unsupported-origin": {
       failure: { code: "registry.unsupported-origin", moduleId: "third.party" },
       details: { moduleId: "third.party" },
     },
-    {
+    "registry.unsupported-runtime": {
       failure: { code: "registry.unsupported-runtime", moduleId: "third.party" },
       details: { moduleId: "third.party" },
     },
-    {
+    "registry.unsupported-trust-level": {
       failure: {
         code: "registry.unsupported-trust-level",
         moduleId: "third.party",
       },
       details: { moduleId: "third.party" },
     },
-    {
+    "registry.api-version-incompatible": {
       failure: {
         code: "registry.api-version-incompatible",
         moduleId: "third.party",
       },
       details: { moduleId: "third.party" },
     },
-    {
+    "registry.capability-denied": {
       failure: {
         code: "registry.capability-denied",
         moduleId: "third.party",
@@ -246,53 +309,54 @@ test("registry startup adapter uses exact per-code detail allowlists", () => {
       },
       details: { moduleId: "third.party", capability: "score:read" },
     },
-    {
+    "registry.invalid-contribution": {
       failure: {
         code: "registry.invalid-contribution",
         registrationEntryId: "core.commands.v1",
       },
       details: { registrationEntryId: "core.commands.v1" },
     },
-    {
+    "registry.handler-mismatch": {
       failure: {
         code: "registry.handler-mismatch",
         contributionId: "core.selector.score-metadata",
       },
       details: { contributionId: "core.selector.score-metadata" },
     },
-    { failure: { code: "registry.internal-error" } },
-  ] satisfies readonly {
-    readonly failure: KernelRegistryStartupFailure;
-    readonly details?: Readonly<Record<string, unknown>>;
-  }[];
+    "registry.internal-error": {
+      failure: { code: "registry.internal-error" },
+    },
+  } satisfies FailureFixtureByCode<KernelRegistryStartupFailure>;
 
-  for (const fixture of fixtures) {
+  for (const fixture of Object.values(fixtures)) {
     assertSingleMappedIssue(
       mapRegistryStartupFailureToKernelIssues(fixture.failure),
       {
         failure: fixture.failure,
         source: { kind: "core", subsystem: "registry" },
-        ...(fixture.details === undefined ? {} : { details: fixture.details }),
+        ...("details" in fixture ? { details: fixture.details } : {}),
       },
     );
   }
 });
 
 test("registry access adapter uses exact per-code detail allowlists", () => {
-  const fixtures = [
-    { failure: { code: "registry.invalid-invocation" } },
-    {
+  const fixtures = {
+    "registry.invalid-invocation": {
+      failure: { code: "registry.invalid-invocation" },
+    },
+    "registry.module-not-found": {
       failure: { code: "registry.module-not-found", moduleId: "third.party" },
       details: { moduleId: "third.party" },
     },
-    {
+    "registry.contribution-not-found": {
       failure: {
         code: "registry.contribution-not-found",
         contributionId: "third.party.command",
       },
       details: { contributionId: "third.party.command" },
     },
-    {
+    "registry.capability-denied": {
       failure: {
         code: "registry.capability-denied",
         moduleId: "third.party",
@@ -300,19 +364,18 @@ test("registry access adapter uses exact per-code detail allowlists", () => {
       },
       details: { moduleId: "third.party", capability: "command:execute" },
     },
-    { failure: { code: "registry.internal-error" } },
-  ] satisfies readonly {
-    readonly failure: KernelRegistryAccessFailure;
-    readonly details?: Readonly<Record<string, unknown>>;
-  }[];
+    "registry.internal-error": {
+      failure: { code: "registry.internal-error" },
+    },
+  } satisfies FailureFixtureByCode<KernelRegistryAccessFailure>;
 
-  for (const fixture of fixtures) {
+  for (const fixture of Object.values(fixtures)) {
     assertSingleMappedIssue(
       mapRegistryAccessFailureToKernelIssues(fixture.failure),
       {
         failure: fixture.failure,
         source: { kind: "core", subsystem: "registry" },
-        ...(fixture.details === undefined ? {} : { details: fixture.details }),
+        ...("details" in fixture ? { details: fixture.details } : {}),
       },
     );
   }
@@ -345,6 +408,11 @@ test("every failure family rejects extra fields, accessors and hostile Proxies",
     {
       map: (value: unknown) => mapCommandFailureToKernelIssues(value as never),
       valid: { code: "command.invalid-envelope" },
+    },
+    {
+      map: (value: unknown) =>
+        mapCommandBusCreationFailureToKernelIssues(value as never),
+      valid: { code: "command.invalid-initial-document" },
     },
     {
       map: (value: unknown) => mapCheckpointFailureToKernelIssues(value as never),

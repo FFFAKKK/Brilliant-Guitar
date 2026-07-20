@@ -218,7 +218,7 @@ Why before final integration: all failure paths need stable codes, diagnostics, 
 Deliverables:
 
 - internal sealed error families with public data-only `KernelIssue` projections
-- additive adapters for K1-1 diagnostics and K1-2/K1-3/K1-4 failure unions
+- additive adapters for K1-1 diagnostics and K1-2/K1-3/K1-4 failure unions, explicitly including K1-2 CommandBus creation/replay failures
 - derived deeply frozen `KernelReport<"validation" | "migration">`
 - `createKernelValidationReport` without changing K1-1 `ValidationReport`
 - current `brilliant-score-1` `not-required | rejected` migration entry without physical IO or session effects

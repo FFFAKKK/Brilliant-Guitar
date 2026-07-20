@@ -9,7 +9,7 @@
 ## Verified Baseline
 
 - K1-1 的 decode/semantic/profile diagnostics 是冻结兼容面：稳定 closed code、`messageKey`、确定性顺序、结构化 `path` 和隐私安全 `details`。
-- K1-2 的 `CommandFailure`、K1-3 的 read/checkpoint/event failure、K1-4 的 startup/access failure 均由各自阶段拥有；K1-5 可以提供显式映射，但不得重命名、改写或破坏这些结果合同。
+- K1-2 的 `CommandFailure` 与 `CommandBusCreationFailure`、K1-3 的 read/checkpoint/event failure、K1-4 的 startup/access failure 均由各自阶段拥有；K1-5 可以提供显式映射，但不得重命名、改写或破坏这些结果合同。
 - K1-4 已在 `94766a0930c05e5339c44f667deaf02116af1c0c` 通过独立验收并归档，125/125 tests 通过；K1-5 规划门已解锁。
 - K1-4 的 `moduleId` 只用于 registry lookup、capability check、安全失败 details 与 summary source metadata。K1-5 若需要 operation/report 归因，必须使用独立记录，不得把 module attribution 写入 command envelope、history、undo/redo、replay 或 K1-3 events。
 - 当前权威 K1-5 输入为活动 Core spec、已归档 K1-1 至 K1-4 任务与本独立任务；父计划和产品 REQ/SPEC 中的 K1-5 内容目前仅作为待复核草案，不能直接扩大实施范围。
@@ -50,7 +50,7 @@
 - **K1-5-REQ-001 — Additive compatibility:** 所有既有 diagnostic/failure/result 签名、code、字段含义与成功路径保持不变；K1-5 只增加显式 adapters 和新入口。
 - **K1-5-REQ-002 — Internal OO hierarchy:** 内部错误体系必须由一个封闭基础类和少量按 family 派生的具体类承载共享行为；不得为每个 code 创建子类，也不得从 public index 导出 class hierarchy。
 - **K1-5-REQ-003 — Stable issue record:** `KernelIssue` 必须是版本化、closed、深度不可变的纯数据记录，包含原始稳定 code、自动 `messageKey`、自动 severity、可选 location/source 与白名单 details。
-- **K1-5-REQ-004 — Lossless adapters:** K1-1 diagnostic、K1-2 command/history、K1-3 read/checkpoint/event 和 K1-4 registry failure 必须由各自强类型 adapter 映射；adapter 不接受公开 patch 或任意自由形状 failure。
+- **K1-5-REQ-004 — Lossless adapters:** K1-1 diagnostic、K1-2 CommandBus creation/replay 与 command/history、K1-3 read/checkpoint/event 和 K1-4 registry failure 必须由各自强类型 adapter 映射；adapter 不接受公开 patch 或任意自由形状 failure。
 - **K1-5-REQ-005 — Nested diagnostics:** 带具体 diagnostics 的 failure 必须先输出外层 operation issue，再按原确定顺序输出所有具体 issues；不得丢失、排序、去重或泛化 code/path/details。
 - **K1-5-REQ-006 — Location/source separation:** issue location 与 source 使用不同 closed union。location 仅允许 DiagnosticPath、ScoreAddress、ScoreRange；source 仅允许受控 Core subsystem 或已验证 module/contribution attribution，且永不参与授权。
 - **K1-5-REQ-007 — Privacy by construction:** 新 details 只允许 adapter 白名单字段。unknown exception 内容、stack、cause、源码、token、secret、私有绝对路径、URL 和谱面正文不得进入 error/issue/report；转换不得触发未知 getter 或 Proxy `get` trap。
@@ -81,7 +81,7 @@
 
 - [x] **AC-K1-5-001:** 最终 PRD、`design.md` 和 `implement.md` 已于 2026-07-20 经用户审核批准；任务可交给操作者执行启动 gate。
 - [x] **AC-K1-5-002:** 内部 OO hierarchy 具有基础类和少量 family 派生类，但 public API/runtime export 不含这些 class，所有公开结果均为深度冻结纯数据。
-- [x] **AC-K1-5-003:** Diagnostic、CommandFailure、CheckpointFailure、ReadFailure、EventSubscription failure、Registry startup/access failure 分别具有 compile-time closed adapter 覆盖；新增 union member 会触发穷尽性编译失败或测试失败。
+- [x] **AC-K1-5-003:** Diagnostic、CommandFailure、CommandBusCreationFailure、CheckpointFailure、ReadFailure、EventSubscription failure、Registry startup/access failure 分别具有 compile-time closed adapter 覆盖；新增 union member 会触发穷尽性编译失败或测试失败。
 - [x] **AC-K1-5-004:** 每个 adapter 保留原 code 和全部批准的安全字段；semantic-invalid 同时保留外层 issue 与全部原始 semantic diagnostics，顺序深度相等。
 - [x] **AC-K1-5-005:** messageKey 与 severity 只能由 code 推导；调用者不能构造 code/messageKey/severity 矛盾组合。
 - [x] **AC-K1-5-006:** diagnostic-path、ScoreAddress、ScoreRange、Core subsystem 与 module/contribution source 均覆盖 good/base/bad case；source 不执行授权，file path/URL/free-form source 被排除。
@@ -107,7 +107,7 @@
 - **DEC-K1-5-007 — Detached migration candidate:** migration 是纯、原子的 compatibility boundary。成功或 `not-required` 只返回与输入及内部状态脱离、深度冻结、已通过 decode/semantic validation 的 `ScoreDocument` 候选与 report；失败不返回 candidate 或任何半迁移状态。migration 不持有、修改或整体替换活动 `CommandBus`，不产生 history/dirty/event；外层可用成功候选创建新的 session。未知 ExtensionBlock 必须在所有成功路径深度原样保留。
 - **DEC-K1-5-008 — Explicit exception boundaries only:** K1-5 的基础错误模块提供从 `unknown` 安全归一化为 family error/`KernelIssue` 的显式工厂或 wrapper，但只用于明确进入该边界的 operation、migration 或未来 module 调用。原始异常不得被保存、返回或重新抛出。K1-3 subscriber 异常继续按原合同隔离且本阶段不产生全局 issue；K1-4 的安全 failure 只能无损映射，不能恢复已抑制内容。K1-5 不增加全局错误 observer/event bus。
 - **DEC-K1-5-009 — Separate issue location from source:** `KernelIssueLocation` 是可选 closed union，只允许现有 `DiagnosticPath`、`ScoreAddress` 或 `ScoreRange`；adapter 不在缺少文档上下文时猜测语义地址。`KernelIssueSource` 是独立 closed union，只允许受控 Core subsystem 或经严格验证的 module/contribution attribution，并且不参与授权。Core issue 不接受 file path、URL 或自由文本 location/source；所有嵌套数据均严格解码、隔离复制并深度冻结。
-- **DEC-K1-5-010 — Closed code and derived severity:** `KernelIssueCode` 无损包含已批准的 K1-1 diagnostics、K1-2/K1-3/K1-4 failure code 与 K1-5 自有 closed code；`messageKey` 恒为 `core.${code}`。severity 不能由调用者提供：`unsupported.*` 为 `warning`，internal/invariant/显式未知模块异常为 `fatal`，其余失败为 `error`；本阶段不加入无真实语义的 `info`。`fatal` 仅表示当前 operation 无法安全继续。`command.semantic-invalid` 映射为外层 operation issue，随后按原确定顺序追加全部具体 semantic issues。
+- **DEC-K1-5-010 — Closed code and derived severity:** `KernelIssueCode` 无损包含已批准的 K1-1 diagnostics、K1-2/K1-3/K1-4 failure code 与 K1-5 自有 closed code；其中 K1-2 同时包含 `CommandFailure` 与 `CommandBusCreationFailure`。`messageKey` 恒为 `core.${code}`。severity 不能由调用者提供：`unsupported.*` 为 `warning`，internal/invariant/显式未知模块异常为 `fatal`，其余失败为 `error`；本阶段不加入无真实语义的 `info`。`fatal` 仅表示当前 operation 无法安全继续。`command.semantic-invalid` 与携带 diagnostics 的 `command.invalid-initial-document` 都映射为外层 operation issue，随后按原确定顺序追加全部具体 semantic issues。
 - **DEC-K1-5-011 — Derived report status and summary:** `KernelReport` 当前只允许 `kind: "validation" | "migration"`，status 只允许 `completed | completed-with-warnings | rejected`。status 与 `issueCount/warningCount/errorCount/fatalCount` 必须由冻结 issues 自动计算，调用者不得填写或覆盖；无 issue 为 completed，仅 warning 为 completed-with-warnings，出现 error/fatal 为 rejected。当前版本 pass-through 的 `MigrationResult.status: "not-required"` 对应 completed report；partial 语义延后到真实 importer。
 - **DEC-K1-5-012 — Single task with staged delivery:** K1-5 不创建子任务；同一任务的 `implement.md` 明确拆为 (1) error class/issue/adapters、(2) report/validation adapter、(3) migration compatibility boundary、(4) integration/public exports/spec sync 四个顺序阶段。每阶段必须有独立 RED/GREEN、局部回归、回滚点与建议提交边界，最终统一通过 K1-5 Gate。
 - **DEC-K1-5-013 — Internal sealed class hierarchy:** 抽象 `KernelError` 基类及其 family 派生类属于 Core 内部实现，不作为公共继承/`instanceof` 合同导出。公共 API 只暴露 closed data types 与必要的安全 adapters/factories。外部代码不能覆盖 `toIssue()` 或注入自定义 subclass；未来第三方 Module SDK 若需要可扩展错误协议，必须独立规划。
@@ -117,6 +117,6 @@
 
 ## Notes
 
-- 2026-07-20：用户已最终批准三份 K1-5 规划文档；当前 Trellis task 仍为 `planning`，尚未由操作者启动。
-- 当前任务创建于既有 K1-4 分支，仅代表规划容器创建成功；实施前必须确认干净基线和独立 `codex/k1-5-*` 分支。
+- 2026-07-20：用户批准三份 K1-5 规划文档后，操作者已在 `codex/k1-5-errors-diagnostics-reports-migration` 启动实施；当前 Trellis task 为 `in_progress / acceptance_pending`。
+- “实施前创建独立 K1-5 分支”是规划阶段的历史启动条件，现已满足。当前修复仍以已验收 K1-4 为祖先；K1-5 在独立复验前不得标记 accepted，K1-6 继续阻塞。
 - 所有非 K1-5 的用户自有未跟踪目录（包括 `.trellis/maintenance/`、DVA/Codex theme 任务与 `codex theme/`）均不属于本任务，不得修改、清理、移动或纳入提交。

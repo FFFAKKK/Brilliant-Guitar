@@ -173,7 +173,7 @@ Purpose: standardize failures, validation location, report shells, and schema mi
 Subfeatures:
 
 - Internal error families with public closed, deeply frozen `KernelIssue` data.
-- Descriptor-first additive adapters that preserve all accepted K1-1 through K1-4 codes and allowlisted facts.
+- Descriptor-first additive adapters that preserve all accepted K1-1 through K1-4 codes and allowlisted facts, including K1-2 CommandBus creation/replay failures.
 - Derived validation/migration reports; existing K1-1 `ValidationReport` remains unchanged.
 - Current `brilliant-score-1` not-required pass-through and safe future/malformed/semantic/internal rejection.
 - Empty private migration step table; no fictional legacy schema, dynamic registration, or `migrated` branch.

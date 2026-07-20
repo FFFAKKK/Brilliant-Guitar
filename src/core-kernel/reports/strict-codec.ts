@@ -1,5 +1,8 @@
 import type { JsonObject, JsonValue } from "../domain/extensions";
-import type { CommandFailure } from "../commands/contracts";
+import type {
+  CommandBusCreationFailure,
+  CommandFailure,
+} from "../commands/contracts";
 import type { EventSubscriptionResult } from "../events/contracts";
 import type { CheckpointFailure, ReadFailure } from "../read/contracts";
 import {
@@ -16,112 +19,154 @@ import type {
   Diagnostic,
   DiagnosticCode,
   DiagnosticPath,
+  SemanticDiagnostic,
 } from "../validation/diagnostics";
 import type { KernelIssueSource } from "./contracts";
 
-const DIAGNOSTIC_CODES = new Set<string>([
-  "decode.encode-failed",
-  "decode.extra-field",
-  "decode.json-syntax",
-  "decode.json-value",
-  "decode.non-finite-number",
-  "decode.required-field",
-  "decode.type",
-  "decode.union",
-  "decode.unreadable-input",
-  "decode.unsupported-schema-version",
-  "semantic.extension-duplicate",
-  "semantic.extension-namespace-invalid",
-  "semantic.extension-owner-missing",
-  "semantic.extension-payload-invalid",
-  "semantic.extension-schema-version-invalid",
-  "semantic.fraction-non-canonical",
-  "semantic.fraction-sign-invalid",
-  "semantic.id-duplicate",
-  "semantic.id-empty",
-  "semantic.measure-coverage-duplicate",
-  "semantic.measure-coverage-missing",
-  "semantic.measure-duration-invalid",
-  "semantic.measure-reference-missing",
-  "semantic.measure-required",
-  "semantic.meter-denominator-invalid",
-  "semantic.meter-numerator-invalid",
-  "semantic.note-value-invalid",
-  "semantic.notes-required",
-  "semantic.part-required",
-  "semantic.pickup-exceeds-measure",
-  "semantic.sequence-exceeds-measure",
-  "semantic.sequence-start-out-of-bounds",
-  "semantic.sounding-pitch-invalid",
-  "semantic.staff-line-count-invalid",
-  "semantic.staff-reference-missing",
-  "semantic.staff-required",
-  "semantic.tempo-invalid",
-  "semantic.time-arithmetic-overflow",
-  "semantic.transposition-invalid",
-  "semantic.voice-required",
-  "semantic.written-pitch-invalid",
-  "unsupported.chord",
-  "unsupported.dots",
-  "unsupported.meter",
-  "unsupported.note-value-base",
-  "unsupported.part-count",
-  "unsupported.pickup",
-  "unsupported.sequence-duration",
-  "unsupported.sequence-start",
-  "unsupported.staff-count",
-  "unsupported.time-modification",
-  "unsupported.voice-count",
-]);
+const DIAGNOSTIC_CODES = Object.freeze({
+  "decode.encode-failed": true,
+  "decode.extra-field": true,
+  "decode.json-syntax": true,
+  "decode.json-value": true,
+  "decode.non-finite-number": true,
+  "decode.required-field": true,
+  "decode.type": true,
+  "decode.union": true,
+  "decode.unreadable-input": true,
+  "decode.unsupported-schema-version": true,
+  "semantic.extension-duplicate": true,
+  "semantic.extension-namespace-invalid": true,
+  "semantic.extension-owner-missing": true,
+  "semantic.extension-payload-invalid": true,
+  "semantic.extension-schema-version-invalid": true,
+  "semantic.fraction-non-canonical": true,
+  "semantic.fraction-sign-invalid": true,
+  "semantic.id-duplicate": true,
+  "semantic.id-empty": true,
+  "semantic.measure-coverage-duplicate": true,
+  "semantic.measure-coverage-missing": true,
+  "semantic.measure-duration-invalid": true,
+  "semantic.measure-reference-missing": true,
+  "semantic.measure-required": true,
+  "semantic.meter-denominator-invalid": true,
+  "semantic.meter-numerator-invalid": true,
+  "semantic.note-value-invalid": true,
+  "semantic.notes-required": true,
+  "semantic.part-required": true,
+  "semantic.pickup-exceeds-measure": true,
+  "semantic.sequence-exceeds-measure": true,
+  "semantic.sequence-start-out-of-bounds": true,
+  "semantic.sounding-pitch-invalid": true,
+  "semantic.staff-line-count-invalid": true,
+  "semantic.staff-reference-missing": true,
+  "semantic.staff-required": true,
+  "semantic.tempo-invalid": true,
+  "semantic.time-arithmetic-overflow": true,
+  "semantic.transposition-invalid": true,
+  "semantic.voice-required": true,
+  "semantic.written-pitch-invalid": true,
+  "unsupported.chord": true,
+  "unsupported.dots": true,
+  "unsupported.meter": true,
+  "unsupported.note-value-base": true,
+  "unsupported.part-count": true,
+  "unsupported.pickup": true,
+  "unsupported.sequence-duration": true,
+  "unsupported.sequence-start": true,
+  "unsupported.staff-count": true,
+  "unsupported.time-modification": true,
+  "unsupported.voice-count": true,
+} satisfies Record<DiagnosticCode, true>);
 
-const COMMAND_CODE_ONLY_FAILURES = new Set<string>([
-  "command.invalid-envelope",
-  "command.unsupported-version",
-  "command.unknown-id",
-  "command.target-mismatch",
-  "command.target-not-found",
-  "command.anchor-not-found",
-  "command.anchor-wrong-owner",
-  "command.version-overflow",
-  "command.internal-error",
-  "history.empty-undo",
-  "history.empty-redo",
-  "history.invariant-violation",
-  "event.reentrant-write",
-  "event.sequence-overflow",
-]);
+const COMMAND_FAILURE_CODES = Object.freeze({
+  "command.invalid-envelope": true,
+  "command.unsupported-version": true,
+  "command.unknown-id": true,
+  "command.target-mismatch": true,
+  "command.target-not-found": true,
+  "command.anchor-not-found": true,
+  "command.anchor-wrong-owner": true,
+  "command.semantic-invalid": true,
+  "command.version-overflow": true,
+  "command.internal-error": true,
+  "history.empty-undo": true,
+  "history.empty-redo": true,
+  "history.invariant-violation": true,
+  "event.reentrant-write": true,
+  "event.sequence-overflow": true,
+} satisfies Record<CommandFailure["code"], true>);
 
-const CHECKPOINT_FAILURE_CODES = new Set<string>([
-  "checkpoint.invalid",
-  "checkpoint.document-mismatch",
-  "checkpoint.version-unavailable",
-  "checkpoint.invariant-violation",
-  "event.reentrant-write",
-  "event.sequence-overflow",
-]);
+const COMMAND_BUS_CREATION_FAILURE_CODES = Object.freeze({
+  "command.invalid-initial-document": true,
+} satisfies Record<CommandBusCreationFailure["code"], true>);
 
-const READ_FAILURE_CODES = new Set<string>([
-  "read.invalid-address",
-  "read.entity-not-found",
-  "read.invalid-range",
-  "read.range-endpoint-not-found",
-  "read.range-owner-mismatch",
-  "read.invalid-snapshot",
-  "read.invariant-violation",
-]);
+const CHECKPOINT_FAILURE_CODES = Object.freeze({
+  "checkpoint.invalid": true,
+  "checkpoint.document-mismatch": true,
+  "checkpoint.version-unavailable": true,
+  "checkpoint.invariant-violation": true,
+  "event.reentrant-write": true,
+  "event.sequence-overflow": true,
+} satisfies Record<CheckpointFailure["code"], true>);
 
-const KERNEL_CAPABILITIES = new Set<string>([
-  "registry:read",
-  "command:register",
-  "selector:register",
-  "command:execute",
-  "selector:execute",
-  "score:read",
-  "event:subscribe",
-]);
+const READ_FAILURE_CODES = Object.freeze({
+  "read.invalid-address": true,
+  "read.entity-not-found": true,
+  "read.invalid-range": true,
+  "read.range-endpoint-not-found": true,
+  "read.range-owner-mismatch": true,
+  "read.invalid-snapshot": true,
+  "read.invariant-violation": true,
+} satisfies Record<ReadFailure["code"], true>);
+
+const EVENT_SUBSCRIPTION_FAILURE_CODES = Object.freeze({
+  "event.invalid-handler": true,
+} satisfies Record<EventSubscriptionFailure["code"], true>);
+
+const REGISTRY_STARTUP_FAILURE_CODES = Object.freeze({
+  "registry.invalid-startup-input": true,
+  "registry.registration-entry-not-found": true,
+  "registry.registration-owner-mismatch": true,
+  "registry.duplicate-module-id": true,
+  "registry.duplicate-contribution-id": true,
+  "registry.unsupported-origin": true,
+  "registry.unsupported-runtime": true,
+  "registry.unsupported-trust-level": true,
+  "registry.api-version-incompatible": true,
+  "registry.capability-denied": true,
+  "registry.invalid-contribution": true,
+  "registry.handler-mismatch": true,
+  "registry.internal-error": true,
+} satisfies Record<KernelRegistryStartupFailure["code"], true>);
+
+const REGISTRY_ACCESS_FAILURE_CODES = Object.freeze({
+  "registry.invalid-invocation": true,
+  "registry.module-not-found": true,
+  "registry.contribution-not-found": true,
+  "registry.capability-denied": true,
+  "registry.internal-error": true,
+} satisfies Record<KernelRegistryAccessFailure["code"], true>);
+
+const KERNEL_CAPABILITIES = Object.freeze({
+  "registry:read": true,
+  "command:register": true,
+  "selector:register": true,
+  "command:execute": true,
+  "selector:execute": true,
+  "score:read": true,
+  "event:subscribe": true,
+} satisfies Record<KernelCapability, true>);
+
+function isListedCode<Code extends string>(
+  value: unknown,
+  codes: Readonly<Record<Code, true>>,
+): value is Code {
+  return typeof value === "string" &&
+    Reflect.getOwnPropertyDescriptor(codes, value)?.value === true;
+}
 
 function isDiagnosticCode(value: unknown): value is DiagnosticCode {
-  return typeof value === "string" && DIAGNOSTIC_CODES.has(value);
+  return isListedCode(value, DIAGNOSTIC_CODES);
 }
 
 function cloneJsonValue(
@@ -294,51 +339,81 @@ export function decodeModuleIssueSource(
 
 function decodeCodeOnlyFailure<Failure extends { readonly code: string }>(
   input: unknown,
-  acceptedCodes: ReadonlySet<string>,
+  acceptedCodes: Readonly<Record<Failure["code"], true>>,
 ): Failure | undefined {
   const record = readExactDataRecord(input, ["code"]);
   return record !== undefined &&
-    typeof record.code === "string" &&
-    acceptedCodes.has(record.code)
+    isListedCode(record.code, acceptedCodes)
     ? ({ code: record.code } as Failure)
     : undefined;
+}
+
+function decodeSemanticDiagnostics(
+  input: unknown,
+): readonly SemanticDiagnostic[] | undefined {
+  const values = readDenseArray(input);
+  if (values === undefined) {
+    return undefined;
+  }
+  const diagnostics: SemanticDiagnostic[] = [];
+  for (const value of values) {
+    const diagnostic = decodeDiagnosticInput(value);
+    if (
+      diagnostic === undefined ||
+      !diagnostic.code.startsWith("semantic.")
+    ) {
+      return undefined;
+    }
+    diagnostics.push(diagnostic as SemanticDiagnostic);
+  }
+  return diagnostics;
 }
 
 export function decodeCommandFailure(
   input: unknown,
 ): CommandFailure | undefined {
   try {
-    const codeOnly = decodeCodeOnlyFailure<CommandFailure>(
-      input,
-      COMMAND_CODE_ONLY_FAILURES,
-    );
-    if (codeOnly !== undefined) {
-      return codeOnly;
+    const codeOnly = readExactDataRecord(input, ["code"]);
+    if (
+      isListedCode(codeOnly?.code, COMMAND_FAILURE_CODES) &&
+      codeOnly.code !== "command.semantic-invalid"
+    ) {
+      return { code: codeOnly.code };
     }
     const record = readExactDataRecord(input, ["code", "diagnostics"]);
-    const values = readDenseArray(record?.diagnostics);
+    const diagnostics = decodeSemanticDiagnostics(record?.diagnostics);
     if (
       record === undefined ||
       record.code !== "command.semantic-invalid" ||
-      values === undefined
+      diagnostics === undefined
     ) {
       return undefined;
     }
-    const diagnostics: Extract<
-      CommandFailure,
-      { readonly code: "command.semantic-invalid" }
-    >["diagnostics"][number][] = [];
-    for (const value of values) {
-      const diagnostic = decodeDiagnosticInput(value);
-      if (
-        diagnostic === undefined ||
-        !diagnostic.code.startsWith("semantic.")
-      ) {
-        return undefined;
-      }
-      diagnostics.push(diagnostic as (typeof diagnostics)[number]);
-    }
     return { code: "command.semantic-invalid", diagnostics };
+  } catch {
+    return undefined;
+  }
+}
+
+export function decodeCommandBusCreationFailure(
+  input: unknown,
+): CommandBusCreationFailure | undefined {
+  try {
+    const codeOnly = readExactDataRecord(input, ["code"]);
+    if (
+      isListedCode(codeOnly?.code, COMMAND_BUS_CREATION_FAILURE_CODES)
+    ) {
+      return { code: "command.invalid-initial-document" };
+    }
+
+    const record = readExactDataRecord(input, ["code", "diagnostics"]);
+    if (record?.code !== "command.invalid-initial-document") {
+      return undefined;
+    }
+    const diagnostics = decodeSemanticDiagnostics(record.diagnostics);
+    return diagnostics === undefined
+      ? undefined
+      : { code: "command.invalid-initial-document", diagnostics };
   } catch {
     return undefined;
   }
@@ -376,7 +451,7 @@ export function decodeEventSubscriptionFailure(
   try {
     return decodeCodeOnlyFailure<EventSubscriptionFailure>(
       input,
-      new Set(["event.invalid-handler"]),
+      EVENT_SUBSCRIPTION_FAILURE_CODES,
     );
   } catch {
     return undefined;
@@ -388,8 +463,8 @@ function decodeSafeId(value: unknown): string | undefined {
 }
 
 function decodeCapability(value: unknown): KernelCapability | undefined {
-  return typeof value === "string" && KERNEL_CAPABILITIES.has(value)
-    ? (value as KernelCapability)
+  return isListedCode(value, KERNEL_CAPABILITIES)
+    ? value
     : undefined;
 }
 
@@ -399,8 +474,9 @@ export function decodeRegistryStartupFailure(
   try {
     const codeOnly = readExactDataRecord(input, ["code"]);
     if (
-      codeOnly?.code === "registry.invalid-startup-input" ||
-      codeOnly?.code === "registry.internal-error"
+      isListedCode(codeOnly?.code, REGISTRY_STARTUP_FAILURE_CODES) &&
+      (codeOnly.code === "registry.invalid-startup-input" ||
+        codeOnly.code === "registry.internal-error")
     ) {
       return { code: codeOnly.code };
     }
@@ -491,8 +567,9 @@ export function decodeRegistryAccessFailure(
   try {
     const codeOnly = readExactDataRecord(input, ["code"]);
     if (
-      codeOnly?.code === "registry.invalid-invocation" ||
-      codeOnly?.code === "registry.internal-error"
+      isListedCode(codeOnly?.code, REGISTRY_ACCESS_FAILURE_CODES) &&
+      (codeOnly.code === "registry.invalid-invocation" ||
+        codeOnly.code === "registry.internal-error")
     ) {
       return { code: codeOnly.code };
     }

@@ -52,7 +52,8 @@ Registry/capability, general report, migration, Guitar Domain, UI, playback, and
 ## K1-5 Required Tests
 
 - Closed Issue classification and zero-leak internal/module/report/migration error conversion.
-- Descriptor-first diagnostic and failure adapters covering every K1-1 through K1-4 code and exact details allowlists.
+- Descriptor-first diagnostic and failure adapters covering every K1-1 through K1-4 code and exact details allowlists, including actual `CommandBus.create()`/replay `CommandBusCreationFailure` results.
+- Compiler-exhaustive code maps for diagnostic, command, CommandBus creation, checkpoint, read, event and both Registry failure families; a newly added union code must fail typecheck until its table and fixture are updated.
 - Extra-field, getter, Proxy, cyclic JsonValue, sparse array, and post-call mutation boundaries.
 - Deterministic deeply frozen validation/migration reports with status and counts derived exclusively from issues.
 - Current `brilliant-score-1` not-required migration, future/malformed/semantic-invalid/internal rejection, and preserved concrete diagnostics.

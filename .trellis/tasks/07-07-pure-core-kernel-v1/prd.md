@@ -111,7 +111,7 @@
 小功能:
 
 - 内部错误族: 复用安全转换行为，但 class 不作为公共 `instanceof` 或序列化合同。
-- `KernelIssue`: closed code、派生 severity/messageKey、受控 source/location/details；保留 K1-1 diagnostics 和 K1-2～K1-4 failures。
+- `KernelIssue`: closed code、派生 severity/messageKey、受控 source/location/details；保留 K1-1 diagnostics，以及 K1-2 `CommandBusCreationFailure`、command/history 和 K1-3～K1-4 failures。
 - validation diagnostics: 保留已批准的 `decode.*`、`semantic.*`、`unsupported.*` code、path、details 与确定顺序。
 - report shell: 只定义当前有真实消费者的 `KernelReport<"validation" | "migration">` 与 `MigrationReport`；K1-1 `ValidationReport` 保持不变。
 - 隐私边界: report/error 默认不包含用户谱面正文、访问令牌、本机隐私绝对路径、第三方密钥或插件源码。

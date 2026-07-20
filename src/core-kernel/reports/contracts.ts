@@ -1,4 +1,7 @@
-import type { CommandFailure } from "../commands/contracts";
+import type {
+  CommandBusCreationFailure,
+  CommandFailure,
+} from "../commands/contracts";
 import type { ScoreAddress, ScoreRange } from "../domain/address";
 import type { JsonObject } from "../domain/extensions";
 import type { EventSubscriptionResult } from "../events/contracts";
@@ -32,6 +35,7 @@ export type EventSubscriptionFailure = Extract<
 export type KernelIssueCode =
   | DiagnosticCode
   | CommandFailure["code"]
+  | CommandBusCreationFailure["code"]
   | CheckpointFailure["code"]
   | ReadFailure["code"]
   | EventSubscriptionFailure["code"]

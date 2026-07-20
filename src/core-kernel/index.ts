@@ -67,6 +67,7 @@ export type {
 export {
   createModuleInternalIssue,
   mapCheckpointFailureToKernelIssues,
+  mapCommandBusCreationFailureToKernelIssues,
   mapCommandFailureToKernelIssues,
   mapDiagnosticToKernelIssue,
   mapEventSubscriptionFailureToKernelIssues,

@@ -22,6 +22,7 @@ K1-2/K1-3/K1-4 的原始 failure union 分别由 `command-transaction.md`、
 
 - `mapDiagnosticToKernelIssue`
 - `mapCommandFailureToKernelIssues`
+- `mapCommandBusCreationFailureToKernelIssues`
 - `mapCheckpointFailureToKernelIssues`
 - `mapReadFailureToKernelIssues`
 - `mapEventSubscriptionFailureToKernelIssues`
@@ -35,6 +36,8 @@ K1-2/K1-3/K1-4 的原始 failure union 分别由 `command-transaction.md`、
 
 - 内部使用封闭错误族复用行为；公共边界只返回深冻结纯数据，不能依赖 `instanceof`。
 - `KernelIssueCode` 是闭集；`messageKey` 恒为 `core.${code}`，severity 由 code 推导。
+- K1-2 的闭集同时包含 `CommandFailure["code"]` 与 `CommandBusCreationFailure["code"]`；后者严格支持 `{ code }` 和 `{ code, diagnostics }` 两种真实形状。
+- 所有 diagnostic/failure code 表必须使用 `Record<UnionCode, true>` 或等价 `never` 证明形成编译期穷尽门禁；仅使用 `satisfies readonly Failure[]` 不构成穷尽证明。
 - adapter 严格按字段白名单构造结果；畸形输入返回 `report.invalid-input`，内部意外返回 `report.internal-error`。
 - `KernelReport` 只允许 `validation | migration`，status/summary 只能从 issues 推导。
 - report 不包含 reportId、operationId、createdAt、时间戳或随机标识。
@@ -47,7 +50,9 @@ K1-2/K1-3/K1-4 的原始 failure union 分别由 `command-transaction.md`、
 | Scenario | Stable result |
 |---|---|
 | K1-1 diagnostic | 保留 code/path/details 与顺序 |
-| K1-2/K1-3/K1-4 failure | 保留原 code，只复制每个 code 获批字段 |
+| K1-2 `CommandFailure`、K1-3/K1-4 failure | 保留原 code，只复制每个 code 获批字段 |
+| K1-2 `CommandBusCreationFailure` code-only | 单个 `command.invalid-initial-document` issue |
+| K1-2 `CommandBusCreationFailure` with diagnostics | 外层 `command.invalid-initial-document`，随后保持全部 semantic diagnostics 原顺序 |
 | malformed adapter input | 单个 `report.invalid-input` |
 | unexpected adapter failure | 单个 fatal `report.internal-error` |
 | empty validation issues | `completed` |
@@ -62,13 +67,15 @@ K1-2/K1-3/K1-4 的原始 failure union 分别由 `command-transaction.md`、
 
 - Good：同一输入重复映射、报告或迁移得到深度相等结果。
 - Base：`command.semantic-invalid` 先输出 operation issue，再按原顺序输出全部 semantic issues。
+- Base：实际 `CommandBus.create()` 与 replay 的 invalid-initial-document 结果先输出创建 issue，再按原顺序输出全部 semantic issues。
 - Base：未知 `ExtensionBlock` 在 current-schema pass-through 中深度保留。
 - Bad：getter、Proxy、extra field、cycle 或 sparse array 不能逃逸异常或执行 `get` trap。
 - Bad：公共根不得导出错误类、builder、strict codec、迁移步骤表或测试依赖注入缝。
 
 ## 6. Tests Required
 
-穷尽映射全部已验收 code；验证字段白名单、顺序、深冻结、mutation isolation、
+穷尽映射全部已验收 code，并用编译期穷尽 code 表保证新增 union member 时 typecheck 失败；
+覆盖实际 `CommandBus.create()` 与 replay 创建失败；验证字段白名单、顺序、深冻结、mutation isolation、
 report 派生计数、全部 migration 路径、unknown ExtensionBlock 与 CommandBus 隔离。
 公共出口、禁止依赖、typecheck、build、完整测试、Trellis validate 和 diff check
 必须全部通过。
