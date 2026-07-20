@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript 5.8, Node.js test runner, existing `structuredClone`, `deepFreezeValue`, K1-1 codec/semantic validator, K1-4 descriptor-first strict-codec helpers, no new runtime dependencies.
 
-**Current status:** The user approved `prd.md`, `design.md`, and this implementation plan on 2026-07-20. The task is still not started; production work remains forbidden until the operator activates the Trellis task and verifies a dedicated `codex/k1-5-errors-diagnostics-reports-migration` branch and baseline.
+**Current status:** Tasks 0–9 are implemented on `codex/k1-5-errors-diagnostics-reports-migration`. The implementation baseline is `171790743450b3a3c0fa1720c847302308c27937`; the fresh full gate passes 159/159 tests and the focused K1-5 gate passes 37/37. Independent acceptance is pending, so this is not an accepted baseline and K1-6 remains blocked.
 
 ## Global Constraints
 
@@ -41,7 +41,7 @@
 - Consumes the user-approved planning commit and accepted K1-4 baseline.
 - Produces no file changes; it is a hard stop if branch/task/worktree state is wrong.
 
-- [ ] **Step 1: Load Trellis development context**
+- [x] **Step 1: Load Trellis development context**
 
 Run:
 
@@ -52,7 +52,7 @@ python .\.trellis\scripts\get_context.py --mode packages
 
 Expected: active task is `k1-5-errors-diagnostics-reports-migration`, phase permits development, and Core Kernel backend specs are selected.
 
-- [ ] **Step 2: Verify branch and preserve unrelated work**
+- [x] **Step 2: Verify branch and preserve unrelated work**
 
 Run:
 
@@ -64,7 +64,7 @@ git merge-base --is-ancestor 94766a0930c05e5339c44f667deaf02116af1c0c HEAD
 
 Expected: branch is `codex/k1-5-errors-diagnostics-reports-migration`; the merge-base command exits 0; only explicitly approved K1-5 files may be modified. If unrelated paths are present, preserve them and keep them out of all stage commands.
 
-- [ ] **Step 3: Establish the fresh regression baseline**
+- [x] **Step 3: Establish the fresh regression baseline**
 
 Run:
 
@@ -95,7 +95,7 @@ Expected: all commands pass before the first K1-5 RED test. Record the exact tes
 - Produces public data types `KernelIssueCode`, `KernelSeverity`, `KernelIssueLocation`, `CoreIssueSubsystem`, `KernelIssueSource`, `KernelIssue`, `KernelReportKind`, `KernelReportStatus`, `KernelReportSummary`, `KernelReport`, and `MigrationReport`.
 - Produces internal factories `createOperationKernelIssue`, `createMigrationKernelIssue`, `createModuleKernelIssue`, and `createReportKernelIssue`; no class is exported from the Core public root.
 
-- [ ] **Step 1: Write the failing issue/classification tests**
+- [x] **Step 1: Write the failing issue/classification tests**
 
 Add tests that assert exact derived facts and deep freeze:
 
@@ -133,7 +133,7 @@ test("issue facts derive from closed code and are deeply frozen", () => {
 
 Add a privacy assertion proving the internal factory input type and returned issue have no `message`, `stack`, or `cause` keys.
 
-- [ ] **Step 2: Confirm the behavioral RED**
+- [x] **Step 2: Confirm the behavioral RED**
 
 Temporarily add minimal compiling module stubs that throw `new Error("not implemented")`, then run:
 
@@ -144,7 +144,7 @@ node --test dist/test/core-kernel/kernel-issues.test.js
 
 Expected: build passes and the test fails on the first issue assertion because the factory stub throws. Remove the throw in the GREEN step.
 
-- [ ] **Step 3: Define exact public contracts**
+- [x] **Step 3: Define exact public contracts**
 
 Implement the contracts from `design.md`, including these K1-5-native codes:
 
@@ -164,7 +164,7 @@ export type MigrationFailureCode =
 
 Compose `KernelIssueCode` from existing union index access plus these native unions. Define only `warning | error | fatal`; define `KernelReportKind` as only `validation | migration`.
 
-- [ ] **Step 4: Implement code-derived classification**
+- [x] **Step 4: Implement code-derived classification**
 
 Use closed input typing and deterministic rules:
 
@@ -202,7 +202,7 @@ export function messageKeyForKernelIssueCode<Code extends KernelIssueCode>(
 
 The casts are confined to this closed classifier; callers cannot pass arbitrary strings.
 
-- [ ] **Step 5: Implement the sealed internal class hierarchy**
+- [x] **Step 5: Implement the sealed internal class hierarchy**
 
 Keep the base and derived classes unexported. Export only factory functions used by neighboring K1-5 modules. The base constructor accepts safe normalized fields, never an Error/cause/raw message. `toIssue()` clones safe nested values and calls `deepFreezeValue` before returning.
 
@@ -217,7 +217,7 @@ class ReportKernelError extends KernelError<ReportFailureCode> {}
 
 `createModuleKernelIssue` always constructs `module.internal-error`; no caller-supplied module error code exists.
 
-- [ ] **Step 6: Verify Task 1 GREEN and regressions**
+- [x] **Step 6: Verify Task 1 GREEN and regressions**
 
 Run:
 
@@ -230,7 +230,7 @@ npm run typecheck
 
 Expected: all pass; public root exports have not changed yet.
 
-- [ ] **Step 7: Commit Task 1**
+- [x] **Step 7: Commit Task 1**
 
 ```powershell
 git add src/core-kernel/reports/contracts.ts src/core-kernel/errors/classification.ts src/core-kernel/errors/kernel-error.ts test/core-kernel/kernel-issues.test.ts
@@ -251,7 +251,7 @@ git commit -m "feat(core): add k1-5 issue foundation"
 - Produces `mapDiagnosticToKernelIssue(diagnostic: Diagnostic): KernelIssue` and `createModuleInternalIssue(source): KernelIssue<"module.internal-error">`.
 - Malformed runtime values produce `report.invalid-input`; unexpected adapter exceptions produce `report.internal-error`.
 
-- [ ] **Step 1: Add RED tests for diagnostic preservation and hostile inputs**
+- [x] **Step 1: Add RED tests for diagnostic preservation and hostile inputs**
 
 Cover one semantic diagnostic with nested details, one unsupported diagnostic, an extra-field record, accessor properties, a root Proxy with a throwing `get` trap, cyclic details, a sparse array inside details, and post-call mutation.
 
@@ -280,7 +280,7 @@ assert.equal(getCalls, 0);
 
 For accessor/extra/cyclic invalid records, assert `report.invalid-input`; for an injected internal factory failure, assert `report.internal-error` without the private error text.
 
-- [ ] **Step 2: Confirm behavioral RED**
+- [x] **Step 2: Confirm behavioral RED**
 
 Add compiling adapter stubs returning a deliberately wrong `report.internal-error` for every input, then run:
 
@@ -291,13 +291,13 @@ node --test dist/test/core-kernel/kernel-issues.test.js
 
 Expected: FAIL on exact diagnostic code/path/details preservation.
 
-- [ ] **Step 3: Implement descriptor-first decoding**
+- [x] **Step 3: Implement descriptor-first decoding**
 
 Use `Reflect.ownKeys` plus own data descriptors before any field read. Arrays must pass descriptor `length`, own-key cardinality and per-index data-descriptor checks before traversal. Do not call input array methods, iterators, getters, coercion or `JSON.stringify`.
 
 For nested JsonValue detachment, maintain an active-object set to reject cycles. Build a new plain object/array from descriptor values, then freeze only the detached output. Diagnostic records accept exactly `code`, `messageKey`, `path`, and optional `details`; verify `messageKey === core.${code}`.
 
-- [ ] **Step 4: Implement total diagnostic/module mapping**
+- [x] **Step 4: Implement total diagnostic/module mapping**
 
 Map diagnostic source by prefix:
 
@@ -315,7 +315,7 @@ function sourceForDiagnosticCode(code: DiagnosticCode): KernelIssueSource {
 
 Always emit `location: { kind: "diagnostic-path", path }`, including an empty path. Module source accepts exact keys `kind/moduleId` or `kind/moduleId/contributionId`; validate IDs with the accepted K1-4 identifier rule and never perform capability checks.
 
-- [ ] **Step 5: Verify Task 2 GREEN and strict-codec regressions**
+- [x] **Step 5: Verify Task 2 GREEN and strict-codec regressions**
 
 Run:
 
@@ -328,7 +328,7 @@ npm run typecheck
 
 Expected: all pass; Proxy `getCalls` remains zero.
 
-- [ ] **Step 6: Commit Task 2**
+- [x] **Step 6: Commit Task 2**
 
 ```powershell
 git add src/core-kernel/reports/strict-codec.ts src/core-kernel/reports/adapters.ts test/core-kernel/kernel-issues.test.ts
@@ -349,7 +349,7 @@ git commit -m "feat(core): add safe issue adapters"
 - Produces the six subsystem mapping functions listed in `design.md`; the event failure input type is derived from the rejected branch of `EventSubscriptionResult` rather than changing K1-3 contracts.
 - Every function returns a detached frozen issue array; nested diagnostic failures return operation issue first.
 
-- [ ] **Step 1: Write table-driven RED tests for every failure code**
+- [x] **Step 1: Write table-driven RED tests for every failure code**
 
 Create explicit fixtures for every member of:
 
@@ -365,7 +365,7 @@ type ExistingFailure =
 
 For field-carrying registry failures, assert the exact allowlist details. For `command.semantic-invalid`, assert `["command.semantic-invalid", ...diagnosticCodes]` and exact diagnostic locations. Add extra-field/getter/Proxy probes for each record family and assert total `report.invalid-input` output.
 
-- [ ] **Step 2: Confirm behavioral RED**
+- [x] **Step 2: Confirm behavioral RED**
 
 Add compiling function stubs that return `[createReportInvalidInputIssue()]`, then run:
 
@@ -376,7 +376,7 @@ node --test dist/test/core-kernel/kernel-failure-adapters.test.js
 
 Expected: FAIL on the first expected subsystem code.
 
-- [ ] **Step 3: Implement exact per-code decoders and allowlists**
+- [x] **Step 3: Implement exact per-code decoders and allowlists**
 
 Use exhaustive switches after safe decoding. Allow only fields present in existing contracts:
 
@@ -386,7 +386,7 @@ Use exhaustive switches after safe decoding. Allow only fields present in existi
 
 Do not copy failure objects with spread. Use fixed Core source mapping: command/history -> command, checkpoint -> session, read -> read, event -> event, registry -> registry.
 
-- [ ] **Step 4: Preserve nested diagnostics and freeze results**
+- [x] **Step 4: Preserve nested diagnostics and freeze results**
 
 For semantic-invalid:
 
@@ -402,7 +402,7 @@ return deepFreezeValue([
 
 If any nested diagnostic fails runtime decoding, return exactly one `report.invalid-input` issue rather than a partially mapped array.
 
-- [ ] **Step 5: Verify Task 3 GREEN and all affected regressions**
+- [x] **Step 5: Verify Task 3 GREEN and all affected regressions**
 
 Run:
 
@@ -415,7 +415,7 @@ npm run typecheck
 
 Expected: all pass; existing result assertions remain unchanged.
 
-- [ ] **Step 6: Commit Task 3**
+- [x] **Step 6: Commit Task 3**
 
 ```powershell
 git add src/core-kernel/reports/strict-codec.ts src/core-kernel/reports/adapters.ts test/core-kernel/kernel-failure-adapters.test.ts
@@ -442,7 +442,7 @@ git commit -m "feat(core): map accepted kernel failures"
 - Produces internal `buildKernelReport(kind, issues)` and public `createKernelValidationReport(diagnostics)`.
 - `createKernelValidationReport` returns `KernelReport<"validation">` for every runtime input; malformed/internal cases are rejected reports with one report failure issue.
 
-- [ ] **Step 1: Write RED tests for all derived report states**
+- [x] **Step 1: Write RED tests for all derived report states**
 
 Cover exact outputs for empty, unsupported-only, semantic error and report-internal fatal inputs:
 
@@ -468,7 +468,7 @@ test("validation report derives status and counts", () => {
 
 Also assert repeated calls are deeply equal, source diagnostics can be mutated after the call without changing the report, and malformed sparse/Proxy input returns a rejected `report.invalid-input` report without executing a `get` trap.
 
-- [ ] **Step 2: Confirm behavioral RED**
+- [x] **Step 2: Confirm behavioral RED**
 
 Add compiling stubs returning an empty completed report for every input, then run:
 
@@ -479,7 +479,7 @@ node --test dist/test/core-kernel/kernel-reports.test.js
 
 Expected: FAIL on warning status/counts.
 
-- [ ] **Step 3: Implement the private report builder**
+- [x] **Step 3: Implement the private report builder**
 
 Clone/freeze issues first, then derive counts in one pass. Derive status exactly:
 
@@ -494,11 +494,11 @@ const status =
 
 Before incrementing any counter, assert it is below `Number.MAX_SAFE_INTEGER`; an impossible internal overflow is caught by the public caller and becomes `report.internal-error`. Do not accept status or summary as parameters.
 
-- [ ] **Step 4: Implement total validation projection**
+- [x] **Step 4: Implement total validation projection**
 
 Descriptor-decode the runtime diagnostics array. On invalid input, build a validation report from one `report.invalid-input` issue. Wrap all other work in a total boundary; catch returns one `report.internal-error` issue. Preserve valid diagnostics in input order.
 
-- [ ] **Step 5: Prove the original K1-1 ValidationReport is unchanged**
+- [x] **Step 5: Prove the original K1-1 ValidationReport is unchanged**
 
 Run:
 
@@ -511,7 +511,7 @@ npm run typecheck
 
 Expected: all pass with no changes to K1-1 assertions or exported `ValidationReport` shape.
 
-- [ ] **Step 6: Commit Task 4**
+- [x] **Step 6: Commit Task 4**
 
 ```powershell
 git add src/core-kernel/reports/build-report.ts src/core-kernel/reports/validation-report.ts test/core-kernel/kernel-reports.test.ts
@@ -538,11 +538,11 @@ git commit -m "feat(core): add deterministic kernel reports"
 - Produces public `MigrationFailure`, `MigrationResult` and internal frozen `CORE_MIGRATION_STEPS` with no production entries.
 - Does not produce `MigrationContribution`, register/unregister functions or a `migrated` result branch.
 
-- [ ] **Step 1: Write the RED contract/boundary test**
+- [x] **Step 1: Write the RED contract/boundary test**
 
 Assert the production step table is deeply frozen and empty, and use compile-time assignments proving only `not-required | rejected` statuses exist. Read the public index text and assert it does not contain `MigrationContribution`, `registerMigration`, `unregisterMigration` or `CORE_MIGRATION_STEPS`.
 
-- [ ] **Step 2: Confirm behavioral RED**
+- [x] **Step 2: Confirm behavioral RED**
 
 Add compiling contract stubs with a deliberately non-empty step table, then run:
 
@@ -553,11 +553,11 @@ node --test dist/test/core-kernel/migration.test.js
 
 Expected: FAIL because the production table is not empty.
 
-- [ ] **Step 3: Implement exact migration result contracts**
+- [x] **Step 3: Implement exact migration result contracts**
 
 Use the union from `design.md` verbatim. `not-required` contains document/report; `rejected` contains failure/report and no document. Failure diagnostic arrays are readonly and become deeply frozen in runtime results.
 
-- [ ] **Step 4: Implement the private empty catalog**
+- [x] **Step 4: Implement the private empty catalog**
 
 ```typescript
 interface CoreMigrationStep {
@@ -573,7 +573,7 @@ export const CORE_MIGRATION_STEPS: readonly CoreMigrationStep[] =
 
 Keep this module out of `src/core-kernel/index.ts`. No test fixture may invent `brilliant-score-0`.
 
-- [ ] **Step 5: Verify Task 5 GREEN**
+- [x] **Step 5: Verify Task 5 GREEN**
 
 Run:
 
@@ -585,7 +585,7 @@ npm run typecheck
 
 Expected: all pass.
 
-- [ ] **Step 6: Commit Task 5**
+- [x] **Step 6: Commit Task 5**
 
 ```powershell
 git add src/core-kernel/migration/contracts.ts src/core-kernel/migration/steps.ts test/core-kernel/migration.test.ts
@@ -605,7 +605,7 @@ git commit -m "feat(core): define migration compatibility contracts"
 - Produces public `migrateScoreDocument(input: unknown): MigrationResult`.
 - Does not consume or mutate CommandBus/session state.
 
-- [ ] **Step 1: Write RED tests for all producible paths**
+- [x] **Step 1: Write RED tests for all producible paths**
 
 Add behavior tests for:
 
@@ -621,7 +621,7 @@ Add behavior tests for:
 
 Use an existing valid fixture and change only the field required by each case; do not add a fictional schema version fixture.
 
-- [ ] **Step 2: Confirm behavioral RED**
+- [x] **Step 2: Confirm behavioral RED**
 
 Add a compiling `migrateScoreDocument` stub that always returns `migration.internal-error`, then run:
 
@@ -632,13 +632,13 @@ node --test dist/test/core-kernel/migration.test.js
 
 Expected: FAIL on valid current fixture status.
 
-- [ ] **Step 3: Implement the decode/classification pipeline**
+- [x] **Step 3: Implement the decode/classification pipeline**
 
 Call `decodeScoreDocument(input)` exactly once. If decode fails, classify `decode.unsupported-schema-version` as the outer unsupported-source failure; otherwise use invalid-input. Build report issues as outer migration issue followed by mapped decoder diagnostics in their existing order.
 
 Do not probe `input.schemaVersion` separately; this avoids double-reading accessor/Proxy-backed input.
 
-- [ ] **Step 4: Implement semantic validation and detached success**
+- [x] **Step 4: Implement semantic validation and detached success**
 
 On decode success, run `validateScoreDocumentSemantics`. On invalid semantics, return no candidate and preserve all diagnostics after the outer migration issue. On success:
 
@@ -653,15 +653,15 @@ return deepFreezeValue({
 
 Do not call ScoreFeatureProfile; semantic-valid-but-product-unsupported data remains a valid schema candidate.
 
-- [ ] **Step 5: Add the total exception boundary**
+- [x] **Step 5: Add the total exception boundary**
 
 Wrap the public pipeline. Catch returns rejected `migration.internal-error` and a single fatal migration issue. Never attach the caught value, message, stack or cause.
 
-- [ ] **Step 6: Prove session isolation**
+- [x] **Step 6: Prove session isolation**
 
 Create a CommandBus from a fixture, record snapshot/history/dirty/event facts, call migration on a separate clone, then assert the bus facts remain deeply equal. The migration API must not accept a bus or expose a replace method.
 
-- [ ] **Step 7: Verify Task 6 GREEN and K1-1/K1-3 regressions**
+- [x] **Step 7: Verify Task 6 GREEN and K1-1/K1-3 regressions**
 
 Run:
 
@@ -674,7 +674,7 @@ npm run typecheck
 
 Expected: all pass.
 
-- [ ] **Step 8: Commit Task 6**
+- [x] **Step 8: Commit Task 6**
 
 ```powershell
 git add src/core-kernel/migration/migrate-score-document.ts test/core-kernel/migration.test.ts
@@ -700,7 +700,7 @@ git commit -m "feat(core): add current schema migration boundary"
 - Produces root exports for approved report contracts, mapping functions, module issue factory, validation report adapter, migration contracts and migration entry.
 - Keeps error classes, strict codec, report builder and migration steps private.
 
-- [ ] **Step 1: Write the public-boundary RED test**
+- [x] **Step 1: Write the public-boundary RED test**
 
 Add expected runtime keys for:
 
@@ -721,7 +721,7 @@ Add expected runtime keys for:
 
 Keep runtime-negative assertions for `KernelError` and `KernelReport` class/value exports because approved contracts are type-only. Add compile-time type imports for the approved `KernelIssue`, `KernelReport`, `MigrationReport` and `MigrationResult`. Keep/add forbidden checks for `KernelDiagnostic`, `ImportReport`, `ExportReport`, `RecoveryReport`, `MigrationContribution`, `CORE_MIGRATION_STEPS`, internal factories/builders/codecs and physical IO.
 
-- [ ] **Step 2: Confirm behavioral RED**
+- [x] **Step 2: Confirm behavioral RED**
 
 Run:
 
@@ -732,11 +732,11 @@ node --test dist/test/core-kernel/public-api-boundary.test.js
 
 Expected: FAIL because the approved runtime functions are not root exports.
 
-- [ ] **Step 3: Add explicit root exports**
+- [x] **Step 3: Add explicit root exports**
 
 Use explicit exports for runtime functions and `export type` for data contracts. Do not use wildcard exports from `errors/`, `reports/build-report`, `reports/strict-codec`, or `migration/steps`.
 
-- [ ] **Step 4: Verify public and forbidden boundaries**
+- [x] **Step 4: Verify public and forbidden boundaries**
 
 Run:
 
@@ -748,7 +748,7 @@ npm run typecheck
 
 Expected: all pass and no forbidden capabilities enter the dependency graph.
 
-- [ ] **Step 5: Commit Task 7**
+- [x] **Step 5: Commit Task 7**
 
 ```powershell
 git add src/core-kernel/index.ts test/core-kernel/public-api-boundary.test.ts test/core-kernel/forbidden-dependency-boundary.test.ts
@@ -777,15 +777,15 @@ git commit -m "feat(core): expose k1-5 report and migration api"
 - Produces one consistent active contract marked implementation candidate / independent acceptance pending.
 - Does not edit historical snapshots, retired specs or archived K1-1 through K1-4 task decisions.
 
-- [ ] **Step 1: Replace stale K1-5 blocked/draft claims**
+- [x] **Step 1: Replace stale K1-5 blocked/draft claims**
 
 Document the exact approved facts: additive adapters, internal OO hierarchy/public data boundary, no `KernelDiagnostic`, validation/migration report kinds only, no ID/time, current-schema not-required/rejected migration, empty private step table, no global issue bus, no import/export/recovery aliases.
 
-- [ ] **Step 2: Add exact scenarios and failure matrix to the active Core spec**
+- [x] **Step 2: Add exact scenarios and failure matrix to the active Core spec**
 
 For each public adapter/report/migration entry, record scope, signature, invariants, good/base/bad cases and required tests. Preserve all K1-1 diagnostic code tables and link K1-2/K1-3/K1-4 failure ownership rather than copying divergent unions.
 
-- [ ] **Step 3: Record candidate evidence without claiming final acceptance**
+- [x] **Step 3: Record candidate evidence without claiming final acceptance**
 
 Use wording equivalent to:
 
@@ -796,7 +796,7 @@ K1-6 remains blocked until K1-5 receives a separate acceptance baseline.
 
 Insert the actual implementation HEAD and fresh test count only after Task 9 verification. Do not reuse `94766a0` or 125/125 as K1-5 evidence.
 
-- [ ] **Step 4: Check active Markdown convergence**
+- [x] **Step 4: Check active Markdown convergence**
 
 Run focused searches for contradictory status and retired K1-5 vocabulary, then:
 
@@ -806,7 +806,7 @@ git diff --check
 
 Expected: no active document calls K1-5 blocked/not started, no active contract requires reportId/createdAt or public import/export/recovery reports, and diff check passes.
 
-- [ ] **Step 5: Commit Task 8**
+- [x] **Step 5: Commit Task 8**
 
 Stage only the listed active documents and commit:
 
@@ -827,7 +827,7 @@ git commit -m "docs(core): synchronize k1-5 candidate contracts"
 - Produces the implementation candidate and evidence package for an independent reviewer.
 - Does not archive the task, mark K1-5 accepted or unlock K1-6.
 
-- [ ] **Step 1: Run all static and build gates**
+- [x] **Step 1: Run all static and build gates**
 
 ```powershell
 npm run typecheck
@@ -837,7 +837,7 @@ git diff --check
 
 Expected: all exit 0.
 
-- [ ] **Step 2: Run focused K1-5 tests**
+- [x] **Step 2: Run focused K1-5 tests**
 
 ```powershell
 node --test dist/test/core-kernel/kernel-issues.test.js dist/test/core-kernel/kernel-failure-adapters.test.js dist/test/core-kernel/kernel-reports.test.js dist/test/core-kernel/migration.test.js dist/test/core-kernel/public-api-boundary.test.js dist/test/core-kernel/forbidden-dependency-boundary.test.js
@@ -845,7 +845,7 @@ node --test dist/test/core-kernel/kernel-issues.test.js dist/test/core-kernel/ke
 
 Expected: all focused tests pass with zero failures.
 
-- [ ] **Step 3: Run the full regression suite**
+- [x] **Step 3: Run the full regression suite**
 
 ```powershell
 npm test
@@ -853,7 +853,7 @@ npm test
 
 Expected: all K1-1 through K1-5 tests pass. Record the fresh total from this run.
 
-- [ ] **Step 4: Validate Trellis artifacts and repository state**
+- [x] **Step 4: Validate Trellis artifacts and repository state**
 
 Run:
 
@@ -870,7 +870,7 @@ git log --oneline --decorate -12
 
 Expected: task validation passes; only approved K1-5 changes are committed; user-owned unrelated untracked paths remain untouched.
 
-- [ ] **Step 5: Update candidate evidence and commit it**
+- [x] **Step 5: Update candidate evidence and commit it**
 
 Write the final implementation commit hash and fresh test count into the independent K1-5 task and active status documents with “acceptance pending” wording. Stage only those documents:
 
@@ -878,7 +878,7 @@ Write the final implementation commit hash and fresh test count into the indepen
 git commit -m "docs(core): record k1-5 candidate evidence"
 ```
 
-- [ ] **Step 6: Hand off for independent acceptance**
+- [x] **Step 6: Hand off for independent acceptance**
 
 Report:
 

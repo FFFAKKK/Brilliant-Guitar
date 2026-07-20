@@ -2,7 +2,7 @@
 
 > **Current Core implementation stage (2026-07-20):** K1-1 through K1-4 are accepted foundations.
 > K1-4 is fixed at `94766a0930c05e5339c44f667deaf02116af1c0c` with 125/125 tests passing.
-> K1-5 implementation candidate is complete; independent acceptance is pending, so K1-6 remains blocked.
+> K1-5 implementation candidate is complete at `171790743450b3a3c0fa1720c847302308c27937` with 159/159 tests passing; independent acceptance is pending, so K1-6 remains blocked.
 
 > Coding rules for the Pure Core Kernel V1 implementation.
 

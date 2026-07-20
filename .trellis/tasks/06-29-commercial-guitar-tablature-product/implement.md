@@ -2,12 +2,12 @@
 
 ## 当前状态
 
-- 阶段：Core K1-1～K1-4 已正式验收并归档；K1-5 implementation candidate 已完成，等待独立验收，K1-6 继续阻塞。
+- 阶段：Core K1-1～K1-4 已正式验收并归档；K1-5 implementation candidate `171790743450b3a3c0fa1720c847302308c27937` 已完成并通过 159/159 测试，等待独立验收，K1-6 继续阻塞。
 - K1-3 验收基线：`7369eeac60fecea66c2c9164c04439625c2d78b0`，typecheck、build、102/102 tests、diff check 与 Trellis 校验通过。
 - K1-3 决策源：`.trellis/tasks/archive/2026-07/07-15-k1-3-address-snapshots-selectors-events/`。
 - 活动代码契约：`.trellis/spec/core-kernel/`。
 - K1-4 验收基线：`94766a0930c05e5339c44f667deaf02116af1c0c`，125/125 测试通过。
-- K1-5 权威执行任务：`.trellis/tasks/07-19-k1-5-errors-diagnostics-reports-migration/`；当前为 implementation candidate / independent acceptance pending。
+- K1-5 权威执行任务：`.trellis/tasks/07-19-k1-5-errors-diagnostics-reports-migration/`；当前实施候选基线为 `171790743450b3a3c0fa1720c847302308c27937`，159/159 测试通过，independent acceptance pending。
 
 旧的“一次实现全部九类机制”计划已归档至 `.trellis/archive/core-kernel/2026-06-29-retired-product-implementation-plan.md`。它只能用于追溯，不能作为当前执行清单。
 

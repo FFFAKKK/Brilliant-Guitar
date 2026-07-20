@@ -1,7 +1,7 @@
 # SPEC-016 内核错误、Issue、Report 与迁移兼容边界
 
 > **状态：K1-5 IMPLEMENTATION CANDIDATE / INDEPENDENT ACCEPTANCE PENDING。**
-> K1-1～K1-4 的 diagnostics/failure union 保持不变；K1-6 在 K1-5 形成独立验收基线前继续阻塞。
+> 实施候选基线 `171790743450b3a3c0fa1720c847302308c27937` 已通过 159/159 测试；K1-1～K1-4 的 diagnostics/failure union 保持不变，K1-6 在 K1-5 形成独立验收基线前继续阻塞。
 
 ## 1. Scope / Trigger
 
@@ -76,4 +76,4 @@ report 派生计数、全部 migration 路径、unknown ExtensionBlock 与 Comma
 ## 7. Candidate Gate
 
 当前只能声明：`K1-5 implementation candidate complete; independent acceptance pending.`
-最终实现 HEAD 与完整测试总数在候选门禁完成后另行记录；不得提前标记 accepted 或开启 K1-6。
+实施候选基线为 `171790743450b3a3c0fa1720c847302308c27937`，完整测试为 159/159；不得提前标记 accepted 或开启 K1-6。

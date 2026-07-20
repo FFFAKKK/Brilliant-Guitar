@@ -1,6 +1,6 @@
 # K1-5 Errors Diagnostics Reports Migration
 
-> **Status: PLANNING APPROVED / READY FOR OPERATOR / NOT STARTED.** 用户已于 2026-07-20 最终批准 `prd.md`、`design.md` 和 `implement.md`。规划者不启动开发；操作者完成 Trellis/branch/baseline gate 后方可进入实施。
+> **Status: IMPLEMENTATION CANDIDATE COMPLETE / INDEPENDENT ACCEPTANCE PENDING.** 实施候选基线为 `171790743450b3a3c0fa1720c847302308c27937`；2026-07-20 完整门禁通过 159/159 tests。该提交不是 accepted baseline，K1-6 继续阻塞。
 
 ## Goal
 
@@ -80,21 +80,21 @@
 ## Acceptance Criteria
 
 - [x] **AC-K1-5-001:** 最终 PRD、`design.md` 和 `implement.md` 已于 2026-07-20 经用户审核批准；任务可交给操作者执行启动 gate。
-- [ ] **AC-K1-5-002:** 内部 OO hierarchy 具有基础类和少量 family 派生类，但 public API/runtime export 不含这些 class，所有公开结果均为深度冻结纯数据。
-- [ ] **AC-K1-5-003:** Diagnostic、CommandFailure、CheckpointFailure、ReadFailure、EventSubscription failure、Registry startup/access failure 分别具有 compile-time closed adapter 覆盖；新增 union member 会触发穷尽性编译失败或测试失败。
-- [ ] **AC-K1-5-004:** 每个 adapter 保留原 code 和全部批准的安全字段；semantic-invalid 同时保留外层 issue 与全部原始 semantic diagnostics，顺序深度相等。
-- [ ] **AC-K1-5-005:** messageKey 与 severity 只能由 code 推导；调用者不能构造 code/messageKey/severity 矛盾组合。
-- [ ] **AC-K1-5-006:** diagnostic-path、ScoreAddress、ScoreRange、Core subsystem 与 module/contribution source 均覆盖 good/base/bad case；source 不执行授权，file path/URL/free-form source 被排除。
-- [ ] **AC-K1-5-007:** known failure details 使用白名单复制；恶意 extra fields、getter、Proxy、raw Error、stack、cause、token、secret、路径和谱面正文均无法进入输出或触发未捕获异常。
-- [ ] **AC-K1-5-008:** validation report adapter 对空 diagnostics、unsupported warnings、semantic/decode errors 产生正确 kind/status/summary/issues，且不改变现有 `ValidationReport`。
-- [ ] **AC-K1-5-009:** report status/summary 不能由调用者伪造；issues 的外部后续修改不影响 report，report 嵌套对象和数组均被冻结。
-- [ ] **AC-K1-5-010:** 当前 schema 的有效输入返回 `not-required`、completed empty report 与隔离冻结候选；修改输入或输出均不能影响另一方。
-- [ ] **AC-K1-5-011:** future/unknown schema、malformed shape、semantic-invalid 与意外内部异常分别返回稳定 rejected result/report，不返回 candidate、不抛原始异常。
-- [ ] **AC-K1-5-012:** unknown ExtensionBlock 在 current-version pass-through 中深度相等保留；migration 不修改活动 CommandBus、documentVersion、history、dirty state 或 event sequence。
-- [ ] **AC-K1-5-013:** 重复运行相同 adapter/report/migration 输入得到深度相等结果和相同顺序，不读取 wall clock/randomness，不包含 ID/time。
-- [ ] **AC-K1-5-014:** public boundary 只增加批准的 issue/report/adapters/migration 数据 API；无 KernelError class、KernelDiagnostic、ImportReport、ExportReport、RecoveryReport、MigrationContribution、mutable registry/builder、physical IO 或全局 issue event。
-- [ ] **AC-K1-5-015:** 更新活动 Core spec、父任务和产品 REQ/SPEC 的 K1-5 状态与最终合同；历史快照和退休文档保持不改。
-- [ ] **AC-K1-5-016:** `npm run typecheck`、`npm run build`、`npm test`、forbidden dependency/public export checks 与 `git diff --check` 全部通过；实施完成后仍需独立人工验收才能解锁 K1-6。
+- [x] **AC-K1-5-002:** 内部 OO hierarchy 具有基础类和少量 family 派生类，但 public API/runtime export 不含这些 class，所有公开结果均为深度冻结纯数据。
+- [x] **AC-K1-5-003:** Diagnostic、CommandFailure、CheckpointFailure、ReadFailure、EventSubscription failure、Registry startup/access failure 分别具有 compile-time closed adapter 覆盖；新增 union member 会触发穷尽性编译失败或测试失败。
+- [x] **AC-K1-5-004:** 每个 adapter 保留原 code 和全部批准的安全字段；semantic-invalid 同时保留外层 issue 与全部原始 semantic diagnostics，顺序深度相等。
+- [x] **AC-K1-5-005:** messageKey 与 severity 只能由 code 推导；调用者不能构造 code/messageKey/severity 矛盾组合。
+- [x] **AC-K1-5-006:** diagnostic-path、ScoreAddress、ScoreRange、Core subsystem 与 module/contribution source 均覆盖 good/base/bad case；source 不执行授权，file path/URL/free-form source 被排除。
+- [x] **AC-K1-5-007:** known failure details 使用白名单复制；恶意 extra fields、getter、Proxy、raw Error、stack、cause、token、secret、路径和谱面正文均无法进入输出或触发未捕获异常。
+- [x] **AC-K1-5-008:** validation report adapter 对空 diagnostics、unsupported warnings、semantic/decode errors 产生正确 kind/status/summary/issues，且不改变现有 `ValidationReport`。
+- [x] **AC-K1-5-009:** report status/summary 不能由调用者伪造；issues 的外部后续修改不影响 report，report 嵌套对象和数组均被冻结。
+- [x] **AC-K1-5-010:** 当前 schema 的有效输入返回 `not-required`、completed empty report 与隔离冻结候选；修改输入或输出均不能影响另一方。
+- [x] **AC-K1-5-011:** future/unknown schema、malformed shape、semantic-invalid 与意外内部异常分别返回稳定 rejected result/report，不返回 candidate、不抛原始异常。
+- [x] **AC-K1-5-012:** unknown ExtensionBlock 在 current-version pass-through 中深度相等保留；migration 不修改活动 CommandBus、documentVersion、history、dirty state 或 event sequence。
+- [x] **AC-K1-5-013:** 重复运行相同 adapter/report/migration 输入得到深度相等结果和相同顺序，不读取 wall clock/randomness，不包含 ID/time。
+- [x] **AC-K1-5-014:** public boundary 只增加批准的 issue/report/adapters/migration 数据 API；无 KernelError class、KernelDiagnostic、ImportReport、ExportReport、RecoveryReport、MigrationContribution、mutable registry/builder、physical IO 或全局 issue event。
+- [x] **AC-K1-5-015:** 更新活动 Core spec、父任务和产品 REQ/SPEC 的 K1-5 状态与最终合同；历史快照和退休文档保持不改。
+- [x] **AC-K1-5-016:** `npm run typecheck`、`npm run build`、`npm test`、forbidden dependency/public export checks 与 `git diff --check` 全部通过；实施完成后仍需独立人工验收才能解锁 K1-6。
 
 ## Approved Decisions
 

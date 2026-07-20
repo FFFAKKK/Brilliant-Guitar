@@ -2,7 +2,7 @@
 
 ## 状态
 
-- 阶段: Core K1-1～K1-4 已正式验收并归档；K1-5 implementation candidate 已完成并等待独立验收，K1-6 继续阻塞；产品其余阶段保持 planning
+- 阶段: Core K1-1～K1-4 已正式验收并归档；K1-5 implementation candidate `171790743450b3a3c0fa1720c847302308c27937` 已完成并通过 159/159 测试，等待独立验收；K1-6 继续阻塞；产品其余阶段保持 planning
 - 目标: 为第一条可运行 MVP 闭环提供需求反推的技术设计骨架。
 - 已确认技术栈: Tauri 2 + TypeScript + React + Vite。
 - 首发平台: Windows 桌面。

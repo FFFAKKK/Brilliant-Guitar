@@ -1,7 +1,8 @@
 # Errors and Reports
 
-> **Current stage (2026-07-20):** K1-5 implementation candidate complete;
-> independent acceptance pending.
+> **Current stage (2026-07-20):** K1-5 implementation candidate complete at
+> `171790743450b3a3c0fa1720c847302308c27937`; the fresh full gate passes 159/159 tests.
+> Independent acceptance is pending, so K1-6 remains blocked.
 
 ## Current Diagnostic Contract
 

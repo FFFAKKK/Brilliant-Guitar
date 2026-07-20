@@ -1,6 +1,6 @@
 # K1-5 Errors Diagnostics Reports Migration — Design
 
-> **Status: PLANNING APPROVED / READY FOR OPERATOR / NOT STARTED.** The user approved this design together with `prd.md` and `implement.md` on 2026-07-20. The planner does not start production work; the operator must pass the execution gates first.
+> **Status: IMPLEMENTATION CANDIDATE COMPLETE / INDEPENDENT ACCEPTANCE PENDING.** Candidate implementation baseline: `171790743450b3a3c0fa1720c847302308c27937`; the fresh 2026-07-20 full gate passed 159/159 tests. This is not an accepted baseline and K1-6 remains blocked.
 
 ## 1. Context and Authority
 

@@ -1,7 +1,7 @@
 # REQ-019 内核错误、Diagnostic 与 Report 契约
 
 > **状态：K1-5 IMPLEMENTATION CANDIDATE / INDEPENDENT ACCEPTANCE PENDING。**
-> K1-1～K1-4 既有 failure/result 合同保持不变；K1-6 在独立验收前继续阻塞。
+> 实施候选基线 `171790743450b3a3c0fa1720c847302308c27937` 已通过 159/159 测试；K1-1～K1-4 既有 failure/result 合同保持不变，K1-6 在独立验收前继续阻塞。
 
 ## 用户价值
 
@@ -177,4 +177,4 @@ MVP 不需要完整观测平台。当前阶段应避免:
 
 ## 当前状态
 
-K1-5 implementation candidate complete；独立验收 pending。最终候选 HEAD 与测试总数在完整门禁后记录；在正式 accepted baseline 形成前不得启动 K1-6。
+K1-5 implementation candidate `171790743450b3a3c0fa1720c847302308c27937` complete；完整门禁 159/159 tests 通过，独立验收 pending。在正式 accepted baseline 形成前不得启动 K1-6。
