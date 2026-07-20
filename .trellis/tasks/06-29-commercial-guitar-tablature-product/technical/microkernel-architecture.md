@@ -273,7 +273,7 @@ K1-3 不提供 load/history/diagnostics/registry/migration 事件；K1-4 不新�
 当前 K1-5 candidate 负责:
 
 - 内部封闭 `KernelError` family；错误类不进入公共 API。
-- 公开深冻结、纯数据的 `KernelIssue`、`KernelIssueTarget`、`KernelIssueSource` 和 `KernelReport`/summary/counts。
+- 公开深冻结、纯数据的 `KernelIssue`、`KernelIssueLocation`、`KernelIssueSource` 和 `KernelReport`/summary/counts。
 - 把 K1-1～K1-4 已验收 failure/diagnostic 无损映射为 issue，并以编译期穷尽门禁防止新增 code 漏映射。
 - validation report 与 current-schema `MigrationReport`；report 状态和计数只能由 issues 推导。
 - 通过批准 details 白名单、i18n `messageKey` 和异常隔离保护隐私边界。
