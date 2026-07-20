@@ -2,12 +2,12 @@
 
 ## 当前状态
 
-- 阶段：Core K1-1、K1-2、K1-3 已正式验收并归档；K1-4 实施候选及验收修复已完成并通过 125/125 测试，等待独立验收。
+- 阶段：Core K1-1～K1-4 已正式验收并归档；K1-5 implementation candidate 已完成，等待独立验收，K1-6 继续阻塞。
 - K1-3 验收基线：`7369eeac60fecea66c2c9164c04439625c2d78b0`，typecheck、build、102/102 tests、diff check 与 Trellis 校验通过。
 - K1-3 决策源：`.trellis/tasks/archive/2026-07/07-15-k1-3-address-snapshots-selectors-events/`。
 - 活动代码契约：`.trellis/spec/core-kernel/`。
-- 当前实施分支为 `codex/k1-4-registry-capability-startup-registration`；Tasks 1–6 已完成。
-- K1-4 的 PRD/design/implement 已审核通过并据此完成实施候选；下一步是独立验收，不得直接进入 K1-5。
+- K1-4 验收基线：`94766a0930c05e5339c44f667deaf02116af1c0c`，125/125 测试通过。
+- K1-5 权威执行任务：`.trellis/tasks/07-19-k1-5-errors-diagnostics-reports-migration/`；当前为 implementation candidate / independent acceptance pending。
 
 旧的“一次实现全部九类机制”计划已归档至 `.trellis/archive/core-kernel/2026-06-29-retired-product-implementation-plan.md`。它只能用于追溯，不能作为当前执行清单。
 
@@ -71,15 +71,17 @@ K1-2 已独立验收并归档；其稳定合同包括：
 
 K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 正式验收并归档。已固定文档版本、不可变 snapshot、六个纯 selector、精确 dirty checkpoint、两种提交后事件、同步/异步 handler 隔离和重入规则；事件不泄漏可变 `ScoreDocument` 或领域私有 payload 解释权。
 
-### 实施候选已完成：K1-4 Registry / Capability
+### 已验收归档：K1-4 Registry / Capability
 
-> **Tasks 1–6 与验收修复已完成，等待独立验收。** 权威执行与验收输入为 `.trellis/tasks/07-16-k1-4-registry-capability-startup-registration/`；当前候选通过 125/125 测试，正式验收前不得启动 K1-5。
+> K1-4 已在 `94766a0930c05e5339c44f667deaf02116af1c0c` 独立验收并归档，125/125 测试通过。
 
 批准范围固定为启动期原子 frozen Registry、command/selector 两类既有 adapter、七个 capability、模块 gateway、最小 summary 和 K1-4 本地失败合同；无 Registry version/event、module attribution、其他 contribution kind、第三方 runtime、Guitar Domain 或 K1-5 report。
 
 ### K1-5：Errors / Reports / Migration
 
-必须复用 K1-1 已发布的 `decode.*`、`semantic.*`、`unsupported.*` 诊断兼容面，再设计 operation errors、report shells 与 migration。外层报告不得吞掉具体诊断 code；物理 IO 仍属于外部模块。
+> **Implementation candidate complete；independent acceptance pending。**
+
+已按批准任务实现 additive failure adapters、内部 OO/公共 data-only Issue 边界、validation/migration 两种派生 report、current `brilliant-score-1` 的 `not-required | rejected` 迁移入口与空私有步骤表。K1-1～K1-4 原 failure/result 合同保持不变；无 `KernelDiagnostic`、import/export/recovery report alias、ID/time、全局 issue bus、动态 migration registry 或物理 IO。独立验收形成正式 baseline 前不得进入 K1-6。
 
 ### K1-6：Integration Gate
 

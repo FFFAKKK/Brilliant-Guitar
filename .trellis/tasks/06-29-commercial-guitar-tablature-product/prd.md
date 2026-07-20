@@ -3,12 +3,12 @@
 ## 状态
 
 - Trellis task: `06-29-commercial-guitar-tablature-product`
-- 当前阶段: Core K1-3 Gate 已正式收口；K1-4 实施候选及验收修复已完成并通过 125/125 测试，等待独立验收；产品其余阶段保持规划态
+- 当前阶段: Core K1-1～K1-4 已正式验收归档；K1-5 implementation candidate 已完成并等待独立验收，K1-6 继续阻塞；产品其余阶段保持规划态
 - 创建日期: 2026-06-29
 - 负责人: ATOM
 - 文档策略: 每个需求先写独立文档，最终再合并为收敛后的 PRD。
 - 当前 Core 基线: K1-1 已在 `30894e2` 正式验收；K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 正式验收并通过 102/102 测试；`.trellis/spec/core-kernel/` 是活动代码契约。本文较早的决策记录若与其冲突，以活动规范与独立 Block 任务为准。
-- 当前交付状态: K1-2、K1-3 均已完成独立复验并归档。K1-4 已在 `codex/k1-4-registry-capability-startup-registration` 完成 command/selector 两类贡献、K1-4 本地失败合同以及无 registry version/change event 的实施候选；正式验收前不进入 K1-5。Guitar Domain 和通用 report 仍需分别重规划。
+- 当前交付状态: K1-2、K1-3 均已完成独立复验并归档；K1-4 已在 `94766a0930c05e5339c44f667deaf02116af1c0c` 验收归档。K1-5 已按独立批准任务完成 Issue/Report/Migration implementation candidate，正式 accepted baseline 前不进入 K1-6。Guitar Domain 仍需独立规划。
 
 ## 产品目标
 
@@ -51,7 +51,7 @@
 - 验证边界已确认: Core 分为 strict decode、semantic validation 与 ScoreFeatureProfile；吉他 payload 由 Guitar Domain 验证。软一致性、可演奏性分析、指法建议、教学提示、风格检查和难度评分暂不进入 MVP。
 - `.bgp` 语义契约边界已确认: `.bgp` 的包内语义、`manifest.json`、`score.json` schema、schema version、兼容矩阵、迁移入口和 `MigrationReport` 属于 Core Kernel；真实 zip 读写、文件路径、原子保存、自动保存、崩溃恢复和最近文件列表属于外部 `Persistence Service`。
 - 内核注册表与 capability 已确认: K1-4 采用启动期原子 frozen Registry、七个固定 capability、command/selector adapter 和 capability-scoped gateway；完整权威为独立 K1-4 任务。
-- 内核错误、diagnostic 与 report 已确认: `KernelError`、`KernelDiagnostic`、`KernelReport`、`KernelReportIssue`、`ImportReport`、`ExportReport`、`MigrationReport` 和 `ValidationReport` 作为独立 Core Kernel 功能继续规划。
+- 内核错误、diagnostic 与 report 已确认: 内部 sealed error family，公共深冻结 `KernelIssue`，以及只面向当前真实消费者的 validation/migration `KernelReport`；K1-1 `Diagnostic`/`ValidationReport` 保持不变，不预建 import/export/recovery report alias。
 - 国际化范围已确认: 后续要支持语言切换，第一阶段先支持简体中文和英文。
 - MVP 导出范围已确认: 第一阶段先做 PDF + PNG，SVG 后置。
 - MVP 弦数范围已确认: 第一阶段暂不支持 7 弦吉他，只支持标准 6 弦吉他；7/8 弦吉他进入后续阶段候选。
@@ -455,17 +455,17 @@ P0 类别包括连接与连奏、音高变化与表情、延音闷音与噪音�
 
 取舍: 这个选择迁移吸引力最强，但风险和工作量最高；开放格式互操作会延后。MusicXML 更稳但对吉他手迁移吸引力弱一些，MIDI 素材多但谱面编辑语义损失大，ASCII tab 解析不稳定，全部后置。
 
-实现约束: 第二阶段不得把 MusicXML、MIDI、ASCII tab、PDF/图片识别或 Guitar Pro 导出作为同一阶段验收项。Guitar Pro 导入必须输出 `ImportReport`，说明成功项、警告、丢失项、无法识别项和不支持能力。
+实现约束: 第二阶段不得把 MusicXML、MIDI、ASCII tab、PDF/图片识别或 Guitar Pro 导出作为同一阶段验收项。Guitar Pro 导入必须输出模块专属导入报告（名称与字段由该外部模块任务确定），说明成功项、警告、丢失项、无法识别项和不支持能力。
 
 ### DEC-P033: Guitar Pro 导入第二阶段先支持哪些版本和能力范围？
 
-结论: 第二阶段先做用户本地 Guitar Pro 文件的 best-effort 导入，不做导出，不碰 mySongBook、云曲库或受保护内容。兼容范围先以合法样例和可用解析方案为准，优先覆盖当前 `.gp` 文件以及常见历史 `.gp5`/`.gpx` 中能稳定解析的子集；导入后映射到 `.bgp` 领域模型，无法支持的轨道、技巧、排版、音色、自动化和音频轨必须进入 `ImportReport`。
+结论: 第二阶段先做用户本地 Guitar Pro 文件的 best-effort 导入，不做导出，不碰 mySongBook、云曲库或受保护内容。兼容范围先以合法样例和可用解析方案为准，优先覆盖当前 `.gp` 文件以及常见历史 `.gp5`/`.gpx` 中能稳定解析的子集；导入后映射到 `.bgp` 领域模型，无法支持的轨道、技巧、排版、音色、自动化和音频轨必须进入该模块专属导入报告。
 
 原因: Guitar Pro 格式不是我们控制的开放格式，第二阶段最危险的是把“支持 Guitar Pro 导入”说得过满。先定义文件来源、版本范围、能力映射和降级报告，才能让后续代码实现可控。
 
 取舍: 如果范围更宽，迁移能力更强但解析、测试、法律和兼容风险明显上升；如果范围更窄，第二阶段更稳，但用户可能会遇到部分历史文件导入失败或能力丢失。
 
-实现约束: 第二阶段实现前必须建立合法 fixture 来源、解析可行性研究、能力映射表、降级规则和 `ImportReport` 字段。导入器不得绕过 `.bgp` 领域模型验证器；导入失败必须安全失败并保留可读错误。
+实现约束: 第二阶段实现前必须建立合法 fixture 来源、解析可行性研究、能力映射表、降级规则和模块专属导入报告字段。导入器不得绕过 `.bgp` 领域模型验证器；导入失败必须安全失败并保留可读错误。
 
 ### DEC-P034: 项目目录结构是否现在确认？
 
@@ -503,7 +503,7 @@ P0 类别包括连接与连奏、音高变化与表情、延音闷音与噪音�
 
 结论: 第一阶段先把纯 Core Kernel 做好。Pure Kernel V1 必须是纯 TypeScript 内核能力，可在无 UI、无 Tauri、无 VexFlow、无 Web Audio、无 PDF/PNG、无浏览器 DOM 的环境下通过测试；桌面壳、React 工作台、渲染、播放、持久化物理 IO、导出和导入都必须等纯内核验收通过后再进入实现。
 
-边界: Pure Kernel V1 只实现 9 类内核机制: `ScoreDocument` 对象模型、语义命令、事务/undo/redo、地址/范围、硬验证、`.bgp` 语义 schema/迁移入口、snapshot/selector/event、registry/capability、error/diagnostic/report 外壳。它可以定义外部 import/export 抽象 descriptor、`ImportReport`、`ExportReport` 等 report 类型，但不实现、不注册真实 Guitar Pro 导入、PDF/PNG 导出、`.bgp` 物理读写或桌面文件系统能力。
+边界: Pure Kernel V1 只实现 9 类内核机制: `ScoreDocument` 对象模型、语义命令、事务/undo/redo、地址/范围、硬验证、`.bgp` 语义 schema/迁移入口、snapshot/selector/event、registry/capability、error/diagnostic/report 外壳。K1-5 只公开 validation/migration report；外部 import/export descriptor 与模块专属报告由真实消费者后续定义。Core 不实现、不注册真实 Guitar Pro 导入、PDF/PNG 导出、`.bgp` 物理读写或桌面文件系统能力。
 
 验收: Pure Kernel V1 必须通过 fixture 谱面验证、命令提交与 rollback、细粒度 undo/redo、命令回放、schema round-trip、迁移入口、snapshot/selector 只读性、事件顺序、registry/capability、错误/report 隐私边界和 unsupported feature 测试。
 
@@ -571,7 +571,7 @@ P0 类别包括连接与连奏、音高变化与表情、延音闷音与噪音�
 
 定义: `.bgp` 语义契约是指文件包内哪些内容代表正式谱面数据、版本字段如何声明、`manifest.json` 和 `score.json` 的语义是什么、旧 schema 如何迁移到当前 schema，以及未来版本如何安全失败。它不是物理文件 IO，不包括打开文件对话框、zip 压缩、文件路径、自动保存目录、原子写入实现或插件私有数据保留协议。
 
-结论: `.bgp` 语义契约和迁移入口属于 Core Kernel；物理读写属于外部 `Persistence Service`。Pure Core Kernel V1 只负责 `manifest.json` 语义、`score.json` schema、schema version、兼容矩阵、迁移器注册、`MigrationReport`、打开后/保存前验证入口和纯 JSON round-trip；不定义 `extensions/`、扩展数据保留协议或插件私有数据持久化协议。`Persistence Service` 负责 zip 包读写、文件系统路径、原子保存、备份、自动保存、崩溃恢复、最近文件列表和损坏文件读取保护。
+结论: `.bgp` 语义契约和迁移入口属于 Core Kernel；物理读写属于外部 `Persistence Service`。Pure Core Kernel V1 负责 `score.json` 的 `brilliant-score-1` schema、当前版本兼容检查、空私有迁移步骤表、`MigrationReport` 和纯 JSON round-trip；不提供动态迁移注册。`ExtensionBlock` 的未知 JSON 由 Core 保真，zip package/manifest 的物理装配、文件系统路径、原子保存、备份、自动保存、崩溃恢复、最近文件列表和损坏文件读取保护由 `Persistence Service` 负责。
 
 MVP 包结构建议: `.bgp` 的长期形态是单文件开放 zip 包，至少包含 `manifest.json` 和 `score.json`；Pure Core Kernel V1 只验证这两个语义入口。`assets/`、`extensions/`、`preview/` 属于后续物理包、资源和插件阶段规划，不作为 K1 实现项或验收项。`manifest.json` 至少声明格式标识、format/schema version、创建应用版本、最后保存应用版本和资源索引；`score.json` 承载 `ScoreDocument`，不得包含 VexFlow、SVG DOM、屏幕坐标、播放引擎状态或 UI 会话状态。
 
@@ -599,13 +599,13 @@ MVP 包结构建议: `.bgp` 的长期形态是单文件开放 zip 包，至少�
 
 允许场景: 外部模块可以从 snapshot 派生非谱面事实的数据结构，例如 `LayoutPrimitives`、hit areas、`PlaybackEvents`、导出页面模型、缩略图、分析报告或导入中间模型。这些不是 `ScoreDocument` 副本，不能被保存为权威谱面，也不能整体写回内核。如果要改变谱面，必须产出语义命令序列、`ImportResult` 或内核迁移结果，而不是替换整份文档。
 
-实现约束: `DocumentSnapshot` 必须保持只读；Core Kernel 不提供 `getMutableDocumentCopy`、`replaceDocumentFromExternalCopy`、`saveMutableWorkingCopy` 或任意外部整文档覆盖 API。导入器可以生成导入候选结构，迁移器可以生成迁移结果，但它们必须走专门入口、来源标识、硬一致性验证、`ImportReport` 或 `MigrationReport`，并由内核决定如何 commit。普通模块不得持有、修改或提交可变 `ScoreDocument` 副本。
+实现约束: `DocumentSnapshot` 必须保持只读；Core Kernel 不提供 `getMutableDocumentCopy`、`replaceDocumentFromExternalCopy`、`saveMutableWorkingCopy` 或任意外部整文档覆盖 API。导入器可以生成外部候选与模块专属报告，迁移器通过 `migrateScoreDocument` 生成 detached candidate 与 `MigrationReport`；二者都不能整体覆盖活动 session。普通模块不得持有、修改或提交可变 `ScoreDocument` 副本。
 
 取舍: 拒绝外部可变 `ScoreDocument` 副本会让模块写入路径更严格，模块需要把变化表达成命令、导入结果或迁移结果，开发成本更高；但它能保住微内核边界、undo/redo、插件权限、事件系统、文件兼容和长期维护。如果允许外部模块自由改副本再整体写回，初期编码会快一些，但会把架构退回“多个模块各自维护状态，最后碰运气合并”的模式。
 
 ### DEC-K045: 注册表/capability 和错误/diagnostic/report 是否应该拆成两个内核功能？
 
-结论: 已确认拆成两个内核功能，并且两个都属于 Core Kernel。`KernelRegistry`、`KernelCapability`、`KernelModuleIdentity`、API version 和 contribution descriptor 归为“注册表与能力边界”；`KernelError`、`KernelDiagnostic`、`KernelReport`、`KernelReportIssue`、`ImportReport`、`ExportReport`、`MigrationReport` 和 `ValidationReport` 归为“错误、diagnostic 与 report 契约”。
+结论: 已确认拆成两个内核功能，并且两个都属于 Core Kernel。`KernelRegistry`、`KernelCapability`、`KernelModuleIdentity`、API version 和 contribution descriptor 归为“注册表与能力边界”；内部 error family、公共 `KernelIssue`、validation/migration `KernelReport`、failure adapters 与 current-schema migration 归为“错误、diagnostic 与 report 契约”。
 
 原因: 这两个功能的变化原因不同。注册表/capability 解决“谁能把什么能力接入内核、谁能调用什么能力”；错误/diagnostic/report 解决“失败如何表达、如何定位、如何给 UI/测试/导入导出使用”。它们确实会协作，例如注册失败返回 `KernelError`，但不应该由同一个模块拥有全部职责。
 
@@ -623,9 +623,9 @@ MVP 包结构建议: `.bgp` 的长期形态是单文件开放 zip 包，至少�
 
 ### DEC-K047: Core Kernel 的错误、diagnostic 和 report 应该如何设计？
 
-推荐答案: 第一阶段采用“Structured Error + Diagnostic + Shared Report Shell”的模型。Core Kernel 保留 `KernelError`、`KernelDiagnostic`、`KernelReport`、`KernelReportIssue`、`ImportReport`、`ExportReport`、`MigrationReport`、`ValidationReport` 和恢复报告外壳。
+批准答案（2026-07-20）: K1-5 采用“Internal OO + Public Data-Only Issue + Derived Validation/Migration Report”的模型。Core 保留既有 diagnostics/failure unions，以显式 adapter 生成深冻结 `KernelIssue`；report 只允许 validation/migration，current schema migration 只允许 `not-required | rejected`。
 
-实现约束: 所有用户可见错误、diagnostic 和 report issue 必须使用稳定 code、severity、messageKey、target、source 和结构化 details，不得把中文/英文文案、用户谱面正文、访问令牌、本机隐私路径或第三方密钥硬编码进错误对象。模块异常必须被捕获并转换为 `module-error` diagnostic 或 report issue，不得导致 Core Kernel 崩溃。
+实现约束: 所有公共 Issue 使用稳定 closed code、派生 severity/messageKey、closed location、受控 source 和白名单 details，不得包含中文/英文文案、raw Error 字段、用户谱面正文、访问令牌、本机隐私路径或第三方密钥。Core report 无 ID/time，source 不执行授权；无 `KernelDiagnostic`、import/export/recovery report alias、全局 issue bus 或 public error class。
 
 取舍: 该方案会增加错误 code、report issue 和隐私边界的设计成本；但它能统一命令、验证、导入、导出、迁移和插件异常的失败表达。如果只用异常或字符串，MVP 更快，但国际化、测试断言、问题定位和长期维护都会变得脆弱。
 

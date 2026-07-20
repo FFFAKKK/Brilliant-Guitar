@@ -1,5 +1,8 @@
 # REQ-019 内核错误、Diagnostic 与 Report 契约
 
+> **状态：K1-5 IMPLEMENTATION CANDIDATE / INDEPENDENT ACCEPTANCE PENDING。**
+> K1-1～K1-4 既有 failure/result 合同保持不变；K1-6 在独立验收前继续阻塞。
+
 ## 用户价值
 
 `Brilliant Guitar` 是长期维护的开源打谱软件，失败不能只是抛异常或显示一段不可测试的字符串。用户最终感知到的是:
@@ -7,7 +10,7 @@
 - 命令失败、文件打开失败、导入失败、导出失败和模块异常都有明确原因。
 - UI 能把错误显示成中英文文本，但核心错误对象不硬编码中文或英文。
 - 测试能稳定断言错误 code、severity、target 和来源。
-- 导入、导出、迁移、验证和恢复都能输出一致 report，便于问题定位和毕业设计答辩展示。
+- 当前 Core 的验证和迁移能输出一致 report；导入、导出和恢复报告由相应外部模块后续定义。
 - 错误和 report 默认不泄露用户谱面正文、访问令牌或本机隐私路径。
 
 ## 当前决策状态
@@ -35,19 +38,19 @@ MVP 真正必要的功能:
 
 - 稳定错误 code。
 - `messageKey` 支持中英文。
-- 可定位 `KernelDiagnostic`。
-- 统一 `KernelReport` 外壳。
+- 可定位、深冻结的 `KernelIssue`。
+- 只面向当前真实消费者的 `KernelReport<"validation" | "migration">` 外壳。
 - report 默认隐私保护。
 
 ### 业务逻辑视角
 
 业务流程:
 
-1. 命令、验证、打开、迁移、导入、导出、注册或模块调用发生失败。
-2. 失败被转换为 `KernelError`、`KernelDiagnostic` 或 `KernelReportIssue`。
+1. 命令、验证、迁移、注册或模块调用发生失败。
+2. 既有 failure/diagnostic 通过显式 adapter 转换为 `KernelIssue`；内部错误类不跨公共边界。
 3. UI 通过 `messageKey` 和 i18n 字典渲染用户文本。
-4. diagnostic 可以定位到文档、地址、范围、模块、贡献点或文件。
-5. 导入、导出、迁移、验证和恢复操作输出统一 report。
+4. issue 可以使用 diagnostic path、`ScoreAddress`、`ScoreRange` 或已验证 module/contribution source；不包含文件路径或 URL。
+5. 当前验证和迁移入口输出统一且确定的 report。
 
 业务规则:
 
@@ -78,19 +81,16 @@ MVP 真正必要的功能:
 
 核心数据模型:
 
-- `KernelError`。
-- `KernelDiagnostic`。
-- `KernelIssueTarget`。
-- `KernelIssueSource`。
-- `KernelReport`。
-- `KernelReportIssue`。
-- `ImportReport`、`ExportReport`、`MigrationReport`、`ValidationReport`、`RecoveryReport`。
+- 内部 sealed `KernelError` family（不公开 class）。
+- 公共 `KernelIssue`、`KernelIssueLocation` 与 `KernelIssueSource`。
+- 公共 `KernelReport<"validation" | "migration">` 与 `MigrationReport`。
+- 原 K1-1 `Diagnostic` / `ValidationReport` 保持不变；不增加 `KernelDiagnostic` 别名。
 
 接口契约:
 
-- 命令和 registry 失败返回 `KernelError`。
-- 验证输出 `KernelDiagnostic` 或 `ValidationReport`。
-- 导入、导出、迁移和恢复输出对应 report。
+- 命令、checkpoint、read、event 与 registry 失败保持原 result，并可显式映射为 Issue 数组。
+- `createKernelValidationReport` 把 K1-1 diagnostics 投影为新的 validation `KernelReport`。
+- `migrateScoreDocument` 只输出 `not-required | rejected` 与 `MigrationReport`。
 - 所有用户可见文本通过 `messageKey` 进入 i18n。
 
 可测试性:
@@ -122,7 +122,7 @@ MVP 不需要完整观测平台。当前阶段应避免:
 
 - 失败如何结构化表达。
 - 可展示、可测试的问题如何定位到文档、地址、范围、模块或文件。
-- 导入、导出、迁移、验证和恢复如何共享 report 外壳。
+- 当前验证和迁移如何共享确定、不可伪造 summary/status 的 report 外壳。
 
 本需求不解决:
 
@@ -135,10 +135,10 @@ MVP 不需要完整观测平台。当前阶段应避免:
 
 - 所有内核错误使用稳定 `code`、`severity`、`messageKey`、可选 `target`、`source` 和结构化 `details`。
 - 所有用户可见文本只通过 i18n key 解析，不在错误对象里硬编码中文或英文。
-- `KernelDiagnostic` 必须能定位到文档级、`ScoreAddress`、`ScoreRange`、模块级、贡献点级或文件级目标。
-- `KernelReport` 必须包含 report id、kind、status、source module、createdAt、summary 和 issues。
-- `ImportReport`、`ExportReport`、`MigrationReport`、`ValidationReport` 和恢复报告复用同一套 `KernelReportIssue`。
-- 模块异常必须被捕获并转换为 `module-error` diagnostic 或 report issue，不得导致 Core Kernel 崩溃。
+- `KernelIssueLocation` 只允许 diagnostic path、`ScoreAddress` 或 `ScoreRange`；module/contribution 归因属于独立 source。
+- `KernelReport` 只包含 reportVersion、kind、派生 status、派生 summary 和 ordered issues，不含 ID/time/source module 顶层字段。
+- 当前只公开 validation 与 migration 两种 report kind；不公开 import/export/recovery 专属类型或第二个 `ValidationReport`。
+- 显式 module wrapper 只生成 `module.internal-error` Issue，不保存或返回 raw Error 字段。
 - `details` 和 report 默认不得包含用户谱面正文、访问令牌、本机绝对隐私路径或第三方密钥。
 
 ## MVP 不做
@@ -154,20 +154,20 @@ MVP 不需要完整观测平台。当前阶段应避免:
 
 - 错误契约: 内核失败只能返回结构化错误或结构化 result，不允许把裸异常穿透给 UI、导出器或插件接口。
 - Diagnostic 契约: diagnostic 表示当前文档或模块状态中的可展示问题，不等同于日志。
-- Report 契约: report 表示一次操作的结果摘要和问题列表，例如导入、导出、迁移、验证或恢复。
+- Report 契约: 当前 Core report 表示一次验证或迁移的确定结果摘要和问题列表；外部模块可在 Core 结果之外包装自己的资源元数据。
 - I18n 契约: `messageKey` 是唯一用户可见文本入口；参数放入结构化 `details`。
 - 隐私契约: 默认不包含谱面正文、令牌、密钥、本机隐私路径或完整异常堆栈。
 - 归因契约: `source` 只用于诊断和报告，不用于授权；授权属于 `REQ-018`。
 
 ## 验收标准
 
-- [ ] AC-019-01: `KernelError`、`KernelDiagnostic` 和 `KernelReportIssue` 都包含稳定 code、severity 和 messageKey。
+- [ ] AC-019-01: 公共 `KernelIssue` 包含稳定 code、派生 severity、派生 messageKey 与受控 source/location/details。
 - [ ] AC-019-02: 用户可见错误文本只使用 i18n key，不硬编码中文或英文。
-- [ ] AC-019-03: hard validation 失败能生成定位到 `ScoreAddress` 或 `ScoreRange` 的 diagnostic。
-- [ ] AC-019-04: `ImportReport`、`ExportReport`、`MigrationReport` 和 `ValidationReport` 复用同一套 `KernelReportIssue` 字段。
-- [ ] AC-019-05: 模块 handler 抛出异常时，被转换为 `module-error` diagnostic 或 report issue。
+- [ ] AC-019-03: K1-1 diagnostics 通过 diagnostic-path location 无损映射，且不猜测缺失的地址/范围。
+- [ ] AC-019-04: validation 与 migration report 复用同一套 `KernelIssue`、派生 summary/status 和隐私边界。
+- [ ] AC-019-05: 显式 module wrapper 把异常边界归一化为 `module.internal-error` Issue，不泄露异常文本。
 - [ ] AC-019-06: report 默认不包含用户谱面正文、访问令牌或本机隐私路径。
-- [ ] AC-019-07: command、schema、migration、import、export、registry 和 capability 失败都能映射到稳定错误 code。
+- [ ] AC-019-07: K1-1 diagnostics、command/history、checkpoint/read/event、registry/capability 与 migration 失败都能映射到稳定 code。
 
 ## 已确认决策
 
@@ -175,6 +175,6 @@ MVP 不需要完整观测平台。当前阶段应避免:
 - DEC-019-02: 该功能独立规划和实现，不与注册表、module identity、contribution descriptor 或 capability 授权合并。
 - DEC-019-03: 该功能可以引用 module id、contribution id、score address 和 score range 做问题归因，但不执行 capability 授权。
 
-## 后续待规划问题
+## 当前状态
 
-- OQ-019-02: MVP 错误 code 体系如何分层: 按内核子系统分组，还是使用一套扁平 code 枚举？
+K1-5 implementation candidate complete；独立验收 pending。最终候选 HEAD 与测试总数在完整门禁后记录；在正式 accepted baseline 形成前不得启动 K1-6。

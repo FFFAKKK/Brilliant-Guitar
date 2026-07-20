@@ -4,7 +4,7 @@
 
 把现有 `Pure Core Kernel V1` 总规划收敛成一个可执行、可验收、可分块推进的内核实现任务。
 
-本任务是 Pure Core Kernel V1 路线图父任务。K1-1 已在 `30894e2` 正式验收；K1-2 已完成 P1 修复、独立复验并归档；K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 独立验收并归档，102/102 测试通过。K1-4 Tasks 1–6 与验收修复已完成并通过 125/125 测试，等待独立验收；K1-5 仍保持阻塞。
+本任务是 Pure Core Kernel V1 路线图父任务。K1-1 已在 `30894e2` 正式验收；K1-2 已完成 P1 修复、独立复验并归档；K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 独立验收并归档，102/102 测试通过；K1-4 已在 `94766a0930c05e5339c44f667deaf02116af1c0c` 正式验收并归档，125/125 测试通过。K1-5 implementation candidate 已完成，等待独立验收；K1-6 在形成 K1-5 accepted baseline 前保持阻塞。
 
 ## Source Documents
 
@@ -106,17 +106,18 @@
 
 ### K1-5: 错误、diagnostic、report 与迁移入口
 
-作用: 统一内核失败表达、验证定位、导入导出报告壳和 schema 迁移入口，让测试、UI、本地化和未来模块都能稳定理解失败原因。
+作用: 通过 additive adapter 统一观察既有内核失败，提供验证报告与 current-schema migration compatibility boundary，让测试、UI、本地化和未来模块稳定理解失败原因，同时不改写 K1-1～K1-4 result 合同。
 
 小功能:
 
-- `KernelError`: 稳定 `code`、`severity`、`messageKey`、结构化 `details`。
-- `KernelDiagnostic`: 可定位到 document、address、range、module、contribution、file 或 operation。
-- validation diagnostics: 保留具体 code，例如 `rhythm-slot-gap`、`technique-definition-missing`、`pitch-octave-out-of-range`。
-- report shell: 定义 `KernelReport`、`KernelReportIssue`、`ValidationReport`、`MigrationReport`、`ImportReport`、`ExportReport`、`RecoveryReport`。
+- 内部错误族: 复用安全转换行为，但 class 不作为公共 `instanceof` 或序列化合同。
+- `KernelIssue`: closed code、派生 severity/messageKey、受控 source/location/details；保留 K1-1 diagnostics 和 K1-2～K1-4 failures。
+- validation diagnostics: 保留已批准的 `decode.*`、`semantic.*`、`unsupported.*` code、path、details 与确定顺序。
+- report shell: 只定义当前有真实消费者的 `KernelReport<"validation" | "migration">` 与 `MigrationReport`；K1-1 `ValidationReport` 保持不变。
 - 隐私边界: report/error 默认不包含用户谱面正文、访问令牌、本机隐私绝对路径、第三方密钥或插件源码。
-- 迁移入口: 定义 schema version、兼容矩阵、迁移器注册入口和 `MigrationReport`，不做物理 `.bgp` zip IO。
-- module exception 转换: 模块异常转成 `module-error` diagnostic 或 report issue。
+- 迁移入口: 当前 `brilliant-score-1` 只产生 `not-required | rejected`，私有步骤表为空，无动态注册和物理 `.bgp` zip IO。
+- module exception 转换: 显式 module wrapper 只产生隐私安全的 `module.internal-error` Issue。
+- 明确排除: 无 `KernelDiagnostic`、import/export/recovery report 类型、ID/time、全局 issue bus、MigrationContribution 或 public error class。
 
 ### K1-6: 内核集成验收与质量门禁
 

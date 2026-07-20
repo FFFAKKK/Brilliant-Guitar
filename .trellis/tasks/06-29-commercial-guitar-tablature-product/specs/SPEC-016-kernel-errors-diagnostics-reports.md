@@ -1,64 +1,79 @@
-# SPEC-016 内核错误、Diagnostic 与 Report 重规划门
+# SPEC-016 内核错误、Issue、Report 与迁移兼容边界
 
-> **状态：PARTIAL CONTRACT / K1-2 COMMAND FAILURES APPROVED / K1-5 REPORTS BLOCKED。** K1-1 validation diagnostics 与 K1-2 封闭 CommandFailure 已是活动兼容面；通用 operation errors、reports 与 migration shell 仍须 K1-5 重规划。
+> **状态：K1-5 IMPLEMENTATION CANDIDATE / INDEPENDENT ACCEPTANCE PENDING。**
+> K1-1～K1-4 的 diagnostics/failure union 保持不变；K1-6 在 K1-5 形成独立验收基线前继续阻塞。
 
 ## 1. Scope / Trigger
 
-当前立即适用于 decode、Core semantic validation、ScoreFeatureProfile，以及 K1-2 的 command/transaction/history 失败结果。Registry、migration、import/export、recovery 和通用 report 仍须各自阶段批准；不得借 SPEC-016 把它们混入 K1-2。
+K1-5 提供显式、可选的失败适配层、不可变 `KernelIssue`/`KernelReport`
+数据合同、validation report adapter，以及当前 `brilliant-score-1` 的纯内存迁移兼容入口。
 
-## 2. Signatures
+不包含 `KernelDiagnostic` 新类型、公开错误类、全局 issue bus、动态迁移注册、
+`ImportReport`/`ExportReport`/`RecoveryReport`、物理 `.bgp` IO 或真实旧 schema。
 
-K1-1 已批准：
+## 2. Authoritative Contracts
 
-```typescript
-interface Diagnostic {
-  readonly code: DiagnosticCode
-  readonly messageKey: `core.${DiagnosticCode}`
-  readonly path: readonly (string | number)[]
-  readonly details?: JsonObject
-}
-```
+详细签名、K1-1 code 表、场景与失败矩阵以
+`.trellis/spec/core-kernel/backend/errors-reports.md` 为唯一活动合同。
+K1-2/K1-3/K1-4 的原始 failure union 分别由 `command-transaction.md`、
+`snapshot-events.md` 和 `registry-capability.md` 拥有，K1-5 不复制或改写它们。
 
-`DiagnosticCode` 是 `.trellis/spec/core-kernel/backend/errors-reports.md` 中记录并由 TypeScript union 约束的封闭集合，不得使用任意 string。K1-2 的 `CommandResult` / `CommandFailure` 封闭 union 以 `.trellis/spec/core-kernel/backend/command-transaction.md` 为唯一代码契约；它不是通用 KernelError/KernelReport。KernelError/KernelReport 最终签名尚未批准。
+公共运行时入口：
+
+- `mapDiagnosticToKernelIssue`
+- `mapCommandFailureToKernelIssues`
+- `mapCheckpointFailureToKernelIssues`
+- `mapReadFailureToKernelIssues`
+- `mapEventSubscriptionFailureToKernelIssues`
+- `mapRegistryStartupFailureToKernelIssues`
+- `mapRegistryAccessFailureToKernelIssues`
+- `createModuleInternalIssue`
+- `createKernelValidationReport`
+- `migrateScoreDocument`
 
 ## 3. Contracts
 
-- `decode.*`、`semantic.*`、`unsupported.*` 的 code、messageKey、path 与确定顺序是兼容面。
-- 外层 operation error/report 必须保留具体 validation diagnostics，不得折叠成泛化字符串。
-- Guitar Domain 后续拥有 `guitar.*`，Core 不产生或解释该族。
-- 用户可见文本通过 i18n messageKey 解析。
-- details 只含有限、隐私安全 JsonValue，不含原始异常、令牌、密钥、私有绝对路径或整段谱面正文。
-- K1-2 submit 意外异常折叠为 `command.internal-error`；undo/redo 意外异常折叠为 `history.invariant-violation`。两类结果均不得携带原始异常、源码、路径、stack 或 internal mutation。
-- Report shell 的 kind/status/source/summary/issues 只有在 K1-5 证明消费方后才能定型。
+- 内部使用封闭错误族复用行为；公共边界只返回深冻结纯数据，不能依赖 `instanceof`。
+- `KernelIssueCode` 是闭集；`messageKey` 恒为 `core.${code}`，severity 由 code 推导。
+- adapter 严格按字段白名单构造结果；畸形输入返回 `report.invalid-input`，内部意外返回 `report.internal-error`。
+- `KernelReport` 只允许 `validation | migration`，status/summary 只能从 issues 推导。
+- report 不包含 reportId、operationId、createdAt、时间戳或随机标识。
+- 当前迁移结果只有 `not-required | rejected`；私有步骤表为空，无 `migrated` 死分支。
+- migration 成功候选与输入隔离、深冻结、通过 decode/semantic validation；失败不返回半成品。
+- migration 不接受或修改 CommandBus，不改变 history、dirty 或 event sequence。
 
-## 4. Validation & Error Matrix
+## 4. Validation & Failure Matrix
 
-| Layer | Current owner | Status |
-|---|---|---|
-| decode/semantic/profile diagnostics | K1-1 stable spec | approved |
-| Guitar diagnostics | future Guitar Domain | blocked |
-| closed command/transaction/history failures | K1-2 command spec | approved |
-| general operation errors/reports | K1-5 | blocked |
-| registry/capability errors | K1-4 + K1-5 | blocked |
-| migration/import/export/recovery reports | K1-5 / external modules | blocked |
+| Scenario | Stable result |
+|---|---|
+| K1-1 diagnostic | 保留 code/path/details 与顺序 |
+| K1-2/K1-3/K1-4 failure | 保留原 code，只复制每个 code 获批字段 |
+| malformed adapter input | 单个 `report.invalid-input` |
+| unexpected adapter failure | 单个 fatal `report.internal-error` |
+| empty validation issues | `completed` |
+| unsupported-only validation | `completed-with-warnings` |
+| error/fatal validation | `rejected` |
+| valid current schema | `not-required` + 空 migration report |
+| future schema | `migration.unsupported-source-version` + decoder issues |
+| malformed/semantic-invalid schema | 外层 migration issue + 全部具体 issues |
+| internal migration fault | 单个 fatal `migration.internal-error` |
 
 ## 5. Good / Base / Bad Cases
 
-- Good：ValidationReport 未来引用原始 `semantic.measure-coverage-missing`，路径和 details 不丢失。
-- Base：合法但当前不支持的和弦保持 `unsupported.chord`，不变成 operation failure。
-- Base：undo/redo 的意外内部异常返回原状态与 `history.invariant-violation`，不抛出 TypeError 或泄露异常文本。
-- Bad：`type ValidationDiagnosticCode = string`，或 report 把所有失败改写成 `validation-failed`。
+- Good：同一输入重复映射、报告或迁移得到深度相等结果。
+- Base：`command.semantic-invalid` 先输出 operation issue，再按原顺序输出全部 semantic issues。
+- Base：未知 `ExtensionBlock` 在 current-schema pass-through 中深度保留。
+- Bad：getter、Proxy、extra field、cycle 或 sparse array 不能逃逸异常或执行 `get` trap。
+- Bad：公共根不得导出错误类、builder、strict codec、迁移步骤表或测试依赖注入缝。
 
 ## 6. Tests Required
 
-现有 K1-1 测试继续验证封闭 code、messageKey、路径、隐私和确定顺序。K1-2 测试必须验证 submit、undo、redo 的异常转换、原状态保留和隐私边界。K1-5 后续补充 report code 保留、模块异常转换、序列化和跨操作一致性测试。
+穷尽映射全部已验收 code；验证字段白名单、顺序、深冻结、mutation isolation、
+report 派生计数、全部 migration 路径、unknown ExtensionBlock 与 CommandBus 隔离。
+公共出口、禁止依赖、typecheck、build、完整测试、Trellis validate 和 diff check
+必须全部通过。
 
-## 7. Wrong vs Correct
+## 7. Candidate Gate
 
-```typescript
-// Wrong
-report.issues = [{ code: "validation-failed" }]
-
-// Correct direction
-report.issues = diagnostics.map(preserveDiagnosticAsReportIssue)
-```
+当前只能声明：`K1-5 implementation candidate complete; independent acceptance pending.`
+最终实现 HEAD 与完整测试总数在候选门禁完成后另行记录；不得提前标记 accepted 或开启 K1-6。

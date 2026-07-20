@@ -2,7 +2,7 @@
 
 ## 状态
 
-- 阶段: Core K1-3 已正式验收并归档；K1-4 实施候选及验收修复已完成并通过 125/125 测试，等待独立验收；产品其余阶段保持 planning
+- 阶段: Core K1-1～K1-4 已正式验收并归档；K1-5 implementation candidate 已完成并等待独立验收，K1-6 继续阻塞；产品其余阶段保持 planning
 - 目标: 为第一条可运行 MVP 闭环提供需求反推的技术设计骨架。
 - 已确认技术栈: Tauri 2 + TypeScript + React + Vite。
 - 首发平台: Windows 桌面。
@@ -38,9 +38,9 @@
 - 文档地址和范围: `ScoreAddress`、`ScorePoint`、`ScoreRange` 和命令目标校验。当前 UI 光标、选区高亮、鼠标拖选和临时 `ScoreCoordinate` 属于 `Editor Session Service` 或 `Layout Module`，不属于微内核。
 - 文件契约: `.bgp` schema、manifest、score JSON、schema version、迁移入口。
 - 快照和查询: `CommandBus.read()` 返回深冻结 `DocumentSnapshot`、history depths、dirty；六个 selector 与分层 range 提供受控读取，物理序列化属于 Persistence。
-- 事件和注册表: K1-3 只提供 document-committed 与 dirty-state-changed 两个事实；K1-4 只登记现有 command/selector adapter，且不新增 Registry event。validator/migration/descriptor/report 由后续块重规划；`ExtensionBlock` 不是 registry。
+- 事件和注册表: K1-3 只提供 document-committed 与 dirty-state-changed 两个事实；K1-4 只登记现有 command/selector adapter，且不新增 Registry event。K1-5 migration/report 是 registry 外的 additive 观察与兼容边界；`ExtensionBlock` 不是 registry。
 - 能力边界: `KernelCapability`、module identity、API version 和 capability 检查。
-- 错误、诊断和报告: `KernelError`、`KernelDiagnostic`、`KernelReport`、`ImportReport`、`ExportReport`、`MigrationReport`、`ValidationReport` 和 report issue 基础类型；导入/导出 report 是外部模块复用的报告壳，不表示内核实现具体格式。
+- 错误、诊断和报告: 内部 sealed error family，公共深冻结 `KernelIssue`，以及只面向当前真实消费者的 validation/migration `KernelReport`；K1-1 `Diagnostic`/`ValidationReport` 保持不变，导入/导出/恢复报告属于后续外部模块合同。
 
 Core Kernel 路线图仍按 9 类机制分类，但按任务分块实施；当前 K1-1 只交付第 1 类所需模型、codec、semantic/profile validation 与诊断，不把 9 类机制一次性实现:
 
@@ -62,7 +62,7 @@ Core Kernel 路线图仍按 9 类机制分类，但按任务分块实施；当�
 
 ### Pure Core Kernel V1 Boundary
 
-Pure Core Kernel V1 最终覆盖上述 9 类机制，但必须按 K1-1 至 K1-6 逐块评审。K1-1 至 K1-3 已验收归档；K1-4 实施候选已在独立分支完成并等待独立验收，K1-5 仍阻塞。任何当前分块都不包含桌面壳、React UI、VexFlow/SVG 渲染、Web Audio 播放、PDF/PNG 真实导出、Guitar Pro 导入、Tauri 文件系统或第三方插件运行时。
+Pure Core Kernel V1 最终覆盖上述 9 类机制，但必须按 K1-1 至 K1-6 逐块评审。K1-1 至 K1-4 已验收归档；K1-5 implementation candidate 已完成并等待独立验收，K1-6 继续阻塞。任何当前分块都不包含桌面壳、React UI、VexFlow/SVG 渲染、Web Audio 播放、PDF/PNG 真实导出、Guitar Pro 导入、Tauri 文件系统或第三方插件运行时。
 
 Pure Core Kernel V1 可以定义外部导入/导出贡献点的抽象 descriptor 类型、capability 检查和 report 外壳，但不得注册 PDF、PNG、Guitar Pro 或 `.bgp` 物理读写的具体 descriptor/handler。`.bgp` schema、manifest 语义和迁移入口属于内核；zip 读写、文件路径、自动保存恢复、PDF/PNG 页面生成和 Guitar Pro 解析都属于外部用户态服务模块。
 
@@ -132,11 +132,11 @@ Pure Core Kernel V1 可以定义外部导入/导出贡献点的抽象 descriptor
 
 ### Kernel Error / Diagnostic / Report Protocol
 
-推荐设计见 `specs/SPEC-016-kernel-errors-diagnostics-reports.md`。第一阶段建议采用:
+正式合同见 `specs/SPEC-016-kernel-errors-diagnostics-reports.md` 与活动 Core `errors-reports.md`：
 
-- Structured Error: 命令、注册、权限、schema、迁移、导入导出和模块异常统一转成 `KernelError`。
-- Diagnostic: 文档验证、unsupported、模块异常和事件处理器失败使用可定位 `KernelDiagnostic`。
-- Shared Report Shell: `ImportReport`、`ExportReport`、`MigrationReport`、`ValidationReport` 和恢复报告复用 `KernelReport` 与 `KernelReportIssue`；具体导入/导出模块生成报告内容，内核只定义结构化外壳和隐私边界。
+- Structured Error: 内部错误族只负责安全行为复用，公共边界统一为 closed、深冻结的 `KernelIssue` 数据。
+- Diagnostic: K1-1 `Diagnostic` 保持原 code/path/details；K1-5 adapter 使用 closed location/source 投影，不新增 `KernelDiagnostic`。
+- Shared Report Shell: 当前 Core 只公开 validation/migration 两种 `KernelReport`；import/export/recovery 专属类型由未来实际模块定义。
 - I18n Message: 用户可见文本只通过 `messageKey` 解析。
 - Privacy by Default: report 默认不包含用户谱面正文、访问令牌、本机隐私路径或第三方密钥。
 
@@ -193,7 +193,7 @@ Pure Core Kernel V1 可以定义外部导入/导出贡献点的抽象 descriptor
 - 第一阶段产品闭环打开: 原生 `.bgp` 和自动保存恢复文件，由 `Persistence Service` 负责物理 IO。
 - 第一阶段产品闭环导出: PDF + PNG，由 `Export Service` 负责页面生成、字体和文件输出。
 - 第二阶段: 只规划 Guitar Pro 导入，其它外部导入后置，Guitar Pro 导出长期后置。
-- 约束: 导入器必须输出 `ImportReport`；导出器必须输出 `ExportReport`；导入结果必须通过内核验证器。抽象 format descriptor 与 report 契约属于 K1-5/后续独立规划，不在 K1-4；Core 不包含 PDF/PNG/Guitar Pro 的具体实现。
+- 约束: 导入/导出器的模块专属 report 由其未来任务定义；导入结果必须通过内核验证器。K1-5 不预建 import/export report alias，Core 不包含 PDF/PNG/Guitar Pro 的具体实现。
 
 ### Unified Module Registration / Future Extension Host
 
@@ -255,8 +255,8 @@ Pure Core Kernel V1 可以定义外部导入/导出贡献点的抽象 descriptor
 - 音乐时间模型属于谱面核心对象模型，不新增第十类机制；Core 持久化 Fraction/NoteValue，tick/PPQ、真实播放时钟和播放光标由外部 adapter 派生。
 - 快照、selector、事件订阅与模块通信遵守 `SPEC-014` 和 `.trellis/tasks/archive/2026-07/07-15-k1-3-address-snapshots-selectors-events/`，旧详细模型已归档。
 - 外部可变 `ScoreDocument` 副本方案已拒绝；这类方案与微内核设计相悖。外部模块只能生成非谱面事实的派生模型，最终写入仍走内核受控入口。
-- Registry/capability 已通过 `SPEC-015` 与独立 K1-4 任务实现为 command/selector-only startup Registry；实施候选等待独立验收。
-- K1-1 diagnostics 已确认；operation errors、report 与 migration 通过 `SPEC-016` K1-5 重规划门补充。
+- Registry/capability 已通过 `SPEC-015` 与独立 K1-4 任务实现为 command/selector-only startup Registry，并在 `94766a0` 验收归档。
+- K1-1 diagnostics 已确认；K1-5 已通过 `SPEC-016` 增加 additive Issue adapters、validation/migration reports 与 current-schema migration candidate，独立验收 pending。
 - 注册表 handler 运行时注销/卸载、第三方插件热插拔、运行中启用/禁用和运行中卸载已明确不作为稳定性目标；未来第三方插件配置变更必须启动前完成并通过重启生效。官方随应用发布的内置模块会有多个，UI 模块只是其中一类，具体模块清单、数量和拆分方式后续再确定；官方和第三方的权限模型不再按来源二分，最终都收敛到同一套注册协议，这些生命周期治理能力不作为当前内核总规划和 Kernel V1 实现阻塞项。
 - 外部工程目录结构、monorepo 方案、`apps/desktop` 和 `packages/*` 拆分不属于当前 Core Kernel 规划阶段；这些只在后续工程脚手架阶段根据已确认内核边界和模块协作方式重新评估，不作为当前内核规划阻塞项。
-- 当前设计文档无阻塞开放问题；K1-3 已正式验收归档，K1-4 实施候选已完成并等待独立验收，K1-5 仍须独立规划获批。
+- 当前设计文档无阻塞开放问题；K1-1～K1-4 已正式验收归档，K1-5 implementation candidate 已完成并等待独立验收，K1-6 在 K1-5 accepted baseline 前继续阻塞。

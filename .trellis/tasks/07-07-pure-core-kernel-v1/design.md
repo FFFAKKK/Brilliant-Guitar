@@ -8,7 +8,8 @@
 - K1-1 authority: `.trellis/tasks/archive/2026-07/07-13-k1-1-foundation-replanning/design.md` and `.trellis/spec/core-kernel/backend/score-document-model.md`.
 - K1-2 authority: `.trellis/tasks/archive/2026-07/07-15-k1-2-commands-transactions-history/design.md` and `.trellis/spec/core-kernel/backend/command-transaction.md`.
 - K1-3 authority: `.trellis/tasks/archive/2026-07/07-15-k1-3-address-snapshots-selectors-events/`, accepted at `7369eeac60fecea66c2c9164c04439625c2d78b0`.
-- K1-4 authority: `.trellis/tasks/archive/2026-07/07-16-k1-4-registry-capability-startup-registration/` and `.trellis/spec/core-kernel/backend/registry-capability.md`; K1-5 and later remain roadmap sketches.
+- K1-4 authority: `.trellis/tasks/archive/2026-07/07-16-k1-4-registry-capability-startup-registration/` and `.trellis/spec/core-kernel/backend/registry-capability.md`.
+- K1-5 authority: `.trellis/tasks/07-19-k1-5-errors-diagnostics-reports-migration/` and `.trellis/spec/core-kernel/backend/errors-reports.md`; implementation candidate complete, independent acceptance pending. K1-6 remains blocked.
 
 ## Design Principle
 
@@ -216,13 +217,12 @@ Why before final integration: all failure paths need stable codes, diagnostics, 
 
 Deliverables:
 
-- `KernelError`
-- operation-level `KernelError` integrated with the existing K1-1 Diagnostic contract
-- `KernelReport`
-- `ValidationReport`
-- `MigrationReport`
-- abstract import/export report shells
-- migration entry without physical IO
+- internal sealed error families with public data-only `KernelIssue` projections
+- additive adapters for K1-1 diagnostics and K1-2/K1-3/K1-4 failure unions
+- derived deeply frozen `KernelReport<"validation" | "migration">`
+- `createKernelValidationReport` without changing K1-1 `ValidationReport`
+- current `brilliant-score-1` `not-required | rejected` migration entry without physical IO or session effects
+- empty private migration step catalog; no dynamic registration, fictional schema, IDs/time, global issue bus, or import/export/recovery aliases
 
 ### K1-6: Integration Gate
 
@@ -267,6 +267,6 @@ No implementation chunk should change unrelated future UI, renderer, playback, p
 - K1-1 is the accepted frozen foundation at `30894e2`.
 - K1-2 passed focused P1 repair and independent re-acceptance and is archived under `.trellis/tasks/archive/2026-07/07-15-k1-2-commands-transactions-history/`.
 - K1-3 passed independent acceptance at `7369eeac60fecea66c2c9164c04439625c2d78b0`, is archived, and has 102/102 passing tests.
-- K1-4 passed independent acceptance at `94766a0930c05e5339c44f667deaf02116af1c0c` and is archived. K1-5 has not started.
+- K1-4 passed independent acceptance at `94766a0930c05e5339c44f667deaf02116af1c0c` and is archived. K1-5 implementation candidate is complete and awaits independent acceptance; K1-6 remains blocked.
 - Guitar Domain Block 2 is independent from Core K1-2 and must define its Part-owned extension before guitar commands or technique semantics are implemented.
 - Before any later implementation, load `trellis-before-dev`, re-read the relevant active specs, and confirm the task is approved; archived drafts are never execution sources.

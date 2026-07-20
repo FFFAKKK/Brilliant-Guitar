@@ -5,7 +5,7 @@
 - Phase: staged execution; K1-1 through K1-4 are accepted/archived. K1-4 is fixed at `94766a0930c05e5339c44f667deaf02116af1c0c` with 125/125 tests passing.
 - K1-1 was formally accepted at baseline `30894e2`; its model and validation contracts remain frozen.
 - This parent plan no longer defines K1-1 or K1-2 executable details; their independent child artifacts and active Core specs are authoritative.
-- K1-3 implementation followed its approved independent PRD/design/implement set and was accepted at `7369eeac60fecea66c2c9164c04439625c2d78b0` with 102/102 tests passing. K1-4 execution authority is its approved independent task; K1-5 and later blocks still require their own plan refresh.
+- K1-3 implementation followed its approved independent PRD/design/implement set and was accepted at `7369eeac60fecea66c2c9164c04439625c2d78b0` with 102/102 tests passing. K1-4 was accepted at `94766a0930c05e5339c44f667deaf02116af1c0c` with 125/125 tests passing. K1-5 implementation follows its approved independent task and is now a candidate pending independent acceptance; K1-6 remains blocked.
 
 ## Global Rules for Every Implementation Round
 
@@ -172,21 +172,23 @@ Purpose: standardize failures, validation location, report shells, and schema mi
 
 Subfeatures:
 
-- Kernel errors: stable code, severity, messageKey, structured details.
-- Diagnostics: preserve the existing closed K1-1 decode/semantic/profile codes and extend targeting only through an approved compatibility update.
-- Validation report: preserve concrete validation diagnostic codes.
-- Migration report: define current version pass-through, future version safe failure, old version hook shape.
-- Import/export report shells: define structure only; no real format implementation.
-- Recovery report shell: define structure only.
-- Privacy boundary: no score text, access tokens, API keys, private absolute paths, third-party secrets, or plugin source code in default details.
-- Module exception conversion: convert thrown module errors into `module-error` diagnostic/report issue.
+- Internal error families with public closed, deeply frozen `KernelIssue` data.
+- Descriptor-first additive adapters that preserve all accepted K1-1 through K1-4 codes and allowlisted facts.
+- Derived validation/migration reports; existing K1-1 `ValidationReport` remains unchanged.
+- Current `brilliant-score-1` not-required pass-through and safe future/malformed/semantic/internal rejection.
+- Empty private migration step table; no fictional legacy schema, dynamic registration, or `migrated` branch.
+- Privacy boundary: no raw Error fields, score text, tokens, keys, private paths, ID/time, or plugin source.
+- No public `KernelDiagnostic`, import/export/recovery report alias, global issue bus, physical IO, or public error class.
 
 Expected files:
 
 - `src/core-kernel/reports/*`
-- `src/core-kernel/validation/diagnostics.ts`
-- `test/core-kernel/reports/*`
-- integration updates to validation, registry, events, commands
+- `src/core-kernel/migration/*`
+- `test/core-kernel/kernel-issues.test.ts`
+- `test/core-kernel/kernel-failure-adapters.test.ts`
+- `test/core-kernel/kernel-reports.test.ts`
+- `test/core-kernel/migration.test.ts`
+- explicit public-boundary and forbidden-dependency updates
 
 Validation:
 
@@ -229,4 +231,4 @@ Completion gate:
 
 ## Current Execution Recommendation
 
-K1-3 is accepted and archived at `7369eeac60fecea66c2c9164c04439625c2d78b0`. K1-4 passed independent acceptance at `94766a0930c05e5339c44f667deaf02116af1c0c`, is archived, and has 125/125 passing tests. K1-5 has not started and requires its own approved task before implementation.
+K1-3 is accepted and archived at `7369eeac60fecea66c2c9164c04439625c2d78b0`. K1-4 passed independent acceptance at `94766a0930c05e5339c44f667deaf02116af1c0c`, is archived, and has 125/125 passing tests. K1-5 implementation candidate is complete under `.trellis/tasks/07-19-k1-5-errors-diagnostics-reports-migration/`; independent acceptance remains pending, so K1-6 must not start.

@@ -1,7 +1,8 @@
 # Core Kernel Quality Guidelines
 
-> **Authoritative staged quality gate (2026-07-16):** K1-1 through K1-3 tests
-> are frozen regressions. K1-3 acceptance at `7369eeac60fecea66c2c9164c04439625c2d78b0` passed 102/102 tests.
+> **Authoritative staged quality gate (2026-07-20):** K1-1 through K1-4 tests
+> are frozen regressions. K1-4 acceptance at `94766a0930c05e5339c44f667deaf02116af1c0c` passed 125/125 tests.
+> K1-5 is an implementation candidate pending independent acceptance.
 
 ## Current K1-1 Required Tests
 
@@ -46,6 +47,18 @@ Every production behavior starts with a compiling behavioral RED test. Compiler/
 - Replay remains detached and event/checkpoint-session-free.
 - Deep unknown ExtensionBlock preservation and K1-4/K1-5/Guitar/UI/IO/internal API exclusion.
 
-Registry/capability, general report, migration, Guitar Domain, UI, playback, and IO tests remain later tasks and must not be pulled into K1-3.
+Registry/capability, general report, migration, Guitar Domain, UI, playback, and IO tests must not be backported into K1-3 or used to rewrite its accepted contracts.
+
+## K1-5 Required Tests
+
+- Closed Issue classification and zero-leak internal/module/report/migration error conversion.
+- Descriptor-first diagnostic and failure adapters covering every K1-1 through K1-4 code and exact details allowlists.
+- Extra-field, getter, Proxy, cyclic JsonValue, sparse array, and post-call mutation boundaries.
+- Deterministic deeply frozen validation/migration reports with status and counts derived exclusively from issues.
+- Current `brilliant-score-1` not-required migration, future/malformed/semantic-invalid/internal rejection, and preserved concrete diagnostics.
+- Deep unknown ExtensionBlock preservation, repeated-result equality, and no generated ID/time fields.
+- CommandBus document/history/dirty/event isolation and no migration physical IO or dynamic step registration.
+- Explicit public exports for approved data APIs only; error classes, builders, strict codecs, dependency injection seams, and migration steps stay private.
+- Focused K1-5 tests, full K1-1 through K1-5 regression, Trellis validation, `git diff --check`, and clean scoped commit review.
 
 Retired aggregate V1 checklists are archived under `.trellis/archive/core-kernel/`, not a completion gate for K1-1.
