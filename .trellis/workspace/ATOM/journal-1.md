@@ -191,3 +191,36 @@ Recorded 94766a0 as the accepted K1-4 baseline, synchronized active Core and par
 ### Next Steps
 
 - None - task complete
+
+
+## Session 6: K1-5 acceptance closure and K1-6 planning unlock
+
+**Date**: 2026-07-21
+**Task**: K1-5 acceptance closure and K1-6 planning unlock
+**Branch**: `codex/k1-5-errors-diagnostics-reports-migration`
+
+### Summary
+
+Recorded the independent K1-5 acceptance baseline, synchronized active Core/parent/product planning documents, verified fresh typecheck/build/161 tests/diff/Trellis gates, preserved unrelated user-owned paths, and archived K1-5. K1-6 planning is unlocked while production implementation remains separately gated.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b3127bf` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
