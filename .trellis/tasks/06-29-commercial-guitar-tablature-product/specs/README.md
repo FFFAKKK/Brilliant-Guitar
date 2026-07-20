@@ -2,9 +2,9 @@
 
 ## 状态
 
-- 状态: K1-1 文档模型已同步；K1-2 以后保持重规划门
+- 状态: K1-1～K1-4 已验收归档；K1-5 implementation candidate `51fa2177cbd25dea53f1ebaf23bd8b8426471589` 已完成并通过 161/161 测试，等待独立验收；K1-6 继续阻塞。
 - 作用: 定义后续 spec 的拆分方式。
-- 注意: `SPEC-001` 是当前模型的产品投影，字段级契约在 `.trellis/spec/core-kernel/`；`SPEC-003/014/015/016` 只是后续任务门禁，不能据此实现 API。
+- 注意: `SPEC-001` 是当前模型的产品投影，字段级契约在 `.trellis/spec/core-kernel/`；`SPEC-003`、`SPEC-014`、`SPEC-015` 已分别由 K1-2/K1-3/K1-4 验收合同落实，`SPEC-016` 对应 K1-5 candidate。未验收或标记为未来路线图的段落不能据此实现 API。
 
 ## Spec 拆分原则
 
@@ -17,8 +17,8 @@
 
 - `SPEC-000-documentation-contract.md`: 文档和规格写作契约，约束所有需求、架构和实现计划。
 - `SPEC-001-document-model.md`: `brilliant-score-1` 的产品级投影；稳定字段规则由 Core spec 统一管理。
-- `SPEC-002-file-format.md`: `.bgp` 原生单文件开放包结构、manifest、schema version、迁移。
-- `SPEC-003-command-system.md`: K1-2 命令、事务、undo/redo 与回放的重规划门。
+- `SPEC-002-file-format.md`: K1-1/K1-5 已实现内存语义与 current-schema compatibility；物理 `.bgp`、manifest、文件 IO 和真实旧版本迁移仍是后续合同。
+- `SPEC-003-command-system.md`: 已验收的 K1-2 命令、事务、undo/redo 与回放合同。
 - `SPEC-004-selection-editing.md`: 光标、选区、键盘优先编辑、多选、复制粘贴、批量编辑。
 - `SPEC-005-guitar-techniques.md`: Guitar Domain Block 2 重规划门；尚无已批准 payload。
 - `SPEC-006-layout-rendering.md`: 布局 primitives、SVG 渲染、hit testing、导出一致性。
@@ -29,9 +29,9 @@
 - `SPEC-011-internationalization.md`: 语言切换、i18n key、翻译资源、fallback 和本地化元数据。
 - `SPEC-012-open-source-release.md`: Apache-2.0、DCO、第三方许可、商标边界、开源发布和不商业化约束。
 - `SPEC-013-long-term-maintenance.md`: 长期维护原则、版本演进、`.bgp` 兼容、schema 迁移、回归测试和发布纪律。
-- `SPEC-014-kernel-snapshot-events.md`: K1-3 快照、selector 与事件的重规划门。
-- `SPEC-015-kernel-registry-capability.md`: K1-4 registry/capability 重规划门。
-- `SPEC-016-kernel-errors-diagnostics-reports.md`: K1-1 diagnostics 当前契约与 K1-5 report 重规划门。
+- `SPEC-014-kernel-snapshot-events.md`: 已验收的 K1-3 快照、selector 与事件合同。
+- `SPEC-015-kernel-registry-capability.md`: 已验收的 K1-4 registry/capability 合同。
+- `SPEC-016-kernel-errors-diagnostics-reports.md`: K1-1 diagnostics 与 K1-5 candidate 的 errors/issues/reports/current-schema migration 合同。
 
 ## Spec 完成标准
 

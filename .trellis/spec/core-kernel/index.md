@@ -1,9 +1,9 @@
 # Core Kernel Guidelines
 
-> **Current staged workflow (2026-07-19):** K1-1 through K1-4 are accepted.
-> K1-4 Registry/Capability contracts are fixed at code baseline `94766a0930c05e5339c44f667deaf02116af1c0c` with 125/125 tests passing.
+> **Current staged workflow (2026-07-20):** K1-1 through K1-4 are accepted and archived.
+> K1-5 implementation candidate `51fa2177cbd25dea53f1ebaf23bd8b8426471589` is complete with 161/161 tests passing and awaits independent acceptance. K1-6 remains blocked.
 
-For changes that consume the accepted kernel, read `backend/score-document-model.md`, `backend/command-transaction.md`, `backend/snapshot-events.md`, `backend/registry-capability.md`, and all staged boundary/diagnostic/quality guides. K1-1 through K1-4 contracts are frozen. General reports, migrations, Guitar Domain, UI, playback, layout, and physical IO remain later work.
+For changes that consume the accepted kernel, read `backend/score-document-model.md`, `backend/command-transaction.md`, `backend/snapshot-events.md`, `backend/registry-capability.md`, `backend/errors-reports.md`, and all staged boundary/diagnostic/quality guides. K1-1 through K1-4 contracts are frozen. The K1-5 candidate adds internal error families, public issue/report data, validation reports, and in-memory current-schema migration compatibility. Physical `.bgp` packaging, manifest, file IO, real legacy migration steps, Guitar Domain, UI, playback, and layout remain later work.
 
 The K1-1 data path is `unknown -> decode -> semantic validation -> ScoreFeatureProfile`. Unknown extension data must survive semantic round-trip.
 

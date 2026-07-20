@@ -1,6 +1,6 @@
 # 微内核架构图与模块职责
 
-> **当前模型基线（2026-07-19）：** K1-1 至 K1-3 已验收；K1-3 固定基线为 `7369eeac60fecea66c2c9164c04439625c2d78b0`，102/102 测试通过。K1-4 实施候选及验收修复已完成并通过 125/125 测试，等待独立验收；report 和第三方模块章节仍是后续路线图。
+> **当前 Core 状态（2026-07-20）：** K1-1～K1-4 已验收归档；K1-5 implementation candidate `51fa2177cbd25dea53f1ebaf23bd8b8426471589` 已完成并通过 161/161 测试，等待独立验收；K1-6 继续阻塞。第三方模块章节仍是后续路线图。
 
 ## 架构结论
 
@@ -16,7 +16,7 @@
 
 ## 内核总规划优先级
 
-Core Kernel V1 仍用 9 类机制整理路线图，但按 K1-1 至 K1-6 分块规划、实施和评审。K1-1 至 K1-3 已验收归档；K1-4 command/selector-only Registry 实施候选已完成并等待独立验收，Guitar Domain 与 reports/migration 仍有各自门禁。注册表 handler 运行时注销、第三方插件运行中启停、热插拔、权限 UI 等生命周期治理不进入当前实现；未来插件平台也不得反向要求已完成分块预建执行基础设施。
+Core Kernel V1 仍用 9 类机制整理路线图，但按 K1-1 至 K1-6 分块规划、实施和评审。K1-1～K1-4 已验收归档；K1-5 已形成 errors/diagnostics/reports/current-schema migration implementation candidate 并等待独立验收；K1-6 继续阻塞。Guitar Domain、物理文件合同和第三方插件平台仍有各自门禁。注册表 handler 运行时注销、第三方插件运行中启停、热插拔、权限 UI 等生命周期治理不进入当前实现；未来插件平台也不得反向要求已完成分块预建执行基础设施。
 
 内核总规划按以下 9 类机制收敛:
 
@@ -27,10 +27,10 @@ Core Kernel V1 仍用 9 类机制整理路线图，但按 K1-1 至 K1-6 分块�
 | 3 | 事务、历史和一致性边界 | 保证写入可回滚可回放 | 细粒度 undo/redo、dirty state、command replay |
 | 4 | 文档地址和范围模型 | 统一命令目标语言 | 稳定 ID、`ScoreAddress`、`ScorePoint`、`ScoreRange` |
 | 5 | 验证边界 | 防止文档被写坏并区分产品支持面 | decode、Core semantic validation、ScoreFeatureProfile；吉他语义由 Guitar Domain 验证 |
-| 6 | `.bgp` 语义契约和迁移入口 | 保护长期文件资产 | manifest/score schema、schema version、migration/report 入口 |
+| 6 | 谱面语义契约和迁移入口 | 保护长期文件资产 | `brilliant-score-1` schema/codec、current-schema 内存兼容入口、`MigrationReport`；物理 `.bgp`/manifest/IO/旧版本步骤后置 |
 | 7 | 快照、事件和模块通信协议 | 让外部模块低耦合协作 | 只读 snapshot/selector、提交后事件、command-only write |
 | 8 | 注册表与能力边界 | 管理贡献点和模块权限 | registry、capability、module identity、静态可信启动清单 |
-| 9 | 错误、Diagnostic 和 Report 契约 | 统一失败表达和定位 | `KernelError`、diagnostic、shared report shell |
+| 9 | 错误、Diagnostic 和 Report 契约 | 统一失败表达和定位 | 内部 `KernelError`、公开 `KernelIssue`、`KernelReport<"validation" | "migration">` |
 
 后置到内核总规划完成后再讨论:
 
@@ -181,17 +181,18 @@ Core Kernel V1 仍用 9 类机制整理路线图，但按 K1-1 至 K1-6 分块�
 
 这些软一致性/分析类能力第一阶段不实现，也不作为 MVP 闭环依赖。后续如果有明确产品价值，可以作为外部 `Analysis Service`、`Teaching Service` 或 UI 能力重新立项，并通过注册表读取内核 diagnostic。
 
-### 内核保留 6: `.bgp` 语义契约和迁移入口
+### 内核保留 6: 谱面语义契约和迁移入口
 
-微内核不负责真实文件 IO，但必须定义 `.bgp` 包内语义。
+当前 Core 不负责真实文件 IO，也尚未定义物理 `.bgp` 包。已实现的边界是内存中的谱面语义与兼容入口。
 
-内核负责:
+当前 Core 负责:
 
-- `manifest.json` 语义契约。
-- `score.json` schema。
-- schema version。
-- 迁移入口和迁移注册。
+- K1-1 的 `brilliant-score-1` `score.json` 语义 schema、strict decode 和 encode。
+- K1-5 的 `migrateScoreDocument(unknown)` current-schema compatibility：只返回 `not-required` 或 `rejected`，并生成深冻结 validation/migration `KernelReport`。
+- 当前没有公开 `migrated` 分支，真实旧版本 step table 保持私有且为空。
 - K1 不定义插件私有数据命名空间、模块私有数据持久化位置或 extension payload 语义；这些内容后续按模块单独规划。
+
+未来 File Contract/Persistence 阶段再定义物理 `.bgp` zip、`manifest.json`、包一致性、文件 IO、兼容矩阵和真实旧版本 migration step，不得把这些未来合同写成 K1-5 已实现能力。
 
 移出内核:
 
@@ -215,7 +216,7 @@ Core Kernel V1 仍用 9 类机制整理路线图，但按 K1-1 至 K1-6 分块�
 - `core.document.committed`。
 - `core.session.dirty-state-changed`。
 
-K1-3 不提供 load/history/diagnostics/registry/migration 事件；K1-4 已明确不新增 Registry event，其他事实分别由初始化调用方、read selector、K1-5 或外部模块负责。
+K1-3 不提供 load/history/diagnostics/registry/migration 事件；K1-4 不新增 Registry event，K1-5 也不新增 issue/report/migration event。初始化调用方通过显式 API 获取结果，外部模块不得伪造 Core 事件。
 
 移出内核:
 
@@ -263,23 +264,21 @@ K1-3 不提供 load/history/diagnostics/registry/migration 事件；K1-4 已明�
 - 插件 UI 面板生命周期。
 - 插件签名和审核。
 - 插件权限 UI。
-- hard validator、technique、migration、import/export descriptor、template、Guitar Domain 和 K1-5 report contribution。
+- hard validator、technique、真实旧版本 migration step、import/export descriptor、template、Guitar Domain 和未来 plugin report contribution。
 
 ### 内核保留 9: 错误、Diagnostic 和 Report 契约
 
 微内核负责结构化失败表达和可定位问题外壳，但不负责完整日志产品或诊断包上传。
 
-内核负责:
+当前 K1-5 candidate 负责:
 
-- 定义 `KernelError`。
-- 定义 `KernelDiagnostic`。
-- 定义 `KernelIssueTarget` 和 `KernelIssueSource`。
-- 定义 `KernelReport`、`KernelReportIssue` 和 `KernelReportSummary`。
-- 定义 `ImportReport`、`ExportReport`、`MigrationReport`、`ValidationReport` 和恢复报告外壳。
-- 这些 report 只定义结构和隐私边界；具体导入/导出模块负责生成报告内容。
-- 为命令、schema、迁移、导入、导出、注册、capability 和模块异常提供稳定错误 code。
-- 将模块异常转换为 `module-error` diagnostic 或 report issue。
-- 确保用户可见文本只通过 i18n key 表达。
+- 内部封闭 `KernelError` family；错误类不进入公共 API。
+- 公开深冻结、纯数据的 `KernelIssue`、`KernelIssueTarget`、`KernelIssueSource` 和 `KernelReport`/summary/counts。
+- 把 K1-1～K1-4 已验收 failure/diagnostic 无损映射为 issue，并以编译期穷尽门禁防止新增 code 漏映射。
+- validation report 与 current-schema `MigrationReport`；report 状态和计数只能由 issues 推导。
+- 通过批准 details 白名单、i18n `messageKey` 和异常隔离保护隐私边界。
+
+`ImportReport`、`ExportReport`、recovery 专属报告、plugin report ingress 和远程诊断属于未来真实消费者所在阶段，不是当前公共合同。
 - 确保 report 默认不包含用户谱面正文、访问令牌、本机隐私路径或第三方密钥。
 
 移出内核:
@@ -344,11 +343,11 @@ flowchart TB
     Doc["Document Store\nScoreDocument、Part/Staff/Voice/Event、扩展信封"]
     Address["Address / Range Model\n文档地址、范围、命令目标校验"]
     Validator["Validation Pipeline\ndecode、Core semantic、ScoreFeatureProfile"]
-    Schema["Schema & Migration Contract\n.bgp schema、manifest、迁移入口"]
+    Schema["Score Schema & Compatibility\nbrilliant-score-1、current-schema migration"]
     Snapshot["Snapshot / Query Service\n不可变快照、selector、派生读模型"]
     Events["Event Delivery\ndocument committed、dirty changed"]
     Registry["Registry & Capability Manager\n贡献点注册、模块能力、API version"]
-    Reports["Error / Diagnostic / Report Contracts\nKernelError、Diagnostic、ReportIssue"]
+    Reports["Error / Issue / Report Contracts\ninternal KernelError、KernelIssue、KernelReport"]
   end
 
   subgraph Services["用户态服务模块"]
@@ -402,7 +401,7 @@ flowchart TB
 - 文档真相: 谱面数据的唯一事实来源。
 - 写入入口: 所有编辑都通过命令事务。
 - 一致性检查: 所有写入、打开、保存、导入都经过验证。
-- 版本契约: `.bgp` schema、迁移、兼容矩阵。
+- 版本契约: 当前为 `brilliant-score-1` schema/current-schema compatibility；物理 `.bgp`、manifest、IO、兼容矩阵和旧版本迁移后置。
 - 协作协议: query、snapshot、event、registry、capability、report。
 - 可测试核心: 无 UI 环境下可以运行 fixture、命令回放、schema round-trip。
 
@@ -568,7 +567,7 @@ Core Kernel 只负责:
 
 负责:
 
-- `.bgp` schema 验证。
+- `brilliant-score-1` schema 验证；物理 `.bgp` 包验证后置。
 - MVP 能力范围验证。
 - unsupported 能力识别。
 - 验证失败目标收集，例如 `ScoreAddress` 或 `ScoreRange`。
@@ -577,8 +576,8 @@ Core Kernel 只负责:
 边界:
 
 - Hard Validation 只判断文档是否结构合法、引用完整、可保存、可迁移、可回放。
-- Hard Validation 不拥有 `KernelError`、`KernelDiagnostic`、`KernelReportIssue` 的结构定义。
-- 用户可见错误文本、severity、messageKey、report issue 格式和隐私边界由 `Error / Diagnostic / Report Contracts` 定义。
+- Hard Validation 不拥有 `KernelError`、`KernelIssue` 或 `KernelReport` 的结构定义；K1-1 `Diagnostic`/`ValidationReport` 合同保持不变。
+- K1-5 adapter 负责把既有 diagnostics 转换成公开 issue/report；用户可见错误文本、severity、messageKey、details 白名单和隐私边界由 `Error / Diagnostic / Report Contracts` 定义。
 
 示例:
 
@@ -590,20 +589,15 @@ Core Kernel 只负责:
 
 ### 9. Schema & Migration Contract
 
-作用: 保证 `.bgp` 长期可打开、可迁移。
+作用: 先保证 `ScoreDocument` 的当前 schema 输入可严格判定、可验证和可报告，再由后续物理文件阶段扩展长期文件兼容。
 
-负责:
+当前已实现:
 
-- `manifest.json`。
-- `score.json`。
-- schema version。
-- 迁移入口。
-- 兼容矩阵。
+- K1-1 `brilliant-score-1` `score.json` schema/codec 与 schema version。
+- K1-5 `migrateScoreDocument(unknown)` 的 current-schema pass-through/rejection、未知 ExtensionBlock 保真和 validation/migration report。
+- 无真实旧版本 migration step，也不暴露虚构的 `migrated` 分支。
 
-原则:
-
-- 1.x 稳定版应能打开所有 1.x 稳定版保存的 `.bgp`。
-- 任何破坏性变更必须有迁移策略、测试和发布说明。
+后续 File Contract/Persistence 阶段负责 `manifest.json`、物理 `.bgp` zip、文件 IO、兼容矩阵和真实旧版本迁移。任何破坏性变更届时必须有迁移策略、fixture、测试和发布说明。
 
 ### 10. Snapshot / Query Service
 
@@ -641,7 +635,7 @@ Core Kernel 只负责:
 - K1-3 成功 submit/undo/redo 的 `core.document.committed`。
 - K1-3 dirty 布尔变化时的 `core.session.dirty-state-changed`。
 - 确定性 event sequence、稳定 ID/版本关联、订阅快照、handler 同步 throw/异步 rejection 隔离与同步写入重入拒绝。
-- Registry、diagnostic/report 与 migration 事实只能由 K1-4/K1-5 等后续分块独立批准；文档初始加载由外部初始化调用方负责，不伪造 K1-3 commit 事件。
+- K1-4 Registry 与 K1-5 issue/report/migration 均不新增事件；这些 API 由调用方显式调用。文档初始加载由外部初始化调用方负责，不伪造 K1-3 commit 事件。
 
 价值:
 
@@ -677,13 +671,13 @@ MVP:
 
 作用: 统一内核失败表达、diagnostic 和操作报告。
 
-负责:
+当前 K1-5 candidate 负责:
 
-- 定义稳定错误 code。
-- 定义 `KernelError`、`KernelDiagnostic` 和 `KernelReportIssue`。
-- 定义导入、导出、迁移、验证和恢复报告外壳。
-- 捕获模块异常并转换为结构化问题。
-- 保护 report 隐私边界。
+- 定义稳定 issue code，并穷尽映射 K1-1～K1-4 的已验收 failure/diagnostic。
+- 内部使用封闭 `KernelError`；公开只返回深冻结 `KernelIssue` 和 validation/migration `KernelReport`。
+- current-schema migration 只表达 `not-required` 或 `rejected`，不虚构旧版本步骤或成功迁移分支。
+- 捕获 adapter/migration 边界异常并转换为隐私安全的结构化 issue。
+- `ImportReport`、`ExportReport`、recovery 报告及第三方 report ingress 后置到对应真实模块。
 
 MVP:
 
@@ -777,7 +771,7 @@ MVP 负责:
 
 输出:
 
-- `ExportReport`。
+- 未来经独立批准的 export report；必须复用 K1-5 `KernelIssue`/`KernelReport` 数据与隐私边界。
 
 ### 19. Import Service
 
@@ -785,14 +779,14 @@ MVP 负责:
 
 定位: 用户态服务模块，不属于 Core Kernel。
 
-MVP:
+未来 File Contract/Persistence MVP:
 
-- 不做外部导入，只打开 `.bgp` 和自动保存恢复文件。
+- 只打开 `.bgp` 和自动保存恢复文件，不做外部格式导入；这不是 K1-5 已实现能力。
 
 第二阶段:
 
 - 只做 Guitar Pro best-effort 导入。
-- 输出 `ImportReport`。
+- 输出未来经独立批准的 import report；必须复用 K1-5 `KernelIssue`/`KernelReport` 数据与隐私边界。
 - 不能绕过内核验证器。
 
 ### 20. Extension Host
@@ -904,7 +898,7 @@ sequenceDiagram
 - [ ] 任意模块不能直接修改 `ScoreDocument`。
 - [ ] 所有写操作都能映射到命令事务。
 - [ ] 渲染、播放、导出、分析和插件都只读快照或 selector。
-- [ ] `.bgp` 打开、保存、迁移必须经过内核验证器。
+- [ ] 未来 `.bgp` 打开、保存和真实迁移必须经过内核验证器；当前 K1-5 只覆盖纯内存 current-schema compatibility。
 - [ ] VexFlow、Web Audio、PDF/PNG 具体实现可以替换，不影响 `.bgp` 和内核。
 - [ ] 插件被启动前配置为禁用或缺失后，核心谱面仍可打开、编辑、播放和保存。
 - [ ] 第一条 4 小节 riff 闭环能作为长期回归测试运行。

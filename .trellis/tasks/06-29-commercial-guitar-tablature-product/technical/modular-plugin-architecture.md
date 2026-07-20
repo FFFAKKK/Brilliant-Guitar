@@ -1,6 +1,6 @@
 # 模块化与插件架构可行性
 
-> **当前 Core 边界（2026-07-19）：** K1-3 已正式验收并通过 102/102 测试，只公开封闭 snapshot/selectors、`CommandBus.subscribe()` 和两个事件类型。K1-4 command/selector-only startup Registry 实施候选及验收修复已完成并通过 125/125 测试，等待独立验收；第三方代理与新增 contribution kind 仍须独立批准。
+> **当前 Core 状态（2026-07-20）：** K1-1～K1-4 已验收归档；K1-5 implementation candidate `51fa2177cbd25dea53f1ebaf23bd8b8426471589` 已完成并通过 161/161 测试，等待独立验收；K1-6 继续阻塞。第三方代理与新增 contribution kind 仍须独立批准。
 
 ## 结论
 
@@ -31,12 +31,12 @@
 - `commands`: 语义命令总线、事务、内部 delta、undo/redo、命令回放。
 - `address-range`: 文档地址、范围和命令目标校验；当前 UI 光标和选区会话状态属于外部编辑会话服务。
 - `validation`: 文档验证、unsupported 诊断、错误定位。
-- `file-contract`: `.bgp` schema、manifest、迁移入口和兼容矩阵；Pure Core Kernel V1 不定义插件私有数据命名空间。
+- `file-contract`: 当前只有 K1-1 `brilliant-score-1` 语义 codec 与 K1-5 current-schema 内存兼容/report；物理 `.bgp`、manifest、文件 IO、兼容矩阵和真实旧版本 migration step 后置。Pure Core Kernel V1 不定义插件私有数据命名空间。
 - `snapshot-query`: `CommandBus.read()` 的深冻结 `DocumentSnapshot` 与六个受控 selector；物理序列化由 Persistence 负责。
 - `registry`: K1-4 只含现有六命令与六 selector adapter 的启动期 frozen 目录；其他贡献点属于后续路线图。
 - `events`: K1-3 只提供 document-committed 与 dirty-state-changed；其他模块事实由后续分块或 Extension Host 过滤协议定义。
 - `capabilities`: 模块或插件的能力声明、权限和 API 版本。
-- `errors-reports`: `KernelError`、`KernelDiagnostic`、`KernelReport`、`ImportReport`、`ExportReport` 和 `MigrationReport` 外壳。
+- `errors-reports`: K1-5 内部封闭 `KernelError`，公开深冻结 `KernelIssue` 与 validation/migration `KernelReport`；`ImportReport`、`ExportReport`、recovery 报告和插件报告入口后置。
 
 强制要求:
 
@@ -148,7 +148,7 @@ V1 启动期模块来源:
 6. 插件读取谱面时调用 snapshot 或 selector。
 7. 插件修改谱面时提交已注册语义命令。
 8. 插件订阅事件时只接收 `Extension Host` 过滤后的事件。
-9. 插件导入、导出、验证和异常统一生成 `ImportReport`、`ExportReport`、`KernelDiagnostic` 或 `KernelReportIssue`。
+9. 未来插件导入、导出、验证和异常必须复用 K1-5 的 `KernelIssue`/`KernelReport` 数据与隐私边界；import/export/plugin 专属 kind、facade 和写入入口由对应阶段独立批准。
 
 业务规则:
 
@@ -212,8 +212,8 @@ export interface PluginEventFacade {
 }
 
 export interface PluginReportFacade {
-  createDiagnostic(diagnostic: KernelDiagnostic): void
-  createReport(report: KernelReport): void
+  observeIssues(issues: readonly KernelIssue[]): void
+  observeReport(report: KernelReport): void
 }
 ```
 
@@ -222,6 +222,8 @@ export interface PluginReportFacade {
 `CommandBus.read()`、完整深冻结 `DocumentSnapshot` 和六个封闭纯 selector；
 未来 facade 只能在 capability 约束下映射到已批准 Core 原语或后续独立批准的
 Registry contribution。
+
+K1-5 已提供 validation/migration issue/report 数据合同；上述 `PluginReportFacade` 仍是未来 Extension Host 草案，不是当前 Core 写入、注册或第三方 report ingress API。
 
 依赖方向:
 

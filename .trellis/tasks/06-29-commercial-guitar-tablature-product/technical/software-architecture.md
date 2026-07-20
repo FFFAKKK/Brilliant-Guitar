@@ -6,7 +6,7 @@
 - 作用: 定义后续实现的核心边界、模块协作方式、依赖方向和架构验收标准。
 - 当前架构决策: 采用参照操作系统微内核思想的 Core Kernel + 用户态服务模块架构。内核负责谱面真相、命令事务、验证、版本化契约和模块协作接口；UI、渲染、播放、导入导出、桌面壳和未来插件都作为模块或适配器与内核协作。
 - 详细架构图: `technical/microkernel-architecture.md`。
-- 当前数据模型: `.trellis/tasks/archive/2026-07/07-13-k1-1-foundation-replanning/design.md` 与 `.trellis/spec/core-kernel/`；K1-1 至 K1-3 已验收，K1-3 固定基线为 `7369eeac60fecea66c2c9164c04439625c2d78b0`、102/102 测试通过。K1-4 实施候选及验收修复已完成并通过 125/125 测试，等待独立验收；后续分块仍须重规划并审核。
+- 当前 Core 状态: K1-1～K1-4 已验收归档；K1-5 implementation candidate `51fa2177cbd25dea53f1ebaf23bd8b8426471589` 已完成并通过 161/161 测试，等待独立验收；K1-6 继续阻塞。权威合同位于 `.trellis/spec/core-kernel/`，后续分块仍须独立规划并审核。
 - 当前阶段边界: 当前是 Pure Core Kernel 分块实施阶段。本文件只定义内核边界、模块协作原则和依赖方向；外部工程目录结构、monorepo 方案、`apps/desktop` 和 `packages/*` 拆分不属于当前阶段。
 - 首个实现里程碑: Pure Core Kernel V1。先实现纯 TypeScript 内核和内核测试；桌面壳、UI、渲染、播放、持久化物理 IO、导出和导入均后置。
 - 目录状态: 目录结构仍未确认，必须等工程脚手架阶段从已确认内核边界、测试边界、构建方式和发布方式反推，不得反过来限制当前内核规划。
@@ -79,11 +79,11 @@ flowchart TD
 - 文档地址和范围模型: `ScoreAddress`、`ScorePoint`、`ScoreRange` 和命令目标校验；活动光标、选区高亮、鼠标拖选状态和临时 `ScoreCoordinate` 属于 `Editor Session Service` 或 `Layout Module`。
 - 语义目标协议: 内核只承认从谱面数据解析出的语义目标；`ViewCoordinate`、`LayoutCoordinate`、SVG/VexFlow 坐标和 hit testing 由外部模块处理，外部模块只能把解析后的 `ScoreAddress | ScorePoint | ScoreRange` 或合法语义 payload 提交给命令系统。
 - 验证和诊断: strict decode 检查输入形状，Core semantic validation 检查 ID、measure coverage、Part/Staff/Voice/Event 引用、Fraction/NoteValue、WrittenPitch/transposition 与 ExtensionBlock 信封，ScoreFeatureProfile 报告产品不支持项；调弦、弦品和技巧 payload 由后续 Guitar Domain 验证。软一致性、可演奏性分析、教学提示、风格检查和难度评分不进入 MVP。
-- 文件格式契约: `.bgp` 包结构、`manifest.json`、`score.json`、schema version、迁移入口和兼容矩阵。Pure Core Kernel V1 不定义插件私有数据命名空间或模块私有数据持久化位置。
+- 文件兼容边界: K1-1 定义 `brilliant-score-1` 语义 codec；K1-5 提供纯内存 current-schema migration compatibility 与 `MigrationReport`。物理 `.bgp` zip 包、`manifest.json`、文件 IO、兼容矩阵和真实旧版本 migration step 仍属于后续 File Contract/Persistence 阶段。
 - 查询和快照: 为渲染、播放、导出、分析和插件提供只读快照或 selector。
-- 事件系统: K1-3 只提供 committed submit/undo/redo 与 dirty 布尔变化事实；K1-4 不新增 Registry event，diagnostic/report、migration 等通知须由后续分块独立批准，文档加载由外部初始化调用方负责。UI 光标、选区高亮、鼠标拖拽和播放光标 tick 属于外部服务事件，不属于 Core Kernel 事件。
+- 事件系统: K1-3 只提供 committed submit/undo/redo 与 dirty 布尔变化事实；K1-4 不新增 Registry event，K1-5 也只提供显式 issue/report/migration API，不新增 diagnostic/report/migration event。文档加载由外部初始化调用方负责；UI 光标、选区高亮、鼠标拖拽和播放光标 tick 属于外部服务事件，不属于 Core Kernel 事件。
 - 注册表和能力管理: K1-4 只登记现有六命令和六 selector adapter，原子冻结，使用七个 capability 与 module gateway；validator、格式、模板和未来插件贡献点后置。
-- 错误、诊断和报告模型: 内核错误、用户可理解错误、diagnostic、`ImportReport`、`ExportReport`、`MigrationReport` 和 `ValidationReport` 基础类型。
+- 错误、诊断和报告模型: K1-5 使用内部封闭 `KernelError` family，并公开深冻结 `KernelIssue`、`KernelReport<"validation" | "migration">`、validation adapter 与 `MigrationReport`；K1-1 `Diagnostic`/`ValidationReport` 保持不变。`ImportReport`、`ExportReport` 和 recovery 专属报告仍由未来真实模块定义。
 - 可测试核心: fixture 验证、命令回放、undo/redo、round-trip、迁移和 unsupported feature 测试。
 
 ### 内核不负责
@@ -105,9 +105,9 @@ flowchart TD
 - `DocumentValidator` 和 diagnostic 类型。
 - `CommandBus`、语义命令定义、内部 delta、事务、undo/redo、命令回放。
 - 语义地址、范围模型和命令目标校验。
-- `.bgp` schema、序列化契约、迁移入口。
-- K1-3 的封闭 snapshot/selectors、`CommandBus.subscribe()` 与两个事件类型；K1-4 Registry/Capability 实施候选已完成并等待独立验收，通用 Error/Report 仍等待 K1-5 独立批准。
-- `ImportReport`、`ExportReport`、unsupported diagnostic 基础结构。
+- `brilliant-score-1` schema/codec，以及 K1-5 已实现的纯内存 current-schema compatibility 入口；物理 `.bgp`/manifest/文件 IO 后置。
+- K1-3 的封闭 snapshot/selectors、`CommandBus.subscribe()` 与两个事件类型；K1-4 Registry/Capability 已验收归档；K1-5 Issue/Report/migration implementation candidate 已完成并等待独立验收。
+- K1-1 diagnostics 与 K1-5 `KernelIssue`、validation/migration `KernelReport` 基础；import/export/recovery 专属报告后置。
 
 第一阶段推荐内核排除:
 
@@ -164,15 +164,15 @@ Pure Core Kernel V1 验收通过前，不进入 React UI、Tauri 桌面壳、Vex
 ### Persistence Adapter
 
 - 负责把 `.bgp` 读写落到本地文件系统。
-- 调用内核的 schema、序列化和迁移契约。
-- 不拥有 `.bgp` 包内语义；`manifest.json`、`score.json` schema、schema version、迁移入口和 `MigrationReport` 属于 Core Kernel。
+- 调用已实现的 `brilliant-score-1` codec、验证与 K1-5 纯内存 compatibility 入口。
+- 未来物理 `.bgp` 包、`manifest.json`、zip 结构和真实旧版本 migration step 必须先形成独立文件合同；Persistence 负责 IO，不得改写 Core 的 `score.json` 语义或 K1-5 `MigrationReport`。
 - 保存失败不能破坏原文件。
 - 自动保存和崩溃恢复必须保持和正式保存同样的验证纪律。
 
 ### Import / Export Modules
 
-- 导入器把外部格式转换为内核可验证模型，并输出 `ImportReport`。
-- 导出器把内核快照和布局结果转换为外部格式，并输出 `ExportReport`。
+- 未来导入器把外部格式转换为内核可验证模型，并输出经独立批准的 import report；该合同必须复用 K1-5 `KernelIssue`/`KernelReport` 基础。
+- 未来导出器把内核快照和布局结果转换为外部格式，并输出经独立批准的 export report；该合同必须复用 K1-5 `KernelIssue`/`KernelReport` 基础。
 - MVP 只要求 `.bgp` 打开保存和 PDF/PNG 导出。
 - 第二阶段只规划 Guitar Pro 导入，其它外部导入后置。
 - 导入导出不得绕过内核验证器。
@@ -193,7 +193,7 @@ Pure Core Kernel V1 验收通过前，不进入 React UI、Tauri 桌面壳、Vex
 - Snapshot: 渲染、播放、导出、分析和未来插件使用的深冻结视图，身份仅为 `documentId`、`schemaVersion`、`documentVersion`，无随机 ID/时间。
 - Event: K1-3 只发布成功 submit/undo/redo 的 document-committed 与 dirty 布尔变化事实；失败、no-op 或 rollback 零事件。Registry/Migration/Report 事件不得提前混入。
 - Registry: K1-4 仅有现有 command/selector adapter 的启动期目录；更广贡献点属于未来独立规划。
-- Report: 导入、导出、验证、迁移和错误恢复必须有结构化报告。
+- Report: K1-5 当前只批准 validation/migration `KernelReport`；未来导入、导出和恢复模块必须复用 `KernelIssue`/`KernelReport` 基础，再定义各自有真实消费者的专属结果。
 - Capability Manifest: trusted Host 为官方模块声明身份、七个 capability 与兼容 API 版本；模块不能自授权。
 
 注册表和 capability 的详细契约见 `specs/SPEC-015-kernel-registry-capability.md`。错误、diagnostic 和 report 的详细契约见 `specs/SPEC-016-kernel-errors-diagnostics-reports.md`。K1-4 只负责 command/selector-only frozen Registry、能力 gateway 和本地结构化失败；第三方插件发现、安装、沙箱、签名、审核、插件市场、权限 UI 与新增 contribution kind 属于外部 `Extension Host` 或后续任务。
@@ -230,7 +230,7 @@ packages/
 - [ ] 布局坐标、屏幕坐标、SVG/VexFlow 坐标、PDF/PNG 页面坐标和播放光标不能成为谱面事实来源。
 - [ ] 每个编辑动作都有命令定义、验证、undo/redo 和回放测试。
 - [ ] 渲染、播放、导出和分析只读取快照或 selector。
-- [ ] `.bgp` 文件格式、schema version 和迁移入口从第一阶段进入测试。
+- [ ] `brilliant-score-1` schema/codec 与纯内存 current-schema compatibility 从 Core 阶段进入测试；物理 `.bgp`/manifest/文件 IO 和真实旧版本 migration step 在对应后续阶段进入测试。
 - [ ] 任意核心模块都能用 fixture 在无 UI 环境下测试。
 - [ ] 缺失领域模块时，Core 仍能打开并验证通用谱面语义，且必须语义保真未知 score/part ExtensionBlock；Core 不解释领域 payload，也不承诺物理资源或字节级保真。
 - [ ] 目录结构确认时必须能追溯到本文件定义的内核和模块边界。

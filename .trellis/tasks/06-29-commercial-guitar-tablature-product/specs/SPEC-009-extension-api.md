@@ -2,11 +2,11 @@
 
 ## 状态
 
-- 状态: 草案
+- 状态: 未来插件平台草案；K1-4 Registry 合同已验收，K1-5 issue/report 合同仍处于独立验收门。
 - 映射需求: `REQ-007`
 - 目标: 为模块化软件和未来插件生态定义可实现、可测试、可控的扩展边界。
-- 当前约束: 本文件是未来插件平台路线图，不是 K1-4 实现契约；K1-4 已通过 `SPEC-015` 实现 command/selector-only startup Registry 候选并等待独立验收。
-- K1-3/K1-4 边界: K1-3 已验收并通过 102/102 测试，只提供 `CommandBus.read()`、六个封闭 selector、`CommandBus.subscribe()` 与两个事件类型。批准的 K1-4 只增加官方模块的 frozen Registry/gateway，不开放第三方执行、动态 selector/event、Registry mutation/event 或第三方直连发布器。
+- 当前 Core 状态: K1-1～K1-4 已验收归档；K1-5 implementation candidate `51fa2177cbd25dea53f1ebaf23bd8b8426471589` 已完成并通过 161/161 测试，等待独立验收；K1-6 继续阻塞。
+- 当前约束: 本文件是未来插件平台路线图，不是 K1-4/K1-5 实现契约。K1-4 只增加官方模块的 frozen Registry/gateway；K1-5 只提供 validation/migration `KernelIssue`/`KernelReport` 数据合同，不开放第三方执行、动态 contribution、Registry mutation/event 或 plugin report ingress。
 - 数据边界: `ScoreDocument.extensions` 已由 Core K1-1 定义为 score/part-owned 纯数据信封；它不等于插件安装、发现、registry 或执行 API。
 
 ## 适用范围
@@ -145,7 +145,7 @@ K1-4 使用 trusted Host 启动期原子创建:
 - 读取通道: `Extension Host -> capability-scoped facade -> CommandBus.read()/closed pure selectors`。
 - 写入通道: `Extension Host -> CommandBus.submit`。
 - 事件通道: `Extension Host -> filtered KernelEvent`。
-- 报告通道: `Extension Host -> KernelDiagnostic/KernelReport`。
+- 报告通道: `Extension Host -> future approved report adapter -> KernelIssue/KernelReport`；当前 K1-5 不提供第三方 report ingress。
 
 ```ts
 /**
@@ -194,8 +194,8 @@ export interface PluginEventFacade {
 }
 
 export interface PluginReportFacade {
-  createDiagnostic(diagnostic: KernelDiagnostic): void
-  createReport(report: KernelReport): void
+  observeIssues(issues: readonly KernelIssue[]): void
+  observeReport(report: KernelReport): void
 }
 ```
 
@@ -211,7 +211,7 @@ export interface PluginReportFacade {
 - `PluginKernelFacade` 不暴露 React、VexFlow、SVG DOM、Web Audio 或 Tauri 文件对象。
 - 第三方插件的 facade 必须由 `Extension Host` 根据 manifest 和 capability 创建。
 - `PluginKernelFacade` 是未来第三方插件平台的 facade 草案，不属于 Pure Core Kernel V1 必须实现项。
-- K1-4 的 `internal-module` 可以同进程运行，但只能接收 Host 创建的 gateway；测试必须证明它没有绕过 snapshot、command、registry 或 event 契约。report 仍属 K1-5。
+- K1-4 的 `internal-module` 可以同进程运行，但只能接收 Host 创建的 gateway；测试必须证明它没有绕过 snapshot、command、registry 或 event 契约。K1-5 已提供 validation/migration issue/report 数据合同，但上述 `PluginReportFacade` 仍是未来 Extension Host 草案，不是当前 Core 写入或注册 API。
 
 ## 贡献点契约
 
@@ -232,12 +232,12 @@ export interface PluginReportFacade {
 
 - 导入器输入由用户显式选择。
 - 导入器输出领域模型或中间模型。
-- 导入器必须返回 `ImportReport`。
+- 未来导入器必须返回经独立批准、复用 K1-5 `KernelIssue`/`KernelReport` 基础的 import report。
 
 ### Exporters
 
 - 导出器输入是领域模型快照。
-- 导出器必须返回 `ExportReport`。
+- 未来导出器必须返回经独立批准、复用 K1-5 `KernelIssue`/`KernelReport` 基础的 export report。
 - 导出器不得静默丢失关键能力。
 
 ### Templates

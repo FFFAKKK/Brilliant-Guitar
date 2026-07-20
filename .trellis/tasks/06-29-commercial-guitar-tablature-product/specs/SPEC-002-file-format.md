@@ -2,25 +2,30 @@
 
 ## 状态
 
-- 状态: 已确认第一阶段边界。
+- Core 状态: K1-1～K1-4 已验收归档；K1-5 implementation candidate `51fa2177cbd25dea53f1ebaf23bd8b8426471589` 已完成并通过 161/161 测试，等待独立验收；K1-6 继续阻塞。
+- 状态: 本文件中的物理文件格式仍是后续 File Contract/Persistence 合同，不能据此认定 `.bgp` IO 已实现。
 - 映射需求: `REQ-009`, `REQ-016`, `REQ-015`。
-- 适用范围: 第一阶段 `.bgp` 原生文件、保存/打开、自动保存恢复、schema version 和迁移入口。
-- 当前实现边界: K1-1 只定义 `score.json` 中 `brilliant-score-1` 的语义 codec 与 ExtensionBlock 保真；物理包、manifest 和 migration/report 等待 K1-5/Persistence 规划。
+- 适用范围: 后续 File Contract/Persistence 阶段的 `.bgp` 原生文件、保存/打开、自动保存恢复和真实版本迁移；同时记录当前 K1-1/K1-5 已实现的内存边界。
+- 当前实现边界: K1-1 定义 `score.json` 中 `brilliant-score-1` 的语义 codec 与 ExtensionBlock 保真；K1-5 提供纯内存 current-schema migration compatibility、validation report 与 migration report。物理 `.bgp` zip 包、manifest、文件 IO 和真实旧版本 migration step 仍属于后续阶段。
 
 ## 目标
 
-`.bgp` 是用户长期保存作品的原生工程文件。它必须兼顾 Guitar Pro 式单文件体验、开源可审查性、长期兼容、迁移测试和未来插件扩展。Core Kernel 负责文件包内的语义契约和迁移入口；`Persistence Service` 负责真实文件系统、zip 读写、原子保存、自动保存和崩溃恢复。
+`.bgp` 是用户长期保存作品的目标原生工程文件。它必须兼顾 Guitar Pro 式单文件体验、开源可审查性、长期兼容、迁移测试和未来插件扩展。当前 Core 只拥有 `ScoreDocument` 语义与纯内存 current-schema compatibility；后续 File Contract 才负责文件包内语义，`Persistence Service` 负责真实文件系统、zip 读写、原子保存、自动保存和崩溃恢复。
 
 ## 架构边界
 
-Core Kernel 负责:
+当前 Core 已实现:
 
-- `manifest.json` 语义契约。
-- `score.json` schema。
-- schema version 和兼容矩阵。
-- 迁移器注册和迁移入口。
-- `MigrationReport` 基础结构。
-- 打开后、保存前、迁移后的硬一致性验证入口。
+- K1-1 `brilliant-score-1` `score.json` 语义 schema、strict decode/encode 和 schema version。
+- K1-5 `migrateScoreDocument(unknown)` current-schema compatibility；结果只可能是 `not-required` 或 `rejected`。
+- K1-5 validation/migration `KernelReport`；report 状态和计数由 issues 推导，未知 ExtensionBlock 保持语义保真。
+- 当前真实旧版本 step table 保持私有且为空，不公开虚构的 `migrated` 分支。
+
+后续 File Contract 阶段的 Core 语义职责（尚未实现）:
+
+- `manifest.json` schema、物理包一致性和兼容矩阵。
+- 真实 source/target schema migration step、fixture 和迁移策略。
+- 打开后、保存前和真实迁移后的硬一致性编排合同。
 
 Core Kernel 不负责:
 
@@ -34,7 +39,7 @@ Core Kernel 不负责:
 
 ## 包结构
 
-MVP `.bgp` 的长期形态必须是单文件开放 zip 包。Pure Core Kernel V1 只定义包内语义文件契约；第一阶段内核实现只需要处理以下两个语义入口的 JSON schema、schema version、migration 入口和纯 JSON round-trip:
+MVP `.bgp` 的长期目标形态是单文件开放 zip 包。下述结构尚未由 K1-5 实现，必须在 File Contract/Persistence 阶段通过独立规划与验收后才成为可执行合同:
 
 ```text
 project.bgp
@@ -59,7 +64,7 @@ project.bgp
 - `extensions/`: 未来物理包附加数据位置草案；K1-1 不定义该目录。它与 `score.json` 内已批准的 `ScoreDocument.extensions`/ExtensionBlock 不是同一契约。
 - `preview/`: 未来缩略图或预览缓存，不作为谱面事实来源。
 
-## manifest.json 契约
+## 未来 manifest.json 契约
 
 `manifest.json` 至少必须表达:
 
@@ -100,25 +105,20 @@ project.bgp
 
 ## 迁移契约
 
-迁移器必须满足:
+K1-5 当前已实现的纯内存入口:
 
-- 输入旧版本 `manifest.json` 和 `score.json`。
-- 输出当前版本 `manifest.json`、`score.json` 和 `MigrationReport`。
-- 不得静默丢弃旧文件中可保留的数据。
-- 无法保留的数据必须进入 `MigrationReport`。
-- 迁移失败必须安全失败，不得覆盖原文件。
-- 迁移完成后必须运行硬一致性验证。
+- `migrateScoreDocument(input: unknown)` 先按 descriptor-first strict codec 解码，再进行语义验证。
+- 当前 schema 合法时返回 `status: "not-required"`、隔离后的 `ScoreDocument` 与 migration report。
+- 畸形或语义无效输入返回 `status: "rejected"` 与 migration report，不抛 raw exception。
+- 未知 ExtensionBlock 的 JSON 语义必须保留。
+- 当前没有真实旧版本 migration step，因此不公开 `migrated` 成功分支或物理资源字段。
 
-`MigrationReport` 至少包含:
+未来物理文件迁移器必须另行批准并满足:
 
-- 源格式版本。
-- 目标格式版本。
-- 是否成功。
-- 执行过的迁移步骤。
-- warning 列表。
-- lostData 列表。
-- unsupportedFeatures 列表。
-- diagnostic 列表。
+- 输入旧版本 `manifest.json` 和 `score.json`，输出当前版本的物理包候选。
+- 不得静默丢弃可保留数据；无法保留的数据必须通过未来已批准的 issue/report 合同表达。
+- 迁移失败必须安全失败，不得覆盖原文件；迁移完成后必须运行硬一致性验证。
+- 源/目标版本、步骤和物理资源信息可以由 File Contract/Persistence 结果包装，但不得擅自改变 K1-5 `KernelIssue`/`KernelReport` 的公共字段。
 
 ## 兼容策略
 
@@ -158,11 +158,14 @@ project.bgp
 
 ## 测试要求
 
-- 能创建最小 `.bgp` fixture，并包含 `manifest.json` 和 `score.json`。
-- 保存后重新打开，`ScoreDocument` 语义不丢失。
-- zip 解包后可以人工识别 `manifest.json` 和 `score.json`。
-- 保存前、打开后、迁移后必须运行硬一致性验证。
-- 未来 schema version 文件必须安全失败并给出可读错误。
-- 一旦存在旧 schema fixture，迁移器必须覆盖旧版本到当前版本的测试。
-- 物理 `extensions/` 目录与非 JSON 资源 round-trip 属于后续 Persistence/插件阶段；`score.json` 内未知 score/part ExtensionBlock 的 JsonValue 语义 round-trip 已是 Core K1-1 验收项。
-- 损坏 zip、缺失 `manifest.json`、缺失 `score.json`、schema version 不匹配必须返回结构化错误。
+当前 Core 已覆盖:
+
+- current-schema 输入的 `not-required` pass-through、畸形/语义无效输入的 `rejected`、异常隔离和 report 推导。
+- `score.json` 内未知 score/part ExtensionBlock 的 JsonValue 语义 round-trip。
+
+未来 File Contract/Persistence 阶段必须覆盖:
+
+- 最小 `.bgp` fixture、`manifest.json`/`score.json`、zip 人工可识别性和保存后重开。
+- 保存前、打开后、真实迁移后的硬一致性验证。
+- future/legacy schema、安全失败、旧版本 fixture 到当前版本的真实 migration step。
+- 物理 `extensions/` 与非 JSON 资源 round-trip，以及损坏 zip、缺失 manifest/score、版本不匹配的结构化失败。

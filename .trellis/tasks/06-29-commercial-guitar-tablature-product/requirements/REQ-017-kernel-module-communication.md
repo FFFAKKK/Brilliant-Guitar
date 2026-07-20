@@ -12,7 +12,7 @@
 
 ## 当前决策状态
 
-- 状态: K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 正式验收并归档，102/102 测试通过；外部可变 `ScoreDocument` 副本方案已拒绝。K1-4 实施候选已完成并等待独立验收，且未扩大 K1-3 读取/事件合同。
+- 状态: K1-1～K1-4 已验收归档；K1-5 implementation candidate `51fa2177cbd25dea53f1ebaf23bd8b8426471589` 已完成并通过 161/161 测试，等待独立验收；K1-6 继续阻塞。外部可变 `ScoreDocument` 副本方案已拒绝，K1-4/K1-5 均未扩大 K1-3 读取/事件合同。
 - 已确认方案: `Snapshot / Selector + Post-Commit Event Bus + Command-only write`。
 - 对应 spec: `specs/SPEC-014-kernel-snapshot-events.md`。
 
@@ -48,7 +48,7 @@
 - 写入契约: 模块修改谱面必须提交已注册语义命令，不能通过事件、snapshot 或内部 delta 写入。
 - 事件契约: 内核事件只描述已经发生的事实，不代表请求、命令或待处理任务。
 - 版本契约: snapshot 和事件携带 `documentVersion`；selector 结果由其输入 snapshot/read state 的 `documentVersion` 关联，模块缓存以该来源版本失效。
-- 异常契约: K1-3 隔离事件订阅者同步 throw 与 Promise/thenable 异步 rejection，禁止 raw exception 或未处理 rejection 逃逸；结构化模块错误报告由 K1-5 定义。
+- 异常契约: K1-3 隔离事件订阅者同步 throw 与 Promise/thenable 异步 rejection，禁止 raw exception 或未处理 rejection 逃逸；K1-5 candidate 已提供既有 failure/diagnostic 到 `KernelIssue`/`KernelReport` 的严格 adapter 和 current-schema validation/migration report，但没有新增事件或第三方模块报告入口。
 - 边界契约: UI 会话状态、布局派生模型、播放派生事件和导出页面模型都属于外部模块，不进入 Core Kernel。
 - 派生数据契约: 外部派生数据只能用于布局、播放、导出、分析、预览或导入中间处理；最终改变谱面时必须转换为语义命令序列、`ImportResult` 或内核迁移结果，并经过内核验证和事务提交。
 

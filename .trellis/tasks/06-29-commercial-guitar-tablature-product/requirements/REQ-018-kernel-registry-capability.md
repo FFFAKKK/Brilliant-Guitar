@@ -14,10 +14,10 @@
 
 ## 当前决策状态
 
-- 状态: K1-4 规划已于 2026-07-17 获用户批准；Tasks 1–6 与验收修复已完成并通过 125/125 测试，等待独立验收。
+- 状态: K1-4 已在 `94766a0930c05e5339c44f667deaf02116af1c0c` 通过独立验收并归档，125/125 测试通过。
 - 批准方向: 启动期原子 frozen Registry、`command | selector` 两类贡献、七个互不蕴含的 capability、capability-scoped gateway、最小 summary 和 K1-4 本地失败合同。
 - 对应 spec: `specs/SPEC-015-kernel-registry-capability.md`。
-- 关联错误契约: K1-4 拥有封闭 startup/access failure union；K1-5 可映射但不得改名或改义。
+- 关联错误契约: K1-4 拥有封闭 startup/access failure union；K1-5 candidate 已将其严格映射为 `KernelIssue`，未改名或改义。
 
 ## 规划审核视角
 
@@ -74,7 +74,7 @@ MVP 真正必要的功能:
 模块边界:
 
 - 属于 Core Kernel。
-- K1-4 自有 closed startup/access failure；K1-5 可映射但不能重定义。
+- K1-4 自有 closed startup/access failure；K1-5 candidate 已映射但未重定义。
 - 不拥有通用 `KernelError`、diagnostic 生命周期或 report 生成规则。
 - 不依赖 React、Tauri、VexFlow、Web Audio、文件系统或 UI 组件。
 
