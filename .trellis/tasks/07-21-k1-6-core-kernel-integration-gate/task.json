@@ -21,12 +21,13 @@
   "children": [],
   "parent": null,
   "relatedFiles": [],
-  "notes": "DEC-K1-6-001 through DEC-K1-6-005 approved on 2026-07-21. Final PRD/design/implement review is pending; implementation remains unauthorized.",
+  "notes": "Final PRD/design/implement approved on 2026-07-21. Ready for an operator to run the explicit Trellis start gate; scope remains limited to the approved K1-6 plan.",
   "meta": {
     "planning_base_commit": "321064d",
     "k1_5_implementation_commit": "51fa2177cbd25dea53f1ebaf23bd8b8426471589",
     "k1_5_acceptance_documentation_commit": "ed801a9fa1a69222188c3ca04ee243b48d7a92d2",
     "planning_decisions_approved_at": "2026-07-21",
-    "implementation_authorized": false
+    "final_plan_approved_at": "2026-07-21",
+    "implementation_authorized": true
   }
 }

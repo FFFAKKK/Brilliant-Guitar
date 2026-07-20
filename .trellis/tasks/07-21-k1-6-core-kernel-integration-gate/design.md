@@ -1,6 +1,6 @@
 # K1-6 Core Kernel Integration Gate — Design
 
-> **Status: DECISIONS APPROVED / FINAL PLAN REVIEW PENDING（2026-07-21）.** 用户已批准 `DEC-K1-6-001` 至 `DEC-K1-6-005` 的推荐方案。本文件只定义 K1-6 集成验收设计；`task.py start`、生产代码修改和测试实现仍未授权。
+> **Status: FINAL PLAN APPROVED / READY FOR OPERATOR START（2026-07-21）.** 用户已批准 `DEC-K1-6-001` 至 `DEC-K1-6-005` 以及完整 PRD/design/implement 规划。本文件只定义 K1-6 集成验收设计；任务仍保持 planning，必须由操作者显式执行 Trellis start gate 后才能按批准范围实施。
 
 ## 1. Authority and Baseline
 

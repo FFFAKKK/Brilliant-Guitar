@@ -1,6 +1,6 @@
 # K1-6 Core Kernel Integration Gate
 
-> **Status: DECISIONS APPROVED / FINAL PLAN REVIEW PENDING / IMPLEMENTATION NOT AUTHORIZED.** K1-5 implementation baseline `51fa2177cbd25dea53f1ebaf23bd8b8426471589` was independently accepted at documentation baseline `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` on 2026-07-21 with 161/161 tests passing. K1-6 planning starts after acceptance closure and active-document convergence at `321064d`; the user approved `DEC-K1-6-001` through `DEC-K1-6-005` on 2026-07-21. No implementation may begin until this PRD, `design.md`, and `implement.md` receive explicit final approval.
+> **Status: FINAL PLAN APPROVED / READY FOR OPERATOR START（2026-07-21）.** K1-5 implementation baseline `51fa2177cbd25dea53f1ebaf23bd8b8426471589` was independently accepted at documentation baseline `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` with 161/161 tests passing. The user approved `DEC-K1-6-001` through `DEC-K1-6-005` and the complete PRD/design/implement set on 2026-07-21. The task remains in planning until an operator deliberately runs the Trellis start gate; this approval does not permit scope beyond the approved plan.
 
 ## Goal
 
@@ -47,7 +47,7 @@ Prove that the accepted K1-1 through K1-5 contracts operate as one deterministic
 
 ## Acceptance Criteria
 
-- [ ] AC-K1-6-001: final PRD, design, and implementation plan are explicitly approved before task start.
+- [x] AC-K1-6-001: final PRD, design, and implementation plan were explicitly approved on 2026-07-21 before task start.
 - [ ] AC-K1-6-002: the canonical four-measure fixture passes strict decode, semantic validation, expected profile classification, encode/decode round-trip, and detached current-schema migration.
 - [ ] AC-K1-6-003: a representative authorized command sequence produces the expected documents, versions, history depths, snapshots, selectors, dirty transitions, and ordered events.
 - [ ] AC-K1-6-004: undo, redo, and replay converge on deeply equal documents while preserving deterministic results and unknown extensions.

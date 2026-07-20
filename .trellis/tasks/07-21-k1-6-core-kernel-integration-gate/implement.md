@@ -1,12 +1,14 @@
 # K1-6 Core Kernel Integration Gate Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: use `superpowers:executing-plans` in inline mode and complete this plan task-by-task. Do not dispatch implementation or check sub-agents for this repository workflow. Do not run `task.py start` until the user explicitly approves the final PRD/design/implement set.
+> **For agentic workers:** REQUIRED SUB-SKILL: use `superpowers:executing-plans` in inline mode and complete this plan task-by-task. Do not dispatch implementation or check sub-agents for this repository workflow. The user approved the final PRD/design/implement set on 2026-07-21; an operator may now run the explicit Trellis start gate, but may not broaden this plan.
 
 **Goal:** Add test-only integration evidence proving the accepted K1-1 through K1-5 public contracts form one deterministic, privacy-safe Pure Core Kernel V1, then record a separately reviewable implementation candidate.
 
 **Architecture:** A new four-measure fixture is consumed only through `src/core-kernel/index.ts`. One successful scenario crosses codec, semantic/profile validation, migration, Registry/gateway, CommandBus, checkpoint, read/selectors, events, undo/redo, replay, issue/report boundaries, and is repeated deeply; a second file covers representative invalid, unsupported, authorization, atomicity, and privacy paths. No production source change is planned.
 
 **Tech Stack:** TypeScript 5.8, Node.js built-in test runner, `node:assert/strict`, existing Core public API, no new dependency.
+
+**Current status:** FINAL PLAN APPROVED / READY FOR OPERATOR START. The Trellis task intentionally remains `planning` with `branch: null` until the operator starts it; no implementation work is part of the planning approval commit.
 
 ## Global Constraints
 
