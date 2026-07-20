@@ -270,7 +270,7 @@ K1-3 不提供 load/history/diagnostics/registry/migration 事件；K1-4 不新�
 
 微内核负责结构化失败表达和可定位问题外壳，但不负责完整日志产品或诊断包上传。
 
-当前 K1-5 candidate 负责:
+已验收 K1-5 合同负责:
 
 - 内部封闭 `KernelError` family；错误类不进入公共 API。
 - 公开深冻结、纯数据的 `KernelIssue`、`KernelIssueLocation`、`KernelIssueSource` 和 `KernelReport`/summary/counts。
@@ -671,7 +671,7 @@ MVP:
 
 作用: 统一内核失败表达、diagnostic 和操作报告。
 
-当前 K1-5 candidate 负责:
+已验收 K1-5 合同负责:
 
 - 定义稳定 issue code，并穷尽映射 K1-1～K1-4 的已验收 failure/diagnostic。
 - 内部使用封闭 `KernelError`；公开只返回深冻结 `KernelIssue` 和 validation/migration `KernelReport`。

@@ -38,7 +38,7 @@ Pure Core Kernel V1 is not the desktop app. It must be testable without React, T
 | [Command and Transaction](./command-transaction.md) | K1-2 executable command/transaction/history/replay contract | Active |
 | [Snapshot and Events](./snapshot-events.md) | K1-3 address/read/checkpoint/event implementation contract | K1-3 authoritative |
 | [Registry and Capability](./registry-capability.md) | Approved K1-4 startup Registry/gateway implementation contract | Accepted at `94766a0` |
-| [Errors and Reports](./errors-reports.md) | K1-5 additive Issue/Report adapters and current-schema migration | Candidate; acceptance pending |
+| [Errors and Reports](./errors-reports.md) | K1-5 additive Issue/Report adapters and current-schema migration | Accepted / archived |
 | [Quality Guidelines](./quality-guidelines.md) | Required tests and forbidden shortcuts | Stable |
 
 ---

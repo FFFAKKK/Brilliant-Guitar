@@ -7,7 +7,7 @@
 - K1-3 决策源：`.trellis/tasks/archive/2026-07/07-15-k1-3-address-snapshots-selectors-events/`。
 - 活动代码契约：`.trellis/spec/core-kernel/`。
 - K1-4 验收基线：`94766a0930c05e5339c44f667deaf02116af1c0c`，125/125 测试通过。
-- K1-5 权威执行任务：`.trellis/tasks/07-19-k1-5-errors-diagnostics-reports-migration/`；当前实施候选基线为 `51fa2177cbd25dea53f1ebaf23bd8b8426471589`，161/161 测试通过，independent acceptance pending。
+- K1-5 权威归档任务：`.trellis/tasks/archive/2026-07/07-19-k1-5-errors-diagnostics-reports-migration/`；实现基线 `51fa2177cbd25dea53f1ebaf23bd8b8426471589` 已在文档基线 `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` 通过独立验收，161/161 测试通过。
 
 旧的“一次实现全部九类机制”计划已归档至 `.trellis/archive/core-kernel/2026-06-29-retired-product-implementation-plan.md`。它只能用于追溯，不能作为当前执行清单。
 
@@ -77,11 +77,11 @@ K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 正式验收并归档。�
 
 批准范围固定为启动期原子 frozen Registry、command/selector 两类既有 adapter、七个 capability、模块 gateway、最小 summary 和 K1-4 本地失败合同；无 Registry version/event、module attribution、其他 contribution kind、第三方 runtime、Guitar Domain 或 K1-5 report。
 
-### K1-5：Errors / Reports / Migration
+### 已验收归档：K1-5 Errors / Reports / Migration
 
-> **Implementation candidate complete；independent acceptance pending。**
+> **Accepted / archived（2026-07-21）。**
 
-已按批准任务实现 additive failure adapters、内部 OO/公共 data-only Issue 边界、validation/migration 两种派生 report、current `brilliant-score-1` 的 `not-required | rejected` 迁移入口与空私有步骤表。K1-1～K1-4 原 failure/result 合同保持不变；无 `KernelDiagnostic`、import/export/recovery report alias、ID/time、全局 issue bus、动态 migration registry 或物理 IO。独立验收形成正式 baseline 前不得进入 K1-6。
+已按批准任务实现并验收 additive failure adapters、内部 OO/公共 data-only Issue 边界、validation/migration 两种派生 report、current `brilliant-score-1` 的 `not-required | rejected` 迁移入口与空私有步骤表。K1-1～K1-4 原 failure/result 合同保持不变；无 `KernelDiagnostic`、import/export/recovery report alias、ID/time、全局 issue bus、动态 migration registry 或物理 IO。K1-6 规划已解锁，生产实现仍需独立批准。
 
 ### K1-6：Integration Gate
 
