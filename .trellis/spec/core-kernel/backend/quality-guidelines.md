@@ -2,7 +2,7 @@
 
 > **Authoritative staged quality gate (2026-07-20):** K1-1 through K1-4 tests
 > are frozen regressions. K1-4 acceptance at `94766a0930c05e5339c44f667deaf02116af1c0c` passed 125/125 tests.
-> K1-5 is an implementation candidate at `171790743450b3a3c0fa1720c847302308c27937`; the fresh full gate passes 159/159 tests. Independent acceptance is pending.
+> K1-5 is an implementation candidate at `51fa2177cbd25dea53f1ebaf23bd8b8426471589`; the fresh full gate passes 161/161 tests. Independent acceptance is pending.
 
 ## Current K1-1 Required Tests
 

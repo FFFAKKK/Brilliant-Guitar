@@ -3,7 +3,7 @@
 ## 状态
 
 - Trellis task: `06-29-commercial-guitar-tablature-product`
-- 当前阶段: Core K1-1～K1-4 已正式验收归档；K1-5 implementation candidate `171790743450b3a3c0fa1720c847302308c27937` 已完成并通过 159/159 测试，等待独立验收；K1-6 继续阻塞；产品其余阶段保持规划态
+- 当前阶段: Core K1-1～K1-4 已正式验收归档；K1-5 implementation candidate `51fa2177cbd25dea53f1ebaf23bd8b8426471589` 已完成并通过 161/161 测试，等待独立验收；K1-6 继续阻塞；产品其余阶段保持规划态
 - 创建日期: 2026-06-29
 - 负责人: ATOM
 - 文档策略: 每个需求先写独立文档，最终再合并为收敛后的 PRD。

@@ -2,7 +2,7 @@
 
 > **状态：K1-4 已验收并归档（2026-07-20）。** 验收基线为
 > `94766a0930c05e5339c44f667deaf02116af1c0c`，125/125 测试通过。
-> K1-5 implementation candidate `171790743450b3a3c0fa1720c847302308c27937` 已通过 159/159 测试并等待独立验收；K1-6 继续阻塞。
+> K1-5 implementation candidate `51fa2177cbd25dea53f1ebaf23bd8b8426471589` 已通过 161/161 测试并等待独立验收；K1-6 继续阻塞。
 
 ## 1. Scope / Trigger
 

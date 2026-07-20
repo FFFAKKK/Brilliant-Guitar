@@ -9,7 +9,7 @@
 - K1-2 authority: `.trellis/tasks/archive/2026-07/07-15-k1-2-commands-transactions-history/design.md` and `.trellis/spec/core-kernel/backend/command-transaction.md`.
 - K1-3 authority: `.trellis/tasks/archive/2026-07/07-15-k1-3-address-snapshots-selectors-events/`, accepted at `7369eeac60fecea66c2c9164c04439625c2d78b0`.
 - K1-4 authority: `.trellis/tasks/archive/2026-07/07-16-k1-4-registry-capability-startup-registration/` and `.trellis/spec/core-kernel/backend/registry-capability.md`.
-- K1-5 authority: `.trellis/tasks/07-19-k1-5-errors-diagnostics-reports-migration/` and `.trellis/spec/core-kernel/backend/errors-reports.md`; implementation candidate `171790743450b3a3c0fa1720c847302308c27937` passes 159/159 tests, independent acceptance pending. K1-6 remains blocked.
+- K1-5 authority: `.trellis/tasks/07-19-k1-5-errors-diagnostics-reports-migration/` and `.trellis/spec/core-kernel/backend/errors-reports.md`; implementation candidate `51fa2177cbd25dea53f1ebaf23bd8b8426471589` passes 161/161 tests, independent acceptance pending. K1-6 remains blocked.
 
 ## Design Principle
 

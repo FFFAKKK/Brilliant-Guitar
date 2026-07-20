@@ -4,7 +4,7 @@
 
 把现有 `Pure Core Kernel V1` 总规划收敛成一个可执行、可验收、可分块推进的内核实现任务。
 
-本任务是 Pure Core Kernel V1 路线图父任务。K1-1 已在 `30894e2` 正式验收；K1-2 已完成 P1 修复、独立复验并归档；K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 独立验收并归档，102/102 测试通过；K1-4 已在 `94766a0930c05e5339c44f667deaf02116af1c0c` 正式验收并归档，125/125 测试通过。K1-5 implementation candidate 已在 `171790743450b3a3c0fa1720c847302308c27937` 完成并通过 159/159 完整测试，等待独立验收；K1-6 在形成 K1-5 accepted baseline 前保持阻塞。
+本任务是 Pure Core Kernel V1 路线图父任务。K1-1 已在 `30894e2` 正式验收；K1-2 已完成 P1 修复、独立复验并归档；K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 独立验收并归档，102/102 测试通过；K1-4 已在 `94766a0930c05e5339c44f667deaf02116af1c0c` 正式验收并归档，125/125 测试通过。K1-5 implementation candidate 已在 `51fa2177cbd25dea53f1ebaf23bd8b8426471589` 完成并通过 161/161 完整测试，等待独立验收；K1-6 在形成 K1-5 accepted baseline 前保持阻塞。
 
 ## Source Documents
 

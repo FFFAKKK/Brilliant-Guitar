@@ -24,8 +24,8 @@
   "notes": "K1-5 implementation candidate complete; independent acceptance pending. K1-6 remains blocked.",
   "meta": {
     "implementation_stage": "acceptance_pending",
-    "implementation_commit": "171790743450b3a3c0fa1720c847302308c27937",
-    "focused_test_count": 37,
-    "full_test_count": 159
+    "implementation_commit": "51fa2177cbd25dea53f1ebaf23bd8b8426471589",
+    "focused_test_count": 39,
+    "full_test_count": 161
   }
 }

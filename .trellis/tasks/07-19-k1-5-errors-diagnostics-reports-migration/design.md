@@ -1,6 +1,6 @@
 # K1-5 Errors Diagnostics Reports Migration — Design
 
-> **Status: IMPLEMENTATION CANDIDATE COMPLETE / INDEPENDENT ACCEPTANCE PENDING.** Candidate implementation baseline: `171790743450b3a3c0fa1720c847302308c27937`; the fresh 2026-07-20 full gate passed 159/159 tests. This is not an accepted baseline and K1-6 remains blocked.
+> **Status: IMPLEMENTATION CANDIDATE COMPLETE / INDEPENDENT ACCEPTANCE PENDING.** Candidate implementation baseline: `51fa2177cbd25dea53f1ebaf23bd8b8426471589`; the fresh 2026-07-20 full gate passed 161/161 tests. This is not an accepted baseline and K1-6 remains blocked.
 
 ## 1. Context and Authority
 

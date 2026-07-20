@@ -5,7 +5,7 @@
 - Phase: staged execution; K1-1 through K1-4 are accepted/archived. K1-4 is fixed at `94766a0930c05e5339c44f667deaf02116af1c0c` with 125/125 tests passing.
 - K1-1 was formally accepted at baseline `30894e2`; its model and validation contracts remain frozen.
 - This parent plan no longer defines K1-1 or K1-2 executable details; their independent child artifacts and active Core specs are authoritative.
-- K1-3 implementation followed its approved independent PRD/design/implement set and was accepted at `7369eeac60fecea66c2c9164c04439625c2d78b0` with 102/102 tests passing. K1-4 was accepted at `94766a0930c05e5339c44f667deaf02116af1c0c` with 125/125 tests passing. K1-5 implementation candidate `171790743450b3a3c0fa1720c847302308c27937` passes 159/159 tests and is pending independent acceptance; K1-6 remains blocked.
+- K1-3 implementation followed its approved independent PRD/design/implement set and was accepted at `7369eeac60fecea66c2c9164c04439625c2d78b0` with 102/102 tests passing. K1-4 was accepted at `94766a0930c05e5339c44f667deaf02116af1c0c` with 125/125 tests passing. K1-5 implementation candidate `51fa2177cbd25dea53f1ebaf23bd8b8426471589` passes 161/161 tests and is pending independent acceptance; K1-6 remains blocked.
 
 ## Global Rules for Every Implementation Round
 
@@ -231,4 +231,4 @@ Completion gate:
 
 ## Current Execution Recommendation
 
-K1-3 is accepted and archived at `7369eeac60fecea66c2c9164c04439625c2d78b0`. K1-4 passed independent acceptance at `94766a0930c05e5339c44f667deaf02116af1c0c`, is archived, and has 125/125 passing tests. K1-5 implementation candidate `171790743450b3a3c0fa1720c847302308c27937` is complete under `.trellis/tasks/07-19-k1-5-errors-diagnostics-reports-migration/` with 159/159 passing tests; independent acceptance remains pending, so K1-6 must not start.
+K1-3 is accepted and archived at `7369eeac60fecea66c2c9164c04439625c2d78b0`. K1-4 passed independent acceptance at `94766a0930c05e5339c44f667deaf02116af1c0c`, is archived, and has 125/125 passing tests. K1-5 implementation candidate `51fa2177cbd25dea53f1ebaf23bd8b8426471589` is complete under `.trellis/tasks/07-19-k1-5-errors-diagnostics-reports-migration/` with 161/161 passing tests; independent acceptance remains pending, so K1-6 must not start.

@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript 5.8, Node.js test runner, existing `structuredClone`, `deepFreezeValue`, K1-1 codec/semantic validator, K1-4 descriptor-first strict-codec helpers, no new runtime dependencies.
 
-**Current status:** Tasks 0–9 are implemented on `codex/k1-5-errors-diagnostics-reports-migration`. The implementation baseline is `171790743450b3a3c0fa1720c847302308c27937`; the fresh full gate passes 159/159 tests and the focused K1-5 gate passes 37/37. Independent acceptance is pending, so this is not an accepted baseline and K1-6 remains blocked.
+**Current status:** Tasks 0–9 and acceptance repair AR-1 are implemented on `codex/k1-5-errors-diagnostics-reports-migration`. The implementation baseline is `51fa2177cbd25dea53f1ebaf23bd8b8426471589`; the fresh full gate passes 161/161 tests and the focused K1-5 gate passes 39/39. Independent acceptance is pending, so this is not an accepted baseline and K1-6 remains blocked.
 
 ## Global Constraints
 
@@ -901,6 +901,6 @@ Do not call `task.py finish`, archive K1-5, update an accepted baseline or begin
 - [x] Replace open `Set<string>`/non-exhaustive fixture arrays with compiler-exhaustive records for diagnostic, command, CommandBus creation, checkpoint, read, event, Registry startup and Registry access code families.
 - [x] Prove the exhaustiveness gate by temporarily adding a diagnostic/command union member and observing the expected typecheck failure before reverting the probe.
 - [x] Synchronize the authoritative PRD, design, implementation record, active Core spec, parent task and product REQ/SPEC while keeping K1-5 acceptance pending and K1-6 blocked.
-- [ ] Run the complete fresh gate, record the repair implementation commit/test count, and hand the new candidate baseline to an independent reviewer.
+- [x] Run the complete fresh gate, record the repair implementation commit/test count, and hand the new candidate baseline to an independent reviewer.
 
 **Stage 4 rollback point:** revert candidate-evidence/docs commit, Task 8 docs commit and Task 7 public export commit. Earlier internal K1-5 stages remain testable; reverting all four stages restores the accepted K1-4 public surface without persisted-data migration.

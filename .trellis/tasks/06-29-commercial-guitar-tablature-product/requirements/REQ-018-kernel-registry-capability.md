@@ -1,6 +1,6 @@
 # REQ-018 内核注册表与能力边界
 
-> **状态：K1-4 ACCEPTED / ARCHIVED（2026-07-20）。** K1-4 已在 `94766a0930c05e5339c44f667deaf02116af1c0c` 通过独立验收并归档，125/125 测试通过。K1-5 implementation candidate `171790743450b3a3c0fa1720c847302308c27937` 已通过 159/159 测试并等待独立验收；K1-6 继续阻塞。
+> **状态：K1-4 ACCEPTED / ARCHIVED（2026-07-20）。** K1-4 已在 `94766a0930c05e5339c44f667deaf02116af1c0c` 通过独立验收并归档，125/125 测试通过。K1-5 implementation candidate `51fa2177cbd25dea53f1ebaf23bd8b8426471589` 已通过 161/161 测试并等待独立验收；K1-6 继续阻塞。
 
 ## 用户价值
 

@@ -1,6 +1,6 @@
 # K1-5 Errors Diagnostics Reports Migration
 
-> **Status: IMPLEMENTATION CANDIDATE COMPLETE / INDEPENDENT ACCEPTANCE PENDING.** 实施候选基线为 `171790743450b3a3c0fa1720c847302308c27937`；2026-07-20 完整门禁通过 159/159 tests。该提交不是 accepted baseline，K1-6 继续阻塞。
+> **Status: IMPLEMENTATION CANDIDATE COMPLETE / INDEPENDENT ACCEPTANCE PENDING.** 实施候选基线为 `51fa2177cbd25dea53f1ebaf23bd8b8426471589`；2026-07-20 完整门禁通过 161/161 tests。该提交不是 accepted baseline，K1-6 继续阻塞。
 
 ## Goal
 
