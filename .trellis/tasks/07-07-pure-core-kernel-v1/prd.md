@@ -4,7 +4,7 @@
 
 把现有 `Pure Core Kernel V1` 总规划收敛成一个可执行、可验收、可分块推进的内核实现任务。
 
-本任务是 Pure Core Kernel V1 路线图父任务。K1-1 已在 `30894e2` 正式验收；K1-2 已完成 P1 修复、独立复验并归档；K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 独立验收并归档，102/102 测试通过；K1-4 已在 `94766a0930c05e5339c44f667deaf02116af1c0c` 正式验收并归档，125/125 测试通过。K1-5 实现基线 `51fa2177cbd25dea53f1ebaf23bd8b8426471589` 已于 2026-07-21 在文档基线 `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` 通过独立验收，161/161 完整测试通过；K1-6 规划已解锁，生产实现仍需独立批准。
+本任务是 Pure Core Kernel V1 路线图父任务。K1-1 已在 `30894e2` 正式验收；K1-2 已完成 P1 修复、独立复验并归档；K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 独立验收并归档，102/102 测试通过；K1-4 已在 `94766a0930c05e5339c44f667deaf02116af1c0c` 正式验收并归档，125/125 测试通过。K1-5 实现基线 `51fa2177cbd25dea53f1ebaf23bd8b8426471589` 已于 2026-07-21 在文档基线 `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` 通过独立验收，161/161 完整测试通过；K1-6 实现候选 `3dffa71c44d0eacb81d391714b855799f9e5cae9` 已完成并通过 8/8 聚焦、169/169 完整测试，等待独立验收。Pure Core Kernel V1 尚未正式关闭，Guitar Domain 与产品层实现仍未授权。
 
 ## Source Documents
 
@@ -125,7 +125,7 @@
 
 小功能:
 
-- 4 小节通用 score fixture 全链路验证；GuitarExtension fixture 仅在独立领域任务完成后接入。
+- 4 小节通用 score fixture 全链路验证；由于没有已验收的领域前置实现，本次候选明确排除 GuitarExtension/Guitar Domain。
 - schema round-trip 验证。
 - 命令提交、rollback、undo、redo、replay 验证。
 - snapshot/selector 只读验证。

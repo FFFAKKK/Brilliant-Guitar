@@ -2,10 +2,10 @@
 
 ## Status
 
-- Phase: staged execution; K1-1 through K1-5 are accepted/archived. K1-5 implementation is fixed at `51fa2177cbd25dea53f1ebaf23bd8b8426471589` and independently accepted documentation baseline `ed801a9fa1a69222188c3ca04ee243b48d7a92d2`, with 161/161 tests passing.
+- Phase: staged execution; K1-1 through K1-5 are accepted/archived. K1-6 implementation candidate `3dffa71c44d0eacb81d391714b855799f9e5cae9` passes 8/8 focused and 169/169 full tests; independent acceptance is pending.
 - K1-1 was formally accepted at baseline `30894e2`; its model and validation contracts remain frozen.
 - This parent plan no longer defines K1-1 or K1-2 executable details; their independent child artifacts and active Core specs are authoritative.
-- K1-3 implementation followed its approved independent PRD/design/implement set and was accepted at `7369eeac60fecea66c2c9164c04439625c2d78b0` with 102/102 tests passing. K1-4 was accepted at `94766a0930c05e5339c44f667deaf02116af1c0c` with 125/125 tests passing. K1-5 implementation baseline `51fa2177cbd25dea53f1ebaf23bd8b8426471589` was independently accepted at documentation baseline `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` with 161/161 tests passing; K1-6 planning is unlocked, while production implementation remains separately gated.
+- K1-3 implementation followed its approved independent PRD/design/implement set and was accepted at `7369eeac60fecea66c2c9164c04439625c2d78b0` with 102/102 tests passing. K1-4 was accepted at `94766a0930c05e5339c44f667deaf02116af1c0c` with 125/125 tests passing. K1-5 implementation baseline `51fa2177cbd25dea53f1ebaf23bd8b8426471589` was independently accepted at documentation baseline `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` with 161/161 tests passing. K1-6 candidate `3dffa71c44d0eacb81d391714b855799f9e5cae9` now awaits independent acceptance.
 
 ## Global Rules for Every Implementation Round
 
@@ -205,7 +205,7 @@ Purpose: prove the pieces form a usable Pure Core Kernel V1 rather than isolated
 
 Subfeatures:
 
-- Full fixture path: a general 4-measure score validates, serializes, snapshots, and participates in command flows; GuitarExtension is added only through its separately approved fixture.
+- Full fixture path: a general four-measure score validates, serializes, migrates, snapshots, selects, and participates in authorized command/history/replay flows; GuitarExtension is excluded because no accepted Guitar Domain prerequisite exists.
 - Command path: insert note, set WrittenPitch/NoteValue, undo/redo, and prove unknown extension preservation.
 - Read path: snapshot and selectors reflect committed state and cannot mutate kernel state.
 - Event path: post-commit facts correlate by document version and cause with accepted submit/undo/redo/checkpoint transitions.
@@ -231,4 +231,4 @@ Completion gate:
 
 ## Current Execution Recommendation
 
-K1-3 is accepted and archived at `7369eeac60fecea66c2c9164c04439625c2d78b0`. K1-4 passed independent acceptance at `94766a0930c05e5339c44f667deaf02116af1c0c`, is archived, and has 125/125 passing tests. K1-5 implementation baseline `51fa2177cbd25dea53f1ebaf23bd8b8426471589` was independently accepted at documentation baseline `ed801a9fa1a69222188c3ca04ee243b48d7a92d2`, has 161/161 passing tests, and is archived under `.trellis/tasks/archive/2026-07/07-19-k1-5-errors-diagnostics-reports-migration/`. K1-6 planning may start; production implementation requires a separate authorization gate.
+K1-3 is accepted and archived at `7369eeac60fecea66c2c9164c04439625c2d78b0`. K1-4 passed independent acceptance at `94766a0930c05e5339c44f667deaf02116af1c0c`, is archived, and has 125/125 passing tests. K1-5 implementation baseline `51fa2177cbd25dea53f1ebaf23bd8b8426471589` was independently accepted at documentation baseline `ed801a9fa1a69222188c3ca04ee243b48d7a92d2`, has 161/161 passing tests, and is archived. K1-6 candidate `3dffa71c44d0eacb81d391714b855799f9e5cae9` has completed its approved implementation scope and passed 8/8 focused plus 169/169 full tests; stop for independent acceptance without starting Guitar Domain or product-layer work.

@@ -1,9 +1,9 @@
 # Core Kernel Guidelines
 
-> **Current staged workflow (2026-07-20):** K1-1 through K1-4 are accepted and archived.
-> K1-5 implementation baseline `51fa2177cbd25dea53f1ebaf23bd8b8426471589` was independently accepted at documentation baseline `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` on 2026-07-21 with 161/161 tests passing. K1-6 planning is unlocked; production implementation remains separately gated.
+> **Current staged workflow (2026-07-21):** K1-1 through K1-5 are accepted and archived.
+> K1-6 implementation candidate `3dffa71c44d0eacb81d391714b855799f9e5cae9` passes 8/8 focused and 169/169 full tests. Independent acceptance is pending; Pure Core Kernel V1 is not formally closed, and Guitar Domain/product implementation remain unauthorized.
 
-For changes that consume the accepted kernel, read `backend/score-document-model.md`, `backend/command-transaction.md`, `backend/snapshot-events.md`, `backend/registry-capability.md`, `backend/errors-reports.md`, and all staged boundary/diagnostic/quality guides. K1-1 through K1-5 contracts are frozen. The accepted K1-5 contract adds internal error families, public issue/report data, validation reports, and in-memory current-schema migration compatibility. Physical `.bgp` packaging, manifest, file IO, real legacy migration steps, Guitar Domain, UI, playback, and layout remain later work.
+For changes that consume the accepted kernel, read `backend/score-document-model.md`, `backend/command-transaction.md`, `backend/snapshot-events.md`, `backend/registry-capability.md`, `backend/errors-reports.md`, `backend/integration-gate.md`, and all staged boundary/diagnostic/quality guides. K1-1 through K1-5 contracts are frozen. K1-6 adds integration evidence only and does not alter them. Physical `.bgp` packaging, manifest, file IO, real legacy migration steps, Guitar Domain, UI, playback, and layout remain later work.
 
 The K1-1 data path is `unknown -> decode -> semantic validation -> ScoreFeatureProfile`. Unknown extension data must survive semantic round-trip.
 

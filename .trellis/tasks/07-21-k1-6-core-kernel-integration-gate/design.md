@@ -1,6 +1,6 @@
 # K1-6 Core Kernel Integration Gate — Design
 
-> **Status: FINAL PLAN APPROVED / READY FOR OPERATOR START（2026-07-21）.** 用户已批准 `DEC-K1-6-001` 至 `DEC-K1-6-005` 以及完整 PRD/design/implement 规划。本文件只定义 K1-6 集成验收设计；任务仍保持 planning，必须由操作者显式执行 Trellis start gate 后才能按批准范围实施。
+> **Status: IMPLEMENTATION CANDIDATE / INDEPENDENT ACCEPTANCE PENDING（2026-07-21）.** 候选 `3dffa71c44d0eacb81d391714b855799f9e5cae9` 已按批准设计完成，8/8 聚焦测试和 169/169 完整测试通过。任务保持 `in_progress`，不得标记 accepted/archived，也不得解锁 Guitar Domain 或产品层实现。
 
 ## 1. Authority and Baseline
 
@@ -233,3 +233,11 @@ The full suite must include the existing public-export and forbidden-dependency 
 - Active docs may say only `implementation candidate / independent acceptance pending` until a separate reviewer returns a verdict.
 - Only after that verdict may planning documents record a fixed accepted baseline and archive K1-6.
 - K1-6 acceptance closes Pure Core Kernel V1 integration; it does not authorize Guitar Domain or any product-layer implementation.
+
+### Recorded implementation candidate
+
+- Activation baseline: `3f6ae5d4467f560e6341e78ce6c7d3bdd46a3830`.
+- Candidate: `3dffa71c44d0eacb81d391714b855799f9e5cae9`.
+- Evidence: 8/8 focused tests, 169/169 full tests, typecheck/build/diff/Trellis gates pass.
+- Scope proof: no `src/**`, package configuration, public API boundary test, or forbidden dependency boundary test change.
+- Lifecycle: implementation candidate complete; independent acceptance pending.

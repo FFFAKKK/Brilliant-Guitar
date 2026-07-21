@@ -3,12 +3,12 @@
 ## 状态
 
 - Trellis task: `06-29-commercial-guitar-tablature-product`
-- 当前阶段: Core K1-1～K1-5 已正式验收归档；K1-5 实现基线 `51fa2177cbd25dea53f1ebaf23bd8b8426471589` 已于 2026-07-21 在文档基线 `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` 通过独立验收，161/161 测试通过；K1-6 规划已解锁，生产实现尚未授权；产品其余阶段保持规划态
+- 当前阶段: Core K1-1～K1-5 已正式验收归档；K1-6 实现候选 `3dffa71c44d0eacb81d391714b855799f9e5cae9` 已完成并通过 8/8 聚焦、169/169 完整测试，等待独立验收；Pure Core Kernel V1 尚未正式关闭，产品其余阶段保持规划态
 - 创建日期: 2026-06-29
 - 负责人: ATOM
 - 文档策略: 每个需求先写独立文档，最终再合并为收敛后的 PRD。
 - 当前 Core 基线: K1-1 已在 `30894e2` 正式验收；K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 正式验收并通过 102/102 测试；`.trellis/spec/core-kernel/` 是活动代码契约。本文较早的决策记录若与其冲突，以活动规范与独立 Block 任务为准。
-- 当前交付状态: K1-2、K1-3 均已完成独立复验并归档；K1-4 已在 `94766a0930c05e5339c44f667deaf02116af1c0c` 验收归档；K1-5 已完成 Issue/Report/Migration 独立验收并归档。K1-6 只解锁规划，生产实现仍需单独批准。Guitar Domain 仍需独立规划。
+- 当前交付状态: K1-2、K1-3 均已完成独立复验并归档；K1-4 已在 `94766a0930c05e5339c44f667deaf02116af1c0c` 验收归档；K1-5 已完成 Issue/Report/Migration 独立验收并归档。K1-6 处于 `implementation candidate / independent acceptance pending`；Guitar Domain 与产品层实现仍未授权。
 
 ## 产品目标
 
@@ -655,4 +655,4 @@ MVP 包结构建议: `.bgp` 的长期形态是单文件开放 zip 包，至少�
 
 ## 当前阻塞开放问题
 
-无。当前 PRD 已完成 Phase 1 收敛，剩余动作是用户审核 `prd.md`、`design.md` 和 `implement.md`，审核通过后才能按 Trellis 流程进入 `task.py start` 和 Pure Core Kernel V1 实现。
+当前唯一 Core Gate 动作是独立审核 K1-6 候选 `3dffa71c44d0eacb81d391714b855799f9e5cae9`。审核记录 accepted baseline 之前，不得关闭 Pure Core Kernel V1，也不得开始 Guitar Domain 或产品层实现。

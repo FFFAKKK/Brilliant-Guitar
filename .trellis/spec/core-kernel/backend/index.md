@@ -1,8 +1,8 @@
 # Core Kernel Backend Guidelines
 
-> **Current Core implementation stage (2026-07-20):** K1-1 through K1-4 are accepted foundations.
+> **Current Core implementation stage (2026-07-21):** K1-1 through K1-5 are accepted foundations.
 > K1-4 is fixed at `94766a0930c05e5339c44f667deaf02116af1c0c` with 125/125 tests passing.
-> K1-5 implementation baseline `51fa2177cbd25dea53f1ebaf23bd8b8426471589` was independently accepted at documentation baseline `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` on 2026-07-21 with 161/161 tests passing. K1-6 planning is unlocked; production implementation remains separately gated.
+> K1-5 implementation baseline `51fa2177cbd25dea53f1ebaf23bd8b8426471589` was independently accepted at documentation baseline `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` with 161/161 tests passing. K1-6 implementation candidate `3dffa71c44d0eacb81d391714b855799f9e5cae9` passes 8/8 focused and 169/169 full tests; independent acceptance is pending.
 
 > Coding rules for the Pure Core Kernel V1 implementation.
 
@@ -39,6 +39,7 @@ Pure Core Kernel V1 is not the desktop app. It must be testable without React, T
 | [Snapshot and Events](./snapshot-events.md) | K1-3 address/read/checkpoint/event implementation contract | K1-3 authoritative |
 | [Registry and Capability](./registry-capability.md) | Approved K1-4 startup Registry/gateway implementation contract | Accepted at `94766a0` |
 | [Errors and Reports](./errors-reports.md) | K1-5 additive Issue/Report adapters and current-schema migration | Accepted / archived |
+| [Integration Gate](./integration-gate.md) | K1-6 cross-contract fixture, deterministic public flow, failure/privacy matrix, and candidate gate | Candidate / acceptance pending |
 | [Quality Guidelines](./quality-guidelines.md) | Required tests and forbidden shortcuts | Stable |
 
 ---
@@ -56,6 +57,8 @@ Before finishing Core Kernel work, verify the frozen K1-1 rules plus the active 
 - [ ] Diagnostics use stable codes, messageKeys, paths, and deterministic ordering.
 - [x] K1-5 adapters preserve accepted failure facts, reports derive status/summary, and migration stays detached from CommandBus state.
 - [x] K1-5 public output contains no raw Error fields, ID/time metadata, dynamic migration registry, physical IO, or unapproved report kinds.
+- [x] K1-6 exercises the accepted public surface through one deterministic four-measure flow and eight focused integration tests.
+- [x] K1-6 preserves extensions, failure atomicity, unsupported separation, capability denial, and subscriber/report privacy without production source changes.
 - [ ] Semantic schema/codec stays independent from physical zip/file IO.
 - [ ] Any newly added kernel concept is documented as part of one of the 9 mechanisms or has an approved boundary decision.
 - [ ] Tests cover the Core loop fixture and semantic-valid-but-profile-unsupported boundaries.

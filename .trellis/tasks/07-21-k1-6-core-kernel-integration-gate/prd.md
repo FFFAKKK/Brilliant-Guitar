@@ -1,6 +1,6 @@
 # K1-6 Core Kernel Integration Gate
 
-> **Status: FINAL PLAN APPROVED / READY FOR OPERATOR START（2026-07-21）.** K1-5 implementation baseline `51fa2177cbd25dea53f1ebaf23bd8b8426471589` was independently accepted at documentation baseline `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` with 161/161 tests passing. The user approved `DEC-K1-6-001` through `DEC-K1-6-005` and the complete PRD/design/implement set on 2026-07-21. The task remains in planning until an operator deliberately runs the Trellis start gate; this approval does not permit scope beyond the approved plan.
+> **Status: IMPLEMENTATION CANDIDATE / INDEPENDENT ACCEPTANCE PENDING（2026-07-21）.** Candidate `3dffa71c44d0eacb81d391714b855799f9e5cae9` passes 8/8 focused and 169/169 full tests. K1-6 remains `in_progress`; it is not accepted or archived, Pure Core Kernel V1 is not formally closed, and Guitar Domain/product implementation remain unauthorized.
 
 ## Goal
 
@@ -48,15 +48,15 @@ Prove that the accepted K1-1 through K1-5 contracts operate as one deterministic
 ## Acceptance Criteria
 
 - [x] AC-K1-6-001: final PRD, design, and implementation plan were explicitly approved on 2026-07-21 before task start.
-- [ ] AC-K1-6-002: the canonical four-measure fixture passes strict decode, semantic validation, expected profile classification, encode/decode round-trip, and detached current-schema migration.
-- [ ] AC-K1-6-003: a representative authorized command sequence produces the expected documents, versions, history depths, snapshots, selectors, dirty transitions, and ordered events.
-- [ ] AC-K1-6-004: undo, redo, and replay converge on deeply equal documents while preserving deterministic results and unknown extensions.
-- [ ] AC-K1-6-005: representative invalid and unexpected-failure paths return closed failures/issues/reports, leak no raw exception or private data, and leave state unchanged.
-- [ ] AC-K1-6-006: semantic-valid unsupported features remain unsupported diagnostics rather than decode/semantic failures.
-- [ ] AC-K1-6-007: public export and forbidden dependency gates remain green with no new public contract unless separately approved.
-- [ ] AC-K1-6-008: Guitar Domain and all product/infrastructure exclusions remain absent unless their independent acceptance prerequisite is proven before implementation authorization.
-- [ ] AC-K1-6-009: `npm run typecheck`, `npm run build`, full `npm test`, deterministic integration repeats, `git diff --check`, and Trellis validation all pass in the approved environment.
-- [ ] AC-K1-6-010: active Core/parent/product documents record the final fixed baseline and no stale stage status; K1-6 is not marked accepted until a separate reviewer approves it.
+- [x] AC-K1-6-002: the canonical four-measure fixture passes strict decode, semantic validation, expected profile classification, encode/decode round-trip, and detached current-schema migration.
+- [x] AC-K1-6-003: a representative authorized command sequence produces the expected documents, versions, history depths, snapshots, selectors, dirty transitions, and ordered events.
+- [x] AC-K1-6-004: undo, redo, and replay converge on deeply equal documents while preserving deterministic results and unknown extensions.
+- [x] AC-K1-6-005: representative invalid and unexpected-failure paths return closed failures/issues/reports, leak no raw exception or private data, and leave state unchanged.
+- [x] AC-K1-6-006: semantic-valid unsupported features remain unsupported diagnostics rather than decode/semantic failures.
+- [x] AC-K1-6-007: public export and forbidden dependency gates remain green with no new public contract unless separately approved.
+- [x] AC-K1-6-008: Guitar Domain and all product/infrastructure exclusions remain absent unless their independent acceptance prerequisite is proven before implementation authorization.
+- [x] AC-K1-6-009: `npm run typecheck`, `npm run build`, full `npm test`, deterministic integration repeats, `git diff --check`, and Trellis validation all pass in the approved environment.
+- [x] AC-K1-6-010: active Core/parent/product documents record the final fixed baseline and no stale stage status; K1-6 is not marked accepted until a separate reviewer approves it.
 
 ## Approved Decisions
 

@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript 5.8, Node.js built-in test runner, `node:assert/strict`, existing Core public API, no new dependency.
 
-**Current status:** FINAL PLAN APPROVED / READY FOR OPERATOR START. The Trellis task intentionally remains `planning` with `branch: null` until the operator starts it; no implementation work is part of the planning approval commit.
+**Current status:** IMPLEMENTATION CANDIDATE / INDEPENDENT ACCEPTANCE PENDING. Candidate `3dffa71c44d0eacb81d391714b855799f9e5cae9` passes 8/8 focused and 169/169 full tests. The task remains `in_progress`; Task 5 hands the candidate to a separate reviewer and does not finish or archive it.
 
 ## Global Constraints
 
@@ -40,7 +40,7 @@
 - Consumes the explicitly approved planning set and the accepted K1-1 through K1-5 baseline.
 - Produces one activated K1-6 branch and a recorded pre-change gate; it produces no runtime behavior.
 
-- [ ] **Step 1: Confirm planning approval and task state**
+- [x] **Step 1: Confirm planning approval and task state**
 
 Run:
 
@@ -50,15 +50,15 @@ Get-Content .trellis\tasks\07-21-k1-6-core-kernel-integration-gate\task.json
 
 Expected before activation: `status` is `planning`, `branch` is `null`, and the notes say implementation is not authorized. Stop unless the user has explicitly approved all three planning documents.
 
-- [ ] **Step 2: Load implementation context**
+- [x] **Step 2: Load implementation context**
 
 Use `trellis-before-dev` to read the task artifacts and active Core specs. Inline mode skips implement/check jsonl curation.
 
-- [ ] **Step 3: Start the task with the project workflow**
+- [x] **Step 3: Start the task with the project workflow**
 
 Run the project-provided Trellis start action. Expected: task becomes `in_progress` and the created/switched branch uses the `codex/` prefix. Do not manually broaden scope during activation.
 
-- [ ] **Step 4: Record the clean baseline**
+- [x] **Step 4: Record the clean baseline**
 
 Run:
 
@@ -87,7 +87,7 @@ Expected: typecheck/build pass, the pre-K1-6 full suite reports 161/161, and dif
 - Produces `createK1_6ScoreFixture(): ScoreDocument` and `cloneK1_6ScoreFixture(): ScoreDocument` for K1-6 tests only.
 - Produces one public-API foundation test; Tasks 2 and 3 consume the fixture without modifying its contract.
 
-- [ ] **Step 1: Create the isolated fixture**
+- [x] **Step 1: Create the isolated fixture**
 
 Add `test/core-kernel/fixtures/k1-6-score.ts` with this structure and exact identities:
 
@@ -259,7 +259,7 @@ export function cloneK1_6ScoreFixture(): ScoreDocument {
 }
 ```
 
-- [ ] **Step 2: Add the public foundation test**
+- [x] **Step 2: Add the public foundation test**
 
 Create `test/core-kernel/core-kernel-integration.test.ts`. Import runtime APIs only from `../../src/core-kernel/index` and add:
 
@@ -347,7 +347,7 @@ test("four-measure fixture traverses codec validation profile and migration", ()
 });
 ```
 
-- [ ] **Step 3: Run the fixture foundation gate**
+- [x] **Step 3: Run the fixture foundation gate**
 
 Run:
 
@@ -359,7 +359,7 @@ node --test dist/test/core-kernel/core-kernel-integration.test.js
 
 Expected: typecheck/build pass and 1/1 focused test passes. Any product assertion failure is a K1-6 defect finding; stop rather than weakening the assertion.
 
-- [ ] **Step 4: Commit Task 1**
+- [x] **Step 4: Commit Task 1**
 
 ```powershell
 git add test/core-kernel/fixtures/k1-6-score.ts test/core-kernel/core-kernel-integration.test.ts
@@ -379,7 +379,7 @@ git commit -m "test(core): add k1-6 integration fixture"
 - Consumes the K1-6 fixture and public Core APIs.
 - Produces test-local `runK1_6IntegrationScenario()` and two behavioral tests; no helper is exported from production.
 
-- [ ] **Step 1: Add exact public command and manifest builders**
+- [x] **Step 1: Add exact public command and manifest builders**
 
 Extend imports with the public types/functions used by the scenario:
 
@@ -474,7 +474,7 @@ const ACCEPTED_COMMANDS = [
 ] as const;
 ```
 
-- [ ] **Step 2: Add strict local unwrapping helpers**
+- [x] **Step 2: Add strict local unwrapping helpers**
 
 Add local helpers that throw only when the fixture/test setup violates an expected public branch:
 
@@ -504,7 +504,7 @@ function requireAuthorized<T>(
 }
 ```
 
-- [ ] **Step 3: Implement the observable trace runner**
+- [x] **Step 3: Implement the observable trace runner**
 
 Add this test-local trace type:
 
@@ -661,7 +661,7 @@ Submit command 1, mark version 1 persisted, then submit commands 2 and 3 sequent
 
 Do not capture gateway/subscription functions in the returned trace.
 
-- [ ] **Step 4: Add exact coherence assertions**
+- [x] **Step 4: Add exact coherence assertions**
 
 Add the test `public integration scenario keeps writes reads events history and replay coherent` and assert:
 
@@ -786,7 +786,7 @@ assert.equal(JSON.stringify(trace).includes("PRIVATE_K1_6"), false);
 
 Also assert the inserted event selector, ownership selector, four-measure range selector, history selector, and dirty selector return authorized successful results with their exact stable IDs/counts.
 
-- [ ] **Step 5: Add the deterministic repeat test**
+- [x] **Step 5: Add the deterministic repeat test**
 
 ```typescript
 test("public integration scenario is deeply deterministic across fresh runs", async () => {
@@ -800,7 +800,7 @@ test("public integration scenario is deeply deterministic across fresh runs", as
 
 Expected: no unhandled rejection and no timing field in either trace.
 
-- [ ] **Step 6: Run the successful-flow gate**
+- [x] **Step 6: Run the successful-flow gate**
 
 ```powershell
 npm run typecheck
@@ -810,7 +810,7 @@ node --test dist/test/core-kernel/core-kernel-integration.test.js
 
 Expected: 3/3 focused tests pass.
 
-- [ ] **Step 7: Commit Task 2**
+- [x] **Step 7: Commit Task 2**
 
 ```powershell
 git add test/core-kernel/core-kernel-integration.test.ts
@@ -830,7 +830,7 @@ git commit -m "test(core): cover k1-6 public integration flow"
 - Consumes the public Core index and `cloneK1_6ScoreFixture()`.
 - Produces five focused boundary tests without changing accepted subsystem unit ownership.
 
-- [ ] **Step 1: Add future-schema and semantic-invalid separation**
+- [x] **Step 1: Add future-schema and semantic-invalid separation**
 
 Create the test file with public imports:
 
@@ -1006,7 +1006,7 @@ assert.deepEqual(
 assert.equal("document" in migratedDuplicate, false);
 ```
 
-- [ ] **Step 2: Add the semantic-valid unsupported chord test**
+- [x] **Step 2: Add the semantic-valid unsupported chord test**
 
 ```typescript
 const chord = cloneK1_6ScoreFixture();
@@ -1032,7 +1032,7 @@ assert.deepEqual(report.issues.map(({ code }) => code), ["unsupported.chord"]);
 assert.equal(migrateScoreDocument(chord).status, "not-required");
 ```
 
-- [ ] **Step 3: Add authorized command rejection atomicity**
+- [x] **Step 3: Add authorized command rejection atomicity**
 
 Use `requireBoundaryRuntime()`, subscribe a recording handler, capture the successful `bus.read()` value, then verify empty history, invalid selector, invalid checkpoint, invalid subscription, and missing-target command failures all remain atomic:
 
@@ -1108,7 +1108,7 @@ assert.deepEqual(events, []);
 
 The before/after read must retain version 0, undoDepth 0, redoDepth 0, and dirty false.
 
-- [ ] **Step 4: Add capability denial before mutation**
+- [x] **Step 4: Add capability denial before mutation**
 
 Add `internal.k1-6-denied` with an empty capability array to the public manifest, create its gateway, and assert:
 
@@ -1142,7 +1142,7 @@ if (!afterResult.ok) throw new Error("expected denied-path read after failure");
 assert.deepEqual(afterResult.value, before);
 ```
 
-- [ ] **Step 5: Add subscriber and hostile-report privacy closure**
+- [x] **Step 5: Add subscriber and hostile-report privacy closure**
 
 Create an async test and use one recording subscriber plus synchronous and Promise-rejecting subscribers:
 
@@ -1200,7 +1200,7 @@ assert.deepEqual(report.issues.map(({ code }) => code), [
 assert.equal(JSON.stringify(report).includes("PRIVATE_K1_6"), false);
 ```
 
-- [ ] **Step 6: Run the boundary gate**
+- [x] **Step 6: Run the boundary gate**
 
 ```powershell
 npm run typecheck
@@ -1210,7 +1210,7 @@ node --test dist/test/core-kernel/core-kernel-integration-boundaries.test.js
 
 Expected: 5/5 focused boundary tests pass.
 
-- [ ] **Step 7: Run both K1-6 files together**
+- [x] **Step 7: Run both K1-6 files together**
 
 ```powershell
 node --test dist/test/core-kernel/core-kernel-integration.test.js dist/test/core-kernel/core-kernel-integration-boundaries.test.js
@@ -1218,7 +1218,7 @@ node --test dist/test/core-kernel/core-kernel-integration.test.js dist/test/core
 
 Expected: 8/8 K1-6 tests pass.
 
-- [ ] **Step 8: Commit Task 3**
+- [x] **Step 8: Commit Task 3**
 
 ```powershell
 git add test/core-kernel/core-kernel-integration-boundaries.test.ts
@@ -1250,7 +1250,7 @@ git commit -m "test(core): cover k1-6 integration boundaries"
 - Consumes the 8 focused K1-6 tests and all existing K1-1 through K1-5 gates.
 - Produces a fixed implementation candidate and active cross-contract specification; it does not claim independent acceptance.
 
-- [ ] **Step 1: Run static, build, focused, and full gates**
+- [x] **Step 1: Run static, build, focused, and full gates**
 
 ```powershell
 npm run typecheck
@@ -1263,7 +1263,7 @@ python .\.trellis\scripts\task.py validate .trellis\tasks\07-21-k1-6-core-kernel
 
 Expected on the approved 161-test baseline: 8/8 focused K1-6 tests and 169/169 full tests pass. If another separately approved change legitimately changes the baseline before activation, record the exact new pre-K1-6 count and require exactly eight additional K1-6 tests; never silently edit the expected evidence.
 
-- [ ] **Step 2: Confirm source and public surface stayed unchanged**
+- [x] **Step 2: Confirm source and public surface stayed unchanged**
 
 Run:
 
@@ -1274,7 +1274,7 @@ git diff c4cd4f2 -- test/core-kernel/public-api-boundary.test.ts test/core-kerne
 
 Expected: both diffs are empty. If not, stop and classify the change against `DEC-K1-6-005`.
 
-- [ ] **Step 3: Write the active integration specification**
+- [x] **Step 3: Write the active integration specification**
 
 Create `integration-gate.md` with:
 
@@ -1287,7 +1287,7 @@ Create `integration-gate.md` with:
 - exact candidate HEAD and fresh 8/full test counts;
 - wording `K1-6 implementation candidate complete; independent acceptance pending`.
 
-- [ ] **Step 4: Synchronize only active status documents**
+- [x] **Step 4: Synchronize only active status documents**
 
 Update the listed Core/parent/product files so they agree that K1-6 is an implementation candidate awaiting independent review. Do not mark Pure Core Kernel V1 complete and do not unlock Guitar/product implementation.
 
@@ -1299,11 +1299,11 @@ rg -n "K1-6|Pure Core Kernel V1" .trellis/spec/core-kernel .trellis/tasks/07-07-
 
 Expected: no active document says K1-6 is not started, already accepted, or includes Guitar Domain. Historical snapshots and archived tasks are excluded from convergence edits.
 
-- [ ] **Step 5: Record candidate metadata**
+- [x] **Step 5: Record candidate metadata**
 
 Set the K1-6 task notes/meta to the actual implementation candidate commit, focused count `8`, full count `169` (or the exact approved-baseline-plus-eight count), and `implementation_stage: acceptance_pending`. Keep the task `in_progress` until independent review.
 
-- [ ] **Step 6: Commit candidate documentation**
+- [x] **Step 6: Commit candidate documentation**
 
 Stage only the listed K1-6/Core/parent/product documentation files and commit:
 
@@ -1311,7 +1311,7 @@ Stage only the listed K1-6/Core/parent/product documentation files and commit:
 git commit -m "docs(core): record k1-6 integration candidate"
 ```
 
-- [ ] **Step 7: Rerun convergence and diff gates after documentation commit**
+- [x] **Step 7: Rerun convergence and diff gates after documentation commit**
 
 ```powershell
 git diff --check
