@@ -12,7 +12,7 @@
 
 ## 当前决策状态
 
-- 状态: K1-1～K1-5 已验收归档；K1-6 候选 `3dffa71c44d0eacb81d391714b855799f9e5cae9` 已完成并通过 8/8 聚焦、169/169 完整测试，等待独立验收。K1-4/K1-5/K1-6 均未扩大 K1-3 读取/事件合同。
+- 状态: K1-1～K1-5 已验收归档；K1-6 审计修复候选 `45398df4f0daf2134fcb142d2a74bac9511cf908` 已完成并通过 8/8 聚焦、169/169 完整测试，等待独立验收。K1-4/K1-5/K1-6 均未扩大 K1-3 读取/事件合同。
 - 已确认方案: `Snapshot / Selector + Post-Commit Event Bus + Command-only write`。
 - 对应 spec: `specs/SPEC-014-kernel-snapshot-events.md`。
 

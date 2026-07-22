@@ -2,7 +2,7 @@
 
 ## 状态
 
-- 阶段: Core K1-1～K1-5 已正式验收并归档；K1-6 实现候选 `3dffa71c44d0eacb81d391714b855799f9e5cae9` 已完成并通过 8/8 聚焦、169/169 完整测试，等待独立验收；Pure Core Kernel V1 尚未正式关闭，产品其余阶段保持 planning
+- 阶段: Core K1-1～K1-5 已正式验收并归档；K1-6 审计修复候选 `45398df4f0daf2134fcb142d2a74bac9511cf908` 已完成并通过 8/8 聚焦、169/169 完整测试，等待独立验收；Pure Core Kernel V1 尚未正式关闭，产品其余阶段保持 planning
 - 目标: 为第一条可运行 MVP 闭环提供需求反推的技术设计骨架。
 - 已确认技术栈: Tauri 2 + TypeScript + React + Vite。
 - 首发平台: Windows 桌面。
@@ -259,4 +259,4 @@ Pure Core Kernel V1 可以定义外部导入/导出贡献点的抽象 descriptor
 - K1-1 diagnostics 已确认；K1-5 已通过 `SPEC-016` 增加 additive Issue adapters、validation/migration reports 与 current-schema migration，并于 2026-07-21 通过独立验收。
 - 注册表 handler 运行时注销/卸载、第三方插件热插拔、运行中启用/禁用和运行中卸载已明确不作为稳定性目标；未来第三方插件配置变更必须启动前完成并通过重启生效。官方随应用发布的内置模块会有多个，UI 模块只是其中一类，具体模块清单、数量和拆分方式后续再确定；官方和第三方的权限模型不再按来源二分，最终都收敛到同一套注册协议，这些生命周期治理能力不作为当前内核总规划和 Kernel V1 实现阻塞项。
 - 外部工程目录结构、monorepo 方案、`apps/desktop` 和 `packages/*` 拆分不属于当前 Core Kernel 规划阶段；这些只在后续工程脚手架阶段根据已确认内核边界和模块协作方式重新评估，不作为当前内核规划阻塞项。
-- 当前设计文档无新增设计问题；K1-6 候选 `3dffa71c44d0eacb81d391714b855799f9e5cae9` 等待独立验收，验收前不得关闭 Pure Core Kernel V1 或解锁后续实现。
+- 当前设计文档无新增设计问题；K1-6 审计修复候选 `45398df4f0daf2134fcb142d2a74bac9511cf908` 等待独立验收，验收前不得关闭 Pure Core Kernel V1 或解锁后续实现。

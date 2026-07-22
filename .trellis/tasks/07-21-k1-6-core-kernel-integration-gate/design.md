@@ -1,6 +1,6 @@
 # K1-6 Core Kernel Integration Gate — Design
 
-> **Status: IMPLEMENTATION CANDIDATE / INDEPENDENT ACCEPTANCE PENDING（2026-07-21）.** 候选 `3dffa71c44d0eacb81d391714b855799f9e5cae9` 已按批准设计完成，8/8 聚焦测试和 169/169 完整测试通过。任务保持 `in_progress`，不得标记 accepted/archived，也不得解锁 Guitar Domain 或产品层实现。
+> **Status: AUDIT-REPAIR CANDIDATE / INDEPENDENT ACCEPTANCE PENDING（2026-07-22）.** 候选 `45398df4f0daf2134fcb142d2a74bac9511cf908` 已补齐审计证据，8/8 聚焦测试和 169/169 完整测试通过。任务保持 `in_progress`，不得标记 accepted/archived，也不得解锁 Guitar Domain 或产品层实现。
 
 ## 1. Authority and Baseline
 
@@ -9,6 +9,7 @@
 - K1-5 independent acceptance documentation baseline: `ed801a9fa1a69222188c3ca04ee243b48d7a92d2`.
 - K1-5 acceptance closure, archive, journal, and active-document convergence are present before K1-6 planning baseline `321064d`.
 - K1-6 planning seed: `c4cd4f2`.
+- K1-6 final reviewed planning baseline: `0c7a5ba37051498af1ee779ce0412845813dab04`; activation baseline `3f6ae5d4467f560e6341e78ce6c7d3bdd46a3830` is its verified clean descendant.
 - Current repository evidence contains no accepted Guitar Domain implementation under `src/` or `test/`; Guitar terminology appears only in future-boundary documentation and the profile name.
 
 ## 2. Purpose and Non-goals
@@ -77,7 +78,7 @@ K1-6 remains one Trellis task. The fixture, successful flow, boundary flow, and 
 
 - Create `.trellis/spec/core-kernel/backend/integration-gate.md` only after the implementation candidate passes all gates; it records tested cross-contract invariants and exclusions, not a new runtime API.
 - Update `.trellis/spec/core-kernel/backend/index.md` and `.trellis/spec/core-kernel/index.md` to link the K1-6 gate and candidate/accepted status.
-- Update the K1-6 PRD/design/implement record, Pure Core Kernel parent task, and directly conflicting product status lines with the actual candidate commit and fresh test total.
+- Generate the active document inventory with `rg -l "K1-6|Pure Core Kernel V1"` across Core specs, the Pure Core parent, product documents, and the K1-6 task; exclude `archive/`, `planning-snapshots/`, and `notes/`, then review every returned file and update every directly conflicting status line with the actual candidate commit and fresh test total.
 - Do not edit archived K1-1 through K1-5 decisions, `planning-snapshots/`, retired plans, or `notes/context-snapshot.md`.
 
 No `src/**`, package configuration, dependency, schema, or public-export file is planned for modification.
@@ -237,7 +238,7 @@ The full suite must include the existing public-export and forbidden-dependency 
 ### Recorded implementation candidate
 
 - Activation baseline: `3f6ae5d4467f560e6341e78ce6c7d3bdd46a3830`.
-- Candidate: `3dffa71c44d0eacb81d391714b855799f9e5cae9`.
+- Audit-repair candidate: `45398df4f0daf2134fcb142d2a74bac9511cf908`.
 - Evidence: 8/8 focused tests, 169/169 full tests, typecheck/build/diff/Trellis gates pass.
 - Scope proof: no `src/**`, package configuration, public API boundary test, or forbidden dependency boundary test change.
 - Lifecycle: implementation candidate complete; independent acceptance pending.

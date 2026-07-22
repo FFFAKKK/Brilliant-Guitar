@@ -2,7 +2,7 @@
 
 > **Current Core implementation stage (2026-07-21):** K1-1 through K1-5 are accepted foundations.
 > K1-4 is fixed at `94766a0930c05e5339c44f667deaf02116af1c0c` with 125/125 tests passing.
-> K1-5 implementation baseline `51fa2177cbd25dea53f1ebaf23bd8b8426471589` was independently accepted at documentation baseline `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` with 161/161 tests passing. K1-6 implementation candidate `3dffa71c44d0eacb81d391714b855799f9e5cae9` passes 8/8 focused and 169/169 full tests; independent acceptance is pending.
+> K1-5 implementation baseline `51fa2177cbd25dea53f1ebaf23bd8b8426471589` was independently accepted at documentation baseline `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` with 161/161 tests passing. K1-6 audit-repair candidate `45398df4f0daf2134fcb142d2a74bac9511cf908` passes 8/8 focused and 169/169 full tests; independent acceptance is pending.
 
 > Coding rules for the Pure Core Kernel V1 implementation.
 

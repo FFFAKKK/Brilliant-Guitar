@@ -3,7 +3,7 @@
 ## 状态
 
 - Trellis task: `06-29-commercial-guitar-tablature-product`
-- 当前阶段: Core K1-1～K1-5 已正式验收归档；K1-6 实现候选 `3dffa71c44d0eacb81d391714b855799f9e5cae9` 已完成并通过 8/8 聚焦、169/169 完整测试，等待独立验收；Pure Core Kernel V1 尚未正式关闭，产品其余阶段保持规划态
+- 当前阶段: Core K1-1～K1-5 已正式验收归档；K1-6 审计修复候选 `45398df4f0daf2134fcb142d2a74bac9511cf908` 已完成并通过 8/8 聚焦、169/169 完整测试，等待独立验收；Pure Core Kernel V1 尚未正式关闭，产品其余阶段保持规划态
 - 创建日期: 2026-06-29
 - 负责人: ATOM
 - 文档策略: 每个需求先写独立文档，最终再合并为收敛后的 PRD。
@@ -655,4 +655,4 @@ MVP 包结构建议: `.bgp` 的长期形态是单文件开放 zip 包，至少�
 
 ## 当前阻塞开放问题
 
-当前唯一 Core Gate 动作是独立审核 K1-6 候选 `3dffa71c44d0eacb81d391714b855799f9e5cae9`。审核记录 accepted baseline 之前，不得关闭 Pure Core Kernel V1，也不得开始 Guitar Domain 或产品层实现。
+当前唯一 Core Gate 动作是独立审核 K1-6 审计修复候选 `45398df4f0daf2134fcb142d2a74bac9511cf908`。审核记录 accepted baseline 之前，不得关闭 Pure Core Kernel V1，也不得开始 Guitar Domain 或产品层实现。

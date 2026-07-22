@@ -2,7 +2,7 @@
 
 > **Accepted stage (2026-07-21):** K1-5 implementation baseline
 > `51fa2177cbd25dea53f1ebaf23bd8b8426471589` was independently accepted at documentation baseline
-> `ed801a9fa1a69222188c3ca04ee243b48d7a92d2`; its fresh full gate passes 161/161 tests. K1-6 implementation candidate `3dffa71c44d0eacb81d391714b855799f9e5cae9` passes 8/8 focused and 169/169 full tests; independent acceptance is pending and does not alter this K1-5 contract.
+> `ed801a9fa1a69222188c3ca04ee243b48d7a92d2`; its fresh full gate passes 161/161 tests. K1-6 audit-repair candidate `45398df4f0daf2134fcb142d2a74bac9511cf908` passes 8/8 focused and 169/169 full tests; independent acceptance is pending and does not alter this K1-5 contract.
 
 ## Current Diagnostic Contract
 

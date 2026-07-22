@@ -1,6 +1,6 @@
 # Core Kernel Integration Gate
 
-> **Implementation candidate（2026-07-21）:** K1-6 candidate `3dffa71c44d0eacb81d391714b855799f9e5cae9` passes 8/8 focused integration tests and 169/169 full tests. Independent acceptance is pending; this document does not close Pure Core Kernel V1.
+> **Audit-repair candidate（2026-07-22）:** K1-6 candidate `45398df4f0daf2134fcb142d2a74bac9511cf908` passes 8/8 focused integration tests and 169/169 full tests. Independent acceptance is pending; this document does not close Pure Core Kernel V1.
 
 ## 1. Scope / Trigger
 
@@ -8,8 +8,9 @@ K1-6 is the cross-contract acceptance gate for the already accepted K1-1 through
 
 - K1-5 implementation baseline `51fa2177cbd25dea53f1ebaf23bd8b8426471589`;
 - K1-5 acceptance documentation baseline `ed801a9fa1a69222188c3ca04ee243b48d7a92d2`;
+- K1-6 final reviewed planning baseline `0c7a5ba37051498af1ee779ce0412845813dab04`;
 - K1-6 activation baseline `3f6ae5d4467f560e6341e78ce6c7d3bdd46a3830`;
-- K1-6 implementation candidate `3dffa71c44d0eacb81d391714b855799f9e5cae9`.
+- K1-6 audit-repair candidate `45398df4f0daf2134fcb142d2a74bac9511cf908`.
 
 The gate adds integration tests and active documentation only. It introduces no production source, public export, schema, dependency, Guitar Domain, physical `.bgp` IO, UI, renderer, playback, import/export, network, Extension Host, or third-party runtime behavior.
 
@@ -69,11 +70,13 @@ The second commit is semantic-valid but reports `unsupported.sequence-duration`;
 
 Selectors must agree with the same version-3 state for metadata, inserted event, ownership, four-measure range, history, and dirty state. Undo must return to the unsupported version-2 content; redo must restore the supported version-3 content at document version 5.
 
+The checkpoint read must expose document version 1, history `1 / 0`, and `dirty: false`. The read taken immediately after undo must expose document version 4, history `2 / 1`, `dirty: true`, and content deeply equal to replaying only the first two commands. Redo must restore the version-3/replay content at document version 5. Both unknown extensions remain deeply equal at checkpoint, version 3, undo, replay, and redo/final reads.
+
 ## 4. Validation & Error Matrix
 
 | Condition | Required observable result | State/event rule |
 |---|---|---|
-| future `brilliant-score-2` | decode failure; `migration.unsupported-source-version` | no migrated document |
+| future `brilliant-score-2` | exact decode diagnostic `decode.unsupported-schema-version` at `["schemaVersion"]`, then `migration.unsupported-source-version` | stable one-diagnostic order; no migrated document |
 | duplicate global event ID | decode succeeds; `semantic.id-duplicate`; `migration.semantic-invalid` | no migrated document |
 | semantic-valid chord | `unsupported.chord`; validation report `completed-with-warnings` | migration remains `not-required` |
 | empty undo | `history.empty-undo` | version/history/dirty unchanged; no event |
@@ -88,7 +91,7 @@ Selectors must agree with the same version-3 state for metadata, inserted event,
 ## 5. Good / Base / Bad Cases
 
 - Good: the three-command authorized flow reaches version 3, replay matches it, undo/redo reach versions 4/5, all selectors agree, and both opaque extensions are preserved.
-- Base: the current-schema fixture passes decode, semantic validation, supported profile classification, JSON round-trip, and detached frozen `not-required` migration without starting a session.
+- Base: the current-schema fixture passes decode, semantic validation, supported profile classification, JSON round-trip, and detached frozen `not-required` migration without starting a session. Mutating nested caller-owned extension objects and arrays after decode/migration must succeed on the source while leaving decoded, parsed, and migrated outputs unchanged.
 - Bad: malformed, semantic-invalid, unauthorized, missing-target, invalid-handler, and hostile runtime inputs return their closed public data contracts without partial state or private exception leakage.
 
 ## 6. Tests Required

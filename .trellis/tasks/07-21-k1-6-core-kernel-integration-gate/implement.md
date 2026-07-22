@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript 5.8, Node.js built-in test runner, `node:assert/strict`, existing Core public API, no new dependency.
 
-**Current status:** IMPLEMENTATION CANDIDATE / INDEPENDENT ACCEPTANCE PENDING. Candidate `3dffa71c44d0eacb81d391714b855799f9e5cae9` passes 8/8 focused and 169/169 full tests. The task remains `in_progress`; Task 5 hands the candidate to a separate reviewer and does not finish or archive it.
+**Current status:** AUDIT-REPAIR CANDIDATE / INDEPENDENT ACCEPTANCE PENDING. Candidate `45398df4f0daf2134fcb142d2a74bac9511cf908` passes 8/8 focused and 169/169 full tests. The task remains `in_progress`; Task 5 hands the candidate to a separate reviewer and does not finish or archive it.
 
 ## Global Constraints
 
@@ -48,7 +48,7 @@ Run:
 Get-Content .trellis\tasks\07-21-k1-6-core-kernel-integration-gate\task.json
 ```
 
-Expected before activation: `status` is `planning`, `branch` is `null`, and the notes say implementation is not authorized. Stop unless the user has explicitly approved all three planning documents.
+Expected before activation: `status` is `planning`, `branch` is `null`, `meta.implementation_authorized` is `true`, and the notes record final-plan approval. Stop if authorization is false, approval is absent, or the task is already active.
 
 - [x] **Step 2: Load implementation context**
 
@@ -56,7 +56,15 @@ Use `trellis-before-dev` to read the task artifacts and active Core specs. Inlin
 
 - [x] **Step 3: Start the task with the project workflow**
 
-Run the project-provided Trellis start action. Expected: task becomes `in_progress` and the created/switched branch uses the `codex/` prefix. Do not manually broaden scope during activation.
+Create an isolated worktree from the reviewed planning baseline (or a verified clean descendant), record the branch explicitly, and then start the task:
+
+```powershell
+git worktree add .worktrees/k1-6-core-kernel-integration-gate -b codex/k1-6-core-kernel-integration-gate 0c7a5ba
+python .\.trellis\scripts\task.py set-branch .trellis\tasks\07-21-k1-6-core-kernel-integration-gate codex/k1-6-core-kernel-integration-gate
+python .\.trellis\scripts\task.py start .trellis\tasks\07-21-k1-6-core-kernel-integration-gate
+```
+
+Expected: the clean worktree is on `codex/k1-6-core-kernel-integration-gate`, the task records that branch, and its status becomes `in_progress`. `task.py start` does not create or switch a Git branch; the explicit worktree and `set-branch` steps are mandatory. Do not manually broaden scope during activation.
 
 - [x] **Step 4: Record the clean baseline**
 
@@ -320,6 +328,24 @@ test("four-measure fixture traverses codec validation profile and migration", ()
   assert.deepEqual(migrated.document, decoded.value);
   assert.notEqual(migrated.document, source);
   assertDeeplyFrozen(migrated.document);
+  const detachedDocument = structuredClone(decoded.value);
+  const scorePayload = source.extensions[0]!.payload as {
+    nested: { flags: boolean[]; count: number };
+  };
+  const partPayload = source.extensions[1]!.payload as {
+    annotations: { values: number[] }[];
+  };
+  scorePayload.nested.flags.push(true);
+  scorePayload.nested.count = 99;
+  partPayload.annotations[0]!.values.push(99);
+  assert.deepEqual(scorePayload.nested, {
+    flags: [true, false, true],
+    count: 99,
+  });
+  assert.deepEqual(partPayload.annotations[0]!.values, [1, 2, 3, 99]);
+  assert.deepEqual(decoded.value, detachedDocument);
+  assert.deepEqual(parsed.value, detachedDocument);
+  assert.deepEqual(migrated.document, detachedDocument);
   assert.deepEqual(migrated.report, {
     reportVersion: 1,
     kind: "migration",
@@ -515,6 +541,7 @@ interface K1_6IntegrationTrace {
   readonly registrySummary: RegistrySummary;
   readonly commandResults: readonly CommandResult[];
   readonly checkpointResult: MarkPersistedResult;
+  readonly persistedRead: KernelReadState;
   readonly version3Read: KernelReadState;
   readonly selectorFacts: Readonly<{
     metadata: unknown;
@@ -526,6 +553,7 @@ interface K1_6IntegrationTrace {
   }>;
   readonly replay: ReplayCoreCommandsResult;
   readonly undoResult: CommandResult;
+  readonly undoRead: KernelReadState;
   readonly redoResult: CommandResult;
   readonly finalRead: KernelReadState;
   readonly events: readonly KernelEvent[];
@@ -593,6 +621,7 @@ Submit command 1, mark version 1 persisted, then submit commands 2 and 3 sequent
     documentVersion: 1,
     dirty: false,
   });
+  const persistedRead = requireReadResult(requireAuthorized(gateway.read()));
   const second = requireAuthorized(gateway.submit(ACCEPTED_COMMANDS[1]));
   assert.equal(second.status, "committed");
   if (second.status !== "committed") throw new Error("expected command 2 commit");
@@ -639,6 +668,7 @@ Submit command 1, mark version 1 persisted, then submit commands 2 and 3 sequent
     ACCEPTED_COMMANDS,
   );
   const undoResult = requireAuthorized(gateway.undo());
+  const undoRead = requireReadResult(requireAuthorized(gateway.read()));
   const redoResult = requireAuthorized(gateway.redo());
   const finalRead = requireReadResult(requireAuthorized(gateway.read()));
 
@@ -648,10 +678,12 @@ Submit command 1, mark version 1 persisted, then submit commands 2 and 3 sequent
     registrySummary: structuredClone(registrySummary),
     commandResults: structuredClone([first, second, third]),
     checkpointResult: structuredClone(checkpointResult),
+    persistedRead: structuredClone(persistedRead),
     version3Read: structuredClone(version3Read),
     selectorFacts: structuredClone(selectorFacts),
     replay: structuredClone(replay),
     undoResult: structuredClone(undoResult),
+    undoRead: structuredClone(undoRead),
     redoResult: structuredClone(redoResult),
     finalRead: structuredClone(finalRead),
     events: structuredClone(events),
@@ -690,6 +722,9 @@ assert.deepEqual(
   trace.replay.finalDocument,
   trace.version3Read.snapshot.document,
 );
+assert.equal(trace.persistedRead.snapshot.documentVersion, 1);
+assert.deepEqual(trace.persistedRead.history, { undoDepth: 1, redoDepth: 0 });
+assert.equal(trace.persistedRead.dirty, false);
 assert.deepEqual(
   [trace.undoResult.status, trace.undoResult.documentVersion,
     trace.undoResult.undoDepth, trace.undoResult.redoDepth],
@@ -699,6 +734,21 @@ assert.deepEqual(
   [trace.redoResult.status, trace.redoResult.documentVersion,
     trace.redoResult.undoDepth, trace.redoResult.redoDepth],
   ["committed", 5, 3, 0],
+);
+const replayBeforeInsert = replayCoreCommands(
+  cloneK1_6ScoreFixture(),
+  ACCEPTED_COMMANDS.slice(0, 2),
+);
+assert.equal(replayBeforeInsert.status, "replayed");
+if (replayBeforeInsert.status !== "replayed") {
+  throw new Error("expected K1-6 pre-insert replay");
+}
+assert.equal(trace.undoRead.snapshot.documentVersion, 4);
+assert.deepEqual(trace.undoRead.history, { undoDepth: 2, redoDepth: 1 });
+assert.equal(trace.undoRead.dirty, true);
+assert.deepEqual(
+  trace.undoRead.snapshot.document,
+  replayBeforeInsert.finalDocument,
 );
 assert.deepEqual(
   trace.finalRead.snapshot.document,
@@ -760,9 +810,23 @@ assert.deepEqual(trace.selectorFacts.measureRange, {
 });
 const expectedExtensions = cloneK1_6ScoreFixture().extensions;
 assert.deepEqual(trace.roundTripDocument.extensions, expectedExtensions);
-assert.deepEqual(trace.version3Read.snapshot.document.extensions, expectedExtensions);
+assert.deepEqual(
+  trace.persistedRead.snapshot.document.extensions,
+  expectedExtensions,
+);
+assert.deepEqual(
+  trace.version3Read.snapshot.document.extensions,
+  expectedExtensions,
+);
 assert.deepEqual(trace.replay.finalDocument.extensions, expectedExtensions);
-assert.deepEqual(trace.finalRead.snapshot.document.extensions, expectedExtensions);
+assert.deepEqual(
+  trace.undoRead.snapshot.document.extensions,
+  expectedExtensions,
+);
+assert.deepEqual(
+  trace.finalRead.snapshot.document.extensions,
+  expectedExtensions,
+);
 assert.deepEqual(
   trace.events.map((event) => [
     event.eventSequence,
@@ -972,6 +1036,17 @@ const future = {
 };
 const decodedFuture = decodeScoreDocument(future);
 assert.equal(decodedFuture.ok, false);
+if (decodedFuture.ok) {
+  throw new Error("expected future schema decode rejection");
+}
+assert.deepEqual(decodedFuture.diagnostics, [
+  {
+    code: "decode.unsupported-schema-version",
+    messageKey: "core.decode.unsupported-schema-version",
+    path: ["schemaVersion"],
+    details: { actual: "brilliant-score-2" },
+  },
+]);
 const migratedFuture = migrateScoreDocument(future);
 assert.equal(migratedFuture.status, "rejected");
 if (migratedFuture.status !== "rejected") {
@@ -1238,12 +1313,7 @@ git commit -m "test(core): cover k1-6 integration boundaries"
 - Modify: `.trellis/tasks/07-21-k1-6-core-kernel-integration-gate/design.md`
 - Modify: `.trellis/tasks/07-21-k1-6-core-kernel-integration-gate/implement.md`
 - Modify: `.trellis/tasks/07-21-k1-6-core-kernel-integration-gate/task.json`
-- Modify directly conflicting K1-6 status lines in `.trellis/tasks/07-07-pure-core-kernel-v1/prd.md`
-- Modify directly conflicting K1-6 status lines in `.trellis/tasks/07-07-pure-core-kernel-v1/design.md`
-- Modify directly conflicting K1-6 status lines in `.trellis/tasks/07-07-pure-core-kernel-v1/implement.md`
-- Modify directly conflicting K1-6 status lines in `.trellis/tasks/06-29-commercial-guitar-tablature-product/prd.md`
-- Modify directly conflicting K1-6 status lines in `.trellis/tasks/06-29-commercial-guitar-tablature-product/design.md`
-- Modify directly conflicting K1-6 status lines in `.trellis/tasks/06-29-commercial-guitar-tablature-product/implement.md`
+- Review every active match produced by the Step 4 `rg -l` inventory, including Core specs, the Pure Core parent task, product requirements/specs/technical documents, and the K1-6 task itself. Modify each directly conflicting status line; do not rely on a hand-maintained shortlist.
 
 **Interfaces:**
 
@@ -1289,15 +1359,18 @@ Create `integration-gate.md` with:
 
 - [x] **Step 4: Synchronize only active status documents**
 
-Update the listed Core/parent/product files so they agree that K1-6 is an implementation candidate awaiting independent review. Do not mark Pure Core Kernel V1 complete and do not unlock Guitar/product implementation.
+Generate the active inventory first, then review every returned file so all directly conflicting status lines agree that K1-6 is an implementation candidate awaiting independent review. Do not mark Pure Core Kernel V1 complete and do not unlock Guitar/product implementation.
 
 Search:
 
 ```powershell
-rg -n "K1-6|Pure Core Kernel V1" .trellis/spec/core-kernel .trellis/tasks/07-07-pure-core-kernel-v1 .trellis/tasks/06-29-commercial-guitar-tablature-product
+$activeK16Files = rg -l "K1-6|Pure Core Kernel V1" .trellis/spec/core-kernel .trellis/tasks/07-07-pure-core-kernel-v1 .trellis/tasks/06-29-commercial-guitar-tablature-product .trellis/tasks/07-21-k1-6-core-kernel-integration-gate |
+  Where-Object { $_ -notmatch '[/\\](archive|planning-snapshots|notes)[/\\]' }
+$activeK16Files | Sort-Object
+rg -n "K1-6|Pure Core Kernel V1" $activeK16Files
 ```
 
-Expected: no active document says K1-6 is not started, already accepted, or includes Guitar Domain. Historical snapshots and archived tasks are excluded from convergence edits.
+The implementation-time inventory included all active Core specs, all three Pure Core parent documents plus `task.json`, the K1-6 task documents, and every matching product requirement/spec/technical/top-level document. Expected: every returned file is reviewed; no active document says K1-6 is not started, already accepted, or includes Guitar Domain. Historical snapshots, archives, and notes are excluded from convergence edits.
 
 - [x] **Step 5: Record candidate metadata**
 

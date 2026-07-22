@@ -1,7 +1,7 @@
 # REQ-019 内核错误、Diagnostic 与 Report 契约
 
 > **状态：K1-5 ACCEPTED / ARCHIVED（2026-07-21）。**
-> 实现基线 `51fa2177cbd25dea53f1ebaf23bd8b8426471589` 已在文档基线 `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` 通过独立验收，161/161 测试通过；K1-1～K1-4 既有 failure/result 合同保持不变。K1-6 候选 `3dffa71c44d0eacb81d391714b855799f9e5cae9` 等待独立验收并未扩大本合同。
+> 实现基线 `51fa2177cbd25dea53f1ebaf23bd8b8426471589` 已在文档基线 `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` 通过独立验收，161/161 测试通过；K1-1～K1-4 既有 failure/result 合同保持不变。K1-6 审计修复候选 `45398df4f0daf2134fcb142d2a74bac9511cf908` 等待独立验收并未扩大本合同。
 
 ## 用户价值
 
