@@ -136,6 +136,7 @@ interface K1_6IntegrationTrace {
   readonly registrySummary: RegistrySummary;
   readonly commandResults: readonly CommandResult[];
   readonly checkpointResult: MarkPersistedResult;
+  readonly persistedRead: KernelReadState;
   readonly version3Read: KernelReadState;
   readonly selectorFacts: Readonly<{
     metadata: unknown;
@@ -147,6 +148,7 @@ interface K1_6IntegrationTrace {
   }>;
   readonly replay: ReplayCoreCommandsResult;
   readonly undoResult: CommandResult;
+  readonly undoRead: KernelReadState;
   readonly redoResult: CommandResult;
   readonly finalRead: KernelReadState;
   readonly events: readonly KernelEvent[];
@@ -219,6 +221,7 @@ function runK1_6IntegrationScenario(): K1_6IntegrationTrace {
     documentVersion: 1,
     dirty: false,
   });
+  const persistedRead = requireReadResult(requireAuthorized(gateway.read()));
   const second = requireAuthorized(gateway.submit(ACCEPTED_COMMANDS[1]));
   assert.equal(second.status, "committed");
   if (second.status !== "committed") throw new Error("expected command 2 commit");
@@ -280,6 +283,7 @@ function runK1_6IntegrationScenario(): K1_6IntegrationTrace {
 
   const replay = replayCoreCommands(cloneK1_6ScoreFixture(), ACCEPTED_COMMANDS);
   const undoResult = requireAuthorized(gateway.undo());
+  const undoRead = requireReadResult(requireAuthorized(gateway.read()));
   const redoResult = requireAuthorized(gateway.redo());
   const finalRead = requireReadResult(requireAuthorized(gateway.read()));
 
@@ -289,10 +293,12 @@ function runK1_6IntegrationScenario(): K1_6IntegrationTrace {
     registrySummary: structuredClone(registrySummary),
     commandResults: structuredClone([first, second, third]),
     checkpointResult: structuredClone(checkpointResult),
+    persistedRead: structuredClone(persistedRead),
     version3Read: structuredClone(version3Read),
     selectorFacts: structuredClone(selectorFacts),
     replay: structuredClone(replay),
     undoResult: structuredClone(undoResult),
+    undoRead: structuredClone(undoRead),
     redoResult: structuredClone(redoResult),
     finalRead: structuredClone(finalRead),
     events: structuredClone(events),
@@ -330,6 +336,24 @@ test("four-measure fixture traverses codec validation profile and migration", ()
   assert.deepEqual(migrated.document, decoded.value);
   assert.notEqual(migrated.document, source);
   assertDeeplyFrozen(migrated.document);
+  const detachedDocument = structuredClone(decoded.value);
+  const scorePayload = source.extensions[0]!.payload as {
+    nested: { flags: boolean[]; count: number };
+  };
+  const partPayload = source.extensions[1]!.payload as {
+    annotations: { values: number[] }[];
+  };
+  scorePayload.nested.flags.push(true);
+  scorePayload.nested.count = 99;
+  partPayload.annotations[0]!.values.push(99);
+  assert.deepEqual(scorePayload.nested, {
+    flags: [true, false, true],
+    count: 99,
+  });
+  assert.deepEqual(partPayload.annotations[0]!.values, [1, 2, 3, 99]);
+  assert.deepEqual(decoded.value, detachedDocument);
+  assert.deepEqual(parsed.value, detachedDocument);
+  assert.deepEqual(migrated.document, detachedDocument);
   assert.deepEqual(migrated.report, {
     reportVersion: 1,
     kind: "migration",
@@ -372,6 +396,9 @@ test("public integration scenario keeps writes reads events history and replay c
       ["committed", 3, 3, 0],
     ],
   );
+  assert.equal(trace.persistedRead.snapshot.documentVersion, 1);
+  assert.deepEqual(trace.persistedRead.history, { undoDepth: 1, redoDepth: 0 });
+  assert.equal(trace.persistedRead.dirty, false);
   assert.equal(trace.version3Read.snapshot.documentVersion, 3);
   assert.equal(trace.version3Read.history.undoDepth, 3);
   assert.equal(trace.version3Read.history.redoDepth, 0);
@@ -400,6 +427,21 @@ test("public integration scenario keeps writes reads events history and replay c
       trace.redoResult.redoDepth,
     ],
     ["committed", 5, 3, 0],
+  );
+  const replayBeforeInsert = replayCoreCommands(
+    cloneK1_6ScoreFixture(),
+    ACCEPTED_COMMANDS.slice(0, 2),
+  );
+  assert.equal(replayBeforeInsert.status, "replayed");
+  if (replayBeforeInsert.status !== "replayed") {
+    throw new Error("expected K1-6 pre-insert replay");
+  }
+  assert.equal(trace.undoRead.snapshot.documentVersion, 4);
+  assert.deepEqual(trace.undoRead.history, { undoDepth: 2, redoDepth: 1 });
+  assert.equal(trace.undoRead.dirty, true);
+  assert.deepEqual(
+    trace.undoRead.snapshot.document,
+    replayBeforeInsert.finalDocument,
   );
   assert.deepEqual(
     trace.finalRead.snapshot.document,
@@ -461,11 +503,22 @@ test("public integration scenario keeps writes reads events history and replay c
   const expectedExtensions = cloneK1_6ScoreFixture().extensions;
   assert.deepEqual(trace.roundTripDocument.extensions, expectedExtensions);
   assert.deepEqual(
+    trace.persistedRead.snapshot.document.extensions,
+    expectedExtensions,
+  );
+  assert.deepEqual(
     trace.version3Read.snapshot.document.extensions,
     expectedExtensions,
   );
   assert.deepEqual(trace.replay.finalDocument.extensions, expectedExtensions);
-  assert.deepEqual(trace.finalRead.snapshot.document.extensions, expectedExtensions);
+  assert.deepEqual(
+    trace.undoRead.snapshot.document.extensions,
+    expectedExtensions,
+  );
+  assert.deepEqual(
+    trace.finalRead.snapshot.document.extensions,
+    expectedExtensions,
+  );
   assert.deepEqual(
     trace.events.map((event) => [
       event.eventSequence,

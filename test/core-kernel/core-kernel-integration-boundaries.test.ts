@@ -128,6 +128,17 @@ test("future schema and semantic invalidity remain separate rejection boundaries
   };
   const decodedFuture = decodeScoreDocument(future);
   assert.equal(decodedFuture.ok, false);
+  if (decodedFuture.ok) {
+    throw new Error("expected future schema decode rejection");
+  }
+  assert.deepEqual(decodedFuture.diagnostics, [
+    {
+      code: "decode.unsupported-schema-version",
+      messageKey: "core.decode.unsupported-schema-version",
+      path: ["schemaVersion"],
+      details: { actual: "brilliant-score-2" },
+    },
+  ]);
   const migratedFuture = migrateScoreDocument(future);
   assert.equal(migratedFuture.status, "rejected");
   if (migratedFuture.status !== "rejected") {
