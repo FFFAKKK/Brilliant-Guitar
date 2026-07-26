@@ -2,7 +2,7 @@
 
 > **Authoritative staged quality gate (2026-07-20):** K1-1 through K1-4 tests
 > are frozen regressions. K1-4 acceptance at `94766a0930c05e5339c44f667deaf02116af1c0c` passed 125/125 tests.
-> K1-5 implementation baseline `51fa2177cbd25dea53f1ebaf23bd8b8426471589` was independently accepted at documentation baseline `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` on 2026-07-21. K1-6 audit-repair candidate `355512aba4a8057d2d75aa665d74df49cdd2e23c` passes 8/8 focused and 169/169 full tests; independent acceptance is pending.
+> K1-5 implementation baseline `51fa2177cbd25dea53f1ebaf23bd8b8426471589` was independently accepted at documentation baseline `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` on 2026-07-21. K1-6 test baseline `355512aba4a8057d2d75aa665d74df49cdd2e23c` was independently accepted at review baseline `989c1f7a4056b14d3d59918c9b96874ad71591a8` after 8/8 focused and 169/169 full tests.
 
 ## Current K1-1 Required Tests
 

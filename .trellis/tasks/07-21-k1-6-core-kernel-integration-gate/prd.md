@@ -1,6 +1,6 @@
 # K1-6 Core Kernel Integration Gate
 
-> **Status: AUDIT-REPAIR CANDIDATE / INDEPENDENT ACCEPTANCE PENDING（2026-07-26）.** Test candidate `355512aba4a8057d2d75aa665d74df49cdd2e23c` passes 8/8 focused and 169/169 full tests. K1-6 remains `in_progress`; it is not accepted or archived, Pure Core Kernel V1 is not formally closed, and Guitar Domain/product implementation remain unauthorized.
+> **Status: ACCEPTED（2026-07-26）.** Test baseline `355512aba4a8057d2d75aa665d74df49cdd2e23c` passed 8/8 focused and 169/169 full tests and was independently accepted at review baseline `989c1f7a4056b14d3d59918c9b96874ad71591a8`. K1-6 closes the Pure Core Kernel V1 integration gate; Guitar Domain and product implementation still require separate planning and approval.
 
 ## Goal
 

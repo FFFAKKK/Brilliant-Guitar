@@ -2,14 +2,14 @@
 
 ## Status
 
-- Phase: staged execution; K1-1 through K1-5 are accepted/archived. K1-6 audit-repair test candidate `355512aba4a8057d2d75aa665d74df49cdd2e23c` passes 8/8 focused and 169/169 full tests; independent acceptance is pending.
+- Phase: closed; K1-1 through K1-6 are independently accepted. K1-6 test baseline `355512aba4a8057d2d75aa665d74df49cdd2e23c` passed 8/8 focused and 169/169 full tests and was accepted at review baseline `989c1f7a4056b14d3d59918c9b96874ad71591a8`.
 - Parent task: `06-29-commercial-guitar-tablature-product`.
 - Implementation target: pure TypeScript Core Kernel only.
 - K1-1 authority: `.trellis/tasks/archive/2026-07/07-13-k1-1-foundation-replanning/design.md` and `.trellis/spec/core-kernel/backend/score-document-model.md`.
 - K1-2 authority: `.trellis/tasks/archive/2026-07/07-15-k1-2-commands-transactions-history/design.md` and `.trellis/spec/core-kernel/backend/command-transaction.md`.
 - K1-3 authority: `.trellis/tasks/archive/2026-07/07-15-k1-3-address-snapshots-selectors-events/`, accepted at `7369eeac60fecea66c2c9164c04439625c2d78b0`.
 - K1-4 authority: `.trellis/tasks/archive/2026-07/07-16-k1-4-registry-capability-startup-registration/` and `.trellis/spec/core-kernel/backend/registry-capability.md`.
-- K1-5 authority: `.trellis/tasks/archive/2026-07/07-19-k1-5-errors-diagnostics-reports-migration/` and `.trellis/spec/core-kernel/backend/errors-reports.md`; implementation baseline `51fa2177cbd25dea53f1ebaf23bd8b8426471589` was independently accepted at documentation baseline `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` with 161/161 tests passing. K1-6 candidate authority is `.trellis/tasks/07-21-k1-6-core-kernel-integration-gate/` and `.trellis/spec/core-kernel/backend/integration-gate.md`; it is not yet accepted.
+- K1-5 authority: `.trellis/tasks/archive/2026-07/07-19-k1-5-errors-diagnostics-reports-migration/` and `.trellis/spec/core-kernel/backend/errors-reports.md`; implementation baseline `51fa2177cbd25dea53f1ebaf23bd8b8426471589` was independently accepted at documentation baseline `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` with 161/161 tests passing. K1-6 authority is `.trellis/tasks/archive/2026-07/07-21-k1-6-core-kernel-integration-gate/` and `.trellis/spec/core-kernel/backend/integration-gate.md`; test baseline `355512aba4a8057d2d75aa665d74df49cdd2e23c` was independently accepted at review baseline `989c1f7a4056b14d3d59918c9b96874ad71591a8`.
 
 ## Design Principle
 
@@ -266,6 +266,6 @@ No implementation chunk should change unrelated future UI, renderer, playback, p
 - K1-1 is the accepted frozen foundation at `30894e2`.
 - K1-2 passed focused P1 repair and independent re-acceptance and is archived under `.trellis/tasks/archive/2026-07/07-15-k1-2-commands-transactions-history/`.
 - K1-3 passed independent acceptance at `7369eeac60fecea66c2c9164c04439625c2d78b0`, is archived, and has 102/102 passing tests.
-- K1-4 passed independent acceptance at `94766a0930c05e5339c44f667deaf02116af1c0c` and is archived. K1-5 was independently accepted at `ed801a9fa1a69222188c3ca04ee243b48d7a92d2`. K1-6 audit-repair test candidate `355512aba4a8057d2d75aa665d74df49cdd2e23c` passes 8/8 focused and 169/169 full tests and awaits independent acceptance; Pure Core Kernel V1 is not yet formally closed.
+- K1-4 passed independent acceptance at `94766a0930c05e5339c44f667deaf02116af1c0c` and is archived. K1-5 was independently accepted at `ed801a9fa1a69222188c3ca04ee243b48d7a92d2`. K1-6 test baseline `355512aba4a8057d2d75aa665d74df49cdd2e23c` passed 8/8 focused and 169/169 full tests and was independently accepted at review baseline `989c1f7a4056b14d3d59918c9b96874ad71591a8`; Pure Core Kernel V1 is formally closed.
 - Guitar Domain Block 2 is independent from Core K1-2 and must define its Part-owned extension before guitar commands or technique semantics are implemented.
 - Before any later implementation, load `trellis-before-dev`, re-read the relevant active specs, and confirm the task is approved; archived drafts are never execution sources.

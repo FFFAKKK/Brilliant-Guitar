@@ -1,6 +1,6 @@
 # Core Kernel Integration Gate
 
-> **Audit-repair candidate（2026-07-26）:** K1-6 test candidate `355512aba4a8057d2d75aa665d74df49cdd2e23c` passes 8/8 focused integration tests and 169/169 full tests. Independent acceptance is pending; this document does not close Pure Core Kernel V1.
+> **ACCEPTED（2026-07-26）:** K1-6 test baseline `355512aba4a8057d2d75aa665d74df49cdd2e23c` passed 8/8 focused integration tests and 169/169 full tests and was independently accepted at review baseline `989c1f7a4056b14d3d59918c9b96874ad71591a8`. This gate closes Pure Core Kernel V1.
 
 ## 1. Scope / Trigger
 
@@ -10,7 +10,8 @@ K1-6 is the cross-contract acceptance gate for the already accepted K1-1 through
 - K1-5 acceptance documentation baseline `ed801a9fa1a69222188c3ca04ee243b48d7a92d2`;
 - K1-6 final reviewed planning baseline `0c7a5ba37051498af1ee779ce0412845813dab04`;
 - K1-6 activation baseline `3f6ae5d4467f560e6341e78ce6c7d3bdd46a3830`;
-- K1-6 audit-repair test candidate `355512aba4a8057d2d75aa665d74df49cdd2e23c`.
+- K1-6 accepted test baseline `355512aba4a8057d2d75aa665d74df49cdd2e23c`.
+- Independent review baseline `989c1f7a4056b14d3d59918c9b96874ad71591a8`.
 
 The gate adds integration tests and active documentation only. It introduces no production source, public export, schema, dependency, Guitar Domain, physical `.bgp` IO, UI, renderer, playback, import/export, network, Extension Host, or third-party runtime behavior.
 
@@ -137,6 +138,6 @@ The correct path proves capability authorization, strict command decoding, atomi
 
 ## Candidate Gate
 
-`K1-6 implementation candidate complete; independent acceptance pending.`
+`K1-6 independently accepted; Pure Core Kernel V1 integration gate closed.`
 
-Pure Core Kernel V1 is not formally closed until a separate reviewer records an accepted baseline. Guitar Domain and product-layer implementation remain unauthorized.
+Guitar Domain and product-layer implementation are outside this acceptance and still require separate planning and approval.

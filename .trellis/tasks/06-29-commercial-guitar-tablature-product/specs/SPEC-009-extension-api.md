@@ -5,7 +5,7 @@
 - 状态: 未来插件平台草案；K1-4 Registry 与 K1-5 issue/report 合同均已验收，但第三方插件平台仍须独立规划。
 - 映射需求: `REQ-007`
 - 目标: 为模块化软件和未来插件生态定义可实现、可测试、可控的扩展边界。
-- 当前 Core 状态: K1-1～K1-5 已验收归档；K1-6 审计修复测试候选 `355512aba4a8057d2d75aa665d74df49cdd2e23c` 已完成并通过 8/8 聚焦、169/169 完整测试，等待独立验收；扩展系统后续实现仍未授权。
+- 当前 Core 状态: K1-1～K1-6 已验收；K1-6 测试基线 `355512aba4a8057d2d75aa665d74df49cdd2e23c` 在审查基线 `989c1f7a4056b14d3d59918c9b96874ad71591a8` 通过独立验收，8/8 聚焦、169/169 完整测试通过；Pure Core Kernel V1 已关闭，扩展系统后续实现仍需独立规划和批准。
 - 当前约束: 本文件是未来插件平台路线图，不是 K1-4/K1-5 实现契约。K1-4 只增加官方模块的 frozen Registry/gateway；K1-5 只提供 validation/migration `KernelIssue`/`KernelReport` 数据合同，不开放第三方执行、动态 contribution、Registry mutation/event 或 plugin report ingress。
 - 数据边界: `ScoreDocument.extensions` 已由 Core K1-1 定义为 score/part-owned 纯数据信封；它不等于插件安装、发现、registry 或执行 API。
 

@@ -2,7 +2,7 @@
 
 ## 当前状态
 
-- 阶段：Core K1-1～K1-5 已正式验收并归档；K1-6 审计修复测试候选 `355512aba4a8057d2d75aa665d74df49cdd2e23c` 已完成并通过 8/8 聚焦、169/169 完整测试，等待独立验收；Pure Core Kernel V1 尚未正式关闭。
+- 阶段：Core K1-1～K1-6 已正式验收；K1-6 测试基线 `355512aba4a8057d2d75aa665d74df49cdd2e23c` 在审查基线 `989c1f7a4056b14d3d59918c9b96874ad71591a8` 通过独立验收，8/8 聚焦、169/169 完整测试通过；Pure Core Kernel V1 已正式关闭，后续阶段仍需独立规划和批准。
 - K1-3 验收基线：`7369eeac60fecea66c2c9164c04439625c2d78b0`，typecheck、build、102/102 tests、diff check 与 Trellis 校验通过。
 - K1-3 决策源：`.trellis/tasks/archive/2026-07/07-15-k1-3-address-snapshots-selectors-events/`。
 - 活动代码契约：`.trellis/spec/core-kernel/`。
@@ -81,11 +81,11 @@ K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 正式验收并归档。�
 
 > **Accepted / archived（2026-07-21）。**
 
-已按批准任务实现并验收 additive failure adapters、内部 OO/公共 data-only Issue 边界、validation/migration 两种派生 report、current `brilliant-score-1` 的 `not-required | rejected` 迁移入口与空私有步骤表。K1-1～K1-4 原 failure/result 合同保持不变；无 `KernelDiagnostic`、import/export/recovery report alias、ID/time、全局 issue bus、动态 migration registry 或物理 IO。K1-6 已形成候选，仍需独立验收。
+已按批准任务实现并验收 additive failure adapters、内部 OO/公共 data-only Issue 边界、validation/migration 两种派生 report、current `brilliant-score-1` 的 `not-required | rejected` 迁移入口与空私有步骤表。K1-1～K1-4 原 failure/result 合同保持不变；无 `KernelDiagnostic`、import/export/recovery report alias、ID/time、全局 issue bus、动态 migration registry 或物理 IO。K1-6 已完成独立验收且未扩大上述合同。
 
 ### K1-6：Integration Gate
 
-审计修复测试候选 `355512aba4a8057d2d75aa665d74df49cdd2e23c` 已用四小节通用 score fixture 验证 codec、validation/profile、migration、命令/history、checkpoint/undo 中间读取及完整文档、事件、registry/gateway、replay 与报告的可回归链路。由于没有已验收的领域前置实现，本 Gate 明确排除 Guitar Domain；不得使用旧 tick/slot fixture 作为基准。
+已验收测试基线 `355512aba4a8057d2d75aa665d74df49cdd2e23c` 使用四小节通用 score fixture 验证 codec、validation/profile、migration、命令/history、checkpoint/undo 中间读取及完整文档、事件、registry/gateway、replay 与报告的可回归链路。该 Gate 明确排除 Guitar Domain；不得使用旧 tick/slot fixture 作为基准。
 
 ## 产品闭环后续顺序
 

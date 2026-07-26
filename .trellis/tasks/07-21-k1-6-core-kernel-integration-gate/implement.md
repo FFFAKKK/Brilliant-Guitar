@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript 5.8, Node.js built-in test runner, `node:assert/strict`, existing Core public API, no new dependency.
 
-**Current status:** AUDIT-REPAIR CANDIDATE / INDEPENDENT ACCEPTANCE PENDING. Test candidate `355512aba4a8057d2d75aa665d74df49cdd2e23c` passes 8/8 focused and 169/169 full tests. The task remains `in_progress`; Task 5 hands the candidate to a separate reviewer and does not finish or archive it.
+**Current status:** ACCEPTED / ARCHIVAL GOVERNANCE PENDING. Test baseline `355512aba4a8057d2d75aa665d74df49cdd2e23c` passed 8/8 focused and 169/169 full tests and was independently accepted at review baseline `989c1f7a4056b14d3d59918c9b96874ad71591a8`. The remaining action is task archival; no Guitar Domain or product implementation is authorized by this result.
 
 ## Global Constraints
 
@@ -1367,7 +1367,7 @@ Create `integration-gate.md` with:
 - representative failure/unsupported/privacy cases;
 - explicit no-new-API/no-Guitar/no-product-runtime exclusions;
 - exact candidate HEAD and fresh 8/full test counts;
-- wording `K1-6 implementation candidate complete; independent acceptance pending`.
+- candidate-stage wording was `K1-6 implementation candidate complete; independent review pending`; final wording is `K1-6 accepted; archival governance pending`.
 
 - [x] **Step 4: Synchronize only active status documents**
 
@@ -1386,7 +1386,7 @@ The implementation-time inventory included all active Core specs, all three Pure
 
 - [x] **Step 5: Record candidate metadata**
 
-Set the K1-6 task notes/meta to the actual implementation candidate commit, focused count `8`, full count `169` (or the exact approved-baseline-plus-eight count), and `implementation_stage: acceptance_pending`. Keep the task `in_progress` until independent review.
+At candidate handoff, the K1-6 task notes/meta recorded the implementation candidate, focused count `8`, full count `169`, and `implementation_stage: acceptance_pending`. After the independent `ACCEPT`, the lifecycle is updated to `accepted` before archival.
 
 - [x] **Step 6: Commit candidate documentation**
 
@@ -1438,8 +1438,9 @@ Provide:
 Use the exact conclusion:
 
 ```text
-K1-6 implementation candidate complete; independent acceptance pending.
-Pure Core Kernel V1 is not formally closed until a separate reviewer records an accepted baseline.
+K1-6 accepted test baseline: `355512aba4a8057d2d75aa665d74df49cdd2e23c`.
+Independent review baseline: `989c1f7a4056b14d3d59918c9b96874ad71591a8`.
+Pure Core Kernel V1 closes when the accepted K1-6 task is archived; Guitar Domain and product implementation remain separately gated.
 Guitar Domain and product-layer implementation remain unauthorized.
 ```
 

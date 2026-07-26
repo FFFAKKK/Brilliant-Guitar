@@ -3,12 +3,12 @@
 ## 状态
 
 - Trellis task: `06-29-commercial-guitar-tablature-product`
-- 当前阶段: Core K1-1～K1-5 已正式验收归档；K1-6 审计修复测试候选 `355512aba4a8057d2d75aa665d74df49cdd2e23c` 已完成并通过 8/8 聚焦、169/169 完整测试，等待独立验收；Pure Core Kernel V1 尚未正式关闭，产品其余阶段保持规划态
+- 当前阶段: Core K1-1～K1-6 已正式验收；K1-6 测试基线 `355512aba4a8057d2d75aa665d74df49cdd2e23c` 在审查基线 `989c1f7a4056b14d3d59918c9b96874ad71591a8` 通过独立验收，8/8 聚焦、169/169 完整测试通过；Pure Core Kernel V1 已正式关闭，产品其余阶段保持规划态并需独立批准
 - 创建日期: 2026-06-29
 - 负责人: ATOM
 - 文档策略: 每个需求先写独立文档，最终再合并为收敛后的 PRD。
 - 当前 Core 基线: K1-1 已在 `30894e2` 正式验收；K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 正式验收并通过 102/102 测试；`.trellis/spec/core-kernel/` 是活动代码契约。本文较早的决策记录若与其冲突，以活动规范与独立 Block 任务为准。
-- 当前交付状态: K1-2、K1-3 均已完成独立复验并归档；K1-4 已在 `94766a0930c05e5339c44f667deaf02116af1c0c` 验收归档；K1-5 已完成 Issue/Report/Migration 独立验收并归档。K1-6 处于 `implementation candidate / independent acceptance pending`；Guitar Domain 与产品层实现仍未授权。
+- 当前交付状态: K1-2、K1-3 均已完成独立复验并归档；K1-4 已在 `94766a0930c05e5339c44f667deaf02116af1c0c` 验收归档；K1-5 已完成 Issue/Report/Migration 独立验收并归档；K1-6 已通过独立验收并关闭 Pure Core Kernel V1。Guitar Domain 与产品层实现仍需独立规划和批准。
 
 ## 产品目标
 
@@ -655,4 +655,4 @@ MVP 包结构建议: `.bgp` 的长期形态是单文件开放 zip 包，至少�
 
 ## 当前阻塞开放问题
 
-当前唯一 Core Gate 动作是独立审核 K1-6 审计修复测试候选 `355512aba4a8057d2d75aa665d74df49cdd2e23c`。审核记录 accepted baseline 之前，不得关闭 Pure Core Kernel V1，也不得开始 Guitar Domain 或产品层实现。
+K1-6 测试基线 `355512aba4a8057d2d75aa665d74df49cdd2e23c` 已在审查基线 `989c1f7a4056b14d3d59918c9b96874ad71591a8` 通过独立验收，Pure Core Kernel V1 Gate 已关闭。该结论不自动开始 Guitar Domain 或产品层实现；后续阶段仍需独立规划和批准。

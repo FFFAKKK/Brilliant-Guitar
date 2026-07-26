@@ -15,13 +15,16 @@
   "branch": null,
   "base_branch": "master",
   "worktree_path": null,
-  "commit": null,
+  "commit": "989c1f7a4056b14d3d59918c9b96874ad71591a8",
   "pr_url": null,
   "subtasks": [],
   "children": [
     "07-13-k1-1-foundation-replanning",
     "07-15-k1-2-commands-transactions-history",
-    "07-15-k1-3-address-snapshots-selectors-events"
+    "07-15-k1-3-address-snapshots-selectors-events",
+    "07-16-k1-4-registry-capability-startup-registration",
+    "07-19-k1-5-errors-diagnostics-reports-migration",
+    "07-21-k1-6-core-kernel-integration-gate"
   ],
   "parent": "06-29-commercial-guitar-tablature-product",
   "relatedFiles": [
@@ -41,12 +44,20 @@
     ".trellis/spec/core-kernel/backend/errors-reports.md",
     ".trellis/spec/core-kernel/backend/quality-guidelines.md"
   ],
-  "notes": "按用户要求，一个大的内核功能一个大的内核功能推进；每个大功能必须说明作用、子功能作用、验收和边界。",
+  "notes": "Pure Core Kernel V1 completed K1-1 through K1-6 independent acceptance. K1-6 test baseline 355512aba4a8057d2d75aa665d74df49cdd2e23c was accepted at review baseline 989c1f7a4056b14d3d59918c9b96874ad71591a8 on 2026-07-26 with 8/8 focused and 169/169 full tests. Guitar Domain and product implementation remain separately gated.",
   "meta": {
     "k1_3_status": "accepted_archived",
     "k1_3_task": "07-15-k1-3-address-snapshots-selectors-events",
     "k1_3_baseline": "7369eeac60fecea66c2c9164c04439625c2d78b0",
     "k1_3_test_count": 102,
-    "k1_4_status": "planning_unblocked_implementation_blocked"
+    "k1_4_status": "accepted_archived",
+    "k1_4_baseline": "94766a0930c05e5339c44f667deaf02116af1c0c",
+    "k1_5_status": "accepted_archived",
+    "k1_5_implementation_baseline": "51fa2177cbd25dea53f1ebaf23bd8b8426471589",
+    "k1_5_review_baseline": "ed801a9fa1a69222188c3ca04ee243b48d7a92d2",
+    "k1_6_status": "accepted_archival_pending",
+    "k1_6_test_baseline": "355512aba4a8057d2d75aa665d74df49cdd2e23c",
+    "k1_6_review_baseline": "989c1f7a4056b14d3d59918c9b96874ad71591a8",
+    "pure_core_kernel_v1_status": "closed"
   }
 }

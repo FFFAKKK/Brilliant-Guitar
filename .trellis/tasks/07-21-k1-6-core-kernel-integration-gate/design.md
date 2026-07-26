@@ -1,6 +1,6 @@
 # K1-6 Core Kernel Integration Gate — Design
 
-> **Status: AUDIT-REPAIR CANDIDATE / INDEPENDENT ACCEPTANCE PENDING（2026-07-26）.** 测试候选 `355512aba4a8057d2d75aa665d74df49cdd2e23c` 已补齐审计证据，8/8 聚焦测试和 169/169 完整测试通过。任务保持 `in_progress`，不得标记 accepted/archived，也不得解锁 Guitar Domain 或产品层实现。
+> **Status: ACCEPTED（2026-07-26）.** 测试基线 `355512aba4a8057d2d75aa665d74df49cdd2e23c` 已通过 8/8 聚焦测试和 169/169 完整测试，并在审查基线 `989c1f7a4056b14d3d59918c9b96874ad71591a8` 获得独立验收。K1-6 关闭 Pure Core Kernel V1 集成门禁；Guitar Domain 与产品层实现仍需独立规划和批准。
 
 ## 1. Authority and Baseline
 
@@ -233,14 +233,15 @@ The full suite must include the existing public-export and forbidden-dependency 
 
 - The implementation operator creates a K1-6 branch only after explicit final-plan approval and `task.py start` authorization.
 - Test commits must not claim acceptance. They produce an implementation candidate with exact HEAD, focused count, full count, and preserved unrelated paths.
-- Active docs may say only `implementation candidate / independent acceptance pending` until a separate reviewer returns a verdict.
+- Before the verdict, active docs recorded a candidate handoff. The independent reviewer has now returned `ACCEPT`, so final active status is `accepted` until archival.
 - Only after that verdict may planning documents record a fixed accepted baseline and archive K1-6.
 - K1-6 acceptance closes Pure Core Kernel V1 integration; it does not authorize Guitar Domain or any product-layer implementation.
 
 ### Recorded implementation candidate
 
 - Activation baseline: `3f6ae5d4467f560e6341e78ce6c7d3bdd46a3830`.
-- Audit-repair test candidate: `355512aba4a8057d2d75aa665d74df49cdd2e23c`.
+- Accepted test baseline: `355512aba4a8057d2d75aa665d74df49cdd2e23c`.
+- Independent review baseline: `989c1f7a4056b14d3d59918c9b96874ad71591a8`.
 - Evidence: 8/8 focused tests, 169/169 full tests, typecheck/build/diff/Trellis gates pass.
 - Scope proof: no `src/**`, package configuration, public API boundary test, or forbidden dependency boundary test change.
-- Lifecycle: implementation candidate complete; independent acceptance pending.
+- Lifecycle: independently accepted; archival governance pending.
