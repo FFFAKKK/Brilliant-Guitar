@@ -1,6 +1,6 @@
 # Core Kernel Integration Gate
 
-> **Audit-repair candidate（2026-07-22）:** K1-6 candidate `45398df4f0daf2134fcb142d2a74bac9511cf908` passes 8/8 focused integration tests and 169/169 full tests. Independent acceptance is pending; this document does not close Pure Core Kernel V1.
+> **Audit-repair candidate（2026-07-26）:** K1-6 test candidate `355512aba4a8057d2d75aa665d74df49cdd2e23c` passes 8/8 focused integration tests and 169/169 full tests. Independent acceptance is pending; this document does not close Pure Core Kernel V1.
 
 ## 1. Scope / Trigger
 
@@ -10,7 +10,7 @@ K1-6 is the cross-contract acceptance gate for the already accepted K1-1 through
 - K1-5 acceptance documentation baseline `ed801a9fa1a69222188c3ca04ee243b48d7a92d2`;
 - K1-6 final reviewed planning baseline `0c7a5ba37051498af1ee779ce0412845813dab04`;
 - K1-6 activation baseline `3f6ae5d4467f560e6341e78ce6c7d3bdd46a3830`;
-- K1-6 audit-repair candidate `45398df4f0daf2134fcb142d2a74bac9511cf908`.
+- K1-6 audit-repair test candidate `355512aba4a8057d2d75aa665d74df49cdd2e23c`.
 
 The gate adds integration tests and active documentation only. It introduces no production source, public export, schema, dependency, Guitar Domain, physical `.bgp` IO, UI, renderer, playback, import/export, network, Extension Host, or third-party runtime behavior.
 
@@ -19,17 +19,23 @@ The gate adds integration tests and active documentation only. It introduces no 
 K1-6 must exercise the accepted public entry point at `src/core-kernel/index.ts`; it must not import private mutation, history, registry table, decoder dependency, or report-builder seams.
 
 ```typescript
-decodeScoreDocument(input: unknown): DecodeScoreDocumentResult
-encodeScoreDocumentJson(document: unknown): EncodeScoreDocumentJsonResult
-parseScoreDocumentJson(json: string): ParseScoreDocumentJsonResult
+decodeScoreDocument(value: unknown): DecodeScoreDocumentResult
+encodeScoreDocumentJson(document: ScoreDocument): EncodeScoreDocumentResult
+parseScoreDocumentJson(json: string): DecodeScoreDocumentResult
 validateScoreDocumentSemantics(document: ScoreDocument): ValidationReport
 validateScoreFeatureProfile(document: ScoreDocument): ScoreSupportResult
 migrateScoreDocument(input: unknown): MigrationResult
 
-CommandBus.create(document: ScoreDocument): CommandBusCreationResult
-createKernelRegistry(manifest: KernelStartupModuleManifest): KernelRegistryCreationResult
-registry.createGateway(moduleId: string, bus: CommandBus): KernelModuleGatewayCreationResult
-replayCoreCommands(document: ScoreDocument, commands: readonly CoreCommand[]): ReplayCoreCommandsResult
+CommandBus.create(initialDocument: ScoreDocument): CommandBusCreationResult
+createKernelRegistry(manifest: unknown): KernelRegistryCreationResult
+registry.createGateway(
+  moduleId: string,
+  commandBus: CommandBus,
+): KernelModuleGatewayCreationResult
+replayCoreCommands(
+  initialDocument: ScoreDocument,
+  acceptedCommands: readonly unknown[],
+): ReplayCoreCommandsResult
 createKernelValidationReport(diagnostics: readonly Diagnostic[]): KernelReport<"validation">
 ```
 
@@ -70,7 +76,7 @@ The second commit is semantic-valid but reports `unsupported.sequence-duration`;
 
 Selectors must agree with the same version-3 state for metadata, inserted event, ownership, four-measure range, history, and dirty state. Undo must return to the unsupported version-2 content; redo must restore the supported version-3 content at document version 5.
 
-The checkpoint read must expose document version 1, history `1 / 0`, and `dirty: false`. The read taken immediately after undo must expose document version 4, history `2 / 1`, `dirty: true`, and content deeply equal to replaying only the first two commands. Redo must restore the version-3/replay content at document version 5. Both unknown extensions remain deeply equal at checkpoint, version 3, undo, replay, and redo/final reads.
+The checkpoint read must expose document version 1, history `1 / 0`, `dirty: false`, and a complete document deeply equal to replaying only the first command. The read taken immediately after undo must expose document version 4, history `2 / 1`, `dirty: true`, and content deeply equal to replaying only the first two commands. Redo must restore the version-3/replay content at document version 5. Both unknown extensions remain deeply equal at checkpoint, version 3, undo, replay, and redo/final reads.
 
 ## 4. Validation & Error Matrix
 

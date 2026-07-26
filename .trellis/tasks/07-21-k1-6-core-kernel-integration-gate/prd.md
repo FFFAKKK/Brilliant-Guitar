@@ -1,6 +1,6 @@
 # K1-6 Core Kernel Integration Gate
 
-> **Status: AUDIT-REPAIR CANDIDATE / INDEPENDENT ACCEPTANCE PENDING（2026-07-22）.** Candidate `45398df4f0daf2134fcb142d2a74bac9511cf908` passes 8/8 focused and 169/169 full tests. K1-6 remains `in_progress`; it is not accepted or archived, Pure Core Kernel V1 is not formally closed, and Guitar Domain/product implementation remain unauthorized.
+> **Status: AUDIT-REPAIR CANDIDATE / INDEPENDENT ACCEPTANCE PENDING（2026-07-26）.** Test candidate `355512aba4a8057d2d75aa665d74df49cdd2e23c` passes 8/8 focused and 169/169 full tests. K1-6 remains `in_progress`; it is not accepted or archived, Pure Core Kernel V1 is not formally closed, and Guitar Domain/product implementation remain unauthorized.
 
 ## Goal
 
@@ -49,7 +49,7 @@ Prove that the accepted K1-1 through K1-5 contracts operate as one deterministic
 
 - [x] AC-K1-6-001: final PRD, design, and implementation plan were explicitly approved on 2026-07-21 before task start.
 - [x] AC-K1-6-002: the canonical four-measure fixture passes strict decode, semantic validation, expected profile classification, encode/decode round-trip, and detached current-schema migration; successful deep mutation of caller-owned extension inputs cannot change decoded, parsed, or migrated outputs.
-- [x] AC-K1-6-003: a representative authorized command sequence produces the expected documents, versions, history depths, snapshots, selectors, dirty transitions, and ordered events, including direct reads immediately after checkpoint and undo.
+- [x] AC-K1-6-003: a representative authorized command sequence produces the expected documents, versions, history depths, snapshots, selectors, dirty transitions, and ordered events, including direct reads immediately after checkpoint and undo; the checkpoint document equals first-command replay and the undo document equals first-two-command replay.
 - [x] AC-K1-6-004: undo, redo, and replay converge on deeply equal documents while preserving deterministic results and unknown extensions.
 - [x] AC-K1-6-005: representative invalid and unexpected-failure paths return closed failures/issues/reports, leak no raw exception or private data, and leave state unchanged; future schema rejection preserves the exact decode diagnostic code, path, details, and order.
 - [x] AC-K1-6-006: semantic-valid unsupported features remain unsupported diagnostics rather than decode/semantic failures.

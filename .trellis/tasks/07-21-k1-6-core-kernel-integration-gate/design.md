@@ -1,6 +1,6 @@
 # K1-6 Core Kernel Integration Gate — Design
 
-> **Status: AUDIT-REPAIR CANDIDATE / INDEPENDENT ACCEPTANCE PENDING（2026-07-22）.** 候选 `45398df4f0daf2134fcb142d2a74bac9511cf908` 已补齐审计证据，8/8 聚焦测试和 169/169 完整测试通过。任务保持 `in_progress`，不得标记 accepted/archived，也不得解锁 Guitar Domain 或产品层实现。
+> **Status: AUDIT-REPAIR CANDIDATE / INDEPENDENT ACCEPTANCE PENDING（2026-07-26）.** 测试候选 `355512aba4a8057d2d75aa665d74df49cdd2e23c` 已补齐审计证据，8/8 聚焦测试和 169/169 完整测试通过。任务保持 `in_progress`，不得标记 accepted/archived，也不得解锁 Guitar Domain 或产品层实现。
 
 ## 1. Authority and Baseline
 
@@ -161,6 +161,7 @@ interface K1_6IntegrationTrace {
   readonly registrySummary: RegistrySummary;
   readonly commandResults: readonly CommandResult[];
   readonly checkpointResult: MarkPersistedResult;
+  readonly persistedRead: KernelReadState;
   readonly version3Read: KernelReadState;
   readonly selectorFacts: Readonly<{
     metadata: unknown;
@@ -172,6 +173,7 @@ interface K1_6IntegrationTrace {
   }>;
   readonly replay: ReplayCoreCommandsResult;
   readonly undoResult: CommandResult;
+  readonly undoRead: KernelReadState;
   readonly redoResult: CommandResult;
   readonly finalRead: KernelReadState;
   readonly events: readonly KernelEvent[];
@@ -238,7 +240,7 @@ The full suite must include the existing public-export and forbidden-dependency 
 ### Recorded implementation candidate
 
 - Activation baseline: `3f6ae5d4467f560e6341e78ce6c7d3bdd46a3830`.
-- Audit-repair candidate: `45398df4f0daf2134fcb142d2a74bac9511cf908`.
+- Audit-repair test candidate: `355512aba4a8057d2d75aa665d74df49cdd2e23c`.
 - Evidence: 8/8 focused tests, 169/169 full tests, typecheck/build/diff/Trellis gates pass.
 - Scope proof: no `src/**`, package configuration, public API boundary test, or forbidden dependency boundary test change.
 - Lifecycle: implementation candidate complete; independent acceptance pending.

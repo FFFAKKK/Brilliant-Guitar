@@ -1,7 +1,7 @@
 # Core Kernel Guidelines
 
 > **Current staged workflow (2026-07-21):** K1-1 through K1-5 are accepted and archived.
-> K1-6 audit-repair candidate `45398df4f0daf2134fcb142d2a74bac9511cf908` passes 8/8 focused and 169/169 full tests. Independent acceptance is pending; Pure Core Kernel V1 is not formally closed, and Guitar Domain/product implementation remain unauthorized.
+> K1-6 audit-repair candidate `355512aba4a8057d2d75aa665d74df49cdd2e23c` passes 8/8 focused and 169/169 full tests. Independent acceptance is pending; Pure Core Kernel V1 is not formally closed, and Guitar Domain/product implementation remain unauthorized.
 
 For changes that consume the accepted kernel, read `backend/score-document-model.md`, `backend/command-transaction.md`, `backend/snapshot-events.md`, `backend/registry-capability.md`, `backend/errors-reports.md`, `backend/integration-gate.md`, and all staged boundary/diagnostic/quality guides. K1-1 through K1-5 contracts are frozen. K1-6 adds integration evidence only and does not alter them. Physical `.bgp` packaging, manifest, file IO, real legacy migration steps, Guitar Domain, UI, playback, and layout remain later work.
 

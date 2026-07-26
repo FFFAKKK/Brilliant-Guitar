@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript 5.8, Node.js built-in test runner, `node:assert/strict`, existing Core public API, no new dependency.
 
-**Current status:** AUDIT-REPAIR CANDIDATE / INDEPENDENT ACCEPTANCE PENDING. Candidate `45398df4f0daf2134fcb142d2a74bac9511cf908` passes 8/8 focused and 169/169 full tests. The task remains `in_progress`; Task 5 hands the candidate to a separate reviewer and does not finish or archive it.
+**Current status:** AUDIT-REPAIR CANDIDATE / INDEPENDENT ACCEPTANCE PENDING. Test candidate `355512aba4a8057d2d75aa665d74df49cdd2e23c` passes 8/8 focused and 169/169 full tests. The task remains `in_progress`; Task 5 hands the candidate to a separate reviewer and does not finish or archive it.
 
 ## Global Constraints
 
@@ -725,6 +725,18 @@ assert.deepEqual(
 assert.equal(trace.persistedRead.snapshot.documentVersion, 1);
 assert.deepEqual(trace.persistedRead.history, { undoDepth: 1, redoDepth: 0 });
 assert.equal(trace.persistedRead.dirty, false);
+const replayAfterFirst = replayCoreCommands(
+  cloneK1_6ScoreFixture(),
+  ACCEPTED_COMMANDS.slice(0, 1),
+);
+assert.equal(replayAfterFirst.status, "replayed");
+if (replayAfterFirst.status !== "replayed") {
+  throw new Error("expected K1-6 first-command replay");
+}
+assert.deepEqual(
+  trace.persistedRead.snapshot.document,
+  replayAfterFirst.finalDocument,
+);
 assert.deepEqual(
   [trace.undoResult.status, trace.undoResult.documentVersion,
     trace.undoResult.undoDepth, trace.undoResult.redoDepth],
