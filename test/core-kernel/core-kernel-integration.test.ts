@@ -399,6 +399,18 @@ test("public integration scenario keeps writes reads events history and replay c
   assert.equal(trace.persistedRead.snapshot.documentVersion, 1);
   assert.deepEqual(trace.persistedRead.history, { undoDepth: 1, redoDepth: 0 });
   assert.equal(trace.persistedRead.dirty, false);
+  const replayAfterFirst = replayCoreCommands(
+    cloneK1_6ScoreFixture(),
+    ACCEPTED_COMMANDS.slice(0, 1),
+  );
+  assert.equal(replayAfterFirst.status, "replayed");
+  if (replayAfterFirst.status !== "replayed") {
+    throw new Error("expected K1-6 first-command replay");
+  }
+  assert.deepEqual(
+    trace.persistedRead.snapshot.document,
+    replayAfterFirst.finalDocument,
+  );
   assert.equal(trace.version3Read.snapshot.documentVersion, 3);
   assert.equal(trace.version3Read.history.undoDepth, 3);
   assert.equal(trace.version3Read.history.redoDepth, 0);
