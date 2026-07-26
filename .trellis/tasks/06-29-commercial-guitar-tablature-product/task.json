@@ -79,5 +79,12 @@
     ".trellis/tasks/06-29-commercial-guitar-tablature-product/research/vexflow-rendering-evaluation.md"
   ],
   "notes": "用户要求需求粒度细，并按每个需求一个文档推进，最后再合并。",
-  "meta": {}
+  "meta": {
+    "pure_core_kernel_v1_status": "closed",
+    "pure_core_kernel_v1_completed_at": "2026-07-26",
+    "k1_6_status": "accepted_archived",
+    "k1_6_test_baseline": "355512aba4a8057d2d75aa665d74df49cdd2e23c",
+    "k1_6_review_baseline": "989c1f7a4056b14d3d59918c9b96874ad71591a8",
+    "next_implementation_stage": "separate_planning_and_approval_required"
+  }
 }
