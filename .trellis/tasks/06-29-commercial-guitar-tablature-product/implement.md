@@ -44,9 +44,18 @@ K1-1 不包含命令/history、snapshot/events、registry/capability、通用 re
 
 ## Core Gate 状态与后续顺序
 
-### Block 2：Guitar Domain
+### Block 2：Guitar Domain（GD-0 文档合同同步中）
 
-在独立任务中定义 Part-owned `GuitarExtension`：
+GD-0 已于 2026-07-28 批准微内核集成规划，但当前只执行文档合同同步与独立评审。生产实现必须按以下独立 Gate 顺序推进：
+
+1. CK1.1-0：public `unknown` guards 的 descriptor-first/no-getter/no-throw 前置。
+2. CK1.1-1：official module SDK 的 data/error/descriptor authoring 基础，不含运行时。
+3. GD-1：Part-owned `GuitarExtension` foundation、codec、semantic/profile validation，不含命令。
+4. GD-2：Core V1.1 通用 official domain command seam，使用 neutral synthetic contribution 验证。
+5. GD-3：Guitar placement、slide、bend、vibrato 语义命令。
+6. GD-4：Core/Guitar 集成与兼容门禁。
+
+GD-1 将定义：
 
 - namespace 与 schemaVersion。
 - 标准 6 弦实际调弦。
@@ -54,7 +63,7 @@ K1-1 不包含命令/history、snapshot/events、registry/capability、通用 re
 - 吉他技巧 payload、引用规则、codec、semantic validation 与 `guitar.*` diagnostics。
 - 未知/新版 Guitar payload 的降级与迁移策略。
 
-该块不能把 guitar 字段塞回 Core Note/Event/metadata，也不能假设旧 `TechniqueData` registry 已存在。
+上述各块不能把 guitar 字段塞回 Core Note/Event/metadata，不能假设旧 `TechniqueData` registry 已存在，也不能建立第二套 document/history/replay/dirty/event owner。当前 GD-0 不授权创建或激活任何下游实现任务。
 
 ### 已完成：K1-2 Commands / Transactions / History
 

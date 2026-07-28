@@ -6,7 +6,7 @@
 - 映射需求: `REQ-007`
 - 目标: 为模块化软件和未来插件生态定义可实现、可测试、可控的扩展边界。
 - 当前 Core 状态: K1-1～K1-6 已验收；K1-6 测试基线 `355512aba4a8057d2d75aa665d74df49cdd2e23c` 在审查基线 `989c1f7a4056b14d3d59918c9b96874ad71591a8` 通过独立验收，8/8 聚焦、169/169 完整测试通过；Pure Core Kernel V1 已关闭，扩展系统后续实现仍需独立规划和批准。
-- 当前约束: 本文件是未来插件平台路线图，不是 K1-4/K1-5 实现契约。K1-4 只增加官方模块的 frozen Registry/gateway；K1-5 只提供 validation/migration `KernelIssue`/`KernelReport` 数据合同，不开放第三方执行、动态 contribution、Registry mutation/event 或 plugin report ingress。
+- 当前约束: 本文件是未来插件平台路线图，不是 K1-4/K1-5 实现契约。GD-0 已批准后续 Core V1.1 的 startup-frozen official domain command catalog，但仍不开放第三方执行、动态 contribution、Registry mutation/event 或 plugin report ingress。
 - 数据边界: `ScoreDocument.extensions` 已由 Core K1-1 定义为 score/part-owned 纯数据信封；它不等于插件安装、发现、registry 或执行 API。
 
 ## 适用范围
@@ -56,6 +56,11 @@
 - EXT-023: 未来第三方模块可以在启动前被授予高权限并替换官方 UI、渲染器、导入导出器或其它模块，但仍必须通过统一注册协议和内核公开接口协作。
 - EXT-024: K1-4 ready Registry 没有任何生命周期 mutation API。未来第三方新增、移除、启用、禁用或热插拔请求的持久化与 `restart-required` 行为由 Extension Host 定义，不得改变当前 Registry。
 - EXT-025: Pure Core Kernel V1 的 `KernelStartupModuleManifest` 只能引用应用内已编译绑定的 `CoreModuleRegistrationEntryId`，不得把外部路径、URL、脚本字符串或动态 import 当作注册入口；未来第三方安装源和签名策略后置单独设计。
+- EXT-026: GD-0 official domain command 仍通过现有 `CommandBus.submit(unknown)` / gateway submit；不得增加领域专用可变 facade 或第二条 history/replay/event 路径。
+- EXT-027: `kernel.domain-commands.v1` 只绑定产品 composition root 静态链接的 official/system-trusted compiled contribution；manifest 永不携带函数。
+- EXT-028: 领域 contribution 只拥有声明的 extension namespace、命令/effect/issue code；Core 不枚举 Guitar code，也不导入 Guitar Domain。
+- EXT-029: known official extension 的 immutable compatibility declaration 要求缺失 contribution 时，只允许 lossless read-only integrated session；unknown opaque extension 继续按 Core V1 保真。
+- EXT-030: GD-0 不授权第三方 Extension Host、PluginManifest 加载、runtime register/unregister、hot reload 或插件代码执行。
 
 ## 未来 PluginManifest 契约
 
@@ -213,6 +218,18 @@ export interface PluginReportFacade {
 - `PluginKernelFacade` 是未来第三方插件平台的 facade 草案，不属于 Pure Core Kernel V1 必须实现项。
 - K1-4 的 `internal-module` 可以同进程运行，但只能接收 Host 创建的 gateway；测试必须证明它没有绕过 snapshot、command、registry 或 event 契约。K1-5 已提供 validation/migration issue/report 数据合同，但上述 `PluginReportFacade` 仍是未来 Extension Host 草案，不是当前 Core 写入或注册 API。
 
+### GD-0 official domain module boundary
+
+GD-0 位于 K1-4 Core-only Registry 与未来第三方 Extension Host 之间，但不把两者混为一体：
+
+- official domain module 由产品 composition root 静态链接，在 startup 与纯数据 manifest 原子编译成 frozen catalog；
+- domain command 通过既有 submit port 进入一个 transaction/history/replay/event owner；
+- domain validator/classifier/effect/fact hooks 只获得 detached read-only context，且必须同步、确定、异常收口；
+- application-facing Core 只公开 integrated data contracts/factory，official module authoring 能力位于独立版本化 SDK entry point；
+- third-party manifest、sandbox、安装/启停、权限 UI 与 filtered facade 继续后置。
+
+权威文档为 `.trellis/spec/core-kernel/backend/domain-transaction-integration.md`。
+
 ## 贡献点契约
 
 ### Commands
@@ -292,7 +309,7 @@ K1-4 必须做:
 - [x] AC-009-06: authorized gateway 的 command/selector/read/subscribe 结果与 trusted-host API 相同；拒绝与异常保持所有 K1-2/K1-3 状态。
 - [x] AC-009-07: Registry summary 确定排序、深冻结、脱离内部状态且不泄露 grant/trust/handler/index/Registry/mutable document。
 - [x] AC-009-08: ready Registry 无 public mutation、runtime version 或 Registry event。
-- [x] AC-009-09: command envelope、history、replay 与 K1-3 event 不含 module/plugin attribution。
+- [x] AC-009-09: K1-4 Core-only command envelope、history、replay 与 K1-3 event 不含 module/plugin attribution；未来 GD-2 integrated session 仅按 GD-0 additive contract 保存私有 contribution identity，并公开 namespaced command identity，不改变 Core-only shape。
 - [x] AC-009-10: Core 保真未知 score/part ExtensionBlock 的 JsonValue 语义；不承诺物理插件资源或字节级 round-trip。
 - [x] AC-009-11: K1-4 不读取真实第三方 `PluginManifest`，也不导出 `PluginKernelFacade` 或 public registration handler。
 
@@ -303,3 +320,10 @@ K1-4 必须做:
 - [ ] AC-009-F03: 第三方插件通过未来 `PluginKernelFacade` 读取 snapshot 时不会获得可变 `ScoreDocument`。
 - [ ] AC-009-F04: 第三方插件通过未来 `PluginKernelFacade` 提交写命令后进入 undo/redo；来源归因使用未来 operation/report 记录，不污染 Core HistoryEntry 或 document event。
 - [ ] AC-009-F05: 打开含未知 ExtensionBlock 的文件后必须语义保留；若未来物理插件资源无法保留，Persistence/插件平台必须明确报告。
+
+## GD-0 Documentation Gate
+
+- [x] one submit port、one transaction/history/replay/event owner 与 Core-to-Guitar zero dependency 已固定。
+- [x] startup-frozen official domain catalog 与 `kernel.domain-commands.v1` 边界已固定。
+- [x] known required contribution missing 与 unknown opaque extension 的行为已分离。
+- [ ] CK1.1-0、CK1.1-1、GD-1、GD-2、GD-3、GD-4 仍须各自创建、实施、验收；GD-0 不激活它们。

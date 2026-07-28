@@ -1,6 +1,6 @@
 # SPEC-005 Guitar Domain 技巧重规划门
 
-> **状态：BLOCKED / NOT EXECUTABLE。** 吉他技巧不属于 Core K1-1；须在独立 Guitar Domain / Block 2 任务中设计。本文件不批准旧 Core 技巧 registry。
+> **状态：GD-0 INTEGRATION CONTRACT APPROVED / GUITAR IMPLEMENTATION BLOCKED。** GD-0 已固定领域事务 seam 与 slide/bend/vibrato 首批范围；GuitarExtension schema、技巧 payload 和生产实现仍由 GD-1/GD-3 独立批准。本文件不批准旧 Core 技巧 registry。
 
 ## 1. Scope / Trigger
 
@@ -19,7 +19,7 @@ interface ExtensionBlock {
 }
 ```
 
-GuitarExtension namespace、payload、技巧 ID、参数 schema 与跨 Note 引用尚未批准。
+GuitarExtension 的 Part ownership、ordered variable-length tuning、noteId-to-string/fret placement、首批 slide/bend/vibrato 范围已批准；精确 namespace、payload version、技巧 ID、参数单位和跨 Note 引用仍由 GD-1/GD-3 固定。
 
 ## 3. Contracts
 
@@ -28,7 +28,9 @@ GuitarExtension namespace、payload、技巧 ID、参数 schema 与跨 Note 引�
 - Core 只验证 ExtensionBlock 信封并保真未知 JsonValue。
 - 技巧持久化必须是纯数据，不得包含 callback、class、renderer、player 或模块代码。
 - UI 名称、渲染、播放与导出从稳定领域语义派生，不各自维护第二份技巧事实。
-- 是否需要 registry 是 Block 2/K1-4 的独立决策，不能从旧测试定义继承。
+- 领域命令通过 GD-0 批准的 startup-frozen official contribution catalog 接入同一个 CommandBus；不得从旧测试 registry 继承技巧定义，也不得使用 runtime registration。
+- 设置 string/fret placement 必须在一个事务中同步 Core `WrittenPitch` 与 Part-owned placement；generic Core pitch edit 不推断指法。
+- 所有已安装领域 validator 在 Core semantic 成功后按 frozen catalog 顺序运行；unsupported 与 semantic invalid 分离。
 
 ## 4. Validation & Error Matrix
 
@@ -47,7 +49,7 @@ GuitarExtension namespace、payload、技巧 ID、参数 schema 与跨 Note 引�
 
 ## 6. Tests Required
 
-Block 2 必须覆盖 tuning、string/fret、技巧引用与参数、未知/新版 payload、语义 round-trip、Core 无解释边界以及保存/重开。命令与 undo/redo 测试待 K1-2 接口批准后补充。
+GD-1 必须覆盖 tuning、string/fret、引用、未知/新版 payload、语义 round-trip 与 Core 无解释边界。GD-3/GD-4 必须覆盖 placement/slide/bend/vibrato 的 submit/no-op/reject/undo/redo/replay、一个 transaction/history/event、未知扩展保留和 missing-domain read-only degradation。当前 GD-0 只同步合同。
 
 ## 7. Wrong vs Correct
 
@@ -58,3 +60,11 @@ note.fret = 7
 // Correct direction: Guitar Domain owns a versioned Part extension.
 guitarDomain.updatePlacement(partExtension, noteId, { stringNumber: 2, fret: 7 })
 ```
+
+## 8. GD-0 Execution Boundary
+
+- CK1.1-0/CK1.1-1 先完成 hostile-input guard 与 official module SDK。
+- GD-1 只实现 GuitarExtension 数据、codec、validator/profile，不实现命令。
+- GD-2 只实现通用领域 seam，并使用 neutral synthetic contribution，不依赖 Guitar production code。
+- GD-3 才实现 Guitar semantic commands；GD-4 才形成四小节 Guitar/Core 集成门禁。
+- UI、layout、render、playback、physical `.bgp` IO、Guitar Pro 与第三方插件均不进入上述合同。

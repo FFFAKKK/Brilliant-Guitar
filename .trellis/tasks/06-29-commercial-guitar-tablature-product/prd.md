@@ -8,7 +8,7 @@
 - 负责人: ATOM
 - 文档策略: 每个需求先写独立文档，最终再合并为收敛后的 PRD。
 - 当前 Core 基线: K1-1 已在 `30894e2` 正式验收；K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 正式验收并通过 102/102 测试；`.trellis/spec/core-kernel/` 是活动代码契约。本文较早的决策记录若与其冲突，以活动规范与独立 Block 任务为准。
-- 当前交付状态: K1-2、K1-3 均已完成独立复验并归档；K1-4 已在 `94766a0930c05e5339c44f667deaf02116af1c0c` 验收归档；K1-5 已完成 Issue/Report/Migration 独立验收并归档；K1-6 已通过独立验收并关闭 Pure Core Kernel V1。Guitar Domain 与产品层实现仍需独立规划和批准。
+- 当前交付状态: K1-2、K1-3 均已完成独立复验并归档；K1-4 已在 `94766a0930c05e5339c44f667deaf02116af1c0c` 验收归档；K1-5 已完成 Issue/Report/Migration 独立验收并归档；K1-6 已通过独立验收并关闭 Pure Core Kernel V1。GD-0 微内核集成规划已于 2026-07-28 批准并进入文档合同同步；CK1.1-0、CK1.1-1、GD-1～GD-4 与产品层生产实现仍须各自规划、批准和验收。
 
 ## 产品目标
 
@@ -146,7 +146,7 @@
 - Tauri/Rust 插件默认只用于系统能力；谱面插件生态未来由产品层插件平台或 Extension Host 在启动前发现、校验、授权并映射到统一注册协议。
 - 未来公开第三方谱面插件统一采用 TypeScript 源码、SDK、类型契约、示例和兼容测试；发布包可包含编译后的 JavaScript 产物，但必须通过 TypeScript 类型契约和 manifest 校验。官方与第三方的差异只存在于注册前发现、校验、授权和加载阶段，进入内核后都必须遵守同一套 registry、capability、command、snapshot、event 和 report 契约。
 - MVP 第一实现阶段默认只交付吉他核心闭环: 吉他轨道、六线谱、基础五线谱同步、基础排版、P0 高频吉他技巧、播放校对、保存与导出。
-- MVP 吉他闭环仍优先覆盖 slide、bend、vibrato 等少量高频技巧；具体 namespace、payload、命令和测试 ID 等待 Guitar Domain 规划，不作为 Core K1-1 验收项。
+- MVP 吉他闭环仍优先覆盖 slide、bend、vibrato 等少量高频技巧；GD-0 已固定领域事务 seam，具体 namespace/payload 由 GD-1、命令/参数/测试 ID 由 GD-3 独立规划，不作为 Core K1-1 验收项。
 - Pure Core Kernel K1 不预留 `tracks` 数组、多轨字段、多乐器字段或多弦数字段作为核心 schema；未来多轨、多乐器和多弦数必须单独规划。第一实现阶段 UI、测试和验收只覆盖标准 6 弦吉他产品上下文；7/8 弦吉他、贝斯、鼓、键盘和完整乐队编曲不作为第一实现阶段的验收门槛。
 - 第一实现阶段不暴露轨道管理 UI；用户只能编辑默认标准 6 弦吉他轨道。
 - MVP 第一阶段默认支持 `zh-CN` 和 `en-US`，所有用户可见文本必须通过 i18n key 管理。
@@ -655,4 +655,4 @@ MVP 包结构建议: `.bgp` 的长期形态是单文件开放 zip 包，至少�
 
 ## 当前阻塞开放问题
 
-K1-6 测试基线 `355512aba4a8057d2d75aa665d74df49cdd2e23c` 已在审查基线 `989c1f7a4056b14d3d59918c9b96874ad71591a8` 通过独立验收，Pure Core Kernel V1 Gate 已关闭。该结论不自动开始 Guitar Domain 或产品层实现；后续阶段仍需独立规划和批准。
+K1-6 测试基线 `355512aba4a8057d2d75aa665d74df49cdd2e23c` 已在审查基线 `989c1f7a4056b14d3d59918c9b96874ad71591a8` 通过独立验收，Pure Core Kernel V1 Gate 已关闭。GD-0 仅批准并同步 Core/Guitar 集成文档合同；该结论不自动开始 CK1.1/Guitar Domain 或产品层生产实现，后续阶段仍需独立任务与批准。

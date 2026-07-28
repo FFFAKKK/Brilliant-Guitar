@@ -37,7 +37,7 @@ manifest 提供的 module/registration-entry ID 长度为 1–128，并匹配 `^
 - 现有 direct `CommandBus`/selector 保留为 trusted Core Host API；模块正常集成面是 gateway。
 - ready Registry 无公开 builder/register/seal/unregister/replace，无 runtime mutation、`registryVersion` 或 `kernel.registry.changed`；K1-3 事件 union 不变。
 - Summary 只含 manifest version、按 moduleId 排序的 moduleId/apiVersion，以及按 kind/id 排序的 contribution 公共元数据；深冻结、脱离内部状态，不泄露 grant、origin/runtime/trust、handler、index、Registry 或谱面。
-- `moduleId` 不进入 command envelope、history、replay 或 K1-3 event。
+- K1-4 Core-only 的 `moduleId` 不进入 command envelope、history、replay 或 K1-3 event；GD-2 integrated construction 只能按 GD-0 additive contract 在私有 history/catalog 中保留 contribution identity，并在 modular event/result 中公开 allowlisted namespaced identity，不改变 Core-only shape。
 - K1-4 自有封闭、隐私安全的 startup/access failure；K1-5 只能映射，不能改名或改义。
 
 ## 4. Validation & Error Matrix
@@ -75,3 +75,17 @@ const gateway = created.ok
   ? created.registry.createGateway(moduleId, commandBus)
   : created
 ```
+
+## 8. GD-0 Additive Official Domain Catalog
+
+K1-4 Core-only Registry、六 command/六 selector adapter 与七个 capability 保持冻结。后续 GD-2 通过 integrated construction 增加独立审核的 `kernel.domain-commands.v1` compiled entry：
+
+- manifest 仍为纯数据；compiled functions 由产品 composition root 静态链接并在 startup 与 manifest/descriptor 原子匹配。
+- 仅接受 official、system-trusted、允许 runtime 的 contribution；不接收第三方脚本、路径、URL、dynamic import 或 manifest callback。
+- catalog 必须验证 module/contribution/command/effect/namespace 唯一性、ID namespace ownership、capability、API/version、handler/descriptor parity、profile 与 compatibility declaration。
+- ready catalog、descriptor、profile 与 compatibility data 深冻结；无 runtime register/unregister/replace、Registry version 或 changed event。
+- integrated Registry、gateway、CommandBus 与 replay 绑定同一私有 assembly identity；cross-assembly 或 Core-only/integrated 错配在 construction 阶段稳定拒绝。
+- `command:register` 仍不蕴含 `command:execute`；GD-0 不新增 generic document-mutation capability。
+- Registry summary 继续只暴露 allowlisted metadata，不泄露 compiled handler、effect implementation、grants、mutable catalog 或文档。
+
+此扩展只服务随应用发布的官方领域模块，不授权第三方 Extension Host 或插件生命周期实现。

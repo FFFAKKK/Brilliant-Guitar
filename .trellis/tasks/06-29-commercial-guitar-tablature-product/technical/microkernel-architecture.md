@@ -893,6 +893,36 @@ sequenceDiagram
 - playback 读取预编译播放事件。
 - 性能热点可以局部下沉到 Rust 或 worker，但不能绕过内核契约。
 
+## GD-0：官方领域事务集成（2026-07-28）
+
+Pure Core Kernel V1 继续作为稳定兼容基线。GD-0 只批准一个 additive Core V1.1 seam，使随应用发布的官方领域模块加入既有事务机制，而不是把 Guitar policy 写入 Core。
+
+```mermaid
+flowchart LR
+    PRODUCT["Product composition root"] --> ASSEMBLY["Frozen official assembly"]
+    UI["Editor / module"] --> SUBMIT["CommandBus.submit(unknown)"]
+    SUBMIT --> ROUTE["Core + official domain catalog"]
+    ROUTE --> EFFECTS["Private atomic effect set"]
+    EFFECTS --> VALIDATE["Core semantics -> all domain semantics -> profiles"]
+    VALIDATE --> STATE["One document/version/history/dirty owner"]
+    STATE --> EVENT["One committed fact + optional dirty fact"]
+    GUITAR["Guitar Domain"] -->|public Core data + official SDK| ASSEMBLY
+    ASSEMBLY --> ROUTE
+```
+
+固定边界：
+
+- Core-only construction、六个 Core commands、K1-3 events 与 K1-4 Registry 行为保持不变。
+- integrated construction 使用同一个 CommandBus 实现、history、replay、checkpoint/dirty 与事件序列；不存在第二套 Guitar runtime。
+- static manifest 只选择 descriptor，compiled functions 由 composition root 直接绑定；ready catalog 无 runtime mutation。
+- domain contribution 拥有 namespace、command/effect/issue/validator/profile policy，Core 只拥有机制且保持零 Guitar import。
+- changed candidate 依次执行 Core semantic、全部 installed-domain semantic、Core profile、全部 domain profile，再原子接纳状态。
+- 一个 domain command 可产生多个私有细粒度 effects，但只形成一个 history entry、一个 version increment 和一个 committed event。
+- known required domain missing 时 integrated session lossless read-only；unknown opaque extension 仍按 Core V1 保真并保持可写。
+- public hostile `unknown` 边界统一 descriptor-first、no-getter、no-throw；error instances、handlers、effects、history 与 mutable catalog 均不公开。
+
+执行必须拆为 CK1.1-0、CK1.1-1、GD-1、GD-2、GD-3、GD-4 六个独立 Gate。当前 GD-0 只产生合同，不修改 `src/**` 或 `test/**`。
+
 ## 架构验收标准
 
 - [ ] 任意模块不能直接修改 `ScoreDocument`。
@@ -900,5 +930,5 @@ sequenceDiagram
 - [ ] 渲染、播放、导出、分析和插件都只读快照或 selector。
 - [ ] 未来 `.bgp` 打开、保存和真实迁移必须经过内核验证器；当前 K1-5 只覆盖纯内存 current-schema compatibility。
 - [ ] VexFlow、Web Audio、PDF/PNG 具体实现可以替换，不影响 `.bgp` 和内核。
-- [ ] 插件被启动前配置为禁用或缺失后，核心谱面仍可打开、编辑、播放和保存。
+- [ ] 未知 opaque extension 缺失解释器时仍保真并可按 Core V1 编辑；若已知官方 compatibility declaration 要求的 contribution 缺失，则必须 lossless read-only，禁止未经领域验证的编辑/保存写入。
 - [ ] 第一条 4 小节 riff 闭环能作为长期回归测试运行。

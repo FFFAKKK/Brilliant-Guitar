@@ -19,7 +19,8 @@
   "pr_url": null,
   "subtasks": [],
   "children": [
-    "07-07-pure-core-kernel-v1"
+    "07-07-pure-core-kernel-v1",
+    "07-28-gd-0-guitar-domain-core-transaction-contract"
   ],
   "parent": null,
   "relatedFiles": [
@@ -85,6 +86,9 @@
     "k1_6_status": "accepted_archived",
     "k1_6_test_baseline": "355512aba4a8057d2d75aa665d74df49cdd2e23c",
     "k1_6_review_baseline": "989c1f7a4056b14d3d59918c9b96874ad71591a8",
-    "next_implementation_stage": "separate_planning_and_approval_required"
+    "next_implementation_stage": "gd0_documentation_contract_in_progress",
+    "gd0_status": "documentation_sync_candidate_pending_independent_review",
+    "gd0_planning_base": "064dc2bffe26022bc58f0690986b09a0c6a257aa",
+    "gd0_production_implementation_authorized": false
   }
 }

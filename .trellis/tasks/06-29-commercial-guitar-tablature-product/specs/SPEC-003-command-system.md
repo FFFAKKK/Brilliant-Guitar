@@ -1,6 +1,6 @@
 # SPEC-003 命令系统、事务、历史与回放
 
-> **状态：K1-2 EXECUTABLE / APPROVED 2026-07-15。** K1-1 正式代码基线为 `30894e2`。本规范批准 K1-2 的 Core 命令、事务、版本、history、undo/redo 与确定性命令回放；任何扩大到 K1-3/K1-4/Guitar/UI/IO 的行为仍需独立规划。
+> **状态：K1-2 ACCEPTED / CORE V1 CLOSED；GD-0 ADDITIVE CONTRACT APPROVED 2026-07-28。** K1-2 Core-only 行为保持冻结；GD-0 只批准后续 Core V1.1 官方领域命令集成合同，生产实现仍须独立 Gate。
 
 ## 1. Scope / Trigger
 
@@ -78,3 +78,17 @@ submit({ op: "replace", path: "/scoreData/timeline/0" })
 // Correct direction
 submit({ commandId: "core.note.set-written-pitch", target: { kind: "note", noteId }, payload })
 ```
+
+## 8. GD-0 Additive Domain Transaction Contract
+
+GD-0 不改写上述 K1-2 Core-only 合同，而是为后续 integrated construction 固定以下兼容扩展：
+
+- Core 与启动期已安装的官方领域命令继续共用 `CommandBus.submit(unknown)` 与 gateway submit；不增加 Guitar 专用写入口。
+- 六个现有 Core command ID、结果、no-op、version、history、undo/redo 与 `replayCoreCommands()` 保持不变。
+- integrated construction 通过不可变 catalog 严格路由 namespaced domain command，并使用同一个 document/version/history/replay/dirty/event owner。
+- 一个语义命令可准备一个私有非空 effect set；所有 Core/extension effects 在同一 isolated candidate 中应用并形成一个 history entry。effect、inverse、history internals、patch 和 whole-document replacement 均不公开。
+- live submit 与 integrated replay 使用相同 catalog、decode、target/ownership、effect、validation、classification 和 failure pipeline。
+- 失败或 no-op 保持完整状态不变；semantic invalid 拒绝，profile unsupported 可提交并返回 Core + module 完整分类。
+- generic Core pitch command 不推断弦品；若已安装领域验证发现现有 placement 将不一致，则整笔 Core 命令拒绝，调用方须使用领域命令替换或清除 placement。
+
+权威合同见 `.trellis/spec/core-kernel/backend/domain-transaction-integration.md`。GD-0 不授权当前生产代码修改。

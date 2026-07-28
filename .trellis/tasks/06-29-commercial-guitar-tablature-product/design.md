@@ -120,7 +120,7 @@ Pure Core Kernel V1 可以定义外部导入/导出贡献点的抽象 descriptor
 - Static Capability Gateway: 七个 capability 互不蕴含，模块先授权再委托既有 CommandBus/selector/read/subscribe；trusted Core Host direct API 保留。
 - Minimal Summary: 只读、确定排序、深冻结、脱离内部状态，不泄露 grants、trust、handler、index、Registry 或可变 `ScoreDocument`。
 - Command-only Write: Registry 不产生第二写入路径；修改谱面仍走既有语义命令事务。
-- Immutable Runtime: ready 后无 mutation API、`registryVersion` 或 Registry event；moduleId 不进入 history/replay/K1-3 events。
+- Immutable Runtime: K1-4 Core-only ready Registry 无 mutation API、`registryVersion` 或 Registry event，moduleId 不进入 Core-only history/replay/K1-3 events；未来 GD-2 integrated construction 仅按 GD-0 additive contract 保存私有 contribution identity 并公开 namespaced command identity。
 
 明确不放进 Core Kernel:
 
@@ -260,3 +260,17 @@ Pure Core Kernel V1 可以定义外部导入/导出贡献点的抽象 descriptor
 - 注册表 handler 运行时注销/卸载、第三方插件热插拔、运行中启用/禁用和运行中卸载已明确不作为稳定性目标；未来第三方插件配置变更必须启动前完成并通过重启生效。官方随应用发布的内置模块会有多个，UI 模块只是其中一类，具体模块清单、数量和拆分方式后续再确定；官方和第三方的权限模型不再按来源二分，最终都收敛到同一套注册协议，这些生命周期治理能力不作为当前内核总规划和 Kernel V1 实现阻塞项。
 - 外部工程目录结构、monorepo 方案、`apps/desktop` 和 `packages/*` 拆分不属于当前 Core Kernel 规划阶段；这些只在后续工程脚手架阶段根据已确认内核边界和模块协作方式重新评估，不作为当前内核规划阻塞项。
 - 当前设计文档无新增设计问题；K1-6 测试基线 `355512aba4a8057d2d75aa665d74df49cdd2e23c` 已在审查基线 `989c1f7a4056b14d3d59918c9b96874ad71591a8` 通过独立验收，Pure Core Kernel V1 已关闭。后续实现仍需独立规划和批准。
+
+## GD-0：Guitar Domain / Core 事务集成合同（2026-07-28）
+
+GD-0 已批准文档合同，权威来源为 `.trellis/tasks/07-28-gd-0-guitar-domain-core-transaction-contract/` 与 `.trellis/spec/core-kernel/backend/domain-transaction-integration.md`。当前仅同步合同，不代表 Core V1.1 或 Guitar Domain 生产实现已经开始。
+
+- Core 与官方领域命令共用现有 `CommandBus.submit(unknown)` / gateway submit；不建立 Guitar facade、第二个 CommandBus、第二套 history/replay/dirty/event。
+- 产品组合根在启动期装配静态链接的官方贡献，形成不可变 catalog；Core 保持对 Guitar Domain 的零依赖，ready 后无注册、卸载、热插拔或 Registry change event。
+- 一个 Guitar placement 命令以私有细粒度 effect set 原子更新 Core `WrittenPitch` 与 Part-owned `GuitarExtension`，只生成一个版本、一个 history entry 和一个 committed fact；公开 API 不暴露 patch、内部 effect 或整文档替换。
+- changed candidate 先跑 Core semantic，再按 frozen catalog 顺序跑全部领域 semantic；全部语义有效后才运行 Core 与领域 profile。unsupported 可提交，semantic invalid 全量回滚。
+- 已知官方扩展声明所需贡献缺失时，产品以 detached、lossless read-only session 打开；未知 opaque ExtensionBlock 继续按 Core V1 保真且不会自动阻塞写入。
+- integrated result/event/read 使用 additive data-only 合同；领域 code 由 namespace 所有者负责，Core 不枚举 Guitar code。应用公共根不导出错误类、compiled handler、effect、history internals 或 mutable catalog。
+- 所有 public `unknown` guard/decoder 的目标合同是 descriptor-first、no-getter、no-throw；先由 CK1.1-0 独立实现和验收。
+
+固定执行顺序为：CK1.1-0 hostile-input guard → CK1.1-1 official module SDK → GD-1 GuitarExtension → GD-2 通用领域命令 seam → GD-3 Guitar 命令 → GD-4 集成门禁。每一项均为独立 Trellis 任务；当前 GD-0 不创建或激活这些下游任务。
