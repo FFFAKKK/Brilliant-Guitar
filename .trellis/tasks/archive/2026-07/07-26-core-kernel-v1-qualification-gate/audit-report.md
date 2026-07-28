@@ -6,6 +6,12 @@
 
 At accepted HEAD `d92a7586536ac8757c318ae6f75aabd8698f85ac`, no reproducible behavior contradicts an approved K1-1 through K1-6 contract. Fresh gates pass, 25/26 contract groups have specification and decisive test evidence, and one public-helper boundary remains under-specified. There are no P0, P1, or P2 findings and no repair blocker.
 
+## User Acceptance
+
+The user formally accepted this qualification result on 2026-07-28. The verdict and all recorded evidence remain unchanged: 169/169 tests passed, 25 contract groups are covered, there are no coverage gaps or reproducible bugs, and the sole P3 specification gap is nonblocking.
+
+For `CKV1-AUDIT-001`, the accepted future contract is **descriptor-first, no-throw, and no-getter**. Its specification and regression coverage are deferred to a separately approved GD-0/Core V1.1 prerequisite contract; this audit performs no repair or implementation.
+
 ## Audit Baseline and Boundaries
 
 - Branch: `codex/k1-6-core-kernel-integration-gate`
@@ -77,7 +83,7 @@ isJsonValue(object with enumerable value getter)      -> true; getCalls = 1
 
 **Affected state:** none. The observation is limited to direct predicate calls; no `CommandBus`, history, dirty/checkpoint, event, Registry, report, or migration state is created or mutated. Approved strict public decoders continue to return their closed results.
 
-**Next action:** the planner should make one explicit API decision in a separate approved task: either document these predicates as trusted-value helpers, or require a descriptor-first/no-throw hostile-input contract and add focused regression tests. No Core repair is justified until that contract is chosen.
+**Accepted disposition (2026-07-28):** the public unknown-value guard contract is fixed as descriptor-first, no-throw, and no-getter. Specification and focused regression coverage remain deferred to a separately approved GD-0/Core V1.1 prerequisite contract. No Core repair occurs in this qualification task.
 
 ## Severity Summary
 
@@ -90,4 +96,4 @@ isJsonValue(object with enumerable value getter)      -> true; getCalls = 1
 
 ## Final Decision
 
-Pure Core Kernel V1 passes functional-completeness and reproducible-defect qualification against its approved contracts, with the single nonblocking public-helper spec gap above. The audit does not authorize a repair or any Guitar/product implementation; either action remains separately planned and approved.
+Pure Core Kernel V1 passes functional-completeness and reproducible-defect qualification against its approved contracts, with the single nonblocking public-helper spec gap above. The user accepted this result on 2026-07-28 and authorized qualification-task archival. The audit does not authorize a repair or any Guitar/product implementation; either action remains separately planned and approved.
