@@ -62,10 +62,10 @@ GD-1 将定义：
 - noteId 到 string/fret 的演奏位置映射。
 - 吉他技巧 payload、引用规则、codec、semantic validation 与 `guitar.*` diagnostics。
 - 未知/新版 Guitar payload 的降级与迁移策略。
-- `ExtensionBlock.schemaVersion` 的有限精确支持列表；missing/incompatible/future schema 的 lossless read-only 与 handler 禁止执行规则。
-- public write/validation availability 的 `writable|read-only`、`complete|incomplete` discriminant 与排序稳定 facts，避免 Core-only validation 被表述为完整领域语义有效。
+- `ExtensionBlock.schemaVersion` 的有限精确支持列表与逐 block 协商；mixed owner/version 时只向单次 validator/classifier 提供 compatible filtered view，missing/incompatible/future block 对全部 handler 零调用并 lossless 保留。
+- public write/validation availability 的 `writable|read-only`、`complete|incomplete` discriminant 与排序稳定完整 facts；mixed unavailable/incompatible 写路径固定选择 incompatible code，避免 Core-only validation 被表述为完整领域语义有效。
 
-上述各块不能把 guitar 字段塞回 Core Note/Event/metadata，不能假设旧 `TechniqueData` registry 已存在，也不能建立第二套 document/history/replay/dirty/event owner。GD-2 还必须实现候选中固定的 integrated factory、bus/gateway result、availability 与 replay 公共签名/discriminant；当前 GD-0 不授权创建或激活任何下游实现任务。
+上述各块不能把 guitar 字段塞回 Core Note/Event/metadata，不能假设旧 `TechniqueData` registry 已存在，也不能建立第二套 document/history/replay/dirty/event owner。GD-2 还必须实现候选中固定且经 docs-only fixture 编译的 integrated factory、Registry 实例 gateway overload/完整保留 surface、availability 与 replay 公共签名/discriminant；当前 GD-0 不授权创建或激活任何下游实现任务。
 
 ### 已完成：K1-2 Commands / Transactions / History
 

@@ -99,7 +99,7 @@ The public write method remains `submit(unknown)`, but its compile-time result i
 
 The following minimum public names, fields, and discriminants are frozen by GD-0. Later implementation tasks may choose private class/module layout but do not rename or widen this surface without returning GD-0 to planning:
 
-```typescript
+```typescript public-contract
 type ModuleIssueCode = `${string}.${string}`;
 
 interface ModuleKernelIssue {
@@ -245,7 +245,7 @@ Affected-fact rules:
 
 The composition root supplies this frozen public compatibility declaration:
 
-```typescript
+```typescript public-contract
 interface ExtensionRuntimeRequirementV1 {
   readonly requirementVersion: 1;
   readonly namespace: string;
@@ -270,14 +270,23 @@ Compatibility resolution is deterministic:
 
 Schema compatibility is evaluated before executable availability, so an unsupported/future version always yields the stable incompatible fact even when the declared contribution is also absent. Every missing or incompatible required contribution places the session in lossless read-only mode. The complete uninterpreted target `ExtensionBlock`, including namespace, `schemaVersion`, owner, and nested payload, remains deeply equal in JSON-value semantics through decode/encode/read/replay rejection; physical byte identity is outside Core.
 
+Compatibility is resolved per persisted `ExtensionBlock`, not once per namespace or contribution. When one contribution faces both an exactly compatible block and an incompatible/future block, GD-0 fixes a **block-scoped compatible view**:
+
+- the incompatible/future block is never passed to that contribution's decoder, validator, classifier, command handler, effect handler, or affected-fact handler;
+- the contribution validator is invoked at most once during a validation pass with a detached input containing Core score read data plus only its exactly compatible blocks, sorted in canonical extension-owner order;
+- after Core and all compatible domain validators pass, the contribution classifier is invoked at most once with the same filtered block set and owner order;
+- the integrated session is still read-only and its validation availability remains `incomplete`, because the incompatible fact describes semantics that were not validated;
+- submit, undo, redo, and non-empty replay reject at availability preflight, so no command/effect/fact handler runs in this degraded session;
+- the excluded block's namespace, owner, `schemaVersion`, and complete nested payload remain JSON-semantically unchanged. The private handler-input type name and class layout remain for CK1.1-1/GD-2, but an unfiltered document or incompatible block may not be exposed as a substitute.
+
 Read-only degraded behavior:
 
 - decode, encode, snapshots, selectors, ownership/range reads, incomplete validation reports, and opaque extension round-trip remain available;
 - integrated reads expose both stable write availability and stable validation availability facts;
-- submit, undo, and redo reject before command/effect processing with `command.required-contribution-unavailable` or `command.required-contribution-incompatible` and unchanged state;
+- submit, undo, and redo reject at the same availability preflight before command decoding, history checks, or effect processing, using the deterministic mixed-gap failure rule in section 7.4 and leaving state unchanged;
 - no incompatible decoder, validator, classifier, command handler, effect handler, or fact generator executes;
 - checkpoint marking remains available because it changes session bookkeeping rather than document content;
-- integrated replay rejects before the first write while returning a detached unchanged initial document and the same availability facts;
+- integrated replay applies the same availability preflight to each attempted command; an empty sequence may replay unchanged, while the first attempted write rejects with the deterministic mixed-gap failure code, detached unchanged initial document, and the same complete fact list;
 - installing an exactly compatible contribution and reopening permits complete validation and may restore writability;
 - the kernel never deletes, rewrites, guesses, or implicitly migrates unavailable or incompatible extension data.
 
@@ -328,15 +337,23 @@ GD0-D001 through GD0-D005 are user-approved plan decisions. This synchronized do
 
 GD-0 freezes the following minimum public construction surface. `KernelIntegratedCatalog` is an opaque, deeply frozen handle produced only by the separately approved official-catalog compiler; application callers cannot construct or mutate its bindings.
 
-```typescript
+```typescript public-contract
+declare const kernelIntegratedCatalogBrand: unique symbol;
+
+interface KernelIntegratedCatalog {
+  readonly [kernelIntegratedCatalogBrand]: true;
+}
+
 type IntegratedCommandBusCreationResult =
   | { readonly ok: true; readonly value: IntegratedCommandBus }
   | { readonly ok: false; readonly failure: KernelCommandBusCreationFailure };
 
-CommandBus.createIntegrated(
-  initialDocument: ScoreDocument,
-  catalog: KernelIntegratedCatalog,
-): IntegratedCommandBusCreationResult;
+declare namespace CommandBus {
+  function createIntegrated(
+    initialDocument: ScoreDocument,
+    catalog: KernelIntegratedCatalog,
+  ): IntegratedCommandBusCreationResult;
+}
 
 interface IntegratedCommandBus {
   submit(input: unknown): KernelCommandResult;
@@ -394,7 +411,7 @@ The official module SDK exposes a narrow `ModuleKernelErrorBase` derived from th
 
 Integrated reads add detached, deeply frozen write and validation availability using these exact public discriminants:
 
-```typescript
+```typescript public-contract
 type KernelDomainAvailabilityFact =
   | {
       readonly reason: "required-contribution-unavailable";
@@ -478,13 +495,28 @@ type KernelCommandBusCreationFailure =
 
 Facts are deduplicated and sorted by namespace, owner identity, extension schema version, module, contribution, and reason. `supportedSchemaVersions` is copied from the canonical requirement. Facts contain no extension payload, filesystem path, stack, handler, or raw error. `complete` means every known required official-domain block has an installed exactly compatible validator and all of those validators completed; Core-only semantic validation with any fact above is always exposed as `incomplete`, never as complete domain-semantic validity.
 
+Availability failure selection is one deterministic preflight shared by `submit`, `undo`, `redo`, and every attempted integrated replay command:
+
+1. Canonicalize the complete availability fact list without dropping either reason.
+2. If at least one fact has reason `required-contribution-incompatible`, return `command.required-contribution-incompatible`.
+3. Otherwise, because the list is nonempty, return `command.required-contribution-unavailable`.
+4. In both branches, `failure.facts` is the full canonical list and is deeply equal to the facts exposed by the read/replay availability values; the failure code summarizes the highest-priority reason and does not filter the facts.
+
+| Canonical availability facts | submit / undo / redo / first replay write | Facts returned |
+|---|---|---|
+| unavailable only | `command.required-contribution-unavailable` | full unavailable list |
+| incompatible only | `command.required-contribution-incompatible` | full incompatible list |
+| unavailable + incompatible, in any input order | `command.required-contribution-incompatible` | full mixed canonical list |
+
+This availability guard runs before command decoding and before empty-history checks, so all four write paths use the same code/facts relation and preserve the complete pre-call state. Empty integrated replay remains the sole no-write case and may return `replayed` unchanged with read-only/incomplete availability.
+
 The same two availability values appear on integrated replay results and every public integrated validation report/read. Unknown undeclared opaque extensions remain outside this official-domain completeness claim and retain Core V1 preservation behavior.
 
 ### 7.5 Registry gateway surface
 
 The existing Core overload/result remains unchanged. An integrated bus uses this additive overload and exact result discriminants:
 
-```typescript
+```typescript public-contract
 type IntegratedKernelModuleGatewayCreationResult =
   | { readonly ok: true; readonly gateway: IntegratedKernelModuleGateway }
   | {
@@ -494,20 +526,25 @@ type IntegratedKernelModuleGatewayCreationResult =
         | { readonly code: "registry.assembly-mismatch" };
     };
 
-KernelRegistry.createGateway(
-  moduleId: string,
-  commandBus: IntegratedCommandBus,
-): IntegratedKernelModuleGatewayCreationResult;
+interface KernelRegistry {
+  createGateway(
+    moduleId: string,
+    commandBus: IntegratedCommandBus,
+  ): IntegratedKernelModuleGatewayCreationResult;
+}
 
-interface IntegratedKernelModuleGateway {
+type IntegratedKernelModuleGateway = Omit<
+  KernelModuleGateway,
+  "submit" | "undo" | "redo" | "read"
+> & {
   submit(input: unknown): KernelGatewayResult<KernelCommandResult>;
   undo(): KernelGatewayResult<KernelCommandResult>;
   redo(): KernelGatewayResult<KernelCommandResult>;
   read(): KernelGatewayResult<ReadResult<IntegratedKernelReadState>>;
-}
+};
 ```
 
-Other approved capability-gated gateway operations keep their K1-4 behavior. Both factory and gateway reject cross-catalog/Core-only pairings with stable data-only failures before exposing a writable session.
+The interface merge above is an additive **instance overload** on `KernelRegistry`; it does not create a static factory. `Omit` replaces only the four state/result-bearing methods, so the accepted K1-4 `summary`, every typed `select` overload, and `subscribe` remain present with their existing capability gates and result types. Both factory and gateway reject cross-catalog/Core-only pairings with stable data-only failures before exposing a writable session.
 
 ## 8. Compiled Domain Contribution ABI
 
@@ -642,7 +679,7 @@ The transaction remains invisible until step 7. Unsupported profile issues are w
 
 `replayCoreCommands()` stays unchanged. GD-0 freezes this additive public replay signature and result discriminants:
 
-```typescript
+```typescript public-contract
 type ReplayKernelCommandsResult =
   | {
       readonly status: "replayed";
@@ -667,7 +704,7 @@ type ReplayKernelCommandsResult =
       readonly failure: KernelCommandBusCreationFailure;
     };
 
-replayKernelCommands(
+declare function replayKernelCommands(
   initialDocument: ScoreDocument,
   acceptedCommands: readonly unknown[],
   catalog: KernelIntegratedCatalog,
@@ -678,7 +715,7 @@ replayKernelCommands(
 - It replays decoded semantic commands only; internal effects, undo/redo session logs, events, timestamps, and history snapshots are not replay input.
 - The same initial document, catalog, and accepted command sequence produce deeply equal final documents, result/status/version sequences, module assessments, availability facts, and failure index.
 - Results/final document are detached from the catalog and any live bus.
-- A required unavailable or schema-incompatible contribution produces read-only/incomplete availability. An empty sequence may return `replayed` with the detached unchanged document; the first attempted write returns `rejected` at its exact index without executing an incompatible handler.
+- A required unavailable or schema-incompatible contribution produces read-only/incomplete availability. An empty sequence may return `replayed` with the detached unchanged document; the first attempted write returns `rejected` at its exact index using the same mixed-gap priority and full fact list as submit/undo/redo, without executing an incompatible handler.
 - Input commands and catalog/profile objects are cloned/frozen or safely read so later caller mutation cannot change results.
 
 ## 12. Event Fact Design
@@ -701,6 +738,8 @@ The command preparation result includes affected `ScoreAddress` facts rather tha
 - The application-facing root exports integrated factories/data contracts but omits compiled handlers, private effects, history entries, module effect payload decoders, mutable catalog objects, and error classes.
 - The official module SDK is a separate reviewed entry point. It exposes only descriptor/building types, restricted effect requests, issue/error construction, and read-only contribution contexts required by official modules.
 - Existing forbidden-dependency and public-boundary tests are extended rather than weakened.
+- Every authoritative public declaration fence is tagged `typescript public-contract` and compiled by the docs-only fixture at `contract-fixtures/verify-public-contracts.mjs`. The fixture must report zero parse/type diagnostics and prove the integrated gateway retains `summary`, `select`, and `subscribe`; it does not alter product `tsconfig` or production tests.
+- GD-2 downstream fixtures must include (a) mixed unavailable+incompatible facts and equal failure selection/full facts across submit, undo, redo, and first replay write, and (b) one contribution with compatible and incompatible/future blocks at different owners, proving the filtered single validate/classify scope, zero incompatible/write-handler calls, and lossless excluded payload.
 - The Core V1.1 domain runtime seam is isolated in GD-2; CK1.1-0/CK1.1-1 own only their approved prerequisites. GD-2 must rerun K1-2, K1-3, K1-4, K1-5, K1-6, and qualification gates.
 
 The Brilliant Guitar product composition root always uses integrated construction for product documents. The retained Core-only constructor is the compatible low-level Core API for generic Core consumers/tests; it is not the product path for a document whose official domain compatibility requirements are known.

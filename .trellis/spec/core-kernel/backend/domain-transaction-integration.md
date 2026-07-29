@@ -50,7 +50,13 @@ Core Kernel            -> zero imports from Guitar Domain
 
 The names, parameters, result fields, and discriminants below are frozen by GD-0. CK1.1-1/GD-2 may design private handlers, builders, and class layout, but may not substitute another public construction or replay contract without returning GD-0 to planning.
 
-```typescript
+```typescript public-contract
+declare const kernelIntegratedCatalogBrand: unique symbol;
+
+interface KernelIntegratedCatalog {
+  readonly [kernelIntegratedCatalogBrand]: true;
+}
+
 interface ExtensionRuntimeRequirementV1 {
   readonly requirementVersion: 1;
   readonly namespace: string;
@@ -188,10 +194,12 @@ type IntegratedCommandBusCreationResult =
   | { readonly ok: true; readonly value: IntegratedCommandBus }
   | { readonly ok: false; readonly failure: KernelCommandBusCreationFailure };
 
-CommandBus.createIntegrated(
-  initialDocument: ScoreDocument,
-  catalog: KernelIntegratedCatalog,
-): IntegratedCommandBusCreationResult;
+declare namespace CommandBus {
+  function createIntegrated(
+    initialDocument: ScoreDocument,
+    catalog: KernelIntegratedCatalog,
+  ): IntegratedCommandBusCreationResult;
+}
 
 interface IntegratedCommandBus {
   submit(input: unknown): KernelCommandResult;
@@ -211,17 +219,22 @@ type IntegratedKernelModuleGatewayCreationResult =
         | { readonly code: "registry.assembly-mismatch" };
     };
 
-KernelRegistry.createGateway(
-  moduleId: string,
-  commandBus: IntegratedCommandBus,
-): IntegratedKernelModuleGatewayCreationResult;
+interface KernelRegistry {
+  createGateway(
+    moduleId: string,
+    commandBus: IntegratedCommandBus,
+  ): IntegratedKernelModuleGatewayCreationResult;
+}
 
-interface IntegratedKernelModuleGateway {
+type IntegratedKernelModuleGateway = Omit<
+  KernelModuleGateway,
+  "submit" | "undo" | "redo" | "read"
+> & {
   submit(input: unknown): KernelGatewayResult<KernelCommandResult>;
   undo(): KernelGatewayResult<KernelCommandResult>;
   redo(): KernelGatewayResult<KernelCommandResult>;
   read(): KernelGatewayResult<ReadResult<IntegratedKernelReadState>>;
-}
+};
 
 type ReplayKernelCommandsResult =
   | {
@@ -247,14 +260,14 @@ type ReplayKernelCommandsResult =
       readonly failure: KernelCommandBusCreationFailure;
     };
 
-replayKernelCommands(
+declare function replayKernelCommands(
   initialDocument: ScoreDocument,
   acceptedCommands: readonly unknown[],
   catalog: KernelIntegratedCatalog,
 ): ReplayKernelCommandsResult;
 ```
 
-Existing Core-only constructors, results, gateway overload, and `replayCoreCommands()` remain unchanged.
+The `CommandBus` namespace declaration represents an additive static factory on the accepted class. The `KernelRegistry` interface merge represents an additive **instance overload** on the accepted Registry instance; no static Registry factory is introduced. The integrated gateway replaces only `submit`, `undo`, `redo`, and `read`, so K1-4 `summary`, every typed `select` overload, and `subscribe` remain present with their accepted capability gates and result types. Existing Core-only constructors, results, gateway overload, and `replayCoreCommands()` remain unchanged.
 
 ## Submission and Transaction Pipeline
 
@@ -298,9 +311,11 @@ Rejected and no-op operations leave document state, version, history, redo depth
 
 - `supportedSchemaVersions` is nonempty, strictly ascending, duplicate-free, positive safe integers. Compatibility uses exact equality with each target `ExtensionBlock.schemaVersion`; no range, “latest”, downgrade, guess, or implicit migration exists.
 - A declared namespace with no block produces no availability fact. A block with a listed version and absent contribution produces `required-contribution-unavailable`. A block with an unlisted version—including a future version—produces `required-contribution-incompatible` whether or not a contribution is present.
-- Incompatible contribution decoders, validators, classifiers, command/effect handlers, and fact generators do not execute. The full target extension envelope and nested JSON data remain unchanged.
+- Compatibility is resolved per persisted `ExtensionBlock`. If one contribution owns an exactly compatible block and an incompatible/future block, only the compatible block enters a detached block-scoped view in canonical owner order. The incompatible block is never passed to that contribution's decoder, validator, classifier, command/effect handler, or fact generator.
+- During each validation pass, `validate` runs at most once per contribution over Core score read data plus that filtered compatible view. After Core and compatible validators pass, `classify` runs at most once with the same filtered view. The session remains read-only and validation-incomplete because the excluded block is not domain-validated; the private handler-input type remains for CK1.1-1/GD-2.
+- The full excluded extension envelope and nested JSON data remain unchanged. Writes reject at availability preflight, so command/effect/fact handlers receive zero calls in the degraded session.
 - Integrated reads expose both `KernelWriteAvailability` and `KernelValidationAvailability`. Facts are canonical, deduplicated, sorted, detached, and deeply frozen. A Core-valid result with any missing/incompatible fact is `incomplete`; callers cannot label it complete installed-domain semantic validity.
-- Read-only sessions retain decode, encode, snapshot, selection, inspection, checkpoint bookkeeping, incomplete validation reporting, and exact opaque payload preservation. Submit, undo, and redo reject before processing with the matching unavailable/incompatible failure.
+- Read-only sessions retain decode, encode, snapshot, selection, inspection, checkpoint bookkeeping, incomplete validation reporting, and exact opaque payload preservation. Submit, undo, redo, and each attempted replay command use one preflight rule before command decoding or empty-history checks: if any canonical fact is incompatible, return `command.required-contribution-incompatible`; otherwise return `command.required-contribution-unavailable`. The returned `facts` always contain the full canonical list, including both reasons in a mixed state, and equal the read/replay availability facts. All four paths preserve the complete pre-call state; empty replay is the only no-write path and may return `replayed` unchanged with the same availability values.
 - Truly unknown undeclared ExtensionBlocks remain writable under accepted Core V1 semantics and are outside the known official-domain completeness claim.
 - Integrated replay consumes semantic command envelopes only and uses the same frozen catalog and execution pipeline as live submit. It returns detached results and final document; internal effects, undo/redo logs, events, and history snapshots are not replay input. Empty replay may succeed unchanged in read-only mode; the first write rejects at its exact index.
 - Unknown and non-target extension subtrees remain deeply equal through success, rejection, no-op, undo, redo, replay, missing/incompatible-domain degradation, and codec round-trip.
@@ -328,6 +343,8 @@ Rejected and no-op operations leave document state, version, history, redo depth
 | Known block version exactly supported and contribution present | `writable` + validation `complete` after all validators succeed | compatible handlers may execute |
 | Known block version exactly supported but contribution absent | read-only + validation `incomplete`; fact reason `required-contribution-unavailable` | no write handler executes; full block preserved |
 | Known block version unlisted, including a future version | read-only + validation `incomplete`; fact reason `required-contribution-incompatible` | no contribution handler for that block executes; full block preserved |
+| Unavailable and incompatible facts coexist | read-only + validation `incomplete`; every write path returns `command.required-contribution-incompatible` | full mixed canonical fact list returned; no state or handler activity |
+| Same contribution owns one compatible and one incompatible/future block | read-only + validation `incomplete`; compatible subset may be validated/classified once | incompatible block reaches no handler; full payload remains unchanged |
 | Compatible domain validator returns semantic issues | `command.contribution-semantic-invalid` with ordered module issues | complete pre-operation state retained |
 | Contribution violates its data contract or throws/returns a Promise-like value in a synchronous hook | `command.contribution-contract-violation` or `command.contribution-internal-error` | complete pre-operation state retained |
 | Integrated component uses a different/forged catalog identity | `command.assembly-mismatch` or `registry.assembly-mismatch` | reject before session/gateway exposure |
@@ -336,13 +353,14 @@ Rejected and no-op operations leave document state, version, history, redo depth
 ## Good / Base / Bad Cases
 
 - **Good:** a compatible official contribution validates one Part-owned extension, then one placement command atomically changes Core pitch and owned extension data with one version/history/event fact.
-- **Base:** a future `schemaVersion` opens lossless read-only, reports one canonical incompatible fact, performs zero incompatible handler calls, and round-trips the full extension JSON value unchanged.
+- **Base:** a mixed-owner/version document gives one contribution an exactly compatible block and an incompatible/future block. It opens lossless read-only, exposes the full canonical facts, validates/classifies only the compatible block-scoped view at most once, performs zero incompatible-block and write-handler calls, and round-trips the full excluded extension JSON value unchanged.
 - **Bad:** silently skipping an absent validator and returning “complete/valid”, invoking a handler before exact-version negotiation, or replacing the integrated path with a second command/history owner.
 
 ## Tests Required by Downstream Gates
 
-- Compile-time/public-boundary assertions for the exact factory, bus/gateway result, availability, issue/failure, and replay discriminants; Core-only signatures remain unchanged.
-- Table-driven absent/compatible/incompatible/future-schema cases with sorted/deduplicated facts, read-only rejection, validation completeness, zero incompatible handler calls, deep freeze, and input isolation.
+- The docs-only contract compiler at `.trellis/tasks/07-28-gd-0-guitar-domain-core-transaction-contract/contract-fixtures/verify-public-contracts.mjs` must report zero parse or type diagnostics for every tagged authoritative `typescript public-contract` fence. Downstream compile-time/public-boundary assertions cover the same exact factory, instance gateway overload/full retained gateway surface, availability, issue/failure, and replay discriminants; Core-only signatures remain unchanged.
+- Table-driven absent/compatible/incompatible/future-schema cases with sorted/deduplicated facts, read-only rejection, validation completeness, zero incompatible handler calls, deep freeze, and input isolation. Include a mixed unavailable+incompatible fixture and assert identical code/full facts for submit, undo, redo, and first replay write.
+- Include a mixed-owner/version fixture for one contribution with both a compatible block and an incompatible/future block. Assert one filtered validator call and at most one filtered classifier call in canonical owner order, zero incompatible-block decoder/validator/classifier calls, zero command/effect/fact calls, and full excluded-payload preservation.
 - Atomic multi-effect submit/no-op/reject/undo/redo, full rollback at every failure phase, one history entry/version/event, checkpoint/dirty parity, and live/replay deep equality.
 - Unknown/non-target extension preservation across codec, success, rejection, no-op, undo, redo, replay, and degraded reads.
 - Hostile accessor/Proxy/sparse/cyclic inputs, synchronous throws, Promise-like synchronous hooks, subscriber rejection, overflow, privacy allowlists, forbidden dependencies, and public export boundaries.

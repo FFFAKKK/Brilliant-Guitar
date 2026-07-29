@@ -156,7 +156,8 @@ GD-1 adds an isolated package/spec/fixture and no Core runtime seam. Revert the 
 
 - Add integrated CommandBus construction while preserving `CommandBus.create()`.
 - Add catalog-bound integrated result/read/event/replay data contracts.
-- Add `KernelWriteAvailability` and required-contribution-unavailable failure data.
+- Add `KernelWriteAvailability` plus unavailable/incompatible failure data with one shared priority rule: any incompatible fact selects `command.required-contribution-incompatible`; otherwise a nonempty gap list selects `command.required-contribution-unavailable`; both return the full canonical facts.
+- Implement the integrated Registry entry as an instance `createGateway` overload. Retain the accepted K1-4 `summary`, all typed `select` overloads, and `subscribe` while replacing only submit/undo/redo/read result types.
 - Consume and, only where the approved runtime requires it, additively extend the accepted CK1.1-1 SDK entry point for contribution descriptors, restricted effects, and `ModuleKernelErrorBase`/issue conversion; do not duplicate it inside command runtime modules.
 - Keep compiled functions, effects, history entries, mutable state, and error classes out of the application-facing Core root.
 
@@ -187,6 +188,7 @@ GD-1 adds an isolated package/spec/fixture and no Core runtime seam. Revert the 
 ### 7.5 Validation and classification
 
 - Core semantics first; every installed exactly schema-compatible domain validator afterward in frozen order.
+- Build a detached contribution view from Core score read data plus only that contribution's exactly compatible blocks in canonical owner order. Invoke `validate` at most once per contribution per validation pass; invoke `classify` at most once after semantic success with the same filtered block set.
 - Collect deterministic semantic issues.
 - Core profile first; every domain profile afterward.
 - Finish all classification before visible commit.
@@ -197,7 +199,8 @@ GD-1 adds an isolated package/spec/fixture and no Core runtime seam. Revert the 
 - Validate finite exact `supportedSchemaVersions`, compare each known target block and compiled contribution during integrated construction, and classify absent/compatible/incompatible/future-schema cases before any handler call.
 - Expose sorted frozen write and validation availability with stable unavailable/incompatible facts.
 - Permit detached reads/codec preservation/checkpoint bookkeeping.
-- Reject submit/undo/redo before processing when required contributions are missing or schema-incompatible; incompatible handlers receive zero calls.
+- Reject submit/undo/redo and each attempted replay command through the same availability preflight before command decoding or history checks. Mixed gaps select the incompatible code but return every unavailable and incompatible fact.
+- Never expose incompatible/future blocks to decoder, validator, classifier, command, effect, or fact handlers. In a mixed compatible/incompatible contribution, only the compatible filtered view may be validated/classified; the session remains read-only/incomplete and the excluded payload remains unchanged.
 - Preserve undeclared opaque-extension Core V1 behavior.
 
 ### 7.7 Unified events
@@ -251,6 +254,8 @@ GD-2 uses a test-only neutral domain contribution rather than importing Guitar D
 - contribution/effect/validator/classifier/fact throws preserve full state;
 - read-only known-missing/incompatible/future-schema behavior, explicit validation completeness, and unknown opaque-extension compatibility;
 - exact supported-schema negotiation, future/incompatible schema handler suppression, incomplete validation facts, and lossless payload preservation;
+- mixed unavailable+incompatible facts with identical priority/full-fact behavior for submit, undo, redo, and first replay write;
+- a mixed-owner/version contribution fixture proving one filtered validate/classify call scope, canonical compatible-owner order, zero incompatible-block and write-handler calls, and exact excluded-payload preservation;
 - live/replay deep equality;
 - existing six Core commands retain exact Core-only results/events.
 
@@ -311,6 +316,7 @@ Use one deterministic four-measure standard-six-string Guitar document containin
 ### Final validation commands
 
 ```powershell
+node .trellis/tasks/07-28-gd-0-guitar-domain-core-transaction-contract/contract-fixtures/verify-public-contracts.mjs
 npm run typecheck
 npm run build
 npm test

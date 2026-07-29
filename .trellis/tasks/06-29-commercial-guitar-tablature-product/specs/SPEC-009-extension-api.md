@@ -59,7 +59,7 @@
 - EXT-026: GD-0 official domain command 仍通过现有 `CommandBus.submit(unknown)` / gateway submit；不得增加领域专用可变 facade 或第二条 history/replay/event 路径。
 - EXT-027: `kernel.domain-commands.v1` 只绑定产品 composition root 静态链接的 official/system-trusted compiled contribution；manifest 永不携带函数。
 - EXT-028: 领域 contribution 只拥有声明的 extension namespace、命令/effect/issue code；Core 不枚举 Guitar code，也不导入 Guitar Domain。
-- EXT-029: known official extension requirement 必须以有限精确列表协商 `ExtensionBlock.schemaVersion`。required contribution 缺失或版本不兼容（含 future schema）时，只允许 lossless read-only + validation-incomplete integrated session，不执行不兼容 handler，并原样保留扩展；unknown opaque extension 继续按 Core V1 保真/可写。
+- EXT-029: known official extension requirement 必须以有限精确列表逐 block 协商 `ExtensionBlock.schemaVersion`。required contribution 缺失或版本不兼容（含 future schema）时，只允许 lossless read-only + validation-incomplete integrated session；mixed unavailable/incompatible facts 统一以 incompatible failure code 概括并返回完整 canonical facts。同一 contribution 的 mixed owner/version 输入只向单次 validator/classifier 提供 compatible block-scoped view，不兼容 block 不进入任何 handler 且完整保真；unknown opaque extension 继续按 Core V1 保真/可写。
 - EXT-030: GD-0 不授权第三方 Extension Host、PluginManifest 加载、runtime register/unregister、hot reload 或插件代码执行。
 
 ## 未来 PluginManifest 契约
