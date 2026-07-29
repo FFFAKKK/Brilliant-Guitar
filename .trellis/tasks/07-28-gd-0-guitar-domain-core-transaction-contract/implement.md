@@ -188,7 +188,7 @@ GD-1 adds an isolated package/spec/fixture and no Core runtime seam. Revert the 
 ### 7.5 Validation and classification
 
 - Core semantics first; every installed exactly schema-compatible domain validator afterward in frozen order.
-- Build a detached contribution view from Core score read data plus only that contribution's exactly compatible blocks in canonical owner order. Invoke `validate` at most once per contribution per validation pass; invoke `classify` at most once after semantic success with the same filtered block set.
+- Build a detached contribution view from Core score read data plus only that contribution's exactly compatible blocks in canonical owner order. A contribution with zero compatible blocks receives `validate/classify = 0/0`. A contribution with one or more compatible blocks receives exactly one `validate` call in every applicable pass; only after every applicable validator succeeds and classification begins does it receive exactly one `classify` call with the same filtered view. Any semantic issue, throw, or contract violation yields classifier count `0` for the pass.
 - Collect deterministic semantic issues.
 - Core profile first; every domain profile afterward.
 - Finish all classification before visible commit.
@@ -200,7 +200,7 @@ GD-1 adds an isolated package/spec/fixture and no Core runtime seam. Revert the 
 - Expose sorted frozen write and validation availability with stable unavailable/incompatible facts.
 - Permit detached reads/codec preservation/checkpoint bookkeeping.
 - Reject submit/undo/redo and each attempted replay command through the same availability preflight before command decoding or history checks. Mixed gaps select the incompatible code but return every unavailable and incompatible fact.
-- Never expose incompatible/future blocks to decoder, validator, classifier, command, effect, or fact handlers. In a mixed compatible/incompatible contribution, only the compatible filtered view may be validated/classified; the session remains read-only/incomplete and the excluded payload remains unchanged.
+- Never expose incompatible/future blocks to decoder, validator, classifier, command, effect, or fact handlers. Initial construction/explicit validation, changed candidates, undo, redo, and replay candidate passes use the same `0/0`, `1/1`, or validation-failure `1/0` rule over the compatible filtered view. Read-only submit/undo/redo/first replay write stops at availability preflight with operation-phase validator/classifier/write counts `0/0/0`; the session remains read-only/incomplete and the excluded payload remains unchanged.
 - Preserve undeclared opaque-extension Core V1 behavior.
 
 ### 7.7 Unified events
@@ -255,7 +255,7 @@ GD-2 uses a test-only neutral domain contribution rather than importing Guitar D
 - read-only known-missing/incompatible/future-schema behavior, explicit validation completeness, and unknown opaque-extension compatibility;
 - exact supported-schema negotiation, future/incompatible schema handler suppression, incomplete validation facts, and lossless payload preservation;
 - mixed unavailable+incompatible facts with identical priority/full-fact behavior for submit, undo, redo, and first replay write;
-- a mixed-owner/version contribution fixture proving one filtered validate/classify call scope, canonical compatible-owner order, zero incompatible-block and write-handler calls, and exact excluded-payload preservation;
+- mixed-owner/version table fixtures proving: no compatible block gives validator/classifier `0/0`; compatible blocks plus total validation success gives exactly `1/1` over the identical canonical-owner-ordered filtered view; semantic issues, throws, or contract violations give exactly `1/0`; read-only submit/undo/redo/first replay write gives operation-phase validator/classifier/write `0/0/0`; incompatible blocks reach zero handlers; and excluded payload is preserved exactly;
 - live/replay deep equality;
 - existing six Core commands retain exact Core-only results/events.
 
@@ -317,6 +317,7 @@ Use one deterministic four-measure standard-six-string Guitar document containin
 
 ```powershell
 node .trellis/tasks/07-28-gd-0-guitar-domain-core-transaction-contract/contract-fixtures/verify-public-contracts.mjs
+npx tsc -p .trellis/tasks/07-28-gd-0-guitar-domain-core-transaction-contract/contract-fixtures/tsconfig.real-core.json --noEmit
 npm run typecheck
 npm run build
 npm test

@@ -87,7 +87,7 @@ K1-4 Core-only Registry、六 command/六 selector adapter 与七个 capability 
 - catalog 必须验证 module/contribution/command/effect/namespace 唯一性、ID namespace ownership、capability、API/version、handler/descriptor parity、profile，以及 `ExtensionRuntimeRequirementV1.supportedSchemaVersions` 的非空/升序/去重/正安全整数精确版本合同。
 - ready catalog、descriptor、profile 与 compatibility data 深冻结；无 runtime register/unregister/replace、Registry version 或 changed event。
 - integrated Registry、gateway、CommandBus 与 replay 绑定同一私有 assembly identity；integrated gateway 是 `KernelRegistry` 实例 `createGateway` overload，保留 K1-4 `summary`、typed `select` 与 `subscribe`；cross-assembly 或 Core-only/integrated 错配在 construction 阶段稳定拒绝。
-- document block 版本未被精确支持时 catalog/runtime 产生 stable incompatible availability fact，禁止把该 block 交给 decoder/validator/classifier/command/effect/fact handler；缺失 compatible binding 则产生 unavailable fact。同一 contribution 的 compatible blocks 通过 canonical block-scoped view 每阶段至多调用一次 validate/classify；mixed facts 选择 incompatible failure code 并返回全部 facts。
+- document block 版本未被精确支持时 catalog/runtime 产生 stable incompatible availability fact，禁止把该 block 交给 decoder/validator/classifier/command/effect/fact handler；缺失 compatible binding 则产生 unavailable fact。同一 contribution 在每个 applicable pass 中 compatible 为 0 时 validate/classify `0/0`；至少一个时恰好 validate 1 次，并仅在全部 validator 成功后通过同一 canonical block-scoped view classify 1 次，validation failure 为 `1/0`；read-only 写路径 operation-phase validate/classify/write `0/0/0`。mixed facts 选择 incompatible failure code 并返回全部 facts。
 - `command:register` 仍不蕴含 `command:execute`；GD-0 不新增 generic document-mutation capability。
 - Registry summary 继续只暴露 allowlisted metadata，不泄露 compiled handler、effect implementation、grants、mutable catalog 或文档。
 

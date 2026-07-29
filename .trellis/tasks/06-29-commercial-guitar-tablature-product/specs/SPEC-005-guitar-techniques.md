@@ -31,7 +31,7 @@ GuitarExtension 的 Part ownership、ordered variable-length tuning、noteId-to-
 - 领域命令通过 GD-0 批准的 startup-frozen official contribution catalog 接入同一个 CommandBus；不得从旧测试 registry 继承技巧定义，也不得使用 runtime registration。
 - 设置 string/fret placement 必须在一个事务中同步 Core `WrittenPitch` 与 Part-owned placement；generic Core pitch edit 不推断指法。
 - 所有已安装领域 validator 在 Core semantic 成功后按 frozen catalog 顺序运行；unsupported 与 semantic invalid 分离。
-- official compatibility requirement 必须声明非空、升序、去重的精确 `supportedSchemaVersions`，并逐 `ExtensionBlock` 判断；missing、unlisted 或 future schema 均不得猜测/降级/隐式迁移。同一 contribution 的 mixed owner/version 输入只把 compatible blocks 以 canonical owner 顺序交给单次 validator/classifier，不兼容 block 的全部 handler 零调用且原 payload 完整保留。
+- official compatibility requirement 必须声明非空、升序、去重的精确 `supportedSchemaVersions`，并逐 `ExtensionBlock` 判断；missing、unlisted 或 future schema 均不得猜测/降级/隐式迁移。同一 contribution 的 mixed owner/version 输入按 compatible 数量与验证结果固定 validator/classifier `0/0`、成功 `1/1` 或失败 `1/0`，两阶段仅接收同一 canonical owner filtered view；read-only 写路径 operation-phase `0/0/0`，不兼容 block 的全部 handler 零调用且原 payload 完整保留。
 - 缺失/不兼容 validator 时 integrated validation 明确为 `incomplete`，并随 read-only write availability 提供完整稳定 facts；仅 Core validation 通过不等于 Guitar semantic validation complete。mixed unavailable/incompatible facts 在所有写路径以 incompatible code 概括，但 facts 不被过滤。
 
 ## 4. Validation & Error Matrix

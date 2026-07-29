@@ -91,7 +91,7 @@ GD-0 不改写上述 K1-2 Core-only 合同，而是为后续 integrated construc
 - 失败或 no-op 保持完整状态不变；semantic invalid 拒绝，profile unsupported 可提交并返回 Core + module 完整分类。
 - generic Core pitch command 不推断弦品；若已安装领域验证发现现有 placement 将不一致，则整笔 Core 命令拒绝，调用方须使用领域命令替换或清除 placement。
 - known official extension 对每个 `ExtensionBlock.schemaVersion` 只做有限精确匹配；required contribution missing/incompatible 时 session 为 lossless read-only 且 validation incomplete。若 unavailable 与 incompatible facts 混合，submit/undo/redo/首个 replay write 统一返回 incompatible code，并携带未过滤的完整 canonical facts。
-- 同一 contribution 同时面对 compatible 与 incompatible/future block 时，validator/classifier 每阶段至多调用一次且只接收 canonical owner 顺序的 compatible block-scoped view；不兼容 block 到 decoder/validator/classifier/command/effect/fact handler 均为零调用，payload 保真。
+- 同一 contribution 同时面对 compatible 与 incompatible/future block 时，compatible 为 0 则 validator/classifier `0/0`；至少一个则每个 applicable pass 恰好 validate 1 次，并仅在全部 validator 成功后用同一 canonical owner filtered view classify 1 次；semantic issue/throw/contract violation 为 `1/0`。read-only submit/undo/redo/首个 replay write 在 availability preflight 结束，operation-phase validator/classifier/write `0/0/0`；不兼容 block 到全部 handler 均为零调用，payload 保真。
 - 最小公共面固定为 `CommandBus.createIntegrated`/`IntegratedCommandBusCreationResult`、`KernelRegistry` 实例 `createGateway` overload、integrated bus/gateway result、`IntegratedKernelReadState` 的 write/validation availability，以及 `replayKernelCommands`/三状态 `ReplayKernelCommandsResult`；gateway 保留 K1-4 `summary`、全部 typed `select` 与 `subscribe`，Core-only 入口保持原样。
 
 权威合同见 `.trellis/spec/core-kernel/backend/domain-transaction-integration.md`。GD-0 不授权当前生产代码修改。

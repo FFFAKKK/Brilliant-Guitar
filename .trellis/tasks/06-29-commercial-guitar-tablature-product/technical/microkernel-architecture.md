@@ -916,10 +916,10 @@ flowchart LR
 - integrated construction 使用同一个 CommandBus 实现、history、replay、checkpoint/dirty 与事件序列；不存在第二套 Guitar runtime。
 - static manifest 只选择 descriptor，compiled functions 由 composition root 直接绑定；ready catalog 无 runtime mutation。
 - domain contribution 拥有 namespace、command/effect/issue/validator/profile policy，Core 只拥有机制且保持零 Guitar import。
-- changed candidate 依次执行 Core semantic、全部 exactly schema-compatible installed-domain semantic、Core profile、全部 domain profile，再原子接纳状态；同一 contribution 只通过 canonical compatible block-scoped view 每阶段调用至多一次 validator/classifier，不兼容 block 零调用。缺失/不兼容 validator 明确产生 validation-incomplete 完整 facts，不能把仅 Core validation 表示为完整领域有效。
+- changed candidate 依次执行 Core semantic、全部 exactly schema-compatible installed-domain semantic、Core profile、全部 domain profile，再原子接纳状态；同一 contribution 在 compatible block 为 0 时 validator/classifier `0/0`，至少一个时每个 applicable pass 恰好 validate 1 次，并仅在全部 validator 成功后用同一 canonical compatible view classify 1 次；validation failure 为 `1/0`，read-only 写路径 operation-phase validator/classifier/write `0/0/0`，不兼容 block 零调用。缺失/不兼容 validator 明确产生 validation-incomplete 完整 facts，不能把仅 Core validation 表示为完整领域有效。
 - 一个 domain command 可产生多个私有细粒度 effects，但只形成一个 history entry、一个 version increment 和一个 committed event。
 - known official requirement 以有限精确列表逐 block 匹配 `ExtensionBlock.schemaVersion`；required domain missing、incompatible 或 future schema 时 integrated session lossless read-only + validation incomplete，禁止执行不兼容 handler，并原样保留数据；mixed gaps 在所有写路径选择 incompatible code 且返回全量 facts；unknown opaque extension 仍按 Core V1 保真并保持可写。
-- integrated factory、bus/gateway result、write/validation availability 与 replay 使用 GD-0 候选固定且经 docs-only fixture 编译的最小 public declarations；gateway 是 Registry 实例 overload，并保留 K1-4 `summary`/typed `select`/`subscribe`，private SDK/runtime 布局留给后续独立 Gate。
+- integrated factory、bus/gateway result、write/validation availability 与 replay 使用 GD-0 候选固定的最小 public declarations；Layer A 编译 Markdown declarations，Layer B 直接导入真实 accepted Core 类型证明 `authorized/rejected`、Registry 实例 `createGateway`、全部 typed `select`、`summary`/`subscribe`、共用 bus/checkpoint/subscription 表面，private SDK/runtime 布局留给后续独立 Gate。
 - public hostile `unknown` 边界统一 descriptor-first、no-getter、no-throw；error instances、handlers、effects、history 与 mutable catalog 均不公开。
 
 执行必须拆为 CK1.1-0、CK1.1-1、GD-1、GD-2、GD-3、GD-4 六个独立 Gate。当前 GD-0 只准备文档 review candidate，不修改 `src/**` 或 `test/**`，不记录 accepted baseline、不归档、不激活任何下游 Gate。

@@ -13,8 +13,8 @@ const documentPaths = [
 ];
 
 const [prelude, assertions] = await Promise.all([
-  readFile(join(fixtureDirectory, "accepted-core-prelude.d.ts"), "utf8"),
-  readFile(join(fixtureDirectory, "public-contract-assertions.ts"), "utf8"),
+  readFile(join(fixtureDirectory, "syntax-name-prelude.d.ts"), "utf8"),
+  readFile(join(fixtureDirectory, "markdown-contract-assertions.ts"), "utf8"),
 ]);
 
 const fencePattern = /```typescript public-contract\r?\n([\s\S]*?)\r?\n```/gu;
@@ -76,7 +76,7 @@ try {
     }
 
     console.log(
-      `[contract] ${relativeDocumentPath}: ${snippets.length} fence(s), 0 diagnostics`,
+      `[contract:markdown] ${relativeDocumentPath}: ${snippets.length} fence(s), 0 diagnostics`,
     );
   }
 } finally {

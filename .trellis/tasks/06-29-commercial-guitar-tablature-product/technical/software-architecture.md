@@ -195,8 +195,8 @@ Pure Core Kernel V1 验收通过前，不进入 React UI、Tauri 桌面壳、Vex
 - Registry: K1-4 仅有现有 command/selector adapter 的启动期目录；更广贡献点属于未来独立规划。
 - Report: K1-5 当前只批准 validation/migration `KernelReport`；未来导入、导出和恢复模块必须复用 `KernelIssue`/`KernelReport` 基础，再定义各自有真实消费者的专属结果。
 - Capability Manifest: trusted Host 为官方模块声明身份、七个 capability 与兼容 API 版本；模块不能自授权。
-- Official-domain compatibility: known extension requirement 以有限精确版本列表逐 block 匹配 `ExtensionBlock.schemaVersion`。missing/incompatible/future schema 时 integrated session lossless read-only、validation incomplete；mixed gaps 统一选择 incompatible code 并返回全量 facts；同一 contribution 只获得 compatible block-scoped validator/classifier view，不兼容 block 零调用且完整保真。unknown opaque extension 保持 Core V1 语义保真/可写。
-- Integrated public seam: 最小 factory、Registry 实例 gateway overload/完整 K1-4 retained surface、write/validation availability 和 replay declarations 以 GD-0 候选为准并由 docs-only fixture 编译；缺失/不兼容领域验证的稳定 facts 阻止调用方把 Core-only validation 表述为完整领域有效。
+- Official-domain compatibility: known extension requirement 以有限精确版本列表逐 block 匹配 `ExtensionBlock.schemaVersion`。missing/incompatible/future schema 时 integrated session lossless read-only、validation incomplete；mixed gaps 统一选择 incompatible code 并返回全量 facts；同一 contribution 按 compatible 数量与验证结果执行精确 `0/0`、成功 `1/1` 或失败 `1/0` validator/classifier 计数，并始终使用同一 canonical filtered view；read-only 写路径 operation-phase `0/0/0`，不兼容 block 零调用且完整保真。unknown opaque extension 保持 Core V1 语义保真/可写。
+- Integrated public seam: 最小 factory、Registry 实例 gateway overload/完整 K1-4 retained surface、write/validation availability 和 replay declarations 以 GD-0 候选为准；Layer A 编译 Markdown 声明，Layer B 直接导入真实 accepted Core 类型验证 `authorized/rejected`、实例 `createGateway`、全部 typed `select`、`summary`/`subscribe`、共用 bus/checkpoint/subscription 表面；缺失/不兼容领域验证的稳定 facts 阻止调用方把 Core-only validation 表述为完整领域有效。
 
 注册表和 capability 的详细契约见 `specs/SPEC-015-kernel-registry-capability.md`。错误、diagnostic 和 report 的详细契约见 `specs/SPEC-016-kernel-errors-diagnostics-reports.md`。K1-4 只负责 command/selector-only frozen Registry、能力 gateway 和本地结构化失败；第三方插件发现、安装、沙箱、签名、审核、插件市场、权限 UI 与新增 contribution kind 属于外部 `Extension Host` 或后续任务。
 

@@ -264,7 +264,7 @@ Compatibility resolution is deterministic:
 |---|---|---|
 | No block for the declared namespace | absent or present | No availability gap for that namespace. |
 | Block version is listed | absent | `required-contribution-unavailable`; integrated read succeeds but validation is incomplete and writes are read-only. |
-| Block version is listed | present and identity-compatible | The strict decoder, validator, classifier, and command/effect handlers may run; validation becomes complete only after their successful execution. |
+| Block version is listed | present and identity-compatible | The contribution enters the exact call-count matrix; command/effect handlers execute only for an accepted writable operation, and validation becomes complete only after the required validator pass succeeds. |
 | Block version is not listed | absent or present | `required-contribution-incompatible`; integrated read succeeds but validation is incomplete and writes are read-only. No handler for that contribution may execute against the block. |
 | Block uses a future schema version | absent or present | The same incompatible result; the kernel does not guess, downgrade, or implicitly migrate it. |
 
@@ -273,11 +273,21 @@ Schema compatibility is evaluated before executable availability, so an unsuppor
 Compatibility is resolved per persisted `ExtensionBlock`, not once per namespace or contribution. When one contribution faces both an exactly compatible block and an incompatible/future block, GD-0 fixes a **block-scoped compatible view**:
 
 - the incompatible/future block is never passed to that contribution's decoder, validator, classifier, command handler, effect handler, or affected-fact handler;
-- the contribution validator is invoked at most once during a validation pass with a detached input containing Core score read data plus only its exactly compatible blocks, sorted in canonical extension-owner order;
-- after Core and all compatible domain validators pass, the contribution classifier is invoked at most once with the same filtered block set and owner order;
+- an installed contribution with zero exactly compatible blocks receives zero validator and zero classifier calls during that pass;
+- an installed contribution with one or more exactly compatible blocks receives exactly one validator call during every applicable pass, using a detached input containing Core score read data plus only those blocks in canonical extension-owner order;
+- after every applicable validator succeeds and the classification phase begins, each such contribution receives exactly one classifier call with the same filtered view; if any validator returns semantic issues, throws, or violates its contract, the classification phase does not begin and every classifier receives zero calls;
 - the integrated session is still read-only and its validation availability remains `incomplete`, because the incompatible fact describes semantics that were not validated;
 - submit, undo, redo, and non-empty replay reject at availability preflight, so no command/effect/fact handler runs in this degraded session;
 - the excluded block's namespace, owner, `schemaVersion`, and complete nested payload remain JSON-semantically unchanged. The private handler-input type name and class layout remain for CK1.1-1/GD-2, but an unfiltered document or incompatible block may not be exposed as a substitute.
+
+The exact call-count matrix is frozen for every applicable pass:
+
+| Pass/state | Compatible blocks for the contribution | Validator calls | Classifier calls | Input and stop rule |
+|---|---:|---:|---:|---|
+| Initial construction or explicit validation | `0` | `0` | `0` | no contribution view is built |
+| Initial construction, explicit validation, changed candidate, undo, redo, or replay candidate | `>= 1` | exactly `1` | exactly `1` only after all applicable validators succeed and classification begins | both calls receive the same canonical-owner-ordered filtered compatible view |
+| Any applicable pass where a validator returns semantic issues, throws, or violates its contract | `>= 1` | exactly `1` per applicable contribution | `0` for every contribution | classification does not begin; state remains unchanged |
+| Read-only submit, undo, redo, or first replay write | any | operation-phase `0` | operation-phase `0` | availability preflight rejects before validation/classification; write handlers also receive `0` calls |
 
 Read-only degraded behavior:
 
@@ -738,8 +748,8 @@ The command preparation result includes affected `ScoreAddress` facts rather tha
 - The application-facing root exports integrated factories/data contracts but omits compiled handlers, private effects, history entries, module effect payload decoders, mutable catalog objects, and error classes.
 - The official module SDK is a separate reviewed entry point. It exposes only descriptor/building types, restricted effect requests, issue/error construction, and read-only contribution contexts required by official modules.
 - Existing forbidden-dependency and public-boundary tests are extended rather than weakened.
-- Every authoritative public declaration fence is tagged `typescript public-contract` and compiled by the docs-only fixture at `contract-fixtures/verify-public-contracts.mjs`. The fixture must report zero parse/type diagnostics and prove the integrated gateway retains `summary`, `select`, and `subscribe`; it does not alter product `tsconfig` or production tests.
-- GD-2 downstream fixtures must include (a) mixed unavailable+incompatible facts and equal failure selection/full facts across submit, undo, redo, and first replay write, and (b) one contribution with compatible and incompatible/future blocks at different owners, proving the filtered single validate/classify scope, zero incompatible/write-handler calls, and lossless excluded payload.
+- Every authoritative public declaration fence is tagged `typescript public-contract` and compiled by the Layer A docs-only fixture at `contract-fixtures/verify-public-contracts.mjs`, which uses only a syntax/name-resolution prelude and must report zero parse/type diagnostics. The independent Layer B no-emit assertion at `contract-fixtures/real-core-drift-assertions.ts` imports the accepted Core root and must prove the real `KernelGatewayResult` discriminants, Registry instance gateway method, full typed selector surface, `summary`/`subscribe`, shared `CommandBus` methods, `MarkPersistedResult`, and `EventSubscriptionResult` have not drifted. Neither layer alters product `tsconfig` or production tests.
+- GD-2 downstream fixtures must include (a) mixed unavailable+incompatible facts and equal failure selection/full facts across submit, undo, redo, and first replay write, and (b) one contribution with compatible and incompatible/future blocks at different owners. For (b), assert `0/0` validator/classifier calls when no compatible block exists; exactly `1/1` over the same canonical filtered view after total validator success; exactly `1/0` when validation returns issues, throws, or violates its contract; operation-phase `0/0/0` validator/classifier/write calls on read-only submit/undo/redo/first replay write; zero incompatible-block calls; and lossless excluded payload.
 - The Core V1.1 domain runtime seam is isolated in GD-2; CK1.1-0/CK1.1-1 own only their approved prerequisites. GD-2 must rerun K1-2, K1-3, K1-4, K1-5, K1-6, and qualification gates.
 
 The Brilliant Guitar product composition root always uses integrated construction for product documents. The retained Core-only constructor is the compatible low-level Core API for generic Core consumers/tests; it is not the product path for a document whose official domain compatibility requirements are known.
