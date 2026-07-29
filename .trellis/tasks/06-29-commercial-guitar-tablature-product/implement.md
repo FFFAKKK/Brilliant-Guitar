@@ -44,9 +44,9 @@ K1-1 不包含命令/history、snapshot/events、registry/capability、通用 re
 
 ## Core Gate 状态与后续顺序
 
-### Block 2：Guitar Domain（GD-0 文档合同同步中）
+### Block 2：Guitar Domain（GD-0 documentation review candidate）
 
-GD-0 已于 2026-07-28 批准微内核集成规划，但当前只执行文档合同同步与独立评审。生产实现必须按以下独立 Gate 顺序推进：
+GD-0 生命周期为 **USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING**。当前只准备文档候选：不记录 accepted baseline、不归档、不创建或激活下游任务。独立验收与后续用户授权完成后，生产实现才可按以下独立 Gate 顺序推进：
 
 1. CK1.1-0：public `unknown` guards 的 descriptor-first/no-getter/no-throw 前置。
 2. CK1.1-1：official module SDK 的 data/error/descriptor authoring 基础，不含运行时。
@@ -62,8 +62,10 @@ GD-1 将定义：
 - noteId 到 string/fret 的演奏位置映射。
 - 吉他技巧 payload、引用规则、codec、semantic validation 与 `guitar.*` diagnostics。
 - 未知/新版 Guitar payload 的降级与迁移策略。
+- `ExtensionBlock.schemaVersion` 的有限精确支持列表；missing/incompatible/future schema 的 lossless read-only 与 handler 禁止执行规则。
+- public write/validation availability 的 `writable|read-only`、`complete|incomplete` discriminant 与排序稳定 facts，避免 Core-only validation 被表述为完整领域语义有效。
 
-上述各块不能把 guitar 字段塞回 Core Note/Event/metadata，不能假设旧 `TechniqueData` registry 已存在，也不能建立第二套 document/history/replay/dirty/event owner。当前 GD-0 不授权创建或激活任何下游实现任务。
+上述各块不能把 guitar 字段塞回 Core Note/Event/metadata，不能假设旧 `TechniqueData` registry 已存在，也不能建立第二套 document/history/replay/dirty/event owner。GD-2 还必须实现候选中固定的 integrated factory、bus/gateway result、availability 与 replay 公共签名/discriminant；当前 GD-0 不授权创建或激活任何下游实现任务。
 
 ### 已完成：K1-2 Commands / Transactions / History
 

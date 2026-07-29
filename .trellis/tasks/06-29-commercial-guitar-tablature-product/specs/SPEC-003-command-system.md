@@ -1,6 +1,6 @@
 # SPEC-003 命令系统、事务、历史与回放
 
-> **状态：K1-2 ACCEPTED / CORE V1 CLOSED；GD-0 ADDITIVE CONTRACT APPROVED 2026-07-28。** K1-2 Core-only 行为保持冻结；GD-0 只批准后续 Core V1.1 官方领域命令集成合同，生产实现仍须独立 Gate。
+> **状态：K1-2 ACCEPTED / CORE V1 CLOSED；GD-0 USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING。** K1-2 Core-only 行为保持冻结；GD-0 候选不构成生产实现授权。
 
 ## 1. Scope / Trigger
 
@@ -90,5 +90,7 @@ GD-0 不改写上述 K1-2 Core-only 合同，而是为后续 integrated construc
 - live submit 与 integrated replay 使用相同 catalog、decode、target/ownership、effect、validation、classification 和 failure pipeline。
 - 失败或 no-op 保持完整状态不变；semantic invalid 拒绝，profile unsupported 可提交并返回 Core + module 完整分类。
 - generic Core pitch command 不推断弦品；若已安装领域验证发现现有 placement 将不一致，则整笔 Core 命令拒绝，调用方须使用领域命令替换或清除 placement。
+- known official extension 对 `schemaVersion` 只做有限精确匹配；required contribution missing/incompatible 时 session 为 lossless read-only 且 validation incomplete，submit/undo/redo 在 handler 前稳定拒绝。
+- 最小公共面固定为 `CommandBus.createIntegrated`/`IntegratedCommandBusCreationResult`、integrated bus/gateway result、`IntegratedKernelReadState` 的 write/validation availability，以及 `replayKernelCommands`/三状态 `ReplayKernelCommandsResult`；Core-only 入口保持原样。
 
 权威合同见 `.trellis/spec/core-kernel/backend/domain-transaction-integration.md`。GD-0 不授权当前生产代码修改。

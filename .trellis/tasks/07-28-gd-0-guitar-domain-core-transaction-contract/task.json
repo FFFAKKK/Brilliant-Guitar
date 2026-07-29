@@ -23,6 +23,7 @@
   "relatedFiles": [
     ".trellis/tasks/07-28-gd-0-guitar-domain-core-transaction-contract/documentation-sync-matrix.md",
     ".trellis/spec/core-kernel/backend/domain-transaction-integration.md",
+    ".trellis/spec/core-kernel/backend/pure-kernel-boundary.md",
     ".trellis/spec/core-kernel/backend/integration-gate.md",
     ".trellis/spec/core-kernel/backend/index.md",
     ".trellis/spec/core-kernel/index.md",
@@ -36,18 +37,21 @@
     ".trellis/tasks/06-29-commercial-guitar-tablature-product/specs/SPEC-015-kernel-registry-capability.md",
     ".trellis/tasks/06-29-commercial-guitar-tablature-product/specs/SPEC-016-kernel-errors-diagnostics-reports.md",
     ".trellis/tasks/06-29-commercial-guitar-tablature-product/technical/microkernel-architecture.md",
-    ".trellis/tasks/06-29-commercial-guitar-tablature-product/technical/modular-plugin-architecture.md"
+    ".trellis/tasks/06-29-commercial-guitar-tablature-product/technical/modular-plugin-architecture.md",
+    ".trellis/tasks/06-29-commercial-guitar-tablature-product/technical/software-architecture.md"
   ],
-  "notes": "User approved the final GD-0 microkernel plan on 2026-07-28. D001-D005 are fixed. Stage 0 documentation synchronization is active and will stop at an independent review candidate. Production implementation, downstream task activation, accepted-baseline recording, and archival remain separately gated by the Stage 0 review result.",
+  "notes": "USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING. D001-D005 are fixed plan decisions. This repair candidate records no accepted baseline, performs no archive, and activates no CK1.1/GD implementation task. Production implementation and all downstream governance remain separately gated by a later independent ACCEPT and user authorization.",
   "meta": {
     "planning_base": "064dc2bffe26022bc58f0690986b09a0c6a257aa",
     "architecture_style": "microkernel_modular",
-    "planning_stage": "documentation_sync_candidate_ready_for_independent_review",
+    "planning_stage": "documentation_review_candidate_independent_acceptance_pending",
     "decision_gd0_d001": "single_existing_submit_port",
     "decision_gd0_d002": "extensible_module_owned_results_and_errors",
     "decision_gd0_d003": "core_then_all_installed_domain_validators",
     "decision_gd0_d004": "one_unified_committed_event_per_transaction",
-    "decision_gd0_d005": "lossless_read_only_when_required_domain_missing",
+    "decision_gd0_d005": "exact_schema_compatibility_lossless_read_only_when_required_domain_missing_or_incompatible",
+    "validation_completeness_contract": "explicit_complete_or_incomplete_with_stable_facts",
+    "public_contract_surface": "minimum_integrated_factory_bus_gateway_availability_replay_signatures_frozen",
     "user_plan_approval": "APPROVED",
     "user_plan_approved_at": "2026-07-28",
     "documentation_stage_authorized": true,

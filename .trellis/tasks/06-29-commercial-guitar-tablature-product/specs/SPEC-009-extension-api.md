@@ -6,7 +6,7 @@
 - 映射需求: `REQ-007`
 - 目标: 为模块化软件和未来插件生态定义可实现、可测试、可控的扩展边界。
 - 当前 Core 状态: K1-1～K1-6 已验收；K1-6 测试基线 `355512aba4a8057d2d75aa665d74df49cdd2e23c` 在审查基线 `989c1f7a4056b14d3d59918c9b96874ad71591a8` 通过独立验收，8/8 聚焦、169/169 完整测试通过；Pure Core Kernel V1 已关闭，扩展系统后续实现仍需独立规划和批准。
-- 当前约束: 本文件是未来插件平台路线图，不是 K1-4/K1-5 实现契约。GD-0 已批准后续 Core V1.1 的 startup-frozen official domain command catalog，但仍不开放第三方执行、动态 contribution、Registry mutation/event 或 plugin report ingress。
+- 当前约束: 本文件是未来插件平台路线图，不是 K1-4/K1-5 实现契约。GD-0 为 **USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING**；其 startup-frozen official domain command catalog 候选不开放第三方执行、动态 contribution、Registry mutation/event 或 plugin report ingress。
 - 数据边界: `ScoreDocument.extensions` 已由 Core K1-1 定义为 score/part-owned 纯数据信封；它不等于插件安装、发现、registry 或执行 API。
 
 ## 适用范围
@@ -59,7 +59,7 @@
 - EXT-026: GD-0 official domain command 仍通过现有 `CommandBus.submit(unknown)` / gateway submit；不得增加领域专用可变 facade 或第二条 history/replay/event 路径。
 - EXT-027: `kernel.domain-commands.v1` 只绑定产品 composition root 静态链接的 official/system-trusted compiled contribution；manifest 永不携带函数。
 - EXT-028: 领域 contribution 只拥有声明的 extension namespace、命令/effect/issue code；Core 不枚举 Guitar code，也不导入 Guitar Domain。
-- EXT-029: known official extension 的 immutable compatibility declaration 要求缺失 contribution 时，只允许 lossless read-only integrated session；unknown opaque extension 继续按 Core V1 保真。
+- EXT-029: known official extension requirement 必须以有限精确列表协商 `ExtensionBlock.schemaVersion`。required contribution 缺失或版本不兼容（含 future schema）时，只允许 lossless read-only + validation-incomplete integrated session，不执行不兼容 handler，并原样保留扩展；unknown opaque extension 继续按 Core V1 保真/可写。
 - EXT-030: GD-0 不授权第三方 Extension Host、PluginManifest 加载、runtime register/unregister、hot reload 或插件代码执行。
 
 ## 未来 PluginManifest 契约
@@ -226,6 +226,7 @@ GD-0 位于 K1-4 Core-only Registry 与未来第三方 Extension Host 之间，�
 - domain command 通过既有 submit port 进入一个 transaction/history/replay/event owner；
 - domain validator/classifier/effect/fact hooks 只获得 detached read-only context，且必须同步、确定、异常收口；
 - application-facing Core 只公开 integrated data contracts/factory，official module authoring 能力位于独立版本化 SDK entry point；
+- integrated public surface 固定 factory、bus/gateway result、write/validation availability 与 replay 的最小签名/discriminant；缺失/不兼容领域验证必须公开 `incomplete` 稳定 facts；
 - third-party manifest、sandbox、安装/启停、权限 UI 与 filtered facade 继续后置。
 
 权威文档为 `.trellis/spec/core-kernel/backend/domain-transaction-integration.md`。
@@ -325,5 +326,5 @@ K1-4 必须做:
 
 - [x] one submit port、one transaction/history/replay/event owner 与 Core-to-Guitar zero dependency 已固定。
 - [x] startup-frozen official domain catalog 与 `kernel.domain-commands.v1` 边界已固定。
-- [x] known required contribution missing 与 unknown opaque extension 的行为已分离。
+- [x] known required contribution missing/incompatible/future-schema 与 unknown opaque extension 的行为已分离；前者同时公开 read-only 和 validation-incomplete facts。
 - [ ] CK1.1-0、CK1.1-1、GD-1、GD-2、GD-3、GD-4 仍须各自创建、实施、验收；GD-0 不激活它们。

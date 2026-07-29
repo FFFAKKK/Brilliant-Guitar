@@ -1,6 +1,6 @@
 # Core Kernel Backend Guidelines
 
-> **Current Core implementation stage (2026-07-28):** Pure Core Kernel V1 is accepted and closed. GD-0 has approved an additive Core V1.1 domain-transaction documentation contract; production implementation remains separately gated.
+> **Current Core implementation stage (2026-07-29):** Pure Core Kernel V1 is accepted and closed. GD-0 is **USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING**; its additive Core V1.1 documentation candidate authorizes no production implementation.
 > K1-4 is fixed at `94766a0930c05e5339c44f667deaf02116af1c0c` with 125/125 tests passing.
 > K1-5 implementation baseline `51fa2177cbd25dea53f1ebaf23bd8b8426471589` was independently accepted at documentation baseline `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` with 161/161 tests passing. K1-6 test baseline `355512aba4a8057d2d75aa665d74df49cdd2e23c` passed 8/8 focused and 169/169 full tests and was independently accepted at review baseline `989c1f7a4056b14d3d59918c9b96874ad71591a8`; Pure Core Kernel V1 is closed.
 
@@ -40,7 +40,7 @@ Pure Core Kernel V1 is not the desktop app. It must be testable without React, T
 | [Registry and Capability](./registry-capability.md) | Approved K1-4 startup Registry/gateway implementation contract | Accepted at `94766a0` |
 | [Errors and Reports](./errors-reports.md) | K1-5 additive Issue/Report adapters and current-schema migration | Accepted / archived |
 | [Integration Gate](./integration-gate.md) | K1-6 cross-contract fixture, deterministic public flow, failure/privacy matrix, and final gate | Accepted / Pure Core V1 closed |
-| [Domain Transaction Integration](./domain-transaction-integration.md) | GD-0 additive Core V1.1 seam for official domain commands, unified transactions, validation, events, and read-only degradation | Documentation contract approved; implementation gated |
+| [Domain Transaction Integration](./domain-transaction-integration.md) | GD-0 additive Core V1.1 seam for official domain commands, unified transactions, exact schema compatibility, validation completeness, events, and read-only degradation | Documentation review candidate; independent acceptance pending |
 | [Quality Guidelines](./quality-guidelines.md) | Required tests and forbidden shortcuts | Stable |
 
 ---

@@ -655,4 +655,4 @@ MVP 包结构建议: `.bgp` 的长期形态是单文件开放 zip 包，至少�
 
 ## 当前阻塞开放问题
 
-K1-6 测试基线 `355512aba4a8057d2d75aa665d74df49cdd2e23c` 已在审查基线 `989c1f7a4056b14d3d59918c9b96874ad71591a8` 通过独立验收，Pure Core Kernel V1 Gate 已关闭。GD-0 仅批准并同步 Core/Guitar 集成文档合同；该结论不自动开始 CK1.1/Guitar Domain 或产品层生产实现，后续阶段仍需独立任务与批准。
+K1-6 测试基线 `355512aba4a8057d2d75aa665d74df49cdd2e23c` 已在审查基线 `989c1f7a4056b14d3d59918c9b96874ad71591a8` 通过独立验收，Pure Core Kernel V1 Gate 已关闭。GD-0 当前生命周期仅为 **USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING**；没有 accepted baseline、归档或 CK1.1/Guitar Domain 激活。候选合同要求 known official extension 以 `ExtensionBlock.schemaVersion` 精确匹配有限支持版本；缺失或不兼容 contribution 均 lossless read-only、validation incomplete，且不执行不兼容 handler。integrated factory、bus/gateway result、write/validation availability 与 replay 的最小公开签名/discriminant 已固定，生产实现仍须独立任务与批准。

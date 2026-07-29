@@ -1,6 +1,6 @@
 # SPEC-005 Guitar Domain 技巧重规划门
 
-> **状态：GD-0 INTEGRATION CONTRACT APPROVED / GUITAR IMPLEMENTATION BLOCKED。** GD-0 已固定领域事务 seam 与 slide/bend/vibrato 首批范围；GuitarExtension schema、技巧 payload 和生产实现仍由 GD-1/GD-3 独立批准。本文件不批准旧 Core 技巧 registry。
+> **状态：GD-0 USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING；GUITAR IMPLEMENTATION BLOCKED。** 领域事务 seam 与 slide/bend/vibrato 首批范围属于待独立验收候选；GuitarExtension schema、技巧 payload 和生产实现仍由 GD-1/GD-3 独立批准。本文件不批准旧 Core 技巧 registry。
 
 ## 1. Scope / Trigger
 
@@ -31,6 +31,8 @@ GuitarExtension 的 Part ownership、ordered variable-length tuning、noteId-to-
 - 领域命令通过 GD-0 批准的 startup-frozen official contribution catalog 接入同一个 CommandBus；不得从旧测试 registry 继承技巧定义，也不得使用 runtime registration。
 - 设置 string/fret placement 必须在一个事务中同步 Core `WrittenPitch` 与 Part-owned placement；generic Core pitch edit 不推断指法。
 - 所有已安装领域 validator 在 Core semantic 成功后按 frozen catalog 顺序运行；unsupported 与 semantic invalid 分离。
+- official compatibility requirement 必须声明非空、升序、去重的精确 `supportedSchemaVersions`；missing、unlisted 或 future schema 均不得猜测/降级/隐式迁移，不兼容 handler 不执行，原 ExtensionBlock 完整保留。
+- 缺失/不兼容 validator 时 integrated validation 明确为 `incomplete`，并随 read-only write availability 提供稳定 facts；仅 Core validation 通过不等于 Guitar semantic validation complete。
 
 ## 4. Validation & Error Matrix
 
@@ -49,7 +51,7 @@ GuitarExtension 的 Part ownership、ordered variable-length tuning、noteId-to-
 
 ## 6. Tests Required
 
-GD-1 必须覆盖 tuning、string/fret、引用、未知/新版 payload、语义 round-trip 与 Core 无解释边界。GD-3/GD-4 必须覆盖 placement/slide/bend/vibrato 的 submit/no-op/reject/undo/redo/replay、一个 transaction/history/event、未知扩展保留和 missing-domain read-only degradation。当前 GD-0 只同步合同。
+GD-1 必须覆盖 tuning、string/fret、引用、未知/新版 payload、精确 schema-version compatibility、语义 round-trip 与 Core 无解释边界。GD-3/GD-4 必须覆盖 placement/slide/bend/vibrato 的 submit/no-op/reject/undo/redo/replay、一个 transaction/history/event、未知扩展保留，以及 missing/incompatible/future-schema read-only + incomplete-validation degradation。当前 GD-0 只同步候选合同。
 
 ## 7. Wrong vs Correct
 

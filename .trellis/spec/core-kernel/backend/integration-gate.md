@@ -140,4 +140,4 @@ The correct path proves capability authorization, strict command decoding, atomi
 
 `K1-6 independently accepted; Pure Core Kernel V1 integration gate closed.`
 
-Guitar Domain and product-layer implementation remain outside this K1-6 acceptance. GD-0 documentation planning was approved on 2026-07-28, while every CK1.1/GD production stage still requires its own task, implementation authorization, and acceptance.
+Guitar Domain and product-layer implementation remain outside this K1-6 acceptance. GD-0 is **USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING**; every CK1.1/GD production stage still requires its own task, implementation authorization, and acceptance.

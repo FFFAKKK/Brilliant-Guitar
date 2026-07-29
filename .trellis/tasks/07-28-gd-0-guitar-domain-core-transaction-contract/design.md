@@ -1,6 +1,6 @@
 # GD-0 Guitar Domain / Core Transaction Integration Design
 
-> **Status:** FINAL PLAN APPROVED 2026-07-28 / STAGE 0 DOCUMENTATION SYNC IN PROGRESS
+> **Status:** USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING
 > **Planning base:** `064dc2bffe26022bc58f0690986b09a0c6a257aa`
 > **Production implementation:** not authorized by this draft
 
@@ -69,7 +69,7 @@ Core                      -> no Guitar Domain import
 
 ### GD0-D001 — One public command submission port
 
-**Status:** approved by user on 2026-07-28
+**Plan decision status:** USER APPROVED 2026-07-28; documentation acceptance pending.
 **Decision:** Core and installed official domain commands are submitted through the existing `CommandBus.submit(unknown)` and `KernelModuleGateway.submit(unknown)` public entry points.
 
 The active session binds one immutable compiled contribution catalog. The port performs safe top-level routing, then delegates strict decoding and domain policy to the matching trusted compiled contribution. All accepted commands enter the same transaction engine.
@@ -88,7 +88,7 @@ The active session binds one immutable compiled contribution catalog. The port p
 
 ### GD0-D002 — Modular result, support, and error contract
 
-**Status:** approved by user on 2026-07-28
+**Plan decision status:** USER APPROVED 2026-07-28; documentation acceptance pending.
 **Decision:** use an extensible, domain-neutral result contract. Core does not enumerate Guitar error or support codes.
 
 The public write method remains `submit(unknown)`, but its compile-time result is selected by the catalog-bound bus type:
@@ -97,9 +97,25 @@ The public write method remains `submit(unknown)`, but its compile-time result i
 - Integrated construction exposes a `KernelCommandResult` common envelope with the same status/version/history fields, Core support, and a deterministically ordered, deeply frozen module result collection.
 - A Core-only command submitted through an integrated bus still returns the integrated envelope because installed validators and profiles may classify cross-domain invariants.
 
-Illustrative domain-neutral shape; final names may follow repository naming during GD-2:
+The following minimum public names, fields, and discriminants are frozen by GD-0. Later implementation tasks may choose private class/module layout but do not rename or widen this surface without returning GD-0 to planning:
 
 ```typescript
+type ModuleIssueCode = `${string}.${string}`;
+
+interface ModuleKernelIssue {
+  readonly issueVersion: 1;
+  readonly code: ModuleIssueCode;
+  readonly severity: KernelSeverity;
+  readonly messageKey: string;
+  readonly source: {
+    readonly kind: "module";
+    readonly moduleId: string;
+    readonly contributionId: string;
+  };
+  readonly location?: KernelIssueLocation;
+  readonly details?: JsonObject;
+}
+
 interface ModuleCommandAssessment {
   readonly moduleId: string;
   readonly contributionId: string;
@@ -129,7 +145,7 @@ type KernelCommandResult =
     };
 ```
 
-The integrated failure union contains only domain-neutral mechanism codes, for example contribution unavailable, contribution semantic rejection, contribution contract violation, and contribution internal failure. Domain-specific meaning is carried by frozen module issues whose source includes `moduleId` and `contributionId` and whose codes belong to that module's registered namespace.
+The integrated failure union extends accepted Core `CommandFailure` only with the six exact domain-neutral mechanism codes fixed in section 7.3. Domain-specific meaning is carried by frozen module issues whose source includes `moduleId` and `contributionId` and whose codes belong to that module's registered namespace.
 
 The object-oriented construction model is:
 
@@ -158,14 +174,14 @@ Error
 
 ### GD0-D003 — Complete installed-domain validation
 
-**Status:** approved by user on 2026-07-28
+**Plan decision status:** USER APPROVED 2026-07-28; documentation acceptance pending.
 **Decision:** after Core semantic validation succeeds, run every installed domain semantic validator in the deeply frozen catalog order for every changed candidate.
 
 The authoritative lifecycle is:
 
 | Path | Semantic validation | Support classification | State effect |
 |---|---|---|---|
-| Initial construction | Core, then all installed domains | Core, then all installed domains | Create only when semantic-valid |
+| Initial construction | Core, then every installed exactly compatible domain; missing/incompatible requirements are explicit `incomplete` facts | Core, then compatible domains only | Create writable only when complete and semantic-valid; otherwise create lossless read-only when Core-valid but incomplete |
 | Changed submit | Core, then all installed domains | Core, then all installed domains | Commit once only after all phases finish |
 | No-op submit | Current state is already invariant-valid | Core, then all installed domains | No version/history/redo/dirty/event change |
 | Undo | Apply full inverse to candidate; Core, then all installed domains | Core, then all installed domains | Move history atomically |
@@ -176,22 +192,23 @@ Rules:
 
 - Domain validators receive only a detached read view plus their versioned contribution context; they receive no mutable candidate reference.
 - If Core semantics fail, domain validators are skipped because their precondition is a coherent Core score.
-- If Core passes, all installed domain validators run and their returned semantic issues are collected in catalog order before rejection, so callers receive a complete deterministic report.
+- If Core passes and validation availability is complete, all installed compatible domain validators run and their returned semantic issues are collected in catalog order before rejection, so callers receive a complete deterministic report.
 - A thrown/rejected validator is not a semantic diagnostic. It becomes a stable contribution-internal failure at that catalog position and the complete pre-operation state is retained.
-- Support classifiers run only for a semantically valid state. Core profile classification runs first, followed by every installed domain profile in catalog order.
+- Support classifiers run only for a semantically valid state. Core profile classification runs first, followed by every installed compatible domain profile in catalog order. An incomplete read-only session may expose available Core facts but never labels the combined domain assessment complete.
 - `unsupported` is reportable and committable; `invalid` is a transaction rejection.
 - Classification completes before the commit becomes externally visible. A classifier failure therefore leaves document, version, history, dirty state, and event sequence unchanged.
 - Direct Core pitch edits are checked by Guitar validation whenever Guitar is installed, which prevents stale placement from surviving a generic pitch-only command.
+- If a required domain validator is absent or schema-incompatible, it is not silently skipped: construction produces a lossless read-only integrated session whose public validation availability is `incomplete` with stable facts. Only a complete validation result may be described as domain-semantically valid.
 - Optimization by declared invalidation triggers is deferred. A later optimization must prove result equivalence against the all-validator model and cannot change ordering or visible classifications.
 
 **Rejected alternative:** trigger-selected validators. It could reduce work but introduces a second correctness contract for dependency declarations; a missed trigger could commit cross-domain inconsistency.
 
 ### GD0-D004 — One unified committed event per transaction
 
-**Status:** approved by user on 2026-07-28
+**Plan decision status:** USER APPROVED 2026-07-28; documentation acceptance pending.
 **Decision:** every committed submit/undo/redo produces one domain-neutral `core.document.committed` fact, regardless of how many Core-owned or domain-owned effects the transaction contains.
 
-Integrated sessions use a domain-neutral identity equivalent to:
+Integrated sessions use this exact public domain-neutral identity:
 
 ```typescript
 interface KernelCommandIdentity {
@@ -221,36 +238,50 @@ Affected-fact rules:
 
 **Rejected alternative:** separate Core and Guitar committed events. Multiple commit facts for one transaction would make subscribers reconstruct atomic grouping and would complicate sequence reservation, rollback, undo/redo, and replay equivalence.
 
-### GD0-D005 — Lossless read-only degradation for a required missing domain
+### GD0-D005 — Lossless read-only degradation for a missing or schema-incompatible required domain
 
-**Status:** approved by user on 2026-07-28
-**Decision:** when a document contains a known official extension whose immutable compatibility declaration requires an unavailable contribution, create a detached read-only integrated session rather than allowing unvalidated writes or rejecting all access.
+**Plan decision status:** USER APPROVED 2026-07-28; documentation acceptance pending.
+**Decision:** when a document contains a known official extension and the immutable requirement cannot be satisfied by an exactly schema-compatible contribution, create a detached, lossless read-only integrated session rather than allowing unvalidated writes or rejecting all access.
 
-The composition root supplies a frozen, domain-neutral compatibility declaration equivalent to:
+The composition root supplies this frozen public compatibility declaration:
 
 ```typescript
-interface ExtensionRuntimeRequirement {
+interface ExtensionRuntimeRequirementV1 {
+  readonly requirementVersion: 1;
   readonly namespace: string;
   readonly moduleId: string;
   readonly contributionId: string;
+  readonly supportedSchemaVersions: readonly number[];
   readonly requiredForWrite: true;
 }
 ```
 
-The declaration is metadata; Core contains no Guitar namespace or module ID. Session construction compares document extension namespaces, compatibility requirements, and the compiled contribution catalog.
+`supportedSchemaVersions` is a non-empty, strictly ascending, duplicate-free list of positive safe integers. Compatibility is exact: an `ExtensionBlock.schemaVersion` is compatible only when it equals one listed value. The declaration is metadata; Core contains no Guitar namespace or module ID. Session construction compares each declared namespace in the document with the immutable requirements and compiled catalog without executing contribution code.
+
+Compatibility resolution is deterministic:
+
+| Document/requirement state | Executable contribution | Result |
+|---|---|---|
+| No block for the declared namespace | absent or present | No availability gap for that namespace. |
+| Block version is listed | absent | `required-contribution-unavailable`; integrated read succeeds but validation is incomplete and writes are read-only. |
+| Block version is listed | present and identity-compatible | The strict decoder, validator, classifier, and command/effect handlers may run; validation becomes complete only after their successful execution. |
+| Block version is not listed | absent or present | `required-contribution-incompatible`; integrated read succeeds but validation is incomplete and writes are read-only. No handler for that contribution may execute against the block. |
+| Block uses a future schema version | absent or present | The same incompatible result; the kernel does not guess, downgrade, or implicitly migrate it. |
+
+Schema compatibility is evaluated before executable availability, so an unsupported/future version always yields the stable incompatible fact even when the declared contribution is also absent. Every missing or incompatible required contribution places the session in lossless read-only mode. The complete uninterpreted target `ExtensionBlock`, including namespace, `schemaVersion`, owner, and nested payload, remains deeply equal in JSON-value semantics through decode/encode/read/replay rejection; physical byte identity is outside Core.
 
 Read-only degraded behavior:
 
-- decode, encode, snapshots, selectors, ownership/range reads, validation reports based on available contracts, and opaque extension round-trip remain available;
-- write availability is exposed as detached data containing the stable missing module/contribution identities;
-- submit, undo, and redo reject before command/effect processing with a domain-neutral required-contribution-unavailable failure and unchanged state;
+- decode, encode, snapshots, selectors, ownership/range reads, incomplete validation reports, and opaque extension round-trip remain available;
+- integrated reads expose both stable write availability and stable validation availability facts;
+- submit, undo, and redo reject before command/effect processing with `command.required-contribution-unavailable` or `command.required-contribution-incompatible` and unchanged state;
+- no incompatible decoder, validator, classifier, command handler, effect handler, or fact generator executes;
 - checkpoint marking remains available because it changes session bookkeeping rather than document content;
-- replay with a missing required contribution rejects before the first write while returning a detached unchanged initial document;
-- installing the contribution and reopening creates a normally validated writable session;
-- the kernel never deletes, rewrites, guesses, or implicitly migrates the unavailable extension payload.
+- integrated replay rejects before the first write while returning a detached unchanged initial document and the same availability facts;
+- installing an exactly compatible contribution and reopening permits complete validation and may restore writability;
+- the kernel never deletes, rewrites, guesses, or implicitly migrates unavailable or incompatible extension data.
 
-Unknown extension compatibility remains unchanged: an undeclared opaque namespace is preserved under Core V1 rules and does not automatically trigger read-only mode. This avoids converting existing forward-compatible documents into write-blocked documents. Official domains that require invariant enforcement must ship an immutable compatibility declaration even when their executable contribution is absent.
-
+Unknown extension compatibility remains unchanged: an undeclared opaque namespace is preserved under Core V1 rules and does not automatically trigger read-only mode. This avoids converting existing forward-compatible documents into write-blocked documents. Official domains that require invariant enforcement must ship an immutable versioned requirement even when their executable contribution is absent.
 **Rejected alternatives:**
 
 - allowing Core writes while the required validator is absent, which can create contradictory Core pitch and Guitar placement state;
@@ -287,7 +318,7 @@ Any failure before step 9 preserves the complete pre-submit state.
 
 ## 6. Product Decision Status
 
-GD0-D001 through GD0-D005 are approved. Remaining design sections derive repository-answerable technical mechanics from those decisions and do not reopen product scope.
+GD0-D001 through GD0-D005 are user-approved plan decisions. This synchronized document remains a review candidate until independent acceptance; the remaining sections derive repository-answerable technical mechanics without claiming an accepted baseline.
 
 ## 7. Public Integration Contracts
 
@@ -295,7 +326,7 @@ GD0-D001 through GD0-D005 are approved. Remaining design sections derive reposit
 
 `CommandBus.create(initialDocument)` and `replayCoreCommands()` retain their accepted Core V1 types and runtime behavior.
 
-Core V1.1 adds an integrated construction path on the same class, conceptually:
+GD-0 freezes the following minimum public construction surface. `KernelIntegratedCatalog` is an opaque, deeply frozen handle produced only by the separately approved official-catalog compiler; application callers cannot construct or mutate its bindings.
 
 ```typescript
 type IntegratedCommandBusCreationResult =
@@ -304,8 +335,17 @@ type IntegratedCommandBusCreationResult =
 
 CommandBus.createIntegrated(
   initialDocument: ScoreDocument,
-  assembly: CompiledKernelAssembly,
+  catalog: KernelIntegratedCatalog,
 ): IntegratedCommandBusCreationResult;
+
+interface IntegratedCommandBus {
+  submit(input: unknown): KernelCommandResult;
+  undo(): KernelCommandResult;
+  redo(): KernelCommandResult;
+  read(): ReadResult<IntegratedKernelReadState>;
+  markPersisted(input: unknown): MarkPersistedResult;
+  subscribe(handler: unknown): EventSubscriptionResult;
+}
 ```
 
 `IntegratedCommandBus` is a catalog-bound view of the existing bus implementation. It exposes the same method names—`submit`, `undo`, `redo`, `read`, `markPersisted`, and `subscribe`—with integrated result/read/event types. It is not a second runtime, state object, or history owner.
@@ -337,36 +377,137 @@ interface KernelCommandDescriptorV1 {
 
 ### 7.3 Modular result and issue data
 
-The integrated result uses the D002 assessment model. The stable additional mechanism failures are:
+The integrated result uses the D002 assessment model. The closed additional mechanism failures are:
 
 - `command.required-contribution-unavailable`;
+- `command.required-contribution-incompatible`;
 - `command.contribution-semantic-invalid` with frozen module issues;
 - `command.contribution-contract-violation` for malformed prepared effects/facts;
-- `command.contribution-internal-error` for unexpected contribution exceptions or Promise-like returns from synchronous transaction hooks.
+- `command.contribution-internal-error` for unexpected contribution exceptions or Promise-like returns from synchronous transaction hooks;
+- `command.assembly-mismatch` for a forged/cross-catalog integrated invocation.
 
 Existing Core failures keep their codes and facts. Domain-specific meaning stays inside namespace-qualified `ModuleKernelIssue` values. Ordering is Core issues first, then module assessments/issues in frozen catalog order and validator-return order.
 
 The official module SDK exposes a narrow `ModuleKernelErrorBase` derived from the internal object-oriented error foundation. Domain subclasses may add only allowlisted detached code/source/location/details data and must convert through `toIssue()`. The application-facing Core root continues to omit runtime error classes and returns data-only results.
 
-### 7.4 Write availability
+### 7.4 Write and validation availability
 
-Integrated reads add detached write availability:
+Integrated reads add detached, deeply frozen write and validation availability using these exact public discriminants:
 
 ```typescript
+type KernelDomainAvailabilityFact =
+  | {
+      readonly reason: "required-contribution-unavailable";
+      readonly namespace: string;
+      readonly owner: ExtensionOwner;
+      readonly extensionSchemaVersion: number;
+      readonly moduleId: string;
+      readonly contributionId: string;
+      readonly supportedSchemaVersions: readonly number[];
+    }
+  | {
+      readonly reason: "required-contribution-incompatible";
+      readonly namespace: string;
+      readonly owner: ExtensionOwner;
+      readonly extensionSchemaVersion: number;
+      readonly moduleId: string;
+      readonly contributionId: string;
+      readonly supportedSchemaVersions: readonly number[];
+    };
+
 type KernelWriteAvailability =
   | { readonly status: "writable" }
   | {
       readonly status: "read-only";
-      readonly reason: "required-contribution-unavailable";
-      readonly missing: readonly {
-        readonly namespace: string;
-        readonly moduleId: string;
-        readonly contributionId: string;
-      }[];
+      readonly reason: "domain-validation-incomplete";
+      readonly facts: readonly KernelDomainAvailabilityFact[];
     };
+
+type KernelValidationAvailability =
+  | { readonly status: "complete" }
+  | {
+      readonly status: "incomplete";
+      readonly facts: readonly KernelDomainAvailabilityFact[];
+    };
+
+interface IntegratedKernelReadState extends KernelReadState {
+  readonly writeAvailability: KernelWriteAvailability;
+  readonly validationAvailability: KernelValidationAvailability;
+}
+
+type KernelContributionFailure =
+  | {
+      readonly code: "command.required-contribution-unavailable";
+      readonly facts: readonly KernelDomainAvailabilityFact[];
+    }
+  | {
+      readonly code: "command.required-contribution-incompatible";
+      readonly facts: readonly KernelDomainAvailabilityFact[];
+    }
+  | {
+      readonly code: "command.contribution-semantic-invalid";
+      readonly issues: readonly ModuleKernelIssue[];
+    }
+  | {
+      readonly code: "command.contribution-contract-violation";
+      readonly moduleId: string;
+      readonly contributionId: string;
+    }
+  | {
+      readonly code: "command.contribution-internal-error";
+      readonly moduleId: string;
+      readonly contributionId: string;
+    }
+  | { readonly code: "command.assembly-mismatch" };
+
+type KernelCommandFailure = CommandFailure | KernelContributionFailure;
+
+type KernelCommandBusCreationFailure =
+  | CommandBusCreationFailure
+  | Extract<
+      KernelContributionFailure,
+      {
+        readonly code:
+          | "command.contribution-semantic-invalid"
+          | "command.contribution-contract-violation"
+          | "command.contribution-internal-error"
+          | "command.assembly-mismatch";
+      }
+    >;
 ```
 
-Missing entries are deduplicated and sorted by namespace/module/contribution. They contain no document payload, filesystem path, stack, or raw error.
+Facts are deduplicated and sorted by namespace, owner identity, extension schema version, module, contribution, and reason. `supportedSchemaVersions` is copied from the canonical requirement. Facts contain no extension payload, filesystem path, stack, handler, or raw error. `complete` means every known required official-domain block has an installed exactly compatible validator and all of those validators completed; Core-only semantic validation with any fact above is always exposed as `incomplete`, never as complete domain-semantic validity.
+
+The same two availability values appear on integrated replay results and every public integrated validation report/read. Unknown undeclared opaque extensions remain outside this official-domain completeness claim and retain Core V1 preservation behavior.
+
+### 7.5 Registry gateway surface
+
+The existing Core overload/result remains unchanged. An integrated bus uses this additive overload and exact result discriminants:
+
+```typescript
+type IntegratedKernelModuleGatewayCreationResult =
+  | { readonly ok: true; readonly gateway: IntegratedKernelModuleGateway }
+  | {
+      readonly ok: false;
+      readonly failure:
+        | KernelRegistryAccessFailure
+        | { readonly code: "registry.assembly-mismatch" };
+    };
+
+KernelRegistry.createGateway(
+  moduleId: string,
+  commandBus: IntegratedCommandBus,
+): IntegratedKernelModuleGatewayCreationResult;
+
+interface IntegratedKernelModuleGateway {
+  submit(input: unknown): KernelGatewayResult<KernelCommandResult>;
+  undo(): KernelGatewayResult<KernelCommandResult>;
+  redo(): KernelGatewayResult<KernelCommandResult>;
+  read(): KernelGatewayResult<ReadResult<IntegratedKernelReadState>>;
+}
+```
+
+Other approved capability-gated gateway operations keep their K1-4 behavior. Both factory and gateway reject cross-catalog/Core-only pairings with stable data-only failures before exposing a writable session.
 
 ## 8. Compiled Domain Contribution ABI
 
@@ -376,7 +517,7 @@ The product composition root imports statically linked official compiled entries
 
 The additive registration entry is `kernel.domain-commands.v1`. It reuses the accepted `command:register`, `command:execute`, `score:read`, and `event:subscribe` capabilities; GD-0 adds namespace ownership metadata rather than a generic document-mutation capability.
 
-Conceptual compiled contribution:
+The official module SDK candidate uses this minimum versioned contribution shape; handler signatures and private builders are finalized by CK1.1-1/GD-2 without changing the public application-facing contracts fixed in section 7:
 
 ```typescript
 interface CompiledDomainCommandContributionV1 {
@@ -384,6 +525,7 @@ interface CompiledDomainCommandContributionV1 {
   readonly moduleId: string;
   readonly contributionId: string;
   readonly extensionNamespaces: readonly string[];
+  readonly extensionRequirements: readonly ExtensionRuntimeRequirementV1[];
   readonly commands: readonly CompiledDomainCommandDefinitionV1[];
   readonly validate: DomainSemanticValidatorV1;
   readonly classify: DomainSupportClassifierV1;
@@ -402,7 +544,7 @@ Catalog construction is isolated and all-or-nothing. It validates:
 - unique module, contribution, command, effect-kind, and extension-namespace ownership;
 - command ID namespace ownership and target kind;
 - matching compiled handler/descriptor counts and identities;
-- frozen profiles, compatibility requirements, and effect definitions;
+- frozen profiles, compatibility requirements, and effect definitions. Each compiled binding must match its selected `ExtensionRuntimeRequirementV1` identity and exact supported-version list; mismatch fails catalog construction before any handler is callable;
 - absence of runtime mutation APIs.
 
 The successful catalog, nested arrays/records/profiles/descriptors, and compatibility declarations are deeply frozen. Construction failures expose only stable registry facts. Function closure purity is enforced through design review and deterministic/hostile-state tests; mutable global profiles are forbidden.
@@ -486,7 +628,7 @@ Each contribution call has its own total sync/async exception boundary. Async re
 Changed-candidate order:
 
 1. Core semantic validation.
-2. Every installed domain semantic validator in catalog order; collect returned issues.
+2. Every installed exactly schema-compatible domain semantic validator in catalog order; collect returned issues. Missing/incompatible requirements never enter this write pipeline because availability rejects first.
 3. Reject when any semantic issue exists.
 4. Core feature-profile classification.
 5. Every installed domain profile classifier in catalog order.
@@ -498,14 +640,46 @@ The transaction remains invisible until step 7. Unsupported profile issues are w
 
 ## 11. Replay Contract
 
-`replayCoreCommands()` stays unchanged. Core V1.1 adds catalog-bound `replayKernelCommands(initialDocument, acceptedCommands, assembly)` or the equivalent integrated factory operation.
+`replayCoreCommands()` stays unchanged. GD-0 freezes this additive public replay signature and result discriminants:
 
-- It compiles/binds the same assembly contract used by live integrated construction.
+```typescript
+type ReplayKernelCommandsResult =
+  | {
+      readonly status: "replayed";
+      readonly finalDocument: ScoreDocument;
+      readonly documentVersion: number;
+      readonly results: readonly KernelCommandResult[];
+      readonly writeAvailability: KernelWriteAvailability;
+      readonly validationAvailability: KernelValidationAvailability;
+    }
+  | {
+      readonly status: "rejected";
+      readonly finalDocument: ScoreDocument;
+      readonly documentVersion: number;
+      readonly results: readonly KernelCommandResult[];
+      readonly failedCommandIndex: number;
+      readonly failure: KernelCommandFailure;
+      readonly writeAvailability: KernelWriteAvailability;
+      readonly validationAvailability: KernelValidationAvailability;
+    }
+  | {
+      readonly status: "invalid-initial-document";
+      readonly failure: KernelCommandBusCreationFailure;
+    };
+
+replayKernelCommands(
+  initialDocument: ScoreDocument,
+  acceptedCommands: readonly unknown[],
+  catalog: KernelIntegratedCatalog,
+): ReplayKernelCommandsResult;
+```
+
+- It binds the same `KernelIntegratedCatalog` contract used by live integrated construction.
 - It replays decoded semantic commands only; internal effects, undo/redo session logs, events, timestamps, and history snapshots are not replay input.
-- The same initial document, assembly, and accepted command sequence produce deeply equal final documents, result/status/version sequences, module assessments, and failure index.
-- Results/final document are detached from the assembly and any live bus.
-- A required missing contribution produces read-only availability and rejects before the first replayed write.
-- Input commands and assembly/profile objects are cloned/frozen or safely read so later caller mutation cannot change results.
+- The same initial document, catalog, and accepted command sequence produce deeply equal final documents, result/status/version sequences, module assessments, availability facts, and failure index.
+- Results/final document are detached from the catalog and any live bus.
+- A required unavailable or schema-incompatible contribution produces read-only/incomplete availability. An empty sequence may return `replayed` with the detached unchanged document; the first attempted write returns `rejected` at its exact index without executing an incompatible handler.
+- Input commands and catalog/profile objects are cloned/frozen or safely read so later caller mutation cannot change results.
 
 ## 12. Event Fact Design
 
@@ -522,6 +696,7 @@ The command preparation result includes affected `ScoreAddress` facts rather tha
 - Core-only construction remains available and installs only the six accepted Core built-ins.
 - Existing Core command results, no-op behavior, version increments, history depth, replay results, public events, root exports, and ordering remain behaviorally equal.
 - Integrated construction is additive and binds official domain contributions before the session begins.
+- The exact minimum public names and discriminants are `KernelIntegratedCatalog`, `CommandBus.createIntegrated`, `IntegratedCommandBusCreationResult`, `IntegratedCommandBus`, `IntegratedKernelReadState`, `KernelWriteAvailability`, `KernelValidationAvailability`, the integrated `KernelRegistry.createGateway` overload/result, and `replayKernelCommands`/`ReplayKernelCommandsResult`. Later tasks design private handlers/builders, not substitutes for this surface.
 - Persisted documents retain opaque extension preservation whether or not an interpreting contribution is installed.
 - The application-facing root exports integrated factories/data contracts but omits compiled handlers, private effects, history entries, module effect payload decoders, mutable catalog objects, and error classes.
 - The official module SDK is a separate reviewed entry point. It exposes only descriptor/building types, restricted effect requests, issue/error construction, and read-only contribution contexts required by official modules.
@@ -537,7 +712,7 @@ The Brilliant Guitar product composition root always uses integrated constructio
 - Stable public failures contain only allowlisted module/contribution/namespace IDs, codes, locations, and JSON details.
 - Profiles, descriptors, compatibility declarations, issues, assessments, results, events, reads, and replay output are detached and deeply frozen.
 - Catalog order is explicit and deterministic; object enumeration order, registration timing, wall clock, random values, and handler identity never determine observable output.
-- Unknown/non-target extension data is preserved byte-for-JSON-value through submit, reject, no-op, undo, redo, replay, read-only degradation, and codec round-trip.
+- Unknown/non-target extension data preserves exact JSON-value semantics through submit, reject, no-op, undo, redo, replay, read-only degradation, and codec round-trip; physical byte identity remains outside Core.
 
 ## 15. Rollout and Rollback
 

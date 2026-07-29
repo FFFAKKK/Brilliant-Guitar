@@ -1,18 +1,18 @@
 # GD-0 Downstream Implementation Plan
 
-> **Status:** STAGE 0 DOCUMENTATION SYNC IN PROGRESS / INDEPENDENT REVIEW PENDING
+> **Status:** USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING
 > **Planning base:** `064dc2bffe26022bc58f0690986b09a0c6a257aa`
 > **Current authorization:** Stage 0 documentation-contract closure only
 > **Rule:** each stage below is a separate Trellis task and independent acceptance gate
 
 ## 1. Purpose
 
-Translate the approved GD-0 microkernel contract into a safe execution sequence. This file does not authorize production implementation and deliberately avoids one broad “Guitar Domain” task. Core V1.1 mechanisms, Guitar data semantics, Guitar commands, and integration qualification remain independently reviewable.
+Translate the user-approved GD-0 plan candidate into a safe execution sequence. This file does not authorize production implementation and deliberately avoids one broad “Guitar Domain” task. Core V1.1 mechanisms, Guitar data semantics, Guitar commands, and integration qualification remain independently reviewable.
 
 ## 2. Fixed Ordering
 
 ```text
-GD-0 contract acceptance
+GD-0 independent documentation acceptance
   -> CK1.1-0 hostile-input guard prerequisite
   -> CK1.1-1 official module-SDK contract foundation
   -> GD-1 GuitarExtension foundation
@@ -26,17 +26,17 @@ Dependencies are contractual, not implied by parent/child placement:
 
 - CK1.1-1 begins after CK1.1-0 and establishes the approved module issue/error/descriptor authoring surface without a command runtime.
 - GD-1 begins after CK1.1-1 because its strict codecs/guards and derived domain errors require the hardened Core and official module SDK.
-- GD-2 consumes the accepted GD-0 contracts and may use a synthetic test contribution; it must not import GD-1 production code.
+- GD-2 may consume the GD-0 contracts only after independent documentation acceptance and may use a synthetic test contribution; it must not import GD-1 production code.
 - GD-3 requires accepted GD-1 and GD-2 baselines.
 - GD-4 requires accepted GD-3 and reruns all relevant Core gates.
 
-## 3. Stage 0 — Close GD-0 as a Documentation Contract
+## 3. Stage 0 — Prepare the GD-0 Documentation Review Candidate
 
 ### Deliverables
 
 - Final convergence pass over `prd.md`, `design.md`, and `implement.md`.
 - Independent review of D001-D005 and technical derivations.
-- Sync the approved contract into the active product documents without changing production source:
+- Sync the user-approved plan candidate into the active product documents without changing production source:
   - product `design.md` and `implement.md`;
   - `SPEC-003-command-system.md`;
   - `SPEC-005-guitar-techniques.md`;
@@ -46,7 +46,9 @@ Dependencies are contractual, not implied by parent/child placement:
   - `SPEC-016-kernel-errors-diagnostics-reports.md`;
   - `technical/microkernel-architecture.md` and `technical/modular-plugin-architecture.md`.
 - Add an active Core V1.1 domain-integration specification or an explicitly linked additive section under `.trellis/spec/core-kernel/backend/`.
-- Record the accepted GD-0 documentation baseline and archive this task.
+- Synchronize `pure-kernel-boundary.md` so K1-1 through K1-6 remain the closed Core-only baseline and GD-0 is explicitly additive.
+- Fix exact schema-version compatibility, write/validation availability facts, and the minimum integrated factory/bus/gateway/replay signatures for independent review.
+- Stop at a clean documentation review candidate. Accepted-baseline recording, archive, and downstream activation require a later explicit independent `ACCEPT` governance action.
 
 ### Gate
 
@@ -184,18 +186,18 @@ GD-1 adds an isolated package/spec/fixture and no Core runtime seam. Revert the 
 
 ### 7.5 Validation and classification
 
-- Core semantics first; every installed domain validator afterward in frozen order.
+- Core semantics first; every installed exactly schema-compatible domain validator afterward in frozen order.
 - Collect deterministic semantic issues.
 - Core profile first; every domain profile afterward.
 - Finish all classification before visible commit.
-- Use the same order for creation, submit, undo, redo, and integrated replay.
+- Use the same order for creation, submit, undo, redo, and integrated replay; missing/incompatible validators produce explicit incomplete availability rather than a partial “valid” result.
 
 ### 7.6 Read-only degradation
 
-- Compare known extension compatibility requirements with compiled contributions during integrated construction.
-- Expose sorted frozen write availability.
+- Validate finite exact `supportedSchemaVersions`, compare each known target block and compiled contribution during integrated construction, and classify absent/compatible/incompatible/future-schema cases before any handler call.
+- Expose sorted frozen write and validation availability with stable unavailable/incompatible facts.
 - Permit detached reads/codec preservation/checkpoint bookkeeping.
-- Reject submit/undo/redo before processing when required contributions are missing.
+- Reject submit/undo/redo before processing when required contributions are missing or schema-incompatible; incompatible handlers receive zero calls.
 - Preserve undeclared opaque-extension Core V1 behavior.
 
 ### 7.7 Unified events
@@ -247,7 +249,8 @@ GD-2 uses a test-only neutral domain contribution rather than importing Guitar D
 - all installed validators/classifiers run in deterministic order;
 - semantic invalid rejects while unsupported commits;
 - contribution/effect/validator/classifier/fact throws preserve full state;
-- read-only known-missing-domain behavior and unknown opaque-extension compatibility;
+- read-only known-missing/incompatible/future-schema behavior, explicit validation completeness, and unknown opaque-extension compatibility;
+- exact supported-schema negotiation, future/incompatible schema handler suppression, incomplete validation facts, and lossless payload preservation;
 - live/replay deep equality;
 - existing six Core commands retain exact Core-only results/events.
 
@@ -300,7 +303,7 @@ Use one deterministic four-measure standard-six-string Guitar document containin
 - Multi-step undo/redo and redo invalidation.
 - Live versus replay document/result/version/classification equality.
 - One event per transaction plus optional dirty event.
-- Missing Guitar contribution opens read-only with exact preservation.
+- Missing or schema-incompatible Guitar contribution opens read-only with incomplete validation facts and exact preservation; incompatible handlers are not executed.
 - Unknown extension remains writable under Core V1 opaque behavior.
 - Original documents, payloads, profiles, results, reads, and events are detached/frozen.
 - Hostile `unknown`, mutable globals, sync throws, async handler rejection, version/event overflow, and privacy checks.
@@ -336,8 +339,8 @@ Before any downstream task starts:
 
 1. User approves final `prd.md`, `design.md`, and `implement.md`.
 2. Independent reviewer checks microkernel dependency direction, Core compatibility, atomicity, deterministic failure boundaries, and data preservation.
-3. GD-0 documentation task is synced and archived with a fixed baseline.
-4. Only the next single downstream task is created/activated; later stages remain planned and blocked by their predecessor's acceptance.
+3. Independent acceptance is recorded before GD-0 is assigned a fixed baseline or archived.
+4. A separate user-authorized governance/activation action creates or activates only the next single downstream task; this documentation candidate activates none.
 
 ## 12. Stage 0 Execution Record
 

@@ -1,6 +1,6 @@
 # GD-0 Guitar Domain / Core Transaction Integration Contract
 
-> **Status:** STAGE 0 DOCUMENTATION SYNC IN PROGRESS / INDEPENDENT REVIEW PENDING
+> **Status:** USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING
 > **Planning base:** `064dc2bffe26022bc58f0690986b09a0c6a257aa`
 > **Parent:** `.trellis/tasks/06-29-commercial-guitar-tablature-product/`
 > **Created:** 2026-07-28
@@ -35,7 +35,7 @@ The following decisions are already approved and are not reopened by GD-0:
 11. **Modular result and error contract.** Core-only construction retains the accepted Core `CommandResult` surface. Integrated construction uses the same submit method through a typed modular result envelope containing Core support plus deterministically ordered module support/issues. Domain codes are namespaced and owned by their contribution rather than enumerated in Core. A domain-neutral object-oriented error base and derived module errors produce deeply frozen public issue data; error instances, stacks, and internal state remain behind the boundary.
 12. **Complete installed-domain validation.** Core semantic validation runs first for every changed candidate. Once Core is valid, every installed domain semantic validator runs in frozen catalog order and all returned semantic issues are collected. Core and all domain support classifiers run only after semantic validity is established. The same catalog and ordering apply to initialization, submit, undo, redo, and replay; no-op classifies the unchanged valid state without changing history or version.
 13. **One committed fact per transaction.** Integrated submit/undo/redo publishes exactly one domain-neutral `core.document.committed` event for each committed transaction, followed only by the existing dirty-state event when dirty state changes. The committed event carries a namespaced command identity and the canonical union of Core/domain affected `ScoreAddress` facts. Core-only event contracts retain their accepted shape; integrated sessions use the additive modular event type.
-14. **Known missing-domain degradation.** A document containing an official extension whose immutable compatibility declaration requires an unavailable contribution opens in a detached, lossless read-only mode. Decode, encode, snapshot, selection, inspection, and opaque payload preservation remain available; document writes reject with a stable required-contribution-unavailable failure. Truly unknown opaque extensions retain the accepted Core V1 preservation behavior. No domain payload is stripped, guessed, or implicitly migrated.
+14. **Known missing/incompatible-domain degradation.** Each known official extension requirement declares an exact, finite set of supported `ExtensionBlock.schemaVersion` values. A matching block whose required contribution is absent, or whose schema version is not exactly supported, opens in a detached, lossless read-only mode. Integrated reads expose stable write-availability and validation-completeness facts; incompatible handlers never execute. Decode, encode, snapshot, selection, inspection, and opaque payload preservation remain available. Truly unknown opaque extensions retain the accepted Core V1 preservation behavior. No domain payload is stripped, guessed, downgraded, or implicitly migrated.
 
 ## Microkernel Product Principle
 
@@ -56,13 +56,13 @@ GD-0 must define requirements and stable public contracts for:
 - domain-neutral command IDs and contribution ownership without a Core-to-Guitar dependency;
 - atomic multi-effect transactions that can update Core-owned and extension-owned state in one history entry;
 - deterministic forward/inverse effects sufficient for submit, undo, redo, and replay without whole-document history snapshots or public patch APIs;
-- candidate validation that runs frozen Core semantic rules followed by every installed domain validator before commit;
+- candidate validation that runs frozen Core semantic rules followed by every installed, schema-compatible domain validator before commit and publicly distinguishes complete from incomplete domain validation;
 - separation of semantic invalidity from product-profile unsupported classification;
 - stable, privacy-safe domain failures, diagnostics, support results, and reports;
 - affected-entity derivation and post-commit events for installed domain commands;
 - checkpoint, dirty-state, no-op, version-overflow, event-sequence, and handler-rejection behavior consistent with accepted Core V1 contracts;
 - preservation of unknown and non-target extension subtrees across success, failure, undo, redo, persistence round-trip, and replay;
-- compatibility behavior when a persisted document contains a known Guitar extension but the Guitar contribution is absent;
+- exact-version compatibility behavior when a persisted document contains a known Guitar extension whose required contribution is absent or schema-incompatible;
 - the exact Core V1.1 prerequisite and regression surface required before GD-1 and GD-2 implementation.
 
 ## Required Behavioral Contracts
@@ -93,13 +93,14 @@ GD-0 must define requirements and stable public contracts for:
 - Unexpected contribution exceptions or Promise-like returns from synchronous transaction hooks are isolated and converted to a stable failure while preserving the complete pre-call state.
 - Domain-semantic invalidity is a hard rejection.
 - Domain-semantic validity with product-profile unsupported content may commit and must return the complete unsupported classification.
+- Missing or schema-incompatible required validators yield `validationAvailability.status: "incomplete"` with stable sorted facts. A Core-only validation report must never be presented as complete domain-semantic validity for that integrated document.
 - Public inputs are decoded from `unknown` without executing getters or Proxy traps where the contract promises hostile-input safety.
 
 ### Compatibility
 
 - Existing six Core commands retain their accepted public behavior and result classifications.
 - Existing Core documents and replay sequences remain valid without installing Guitar Domain.
-- A document containing an unknown or unavailable domain extension remains decodable and round-trippable as opaque data under the established extension-preservation contract.
+- A document containing an unknown, unavailable, schema-incompatible, or future-version domain extension remains decodable and round-trippable as opaque data under the established extension-preservation contract. Known unavailable/incompatible requirements additionally force lossless read-only mode and incomplete validation.
 - No Core V1 accepted contract may be silently weakened. Any unavoidable incompatible change stops GD-0 and requires a separately approved migration plan.
 
 ## Out of Scope
@@ -113,7 +114,7 @@ GD-0 must define requirements and stable public contracts for:
 
 ## Planning Deliverables
 
-- `prd.md`: approved requirements, boundaries, decisions, and acceptance criteria.
+- `prd.md`: user-approved plan requirements, boundaries, decisions, and acceptance criteria for the documentation review candidate.
 - `research/current-core-constraints.md`: evidence-backed inventory of the accepted Core contracts that GD-0 must extend.
 - `design.md`: the chosen public submission/result contracts, contribution model, transaction/effect model, validation order, history/replay/events integration, compatibility rules, and alternatives rejected.
 - `implement.md`: ordered implementation split and gates for the subsequent Core V1.1 and Guitar Domain tasks; GD-0 itself does not authorize production implementation.
@@ -126,7 +127,9 @@ GD-0 must define requirements and stable public contracts for:
 - [x] The design proves Core retains zero Guitar imports and that startup contributions are immutable and deterministic.
 - [x] Submit, no-op, reject, undo, redo, replay, checkpoint, dirty, event, support, diagnostic, overflow, and unexpected-failure paths each have defined state invariants.
 - [x] Existing six Core commands and Core-only documents retain compatible behavior.
-- [x] Unknown extensions and unavailable-domain documents have an explicit preservation and compatibility contract.
+- [x] Unknown extensions plus unavailable, incompatible, and future-schema known-domain documents have an explicit exact-version preservation/compatibility contract.
+- [x] Integrated write and validation availability expose stable public discriminants/facts, and incomplete domain validation cannot be represented as complete.
+- [x] The minimum integrated factory, bus/gateway result, read-availability, and replay signatures/discriminants are fixed rather than illustrative.
 - [x] The P3 hostile-input guard prerequisite is assigned to the Core V1.1 implementation split with focused regression criteria.
 - [x] The test plan covers atomic dual-owner mutation, rollback, deterministic replay, event ordering, validation failure, support classification, contribution absence, and extension preservation.
 - [x] Core V1.1 seam work, official module SDK, GuitarExtension foundation, Guitar commands, and Guitar integration gate are split into independently reviewable tasks with clear ordering.
@@ -135,4 +138,4 @@ GD-0 must define requirements and stable public contracts for:
 
 ## Gate
 
-The user approved this final GD-0 plan on 2026-07-28. An operator may now run the Trellis start gate for **Stage 0 documentation-contract closure only**: synchronize the approved product/Core specifications, obtain independent documentation/architecture review, record the accepted documentation baseline, and archive GD-0. Production `src/**`/`test/**` work and CK1.1-0/GD-1/GD-2/GD-3 activation remain separately gated.
+The user approved the GD-0 plan on 2026-07-28. The present repository state is only **USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING**. This repair pass synchronizes the candidate and stops for independent review. It records no accepted baseline, performs no archive, and does not create or activate CK1.1-0, CK1.1-1, GD-1, GD-2, GD-3, or GD-4. A later governance action may record acceptance and archive only after an explicit independent `ACCEPT`; production `src/**`/`test/**` work remains separately gated.

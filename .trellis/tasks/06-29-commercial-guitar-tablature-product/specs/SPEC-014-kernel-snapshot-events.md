@@ -62,13 +62,15 @@ const correct = {
 
 ## 8. GD-0 Additive Integrated Event Contract
 
+> **GD-0 lifecycle:** USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING.
+
 K1-3 Core-only snapshot/event 合同保持冻结。后续 GD-2 integrated construction 只做兼容扩展：
 
-- integrated read 增加 detached、deeply frozen 的 write availability；known required contribution 缺失时为 read-only，并提供排序去重后的 namespace/module/contribution facts。
+- integrated read 增加 detached、deeply frozen 的 `KernelWriteAvailability` 与 `KernelValidationAvailability`；known required contribution 缺失或 `ExtensionBlock.schemaVersion` 不兼容（含 future schema）时分别为 read-only/incomplete，并提供排序去重后的 namespace/owner/schemaVersion/module/contribution/reason/supported-version facts。仅 Core validation 不得标成完整领域语义有效。
 - 每次 committed submit/undo/redo 仍只发布一个 `core.document.committed`，之后仅在 dirty 布尔变化时发布现有 dirty event。
 - integrated committed fact 使用 namespaced command identity，并携带 Core/domain affected `ScoreAddress` 的 canonical union；不携带 effect、extension payload、history、document、handler 或 raw error。
 - submit/redo 使用 forward facts；undo 使用同一稳定实体身份与 `undo` cause。事实校验、去重、排序与 event sequence reservation 必须在可见 commit 前完成。
-- read-only submit/undo/redo、失败与 no-op 均发布零事件且不改变 event sequence。
+- read-only submit/undo/redo 在不兼容 handler 运行前拒绝；这些拒绝、其他失败与 no-op 均发布零事件且不改变 event sequence。
 - 同步 throw、Promise/thenable rejection 与重入隔离规则完全继承 K1-3，不允许领域 handler 改写已提交状态。
 
 权威合同见 `.trellis/spec/core-kernel/backend/domain-transaction-integration.md`；当前仅完成文档同步。

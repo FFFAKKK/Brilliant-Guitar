@@ -128,7 +128,7 @@ Findings:
 - Core support classification itself reruns Core semantic validation before checking the product profile.
 - No installed-domain validation lifecycle exists yet.
 
-GD-0 implication: the integrated lifecycle must define domain validation for initial construction, submit, no-op classification, undo, redo, and replay. Core semantics must run first because domain validators rely on a structurally and semantically coherent score. The remaining product choice is whether every installed domain validator runs for every candidate or whether the catalog uses declared triggers to select validators.
+GD-0 implication: the integrated lifecycle must define domain validation for initial construction, submit, no-op classification, undo, redo, and replay. Core semantics must run first because domain validators rely on a structurally and semantically coherent score. GD0-D003 resolved the former choice: every installed, schema-compatible domain validator runs for every candidate; trigger-selected validation is rejected for this contract.
 
 ## Existing Event Identity and Fact Derivation
 

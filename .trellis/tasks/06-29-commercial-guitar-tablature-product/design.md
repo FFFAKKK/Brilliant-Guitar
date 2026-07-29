@@ -263,14 +263,14 @@ Pure Core Kernel V1 可以定义外部导入/导出贡献点的抽象 descriptor
 
 ## GD-0：Guitar Domain / Core 事务集成合同（2026-07-28）
 
-GD-0 已批准文档合同，权威来源为 `.trellis/tasks/07-28-gd-0-guitar-domain-core-transaction-contract/` 与 `.trellis/spec/core-kernel/backend/domain-transaction-integration.md`。当前仅同步合同，不代表 Core V1.1 或 Guitar Domain 生产实现已经开始。
+GD-0 当前为 **USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING**，权威候选来源为 `.trellis/tasks/07-28-gd-0-guitar-domain-core-transaction-contract/` 与 `.trellis/spec/core-kernel/backend/domain-transaction-integration.md`。本轮不记录 accepted baseline、不归档、不激活 Core V1.1 或 Guitar Domain 生产实现。
 
 - Core 与官方领域命令共用现有 `CommandBus.submit(unknown)` / gateway submit；不建立 Guitar facade、第二个 CommandBus、第二套 history/replay/dirty/event。
 - 产品组合根在启动期装配静态链接的官方贡献，形成不可变 catalog；Core 保持对 Guitar Domain 的零依赖，ready 后无注册、卸载、热插拔或 Registry change event。
 - 一个 Guitar placement 命令以私有细粒度 effect set 原子更新 Core `WrittenPitch` 与 Part-owned `GuitarExtension`，只生成一个版本、一个 history entry 和一个 committed fact；公开 API 不暴露 patch、内部 effect 或整文档替换。
-- changed candidate 先跑 Core semantic，再按 frozen catalog 顺序跑全部领域 semantic；全部语义有效后才运行 Core 与领域 profile。unsupported 可提交，semantic invalid 全量回滚。
-- 已知官方扩展声明所需贡献缺失时，产品以 detached、lossless read-only session 打开；未知 opaque ExtensionBlock 继续按 Core V1 保真且不会自动阻塞写入。
-- integrated result/event/read 使用 additive data-only 合同；领域 code 由 namespace 所有者负责，Core 不枚举 Guitar code。应用公共根不导出错误类、compiled handler、effect、history internals 或 mutable catalog。
+- changed candidate 先跑 Core semantic，再按 frozen catalog 顺序跑全部 exactly schema-compatible 领域 semantic；全部语义有效后才运行 Core 与领域 profile。缺失/不兼容 validator 必须公开 `validationAvailability: incomplete` 和稳定 facts，Core-only 验证不得冒充完整领域语义有效。unsupported 可提交，semantic invalid 全量回滚。
+- 已知官方扩展通过有限、精确的 `ExtensionBlock.schemaVersion` 列表协商。所需贡献缺失、版本不兼容或 future schema 时，产品以 detached、lossless read-only session 打开，不执行不兼容 handler，并原样保留完整扩展数据；未知 opaque ExtensionBlock 继续按 Core V1 保真且不会自动阻塞写入。
+- integrated factory、bus/gateway result、write/validation availability、replay 使用权威候选中固定的最小 public signatures/discriminants；result/event/read 均为 additive data-only 合同。领域 code 由 namespace 所有者负责，Core 不枚举 Guitar code。应用公共根不导出错误类、compiled handler、effect、history internals 或 mutable catalog。
 - 所有 public `unknown` guard/decoder 的目标合同是 descriptor-first、no-getter、no-throw；先由 CK1.1-0 独立实现和验收。
 
 固定执行顺序为：CK1.1-0 hostile-input guard → CK1.1-1 official module SDK → GD-1 GuitarExtension → GD-2 通用领域命令 seam → GD-3 Guitar 命令 → GD-4 集成门禁。每一项均为独立 Trellis 任务；当前 GD-0 不创建或激活这些下游任务。

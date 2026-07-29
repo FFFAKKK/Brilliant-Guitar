@@ -122,7 +122,7 @@ V1 启动期模块来源:
 
 - 新导出器、验证器、模板、批量编辑命令可以被添加。
 - 插件出错时主程序不崩溃，谱面不损坏。
-- 插件或领域 contribution 缺失后谱面必须 lossless 打开；unknown opaque extension 仍可按 Core V1 编辑/保存，known required contribution 缺失则 integrated session 为 read-only，禁止绕过领域验证写入。
+- 插件或领域 contribution 缺失后谱面必须 lossless 打开；unknown opaque extension 仍可按 Core V1 编辑/保存，known required contribution 缺失或 schema 不兼容（含 future schema）则 integrated session 为 read-only、validation incomplete，禁止不兼容 handler 与绕过领域验证写入。
 - 未来插件能力能逐步开放，而不是 MVP 一次性承担完整插件平台复杂度。
 
 ### 业务逻辑视角
@@ -382,7 +382,7 @@ Tauri 官方插件机制适合扩展应用原生能力，例如文件系统、�
 - 插件修改谱面必须走语义命令事务。
 - 插件不得提交任意 patch、JSON path、字段替换、数组 splice 或脚本式写入。
 - 插件异常不能导致主程序崩溃。
-- 插件或领域 contribution 缺失时谱面仍必须 lossless 打开；未知 opaque extension 按 Core V1 保真，已知 required contribution 缺失则进入 read-only。
+- 插件或领域 contribution 缺失时谱面仍必须 lossless 打开；未知 opaque extension 按 Core V1 保真，已知 required contribution 缺失或 exact schema 不兼容则进入 read-only + validation incomplete。
 - 插件私有数据必须按插件 ID 命名空间隔离。
 
 ## 主要风险
@@ -412,16 +412,17 @@ Tauri 官方插件机制适合扩展应用原生能力，例如文件系统、�
 
 ## GD-0：官方领域模块不是第三方插件运行时
 
-GD-0 固定的是随产品静态发布的 official domain contribution seam，不是 `PluginManifest`、Extension Host 或 marketplace：
+GD-0 为 **USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING**。其候选固定随产品静态发布的 official domain contribution seam，不是 `PluginManifest`、Extension Host 或 marketplace，也不是 accepted runtime baseline：
 
 - 产品 composition root 在启动期把纯数据 manifest 与静态 compiled bindings 原子装配成 frozen catalog。
 - Core 与领域命令只通过现有 submit port，复用一个 document/version/history/replay/dirty/event owner。
 - official domain SDK 只暴露 versioned descriptor、restricted effect request、read-only context 与 data-only issue/error conversion；application Core root 不暴露 authoring internals。
 - Core 不导入 Guitar Domain；GuitarExtension、validator/profile、命令/effect/issue code 由 Guitar 模块 namespace 所有。
 - ready 后无 register/unregister/hot reload；第三方 TypeScript runtime、sandbox、权限 UI 和 filtered facade 仍由未来 Extension Host 规划。
-- known required contribution missing 与 unknown opaque extension 分离：前者 lossless read-only，后者保持 Core V1 preservation/writable behavior。
+- known official requirement 使用有限精确 `ExtensionBlock.schemaVersion` 支持列表；required contribution missing/incompatible/future schema 与 unknown opaque extension 分离：前者 lossless read-only + validation incomplete 且不执行不兼容 handler，后者保持 Core V1 preservation/writable behavior。
+- integrated factory、bus/gateway result、write/validation availability 和 replay 的最小 public signatures/discriminants 固定；private authoring/runtime 设计仍由独立 CK1.1-1/GD-2 Gate 负责。
 
-下游顺序为 CK1.1-0 → CK1.1-1 → GD-1 → GD-2 → GD-3 → GD-4；当前 GD-0 不创建或激活这些实现任务。
+下游顺序为 CK1.1-0 → CK1.1-1 → GD-1 → GD-2 → GD-3 → GD-4；当前 GD-0 不记录 accepted baseline、不归档、不创建或激活这些实现任务。
 
 ## 验收标准
 
@@ -430,5 +431,5 @@ GD-0 固定的是随产品静态发布的 official domain contribution seam，�
 - [ ] 模块边界能支持不用改领域模型就新增一个只读分析器。
 - [ ] 插件不能直接改谱面对象，只能提交语义命令事务。
 - [ ] 插件不能获得任意 patch 或字段路径写入能力。
-- [ ] 插件或领域 contribution 缺失后谱面仍可 lossless 打开；Core V1 保真未知 score/part ExtensionBlock JsonValue，known required contribution 缺失时进入 read-only。物理插件资源仍不属于 Core 承诺。
+- [ ] 插件或领域 contribution 缺失后谱面仍可 lossless 打开；Core V1 保真未知 score/part ExtensionBlock JsonValue，known required contribution 缺失或 schema 不兼容时进入 read-only + validation incomplete，且不兼容 handler 零执行。物理插件资源仍不属于 Core 承诺。
 - [ ] MVP 文档明确第三方插件安装不是第一版必须项。

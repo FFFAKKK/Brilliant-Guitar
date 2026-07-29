@@ -1,24 +1,31 @@
-# Pure Kernel Boundary
+# Pure Core Kernel Boundary
 
-> **Authoritative staged boundary (2026-07-16):** The Core V1 roadmap still
-> classifies nine mechanisms, but each task implements only its approved block.
+> **Authoritative staged boundary (2026-07-29):** K1-1 through K1-6 are independently accepted, the Core V1 qualification gate is archived, and Pure Core Kernel V1 is closed.
+> **GD-0 lifecycle:** USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING.
 
-## Current Accepted K1-1 through K1-4 Stage
+## Closed Pure Core Kernel V1 Baseline
 
-K1-1 score document/exact time, semantic schema/codec, hard validation, feature-profile validation, and diagnostics are the frozen foundation. Accepted K1-2 adds the closed six-command write boundary, atomic transactions, documentVersion, fine-grained history, undo/redo, and deterministic command replay. Accepted K1-3 adds stable address/range, deeply immutable reads, exact dirty checkpoints, and two deterministic committed/session facts at baseline `7369eeac60fecea66c2c9164c04439625c2d78b0`. Accepted K1-4 adds only a startup-frozen command/selector Registry and capability gateway at baseline `94766a0930c05e5339c44f667deaf02116af1c0c`, with 125/125 tests passing. General reports and migrations remain later tasks.
+Pure Core Kernel V1 consists only of the accepted K1-1 through K1-6 contracts:
 
-`ExtensionBlock` belongs to the score document/schema mechanism. It stores pure JSON-compatible data and does not create a registry, plugin runtime, capability system, or tenth mechanism.
+- K1-1: `ScoreDocument`, exact musical time and written pitch, strict decode, semantic validation, feature support, and lossless `ExtensionBlock` preservation.
+- K1-2: the closed six-command write boundary, atomic transactions, document version, history, undo/redo, and deterministic replay.
+- K1-3: stable addresses and ranges, immutable snapshots and selectors, checkpoint/dirty state, and deterministic committed/session events.
+- K1-4: the startup-frozen Registry, immutable compiled contribution tables, capabilities, and module gateway.
+- K1-5: data-only issue/report adapters, validation and current-schema migration reports, privacy boundaries, and detached current-schema migration compatibility.
+- K1-6: cross-contract integration evidence. Its accepted flow passed 8/8 focused and 169/169 full tests without changing the K1-1 through K1-5 production contracts.
 
-Current boundary rules:
+The archived Core V1 qualification gate recorded 25 covered contract groups, zero coverage gaps, and zero reproducible bugs. Its sole nonblocking P3 disposition requires future public `unknown` guards to be descriptor-first, no-getter, and no-throw through a separately accepted Core V1.1 prerequisite.
 
-- Core persists WrittenPitch and Part transposition; SoundingPitch is derived.
-- Core owns Fraction/NoteValue; tick, PPQ, milliseconds, playback cursors, and layout coordinates are adapter-derived.
-- Core preserves score/part ExtensionBlock envelopes but never interprets guitar tuning, string/fret, or technique payloads.
-- Core codec owns `unknown` to typed semantic data; physical files and original bytes remain external.
-- K1-3 keeps `CommandBus` as the only public session owner. Reads return detached frozen snapshots; `markPersisted` changes only the clean checkpoint; publishing remains private.
-- K1-3 exposes no mutable ScoreDocument, patch API, dynamic selector/event registration, registry, report framework, plugin lifecycle, UI/IO object, or physical save operation. Approved K1-4 may add only the frozen Registry/gateway surface in `registry-capability.md` and cannot widen K1-3 events or writes.
-- Fixtures and test helpers live under `test/` and never enter production exports.
+## Frozen Core-Only Contract
 
-Every active type must map to the frozen K1-1 foundation, accepted K1-2/K1-3 contracts, or the approved K1-4 Registry plan. Anything else requires a new approved task.
+Core-only construction, exports, persisted `brilliant-score-1` meaning, command/result unions, history and replay behavior, snapshots/selectors/checkpoints, event ordering, Registry/capability behavior, Issue/Report contracts, and migration compatibility are frozen at the accepted Core V1 baseline. An additive integration may consume these contracts but does not rename, widen, or reinterpret them.
 
-Later-stage design is a roadmap only and must be refreshed against the reviewed `brilliant-score-1` contract before implementation. Retired boundary drafts are stored under `.trellis/archive/core-kernel/`.
+Pure Core remains a platform-neutral TypeScript library with no Guitar imports, UI, DOM, rendering, audio, physical package/file IO, dynamic plugin lifecycle, or generic external document-mutation capability. `ScoreDocument` remains the only score truth, `ExtensionBlock` remains an opaque persistence envelope at the Core boundary, and `CommandBus` remains the sole document/version/history owner.
+
+## GD-0 Additive Documentation Candidate
+
+GD-0 is an additive integrated documentation review candidate, not an accepted runtime baseline. It defines the minimum behavior required for official domain contributions to join the existing transaction owner while leaving every Core-only path unchanged. Its authority is limited to `.trellis/tasks/07-28-gd-0-guitar-domain-core-transaction-contract/` and `domain-transaction-integration.md` until independent acceptance.
+
+The candidate requires exact `ExtensionBlock.schemaVersion` compatibility negotiation, explicit complete/incomplete domain-validation availability, lossless read-only degradation for missing or incompatible required contributions, and stable integrated public signatures/discriminants. CK1.1-0, CK1.1-1, GD-1, GD-2, GD-3, and later production work remain inactive and require separate plans and acceptance gates.
+
+Every active Core-only type must map to an accepted K1-1 through K1-6 contract. Every additive integrated type must map to the GD-0 review candidate and still requires separately accepted production implementation. Retired boundary drafts live only under `.trellis/archive/core-kernel/`.

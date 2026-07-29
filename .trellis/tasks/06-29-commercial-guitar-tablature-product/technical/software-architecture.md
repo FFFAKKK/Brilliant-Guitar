@@ -7,7 +7,7 @@
 - 当前架构决策: 采用参照操作系统微内核思想的 Core Kernel + 用户态服务模块架构。内核负责谱面真相、命令事务、验证、版本化契约和模块协作接口；UI、渲染、播放、导入导出、桌面壳和未来插件都作为模块或适配器与内核协作。
 - 详细架构图: `technical/microkernel-architecture.md`。
 - 当前 Core 状态: K1-1～K1-6 已验收；K1-6 测试基线 `355512aba4a8057d2d75aa665d74df49cdd2e23c` 在审查基线 `989c1f7a4056b14d3d59918c9b96874ad71591a8` 通过独立验收，8/8 聚焦、169/169 完整测试通过。权威合同位于 `.trellis/spec/core-kernel/`；Pure Core Kernel V1 已正式关闭，后续分块仍需独立规划和批准。
-- 当前阶段边界: 当前是 Pure Core Kernel 分块实施阶段。本文件只定义内核边界、模块协作原则和依赖方向；外部工程目录结构、monorepo 方案、`apps/desktop` 和 `packages/*` 拆分不属于当前阶段。
+- 当前阶段边界: Pure Core Kernel V1 已关闭；GD-0 为 **USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING**。本轮没有 accepted baseline、归档或 CK1.1/Guitar 实现激活。本文件只同步架构候选边界；外部工程目录结构、monorepo 方案、`apps/desktop` 和 `packages/*` 拆分不属于当前阶段。
 - 首个实现里程碑: Pure Core Kernel V1。先实现纯 TypeScript 内核和内核测试；桌面壳、UI、渲染、播放、持久化物理 IO、导出和导入均后置。
 - 目录状态: 目录结构仍未确认，必须等工程脚手架阶段从已确认内核边界、测试边界、构建方式和发布方式反推，不得反过来限制当前内核规划。
 
@@ -195,6 +195,8 @@ Pure Core Kernel V1 验收通过前，不进入 React UI、Tauri 桌面壳、Vex
 - Registry: K1-4 仅有现有 command/selector adapter 的启动期目录；更广贡献点属于未来独立规划。
 - Report: K1-5 当前只批准 validation/migration `KernelReport`；未来导入、导出和恢复模块必须复用 `KernelIssue`/`KernelReport` 基础，再定义各自有真实消费者的专属结果。
 - Capability Manifest: trusted Host 为官方模块声明身份、七个 capability 与兼容 API 版本；模块不能自授权。
+- Official-domain compatibility: known extension requirement 以有限精确版本列表匹配 `ExtensionBlock.schemaVersion`。missing/incompatible/future schema 时 integrated session lossless read-only、validation incomplete，不执行不兼容 handler，并保留完整扩展数据；unknown opaque extension 保持 Core V1 语义保真/可写。
+- Integrated public seam: 最小 factory、bus/gateway result、write/validation availability 和 replay 签名/discriminant 以 GD-0 候选为准；缺失/不兼容领域验证的稳定 facts 阻止调用方把 Core-only validation 表述为完整领域有效。
 
 注册表和 capability 的详细契约见 `specs/SPEC-015-kernel-registry-capability.md`。错误、diagnostic 和 report 的详细契约见 `specs/SPEC-016-kernel-errors-diagnostics-reports.md`。K1-4 只负责 command/selector-only frozen Registry、能力 gateway 和本地结构化失败；第三方插件发现、安装、沙箱、签名、审核、插件市场、权限 UI 与新增 contribution kind 属于外部 `Extension Host` 或后续任务。
 

@@ -1,9 +1,9 @@
 # Core Kernel Guidelines
 
-> **Current staged workflow (2026-07-28):** Pure Core Kernel V1 is accepted and closed. GD-0 has approved a documentation-only additive Core V1.1 domain-transaction contract; CK1.1/Guitar production work still requires its own task and acceptance gate.
+> **Current staged workflow (2026-07-29):** Pure Core Kernel V1 is accepted and closed. GD-0 is **USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING**. Its additive Core V1.1 domain-transaction documentation candidate does not activate CK1.1/Guitar production work.
 > K1-6 test baseline `355512aba4a8057d2d75aa665d74df49cdd2e23c` passed 8/8 focused and 169/169 full tests and was independently accepted at review baseline `989c1f7a4056b14d3d59918c9b96874ad71591a8` on 2026-07-26. Pure Core Kernel V1 is formally closed; Guitar Domain and product implementation require separate planning and approval.
 
-For changes that consume the accepted kernel, read `backend/score-document-model.md`, `backend/command-transaction.md`, `backend/snapshot-events.md`, `backend/registry-capability.md`, `backend/errors-reports.md`, `backend/integration-gate.md`, and all staged boundary/diagnostic/quality guides. Work on the approved Core V1.1 official-domain seam must also read `backend/domain-transaction-integration.md`. K1-1 through K1-5 contracts are frozen. K1-6 adds integration evidence only and does not alter them. Physical `.bgp` packaging, manifest, file IO, real legacy migration steps, Guitar Domain implementation, UI, playback, and layout remain later work.
+For changes that consume the accepted kernel, read `backend/score-document-model.md`, `backend/command-transaction.md`, `backend/snapshot-events.md`, `backend/registry-capability.md`, `backend/errors-reports.md`, `backend/integration-gate.md`, and all staged boundary/diagnostic/quality guides. Review of the additive Core V1.1 official-domain candidate must also read `backend/domain-transaction-integration.md` and `backend/pure-kernel-boundary.md`. K1-1 through K1-6 Core-only contracts are frozen. Physical `.bgp` packaging, manifest, file IO, real legacy migration steps, Guitar Domain implementation, UI, playback, and layout remain later work.
 
 The K1-1 data path is `unknown -> decode -> semantic validation -> ScoreFeatureProfile`. Unknown extension data must survive semantic round-trip.
 

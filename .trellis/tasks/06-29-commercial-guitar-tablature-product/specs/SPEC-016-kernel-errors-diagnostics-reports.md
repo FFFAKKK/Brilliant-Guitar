@@ -87,13 +87,16 @@ report 派生计数、全部 migration 路径、unknown ExtensionBlock 与 Comma
 
 ## 8. GD-0 Modular Issue and Result Boundary
 
+> **GD-0 lifecycle:** USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING.
+
 K1-5 的 closed Core `KernelIssueCode`、adapter 与 validation/migration report 保持不变。后续 Core V1.1 integrated construction 使用 additive module data contract：
 
 - domain issue code 必须 namespace-qualified 并由 contribution 所有，不加入 Core closed code union。
 - integrated result 先包含 accepted Core result/issue，再按 frozen catalog 顺序、validator-return 顺序包含 module assessments/issues。
-- stable mechanism failures覆盖 required contribution unavailable、domain semantic invalid、contribution contract violation、contribution internal error 与 assembly mismatch；失败只携带 allowlisted ID/location/details。
+- stable mechanism failures 覆盖 required contribution unavailable、required contribution incompatible、domain semantic invalid、contribution contract violation、contribution internal error 与 assembly mismatch；失败只携带 allowlisted ID/location/details。
 - official module SDK 可提供窄化 `ModuleKernelErrorBase` 与 `toIssue()`，但 application-facing Core root 不导出 error class、stack、builder internals、handler 或 effect。
 - 所有 public issues/assessments/results 深冻结并与输入隔离；getter/Proxy/extra-field/cycle/sparse-array/Promise-like sync hook 通过 descriptor-first、no-getter、no-throw 边界稳定收口。
+- integrated validation 额外携带 `KernelValidationAvailability = complete | incomplete`；incomplete 含排序稳定的 unavailable/incompatible facts，K1-5 Core validation report 不得单独被包装成完整领域语义有效结论。
 - GD-0 不新增 global issue bus、第三方 report ingress、import/export/recovery report 或远程日志。
 
 详细合同见 `.trellis/spec/core-kernel/backend/domain-transaction-integration.md`。CK1.1-1 与 GD-2 分别实现 SDK 与 runtime，均需独立验收。
