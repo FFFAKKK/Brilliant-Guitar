@@ -1,3 +1,5 @@
+import { readExactDataRecord } from "./strict-data";
+
 export type PitchStep = "C" | "D" | "E" | "F" | "G" | "A" | "B";
 export type PitchAlter = -2 | -1 | 0 | 1 | 2;
 
@@ -30,38 +32,43 @@ export type PitchTranspositionResult =
 
 const PITCH_STEPS: readonly PitchStep[] = ["C", "D", "E", "F", "G", "A", "B"];
 const NATURAL_SEMITONES: readonly number[] = [0, 2, 4, 5, 7, 9, 11];
+const WRITTEN_PITCH_KEYS = ["step", "alter", "octave"] as const;
+const TRANSPOSITION_KEYS = [
+  "diatonicSteps",
+  "chromaticSemitones",
+] as const;
 
 export function isWrittenPitch(value: unknown): value is WrittenPitch {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+  const fields = readExactDataRecord(value, WRITTEN_PITCH_KEYS);
+  if (fields === undefined) {
     return false;
   }
-
-  const candidate = value as Record<string, unknown>;
+  const [step, alter, octave] = fields;
   return (
-    typeof candidate.step === "string" &&
-    PITCH_STEPS.includes(candidate.step as PitchStep) &&
-    Number.isInteger(candidate.alter) &&
-    typeof candidate.alter === "number" &&
-    candidate.alter >= -2 &&
-    candidate.alter <= 2 &&
-    Number.isInteger(candidate.octave) &&
-    typeof candidate.octave === "number" &&
-    candidate.octave >= 0 &&
-    candidate.octave <= 8
+    typeof step === "string" &&
+    PITCH_STEPS.includes(step as PitchStep) &&
+    typeof alter === "number" &&
+    Number.isInteger(alter) &&
+    alter >= -2 &&
+    alter <= 2 &&
+    typeof octave === "number" &&
+    Number.isInteger(octave) &&
+    octave >= 0 &&
+    octave <= 8
   );
 }
 
 export function isTransposition(value: unknown): value is Transposition {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+  const fields = readExactDataRecord(value, TRANSPOSITION_KEYS);
+  if (fields === undefined) {
     return false;
   }
-
-  const candidate = value as Record<string, unknown>;
+  const [diatonicSteps, chromaticSemitones] = fields;
   return (
-    typeof candidate.diatonicSteps === "number" &&
-    Number.isSafeInteger(candidate.diatonicSteps) &&
-    typeof candidate.chromaticSemitones === "number" &&
-    Number.isSafeInteger(candidate.chromaticSemitones)
+    typeof diatonicSteps === "number" &&
+    Number.isSafeInteger(diatonicSteps) &&
+    typeof chromaticSemitones === "number" &&
+    Number.isSafeInteger(chromaticSemitones)
   );
 }
 

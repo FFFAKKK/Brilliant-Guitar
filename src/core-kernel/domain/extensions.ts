@@ -1,3 +1,5 @@
+import { readJsonContainerValues } from "./strict-data";
+
 export type JsonValue =
   | null
   | boolean
@@ -21,49 +23,52 @@ export interface ExtensionBlock {
   readonly payload: JsonObject;
 }
 
-function isJsonValueInternal(value: unknown, active: Set<object>): boolean {
-  if (value === null || typeof value === "boolean" || typeof value === "string") {
-    return true;
-  }
-  if (typeof value === "number") {
-    return Number.isFinite(value);
-  }
-  if (typeof value !== "object") {
-    return false;
-  }
-  if (active.has(value)) {
-    return false;
-  }
+type JsonTraversalFrame =
+  | { readonly kind: "enter"; readonly value: unknown }
+  | { readonly kind: "exit"; readonly value: object };
 
-  active.add(value);
-  try {
-    if (Array.isArray(value)) {
-      for (let index = 0; index < value.length; index += 1) {
-        if (
-          !Object.prototype.hasOwnProperty.call(value, index) ||
-          !isJsonValueInternal(value[index], active)
-        ) {
-          return false;
-        }
-      }
-      return true;
+export function isJsonValue(value: unknown): value is JsonValue {
+  const activePath = new Set<object>();
+  const stack: JsonTraversalFrame[] = [{ kind: "enter", value }];
+
+  while (stack.length > 0) {
+    const frame = stack.pop();
+    if (frame === undefined) {
+      return false;
+    }
+    if (frame.kind === "exit") {
+      activePath.delete(frame.value);
+      continue;
     }
 
-    const prototype = Object.getPrototypeOf(value) as unknown;
-    if (prototype !== Object.prototype && prototype !== null) {
+    const current = frame.value;
+    if (
+      current === null ||
+      typeof current === "boolean" ||
+      typeof current === "string"
+    ) {
+      continue;
+    }
+    if (typeof current === "number") {
+      if (!Number.isFinite(current)) {
+        return false;
+      }
+      continue;
+    }
+    if (typeof current !== "object" || activePath.has(current)) {
       return false;
     }
 
-    return Object.keys(value).every((key) =>
-      isJsonValueInternal((value as Record<string, unknown>)[key], active),
-    );
-  } catch {
-    return false;
-  } finally {
-    active.delete(value);
+    const children = readJsonContainerValues(current);
+    if (children === undefined) {
+      return false;
+    }
+    activePath.add(current);
+    stack.push({ kind: "exit", value: current });
+    for (let index = children.length - 1; index >= 0; index -= 1) {
+      stack.push({ kind: "enter", value: children[index] });
+    }
   }
-}
 
-export function isJsonValue(value: unknown): value is JsonValue {
-  return isJsonValueInternal(value, new Set<object>());
+  return true;
 }
