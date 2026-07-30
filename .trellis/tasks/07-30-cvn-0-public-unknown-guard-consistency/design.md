@@ -2,7 +2,7 @@
 
 ## 1. Status and Authority
 
-- Lifecycle: `IN PROGRESS / USER PLAN APPROVED / IMPLEMENTATION ACTIVE`.
+- Lifecycle: `IMPLEMENTATION CANDIDATE / INDEPENDENT ACCEPTANCE PENDING`.
 - Parent contract: CVN-FC-010.
 - Finding authority: archived `CKV1-AUDIT-001`.
 - Compatibility: Core V1 public predicate names/signatures and all unrelated mechanisms remain frozen.

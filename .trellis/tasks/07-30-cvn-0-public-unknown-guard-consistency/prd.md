@@ -1,6 +1,6 @@
 # CVN-0 Public Unknown-Guard Consistency
 
-> **Lifecycle:** IN PROGRESS / USER PLAN APPROVED / IMPLEMENTATION ACTIVE.
+> **Lifecycle:** IMPLEMENTATION CANDIDATE / INDEPENDENT ACCEPTANCE PENDING.
 > **Parent authority:** `../07-29-core-vnext-product-ready-extensible-kernel-completion/feature-contract-matrix.md` CVN-FC-010.
 
 ## Goal
@@ -108,14 +108,14 @@ Production edits are limited to the two affected domain files plus one optional 
 
 ## Acceptance Criteria
 
-- [ ] CVN0-AC001: All three public predicates return boolean and leak zero raw exceptions across the fixed hostile matrix.
-- [ ] CVN0-AC002: Accessor getter counters remain `0`; Proxy `get` counters remain `0` for both accepted and rejected proxy fixtures.
-- [ ] CVN0-AC003: Throwing/revoked `getPrototypeOf`, `ownKeys` and `getOwnPropertyDescriptor` proxy cases return `false`.
-- [ ] CVN0-AC004: Exact-field plain and null-prototype WrittenPitch/Transposition values pass; accessor, extra-field, inherited-field, symbol, non-enumerable and custom-prototype forms fail.
-- [ ] CVN0-AC005: JsonValue primitive/object/array/cycle/shared-reference decisions match CVN0-R002.
-- [ ] CVN0-AC006: A huge sparse array is rejected before any index-descriptor loop; a dense 20,000-level nested value completes without stack failure.
-- [ ] CVN0-AC007: Existing ordinary tests and all 169 accepted Core V1 tests remain green or are superseded only by an explicitly recorded larger count.
-- [ ] CVN0-AC008: `test/core-kernel/public-api-boundary.test.ts` proves no root export drift.
-- [ ] CVN0-AC009: Git diff contains only approved source/test/spec/task paths and zero Guitar/UI/IO dependency.
-- [ ] CVN0-AC010: Typecheck, build, focused tests, full tests, Trellis validation and `git diff --check` pass from a clean reproducible execution.
+- [x] CVN0-AC001: All three public predicates return boolean and leak zero raw exceptions across the fixed hostile matrix.
+- [x] CVN0-AC002: Accessor getter counters remain `0`; Proxy `get` counters remain `0` for both accepted and rejected proxy fixtures.
+- [x] CVN0-AC003: Throwing/revoked `getPrototypeOf`, `ownKeys` and `getOwnPropertyDescriptor` proxy cases return `false`.
+- [x] CVN0-AC004: Exact-field plain and null-prototype WrittenPitch/Transposition values pass; accessor, extra-field, inherited-field, symbol, non-enumerable and custom-prototype forms fail.
+- [x] CVN0-AC005: JsonValue primitive/object/array/cycle/shared-reference decisions match CVN0-R002.
+- [x] CVN0-AC006: A huge sparse array is rejected before any index-descriptor loop; a dense 20,000-level nested value completes without stack failure.
+- [x] CVN0-AC007: Existing ordinary tests and all 169 accepted Core V1 tests remain green or are superseded only by an explicitly recorded larger count.
+- [x] CVN0-AC008: `test/core-kernel/public-api-boundary.test.ts` proves no root export drift.
+- [x] CVN0-AC009: Git diff contains only approved source/test/spec/task paths and zero Guitar/UI/IO dependency.
+- [x] CVN0-AC010: Typecheck, build, focused tests, full tests, Trellis validation and `git diff --check` pass from a clean reproducible execution.
 - [ ] CVN0-AC011: Independent review confirms no public size cap, cache, mutable global state or generalized decoder subsystem entered CVN-0.

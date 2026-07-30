@@ -87,13 +87,16 @@
     "k1_6_status": "accepted_archived",
     "k1_6_test_baseline": "355512aba4a8057d2d75aa665d74df49cdd2e23c",
     "k1_6_review_baseline": "989c1f7a4056b14d3d59918c9b96874ad71591a8",
-    "next_implementation_stage": "none_core_vnext_parent_detailed_contract_review_and_gd0_acceptance_pending",
+    "next_implementation_stage": "cvn0_implementation_candidate_independent_acceptance_pending",
     "gd0_status": "documentation_sync_candidate_pending_independent_review",
     "gd0_planning_base": "064dc2bffe26022bc58f0690986b09a0c6a257aa",
     "gd0_production_implementation_authorized": false,
     "core_vnext_parent_status": "planning_detailed_feature_contract_user_review_pending",
     "core_vnext_total_core_commands": 28,
     "core_vnext_task": "07-29-core-vnext-product-ready-extensible-kernel-completion",
-    "core_vnext_production_implementation_authorized": false
+    "core_vnext_production_implementation_authorized": false,
+    "cvn0_status": "implementation_candidate_independent_acceptance_pending",
+    "cvn0_implementation_commit": "7c60d8e32e8df8cdf70801d353551dfccad01b0c",
+    "cvn0_full_test_count": 181
   }
 }

@@ -2,7 +2,7 @@
 
 ## 1. Execution Status
 
-`PLANNING / DETAILED CONTRACT REVIEW CANDIDATE / NO PRODUCTION TASK ACTIVATED`.
+`PLANNING / DETAILED CONTRACT REVIEW CANDIDATE / CVN-0 IMPLEMENTATION CANDIDATE PENDING INDEPENDENT ACCEPTANCE / OTHER CHILDREN INACTIVE`.
 
 This parent task coordinates independently verifiable children. It does not batch all production changes into one implementation branch. Each child must receive its own PRD/design/implement review, `task.py start`, independent technical audit and archive decision.
 
@@ -28,7 +28,7 @@ Every child records a fresh activation baseline and may not substitute these his
 - [x] Re-run Markdown contract/path/count checks and `git diff --check` after the detailed-contract pass.
 - [x] Present all four parent contract artifacts and a concise decision summary to the user.
 - [x] Receive explicit approval to create the first planning child; `07-30-cvn-0-public-unknown-guard-consistency` was created on 2026-07-30.
-- [ ] Obtain explicit review approval before running `task.py start` for CVN-0; creation alone does not activate implementation.
+- [x] Obtain explicit review approval before running `task.py start` for CVN-0; creation alone does not activate implementation.
 
 ## 4. Child Gate Map
 

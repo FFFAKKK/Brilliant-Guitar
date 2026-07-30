@@ -2,7 +2,7 @@
 
 ## 1. Execution Status
 
-`IN PROGRESS / USER PLAN APPROVED / TASK.PY START RUN`.
+`IMPLEMENTATION CANDIDATE / INDEPENDENT ACCEPTANCE PENDING`.
 
 This document instructs the later operator. Planner-owned production implementation is outside this task preparation pass.
 
@@ -21,48 +21,48 @@ Before implementation, the operator records a fresh HEAD/status and confirms the
 
 ### Step 0 — Read and characterize
 
-- [ ] Read child `prd.md`, `design.md`, this file, parent CVN-FC-010, active Core boundary/quality specs and archived finding.
-- [ ] Record existing ordinary results for JsonValue, WrittenPitch and Transposition fixtures.
-- [ ] Record exact public export allowlist.
-- [ ] Confirm protected production paths show zero pre-existing drift relative to activation HEAD.
+- [x] Read child `prd.md`, `design.md`, this file, parent CVN-FC-010, active Core boundary/quality specs and archived finding.
+- [x] Record existing ordinary results for JsonValue, WrittenPitch and Transposition fixtures.
+- [x] Record exact public export allowlist.
+- [x] Confirm protected production paths show zero pre-existing drift relative to activation HEAD.
 
 ### Step 1 — Add focused failing tests first
 
-- [ ] Create only `test/core-kernel/public-unknown-guards.test.ts` for UG-T01–UG-T13.
-- [ ] Prove the current baseline reproduces the three CKV1-AUDIT-001 observations before repair.
-- [ ] Keep counters separate for getter, Proxy `get`, `getPrototypeOf`, `ownKeys` and `getOwnPropertyDescriptor` traps.
-- [ ] Make the huge-sparse fixture assert zero index descriptor checks after structural rejection.
-- [ ] Make the deep fixture exactly 20,000 levels and avoid recursive construction/assertion helpers.
+- [x] Create only `test/core-kernel/public-unknown-guards.test.ts` for UG-T01–UG-T13.
+- [x] Prove the current baseline reproduces the three CKV1-AUDIT-001 observations before repair.
+- [x] Keep counters separate for getter, Proxy `get`, `getPrototypeOf`, `ownKeys` and `getOwnPropertyDescriptor` traps.
+- [x] Make the huge-sparse fixture assert zero index descriptor checks after structural rejection.
+- [x] Make the deep fixture exactly 20,000 levels and avoid recursive construction/assertion helpers.
 
 ### Step 2 — Introduce the narrow private inspection helper
 
-- [ ] Prefer `src/core-kernel/domain/strict-data.ts` when it removes real duplication between pitch and extensions.
-- [ ] Implement only the primitives listed in design §4.
-- [ ] Keep every reflection operation inside a total exception boundary.
-- [ ] Keep helper exports private to internal module imports and absent from the Core root.
-- [ ] Add no dependency, cache, global mutable state, logger, Error subclass or result union.
+- [x] Prefer `src/core-kernel/domain/strict-data.ts` when it removes real duplication between pitch and extensions.
+- [x] Implement only the primitives listed in design §4.
+- [x] Keep every reflection operation inside a total exception boundary.
+- [x] Keep helper exports private to internal module imports and absent from the Core root.
+- [x] Add no dependency, cache, global mutable state, logger, Error subclass or result union.
 
 If two local implementations are materially shorter and clearer than a helper, the operator records that private-layout choice in the check report; observable contracts remain identical.
 
 ### Step 3 — Repair pitch/transposition guards
 
-- [ ] Replace direct untrusted field reads with exact descriptor snapshots.
-- [ ] Validate captured values once in fixed key order.
-- [ ] Preserve current type-predicate signatures and numeric ranges.
-- [ ] Run UG-T02–UG-T07 and existing pitch transposition tests.
+- [x] Replace direct untrusted field reads with exact descriptor snapshots.
+- [x] Validate captured values once in fixed key order.
+- [x] Preserve current type-predicate signatures and numeric ranges.
+- [x] Run UG-T02–UG-T07 and existing pitch transposition tests.
 
 ### Step 4 — Repair JsonValue guard
 
-- [ ] Replace recursive property reads with the iterative active-path algorithm.
-- [ ] Preserve finite primitive, cycle, DAG/shared-reference and sparse decisions.
-- [ ] Apply the array fast-rejection order before index iteration.
-- [ ] Run UG-T01/UG-T04–UG-T12 and existing extension tests.
+- [x] Replace recursive property reads with the iterative active-path algorithm.
+- [x] Preserve finite primitive, cycle, DAG/shared-reference and sparse decisions.
+- [x] Apply the array fast-rejection order before index iteration.
+- [x] Run UG-T01/UG-T04–UG-T12 and existing extension tests.
 
 ### Step 5 — Compatibility and spec closeout
 
-- [ ] Run public API allowlist and semantic/command consumer tests.
-- [ ] Synchronize `pure-kernel-boundary.md` and `quality-guidelines.md` from “future prerequisite” to the accepted implemented contract only after code evidence is green.
-- [ ] Update task evidence with exact test counts and changed paths.
+- [x] Run public API allowlist and semantic/command consumer tests.
+- [x] Synchronize `pure-kernel-boundary.md` and `quality-guidelines.md` from “future prerequisite” to the implementation candidate contract only after code evidence is green.
+- [x] Update task evidence with exact test counts and changed paths.
 - [ ] Request independent review before archive/merge.
 
 ## 4. Required Verification Commands
@@ -124,3 +124,16 @@ The operator's handoff back to the planner/reviewer must include:
 - [x] PRD/design/operator plan contain exact observable contracts.
 - [x] User reviewed and approved the child planning package on 2026-07-30.
 - [x] `task.py start` ran after that review and transferred implementation ownership to the operator.
+
+## 8. Implementation Candidate Evidence — 2026-07-30
+
+- Activation HEAD: `8c26fc29a4a103c400497b7c1f1fbfdbee2fca0c`.
+- Planning/activation commit: `f02ba003b9d166cc328a109329efdb30f93d6af2`.
+- Implementation commit: `7c60d8e32e8df8cdf70801d353551dfccad01b0c`.
+- RED: the compiling focused file reported 4 passing and 8 failing tests against the activation implementation; failures covered every intended hostile boundary.
+- GREEN: 12/12 focused guard tests, 17/17 guard/extension/pitch/public-API tests, 37/37 codec/semantic/command consumer tests, and 181/181 full tests passed.
+- Static gates: typecheck, build, public export count `48`, forbidden-dependency scan, Trellis validation, and `git diff --check` passed.
+- Production paths: `src/core-kernel/domain/extensions.ts`, `src/core-kernel/domain/pitch.ts`, and private `src/core-kernel/domain/strict-data.ts` only.
+- Test path: `test/core-kernel/public-unknown-guards.test.ts` only; existing tests were preserved.
+- Rollback: revert the implementation commit; no persisted schema, migration, package, dependency, or public export changed.
+- Gate: implementation candidate complete; independent acceptance pending.
