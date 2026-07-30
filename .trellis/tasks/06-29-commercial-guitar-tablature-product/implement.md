@@ -46,7 +46,7 @@ K1-1 不包含命令/history、snapshot/events、registry/capability、通用 re
 
 ### Block 2：Guitar Domain（GD-0 documentation review candidate）
 
-GD-0 生命周期为 **USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING**。当前只准备文档候选：不记录 accepted baseline、不归档、不创建或激活下游任务。独立验收与后续用户授权完成后，生产实现才可按以下独立 Gate 顺序推进：
+GD-0 生命周期为 **USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING**。当前只准备文档候选：不记录 accepted baseline、不归档、不创建或激活下游任务。原候选记录的下游 Gate 为：
 
 1. CK1.1-0：public `unknown` guards 的 descriptor-first/no-getter/no-throw 前置。
 2. CK1.1-1：official module SDK 的 data/error/descriptor authoring 基础，不含运行时。
@@ -54,6 +54,8 @@ GD-0 生命周期为 **USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / IND
 4. GD-2：Core V1.1 通用 official domain command seam，使用 neutral synthetic contribution 验证。
 5. GD-3：Guitar placement、slide、bend、vibrato 语义命令。
 6. GD-4：Core/Guitar 集成与兼容门禁。
+
+用户随后决定先完整收口领域无关内核。`07-29-core-vnext-product-ready-extensible-kernel-completion` 因此成为新的父规划详细功能合同审阅候选：父级 `feature-contract-matrix.md` 已冻结 28-command finite catalog 与 factory/structure/range/batch/failure/resource/qualification 条件；CK1.1-0 映射到 CVN-0，CK1.1-1 映射到 CVN-2，GD-2 的 generic Core runtime 责任映射到 CVN-1/CVN-6，cross-module batch 映射到 CVN-5；CVN-7 通过后才恢复 GD-1/GD-3/GD-4。该映射尚待父规划最终批准，不改写 GD-0 冻结的 public declarations，也不授权任何生产 child。
 
 GD-1 将定义：
 

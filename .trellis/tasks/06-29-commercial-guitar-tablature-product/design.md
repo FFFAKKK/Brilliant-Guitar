@@ -10,6 +10,7 @@
 - 首个实现里程碑: Pure Core Kernel V1，纯 TypeScript、无 UI、无 Tauri、无 VexFlow、无 Web Audio、无 PDF/PNG。
 - K1-1 模型决策源: `.trellis/tasks/archive/2026-07/07-13-k1-1-foundation-replanning/design.md`；K1-2 执行源已归档；K1-3 权威源为 `.trellis/tasks/archive/2026-07/07-15-k1-3-address-snapshots-selectors-events/`，已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 正式验收并通过 102/102 测试。字段级与行为级契约以 `.trellis/spec/core-kernel/` 为准。
 - K1-4 Registry 合同以独立任务和活动 SPEC-015 为准；report 与更广插件协作仍只是路线图，不得反向扩大 K1-3 或 K1-4 封闭合同。
+- Core VNext 父规划 `.trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/` 当前为详细功能合同用户审阅候选：`feature-contract-matrix.md` 已冻结 28-command finite catalog、factory、anchors、cascade、range/batch、failure/resource/performance 条件；路线仍是稳定优先、启动期冻结、无热插拔，并把旧 CK1.1/GD-2 的领域无关 Core 责任映射到八个 CVN Gate。它尚未授权生产实现，也不改写待独立验收的 GD-0 公共合同。
 
 ## 设计目标
 
@@ -273,4 +274,4 @@ GD-0 当前为 **USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDE
 - integrated factory、bus/gateway result、write/validation availability、replay 使用权威候选中可编译的最小 public signatures/discriminants；`createGateway` 是 Registry 实例 overload，并保留 K1-4 `summary`/typed `select`/`subscribe`。result/event/read 均为 additive data-only 合同。领域 code 由 namespace 所有者负责，Core 不枚举 Guitar code。应用公共根不导出错误类、compiled handler、effect、history internals 或 mutable catalog。
 - 所有 public `unknown` guard/decoder 的目标合同是 descriptor-first、no-getter、no-throw；先由 CK1.1-0 独立实现和验收。
 
-固定执行顺序为：CK1.1-0 hostile-input guard → CK1.1-1 official module SDK → GD-1 GuitarExtension → GD-2 通用领域命令 seam → GD-3 Guitar 命令 → GD-4 集成门禁。每一项均为独立 Trellis 任务；当前 GD-0 不创建或激活这些下游任务。
+GD-0 原候选记录的下游顺序为 CK1.1-0 → CK1.1-1 → GD-1 → GD-2 → GD-3 → GD-4。Core VNext 详细功能合同审阅候选在不改写上述公共合同的前提下，拟将 generic Core 责任映射为 CVN-0/1/2/5/6，并在 CVN-7 后再恢复 GD-1/GD-3/GD-4；批准前后都不重复创建另一套 GD-2 Core seam。当前不创建或激活任何生产 child。
