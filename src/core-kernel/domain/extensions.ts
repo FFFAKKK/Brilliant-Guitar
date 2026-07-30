@@ -29,6 +29,7 @@ type JsonTraversalFrame =
 
 export function isJsonValue(value: unknown): value is JsonValue {
   const activePath = new Set<object>();
+  const completed = new Set<object>();
   const stack: JsonTraversalFrame[] = [{ kind: "enter", value }];
 
   while (stack.length > 0) {
@@ -38,6 +39,7 @@ export function isJsonValue(value: unknown): value is JsonValue {
     }
     if (frame.kind === "exit") {
       activePath.delete(frame.value);
+      completed.add(frame.value);
       continue;
     }
 
@@ -55,7 +57,13 @@ export function isJsonValue(value: unknown): value is JsonValue {
       }
       continue;
     }
-    if (typeof current !== "object" || activePath.has(current)) {
+    if (typeof current !== "object") {
+      return false;
+    }
+    if (completed.has(current)) {
+      continue;
+    }
+    if (activePath.has(current)) {
       return false;
     }
 

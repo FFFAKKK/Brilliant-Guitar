@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert = require("node:assert/strict");
+import { runInNewContext } from "node:vm";
 
 import * as coreKernel from "../../src/core-kernel/index";
 import type {
@@ -72,6 +73,13 @@ test("UG-T01 public guards preserve ordinary primitive and nested decisions", ()
     true,
   );
   assert.equal(jsonValueGuard(Object.freeze([1, { value: true }])), true);
+});
+
+test("UG-T01 dense arrays from another Realm preserve JsonValue compatibility", () => {
+  const value: unknown = runInNewContext("[1, true, null]");
+
+  assert.equal(Array.isArray(value), true);
+  assert.equal(jsonValueGuard(value), true);
 });
 
 test("UG-T02 and UG-T03 exact pitch records preserve domain boundaries", () => {
@@ -346,6 +354,29 @@ test("UG-T09 and UG-T10 cycles fail while shared acyclic values pass", () => {
 
   const shared = { nested: [1, 2, 3] };
   assert.equal(jsonValueGuard({ left: shared, right: shared }), true);
+});
+
+test("UG-T10 shared DAG containers are inspected once per call", () => {
+  let descriptorCalls = 0;
+  const observe = (target: Record<string, unknown>): object =>
+    new Proxy(target, {
+      getOwnPropertyDescriptor(currentTarget, key) {
+        descriptorCalls += 1;
+        return Reflect.getOwnPropertyDescriptor(currentTarget, key);
+      },
+    });
+
+  const uniqueContainerCount = 18;
+  let value = observe({ value: 1 });
+  for (let index = 1; index < uniqueContainerCount; index += 1) {
+    value = observe({ left: value, right: value });
+  }
+
+  assert.equal(jsonValueGuard(value), true);
+  assert.equal(descriptorCalls, 35);
+
+  assert.equal(jsonValueGuard(value), true);
+  assert.equal(descriptorCalls, 70);
 });
 
 test("UG-T11 a 20,000-level dense value avoids recursive stack failure", () => {

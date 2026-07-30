@@ -98,7 +98,8 @@ function isCanonicalArrayIndex(key: PropertyKey, length: number): key is string 
 function readDenseJsonArrayValues(
   value: readonly unknown[],
 ): readonly unknown[] | undefined {
-  if (Reflect.getPrototypeOf(value) !== Array.prototype) {
+  // Array.prototype is Array-branded in every Realm; custom/class prototypes are not.
+  if (!Array.isArray(Reflect.getPrototypeOf(value))) {
     return undefined;
   }
 
