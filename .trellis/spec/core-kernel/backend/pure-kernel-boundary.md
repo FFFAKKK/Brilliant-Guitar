@@ -2,7 +2,7 @@
 
 > **Authoritative staged boundary (2026-07-29):** K1-1 through K1-6 are independently accepted, the Core V1 qualification gate is archived, and Pure Core Kernel V1 is closed.
 > **GD-0 lifecycle:** USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING.
-> **CVN-0 lifecycle (2026-07-30):** IMPLEMENTATION CANDIDATE / INDEPENDENT ACCEPTANCE PENDING at `7c60d8e32e8df8cdf70801d353551dfccad01b0c`; 12/12 focused and 181/181 full tests pass.
+> **CVN-0 lifecycle (2026-08-04):** ACCEPTED / ARCHIVE PENDING; final independent re-review verifies 19/19 focused and 188/188 full tests.
 
 ## Closed Pure Core Kernel V1 Baseline
 
@@ -23,17 +23,19 @@ Core-only construction, exports, persisted `brilliant-score-1` meaning, command/
 
 Pure Core remains a platform-neutral TypeScript library with no Guitar imports, UI, DOM, rendering, audio, physical package/file IO, dynamic plugin lifecycle, or generic external document-mutation capability. `ScoreDocument` remains the only score truth, `ExtensionBlock` remains an opaque persistence envelope at the Core boundary, and `CommandBus` remains the sole document/version/history owner.
 
-## CVN-0 Public Unknown-Guard Candidate
+## CVN-0 Public Unknown-Guard Contract
 
-The candidate preserves the public names and type-predicate signatures of `isJsonValue`, `isWrittenPitch`, and `isTransposition` while tightening hostile runtime shapes to one consistent contract:
+The accepted implementation preserves the public names and type-predicate signatures of `isJsonValue`, `isWrittenPitch`, and `isTransposition` while tightening hostile runtime shapes to one consistent contract:
 
-- exact plain or null-prototype records and exact dense arrays are inspected through own data descriptors;
+- exact plain or null-prototype records and Realm-independent exact dense arrays with a descriptor-verified ordinary Realm Array prototype are inspected through own data descriptors;
 - accessors, symbol/custom fields, sparse arrays, invalid prototypes, revoked Proxies, and failing reflection traps return `false` without leaking an exception;
 - ordinary Proxy `get` traps and input getters execute zero times;
-- `isJsonValue` uses an iterative active-path traversal, rejects cycles, permits shared acyclic references, and adds no V1 depth/property cap;
+- each public predicate contains its complete execution path in a total exception boundary, captures every later-used reflection/Array/Set/Number primitive, and rejects throwing or forged-return replacement after reflection;
+- `isJsonValue` uses call-local tri-color traversal: `activePath` rejects cycles and `completed` makes shared acyclic graphs linear in their unique containers, while adding no V1 depth/property cap or cross-call cache;
+- Array-branded instances installed as custom prototypes, real Realm Array/Object prototypes with an own `toJSON`, replaced Object-prototype parents, and structurally linked user-constructor/prototype pairs are rejected through the native constructor back-reference, null-rooted parent-chain, and JSON-serialization checks; unrelated Array method descriptors such as `values` are outside the JsonValue contract and are not fingerprinted;
 - `src/core-kernel/domain/strict-data.ts` remains a domain-private helper and is absent from the Core root export surface.
 
-The implementation candidate changes no command, history, replay, event, Registry, report, migration, persisted schema, package, or dependency contract. Independent acceptance is still required before CVN-0 is archived or treated as a fixed Core VNext baseline.
+The accepted implementation changes no command, history, replay, event, Registry, report, migration, persisted schema, package, or dependency contract. CVN-0 archive bookkeeping remains the only outstanding closeout action before it is treated as the fixed Core VNext baseline.
 
 ## GD-0 Additive Documentation Candidate
 

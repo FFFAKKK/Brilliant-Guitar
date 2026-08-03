@@ -55,7 +55,7 @@ GD-0 生命周期为 **USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / IND
 5. GD-3：Guitar placement、slide、bend、vibrato 语义命令。
 6. GD-4：Core/Guitar 集成与兼容门禁。
 
-用户随后决定先完整收口领域无关内核。`07-29-core-vnext-product-ready-extensible-kernel-completion` 因此成为新的父规划详细功能合同审阅候选：父级 `feature-contract-matrix.md` 已冻结 28-command finite catalog 与 factory/structure/range/batch/failure/resource/qualification 条件；CK1.1-0 映射到 CVN-0，CK1.1-1 映射到 CVN-2，GD-2 的 generic Core runtime 责任映射到 CVN-1/CVN-6，cross-module batch 映射到 CVN-5；CVN-7 通过后才恢复 GD-1/GD-3/GD-4。父规划整体仍待最终批准；独立子任务 CVN-0 已形成实现候选并等待独立验收，且不改写 GD-0 冻结的 public declarations。
+用户随后决定先完整收口领域无关内核。`07-29-core-vnext-product-ready-extensible-kernel-completion` 因此成为新的父规划详细功能合同审阅候选：父级 `feature-contract-matrix.md` 已冻结 28-command finite catalog 与 factory/structure/range/batch/failure/resource/qualification 条件；CK1.1-0 映射到 CVN-0，CK1.1-1 映射到 CVN-2，GD-2 的 generic Core runtime 责任映射到 CVN-1/CVN-6，cross-module batch 映射到 CVN-5；CVN-7 通过后才恢复 GD-1/GD-3/GD-4。父规划整体仍待最终批准；独立子任务 CVN-0 已通过最终独立复验，19/19 聚焦与 188/188 全量测试通过，归档待执行，且不改写 GD-0 冻结的 public declarations。
 
 GD-1 将定义：
 

@@ -3,7 +3,7 @@
 > **Authoritative staged quality gate (2026-07-20):** K1-1 through K1-4 tests
 > are frozen regressions. K1-4 acceptance at `94766a0930c05e5339c44f667deaf02116af1c0c` passed 125/125 tests.
 > K1-5 implementation baseline `51fa2177cbd25dea53f1ebaf23bd8b8426471589` was independently accepted at documentation baseline `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` on 2026-07-21. K1-6 test baseline `355512aba4a8057d2d75aa665d74df49cdd2e23c` was independently accepted at review baseline `989c1f7a4056b14d3d59918c9b96874ad71591a8` after 8/8 focused and 169/169 full tests.
-> CVN-0 implementation candidate `7c60d8e32e8df8cdf70801d353551dfccad01b0c` passes 12/12 focused and 181/181 full tests; independent acceptance remains pending.
+> CVN-0 is accepted on 2026-08-04 after final independent re-review, with 19/19 focused and 188/188 full tests passing; archive bookkeeping remains pending.
 
 ## Current K1-1 Required Tests
 
@@ -63,12 +63,15 @@ Registry/capability, general report, migration, Guitar Domain, UI, playback, and
 - Explicit public exports for approved data APIs only; error classes, builders, strict codecs, dependency injection seams, and migration steps stay private.
 - Focused K1-5 tests, full K1-1 through K1-5 regression, Trellis validation, `git diff --check`, and clean scoped commit review.
 
-## CVN-0 Candidate Required Tests
+## CVN-0 Accepted Regression Contract
 
 - All three public `unknown -> boolean` predicates are total across accessors, revoked Proxies, throwing reflection traps, cycles, sparse arrays, and malformed records.
+- Reflection traps that synchronously replace later-used `Set`, `Array`, `Number`, or reflection methods with throws or forged returns still produce `false`; every later-used primitive is captured at module initialization and checked for replacement.
 - Getter and ordinary Proxy `get` counters remain zero; each accepted field/index descriptor is captured exactly once per visit.
 - WrittenPitch and Transposition accept only exact own enumerable data fields on plain or null-prototype records while preserving their accepted numeric domains.
-- JsonValue preserves finite primitives, exact plain objects, dense arrays, shared acyclic references, cycle rejection, and current ordinary caller behavior.
+- JsonValue preserves finite primitives, exact plain objects, same- and cross-Realm dense arrays, shared acyclic references, cycle rejection, and current ordinary caller behavior.
+- Standard cross-Realm arrays are recognized through a Realm-native Array-constructor back-reference, a Realm-native Object-prototype parent rooted at `null`, and explicit absence of an own `toJSON` on either prototype; custom prototypes, `toJSON` pollution, replaced parents, and structurally linked user-constructor/prototype pairs are rejected, while unrelated Array method substitutions are outside the JsonValue contract.
+- Call-local tri-color traversal inspects each unique completed DAG container once per invocation while retaining zero state across invocations.
 - Huge sparse arrays reject before index-proportional descriptor work, while a 20,000-level dense nested value completes through iterative traversal.
 - Repeated calls retain no cache and re-evaluate the current descriptor snapshot.
 - Root exports remain exactly unchanged and the private domain helper stays absent from `src/core-kernel/index.ts`.

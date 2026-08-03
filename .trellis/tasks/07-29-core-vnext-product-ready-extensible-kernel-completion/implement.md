@@ -2,7 +2,7 @@
 
 ## 1. Execution Status
 
-`PLANNING / DETAILED CONTRACT REVIEW CANDIDATE / CVN-0 IMPLEMENTATION CANDIDATE PENDING INDEPENDENT ACCEPTANCE / OTHER CHILDREN INACTIVE`.
+`PLANNING / DETAILED CONTRACT REVIEW CANDIDATE / CVN-0 ACCEPTED, ARCHIVE PENDING / OTHER CHILDREN INACTIVE`.
 
 This parent task coordinates independently verifiable children. It does not batch all production changes into one implementation branch. Each child must receive its own PRD/design/implement review, `task.py start`, independent technical audit and archive decision.
 

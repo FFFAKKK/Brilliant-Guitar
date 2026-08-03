@@ -2,7 +2,7 @@
 
 ## 1. Status and Authority
 
-- Lifecycle: `IMPLEMENTATION CANDIDATE / INDEPENDENT ACCEPTANCE PENDING`.
+- Lifecycle: `ACCEPTED / ARCHIVE PENDING — final independent re-review passed 2026-08-04`.
 - Parent contract: CVN-FC-010.
 - Finding authority: archived `CKV1-AUDIT-001`.
 - Compatibility: Core V1 public predicate names/signatures and all unrelated mechanisms remain frozen.
@@ -52,9 +52,11 @@ The optional helper owns only synchronous reflection operations wrapped by a tot
 
 Every helper returns private data or `undefined`; it throws no error and exports nothing from the Core root. It performs no clone, freeze, mutation, cache, logging or error conversion.
 
+Helper-local reflection catches are not the complete public totality boundary. Each public predicate wraps its full body in a top-level `try/catch`; it also uses module-captured reflection/Array/Set/Number primordials through captured `Reflect.apply` and verifies their live data properties after reflection. A synchronous replacement therefore produces `false` whether it throws or forges a plausible return value.
+
 ## 5. Record Inspection Algorithm
 
-For WrittenPitch/Transposition, execute in this exact order inside `try/catch`:
+For WrittenPitch/Transposition, execute in this exact order inside the public predicate's top-level `try/catch`:
 
 1. Reject primitive, `null` and Array.
 2. Read prototype through reflection; accept only `Object.prototype` or `null`.
@@ -63,40 +65,44 @@ For WrittenPitch/Transposition, execute in this exact order inside `try/catch`:
 5. For expected keys in contract order, read each own descriptor once.
 6. Require an enumerable data descriptor containing `value`; reject accessor/non-enumerable/missing descriptors.
 7. Validate only captured descriptor values; perform zero property `get` operations.
-8. Return boolean; catch any reflection failure and return `false`.
+8. Return boolean; catch any reflection or post-inspection validation failure and return `false`.
 
 ## 6. JsonValue Algorithm
 
-Use an explicit DFS work stack with enter/exit frames:
+Use an explicit DFS work stack with enter/exit frames plus call-local `activePath` and `completed` sets:
 
 1. Primitive frame: apply CVN0-R002 directly.
 2. Object/array enter frame:
+   - if object is in the completed set, skip it；
    - if object is in the active-path set, return `false`；
    - inspect prototype/keys/descriptors and capture child descriptor values；
    - add object to active path；
    - push one exit frame, then children in reverse order so validation follows original key/index order。
-3. Exit frame: remove object from active path.
+3. Exit frame: remove object from active path and add it to completed.
 
-The active-path set, rather than a global seen set, rejects cycles while allowing a shared acyclic object to appear in multiple branches. All traversal state is call-local.
+This is a call-local tri-color traversal: active-path objects are gray and expose back-edge cycles; completed objects are black and need no repeated validation when a DAG branch shares them. Each unique valid container is therefore inspected once per invocation, and all state is released when the predicate returns.
 
 ### Array fast rejection
 
 Before reading any index descriptor:
 
-1. Read the own `length` descriptor.
-2. Require a non-enumerable data descriptor with a nonnegative safe-integer value; writable/configurable may be either value so frozen arrays remain valid.
-3. Read own keys once.
-4. Require exactly `length + 1` keys: `length` plus canonical decimal indices `0..length-1` and no symbol/custom keys.
-5. If key count or canonical-index coverage differs, return `false` before a length-sized loop.
+1. Confirm the direct prototype has the Realm-independent JSON-boundary shape rather than comparing it to the current Realm's `Array.prototype` identity: it is Array-branded; owns a non-enumerable data `constructor`; that constructor is a Realm-native `Array` recognized with captured intrinsic `Function.prototype.toString`; the constructor owns a non-enumerable data `prototype` back-reference; its parent is a Realm-native `Object.prototype` rooted at `null`; and neither prototype owns `toJSON`. The predicate intentionally does not fingerprint unrelated Array methods because same-named native methods from different intrinsics have indistinguishable source text and do not affect JSON serialization.
+2. Read the own `length` descriptor.
+3. Require a non-enumerable data descriptor with a nonnegative safe-integer value; writable/configurable may be either value so frozen arrays remain valid.
+4. Read own keys once.
+5. Require exactly `length + 1` keys: `length` plus canonical decimal indices `0..length-1` and no symbol/custom keys.
+6. If key count or canonical-index coverage differs, return `false` before a length-sized loop.
 
 This makes `length = 0xffff_ffff` with zero indices a constant-shape rejection after `ownKeys`, rather than billions of index checks.
+
+Per invocation, a local list avoids repeating the full surface comparison for the same Array prototype; every listed prototype is revalidated before a `true` result and the list is discarded when the call returns.
 
 ## 7. Proxy and Mutation Model
 
 - A normal Proxy around a valid target may return `true` when its reflection traps expose valid descriptors; its `get` trap count remains zero.
 - Throwing, revoked or invariant-violating reflection traps return `false` through the outer boundary.
 - A Proxy may mutate its target during a reflection trap. The predicate validates the captured descriptor snapshot from that call and retains nothing afterward.
-- The next predicate invocation starts from empty stack/set state and observes the new reflection result.
+- The next predicate invocation starts from empty stack/active/completed state and observes the new reflection result.
 
 ## 8. Compatibility and Protected Areas
 
@@ -118,20 +124,20 @@ Hostile or non-data runtime shapes that previously executed code or were acciden
 
 | ID | Fixture | Expected |
 |---|---|---|
-| UG-T01 | current valid primitives/nested JSON | unchanged result |
+| UG-T01 | current valid primitives/nested JSON plus a standard cross-Realm dense array | unchanged result / `true` |
 | UG-T02 | exact plain + null-prototype pitch/transposition | `true` |
 | UG-T03 | min/max pitch and safe-integer transposition boundaries | exact boolean |
 | UG-T04 | getter for every guarded field/index/key | `false`, getter count `0` |
 | UG-T05 | Proxy with throwing `get` around valid target | valid result, `get` count `0` |
-| UG-T06 | throwing reflection traps and revoked Proxy | `false`, no throw |
-| UG-T07 | accessor/symbol/non-enumerable/extra/inherited/custom prototype | `false` |
+| UG-T06 | throwing/revoked reflection plus traps that replace later-used `Set`/`Array`/`Number` methods with throws or forged results | `false`, no throw, globals restored by fixture |
+| UG-T07 | accessor/symbol/non-enumerable/extra/inherited/custom prototype, own/inherited `toJSON` or parent-chain pollution | `false`; a cross-Realm `Array.prototype.values = Set.prototype.values` remains `true` because it leaves JSON serialization unchanged |
 | UG-T08 | sparse and huge sparse arrays | `false`, zero index-descriptor loop |
 | UG-T09 | cyclic object/array | `false` |
-| UG-T10 | repeated shared non-cyclic object | `true` |
+| UG-T10 | repeated shared non-cyclic object and 18-unique-container shared DAG | `true`; exactly 35 descriptor inspections per call |
 | UG-T11 | 20,000-level dense nested array | `true`, no stack failure |
 | UG-T12 | mutate after first call, invoke again | each call reflects its own descriptor snapshot |
 | UG-T13 | root public export allowlist | deeply equal |
-| UG-T14 | full Core suite | green |
+| UG-T14 | full Core suite | 188/188 green |
 
 ## 10. Rollback
 

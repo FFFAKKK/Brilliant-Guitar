@@ -87,7 +87,7 @@
     "k1_6_status": "accepted_archived",
     "k1_6_test_baseline": "355512aba4a8057d2d75aa665d74df49cdd2e23c",
     "k1_6_review_baseline": "989c1f7a4056b14d3d59918c9b96874ad71591a8",
-    "next_implementation_stage": "cvn0_implementation_candidate_independent_acceptance_pending",
+    "next_implementation_stage": "cvn0_accepted_archive_pending",
     "gd0_status": "documentation_sync_candidate_pending_independent_review",
     "gd0_planning_base": "064dc2bffe26022bc58f0690986b09a0c6a257aa",
     "gd0_production_implementation_authorized": false,
@@ -95,8 +95,13 @@
     "core_vnext_total_core_commands": 28,
     "core_vnext_task": "07-29-core-vnext-product-ready-extensible-kernel-completion",
     "core_vnext_production_implementation_authorized": false,
-    "cvn0_status": "implementation_candidate_independent_acceptance_pending",
-    "cvn0_implementation_commit": "7c60d8e32e8df8cdf70801d353551dfccad01b0c",
-    "cvn0_full_test_count": 181
+    "cvn0_status": "accepted_archive_pending",
+    "cvn0_final_independent_re_review": "passed_2026-08-04",
+    "cvn0_implementation_commit": "fce2be2f68adc6362f83b95467a17ffef736ad78",
+    "cvn0_second_repair_commit": null,
+    "cvn0_third_repair_commit": null,
+    "cvn0_fourth_repair_commit": null,
+    "cvn0_focused_test_count": 19,
+    "cvn0_full_test_count": 188
   }
 }

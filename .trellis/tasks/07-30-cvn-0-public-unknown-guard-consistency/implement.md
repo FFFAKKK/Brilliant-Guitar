@@ -2,9 +2,9 @@
 
 ## 1. Execution Status
 
-`IMPLEMENTATION CANDIDATE / INDEPENDENT ACCEPTANCE PENDING`.
+`ACCEPTED / ARCHIVE PENDING — FINAL INDEPENDENT RE-REVIEW PASSED 2026-08-04`.
 
-This document instructs the later operator. Planner-owned production implementation is outside this task preparation pass.
+This document records the approved operator plan and its execution evidence. Production work began only after the task activation gate.
 
 ## 2. Activation Baseline
 
@@ -137,3 +137,52 @@ The operator's handoff back to the planner/reviewer must include:
 - Test path: `test/core-kernel/public-unknown-guards.test.ts` only; existing tests were preserved.
 - Rollback: revert the implementation commit; no persisted schema, migration, package, dependency, or public export changed.
 - Gate: implementation candidate complete; independent acceptance pending.
+
+## 9. Independent Review Repair Evidence — 2026-07-30
+
+- Independent review returned the first candidate for repair at documentation HEAD `5055eb7882c0dd2ae3bf011ed5eee0787ddfd4cb`: standard cross-Realm dense arrays were rejected, and shared DAG containers were revalidated exponentially.
+- Repair commit: `fce2be2f68adc6362f83b95467a17ffef736ad78`.
+- RED: 12/14 focused tests passed. The cross-Realm fixture returned `false`, and the 18-unique-container DAG reached 393,214 descriptor inspections before the expected 35 assertion failed.
+- GREEN: 14/14 focused tests pass. The same cross-Realm fixture returns `true`; the DAG requires exactly 35 descriptor inspections on its first call and 70 cumulatively after a second call, proving per-call completion with zero retained cross-call state.
+- Compatibility: 42/42 related extension/pitch/public-API/codec/semantic/command tests pass; the full compiled test corpus passes 183/183 under the Node test runner's official single-process isolation mode.
+- Static evidence: typecheck, build, focused helper coverage (93.70% lines / 92.73% branches), public export count `48` and SHA-256 `99f4e3c6f35e4765cf9b338efe9421dfa0fa74c2a6b26b2f623ed13deb3b923c`, forbidden/debug scan, and `git diff --check` pass.
+- Environment note: default process-isolated Node test discovery reached Windows `spawn EPERM`; `node --test --test-isolation=none "dist/test/**/*.test.js"` ran the identical compiled glob and all 183 tests in the current process.
+- Gate at that checkpoint: repaired implementation candidate complete; independent re-review was pending and the task remained `in_progress`.
+
+## 10. Second Independent Review Repair Evidence — 2026-08-01
+
+- Independent re-review of repair commit `fce2be2f68adc6362f83b95467a17ffef736ad78` closed the cross-Realm and shared-DAG findings, then returned two remaining boundaries: reflection traps could replace later-used built-ins outside the helper catch, and an Array instance used as a custom prototype could pass the Array-brand-only rule and supply inherited `toJSON`.
+- P1 RED was staged as one progressive fixture: before the public wrappers it leaked `PRIVATE_UG_SET_ADD_SIDE_EFFECT`; after wrapping only `isJsonValue` it advanced to `PRIVATE_UG_INCLUDES_SIDE_EFFECT`; after wrapping `isWrittenPitch` it advanced to `PRIVATE_UG_SAFE_INTEGER_SIDE_EFFECT`. Wrapping all three complete public predicate bodies made the fixture return `false` at every stage while `finally` restored each global descriptor.
+- P2 RED first proved `Object.setPrototypeOf([1], [])` and an inherited-`toJSON` prototype were accepted. A stronger structurally linked user-constructor/prototype pair with a null-rooted parent also failed before the Realm-native constructor check was added.
+- GREEN: 16/16 focused tests pass. Standard cross-Realm dense arrays remain accepted; Array-branded custom prototypes, inherited `toJSON`, mismatched/back-linked user constructors and the stronger structural spoof all return `false`.
+- Compatibility: 42/42 related extension/pitch/public-API/codec/semantic/command tests pass; the exact full `npm test` corpus passes 185/185.
+- Focused coverage: `extensions.ts` 96.43% lines / 96.15% branches / 100% functions; `strict-data.ts` 95.03% lines / 94.20% branches / 100% functions; pitch guard branches 100% (the focused file intentionally does not exercise the separate transposition algorithm).
+- Gate: second-repair implementation candidate complete in the worktree; final independent re-review remains pending, CVN0-AC011 remains unchecked, and the task stays `in_progress`.
+
+## 11. Third Independent Review Repair Evidence — 2026-08-03
+
+- The second-repair audit closed raw exception leakage but reproduced three forged-return false positives: no-op `Array.prototype.push` accepted `{ invalid: undefined }`, forged `includes` accepted step `H`, and forged `Number.isSafeInteger` accepted fractional Transposition fields. It also reproduced real VM Realm `Array.prototype` pollution through own `toJSON` and a replacement null-rooted parent with `toJSON`.
+- RED: the focused suite compiled with 16/18 passing; the two new fixtures failed through the public export boundary.
+- GREEN: strict-data, traversal, and pitch guards capture required primordials at module initialization, invoke them through captured `Reflect.apply`, and reject live replacement. Cross-Realm recognition now compares captured Array/Object prototype descriptor surfaces. A call-local validated-prototype list is final-revalidated before success, preserving 20,000-level iterative behavior without cross-call retention.
+- Security closure: direct public-boundary reproduction yields `false` for all three forged-return cases and both VM pollution cases; an unmodified VM `[1, true, null]` remains `true`.
+- Compatibility: 18/18 focused tests, 42/42 related extension/pitch/public-API/codec/semantic/command tests, and 187/187 full tests pass. The 20,000-level focused fixture completed in 39.89 ms in the post-fix focused run.
+- Focused coverage: `strict-data.ts` 89.63% lines / 84.25% branches / 100% functions; `extensions.ts` 94.87% lines / 93.33% branches / 100% functions; pitch guard branches 90.91%.
+- Gate: third-repair implementation candidate is ready for final independent re-review; CVN0-AC011 remains unchecked and the task stays `in_progress`.
+
+## 12. Fourth Independent Review Repair Evidence — 2026-08-03
+
+- The follow-up P2 reproduced a collision in the generic cross-Realm descriptor fingerprint: `Array.prototype.values = Set.prototype.values` left two native sources as `function values() { [native code] }`, so source comparison could not distinguish them even though calling `value.values()` threw `TypeError`.
+- Contract decision: JsonValue validates only inherited prototype behavior that can alter an otherwise dense array's JSON meaning — the Realm-native Array/Object constructor back-references, a null-rooted Object parent, and absence of own `toJSON` on both prototypes. It deliberately does not fingerprint unrelated Array methods such as `values`.
+- GREEN: `strict-data.ts` removes the generic recursive descriptor/function-surface system (352 lines after the reduction) and retains the narrow JSON-serialization/prototype-chain validation. Existing own/inherited `toJSON`, custom prototype, and replaced-parent fixtures continue to return `false`.
+- Regression: focused UG-T07 now builds a VM value with `Array.prototype.values = Set.prototype.values`; `JSON.stringify(value)` remains `[1]`, direct `value.values()` throws cross-Realm `TypeError`, and `isJsonValue(value)` remains `true` by the documented contract. The focused suite passes 19/19.
+- Direct public-boundary reproduction reports `{ unrelatedMethod: true, unrelatedMethodJson: "[1]", unrelatedMethodInvocation: "TypeError", ownToJson: false, replacedParent: false, validCrossRealm: true }`.
+- Verification: typecheck and build pass; the complete `npm test` corpus passes 188/188. Focused coverage is `strict-data.ts` 91.54% lines / 88.46% branches / 100% functions, `extensions.ts` 94.87% / 93.33% / 100%, and pitch guard branches 90.91%.
+- Gate: fourth-repair implementation candidate is complete; final acceptance is recorded below and archive bookkeeping is pending.
+
+## 13. Final Independent Re-Review — 2026-08-04
+
+- Scope: reviewed the four CVN-0 production/test paths and the synchronized Core/task documentation against CVN0-R001–R006 and CVN0-AC001–AC011.
+- Fresh verification: `npm.cmd run typecheck`, `npm.cmd test`, all three task validations, and `git diff --check` pass; the full suite reports 188/188.
+- Direct public-boundary probes confirm forged `push`, `includes`, and `Number.isSafeInteger` outcomes return `false`; a standard VM array remains `true`; VM `toJSON` pollution and a replaced parent return `false`; the documented non-serialization `values` substitution remains `true` with unchanged JSON output.
+- Review verdict: no reproducible P0/P1/P2. CVN0-AC011 passes. The implementation introduces no public export, public size policy, retained traversal state, mutable global guard state, generalized decoder, or out-of-scope Core/Guitar/UI/IO dependency.
+- Closeout: work commits, task archive, and session journal are the remaining bookkeeping actions.

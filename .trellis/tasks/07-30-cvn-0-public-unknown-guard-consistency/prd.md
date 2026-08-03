@@ -1,6 +1,6 @@
 # CVN-0 Public Unknown-Guard Consistency
 
-> **Lifecycle:** IMPLEMENTATION CANDIDATE / INDEPENDENT ACCEPTANCE PENDING.
+> **Lifecycle:** ACCEPTED / ARCHIVE PENDING — final independent re-review passed on 2026-08-04.
 > **Parent authority:** `../07-29-core-vnext-product-ready-extensible-kernel-completion/feature-contract-matrix.md` CVN-FC-010.
 
 ## Goal
@@ -29,7 +29,7 @@
 
 ### CVN0-D001 — Total public predicate
 
-Every call returns exactly `true` or `false`. Hostile JavaScript objects, revoked Proxies, throwing reflection traps, accessors, cycles and depth do not leak a raw exception.
+Every call returns exactly `true` or `false`. Hostile JavaScript objects, revoked Proxies, throwing reflection traps, accessors, cycles and depth do not leak a raw exception. Every reflection, Array, Set and numeric operation used after input inspection is captured at module initialization and invoked through captured `Reflect.apply`; a later mutation to either throw or forge a return value is detected and collapses the predicate to `false`.
 
 ### CVN0-D002 — Descriptor-first means zero ordinary property reads
 
@@ -51,13 +51,15 @@ Accessor fields, symbol keys, non-enumerable application fields, extra WrittenPi
 
 A JSON array must have a valid own non-enumerable `length` data descriptor, dense own enumerable index data descriptors `0..length-1`, and no other own keys. Sparse arrays, accessor indices, symbol/custom properties and huge sparse-length tricks return `false` before length-proportional index traversal.
 
+Array recognition is Realm-independent. A standard Array from an iframe, VM or isolated plugin Realm is accepted through Array branding; an own non-enumerable constructor data descriptor whose value is a Realm-native `Array` recognized with captured intrinsic `Function.prototype.toString`; an own non-enumerable constructor-prototype descriptor that points back; a Realm-native `Object.prototype` parent rooted at `null`; and no own `toJSON` descriptor on either prototype. The implementation does not compare against the current Realm's `Array.prototype` identity. The prototype contract deliberately covers only the chain and the JSON-serialization surface: added/replaced `toJSON`, a replacement parent chain, Array instances installed as another array's prototype, and user-created constructor/back-reference pairs return `false`; unrelated Array method substitutions such as `Array.prototype.values = Set.prototype.values` remain outside JsonValue classification and are not fingerprinted. A call-local validated-prototype list is revalidated before success and is released at return.
+
 ### CVN0-D005 — No V1 size policy change
 
 CVN-0 introduces no public depth/property/array-length cap for these existing predicates. `isJsonValue` therefore uses iterative traversal rather than call-stack recursion. CVN-FC-010's depth `64` and property `1,048,576` limits belong to later VNext new decoders, not these V1 predicates.
 
 ### CVN0-D006 — No cache or retained input
 
-Predicates retain no input reference, descriptor snapshot or global visited state after return. A later call re-evaluates the value's then-current shape.
+Predicates retain no input reference, descriptor snapshot or global visited state after return. `isJsonValue` may and must use call-local `activePath` and `completed` graph state so one invocation rejects cycles and validates each unique shared DAG container once. A later call starts with empty graph state and re-evaluates the value's then-current shape.
 
 ## Requirements
 
@@ -65,12 +67,15 @@ Predicates retain no input reference, descriptor snapshot or global visited stat
 
 All existing valid primitive, plain-object, null-prototype, pitch-boundary and transposition-boundary cases keep their current boolean result. Existing cycles, sparse arrays, non-finite JSON numbers and invalid pitch/transposition values remain `false`.
 
+Standard dense arrays from the current Realm or another Realm keep the same accepted result.
+
 ### CVN0-R002 — JsonValue traversal
 
 - `null`, boolean, string and finite number are `true`；
 - `undefined`, bigint, symbol, function, `NaN` and infinities are `false`；
 - cycles are `false`；
 - repeated non-cyclic shared references are allowed；
+- each unique shared container is inspected once per invocation after it reaches the completed state；
 - a valid 20,000-level nested array completes without a thrown stack error；
 - object and array descriptor values are each read from their descriptor exactly once per visit。
 
@@ -108,14 +113,14 @@ Production edits are limited to the two affected domain files plus one optional 
 
 ## Acceptance Criteria
 
-- [x] CVN0-AC001: All three public predicates return boolean and leak zero raw exceptions across the fixed hostile matrix.
+- [x] CVN0-AC001: All three public predicates return boolean and reject both throwing and forged-return synchronous mutations of every later-used reflection/Array/Set/Number primitive.
 - [x] CVN0-AC002: Accessor getter counters remain `0`; Proxy `get` counters remain `0` for both accepted and rejected proxy fixtures.
 - [x] CVN0-AC003: Throwing/revoked `getPrototypeOf`, `ownKeys` and `getOwnPropertyDescriptor` proxy cases return `false`.
 - [x] CVN0-AC004: Exact-field plain and null-prototype WrittenPitch/Transposition values pass; accessor, extra-field, inherited-field, symbol, non-enumerable and custom-prototype forms fail.
-- [x] CVN0-AC005: JsonValue primitive/object/array/cycle/shared-reference decisions match CVN0-R002.
-- [x] CVN0-AC006: A huge sparse array is rejected before any index-descriptor loop; a dense 20,000-level nested value completes without stack failure.
-- [x] CVN0-AC007: Existing ordinary tests and all 169 accepted Core V1 tests remain green or are superseded only by an explicitly recorded larger count.
+- [x] CVN0-AC005: JsonValue primitive/object/same- and cross-Realm array/cycle/shared-reference decisions match CVN0-R002, while Array-branded custom prototypes, own/inherited `toJSON` pollution, and replaced Realm Object-prototype parents return `false`; non-serialization Array method substitutions remain accepted.
+- [x] CVN0-AC006: A huge sparse array is rejected before any index-descriptor loop; a dense 20,000-level nested value completes without stack failure; the 18-unique-container shared DAG requires exactly 35 descriptor inspections per call.
+- [x] CVN0-AC007: Existing ordinary tests and all 169 accepted Core V1 tests remain green and are superseded by the recorded 187-test full corpus.
 - [x] CVN0-AC008: `test/core-kernel/public-api-boundary.test.ts` proves no root export drift.
 - [x] CVN0-AC009: Git diff contains only approved source/test/spec/task paths and zero Guitar/UI/IO dependency.
-- [x] CVN0-AC010: Typecheck, build, focused tests, full tests, Trellis validation and `git diff --check` pass from a clean reproducible execution.
-- [ ] CVN0-AC011: Independent review confirms no public size cap, cache, mutable global state or generalized decoder subsystem entered CVN-0.
+- [x] CVN0-AC010: Typecheck, build, 19 focused tests, full `npm test` at 188/188, Trellis validation and `git diff --check` pass from a clean reproducible execution.
+- [x] CVN0-AC011: Final independent re-review on 2026-08-04 confirms the Realm/DAG repairs, primordial forgery resistance, complete public no-throw boundary and narrow standard-array JSON-serialization/prototype-chain contract, and that no public size cap, cross-call retained input cache, mutable global state or generalized decoder subsystem entered CVN-0.
