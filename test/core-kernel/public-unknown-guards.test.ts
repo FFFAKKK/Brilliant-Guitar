@@ -44,6 +44,17 @@ function assertGuardReturnsFalse(guard: UnknownGuard, value: unknown): void {
   assert.equal(guard(value), false);
 }
 
+function requireOwnDescriptor(
+  value: object,
+  key: PropertyKey,
+): PropertyDescriptor {
+  const descriptor = Reflect.getOwnPropertyDescriptor(value, key);
+  if (descriptor === undefined) {
+    throw new Error(`Missing test fixture descriptor: ${String(key)}`);
+  }
+  return descriptor;
+}
+
 test("UG-T01 public guards preserve ordinary primitive and nested decisions", () => {
   for (const value of [null, true, false, 0, -3.5, "value"]) {
     assert.equal(jsonValueGuard(value), true);
@@ -268,6 +279,164 @@ test("UG-T06 reflection failures and revoked Proxies return false", () => {
   }
 });
 
+test("UG-T06 public guards contain synchronous reflection side effects", () => {
+  const setAddDescriptor = requireOwnDescriptor(Set.prototype, "add");
+  let setAddReplaced = false;
+  let jsonResult: boolean | undefined;
+  try {
+    const value = new Proxy(
+      { value: 1 },
+      {
+        ownKeys(target) {
+          setAddReplaced = Reflect.defineProperty(Set.prototype, "add", {
+            configurable: true,
+            writable: true,
+            value() {
+              throw new Error("PRIVATE_UG_SET_ADD_SIDE_EFFECT");
+            },
+          });
+          return Reflect.ownKeys(target);
+        },
+      },
+    );
+    jsonResult = jsonValueGuard(value);
+  } finally {
+    Reflect.defineProperty(Set.prototype, "add", setAddDescriptor);
+  }
+  assert.equal(setAddReplaced, true);
+  assert.equal(jsonResult, false);
+
+  const includesDescriptor = requireOwnDescriptor(Array.prototype, "includes");
+  let includesReplaced = false;
+  let pitchResult: boolean | undefined;
+  try {
+    const value = new Proxy(
+      { step: "C", alter: 0, octave: 4 },
+      {
+        getOwnPropertyDescriptor(target, key) {
+          includesReplaced = Reflect.defineProperty(Array.prototype, "includes", {
+            configurable: true,
+            writable: true,
+            value() {
+              throw new Error("PRIVATE_UG_INCLUDES_SIDE_EFFECT");
+            },
+          });
+          return Reflect.getOwnPropertyDescriptor(target, key);
+        },
+      },
+    );
+    pitchResult = writtenPitchGuard(value);
+  } finally {
+    Reflect.defineProperty(Array.prototype, "includes", includesDescriptor);
+  }
+  assert.equal(includesReplaced, true);
+  assert.equal(pitchResult, false);
+
+  const safeIntegerDescriptor = requireOwnDescriptor(Number, "isSafeInteger");
+  let safeIntegerReplaced = false;
+  let transpositionResult: boolean | undefined;
+  try {
+    const value = new Proxy(
+      { diatonicSteps: -7, chromaticSemitones: -12 },
+      {
+        getOwnPropertyDescriptor(target, key) {
+          safeIntegerReplaced = Reflect.defineProperty(Number, "isSafeInteger", {
+            configurable: true,
+            writable: true,
+            value() {
+              throw new Error("PRIVATE_UG_SAFE_INTEGER_SIDE_EFFECT");
+            },
+          });
+          return Reflect.getOwnPropertyDescriptor(target, key);
+        },
+      },
+    );
+    transpositionResult = transpositionGuard(value);
+  } finally {
+    Reflect.defineProperty(Number, "isSafeInteger", safeIntegerDescriptor);
+  }
+  assert.equal(safeIntegerReplaced, true);
+  assert.equal(transpositionResult, false);
+});
+
+test("UG-T06 public guards reject forged synchronous built-in outcomes", () => {
+  const pushDescriptor = requireOwnDescriptor(Array.prototype, "push");
+  let pushReplaced = false;
+  let jsonResult: boolean | undefined;
+  try {
+    const value = new Proxy(
+      { invalid: undefined },
+      {
+        ownKeys(target) {
+          pushReplaced = Reflect.defineProperty(Array.prototype, "push", {
+            configurable: true,
+            writable: true,
+            value() {},
+          });
+          return Reflect.ownKeys(target);
+        },
+      },
+    );
+    jsonResult = jsonValueGuard(value);
+  } finally {
+    Reflect.defineProperty(Array.prototype, "push", pushDescriptor);
+  }
+  assert.equal(pushReplaced, true);
+  assert.equal(jsonResult, false);
+
+  const includesDescriptor = requireOwnDescriptor(Array.prototype, "includes");
+  let includesReplaced = false;
+  let pitchResult: boolean | undefined;
+  try {
+    const value = new Proxy(
+      { step: "H", alter: 0, octave: 4 },
+      {
+        getOwnPropertyDescriptor(target, key) {
+          includesReplaced = Reflect.defineProperty(Array.prototype, "includes", {
+            configurable: true,
+            writable: true,
+            value() {
+              return true;
+            },
+          });
+          return Reflect.getOwnPropertyDescriptor(target, key);
+        },
+      },
+    );
+    pitchResult = writtenPitchGuard(value);
+  } finally {
+    Reflect.defineProperty(Array.prototype, "includes", includesDescriptor);
+  }
+  assert.equal(includesReplaced, true);
+  assert.equal(pitchResult, false);
+
+  const safeIntegerDescriptor = requireOwnDescriptor(Number, "isSafeInteger");
+  let safeIntegerReplaced = false;
+  let transpositionResult: boolean | undefined;
+  try {
+    const value = new Proxy(
+      { diatonicSteps: 0.5, chromaticSemitones: 0.5 },
+      {
+        getOwnPropertyDescriptor(target, key) {
+          safeIntegerReplaced = Reflect.defineProperty(Number, "isSafeInteger", {
+            configurable: true,
+            writable: true,
+            value() {
+              return true;
+            },
+          });
+          return Reflect.getOwnPropertyDescriptor(target, key);
+        },
+      },
+    );
+    transpositionResult = transpositionGuard(value);
+  } finally {
+    Reflect.defineProperty(Number, "isSafeInteger", safeIntegerDescriptor);
+  }
+  assert.equal(safeIntegerReplaced, true);
+  assert.equal(transpositionResult, false);
+});
+
 test("UG-T07 exact record guards reject non-data and non-plain shapes", () => {
   const symbol = Symbol("extra");
   const pitchWithSymbol = { step: "C", alter: 0, octave: 4, [symbol]: true };
@@ -326,6 +495,95 @@ test("UG-T07 exact record guards reject non-data and non-plain shapes", () => {
   for (const value of [arrayWithSymbol, arrayWithHidden, arrayWithCustomPrototype]) {
     assert.equal(jsonValueGuard(value), false);
   }
+});
+
+test("UG-T07 Array-branded custom prototypes are rejected", () => {
+  const customPrototype: unknown[] = [];
+  const customPrototypeValue = [1];
+  Object.setPrototypeOf(customPrototypeValue, customPrototype);
+
+  const customToJsonPrototype: unknown[] = [];
+  Object.defineProperty(customToJsonPrototype, "toJSON", {
+    configurable: true,
+    value() {
+      return "changed";
+    },
+  });
+  const inheritedToJsonValue = [1];
+  Object.setPrototypeOf(inheritedToJsonValue, customToJsonPrototype);
+
+  const mismatchedConstructorPrototype: unknown[] = [];
+  Object.defineProperty(mismatchedConstructorPrototype, "constructor", {
+    configurable: true,
+    value: Array,
+  });
+  const mismatchedConstructorValue = [1];
+  Object.setPrototypeOf(
+    mismatchedConstructorValue,
+    mismatchedConstructorPrototype,
+  );
+
+  const linkedConstructorPrototype: unknown[] = [];
+  function CustomArrayPrototype(): void {}
+  CustomArrayPrototype.prototype = linkedConstructorPrototype;
+  Object.defineProperty(linkedConstructorPrototype, "constructor", {
+    configurable: true,
+    value: CustomArrayPrototype,
+  });
+  const linkedConstructorValue = [1];
+  Object.setPrototypeOf(linkedConstructorValue, linkedConstructorPrototype);
+
+  const structurallySpoofedPrototype: unknown[] = [];
+  Object.setPrototypeOf(structurallySpoofedPrototype, Object.create(null));
+  function StructurallySpoofedArray(): void {}
+  StructurallySpoofedArray.prototype = structurallySpoofedPrototype;
+  Object.defineProperty(structurallySpoofedPrototype, "constructor", {
+    configurable: true,
+    value: StructurallySpoofedArray,
+  });
+  const structurallySpoofedValue = [1];
+  Object.setPrototypeOf(structurallySpoofedValue, structurallySpoofedPrototype);
+
+  assert.equal(Array.isArray(Reflect.getPrototypeOf(customPrototypeValue)), true);
+  assert.equal(jsonValueGuard(customPrototypeValue), false);
+  assert.equal(JSON.stringify(inheritedToJsonValue), '"changed"');
+  assert.equal(jsonValueGuard(inheritedToJsonValue), false);
+  assert.equal(jsonValueGuard(mismatchedConstructorValue), false);
+  assert.equal(jsonValueGuard(linkedConstructorValue), false);
+  assert.equal(jsonValueGuard(structurallySpoofedValue), false);
+});
+
+test("UG-T07 modified cross-Realm Array prototypes are rejected", () => {
+  const ownToJsonValue: unknown = runInNewContext(
+    "Object.defineProperty(Array.prototype, 'toJSON', { value() { return 'changed'; } }); [1]",
+  );
+  const replacedParentValue: unknown = runInNewContext(
+    "const parent = Object.create(null); Object.defineProperty(parent, 'toJSON', { value() { return 'changed'; } }); Object.setPrototypeOf(Array.prototype, parent); [1]",
+  );
+
+  assert.equal(Array.isArray(ownToJsonValue), true);
+  assert.equal(JSON.stringify(ownToJsonValue), '"changed"');
+  assert.equal(jsonValueGuard(ownToJsonValue), false);
+  assert.equal(Array.isArray(replacedParentValue), true);
+  assert.equal(JSON.stringify(replacedParentValue), '"changed"');
+  assert.equal(jsonValueGuard(replacedParentValue), false);
+});
+
+test("UG-T07 ignores non-JSON cross-Realm Array method substitutions", () => {
+  const value: unknown = runInNewContext(
+    "Array.prototype.values = Set.prototype.values; [1]",
+  );
+
+  assert.equal(Array.isArray(value), true);
+  assert.equal(JSON.stringify(value), "[1]");
+  assert.throws(
+    () => Reflect.apply((value as unknown[]).values, value, []),
+    (error: unknown) =>
+      typeof error === "object" &&
+      error !== null &&
+      Reflect.get(error, "name") === "TypeError",
+  );
+  assert.equal(jsonValueGuard(value), true);
 });
 
 test("UG-T08 sparse arrays reject before index-proportional inspection", () => {

@@ -1,4 +1,7 @@
-import { readExactDataRecord } from "./strict-data";
+import {
+  hasUnchangedBuiltinDataValue,
+  readExactDataRecord,
+} from "./strict-data";
 
 export type PitchStep = "C" | "D" | "E" | "F" | "G" | "A" | "B";
 export type PitchAlter = -2 | -1 | 0 | 1 | 2;
@@ -37,39 +40,78 @@ const TRANSPOSITION_KEYS = [
   "diatonicSteps",
   "chromaticSemitones",
 ] as const;
+const reflectApply = Reflect.apply;
+const arrayConstructor = Array;
+const arrayIncludes = arrayConstructor.prototype.includes;
+const numberConstructor = Number;
+const numberIsInteger = numberConstructor.isInteger;
+const numberIsSafeInteger = numberConstructor.isSafeInteger;
 
-export function isWrittenPitch(value: unknown): value is WrittenPitch {
-  const fields = readExactDataRecord(value, WRITTEN_PITCH_KEYS);
-  if (fields === undefined) {
-    return false;
-  }
-  const [step, alter, octave] = fields;
+function hasIntactPitchGuardPrimordials(): boolean {
   return (
-    typeof step === "string" &&
-    PITCH_STEPS.includes(step as PitchStep) &&
-    typeof alter === "number" &&
-    Number.isInteger(alter) &&
-    alter >= -2 &&
-    alter <= 2 &&
-    typeof octave === "number" &&
-    Number.isInteger(octave) &&
-    octave >= 0 &&
-    octave <= 8
+    hasUnchangedBuiltinDataValue(
+      arrayConstructor.prototype,
+      "includes",
+      arrayIncludes,
+    ) &&
+    hasUnchangedBuiltinDataValue(
+      numberConstructor,
+      "isInteger",
+      numberIsInteger,
+    ) &&
+    hasUnchangedBuiltinDataValue(
+      numberConstructor,
+      "isSafeInteger",
+      numberIsSafeInteger,
+    )
   );
 }
 
-export function isTransposition(value: unknown): value is Transposition {
-  const fields = readExactDataRecord(value, TRANSPOSITION_KEYS);
-  if (fields === undefined) {
+export function isWrittenPitch(value: unknown): value is WrittenPitch {
+  try {
+    const fields = readExactDataRecord(value, WRITTEN_PITCH_KEYS);
+    if (fields === undefined || !hasIntactPitchGuardPrimordials()) {
+      return false;
+    }
+    const [step, alter, octave] = fields;
+    return (
+      typeof step === "string" &&
+      reflectApply(arrayIncludes, PITCH_STEPS, [step]) === true &&
+      typeof alter === "number" &&
+      reflectApply(numberIsInteger, numberConstructor, [alter]) === true &&
+      alter >= -2 &&
+      alter <= 2 &&
+      typeof octave === "number" &&
+      reflectApply(numberIsInteger, numberConstructor, [octave]) === true &&
+      octave >= 0 &&
+      octave <= 8
+    );
+  } catch {
     return false;
   }
-  const [diatonicSteps, chromaticSemitones] = fields;
-  return (
-    typeof diatonicSteps === "number" &&
-    Number.isSafeInteger(diatonicSteps) &&
-    typeof chromaticSemitones === "number" &&
-    Number.isSafeInteger(chromaticSemitones)
-  );
+}
+
+export function isTransposition(value: unknown): value is Transposition {
+  try {
+    const fields = readExactDataRecord(value, TRANSPOSITION_KEYS);
+    if (fields === undefined || !hasIntactPitchGuardPrimordials()) {
+      return false;
+    }
+    const [diatonicSteps, chromaticSemitones] = fields;
+    return (
+      typeof diatonicSteps === "number" &&
+      reflectApply(numberIsSafeInteger, numberConstructor, [diatonicSteps]) ===
+        true &&
+      typeof chromaticSemitones === "number" &&
+      reflectApply(
+        numberIsSafeInteger,
+        numberConstructor,
+        [chromaticSemitones],
+      ) === true
+    );
+  } catch {
+    return false;
+  }
 }
 
 export function transposeWrittenPitch(
