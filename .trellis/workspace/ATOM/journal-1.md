@@ -224,3 +224,37 @@ Recorded the independent K1-5 acceptance baseline, synchronized active Core/pare
 ### Next Steps
 
 - None - task complete
+
+
+## Session 7: Accept CVN-0 public unknown guards
+
+**Date**: 2026-08-04
+**Task**: Accept CVN-0 public unknown guards
+**Branch**: `codex/cvn-0-public-unknown-guard-consistency`
+
+### Summary
+
+Completed fourth repair, final independent re-review, 188/188 regression gate, acceptance record, and task archive for CVN-0.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c7ffd49` | (see git log) |
+| `cc9beee` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
