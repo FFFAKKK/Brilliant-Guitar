@@ -84,7 +84,7 @@ The graph is dependency-based rather than numeric-order-based. CVN-2 and CVN-3 a
 | CVN-1 | completed and archived | final narrow re-review passed; 19 command-internals and 193 full tests recorded | retained as accepted transaction-spine base |
 | CVN-2 | parent-planned; child not created | CVN-1 accepted, GD-0 independent acceptance pending | create detailed child only after GD-0 acceptance and user approval |
 | CVN-3 | completed and archived | independent review passed at `d9500f5` with P0/P1/P2 = `0/0/0`; 22 lifecycle and 233 full tests reproduced; acceptance commit `3691d93` | retained as accepted factory and Measure-lifecycle prerequisite |
-| CVN-4 | parent-planned; child not created | accepted/archived CVN-3 dependency is satisfied | detailed planning and formal child creation after user direction |
+| CVN-4 | conditional detailed preplanning complete; formal child not created | accepted/archived CVN-3 dependency is satisfied; preplan and live evidence are recorded under parent research | create formal child only after user direction |
 | CVN-5 | parent-planned; child not created | waits for accepted CVN-2, CVN-3, CVN-4 and CVN-6 | detailed planning after all four dependencies are accepted |
 | CVN-6 | parent-planned; child not created | waits for accepted CVN-2 and CVN-1 | detailed planning after CVN-2 acceptance |
 | CVN-7 | parent-planned; child not created | waits for independently accepted and archived CVN-0 through CVN-6 | final qualification task |
@@ -326,6 +326,13 @@ Factory matrices and all four commands must pass committed, no-op, rejected, und
 - Primary contract owners: `CVN-FC-060–070`.
 - Purpose: complete generic hierarchy editing on the accepted score schema.
 - Dependencies: accepted CVN-3 and accepted CVN-1.
+
+Conditional detailed planning is preserved in:
+
+- `.trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-4-part-staff-voice-preplanning.md`
+- `.trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-4-current-hierarchy-evidence.md`
+
+These files freeze the proposed payload types, title keys, private effects, owner/anchor algorithms, affected-address order, file/test surfaces, twenty requirements and thirty-five acceptance criteria. They do not create or activate the formal child before CVN-3 acceptance.
 
 ### Fixed command set: fifteen
 
@@ -603,7 +610,7 @@ Creation alone does not authorize source changes. Parent planning status does no
 
 1. CVN-3 is independently accepted and archived; no CVN implementation child is active at this snapshot.
 2. CVN-2 becomes eligible after independent GD-0 acceptance.
-3. CVN-4 is dependency-satisfied after CVN-3 acceptance/archive; activation still requires user direction.
+3. CVN-4 conditional preplanning is complete and its CVN-3 dependency is satisfied; formal child creation still requires user direction.
 4. If CVN-2 and CVN-4 are both eligible, present the live comparison and activate only the user-approved next child.
 5. CVN-6 follows accepted CVN-2.
 6. CVN-5 waits for accepted CVN-2, CVN-3, CVN-4 and CVN-6.
@@ -621,6 +628,8 @@ Parent authorities:
 - `.trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/feature-contract-matrix.md`
 - `.trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/documentation-sync-matrix.md`
 - `.trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-roadmap-and-stage-plan.md`
+- `.trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-4-part-staff-voice-preplanning.md`
+- `.trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-4-current-hierarchy-evidence.md`
 
 Accepted children:
 
