@@ -78,7 +78,30 @@
     "production_implementation_authorized": true,
     "task_start_run": true,
     "activation_head": "a8c7404cc34649aaa2c6ebfe8d93e46daf87dbf5",
-    "implementation_stage": "operator_handoff_ready_planning_commit_then_characterization",
-    "independent_review": "not_started"
+    "implementation_stage": "characterization_complete_private_assembly_next",
+    "independent_review": "not_started",
+    "activation_commit": "6d074ff84a13692ff1127ff16dd492c7c59c6246",
+    "activation_merge_base": "a8c7404cc34649aaa2c6ebfe8d93e46daf87dbf5",
+    "activation_platform": {
+      "os": "Microsoft Windows NT 10.0.26200.0",
+      "node": "v24.15.0",
+      "npm": "11.12.1",
+      "logical_processors": 32
+    },
+    "activation_verification": {
+      "typecheck": "passed",
+      "build": "passed",
+      "full_test_count": 188,
+      "task_validate": "passed",
+      "diff_check": "passed"
+    },
+    "characterization": {
+      "baseline_production_commit": "a8c7404cc34649aaa2c6ebfe8d93e46daf87dbf5",
+      "expected_trace_sha256": "CDBCFD68DCC84C514BCAC8BA83B44B819A237146C842E0F63E8F17A3CD2FF4D9",
+      "fresh_process_hashes_equal": true,
+      "case_count": 10,
+      "post_characterization_full_test_count": 189,
+      "expected_trace_regeneration_forbidden_after_stage1": true
+    }
   }
 }

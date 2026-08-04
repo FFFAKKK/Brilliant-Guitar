@@ -10,17 +10,24 @@ This file is the active operator handoff. User approval and `task.py start` were
 
 All items are mandatory before the first `src/**` edit:
 
-- [ ] User approves `prd.md`, `design.md` and this execution plan.
-- [ ] Planner runs `python ./.trellis/scripts/task.py start 08-04-cvn-1-command-transaction-registry-spine`.
-- [ ] `task.py current --source` points to this task and status is `in_progress`.
-- [ ] Branch is `codex/cvn-1-command-transaction-registry-spine`.
-- [ ] Base branch is `codex/cvn-0-public-unknown-guard-consistency`.
-- [ ] Working tree is clean and HEAD is recorded.
-- [ ] CVN-0 archive exists and its final independent re-review is passed.
-- [ ] GD-0 is treated only as non-authoritative research input unless its live task has separately reached accepted/archive status.
-- [ ] Trellis context manifests contain real spec/research entries and `task.py validate` passes.
+- [x] User approves `prd.md`, `design.md` and this execution plan.
+- [x] Planner runs `python ./.trellis/scripts/task.py start 08-04-cvn-1-command-transaction-registry-spine`.
+- [x] `task.py current --source` points to this task and status is `in_progress`.
+- [x] Branch is `codex/cvn-1-command-transaction-registry-spine`.
+- [x] Base branch is `codex/cvn-0-public-unknown-guard-consistency`.
+- [x] Working tree is clean and HEAD is recorded.
+- [x] CVN-0 archive exists and its final independent re-review is passed.
+- [x] GD-0 is treated only as non-authoritative research input unless its live task has separately reached accepted/archive status.
+- [x] Trellis context manifests contain real spec/research entries and `task.py validate` passes.
 
 Record activation facts in the task's `task.json.meta` and append a dated section to this file. Do not reuse historical HEAD/test output as a live activation result.
+
+### Activation record — 2026-08-04
+
+- Task activation was re-bound to this Codex session through `task.py start`; `task.py current --source` reports `08-04-cvn-1-command-transaction-registry-spine` with `status: in_progress`.
+- Activation planning commit: `6d074ff84a13692ff1127ff16dd492c7c59c6246`; production merge-base: `a8c7404cc34649aaa2c6ebfe8d93e46daf87dbf5` on `codex/cvn-0-public-unknown-guard-consistency`.
+- Host facts: Windows NT `10.0.26200.0`, Node `v24.15.0`, npm `11.12.1`, 32 logical processors.
+- Fresh pre-characterization verification passed: `npm.cmd run typecheck`, `npm.cmd run build`, `npm.cmd test` (188/188), `task.py validate`, and `git diff --check`.
 
 ## 3. Owned and Protected Files
 
@@ -126,6 +133,13 @@ This stage touches `test/**` and task evidence only. It precedes production edit
    `test(core): freeze CVN-1 V1 characterization`
 
 **Gate S1:** test-only baseline commit exists; expected JSON is immutable for subsequent stages.
+
+### Stage 1 record — 2026-08-04
+
+- Added the required ten-case public characterization collector, immutable expected trace, and regression test without changing `src/**`.
+- Two separate Node processes generated identical formatted trace bytes: SHA-256 `CDBCFD68DCC84C514BCAC8BA83B44B819A237146C842E0F63E8F17A3CD2FF4D9`.
+- The expected JSON is derived from the CVN-0 production baseline `a8c7404`; the only intervening commit `6d074ff` is task-planning documentation.
+- Characterization test passed, then the full suite passed at 189/189 with `typecheck`, `build`, and `git diff --check` green. Subsequent production stages compare against this JSON and must not regenerate it.
 
 ### Stage 2 — Private default execution assembly and six adapters
 
