@@ -3,6 +3,14 @@ import assert = require("node:assert/strict");
 
 import * as coreKernel from "../../src/core-kernel/index";
 import {
+  ScoreComponentDecodeContext,
+  decodeArray,
+  decodeExtension,
+  decodeMeasureDefinition,
+  decodeRhythmicEvent,
+  decodeVoice,
+} from "../../src/core-kernel/codec/score-component-codec";
+import {
   cloneCoreScoreFixture,
   createCoreScoreFixture,
 } from "./fixtures/core-score";
@@ -333,4 +341,111 @@ test("encoder converts JSON stringify failure into a stable diagnostic", () => {
   } finally {
     Object.defineProperty(JSON, "stringify", descriptor);
   }
+});
+
+test("shared component codec preserves exact persisted component shapes", () => {
+  const context = new ScoreComponentDecodeContext();
+  const measure = decodeMeasureDefinition(
+    {
+      id: "measure-intro",
+      meter: { numerator: 4, denominator: 4 },
+      pickupDuration: { numerator: 1, denominator: 4 },
+    },
+    ["measureDefinitions", 0],
+    context,
+  );
+  const event = decodeRhythmicEvent(
+    {
+      id: "event-1",
+      duration: {
+        base: 8,
+        dots: 1,
+        timeModification: { actualNotes: 3, normalNotes: 2 },
+      },
+      staffId: "staff-1",
+      content: {
+        kind: "notes",
+        notes: [
+          {
+            id: "note-1",
+            writtenPitch: { step: "C", alter: 0, octave: 4 },
+          },
+        ],
+      },
+    },
+    ["parts", 0, "measureContents", 0, "voices", 0, "sequence", "events", 0],
+    context,
+  );
+  const extension = decodeExtension(
+    {
+      namespace: "com.example.codec",
+      schemaVersion: 1,
+      owner: { kind: "score" },
+      payload: { retained: [true, null, { deep: "value" }] },
+    },
+    ["extensions", 0],
+    context,
+  );
+
+  assert.deepEqual(measure, {
+    id: "measure-intro",
+    meter: { numerator: 4, denominator: 4 },
+    pickupDuration: { numerator: 1, denominator: 4 },
+  });
+  assert.deepEqual(event, {
+    id: "event-1",
+    duration: {
+      base: 8,
+      dots: 1,
+      timeModification: { actualNotes: 3, normalNotes: 2 },
+    },
+    staffId: "staff-1",
+    content: {
+      kind: "notes",
+      notes: [
+        {
+          id: "note-1",
+          writtenPitch: { step: "C", alter: 0, octave: 4 },
+        },
+      ],
+    },
+  });
+  assert.deepEqual(extension, {
+    namespace: "com.example.codec",
+    schemaVersion: 1,
+    owner: { kind: "score" },
+    payload: { retained: [true, null, { deep: "value" }] },
+  });
+  assert.deepEqual(context.diagnostics, []);
+});
+
+test("shared component codec leaves non-empty policy to its callers", () => {
+  const context = new ScoreComponentDecodeContext();
+  const voices = decodeArray([], ["voices"], context, decodeVoice);
+
+  assert.deepEqual(voices, []);
+  assert.deepEqual(context.diagnostics, []);
+});
+
+test("shared component codec retains exact diagnostics for malformed components", () => {
+  const context = new ScoreComponentDecodeContext();
+  const measure = decodeMeasureDefinition(
+    {
+      id: "measure-intro",
+      meter: { numerator: 4, denominator: 4 },
+      unexpected: true,
+    },
+    ["measureDefinitions", 0],
+    context,
+  );
+
+  assert.equal(measure, undefined);
+  assert.deepEqual(context.diagnostics, [
+    {
+      code: "decode.extra-field",
+      messageKey: "core.decode.extra-field",
+      path: ["measureDefinitions", 0, "unexpected"],
+      details: { field: "unexpected" },
+    },
+  ]);
 });
