@@ -4,4 +4,4 @@
 {"file":".trellis/spec/core-kernel/backend/registry-capability.md","reason":"Audit Registry split for exact summary, capability, gateway, failure and no-hot-plug parity."}
 {"file":".trellis/spec/core-kernel/backend/errors-reports.md","reason":"Verify refactored failure paths preserve stable privacy-safe Issue/Report mapping and add no raw internal data."}
 {"file":".trellis/spec/core-kernel/backend/quality-guidelines.md","reason":"Drive final full-scope tests, hostile-input review, public export check and forbidden-shortcut audit."}
-{"file":".trellis/tasks/08-04-cvn-1-command-transaction-registry-spine/research/current-spine-evidence.md","reason":"Use the recorded live baseline and evidence map to detect missing or weakened compatibility proof."}
+{"file":".trellis/tasks/archive/2026-08/08-04-cvn-1-command-transaction-registry-spine/research/current-spine-evidence.md","reason":"Use the recorded live baseline and evidence map to detect missing or weakened compatibility proof."}

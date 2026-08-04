@@ -4,4 +4,4 @@
 {"file":".trellis/spec/core-kernel/backend/registry-capability.md","reason":"Preserve default manifest, Registry/Gateway summaries, capability ordering, startup-only registration and public failures."}
 {"file":".trellis/spec/core-kernel/backend/quality-guidelines.md","reason":"Apply Core testing, privacy, dependency and regression requirements to every implementation stage."}
 {"file":".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/core-vnext-refactor-assessment.md","reason":"Parent evidence for the behavior-preserving refactor boundary and seams that require restructuring."}
-{"file":".trellis/tasks/08-04-cvn-1-command-transaction-registry-spine/research/current-spine-evidence.md","reason":"Live CVN-1 baseline, source/test anchors, responsibility map and operator evidence gaps."}
+{"file":".trellis/tasks/archive/2026-08/08-04-cvn-1-command-transaction-registry-spine/research/current-spine-evidence.md","reason":"Live CVN-1 baseline, source/test anchors, responsibility map and operator evidence gaps."}
