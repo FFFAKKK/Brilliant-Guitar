@@ -2,12 +2,99 @@ import * as coreKernel from "../../../src/core-kernel/index";
 import type {
   CommandBus,
   KernelEvent,
+  KernelGatewayResult,
+  RegistrySummary,
   ScoreDocument,
 } from "../../../src/core-kernel/index";
 import { CORE_COMMAND_DEFINITIONS } from "../../../src/core-kernel/commands/catalog";
 import { cloneCoreScoreFixture } from "./core-score";
 
 const CVN1_BASELINE_COMMIT = "a8c7404cc34649aaa2c6ebfe8d93e46daf87dbf5" as const;
+
+/**
+ * The original root runtime surface. This is deliberately test-only: CVN-3
+ * grows the public API, while this characterization fixture continues to
+ * protect the frozen V1 contract.
+ */
+export const CVN1_RUNTIME_EXPORT_NAMES = [
+  "CORE_KERNEL_STARTUP_MANIFEST",
+  "CommandBus",
+  "K1_SCORE_FEATURE_PROFILE",
+  "KernelModuleGateway",
+  "KernelRegistry",
+  "PURE_CORE_KERNEL_V1_SCOPE",
+  "SCORE_DOCUMENT_SCHEMA_VERSION",
+  "addFractions",
+  "compareFractions",
+  "createDiagnostic",
+  "createFraction",
+  "createKernelRegistry",
+  "createKernelValidationReport",
+  "createModuleInternalIssue",
+  "decodeScoreDocument",
+  "deriveSequenceEventStarts",
+  "encodeScoreDocumentJson",
+  "getEffectiveMeasureDuration",
+  "getNoteValueDuration",
+  "isCanonicalFraction",
+  "isJsonValue",
+  "isNoteValueBase",
+  "isNoteValueDots",
+  "isScoreDocumentSchemaVersion",
+  "isTransposition",
+  "isWrittenPitch",
+  "mapCheckpointFailureToKernelIssues",
+  "mapCommandBusCreationFailureToKernelIssues",
+  "mapCommandFailureToKernelIssues",
+  "mapDiagnosticToKernelIssue",
+  "mapEventSubscriptionFailureToKernelIssues",
+  "mapReadFailureToKernelIssues",
+  "mapRegistryAccessFailureToKernelIssues",
+  "mapRegistryStartupFailureToKernelIssues",
+  "migrateScoreDocument",
+  "multiplyFractions",
+  "parseScoreDocumentJson",
+  "replayCoreCommands",
+  "selectDirtyState",
+  "selectHistoryState",
+  "selectScoreEntity",
+  "selectScoreEntityOwnership",
+  "selectScoreMetadata",
+  "selectScoreRange",
+  "subtractFractions",
+  "transposeWrittenPitch",
+  "validateScoreDocumentSemantics",
+  "validateScoreFeatureProfile",
+] as const;
+
+/** The six V1 command IDs retained by the frozen characterization trace. */
+export const CVN1_COMMAND_IDS = [
+  "core.document.set-metadata",
+  "core.note.set-written-pitch",
+  "core.event.set-note-value",
+  "core.voice.insert-notes-event",
+  "core.voice.insert-rest-event",
+  "core.event.remove",
+] as const;
+
+/**
+ * These are the only Registry descriptors removed from the V1 projection.
+ * Any unrelated descriptor drift remains visible to the historical fixture.
+ */
+export const CVN3_PROJECTED_COMMAND_IDS = [
+  "core.measure.insert",
+  "core.measure.remove",
+  "core.measure.move",
+  "core.measure.set-definition",
+] as const;
+
+const CVN1_RUNTIME_EXPORT_NAME_SET: ReadonlySet<string> = new Set(
+  CVN1_RUNTIME_EXPORT_NAMES,
+);
+const CVN1_COMMAND_ID_SET: ReadonlySet<string> = new Set(CVN1_COMMAND_IDS);
+const CVN3_PROJECTED_COMMAND_ID_SET: ReadonlySet<string> = new Set(
+  CVN3_PROJECTED_COMMAND_IDS,
+);
 
 const REQUIRED_CASE_IDS = [
   "metadata-change-noop-reject",
@@ -45,6 +132,15 @@ export interface Cvn1CommandCaseTrace {
   readonly operations: readonly Cvn1OperationTrace[];
 }
 
+export interface Cvn1RegistryCaseTrace {
+  readonly caseId: "registry-summary-gateway-parity-denial";
+  readonly defaultRegistry: unknown;
+  readonly summary: KernelGatewayResult<RegistrySummary>;
+  readonly direct: unknown;
+  readonly gateway: unknown;
+  readonly denied: unknown;
+}
+
 export interface Cvn1CharacterizationTraceV1 {
   readonly traceVersion: 1;
   readonly baselineCommit: typeof CVN1_BASELINE_COMMIT;
@@ -56,7 +152,7 @@ export interface Cvn1CharacterizationTraceV1 {
   readonly commandCases: readonly Cvn1CommandCaseTrace[];
   readonly historyReplayCase: unknown;
   readonly unknownExtensionCase: unknown;
-  readonly registryCase: unknown;
+  readonly registryCase: Cvn1RegistryCaseTrace;
 }
 
 interface TrackedBus {
@@ -550,7 +646,7 @@ function registryManifest(): Record<string, unknown> {
   return manifest;
 }
 
-function registryCase(): unknown {
+function registryCase(): Cvn1RegistryCaseTrace {
   const defaultRegistry = coreKernel.createKernelRegistry(
     coreKernel.CORE_KERNEL_STARTUP_MANIFEST,
   );
@@ -608,8 +704,50 @@ function registryCase(): unknown {
   };
 }
 
-export function collectCvn1CharacterizationTrace(): Cvn1CharacterizationTraceV1 {
+function projectCvn1RegistrySummary(
+  summary: KernelGatewayResult<RegistrySummary>,
+): KernelGatewayResult<RegistrySummary> {
+  if (summary.status !== "authorized") {
+    return summary;
+  }
   return {
+    status: "authorized",
+    value: {
+      ...summary.value,
+      contributions: summary.value.contributions.filter(
+        (contribution) =>
+          contribution.kind !== "command" ||
+          !CVN3_PROJECTED_COMMAND_ID_SET.has(contribution.id),
+      ),
+    },
+  };
+}
+
+/**
+ * Projects only the additive CVN-3 public surface out of the historical V1
+ * trace. Command behavior, document snapshots, results, history, replay and
+ * events intentionally pass through unchanged.
+ */
+export function projectCvn1CharacterizationTrace(
+  trace: Cvn1CharacterizationTraceV1,
+): Cvn1CharacterizationTraceV1 {
+  return {
+    ...trace,
+    runtimeExports: trace.runtimeExports.filter((name) =>
+      CVN1_RUNTIME_EXPORT_NAME_SET.has(name),
+    ),
+    catalog: trace.catalog.filter(({ commandId }) =>
+      CVN1_COMMAND_ID_SET.has(commandId),
+    ),
+    registryCase: {
+      ...trace.registryCase,
+      summary: projectCvn1RegistrySummary(trace.registryCase.summary),
+    },
+  };
+}
+
+export function collectCvn1CharacterizationTrace(): Cvn1CharacterizationTraceV1 {
+  const captured: Cvn1CharacterizationTraceV1 = {
     traceVersion: 1,
     baselineCommit: CVN1_BASELINE_COMMIT,
     runtimeExports: Object.keys(coreKernel).sort(),
@@ -630,6 +768,7 @@ export function collectCvn1CharacterizationTrace(): Cvn1CharacterizationTraceV1 
     unknownExtensionCase: unknownExtensionCase(),
     registryCase: registryCase(),
   };
+  return projectCvn1CharacterizationTrace(captured);
 }
 
 export function serializeCvn1CharacterizationTrace(

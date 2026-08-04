@@ -1,0 +1,146 @@
+{
+  "runtimeExports": [
+    "CORE_KERNEL_STARTUP_MANIFEST",
+    "CommandBus",
+    "K1_SCORE_FEATURE_PROFILE",
+    "KernelModuleGateway",
+    "KernelRegistry",
+    "PURE_CORE_KERNEL_V1_SCOPE",
+    "SCORE_DOCUMENT_SCHEMA_VERSION",
+    "addFractions",
+    "compareFractions",
+    "createDiagnostic",
+    "createFraction",
+    "createKernelRegistry",
+    "createKernelValidationReport",
+    "createModuleInternalIssue",
+    "decodeScoreDocument",
+    "deriveSequenceEventStarts",
+    "encodeScoreDocumentJson",
+    "getEffectiveMeasureDuration",
+    "getNoteValueDuration",
+    "isCanonicalFraction",
+    "isJsonValue",
+    "isNoteValueBase",
+    "isNoteValueDots",
+    "isScoreDocumentSchemaVersion",
+    "isTransposition",
+    "isWrittenPitch",
+    "mapCheckpointFailureToKernelIssues",
+    "mapCommandBusCreationFailureToKernelIssues",
+    "mapCommandFailureToKernelIssues",
+    "mapDiagnosticToKernelIssue",
+    "mapEventSubscriptionFailureToKernelIssues",
+    "mapReadFailureToKernelIssues",
+    "mapRegistryAccessFailureToKernelIssues",
+    "mapRegistryStartupFailureToKernelIssues",
+    "migrateScoreDocument",
+    "multiplyFractions",
+    "parseScoreDocumentJson",
+    "replayCoreCommands",
+    "selectDirtyState",
+    "selectHistoryState",
+    "selectScoreEntity",
+    "selectScoreEntityOwnership",
+    "selectScoreMetadata",
+    "selectScoreRange",
+    "subtractFractions",
+    "transposeWrittenPitch",
+    "validateScoreDocumentSemantics",
+    "validateScoreFeatureProfile"
+  ],
+  "catalog": [
+    {
+      "commandId": "core.document.set-metadata",
+      "targetKind": "document"
+    },
+    {
+      "commandId": "core.note.set-written-pitch",
+      "targetKind": "note"
+    },
+    {
+      "commandId": "core.event.set-note-value",
+      "targetKind": "event"
+    },
+    {
+      "commandId": "core.voice.insert-notes-event",
+      "targetKind": "voice"
+    },
+    {
+      "commandId": "core.voice.insert-rest-event",
+      "targetKind": "voice"
+    },
+    {
+      "commandId": "core.event.remove",
+      "targetKind": "event"
+    }
+  ],
+  "registryCommandDescriptors": [
+    {
+      "id": "core.document.set-metadata",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.set-metadata.title",
+      "kind": "command",
+      "targetKind": "document"
+    },
+    {
+      "id": "core.event.remove",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.remove-event.title",
+      "kind": "command",
+      "targetKind": "event"
+    },
+    {
+      "id": "core.event.set-note-value",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.set-note-value.title",
+      "kind": "command",
+      "targetKind": "event"
+    },
+    {
+      "id": "core.note.set-written-pitch",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.set-written-pitch.title",
+      "kind": "command",
+      "targetKind": "note"
+    },
+    {
+      "id": "core.voice.insert-notes-event",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.insert-notes-event.title",
+      "kind": "command",
+      "targetKind": "voice"
+    },
+    {
+      "id": "core.voice.insert-rest-event",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.insert-rest-event.title",
+      "kind": "command",
+      "targetKind": "voice"
+    }
+  ]
+}
