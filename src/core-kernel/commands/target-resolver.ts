@@ -9,6 +9,7 @@ import type {
 } from "../domain/score-document";
 import type {
   CommandFailure,
+  MeasureAnchor,
   ScoreEntityTarget,
   SequenceAnchor,
 } from "./contracts";
@@ -41,6 +42,116 @@ export type ResolveEntityResult =
 export type ResolveAnchorResult =
   | { readonly ok: true; readonly insertionIndex: number }
   | { readonly ok: false; readonly failure: CommandFailure };
+
+interface UniqueIdIndex {
+  readonly kind: "found" | "missing" | "duplicate";
+  readonly index?: number;
+}
+
+function uniqueIdIndex(ids: readonly string[], id: string): UniqueIdIndex {
+  let matchIndex = -1;
+  for (let index = 0; index < ids.length; index += 1) {
+    if (ids[index] !== id) {
+      continue;
+    }
+    if (matchIndex >= 0) {
+      return { kind: "duplicate" };
+    }
+    matchIndex = index;
+  }
+  return matchIndex < 0
+    ? { kind: "missing" }
+    : { kind: "found", index: matchIndex };
+}
+
+/** Resolves the stable public Measure insertion anchor within one ID list. */
+export function resolveMeasureAnchorInIds(
+  ids: readonly string[],
+  anchor: MeasureAnchor,
+): ResolveAnchorResult {
+  if (anchor.kind === "start") {
+    return { ok: true, insertionIndex: 0 };
+  }
+  const match = uniqueIdIndex(ids, anchor.measureId);
+  if (match.kind === "found" && match.index !== undefined) {
+    return { ok: true, insertionIndex: match.index + 1 };
+  }
+  return {
+    ok: false,
+    failure: {
+      code:
+        match.kind === "missing"
+          ? "command.anchor-not-found"
+          : "command.internal-error",
+    },
+  };
+}
+
+/** Returns the stable anchor that restores an item to its current position. */
+export function previousMeasureAnchor(
+  ids: readonly string[],
+  targetIndex: number,
+): MeasureAnchor {
+  const previous = targetIndex > 0 ? ids[targetIndex - 1] : undefined;
+  return previous === undefined
+    ? { kind: "start" }
+    : { kind: "after-measure", measureId: previous };
+}
+
+/**
+ * Resolves a move against the original list, then returns the insertion index
+ * in the list after the target has been removed.
+ */
+export function moveInsertionIndex(
+  originalIds: readonly string[],
+  targetId: string,
+  anchor: MeasureAnchor,
+): ResolveAnchorResult {
+  const target = uniqueIdIndex(originalIds, targetId);
+  if (target.kind !== "found" || target.index === undefined) {
+    return {
+      ok: false,
+      failure: {
+        code:
+          target.kind === "missing"
+            ? "command.target-not-found"
+            : "command.internal-error",
+      },
+    };
+  }
+  if (anchor.kind === "after-measure" && anchor.measureId === targetId) {
+    return {
+      ok: false,
+      failure: { code: "command.anchor-self-reference" },
+    };
+  }
+  if (anchor.kind === "start") {
+    return { ok: true, insertionIndex: 0 };
+  }
+
+  const anchorMatch = uniqueIdIndex(originalIds, anchor.measureId);
+  if (anchorMatch.kind !== "found" || anchorMatch.index === undefined) {
+    return {
+      ok: false,
+      failure: {
+        code:
+          anchorMatch.kind === "missing"
+            ? "command.anchor-not-found"
+            : "command.internal-error",
+      },
+    };
+  }
+
+  const remainingIds = originalIds.filter((id) => id !== targetId);
+  const remainingAnchor = uniqueIdIndex(remainingIds, anchor.measureId);
+  if (
+    remainingAnchor.kind !== "found" ||
+    remainingAnchor.index === undefined
+  ) {
+    return { ok: false, failure: { code: "command.internal-error" } };
+  }
+  return { ok: true, insertionIndex: remainingAnchor.index + 1 };
+}
 
 function uniqueMatch(
   matches: readonly ResolvedScoreEntity[],

@@ -32,6 +32,7 @@ import {
   resolveScoreEntityTarget,
   resolveSequenceAnchor,
 } from "./target-resolver";
+import { MEASURE_COMMAND_ADAPTERS } from "./measure-command-adapters";
 
 export type CoreCommandTargetKind = ScoreEntityTarget["kind"];
 
@@ -40,6 +41,7 @@ export type PlainRecord = Readonly<Record<string, unknown>>;
 export interface CoreCommandAdapter {
   readonly commandId: CoreCommandId;
   readonly targetKind: CoreCommandTargetKind;
+  readonly inputBoundary: "legacy-v1" | "vnext-bounded-v1";
   readonly decodePayload: (
     payload: unknown,
     target: ScoreEntityTarget,
@@ -694,37 +696,44 @@ export const CORE_COMMAND_ADAPTERS: readonly CoreCommandAdapter[] = Object.freez
   Object.freeze({
     commandId: "core.document.set-metadata" as const,
     targetKind: "document" as const,
+    inputBoundary: "legacy-v1" as const,
     decodePayload: decodeSetMetadataPayload,
     prepare: prepareSetMetadata,
   }),
   Object.freeze({
     commandId: "core.note.set-written-pitch" as const,
     targetKind: "note" as const,
+    inputBoundary: "legacy-v1" as const,
     decodePayload: decodeSetWrittenPitchPayload,
     prepare: prepareSetWrittenPitch,
   }),
   Object.freeze({
     commandId: "core.event.set-note-value" as const,
     targetKind: "event" as const,
+    inputBoundary: "legacy-v1" as const,
     decodePayload: decodeSetNoteValuePayload,
     prepare: prepareSetNoteValue,
   }),
   Object.freeze({
     commandId: "core.voice.insert-notes-event" as const,
     targetKind: "voice" as const,
+    inputBoundary: "legacy-v1" as const,
     decodePayload: decodeInsertNotesEventPayload,
     prepare: prepareInsertEvent,
   }),
   Object.freeze({
     commandId: "core.voice.insert-rest-event" as const,
     targetKind: "voice" as const,
+    inputBoundary: "legacy-v1" as const,
     decodePayload: decodeInsertRestEventPayload,
     prepare: prepareInsertEvent,
   }),
   Object.freeze({
     commandId: "core.event.remove" as const,
     targetKind: "event" as const,
+    inputBoundary: "legacy-v1" as const,
     decodePayload: decodeRemoveEventPayload,
     prepare: prepareRemoveEvent,
   }),
+  ...MEASURE_COMMAND_ADAPTERS,
 ] satisfies readonly CoreCommandAdapter[]);

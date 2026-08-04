@@ -86,7 +86,8 @@ test("command and history adapters cover every accepted failure code", () => {
   const eventSource = { kind: "core", subsystem: "event" } as const;
   type CodeOnlyCommandFailure = Exclude<
     CommandFailure,
-    { readonly code: "command.semantic-invalid" }
+    | { readonly code: "command.semantic-invalid" }
+    | { readonly code: "command.resource-limit-exceeded" }
   >;
   const fixtures = {
     "command.invalid-envelope": { code: "command.invalid-envelope" },
@@ -96,6 +97,9 @@ test("command and history adapters cover every accepted failure code", () => {
     "command.target-not-found": { code: "command.target-not-found" },
     "command.anchor-not-found": { code: "command.anchor-not-found" },
     "command.anchor-wrong-owner": { code: "command.anchor-wrong-owner" },
+    "command.anchor-self-reference": {
+      code: "command.anchor-self-reference",
+    },
     "command.version-overflow": { code: "command.version-overflow" },
     "command.internal-error": { code: "command.internal-error" },
     "history.empty-undo": { code: "history.empty-undo" },
@@ -111,6 +115,25 @@ test("command and history adapters cover every accepted failure code", () => {
       source: failure.code.startsWith("event.") ? eventSource : commandSource,
     });
   }
+
+  const resourceFailure: Extract<
+    CommandFailure,
+    { readonly code: "command.resource-limit-exceeded" }
+  > = {
+    code: "command.resource-limit-exceeded",
+    limitKind: "input-properties",
+    limit: 1_048_576,
+    actual: 1_048_577,
+  };
+  assertSingleMappedIssue(mapCommandFailureToKernelIssues(resourceFailure), {
+    failure: resourceFailure,
+    source: commandSource,
+    details: {
+      limitKind: "input-properties",
+      limit: 1_048_576,
+      actual: 1_048_577,
+    },
+  });
 });
 
 test("semantic command failure preserves operation-first diagnostic order", () => {

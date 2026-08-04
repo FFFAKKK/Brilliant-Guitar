@@ -479,7 +479,7 @@ test("public integration scenario keeps writes reads events history and replay c
     trace.registrySummary.modules.map(({ moduleId }) => moduleId),
     ["core.commands", "core.selectors", "internal.k1-6-integration"],
   );
-  assert.equal(trace.registrySummary.contributions.length, 12);
+  assert.equal(trace.registrySummary.contributions.length, 16);
   assert.deepEqual(trace.selectorFacts.metadata, {
     title: "K1-6 integration fixture",
     authors: ["Brilliant Guitar"],

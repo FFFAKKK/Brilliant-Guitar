@@ -45,6 +45,17 @@ import type {
 } from "../../src/core-kernel/commands/contracts";
 import type { ScoreDocument } from "../../src/core-kernel/index";
 import { cloneCoreScoreFixture } from "./fixtures/core-score";
+import {
+  insertMeasureCommand,
+  moveMeasureCommand,
+  removeMeasureCommand,
+  setMeasureDefinitionCommand,
+} from "./fixtures/cvn-3-command-helpers";
+import {
+  cloneCvn3MeasureFixture,
+  createCvn3InsertedVoices,
+  createCvn3ShuffledMeasureFixture,
+} from "./fixtures/cvn-3-score";
 
 function envelope(
   commandId: string,
@@ -123,7 +134,7 @@ function countRootDocumentClones<T>(
   }
 }
 
-test("the static catalog is frozen and contains only the six approved Core commands", () => {
+test("the static catalog is frozen and contains the six V1 plus four Measure commands", () => {
   assert.equal(Object.isFrozen(CORE_COMMAND_DEFINITIONS), true);
   assert.equal(
     CORE_COMMAND_DEFINITIONS.every((definition) => Object.isFrozen(definition)),
@@ -138,11 +149,15 @@ test("the static catalog is frozen and contains only the six approved Core comma
       "core.voice.insert-notes-event",
       "core.voice.insert-rest-event",
       "core.event.remove",
+      "core.measure.insert",
+      "core.measure.remove",
+      "core.measure.move",
+      "core.measure.set-definition",
     ],
   );
 });
 
-test("the private default execution assembly freezes the six compatible adapters", () => {
+test("the private default execution assembly freezes all ten compatible adapters", () => {
   const assembly = DEFAULT_CORE_EXECUTION_ASSEMBLY;
   assert.deepEqual(assembly.source, {
     moduleId: "core.commands",
@@ -161,6 +176,51 @@ test("the private default execution assembly freezes the six compatible adapters
       targetKind,
     })),
     CORE_COMMAND_DEFINITIONS,
+  );
+  assert.deepEqual(
+    assembly.definitions.map(({ commandId, inputBoundary }) => ({
+      commandId,
+      inputBoundary,
+    })),
+    [
+      {
+        commandId: "core.document.set-metadata",
+        inputBoundary: "legacy-v1",
+      },
+      {
+        commandId: "core.note.set-written-pitch",
+        inputBoundary: "legacy-v1",
+      },
+      {
+        commandId: "core.event.set-note-value",
+        inputBoundary: "legacy-v1",
+      },
+      {
+        commandId: "core.voice.insert-notes-event",
+        inputBoundary: "legacy-v1",
+      },
+      {
+        commandId: "core.voice.insert-rest-event",
+        inputBoundary: "legacy-v1",
+      },
+      { commandId: "core.event.remove", inputBoundary: "legacy-v1" },
+      {
+        commandId: "core.measure.insert",
+        inputBoundary: "vnext-bounded-v1",
+      },
+      {
+        commandId: "core.measure.remove",
+        inputBoundary: "vnext-bounded-v1",
+      },
+      {
+        commandId: "core.measure.move",
+        inputBoundary: "vnext-bounded-v1",
+      },
+      {
+        commandId: "core.measure.set-definition",
+        inputBoundary: "vnext-bounded-v1",
+      },
+    ],
   );
   assert.equal(typeof assembly.validate, "function");
   assert.equal(typeof assembly.classify, "function");
@@ -205,6 +265,14 @@ test("the private default execution assembly freezes the six compatible adapters
     true,
   );
   assert.equal(isolated.definitions[0]?.targetKind, "document");
+
+  const wrongBoundary: CoreCommandAdapter[] = CORE_COMMAND_ADAPTERS.map(
+    (definition) =>
+      definition.commandId === "core.measure.insert"
+        ? { ...definition, inputBoundary: "legacy-v1" }
+        : definition,
+  );
+  assert.throws(() => createCoreExecutionAssembly(wrongBoundary), TypeError);
 });
 
 test("assembly-routed decoding detaches and deep-freezes accepted envelopes", () => {
@@ -548,6 +616,115 @@ test("each prepared internal effect set round-trips the document exactly", () =>
       assert.deepEqual(inverse.document, document);
     }
   });
+});
+
+test("Measure effect sets derive reverse multi-effect inverses and restore shuffled documents", () => {
+  const insertedMeasureId = "cvn3-internal-effect-insert";
+  const cases: readonly {
+    readonly document: ScoreDocument;
+    readonly input: unknown;
+    readonly forwardKinds: readonly string[];
+    readonly inverseKinds: readonly string[];
+  }[] = [
+    {
+      document: createCvn3ShuffledMeasureFixture(),
+      input: insertMeasureCommand({
+        anchor: { kind: "after-measure", measureId: "cvn3-measure-1" },
+        definition: {
+          id: insertedMeasureId,
+          meter: { numerator: 4, denominator: 4 },
+        },
+        contents: [
+          {
+            partId: "cvn3-part-b",
+            voices: createCvn3InsertedVoices("cvn3-part-b", insertedMeasureId),
+          },
+          {
+            partId: "cvn3-part-a",
+            voices: createCvn3InsertedVoices("cvn3-part-a", insertedMeasureId),
+          },
+        ],
+      }),
+      forwardKinds: [
+        "insert-measure-bundle",
+        "reorder-part-measure-contents",
+      ],
+      inverseKinds: [
+        "reorder-part-measure-contents",
+        "remove-measure-bundle",
+      ],
+    },
+    {
+      document: createCvn3ShuffledMeasureFixture(),
+      input: removeMeasureCommand("cvn3-measure-1"),
+      forwardKinds: [
+        "remove-measure-bundle",
+        "reorder-part-measure-contents",
+      ],
+      inverseKinds: [
+        "reorder-part-measure-contents",
+        "insert-measure-bundle",
+      ],
+    },
+    {
+      document: createCvn3ShuffledMeasureFixture(),
+      input: moveMeasureCommand("cvn3-measure-3", { kind: "start" }),
+      forwardKinds: [
+        "move-measure-bundle",
+        "reorder-part-measure-contents",
+      ],
+      inverseKinds: [
+        "reorder-part-measure-contents",
+        "move-measure-bundle",
+      ],
+    },
+    {
+      document: cloneCvn3MeasureFixture(),
+      input: setMeasureDefinitionCommand(
+        "cvn3-measure-1",
+        { numerator: 2, denominator: 2 },
+        { kind: "none" },
+      ),
+      forwardKinds: ["replace-measure-definition"],
+      inverseKinds: ["replace-measure-definition"],
+    },
+  ];
+
+  for (const entry of cases) {
+    const before = structuredClone(entry.document);
+    const decoded = requireDecoded(entry.input);
+    const definition = DEFAULT_CORE_EXECUTION_ASSEMBLY.definitions.find(
+      (candidate) => candidate.commandId === decoded.commandId,
+    );
+    assert.notEqual(definition, undefined);
+    if (definition === undefined) {
+      continue;
+    }
+    const prepared = definition.prepare(entry.document, decoded);
+    assert.equal(prepared.ok, true);
+    assert.equal(prepared.ok && prepared.changed, true);
+    if (!prepared.ok || !prepared.changed) {
+      continue;
+    }
+    assert.deepEqual(
+      prepared.effects.map(({ kind }) => kind),
+      entry.forwardKinds,
+    );
+    const applied = applyCoreEffectSet(entry.document, prepared.effects);
+    assert.equal(applied.ok, true);
+    if (!applied.ok) {
+      continue;
+    }
+    assert.deepEqual(
+      applied.inverse.map(({ kind }) => kind),
+      entry.inverseKinds,
+    );
+    const restored = applyCoreEffectSet(applied.document, applied.inverse);
+    assert.equal(restored.ok, true);
+    if (restored.ok) {
+      assert.deepEqual(restored.document, before);
+    }
+  }
 });
 
 test("ordered private effect sets clone once, derive reverse inverses, and stay atomic", () => {

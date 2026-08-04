@@ -74,6 +74,22 @@
     {
       "commandId": "core.event.remove",
       "targetKind": "event"
+    },
+    {
+      "commandId": "core.measure.insert",
+      "targetKind": "document"
+    },
+    {
+      "commandId": "core.measure.remove",
+      "targetKind": "measure"
+    },
+    {
+      "commandId": "core.measure.move",
+      "targetKind": "measure"
+    },
+    {
+      "commandId": "core.measure.set-definition",
+      "targetKind": "measure"
     }
   ],
   "registryCommandDescriptors": [
@@ -109,6 +125,50 @@
       "titleKey": "core.command.set-note-value.title",
       "kind": "command",
       "targetKind": "event"
+    },
+    {
+      "id": "core.measure.insert",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.insert-measure.title",
+      "kind": "command",
+      "targetKind": "document"
+    },
+    {
+      "id": "core.measure.move",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.move-measure.title",
+      "kind": "command",
+      "targetKind": "measure"
+    },
+    {
+      "id": "core.measure.remove",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.remove-measure.title",
+      "kind": "command",
+      "targetKind": "measure"
+    },
+    {
+      "id": "core.measure.set-definition",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.set-measure-definition.title",
+      "kind": "command",
+      "targetKind": "measure"
     },
     {
       "id": "core.note.set-written-pitch",

@@ -26,6 +26,10 @@ const COMMAND_TITLE_KEYS: Readonly<Record<CoreCommandId, string>> = {
   "core.voice.insert-notes-event": "core.command.insert-notes-event.title",
   "core.voice.insert-rest-event": "core.command.insert-rest-event.title",
   "core.event.remove": "core.command.remove-event.title",
+  "core.measure.insert": "core.command.insert-measure.title",
+  "core.measure.remove": "core.command.remove-measure.title",
+  "core.measure.move": "core.command.move-measure.title",
+  "core.measure.set-definition": "core.command.set-measure-definition.title",
 };
 
 const COMMAND_REQUIRED_CAPABILITIES = deepFreezeValue([

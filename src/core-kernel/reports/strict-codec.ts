@@ -86,7 +86,9 @@ const COMMAND_FAILURE_CODES = Object.freeze({
   "command.target-not-found": true,
   "command.anchor-not-found": true,
   "command.anchor-wrong-owner": true,
+  "command.anchor-self-reference": true,
   "command.semantic-invalid": true,
+  "command.resource-limit-exceeded": true,
   "command.version-overflow": true,
   "command.internal-error": true,
   "history.empty-undo": true,
@@ -376,20 +378,46 @@ export function decodeCommandFailure(
     const codeOnly = readExactDataRecord(input, ["code"]);
     if (
       isListedCode(codeOnly?.code, COMMAND_FAILURE_CODES) &&
-      codeOnly.code !== "command.semantic-invalid"
+      codeOnly.code !== "command.semantic-invalid" &&
+      codeOnly.code !== "command.resource-limit-exceeded"
     ) {
       return { code: codeOnly.code };
     }
     const record = readExactDataRecord(input, ["code", "diagnostics"]);
     const diagnostics = decodeSemanticDiagnostics(record?.diagnostics);
     if (
-      record === undefined ||
-      record.code !== "command.semantic-invalid" ||
-      diagnostics === undefined
+      record !== undefined &&
+      record.code === "command.semantic-invalid" &&
+      diagnostics !== undefined
+    ) {
+      return { code: "command.semantic-invalid", diagnostics };
+    }
+
+    const resource = readExactDataRecord(input, [
+      "code",
+      "limitKind",
+      "limit",
+      "actual",
+    ]);
+    if (
+      resource?.code !== "command.resource-limit-exceeded" ||
+      (resource.limitKind !== "input-depth" &&
+        resource.limitKind !== "input-properties") ||
+      typeof resource.limit !== "number" ||
+      !Number.isSafeInteger(resource.limit) ||
+      resource.limit < 0 ||
+      typeof resource.actual !== "number" ||
+      !Number.isSafeInteger(resource.actual) ||
+      resource.actual < 0
     ) {
       return undefined;
     }
-    return { code: "command.semantic-invalid", diagnostics };
+    return {
+      code: "command.resource-limit-exceeded",
+      limitKind: resource.limitKind,
+      limit: resource.limit,
+      actual: resource.actual,
+    };
   } catch {
     return undefined;
   }

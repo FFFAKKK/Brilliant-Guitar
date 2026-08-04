@@ -27,6 +27,21 @@ const DEFAULT_SOURCE: CoreExecutionSourceIdentity = Object.freeze({
   contributionId: "core.commands.v1",
 });
 
+const VNEXT_BOUNDED_COMMAND_IDS: ReadonlySet<CoreCommandId> = new Set([
+  "core.measure.insert",
+  "core.measure.remove",
+  "core.measure.move",
+  "core.measure.set-definition",
+]);
+
+function expectedInputBoundary(
+  commandId: CoreCommandId,
+): CoreCommandAdapter["inputBoundary"] {
+  return VNEXT_BOUNDED_COMMAND_IDS.has(commandId)
+    ? "vnext-bounded-v1"
+    : "legacy-v1";
+}
+
 function definitionFor(
   definitions: readonly CoreCommandAdapter[],
   commandId: CoreCommandId,
@@ -47,6 +62,7 @@ export function createCoreExecutionAssembly(
     if (
       definition === undefined ||
       definition.targetKind !== catalogDefinition.targetKind ||
+      definition.inputBoundary !== expectedInputBoundary(catalogDefinition.commandId) ||
       seen.has(definition.commandId)
     ) {
       throw new TypeError("Core execution assembly command definition mismatch");

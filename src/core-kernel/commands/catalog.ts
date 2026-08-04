@@ -20,6 +20,13 @@ export const CORE_COMMAND_DEFINITIONS = Object.freeze([
     targetKind: "voice",
   }),
   Object.freeze({ commandId: "core.event.remove", targetKind: "event" }),
+  Object.freeze({ commandId: "core.measure.insert", targetKind: "document" }),
+  Object.freeze({ commandId: "core.measure.remove", targetKind: "measure" }),
+  Object.freeze({ commandId: "core.measure.move", targetKind: "measure" }),
+  Object.freeze({
+    commandId: "core.measure.set-definition",
+    targetKind: "measure",
+  }),
 ] as const);
 
 export type CoreCommandId =

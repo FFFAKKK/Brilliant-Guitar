@@ -175,6 +175,15 @@ export function mapCommandFailureToKernelIssues(
         ...diagnosticIssues,
       ]);
     }
+    if (decoded.code === "command.resource-limit-exceeded") {
+      return freezeIssueArray([
+        operationIssue(decoded.code, "command", {
+          limitKind: decoded.limitKind,
+          limit: decoded.limit,
+          actual: decoded.actual,
+        }),
+      ]);
+    }
     const subsystem = decoded.code.startsWith("event.")
       ? "event"
       : "command";
