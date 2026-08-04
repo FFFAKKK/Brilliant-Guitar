@@ -381,19 +381,24 @@ Reviewer receives base `d936d58195803ef938214948b21e89fe67939090`, candidate tip
 
 Reviewer must:
 
-- [ ] compare the full diff, not only the latest commit;
-- [ ] map each parent CVN-FC row and each CVN3-AC row to evidence;
-- [ ] inspect strict capture for getter/Proxy/primordial/resource behavior;
-- [ ] inspect every private Measure effect and inverse for exactness;
-- [ ] audit pre-shuffled order normalization/undo;
-- [ ] audit last-Measure and sequence rejection state equality;
-- [ ] audit history/replay/event/dirty/checkpoint parity;
-- [ ] audit Registry/report/public allowlists and privacy;
-- [ ] audit projected CVN-1 trace without weakening old behavior assertions;
-- [ ] run focused and full commands independently;
-- [ ] record P0/P1/P2 findings or a pass verdict with exact candidate commit.
+- [x] compare the full diff, not only the latest commit;
+- [x] map each parent CVN-FC row and each CVN3-AC row to evidence;
+- [x] inspect strict capture for getter/Proxy/primordial/resource behavior;
+- [x] inspect every private Measure effect and inverse for exactness;
+- [x] audit pre-shuffled order normalization/undo;
+- [x] audit last-Measure and sequence rejection state equality;
+- [x] audit history/replay/event/dirty/checkpoint parity;
+- [x] audit Registry/report/public allowlists and privacy;
+- [x] audit projected CVN-1 trace without weakening old behavior assertions;
+- [x] run focused and full commands independently;
+- [x] record P0/P1/P2 findings or a pass verdict with exact candidate commit.
 
-CVN-4 becomes dependency-satisfied only after findings are repaired/re-reviewed and the planner records acceptance/archive evidence.
+Independent verdict recorded on 2026-08-04: source/test commit
+`d9500f5a8ac285071586ba8eda380370eafd022f` passed with P0/P1/P2 = `0/0/0`.
+Typecheck, build, the lifecycle triad (`22/22`), full regression (`233/233`),
+Trellis validation, candidate diff checking, and the immutable CVN-1 hash gate
+all passed. CVN-4 becomes dependency-satisfied when this accepted child is
+archived and the parent state is synchronized.
 
 ## 5. Focused verification commands
 

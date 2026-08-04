@@ -1,17 +1,17 @@
-# CVN-3 Independent Review Candidate
+# CVN-3 Independent Review Record
 
 ## Status
 
-- **Review status:** `independent_review_pending`.
+- **Review status:** `independent_review_passed`.
 - **Review base:** `d936d58195803ef938214948b21e89fe67939090`.
 - **Source/test candidate:** `d9500f5a8ac285071586ba8eda380370eafd022f`.
 - **Branch/worktree:** `codex/cvn-3-document-factory-measure-lifecycle` /
   `.worktrees/k1-6-core-kernel-integration-gate`.
-- **Acceptance boundary:** CVN3-AC001 through CVN3-AC027 have operator
-  evidence below. CVN3-AC028 remains unchecked until an independent reviewer
-  compares the full diff, reproduces the gates, and records a verdict.
+- **Acceptance boundary:** CVN3-AC001 through CVN3-AC028 are accepted at the
+  source/test candidate after independent diff review and gate reproduction.
+- **Findings:** P0/P1/P2 = `0/0/0`.
 
-This record is a review package, not an acceptance or archive record.
+This record is the independent acceptance evidence used for archive closeout.
 
 ## Candidate commits
 
@@ -107,7 +107,7 @@ or arbitrary extra details.
 | CVN3-AC025 | `command-spine-characterization.test.ts` CVN-1 projection/SHA assertions; `cvn-3-public-surface.test.ts` |
 | CVN3-AC026 | typecheck/build/focused/full/diff/Trellis gates in this record and task metadata |
 | CVN3-AC027 | `public-api-boundary.test.ts`, `forbidden-dependency-boundary.test.ts`, schema diff and protected-fixture checks |
-| CVN3-AC028 | **pending independent review** |
+| CVN3-AC028 | **passed** — independent review at `d9500f5a8ac285071586ba8eda380370eafd022f`; P0/P1/P2 = `0/0/0` |
 
 ## Parent-contract crosswalk
 
@@ -147,14 +147,18 @@ or arbitrary extra details.
   projection helper/test adds the declared CVN-3 descriptors when measuring the
   current additive surface.
 
-## Remaining independent-review gate
+## Independent-review verdict
 
-The reviewer must use the base and source/test candidate above, inspect the
-complete range, rerun the focused/full commands independently, and record any
-P0/P1/P2 finding or a pass verdict. In particular, review strict capture
-primordials/Proxy paths, every Measure effect/inverse, shuffled-order undo,
-last-Measure and sequence rollback equality, history/replay/event/dirty/
-checkpoint parity, Registry/report allowlists, and CVN-1 projection integrity.
+On 2026-08-04 the reviewer compared the complete range from
+`d936d58195803ef938214948b21e89fe67939090` through source/test candidate
+`d9500f5a8ac285071586ba8eda380370eafd022f`. The review covered strict capture
+primordials/Proxy/resource paths, every Measure effect/inverse, shuffled-order
+undo, last-Measure and sequence rollback, transaction/history/replay/event/
+dirty/checkpoint parity, Registry/report/public allowlists, and projected CVN-1
+integrity.
 
-No operator-reported unresolved implementation finding is recorded here; that
-is not a substitute for the required independent verdict.
+Independent reproduction passed typecheck, build, the lifecycle triad
+(`22/22`), the full suite (`233/233`), Trellis context validation, candidate
+`git diff --check`, and CVN-1 expected SHA-256
+`CDBCFD68DCC84C514BCAC8BA83B44B819A237146C842E0F63E8F17A3CD2FF4D9`.
+Verdict: accepted with P0/P1/P2 = `0/0/0`; no re-review cycle is required.

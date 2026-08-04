@@ -389,13 +389,14 @@ Factory priority is: strict capture resource over later schema diagnostics once 
 - [x] **CVN3-AC025:** projected CVN-1 trace remains equal to its immutable expected fixture and accepted SHA-256; the additive surface is exactly 49 exports/10 commands/10 Registry command descriptors.
 - [x] **CVN3-AC026:** typecheck, build, focused tests, full tests, `git diff --check`, forbidden-dependency scan and Trellis validation pass.
 - [x] **CVN3-AC027:** no public/private whole-document replacement shortcut, no persisted schema change and no Guitar/module-runtime dependency appears in the full diff.
-- [ ] **CVN3-AC028:** independent final review reports no reproducible release-blocking finding and records the accepted source/test commit before archive.
+- [x] **CVN3-AC028:** independent final review reports no reproducible release-blocking finding and records the accepted source/test commit before archive.
 
-> **Operator evidence status (2026-08-04):** CVN3-AC001 through
-> CVN3-AC027 are implementation-verified at source/test candidate
-> `d9500f5a8ac285071586ba8eda380370eafd022f`; the evidence matrix is
-> `review-candidate.md`. This is not final acceptance. CVN3-AC028 remains the
-> independent-review gate.
+> **Independent acceptance (2026-08-04):** CVN3-AC001 through CVN3-AC028 are
+> accepted at source/test commit
+> `d9500f5a8ac285071586ba8eda380370eafd022f`. The independent review reported
+> P0/P1/P2 = `0/0/0`; typecheck, build, the 22-test lifecycle triad, the
+> 233-test full suite, Trellis validation, candidate `git diff --check`, and
+> the immutable CVN-1 SHA-256 gate all passed.
 
 ## 9. Planning completion and activation gate
 

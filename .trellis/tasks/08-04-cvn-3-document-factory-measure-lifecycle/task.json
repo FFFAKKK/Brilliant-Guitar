@@ -37,7 +37,7 @@
     ".trellis/spec/core-kernel/backend/quality-guidelines.md",
     ".trellis/tasks/08-04-cvn-3-document-factory-measure-lifecycle/review-candidate.md"
   ],
-  "notes": "ACTIVE / USER EXECUTION APPROVED 2026-08-04 / OPERATOR READY / CVN-1 ACCEPTED DEPENDENCY / CORE-ONLY / FACTORY PLUS FOUR EXACT MEASURE COMMANDS / NO HOT PLUG / NO WHOLE-DOCUMENT REPLACEMENT.",
+  "notes": "INDEPENDENTLY ACCEPTED 2026-08-04 / P0-P1-P2 0-0-0 / SOURCE-TEST COMMIT D9500F5 / CVN-1 ACCEPTED DEPENDENCY / CORE-ONLY / READY TO ARCHIVE.",
   "meta": {
     "planning_base_head": "d936d58195803ef938214948b21e89fe67939090",
     "dependency": "accepted_cvn_1",
@@ -87,7 +87,7 @@
     "task_start_run": true,
     "activation_head": "d936d58195803ef938214948b21e89fe67939090",
     "production_implementation_authorized": true,
-    "operator_state": "review_candidate_ready",
+    "operator_state": "independently_accepted_pending_archive",
     "stage_0_verification": {
       "recorded_at": "2026-08-04",
       "planning_commit": "e9737947b372a2608d5779ed3d6ca90c2b82e4ca",
@@ -137,8 +137,24 @@
       "protected_persisted_schema_diff": "passed_no_diff",
       "protected_cvn1_expected_fixture_diff": "passed_no_diff"
     },
-    "final_independent_review": "pending",
-    "final_independent_re_review": "pending",
-    "next_gate": "CVN3-AC028 independent final review"
+    "final_independent_review": "passed_2026-08-04",
+    "final_independent_re_review": "not_required_no_findings",
+    "accepted_source_test_commit": "d9500f5a8ac285071586ba8eda380370eafd022f",
+    "independent_review_head": "73402e2ead5a888b4b1152b42384d535bd99f97f",
+    "independent_review_findings": {
+      "P0": 0,
+      "P1": 0,
+      "P2": 0
+    },
+    "independent_review_verification": {
+      "typecheck": "passed",
+      "build": "passed",
+      "measure_lifecycle_test_count": 22,
+      "full_test_count": 233,
+      "trellis_validation": "passed",
+      "source_test_diff_check": "passed",
+      "cvn1_expected_trace_sha256": "CDBCFD68DCC84C514BCAC8BA83B44B819A237146C842E0F63E8F17A3CD2FF4D9"
+    },
+    "next_gate": "archive task and synchronize parent dependency status"
   }
 }
