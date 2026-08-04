@@ -5,5 +5,5 @@
 {"file": ".trellis/spec/core-kernel/backend/registry-capability.md", "reason": "Audit ten built-in command descriptors, title keys, capability authorization, and no hot-plug growth."}
 {"file": ".trellis/spec/core-kernel/backend/errors-reports.md", "reason": "Audit exact failure decoding, Issue details, deterministic diagnostics, and privacy."}
 {"file": ".trellis/spec/core-kernel/backend/quality-guidelines.md", "reason": "Drive full-diff regression, public export, hostile-input, forbidden-shortcut, and final full-suite checks."}
-{"file": ".trellis/tasks/08-04-cvn-3-document-factory-measure-lifecycle/research/current-measure-evidence.md", "reason": "Compare the implementation with the recorded live baseline, source seams, and previously identified gaps."}
+{"file": ".trellis/tasks/archive/2026-08/08-04-cvn-3-document-factory-measure-lifecycle/research/current-measure-evidence.md", "reason": "Compare the implementation with the recorded live baseline, source seams, and previously identified gaps."}
 {"file": ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-roadmap-and-stage-plan.md", "reason": "Audit that CVN-3 stays inside its roadmap ownership, preserves global Core VNext invariants and does not advance CVN-2, CVN-4 or later gates prematurely."}

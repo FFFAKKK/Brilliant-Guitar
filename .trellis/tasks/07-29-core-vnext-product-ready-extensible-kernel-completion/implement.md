@@ -2,7 +2,7 @@
 
 ## 1. Execution Status
 
-`PLANNING COORDINATION / CVN-0 AND CVN-1 ACCEPTED AND ARCHIVED / CVN-3 ACTIVE / CVN-2 AND CVN-4..7 INACTIVE`.
+`PLANNING COORDINATION / CVN-0 CVN-1 AND CVN-3 ACCEPTED AND ARCHIVED / CVN-4 DEPENDENCY SATISFIED / CVN-2 AND FORMAL CVN-4..7 INACTIVE`.
 
 This parent task coordinates independently verifiable children. It does not batch all production changes into one implementation branch. Each child must receive its own PRD/design/implement review, `task.py start`, independent technical audit and archive decision.
 
@@ -39,6 +39,7 @@ Every child records a fresh activation baseline and may not substitute these his
 - [x] Complete the CVN-3 PRD/design/implementation/research/context-manifest planning package before activating production implementation.
 - [x] Receive explicit user review approval and run `task.py start` for CVN-3 on 2026-08-04; task status is `in_progress` and operator handoff is authorized.
 - [x] Add the durable CVN dependency and stage recovery plan at `research/cvn-roadmap-and-stage-plan.md`, register it in parent/CVN-3 context, and define its maintenance protocol.
+- [x] Independently accept CVN-3 at `d9500f5` with P0/P1/P2 = `0/0/0`, record acceptance commit `3691d93`, archive the child, and mark the CVN-4 dependency satisfied.
 
 ## 4. Child Gate Map
 

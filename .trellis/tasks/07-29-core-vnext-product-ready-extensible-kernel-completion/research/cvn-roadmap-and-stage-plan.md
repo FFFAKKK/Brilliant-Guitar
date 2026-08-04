@@ -83,8 +83,8 @@ The graph is dependency-based rather than numeric-order-based. CVN-2 and CVN-3 a
 | CVN-0 | completed and archived | final independent re-review passed; 19 focused and 188 full tests recorded | retained as accepted prerequisite |
 | CVN-1 | completed and archived | final narrow re-review passed; 19 command-internals and 193 full tests recorded | retained as accepted transaction-spine base |
 | CVN-2 | parent-planned; child not created | CVN-1 accepted, GD-0 independent acceptance pending | create detailed child only after GD-0 acceptance and user approval |
-| CVN-3 | `in_progress` | user execution approved; task started on branch `codex/cvn-3-document-factory-measure-lifecycle` | implementation, verification, independent review, acceptance and archive |
-| CVN-4 | parent-planned; child not created | waits for accepted CVN-3 | detailed planning after dependency acceptance and user direction |
+| CVN-3 | completed and archived | independent review passed at `d9500f5` with P0/P1/P2 = `0/0/0`; 22 lifecycle and 233 full tests reproduced; acceptance commit `3691d93` | retained as accepted factory and Measure-lifecycle prerequisite |
+| CVN-4 | parent-planned; child not created | accepted/archived CVN-3 dependency is satisfied | detailed planning and formal child creation after user direction |
 | CVN-5 | parent-planned; child not created | waits for accepted CVN-2, CVN-3, CVN-4 and CVN-6 | detailed planning after all four dependencies are accepted |
 | CVN-6 | parent-planned; child not created | waits for accepted CVN-2 and CVN-1 | detailed planning after CVN-2 acceptance |
 | CVN-7 | parent-planned; child not created | waits for independently accepted and archived CVN-0 through CVN-6 | final qualification task |
@@ -95,6 +95,7 @@ Snapshot evidence:
 - CVN-1 final source commits: `f7c0064` and `1016d05`; acceptance `8362086`; archive `4bdc405`.
 - CVN-1 immutable expected trace SHA-256: `CDBCFD68DCC84C514BCAC8BA83B44B819A237146C842E0F63E8F17A3CD2FF4D9`.
 - CVN-3 activation baseline: `d936d58195803ef938214948b21e89fe67939090`.
+- CVN-3 accepted source/test commit: `d9500f5a8ac285071586ba8eda380370eafd022f`; independent review passed with P0/P1/P2 = `0/0/0`; acceptance commit `3691d93`.
 - GD-0 snapshot status: documentation review candidate; independent acceptance pending.
 
 ## 5. Exact Command Inventory
@@ -600,9 +601,9 @@ Creation alone does not authorize source changes. Parent planning status does no
 
 ## 16. Current Scheduling Decisions
 
-1. CVN-3 is the only active CVN child at this snapshot.
+1. CVN-3 is independently accepted and archived; no CVN implementation child is active at this snapshot.
 2. CVN-2 becomes eligible after independent GD-0 acceptance.
-3. CVN-4 becomes eligible after CVN-3 acceptance.
+3. CVN-4 is dependency-satisfied after CVN-3 acceptance/archive; activation still requires user direction.
 4. If CVN-2 and CVN-4 are both eligible, present the live comparison and activate only the user-approved next child.
 5. CVN-6 follows accepted CVN-2.
 6. CVN-5 waits for accepted CVN-2, CVN-3, CVN-4 and CVN-6.
@@ -625,14 +626,9 @@ Accepted children:
 
 - `.trellis/tasks/archive/2026-08/07-30-cvn-0-public-unknown-guard-consistency/`
 - `.trellis/tasks/archive/2026-08/08-04-cvn-1-command-transaction-registry-spine/`
+- `.trellis/tasks/archive/2026-08/08-04-cvn-3-document-factory-measure-lifecycle/`
 
-Active child at this snapshot:
-
-- `.trellis/tasks/08-04-cvn-3-document-factory-measure-lifecycle/task.json`
-- `.trellis/tasks/08-04-cvn-3-document-factory-measure-lifecycle/prd.md`
-- `.trellis/tasks/08-04-cvn-3-document-factory-measure-lifecycle/design.md`
-- `.trellis/tasks/08-04-cvn-3-document-factory-measure-lifecycle/implement.md`
-- `.trellis/tasks/08-04-cvn-3-document-factory-measure-lifecycle/research/current-measure-evidence.md`
+Active CVN implementation child at this snapshot: none.
 
 GD-0 dependency authority:
 
