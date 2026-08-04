@@ -5,6 +5,7 @@ import {
   CORE_COMPILED_REGISTRATION_ENTRIES,
   CORE_KERNEL_STARTUP_MANIFEST,
 } from "../../src/core-kernel/registry/builtins";
+import { DEFAULT_CORE_EXECUTION_ASSEMBLY } from "../../src/core-kernel/commands/execution-assembly";
 import {
   buildRegistryCandidate,
   createKernelRegistry,
@@ -192,6 +193,15 @@ test("compiled entries bind only the approved command and selector descriptors",
         "commandDefinition" in contribution && !("selector" in contribution),
     ),
     true,
+  );
+  if (commandEntry === undefined || commandEntry.kind !== "command") {
+    assert.fail("expected the frozen Core command entry");
+  }
+  assert.deepEqual(
+    commandEntry.contributions.map(({ commandDefinition }) => commandDefinition),
+    DEFAULT_CORE_EXECUTION_ASSEMBLY.definitions.map(
+      ({ commandId, targetKind }) => ({ commandId, targetKind }),
+    ),
   );
 
   assert.deepEqual(

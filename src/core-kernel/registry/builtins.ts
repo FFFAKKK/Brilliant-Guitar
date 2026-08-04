@@ -1,7 +1,5 @@
-import {
-  CORE_COMMAND_DEFINITIONS,
-  type CoreCommandId,
-} from "../commands/catalog";
+import type { CoreCommandId } from "../commands/catalog";
+import { DEFAULT_CORE_EXECUTION_ASSEMBLY } from "../commands/execution-assembly";
 import type { DocumentSnapshot, KernelReadState } from "../read/contracts";
 import { deepFreezeValue } from "../read/deep-freeze";
 import {
@@ -38,7 +36,10 @@ const SELECTOR_REQUIRED_CAPABILITIES = deepFreezeValue([
   "selector:execute",
 ] as const);
 
-type CoreCommandDefinition = (typeof CORE_COMMAND_DEFINITIONS)[number];
+type CoreCommandDefinition = Readonly<{
+  commandId: CoreCommandId;
+  targetKind: (typeof DEFAULT_CORE_EXECUTION_ASSEMBLY.definitions)[number]["targetKind"];
+}>;
 type CommandContributionDescriptor = Extract<
   RegistryContributionSummary,
   { readonly kind: "command" }
@@ -145,18 +146,20 @@ function readStateSelector(
 
 const CORE_COMMAND_CONTRIBUTIONS: readonly CompiledCommandContribution[] =
   deepFreezeValue(
-    CORE_COMMAND_DEFINITIONS.map((commandDefinition) => ({
-      descriptor: {
-        id: commandDefinition.commandId,
-        kind: "command" as const,
-        sourceModuleId: "core.commands",
-        apiVersion: 1 as const,
-        requiredCapabilities: COMMAND_REQUIRED_CAPABILITIES,
-        titleKey: COMMAND_TITLE_KEYS[commandDefinition.commandId],
-        targetKind: commandDefinition.targetKind,
-      },
-      commandDefinition,
-    })),
+    DEFAULT_CORE_EXECUTION_ASSEMBLY.definitions.map(
+      ({ commandId, targetKind }) => ({
+        descriptor: {
+          id: commandId,
+          kind: "command" as const,
+          sourceModuleId: "core.commands",
+          apiVersion: 1 as const,
+          requiredCapabilities: COMMAND_REQUIRED_CAPABILITIES,
+          titleKey: COMMAND_TITLE_KEYS[commandId],
+          targetKind,
+        },
+        commandDefinition: { commandId, targetKind },
+      }),
+    ),
   );
 
 const CORE_SELECTOR_CONTRIBUTIONS: readonly CompiledSelectorContribution[] =
