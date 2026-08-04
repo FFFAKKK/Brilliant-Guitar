@@ -19,7 +19,11 @@
 
 ### Main Changes
 
-(Add details)
+- Froze the six compatible Core V1 adapters in the private execution assembly and routed command decoding/preparation through it.
+- Replaced the legacy single-mutation path with one ordered nonempty effect-set transaction boundary, including reverse inverse history and generic affected-address event facts.
+- Split Registry candidate assembly and gateway capability state from the public runtime factory without changing the root export surface.
+- Removed the injectable document cloner after the atomicity review finding; the engine owns its single root clone and the failure regression proves caller isolation.
+- Recorded independent acceptance, archived CVN-1 in `4bdc405`, and synchronized the parent Core VNext roadmap in `709e14b`.
 
 ### Git Commits
 
@@ -30,7 +34,11 @@
 
 ### Testing
 
-- [OK] (Add test results)
+- [OK] `npm.cmd run typecheck` and build passed.
+- [OK] `command-internals` passed 19/19; the full suite passed 193/193.
+- [OK] The immutable characterization trace SHA-256 remained `CDBCFD68DCC84C514BCAC8BA83B44B819A237146C842E0F63E8F17A3CD2FF4D9`.
+- [OK] Trellis validation and `git diff --check` passed.
+- [OK] Final narrow independent re-review found no reproducible P0/P1/P2.
 
 ### Status
 
@@ -246,6 +254,45 @@ Completed fourth repair, final independent re-review, 188/188 regression gate, a
 |------|---------|
 | `c7ffd49` | (see git log) |
 | `cc9beee` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 8: CVN-1 transaction and registry spine
+
+**Date**: 2026-08-04
+**Task**: CVN-1 transaction and registry spine
+**Branch**: `codex/cvn-1-command-transaction-registry-spine`
+
+### Summary
+
+Completed the private command, ordered effect-set transaction, and Registry responsibility refactor; closed clone-isolation P2; recorded independent acceptance and archived CVN-1.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6d074ff` | (see git log) |
+| `b9d27c3` | (see git log) |
+| `6776cea` | (see git log) |
+| `f7c0064` | (see git log) |
+| `1016d05` | (see git log) |
+| `8362086` | (see git log) |
+| `709e14b` | (see git log) |
 
 ### Testing
 

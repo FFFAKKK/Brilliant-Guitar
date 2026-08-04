@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 7
+- **Total Sessions**: 8
 - **Last Active**: 2026-08-04
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~260 | Active |
+| `journal-1.md` | ~299 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 8 | 2026-08-04 | CVN-1 transaction and registry spine | `6d074ff`, `b9d27c3`, `6776cea`, `f7c0064`, `1016d05`, `8362086`, `709e14b` | `codex/cvn-1-command-transaction-registry-spine` |
 | 7 | 2026-08-04 | Accept CVN-0 public unknown guards | `c7ffd49`, `cc9beee` | `codex/cvn-0-public-unknown-guard-consistency` |
 | 6 | 2026-07-21 | K1-5 acceptance closure and K1-6 planning unlock | `b3127bf` | `codex/k1-5-errors-diagnostics-reports-migration` |
 | 5 | 2026-07-19 | K1-4 acceptance closure | `94766a0`, `b2a0c95` | `codex/k1-4-registry-capability-startup-registration` |
