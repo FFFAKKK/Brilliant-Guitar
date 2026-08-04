@@ -17,9 +17,16 @@
 - [x] Working tree contains only reviewed planning artifacts before operator edits.
 - [x] CVN-1 archive and final independent verdict are present.
 - [x] Both context manifests contain real entries and `task.py validate` passes.
-- [ ] Operator reads PRD -> design -> this plan -> every context-manifest entry in that order.
+- [x] Operator read PRD -> design -> this plan -> every context-manifest entry in that order.
 
 No production edit starts before all activation checks are recorded under this section.
+
+### Stage 0 evidence — 2026-08-04
+
+- Activation source baseline: `d936d58195803ef938214948b21e89fe67939090`; reviewed planning/activation commit: `e9737947b372a2608d5779ed3d6ca90c2b82e4ca` on `codex/cvn-3-document-factory-measure-lifecycle`.
+- Fresh checks passed: `npm.cmd run typecheck`, build, `command-spine-characterization` `1/1`, `command-internals` `19/19`, and full `npm.cmd test` `193/193`.
+- Immutable CVN-1 fixture SHA-256 remains `CDBCFD68DCC84C514BCAC8BA83B44B819A237146C842E0F63E8F17A3CD2FF4D9`.
+- CVN-3 context validation and `git diff --check` passed; the planning commit left the worktree clean before Stage 1.
 
 ## 3. Owned and protected surfaces
 

@@ -86,6 +86,18 @@
     "task_start_run": true,
     "activation_head": "d936d58195803ef938214948b21e89fe67939090",
     "production_implementation_authorized": true,
-    "operator_state": "ready_for_handoff"
+    "operator_state": "stage_0_baseline_verified",
+    "stage_0_verification": {
+      "recorded_at": "2026-08-04",
+      "planning_commit": "e9737947b372a2608d5779ed3d6ca90c2b82e4ca",
+      "typecheck": "passed",
+      "build": "passed",
+      "characterization_test_count": 1,
+      "command_internals_test_count": 19,
+      "full_test_count": 193,
+      "cvn1_expected_trace_sha256": "CDBCFD68DCC84C514BCAC8BA83B44B819A237146C842E0F63E8F17A3CD2FF4D9",
+      "task_validate": "passed",
+      "diff_check": "passed"
+    }
   }
 }
