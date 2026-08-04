@@ -4,7 +4,7 @@
 
 `USER APPROVED 2026-08-04 / TASK STARTED / OPERATOR HANDOFF READY / CHARACTERIZATION FIRST`.
 
-This file is the active operator handoff. User approval and `task.py start` were recorded on 2026-08-04 at activation HEAD `a8c7404cc34649aaa2c6ebfe8d93e46daf87dbf5`. No implementation stage or product test has run yet. The operator first creates an isolated planning commit from the approved task/parent documentation, restores a clean tree, and then begins Stage 0 followed by the characterization-only Stage 1.
+This file is the CVN-1 operator record. User approval and `task.py start` were recorded on 2026-08-04 at activation HEAD `a8c7404cc34649aaa2c6ebfe8d93e46daf87dbf5`; characterization and all implementation stages then completed on the isolated CVN-1 branch. The final narrow independent re-review passed on 2026-08-04, with only Trellis archive bookkeeping remaining.
 
 ## 2. Activation Preconditions
 
@@ -158,6 +158,12 @@ This stage touches `test/**` and task evidence only. It precedes production edit
 
 **Gate S2:** golden characterization, command internals/system and public API tests pass; no new root export.
 
+### Stage 2 record — 2026-08-04
+
+- Commit `6776cead1582d700ff7b617167b336aa8dce4f7f` added the frozen `core.commands` / `core.commands.v1` default execution assembly, its six adapter definitions, and assembly-routed detached command decoding.
+- Direct adapter tests cover exact catalog order, source identity, frozen construction, duplicate/target-kind rejection, and detached deeply frozen accepted envelopes.
+- The post-Stage-2 full suite passed at `191/191`; the immutable characterization JSON remained SHA-256 `CDBCFD68DCC84C514BCAC8BA83B44B819A237146C842E0F63E8F17A3CD2FF4D9`.
+
 ### Stage 3 — Ordered effect-set engine
 
 1. Add the five exact effect kinds in `effects.ts`.
@@ -230,6 +236,16 @@ This stage touches `test/**` and task evidence only. It precedes production edit
 
 **Gate S8:** no duplicate execution path; protected public behavior remains trace-equal.
 
+### Stages 3–8 implementation checkpoint — 2026-08-04
+
+- `effects.ts` now owns the one-root-clone ordered V1 effect-set application boundary. It derives inverses from the evolving candidate, reverses the inverse set, rejects an empty set before cloning, and never adopts a failed candidate.
+- The six frozen Core adapters own target/no-op/anchor preparation plus canonical affected addresses. `CommandRuntimeState` is assembly-bound; its history stores one accepted command, frozen forward/inverse nonempty effect sets, and the canonical address facts used by submit/undo/redo event publication.
+- Generic event publication now consumes those canonical facts without switching on Core commands or effects. `commands/mutations.ts` has been removed; source and executable tests have one effect applier and no legacy mutation consumer.
+- `registry/assembly.ts` owns normalized module/contribution validation, ordering, candidate state, and summary construction. `registry/gateway.ts` owns construction tokens, WeakMap state, authorization, and delegation. `registry/runtime.ts` remains the public factory/orchestration boundary. Built-in command descriptors derive from `DEFAULT_CORE_EXECUTION_ASSEMBLY.definitions`.
+- Current worktree evidence: typecheck/build pass; command/history/event/read/integration focus passed `64/64`; full `npm.cmd test` passed `193/193`; public export and forbidden-dependency checks passed; expected trace hash remains `CDBCFD68DCC84C514BCAC8BA83B44B819A237146C842E0F63E8F17A3CD2FF4D9`.
+- Independent-audit P2 repair: removed the injectable `cloneDocument` dependency from `applyCoreEffectSet()`. The engine now always owns `structuredClone(document)` internally; its two-effect failure regression counts exactly one root clone and proves the original input remains deeply unchanged after the later failure.
+- Final status: the repaired candidate was committed and the requested narrow independent re-review passed. The task remains `in_progress` only until the Trellis archive flow records completion.
+
 ### Stage 9 — Final evidence and independent review candidate
 
 1. Record final HEAD and diff against activation baseline.
@@ -241,6 +257,32 @@ This stage touches `test/**` and task evidence only. It precedes production edit
 7. Hand to an independent reviewer with `check.jsonl` context.
 
 **Gate S9:** reviewable candidate, clean commits, no completion/archive claim.
+
+### Stage 9 pre-commit evidence — 2026-08-04
+
+| Criterion | Operator evidence before independent review |
+|---|---|
+| AC001 | `b9d27c3` is the test-only characterization commit; the checked-in JSON remains SHA-256 `CDBCFD68DCC84C514BCAC8BA83B44B819A237146C842E0F63E8F17A3CD2FF4D9`. |
+| AC002–AC004 | `public-api-boundary`, `command-spine-characterization`, `command-internals`, and `command-system` retain the 48-export allowlist, six envelopes, strict decoder priority, and hostile-input behavior. |
+| AC005 | `the private default execution assembly freezes the six compatible adapters` proves source identity, all six definitions, duplicate/target rejection, and caller-definition isolation. |
+| AC006 | `ordered private effect sets clone once, derive reverse inverses, and stay atomic` covers distinct/same-target/dependent effects, reverse inversion, empty-before-clone, and failed-candidate isolation. The post-audit repair removes injectable cloning, counts the engine-owned root clone, and proves a later-effect failure leaves the input deeply unchanged. |
+| AC007–AC010 | `command-internals`, `command-system`, and the immutable characterization trace cover one-entry history, no-op/reject identity, undo/redo, semantic-before-support behavior, and repeated live/replay parity. |
+| AC011–AC012 | `event-system`, `dirty-checkpoint`, `read-system`, and both integration suites retain affected-address order, subscriber isolation, event reservation, snapshot, dirty, checkpoint, undo, and redo behavior. |
+| AC013 | `deep unknown extensions survive commit, rejection, undo, and redo` plus characterization replay retain opaque extension data and caller detachment. |
+| AC014–AC015 | `registry-contracts` and `registry-gateway` cover frozen 2-entry/6+6 Registry state, summary ordering, direct construction denial, gateway/capability ordering, all selectors, command parity, and no ready-state registration surface. |
+| AC016 | Existing event/report/failure boundary suites and the public characterization exclude effect/history/assembly/handler/raw-error leakage. |
+| AC017 | Current candidate passed `npm.cmd run typecheck`, `npm.cmd test` (`193/193`), focused suites (`64/64`), public API and forbidden-dependency tests, `git diff --check`, and `task.py validate`. |
+| AC018 | The narrow independent re-review passed with no new P0/P1/P2. It verified zero `cloneDocument` / `CoreEffectSetDependencies` references, engine-owned cloning, empty-before-clone rejection, one root clone, and atomic caller isolation after a later effect failure. |
+
+Protected source review found changes only in the planned command/session/event/Registry paths. `src/core-kernel/index.ts`, persisted codec/domain/model/report/migration paths, Guitar behavior, and the expected characterization JSON remain unchanged.
+
+### Stage 10 — Final independent re-review acceptance — 2026-08-04
+
+- Final production commits: `f7c0064420d0455fe84e5a2d550601c5bd724864` (ordered effect-set transaction spine) and `1016d053c9d322bb2258f1eef288895075c0c13d` (Registry responsibility split).
+- The prior P2 is closed: `applyCoreEffectSet()` has no caller-provided cloner, owns the root `structuredClone(document)`, rejects an empty effect set before cloning, and leaves the original document deeply unchanged when a later effect fails.
+- Fresh audit verification passed: typecheck, build, `command-internals` `19/19`, full `npm.cmd test` `193/193`, immutable trace SHA-256 `CDBCFD68DCC84C514BCAC8BA83B44B819A237146C842E0F63E8F17A3CD2FF4D9`, Trellis validation, and `git diff --check`.
+- Review verdict: no reproducible P0, P1, or P2; `CVN1-AC018` passes. The candidate retains the six-command, 48-root-export, persisted-schema, and Guitar-behavior boundaries.
+- Closeout: acceptance documentation is committed before invoking the Trellis archive flow; that flow records the completed lifecycle state and moves the task directory.
 
 ## 5. Focused Verification Commands
 

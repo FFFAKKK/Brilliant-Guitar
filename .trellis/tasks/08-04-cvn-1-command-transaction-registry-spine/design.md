@@ -2,7 +2,7 @@
 
 ## 1. Status and Design Authority
 
-- Lifecycle: `USER APPROVED 2026-08-04 / TASK ACTIVATED / OPERATOR HANDOFF READY`.
+- Lifecycle: `CVN-1 ACCEPTED 2026-08-04 / ARCHIVE PENDING`.
 - Parent observable authority: CVN-FC-010, CVN-FC-011 and CVN-FC-040.
 - Compatibility baseline: clean CVN-0-derived HEAD `a8c7404cc34649aaa2c6ebfe8d93e46daf87dbf5`.
 - This design fixes private organization for CVN-1. It does not add public behavior and does not import unaccepted GD-0 contracts.
@@ -353,8 +353,7 @@ Generic event publication consumes only:
   cause,
   commandId,
   affected,
-  previousDocument,
-  committedDocument,
+  documentId,
   documentVersion,
   dirtyBefore,
   dirtyAfter,
@@ -469,7 +468,7 @@ Internal tests may import package-private files directly, as existing Core tests
 - be deterministic and reset-free;
 - prove effect order, inverse order, frozen assembly and failure atomicity.
 
-To prove one root candidate clone, `applyEffectSet` may accept an optional package-private dependency object in direct internal tests, with a default `structuredClone` implementation. This parameter does not cross `CommandBus` or root exports. If the operator uses another proof mechanism, it must provide an equally decisive clone-count assertion.
+`applyCoreEffectSet()` owns its root candidate clone and exposes no injectable clone dependency. The direct internal regression temporarily wraps and restores `globalThis.structuredClone` to count the one root-document clone, then proves a later effect failure leaves the caller document deeply unchanged.
 
 ## 18. Compatibility and Rollback
 

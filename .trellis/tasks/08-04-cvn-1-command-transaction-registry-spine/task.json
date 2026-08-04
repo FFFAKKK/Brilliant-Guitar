@@ -52,7 +52,7 @@
     "test/core-kernel/public-api-boundary.test.ts",
     "test/core-kernel/forbidden-dependency-boundary.test.ts"
   ],
-  "notes": "USER APPROVED 2026-08-04 / TASK ACTIVATED / OPERATOR HANDOFF READY / CVN-FC-011 AND CVN-FC-040 / EXACT SIX V1 COMMANDS / ZERO NEW PUBLIC BEHAVIOR / CHARACTERIZATION-FIRST / PRIVATE FROZEN ASSEMBLY / ORDERED NONEMPTY EFFECT SETS / CLONE-ONCE CANDIDATE / SPLIT REGISTRY RESPONSIBILITIES.",
+  "notes": "CVN-1 ACCEPTED / CVN-FC-011 AND CVN-FC-040 / EXACT SIX V1 COMMANDS / ZERO NEW PUBLIC BEHAVIOR / CHARACTERIZATION-FIRST / PRIVATE FROZEN ASSEMBLY / ORDERED NONEMPTY EFFECT SETS / ENGINE-OWNED CLONE-ONCE CANDIDATE / SPLIT REGISTRY RESPONSIBILITIES / FINAL NARROW INDEPENDENT RE-REVIEW PASSED 2026-08-04 / ARCHIVE PENDING.",
   "meta": {
     "planning_base_head": "a8c7404cc34649aaa2c6ebfe8d93e46daf87dbf5",
     "cvn0_acceptance_commit": "cc9beee",
@@ -78,8 +78,15 @@
     "production_implementation_authorized": true,
     "task_start_run": true,
     "activation_head": "a8c7404cc34649aaa2c6ebfe8d93e46daf87dbf5",
-    "implementation_stage": "characterization_complete_private_assembly_next",
-    "independent_review": "not_started",
+    "implementation_stage": "accepted_pending_archive",
+    "independent_review": "passed_2026-08-04_narrow_re_review",
+    "final_independent_re_review": "passed_2026-08-04",
+    "final_independent_re_review_verdict": "pass_no_reproducible_p0_p1_p2",
+    "final_candidate_commit": "1016d053c9d322bb2258f1eef288895075c0c13d",
+    "final_implementation_commits": [
+      "f7c0064420d0455fe84e5a2d550601c5bd724864",
+      "1016d053c9d322bb2258f1eef288895075c0c13d"
+    ],
     "activation_commit": "6d074ff84a13692ff1127ff16dd492c7c59c6246",
     "activation_merge_base": "a8c7404cc34649aaa2c6ebfe8d93e46daf87dbf5",
     "activation_platform": {
@@ -102,6 +109,34 @@
       "case_count": 10,
       "post_characterization_full_test_count": 189,
       "expected_trace_regeneration_forbidden_after_stage1": true
+    },
+    "stage_2_commit": "6776cead1582d700ff7b617167b336aa8dce4f7f",
+    "implementation_checkpoint": {
+      "date": "2026-08-04",
+      "effect_history_event_spine": "implemented",
+      "registry_responsibility_split": "implemented",
+      "legacy_mutation_path": "removed",
+      "full_test_count": 193,
+      "focused_test_count": 64,
+      "expected_trace_sha256": "CDBCFD68DCC84C514BCAC8BA83B44B819A237146C842E0F63E8F17A3CD2FF4D9",
+      "root_export_count": 48,
+      "independent_review_status": "passed_2026-08-04_narrow_re_review",
+      "effect_clone_injection": "removed_from_production_signature",
+      "p2_repair_verification": {
+        "command_internals_test_count": 19,
+        "full_test_count": 193,
+        "diff_check": "passed",
+        "expected_trace_sha256": "CDBCFD68DCC84C514BCAC8BA83B44B819A237146C842E0F63E8F17A3CD2FF4D9",
+        "clone_injection_references": "none_in_src_or_executable_tests"
+      },
+      "final_narrow_re_review": {
+        "verdict": "pass_no_reproducible_p0_p1_p2",
+        "command_internals_test_count": 19,
+        "full_test_count": 193,
+        "expected_trace_sha256": "CDBCFD68DCC84C514BCAC8BA83B44B819A237146C842E0F63E8F17A3CD2FF4D9",
+        "clone_injection_references": "none_in_src_or_executable_tests",
+        "input_unchanged_after_later_effect_failure": true
+      }
     }
   }
 }
