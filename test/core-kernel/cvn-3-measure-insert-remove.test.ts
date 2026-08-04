@@ -171,6 +171,42 @@ test("insert resolves target and anchor before final semantic coverage and prese
   const bus = requireBus(source);
   const events = collectEvents(bus);
   const before = structuredClone(readDocument(bus));
+  const beforeRead = bus.read();
+
+  function assertStateUnchanged(): void {
+    assert.deepEqual(readDocument(bus), before);
+    assert.deepEqual(bus.read(), beforeRead);
+  }
+
+  function assertSemanticCode(input: unknown, code: string): void {
+    const diagnostics = requireSemanticFailure(bus.submit(input));
+    assert.equal(diagnostics.some((diagnostic) => diagnostic.code === code), true);
+    assertStateUnchanged();
+  }
+
+  const wrongDocument = insertMeasureCommand({
+    documentId: "cvn3-document-missing",
+    anchor: { kind: "start" },
+    definition: { id: "cvn3-wrong-document", meter: { numerator: 4, denominator: 4 } },
+    contents: [
+      {
+        partId: "cvn3-part-a",
+        voices: createCvn3InsertedVoices("cvn3-part-a", "cvn3-wrong-document"),
+      },
+      {
+        partId: "cvn3-part-b",
+        voices: createCvn3InsertedVoices("cvn3-part-b", "cvn3-wrong-document"),
+      },
+    ],
+  });
+  const wrongDocumentResult = bus.submit(wrongDocument);
+  assert.equal(wrongDocumentResult.status, "rejected");
+  assert.equal(
+    wrongDocumentResult.status === "rejected" &&
+      wrongDocumentResult.failure.code,
+    "command.target-not-found",
+  );
+  assertStateUnchanged();
 
   const missingPart = insertMeasureCommand({
     anchor: { kind: "start" },
@@ -188,7 +224,7 @@ test("insert resolves target and anchor before final semantic coverage and prese
     missingPartResult.status === "rejected" && missingPartResult.failure.code,
     "command.target-not-found",
   );
-  assert.deepEqual(readDocument(bus), before);
+  assertStateUnchanged();
 
   const invalidAnchor = insertMeasureCommand({
     anchor: { kind: "after-measure", measureId: "measure-missing" },
@@ -210,7 +246,7 @@ test("insert resolves target and anchor before final semantic coverage and prese
     invalidAnchorResult.status === "rejected" && invalidAnchorResult.failure.code,
     "command.anchor-not-found",
   );
-  assert.deepEqual(readDocument(bus), before);
+  assertStateUnchanged();
 
   const missingCoverage = insertMeasureCommand({
     anchor: { kind: "start" },
@@ -222,16 +258,91 @@ test("insert resolves target and anchor before final semantic coverage and prese
       },
     ],
   });
-  const missingCoverageDiagnostics = requireSemanticFailure(
-    bus.submit(missingCoverage),
+  assertSemanticCode(missingCoverage, "semantic.measure-coverage-missing");
+
+  const duplicateCoverageId = "cvn3-coverage-duplicate";
+  const duplicateCoverage = insertMeasureCommand({
+    anchor: { kind: "start" },
+    definition: { id: duplicateCoverageId, meter: { numerator: 4, denominator: 4 } },
+    contents: [
+      {
+        partId: "cvn3-part-a",
+        voices: createCvn3InsertedVoices("cvn3-part-a", duplicateCoverageId),
+      },
+      {
+        partId: "cvn3-part-a",
+        voices: createCvn3InsertedVoices("cvn3-part-a", duplicateCoverageId),
+      },
+      {
+        partId: "cvn3-part-b",
+        voices: createCvn3InsertedVoices("cvn3-part-b", duplicateCoverageId),
+      },
+    ],
+  });
+  assertSemanticCode(duplicateCoverage, "semantic.measure-coverage-duplicate");
+
+  const invalidStaffId = "cvn3-staff-reference";
+  const invalidStaffVoices = structuredClone(
+    createCvn3InsertedVoices("cvn3-part-a", invalidStaffId),
+  ) as [Voice];
+  (invalidStaffVoices[0] as { defaultStaffId: string }).defaultStaffId =
+    "staff-missing";
+  assertSemanticCode(
+    insertMeasureCommand({
+      anchor: { kind: "start" },
+      definition: { id: invalidStaffId, meter: { numerator: 4, denominator: 4 } },
+      contents: [
+        { partId: "cvn3-part-a", voices: invalidStaffVoices },
+        {
+          partId: "cvn3-part-b",
+          voices: createCvn3InsertedVoices("cvn3-part-b", invalidStaffId),
+        },
+      ],
+    }),
+    "semantic.staff-reference-missing",
   );
-  assert.equal(
-    missingCoverageDiagnostics.some(
-      ({ code }) => code === "semantic.measure-coverage-missing",
-    ),
-    true,
+
+  const invalidSequenceId = "cvn3-sequence-invalid";
+  const invalidSequenceVoices = structuredClone(
+    createCvn3InsertedVoices("cvn3-part-a", invalidSequenceId),
+  ) as [Voice];
+  (invalidSequenceVoices[0]!.sequence.start as { numerator: number }).numerator =
+    -1;
+  assertSemanticCode(
+    insertMeasureCommand({
+      anchor: { kind: "start" },
+      definition: { id: invalidSequenceId, meter: { numerator: 4, denominator: 4 } },
+      contents: [
+        { partId: "cvn3-part-a", voices: invalidSequenceVoices },
+        {
+          partId: "cvn3-part-b",
+          voices: createCvn3InsertedVoices("cvn3-part-b", invalidSequenceId),
+        },
+      ],
+    }),
+    "semantic.fraction-sign-invalid",
   );
-  assert.deepEqual(readDocument(bus), before);
+
+  const duplicateEntityId = "cvn3-entity-duplicate";
+  const duplicateEntityVoices = structuredClone(
+    createCvn3InsertedVoices("cvn3-part-a", duplicateEntityId),
+  ) as [Voice];
+  (duplicateEntityVoices[0] as { id: string }).id =
+    "cvn3-part-a-cvn3-measure-1-voice";
+  assertSemanticCode(
+    insertMeasureCommand({
+      anchor: { kind: "start" },
+      definition: { id: duplicateEntityId, meter: { numerator: 4, denominator: 4 } },
+      contents: [
+        { partId: "cvn3-part-a", voices: duplicateEntityVoices },
+        {
+          partId: "cvn3-part-b",
+          voices: createCvn3InsertedVoices("cvn3-part-b", duplicateEntityId),
+        },
+      ],
+    }),
+    "semantic.id-duplicate",
+  );
 
   const duplicateDefinition = insertMeasureCommand({
     anchor: { kind: "after-measure", measureId: "cvn3-measure-1" },
@@ -259,7 +370,7 @@ test("insert resolves target and anchor before final semantic coverage and prese
       details: { id: "cvn3-measure-2" },
     },
   ]);
-  assert.deepEqual(readDocument(bus), before);
+  assertStateUnchanged();
   assert.equal(events.length, 0);
 });
 

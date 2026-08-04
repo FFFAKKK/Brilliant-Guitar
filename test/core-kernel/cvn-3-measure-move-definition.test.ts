@@ -138,6 +138,29 @@ test("move synchronizes all Part lists without changing aggregate values and pre
   assert.equal(committedEvents(events).length, 1);
 });
 
+test("move forward after a later Measure keeps every Part order synchronized", () => {
+  const initial = cloneCvn3MeasureFixture();
+  const aggregateBefore = aggregateValues(initial);
+  const bus = requireBus(initial);
+
+  const result = bus.submit(
+    moveMeasureCommand("cvn3-measure-1", {
+      kind: "after-measure",
+      measureId: "cvn3-measure-3",
+    }),
+  );
+
+  assert.equal(result.status, "committed");
+  const afterMove = readDocument(bus);
+  assert.deepEqual(afterMove.measureDefinitions.map(({ id }) => id), [
+    "cvn3-measure-2",
+    "cvn3-measure-3",
+    "cvn3-measure-1",
+  ]);
+  assertSynchronizedMeasureOrders(afterMove);
+  assert.deepEqual(aggregateValues(afterMove), aggregateBefore);
+});
+
 test("a requested global no-op normalizes shuffled Part order and its inverse restores every original order", () => {
   const initial = createCvn3ShuffledMeasureFixture();
   const before = structuredClone(initial);

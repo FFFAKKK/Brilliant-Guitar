@@ -390,6 +390,17 @@ for (const entry of lifecycleCases()) {
       "caller-mutated";
     assert.deepEqual(readDocument(bus), after);
     assert.deepEqual(after.extensions, before.extensions);
+
+    let getCalls = 0;
+    const proxied = new Proxy(entry.create(), {
+      get(target, key, receiver) {
+        getCalls += 1;
+        return Reflect.get(target, key, receiver);
+      },
+    });
+    const proxiedResult = requireBus(cloneCvn3MeasureFixture()).submit(proxied);
+    assert.equal(proxiedResult.status, "committed");
+    assert.equal(getCalls, 0);
   });
 }
 
