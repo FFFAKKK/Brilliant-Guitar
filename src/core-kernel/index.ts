@@ -22,6 +22,13 @@ export * from "./domain/score-document";
 export * from "./domain/address";
 export * from "./codec/decode-score-document";
 export * from "./codec/score-json";
+export { createScoreDocument } from "./factory/create-score-document";
+export type {
+  CreateScoreDocumentFailure,
+  CreateScoreDocumentInputV1,
+  CreateScoreDocumentResult,
+  InitialPartV1,
+} from "./factory/contracts";
 export * from "./validation/diagnostics";
 export * from "./validation/validate-score-semantics";
 export * from "./profiles/score-feature-profile";

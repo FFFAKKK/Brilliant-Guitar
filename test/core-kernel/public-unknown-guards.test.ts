@@ -662,11 +662,11 @@ test("UG-T12 every call observes current descriptors without retained cache", ()
   assert.equal(jsonValueGuard(json), true);
 });
 
-test("UG-T13 guard signatures and the 48-name public surface stay fixed", () => {
+test("UG-T13 guard signatures remain fixed while CVN-3 adds one factory export", () => {
   assert.strictEqual(jsonValueGuard, coreKernel.isJsonValue);
   assert.strictEqual(writtenPitchGuard, coreKernel.isWrittenPitch);
   assert.strictEqual(transpositionGuard, coreKernel.isTransposition);
-  assert.equal(Object.keys(coreKernel).length, 48);
+  assert.equal(Object.keys(coreKernel).length, 49);
   assert.deepEqual(
     Object.keys(coreKernel)
       .filter((name) => name.startsWith("is"))

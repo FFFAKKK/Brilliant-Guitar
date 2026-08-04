@@ -27,18 +27,19 @@ import {
 } from "../domain/score-document";
 import {
   createDiagnostic,
-  type Diagnostic,
-  type DiagnosticCode,
+  type DecodeDiagnostic,
   type DiagnosticPath,
 } from "../validation/diagnostics";
 
 type PlainRecord = Record<string, unknown>;
 
 export class ScoreComponentDecodeContext {
-  readonly diagnostics: Diagnostic[] = [];
+  readonly diagnostics: DecodeDiagnostic[] = [];
+
+  constructor(private readonly requireSafeIntegers: boolean = false) {}
 
   add(
-    code: DiagnosticCode,
+    code: DecodeDiagnostic["code"],
     path: DiagnosticPath,
     details?: JsonObject,
   ): void {
@@ -102,6 +103,19 @@ export class ScoreComponentDecodeContext {
       return undefined;
     }
     return value;
+  }
+
+  integer(value: unknown, path: DiagnosticPath): number | undefined {
+    const decoded = this.number(value, path);
+    if (
+      decoded !== undefined &&
+      this.requireSafeIntegers &&
+      !Number.isSafeInteger(decoded)
+    ) {
+      this.add("decode.type", path, { expected: "safe-integer" });
+      return undefined;
+    }
+    return decoded;
   }
 
   literal<T extends string | number>(
@@ -175,8 +189,8 @@ export function decodeFraction(
   if (input === undefined) {
     return undefined;
   }
-  const numerator = context.number(input.numerator, [...path, "numerator"]);
-  const denominator = context.number(
+  const numerator = context.integer(input.numerator, [...path, "numerator"]);
+  const denominator = context.integer(
     input.denominator,
     [...path, "denominator"],
   );
@@ -194,11 +208,11 @@ export function decodeTimeModification(
   if (input === undefined) {
     return undefined;
   }
-  const actualNotes = context.number(
+  const actualNotes = context.integer(
     input.actualNotes,
     [...path, "actualNotes"],
   );
-  const normalNotes = context.number(
+  const normalNotes = context.integer(
     input.normalNotes,
     [...path, "normalNotes"],
   );
@@ -256,7 +270,7 @@ export function decodeMeter(
   if (input === undefined) {
     return undefined;
   }
-  const numerator = context.number(input.numerator, [...path, "numerator"]);
+  const numerator = context.integer(input.numerator, [...path, "numerator"]);
   const denominator = context.literal(
     input.denominator,
     [...path, "denominator"],
@@ -343,11 +357,11 @@ export function decodeTransposition(
   if (input === undefined) {
     return undefined;
   }
-  const diatonicSteps = context.number(
+  const diatonicSteps = context.integer(
     input.diatonicSteps,
     [...path, "diatonicSteps"],
   );
-  const chromaticSemitones = context.number(
+  const chromaticSemitones = context.integer(
     input.chromaticSemitones,
     [...path, "chromaticSemitones"],
   );
@@ -406,7 +420,7 @@ export function decodeStaff(
     return undefined;
   }
   const id = context.string(input.id, [...path, "id"]);
-  const lineCount = context.number(input.lineCount, [...path, "lineCount"]);
+  const lineCount = context.integer(input.lineCount, [...path, "lineCount"]);
   const defaultClef = decodeClef(
     input.defaultClef,
     [...path, "defaultClef"],
@@ -438,7 +452,7 @@ export function decodeWrittenPitch(
   const alter = context.literal(input.alter, [...path, "alter"], [
     -2, -1, 0, 1, 2,
   ] as const);
-  const octave = context.number(input.octave, [...path, "octave"]);
+  const octave = context.integer(input.octave, [...path, "octave"]);
   return step === undefined || alter === undefined || octave === undefined
     ? undefined
     : { step, alter, octave };
@@ -741,7 +755,7 @@ export function decodeExtension(
     return undefined;
   }
   const namespace = context.string(input.namespace, [...path, "namespace"]);
-  const schemaVersion = context.number(
+  const schemaVersion = context.integer(
     input.schemaVersion,
     [...path, "schemaVersion"],
   );
