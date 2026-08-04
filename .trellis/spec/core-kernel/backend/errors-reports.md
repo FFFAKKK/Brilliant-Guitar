@@ -234,3 +234,85 @@ Unknown `ExtensionBlock` JSON remains deeply equal. Repeated execution is determ
 - Run typecheck, build, full tests, forbidden-dependency/public-export tests, Trellis validation, and diff check.
 
 K1-5 intentionally exposes no `KernelDiagnostic`, `ImportReport`, `ExportReport`, `RecoveryReport`, second `ValidationReport`, `MigrationContribution`, global issue/event bus, dynamic migration registration, physical IO, or public error classes.
+
+## CVN-3 Review Candidate: Measure Failure Issue Facts (2026-08-04)
+
+> Source/test candidate: `d9500f5a8ac285071586ba8eda380370eafd022f`.
+> This closed-union addition is implementation-verified and remains pending
+> independent CVN3-AC028 review.
+
+### 1. Scope / Trigger
+
+Apply this candidate only when mapping a `CommandFailure` from the four static
+Measure lifecycle commands. It adds no report kind, public builder, dynamic
+code family, or arbitrary error-details passthrough.
+
+### 2. Signatures
+
+```typescript
+type Cvn3CommandFailure =
+  | { readonly code: "command.anchor-self-reference" }
+  | {
+      readonly code: "command.resource-limit-exceeded";
+      readonly limitKind: "input-depth" | "input-properties";
+      readonly limit: number;
+      readonly actual: number;
+    };
+
+mapCommandFailureToKernelIssues(
+  failure: CommandFailure,
+): readonly KernelIssue[];
+```
+
+### 3. Contracts
+
+- `command.anchor-self-reference` is a code-only command issue with no target,
+  anchor ID, raw input, exception text, or implementation detail.
+- `command.resource-limit-exceeded` produces exactly one command issue whose
+  details contain only `limitKind`, `limit`, and `actual` after strict exact
+  record decoding.
+- The report decoder rejects extra fields, accessors, sparse/cyclic values,
+  hostile Proxies, unsafe numbers, and unsupported limit strings as
+  `report.invalid-input`; it never spreads an input failure object.
+- The command failure-code table remains compiler-exhaustive over the closed
+  `CommandFailure["code"]` union.
+
+### 4. Validation & Error Matrix
+
+| Failure value | Mapped issue | Allowed details |
+| --- | --- | --- |
+| `{ code: "command.anchor-self-reference" }` | one error, command source | none |
+| exact depth resource failure | one error, command source | `input-depth`, `64`, `65` |
+| exact property resource failure | one error, command source | `input-properties`, `1048576`, `1048577` |
+| any malformed/extra resource object | one `report.invalid-input` issue | none from input |
+
+### 5. Good / Base / Bad Cases
+
+- Good: a move-to-self rejection maps to one privacy-safe command issue.
+- Base: the exact bounded-capture failure retains its numeric limit facts for
+  operator remediation without retaining envelope data.
+- Bad: map a generic `Error`, append `message`, stack, target, or arbitrary
+  resource keys to issue details.
+
+### 6. Tests Required
+
+- `kernel-failure-adapters.test.ts` must cover each closed failure code and the
+  exact resource detail allowlist.
+- `cvn-3-transaction-integration.test.ts` must drive both strict-capture
+  resource boundaries through the command path.
+- Full tests must preserve descriptor-first malformed-input rejection and the
+  public report/privacy boundary.
+
+### 7. Wrong vs Correct
+
+```typescript
+// Wrong: leaks arbitrary failure fields into a public issue.
+return operationIssue(failure.code, "command", { ...failure });
+
+// Correct: select the three reviewed resource facts only.
+return operationIssue("command.resource-limit-exceeded", "command", {
+  limitKind: failure.limitKind,
+  limit: failure.limit,
+  actual: failure.actual,
+});
+```

@@ -347,49 +347,55 @@ Factory priority is: strict capture resource over later schema diagnostics once 
 
 ### Factory
 
-- [ ] **CVN3-AC001:** minimum one-Measure/one-Part/one-Staff/one-Voice input creates the exact `brilliant-score-1` document and detached support result.
-- [ ] **CVN3-AC002:** multi-Part input creates one canonical content per Part and returns `created` even when profile support is `unsupported`.
-- [ ] **CVN3-AC003:** exact field/union/tuple diagnostics cover extra fields, wrong version, empty initialParts/staves/voices, sparse arrays and non-finite/unsafe numeric fields.
-- [ ] **CVN3-AC004:** semantic cases cover empty/duplicate IDs, wrong Staff references, invalid sequence, invalid extension owner/payload, invalid meter/pickup and deterministic full diagnostics.
-- [ ] **CVN3-AC005:** repeated calls are deeply equal; caller mutation after return changes neither document nor support; all returned values are deeply frozen.
-- [ ] **CVN3-AC006:** getter/Proxy/accessor/symbol/sparse/cycle/coercion/toJSON fixtures return stable results with zero getter/`get`/method calls and no thrown exception.
-- [ ] **CVN3-AC007:** depth 64 versus 65 and property count 1,048,576 versus 1,048,577 return the exact non-resource/resource distinctions and values.
+- [x] **CVN3-AC001:** minimum one-Measure/one-Part/one-Staff/one-Voice input creates the exact `brilliant-score-1` document and detached support result.
+- [x] **CVN3-AC002:** multi-Part input creates one canonical content per Part and returns `created` even when profile support is `unsupported`.
+- [x] **CVN3-AC003:** exact field/union/tuple diagnostics cover extra fields, wrong version, empty initialParts/staves/voices, sparse arrays and non-finite/unsafe numeric fields.
+- [x] **CVN3-AC004:** semantic cases cover empty/duplicate IDs, wrong Staff references, invalid sequence, invalid extension owner/payload, invalid meter/pickup and deterministic full diagnostics.
+- [x] **CVN3-AC005:** repeated calls are deeply equal; caller mutation after return changes neither document nor support; all returned values are deeply frozen.
+- [x] **CVN3-AC006:** getter/Proxy/accessor/symbol/sparse/cycle/coercion/toJSON fixtures return stable results with zero getter/`get`/method calls and no thrown exception.
+- [x] **CVN3-AC007:** depth 64 versus 65 and property count 1,048,576 versus 1,048,577 return the exact non-resource/resource distinctions and values.
 
 ### Catalog and insert
 
-- [ ] **CVN3-AC008:** catalog order is the six accepted IDs followed by the four CVN-3 IDs with exact targets and title keys.
-- [ ] **CVN3-AC009:** valid shuffled-per-Part insert commits one synchronized Measure aggregate and preserves Voice/Event/Note order.
-- [ ] **CVN3-AC010:** insert covers missing/duplicate/extra Part references, duplicate entity IDs, wrong Staff references, invalid sequence, invalid anchor, wrong document and full rejection-state equality.
-- [ ] **CVN3-AC011:** insert undo/redo/replay exactly restores/reapplies encoded document, history, dirty/checkpoint and event/affected-address behavior.
+- [x] **CVN3-AC008:** catalog order is the six accepted IDs followed by the four CVN-3 IDs with exact targets and title keys.
+- [x] **CVN3-AC009:** valid shuffled-per-Part insert commits one synchronized Measure aggregate and preserves Voice/Event/Note order.
+- [x] **CVN3-AC010:** insert covers missing/duplicate/extra Part references, duplicate entity IDs, wrong Staff references, invalid sequence, invalid anchor, wrong document and full rejection-state equality.
+- [x] **CVN3-AC011:** insert undo/redo/replay exactly restores/reapplies encoded document, history, dirty/checkpoint and event/affected-address behavior.
 
 ### Remove
 
-- [ ] **CVN3-AC012:** valid remove deletes the exact Measure/Voice/Event/Note aggregate from global and all Part lists while preserving extensions.
-- [ ] **CVN3-AC013:** remove undo restores every value and original global/per-Part position; redo and replay match the live result.
-- [ ] **CVN3-AC014:** removing the final Measure returns `command.semantic-invalid` containing `semantic.measure-required` with complete pre/post state equality and zero events.
+- [x] **CVN3-AC012:** valid remove deletes the exact Measure/Voice/Event/Note aggregate from global and all Part lists while preserving extensions.
+- [x] **CVN3-AC013:** remove undo restores every value and original global/per-Part position; redo and replay match the live result.
+- [x] **CVN3-AC014:** removing the final Measure returns `command.semantic-invalid` containing `semantic.measure-required` with complete pre/post state equality and zero events.
 
 ### Move
 
-- [ ] **CVN3-AC015:** start, forward and backward moves keep global and every Part order identical while all aggregate values remain deeply equal.
-- [ ] **CVN3-AC016:** self-reference, missing target, missing anchor and invalid anchor shapes return exact failures with unchanged state.
-- [ ] **CVN3-AC017:** already-positioned aligned move is no-op; a pre-shuffled valid Part layout is normalized by a changed move and undo restores the exact shuffled order.
-- [ ] **CVN3-AC018:** move undo/redo/replay and affected-address order are exact.
+- [x] **CVN3-AC015:** start, forward and backward moves keep global and every Part order identical while all aggregate values remain deeply equal.
+- [x] **CVN3-AC016:** self-reference, missing target, missing anchor and invalid anchor shapes return exact failures with unchanged state.
+- [x] **CVN3-AC017:** already-positioned aligned move is no-op; a pre-shuffled valid Part layout is normalized by a changed move and undo restores the exact shuffled order.
+- [x] **CVN3-AC018:** move undo/redo/replay and affected-address order are exact.
 
 ### Set definition
 
-- [ ] **CVN3-AC019:** meter/pickup set, pickup removal and exact no-op cases produce the required documents/results.
-- [ ] **CVN3-AC020:** a definition that makes any Part sequence invalid rejects atomically with exact semantic diagnostics.
-- [ ] **CVN3-AC021:** semantic-valid profile-unsupported meter/pickup commits with unsupported support; undo/redo/replay are exact.
+- [x] **CVN3-AC019:** meter/pickup set, pickup removal and exact no-op cases produce the required documents/results.
+- [x] **CVN3-AC020:** a definition that makes any Part sequence invalid rejects atomically with exact semantic diagnostics.
+- [x] **CVN3-AC021:** semantic-valid profile-unsupported meter/pickup commits with unsupported support; undo/redo/replay are exact.
 
 ### Cross-cutting compatibility and quality
 
-- [ ] **CVN3-AC022:** each of the four IDs independently covers valid, no-op where applicable, invalid/extra/wrong target, target/anchor/reference, semantic, exact before/after, undo, redo, replay, checkpoint/dirty/redo-clear/event, hostile input, caller mutation and extension preservation cases required by CVN-FC-140.
-- [ ] **CVN3-AC023:** new command depth/property resource failures and their Issue mappings contain only allowlisted code/limits.
-- [ ] **CVN3-AC024:** direct bus and capability-authorized gateway results/state/events are deeply equal for all four IDs; denial occurs before mutation.
-- [ ] **CVN3-AC025:** projected CVN-1 trace remains equal to its immutable expected fixture and accepted SHA-256; the additive surface is exactly 49 exports/10 commands/10 Registry command descriptors.
-- [ ] **CVN3-AC026:** typecheck, build, focused tests, full tests, `git diff --check`, forbidden-dependency scan and Trellis validation pass.
-- [ ] **CVN3-AC027:** no public/private whole-document replacement shortcut, no persisted schema change and no Guitar/module-runtime dependency appears in the full diff.
+- [x] **CVN3-AC022:** each of the four IDs independently covers valid, no-op where applicable, invalid/extra/wrong target, target/anchor/reference, semantic, exact before/after, undo, redo, replay, checkpoint/dirty/redo-clear/event, hostile input, caller mutation and extension preservation cases required by CVN-FC-140.
+- [x] **CVN3-AC023:** new command depth/property resource failures and their Issue mappings contain only allowlisted code/limits.
+- [x] **CVN3-AC024:** direct bus and capability-authorized gateway results/state/events are deeply equal for all four IDs; denial occurs before mutation.
+- [x] **CVN3-AC025:** projected CVN-1 trace remains equal to its immutable expected fixture and accepted SHA-256; the additive surface is exactly 49 exports/10 commands/10 Registry command descriptors.
+- [x] **CVN3-AC026:** typecheck, build, focused tests, full tests, `git diff --check`, forbidden-dependency scan and Trellis validation pass.
+- [x] **CVN3-AC027:** no public/private whole-document replacement shortcut, no persisted schema change and no Guitar/module-runtime dependency appears in the full diff.
 - [ ] **CVN3-AC028:** independent final review reports no reproducible release-blocking finding and records the accepted source/test commit before archive.
+
+> **Operator evidence status (2026-08-04):** CVN3-AC001 through
+> CVN3-AC027 are implementation-verified at source/test candidate
+> `d9500f5a8ac285071586ba8eda380370eafd022f`; the evidence matrix is
+> `review-candidate.md`. This is not final acceptance. CVN3-AC028 remains the
+> independent-review gate.
 
 ## 9. Planning completion and activation gate
 

@@ -112,12 +112,12 @@ Record exact counts and the projected trace hash before Stage 1. A baseline fail
 
 Goal: make the prior trace explicitly project its frozen V1 surface before adding CVN-3 behavior.
 
-- [ ] Add test-only constants for the original 48 runtime names and six command IDs.
-- [ ] Project runtime exports/catalog/Registry command descriptors exactly as `design.md` section 15 states.
-- [ ] Leave all six-command document/result/history/replay/event values unprojected.
-- [ ] Keep `cvn-1-characterization.expected.json` byte-identical.
-- [ ] Prove projected trace equals expected JSON and accepted SHA-256.
-- [ ] Add an initially current-surface CVN-3 fixture capturing 48/6 before feature commits, then update it only in the additive feature commit.
+- [x] Add test-only constants for the original 48 runtime names and six command IDs.
+- [x] Project runtime exports/catalog/Registry command descriptors exactly as `design.md` section 15 states.
+- [x] Leave all six-command document/result/history/replay/event values unprojected.
+- [x] Keep `cvn-1-characterization.expected.json` byte-identical.
+- [x] Prove projected trace equals expected JSON and accepted SHA-256.
+- [x] Add an initially current-surface CVN-3 fixture capturing 48/6 before feature commits, then update it only in the additive feature commit.
 
 Verification:
 
@@ -134,12 +134,12 @@ Required commit boundary: **test-only characterization/projection**. No `src/**`
 
 Goal: land reusable private infrastructure with zero new public feature behavior.
 
-- [ ] Add iterative `strict-input-capture.ts` with exact depth/property accounting.
-- [ ] Add hostile-input tests for plain/null records, cross-realm dense arrays, accessors, Proxies, symbols, sparse arrays, cycles, shared DAGs, poisoned methods and deep input.
-- [ ] Add exact `64/65` and `1,048,576/1,048,577` tests against the private capture result.
-- [ ] Extract the current component decode logic into `score-component-codec.ts`.
-- [ ] Keep public `decodeScoreDocument` result/diagnostic/round-trip behavior unchanged.
-- [ ] Verify no new symbol is exported from Core root.
+- [x] Add iterative `strict-input-capture.ts` with exact depth/property accounting.
+- [x] Add hostile-input tests for plain/null records, cross-realm dense arrays, accessors, Proxies, symbols, sparse arrays, cycles, shared DAGs, poisoned methods and deep input.
+- [x] Add exact `64/65` and `1,048,576/1,048,577` tests against the private capture result.
+- [x] Extract the current component decode logic into `score-component-codec.ts`.
+- [x] Keep public `decodeScoreDocument` result/diagnostic/round-trip behavior unchanged.
+- [x] Verify no new symbol is exported from Core root.
 
 Verification:
 
@@ -161,15 +161,15 @@ Required commit boundary: **private refactor only**. Public runtime count remain
 
 Goal: add `createScoreDocument` without touching active bus state.
 
-- [ ] Add exact factory contracts and type exports.
-- [ ] Implement fixed field-order decoder and tuple-nonempty checks.
-- [ ] Construct exactly one initial Measure/content per Part.
-- [ ] Run Core semantic validation before profile classification.
-- [ ] Sort factory decode/semantic diagnostics by path/code.
-- [ ] Deep-freeze the complete created/rejected result.
-- [ ] Export only the factory function at runtime.
-- [ ] Add minimum, multi-Part, invalid shape, semantic invalid, profile unsupported, determinism, alias isolation, hostile input and resource tests.
-- [ ] Assert the factory does not create/reset a bus, Registry, history or event source.
+- [x] Add exact factory contracts and type exports.
+- [x] Implement fixed field-order decoder and tuple-nonempty checks.
+- [x] Construct exactly one initial Measure/content per Part.
+- [x] Run Core semantic validation before profile classification.
+- [x] Sort factory decode/semantic diagnostics by path/code.
+- [x] Deep-freeze the complete created/rejected result.
+- [x] Export only the factory function at runtime.
+- [x] Add minimum, multi-Part, invalid shape, semantic invalid, profile unsupported, determinism, alias isolation, hostile input and resource tests.
+- [x] Assert the factory does not create/reset a bus, Registry, history or event source.
 
 Verification:
 
@@ -188,14 +188,14 @@ Required commit boundary: **factory capability**. Expected runtime exports becom
 
 Goal: establish exact compile-time/runtime routing surface before behavior commits.
 
-- [ ] Append four catalog definitions in fixed order.
-- [ ] Add `MeasureAnchor`, payload/envelope types and staged failures.
-- [ ] Add `inputBoundary` to all ten adapters; six legacy/four bounded.
-- [ ] Make default execution assembly require ten exact definitions.
-- [ ] Add four Registry title keys and descriptor expectations.
-- [ ] Decode/map self-reference and resource-limit failures with exact privacy-safe details.
-- [ ] Add surface fixture asserting 49 exports, 10 catalog entries and 10 Registry command descriptors.
-- [ ] Keep the four adapters present but route them only when their complete prepare paths exist in the same commit; no placeholder handler may ship.
+- [x] Append four catalog definitions in fixed order.
+- [x] Add `MeasureAnchor`, payload/envelope types and staged failures.
+- [x] Add `inputBoundary` to all ten adapters; six legacy/four bounded.
+- [x] Make default execution assembly require ten exact definitions.
+- [x] Add four Registry title keys and descriptor expectations.
+- [x] Decode/map self-reference and resource-limit failures with exact privacy-safe details.
+- [x] Add surface fixture asserting 49 exports, 10 catalog entries and 10 Registry command descriptors.
+- [x] Keep the four adapters present but route them only when their complete prepare paths exist in the same commit; no placeholder handler may ship.
 
 This stage may be committed together with Stage 5 if TypeScript exhaustiveness prevents a passing intermediate state.
 
@@ -217,15 +217,15 @@ node --test "dist/test/core-kernel/command-spine-characterization.test.js"
 
 Goal: prove synchronized insertion and exact inverse on the accepted effect engine.
 
-- [ ] Add insert/remove/reorder private effect shapes needed for insert inverse.
-- [ ] Implement effect preflight, candidate mutation and inverse derivation.
-- [ ] Implement exact insert payload decode and Part coverage handling.
-- [ ] Canonicalize valid caller-shuffled entries to current Part order.
-- [ ] Generate content Measure IDs from definition ID.
-- [ ] Normalize Part Measure order when pre-state is shuffled.
-- [ ] Build canonical affected addresses.
-- [ ] Add valid/rejected/history/replay/event/extension/caller-mutation/hostile/resource tests.
-- [ ] Add internal forward-then-inverse and multi-effect reverse-order tests.
+- [x] Add insert/remove/reorder private effect shapes needed for insert inverse.
+- [x] Implement effect preflight, candidate mutation and inverse derivation.
+- [x] Implement exact insert payload decode and Part coverage handling.
+- [x] Canonicalize valid caller-shuffled entries to current Part order.
+- [x] Generate content Measure IDs from definition ID.
+- [x] Normalize Part Measure order when pre-state is shuffled.
+- [x] Build canonical affected addresses.
+- [x] Add valid/rejected/history/replay/event/extension/caller-mutation/hostile/resource tests.
+- [x] Add internal forward-then-inverse and multi-effect reverse-order tests.
 
 Verification:
 
@@ -243,13 +243,13 @@ Required commit boundary: **insert + required private effects**, with no remove 
 
 Goal: delete and restore the exact Measure-owned aggregate.
 
-- [ ] Implement remove adapter preparation.
-- [ ] Capture definition/content predecessor anchors before mutation.
-- [ ] Remove one content from every Part and preserve extensions.
-- [ ] Normalize remaining Part order when needed.
-- [ ] Prove last-Measure semantic rejection and total state equality.
-- [ ] Prove exact aggregate/order restoration across undo, redo and replay.
-- [ ] Verify affected order includes removed descendants.
+- [x] Implement remove adapter preparation.
+- [x] Capture definition/content predecessor anchors before mutation.
+- [x] Remove one content from every Part and preserve extensions.
+- [x] Normalize remaining Part order when needed.
+- [x] Prove last-Measure semantic rejection and total state equality.
+- [x] Prove exact aggregate/order restoration across undo, redo and replay.
+- [x] Verify affected order includes removed descendants.
 
 Verification:
 
@@ -267,13 +267,13 @@ Required commit boundary: **remove aggregate**.
 
 Goal: synchronize global/per-Part order without changing aggregate values.
 
-- [ ] Add move bundle effect and per-list inverse anchors.
-- [ ] Implement target -> self-reference -> anchor resolution order.
-- [ ] Implement start/forward/backward/already-positioned behavior.
-- [ ] Normalize every Part to desired global order.
-- [ ] Add pre-shuffled valid fixture and prove undo restores it exactly.
-- [ ] Prove move values are deeply equal before/after apart from array order.
-- [ ] Prove redo/replay/event/affected-address behavior.
+- [x] Add move bundle effect and per-list inverse anchors.
+- [x] Implement target -> self-reference -> anchor resolution order.
+- [x] Implement start/forward/backward/already-positioned behavior.
+- [x] Normalize every Part to desired global order.
+- [x] Add pre-shuffled valid fixture and prove undo restores it exactly.
+- [x] Prove move values are deeply equal before/after apart from array order.
+- [x] Prove redo/replay/event/affected-address behavior.
 
 Verification:
 
@@ -291,13 +291,13 @@ Required commit boundary: **move + exact order inverse**.
 
 Goal: change meter/pickup with exact no-op and semantic/profile separation.
 
-- [ ] Add replacement effect and inverse.
-- [ ] Implement exact pickup union decode.
-- [ ] Implement full equality including pickup presence.
-- [ ] Test meter change, pickup add/remove, exact no-op and target failures.
-- [ ] Test sequence-exceeds rejection across multiple Parts.
-- [ ] Test semantic-valid non-K1 meter/pickup commit as unsupported.
-- [ ] Prove undo/redo/replay/event/affected behavior.
+- [x] Add replacement effect and inverse.
+- [x] Implement exact pickup union decode.
+- [x] Implement full equality including pickup presence.
+- [x] Test meter change, pickup add/remove, exact no-op and target failures.
+- [x] Test sequence-exceeds rejection across multiple Parts.
+- [x] Test semantic-valid non-K1 meter/pickup commit as unsupported.
+- [x] Prove undo/redo/replay/event/affected behavior.
 
 Verification:
 
@@ -315,16 +315,16 @@ Required commit boundary: **set-definition**.
 
 Goal: close every observable path, not only happy-path command behavior.
 
-- [ ] Complete one row per PRD acceptance criterion with test/file anchor.
-- [ ] Exercise direct bus and authorized/denied gateway for all four IDs.
-- [ ] Exercise checkpoint/dirty/redo preservation and redo clearing.
-- [ ] Exercise event counts, sequence order, affected addresses and subscriber isolation.
-- [ ] Exercise unknown extension preservation through factory/submit/reject/undo/redo/replay.
-- [ ] Exercise resource failures and Issue mapping.
-- [ ] Exercise caller mutation after submit/factory return.
-- [ ] Exercise full failure-state deep equality.
-- [ ] Re-run projected CVN-1 trace and exact additive surface fixture.
-- [ ] Scan root exports and private effect/history leakage.
+- [x] Complete one row per PRD acceptance criterion with test/file anchor.
+- [x] Exercise direct bus and authorized/denied gateway for all four IDs.
+- [x] Exercise checkpoint/dirty/redo preservation and redo clearing.
+- [x] Exercise event counts, sequence order, affected addresses and subscriber isolation.
+- [x] Exercise unknown extension preservation through factory/submit/reject/undo/redo/replay.
+- [x] Exercise resource failures and Issue mapping.
+- [x] Exercise caller mutation after submit/factory return.
+- [x] Exercise full failure-state deep equality.
+- [x] Re-run projected CVN-1 trace and exact additive surface fixture.
+- [x] Scan root exports and private effect/history leakage.
 
 Verification:
 
@@ -345,14 +345,35 @@ git diff --check
 
 Only after source/tests pass:
 
-- [ ] Record exact source/test commits and test counts in task metadata.
-- [ ] Update active Core specs with accepted behavior as a candidate diff, preserving Core V1 history.
-- [ ] Update parent CVN-3 progress and dependency fields.
-- [ ] Record the exact 49/10/10 surface and resource limits.
-- [ ] Record any private file-name substitution with contract-equivalence rationale.
-- [ ] Run Trellis validation and Markdown/code-fence/path scans.
+- [x] Record exact source/test commits and test counts in task metadata.
+- [x] Update active Core specs with accepted behavior as a candidate diff, preserving Core V1 history.
+- [x] Update parent CVN-3 progress and dependency fields.
+- [x] Record the exact 49/10/10 surface and resource limits.
+- [x] Record any private file-name substitution with contract-equivalence rationale.
+- [x] Run Trellis validation and Markdown/code-fence/path scans.
 
 This stage creates a review candidate, not acceptance.
+
+
+### Stages 1-10 execution evidence ? 2026-08-04
+
+- Review base: `d936d58195803ef938214948b21e89fe67939090`; source/test candidate:
+  `d9500f5a8ac285071586ba8eda380370eafd022f`.
+- Delivery commits: `b22f455` (projection), `a1bef39` (strict capture/shared
+  codec), `a55ed2e` (factory), `585d352` (four Measure commands), and
+  `d9500f5` (acceptance-matrix tests).
+- Verified source/test gates: typecheck and build passed; lifecycle triad
+  passed 22/22; plan section 5 focused matrix passed 71/71; full `npm.cmd test`
+  passed 233/233; `git diff --check` passed for the source/test candidate.
+- Compatibility evidence: projected CVN-1 expected SHA-256 remains
+  `CDBCFD68DCC84C514BCAC8BA83B44B819A237146C842E0F63E8F17A3CD2FF4D9`;
+  exact additive surface is 49 runtime exports / 10 catalog commands / 10
+  Registry command descriptors.
+- Bounded capture evidence: depth `64/65` and property count
+  `1,048,576/1,048,577` map to the exact factory/command resource failures;
+  command Issue mapping retains only `limitKind`, `limit`, and `actual`.
+- The full AC/parent-contract mapping and protected-surface rationale are in
+  `review-candidate.md`. Stage 11 is deliberately not checked.
 
 ### Stage 11 — Independent final review
 

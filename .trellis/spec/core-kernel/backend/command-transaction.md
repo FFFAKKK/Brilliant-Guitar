@@ -130,3 +130,165 @@ submit({
   payload: { writtenPitch },
 })
 ```
+
+## CVN-3 Review Candidate: Measure Lifecycle Commands (2026-08-04)
+
+> Source/test candidate: `d9500f5a8ac285071586ba8eda380370eafd022f`.
+> The candidate preserves the preceding K1-2 six-command compatibility
+> contract and is awaiting independent CVN3-AC028 review. It is not an
+> acceptance record and it does not introduce a persisted schema change.
+
+### 1. Scope / Trigger
+
+Apply this additive contract when a trusted Core Host or an authorized Registry
+gateway needs to insert, remove, move, or change the definition of a Measure.
+The static catalog grows from the six K1-2 commands to ten fixed commands;
+there is no command registration, whole-document replacement, generic patch,
+or index-addressed write path. The first six commands keep their legacy input
+boundary; only the four commands below use bounded strict input capture.
+
+### 2. Signatures
+
+```typescript
+type MeasureAnchor =
+  | { readonly kind: "start" }
+  | { readonly kind: "after-measure"; readonly measureId: string };
+
+type InsertMeasureCommand = {
+  readonly commandVersion: 1;
+  readonly commandId: "core.measure.insert";
+  readonly target: { readonly kind: "document"; readonly documentId: string };
+  readonly payload: {
+    readonly anchor: MeasureAnchor;
+    readonly definition: MeasureDefinition;
+    readonly contents: readonly [
+      { readonly partId: string; readonly voices: readonly [Voice, ...Voice[]] },
+      ...{ readonly partId: string; readonly voices: readonly [Voice, ...Voice[]] }[],
+    ];
+  };
+};
+
+type RemoveMeasureCommand = {
+  readonly commandVersion: 1;
+  readonly commandId: "core.measure.remove";
+  readonly target: { readonly kind: "measure"; readonly measureId: string };
+  readonly payload: Record<string, never>;
+};
+
+type MoveMeasureCommand = {
+  readonly commandVersion: 1;
+  readonly commandId: "core.measure.move";
+  readonly target: { readonly kind: "measure"; readonly measureId: string };
+  readonly payload: { readonly anchor: MeasureAnchor };
+};
+
+type SetMeasureDefinitionCommand = {
+  readonly commandVersion: 1;
+  readonly commandId: "core.measure.set-definition";
+  readonly target: { readonly kind: "measure"; readonly measureId: string };
+  readonly payload: {
+    readonly meter: Meter;
+    readonly pickup:
+      | { readonly kind: "none" }
+      | { readonly kind: "duration"; readonly duration: Fraction };
+  };
+};
+```
+
+The fixed additive order is `core.measure.insert`, `core.measure.remove`,
+`core.measure.move`, then `core.measure.set-definition` after the original
+six catalog entries. `CommandBus.submit`, undo/redo, and replay retain their
+existing signatures and result union.
+
+### 3. Contracts
+
+- `core.measure.insert` targets the current document and supplies one non-empty
+  Voice collection for every existing Part exactly once. Valid caller-shuffled
+  Part entries are normalized to current Part order; the supplied definition
+  ID is the new content `measureId`.
+- `core.measure.remove` targets one existing Measure and removes its definition
+  plus the corresponding content/Voice/Event/Note aggregate from every Part.
+  Its inverse records predecessor anchors so undo restores the original global
+  and per-Part positions exactly.
+- `core.measure.move` resolves target before self-reference and anchor. Start,
+  forward, and backward moves synchronize every Part list to the global
+  Measure order; if a valid pre-state had shuffled Part lists, a changed move
+  normalizes them and its inverse restores the prior exact order.
+- `core.measure.set-definition` replaces only `meter` and the explicit pickup
+  union. Full equality, including pickup presence, is no-op; semantic-valid
+  profile-unsupported definitions commit with `unsupported` support.
+- Each handler prepares detached private effect sets. Effect application clones
+  one candidate, derives reverse effects in reverse order, semantically
+  validates before state adoption, and preserves unknown ExtensionBlocks.
+- The four input routes capture before decode using exact depth `64` and
+  property count `1,048,576` limits. Accepted envelopes are detached/frozen;
+  no caller mutation, getter, Proxy `get`, input method, iterator, coercion,
+  or `toJSON` call may influence the result.
+- Live submit, authorized gateway submit, undo/redo, replay, dirty/checkpoint,
+  and committed event behavior all use the same existing transaction spine.
+
+### 4. Validation & Error Matrix
+
+| Condition | Stable result | State effect |
+| --- | --- | --- |
+| malformed/extra/hostile envelope or payload | `command.invalid-envelope` | none |
+| capture depth `65` / properties `1,048,577` | `command.resource-limit-exceeded` with exact limit facts | none |
+| wrong target kind | `command.target-mismatch` | none |
+| missing document/Measure/Part/anchor | `command.target-not-found` / `command.anchor-not-found` | none |
+| move target used as `after-measure` anchor | `command.anchor-self-reference` | none |
+| duplicate/missing Part coverage, duplicate IDs, broken Staff or sequence | `command.semantic-invalid` plus original diagnostics | none |
+| remove last Measure | `command.semantic-invalid` plus `semantic.measure-required` | none |
+| semantic-valid K1-profile mismatch | committed with full `unsupported` support | version +1 and one history entry |
+| aligned requested move or unchanged definition | no-op | no version/history/redo/event change |
+
+Target/anchor resolution is performed before final semantic candidate
+validation. Every rejection retains deep pre-state equality, history,
+checkpoint/dirty status, and event sequence.
+
+### 5. Good / Base / Bad Cases
+
+- Good: insert a new Measure with every Part represented once; all Part lists
+  become synchronized and the emitted affected addresses include the created
+  Measure aggregate in canonical order.
+- Base: move the first Measure after a later one, then undo/redo/replay; global
+  and every Part order change to the same sequence while aggregate values stay
+  equal.
+- Base: replace a supported 4/4 definition with legal 2/2 or a pickup; commit
+  succeeds with an `unsupported` support result when appropriate.
+- Bad: remove the only Measure, insert duplicate Part coverage, point a Voice
+  at another/missing Staff, or submit an `after-measure` self-anchor.
+- Bad: expose a Measure bundle effect, accept `/parts/0` or array-index target,
+  or let a public callback determine clone/application behavior.
+
+### 6. Tests Required
+
+- `cvn-3-measure-insert-remove.test.ts` must cover shuffled insert,
+  coverage/reference/sequence/ID rejection equality, aggregate removal,
+  final-Measure rejection, exact inverse, undo/redo/replay, events, and
+  extension/caller-mutation preservation.
+- `cvn-3-measure-move-definition.test.ts` must cover start/forward/backward
+  movement, no-op, pre-shuffled normalization/undo, self/missing anchors,
+  pickup add/remove, semantic rollback, profile classification, and history.
+- `cvn-3-transaction-integration.test.ts` must cover all four IDs independently
+  through strict resource capture, root Proxy totality, direct/gateway parity,
+  capability denial, caller alias isolation, extensions, and
+  checkpoint/dirty/redo clearing.
+- `command-internals.test.ts`, `command-spine-characterization.test.ts`,
+  Registry/report adapter tests, public-surface tests, and the full suite must
+  prove exact effects, 49/10/10 public counts, legacy trace preservation,
+  allowlisted issue facts, and no private leakage.
+
+### 7. Wrong vs Correct
+
+```typescript
+// Wrong: unstable structural replacement bypasses coverage and history facts.
+submit({ op: "replace", path: "/parts/0/measureContents", value: next });
+
+// Correct: stable Measure identity plus a closed insertion anchor.
+submit({
+  commandVersion: 1,
+  commandId: "core.measure.move",
+  target: { kind: "measure", measureId },
+  payload: { anchor: { kind: "after-measure", measureId: anchorMeasureId } },
+});
+```

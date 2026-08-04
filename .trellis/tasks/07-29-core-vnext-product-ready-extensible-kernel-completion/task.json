@@ -123,6 +123,28 @@
       "CVN-FC-142"
     ],
     "runtime_hot_plug": false,
-    "production_implementation_authorized": false
+    "production_implementation_authorized": false,
+    "third_child_operator_state": "review_candidate_ready",
+    "third_child_source_test_candidate_commit": "d9500f5a8ac285071586ba8eda380370eafd022f",
+    "third_child_source_test_candidate_base": "d936d58195803ef938214948b21e89fe67939090",
+    "third_child_source_commits": {
+      "trace_projection_characterization": "b22f4554a5b0c46f0f9f50cbdd75611a833837b1",
+      "strict_capture_component_codec": "a1bef39ff35f4b13a87bb4fc3e793bc9a216ebcf",
+      "document_factory": "a55ed2e20cd209cf6ebfe329b875b7337555b437",
+      "measure_lifecycle": "585d3527eae4e663dd11413f096c109fd385ea40",
+      "acceptance_matrix_tests": "d9500f5a8ac285071586ba8eda380370eafd022f"
+    },
+    "third_child_measure_lifecycle_test_count": 22,
+    "third_child_cross_layer_focused_test_count": 71,
+    "third_child_full_test_count": 233,
+    "third_child_expected_trace_sha256": "CDBCFD68DCC84C514BCAC8BA83B44B819A237146C842E0F63E8F17A3CD2FF4D9",
+    "third_child_registry_command_descriptor_count": 10,
+    "third_child_input_depth_limit": 64,
+    "third_child_input_property_limit": 1048576,
+    "third_child_final_independent_review": "pending",
+    "third_child_next_gate": "CVN3-AC028 independent final review",
+    "third_child_documentation_candidate_validation": "passed",
+    "third_child_protected_persisted_schema_diff": "passed_no_diff",
+    "third_child_protected_cvn1_expected_fixture_diff": "passed_no_diff"
   }
 }

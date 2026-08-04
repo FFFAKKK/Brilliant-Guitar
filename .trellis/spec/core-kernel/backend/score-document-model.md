@@ -247,3 +247,121 @@ The profile result is not a generic boolean validation report. `supported` has n
 The unpublished tick/slot draft has no compatibility layer. Discovery of a real external consumer or user file stops implementation and requires a migration plan. Future schema versions fail safely; physical `.bgp` bytes remain outside K1-1.
 
 Required tests cover exact Fraction/NoteValue arithmetic and overflow; single-Part round-trip; semantic-valid but profile-unsupported piano/multi-Part/multi-Voice/chord/dot/time-modification/pickup/meter/note-base/sequence-boundary fixtures; two-measure order-independent Part content; cross-entity global id collisions; malformed JSON/strict fields/future version; broken references/coverage/time bounds; deep unknown extension round-trip; and production-export boundaries.
+
+## CVN-3 Review Candidate: Deterministic Document Factory (2026-08-04)
+
+> Source/test candidate: `d9500f5a8ac285071586ba8eda380370eafd022f`.
+> This additive contract is implementation-verified but remains subject to the
+> independent CVN3-AC028 review; it does not alter the persisted
+> `brilliant-score-1` schema or the K1-1 historical baseline above.
+
+### 1. Scope / Trigger
+
+Use `createScoreDocument(unknown)` when a caller needs a deterministic,
+session-free construction of a first `ScoreDocument` from explicit notation
+facts. It owns strict input capture, construction of exactly one initial
+Measure content per supplied Part, semantic validation, and profile
+classification. It does not create a `CommandBus`, Registry, history,
+checkpoint, event source, generated ID, template, persistence record, or
+default instrument choice.
+
+### 2. Signatures
+
+```typescript
+interface InitialPartV1 {
+  readonly id: string;
+  readonly name: string;
+  readonly instrument: InstrumentDescriptor;
+  readonly staves: readonly [StaffDefinition, ...StaffDefinition[]];
+  readonly voices: readonly [Voice, ...Voice[]];
+}
+
+interface CreateScoreDocumentInputV1 {
+  readonly factoryVersion: 1;
+  readonly documentId: string;
+  readonly metadata: ScoreMetadata;
+  readonly initialMeasure: MeasureDefinition;
+  readonly initialParts: readonly [InitialPartV1, ...InitialPartV1[]];
+  readonly extensions: readonly ExtensionBlock[];
+}
+
+createScoreDocument(input: unknown): CreateScoreDocumentResult;
+```
+
+`CreateScoreDocumentResult` is either `{ status: "created", document,
+support }` or `{ status: "rejected", failure }`. Its closed failures are
+`factory.invalid-input` with decode diagnostics,
+`factory.semantic-invalid` with semantic diagnostics, and
+`factory.resource-limit-exceeded` with `limitKind`, `limit`, and `actual`.
+
+### 3. Contracts
+
+- Capture `unknown` descriptor-first before schema decoding. It accepts plain
+  or null-prototype records and cross-Realm dense Arrays, copies into detached
+  plain values, and never invokes input getters, Proxy `get`, array methods,
+  iterators, coercion, or `toJSON`.
+- The capture limits are exact: depth `64` and at most `1,048,576` inspected
+  properties. Depth `65` and property count `1,048,577` return the resource
+  failure before later schema diagnostics.
+- Construction preserves caller-supplied Part/Staff/Voice/Event/Note order and
+  creates a `PartMeasureContent` for every initial Part whose `measureId` is
+  the supplied `initialMeasure.id`. No field is added to persistence.
+- Decode failures sort deterministically by path/code. A captured shape failure
+  returns `factory.invalid-input`; a semantically invalid constructed document
+  returns `factory.semantic-invalid`; only a semantic-valid document reaches
+  `ScoreFeatureProfile` and may be `unsupported`.
+- Every result, document, support result, diagnostic, and nested value is
+  detached and deeply frozen. Repeated equal inputs produce deeply equal output.
+
+### 4. Validation & Error Matrix
+
+| Condition | Result | State / ordering rule |
+| --- | --- | --- |
+| getter, accessor, Proxy reflection failure, sparse/cyclic/symbol shape | `factory.invalid-input` | no user hook execution and no throw |
+| extra/missing/wrong field, tuple empty, bad union/version/non-finite or unsafe number | `factory.invalid-input` | deterministic sorted decode diagnostics |
+| depth `65` / properties `1,048,577` | `factory.resource-limit-exceeded` | `{ input-depth, 64, 65 }` / `{ input-properties, 1048576, 1048577 }` |
+| duplicate/empty ID, missing Staff, invalid sequence/meter/pickup/extension | `factory.semantic-invalid` | sorted semantic diagnostics; no profile diagnostics |
+| semantic-valid but outside K1 profile | `created` + `support.status === "unsupported"` | document remains valid and frozen |
+| minimum supported document | `created` + `support.status === "supported"` | exactly one Measure content per Part |
+
+### 5. Good / Base / Bad Cases
+
+- Good: a one-Measure/one-Part/one-Staff/one-Voice input creates the exact
+  `brilliant-score-1` document without a session.
+- Base: semantic-valid multi-Part or multi-Voice input creates all coverage and
+  returns `unsupported` rather than treating the document as corrupt.
+- Bad: a caller passes a sparse `initialParts` Array or an empty Voice tuple;
+  factory rejects it without compacting or synthesizing content.
+- Bad: a caller expects an absent instrument, ID, event source, or persisted
+  schema field to be inferred by the factory.
+
+### 6. Tests Required
+
+- `cvn-3-document-factory.test.ts` must prove exact minimum and multi-Part
+  construction, exact shape/tuple/version/numeric diagnostics, semantic versus
+  profile separation, deterministic deep freeze/alias isolation, hostile input
+  totality, and both resource boundaries.
+- `cvn-3-strict-input.test.ts` must prove descriptor-only capture, cross-Realm
+  dense Array handling, poisoned-primordial resilience, shared DAG handling,
+  and exact `64/65` plus `1,048,576/1,048,577` accounting.
+- Public-surface and full-suite tests must prove that only
+  `createScoreDocument` is added to the Core root and no session/Registry or
+  physical IO dependency enters production code.
+
+### 7. Wrong vs Correct
+
+```typescript
+// Wrong: constructs an implicit document and creates hidden runtime state.
+const document = createDefaultDocument();
+const bus = CommandBus.create(document);
+
+// Correct: require complete caller-owned notation facts and return data only.
+const result = createScoreDocument({
+  factoryVersion: 1,
+  documentId,
+  metadata,
+  initialMeasure,
+  initialParts,
+  extensions: [],
+});
+```

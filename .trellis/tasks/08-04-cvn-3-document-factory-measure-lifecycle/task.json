@@ -15,7 +15,7 @@
   "branch": "codex/cvn-3-document-factory-measure-lifecycle",
   "base_branch": "codex/cvn-1-command-transaction-registry-spine",
   "worktree_path": ".worktrees/k1-6-core-kernel-integration-gate",
-  "commit": null,
+  "commit": "d9500f5a8ac285071586ba8eda380370eafd022f",
   "pr_url": null,
   "subtasks": [],
   "children": [],
@@ -34,7 +34,8 @@
     ".trellis/spec/core-kernel/backend/snapshot-events.md",
     ".trellis/spec/core-kernel/backend/registry-capability.md",
     ".trellis/spec/core-kernel/backend/errors-reports.md",
-    ".trellis/spec/core-kernel/backend/quality-guidelines.md"
+    ".trellis/spec/core-kernel/backend/quality-guidelines.md",
+    ".trellis/tasks/08-04-cvn-3-document-factory-measure-lifecycle/review-candidate.md"
   ],
   "notes": "ACTIVE / USER EXECUTION APPROVED 2026-08-04 / OPERATOR READY / CVN-1 ACCEPTED DEPENDENCY / CORE-ONLY / FACTORY PLUS FOUR EXACT MEASURE COMMANDS / NO HOT PLUG / NO WHOLE-DOCUMENT REPLACEMENT.",
   "meta": {
@@ -86,7 +87,7 @@
     "task_start_run": true,
     "activation_head": "d936d58195803ef938214948b21e89fe67939090",
     "production_implementation_authorized": true,
-    "operator_state": "stage_0_baseline_verified",
+    "operator_state": "review_candidate_ready",
     "stage_0_verification": {
       "recorded_at": "2026-08-04",
       "planning_commit": "e9737947b372a2608d5779ed3d6ca90c2b82e4ca",
@@ -98,6 +99,46 @@
       "cvn1_expected_trace_sha256": "CDBCFD68DCC84C514BCAC8BA83B44B819A237146C842E0F63E8F17A3CD2FF4D9",
       "task_validate": "passed",
       "diff_check": "passed"
-    }
+    },
+    "operator_implementation_complete": true,
+    "source_test_candidate_commit": "d9500f5a8ac285071586ba8eda380370eafd022f",
+    "source_commits": {
+      "trace_projection_characterization": "b22f4554a5b0c46f0f9f50cbdd75611a833837b1",
+      "strict_capture_component_codec": "a1bef39ff35f4b13a87bb4fc3e793bc9a216ebcf",
+      "document_factory": "a55ed2e20cd209cf6ebfe329b875b7337555b437",
+      "measure_lifecycle": "585d3527eae4e663dd11413f096c109fd385ea40",
+      "acceptance_matrix_tests": "d9500f5a8ac285071586ba8eda380370eafd022f"
+    },
+    "source_test_candidate_base": "d936d58195803ef938214948b21e89fe67939090",
+    "verification": {
+      "recorded_at": "2026-08-04",
+      "typecheck": "passed",
+      "build": "passed",
+      "measure_lifecycle_test_count": 22,
+      "cross_layer_focused_test_count": 71,
+      "full_test_count": 233,
+      "cvn1_expected_trace_sha256": "CDBCFD68DCC84C514BCAC8BA83B44B819A237146C842E0F63E8F17A3CD2FF4D9",
+      "runtime_export_count": 49,
+      "core_command_count": 10,
+      "registry_command_descriptor_count": 10,
+      "input_depth_boundary": {
+        "accepted": 64,
+        "rejected": 65
+      },
+      "input_property_boundary": {
+        "accepted": 1048576,
+        "rejected": 1048577
+      },
+      "source_test_diff_check": "passed",
+      "post_documentation_trellis_validation": "passed",
+      "post_documentation_diff_check": "passed",
+      "post_documentation_markdown_scan": "passed_8_markdown_files",
+      "post_documentation_json_parse": "passed_2_task_files",
+      "protected_persisted_schema_diff": "passed_no_diff",
+      "protected_cvn1_expected_fixture_diff": "passed_no_diff"
+    },
+    "final_independent_review": "pending",
+    "final_independent_re_review": "pending",
+    "next_gate": "CVN3-AC028 independent final review"
   }
 }
