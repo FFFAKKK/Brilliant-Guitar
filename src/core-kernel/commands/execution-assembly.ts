@@ -59,9 +59,13 @@ export function createCoreExecutionAssembly(
     }
   }
 
+  const frozenDefinitions = Object.freeze(
+    definitions.map((definition) => Object.freeze({ ...definition })),
+  );
+
   return Object.freeze({
     source: DEFAULT_SOURCE,
-    definitions: Object.freeze([...definitions]),
+    definitions: frozenDefinitions,
     validate: validateScoreDocumentSemantics,
     classify: validateScoreFeatureProfile,
   });

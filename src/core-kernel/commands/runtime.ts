@@ -1,27 +1,34 @@
+import type { ScoreAddress } from "../domain/address";
 import type { ScoreDocument } from "../domain/score-document";
-import { validateScoreFeatureProfile } from "../profiles/score-feature-profile";
-import { validateScoreDocumentSemantics } from "../validation/validate-score-semantics";
+import { deepFreezeValue } from "../read/deep-freeze";
 import type {
   CommandBusCreationFailure,
   CommandFailure,
   CommandResult,
   CoreCommandEnvelope,
 } from "./contracts";
-import { decodeCoreCommand } from "./strict-codec";
 import {
-  applyCoreMutation,
-  prepareCommandMutation,
-  type CoreMutation,
-} from "./mutations";
+  DEFAULT_CORE_EXECUTION_ASSEMBLY,
+  findCoreExecutionDefinition,
+  type CoreExecutionAssembly,
+} from "./execution-assembly";
+import {
+  applyCoreEffectSet,
+  freezeCoreEffectSet,
+  type NonEmptyCoreEffectSet,
+} from "./effects";
+import { decodeCoreCommand } from "./strict-codec";
 
 export interface HistoryEntry {
   readonly sequence: number;
   readonly command: CoreCommandEnvelope;
-  readonly forward: CoreMutation;
-  readonly inverse: CoreMutation;
+  readonly forward: NonEmptyCoreEffectSet;
+  readonly inverse: NonEmptyCoreEffectSet;
+  readonly affected: readonly ScoreAddress[];
 }
 
 export interface CommandRuntimeState {
+  readonly assembly: CoreExecutionAssembly;
   readonly document: ScoreDocument;
   readonly documentVersion: number;
   readonly nextHistorySequence: number;
@@ -32,7 +39,7 @@ export interface CommandRuntimeState {
 export interface CommittedOperation {
   readonly cause: "submit" | "undo" | "redo";
   readonly command: CoreCommandEnvelope;
-  readonly effectiveMutation: CoreMutation;
+  readonly affected: readonly ScoreAddress[];
 }
 
 export type CreateCommandRuntimeResult =
@@ -42,7 +49,7 @@ export type CreateCommandRuntimeResult =
 export interface CommandRuntimeHooks {
   readonly beforePrepare?: () => void;
   readonly beforeApply?: () => void;
-  readonly classify?: typeof validateScoreFeatureProfile;
+  readonly classify?: CoreExecutionAssembly["classify"];
 }
 
 export interface CommandTransition {
@@ -92,6 +99,22 @@ function validHistorySequence(sequence: number): boolean {
   return Number.isSafeInteger(sequence) && sequence > 0;
 }
 
+function historyEntry(
+  sequence: number,
+  command: CoreCommandEnvelope,
+  forward: NonEmptyCoreEffectSet,
+  inverse: NonEmptyCoreEffectSet,
+  affected: readonly ScoreAddress[],
+): HistoryEntry {
+  return deepFreezeValue({
+    sequence,
+    command: cloneValue(command),
+    forward: freezeCoreEffectSet(forward),
+    inverse: freezeCoreEffectSet(inverse),
+    affected: affected.map(cloneValue),
+  });
+}
+
 function committed(
   state: CommandRuntimeState,
   document: ScoreDocument,
@@ -107,7 +130,7 @@ function committed(
     undoStack,
     redoStack,
   };
-  const support = (hooks.classify ?? validateScoreFeatureProfile)(document);
+  const support = (hooks.classify ?? state.assembly.classify)(document);
   return {
     state: nextState,
     result: {
@@ -116,16 +139,21 @@ function committed(
       support,
       ...depths(nextState),
     },
-    committed: cloneValue(operation),
+    committed: deepFreezeValue({
+      cause: operation.cause,
+      command: cloneValue(operation.command),
+      affected: operation.affected.map(cloneValue),
+    }),
   };
 }
 
 export function createCommandRuntime(
   initialDocument: ScoreDocument,
+  assembly: CoreExecutionAssembly = DEFAULT_CORE_EXECUTION_ASSEMBLY,
 ): CreateCommandRuntimeResult {
   try {
     const document = cloneValue(initialDocument);
-    const semantic = validateScoreDocumentSemantics(document);
+    const semantic = assembly.validate(document);
     if (!semantic.ok) {
       return {
         ok: false,
@@ -138,6 +166,7 @@ export function createCommandRuntime(
     return {
       ok: true,
       state: {
+        assembly,
         document,
         documentVersion: 0,
         nextHistorySequence: 1,
@@ -158,13 +187,20 @@ export function submitCommand(
   input: unknown,
   hooks: CommandRuntimeHooks = {},
 ): CommandTransition {
-  const decoded = decodeCoreCommand(input);
+  const decoded = decodeCoreCommand(input, state.assembly);
   if (!decoded.ok) {
     return rejected(state, decoded.failure);
   }
   try {
+    const definition = findCoreExecutionDefinition(
+      state.assembly,
+      decoded.value.commandId,
+    );
+    if (definition === undefined) {
+      return rejected(state, { code: "command.internal-error" });
+    }
     hooks.beforePrepare?.();
-    const prepared = prepareCommandMutation(state.document, decoded.value);
+    const prepared = definition.prepare(state.document, decoded.value);
     if (!prepared.ok) {
       return rejected(state, prepared.failure);
     }
@@ -174,7 +210,7 @@ export function submitCommand(
         result: {
           status: "no-op",
           documentVersion: state.documentVersion,
-          support: validateScoreFeatureProfile(state.document),
+          support: (hooks.classify ?? state.assembly.classify)(state.document),
           ...depths(state),
         },
       };
@@ -187,11 +223,11 @@ export function submitCommand(
     }
 
     hooks.beforeApply?.();
-    const applied = applyCoreMutation(state.document, prepared.forward);
+    const applied = applyCoreEffectSet(state.document, prepared.effects);
     if (!applied.ok) {
       return rejected(state, { code: "command.internal-error" });
     }
-    const semantic = validateScoreDocumentSemantics(applied.document);
+    const semantic = state.assembly.validate(applied.document);
     if (!semantic.ok) {
       return rejected(state, {
         code: "command.semantic-invalid",
@@ -199,13 +235,14 @@ export function submitCommand(
       });
     }
 
-    const entry: HistoryEntry = {
-      sequence: state.nextHistorySequence,
-      command: cloneValue(decoded.value),
-      forward: cloneValue(prepared.forward),
-      inverse: cloneValue(prepared.inverse),
-    };
-    const transition = committed(
+    const entry = historyEntry(
+      state.nextHistorySequence,
+      decoded.value,
+      prepared.effects,
+      applied.inverse,
+      prepared.affected,
+    );
+    return committed(
       {
         ...state,
         nextHistorySequence: state.nextHistorySequence + 1,
@@ -217,17 +254,25 @@ export function submitCommand(
       {
         cause: "submit",
         command: decoded.value,
-        effectiveMutation: prepared.forward,
+        affected: prepared.affected,
       },
     );
-    return transition;
   } catch {
     return rejected(state, { code: "command.internal-error" });
   }
 }
 
 function entryIsValid(entry: HistoryEntry | undefined): entry is HistoryEntry {
-  return entry !== undefined && validHistorySequence(entry.sequence);
+  return (
+    entry !== undefined &&
+    validHistorySequence(entry.sequence) &&
+    Array.isArray(entry.forward) &&
+    entry.forward.length > 0 &&
+    Array.isArray(entry.inverse) &&
+    entry.inverse.length > 0 &&
+    Array.isArray(entry.affected) &&
+    entry.affected.length > 0
+  );
 }
 
 export function undoCommand(
@@ -245,8 +290,8 @@ export function undoCommand(
     if (!canIncrementVersion(state)) {
       return rejected(state, { code: "command.version-overflow" });
     }
-    const applied = applyCoreMutation(state.document, entry.inverse);
-    if (!applied.ok || !validateScoreDocumentSemantics(applied.document).ok) {
+    const applied = applyCoreEffectSet(state.document, entry.inverse);
+    if (!applied.ok || !state.assembly.validate(applied.document).ok) {
       return rejected(state, { code: "history.invariant-violation" });
     }
     return committed(
@@ -258,7 +303,7 @@ export function undoCommand(
       {
         cause: "undo",
         command: entry.command,
-        effectiveMutation: entry.inverse,
+        affected: entry.affected,
       },
     );
   } catch {
@@ -281,8 +326,8 @@ export function redoCommand(
     if (!canIncrementVersion(state)) {
       return rejected(state, { code: "command.version-overflow" });
     }
-    const applied = applyCoreMutation(state.document, entry.forward);
-    if (!applied.ok || !validateScoreDocumentSemantics(applied.document).ok) {
+    const applied = applyCoreEffectSet(state.document, entry.forward);
+    if (!applied.ok || !state.assembly.validate(applied.document).ok) {
       return rejected(state, { code: "history.invariant-violation" });
     }
     return committed(
@@ -294,7 +339,7 @@ export function redoCommand(
       {
         cause: "redo",
         command: entry.command,
-        effectiveMutation: entry.forward,
+        affected: entry.affected,
       },
     );
   } catch {

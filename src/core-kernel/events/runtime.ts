@@ -1,5 +1,4 @@
 import type { CommittedOperation } from "../commands/runtime";
-import type { ScoreDocument } from "../domain/score-document";
 import { deepFreezeValue } from "../read/deep-freeze";
 import type { KernelEvent } from "./contracts";
 import { deriveAffectedEntities } from "./facts";
@@ -35,8 +34,7 @@ function reserveSequences(
 export function buildCommittedEvents(input: {
   readonly lastEventSequence: number;
   readonly operation: CommittedOperation;
-  readonly previousDocument: ScoreDocument;
-  readonly committedDocument: ScoreDocument;
+  readonly documentId: string;
   readonly documentVersion: number;
   readonly dirtyBefore: boolean;
   readonly dirtyAfter: boolean;
@@ -55,15 +53,11 @@ export function buildCommittedEvents(input: {
         eventVersion: 1,
         eventSequence: input.lastEventSequence + 1,
         eventType: "core.document.committed",
-        documentId: input.committedDocument.id,
+        documentId: input.documentId,
         documentVersion: input.documentVersion,
         cause: input.operation.cause,
         commandId: input.operation.command.commandId,
-        affectedEntities: deriveAffectedEntities(
-          input.operation,
-          input.previousDocument,
-          input.committedDocument,
-        ),
+        affectedEntities: deriveAffectedEntities(input.operation),
       },
     ];
     if (dirtyChanged) {
@@ -71,7 +65,7 @@ export function buildCommittedEvents(input: {
         eventVersion: 1,
         eventSequence: input.lastEventSequence + 2,
         eventType: "core.session.dirty-state-changed",
-        documentId: input.committedDocument.id,
+        documentId: input.documentId,
         documentVersion: input.documentVersion,
         cause: input.operation.cause,
         dirty: input.dirtyAfter,

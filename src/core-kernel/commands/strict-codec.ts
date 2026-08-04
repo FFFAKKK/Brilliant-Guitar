@@ -8,6 +8,7 @@ import {
   readExactRecord,
 } from "./core-command-adapters";
 import {
+  type CoreExecutionAssembly,
   DEFAULT_CORE_EXECUTION_ASSEMBLY,
   findCoreExecutionDefinition,
 } from "./execution-assembly";
@@ -17,7 +18,10 @@ export type DecodeResult =
   | { readonly ok: true; readonly value: CoreCommandEnvelope }
   | { readonly ok: false; readonly failure: CommandFailure };
 
-export function decodeCoreCommand(input: unknown): DecodeResult {
+export function decodeCoreCommand(
+  input: unknown,
+  assembly: CoreExecutionAssembly = DEFAULT_CORE_EXECUTION_ASSEMBLY,
+): DecodeResult {
   try {
     const envelope = readExactRecord(input, [
       "commandVersion",
@@ -41,7 +45,7 @@ export function decodeCoreCommand(input: unknown): DecodeResult {
       return { ok: false, failure: { code: "command.invalid-envelope" } };
     }
     const definition = findCoreExecutionDefinition(
-      DEFAULT_CORE_EXECUTION_ASSEMBLY,
+      assembly,
       envelope.commandId,
     );
     if (definition === undefined) {

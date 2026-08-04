@@ -122,8 +122,7 @@ function integrateCommand(
   const eventCandidate = buildCommittedEvents({
     lastEventSequence: state.lastEventSequence,
     operation: transition.committed,
-    previousDocument: state.commandState.document,
-    committedDocument: transition.state.document,
+    documentId: transition.state.document.id,
     documentVersion: transition.state.documentVersion,
     dirtyBefore: isDirty(state.commandState, state.readState),
     dirtyAfter: isDirty(transition.state, readCandidate.state),

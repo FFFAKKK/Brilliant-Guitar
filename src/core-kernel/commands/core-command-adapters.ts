@@ -7,11 +7,15 @@ import {
 import type {
   NotesContent,
   RhythmicEvent,
+  ScoreDocument,
   ScoreMetadata,
   ScoreNote,
 } from "../domain/score-document";
 import { isWrittenPitch, type WrittenPitch } from "../domain/pitch";
+import type { ScoreAddress } from "../domain/address";
+import { deepFreezeValue } from "../read/deep-freeze";
 import type {
+  CommandFailure,
   CoreCommandEnvelope,
   NotesRhythmicEvent,
   RestRhythmicEvent,
@@ -19,6 +23,15 @@ import type {
   SequenceAnchor,
 } from "./contracts";
 import type { CoreCommandId } from "./catalog";
+import {
+  freezeCoreEffectSet,
+  type CoreEffect,
+  type NonEmptyCoreEffectSet,
+} from "./effects";
+import {
+  resolveScoreEntityTarget,
+  resolveSequenceAnchor,
+} from "./target-resolver";
 
 export type CoreCommandTargetKind = ScoreEntityTarget["kind"];
 
@@ -31,7 +44,21 @@ export interface CoreCommandAdapter {
     payload: unknown,
     target: ScoreEntityTarget,
   ) => CoreCommandEnvelope | undefined;
+  readonly prepare: (
+    document: ScoreDocument,
+    command: CoreCommandEnvelope,
+  ) => PrepareCoreCommandEffectsResult;
 }
+
+export type PrepareCoreCommandEffectsResult =
+  | { readonly ok: true; readonly changed: false }
+  | {
+      readonly ok: true;
+      readonly changed: true;
+      readonly effects: NonEmptyCoreEffectSet;
+      readonly affected: readonly ScoreAddress[];
+    }
+  | { readonly ok: false; readonly failure: CommandFailure };
 
 export function readExactRecord(
   value: unknown,
@@ -438,35 +465,266 @@ function decodeRemoveEventPayload(
     : undefined;
 }
 
+function metadataEqual(left: ScoreMetadata, right: ScoreMetadata): boolean {
+  return (
+    left.title === right.title &&
+    left.tempo.bpm === right.tempo.bpm &&
+    left.authors.length === right.authors.length &&
+    left.authors.every((author, index) => author === right.authors[index])
+  );
+}
+
+function pitchEqual(left: WrittenPitch, right: WrittenPitch): boolean {
+  return (
+    left.step === right.step &&
+    left.alter === right.alter &&
+    left.octave === right.octave
+  );
+}
+
+function noteValueEqual(left: NoteValue, right: NoteValue): boolean {
+  return (
+    left.base === right.base &&
+    left.dots === right.dots &&
+    left.timeModification?.actualNotes === right.timeModification?.actualNotes &&
+    left.timeModification?.normalNotes === right.timeModification?.normalNotes
+  );
+}
+
+function cloneValue<T>(value: T): T {
+  return structuredClone(value);
+}
+
+function changed(
+  effects: NonEmptyCoreEffectSet,
+  affected: readonly ScoreAddress[],
+): PrepareCoreCommandEffectsResult {
+  return {
+    ok: true,
+    changed: true,
+    effects: freezeCoreEffectSet(effects),
+    affected: deepFreezeValue(affected.map(cloneValue)),
+  };
+}
+
+function prepareSetMetadata(
+  document: ScoreDocument,
+  command: CoreCommandEnvelope,
+): PrepareCoreCommandEffectsResult {
+  if (
+    command.commandId !== "core.document.set-metadata" ||
+    command.target.kind !== "document"
+  ) {
+    return { ok: false, failure: { code: "command.internal-error" } };
+  }
+  const resolved = resolveScoreEntityTarget(document, command.target);
+  if (!resolved.ok) {
+    return resolved;
+  }
+  if (resolved.value.kind !== "document") {
+    return { ok: false, failure: { code: "command.internal-error" } };
+  }
+  if (metadataEqual(resolved.value.document.metadata, command.payload.metadata)) {
+    return { ok: true, changed: false };
+  }
+  return changed(
+    [
+      {
+        kind: "replace-metadata",
+        documentId: command.target.documentId,
+        value: cloneValue(command.payload.metadata),
+      },
+    ],
+    [{ kind: "document", documentId: command.target.documentId }],
+  );
+}
+
+function prepareSetWrittenPitch(
+  document: ScoreDocument,
+  command: CoreCommandEnvelope,
+): PrepareCoreCommandEffectsResult {
+  if (
+    command.commandId !== "core.note.set-written-pitch" ||
+    command.target.kind !== "note"
+  ) {
+    return { ok: false, failure: { code: "command.internal-error" } };
+  }
+  const resolved = resolveScoreEntityTarget(document, command.target);
+  if (!resolved.ok) {
+    return resolved;
+  }
+  if (resolved.value.kind !== "note") {
+    return { ok: false, failure: { code: "command.internal-error" } };
+  }
+  if (pitchEqual(resolved.value.note.writtenPitch, command.payload.writtenPitch)) {
+    return { ok: true, changed: false };
+  }
+  return changed(
+    [
+      {
+        kind: "replace-written-pitch",
+        noteId: command.target.noteId,
+        value: cloneValue(command.payload.writtenPitch),
+      },
+    ],
+    [{ kind: "note", noteId: command.target.noteId }],
+  );
+}
+
+function prepareSetNoteValue(
+  document: ScoreDocument,
+  command: CoreCommandEnvelope,
+): PrepareCoreCommandEffectsResult {
+  if (
+    command.commandId !== "core.event.set-note-value" ||
+    command.target.kind !== "event"
+  ) {
+    return { ok: false, failure: { code: "command.internal-error" } };
+  }
+  const resolved = resolveScoreEntityTarget(document, command.target);
+  if (!resolved.ok) {
+    return resolved;
+  }
+  if (resolved.value.kind !== "event") {
+    return { ok: false, failure: { code: "command.internal-error" } };
+  }
+  if (noteValueEqual(resolved.value.event.duration, command.payload.noteValue)) {
+    return { ok: true, changed: false };
+  }
+  return changed(
+    [
+      {
+        kind: "replace-note-value",
+        eventId: command.target.eventId,
+        value: cloneValue(command.payload.noteValue),
+      },
+    ],
+    [{ kind: "event", eventId: command.target.eventId }],
+  );
+}
+
+function prepareInsertEvent(
+  document: ScoreDocument,
+  command: CoreCommandEnvelope,
+): PrepareCoreCommandEffectsResult {
+  if (
+    (command.commandId !== "core.voice.insert-notes-event" &&
+      command.commandId !== "core.voice.insert-rest-event") ||
+    command.target.kind !== "voice"
+  ) {
+    return { ok: false, failure: { code: "command.internal-error" } };
+  }
+  const resolved = resolveScoreEntityTarget(document, command.target);
+  if (!resolved.ok) {
+    return resolved;
+  }
+  if (resolved.value.kind !== "voice") {
+    return { ok: false, failure: { code: "command.internal-error" } };
+  }
+  const anchor = resolveSequenceAnchor(
+    document,
+    resolved.value.voice,
+    command.payload.anchor,
+  );
+  if (!anchor.ok) {
+    return anchor;
+  }
+  const event = command.payload.event;
+  const affected: ScoreAddress[] = [
+    { kind: "voice", voiceId: command.target.voiceId },
+    { kind: "event", eventId: event.id },
+  ];
+  if (event.content.kind === "notes") {
+    for (const note of event.content.notes) {
+      affected.push({ kind: "note", noteId: note.id });
+    }
+  }
+  return changed(
+    [
+      {
+        kind: "insert-event",
+        voiceId: command.target.voiceId,
+        anchor: cloneValue(command.payload.anchor),
+        event: cloneValue(event),
+      },
+    ],
+    affected,
+  );
+}
+
+function prepareRemoveEvent(
+  document: ScoreDocument,
+  command: CoreCommandEnvelope,
+): PrepareCoreCommandEffectsResult {
+  if (
+    command.commandId !== "core.event.remove" ||
+    command.target.kind !== "event"
+  ) {
+    return { ok: false, failure: { code: "command.internal-error" } };
+  }
+  const resolved = resolveScoreEntityTarget(document, command.target);
+  if (!resolved.ok) {
+    return resolved;
+  }
+  if (resolved.value.kind !== "event") {
+    return { ok: false, failure: { code: "command.internal-error" } };
+  }
+  const affected: ScoreAddress[] = [
+    { kind: "event", eventId: command.target.eventId },
+    { kind: "voice", voiceId: resolved.value.voice.id },
+  ];
+  if (resolved.value.event.content.kind === "notes") {
+    for (const note of resolved.value.event.content.notes) {
+      affected.push({ kind: "note", noteId: note.id });
+    }
+  }
+  return changed(
+    [
+      {
+        kind: "remove-event",
+        voiceId: resolved.value.voice.id,
+        eventId: command.target.eventId,
+      },
+    ],
+    affected,
+  );
+}
+
 export const CORE_COMMAND_ADAPTERS: readonly CoreCommandAdapter[] = Object.freeze([
   Object.freeze({
     commandId: "core.document.set-metadata" as const,
     targetKind: "document" as const,
     decodePayload: decodeSetMetadataPayload,
+    prepare: prepareSetMetadata,
   }),
   Object.freeze({
     commandId: "core.note.set-written-pitch" as const,
     targetKind: "note" as const,
     decodePayload: decodeSetWrittenPitchPayload,
+    prepare: prepareSetWrittenPitch,
   }),
   Object.freeze({
     commandId: "core.event.set-note-value" as const,
     targetKind: "event" as const,
     decodePayload: decodeSetNoteValuePayload,
+    prepare: prepareSetNoteValue,
   }),
   Object.freeze({
     commandId: "core.voice.insert-notes-event" as const,
     targetKind: "voice" as const,
     decodePayload: decodeInsertNotesEventPayload,
+    prepare: prepareInsertEvent,
   }),
   Object.freeze({
     commandId: "core.voice.insert-rest-event" as const,
     targetKind: "voice" as const,
     decodePayload: decodeInsertRestEventPayload,
+    prepare: prepareInsertEvent,
   }),
   Object.freeze({
     commandId: "core.event.remove" as const,
     targetKind: "event" as const,
     decodePayload: decodeRemoveEventPayload,
+    prepare: prepareRemoveEvent,
   }),
 ] satisfies readonly CoreCommandAdapter[]);

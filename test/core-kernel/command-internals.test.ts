@@ -12,10 +12,10 @@ import {
 } from "../../src/core-kernel/commands/execution-assembly";
 import { decodeCoreCommand } from "../../src/core-kernel/commands/strict-codec";
 import {
-  applyCoreMutation,
-  prepareCommandMutation,
-  type CoreMutation,
-} from "../../src/core-kernel/commands/mutations";
+  applyCoreEffectSet,
+  type CoreEffect,
+  type NonEmptyCoreEffectSet,
+} from "../../src/core-kernel/commands/effects";
 import {
   createCommandRuntime,
   redoCommand,
@@ -94,6 +94,35 @@ function requireDecoded(input: unknown): CoreCommandEnvelope {
   return decoded.value;
 }
 
+function countRootDocumentClones<T>(
+  document: ScoreDocument,
+  operation: () => T,
+): { readonly value: T; readonly count: number } {
+  const descriptor = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "structuredClone",
+  );
+  if (descriptor === undefined || !("value" in descriptor)) {
+    throw new Error("expected a writable structuredClone data property");
+  }
+  const originalStructuredClone = descriptor.value as typeof structuredClone;
+  let count = 0;
+  Object.defineProperty(globalThis, "structuredClone", {
+    ...descriptor,
+    value: ((value: unknown) => {
+      if (value === document) {
+        count += 1;
+      }
+      return originalStructuredClone(value);
+    }) as typeof structuredClone,
+  });
+  try {
+    return { value: operation(), count };
+  } finally {
+    Object.defineProperty(globalThis, "structuredClone", descriptor);
+  }
+}
+
 test("the static catalog is frozen and contains only the six approved Core commands", () => {
   assert.equal(Object.isFrozen(CORE_COMMAND_DEFINITIONS), true);
   assert.equal(
@@ -160,6 +189,22 @@ test("the private default execution assembly freezes the six compatible adapters
         : definition,
   );
   assert.throws(() => createCoreExecutionAssembly(mismatched), TypeError);
+
+  const mutableFirstDefinition = { ...CORE_COMMAND_ADAPTERS[0]! };
+  const isolated = createCoreExecutionAssembly([
+    mutableFirstDefinition,
+    ...CORE_COMMAND_ADAPTERS.slice(1),
+  ]);
+  assert.equal(Object.isFrozen(isolated.definitions[0]), true);
+  assert.equal(
+    Reflect.set(
+      mutableFirstDefinition as unknown as Record<string, unknown>,
+      "targetKind",
+      "note",
+    ),
+    true,
+  );
+  assert.equal(isolated.definitions[0]?.targetKind, "document");
 });
 
 test("assembly-routed decoding detaches and deep-freezes accepted envelopes", () => {
@@ -179,6 +224,45 @@ test("assembly-routed decoding detaches and deep-freezes accepted envelopes", ()
   assert.equal(Object.isFrozen(decoded.value.payload.metadata.authors), true);
   (input.payload as { metadata: { title: string } }).metadata.title = "Mutated";
   assert.equal(decoded.value.payload.metadata.title, "Frozen decoder output");
+});
+
+test("prepared Core effects and canonical facts are detached and frozen", () => {
+  const decoded = requireDecoded(metadataCommand("Prepared effect"));
+  assert.equal(decoded.commandId, "core.document.set-metadata");
+  if (decoded.commandId !== "core.document.set-metadata") {
+    return;
+  }
+  const definition = DEFAULT_CORE_EXECUTION_ASSEMBLY.definitions.find(
+    (candidate) => candidate.commandId === decoded.commandId,
+  );
+  assert.notEqual(definition, undefined);
+  if (definition === undefined) {
+    return;
+  }
+  const prepared = definition.prepare(cloneCoreScoreFixture(), decoded);
+  assert.equal(prepared.ok, true);
+  assert.equal(prepared.ok && prepared.changed, true);
+  if (!prepared.ok || !prepared.changed) {
+    return;
+  }
+
+  assert.equal(Object.isFrozen(prepared.effects), true);
+  assert.equal(Object.isFrozen(prepared.effects[0]), true);
+  assert.equal(Object.isFrozen(prepared.affected), true);
+  assert.equal(Object.isFrozen(prepared.affected[0]), true);
+  const effect = prepared.effects[0];
+  assert.equal(effect.kind, "replace-metadata");
+  if (effect.kind !== "replace-metadata") {
+    return;
+  }
+  assert.equal(Object.isFrozen(effect.value), true);
+  assert.notEqual(
+    effect.value,
+    decoded.payload.metadata,
+  );
+  assert.deepEqual(prepared.affected, [
+    { kind: "document", documentId: "score-1" },
+  ]);
 });
 
 test("strict command decoding rejects sparse arrays, non-finite values, getters, and malformed unions", () => {
@@ -396,7 +480,7 @@ test("anchor resolution rejects duplicate matches instead of choosing an array p
   );
 });
 
-test("each internal forward/inverse mutation pair round-trips the document exactly", () => {
+test("each prepared internal effect set round-trips the document exactly", () => {
   const incomplete = cloneCoreScoreFixture();
   const incompleteEvents =
     incomplete.parts[0]!.measureContents[0]!.voices[0]!.sequence.events;
@@ -439,23 +523,188 @@ test("each internal forward/inverse mutation pair round-trips the document exact
   ];
 
   cases.forEach(([document, input]) => {
-    const prepared = prepareCommandMutation(document, requireDecoded(input));
+    const decoded = requireDecoded(input);
+    const definition = DEFAULT_CORE_EXECUTION_ASSEMBLY.definitions.find(
+      (candidate) => candidate.commandId === decoded.commandId,
+    );
+    assert.notEqual(definition, undefined);
+    if (definition === undefined) {
+      return;
+    }
+    const prepared = definition.prepare(document, decoded);
     assert.equal(prepared.ok, true);
     assert.equal(prepared.ok && prepared.changed, true);
     if (!prepared.ok || !prepared.changed) {
       return;
     }
-    const forward = applyCoreMutation(document, prepared.forward);
+    const forward = applyCoreEffectSet(document, prepared.effects);
     assert.equal(forward.ok, true);
     if (!forward.ok) {
       return;
     }
-    const inverse = applyCoreMutation(forward.document, prepared.inverse);
+    const inverse = applyCoreEffectSet(forward.document, forward.inverse);
     assert.equal(inverse.ok, true);
     if (inverse.ok) {
       assert.deepEqual(inverse.document, document);
     }
   });
+});
+
+test("ordered private effect sets clone once, derive reverse inverses, and stay atomic", () => {
+  const initial = cloneCoreScoreFixture();
+  const effects: NonEmptyCoreEffectSet = [
+    {
+      kind: "replace-metadata",
+      documentId: "score-1",
+      value: {
+        title: "Effect metadata",
+        authors: ["Brilliant Guitar"],
+        tempo: { bpm: 120 },
+      },
+    },
+    {
+      kind: "replace-written-pitch",
+      noteId: "note-1",
+      value: { step: "D", alter: 0, octave: 4 },
+    },
+  ];
+  const appliedObservation = countRootDocumentClones(initial, () =>
+    applyCoreEffectSet(initial, effects),
+  );
+  const applied = appliedObservation.value;
+  assert.equal(appliedObservation.count, 1);
+  assert.equal(applied.ok, true);
+  if (!applied.ok) {
+    return;
+  }
+  assert.equal(initial.metadata.title, "Core fixture");
+  assert.equal(applied.document.metadata.title, "Effect metadata");
+  const notes = applied.document.parts[0]!.measureContents[0]!.voices[0]!
+    .sequence.events[0]!.content;
+  assert.equal(notes.kind, "notes");
+  if (notes.kind === "notes") {
+    assert.equal(notes.notes[0]!.writtenPitch.step, "D");
+  }
+  assert.deepEqual(applied.inverse, [
+    {
+      kind: "replace-written-pitch",
+      noteId: "note-1",
+      value: { step: "C", alter: 0, octave: 4 },
+    },
+    {
+      kind: "replace-metadata",
+      documentId: "score-1",
+      value: {
+        title: "Core fixture",
+        authors: ["Brilliant Guitar"],
+        tempo: { bpm: 120 },
+      },
+    },
+  ]);
+  assert.equal(Object.isFrozen(applied.inverse), true);
+  assert.equal(Object.isFrozen(applied.inverse[0]), true);
+  const restored = applyCoreEffectSet(applied.document, applied.inverse);
+  assert.equal(restored.ok, true);
+  if (restored.ok) {
+    assert.deepEqual(restored.document, initial);
+  }
+
+  const sameTarget: NonEmptyCoreEffectSet = [
+    {
+      kind: "replace-written-pitch",
+      noteId: "note-1",
+      value: { step: "D", alter: 0, octave: 4 },
+    },
+    {
+      kind: "replace-written-pitch",
+      noteId: "note-1",
+      value: { step: "E", alter: 0, octave: 4 },
+    },
+  ];
+  const sameTargetApplied = applyCoreEffectSet(initial, sameTarget);
+  assert.equal(sameTargetApplied.ok, true);
+  if (sameTargetApplied.ok) {
+    assert.deepEqual(sameTargetApplied.inverse, [
+      {
+        kind: "replace-written-pitch",
+        noteId: "note-1",
+        value: { step: "D", alter: 0, octave: 4 },
+      },
+      {
+        kind: "replace-written-pitch",
+        noteId: "note-1",
+        value: { step: "C", alter: 0, octave: 4 },
+      },
+    ]);
+  }
+
+  const incomplete = cloneCoreScoreFixture();
+  const incompleteEvents =
+    incomplete.parts[0]!.measureContents[0]!.voices[0]!.sequence.events;
+  (incompleteEvents as typeof incompleteEvents[number][]).splice(3);
+  const dependentEffects: NonEmptyCoreEffectSet = [
+    {
+      kind: "insert-event",
+      voiceId: "voice-1",
+      anchor: { kind: "after-event", eventId: "event-3" },
+      event: {
+        id: "event-dependent",
+        duration: { base: 4, dots: 0 },
+        content: { kind: "rest" },
+      },
+    },
+    {
+      kind: "replace-note-value",
+      eventId: "event-dependent",
+      value: { base: 8, dots: 0 },
+    },
+  ];
+  const dependentApplied = applyCoreEffectSet(incomplete, dependentEffects);
+  assert.equal(dependentApplied.ok, true);
+  if (dependentApplied.ok) {
+    assert.deepEqual(dependentApplied.inverse, [
+      {
+        kind: "replace-note-value",
+        eventId: "event-dependent",
+        value: { base: 4, dots: 0 },
+      },
+      {
+        kind: "remove-event",
+        voiceId: "voice-1",
+        eventId: "event-dependent",
+      },
+    ]);
+    const restoredDependent = applyCoreEffectSet(
+      dependentApplied.document,
+      dependentApplied.inverse,
+    );
+    assert.equal(restoredDependent.ok, true);
+    if (restoredDependent.ok) {
+      assert.deepEqual(restoredDependent.document, incomplete);
+    }
+  }
+
+  const unchanged = cloneCoreScoreFixture();
+  const unchangedBefore = structuredClone(unchanged);
+  const secondEffectFailure: readonly CoreEffect[] = [
+    {
+      kind: "replace-written-pitch",
+      noteId: "note-1",
+      value: { step: "D", alter: 0, octave: 4 },
+    },
+    { kind: "remove-event", voiceId: "voice-1", eventId: "event-missing" },
+  ];
+  assert.equal(
+    applyCoreEffectSet(unchanged, secondEffectFailure).ok,
+    false,
+  );
+  assert.deepEqual(unchanged, unchangedBefore);
+
+  const emptyObservation = countRootDocumentClones(initial, () =>
+    applyCoreEffectSet(initial, []),
+  );
+  assert.equal(emptyObservation.value.ok, false);
+  assert.equal(emptyObservation.count, 0);
 });
 
 test("handler/application exceptions and version overflow preserve the exact runtime state", () => {
@@ -516,14 +765,14 @@ test("history corruption rejects undo atomically and no-op/rejection create no e
   assert.equal(rejected.state.undoStack.length, 1);
 
   const entry = committed.state.undoStack[0]!;
-  const brokenInverse: CoreMutation = {
+  const brokenInverse: CoreEffect = {
     kind: "remove-event",
     voiceId: "voice-1",
     eventId: "event-missing",
   };
   const corrupted: CommandRuntimeState = {
     ...committed.state,
-    undoStack: [{ ...entry, inverse: brokenInverse }],
+    undoStack: [{ ...entry, inverse: [brokenInverse] }],
   };
   const failure = undoCommand(corrupted);
   assert.equal(failure.state, corrupted);
@@ -537,11 +786,13 @@ test("history corruption rejects undo atomically and no-op/rejection create no e
     undoStack: [
       {
         ...entry,
-        inverse: {
-          kind: "replace-note-value",
-          eventId: "event-1",
-          value: { base: 2, dots: 0 },
-        },
+        inverse: [
+          {
+            kind: "replace-note-value",
+            eventId: "event-1",
+            value: { base: 2, dots: 0 },
+          },
+        ],
       },
     ],
   };
@@ -561,11 +812,13 @@ test("history corruption rejects undo atomically and no-op/rejection create no e
     redoStack: [
       {
         ...redoEntry,
-        forward: {
-          kind: "replace-note-value",
-          eventId: "event-1",
-          value: { base: 2, dots: 0 },
-        },
+        forward: [
+          {
+            kind: "replace-note-value",
+            eventId: "event-1",
+            value: { base: 2, dots: 0 },
+          },
+        ],
       },
     ],
   };
@@ -621,6 +874,7 @@ test("history entries use deterministic sequences and contain no document snapsh
   );
   second.state.undoStack.forEach((entry) => {
     assert.deepEqual(Object.keys(entry).sort(), [
+      "affected",
       "command",
       "forward",
       "inverse",
@@ -632,13 +886,15 @@ test("history entries use deterministic sequences and contain no document snapsh
   });
 });
 
-test("only committed command transitions expose private effective operation facts", () => {
+test("only committed command transitions expose canonical private operation facts", () => {
   const initial = requireRuntime();
   const submitted = submitCommand(initial, pitchCommand("D"));
   assert.equal(submitted.result.status, "committed");
   assert.equal(submitted.committed?.cause, "submit");
   assert.equal(submitted.committed?.command.commandId, "core.note.set-written-pitch");
-  assert.equal(submitted.committed?.effectiveMutation.kind, "replace-written-pitch");
+  assert.deepEqual(submitted.committed?.affected, [
+    { kind: "note", noteId: "note-1" },
+  ]);
 
   const noOp = submitCommand(submitted.state, pitchCommand("D"));
   const rejected = submitCommand(submitted.state, { commandVersion: 1 });
@@ -649,12 +905,12 @@ test("only committed command transitions expose private effective operation fact
   assert.equal(undone.result.status, "committed");
   assert.equal(undone.committed?.cause, "undo");
   assert.equal(undone.committed?.command.commandId, "core.note.set-written-pitch");
-  assert.deepEqual(undone.committed?.effectiveMutation, submitted.state.undoStack[0]?.inverse);
+  assert.deepEqual(undone.committed?.affected, submitted.state.undoStack[0]?.affected);
 
   const redone = redoCommand(undone.state);
   assert.equal(redone.result.status, "committed");
   assert.equal(redone.committed?.cause, "redo");
-  assert.deepEqual(redone.committed?.effectiveMutation, submitted.state.undoStack[0]?.forward);
+  assert.deepEqual(redone.committed?.affected, submitted.state.undoStack[0]?.affected);
 });
 
 test("committed document versions copy only deterministic content-state identities", () => {
