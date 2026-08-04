@@ -84,7 +84,7 @@ The graph is dependency-based rather than numeric-order-based. CVN-2 and CVN-3 a
 | CVN-1 | completed and archived | final narrow re-review passed; 19 command-internals and 193 full tests recorded | retained as accepted transaction-spine base |
 | CVN-2 | parent-planned; child not created | CVN-1 accepted, GD-0 independent acceptance pending | create detailed child only after GD-0 acceptance and user approval |
 | CVN-3 | completed and archived | independent review passed at `d9500f5` with P0/P1/P2 = `0/0/0`; 22 lifecycle and 233 full tests reproduced; acceptance commit `3691d93` | retained as accepted factory and Measure-lifecycle prerequisite |
-| CVN-4 | conditional detailed preplanning complete; formal child not created | accepted/archived CVN-3 dependency is satisfied; preplan and live evidence are recorded under parent research | create formal child only after user direction |
+| CVN-4 | formal child created; planning package complete, execution not authorized | accepted/archived CVN-3 dependency is satisfied; dedicated branch and task-local PRD/design/implement exist at 4e5612b | user reviews plan, then separately authorizes activation |
 | CVN-5 | parent-planned; child not created | waits for accepted CVN-2, CVN-3, CVN-4 and CVN-6 | detailed planning after all four dependencies are accepted |
 | CVN-6 | parent-planned; child not created | waits for accepted CVN-2 and CVN-1 | detailed planning after CVN-2 acceptance |
 | CVN-7 | parent-planned; child not created | waits for independently accepted and archived CVN-0 through CVN-6 | final qualification task |
@@ -608,10 +608,10 @@ Creation alone does not authorize source changes. Parent planning status does no
 
 ## 16. Current Scheduling Decisions
 
-1. CVN-3 is independently accepted and archived; no CVN implementation child is active at this snapshot.
+1. CVN-3 is independently accepted and archived; CVN-4 is the only active CVN child in planning, with no source implementation activated.
 2. CVN-2 becomes eligible after independent GD-0 acceptance.
-3. CVN-4 conditional preplanning is complete and its CVN-3 dependency is satisfied; formal child creation still requires user direction.
-4. If CVN-2 and CVN-4 are both eligible, present the live comparison and activate only the user-approved next child.
+3. CVN-4 formal child and planning package are complete after user direction; task.py start and source implementation still require separate user approval.
+4. User selected CVN-4 as the next planning child; no other child activation is implied, and CVN-4 execution remains a separate approval gate.
 5. CVN-6 follows accepted CVN-2.
 6. CVN-5 waits for accepted CVN-2, CVN-3, CVN-4 and CVN-6.
 7. CVN-7 waits for accepted and archived CVN-0 through CVN-6.

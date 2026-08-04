@@ -1,0 +1,13 @@
+{"file": ".trellis/spec/core-kernel/backend/pure-kernel-boundary.md", "reason": "保持纯 Core、单 runtime owner、schema 稳定以及禁止产品/模块运行时依赖。"}
+{"file": ".trellis/spec/core-kernel/backend/score-document-model.md", "reason": "约束 brilliant-score-1 的 Part、Staff、PartMeasureContent、Voice、Event、extension、semantic 与 profile 模型。"}
+{"file": ".trellis/spec/core-kernel/backend/command-transaction.md", "reason": "约束 command envelope、candidate、effect inverse、history、undo/redo/replay、no-op 与原子失败。"}
+{"file": ".trellis/spec/core-kernel/backend/snapshot-events.md", "reason": "约束 checkpoint/dirty、committed event、affected-address、subscriber isolation。"}
+{"file": ".trellis/spec/core-kernel/backend/registry-capability.md", "reason": "约束 frozen built-ins、descriptor、capability gateway 与无 runtime hot-plug。"}
+{"file": ".trellis/spec/core-kernel/backend/errors-reports.md", "reason": "约束封闭 failure/Issue/report decoder、确定性 diagnostics 与 privacy。"}
+{"file": ".trellis/spec/core-kernel/backend/quality-guidelines.md", "reason": "驱动 hostile-input、public-surface、dependency、regression 与 full-diff 验证。"}
+{"file": ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/feature-contract-matrix.md", "reason": "提供 CVN-FC-010/011/030/031/041/060-070/100-102/120/121/140/142 的父合同。"}
+{"file": ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-roadmap-and-stage-plan.md", "reason": "保持 CVN-4 的 dependency order、child boundary、stop condition 与后继 CVN-5 gate。"}
+{"file": ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-4-part-staff-voice-preplanning.md", "reason": "提供经收敛的 exact 15 command、payload、effect、fixture、validation 和 acceptance 细节。"}
+{"file": ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-4-current-hierarchy-evidence.md", "reason": "提供 CVN-3 source seam、ownership gap、strict codec、extension restoration 与 public surface 证据。"}
+{"file": ".trellis/tasks/archive/2026-08/08-04-cvn-3-document-factory-measure-lifecycle/prd.md", "reason": "保留已验收 CVN-3 public/transaction/surface compatibility baseline。"}
+{"file": ".trellis/tasks/archive/2026-08/08-04-cvn-3-document-factory-measure-lifecycle/design.md", "reason": "复用已验收 strict capture、Measure aggregate/effect 与 surface projection 设计边界。"}

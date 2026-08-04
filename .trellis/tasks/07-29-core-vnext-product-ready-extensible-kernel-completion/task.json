@@ -21,7 +21,8 @@
   "children": [
     "07-30-cvn-0-public-unknown-guard-consistency",
     "08-04-cvn-1-command-transaction-registry-spine",
-    "08-04-cvn-3-document-factory-measure-lifecycle"
+    "08-04-cvn-3-document-factory-measure-lifecycle",
+    "08-04-cvn-4-part-staff-voice-lifecycle"
   ],
   "parent": "06-29-commercial-guitar-tablature-product",
   "relatedFiles": [
@@ -47,7 +48,7 @@
     ".trellis/spec/core-kernel/backend/errors-reports.md",
     ".trellis/spec/core-kernel/backend/domain-transaction-integration.md"
   ],
-  "notes": "PLANNING COORDINATION / CVN-0 CVN-1 AND CVN-3 ACCEPTED AND ARCHIVED / CVN-4 DEPENDENCY SATISFIED WITH CONDITIONAL DETAILED PREPLANNING COMPLETE / FORMAL CVN-4 CHILD NOT CREATED / 28-COMMAND FINITE CATALOG / STABILITY FIRST / HOT PLUG EXCLUDED.",
+  "notes": "PLANNING COORDINATION / CVN-0 CVN-1 AND CVN-3 ACCEPTED AND ARCHIVED / CVN-4 FORMAL CHILD CREATED ON DEDICATED BRANCH / PLANNING PACKAGE COMPLETE / EXECUTION APPROVAL PENDING / 28-COMMAND FINITE CATALOG / STABILITY FIRST / HOT PLUG EXCLUDED.",
   "meta": {
     "compatibility_base": "d92a7586536ac8757c318ae6f75aabd8698f85ac",
     "architecture_style": "stability_first_startup_frozen_microkernel",
@@ -62,12 +63,12 @@
     "transaction_effect_limit": 131072,
     "durable_roadmap": ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-roadmap-and-stage-plan.md",
     "durable_roadmap_last_synchronized": "2026-08-04",
-    "cvn4_preplanning_status": "conditional_complete_dependency_satisfied_formal_child_pending_user_direction",
+    "cvn4_preplanning_status": "formal_child_created_planning_review_pending_execution_approval",
     "cvn4_dependency_status": "satisfied_by_accepted_archived_cvn3",
     "cvn4_preplanning_file": ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-4-part-staff-voice-preplanning.md",
     "cvn4_evidence_file": ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-4-current-hierarchy-evidence.md",
-    "cvn4_formal_task_created": false,
-    "cvn4_branch_created": false,
+    "cvn4_formal_task_created": true,
+    "cvn4_branch_created": true,
     "cvn4_task_start_run": false,
     "cvn4_production_implementation_authorized": false,
     "cvn4_expected_runtime_export_count": 49,
@@ -163,6 +164,17 @@
     "third_child_next_gate": "completed; choose the next dependency-satisfied child",
     "third_child_documentation_candidate_validation": "passed",
     "third_child_protected_persisted_schema_diff": "passed_no_diff",
-    "third_child_protected_cvn1_expected_fixture_diff": "passed_no_diff"
+    "third_child_protected_cvn1_expected_fixture_diff": "passed_no_diff",
+    "cvn4_formal_task_directory": ".trellis/tasks/08-04-cvn-4-part-staff-voice-lifecycle",
+    "cvn4_formal_task_branch": "codex/cvn-4-part-staff-voice-lifecycle",
+    "cvn4_worktree_path": ".worktrees/cvn-4-part-staff-voice-lifecycle",
+    "cvn4_planning_base_head": "4e5612b0a0e586184a74e951e5b3a2394f8cc5c0",
+    "cvn4_accepted_cvn3_source_test_commit": "d9500f5a8ac285071586ba8eda380370eafd022f",
+    "cvn4_accepted_cvn3_acceptance_commit": "3691d93e934c4fe44d3d34e313acd257deae154c",
+    "cvn4_accepted_cvn3_archive_commit": "7b727af0a55e22f878e1d7a744f0426deef37cf2",
+    "cvn4_user_planning_direction_received": true,
+    "cvn4_user_planning_direction_date": "2026-08-04",
+    "cvn4_planning_artifacts_complete": true,
+    "cvn4_next_gate": "formal plan review and separate user execution approval"
   }
 }
