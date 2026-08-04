@@ -305,3 +305,36 @@ Completed the private command, ordered effect-set transaction, and Registry resp
 ### Next Steps
 
 - None - task complete
+
+
+## Session 9: Accept and archive CVN-3
+
+**Date**: 2026-08-04
+**Task**: Accept and archive CVN-3
+**Branch**: `codex/cvn-3-document-factory-measure-lifecycle`
+
+### Summary
+
+Independent audit accepted source/test commit d9500f5 with P0/P1/P2 0/0/0; typecheck, build, lifecycle 22/22, full 233/233, Trellis and compatibility gates passed. Recorded AC028, archived CVN-3, marked the CVN-4 dependency satisfied, and preserved parallel CVN-4 preplanning changes.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `3691d93` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
