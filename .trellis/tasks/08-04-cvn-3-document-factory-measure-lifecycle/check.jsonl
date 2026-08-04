@@ -1,0 +1,9 @@
+{"file": ".trellis/spec/core-kernel/backend/pure-kernel-boundary.md", "reason": "Audit that the child stays pure Core, schema-stable, single-owner, and free of product/module-runtime dependencies."}
+{"file": ".trellis/spec/core-kernel/backend/score-document-model.md", "reason": "Audit exact Measure coverage, IDs, references, semantics, support classification, and extension preservation."}
+{"file": ".trellis/spec/core-kernel/backend/command-transaction.md", "reason": "Audit exact command decoding, candidate/effect inverse, state, history, undo/redo, replay, and failure behavior."}
+{"file": ".trellis/spec/core-kernel/backend/snapshot-events.md", "reason": "Audit checkpoint/dirty state, canonical affected addresses, event count/order, and subscriber isolation."}
+{"file": ".trellis/spec/core-kernel/backend/registry-capability.md", "reason": "Audit ten built-in command descriptors, title keys, capability authorization, and no hot-plug growth."}
+{"file": ".trellis/spec/core-kernel/backend/errors-reports.md", "reason": "Audit exact failure decoding, Issue details, deterministic diagnostics, and privacy."}
+{"file": ".trellis/spec/core-kernel/backend/quality-guidelines.md", "reason": "Drive full-diff regression, public export, hostile-input, forbidden-shortcut, and final full-suite checks."}
+{"file": ".trellis/tasks/08-04-cvn-3-document-factory-measure-lifecycle/research/current-measure-evidence.md", "reason": "Compare the implementation with the recorded live baseline, source seams, and previously identified gaps."}
+{"file": ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-roadmap-and-stage-plan.md", "reason": "Audit that CVN-3 stays inside its roadmap ownership, preserves global Core VNext invariants and does not advance CVN-2, CVN-4 or later gates prematurely."}

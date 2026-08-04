@@ -20,19 +20,22 @@
   "subtasks": [],
   "children": [
     "07-30-cvn-0-public-unknown-guard-consistency",
-    "08-04-cvn-1-command-transaction-registry-spine"
+    "08-04-cvn-1-command-transaction-registry-spine",
+    "08-04-cvn-3-document-factory-measure-lifecycle"
   ],
   "parent": "06-29-commercial-guitar-tablature-product",
   "relatedFiles": [
     ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/prd.md",
     ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/design.md",
     ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/implement.md",
+    ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-roadmap-and-stage-plan.md",
     ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/feature-contract-matrix.md",
     ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/documentation-sync-matrix.md",
     ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/core-vnext-refactor-assessment.md",
     ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/core-vnext-performance-baseline.md",
     ".trellis/tasks/archive/2026-08/07-30-cvn-0-public-unknown-guard-consistency/",
     ".trellis/tasks/archive/2026-08/08-04-cvn-1-command-transaction-registry-spine/",
+    ".trellis/tasks/08-04-cvn-3-document-factory-measure-lifecycle/",
     ".trellis/tasks/07-28-gd-0-guitar-domain-core-transaction-contract/",
     ".trellis/spec/core-kernel/backend/index.md",
     ".trellis/spec/core-kernel/backend/pure-kernel-boundary.md",
@@ -42,7 +45,7 @@
     ".trellis/spec/core-kernel/backend/errors-reports.md",
     ".trellis/spec/core-kernel/backend/domain-transaction-integration.md"
   ],
-  "notes": "PLANNING COORDINATION / CVN-0 AND CVN-1 ACCEPTED AND ARCHIVED / 28-COMMAND FINITE CATALOG / PRODUCT-READY EXTENSIBLE MICROKERNEL / STABILITY FIRST / HOT PLUG EXCLUDED / CONTROLLED SPINE REFACTOR / CORE-FIRST LEGACY GATE MAPPING.",
+  "notes": "PLANNING COORDINATION / CVN-0 AND CVN-1 ACCEPTED AND ARCHIVED / CVN-3 ACTIVE AND OPERATOR READY / 28-COMMAND FINITE CATALOG / PRODUCT-READY EXTENSIBLE MICROKERNEL / STABILITY FIRST / HOT PLUG EXCLUDED / CONTROLLED SPINE REFACTOR / CORE-FIRST LEGACY GATE MAPPING.",
   "meta": {
     "compatibility_base": "d92a7586536ac8757c318ae6f75aabd8698f85ac",
     "architecture_style": "stability_first_startup_frozen_microkernel",
@@ -55,6 +58,8 @@
     "vnext_new_core_commands": 22,
     "batch_child_limit": 100,
     "transaction_effect_limit": 131072,
+    "durable_roadmap": ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-roadmap-and-stage-plan.md",
+    "durable_roadmap_last_synchronized": "2026-08-04",
     "first_child": "07-30-cvn-0-public-unknown-guard-consistency",
     "first_child_status": "completed_archived",
     "first_child_final_independent_re_review": "passed_2026-08-04",
@@ -86,6 +91,36 @@
     "second_child_parent_contracts": [
       "CVN-FC-011",
       "CVN-FC-040"
+    ],
+    "third_child": "08-04-cvn-3-document-factory-measure-lifecycle",
+    "third_child_status": "in_progress",
+    "third_child_branch": "codex/cvn-3-document-factory-measure-lifecycle",
+    "third_child_base_branch": "codex/cvn-1-command-transaction-registry-spine",
+    "third_child_planning_base_head": "d936d58195803ef938214948b21e89fe67939090",
+    "third_child_dependency_satisfied": true,
+    "third_child_task_start_run": true,
+    "third_child_user_execution_approval": true,
+    "third_child_user_execution_approval_date": "2026-08-04",
+    "third_child_production_implementation_authorized": true,
+    "third_child_expected_runtime_export_count": 49,
+    "third_child_expected_core_command_count": 10,
+    "third_child_parent_contracts": [
+      "CVN-FC-010",
+      "CVN-FC-011",
+      "CVN-FC-020",
+      "CVN-FC-021",
+      "CVN-FC-030",
+      "CVN-FC-031",
+      "CVN-FC-041",
+      "CVN-FC-050",
+      "CVN-FC-051",
+      "CVN-FC-052",
+      "CVN-FC-053",
+      "CVN-FC-100",
+      "CVN-FC-101",
+      "CVN-FC-102",
+      "CVN-FC-140",
+      "CVN-FC-142"
     ],
     "runtime_hot_plug": false,
     "production_implementation_authorized": false
