@@ -1,0 +1,7 @@
+{"file":".trellis/spec/core-kernel/backend/pure-kernel-boundary.md","reason":"Preserve the nine-mechanism pure Core boundary and forbidden product/platform dependencies during the private spine refactor."}
+{"file":".trellis/spec/core-kernel/backend/command-transaction.md","reason":"Authoritative accepted six-command, transaction, history, replay, failure and hostile-input behavior."}
+{"file":".trellis/spec/core-kernel/backend/snapshot-events.md","reason":"Preserve read, checkpoint, dirty, event ordering, affected facts, atomic adoption and subscriber isolation."}
+{"file":".trellis/spec/core-kernel/backend/registry-capability.md","reason":"Preserve default manifest, Registry/Gateway summaries, capability ordering, startup-only registration and public failures."}
+{"file":".trellis/spec/core-kernel/backend/quality-guidelines.md","reason":"Apply Core testing, privacy, dependency and regression requirements to every implementation stage."}
+{"file":".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/core-vnext-refactor-assessment.md","reason":"Parent evidence for the behavior-preserving refactor boundary and seams that require restructuring."}
+{"file":".trellis/tasks/08-04-cvn-1-command-transaction-registry-spine/research/current-spine-evidence.md","reason":"Live CVN-1 baseline, source/test anchors, responsibility map and operator evidence gaps."}

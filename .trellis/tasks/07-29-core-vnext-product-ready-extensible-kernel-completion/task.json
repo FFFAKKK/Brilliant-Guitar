@@ -19,7 +19,8 @@
   "pr_url": null,
   "subtasks": [],
   "children": [
-    "07-30-cvn-0-public-unknown-guard-consistency"
+    "07-30-cvn-0-public-unknown-guard-consistency",
+    "08-04-cvn-1-command-transaction-registry-spine"
   ],
   "parent": "06-29-commercial-guitar-tablature-product",
   "relatedFiles": [
@@ -30,7 +31,8 @@
     ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/documentation-sync-matrix.md",
     ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/core-vnext-refactor-assessment.md",
     ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/core-vnext-performance-baseline.md",
-    ".trellis/tasks/07-30-cvn-0-public-unknown-guard-consistency/",
+    ".trellis/tasks/archive/2026-08/07-30-cvn-0-public-unknown-guard-consistency/",
+    ".trellis/tasks/08-04-cvn-1-command-transaction-registry-spine/",
     ".trellis/tasks/07-28-gd-0-guitar-domain-core-transaction-contract/",
     ".trellis/spec/core-kernel/backend/index.md",
     ".trellis/spec/core-kernel/backend/pure-kernel-boundary.md",
@@ -40,7 +42,7 @@
     ".trellis/spec/core-kernel/backend/errors-reports.md",
     ".trellis/spec/core-kernel/backend/domain-transaction-integration.md"
   ],
-  "notes": "PLANNING DETAILED CONTRACT REVIEW CANDIDATE / FIRST CHILD CVN-0 ACCEPTED WITH ARCHIVE PENDING / 28-COMMAND FINITE CATALOG / PRODUCT-READY EXTENSIBLE MICROKERNEL / STABILITY FIRST / HOT PLUG EXCLUDED / CONTROLLED SPINE REFACTOR / CORE-FIRST LEGACY GATE MAPPING.",
+  "notes": "PLANNING COORDINATION / CVN-0 ACCEPTED AND ARCHIVED / CVN-1 USER APPROVED AND ACTIVATED / 28-COMMAND FINITE CATALOG / PRODUCT-READY EXTENSIBLE MICROKERNEL / STABILITY FIRST / HOT PLUG EXCLUDED / CONTROLLED SPINE REFACTOR / CORE-FIRST LEGACY GATE MAPPING.",
   "meta": {
     "compatibility_base": "d92a7586536ac8757c318ae6f75aabd8698f85ac",
     "architecture_style": "stability_first_startup_frozen_microkernel",
@@ -54,7 +56,7 @@
     "batch_child_limit": 100,
     "transaction_effect_limit": 131072,
     "first_child": "07-30-cvn-0-public-unknown-guard-consistency",
-    "first_child_status": "accepted_pending_archive",
+    "first_child_status": "completed_archived",
     "first_child_final_independent_re_review": "passed_2026-08-04",
     "first_child_implementation_commit": "fce2be2f68adc6362f83b95467a17ffef736ad78",
     "first_child_second_repair_commit": null,
@@ -62,6 +64,19 @@
     "first_child_fourth_repair_commit": null,
     "first_child_focused_test_count": 19,
     "first_child_full_test_count": 188,
+    "first_child_acceptance_commit": "cc9beee",
+    "first_child_archive_commit": "6cec36b",
+    "first_child_final_source_commit": "c7ffd49",
+    "second_child": "08-04-cvn-1-command-transaction-registry-spine",
+    "second_child_status": "in_progress_operator_handoff_ready",
+    "second_child_branch": "codex/cvn-1-command-transaction-registry-spine",
+    "second_child_planning_base_head": "a8c7404cc34649aaa2c6ebfe8d93e46daf87dbf5",
+    "second_child_user_approval": "2026-08-04",
+    "second_child_task_start_run": true,
+    "second_child_parent_contracts": [
+      "CVN-FC-011",
+      "CVN-FC-040"
+    ],
     "runtime_hot_plug": false,
     "production_implementation_authorized": false
   }

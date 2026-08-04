@@ -2,7 +2,7 @@
 
 ## 1. Execution Status
 
-`PLANNING / DETAILED CONTRACT REVIEW CANDIDATE / CVN-0 ACCEPTED, ARCHIVE PENDING / OTHER CHILDREN INACTIVE`.
+`PLANNING COORDINATION / CVN-0 ACCEPTED AND ARCHIVED / CVN-1 USER APPROVED AND ACTIVATED / CVN-2..7 INACTIVE`.
 
 This parent task coordinates independently verifiable children. It does not batch all production changes into one implementation branch. Each child must receive its own PRD/design/implement review, `task.py start`, independent technical audit and archive decision.
 
@@ -11,10 +11,11 @@ After final user approval, the parent may enter `in_progress` only as the coordi
 ## 2. Entry Baselines
 
 - Core V1 close baseline: `d92a7586536ac8757c318ae6f75aabd8698f85ac`.
-- Current planning branch HEAD at assessment: `8c26fc29a4a103c400497b7c1f1fbfdbee2fca0c`.
+- Current next-child planning baseline: `a8c7404cc34649aaa2c6ebfe8d93e46daf87dbf5`, after accepted CVN-0 and its archive/journal records.
 - GD-0: documentation review candidate; independent acceptance pending.
-- Core accepted regression evidence: 8/8 K1-6 focused and 169/169 full tests.
-- Production-code drift from Core close baseline to the planning HEAD: none in `src/**`, `test/**`, `package.json`, or `tsconfig.json`.
+- Core V1 accepted regression evidence: 8/8 K1-6 focused and 169/169 full tests.
+- CVN-0 accepted evidence: 19 focused, 42 related regression and 188 full tests; final independent re-review passed on 2026-08-04.
+- Production drift after Core close is limited to the independently accepted CVN-0 public unknown-guard repair and its tests/spec synchronization; CVN-1 must freshly characterize command/transaction/event/Registry behavior before refactoring it.
 
 Every child records a fresh activation baseline and may not substitute these historical hashes for its own live verification.
 
@@ -29,6 +30,8 @@ Every child records a fresh activation baseline and may not substitute these his
 - [x] Present all four parent contract artifacts and a concise decision summary to the user.
 - [x] Receive explicit approval to create the first planning child; `07-30-cvn-0-public-unknown-guard-consistency` was created on 2026-07-30.
 - [x] Obtain explicit review approval before running `task.py start` for CVN-0; creation alone does not activate implementation.
+- [x] Accept and archive CVN-0 after final independent re-review; acceptance commit `cc9beee`, archive commit `6cec36b`.
+- [x] Receive user direction to continue to the next planning gate and create CVN-1 on 2026-08-04.
 
 ## 4. Child Gate Map
 
@@ -56,7 +59,7 @@ Numeric labels organize scope; the arrows above are the actual execution depende
 - stable boolean classification; K1-5 error/report contracts remain separate；
 - establish the strict inspection primitives consumed by later VNext decoders; depth/property budget counters land with those new decoder gates and do not add a V1 predicate size rejection。
 
-**Created child:** `.trellis/tasks/07-30-cvn-0-public-unknown-guard-consistency/`, status `planning`, branch `codex/cvn-0-public-unknown-guard-consistency`, activation HEAD `8c26fc29a4a103c400497b7c1f1fbfdbee2fca0c`.
+**Archived child:** `.trellis/tasks/archive/2026-08/07-30-cvn-0-public-unknown-guard-consistency/`, status `completed`, branch `codex/cvn-0-public-unknown-guard-consistency`, activation HEAD `8c26fc29a4a103c400497b7c1f1fbfdbee2fca0c`, final independent re-review passed 2026-08-04.
 
 **Protected:** command/history/event/Registry behavior and public export list except an explicitly approved private helper layout.
 
@@ -67,6 +70,8 @@ Numeric labels organize scope; the arrows above are the actual execution depende
 **Purpose:** establish the internal execution catalog/effect-set architecture with zero new user-visible behavior.
 
 **Dependencies:** CVN-0 accepted; GD-0 contract either independently accepted or explicitly treated only as non-authoritative research input.
+
+**Active child:** `.trellis/tasks/08-04-cvn-1-command-transaction-registry-spine/`, status `in_progress`, branch `codex/cvn-1-command-transaction-registry-spine`, base `codex/cvn-0-public-unknown-guard-consistency`, activation HEAD `a8c7404cc34649aaa2c6ebfe8d93e46daf87dbf5`. The user approved the completed artifacts and `task.py start` ran on 2026-08-04. GD-0 remains explicitly non-authoritative research input. Operator work begins with an isolated planning commit and Stage 1 characterization before production refactoring.
 
 **Before code:**
 
