@@ -2,7 +2,7 @@
 
 ## 1. Execution Status
 
-`PLANNING COORDINATION / CVN-0 ACCEPTED AND ARCHIVED / CVN-1 USER APPROVED AND ACTIVATED / CVN-2..7 INACTIVE`.
+`PLANNING COORDINATION / CVN-0 AND CVN-1 ACCEPTED AND ARCHIVED / CVN-2..7 INACTIVE`.
 
 This parent task coordinates independently verifiable children. It does not batch all production changes into one implementation branch. Each child must receive its own PRD/design/implement review, `task.py start`, independent technical audit and archive decision.
 
@@ -15,7 +15,8 @@ After final user approval, the parent may enter `in_progress` only as the coordi
 - GD-0: documentation review candidate; independent acceptance pending.
 - Core V1 accepted regression evidence: 8/8 K1-6 focused and 169/169 full tests.
 - CVN-0 accepted evidence: 19 focused, 42 related regression and 188 full tests; final independent re-review passed on 2026-08-04.
-- Production drift after Core close is limited to the independently accepted CVN-0 public unknown-guard repair and its tests/spec synchronization; CVN-1 must freshly characterize command/transaction/event/Registry behavior before refactoring it.
+- CVN-1 accepted evidence: 19/19 command-internals and 193/193 full tests; immutable characterization SHA-256 `CDBCFD68DCC84C514BCAC8BA83B44B819A237146C842E0F63E8F17A3CD2FF4D9`; final narrow independent re-review passed on 2026-08-04.
+- Production drift after Core close is limited to the independently accepted CVN-0 public unknown-guard repair and CVN-1 private command/transaction/Registry spine refactor, with their tests/spec synchronization; the six V1 public command traces and 48-root-export boundary remain preserved.
 
 Every child records a fresh activation baseline and may not substitute these historical hashes for its own live verification.
 
@@ -32,6 +33,7 @@ Every child records a fresh activation baseline and may not substitute these his
 - [x] Obtain explicit review approval before running `task.py start` for CVN-0; creation alone does not activate implementation.
 - [x] Accept and archive CVN-0 after final independent re-review; acceptance commit `cc9beee`, archive commit `6cec36b`.
 - [x] Receive user direction to continue to the next planning gate and create CVN-1 on 2026-08-04.
+- [x] Accept and archive CVN-1 after final narrow independent re-review; transaction commit `f7c0064`, Registry commit `1016d05`, acceptance commit `8362086`, archive commit `4bdc405`.
 
 ## 4. Child Gate Map
 
@@ -71,7 +73,7 @@ Numeric labels organize scope; the arrows above are the actual execution depende
 
 **Dependencies:** CVN-0 accepted; GD-0 contract either independently accepted or explicitly treated only as non-authoritative research input.
 
-**Active child:** `.trellis/tasks/08-04-cvn-1-command-transaction-registry-spine/`, status `in_progress`, branch `codex/cvn-1-command-transaction-registry-spine`, base `codex/cvn-0-public-unknown-guard-consistency`, activation HEAD `a8c7404cc34649aaa2c6ebfe8d93e46daf87dbf5`. The user approved the completed artifacts and `task.py start` ran on 2026-08-04. GD-0 remains explicitly non-authoritative research input. Operator work begins with an isolated planning commit and Stage 1 characterization before production refactoring.
+**Archived child:** `.trellis/tasks/archive/2026-08/08-04-cvn-1-command-transaction-registry-spine/`, status `completed`, branch `codex/cvn-1-command-transaction-registry-spine`, base `codex/cvn-0-public-unknown-guard-consistency`, activation HEAD `a8c7404cc34649aaa2c6ebfe8d93e46daf87dbf5`. The final source commits are `f7c0064` and `1016d05`; acceptance was recorded by `8362086` and archived by `4bdc405`. The final narrow independent re-review found no reproducible P0/P1/P2. GD-0 remains explicitly non-authoritative research input.
 
 **Before code:**
 
@@ -93,6 +95,8 @@ Numeric labels organize scope; the arrows above are the actual execution depende
 **Protected:** persisted schema; all Core V1 public signatures/discriminants; read/snapshot/checkpoint/event/report/migration behavior.
 
 **Exit:** before/after trace deep equality, full test suite, no new root export and independent technical acceptance.
+
+**Result:** exit criteria passed and the child is archived; no subsequent child is activated by this record.
 
 ### CVN-2 — Official Module SDK and Frozen Contribution Assembly
 
