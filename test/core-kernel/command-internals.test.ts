@@ -2,6 +2,14 @@ import { test } from "node:test";
 import assert = require("node:assert/strict");
 
 import { CORE_COMMAND_DEFINITIONS } from "../../src/core-kernel/commands/catalog";
+import {
+  CORE_COMMAND_ADAPTERS,
+  type CoreCommandAdapter,
+} from "../../src/core-kernel/commands/core-command-adapters";
+import {
+  createCoreExecutionAssembly,
+  DEFAULT_CORE_EXECUTION_ASSEMBLY,
+} from "../../src/core-kernel/commands/execution-assembly";
 import { decodeCoreCommand } from "../../src/core-kernel/commands/strict-codec";
 import {
   applyCoreMutation,
@@ -103,6 +111,74 @@ test("the static catalog is frozen and contains only the six approved Core comma
       "core.event.remove",
     ],
   );
+});
+
+test("the private default execution assembly freezes the six compatible adapters", () => {
+  const assembly = DEFAULT_CORE_EXECUTION_ASSEMBLY;
+  assert.deepEqual(assembly.source, {
+    moduleId: "core.commands",
+    contributionId: "core.commands.v1",
+  });
+  assert.equal(Object.isFrozen(assembly), true);
+  assert.equal(Object.isFrozen(assembly.source), true);
+  assert.equal(Object.isFrozen(assembly.definitions), true);
+  assert.equal(
+    assembly.definitions.every((definition) => Object.isFrozen(definition)),
+    true,
+  );
+  assert.deepEqual(
+    assembly.definitions.map(({ commandId, targetKind }) => ({
+      commandId,
+      targetKind,
+    })),
+    CORE_COMMAND_DEFINITIONS,
+  );
+  assert.equal(typeof assembly.validate, "function");
+  assert.equal(typeof assembly.classify, "function");
+  assert.equal(
+    Reflect.set(
+      assembly.definitions as unknown as Record<string, unknown>,
+      "0",
+      null,
+    ),
+    false,
+  );
+
+  const duplicate: CoreCommandAdapter[] = [
+    ...CORE_COMMAND_ADAPTERS.slice(0, -1),
+    CORE_COMMAND_ADAPTERS[0]!,
+  ];
+  assert.throws(() => createCoreExecutionAssembly(duplicate), TypeError);
+
+  const mismatched: CoreCommandAdapter[] = CORE_COMMAND_ADAPTERS.map(
+    (definition, index) =>
+      index === 0
+        ? {
+            ...definition,
+            targetKind: "note",
+          }
+        : definition,
+  );
+  assert.throws(() => createCoreExecutionAssembly(mismatched), TypeError);
+});
+
+test("assembly-routed decoding detaches and deep-freezes accepted envelopes", () => {
+  const input = metadataCommand("Frozen decoder output");
+  const decoded = decodeCoreCommand(input);
+  assert.equal(decoded.ok, true);
+  if (!decoded.ok) {
+    return;
+  }
+  if (decoded.value.commandId !== "core.document.set-metadata") {
+    throw new Error("expected metadata command decoder result");
+  }
+  assert.equal(Object.isFrozen(decoded.value), true);
+  assert.equal(Object.isFrozen(decoded.value.target), true);
+  assert.equal(Object.isFrozen(decoded.value.payload), true);
+  assert.equal(Object.isFrozen(decoded.value.payload.metadata), true);
+  assert.equal(Object.isFrozen(decoded.value.payload.metadata.authors), true);
+  (input.payload as { metadata: { title: string } }).metadata.title = "Mutated";
+  assert.equal(decoded.value.payload.metadata.title, "Frozen decoder output");
 });
 
 test("strict command decoding rejects sparse arrays, non-finite values, getters, and malformed unions", () => {
