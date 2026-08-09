@@ -33,6 +33,74 @@ import {
 
 type PlainRecord = Record<string, unknown>;
 
+const reflectApply = Reflect.apply;
+const arrayPrototype = Array.prototype;
+const arrayFilter = arrayPrototype.filter;
+const arrayPush = arrayPrototype.push;
+const arraySlice = arrayPrototype.slice;
+const arraySort = arrayPrototype.sort;
+const objectConstructor = Object;
+const objectKeys = objectConstructor.keys;
+const objectHasOwnProperty = objectConstructor.prototype.hasOwnProperty;
+const setConstructor = Set;
+const setPrototype = setConstructor.prototype;
+const setAdd = setPrototype.add;
+const setDelete = setPrototype.delete;
+const setHas = setPrototype.has;
+
+function filterValues<T>(
+  values: readonly T[],
+  predicate: (value: T, index: number) => boolean,
+): T[] {
+  return reflectApply(arrayFilter, values, [predicate]) as T[];
+}
+
+function pushValue<T>(values: T[], value: T): void {
+  reflectApply(arrayPush, values, [value]);
+}
+
+function appendPath(
+  path: DiagnosticPath,
+  segment: DiagnosticPath[number],
+): DiagnosticPath {
+  const output = reflectApply(arraySlice, path, []) as DiagnosticPath[number][];
+  pushValue(output, segment);
+  return output;
+}
+
+function ownEnumerableStringKeys(value: object): string[] {
+  return reflectApply(objectKeys, objectConstructor, [value]) as string[];
+}
+
+function hasOwn(value: object, key: PropertyKey): boolean {
+  return reflectApply(objectHasOwnProperty, value, [key]) as boolean;
+}
+
+function addSetValue<T>(values: Set<T>, value: T): void {
+  reflectApply(setAdd, values, [value]);
+}
+
+function deleteSetValue<T>(values: Set<T>, value: T): void {
+  reflectApply(setDelete, values, [value]);
+}
+
+function setHasValue<T>(values: Set<T>, value: T): boolean {
+  return reflectApply(setHas, values, [value]) as boolean;
+}
+
+function addStrings(values: Set<string>, additions: readonly string[]): void {
+  for (let index = 0; index < additions.length; index += 1) {
+    const value = additions[index];
+    if (value !== undefined) {
+      addSetValue(values, value);
+    }
+  }
+}
+
+function sortStrings(values: string[]): string[] {
+  return reflectApply(arraySort, values, []) as string[];
+}
+
 export class ScoreComponentDecodeContext {
   readonly diagnostics: DecodeDiagnostic[] = [];
 
@@ -43,7 +111,7 @@ export class ScoreComponentDecodeContext {
     path: DiagnosticPath,
     details?: JsonObject,
   ): void {
-    this.diagnostics.push(createDiagnostic(code, path, details));
+    pushValue(this.diagnostics, createDiagnostic(code, path, details));
   }
 
   object(
@@ -57,19 +125,31 @@ export class ScoreComponentDecodeContext {
       return undefined;
     }
 
-    const allowed = new Set([...required, ...optional]);
-    const extraFields = Object.keys(value)
-      .filter((key) => !allowed.has(key))
-      .sort();
-    for (const field of extraFields) {
-      this.add("decode.extra-field", [...path, field], { field });
+    const allowed = new setConstructor<string>();
+    addStrings(allowed, required);
+    addStrings(allowed, optional);
+    const extraFields = sortStrings(
+      filterValues(
+        ownEnumerableStringKeys(value),
+        (key) => !setHasValue(allowed, key),
+      ),
+    );
+    for (let index = 0; index < extraFields.length; index += 1) {
+      const field = extraFields[index];
+      if (field !== undefined) {
+        this.add("decode.extra-field", appendPath(path, field), { field });
+      }
     }
 
-    const missingFields = required.filter(
-      (field) => !Object.prototype.hasOwnProperty.call(value, field),
+    const missingFields = filterValues(
+      required,
+      (field) => !hasOwn(value, field),
     );
-    for (const field of missingFields) {
-      this.add("decode.required-field", [...path, field], { field });
+    for (let index = 0; index < missingFields.length; index += 1) {
+      const field = missingFields[index];
+      if (field !== undefined) {
+        this.add("decode.required-field", appendPath(path, field), { field });
+      }
     }
 
     return extraFields.length === 0 && missingFields.length === 0
@@ -157,7 +237,7 @@ export function decodeArray<T>(
   let valid = true;
   for (let index = 0; index < input.length; index += 1) {
     const itemPath = [...path, index];
-    if (!Object.prototype.hasOwnProperty.call(input, index)) {
+    if (!hasOwn(input, index)) {
       context.add("decode.json-value", itemPath);
       valid = false;
       continue;
@@ -166,7 +246,7 @@ export function decodeArray<T>(
     if (decoded === undefined) {
       valid = false;
     } else {
-      output.push(decoded);
+      pushValue(output, decoded);
     }
   }
   return valid ? output : undefined;
@@ -238,10 +318,7 @@ export function decodeNoteValue(
   const dots = context.literal(input.dots, [...path, "dots"], [
     0, 1, 2, 3,
   ] as const);
-  const hasTimeModification = Object.prototype.hasOwnProperty.call(
-    input,
-    "timeModification",
-  );
+  const hasTimeModification = hasOwn(input, "timeModification");
   const timeModification = hasTimeModification
     ? decodeTimeModification(
         input.timeModification,
@@ -329,7 +406,7 @@ export function decodeMeasureDefinition(
   }
   const id = context.string(input.id, [...path, "id"]);
   const meter = decodeMeter(input.meter, [...path, "meter"], context);
-  const hasPickup = Object.prototype.hasOwnProperty.call(input, "pickupDuration");
+  const hasPickup = hasOwn(input, "pickupDuration");
   const pickupDuration = hasPickup
     ? decodeFraction(input.pickupDuration, [...path, "pickupDuration"], context)
     : undefined;
@@ -523,7 +600,7 @@ export function decodeRhythmicEvent(
   const id = context.string(input.id, [...path, "id"]);
   const duration = decodeNoteValue(input.duration, [...path, "duration"], context);
   const content = decodeEventContent(input.content, [...path, "content"], context);
-  const hasStaffId = Object.prototype.hasOwnProperty.call(input, "staffId");
+  const hasStaffId = hasOwn(input, "staffId");
   const staffId = hasStaffId
     ? context.string(input.staffId, [...path, "staffId"])
     : undefined;
@@ -665,11 +742,11 @@ function decodeJsonValue(
     context.add("decode.json-value", path);
     return undefined;
   }
-  if (active.has(value)) {
+  if (setHasValue(active, value)) {
     context.add("decode.json-value", path, { reason: "cycle" });
     return undefined;
   }
-  active.add(value);
+  addSetValue(active, value);
   try {
     if (Array.isArray(value)) {
       const output: JsonValue[] = [];
@@ -684,7 +761,7 @@ function decodeJsonValue(
         if (decoded === undefined) {
           valid = false;
         } else {
-          output.push(decoded);
+          pushValue(output, decoded);
         }
       }
       return valid ? output : undefined;
@@ -695,7 +772,7 @@ function decodeJsonValue(
     }
     const output: Record<string, JsonValue> = {};
     let valid = true;
-    for (const key of Object.keys(value)) {
+    for (const key of ownEnumerableStringKeys(value)) {
       const decoded = decodeJsonValue(value[key], [...path, key], context, active);
       if (decoded === undefined) {
         valid = false;
@@ -710,7 +787,7 @@ function decodeJsonValue(
     }
     return valid ? output : undefined;
   } finally {
-    active.delete(value);
+    deleteSetValue(active, value);
   }
 }
 
@@ -764,7 +841,7 @@ export function decodeExtension(
     input.payload,
     [...path, "payload"],
     context,
-    new Set<object>(),
+    new setConstructor<object>(),
   );
   const payload =
     payloadValue !== undefined &&

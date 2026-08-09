@@ -246,8 +246,10 @@ interface ReorderMeasurePlan {
   }[];
 }
 
+const structuredCloneValue = structuredClone;
+
 function cloneValue<T>(value: T): T {
-  return structuredClone(value);
+  return structuredCloneValue(value);
 }
 
 function failure(

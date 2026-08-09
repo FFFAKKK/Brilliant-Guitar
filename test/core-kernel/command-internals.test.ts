@@ -125,7 +125,7 @@ function requireDecoded(input: unknown): CoreCommandEnvelope {
   return decoded.value;
 }
 
-function countRootDocumentClones<T>(
+function countPostInitializationStructuredCloneCalls<T>(
   document: ScoreDocument,
   operation: () => T,
 ): { readonly value: T; readonly count: number } {
@@ -752,7 +752,7 @@ test("Measure effect sets derive reverse multi-effect inverses and restore shuff
   }
 });
 
-test("ordered private effect sets clone once, derive reverse inverses, and stay atomic", () => {
+test("ordered private effect sets use the captured clone, derive reverse inverses, and stay atomic", () => {
   const initial = cloneCoreScoreFixture();
   const effects: NonEmptyCoreEffectSet = [
     {
@@ -770,11 +770,11 @@ test("ordered private effect sets clone once, derive reverse inverses, and stay 
       value: { step: "D", alter: 0, octave: 4 },
     },
   ];
-  const appliedObservation = countRootDocumentClones(initial, () =>
+  const appliedObservation = countPostInitializationStructuredCloneCalls(initial, () =>
     applyCoreEffectSet(initial, effects),
   );
   const applied = appliedObservation.value;
-  assert.equal(appliedObservation.count, 1);
+  assert.equal(appliedObservation.count, 0);
   assert.equal(applied.ok, true);
   if (!applied.ok) {
     return;
@@ -902,7 +902,7 @@ test("ordered private effect sets clone once, derive reverse inverses, and stay 
   );
   assert.deepEqual(unchanged, unchangedBefore);
 
-  const emptyObservation = countRootDocumentClones(initial, () =>
+  const emptyObservation = countPostInitializationStructuredCloneCalls(initial, () =>
     applyCoreEffectSet(initial, []),
   );
   assert.equal(emptyObservation.value.ok, false);
@@ -924,6 +924,7 @@ test("CVN-4 hierarchy effects keep final Staff validity in the semantic gate", (
   if (!applied.ok) {
     return;
   }
+  assert.notEqual(applied.document, initial);
   const semantic = validateScoreDocumentSemantics(applied.document);
   assert.equal(semantic.ok, false);
   assert.equal(

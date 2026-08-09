@@ -5,6 +5,7 @@ import {
   STRICT_INPUT_MAX_PROPERTIES,
 } from "../../src/core-kernel/codec/strict-input-capture";
 import {
+  collectEvents,
   commandEnvelope,
   insertPartCommand,
   insertStaffCommand,
@@ -99,6 +100,142 @@ test("all fifteen CVN-4 commands use the bounded descriptor-first input boundary
     };
     assertInvalidAndUnchanged(bus, withExtraPayload, before);
   }
+});
+
+function assertSynchronousReplacementCannotHideExtraPayload(
+  installReplacement: () => () => void,
+): void {
+  const initial = cloneCvn4ScoreFixture();
+  const bus = requireBus(initial);
+  const events = collectEvents(bus);
+  let trapCalls = 0;
+  let replacementInstalled = false;
+  let restoreReplacement = (): void => {};
+  const command = new Proxy(
+    {
+      ...removeVoiceCommand("cvn4-voice-a-1-primary"),
+      payload: { extra: true },
+    },
+    {
+      ownKeys(target) {
+        trapCalls += 1;
+        if (!replacementInstalled) {
+          restoreReplacement = installReplacement();
+          replacementInstalled = true;
+        }
+        return Reflect.ownKeys(target);
+      },
+    },
+  );
+
+  const result = (() => {
+    try {
+      return bus.submit(command);
+    } finally {
+      restoreReplacement();
+    }
+  })();
+
+  assert.equal(trapCalls > 0, true);
+  assert.equal(result.status, "rejected");
+  assert.equal(
+    result.status === "rejected" && result.failure.code,
+    "command.invalid-envelope",
+  );
+  assert.equal(result.documentVersion, 0);
+  assert.equal(result.undoDepth, 0);
+  assert.equal(result.redoDepth, 0);
+  const read = bus.read();
+  assert.equal(read.ok, true);
+  if (read.ok) {
+    assert.deepEqual(read.value.snapshot.document, initial);
+    assert.equal(read.value.snapshot.documentVersion, 0);
+    assert.deepEqual(read.value.history, { undoDepth: 0, redoDepth: 0 });
+  }
+  assert.deepEqual(events, []);
+}
+
+test("synchronous Object.keys replacement cannot hide an extra payload field", () => {
+  const descriptor = Object.getOwnPropertyDescriptor(Object, "keys");
+  if (descriptor === undefined || !("value" in descriptor)) {
+    throw new Error("expected Object.keys to be a data property");
+  }
+  const originalObjectKeys = descriptor.value as typeof Object.keys;
+  assertSynchronousReplacementCannotHideExtraPayload(() => {
+    Object.defineProperty(Object, "keys", {
+      ...descriptor,
+      value: ((value: object) =>
+        originalObjectKeys(value).filter((key) => key !== "extra")) as typeof Object.keys,
+    });
+    return () => Object.defineProperty(Object, "keys", descriptor);
+  });
+});
+
+test("synchronous Array.filter replacement cannot hide an extra payload field", () => {
+  const descriptor = Object.getOwnPropertyDescriptor(Array.prototype, "filter");
+  if (descriptor === undefined || !("value" in descriptor)) {
+    throw new Error("expected Array.prototype.filter to be a data property");
+  }
+  assertSynchronousReplacementCannotHideExtraPayload(() => {
+    Object.defineProperty(Array.prototype, "filter", {
+      ...descriptor,
+      value: (() => []) as unknown as typeof Array.prototype.filter,
+    });
+    return () => Object.defineProperty(Array.prototype, "filter", descriptor);
+  });
+});
+
+test("synchronous structuredClone replacement cannot alias a rejected candidate", () => {
+  const initial = cloneCvn4ScoreFixture();
+  const bus = requireBus(initial);
+  const events = collectEvents(bus);
+  const descriptor = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "structuredClone",
+  );
+  if (descriptor === undefined || !("value" in descriptor)) {
+    throw new Error("expected structuredClone to be a data property");
+  }
+  let trapCalls = 0;
+  const command = new Proxy(
+    setStaffDefinitionCommand("cvn4-staff-a-1", 0, { sign: "G", line: 2 }),
+    {
+      ownKeys(target) {
+        trapCalls += 1;
+        Object.defineProperty(globalThis, "structuredClone", {
+          ...descriptor,
+          value: ((value: unknown) => value) as typeof structuredClone,
+        });
+        return Reflect.ownKeys(target);
+      },
+    },
+  );
+
+  const result = (() => {
+    try {
+      return bus.submit(command);
+    } finally {
+      Object.defineProperty(globalThis, "structuredClone", descriptor);
+    }
+  })();
+
+  assert.equal(trapCalls > 0, true);
+  assert.equal(result.status, "rejected");
+  assert.equal(
+    result.status === "rejected" && result.failure.code,
+    "command.semantic-invalid",
+  );
+  assert.equal(result.documentVersion, 0);
+  assert.equal(result.undoDepth, 0);
+  assert.equal(result.redoDepth, 0);
+  const read = bus.read();
+  assert.equal(read.ok, true);
+  if (read.ok) {
+    assert.deepEqual(read.value.snapshot.document, initial);
+    assert.equal(read.value.snapshot.documentVersion, 0);
+    assert.deepEqual(read.value.history, { undoDepth: 0, redoDepth: 0 });
+  }
+  assert.deepEqual(events, []);
 });
 
 test("all fifteen CVN-4 commands reject sparse, cyclic, symbol, and accessor inputs without caller execution", () => {
