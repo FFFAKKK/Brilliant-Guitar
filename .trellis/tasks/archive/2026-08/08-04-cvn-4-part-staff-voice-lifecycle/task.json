@@ -38,7 +38,7 @@
     ".trellis/spec/core-kernel/backend/quality-guidelines.md",
     ".trellis/tasks/08-04-cvn-4-part-staff-voice-lifecycle/review-candidate.md"
   ],
-  "notes": "INDEPENDENTLY ACCEPTED 2026-08-09 / P0-P1-P2 0-0-0 / SOURCE-TEST COMMIT 788594E / 15 FIXED CORE HIERARCHY COMMANDS / READY TO ARCHIVE.",
+  "notes": "COMPLETED AND ARCHIVED 2026-08-09 / P0-P1-P2 0-0-0 / SOURCE-TEST COMMIT 788594E / ACCEPTANCE COMMIT 1BB19B0 / 15 FIXED CORE HIERARCHY COMMANDS.",
   "meta": {
     "planning_base_head": "4e5612b0a0e586184a74e951e5b3a2394f8cc5c0",
     "dependency": "accepted_archived_cvn_3",
@@ -111,7 +111,7 @@
     "task_start_run": true,
     "production_implementation_authorized": true,
     "activation_head": "00e0386bd66ec5e36198b8ad8cd2ec292d0b16f8",
-    "operator_state": "independently_accepted_pending_archive",
+    "operator_state": "completed_archived",
     "stage_0_activation_baseline": "passed_2026-08-09",
     "stage_0_typecheck": "passed",
     "stage_0_build": "passed",
@@ -147,7 +147,9 @@
       "core_command_count": 25,
       "registry_command_descriptor_count": 25
     },
-    "next_gate": "archive task and synchronize parent dependency status",
+    "archive_commit": "13039d05a2120e8db49924f4a417d4c36702cde1",
+    "archive_path": ".trellis/tasks/archive/2026-08/08-04-cvn-4-part-staff-voice-lifecycle/",
+    "next_gate": "completed; retained as accepted CVN-5 prerequisite",
     "user_execution_approval": true,
     "user_execution_approval_date": "2026-08-09",
     "stage_1_cvn3_surface_freeze": "passed_2026-08-09",
