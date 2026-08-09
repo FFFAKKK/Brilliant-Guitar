@@ -1,6 +1,6 @@
 # Core VNext Documentation Synchronization Matrix
 
-> **Lifecycle:** APPROVED COORDINATION BASELINE / POST-APPROVAL OWNERSHIP SYNC CANDIDATE / GD-0 INDEPENDENT ACCEPTANCE IN PROGRESS.
+> **Lifecycle:** APPROVED COORDINATION BASELINE / POST-APPROVAL OWNERSHIP SYNC ACCEPTED / NEXT GATE SEPARATELY APPROVED CVN-2 PLANNING.
 > **Scope:** roadmap and contract-authority synchronization only; no production source/test activation.
 
 ## Current Authority
@@ -8,10 +8,10 @@
 | Subject | Current authority | Current status |
 |---|---|---|
 | Accepted Core behavior | `.trellis/spec/core-kernel/` and Core V1 close baseline `d92a7586536ac8757c318ae6f75aabd8698f85ac` | accepted and frozen compatibility base |
-| Integrated official-domain public contract | `.trellis/tasks/07-28-gd-0-guitar-domain-core-transaction-contract/` plus `backend/domain-transaction-integration.md` | documentation review candidate; independent acceptance pending |
+| Integrated official-domain public contract | GD-0 task acceptance record plus `backend/domain-transaction-integration.md` | accepted documentation/architecture contract; runtime separately gated |
 | Core VNext completion scope and gate ownership | this parent PRD/design/implement | approved coordination baseline; CVN-0/1/3/4 and reservation gate archived |
 | Core VNext exact feature behavior and qualification data | `feature-contract-matrix.md` CVN-FC-001–143 | approved parent contract; remaining gates separately activated |
-| Product roadmap projection | product PRD/design/implement | post-approval legacy ownership synchronized; GD-0 acceptance pending |
+| Product roadmap projection | product PRD/design/implement | post-approval legacy ownership synchronized and accepted |
 
 ## Post-Approval Mapping
 

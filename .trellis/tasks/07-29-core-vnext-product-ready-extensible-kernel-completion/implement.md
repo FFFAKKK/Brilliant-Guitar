@@ -2,7 +2,7 @@
 
 ## 1. Execution Status
 
-`PLANNING COORDINATION / CVN-0 CVN-1 CVN-3 CVN-4 AND EXTENSIBILITY RESERVATION GATE ACCEPTED AND ARCHIVED / GD-0 INDEPENDENT ACCEPTANCE IN PROGRESS / CVN-2 CVN-5 CVN-6 CVN-7 INACTIVE`.
+`PLANNING COORDINATION / CVN-0 CVN-1 CVN-3 CVN-4 EXTENSIBILITY RESERVATION AND GD-0 CONTRACT ACCEPTED / NEXT GATE SEPARATELY APPROVED CVN-2 PLANNING / CVN-5 CVN-6 CVN-7 INACTIVE`.
 
 This parent task coordinates independently verifiable children. It does not batch all production changes into one implementation branch. Each child must receive its own PRD/design/implement review, `task.py start`, independent technical audit and archive decision.
 
@@ -12,7 +12,7 @@ After final user approval, the parent may enter `in_progress` only as the coordi
 
 - Core V1 close baseline: `d92a7586536ac8757c318ae6f75aabd8698f85ac`.
 - Current GD-0 review baseline: `7467a2715ce09071e12b2287e76bdc9c3bd006f5`, after accepted CVN-4 and the archived extensibility reservation gate.
-- GD-0: documentation ownership reconciliation complete; independent acceptance checks in progress. CVN-2 still requires a separate planning approval after GD-0 acceptance.
+- GD-0: documentation ownership reconciliation and independent acceptance passed at `451627e` with final P0/P1/P2=`0/0/0`. CVN-2 is dependency-satisfied but still requires separate planning approval.
 - Core V1 accepted regression evidence: 8/8 K1-6 focused and 169/169 full tests.
 - CVN-0 accepted evidence: 19 focused, 42 related regression and 188 full tests; final independent re-review passed on 2026-08-04.
 - CVN-1 accepted evidence: 19/19 command-internals and 193/193 full tests; immutable characterization SHA-256 `CDBCFD68DCC84C514BCAC8BA83B44B819A237146C842E0F63E8F17A3CD2FF4D9`; final narrow independent re-review passed on 2026-08-04.

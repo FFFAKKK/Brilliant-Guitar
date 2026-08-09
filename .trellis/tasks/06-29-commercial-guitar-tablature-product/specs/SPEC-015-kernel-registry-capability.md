@@ -78,7 +78,7 @@ const gateway = created.ok
 
 ## 8. GD-0 Additive Official Domain Catalog
 
-> **GD-0 lifecycle:** USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING.
+> **GD-0 lifecycle:** ACCEPTED DOCUMENTATION / ARCHITECTURE CONTRACT; CVN-2/CVN-6 SEPARATELY GATED.
 
 K1-4 Core-only Registry、六 command/六 selector adapter 与七个 capability 保持冻结。CVN-2 增加独立审核的 `kernel.domain-commands.v1` SDK/compiled catalog，CVN-6 才把该 Assembly 绑定到 integrated construction：
 

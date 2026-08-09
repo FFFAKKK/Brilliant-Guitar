@@ -87,7 +87,7 @@ The graph is dependency-based rather than numeric-order-based. CVN-2 and CVN-3 a
 | CVN-0 | completed and archived | final independent re-review passed; 19 focused and 188 full tests recorded | retained as accepted prerequisite |
 | CVN-1 | completed and archived | final narrow re-review passed; 19 command-internals and 193 full tests recorded | retained as accepted transaction-spine base |
 | Extensibility Reservation Gate | completed and archived | candidate `7c4e852`, acceptance `253d19e`, archive `a4d8cee`; one narrow P2 repaired; final P0/P1/P2=`0/0/0`; task AC `25/25` | retained as accepted GD-0/CVN-2 evolution prerequisite |
-| CVN-2 | parent-planned; child not created | CVN-1 and Extensibility Reservation Gate accepted; GD-0 independent acceptance pending | create detailed child only after GD-0 acceptance and separate user planning approval |
+| CVN-2 | parent-planned; child not created | CVN-1, Extensibility Reservation Gate, and GD-0 documentation contract accepted | create detailed child only after separate user planning approval |
 | CVN-3 | completed and archived | independent review passed at `d9500f5` with P0/P1/P2 = `0/0/0`; 22 lifecycle and 233 full tests reproduced; acceptance commit `3691d93` | retained as accepted factory and Measure-lifecycle prerequisite |
 | CVN-4 | completed and archived | independent re-review passed at `788594e` with P0/P1/P2 = `0/0/0`; focused Voice `4/4`, full `312/312`; acceptance `1bb19b0` | retained as accepted hierarchy-lifecycle prerequisite |
 | CVN-5 | parent-planned; child not created | waits for accepted CVN-2, CVN-3, CVN-4 and CVN-6 | detailed planning after all four dependencies are accepted |
@@ -103,7 +103,7 @@ Snapshot evidence:
 - CVN-3 accepted source/test commit: `d9500f5a8ac285071586ba8eda380370eafd022f`; independent review passed with P0/P1/P2 = `0/0/0`; acceptance commit `3691d93`.
 - CVN-4 accepted source/test commit: `788594e670a1608ee2beabddcd217a9d340a5d30`; independent re-review passed with P0/P1/P2 = `0/0/0`; acceptance commit `1bb19b0`.
 - Extensibility Reservation Gate planning commit: `6298d4b`; activation baseline `783f69c`; candidate `7c4e852`; acceptance `253d19e`; archive `a4d8cee`; final P0/P1/P2=`0/0/0` after one narrow P2 repair.
-- GD-0 snapshot status: documentation review candidate; independent acceptance pending.
+- GD-0 snapshot status: accepted documentation/architecture contract at `451627e`; runtime implementation remains separately gated.
 
 ## 5. Exact Command Inventory
 

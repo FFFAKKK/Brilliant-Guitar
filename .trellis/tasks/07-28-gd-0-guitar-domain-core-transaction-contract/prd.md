@@ -1,6 +1,6 @@
 # GD-0 Guitar Domain / Core Transaction Integration Contract
 
-> **Status:** USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING
+> **Status:** ACCEPTED DOCUMENTATION / ARCHITECTURE CONTRACT; PRODUCTION IMPLEMENTATION SEPARATELY GATED
 > **Planning base:** `064dc2bffe26022bc58f0690986b09a0c6a257aa`
 > **Parent:** `.trellis/tasks/06-29-commercial-guitar-tablature-product/`
 > **Created:** 2026-07-28
@@ -144,4 +144,4 @@ GD-0 must define requirements and stable public contracts for:
 
 ## Gate
 
-The user approved the GD-0 plan on 2026-07-28. The present repository state is only **USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING**. This reconciliation pass synchronizes the accepted Core VNext ownership map and stops for independent review. It records no accepted GD-0 baseline, performs no archive, and does not create or activate CVN-2, CVN-5, CVN-6, CVN-7, GD-1, GD-3, GD-4, or a replacement generic GD-2 task. A later governance action may record acceptance and archive only after the independent review passes; production `src/**`/`test/**` work remains separately gated.
+The user approved the GD-0 plan on 2026-07-28, and the independently reviewed reconciled candidate `451627e605695c95ecdc85e32bd471fcc81885c4` passed on 2026-08-10 with final P0/P1/P2=`0/0/0`. GD-0 is therefore an accepted documentation/architecture contract. Acceptance does not create or activate CVN-2, CVN-5, CVN-6, CVN-7, GD-1, GD-3, GD-4, or a replacement generic GD-2 task; production `src/**`/`test/**` work remains separately gated. The only newly available action is separately approved CVN-2 planning.

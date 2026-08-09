@@ -87,7 +87,7 @@ report 派生计数、全部 migration 路径、unknown ExtensionBlock 与 Comma
 
 ## 8. GD-0 Modular Issue and Result Boundary
 
-> **GD-0 lifecycle:** USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING.
+> **GD-0 lifecycle:** ACCEPTED DOCUMENTATION / ARCHITECTURE CONTRACT; IMPLEMENTATION SEPARATELY GATED.
 
 K1-5 的 closed Core `KernelIssueCode`、adapter 与 validation/migration report 保持不变。后续 Core V1.1 integrated construction 使用 additive module data contract：
 

@@ -1,8 +1,8 @@
 # GD-0 Downstream Implementation Plan
 
-> **Status:** USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING
+> **Status:** ACCEPTED DOCUMENTATION / ARCHITECTURE CONTRACT
 > **Planning base:** `064dc2bffe26022bc58f0690986b09a0c6a257aa`
-> **Current authorization:** GD-0 documentation reconciliation and independent acceptance only
+> **Current authorization:** archive GD-0; the next possible action is separately approved CVN-2 planning only
 > **Rule:** each production gate named below has its own Trellis task and independent acceptance; satisfied, historical and deferred sections do not activate work
 
 ## 1. Purpose
@@ -389,7 +389,7 @@ Before any downstream task starts:
 - [x] Active Core V1.1 domain-integration specification added and linked from the Core indexes.
 - [x] Documentation synchronization matrix added for independent review.
 - [x] Core VNext legacy ownership mapping synchronized without changing any GD-0 public-contract fence or creating a duplicate CK1.1/GD-2 task.
-- [ ] Independent documentation/architecture review accepts the synchronized candidate.
-- [ ] Accepted documentation baseline recorded and GD-0 archived.
+- [x] Independent documentation/architecture review accepts reconciled candidate `451627e` with final P0/P1/P2=`0/0/0`.
+- [x] Accepted documentation baseline recorded; GD-0 archive follows this acceptance commit.
 
 Production implementation and downstream task activation remain outside this execution record.

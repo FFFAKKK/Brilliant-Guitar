@@ -7,7 +7,7 @@
 - 当前架构决策: 采用参照操作系统微内核思想的 Core Kernel + 用户态服务模块架构。内核负责谱面真相、命令事务、验证、版本化契约和模块协作接口；UI、渲染、播放、导入导出、桌面壳和未来插件都作为模块或适配器与内核协作。
 - 详细架构图: `technical/microkernel-architecture.md`。
 - 当前 Core 状态: K1-1～K1-6 已验收；K1-6 测试基线 `355512aba4a8057d2d75aa665d74df49cdd2e23c` 在审查基线 `989c1f7a4056b14d3d59918c9b96874ad71591a8` 通过独立验收，8/8 聚焦、169/169 完整测试通过。权威合同位于 `.trellis/spec/core-kernel/`；Pure Core Kernel V1 已正式关闭，后续分块仍需独立规划和批准。
-- 当前阶段边界: Pure Core Kernel V1 已关闭；CVN-0、CVN-1、CVN-3、CVN-4 与扩展性预留门禁已验收归档；GD-0 为 **USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING**。本轮只同步合同与所有权映射，不激活 CVN-2 或 Guitar 实现。外部工程目录结构、monorepo 方案、`apps/desktop` 和 `packages/*` 拆分不属于当前阶段。
+- 当前阶段边界: Pure Core Kernel V1 已关闭；CVN-0、CVN-1、CVN-3、CVN-4、扩展性预留门禁与 GD-0 文档/架构合同已验收。CVN-2 现可进入单独规划审批，但尚未由该验收激活；Guitar 实现仍在 CVN-7 之后。外部工程目录结构、monorepo 方案、`apps/desktop` 和 `packages/*` 拆分不属于当前阶段。
 - 首个实现里程碑: Pure Core Kernel V1。先实现纯 TypeScript 内核和内核测试；桌面壳、UI、渲染、播放、持久化物理 IO、导出和导入均后置。
 - 目录状态: 目录结构仍未确认，必须等工程脚手架阶段从已确认内核边界、测试边界、构建方式和发布方式反推，不得反过来限制当前内核规划。
 

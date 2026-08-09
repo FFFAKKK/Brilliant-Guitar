@@ -1,6 +1,6 @@
 # GD-0 Documentation Synchronization Matrix
 
-> **Lifecycle:** USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING.
+> **Lifecycle:** ACCEPTED DOCUMENTATION / ARCHITECTURE CONTRACT; ARCHIVE PENDING.
 > **Production implementation:** not authorized.
 
 ## Decision Coverage
@@ -45,14 +45,14 @@ The Stage 0 candidate contains no change under `src/**`, `test/**`, `package.jso
 
 ## Independent Review Checklist
 
-- [ ] D001-D005 match the user-approved plan in GD-0 `prd.md` and `design.md` without prematurely claiming documentation acceptance.
-- [ ] Core-only K1-1 through K1-6 behavior is distinguished from future integrated behavior.
-- [ ] The new Core V1.1 spec contains no Guitar-specific implementation dependency.
-- [ ] Missing/incompatible/future-schema read-only behavior is not confused with unknown opaque-extension preservation.
-- [ ] Mixed unavailable/incompatible facts use the incompatible failure code plus the complete canonical facts for submit, undo, redo, and replay.
-- [ ] Exact count fixtures prove `0/0` with no compatible blocks, successful `1/1` with the identical canonical filtered view, validation-failure `1/0`, and read-only operation-phase `0/0/0`; excluded blocks reach zero handlers and remain lossless.
-- [ ] Availability facts prove whether installed-domain validation is complete; Core-only validation is never labeled complete domain validity.
-- [ ] Layer A reports zero parse/type diagnostics for Markdown contracts, and mandatory Layer B compiles against real Core to prove gateway discriminants, instance creation, all typed selects, subscription, shared bus, checkpoint, and event-subscription surfaces.
-- [ ] The obsolete fixed sequence is removed from active GD-0/Core authority, and CK1.1/GD-2 responsibilities map exactly once to CVN-0/1/2/5/6 while Guitar work remains post-CVN-7.
-- [ ] No document claims inactive CVN-2/CVN-5/CVN-6/CVN-7 or post-CVN-7 Guitar work is authorized or complete; accepted CVN-0/CVN-1 ownership is recorded only as satisfied prerequisite state.
-- [ ] Trellis task validation and `git diff --check` pass on the candidate.
+- [x] D001-D005 match the user-approved plan in GD-0 `prd.md` and `design.md`.
+- [x] Core-only K1-1 through K1-6 behavior is distinguished from future integrated behavior.
+- [x] The Core V1.1 spec contains no Guitar-specific implementation dependency.
+- [x] Missing/incompatible/future-schema read-only behavior is not confused with unknown opaque-extension preservation.
+- [x] Mixed unavailable/incompatible facts use the incompatible failure code plus the complete canonical facts for submit, undo, redo, and replay.
+- [x] Exact count fixtures prove `0/0` with no compatible blocks, successful `1/1` with the identical canonical filtered view, validation-failure `1/0`, and read-only operation-phase `0/0/0`; excluded blocks reach zero handlers and remain lossless.
+- [x] Availability facts prove whether installed-domain validation is complete; Core-only validation is never labeled complete domain validity.
+- [x] Layer A reports zero parse/type diagnostics for Markdown contracts, and mandatory Layer B compiles against real Core to prove gateway discriminants, instance creation, all typed selects, subscription, shared bus, checkpoint, and event-subscription surfaces.
+- [x] The obsolete fixed sequence is removed from active GD-0/Core authority, and CK1.1/GD-2 responsibilities map exactly once to CVN-0/1/2/5/6 while Guitar work remains post-CVN-7.
+- [x] No document claims inactive CVN-2/CVN-5/CVN-6/CVN-7 or post-CVN-7 Guitar work is authorized or complete; accepted CVN-0/CVN-1 ownership is recorded only as satisfied prerequisite state.
+- [x] Trellis task validation and `git diff --check` pass on committed candidate `451627e`.

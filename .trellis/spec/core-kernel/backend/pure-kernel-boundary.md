@@ -1,7 +1,7 @@
 # Pure Core Kernel Boundary
 
 > **Authoritative staged boundary (2026-07-29):** K1-1 through K1-6 are independently accepted, the Core V1 qualification gate is archived, and Pure Core Kernel V1 is closed.
-> **GD-0 lifecycle:** USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING.
+> **GD-0 lifecycle:** ACCEPTED DOCUMENTATION / ARCHITECTURE CONTRACT; RUNTIME SEPARATELY GATED.
 > **Core VNext accepted prerequisites (2026-08-10):** CVN-0, CVN-1, CVN-3, CVN-4 and the extensibility reservation gate are accepted and archived; current normalized-HEAD verification is 312/312.
 
 ## Closed Pure Core Kernel V1 Baseline
@@ -37,9 +37,9 @@ The accepted implementation preserves the public names and type-predicate signat
 
 The accepted CVN-0 implementation changes no command, history, replay, event, Registry, report, migration, persisted schema, package, or dependency contract. Its archived baseline is the fixed hostile-input prerequisite for every later Core VNext gate.
 
-## GD-0 Additive Documentation Candidate
+## GD-0 Accepted Additive Documentation Contract
 
-GD-0 is an additive integrated documentation review candidate, not an accepted runtime baseline. It defines the minimum behavior required for official domain contributions to join the existing transaction owner while leaving every Core-only path unchanged. Its authority is limited to `.trellis/tasks/07-28-gd-0-guitar-domain-core-transaction-contract/` and `domain-transaction-integration.md` until independent acceptance.
+GD-0 is an accepted additive documentation/architecture contract, not an implemented runtime baseline. It defines the minimum behavior required for official domain contributions to join the existing transaction owner while leaving every Core-only path unchanged. Its authority is `.trellis/tasks/07-28-gd-0-guitar-domain-core-transaction-contract/` together with `domain-transaction-integration.md` and its recorded acceptance review.
 
 The candidate requires exact `ExtensionBlock.schemaVersion` compatibility negotiation, explicit complete/incomplete domain-validation availability, lossless read-only degradation for missing or incompatible required contributions, and stable integrated public signatures/discriminants. Legacy ownership is mapped once: CK1.1-0 → accepted CVN-0; CK1.1-1 → CVN-2; generic GD-2 → accepted CVN-1 plus CVN-6/CVN-5; Guitar-owned GD-1/GD-3/GD-4 → post-CVN-7. Pending gates remain inactive and require separate plans and acceptance.
 

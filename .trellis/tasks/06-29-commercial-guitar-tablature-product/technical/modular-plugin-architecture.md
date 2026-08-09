@@ -412,7 +412,7 @@ Tauri 官方插件机制适合扩展应用原生能力，例如文件系统、�
 
 ## GD-0：官方领域模块不是第三方插件运行时
 
-GD-0 为 **USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING**。其候选固定随产品静态发布的 official domain contribution seam，不是 `PluginManifest`、Extension Host 或 marketplace，也不是 accepted runtime baseline：
+GD-0 是已验收的文档/架构合同。它固定随产品静态发布的 official domain contribution seam，不是 `PluginManifest`、Extension Host 或 marketplace，也不是已实现 runtime baseline：
 
 - 产品 composition root 在启动期把纯数据 manifest 与静态 compiled bindings 原子装配成 frozen catalog。
 - Core 与领域命令只通过现有 submit port，复用一个 document/version/history/replay/dirty/event owner。

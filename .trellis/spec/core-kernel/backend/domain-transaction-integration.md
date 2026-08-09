@@ -1,6 +1,6 @@
 # Core V1.1 Domain Transaction Integration Contract
 
-> **Status:** USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING.
+> **Status:** ACCEPTED DOCUMENTATION / ARCHITECTURE CONTRACT; PRODUCTION IMPLEMENTATION SEPARATELY GATED.
 > **Authority:** `.trellis/tasks/07-28-gd-0-guitar-domain-core-transaction-contract/`
 > **Compatibility base:** Pure Core Kernel V1 accepted at `d92a7586536ac8757c318ae6f75aabd8698f85ac`.
 

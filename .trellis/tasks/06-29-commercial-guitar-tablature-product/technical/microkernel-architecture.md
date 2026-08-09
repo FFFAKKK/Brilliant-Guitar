@@ -895,7 +895,7 @@ sequenceDiagram
 
 ## GD-0：官方领域事务集成（2026-07-28）
 
-Pure Core Kernel V1 继续作为稳定兼容基线。GD-0 当前为 **USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING**；additive Core V1.1 seam 仍是待独立验收文档候选，而不是 accepted baseline 或生产授权。
+Pure Core Kernel V1 继续作为稳定兼容基线。GD-0 additive Core V1.1 seam 已作为文档/架构合同独立验收；它不是已实现 runtime，也不直接构成 CVN-2/CVN-6 生产授权。
 
 ```mermaid
 flowchart LR

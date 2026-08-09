@@ -62,7 +62,7 @@ const correct = {
 
 ## 8. GD-0 Additive Integrated Event Contract
 
-> **GD-0 lifecycle:** USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING.
+> **GD-0 lifecycle:** ACCEPTED DOCUMENTATION / ARCHITECTURE CONTRACT; RUNTIME SEPARATELY GATED.
 
 K1-3 Core-only snapshot/event 合同保持冻结。后续 CVN-6 integrated construction 只按 GD-0 做兼容扩展；CVN-2 只提供 SDK/frozen assembly，不提前发布 writable event Session：
 

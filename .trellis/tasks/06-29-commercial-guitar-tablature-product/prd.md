@@ -8,7 +8,7 @@
 - 负责人: ATOM
 - 文档策略: 每个需求先写独立文档，最终再合并为收敛后的 PRD。
 - 当前 Core 基线: K1-1 已在 `30894e2` 正式验收；K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 正式验收并通过 102/102 测试；`.trellis/spec/core-kernel/` 是活动代码契约。本文较早的决策记录若与其冲突，以活动规范与独立 Block 任务为准。
-- 当前交付状态: K1-2～K1-6 已完成独立验收并归档，Pure Core Kernel V1 已关闭。Core VNext 的 CVN-0、CVN-1、CVN-3、CVN-4 与扩展性预留门禁均已独立验收归档；当前 HEAD 规范化回归为 312/312。GD-0 微内核集成合同正在独立文档验收，CVN-2 仍等待该验收与单独规划批准；CVN-5、CVN-6、CVN-7 以及 Guitar Domain 生产实现均未由本状态记录激活。
+- 当前交付状态: K1-2～K1-6 已完成独立验收并归档，Pure Core Kernel V1 已关闭。Core VNext 的 CVN-0、CVN-1、CVN-3、CVN-4、扩展性预留门禁与 GD-0 文档/架构合同均已通过独立验收；当前规范化回归为 312/312。CVN-2 现为下一个依赖满足的规划门，但仍需单独批准；CVN-5、CVN-6、CVN-7 以及 Guitar Domain 生产实现均未由本状态记录激活。
 
 ## 产品目标
 
@@ -655,4 +655,4 @@ MVP 包结构建议: `.bgp` 的长期形态是单文件开放 zip 包，至少�
 
 ## 当前阻塞开放问题
 
-K1-6 测试基线 `355512aba4a8057d2d75aa665d74df49cdd2e23c` 已在审查基线 `989c1f7a4056b14d3d59918c9b96874ad71591a8` 通过独立验收，Pure Core Kernel V1 Gate 已关闭。GD-0 当前生命周期仅为 **USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING**；没有 accepted baseline、归档或 CK1.1/Guitar Domain 激活。候选合同要求 known official extension 逐 `ExtensionBlock.schemaVersion` 精确匹配有限支持版本；缺失或不兼容 contribution 均 lossless read-only、validation incomplete。mixed gaps 在 submit/undo/redo/replay 选择 incompatible code 并返回全量 canonical facts；compatible block 为 0 时 validator/classifier `0/0`，至少一个 compatible block 时每个 applicable pass 恰好 validate 1 次，且仅在全部 validator 成功后以同一 canonical filtered view classify 1 次，validation issue/throw/contract violation 时 classifier 0 次；read-only 写路径 operation-phase validator/classifier/write `0/0/0`，不兼容 block 对全部 handler 零调用并保持 payload。integrated factory、Registry 实例 gateway overload（保留 K1-4 `summary`/typed `select`/`subscribe`）、write/validation availability 与 replay 的最小公开声明已固定并纳入两层 task-local 编译 fixture，生产实现仍须独立任务与批准。
+K1-6 测试基线 `355512aba4a8057d2d75aa665d74df49cdd2e23c` 已在审查基线 `989c1f7a4056b14d3d59918c9b96874ad71591a8` 通过独立验收，Pure Core Kernel V1 Gate 已关闭。GD-0 文档/架构合同已在候选 `451627e` 上以最终 P0/P1/P2=`0/0/0` 验收；该结论不激活 CVN-2 或 Guitar Domain 生产实现。合同要求 known official extension 逐 `ExtensionBlock.schemaVersion` 精确匹配有限支持版本；缺失或不兼容 contribution 均 lossless read-only、validation incomplete。mixed gaps 在 submit/undo/redo/replay 选择 incompatible code 并返回全量 canonical facts；compatible block 为 0 时 validator/classifier `0/0`，至少一个 compatible block 时每个 applicable pass 恰好 validate 1 次，且仅在全部 validator 成功后以同一 canonical filtered view classify 1 次，validation issue/throw/contract violation 时 classifier 0 次；read-only 写路径 operation-phase validator/classifier/write `0/0/0`，不兼容 block 对全部 handler 零调用并保持 payload。integrated factory、Registry 实例 gateway overload（保留 K1-4 `summary`/typed `select`/`subscribe`）、write/validation availability 与 replay 的最小公开声明已固定并纳入两层 task-local 编译 fixture，生产实现仍须独立任务与批准。

@@ -1,8 +1,8 @@
 # GD-0 Guitar Domain / Core Transaction Integration Design
 
-> **Status:** USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING
+> **Status:** ACCEPTED DOCUMENTATION / ARCHITECTURE CONTRACT
 > **Planning base:** `064dc2bffe26022bc58f0690986b09a0c6a257aa`
-> **Production implementation:** not authorized by this draft
+> **Production implementation:** separately gated; this accepted contract activates none
 
 ## 1. Architectural Intent
 

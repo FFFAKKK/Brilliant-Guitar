@@ -10,7 +10,7 @@
 - 首个实现里程碑: Pure Core Kernel V1，纯 TypeScript、无 UI、无 Tauri、无 VexFlow、无 Web Audio、无 PDF/PNG。
 - K1-1 模型决策源: `.trellis/tasks/archive/2026-07/07-13-k1-1-foundation-replanning/design.md`；K1-2 执行源已归档；K1-3 权威源为 `.trellis/tasks/archive/2026-07/07-15-k1-3-address-snapshots-selectors-events/`，已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 正式验收并通过 102/102 测试。字段级与行为级契约以 `.trellis/spec/core-kernel/` 为准。
 - K1-4 Registry 合同以独立任务和活动 SPEC-015 为准；report 与更广插件协作仍只是路线图，不得反向扩大 K1-3 或 K1-4 封闭合同。
-- Core VNext 父规划 `.trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/` 是当前协调权威：`feature-contract-matrix.md` 冻结 28-command finite catalog、factory、anchors、cascade、range/batch、failure/resource/performance 条件；路线保持稳定优先、启动期冻结、无热插拔。CVN-0、CVN-1、CVN-3、CVN-4 与扩展性预留门禁已独立验收归档；GD-0 正在独立文档验收，CVN-2 仍等待该验收与单独规划批准，且不得改写六个 GD-0 公共合同。
+- Core VNext 父规划 `.trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/` 是当前协调权威：`feature-contract-matrix.md` 冻结 28-command finite catalog、factory、anchors、cascade、range/batch、failure/resource/performance 条件；路线保持稳定优先、启动期冻结、无热插拔。CVN-0、CVN-1、CVN-3、CVN-4、扩展性预留门禁与 GD-0 文档/架构合同均已独立验收；CVN-2 现可进入单独规划审批，但不得改写六个 GD-0 公共合同。
 
 ## 设计目标
 
@@ -264,7 +264,7 @@ Pure Core Kernel V1 可以定义外部导入/导出贡献点的抽象 descriptor
 
 ## GD-0：Guitar Domain / Core 事务集成合同（2026-07-28）
 
-GD-0 当前为 **USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING**，权威候选来源为 `.trellis/tasks/07-28-gd-0-guitar-domain-core-transaction-contract/` 与 `.trellis/spec/core-kernel/backend/domain-transaction-integration.md`。本轮不记录 accepted baseline、不归档、不激活 Core V1.1 或 Guitar Domain 生产实现。
+GD-0 已成为 **ACCEPTED DOCUMENTATION / ARCHITECTURE CONTRACT**，验收候选为 `451627e`，权威来源为其任务归档、验收记录与 `.trellis/spec/core-kernel/backend/domain-transaction-integration.md`。该验收不激活 Core VNext 或 Guitar Domain 生产实现。
 
 - Core 与官方领域命令共用现有 `CommandBus.submit(unknown)` / gateway submit；不建立 Guitar facade、第二个 CommandBus、第二套 history/replay/dirty/event。
 - 产品组合根在启动期装配静态链接的官方贡献，形成不可变 catalog；Core 保持对 Guitar Domain 的零依赖，ready 后无注册、卸载、热插拔或 Registry change event。

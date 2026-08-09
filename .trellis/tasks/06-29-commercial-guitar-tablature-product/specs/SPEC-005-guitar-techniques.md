@@ -1,6 +1,6 @@
 # SPEC-005 Guitar Domain 技巧重规划门
 
-> **状态：GD-0 USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING；GUITAR IMPLEMENTATION BLOCKED。** 领域事务 seam 与 slide/bend/vibrato 首批范围属于待独立验收候选；GuitarExtension schema、技巧 payload 和生产实现仍由 GD-1/GD-3 独立批准。本文件不批准旧 Core 技巧 registry。
+> **状态：GD-0 ACCEPTED DOCUMENTATION / ARCHITECTURE CONTRACT；GUITAR IMPLEMENTATION DEFERRED UNTIL POST-CVN-7。** 领域事务 seam 已固定；GuitarExtension schema、技巧 payload 和生产实现仍由未来 GD-1/GD-3 独立批准。本文件不批准旧 Core 技巧 registry。
 
 ## 1. Scope / Trigger
 

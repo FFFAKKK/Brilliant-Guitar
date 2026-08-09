@@ -46,7 +46,7 @@ K1-1 不包含命令/history、snapshot/events、registry/capability、通用 re
 
 ### Block 2：GD-0 合同验收与 Core-first 后续门禁
 
-GD-0 生命周期为 **USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING**。当前只执行文档映射修复与独立验收，不激活生产任务。现行依赖图为：
+GD-0 文档/架构合同已在 `451627e` 上通过独立验收，最终 P0/P1/P2=`0/0/0`。该验收只使 CVN-2 成为下一个可单独审批的规划门，不激活生产任务。现行依赖图为：
 
 1. 已归档 CVN-0 承接 hostile-input guard；已归档 CVN-1 承接行为保持型 command/transaction/Registry spine。
 2. GD-0 验收后，CVN-2 经单独规划批准承接 official module SDK 与 frozen catalog assembly，但不开放 writable integrated Session。
