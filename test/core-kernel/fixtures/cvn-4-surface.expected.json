@@ -1,0 +1,432 @@
+{
+  "runtimeExports": [
+    "CORE_KERNEL_STARTUP_MANIFEST",
+    "CommandBus",
+    "K1_SCORE_FEATURE_PROFILE",
+    "KernelModuleGateway",
+    "KernelRegistry",
+    "PURE_CORE_KERNEL_V1_SCOPE",
+    "SCORE_DOCUMENT_SCHEMA_VERSION",
+    "addFractions",
+    "compareFractions",
+    "createDiagnostic",
+    "createFraction",
+    "createKernelRegistry",
+    "createKernelValidationReport",
+    "createModuleInternalIssue",
+    "createScoreDocument",
+    "decodeScoreDocument",
+    "deriveSequenceEventStarts",
+    "encodeScoreDocumentJson",
+    "getEffectiveMeasureDuration",
+    "getNoteValueDuration",
+    "isCanonicalFraction",
+    "isJsonValue",
+    "isNoteValueBase",
+    "isNoteValueDots",
+    "isScoreDocumentSchemaVersion",
+    "isTransposition",
+    "isWrittenPitch",
+    "mapCheckpointFailureToKernelIssues",
+    "mapCommandBusCreationFailureToKernelIssues",
+    "mapCommandFailureToKernelIssues",
+    "mapDiagnosticToKernelIssue",
+    "mapEventSubscriptionFailureToKernelIssues",
+    "mapReadFailureToKernelIssues",
+    "mapRegistryAccessFailureToKernelIssues",
+    "mapRegistryStartupFailureToKernelIssues",
+    "migrateScoreDocument",
+    "multiplyFractions",
+    "parseScoreDocumentJson",
+    "replayCoreCommands",
+    "selectDirtyState",
+    "selectHistoryState",
+    "selectScoreEntity",
+    "selectScoreEntityOwnership",
+    "selectScoreMetadata",
+    "selectScoreRange",
+    "subtractFractions",
+    "transposeWrittenPitch",
+    "validateScoreDocumentSemantics",
+    "validateScoreFeatureProfile"
+  ],
+  "catalog": [
+    {
+      "commandId": "core.document.set-metadata",
+      "targetKind": "document"
+    },
+    {
+      "commandId": "core.note.set-written-pitch",
+      "targetKind": "note"
+    },
+    {
+      "commandId": "core.event.set-note-value",
+      "targetKind": "event"
+    },
+    {
+      "commandId": "core.voice.insert-notes-event",
+      "targetKind": "voice"
+    },
+    {
+      "commandId": "core.voice.insert-rest-event",
+      "targetKind": "voice"
+    },
+    {
+      "commandId": "core.event.remove",
+      "targetKind": "event"
+    },
+    {
+      "commandId": "core.measure.insert",
+      "targetKind": "document"
+    },
+    {
+      "commandId": "core.measure.remove",
+      "targetKind": "measure"
+    },
+    {
+      "commandId": "core.measure.move",
+      "targetKind": "measure"
+    },
+    {
+      "commandId": "core.measure.set-definition",
+      "targetKind": "measure"
+    },
+    {
+      "commandId": "core.part.insert",
+      "targetKind": "document"
+    },
+    {
+      "commandId": "core.part.remove",
+      "targetKind": "part"
+    },
+    {
+      "commandId": "core.part.move",
+      "targetKind": "part"
+    },
+    {
+      "commandId": "core.part.set-name",
+      "targetKind": "part"
+    },
+    {
+      "commandId": "core.part.set-instrument",
+      "targetKind": "part"
+    },
+    {
+      "commandId": "core.staff.insert",
+      "targetKind": "part"
+    },
+    {
+      "commandId": "core.staff.remove",
+      "targetKind": "staff"
+    },
+    {
+      "commandId": "core.staff.move",
+      "targetKind": "staff"
+    },
+    {
+      "commandId": "core.staff.set-definition",
+      "targetKind": "staff"
+    },
+    {
+      "commandId": "core.voice.insert",
+      "targetKind": "part"
+    },
+    {
+      "commandId": "core.voice.remove",
+      "targetKind": "voice"
+    },
+    {
+      "commandId": "core.voice.move",
+      "targetKind": "voice"
+    },
+    {
+      "commandId": "core.voice.set-default-staff",
+      "targetKind": "voice"
+    },
+    {
+      "commandId": "core.voice.set-sequence-start",
+      "targetKind": "voice"
+    },
+    {
+      "commandId": "core.event.set-staff-assignment",
+      "targetKind": "event"
+    }
+  ],
+  "registryCommandDescriptors": [
+    {
+      "id": "core.document.set-metadata",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.set-metadata.title",
+      "kind": "command",
+      "targetKind": "document"
+    },
+    {
+      "id": "core.event.remove",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.remove-event.title",
+      "kind": "command",
+      "targetKind": "event"
+    },
+    {
+      "id": "core.event.set-note-value",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.set-note-value.title",
+      "kind": "command",
+      "targetKind": "event"
+    },
+    {
+      "id": "core.event.set-staff-assignment",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.set-event-staff-assignment.title",
+      "kind": "command",
+      "targetKind": "event"
+    },
+    {
+      "id": "core.measure.insert",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.insert-measure.title",
+      "kind": "command",
+      "targetKind": "document"
+    },
+    {
+      "id": "core.measure.move",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.move-measure.title",
+      "kind": "command",
+      "targetKind": "measure"
+    },
+    {
+      "id": "core.measure.remove",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.remove-measure.title",
+      "kind": "command",
+      "targetKind": "measure"
+    },
+    {
+      "id": "core.measure.set-definition",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.set-measure-definition.title",
+      "kind": "command",
+      "targetKind": "measure"
+    },
+    {
+      "id": "core.note.set-written-pitch",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.set-written-pitch.title",
+      "kind": "command",
+      "targetKind": "note"
+    },
+    {
+      "id": "core.part.insert",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.insert-part.title",
+      "kind": "command",
+      "targetKind": "document"
+    },
+    {
+      "id": "core.part.move",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.move-part.title",
+      "kind": "command",
+      "targetKind": "part"
+    },
+    {
+      "id": "core.part.remove",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.remove-part.title",
+      "kind": "command",
+      "targetKind": "part"
+    },
+    {
+      "id": "core.part.set-instrument",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.set-part-instrument.title",
+      "kind": "command",
+      "targetKind": "part"
+    },
+    {
+      "id": "core.part.set-name",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.set-part-name.title",
+      "kind": "command",
+      "targetKind": "part"
+    },
+    {
+      "id": "core.staff.insert",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.insert-staff.title",
+      "kind": "command",
+      "targetKind": "part"
+    },
+    {
+      "id": "core.staff.move",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.move-staff.title",
+      "kind": "command",
+      "targetKind": "staff"
+    },
+    {
+      "id": "core.staff.remove",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.remove-staff.title",
+      "kind": "command",
+      "targetKind": "staff"
+    },
+    {
+      "id": "core.staff.set-definition",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.set-staff-definition.title",
+      "kind": "command",
+      "targetKind": "staff"
+    },
+    {
+      "id": "core.voice.insert",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.insert-voice.title",
+      "kind": "command",
+      "targetKind": "part"
+    },
+    {
+      "id": "core.voice.insert-notes-event",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.insert-notes-event.title",
+      "kind": "command",
+      "targetKind": "voice"
+    },
+    {
+      "id": "core.voice.insert-rest-event",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.insert-rest-event.title",
+      "kind": "command",
+      "targetKind": "voice"
+    },
+    {
+      "id": "core.voice.move",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.move-voice.title",
+      "kind": "command",
+      "targetKind": "voice"
+    },
+    {
+      "id": "core.voice.remove",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.remove-voice.title",
+      "kind": "command",
+      "targetKind": "voice"
+    },
+    {
+      "id": "core.voice.set-default-staff",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.set-voice-default-staff.title",
+      "kind": "command",
+      "targetKind": "voice"
+    },
+    {
+      "id": "core.voice.set-sequence-start",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.set-voice-sequence-start.title",
+      "kind": "command",
+      "targetKind": "voice"
+    }
+  ]
+}

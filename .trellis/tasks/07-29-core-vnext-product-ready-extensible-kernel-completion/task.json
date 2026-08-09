@@ -49,7 +49,7 @@
     ".trellis/spec/core-kernel/backend/errors-reports.md",
     ".trellis/spec/core-kernel/backend/domain-transaction-integration.md"
   ],
-  "notes": "PLANNING COORDINATION / CVN-0 CVN-1 AND CVN-3 ACCEPTED AND ARCHIVED / CVN-4 FORMAL CHILD CREATED ON DEDICATED BRANCH / PLANNING PACKAGE COMPLETE / EXECUTION APPROVAL PENDING / 28-COMMAND FINITE CATALOG / STABILITY FIRST / HOT PLUG EXCLUDED.",
+  "notes": "PLANNING COORDINATION / CVN-0 CVN-1 CVN-3 AND CVN-4 ACCEPTED AND ARCHIVED / CVN-5 STILL WAITS FOR CVN-2 AND CVN-6 / 28-COMMAND FINITE CATALOG / STABILITY FIRST / HOT PLUG EXCLUDED.",
   "meta": {
     "compatibility_base": "d92a7586536ac8757c318ae6f75aabd8698f85ac",
     "architecture_style": "stability_first_startup_frozen_microkernel",
@@ -63,15 +63,15 @@
     "batch_child_limit": 100,
     "transaction_effect_limit": 131072,
     "durable_roadmap": ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-roadmap-and-stage-plan.md",
-    "durable_roadmap_last_synchronized": "2026-08-04",
-    "cvn4_preplanning_status": "formal_child_created_planning_review_pending_execution_approval",
+    "durable_roadmap_last_synchronized": "2026-08-09",
+    "cvn4_preplanning_status": "completed_archived",
     "cvn4_dependency_status": "satisfied_by_accepted_archived_cvn3",
     "cvn4_preplanning_file": ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-4-part-staff-voice-preplanning.md",
     "cvn4_evidence_file": ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-4-current-hierarchy-evidence.md",
     "cvn4_formal_task_created": true,
     "cvn4_branch_created": true,
-    "cvn4_task_start_run": false,
-    "cvn4_production_implementation_authorized": false,
+    "cvn4_task_start_run": true,
+    "cvn4_production_implementation_authorized": true,
     "cvn4_expected_runtime_export_count": 49,
     "cvn4_expected_core_command_count": 25,
     "cvn4_expected_registry_command_descriptor_count": 25,
@@ -176,6 +176,23 @@
     "cvn4_user_planning_direction_received": true,
     "cvn4_user_planning_direction_date": "2026-08-04",
     "cvn4_planning_artifacts_complete": true,
-    "cvn4_next_gate": "formal plan review and separate user execution approval"
+    "cvn4_status": "completed_archived",
+    "cvn4_operator_state": "completed_archived",
+    "cvn4_source_test_commit": "788594e670a1608ee2beabddcd217a9d340a5d30",
+    "cvn4_acceptance_commit": "1bb19b0ca4859e546e121593e522ba13d7406982",
+    "cvn4_archive_commit": "13039d05a2120e8db49924f4a417d4c36702cde1",
+    "cvn4_final_independent_review": "passed_2026-08-09_after_narrow_p2_repair",
+    "cvn4_final_independent_review_findings": {
+      "P0": 0,
+      "P1": 0,
+      "P2": 0
+    },
+    "cvn4_focused_voice_test_count": 4,
+    "cvn4_full_test_count": 312,
+    "cvn4_runtime_export_count": 49,
+    "cvn4_core_command_count": 25,
+    "cvn4_registry_command_descriptor_count": 25,
+    "cvn4_archive_path": ".trellis/tasks/archive/2026-08/08-04-cvn-4-part-staff-voice-lifecycle/",
+    "cvn4_next_gate": "completed; retain as accepted CVN-5 prerequisite while CVN-2 and CVN-6 remain pending"
   }
 }

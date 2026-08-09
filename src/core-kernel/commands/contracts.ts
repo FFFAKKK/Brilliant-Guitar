@@ -1,11 +1,15 @@
 import type { Fraction } from "../domain/fraction";
 import type { Meter, NoteValue } from "../domain/musical-time";
 import type {
+  Clef,
+  InstrumentDescriptor,
   MeasureDefinition,
   NotesContent,
+  Part,
   RhythmicEvent,
   ScoreDocument,
   ScoreMetadata,
+  StaffDefinition,
   Voice,
 } from "../domain/score-document";
 import type { WrittenPitch } from "../domain/pitch";
@@ -31,6 +35,18 @@ export type SequenceAnchor =
 export type MeasureAnchor =
   | { readonly kind: "start" }
   | { readonly kind: "after-measure"; readonly measureId: string };
+
+export type PartAnchor =
+  | { readonly kind: "start" }
+  | { readonly kind: "after-part"; readonly partId: string };
+
+export type StaffAnchor =
+  | { readonly kind: "start" }
+  | { readonly kind: "after-staff"; readonly staffId: string };
+
+export type VoiceAnchor =
+  | { readonly kind: "start" }
+  | { readonly kind: "after-voice"; readonly voiceId: string };
 
 export type NotesRhythmicEvent = Omit<RhythmicEvent, "content"> & {
   readonly content: NotesContent;
@@ -132,6 +148,104 @@ export type SetMeasureDefinitionCommand = CommandEnvelopeBase<
   SetMeasureDefinitionPayloadV1
 >;
 
+export type InsertPartCommand = CommandEnvelopeBase<
+  "core.part.insert",
+  Extract<ScoreEntityTarget, { readonly kind: "document" }>,
+  { readonly anchor: PartAnchor; readonly part: Part }
+>;
+
+export type RemovePartCommand = CommandEnvelopeBase<
+  "core.part.remove",
+  Extract<ScoreEntityTarget, { readonly kind: "part" }>,
+  Record<string, never>
+>;
+
+export type MovePartCommand = CommandEnvelopeBase<
+  "core.part.move",
+  Extract<ScoreEntityTarget, { readonly kind: "part" }>,
+  { readonly anchor: PartAnchor }
+>;
+
+export type SetPartNameCommand = CommandEnvelopeBase<
+  "core.part.set-name",
+  Extract<ScoreEntityTarget, { readonly kind: "part" }>,
+  { readonly name: string }
+>;
+
+export type SetPartInstrumentCommand = CommandEnvelopeBase<
+  "core.part.set-instrument",
+  Extract<ScoreEntityTarget, { readonly kind: "part" }>,
+  { readonly instrument: InstrumentDescriptor }
+>;
+
+export type InsertStaffCommand = CommandEnvelopeBase<
+  "core.staff.insert",
+  Extract<ScoreEntityTarget, { readonly kind: "part" }>,
+  { readonly anchor: StaffAnchor; readonly staff: StaffDefinition }
+>;
+
+export type RemoveStaffCommand = CommandEnvelopeBase<
+  "core.staff.remove",
+  Extract<ScoreEntityTarget, { readonly kind: "staff" }>,
+  Record<string, never>
+>;
+
+export type MoveStaffCommand = CommandEnvelopeBase<
+  "core.staff.move",
+  Extract<ScoreEntityTarget, { readonly kind: "staff" }>,
+  { readonly anchor: StaffAnchor }
+>;
+
+export type SetStaffDefinitionCommand = CommandEnvelopeBase<
+  "core.staff.set-definition",
+  Extract<ScoreEntityTarget, { readonly kind: "staff" }>,
+  { readonly lineCount: number; readonly defaultClef: Clef }
+>;
+
+export type InsertVoiceCommand = CommandEnvelopeBase<
+  "core.voice.insert",
+  Extract<ScoreEntityTarget, { readonly kind: "part" }>,
+  {
+    readonly measureId: string;
+    readonly anchor: VoiceAnchor;
+    readonly voice: Voice;
+  }
+>;
+
+export type RemoveVoiceCommand = CommandEnvelopeBase<
+  "core.voice.remove",
+  Extract<ScoreEntityTarget, { readonly kind: "voice" }>,
+  Record<string, never>
+>;
+
+export type MoveVoiceCommand = CommandEnvelopeBase<
+  "core.voice.move",
+  Extract<ScoreEntityTarget, { readonly kind: "voice" }>,
+  { readonly anchor: VoiceAnchor }
+>;
+
+export type SetVoiceDefaultStaffCommand = CommandEnvelopeBase<
+  "core.voice.set-default-staff",
+  Extract<ScoreEntityTarget, { readonly kind: "voice" }>,
+  { readonly staffId: string }
+>;
+
+export type SetVoiceSequenceStartCommand = CommandEnvelopeBase<
+  "core.voice.set-sequence-start",
+  Extract<ScoreEntityTarget, { readonly kind: "voice" }>,
+  { readonly start: Fraction }
+>;
+
+export type SetEventStaffAssignmentCommand = CommandEnvelopeBase<
+  "core.event.set-staff-assignment",
+  Extract<ScoreEntityTarget, { readonly kind: "event" }>,
+  {
+    readonly assignment:
+      | { readonly kind: "inherit-default" }
+      | { readonly kind: "staff"; readonly staffId: string };
+  }
+>;
+
 export type CoreCommandEnvelope =
   | SetMetadataCommand
   | SetWrittenPitchCommand
@@ -142,7 +256,22 @@ export type CoreCommandEnvelope =
   | InsertMeasureCommand
   | RemoveMeasureCommand
   | MoveMeasureCommand
-  | SetMeasureDefinitionCommand;
+  | SetMeasureDefinitionCommand
+  | InsertPartCommand
+  | RemovePartCommand
+  | MovePartCommand
+  | SetPartNameCommand
+  | SetPartInstrumentCommand
+  | InsertStaffCommand
+  | RemoveStaffCommand
+  | MoveStaffCommand
+  | SetStaffDefinitionCommand
+  | InsertVoiceCommand
+  | RemoveVoiceCommand
+  | MoveVoiceCommand
+  | SetVoiceDefaultStaffCommand
+  | SetVoiceSequenceStartCommand
+  | SetEventStaffAssignmentCommand;
 
 export type CommandFailure =
   | { readonly code: "command.invalid-envelope" }
@@ -153,6 +282,7 @@ export type CommandFailure =
   | { readonly code: "command.anchor-not-found" }
   | { readonly code: "command.anchor-wrong-owner" }
   | { readonly code: "command.anchor-self-reference" }
+  | { readonly code: "command.reference-conflict" }
   | {
       readonly code: "command.semantic-invalid";
       readonly diagnostics: readonly SemanticDiagnostic[];

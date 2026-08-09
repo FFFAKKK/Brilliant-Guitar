@@ -39,6 +39,7 @@ import {
   resolveScoreEntityTarget,
   resolveSequenceAnchor,
 } from "../../src/core-kernel/commands/target-resolver";
+import { validateScoreDocumentSemantics } from "../../src/core-kernel/validation/validate-score-semantics";
 import type {
   CoreCommandEnvelope,
   ScoreEntityTarget,
@@ -56,6 +57,25 @@ import {
   createCvn3InsertedVoices,
   createCvn3ShuffledMeasureFixture,
 } from "./fixtures/cvn-3-score";
+import { cloneCvn4ScoreFixture } from "./fixtures/cvn-4-score";
+
+const CVN4_COMMAND_IDS = [
+  "core.part.insert",
+  "core.part.remove",
+  "core.part.move",
+  "core.part.set-name",
+  "core.part.set-instrument",
+  "core.staff.insert",
+  "core.staff.remove",
+  "core.staff.move",
+  "core.staff.set-definition",
+  "core.voice.insert",
+  "core.voice.remove",
+  "core.voice.move",
+  "core.voice.set-default-staff",
+  "core.voice.set-sequence-start",
+  "core.event.set-staff-assignment",
+] as const;
 
 function envelope(
   commandId: string,
@@ -134,7 +154,7 @@ function countRootDocumentClones<T>(
   }
 }
 
-test("the static catalog is frozen and contains the six V1 plus four Measure commands", () => {
+test("the static catalog is frozen and contains the fixed twenty-five Core commands", () => {
   assert.equal(Object.isFrozen(CORE_COMMAND_DEFINITIONS), true);
   assert.equal(
     CORE_COMMAND_DEFINITIONS.every((definition) => Object.isFrozen(definition)),
@@ -153,11 +173,12 @@ test("the static catalog is frozen and contains the six V1 plus four Measure com
       "core.measure.remove",
       "core.measure.move",
       "core.measure.set-definition",
+      ...CVN4_COMMAND_IDS,
     ],
   );
 });
 
-test("the private default execution assembly freezes all ten compatible adapters", () => {
+test("the private default execution assembly freezes all twenty-five compatible adapters", () => {
   const assembly = DEFAULT_CORE_EXECUTION_ASSEMBLY;
   assert.deepEqual(assembly.source, {
     moduleId: "core.commands",
@@ -220,6 +241,10 @@ test("the private default execution assembly freezes all ten compatible adapters
         commandId: "core.measure.set-definition",
         inputBoundary: "vnext-bounded-v1",
       },
+      ...CVN4_COMMAND_IDS.map((commandId) => ({
+        commandId,
+        inputBoundary: "vnext-bounded-v1",
+      })),
     ],
   );
   assert.equal(typeof assembly.validate, "function");
@@ -882,6 +907,34 @@ test("ordered private effect sets clone once, derive reverse inverses, and stay 
   );
   assert.equal(emptyObservation.value.ok, false);
   assert.equal(emptyObservation.count, 0);
+});
+
+test("CVN-4 hierarchy effects keep final Staff validity in the semantic gate", () => {
+  const initial = cloneCvn4ScoreFixture();
+  const before = structuredClone(initial);
+  const applied = applyCoreEffectSet(initial, [
+    {
+      kind: "remove-staff",
+      partId: "cvn4-part-b",
+      staffId: "cvn4-staff-b-1",
+    },
+  ]);
+  assert.equal(applied.ok, true);
+  assert.deepEqual(initial, before);
+  if (!applied.ok) {
+    return;
+  }
+  const semantic = validateScoreDocumentSemantics(applied.document);
+  assert.equal(semantic.ok, false);
+  assert.equal(
+    semantic.diagnostics.some(({ code }) => code === "semantic.staff-required"),
+    true,
+  );
+  const restored = applyCoreEffectSet(applied.document, applied.inverse);
+  assert.equal(restored.ok, true);
+  if (restored.ok) {
+    assert.deepEqual(restored.document, before);
+  }
 });
 
 test("handler/application exceptions and version overflow preserve the exact runtime state", () => {

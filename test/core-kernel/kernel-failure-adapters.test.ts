@@ -100,6 +100,7 @@ test("command and history adapters cover every accepted failure code", () => {
     "command.anchor-self-reference": {
       code: "command.anchor-self-reference",
     },
+    "command.reference-conflict": { code: "command.reference-conflict" },
     "command.version-overflow": { code: "command.version-overflow" },
     "command.internal-error": { code: "command.internal-error" },
     "history.empty-undo": { code: "history.empty-undo" },

@@ -30,6 +30,22 @@ const COMMAND_TITLE_KEYS: Readonly<Record<CoreCommandId, string>> = {
   "core.measure.remove": "core.command.remove-measure.title",
   "core.measure.move": "core.command.move-measure.title",
   "core.measure.set-definition": "core.command.set-measure-definition.title",
+  "core.part.insert": "core.command.insert-part.title",
+  "core.part.remove": "core.command.remove-part.title",
+  "core.part.move": "core.command.move-part.title",
+  "core.part.set-name": "core.command.set-part-name.title",
+  "core.part.set-instrument": "core.command.set-part-instrument.title",
+  "core.staff.insert": "core.command.insert-staff.title",
+  "core.staff.remove": "core.command.remove-staff.title",
+  "core.staff.move": "core.command.move-staff.title",
+  "core.staff.set-definition": "core.command.set-staff-definition.title",
+  "core.voice.insert": "core.command.insert-voice.title",
+  "core.voice.remove": "core.command.remove-voice.title",
+  "core.voice.move": "core.command.move-voice.title",
+  "core.voice.set-default-staff": "core.command.set-voice-default-staff.title",
+  "core.voice.set-sequence-start": "core.command.set-voice-sequence-start.title",
+  "core.event.set-staff-assignment":
+    "core.command.set-event-staff-assignment.title",
 };
 
 const COMMAND_REQUIRED_CAPABILITIES = deepFreezeValue([
