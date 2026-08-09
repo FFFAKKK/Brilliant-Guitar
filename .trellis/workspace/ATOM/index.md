@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 10
+- **Total Sessions**: 11
 - **Last Active**: 2026-08-09
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~374 | Active |
+| `journal-1.md` | ~411 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 11 | 2026-08-09 | Core VNext extensibility reservation accepted and archived | `6298d4b`, `783f69c`, `7c4e852`, `253d19e`, `df9d236` | `codex/core-vnext-extensibility-reservation-review` |
 | 10 | 2026-08-09 | CVN-4 independent acceptance and archive | `788594e`, `1bb19b0` | `codex/cvn-4-part-staff-voice-lifecycle` |
 | 9 | 2026-08-04 | Accept and archive CVN-3 | `3691d93` | `codex/cvn-3-document-factory-measure-lifecycle` |
 | 8 | 2026-08-04 | CVN-1 transaction and registry spine | `6d074ff`, `b9d27c3`, `6776cea`, `f7c0064`, `1016d05`, `8362086`, `709e14b` | `codex/cvn-1-command-transaction-registry-spine` |

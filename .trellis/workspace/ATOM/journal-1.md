@@ -372,3 +372,40 @@ Bounded independent re-review closed the affectedEntities P2; focused Voice 4/4,
 ### Next Steps
 
 - None - task complete
+
+
+## Session 11: Core VNext extensibility reservation accepted and archived
+
+**Date**: 2026-08-09
+**Task**: Core VNext extensibility reservation accepted and archived
+**Branch**: `codex/core-vnext-extensibility-reservation-review`
+
+### Summary
+
+Accepted and archived the documentation-only extensibility reservation gate after one narrow P2 terminology repair; final P0/P1/P2=0/0/0, 25/25 AC, parent D/R/AC=12/12/18, FC headings/owners/commands=44/9/28, GD-0 six public fences unchanged. GD-0 independent acceptance remains the next dependency gate; CVN-2 is inactive.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6298d4b` | (see git log) |
+| `783f69c` | (see git log) |
+| `7c4e852` | (see git log) |
+| `253d19e` | (see git log) |
+| `df9d236` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
