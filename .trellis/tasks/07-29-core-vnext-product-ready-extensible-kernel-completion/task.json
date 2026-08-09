@@ -66,7 +66,7 @@
     "durable_roadmap": ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-roadmap-and-stage-plan.md",
     "durable_roadmap_last_synchronized": "2026-08-09",
     "extensibility_reservation_task": "08-09-core-vnext-extensibility-reservation-review",
-    "extensibility_reservation_status": "in_progress_ready_for_independent_review",
+    "extensibility_reservation_status": "accepted_archive_pending",
     "extensibility_reservation_branch": "codex/core-vnext-extensibility-reservation-review",
     "extensibility_reservation_activation_baseline": "783f69c581b32549fae3fb3d168cb2848bdd53f0",
     "extensibility_reservation_required_before": [
@@ -78,6 +78,8 @@
     "extensibility_reservation_core_command_count_change": false,
     "extensibility_reservation_active_spec_change": false,
     "extensibility_reservation_docs_sync_validation": "passed_parent_D12_R12_AC18_FC44_owner9_commands28_gd0_fences6_full_tests312_2026-08-09",
+    "extensibility_reservation_review_findings": "P0_0_P1_0_P2_0_after_narrow_p2_terminology_repair",
+    "extensibility_reservation_user_acceptance": "2026-08-09",
     "cvn4_preplanning_status": "completed_archived",
     "cvn4_dependency_status": "satisfied_by_accepted_archived_cvn3",
     "cvn4_preplanning_file": ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-4-part-staff-voice-preplanning.md",

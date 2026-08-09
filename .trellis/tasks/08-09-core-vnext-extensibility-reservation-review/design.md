@@ -410,4 +410,4 @@ technique command
 
 ### Rollback
 
-本任务是文档-only。回滚只撤销该分支的任务/父/GD-0 文档提交；Core source、tests、persisted document 和 CVN-4 candidate 没有迁移或运行时状态需要恢复。
+本任务是文档-only。回滚只撤销该分支的任务/父/GD-0 文档提交；Core source、tests、persisted document 和已归档 CVN-4 基线没有迁移或运行时状态需要恢复。

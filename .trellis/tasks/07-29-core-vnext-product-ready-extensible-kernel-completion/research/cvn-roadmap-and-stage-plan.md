@@ -86,7 +86,7 @@ The graph is dependency-based rather than numeric-order-based. CVN-2 and CVN-3 a
 |---|---|---|---|
 | CVN-0 | completed and archived | final independent re-review passed; 19 focused and 188 full tests recorded | retained as accepted prerequisite |
 | CVN-1 | completed and archived | final narrow re-review passed; 19 command-internals and 193 full tests recorded | retained as accepted transaction-spine base |
-| Extensibility Reservation Gate | in progress; ready for independent docs review | planning package committed at `6298d4b`; accepted CVN-4 baseline merged at `783f69c`; parent/GD-0 evolution charter and 24/25 task AC checks complete | independent P0/P1/P2 review, user acceptance and archive before GD-0 final acceptance/CVN-2 creation |
+| Extensibility Reservation Gate | accepted; archive pending | candidate `7c4e852` passed after one narrow P2 terminology repair; final P0/P1/P2=`0/0/0`; task AC `25/25`; user finalization approval recorded | archive and synchronize durable parent state; GD-0 still blocks CVN-2 |
 | CVN-2 | parent-planned; child not created | CVN-1 accepted; GD-0 independent acceptance and Extensibility Reservation Gate acceptance pending | create detailed child only after both gates and separate user planning approval |
 | CVN-3 | completed and archived | independent review passed at `d9500f5` with P0/P1/P2 = `0/0/0`; 22 lifecycle and 233 full tests reproduced; acceptance commit `3691d93` | retained as accepted factory and Measure-lifecycle prerequisite |
 | CVN-4 | completed and archived | independent re-review passed at `788594e` with P0/P1/P2 = `0/0/0`; focused Voice `4/4`, full `312/312`; acceptance `1bb19b0` | retained as accepted hierarchy-lifecycle prerequisite |

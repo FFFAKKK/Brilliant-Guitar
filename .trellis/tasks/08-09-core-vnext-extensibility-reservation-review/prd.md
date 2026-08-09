@@ -237,7 +237,7 @@ CVN-2 保持对 accepted GD-0、accepted CVN-1 与 accepted reservation gate 的
 - [x] AC022：`implement.jsonl` 与 `check.jsonl` 只含真实 spec/research 上下文，没有 seed `_example`。
 - [x] AC023：任务、父任务和引用路径通过 Trellis validation；Markdown fences、JSON/JSONL 和 `git diff --check` 通过。
 - [x] AC024：最终 diff 没有 `src/**`、`test/**`、构建配置、CVN-4 task 或活动 spec 修改。
-- [ ] AC025：独立审查给出 P0/P1/P2=`0/0/0`；用户完成最终文档验收后再记录 gate acceptance/archive，CVN-2 仍需单独 planning approval。
+- [x] AC025：提交后验收复核在一项窄 P2 术语修复后给出最终 P0/P1/P2=`0/0/0`；用户于 2026-08-09 授权继续收尾。Gate 可归档，CVN-2 仍需 accepted GD-0 与单独 planning approval。
 
 ## 7. Out of Scope
 

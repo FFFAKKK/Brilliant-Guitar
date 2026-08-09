@@ -15,7 +15,7 @@
   "branch": "codex/core-vnext-extensibility-reservation-review",
   "base_branch": "codex/cvn-4-part-staff-voice-lifecycle",
   "worktree_path": ".worktrees/core-vnext-extensibility-reservation-review",
-  "commit": null,
+  "commit": "7c4e852ba62bcf18716ac2b374a8cd549c456b5a",
   "pr_url": null,
   "subtasks": [],
   "children": [],
@@ -26,7 +26,7 @@
     ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-roadmap-and-stage-plan.md",
     ".trellis/tasks/07-28-gd-0-guitar-domain-core-transaction-contract/design.md"
   ],
-  "notes": "CVN-4 is independently accepted and archived. The reservation charter was activated after user review and must be independently accepted before final GD-0 contract acceptance and CVN-2 public SDK freeze. No production or active-spec changes are owned.",
+  "notes": "ACCEPTED / ARCHIVE PENDING after a bounded post-commit review and one narrow P2 terminology repair. P0/P1/P2=0/0/0. GD-0 remains pending and CVN-2 remains inactive. No production or active-spec changes are owned.",
   "meta": {
     "planning_only": true,
     "planning_base": "00e0386bd66ec5e36198b8ad8cd2ec292d0b16f8",
@@ -76,8 +76,16 @@
     "post_delta_typecheck": "passed_2026-08-09",
     "post_delta_full_test": "passed_312_in_head_normalized_checkout_2026-08-09",
     "checkout_fixture_observation": "direct_worktree_cvn1_raw_fixture_crlf_materialization_head_blob_lf_and_sha256_canonical",
-    "acceptance_criteria_progress": "24_of_25_complete_ac025_independent_review_and_user_acceptance_pending",
-    "review_state": "ready_for_independent_review",
-    "next_gate": "Obtain independent P0/P1/P2 review and final user acceptance before recording acceptance/archive; CVN-2 remains inactive."
+    "acceptance_criteria_progress": "25_of_25_complete",
+    "review_subject_commit": "7c4e852ba62bcf18716ac2b374a8cd549c456b5a",
+    "review_initial_findings": "P0_0_P1_0_P2_1_stale_cvn4_candidate_term",
+    "review_repair": "design_md_rollback_term_updated_to_archived_cvn4_baseline",
+    "final_review_findings": "P0_0_P1_0_P2_0",
+    "final_review_date": "2026-08-09",
+    "review_state": "accepted_archive_pending_after_narrow_p2_repair",
+    "user_finalization_approval": true,
+    "user_finalization_approval_date": "2026-08-09",
+    "user_finalization_approval_text": "现在可以继续了",
+    "next_gate": "Archive this accepted documentation-only gate and synchronize parent/archive state; GD-0 remains pending and CVN-2 remains inactive."
   }
 }
