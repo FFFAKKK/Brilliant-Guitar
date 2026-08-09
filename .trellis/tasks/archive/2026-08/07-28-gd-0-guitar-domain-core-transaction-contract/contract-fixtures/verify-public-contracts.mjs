@@ -5,10 +5,10 @@ import { fileURLToPath } from "node:url";
 import ts from "typescript";
 
 const fixtureDirectory = dirname(fileURLToPath(import.meta.url));
-const repositoryRoot = resolve(fixtureDirectory, "../../../..");
+const repositoryRoot = resolve(fixtureDirectory, "../../../../../..");
 
 const documentPaths = [
-  ".trellis/tasks/07-28-gd-0-guitar-domain-core-transaction-contract/design.md",
+  ".trellis/tasks/archive/2026-08/07-28-gd-0-guitar-domain-core-transaction-contract/design.md",
   ".trellis/spec/core-kernel/backend/domain-transaction-integration.md",
 ];
 

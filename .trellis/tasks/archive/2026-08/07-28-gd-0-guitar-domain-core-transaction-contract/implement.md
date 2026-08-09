@@ -348,8 +348,8 @@ Use one deterministic four-measure standard-six-string Guitar document containin
 ### Final validation commands
 
 ```powershell
-node .trellis/tasks/07-28-gd-0-guitar-domain-core-transaction-contract/contract-fixtures/verify-public-contracts.mjs
-npx tsc -p .trellis/tasks/07-28-gd-0-guitar-domain-core-transaction-contract/contract-fixtures/tsconfig.real-core.json --noEmit
+node .trellis/tasks/archive/2026-08/07-28-gd-0-guitar-domain-core-transaction-contract/contract-fixtures/verify-public-contracts.mjs
+npx tsc -p .trellis/tasks/archive/2026-08/07-28-gd-0-guitar-domain-core-transaction-contract/contract-fixtures/tsconfig.real-core.json --noEmit
 npm run typecheck
 npm run build
 npm test

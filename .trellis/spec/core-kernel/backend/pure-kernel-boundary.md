@@ -39,7 +39,7 @@ The accepted CVN-0 implementation changes no command, history, replay, event, Re
 
 ## GD-0 Accepted Additive Documentation Contract
 
-GD-0 is an accepted additive documentation/architecture contract, not an implemented runtime baseline. It defines the minimum behavior required for official domain contributions to join the existing transaction owner while leaving every Core-only path unchanged. Its authority is `.trellis/tasks/07-28-gd-0-guitar-domain-core-transaction-contract/` together with `domain-transaction-integration.md` and its recorded acceptance review.
+GD-0 is an accepted additive documentation/architecture contract, not an implemented runtime baseline. It defines the minimum behavior required for official domain contributions to join the existing transaction owner while leaving every Core-only path unchanged. Its authority is `.trellis/tasks/archive/2026-08/07-28-gd-0-guitar-domain-core-transaction-contract/` together with `domain-transaction-integration.md` and its recorded acceptance review.
 
 The candidate requires exact `ExtensionBlock.schemaVersion` compatibility negotiation, explicit complete/incomplete domain-validation availability, lossless read-only degradation for missing or incompatible required contributions, and stable integrated public signatures/discriminants. Legacy ownership is mapped once: CK1.1-0 → accepted CVN-0; CK1.1-1 → CVN-2; generic GD-2 → accepted CVN-1 plus CVN-6/CVN-5; Guitar-owned GD-1/GD-3/GD-4 → post-CVN-7. Pending gates remain inactive and require separate plans and acceptance.
 

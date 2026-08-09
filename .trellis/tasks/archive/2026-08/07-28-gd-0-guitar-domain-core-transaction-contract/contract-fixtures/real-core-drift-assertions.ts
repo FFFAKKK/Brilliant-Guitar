@@ -17,7 +17,7 @@ import {
   type ScoreMetadata,
   type ScoreRangeSelection,
   type SelectedScoreEntity,
-} from "../../../../src/core-kernel/index";
+} from "../../../../../../src/core-kernel/index";
 
 type Equal<Left, Right> =
   (<Value>() => Value extends Left ? 1 : 2) extends

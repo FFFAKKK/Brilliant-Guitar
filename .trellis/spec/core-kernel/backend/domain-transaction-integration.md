@@ -1,7 +1,7 @@
 # Core V1.1 Domain Transaction Integration Contract
 
 > **Status:** ACCEPTED DOCUMENTATION / ARCHITECTURE CONTRACT; PRODUCTION IMPLEMENTATION SEPARATELY GATED.
-> **Authority:** `.trellis/tasks/07-28-gd-0-guitar-domain-core-transaction-contract/`
+> **Authority:** `.trellis/tasks/archive/2026-08/07-28-gd-0-guitar-domain-core-transaction-contract/`
 > **Compatibility base:** Pure Core Kernel V1 accepted at `d92a7586536ac8757c318ae6f75aabd8698f85ac`.
 
 ## Scope
@@ -361,7 +361,7 @@ Rejected and no-op operations leave document state, version, history, redo depth
 
 ## Tests Required by Downstream Gates
 
-- Layer A, `.trellis/tasks/07-28-gd-0-guitar-domain-core-transaction-contract/contract-fixtures/verify-public-contracts.mjs`, extracts every tagged authoritative `typescript public-contract` fence and must report zero parse/type diagnostics using a syntax/name-resolution-only prelude. Layer B compiles `real-core-drift-assertions.ts` with `tsconfig.real-core.json` against the real accepted Core public root and must prove `KernelGatewayResult` uses `authorized/rejected`, `createGateway` is an instance method, all six typed `select` overloads plus `summary`/`subscribe` remain, shared `CommandBus` methods retain their types, and `MarkPersistedResult`/`EventSubscriptionResult` retain their discriminants. Both are mandatory; no copied prelude is accepted as Core compatibility evidence.
+- Layer A, `.trellis/tasks/archive/2026-08/07-28-gd-0-guitar-domain-core-transaction-contract/contract-fixtures/verify-public-contracts.mjs`, extracts every tagged authoritative `typescript public-contract` fence and must report zero parse/type diagnostics using a syntax/name-resolution-only prelude. Layer B compiles `real-core-drift-assertions.ts` with the archived `tsconfig.real-core.json` against the real accepted Core public root and must prove `KernelGatewayResult` uses `authorized/rejected`, `createGateway` is an instance method, all six typed `select` overloads plus `summary`/`subscribe` remain, shared `CommandBus` methods retain their types, and `MarkPersistedResult`/`EventSubscriptionResult` retain their discriminants. Both are mandatory; no copied prelude is accepted as Core compatibility evidence.
 - Table-driven absent/compatible/incompatible/future-schema cases with sorted/deduplicated facts, read-only rejection, validation completeness, zero incompatible handler calls, deep freeze, and input isolation. Include a mixed unavailable+incompatible fixture and assert identical code/full facts for submit, undo, redo, and first replay write.
 - Include table-driven mixed-owner/version fixtures. Assert compatible count `0` gives validator/classifier `0/0`; compatible count `>= 1` gives exactly one validator call per applicable pass over the canonical-owner-ordered filtered view; total validator success plus classification gives classifier count `1` with the identical view; semantic issues, throws, or contract violations give classifier count `0`; and read-only submit/undo/redo/first replay write gives operation validator/classifier/write `0/0/0`. Also assert zero incompatible-block decoder/validator/classifier/command/effect/fact calls and full excluded-payload preservation.
 - Atomic multi-effect submit/no-op/reject/undo/redo, full rollback at every failure phase, one history entry/version/event, checkpoint/dirty parity, and live/replay deep equality.

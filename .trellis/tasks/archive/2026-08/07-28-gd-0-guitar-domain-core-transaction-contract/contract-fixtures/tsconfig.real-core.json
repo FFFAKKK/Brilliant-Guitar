@@ -1,15 +1,15 @@
 {
-  "extends": "../../../../tsconfig.json",
+  "extends": "../../../../../../tsconfig.json",
   "compilerOptions": {
     "noEmit": true,
-    "rootDir": "../../../.."
+    "rootDir": "../../../../../.."
   },
   "include": [
-    "../../../../src/core-kernel/**/*.ts",
+    "../../../../../../src/core-kernel/**/*.ts",
     "./real-core-drift-assertions.ts"
   ],
   "exclude": [
-    "../../../../test",
-    "../../../../dist"
+    "../../../../../../test",
+    "../../../../../../dist"
   ]
 }
