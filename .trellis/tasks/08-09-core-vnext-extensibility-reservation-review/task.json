@@ -1,0 +1,59 @@
+{
+  "id": "core-vnext-extensibility-reservation-review",
+  "name": "core-vnext-extensibility-reservation-review",
+  "title": "Core VNext Extensibility Reservation Review",
+  "description": "Plan the additive, versioned extension lanes that must be reviewed before GD-0 acceptance and CVN-2/CVN-6, while keeping current V1 contracts exact and CVN-4 review isolated.",
+  "status": "planning",
+  "dev_type": null,
+  "scope": "Planning/docs only: freeze additive extensibility reservations and the pre-CVN-2/CVN-6 review gate; preserve CVN-4 review state and all production source/tests.",
+  "package": null,
+  "priority": "P1",
+  "creator": "ATOM",
+  "assignee": "ATOM",
+  "createdAt": "2026-08-09",
+  "completedAt": null,
+  "branch": "codex/core-vnext-extensibility-reservation-review",
+  "base_branch": "codex/cvn-4-part-staff-voice-lifecycle",
+  "worktree_path": ".worktrees/core-vnext-extensibility-reservation-review",
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "07-29-core-vnext-product-ready-extensible-kernel-completion",
+  "relatedFiles": [
+    ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/prd.md",
+    ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/feature-contract-matrix.md",
+    ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-roadmap-and-stage-plan.md",
+    ".trellis/tasks/07-28-gd-0-guitar-domain-core-transaction-contract/design.md"
+  ],
+  "notes": "Planning may proceed while CVN-4 independent review is pending. Adoption must precede final GD-0 contract acceptance and CVN-2 public SDK freeze. No production or active-spec changes are owned.",
+  "meta": {
+    "planning_only": true,
+    "planning_base": "00e0386bd66ec5e36198b8ad8cd2ec292d0b16f8",
+    "cvn4_live_state_observed_2026_08_09": "implementation_candidate_ready_for_independent_review_not_accepted",
+    "cvn4_acceptance_dependency": false,
+    "must_complete_before": [
+      "gd-0-final-contract-acceptance",
+      "cvn-2-formal-child-creation",
+      "cvn-2-public-sdk-freeze"
+    ],
+    "consumed_by": [
+      "cvn-2-official-module-sdk-and-frozen-assembly",
+      "cvn-6-module-runtime-validation-and-migration",
+      "cvn-5-mixed-core-module-batch"
+    ],
+    "current_v1_behavior_change": false,
+    "persisted_schema_change": false,
+    "core_command_count_change": false,
+    "source_or_test_change": false,
+    "active_spec_change": false,
+    "task_start_run": false,
+    "production_implementation_authorized": false,
+    "planning_artifacts_complete": true,
+    "prd_convergence_pass": "passed_2026-08-09",
+    "task_validation": "passed_7_implement_7_check_entries_2026-08-09",
+    "parent_task_validation": "passed_2026-08-09",
+    "planning_trace": "16_requirements_25_acceptance_criteria_22_reservation_decisions_10_scenarios",
+    "next_gate": "User reviews the complete planning package. Keep status planning; run task.py start and edit parent/GD-0 contracts only after explicit approval."
+  }
+}
