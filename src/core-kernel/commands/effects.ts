@@ -1,25 +1,43 @@
+import type { ExtensionBlock } from "../domain/extensions";
+import type { Fraction } from "../domain/fraction";
 import type { NoteValue } from "../domain/musical-time";
 import type {
+  Clef,
+  InstrumentDescriptor,
   MeasureDefinition,
   Part,
   PartMeasureContent,
   RhythmicEvent,
   ScoreDocument,
   ScoreMetadata,
+  StaffDefinition,
+  Voice,
 } from "../domain/score-document";
 import type { WrittenPitch } from "../domain/pitch";
 import { deepFreezeValue } from "../read/deep-freeze";
 import type {
   CommandFailure,
   MeasureAnchor,
+  PartAnchor,
   SequenceAnchor,
+  StaffAnchor,
+  VoiceAnchor,
 } from "./contracts";
 import {
+  movePartInsertionIndex,
+  moveStaffInsertionIndex,
+  moveVoiceInsertionIndex,
   moveInsertionIndex,
+  previousPartAnchor,
+  previousStaffAnchor,
+  previousVoiceAnchor,
+  resolvePartAnchorInIds,
   previousMeasureAnchor,
   resolveMeasureAnchorInIds,
   resolveScoreEntityTarget,
   resolveSequenceAnchor,
+  resolveStaffAnchor,
+  resolveVoiceAnchor,
 } from "./target-resolver";
 
 export interface PartMeasureAnchor {
@@ -29,6 +47,11 @@ export interface PartMeasureAnchor {
 
 export interface AnchoredPartMeasureContent extends PartMeasureAnchor {
   readonly content: PartMeasureContent;
+}
+
+interface IndexedExtensionBlock {
+  readonly index: number;
+  readonly value: ExtensionBlock;
 }
 
 export type CoreEffect =
@@ -90,6 +113,94 @@ export type CoreEffect =
       readonly documentId: string;
       readonly measureId: string;
       readonly value: MeasureDefinition;
+    }
+  | {
+      readonly kind: "insert-part-bundle";
+      readonly documentId: string;
+      readonly anchor: PartAnchor;
+      readonly part: Part;
+      readonly extensions: readonly IndexedExtensionBlock[];
+    }
+  | {
+      readonly kind: "remove-part-bundle";
+      readonly documentId: string;
+      readonly partId: string;
+    }
+  | {
+      readonly kind: "move-part";
+      readonly documentId: string;
+      readonly partId: string;
+      readonly anchor: PartAnchor;
+    }
+  | {
+      readonly kind: "replace-part-name";
+      readonly partId: string;
+      readonly value: string;
+    }
+  | {
+      readonly kind: "replace-part-instrument";
+      readonly partId: string;
+      readonly value: InstrumentDescriptor;
+    }
+  | {
+      readonly kind: "insert-staff";
+      readonly partId: string;
+      readonly anchor: StaffAnchor;
+      readonly staff: StaffDefinition;
+    }
+  | {
+      readonly kind: "remove-staff";
+      readonly partId: string;
+      readonly staffId: string;
+    }
+  | {
+      readonly kind: "move-staff";
+      readonly partId: string;
+      readonly staffId: string;
+      readonly anchor: StaffAnchor;
+    }
+  | {
+      readonly kind: "replace-staff-definition";
+      readonly partId: string;
+      readonly staffId: string;
+      readonly value: StaffDefinition;
+    }
+  | {
+      readonly kind: "insert-voice";
+      readonly partId: string;
+      readonly measureId: string;
+      readonly anchor: VoiceAnchor;
+      readonly voice: Voice;
+    }
+  | {
+      readonly kind: "remove-voice";
+      readonly partId: string;
+      readonly measureId: string;
+      readonly voiceId: string;
+    }
+  | {
+      readonly kind: "move-voice";
+      readonly partId: string;
+      readonly measureId: string;
+      readonly voiceId: string;
+      readonly anchor: VoiceAnchor;
+    }
+  | {
+      readonly kind: "replace-voice-default-staff";
+      readonly voiceId: string;
+      readonly value: string;
+    }
+  | {
+      readonly kind: "replace-voice-sequence-start";
+      readonly voiceId: string;
+      readonly value: Fraction;
+    }
+  | {
+      readonly kind: "replace-event-staff-assignment";
+      readonly eventId: string;
+      readonly value:
+        | { readonly kind: "inherit-default" }
+        | { readonly kind: "staff"; readonly staffId: string };
     };
 
 export type NonEmptyCoreEffectSet = readonly [CoreEffect, ...CoreEffect[]];
@@ -422,6 +533,292 @@ function preflightReplaceMeasureDefinition(
   return measureIndex(document, effect.measureId);
 }
 
+interface ResolvedPartLocation {
+  readonly part: Part;
+  readonly index: number;
+}
+
+interface ResolvedContentLocation extends ResolvedPartLocation {
+  readonly content: PartMeasureContent;
+  readonly contentIndex: number;
+}
+
+function resolvePartLocation(
+  document: ScoreDocument,
+  partId: string,
+): ResolvedPartLocation | undefined {
+  const index = partIndex(document, partId);
+  const part = index === undefined ? undefined : document.parts[index];
+  if (index === undefined || part === undefined) {
+    return undefined;
+  }
+  return { part, index };
+}
+
+function resolveContentLocation(
+  document: ScoreDocument,
+  partId: string,
+  measureId: string,
+): ResolvedContentLocation | undefined {
+  const partLocation = resolvePartLocation(document, partId);
+  if (partLocation === undefined) {
+    return undefined;
+  }
+  const contentIndex = partContentIndex(partLocation.part, measureId);
+  const content = contentIndex === undefined
+    ? undefined
+    : partLocation.part.measureContents[contentIndex];
+  if (contentIndex === undefined || content === undefined) {
+    return undefined;
+  }
+  return { ...partLocation, content, contentIndex };
+}
+
+function staffIndex(part: Part, staffId: string): number | undefined {
+  return uniqueIndex(part.staves, (staff) => staff.id === staffId);
+}
+
+function voiceIndex(content: PartMeasureContent, voiceId: string): number | undefined {
+  return uniqueIndex(content.voices, (voice) => voice.id === voiceId);
+}
+
+function partIds(document: ScoreDocument): readonly string[] {
+  return document.parts.map((part) => part.id);
+}
+
+function staffIds(part: Part): readonly string[] {
+  return part.staves.map((staff) => staff.id);
+}
+
+function voiceIds(content: PartMeasureContent): readonly string[] {
+  return content.voices.map((voice) => voice.id);
+}
+
+function partOwnedExtensions(
+  document: ScoreDocument,
+  partId: string,
+): readonly IndexedExtensionBlock[] {
+  const owned: IndexedExtensionBlock[] = [];
+  for (let index = 0; index < document.extensions.length; index += 1) {
+    const value = document.extensions[index];
+    if (value?.owner.kind === "part" && value.owner.partId === partId) {
+      owned.push({ index, value });
+    }
+  }
+  return owned;
+}
+
+function insertPartPlan(
+  document: ScoreDocument,
+  effect: Extract<CoreEffect, { readonly kind: "insert-part-bundle" }>,
+): { readonly partIndex: number } | undefined {
+  if (!matchesDocument(document, effect.documentId)) {
+    return undefined;
+  }
+  const anchor = resolvePartAnchorInIds(partIds(document), effect.anchor);
+  if (!anchor.ok) {
+    return undefined;
+  }
+  let maximumIndex = document.extensions.length;
+  let previousIndex = -1;
+  for (const entry of effect.extensions) {
+    if (
+      !Number.isSafeInteger(entry.index) ||
+      entry.index < 0 ||
+      entry.index <= previousIndex ||
+      entry.index > maximumIndex ||
+      entry.value.owner.kind !== "part" ||
+      entry.value.owner.partId !== effect.part.id
+    ) {
+      return undefined;
+    }
+    previousIndex = entry.index;
+    maximumIndex += 1;
+  }
+  return { partIndex: anchor.insertionIndex };
+}
+
+function removePartPlan(
+  document: ScoreDocument,
+  effect: Extract<CoreEffect, { readonly kind: "remove-part-bundle" }>,
+):
+  | {
+      readonly partIndex: number;
+      readonly extensions: readonly IndexedExtensionBlock[];
+    }
+  | undefined {
+  if (!matchesDocument(document, effect.documentId)) {
+    return undefined;
+  }
+  const partLocation = resolvePartLocation(document, effect.partId);
+  return partLocation === undefined
+    ? undefined
+    : {
+        partIndex: partLocation.index,
+        extensions: partOwnedExtensions(document, effect.partId),
+      };
+}
+
+function movePartPlan(
+  document: ScoreDocument,
+  effect: Extract<CoreEffect, { readonly kind: "move-part" }>,
+): { readonly targetIndex: number; readonly insertionIndex: number } | undefined {
+  if (!matchesDocument(document, effect.documentId)) {
+    return undefined;
+  }
+  const targetIndex = partIndex(document, effect.partId);
+  const move = movePartInsertionIndex(document, effect.partId, effect.anchor);
+  return targetIndex === undefined || !move.ok
+    ? undefined
+    : { targetIndex, insertionIndex: move.insertionIndex };
+}
+
+function insertStaffPlan(
+  document: ScoreDocument,
+  effect: Extract<CoreEffect, { readonly kind: "insert-staff" }>,
+): { readonly part: Part; readonly insertionIndex: number } | undefined {
+  const partLocation = resolvePartLocation(document, effect.partId);
+  if (partLocation === undefined) {
+    return undefined;
+  }
+  const anchor = resolveStaffAnchor(document, partLocation.part, effect.anchor);
+  return anchor.ok
+    ? { part: partLocation.part, insertionIndex: anchor.insertionIndex }
+    : undefined;
+}
+
+function removeStaffPlan(
+  document: ScoreDocument,
+  effect: Extract<CoreEffect, { readonly kind: "remove-staff" }>,
+): { readonly part: Part; readonly staffIndex: number } | undefined {
+  const partLocation = resolvePartLocation(document, effect.partId);
+  const targetIndex = partLocation === undefined
+    ? undefined
+    : staffIndex(partLocation.part, effect.staffId);
+  return partLocation === undefined || targetIndex === undefined
+    ? undefined
+    : { part: partLocation.part, staffIndex: targetIndex };
+}
+
+function moveStaffPlan(
+  document: ScoreDocument,
+  effect: Extract<CoreEffect, { readonly kind: "move-staff" }>,
+):
+  | {
+      readonly part: Part;
+      readonly targetIndex: number;
+      readonly insertionIndex: number;
+    }
+  | undefined {
+  const partLocation = resolvePartLocation(document, effect.partId);
+  const targetIndex = partLocation === undefined
+    ? undefined
+    : staffIndex(partLocation.part, effect.staffId);
+  const move = partLocation === undefined
+    ? undefined
+    : moveStaffInsertionIndex(
+        document,
+        partLocation.part,
+        effect.staffId,
+        effect.anchor,
+      );
+  return (
+    partLocation === undefined ||
+    targetIndex === undefined ||
+    move === undefined ||
+    !move.ok
+  )
+    ? undefined
+    : {
+        part: partLocation.part,
+        targetIndex,
+        insertionIndex: move.insertionIndex,
+      };
+}
+
+function insertVoicePlan(
+  document: ScoreDocument,
+  effect: Extract<CoreEffect, { readonly kind: "insert-voice" }>,
+): { readonly content: PartMeasureContent; readonly insertionIndex: number } | undefined {
+  const location = resolveContentLocation(
+    document,
+    effect.partId,
+    effect.measureId,
+  );
+  if (location === undefined) {
+    return undefined;
+  }
+  const anchor = resolveVoiceAnchor(
+    document,
+    location.part,
+    location.content,
+    effect.anchor,
+  );
+  return anchor.ok
+    ? { content: location.content, insertionIndex: anchor.insertionIndex }
+    : undefined;
+}
+
+function removeVoicePlan(
+  document: ScoreDocument,
+  effect: Extract<CoreEffect, { readonly kind: "remove-voice" }>,
+): { readonly content: PartMeasureContent; readonly voiceIndex: number } | undefined {
+  const location = resolveContentLocation(
+    document,
+    effect.partId,
+    effect.measureId,
+  );
+  const targetIndex = location === undefined
+    ? undefined
+    : voiceIndex(location.content, effect.voiceId);
+  return location === undefined || targetIndex === undefined
+    ? undefined
+    : { content: location.content, voiceIndex: targetIndex };
+}
+
+function moveVoicePlan(
+  document: ScoreDocument,
+  effect: Extract<CoreEffect, { readonly kind: "move-voice" }>,
+):
+  | {
+      readonly part: Part;
+      readonly content: PartMeasureContent;
+      readonly targetIndex: number;
+      readonly insertionIndex: number;
+    }
+  | undefined {
+  const location = resolveContentLocation(
+    document,
+    effect.partId,
+    effect.measureId,
+  );
+  const targetIndex = location === undefined
+    ? undefined
+    : voiceIndex(location.content, effect.voiceId);
+  const move = location === undefined
+    ? undefined
+    : moveVoiceInsertionIndex(
+        document,
+        location.part,
+        location.content,
+        effect.voiceId,
+        effect.anchor,
+      );
+  return (
+    location === undefined ||
+    targetIndex === undefined ||
+    move === undefined ||
+    !move.ok
+  )
+    ? undefined
+    : {
+        part: location.part,
+        content: location.content,
+        targetIndex,
+        insertionIndex: move.insertionIndex,
+      };
+}
+
 function deriveInverseEffect(
   candidate: ScoreDocument,
   effect: CoreEffect,
@@ -602,6 +999,198 @@ function deriveInverseEffect(
         documentId: effect.documentId,
         measureId: effect.measureId,
         value: cloneValue(previous),
+      };
+    }
+    case "insert-part-bundle": {
+      if (insertPartPlan(candidate, effect) === undefined) {
+        return internalFailure();
+      }
+      return {
+        kind: "remove-part-bundle",
+        documentId: effect.documentId,
+        partId: effect.part.id,
+      };
+    }
+    case "remove-part-bundle": {
+      const plan = removePartPlan(candidate, effect);
+      const part = plan === undefined ? undefined : candidate.parts[plan.partIndex];
+      if (plan === undefined || part === undefined) {
+        return internalFailure();
+      }
+      return {
+        kind: "insert-part-bundle",
+        documentId: effect.documentId,
+        anchor: previousPartAnchor(partIds(candidate), plan.partIndex),
+        part: cloneValue(part),
+        extensions: plan.extensions.map(({ index, value }) => ({
+          index,
+          value: cloneValue(value),
+        })),
+      };
+    }
+    case "move-part": {
+      const plan = movePartPlan(candidate, effect);
+      if (plan === undefined) {
+        return internalFailure();
+      }
+      return {
+        kind: "move-part",
+        documentId: effect.documentId,
+        partId: effect.partId,
+        anchor: previousPartAnchor(partIds(candidate), plan.targetIndex),
+      };
+    }
+    case "replace-part-name": {
+      const part = resolvePartLocation(candidate, effect.partId)?.part;
+      if (part === undefined) {
+        return internalFailure();
+      }
+      return {
+        kind: "replace-part-name",
+        partId: effect.partId,
+        value: part.name,
+      };
+    }
+    case "replace-part-instrument": {
+      const part = resolvePartLocation(candidate, effect.partId)?.part;
+      if (part === undefined) {
+        return internalFailure();
+      }
+      return {
+        kind: "replace-part-instrument",
+        partId: effect.partId,
+        value: cloneValue(part.instrument),
+      };
+    }
+    case "insert-staff": {
+      if (insertStaffPlan(candidate, effect) === undefined) {
+        return internalFailure();
+      }
+      return {
+        kind: "remove-staff",
+        partId: effect.partId,
+        staffId: effect.staff.id,
+      };
+    }
+    case "remove-staff": {
+      const plan = removeStaffPlan(candidate, effect);
+      const staff = plan === undefined ? undefined : plan.part.staves[plan.staffIndex];
+      if (plan === undefined || staff === undefined) {
+        return internalFailure();
+      }
+      return {
+        kind: "insert-staff",
+        partId: effect.partId,
+        anchor: previousStaffAnchor(staffIds(plan.part), plan.staffIndex),
+        staff: cloneValue(staff),
+      };
+    }
+    case "move-staff": {
+      const plan = moveStaffPlan(candidate, effect);
+      if (plan === undefined) {
+        return internalFailure();
+      }
+      return {
+        kind: "move-staff",
+        partId: effect.partId,
+        staffId: effect.staffId,
+        anchor: previousStaffAnchor(staffIds(plan.part), plan.targetIndex),
+      };
+    }
+    case "replace-staff-definition": {
+      const part = resolvePartLocation(candidate, effect.partId)?.part;
+      const index = part === undefined ? undefined : staffIndex(part, effect.staffId);
+      const staff = index === undefined ? undefined : part?.staves[index];
+      if (staff === undefined) {
+        return internalFailure();
+      }
+      return {
+        kind: "replace-staff-definition",
+        partId: effect.partId,
+        staffId: effect.staffId,
+        value: cloneValue(staff),
+      };
+    }
+    case "insert-voice": {
+      if (insertVoicePlan(candidate, effect) === undefined) {
+        return internalFailure();
+      }
+      return {
+        kind: "remove-voice",
+        partId: effect.partId,
+        measureId: effect.measureId,
+        voiceId: effect.voice.id,
+      };
+    }
+    case "remove-voice": {
+      const plan = removeVoicePlan(candidate, effect);
+      const voice = plan === undefined ? undefined : plan.content.voices[plan.voiceIndex];
+      if (plan === undefined || voice === undefined) {
+        return internalFailure();
+      }
+      return {
+        kind: "insert-voice",
+        partId: effect.partId,
+        measureId: effect.measureId,
+        anchor: previousVoiceAnchor(voiceIds(plan.content), plan.voiceIndex),
+        voice: cloneValue(voice),
+      };
+    }
+    case "move-voice": {
+      const plan = moveVoicePlan(candidate, effect);
+      if (plan === undefined) {
+        return internalFailure();
+      }
+      return {
+        kind: "move-voice",
+        partId: effect.partId,
+        measureId: effect.measureId,
+        voiceId: effect.voiceId,
+        anchor: previousVoiceAnchor(voiceIds(plan.content), plan.targetIndex),
+      };
+    }
+    case "replace-voice-default-staff": {
+      const resolved = resolveScoreEntityTarget(candidate, {
+        kind: "voice",
+        voiceId: effect.voiceId,
+      });
+      if (!resolved.ok || resolved.value.kind !== "voice") {
+        return resolved.ok ? internalFailure() : resolved.failure;
+      }
+      return {
+        kind: "replace-voice-default-staff",
+        voiceId: effect.voiceId,
+        value: resolved.value.voice.defaultStaffId,
+      };
+    }
+    case "replace-voice-sequence-start": {
+      const resolved = resolveScoreEntityTarget(candidate, {
+        kind: "voice",
+        voiceId: effect.voiceId,
+      });
+      if (!resolved.ok || resolved.value.kind !== "voice") {
+        return resolved.ok ? internalFailure() : resolved.failure;
+      }
+      return {
+        kind: "replace-voice-sequence-start",
+        voiceId: effect.voiceId,
+        value: cloneValue(resolved.value.voice.sequence.start),
+      };
+    }
+    case "replace-event-staff-assignment": {
+      const resolved = resolveScoreEntityTarget(candidate, {
+        kind: "event",
+        eventId: effect.eventId,
+      });
+      if (!resolved.ok || resolved.value.kind !== "event") {
+        return resolved.ok ? internalFailure() : resolved.failure;
+      }
+      return {
+        kind: "replace-event-staff-assignment",
+        eventId: effect.eventId,
+        value: resolved.value.event.staffId === undefined
+          ? { kind: "inherit-default" }
+          : { kind: "staff", staffId: resolved.value.event.staffId },
       };
     }
   }
@@ -811,6 +1400,183 @@ function applyEffectInPlace(
         1,
         cloneValue(effect.value),
       );
+      return undefined;
+    }
+    case "insert-part-bundle": {
+      const plan = insertPartPlan(candidate, effect);
+      if (plan === undefined) {
+        return internalFailure();
+      }
+      (candidate.parts as Part[]).splice(
+        plan.partIndex,
+        0,
+        cloneValue(effect.part),
+      );
+      const extensions = candidate.extensions as ExtensionBlock[];
+      for (const entry of effect.extensions) {
+        extensions.splice(entry.index, 0, cloneValue(entry.value));
+      }
+      return undefined;
+    }
+    case "remove-part-bundle": {
+      const plan = removePartPlan(candidate, effect);
+      if (plan === undefined) {
+        return internalFailure();
+      }
+      const extensions = candidate.extensions as ExtensionBlock[];
+      for (let index = plan.extensions.length - 1; index >= 0; index -= 1) {
+        const entry = plan.extensions[index];
+        if (entry === undefined) {
+          return internalFailure();
+        }
+        extensions.splice(entry.index, 1);
+      }
+      (candidate.parts as Part[]).splice(plan.partIndex, 1);
+      return undefined;
+    }
+    case "move-part": {
+      const plan = movePartPlan(candidate, effect);
+      return plan === undefined ||
+        !moveAt(
+          candidate.parts as Part[],
+          plan.targetIndex,
+          plan.insertionIndex,
+        )
+        ? internalFailure()
+        : undefined;
+    }
+    case "replace-part-name": {
+      const part = resolvePartLocation(candidate, effect.partId)?.part;
+      if (part === undefined) {
+        return internalFailure();
+      }
+      (part as { name: string }).name = effect.value;
+      return undefined;
+    }
+    case "replace-part-instrument": {
+      const part = resolvePartLocation(candidate, effect.partId)?.part;
+      if (part === undefined) {
+        return internalFailure();
+      }
+      (part as { instrument: InstrumentDescriptor }).instrument = cloneValue(
+        effect.value,
+      );
+      return undefined;
+    }
+    case "insert-staff": {
+      const plan = insertStaffPlan(candidate, effect);
+      if (plan === undefined) {
+        return internalFailure();
+      }
+      (plan.part.staves as StaffDefinition[]).splice(
+        plan.insertionIndex,
+        0,
+        cloneValue(effect.staff),
+      );
+      return undefined;
+    }
+    case "remove-staff": {
+      const plan = removeStaffPlan(candidate, effect);
+      if (plan === undefined) {
+        return internalFailure();
+      }
+      (plan.part.staves as StaffDefinition[]).splice(plan.staffIndex, 1);
+      return undefined;
+    }
+    case "move-staff": {
+      const plan = moveStaffPlan(candidate, effect);
+      return plan === undefined ||
+        !moveAt(
+          plan.part.staves as StaffDefinition[],
+          plan.targetIndex,
+          plan.insertionIndex,
+        )
+        ? internalFailure()
+        : undefined;
+    }
+    case "replace-staff-definition": {
+      const part = resolvePartLocation(candidate, effect.partId)?.part;
+      const index = part === undefined ? undefined : staffIndex(part, effect.staffId);
+      if (
+        part === undefined ||
+        index === undefined ||
+        effect.value.id !== effect.staffId
+      ) {
+        return internalFailure();
+      }
+      (part.staves as StaffDefinition[]).splice(index, 1, cloneValue(effect.value));
+      return undefined;
+    }
+    case "insert-voice": {
+      const plan = insertVoicePlan(candidate, effect);
+      if (plan === undefined) {
+        return internalFailure();
+      }
+      (plan.content.voices as Voice[]).splice(
+        plan.insertionIndex,
+        0,
+        cloneValue(effect.voice),
+      );
+      return undefined;
+    }
+    case "remove-voice": {
+      const plan = removeVoicePlan(candidate, effect);
+      if (plan === undefined) {
+        return internalFailure();
+      }
+      (plan.content.voices as Voice[]).splice(plan.voiceIndex, 1);
+      return undefined;
+    }
+    case "move-voice": {
+      const plan = moveVoicePlan(candidate, effect);
+      return plan === undefined ||
+        !moveAt(
+          plan.content.voices as Voice[],
+          plan.targetIndex,
+          plan.insertionIndex,
+        )
+        ? internalFailure()
+        : undefined;
+    }
+    case "replace-voice-default-staff": {
+      const resolved = resolveScoreEntityTarget(candidate, {
+        kind: "voice",
+        voiceId: effect.voiceId,
+      });
+      if (!resolved.ok || resolved.value.kind !== "voice") {
+        return resolved.ok ? internalFailure() : resolved.failure;
+      }
+      (resolved.value.voice as { defaultStaffId: string }).defaultStaffId =
+        effect.value;
+      return undefined;
+    }
+    case "replace-voice-sequence-start": {
+      const resolved = resolveScoreEntityTarget(candidate, {
+        kind: "voice",
+        voiceId: effect.voiceId,
+      });
+      if (!resolved.ok || resolved.value.kind !== "voice") {
+        return resolved.ok ? internalFailure() : resolved.failure;
+      }
+      (
+        resolved.value.voice.sequence as { start: Fraction }
+      ).start = cloneValue(effect.value);
+      return undefined;
+    }
+    case "replace-event-staff-assignment": {
+      const resolved = resolveScoreEntityTarget(candidate, {
+        kind: "event",
+        eventId: effect.eventId,
+      });
+      if (!resolved.ok || resolved.value.kind !== "event") {
+        return resolved.ok ? internalFailure() : resolved.failure;
+      }
+      const event = resolved.value.event as { staffId?: string };
+      if (effect.value.kind === "inherit-default") {
+        delete event.staffId;
+      } else {
+        event.staffId = effect.value.staffId;
+      }
       return undefined;
     }
   }

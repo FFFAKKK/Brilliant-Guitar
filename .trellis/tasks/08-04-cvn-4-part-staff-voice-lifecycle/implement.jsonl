@@ -11,3 +11,5 @@
 {"file": ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-4-current-hierarchy-evidence.md", "reason": "提供 CVN-3 source seam、ownership gap、strict codec、extension restoration 与 public surface 证据。"}
 {"file": ".trellis/tasks/archive/2026-08/08-04-cvn-3-document-factory-measure-lifecycle/prd.md", "reason": "保留已验收 CVN-3 public/transaction/surface compatibility baseline。"}
 {"file": ".trellis/tasks/archive/2026-08/08-04-cvn-3-document-factory-measure-lifecycle/design.md", "reason": "复用已验收 strict capture、Measure aggregate/effect 与 surface projection 设计边界。"}
+{"file": ".gitattributes", "reason": "Keep SHA-256 checked CVN-1 and CVN-3 golden trace fixtures checked out as raw LF on Windows; no fixture content changed."}
+{"file": "src/core-kernel/commands/hierarchy-command-adapters.ts", "reason": "Implemented the fixed fifteen CVN-4 hierarchy command adapters with strict decoding, ownership anchors, prepared plans, and unchanged public runtime exports."}

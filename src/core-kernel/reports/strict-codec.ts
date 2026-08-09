@@ -87,6 +87,7 @@ const COMMAND_FAILURE_CODES = Object.freeze({
   "command.anchor-not-found": true,
   "command.anchor-wrong-owner": true,
   "command.anchor-self-reference": true,
+  "command.reference-conflict": true,
   "command.semantic-invalid": true,
   "command.resource-limit-exceeded": true,
   "command.version-overflow": true,

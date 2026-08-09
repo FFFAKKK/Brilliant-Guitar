@@ -77,10 +77,7 @@ export const CVN1_COMMAND_IDS = [
   "core.event.remove",
 ] as const;
 
-/**
- * These are the only Registry descriptors removed from the V1 projection.
- * Any unrelated descriptor drift remains visible to the historical fixture.
- */
+/** The CVN-3 descriptors removed from the frozen V1 projection. */
 export const CVN3_PROJECTED_COMMAND_IDS = [
   "core.measure.insert",
   "core.measure.remove",
@@ -88,12 +85,35 @@ export const CVN3_PROJECTED_COMMAND_IDS = [
   "core.measure.set-definition",
 ] as const;
 
+/**
+ * CVN-4 is additive to the command spine. Its fixed descriptors are removed
+ * only from this historical V1 projection; unrelated descriptors remain
+ * visible so the characterization continues to detect unplanned drift.
+ */
+export const CVN4_PROJECTED_COMMAND_IDS = [
+  "core.part.insert",
+  "core.part.remove",
+  "core.part.move",
+  "core.part.set-name",
+  "core.part.set-instrument",
+  "core.staff.insert",
+  "core.staff.remove",
+  "core.staff.move",
+  "core.staff.set-definition",
+  "core.voice.insert",
+  "core.voice.remove",
+  "core.voice.move",
+  "core.voice.set-default-staff",
+  "core.voice.set-sequence-start",
+  "core.event.set-staff-assignment",
+] as const;
+
 const CVN1_RUNTIME_EXPORT_NAME_SET: ReadonlySet<string> = new Set(
   CVN1_RUNTIME_EXPORT_NAMES,
 );
 const CVN1_COMMAND_ID_SET: ReadonlySet<string> = new Set(CVN1_COMMAND_IDS);
-const CVN3_PROJECTED_COMMAND_ID_SET: ReadonlySet<string> = new Set(
-  CVN3_PROJECTED_COMMAND_IDS,
+const POST_CVN1_PROJECTED_COMMAND_ID_SET: ReadonlySet<string> = new Set(
+  [...CVN3_PROJECTED_COMMAND_IDS, ...CVN4_PROJECTED_COMMAND_IDS],
 );
 
 const REQUIRED_CASE_IDS = [
@@ -717,7 +737,7 @@ function projectCvn1RegistrySummary(
       contributions: summary.value.contributions.filter(
         (contribution) =>
           contribution.kind !== "command" ||
-          !CVN3_PROJECTED_COMMAND_ID_SET.has(contribution.id),
+          !POST_CVN1_PROJECTED_COMMAND_ID_SET.has(contribution.id),
       ),
     },
   };

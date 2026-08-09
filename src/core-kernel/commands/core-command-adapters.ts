@@ -32,6 +32,7 @@ import {
   resolveScoreEntityTarget,
   resolveSequenceAnchor,
 } from "./target-resolver";
+import { HIERARCHY_COMMAND_ADAPTERS } from "./hierarchy-command-adapters";
 import { MEASURE_COMMAND_ADAPTERS } from "./measure-command-adapters";
 
 export type CoreCommandTargetKind = ScoreEntityTarget["kind"];
@@ -736,4 +737,5 @@ export const CORE_COMMAND_ADAPTERS: readonly CoreCommandAdapter[] = Object.freez
     prepare: prepareRemoveEvent,
   }),
   ...MEASURE_COMMAND_ADAPTERS,
+  ...HIERARCHY_COMMAND_ADAPTERS,
 ] satisfies readonly CoreCommandAdapter[]);

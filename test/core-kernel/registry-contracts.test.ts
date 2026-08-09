@@ -19,6 +19,56 @@ type StartupFailure = Readonly<Record<string, unknown>> & {
   readonly code: string;
 };
 
+const CVN4_COMMAND_DESCRIPTORS = [
+  ["core.part.insert", "core.command.insert-part.title", "document"],
+  ["core.part.remove", "core.command.remove-part.title", "part"],
+  ["core.part.move", "core.command.move-part.title", "part"],
+  ["core.part.set-name", "core.command.set-part-name.title", "part"],
+  [
+    "core.part.set-instrument",
+    "core.command.set-part-instrument.title",
+    "part",
+  ],
+  ["core.staff.insert", "core.command.insert-staff.title", "part"],
+  ["core.staff.remove", "core.command.remove-staff.title", "staff"],
+  ["core.staff.move", "core.command.move-staff.title", "staff"],
+  [
+    "core.staff.set-definition",
+    "core.command.set-staff-definition.title",
+    "staff",
+  ],
+  ["core.voice.insert", "core.command.insert-voice.title", "part"],
+  ["core.voice.remove", "core.command.remove-voice.title", "voice"],
+  ["core.voice.move", "core.command.move-voice.title", "voice"],
+  [
+    "core.voice.set-default-staff",
+    "core.command.set-voice-default-staff.title",
+    "voice",
+  ],
+  [
+    "core.voice.set-sequence-start",
+    "core.command.set-voice-sequence-start.title",
+    "voice",
+  ],
+  [
+    "core.event.set-staff-assignment",
+    "core.command.set-event-staff-assignment.title",
+    "event",
+  ],
+] as const;
+
+const CVN4_REGISTRY_COMMAND_DESCRIPTORS = CVN4_COMMAND_DESCRIPTORS.map(
+  ([id, titleKey, targetKind]) => ({
+    id,
+    kind: "command",
+    sourceModuleId: "core.commands",
+    apiVersion: 1,
+    requiredCapabilities: ["command:execute"],
+    titleKey,
+    targetKind,
+  }),
+);
+
 function createMutableManifest(): {
   startupManifestVersion: number;
   modules: Array<{
@@ -112,7 +162,7 @@ test("default startup manifest is deeply frozen and owns two compiled entries", 
         registrationEntryId: "core.commands.v1",
         ownerModuleId: "core.commands",
         kind: "command",
-        contributionCount: 10,
+        contributionCount: 25,
       },
       {
         registrationEntryId: "core.selectors.v1",
@@ -221,6 +271,7 @@ test("compiled entries bind only the approved command and selector descriptors",
         titleKey: "core.command.set-measure-definition.title",
         targetKind: "measure",
       },
+      ...CVN4_REGISTRY_COMMAND_DESCRIPTORS,
     ],
   );
   assert.equal(
