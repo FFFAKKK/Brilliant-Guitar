@@ -123,6 +123,13 @@
 
 独立 reviewer 从 accepted CVN-3 base 审查 full diff、十五个 envelope、effect inverses、Part extensions、Staff reference scans、Voice content ownership、wrong-owner anchors、failure privacy、surface counts、immutable fixtures 和 all gates。任何 P0/P1/P2 必须窄修并独立复验。仅在 0/0/0、accepted source/test commit 记录后，更新 task completed、归档并推进 CVN-5 dependency。
 
+Stage 11 已于 2026-08-09 完成。初审发现一个 P2：`core.voice.remove`
+的 affected facts 将 owner Part 放在 Event/Note 子树之后。窄修后顺序恢复为
+`Voice → owner Part → Events/Notes`，并以 exact submit/undo/redo 回归锁定。
+复审在 source/test commit `788594e670a1608ee2beabddcd217a9d340a5d30`
+上得到 P0/P1/P2 = `0/0/0`；focused Voice `4/4`、full `312/312`、
+typecheck、build、Trellis validation、diff check 与 protected hashes 均通过。
+
 ## 5. 验证命令
 
 执行阶段使用 Windows 可靠的 npm.cmd。planned CVN-4 test files 仅在相应阶段创建后运行：

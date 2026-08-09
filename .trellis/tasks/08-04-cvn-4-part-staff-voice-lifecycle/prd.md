@@ -190,53 +190,62 @@ CVN-1 characterization expected fixture 与 CVN-3 surface expected JSON 必须�
 
 ### 基线、目录与输入
 
-- [ ] **CVN4-AC001:** formal task records accepted CVN-3 source/acceptance/archive commits and a clean activation HEAD.
-- [ ] **CVN4-AC002:** catalog IDs 11–25 exactly match section 3.1 in order, version and target.
-- [ ] **CVN4-AC003:** Registry contains exact 25 descriptors and the fifteen fixed title keys.
-- [ ] **CVN4-AC004:** runtime root export allowlist remains exactly 49.
-- [ ] **CVN4-AC005:** all fifteen commands reject hostile/extra/sparse/cyclic input without invoking caller code.
-- [ ] **CVN4-AC006:** depth 64/property 1,048,576 accept at the applicable boundary and 65/1,048,577 reject with exact facts.
+- [x] **CVN4-AC001:** formal task records accepted CVN-3 source/acceptance/archive commits and a clean activation HEAD.
+- [x] **CVN4-AC002:** catalog IDs 11–25 exactly match section 3.1 in order, version and target.
+- [x] **CVN4-AC003:** Registry contains exact 25 descriptors and the fifteen fixed title keys.
+- [x] **CVN4-AC004:** runtime root export allowlist remains exactly 49.
+- [x] **CVN4-AC005:** all fifteen commands reject hostile/extra/sparse/cyclic input without invoking caller code.
+- [x] **CVN4-AC006:** depth 64/property 1,048,576 accept at the applicable boundary and 65/1,048,577 reject with exact facts.
 
 ### Part
 
-- [ ] **CVN4-AC007:** Part insert commits exact coverage in global Measure order.
-- [ ] **CVN4-AC008:** Part insert coverage/ID/reference failures preserve full state equality.
-- [ ] **CVN4-AC009:** Part remove deletes the full aggregate and only its owned extensions.
-- [ ] **CVN4-AC010:** Part remove undo restores exact mixed extension array positions and payload values.
-- [ ] **CVN4-AC011:** Part move changes only Part order and is no-op when already positioned.
-- [ ] **CVN4-AC012:** Part name preserves exact whitespace and no-op equality.
-- [ ] **CVN4-AC013:** instrument replacement proves commit/no-op/semantic rejection/profile unsupported behavior.
+- [x] **CVN4-AC007:** Part insert commits exact coverage in global Measure order.
+- [x] **CVN4-AC008:** Part insert coverage/ID/reference failures preserve full state equality.
+- [x] **CVN4-AC009:** Part remove deletes the full aggregate and only its owned extensions.
+- [x] **CVN4-AC010:** Part remove undo restores exact mixed extension array positions and payload values.
+- [x] **CVN4-AC011:** Part move changes only Part order and is no-op when already positioned.
+- [x] **CVN4-AC012:** Part name preserves exact whitespace and no-op equality.
+- [x] **CVN4-AC013:** instrument replacement proves commit/no-op/semantic rejection/profile unsupported behavior.
 
 ### Staff
 
-- [ ] **CVN4-AC014:** Staff insert adds no implicit Voice or reference mutation.
-- [ ] **CVN4-AC015:** Staff remove rejects a default-Staff Voice reference.
-- [ ] **CVN4-AC016:** Staff remove rejects an explicit Event Staff reference.
-- [ ] **CVN4-AC017:** after explicit reassignment, Staff removal commits and exact undo restores both commands independently.
-- [ ] **CVN4-AC018:** removal of final Staff reports exact semantic.staff-required path and full state equality.
-- [ ] **CVN4-AC019:** Staff move distinguishes missing, wrong-owner and self anchors.
-- [ ] **CVN4-AC020:** Staff definition replacement proves exact equality and invalid line-count rollback.
+- [x] **CVN4-AC014:** Staff insert adds no implicit Voice or reference mutation.
+- [x] **CVN4-AC015:** Staff remove rejects a default-Staff Voice reference.
+- [x] **CVN4-AC016:** Staff remove rejects an explicit Event Staff reference.
+- [x] **CVN4-AC017:** after explicit reassignment, Staff removal commits and exact undo restores both commands independently.
+- [x] **CVN4-AC018:** removal of final Staff reports exact semantic.staff-required path and full state equality.
+- [x] **CVN4-AC019:** Staff move distinguishes missing, wrong-owner and self anchors.
+- [x] **CVN4-AC020:** Staff definition replacement proves exact equality and invalid line-count rollback.
 
 ### Voice 与 Event
 
-- [ ] **CVN4-AC021:** Voice insert resolves target Part/Measure/content and preserves unrelated contents.
-- [ ] **CVN4-AC022:** Voice insert rejects global ID, Staff reference and sequence violations deterministically.
-- [ ] **CVN4-AC023:** Voice remove deletes Event/Note descendants and restores exact order/value through undo.
-- [ ] **CVN4-AC024:** removal of final Voice reports exact semantic.voice-required path.
-- [ ] **CVN4-AC025:** Voice move distinguishes cross-Measure, cross-Part, missing and self anchors.
-- [ ] **CVN4-AC026:** Voice default Staff replacement commits/no-ops/rejects wrong ownership exactly.
-- [ ] **CVN4-AC027:** sequence-start replacement proves canonical Fraction, bounds, no-op and unsupported separation.
-- [ ] **CVN4-AC028:** Event assignment proves explicit, inherited, no-op and wrong-owner cases.
+- [x] **CVN4-AC021:** Voice insert resolves target Part/Measure/content and preserves unrelated contents.
+- [x] **CVN4-AC022:** Voice insert rejects global ID, Staff reference and sequence violations deterministically.
+- [x] **CVN4-AC023:** Voice remove deletes Event/Note descendants and restores exact order/value through undo.
+- [x] **CVN4-AC024:** removal of final Voice reports exact semantic.voice-required path.
+- [x] **CVN4-AC025:** Voice move distinguishes cross-Measure, cross-Part, missing and self anchors.
+- [x] **CVN4-AC026:** Voice default Staff replacement commits/no-ops/rejects wrong ownership exactly.
+- [x] **CVN4-AC027:** sequence-start replacement proves canonical Fraction, bounds, no-op and unsupported separation.
+- [x] **CVN4-AC028:** Event assignment proves explicit, inherited, no-op and wrong-owner cases.
 
 ### 事务、兼容性与质量
 
-- [ ] **CVN4-AC029:** each command proves exact encoded before/after, undo, redo and replay equality.
-- [ ] **CVN4-AC030:** each command proves checkpoint, dirty, redo and committed-event state rules.
-- [ ] **CVN4-AC031:** affected addresses match the design's canonical order and remain identical through undo/redo history facts.
-- [ ] **CVN4-AC032:** caller mutation and unknown extension preservation pass every relevant path.
-- [ ] **CVN4-AC033:** command.reference-conflict mapping is exhaustive, frozen and privacy-safe.
-- [ ] **CVN4-AC034:** CVN-1 expected characterization and CVN-3 expected surface JSON remain byte-identical.
-- [ ] **CVN4-AC035:** typecheck, build, focused tests, full tests, Trellis validation, diff checks and independent final review pass.
+- [x] **CVN4-AC029:** each command proves exact encoded before/after, undo, redo and replay equality.
+- [x] **CVN4-AC030:** each command proves checkpoint, dirty, redo and committed-event state rules.
+- [x] **CVN4-AC031:** affected addresses match the design's canonical order and remain identical through undo/redo history facts.
+- [x] **CVN4-AC032:** caller mutation and unknown extension preservation pass every relevant path.
+- [x] **CVN4-AC033:** command.reference-conflict mapping is exhaustive, frozen and privacy-safe.
+- [x] **CVN4-AC034:** CVN-1 expected characterization and CVN-3 expected surface JSON remain byte-identical.
+- [x] **CVN4-AC035:** typecheck, build, focused tests, full tests, Trellis validation, diff checks and independent final review pass.
+
+> **Independent acceptance (2026-08-09):** CVN4-AC001 through CVN4-AC035 are
+> accepted at source/test commit
+> `788594e670a1608ee2beabddcd217a9d340a5d30`. The initial review found one P2
+> canonical-order defect in `core.voice.remove`; the narrow repair and exact
+> submit/undo/redo regression were independently reproduced. Final verdict:
+> P0/P1/P2 = `0/0/0`, with focused Voice tests `4/4`, full tests `312/312`,
+> typecheck, build, Trellis validation, diff checking, and both protected hashes
+> passing.
 
 ## 8. 规划收敛与执行门禁
 
