@@ -372,3 +372,37 @@ Bounded independent re-review closed the affectedEntities P2; focused Voice 4/4,
 ### Next Steps
 
 - None - task complete
+
+
+## Session 11: CVN-4 local correctness repair acceptance
+
+**Date**: 2026-08-09
+**Task**: CVN-4 local correctness repair acceptance
+**Branch**: `codex/cvn-4-part-staff-voice-lifecycle`
+
+### Summary
+
+Reviewed only local score input validation and document rollback behavior. Focused 92/92 and full 315/315 passed with typecheck, build, Trellis, diff and protected hashes. Re-accepted the archived CVN-4 task and synchronized the parent roadmap; no push.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b0272e2` | (see git log) |
+| `7f33e7d` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
