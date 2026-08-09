@@ -338,3 +338,37 @@ Independent audit accepted source/test commit d9500f5 with P0/P1/P2 0/0/0; typec
 ### Next Steps
 
 - None - task complete
+
+
+## Session 10: CVN-4 independent acceptance and archive
+
+**Date**: 2026-08-09
+**Task**: CVN-4 independent acceptance and archive
+**Branch**: `codex/cvn-4-part-staff-voice-lifecycle`
+
+### Summary
+
+Bounded independent re-review closed the affectedEntities P2; focused Voice 4/4, full 312/312, typecheck, build, Trellis, diff and protected-hash gates passed. Accepted, archived, and synchronized the parent roadmap; no push.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `788594e` | (see git log) |
+| `1bb19b0` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
