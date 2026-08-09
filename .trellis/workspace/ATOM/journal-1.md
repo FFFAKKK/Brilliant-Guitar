@@ -409,3 +409,38 @@ Accepted and archived the documentation-only extensibility reservation gate afte
 ### Next Steps
 
 - None - task complete
+
+
+## Session 12: GD-0 independent contract acceptance and archive
+
+**Date**: 2026-08-10
+**Task**: GD-0 independent contract acceptance and archive
+**Branch**: `codex/gd-0-independent-acceptance-review`
+
+### Summary
+
+Reconciled legacy CK1.1/GD-2 ownership to CVN-0/1/2/5/6, preserved all GD-0 public-contract fences, passed Layer A/B, typecheck, normalized 312/312 regression, accepted with final P0/P1/P2=0/0/0, archived GD-0, and left separately approved CVN-2 planning as the next gate.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `451627e` | (see git log) |
+| `a2b9009` | (see git log) |
+| `ade7526` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
