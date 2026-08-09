@@ -37,6 +37,7 @@
     ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/documentation-sync-matrix.md",
     ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/core-vnext-refactor-assessment.md",
     ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/core-vnext-performance-baseline.md",
+    ".trellis/tasks/08-09-core-vnext-extensibility-reservation-review/",
     ".trellis/tasks/archive/2026-08/07-30-cvn-0-public-unknown-guard-consistency/",
     ".trellis/tasks/archive/2026-08/08-04-cvn-1-command-transaction-registry-spine/",
     ".trellis/tasks/08-04-cvn-3-document-factory-measure-lifecycle/",
@@ -49,7 +50,7 @@
     ".trellis/spec/core-kernel/backend/errors-reports.md",
     ".trellis/spec/core-kernel/backend/domain-transaction-integration.md"
   ],
-  "notes": "PLANNING COORDINATION / CVN-0 CVN-1 CVN-3 AND CVN-4 ACCEPTED AND ARCHIVED / CVN-5 STILL WAITS FOR CVN-2 AND CVN-6 / 28-COMMAND FINITE CATALOG / STABILITY FIRST / HOT PLUG EXCLUDED.",
+  "notes": "PLANNING COORDINATION / CVN-0 CVN-1 CVN-3 AND CVN-4 ACCEPTED AND ARCHIVED / EXTENSIBILITY RESERVATION DOCS GATE IN PROGRESS / CVN-2 WAITS FOR GD-0 AND RESERVATION ACCEPTANCE / CVN-5 STILL WAITS FOR CVN-2 AND CVN-6 / 28-COMMAND FINITE CATALOG / STABILITY FIRST / HOT PLUG EXCLUDED.",
   "meta": {
     "compatibility_base": "d92a7586536ac8757c318ae6f75aabd8698f85ac",
     "architecture_style": "stability_first_startup_frozen_microkernel",
@@ -64,6 +65,19 @@
     "transaction_effect_limit": 131072,
     "durable_roadmap": ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-roadmap-and-stage-plan.md",
     "durable_roadmap_last_synchronized": "2026-08-09",
+    "extensibility_reservation_task": "08-09-core-vnext-extensibility-reservation-review",
+    "extensibility_reservation_status": "in_progress_ready_for_independent_review",
+    "extensibility_reservation_branch": "codex/core-vnext-extensibility-reservation-review",
+    "extensibility_reservation_activation_baseline": "783f69c581b32549fae3fb3d168cb2848bdd53f0",
+    "extensibility_reservation_required_before": [
+      "gd-0-final-contract-acceptance",
+      "cvn-2-formal-child-creation",
+      "cvn-2-public-sdk-freeze"
+    ],
+    "extensibility_reservation_v1_behavior_change": false,
+    "extensibility_reservation_core_command_count_change": false,
+    "extensibility_reservation_active_spec_change": false,
+    "extensibility_reservation_docs_sync_validation": "passed_parent_D12_R12_AC18_FC44_owner9_commands28_gd0_fences6_full_tests312_2026-08-09",
     "cvn4_preplanning_status": "completed_archived",
     "cvn4_dependency_status": "satisfied_by_accepted_archived_cvn3",
     "cvn4_preplanning_file": ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-4-part-staff-voice-preplanning.md",

@@ -2,7 +2,7 @@
 
 ## 1. 执行状态
 
-本文件是规划文档修改任务的有序执行计划。当前任务保持 `planning`；本轮只完成任务、分支、PRD、design、implement、research 和 context manifest。父合同/GD-0 的实际修改、task activation、提交、验收和归档均等待用户审阅。
+本文件是规划文档修改任务的有序执行计划。规划包已完成用户审阅，`task.py start` 已将任务切换为 `in_progress`。当前执行只同步获批的父合同、feature matrix、durable roadmap、GD-0 forward-evolution boundary 与本任务证据；生产源码、测试、活动 spec、持久化 schema 和运行时 Registry 不属于 task-owned delta。最终验收与归档仍等待独立审查和用户确认。
 
 本任务全程是 documentation-only：
 
@@ -10,8 +10,8 @@
 - 不修改 `test/**`；
 - 不修改构建/package 配置；
 - 不修改 `.trellis/spec/**` 的 accepted behavior；
-- 不修改 `.trellis/tasks/08-04-cvn-4-part-staff-voice-lifecycle/**`；
-- 不读取 CVN-4 未提交实现候选为基线或 acceptance 证据。
+- 不修改 `.trellis/tasks/archive/2026-08/08-04-cvn-4-part-staff-voice-lifecycle/**`；
+- accepted CVN-4 branch `700bac9` 已通过 merge `783f69c` 成为前置基线；CVN-4 独立 worktree 的归档后并行 dirty paths 保持原样。
 
 ## 2. 激活前条件
 
@@ -19,14 +19,14 @@
 
 1. 当前 worktree 是 `.worktrees/core-vnext-extensibility-reservation-review`；
 2. 当前 branch 是 `codex/core-vnext-extensibility-reservation-review`；
-3. planning base 是 `00e0386bd66ec5e36198b8ad8cd2ec292d0b16f8`；
-4. task status 是 `planning`；
+3. 原始 planning base 是 `00e0386bd66ec5e36198b8ad8cd2ec292d0b16f8`，accepted CVN-4 baseline 是 `700bac9c457dba84d801161e7d3c39b83ed075ad`，activation baseline 是 merge `783f69c581b32549fae3fb3d168cb2848bdd53f0`；
+4. task status 是 `in_progress`；
 5. parent 是 `07-29-core-vnext-product-ready-extensible-kernel-completion`；
-6. CVN-4 live status 通过其独立 worktree/task metadata读取并记录为 candidate/pending review，除非届时已有新的可验证 acceptance/archive 事实；
+6. CVN-4 live archive 已验证为 completed/archived：source/test `788594e`、acceptance `1bb19b0`、archive `13039d0`、P0/P1/P2=`0/0/0`；
 7. 本分支没有 source/test/spec/CVN-4 task 变更；
 8. 父 feature matrix 和 GD-0 public fence 相对基线可读取且未发生未解释漂移。
 
-任何一项不一致时，先更新基线记录和影响图，再进入文档 delta。不要通过 reset/cleanup 处理其他 worktree 的候选。
+任何一项不一致时，先更新基线记录和影响图，再进入文档 delta。其他 worktree 的并行修改通过只读状态核对后原样保留。
 
 ## 3. 拥有文件面
 
@@ -52,22 +52,23 @@
 
 - `src/**`、`test/**`、`package.json`、`tsconfig*`；
 - `.trellis/spec/**`；
-- CVN-0 至 CVN-4 active/archive task files，尤其 `08-04-cvn-4-part-staff-voice-lifecycle/**`；
+- CVN-0 至 CVN-4 active/archive task files，尤其 `.trellis/tasks/archive/2026-08/08-04-cvn-4-part-staff-voice-lifecycle/**`；
 - GD-0 `public-contract` fence 内容；
-- 28 command IDs、44 parent FC headings/primary ownership、resource caps、fixtures、budgets；
+- 28 command IDs、44 parent FC headings、9 个 primary-owner rows、resource caps、fixtures、budgets；
 - `brilliant-score-1`、ExtensionOwner V1、V1 contribution fields 和 V1 effect scope。
 
 ## 4. Stage 0 — 激活与基线证据
 
-仅在用户批准执行后：
+已于 2026-08-09 完成：
 
-1. 运行 `task.py start`；
-2. 记录 branch、HEAD、base branch、worktree 和 dirty paths；
-3. 读取 parent task、GD-0 task、CVN-4 live task 状态；
-4. 记录 parent PRD decision/requirement/AC counts；
-5. 记录 `CVN-FC-*` heading 数、primary owner 表和 28-command count；
-6. 提取 GD-0 `public-contract` fences 的 hash；
-7. 保存 `git diff --name-only` 作为 pre-change evidence。
+1. `task.py start` 成功将状态从 `planning` 切换为 `in_progress`；
+2. branch=`codex/core-vnext-extensibility-reservation-review`，worktree=`.worktrees/core-vnext-extensibility-reservation-review`；
+3. accepted CVN-4 branch HEAD=`700bac9c457dba84d801161e7d3c39b83ed075ad`，merge/activation baseline=`783f69c581b32549fae3fb3d168cb2848bdd53f0`；
+4. CVN-4 archive 证据为 source/test `788594e`、acceptance `1bb19b0`、archive `13039d0`、P0/P1/P2=`0/0/0`、full tests `312/312`；
+5. parent pre-delta counts 为 D/R/AC=`11/11/17`，目标 post-delta 为 `12/12/18`；
+6. feature matrix pre-delta 为 44 个 `CVN-FC-*` headings、9 个 primary-owner rows、28 个唯一 Core command IDs；
+7. GD-0 pre-delta 为 6 个 `typescript public-contract` fences，SHA-256 依次为 `66A9BD5527D59B0D6826B85A1403E79E34698919FF2274381DB65C9017810D28`、`7C411694565A9B47942DB062EE7A343E0EBDF4B53456158676A5B7EE5D1417CD`、`BCD2001F8136EB55D6832E17D6C0B5A6DAA12F8CD3F6689013664FE0A99B868B`、`36B943C9E1F8559AF721AF1C48BFCB1D3BBDF6A1D69D44D0CA35775BC68D0BC4`、`5C50401320614F8C8B6E66AD853933E6CFBFCA65835EDAF8B4C5555D22D1164E`、`0FA3520DD2B169E3793630D77ED34406515B5C48D5C2F074FCC5C64166675DB4`；
+8. 文档 delta 前，task activation 只使本任务 `task.json` 变为 dirty；CVN-4 独立 worktree 的四个归档后并行 dirty paths 未被读取或改写。
 
 建议命令：
 
@@ -80,7 +81,7 @@ rg -n "^### CVN-FC-" .trellis/tasks/07-29-core-vnext-product-ready-extensible-ke
 rg -n "Command ID" .trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/feature-contract-matrix.md
 ```
 
-**停止点：** branch/worktree/task 指向错误；CVN-4 被误标 accepted；现有 parent/GD-0 发生未知漂移；保护路径已经 dirty。
+**停止点：** branch/worktree/task 指向错误；CVN-4 状态或 commit 证据与 archive 不一致；现有 parent/GD-0 发生未知漂移；activation baseline 之后出现保护路径 delta。
 
 ## 5. Stage 1 — Surface inventory 与决策矩阵确认
 
@@ -163,8 +164,8 @@ Additive evolution reservation (non-V1 completion scope)
 更新 roadmap：
 
 1. Snapshot date 和 live-state 说明使用实际证据；
-2. 增加本任务为 planning-only reservation gate；
-3. CVN-4 状态只依据届时 live review 证据；
+2. 增加本任务为 `in_progress` documentation-only reservation gate；
+3. CVN-4 状态依据 live archive 证据记录为 accepted/archived；
 4. GD-0 acceptance/CVN-2 child creation 前要求本 gate accepted；
 5. CVN-6 消费 accepted CVN-2 + reservation charter；
 6. CVN-5 原依赖保持；
@@ -175,9 +176,9 @@ Additive evolution reservation (non-V1 completion scope)
 依赖图推荐标注：
 
 ```text
-CVN-4 review continues independently
+accepted CVN-4 remains a fixed CVN-5 prerequisite
 
-Extensibility Reservation Gate + accepted GD-0
+accepted Extensibility Reservation Gate + accepted GD-0 + accepted CVN-1
     -> CVN-2
         -> CVN-6
 
@@ -185,7 +186,7 @@ accepted CVN-2 + CVN-3 + CVN-4 + CVN-6
     -> CVN-5
 ```
 
-不要把本 gate 表述为 CVN-4 的依赖，也不要把 CVN-4 candidate 表述为 accepted。
+本 gate 不是 CVN-4 的依赖，也不重开 CVN-4 已归档验收；它只位于 GD-0 final acceptance/CVN-2 creation 之前。
 
 ## 9. Stage 5 — GD-0 forward-evolution sync
 
@@ -233,6 +234,15 @@ accepted CVN-2 + CVN-3 + CVN-4 + CVN-6
 
 ## 11. Stage 7 — 规划质量验证
 
+2026-08-09 已记录结果：
+
+- 本任务 `implement.jsonl`/`check.jsonl` 为 `7/7`，父任务为 `3/3`，两者 `task.py validate` 通过；task/parent JSON parse 通过；
+- parent post-delta D/R/AC=`12/12/18`；feature matrix 保持 44 个 FC headings、9 个 primary-owner rows、28 个唯一 Core command IDs；
+- GD-0 仍为 6 个 `typescript public-contract` fences，ordered SHA-256 与 Stage 0 六项完全相等；docs-only public-contract fixture 报告 0 diagnostics；
+- Markdown fence balance、`git diff --check` 与 task-owned path scan 通过；activation baseline `783f69c` 后只有本任务、父合同、roadmap 和 GD-0 planning docs；
+- `npm.cmd run typecheck` 通过；直接 worktree full test 暴露 raw fixture 被旧 checkout 物化为 CRLF，而 HEAD blob 的 SHA-256 为受控值 `CDBCFD68DCC84C514BCAC8BA83B44B819A237146C842E0F63E8F17A3CD2FF4D9`、LF=`7360`、CRLF=`0`；
+- 在临时 HEAD-normalized checkout 中复跑完整 `node --test`，exit=`0`、test dots=`312`。临时目录已清理，工作树 source/test 和 index 未改变。
+
 ### 11.1 Trellis 与数据文件
 
 ```powershell
@@ -263,7 +273,7 @@ rg -n "core\.[a-z0-9.-]+" .trellis/tasks/07-29-core-vnext-product-ready-extensib
 
 ```powershell
 git status --short --branch
-git diff --name-only 00e0386bd66ec5e36198b8ad8cd2ec292d0b16f8
+git diff --name-only 783f69c581b32549fae3fb3d168cb2848bdd53f0
 git diff --check
 ```
 
@@ -298,7 +308,7 @@ Reviewer 发现问题时只修本任务/父/GD-0 文档；涉及 V1 行为、sch
 3. 记录 commit、验证结果、P0/P1/P2 和 user acceptance；
 4. archive 本任务；
 5. 更新 parent roadmap 的 accepted reservation gate；
-6. 保持 CVN-4 独立 review/acceptance 流程；
+6. 保持 CVN-4 accepted/archive 记录和独立 worktree 的归档后并行修改原样；
 7. 当 GD-0 也 accepted 时，CVN-2 才成为可创建/规划 child；
 8. 仍需用户单独授权 CVN-2 planning 和后续 implementation。
 
@@ -308,13 +318,13 @@ Reviewer 发现问题时只修本任务/父/GD-0 文档；涉及 V1 行为、sch
 2. `docs(core): adopt additive extensibility charter` — 经执行/审查的 parent/GD-0 delta；
 3. `chore(trellis): record extensibility gate acceptance` — acceptance/archive/status。
 
-不要把 CVN-4 候选、CVN-2 activation 或任何 production code 混入这些提交。
+提交边界仅含本任务、父合同、roadmap 与 GD-0 planning docs；CVN-2 activation 和 production code 保持在后续独立任务。
 
 ## 14. 回滚
 
 回滚顺序：
 
-1. 保留 CVN-4 worktree及其候选原样；
+1. 保留 CVN-4 accepted commits、archive 与独立 worktree 的归档后并行 dirty paths 原样；
 2. 撤销本分支 docs-only commit 或删除尚未合并的 planning branch/worktree；
 3. parent/GD-0 回到修改前文档；
 4. 重新运行 FC/command/fence/count 和 Trellis validation；

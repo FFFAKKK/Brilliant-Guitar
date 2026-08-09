@@ -763,7 +763,23 @@ The Brilliant Guitar product composition root always uses integrated constructio
 - Catalog order is explicit and deterministic; object enumeration order, registration timing, wall clock, random values, and handler identity never determine observable output.
 - Unknown/non-target extension data preserves exact JSON-value semantics through submit, reject, no-op, undo, redo, replay, read-only degradation, and codec round-trip; physical byte identity remains outside Core.
 
-## 15. Rollout and Rollback
+## 15. Forward-Evolution Boundary
+
+The six `typescript public-contract` fences above define the exact GD-0 V1 application-facing construction, result, availability, gateway and replay contract. CVN-2 and CVN-6 implement that V1 contract through separately reviewed gates; this section adds no declaration, field, export, command, effect kind or persisted-schema behavior to those fences.
+
+Later module capabilities use additive and explicitly versioned lanes rather than widening the published V1 shape in place:
+
+- a module that must orchestrate multiple Core structure operations uses a future typed, bounded operation-expansion registration/API version; CVN-5 batch remains the current cross-boundary composition path;
+- domain-specific reads use a future detached, deeply frozen and bounded Selector contribution contract;
+- finer Extension owner granularity or block identity uses a new Score schema version and explicit pure-data migration; `brilliant-score-1` and score/Part ownership remain unchanged here;
+- installation, upgrade, disable and rollback belong to a future Module Package Host that builds a new immutable Assembly generation for new Sessions; an active Session stays pinned to its creation generation;
+- Renderer, Playback, Import/Export, Analysis and UI integrations use dedicated Product Host/Adapter contracts, Snapshot/Selector reads and Command/Gateway writes.
+
+Every future lane requires its own owner, contract/registration ID, version, capability, failure, compatibility, migration, Session lifecycle, resource caps, fixtures, tests, user approval and independent acceptance. The single Core document and transaction/history/replay/event owner, frozen Session Assembly, exact compatibility model, detached module views and data-only failures remain binding across lanes. Generic patch, mutable document access, whole-document replacement, second transaction owner and ready-Assembly register/unregister/replace remain excluded.
+
+These reservations are outside GD-0 acceptance and outside CVN-2/CVN-6 V1 implementation. Their purpose is to keep a known additive route open without turning speculative signatures into current API.
+
+## 16. Rollout and Rollback
 
 GD-0 itself produces contract documents only. Downstream implementation is split so the Core seam and Guitar semantics remain independently reviewable:
 

@@ -2,13 +2,14 @@
 
 ## 1. 设计状态与作用范围
 
-本设计描述扩展性合同如何被预留和版本化。它是规划候选，不是公开 TypeScript API，也不授权生产实现。所有 `Planned*` 名称都是后续 gate 的规划标识；只有父合同/GD-0 正式 delta 经独立评审和用户确认后，才能成为后续 child 的输入。
+本设计描述扩展性合同如何被预留和版本化。任务已由用户批准进入 documentation-only 执行，但本文仍不是公开 TypeScript API，也不授权生产实现。所有 `Planned*` 名称都是后续 gate 的规划标识；只有本轮父合同/GD-0 delta 经独立评审、用户接受并归档后，才能成为后续 child 的输入。
 
-本任务与 CVN-4 审计并行，但两者相互隔离：
+CVN-4 已独立验收并归档，本任务将其作为只读前置基线：
 
-- CVN-4 继续拥有 Part/Staff/Voice/Event lifecycle 的 15 个 Core 命令；
+- CVN-4 继续拥有已接受的 Part/Staff/Voice/Event lifecycle 15 个 Core 命令；
 - 本任务只拥有扩展版本章程和 CVN-2/CVN-6 前置 gate；
-- CVN-4 候选的源码、测试、task metadata 和 acceptance 结论均不进入本分支；
+- accepted CVN-4 branch `700bac9` 已通过 merge `783f69c` 成为执行基线；本任务不修改其源码、测试、archive metadata 或 acceptance 结论；
+- CVN-4 独立 worktree 的归档后并行 dirty paths 保持在原 worktree，不进入本任务；
 - 本任务不改变 CVN-4、CVN-2、CVN-5、CVN-6 的既有 primary FC ownership。
 
 ## 2. 第一性原则
@@ -361,12 +362,12 @@ technique command
 
 增加：
 
-- 本任务的 live/planning 状态；
+- 本任务的 live `in_progress` documentation-only 状态；
 - GD-0 acceptance/CVN-2 creation 前的 reservation review gate；
 - CVN-6 只消费 accepted CVN-2 和该章程；
 - CVN-5 继续等待原四项依赖；
 - CVN-7 后的 future extension gate index；
-- CVN-4 仍由其独立 reviewer 决定 acceptance。
+- CVN-4 已由独立 reviewer 验收并归档，继续作为 accepted prerequisite。
 
 ### 12.4 GD-0 design
 
@@ -391,7 +392,7 @@ technique command
 | 需要 module 获取 mutable document/bus/history | 归入永久排除，保留 single-owner invariant |
 | 需要 ready Registry 原地变化 | 使用 future Assembly generation |
 | 需要改变 FC count、caps、fixtures、failure priority | 显式 parent contract review，不作为文字整理处理 |
-| CVN-4 审计发现 parent contract drift | 独立解决 CVN-4；本任务不代替其审查 |
+| 后续证据发现与 accepted CVN-4 parent contract 冲突 | 停止本任务并发起显式父级合同复审；不通过本任务重写已归档结论 |
 | GD-0 public fence 与 reservation 冲突 | 在 GD-0 acceptance 前回到合同规划 |
 | planning diff 触及 source/test/spec/CVN-4 task | 丢弃越界修改，只保留拥有的文档面 |
 
@@ -399,11 +400,11 @@ technique command
 
 ### Rollout
 
-1. 完成本任务 planning artifacts 和 research；
-2. 用户审阅后决定 task activation；
-3. 操作者只修改列出的 parent/GD-0 planning docs；
-4. 独立 reviewer 复核无 V1 drift、无 CVN-4 状态误报；
-5. 用户接受并归档 planning gate；
+1. 本任务 planning artifacts 和 research 已完成并提交；
+2. accepted CVN-4 baseline 已合入，用户已批准 `task.py start`；
+3. 当前只修改列出的 parent/GD-0 planning docs 与本任务证据；
+4. 独立 reviewer 复核无 V1 drift、CVN-4 状态准确且 task-owned diff 无 source/test/spec；
+5. 用户接受后归档 reservation gate；
 6. GD-0 acceptance 与 CVN-2 planning 消费已接受章程；
 7. future gates 只在产品需求和依赖满足时单独建立。
 

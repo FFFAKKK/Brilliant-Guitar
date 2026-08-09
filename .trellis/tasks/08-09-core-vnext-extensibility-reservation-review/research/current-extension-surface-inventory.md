@@ -6,9 +6,9 @@
 
 | Item | Evidence | Conclusion |
 |---|---|---|
-| CVN-4 planning commit | `00e0386bd66ec5e36198b8ad8cd2ec292d0b16f8` | This reservation branch contains only the accepted planning package baseline, not the uncommitted implementation candidate. |
-| CVN-4 live worktree | `.worktrees/cvn-4-part-staff-voice-lifecycle` | On 2026-08-09 it contains an uncommitted implementation candidate marked ready for independent review; acceptance remains pending. |
-| Reservation branch | `codex/core-vnext-extensibility-reservation-review` | Independent planning worktree; no CVN-4 source/test paths are owned. |
+| CVN-4 accepted branch | `700bac9c457dba84d801161e7d3c39b83ed075ad` | CVN-4 is completed/archived; source/test `788594e`, acceptance `1bb19b0`, archive `13039d0`, independent P0/P1/P2=`0/0/0`. |
+| CVN-4 live worktree | `.worktrees/cvn-4-part-staff-voice-lifecycle` | The accepted/archive commits are stable; post-archive dirty paths `src/core-kernel/codec/score-component-codec.ts`, `src/core-kernel/commands/effects.ts`, `test/core-kernel/command-internals.test.ts`, and `test/core-kernel/cvn-4-strict-input.test.ts` remain parallel work and are outside this task. |
+| Reservation branch | `codex/core-vnext-extensibility-reservation-review` at activation baseline `783f69c581b32549fae3fb3d168cb2848bdd53f0` | Accepted CVN-4 history is merged as a prerequisite; task-owned changes after activation are documentation-only. |
 | Parent task | `.trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion` | Owns exact Core VNext public behavior and dependency graph. |
 
 ## 2. Parent product decisions
@@ -94,4 +94,3 @@ These are not one category. The reservation task separates them into:
 - deterministic, detached, bounded inputs/outputs;
 - lossless unknown/missing/incompatible extension handling;
 - no generic mutation or active Registry mutation.
-

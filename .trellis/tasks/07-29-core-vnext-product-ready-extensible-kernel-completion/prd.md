@@ -85,6 +85,14 @@ Core VNext 需要一次范围较大的内部“内核脊柱重构”，但不进
 
 该映射只调整下游工作归属，不把 Guitar schema、命令或技巧移入 Core，也不把尚待独立验收的 GD-0 文档候选提前表述为 accepted baseline。
 
+### CVN-D012 — Versioned extensibility reservations
+
+Core VNext 的完成合同继续以当前 V1 形状为准；未来能力通过新的 registration entry、明确的新 API version、独立的 Score schema version 或 Core 外部 Adapter contract 追加。已发布版本的字段含义、capability、failure、资源上限和 Session 语义不在原版本内扩张，也不通过隐式降级、猜测或 reinterpretation 改变。
+
+本父级现在预留五类后续独立 gate：受限的 module-to-Core operation expansion、只读 Domain Selector contribution、更细粒度 Extension owner/schema、Assembly generation 与模块包 Host、Renderer/Playback/Import/Export/Analysis/UI Adapter。每个 gate 都必须另有 owner、版本、失败模型、兼容与迁移合同、资源上限、fixtures、决定性测试、用户批准和独立验收；这些预留不属于当前 V1 实现范围，也不增加 Core command、FC primary owner 或运行时导出。
+
+以下不变量跨所有未来 gate 永久保持：`ScoreDocument` 唯一真相；单一 transaction/history/replay/event owner；ready Session 绑定不可变 Assembly；模块仅获得 detached read data 与受限、typed、bounded 能力；generic patch、JSON path、mutable document、whole-document replacement、ready Assembly 原地 register/unregister/replace 和第二事务所有者继续排除。该章程必须在 GD-0 最终合同验收和 CVN-2 public SDK allowlist 冻结前完成独立复审；CVN-6 只消费已验收的 CVN-2 与本章程。
+
 ## Requirements
 
 `feature-contract-matrix.md` 是以下需求的绑定式明细。它已经在父级冻结 28-command finite catalog、factory、payload、anchor、cascade、range、batch、failure priority、resource caps、fixture 与 benchmark method。Child 只拥有实现、私有组织和证据，不拥有重新选择这些可观察合同的空间。
@@ -175,6 +183,12 @@ Batch 遵守 CVN-D009：可组合 Core 与官方模块命令，但每个原始 c
 
 父规划获批后只按依赖逐个创建和评审下一项 child，不要求预先创建全部八项。父任务进入协调状态不等于任何生产 child 获得实施授权。
 
+### CVN-R012 — Future extension port charter
+
+每个 future extension port 必须在实现前形成可审计章程，并逐项写明：机制 owner、registration/contract ID、版本单元、输入输出方向、capability、Session/Assembly 生命周期、资源上限、稳定失败、兼容规则、迁移与回滚责任、缺失或版本不兼容时的行为、代表性 acceptance scenario，以及进入正式 planning 的前置证据。
+
+未来版本只能追加独立 decoder、binding parity、export allowlist 和 qualification fixture。operation expansion 必须保持 typed、stable-addressed、单层、bounded，并复用同一个候选与提交；Selector 必须只读、detached、deeply frozen、bounded；Extension owner 粒度只随新 Score schema 和显式纯数据 migration 进入；模块包变更只构建新 Assembly generation 并由新 Session 使用；外部 Adapter 通过 Snapshot/Selector 读取并通过 Command/Gateway 写入。任何 port 若要求扩大现有 V1 九字段 ABI、改变 `brilliant-score-1`、新增第二事务路径或给 ready Assembly 提供原地 mutation，必须停止该 child 并返回父级合同复审。
+
 ## Out of Scope
 
 - runtime hot plug、register/unregister/replace、模块热重载与 Registry changed event；
@@ -204,3 +218,4 @@ Batch 遵守 CVN-D009：可组合 Core 与官方模块命令，但每个原始 c
 - [ ] CVN-AC015: GD-0 与产品路线图完成 CVN-D011 映射同步；GD-0 公共合同未被静默改写，旧 CK1.1/GD-2 generic Core seam 没有形成重复实施路径。
 - [ ] CVN-AC016: `feature-contract-matrix.md` 的 CVN-FC-001–143 全部映射到唯一 primary owner 与决定性测试；active child 文档不存在未决公共合同占位符或未量化的发布条件。
 - [ ] CVN-AC017: 新增命令目录精确为 22 个、VNext Core 总目录精确为 28 个；公共导出/catalog fixture 对 ID、version、target 和 payload 做 exact allowlist 断言。
+- [ ] CVN-AC018: 所有 future extension port 均可追踪到 owner/version/capability/data-direction/failure/compatibility/migration/Session lifecycle/acceptance scenario；`kernel.domain-commands.v1`、九字段 ABI、WrittenPitch/score-Part effect scope、`brilliant-score-1`、28-command catalog、44 个 `CVN-FC-*` headings、9 个 primary-owner rows、资源上限和 GD-0 public-contract fences 保持基线相等；任务差异只含获批规划文档，且 CVN-2/CVN-6 明确消费已验收 reservation charter。

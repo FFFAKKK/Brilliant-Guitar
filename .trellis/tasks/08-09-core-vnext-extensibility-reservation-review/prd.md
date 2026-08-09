@@ -1,8 +1,8 @@
 # Core VNext Extensibility Reservation Review
 
-> **状态：** 正式 Trellis 规划子任务；仅创建扩展性合同复审与后续文档修改计划。任务保持 `planning`，本任务没有生产源码、测试、持久化 schema 或活动 Registry 修改授权。
+> **状态：** 正式 Trellis documentation-only 子任务；规划包经用户审阅后已运行 `task.py start`，当前为 `in_progress`，只执行获批的父合同、路线图、GD-0 forward-evolution 和本任务证据同步。生产源码、测试、持久化 schema、活动 Registry 与现有 V1 运行时合同不属于本任务差异。
 >
-> **并行状态：** CVN-4 在独立 worktree 中已有待独立审计的未提交实现候选。本任务从 CVN-4 的纯规划提交 `00e0386bd66ec5e36198b8ad8cd2ec292d0b16f8` 分支，不读取该候选为已验收事实，也不改动 CVN-4 文件和状态。
+> **CVN-4 基线：** CVN-4 已于 2026-08-09 独立验收并归档：source/test `788594e670a1608ee2beabddcd217a9d340a5d30`、acceptance `1bb19b0ca4859e546e121593e522ba13d7406982`、archive `13039d05a2120e8db49924f4a417d4c36702cde1`，P0/P1/P2=`0/0/0`。本分支通过 merge `783f69c` 吸收已提交基线；CVN-4 独立 worktree 的归档后并行 dirty paths 保持原样。
 
 ## 1. 目标与产品价值
 
@@ -25,9 +25,10 @@
 | 对象 | 已确认事实 | 本任务处理 |
 |---|---|---|
 | CVN-0 / CVN-1 / CVN-3 | 已有独立验收与归档记录 | 作为既有稳定输入 |
-| CVN-4 | 独立 worktree 中的实现候选等待最终独立审计；不视为 accepted | 只记录状态，不读取候选源码，不改变审计结论 |
-| 本任务基线 | `00e0386bd66ec5e36198b8ad8cd2ec292d0b16f8`，仅含 CVN-4 正式规划包 | 用于隔离规划 |
-| 本任务分支 | `codex/core-vnext-extensibility-reservation-review` | 只承载任务和规划文档 |
+| CVN-4 | 已独立验收并归档；source/test `788594e`、acceptance `1bb19b0`、archive `13039d0`，P0/P1/P2=`0/0/0` | 作为已接受结构生命周期基线；本任务不重开或改写其结论 |
+| 原始规划基线 | `00e0386bd66ec5e36198b8ad8cd2ec292d0b16f8` | 保留为规划来源追踪 |
+| 当前执行基线 | accepted CVN-4 branch `700bac9c457dba84d801161e7d3c39b83ed075ad`；merge/activation HEAD `783f69c581b32549fae3fb3d168cb2848bdd53f0` | 后续 task-owned diff 以 `783f69c` 为比较点 |
+| 本任务分支 | `codex/core-vnext-extensibility-reservation-review` | 只承载获批规划文档差异；已合入的 CVN-4 source/test 属前置基线 |
 | CVN-2 | 尚未建立正式 child；依赖 GD-0 独立合同确认 | 本任务必须在其合同冻结前关闭 |
 | CVN-6 | 尚未建立正式 child；依赖 accepted CVN-2 | 消费本任务和 CVN-2 的最终决定 |
 | CVN-5 | 依赖 accepted CVN-2、CVN-3、CVN-4、CVN-6 | 消费最终 Core/module batch 语义 |
@@ -106,7 +107,7 @@
 
 ### R001 — 规划隔离与 CVN-4 状态真实性
 
-本任务可在 CVN-4 独立审计完成前进行规划，但所有文档必须明确 CVN-4 仍是候选状态。本任务的 Git diff 只包含自身任务工件和后续获批的父/GD-0 规划文档；CVN-4 的源码、测试、fixture、task metadata、验收记录和未提交候选保持原样。
+所有文档必须准确记录 CVN-4 已独立验收并归档及其决定性 commit/P0-P2 证据。本任务的 task-owned Git diff 以 activation baseline `783f69c` 为起点，只包含自身任务工件和获批的父/GD-0 规划文档；已接受 CVN-4 source/test/archive 历史作为合并基线保留，CVN-4 独立 worktree 的归档后并行 dirty paths 不进入本任务。
 
 ### R002 — 有限扩展性章程
 
@@ -194,13 +195,13 @@ Renderer、Playback、Import/Export、Analysis 与 UI Tool/Panel 归产品 Host 
 
 ### R014 — 依赖与停止点
 
-本任务的规划和文档评审可以与 CVN-4 审计并行。以下动作进入前必须完成本任务的独立评审和用户确认：
+CVN-4 已完成并作为稳定输入。以下动作进入前必须完成本任务的独立评审、用户确认和归档：
 
 - GD-0 作为最终 accepted contract 被锁定；
 - CVN-2 正式 child 创建或 public SDK allowlist 冻结；
 - CVN-6 运行时设计开始消费 CVN-2。
 
-CVN-2 保持对 GD-0 的依赖；CVN-5 保持对 accepted CVN-2/CVN-3/CVN-4/CVN-6 的依赖。本任务不是 CVN-4 的验收替代品。
+CVN-2 保持对 accepted GD-0、accepted CVN-1 与 accepted reservation gate 的依赖；CVN-5 保持对 accepted CVN-2/CVN-3/CVN-4/CVN-6 的依赖。本任务不重开 CVN-4 验收。
 
 ### R015 — 可验证规划证据
 
@@ -208,40 +209,40 @@ CVN-2 保持对 GD-0 的依赖；CVN-5 保持对 accepted CVN-2/CVN-3/CVN-4/CVN-
 
 ### R016 — 独立审查与交接
 
-独立审查必须给出 P0/P1/P2 计数，并重点检查：V1 是否被静默扩大、未来预留是否误写成已实现、CVN-4 是否被误标验收、是否产生第二事务路径、是否遗漏具体场景、是否碰触 source/test/spec。用户审阅后才进入 task activation 或父合同修改执行。
+独立审查必须给出 P0/P1/P2 计数，并重点检查：V1 是否被静默扩大、未来预留是否误写成已实现、CVN-4 accepted/archive 证据是否准确、是否产生第二事务路径、是否遗漏具体场景、task-owned diff 是否碰触 source/test/spec/CVN-4 archive。任务已经经用户批准 activation；最终用户接受后才记录 gate acceptance/archive，并使 GD-0/CVN-2 消费该章程。
 
 ## 6. Acceptance Criteria
 
-- [ ] AC001：任务目录、parent linkage、独立 `codex/` 分支和 worktree 已建立，状态保持 `planning`。
-- [ ] AC002：文档明确记录 CVN-4 是待独立审计候选，没有 acceptance/commit/archive 推断。
-- [ ] AC003：扩展口全部进入 `ADOPT_CONTRACT_NOW`、`DEFER_VERSIONED_GATE` 或 `EXCLUDE_PERMANENTLY`，没有未分类条目。
-- [ ] AC004：`ScoreDocument`、single submit、single transaction/history/replay/event owner 与 frozen Session Assembly 被列为永久不变量。
-- [ ] AC005：`kernel.domain-commands.v1` 和 `CompiledDomainCommandContributionV1` 的当前边界被精确列出。
-- [ ] AC006：未来 ABI 使用新 entry/API version，未知版本、冲突和不兼容具有稳定创建失败规则。
-- [ ] AC007：模块文档 operation expansion 的深度、递归、目标、capability、资源、事务和 replay 边界完整。
-- [ ] AC008：当前 V1 Core/module 组合明确继续使用 `core.transaction.batch`。
-- [ ] AC009：Domain Selector 的输入、输出、能力、资源与真相所有权完整。
-- [ ] AC010：Extension envelope/owner 的未来升级明确使用新 Score schema 与显式 migration。
-- [ ] AC011：Assembly generation 保证新旧 Session 代际隔离和候选构建原子性。
-- [ ] AC012：第三方包 Host 与系统可信内置模块 V1 清晰分层。
-- [ ] AC013：Renderer/Playback/Import/Export/Analysis/UI Adapter 的 owner 和 Core 协作边界完整。
-- [ ] AC014：模块依赖不存在直接 handler/state 耦合，composition root 负责确定性解析。
-- [ ] AC015：十个代表场景全部映射到当前路径或具名 future gate。
-- [ ] AC016：父 PRD delta 精确为 CVN-D012/CVN-R012/CVN-AC018。
-- [ ] AC017：Feature Matrix delta 不新增 Core command 或 `CVN-FC-*` primary owner。
-- [ ] AC018：GD-0 forward-evolution 同步不改变任何现有 `public-contract` fence。
-- [ ] AC019：活动 `.trellis/spec/**` 在行为落地前保持当前 accepted 描述。
-- [ ] AC020：28-command、`brilliant-score-1`、V1 effect scope、caps、fixtures 和 failure priority保持原样。
-- [ ] AC021：CVN-2/CVN-6/CVN-5 的依赖和停止点与父路线一致。
-- [ ] AC022：`implement.jsonl` 与 `check.jsonl` 只含真实 spec/research 上下文，没有 seed `_example`。
-- [ ] AC023：任务、父任务和引用路径通过 Trellis validation；Markdown fences、JSON/JSONL 和 `git diff --check` 通过。
-- [ ] AC024：最终 diff 没有 `src/**`、`test/**`、构建配置、CVN-4 task 或活动 spec 修改。
-- [ ] AC025：独立审查给出 P0/P1/P2，用户完成规划审阅后再决定 activation。
+- [x] AC001：任务目录、parent linkage、独立 `codex/` 分支和 worktree 已建立；用户批准后 `task.py start` 已将状态切换为 `in_progress`。
+- [x] AC002：文档记录 CVN-4 的 source/test、acceptance、archive commits 和 P0/P1/P2=`0/0/0`，与 live archive 证据一致。
+- [x] AC003：扩展口全部进入 `ADOPT_CONTRACT_NOW`、`DEFER_VERSIONED_GATE` 或 `EXCLUDE_PERMANENTLY`，没有未分类条目。
+- [x] AC004：`ScoreDocument`、single submit、single transaction/history/replay/event owner 与 frozen Session Assembly 被列为永久不变量。
+- [x] AC005：`kernel.domain-commands.v1` 和 `CompiledDomainCommandContributionV1` 的当前边界被精确列出。
+- [x] AC006：未来 ABI 使用新 entry/API version，未知版本、冲突和不兼容具有稳定创建失败规则。
+- [x] AC007：模块文档 operation expansion 的深度、递归、目标、capability、资源、事务和 replay 边界完整。
+- [x] AC008：当前 V1 Core/module 组合明确继续使用 `core.transaction.batch`。
+- [x] AC009：Domain Selector 的输入、输出、能力、资源与真相所有权完整。
+- [x] AC010：Extension envelope/owner 的未来升级明确使用新 Score schema 与显式 migration。
+- [x] AC011：Assembly generation 保证新旧 Session 代际隔离和候选构建原子性。
+- [x] AC012：第三方包 Host 与系统可信内置模块 V1 清晰分层。
+- [x] AC013：Renderer/Playback/Import/Export/Analysis/UI Adapter 的 owner 和 Core 协作边界完整。
+- [x] AC014：模块依赖不存在直接 handler/state 耦合，composition root 负责确定性解析。
+- [x] AC015：十个代表场景全部映射到当前路径或具名 future gate。
+- [x] AC016：父 PRD delta 精确为 CVN-D012/CVN-R012/CVN-AC018。
+- [x] AC017：Feature Matrix delta 不新增 Core command 或 `CVN-FC-*` primary owner。
+- [x] AC018：GD-0 forward-evolution 同步不改变任何现有 `public-contract` fence。
+- [x] AC019：活动 `.trellis/spec/**` 在行为落地前保持当前 accepted 描述。
+- [x] AC020：28-command、`brilliant-score-1`、V1 effect scope、caps、fixtures 和 failure priority保持原样。
+- [x] AC021：CVN-2/CVN-6/CVN-5 的依赖和停止点与父路线一致。
+- [x] AC022：`implement.jsonl` 与 `check.jsonl` 只含真实 spec/research 上下文，没有 seed `_example`。
+- [x] AC023：任务、父任务和引用路径通过 Trellis validation；Markdown fences、JSON/JSONL 和 `git diff --check` 通过。
+- [x] AC024：最终 diff 没有 `src/**`、`test/**`、构建配置、CVN-4 task 或活动 spec 修改。
+- [ ] AC025：独立审查给出 P0/P1/P2=`0/0/0`；用户完成最终文档验收后再记录 gate acceptance/archive，CVN-2 仍需单独 planning approval。
 
 ## 7. Out of Scope
 
 - 生产 TypeScript、测试、fixture、build/package 配置修改；
-- CVN-4 候选审计、修复、提交、验收或归档；
+- 重开、修改或替代 CVN-4 已记录的 source/test、验收、归档和独立审查结论；
 - CVN-2、CVN-5、CVN-6 的实现或 task activation；
 - 新 Core command、Note/Chord lifecycle 或新 target/address kind；
 - `brilliant-score-1` 迁移或 `ExtensionOwner` 运行时扩展；

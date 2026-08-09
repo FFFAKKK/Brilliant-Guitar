@@ -537,6 +537,14 @@ Contribution ABI V1 resource caps：
 - 第一版 module-to-Core effect request 只开放 WrittenPitch replacement；module-owned effect 只替换/删除声明 namespace 与 score/Part owner 的 ExtensionBlock。
 - Generic JSON patch/path、whole-document replacement、arbitrary callback mutation 与 module-supplied inverse 均排除。
 
+#### Additive evolution reservation (non-V1 completion scope)
+
+当前 V1 行为仍是 Core VNext 的绑定式完成合同：`kernel.domain-commands.v1`、`CompiledDomainCommandContributionV1` 九字段、WrittenPitch module-to-Core request、score/Part-owned ExtensionBlock effect、当前 capability/failure/resource caps 和 startup-frozen Assembly 均保持精确形状。后续能力只通过新的 registration entry、明确的新 API version、新 Score schema version 或 Core 外部 Adapter contract 追加；同一版本内没有静默字段扩张、隐式降级或 reinterpretation。
+
+已预留但不由 CVN-2/CVN-6 V1 操作者实现的后续 gate 包括：typed/bounded Core operation expansion、只读 Domain Selector contribution、Assembly generations 与模块包 Host、更细粒度 Extension schema/owner、Renderer/Playback/Import/Export/Analysis/UI Adapter。每个 gate 必须另有父级复审、owner/version/capability/failure/compatibility/migration/Session lifecycle 合同、资源上限、fixtures、决定性测试、用户批准和独立验收。
+
+永久排除项保持不变：generic patch、JSON path、mutable document、whole-document replacement、第二 bus/history/replay/event owner、module-supplied inverse，以及 ready Assembly 的原地 register/unregister/replace。未来 operation expansion 仍只产生受 capability 约束的 typed Core operations，进入同一候选、同一 validation pipeline 和一次 commit/history/event；未来 Selector 只返回 detached、deeply frozen、bounded data，不形成写入口或第二真相源。
+
 ## 14. Validation、compatibility 与 migration
 
 ### CVN-FC-120 — Changed-candidate pipeline
