@@ -1,7 +1,7 @@
 {"file": ".trellis/spec/core-kernel/backend/domain-transaction-integration.md", "reason": "Binding V1 domain command, effect, validation, availability, migration, history and replay authority."}
 {"file": ".trellis/spec/core-kernel/backend/registry-capability.md", "reason": "Startup-frozen Registry, capability isolation, selector gateway and no-ready-mutation authority."}
 {"file": ".trellis/spec/core-kernel/backend/score-document-model.md", "reason": "brilliant-score-1 and score/Part ExtensionBlock persistence authority."}
-{"file": ".trellis/tasks/08-09-core-vnext-extensibility-reservation-review/research/reservation-decision-matrix.md", "reason": "Authoritative adopt/defer/exclude classification for every proposed extension port."}
-{"file": ".trellis/tasks/08-09-core-vnext-extensibility-reservation-review/research/scenario-coverage-matrix.md", "reason": "Concrete technique, piano, compatibility, generation and adapter workflows."}
-{"file": ".trellis/tasks/08-09-core-vnext-extensibility-reservation-review/research/contract-impact-map.md", "reason": "Exact documentation edit surface, protected files, counts and traceability."}
-{"file": ".trellis/tasks/08-09-core-vnext-extensibility-reservation-review/research/current-extension-surface-inventory.md", "reason": "Evidence-backed inventory for present module, Registry, ExtensionBlock and read/event boundaries."}
+{"file": ".trellis/tasks/archive/2026-08/08-09-core-vnext-extensibility-reservation-review/research/reservation-decision-matrix.md", "reason": "Authoritative adopt/defer/exclude classification for every proposed extension port."}
+{"file": ".trellis/tasks/archive/2026-08/08-09-core-vnext-extensibility-reservation-review/research/scenario-coverage-matrix.md", "reason": "Concrete technique, piano, compatibility, generation and adapter workflows."}
+{"file": ".trellis/tasks/archive/2026-08/08-09-core-vnext-extensibility-reservation-review/research/contract-impact-map.md", "reason": "Exact documentation edit surface, protected files, counts and traceability."}
+{"file": ".trellis/tasks/archive/2026-08/08-09-core-vnext-extensibility-reservation-review/research/current-extension-surface-inventory.md", "reason": "Evidence-backed inventory for present module, Registry, ExtensionBlock and read/event boundaries."}

@@ -2,7 +2,7 @@
 
 > **Purpose:** durable context-recovery entry for CVN-0 through CVN-7.
 > **Snapshot date:** 2026-08-09.
-> **Current active coordination gate at this snapshot:** Core VNext Extensibility Reservation Review (`in_progress`, documentation-only). No CVN production child is active.
+> **Current active coordination gate at this snapshot:** none. The Extensibility Reservation Gate is accepted and archived; no CVN production child is active.
 > **Status authority:** live child and parent `task.json` files override the snapshot status table below.
 > **Behavior authority:** `feature-contract-matrix.md` overrides this summary for exact public contracts, command payloads, failure priority, limits, fixtures and budgets.
 
@@ -86,8 +86,8 @@ The graph is dependency-based rather than numeric-order-based. CVN-2 and CVN-3 a
 |---|---|---|---|
 | CVN-0 | completed and archived | final independent re-review passed; 19 focused and 188 full tests recorded | retained as accepted prerequisite |
 | CVN-1 | completed and archived | final narrow re-review passed; 19 command-internals and 193 full tests recorded | retained as accepted transaction-spine base |
-| Extensibility Reservation Gate | accepted; archive pending | candidate `7c4e852` passed after one narrow P2 terminology repair; final P0/P1/P2=`0/0/0`; task AC `25/25`; user finalization approval recorded | archive and synchronize durable parent state; GD-0 still blocks CVN-2 |
-| CVN-2 | parent-planned; child not created | CVN-1 accepted; GD-0 independent acceptance and Extensibility Reservation Gate acceptance pending | create detailed child only after both gates and separate user planning approval |
+| Extensibility Reservation Gate | completed and archived | candidate `7c4e852`, acceptance `253d19e`, archive `a4d8cee`; one narrow P2 repaired; final P0/P1/P2=`0/0/0`; task AC `25/25` | retained as accepted GD-0/CVN-2 evolution prerequisite |
+| CVN-2 | parent-planned; child not created | CVN-1 and Extensibility Reservation Gate accepted; GD-0 independent acceptance pending | create detailed child only after GD-0 acceptance and separate user planning approval |
 | CVN-3 | completed and archived | independent review passed at `d9500f5` with P0/P1/P2 = `0/0/0`; 22 lifecycle and 233 full tests reproduced; acceptance commit `3691d93` | retained as accepted factory and Measure-lifecycle prerequisite |
 | CVN-4 | completed and archived | independent re-review passed at `788594e` with P0/P1/P2 = `0/0/0`; focused Voice `4/4`, full `312/312`; acceptance `1bb19b0` | retained as accepted hierarchy-lifecycle prerequisite |
 | CVN-5 | parent-planned; child not created | waits for accepted CVN-2, CVN-3, CVN-4 and CVN-6 | detailed planning after all four dependencies are accepted |
@@ -102,7 +102,7 @@ Snapshot evidence:
 - CVN-3 activation baseline: `d936d58195803ef938214948b21e89fe67939090`.
 - CVN-3 accepted source/test commit: `d9500f5a8ac285071586ba8eda380370eafd022f`; independent review passed with P0/P1/P2 = `0/0/0`; acceptance commit `3691d93`.
 - CVN-4 accepted source/test commit: `788594e670a1608ee2beabddcd217a9d340a5d30`; independent re-review passed with P0/P1/P2 = `0/0/0`; acceptance commit `1bb19b0`.
-- Extensibility Reservation Gate planning commit: `6298d4b`; accepted CVN-4 baseline merge/activation baseline: `783f69c`; task status `in_progress`, documentation-only.
+- Extensibility Reservation Gate planning commit: `6298d4b`; activation baseline `783f69c`; candidate `7c4e852`; acceptance `253d19e`; archive `a4d8cee`; final P0/P1/P2=`0/0/0` after one narrow P2 repair.
 - GD-0 snapshot status: documentation review candidate; independent acceptance pending.
 
 ## 5. Exact Command Inventory
@@ -630,8 +630,8 @@ Creation alone does not authorize source changes. Parent planning status does no
 ## 17. Current Scheduling Decisions
 
 1. CVN-3 and CVN-4 are independently accepted and archived; no CVN implementation child is active.
-2. The documentation-only Extensibility Reservation Gate is the active coordination task and does not reopen CVN-4.
-3. CVN-2 becomes eligible only after independent GD-0 acceptance, Extensibility Reservation Gate acceptance/archive and separate user planning approval.
+2. The documentation-only Extensibility Reservation Gate is accepted and archived and does not reopen CVN-4.
+3. CVN-2 becomes eligible only after independent GD-0 acceptance and separate user planning approval; reservation-gate dependency is satisfied.
 4. CVN-4 remains the accepted Part/Staff/Voice/Event lifecycle prerequisite; no successor was implicitly activated by its acceptance.
 5. CVN-6 follows accepted CVN-2 and consumes the accepted reservation charter while keeping post-V1 ports deferred.
 6. CVN-5 waits for accepted CVN-2, CVN-3, CVN-4 and CVN-6.
@@ -652,7 +652,6 @@ Parent authorities:
 - `.trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-roadmap-and-stage-plan.md`
 - `.trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-4-part-staff-voice-preplanning.md`
 - `.trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-4-current-hierarchy-evidence.md`
-- `.trellis/tasks/08-09-core-vnext-extensibility-reservation-review/`
 
 Accepted children:
 
@@ -661,7 +660,11 @@ Accepted children:
 - `.trellis/tasks/archive/2026-08/08-04-cvn-3-document-factory-measure-lifecycle/`
 - `.trellis/tasks/archive/2026-08/08-04-cvn-4-part-staff-voice-lifecycle/`
 
-Active coordination gate at this snapshot: `.trellis/tasks/08-09-core-vnext-extensibility-reservation-review/` (`in_progress`, documentation-only). Active CVN implementation child: none.
+Accepted coordination gates:
+
+- `.trellis/tasks/archive/2026-08/08-09-core-vnext-extensibility-reservation-review/`
+
+Active coordination gate at this snapshot: none. Active CVN implementation child: none. The next dependency gate is independent GD-0 acceptance.
 
 GD-0 dependency authority:
 

@@ -26,7 +26,7 @@
     ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-roadmap-and-stage-plan.md",
     ".trellis/tasks/07-28-gd-0-guitar-domain-core-transaction-contract/design.md"
   ],
-  "notes": "ACCEPTED / ARCHIVE PENDING after a bounded post-commit review and one narrow P2 terminology repair. P0/P1/P2=0/0/0. GD-0 remains pending and CVN-2 remains inactive. No production or active-spec changes are owned.",
+  "notes": "COMPLETED / ARCHIVED after a bounded post-commit review and one narrow P2 terminology repair. P0/P1/P2=0/0/0. GD-0 remains pending and CVN-2 remains inactive. No production or active-spec changes are owned.",
   "meta": {
     "planning_only": true,
     "planning_base": "00e0386bd66ec5e36198b8ad8cd2ec292d0b16f8",
@@ -82,10 +82,13 @@
     "review_repair": "design_md_rollback_term_updated_to_archived_cvn4_baseline",
     "final_review_findings": "P0_0_P1_0_P2_0",
     "final_review_date": "2026-08-09",
-    "review_state": "accepted_archive_pending_after_narrow_p2_repair",
+    "review_state": "completed_archived_after_narrow_p2_repair",
+    "acceptance_commit": "253d19e5e9d6a3bfdfa0158833d59872e8be156c",
+    "archive_commit": "a4d8cee406e8aa9a6efa05f4e24a8707367dc7b8",
+    "archive_path": ".trellis/tasks/archive/2026-08/08-09-core-vnext-extensibility-reservation-review/",
     "user_finalization_approval": true,
     "user_finalization_approval_date": "2026-08-09",
     "user_finalization_approval_text": "现在可以继续了",
-    "next_gate": "Archive this accepted documentation-only gate and synchronize parent/archive state; GD-0 remains pending and CVN-2 remains inactive."
+    "next_gate": "Completed and archived; independently accept GD-0 before any separately approved CVN-2 planning."
   }
 }

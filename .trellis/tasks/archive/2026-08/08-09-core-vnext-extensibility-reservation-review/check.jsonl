@@ -1,7 +1,7 @@
 {"file": ".trellis/spec/core-kernel/backend/domain-transaction-integration.md", "reason": "Verify V1 public behavior, single owner, effect scope and compatibility remain exact."}
 {"file": ".trellis/spec/core-kernel/backend/registry-capability.md", "reason": "Verify immutable startup Registry and capability boundaries are preserved."}
 {"file": ".trellis/spec/core-kernel/backend/score-document-model.md", "reason": "Verify brilliant-score-1 and ExtensionOwner V1 remain unchanged."}
-{"file": ".trellis/tasks/08-09-core-vnext-extensibility-reservation-review/research/current-extension-surface-inventory.md", "reason": "Evidence-backed inventory for current versus future claims."}
-{"file": ".trellis/tasks/08-09-core-vnext-extensibility-reservation-review/research/reservation-decision-matrix.md", "reason": "Check complete and mutually exclusive extension classification."}
-{"file": ".trellis/tasks/08-09-core-vnext-extensibility-reservation-review/research/scenario-coverage-matrix.md", "reason": "Check all ten product scenarios have a current path or named future gate."}
-{"file": ".trellis/tasks/08-09-core-vnext-extensibility-reservation-review/research/contract-impact-map.md", "reason": "Check docs-only path boundary, count invariants and requirement trace."}
+{"file": ".trellis/tasks/archive/2026-08/08-09-core-vnext-extensibility-reservation-review/research/current-extension-surface-inventory.md", "reason": "Evidence-backed inventory for current versus future claims."}
+{"file": ".trellis/tasks/archive/2026-08/08-09-core-vnext-extensibility-reservation-review/research/reservation-decision-matrix.md", "reason": "Check complete and mutually exclusive extension classification."}
+{"file": ".trellis/tasks/archive/2026-08/08-09-core-vnext-extensibility-reservation-review/research/scenario-coverage-matrix.md", "reason": "Check all ten product scenarios have a current path or named future gate."}
+{"file": ".trellis/tasks/archive/2026-08/08-09-core-vnext-extensibility-reservation-review/research/contract-impact-map.md", "reason": "Check docs-only path boundary, count invariants and requirement trace."}
