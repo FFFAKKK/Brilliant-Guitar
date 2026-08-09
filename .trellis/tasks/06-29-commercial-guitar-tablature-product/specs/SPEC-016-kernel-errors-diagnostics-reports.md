@@ -99,4 +99,4 @@ K1-5 的 closed Core `KernelIssueCode`、adapter 与 validation/migration report
 - integrated validation 额外携带 `KernelValidationAvailability = complete | incomplete`；incomplete 含排序稳定的 unavailable/incompatible facts，K1-5 Core validation report 不得单独被包装成完整领域语义有效结论。
 - GD-0 不新增 global issue bus、第三方 report ingress、import/export/recovery report 或远程日志。
 
-详细合同见 `.trellis/spec/core-kernel/backend/domain-transaction-integration.md`。CK1.1-1 与 GD-2 分别实现 SDK 与 runtime，均需独立验收。
+详细合同见 `.trellis/spec/core-kernel/backend/domain-transaction-integration.md`。CVN-2 与 CVN-6 分别实现 SDK/frozen assembly 与 integrated runtime，均需独立规划、实现和验收；旧 CK1.1-1/GD-2 标签不创建重复路径。

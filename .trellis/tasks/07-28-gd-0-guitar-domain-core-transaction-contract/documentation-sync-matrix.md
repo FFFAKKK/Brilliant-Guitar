@@ -20,13 +20,13 @@
 | Startup-frozen `kernel.domain-commands.v1` catalog and private assembly identity | active Core spec; SPEC-009; SPEC-015; architecture docs | no dynamic registration, third-party runtime, or Registry event |
 | Private nonempty effect set and fine-grained inverse history | active Core spec; SPEC-003; product design | no public patch, whole-document history snapshot, or mutable document |
 | Part-owned GuitarExtension and atomic placement/pitch update | active Core spec; SPEC-005; product design/implement | no Guitar field or Guitar import in Core |
-| Descriptor-first/no-getter/no-throw prerequisite | active Core spec; SPEC-016; product design/implement | CK1.1-0 remains separately gated |
+| Descriptor-first/no-getter/no-throw prerequisite | active Core spec; SPEC-016; product design/implement | satisfied by accepted/archived CVN-0 and retained by every later decoder |
 | Frozen minimum integrated public signatures/discriminants | GD-0 design; active Core spec; SPEC-003; SPEC-014; two-layer task-local contract gates | Layer A compiles Markdown declarations with a syntax-only prelude; Layer B imports real Core and asserts `authorized/rejected`, instance `createGateway`, all typed `select`, `summary`/`subscribe`, shared bus methods, checkpoint, and subscription results |
 | Explicit validation completeness | GD-0 PRD/design; active Core spec; product PRD/design/implement; SPEC-014/SPEC-016 | Core-only validation cannot masquerade as complete installed-domain validation |
 | Exact extension schema compatibility | pure boundary; active Core spec; SPEC-005/SPEC-009/SPEC-015; architecture docs | exact finite versions per block; mixed owner/version views expose only compatible blocks; no guessing/downgrade/implicit migration |
 | Mixed availability failure selection | GD-0 PRD/design/implement; active Core spec; SPEC-003/SPEC-014; architecture docs | any incompatible fact wins the code; every write path returns the complete canonical fact list |
 | Official module SDK separated from application-facing Core root | active Core spec; SPEC-009; SPEC-016; modular architecture | no error classes, builders, handlers, or effects in application root |
-| Fixed downstream sequence | active Core spec; product design/implement; SPEC-005; architecture docs | no downstream task activated by GD-0 |
+| Core-first downstream ownership | GD-0 PRD/design/implement; active Core spec; Core VNext parent PRD/design/implement/feature matrix | CK1.1-0 → accepted CVN-0; CK1.1-1 → CVN-2; generic GD-2 → accepted CVN-1 plus CVN-6/CVN-5; Guitar GD-1/GD-3/GD-4 → post-CVN-7; no duplicate task |
 
 ## Changed Documentation Scope
 
@@ -37,6 +37,7 @@
 - `technical/microkernel-architecture.md` and `technical/modular-plugin-architecture.md`.
 - `.trellis/spec/core-kernel/index.md`, backend index, `backend/pure-kernel-boundary.md`, `backend/integration-gate.md` status line, and `backend/domain-transaction-integration.md`.
 - Product `technical/software-architecture.md` in addition to the microkernel/modular architecture projections.
+- The 2026-08-10 reconciliation changes only downstream ownership/lifecycle wording in GD-0 and the active Core integration spec; every tagged public-contract fence remains byte-for-byte unchanged.
 
 ## Protected Scope Evidence
 
@@ -52,5 +53,6 @@ The Stage 0 candidate contains no change under `src/**`, `test/**`, `package.jso
 - [ ] Exact count fixtures prove `0/0` with no compatible blocks, successful `1/1` with the identical canonical filtered view, validation-failure `1/0`, and read-only operation-phase `0/0/0`; excluded blocks reach zero handlers and remain lossless.
 - [ ] Availability facts prove whether installed-domain validation is complete; Core-only validation is never labeled complete domain validity.
 - [ ] Layer A reports zero parse/type diagnostics for Markdown contracts, and mandatory Layer B compiles against real Core to prove gateway discriminants, instance creation, all typed selects, subscription, shared bus, checkpoint, and event-subscription surfaces.
-- [ ] No document claims CK1.1-0, CK1.1-1, GD-1, GD-2, GD-3, or GD-4 implementation is authorized or complete.
+- [ ] The obsolete fixed sequence is removed from active GD-0/Core authority, and CK1.1/GD-2 responsibilities map exactly once to CVN-0/1/2/5/6 while Guitar work remains post-CVN-7.
+- [ ] No document claims inactive CVN-2/CVN-5/CVN-6/CVN-7 or post-CVN-7 Guitar work is authorized or complete; accepted CVN-0/CVN-1 ownership is recorded only as satisfied prerequisite state.
 - [ ] Trellis task validation and `git diff --check` pass on the candidate.

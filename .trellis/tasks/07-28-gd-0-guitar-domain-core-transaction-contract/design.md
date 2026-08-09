@@ -278,7 +278,7 @@ Compatibility is resolved per persisted `ExtensionBlock`, not once per namespace
 - after every applicable validator succeeds and the classification phase begins, each such contribution receives exactly one classifier call with the same filtered view; if any validator returns semantic issues, throws, or violates its contract, the classification phase does not begin and every classifier receives zero calls;
 - the integrated session is still read-only and its validation availability remains `incomplete`, because the incompatible fact describes semantics that were not validated;
 - submit, undo, redo, and non-empty replay reject at availability preflight, so no command/effect/fact handler runs in this degraded session;
-- the excluded block's namespace, owner, `schemaVersion`, and complete nested payload remain JSON-semantically unchanged. The private handler-input type name and class layout remain for CK1.1-1/GD-2, but an unfiltered document or incompatible block may not be exposed as a substitute.
+- the excluded block's namespace, owner, `schemaVersion`, and complete nested payload remain JSON-semantically unchanged. CVN-2/CVN-6 finalize the private handler-input type name and class layout, but an unfiltered document or incompatible block may not be exposed as a substitute.
 
 The exact call-count matrix is frozen for every applicable pass:
 
@@ -564,7 +564,7 @@ The product composition root imports statically linked official compiled entries
 
 The additive registration entry is `kernel.domain-commands.v1`. It reuses the accepted `command:register`, `command:execute`, `score:read`, and `event:subscribe` capabilities; GD-0 adds namespace ownership metadata rather than a generic document-mutation capability.
 
-The official module SDK candidate uses this minimum versioned contribution shape; handler signatures and private builders are finalized by CK1.1-1/GD-2 without changing the public application-facing contracts fixed in section 7:
+The official module SDK candidate uses this minimum versioned contribution shape; CVN-2 finalizes SDK/catalog handler signatures and private builders, while CVN-6 finalizes writable runtime binding without changing the public application-facing contracts fixed in section 7:
 
 ```typescript
 interface CompiledDomainCommandContributionV1 {
@@ -749,8 +749,8 @@ The command preparation result includes affected `ScoreAddress` facts rather tha
 - The official module SDK is a separate reviewed entry point. It exposes only descriptor/building types, restricted effect requests, issue/error construction, and read-only contribution contexts required by official modules.
 - Existing forbidden-dependency and public-boundary tests are extended rather than weakened.
 - Every authoritative public declaration fence is tagged `typescript public-contract` and compiled by the Layer A docs-only fixture at `contract-fixtures/verify-public-contracts.mjs`, which uses only a syntax/name-resolution prelude and must report zero parse/type diagnostics. The independent Layer B no-emit assertion at `contract-fixtures/real-core-drift-assertions.ts` imports the accepted Core root and must prove the real `KernelGatewayResult` discriminants, Registry instance gateway method, full typed selector surface, `summary`/`subscribe`, shared `CommandBus` methods, `MarkPersistedResult`, and `EventSubscriptionResult` have not drifted. Neither layer alters product `tsconfig` or production tests.
-- GD-2 downstream fixtures must include (a) mixed unavailable+incompatible facts and equal failure selection/full facts across submit, undo, redo, and first replay write, and (b) one contribution with compatible and incompatible/future blocks at different owners. For (b), assert `0/0` validator/classifier calls when no compatible block exists; exactly `1/1` over the same canonical filtered view after total validator success; exactly `1/0` when validation returns issues, throws, or violates its contract; operation-phase `0/0/0` validator/classifier/write calls on read-only submit/undo/redo/first replay write; zero incompatible-block calls; and lossless excluded payload.
-- The Core V1.1 domain runtime seam is isolated in GD-2; CK1.1-0/CK1.1-1 own only their approved prerequisites. GD-2 must rerun K1-2, K1-3, K1-4, K1-5, K1-6, and qualification gates.
+- CVN-6 downstream fixtures must include (a) mixed unavailable+incompatible facts and equal failure selection/full facts across submit, undo, redo, and first replay write, and (b) one contribution with compatible and incompatible/future blocks at different owners. For (b), assert `0/0` validator/classifier calls when no compatible block exists; exactly `1/1` over the same canonical filtered view after total validator success; exactly `1/0` when validation returns issues, throws, or violates its contract; operation-phase `0/0/0` validator/classifier/write calls on read-only submit/undo/redo/first replay write; zero incompatible-block calls; and lossless excluded payload.
+- The Core V1.1 domain runtime seam is isolated across accepted CVN-1 plus CVN-2/CVN-6/CVN-5; no legacy label owns a duplicate path. CVN-6 and final CVN-7 qualification rerun every relevant K1-2 through K1-6 and accepted Core VNext gate.
 
 The Brilliant Guitar product composition root always uses integrated construction for product documents. The retained Core-only constructor is the compatible low-level Core API for generic Core consumers/tests; it is not the product path for a document whose official domain compatibility requirements are known.
 
@@ -781,13 +781,13 @@ These reservations are outside GD-0 acceptance and outside CVN-2/CVN-6 V1 implem
 
 ## 16. Rollout and Rollback
 
-GD-0 itself produces contract documents only. Downstream implementation is split so the Core seam and Guitar semantics remain independently reviewable:
+GD-0 itself produces contract documents only. The approved Core-first roadmap delivers the generic mechanism before Guitar-owned implementation, with every gate independently reviewed:
 
-1. Core V1.1 hostile-input guard prerequisite.
-2. Core V1.1 official module-SDK contract foundation.
-3. GD-1 GuitarExtension foundation and validators/profile without commands.
-4. GD-2 Core V1.1 compiled contribution/effect/history/result/event/read-only seam.
-5. GD-3 Guitar semantic commands using the approved seam.
-6. GD-4 Core/Guitar integration and compatibility gate.
+1. CVN-0, already accepted and archived, owns the former CK1.1-0 hostile-input guard prerequisite.
+2. CVN-1, already accepted and archived, owns the behavior-preserving command/transaction/Registry spine and private effect-set foundation.
+3. CVN-2, after GD-0 acceptance and separate planning approval, owns the official module SDK plus all-or-nothing frozen contribution assembly; it exposes no writable integrated Session.
+4. CVN-6, after CVN-2 acceptance, owns the assembly-bound integrated factory/bus/gateway/replay path, domain validation/classification, diagnostics, compatibility, migration, read-only degradation and unified event behavior fixed by GD-0.
+5. CVN-5, after CVN-2/CVN-3/CVN-4/CVN-6 acceptance, owns the bounded cross-module batch extension through the same transaction owner.
+6. CVN-7 qualifies the complete Core VNext baseline. Only then are GD-1, GD-3 and GD-4 replanned for Guitar-owned schema, commands and conformance. The former generic GD-2 label is fully consumed by CVN-1/CVN-2/CVN-6/CVN-5 and is not recreated as a second Core seam.
 
 GD-0 produces contracts only. If a later Core V1.1 candidate violates accepted Core behavior, rollback removes the additive seam and integrated factory while retaining Core-only V1 behavior and persisted extension preservation. No persisted document migration may depend on an unaccepted seam candidate.

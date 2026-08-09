@@ -215,7 +215,7 @@ Batch 遵守 CVN-D009：可组合 Core 与官方模块命令，但每个原始 c
 - [ ] CVN-AC012: 稳定主体的受保护路径清单明确；任何超出命令/事务/Registry 接缝的修改都必须给出独立不变量证据并重新评审范围。
 - [ ] CVN-AC013: Measure/Part/Voice 删除的 ownership cascade 可精确 undo/redo/replay；Staff 跨引用删除稳定拒绝，公共合同中不存在通用 cascade 开关。
 - [ ] CVN-AC014: CVN-D010 的 25,600-event 发布阻断 fixture 满足全部 reference-Windows P95 预算，102,400-event stress fixture 与 10,000-command workload 确定性完成，且 benchmark 证据可复现。
-- [ ] CVN-AC015: GD-0 与产品路线图完成 CVN-D011 映射同步；GD-0 公共合同未被静默改写，旧 CK1.1/GD-2 generic Core seam 没有形成重复实施路径。
+- [x] CVN-AC015: GD-0 与产品路线图完成 CVN-D011 映射同步；GD-0 公共合同未被静默改写，旧 CK1.1/GD-2 generic Core seam 没有形成重复实施路径。
 - [ ] CVN-AC016: `feature-contract-matrix.md` 的 CVN-FC-001–143 全部映射到唯一 primary owner 与决定性测试；active child 文档不存在未决公共合同占位符或未量化的发布条件。
 - [ ] CVN-AC017: 新增命令目录精确为 22 个、VNext Core 总目录精确为 28 个；公共导出/catalog fixture 对 ID、version、target 和 payload 做 exact allowlist 断言。
 - [x] CVN-AC018: 所有 future extension port 均可追踪到 owner/version/capability/data-direction/failure/compatibility/migration/Session lifecycle/acceptance scenario；`kernel.domain-commands.v1`、九字段 ABI、WrittenPitch/score-Part effect scope、`brilliant-score-1`、28-command catalog、44 个 `CVN-FC-*` headings、9 个 primary-owner rows、资源上限和 GD-0 public-contract fences 保持基线相等；任务差异只含获批规划文档，且 CVN-2/CVN-6 明确消费已验收 reservation charter。

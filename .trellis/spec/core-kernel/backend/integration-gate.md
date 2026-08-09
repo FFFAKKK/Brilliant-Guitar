@@ -140,4 +140,4 @@ The correct path proves capability authorization, strict command decoding, atomi
 
 `K1-6 independently accepted; Pure Core Kernel V1 integration gate closed.`
 
-Guitar Domain and product-layer implementation remain outside this K1-6 acceptance. GD-0 is **USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING**; every CK1.1/GD production stage still requires its own task, implementation authorization, and acceptance.
+Guitar Domain and product-layer implementation remain outside this K1-6 acceptance. GD-0 is **USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING**. Accepted CVN-0/CVN-1/CVN-3/CVN-4 do not activate the integrated seam; CVN-2/CVN-6/CVN-5/CVN-7 and later Guitar gates each retain separate planning, implementation authorization and acceptance.

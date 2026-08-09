@@ -63,10 +63,9 @@ note.fret = 7
 guitarDomain.updatePlacement(partExtension, noteId, { stringNumber: 2, fret: 7 })
 ```
 
-## 8. GD-0 Execution Boundary
+## 8. Core-first Execution Boundary
 
-- CK1.1-0/CK1.1-1 先完成 hostile-input guard 与 official module SDK。
-- GD-1 只实现 GuitarExtension 数据、codec、validator/profile，不实现命令。
-- GD-2 只实现通用领域 seam，并使用 neutral synthetic contribution，不依赖 Guitar production code。
+- 已归档 CVN-0/CVN-1 提供 hostile-input guard 与行为保持型 private spine；CVN-2/CVN-6/CVN-5 分别拥有 SDK/catalog、integrated runtime 与 bounded batch，均使用 neutral synthetic contribution，不依赖 Guitar production code。
+- CVN-7 验收完整 Core VNext 后，GD-1 才重新规划 GuitarExtension 数据、codec、validator/profile，不实现命令。
 - GD-3 才实现 Guitar semantic commands；GD-4 才形成四小节 Guitar/Core 集成门禁。
 - UI、layout、render、playback、physical `.bgp` IO、Guitar Pro 与第三方插件均不进入上述合同。

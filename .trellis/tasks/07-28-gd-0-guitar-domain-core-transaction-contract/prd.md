@@ -14,8 +14,9 @@ GD-0 is a contract and architecture gate. It does not implement Guitar technique
 ## Context
 
 - Pure Core Kernel V1 is closed. The independent qualification task was accepted and archived on 2026-07-28 with 169/169 tests passing, 25 covered contract groups, zero coverage gaps, zero reproducible bugs, and one nonblocking P3 specification gap.
-- The accepted P3 disposition is that public `unknown` guards become descriptor-first, no-getter, and no-throw through a separately approved Core V1.1 prerequisite.
-- The current Core command runtime is intentionally closed around six built-in commands, one forward/inverse mutation per history entry, Core-only semantic validation, and Core command IDs in events and registry contributions.
+- At the original GD-0 planning baseline, the accepted P3 disposition assigned descriptor-first, no-getter, no-throw public `unknown` guards to a separate Core V1.1 prerequisite, and the accepted runtime still exposed six built-in commands with Core-only semantic validation.
+- Core VNext subsequently accepted and archived CVN-0 (the former CK1.1-0 guard prerequisite), CVN-1 (the behavior-preserving command/transaction/Registry spine), CVN-3, CVN-4, and the extensibility reservation gate. Those accepted prerequisites preserve the six-command Core V1 compatibility surface and do not themselves accept or implement the GD-0 integrated public contract.
+- The approved Core-first roadmap maps the former CK1.1-1 authoring/assembly work to CVN-2, the generic integrated validation/runtime/replay work to CVN-6, and cross-module batch work to CVN-5. Guitar-owned GD-1/GD-3/GD-4 planning resumes only after the Core VNext CVN-7 qualification gate; the former generic GD-2 label creates no duplicate Core implementation task.
 - The product contract requires Guitar data to remain in a Part-owned `GuitarExtension`; Guitar fields must not be added to Core `Note`, `Event`, or score metadata.
 
 ## Locked Product Decisions (Approved 2026-07-28)
@@ -63,7 +64,7 @@ GD-0 must define requirements and stable public contracts for:
 - checkpoint, dirty-state, no-op, version-overflow, event-sequence, and handler-rejection behavior consistent with accepted Core V1 contracts;
 - preservation of unknown and non-target extension subtrees across success, failure, undo, redo, persistence round-trip, and replay;
 - exact-version compatibility behavior when a persisted document contains a known Guitar extension whose required contribution is absent or schema-incompatible;
-- the exact Core V1.1 prerequisite and regression surface required before GD-1 and GD-2 implementation.
+- the exact accepted/future Core VNext prerequisite and regression surface required before CVN-2/CVN-6/CVN-5, CVN-7 qualification, and later Guitar-owned GD-1/GD-3/GD-4 work.
 
 ## Required Behavioral Contracts
 
@@ -106,7 +107,7 @@ GD-0 must define requirements and stable public contracts for:
 ## Out of Scope
 
 - Implementing `GuitarExtension`, its codec, migration, validators, or profile (GD-1).
-- Implementing the Core V1.1 seam in production code (GD-2).
+- Implementing the Core V1.1 seam in production code (CVN-2/CVN-6/CVN-5 under the current ownership map).
 - Implementing slide, bend, vibrato, or other Guitar commands (GD-3).
 - Seven-string, bass, alternate-tuning product profiles, chord diagrams, rhythm slashes, percussion notation, and Guitar Pro compatibility.
 - UI/editor gestures, rendering/layout, playback/audio, collaboration, physical file I/O, autosave, and plugin marketplace behavior.
@@ -134,12 +135,13 @@ GD-0 must define requirements and stable public contracts for:
 - [x] Mixed compatible/incompatible blocks for one contribution use a filtered block-scoped validation/classification view, with zero incompatible-block handler calls and lossless payload preservation.
 - [x] Compatible-block count and validator outcome determine exact `validate`/`classify` call counts for every applicable pass, including explicit zero-call failure and read-only-preflight branches.
 - [x] The task-local two-layer gate compiles authoritative Markdown public-contract fences with a syntax/name-resolution-only prelude, then separately compiles drift assertions against the real accepted Core root for gateway discriminants, the Registry instance method, all typed selectors, shared bus methods, checkpoint results, and event subscription results.
-- [x] The P3 hostile-input guard prerequisite is assigned to the Core V1.1 implementation split with focused regression criteria.
+- [x] The P3 hostile-input guard prerequisite is satisfied by accepted CVN-0 with focused regression evidence and remains mandatory for every later decoder.
 - [x] The test plan covers atomic dual-owner mutation, rollback, deterministic replay, event ordering, validation failure, support classification, contribution absence, and extension preservation.
 - [x] Core V1.1 seam work, official module SDK, GuitarExtension foundation, Guitar commands, and Guitar integration gate are split into independently reviewable tasks with clear ordering.
+- [x] The accepted Core-first ownership map is synchronized without changing the six GD-0 public-contract fences: CK1.1-0 → CVN-0, CK1.1-1 → CVN-2, generic GD-2 foundation/runtime/batch → CVN-1/CVN-6/CVN-5, and Guitar-owned GD-1/GD-3/GD-4 → post-CVN-7 replanning.
 - [x] Trellis task validation and `git diff --check` pass.
 - [x] The user reviewed and approved the final three planning documents on 2026-07-28 before task activation or production-code work.
 
 ## Gate
 
-The user approved the GD-0 plan on 2026-07-28. The present repository state is only **USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING**. This repair pass synchronizes the candidate and stops for independent review. It records no accepted baseline, performs no archive, and does not create or activate CK1.1-0, CK1.1-1, GD-1, GD-2, GD-3, or GD-4. A later governance action may record acceptance and archive only after an explicit independent `ACCEPT`; production `src/**`/`test/**` work remains separately gated.
+The user approved the GD-0 plan on 2026-07-28. The present repository state is only **USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING**. This reconciliation pass synchronizes the accepted Core VNext ownership map and stops for independent review. It records no accepted GD-0 baseline, performs no archive, and does not create or activate CVN-2, CVN-5, CVN-6, CVN-7, GD-1, GD-3, GD-4, or a replacement generic GD-2 task. A later governance action may record acceptance and archive only after the independent review passes; production `src/**`/`test/**` work remains separately gated.

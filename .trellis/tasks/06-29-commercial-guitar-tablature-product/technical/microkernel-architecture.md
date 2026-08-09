@@ -922,7 +922,7 @@ flowchart LR
 - integrated factory、bus/gateway result、write/validation availability 与 replay 使用 GD-0 候选固定的最小 public declarations；Layer A 编译 Markdown declarations，Layer B 直接导入真实 accepted Core 类型证明 `authorized/rejected`、Registry 实例 `createGateway`、全部 typed `select`、`summary`/`subscribe`、共用 bus/checkpoint/subscription 表面，private SDK/runtime 布局留给后续独立 Gate。
 - public hostile `unknown` 边界统一 descriptor-first、no-getter、no-throw；error instances、handlers、effects、history 与 mutable catalog 均不公开。
 
-执行必须拆为 CK1.1-0、CK1.1-1、GD-1、GD-2、GD-3、GD-4 六个独立 Gate。当前 GD-0 只准备文档 review candidate，不修改 `src/**` 或 `test/**`，不记录 accepted baseline、不归档、不激活任何下游 Gate。
+执行采用 Core-first 独立 Gate：已归档 CVN-0/CVN-1 承接 guard 与 private spine；CVN-2 承接 SDK/frozen Assembly；CVN-6 承接 integrated runtime/validation/replay；CVN-5 承接 bounded batch；CVN-7 完成 Core VNext 总验收后，才重新规划 GD-1/GD-3/GD-4。旧 GD-2 generic Core seam 已被这些唯一 owner 完整吸收。当前 GD-0 只准备并验收文档合同，不修改 `src/**` 或 `test/**`，也不激活下游 Gate。
 
 ## 架构验收标准
 

@@ -7,7 +7,7 @@
 - 当前架构决策: 采用参照操作系统微内核思想的 Core Kernel + 用户态服务模块架构。内核负责谱面真相、命令事务、验证、版本化契约和模块协作接口；UI、渲染、播放、导入导出、桌面壳和未来插件都作为模块或适配器与内核协作。
 - 详细架构图: `technical/microkernel-architecture.md`。
 - 当前 Core 状态: K1-1～K1-6 已验收；K1-6 测试基线 `355512aba4a8057d2d75aa665d74df49cdd2e23c` 在审查基线 `989c1f7a4056b14d3d59918c9b96874ad71591a8` 通过独立验收，8/8 聚焦、169/169 完整测试通过。权威合同位于 `.trellis/spec/core-kernel/`；Pure Core Kernel V1 已正式关闭，后续分块仍需独立规划和批准。
-- 当前阶段边界: Pure Core Kernel V1 已关闭；GD-0 为 **USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING**。本轮没有 accepted baseline、归档或 CK1.1/Guitar 实现激活。本文件只同步架构候选边界；外部工程目录结构、monorepo 方案、`apps/desktop` 和 `packages/*` 拆分不属于当前阶段。
+- 当前阶段边界: Pure Core Kernel V1 已关闭；CVN-0、CVN-1、CVN-3、CVN-4 与扩展性预留门禁已验收归档；GD-0 为 **USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING**。本轮只同步合同与所有权映射，不激活 CVN-2 或 Guitar 实现。外部工程目录结构、monorepo 方案、`apps/desktop` 和 `packages/*` 拆分不属于当前阶段。
 - 首个实现里程碑: Pure Core Kernel V1。先实现纯 TypeScript 内核和内核测试；桌面壳、UI、渲染、播放、持久化物理 IO、导出和导入均后置。
 - 目录状态: 目录结构仍未确认，必须等工程脚手架阶段从已确认内核边界、测试边界、构建方式和发布方式反推，不得反过来限制当前内核规划。
 
@@ -197,6 +197,7 @@ Pure Core Kernel V1 验收通过前，不进入 React UI、Tauri 桌面壳、Vex
 - Capability Manifest: trusted Host 为官方模块声明身份、七个 capability 与兼容 API 版本；模块不能自授权。
 - Official-domain compatibility: known extension requirement 以有限精确版本列表逐 block 匹配 `ExtensionBlock.schemaVersion`。missing/incompatible/future schema 时 integrated session lossless read-only、validation incomplete；mixed gaps 统一选择 incompatible code 并返回全量 facts；同一 contribution 按 compatible 数量与验证结果执行精确 `0/0`、成功 `1/1` 或失败 `1/0` validator/classifier 计数，并始终使用同一 canonical filtered view；read-only 写路径 operation-phase `0/0/0`，不兼容 block 零调用且完整保真。unknown opaque extension 保持 Core V1 语义保真/可写。
 - Integrated public seam: 最小 factory、Registry 实例 gateway overload/完整 K1-4 retained surface、write/validation availability 和 replay declarations 以 GD-0 候选为准；Layer A 编译 Markdown 声明，Layer B 直接导入真实 accepted Core 类型验证 `authorized/rejected`、实例 `createGateway`、全部 typed `select`、`summary`/`subscribe`、共用 bus/checkpoint/subscription 表面；缺失/不兼容领域验证的稳定 facts 阻止调用方把 Core-only validation 表述为完整领域有效。
+- Delivery ownership: 已归档 CVN-0/CVN-1 承接 guard/private spine；CVN-2 承接 SDK/frozen assembly；CVN-6 承接 writable integration/validation/replay；CVN-5 承接 bounded batch；CVN-7 之后才恢复 Guitar-owned GD-1/GD-3/GD-4。旧 CK1.1/GD-2 标签不创建第二实现路径。
 
 注册表和 capability 的详细契约见 `specs/SPEC-015-kernel-registry-capability.md`。错误、diagnostic 和 report 的详细契约见 `specs/SPEC-016-kernel-errors-diagnostics-reports.md`。K1-4 只负责 command/selector-only frozen Registry、能力 gateway 和本地结构化失败；第三方插件发现、安装、沙箱、签名、审核、插件市场、权限 UI 与新增 contribution kind 属于外部 `Extension Host` 或后续任务。
 

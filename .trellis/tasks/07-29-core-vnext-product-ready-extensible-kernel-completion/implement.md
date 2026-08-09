@@ -2,7 +2,7 @@
 
 ## 1. Execution Status
 
-`PLANNING COORDINATION / CVN-0 CVN-1 AND CVN-3 ACCEPTED AND ARCHIVED / CVN-4 DEPENDENCY SATISFIED AND CONDITIONAL PREPLANNING COMPLETE / CVN-2 AND FORMAL CVN-4..7 INACTIVE`.
+`PLANNING COORDINATION / CVN-0 CVN-1 CVN-3 CVN-4 AND EXTENSIBILITY RESERVATION GATE ACCEPTED AND ARCHIVED / GD-0 INDEPENDENT ACCEPTANCE IN PROGRESS / CVN-2 CVN-5 CVN-6 CVN-7 INACTIVE`.
 
 This parent task coordinates independently verifiable children. It does not batch all production changes into one implementation branch. Each child must receive its own PRD/design/implement review, `task.py start`, independent technical audit and archive decision.
 
@@ -11,12 +11,12 @@ After final user approval, the parent may enter `in_progress` only as the coordi
 ## 2. Entry Baselines
 
 - Core V1 close baseline: `d92a7586536ac8757c318ae6f75aabd8698f85ac`.
-- Current next-child planning baseline: `a8c7404cc34649aaa2c6ebfe8d93e46daf87dbf5`, after accepted CVN-0 and its archive/journal records.
-- GD-0: documentation review candidate; independent acceptance pending.
+- Current GD-0 review baseline: `7467a2715ce09071e12b2287e76bdc9c3bd006f5`, after accepted CVN-4 and the archived extensibility reservation gate.
+- GD-0: documentation ownership reconciliation complete; independent acceptance checks in progress. CVN-2 still requires a separate planning approval after GD-0 acceptance.
 - Core V1 accepted regression evidence: 8/8 K1-6 focused and 169/169 full tests.
 - CVN-0 accepted evidence: 19 focused, 42 related regression and 188 full tests; final independent re-review passed on 2026-08-04.
 - CVN-1 accepted evidence: 19/19 command-internals and 193/193 full tests; immutable characterization SHA-256 `CDBCFD68DCC84C514BCAC8BA83B44B819A237146C842E0F63E8F17A3CD2FF4D9`; final narrow independent re-review passed on 2026-08-04.
-- Production drift after Core close is limited to the independently accepted CVN-0 public unknown-guard repair and CVN-1 private command/transaction/Registry spine refactor, with their tests/spec synchronization; the six V1 public command traces and 48-root-export boundary remain preserved.
+- Accepted Core VNext drift through CVN-4 comprises CVN-0 hostile-input guards, CVN-1 private spine, CVN-3 factory/Measure lifecycle and CVN-4 Part/Staff/Voice/Event lifecycle. The current catalog has 25 commands, the six V1 characterization fixture remains at SHA-256 `CDBCFD68DCC84C514BCAC8BA83B44B819A237146C842E0F63E8F17A3CD2FF4D9`, and normalized-HEAD typecheck/build/full tests pass 312/312.
 
 Every child records a fresh activation baseline and may not substitute these historical hashes for its own live verification.
 
@@ -41,6 +41,9 @@ Every child records a fresh activation baseline and may not substitute these his
 - [x] Add the durable CVN dependency and stage recovery plan at `research/cvn-roadmap-and-stage-plan.md`, register it in parent/CVN-3 context, and define its maintenance protocol.
 - [x] Complete conditional CVN-4 preplanning and live hierarchy evidence without creating/activating the formal child; CVN-3 independent acceptance remains the formal creation gate.
 - [x] Independently accept CVN-3 at `d9500f5` with P0/P1/P2 = `0/0/0`, record acceptance commit `3691d93`, archive the child, and mark the CVN-4 dependency satisfied.
+- [x] Independently accept and archive CVN-4 after its narrow P2 repair; source/test candidate `788594e`, acceptance `1bb19b0`, archive `13039d0`, full tests 312/312.
+- [x] Independently accept and archive the Core VNext extensibility reservation gate; acceptance `253d19e`, archive `a4d8cee`.
+- [x] Synchronize the GD-0/Core VNext/product ownership map so legacy CK1.1/GD-2 labels create no duplicate implementation path while all public-contract fences remain unchanged.
 
 ## 4. Child Gate Map
 
@@ -291,7 +294,7 @@ Stop the active child and return to planning if any of the following occurs:
 - [ ] Core V1 compatibility matrix is fully green.
 - [ ] Core VNext scale/reliability gate is independently accepted.
 - [ ] Active Core specs and product roadmap reflect the fixed VNext baseline.
-- [ ] GD-0/CK1.1/GD-2 legacy labels map to CVN-0/1/2/5/6 without duplicate implementation ownership.
+- [x] GD-0/CK1.1/GD-2 legacy labels map to CVN-0/1/2/5/6 without duplicate implementation ownership.
 - [ ] CVN-FC-001–143 have a complete requirement → gate → test → evidence trace with no unresolved placeholder.
 - [ ] Final catalog/export evidence reports exactly 28 Core command IDs: six preserved V1 plus twenty-two additive VNext.
 - [ ] Parent PRD acceptance criteria are all evidenced.

@@ -8,7 +8,7 @@
 - 负责人: ATOM
 - 文档策略: 每个需求先写独立文档，最终再合并为收敛后的 PRD。
 - 当前 Core 基线: K1-1 已在 `30894e2` 正式验收；K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 正式验收并通过 102/102 测试；`.trellis/spec/core-kernel/` 是活动代码契约。本文较早的决策记录若与其冲突，以活动规范与独立 Block 任务为准。
-- 当前交付状态: K1-2、K1-3 均已完成独立复验并归档；K1-4 已在 `94766a0930c05e5339c44f667deaf02116af1c0c` 验收归档；K1-5 已完成 Issue/Report/Migration 独立验收并归档；K1-6 已通过独立验收并关闭 Pure Core Kernel V1。GD-0 微内核集成合同仍待独立验收；新的 `07-29-core-vnext-product-ready-extensible-kernel-completion` 父规划仍处于详细功能合同审阅候选。其首个独立子任务 CVN-0 已通过最终独立复验，19/19 聚焦与 188/188 全量测试通过，归档待执行；其他 CVN 与 GD 生产实现仍未激活。
+- 当前交付状态: K1-2～K1-6 已完成独立验收并归档，Pure Core Kernel V1 已关闭。Core VNext 的 CVN-0、CVN-1、CVN-3、CVN-4 与扩展性预留门禁均已独立验收归档；当前 HEAD 规范化回归为 312/312。GD-0 微内核集成合同正在独立文档验收，CVN-2 仍等待该验收与单独规划批准；CVN-5、CVN-6、CVN-7 以及 Guitar Domain 生产实现均未由本状态记录激活。
 
 ## 产品目标
 

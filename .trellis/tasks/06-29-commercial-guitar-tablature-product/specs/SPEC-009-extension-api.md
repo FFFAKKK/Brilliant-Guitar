@@ -310,7 +310,7 @@ K1-4 必须做:
 - [x] AC-009-06: authorized gateway 的 command/selector/read/subscribe 结果与 trusted-host API 相同；拒绝与异常保持所有 K1-2/K1-3 状态。
 - [x] AC-009-07: Registry summary 确定排序、深冻结、脱离内部状态且不泄露 grant/trust/handler/index/Registry/mutable document。
 - [x] AC-009-08: ready Registry 无 public mutation、runtime version 或 Registry event。
-- [x] AC-009-09: K1-4 Core-only command envelope、history、replay 与 K1-3 event 不含 module/plugin attribution；未来 GD-2 integrated session 仅按 GD-0 additive contract 保存私有 contribution identity，并公开 namespaced command identity，不改变 Core-only shape。
+- [x] AC-009-09: K1-4 Core-only command envelope、history、replay 与 K1-3 event 不含 module/plugin attribution；未来 CVN-2/CVN-6 integrated session 仅按 GD-0 additive contract 保存私有 contribution identity，并公开 namespaced command identity，不改变 Core-only shape。
 - [x] AC-009-10: Core 保真未知 score/part ExtensionBlock 的 JsonValue 语义；不承诺物理插件资源或字节级 round-trip。
 - [x] AC-009-11: K1-4 不读取真实第三方 `PluginManifest`，也不导出 `PluginKernelFacade` 或 public registration handler。
 
@@ -327,4 +327,4 @@ K1-4 必须做:
 - [x] one submit port、one transaction/history/replay/event owner 与 Core-to-Guitar zero dependency 已固定。
 - [x] startup-frozen official domain catalog 与 `kernel.domain-commands.v1` 边界已固定。
 - [x] known required contribution missing/incompatible/future-schema 与 unknown opaque extension 的行为已分离；前者同时公开 read-only 和 validation-incomplete facts。
-- [ ] CK1.1-0、CK1.1-1、GD-1、GD-2、GD-3、GD-4 仍须各自创建、实施、验收；GD-0 不激活它们。
+- [x] legacy ownership 已唯一映射：CK1.1-0 → 已归档 CVN-0，CK1.1-1 → CVN-2，generic GD-2 → 已归档 CVN-1 + CVN-6/CVN-5；GD-1/GD-3/GD-4 仅在 CVN-7 后重启规划。GD-0 不激活这些后续任务。

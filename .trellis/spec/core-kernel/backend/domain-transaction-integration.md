@@ -48,7 +48,7 @@ Core Kernel            -> zero imports from Guitar Domain
 
 ## Minimum Public Integration Surface
 
-The names, parameters, result fields, and discriminants below are frozen by GD-0. CK1.1-1/GD-2 may design private handlers, builders, and class layout, but may not substitute another public construction or replay contract without returning GD-0 to planning.
+The names, parameters, result fields, and discriminants below are frozen by GD-0. CVN-2 may design private SDK/catalog handlers and builders, and CVN-6 may design private runtime binding/class layout, but neither may substitute another public construction or replay contract without returning GD-0 to planning.
 
 ```typescript public-contract
 declare const kernelIntegratedCatalogBrand: unique symbol;
@@ -312,7 +312,7 @@ Rejected and no-op operations leave document state, version, history, redo depth
 - `supportedSchemaVersions` is nonempty, strictly ascending, duplicate-free, positive safe integers. Compatibility uses exact equality with each target `ExtensionBlock.schemaVersion`; no range, “latest”, downgrade, guess, or implicit migration exists.
 - A declared namespace with no block produces no availability fact. A block with a listed version and absent contribution produces `required-contribution-unavailable`. A block with an unlisted version—including a future version—produces `required-contribution-incompatible` whether or not a contribution is present.
 - Compatibility is resolved per persisted `ExtensionBlock`. If one contribution owns an exactly compatible block and an incompatible/future block, only the compatible block enters a detached block-scoped view in canonical owner order. The incompatible block is never passed to that contribution's decoder, validator, classifier, command/effect handler, or fact generator.
-- During every applicable pass, an installed contribution with zero compatible blocks receives validator/classifier calls `0/0`. With one or more compatible blocks it receives exactly one `validate` call over Core score read data plus the canonical-owner-ordered filtered compatible view. Only after every applicable validator succeeds and classification begins does each such contribution receive exactly one `classify` call over that same view. If any validator returns semantic issues, throws, or violates its contract, classification does not begin and all classifiers receive zero calls. Initial construction/explicit validation, changed candidates, undo, redo, and replay candidate passes use this same rule. The session remains read-only and validation-incomplete when an excluded block exists; the private handler-input type remains for CK1.1-1/GD-2.
+- During every applicable pass, an installed contribution with zero compatible blocks receives validator/classifier calls `0/0`. With one or more compatible blocks it receives exactly one `validate` call over Core score read data plus the canonical-owner-ordered filtered compatible view. Only after every applicable validator succeeds and classification begins does each such contribution receive exactly one `classify` call over that same view. If any validator returns semantic issues, throws, or violates its contract, classification does not begin and all classifiers receive zero calls. Initial construction/explicit validation, changed candidates, undo, redo, and replay candidate passes use this same rule. The session remains read-only and validation-incomplete when an excluded block exists; the private handler-input type remains for CVN-2/CVN-6.
 - The full excluded extension envelope and nested JSON data remain unchanged. Writes reject at availability preflight, so command/effect/fact handlers receive zero calls in the degraded session.
 - Integrated reads expose both `KernelWriteAvailability` and `KernelValidationAvailability`. Facts are canonical, deduplicated, sorted, detached, and deeply frozen. A Core-valid result with any missing/incompatible fact is `incomplete`; callers cannot label it complete installed-domain semantic validity.
 - Read-only sessions retain decode, encode, snapshot, selection, inspection, checkpoint bookkeeping, incomplete validation reporting, and exact opaque payload preservation. Submit, undo, redo, and each attempted replay command use one preflight rule before command decoding or empty-history checks: if any canonical fact is incompatible, return `command.required-contribution-incompatible`; otherwise return `command.required-contribution-unavailable`. The returned `facts` always contain the full canonical list, including both reasons in a mixed state, and equal the read/replay availability facts. All four paths preserve the complete pre-call state; empty replay is the only no-write path and may return `replayed` unchanged with the same availability values.
@@ -333,7 +333,7 @@ Rejected and no-op operations leave document state, version, history, redo depth
 - Every public `unknown` guard/decoder used by the seam is descriptor-first, no-getter, and no-throw.
 - Accessors, hostile Proxies, invalid prototypes, extra fields, sparse arrays, cycles, Promise-like synchronous hooks, and mutable caller aliases reject with stable data-only failures.
 - IDs, effect order, validation order, classification, events, results, and replay never depend on wall clock, randomness, object identity, object enumeration, registration timing, or mutable global profiles.
-- The accepted guard behavior is implemented first by CK1.1-0; the module SDK follows in CK1.1-1. This document does not authorize either implementation.
+- Accepted CVN-0 supplies the guard prerequisite; CVN-2 supplies the module SDK/frozen assembly only after GD-0 acceptance and separate approval. This document does not activate CVN-2 or later runtime work.
 
 ## Validation and Error Matrix
 
@@ -387,13 +387,14 @@ return {
 
 ## Downstream Gates
 
-Implementation order is fixed and independently reviewed:
+The approved Core-first ownership graph is fixed and independently reviewed:
 
-1. CK1.1-0 hostile-input guard prerequisite.
-2. CK1.1-1 official module-SDK contract foundation.
-3. GD-1 GuitarExtension foundation and validation/profile, without commands.
-4. GD-2 generic Core V1.1 domain-command seam, using a neutral synthetic test contribution.
-5. GD-3 Guitar semantic commands for placement, slide, bend, and vibrato.
-6. GD-4 Core/Guitar integration and compatibility gate.
+1. CVN-0 (accepted) owns the former CK1.1-0 hostile-input prerequisite; CVN-1 (accepted) owns the behavior-preserving command/transaction/Registry spine.
+2. CVN-2, after GD-0 acceptance and separate planning approval, owns the official-module SDK plus detached frozen contribution assembly, without a writable integrated Session.
+3. CVN-6, after CVN-2, owns the same-Assembly integrated factory/bus/gateway/replay path, module effects, validation/classification, availability, diagnostics, migration and events defined here.
+4. CVN-5, after CVN-2/CVN-3/CVN-4/CVN-6, owns bounded Core/module batch through the same transaction owner.
+5. CVN-7 qualifies the complete Core VNext baseline. GD-1/GD-3/GD-4 Guitar-owned schema, command and conformance work is replanned only after CVN-7.
+
+The former generic GD-2 label is fully mapped to CVN-1/CVN-2/CVN-6/CVN-5 and does not authorize a duplicate Core seam. This ownership mapping changes no public declaration in this specification.
 
 Any requirement for a Core-to-Guitar import, second transaction/history/event owner, public patch API, runtime registration/unload, whole-document history snapshot, persisted Core schema change, or UI/render/playback/physical-I/O behavior stops the active downstream task and returns it to planning.

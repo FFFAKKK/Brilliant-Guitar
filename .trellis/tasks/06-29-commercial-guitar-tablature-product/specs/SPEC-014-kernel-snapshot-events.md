@@ -64,7 +64,7 @@ const correct = {
 
 > **GD-0 lifecycle:** USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING.
 
-K1-3 Core-only snapshot/event 合同保持冻结。后续 GD-2 integrated construction 只做兼容扩展：
+K1-3 Core-only snapshot/event 合同保持冻结。后续 CVN-6 integrated construction 只按 GD-0 做兼容扩展；CVN-2 只提供 SDK/frozen assembly，不提前发布 writable event Session：
 
 - integrated read 增加 detached、deeply frozen 的 `KernelWriteAvailability` 与 `KernelValidationAvailability`；known required contribution 缺失或逐 block `ExtensionBlock.schemaVersion` 不兼容（含 future schema）时分别为 read-only/incomplete，并提供排序去重后的 namespace/owner/schemaVersion/module/contribution/reason/supported-version 完整 facts。仅 Core validation 不得标成完整领域语义有效；mixed unavailable/incompatible facts 在所有写路径选择 incompatible code，但 facts 保持全量一致。
 - 每次 committed submit/undo/redo 仍只发布一个 `core.document.committed`，之后仅在 dirty 布尔变化时发布现有 dirty event。

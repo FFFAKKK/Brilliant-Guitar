@@ -1,6 +1,6 @@
 # Core VNext Documentation Synchronization Matrix
 
-> **Lifecycle:** PARENT DETAILED-CONTRACT REVIEW CANDIDATE / USER APPROVAL PENDING.
+> **Lifecycle:** APPROVED COORDINATION BASELINE / POST-APPROVAL OWNERSHIP SYNC CANDIDATE / GD-0 INDEPENDENT ACCEPTANCE IN PROGRESS.
 > **Scope:** roadmap and contract-authority synchronization only; no production source/test activation.
 
 ## Current Authority
@@ -9,9 +9,9 @@
 |---|---|---|
 | Accepted Core behavior | `.trellis/spec/core-kernel/` and Core V1 close baseline `d92a7586536ac8757c318ae6f75aabd8698f85ac` | accepted and frozen compatibility base |
 | Integrated official-domain public contract | `.trellis/tasks/07-28-gd-0-guitar-domain-core-transaction-contract/` plus `backend/domain-transaction-integration.md` | documentation review candidate; independent acceptance pending |
-| Core VNext completion scope and gate ownership | this parent PRD/design/implement | final user review candidate |
-| Core VNext exact feature behavior and qualification data | `feature-contract-matrix.md` CVN-FC-001–143 | detailed parent contract; user review pending |
-| Product roadmap projection | product PRD/design/implement | candidate status note synchronized; detailed legacy labels still await post-approval pass |
+| Core VNext completion scope and gate ownership | this parent PRD/design/implement | approved coordination baseline; CVN-0/1/3/4 and reservation gate archived |
+| Core VNext exact feature behavior and qualification data | `feature-contract-matrix.md` CVN-FC-001–143 | approved parent contract; remaining gates separately activated |
+| Product roadmap projection | product PRD/design/implement | post-approval legacy ownership synchronized; GD-0 acceptance pending |
 
 ## Post-Approval Mapping
 
@@ -26,7 +26,7 @@ This mapping changes task ownership only. It preserves every GD-0 public constru
 | GD-2 cross-module batch extension | CVN-5 | add the new batch responsibility without a second submit/history path |
 | GD-1/GD-3/GD-4 | Guitar roadmap after CVN-7 | pause implementation; later replan only Guitar-owned data, commands and conformance |
 
-## Documents to Synchronize After Final Parent Approval
+## Documents Synchronized for GD-0 Acceptance
 
 ### GD-0 authority and task artifacts
 
@@ -65,7 +65,7 @@ The absent planned `SPEC-010-product-quality.md` is not fabricated during parent
 
 ## Verification
 
-After the post-approval synchronization:
+The post-approval synchronization is accepted only if all of the following rerun successfully on the review candidate:
 
 1. Run GD-0 Layer A Markdown public-contract verification.
 2. Run GD-0 Layer B real-Core no-emit drift assertions.

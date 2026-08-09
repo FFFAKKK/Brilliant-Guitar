@@ -420,9 +420,9 @@ GD-0 为 **USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACC
 - Core 不导入 Guitar Domain；GuitarExtension、validator/profile、命令/effect/issue code 由 Guitar 模块 namespace 所有。
 - ready 后无 register/unregister/hot reload；第三方 TypeScript runtime、sandbox、权限 UI 和 filtered facade 仍由未来 Extension Host 规划。
 - known official requirement 使用有限精确 `ExtensionBlock.schemaVersion` 支持列表并逐 block 协商；required contribution missing/incompatible/future schema 与 unknown opaque extension 分离。前者 lossless read-only + validation incomplete；mixed gaps 固定 incompatible code + 全量 facts；mixed owner/version contribution 在每个 applicable pass 按 compatible 数量与验证结果执行 `0/0`、成功 `1/1` 或失败 `1/0`，两阶段使用同一 canonical compatible view；read-only 写路径 operation-phase `0/0/0`，不兼容 block 零调用且 payload 保真。后者保持 Core V1 preservation/writable behavior。
-- integrated factory、bus/gateway result、write/validation availability 和 replay 的最小 public declarations 固定；Layer A 编译 Markdown declarations，Layer B 直接对真实 accepted Core 断言 `authorized/rejected`、Registry 实例 overload、全部 typed `select`、`summary`/`subscribe` 与共用 bus/checkpoint/subscription 类型，private authoring/runtime 设计仍由独立 CK1.1-1/GD-2 Gate 负责。
+- integrated factory、bus/gateway result、write/validation availability 和 replay 的最小 public declarations 固定；Layer A 编译 Markdown declarations，Layer B 直接对真实 accepted Core 断言 `authorized/rejected`、Registry 实例 overload、全部 typed `select`、`summary`/`subscribe` 与共用 bus/checkpoint/subscription 类型。private authoring/frozen assembly 由 CVN-2 负责，writable runtime/validation/replay 由 CVN-6 负责，bounded batch 由 CVN-5 负责。
 
-下游顺序为 CK1.1-0 → CK1.1-1 → GD-1 → GD-2 → GD-3 → GD-4；当前 GD-0 不记录 accepted baseline、不归档、不创建或激活这些实现任务。
+Core-first 顺序为：已归档 CVN-0/CVN-1 → GD-0 验收 → 单独批准 CVN-2 → CVN-6 → CVN-5 → CVN-7 → 重启 Guitar-owned GD-1/GD-3/GD-4 规划。旧 CK1.1/GD-2 标签只保留追踪意义，不创建重复 seam；GD-0 验收本身不激活任何生产任务。
 
 ## 验收标准
 

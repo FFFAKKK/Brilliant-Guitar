@@ -44,18 +44,17 @@ K1-1 不包含命令/history、snapshot/events、registry/capability、通用 re
 
 ## Core Gate 状态与后续顺序
 
-### Block 2：Guitar Domain（GD-0 documentation review candidate）
+### Block 2：GD-0 合同验收与 Core-first 后续门禁
 
-GD-0 生命周期为 **USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING**。当前只准备文档候选：不记录 accepted baseline、不归档、不创建或激活下游任务。原候选记录的下游 Gate 为：
+GD-0 生命周期为 **USER PLAN APPROVED / DOCUMENTATION REVIEW CANDIDATE / INDEPENDENT ACCEPTANCE PENDING**。当前只执行文档映射修复与独立验收，不激活生产任务。现行依赖图为：
 
-1. CK1.1-0：public `unknown` guards 的 descriptor-first/no-getter/no-throw 前置。
-2. CK1.1-1：official module SDK 的 data/error/descriptor authoring 基础，不含运行时。
-3. GD-1：Part-owned `GuitarExtension` foundation、codec、semantic/profile validation，不含命令。
-4. GD-2：Core V1.1 通用 official domain command seam，使用 neutral synthetic contribution 验证。
-5. GD-3：Guitar placement、slide、bend、vibrato 语义命令。
-6. GD-4：Core/Guitar 集成与兼容门禁。
+1. 已归档 CVN-0 承接 hostile-input guard；已归档 CVN-1 承接行为保持型 command/transaction/Registry spine。
+2. GD-0 验收后，CVN-2 经单独规划批准承接 official module SDK 与 frozen catalog assembly，但不开放 writable integrated Session。
+3. CVN-2 验收后，CVN-6 承接 integrated factory/bus/gateway/replay、validation/profile/diagnostics/migration 与 degraded-read runtime。
+4. CVN-2、CVN-3、CVN-4、CVN-6 均验收后，CVN-5 承接同一事务所有者下的 bounded Core/module batch。
+5. CVN-0～CVN-6 全部验收后由 CVN-7 完成兼容、可靠性和规模门禁；随后才重新规划 GD-1、GD-3、GD-4。
 
-用户随后决定先完整收口领域无关内核。`07-29-core-vnext-product-ready-extensible-kernel-completion` 因此成为新的父规划详细功能合同审阅候选：父级 `feature-contract-matrix.md` 已冻结 28-command finite catalog 与 factory/structure/range/batch/failure/resource/qualification 条件；CK1.1-0 映射到 CVN-0，CK1.1-1 映射到 CVN-2，GD-2 的 generic Core runtime 责任映射到 CVN-1/CVN-6，cross-module batch 映射到 CVN-5；CVN-7 通过后才恢复 GD-1/GD-3/GD-4。父规划整体仍待最终批准；独立子任务 CVN-0 已通过最终独立复验，19/19 聚焦与 188/188 全量测试通过，归档待执行，且不改写 GD-0 冻结的 public declarations。
+`07-29-core-vnext-product-ready-extensible-kernel-completion` 是上述依赖图与 28-command finite catalog 的协调权威。CVN-0、CVN-1、CVN-3、CVN-4 与扩展性预留门禁已归档；旧 CK1.1/GD-2 标签只保留追踪意义，不创建重复实现路径，也不改写 GD-0 冻结的 public declarations。
 
 GD-1 将定义：
 
@@ -67,7 +66,7 @@ GD-1 将定义：
 - `ExtensionBlock.schemaVersion` 的有限精确支持列表与逐 block 协商；每个 applicable pass 中 compatible block 为 0 时 validator/classifier `0/0`，至少一个时恰好 validate 1 次并在全部 validator 成功后以同一 canonical filtered view classify 1 次，validation failure 时 `1/0`；read-only 写路径 operation-phase validator/classifier/write `0/0/0`，missing/incompatible/future block 对全部 handler 零调用并 lossless 保留。
 - public write/validation availability 的 `writable|read-only`、`complete|incomplete` discriminant 与排序稳定完整 facts；mixed unavailable/incompatible 写路径固定选择 incompatible code，避免 Core-only validation 被表述为完整领域语义有效。
 
-上述各块不能把 guitar 字段塞回 Core Note/Event/metadata，不能假设旧 `TechniqueData` registry 已存在，也不能建立第二套 document/history/replay/dirty/event owner。GD-2 还必须实现候选中固定的 integrated factory、Registry 实例 gateway overload/完整保留 surface、availability 与 replay 公共签名/discriminant；其 Markdown 声明由 Layer A 编译，accepted Core 兼容性由直接导入真实 Core 类型的 Layer B 断言。当前 GD-0 不授权创建或激活任何下游实现任务。
+上述各块不能把 guitar 字段塞回 Core Note/Event/metadata，不能假设旧 `TechniqueData` registry 已存在，也不能建立第二套 document/history/replay/dirty/event owner。CVN-2/CVN-6 必须原样消费候选中固定的 integrated factory、Registry 实例 gateway overload/完整保留 surface、availability 与 replay 公共签名/discriminant；其 Markdown 声明由 Layer A 编译，accepted Core 兼容性由直接导入真实 Core 类型的 Layer B 断言。GD-0 验收本身仍不授权 CVN-2 或后续生产任务启动。
 
 ### 已完成：K1-2 Commands / Transactions / History
 
