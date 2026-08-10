@@ -89,7 +89,7 @@ The graph is dependency-based rather than numeric-order-based. CVN-2 and CVN-3 a
 | Extensibility Reservation Gate | completed and archived | candidate `7c4e852`, acceptance `253d19e`, archive `a4d8cee`; one narrow P2 repaired; final P0/P1/P2=`0/0/0`; task AC `25/25` | retained as accepted GD-0/CVN-2 evolution prerequisite |
 | CVN-2 | parent-planned; child not created | CVN-1, Extensibility Reservation Gate, and GD-0 documentation contract accepted | create detailed child only after separate user planning approval |
 | CVN-3 | completed and archived | independent review passed at `d9500f5` with P0/P1/P2 = `0/0/0`; 22 lifecycle and 233 full tests reproduced; acceptance commit `3691d93` | retained as accepted factory and Measure-lifecycle prerequisite |
-| CVN-4 | completed and archived | independent re-review passed at `788594e` with P0/P1/P2 = `0/0/0`; focused Voice `4/4`, full `312/312`; acceptance `1bb19b0` | retained as accepted hierarchy-lifecycle prerequisite |
+| CVN-4 | completed and archived | final local re-review passed at `b0272e2` with P0/P1/P2 = `0/0/0`; focused `92/92`, full `315/315`; acceptance `7f33e7d` | retained as accepted hierarchy-lifecycle prerequisite |
 | CVN-5 | parent-planned; child not created | waits for accepted CVN-2, CVN-3, CVN-4 and CVN-6 | detailed planning after all four dependencies are accepted |
 | CVN-6 | parent-planned; child not created | waits for accepted CVN-2 and CVN-1 | detailed planning after CVN-2 acceptance |
 | CVN-7 | parent-planned; child not created | waits for independently accepted and archived CVN-0 through CVN-6 | final qualification task |
@@ -101,9 +101,9 @@ Snapshot evidence:
 - CVN-1 immutable expected trace SHA-256: `CDBCFD68DCC84C514BCAC8BA83B44B819A237146C842E0F63E8F17A3CD2FF4D9`.
 - CVN-3 activation baseline: `d936d58195803ef938214948b21e89fe67939090`.
 - CVN-3 accepted source/test commit: `d9500f5a8ac285071586ba8eda380370eafd022f`; independent review passed with P0/P1/P2 = `0/0/0`; acceptance commit `3691d93`.
-- CVN-4 accepted source/test commit: `788594e670a1608ee2beabddcd217a9d340a5d30`; independent re-review passed with P0/P1/P2 = `0/0/0`; acceptance commit `1bb19b0`.
-- Extensibility Reservation Gate planning commit: `6298d4b`; activation baseline `783f69c`; candidate `7c4e852`; acceptance `253d19e`; archive `a4d8cee`; final P0/P1/P2=`0/0/0` after one narrow P2 repair.
-- GD-0 snapshot status: accepted documentation/architecture contract at `451627e`; runtime implementation remains separately gated.
+- CVN-4 final accepted source/test commit: `b0272e2eabd0d222baea12cbaae3e08f9f61bfdd`; local input-validation and rejection-rollback re-review passed with P0/P1/P2 = `0/0/0`; acceptance commit `7f33e7d`.
+- Extensibility Reservation Gate planning commit: `6298d4b`; activation baseline `783f69c`; charter `7c4e852`; acceptance `253d19e`; archive `a4d8cee`; final P0/P1/P2=`0/0/0` after one narrow P2 repair.
+- GD-0 accepted documentation/architecture contract: candidate `451627e`; acceptance `a2b9009`; archive `4580164`; archived-path synchronization `ade7526`; runtime implementation remains separately gated.
 
 ## 5. Exact Command Inventory
 

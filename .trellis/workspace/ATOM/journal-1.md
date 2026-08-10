@@ -374,7 +374,41 @@ Bounded independent re-review closed the affectedEntities P2; focused Voice 4/4,
 - None - task complete
 
 
-## Session 11: Core VNext extensibility reservation accepted and archived
+## Session 11: CVN-4 local correctness repair acceptance
+
+**Date**: 2026-08-09
+**Task**: CVN-4 local correctness repair acceptance
+**Branch**: `codex/cvn-4-part-staff-voice-lifecycle`
+
+### Summary
+
+Reviewed only local score input validation and document rollback behavior. Focused 92/92 and full 315/315 passed with typecheck, build, Trellis, diff and protected hashes. Re-accepted the archived CVN-4 task and synchronized the parent roadmap; no push.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b0272e2` | (see git log) |
+| `7f33e7d` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 12: Core VNext extensibility reservation accepted and archived
 
 **Date**: 2026-08-09
 **Task**: Core VNext extensibility reservation accepted and archived
@@ -382,7 +416,7 @@ Bounded independent re-review closed the affectedEntities P2; focused Voice 4/4,
 
 ### Summary
 
-Accepted and archived the documentation-only extensibility reservation gate after one narrow P2 terminology repair; final P0/P1/P2=0/0/0, 25/25 AC, parent D/R/AC=12/12/18, FC headings/owners/commands=44/9/28, GD-0 six public fences unchanged. GD-0 independent acceptance remains the next dependency gate; CVN-2 is inactive.
+Accepted and archived the documentation-only extensibility reservation gate after one narrow P2 terminology repair; final P0/P1/P2=0/0/0, 25/25 AC, parent D/R/AC=12/12/18, FC headings/owners/commands=44/9/28, GD-0 six public fences unchanged. GD-0 independent acceptance remained the next dependency gate; CVN-2 stayed inactive.
 
 ### Main Changes
 
@@ -411,7 +445,7 @@ Accepted and archived the documentation-only extensibility reservation gate afte
 - None - task complete
 
 
-## Session 12: GD-0 independent contract acceptance and archive
+## Session 13: GD-0 independent contract acceptance and archive
 
 **Date**: 2026-08-10
 **Task**: GD-0 independent contract acceptance and archive
