@@ -269,8 +269,9 @@ The following are not CVN-2 implementation work:
 The earlier review pass at `83478fe` was superseded by the external targeted
 audit of `f6d4694`, which returned P0/P1/P2=`0/1/0` because the planned module
 error base bypassed GD-0's internal `KernelErrorBase<Code>`. The bounded repair
-now fixes the hierarchy, file owners, and tests; AC010 remains open until a
-fresh targeted re-review passes.
+now fixes the hierarchy, file owners, and tests; targeted re-review at
+`69f7fad` passed with P0/P1/P2=`0/0/0`. AC010 remains open only until the user
+reviews this result and makes the explicit activation decision.
 
 ### Required from a future implementation candidate
 
@@ -298,8 +299,8 @@ fresh targeted re-review passes.
 
 ## 7. Activation gate
 
-The next lifecycle decision is the targeted planning re-review of the bounded
-error-hierarchy repair. After a `0/0/0` result, the user reviews the result and
-makes the explicit activation decision. Until then, the task stays `planning`,
+The targeted planning re-review of the bounded error-hierarchy repair passed at
+`69f7fad` with P0/P1/P2=`0/0/0`. The next lifecycle decision is the user's
+review and explicit activation decision. Until then, the task stays `planning`,
 production files stay untouched, and CVN-6 remains blocked on accepted CVN-2
 rather than on this planning candidate alone.

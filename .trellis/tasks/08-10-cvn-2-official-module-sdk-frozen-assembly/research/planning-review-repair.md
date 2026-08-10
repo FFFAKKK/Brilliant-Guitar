@@ -9,8 +9,8 @@
 - Lifecycle: `planning`; `task.py start` remains false
 - Earlier re-review baseline: `83478fedb892b8bd048acc4f63145f3570872d8a`
 - External targeted-audit baseline: `f6d4694d8eb325883be9abdb697d35086759ca16`
-- Current audit: P0/P1/P2=`0/1/0`; bounded hierarchy repair specified and
-  targeted re-review pending
+- Bounded hierarchy repair candidate: `69f7fadb691bfed833c0ed067ea56d530ab84b4b`
+- Targeted re-review: P0/P1/P2=`0/0/0`; user activation pending
 
 ## Repair 1 — typed heterogeneous definitions
 
@@ -178,6 +178,11 @@ The Repair 4 planning-contract checks additionally produced:
 - accepted GD-0 archive and active integration-spec delta: `0`;
 - `git diff --check`: pass.
 
+Targeted re-review at `69f7fad` then reproduced six accepted ancestors, the
+same JSON/JSONL/Trellis/export/file/delta checks, repository typecheck, build,
+full `315/315`, GD-0 authority delta `0`, diff check, and clean pre-record
+status. It found no remaining P0/P1/P2.
+
 ## Re-review checklist
 
 The fresh planning re-review must verify:
@@ -194,5 +199,6 @@ The fresh planning re-review must verify:
    fixtures close the external P1;
 8. Trellis/JSON/JSONL/Markdown/diff checks pass with zero production delta.
 
-Until the new hierarchy-focused re-review reports P0/P1/P2=`0/0/0` and the user
-reviews the result, implementation remains inactive.
+The hierarchy-focused re-review now reports P0/P1/P2=`0/0/0`. Implementation
+remains inactive until the user reviews the result and explicitly activates the
+task.

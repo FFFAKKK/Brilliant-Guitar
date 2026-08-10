@@ -39,9 +39,9 @@
     ".trellis/tasks/archive/2026-08/08-04-cvn-4-part-staff-voice-lifecycle/task.json",
     ".trellis/spec/core-kernel/backend/domain-transaction-integration.md"
   ],
-  "notes": "BOUNDED ERROR-HIERARCHY PLANNING REPAIR SPECIFIED / TARGETED RE-REVIEW PENDING. External audit of f6d4694 found P0/P1/P2=0/1/0 because ModuleKernelErrorBase bypassed GD-0's internal KernelErrorBase. The repaired plan adds one internal base file, makes existing Core and SDK module branches derive from it, expands only the exact file/test matrix, preserves SDK 8/34 and zero application-root runtime additions. task.py start has not run and production implementation remains inactive.",
+  "notes": "TARGETED ERROR-HIERARCHY PLANNING RE-REVIEW PASSED / USER ACTIVATION PENDING. External audit of f6d4694 found P0/P1/P2=0/1/0; bounded repair 69f7fad restores the internal KernelErrorBase branch, exact file/test ownership, SDK 8/34 and zero application-root runtime additions. Fresh targeted re-review passed P0/P1/P2=0/0/0 with typecheck, build, full 315/315 and zero production delta. task.py start has not run and production implementation remains inactive.",
   "meta": {
-    "planning_stage": "bounded_error_hierarchy_repair_candidate_pending_targeted_rereview",
+    "planning_stage": "targeted_error_hierarchy_rereview_passed_pending_user_activation",
     "planning_base_commit": "706802c",
     "planning_candidate_commit": "73fe18a10f280146dd341493c1e956d3a8427d32",
     "detailed_planning_artifacts_commit": "2941725",
@@ -65,7 +65,7 @@
     "task_start_run": false,
     "detailed_planning_artifacts_complete": true,
     "planning_self_audit": "passed_final_p0_p1_p2_0_0_0_after_correcting_current25_vs_parent_final28_count",
-    "independent_planning_review": "returned_by_external_targeted_audit_p1_kernel_error_base_hierarchy",
+    "independent_planning_review": "passed_after_external_p1_common_error_hierarchy_repair_final_p0_0_p1_0_p2_0",
     "planning_review_baseline": "8757097fd6dd3e9464807b9ab091006285a19f2b",
     "planning_review_report": ".trellis/tasks/08-10-cvn-2-official-module-sdk-frozen-assembly/review-candidate.md",
     "planning_review_findings_initial": {
@@ -74,7 +74,7 @@
       "P2": 1
     },
     "planning_review_repair_report": ".trellis/tasks/08-10-cvn-2-official-module-sdk-frozen-assembly/research/planning-review-repair.md",
-    "planning_review_repair_status": "second_bounded_hierarchy_repair_specified_pending_targeted_rereview",
+    "planning_review_repair_status": "second_bounded_hierarchy_repair_committed_and_targeted_rereviewed",
     "planning_review_finding_record_commit": "31be407f1dbd8c043a049435fde45625632d46e0",
     "planning_review_repair_commit": "0c49750308673c30c85b918dbe6735e03591b23e",
     "planning_review_re_review_baseline": "83478fedb892b8bd048acc4f63145f3570872d8a",
@@ -96,13 +96,15 @@
     },
     "external_planning_audit_finding": "module_kernel_error_base_bypasses_internal_kernel_error_base",
     "external_planning_audit_finding_record_commit": "e8d5e765270eea642ae2c84f93ca76fab9128940",
-    "planning_review_findings_current": {
+    "bounded_hierarchy_repair_commit": "69f7fadb691bfed833c0ed067ea56d530ab84b4b",
+    "targeted_hierarchy_rereview_baseline": "69f7fadb691bfed833c0ed067ea56d530ab84b4b",
+    "planning_review_findings_final": {
       "P0": 0,
-      "P1": 1,
+      "P1": 0,
       "P2": 0
     },
     "previous_planning_review_verification": "type_shape_probe_pass_export8_type34_trellis_child9_11_parent3_3_product0_0_typecheck_full315_zero_production_delta_clean",
-    "bounded_hierarchy_repair_verification": "planning_contract_pass_json_jsonl_trellis_child9_11_parent3_3_product0_0_sdk8_34_files8_4_zero_production_delta_gd0_authority_delta0_diffcheck_targeted_rereview_pending",
+    "bounded_hierarchy_repair_verification": "targeted_rereview_pass_ancestry6_json_jsonl_trellis_child9_11_parent3_3_product0_0_sdk8_34_files8_4_typecheck_build_full315_zero_production_delta_gd0_authority_delta0_diffcheck_clean",
     "primary_sdk_entry": "src/core-kernel/module-sdk/index.ts",
     "application_root": "src/core-kernel/index.ts",
     "application_runtime_exports_change": "none",
@@ -158,6 +160,6 @@
       "src/core-kernel/registry/strict-codec.ts"
     ],
     "planning_base_verification": "passed_ancestry6_trellis6_typecheck_build_full315_clean_source_test_equal_cvn4_planning_production_delta0",
-    "next_gate": "targeted_error_hierarchy_planning_rereview"
+    "next_gate": "user_review_and_explicit_activation_decision"
   }
 }

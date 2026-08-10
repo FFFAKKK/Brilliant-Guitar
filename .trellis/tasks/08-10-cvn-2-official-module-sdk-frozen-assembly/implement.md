@@ -1,9 +1,9 @@
 # CVN-2 Operator Runbook
 
-> **Current lifecycle:** the bounded GD-0 error-hierarchy planning repair is
-> specified; targeted re-review is pending. Until that review reports
-> P0/P1/P2=`0/0/0`, do not run `task.py start` and do not edit production/test
-> files.
+> **Current lifecycle:** the bounded GD-0 error-hierarchy planning repair at
+> `69f7fad` passed targeted re-review with P0/P1/P2=`0/0/0`; explicit user
+> activation is pending. Until that decision, do not run `task.py start` and do
+> not edit production/test files.
 
 ## 1. Objective
 

@@ -232,3 +232,59 @@ new internal file and one existing Core error-file modification:
 The candidate remains `planning` with current audit P0/P1/P2=`0/1/0` until the
 targeted re-review closes this exact finding. No production/test edit is present
 in the planning repair itself.
+
+## Targeted hierarchy re-review at `69f7fad`
+
+### Finding closure
+
+The external P1 is closed. The repaired contract now has one unambiguous chain:
+
+```text
+Error
+└─ KernelErrorBase<Code>                    internal file export only
+   ├─ KernelError<CoreCode>                 existing private Core branch
+   └─ ModuleKernelErrorBase<ModuleId, Code> SDK runtime export
+```
+
+The internal base owns only native Error initialization, the readonly literal
+code, and the abstract common issue-data conversion shape. The current Core
+branch removes duplicate code ownership while retaining its current conversion
+behavior. The module branch validates once, passes the validated code to the
+base, stores one detached deeply frozen issue, and returns that same frozen
+issue from `toIssue()`.
+
+The synchronized file/test contract now proves:
+
+- planned production additions/modifications are exactly `8/4`, including the
+  internal base addition and current Core error-file modification;
+- `test/core-kernel/module-sdk-contracts.test.ts` owns prototype, generic, SDK
+  non-export, code equality, and issue-isolation proof;
+- `test/core-kernel/kernel-issues.test.ts` owns unchanged Core factory/freeze/
+  input-isolation regression;
+- the SDK runtime/type allowlists remain `8/34`; `KernelErrorBase` appears in
+  neither public entry, `ModuleKernelErrorBase` remains the SDK's sole runtime
+  error class, and the application root gains zero runtime keys.
+
+### Fresh verification
+
+- required accepted ancestry: `6/6`;
+- child/parent/product Trellis context: `9/11`, `3/3`, `0/0`, valid;
+- lifecycle: `planning`; `task.py start=false`; production authorization=false;
+- owners: exactly `CVN-FC-110/111`;
+- design contract parser: SDK `8/34`, files `8/4`, module inheritance exact;
+- typecheck: pass;
+- build: pass;
+- complete Core regression: `315/315` pass;
+- `f6d4694..69f7fad` source/test/package/config delta: zero;
+- accepted GD-0 archive and active integration-spec delta: zero;
+- `git diff --check`: pass;
+- worktree before this review-record update: clean.
+
+## Current final planning-review verdict
+
+**PASS. P0/P1/P2=`0/0/0`.**
+
+The bounded hierarchy defect is closed without changing the SDK export counts,
+application-root runtime surface, nine-field contribution ABI, CVN ownership,
+or CVN-6/future-port exclusions. The task remains `planning`; the next gate is
+the user's review of this result and explicit activation decision.

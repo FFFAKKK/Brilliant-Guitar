@@ -6,8 +6,8 @@
 > `planning-review-repair.md`. This file remains evidence of the earlier
 > current-25/final-28 correction, not the current review verdict. The later
 > `0/0/0` result at `83478fe` was superseded by the external targeted audit of
-> `f6d4694`; the current audit remains P0/P1/P2=`0/1/0` until the bounded common
-> error-hierarchy repair receives a targeted re-review.
+> `f6d4694`; the bounded common error-hierarchy repair was then committed at
+> `69f7fad` and passed targeted re-review with current P0/P1/P2=`0/0/0`.
 
 ## Scope and status
 
