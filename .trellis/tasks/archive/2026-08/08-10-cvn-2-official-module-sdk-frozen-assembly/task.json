@@ -40,9 +40,9 @@
     ".trellis/tasks/archive/2026-08/08-04-cvn-4-part-staff-voice-lifecycle/task.json",
     ".trellis/spec/core-kernel/backend/domain-transaction-integration.md"
   ],
-  "notes": "INDEPENDENT IMPLEMENTATION REVIEW PASSED 2026-08-11 WITH P0/P1/P2 0/0/0. Accepted source/test candidate e203136a0e6d995d543dbe615be27dc4ca38d6c1 implements CVN-FC-110/111 only. Typecheck, build, focused 54/54, full 350/350, forbidden dependency, GD-0, Trellis, protected paths, 22/22 allowlist and diff checks pass; all six callback counters remain zero. CVN2-AC011..020 are satisfied. Archive is the next separate lifecycle action; CVN-6 remains unstarted.",
+  "notes": "COMPLETED AND ARCHIVED 2026-08-11. Independent implementation review passed with P0/P1/P2 0/0/0. Accepted source/test candidate e203136a0e6d995d543dbe615be27dc4ca38d6c1 implements CVN-FC-110/111 only. Typecheck, build, focused 54/54, full 350/350, forbidden dependency, GD-0, Trellis, protected paths, 22/22 allowlist and diff checks pass; all six callback counters remain zero. CVN2-AC011..020 are satisfied. CVN-6 is now the next dependency-satisfied Core child but remains uncreated and separately gated.",
   "meta": {
-    "planning_stage": "implementation_accepted_ready_for_archive",
+    "planning_stage": "completed_archived",
     "planning_base_commit": "706802c",
     "planning_candidate_commit": "73fe18a10f280146dd341493c1e956d3a8427d32",
     "detailed_planning_artifacts_commit": "2941725",
@@ -180,6 +180,9 @@
       "P2": 0
     },
     "final_independent_implementation_review_verification": "seven_stage_priority_and_exact_owner_decoy_reproductions_pass_focused54_full350_forbidden3_gd0_trellis_protected_allowlist22_diffcheck_callbacks0",
-    "next_gate": "archive_accepted_cvn2"
+    "acceptance_record_commit": "f3d0be0de3c0ad3481e179c40bd1efe76f2a1512",
+    "archive_commit": "42110c48d9dcd765daa44f24f5df48c814895f09",
+    "archive_path": ".trellis/tasks/archive/2026-08/08-10-cvn-2-official-module-sdk-frozen-assembly/",
+    "next_gate": "completed; CVN-6 may be planned from accepted CVN-2"
   }
 }

@@ -87,7 +87,7 @@ The graph is dependency-based rather than numeric-order-based. CVN-2 and CVN-3 a
 | CVN-0 | completed and archived | final independent re-review passed; 19 focused and 188 full tests recorded | retained as accepted prerequisite |
 | CVN-1 | completed and archived | final narrow re-review passed; 19 command-internals and 193 full tests recorded | retained as accepted transaction-spine base |
 | Extensibility Reservation Gate | completed and archived | candidate `7c4e852`, acceptance `253d19e`, archive `a4d8cee`; one narrow P2 repaired; final P0/P1/P2=`0/0/0`; task AC `25/25` | retained as accepted GD-0/CVN-2 evolution prerequisite |
-| CVN-2 | targeted planning re-review passed; status `planning` | external audit `f6d4694` P0/P1/P2=`0/1/0` was closed by bounded repair `69f7fad`; common internal base, Core/module branches, exact inheritance/generic/isolation/Core regression, SDK `8/34`, root runtime delta `0`, typecheck/build/full `315/315` all passed; final `0/0/0` | user reviews the result and makes the explicit activation decision; no `task.py start` |
+| CVN-2 | completed and archived | accepted source `e203136`, acceptance `f3d0be0`, archive `42110c4`; final implementation review P0/P1/P2=`0/0/0`; focused `54/54`, full `350/350`, SDK `8/34`, root runtime delta `0` | retained as accepted CVN-6 prerequisite |
 | CVN-3 | completed and archived | independent review passed at `d9500f5` with P0/P1/P2 = `0/0/0`; 22 lifecycle and 233 full tests reproduced; acceptance commit `3691d93` | retained as accepted factory and Measure-lifecycle prerequisite |
 | CVN-4 | completed and archived | final local re-review passed at `b0272e2` with P0/P1/P2 = `0/0/0`; focused `92/92`, full `315/315`; acceptance `7f33e7d` | retained as accepted hierarchy-lifecycle prerequisite |
 | CVN-5 | parent-planned; child not created | waits for accepted CVN-2, CVN-3, CVN-4 and CVN-6 | detailed planning after all four dependencies are accepted |
@@ -104,7 +104,7 @@ Snapshot evidence:
 - CVN-4 final accepted source/test commit: `b0272e2eabd0d222baea12cbaae3e08f9f61bfdd`; local input-validation and rejection-rollback re-review passed with P0/P1/P2 = `0/0/0`; acceptance commit `7f33e7d`.
 - Extensibility Reservation Gate planning commit: `6298d4b`; activation baseline `783f69c`; charter `7c4e852`; acceptance `253d19e`; archive `a4d8cee`; final P0/P1/P2=`0/0/0` after one narrow P2 repair.
 - GD-0 accepted documentation/architecture contract: candidate `451627e`; acceptance `a2b9009`; archive `4580164`; archived-path synchronization `ade7526`; runtime implementation remains separately gated.
-- CVN-2 unified planning base: merge `706802c` with parents `ebd8075` and `7ad1ff1`; planning candidate `73fe18a` passed six-commit ancestry, six Trellis validations, typecheck, build, full `315/315`, CVN-4 source/test equality and zero planning production delta. Detailed planning artifacts are recorded at `2941725`; verification metadata is recorded at `8757097`. Initial review returned `0/2/1`; bounded repair `0c49750` and state/SDK-ownership clarification `83478fe` produced the earlier `0/0/0` result. External targeted audit of `f6d4694` then found one P1 in the GD-0 error inheritance boundary; finding-state commit `e8d5e76` recorded the return, and bounded repair `69f7fad` fixed the internal common base, Core/module derived branches, exact file ownership, and decisive tests. Targeted re-review reproduced ancestry `6/6`, SDK `8/34`, file counts `8/4`, Trellis `9/11`, `3/3`, `0/0`, typecheck, build, full `315/315`, zero production/GD-0 delta, and final P0/P1/P2=`0/0/0`. The child remains `planning`, owns only `CVN-FC-110/111`, has zero production authorization, and has not run `task.py start`.
+- CVN-2 unified planning base: merge `706802c` with parents `ebd8075` and `7ad1ff1`; planning candidate `73fe18a` and its bounded planning repairs established the accepted contract. Production implementation was activated separately and closed four bounded review rounds covering the common error hierarchy, stable local validation primitives and global Stage 1-8 failure precedence. Accepted source/test candidate `e203136` passed final independent implementation review with P0/P1/P2=`0/0/0`, focused `54/54`, full `350/350`, forbidden dependency `3/3`, GD-0, Trellis, protected-path, allowlist and diff gates. Acceptance is `f3d0be0`; archive is `42110c4`. The archived child owns only `CVN-FC-110/111`; CVN-6 remains separately planned and gated.
 
 ## 5. Exact Command Inventory
 
@@ -634,7 +634,7 @@ Creation alone does not authorize source changes. Parent planning status does no
 
 1. CVN-3 and final repaired CVN-4 are independently accepted and archived; no CVN implementation child is active.
 2. The documentation-only Extensibility Reservation Gate is accepted and archived and does not reopen CVN-4.
-3. GD-0 and the reservation gate are accepted; CVN-2 now has one unified planning child at `706802c`, remains `planning`, and owns only `CVN-FC-110/111`.
+3. GD-0, the reservation gate and CVN-2 are accepted and archived; CVN-2 owns only `CVN-FC-110/111` and is the frozen input for CVN-6.
 4. CVN-4 remains the accepted Part/Staff/Voice/Event lifecycle prerequisite; no successor was implicitly activated by its acceptance.
 5. CVN-6 follows accepted CVN-2 and consumes the accepted reservation charter while keeping post-V1 ports deferred.
 6. CVN-5 waits for accepted CVN-2, CVN-3, CVN-4 and CVN-6.
@@ -662,16 +662,15 @@ Accepted children:
 - `.trellis/tasks/archive/2026-08/08-04-cvn-1-command-transaction-registry-spine/`
 - `.trellis/tasks/archive/2026-08/08-04-cvn-3-document-factory-measure-lifecycle/`
 - `.trellis/tasks/archive/2026-08/08-04-cvn-4-part-staff-voice-lifecycle/`
+- `.trellis/tasks/archive/2026-08/08-10-cvn-2-official-module-sdk-frozen-assembly/`
 
 Accepted coordination gates:
 
 - `.trellis/tasks/archive/2026-08/08-09-core-vnext-extensibility-reservation-review/`
 
-Current planning child:
+Current planning child: none.
 
-- `.trellis/tasks/08-10-cvn-2-official-module-sdk-frozen-assembly/`
-
-Active coordination gate at this snapshot: CVN-2 user review and explicit activation decision. Active CVN implementation child: none. Targeted hierarchy re-review is final P0/P1/P2=`0/0/0`; production authorization remains false until the user activates the child.
+Active coordination gate at this snapshot: CVN-6 detailed planning and explicit user activation. Active CVN implementation child: none. CVN-2 is accepted and archived with final P0/P1/P2=`0/0/0`; its catalog remains detached and non-executable until CVN-6 is separately accepted.
 
 GD-0 dependency authority:
 

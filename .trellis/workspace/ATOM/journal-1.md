@@ -557,3 +557,37 @@ Completed the detailed planning-only CVN-2 candidate on the unified accepted bas
 ### Next Steps
 
 - Independent planning review, then explicit user activation decision; CVN-2 remains `planning`.
+
+
+## Session 16: CVN-2 independent acceptance and archive
+
+**Date**: 2026-08-11
+**Task**: CVN-2 independent acceptance and archive
+**Branch**: `codex/cvn-2-official-module-sdk-frozen-assembly`
+
+### Summary
+
+Accepted and archived CVN-2 after final independent P0/P1/P2 0/0/0 review; synchronized the parent roadmap so CVN-6 is the next separately gated child.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e203136a0e6d995d543dbe615be27dc4ca38d6c1` | (see git log) |
+| `f3d0be0de3c0ad3481e179c40bd1efe76f2a1512` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
