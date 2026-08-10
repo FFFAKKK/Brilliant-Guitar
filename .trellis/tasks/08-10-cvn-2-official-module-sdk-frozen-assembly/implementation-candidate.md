@@ -5,9 +5,11 @@
 - Worktree: `E:\desktop\brilliant_ideas\brilliant_guitar\.worktrees\cvn-2-official-module-sdk-frozen-assembly`
 - Branch: `codex/cvn-2-official-module-sdk-frozen-assembly`
 - Activation/base HEAD: `faaf424cf370bbf055ad2cf9862e472a50edc22f`
+- Accepted source/test candidate: `e203136a0e6d995d543dbe615be27dc4ca38d6c1`
 - Task status: `in_progress`
-- Candidate form: uncommitted, repaired and ready for targeted independent re-review
-- Commit/archive/acceptance: not performed
+- Candidate form: committed after the exact reviewed tree passed independent re-review
+- Independent implementation review: PASS, P0/P1/P2=`0/0/0`
+- Archive: pending as the next separate lifecycle action
 
 ## Implemented boundary
 
@@ -67,6 +69,9 @@ every entry that can participate in exact or wrong-owner selection. Regressions
 prove malformed nested contribution data precedes Domain registration identity,
 Core declaration parity, and owner mismatch, in addition to the earlier global
 stage combinations; every path invokes zero callbacks. Targeted independent
-re-review should compare the working tree against base
-`faaf424cf370bbf055ad2cf9862e472a50edc22f` and confirm closure. Commit,
-acceptance metadata and archive remain separate later actions.
+re-review compared the candidate against base
+`faaf424cf370bbf055ad2cf9862e472a50edc22f`, independently reproduced seven
+stage-priority/decoy cases, and passed with P0/P1/P2=`0/0/0`. The exact reviewed
+tree is committed at `e203136a0e6d995d543dbe615be27dc4ca38d6c1`.
+Acceptance metadata is recorded separately; archive remains the next lifecycle
+action.

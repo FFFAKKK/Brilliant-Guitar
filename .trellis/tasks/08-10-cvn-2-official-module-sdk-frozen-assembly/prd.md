@@ -275,27 +275,27 @@ reviews this result and makes the explicit activation decision.
 
 ### Required from a future implementation candidate
 
-- [ ] CVN2-AC011: application root runtime export allowlist and all accepted Core behavior remain equal.
-- [ ] CVN2-AC012: SDK runtime/type export allowlists match `design.md` exactly;
+- [x] CVN2-AC011: application root runtime export allowlist and all accepted Core behavior remain equal.
+- [x] CVN2-AC012: SDK runtime/type export allowlists match `design.md` exactly;
   strict type fixtures prove heterogeneous typed handles, reject crossed
   decoder/consumer pairs, reject mismatched error-base constructor data, and
   prove `ModuleKernelErrorBase<ModuleId, Code>` is assignable through the
   internal `KernelErrorBase<Code>` branch while that base is absent from both
   public entries.
-- [ ] CVN2-AC013: the outer contribution object has exactly nine fields;
+- [x] CVN2-AC013: the outer contribution object has exactly nine fields;
   command/effect members are authentic opaque handles, readable fake or
   cross-instance handles have exact handler-mismatch coverage, and manifests
   carry zero functions.
-- [ ] CVN2-AC014: valid two-module catalog order, input isolation, deep freeze, opaque handle, and private state are proven with callback counts `0`.
-- [ ] CVN2-AC015: every validation stage and failure mapping has a decisive table-driven case; no partial handle/state is observable.
-- [ ] CVN2-AC016: each enforced limit passes at the exact boundary and rejects at boundary+1 with the specified Registry failure.
-- [ ] CVN2-AC017: hostile getters, Proxies, sparse arrays, cycles, extra fields, invalid prototypes, async/generator callback slots, caller mutation, and thrown traps return stable data-only results.
-- [ ] CVN2-AC018: SDK issue/error helpers produce detached frozen issues, tie
+- [x] CVN2-AC014: valid two-module catalog order, input isolation, deep freeze, opaque handle, and private state are proven with callback counts `0`.
+- [x] CVN2-AC015: every validation stage and failure mapping has a decisive table-driven case; no partial handle/state is observable.
+- [x] CVN2-AC016: each enforced limit passes at the exact boundary and rejects at boundary+1 with the specified Registry failure.
+- [x] CVN2-AC017: hostile getters, Proxies, sparse arrays, cycles, extra fields, invalid prototypes, async/generator callback slots, caller mutation, and thrown traps return stable data-only results.
+- [x] CVN2-AC018: SDK issue/error helpers produce detached frozen issues, tie
   generic module/code parameters to constructor data, preserve the exact
   `Error -> KernelErrorBase -> ModuleKernelErrorBase` prototype chain, isolate
   constructor input and returned issue data, and expose no raw `Error` fields.
-- [ ] CVN2-AC019: Core forbidden-dependency scan, GD-0 contract fixtures, typecheck, build, full tests, Trellis validation, and diff check all pass.
-- [ ] CVN2-AC020: source/test changes stay within the file allowlist in `implement.md`, and the final worktree is clean after a path-limited commit.
+- [x] CVN2-AC019: Core forbidden-dependency scan, GD-0 contract fixtures, typecheck, build, full tests, Trellis validation, and diff check all pass.
+- [x] CVN2-AC020: source/test changes stay within the file allowlist in `implement.md`, and the final worktree is clean after a path-limited commit.
 
 ## 7. Activation gate
 
