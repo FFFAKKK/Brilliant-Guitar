@@ -29,6 +29,7 @@
     ".trellis/tasks/08-10-cvn-2-official-module-sdk-frozen-assembly/research/planning-base-audit.md",
     ".trellis/tasks/08-10-cvn-2-official-module-sdk-frozen-assembly/research/current-sdk-catalog-boundary.md",
     ".trellis/tasks/08-10-cvn-2-official-module-sdk-frozen-assembly/research/planning-candidate-self-audit.md",
+    ".trellis/tasks/08-10-cvn-2-official-module-sdk-frozen-assembly/review-candidate.md",
     ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/feature-contract-matrix.md",
     ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-roadmap-and-stage-plan.md",
     ".trellis/tasks/archive/2026-08/07-28-gd-0-guitar-domain-core-transaction-contract/design.md",
@@ -37,9 +38,9 @@
     ".trellis/tasks/archive/2026-08/08-04-cvn-4-part-staff-voice-lifecycle/task.json",
     ".trellis/spec/core-kernel/backend/domain-transaction-integration.md"
   ],
-  "notes": "PLANNING ONLY. Unified base 706802c and detailed PRD/design/operator runbook/context manifests are recorded at 2941725. Self-audit final P0/P1/P2 is 0/0/0. Independent planning review and user activation remain pending; task.py start has not run and production implementation is inactive.",
+  "notes": "PLANNING ONLY / RETURNED FOR BOUNDED REPAIR. Independent review of candidate 8757097 found P0/P1/P2=0/2/1: invariant generic command/effect definitions cannot enter the planned heterogeneous unknown arrays, command decoder input shape is unspecified, and ModuleKernelErrorBase generics are not tied to constructor data. task.py start has not run and production implementation is inactive.",
   "meta": {
-    "planning_stage": "detailed_planning_candidate_ready",
+    "planning_stage": "independent_review_returned_for_bounded_repair",
     "planning_base_commit": "706802c",
     "planning_candidate_commit": "73fe18a10f280146dd341493c1e956d3a8427d32",
     "detailed_planning_artifacts_commit": "2941725",
@@ -63,7 +64,14 @@
     "task_start_run": false,
     "detailed_planning_artifacts_complete": true,
     "planning_self_audit": "passed_final_p0_p1_p2_0_0_0_after_correcting_current25_vs_parent_final28_count",
-    "independent_planning_review": "pending",
+    "independent_planning_review": "initial_return_p0_0_p1_2_p2_1_at_8757097",
+    "planning_review_baseline": "8757097fd6dd3e9464807b9ab091006285a19f2b",
+    "planning_review_report": ".trellis/tasks/08-10-cvn-2-official-module-sdk-frozen-assembly/review-candidate.md",
+    "planning_review_findings_initial": {
+      "P0": 0,
+      "P1": 2,
+      "P2": 1
+    },
     "primary_sdk_entry": "src/core-kernel/module-sdk/index.ts",
     "application_root": "src/core-kernel/index.ts",
     "application_runtime_exports_change": "none",
@@ -105,6 +113,6 @@
       "src/core-kernel/registry/strict-codec.ts"
     ],
     "planning_base_verification": "passed_ancestry6_trellis6_typecheck_build_full315_clean_source_test_equal_cvn4_planning_production_delta0",
-    "next_gate": "independent_planning_review_then_user_activation_decision"
+    "next_gate": "bounded_planning_repair_then_independent_re_review"
   }
 }
