@@ -53,7 +53,7 @@
     ".trellis/spec/core-kernel/backend/errors-reports.md",
     ".trellis/spec/core-kernel/backend/domain-transaction-integration.md"
   ],
-  "notes": "PLANNING COORDINATION / CVN-0 CVN-1 CVN-3 FINAL CVN-4 EXTENSIBILITY RESERVATION AND GD-0 DOCUMENTATION CONTRACT ACCEPTED / CVN-2 DETAILED PLANNING CANDIDATE PREPARED ON UNIFIED BASE 706802c, SELF-AUDIT FINAL P0/P1/P2 0/0/0, AND REMAINS PLANNING / INDEPENDENT PLANNING REVIEW AND USER ACTIVATION ARE NEXT / CVN-5 STILL WAITS FOR ACCEPTED CVN-2 AND CVN-6 / 28-COMMAND FINITE CATALOG / STABILITY FIRST / HOT PLUG EXCLUDED.",
+  "notes": "PLANNING COORDINATION / CVN-0 CVN-1 CVN-3 FINAL CVN-4 EXTENSIBILITY RESERVATION AND GD-0 DOCUMENTATION CONTRACT ACCEPTED / CVN-2 DETAILED PLANNING ARTIFACTS AT 2941725 ON UNIFIED BASE 706802c, SELF-AUDIT FINAL P0/P1/P2 0/0/0, AND REMAINS PLANNING / INDEPENDENT PLANNING REVIEW AND USER ACTIVATION ARE NEXT / CVN-5 STILL WAITS FOR ACCEPTED CVN-2 AND CVN-6 / 28-COMMAND FINITE CATALOG / STABILITY FIRST / HOT PLUG EXCLUDED.",
   "meta": {
     "compatibility_base": "d92a7586536ac8757c318ae6f75aabd8698f85ac",
     "architecture_style": "stability_first_startup_frozen_microkernel",
@@ -62,6 +62,7 @@
     "qualification_scale": "balanced_25600_event_release_gate_plus_102400_event_stress_gate",
     "legacy_gate_mapping": "ck1_1_0_to_cvn0_ck1_1_1_to_cvn2_generic_gd2_to_cvn1_cvn5_cvn6",
     "planning_review": "cvn2_detailed_candidate_self_audit_passed_independent_review_pending",
+    "cvn2_detailed_planning_artifacts_commit": "2941725",
     "vnext_total_core_commands": 28,
     "vnext_new_core_commands": 22,
     "batch_child_limit": 100,

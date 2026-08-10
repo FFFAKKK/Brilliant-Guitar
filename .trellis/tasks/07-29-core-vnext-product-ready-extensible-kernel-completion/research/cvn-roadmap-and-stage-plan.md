@@ -104,7 +104,7 @@ Snapshot evidence:
 - CVN-4 final accepted source/test commit: `b0272e2eabd0d222baea12cbaae3e08f9f61bfdd`; local input-validation and rejection-rollback re-review passed with P0/P1/P2 = `0/0/0`; acceptance commit `7f33e7d`.
 - Extensibility Reservation Gate planning commit: `6298d4b`; activation baseline `783f69c`; charter `7c4e852`; acceptance `253d19e`; archive `a4d8cee`; final P0/P1/P2=`0/0/0` after one narrow P2 repair.
 - GD-0 accepted documentation/architecture contract: candidate `451627e`; acceptance `a2b9009`; archive `4580164`; archived-path synchronization `ade7526`; runtime implementation remains separately gated.
-- CVN-2 unified planning base: merge `706802c` with parents `ebd8075` and `7ad1ff1`; planning candidate `73fe18a` passed six-commit ancestry, six Trellis validations, typecheck, build, full `315/315`, CVN-4 source/test equality and zero planning production delta. The child `.trellis/tasks/08-10-cvn-2-official-module-sdk-frozen-assembly/` now also contains a detailed PRD, exact SDK/catalog design, staged operator runbook, and curated context manifests; it remains `planning`, owns only `CVN-FC-110/111`, and has not run `task.py start`.
+- CVN-2 unified planning base: merge `706802c` with parents `ebd8075` and `7ad1ff1`; planning candidate `73fe18a` passed six-commit ancestry, six Trellis validations, typecheck, build, full `315/315`, CVN-4 source/test equality and zero planning production delta. Detailed planning artifacts are recorded at `2941725`: PRD, exact SDK/catalog design, staged operator runbook, curated context manifests, and final self-audit P0/P1/P2=`0/0/0`. The child remains `planning`, owns only `CVN-FC-110/111`, and has not run `task.py start`.
 
 ## 5. Exact Command Inventory
 

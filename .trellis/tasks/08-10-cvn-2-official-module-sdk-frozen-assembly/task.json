@@ -37,11 +37,12 @@
     ".trellis/tasks/archive/2026-08/08-04-cvn-4-part-staff-voice-lifecycle/task.json",
     ".trellis/spec/core-kernel/backend/domain-transaction-integration.md"
   ],
-  "notes": "PLANNING ONLY. Unified base 706802c and detailed PRD/design/operator runbook/context manifests are prepared. Independent planning review and user activation remain pending; task.py start has not run and production implementation is inactive.",
+  "notes": "PLANNING ONLY. Unified base 706802c and detailed PRD/design/operator runbook/context manifests are recorded at 2941725. Self-audit final P0/P1/P2 is 0/0/0. Independent planning review and user activation remain pending; task.py start has not run and production implementation is inactive.",
   "meta": {
     "planning_stage": "detailed_planning_candidate_ready",
     "planning_base_commit": "706802c",
     "planning_candidate_commit": "73fe18a10f280146dd341493c1e956d3a8427d32",
+    "detailed_planning_artifacts_commit": "2941725",
     "planning_base_parent_gd0": "ebd8075ae79c2fd82f93c75f9c02f83bc878bfef",
     "planning_base_parent_cvn4": "7ad1ff1108b86e0b8a70551b1a378a1c6caf48ca",
     "required_accepted_commits": [

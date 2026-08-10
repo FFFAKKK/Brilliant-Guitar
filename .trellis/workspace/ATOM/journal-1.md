@@ -513,3 +513,47 @@ Merged final CVN-4 repair with accepted extensibility and GD-0 lines, created th
 ### Next Steps
 
 - None - task complete
+
+
+## Session 15: CVN-2 detailed SDK and catalog planning candidate
+
+**Date**: 2026-08-10
+**Task**: CVN-2 detailed SDK and catalog planning candidate
+**Branch**: `codex/cvn-2-official-module-sdk-frozen-assembly`
+
+### Summary
+
+Completed the detailed planning-only CVN-2 candidate on the unified accepted baseline, with exact SDK/catalog contracts and final self-audit P0/P1/P2=0/0/0; independent planning review and user activation remain next.
+
+### Main Changes
+
+- Rewrote the CVN-2 PRD around exact CVN-FC-110/111 ownership and capability value.
+- Added the separate SDK entry/export allowlists, exact TypeScript data/callback contracts, eight-stage catalog validation, failure mapping, resource limits, neutral fixtures, file allowlist, rollback, and stop conditions.
+- Curated 8 implementation and 9 review context entries and synchronized the parent roadmap.
+- Self-audit corrected current 25 versus parent-final 28 Core command wording; final P0/P1/P2=0/0/0.
+- Kept task status planning, implementation authorization false, task.py start false, and production delta zero.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2941725` | (see git log) |
+
+### Testing
+
+- [OK] child, Core VNext parent, and product parent Trellis validation
+- [OK] JSON duplicate-key/path/context/owner/ABI/limit/fence static audit
+- [OK] GD-0 Layer A: 6 archived + 1 active fence, 0 diagnostics
+- [OK] GD-0 Layer B real-Core no-emit compile
+- [OK] `npm.cmd run typecheck`
+- [OK] `npm.cmd test`: 315/315
+- [OK] `git diff --check` and zero `src/**`/`test/**`/package/tsconfig delta
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- Independent planning review, then explicit user activation decision; CVN-2 remains `planning`.
