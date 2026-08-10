@@ -78,7 +78,7 @@ CVN-0 + CVN-1 + CVN-2 + CVN-3 + CVN-4 + CVN-5 + CVN-6
     -> optional post-CVN-7 extension gates when product evidence justifies them
 ```
 
-The graph is dependency-based rather than numeric-order-based. CVN-2 and CVN-3 are sibling tracks after CVN-1. CVN-2 waits for independent GD-0 acceptance and acceptance of the documentation-only Extensibility Reservation Gate; CVN-3 is Core-only and proceeded without GD-0. CVN-4 follows CVN-3 and is accepted. CVN-6 follows CVN-2 and consumes the accepted reservation charter without implementing its post-V1 gates. CVN-5 joins the two tracks. CVN-7 closes the finite Core VNext system; later extension gates remain separate product decisions rather than hidden VNext completion work.
+The graph is dependency-based rather than numeric-order-based. CVN-2 and CVN-3 are sibling tracks after CVN-1. CVN-2 eligibility depended on independent GD-0 acceptance and acceptance of the documentation-only Extensibility Reservation Gate; both are now satisfied on the unified planning line. CVN-3 is Core-only and proceeded without GD-0. Final repaired CVN-4 follows CVN-3 and is accepted. CVN-6 follows accepted CVN-2 and consumes the accepted reservation charter without implementing its post-V1 gates. CVN-5 joins the two tracks. CVN-7 closes the finite Core VNext system; later extension gates remain separate product decisions rather than hidden VNext completion work.
 
 ## 4. Live Status Snapshot
 
@@ -87,7 +87,7 @@ The graph is dependency-based rather than numeric-order-based. CVN-2 and CVN-3 a
 | CVN-0 | completed and archived | final independent re-review passed; 19 focused and 188 full tests recorded | retained as accepted prerequisite |
 | CVN-1 | completed and archived | final narrow re-review passed; 19 command-internals and 193 full tests recorded | retained as accepted transaction-spine base |
 | Extensibility Reservation Gate | completed and archived | candidate `7c4e852`, acceptance `253d19e`, archive `a4d8cee`; one narrow P2 repaired; final P0/P1/P2=`0/0/0`; task AC `25/25` | retained as accepted GD-0/CVN-2 evolution prerequisite |
-| CVN-2 | parent-planned; child not created | CVN-1, Extensibility Reservation Gate, and GD-0 documentation contract accepted | create detailed child only after separate user planning approval |
+| CVN-2 | child created; status `planning` | unified base `706802c` contains final CVN-4, accepted Extensibility Reservation charter, accepted/archived GD-0, and accepted CVN-1 ancestry; primary owners are only `CVN-FC-110/111` | complete detailed PRD/design/implement/context manifests and independent planning review before any activation |
 | CVN-3 | completed and archived | independent review passed at `d9500f5` with P0/P1/P2 = `0/0/0`; 22 lifecycle and 233 full tests reproduced; acceptance commit `3691d93` | retained as accepted factory and Measure-lifecycle prerequisite |
 | CVN-4 | completed and archived | final local re-review passed at `b0272e2` with P0/P1/P2 = `0/0/0`; focused `92/92`, full `315/315`; acceptance `7f33e7d` | retained as accepted hierarchy-lifecycle prerequisite |
 | CVN-5 | parent-planned; child not created | waits for accepted CVN-2, CVN-3, CVN-4 and CVN-6 | detailed planning after all four dependencies are accepted |
@@ -104,6 +104,7 @@ Snapshot evidence:
 - CVN-4 final accepted source/test commit: `b0272e2eabd0d222baea12cbaae3e08f9f61bfdd`; local input-validation and rejection-rollback re-review passed with P0/P1/P2 = `0/0/0`; acceptance commit `7f33e7d`.
 - Extensibility Reservation Gate planning commit: `6298d4b`; activation baseline `783f69c`; charter `7c4e852`; acceptance `253d19e`; archive `a4d8cee`; final P0/P1/P2=`0/0/0` after one narrow P2 repair.
 - GD-0 accepted documentation/architecture contract: candidate `451627e`; acceptance `a2b9009`; archive `4580164`; archived-path synchronization `ade7526`; runtime implementation remains separately gated.
+- CVN-2 unified planning base: merge `706802c` with parents `ebd8075` and `7ad1ff1`; child `.trellis/tasks/08-10-cvn-2-official-module-sdk-frozen-assembly/` remains `planning` and owns only `CVN-FC-110/111`.
 
 ## 5. Exact Command Inventory
 
@@ -272,6 +273,8 @@ Any construction failure produces zero active integrated session. No partially a
 10. enforce limits, data-only failure privacy and deep freeze;
 11. prove absence of ready-state mutation APIs;
 12. run full Core compatibility tests and independent review.
+
+Current checkpoint: stages 1-3 are complete at planning base `706802c`. Stages 4-6 belong to detailed planning; stages 7-12 remain inactive until planning review and explicit execution approval.
 
 ### Explicit exclusions
 
@@ -629,9 +632,9 @@ Creation alone does not authorize source changes. Parent planning status does no
 
 ## 17. Current Scheduling Decisions
 
-1. CVN-3 and CVN-4 are independently accepted and archived; no CVN implementation child is active.
+1. CVN-3 and final repaired CVN-4 are independently accepted and archived; no CVN implementation child is active.
 2. The documentation-only Extensibility Reservation Gate is accepted and archived and does not reopen CVN-4.
-3. CVN-2 becomes eligible only after independent GD-0 acceptance and separate user planning approval; reservation-gate dependency is satisfied.
+3. GD-0 and the reservation gate are accepted; CVN-2 now has one unified planning child at `706802c`, remains `planning`, and owns only `CVN-FC-110/111`.
 4. CVN-4 remains the accepted Part/Staff/Voice/Event lifecycle prerequisite; no successor was implicitly activated by its acceptance.
 5. CVN-6 follows accepted CVN-2 and consumes the accepted reservation charter while keeping post-V1 ports deferred.
 6. CVN-5 waits for accepted CVN-2, CVN-3, CVN-4 and CVN-6.
@@ -664,12 +667,16 @@ Accepted coordination gates:
 
 - `.trellis/tasks/archive/2026-08/08-09-core-vnext-extensibility-reservation-review/`
 
-Active coordination gate at this snapshot: none. Active CVN implementation child: none. The next dependency gate is independent GD-0 acceptance.
+Current planning child:
+
+- `.trellis/tasks/08-10-cvn-2-official-module-sdk-frozen-assembly/`
+
+Active coordination gate at this snapshot: none. Active CVN implementation child: none. The next gate is CVN-2 detailed planning plus independent planning review.
 
 GD-0 dependency authority:
 
-- `.trellis/tasks/07-28-gd-0-guitar-domain-core-transaction-contract/task.json`
-- `.trellis/tasks/07-28-gd-0-guitar-domain-core-transaction-contract/design.md`
+- `.trellis/tasks/archive/2026-08/07-28-gd-0-guitar-domain-core-transaction-contract/task.json`
+- `.trellis/tasks/archive/2026-08/07-28-gd-0-guitar-domain-core-transaction-contract/design.md`
 - `.trellis/spec/core-kernel/backend/domain-transaction-integration.md`
 
 ## 19. Maintenance Rules

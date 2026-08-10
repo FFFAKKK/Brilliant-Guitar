@@ -23,7 +23,8 @@
     "08-04-cvn-1-command-transaction-registry-spine",
     "08-04-cvn-3-document-factory-measure-lifecycle",
     "08-04-cvn-4-part-staff-voice-lifecycle",
-    "08-09-core-vnext-extensibility-reservation-review"
+    "08-09-core-vnext-extensibility-reservation-review",
+    "08-10-cvn-2-official-module-sdk-frozen-assembly"
   ],
   "parent": "06-29-commercial-guitar-tablature-product",
   "relatedFiles": [
@@ -31,6 +32,7 @@
     ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/design.md",
     ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/implement.md",
     ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-roadmap-and-stage-plan.md",
+    ".trellis/tasks/08-10-cvn-2-official-module-sdk-frozen-assembly/",
     ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-4-part-staff-voice-preplanning.md",
     ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-4-current-hierarchy-evidence.md",
     ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/feature-contract-matrix.md",
@@ -51,7 +53,7 @@
     ".trellis/spec/core-kernel/backend/errors-reports.md",
     ".trellis/spec/core-kernel/backend/domain-transaction-integration.md"
   ],
-  "notes": "PLANNING COORDINATION / CVN-0 CVN-1 CVN-3 CVN-4 EXTENSIBILITY RESERVATION AND GD-0 DOCUMENTATION CONTRACT ACCEPTED / NEXT GATE IS SEPARATELY APPROVED CVN-2 PLANNING / CVN-5 STILL WAITS FOR CVN-2 AND CVN-6 / 28-COMMAND FINITE CATALOG / STABILITY FIRST / HOT PLUG EXCLUDED.",
+  "notes": "PLANNING COORDINATION / CVN-0 CVN-1 CVN-3 FINAL CVN-4 EXTENSIBILITY RESERVATION AND GD-0 DOCUMENTATION CONTRACT ACCEPTED / CVN-2 CHILD CREATED ON UNIFIED BASE 706802c AND REMAINS PLANNING / DETAILED CVN-2 PLANNING REVIEW IS NEXT / CVN-5 STILL WAITS FOR ACCEPTED CVN-2 AND CVN-6 / 28-COMMAND FINITE CATALOG / STABILITY FIRST / HOT PLUG EXCLUDED.",
   "meta": {
     "compatibility_base": "d92a7586536ac8757c318ae6f75aabd8698f85ac",
     "architecture_style": "stability_first_startup_frozen_microkernel",
@@ -59,13 +61,13 @@
     "refactor_strategy": "behavior_preserving_command_transaction_registry_spine",
     "qualification_scale": "balanced_25600_event_release_gate_plus_102400_event_stress_gate",
     "legacy_gate_mapping": "ck1_1_0_to_cvn0_ck1_1_1_to_cvn2_generic_gd2_to_cvn1_cvn5_cvn6",
-    "planning_review": "approved_coordination_baseline_gd0_ownership_sync_accepted",
+    "planning_review": "unified_cvn2_planning_base_prepared_detailed_review_pending",
     "vnext_total_core_commands": 28,
     "vnext_new_core_commands": 22,
     "batch_child_limit": 100,
     "transaction_effect_limit": 131072,
     "durable_roadmap": ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-roadmap-and-stage-plan.md",
-    "durable_roadmap_last_synchronized": "2026-08-09",
+    "durable_roadmap_last_synchronized": "2026-08-10",
     "extensibility_reservation_task": "08-09-core-vnext-extensibility-reservation-review",
     "extensibility_reservation_status": "completed_archived",
     "extensibility_reservation_branch": "codex/core-vnext-extensibility-reservation-review",
@@ -84,7 +86,19 @@
     "extensibility_reservation_acceptance_commit": "253d19e5e9d6a3bfdfa0158833d59872e8be156c",
     "extensibility_reservation_archive_commit": "a4d8cee406e8aa9a6efa05f4e24a8707367dc7b8",
     "extensibility_reservation_archive_path": ".trellis/tasks/archive/2026-08/08-09-core-vnext-extensibility-reservation-review/",
-    "next_dependency_gate": "separately-approved-cvn-2-planning",
+    "next_dependency_gate": "cvn2-detailed-planning-and-independent-planning-review",
+    "cvn2_task": "08-10-cvn-2-official-module-sdk-frozen-assembly",
+    "cvn2_status": "planning",
+    "cvn2_branch": "codex/cvn-2-official-module-sdk-frozen-assembly",
+    "cvn2_worktree_path": ".worktrees/cvn-2-official-module-sdk-frozen-assembly",
+    "cvn2_planning_base_commit": "706802c",
+    "cvn2_primary_contracts": [
+      "CVN-FC-110",
+      "CVN-FC-111"
+    ],
+    "cvn2_runtime_integration_excluded_owner": "CVN-6",
+    "cvn2_future_extension_ports": "excluded_and_separately_gated",
+    "cvn2_production_implementation_authorized": false,
     "gd0_status": "completed_archived",
     "gd0_accepted_baseline": "451627e605695c95ecdc85e32bd471fcc81885c4",
     "gd0_independent_review_findings": "P0_0_P1_0_P2_0_after_one_p1_mapping_repair",
