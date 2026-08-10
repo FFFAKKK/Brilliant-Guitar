@@ -74,11 +74,17 @@ CVN-2 + CVN-3 + CVN-4 + CVN-6
 
 CVN-0 + CVN-1 + CVN-2 + CVN-3 + CVN-4 + CVN-5 + CVN-6
     -> CVN-7
-    -> resume Guitar-owned roadmap planning
-    -> optional post-CVN-7 extension gates when product evidence justifies them
+    -> close the finite generic Core VNext
+    -> Official Guitar Domain V1
+    -> official product services + Desktop/Workbench host
+    -> Guitar Core Loop + product release qualification
+    -> public visual/functional plugin planning
+
+concrete post-CVN-7 evidence
+    -> optional versioned Core/Host evolution gates when required
 ```
 
-The graph is dependency-based rather than numeric-order-based. CVN-2 and CVN-3 are sibling tracks after CVN-1. CVN-2 eligibility depended on independent GD-0 acceptance and acceptance of the documentation-only Extensibility Reservation Gate; both are now satisfied on the unified planning line. CVN-3 is Core-only and proceeded without GD-0. Final repaired CVN-4 follows CVN-3 and is accepted. CVN-6 follows accepted CVN-2 and consumes the accepted reservation charter without implementing its post-V1 gates. CVN-5 joins the two tracks. CVN-7 closes the finite Core VNext system; later extension gates remain separate product decisions rather than hidden VNext completion work.
+The graph is dependency-based rather than numeric-order-based. CVN-2 and CVN-3 are sibling tracks after CVN-1. CVN-2 eligibility depended on independent GD-0 acceptance and acceptance of the documentation-only Extensibility Reservation Gate; both are now satisfied on the unified planning line. CVN-3 is Core-only and proceeded without GD-0. Final repaired CVN-4 follows CVN-3 and is accepted. CVN-6 follows accepted CVN-2 and consumes the accepted reservation charter without implementing its post-V1 gates. CVN-5 joins the two tracks. CVN-7 closes the finite Core VNext system. The mandatory product exit then begins with Official Guitar Domain and independently gated official product services; evidence-triggered Core/Host evolution gates remain separate decisions rather than hidden VNext completion work.
 
 ## 4. Live Status Snapshot
 
@@ -580,7 +586,21 @@ Reference Windows P95 budgets:
 
 Final evidence must prove the exact 28-command catalog, complete FC traceability, compatibility and budgets. The kernel then becomes a measurable product foundation rather than a collection of individually passing features.
 
-## 14. Post-CVN-7 Future Extension Gate Index
+## 14. Post-CVN-7 Product Program and Future Extension Gate Index
+
+### 14.1 Mandatory product-program exit
+
+CVN-7 acceptance closes the generic Core seam and hands coordination to `.trellis/tasks/08-11-post-core-official-plugin-product-roadmap/`. That planning-only parent fixes the next sequence without activating it early:
+
+1. Official Guitar Domain V1;
+2. official `.bgp`/Persistence, Layout, SVG Renderer, Playback, Workbench/Editor Session and PDF/PNG Export tasks;
+3. Guitar Core Loop integration;
+4. product release qualification;
+5. public visual and functional plugin planning.
+
+Every item remains an independently created, planned, approved, reviewed and archived child. The first child is created only after CVN-0 through CVN-7 are accepted and archived plus explicit user approval. Product services stay outside Core, and the parent itself is not an implementation target.
+
+### 14.2 Evidence-triggered version gates
 
 These entries are versioned reservation targets, not Core VNext completion work and not current runtime claims. Create one dedicated parent-reviewed child only when a concrete product scenario, owner, resource budget and compatibility fixture exist.
 
@@ -641,6 +661,8 @@ Creation alone does not authorize source changes. Parent planning status does no
 7. CVN-7 waits for accepted and archived CVN-0 through CVN-6.
 8. Guitar-owned planning resumes only after CVN-7 closes the generic Core seam.
 9. Operation expansion, Domain Selectors, schema/owner evolution, Module Package Host and external adapters enter only through separate post-CVN-7 gates when concrete product evidence exists.
+10. The mandatory post-CVN-7 product-program authority is `.trellis/tasks/08-11-post-core-official-plugin-product-roadmap/`; its first future implementation child is Official Guitar Domain V1.
+11. Official product services and Desktop/Workbench remain outside Core; public visual/functional plugin work follows the official product loop and product release qualification.
 
 ## 18. Durable File Index
 
@@ -679,9 +701,17 @@ GD-0 dependency authority:
 - `.trellis/tasks/archive/2026-08/07-28-gd-0-guitar-domain-core-transaction-contract/design.md`
 - `.trellis/spec/core-kernel/backend/domain-transaction-integration.md`
 
+Post-Core product-program authority:
+
+- `.trellis/tasks/08-11-post-core-official-plugin-product-roadmap/task.json`
+- `.trellis/tasks/08-11-post-core-official-plugin-product-roadmap/prd.md`
+- `.trellis/tasks/08-11-post-core-official-plugin-product-roadmap/design.md`
+- `.trellis/tasks/08-11-post-core-official-plugin-product-roadmap/implement.md`
+- `.trellis/tasks/08-11-post-core-official-plugin-product-roadmap/operator-handoff.md`
+
 ## 19. Maintenance Rules
 
-Update this file when a child or reservation gate is created, activated, accepted or archived; when a dependency changes through parent review; when an exact command allocation, FC owner, limit, fixture or budget changes; when a reserved port is adopted into a version lane; or when the active-child pointer materially changes.
+Update this file when a child or reservation gate is created, activated, accepted or archived; when a dependency changes through parent review; when an exact command allocation, FC owner, limit, fixture or budget changes; when a reserved port is adopted into a version lane; when the active-child pointer materially changes; or when CVN-7 hands control to the accepted post-Core product-program parent.
 
 For a status-only update:
 

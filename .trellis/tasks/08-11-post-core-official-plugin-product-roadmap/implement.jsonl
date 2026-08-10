@@ -1,0 +1,15 @@
+{"file":".trellis/tasks/06-29-commercial-guitar-tablature-product/prd.md","reason":"固定商业级吉他打谱产品目标、产品范围与交付顺序。"}
+{"file":".trellis/tasks/06-29-commercial-guitar-tablature-product/requirements/REQ-007-extension-system.md","reason":"约束官方与公共扩展系统的长期能力目标。"}
+{"file":".trellis/tasks/06-29-commercial-guitar-tablature-product/requirements/REQ-011-mvp-first-stage-scope.md","reason":"定义 Guitar Core Loop 的首个产品纵向闭环。"}
+{"file":".trellis/tasks/06-29-commercial-guitar-tablature-product/requirements/REQ-015-commercial-quality-attributes.md","reason":"提供商业级性能、稳定性、兼容性与交付质量基线。"}
+{"file":".trellis/tasks/06-29-commercial-guitar-tablature-product/requirements/REQ-017-kernel-module-communication.md","reason":"约束 command、snapshot 与 event 的内核通信边界。"}
+{"file":".trellis/tasks/06-29-commercial-guitar-tablature-product/requirements/REQ-018-kernel-registry-capability.md","reason":"约束 Registry、能力声明与应用装配关系。"}
+{"file":".trellis/tasks/06-29-commercial-guitar-tablature-product/requirements/REQ-019-kernel-errors-diagnostics-reports.md","reason":"约束错误、诊断与报告的统一产品可观测合同。"}
+{"file":".trellis/tasks/06-29-commercial-guitar-tablature-product/technical/microkernel-architecture.md","reason":"保持微内核职责、模块边界和依赖方向一致。"}
+{"file":".trellis/tasks/06-29-commercial-guitar-tablature-product/technical/modular-plugin-architecture.md","reason":"保持模块化插件架构与产品层装配方向一致。"}
+{"file":".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-roadmap-and-stage-plan.md","reason":"确认 CVN-0 至 CVN-7 的有限内核完成线与 post-CVN-7 出口。"}
+{"file":".trellis/tasks/archive/2026-08/08-09-core-vnext-extensibility-reservation-review/research/reservation-decision-matrix.md","reason":"复用已接受的扩展性预留决策和延期门槛。"}
+{"file":".trellis/tasks/archive/2026-08/07-28-gd-0-guitar-domain-core-transaction-contract/design.md","reason":"复用已接受的 Guitar Domain 合同和错误继承边界。"}
+{"file":".trellis/spec/core-kernel/backend/index.md","reason":"作为当前 Core Kernel 规范入口和实施前检查索引。"}
+{"file":".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/research/current-authority-and-gap-audit.md","reason":"区分已接受、候选与未来状态并锁定产品差距。"}
+{"file":".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/research/official-plugin-product-dependency-map.md","reason":"锁定官方插件、产品服务、宿主与公共插件的依赖顺序。"}

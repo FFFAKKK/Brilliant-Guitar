@@ -9,6 +9,7 @@
 - 文档策略: 每个需求先写独立文档，最终再合并为收敛后的 PRD。
 - 当前 Core 基线: K1-1 已在 `30894e2` 正式验收；K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 正式验收并通过 102/102 测试；`.trellis/spec/core-kernel/` 是活动代码契约。本文较早的决策记录若与其冲突，以活动规范与独立 Block 任务为准。
 - 当前交付状态: K1-2～K1-6 已完成独立验收并归档，Pure Core Kernel V1 已关闭。Core VNext 的 CVN-0、CVN-1、CVN-3、CVN-4、扩展性预留门禁与 GD-0 文档/架构合同均已通过独立验收；当前规范化回归为 312/312。CVN-2 现为下一个依赖满足的规划门，但仍需单独批准；CVN-5、CVN-6、CVN-7 以及 Guitar Domain 生产实现均未由本状态记录激活。
+- Post-Core 路线状态: `.trellis/tasks/08-11-post-core-official-plugin-product-roadmap/` 已作为 planning-only 父任务建立；它等待 CVN-0～CVN-7 全部独立验收归档，不构成任何官方插件、产品宿主或公共插件生产授权。
 
 ## 产品目标
 
@@ -17,6 +18,19 @@
 一句话目标:
 
 > 为严肃吉他手、教师、编曲者和内容创作者提供一个高效率、可扩展、可长期维护的开源吉他谱创作与练习平台。
+
+## 固定交付顺序
+
+项目按以下顺序推进：
+
+`完整 Core VNext → 官方 Guitar Domain 与官方产品服务模块 → Desktop/Workbench 产品宿主与 Guitar Core Loop → 产品发布资格门 → 公共视觉与功能插件生态`
+
+- 内核扩展性属于 Core 完成定义；CVN-2/6/5/7 先完成官方模块 SDK、统一运行时、范围/batch 和最终资格门。
+- CVN-7 关闭有限通用 Core 后，第一个 post-Core 实现任务固定为官方 Guitar Domain。
+- Layout、Renderer、Playback、Persistence、Export 作为独立官方产品服务模块消费 Core/Guitar 合同。
+- Desktop Shell、Workbench 与 Editor Session 负责产品装配和用户体验，不形成第二套谱面事务或真相。
+- 公共视觉与功能插件在官方插件、Guitar Core Loop 和产品资格门形成真实合同证据后再独立规划。
+- 详细依赖、停线条件和操作者交接由 `.trellis/tasks/08-11-post-core-official-plugin-product-roadmap/` 持有。
 
 ## 已确认事实
 

@@ -1,0 +1,16 @@
+{"file":".trellis/tasks/06-29-commercial-guitar-tablature-product/prd.md","reason":"核验固定交付顺序、产品目标和父子任务引用。"}
+{"file":".trellis/tasks/06-29-commercial-guitar-tablature-product/requirements/REQ-007-extension-system.md","reason":"核验路线最终覆盖视觉与功能插件且未提前进入 CVN。"}
+{"file":".trellis/tasks/06-29-commercial-guitar-tablature-product/requirements/REQ-011-mvp-first-stage-scope.md","reason":"核验 Guitar Core Loop 的阶段覆盖和用户收益。"}
+{"file":".trellis/tasks/06-29-commercial-guitar-tablature-product/requirements/REQ-015-commercial-quality-attributes.md","reason":"核验产品资格门覆盖性能、稳定性和商业级交付。"}
+{"file":".trellis/tasks/06-29-commercial-guitar-tablature-product/requirements/REQ-017-kernel-module-communication.md","reason":"核验跨层数据流没有绕过 command、snapshot 与 event 合同。"}
+{"file":".trellis/tasks/06-29-commercial-guitar-tablature-product/requirements/REQ-018-kernel-registry-capability.md","reason":"核验宿主装配与内核 Registry 职责没有重叠。"}
+{"file":".trellis/tasks/06-29-commercial-guitar-tablature-product/requirements/REQ-019-kernel-errors-diagnostics-reports.md","reason":"核验后续服务和宿主保留统一错误与报告边界。"}
+{"file":".trellis/tasks/06-29-commercial-guitar-tablature-product/technical/microkernel-architecture.md","reason":"核验五层架构没有把产品服务重新塞回内核。"}
+{"file":".trellis/tasks/06-29-commercial-guitar-tablature-product/technical/modular-plugin-architecture.md","reason":"核验官方和第三方插件最终共享版本化贡献合同。"}
+{"file":".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-roadmap-and-stage-plan.md","reason":"核验 CVN-7 关闭 Core 且 post-Core 出口唯一明确。"}
+{"file":".trellis/tasks/archive/2026-08/08-09-core-vnext-extensibility-reservation-review/research/reservation-decision-matrix.md","reason":"核验未来扩展端口仍由证据门触发而非路线预实现。"}
+{"file":".trellis/tasks/archive/2026-08/07-28-gd-0-guitar-domain-core-transaction-contract/design.md","reason":"核验首个官方 Guitar Domain 子任务复用既有权威合同。"}
+{"file":".trellis/spec/core-kernel/backend/index.md","reason":"核验当前 Core 规范引用完整且没有生产层漂移。"}
+{"file":".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/research/current-authority-and-gap-audit.md","reason":"核验状态、差距、停线条件和交接边界。"}
+{"file":".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/research/official-plugin-product-dependency-map.md","reason":"核验每个未来阶段的依赖、进入条件、退出条件和用户收益。"}
+{"file":".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/research/roadmap-sync-matrix.md","reason":"核验现有路线文档同步范围与未修改边界。"}
