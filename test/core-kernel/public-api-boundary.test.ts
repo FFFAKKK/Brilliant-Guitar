@@ -15,6 +15,7 @@ import type {
   KernelModuleIdentity,
   KernelModuleOrigin,
   KernelModuleRuntime,
+  KernelIntegratedCatalog,
   KernelIssue,
   KernelReport,
   KernelRegistryAccessFailure,
@@ -30,6 +31,9 @@ import type {
   RegistrySummary,
   MigrationReport,
   MigrationResult,
+  ExtensionRuntimeRequirementV1,
+  ModuleIssueCode,
+  ModuleKernelIssue,
 } from "../../src/core-kernel/index";
 
 type PublicRegistryTypeBoundary = readonly [
@@ -58,6 +62,10 @@ type PublicRegistryTypeBoundary = readonly [
   KernelReport,
   MigrationReport,
   MigrationResult,
+  ExtensionRuntimeRequirementV1,
+  KernelIntegratedCatalog,
+  ModuleIssueCode,
+  ModuleKernelIssue,
 ];
 
 test("Core exports only formal production APIs and no retired test vocabulary", () => {
@@ -169,6 +177,16 @@ test("Core exports only formal production APIs and no retired test vocabulary", 
     "ImporterContribution",
     "ExporterContribution",
     "TemplateContribution",
+    "OFFICIAL_MODULE_SDK_V1_LIMITS",
+    "ModuleKernelErrorBase",
+    "createModuleKernelIssueV1",
+    "defineDomainCommandV1",
+    "defineModuleEffectV1",
+    "defineDomainCommandContributionV1",
+    "defineDomainCommandRegistrationEntryV1",
+    "compileOfficialModuleCatalogV1",
+    "getKernelIntegratedCatalogState",
+    "KernelErrorBase",
   ];
   forbidden.forEach((name) => assert.equal(name in coreKernel, false));
 

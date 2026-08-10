@@ -12,6 +12,7 @@ import {
   messageKeyForKernelIssueCode,
   severityForKernelIssueCode,
 } from "./classification";
+import { KernelErrorBase } from "./kernel-error-base";
 
 type OperationIssueCode = Exclude<
   KernelIssueCode,
@@ -29,8 +30,8 @@ function cloneAndFreeze<T>(value: T): T {
   return deepFreezeValue(structuredClone(value));
 }
 
-abstract class KernelError<Code extends KernelIssueCode> extends Error {
-  readonly code: Code;
+abstract class KernelError<Code extends KernelIssueCode>
+  extends KernelErrorBase<Code> {
   readonly source: KernelIssueSource;
   readonly location?: KernelIssueLocation;
   readonly details?: JsonObject;
@@ -38,7 +39,6 @@ abstract class KernelError<Code extends KernelIssueCode> extends Error {
   protected constructor(input: SafeKernelErrorInput<Code>) {
     super(input.code);
     this.name = "KernelError";
-    this.code = input.code;
     this.source = cloneAndFreeze(input.source);
     if (input.location !== undefined) {
       this.location = cloneAndFreeze(input.location);
@@ -48,7 +48,7 @@ abstract class KernelError<Code extends KernelIssueCode> extends Error {
     }
   }
 
-  toIssue(): KernelIssue<Code> {
+  override toIssue(): KernelIssue<Code> {
     const issue = {
       issueVersion: 1,
       code: this.code,

@@ -31,6 +31,13 @@ export type CoreModuleRegistrationEntryId =
   | "core.commands.v1"
   | "core.selectors.v1";
 
+export type OfficialModuleRegistrationEntryId =
+  "kernel.domain-commands.v1";
+
+export type KernelModuleRegistrationEntryId =
+  | CoreModuleRegistrationEntryId
+  | OfficialModuleRegistrationEntryId;
+
 export interface KernelModuleIdentity {
   readonly moduleId: string;
   readonly origin: KernelModuleOrigin;
@@ -42,7 +49,7 @@ export interface KernelModuleIdentity {
 
 export interface KernelStartupModuleDeclaration
   extends KernelModuleIdentity {
-  readonly registrationEntryIds: readonly CoreModuleRegistrationEntryId[];
+  readonly registrationEntryIds: readonly KernelModuleRegistrationEntryId[];
 }
 
 export interface KernelStartupModuleManifest {

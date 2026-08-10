@@ -13,6 +13,23 @@ import {
   mapDiagnosticToKernelIssueWithFactory,
 } from "../../src/core-kernel/reports/adapters";
 import type { KernelIssue } from "../../src/core-kernel/reports/contracts";
+import { KernelErrorBase } from "../../src/core-kernel/errors/kernel-error-base";
+
+class FixtureKernelError extends KernelErrorBase<"fixture.problem"> {
+  constructor() {
+    super("fixture.problem");
+  }
+
+  override toIssue() {
+    return {
+      issueVersion: 1,
+      code: this.code,
+      severity: "error",
+      messageKey: "fixture.problem",
+      source: { kind: "core", subsystem: "report" },
+    } as const;
+  }
+}
 
 function assertDeeplyFrozen(value: unknown): void {
   if (value === null || typeof value !== "object") {
@@ -26,6 +43,15 @@ function assertDeeplyFrozen(value: unknown): void {
     }
   }
 }
+
+test("internal kernel error base owns the typed code and native Error branch", () => {
+  const error = new FixtureKernelError();
+  const code: "fixture.problem" = error.code;
+  void code;
+  assert.equal(error instanceof Error, true);
+  assert.equal(error.code, "fixture.problem");
+  assert.equal(error.message, "fixture.problem");
+});
 
 test("issue facts derive from closed code and are deeply frozen", () => {
   const warning: KernelIssue<"unsupported.chord"> =

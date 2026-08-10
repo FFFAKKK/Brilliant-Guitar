@@ -2,8 +2,8 @@
   "id": "cvn-2-official-module-sdk-frozen-assembly",
   "name": "cvn-2-official-module-sdk-frozen-assembly",
   "title": "CVN-2 Official Module SDK and Frozen Contribution Assembly",
-  "description": "Plan the CVN-2 V1 official-module authoring SDK and detached all-or-nothing frozen contribution catalog on the unified accepted CVN-4, extensibility-charter and GD-0 baseline.",
-  "status": "planning",
+  "description": "Implement the CVN-2 V1 official-module authoring SDK and detached all-or-nothing frozen contribution catalog on the unified accepted CVN-4, extensibility-charter and GD-0 baseline.",
+  "status": "in_progress",
   "dev_type": null,
   "scope": "Planning and later independently gated implementation of CVN-FC-110/111 only: official-module authoring SDK and detached all-or-nothing frozen contribution catalog; CVN-6 runtime integration and future extension ports excluded",
   "package": null,
@@ -39,9 +39,9 @@
     ".trellis/tasks/archive/2026-08/08-04-cvn-4-part-staff-voice-lifecycle/task.json",
     ".trellis/spec/core-kernel/backend/domain-transaction-integration.md"
   ],
-  "notes": "TARGETED ERROR-HIERARCHY PLANNING RE-REVIEW PASSED / USER ACTIVATION PENDING. External audit of f6d4694 found P0/P1/P2=0/1/0; bounded repair 69f7fad restores the internal KernelErrorBase branch, exact file/test ownership, SDK 8/34 and zero application-root runtime additions. Fresh targeted re-review passed P0/P1/P2=0/0/0 with typecheck, build, full 315/315 and zero production delta. task.py start has not run and production implementation remains inactive.",
+  "notes": "IMPLEMENTATION CANDIDATE REPAIRED FOR TARGETED INDEPENDENT RE-REVIEW. The bounded CVN-FC-110/111 implementation remains uncommitted. Prior primordial repairs remain present. The fourth bounded repair makes Stage 1 capture every entry that can actually participate in exact or owner-mismatch selection before any Stage 2 Core declaration, Domain registration identity, or owner check. Typecheck, build, SDK/catalog focused 54/54, full 350/350, forbidden dependency scan, GD-0 Layer A/Layer B, three Trellis validations, protected-path equality, 22/22 allowlisted files and git diff --check pass. Cross-stage regressions now also cover malformed nested contribution data over Domain registration identity, Core declaration parity and wrong-owner failures; all six callback counters remain zero. Application-root runtime keys and SDK export counts remain unchanged; no commit/archive/acceptance state has been created.",
   "meta": {
-    "planning_stage": "targeted_error_hierarchy_rereview_passed_pending_user_activation",
+    "planning_stage": "implementation_candidate_ready_for_independent_review",
     "planning_base_commit": "706802c",
     "planning_candidate_commit": "73fe18a10f280146dd341493c1e956d3a8427d32",
     "detailed_planning_artifacts_commit": "2941725",
@@ -61,8 +61,8 @@
     ],
     "runtime_integration_owner": "CVN-6",
     "future_extension_ports": "excluded_and_separately_gated",
-    "production_implementation_authorized": false,
-    "task_start_run": false,
+    "production_implementation_authorized": true,
+    "task_start_run": true,
     "detailed_planning_artifacts_complete": true,
     "planning_self_audit": "passed_final_p0_p1_p2_0_0_0_after_correcting_current25_vs_parent_final28_count",
     "independent_planning_review": "passed_after_external_p1_common_error_hierarchy_repair_final_p0_0_p1_0_p2_0",
@@ -160,6 +160,19 @@
       "src/core-kernel/registry/strict-codec.ts"
     ],
     "planning_base_verification": "passed_ancestry6_trellis6_typecheck_build_full315_clean_source_test_equal_cvn4_planning_production_delta0",
-    "next_gate": "user_review_and_explicit_activation_decision"
+    "implementation_candidate_base": "faaf424cf370bbf055ad2cf9862e472a50edc22f",
+    "implementation_candidate_commit": null,
+    "implementation_candidate_evidence": ".trellis/tasks/08-10-cvn-2-official-module-sdk-frozen-assembly/implementation-candidate.md",
+    "implementation_verification": "typecheck_build_sdk_catalog_focused54_full350_forbidden_dependency_gd0_layer_a_layer_b_trellis_9_11_3_3_0_0_protected_paths_equal_diffcheck_pass",
+    "implementation_repair": "safe_registry_id_finite_ascii_scanner_without_regexp_dispatch",
+    "implementation_repair_regression": "proxy_ownkeys_sync_regexp_exec_replacement_rejected_across_sdk_definition_module_issue_manifest_and_full_catalog_with_zero_callbacks",
+    "implementation_repair_round_2": "captured_numeric_index_conversion_explicit_contribution_counter_and_cvn2_r009_stage_5_6_7_priority",
+    "implementation_repair_round_2_regression": "public_module_issue_string_replacement_public_catalog_set_size_replacement_and_table_driven_command_requirement_effect_priority_with_zero_callbacks",
+    "implementation_repair_round_3": "global_cvn2_r009_stage_1_through_8_catalog_pipeline_with_separate_structural_capture_and_semantic_normalization",
+    "implementation_repair_round_3_regression": "cross_module_stage_2_over_3_cross_contribution_stage_4_over_5_and_stage_1_over_3_with_zero_callbacks",
+    "implementation_repair_round_4": "stage_1_captures_exact_or_wrong_owner_selection_candidates_before_core_domain_and_owner_stage_2_checks",
+    "implementation_repair_round_4_regression": "malformed_nested_contribution_precedes_domain_registration_identity_core_declaration_parity_and_owner_mismatch_with_zero_callbacks",
+    "final_independent_implementation_review": "pending_future",
+    "next_gate": "independent_implementation_review"
   }
 }

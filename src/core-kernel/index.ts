@@ -70,6 +70,12 @@ export type {
   KernelModuleGatewayCreationResult,
   KernelRegistryCreationResult,
 } from "./registry/runtime";
+export type {
+  ExtensionRuntimeRequirementV1,
+  KernelIntegratedCatalog,
+  ModuleIssueCode,
+  ModuleKernelIssue,
+} from "./registry/integrated-contracts";
 
 export {
   createModuleInternalIssue,

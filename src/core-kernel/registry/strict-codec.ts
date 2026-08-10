@@ -28,8 +28,25 @@ export type KernelStartupManifestDecodeResult =
   | { readonly ok: true; readonly value: DecodedKernelStartupManifest }
   | { readonly ok: false; readonly failure: KernelRegistryStartupFailure };
 
-const MODULE_ID_PATTERN = /^[a-z0-9]+(?:[.-][a-z0-9]+)*$/;
 const MAX_REGISTRY_ID_LENGTH = 128;
+
+const reflectApply = Reflect.apply;
+const reflectGetOwnPropertyDescriptor = Reflect.getOwnPropertyDescriptor;
+const reflectGetPrototypeOf = Reflect.getPrototypeOf;
+const reflectOwnKeys = Reflect.ownKeys;
+const arrayConstructor = Array;
+const arrayIncludes = arrayConstructor.prototype.includes;
+const arrayIsArray = arrayConstructor.isArray;
+const arrayPush = arrayConstructor.prototype.push;
+const arraySort = arrayConstructor.prototype.sort;
+const numberConstructor = Number;
+const numberIsSafeInteger = numberConstructor.isSafeInteger;
+const numberToString = numberConstructor.prototype.toString;
+const objectPrototype = Object.prototype;
+const setConstructor = Set;
+const setAdd = setConstructor.prototype.add;
+const setHas = setConstructor.prototype.has;
+const stringCharCodeAt = String.prototype.charCodeAt;
 
 const KERNEL_CAPABILITIES: readonly KernelCapability[] = [
   "registry:read",
@@ -52,23 +69,37 @@ export function readExactDataRecord(
   value: unknown,
   expectedKeys: readonly string[],
 ): ExactDataRecord | undefined {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    return undefined;
-  }
-  const prototype = Object.getPrototypeOf(value);
-  if (prototype !== Object.prototype && prototype !== null) {
-    return undefined;
-  }
-  const ownKeys = Reflect.ownKeys(value);
   if (
-    ownKeys.length !== expectedKeys.length ||
-    ownKeys.some((key) => typeof key !== "string" || !expectedKeys.includes(key))
+    typeof value !== "object" ||
+    value === null ||
+    reflectApply(arrayIsArray, arrayConstructor, [value]) === true
   ) {
     return undefined;
   }
+  const prototype = reflectGetPrototypeOf(value);
+  if (prototype !== objectPrototype && prototype !== null) {
+    return undefined;
+  }
+  const ownKeys = reflectOwnKeys(value);
+  if (ownKeys.length !== expectedKeys.length) {
+    return undefined;
+  }
+  for (let index = 0; index < ownKeys.length; index += 1) {
+    const key = ownKeys[index];
+    if (
+      typeof key !== "string" ||
+      reflectApply(arrayIncludes, expectedKeys, [key]) !== true
+    ) {
+      return undefined;
+    }
+  }
   const decoded: Record<string, unknown> = {};
-  for (const key of expectedKeys) {
-    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+  for (let index = 0; index < expectedKeys.length; index += 1) {
+    const key = expectedKeys[index];
+    if (key === undefined) {
+      return undefined;
+    }
+    const descriptor = reflectGetOwnPropertyDescriptor(value, key);
     if (
       descriptor === undefined ||
       !("value" in descriptor) ||
@@ -82,28 +113,38 @@ export function readExactDataRecord(
 }
 
 export function readDenseArray(value: unknown): readonly unknown[] | undefined {
-  if (!Array.isArray(value)) {
+  if (reflectApply(arrayIsArray, arrayConstructor, [value]) !== true) {
     return undefined;
   }
-  const lengthDescriptor = Object.getOwnPropertyDescriptor(value, "length");
+  const arrayValue = value as object;
+  const lengthDescriptor = reflectGetOwnPropertyDescriptor(
+    arrayValue,
+    "length",
+  );
   if (
     lengthDescriptor === undefined ||
     !("value" in lengthDescriptor) ||
     typeof lengthDescriptor.value !== "number" ||
-    !Number.isSafeInteger(lengthDescriptor.value) ||
+    reflectApply(numberIsSafeInteger, numberConstructor, [
+      lengthDescriptor.value,
+    ]) !== true ||
     lengthDescriptor.value < 0
   ) {
     return undefined;
   }
   const length = lengthDescriptor.value;
-  const ownKeys = Reflect.ownKeys(value);
+  const ownKeys = reflectOwnKeys(arrayValue);
   if (ownKeys.length !== length + 1) {
     return undefined;
   }
 
   const decoded: unknown[] = [];
   for (let index = 0; index < length; index += 1) {
-    const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
+    const indexKey = reflectApply(numberToString, index, []) as string;
+    const descriptor = reflectGetOwnPropertyDescriptor(
+      arrayValue,
+      indexKey,
+    );
     if (
       descriptor === undefined ||
       !("value" in descriptor) ||
@@ -111,24 +152,44 @@ export function readDenseArray(value: unknown): readonly unknown[] | undefined {
     ) {
       return undefined;
     }
-    decoded.push(descriptor.value);
+    reflectApply(arrayPush, decoded, [descriptor.value]);
   }
   return decoded;
 }
 
 export function isSafeRegistryId(value: unknown): value is string {
-  return (
-    typeof value === "string" &&
-    value.length >= 1 &&
-    value.length <= MAX_REGISTRY_ID_LENGTH &&
-    MODULE_ID_PATTERN.test(value)
-  );
+  if (
+    typeof value !== "string" ||
+    value.length < 1 ||
+    value.length > MAX_REGISTRY_ID_LENGTH
+  ) {
+    return false;
+  }
+
+  let previousWasSeparator = true;
+  for (let index = 0; index < value.length; index += 1) {
+    const codeUnit = reflectApply(stringCharCodeAt, value, [index]) as number;
+    const isLowercaseLetterOrDigit =
+      (codeUnit >= 48 && codeUnit <= 57) ||
+      (codeUnit >= 97 && codeUnit <= 122);
+    if (isLowercaseLetterOrDigit) {
+      previousWasSeparator = false;
+      continue;
+    }
+    const isSeparator = codeUnit === 45 || codeUnit === 46;
+    if (!isSeparator || previousWasSeparator) {
+      return false;
+    }
+    previousWasSeparator = true;
+  }
+
+  return !previousWasSeparator;
 }
 
 function isKernelCapability(value: unknown): value is KernelCapability {
   return (
     typeof value === "string" &&
-    (KERNEL_CAPABILITIES as readonly string[]).includes(value)
+    reflectApply(arrayIncludes, KERNEL_CAPABILITIES, [value]) === true
   );
 }
 
@@ -138,15 +199,19 @@ function decodeCapabilities(value: unknown): readonly KernelCapability[] | undef
     return undefined;
   }
   const capabilities: KernelCapability[] = [];
-  const seen = new Set<KernelCapability>();
-  for (const candidate of input) {
-    if (!isKernelCapability(candidate) || seen.has(candidate)) {
+  const seen = new setConstructor<KernelCapability>();
+  for (let index = 0; index < input.length; index += 1) {
+    const candidate = input[index];
+    if (
+      !isKernelCapability(candidate) ||
+      reflectApply(setHas, seen, [candidate]) === true
+    ) {
       return undefined;
     }
-    seen.add(candidate);
-    capabilities.push(candidate);
+    reflectApply(setAdd, seen, [candidate]);
+    reflectApply(arrayPush, capabilities, [candidate]);
   }
-  return capabilities.sort();
+  return reflectApply(arraySort, capabilities, []) as KernelCapability[];
 }
 
 function decodeRegistrationEntryIds(value: unknown): readonly string[] | undefined {
@@ -155,15 +220,19 @@ function decodeRegistrationEntryIds(value: unknown): readonly string[] | undefin
     return undefined;
   }
   const registrationEntryIds: string[] = [];
-  const seen = new Set<string>();
-  for (const candidate of input) {
-    if (!isSafeRegistryId(candidate) || seen.has(candidate)) {
+  const seen = new setConstructor<string>();
+  for (let index = 0; index < input.length; index += 1) {
+    const candidate = input[index];
+    if (
+      !isSafeRegistryId(candidate) ||
+      reflectApply(setHas, seen, [candidate]) === true
+    ) {
       return undefined;
     }
-    seen.add(candidate);
-    registrationEntryIds.push(candidate);
+    reflectApply(setAdd, seen, [candidate]);
+    reflectApply(arrayPush, registrationEntryIds, [candidate]);
   }
-  return registrationEntryIds.sort();
+  return reflectApply(arraySort, registrationEntryIds, []) as string[];
 }
 
 function decodeOrigin(value: unknown): KernelModuleOrigin | undefined {
@@ -211,7 +280,8 @@ function decodeModule(
     runtime === undefined ||
     trustLevel === undefined ||
     typeof record.apiVersion !== "number" ||
-    !Number.isSafeInteger(record.apiVersion) ||
+    reflectApply(numberIsSafeInteger, numberConstructor, [record.apiVersion]) !==
+      true ||
     capabilities === undefined ||
     registrationEntryIds === undefined
   ) {
@@ -246,12 +316,12 @@ export function decodeKernelStartupManifest(
     }
 
     const decodedModules: DecodedKernelStartupModuleDeclaration[] = [];
-    for (const module of modules) {
-      const decoded = decodeModule(module);
+    for (let index = 0; index < modules.length; index += 1) {
+      const decoded = decodeModule(modules[index]);
       if (decoded === undefined) {
         return invalidStartupInput();
       }
-      decodedModules.push(decoded);
+      reflectApply(arrayPush, decodedModules, [decoded]);
     }
     return {
       ok: true,
@@ -269,7 +339,7 @@ function readDataProperty(
   record: ExactDataRecord,
   key: string,
 ): unknown {
-  const descriptor = Object.getOwnPropertyDescriptor(record, key);
+  const descriptor = reflectGetOwnPropertyDescriptor(record, key);
   return descriptor !== undefined && "value" in descriptor
     ? descriptor.value
     : undefined;
