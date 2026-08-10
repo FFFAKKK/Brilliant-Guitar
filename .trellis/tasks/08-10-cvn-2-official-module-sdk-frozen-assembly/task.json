@@ -35,6 +35,7 @@
   "meta": {
     "planning_stage": "planning_base_prepared",
     "planning_base_commit": "706802c",
+    "planning_candidate_commit": "73fe18a10f280146dd341493c1e956d3a8427d32",
     "planning_base_parent_gd0": "ebd8075ae79c2fd82f93c75f9c02f83bc878bfef",
     "planning_base_parent_cvn4": "7ad1ff1108b86e0b8a70551b1a378a1c6caf48ca",
     "required_accepted_commits": [
@@ -54,6 +55,7 @@
     "production_implementation_authorized": false,
     "task_start_run": false,
     "detailed_planning_artifacts_complete": false,
+    "planning_base_verification": "passed_ancestry6_trellis6_typecheck_build_full315_clean_source_test_equal_cvn4_planning_production_delta0",
     "next_gate": "cvn2_detailed_planning_and_independent_planning_review"
   }
 }

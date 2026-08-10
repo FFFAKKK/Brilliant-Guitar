@@ -92,6 +92,7 @@
     "cvn2_branch": "codex/cvn-2-official-module-sdk-frozen-assembly",
     "cvn2_worktree_path": ".worktrees/cvn-2-official-module-sdk-frozen-assembly",
     "cvn2_planning_base_commit": "706802c",
+    "cvn2_planning_candidate_commit": "73fe18a10f280146dd341493c1e956d3a8427d32",
     "cvn2_primary_contracts": [
       "CVN-FC-110",
       "CVN-FC-111"
@@ -99,6 +100,7 @@
     "cvn2_runtime_integration_excluded_owner": "CVN-6",
     "cvn2_future_extension_ports": "excluded_and_separately_gated",
     "cvn2_production_implementation_authorized": false,
+    "cvn2_planning_base_verification": "passed_ancestry6_trellis6_typecheck_build_full315_clean_source_test_equal_cvn4_planning_production_delta0",
     "gd0_status": "completed_archived",
     "gd0_accepted_baseline": "451627e605695c95ecdc85e32bd471fcc81885c4",
     "gd0_independent_review_findings": "P0_0_P1_0_P2_0_after_one_p1_mapping_repair",

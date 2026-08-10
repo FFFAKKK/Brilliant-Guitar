@@ -2,7 +2,7 @@
 
 ## Decision
 
-`PASS FOR DETAILED PLANNING` at merge commit `706802c`. This decision prepares one authoritative planning baseline; it does not activate implementation.
+`PASS FOR DETAILED PLANNING` at planning candidate `73fe18a`, built on unified merge commit `706802c`. This decision prepares one authoritative planning baseline; it does not activate implementation.
 
 ## Source Lines
 
@@ -29,8 +29,11 @@ The two source lines shared `700bac9` before the final CVN-4 repair and Extensib
 - `npm.cmd run typecheck`: passed.
 - `npm.cmd test`: build passed; full regression `315/315` passed.
 - Merge diff check: passed.
-- Required accepted commits: ancestry check required again after the planning-metadata commit.
-- Final clean status: required again after the planning-metadata commit.
+- Required accepted commit ancestry: all six passed at `73fe18a`.
+- Unified merge parents: `706802c` has parents `ebd8075` and `7ad1ff1`.
+- Accepted CVN-4 source/test equality: passed against `7ad1ff1`.
+- Planning metadata production delta from `706802c`: zero across `src/**`, `test/**`, package manifests, and `tsconfig.json`.
+- Final candidate worktree status at `73fe18a`: clean.
 
 ## Next Gate
 
