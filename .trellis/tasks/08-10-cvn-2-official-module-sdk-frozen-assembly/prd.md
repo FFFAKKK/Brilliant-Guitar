@@ -110,6 +110,11 @@ Different typed command/effect handles can coexist in one contribution without
 rejected by private binding authenticity. These callback slots are stored but
 never called by CVN-2 catalog construction.
 
+All V1 official modules and the composition root resolve one host-owned SDK
+instance. Future module packages consume that instance as an external/peer
+boundary rather than bundle a second SDK copy; duplicate instances fail before
+catalog publication. Packaging mechanics remain outside CVN-2.
+
 ### CVN2-R007 — Issue and error boundary
 
 - Module issue codes use the Registry safe-ID grammar, are no longer than 128 characters, and begin with `${moduleId}.`.
@@ -143,7 +148,10 @@ Catalog construction validates in this order and reports the first failing stage
 7. effect namespace, supported-version parity, and score/Part owner allowlist;
 8. synchronous compiler completion, callback slot kind, deep freeze, private identity, and absence of ready mutation APIs.
 
-No public handle is created and no private catalog state is installed until every stage succeeds.
+No public `KernelIntegratedCatalog` handle is created and no private catalog
+state is installed until every stage succeeds. Authentic definition handles and
+their authoring bindings may already exist as compiler inputs; a failed catalog
+compile neither installs them into a catalog nor deletes or mutates them.
 
 ### CVN2-R010 — Deterministic normalization
 
@@ -251,7 +259,9 @@ The following are not CVN-2 implementation work:
   strict type fixtures prove heterogeneous typed handles, reject crossed
   decoder/consumer pairs, and reject mismatched error-base constructor data.
 - [ ] CVN2-AC013: the outer contribution object has exactly nine fields;
-  command/effect members are authentic opaque handles and manifests carry zero functions.
+  command/effect members are authentic opaque handles, readable fake or
+  cross-instance handles have exact handler-mismatch coverage, and manifests
+  carry zero functions.
 - [ ] CVN2-AC014: valid two-module catalog order, input isolation, deep freeze, opaque handle, and private state are proven with callback counts `0`.
 - [ ] CVN2-AC015: every validation stage and failure mapping has a decisive table-driven case; no partial handle/state is observable.
 - [ ] CVN2-AC016: each enforced limit passes at the exact boundary and rejects at boundary+1 with the specified Registry failure.

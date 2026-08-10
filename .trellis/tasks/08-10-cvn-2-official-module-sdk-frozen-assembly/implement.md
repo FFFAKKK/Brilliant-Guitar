@@ -277,7 +277,8 @@ A test/core-kernel/fixtures/synthetic-official-modules.ts
    `@ts-expect-error` cases.
 9. Assert command/effect handle enumerable keys, contribution exact nine-field
    ABI, registration exact four-field shape, final builder export subset, and
-   zero callback counts.
+   zero callback counts. Each invalid builder attempt must publish no handle or
+   binding while already valid handles remain usable.
 
 Focused commands:
 
@@ -319,7 +320,10 @@ M test/core-kernel/registry-contracts.test.ts
 9. Prove two separately compiled catalogs have unequal identity, reversed
    inputs normalize equally, input mutation is isolated, fake/copied-brand
    definition handles fail before publication, no method exists on the public
-   catalog or definition handles, and every callback counter is zero.
+   catalog or definition handles, preexisting authentic definition bindings are
+   unchanged after failure, and every callback counter is zero. A readable fake
+   or cross-instance-equivalent handle maps to `registry.handler-mismatch`; an
+   unreadable nested fake maps to stage-1 `registry.invalid-contribution`.
 
 Focused commands:
 

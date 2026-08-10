@@ -81,6 +81,8 @@
     "sdk_runtime_export_count": 8,
     "sdk_type_export_count": 34,
     "definition_handle_model": "typed_generic_input_to_opaque_non_generic_handle_with_private_weakmap_binding",
+    "sdk_instance_ownership": "single_host_owned_instance_official_modules_must_not_bundle_duplicate_sdk",
+    "definition_vs_catalog_state": "definition_bindings_may_preexist_failed_catalog_compile_publishes_zero_catalog_handle_or_catalog_state_and_preserves_bindings",
     "command_decode_input_keys": [
       "target",
       "payload"

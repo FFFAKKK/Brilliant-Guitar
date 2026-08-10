@@ -32,6 +32,17 @@ Exact authoring sequence:
 6. CVN-6 may hand a successful decode result only to the consumer from the same
    private binding. No public callback getter or structural constructor exists.
 
+All V1 official modules and the composition root resolve one host-owned SDK
+instance. A later separately packaged official module consumes that host SDK as
+an external/peer boundary; bundling another copy intentionally produces a
+handler mismatch before catalog publication. This is an ABI condition, while
+package-host implementation remains outside CVN-2.
+
+Definition-binding state and ready catalog state are distinct. A failed
+definition attempt publishes neither handle nor binding. A failed catalog
+compile publishes neither catalog handle nor catalog-state entry, but it leaves
+preexisting authentic definition handles/bindings unchanged and reusable.
+
 The SDK runtime allowlist therefore contains exactly eight names: the previous
 six plus `defineDomainCommandV1` and `defineModuleEffectV1`. The SDK type
 allowlist contains exactly thirty-four names: the previous thirty-one plus

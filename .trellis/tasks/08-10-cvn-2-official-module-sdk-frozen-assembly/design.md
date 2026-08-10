@@ -537,6 +537,26 @@ They validate local shape/parity only. Manifest identity, cross-entry uniqueness
 
 `definitions.ts` owns the two definition-binding `WeakMap`s and internal binding readers. Generic erasure occurs only behind those private readers. The runtime handoff invariant is exact: a successful decoded command/payload may be consumed only by the paired callback stored in the same binding. No public `any`, bivariant method escape, generic cast helper, raw callback getter, or structural definition constructor is part of V1.
 
+V1 uses one host-owned SDK instance. Every statically shipped official module
+and the product composition root import the same
+`src/core-kernel/module-sdk/index.ts` instance. A future separately packaged
+official module consumes the host SDK as an external/peer boundary rather than
+bundling another copy. Duplicate SDK instances intentionally fail handle
+authenticity before catalog publication. Package-manager and Module Host
+mechanics remain a separately gated future concern; this singleton identity
+rule is the CVN-2 ABI condition they must preserve.
+
+Definition and catalog atomicity are separate:
+
+- a failed command/effect definition builder returns the frozen `invalid`
+  singleton and publishes neither a handle nor a binding for that attempted
+  input;
+- a successful definition handle/binding may be reused by more than one later
+  catalog compile and is not active runtime state by itself;
+- a failed catalog compile publishes no `KernelIntegratedCatalog` handle and no
+  entry in the catalog-state `WeakMap`; it leaves all preexisting definition
+  handles/bindings unchanged.
+
 ## 11. Catalog compiler contract
 
 ```typescript
@@ -597,7 +617,12 @@ is exported only from `registry/domain-catalog.ts` for direct internal use by la
 
 ### 11.4 Atomic publication
 
-All normalized arrays, descriptors, requirement lists, issue-independent data, and the assembly identity object are created and frozen in locals. The public handle and `WeakMap.set` occur only after every check and freeze succeeds. Failure paths return before either operation. No candidate object escapes through a failure.
+All normalized arrays, descriptors, requirement lists, issue-independent data,
+and the assembly identity object are created and frozen in locals. The public
+catalog handle and catalog-state `WeakMap.set` occur only after every check and
+freeze succeeds. Failure paths return before either catalog operation. No
+catalog candidate object escapes through a failure; preexisting authoring
+definition bindings remain unchanged.
 
 ## 12. Resource constants and enforcement
 
@@ -639,9 +664,9 @@ No count uses array allocation proportional to the rejected `actual` beyond the 
 | 2 | Core declarations fixed; selected entry exists; owner/module/contribution/source parity | registration not found, owner mismatch, duplicate contribution, or handler mismatch |
 | 3 | official origin; builtin/internal runtime; system trust; API 1; four required capabilities | existing dedicated Registry failure |
 | 4 | duplicate module, contribution, command, effect, namespace | dedicated module/contribution failure where available; otherwise invalid contribution |
-| 5 | command namespace; target kind; exact capability tuple; decoder/preparer callable slot parity | invalid contribution or handler mismatch |
+| 5 | command namespace; target kind; exact capability tuple; authentic command handle and decoder/preparer binding parity | invalid contribution or handler mismatch |
 | 6 | namespace/requirement one-to-one; requirement source; exact version list | invalid contribution |
-| 7 | effect namespace/source/version/owner-kind parity; effect slot parity | invalid contribution or handler mismatch |
+| 7 | effect namespace/source/version/owner-kind parity; authentic effect handle and decoder/transformer binding parity | invalid contribution or handler mismatch |
 | 8 | permitted synchronous slot kind; normalized order; data freeze; private identity; no methods | invalid contribution or internal error |
 
 Within a stage:
@@ -681,7 +706,7 @@ Exact mapping:
 | duplicate contribution | `registry.duplicate-contribution-id` + contribution ID |
 | origin/runtime/trust/API/capability | current dedicated failure + allowlisted ID/capability |
 | malformed nested descriptor; duplicate command/effect/namespace; aggregate/version overflow | `registry.invalid-contribution` + registration entry ID |
-| descriptor/function count or identity parity | `registry.handler-mismatch` + contribution ID |
+| authentic handle or descriptor/binding count/identity parity | `registry.handler-mismatch` + contribution ID |
 | caught unexpected internal condition | `{ code: "registry.internal-error" }` |
 
 Returned data contains no absolute source path, handler/effect object, manifest fragment, extension payload, stack, exception message, Proxy error, catalog handle, private identity, or partial state.
@@ -746,15 +771,15 @@ Expected:
 
 - `ok: true`;
 - canonical module/contribution/command/effect/namespace order;
-- public handle frozen and method-free;
-- private nested data frozen and input-detached;
+- public catalog handle frozen and method-free;
+- private catalog data frozen and input-detached;
 - two separately compiled catalogs have different private identities;
 - all callback counters remain zero.
 
 ### 17.2 Base variations
 
 - caller reverses module/entry/contribution arrays: normalized result order stays equal;
-- caller mutates every original data array after success: private state stays equal;
+- caller mutates every original data array after success: private catalog state stays equal;
 - functions carry enumerable custom properties: those properties do not enter public/private data summaries;
 - command/effect handles expose only `descriptor` through `Object.keys`, have no callback property or method, and remain authentic after caller mutation attempts;
 - zero command/effect arrays on a validation-only contribution compile when every other contract passes;
@@ -771,11 +796,24 @@ One case per earliest stage plus combination cases proving precedence:
 - duplicate command + bad requirement -> invalid contribution at uniqueness stage;
 - requirement mismatch + bad effect -> invalid contribution at requirement stage;
 - declared async/generator slot -> invalid contribution/definition invalid;
-- structurally forged, copied-brand, Proxy-wrapped, or cross-SDK-instance command/effect handle -> definition invalid or `registry.handler-mismatch` at the earliest applicable stage;
+- structurally forged or copied-brand command/effect handle passed to the
+  contribution builder -> definition `invalid` and no new definition binding;
+- the same readable fake embedded directly in raw compiler input ->
+  `registry.handler-mismatch` at command stage 5 or effect stage 7 with the
+  contribution ID;
+- an unreadable/Proxy-wrapped fake rejected during nested capture ->
+  `registry.invalid-contribution` at stage 1 with the registration entry ID;
+- a real handle from another SDK instance follows the same
+  `registry.handler-mismatch` path as a readable fake;
 - boundary+1 for each enforced cap;
 - callback that throws or returns Promise when called: catalog still compiles without invoking it; counters remain zero, leaving runtime rejection to CVN-6.
 
-Every bad catalog case asserts no authentic handle, no private WeakMap state, no callback activity, and no leaked input value.
+Every bad catalog case asserts no authentic catalog handle, no catalog-state
+`WeakMap` entry, no callback activity, and no leaked input value. It also proves
+that any authentic definition handles/bindings created before the attempted
+compile remain unchanged and reusable. Every bad definition-builder case
+separately proves that the attempted input gained neither a returned handle nor
+a definition-binding entry.
 
 ### 17.4 Compile-time SDK fixture
 
