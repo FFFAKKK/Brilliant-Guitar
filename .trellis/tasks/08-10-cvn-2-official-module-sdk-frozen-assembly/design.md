@@ -188,13 +188,54 @@ Validation:
 
 Failure is the single frozen `{ status: "invalid" }`; no failing path, input fragment, getter error, or thrown value is returned.
 
-### 4.2 Error base
+### 4.2 Internal common base and SDK-derived branch
+
+`src/core-kernel/errors/kernel-error-base.ts` is a new internal module. Its
+class is exported only for direct Core-internal imports; neither
+`src/core-kernel/index.ts` nor `src/core-kernel/module-sdk/index.ts` re-exports
+it.
+
+Exact internal contract:
+
+```typescript
+export abstract class KernelErrorBase<Code extends string> extends Error {
+  readonly code: Code;
+
+  protected constructor(code: Code);
+
+  abstract toIssue(): {
+    readonly issueVersion: 1;
+    readonly code: Code;
+    readonly severity: KernelSeverity;
+    readonly messageKey: string;
+    readonly source: KernelIssueSource;
+    readonly location?: KernelIssueLocation;
+    readonly details?: JsonObject;
+  };
+}
+```
+
+The base has exactly three responsibilities: initialize native `Error` once,
+retain the readonly generic `code`, and require conversion to the shared
+data-only issue shape. It does not derive severity/message keys, validate
+namespaces, clone/freeze issue payloads, store catalog state, or define a public
+entry. Subclasses own those policies. This keeps the base domain-neutral and
+prevents a second object/error convention.
+
+The existing file-local `KernelError<Code extends KernelIssueCode>` in
+`src/core-kernel/errors/kernel-error.ts` changes only to extend
+`KernelErrorBase<Code>` and call `super(input.code)`. The file-local duplicate
+`code` declaration/assignment is removed because the internal base is its sole
+owner. Its current source, location/details isolation, Core classification,
+`name`, and `toIssue()` output remain behaviorally equal.
+
+The official-module branch is exactly:
 
 ```typescript
 export abstract class ModuleKernelErrorBase<
   ModuleId extends string,
   Code extends ModuleIssueCode & `${ModuleId}.${string}`,
-> extends Error {
+> extends KernelErrorBase<Code> {
   protected constructor(input: ModuleIssueInputV1<ModuleId, Code>);
   toIssue(): ModuleKernelIssue & {
     readonly code: Code;
@@ -207,7 +248,34 @@ export abstract class ModuleKernelErrorBase<
 }
 ```
 
-The generic parameters and constructor data are one compile-time relation: a subclass claiming module `fixture.score` and code `fixture.score.problem` cannot pass another module/code pair to `super()`. The protected constructor runs the same runtime validator once and stores only the frozen issue in a private field. Invalid trusted subclass construction throws a local `TypeError`; public Core operations never expose or throw the instance. `toIssue()` returns the stored data object and no `name`, `message`, `stack`, `cause`, prototype, or class identity.
+The exact runtime construction order is: normalize once through the same private
+strict helper used by `createModuleKernelIssueV1`; throw a local `TypeError` on
+an invalid trusted subclass input; pass the validated issue code to the common
+base constructor; then store only the detached deeply frozen issue in the
+module subclass private field. Therefore `error.code === error.toIssue().code`
+and the generic parameters, native Error branch, and frozen data cannot diverge.
+
+The generic parameters and constructor data are one compile-time relation: a
+subclass claiming module `fixture.score` and code `fixture.score.problem` cannot
+pass another module/code pair to `super()`. `toIssue()` returns the stored issue
+data and no `name`, `message`, `stack`, `cause`, prototype, class identity, or
+mutable constructor input. Public Core operations expose or return only issue
+data.
+
+`toIssue()` returns the same stored frozen issue reference on repeated calls;
+the isolation guarantee is input detachment plus recursive immutability, not a
+fresh clone per call. The base defines no additional `name`/`cause` policy;
+existing Core `name` behavior stays unchanged and no Error field enters issue
+data.
+
+The required hierarchy is:
+
+```text
+Error
+└─ KernelErrorBase<Code>                 internal only
+   ├─ KernelError<CoreCode>              existing file-local Core branch
+   └─ ModuleKernelErrorBase<ModuleId, Code>  SDK runtime export
+```
 
 ## 5. Read-only callback data
 
@@ -717,6 +785,7 @@ Returned data contains no absolute source path, handler/effect object, manifest 
 
 | File | Sole responsibility |
 |---|---|
+| `src/core-kernel/errors/kernel-error-base.ts` | internal domain-neutral native Error initialization, typed code, and abstract data-only `toIssue()` contract |
 | `src/core-kernel/registry/integrated-contracts.ts` | shared opaque catalog, requirement, and module issue data types |
 | `src/core-kernel/module-sdk/contracts.ts` | SDK descriptors, decode input, callback signatures, generic definition inputs, opaque compiled handle declarations/internal-only brand symbols, result unions, and limits type |
 | `src/core-kernel/module-sdk/module-issues.ts` | issue strict builder and `ModuleKernelErrorBase` |
@@ -730,6 +799,7 @@ Returned data contains no absolute source path, handler/effect object, manifest 
 | File | Allowed delta |
 |---|---|
 | `src/core-kernel/index.ts` | four type-only exports; zero runtime exports |
+| `src/core-kernel/errors/kernel-error.ts` | make the existing private Core error foundation derive from `KernelErrorBase`; preserve all Core issue factory behavior |
 | `src/core-kernel/registry/contracts.ts` | add `OfficialModuleRegistrationEntryId` and `KernelModuleRegistrationEntryId`; widen startup declaration registration IDs; preserve `CoreModuleRegistrationEntryId` |
 | `src/core-kernel/registry/strict-codec.ts` | recognize the additive domain entry ID while preserving exact unknown-ID rejection |
 
@@ -749,6 +819,9 @@ No change is planned for `commands/**`, `session/**`, `events/**`, `read/session
 Existing tests modified narrowly:
 
 - `test/core-kernel/public-api-boundary.test.ts`: assert unchanged root runtime keys, four approved type names, and forbidden authoring internals.
+- `test/core-kernel/kernel-issues.test.ts`: retain current Core issue factory,
+  deep-freeze, and input-isolation behavior after the internal superclass
+  extraction.
 - `test/core-kernel/forbidden-dependency-boundary.test.ts`: add explicit SDK/Core containment assertions if current recursive scan does not already prove them.
 - `test/core-kernel/registry-contracts.test.ts`: characterize additive ID decoding and prove Core-only factory behavior remains unchanged.
 
@@ -834,7 +907,12 @@ under the repository's real `strict` configuration:
    `DomainCommandDecodeInputV1` shell and its decoder implementation handles
    both `target` and `payload` as `unknown`;
 6. a `ModuleKernelErrorBase<ModuleId, Code>` subclass cannot call `super()`
-   with another module ID or code namespace.
+   with another module ID or code namespace;
+7. a concrete module error is a `ModuleKernelErrorBase`, an internal
+   `KernelErrorBase<Code>`, and an `Error`, while `KernelErrorBase` remains
+   absent from both public export allowlists;
+8. `KernelErrorBase<Code>` preserves the literal code type and rejects a
+   mismatched base assignment.
 
 Typecheck must fail if any negative line stops producing an error. Runtime
 execution of the test file remains a no-op for these type-only assertions.
@@ -857,11 +935,13 @@ The implementation candidate must prove:
 
 Rollback is file-additive:
 
-1. remove the seven new SDK/catalog files;
+1. remove the eight new internal-base/SDK/catalog files;
 2. remove the four type-only root exports;
-3. remove the additive registration ID aliases and strict-codec recognition;
-4. remove CVN-2 tests/fixtures;
-5. rerun the accepted Core-only suite.
+3. restore `src/core-kernel/errors/kernel-error.ts` to its pre-CVN-2 private
+   direct-`Error` implementation;
+4. remove the additive registration ID aliases and strict-codec recognition;
+5. remove CVN-2 tests/fixtures and restore the narrow Core issue regression;
+6. rerun the accepted Core-only suite.
 
 No `ScoreDocument` field, encoded document, command history entry, checkpoint, migration step, event, Registry persisted value, or public runtime function is created by CVN-2, so rollback requires no data migration.
 

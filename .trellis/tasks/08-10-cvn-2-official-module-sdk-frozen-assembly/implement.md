@@ -1,9 +1,9 @@
 # CVN-2 Operator Runbook
 
-> **Current lifecycle:** external targeted audit of `f6d4694` returned the
-> planning candidate with P0/P1/P2=`0/1/0` for one GD-0 error-hierarchy defect.
-> Until the bounded planning repair and targeted re-review pass, do not run
-> `task.py start` and do not edit production/test files.
+> **Current lifecycle:** the bounded GD-0 error-hierarchy planning repair is
+> specified; targeted re-review is pending. Until that review reports
+> P0/P1/P2=`0/0/0`, do not run `task.py start` and do not edit production/test
+> files.
 
 ## 1. Objective
 
@@ -71,6 +71,7 @@ $env:CVN2_BASE = git rev-parse HEAD
 ### 5.1 Production files that may be added
 
 ```text
+src/core-kernel/errors/kernel-error-base.ts
 src/core-kernel/registry/integrated-contracts.ts
 src/core-kernel/module-sdk/contracts.ts
 src/core-kernel/module-sdk/module-issues.ts
@@ -84,6 +85,7 @@ src/core-kernel/registry/domain-catalog.ts
 
 ```text
 src/core-kernel/index.ts
+src/core-kernel/errors/kernel-error.ts
 src/core-kernel/registry/contracts.ts
 src/core-kernel/registry/strict-codec.ts
 ```
@@ -102,6 +104,7 @@ test/core-kernel/fixtures/synthetic-official-modules.ts
 ### 5.4 Existing tests that may be modified
 
 ```text
+test/core-kernel/kernel-issues.test.ts
 test/core-kernel/public-api-boundary.test.ts
 test/core-kernel/forbidden-dependency-boundary.test.ts
 test/core-kernel/registry-contracts.test.ts
@@ -138,6 +141,10 @@ package.json
 package-lock.json
 tsconfig.json
 ```
+
+The two error paths in sections 5.1/5.2 are the sole exception to the previous
+error-layer freeze: one new internal base and one inheritance-only modification.
+No other file under `src/core-kernel/errors/**` is allowlisted.
 
 The accepted GD-0 tagged fences, active combined fence, current twenty-five Core IDs, Core runtime export list, Core startup manifest, and final CVN-4 tests are equality baselines. The parent-owned final twenty-eight-command plan remains untouched and is not a current CVN-2 source fixture.
 
@@ -209,22 +216,45 @@ Stage exit: typecheck and both focused tests pass; `Object.keys(coreKernel)` is 
 **Files:**
 
 ```text
+A src/core-kernel/errors/kernel-error-base.ts
+M src/core-kernel/errors/kernel-error.ts
 A src/core-kernel/module-sdk/module-issues.ts
 M src/core-kernel/module-sdk/index.ts
 M test/core-kernel/module-sdk-contracts.test.ts
 A test/core-kernel/module-sdk-hostile-input.test.ts
+M test/core-kernel/kernel-issues.test.ts
 ```
 
-1. Capture exact input without getters and validate safe IDs, source parity, location, and JSON details.
-2. Derive message key/severity exactly as `design.md` specifies.
-3. Return only `created` or `invalid`, never a throw from the public builder.
-4. Add protected `ModuleKernelErrorBase` whose generic module/code parameters
-   are the constructor input's parameters and whose code is constrained to that
-   module namespace.
-5. Prove issue deep freeze, caller mutation isolation, typed subclass
-   `toIssue()`, the required compile-time error for mismatched `super()` data,
-   and absence of Error fields.
-6. Cover invalid code namespace, overlength IDs, extra message/severity fields, bad source, bad locations/details, accessor, Proxy, sparse/cyclic data, and mutable built-in sabotage already covered by the shared strict-input prerequisite.
+1. Add internal `KernelErrorBase<Code extends string>` with only native Error
+   initialization, readonly typed `code`, and the abstract common issue-data
+   `toIssue()` signature. Export it from its file for internal imports only.
+2. Make the existing file-local Core `KernelError` derive from that base and
+   call `super(input.code)`; remove its duplicate code field/assignment so the
+   base is the sole code owner; keep current Core classification,
+   cloning/freezing, names, issue factories, and public exports unchanged.
+3. Capture exact module issue input without getters and validate safe IDs,
+   source parity, location, and JSON details.
+4. Derive message key/severity exactly as `design.md` specifies and return only
+   `created` or `invalid` from the public builder.
+5. Add protected `ModuleKernelErrorBase` as a direct
+   `KernelErrorBase<Code>` subclass. Its generic module/code parameters are the
+   constructor input's parameters, and `Code` is constrained to that module
+   namespace. Normalize once, pass the validated code to `super`, and store only
+   the frozen issue.
+6. Prove the exact three-level prototype chain, literal generic-code
+   assignability, the required compile-time errors for mismatched `super()` data
+   and base code, issue deep freeze, caller-input/output mutation isolation,
+   `error.code === issue.code`, repeated `toIssue()` identity of the same frozen
+   issue, and absence of Error fields in `toIssue()`.
+7. Assert `KernelErrorBase` is absent from SDK and application-root runtime/type
+   allowlists while `ModuleKernelErrorBase` remains the SDK's sole runtime error
+   class.
+8. Rerun the existing Core issue regression to prove the internal refactor
+   preserves every Core factory result, freeze, and isolation invariant.
+9. Cover invalid code namespace, overlength IDs, extra message/severity fields,
+   bad source, bad locations/details, accessor, Proxy, sparse/cyclic data, and
+   mutable built-in sabotage already covered by the shared strict-input
+   prerequisite.
 
 Focused commands:
 
@@ -233,9 +263,12 @@ npm.cmd run typecheck
 npm.cmd run build
 node --test dist/test/core-kernel/module-sdk-contracts.test.js
 node --test dist/test/core-kernel/module-sdk-hostile-input.test.js
+node --test dist/test/core-kernel/kernel-issues.test.js
 ```
 
-Stage exit: all issue/error cases pass and no application-root runtime export is added.
+Stage exit: the prototype/generic/isolation matrix and existing Core issue suite
+pass; the SDK export counts remain `8/34`, and no application-root runtime export
+is added.
 
 ### Stage 3 — Strict command, effect, contribution, and registration definition builders
 
@@ -469,6 +502,7 @@ The implementation reviewer receives:
 - callback counter proof;
 - cap boundary table;
 - protected-source equality output;
+- exact internal/SDK error prototype chain, generic, and isolation proof;
 - Trellis validation and clean-status evidence.
 
 Review findings use P0/P1/P2. Any P0/P1 returns the candidate for bounded repair. A P2 is either repaired or explicitly accepted with recorded rationale. Task status is not marked accepted/archive until the review gate passes and task acceptance metadata is synchronized.
@@ -476,7 +510,9 @@ Review findings use P0/P1/P2. Any P0/P1 returns the candidate for bounded repair
 ## 11. Rollback by stage
 
 - **Stage 1:** remove shared/SDK contract additions and four root type exports.
-- **Stage 2:** remove module issue/error implementation and its tests.
+- **Stage 2:** remove the module issue/error implementation and internal base,
+  restore the existing Core error file and Core issue test, then rerun its
+  focused regression.
 - **Stage 3:** remove all four definition/contribution/registration builders,
   their private binding state/readers, codec, and synthetic fixtures.
 - **Stage 4:** remove compiler; revert the one registration-ID alias/decoder addition.
@@ -511,6 +547,8 @@ CVN-2 implementation is done only when:
 
 - all `CVN2-AC011..020` checks are evidenced;
 - exact SDK and root boundaries are proven;
+- the accepted `Error -> KernelErrorBase -> ModuleKernelErrorBase` branch and
+  unchanged Core issue behavior are proven;
 - two neutral modules compile into one frozen catalog with zero callback calls;
 - every construction failure is atomic, stable, and private;
 - all enforced caps have boundary proof;

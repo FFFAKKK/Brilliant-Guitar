@@ -209,3 +209,26 @@ All other audit conclusions remain preserved: the unified ancestry, `planning`
 lifecycle, zero production delta, `CVN-FC-110/111` ownership, CVN-6/future-port
 exclusions, Trellis gates, typecheck, build, `315/315`, diff check, and clean
 status passed at the audited baseline. Production activation remains false.
+
+### Bounded repair candidate
+
+After the finding-state commit `e8d5e76`, the planning artifacts now fix one
+new internal file and one existing Core error-file modification:
+
+- `src/core-kernel/errors/kernel-error-base.ts` owns
+  `KernelErrorBase<Code extends string>` and is omitted from both public entry
+  allowlists;
+- the current file-local Core `KernelError` derives from that base without
+  changing its issue factories;
+- SDK `ModuleKernelErrorBase<ModuleId, Code>` directly derives from
+  `KernelErrorBase<Code>` and remains the sole SDK runtime error export;
+- the application root still adds zero runtime keys;
+- the operator matrix now requires prototype-chain, literal-code generic,
+  mismatched-constructor, input/output isolation, deep-freeze, Error-field
+  exclusion, and unchanged Core issue regression proof;
+- the future implementation allowlist now contains eight production additions,
+  four production modifications, and the existing Core issue test modification.
+
+The candidate remains `planning` with current audit P0/P1/P2=`0/1/0` until the
+targeted re-review closes this exact finding. No production/test edit is present
+in the planning repair itself.

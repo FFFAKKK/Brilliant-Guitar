@@ -32,6 +32,22 @@ Planning consequence: CVN-2 extends the accepted startup ID decoder additively b
 
 Planning consequence: all manifest/descriptors/payload-independent metadata use the accepted capture/strict-reader principles. Function purity stays a trusted static-code review rule; CVN-2 validates callable slot kind and stores the references privately.
 
+## Current internal error foundation
+
+- `src/core-kernel/errors/kernel-error.ts` currently owns a private abstract
+  `KernelError<Code extends KernelIssueCode>` that directly extends `Error`,
+  clones/freezes source/location/details, and converts operation, migration,
+  module-internal, and report subclasses to current `KernelIssue` data.
+- GD-0 accepts a domain-neutral internal `KernelErrorBase<Code>` above both the
+  Core branch and the SDK-exported `ModuleKernelErrorBase<ModuleId, Code>`.
+- The application root currently exports no runtime error class, and that
+  boundary remains authoritative.
+
+Planning consequence: CVN-2 extracts one minimal internal base file, changes
+the current private Core foundation to derive from it without behavior drift,
+and derives the SDK module base from the same class. Only the module-derived
+class is exported from the SDK; the application root gains neither class.
+
 ## Current transaction boundary
 
 - CVN-1 already owns one command/transaction/history/event spine and a private nonempty effect-set foundation.

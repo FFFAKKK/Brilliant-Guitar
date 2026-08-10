@@ -4,9 +4,10 @@
 > candidate `8757097`. That review returned P0/P1/P2=`0/2/1` and is recorded in
 > `../review-candidate.md`; the bounded repair is recorded in
 > `planning-review-repair.md`. This file remains evidence of the earlier
-> current-25/final-28 correction, not the current review verdict. The current
-> verdict is the final P0/P1/P2=`0/0/0` re-review recorded in
-> `../review-candidate.md` at candidate `83478fe`.
+> current-25/final-28 correction, not the current review verdict. The later
+> `0/0/0` result at `83478fe` was superseded by the external targeted audit of
+> `f6d4694`; the current audit remains P0/P1/P2=`0/1/0` until the bounded common
+> error-hierarchy repair receives a targeted re-review.
 
 ## Scope and status
 

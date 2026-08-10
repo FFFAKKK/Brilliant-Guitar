@@ -13,6 +13,9 @@ After CVN-2 implementation and independent acceptance, the kernel will gain thes
 3. A successful assembly is immutable and has one process-local identity, eliminating ready-state registration order, replacement, and hot-reload drift.
 4. CVN-6 can consume a stable catalog rather than redesigning module metadata while it implements runtime execution.
 5. Existing Core-only construction, the current accepted twenty-five Core command IDs, history, replay, events, and document schema remain unchanged; the parent-owned final twenty-eight-command plan is neither implemented nor altered here.
+6. Core-owned and official-module error objects share one internal typed base and
+   one data-conversion obligation, so later domain errors cannot create a
+   parallel object/error convention while public results remain data-only.
 
 CVN-2 does **not** make module commands executable. It creates the accepted authoring and catalog foundation needed for that later integration.
 
@@ -60,7 +63,9 @@ Private file names may follow this child plan; public fields, discriminants, own
 - Application-facing entry remains `src/core-kernel/index.ts`.
 - Official module authoring entry is fixed as `src/core-kernel/module-sdk/index.ts`.
 - The application root adds only type-only shared data needed now: `KernelIntegratedCatalog`, `ExtensionRuntimeRequirementV1`, `ModuleIssueCode`, and `ModuleKernelIssue`.
-- The application root does not export the compiler, definition builders, `ModuleKernelErrorBase`, callbacks, effect requests, catalog state accessors, or assembly builders.
+- The application root does not export the compiler, definition builders,
+  internal `KernelErrorBase`, `ModuleKernelErrorBase`, callbacks, effect
+  requests, catalog state accessors, or assembly builders.
 - The SDK entry uses explicit allowlisted exports; it never uses `export *`.
 
 ### CVN2-R004 — Exact V1 outer ABI
@@ -103,7 +108,8 @@ The SDK defines and freezes:
   non-generic handles preserve each decoder/transformer pair inside one private
   SDK binding and remain limited to a declared namespace and score/Part owner kind;
 - semantic validator and support classifier signatures;
-- namespace-qualified module issue data, the issue builder, and `ModuleKernelErrorBase`.
+- namespace-qualified module issue data, the issue builder, and
+  `ModuleKernelErrorBase` derived from Core's internal `KernelErrorBase`.
 
 Different typed command/effect handles can coexist in one contribution without
 `any`, type assertions, or bivariant methods. Fake or cross-instance handles are
@@ -121,9 +127,17 @@ catalog publication. Packaging mechanics remain outside CVN-2.
 - `messageKey` is derived as `module.${code}`; callers do not supply it.
 - Severity is deterministic: a code containing `.unsupported.` or ending `.unsupported` is `warning`; codes ending `.internal-error` or `.invariant-violation` are `fatal`; all others are `error`.
 - Source is exactly `{ kind: "module", moduleId, contributionId }`.
+- `src/core-kernel/errors/kernel-error-base.ts` owns the internal-only
+  `KernelErrorBase<Code extends string>` contract: native `Error`
+  initialization, the readonly typed `code`, and the abstract data-only
+  `toIssue()` obligation. It owns no Core/module classification or issue state.
+- The existing private Core error foundation in
+  `src/core-kernel/errors/kernel-error.ts` derives from this base and preserves
+  every accepted Core issue factory result.
 - `ModuleIssueInputV1<ModuleId, Code>` and
   `ModuleKernelErrorBase<ModuleId, Code>` bind constructor data to the same
-  module/code namespace at compile time; runtime validation repeats the check.
+  module/code namespace at compile time; the module base directly derives from
+  `KernelErrorBase<Code>`, and runtime validation repeats the check.
 - Optional location is an existing `KernelIssueLocation`; optional details is a captured `JsonObject`.
 - `toIssue()` returns detached, deeply frozen data. Error instances, stack, message, cause, and thrown values never enter results or catalog summaries.
 
@@ -254,15 +268,19 @@ The following are not CVN-2 implementation work:
 
 The earlier review pass at `83478fe` was superseded by the external targeted
 audit of `f6d4694`, which returned P0/P1/P2=`0/1/0` because the planned module
-error base bypassed GD-0's internal `KernelErrorBase<Code>`. AC010 remains open
-until the bounded planning repair and a fresh targeted re-review pass.
+error base bypassed GD-0's internal `KernelErrorBase<Code>`. The bounded repair
+now fixes the hierarchy, file owners, and tests; AC010 remains open until a
+fresh targeted re-review passes.
 
 ### Required from a future implementation candidate
 
 - [ ] CVN2-AC011: application root runtime export allowlist and all accepted Core behavior remain equal.
 - [ ] CVN2-AC012: SDK runtime/type export allowlists match `design.md` exactly;
   strict type fixtures prove heterogeneous typed handles, reject crossed
-  decoder/consumer pairs, and reject mismatched error-base constructor data.
+  decoder/consumer pairs, reject mismatched error-base constructor data, and
+  prove `ModuleKernelErrorBase<ModuleId, Code>` is assignable through the
+  internal `KernelErrorBase<Code>` branch while that base is absent from both
+  public entries.
 - [ ] CVN2-AC013: the outer contribution object has exactly nine fields;
   command/effect members are authentic opaque handles, readable fake or
   cross-instance handles have exact handler-mismatch coverage, and manifests
@@ -272,13 +290,16 @@ until the bounded planning repair and a fresh targeted re-review pass.
 - [ ] CVN2-AC016: each enforced limit passes at the exact boundary and rejects at boundary+1 with the specified Registry failure.
 - [ ] CVN2-AC017: hostile getters, Proxies, sparse arrays, cycles, extra fields, invalid prototypes, async/generator callback slots, caller mutation, and thrown traps return stable data-only results.
 - [ ] CVN2-AC018: SDK issue/error helpers produce detached frozen issues, tie
-  generic module/code parameters to constructor data, and expose no raw `Error` fields.
+  generic module/code parameters to constructor data, preserve the exact
+  `Error -> KernelErrorBase -> ModuleKernelErrorBase` prototype chain, isolate
+  constructor input and returned issue data, and expose no raw `Error` fields.
 - [ ] CVN2-AC019: Core forbidden-dependency scan, GD-0 contract fixtures, typecheck, build, full tests, Trellis validation, and diff check all pass.
 - [ ] CVN2-AC020: source/test changes stay within the file allowlist in `implement.md`, and the final worktree is clean after a path-limited commit.
 
 ## 7. Activation gate
 
-The next lifecycle decision is the user's review and explicit activation
-decision. Until that occurs, the task stays `planning`, production files stay
-untouched, and CVN-6 remains blocked on accepted CVN-2 rather than on this
-planning candidate alone.
+The next lifecycle decision is the targeted planning re-review of the bounded
+error-hierarchy repair. After a `0/0/0` result, the user reviews the result and
+makes the explicit activation decision. Until then, the task stays `planning`,
+production files stay untouched, and CVN-6 remains blocked on accepted CVN-2
+rather than on this planning candidate alone.

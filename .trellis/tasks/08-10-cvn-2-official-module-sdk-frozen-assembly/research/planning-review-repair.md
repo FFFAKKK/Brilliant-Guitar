@@ -7,8 +7,10 @@
 - Initial findings: P0/P1/P2=`0/2/1`
 - Repair scope: planning artifacts only
 - Lifecycle: `planning`; `task.py start` remains false
-- Re-review baseline: `83478fedb892b8bd048acc4f63145f3570872d8a`
-- Final re-review: P0/P1/P2=`0/0/0`; user activation pending
+- Earlier re-review baseline: `83478fedb892b8bd048acc4f63145f3570872d8a`
+- External targeted-audit baseline: `f6d4694d8eb325883be9abdb697d35086759ca16`
+- Current audit: P0/P1/P2=`0/1/0`; bounded hierarchy repair specified and
+  targeted re-review pending
 
 ## Repair 1 — typed heterogeneous definitions
 
@@ -94,10 +96,11 @@ the runtime builder repeats safe-ID and prefix validation.
 
 ## Files and scope
 
-No source/test/package/config file is added or modified by this repair. The
-future implementation file allowlist remains unchanged; both new builders fit
-inside the already planned `module-sdk/definitions.ts`, while their types and
-internal-only brands fit inside the already planned `module-sdk/contracts.ts`.
+No source/test/package/config file is added or modified by these planning
+repairs. Repairs 1-3 kept the future implementation allowlist unchanged because
+their builders/types fit the already planned SDK files. Repair 4 expands that
+future allowlist only by one internal base addition, one current Core error-file
+modification, and one current Core issue-test modification, as fixed below.
 
 The following remain unchanged:
 
@@ -108,9 +111,50 @@ The following remain unchanged:
 - current Core command count is 25 and parent-final count is 28;
 - CVN-6 runtime integration and all future ports remain separate gates.
 
-## Repair candidate verification
+## Repair 4 — accepted common error hierarchy
 
-Fresh checks on 2026-08-10 produced:
+The external targeted audit found that Repair 3 fixed the module/code generic
+relation but still declared `ModuleKernelErrorBase` as a direct `Error`
+subclass. The bounded correction restores GD-0's accepted branch:
+
+```text
+Error
+└─ KernelErrorBase<Code>
+   ├─ existing private Core KernelError<CoreCode>
+   └─ ModuleKernelErrorBase<ModuleId, Code>
+```
+
+Exact file decision:
+
+- add `src/core-kernel/errors/kernel-error-base.ts` for the internal-only base;
+- modify `src/core-kernel/errors/kernel-error.ts` only to derive its current
+  private foundation from that base;
+- keep `src/core-kernel/module-sdk/module-issues.ts` as the module issue builder
+  and SDK-derived error owner;
+- modify `test/core-kernel/kernel-issues.test.ts` for behavior-preservation
+  regression, in addition to the planned SDK contract/hostile-input tests.
+
+`KernelErrorBase<Code extends string>` owns only native Error initialization,
+the readonly typed code, and the abstract common issue-data `toIssue()` shape.
+The Core and module subclasses retain their own classification, validation,
+clone/freeze, and return refinements. The SDK runtime/type counts remain `8/34`:
+`ModuleKernelErrorBase` is exported, `KernelErrorBase` is internal, and the
+application root adds zero runtime error keys.
+
+The existing Core subclass removes its duplicate code field/assignment and
+delegates code ownership to the base. The module subclass returns the same
+stored deeply frozen issue on repeated `toIssue()` calls; input detachment and
+recursive immutability, rather than per-call cloning, define its isolation.
+
+The decisive matrix now requires prototype-chain proof, literal generic-code
+assignment and mismatch rejection, constructor module/code mismatch rejection,
+`error.code === issue.code`, constructor-input detachment, recursive freeze,
+post-return mutation isolation, no Error fields in issue data, and unchanged
+Core issue factory results.
+
+## Verification history
+
+The earlier Repair 1-3 candidate checks on 2026-08-10 produced:
 
 - design allowlist parser: runtime `8`, type `34`;
 - strict design-shape TypeScript probe: exit `0` with all required negative
@@ -121,6 +165,17 @@ Fresh checks on 2026-08-10 produced:
 - repository typecheck: pass;
 - complete current Core regression: `315/315` pass;
 - changed files outside `.trellis/**`: `0`;
+- `git diff --check`: pass.
+
+The Repair 4 planning-contract checks additionally produced:
+
+- task JSON/JSONL parse: pass; planned production additions/modifications
+  exactly `8/4`;
+- design parser: SDK runtime/type allowlists exactly `8/34`, and the module
+  declaration contains `extends KernelErrorBase<Code>`;
+- child/parent/product Trellis contexts: `9/11`, `3/3`, `0/0`, valid;
+- changed planning paths: `12`; source/test/package/config delta: `0`;
+- accepted GD-0 archive and active integration-spec delta: `0`;
 - `git diff --check`: pass.
 
 ## Re-review checklist
@@ -134,7 +189,10 @@ The fresh planning re-review must verify:
    handle construction reintroduces the variance defect;
 5. decoder shell/handoff rules are singular and agree with accepted GD-0;
 6. error generic/data coherence has both positive and negative type fixtures;
-7. Trellis/JSON/JSONL/Markdown/diff checks pass with zero production delta.
+7. the exact `Error -> KernelErrorBase -> ModuleKernelErrorBase` branch, common
+   code ownership, SDK/root non-export boundary, and input/output isolation
+   fixtures close the external P1;
+8. Trellis/JSON/JSONL/Markdown/diff checks pass with zero production delta.
 
-Until that re-review reports P0/P1/P2=`0/0/0` and the user reviews the result,
-implementation remains inactive.
+Until the new hierarchy-focused re-review reports P0/P1/P2=`0/0/0` and the user
+reviews the result, implementation remains inactive.
