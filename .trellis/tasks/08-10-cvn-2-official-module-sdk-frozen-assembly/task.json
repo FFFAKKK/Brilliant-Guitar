@@ -22,7 +22,13 @@
   "parent": "07-29-core-vnext-product-ready-extensible-kernel-completion",
   "relatedFiles": [
     ".trellis/tasks/08-10-cvn-2-official-module-sdk-frozen-assembly/prd.md",
+    ".trellis/tasks/08-10-cvn-2-official-module-sdk-frozen-assembly/design.md",
+    ".trellis/tasks/08-10-cvn-2-official-module-sdk-frozen-assembly/implement.md",
+    ".trellis/tasks/08-10-cvn-2-official-module-sdk-frozen-assembly/implement.jsonl",
+    ".trellis/tasks/08-10-cvn-2-official-module-sdk-frozen-assembly/check.jsonl",
     ".trellis/tasks/08-10-cvn-2-official-module-sdk-frozen-assembly/research/planning-base-audit.md",
+    ".trellis/tasks/08-10-cvn-2-official-module-sdk-frozen-assembly/research/current-sdk-catalog-boundary.md",
+    ".trellis/tasks/08-10-cvn-2-official-module-sdk-frozen-assembly/research/planning-candidate-self-audit.md",
     ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/feature-contract-matrix.md",
     ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-roadmap-and-stage-plan.md",
     ".trellis/tasks/archive/2026-08/07-28-gd-0-guitar-domain-core-transaction-contract/design.md",
@@ -31,9 +37,9 @@
     ".trellis/tasks/archive/2026-08/08-04-cvn-4-part-staff-voice-lifecycle/task.json",
     ".trellis/spec/core-kernel/backend/domain-transaction-integration.md"
   ],
-  "notes": "PLANNING ONLY. Unified planning base prepared at 706802c; detailed design/implementation planning and independent planning review remain pending. task.py start has not run and production implementation is inactive.",
+  "notes": "PLANNING ONLY. Unified base 706802c and detailed PRD/design/operator runbook/context manifests are prepared. Independent planning review and user activation remain pending; task.py start has not run and production implementation is inactive.",
   "meta": {
-    "planning_stage": "planning_base_prepared",
+    "planning_stage": "detailed_planning_candidate_ready",
     "planning_base_commit": "706802c",
     "planning_candidate_commit": "73fe18a10f280146dd341493c1e956d3a8427d32",
     "planning_base_parent_gd0": "ebd8075ae79c2fd82f93c75f9c02f83bc878bfef",
@@ -54,8 +60,50 @@
     "future_extension_ports": "excluded_and_separately_gated",
     "production_implementation_authorized": false,
     "task_start_run": false,
-    "detailed_planning_artifacts_complete": false,
+    "detailed_planning_artifacts_complete": true,
+    "planning_self_audit": "passed_final_p0_p1_p2_0_0_0_after_correcting_current25_vs_parent_final28_count",
+    "independent_planning_review": "pending",
+    "primary_sdk_entry": "src/core-kernel/module-sdk/index.ts",
+    "application_root": "src/core-kernel/index.ts",
+    "application_runtime_exports_change": "none",
+    "contribution_outer_abi_fields": [
+      "apiVersion",
+      "moduleId",
+      "contributionId",
+      "extensionNamespaces",
+      "extensionRequirements",
+      "commands",
+      "validate",
+      "classify",
+      "effects"
+    ],
+    "catalog_callbacks_invoked_by_cvn2": false,
+    "resource_limits": {
+      "modules": 64,
+      "contributions": 256,
+      "commands": 4096,
+      "effects": 4096,
+      "extension_namespaces": 1024,
+      "supported_versions_per_requirement": 256,
+      "issues_per_callback": 1024,
+      "issues_per_transaction": 4096,
+      "compatibility_facts": 131072
+    },
+    "planned_production_additions": [
+      "src/core-kernel/registry/integrated-contracts.ts",
+      "src/core-kernel/module-sdk/contracts.ts",
+      "src/core-kernel/module-sdk/module-issues.ts",
+      "src/core-kernel/module-sdk/definitions.ts",
+      "src/core-kernel/module-sdk/index.ts",
+      "src/core-kernel/registry/domain-catalog-codec.ts",
+      "src/core-kernel/registry/domain-catalog.ts"
+    ],
+    "planned_production_modifications": [
+      "src/core-kernel/index.ts",
+      "src/core-kernel/registry/contracts.ts",
+      "src/core-kernel/registry/strict-codec.ts"
+    ],
     "planning_base_verification": "passed_ancestry6_trellis6_typecheck_build_full315_clean_source_test_equal_cvn4_planning_production_delta0",
-    "next_gate": "cvn2_detailed_planning_and_independent_planning_review"
+    "next_gate": "independent_planning_review_then_user_activation_decision"
   }
 }

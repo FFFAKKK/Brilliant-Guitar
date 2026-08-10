@@ -87,7 +87,7 @@ The graph is dependency-based rather than numeric-order-based. CVN-2 and CVN-3 a
 | CVN-0 | completed and archived | final independent re-review passed; 19 focused and 188 full tests recorded | retained as accepted prerequisite |
 | CVN-1 | completed and archived | final narrow re-review passed; 19 command-internals and 193 full tests recorded | retained as accepted transaction-spine base |
 | Extensibility Reservation Gate | completed and archived | candidate `7c4e852`, acceptance `253d19e`, archive `a4d8cee`; one narrow P2 repaired; final P0/P1/P2=`0/0/0`; task AC `25/25` | retained as accepted GD-0/CVN-2 evolution prerequisite |
-| CVN-2 | child created; status `planning` | unified base `706802c` contains final CVN-4, accepted Extensibility Reservation charter, accepted/archived GD-0, and accepted CVN-1 ancestry; primary owners are only `CVN-FC-110/111` | complete detailed PRD/design/implement/context manifests and independent planning review before any activation |
+| CVN-2 | detailed planning candidate prepared; status `planning` | unified base `706802c`; child PRD/design/operator runbook/context manifests freeze the separate SDK entry, nine-field ABI, eight-stage construction order, limits, exact file/test allowlists, fixtures, rollback, and CVN-6 exclusion; self-audit corrected current 25 versus parent-final 28 command-count wording and ended P0/P1/P2=`0/0/0`; primary owners remain only `CVN-FC-110/111` | independent planning review, then explicit user activation decision; no `task.py start` yet |
 | CVN-3 | completed and archived | independent review passed at `d9500f5` with P0/P1/P2 = `0/0/0`; 22 lifecycle and 233 full tests reproduced; acceptance commit `3691d93` | retained as accepted factory and Measure-lifecycle prerequisite |
 | CVN-4 | completed and archived | final local re-review passed at `b0272e2` with P0/P1/P2 = `0/0/0`; focused `92/92`, full `315/315`; acceptance `7f33e7d` | retained as accepted hierarchy-lifecycle prerequisite |
 | CVN-5 | parent-planned; child not created | waits for accepted CVN-2, CVN-3, CVN-4 and CVN-6 | detailed planning after all four dependencies are accepted |
@@ -104,7 +104,7 @@ Snapshot evidence:
 - CVN-4 final accepted source/test commit: `b0272e2eabd0d222baea12cbaae3e08f9f61bfdd`; local input-validation and rejection-rollback re-review passed with P0/P1/P2 = `0/0/0`; acceptance commit `7f33e7d`.
 - Extensibility Reservation Gate planning commit: `6298d4b`; activation baseline `783f69c`; charter `7c4e852`; acceptance `253d19e`; archive `a4d8cee`; final P0/P1/P2=`0/0/0` after one narrow P2 repair.
 - GD-0 accepted documentation/architecture contract: candidate `451627e`; acceptance `a2b9009`; archive `4580164`; archived-path synchronization `ade7526`; runtime implementation remains separately gated.
-- CVN-2 unified planning base: merge `706802c` with parents `ebd8075` and `7ad1ff1`; planning candidate `73fe18a` passed six-commit ancestry, six Trellis validations, typecheck, build, full `315/315`, CVN-4 source/test equality and zero planning production delta. The child `.trellis/tasks/08-10-cvn-2-official-module-sdk-frozen-assembly/` remains `planning` and owns only `CVN-FC-110/111`.
+- CVN-2 unified planning base: merge `706802c` with parents `ebd8075` and `7ad1ff1`; planning candidate `73fe18a` passed six-commit ancestry, six Trellis validations, typecheck, build, full `315/315`, CVN-4 source/test equality and zero planning production delta. The child `.trellis/tasks/08-10-cvn-2-official-module-sdk-frozen-assembly/` now also contains a detailed PRD, exact SDK/catalog design, staged operator runbook, and curated context manifests; it remains `planning`, owns only `CVN-FC-110/111`, and has not run `task.py start`.
 
 ## 5. Exact Command Inventory
 
@@ -671,7 +671,7 @@ Current planning child:
 
 - `.trellis/tasks/08-10-cvn-2-official-module-sdk-frozen-assembly/`
 
-Active coordination gate at this snapshot: none. Active CVN implementation child: none. The next gate is CVN-2 detailed planning plus independent planning review.
+Active coordination gate at this snapshot: CVN-2 independent planning review. Active CVN implementation child: none. The detailed planning candidate is ready, but implementation activation still requires the review result and an explicit user decision.
 
 GD-0 dependency authority:
 
