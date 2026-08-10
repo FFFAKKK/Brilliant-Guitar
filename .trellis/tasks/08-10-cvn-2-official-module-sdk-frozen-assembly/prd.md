@@ -91,15 +91,24 @@ Private file names may follow this child plan; public fields, discriminants, own
 
 The SDK defines and freezes:
 
-- command descriptors plus strict decoder/preparation bindings;
+- command descriptors plus typed command-definition builders whose opaque,
+  non-generic handles preserve each decoder/preparer pair inside one private
+  SDK binding;
+- one exact command-decoder input shell containing only `target: unknown` and
+  `payload: unknown`; command ID/version and the original envelope are excluded;
 - exact extension runtime requirements;
 - a detached contribution read view containing Core document data without the global extension array plus only that contribution's exact-compatible blocks;
 - restricted forward effect-request data for WrittenPitch replacement or a declared module effect;
-- module effect descriptors plus decode/transform bindings limited to a declared namespace and score/Part owner kind;
+- module effect descriptors plus typed effect-definition builders whose opaque,
+  non-generic handles preserve each decoder/transformer pair inside one private
+  SDK binding and remain limited to a declared namespace and score/Part owner kind;
 - semantic validator and support classifier signatures;
 - namespace-qualified module issue data, the issue builder, and `ModuleKernelErrorBase`.
 
-These callback slots are stored but never called by CVN-2 catalog construction.
+Different typed command/effect handles can coexist in one contribution without
+`any`, type assertions, or bivariant methods. Fake or cross-instance handles are
+rejected by private binding authenticity. These callback slots are stored but
+never called by CVN-2 catalog construction.
 
 ### CVN2-R007 — Issue and error boundary
 
@@ -107,6 +116,9 @@ These callback slots are stored but never called by CVN-2 catalog construction.
 - `messageKey` is derived as `module.${code}`; callers do not supply it.
 - Severity is deterministic: a code containing `.unsupported.` or ending `.unsupported` is `warning`; codes ending `.internal-error` or `.invariant-violation` are `fatal`; all others are `error`.
 - Source is exactly `{ kind: "module", moduleId, contributionId }`.
+- `ModuleIssueInputV1<ModuleId, Code>` and
+  `ModuleKernelErrorBase<ModuleId, Code>` bind constructor data to the same
+  module/code namespace at compile time; runtime validation repeats the check.
 - Optional location is an existing `KernelIssueLocation`; optional details is a captured `JsonObject`.
 - `toIssue()` returns detached, deeply frozen data. Error instances, stack, message, cause, and thrown values never enter results or catalog summaries.
 
@@ -235,13 +247,17 @@ The following are not CVN-2 implementation work:
 ### Required from a future implementation candidate
 
 - [ ] CVN2-AC011: application root runtime export allowlist and all accepted Core behavior remain equal.
-- [ ] CVN2-AC012: SDK runtime/type export allowlists match `design.md` exactly.
-- [ ] CVN2-AC013: the outer contribution object has exactly nine fields; manifests carry zero functions.
+- [ ] CVN2-AC012: SDK runtime/type export allowlists match `design.md` exactly;
+  strict type fixtures prove heterogeneous typed handles, reject crossed
+  decoder/consumer pairs, and reject mismatched error-base constructor data.
+- [ ] CVN2-AC013: the outer contribution object has exactly nine fields;
+  command/effect members are authentic opaque handles and manifests carry zero functions.
 - [ ] CVN2-AC014: valid two-module catalog order, input isolation, deep freeze, opaque handle, and private state are proven with callback counts `0`.
 - [ ] CVN2-AC015: every validation stage and failure mapping has a decisive table-driven case; no partial handle/state is observable.
 - [ ] CVN2-AC016: each enforced limit passes at the exact boundary and rejects at boundary+1 with the specified Registry failure.
 - [ ] CVN2-AC017: hostile getters, Proxies, sparse arrays, cycles, extra fields, invalid prototypes, async/generator callback slots, caller mutation, and thrown traps return stable data-only results.
-- [ ] CVN2-AC018: SDK issue/error helpers produce detached frozen issues and expose no raw `Error` fields.
+- [ ] CVN2-AC018: SDK issue/error helpers produce detached frozen issues, tie
+  generic module/code parameters to constructor data, and expose no raw `Error` fields.
 - [ ] CVN2-AC019: Core forbidden-dependency scan, GD-0 contract fixtures, typecheck, build, full tests, Trellis validation, and diff check all pass.
 - [ ] CVN2-AC020: source/test changes stay within the file allowlist in `implement.md`, and the final worktree is clean after a path-limited commit.
 

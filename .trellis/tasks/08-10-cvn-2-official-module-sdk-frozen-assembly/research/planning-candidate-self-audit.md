@@ -1,5 +1,11 @@
 # CVN-2 Detailed Planning Candidate Self-Audit
 
+> Historical checkpoint: this self-audit predates the independent review of
+> candidate `8757097`. That review returned P0/P1/P2=`0/2/1` and is recorded in
+> `../review-candidate.md`; the bounded repair is recorded in
+> `planning-review-repair.md`. This file remains evidence of the earlier
+> current-25/final-28 correction, not the current review verdict.
+
 ## Scope and status
 
 This is a bounded planner self-audit of the detailed planning artifacts and current worktree. It is not the independent planning acceptance required before activation. Task status remains `planning`; `task.py start` has not run.

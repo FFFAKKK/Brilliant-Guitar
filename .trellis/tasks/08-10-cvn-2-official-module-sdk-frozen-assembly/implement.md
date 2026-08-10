@@ -177,10 +177,18 @@ M test/core-kernel/public-api-boundary.test.ts
 ```
 
 1. Add the opaque branded `KernelIntegratedCatalog`, exact GD-0 requirement, and module issue data interfaces.
-2. Add every SDK type from the design allowlist with exact fields/discriminants.
+2. Add every SDK data/callback type from the design allowlist with exact
+   fields/discriminants, including the two-field `DomainCommandDecodeInputV1`,
+   generic definition inputs, non-generic opaque definition handles, and
+   generic-coupled module issue input.
 3. Add the nine-key frozen limits object with exact literal values.
 4. Root-export only the four shared types; SDK-export only the declared allowlist.
-5. Test the outer contribution key list, registration entry key list, callback signature assignability, limits key/value/freeze state, root runtime key equality, and absence of forbidden exports.
+5. Lock the final eight-name runtime and thirty-four-name type allowlists in one
+   source/type fixture while accepting only the Stage 1 runtime subset until
+   later builders/compiler exist.
+6. Test the decoder input's exact two-key static shape, limits
+   key/value/freeze state, root runtime key equality, and absence of forbidden
+   application-root exports.
 
 Focused commands:
 
@@ -207,8 +215,12 @@ A test/core-kernel/module-sdk-hostile-input.test.ts
 1. Capture exact input without getters and validate safe IDs, source parity, location, and JSON details.
 2. Derive message key/severity exactly as `design.md` specifies.
 3. Return only `created` or `invalid`, never a throw from the public builder.
-4. Add protected `ModuleKernelErrorBase` using the same normalized issue.
-5. Prove issue deep freeze, caller mutation isolation, typed subclass `toIssue()`, and absence of Error fields.
+4. Add protected `ModuleKernelErrorBase` whose generic module/code parameters
+   are the constructor input's parameters and whose code is constrained to that
+   module namespace.
+5. Prove issue deep freeze, caller mutation isolation, typed subclass
+   `toIssue()`, the required compile-time error for mismatched `super()` data,
+   and absence of Error fields.
 6. Cover invalid code namespace, overlength IDs, extra message/severity fields, bad source, bad locations/details, accessor, Proxy, sparse/cyclic data, and mutable built-in sabotage already covered by the shared strict-input prerequisite.
 
 Focused commands:
@@ -222,7 +234,7 @@ node --test dist/test/core-kernel/module-sdk-hostile-input.test.js
 
 Stage exit: all issue/error cases pass and no application-root runtime export is added.
 
-### Stage 3 — Strict contribution and registration definition builders
+### Stage 3 — Strict command, effect, contribution, and registration definition builders
 
 **Files:**
 
@@ -235,13 +247,37 @@ M test/core-kernel/module-sdk-hostile-input.test.ts
 A test/core-kernel/fixtures/synthetic-official-modules.ts
 ```
 
-1. Implement descriptor-first exact readers for registration entry, contribution, command descriptor, requirement, and effect descriptor.
-2. Use accepted strict-input capture for every data-only subtree; inspect function slots separately.
-3. Reject extra/symbol/accessor properties, invalid prototypes, sparse arrays, cyclic data, async/generator functions, class constructors, and bound/native functions.
-4. Normalize local arrays to canonical order; require version lists already valid and ascending.
-5. Clone/freeze data and outer arrays/records; retain callbacks privately without invocation.
-6. Implement the two exact synthetic fixtures with counters for all six callback categories.
-7. Assert contribution own keys are the exact nine-field ABI and registration own keys are exact four-field shape.
+1. Implement descriptor-first exact readers for registration entry,
+   contribution, command descriptor, requirement, and effect descriptor.
+2. Implement `defineDomainCommandV1` and `defineModuleEffectV1`: validate the
+   exact three-key typed inputs, clone/freeze the descriptor, create a frozen
+   opaque handle with only `descriptor` enumerable, and publish the paired
+   callbacks to the matching private `WeakMap` only after local success.
+3. Implement internal definition-binding readers omitted from both public
+   entries. They return state only for authentic same-SDK handles.
+4. Implement contribution/registration builders that require authentic
+   command/effect handles. Their public overloads are typed; implementation
+   signatures inspect `unknown` and retain data-only invalid results for hostile
+   JavaScript/casts. Hostile TypeScript cases use `Reflect.apply`; they do not
+   weaken the public overloads.
+5. Use accepted strict-input capture for every data-only subtree; inspect
+   function slots separately. Reject extra/unexpected-symbol/accessor
+   properties, invalid prototypes, sparse arrays, cyclic data, async/generator
+   functions, class constructors, bound/native functions, and fake or copied-brand handles.
+6. Normalize local arrays to canonical order; require version lists already
+   valid and ascending. Clone/freeze data and outer arrays/records; never invoke
+   a callback.
+7. Implement the two exact synthetic fixtures by unwrapping the two typed
+   definition builders before building their contributions; retain counters for
+   all six callback categories.
+8. In one unreachable strict type block, prove two command types and two effect
+   payload types coexist without `any`/assertions/bivariant methods, while
+   crossed decoder/consumer pairs, structural handles, and mismatched
+   `ModuleKernelErrorBase` constructor data remain required
+   `@ts-expect-error` cases.
+9. Assert command/effect handle enumerable keys, contribution exact nine-field
+   ABI, registration exact four-field shape, final builder export subset, and
+   zero callback counts.
 
 Focused commands:
 
@@ -252,7 +288,9 @@ node --test dist/test/core-kernel/module-sdk-contracts.test.js
 node --test dist/test/core-kernel/module-sdk-hostile-input.test.js
 ```
 
-Stage exit: valid definitions are detached/frozen, invalid definitions return only `invalid`, and fixture counters are zero.
+Stage exit: the strict type fixture passes, heterogeneous typed definitions use
+opaque handles without escape hatches, valid definitions are detached/frozen,
+invalid definitions return only `invalid`, and fixture counters are zero.
 
 ### Stage 4 — Additive manifest ID and catalog compiler
 
@@ -275,8 +313,13 @@ M test/core-kernel/registry-contracts.test.ts
 5. Index static domain entries by composite owner/entry key; reject missing, duplicate selected-key, or owner-mismatched entries. Ignore unselected static entries so the manifest remains the selection authority.
 6. Apply the eight-stage validation precedence and canonical scan order.
 7. Build frozen normalized state, indexes, private assembly identity, frozen branded handle, and WeakMap publication as the final operations only.
-8. Export only the compiler through the SDK; retain state accessor in the private Registry module.
-9. Prove two separately compiled catalogs have unequal identity, reversed inputs normalize equally, input mutation is isolated, no method exists on the public handle, and every callback counter is zero.
+8. Add only the compiler to the existing SDK builder surface; the final runtime
+   export set is exactly eight names. Retain catalog and definition binding
+   accessors in private modules.
+9. Prove two separately compiled catalogs have unequal identity, reversed
+   inputs normalize equally, input mutation is isolated, fake/copied-brand
+   definition handles fail before publication, no method exists on the public
+   catalog or definition handles, and every callback counter is zero.
 
 Focused commands:
 
@@ -427,7 +470,8 @@ Review findings use P0/P1/P2. Any P0/P1 returns the candidate for bounded repair
 
 - **Stage 1:** remove shared/SDK contract additions and four root type exports.
 - **Stage 2:** remove module issue/error implementation and its tests.
-- **Stage 3:** remove definition builders, codec, and synthetic fixtures.
+- **Stage 3:** remove all four definition/contribution/registration builders,
+  their private binding state/readers, codec, and synthetic fixtures.
 - **Stage 4:** remove compiler; revert the one registration-ID alias/decoder addition.
 - **Stage 5:** remove cap/failure qualification tests only.
 - **Final rollback:** return every allowlisted production/test file to `CVN2_BASE`; no persisted document migration is needed.
@@ -448,7 +492,11 @@ Stop the active implementation and return to planning if any of these appears:
 8. a dynamic registration/install/unload/reload API is requested;
 9. a Guitar-specific type/import/fixture enters Core;
 10. a reserved future port is required for acceptance;
-11. GD-0 fence or one of the six accepted prerequisite commits no longer matches the reviewed baseline.
+11. heterogeneous definitions require public `any`, a type assertion helper, or
+    bivariant callback methods instead of the opaque typed builders;
+12. CVN-6 would need any command decoder input other than the exact frozen
+    `DomainCommandDecodeInputV1` target/payload shell;
+13. GD-0 fence or one of the six accepted prerequisite commits no longer matches the reviewed baseline.
 
 ## 13. Definition of done
 

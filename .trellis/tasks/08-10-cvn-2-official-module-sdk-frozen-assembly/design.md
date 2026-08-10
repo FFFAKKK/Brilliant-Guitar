@@ -56,9 +56,11 @@ Exact runtime export allowlist:
 1. `OFFICIAL_MODULE_SDK_V1_LIMITS`
 2. `ModuleKernelErrorBase`
 3. `createModuleKernelIssueV1`
-4. `defineDomainCommandContributionV1`
-5. `defineDomainCommandRegistrationEntryV1`
-6. `compileOfficialModuleCatalogV1`
+4. `defineDomainCommandV1`
+5. `defineModuleEffectV1`
+6. `defineDomainCommandContributionV1`
+7. `defineDomainCommandRegistrationEntryV1`
+8. `compileOfficialModuleCatalogV1`
 
 Exact type export allowlist:
 
@@ -67,32 +69,35 @@ Exact type export allowlist:
 3. `CompiledDomainCommandRegistrationEntryV1`
 4. `CompiledModuleEffectDefinitionV1`
 5. `CoreWrittenPitchEffectRequestV1`
-6. `DomainCommandDecodeResultV1`
-7. `DomainCommandDecoderV1`
-8. `DomainCommandDescriptorV1`
-9. `DomainCommandPreparationResultV1`
-10. `DomainCommandPreparerV1`
-11. `DomainContributionReadViewV1`
-12. `DomainEffectRequestV1`
-13. `DomainSemanticValidatorV1`
-14. `DomainSupportClassificationV1`
-15. `DomainSupportClassifierV1`
-16. `ExtensionRuntimeRequirementV1`
-17. `KernelIntegratedCatalog`
-18. `ModuleEffectApplyInputV1`
-19. `ModuleEffectApplyResultV1`
-20. `ModuleEffectDescriptorV1`
-21. `ModuleEffectPayloadDecodeResultV1`
-22. `ModuleEffectPayloadDecoderV1`
-23. `ModuleEffectTransformerV1`
-24. `ModuleIssueCode`
-25. `ModuleIssueCreationResultV1`
-26. `ModuleIssueInputV1`
-27. `ModuleKernelIssue`
-28. `ModuleOwnedEffectRequestV1`
-29. `OfficialModuleCatalogCompilationResultV1`
-30. `OfficialModuleDefinitionResultV1`
-31. `OfficialModuleSdkV1Limits`
+6. `DomainCommandDecodeInputV1`
+7. `DomainCommandDecodeResultV1`
+8. `DomainCommandDecoderV1`
+9. `DomainCommandDefinitionInputV1`
+10. `DomainCommandDescriptorV1`
+11. `DomainCommandPreparationResultV1`
+12. `DomainCommandPreparerV1`
+13. `DomainContributionReadViewV1`
+14. `DomainEffectRequestV1`
+15. `DomainSemanticValidatorV1`
+16. `DomainSupportClassificationV1`
+17. `DomainSupportClassifierV1`
+18. `ExtensionRuntimeRequirementV1`
+19. `KernelIntegratedCatalog`
+20. `ModuleEffectApplyInputV1`
+21. `ModuleEffectApplyResultV1`
+22. `ModuleEffectDefinitionInputV1`
+23. `ModuleEffectDescriptorV1`
+24. `ModuleEffectPayloadDecodeResultV1`
+25. `ModuleEffectPayloadDecoderV1`
+26. `ModuleEffectTransformerV1`
+27. `ModuleIssueCode`
+28. `ModuleIssueCreationResultV1`
+29. `ModuleIssueInputV1`
+30. `ModuleKernelIssue`
+31. `ModuleOwnedEffectRequestV1`
+32. `OfficialModuleCatalogCompilationResultV1`
+33. `OfficialModuleDefinitionResultV1`
+34. `OfficialModuleSdkV1Limits`
 
 No Registry private state type, catalog accessor, internal brand symbol, mutable builder, active bus, history/effect algebra, or raw error type appears here.
 
@@ -140,11 +145,15 @@ The runtime handle is a frozen object containing the internal brand property. A 
 ### 4.1 Input and result
 
 ```typescript
-export interface ModuleIssueInputV1 {
-  readonly code: ModuleIssueCode;
+export interface ModuleIssueInputV1<
+  ModuleId extends string = string,
+  Code extends ModuleIssueCode & `${ModuleId}.${string}` =
+    ModuleIssueCode & `${ModuleId}.${string}`,
+> {
+  readonly code: Code;
   readonly source: {
     readonly kind: "module";
-    readonly moduleId: string;
+    readonly moduleId: ModuleId;
     readonly contributionId: string;
   };
   readonly location?: KernelIssueLocation;
@@ -184,9 +193,9 @@ Failure is the single frozen `{ status: "invalid" }`; no failing path, input fra
 ```typescript
 export abstract class ModuleKernelErrorBase<
   ModuleId extends string,
-  Code extends ModuleIssueCode,
+  Code extends ModuleIssueCode & `${ModuleId}.${string}`,
 > extends Error {
-  protected constructor(input: ModuleIssueInputV1);
+  protected constructor(input: ModuleIssueInputV1<ModuleId, Code>);
   toIssue(): ModuleKernelIssue & {
     readonly code: Code;
     readonly source: {
@@ -198,7 +207,7 @@ export abstract class ModuleKernelErrorBase<
 }
 ```
 
-The protected constructor runs the same validator once and stores only the frozen issue in a private field. Invalid trusted subclass construction throws a local `TypeError`; public Core operations never expose or throw the instance. `toIssue()` returns the stored data object and no `name`, `message`, `stack`, `cause`, prototype, or class identity.
+The generic parameters and constructor data are one compile-time relation: a subclass claiming module `fixture.score` and code `fixture.score.problem` cannot pass another module/code pair to `super()`. The protected constructor runs the same runtime validator once and stores only the frozen issue in a private field. Invalid trusted subclass construction throws a local `TypeError`; public Core operations never expose or throw the instance. `toIssue()` returns the stored data object and no `name`, `message`, `stack`, `cause`, prototype, or class identity.
 
 ## 5. Read-only callback data
 
@@ -251,12 +260,17 @@ export interface DomainCommandDescriptorV1 {
 ### 6.2 Decode and preparation
 
 ```typescript
+export interface DomainCommandDecodeInputV1 {
+  readonly target: unknown;
+  readonly payload: unknown;
+}
+
 export type DomainCommandDecodeResultV1<Command> =
   | { readonly status: "decoded"; readonly command: Command }
   | { readonly status: "invalid" };
 
 export type DomainCommandDecoderV1<Command> = (
-  input: unknown,
+  input: DomainCommandDecodeInputV1,
 ) => DomainCommandDecodeResultV1<Command>;
 
 export interface CoreWrittenPitchEffectRequestV1 {
@@ -302,14 +316,39 @@ export type DomainCommandPreparerV1<Command> = (
   command: Command,
 ) => DomainCommandPreparationResultV1;
 
-export interface CompiledDomainCommandDefinitionV1<Command = unknown> {
+export interface DomainCommandDefinitionInputV1<Command> {
   readonly descriptor: DomainCommandDescriptorV1;
   readonly decode: DomainCommandDecoderV1<Command>;
   readonly prepare: DomainCommandPreparerV1<Command>;
 }
+
+export const compiledDomainCommandDefinitionBrand: unique symbol = Symbol(
+  "brilliant-guitar.module-sdk.v1.domain-command-definition",
+);
+
+export interface CompiledDomainCommandDefinitionV1 {
+  readonly descriptor: DomainCommandDescriptorV1;
+  readonly [compiledDomainCommandDefinitionBrand]: true;
+}
 ```
 
-CVN-2 checks descriptor shape, source parity, command uniqueness, target kind, exact capability tuple, and that `decode`/`prepare` are permitted synchronous callable slots. It does not call either function. CVN-6 later captures/freezes every returned command/result and maps throws, Promise-like values, malformed issues/effects/facts, and resource overflow to accepted runtime failures.
+`compiledDomainCommandDefinitionBrand` is exported only from the internal
+`module-sdk/contracts.ts` module and is omitted by the SDK entry. Its handle
+property is non-enumerable. The public handle therefore has exactly one
+enumerable string key, `descriptor`; its callback pair is retained by one
+private SDK `WeakMap`. A structural lookalike, a handle from another SDK
+instance, or a copied brand is absent from that `WeakMap` and is invalid.
+
+The CVN-6 invocation value is fixed now even though CVN-2 never constructs it:
+
+1. after strict top-level envelope routing captures the own data values `target` and `payload`, CVN-6 creates a fresh ordinary object with exactly those two enumerable keys;
+2. the shell is shallow-frozen; the captured unknown values are not traversed, cloned, or frozen before trusted decoder inspection;
+3. `commandVersion`, `commandId`, the original envelope object, its prototype, and any extra field are not passed to the decoder;
+4. the matched decoder strictly decodes both target and payload and returns one command value containing every value needed by preparation;
+5. CVN-6 captures, clones, and deeply freezes the decoded command before passing it to the `prepare` callback from the same private definition binding;
+6. a decoded value is never handed to another definition's preparer.
+
+CVN-2 checks descriptor shape, source parity, command uniqueness, target kind, exact capability tuple, handle authenticity, and that `decode`/`prepare` are permitted synchronous callable slots when the handle is defined. It does not call either function. CVN-6 later maps throws, Promise-like values, malformed issues/effects/facts, and resource overflow to accepted runtime failures.
 
 ## 7. Validator and classifier contracts
 
@@ -387,14 +426,31 @@ export type ModuleEffectTransformerV1<Payload> = (
   input: ModuleEffectApplyInputV1<Payload>,
 ) => ModuleEffectApplyResultV1;
 
-export interface CompiledModuleEffectDefinitionV1<Payload = unknown> {
+export interface ModuleEffectDefinitionInputV1<Payload> {
   readonly descriptor: ModuleEffectDescriptorV1;
   readonly decode: ModuleEffectPayloadDecoderV1<Payload>;
   readonly transform: ModuleEffectTransformerV1<Payload>;
 }
+
+export const compiledModuleEffectDefinitionBrand: unique symbol = Symbol(
+  "brilliant-guitar.module-sdk.v1.module-effect-definition",
+);
+
+export interface CompiledModuleEffectDefinitionV1 {
+  readonly descriptor: ModuleEffectDescriptorV1;
+  readonly [compiledModuleEffectDefinitionBrand]: true;
+}
 ```
 
-The transformer cannot choose a namespace or owner in its return value. CVN-6 later constructs/replaces/removes only the descriptor-bound block and derives the inverse from current candidate state. CVN-2 merely validates and stores the definition.
+`compiledModuleEffectDefinitionBrand` is likewise exported only from the
+internal contracts module and omitted by the SDK entry; the handle property is
+non-enumerable. The handle has exactly one enumerable string key, `descriptor`;
+its decoder/transformer pair lives in a private SDK `WeakMap`. The transformer
+cannot choose a namespace or owner in its return value. CVN-6 later
+constructs/replaces/removes only the descriptor-bound block, passes a
+successfully decoded payload only to the transformer from the same binding, and
+derives the inverse from current candidate state. CVN-2 merely validates and
+stores the authentic handle.
 
 ## 9. Exact contribution and registration shapes
 
@@ -436,26 +492,50 @@ export type OfficialModuleDefinitionResultV1<T> =
   | { readonly status: "defined"; readonly value: T }
   | { readonly status: "invalid" };
 
+export function defineDomainCommandV1<Command>(
+  input: DomainCommandDefinitionInputV1<Command>,
+): OfficialModuleDefinitionResultV1<CompiledDomainCommandDefinitionV1>;
+
+export function defineModuleEffectV1<Payload>(
+  input: ModuleEffectDefinitionInputV1<Payload>,
+): OfficialModuleDefinitionResultV1<CompiledModuleEffectDefinitionV1>;
+
 export function defineDomainCommandContributionV1(
-  input: unknown,
+  input: CompiledDomainCommandContributionV1,
 ): OfficialModuleDefinitionResultV1<CompiledDomainCommandContributionV1>;
 
 export function defineDomainCommandRegistrationEntryV1(
-  input: unknown,
+  input: CompiledDomainCommandRegistrationEntryV1,
 ): OfficialModuleDefinitionResultV1<CompiledDomainCommandRegistrationEntryV1>;
 ```
 
-Builders:
+Those are the public overloads. Each implementation signature receives `unknown` internally and uses the same hostile-input rules, so JavaScript callers, forged casts, and runtime mutation still produce the data-only `invalid` result rather than bypassing inspection.
+Hostile TypeScript tests call the runtime function through `Reflect.apply` with
+malformed values; they do not widen the public overload, export a cast helper,
+or add an `unknown` overload that would erase authoring checks.
+
+Command/effect definition builders:
+
+1. accept exactly `descriptor/decode/prepare` or `descriptor/decode/transform`;
+2. preserve the generic producer/consumer relation at the public call site;
+3. inspect and clone the descriptor and validate both callable slots without invocation;
+4. create a fresh frozen non-generic handle, install the paired callbacks in the matching private `WeakMap`, and publish the handle only after all local checks succeed;
+5. expose neither callback as an own property nor either internal brand/binding reader through the SDK entry.
+
+Contribution/registration builders:
 
 1. inspect exact records/arrays by descriptors;
 2. capture and freeze data-only subtrees;
-3. retain only allowed callable slots;
-4. reject accessors, symbol keys, sparse arrays, cycles in data, extra fields, invalid prototypes, async/generator callable slots, and wrong descriptor/function counts;
-5. create fresh frozen outer objects and arrays;
-6. never invoke a callback;
-7. return the single `{ status: "invalid" }` result on failure.
+3. require every command/effect array member to be an authentic handle in the corresponding private SDK `WeakMap`;
+4. retain only the direct contribution validator/classifier callable slots and the authentic definition handles;
+5. reject accessors, unexpected symbol keys, sparse arrays, cycles in data, extra fields, invalid prototypes, async/generator callable slots, fake/cross-instance handles, and wrong descriptor/function counts;
+6. create fresh frozen outer objects and arrays;
+7. never invoke a callback;
+8. return the single `{ status: "invalid" }` result on failure.
 
 They validate local shape/parity only. Manifest identity, cross-entry uniqueness, global caps, and Core baseline are checked again by the catalog compiler.
+
+`definitions.ts` owns the two definition-binding `WeakMap`s and internal binding readers. Generic erasure occurs only behind those private readers. The runtime handoff invariant is exact: a successful decoded command/payload may be consumed only by the paired callback stored in the same binding. No public `any`, bivariant method escape, generic cast helper, raw callback getter, or structural definition constructor is part of V1.
 
 ## 11. Catalog compiler contract
 
@@ -576,7 +656,7 @@ Output arrays use the same canonical order. Caller array order and object enumer
 
 ## 14. Callable-slot rule
 
-CVN-2 accepts ordinary synchronous function objects in the six slot categories: command decode, command prepare, validate, classify, effect decode, and effect transform.
+CVN-2 accepts ordinary synchronous function objects in the six slot categories: command decode, command prepare, validate, classify, effect decode, and effect transform. Command/effect slots are inspected exactly once by their typed definition builder; contribution slots are inspected exactly once by the contribution builder. The catalog compiler rechecks handle authenticity and direct contribution slots without invoking any of them.
 
 - Declared `async` functions, generator functions, class constructors, and bound/native functions are rejected during definition inspection without invocation. Official modules use ordinary or arrow functions; a module can wrap an otherwise acceptable method in an arrow function.
 - Ordinary functions are not called by CVN-2, so a regular function that later returns a Promise-like value is a CVN-6 runtime contract violation, as required by the parent matrix.
@@ -613,9 +693,9 @@ Returned data contains no absolute source path, handler/effect object, manifest 
 | File | Sole responsibility |
 |---|---|
 | `src/core-kernel/registry/integrated-contracts.ts` | shared opaque catalog, requirement, and module issue data types |
-| `src/core-kernel/module-sdk/contracts.ts` | SDK descriptors, callback signatures, result unions, and limits type |
+| `src/core-kernel/module-sdk/contracts.ts` | SDK descriptors, decode input, callback signatures, generic definition inputs, opaque compiled handle declarations/internal-only brand symbols, result unions, and limits type |
 | `src/core-kernel/module-sdk/module-issues.ts` | issue strict builder and `ModuleKernelErrorBase` |
-| `src/core-kernel/module-sdk/definitions.ts` | contribution/registration definition builders |
+| `src/core-kernel/module-sdk/definitions.ts` | private definition-binding WeakMaps/readers and all four definition/contribution/registration builders |
 | `src/core-kernel/module-sdk/index.ts` | explicit SDK allowlist only |
 | `src/core-kernel/registry/domain-catalog-codec.ts` | descriptor-first domain entry/contribution normalization helpers |
 | `src/core-kernel/registry/domain-catalog.ts` | full compiler, counters, private indexes/identity/WeakMap/internal reader |
@@ -634,7 +714,7 @@ No change is planned for `commands/**`, `session/**`, `events/**`, `read/session
 
 | File | Responsibility |
 |---|---|
-| `test/core-kernel/module-sdk-contracts.test.ts` | SDK type/runtime exports, nine/four-field shapes, issue/error behavior |
+| `test/core-kernel/module-sdk-contracts.test.ts` | SDK type/runtime exports, typed opaque definitions, exact decoder input, nine/four-field shapes, and issue/error behavior |
 | `test/core-kernel/module-sdk-hostile-input.test.ts` | accessors/Proxy/sparse/cycle/prototype/extra-field/function-slot rejection |
 | `test/core-kernel/module-catalog-assembly.test.ts` | valid two-module compile, canonical order, identity parity, frozen opaque/private state, zero calls |
 | `test/core-kernel/module-catalog-failures.test.ts` | stage precedence and exact failure/privacy matrix |
@@ -656,6 +736,12 @@ Full manifest contains accepted Core modules plus:
 - `fixture.score.module`, builtin, namespace `fixture.score`, contribution `fixture.score.contribution.v1`, command `fixture.score.touch`, effect `fixture.score.replace`, schema version `[1]`, score owner;
 - `fixture.part.module`, internal-module, namespace `fixture.part`, contribution `fixture.part.contribution.v1`, command `fixture.part.touch`, effect `fixture.part.replace`, schema version `[1]`, Part owner.
 
+Each fixture first defines its typed command and effect through
+`defineDomainCommandV1` and `defineModuleEffectV1`, unwraps only `defined`
+results, then places the opaque handles into its nine-field contribution and
+four-field registration entry builders. No fixture constructs a compiled
+definition structurally.
+
 Expected:
 
 - `ok: true`;
@@ -670,6 +756,7 @@ Expected:
 - caller reverses module/entry/contribution arrays: normalized result order stays equal;
 - caller mutates every original data array after success: private state stays equal;
 - functions carry enumerable custom properties: those properties do not enter public/private data summaries;
+- command/effect handles expose only `descriptor` through `Object.keys`, have no callback property or method, and remain authentic after caller mutation attempts;
 - zero command/effect arrays on a validation-only contribution compile when every other contract passes;
 - exact cap values compile.
 
@@ -684,10 +771,35 @@ One case per earliest stage plus combination cases proving precedence:
 - duplicate command + bad requirement -> invalid contribution at uniqueness stage;
 - requirement mismatch + bad effect -> invalid contribution at requirement stage;
 - declared async/generator slot -> invalid contribution/definition invalid;
+- structurally forged, copied-brand, Proxy-wrapped, or cross-SDK-instance command/effect handle -> definition invalid or `registry.handler-mismatch` at the earliest applicable stage;
 - boundary+1 for each enforced cap;
 - callback that throws or returns Promise when called: catalog still compiles without invoking it; counters remain zero, leaving runtime rejection to CVN-6.
 
 Every bad catalog case asserts no authentic handle, no private WeakMap state, no callback activity, and no leaked input value.
+
+### 17.4 Compile-time SDK fixture
+
+The unreachable type-contract block in
+`test/core-kernel/module-sdk-contracts.test.ts` must make all of these claims
+under the repository's real `strict` configuration:
+
+1. two different command types and two different effect-payload types can be
+   defined and collected in one contribution without `any`, a type assertion,
+   or bivariant method syntax;
+2. pairing one command decoder with another command type's preparer is a
+   required `@ts-expect-error`;
+3. pairing one effect decoder with another payload type's transformer is a
+   required `@ts-expect-error`;
+4. a raw descriptor/callback object is not assignable to either opaque compiled
+   handle;
+5. `DomainCommandDecoderV1` receives exactly the typed
+   `DomainCommandDecodeInputV1` shell and its decoder implementation handles
+   both `target` and `payload` as `unknown`;
+6. a `ModuleKernelErrorBase<ModuleId, Code>` subclass cannot call `super()`
+   with another module ID or code namespace.
+
+Typecheck must fail if any negative line stops producing an error. Runtime
+execution of the test file remains a no-op for these type-only assertions.
 
 ## 18. Compatibility fences
 
@@ -700,6 +812,8 @@ The implementation candidate must prove:
 5. all GD-0 tagged public-contract fences and the active combined fence retain their accepted text/hash.
 6. no Core source imports Guitar, UI, platform, filesystem, network, or an external package.
 7. the full pre-CVN-2 test suite remains green.
+8. the SDK runtime allowlist is exactly the eight names in section 2.2 and its
+   type allowlist is exactly the thirty-four names in section 2.2.
 
 ## 19. Rollback design
 
@@ -719,6 +833,10 @@ The operator stops and returns this task to planning when any implementation pre
 
 - changing a GD-0 tagged public field/discriminant;
 - adding a tenth field to `CompiledDomainCommandContributionV1`;
+- requiring `any`, a public cast helper, or bivariant callback methods to place
+  heterogeneous command/effect definitions in one contribution;
+- changing the decoder invocation away from the exact two-field
+  `DomainCommandDecodeInputV1` shell;
 - executing a callback during CVN-2 catalog construction;
 - changing `createKernelRegistry()` into integrated construction;
 - touching command/session/history/replay/event behavior;

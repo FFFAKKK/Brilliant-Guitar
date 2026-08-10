@@ -87,7 +87,7 @@ The graph is dependency-based rather than numeric-order-based. CVN-2 and CVN-3 a
 | CVN-0 | completed and archived | final independent re-review passed; 19 focused and 188 full tests recorded | retained as accepted prerequisite |
 | CVN-1 | completed and archived | final narrow re-review passed; 19 command-internals and 193 full tests recorded | retained as accepted transaction-spine base |
 | Extensibility Reservation Gate | completed and archived | candidate `7c4e852`, acceptance `253d19e`, archive `a4d8cee`; one narrow P2 repaired; final P0/P1/P2=`0/0/0`; task AC `25/25` | retained as accepted GD-0/CVN-2 evolution prerequisite |
-| CVN-2 | initial planning review returned for bounded repair; status `planning` | candidate `8757097` retained the correct ownership, nine-field ABI and zero-production-delta boundaries, but strict TypeScript review found P0/P1/P2=`0/2/1`: heterogeneous generic command/effect definitions collapse at the `unknown` arrays, the decoder invocation value is unspecified, and error-base generics are not tied to constructor data | repair those three SDK type/call-shape defects, then perform a fresh independent re-review; no `task.py start` yet |
+| CVN-2 | bounded planning repair candidate ready; status `planning` | initial review of `8757097` returned P0/P1/P2=`0/2/1`; repaired design replaces invariant array records with typed builders plus opaque non-generic handles/private bindings, fixes the decoder to an exact target/payload shell, couples error generics to constructor data, and keeps the nine-field ABI, zero root runtime delta and CVN-6 exclusion | fresh independent planning re-review, then explicit user activation decision; no `task.py start` yet |
 | CVN-3 | completed and archived | independent review passed at `d9500f5` with P0/P1/P2 = `0/0/0`; 22 lifecycle and 233 full tests reproduced; acceptance commit `3691d93` | retained as accepted factory and Measure-lifecycle prerequisite |
 | CVN-4 | completed and archived | final local re-review passed at `b0272e2` with P0/P1/P2 = `0/0/0`; focused `92/92`, full `315/315`; acceptance `7f33e7d` | retained as accepted hierarchy-lifecycle prerequisite |
 | CVN-5 | parent-planned; child not created | waits for accepted CVN-2, CVN-3, CVN-4 and CVN-6 | detailed planning after all four dependencies are accepted |
@@ -104,7 +104,7 @@ Snapshot evidence:
 - CVN-4 final accepted source/test commit: `b0272e2eabd0d222baea12cbaae3e08f9f61bfdd`; local input-validation and rejection-rollback re-review passed with P0/P1/P2 = `0/0/0`; acceptance commit `7f33e7d`.
 - Extensibility Reservation Gate planning commit: `6298d4b`; activation baseline `783f69c`; charter `7c4e852`; acceptance `253d19e`; archive `a4d8cee`; final P0/P1/P2=`0/0/0` after one narrow P2 repair.
 - GD-0 accepted documentation/architecture contract: candidate `451627e`; acceptance `a2b9009`; archive `4580164`; archived-path synchronization `ade7526`; runtime implementation remains separately gated.
-- CVN-2 unified planning base: merge `706802c` with parents `ebd8075` and `7ad1ff1`; planning candidate `73fe18a` passed six-commit ancestry, six Trellis validations, typecheck, build, full `315/315`, CVN-4 source/test equality and zero planning production delta. Detailed planning artifacts are recorded at `2941725`; verification metadata is recorded at `8757097`. The initial independent planning review of `8757097` returned P0/P1/P2=`0/2/1` for bounded SDK type/call-shape repair. The child remains `planning`, owns only `CVN-FC-110/111`, and has not run `task.py start`.
+- CVN-2 unified planning base: merge `706802c` with parents `ebd8075` and `7ad1ff1`; planning candidate `73fe18a` passed six-commit ancestry, six Trellis validations, typecheck, build, full `315/315`, CVN-4 source/test equality and zero planning production delta. Detailed planning artifacts are recorded at `2941725`; verification metadata is recorded at `8757097`. The initial independent planning review of `8757097` returned P0/P1/P2=`0/2/1`; the bounded repair now fixes opaque typed definition handles, the exact decoder shell and error generic/data coherence without changing ownership or production scope. The child remains `planning`, owns only `CVN-FC-110/111`, and has not run `task.py start`.
 
 ## 5. Exact Command Inventory
 
@@ -671,7 +671,7 @@ Current planning child:
 
 - `.trellis/tasks/08-10-cvn-2-official-module-sdk-frozen-assembly/`
 
-Active coordination gate at this snapshot: CVN-2 bounded planning repair followed by independent re-review. Active CVN implementation child: none. The initial review returned P0/P1/P2=`0/2/1`; implementation activation still requires a repaired `0/0/0` planning result and an explicit user decision.
+Active coordination gate at this snapshot: CVN-2 independent planning re-review. Active CVN implementation child: none. The bounded repair candidate addresses the initial P0/P1/P2=`0/2/1`; implementation activation still requires a fresh `0/0/0` planning result and an explicit user decision.
 
 GD-0 dependency authority:
 
