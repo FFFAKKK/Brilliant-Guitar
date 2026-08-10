@@ -252,6 +252,10 @@ The following are not CVN-2 implementation work:
 - [x] CVN2-AC009: bounded self-audit reports final P0/P1/P2=`0/0/0`, records the corrected current-25/final-28 command-count distinction, and confirms zero production delta.
 - [ ] CVN2-AC010: an independent planning reviewer passes the candidate and the user reviews that result before activation.
 
+The review portion of AC010 passed at `83478fe` with final
+P0/P1/P2=`0/0/0`; the checkbox stays open only until the user reviews this
+result and makes the activation decision.
+
 ### Required from a future implementation candidate
 
 - [ ] CVN2-AC011: application root runtime export allowlist and all accepted Core behavior remain equal.
@@ -273,4 +277,7 @@ The following are not CVN-2 implementation work:
 
 ## 7. Activation gate
 
-The next lifecycle decision is an independent planning review plus user activation. Until both occur, the task stays `planning`, production files stay untouched, and CVN-6 remains blocked on accepted CVN-2 rather than on this planning candidate alone.
+The next lifecycle decision is the user's review and explicit activation
+decision. Until that occurs, the task stays `planning`, production files stay
+untouched, and CVN-6 remains blocked on accepted CVN-2 rather than on this
+planning candidate alone.

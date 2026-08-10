@@ -39,9 +39,9 @@
     ".trellis/tasks/archive/2026-08/08-04-cvn-4-part-staff-voice-lifecycle/task.json",
     ".trellis/spec/core-kernel/backend/domain-transaction-integration.md"
   ],
-  "notes": "PLANNING ONLY / BOUNDED REPAIR CANDIDATE READY. Initial review of 8757097 found P0/P1/P2=0/2/1. The plan now uses typed builders plus opaque non-generic command/effect handles, fixes the exact target/payload decoder shell, and ties ModuleKernelErrorBase generics to constructor data. Fresh re-review and user activation remain pending; task.py start has not run and production implementation is inactive.",
+  "notes": "PLANNING REVIEW PASSED / USER ACTIVATION PENDING. Initial review of 8757097 returned P0/P1/P2=0/2/1; bounded repair 0c49750 closed the type/call-shape findings, and clarification 83478fe closed one narrow re-review P2 separating definition bindings from catalog state and fixing host-SDK ownership/failure mapping. Final P0/P1/P2=0/0/0. task.py start has not run and production implementation remains inactive.",
   "meta": {
-    "planning_stage": "bounded_repair_candidate_ready",
+    "planning_stage": "independent_planning_review_passed_pending_user_activation",
     "planning_base_commit": "706802c",
     "planning_candidate_commit": "73fe18a10f280146dd341493c1e956d3a8427d32",
     "detailed_planning_artifacts_commit": "2941725",
@@ -65,7 +65,7 @@
     "task_start_run": false,
     "detailed_planning_artifacts_complete": true,
     "planning_self_audit": "passed_final_p0_p1_p2_0_0_0_after_correcting_current25_vs_parent_final28_count",
-    "independent_planning_review": "initial_return_p0_0_p1_2_p2_1_repair_candidate_pending_re_review",
+    "independent_planning_review": "passed_after_initial_p0_0_p1_2_p2_1_and_narrow_rereview_p2_repair_final_p0_0_p1_0_p2_0",
     "planning_review_baseline": "8757097fd6dd3e9464807b9ab091006285a19f2b",
     "planning_review_report": ".trellis/tasks/08-10-cvn-2-official-module-sdk-frozen-assembly/review-candidate.md",
     "planning_review_findings_initial": {
@@ -74,7 +74,21 @@
       "P2": 1
     },
     "planning_review_repair_report": ".trellis/tasks/08-10-cvn-2-official-module-sdk-frozen-assembly/research/planning-review-repair.md",
-    "planning_review_repair_status": "prepared_pending_commit_and_independent_re_review",
+    "planning_review_repair_status": "committed_and_re_reviewed",
+    "planning_review_finding_record_commit": "31be407f1dbd8c043a049435fde45625632d46e0",
+    "planning_review_repair_commit": "0c49750308673c30c85b918dbe6735e03591b23e",
+    "planning_review_re_review_baseline": "83478fedb892b8bd048acc4f63145f3570872d8a",
+    "planning_review_findings_re_review_initial": {
+      "P0": 0,
+      "P1": 0,
+      "P2": 1
+    },
+    "planning_review_findings_final": {
+      "P0": 0,
+      "P1": 0,
+      "P2": 0
+    },
+    "planning_review_verification": "type_shape_probe_pass_export8_type34_trellis_child9_11_parent3_3_product0_0_typecheck_full315_zero_production_delta_clean",
     "primary_sdk_entry": "src/core-kernel/module-sdk/index.ts",
     "application_root": "src/core-kernel/index.ts",
     "application_runtime_exports_change": "none",
@@ -125,6 +139,6 @@
       "src/core-kernel/registry/strict-codec.ts"
     ],
     "planning_base_verification": "passed_ancestry6_trellis6_typecheck_build_full315_clean_source_test_equal_cvn4_planning_production_delta0",
-    "next_gate": "independent_planning_re_review_then_user_activation_decision"
+    "next_gate": "user_review_and_explicit_activation_decision"
   }
 }

@@ -7,6 +7,8 @@
 - Initial findings: P0/P1/P2=`0/2/1`
 - Repair scope: planning artifacts only
 - Lifecycle: `planning`; `task.py start` remains false
+- Re-review baseline: `83478fedb892b8bd048acc4f63145f3570872d8a`
+- Final re-review: P0/P1/P2=`0/0/0`; user activation pending
 
 ## Repair 1 — typed heterogeneous definitions
 

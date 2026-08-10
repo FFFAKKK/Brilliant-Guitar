@@ -1,6 +1,8 @@
 # CVN-2 Operator Runbook
 
-> **Current lifecycle:** planning only. This runbook becomes executable only after planning review and an explicit user activation decision. Until then, do not run `task.py start` and do not edit production/test files.
+> **Current lifecycle:** planning review passed with final P0/P1/P2=`0/0/0` at
+> candidate `83478fe`; explicit user activation is still pending. Until that
+> decision, do not run `task.py start` and do not edit production/test files.
 
 ## 1. Objective
 

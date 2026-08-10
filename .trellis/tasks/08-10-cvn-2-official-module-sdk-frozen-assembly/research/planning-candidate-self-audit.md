@@ -4,7 +4,9 @@
 > candidate `8757097`. That review returned P0/P1/P2=`0/2/1` and is recorded in
 > `../review-candidate.md`; the bounded repair is recorded in
 > `planning-review-repair.md`. This file remains evidence of the earlier
-> current-25/final-28 correction, not the current review verdict.
+> current-25/final-28 correction, not the current review verdict. The current
+> verdict is the final P0/P1/P2=`0/0/0` re-review recorded in
+> `../review-candidate.md` at candidate `83478fe`.
 
 ## Scope and status
 

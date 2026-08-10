@@ -53,7 +53,7 @@
     ".trellis/spec/core-kernel/backend/errors-reports.md",
     ".trellis/spec/core-kernel/backend/domain-transaction-integration.md"
   ],
-  "notes": "PLANNING COORDINATION / CVN-0 CVN-1 CVN-3 FINAL CVN-4 EXTENSIBILITY RESERVATION AND GD-0 DOCUMENTATION CONTRACT ACCEPTED / CVN-2 INITIAL REVIEW AT 8757097 RETURNED 0/2/1; BOUNDED OPAQUE-HANDLE, DECODER-SHELL, AND ERROR-GENERIC REPAIR CANDIDATE IS READY FOR RE-REVIEW; STATUS REMAINS PLANNING / CVN-5 STILL WAITS FOR ACCEPTED CVN-2 AND CVN-6 / 28-COMMAND FINITE CATALOG / STABILITY FIRST / HOT PLUG EXCLUDED.",
+  "notes": "PLANNING COORDINATION / CVN-0 CVN-1 CVN-3 FINAL CVN-4 EXTENSIBILITY RESERVATION AND GD-0 DOCUMENTATION CONTRACT ACCEPTED / CVN-2 PLANNING REVIEW PASSED AT 83478FE WITH FINAL P0/P1/P2 0/0/0 AFTER INITIAL 0/2/1 REPAIR AND ONE NARROW RE-REVIEW P2 CLARIFICATION; USER ACTIVATION PENDING AND STATUS REMAINS PLANNING / CVN-5 STILL WAITS FOR ACCEPTED CVN-2 AND CVN-6 / 28-COMMAND FINITE CATALOG / STABILITY FIRST / HOT PLUG EXCLUDED.",
   "meta": {
     "compatibility_base": "d92a7586536ac8757c318ae6f75aabd8698f85ac",
     "architecture_style": "stability_first_startup_frozen_microkernel",
@@ -61,12 +61,24 @@
     "refactor_strategy": "behavior_preserving_command_transaction_registry_spine",
     "qualification_scale": "balanced_25600_event_release_gate_plus_102400_event_stress_gate",
     "legacy_gate_mapping": "ck1_1_0_to_cvn0_ck1_1_1_to_cvn2_generic_gd2_to_cvn1_cvn5_cvn6",
-    "planning_review": "cvn2_bounded_repair_candidate_ready_independent_re_review_pending",
+    "planning_review": "cvn2_independent_planning_review_passed_final_p0_0_p1_0_p2_0_user_activation_pending",
     "cvn2_planning_review_baseline": "8757097fd6dd3e9464807b9ab091006285a19f2b",
     "cvn2_planning_review_findings_initial": {
       "P0": 0,
       "P1": 2,
       "P2": 1
+    },
+    "cvn2_planning_repair_candidate_commit": "0c49750308673c30c85b918dbe6735e03591b23e",
+    "cvn2_planning_re_review_baseline": "83478fedb892b8bd048acc4f63145f3570872d8a",
+    "cvn2_planning_re_review_findings_initial": {
+      "P0": 0,
+      "P1": 0,
+      "P2": 1
+    },
+    "cvn2_planning_review_findings_final": {
+      "P0": 0,
+      "P1": 0,
+      "P2": 0
     },
     "cvn2_detailed_planning_artifacts_commit": "2941725",
     "vnext_total_core_commands": 28,
@@ -93,7 +105,7 @@
     "extensibility_reservation_acceptance_commit": "253d19e5e9d6a3bfdfa0158833d59872e8be156c",
     "extensibility_reservation_archive_commit": "a4d8cee406e8aa9a6efa05f4e24a8707367dc7b8",
     "extensibility_reservation_archive_path": ".trellis/tasks/archive/2026-08/08-09-core-vnext-extensibility-reservation-review/",
-    "next_dependency_gate": "cvn2-independent-planning-re-review-and-user-activation-decision",
+    "next_dependency_gate": "cvn2-user-review-and-explicit-activation-decision",
     "cvn2_task": "08-10-cvn-2-official-module-sdk-frozen-assembly",
     "cvn2_status": "planning",
     "cvn2_branch": "codex/cvn-2-official-module-sdk-frozen-assembly",

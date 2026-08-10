@@ -110,3 +110,70 @@ The candidate stays in `planning`. Production implementation remains inactive.
 After the three bounded repairs, a fresh review must reproduce the type
 fixtures, verify the exact export allowlists and nine-field ABI, and report
 P0/P1/P2=`0/0/0` before the user activation decision.
+
+## Re-review cycle
+
+### Exact candidates
+
+- Initial review finding record: `31be407f1dbd8c043a049435fde45625632d46e0`
+- Bounded type/call-shape repair: `0c49750308673c30c85b918dbe6735e03591b23e`
+- Re-review candidate after state-boundary clarification:
+  `83478fedb892b8bd048acc4f63145f3570872d8a`
+
+### Narrow re-review finding
+
+The first pass over `0c49750` found one P2 and no P0/P1:
+P0/P1/P2=`0/0/1`.
+
+#### [P2] Definition bindings and published catalog state were conflated
+
+The repaired plan introduced private definition-binding `WeakMap`s before
+catalog compilation, but one old fixture sentence still required every failed
+catalog to have "no private WeakMap state." It also left the same-SDK-instance
+condition implicit and combined readable fake, unreadable fake, and
+cross-instance failures into one non-exact outcome.
+
+The clarification commit `83478fe` closes this by fixing four distinct rules:
+
+1. failed definition construction publishes no definition handle/binding;
+2. failed catalog construction publishes no catalog handle/catalog-state entry
+   and leaves preexisting definition bindings unchanged;
+3. all V1 official modules consume one host-owned SDK instance, while future
+   package-host mechanics remain separately gated;
+4. readable fake/cross-instance handles map to `registry.handler-mismatch` at
+   command stage 5 or effect stage 7, whereas an unreadable nested fake maps to
+   stage-1 `registry.invalid-contribution`.
+
+### Closure of the three initial findings
+
+| Initial finding | Re-review result |
+|---|---|
+| invariant generic command/effect records cannot enter heterogeneous arrays | closed: typed generic input builders return opaque non-generic handles; no public `any`, assertion helper, or bivariant method |
+| decoder invocation value unspecified | closed: exact shallow-frozen `{ target: unknown, payload: unknown }` shell and same-binding handoff are fixed |
+| error generic parameters not tied to constructor data | closed: generic issue input, module-qualified code constraint, and negative constructor fixture are fixed |
+
+### Fresh verification at `83478fe`
+
+- multi-module TypeScript 5.8 probe using the repository's strict flags: exit
+  `0`; two command types and two effect payload types coexist, internal brands
+  stay absent from the SDK entry, and all crossed/forged/mismatched negative
+  cases remain required errors;
+- SDK allowlist parser: runtime `8`, type `34`;
+- contribution outer ABI: unchanged nine fields;
+- child Trellis context: `implement.jsonl 9`, `check.jsonl 11`, valid;
+- parent Trellis context: `3/3`, valid;
+- product Trellis context: `0/0`, valid;
+- repository typecheck: pass;
+- complete current Core regression: `315/315` pass;
+- `0c49750..83478fe` source/test/package/config delta: zero;
+- final worktree before review-record edits: clean;
+- `task.py start`: not run; production implementation authorization: false.
+
+## Final planning-review verdict
+
+**PASS. Final P0/P1/P2=`0/0/0`.**
+
+The repaired candidate is detailed enough for operator activation without
+choosing a new SDK type model, decoder call shape, handle authenticity rule,
+failure mapping, file scope, or CVN-6 behavior. The task remains `planning` and
+the only open activation condition is the user's review and explicit decision.
