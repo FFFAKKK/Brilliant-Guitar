@@ -1,8 +1,9 @@
 # CVN-2 Operator Runbook
 
-> **Current lifecycle:** planning review passed with final P0/P1/P2=`0/0/0` at
-> candidate `83478fe`; explicit user activation is still pending. Until that
-> decision, do not run `task.py start` and do not edit production/test files.
+> **Current lifecycle:** external targeted audit of `f6d4694` returned the
+> planning candidate with P0/P1/P2=`0/1/0` for one GD-0 error-hierarchy defect.
+> Until the bounded planning repair and targeted re-review pass, do not run
+> `task.py start` and do not edit production/test files.
 
 ## 1. Objective
 

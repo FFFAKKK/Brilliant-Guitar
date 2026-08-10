@@ -39,9 +39,9 @@
     ".trellis/tasks/archive/2026-08/08-04-cvn-4-part-staff-voice-lifecycle/task.json",
     ".trellis/spec/core-kernel/backend/domain-transaction-integration.md"
   ],
-  "notes": "PLANNING REVIEW PASSED / USER ACTIVATION PENDING. Initial review of 8757097 returned P0/P1/P2=0/2/1; bounded repair 0c49750 closed the type/call-shape findings, and clarification 83478fe closed one narrow re-review P2 separating definition bindings from catalog state and fixing host-SDK ownership/failure mapping. Final P0/P1/P2=0/0/0. task.py start has not run and production implementation remains inactive.",
+  "notes": "RETURNED FOR BOUNDED PLANNING REPAIR. External targeted audit of f6d4694 superseded the earlier pass and found P0/P1/P2=0/1/0: ModuleKernelErrorBase bypasses GD-0's internal KernelErrorBase. Repair is limited to the error hierarchy contract, file/test allowlist, and synchronized review state. task.py start has not run and production implementation remains inactive.",
   "meta": {
-    "planning_stage": "independent_planning_review_passed_pending_user_activation",
+    "planning_stage": "external_audit_returned_for_bounded_error_hierarchy_repair",
     "planning_base_commit": "706802c",
     "planning_candidate_commit": "73fe18a10f280146dd341493c1e956d3a8427d32",
     "detailed_planning_artifacts_commit": "2941725",
@@ -65,7 +65,7 @@
     "task_start_run": false,
     "detailed_planning_artifacts_complete": true,
     "planning_self_audit": "passed_final_p0_p1_p2_0_0_0_after_correcting_current25_vs_parent_final28_count",
-    "independent_planning_review": "passed_after_initial_p0_0_p1_2_p2_1_and_narrow_rereview_p2_repair_final_p0_0_p1_0_p2_0",
+    "independent_planning_review": "returned_by_external_targeted_audit_p1_kernel_error_base_hierarchy",
     "planning_review_baseline": "8757097fd6dd3e9464807b9ab091006285a19f2b",
     "planning_review_report": ".trellis/tasks/08-10-cvn-2-official-module-sdk-frozen-assembly/review-candidate.md",
     "planning_review_findings_initial": {
@@ -83,9 +83,21 @@
       "P1": 0,
       "P2": 1
     },
-    "planning_review_findings_final": {
+    "planning_review_findings_previous_final": {
       "P0": 0,
       "P1": 0,
+      "P2": 0
+    },
+    "external_planning_audit_baseline": "f6d4694d8eb325883be9abdb697d35086759ca16",
+    "external_planning_audit_findings": {
+      "P0": 0,
+      "P1": 1,
+      "P2": 0
+    },
+    "external_planning_audit_finding": "module_kernel_error_base_bypasses_internal_kernel_error_base",
+    "planning_review_findings_current": {
+      "P0": 0,
+      "P1": 1,
       "P2": 0
     },
     "planning_review_verification": "type_shape_probe_pass_export8_type34_trellis_child9_11_parent3_3_product0_0_typecheck_full315_zero_production_delta_clean",
@@ -139,6 +151,6 @@
       "src/core-kernel/registry/strict-codec.ts"
     ],
     "planning_base_verification": "passed_ancestry6_trellis6_typecheck_build_full315_clean_source_test_equal_cvn4_planning_production_delta0",
-    "next_gate": "user_review_and_explicit_activation_decision"
+    "next_gate": "bounded_error_hierarchy_planning_repair_then_targeted_rereview"
   }
 }

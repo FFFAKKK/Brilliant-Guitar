@@ -177,3 +177,35 @@ The repaired candidate is detailed enough for operator activation without
 choosing a new SDK type model, decoder call shape, handle authenticity rule,
 failure mapping, file scope, or CVN-6 behavior. The task remains `planning` and
 the only open activation condition is the user's review and explicit decision.
+
+## External targeted audit at `f6d4694`
+
+The later external audit supersedes the preceding PASS as the current gate.
+Current P0/P1/P2=`0/1/0`; verdict: **RETURN FOR BOUNDED PLANNING REPAIR**.
+
+### [P1] `ModuleKernelErrorBase` bypasses the accepted common error base
+
+GD-0 fixes the object-oriented branch as
+`Error -> KernelErrorBase<Code> -> ModuleKernelErrorBase<ModuleId, Code>` and
+requires the SDK module base to derive from the internal error foundation.
+The reviewed CVN-2 design instead declared `ModuleKernelErrorBase ... extends
+Error`, while its planned files and tests contained no `KernelErrorBase<Code>`.
+
+The bounded repair must:
+
+1. fix one internal file owner and exact responsibility for
+   `KernelErrorBase<Code>`;
+2. make `ModuleKernelErrorBase<ModuleId, Code>` derive from it while preserving
+   the generic constructor-data relation;
+3. keep `KernelErrorBase` internal, keep the SDK runtime allowlist at eight with
+   only `ModuleKernelErrorBase` exposed, and add zero application-root runtime
+   error exports;
+4. add decisive inheritance, generic constraint, and `toIssue()` input/output
+   isolation tests;
+5. synchronize PRD, design, runbook, file allowlist, task/roadmap state, and this
+   review record before a targeted re-review.
+
+All other audit conclusions remain preserved: the unified ancestry, `planning`
+lifecycle, zero production delta, `CVN-FC-110/111` ownership, CVN-6/future-port
+exclusions, Trellis gates, typecheck, build, `315/315`, diff check, and clean
+status passed at the audited baseline. Production activation remains false.

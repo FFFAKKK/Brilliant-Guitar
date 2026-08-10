@@ -252,9 +252,10 @@ The following are not CVN-2 implementation work:
 - [x] CVN2-AC009: bounded self-audit reports final P0/P1/P2=`0/0/0`, records the corrected current-25/final-28 command-count distinction, and confirms zero production delta.
 - [ ] CVN2-AC010: an independent planning reviewer passes the candidate and the user reviews that result before activation.
 
-The review portion of AC010 passed at `83478fe` with final
-P0/P1/P2=`0/0/0`; the checkbox stays open only until the user reviews this
-result and makes the activation decision.
+The earlier review pass at `83478fe` was superseded by the external targeted
+audit of `f6d4694`, which returned P0/P1/P2=`0/1/0` because the planned module
+error base bypassed GD-0's internal `KernelErrorBase<Code>`. AC010 remains open
+until the bounded planning repair and a fresh targeted re-review pass.
 
 ### Required from a future implementation candidate
 
