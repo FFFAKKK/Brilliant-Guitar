@@ -1,0 +1,27 @@
+{"file": ".trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/prd.md", "reason": "Review exact scope, requirements and acceptance criteria."}
+{"file": ".trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/design.md", "reason": "Review fixture, worker, evidence, allowlist and routing design."}
+{"file": ".trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/implement.md", "reason": "Review staged execution and gates."}
+{"file": ".trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/operator-handoff.md", "reason": "Review lifecycle and handoff boundaries."}
+{"file": ".trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/review-candidate.md", "reason": "Directed independent review checklist."}
+{"file": ".trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/research/planning-base-and-archive-audit.md", "reason": "Verify baseline and accepted archives."}
+{"file": ".trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/research/qualification-owner-routing.md", "reason": "Verify every failure has one repair owner."}
+{"file": ".trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/research/fixture-and-workload-contract.md", "reason": "Verify exact arithmetic and workloads."}
+{"file": ".trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/research/benchmark-method-and-evidence-schema.md", "reason": "Verify sample and evidence integrity."}
+{"file": ".trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/research/file-test-evidence-ownership-matrix.md", "reason": "Verify closed file ownership."}
+{"file": ".trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/research/contract-traceability-plan.md", "reason": "Verify 44 FC rows and stable case IDs."}
+{"file": ".trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/research/planning-candidate-self-audit.md", "reason": "Review claimed residual finding count."}
+{"file": ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/feature-contract-matrix.md", "reason": "Compare exact parent FC rows, fixtures and budgets."}
+{"file": ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/documentation-sync-matrix.md", "reason": "Verify SPEC-010 and final sync ownership."}
+{"file": ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/core-vnext-performance-baseline.md", "reason": "Compare qualification-scale authority."}
+{"file": ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-roadmap-and-stage-plan.md", "reason": "Verify dependencies and post-Core exit."}
+{"file": ".trellis/tasks/archive/2026-08/08-11-cvn-5-range-operations-explicit-atomic-batch/implementation-review.md", "reason": "Verify final accepted CVN-5 source and evidence."}
+{"file": ".trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/implementation-review.md", "reason": "Verify final accepted CVN-6 source and evidence."}
+{"file": ".trellis/spec/core-kernel/backend/index.md", "reason": "Verify current Core status projection."}
+{"file": ".trellis/spec/core-kernel/backend/pure-kernel-boundary.md", "reason": "Verify Core and product separation."}
+{"file": ".trellis/spec/core-kernel/backend/command-transaction.md", "reason": "Verify transaction/range/batch invariants."}
+{"file": ".trellis/spec/core-kernel/backend/snapshot-events.md", "reason": "Verify history/read/event invariants."}
+{"file": ".trellis/spec/core-kernel/backend/registry-capability.md", "reason": "Verify catalog/Registry invariants."}
+{"file": ".trellis/spec/core-kernel/backend/errors-reports.md", "reason": "Verify failure/resource/privacy invariants."}
+{"file": ".trellis/spec/core-kernel/backend/domain-transaction-integration.md", "reason": "Verify module integration and migration invariants."}
+{"file": ".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/prd.md", "reason": "Verify post-Core remains gated."}
+{"file": ".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/operator-handoff.md", "reason": "Verify first future action remains planning-only."}

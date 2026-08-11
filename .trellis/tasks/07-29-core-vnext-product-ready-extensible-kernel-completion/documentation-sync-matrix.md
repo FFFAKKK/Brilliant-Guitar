@@ -55,7 +55,7 @@ Each newly activated child must copy only its owned CVN-FC rows into a task-loca
 - `SPEC-003`, `SPEC-005`, `SPEC-009`, `SPEC-014`, `SPEC-015`, `SPEC-016`;
 - `technical/software-architecture.md`, `technical/microkernel-architecture.md`, `technical/modular-plugin-architecture.md`.
 
-The absent planned `SPEC-010-product-quality.md` is not fabricated during parent planning. CVN-7 must create it or record an explicitly approved replacement authority before final Core VNext closure.
+The absent planned `SPEC-010-product-quality.md` is not fabricated during parent planning. Formal CVN-7 child `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/` now owns its Stage 10 creation at `.trellis/tasks/06-29-commercial-guitar-tablature-product/specs/SPEC-010-product-quality.md`. It may synchronize only approved Core qualification fixtures, methods, budgets and evidence; later UI/file/playback/render/export/install budgets remain owned by `product-release-qualification-v1`. An alternative authority requires explicit parent review and replaces, rather than duplicates, this path.
 
 ## Protected Historical Scope
 

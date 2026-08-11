@@ -2,7 +2,7 @@
 
 > **Purpose:** durable context-recovery entry for CVN-0 through CVN-7.
 > **Snapshot date:** 2026-08-11.
-> **Current active coordination gate at this snapshot:** CVN-0 through CVN-6 are accepted and archived. CVN-5 source `f329ec1` passed final independent implementation rereview P0/P1/P2=`0/0/0`, acceptance is `b2ad0bc`, archive is `198c71a`, and CVN-7 is the next planning-only qualification child.
+> **Current active coordination gate at this snapshot:** CVN-0 through CVN-6 are accepted and archived. CVN-7 formal planning child `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/` exists on base `38afdc3`; independent planning review is pending, task start is false and production authorization is false.
 > **Status authority:** live child and parent `task.json` files override the snapshot status table below.
 > **Behavior authority:** `feature-contract-matrix.md` overrides this summary for exact public contracts, command payloads, failure priority, limits, fixtures and budgets.
 
@@ -98,7 +98,7 @@ The graph is dependency-based rather than numeric-order-based. CVN-2 and CVN-3 a
 | CVN-4 | completed and archived | final local re-review passed at `b0272e2` with P0/P1/P2 = `0/0/0`; focused `92/92`, full `315/315`; acceptance `7f33e7d` | retained as accepted hierarchy-lifecycle prerequisite |
 | CVN-5 | completed and archived | source `f329ec1`; final implementation rereview `0/0/0`; focused `49/49`; full `432/432`; acceptance `b2ad0bc`; archive `198c71a` | retained as accepted CVN-7 prerequisite |
 | CVN-6 | completed and archived | source `8da50f9`, acceptance `160674d`, archive `a0c1d6a`; final implementation review P0/P1/P2=`0/0/0`; full `383/383` | retained as accepted CVN-5 baseline |
-| CVN-7 | dependency-satisfied; child not created | CVN-0 through CVN-6 are accepted and archived, including CVN-5 archive `198c71a` | create planning-only final qualification child |
+| CVN-7 | formal planning candidate; review pending | task `08-11-cvn-7-core-vnext-final-qualification`; base `38afdc3`; dependencies satisfied; source-default zero; task start/production authorization false | independent planning review |
 
 Snapshot evidence:
 
@@ -113,6 +113,7 @@ Snapshot evidence:
 - CVN-2 unified planning base: merge `706802c` with parents `ebd8075` and `7ad1ff1`; planning candidate `73fe18a` and its bounded planning repairs established the accepted contract. Production implementation was activated separately and closed four bounded review rounds covering the common error hierarchy, stable local validation primitives and global Stage 1-8 failure precedence. Accepted source/test candidate `e203136` passed final independent implementation review with P0/P1/P2=`0/0/0`, focused `54/54`, full `350/350`, forbidden dependency `3/3`, GD-0, Trellis, protected-path, allowlist and diff gates. Acceptance is `f3d0be0`; archive is `42110c4`. The archived child owns only `CVN-FC-110/111`; CVN-6 remains separately planned and gated.
 - CVN-6 archived child: `.trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/`; source `8da50f9`, acceptance `160674d`, archive `a0c1d6a`; owns only `CVN-FC-112/120/121/122`; final implementation review passed `0/0/0` and full suite `383/383`.
 - CVN-5 archived child: `.trellis/tasks/archive/2026-08/08-11-cvn-5-range-operations-explicit-atomic-batch/`; base `d521a61`, source `f329ec1`, acceptance `b2ad0bc`, archive `198c71a`; final implementation rereview passed `0/0/0`, focused `49/49`, full `432/432`; owns `CVN-FC-080..102` with `CVN-FC-141` as the CVN-7 consumer.
+- CVN-7 formal planning child: `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/`; base `38afdc3`; owns exact existing rows `CVN-FC-130..134/140..143`, consumes all 44 actual FC rows, leaves `135..139` unallocated, and defaults to zero production-source change; independent planning review pending.
 
 ## 5. Exact Command Inventory
 
@@ -532,9 +533,11 @@ Two synthetic modules must prove atomic multi-effect execution, integrated const
 
 ## 13. CVN-7: Compatibility, Reliability and Scale Gate
 
+**Formal child:** `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/`; status `planning`, qualification base `38afdc3`, independent planning review pending, task start false, production authorization false.
+
 ### Ownership, purpose and dependencies
 
-- Primary contract owners: `CVN-FC-130–143`.
+- Primary contract owners: exact existing rows `CVN-FC-130–134` and `CVN-FC-140–143`; IDs `135–139` remain unallocated.
 - Purpose: close Core VNext only after all mechanisms are integrated and independently accepted.
 - Dependencies: accepted and archived CVN-0 through CVN-6.
 
@@ -701,9 +704,9 @@ Accepted coordination gates:
 
 - `.trellis/tasks/archive/2026-08/08-09-core-vnext-extensibility-reservation-review/`
 
-Current planning child: none. The next eligible child is CVN-7 final qualification.
+Current planning child: `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/` (formal qualification planning candidate; independent review pending; no production authorization).
 
-Active coordination gate at this snapshot: CVN-6 source `8da50f9` and CVN-5 source `f329ec1` are accepted and archived; CVN-5 archive is `198c71a`. CVN-2 remains accepted/archived and its compiler/catalog/SDK are exact. No CVN implementation child is active; CVN-7 is the next planning-only child.
+Active coordination gate at this snapshot: CVN-6 source `8da50f9` and CVN-5 source `f329ec1` are accepted and archived; CVN-5 archive is `198c71a`. CVN-2 remains accepted/archived and its compiler/catalog/SDK are exact. No CVN implementation child is active. CVN-7 is the sole planning child on `38afdc3`, with independent review pending.
 
 GD-0 dependency authority:
 

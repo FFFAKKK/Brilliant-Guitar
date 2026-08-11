@@ -26,7 +26,8 @@
     "08-09-core-vnext-extensibility-reservation-review",
     "08-10-cvn-2-official-module-sdk-frozen-assembly",
     "08-11-cvn-6-module-runtime-validation-migration-integration",
-    "08-11-cvn-5-range-operations-explicit-atomic-batch"
+    "08-11-cvn-5-range-operations-explicit-atomic-batch",
+    "08-11-cvn-7-core-vnext-final-qualification"
   ],
   "parent": "06-29-commercial-guitar-tablature-product",
   "relatedFiles": [
@@ -57,7 +58,7 @@
     ".trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/",
     ".trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/"
   ],
-  "notes": "PLANNING COORDINATION / CVN-0 THROUGH CVN-6, EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-5 SOURCE f329ec1 ACCEPTED AND ARCHIVED AT 198c71a / CVN-7 IS THE NEXT PLANNING-ONLY QUALIFICATION CHILD.",
+  "notes": "PLANNING COORDINATION / CVN-0 THROUGH CVN-6, EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-7 FORMAL QUALIFICATION PLANNING CANDIDATE CREATED ON 38afdc3 / INDEPENDENT PLANNING REVIEW PENDING / TASK START AND PRODUCTION AUTHORIZATION FALSE / POST-CORE REMAINS GATED.",
   "meta": {
     "compatibility_base": "d92a7586536ac8757c318ae6f75aabd8698f85ac",
     "architecture_style": "stability_first_startup_frozen_microkernel",
@@ -65,7 +66,7 @@
     "refactor_strategy": "behavior_preserving_command_transaction_registry_spine",
     "qualification_scale": "balanced_25600_event_release_gate_plus_102400_event_stress_gate",
     "legacy_gate_mapping": "ck1_1_0_to_cvn0_ck1_1_1_to_cvn2_generic_gd2_to_cvn1_cvn5_cvn6",
-    "planning_review": "cvn7_planning_eligible_after_cvn5_archive",
+    "planning_review": "cvn7_formal_planning_candidate_independent_review_pending",
     "cvn2_planning_review_baseline": "8757097fd6dd3e9464807b9ab091006285a19f2b",
     "cvn2_planning_review_findings_initial": {
       "P0": 0,
@@ -123,7 +124,7 @@
     "extensibility_reservation_acceptance_commit": "253d19e5e9d6a3bfdfa0158833d59872e8be156c",
     "extensibility_reservation_archive_commit": "a4d8cee406e8aa9a6efa05f4e24a8707367dc7b8",
     "extensibility_reservation_archive_path": ".trellis/tasks/archive/2026-08/08-09-core-vnext-extensibility-reservation-review/",
-    "next_dependency_gate": "create_cvn7_planning_candidate",
+    "next_dependency_gate": "cvn7_independent_planning_review",
     "cvn2_task": "08-10-cvn-2-official-module-sdk-frozen-assembly",
     "cvn2_status": "completed_archived",
     "cvn2_branch": "codex/cvn-2-official-module-sdk-frozen-assembly",
@@ -360,7 +361,7 @@
     "cvn6_full_test_count": 383,
     "cvn6_archive_commit": "a0c1d6a7b8b38d053d591dca6586c8fff84bbdd6",
     "cvn6_archive_path": ".trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/",
-    "current_planning_child": null,
+    "current_planning_child": "08-11-cvn-7-core-vnext-final-qualification",
     "cvn5_task": "08-11-cvn-5-range-operations-explicit-atomic-batch",
     "cvn5_status": "completed_archived",
     "cvn5_branch": "codex/cvn-5-range-operations-explicit-atomic-batch",
@@ -441,6 +442,45 @@
     "cvn5_archive_pending": false,
     "cvn7_dependency_status": "satisfied_all_cvn0_through_cvn6_accepted_archived",
     "cvn5_archive_commit": "198c71a",
-    "cvn5_archive_path": ".trellis/tasks/archive/2026-08/08-11-cvn-5-range-operations-explicit-atomic-batch/"
+    "cvn5_archive_path": ".trellis/tasks/archive/2026-08/08-11-cvn-5-range-operations-explicit-atomic-batch/",
+    "cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
+    "cvn7_status": "planning_independent_review_pending",
+    "cvn7_branch": "codex/cvn-7-core-vnext-final-qualification",
+    "cvn7_worktree_path": ".worktrees/cvn-7-core-vnext-final-qualification",
+    "cvn7_qualification_base_commit": "38afdc3fd508dc67f7aa446fd323837a5d550b70",
+    "cvn7_primary_contracts": [
+      "CVN-FC-130",
+      "CVN-FC-131",
+      "CVN-FC-132",
+      "CVN-FC-133",
+      "CVN-FC-134",
+      "CVN-FC-140",
+      "CVN-FC-141",
+      "CVN-FC-142",
+      "CVN-FC-143"
+    ],
+    "cvn7_unallocated_contract_ids": [
+      "CVN-FC-135",
+      "CVN-FC-136",
+      "CVN-FC-137",
+      "CVN-FC-138",
+      "CVN-FC-139"
+    ],
+    "cvn7_consumer_contract_count": 44,
+    "cvn7_dependencies": "cvn0_through_cvn6_accepted_archived",
+    "cvn7_dependency_gate_satisfied": true,
+    "cvn7_task_start_run": false,
+    "cvn7_production_implementation_authorized": false,
+    "cvn7_planning_artifacts_complete": true,
+    "cvn7_independent_planning_review": "pending",
+    "cvn7_expected_core_commands": 28,
+    "cvn7_expected_root_runtime_exports": 51,
+    "cvn7_expected_sdk_exports": "8_runtime_34_type",
+    "cvn7_default_source_delta": "zero",
+    "cvn7_representative_fixture": "25600_events_12800_notes_2_contributions_2000_history",
+    "cvn7_stress_fixture": "102400_events_51200_notes_10000_envelopes_rss_2gib",
+    "cvn7_post_core_scope": "excluded_until_cvn7_and_parent_accepted_archived",
+    "cvn7_planning_self_audit": "ready_for_independent_review_p0_0_p1_0_p2_0",
+    "cvn7_planning_verification": "trellis31_27_parent3_3_product0_0_postcore15_16_fc44_trace44_typecheck_build_full432_production0_postcore0"
   }
 }

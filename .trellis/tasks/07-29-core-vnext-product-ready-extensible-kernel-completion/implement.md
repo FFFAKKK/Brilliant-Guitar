@@ -2,7 +2,7 @@
 
 ## 1. Execution Status
 
-`PLANNING COORDINATION / CVN-0 THROUGH CVN-6, EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-5 ACCEPTED AND ARCHIVED AT 198c71a / CVN-7 IS THE NEXT PLANNING-ONLY QUALIFICATION CHILD`.
+`PLANNING COORDINATION / CVN-0 THROUGH CVN-6, EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-5 ACCEPTED AND ARCHIVED AT 198c71a / CVN-7 FORMAL PLANNING CANDIDATE CREATED ON 38afdc3; INDEPENDENT REVIEW PENDING; TASK START AND PRODUCTION AUTHORIZATION FALSE`.
 
 This parent task coordinates independently verifiable children. It does not batch all production changes into one implementation branch. Each child must receive its own PRD/design/implement review, `task.py start`, independent technical audit and archive decision.
 
@@ -216,9 +216,15 @@ Numeric labels organize scope; the arrows above are the actual execution depende
 
 ### CVN-7 — Core VNext Compatibility, Reliability and Scale Gate
 
+**Formal child:** `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/`; status `planning`, qualification base `38afdc3fd508dc67f7aa446fd323837a5d550b70`, independent planning review pending, task start false and production implementation authorization false.
+
 **Purpose:** close the product-ready extensible kernel only after every mechanism is integrated.
 
 **Dependencies:** CVN-0 through CVN-6 all independently accepted and archived.
+
+**Primary contracts:** exact existing rows `CVN-FC-130..134` and `CVN-FC-140..143`. IDs `CVN-FC-135..139` are unallocated and add no implicit scope. CVN-7 consumes all 44 actual parent FC rows as qualification evidence without changing their primary ownership.
+
+**Production boundary:** default `src/**` delta is zero. Qualification may add new test fixtures, test-only runners, evidence, two npm scripts and final specification/status synchronization. Any behavior defect returns to the named owning gate through an independent bounded repair task.
 
 **Matrix:**
 

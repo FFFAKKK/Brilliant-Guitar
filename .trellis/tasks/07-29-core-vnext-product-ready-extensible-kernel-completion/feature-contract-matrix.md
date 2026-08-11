@@ -740,9 +740,16 @@ Representative benchmark process peak RSS 固定 `<= 1.0 GiB`。Portable CI 运�
 | CVN-4 | CVN-FC-060–070 | CVN-5/7；fifteen exact hierarchy/property commands |
 | CVN-5 | CVN-FC-080–102 | CVN-7；two range commands + one batch command |
 | CVN-6 | CVN-FC-112/120–122 | accepted and archived, source `8da50f9`, final implementation rereview `0/0/0`；CVN-5/7；inventory-bound runtime + validation/profile/diagnostic/migration |
-| CVN-7 | CVN-FC-130–143 | compatibility, scale, resource, deterministic integration evidence |
+| CVN-7 | CVN-FC-130–134 and CVN-FC-140–143 | compatibility, scale, resource, deterministic integration evidence; IDs 135–139 are unallocated |
 
 任一 child 若需要改变命令 ID/target/payload、cascade、range、batch attribution、failure priority、caps、fixture 或 budget，即触发父级规划复审；child 内不以“implementation detail”覆盖这些观察合同。
+
+### CVN-7 formal planning clarification (2026-08-11)
+
+- Formal child: `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/` on qualification base `38afdc3`.
+- Primary owner set is the nine actual rows `130/131/132/133/134/140/141/142/143`; the absent `135..139` headings remain unallocated.
+- CVN-7 supplies qualification evidence for all 44 actual FC rows but does not rewrite command, ABI, failure, limit, fixture or budget authority.
+- Default production-source delta is zero; behavior findings route to the existing primary owner before qualification restarts.
 
 ## 18. 明确排除与后续扩展点
 
