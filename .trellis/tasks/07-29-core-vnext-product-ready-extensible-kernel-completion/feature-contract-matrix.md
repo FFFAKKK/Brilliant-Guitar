@@ -423,7 +423,7 @@ Intermediate candidate 可以暂时违反只由后续 child 修复的 document s
 - `failedCommandIndex` remains the exact public wrapper field. `command.batch-child-rejected` cannot be its own inner failure; the public failure graph depth is at most one wrapper.
 - Child index orders route, preparation, effects, affected facts and child failure attribution. Core semantic validation, compatibility, validators, Core profile, classifiers and the public assessment run once for the final candidate, Core first then frozen module catalog order.
 - This clarification is owned by the formal CVN-5 child and changes no accepted CVN-1/CVN-2/CVN-6 surface.
-- Accepted source `f329ec10bc77c530282db3a6f47dbd6b6112859e` passed final independent implementation rereview P0/P1/P2=`0/0/0`, focused `49/49` and full `432/432`; acceptance record is `b2ad0bc`, with archive pending as a separate lifecycle action.
+- Accepted source `f329ec10bc77c530282db3a6f47dbd6b6112859e` passed final independent implementation rereview P0/P1/P2=`0/0/0`, focused `49/49` and full `432/432`; acceptance record is `b2ad0bc` and archive is `198c71a`.
 
 ## 12. 新增稳定失败
 

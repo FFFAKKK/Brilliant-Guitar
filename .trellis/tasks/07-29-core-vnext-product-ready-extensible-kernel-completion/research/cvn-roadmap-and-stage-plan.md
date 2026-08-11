@@ -2,7 +2,7 @@
 
 > **Purpose:** durable context-recovery entry for CVN-0 through CVN-7.
 > **Snapshot date:** 2026-08-11.
-> **Current active coordination gate at this snapshot:** CVN-6 is accepted and archived. CVN-5 source `f329ec1` passed final independent implementation rereview P0/P1/P2=`0/0/0` and is accepted; parent/spec synchronization and archive are the remaining closure actions before CVN-7 planning.
+> **Current active coordination gate at this snapshot:** CVN-0 through CVN-6 are accepted and archived. CVN-5 source `f329ec1` passed final independent implementation rereview P0/P1/P2=`0/0/0`, acceptance is `b2ad0bc`, archive is `198c71a`, and CVN-7 is the next planning-only qualification child.
 > **Status authority:** live child and parent `task.json` files override the snapshot status table below.
 > **Behavior authority:** `feature-contract-matrix.md` overrides this summary for exact public contracts, command payloads, failure priority, limits, fixtures and budgets.
 
@@ -96,9 +96,9 @@ The graph is dependency-based rather than numeric-order-based. CVN-2 and CVN-3 a
 | CVN-2 | completed and archived | accepted source `e203136`, acceptance `f3d0be0`, archive `42110c4`; final implementation review P0/P1/P2=`0/0/0`; focused `54/54`, full `350/350`, SDK `8/34`, root runtime delta `0` | retained as accepted CVN-6 prerequisite |
 | CVN-3 | completed and archived | independent review passed at `d9500f5` with P0/P1/P2 = `0/0/0`; 22 lifecycle and 233 full tests reproduced; acceptance commit `3691d93` | retained as accepted factory and Measure-lifecycle prerequisite |
 | CVN-4 | completed and archived | final local re-review passed at `b0272e2` with P0/P1/P2 = `0/0/0`; focused `92/92`, full `315/315`; acceptance `7f33e7d` | retained as accepted hierarchy-lifecycle prerequisite |
-| CVN-5 | implementation accepted; archive pending | source `f329ec1`; final implementation rereview `0/0/0`; focused `49/49`; full `432/432`; acceptance `b2ad0bc` | synchronize accepted contracts and archive |
+| CVN-5 | completed and archived | source `f329ec1`; final implementation rereview `0/0/0`; focused `49/49`; full `432/432`; acceptance `b2ad0bc`; archive `198c71a` | retained as accepted CVN-7 prerequisite |
 | CVN-6 | completed and archived | source `8da50f9`, acceptance `160674d`, archive `a0c1d6a`; final implementation review P0/P1/P2=`0/0/0`; full `383/383` | retained as accepted CVN-5 baseline |
-| CVN-7 | parent-planned; child not created | all implementation dependencies accepted; waits only for the CVN-5 archive commit | create planning-only final qualification child after archive |
+| CVN-7 | dependency-satisfied; child not created | CVN-0 through CVN-6 are accepted and archived, including CVN-5 archive `198c71a` | create planning-only final qualification child |
 
 Snapshot evidence:
 
@@ -112,7 +112,7 @@ Snapshot evidence:
 - GD-0 accepted documentation/architecture contract: candidate `451627e`; acceptance `a2b9009`; archive `4580164`; archived-path synchronization `ade7526`; runtime implementation remains separately gated.
 - CVN-2 unified planning base: merge `706802c` with parents `ebd8075` and `7ad1ff1`; planning candidate `73fe18a` and its bounded planning repairs established the accepted contract. Production implementation was activated separately and closed four bounded review rounds covering the common error hierarchy, stable local validation primitives and global Stage 1-8 failure precedence. Accepted source/test candidate `e203136` passed final independent implementation review with P0/P1/P2=`0/0/0`, focused `54/54`, full `350/350`, forbidden dependency `3/3`, GD-0, Trellis, protected-path, allowlist and diff gates. Acceptance is `f3d0be0`; archive is `42110c4`. The archived child owns only `CVN-FC-110/111`; CVN-6 remains separately planned and gated.
 - CVN-6 archived child: `.trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/`; source `8da50f9`, acceptance `160674d`, archive `a0c1d6a`; owns only `CVN-FC-112/120/121/122`; final implementation review passed `0/0/0` and full suite `383/383`.
-- CVN-5 accepted implementation child: `.trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/`; base `d521a61`, source `f329ec1`, acceptance `b2ad0bc`; final implementation rereview passed `0/0/0`, focused `49/49`, full `432/432`; owns `CVN-FC-080..102` with `CVN-FC-141` as the CVN-7 consumer; archive pending.
+- CVN-5 archived child: `.trellis/tasks/archive/2026-08/08-11-cvn-5-range-operations-explicit-atomic-batch/`; base `d521a61`, source `f329ec1`, acceptance `b2ad0bc`, archive `198c71a`; final implementation rereview passed `0/0/0`, focused `49/49`, full `432/432`; owns `CVN-FC-080..102` with `CVN-FC-141` as the CVN-7 consumer.
 
 ## 5. Exact Command Inventory
 
@@ -410,7 +410,7 @@ Every command needs committed, no-op, rejected, undo, redo and replay evidence. 
 
 ## 11. CVN-5: Range Operations and Explicit Atomic Batch
 
-**Formal child:** `.trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/`; status `in_progress`, accepted source `f329ec1`, acceptance record `b2ad0bc`, final implementation rereview P0/P1/P2=`0/0/0`, focused `49/49`, full `432/432`; archive pending.
+**Archived child:** `.trellis/tasks/archive/2026-08/08-11-cvn-5-range-operations-explicit-atomic-batch/`; status `completed`, accepted source `f329ec1`, acceptance `b2ad0bc`, archive `198c71a`, final implementation rereview P0/P1/P2=`0/0/0`, focused `49/49`, full `432/432`.
 
 ### Ownership, purpose and dependencies
 
@@ -667,8 +667,8 @@ Creation alone does not authorize source changes. Parent planning status does no
 3. GD-0, the reservation gate and CVN-2 are accepted and archived; CVN-2 owns only `CVN-FC-110/111` and is the frozen input for CVN-6.
 4. CVN-4 remains the accepted Part/Staff/Voice/Event lifecycle prerequisite; no successor was implicitly activated by its acceptance.
 5. CVN-6 follows accepted CVN-2, consumes the accepted reservation charter while keeping post-V1 ports deferred, and is accepted/archived.
-6. CVN-5 implementation passed final rereview `0/0/0` on the accepted/archived CVN-6 line; source `f329ec1` is accepted and archive is pending.
-7. CVN-7 has all behavior dependencies accepted and waits only for the CVN-5 archive commit.
+6. CVN-5 implementation passed final rereview `0/0/0` on the accepted/archived CVN-6 line; source `f329ec1` is accepted and archived at `198c71a`.
+7. CVN-7 has all CVN-0 through CVN-6 dependencies accepted and archived and is ready for planning-only child creation.
 8. Guitar-owned planning resumes only after CVN-7 closes the generic Core seam.
 9. Operation expansion, Domain Selectors, schema/owner evolution, Module Package Host and external adapters enter only through separate post-CVN-7 gates when concrete product evidence exists.
 10. The mandatory post-CVN-7 product-program authority is `.trellis/tasks/08-11-post-core-official-plugin-product-roadmap/`; its first future implementation child is Official Guitar Domain V1.
@@ -701,9 +701,9 @@ Accepted coordination gates:
 
 - `.trellis/tasks/archive/2026-08/08-09-core-vnext-extensibility-reservation-review/`
 
-Current closure child: `.trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/` (implementation accepted after final rereview `0/0/0`; archive pending).
+Current planning child: none. The next eligible child is CVN-7 final qualification.
 
-Active coordination gate at this snapshot: CVN-6 source/test candidate `8da50f90c9c05d87a8e1aa7a4e65b30e6ab82c7f` is accepted and archived. CVN-5 source `f329ec10bc77c530282db3a6f47dbd6b6112859e` passed final rereview `0/0/0`, is accepted, and awaits archive after contract synchronization. CVN-2 remains accepted/archived and its compiler/catalog/SDK are exact; CVN-7 waits only for the CVN-5 archive commit.
+Active coordination gate at this snapshot: CVN-6 source `8da50f9` and CVN-5 source `f329ec1` are accepted and archived; CVN-5 archive is `198c71a`. CVN-2 remains accepted/archived and its compiler/catalog/SDK are exact. No CVN implementation child is active; CVN-7 is the next planning-only child.
 
 GD-0 dependency authority:
 

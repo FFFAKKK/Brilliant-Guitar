@@ -57,9 +57,9 @@
     ".trellis/spec/core-kernel/backend/registry-capability.md",
     ".trellis/spec/core-kernel/backend/errors-reports.md"
   ],
-  "notes": "CVN-5 IMPLEMENTATION ACCEPTED AFTER FINAL INDEPENDENT REVIEW PASS 0/0/0 / ACCEPTED CANDIDATE f329ec1 / FOCUSED 49/49 / FULL 432/432 / LIFECYCLE METADATA REPAIRED BY 10e5242 / PARENT AND ACTIVE-SPEC SYNC THEN ARCHIVE / CVN-7 REMAINS GATED UNTIL ARCHIVE.",
+  "notes": "CVN-5 COMPLETED AND ARCHIVED / ACCEPTED SOURCE f329ec1 / FINAL INDEPENDENT REVIEW 0/0/0 / FOCUSED 49/49 / FULL 432/432 / ACCEPTANCE b2ad0bc / CONTRACT SYNC 3123a6a / ARCHIVE 198c71a / CVN-7 PLANNING IS THE NEXT GATE.",
   "meta": {
-    "planning_stage": "implementation_accepted_archive_pending",
+    "planning_stage": "completed_archived",
     "planning_base_commit": "d521a618e42c01077e8545d1c87e9b36e14d4bdb",
     "primary_contract_owners": [
       "CVN-FC-080",
@@ -149,7 +149,7 @@
     "planning_ready_for_user_activation": true,
     "user_implementation_authorization": true,
     "user_implementation_authorization_date": "2026-08-11",
-    "operator_state": "accepted_implementation_committed_archive_pending",
+    "operator_state": "completed_archived",
     "implementation_allowlist_amendment": "passed_2026_08_11_p0_0_p1_0_p2_0_exact_ten_path_closed_list",
     "integrated_failure_union_allowlist_amendment": "passed_2026_08_11_p0_0_p1_0_p2_0_single_type_owner",
     "final_independent_implementation_review": "return_for_repair_2026_08_11_p0_0_p1_2_p2_3",
@@ -196,11 +196,13 @@
     "repair_candidate_full_test": "432_of_432_pass",
     "implementation_started_from": "0bd79b2",
     "acceptance_recorded": true,
-    "archive_recorded": false,
+    "archive_recorded": true,
     "acceptance_record_commit": "b2ad0bc",
     "metadata_duplicate_repair_commit": "10e5242",
     "acceptance_gate_evidence": "final_review_p0_0_p1_0_p2_0_trellis28_31_parent3_3_product0_0_postcore15_16_cvn6archive22_23_typecheck_build_focused49_full432_gd0_layer_a7_layer_b_exports51_sdk8_34_core28_allowlist_protected_diffcheck_json_jsonl_pass",
     "user_completion_direction": "verified_and_continue_2026_08_11",
-    "next_gate": "sync_parent_and_active_specs_then_archive_cvn5"
+    "next_gate": "cvn7_planning_candidate",
+    "archive_commit": "198c71a",
+    "archive_path": ".trellis/tasks/archive/2026-08/08-11-cvn-5-range-operations-explicit-atomic-batch/"
   }
 }
