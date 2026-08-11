@@ -229,6 +229,13 @@ export type ApplyCoreEffectSetResult =
     }
   | { readonly ok: false; readonly failure: CommandFailure };
 
+export type ApplyCoreEffectSetToCandidateResult =
+  | {
+      readonly ok: true;
+      readonly inverse: NonEmptyCoreEffectSet;
+    }
+  | { readonly ok: false; readonly failure: CommandFailure };
+
 interface InsertMeasurePlan {
   readonly definitionIndex: number;
   readonly contents: readonly {
@@ -1731,11 +1738,31 @@ export function applyCoreEffectSet(
   effects: readonly CoreEffect[],
 ): ApplyCoreEffectSetResult {
   try {
+    const candidate = cloneValue(document);
+    const applied = applyCoreEffectSetToCandidate(candidate, effects);
+    return applied.ok
+      ? { ok: true, document: candidate, inverse: applied.inverse }
+      : applied;
+  } catch {
+    return failure("command.internal-error");
+  }
+}
+
+/** Creates the single isolated mutable candidate owned by one batch coordinator. */
+export function cloneCoreEffectCandidate(document: ScoreDocument): ScoreDocument {
+  return cloneValue(document);
+}
+
+/** Applies one ordered segment to an already isolated candidate. */
+export function applyCoreEffectSetToCandidate(
+  candidate: ScoreDocument,
+  effects: readonly CoreEffect[],
+): ApplyCoreEffectSetToCandidateResult {
+  try {
     const nonEmpty = asNonEmptyEffectSet(effects);
     if (nonEmpty === undefined) {
       return failure("command.internal-error");
     }
-    const candidate = cloneValue(document);
     const inverses: CoreEffect[] = [];
     for (const effect of nonEmpty) {
       const inverse = deriveInverseEffect(candidate, effect);
@@ -1754,7 +1781,6 @@ export function applyCoreEffectSet(
     }
     return {
       ok: true,
-      document: candidate,
       inverse: freezeCoreEffectSet(inverse),
     };
   } catch {

@@ -34,6 +34,7 @@ import {
 } from "./target-resolver";
 import { HIERARCHY_COMMAND_ADAPTERS } from "./hierarchy-command-adapters";
 import { MEASURE_COMMAND_ADAPTERS } from "./measure-command-adapters";
+import { RANGE_COMMAND_ADAPTERS } from "./range-command-adapters";
 
 export type CoreCommandTargetKind = ScoreEntityTarget["kind"];
 
@@ -738,4 +739,5 @@ export const CORE_COMMAND_ADAPTERS: readonly CoreCommandAdapter[] = Object.freez
   }),
   ...MEASURE_COMMAND_ADAPTERS,
   ...HIERARCHY_COMMAND_ADAPTERS,
+  ...RANGE_COMMAND_ADAPTERS,
 ] satisfies readonly CoreCommandAdapter[]);

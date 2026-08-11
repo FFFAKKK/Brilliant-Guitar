@@ -18,6 +18,12 @@ import {
   type NonEmptyCoreEffectSet,
 } from "./effects";
 import { decodeCoreCommand } from "./strict-codec";
+import {
+  prepareCoreBatch,
+  type EffectiveBatchSegment,
+} from "./batch-runtime";
+
+type CommandSupport = ReturnType<CoreExecutionAssembly["classify"]>;
 
 export interface HistoryEntry {
   readonly sequence: number;
@@ -25,6 +31,7 @@ export interface HistoryEntry {
   readonly forward: NonEmptyCoreEffectSet;
   readonly inverse: NonEmptyCoreEffectSet;
   readonly affected: readonly ScoreAddress[];
+  readonly batchSegments?: readonly EffectiveBatchSegment[];
   readonly integratedSource?: {
     readonly kind: "module";
     readonly moduleId: string;
@@ -61,6 +68,16 @@ export interface CommandTransition {
   readonly state: CommandRuntimeState;
   readonly result: CommandResult;
   readonly committed?: CommittedOperation;
+}
+
+export interface PreparedCommandCommit {
+  readonly command: CoreCommandEnvelope;
+  readonly document: ScoreDocument;
+  readonly forward: NonEmptyCoreEffectSet;
+  readonly inverse: NonEmptyCoreEffectSet;
+  readonly affected: readonly ScoreAddress[];
+  readonly batchSegments?: readonly EffectiveBatchSegment[];
+  readonly support?: CommandSupport;
 }
 
 const structuredCloneValue = structuredClone;
@@ -112,14 +129,19 @@ function historyEntry(
   forward: NonEmptyCoreEffectSet,
   inverse: NonEmptyCoreEffectSet,
   affected: readonly ScoreAddress[],
+  batchSegments?: readonly EffectiveBatchSegment[],
 ): HistoryEntry {
-  return deepFreezeValue({
+  const entry = {
     sequence,
     command: cloneValue(command),
     forward: freezeCoreEffectSet(forward),
     inverse: freezeCoreEffectSet(inverse),
     affected: affected.map(cloneValue),
-  });
+    ...(batchSegments === undefined
+      ? {}
+      : { batchSegments: cloneValue(batchSegments) }),
+  };
+  return deepFreezeValue(entry);
 }
 
 function committed(
@@ -129,6 +151,7 @@ function committed(
   redoStack: readonly HistoryEntry[],
   hooks: CommandRuntimeHooks,
   operation: CommittedOperation,
+  supportOverride?: CommandSupport,
 ): CommandTransition {
   const nextState: CommandRuntimeState = {
     ...state,
@@ -137,7 +160,8 @@ function committed(
     undoStack,
     redoStack,
   };
-  const support = (hooks.classify ?? state.assembly.classify)(document);
+  const support =
+    supportOverride ?? (hooks.classify ?? state.assembly.classify)(document);
   return {
     state: nextState,
     result: {
@@ -152,6 +176,40 @@ function committed(
       affected: operation.affected.map(cloneValue),
     }),
   };
+}
+
+export function commitPreparedCommand(
+  state: CommandRuntimeState,
+  prepared: PreparedCommandCommit,
+  hooks: CommandRuntimeHooks = {},
+): CommandTransition {
+  if (!canIncrementVersion(state)) {
+    return rejected(state, { code: "command.version-overflow" });
+  }
+  if (!validHistorySequence(state.nextHistorySequence)) {
+    return rejected(state, { code: "history.invariant-violation" });
+  }
+  const entry = historyEntry(
+    state.nextHistorySequence,
+    prepared.command,
+    prepared.forward,
+    prepared.inverse,
+    prepared.affected,
+    prepared.batchSegments,
+  );
+  return committed(
+    { ...state, nextHistorySequence: state.nextHistorySequence + 1 },
+    prepared.document,
+    [...state.undoStack, entry],
+    [],
+    hooks,
+    {
+      cause: "submit",
+      command: prepared.command,
+      affected: prepared.affected,
+    },
+    prepared.support,
+  );
 }
 
 export function createCommandRuntime(
@@ -199,6 +257,51 @@ export function submitCommand(
     return rejected(state, decoded.failure);
   }
   try {
+    if (decoded.value.commandId === "core.transaction.batch") {
+      const prepared = prepareCoreBatch(
+        state.document,
+        decoded.value,
+        state.assembly,
+        hooks,
+      );
+      if (!prepared.ok) {
+        return rejected(state, prepared.failure);
+      }
+      const semantic = state.assembly.validate(prepared.document);
+      if (!semantic.ok) {
+        return rejected(state, {
+          code: "command.semantic-invalid",
+          diagnostics: cloneValue(semantic.diagnostics),
+        });
+      }
+      const support = (hooks.classify ?? state.assembly.classify)(
+        prepared.document,
+      );
+      if (!prepared.changed) {
+        return {
+          state,
+          result: {
+            status: "no-op",
+            documentVersion: state.documentVersion,
+            support,
+            ...depths(state),
+          },
+        };
+      }
+      return commitPreparedCommand(
+        state,
+        {
+          command: decoded.value,
+          document: prepared.document,
+          forward: prepared.forward,
+          inverse: prepared.inverse,
+          affected: prepared.affected,
+          batchSegments: prepared.segments,
+          support,
+        },
+        hooks,
+      );
+    }
     const definition = findCoreExecutionDefinition(
       state.assembly,
       decoded.value.commandId,
@@ -269,6 +372,51 @@ export function submitCommand(
   }
 }
 
+function batchSourceIsValid(
+  source: EffectiveBatchSegment["source"] | undefined,
+): boolean {
+  return source?.kind === "core" ||
+    (source?.kind === "module" &&
+      typeof source.moduleId === "string" &&
+      source.moduleId.length > 0 &&
+      typeof source.contributionId === "string" &&
+      source.contributionId.length > 0);
+}
+
+function batchSegmentsAreValid(entry: HistoryEntry): boolean {
+  if (entry.command.commandId !== "core.transaction.batch") {
+    return entry.batchSegments === undefined;
+  }
+  if (!Array.isArray(entry.batchSegments) || entry.batchSegments.length === 0) {
+    return false;
+  }
+  let previousChildIndex = -1;
+  let forwardCount = 0;
+  let inverseCount = 0;
+  for (const segment of entry.batchSegments) {
+    if (
+      segment === undefined ||
+      !Number.isSafeInteger(segment.childIndex) ||
+      segment.childIndex <= previousChildIndex ||
+      !batchSourceIsValid(segment.source) ||
+      !Array.isArray(segment.forward) ||
+      segment.forward.length === 0 ||
+      !Array.isArray(segment.inverse) ||
+      segment.inverse.length === 0 ||
+      !Array.isArray(segment.affected)
+    ) {
+      return false;
+    }
+    previousChildIndex = segment.childIndex;
+    forwardCount += segment.forward.length;
+    inverseCount += segment.inverse.length;
+  }
+  return (
+    forwardCount === entry.forward.length &&
+    inverseCount === entry.inverse.length
+  );
+}
+
 function entryIsValid(entry: HistoryEntry | undefined): entry is HistoryEntry {
   return (
     entry !== undefined &&
@@ -278,7 +426,8 @@ function entryIsValid(entry: HistoryEntry | undefined): entry is HistoryEntry {
     Array.isArray(entry.inverse) &&
     entry.inverse.length > 0 &&
     Array.isArray(entry.affected) &&
-    entry.affected.length > 0
+    entry.affected.length > 0 &&
+    batchSegmentsAreValid(entry)
   );
 }
 

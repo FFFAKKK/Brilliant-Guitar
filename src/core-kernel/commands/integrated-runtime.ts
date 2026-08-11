@@ -54,6 +54,7 @@ import type {
   KernelCommandAssessment,
   KernelCommandBusCreationFailure,
   KernelCommandFailure,
+  KernelBatchChildFailure,
   KernelCommandResult,
   KernelContributionFailure,
   KernelIntegratedCatalog,
@@ -64,15 +65,32 @@ import {
   readDenseArray,
   readExactDataRecord,
 } from "../registry/strict-codec";
-import type { CommandResult, CoreCommandEnvelope, ScoreEntityTarget } from "./contracts";
+import type {
+  BatchCommand,
+  CommandResult,
+  CoreCommandEnvelope,
+  ScoreEntityTarget,
+} from "./contracts";
 import {
   applyCoreEffectSet,
+  applyCoreEffectSetToCandidate,
+  cloneCoreEffectCandidate,
   freezeCoreEffectSet,
   type CoreEffect,
   type NonEmptyCoreEffectSet,
 } from "./effects";
 import { findCoreExecutionDefinition } from "./execution-assembly";
+import { decodeCoreCommand } from "./strict-codec";
+import { resolveScoreEntityTarget } from "./target-resolver";
 import {
+  appendBatchAffectedWithinBudget,
+  BATCH_EFFECT_LIMIT,
+  checkBatchEffectBudget,
+  type BatchChildSource,
+  type EffectiveBatchSegment,
+} from "./batch-runtime";
+import {
+  commitPreparedCommand,
   createCommandRuntime,
   redoCommand,
   submitCommand,
@@ -161,6 +179,42 @@ interface PreparedModuleOperation {
 
 type PrepareModuleOperationResult =
   | { readonly ok: true; readonly value: PreparedModuleOperation }
+  | { readonly ok: false; readonly failure: KernelCommandFailure };
+
+interface ModuleRequestApplicationOptions {
+  /** The caller already owns a detached candidate that may be mutated in place. */
+  readonly candidateIsIsolated: boolean;
+  /** Retain a non-empty effect sequence even when it restores the starting value. */
+  readonly preserveEffectiveSequence: boolean;
+}
+
+const DEFAULT_MODULE_REQUEST_APPLICATION_OPTIONS: ModuleRequestApplicationOptions =
+  Object.freeze({
+    candidateIsIsolated: false,
+    preserveEffectiveSequence: false,
+  });
+
+const BATCH_MODULE_REQUEST_APPLICATION_OPTIONS: ModuleRequestApplicationOptions =
+  Object.freeze({
+    candidateIsIsolated: true,
+    preserveEffectiveSequence: true,
+  });
+
+type PrepareIntegratedBatchResult =
+  | {
+      readonly ok: true;
+      readonly changed: false;
+      readonly document: ScoreDocument;
+    }
+  | {
+      readonly ok: true;
+      readonly changed: true;
+      readonly document: ScoreDocument;
+      readonly forward: NonEmptyCoreEffectSet;
+      readonly inverse: NonEmptyCoreEffectSet;
+      readonly affected: readonly ScoreAddress[];
+      readonly segments: readonly EffectiveBatchSegment[];
+    }
   | { readonly ok: false; readonly failure: KernelCommandFailure };
 
 const INTEGRATED_BUS_TOKEN = Symbol("IntegratedCommandBus construction");
@@ -1145,6 +1199,7 @@ function applyModuleRequests(
   documentVersion: number,
   contribution: CompiledDomainCommandContributionV1,
   requests: readonly unknown[],
+  options: ModuleRequestApplicationOptions,
 ):
   | {
       readonly ok: true;
@@ -1167,28 +1222,35 @@ function applyModuleRequests(
   let candidate = document;
   const forward: CoreEffect[] = [];
   const inverse: CoreEffect[] = [];
-  const pendingCoreEffects: CoreEffect[] = [];
 
   function applyPreparedEffects(effects: readonly CoreEffect[]): boolean {
     if (effects.length === 0) {
       return true;
     }
-    const applied = applyCoreEffectSet(
-      candidate,
-      effects as [CoreEffect, ...CoreEffect[]],
-    );
-    if (!applied.ok) {
-      return false;
+    const segment = effects as [CoreEffect, ...CoreEffect[]];
+    let segmentInverse: NonEmptyCoreEffectSet;
+    if (options.candidateIsIsolated) {
+      const applied = applyCoreEffectSetToCandidate(candidate, segment);
+      if (!applied.ok) {
+        return false;
+      }
+      segmentInverse = applied.inverse;
+    } else {
+      const applied = applyCoreEffectSet(candidate, segment);
+      if (!applied.ok) {
+        return false;
+      }
+      candidate = applied.document;
+      segmentInverse = applied.inverse;
     }
-    candidate = applied.document;
     for (let effectIndex = 0; effectIndex < effects.length; effectIndex += 1) {
       const effect = effects[effectIndex];
       if (effect !== undefined) {
         forward[forward.length] = effect;
       }
     }
-    for (let inverseIndex = applied.inverse.length - 1; inverseIndex >= 0; inverseIndex -= 1) {
-      const inverseEffect = applied.inverse[inverseIndex];
+    for (let inverseIndex = segmentInverse.length - 1; inverseIndex >= 0; inverseIndex -= 1) {
+      const inverseEffect = segmentInverse[inverseIndex];
       if (inverseEffect !== undefined) {
         reflectApply(arrayUnshift, inverse, [inverseEffect]);
       }
@@ -1207,26 +1269,32 @@ function applyModuleRequests(
     let effect: CoreEffect | undefined;
     if (coreRecord?.requestKind === "core.note.replace-written-pitch") {
       const target = decodeTarget(coreRecord.target, "note");
+      const resolved = target?.kind === "note"
+        ? resolveScoreEntityTarget(candidate, target)
+        : undefined;
       if (
         coreRecord.requestVersion !== 1 ||
         target?.kind !== "note" ||
-        !targetExists(candidate, target) ||
+        resolved === undefined ||
+        !resolved.ok ||
+        resolved.value.kind !== "note" ||
         !isWrittenPitch(coreRecord.writtenPitch)
       ) {
         return { ok: false, failure: contractFailure(contribution) };
+      }
+      if (deepEqual(resolved.value.note.writtenPitch, coreRecord.writtenPitch)) {
+        continue;
       }
       effect = {
         kind: "replace-written-pitch",
         noteId: target.noteId,
         value: clone(coreRecord.writtenPitch),
       };
-      pendingCoreEffects[pendingCoreEffects.length] = effect;
-      continue;
-    } else {
-      if (!applyPreparedEffects(pendingCoreEffects)) {
+      if (!applyPreparedEffects([effect])) {
         return { ok: false, failure: { code: "command.internal-error" } };
       }
-      pendingCoreEffects.length = 0;
+      continue;
+    } else {
       const owned = moduleEffectForRequest(request, contribution);
       if (owned === undefined || !ownerExists(candidate, owned.owner)) {
         return { ok: false, failure: contractFailure(contribution) };
@@ -1337,10 +1405,10 @@ function applyModuleRequests(
       return { ok: false, failure: { code: "command.internal-error" } };
     }
   }
-  if (!applyPreparedEffects(pendingCoreEffects)) {
-    return { ok: false, failure: { code: "command.internal-error" } };
-  }
-  if (forward.length === 0 || deepEqual(candidate, document)) {
+  if (
+    forward.length === 0 ||
+    (!options.preserveEffectiveSequence && deepEqual(candidate, document))
+  ) {
     return { ok: true, document };
   }
   return {
@@ -1356,6 +1424,7 @@ function prepareModuleOperation(
   envelope: CapturedEnvelope,
   definition: CompiledDomainCommandDefinitionV1,
   contribution: CompiledDomainCommandContributionV1,
+  applicationOptions = DEFAULT_MODULE_REQUEST_APPLICATION_OPTIONS,
 ): PrepareModuleOperationResult {
   const actualKind = targetKind(envelope.target);
   if (actualKind === undefined) {
@@ -1478,6 +1547,7 @@ function prepareModuleOperation(
     state.documentVersion,
     contribution,
     requests,
+    applicationOptions,
   );
   if (!applied.ok) {
     return applied;
@@ -1508,6 +1578,227 @@ function prepareModuleOperation(
           affected,
         },
   };
+}
+
+function integratedBatchChildFailure(
+  failedCommandIndex: number,
+  failure: KernelCommandFailure,
+): PrepareIntegratedBatchResult {
+  const inner: KernelBatchChildFailure =
+    failure.code === "command.batch-child-rejected"
+      ? { code: "command.internal-error" }
+      : (failure as KernelBatchChildFailure);
+  return {
+    ok: false,
+    failure: freeze({
+      code: "command.batch-child-rejected" as const,
+      failedCommandIndex,
+      failure: clone(inner),
+    }),
+  };
+}
+
+function capturedCommandId(value: unknown): string | undefined {
+  try {
+    if (typeof value !== "object" || value === null) {
+      return undefined;
+    }
+    const descriptor = reflectGetOwnPropertyDescriptor(value, "commandId");
+    return descriptor !== undefined &&
+      "value" in descriptor &&
+      typeof descriptor.value === "string"
+      ? descriptor.value
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function prepareIntegratedBatch(
+  state: IntegratedCommandBusPrivateState,
+  command: BatchCommand,
+): PrepareIntegratedBatchResult {
+  if (command.target.documentId !== state.session.commandState.document.id) {
+    return { ok: false, failure: { code: "command.target-not-found" } };
+  }
+  try {
+    let candidate = cloneCoreEffectCandidate(state.session.commandState.document);
+    const forward: CoreEffect[] = [];
+    let inverse: CoreEffect[] = [];
+    const affected: ScoreAddress[] = [];
+    const seen = reflectApply(objectCreate, Object, [null]) as Record<string, true>;
+    const segments: EffectiveBatchSegment[] = [];
+
+    const appendSegment = (
+      childIndex: number,
+      source: BatchChildSource,
+      segmentForward: NonEmptyCoreEffectSet,
+      segmentInverse: NonEmptyCoreEffectSet,
+      segmentAffected: readonly ScoreAddress[],
+    ): KernelCommandFailure | undefined => {
+      const effectBudget = checkBatchEffectBudget(
+        forward.length,
+        segmentForward.length,
+      );
+      if (!effectBudget.ok) {
+        return freeze({
+          code: "command.batch-child-rejected" as const,
+          failedCommandIndex: childIndex,
+          failure: effectBudget.failure,
+        });
+      }
+      const affectedBudget = appendBatchAffectedWithinBudget(
+        affected,
+        seen,
+        segmentAffected,
+      );
+      if (!affectedBudget.ok) {
+        return freeze({
+          code: "command.batch-child-rejected" as const,
+          failedCommandIndex: childIndex,
+          failure: affectedBudget.failure,
+        });
+      }
+      for (let index = 0; index < segmentForward.length; index += 1) {
+        const effect = segmentForward[index];
+        if (effect !== undefined) {
+          forward[forward.length] = effect;
+        }
+      }
+      inverse = [
+        ...segmentInverse,
+        ...inverse,
+      ];
+      segments[segments.length] = freeze({
+        childIndex,
+        source: clone(source),
+        forward: segmentForward,
+        inverse: segmentInverse,
+        affected: clone(segmentAffected),
+      });
+      return undefined;
+    };
+
+    for (
+      let childIndex = 0;
+      childIndex < command.payload.commands.length;
+      childIndex += 1
+    ) {
+      const rawChild = command.payload.commands[childIndex];
+      if (capturedCommandId(rawChild) === "core.transaction.batch") {
+        return integratedBatchChildFailure(childIndex, {
+          code: "command.batch-nested",
+        });
+      }
+      const envelope = captureEnvelope(rawChild);
+      if (!envelope.ok) {
+        return integratedBatchChildFailure(childIndex, envelope.failure);
+      }
+      const coreDefinition = findCoreExecutionDefinition(
+        state.session.commandState.assembly,
+        envelope.value.commandId,
+      );
+      if (coreDefinition !== undefined) {
+        const decoded = decodeCoreCommand(
+          envelope.value.captured,
+          state.session.commandState.assembly,
+        );
+        if (!decoded.ok) {
+          return integratedBatchChildFailure(childIndex, decoded.failure);
+        }
+        const prepared = coreDefinition.prepare(candidate, decoded.value);
+        if (!prepared.ok) {
+          return integratedBatchChildFailure(childIndex, prepared.failure);
+        }
+        if (!prepared.changed) {
+          continue;
+        }
+        const effectCount = forward.length + prepared.effects.length;
+        if (effectCount > BATCH_EFFECT_LIMIT) {
+          return integratedBatchChildFailure(childIndex, {
+            code: "command.resource-limit-exceeded",
+            limitKind: "effects",
+            limit: BATCH_EFFECT_LIMIT,
+            actual: effectCount,
+          });
+        }
+        const applied = applyCoreEffectSetToCandidate(candidate, prepared.effects);
+        if (!applied.ok) {
+          return integratedBatchChildFailure(childIndex, applied.failure);
+        }
+        const aggregateFailure = appendSegment(
+          childIndex,
+          { kind: "core" },
+          prepared.effects,
+          applied.inverse,
+          prepared.affected,
+        );
+        if (aggregateFailure !== undefined) {
+          return { ok: false, failure: aggregateFailure };
+        }
+        continue;
+      }
+
+      const moduleCommand =
+        state.assembly.catalogState.commandIndex[envelope.value.commandId];
+      if (moduleCommand === undefined) {
+        return integratedBatchChildFailure(childIndex, {
+          code: "command.unknown-id",
+        });
+      }
+      const contribution = contributionForCommand(state.assembly, moduleCommand);
+      if (contribution === undefined) {
+        return integratedBatchChildFailure(childIndex, {
+          code: "command.assembly-mismatch",
+        });
+      }
+      const prepared = prepareModuleOperation(
+        { ...state.session.commandState, document: candidate },
+        envelope.value,
+        moduleCommand,
+        contribution,
+        BATCH_MODULE_REQUEST_APPLICATION_OPTIONS,
+      );
+      if (!prepared.ok) {
+        return integratedBatchChildFailure(childIndex, prepared.failure);
+      }
+      candidate = prepared.value.document;
+      if (
+        prepared.value.status === "no-op" ||
+        prepared.value.forward === undefined ||
+        prepared.value.inverse === undefined
+      ) {
+        continue;
+      }
+      const aggregateFailure = appendSegment(
+        childIndex,
+        prepared.value.source,
+        prepared.value.forward,
+        prepared.value.inverse,
+        prepared.value.affected,
+      );
+      if (aggregateFailure !== undefined) {
+        return { ok: false, failure: aggregateFailure };
+      }
+    }
+
+    const firstForward = forward[0];
+    const firstInverse = inverse[0];
+    if (firstForward === undefined || firstInverse === undefined) {
+      return { ok: true, changed: false, document: candidate };
+    }
+    return {
+      ok: true,
+      changed: true,
+      document: candidate,
+      forward: freezeCoreEffectSet([firstForward, ...forward.slice(1)]),
+      inverse: freezeCoreEffectSet([firstInverse, ...inverse.slice(1)]),
+      affected: freeze(clone(affected)),
+      segments: freeze(clone(segments)),
+    };
+  } catch {
+    return { ok: false, failure: { code: "command.internal-error" } };
+  }
 }
 
 function moduleTransition(
@@ -1701,6 +1992,56 @@ function dispatch(
   return result;
 }
 
+function submitIntegratedBatch(
+  state: IntegratedCommandBusPrivateState,
+  command: BatchCommand,
+): KernelCommandResult {
+  const prepared = prepareIntegratedBatch(state, command);
+  if (!prepared.ok) {
+    return rejected(state, prepared.failure);
+  }
+  const pipeline = runModulePipeline(
+    prepared.document,
+    state.session.commandState.documentVersion + (prepared.changed ? 1 : 0),
+    state.assembly,
+  );
+  if (!pipeline.ok) {
+    return rejected(state, pipeline.failure);
+  }
+  if (!prepared.changed) {
+    return freeze({
+      status: "no-op" as const,
+      documentVersion: state.session.commandState.documentVersion,
+      assessment: pipeline.assessment,
+      ...depths(state.session.commandState),
+    });
+  }
+  const transition = commitPreparedCommand(
+    state.session.commandState,
+    {
+      command,
+      document: prepared.document,
+      forward: prepared.forward,
+      inverse: prepared.inverse,
+      affected: prepared.affected,
+      batchSegments: prepared.segments,
+      support: CORE_CLASSIFICATION_PLACEHOLDER,
+    },
+    { classify: () => CORE_CLASSIFICATION_PLACEHOLDER },
+  );
+  if (transition.result.status === "rejected") {
+    return mapRejectedCore(transition.result);
+  }
+  const result = successResult(transition, pipeline.assessment);
+  return adoptCommitted(
+    state,
+    transition,
+    result,
+    { kind: "core" },
+    pipeline.availability,
+  );
+}
+
 class IntegratedCommandBusImplementation implements IntegratedCommandBus {
   private constructor(
     token: typeof INTEGRATED_BUS_TOKEN,
@@ -1724,6 +2065,22 @@ class IntegratedCommandBusImplementation implements IntegratedCommandBus {
     const blocked = availabilityFailure(state);
     if (blocked !== undefined) {
       return rejected(state, blocked);
+    }
+    if (capturedCommandId(input) === "core.transaction.batch") {
+      const decodedBatch = decodeCoreCommand(
+        input,
+        state.session.commandState.assembly,
+      );
+      if (!decodedBatch.ok) {
+        return rejected(state, decodedBatch.failure);
+      }
+      if (decodedBatch.value.commandId !== "core.transaction.batch") {
+        return rejected(state, { code: "command.internal-error" });
+      }
+      if (!hasIntactExecutionPrimordials()) {
+        return rejected(state, { code: "command.invalid-envelope" });
+      }
+      return submitIntegratedBatch(state, decodedBatch.value);
     }
     const envelope = captureEnvelope(input);
     if (!envelope.ok) {

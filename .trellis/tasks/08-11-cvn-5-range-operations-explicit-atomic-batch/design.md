@@ -240,7 +240,12 @@ Planning-only files are listed in the task metadata. Future implementation may m
 - no product/Guitar/UI/service code;
 - no accepted CVN-6 contract redesign;
 - `reports/strict-codec.ts` is the unique structural-decoder owner for the additive CVN-5 `CommandFailure` variants; `reports/adapters.ts` remains the report projection owner;
-- existing test/projection ownership is the six-path closed list in the ownership matrix, while all new compile assertions remain inside `cvn-5-public-contracts.test.ts`;
+- existing test/projection ownership is the ten-path closed list in the ownership matrix: the original six owners plus the independently reviewed four-path implementation-base amendment; all new compile assertions remain inside `cvn-5-public-contracts.test.ts`;
+- the mixed Core/module batch result additionally requires the one-file
+  integrated failure-union owner recorded by the dated implementation-base
+  amendment; its only permitted delta is the depth-one batch wrapper over
+  existing Core/contribution/resource failure members; targeted review passed
+  on 2026-08-11 with P0/P1/P2=`0/0/0`;
 - the accepted-and-archived CVN-6 implementation baseline must be rescanned before implementation; any newly affected path returns to planning review;
 - any additional production file returns to planning review before edit.
 

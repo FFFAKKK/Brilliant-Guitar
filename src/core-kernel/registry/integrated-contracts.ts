@@ -1,6 +1,7 @@
 import type {
   CommandBusCreationFailure,
   CommandFailure,
+  CommandFailureLeaf,
 } from "../commands/contracts";
 import type { ScoreDocument } from "../domain/score-document";
 import type {
@@ -150,10 +151,20 @@ export interface KernelIntegratedResourceFailure {
   readonly actual: number;
 }
 
+export type KernelBatchChildFailure =
+  | CommandFailureLeaf
+  | KernelContributionFailure
+  | KernelIntegratedResourceFailure;
+
 export type KernelCommandFailure =
   | CommandFailure
   | KernelContributionFailure
-  | KernelIntegratedResourceFailure;
+  | KernelIntegratedResourceFailure
+  | {
+      readonly code: "command.batch-child-rejected";
+      readonly failedCommandIndex: number;
+      readonly failure: KernelBatchChildFailure;
+    };
 
 export type KernelCommandBusCreationFailure =
   | CommandBusCreationFailure

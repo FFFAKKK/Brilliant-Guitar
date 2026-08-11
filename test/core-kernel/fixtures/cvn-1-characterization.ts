@@ -108,12 +108,23 @@ export const CVN4_PROJECTED_COMMAND_IDS = [
   "core.event.set-staff-assignment",
 ] as const;
 
+/** The CVN-5 descriptors removed only from the historical V1 projection. */
+export const CVN5_PROJECTED_COMMAND_IDS = [
+  "core.range.delete",
+  "core.range.transpose-written-pitch",
+  "core.transaction.batch",
+] as const;
+
 const CVN1_RUNTIME_EXPORT_NAME_SET: ReadonlySet<string> = new Set(
   CVN1_RUNTIME_EXPORT_NAMES,
 );
 const CVN1_COMMAND_ID_SET: ReadonlySet<string> = new Set(CVN1_COMMAND_IDS);
 const POST_CVN1_PROJECTED_COMMAND_ID_SET: ReadonlySet<string> = new Set(
-  [...CVN3_PROJECTED_COMMAND_IDS, ...CVN4_PROJECTED_COMMAND_IDS],
+  [
+    ...CVN3_PROJECTED_COMMAND_IDS,
+    ...CVN4_PROJECTED_COMMAND_IDS,
+    ...CVN5_PROJECTED_COMMAND_IDS,
+  ],
 );
 
 const REQUIRED_CASE_IDS = [
@@ -744,7 +755,7 @@ function projectCvn1RegistrySummary(
 }
 
 /**
- * Projects only the additive CVN-3 public surface out of the historical V1
+ * Projects only the declared additive CVN-3/CVN-4/CVN-5 public surfaces out of the historical V1
  * trace. Command behavior, document snapshots, results, history, replay and
  * events intentionally pass through unchanged.
  */

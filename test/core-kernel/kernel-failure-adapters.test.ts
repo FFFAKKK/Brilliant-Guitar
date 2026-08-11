@@ -88,6 +88,8 @@ test("command and history adapters cover every accepted failure code", () => {
     CommandFailure,
     | { readonly code: "command.semantic-invalid" }
     | { readonly code: "command.resource-limit-exceeded" }
+    | { readonly code: "command.range-transform-invalid" }
+    | { readonly code: "command.batch-child-rejected" }
   >;
   const fixtures = {
     "command.invalid-envelope": { code: "command.invalid-envelope" },
@@ -101,6 +103,13 @@ test("command and history adapters cover every accepted failure code", () => {
       code: "command.anchor-self-reference",
     },
     "command.reference-conflict": { code: "command.reference-conflict" },
+    "command.invalid-range": { code: "command.invalid-range" },
+    "command.range-endpoint-not-found": {
+      code: "command.range-endpoint-not-found",
+    },
+    "command.range-owner-mismatch": { code: "command.range-owner-mismatch" },
+    "command.batch-empty": { code: "command.batch-empty" },
+    "command.batch-nested": { code: "command.batch-nested" },
     "command.version-overflow": { code: "command.version-overflow" },
     "command.internal-error": { code: "command.internal-error" },
     "history.empty-undo": { code: "history.empty-undo" },
@@ -133,6 +142,35 @@ test("command and history adapters cover every accepted failure code", () => {
       limitKind: "input-properties",
       limit: 1_048_576,
       actual: 1_048_577,
+    },
+  });
+
+  const transformFailure = {
+    code: "command.range-transform-invalid",
+    address: { kind: "note", noteId: "note-a" },
+    reason: "derived-pitch-alter-out-of-range",
+  } as const satisfies CommandFailure;
+  const transformIssues = mapCommandFailureToKernelIssues(transformFailure);
+  assert.equal(transformIssues.length, 1);
+  assert.deepEqual(transformIssues[0]?.location, {
+    kind: "score-address",
+    address: transformFailure.address,
+  });
+  assert.deepEqual(transformIssues[0]?.details, {
+    reason: transformFailure.reason,
+  });
+
+  const childFailure = {
+    code: "command.batch-child-rejected",
+    failedCommandIndex: 2,
+    failure: { code: "command.batch-nested" },
+  } as const satisfies CommandFailure;
+  assertSingleMappedIssue(mapCommandFailureToKernelIssues(childFailure), {
+    failure: childFailure,
+    source: commandSource,
+    details: {
+      failedCommandIndex: 2,
+      failureCode: "command.batch-nested",
     },
   });
 });

@@ -69,6 +69,28 @@ const CVN4_REGISTRY_COMMAND_DESCRIPTORS = CVN4_COMMAND_DESCRIPTORS.map(
   }),
 );
 
+const CVN5_COMMAND_DESCRIPTORS = [
+  ["core.range.delete", "core.command.delete-range.title", "document"],
+  [
+    "core.range.transpose-written-pitch",
+    "core.command.transpose-range-written-pitch.title",
+    "document",
+  ],
+  ["core.transaction.batch", "core.command.transaction-batch.title", "document"],
+] as const;
+
+const CVN5_REGISTRY_COMMAND_DESCRIPTORS = CVN5_COMMAND_DESCRIPTORS.map(
+  ([id, titleKey, targetKind]) => ({
+    id,
+    kind: "command",
+    sourceModuleId: "core.commands",
+    apiVersion: 1,
+    requiredCapabilities: ["command:execute"],
+    titleKey,
+    targetKind,
+  }),
+);
+
 function createMutableManifest(): {
   startupManifestVersion: number;
   modules: Array<{
@@ -162,7 +184,7 @@ test("default startup manifest is deeply frozen and owns two compiled entries", 
         registrationEntryId: "core.commands.v1",
         ownerModuleId: "core.commands",
         kind: "command",
-        contributionCount: 25,
+        contributionCount: 28,
       },
       {
         registrationEntryId: "core.selectors.v1",
@@ -272,6 +294,7 @@ test("compiled entries bind only the approved command and selector descriptors",
         targetKind: "measure",
       },
       ...CVN4_REGISTRY_COMMAND_DESCRIPTORS,
+      ...CVN5_REGISTRY_COMMAND_DESCRIPTORS,
     ],
   );
   assert.equal(

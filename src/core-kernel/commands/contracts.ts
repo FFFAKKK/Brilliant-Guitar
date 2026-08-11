@@ -1,4 +1,5 @@
 import type { Fraction } from "../domain/fraction";
+import type { ScoreRange } from "../domain/address";
 import type { Meter, NoteValue } from "../domain/musical-time";
 import type {
   Clef,
@@ -12,7 +13,11 @@ import type {
   StaffDefinition,
   Voice,
 } from "../domain/score-document";
-import type { WrittenPitch } from "../domain/pitch";
+import type {
+  PitchTranspositionErrorCode,
+  Transposition,
+  WrittenPitch,
+} from "../domain/pitch";
 import type { ScoreSupportResult } from "../profiles/score-feature-profile";
 import type { SemanticDiagnostic } from "../validation/diagnostics";
 import type { CoreCommandId } from "./catalog";
@@ -246,6 +251,37 @@ export type SetEventStaffAssignmentCommand = CommandEnvelopeBase<
   }
 >;
 
+export interface DeleteRangePayloadV1 {
+  readonly range: ScoreRange;
+}
+
+export interface TransposeRangePayloadV1 {
+  readonly range: ScoreRange;
+  readonly transposition: Transposition;
+}
+
+export interface BatchCommandPayloadV1 {
+  readonly commands: readonly [unknown, ...unknown[]];
+}
+
+export type DeleteRangeCommand = CommandEnvelopeBase<
+  "core.range.delete",
+  Extract<ScoreEntityTarget, { readonly kind: "document" }>,
+  DeleteRangePayloadV1
+>;
+
+export type TransposeRangeWrittenPitchCommand = CommandEnvelopeBase<
+  "core.range.transpose-written-pitch",
+  Extract<ScoreEntityTarget, { readonly kind: "document" }>,
+  TransposeRangePayloadV1
+>;
+
+export type BatchCommand = CommandEnvelopeBase<
+  "core.transaction.batch",
+  Extract<ScoreEntityTarget, { readonly kind: "document" }>,
+  BatchCommandPayloadV1
+>;
+
 export type CoreCommandEnvelope =
   | SetMetadataCommand
   | SetWrittenPitchCommand
@@ -271,9 +307,12 @@ export type CoreCommandEnvelope =
   | MoveVoiceCommand
   | SetVoiceDefaultStaffCommand
   | SetVoiceSequenceStartCommand
-  | SetEventStaffAssignmentCommand;
+  | SetEventStaffAssignmentCommand
+  | DeleteRangeCommand
+  | TransposeRangeWrittenPitchCommand
+  | BatchCommand;
 
-export type CommandFailure =
+export type CommandFailureLeaf =
   | { readonly code: "command.invalid-envelope" }
   | { readonly code: "command.unsupported-version" }
   | { readonly code: "command.unknown-id" }
@@ -283,13 +322,28 @@ export type CommandFailure =
   | { readonly code: "command.anchor-wrong-owner" }
   | { readonly code: "command.anchor-self-reference" }
   | { readonly code: "command.reference-conflict" }
+  | { readonly code: "command.invalid-range" }
+  | { readonly code: "command.range-endpoint-not-found" }
+  | { readonly code: "command.range-owner-mismatch" }
+  | {
+      readonly code: "command.range-transform-invalid";
+      readonly address: Extract<ScoreEntityTarget, { readonly kind: "note" }>;
+      readonly reason: PitchTranspositionErrorCode;
+    }
+  | { readonly code: "command.batch-empty" }
+  | { readonly code: "command.batch-nested" }
   | {
       readonly code: "command.semantic-invalid";
       readonly diagnostics: readonly SemanticDiagnostic[];
     }
   | {
       readonly code: "command.resource-limit-exceeded";
-      readonly limitKind: "input-depth" | "input-properties";
+      readonly limitKind:
+        | "input-depth"
+        | "input-properties"
+        | "batch-children"
+        | "effects"
+        | "affected-addresses";
       readonly limit: number;
       readonly actual: number;
     }
@@ -300,6 +354,14 @@ export type CommandFailure =
   | { readonly code: "history.invariant-violation" }
   | { readonly code: "event.reentrant-write" }
   | { readonly code: "event.sequence-overflow" };
+
+export type CommandFailure =
+  | CommandFailureLeaf
+  | {
+      readonly code: "command.batch-child-rejected";
+      readonly failedCommandIndex: number;
+      readonly failure: CommandFailureLeaf;
+    };
 
 export type CommandResult =
   | {

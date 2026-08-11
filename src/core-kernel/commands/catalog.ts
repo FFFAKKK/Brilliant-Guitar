@@ -57,6 +57,15 @@ export const CORE_COMMAND_DEFINITIONS = Object.freeze([
     commandId: "core.event.set-staff-assignment",
     targetKind: "event",
   }),
+  Object.freeze({ commandId: "core.range.delete", targetKind: "document" }),
+  Object.freeze({
+    commandId: "core.range.transpose-written-pitch",
+    targetKind: "document",
+  }),
+  Object.freeze({
+    commandId: "core.transaction.batch",
+    targetKind: "document",
+  }),
 ] as const);
 
 export type CoreCommandId =

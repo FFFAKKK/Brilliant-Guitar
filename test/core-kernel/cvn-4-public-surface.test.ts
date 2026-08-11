@@ -20,7 +20,7 @@ function readExpectedSurface(): Cvn4SurfaceTrace {
   ) as Cvn4SurfaceTrace;
 }
 
-test("CVN-4 records the final additive Core surface", () => {
+test("the CVN-4 surface fixture consumes the accepted additive CVN-5 projection", () => {
   const actual = collectCvn4SurfaceTrace();
   const repeated = collectCvn4SurfaceTrace();
   const expected = readExpectedSurface();
@@ -30,7 +30,7 @@ test("CVN-4 records the final additive Core surface", () => {
     serializeCvn4SurfaceTrace(repeated),
   );
   assert.equal(actual.runtimeExports.length, 51);
-  assert.equal(actual.catalog.length, 25);
-  assert.equal(actual.registryCommandDescriptors.length, 25);
+  assert.equal(actual.catalog.length, 28);
+  assert.equal(actual.registryCommandDescriptors.length, 28);
   assert.deepEqual(actual, expected);
 });

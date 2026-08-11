@@ -131,11 +131,13 @@ function operationIssue(
   >,
   subsystem: Extract<KernelIssueSource, { readonly kind: "core" }>["subsystem"],
   details?: JsonObject,
+  location?: KernelIssueLocation,
 ): KernelIssue {
   return createOperationKernelIssue({
     code,
     source: { kind: "core", subsystem },
     ...(details === undefined ? {} : { details }),
+    ...(location === undefined ? {} : { location }),
   });
 }
 
@@ -179,6 +181,24 @@ export function mapCommandFailureToKernelIssues(
           limitKind: decoded.limitKind,
           limit: decoded.limit,
           actual: decoded.actual,
+        }),
+      ]);
+    }
+    if (decoded.code === "command.range-transform-invalid") {
+      return freezeIssueArray([
+        operationIssue(
+          decoded.code,
+          "command",
+          { reason: decoded.reason },
+          { kind: "score-address", address: decoded.address },
+        ),
+      ]);
+    }
+    if (decoded.code === "command.batch-child-rejected") {
+      return freezeIssueArray([
+        operationIssue(decoded.code, "command", {
+          failedCommandIndex: decoded.failedCommandIndex,
+          failureCode: decoded.failure.code,
         }),
       ]);
     }

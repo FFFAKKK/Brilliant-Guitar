@@ -367,7 +367,7 @@ test("equivalent startup order preserves summary and representative gateway disp
     { moduleId: "core.selectors", apiVersion: 1 },
     { moduleId: "internal.reader", apiVersion: 1 },
   ]);
-  assert.equal(first.value.contributions.length, 31);
+  assert.equal(first.value.contributions.length, 34);
   assert.deepEqual(first.value.contributions, expectedContributionSummaries());
   assertDeeplyFrozen(first.value);
   assertDeeplyFrozen(repeated.value);

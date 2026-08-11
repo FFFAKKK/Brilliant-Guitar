@@ -2,6 +2,7 @@ import type { JsonObject, JsonValue } from "../domain/extensions";
 import type {
   CommandBusCreationFailure,
   CommandFailure,
+  CommandFailureLeaf,
 } from "../commands/contracts";
 import type { EventSubscriptionResult } from "../events/contracts";
 import type { CheckpointFailure, ReadFailure } from "../read/contracts";
@@ -88,6 +89,13 @@ const COMMAND_FAILURE_CODES = Object.freeze({
   "command.anchor-wrong-owner": true,
   "command.anchor-self-reference": true,
   "command.reference-conflict": true,
+  "command.invalid-range": true,
+  "command.range-endpoint-not-found": true,
+  "command.range-owner-mismatch": true,
+  "command.range-transform-invalid": true,
+  "command.batch-empty": true,
+  "command.batch-nested": true,
+  "command.batch-child-rejected": true,
   "command.semantic-invalid": true,
   "command.resource-limit-exceeded": true,
   "command.version-overflow": true,
@@ -376,13 +384,25 @@ export function decodeCommandFailure(
   input: unknown,
 ): CommandFailure | undefined {
   try {
+    return decodeCommandFailureValue(input, true);
+  } catch {
+    return undefined;
+  }
+}
+
+function decodeCommandFailureValue(
+  input: unknown,
+  allowBatchWrapper: boolean,
+): CommandFailure | undefined {
     const codeOnly = readExactDataRecord(input, ["code"]);
     if (
       isListedCode(codeOnly?.code, COMMAND_FAILURE_CODES) &&
       codeOnly.code !== "command.semantic-invalid" &&
-      codeOnly.code !== "command.resource-limit-exceeded"
+      codeOnly.code !== "command.resource-limit-exceeded" &&
+      codeOnly.code !== "command.range-transform-invalid" &&
+      codeOnly.code !== "command.batch-child-rejected"
     ) {
-      return { code: codeOnly.code };
+      return { code: codeOnly.code } as CommandFailureLeaf;
     }
     const record = readExactDataRecord(input, ["code", "diagnostics"]);
     const diagnostics = decodeSemanticDiagnostics(record?.diagnostics);
@@ -400,29 +420,78 @@ export function decodeCommandFailure(
       "limit",
       "actual",
     ]);
+    if (resource?.code === "command.resource-limit-exceeded") {
+      if (
+        resource.limitKind !== "input-depth" &&
+        resource.limitKind !== "input-properties" &&
+        resource.limitKind !== "batch-children" &&
+        resource.limitKind !== "effects" &&
+        resource.limitKind !== "affected-addresses"
+      ) {
+        return undefined;
+      }
+      if (
+        typeof resource.limit !== "number" ||
+        !Number.isSafeInteger(resource.limit) ||
+        resource.limit < 0 ||
+        typeof resource.actual !== "number" ||
+        !Number.isSafeInteger(resource.actual) ||
+        resource.actual < 0
+      ) {
+        return undefined;
+      }
+      return {
+        code: "command.resource-limit-exceeded",
+        limitKind: resource.limitKind,
+        limit: resource.limit,
+        actual: resource.actual,
+      };
+    }
+
+    const transform = readExactDataRecord(input, ["code", "address", "reason"]);
+    const address = readExactDataRecord(transform?.address, ["kind", "noteId"]);
     if (
-      resource?.code !== "command.resource-limit-exceeded" ||
-      (resource.limitKind !== "input-depth" &&
-        resource.limitKind !== "input-properties") ||
-      typeof resource.limit !== "number" ||
-      !Number.isSafeInteger(resource.limit) ||
-      resource.limit < 0 ||
-      typeof resource.actual !== "number" ||
-      !Number.isSafeInteger(resource.actual) ||
-      resource.actual < 0
+      transform?.code === "command.range-transform-invalid" &&
+      address?.kind === "note" &&
+      typeof address.noteId === "string" &&
+      address.noteId.length > 0 &&
+      (transform.reason === "written-pitch-invalid" ||
+        transform.reason === "transposition-component-invalid" ||
+        transform.reason === "derived-pitch-alter-out-of-range" ||
+        transform.reason === "derived-pitch-octave-out-of-range")
+    ) {
+      return {
+        code: "command.range-transform-invalid",
+        address: { kind: "note", noteId: address.noteId },
+        reason: transform.reason,
+      };
+    }
+
+    if (!allowBatchWrapper) {
+      return undefined;
+    }
+    const wrapper = readExactDataRecord(input, [
+      "code",
+      "failedCommandIndex",
+      "failure",
+    ]);
+    if (
+      wrapper?.code !== "command.batch-child-rejected" ||
+      typeof wrapper.failedCommandIndex !== "number" ||
+      !Number.isSafeInteger(wrapper.failedCommandIndex) ||
+      wrapper.failedCommandIndex < 0
     ) {
       return undefined;
     }
-    return {
-      code: "command.resource-limit-exceeded",
-      limitKind: resource.limitKind,
-      limit: resource.limit,
-      actual: resource.actual,
-    };
-  } catch {
-    return undefined;
+    const inner = decodeCommandFailureValue(wrapper.failure, false);
+    return inner === undefined || inner.code === "command.batch-child-rejected"
+      ? undefined
+      : {
+          code: "command.batch-child-rejected",
+          failedCommandIndex: wrapper.failedCommandIndex,
+          failure: inner as CommandFailureLeaf,
+        };
   }
-}
 
 export function decodeCommandBusCreationFailure(
   input: unknown,

@@ -152,6 +152,18 @@
     {
       "commandId": "core.event.set-staff-assignment",
       "targetKind": "event"
+    },
+    {
+      "commandId": "core.range.delete",
+      "targetKind": "document"
+    },
+    {
+      "commandId": "core.range.transpose-written-pitch",
+      "targetKind": "document"
+    },
+    {
+      "commandId": "core.transaction.batch",
+      "targetKind": "document"
     }
   ],
   "registryCommandDescriptors": [
@@ -310,6 +322,28 @@
       "targetKind": "part"
     },
     {
+      "id": "core.range.delete",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.delete-range.title",
+      "kind": "command",
+      "targetKind": "document"
+    },
+    {
+      "id": "core.range.transpose-written-pitch",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.transpose-range-written-pitch.title",
+      "kind": "command",
+      "targetKind": "document"
+    },
+    {
       "id": "core.staff.insert",
       "sourceModuleId": "core.commands",
       "apiVersion": 1,
@@ -352,6 +386,17 @@
       "titleKey": "core.command.set-staff-definition.title",
       "kind": "command",
       "targetKind": "staff"
+    },
+    {
+      "id": "core.transaction.batch",
+      "sourceModuleId": "core.commands",
+      "apiVersion": 1,
+      "requiredCapabilities": [
+        "command:execute"
+      ],
+      "titleKey": "core.command.transaction-batch.title",
+      "kind": "command",
+      "targetKind": "document"
     },
     {
       "id": "core.voice.insert",

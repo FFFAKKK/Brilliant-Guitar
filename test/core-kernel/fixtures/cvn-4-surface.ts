@@ -4,8 +4,9 @@ import {
 } from "./cvn-3-surface";
 
 /**
- * CVN-4 owns the current additive Core command surface. Its fixture begins
- * from the accepted 49/10/10 checkpoint and is updated only at CVN-4 closure.
+ * CVN-4 established the additive Core command surface. Later accepted command
+ * stages update this current-surface fixture without changing its runtime-export
+ * checkpoint or any CVN-4 behavior assertion.
  */
 export type Cvn4SurfaceTrace = Cvn3SurfaceTrace;
 

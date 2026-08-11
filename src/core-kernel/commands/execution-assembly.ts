@@ -47,6 +47,9 @@ const VNEXT_BOUNDED_COMMAND_IDS: ReadonlySet<CoreCommandId> = new Set([
   "core.voice.set-default-staff",
   "core.voice.set-sequence-start",
   "core.event.set-staff-assignment",
+  "core.range.delete",
+  "core.range.transpose-written-pitch",
+  "core.transaction.batch",
 ]);
 
 function expectedInputBoundary(

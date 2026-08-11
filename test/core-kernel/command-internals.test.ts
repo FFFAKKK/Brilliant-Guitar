@@ -77,6 +77,12 @@ const CVN4_COMMAND_IDS = [
   "core.event.set-staff-assignment",
 ] as const;
 
+const CVN5_COMMAND_IDS = [
+  "core.range.delete",
+  "core.range.transpose-written-pitch",
+  "core.transaction.batch",
+] as const;
+
 function envelope(
   commandId: string,
   target: unknown,
@@ -154,7 +160,7 @@ function countPostInitializationStructuredCloneCalls<T>(
   }
 }
 
-test("the static catalog is frozen and contains the fixed twenty-five Core commands", () => {
+test("the static catalog is frozen and contains the fixed twenty-eight Core commands", () => {
   assert.equal(Object.isFrozen(CORE_COMMAND_DEFINITIONS), true);
   assert.equal(
     CORE_COMMAND_DEFINITIONS.every((definition) => Object.isFrozen(definition)),
@@ -174,11 +180,12 @@ test("the static catalog is frozen and contains the fixed twenty-five Core comma
       "core.measure.move",
       "core.measure.set-definition",
       ...CVN4_COMMAND_IDS,
+      ...CVN5_COMMAND_IDS,
     ],
   );
 });
 
-test("the private default execution assembly freezes all twenty-five compatible adapters", () => {
+test("the private default execution assembly freezes all twenty-eight compatible adapters", () => {
   const assembly = DEFAULT_CORE_EXECUTION_ASSEMBLY;
   assert.deepEqual(assembly.source, {
     moduleId: "core.commands",
@@ -242,6 +249,10 @@ test("the private default execution assembly freezes all twenty-five compatible 
         inputBoundary: "vnext-bounded-v1",
       },
       ...CVN4_COMMAND_IDS.map((commandId) => ({
+        commandId,
+        inputBoundary: "vnext-bounded-v1",
+      })),
+      ...CVN5_COMMAND_IDS.map((commandId) => ({
         commandId,
         inputBoundary: "vnext-bounded-v1",
       })),

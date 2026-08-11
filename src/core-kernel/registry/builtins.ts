@@ -46,6 +46,10 @@ const COMMAND_TITLE_KEYS: Readonly<Record<CoreCommandId, string>> = {
   "core.voice.set-sequence-start": "core.command.set-voice-sequence-start.title",
   "core.event.set-staff-assignment":
     "core.command.set-event-staff-assignment.title",
+  "core.range.delete": "core.command.delete-range.title",
+  "core.range.transpose-written-pitch":
+    "core.command.transpose-range-written-pitch.title",
+  "core.transaction.batch": "core.command.transaction-batch.title",
 };
 
 const COMMAND_REQUIRED_CAPABILITIES = deepFreezeValue([

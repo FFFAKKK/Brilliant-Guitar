@@ -7,6 +7,7 @@ import { test } from "node:test";
 import {
   CVN3_PROJECTED_COMMAND_IDS,
   CVN4_PROJECTED_COMMAND_IDS,
+  CVN5_PROJECTED_COMMAND_IDS,
   assertCvn1CharacterizationShape,
   collectCvn1CharacterizationTrace,
   projectCvn1CharacterizationTrace,
@@ -89,6 +90,19 @@ const SYNTHETIC_CVN4_COMMAND_DESCRIPTORS: readonly RegistryCommandDescriptor[] =
     }),
   );
 
+const SYNTHETIC_CVN5_COMMAND_DESCRIPTORS: readonly RegistryCommandDescriptor[] =
+  CVN5_PROJECTED_COMMAND_IDS.map(
+    (id): RegistryCommandDescriptor => ({
+      id,
+      sourceModuleId: "core.commands",
+      apiVersion: 1,
+      requiredCapabilities: ["command:execute"],
+      titleKey: "core.command.cvn5-projection.title",
+      kind: "command",
+      targetKind: "document",
+    }),
+  );
+
 function appendSyntheticCvn3Surface(
   trace: Cvn1CharacterizationTraceV1,
   unrelatedDescriptor?: RegistryCommandDescriptor,
@@ -168,6 +182,38 @@ function appendSyntheticCvn4Surface(
   };
 }
 
+function appendSyntheticCvn5Surface(
+  trace: Cvn1CharacterizationTraceV1,
+): Cvn1CharacterizationTraceV1 {
+  const summary = trace.registryCase.summary;
+  if (summary.status !== "authorized") {
+    throw new Error("expected CVN-1 characterization Registry summary");
+  }
+  return {
+    ...trace,
+    catalog: [
+      ...trace.catalog,
+      ...CVN5_PROJECTED_COMMAND_IDS.map((commandId) => ({
+        commandId,
+        targetKind: "document" as const,
+      })),
+    ],
+    registryCase: {
+      ...trace.registryCase,
+      summary: {
+        status: "authorized",
+        value: {
+          ...summary.value,
+          contributions: [
+            ...summary.value.contributions,
+            ...SYNTHETIC_CVN5_COMMAND_DESCRIPTORS,
+          ],
+        },
+      },
+    },
+  };
+}
+
 function sha256(value: string): string {
   return createHash("sha256").update(value).digest("hex").toUpperCase();
 }
@@ -196,10 +242,12 @@ test("CVN-1 freezes the pre-refactor public command spine trace", () => {
   assert.deepEqual(actual, expected);
 });
 
-test("CVN-1 projection removes only declared CVN-3 and CVN-4 Registry descriptors", () => {
+test("CVN-1 projection removes only declared CVN-3, CVN-4, and CVN-5 Registry descriptors", () => {
   const baseline = collectCvn1CharacterizationTrace();
   const projected = projectCvn1CharacterizationTrace(
-    appendSyntheticCvn4Surface(appendSyntheticCvn3Surface(baseline)),
+    appendSyntheticCvn5Surface(
+      appendSyntheticCvn4Surface(appendSyntheticCvn3Surface(baseline)),
+    ),
   );
 
   assert.deepEqual(CVN3_PROJECTED_COMMAND_IDS, [
@@ -224,6 +272,11 @@ test("CVN-1 projection removes only declared CVN-3 and CVN-4 Registry descriptor
     "core.voice.set-default-staff",
     "core.voice.set-sequence-start",
     "core.event.set-staff-assignment",
+  ]);
+  assert.deepEqual(CVN5_PROJECTED_COMMAND_IDS, [
+    "core.range.delete",
+    "core.range.transpose-written-pitch",
+    "core.transaction.batch",
   ]);
   assert.deepEqual(projected, baseline);
 });
