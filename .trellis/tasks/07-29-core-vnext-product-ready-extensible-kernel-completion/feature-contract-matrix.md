@@ -391,7 +391,7 @@ interface BatchCommandPayloadV1 {
 
 1. integrated write availability preflight；
 2. outer envelope strict decode、version、ID、target；
-3. batch payload dense/nonempty/100-child/nested/resource preflight；
+3. batch payload exact-shape/dense/nonempty/100-child/global-capture-resource preflight; nested-batch detection is not a global scan and occurs at Step 4 by child index before that child payload decoder.
 4. 按 index 对每个 child 执行 outer decode → catalog unique route → strict contribution decode → target/owner/anchor preflight → prepare → effect contract validation → apply to同一个 isolated candidate；
 5. 全部 child 完成后运行一次 Core semantic validation；
 6. 按 frozen catalog order 运行所有适用 module validators；
@@ -414,8 +414,15 @@ Intermediate candidate 可以暂时违反只由后续 child 修复的 document s
 - 所有 child effective no-op：batch `no-op`，redo 保留。
 - 至少一个 child changed：documentVersion `+1`、history entry `+1`、redo clear、committed event `1`。
 - History 保存原始 frozen batch envelope、按 child/effect 顺序的 effective forward sets、全局 reverse-order inverse sets 和 canonical affected facts；不保存整文档 snapshot。
-- Assessment 聚合顺序固定为 child index；每个 child 内 Core first，再按 frozen module catalog order，再按 validator/classifier 返回顺序。
+- Child index fixes preparation, effect application, affected facts and failure-attribution order. The final public assessment is generated once from the final candidate: Core first, then frozen module catalog order and callback return order; validators/classifiers are not rerun per child and no per-child assessment type is added.
 - Replay 在当前同一逻辑 assembly 上重新 route 每个原始 child；缺失、重复或不兼容 binding 原子拒绝，不使用历史 stored effects 代替解析。
+
+### CVN-5 formal planning clarification (2026-08-11)
+
+- Outer Stage 3 owns only batch envelope/payload exact shape, dense/non-empty/count and global capture budgets. Nested `core.transaction.batch` is a child-local route failure, detected before that child's payload decoder, so the lowest reached `failedCommandIndex` wins.
+- `failedCommandIndex` remains the exact public wrapper field. `command.batch-child-rejected` cannot be its own inner failure; the public failure graph depth is at most one wrapper.
+- Child index orders route, preparation, effects, affected facts and child failure attribution. Core semantic validation, compatibility, validators, Core profile, classifiers and the public assessment run once for the final candidate, Core first then frozen module catalog order.
+- This clarification is owned by the formal CVN-5 child and changes no accepted CVN-1/CVN-2/CVN-6 surface.
 
 ## 12. 新增稳定失败
 

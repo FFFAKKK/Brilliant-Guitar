@@ -288,7 +288,7 @@ The fixed batch form is a versioned semantic command submitted through `submit(u
 - failure index and deterministic failure priority；
 - one candidate, validation pass, commit, version increment, history entry and committed event；
 - replay equality and current-assembly catalog resolution；
-- deterministic aggregated assessment: child order, then Core-first/module-catalog order within each child。
+- deterministic aggregated assessment: child index orders preparation/effects/affected facts/failure attribution; the final candidate produces one Core-first then frozen-module-catalog-order assessment without per-child validator/classifier reruns。
 
 Child preparation and effect application are sequential against the same isolated candidate. Intermediate candidates may be semantically incomplete when a later child is intended to restore an invariant; strict envelope/target/ownership/effect checks still run per child, and the complete semantic/domain validation pipeline runs once after all children have prepared and applied. Any failure discards the whole candidate. If every child is an effective no-op, the batch is a no-op; otherwise it is one commit.
 

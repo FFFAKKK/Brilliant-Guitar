@@ -96,8 +96,8 @@ The graph is dependency-based rather than numeric-order-based. CVN-2 and CVN-3 a
 | CVN-2 | completed and archived | accepted source `e203136`, acceptance `f3d0be0`, archive `42110c4`; final implementation review P0/P1/P2=`0/0/0`; focused `54/54`, full `350/350`, SDK `8/34`, root runtime delta `0` | retained as accepted CVN-6 prerequisite |
 | CVN-3 | completed and archived | independent review passed at `d9500f5` with P0/P1/P2 = `0/0/0`; 22 lifecycle and 233 full tests reproduced; acceptance commit `3691d93` | retained as accepted factory and Measure-lifecycle prerequisite |
 | CVN-4 | completed and archived | final local re-review passed at `b0272e2` with P0/P1/P2 = `0/0/0`; focused `92/92`, full `315/315`; acceptance `7f33e7d` | retained as accepted hierarchy-lifecycle prerequisite |
-| CVN-5 | parent-planned; child not created | waits for accepted CVN-2, CVN-3, CVN-4 and CVN-6 | detailed planning after all four dependencies are accepted |
-| CVN-6 | formal child created; planning review pending | task `08-11-cvn-6-module-runtime-validation-migration-integration`; unified base `050af1e`; task start and production authorization false | independent planning review, then separate user activation |
+| CVN-5 | formal planning candidate; dependency blocked | task `08-11-cvn-5-range-operations-explicit-atomic-batch`; base `1673d94`; task start and production authorization false; waits for accepted/archived CVN-6 | independent planning review now; implementation only after CVN-6 acceptance/archive and separate activation |
+| CVN-6 | implementation in progress | targeted planning rereview passed P0/P1/P2=`0/0/0`; user-authorized task start active; acceptance/archive pending | independent implementation review, acceptance and archive |
 | CVN-7 | parent-planned; child not created | waits for independently accepted and archived CVN-0 through CVN-6 | final qualification task |
 
 Snapshot evidence:
@@ -111,7 +111,8 @@ Snapshot evidence:
 - Extensibility Reservation Gate planning commit: `6298d4b`; activation baseline `783f69c`; charter `7c4e852`; acceptance `253d19e`; archive `a4d8cee`; final P0/P1/P2=`0/0/0` after one narrow P2 repair.
 - GD-0 accepted documentation/architecture contract: candidate `451627e`; acceptance `a2b9009`; archive `4580164`; archived-path synchronization `ade7526`; runtime implementation remains separately gated.
 - CVN-2 unified planning base: merge `706802c` with parents `ebd8075` and `7ad1ff1`; planning candidate `73fe18a` and its bounded planning repairs established the accepted contract. Production implementation was activated separately and closed four bounded review rounds covering the common error hierarchy, stable local validation primitives and global Stage 1-8 failure precedence. Accepted source/test candidate `e203136` passed final independent implementation review with P0/P1/P2=`0/0/0`, focused `54/54`, full `350/350`, forbidden dependency `3/3`, GD-0, Trellis, protected-path, allowlist and diff gates. Acceptance is `f3d0be0`; archive is `42110c4`. The archived child owns only `CVN-FC-110/111`; CVN-6 remains separately planned and gated.
-- CVN-6 formal planning child: `.trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/`; unified base `050af1e` contains accepted/archived CVN-2 line `302dafe` and post-Core roadmap `c68fcc6`; owns only `CVN-FC-112/120/121/122`; independent planning review pending.
+- CVN-6 formal child: `.trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/`; unified base `050af1e` contains accepted/archived CVN-2 line `302dafe` and post-Core roadmap `c68fcc6`; owns only `CVN-FC-112/120/121/122`; targeted planning rereview passed `0/0/0`, implementation is active, acceptance/archive pending.
+- CVN-5 formal planning child: `.trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/`; base `1673d94`; owns `CVN-FC-080..102` with `CVN-FC-141` as the CVN-7 acceptance consumer; task start and production authorization false until CVN-6 acceptance/archive.
 
 ## 5. Exact Command Inventory
 
@@ -409,10 +410,12 @@ Every command needs committed, no-op, rejected, undo, redo and replay evidence. 
 
 ## 11. CVN-5: Range Operations and Explicit Atomic Batch
 
+**Formal child:** `.trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/`; status `planning`, independent planning review pending, execution dependency gate closed until accepted/archived CVN-6.
+
 ### Ownership, purpose and dependencies
 
 - Primary contract owners: `CVN-FC-080–102`.
-- Purpose: safe multi-entity transformations through the single submit port and one semantic transaction result.
+- Purpose: safe multi-entity transformations through the single submit port and one semantic transaction result. Child index orders preparation/effects/affected facts/failure attribution; the final Core/module assessment is produced once from the final candidate.
 - Dependencies: accepted CVN-2, CVN-3, CVN-4 and CVN-6.
 
 ### Fixed command set
@@ -429,7 +432,7 @@ Every command needs committed, no-op, rejected, undo, redo and replay evidence. 
 - batch enters through existing `submit(unknown)`;
 - child count is exactly `1..100`;
 - Core and official-module children come from the same frozen assembly;
-- nested batch is rejected with child attribution;
+- outer preflight validates batch shape/count/capture budgets; nested batch is rejected per child during route with the lowest child index;
 - children prepare sequentially against one isolated candidate;
 - intermediate invalidity may be repaired by later children;
 - one final semantic validation/classification pass decides the candidate;
@@ -469,7 +472,7 @@ Every `CVN-FC-141` case must pass, including exact boundaries, atomic rejection,
 
 - Primary contract owners: `CVN-FC-112` and `CVN-FC-120/121/122`.
 - Purpose: bind an accepted CVN-2 catalog plus a CVN-6-owned known-requirement inventory to the existing Core bus, gateway and replay owner, then complete validation, profile, diagnostics, compatibility and migration.
-- Formal child: `.trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/`; status `planning`, initial independent planning review `0/1/0`, bounded known-requirement inventory repair targeted re-review pending, production implementation authorization false.
+- Formal child: `.trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/`; status `in_progress`, targeted planning rereview passed `0/0/0`, task start and production implementation authorization true; implementation acceptance/archive pending.
 - Dependencies: accepted CVN-1; accepted/archived CVN-2; accepted Extensibility Reservation and GD-0. CVN-3/4 supply accepted structural regression fixtures only.
 
 ### Fixed runtime authority
@@ -698,9 +701,9 @@ Accepted coordination gates:
 
 - `.trellis/tasks/archive/2026-08/08-09-core-vnext-extensibility-reservation-review/`
 
-Next dependency-satisfied child: CVN-5; no CVN-5 task has been created or activated at this snapshot.
+Current planning child: `.trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/` (formal planning candidate; dependency satisfied, targeted independent planning rereview pending).
 
-Active coordination gate at this snapshot: CVN-6 source/test candidate `8da50f90c9c05d87a8e1aa7a4e65b30e6ab82c7f` is accepted and archived after final independent implementation rereview P0/P1/P2=`0/0/0`. CVN-2 remains accepted and archived with its compiler/catalog exact. CVN-5 is now the next dependency-satisfied Core implementation child and still requires its own planning, review and user activation; CVN-7 remains gated on accepted and archived CVN-5.
+Active coordination gate at this snapshot: CVN-6 source/test candidate `8da50f90c9c05d87a8e1aa7a4e65b30e6ab82c7f` is accepted and archived after final independent implementation rereview P0/P1/P2=`0/0/0`. CVN-5 is the sole planning child, with task start and production authorization false until its targeted planning rereview and explicit user activation. CVN-2 remains accepted/archived and its compiler/catalog/SDK are exact; CVN-7 remains gated on accepted and archived CVN-5.
 
 GD-0 dependency authority:
 

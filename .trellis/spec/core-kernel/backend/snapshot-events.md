@@ -47,3 +47,7 @@ that boundary cannot catch a later Promise rejection.
 ## Later Boundaries
 
 Registry/Capability and dynamic contributions are K1-4. General error/report and subscriber-exception reporting are K1-5. Playback, layout, UI, Guitar semantics, autosave policy, physical IO, and persisted event logs remain external/later work.
+
+## CVN-5 Aggregate History and Event Projection (Not Active)
+
+An effective `core.transaction.batch` is one semantic transaction: one version increment, one history entry, one aggregate committed event and the existing optional dirty event. The outer event identity remains Core/`core.transaction.batch` even when accepted CVN-6 module children are present; child committed events are absent. History stores the frozen outer envelope plus private effective child/effect/inverse segments, not document snapshots. Undo/redo use stored effects with child preparer count zero and rerun the final semantic/CVN-6 assessment pipeline once. This behavior remains planning-only until the CVN-5 gate is accepted and activated.

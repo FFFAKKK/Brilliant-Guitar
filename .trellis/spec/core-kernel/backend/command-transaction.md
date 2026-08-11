@@ -292,3 +292,9 @@ submit({
   payload: { anchor: { kind: "after-measure", measureId: anchorMeasureId } },
 });
 ```
+
+## CVN-5 Range and Batch Planning Projection (Not Active)
+
+After accepted/archived CVN-6 and separate activation, CVN-5 adds `core.range.delete`, `core.range.transpose-written-pitch` and `core.transaction.batch`. Range commands reuse the existing three-kind `ScoreRange` and existing `remove-measure-bundle`, `remove-event` and `replace-written-pitch` effects.
+
+Batch accepts a dense tuple of 1..100 raw semantic child envelopes from one current frozen assembly. Outer validation owns exact shape/count/global capture budgets; nested-batch detection is child-local during route and uses the lowest zero-based `failedCommandIndex`. Children route/prepare/apply sequentially on one isolated candidate; intermediate whole-document invalidity is permitted; Core semantic validation, CVN-6 compatibility/validators, Core profile/classifiers and the public assessment run once for the final candidate. An effective batch has one adoption/version/history/event; all-no-op has zero state delta; every rejection preserves the complete session state. The exact candidate contract remains owned by the CVN-5 task until independent planning acceptance.

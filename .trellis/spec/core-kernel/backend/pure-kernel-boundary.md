@@ -44,3 +44,7 @@ GD-0 is an accepted additive documentation/architecture contract, not an impleme
 The candidate requires exact `ExtensionBlock.schemaVersion` compatibility negotiation, explicit complete/incomplete domain-validation availability, lossless read-only degradation for missing or incompatible required contributions, and stable integrated public signatures/discriminants. Legacy ownership is mapped once: CK1.1-0 → accepted CVN-0; CK1.1-1 → CVN-2; generic GD-2 → accepted CVN-1 plus CVN-6/CVN-5; Guitar-owned GD-1/GD-3/GD-4 → post-CVN-7. Pending gates remain inactive and require separate plans and acceptance.
 
 Every active Core-only type must map to an accepted K1-1 through K1-6 contract. Every additive integrated type must map to the GD-0 review candidate and still requires separately accepted production implementation. Retired boundary drafts live only under `.trellis/archive/core-kernel/`.
+
+## CVN-5 Planning Boundary (Not Active)
+
+The formal CVN-5 child is `.trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/`. It may add only two Core range commands and one explicit atomic semantic batch after accepted/archived CVN-6. It cannot add Guitar/product/UI/physical-IO dependencies, a public patch API, dynamic module lifecycle, persisted schema changes, a second transaction owner or Product `Application Assembly` behavior. This projection becomes implementation authority only after independent planning acceptance, dependency closure and separate user activation.

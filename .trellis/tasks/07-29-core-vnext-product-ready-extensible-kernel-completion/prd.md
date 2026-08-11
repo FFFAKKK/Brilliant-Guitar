@@ -63,7 +63,7 @@ Core VNext 需要一次范围较大的内部“内核脊柱重构”，但不进
 
 显式 batch 从第一版起允许按顺序组合 **当前 session 的同一冻结 assembly** 能够解码的 Core 与官方模块命令。Batch 仍通过唯一 `submit(unknown)` 入口提交，不新增第二个写方法；输入只包含原始语义命令信封，不接受已解码 command、catalog/assembly handle 或内部 effect。禁止 nested batch；child count 固定为 `1..100`，单个 transaction 的 expanded primitive effects 与 canonical affected addresses 均固定上限 `131,072`，输入图上限遵守 `feature-contract-matrix.md` 的 CVN-FC-010。
 
-整个 batch 只创建一个候选文档，按 child 顺序 decode/prepare/apply，在全部 child 完成后运行一次完整 semantic/domain validation 与 classification pipeline。任一 child 失败时返回稳定的 `failedCommandIndex` 与 child failure，整体状态保持不变；成功时只产生一次 documentVersion 增量、一个 history entry、一个 committed event 和一个聚合 assessment。聚合顺序固定为 child command 顺序，每个 child 内 Core first、随后 frozen module catalog order。
+整个 batch 只创建一个候选文档，按 child 顺序 decode/prepare/apply，在全部 child 完成后运行一次完整 semantic/domain validation 与 classification pipeline。任一 child 失败时返回稳定的 `failedCommandIndex` 与 child failure，整体状态保持不变；成功时只产生一次 documentVersion 增量、一个 history entry、一个 committed event 和一个聚合 assessment。Child index 只固定 preparation/effect/affected-fact/failure-attribution 顺序；最终 assessment 只从最终 candidate 生成一次，顺序为 Core first、随后 frozen module catalog order，不按 child 重跑 validator/classifier。
 
 ### CVN-D010 — Balanced product qualification scale
 

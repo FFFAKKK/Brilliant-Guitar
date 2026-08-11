@@ -2,7 +2,7 @@
 
 ## 1. Execution Status
 
-`PLANNING COORDINATION / CVN-0 CVN-1 CVN-2 CVN-3 FINAL CVN-4 EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-6 INITIAL PLANNING REVIEW 0/1/0, BOUNDED INVENTORY REPAIR TARGETED RE-REVIEW PENDING, TASK START FALSE / CVN-5 AND CVN-7 DEPENDENCY-GATED`.
+`PLANNING COORDINATION / CVN-0 CVN-1 CVN-2 CVN-3 FINAL CVN-4 EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-6 TARGETED PLANNING REREVIEW PASSED 0/0/0 AND USER-AUTHORIZED IMPLEMENTATION ACTIVE / CVN-5 FORMAL PLANNING CANDIDATE CREATED EARLY BUT EXECUTION WAITS FOR ACCEPTED-ARCHIVED CVN-6 / CVN-7 DEPENDENCY-GATED`.
 
 This parent task coordinates independently verifiable children. It does not batch all production changes into one implementation branch. Each child must receive its own PRD/design/implement review, `task.py start`, independent technical audit and archive decision.
 
@@ -12,7 +12,7 @@ After final user approval, the parent may enter `in_progress` only as the coordi
 
 - Core V1 close baseline: `d92a7586536ac8757c318ae6f75aabd8698f85ac`.
 - Unified CVN-6 planning baseline: `050af1eed067300f2e2fb0339eff6f2430e43b36`, containing accepted/archived CVN-2 and the post-Core roadmap as separate ancestors.
-- GD-0, the Extensibility Reservation and CVN-2 are accepted and archived. CVN-6 is the current formal planning child; its initial planning review returned `0/1/0`, and the bounded known-requirement inventory repair remains targeted-review-gated.
+- GD-0, the Extensibility Reservation and CVN-2 are accepted and archived. CVN-6 passed targeted planning rereview with `0/0/0` and is the active user-authorized implementation child. CVN-5 now has a docs-only formal planning candidate, but its implementation gate remains closed until CVN-6 is accepted and archived.
 - Core V1 accepted regression evidence: 8/8 K1-6 focused and 169/169 full tests.
 - CVN-0 accepted evidence: 19 focused, 42 related regression and 188 full tests; final independent re-review passed on 2026-08-04.
 - CVN-1 accepted evidence: 19/19 command-internals and 193/193 full tests; immutable characterization SHA-256 `CDBCFD68DCC84C514BCAC8BA83B44B819A237146C842E0F63E8F17A3CD2FF4D9`; final narrow independent re-review passed on 2026-08-04.
@@ -167,6 +167,8 @@ Numeric labels organize scope; the arrows above are the actual execution depende
 
 ### CVN-5 — Range Transformations and Explicit Atomic Batch
 
+**Formal child:** `.trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/`; status `planning`, independent planning review pending, task start and production implementation authorization false. Planning may complete early; implementation remains blocked until accepted and archived CVN-6.
+
 **Purpose:** add safe multi-entity editing through existing stable ranges and the single submit port.
 
 **Dependencies:** CVN-2, CVN-3, CVN-4 and CVN-6 accepted.
@@ -180,15 +182,17 @@ Numeric labels organize scope; the arrows above are the actual execution depende
 - nested-batch indexed rejection；input depth `64`；input properties `1,048,576`；effects/affected addresses `131,072`；
 - child decode/route/target/prepare/effect failure index；top-level final semantic/domain failure；
 - one candidate/validation/commit/version/history/event for the whole batch；
-- child-order then Core/module-catalog-order assessment aggregation；
+- child index orders preparation/effects/affected facts/failure attribution; the final assessment runs once, Core first then frozen module catalog order, with no per-child validator/classifier reruns；
 - unknown/current-assembly-incompatible child IDs, external catalog handles, child/effect limit and intermediate failure atomic rejection；
 - sequential child preparation against one candidate, all-no-op normalization and one final validation/classification pass。
 
 **Exit:** every CVN-FC-141 case, including 0/1/100/101, index 0/50/99, intermediate-invalid/final-valid, final-invalid-without-index and exact resource boundaries, proves atomicity, deterministic replay, reverse inverse order, redo invalidation and failure-state preservation.
 
+**Formal planning closures:** outer Stage 3 validates exact batch shape/density/count/global capture budgets only; nested-batch detection occurs per child at route so the lowest index wins. Child index orders route/preparation/effects/affected facts/failure attribution, while the final public assessment is built once from the final candidate: Core first, then frozen module catalog order. There are no per-child validator/classifier reruns.
+
 ### CVN-6 — Module Runtime, Validation and Migration Integration
 
-**Formal child:** `.trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/`; status `planning`, initial independent review `0/1/0`, bounded inventory repair targeted re-review pending, production implementation authorization false.
+**Formal child:** `.trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/`; status `in_progress`, targeted planning rereview passed `0/0/0`, task start and production implementation authorization true; independent implementation acceptance/archive remain pending.
 
 **Purpose:** bind the accepted CVN-2 catalog plus a CVN-6-owned data-only known-requirement inventory to the existing CVN-1 bus/gateway/replay/session owner and complete validation, profile, diagnostics, compatibility and detached migration.
 

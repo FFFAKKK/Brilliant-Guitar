@@ -147,3 +147,7 @@ must occur before a mutation. A future command addition must update the static
 catalog, compiled descriptor table, exact surface test, and this table in one
 reviewed change; it must not add `register`, `unregister`, `replace`, or hot
 reload behavior.
+
+## CVN-5 Descriptor and Gateway Projection (Not Active)
+
+CVN-5 plans exactly three additional document-target Core descriptors, bringing the accepted future Core catalog and Registry descriptor count from 25 to 28. All use the existing `command:execute` capability and gateway path; no `submitBatch`, capability kind, registration mutation or dynamic lifecycle API is added. Core-only batch routes Core children only; an accepted CVN-6 integrated assembly may route Core/module/mixed children while preserving one private assembly identity.
