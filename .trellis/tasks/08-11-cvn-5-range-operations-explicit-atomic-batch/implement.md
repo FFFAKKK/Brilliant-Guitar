@@ -353,6 +353,10 @@ Revert only the bounded defect commit; do not broaden production ownership to ma
 
 Acceptance and archive require separate user direction. Only after both are recorded may the parent expose CVN-7 as dependency-satisfied.
 
+### Recorded acceptance — 2026-08-11
+
+The user reported CVN-5 complete and directed continuation. The planner reproduced the final independent review state and gates, accepted candidate `f329ec10bc77c530282db3a6f47dbd6b6112859e`, and retained `task.status=in_progress` only for the remaining parent/spec synchronization and archive transaction. CVN-7 still starts only after the archive commit.
+
 ### Rollback
 
 If review returns findings, keep the task `in_progress`, create only bounded implementation repair commits and request targeted rereview. Do not accept or archive a failing candidate.

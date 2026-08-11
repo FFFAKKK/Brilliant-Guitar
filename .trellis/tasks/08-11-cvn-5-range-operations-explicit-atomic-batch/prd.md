@@ -250,6 +250,7 @@ CVN-5 excludes:
 - [x] File allowlist, protected paths, privacy, forbidden dependency and rollback checks pass.
 - [x] Typecheck, build, focused tests and full regression pass.
 - [x] Independent technical review reports P0/P1/P2=`0/0/0`; acceptance and archive are separate later actions.
+- [x] Reviewed implementation candidate `f329ec10bc77c530282db3a6f47dbd6b6112859e` is formally accepted after planner reproduction of focused `49/49`, full `432/432`, typecheck/build and structural gates.
 
 ## 12. User benefit
 

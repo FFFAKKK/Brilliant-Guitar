@@ -1,10 +1,10 @@
-# CVN-5 Independent Planning Review Candidate
+# CVN-5 Review Record
 
 ## Status
 
-`PASS ? TARGETED INDEPENDENT PLANNING REREVIEW P0/P1/P2=0/0/0`
+`IMPLEMENTATION ACCEPTED / ARCHIVE PENDING / FINAL P0/P1/P2=0/0/0`
 
-This is a docs-only planning candidate. It is not an implementation, acceptance or archive candidate.
+This file retains the planning and implementation review history. The reviewed implementation candidate is accepted; archive remains the next lifecycle action.
 
 The initial independent review returned P0/P1/P2=`0/1/2`. This bounded repair changes only the closed implementation/test ownership, the hostile-input reflection wording and the live CVN scheduling snapshot. It has now been migrated without production changes onto the accepted/archived CVN-6 baseline.
 
@@ -282,3 +282,13 @@ Technical implementation review is complete. The task intentionally remains
 - This record checks the verified technical acceptance criteria but does not
   change `task.status=in_progress`; formal acceptance, archive, journal and push
   remain separate actions.
+
+## Acceptance record — 2026-08-11
+
+- Accepted implementation source: `f329ec10bc77c530282db3a6f47dbd6b6112859e`.
+- Lifecycle metadata repair: `10e5242`.
+- Final independent implementation rereview: `PASS`, P0/P1/P2=`0/0/0`.
+- Planner reproduction: focused CVN-5 `49/49`, clean-source full `432/432`, typecheck/build pass.
+- Structural gates: Trellis, strict JSON/JSONL and duplicate-key scan, GD-0 compile fences, export counts, allowlist, protected paths and diff check pass.
+- Acceptance is recorded while `task.status` remains `in_progress`; parent/spec synchronization and task archive follow as distinct actions.
+- CVN-7 stays planning-gated until the archive commit is present in its ancestry.

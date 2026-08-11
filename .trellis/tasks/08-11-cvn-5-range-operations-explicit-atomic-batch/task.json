@@ -28,6 +28,7 @@
     ".trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/check.jsonl",
     ".trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/operator-handoff.md",
     ".trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/review-candidate.md",
+    ".trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/implementation-review.md",
     ".trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/research/planning-base-and-dependency-audit.md",
     ".trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/research/implementation-base-audit.md",
     ".trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/research/k1-5-vs-cvn-5-scope-audit.md",
@@ -56,9 +57,9 @@
     ".trellis/spec/core-kernel/backend/registry-capability.md",
     ".trellis/spec/core-kernel/backend/errors-reports.md"
   ],
-  "notes": "CVN-5 IMPLEMENTATION ACTIVATED BY USER AFTER INDEPENDENT PLANNING PASS 0/0/0 / ACCEPTED-ARCHIVED CVN-6 BASELINE / IMPLEMENTATION REVIEW ROUND 1 RETURN 0/2/3 / REREVIEW ROUND 1 RETURN 0/1/0 / FINAL TARGETED REREVIEW PASS 0/0/0 / IMPLEMENTATION CANDIDATE COMMITTED f329ec1 / AWAITING SEPARATE ACCEPTANCE AND ARCHIVE AUTHORIZATION.",
+  "notes": "CVN-5 IMPLEMENTATION ACCEPTED AFTER FINAL INDEPENDENT REVIEW PASS 0/0/0 / ACCEPTED CANDIDATE f329ec1 / FOCUSED 49/49 / FULL 432/432 / LIFECYCLE METADATA REPAIRED BY 10e5242 / PARENT AND ACTIVE-SPEC SYNC THEN ARCHIVE / CVN-7 REMAINS GATED UNTIL ARCHIVE.",
   "meta": {
-    "planning_stage": "completed_independent_pass",
+    "planning_stage": "implementation_accepted_archive_pending",
     "planning_base_commit": "d521a618e42c01077e8545d1c87e9b36e14d4bdb",
     "primary_contract_owners": [
       "CVN-FC-080",
@@ -148,7 +149,7 @@
     "planning_ready_for_user_activation": true,
     "user_implementation_authorization": true,
     "user_implementation_authorization_date": "2026-08-11",
-    "operator_state": "stage_10_reviewed_implementation_candidate_committed_awaiting_acceptance_authorization",
+    "operator_state": "accepted_implementation_committed_archive_pending",
     "implementation_allowlist_amendment": "passed_2026_08_11_p0_0_p1_0_p2_0_exact_ten_path_closed_list",
     "integrated_failure_union_allowlist_amendment": "passed_2026_08_11_p0_0_p1_0_p2_0_single_type_owner",
     "final_independent_implementation_review": "return_for_repair_2026_08_11_p0_0_p1_2_p2_3",
@@ -190,9 +191,16 @@
     "commit_authorization_date": "2026-08-11",
     "implementation_candidate_commit": "f329ec10bc77c530282db3a6f47dbd6b6112859e",
     "implementation_candidate_commit_message": "feat(core-kernel): add range operations and atomic batch",
-    "acceptance_authorized": false,
-    "archive_authorized": false,
+    "acceptance_authorized": true,
+    "archive_authorized": true,
     "repair_candidate_full_test": "432_of_432_pass",
-    "implementation_started_from": "0bd79b2"
+    "implementation_started_from": "0bd79b2",
+    "acceptance_recorded": true,
+    "archive_recorded": false,
+    "acceptance_record_commit": null,
+    "metadata_duplicate_repair_commit": "10e5242",
+    "acceptance_gate_evidence": "final_review_p0_0_p1_0_p2_0_trellis28_31_parent3_3_product0_0_postcore15_16_cvn6archive22_23_typecheck_build_focused49_full432_gd0_layer_a7_layer_b_exports51_sdk8_34_core28_allowlist_protected_diffcheck_json_jsonl_pass",
+    "user_completion_direction": "verified_and_continue_2026_08_11",
+    "next_gate": "sync_parent_and_active_specs_then_archive_cvn5"
   }
 }
