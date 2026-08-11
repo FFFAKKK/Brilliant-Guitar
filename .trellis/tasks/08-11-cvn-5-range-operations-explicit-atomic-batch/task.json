@@ -132,7 +132,6 @@
     "post_core_scope": "excluded_and_retained_by_08_11_post_core_roadmap",
     "planning_only_commit_allowed": true,
     "push_authorized": false,
-    "archive_authorized": false,
     "bounded_self_audit_repair": "pitch_reason_allowlist_aligned_to_exact_PitchTranspositionErrorCode",
     "planning_self_audit": "bounded_repair_migrated_to_accepted_cvn6_baseline_targeted_rereview_pending",
     "planning_self_audit_verification": "trellis28_31_parent3_3_product0_0_cvn6archive22_23_postcore15_16_json_jsonl_unique_child1_diffcheck_typecheck_build_full383_gd0_layer_a7_0_layer_b_exports51_sdk8_34_core25_zero_production_test_build_cvn6_postcore_delta",
