@@ -121,26 +121,26 @@ Tests use two neutral synthetic official modules, one score-owned and one Part-o
 
 ## Acceptance Criteria
 
-- [ ] CVN6-AC001: both required commits are ancestors of the implementation baseline and all four accepted dependencies are recorded.
-- [ ] CVN6-AC002: Core-only factory, Registry, bus, gateway, replay, event, report and migration characterization remains deep-equal to the accepted baseline.
-- [ ] CVN6-AC003: CVN-2 ABI remains nine fields, SDK exports remain `8/34`, catalog compilation and unselected-entry zero-callback behavior remain exact, and CVN-2 tests stay green.
-- [ ] CVN6-AC004: the strict inventory codec, duplicate/cap/catalog-parity rules and canonical ordering pass; integrated Registry, bus, gateway and replay from catalog+inventory A share one private runtime identity, while catalog/inventory A/B, Core/integrated and forged pairings reject before session/gateway exposure.
-- [ ] CVN6-AC005: module callbacks receive only detached owner-scoped views and the restricted forward-effect surface.
-- [ ] CVN6-AC006: WrittenPitch and owned score/Part ExtensionBlock effects apply atomically to one candidate; inverse order and rollback are exact at every failure stage.
-- [ ] CVN6-AC007: the ten-stage pipeline, failure priority and one CVN-1 adoption owner are directly asserted.
-- [ ] CVN6-AC008: real explicit-inventory runtime construction produces compatible, unavailable-only, incompatible-only, future, unknown and mixed matrices without private-state fabrication, with exact write/validation availability, canonical facts and callback counts.
-- [ ] CVN6-AC009: callback matrices prove `0/0`, `1/1`, `1/0`, read-only `0/0/0`, deterministic semantic issue aggregation and exception isolation.
-- [ ] CVN6-AC010: submit/no-op/reject/undo/redo/replay preserve the specified document/version/history/checkpoint/dirty/event invariants.
-- [ ] CVN6-AC011: two synthetic modules prove atomic multi-effect execution, frozen ordering, one history entry/version/event and live/replay result parity without batch semantics.
-- [ ] CVN6-AC012: integrated events carry exact command source identity while Core `KernelEvent` remains exact.
-- [ ] CVN6-AC013: detached migration covers migrated/not-required/rejected, owner and version mismatch, target absence, callback failure, round-trip and non-target deep equality with zero live-state effect.
-- [ ] CVN6-AC014: exact limit and limit+1 tests cover inventory rows/versions, issues, aggregate issues, facts, effects and affected addresses.
-- [ ] CVN6-AC015: hostile accessor/Proxy/sparse/cyclic/invalid-prototype/extra-field/alias document, command, request and inventory inputs return stable data-only failures.
-- [ ] CVN6-AC016: application runtime exports are exactly baseline plus `replayKernelCommands` and `migrateKernelExtension`; public type and SDK allowlists match the frozen design.
-- [ ] CVN6-AC017: GD-0 Layer A/Layer B plus a real-Core CVN-6 compile fence pass.
-- [ ] CVN6-AC018: implementation changes remain inside the exact source/test allowlists; Guitar, product-service, host, persistence and public-plugin dependencies are absent.
-- [ ] CVN6-AC019: typecheck, build, focused tests, full suite, Trellis validation, diff check and protected-path checks pass from a clean candidate.
-- [ ] CVN6-AC020: independent planning review and later independent implementation review each report P0/P1/P2=`0/0/0` before their respective activation/acceptance transitions.
+- [x] CVN6-AC001: both required commits are ancestors of the implementation baseline and all four accepted dependencies are recorded.
+- [x] CVN6-AC002: Core-only factory, Registry, bus, gateway, replay, event, report and migration characterization remains deep-equal to the accepted baseline.
+- [x] CVN6-AC003: CVN-2 ABI remains nine fields, SDK exports remain `8/34`, catalog compilation and unselected-entry zero-callback behavior remain exact, and CVN-2 tests stay green.
+- [x] CVN6-AC004: the strict inventory codec, duplicate/cap/catalog-parity rules and canonical ordering pass; integrated Registry, bus, gateway and replay from catalog+inventory A share one private runtime identity, while catalog/inventory A/B, Core/integrated and forged pairings reject before session/gateway exposure.
+- [x] CVN6-AC005: module callbacks receive only detached owner-scoped views and the restricted forward-effect surface.
+- [x] CVN6-AC006: WrittenPitch and owned score/Part ExtensionBlock effects apply atomically to one candidate; inverse order and rollback are exact at every failure stage.
+- [x] CVN6-AC007: the ten-stage pipeline, failure priority and one CVN-1 adoption owner are directly asserted.
+- [x] CVN6-AC008: real explicit-inventory runtime construction produces compatible, unavailable-only, incompatible-only, future, unknown and mixed matrices without private-state fabrication, with exact write/validation availability, canonical facts and callback counts.
+- [x] CVN6-AC009: callback matrices prove `0/0`, `1/1`, `1/0`, read-only `0/0/0`, deterministic semantic issue aggregation and exception isolation.
+- [x] CVN6-AC010: submit/no-op/reject/undo/redo/replay preserve the specified document/version/history/checkpoint/dirty/event invariants.
+- [x] CVN6-AC011: two synthetic modules prove atomic multi-effect execution, frozen ordering, one history entry/version/event and live/replay result parity without batch semantics.
+- [x] CVN6-AC012: integrated events carry exact command source identity while Core `KernelEvent` remains exact.
+- [x] CVN6-AC013: detached migration covers migrated/not-required/rejected, owner and version mismatch, target absence, callback failure, round-trip and non-target deep equality with zero live-state effect.
+- [x] CVN6-AC014: exact limit and limit+1 tests cover inventory rows/versions, issues, aggregate issues, facts, effects and affected addresses.
+- [x] CVN6-AC015: hostile accessor/Proxy/sparse/cyclic/invalid-prototype/extra-field/alias document, command, request and inventory inputs return stable data-only failures.
+- [x] CVN6-AC016: application runtime exports are exactly baseline plus `replayKernelCommands` and `migrateKernelExtension`; public type and SDK allowlists match the frozen design.
+- [x] CVN6-AC017: GD-0 Layer A/Layer B plus a real-Core CVN-6 compile fence pass.
+- [x] CVN6-AC018: implementation changes remain inside the exact source/test allowlists; Guitar, product-service, host, persistence and public-plugin dependencies are absent.
+- [x] CVN6-AC019: typecheck, build, focused tests, full suite, Trellis validation, diff check and protected-path checks pass from a clean candidate.
+- [x] CVN6-AC020: independent planning review and later independent implementation review each report P0/P1/P2=`0/0/0` before their respective activation/acceptance transitions.
 
 ## Scope Exclusions
 

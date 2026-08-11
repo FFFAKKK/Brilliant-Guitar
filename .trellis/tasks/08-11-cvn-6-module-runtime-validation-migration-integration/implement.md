@@ -2,13 +2,14 @@
 
 ## 1. Execution Status
 
-`BOUNDED REPAIR CANDIDATE READY FOR TARGETED INDEPENDENT REREVIEW / TASK IN_PROGRESS / NO ACCEPTANCE OR ARCHIVE RECORDED`
+`IMPLEMENTATION ACCEPTED / SOURCE CANDIDATE COMMITTED / ARCHIVE PENDING`
 
-Phases 1 through 9 have been implemented inside the reviewed allowlists. Phase
-10 evidence is recorded in `review-candidate.md`; independent implementation
-review returned five P1 findings. Their bounded repairs and regressions are now
-implemented; targeted independent rereview remains the next gate before any
-acceptance, commit, or archive action.
+Phases 1 through 10 are complete inside the reviewed allowlists. The first
+independent implementation review returned five P1 findings; all five bounded
+repairs passed targeted independent rereview with P0/P1/P2=`0/0/0`. The
+accepted source/test candidate is
+`8da50f90c9c05d87a8e1aa7a4e65b30e6ab82c7f`; only acceptance bookkeeping and
+Trellis archival remain.
 
 ## 2. Entry Gate
 

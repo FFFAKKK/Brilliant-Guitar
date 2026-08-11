@@ -12,6 +12,9 @@
 - `production_implementation_authorized=true` after user approval on 2026-08-11.
 - Initial independent planning verdict: `RETURN FOR BOUNDED PLANNING REPAIR`, P0/P1/P2=`0/1/0`.
 - Targeted independent planning rereview: `PASS`, P0/P1/P2=`0/0/0`.
+- Final independent implementation rereview: `PASS`, P0/P1/P2=`0/0/0`.
+- Accepted source/test candidate:
+  `8da50f90c9c05d87a8e1aa7a4e65b30e6ab82c7f`.
 
 ## What This Child Owns
 
@@ -43,8 +46,9 @@ The parent coordination task is not an implementation target. CVN-5 remains gate
 
 ## Immediate Handoff Target
 
-The first independent implementation review returned P0/P1/P2=`0/5/0`. The
-five bounded repairs are now implemented with focused `23/23` and full
-`383/383` passing evidence. The immediate handoff is a read-only targeted
-rereview of those five findings only. No acceptance, commit or archive action
-is authorized by this handoff.
+The first independent implementation review returned P0/P1/P2=`0/5/0`; the
+targeted rereview closed all five findings at `0/0/0`. Focused repaired suites
+pass `23/23`, original closure probes pass `5/5`, and the full suite passes
+`383/383`. The accepted implementation commit is recorded above. The remaining
+operator action is Trellis archive/session bookkeeping; CVN-5 becomes the next
+dependency-satisfied implementation child only after that archive completes.

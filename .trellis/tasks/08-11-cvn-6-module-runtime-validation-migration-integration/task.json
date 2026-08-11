@@ -15,7 +15,7 @@
   "branch": "codex/cvn-6-unified-planning-base",
   "base_branch": "codex/cvn-6-unified-planning-base",
   "worktree_path": ".worktrees/cvn-6-unified-planning-base",
-  "commit": null,
+  "commit": "8da50f90c9c05d87a8e1aa7a4e65b30e6ab82c7f",
   "pr_url": null,
   "subtasks": [],
   "children": [],
@@ -28,6 +28,7 @@
     ".trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/check.jsonl",
     ".trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/operator-handoff.md",
     ".trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/review-candidate.md",
+    ".trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/implementation-review.md",
     ".trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/research/planning-base-audit.md",
     ".trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/research/current-runtime-and-cvn2-consumer-audit.md",
     ".trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/research/gd0-cvn6-contract-closure.md",
@@ -42,9 +43,9 @@
     ".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/",
     ".trellis/spec/core-kernel/backend/domain-transaction-integration.md"
   ],
-  "notes": "CVN-6 IMPLEMENTATION ACTIVATED AFTER TARGETED INDEPENDENT PLANNING PASS P0/P1/P2 0/0/0 / KNOWN-REQUIREMENT INVENTORY OWNED BY CVN-6 RUNTIME CONSTRUCTION / CVN-2 COMPILER ABI SDK AND CATALOG REMAIN EXACT / USER APPROVAL RECORDED 2026-08-11 / CVN-5 AND CVN-7 REMAIN DEPENDENCY-GATED.",
+  "notes": "IMPLEMENTATION ACCEPTED 2026-08-11 / SOURCE-TEST CANDIDATE 8da50f90c9c05d87a8e1aa7a4e65b30e6ab82c7f / FINAL INDEPENDENT IMPLEMENTATION REREVIEW P0/P1/P2 0/0/0 / TYPECHECK BUILD FOCUSED23 PUBLIC-PROBES5 FULL383 TRELLIS GD0 PROTECTED-PATH ALLOWLIST AND DIFF GATES PASS / ARCHIVE PENDING / CVN-5 REMAINS GATED UNTIL ARCHIVE.",
   "meta": {
-    "planning_stage": "implementation_activated_after_independent_planning_pass",
+    "planning_stage": "implementation_accepted_archive_pending",
     "planning_base_commit": "050af1eed067300f2e2fb0339eff6f2430e43b36",
     "required_parent_commits": [
       "302dafe451bd4e10f4978d3076e367473b2fa3ae",
@@ -155,8 +156,8 @@
     "bounded_repair_base_commit": "a8695286c2674a0605b52689b2a4b3bc12d516aa",
     "implementation_activation_approved_by_user": true,
     "implementation_activation_date": "2026-08-11",
-    "operator_state": "bounded_repair_candidate_ready_for_targeted_independent_rereview",
-    "implementation_candidate_commit": null,
+    "operator_state": "accepted_implementation_committed_archive_pending",
+    "implementation_candidate_commit": "8da50f90c9c05d87a8e1aa7a4e65b30e6ab82c7f",
     "implementation_gate_evidence": "typecheck_build_focused23_full383_trellis22_23_3_3_0_0_15_16_gd0_layer_a7_0_layer_b_diffcheck_protected0_exports51_sdk8_34",
     "independent_implementation_review_round_1": "return_for_bounded_repair_2026-08-11_p0_0_p1_5_p2_0",
     "bounded_implementation_repairs": [
@@ -166,8 +167,16 @@
       "captured_json_migration_roundtrip_and_non_target_equality",
       "canonical_deduplicated_affected_address_capacity"
     ],
-    "final_independent_implementation_review": "pending_future",
-    "acceptance_recorded": false,
-    "archive_recorded": false
+    "final_independent_implementation_review": "passed_2026-08-11_p0_0_p1_0_p2_0",
+    "acceptance_recorded": true,
+    "archive_recorded": false,
+    "final_independent_implementation_review_findings": {
+      "P0": 0,
+      "P1": 0,
+      "P2": 0
+    },
+    "final_independent_implementation_review_verification": "targeted_five_finding_reproduction_pass_focused23_public_probes5_full383_typecheck_build_trellis22_23_parent3_3_product0_0_roadmap15_16_gd0_a_b_exports51_sdk8_34_allowlists_protected0_diffcheck",
+    "acceptance_record_commit": null,
+    "next_gate": "archive_cvn6_then_plan_cvn5"
   }
 }

@@ -2,12 +2,28 @@
 
 ## Status
 
-`BOUNDED REPAIR CANDIDATE READY / TARGETED INDEPENDENT REREVIEW PENDING`
+`TARGETED INDEPENDENT REREVIEW PASSED / ACCEPTED SOURCE CANDIDATE COMMITTED`
 
-The targeted independent planning rereview passed P0/P1/P2=`0/0/0`, and the
-user approved activation on 2026-08-11. The task remains `in_progress`. The
-current source/test candidate is uncommitted and has not been accepted or
-archived.
+The targeted independent planning rereview and final independent
+implementation rereview both passed P0/P1/P2=`0/0/0`. The accepted source/test
+candidate is `8da50f90c9c05d87a8e1aa7a4e65b30e6ab82c7f`. The task remains
+`in_progress` only until the acceptance record is committed and the Trellis
+archive step runs.
+
+## Final Independent Implementation Rereview
+
+- verdict: `PASS`;
+- findings: P0/P1/P2=`0/0/0`;
+- prior five P1 findings: all closed through independent public-entry
+  reproduction;
+- focused repaired suites: `23/23`;
+- original closure probes: `5/5`;
+- full suite: `383/383`;
+- task/source/test/Registry boundaries, exports, GD-0, Trellis and diff checks:
+  pass;
+- reviewer writes, staging and commits: `0`.
+
+The independent report is recorded in `implementation-review.md`.
 
 ## Implementation Candidate Evidence
 
@@ -32,7 +48,8 @@ archived.
   final TypeScript projection;
 - `git diff --check`, dependency boundaries, public allowlists and protected
   path checks: pass;
-- staging, commit, acceptance and archive: not performed.
+- source/test candidate committed as
+  `8da50f90c9c05d87a8e1aa7a4e65b30e6ab82c7f`; archive not yet performed.
 
 The reviewer should inspect the actual uncommitted diff and rerun decisive
 commands rather than treating this evidence list as an acceptance conclusion.
@@ -65,8 +82,9 @@ The bounded candidate now:
 - proves a legal 131,072-effect transaction commits, and directly proves
   canonical affected-address limit/limit+1 behavior.
 
-Focused repair regression: `23/23` pass. Full suite: `383/383` pass. No file was
-staged or committed; targeted independent rereview is pending.
+Focused repair regression: `23/23` pass. Full suite: `383/383` pass. The
+targeted independent rereview passed P0/P1/P2=`0/0/0` and authorized the
+acceptance-record/archive flow.
 
 ## Initial Independent Review
 
