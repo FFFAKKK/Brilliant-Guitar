@@ -43,9 +43,9 @@
     ".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/",
     ".trellis/spec/core-kernel/backend/domain-transaction-integration.md"
   ],
-  "notes": "IMPLEMENTATION ACCEPTED 2026-08-11 / SOURCE-TEST CANDIDATE 8da50f90c9c05d87a8e1aa7a4e65b30e6ab82c7f / FINAL INDEPENDENT IMPLEMENTATION REREVIEW P0/P1/P2 0/0/0 / TYPECHECK BUILD FOCUSED23 PUBLIC-PROBES5 FULL383 TRELLIS GD0 PROTECTED-PATH ALLOWLIST AND DIFF GATES PASS / ARCHIVE PENDING / CVN-5 REMAINS GATED UNTIL ARCHIVE.",
+  "notes": "COMPLETED AND ARCHIVED 2026-08-11. Independent implementation rereview passed P0/P1/P2 0/0/0 after five bounded repairs. Accepted source/test candidate 8da50f90c9c05d87a8e1aa7a4e65b30e6ab82c7f implements CVN-FC-112/120/121/122 only. Typecheck, build, focused 23/23, original probes 5/5, full 383/383, Trellis, GD-0, exports, allowlists, protected paths and diff checks pass. CVN-5 is the next dependency-satisfied child and remains separately planned and gated.",
   "meta": {
-    "planning_stage": "implementation_accepted_archive_pending",
+    "planning_stage": "completed_archived",
     "planning_base_commit": "050af1eed067300f2e2fb0339eff6f2430e43b36",
     "required_parent_commits": [
       "302dafe451bd4e10f4978d3076e367473b2fa3ae",
@@ -156,7 +156,7 @@
     "bounded_repair_base_commit": "a8695286c2674a0605b52689b2a4b3bc12d516aa",
     "implementation_activation_approved_by_user": true,
     "implementation_activation_date": "2026-08-11",
-    "operator_state": "accepted_implementation_committed_archive_pending",
+    "operator_state": "completed_archived",
     "implementation_candidate_commit": "8da50f90c9c05d87a8e1aa7a4e65b30e6ab82c7f",
     "implementation_gate_evidence": "typecheck_build_focused23_full383_trellis22_23_3_3_0_0_15_16_gd0_layer_a7_0_layer_b_diffcheck_protected0_exports51_sdk8_34",
     "independent_implementation_review_round_1": "return_for_bounded_repair_2026-08-11_p0_0_p1_5_p2_0",
@@ -169,7 +169,7 @@
     ],
     "final_independent_implementation_review": "passed_2026-08-11_p0_0_p1_0_p2_0",
     "acceptance_recorded": true,
-    "archive_recorded": false,
+    "archive_recorded": true,
     "final_independent_implementation_review_findings": {
       "P0": 0,
       "P1": 0,
@@ -177,6 +177,8 @@
     },
     "final_independent_implementation_review_verification": "targeted_five_finding_reproduction_pass_focused23_public_probes5_full383_typecheck_build_trellis22_23_parent3_3_product0_0_roadmap15_16_gd0_a_b_exports51_sdk8_34_allowlists_protected0_diffcheck",
     "acceptance_record_commit": "160674deb805a30837e4a7a3a815ca4981e3a767",
-    "next_gate": "archive_cvn6_then_plan_cvn5"
+    "next_gate": "completed; CVN-5 may enter separate planning and review",
+    "archive_commit": "a0c1d6a7b8b38d053d591dca6586c8fff84bbdd6",
+    "archive_path": ".trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/"
   }
 }

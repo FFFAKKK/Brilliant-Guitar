@@ -692,14 +692,15 @@ Accepted children:
 - `.trellis/tasks/archive/2026-08/08-04-cvn-3-document-factory-measure-lifecycle/`
 - `.trellis/tasks/archive/2026-08/08-04-cvn-4-part-staff-voice-lifecycle/`
 - `.trellis/tasks/archive/2026-08/08-10-cvn-2-official-module-sdk-frozen-assembly/`
+- `.trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/`
 
 Accepted coordination gates:
 
 - `.trellis/tasks/archive/2026-08/08-09-core-vnext-extensibility-reservation-review/`
 
-Current completion child: `.trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/`.
+Next dependency-satisfied child: CVN-5; no CVN-5 task has been created or activated at this snapshot.
 
-Active coordination gate at this snapshot: CVN-6 source/test candidate `8da50f90c9c05d87a8e1aa7a4e65b30e6ab82c7f` is accepted after final independent implementation rereview P0/P1/P2=`0/0/0`; Trellis archive is the remaining bookkeeping step. CVN-2 remains accepted and archived with its compiler/catalog exact. After CVN-6 archival, CVN-5 is the next dependency-satisfied Core implementation child and still requires its own planning, review and user activation.
+Active coordination gate at this snapshot: CVN-6 source/test candidate `8da50f90c9c05d87a8e1aa7a4e65b30e6ab82c7f` is accepted and archived after final independent implementation rereview P0/P1/P2=`0/0/0`. CVN-2 remains accepted and archived with its compiler/catalog exact. CVN-5 is now the next dependency-satisfied Core implementation child and still requires its own planning, review and user activation; CVN-7 remains gated on accepted and archived CVN-5.
 
 GD-0 dependency authority:
 

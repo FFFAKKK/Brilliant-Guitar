@@ -272,7 +272,7 @@ The `CommandBus` namespace declaration represents an additive static factory on 
 
 ## CVN-6 Accepted Contract Closure
 
-The formal CVN-6 child is `.trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/`. Its accepted source/test candidate is `8da50f90c9c05d87a8e1aa7a4e65b30e6ab82c7f`; final independent implementation rereview passed P0/P1/P2=`0/0/0` after closing five bounded findings. The following code block is the accepted CVN-6 implementation authority that closes construction, event, resource and detached-migration details around the accepted GD-0 declarations above. The archived GD-0 `public-contract` fence remains its prerequisite.
+The formal CVN-6 child is archived at `.trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/`. Its accepted source/test candidate is `8da50f90c9c05d87a8e1aa7a4e65b30e6ab82c7f`; final independent implementation rereview passed P0/P1/P2=`0/0/0` after closing five bounded findings. The following code block is the accepted CVN-6 implementation authority that closes construction, event, resource and detached-migration details around the accepted GD-0 declarations above. The archived GD-0 `public-contract` fence remains its prerequisite.
 
 ```typescript cvn6-planning-contract
 interface KernelKnownRequirementInventoryV1 {

@@ -53,9 +53,9 @@
     ".trellis/spec/core-kernel/backend/registry-capability.md",
     ".trellis/spec/core-kernel/backend/errors-reports.md",
     ".trellis/spec/core-kernel/backend/domain-transaction-integration.md",
-    ".trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/"
+    ".trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/"
   ],
-  "notes": "PLANNING COORDINATION / CVN-0 CVN-1 CVN-2 CVN-3 FINAL CVN-4 EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-6 SOURCE-TEST CANDIDATE ACCEPTED AFTER FINAL INDEPENDENT IMPLEMENTATION REREVIEW P0/P1/P2 0/0/0; ARCHIVE PENDING / CVN-2 COMPILER ABI SDK AND CATALOG EXACT / CVN-5 WAITS FOR CVN-6 ARCHIVE / CVN-7 WAITS FOR ACCEPTED-ARCHIVED CVN-0..6.",
+  "notes": "PLANNING COORDINATION / CVN-0 CVN-1 CVN-2 CVN-3 FINAL CVN-4 CVN-6 EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-6 SOURCE-TEST 8da50f9 FINAL INDEPENDENT IMPLEMENTATION REREVIEW P0/P1/P2 0/0/0 / CVN-2 COMPILER ABI SDK AND CATALOG EXACT / CVN-5 IS NEXT DEPENDENCY-SATISFIED CHILD BUT REMAINS UNCREATED AND SEPARATELY GATED / CVN-7 WAITS FOR ACCEPTED-ARCHIVED CVN-0..6 INCLUDING CVN-5.",
   "meta": {
     "compatibility_base": "d92a7586536ac8757c318ae6f75aabd8698f85ac",
     "architecture_style": "stability_first_startup_frozen_microkernel",
@@ -63,7 +63,7 @@
     "refactor_strategy": "behavior_preserving_command_transaction_registry_spine",
     "qualification_scale": "balanced_25600_event_release_gate_plus_102400_event_stress_gate",
     "legacy_gate_mapping": "ck1_1_0_to_cvn0_ck1_1_1_to_cvn2_generic_gd2_to_cvn1_cvn5_cvn6",
-    "planning_review": "cvn6_final_implementation_rereview_passed_p0_0_p1_0_p2_0_archive_pending",
+    "planning_review": "cvn6_completed_archived_final_implementation_rereview_p0_0_p1_0_p2_0",
     "cvn2_planning_review_baseline": "8757097fd6dd3e9464807b9ab091006285a19f2b",
     "cvn2_planning_review_findings_initial": {
       "P0": 0,
@@ -121,7 +121,7 @@
     "extensibility_reservation_acceptance_commit": "253d19e5e9d6a3bfdfa0158833d59872e8be156c",
     "extensibility_reservation_archive_commit": "a4d8cee406e8aa9a6efa05f4e24a8707367dc7b8",
     "extensibility_reservation_archive_path": ".trellis/tasks/archive/2026-08/08-09-core-vnext-extensibility-reservation-review/",
-    "next_dependency_gate": "cvn6_archive_then_cvn5_planning",
+    "next_dependency_gate": "cvn5_separate_planning_review_and_user_activation",
     "cvn2_task": "08-10-cvn-2-official-module-sdk-frozen-assembly",
     "cvn2_status": "completed_archived",
     "cvn2_branch": "codex/cvn-2-official-module-sdk-frozen-assembly",
@@ -280,9 +280,9 @@
     "cvn4_core_command_count": 25,
     "cvn4_registry_command_descriptor_count": 25,
     "cvn4_archive_path": ".trellis/tasks/archive/2026-08/08-04-cvn-4-part-staff-voice-lifecycle/",
-    "cvn4_next_gate": "completed; retained as accepted CVN-5 structural prerequisite while CVN-6 planning review is pending",
+    "cvn4_next_gate": "completed; retained as accepted CVN-5 structural prerequisite",
     "cvn6_task": "08-11-cvn-6-module-runtime-validation-migration-integration",
-    "cvn6_status": "implementation_accepted_archive_pending",
+    "cvn6_status": "completed_archived",
     "cvn6_branch": "codex/cvn-6-unified-planning-base",
     "cvn6_worktree_path": ".worktrees/cvn-6-unified-planning-base",
     "cvn6_planning_base_commit": "050af1eed067300f2e2fb0339eff6f2430e43b36",
@@ -356,7 +356,7 @@
     "cvn6_focused_repair_test_count": 23,
     "cvn6_public_closure_probe_count": 5,
     "cvn6_full_test_count": 383,
-    "cvn6_archive_commit": null,
-    "cvn6_archive_path": null
+    "cvn6_archive_commit": "a0c1d6a7b8b38d053d591dca6586c8fff84bbdd6",
+    "cvn6_archive_path": ".trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/"
   }
 }

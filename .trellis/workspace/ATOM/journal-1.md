@@ -591,3 +591,38 @@ Accepted and archived CVN-2 after final independent P0/P1/P2 0/0/0 review; synch
 ### Next Steps
 
 - None - task complete
+
+
+## Session 17: Complete and archive CVN-6 runtime integration
+
+**Date**: 2026-08-11
+**Task**: Complete and archive CVN-6 runtime integration
+**Branch**: `codex/cvn-6-unified-planning-base`
+
+### Summary
+
+Implemented CVN-FC-112/120/121/122, closed five independent review findings, passed final P0/P1/P2 0/0/0 with full 383/383, recorded acceptance, synchronized Core contracts, and archived CVN-6. CVN-5 is next but remains separately gated.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8da50f90c9c05d87a8e1aa7a4e65b30e6ab82c7f` | (see git log) |
+| `160674deb805a30837e4a7a3a815ca4981e3a767` | (see git log) |
+| `602ca57` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
