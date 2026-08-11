@@ -543,7 +543,7 @@ Contribution ABI V1 resource caps：
 
 CVN-6 additionally closes the data source required by `CVN-FC-121` without reopening CVN-2: `KernelKnownRequirementInventoryV1` is a strict application-facing data record, and additive integrated Registry/bus/replay overloads accept it beside an authentic catalog while their catalog-only forms remain exact. The inventory contains at most 1,024 `ExtensionRuntimeRequirementV1` rows and 256 versions per row, must contain every installed catalog requirement exactly once with identical data, may add absent requirements, and never installs a descriptor or callback. Malformed, duplicate, over-limit or catalog-parity mismatch returns `command.invalid-requirement-inventory` for bus/replay construction or existing `registry.invalid-startup-input` for Registry construction before runtime publication, with all callback families at zero. The accepted catalog compiler, catalog state, nine-field ABI and SDK `8/34` remain exact. "Known" means present in the frozen CVN-6 runtime inventory, while contribution "present" means separately resolved in the installed CVN-2 namespace index; this makes exact-version/absent states constructible without selecting an entry, mutating catalog internals or treating arbitrary unknown namespaces as official.
 
-正式子任务为 `.trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/`，当前状态 `planning`；初次独立规划审计为 P0/P1/P2=`0/1/0`，known-requirement inventory 窄修已进入 targeted rereview pending；`task_start_run=false`，`production_implementation_authorized=false`。它只拥有 `CVN-FC-112/120/121/122`，并消费已验收 CVN-2 九字段 ABI。
+正式子任务为 `.trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/`，当前状态 `in_progress`；初次独立规划审计 P0/P1/P2=`0/1/0` 的 known-requirement inventory 问题已完成窄修，定向复审通过 P0/P1/P2=`0/0/0`；`task_start_run=true`，`production_implementation_authorized=true`。它只拥有 `CVN-FC-112/120/121/122`，并消费已验收 CVN-2 九字段 ABI。
 
 为使 accepted GD-0 surface 可直接实施，CVN-6 固定五项窄合同：
 
@@ -731,7 +731,7 @@ Representative benchmark process peak RSS 固定 `<= 1.0 GiB`。Portable CI 运�
 | CVN-3 | CVN-FC-020/021/030/031/050–053 | CVN-4/5；factory + four exact Measure commands |
 | CVN-4 | CVN-FC-060–070 | CVN-5/7；fifteen exact hierarchy/property commands |
 | CVN-5 | CVN-FC-080–102 | CVN-7；two range commands + one batch command |
-| CVN-6 | CVN-FC-112/120–122 | formal child `08-11-cvn-6-module-runtime-validation-migration-integration`, bounded inventory repair targeted rereview pending；CVN-5/7；inventory-bound runtime + validation/profile/diagnostic/migration |
+| CVN-6 | CVN-FC-112/120–122 | formal child `08-11-cvn-6-module-runtime-validation-migration-integration`, planning rereview passed and implementation active；CVN-5/7；inventory-bound runtime + validation/profile/diagnostic/migration |
 | CVN-7 | CVN-FC-130–143 | compatibility, scale, resource, deterministic integration evidence |
 
 任一 child 若需要改变命令 ID/target/payload、cascade、range、batch attribution、failure priority、caps、fixture 或 budget，即触发父级规划复审；child 内不以“implementation detail”覆盖这些观察合同。

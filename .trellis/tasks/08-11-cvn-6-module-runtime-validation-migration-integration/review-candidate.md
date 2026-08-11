@@ -2,15 +2,24 @@
 
 ## Status
 
-`READY FOR TARGETED INDEPENDENT PLANNING REREVIEW`
+`ACCEPTED FOR USER-AUTHORIZED IMPLEMENTATION`
 
-This is a planning-only bounded repair. Production implementation authorization and task activation remain false.
+The targeted independent planning rereview passed P0/P1/P2=`0/0/0`. The user approved activation on 2026-08-11; the task is now `in_progress` and production implementation is authorized only within the reviewed CVN-6 allowlists.
 
 ## Initial Independent Review
 
 The initial read-only review returned `RETURN FOR BOUNDED PLANNING REPAIR`, P0/P1/P2=`0/1/0`. The sole finding was that `required-contribution-unavailable` had no real public construction path: `ExtensionBlock` has no contribution identity, while accepted CVN-2 catalog state retains only selected contributions and their namespace index.
 
-The repair introduces an independent composition-root `KernelKnownRequirementInventoryV1` at the CVN-6 runtime-construction boundary. It does not add a CVN-2 compiler overload or alter the nine-field contribution ABI, SDK `8/34`, catalog state, selection rules or zero-callback compilation behavior. Independent planning review remains `pending` until this targeted rereview reports P0/P1/P2=`0/0/0`.
+The repair introduces an independent composition-root `KernelKnownRequirementInventoryV1` at the CVN-6 runtime-construction boundary. It does not add a CVN-2 compiler overload or alter the nine-field contribution ABI, SDK `8/34`, catalog state, selection rules or zero-callback compilation behavior. Targeted independent planning rereview passed P0/P1/P2=`0/0/0` against the clean planning tree at `b0c342b29bde662d7a15f9d61f0bd3e7ccbe4a82`.
+
+## Final Planning Review
+
+- verdict: `PASS`;
+- findings: P0/P1/P2=`0/0/0`;
+- prior inventory-source P1: closed;
+- frozen catalog protected-path follow-up: closed;
+- verified gates: Trellis `22/23`, `3/3`, `0/0`, `15/16`; typecheck/build; full test `350/350`; clean worktree and empty index;
+- next gate: independent implementation review before acceptance or archive.
 
 ## Review Baseline
 

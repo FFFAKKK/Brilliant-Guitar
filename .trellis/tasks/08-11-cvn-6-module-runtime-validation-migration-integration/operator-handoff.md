@@ -7,11 +7,11 @@
 - Branch: `codex/cvn-6-unified-planning-base`.
 - Unified base: `050af1eed067300f2e2fb0339eff6f2430e43b36`.
 - Required ancestors: `302dafe451bd4e10f4978d3076e367473b2fa3ae`, `c68fcc648051b51b73fda3e5bda6eb9e33298f39`.
-- Lifecycle: `planning`.
-- `task_start_run=false`.
-- `production_implementation_authorized=false`.
+- Lifecycle: `in_progress`.
+- `task_start_run=true`.
+- `production_implementation_authorized=true` after user approval on 2026-08-11.
 - Initial independent planning verdict: `RETURN FOR BOUNDED PLANNING REPAIR`, P0/P1/P2=`0/1/0`.
-- Targeted independent planning rereview: pending.
+- Targeted independent planning rereview: `PASS`, P0/P1/P2=`0/0/0`.
 
 ## What This Child Owns
 
@@ -22,14 +22,13 @@
 
 The bounded repair adds application-facing `KernelKnownRequirementInventoryV1` and explicit inventory overloads only to integrated Registry, CommandBus and replay construction. CVN-2 remains the sole owner of catalog compilation, its nine-field ABI, SDK `8/34`, selected-entry rules and catalog-private state. The inventory carries no callback and cannot install a module, contribution, command, effect, Registry summary or gateway.
 
-## Operator Order After Future Activation
+## Operator Order After Activation
 
-1. verify the accepted planning commit and both ancestors;
-2. verify the targeted planning rereview passed P0/P1/P2=`0/0/0`;
-3. activate only this child after explicit approval;
-4. follow `implement.md` phases 1 through 10 in order;
-5. keep source/test edits inside the exact allowlists;
-6. obtain independent implementation review before acceptance/archive.
+1. use accepted planning tree `b0c342b29bde662d7a15f9d61f0bd3e7ccbe4a82` and both required ancestors;
+2. follow `implement.md` phases 1 through 10 in order;
+3. keep source/test edits inside the exact allowlists;
+4. preserve the CVN-2 compiler/private catalog protected boundary;
+5. obtain independent implementation review before acceptance/archive.
 
 The parent coordination task is not an implementation target. CVN-5 remains gated on accepted CVN-6. CVN-7 remains gated on accepted/archived CVN-0 through CVN-6.
 
@@ -44,4 +43,4 @@ The parent coordination task is not an implementation target. CVN-5 remains gate
 
 ## Immediate Handoff Target
 
-The targeted auditor reviews `review-candidate.md` and `research/known-requirement-inventory-closure.md`, then checks the synchronized PRD/design/implement/parent/spec projections. The decisive questions are public reachability of unavailable-only/incompatible-only/mixed/unknown, inventory ownership and strict codec, catalog/inventory assembly mismatch, failure priority, callback-zero behavior, and CVN-2/post-Core zero drift. Implementation activation follows only after a recorded P0/P1/P2=`0/0/0` result and user approval.
+Implementation is active. The next independent handoff occurs after the implementation candidate passes the complete gate matrix; it must review public reachability of unavailable-only/incompatible-only/mixed/unknown, inventory ownership and strict codec, catalog/inventory assembly mismatch, failure priority, callback-zero behavior, and CVN-2/post-Core zero drift.
