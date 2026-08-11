@@ -13,7 +13,7 @@
 - Bounded docs-only repair and accepted-CVN-6 baseline synchronization: complete; targeted independent planning rereview `PASS`, P0/P1/P2=`0/0/0`.
 - Final independent implementation rereview: `PASS`, P0/P1/P2=`0/0/0`.
 - Planner acceptance gates: focused `49/49`, full `432/432`, typecheck/build and structural gates pass.
-- Acceptance: recorded; archive and push: not yet performed.
+- Acceptance: recorded by `b2ad0bc`; archive and push: not yet performed.
 
 ## Current operator action
 

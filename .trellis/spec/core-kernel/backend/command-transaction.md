@@ -293,8 +293,8 @@ submit({
 });
 ```
 
-## CVN-5 Active Range and Batch Contract
+## CVN-5 Accepted Range and Batch Contract
 
 With accepted/archived CVN-6 and separate activation complete, CVN-5 adds `core.range.delete`, `core.range.transpose-written-pitch` and `core.transaction.batch`. Range commands reuse the existing three-kind `ScoreRange` and existing `remove-measure-bundle`, `remove-event` and `replace-written-pitch` effects.
 
-Batch accepts a dense tuple of 1..100 raw semantic child envelopes from one current frozen assembly. Outer validation owns exact shape/count/global capture budgets; nested-batch detection is child-local during route and uses the lowest zero-based `failedCommandIndex`. Children route/prepare/apply sequentially on one isolated candidate; intermediate whole-document invalidity is permitted; Core semantic validation, CVN-6 compatibility/validators, Core profile/classifiers and the public assessment run once for the final candidate. An effective batch has one adoption/version/history/event; all-no-op has zero state delta; every rejection preserves the complete session state. The exact active implementation contract is owned by the CVN-5 task and still requires independent implementation acceptance.
+Batch accepts a dense tuple of 1..100 raw semantic child envelopes from one current frozen assembly. Outer validation owns exact shape/count/global capture budgets; nested-batch detection is child-local during route and uses the lowest zero-based `failedCommandIndex`. Children route/prepare/apply sequentially on one isolated candidate; intermediate whole-document invalidity is permitted; Core semantic validation, CVN-6 compatibility/validators, Core profile/classifiers and the public assessment run once for the final candidate. An effective batch has one adoption/version/history/event; all-no-op has zero state delta; every rejection preserves the complete session state. This exact contract is accepted from source `f329ec1` after final independent review P0/P1/P2=`0/0/0`.

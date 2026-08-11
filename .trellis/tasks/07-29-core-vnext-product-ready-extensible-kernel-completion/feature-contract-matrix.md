@@ -417,12 +417,13 @@ Intermediate candidate 可以暂时违反只由后续 child 修复的 document s
 - Child index fixes preparation, effect application, affected facts and failure-attribution order. The final public assessment is generated once from the final candidate: Core first, then frozen module catalog order and callback return order; validators/classifiers are not rerun per child and no per-child assessment type is added.
 - Replay 在当前同一逻辑 assembly 上重新 route 每个原始 child；缺失、重复或不兼容 binding 原子拒绝，不使用历史 stored effects 代替解析。
 
-### CVN-5 formal planning clarification (2026-08-11)
+### CVN-5 accepted range/batch clarification (2026-08-11)
 
 - Outer Stage 3 owns only batch envelope/payload exact shape, dense/non-empty/count and global capture budgets. Nested `core.transaction.batch` is a child-local route failure, detected before that child's payload decoder, so the lowest reached `failedCommandIndex` wins.
 - `failedCommandIndex` remains the exact public wrapper field. `command.batch-child-rejected` cannot be its own inner failure; the public failure graph depth is at most one wrapper.
 - Child index orders route, preparation, effects, affected facts and child failure attribution. Core semantic validation, compatibility, validators, Core profile, classifiers and the public assessment run once for the final candidate, Core first then frozen module catalog order.
 - This clarification is owned by the formal CVN-5 child and changes no accepted CVN-1/CVN-2/CVN-6 surface.
+- Accepted source `f329ec10bc77c530282db3a6f47dbd6b6112859e` passed final independent implementation rereview P0/P1/P2=`0/0/0`, focused `49/49` and full `432/432`; acceptance record is `b2ad0bc`, with archive pending as a separate lifecycle action.
 
 ## 12. 新增稳定失败
 
@@ -550,7 +551,7 @@ Contribution ABI V1 resource caps：
 
 CVN-6 closes the data source required by `CVN-FC-121` without reopening CVN-2: `KernelKnownRequirementInventoryV1` is a strict application-facing data record, and additive integrated Registry/bus/replay overloads accept it beside an authentic catalog while their catalog-only forms remain exact. The inventory contains at most 1,024 `ExtensionRuntimeRequirementV1` rows and 256 versions per row, must contain every installed catalog requirement exactly once with identical data, may add requirements only under absent module/contribution identities, and never installs a descriptor or callback. Malformed, duplicate, over-limit or bidirectional catalog-parity mismatch returns `command.invalid-requirement-inventory` for bus/replay construction or existing `registry.invalid-startup-input` for Registry construction before runtime publication, with all callback families at zero. The accepted catalog compiler, catalog state, nine-field ABI and SDK `8/34` remain exact. "Known" means present in the frozen CVN-6 runtime inventory, while contribution "present" means separately resolved in the installed CVN-2 namespace index; this makes exact-version/absent states constructible without selecting an entry, mutating catalog internals or treating arbitrary unknown namespaces as official.
 
-正式子任务已归档于 `.trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/`；accepted source/test candidate 为 `8da50f90c9c05d87a8e1aa7a4e65b30e6ab82c7f`，最终独立实施复审 P0/P1/P2=`0/0/0`。它只拥有 `CVN-FC-112/120/121/122`，并消费已验收 CVN-2 九字段 ABI；CVN-5 现为下一依赖满足的实施 child，但仍需独立规划、复审与用户激活。
+正式子任务已归档于 `.trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/`；accepted source/test candidate 为 `8da50f90c9c05d87a8e1aa7a4e65b30e6ab82c7f`，最终独立实施复审 P0/P1/P2=`0/0/0`。它只拥有 `CVN-FC-112/120/121/122`，并消费已验收 CVN-2 九字段 ABI；CVN-5 已在该归档基线上完成实施与独立复审并进入验收归档收尾。
 
 为使 accepted GD-0 surface 可直接实施，CVN-6 固定五项窄合同：
 

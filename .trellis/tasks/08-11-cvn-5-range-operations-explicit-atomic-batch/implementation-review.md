@@ -6,6 +6,7 @@
 - Final independent implementation review: `PASS`.
 - P0/P1/P2: `0/0/0`.
 - Accepted implementation candidate: `f329ec10bc77c530282db3a6f47dbd6b6112859e`.
+- Acceptance record: `b2ad0bc`.
 - Lifecycle metadata duplicate-key repair: `10e5242`.
 - Task state at this record: `in_progress`, implementation accepted, archive pending.
 

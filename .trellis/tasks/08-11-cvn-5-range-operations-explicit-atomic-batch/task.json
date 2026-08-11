@@ -197,7 +197,7 @@
     "implementation_started_from": "0bd79b2",
     "acceptance_recorded": true,
     "archive_recorded": false,
-    "acceptance_record_commit": null,
+    "acceptance_record_commit": "b2ad0bc",
     "metadata_duplicate_repair_commit": "10e5242",
     "acceptance_gate_evidence": "final_review_p0_0_p1_0_p2_0_trellis28_31_parent3_3_product0_0_postcore15_16_cvn6archive22_23_typecheck_build_focused49_full432_gd0_layer_a7_layer_b_exports51_sdk8_34_core28_allowlist_protected_diffcheck_json_jsonl_pass",
     "user_completion_direction": "verified_and_continue_2026_08_11",

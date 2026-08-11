@@ -547,6 +547,6 @@ The former generic GD-2 label is fully mapped to CVN-1/CVN-2/CVN-6/CVN-5 and doe
 
 Any requirement for a Core-to-Guitar import, second transaction/history/event owner, public patch API, runtime registration/unload, whole-document history snapshot, persisted Core schema change, or UI/render/playback/physical-I/O behavior stops the active downstream task and returns it to planning.
 
-## CVN-5 Active Integrated Batch Consumer Contract
+## CVN-5 Accepted Integrated Batch Consumer Contract
 
 CVN-5 consumes, but does not redesign, the accepted/archived CVN-6 integrated assembly. A mixed batch routes each raw child through that one assembly, applies accepted Core or contribution-owned effects to one candidate, and invokes applicable module validators/classifiers once for the final candidate in frozen catalog order. Child index orders route/preparation/effects/affected facts/failure attribution; it does not create per-child assessments. Undo/redo use stored owned effects, replay reroutes semantic child envelopes through the current compatible assembly, and the aggregate event source remains Core. CVN-2's nine-field ABI, SDK `8/34`, catalog compiler and installed-only catalog state remain exact.

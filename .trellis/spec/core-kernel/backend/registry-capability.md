@@ -148,6 +148,6 @@ catalog, compiled descriptor table, exact surface test, and this table in one
 reviewed change; it must not add `register`, `unregister`, `replace`, or hot
 reload behavior.
 
-## CVN-5 Active Descriptor and Gateway Contract
+## CVN-5 Accepted Descriptor and Gateway Contract
 
 CVN-5 adds exactly three additional document-target Core descriptors, bringing the completed Core catalog and Registry descriptor count from 25 to 28. All use the existing `command:execute` capability and gateway path; no `submitBatch`, capability kind, registration mutation or dynamic lifecycle API is added. Core-only batch routes Core children only; an accepted CVN-6 integrated assembly may route Core/module/mixed children while preserving one private assembly identity.
