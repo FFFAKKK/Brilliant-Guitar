@@ -45,6 +45,6 @@ The candidate requires exact `ExtensionBlock.schemaVersion` compatibility negoti
 
 Every active Core-only type must map to an accepted K1-1 through K1-6 contract. Every additive integrated type must map to the GD-0 review candidate and still requires separately accepted production implementation. Retired boundary drafts live only under `.trellis/archive/core-kernel/`.
 
-## CVN-5 Planning Boundary (Not Active)
+## CVN-5 Active Implementation Boundary
 
-The formal CVN-5 child is `.trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/`. It may add only two Core range commands and one explicit atomic semantic batch after accepted/archived CVN-6. It cannot add Guitar/product/UI/physical-IO dependencies, a public patch API, dynamic module lifecycle, persisted schema changes, a second transaction owner or Product `Application Assembly` behavior. This projection becomes implementation authority only after independent planning acceptance, dependency closure and separate user activation.
+The formal CVN-5 child is `.trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/`. It may add only two Core range commands and one explicit atomic semantic batch after accepted/archived CVN-6. It cannot add Guitar/product/UI/physical-IO dependencies, a public patch API, dynamic module lifecycle, persisted schema changes, a second transaction owner or Product `Application Assembly` behavior. Independent planning acceptance, dependency closure and separate user activation are complete; this projection is now implementation authority for CVN-5.

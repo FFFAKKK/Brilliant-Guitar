@@ -3,7 +3,7 @@
   "name": "cvn-5-range-operations-explicit-atomic-batch",
   "title": "CVN-5 Range Operations and Explicit Atomic Batch",
   "description": "Plan the final three Core commands: deterministic range delete/transpose and one-candidate explicit atomic Core/module batch, on the accepted and archived CVN-6 baseline.",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": "Planning and later independently gated implementation of CVN-FC-080..102 only; accepted/archived CVN-6 is the implementation base; CVN-7 qualification, Guitar/product/public plugin work, dynamic lifecycle, persisted formats and CVN-2 ABI changes are excluded",
   "package": "core-kernel",
@@ -56,9 +56,9 @@
     ".trellis/spec/core-kernel/backend/registry-capability.md",
     ".trellis/spec/core-kernel/backend/errors-reports.md"
   ],
-  "notes": "DOCS-ONLY PLANNING CANDIDATE ON ACCEPTED/ARCHIVED CVN-6 BASELINE / FINAL TARGETED INDEPENDENT PLANNING REVIEW PASSED P0/P1/P2 0/0/0 / DEPENDENCY SATISFIED / READY FOR SEPARATE USER IMPLEMENTATION ACTIVATION / TASK START FALSE / PRODUCTION AUTHORIZATION FALSE.",
+  "notes": "CVN-5 IMPLEMENTATION ACTIVATED BY USER AFTER INDEPENDENT PLANNING PASS P0/P1/P2 0/0/0 / ACCEPTED-ARCHIVED CVN-6 BASELINE / TASK START TRUE / PRODUCTION AUTHORIZATION TRUE / IMPLEMENTATION IN PROGRESS / NO ACCEPTANCE OR ARCHIVE.",
   "meta": {
-    "planning_stage": "independent_planning_review_passed_awaiting_user_activation",
+    "planning_stage": "completed_independent_pass",
     "planning_base_commit": "d521a618e42c01077e8545d1c87e9b36e14d4bdb",
     "primary_contract_owners": [
       "CVN-FC-080",
@@ -82,8 +82,8 @@
     "open_dependency": null,
     "dependency_gate_satisfied": true,
     "cvn6_state_at_planning_base": "accepted_archived",
-    "task_start_run": false,
-    "production_implementation_authorized": false,
+    "task_start_run": true,
+    "production_implementation_authorized": true,
     "planning_artifacts_complete": true,
     "independent_planning_review": "passed_2026-08-11_p0_0_p1_0_p2_0",
     "independent_planning_review_findings_initial": {
@@ -146,6 +146,10 @@
       "P2": 0,
       "verdict": "pass"
     },
-    "planning_ready_for_user_activation": true
+    "planning_ready_for_user_activation": true,
+    "user_implementation_authorization": true,
+    "user_implementation_authorization_date": "2026-08-11",
+    "operator_state": "stage_1_public_contracts_and_failure_projection",
+    "implementation_started_from": "0bd79b2"
   }
 }

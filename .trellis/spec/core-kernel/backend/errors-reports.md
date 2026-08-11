@@ -317,6 +317,6 @@ return operationIssue("command.resource-limit-exceeded", "command", {
 });
 ```
 
-## CVN-5 Range/Batch Failure Projection (Not Active)
+## CVN-5 Active Range/Batch Failure Contract
 
-The formal CVN-5 plan consumes the accepted failure/report mechanism for range endpoint/owner/shape/transform failures, `command.batch-empty`, `command.batch-nested`, `command.batch-child-rejected` and `batch-children` resource attribution. The wrapper field is the zero-based `failedCommandIndex`; its inner union excludes the wrapper, so the public failure graph has at most one wrapper. Availability wins before input inspection, outer shape/count/capture failures remain top-level, child route/decode/prepare/effect failures are wrapped at the lowest reached index, and final semantic/module/profile/fact/capacity failures remain top-level. Public reports expose only existing allowlisted code/address/reason/limit/module identity facts. No application-root runtime error class is added.
+The active CVN-5 implementation consumes the accepted failure/report mechanism for range endpoint/owner/shape/transform failures, `command.batch-empty`, `command.batch-nested`, `command.batch-child-rejected` and `batch-children` resource attribution. The wrapper field is the zero-based `failedCommandIndex`; its inner union excludes the wrapper, so the public failure graph has at most one wrapper. Availability wins before input inspection, outer shape/count/capture failures remain top-level, child route/decode/prepare/effect failures are wrapped at the lowest reached index, and final semantic/module/profile/fact/capacity failures remain top-level. Public reports expose only existing allowlisted code/address/reason/limit/module identity facts. No application-root runtime error class is added.
