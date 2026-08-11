@@ -201,6 +201,22 @@ export type CoreEffect =
       readonly value:
         | { readonly kind: "inherit-default" }
         | { readonly kind: "staff"; readonly staffId: string };
+    }
+  | {
+      readonly kind: "set-extension-block";
+      readonly namespace: string;
+      readonly owner: ExtensionBlock["owner"];
+      readonly value: ExtensionBlock;
+    }
+  | {
+      readonly kind: "insert-extension-block";
+      readonly index: number;
+      readonly value: ExtensionBlock;
+    }
+  | {
+      readonly kind: "remove-extension-block";
+      readonly namespace: string;
+      readonly owner: ExtensionBlock["owner"];
     };
 
 export type NonEmptyCoreEffectSet = readonly [CoreEffect, ...CoreEffect[]];
@@ -1195,7 +1211,81 @@ function deriveInverseEffect(
           : { kind: "staff", staffId: resolved.value.event.staffId },
       };
     }
+    case "set-extension-block": {
+      const index = extensionBlockIndex(
+        candidate,
+        effect.namespace,
+        effect.owner,
+      );
+      const current = index === undefined
+        ? undefined
+        : candidate.extensions[index];
+      if (index === undefined || current === undefined) {
+        return internalFailure();
+      }
+      return {
+        kind: "set-extension-block",
+        namespace: effect.namespace,
+        owner: cloneValue(effect.owner),
+        value: cloneValue(current),
+      };
+    }
+    case "insert-extension-block":
+      return {
+        kind: "remove-extension-block",
+        namespace: effect.value.namespace,
+        owner: cloneValue(effect.value.owner),
+      };
+    case "remove-extension-block": {
+      const index = extensionBlockIndex(
+        candidate,
+        effect.namespace,
+        effect.owner,
+      );
+      const current = index === undefined
+        ? undefined
+        : candidate.extensions[index];
+      return index === undefined || current === undefined
+        ? internalFailure()
+        : {
+            kind: "insert-extension-block",
+            index,
+            value: cloneValue(current),
+          };
+    }
   }
+}
+
+function sameExtensionOwner(
+  left: ExtensionBlock["owner"],
+  right: ExtensionBlock["owner"],
+): boolean {
+  return left.kind === right.kind &&
+    (left.kind === "score" ||
+      (right.kind === "part" && left.partId === right.partId));
+}
+
+function extensionBlockIndex(
+  document: ScoreDocument,
+  namespace: string,
+  owner: ExtensionBlock["owner"],
+): number | undefined {
+  let found = -1;
+  for (let index = 0; index < document.extensions.length; index += 1) {
+    const block = document.extensions[index];
+    if (
+      block === undefined ||
+      block.namespace !== namespace ||
+      !sameExtensionOwner(block.owner, owner)
+    ) {
+      continue;
+    }
+    if (found >= 0) {
+      return undefined;
+    }
+    found = index;
+  }
+  return found < 0 ? undefined : found;
 }
 
 function moveAt<T>(
@@ -1579,6 +1669,58 @@ function applyEffectInPlace(
       } else {
         event.staffId = effect.value.staffId;
       }
+      return undefined;
+    }
+    case "set-extension-block": {
+      const index = extensionBlockIndex(
+        candidate,
+        effect.namespace,
+        effect.owner,
+      );
+      if (
+        index === undefined ||
+        effect.value.namespace !== effect.namespace ||
+        !sameExtensionOwner(effect.value.owner, effect.owner)
+      ) {
+        return internalFailure();
+      }
+      (candidate.extensions as ExtensionBlock[]).splice(
+        index,
+        1,
+        cloneValue(effect.value),
+      );
+      return undefined;
+    }
+    case "insert-extension-block": {
+      if (
+        !Number.isSafeInteger(effect.index) ||
+        effect.index < 0 ||
+        effect.index > candidate.extensions.length ||
+        extensionBlockIndex(
+          candidate,
+          effect.value.namespace,
+          effect.value.owner,
+        ) !== undefined
+      ) {
+        return internalFailure();
+      }
+      (candidate.extensions as ExtensionBlock[]).splice(
+        effect.index,
+        0,
+        cloneValue(effect.value),
+      );
+      return undefined;
+    }
+    case "remove-extension-block": {
+      const index = extensionBlockIndex(
+        candidate,
+        effect.namespace,
+        effect.owner,
+      );
+      if (index === undefined) {
+        return internalFailure();
+      }
+      (candidate.extensions as ExtensionBlock[]).splice(index, 1);
       return undefined;
     }
   }

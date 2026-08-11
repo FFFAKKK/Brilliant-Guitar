@@ -43,4 +43,8 @@ The parent coordination task is not an implementation target. CVN-5 remains gate
 
 ## Immediate Handoff Target
 
-Implementation is active. The next independent handoff occurs after the implementation candidate passes the complete gate matrix; it must review public reachability of unavailable-only/incompatible-only/mixed/unknown, inventory ownership and strict codec, catalog/inventory assembly mismatch, failure priority, callback-zero behavior, and CVN-2/post-Core zero drift.
+The first independent implementation review returned P0/P1/P2=`0/5/0`. The
+five bounded repairs are now implemented with focused `23/23` and full
+`383/383` passing evidence. The immediate handoff is a read-only targeted
+rereview of those five findings only. No acceptance, commit or archive action
+is authorized by this handoff.

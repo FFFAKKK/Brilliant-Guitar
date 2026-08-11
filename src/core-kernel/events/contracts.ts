@@ -23,6 +23,28 @@ export type KernelEvent =
       readonly dirty: boolean;
     });
 
+export interface KernelCommandIdentity {
+  readonly commandId: string;
+  readonly source:
+    | { readonly kind: "core" }
+    | {
+        readonly kind: "module";
+        readonly moduleId: string;
+        readonly contributionId: string;
+      };
+}
+
+export type IntegratedKernelEvent =
+  | (Omit<
+      Extract<KernelEvent, { readonly eventType: "core.document.committed" }>,
+      "commandId"
+    > &
+      KernelCommandIdentity)
+  | Extract<
+      KernelEvent,
+      { readonly eventType: "core.session.dirty-state-changed" }
+    >;
+
 export type KernelEventHandler = (event: KernelEvent) => void;
 export type KernelEventUnsubscribe = () => void;
 

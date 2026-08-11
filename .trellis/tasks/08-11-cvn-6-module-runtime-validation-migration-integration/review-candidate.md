@@ -1,10 +1,72 @@
-# CVN-6 Independent Planning Review Candidate
+# CVN-6 Independent Implementation Review Candidate
 
 ## Status
 
-`ACCEPTED FOR USER-AUTHORIZED IMPLEMENTATION`
+`BOUNDED REPAIR CANDIDATE READY / TARGETED INDEPENDENT REREVIEW PENDING`
 
-The targeted independent planning rereview passed P0/P1/P2=`0/0/0`. The user approved activation on 2026-08-11; the task is now `in_progress` and production implementation is authorized only within the reviewed CVN-6 allowlists.
+The targeted independent planning rereview passed P0/P1/P2=`0/0/0`, and the
+user approved activation on 2026-08-11. The task remains `in_progress`. The
+current source/test candidate is uncommitted and has not been accepted or
+archived.
+
+## Implementation Candidate Evidence
+
+- unified base: `050af1eed067300f2e2fb0339eff6f2430e43b36`;
+- required ancestors `302dafe451bd4e10f4978d3076e367473b2fa3ae` and
+  `c68fcc648051b51b73fda3e5bda6eb9e33298f39`: present;
+- integrated public runtime surface: 51 names, with only
+  `replayKernelCommands` and `migrateKernelExtension` added;
+- SDK surface: runtime 8, type 34; CVN-2 compiler, catalog state and protected
+  migration/schema paths have zero diff from the unified base;
+- focused CVN-6 tests: 32 public/boundary tests plus the full CVN-6 functional
+  matrices pass;
+- exact resource evidence covers inventory rows `1024/1025`, versions
+  `256/257`, callback issues `1024/1025`, aggregate issues `4096/4097`, and
+  facts/effects/addresses `131072/131073`;
+- Typecheck and Build: pass;
+- full suite after bounded repair: `383/383` pass;
+- Trellis validation: child `22/23`, parent `3/3`, product `0/0`, roadmap
+  `15/16`, all pass;
+- GD-0 Layer A: 7 fences, 0 diagnostics;
+- GD-0 Layer B: pass after retaining the Core `createGateway` overload as the
+  final TypeScript projection;
+- `git diff --check`, dependency boundaries, public allowlists and protected
+  path checks: pass;
+- staging, commit, acceptance and archive: not performed.
+
+The reviewer should inspect the actual uncommitted diff and rerun decisive
+commands rather than treating this evidence list as an acceptance conclusion.
+
+## Independent Implementation Review Round 1
+
+The first read-only implementation review returned
+`RETURN FOR BOUNDED IMPLEMENTATION REPAIR`, P0/P1/P2=`0/5/0`. The five
+reproduced findings were:
+
+1. module candidates could reach adoption with Core semantic invalidity;
+2. explicit inventory could add a forged namespace owned by an installed
+   contribution identity;
+3. replay did not strictly capture the command-sequence container;
+4. migration round-trip could observe callback replacement of JSON primordials;
+5. affected-address capacity was applied before canonical deduplication, while
+   the original boundary tests did not prove legal limit success.
+
+The bounded candidate now:
+
+- rejects Core-semantic-invalid candidates before module validators/classifiers
+  and preserves all session/event state;
+- enforces bidirectional installed contribution requirement parity for bus,
+  Registry and replay construction;
+- descriptor-first captures one detached dense replay sequence and maps invalid
+  containers to a stable rejected replay result;
+- uses captured JSON parse/stringify, checks callback primordial integrity and
+  verifies round-trip equality before publishing migration output;
+- decodes, deduplicates and sorts affected addresses before the canonical cap;
+- proves a legal 131,072-effect transaction commits, and directly proves
+  canonical affected-address limit/limit+1 behavior.
+
+Focused repair regression: `23/23` pass. Full suite: `383/383` pass. No file was
+staged or committed; targeted independent rereview is pending.
 
 ## Initial Independent Review
 
@@ -42,13 +104,15 @@ The repair introduces an independent composition-root `KernelKnownRequirementInv
 10. Do parent contracts, active spec, JSONL, task metadata and self-audit consistently record the initial P1 repair and targeted-rereview-pending state?
 11. Are CVN-1 single-owner, CVN-5/CVN-7 gates, post-Core ownership and production-path zero-diff boundaries unchanged?
 
-## Expected Verdict Format
+## Expected Implementation Verdict Format
 
 ```text
-PASS | RETURN FOR BOUNDED PLANNING REPAIR
+PASS | RETURN FOR BOUNDED IMPLEMENTATION REPAIR
 P0: <count>
 P1: <count>
 P2: <count>
 ```
 
-Every finding identifies an exact planning file and line range, the violated contract, impact and narrow repair. Review remains read-only.
+Every finding identifies an exact source/test file and line range, the violated
+contract, impact and narrow repair. Review remains read-only; it does not stage,
+commit, accept or archive the task.

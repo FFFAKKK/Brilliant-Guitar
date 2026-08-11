@@ -1,6 +1,7 @@
 import { CommandBus } from "../commands/command-bus";
 import type { CommandResult } from "../commands/contracts";
 import { decodeCoreCommand } from "../commands/strict-codec";
+import { captureStrictInput } from "../codec/strict-input-capture";
 import type { ScoreMetadata } from "../domain/score-document";
 import type { EventSubscriptionResult } from "../events/contracts";
 import { deepFreezeValue } from "../read/deep-freeze";
@@ -32,7 +33,27 @@ import type {
 import {
   decodeCoreSelectorRequest,
   isSafeRegistryId,
+  readExactDataRecord,
 } from "./strict-codec";
+import {
+  getIntegratedCommandBusAssemblyIdentity,
+  isIntegratedCommandBus,
+} from "../commands/integrated-runtime";
+import type {
+  IntegratedCommandBus,
+  IntegratedKernelModuleGateway,
+  IntegratedKernelModuleGatewayCreationResult,
+  KernelCommandResult,
+} from "./integrated-contracts";
+import type { KernelIntegratedRuntimeAssemblyState } from "./domain-availability";
+
+const reflectApply = Reflect.apply;
+const reflectConstruct = Reflect.construct;
+const objectFreeze = Object.freeze;
+const arrayIncludes = Array.prototype.includes;
+const weakMapGet = WeakMap.prototype.get;
+const weakMapSet = WeakMap.prototype.set;
+const structuredCloneValue = structuredClone;
 
 export type KernelRegistryCreationResult =
   | { readonly ok: true; readonly registry: KernelRegistry }
@@ -48,10 +69,16 @@ const GATEWAY_CONSTRUCTION_TOKEN = Symbol("KernelModuleGateway construction");
 interface KernelModuleGatewayState {
   readonly module: NormalizedRegistryModule;
   readonly registry: RegistryAssemblyState;
-  readonly commandBus: CommandBus;
+  readonly commandBus: CommandBus | IntegratedCommandBus;
+  readonly runtimeAssembly?: KernelIntegratedRuntimeAssemblyState;
 }
 
-const REGISTRY_STATES = new WeakMap<KernelRegistry, RegistryAssemblyState>();
+interface KernelRegistryPrivateState {
+  readonly registry: RegistryAssemblyState;
+  readonly runtimeAssembly?: KernelIntegratedRuntimeAssemblyState;
+}
+
+const REGISTRY_STATES = new WeakMap<KernelRegistry, KernelRegistryPrivateState>();
 const GATEWAY_STATES = new WeakMap<
   KernelModuleGateway,
   KernelModuleGatewayState
@@ -60,34 +87,78 @@ const GATEWAY_STATES = new WeakMap<
 export class KernelRegistry {
   private constructor(
     token: typeof REGISTRY_CONSTRUCTION_TOKEN,
-    state: RegistryAssemblyState,
+    state: KernelRegistryPrivateState,
   ) {
     if (token !== REGISTRY_CONSTRUCTION_TOKEN || state === undefined) {
       throw new TypeError("KernelRegistry cannot be constructed directly");
     }
-    REGISTRY_STATES.set(this, state);
-    Object.freeze(this);
+    reflectApply(weakMapSet, REGISTRY_STATES, [this, state]);
+    reflectApply(objectFreeze, Object, [this]);
   }
 
   createGateway(
     moduleId: string,
+    commandBus: IntegratedCommandBus,
+  ): IntegratedKernelModuleGatewayCreationResult;
+  createGateway(
+    moduleId: string,
     commandBus: CommandBus,
-  ): KernelModuleGatewayCreationResult {
+  ): KernelModuleGatewayCreationResult;
+  createGateway(
+    moduleId: string,
+    commandBus: CommandBus | IntegratedCommandBus,
+  ):
+    | KernelModuleGatewayCreationResult
+    | IntegratedKernelModuleGatewayCreationResult {
     try {
-      const state = REGISTRY_STATES.get(this);
+      const state = reflectApply(weakMapGet, REGISTRY_STATES, [this]) as
+        | KernelRegistryPrivateState
+        | undefined;
       if (
         state === undefined ||
-        !isSafeRegistryId(moduleId) ||
-        !(commandBus instanceof CommandBus)
+        !isSafeRegistryId(moduleId)
       ) {
         return {
           ok: false,
           failure: { code: "registry.invalid-invocation" },
         };
       }
-      const module = state.modules.find(
-        (candidate) => candidate.moduleId === moduleId,
-      );
+      const coreBus = commandBus instanceof CommandBus;
+      const integratedBus = isIntegratedCommandBus(commandBus);
+      if (!coreBus && !integratedBus) {
+        return {
+          ok: false,
+          failure: { code: "registry.invalid-invocation" },
+        };
+      }
+      if (
+        (state.runtimeAssembly === undefined && integratedBus) ||
+        (state.runtimeAssembly !== undefined && coreBus)
+      ) {
+        return {
+          ok: false,
+          failure: { code: "registry.assembly-mismatch" },
+        };
+      }
+      if (
+        state.runtimeAssembly !== undefined &&
+        getIntegratedCommandBusAssemblyIdentity(
+          commandBus as IntegratedCommandBus,
+        ) !== state.runtimeAssembly.assemblyIdentity
+      ) {
+        return {
+          ok: false,
+          failure: { code: "registry.assembly-mismatch" },
+        };
+      }
+      let module: NormalizedRegistryModule | undefined;
+      for (let index = 0; index < state.registry.modules.length; index += 1) {
+        const candidate = state.registry.modules[index];
+        if (candidate?.moduleId === moduleId) {
+          module = candidate;
+          break;
+        }
+      }
       if (module === undefined) {
         return {
           ok: false,
@@ -96,7 +167,14 @@ export class KernelRegistry {
       }
       return {
         ok: true,
-        gateway: constructGateway({ module, registry: state, commandBus }),
+        gateway: constructGateway({
+          module,
+          registry: state.registry,
+          commandBus,
+          ...(state.runtimeAssembly === undefined
+            ? {}
+            : { runtimeAssembly: state.runtimeAssembly }),
+        }) as KernelModuleGateway & IntegratedKernelModuleGateway,
       };
     } catch {
       return { ok: false, failure: { code: "registry.internal-error" } };
@@ -112,13 +190,13 @@ export class KernelModuleGateway {
     if (token !== GATEWAY_CONSTRUCTION_TOKEN || state === undefined) {
       throw new TypeError("KernelModuleGateway cannot be constructed directly");
     }
-    GATEWAY_STATES.set(this, state);
-    Object.freeze(this);
+    reflectApply(weakMapSet, GATEWAY_STATES, [this, state]);
+    reflectApply(objectFreeze, Object, [this]);
   }
 
   summary(): KernelGatewayResult<RegistrySummary> {
     try {
-      const state = GATEWAY_STATES.get(this);
+      const state = gatewayState(this);
       if (state === undefined) {
         return gatewayRejected({ code: "registry.invalid-invocation" });
       }
@@ -128,16 +206,19 @@ export class KernelModuleGateway {
       }
       return {
         status: "authorized",
-        value: deepFreezeValue(structuredClone(state.registry.summary)),
+        value: deepFreezeValue(structuredCloneValue(state.registry.summary)),
       };
     } catch {
       return gatewayRejected({ code: "registry.internal-error" });
     }
   }
 
-  read(): KernelGatewayResult<ReadResult<KernelReadState>> {
+  read(): KernelGatewayResult<ReadResult<KernelReadState>>;
+  read(): KernelGatewayResult<
+    ReadResult<KernelReadState> | ReadResult<import("./integrated-contracts").IntegratedKernelReadState>
+  > {
     try {
-      const state = GATEWAY_STATES.get(this);
+      const state = gatewayState(this);
       if (state === undefined) {
         return gatewayRejected({ code: "registry.invalid-invocation" });
       }
@@ -151,9 +232,12 @@ export class KernelModuleGateway {
     }
   }
 
-  submit(input: unknown): KernelGatewayResult<CommandResult> {
+  submit(input: unknown): KernelGatewayResult<CommandResult>;
+  submit(
+    input: unknown,
+  ): KernelGatewayResult<CommandResult | KernelCommandResult> {
     try {
-      const state = GATEWAY_STATES.get(this);
+      const state = gatewayState(this);
       if (state === undefined) {
         return gatewayRejected({ code: "registry.invalid-invocation" });
       }
@@ -165,10 +249,9 @@ export class KernelModuleGateway {
       }
       const decoded = decodeCoreCommand(input);
       if (decoded.ok) {
-        const contribution = state.registry.contributions.find(
-          (candidate): candidate is CompiledCommandContribution =>
-            isCommandContribution(candidate) &&
-            candidate.descriptor.id === decoded.value.commandId,
+        const contribution = findCommandContribution(
+          state.registry.contributions,
+          decoded.value.commandId,
         );
         if (contribution === undefined) {
           return gatewayRejected({
@@ -183,6 +266,35 @@ export class KernelModuleGateway {
         if (contributionDenied !== undefined) {
           return gatewayRejected(contributionDenied);
         }
+      } else if (state.runtimeAssembly !== undefined) {
+        const captured = captureStrictInput(input);
+        const envelope = captured.status === "captured"
+          ? readExactDataRecord(captured.value, [
+              "commandVersion",
+              "commandId",
+              "target",
+              "payload",
+            ])
+          : undefined;
+        const moduleCommand = envelope?.commandVersion === 1 &&
+          typeof envelope.commandId === "string"
+          ? state.runtimeAssembly.catalogState.commandIndex[envelope.commandId]
+          : undefined;
+        if (moduleCommand !== undefined) {
+          if (moduleCommand.descriptor.source.moduleId !== state.module.moduleId) {
+            return gatewayRejected({
+              code: "registry.contribution-not-found",
+              contributionId: envelope?.commandId as string,
+            });
+          }
+          const contributionDenied = requireCapabilities(
+            state.module,
+            moduleCommand.descriptor.requiredCapabilities,
+          );
+          if (contributionDenied !== undefined) {
+            return gatewayRejected(contributionDenied);
+          }
+        }
       }
       return { status: "authorized", value: state.commandBus.submit(input) };
     } catch {
@@ -190,9 +302,10 @@ export class KernelModuleGateway {
     }
   }
 
-  undo(): KernelGatewayResult<CommandResult> {
+  undo(): KernelGatewayResult<CommandResult>;
+  undo(): KernelGatewayResult<CommandResult | KernelCommandResult> {
     try {
-      const state = GATEWAY_STATES.get(this);
+      const state = gatewayState(this);
       if (state === undefined) {
         return gatewayRejected({ code: "registry.invalid-invocation" });
       }
@@ -206,9 +319,10 @@ export class KernelModuleGateway {
     }
   }
 
-  redo(): KernelGatewayResult<CommandResult> {
+  redo(): KernelGatewayResult<CommandResult>;
+  redo(): KernelGatewayResult<CommandResult | KernelCommandResult> {
     try {
-      const state = GATEWAY_STATES.get(this);
+      const state = gatewayState(this);
       if (state === undefined) {
         return gatewayRejected({ code: "registry.invalid-invocation" });
       }
@@ -224,7 +338,7 @@ export class KernelModuleGateway {
 
   subscribe(handler: unknown): KernelGatewayResult<EventSubscriptionResult> {
     try {
-      const state = GATEWAY_STATES.get(this);
+      const state = gatewayState(this);
       if (state === undefined) {
         return gatewayRejected({ code: "registry.invalid-invocation" });
       }
@@ -280,7 +394,7 @@ export class KernelModuleGateway {
   select(input: unknown): KernelGatewayResult<CoreSelectorResult>;
   select(input: unknown): KernelGatewayResult<CoreSelectorResult> {
     try {
-      const state = GATEWAY_STATES.get(this);
+      const state = gatewayState(this);
       if (state === undefined) {
         return gatewayRejected({ code: "registry.invalid-invocation" });
       }
@@ -295,10 +409,9 @@ export class KernelModuleGateway {
       if (request === undefined) {
         return gatewayRejected({ code: "registry.invalid-invocation" });
       }
-      const contribution = state.registry.contributions.find(
-        (candidate): candidate is CompiledSelectorContribution =>
-          isSelectorContribution(candidate) &&
-          candidate.descriptor.id === request.selectorId,
+      const contribution = findSelectorContribution(
+        state.registry.contributions,
+        request.selectorId,
       );
       if (contribution === undefined) {
         return gatewayRejected({
@@ -342,6 +455,48 @@ function isSelectorContribution(
   return contribution.descriptor.kind === "selector";
 }
 
+function gatewayState(
+  gateway: KernelModuleGateway,
+): KernelModuleGatewayState | undefined {
+  return reflectApply(weakMapGet, GATEWAY_STATES, [gateway]) as
+    | KernelModuleGatewayState
+    | undefined;
+}
+
+function findCommandContribution(
+  contributions: readonly CoreCompiledContribution[],
+  id: string,
+): CompiledCommandContribution | undefined {
+  for (let index = 0; index < contributions.length; index += 1) {
+    const candidate = contributions[index];
+    if (
+      candidate !== undefined &&
+      isCommandContribution(candidate) &&
+      candidate.descriptor.id === id
+    ) {
+      return candidate;
+    }
+  }
+  return undefined;
+}
+
+function findSelectorContribution(
+  contributions: readonly CoreCompiledContribution[],
+  id: string,
+): CompiledSelectorContribution | undefined {
+  for (let index = 0; index < contributions.length; index += 1) {
+    const candidate = contributions[index];
+    if (
+      candidate !== undefined &&
+      isSelectorContribution(candidate) &&
+      candidate.descriptor.id === id
+    ) {
+      return candidate;
+    }
+  }
+  return undefined;
+}
+
 function gatewayRejected<T>(
   failure: KernelRegistryAccessFailure,
 ): KernelGatewayResult<T> {
@@ -352,8 +507,12 @@ function requireCapabilities(
   module: NormalizedRegistryModule,
   required: readonly KernelCapability[],
 ): KernelRegistryAccessFailure | undefined {
-  for (const capability of required) {
-    if (!module.capabilities.includes(capability)) {
+  for (let index = 0; index < required.length; index += 1) {
+    const capability = required[index];
+    if (
+      capability !== undefined &&
+      reflectApply(arrayIncludes, module.capabilities, [capability]) !== true
+    ) {
       return {
         code: "registry.capability-denied",
         moduleId: module.moduleId,
@@ -367,16 +526,26 @@ function requireCapabilities(
 export function constructKernelRegistry(
   state: RegistryAssemblyState,
 ): KernelRegistry {
-  return Reflect.construct(KernelRegistry, [
+  return reflectConstruct(KernelRegistry, [
     REGISTRY_CONSTRUCTION_TOKEN,
-    state,
+    { registry: state },
+  ]) as KernelRegistry;
+}
+
+export function constructIntegratedKernelRegistry(
+  state: RegistryAssemblyState,
+  runtimeAssembly: KernelIntegratedRuntimeAssemblyState,
+): KernelRegistry {
+  return reflectConstruct(KernelRegistry, [
+    REGISTRY_CONSTRUCTION_TOKEN,
+    { registry: state, runtimeAssembly },
   ]) as KernelRegistry;
 }
 
 function constructGateway(
   state: KernelModuleGatewayState,
 ): KernelModuleGateway {
-  return Reflect.construct(KernelModuleGateway, [
+  return reflectConstruct(KernelModuleGateway, [
     GATEWAY_CONSTRUCTION_TOKEN,
     state,
   ]) as KernelModuleGateway;

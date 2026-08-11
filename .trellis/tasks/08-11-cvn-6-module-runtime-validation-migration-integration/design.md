@@ -570,8 +570,17 @@ Any source addition outside this list is a planning-review event. `src/core-kern
 - `test/core-kernel/integrated-public-boundary.test.ts`
 - `test/core-kernel/core-only-regression.test.ts`
 - `test/core-kernel/fixtures/cvn-6-synthetic-official-modules.ts`
+- `test/core-kernel/cvn-4-public-surface.test.ts` (runtime count only)
+- `test/core-kernel/module-sdk-contracts.test.ts` (application-root allowlist only)
+- `test/core-kernel/public-api-boundary.test.ts` (application-root allowlist only)
+- `test/core-kernel/public-unknown-guards.test.ts` (runtime count only)
+- `test/core-kernel/fixtures/cvn-4-surface.expected.json` (approved runtime names only)
 
-Existing CVN-0, CVN-1, CVN-2, CVN-3 and CVN-4 regression files remain accepted characterization inputs.
+The five bounded amendments above close the independently confirmed planning
+omission created by the same section 3.7 contract that moves the application
+runtime surface from 49 to 51. All other assertions in those files remain
+unchanged. Existing CVN-0, CVN-1, CVN-2, CVN-3 and CVN-4 regression files
+remain accepted characterization inputs.
 
 ## 13. Rollback
 

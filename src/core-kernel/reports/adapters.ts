@@ -23,6 +23,7 @@ import type {
   KernelIssue,
   KernelIssueLocation,
   KernelIssueSource,
+  MigrationFailureCode,
 } from "./contracts";
 import {
   decodeCheckpointFailure,
@@ -124,10 +125,7 @@ function operationIssue(
   code: Exclude<
     KernelIssue["code"],
     | "module.internal-error"
-    | "migration.invalid-input"
-    | "migration.unsupported-source-version"
-    | "migration.semantic-invalid"
-    | "migration.internal-error"
+    | MigrationFailureCode
     | "report.invalid-input"
     | "report.internal-error"
   >,

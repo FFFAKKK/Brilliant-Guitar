@@ -29,7 +29,7 @@ test("CVN-4 records the final additive Core surface", () => {
     serializeCvn4SurfaceTrace(actual),
     serializeCvn4SurfaceTrace(repeated),
   );
-  assert.equal(actual.runtimeExports.length, 49);
+  assert.equal(actual.runtimeExports.length, 51);
   assert.equal(actual.catalog.length, 25);
   assert.equal(actual.registryCommandDescriptors.length, 25);
   assert.deepEqual(actual, expected);

@@ -666,7 +666,7 @@ test("UG-T13 guard signatures remain fixed while CVN-3 adds one factory export",
   assert.strictEqual(jsonValueGuard, coreKernel.isJsonValue);
   assert.strictEqual(writtenPitchGuard, coreKernel.isWrittenPitch);
   assert.strictEqual(transpositionGuard, coreKernel.isTransposition);
-  assert.equal(Object.keys(coreKernel).length, 49);
+  assert.equal(Object.keys(coreKernel).length, 51);
   assert.deepEqual(
     Object.keys(coreKernel)
       .filter((name) => name.startsWith("is"))

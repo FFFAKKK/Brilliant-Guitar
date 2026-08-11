@@ -23,7 +23,14 @@ export type ModuleFailureCode = "module.internal-error";
 
 export type MigrationFailureCode =
   | "migration.invalid-input"
+  | "migration.invalid-request"
+  | "migration.target-not-found"
   | "migration.unsupported-source-version"
+  | "migration.unsupported-target-version"
+  | "migration.contribution-semantic-invalid"
+  | "migration.contribution-contract-violation"
+  | "migration.contribution-internal-error"
+  | "migration.assembly-mismatch"
   | "migration.semantic-invalid"
   | "migration.internal-error";
 

@@ -154,6 +154,20 @@
     "targeted_planning_rereview": "passed_2026-08-11_p0_0_p1_0_p2_0",
     "bounded_repair_base_commit": "a8695286c2674a0605b52689b2a4b3bc12d516aa",
     "implementation_activation_approved_by_user": true,
-    "implementation_activation_date": "2026-08-11"
+    "implementation_activation_date": "2026-08-11",
+    "operator_state": "bounded_repair_candidate_ready_for_targeted_independent_rereview",
+    "implementation_candidate_commit": null,
+    "implementation_gate_evidence": "typecheck_build_focused23_full383_trellis22_23_3_3_0_0_15_16_gd0_layer_a7_0_layer_b_diffcheck_protected0_exports51_sdk8_34",
+    "independent_implementation_review_round_1": "return_for_bounded_repair_2026-08-11_p0_0_p1_5_p2_0",
+    "bounded_implementation_repairs": [
+      "core_semantic_before_module_validation",
+      "installed_contribution_inventory_bidirectional_parity",
+      "strict_replay_sequence_capture",
+      "captured_json_migration_roundtrip_and_non_target_equality",
+      "canonical_deduplicated_affected_address_capacity"
+    ],
+    "final_independent_implementation_review": "pending_future",
+    "acceptance_recorded": false,
+    "archive_recorded": false
   }
 }

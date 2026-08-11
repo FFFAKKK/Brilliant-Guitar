@@ -7,6 +7,11 @@ import type {
   CommandBusCreationFailure,
   CommandResult,
 } from "./contracts";
+import { createIntegratedCommandBus } from "./integrated-runtime";
+import type {
+  IntegratedCommandBusCreationResult,
+  KernelIntegratedCatalog,
+} from "../registry/integrated-contracts";
 import {
   createCommandRuntime,
   type CommandRuntimeState,
@@ -60,6 +65,28 @@ export class CommandBus {
           value: new CommandBus(COMMAND_BUS_CONSTRUCTION_TOKEN, created.state),
         }
       : { ok: false, failure: created.failure };
+  }
+
+  static createIntegrated(
+    initialDocument: ScoreDocument,
+    catalog: KernelIntegratedCatalog,
+  ): IntegratedCommandBusCreationResult;
+  static createIntegrated(
+    initialDocument: ScoreDocument,
+    catalog: KernelIntegratedCatalog,
+    knownRequirements: unknown,
+  ): IntegratedCommandBusCreationResult;
+  static createIntegrated(
+    initialDocument: ScoreDocument,
+    catalog: KernelIntegratedCatalog,
+    knownRequirements?: unknown,
+  ): IntegratedCommandBusCreationResult {
+    return createIntegratedCommandBus(
+      initialDocument,
+      catalog,
+      knownRequirements,
+      arguments.length >= 3,
+    );
   }
 
   submit(input: unknown): CommandResult {

@@ -72,9 +72,25 @@ export type {
 } from "./registry/runtime";
 export type {
   ExtensionRuntimeRequirementV1,
+  IntegratedCommandBus,
+  IntegratedCommandBusCreationResult,
+  IntegratedKernelModuleGateway,
+  IntegratedKernelModuleGatewayCreationResult,
+  IntegratedKernelReadState,
+  KernelCommandAssessment,
+  KernelCommandBusCreationFailure,
+  KernelCommandFailure,
+  KernelCommandResult,
+  KernelContributionFailure,
+  KernelDomainAvailabilityFact,
   KernelIntegratedCatalog,
+  KernelKnownRequirementInventoryV1,
+  KernelValidationAvailability,
+  KernelWriteAvailability,
+  ModuleCommandAssessment,
   ModuleIssueCode,
   ModuleKernelIssue,
+  ReplayKernelCommandsResult,
 } from "./registry/integrated-contracts";
 
 export {
@@ -107,7 +123,12 @@ export type {
   ReportFailureCode,
 } from "./reports/contracts";
 export { migrateScoreDocument } from "./migration/migrate-score-document";
+export { migrateKernelExtension } from "./migration/migrate-kernel-extension";
+export { replayKernelCommands } from "./commands/replay";
 export type {
+  KernelExtensionMigrationFailure,
+  KernelExtensionMigrationRequestV1,
+  KernelExtensionMigrationResult,
   MigrationFailure,
   MigrationResult,
 } from "./migration/contracts";

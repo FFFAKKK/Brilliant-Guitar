@@ -25,6 +25,11 @@ export interface HistoryEntry {
   readonly forward: NonEmptyCoreEffectSet;
   readonly inverse: NonEmptyCoreEffectSet;
   readonly affected: readonly ScoreAddress[];
+  readonly integratedSource?: {
+    readonly kind: "module";
+    readonly moduleId: string;
+    readonly contributionId: string;
+  };
 }
 
 export interface CommandRuntimeState {
@@ -58,8 +63,10 @@ export interface CommandTransition {
   readonly committed?: CommittedOperation;
 }
 
+const structuredCloneValue = structuredClone;
+
 function cloneValue<T>(value: T): T {
-  return structuredClone(value);
+  return structuredCloneValue(value);
 }
 
 function depths(state: CommandRuntimeState): {
