@@ -697,9 +697,9 @@ Accepted coordination gates:
 
 - `.trellis/tasks/archive/2026-08/08-09-core-vnext-extensibility-reservation-review/`
 
-Current planning child: `.trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/`.
+Current completion child: `.trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/`.
 
-Active coordination gate at this snapshot: CVN-6 targeted independent planning rereview after the initial P0/P1/P2=`0/1/0` inventory-reachability finding, followed by separate user activation. Active CVN implementation child: none. CVN-6 remains `planning` with task start and production authorization false. CVN-2 is accepted and archived with final P0/P1/P2=`0/0/0`; its compiler/catalog remain exact and detached until CVN-6 is separately accepted.
+Active coordination gate at this snapshot: CVN-6 source/test candidate `8da50f90c9c05d87a8e1aa7a4e65b30e6ab82c7f` is accepted after final independent implementation rereview P0/P1/P2=`0/0/0`; Trellis archive is the remaining bookkeeping step. CVN-2 remains accepted and archived with its compiler/catalog exact. After CVN-6 archival, CVN-5 is the next dependency-satisfied Core implementation child and still requires its own planning, review and user activation.
 
 GD-0 dependency authority:
 

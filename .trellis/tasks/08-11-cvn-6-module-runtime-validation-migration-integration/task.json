@@ -176,7 +176,7 @@
       "P2": 0
     },
     "final_independent_implementation_review_verification": "targeted_five_finding_reproduction_pass_focused23_public_probes5_full383_typecheck_build_trellis22_23_parent3_3_product0_0_roadmap15_16_gd0_a_b_exports51_sdk8_34_allowlists_protected0_diffcheck",
-    "acceptance_record_commit": null,
+    "acceptance_record_commit": "160674deb805a30837e4a7a3a815ca4981e3a767",
     "next_gate": "archive_cvn6_then_plan_cvn5"
   }
 }
