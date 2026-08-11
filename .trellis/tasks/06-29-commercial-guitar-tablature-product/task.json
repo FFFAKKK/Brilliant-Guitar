@@ -21,7 +21,8 @@
   "children": [
     "07-07-pure-core-kernel-v1",
     "07-28-gd-0-guitar-domain-core-transaction-contract",
-    "07-29-core-vnext-product-ready-extensible-kernel-completion"
+    "07-29-core-vnext-product-ready-extensible-kernel-completion",
+    "08-11-post-core-official-plugin-product-roadmap"
   ],
   "parent": null,
   "relatedFiles": [
@@ -80,7 +81,7 @@
     ".trellis/tasks/06-29-commercial-guitar-tablature-product/research/tech-stack-comparison.md",
     ".trellis/tasks/06-29-commercial-guitar-tablature-product/research/vexflow-rendering-evaluation.md"
   ],
-  "notes": "用户要求需求粒度细，并按每个需求一个文档推进，最后再合并。Core-first 路线当前已归档 CVN-0/1/3/4 与扩展性预留门禁；GD-0 文档/架构合同已验收，下一规划门仅为另行批准的 CVN-2。",
+  "notes": "用户要求需求粒度细，并按每个需求一个文档推进，最后再合并。Core-first 路线当前已归档 CVN-0/1/3/4 与扩展性预留门禁；GD-0 文档/架构合同已验收，当前执行门仍是 CVN-2。Post-Core 父任务已建立为 planning-only 路线：CVN-7 关闭后依次进入官方 Guitar Domain、官方产品服务、产品宿主/Guitar Core Loop、产品资格门和公共视觉/功能插件。",
   "meta": {
     "pure_core_kernel_v1_status": "closed",
     "pure_core_kernel_v1_completed_at": "2026-07-26",
@@ -113,6 +114,12 @@
     "cvn4_status": "completed_archived",
     "core_vnext_extensibility_reservation_status": "completed_archived",
     "current_verified_full_test_count": 312,
-    "current_verified_source_baseline": "7467a2715ce09071e12b2287e76bdc9c3bd006f5"
+    "current_verified_source_baseline": "7467a2715ce09071e12b2287e76bdc9c3bd006f5",
+    "post_core_roadmap_task": "08-11-post-core-official-plugin-product-roadmap",
+    "post_core_roadmap_status": "planning",
+    "post_core_activation_prerequisite": "accepted_and_archived_cvn0_through_cvn7_plus_explicit_user_approval",
+    "post_core_first_future_child": "official-guitar-domain-v1",
+    "post_core_fixed_delivery_order": "complete_core_then_official_plugins_then_product_loop_then_public_plugins",
+    "post_core_production_implementation_authorized": false
   }
 }
