@@ -1,0 +1,22 @@
+{"file":".trellis/spec/core-kernel/backend/domain-transaction-integration.md","reason":"Check exact GD-0 names, CVN-6 closures, compatibility, callback isolation and ownership separation."}
+{"file":".trellis/spec/core-kernel/backend/command-transaction.md","reason":"Check candidate atomicity, failure order, history, undo/redo and rejection-state preservation."}
+{"file":".trellis/spec/core-kernel/backend/registry-capability.md","reason":"Check Core-only Registry preservation, capability rules and gateway invocation behavior."}
+{"file":".trellis/spec/core-kernel/backend/snapshot-events.md","reason":"Check read, checkpoint, dirty and event parity plus subscriber isolation."}
+{"file":".trellis/spec/core-kernel/backend/errors-reports.md","reason":"Check stable failures, privacy allowlists, report mapping and zero application error classes."}
+{"file":".trellis/spec/core-kernel/backend/pure-kernel-boundary.md","reason":"Check forbidden Guitar, product, platform and physical IO dependencies."}
+{"file":".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/feature-contract-matrix.md","reason":"Check primary ownership, ten-stage order, exact caps and CVN-5/CVN-7 separation."}
+{"file":".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-roadmap-and-stage-plan.md","reason":"Check formal child state, dependency gates and post-CVN-7 exit remain synchronized."}
+{"file":".trellis/tasks/archive/2026-08/08-04-cvn-1-command-transaction-registry-spine/design.md","reason":"Check single runtime/session/history/event owner and Core-only characterization."}
+{"file":".trellis/tasks/archive/2026-08/08-10-cvn-2-official-module-sdk-frozen-assembly/design.md","reason":"Check nine-field ABI, 8/34 SDK exports, authentic catalog state and effect ownership remain exact."}
+{"file":".trellis/tasks/archive/2026-08/08-10-cvn-2-official-module-sdk-frozen-assembly/implementation-review.md","reason":"Check the accepted CVN-2 candidate and final zero-finding review remain the consumed baseline."}
+{"file":".trellis/tasks/archive/2026-08/07-28-gd-0-guitar-domain-core-transaction-contract/review-candidate.md","reason":"Check accepted public-contract review criteria and real-Core drift expectations."}
+{"file":".trellis/tasks/archive/2026-08/08-09-core-vnext-extensibility-reservation-review/research/scenario-coverage-matrix.md","reason":"Check future extension ports stay in separate evidence-triggered gates."}
+{"file":".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/prd.md","reason":"Check Core, official domain/service, host and public plugin phase boundaries."}
+{"file":".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/design.md","reason":"Check kernel assembly identity is distinct from the Product Host Application Assembly."}
+{"file":".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/operator-handoff.md","reason":"Check post-Core implementation remains gated until CVN-7."}
+{"file":".trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/research/planning-base-audit.md","reason":"Check unified ancestry, accepted dependencies and clean planning start."}
+{"file":".trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/research/current-runtime-and-cvn2-consumer-audit.md","reason":"Check live owner evidence and bounded catalog consumption."}
+{"file":".trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/research/gd0-cvn6-contract-closure.md","reason":"Check integrated Registry, event, resource and migration closures are decision-complete."}
+{"file":".trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/research/cvn6-file-and-test-ownership-matrix.md","reason":"Check exact implementation/test allowlists and protected paths."}
+{"file":".trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/research/planning-candidate-self-audit.md","reason":"Check measured planning-only validation evidence before commit."}
+{"file":".trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/review-candidate.md","reason":"Drive independent planning review questions and verdict format."}

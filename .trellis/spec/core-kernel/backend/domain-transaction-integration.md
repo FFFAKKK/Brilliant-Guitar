@@ -269,6 +269,114 @@ declare function replayKernelCommands(
 
 The `CommandBus` namespace declaration represents an additive static factory on the accepted class. The `KernelRegistry` interface merge represents an additive **instance overload** on the accepted Registry instance; no static Registry factory is introduced. The integrated gateway replaces only `submit`, `undo`, `redo`, and `read`, so K1-4 `summary`, every typed `select` overload, and `subscribe` remain present with their accepted capability gates and result types. Existing Core-only constructors, results, gateway overload, and `replayCoreCommands()` remain unchanged.
 
+## CVN-6 Planning-Candidate Contract Closure
+
+The formal CVN-6 child is `.trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/`. Its current state is `planning`; independent planning review is pending; task start and production implementation authorization are false. The following code block is the bounded CVN-6 planning candidate that closes construction, event, resource and detached-migration details around the accepted GD-0 declarations above. The archived GD-0 `public-contract` fence remains the accepted prerequisite; this block becomes implementation authority only after CVN-6 planning acceptance.
+
+```typescript cvn6-planning-contract
+declare function createKernelRegistry(
+  catalog: KernelIntegratedCatalog,
+): KernelRegistryCreationResult;
+
+interface KernelCommandIdentity {
+  readonly commandId: string;
+  readonly source:
+    | { readonly kind: "core" }
+    | {
+        readonly kind: "module";
+        readonly moduleId: string;
+        readonly contributionId: string;
+      };
+}
+
+type IntegratedKernelEvent =
+  | (
+      Omit<
+        Extract<KernelEvent, { readonly eventType: "core.document.committed" }>,
+        "commandId"
+      > &
+      KernelCommandIdentity
+    )
+  | Extract<
+      KernelEvent,
+      { readonly eventType: "core.session.dirty-state-changed" }
+    >;
+
+// Planning notation only; this helper name is not a public export. Its shape is
+// inserted directly into KernelCommandFailure. The construction union uses the
+// same shape with limitKind limited to compatibility-facts | module-issues.
+type CVN6KernelIntegratedResourceFailureAddition = {
+  readonly code: "command.resource-limit-exceeded";
+  readonly limitKind:
+    | "effects"
+    | "affected-addresses"
+    | "compatibility-facts"
+    | "module-issues";
+  readonly limit: number;
+  readonly actual: number;
+};
+
+interface KernelExtensionMigrationRequestV1 {
+  readonly migrationVersion: 1;
+  readonly moduleId: string;
+  readonly contributionId: string;
+  readonly effectKind: string;
+  readonly namespace: string;
+  readonly owner: ExtensionOwner;
+  readonly sourceSchemaVersion: number;
+  readonly targetSchemaVersion: number;
+  readonly payload: JsonObject;
+}
+
+type KernelExtensionMigrationFailure =
+  | MigrationFailure
+  | { readonly code: "migration.invalid-request" }
+  | { readonly code: "migration.target-not-found" }
+  | { readonly code: "migration.unsupported-target-version" }
+  | {
+      readonly code: "migration.contribution-semantic-invalid";
+      readonly issues: readonly ModuleKernelIssue[];
+    }
+  | {
+      readonly code: "migration.contribution-contract-violation";
+      readonly moduleId: string;
+      readonly contributionId: string;
+    }
+  | {
+      readonly code: "migration.contribution-internal-error";
+      readonly moduleId: string;
+      readonly contributionId: string;
+    }
+  | { readonly code: "migration.assembly-mismatch" };
+
+type KernelExtensionMigrationResult =
+  | {
+      readonly status: "migrated";
+      readonly document: ScoreDocument;
+      readonly report: MigrationReport;
+    }
+  | {
+      readonly status: "not-required";
+      readonly document: ScoreDocument;
+      readonly report: MigrationReport;
+    }
+  | {
+      readonly status: "rejected";
+      readonly failure: KernelExtensionMigrationFailure;
+      readonly report: MigrationReport;
+    };
+
+declare function migrateKernelExtension(
+  input: unknown,
+  request: unknown,
+  catalog: KernelIntegratedCatalog,
+): KernelExtensionMigrationResult;
+```
+
+The existing manifest overload of `createKernelRegistry` remains exact. An authentic catalog is recognized only through CVN-2 private state; a structural lookalike follows existing manifest validation. Integrated component identity mismatch remains `registry.assembly-mismatch` or `command.assembly-mismatch` as owned by the receiving boundary. Initial compatibility-fact/module-issue overflow is included in `KernelCommandBusCreationFailure`; effects and affected-address failures apply only after an integrated command begins.
+
+Application runtime exports add exactly `replayKernelCommands` and `migrateKernelExtension`, moving the accepted 49-name baseline to 51. Module SDK runtime/type exports remain `8/34`, and `CompiledDomainCommandContributionV1` remains the accepted nine-field shape. The private kernel catalog identity here is distinct from the post-Core Product Host `Application Assembly`.
+
 ## Submission and Transaction Pipeline
 
 For live submit and integrated replay, routing and execution are identical:

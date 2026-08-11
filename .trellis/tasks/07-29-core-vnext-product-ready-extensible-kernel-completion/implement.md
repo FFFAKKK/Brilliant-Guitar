@@ -2,7 +2,7 @@
 
 ## 1. Execution Status
 
-`PLANNING COORDINATION / CVN-0 CVN-1 CVN-3 CVN-4 EXTENSIBILITY RESERVATION AND GD-0 CONTRACT ACCEPTED / NEXT GATE SEPARATELY APPROVED CVN-2 PLANNING / CVN-5 CVN-6 CVN-7 INACTIVE`.
+`PLANNING COORDINATION / CVN-0 CVN-1 CVN-2 CVN-3 FINAL CVN-4 EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-6 FORMAL PLANNING CANDIDATE CREATED, INDEPENDENT PLANNING REVIEW PENDING, TASK START FALSE / CVN-5 AND CVN-7 DEPENDENCY-GATED`.
 
 This parent task coordinates independently verifiable children. It does not batch all production changes into one implementation branch. Each child must receive its own PRD/design/implement review, `task.py start`, independent technical audit and archive decision.
 
@@ -11,8 +11,8 @@ After final user approval, the parent may enter `in_progress` only as the coordi
 ## 2. Entry Baselines
 
 - Core V1 close baseline: `d92a7586536ac8757c318ae6f75aabd8698f85ac`.
-- Current GD-0 review baseline: `7467a2715ce09071e12b2287e76bdc9c3bd006f5`, after accepted CVN-4 and the archived extensibility reservation gate.
-- GD-0: documentation ownership reconciliation and independent acceptance passed at `451627e` with final P0/P1/P2=`0/0/0`. CVN-2 is dependency-satisfied but still requires separate planning approval.
+- Unified CVN-6 planning baseline: `050af1eed067300f2e2fb0339eff6f2430e43b36`, containing accepted/archived CVN-2 and the post-Core roadmap as separate ancestors.
+- GD-0, the Extensibility Reservation and CVN-2 are accepted and archived. CVN-6 is the current formal planning child and remains review-gated.
 - Core V1 accepted regression evidence: 8/8 K1-6 focused and 169/169 full tests.
 - CVN-0 accepted evidence: 19 focused, 42 related regression and 188 full tests; final independent re-review passed on 2026-08-04.
 - CVN-1 accepted evidence: 19/19 command-internals and 193/193 full tests; immutable characterization SHA-256 `CDBCFD68DCC84C514BCAC8BA83B44B819A237146C842E0F63E8F17A3CD2FF4D9`; final narrow independent re-review passed on 2026-08-04.
@@ -186,11 +186,13 @@ Numeric labels organize scope; the arrows above are the actual execution depende
 
 **Exit:** every CVN-FC-141 case, including 0/1/100/101, index 0/50/99, intermediate-invalid/final-valid, final-invalid-without-index and exact resource boundaries, proves atomicity, deterministic replay, reverse inverse order, redo invalidation and failure-state preservation.
 
-### CVN-6 — Domain Validation / Profile / Diagnostics / Schema Migration Integration
+### CVN-6 — Module Runtime, Validation and Migration Integration
 
-**Purpose:** finish module data lifecycle beyond command execution.
+**Formal child:** `.trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/`; status `planning`, independent planning review pending, production implementation authorization false.
 
-**Dependencies:** CVN-2 and CVN-1 accepted. CVN-3/4 may proceed in parallel and later provide structural regression fixtures; CVN-5 waits for this gate.
+**Purpose:** bind the accepted CVN-2 catalog to the existing CVN-1 bus/gateway/replay/session owner and complete validation, profile, diagnostics, compatibility and detached migration.
+
+**Dependencies:** CVN-1 accepted; CVN-2 accepted/archived; Extensibility Reservation and GD-0 accepted/archived. CVN-3/4 provide accepted structural regression fixtures only. CVN-5 waits for accepted CVN-6.
 
 **Scope:**
 
@@ -202,7 +204,7 @@ Numeric labels organize scope; the arrows above are the actual execution depende
 - detached deterministic official-extension migration pipeline；
 - lossless read-only degradation and unknown opaque extension preservation。
 
-**Fixed contracts:** import the accepted GD-0 public-contract fences without renaming; enforce CVN-FC-110–122 callback isolation, exact compatibility, issue/fact caps, same-assembly identity and write-preflight priority.
+**Fixed contracts:** own only `CVN-FC-112/120/121/122`; consume the accepted GD-0 public-contract fences and frozen CVN-2 nine-field ABI; enforce callback isolation, exact compatibility, issue/fact caps, same-assembly identity and write-preflight priority. The integrated Registry overload, modular event type, construction resource failure and detached migration entry are the bounded public closures recorded by the child.
 
 **Exit:** two synthetic modules prove one atomic multi-effect transaction through the existing bus/history/replay/event owner, integrated factory/gateway/replay binding, missing/incompatible/future/mixed block matrices, migration round-trip, validator/classifier call-count rules, deterministic module assessments and privacy-safe failures.
 
@@ -268,9 +270,9 @@ Windows `spawn EPERM` is recorded as an environment failure and the same narrow 
 
 - **CVN-0:** revert predicate/helper changes; no data migration.
 - **CVN-1:** revert the child branch to its activation baseline; persisted schema and public APIs remain unchanged.
-- **CVN-2:** remove integrated factories/catalog bindings; Core-only default assembly remains.
+- **CVN-2:** remove the official SDK and detached catalog additions; Core-only default assembly remains.
 - **CVN-3–5:** remove the additive command definitions/effects and their exports; existing documents remain valid.
-- **CVN-6:** remove module validation/migration contributions; unknown extension preservation remains available through Core V1.
+- **CVN-6:** remove catalog-bound integrated runtime and detached migration additions; Core-only construction and unknown-extension preservation remain available.
 - **CVN-7:** qualification adds no product behavior; failed qualification returns findings to the owning child.
 
 ## 8. Stop Conditions

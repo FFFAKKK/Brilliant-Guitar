@@ -537,6 +537,19 @@ Contribution ABI V1 resource caps：
 - 第一版 module-to-Core effect request 只开放 WrittenPitch replacement；module-owned effect 只替换/删除声明 namespace 与 score/Part owner 的 ExtensionBlock。
 - Generic JSON patch/path、whole-document replacement、arbitrary callback mutation 与 module-supplied inverse 均排除。
 
+#### CVN-6 formal planning child and bounded public closures
+
+正式子任务为 `.trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/`，当前状态 `planning`，独立规划复审待完成，`task_start_run=false`，`production_implementation_authorized=false`。它只拥有 `CVN-FC-112/120/121/122`，并消费已验收 CVN-2 九字段 ABI。
+
+为使 accepted GD-0 surface 可直接实施，CVN-6 固定四项窄合同：
+
+1. 既有 `createKernelRegistry(manifest)` 保持精确，并增加 `createKernelRegistry(catalog: KernelIntegratedCatalog): KernelRegistryCreationResult`；
+2. 增加 `KernelCommandIdentity` 与 `IntegratedKernelEvent`，Core `KernelEvent` 保持精确；
+3. integrated `KernelCommandFailure` 增加 `effects`、`affected-addresses`、`compatibility-facts`、`module-issues` resource kinds，construction 只消费 facts/issues 子集；
+4. 增加 versioned detached `migrateKernelExtension(input, request, catalog)`，复用 accepted effect definition，保持 `CompiledDomainCommandContributionV1` 九字段与 `migrateScoreDocument()` 精确。
+
+Application root runtime export 只增加 `replayKernelCommands`、`migrateKernelExtension`，预期从 49 变为 51；Module SDK 继续为 runtime/type `8/34`。CVN-6 private kernel assembly identity 与 post-Core Product Host `Application Assembly` 是不同对象。
+
 #### Additive evolution reservation (non-V1 completion scope)
 
 当前 V1 行为仍是 Core VNext 的绑定式完成合同：`kernel.domain-commands.v1`、`CompiledDomainCommandContributionV1` 九字段、WrittenPitch module-to-Core request、score/Part-owned ExtensionBlock effect、当前 capability/failure/resource caps 和 startup-frozen Assembly 均保持精确形状。后续能力只通过新的 registration entry、明确的新 API version、新 Score schema version 或 Core 外部 Adapter contract 追加；同一版本内没有静默字段扩张、隐式降级或 reinterpretation。
@@ -710,7 +723,7 @@ Representative benchmark process peak RSS 固定 `<= 1.0 GiB`。Portable CI 运�
 | CVN-3 | CVN-FC-020/021/030/031/050–053 | CVN-4/5；factory + four exact Measure commands |
 | CVN-4 | CVN-FC-060–070 | CVN-5/7；fifteen exact hierarchy/property commands |
 | CVN-5 | CVN-FC-080–102 | CVN-7；two range commands + one batch command |
-| CVN-6 | CVN-FC-112/120–122 | CVN-5/7；assembly-bound runtime + validation/profile/diagnostic/migration |
+| CVN-6 | CVN-FC-112/120–122 | formal child `08-11-cvn-6-module-runtime-validation-migration-integration`, planning review pending；CVN-5/7；assembly-bound runtime + validation/profile/diagnostic/migration |
 | CVN-7 | CVN-FC-130–143 | compatibility, scale, resource, deterministic integration evidence |
 
 任一 child 若需要改变命令 ID/target/payload、cascade、range、batch attribution、failure priority、caps、fixture 或 budget，即触发父级规划复审；child 内不以“implementation detail”覆盖这些观察合同。

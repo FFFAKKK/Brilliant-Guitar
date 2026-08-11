@@ -24,7 +24,8 @@
     "08-04-cvn-3-document-factory-measure-lifecycle",
     "08-04-cvn-4-part-staff-voice-lifecycle",
     "08-09-core-vnext-extensibility-reservation-review",
-    "08-10-cvn-2-official-module-sdk-frozen-assembly"
+    "08-10-cvn-2-official-module-sdk-frozen-assembly",
+    "08-11-cvn-6-module-runtime-validation-migration-integration"
   ],
   "parent": "06-29-commercial-guitar-tablature-product",
   "relatedFiles": [
@@ -51,9 +52,10 @@
     ".trellis/spec/core-kernel/backend/snapshot-events.md",
     ".trellis/spec/core-kernel/backend/registry-capability.md",
     ".trellis/spec/core-kernel/backend/errors-reports.md",
-    ".trellis/spec/core-kernel/backend/domain-transaction-integration.md"
+    ".trellis/spec/core-kernel/backend/domain-transaction-integration.md",
+    ".trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/"
   ],
-  "notes": "PLANNING COORDINATION / CVN-0 CVN-1 CVN-2 CVN-3 FINAL CVN-4 EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-2 SOURCE E203136, ACCEPTANCE F3D0BE0, ARCHIVE 42110C4, FINAL P0/P1/P2 0/0/0, FOCUSED 54/54 AND FULL 350/350 / CVN-6 IS THE NEXT DEPENDENCY-SATISFIED CORE CHILD BUT REMAINS UNCREATED AND SEPARATELY GATED / CVN-5 STILL WAITS FOR ACCEPTED CVN-6 / 28-COMMAND FINITE CATALOG / STABILITY FIRST / HOT PLUG EXCLUDED.",
+  "notes": "PLANNING COORDINATION / CVN-0 CVN-1 CVN-2 CVN-3 FINAL CVN-4 EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-2 SOURCE E203136, ACCEPTANCE F3D0BE0, ARCHIVE 42110C4, FINAL P0/P1/P2 0/0/0, FOCUSED 54/54 AND FULL 350/350 / CVN-6 FORMAL PLANNING CANDIDATE CREATED AT 08-11-CVN-6-MODULE-RUNTIME-VALIDATION-MIGRATION-INTEGRATION, INDEPENDENT PLANNING REVIEW PENDING, TASK START FALSE, PRODUCTION AUTHORIZATION FALSE / CVN-5 STILL WAITS FOR ACCEPTED CVN-6 / CVN-7 WAITS FOR ACCEPTED-ARCHIVED CVN-0..6 / 28-COMMAND FINITE CATALOG / STABILITY FIRST / HOT PLUG EXCLUDED.",
   "meta": {
     "compatibility_base": "d92a7586536ac8757c318ae6f75aabd8698f85ac",
     "architecture_style": "stability_first_startup_frozen_microkernel",
@@ -119,7 +121,7 @@
     "extensibility_reservation_acceptance_commit": "253d19e5e9d6a3bfdfa0158833d59872e8be156c",
     "extensibility_reservation_archive_commit": "a4d8cee406e8aa9a6efa05f4e24a8707367dc7b8",
     "extensibility_reservation_archive_path": ".trellis/tasks/archive/2026-08/08-09-core-vnext-extensibility-reservation-review/",
-    "next_dependency_gate": "cvn6-detailed-planning-and-user-activation",
+    "next_dependency_gate": "cvn6-independent-planning-review",
     "cvn2_task": "08-10-cvn-2-official-module-sdk-frozen-assembly",
     "cvn2_status": "completed_archived",
     "cvn2_branch": "codex/cvn-2-official-module-sdk-frozen-assembly",
@@ -278,6 +280,45 @@
     "cvn4_core_command_count": 25,
     "cvn4_registry_command_descriptor_count": 25,
     "cvn4_archive_path": ".trellis/tasks/archive/2026-08/08-04-cvn-4-part-staff-voice-lifecycle/",
-    "cvn4_next_gate": "completed; retain as accepted CVN-5 prerequisite while CVN-2 and CVN-6 remain pending"
+    "cvn4_next_gate": "completed; retained as accepted CVN-5 structural prerequisite while CVN-6 planning review is pending",
+    "cvn6_task": "08-11-cvn-6-module-runtime-validation-migration-integration",
+    "cvn6_status": "planning_review_pending",
+    "cvn6_branch": "codex/cvn-6-unified-planning-base",
+    "cvn6_worktree_path": ".worktrees/cvn-6-unified-planning-base",
+    "cvn6_planning_base_commit": "050af1eed067300f2e2fb0339eff6f2430e43b36",
+    "cvn6_required_parent_commits": [
+      "302dafe451bd4e10f4978d3076e367473b2fa3ae",
+      "c68fcc648051b51b73fda3e5bda6eb9e33298f39"
+    ],
+    "cvn6_primary_contracts": [
+      "CVN-FC-112",
+      "CVN-FC-120",
+      "CVN-FC-121",
+      "CVN-FC-122"
+    ],
+    "cvn6_dependencies": [
+      "accepted CVN-1",
+      "accepted/archived CVN-2",
+      "accepted Extensibility Reservation",
+      "accepted GD-0"
+    ],
+    "cvn6_structural_regression_inputs": [
+      "accepted CVN-3",
+      "accepted final CVN-4"
+    ],
+    "cvn6_task_start_run": false,
+    "cvn6_production_implementation_authorized": false,
+    "cvn6_planning_artifacts_complete": true,
+    "cvn6_independent_planning_review": "pending",
+    "cvn6_public_contract_closures": [
+      "integrated_registry_catalog_overload",
+      "integrated_event_identity",
+      "integrated_construction_resource_failure",
+      "detached_extension_migration_entry"
+    ],
+    "cvn6_post_core_scope": "excluded_and_retained_by_08_11_post_core_roadmap",
+    "cvn6_planning_candidate_commit": null,
+    "cvn6_planning_self_audit": "passed_2026-08-11_p0_0_p1_0_p2_0",
+    "cvn6_planning_verification": "ancestry2_trellis21_22_parent3_3_product0_0_postcore15_16_json_jsonl_unique_child1_diffcheck_typecheck_build_full350_gd0_layer_a_b_cvn6_parse_protected0"
   }
 }
