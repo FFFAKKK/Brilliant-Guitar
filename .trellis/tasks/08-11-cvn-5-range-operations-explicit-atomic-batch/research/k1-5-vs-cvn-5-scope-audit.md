@@ -24,6 +24,6 @@ It consumes accepted K1-5 error/report infrastructure but does not replace it. N
 Task status and reports must use the full labels:
 
 - `K1-5 Core V1 errors/reports/migration shell — accepted`;
-- `CVN-5 Range Operations and Explicit Atomic Batch — planning/dependency blocked`.
+- `CVN-5 Range Operations and Explicit Atomic Batch — planning/dependency satisfied, targeted rereview pending`.
 
 Neither label alone is evidence that the other stage is complete.

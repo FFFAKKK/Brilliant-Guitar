@@ -2,7 +2,7 @@
 
 ## Planning candidate allowlist
 
-Relative to `1673d94c100186538d163d259ebb936e9ae00a38`, this planning branch may change only:
+Relative to `d521a618e42c01077e8545d1c87e9b36e14d4bdb`, this planning branch may change only:
 
 - `.trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/**`;
 - `.trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/task.json`;
@@ -13,7 +13,7 @@ Relative to `1673d94c100186538d163d259ebb936e9ae00a38`, this planning branch may
 - `.trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-roadmap-and-stage-plan.md`;
 - the Core Kernel backend index plus labeled CVN-5 planning projections in the six active content specs.
 
-`src/**`, `test/**`, `package*.json`, `tsconfig.json`, the CVN-6 task directory and the post-Core task directory must have zero planning-branch delta.
+`src/**`, `test/**`, `package*.json`, `tsconfig.json`, the archived CVN-6 task directory and the post-Core task directory must have zero planning-branch delta.
 
 ## Future production allowlist
 
@@ -100,9 +100,9 @@ All CVN-5 positive/negative real-Core TypeScript compile assertions belong in `c
 At planning acceptance:
 
 ```powershell
-git diff --name-only 1673d94c100186538d163d259ebb936e9ae00a38 -- src test package.json package-lock.json tsconfig.json
-git diff --name-only 1673d94c100186538d163d259ebb936e9ae00a38 -- .trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration
-git diff --name-only 1673d94c100186538d163d259ebb936e9ae00a38 -- .trellis/tasks/08-11-post-core-official-plugin-product-roadmap
+git diff --name-only d521a618e42c01077e8545d1c87e9b36e14d4bdb -- src test package.json package-lock.json tsconfig.json
+git diff --name-only d521a618e42c01077e8545d1c87e9b36e14d4bdb -- .trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration
+git diff --name-only d521a618e42c01077e8545d1c87e9b36e14d4bdb -- .trellis/tasks/08-11-post-core-official-plugin-product-roadmap
 ```
 
 All three outputs are empty.

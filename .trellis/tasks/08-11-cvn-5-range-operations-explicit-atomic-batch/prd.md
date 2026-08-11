@@ -4,11 +4,11 @@
 
 CVN-5 is the final Core command-surface child. It adds two range commands and one explicit atomic batch command after CVN-6 has been independently accepted and archived.
 
-- Planning base: `1673d94c100186538d163d259ebb936e9ae00a38`.
+- Planning base: `d521a618e42c01077e8545d1c87e9b36e14d4bdb`.
 - Task status: `planning`.
 - Production implementation authorization: `false`.
-- Dependency gate: **closed** until CVN-6 is accepted and archived.
-- This candidate may be reviewed while CVN-6 implementation is active; no CVN-5 source or test work may start early.
+- Dependency gate: **satisfied** by accepted source `8da50f9`, acceptance record `160674d` and archive `a0c1d6a` on this branch.
+- This synchronized docs-only candidate awaits targeted independent planning rereview and separate user activation; no CVN-5 source or test edit has started.
 - Primary ownership: `CVN-FC-080`, `CVN-FC-081`, `CVN-FC-082`, `CVN-FC-090`, `CVN-FC-091`, `CVN-FC-092`, `CVN-FC-093`, `CVN-FC-100`, `CVN-FC-101`, `CVN-FC-102`.
 - CVN-FC-141 is the CVN-7-owned acceptance consumer for the batch matrix, not a second implementation owner.
 
@@ -227,7 +227,7 @@ The batch uses the existing `command:execute` capability and existing gateway me
 
 CVN-5 excludes:
 
-- CVN-6 implementation, review, acceptance or archive work;
+- reopening or changing accepted/archived CVN-6 implementation, review, acceptance or archive records;
 - CVN-7 qualification scale, release benchmark and final product gate beyond bounded functional regressions;
 - Guitar Domain, Persistence, Layout, Renderer, Playback, Export, Desktop Shell, Workbench, Editor Session and Product `Application Assembly`;
 - public Extension Host, public visual/functional plugin platform and dynamic discover/install/unload/replace/hot-reload lifecycle;
@@ -236,7 +236,7 @@ CVN-5 excludes:
 
 ## 11. Acceptance criteria
 
-- [ ] CVN-6 is independently accepted and archived before `task.py start` or any source/test edit.
+- [x] CVN-6 is independently accepted and archived before `task.py start` or any source/test edit.
 - [ ] The three exact command IDs compile and the Core catalog/Registry descriptors equal `28`.
 - [ ] Application runtime export count is `51`; Module SDK is `8/34`; CVN-2 ABI delta is zero.
 - [ ] All three range discriminants, reverse endpoints, missing endpoints, owner mismatch and invalid-range behavior are proven.

@@ -2,7 +2,7 @@
 
 ## 1. Authority and non-authority
 
-This document is a planning candidate for `CVN-FC-080..102`. It does not authorize implementation. Accepted Core V1/CVN-0..4 contracts and the eventual accepted CVN-6 runtime are inputs; this task does not redesign them.
+This document is a planning candidate for `CVN-FC-080..102`. It does not authorize implementation. Accepted Core V1/CVN-0..4 contracts and the accepted/archived CVN-6 runtime are inputs; this task does not redesign them.
 
 Authority order for implementation is:
 
@@ -12,7 +12,7 @@ Authority order for implementation is:
 4. implementation plan and file/test matrix;
 5. current source only as evidence of the accepted baseline.
 
-If accepted CVN-6 differs from this planning base, the operator first rebases the task onto the CVN-6 acceptance/archive line and reruns a contract-delta audit. Any material API, failure, stage or file-ownership delta returns to planning review.
+This planning branch is based on the CVN-6 archive line. The recorded implementation-base audit found no material API, failure, stage or file-ownership delta; any later baseline drift returns to planning review.
 
 ## 2. Boundary map
 

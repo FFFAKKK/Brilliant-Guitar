@@ -16,9 +16,9 @@
 {"file":".trellis/tasks/archive/2026-08/08-04-cvn-3-document-factory-measure-lifecycle/design.md","reason":"Check range deletion reuses accepted measure semantics/effects."}
 {"file":".trellis/tasks/archive/2026-08/08-04-cvn-4-part-staff-voice-lifecycle/design.md","reason":"Check range deletion/transposition reuse accepted hierarchy and effects."}
 {"file":".trellis/tasks/archive/2026-08/08-09-core-vnext-extensibility-reservation-review/research/reservation-decision-matrix.md","reason":"Check CVN-5 does not absorb public extension-platform or dynamic lifecycle work."}
-{"file":".trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/prd.md","reason":"Check CVN-6 is a hard accepted/archive prerequisite and its public closures stay unchanged."}
-{"file":".trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/design.md","reason":"Check mixed batch uses one authentic assembly and accepted callback/effect boundaries."}
-{"file":".trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/operator-handoff.md","reason":"Check no unaccepted CVN-6 implementation candidate is absorbed into CVN-5 planning."}
+{"file":".trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/prd.md","reason":"Check CVN-6 is a hard accepted/archive prerequisite and its public closures stay unchanged."}
+{"file":".trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/design.md","reason":"Check mixed batch uses one authentic assembly and accepted callback/effect boundaries."}
+{"file":".trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/operator-handoff.md","reason":"Check accepted CVN-6 handoff evidence and confirm CVN-5 does not reopen its implementation or ownership."}
 {"file":".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/design.md","reason":"Check CVN-5 kernel batch is distinct from Product Application Assembly and later public plugin host."}
 {"file":".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/operator-handoff.md","reason":"Check post-Core implementation remains after CVN-7 and outside this child."}
 {"file":".trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/research/planning-base-and-dependency-audit.md","reason":"Check live baseline ancestry, dependency status and planning isolation."}
@@ -28,3 +28,4 @@
 {"file":".trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/research/cvn5-file-and-test-ownership-matrix.md","reason":"Check production/test allowlist sufficiency and protected-path fences."}
 {"file":".trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/research/contract-ambiguity-closure.md","reason":"Check both parent wording ambiguities have one deterministic interpretation and owner."}
 {"file":".trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/research/planning-candidate-self-audit.md","reason":"Check self-audit claims against live diff and validation evidence."}
+{"file":".trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/research/implementation-base-audit.md","reason":"Check accepted CVN-6 baseline synchronization and allowlist sufficiency against live layout."}

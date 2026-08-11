@@ -14,7 +14,7 @@ Before any source/test edit, all of the following must be true:
 6. `task.py start 08-11-cvn-5-range-operations-explicit-atomic-batch` is run only after those gates;
 7. the rebased worktree is clean and accepted CVN-6 typecheck/build/full tests pass.
 
-If any condition is false, keep status `planning` and perform documentation-only repair or dependency waiting.
+Conditions 1 through 4 and 7 are now satisfied on base `d521a61`; conditions 5 and 6 remain open. Until explicit user activation closes them, keep status `planning` and perform documentation-only record work only.
 
 ## 1. Baseline preparation
 
@@ -28,11 +28,11 @@ If any condition is false, keep status `planning` and perform documentation-only
 
 ### Actions
 
-1. create a fresh implementation worktree from the CVN-6 archive line;
-2. verify CVN-2/CVN-3/CVN-4/CVN-6 acceptance and archive commits are ancestors;
-3. compare accepted CVN-6 public exports, failures, assembly construction, effect ownership and file layout with this planning candidate;
-4. record any delta in `research/implementation-base-audit.md`;
-5. stop for planning repair if a public contract, stage order, cap, file owner or test owner changed.
+1. use the fresh CVN-5 worktree created from the CVN-6 archive line `d521a61`;
+2. retain the recorded CVN-2/CVN-3/CVN-4/CVN-6 ancestry evidence;
+3. consume the completed comparison of accepted CVN-6 exports, failures, assembly construction, effect ownership and file layout;
+4. keep the result in `research/implementation-base-audit.md`;
+5. stop for planning repair if a later public contract, stage order, cap, file owner or test owner changes.
 
 ### Exit gate
 

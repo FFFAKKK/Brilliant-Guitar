@@ -2,30 +2,30 @@
 
 ## Current state
 
-- Branch: `codex/cvn-5-range-atomic-batch-planning-base`.
-- Worktree: `.worktrees/cvn-5-range-atomic-batch-planning-base`.
-- Planning base: `1673d94c100186538d163d259ebb936e9ae00a38`.
+- Branch: `codex/cvn-5-range-operations-explicit-atomic-batch`.
+- Worktree: `.worktrees/cvn-5-range-operations-explicit-atomic-batch`.
+- Planning base: `d521a618e42c01077e8545d1c87e9b36e14d4bdb`.
 - Task: `.trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/`.
 - Status: `planning`.
 - Task start: `false`.
 - Production implementation authorization: `false`.
 - Initial independent planning review: `RETURN FOR BOUNDED PLANNING REPAIR`, P0/P1/P2=`0/1/2`.
-- Bounded docs-only repair: complete; targeted independent planning rereview `pending`.
+- Bounded docs-only repair and accepted-CVN-6 baseline synchronization: complete; targeted independent planning rereview `PASS`, P0/P1/P2=`0/0/0`.
 - Push/accept/archive: not performed.
 
 ## Current operator action
 
-Submit this bounded repair to the same independent reviewer for targeted rereview. Continue CVN-6 in its separate worktree. Do not merge an unaccepted CVN-6 implementation candidate into this planning branch and do not begin CVN-5 production work.
+Record the independent planning PASS and wait for separate user implementation authorization. The branch already descends from the accepted/archived CVN-6 line; do not begin CVN-5 production work or run `task.py start` before that authorization.
 
-## Activation checklist after CVN-6 closes
+## Activation checklist after planning rereview
 
-1. verify CVN-6 final independent review P0/P1/P2=`0/0/0`;
-2. verify CVN-6 acceptance and archive commits exist;
-3. create a fresh CVN-5 implementation branch/worktree from that archive line;
-4. bring this accepted docs-only planning commit onto the unified line without absorbing unrelated dirty work;
-5. run the implementation-base contract delta audit;
-6. obtain explicit user implementation authorization;
-7. only then run `task.py start` and follow `implement.md` from Stage 1.
+1. retain the verified CVN-6 final independent review P0/P1/P2=`0/0/0`;
+2. retain ancestry of CVN-6 acceptance `160674d` and archive `a0c1d6a`;
+3. obtain targeted independent CVN-5 planning PASS;
+4. record that result in the task and parent coordination state;
+5. obtain explicit user implementation authorization;
+6. run `task.py start` only after those gates;
+7. follow `implement.md` from Stage 1 in this isolated worktree.
 
 ## Stop/return conditions
 
@@ -38,7 +38,7 @@ Return to planning review before source edits if:
 
 ## Non-owners
 
-This task does not own CVN-6 acceptance, CVN-7 qualification, official Guitar Domain, product services/host/Application Assembly, public Extension Host, dynamic module lifecycle or persisted formats.
+This task does not reopen CVN-6 acceptance and does not own CVN-7 qualification, official Guitar Domain, product services/host/Application Assembly, public Extension Host, dynamic module lifecycle or persisted formats.
 
 ## Review package
 
