@@ -1,8 +1,8 @@
 # Core VNext Durable Roadmap and Stage Plan
 
 > **Purpose:** durable context-recovery entry for CVN-0 through CVN-7.
-> **Snapshot date:** 2026-08-09.
-> **Current active coordination gate at this snapshot:** none. The Extensibility Reservation Gate is accepted and archived; no CVN production child is active.
+> **Snapshot date:** 2026-08-11.
+> **Current active coordination gate at this snapshot:** CVN-6 is `implementation_in_progress`; its independent implementation review, acceptance and archive remain pending. CVN-5 is a docs-only planning candidate under targeted planning rereview and its implementation gate remains closed.
 > **Status authority:** live child and parent `task.json` files override the snapshot status table below.
 > **Behavior authority:** `feature-contract-matrix.md` overrides this summary for exact public contracts, command payloads, failure priority, limits, fixtures and budgets.
 
@@ -96,7 +96,7 @@ The graph is dependency-based rather than numeric-order-based. CVN-2 and CVN-3 a
 | CVN-2 | completed and archived | accepted source `e203136`, acceptance `f3d0be0`, archive `42110c4`; final implementation review P0/P1/P2=`0/0/0`; focused `54/54`, full `350/350`, SDK `8/34`, root runtime delta `0` | retained as accepted CVN-6 prerequisite |
 | CVN-3 | completed and archived | independent review passed at `d9500f5` with P0/P1/P2 = `0/0/0`; 22 lifecycle and 233 full tests reproduced; acceptance commit `3691d93` | retained as accepted factory and Measure-lifecycle prerequisite |
 | CVN-4 | completed and archived | final local re-review passed at `b0272e2` with P0/P1/P2 = `0/0/0`; focused `92/92`, full `315/315`; acceptance `7f33e7d` | retained as accepted hierarchy-lifecycle prerequisite |
-| CVN-5 | formal planning candidate; dependency blocked | task `08-11-cvn-5-range-operations-explicit-atomic-batch`; base `1673d94`; task start and production authorization false; waits for accepted/archived CVN-6 | independent planning review now; implementation only after CVN-6 acceptance/archive and separate activation |
+| CVN-5 | bounded planning repair; dependency blocked | task `08-11-cvn-5-range-operations-explicit-atomic-batch`; initial review `0/1/2`; bounded docs-only repair complete; task start and production authorization false; waits for accepted/archived CVN-6 | targeted independent planning rereview; implementation only after CVN-6 acceptance/archive and separate activation |
 | CVN-6 | implementation in progress | targeted planning rereview passed P0/P1/P2=`0/0/0`; user-authorized task start active; acceptance/archive pending | independent implementation review, acceptance and archive |
 | CVN-7 | parent-planned; child not created | waits for independently accepted and archived CVN-0 through CVN-6 | final qualification task |
 
@@ -112,7 +112,7 @@ Snapshot evidence:
 - GD-0 accepted documentation/architecture contract: candidate `451627e`; acceptance `a2b9009`; archive `4580164`; archived-path synchronization `ade7526`; runtime implementation remains separately gated.
 - CVN-2 unified planning base: merge `706802c` with parents `ebd8075` and `7ad1ff1`; planning candidate `73fe18a` and its bounded planning repairs established the accepted contract. Production implementation was activated separately and closed four bounded review rounds covering the common error hierarchy, stable local validation primitives and global Stage 1-8 failure precedence. Accepted source/test candidate `e203136` passed final independent implementation review with P0/P1/P2=`0/0/0`, focused `54/54`, full `350/350`, forbidden dependency `3/3`, GD-0, Trellis, protected-path, allowlist and diff gates. Acceptance is `f3d0be0`; archive is `42110c4`. The archived child owns only `CVN-FC-110/111`; CVN-6 remains separately planned and gated.
 - CVN-6 formal child: `.trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/`; unified base `050af1e` contains accepted/archived CVN-2 line `302dafe` and post-Core roadmap `c68fcc6`; owns only `CVN-FC-112/120/121/122`; targeted planning rereview passed `0/0/0`, implementation is active, acceptance/archive pending.
-- CVN-5 formal planning child: `.trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/`; base `1673d94`; owns `CVN-FC-080..102` with `CVN-FC-141` as the CVN-7 acceptance consumer; task start and production authorization false until CVN-6 acceptance/archive.
+- CVN-5 formal planning child: `.trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/`; base `1673d94`; initial independent review `0/1/2`, bounded repair complete and targeted rereview pending; owns `CVN-FC-080..102` with `CVN-FC-141` as the CVN-7 acceptance consumer; task start and production authorization false until CVN-6 acceptance/archive.
 
 ## 5. Exact Command Inventory
 
@@ -410,7 +410,7 @@ Every command needs committed, no-op, rejected, undo, redo and replay evidence. 
 
 ## 11. CVN-5: Range Operations and Explicit Atomic Batch
 
-**Formal child:** `.trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/`; status `planning`, independent planning review pending, execution dependency gate closed until accepted/archived CVN-6.
+**Formal child:** `.trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/`; status `planning`, initial independent planning review P0/P1/P2=`0/1/2`, bounded docs-only repair complete and targeted rereview pending, execution dependency gate closed until accepted/archived CVN-6.
 
 ### Ownership, purpose and dependencies
 
@@ -662,12 +662,12 @@ Creation alone does not authorize source changes. Parent planning status does no
 
 ## 17. Current Scheduling Decisions
 
-1. CVN-3 and final repaired CVN-4 are independently accepted and archived; no CVN implementation child is active.
+1. CVN-3 and final repaired CVN-4 are independently accepted and archived; CVN-6 is the sole active CVN implementation child, with independent implementation review, acceptance and archive still pending.
 2. The documentation-only Extensibility Reservation Gate is accepted and archived and does not reopen CVN-4.
 3. GD-0, the reservation gate and CVN-2 are accepted and archived; CVN-2 owns only `CVN-FC-110/111` and is the frozen input for CVN-6.
 4. CVN-4 remains the accepted Part/Staff/Voice/Event lifecycle prerequisite; no successor was implicitly activated by its acceptance.
-5. CVN-6 follows accepted CVN-2 and consumes the accepted reservation charter while keeping post-V1 ports deferred.
-6. CVN-5 waits for accepted CVN-2, CVN-3, CVN-4 and CVN-6.
+5. CVN-6 follows accepted CVN-2, consumes the accepted reservation charter while keeping post-V1 ports deferred, and is currently `implementation_in_progress`.
+6. CVN-5 planning is in bounded-repair targeted rereview; implementation waits for accepted CVN-2, CVN-3, CVN-4 and accepted-and-archived CVN-6.
 7. CVN-7 waits for accepted and archived CVN-0 through CVN-6.
 8. Guitar-owned planning resumes only after CVN-7 closes the generic Core seam.
 9. Operation expansion, Domain Selectors, schema/owner evolution, Module Package Host and external adapters enter only through separate post-CVN-7 gates when concrete product evidence exists.
@@ -701,7 +701,7 @@ Accepted coordination gates:
 
 - `.trellis/tasks/archive/2026-08/08-09-core-vnext-extensibility-reservation-review/`
 
-Current planning child: `.trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/` (formal planning candidate; dependency satisfied, targeted independent planning rereview pending).
+Current planning child: `.trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/` (bounded docs-only planning repair complete; dependency satisfied; targeted independent rereview pending).
 
 Active coordination gate at this snapshot: CVN-6 source/test candidate `8da50f90c9c05d87a8e1aa7a4e65b30e6ab82c7f` is accepted and archived after final independent implementation rereview P0/P1/P2=`0/0/0`. CVN-5 is the sole planning child, with task start and production authorization false until its targeted planning rereview and explicit user activation. CVN-2 remains accepted/archived and its compiler/catalog/SDK are exact; CVN-7 remains gated on accepted and archived CVN-5.
 

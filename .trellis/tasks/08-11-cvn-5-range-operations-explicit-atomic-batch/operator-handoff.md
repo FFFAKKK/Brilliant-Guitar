@@ -9,12 +9,13 @@
 - Status: `planning`.
 - Task start: `false`.
 - Production implementation authorization: `false`.
-- Independent planning review: `pending`.
+- Initial independent planning review: `RETURN FOR BOUNDED PLANNING REPAIR`, P0/P1/P2=`0/1/2`.
+- Bounded docs-only repair: complete; targeted independent planning rereview `pending`.
 - Push/accept/archive: not performed.
 
 ## Current operator action
 
-Continue CVN-6 in its separate worktree. Do not merge an unaccepted CVN-6 implementation candidate into this planning branch and do not begin CVN-5 production work.
+Submit this bounded repair to the same independent reviewer for targeted rereview. Continue CVN-6 in its separate worktree. Do not merge an unaccepted CVN-6 implementation candidate into this planning branch and do not begin CVN-5 production work.
 
 ## Activation checklist after CVN-6 closes
 
@@ -48,4 +49,5 @@ Give the independent planning reviewer:
 - parent feature matrix and roadmap diff;
 - active-spec planning projections;
 - validation transcript and docs-only diffstat;
+- the initial `0/1/2` finding record and the three bounded repair diffs;
 - confirmation of zero production/test/build/CVN-6/post-Core delta.

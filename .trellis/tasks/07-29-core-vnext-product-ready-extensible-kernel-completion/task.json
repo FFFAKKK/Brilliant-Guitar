@@ -57,7 +57,7 @@
     ".trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/",
     ".trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/"
   ],
-  "notes": "PLANNING COORDINATION / CVN-0 CVN-1 CVN-2 CVN-3 FINAL CVN-4 CVN-6 EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-5 FORMAL PLANNING CANDIDATE MIGRATED TO THE CVN-6 ARCHIVE LINE; DEPENDENCY SATISFIED, TARGETED INDEPENDENT PLANNING REREVIEW PENDING, TASK START AND PRODUCTION AUTHORIZATION FALSE / CVN-7 WAITS FOR ACCEPTED-ARCHIVED CVN-5.",
+  "notes": "PLANNING COORDINATION / CVN-0 CVN-1 CVN-2 CVN-3 FINAL CVN-4 CVN-6 EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-5 INITIAL PLANNING REVIEW 0/1/2 AND BOUNDED DOCS-ONLY REPAIR COMPLETE ON THE CVN-6 ARCHIVE LINE; DEPENDENCY SATISFIED, TARGETED INDEPENDENT REREVIEW PENDING, TASK START AND PRODUCTION AUTHORIZATION FALSE / CVN-7 WAITS FOR ACCEPTED-ARCHIVED CVN-5.",
   "meta": {
     "compatibility_base": "d92a7586536ac8757c318ae6f75aabd8698f85ac",
     "architecture_style": "stability_first_startup_frozen_microkernel",
@@ -65,7 +65,7 @@
     "refactor_strategy": "behavior_preserving_command_transaction_registry_spine",
     "qualification_scale": "balanced_25600_event_release_gate_plus_102400_event_stress_gate",
     "legacy_gate_mapping": "ck1_1_0_to_cvn0_ck1_1_1_to_cvn2_generic_gd2_to_cvn1_cvn5_cvn6",
-    "planning_review": "cvn5_dependency_closed_targeted_planning_rereview_pending",
+    "planning_review": "cvn5_dependency_closed_bounded_repair_targeted_planning_rereview_pending",
     "cvn2_planning_review_baseline": "8757097fd6dd3e9464807b9ab091006285a19f2b",
     "cvn2_planning_review_findings_initial": {
       "P0": 0,
@@ -362,7 +362,7 @@
     "cvn6_archive_path": ".trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/",
     "current_planning_child": "08-11-cvn-5-range-operations-explicit-atomic-batch",
     "cvn5_task": "08-11-cvn-5-range-operations-explicit-atomic-batch",
-    "cvn5_status": "formal_planning_candidate_dependency_satisfied_rereview_pending",
+    "cvn5_status": "bounded_planning_repair_dependency_satisfied_targeted_rereview_pending",
     "cvn5_branch": "codex/cvn-5-range-operations-explicit-atomic-batch",
     "cvn5_worktree_path": ".worktrees/cvn-5-range-operations-explicit-atomic-batch",
     "cvn5_planning_base_commit": "d521a618e42c01077e8545d1c87e9b36e14d4bdb",
@@ -389,7 +389,7 @@
     "cvn5_task_start_run": false,
     "cvn5_production_implementation_authorized": false,
     "cvn5_planning_artifacts_complete": true,
-    "cvn5_independent_planning_review": "pending",
+    "cvn5_independent_planning_review": "targeted_rereview_pending",
     "cvn5_planned_core_commands": [
       "core.range.delete",
       "core.range.transpose-written-pitch",
@@ -403,8 +403,20 @@
     "cvn5_final_assessment_rule": "once_from_final_candidate_core_first_then_frozen_module_catalog_order",
     "cvn5_nested_batch_rule": "per_child_route_before_child_payload_decode_lowest_failedCommandIndex",
     "cvn5_post_core_scope": "excluded_and_retained_by_post_core_roadmap",
-    "cvn5_planning_self_audit": "passed_residual_p0_0_p1_0_p2_0_independent_review_pending",
+    "cvn5_planning_self_audit": "bounded_repair_passed_residual_p0_0_p1_0_p2_0_targeted_rereview_pending",
     "cvn5_bounded_self_audit_repair": "pitch_reason_allowlist_aligned_to_exact_PitchTranspositionErrorCode",
-    "active_cvn_implementation_child": "none"
+    "active_cvn_implementation_child": "none",
+    "cvn5_independent_planning_review_findings_initial": {
+      "P0": 0,
+      "P1": 1,
+      "P2": 2,
+      "verdict": "return_for_bounded_planning_repair"
+    },
+    "cvn5_independent_planning_repair": [
+      "reports_strict_codec_and_six_existing_test_projection_owners",
+      "durable_roadmap_cvn6_active_status_sync",
+      "proxy_reflection_trap_wording_alignment"
+    ],
+    "cvn5_independent_planning_repair_verification": "trellis27_30_parent3_3_product0_0_cvn6_22_23_postcore15_16_json_jsonl_unique_child1_closed_ownership_roadmap_sync_diffcheck_typecheck_build_full350_gd0_layer_a_b_protected0"
   }
 }

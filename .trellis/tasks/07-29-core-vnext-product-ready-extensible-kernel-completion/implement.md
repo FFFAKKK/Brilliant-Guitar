@@ -2,7 +2,7 @@
 
 ## 1. Execution Status
 
-`PLANNING COORDINATION / CVN-0 CVN-1 CVN-2 CVN-3 FINAL CVN-4 EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-6 TARGETED PLANNING REREVIEW PASSED 0/0/0 AND USER-AUTHORIZED IMPLEMENTATION ACTIVE / CVN-5 FORMAL PLANNING CANDIDATE CREATED EARLY BUT EXECUTION WAITS FOR ACCEPTED-ARCHIVED CVN-6 / CVN-7 DEPENDENCY-GATED`.
+`PLANNING COORDINATION / CVN-0 CVN-1 CVN-2 CVN-3 FINAL CVN-4 EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-6 TARGETED PLANNING REREVIEW PASSED 0/0/0 AND USER-AUTHORIZED IMPLEMENTATION ACTIVE / CVN-5 BOUNDED DOCS-ONLY PLANNING REPAIR COMPLETE WITH TARGETED REREVIEW PENDING AND EXECUTION WAITING FOR ACCEPTED-ARCHIVED CVN-6 / CVN-7 DEPENDENCY-GATED`.
 
 This parent task coordinates independently verifiable children. It does not batch all production changes into one implementation branch. Each child must receive its own PRD/design/implement review, `task.py start`, independent technical audit and archive decision.
 
@@ -167,7 +167,7 @@ Numeric labels organize scope; the arrows above are the actual execution depende
 
 ### CVN-5 — Range Transformations and Explicit Atomic Batch
 
-**Formal child:** `.trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/`; status `planning`, independent planning review pending, task start and production implementation authorization false. Planning may complete early; implementation remains blocked until accepted and archived CVN-6.
+**Formal child:** `.trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/`; status `planning`, initial independent planning review P0/P1/P2=`0/1/2`, bounded docs-only repair complete and targeted rereview pending, task start and production implementation authorization false. Planning may complete early; implementation remains blocked until accepted and archived CVN-6.
 
 **Purpose:** add safe multi-entity editing through existing stable ranges and the single submit port.
 

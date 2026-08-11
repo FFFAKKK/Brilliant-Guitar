@@ -2,13 +2,15 @@
 
 ## Status
 
-`READY FOR INDEPENDENT PLANNING REVIEW`
+`READY FOR TARGETED INDEPENDENT PLANNING REREVIEW`
 
 This is a docs-only planning candidate. It is not an implementation, acceptance or archive candidate.
 
+The initial independent review returned P0/P1/P2=`0/1/2`. This bounded repair changes only the closed implementation/test ownership, the hostile-input reflection wording and the live CVN scheduling snapshot.
+
 ## Reviewer question
 
-Does this plan close the exact CVN-FC-080..102 range/batch contracts with deterministic ownership, executable stages and adequate tests while leaving accepted CVN-6, CVN-2 and post-Core boundaries unchanged?
+Do the three bounded repairs fully close the initial P1/P2 findings without changing the CVN-FC-080..102 behavior, accepted CVN-6/CVN-2 contracts or post-Core boundaries?
 
 ## Required verdict format
 
@@ -19,19 +21,15 @@ Does this plan close the exact CVN-FC-080..102 range/batch contracts with determ
 
 ## Directed review points
 
-1. CVN-6 acceptance/archive is a hard execution gate, not silently assumed.
-2. K1-5 is not confused with CVN-5.
-3. exact three command IDs, final 28 descriptors and zero runtime/SDK/ABI drift.
-4. private range selection matches accepted public range semantics and uses only existing effects.
-5. batch capture has a real 0/1/100/101 and global depth/property path without user-code invocation.
-6. one evolving candidate, intermediate invalidity and one final semantic/module pass are coherent.
-7. assessment ordering and nested-batch priority closures remove parent ambiguity without dual ownership.
-8. wrapper depth, outer/child failure matrix, lowest-index rule and cap attribution are deterministic.
-9. all-no-op versus effective cancellation, inverse order and one history/event semantics are explicit.
-10. Core-only/integrated live, undo/redo and replay preserve assembly and event identity rules.
-11. allowlist/protected paths, rollback and tests are sufficient.
-12. CVN-5 kernel batch is isolated from CVN-7, Guitar/product/Application Assembly and public plugin work.
+1. `reports/strict-codec.ts` is included as the unique stable-failure structural-decoder owner in the production allowlist and Stage 1.
+2. The six known existing test/projection paths are enumerated; CVN-5 compile assertions have one named owner and there is no wildcard edit authority.
+3. The implementation-base rescan gate returns every newly affected path to planning review.
+4. Proxy `get`/getter/iterator/coercion/user methods remain zero-invocation while accepted primordial reflection traps are described accurately and contained.
+5. The roadmap snapshot, scheduling decision and bottom status consistently identify CVN-6 as the sole active implementation child and CVN-5 as planning-only/dependency-blocked.
+6. CVN-6 acceptance/archive remains a hard CVN-5 execution gate.
+7. Exact three command IDs, final 28 descriptors and zero runtime/SDK/ABI drift remain unchanged.
+8. Range/batch behavior, failure priority, caps, history/replay/event ownership and post-Core exclusions have no semantic delta.
 
 ## Local self-audit
 
-P0/P1/P2=`0/0/0`, pending independent confirmation. Validation evidence is recorded in `research/planning-candidate-self-audit.md` and the final execution report.
+Post-repair residual P0/P1/P2=`0/0/0`, pending targeted independent confirmation. Validation evidence is recorded in `research/planning-candidate-self-audit.md` and the final execution report.

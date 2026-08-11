@@ -47,7 +47,8 @@ The wrapper depth is exactly zero or one. The inner union excludes `command.batc
 | depth 65 | accepted strict input-limit failure | 0 semantic child callbacks |
 | properties 1,048,576 | accepted boundary | normal |
 | properties 1,048,577 | accepted strict input-limit failure | 0 semantic child callbacks |
-| accessor/Proxy/coercion/iterator | deterministic invalid input; user code not invoked | 0 |
+| getter, Proxy `get`, iterator, coercion or user method | deterministic invalid input; those entry points are invoked `0` times | 0 semantic child callbacks |
+| Proxy `ownKeys` / `getPrototypeOf` / `getOwnPropertyDescriptor` reflection | accepted primordial descriptor-first inspection may observe these traps; a throw or malformed reflection result collapses to the stable invalid-input result | Proxy `get` and semantic child callbacks remain `0` |
 
 For a 100-child fixture, inject the first child-local failure separately at indices `0`, `50`, and `99`. Each result exposes that exact zero-based `failedCommandIndex`; no later child route/preparer/effect callback runs.
 

@@ -54,6 +54,7 @@ Delete only the unstarted implementation worktree; preserve this planning branch
 - `src/core-kernel/commands/catalog.ts`
 - `src/core-kernel/registry/builtins.ts`
 - `src/core-kernel/reports/adapters.ts` only for existing report projection of new stable codes
+- `src/core-kernel/reports/strict-codec.ts` only for the closed failure-code table and exact structural decoder for the new bounded failure variants
 
 ### Work
 
@@ -66,13 +67,18 @@ Delete only the unstarted implementation worktree; preserve this planning branch
 
 ### Tests
 
-- `cvn-5-public-contracts.test.ts`
-- compile assertions in `integrated-public-contracts.compile.ts`
+- `test/core-kernel/cvn-5-public-contracts.test.ts`, including all CVN-5 positive/negative real-Core TypeScript compile assertions
+- `test/core-kernel/kernel-failure-adapters.test.ts`
+- `test/core-kernel/command-internals.test.ts`
+- `test/core-kernel/registry-contracts.test.ts`
+- `test/core-kernel/cvn-4-public-surface.test.ts`
+- `test/core-kernel/fixtures/cvn-4-surface.ts`
+- `test/core-kernel/fixtures/cvn-4-surface.expected.json`
 - accepted GD-0 Layer A/Layer B compile checks
 
 ### Exit gate
 
-No runtime export delta; exact 28 Core IDs/descriptors; no protected-path diff.
+No runtime export delta; exact 28 Core IDs/descriptors; exhaustive stable failure decoding; no protected-path diff. Before editing, rerun the affected-file inventory against the accepted-and-archived CVN-6 implementation baseline; an additional production/test/projection path returns to planning review.
 
 ### Rollback
 

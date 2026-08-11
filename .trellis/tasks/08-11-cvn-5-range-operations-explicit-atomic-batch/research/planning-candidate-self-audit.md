@@ -2,7 +2,7 @@
 
 ## Verdict
 
-`READY FOR INDEPENDENT PLANNING REVIEW`
+`READY FOR TARGETED INDEPENDENT PLANNING REREVIEW`
 
 - P0: `0`
 - P1: `0`
@@ -30,7 +30,17 @@
 
 ### Bounded self-audit repair
 
-The first contract scan found that the draft had paraphrased the four pitch-transposition reasons instead of consuming the accepted `PitchTranspositionErrorCode` literals. The PRD was corrected to `written-pitch-invalid`, `transposition-component-invalid`, `derived-pitch-alter-out-of-range`, and `derived-pitch-octave-out-of-range`. No source/test or parent authority changed. Residual P0/P1/P2 remains `0/0/0` pending independent review.
+The first contract scan found that the draft had paraphrased the four pitch-transposition reasons instead of consuming the accepted `PitchTranspositionErrorCode` literals. The PRD was corrected to `written-pitch-invalid`, `transposition-component-invalid`, `derived-pitch-alter-out-of-range`, and `derived-pitch-octave-out-of-range`. No source/test or parent authority changed. That pre-review self-audit closed at P0/P1/P2=`0/0/0` before the later independent findings below.
+
+### Independent-review bounded repair
+
+The initial independent planning review returned P0/P1/P2=`0/1/2`:
+
+1. P1: the failure decoder and affected-test ownership were incomplete;
+2. P2: the durable roadmap still claimed no active implementation child in two stale locations;
+3. P2: the hostile-input matrix incorrectly grouped allowed descriptor-reflection Proxy traps with forbidden user-code entry points.
+
+The repair adds `src/core-kernel/reports/strict-codec.ts` to the closed production allowlist and Stage 1, enumerates the six known existing test/projection paths, assigns all new compile assertions to `cvn-5-public-contracts.test.ts`, and requires an implementation-baseline rescan with any new path returning to planning review. It synchronizes the roadmap to CVN-6 `implementation_in_progress` and splits allowed primordial reflection traps from zero-invocation Proxy `get`/getter/iterator/coercion/user methods. No range/batch semantic contract changes. Post-repair residual P0/P1/P2=`0/0/0`; targeted independent rereview is pending.
 
 ## Evidence gates
 
@@ -45,18 +55,16 @@ The final verification record must be appended after execution of:
 - GD-0 compile layers and planning-fence checks;
 - final clean status after the docs-only commit.
 
-## Independent reviewer focus
+## Targeted independent rereviewer focus
 
-1. dependency remains closed until accepted/archived CVN-6;
-2. private range resolver cannot drift from accepted read semantics;
-3. intermediate semantic invalidity and final one-pass validation are compatible with existing effect ownership;
-4. batch wrapper/priority/caps are unambiguous and non-recursive;
-5. effective cancellation still commits while all-no-op does not;
-6. mixed official-module batches preserve CVN-2/CVN-6 ABI and assembly fences;
-7. history, undo/redo, replay and event identity remain one outer Core batch;
-8. future implementation files are sufficient but not overbroad.
+1. failure decoder ownership includes `reports/strict-codec.ts` and remains narrowly bounded;
+2. the exact six existing test/projection paths replace all wildcard edit authority;
+3. the accepted CVN-6 implementation-baseline rescan gate is explicit;
+4. Proxy reflection wording matches accepted descriptor-first behavior without permitting getters, `get`, iterator, coercion or user methods;
+5. every roadmap status surface consistently shows CVN-6 active and CVN-5 blocked;
+6. the repair introduces no range/batch, CVN-2/CVN-6 ABI, production, test or post-Core delta.
 
-## Local validation record — 2026-08-11
+## Bounded-repair validation record — 2026-08-11
 
 - CVN-5 Trellis: `27/30` implement/check contexts, pass.
 - Core parent Trellis: `3/3`, pass.
@@ -65,12 +73,14 @@ The final verification record must be appended after execution of:
 - post-Core roadmap Trellis: `15/16`, pass.
 - JSON/JSONL: parsed; every context path exists and is unique within its manifest.
 - Parent child reference: exactly `1`.
-- Lifecycle: `planning`, `task_start_run=false`, `production_implementation_authorized=false`, dependency gate false, independent review pending, commit null.
-- Spec projections: exactly one labeled CVN-5 block in each of six content specs; index status synchronized.
-- `git diff --check`: pass after removing six trailing blank lines.
+- Lifecycle: `planning`, `task_start_run=false`, `production_implementation_authorized=false`, dependency gate false, targeted independent rereview pending, commit null.
+- Closed ownership scan: `reports/strict-codec.ts` plus all six existing test/projection paths present; anonymous compile-fixture and existing-test wildcard phrases absent.
+- Roadmap scan: no stale “no active CVN implementation/production child” statement; CVN-6 active and CVN-5 blocked at snapshot, status table, stage, scheduling and footer surfaces.
+- `git diff --check`: pass.
 - Typecheck: pass through `npm.cmd run typecheck`.
 - Build: pass through `npm.cmd run build`.
 - Full baseline: `350/350` pass.
-- GD-0 markdown contract verification: archived design `6` fences and active integration spec `1` fence, `0` diagnostics.
-- GD-0 real-Core TypeScript contract fixture: pass.
-- Relative to `1673d94c100186538d163d259ebb936e9ae00a38`, production/test/build-config, CVN-6 task and post-Core task deltas: empty.
+- GD-0 Layer A: archived design `6` fences and active integration spec `1` fence, `0` diagnostics.
+- GD-0 Layer B real-Core TypeScript contract fixture: pass.
+- Relative to repair base `eb599d6e5cf43999682eb2ace34404c9cee8b776`, production/test/build-config, CVN-6 task and post-Core task deltas: empty.
+- Pre-commit diff contains only the bounded CVN-5 planning files and Core-parent planning/status files; final clean status is verified after the docs-only repair commit.
