@@ -626,3 +626,39 @@ Implemented CVN-FC-112/120/121/122, closed five independent review findings, pas
 ### Next Steps
 
 - None - task complete
+
+
+## Session 18: Accept and archive CVN-5 range and atomic batch
+
+**Date**: 2026-08-11
+**Task**: Accept and archive CVN-5 range and atomic batch
+**Branch**: `codex/cvn-5-range-operations-explicit-atomic-batch`
+
+### Summary
+
+Final independent implementation rereview passed 0/0/0; focused 49/49 and full 432/432 reproduced; accepted contracts synchronized; task archived at 198c71a; CVN-7 is now the next planning-only gate.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f329ec10bc77c530282db3a6f47dbd6b6112859e` | (see git log) |
+| `10e5242` | (see git log) |
+| `b2ad0bc` | (see git log) |
+| `3123a6a` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
