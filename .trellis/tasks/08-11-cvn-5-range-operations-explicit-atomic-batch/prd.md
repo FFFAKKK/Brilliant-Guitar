@@ -237,19 +237,19 @@ CVN-5 excludes:
 ## 11. Acceptance criteria
 
 - [x] CVN-6 is independently accepted and archived before `task.py start` or any source/test edit.
-- [ ] The three exact command IDs compile and the Core catalog/Registry descriptors equal `28`.
-- [ ] Application runtime export count is `51`; Module SDK is `8/34`; CVN-2 ABI delta is zero.
-- [ ] All three range discriminants, reverse endpoints, missing endpoints, owner mismatch and invalid-range behavior are proven.
-- [ ] Range delete and transpose use only accepted primitive effects and satisfy exact no-op/failure/affected-address rules.
-- [ ] Batch strict capture proves 0/1/100/101, sparse, accessor, Proxy, cyclic, deep and property-budget cases without observable callback side effects.
-- [ ] Core-only, integrated Core-only, module-only and mixed batches share one-candidate atomic semantics.
-- [ ] Lowest-child failure attribution, one-wrapper graph, global failure priority and exact cap boundaries are proven.
-- [ ] Final validators/classifiers run once in frozen order; no per-child assessment reruns occur.
-- [ ] Effective batch, semantic cancellation, all-no-op, rejection, undo, redo and replay meet exact state/event/history counts.
-- [ ] Existing Core-only factories, 25 accepted commands, CVN-6 integrated runtime, CVN-2 SDK/catalog, GD-0 public contracts and post-Core boundaries regress unchanged.
-- [ ] File allowlist, protected paths, privacy, forbidden dependency and rollback checks pass.
-- [ ] Typecheck, build, focused tests and full regression pass.
-- [ ] Independent technical review reports P0/P1/P2=`0/0/0`; acceptance and archive are separate later actions.
+- [x] The three exact command IDs compile and the Core catalog/Registry descriptors equal `28`.
+- [x] Application runtime export count is `51`; Module SDK is `8/34`; CVN-2 ABI delta is zero.
+- [x] All three range discriminants, reverse endpoints, missing endpoints, owner mismatch and invalid-range behavior are proven.
+- [x] Range delete and transpose use only accepted primitive effects and satisfy exact no-op/failure/affected-address rules.
+- [x] Batch strict capture proves 0/1/100/101, sparse, accessor, Proxy, cyclic, deep and property-budget cases without observable callback side effects.
+- [x] Core-only, integrated Core-only, module-only and mixed batches share one-candidate atomic semantics.
+- [x] Lowest-child failure attribution, one-wrapper graph, global failure priority and exact cap boundaries are proven.
+- [x] Final validators/classifiers run once in frozen order; no per-child assessment reruns occur.
+- [x] Effective batch, semantic cancellation, all-no-op, rejection, undo, redo and replay meet exact state/event/history counts.
+- [x] Existing Core-only factories, 25 accepted commands, CVN-6 integrated runtime, CVN-2 SDK/catalog, GD-0 public contracts and post-Core boundaries regress unchanged.
+- [x] File allowlist, protected paths, privacy, forbidden dependency and rollback checks pass.
+- [x] Typecheck, build, focused tests and full regression pass.
+- [x] Independent technical review reports P0/P1/P2=`0/0/0`; acceptance and archive are separate later actions.
 
 ## 12. User benefit
 
