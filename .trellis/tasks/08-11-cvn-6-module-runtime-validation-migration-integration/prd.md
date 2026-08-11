@@ -2,7 +2,7 @@
 
 ## Goal
 
-Bind the accepted and archived CVN-2 `KernelIntegratedCatalog` to the existing CVN-1 CommandBus, Registry gateway, replay, session, history, dirty-state and event owners. Complete the official-module V1 runtime lifecycle for deterministic command execution, exact schema compatibility, complete/incomplete validation availability, module diagnostics, profile classification and detached extension migration without creating a second transaction owner or absorbing post-Core product work.
+Bind the accepted and archived CVN-2 `KernelIntegratedCatalog` plus one composition-root-owned, data-only known-requirement inventory to the existing CVN-1 CommandBus, Registry gateway, replay, session, history, dirty-state and event owners. Complete the official-module V1 runtime lifecycle for deterministic command execution, reachable unavailable/incompatible classification, complete/incomplete validation availability, module diagnostics, profile classification and detached extension migration without creating a second transaction owner or absorbing post-Core product work.
 
 ## Planning Authority and Current State
 
@@ -25,11 +25,13 @@ Existing Core-only `CommandBus.create`, `createKernelRegistry(manifest)`, Core g
 
 ### CVN6-R002 — Frozen CVN-2 input
 
-CVN-2 remains the sole owner of `CVN-FC-110/111`. CVN-6 consumes its immutable catalog, private catalog state accessor, nine-field `CompiledDomainCommandContributionV1` ABI and accepted callbacks. The SDK export allowlist remains exactly 8 runtime exports and 34 type exports. CVN-6 adds no registration field, second contribution entry or ready-state lifecycle API.
+CVN-2 remains the sole owner of `CVN-FC-110/111`. CVN-6 consumes its immutable catalog, private catalog state accessor, nine-field `CompiledDomainCommandContributionV1` ABI and accepted callbacks. Unselected registration entries remain ignored and install no descriptor or callback. The SDK export allowlist remains exactly 8 runtime exports and 34 type exports. CVN-6 adds no catalog compiler overload, registration field, second contribution entry or ready-state lifecycle API.
 
-### CVN6-R003 — One assembly-bound runtime
+### CVN6-R003 — One inventory-bound runtime assembly
 
-Integrated Registry, CommandBus, module gateway and replay derive the same process-local private `assemblyIdentity` from one authentic `KernelIntegratedCatalog`. A different authentic assembly, Core-only/integrated mode mismatch or structurally forged handle is rejected deterministically before a gateway or writable session becomes observable.
+CVN-6 adds the application-facing data type `KernelKnownRequirementInventoryV1`. The composition root may pass it to additive integrated Registry, CommandBus and replay overloads. It retains namespace, module/contribution identity, exact supported versions and `requiredForWrite` even when the contribution is not installed. The catalog-only overloads remain exact and derive an installed-only inventory.
+
+CVN-6 strictly decodes, normalizes and freezes the inventory, then combines the authentic CVN-2 catalog identity with a collision-free canonical inventory key to obtain one process-local private runtime `assemblyIdentity`. Integrated Registry, CommandBus, module gateway and replay share that identity. The inventory never installs a descriptor, command, effect or callback. A different catalog, a different canonical inventory, Core-only/integrated mode mismatch or structurally forged handle is rejected deterministically before a gateway or writable session becomes observable.
 
 ### CVN6-R004 — Restricted module authority
 
@@ -56,10 +58,10 @@ After the shared write-availability preflight, a writable submit executes exactl
 
 ### CVN6-R007 — Compatibility and availability
 
-Compatibility is exact per persisted block and never uses ranges, latest-version guessing or implicit migration:
+Compatibility is exact per persisted block and never uses ranges, latest-version guessing or implicit migration. A namespace is "known" only when it appears in the frozen CVN-6 runtime inventory; installed contribution lookup remains a separate CVN-2 catalog index:
 
 - known block + exact supported version + contribution present: fully participates;
-- known block + exact supported version + contribution absent: `required-contribution-unavailable`, lossless read-only and validation incomplete;
+- known block + exact supported version + contribution absent from the authentic catalog: `required-contribution-unavailable`, lossless read-only and validation incomplete;
 - known block + future/unlisted version: `required-contribution-incompatible`, lossless read-only and validation incomplete;
 - mixed unavailable/incompatible facts: the write failure code is incompatible and the result carries the complete mixed canonical facts;
 - unknown undeclared opaque block: Core V1 lossless preservation remains writable and makes no installed-domain validation claim.
@@ -81,12 +83,13 @@ Integrated execution reuses the existing CVN-1 runtime and state owner. Undo/red
 
 ### CVN6-R010 — Public integration closures
 
-CVN-6 freezes four additive public closures detailed in `design.md`:
+CVN-6 freezes five additive public closures detailed in `design.md`:
 
-1. `createKernelRegistry(catalog)` integrated overload;
-2. `KernelCommandIdentity` and `IntegratedKernelEvent`;
-3. integrated resource failures for effects, affected addresses, compatibility facts and module issues, including construction overflow;
-4. `migrateKernelExtension(input, request, catalog)` with a versioned detached request/result contract.
+1. `KernelKnownRequirementInventoryV1` plus explicit inventory overloads for `CommandBus.createIntegrated`, `createKernelRegistry` and `replayKernelCommands`, while their catalog-only forms remain exact;
+2. `createKernelRegistry(catalog)` integrated construction;
+3. `KernelCommandIdentity` and `IntegratedKernelEvent`;
+4. integrated resource failures for effects, affected addresses, compatibility facts and module issues, including construction overflow;
+5. `migrateKernelExtension(input, request, catalog)` with a versioned detached request/result contract.
 
 The application root gains exactly two runtime names: `replayKernelCommands` and `migrateKernelExtension`, moving the expected runtime export count from 49 to 51. Runtime error-class exports remain unchanged.
 
@@ -105,32 +108,34 @@ Inclusive limits are:
 | compatibility facts | 131,072 |
 | issues returned by one callback | 1,024 |
 | aggregate module issues per transaction/construction | 4,096 |
+| known requirement inventory rows | 1,024 |
+| supported versions per inventory row | 256 |
 
-The 1,025th callback issue is a contribution contract violation. The 4,097th aggregate issue is `command.resource-limit-exceeded` with `limitKind: "module-issues"`. The 131,073rd compatibility fact uses `limitKind: "compatibility-facts"`. Public failures and events expose only allowlisted codes, module/contribution identities, canonical addresses, limits, facts and frozen diagnostics; raw payloads, handlers, private identities, thrown values, stacks and local paths remain private.
+A malformed, duplicate, over-cap or catalog-inconsistent explicit inventory returns `command.invalid-requirement-inventory` from CommandBus/replay construction and `registry.invalid-startup-input` from Registry construction, before any module callback or partial runtime state. The 1,025th callback issue is a contribution contract violation. The 4,097th aggregate issue is `command.resource-limit-exceeded` with `limitKind: "module-issues"`. The 131,073rd compatibility fact uses `limitKind: "compatibility-facts"`. Public failures and events expose only allowlisted codes, module/contribution identities, canonical addresses, limits, facts and frozen diagnostics; raw payloads, handlers, private identities, thrown values, stacks and local paths remain private.
 
 Canonical fact order is namespace; owner kind (`score` before `part`); part ID; extension schema version; module ID; contribution ID; reason (`incompatible` before `unavailable`). Deduplication uses the complete public tuple.
 
 ### CVN6-R013 — Neutral end-to-end evidence
 
-Tests use two neutral synthetic official modules, one score-owned and one Part-owned. Each module contributes its own command producing ordered WrittenPitch plus owned ExtensionBlock effects. Both are installed together to prove catalog-order validation/classification/fact behavior, while each submit remains owned by one contribution. Cross-module batch composition belongs to CVN-5.
+Tests use two neutral synthetic official modules, one score-owned and one Part-owned. Each module contributes its own command producing ordered WrittenPitch plus owned ExtensionBlock effects. Both are installed together to prove catalog-order validation/classification/fact behavior, while each submit remains owned by one contribution. The explicit inventory additionally declares one absent neutral contribution so unavailable-only and mixed states are constructed through the real public runtime entry. Cross-module batch composition belongs to CVN-5.
 
 ## Acceptance Criteria
 
 - [ ] CVN6-AC001: both required commits are ancestors of the implementation baseline and all four accepted dependencies are recorded.
 - [ ] CVN6-AC002: Core-only factory, Registry, bus, gateway, replay, event, report and migration characterization remains deep-equal to the accepted baseline.
-- [ ] CVN6-AC003: CVN-2 ABI remains nine fields, SDK exports remain `8/34`, catalog construction behavior remains accepted and CVN-2 tests stay green.
-- [ ] CVN6-AC004: integrated Registry, bus, gateway and replay from catalog A share one private identity; A/B, Core/integrated and forged pairings reject with exact failures before session/gateway exposure.
+- [ ] CVN6-AC003: CVN-2 ABI remains nine fields, SDK exports remain `8/34`, catalog compilation and unselected-entry zero-callback behavior remain exact, and CVN-2 tests stay green.
+- [ ] CVN6-AC004: the strict inventory codec, duplicate/cap/catalog-parity rules and canonical ordering pass; integrated Registry, bus, gateway and replay from catalog+inventory A share one private runtime identity, while catalog/inventory A/B, Core/integrated and forged pairings reject before session/gateway exposure.
 - [ ] CVN6-AC005: module callbacks receive only detached owner-scoped views and the restricted forward-effect surface.
 - [ ] CVN6-AC006: WrittenPitch and owned score/Part ExtensionBlock effects apply atomically to one candidate; inverse order and rollback are exact at every failure stage.
 - [ ] CVN6-AC007: the ten-stage pipeline, failure priority and one CVN-1 adoption owner are directly asserted.
-- [ ] CVN6-AC008: compatible, unavailable, incompatible, future, unknown and mixed matrices produce exact write/validation availability and canonical facts.
+- [ ] CVN6-AC008: real explicit-inventory runtime construction produces compatible, unavailable-only, incompatible-only, future, unknown and mixed matrices without private-state fabrication, with exact write/validation availability, canonical facts and callback counts.
 - [ ] CVN6-AC009: callback matrices prove `0/0`, `1/1`, `1/0`, read-only `0/0/0`, deterministic semantic issue aggregation and exception isolation.
 - [ ] CVN6-AC010: submit/no-op/reject/undo/redo/replay preserve the specified document/version/history/checkpoint/dirty/event invariants.
 - [ ] CVN6-AC011: two synthetic modules prove atomic multi-effect execution, frozen ordering, one history entry/version/event and live/replay result parity without batch semantics.
 - [ ] CVN6-AC012: integrated events carry exact command source identity while Core `KernelEvent` remains exact.
 - [ ] CVN6-AC013: detached migration covers migrated/not-required/rejected, owner and version mismatch, target absence, callback failure, round-trip and non-target deep equality with zero live-state effect.
-- [ ] CVN6-AC014: exact limit and limit+1 tests cover issues, aggregate issues, facts, effects and affected addresses.
-- [ ] CVN6-AC015: hostile accessor/Proxy/sparse/cyclic/invalid-prototype/extra-field/alias inputs return stable data-only failures.
+- [ ] CVN6-AC014: exact limit and limit+1 tests cover inventory rows/versions, issues, aggregate issues, facts, effects and affected addresses.
+- [ ] CVN6-AC015: hostile accessor/Proxy/sparse/cyclic/invalid-prototype/extra-field/alias document, command, request and inventory inputs return stable data-only failures.
 - [ ] CVN6-AC016: application runtime exports are exactly baseline plus `replayKernelCommands` and `migrateKernelExtension`; public type and SDK allowlists match the frozen design.
 - [ ] CVN6-AC017: GD-0 Layer A/Layer B plus a real-Core CVN-6 compile fence pass.
 - [ ] CVN6-AC018: implementation changes remain inside the exact source/test allowlists; Guitar, product-service, host, persistence and public-plugin dependencies are absent.
@@ -150,4 +155,4 @@ Tests use two neutral synthetic official modules, one score-owned and one Part-o
 
 ## Product Boundary
 
-CVN-6's private kernel assembly identity is the frozen catalog identity consumed inside one Core session. The post-Core `Application Assembly` is a Product Host responsibility owned by the future Workbench/Editor Session child. The two terms are not interchangeable. CVN-6 accepts a supplied official catalog and never assembles Guitar, service or host providers.
+CVN-6's private runtime assembly identity is derived from one authentic frozen catalog plus one normalized known-requirement inventory and is consumed inside one Core session. The inventory is compatibility data, not a module/package host. The post-Core `Application Assembly` is a Product Host responsibility owned by the future Workbench/Editor Session child. The two terms are not interchangeable. CVN-6 accepts supplied official catalog/inventory data and never assembles Guitar, service or host providers.

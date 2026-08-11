@@ -522,11 +522,13 @@ Contribution ABI V1 resource caps：
 | total effect definitions | 4,096 |
 | total owned extension namespaces | 1,024 |
 | supported schema versions per requirement | 256 |
+| CVN-6 known-requirement inventory rows | 1,024 |
+| CVN-6 supported versions per inventory row | 256 |
 | module issues returned by one callback | 1,024 |
 | aggregate module issues per transaction | 4,096 |
 | canonical compatibility facts | 131,072 |
 
-单个 callback 返回第 1,025 个 issue 时使用 `command.contribution-contract-violation`；合法 callback 的 aggregate issue 到达第 4,097 个时使用 `command.resource-limit-exceeded`/`module-issues`。Assembly root 的 module/contribution 总量超限使用 `registry.invalid-startup-input`；某个 registration entry 的 commands/effects/namespaces/version list 超限使用 `registry.invalid-contribution` 并返回该 `registrationEntryId`；compatibility facts 到达第 131,073 个时使用 `command.resource-limit-exceeded`/`compatibility-facts`。所有分支保持零可调用 handler 或零活动 session。
+单个 callback 返回第 1,025 个 issue 时使用 `command.contribution-contract-violation`；合法 callback 的 aggregate issue 到达第 4,097 个时使用 `command.resource-limit-exceeded`/`module-issues`。Assembly root 的 module/contribution 总量超限使用 `registry.invalid-startup-input`；某个 registration entry 的 commands/effects/namespaces/version list 超限使用 `registry.invalid-contribution` 并返回该 `registrationEntryId`；compatibility facts 到达第 131,073 个时使用 `command.resource-limit-exceeded`/`compatibility-facts`。CVN-6 explicit inventory 的第 1,025 行或单行第 257 个版本在 bus/replay construction 使用 `command.invalid-requirement-inventory`，在 Registry construction 使用 `registry.invalid-startup-input`。所有分支保持零可调用 handler 或零活动 session。
 
 ### CVN-FC-112 — Runtime authority
 
@@ -539,14 +541,17 @@ Contribution ABI V1 resource caps：
 
 #### CVN-6 formal planning child and bounded public closures
 
-正式子任务为 `.trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/`，当前状态 `planning`，独立规划复审待完成，`task_start_run=false`，`production_implementation_authorized=false`。它只拥有 `CVN-FC-112/120/121/122`，并消费已验收 CVN-2 九字段 ABI。
+CVN-6 additionally closes the data source required by `CVN-FC-121` without reopening CVN-2: `KernelKnownRequirementInventoryV1` is a strict application-facing data record, and additive integrated Registry/bus/replay overloads accept it beside an authentic catalog while their catalog-only forms remain exact. The inventory contains at most 1,024 `ExtensionRuntimeRequirementV1` rows and 256 versions per row, must contain every installed catalog requirement exactly once with identical data, may add absent requirements, and never installs a descriptor or callback. Malformed, duplicate, over-limit or catalog-parity mismatch returns `command.invalid-requirement-inventory` for bus/replay construction or existing `registry.invalid-startup-input` for Registry construction before runtime publication, with all callback families at zero. The accepted catalog compiler, catalog state, nine-field ABI and SDK `8/34` remain exact. "Known" means present in the frozen CVN-6 runtime inventory, while contribution "present" means separately resolved in the installed CVN-2 namespace index; this makes exact-version/absent states constructible without selecting an entry, mutating catalog internals or treating arbitrary unknown namespaces as official.
 
-为使 accepted GD-0 surface 可直接实施，CVN-6 固定四项窄合同：
+正式子任务为 `.trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/`，当前状态 `planning`；初次独立规划审计为 P0/P1/P2=`0/1/0`，known-requirement inventory 窄修已进入 targeted rereview pending；`task_start_run=false`，`production_implementation_authorized=false`。它只拥有 `CVN-FC-112/120/121/122`，并消费已验收 CVN-2 九字段 ABI。
 
-1. 既有 `createKernelRegistry(manifest)` 保持精确，并增加 `createKernelRegistry(catalog: KernelIntegratedCatalog): KernelRegistryCreationResult`；
-2. 增加 `KernelCommandIdentity` 与 `IntegratedKernelEvent`，Core `KernelEvent` 保持精确；
-3. integrated `KernelCommandFailure` 增加 `effects`、`affected-addresses`、`compatibility-facts`、`module-issues` resource kinds，construction 只消费 facts/issues 子集；
-4. 增加 versioned detached `migrateKernelExtension(input, request, catalog)`，复用 accepted effect definition，保持 `CompiledDomainCommandContributionV1` 九字段与 `migrateScoreDocument()` 精确。
+为使 accepted GD-0 surface 可直接实施，CVN-6 固定五项窄合同：
+
+1. 增加 application-only `KernelKnownRequirementInventoryV1` 与 integrated Registry/bus/replay explicit-inventory overload，catalog-only 形式保持精确；
+2. 既有 `createKernelRegistry(manifest)` 保持精确，并增加 catalog-only/explicit-inventory integrated construction；
+3. 增加 `KernelCommandIdentity` 与 `IntegratedKernelEvent`，Core `KernelEvent` 保持精确；
+4. integrated `KernelCommandFailure` 增加 `effects`、`affected-addresses`、`compatibility-facts`、`module-issues` resource kinds，construction 增加 invalid-inventory 与 facts/issues 子集；
+5. 增加 versioned detached `migrateKernelExtension(input, request, catalog)`，复用 accepted effect definition，保持 `CompiledDomainCommandContributionV1` 九字段与 `migrateScoreDocument()` 精确。
 
 Application root runtime export 只增加 `replayKernelCommands`、`migrateKernelExtension`，预期从 49 变为 51；Module SDK 继续为 runtime/type `8/34`。CVN-6 private kernel assembly identity 与 post-Core Product Host `Application Assembly` 是不同对象。
 
@@ -575,12 +580,14 @@ Module validator/classifier 只看到自己拥有且 exact-compatible 的 blocks
 
 ### CVN-FC-121 — Availability
 
+- Known namespace 的唯一来源是 CVN-6 normalized runtime inventory；CVN-2 ignored entry 不会让 namespace 变成 known。
 - Known block + exact supported version + contribution present：完整参与 pipeline。
 - Known block + exact supported version + contribution absent：`required-contribution-unavailable`，lossless read-only。
 - Known block + unlisted/future version：`required-contribution-incompatible`，lossless read-only。
 - Mixed facts：failure code 选择 incompatible，返回完整 canonical mixed fact list。
 - Unknown undeclared opaque extension：Core V1 lossless preservation，默认仍 writable，不声称已做领域验证。
 - Submit/undo/redo/每个 replay write 在 decode 或 empty-history check 前共享 availability preflight；empty replay 是唯一不写路径，可原样成功。
+- Explicit inventory 的 malformed/duplicate/over-cap/installed-parity failure 在任何 callback 或 runtime publication 前拒绝；CommandBus/replay 使用 `command.invalid-requirement-inventory`，Registry 使用 `registry.invalid-startup-input`。
 
 ### CVN-FC-122 — Migration
 
@@ -703,7 +710,8 @@ Representative benchmark process peak RSS 固定 `<= 1.0 GiB`。Portable CI 运�
 - all-or-nothing catalog with 0、1、2 contributions；
 - duplicate identity/command/effect/namespace；
 - descriptor/handler/requirement mismatch；
-- unavailable/incompatible/mixed/unknown opaque matrices；
+- public explicit-inventory unavailable-only/incompatible-only/mixed/unknown opaque matrices；
+- inventory duplicate/parity、rows `1024/1025`、versions `256/257` 与 catalog/inventory A-B mismatch；
 - callback throw、Promise-like sync hook return、malformed effects/issues/facts；
 - same-assembly success与 cross-assembly/Core-only mismatch；
 - no callback against incompatible/future block；
@@ -723,7 +731,7 @@ Representative benchmark process peak RSS 固定 `<= 1.0 GiB`。Portable CI 运�
 | CVN-3 | CVN-FC-020/021/030/031/050–053 | CVN-4/5；factory + four exact Measure commands |
 | CVN-4 | CVN-FC-060–070 | CVN-5/7；fifteen exact hierarchy/property commands |
 | CVN-5 | CVN-FC-080–102 | CVN-7；two range commands + one batch command |
-| CVN-6 | CVN-FC-112/120–122 | formal child `08-11-cvn-6-module-runtime-validation-migration-integration`, planning review pending；CVN-5/7；assembly-bound runtime + validation/profile/diagnostic/migration |
+| CVN-6 | CVN-FC-112/120–122 | formal child `08-11-cvn-6-module-runtime-validation-migration-integration`, bounded inventory repair targeted rereview pending；CVN-5/7；inventory-bound runtime + validation/profile/diagnostic/migration |
 | CVN-7 | CVN-FC-130–143 | compatibility, scale, resource, deterministic integration evidence |
 
 任一 child 若需要改变命令 ID/target/payload、cascade、range、batch attribution、failure priority、caps、fixture 或 budget，即触发父级规划复审；child 内不以“implementation detail”覆盖这些观察合同。

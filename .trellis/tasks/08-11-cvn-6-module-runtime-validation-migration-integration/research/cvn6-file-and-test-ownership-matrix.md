@@ -4,14 +4,14 @@
 
 | Path | Ownership |
 |---|---|
-| `.trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/**` | child planning artifacts |
-| parent `task.json` | child link and current CVN-6 planning state |
+| `.trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/**` | child planning artifacts and bounded P1 closure research |
+| parent `task.json` | child link and current CVN-6 review state |
 | parent `implement.md` | current gate and formal child reference |
-| parent `feature-contract-matrix.md` | CVN-6 bounded public closure and state |
+| parent `feature-contract-matrix.md` | CVN-6 inventory/runtime ownership and availability projection |
 | parent `research/cvn-roadmap-and-stage-plan.md` | formal child/current-gate status |
 | active `domain-transaction-integration.md` | labeled CVN-6 planning-candidate closure |
 
-Post-Core task files, `src/**`, `test/**`, package files and TypeScript config have zero planning-candidate delta.
+Post-Core task files, `src/**`, `test/**`, package files and TypeScript config have zero planning-repair delta.
 
 ## Future Production Allowlist
 
@@ -33,7 +33,6 @@ src/core-kernel/commands/execution-assembly.ts
 src/core-kernel/commands/effects.ts
 src/core-kernel/session/runtime.ts
 src/core-kernel/registry/integrated-contracts.ts
-src/core-kernel/registry/domain-catalog.ts
 src/core-kernel/registry/assembly.ts
 src/core-kernel/registry/runtime.ts
 src/core-kernel/registry/gateway.ts
@@ -53,6 +52,7 @@ src/core-kernel/errors/kernel-error.ts
 ## Protected Production Paths
 
 - `src/core-kernel/module-sdk/**`
+- `src/core-kernel/registry/domain-catalog.ts` and the CVN-2 compiler/private catalog-state shape
 - `src/core-kernel/migration/migrate-score-document.ts`
 - Score schema and codec format authority
 - Guitar/domain implementation directories
@@ -63,16 +63,16 @@ src/core-kernel/errors/kernel-error.ts
 
 | File | Decisive ownership |
 |---|---|
-| `cvn-6-public-contracts.test.ts` | declarations, root/SDK export allowlists, Core drift |
-| `integrated-assembly-identity.test.ts` | authentic/forged/mode/A-B construction matrix |
-| `domain-availability.test.ts` | compatibility, fact order, complete/incomplete, frozen views |
+| `cvn-6-public-contracts.test.ts` | inventory/Registry/bus/replay declarations, root/SDK export allowlists, Core drift |
+| `integrated-assembly-identity.test.ts` | authentic/forged/mode/catalog-A-B/inventory-A-B construction matrix |
+| `domain-availability.test.ts` | public unavailable/incompatible/mixed/unknown construction, fact order, completeness and frozen views |
 | `module-transaction-atomicity.test.ts` | ordered multi-effect candidate/inverse/rollback |
 | `module-validation-classification.test.ts` | call order/counts, issue aggregation and exception isolation |
-| `integrated-replay-events-history.test.ts` | submit/undo/redo/replay/history/event parity |
+| `integrated-replay-events-history.test.ts` | inventory-bound submit/undo/redo/replay/history/event parity |
 | `extension-migration.test.ts` | detached migration and preservation matrix |
-| `integrated-hostile-input-resource.test.ts` | guards, callback contracts and caps |
+| `integrated-hostile-input-resource.test.ts` | inventory strict codec/caps plus guards, callback contracts and transaction caps |
 | `integrated-public-boundary.test.ts` | privacy and forbidden dependencies |
-| `core-only-regression.test.ts` | accepted Core-only behavior |
-| `fixtures/cvn-6-synthetic-official-modules.ts` | two neutral official modules |
+| `core-only-regression.test.ts` | accepted Core-only, catalog-only and CVN-2 behavior |
+| `fixtures/cvn-6-synthetic-official-modules.ts` | two installed modules plus one absent neutral inventory requirement |
 
-Any implementation path outside these lists triggers a bounded planning review before further source edits.
+Any implementation path outside these lists triggers bounded planning review before source editing continues.

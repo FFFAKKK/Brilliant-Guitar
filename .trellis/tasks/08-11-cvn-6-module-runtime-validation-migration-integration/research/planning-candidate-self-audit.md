@@ -2,9 +2,9 @@
 
 ## Verdict
 
-`PASS — P0/P1/P2 = 0/0/0`
+`BOUNDED REPAIR SELF-CHECK PASS — RESIDUAL P0/P1/P2 = 0/0/0 / TARGETED INDEPENDENT RE-REVIEW PENDING`
 
-This is the task owner's planning self-audit. Independent planning review remains a separate read-only gate.
+The original task-owner self-audit was superseded by an initial independent result of P0/P1/P2=`0/1/0`. The only finding was the missing public data source for absent-but-known contribution requirements. The bounded repair is documented in `known-requirement-inventory-closure.md`; independent review remains a separate read-only gate.
 
 ## Scope Reviewed
 
@@ -21,7 +21,7 @@ This is the task owner's planning self-audit. Independent planning review remain
 |---|---|
 | CVN-2 line ancestor `302dafe...` | pass |
 | post-Core roadmap ancestor `c68fcc...` | pass |
-| CVN-6 Trellis | pass, implement/check `21/22` |
+| CVN-6 Trellis | pass, implement/check `22/23` |
 | Core VNext parent Trellis | pass, `3/3` |
 | product parent Trellis | pass, `0/0` accepted by validator |
 | post-Core roadmap Trellis | pass, `15/16` |
@@ -48,6 +48,8 @@ The initial `npm` invocation was intercepted by PowerShell execution policy befo
 
 - Core-only behavior and `CommandFailure` remain exact.
 - CVN-2 remains the sole owner of the nine-field contribution ABI and SDK `8/34` surface.
+- `KernelKnownRequirementInventoryV1` belongs only to CVN-6 application/runtime construction; public explicit overloads make unavailable-only/incompatible-only/mixed/unknown states reachable while catalog-only paths remain exact.
+- Inventory authenticity, canonical identity, strict codec, installed parity, `1024/1025` rows, `256/257` versions, failure mapping and callback-zero construction are decision-complete.
 - CVN-1 remains the single session/history/dirty/replay/event owner.
 - Integrated Registry construction, event source identity, construction resource failures and detached migration have unique owners and exact declarations.
 - Two synthetic modules prove separate contribution-owned multi-effect commands; CVN-5 retains cross-module batch.
@@ -56,4 +58,4 @@ The initial `npm` invocation was intercepted by PowerShell execution policy befo
 
 ## Finalization Gate
 
-The candidate is ready for one docs-only commit. After commit, verify the commit file list and clean worktree. The commit hash is reported in the external handoff rather than embedded in its own tree.
+The bounded repair gates pass. Create one docs-only repair commit, verify the commit file list and clean worktree, then request a targeted independent re-review. The repair commit hash is reported in the external handoff rather than embedded in its own tree. Task activation and production authorization remain false.

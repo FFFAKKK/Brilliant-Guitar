@@ -467,22 +467,23 @@ Every `CVN-FC-141` case must pass, including exact boundaries, atomic rejection,
 
 ### Ownership, purpose and dependencies
 
-- Primary contract owners: `CVN-FC-112` and `CVN-FC-120–122`.
-- Purpose: bind an accepted CVN-2 catalog to the existing Core bus, gateway and replay owner, then complete validation, profile, diagnostics, compatibility and migration.
-- Formal child: `.trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/`; status `planning`, independent planning review pending, production implementation authorization false.
+- Primary contract owners: `CVN-FC-112` and `CVN-FC-120/121/122`.
+- Purpose: bind an accepted CVN-2 catalog plus a CVN-6-owned known-requirement inventory to the existing Core bus, gateway and replay owner, then complete validation, profile, diagnostics, compatibility and migration.
+- Formal child: `.trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/`; status `planning`, initial independent planning review `0/1/0`, bounded known-requirement inventory repair targeted re-review pending, production implementation authorization false.
 - Dependencies: accepted CVN-1; accepted/archived CVN-2; accepted Extensibility Reservation and GD-0. CVN-3/4 supply accepted structural regression fixtures only.
 
 ### Fixed runtime authority
 
 - Core-only default assembly remains available;
-- integrated Registry, bus, gateway and replay share one private assembly identity;
-- cross-assembly or Core-only/integrated mismatch rejects deterministically;
+- integrated Registry, bus, gateway and replay share one private runtime identity derived from authentic catalog identity plus canonical inventory data;
+- catalog/inventory cross-assembly or Core-only/integrated mismatch rejects deterministically;
 - handlers receive detached read views and restricted builders;
 - handlers request forward effects only;
 - inverse effects are derived by Core or accepted owned effect definitions;
 - first module-to-Core effect scope is WrittenPitch replacement;
 - module-owned effects replace/remove declared ExtensionBlocks for allowed score/Part owners.
-- bounded public closures are the integrated Registry catalog overload, modular event identity, construction facts/issues resource failure and versioned detached migration entry;
+- bounded public closures are the known-requirement inventory/runtime overloads, integrated Registry construction, modular event identity, invalid-inventory plus facts/issues construction failures and versioned detached migration entry;
+- CVN-6 adds one application-facing `KernelKnownRequirementInventoryV1` data type and explicit integrated Registry/bus/replay overloads; inventory rows/versions are capped at `1024/256`; catalog-only forms plus the CVN-2 compiler, catalog state, nine-field ABI and SDK `8/34` export counts remain exact;
 - application runtime exports add only `replayKernelCommands` and `migrateKernelExtension`; CVN-2 SDK remains `8/34` with the nine-field ABI.
 
 ### Pipeline order
@@ -500,11 +501,13 @@ Every `CVN-FC-141` case must pass, including exact boundaries, atomic rejection,
 
 ### Compatibility and migration behavior
 
+- known namespaces come only from the frozen CVN-6 runtime inventory; installed CVN-2 contribution presence is a separate lookup;
 - known block + exact version + contribution present: full participation;
 - known block + exact version + contribution absent: `required-contribution-unavailable`, lossless read-only;
 - known block + unlisted/future version: `required-contribution-incompatible`, lossless read-only;
 - unknown opaque extension: preserve losslessly without unrelated callbacks;
 - mixed blocks: deterministic per-block availability and no partial write admission;
+- explicit inventory must contain every installed requirement exactly once; duplicate, malformed, over-cap or parity-conflicting data rejects before callbacks/runtime publication;
 - migration is detached, deterministic and owner-scoped;
 - migration does not mutate an active bus or ready assembly.
 
@@ -514,7 +517,7 @@ Every `CVN-FC-141` case must pass, including exact boundaries, atomic rejection,
 2. import accepted GD-0 public-contract fences without renaming;
 3. define integrated construction and assembly-identity tests;
 4. define validator availability and call-count matrices;
-5. define compatible, missing, future and mixed extension fixtures;
+5. define public explicit-inventory runtime fixtures for compatible, unavailable-only, incompatible-only, future, unknown and mixed extension states without private-state fabrication;
 6. define issue/fact caps and callback exception isolation;
 7. define migration round-trip and degraded-read evidence;
 8. install two synthetic modules and run each contribution-owned multi-effect command through submit/history/replay/event without CVN-5 batch semantics;
@@ -696,7 +699,7 @@ Accepted coordination gates:
 
 Current planning child: `.trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/`.
 
-Active coordination gate at this snapshot: CVN-6 independent planning review, followed by separate user activation. Active CVN implementation child: none. CVN-6 remains `planning` with task start and production authorization false. CVN-2 is accepted and archived with final P0/P1/P2=`0/0/0`; its catalog remains detached and non-executable until CVN-6 is separately accepted.
+Active coordination gate at this snapshot: CVN-6 targeted independent planning rereview after the initial P0/P1/P2=`0/1/0` inventory-reachability finding, followed by separate user activation. Active CVN implementation child: none. CVN-6 remains `planning` with task start and production authorization false. CVN-2 is accepted and archived with final P0/P1/P2=`0/0/0`; its compiler/catalog remain exact and detached until CVN-6 is separately accepted.
 
 GD-0 dependency authority:
 

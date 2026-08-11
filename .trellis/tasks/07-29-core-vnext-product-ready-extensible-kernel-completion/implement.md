@@ -2,7 +2,7 @@
 
 ## 1. Execution Status
 
-`PLANNING COORDINATION / CVN-0 CVN-1 CVN-2 CVN-3 FINAL CVN-4 EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-6 FORMAL PLANNING CANDIDATE CREATED, INDEPENDENT PLANNING REVIEW PENDING, TASK START FALSE / CVN-5 AND CVN-7 DEPENDENCY-GATED`.
+`PLANNING COORDINATION / CVN-0 CVN-1 CVN-2 CVN-3 FINAL CVN-4 EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-6 INITIAL PLANNING REVIEW 0/1/0, BOUNDED INVENTORY REPAIR TARGETED RE-REVIEW PENDING, TASK START FALSE / CVN-5 AND CVN-7 DEPENDENCY-GATED`.
 
 This parent task coordinates independently verifiable children. It does not batch all production changes into one implementation branch. Each child must receive its own PRD/design/implement review, `task.py start`, independent technical audit and archive decision.
 
@@ -12,7 +12,7 @@ After final user approval, the parent may enter `in_progress` only as the coordi
 
 - Core V1 close baseline: `d92a7586536ac8757c318ae6f75aabd8698f85ac`.
 - Unified CVN-6 planning baseline: `050af1eed067300f2e2fb0339eff6f2430e43b36`, containing accepted/archived CVN-2 and the post-Core roadmap as separate ancestors.
-- GD-0, the Extensibility Reservation and CVN-2 are accepted and archived. CVN-6 is the current formal planning child and remains review-gated.
+- GD-0, the Extensibility Reservation and CVN-2 are accepted and archived. CVN-6 is the current formal planning child; its initial planning review returned `0/1/0`, and the bounded known-requirement inventory repair remains targeted-review-gated.
 - Core V1 accepted regression evidence: 8/8 K1-6 focused and 169/169 full tests.
 - CVN-0 accepted evidence: 19 focused, 42 related regression and 188 full tests; final independent re-review passed on 2026-08-04.
 - CVN-1 accepted evidence: 19/19 command-internals and 193/193 full tests; immutable characterization SHA-256 `CDBCFD68DCC84C514BCAC8BA83B44B819A237146C842E0F63E8F17A3CD2FF4D9`; final narrow independent re-review passed on 2026-08-04.
@@ -188,25 +188,25 @@ Numeric labels organize scope; the arrows above are the actual execution depende
 
 ### CVN-6 — Module Runtime, Validation and Migration Integration
 
-**Formal child:** `.trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/`; status `planning`, independent planning review pending, production implementation authorization false.
+**Formal child:** `.trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/`; status `planning`, initial independent review `0/1/0`, bounded inventory repair targeted re-review pending, production implementation authorization false.
 
-**Purpose:** bind the accepted CVN-2 catalog to the existing CVN-1 bus/gateway/replay/session owner and complete validation, profile, diagnostics, compatibility and detached migration.
+**Purpose:** bind the accepted CVN-2 catalog plus a CVN-6-owned data-only known-requirement inventory to the existing CVN-1 bus/gateway/replay/session owner and complete validation, profile, diagnostics, compatibility and detached migration.
 
 **Dependencies:** CVN-1 accepted; CVN-2 accepted/archived; Extensibility Reservation and GD-0 accepted/archived. CVN-3/4 provide accepted structural regression fixtures only. CVN-5 waits for accepted CVN-6.
 
 **Scope:**
 
 - exact per-block schema compatibility；
-- integrated factory plus assembly-bound existing bus/gateway/replay construction；
+- catalog-only and explicit-inventory integrated Registry/bus/gateway/replay construction；
 - complete/incomplete validation availability；
 - Core-first then frozen module validator/classifier order；
 - module issue/report mapping；
 - detached deterministic official-extension migration pipeline；
 - lossless read-only degradation and unknown opaque extension preservation。
 
-**Fixed contracts:** own only `CVN-FC-112/120/121/122`; consume the accepted GD-0 public-contract fences and frozen CVN-2 nine-field ABI; enforce callback isolation, exact compatibility, issue/fact caps, same-assembly identity and write-preflight priority. The integrated Registry overload, modular event type, construction resource failure and detached migration entry are the bounded public closures recorded by the child.
+**Fixed contracts:** own only `CVN-FC-112/120/121/122`; consume the accepted GD-0 public-contract fences and frozen CVN-2 nine-field ABI; enforce strict inventory codec/parity/caps, callback isolation, exact compatibility, catalog+inventory assembly identity and write-preflight priority. The application-facing known-requirement inventory plus explicit integrated Registry/bus/replay overloads, modular event type, invalid-inventory/construction-resource failures and detached migration entry are the bounded public closures recorded by the child. The CVN-2 compiler/catalog, nine-field ABI and SDK `8/34` exports remain exact.
 
-**Exit:** two synthetic modules prove one atomic multi-effect transaction through the existing bus/history/replay/event owner, integrated factory/gateway/replay binding, missing/incompatible/future/mixed block matrices, migration round-trip, validator/classifier call-count rules, deterministic module assessments and privacy-safe failures.
+**Exit:** two synthetic modules prove one atomic multi-effect transaction through the existing bus/history/replay/event owner, integrated factory/gateway/replay binding, public-path unavailable/incompatible/future/unknown/mixed block matrices, migration round-trip, validator/classifier call-count rules, deterministic module assessments and privacy-safe failures.
 
 ### CVN-7 — Core VNext Compatibility, Reliability and Scale Gate
 

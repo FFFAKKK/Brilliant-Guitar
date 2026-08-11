@@ -2,7 +2,7 @@
 
 ## 1. Design Status
 
-`PLANNING CONTRACT / INDEPENDENT PLANNING REVIEW PENDING / PRODUCTION IMPLEMENTATION AUTHORIZATION FALSE`
+`BOUNDED PLANNING REPAIR / TARGETED INDEPENDENT REREVIEW PENDING / PRODUCTION IMPLEMENTATION AUTHORIZATION FALSE`
 
 This document defines the implementation boundary for `CVN-FC-112`, `CVN-FC-120`, `CVN-FC-121` and `CVN-FC-122`. It consumes accepted CVN-1 and CVN-2 behavior. Any implementation detail that changes a declaration, failure, order, cap, owner or allowlist below returns to planning.
 
@@ -14,8 +14,17 @@ accepted CVN-2 static official entries + strict manifest
                          v
              KernelIntegratedCatalog
              - immutable public handle
-             - private catalog state
-             - private assemblyIdentity
+             - private catalog state/identity
+                         |
+composition-root KernelKnownRequirementInventoryV1
+             - strict data only
+             - installed + absent requirements
+                         |
+                         v
+        private CVN-6 runtime assembly state
+        - catalog identity + canonical inventory key
+        - frozen requirement inventory/index
+        - private runtime assemblyIdentity
                          |
            +-------------+------------------+
            |             |                  |
@@ -28,7 +37,7 @@ accepted CVN-2 static official entries + strict manifest
           existing CVN-1 session/history/event owner
 ```
 
-The catalog is supplied by a composition root and is already all-or-nothing. CVN-6 never recompiles or widens its contribution ABI. It creates a session-bound consumer of that catalog. Core remains the sole document, transaction, history, replay and event authority.
+The catalog and known-requirement inventory are supplied by a composition root. CVN-6 never recompiles the catalog, changes its private state or widens its contribution ABI. It strictly normalizes the independent inventory while constructing a session-bound runtime consumer. Core remains the sole document, transaction, history, replay and event authority.
 
 The post-Core Product Host `Application Assembly` remains a separate future object. It selects Core, official-domain and service providers for a product session. CVN-6 owns only the internal catalog identity used by Core integrated runtime components.
 
@@ -62,7 +71,59 @@ The following accepted names and fields remain authoritative:
 
 Core-only constructors, results, gateway overloads and `replayCoreCommands()` remain exact.
 
-### 3.2 Integrated Registry construction
+### 3.2 Known-requirement inventory closure
+
+CVN-6 adds one application-facing data type. It is not a Module SDK export and does not change the CVN-2 compiler or catalog ABI:
+
+```ts
+export interface KernelKnownRequirementInventoryV1 {
+  readonly inventoryVersion: 1;
+  readonly requirements: readonly ExtensionRuntimeRequirementV1[];
+}
+```
+
+The accepted catalog-only integrated signatures remain exact. CVN-6 adds explicit composition-root overloads on existing runtime names:
+
+```ts
+export namespace CommandBus {
+  function createIntegrated(
+    initialDocument: ScoreDocument,
+    catalog: KernelIntegratedCatalog,
+    knownRequirements: unknown,
+  ): IntegratedCommandBusCreationResult;
+}
+
+export function createKernelRegistry(
+  catalog: KernelIntegratedCatalog,
+  knownRequirements: unknown,
+): KernelRegistryCreationResult;
+
+export function replayKernelCommands(
+  initialDocument: ScoreDocument,
+  acceptedCommands: readonly unknown[],
+  catalog: KernelIntegratedCatalog,
+  knownRequirements: unknown,
+): ReplayKernelCommandsResult;
+```
+
+The catalog-only forms derive an installed-only inventory from accepted contribution requirements. The explicit forms are the only public path that can retain an absent official requirement and therefore construct `required-contribution-unavailable`.
+
+The explicit inventory is an exact record with `inventoryVersion: 1` and one dense `requirements` Array. Each item reuses the exact `ExtensionRuntimeRequirementV1` data contract and contains no callbacks, registration entries, handles, paths or dynamic imports. Descriptor-first/no-getter/no-throw decoding accepts only ordinary or null-prototype data records and rejects symbols, accessors, extra fields, sparse arrays, cycles, invalid prototypes, mutable aliases and altered inspection primordials. The accepted shared capture budgets remain depth `64` and total own properties `1,048,576`.
+
+Normalization and parity rules are fixed:
+
+1. zero through 1,024 requirement rows are allowed; each version list contains one through 256 positive safe integers;
+2. `requirementVersion` is exactly `1`, `requiredForWrite` is exactly `true`, IDs/namespaces use the accepted CVN-2 lexical rules, versions are unique and normalized ascending;
+3. namespace is globally unique in the inventory; any duplicate namespace, including an identical duplicate, rejects;
+4. normalized row order is namespace, module ID, contribution ID by captured code-unit comparison;
+5. every installed CVN-2 requirement appears exactly once with identical namespace/module/contribution/version/required-for-write data;
+6. an installed namespace naming another module/contribution or a conflicting version list rejects;
+7. additional rows may name absent modules/contributions but never install or expose their descriptors/callbacks;
+8. missing installed rows, malformed data, duplicate rows, over-cap input or parity conflict rejects before runtime publication.
+
+CommandBus/replay construction maps every inventory decode/parity/cap failure to `{code:"command.invalid-requirement-inventory"}`. Registry construction maps the same conditions to existing `registry.invalid-startup-input`. All module callback families remain at zero. No partial Registry, bus, gateway, replay session or cached assembly becomes observable.
+
+### 3.3 Integrated Registry construction
 
 The existing manifest overload remains available and behaviorally exact. CVN-6 adds an overload on the same runtime function:
 
@@ -74,16 +135,22 @@ export function createKernelRegistry(
 export function createKernelRegistry(
   catalog: KernelIntegratedCatalog,
 ): KernelRegistryCreationResult;
+
+export function createKernelRegistry(
+  catalog: KernelIntegratedCatalog,
+  knownRequirements: unknown,
+): KernelRegistryCreationResult;
 ```
 
 Runtime selection is private and deterministic:
 
 1. an object found in the accepted CVN-2 catalog WeakMap uses integrated construction;
 2. every other input follows the existing strict manifest decoder;
-3. a structural catalog lookalike therefore returns `registry.invalid-startup-input`;
-4. unexpected internal conditions retain `registry.internal-error`.
+3. the explicit two-argument form requires an authentic catalog before inventory inspection; a structural catalog lookalike returns `registry.invalid-startup-input`;
+4. inventory decode/parity follows catalog authenticity and also returns `registry.invalid-startup-input`;
+5. unexpected internal conditions retain `registry.internal-error`.
 
-Integrated Registry state contains the accepted Core compiled registry state plus canonical summaries for selected official domain modules and commands. Existing selectors and their capabilities remain Core-owned. The Registry stores the catalog `assemblyIdentity` privately; it exposes no catalog or identity field.
+Integrated Registry state contains the accepted Core compiled registry state plus canonical summaries for installed official domain modules and commands. Inventory-only absent requirements never create Registry summaries or gateways. Existing selectors and their capabilities remain Core-owned. The Registry stores the CVN-6 runtime `assemblyIdentity` privately; it exposes no catalog, inventory or identity field.
 
 `KernelRegistry.createGateway(moduleId, bus)` resolves overloads from private receiver/bus state:
 
@@ -95,7 +162,7 @@ Integrated Registry state contains the accepted Core compiled registry state plu
 
 The check occurs before a gateway is published. An integrated gateway keeps existing `summary`, all six typed `select` overloads and `subscribe`; only submit/undo/redo/read return integrated result types.
 
-### 3.3 Integrated event contract
+### 3.4 Integrated event contract
 
 ```ts
 export interface KernelCommandIdentity {
@@ -125,7 +192,7 @@ export type IntegratedKernelEvent =
 
 Core-only `KernelEvent` stays exact. Integrated committed events retain `eventVersion`, `eventSequence`, `documentId`, `documentVersion`, event type, cause and affected entities. Core commands use `{kind:"core"}`. Module commands use the frozen module/contribution identity from the route. Undo/redo carry the identity stored with the original semantic command. Dirty-state events retain the existing exact shape.
 
-### 3.4 Integrated resource failure
+### 3.5 Integrated resource failure
 
 CVN-6 extends `KernelCommandFailure` additively while preserving `CommandFailure` for Core-only callers:
 
@@ -152,6 +219,7 @@ The exact construction union after CVN-6 is:
 ```ts
 type KernelCommandBusCreationFailure =
   | CommandBusCreationFailure
+  | { readonly code: "command.invalid-requirement-inventory" }
   | Extract<
       KernelContributionFailure,
       {
@@ -170,7 +238,7 @@ type KernelCommandBusCreationFailure =
     };
 ```
 
-### 3.5 Detached migration contract
+### 3.6 Detached migration contract
 
 ```ts
 export interface KernelExtensionMigrationRequestV1 {
@@ -232,7 +300,7 @@ export function migrateKernelExtension(
 
 The new migration codes are added to `MigrationFailureCode` so `MigrationReport` can expose one stable mechanism issue. Granular module semantic issues remain in the failure's `issues` field and are deeply frozen. Application-facing error classes remain absent.
 
-### 3.6 Application export allowlist
+### 3.7 Application export allowlist
 
 Runtime additions are exactly:
 
@@ -244,6 +312,7 @@ Expected application runtime exports: 51, from the accepted 49 baseline. `Comman
 New application type exports are exactly:
 
 - all GD-0 integrated types listed in section 3.1 that are not already exported;
+- `KernelKnownRequirementInventoryV1`;
 - `KernelCommandIdentity`;
 - `IntegratedKernelEvent`;
 - `KernelExtensionMigrationRequestV1`;
@@ -252,23 +321,39 @@ New application type exports are exactly:
 
 The resource branch is part of exported `KernelCommandFailure` / `KernelCommandBusCreationFailure`; no separate public resource-helper name is added.
 
-The Module SDK remains exactly 8 runtime and 34 type exports. It receives no new migration registration field or public runtime object.
+The Module SDK remains exactly 8 runtime and 34 type exports. `KernelKnownRequirementInventoryV1` belongs only to the application composition boundary; the SDK receives no inventory/compiler overload, migration registration field or public runtime object.
 
 ## 4. Private Assembly and Runtime State
 
 ### 4.1 Authenticity
 
-CVN-2's private `WeakMap<KernelIntegratedCatalog, KernelIntegratedCatalogState>` remains the sole authenticity source. CVN-6 reads state through the accepted internal accessor. A brand property alone never grants authority.
+CVN-2's private `WeakMap<KernelIntegratedCatalog, KernelIntegratedCatalogState>` remains the sole catalog authenticity source. CVN-6 reads that state through the accepted internal accessor. A brand property alone never grants authority. The data-only inventory is not independently authentic and never modifies that WeakMap.
 
-Private state for every integrated component contains the same `assemblyIdentity` object. Registry, bus and gateway instances use WeakMap-backed state; public object properties carry no identity. Replay obtains the same identity from its catalog and constructs one ephemeral integrated session.
+CVN-6 normalizes the inventory to a frozen row array plus a frozen null-prototype namespace index. A collision-free length-prefixed canonical key covers inventory version, namespace, module ID, contribution ID, required-for-write and the normalized version sequence. A private cache keyed first by the authentic catalog identity and then by this canonical key returns one `KernelIntegratedRuntimeAssemblyState` with a fresh private runtime `assemblyIdentity`. Equal normalized inventory values share the runtime identity within that catalog; any value difference produces a different runtime identity. No hash collision or caller object identity participates.
+
+Private Registry, bus and gateway WeakMap state contains that same runtime `assemblyIdentity` and frozen inventory projection; public properties carry neither. Replay resolves the identical catalog+inventory runtime assembly and constructs one ephemeral integrated session. The CVN-2 catalog `assemblyIdentity` remains unchanged and is only one input to this CVN-6 runtime assembly binding.
 
 ### 4.2 Core-only default assembly
 
-`DEFAULT_CORE_EXECUTION_ASSEMBLY` remains the default for existing `CommandBus.create`, Core Registry and Core replay. Integrated construction supplies a catalog-bound execution adapter explicitly. There is no global active catalog, mutable default or registration-time switch.
+`DEFAULT_CORE_EXECUTION_ASSEMBLY` remains the default for existing `CommandBus.create`, Core Registry and Core replay. Catalog-only integrated construction supplies the authentic catalog plus its derived installed-only inventory. Explicit integrated construction supplies the same catalog plus the normalized composition-root inventory. There is no global active catalog, mutable default or registration-time switch.
 
 ### 4.3 One owner
 
 The integrated path extends the existing `KernelSessionState`/CommandBus coordination. It may use a private mode or generic state wrapper, but it must not introduce a second document cell, history stack, dirty/checkpoint identity, event sequence or subscriber store. One successful semantic operation calls one CVN-1 adoption owner.
+
+### 4.4 Construction priority
+
+`CommandBus.createIntegrated` and `replayKernelCommands` preserve the existing document-first construction behavior:
+
+1. strict initial document decode and Core semantic validation;
+2. authentic catalog lookup;
+3. explicit inventory decode, normalization and caps, or installed-only derivation for the catalog-only form;
+4. inventory/catalog parity;
+5. private runtime assembly resolution;
+6. compatibility facts and construction caps;
+7. applicable installed module validation/classification before publication.
+
+`createKernelRegistry(catalog, inventory)` has no document stage: authentic catalog lookup precedes inventory inspection, then inventory normalization/parity, runtime assembly resolution and Registry publication. A later gateway pairing compares the private runtime identity before module/capability lookup. These orders prevent forged catalogs from authorizing inventory data and prevent invalid inventories from producing partial integrated state.
 
 ## 5. Module Routing and Effects
 
@@ -349,11 +434,11 @@ Availability preflight precedes empty-history handling. Undo/redo uses stored pr
 
 ### 6.6 Replay
 
-Replay accepts semantic envelopes and an authentic catalog. It creates an ephemeral integrated session, re-routes each input through the same runtime and returns detached results/final document/availability. It accepts no stored effects or history snapshots. Empty replay succeeds unchanged even when availability is read-only; the first attempted write rejects at its exact index. Replay creates no public subscription surface.
+Replay accepts semantic envelopes, an authentic catalog and either the derived installed-only inventory or one explicit inventory input. It resolves the same private runtime assembly as live construction, creates an ephemeral integrated session, re-routes each input through the same runtime and returns detached results/final document/availability. It accepts no stored effects or history snapshots. Empty replay succeeds unchanged even when availability is read-only; the first attempted write rejects at its exact index. Replay creates no public subscription surface.
 
 ## 7. Compatibility and Canonical Facts
 
-Compatibility is evaluated for every persisted block covered by a catalog requirement:
+Compatibility is evaluated by first reading the CVN-6 runtime `knownRequirementByNamespace` and then, independently, the installed CVN-2 `namespaceIndex`:
 
 | Block | Contribution | Result |
 |---|---|---|
@@ -362,7 +447,7 @@ Compatibility is evaluated for every persisted block covered by a catalog requir
 | unlisted/future version | present or absent | incompatible fact |
 | undeclared namespace | any | opaque Core V1 preservation |
 
-A declared namespace with no persisted block creates no fact. A contribution owning compatible and incompatible blocks receives only the compatible block-scoped view; the excluded payload remains untouched. Unrelated incompatible blocks do not receive callbacks.
+A known inventory namespace with no persisted block creates no fact. Inventory hit + listed version + installed exact contribution is compatible. Inventory hit + listed version + no installed contribution is unavailable. Inventory hit + unlisted/future version is incompatible regardless of contribution presence. Inventory miss is unknown opaque data and cannot be upgraded to unavailable by a registration entry ignored by CVN-2. A contribution owning compatible and incompatible blocks receives only the compatible block-scoped view; an absent contribution has no callback object and every decoder/validator/classifier/command/effect/fact callback remains zero; the excluded payload remains untouched. Unrelated incompatible blocks do not receive callbacks.
 
 Canonical comparison keys are:
 
@@ -374,7 +459,7 @@ Canonical comparison keys are:
 6. contribution ID;
 7. reason, incompatible before unavailable.
 
-The complete public fact tuple is the deduplication key. Catalog construction already guarantees that an identical ownership identity cannot declare conflicting supported-version lists.
+The complete public fact tuple is the deduplication key. Inventory namespace uniqueness and installed-requirement parity guarantee that one known namespace cannot resolve to conflicting identities or supported-version lists.
 
 ## 8. Resource and Privacy Boundaries
 
@@ -385,8 +470,10 @@ The complete public fact tuple is the deduplication key. Catalog construction al
 | compatibility facts | 131,072 | resource/compatibility-facts |
 | issues from one callback | 1,024 | contribution-contract-violation |
 | aggregate module issues | 4,096 | resource/module-issues |
+| known requirement inventory rows | 1,024 | command invalid-inventory / Registry invalid-startup-input |
+| versions per inventory row | 256 | command invalid-inventory / Registry invalid-startup-input |
 
-`actual` is the first observed count exceeding the limit, so exact boundary+1 tests assert 131,073 or 4,097. CVN-2 startup limits remain 64 modules, 256 contributions, 4,096 command descriptors, 4,096 effect definitions, 1,024 namespaces and 256 supported versions per requirement.
+`actual` is the first observed count exceeding the transaction limit, so exact boundary+1 tests assert 131,073 or 4,097. Inventory cap failures use their fixed non-resource failure codes and expose no partial runtime. CVN-2 startup limits remain 64 modules, 256 contributions, 4,096 command descriptors, 4,096 effect definitions, 1,024 installed namespaces and 256 supported versions per requirement. The CVN-6 inventory independently permits at most 1,024 globally unique known namespaces and does not change installed module/contribution counts.
 
 Public data may contain only stable failure code, module/contribution identity, canonical address/path, numeric limit, canonical fact and frozen diagnostic/issue fields. It contains no stack, absolute path, thrown value, callback, internal effect, catalog handle, assembly object, full document or extension/command payload.
 
@@ -419,6 +506,8 @@ The transformed document passes strict encode/decode, Core semantic validation a
 
 The function receives no active bus or Registry and mutates no ready catalog. Physical file replacement, persistence transaction, autosave and crash recovery remain future service work.
 
+`migrateKernelExtension` intentionally remains catalog-only because it can target only an installed accepted effect definition. It does not publish complete/incomplete session availability, does not reinterpret inventory-only requirements as migration targets and preserves every unrelated block exactly.
+
 ## 10. Synthetic Evidence Model
 
 The fixture installs two neutral official modules:
@@ -429,6 +518,8 @@ The fixture installs two neutral official modules:
 | `fixture.part-domain` | `fixture.part-domain.commands` | `fixture.part.extension` | part | WrittenPitch + Part block |
 
 Each command is one semantic operation owned by one contribution and contains two ordered effects. Both modules are installed together so every candidate proves catalog-order validation/classification and canonical fact ordering. A single submit never combines commands owned by both modules; that aggregate shape belongs to CVN-5.
+
+Availability fixtures use the explicit public runtime overloads rather than catalog-private state mutation: unavailable-only uses an authentic catalog that omits one contribution plus an inventory retaining its exact requirement; incompatible-only persists an unlisted version for an inventory namespace; mixed combines those two blocks; unknown persists a namespace absent from inventory. An unselected static entry remains ignored by CVN-2, installs no callback and does not itself make a namespace known.
 
 ## 11. Production File Allowlist
 
@@ -449,7 +540,6 @@ Each command is one semantic operation owned by one contribution and contains tw
 - `src/core-kernel/commands/effects.ts`
 - `src/core-kernel/session/runtime.ts`
 - `src/core-kernel/registry/integrated-contracts.ts`
-- `src/core-kernel/registry/domain-catalog.ts`
 - `src/core-kernel/registry/assembly.ts`
 - `src/core-kernel/registry/runtime.ts`
 - `src/core-kernel/registry/gateway.ts`
@@ -465,7 +555,7 @@ Each command is one semantic operation owned by one contribution and contains tw
 - `src/core-kernel/reports/build-report.ts`
 - `src/core-kernel/errors/kernel-error.ts`
 
-Any source addition outside this list is a planning-review event. `src/core-kernel/module-sdk/**`, `migrate-score-document.ts`, Score schema, physical IO and product-layer directories remain protected.
+Any source addition outside this list is a planning-review event. `src/core-kernel/module-sdk/**`, `src/core-kernel/registry/domain-catalog.ts`, `migrate-score-document.ts`, Score schema, physical IO and product-layer directories remain protected. CVN-6 consumes the accepted catalog accessor and does not edit the CVN-2 compiler or private catalog-state shape.
 
 ## 12. Planned Test Allowlist
 

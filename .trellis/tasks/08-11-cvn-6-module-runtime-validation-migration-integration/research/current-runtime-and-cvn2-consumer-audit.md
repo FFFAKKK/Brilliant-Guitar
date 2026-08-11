@@ -2,29 +2,19 @@
 
 ## Existing Runtime Owner
 
-The accepted implementation already centralizes mutable session state in the current `CommandBus` and `KernelSessionState` path:
+The accepted implementation centralizes mutable session state in the current `CommandBus` and `KernelSessionState` path:
 
 - `CommandBus` owns submit/undo/redo/read/markPersisted/subscribe;
-- `createCommandRuntime(initialDocument, assembly)` executes through an explicit assembly and defaults to the Core-only assembly;
+- `createCommandRuntime(initialDocument, assembly)` executes through an explicit assembly and defaults to Core-only;
 - history, redo invalidation, version, checkpoint/dirty identity and event sequence are one state package;
 - `replayCoreCommands` is detached but reuses the Core command runtime;
-- Registry gateway currently binds an authentic Registry receiver to an authentic Core-only bus.
+- Registry gateway binds an authentic Registry receiver to an authentic bus.
 
-CVN-6 must extend this owner rather than wrap it with a second document or history store.
+CVN-6 extends this owner rather than wrapping it with a second document or history store.
 
-## Accepted CVN-2 Input
+## Accepted CVN-2 Input and Reachability Gap
 
-CVN-2 publishes:
-
-- a branded, frozen `KernelIntegratedCatalog` handle;
-- private `KernelIntegratedCatalogState` in a WeakMap;
-- one private `assemblyIdentity` per accepted catalog;
-- canonical modules and nine-field contributions;
-- command, effect and namespace indexes;
-- callbacks captured but never executed during compilation;
-- private access through `getKernelIntegratedCatalogState`.
-
-Accepted contribution fields are exactly:
+CVN-2 publishes a branded frozen catalog, private WeakMap state, one catalog identity, selected modules/contributions, command/effect/namespace indexes and captured callbacks. Its contribution fields remain exactly:
 
 ```text
 apiVersion
@@ -38,23 +28,24 @@ classify
 effects
 ```
 
-Accepted effect requests are only Core WrittenPitch replacement and owned extension operations. An effect definition already owns a strict payload decoder and transformer, which CVN-6 can consume for both live effects and an explicit detached migration call without adding a tenth contribution field.
+`ExtensionBlock` stores only namespace, schemaVersion, owner and payload. CVN-2 ignores static registration entries not selected by the manifest, and `KernelIntegratedCatalogState.namespaceIndex` is built only from selected contributions. Therefore catalog state alone cannot distinguish an absent official contribution from an unknown namespace. Adding data to the CVN-2 compiler or catalog would reopen accepted `CVN-FC-110/111` and is excluded by this repair.
 
-## Public Gaps Owned by CVN-6
+## CVN-6-Owned Closure
 
-GD-0 froze integrated bus, gateway and replay names but left four bounded implementation-facing gaps requiring a single planning decision:
+CVN-6 owns an independent, frozen, data-only `KernelKnownRequirementInventoryV1` supplied by the composition root to explicit integrated Registry, CommandBus and replay overloads. It reuses `ExtensionRuntimeRequirementV1` rows but does not install callbacks or mutate CVN-2 state. The private runtime assembly combines authentic catalog identity with normalized inventory content.
 
-1. how an integrated Registry is constructed from the same catalog;
-2. the exact modular committed event type;
-3. construction-time resource failure for initial facts/issues;
-4. the callable detached extension-migration entry and result union.
+This makes the fixed states reachable:
 
-This task closes those four gaps in `design.md` and synchronizes the active spec as a CVN-6 planning candidate. Archived CVN-2 and GD-0 files remain immutable.
+- inventory hit + supported version + installed contribution: compatible;
+- inventory hit + supported version + absent contribution: unavailable;
+- inventory hit + unsupported version: incompatible;
+- inventory miss: unknown opaque Core data.
 
 ## Preserved Boundaries
 
-- Core-only default assembly and public behavior remain exact.
-- Module SDK exports and contribution ABI remain exact.
+- Core-only and catalog-only integrated behavior remain exact.
+- Module SDK exports, contribution ABI, catalog compilation and unselected-entry behavior remain exact.
+- CVN-1 remains the only session/history/dirty/replay/event owner.
 - Product/Application Assembly ownership remains post-Core Workbench/Editor Session.
 - CVN-5 remains the only owner of aggregate cross-module batch commands.
 - Persisted Score schema and physical IO remain unchanged.

@@ -2,10 +2,10 @@
   "id": "cvn-6-module-runtime-validation-migration-integration",
   "name": "cvn-6-module-runtime-validation-migration-integration",
   "title": "CVN-6 Module Runtime, Validation and Migration Integration",
-  "description": "Plan the assembly-bound official-module runtime that consumes accepted CVN-2 and reuses the CVN-1 bus, gateway, replay, session, history and event owner while completing compatibility, validation, diagnostics and detached extension migration.",
+  "description": "Plan the assembly-bound official-module runtime that consumes accepted CVN-2 plus a CVN-6-owned known-requirement inventory, reuses the CVN-1 bus/gateway/replay/session/history/event owner, and completes compatibility, validation, diagnostics and detached extension migration.",
   "status": "planning",
   "dev_type": null,
-  "scope": "Planning and later independently gated implementation of CVN-FC-112/120/121/122 only; CVN-2 ABI remains frozen; CVN-5 batch, CVN-7 qualification, Guitar Domain, product services/host, public Extension Host, dynamic lifecycle and persisted-format work excluded",
+  "scope": "Planning and later independently gated implementation of CVN-FC-112/120/121/122 only; CVN-2 ABI/compiler/catalog remain frozen; CVN-5 batch, CVN-7 qualification, Guitar Domain, product services/host, public Extension Host, dynamic lifecycle and persisted-format work excluded",
   "package": "core-kernel",
   "priority": "P1",
   "creator": "ATOM",
@@ -32,6 +32,7 @@
     ".trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/research/current-runtime-and-cvn2-consumer-audit.md",
     ".trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/research/gd0-cvn6-contract-closure.md",
     ".trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/research/cvn6-file-and-test-ownership-matrix.md",
+    ".trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/research/known-requirement-inventory-closure.md",
     ".trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/research/planning-candidate-self-audit.md",
     ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/feature-contract-matrix.md",
     ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-roadmap-and-stage-plan.md",
@@ -41,9 +42,9 @@
     ".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/",
     ".trellis/spec/core-kernel/backend/domain-transaction-integration.md"
   ],
-  "notes": "FORMAL CVN-6 PLANNING CANDIDATE / INDEPENDENT PLANNING REVIEW PENDING / UNIFIED BASE 050AF1E WITH ACCEPTED-ARCHIVED CVN-2 AND POST-CORE ROADMAP ANCESTRY / OWNS CVN-FC-112 AND CVN-FC-120..122 / TASK START FALSE / PRODUCTION IMPLEMENTATION AUTHORIZATION FALSE / CVN-5 AND CVN-7 REMAIN DEPENDENCY-GATED.",
+  "notes": "FORMAL CVN-6 PLANNING BOUNDED REPAIR / INITIAL INDEPENDENT REVIEW P0/P1/P2 0/1/0 / KNOWN-REQUIREMENT INVENTORY MOVED TO CVN-6 RUNTIME CONSTRUCTION WITH CVN-2 COMPILER ABI SDK AND CATALOG EXACT / TARGETED REREVIEW PENDING / TASK START FALSE / PRODUCTION IMPLEMENTATION AUTHORIZATION FALSE / CVN-5 AND CVN-7 REMAIN DEPENDENCY-GATED.",
   "meta": {
-    "planning_stage": "formal_candidate_review_pending",
+    "planning_stage": "bounded_inventory_runtime_repair_targeted_rereview_pending",
     "planning_base_commit": "050af1eed067300f2e2fb0339eff6f2430e43b36",
     "required_parent_commits": [
       "302dafe451bd4e10f4978d3076e367473b2fa3ae",
@@ -90,27 +91,64 @@
       "migrateKernelExtension"
     ],
     "runtime_owner": "existing_CVN1_CommandBus_KernelSessionState_history_dirty_event_owner",
-    "assembly_model": "startup_frozen_catalog_bound_process_local_private_identity",
+    "assembly_model": "authentic_cvn2_catalog_plus_cvn6_canonical_known_requirement_inventory_private_runtime_identity",
+    "known_requirement_inventory": {
+      "owner": "CVN-6 application integrated runtime construction",
+      "public_type": "KernelKnownRequirementInventoryV1",
+      "explicit_inputs": [
+        "CommandBus.createIntegrated",
+        "createKernelRegistry",
+        "replayKernelCommands"
+      ],
+      "catalog_only_behavior": "derive_installed_requirements_exactly",
+      "row_shape": "ExtensionRuntimeRequirementV1",
+      "row_inclusive_limit": 1024,
+      "versions_per_row_inclusive_limit": 256,
+      "installed_requirement_rule": "exact_complete_parity",
+      "duplicate_rule": "namespace_globally_unique_identical_duplicate_rejected",
+      "canonical_order": "namespace_moduleId_contributionId_then_versions_ascending",
+      "command_failure": "command.invalid-requirement-inventory",
+      "registry_failure": "registry.invalid-startup-input",
+      "installs_callbacks_or_descriptors": false
+    },
     "migration_model": "versioned_detached_owner_scoped_effect_definition_reuse",
     "resource_limits": {
       "effects_per_transaction": 131072,
       "affected_addresses": 131072,
       "compatibility_facts": 131072,
       "issues_per_callback": 1024,
-      "aggregate_module_issues": 4096
+      "aggregate_module_issues": 4096,
+      "known_requirement_inventory_rows": 1024,
+      "known_requirement_versions_per_row": 256
     },
     "task_start_run": false,
     "production_implementation_authorized": false,
     "planning_artifacts_complete": true,
-    "planning_self_audit": "passed_2026-08-11_p0_0_p1_0_p2_0",
+    "planning_self_audit": "bounded_inventory_runtime_repair_passed_residual_p0_0_p1_0_p2_0_targeted_rereview_pending",
     "independent_planning_review": "pending",
-    "independent_planning_review_findings": null,
+    "independent_planning_review_findings": {
+      "initial_verdict": "return_for_bounded_planning_repair",
+      "P0": 0,
+      "P1": 1,
+      "P2": 0,
+      "finding": "required-contribution-unavailable_missing_publicly_constructible_metadata_source",
+      "repair": "independent_cvn6_known_requirement_inventory_bound_at_integrated_runtime_construction",
+      "targeted_rereview": "pending"
+    },
     "future_cvn5_batch_status": "waiting_for_accepted_cvn6",
     "future_cvn7_status": "waiting_for_accepted_archived_cvn0_through_cvn6",
     "post_core_product_scope": "excluded_and_retained_by_post_core_roadmap",
     "dynamic_module_lifecycle": false,
     "persisted_format_change": false,
-    "planning_candidate_commit": null,
-    "planning_self_audit_verification": "ancestry2_trellis21_22_parent3_3_product0_0_postcore15_16_json_jsonl_unique_child1_diffcheck_typecheck_build_full350_gd0_layer_a_b_cvn6_parse_protected0"
+    "planning_candidate_commit": "a8695286c2674a0605b52689b2a4b3bc12d516aa",
+    "bounded_repair_commit": null,
+    "planning_self_audit_verification": "ancestry2_trellis22_23_parent3_3_product0_0_postcore15_16_json_jsonl_unique_child1_diffcheck_typecheck_build_full350_gd0_layer_a_b_cvn6_parse_protected0_postcore0",
+    "cvn2_catalog_compiler_changed": false,
+    "cvn2_catalog_private_state_changed": false,
+    "planned_application_type_additions": [
+      "KernelKnownRequirementInventoryV1"
+    ],
+    "targeted_planning_rereview": "pending",
+    "bounded_repair_base_commit": "a8695286c2674a0605b52689b2a4b3bc12d516aa"
   }
 }

@@ -40,11 +40,12 @@ Core Kernel            -> zero imports from Guitar Domain
 
 - `CommandBus.create(initialDocument)` and `replayCoreCommands()` retain their accepted Core V1 types and behavior.
 - `CommandBus.createIntegrated(initialDocument, catalog)` binds the existing bus implementation to one immutable `KernelIntegratedCatalog`. It is not a second bus, state store, history stack, replay owner, or event system.
+- The accepted `compileOfficialModuleCatalogV1`, its catalog-private state and unselected-entry behavior remain exact. After CVN-6 planning acceptance, additive integrated Registry/bus/replay overloads may accept one strict data-only known-requirement inventory beside the authentic catalog; catalog-only forms remain exact and derive an installed-only inventory.
 - The product composition root supplies statically linked official compiled entries beside a strict startup manifest. The manifest contains data only and never carries functions, paths, URLs, scripts, or dynamic imports.
 - The additive registration entry is `kernel.domain-commands.v1`. It reuses approved command/read/event capabilities and adds explicit namespace ownership; it does not create a generic document-mutation capability.
 - Catalog construction is all-or-nothing and validates identities, API versions, trust/runtime, capabilities, descriptor/binding parity, command IDs, effect kinds, namespace ownership, profiles, and exact-version compatibility declarations. A compiled binding must match the selected requirement identity and exact supported-version list; mismatch fails construction before any handler is callable.
 - The successful catalog and every nested public data object are detached and deeply frozen. Ready catalogs have no register, unregister, replace, version, or change-event API.
-- Integrated registry, gateway, bus, and replay must share one private assembly identity. Cross-assembly or Core-only/integrated pairing rejects before exposing a session.
+- Integrated registry, gateway, bus, and replay must share one private runtime assembly identity derived from authentic catalog identity plus canonical known-requirement inventory data. Catalog/inventory cross-assembly or Core-only/integrated pairing rejects before exposing a session.
 
 ## Minimum Public Integration Surface
 
@@ -271,12 +272,37 @@ The `CommandBus` namespace declaration represents an additive static factory on 
 
 ## CVN-6 Planning-Candidate Contract Closure
 
-The formal CVN-6 child is `.trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/`. Its current state is `planning`; independent planning review is pending; task start and production implementation authorization are false. The following code block is the bounded CVN-6 planning candidate that closes construction, event, resource and detached-migration details around the accepted GD-0 declarations above. The archived GD-0 `public-contract` fence remains the accepted prerequisite; this block becomes implementation authority only after CVN-6 planning acceptance.
+The formal CVN-6 child is `.trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/`. Its current state is `planning`; the initial independent review returned `0/1/0` and the bounded known-requirement inventory repair awaits targeted re-review; task start and production implementation authorization are false. The following code block is the bounded CVN-6 planning candidate that closes construction, event, resource and detached-migration details around the accepted GD-0 declarations above. The archived GD-0 `public-contract` fence remains the accepted prerequisite; this block becomes implementation authority only after CVN-6 planning acceptance.
 
 ```typescript cvn6-planning-contract
+interface KernelKnownRequirementInventoryV1 {
+  readonly inventoryVersion: 1;
+  readonly requirements: readonly ExtensionRuntimeRequirementV1[];
+}
+
+declare namespace CommandBus {
+  function createIntegrated(
+    initialDocument: ScoreDocument,
+    catalog: KernelIntegratedCatalog,
+    knownRequirements: unknown,
+  ): IntegratedCommandBusCreationResult;
+}
+
 declare function createKernelRegistry(
   catalog: KernelIntegratedCatalog,
 ): KernelRegistryCreationResult;
+
+declare function createKernelRegistry(
+  catalog: KernelIntegratedCatalog,
+  knownRequirements: unknown,
+): KernelRegistryCreationResult;
+
+declare function replayKernelCommands(
+  initialDocument: ScoreDocument,
+  acceptedCommands: readonly unknown[],
+  catalog: KernelIntegratedCatalog,
+  knownRequirements: unknown,
+): ReplayKernelCommandsResult;
 
 interface KernelCommandIdentity {
   readonly commandId: string;
@@ -315,6 +341,16 @@ type CVN6KernelIntegratedResourceFailureAddition = {
   readonly limit: number;
   readonly actual: number;
 };
+
+// Planning notation only; inserted into KernelCommandBusCreationFailure.
+type CVN6KernelCommandBusCreationFailureAddition =
+  | { readonly code: "command.invalid-requirement-inventory" }
+  | {
+      readonly code: "command.resource-limit-exceeded";
+      readonly limitKind: "compatibility-facts" | "module-issues";
+      readonly limit: number;
+      readonly actual: number;
+    };
 
 interface KernelExtensionMigrationRequestV1 {
   readonly migrationVersion: 1;
@@ -373,9 +409,11 @@ declare function migrateKernelExtension(
 ): KernelExtensionMigrationResult;
 ```
 
-The existing manifest overload of `createKernelRegistry` remains exact. An authentic catalog is recognized only through CVN-2 private state; a structural lookalike follows existing manifest validation. Integrated component identity mismatch remains `registry.assembly-mismatch` or `command.assembly-mismatch` as owned by the receiving boundary. Initial compatibility-fact/module-issue overflow is included in `KernelCommandBusCreationFailure`; effects and affected-address failures apply only after an integrated command begins.
+The accepted catalog compiler, catalog-only integrated signatures and existing manifest overload of `createKernelRegistry` remain exact. The explicit inventory form accepts an exact `inventoryVersion: 1` record with at most 1,024 requirement rows and at most 256 versions per row; shared strict-capture budgets remain depth 64 and 1,048,576 own properties. It is normalized outside CVN-2 catalog state, must contain every installed requirement exactly once with identical data, and may add absent requirements. Malformed, duplicate, over-limit or catalog-parity failure returns `command.invalid-requirement-inventory` from bus/replay construction and `registry.invalid-startup-input` from Registry construction; no runtime object or callback activity escapes. A private CVN-6 cache combines authentic catalog identity with a collision-free canonical inventory key so Registry, bus, gateway and replay share one runtime assembly identity; catalog or inventory mismatch remains `registry.assembly-mismatch` or `command.assembly-mismatch` at the receiving boundary. Initial compatibility-fact/module-issue overflow is included in `KernelCommandBusCreationFailure`; effects and affected-address failures apply only after an integrated command begins.
 
-Application runtime exports add exactly `replayKernelCommands` and `migrateKernelExtension`, moving the accepted 49-name baseline to 51. Module SDK runtime/type exports remain `8/34`, and `CompiledDomainCommandContributionV1` remains the accepted nine-field shape. The private kernel catalog identity here is distinct from the post-Core Product Host `Application Assembly`.
+Construction priority is global and fixed. CommandBus/replay preserve initial document strict-decode/Core-semantic failure first, then catalog authenticity, inventory decode/caps, installed-requirement parity, runtime assembly resolution, compatibility facts/caps and applicable installed callbacks. Registry has no document stage: catalog authenticity precedes inventory inspection, then parity, assembly resolution and publication. Gateway compares runtime assembly identity before module/capability lookup. Unknown classification occurs only after a valid inventory miss; neither a forged catalog nor an ignored CVN-2 entry can create unavailable authority.
+
+Application runtime exports add exactly `replayKernelCommands` and `migrateKernelExtension`, moving the accepted 49-name baseline to 51. `KernelKnownRequirementInventoryV1` is one application type export only. Module SDK runtime/type exports remain `8/34`, `compileOfficialModuleCatalogV1` remains exact, and `CompiledDomainCommandContributionV1` remains the accepted nine-field shape. The private kernel runtime assembly identity here is distinct from the post-Core Product Host `Application Assembly`.
 
 ## Submission and Transaction Pipeline
 
@@ -418,7 +456,7 @@ Rejected and no-op operations leave document state, version, history, redo depth
 ## Read, Replay, Compatibility, and Completeness
 
 - `supportedSchemaVersions` is nonempty, strictly ascending, duplicate-free, positive safe integers. Compatibility uses exact equality with each target `ExtensionBlock.schemaVersion`; no range, “latest”, downgrade, guess, or implicit migration exists.
-- A declared namespace with no block produces no availability fact. A block with a listed version and absent contribution produces `required-contribution-unavailable`. A block with an unlisted version—including a future version—produces `required-contribution-incompatible` whether or not a contribution is present.
+- "Known" is determined only by the frozen CVN-6 runtime inventory; contribution presence is determined independently by the installed CVN-2 namespace index. A catalog-only integrated call derives an installed-only inventory, preserving accepted behavior. A known namespace with no block produces no availability fact. A block with a listed version and absent contribution produces `required-contribution-unavailable`. A block with an unlisted version—including a future version—produces `required-contribution-incompatible` whether or not a contribution is present. An inventory miss remains unknown opaque Core V1 data.
 - Compatibility is resolved per persisted `ExtensionBlock`. If one contribution owns an exactly compatible block and an incompatible/future block, only the compatible block enters a detached block-scoped view in canonical owner order. The incompatible block is never passed to that contribution's decoder, validator, classifier, command/effect handler, or fact generator.
 - During every applicable pass, an installed contribution with zero compatible blocks receives validator/classifier calls `0/0`. With one or more compatible blocks it receives exactly one `validate` call over Core score read data plus the canonical-owner-ordered filtered compatible view. Only after every applicable validator succeeds and classification begins does each such contribution receive exactly one `classify` call over that same view. If any validator returns semantic issues, throws, or violates its contract, classification does not begin and all classifiers receive zero calls. Initial construction/explicit validation, changed candidates, undo, redo, and replay candidate passes use this same rule. The session remains read-only and validation-incomplete when an excluded block exists; the private handler-input type remains for CVN-2/CVN-6.
 - The full excluded extension envelope and nested JSON data remain unchanged. Writes reject at availability preflight, so command/effect/fact handlers receive zero calls in the degraded session.
@@ -458,7 +496,7 @@ Rejected and no-op operations leave document state, version, history, redo depth
 | Compatible domain validator throws or violates its validator output contract | `command.contribution-internal-error` or `command.contribution-contract-violation`; validator/classifier exactly `1/0` | no classifier runs; complete pre-operation state retained |
 | Read-only submit, undo, redo, or first replay write | deterministic availability failure; operation validator/classifier/write `0/0/0` | preflight rejects before operation validation or handler activity |
 | A later classifier/effect/fact hook violates its data contract or throws/returns a Promise-like value | `command.contribution-contract-violation` or `command.contribution-internal-error` | complete pre-operation state retained; the attempted hook's own call is counted once |
-| Integrated component uses a different/forged catalog identity | `command.assembly-mismatch` or `registry.assembly-mismatch` | reject before session/gateway exposure |
+| Integrated component uses a different/forged catalog or inventory runtime identity | `command.assembly-mismatch` or `registry.assembly-mismatch` | reject before session/gateway exposure |
 | Undeclared opaque extension namespace | accepted Core V1 preservation behavior | writable unless another declared requirement creates a fact; no claim that opaque payload semantics were domain-validated |
 
 ## Good / Base / Bad Cases
@@ -470,7 +508,8 @@ Rejected and no-op operations leave document state, version, history, redo depth
 ## Tests Required by Downstream Gates
 
 - Layer A, `.trellis/tasks/archive/2026-08/07-28-gd-0-guitar-domain-core-transaction-contract/contract-fixtures/verify-public-contracts.mjs`, extracts every tagged authoritative `typescript public-contract` fence and must report zero parse/type diagnostics using a syntax/name-resolution-only prelude. Layer B compiles `real-core-drift-assertions.ts` with the archived `tsconfig.real-core.json` against the real accepted Core public root and must prove `KernelGatewayResult` uses `authorized/rejected`, `createGateway` is an instance method, all six typed `select` overloads plus `summary`/`subscribe` remain, shared `CommandBus` methods retain their types, and `MarkPersistedResult`/`EventSubscriptionResult` retain their discriminants. Both are mandatory; no copied prelude is accepted as Core compatibility evidence.
-- Table-driven absent/compatible/incompatible/future-schema cases with sorted/deduplicated facts, read-only rejection, validation completeness, zero incompatible handler calls, deep freeze, and input isolation. Include a mixed unavailable+incompatible fixture and assert identical code/full facts for submit, undo, redo, and first replay write.
+- Table-driven absent/compatible/incompatible/future-schema cases with sorted/deduplicated facts, read-only rejection, validation completeness, zero incompatible handler calls, deep freeze, and input isolation. Construct unavailable-only through the public explicit-inventory integrated constructors by omitting the contribution from the authentic catalog while retaining its inventory item; construct incompatible-only, mixed and unknown through the same public path, never by private-state fabrication. Include a mixed unavailable+incompatible fixture and assert identical code/full facts for submit, undo, redo, and first replay write.
+- Inventory tests cover catalog-only overload parity, exact installed superset, absent contribution, malformed/duplicate/parity conflict, 1,024/1,025 rows, 256/257 versions, hostile descriptor/Proxy/alias inputs, canonical order/deep freeze, catalog/inventory identity mismatch and six callback families remaining at zero.
 - Include table-driven mixed-owner/version fixtures. Assert compatible count `0` gives validator/classifier `0/0`; compatible count `>= 1` gives exactly one validator call per applicable pass over the canonical-owner-ordered filtered view; total validator success plus classification gives classifier count `1` with the identical view; semantic issues, throws, or contract violations give classifier count `0`; and read-only submit/undo/redo/first replay write gives operation validator/classifier/write `0/0/0`. Also assert zero incompatible-block decoder/validator/classifier/command/effect/fact calls and full excluded-payload preservation.
 - Atomic multi-effect submit/no-op/reject/undo/redo, full rollback at every failure phase, one history entry/version/event, checkpoint/dirty parity, and live/replay deep equality.
 - Unknown/non-target extension preservation across codec, success, rejection, no-op, undo, redo, replay, and degraded reads.

@@ -55,7 +55,7 @@
     ".trellis/spec/core-kernel/backend/domain-transaction-integration.md",
     ".trellis/tasks/08-11-cvn-6-module-runtime-validation-migration-integration/"
   ],
-  "notes": "PLANNING COORDINATION / CVN-0 CVN-1 CVN-2 CVN-3 FINAL CVN-4 EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-2 SOURCE E203136, ACCEPTANCE F3D0BE0, ARCHIVE 42110C4, FINAL P0/P1/P2 0/0/0, FOCUSED 54/54 AND FULL 350/350 / CVN-6 FORMAL PLANNING CANDIDATE CREATED AT 08-11-CVN-6-MODULE-RUNTIME-VALIDATION-MIGRATION-INTEGRATION, INDEPENDENT PLANNING REVIEW PENDING, TASK START FALSE, PRODUCTION AUTHORIZATION FALSE / CVN-5 STILL WAITS FOR ACCEPTED CVN-6 / CVN-7 WAITS FOR ACCEPTED-ARCHIVED CVN-0..6 / 28-COMMAND FINITE CATALOG / STABILITY FIRST / HOT PLUG EXCLUDED.",
+  "notes": "PLANNING COORDINATION / CVN-0 CVN-1 CVN-2 CVN-3 FINAL CVN-4 EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-6 INITIAL PLANNING REVIEW P0/P1/P2 0/1/0 / CVN-6-OWNED KNOWN-REQUIREMENT RUNTIME INVENTORY BOUNDED REPAIR TARGETED REREVIEW PENDING / CVN-2 COMPILER ABI SDK AND CATALOG EXACT / TASK START FALSE / PRODUCTION AUTHORIZATION FALSE / CVN-5 WAITS FOR ACCEPTED CVN-6 / CVN-7 WAITS FOR ACCEPTED-ARCHIVED CVN-0..6.",
   "meta": {
     "compatibility_base": "d92a7586536ac8757c318ae6f75aabd8698f85ac",
     "architecture_style": "stability_first_startup_frozen_microkernel",
@@ -63,7 +63,7 @@
     "refactor_strategy": "behavior_preserving_command_transaction_registry_spine",
     "qualification_scale": "balanced_25600_event_release_gate_plus_102400_event_stress_gate",
     "legacy_gate_mapping": "ck1_1_0_to_cvn0_ck1_1_1_to_cvn2_generic_gd2_to_cvn1_cvn5_cvn6",
-    "planning_review": "cvn2_targeted_error_hierarchy_rereview_passed_final_p0_0_p1_0_p2_0_user_activation_pending",
+    "planning_review": "cvn6_initial_p0_0_p1_1_p2_0_bounded_runtime_inventory_repair_targeted_rereview_pending",
     "cvn2_planning_review_baseline": "8757097fd6dd3e9464807b9ab091006285a19f2b",
     "cvn2_planning_review_findings_initial": {
       "P0": 0,
@@ -102,7 +102,7 @@
     "batch_child_limit": 100,
     "transaction_effect_limit": 131072,
     "durable_roadmap": ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-roadmap-and-stage-plan.md",
-    "durable_roadmap_last_synchronized": "2026-08-10",
+    "durable_roadmap_last_synchronized": "2026-08-11",
     "extensibility_reservation_task": "08-09-core-vnext-extensibility-reservation-review",
     "extensibility_reservation_status": "completed_archived",
     "extensibility_reservation_branch": "codex/core-vnext-extensibility-reservation-review",
@@ -121,7 +121,7 @@
     "extensibility_reservation_acceptance_commit": "253d19e5e9d6a3bfdfa0158833d59872e8be156c",
     "extensibility_reservation_archive_commit": "a4d8cee406e8aa9a6efa05f4e24a8707367dc7b8",
     "extensibility_reservation_archive_path": ".trellis/tasks/archive/2026-08/08-09-core-vnext-extensibility-reservation-review/",
-    "next_dependency_gate": "cvn6-independent-planning-review",
+    "next_dependency_gate": "cvn6-targeted-independent-planning-rereview",
     "cvn2_task": "08-10-cvn-2-official-module-sdk-frozen-assembly",
     "cvn2_status": "completed_archived",
     "cvn2_branch": "codex/cvn-2-official-module-sdk-frozen-assembly",
@@ -282,7 +282,7 @@
     "cvn4_archive_path": ".trellis/tasks/archive/2026-08/08-04-cvn-4-part-staff-voice-lifecycle/",
     "cvn4_next_gate": "completed; retained as accepted CVN-5 structural prerequisite while CVN-6 planning review is pending",
     "cvn6_task": "08-11-cvn-6-module-runtime-validation-migration-integration",
-    "cvn6_status": "planning_review_pending",
+    "cvn6_status": "bounded_inventory_runtime_repair_targeted_rereview_pending",
     "cvn6_branch": "codex/cvn-6-unified-planning-base",
     "cvn6_worktree_path": ".worktrees/cvn-6-unified-planning-base",
     "cvn6_planning_base_commit": "050af1eed067300f2e2fb0339eff6f2430e43b36",
@@ -310,15 +310,36 @@
     "cvn6_production_implementation_authorized": false,
     "cvn6_planning_artifacts_complete": true,
     "cvn6_independent_planning_review": "pending",
+    "cvn6_initial_planning_finding": "required-contribution-unavailable_missing_publicly_constructible_metadata_source",
+    "cvn6_bounded_planning_repair": "independent_cvn6_known_requirement_inventory_at_integrated_registry_bus_replay_construction",
     "cvn6_public_contract_closures": [
+      "known_requirement_inventory_and_integrated_runtime_overloads",
       "integrated_registry_catalog_overload",
       "integrated_event_identity",
       "integrated_construction_resource_failure",
       "detached_extension_migration_entry"
     ],
     "cvn6_post_core_scope": "excluded_and_retained_by_08_11_post_core_roadmap",
-    "cvn6_planning_candidate_commit": null,
-    "cvn6_planning_self_audit": "passed_2026-08-11_p0_0_p1_0_p2_0",
-    "cvn6_planning_verification": "ancestry2_trellis21_22_parent3_3_product0_0_postcore15_16_json_jsonl_unique_child1_diffcheck_typecheck_build_full350_gd0_layer_a_b_cvn6_parse_protected0"
+    "cvn6_planning_candidate_commit": "a8695286c2674a0605b52689b2a4b3bc12d516aa",
+    "cvn6_bounded_repair_commit": null,
+    "cvn6_planning_self_audit": "bounded_inventory_runtime_repair_passed_residual_p0_0_p1_0_p2_0",
+    "cvn6_planning_verification": "trellis22_23_parent3_3_product0_0_postcore15_16_typecheck_build_full350_gd0_a_b_cvn6_parse_protected0",
+    "cvn6_independent_planning_review_findings": {
+      "P0": 0,
+      "P1": 1,
+      "P2": 0,
+      "verdict": "return_for_bounded_planning_repair"
+    },
+    "cvn6_targeted_planning_rereview": "pending",
+    "cvn6_known_requirement_inventory": {
+      "owner": "CVN-FC-112/121",
+      "public_type": "KernelKnownRequirementInventoryV1",
+      "catalog_only_behavior": "exact_installed_only_derivation",
+      "row_limit": 1024,
+      "versions_per_row_limit": 256,
+      "cvn2_compiler_change": false,
+      "cvn2_catalog_state_change": false
+    },
+    "cvn6_bounded_repair_base_commit": "a8695286c2674a0605b52689b2a4b3bc12d516aa"
   }
 }
