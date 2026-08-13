@@ -44,9 +44,9 @@
     ".trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/",
     ".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/"
   ],
-  "notes": "CVN-7 FORMAL PLANNING CANDIDATE ON ACCEPTED-ARCHIVED CVN-0 THROUGH CVN-6 BASELINE 38afdc3 / QUALIFICATION-ONLY / SOURCE DEFAULT ZERO DIFF / INDEPENDENT PLANNING REVIEW PENDING / TASK START FALSE / PRODUCTION AUTHORIZATION FALSE.",
+  "notes": "CVN-7 INDEPENDENT PLANNING REVIEW PASSED 0-0-0 AFTER TWO BOUNDED REPAIRS ON ACCEPTED-ARCHIVED CVN-0 THROUGH CVN-6 BASELINE 38afdc3 / REVIEWED PLANNING REPAIR COMMIT PENDING / QUALIFICATION IMPLEMENTATION AUTHORIZATION PENDING / QUALIFICATION-ONLY / SOURCE DEFAULT ZERO DIFF / TASK START FALSE / PRODUCTION AUTHORIZATION FALSE.",
   "meta": {
-    "planning_stage": "formal_candidate_independent_review_pending",
+    "planning_stage": "independent_planning_review_passed_implementation_authorization_pending",
     "qualification_base_commit": "38afdc3fd508dc67f7aa446fd323837a5d550b70",
     "cvn5_source_commit": "f329ec10bc77c530282db3a6f47dbd6b6112859e",
     "cvn5_acceptance_commit": "b2ad0bc",
@@ -91,13 +91,47 @@
     "qualification_measurement_run": false,
     "qualification_result": "not_run_planning_only",
     "planning_artifacts_complete": true,
-    "independent_planning_review": "pending",
+    "independent_planning_review": "passed_2026_08_13_p0_0_p1_0_p2_0_after_two_bounded_repairs",
+    "independent_planning_review_findings_initial": {
+      "P0": 0,
+      "P1": 6,
+      "P2": 2,
+      "verdict": "return_for_bounded_planning_repair"
+    },
+    "bounded_planning_repair": [
+      "assign_fc020_021_030_031_exclusively_to_cvn3_and_route_consumer_failures_via_underlying_fc",
+      "freeze_44_exact_trace_paths_titles_and_separate_qualification_assertions",
+      "use_one_clean_all_mode_run_external_temporary_outputs_and_one_atomic_evidence_publish",
+      "reserve_qualified_until_stress_and_independent_technical_review_close",
+      "fix_process_liveness_timeouts_as_evidence_invalid_not_performance_budgets",
+      "retain_explicit_user_approval_after_cvn7_and_parent_archive",
+      "use_artifact_specific_fixture_provenance_and_ordered_benchmark_pairs",
+      "synchronize_active_core_spec_to_cvn4_final_and_cvn5_28_command_432_test_baseline"
+    ],
+    "independent_planning_targeted_rereview_round_1": {
+      "P0": 0,
+      "P1": 1,
+      "P2": 1,
+      "verdict": "return_for_bounded_planning_repair"
+    },
+    "second_bounded_planning_repair": [
+      "remove_task_local_tmp_and_require_full_clean_all_mode_rerun_without_partial_reuse",
+      "replace_raw_sample_arrays_handoff_with_twenty_ordered_pairs_and_recomputed_aggregates"
+    ],
+    "independent_planning_review_findings_final": {
+      "P0": 0,
+      "P1": 0,
+      "P2": 0,
+      "verdict": "pass"
+    },
+    "planning_ready_for_user_activation": true,
+    "reviewed_planning_repair_commit_pending": true,
     "self_audit_findings": {
       "P0": 0,
       "P1": 0,
       "P2": 0
     },
-    "self_audit_status": "ready_for_independent_planning_review",
+    "self_audit_status": "historical_pre_review_self_audit_superseded_by_independent_planning_pass",
     "expected_core_command_count": 28,
     "expected_application_runtime_export_count": 51,
     "expected_module_sdk_runtime_export_count": 8,
@@ -140,8 +174,9 @@
     "post_core_scope": "read_only_until_cvn7_and_parent_accepted_archived",
     "push_authorized": false,
     "archive_authorized": false,
-    "next_gate": "independent_cvn7_planning_review",
+    "next_gate": "reviewed_planning_repair_commit_then_user_qualification_implementation_authorization",
     "planning_verification": "ancestry198c71a_38afdc3_trellis_child31_27_parent3_3_product0_0_postcore15_16_json_jsonl_unique_child1_fc44_trace44_diffcheck_typecheck_build_full432_production0_postcore0",
+    "bounded_planning_repair_verification": "trace44_exact_parent_set_unique_cases_existing_titles_exact_once_trellis31_27_parent3_3_product0_0_postcore15_16_json_jsonl_diffcheck_typecheck_build_full432_protected_delta0",
     "planning_full_test_count": 432,
     "planning_typecheck": "passed",
     "planning_build": "passed_clean_source",

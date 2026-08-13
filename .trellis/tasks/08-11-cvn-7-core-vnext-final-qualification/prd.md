@@ -155,12 +155,12 @@ Representative fixture 上的八项 operation 固定为：
 - 每个 build、每个 operation 使用独立 fresh fixture/state。
 - baseline 与 candidate 各先运行 5 次未记录 warm-up。
 - baseline 与 candidate 各运行 20 次 measured samples。
-- 奇数 sample pair 按 baseline→candidate，偶数 pair 按 candidate→baseline，降低固定顺序漂移。
+- 按 1-based pair number，奇数 pair 为 baseline→candidate、偶数 pair 为 candidate→baseline；证据使用 zero-based `pairIndex 0..19`，因此 even index 为 baseline→candidate、odd index 为 candidate→baseline。
 - 每个 sample 使用 fresh worker process；worker 只加载一个指定 build root。
 - latency worker 使用 `performance.now()`，计时区间仅包含 CVN7-R007 指定 operation。
 - 任一 measured duration 非有限数或 `<=0`，整项报告为 invalid evidence。
 - median 是排序后第 10/11 项算术平均；P95 是 nearest-rank 第 19 项。
-- 报告全部 20 个原始样本、median、P95，而非只保存汇总。
+- 报告 20 个 dense pair records；每条保存 pair index、真实 invocation order、baseline/candidate duration。Validator 从 pair records 重建两侧样本、median 和 P95；不接受丢失执行顺序的两组独立 arrays。
 - memory run 与 latency run 分离；RSS 使用 worker exit 前的 `process.resourceUsage().maxRSS` 并保存原始值、平台单位和归一化 bytes；heap 保存 setup 前、operation 前、operation 后、result encode 后的 `heapUsed`，以四个观测点最大值记为 `observedPeakHeapUsedBytes`。
 
 ### CVN7-R009 — Reference environment 与预算
@@ -228,6 +228,8 @@ Operational comparison 固定为 `process.version === "v24.15.0"`、`process.pla
 
 每份 JSON 具有 `schemaVersion: 1`、任务 ID、baseline/candidate/harness commit、UTC timestamp、normalized relative artifact paths 和 deterministic result fields。tracked evidence 不保存绝对工作树路径、raw stack、环境变量或源码内容。
 
+只有实际构造 representative/stress fixture 的 functional、benchmark、memory 与 stress JSON 携带 `{ generatorVersion: 1, fixtureKind, seed }`；environment、build manifest、contract trace 和 summary 不伪造 fixture seed。Official evidence 由 clean frozen candidate/harness 上的一次 `--mode all` 生成：中间结果位于 worktree 外的临时目录，完整 validator 通过后一次原子发布到 `evidence/`，随后单独提交 measurement commit，且不再启动 worker。固定 process-liveness timeout 只把整次证据标记为 `EVIDENCE_INVALID`，不构成 latency/stress 性能预算。
+
 ### CVN7-R013 — 失败分类与路由
 
 | 失败所属合同 | 唯一修复 owner |
@@ -235,14 +237,14 @@ Operational comparison 固定为 `process.version === "v24.15.0"`、`process.pla
 | `001/002/041` | Core VNext parent contract repair |
 | `010` | CVN-0 bounded repair |
 | `011/040` | CVN-1 bounded repair |
-| `050..053/142` | CVN-3 bounded repair |
-| `060..063/070/142` | CVN-4 bounded repair |
-| `080..102/141` | CVN-5 bounded repair |
+| `020/021/030/031/050..053` | CVN-3 bounded repair |
+| `060..063/070` | CVN-4 bounded repair |
+| `080..102` | CVN-5 bounded repair |
 | `110/111` | CVN-2 bounded repair |
-| `112/120..122/143` | CVN-6 bounded repair |
+| `112/120..122` | CVN-6 bounded repair |
 | `130..134/140..143` 的 harness/evidence defect | CVN-7 qualification repair |
 
-跨 owner finding 按最早决定性失败拆分，不在一个生产修复提交中混合。任何生产 repair 都使旧 candidate 性能和功能 evidence 失效；CVN-7 更新 baseline、重建两侧 build 并重跑全部阻断门。
+`140..143` 是 CVN-7 拥有的 consumer qualification rows，不成为第二个生产行为 owner：如果 consumer case 暴露行为缺陷，必须先归类到上表唯一的 underlying FC row，再交给该 row owner；只有 trace、matrix assembly、runner 或 evidence defect 留在 CVN-7。跨 owner finding 按最早决定性失败拆分，不在一个生产修复提交中混合。任何生产 repair 都使旧 candidate 性能和功能 evidence 失效；CVN-7 更新 baseline、重建两侧 build 并重跑全部阻断门。
 
 ### CVN7-R014 — Product-quality authority closure
 
@@ -258,7 +260,7 @@ CVN-7 最终接受后必须：
 - 同步 active Core specs 为固定 28-command accepted baseline；
 - 父任务 `CVN-AC001..017` 全部有可审计结果；
 - 父任务和 CVN-7 各有独立接受与归档记录；
-- post-Core 路线只解锁“创建 Official Guitar Domain V1 规划 child”，不自动启动实现；
+- post-Core 路线只解锁“在用户再次明确批准后创建 Official Guitar Domain V1 规划 child”，归档不自动创建 child，也不自动启动实现；
 - Core VNext 停止吸收 Guitar Domain、Persistence、Layout、Renderer、Playback、Export、Workbench、Application Assembly 和 public Extension Host 工作。
 
 ### CVN7-R016 — 用户收益

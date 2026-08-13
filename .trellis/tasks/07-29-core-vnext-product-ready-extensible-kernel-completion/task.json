@@ -444,7 +444,7 @@
     "cvn5_archive_commit": "198c71a",
     "cvn5_archive_path": ".trellis/tasks/archive/2026-08/08-11-cvn-5-range-operations-explicit-atomic-batch/",
     "cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
-    "cvn7_status": "planning_independent_review_pending",
+    "cvn7_status": "planning_passed_implementation_authorization_pending",
     "cvn7_branch": "codex/cvn-7-core-vnext-final-qualification",
     "cvn7_worktree_path": ".worktrees/cvn-7-core-vnext-final-qualification",
     "cvn7_qualification_base_commit": "38afdc3fd508dc67f7aa446fd323837a5d550b70",
@@ -472,7 +472,13 @@
     "cvn7_task_start_run": false,
     "cvn7_production_implementation_authorized": false,
     "cvn7_planning_artifacts_complete": true,
-    "cvn7_independent_planning_review": "pending",
+    "cvn7_independent_planning_review": "passed_2026_08_13_p0_0_p1_0_p2_0_after_two_bounded_repairs",
+    "cvn7_independent_planning_review_findings_final": {
+      "P0": 0,
+      "P1": 0,
+      "P2": 0,
+      "verdict": "pass"
+    },
     "cvn7_expected_core_commands": 28,
     "cvn7_expected_root_runtime_exports": 51,
     "cvn7_expected_sdk_exports": "8_runtime_34_type",
@@ -480,7 +486,7 @@
     "cvn7_representative_fixture": "25600_events_12800_notes_2_contributions_2000_history",
     "cvn7_stress_fixture": "102400_events_51200_notes_10000_envelopes_rss_2gib",
     "cvn7_post_core_scope": "excluded_until_cvn7_and_parent_accepted_archived",
-    "cvn7_planning_self_audit": "ready_for_independent_review_p0_0_p1_0_p2_0",
+    "cvn7_planning_self_audit": "historical_pre_review_record_superseded_by_independent_planning_pass",
     "cvn7_planning_verification": "trellis31_27_parent3_3_product0_0_postcore15_16_fc44_trace44_typecheck_build_full432_production0_postcore0"
   }
 }

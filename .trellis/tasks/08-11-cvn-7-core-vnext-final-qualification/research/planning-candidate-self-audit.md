@@ -1,5 +1,7 @@
 # CVN-7 Planning Candidate Self-Audit
 
+> Historical pre-review record. The initial independent planning review superseded this self-audit with `RETURN FOR BOUNDED PLANNING REPAIR`, P0/P1/P2=`0/6/2`; after two bounded repairs, the final targeted independent planning rereview passed P0/P1/P2=`0/0/0`. That independent verdict, not this file, is the current planning-review authority.
+
 ## Verdict
 
 `READY FOR INDEPENDENT PLANNING REVIEW`

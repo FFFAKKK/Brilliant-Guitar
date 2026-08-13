@@ -9,14 +9,21 @@
 - Status: `planning`.
 - Task start: `false`.
 - Production implementation authorization: `false`.
-- Independent planning review: `pending`.
+- Initial independent planning review: `RETURN FOR BOUNDED PLANNING REPAIR`, P0/P1/P2=`0/6/2`.
+- Targeted rereview round 1: `RETURN FOR BOUNDED PLANNING REPAIR`, P0/P1/P2=`0/1/1`.
+- Final targeted planning rereview: `PASS`, P0/P1/P2=`0/0/0`; all initial findings are closed.
+- Qualification implementation authorization: pending; task start and measurements remain false.
 - Push: not requested.
 
 ## What this task adds
 
 CVN-7 adds a deterministic qualification harness, cross-stage tests, reproducible-build evidence, representative/portable/reference/stress measurements, product-quality authority synchronization and final Core closure records. Its default production-source delta is zero.
 
-## First operator action after planning PASS
+## Immediate operator action
+
+Present the reviewed planning repair candidate and its PASS to the user. Commit the reviewed planning paths only after commit authorization, then keep implementation gated until a separate qualification-execution approval; do not run `task.py start` or qualification workers as part of recording this planning verdict.
+
+## First operator action after targeted planning PASS
 
 1. record the independent planning result;
 2. present the reviewed planning commit to the user;
@@ -53,4 +60,4 @@ Give the independent planning reviewer:
 
 ## Completion handoff
 
-After final technical PASS and user acceptance, archive CVN-7, close and archive the Core VNext parent, then update the post-Core parent to permit creation of the Official Guitar Domain V1 **planning** child. Implementation remains a later explicit decision.
+After final technical PASS and user acceptance, archive CVN-7, close and archive the Core VNext parent, then keep the post-Core parent gated until explicit user approval to create the Official Guitar Domain V1 **planning** child. Implementation remains a later explicit decision.

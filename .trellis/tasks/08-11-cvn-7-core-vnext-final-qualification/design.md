@@ -154,7 +154,9 @@ Worker 使用 `createRequire` 从登记的 `buildRoot/dist/src/core-kernel/index
 10. 调用 evidence validator；
 11. 生成 qualification summary。
 
-Coordinator 对每个 worker 设置固定 action-specific timeout。Timeout 只产生 qualification failure，不终止或改写其他证据文件；临时结果写入 task-local `.tmp/`，全部 action 成功后原子写最终 evidence 文件。
+Official blocking evidence 只由一次 `--mode all` 运行产生。Coordinator 在创建任何临时输出或启动 worker 前验证 baseline、candidate、harness commit 和两个 worktree 都 clean。所有中间输出写入 worktree 外的 OS 临时目录 `%TEMP%/cvn7-qualification/<harnessCommit>/<runId>/`；只有全部 mode 完成且 validator 通过后，才把完整集合原子发布到 task-local `evidence/`。发布后不再启动 worker；`evidence/` 变化作为下一次 measurement commit 的精确 allowlist，不被伪装成 clean input。
+
+固定 process-liveness timeout 不是 latency/resource qualification budget：functional/fixture worker 为 `1,800,000 ms`，每个 latency 或 memory sample worker 为 `600,000 ms`，stress submit worker 与 stress replay worker各为 `10,800,000 ms`。超时后 coordinator 给予 `5,000 ms` 终止宽限，再终止该 worker process tree；任一 timeout 使整次运行成为 `EVIDENCE_INVALID`，不产生任何 `NOT_QUALIFIED_*` 性能结论，也不发布 partial evidence。改变这些 liveness timeout 属于 evidence-method/schema 变更，必须重新规划复审；它们不为 stress latency 创建绝对预算。
 
 ### 3.6 Evidence validator
 
@@ -275,7 +277,15 @@ No timed region includes fixture generation, TypeScript compilation, catalog com
 - Qualification harness 由 candidate 构建一次；worker 的 `buildRoot` 决定加载 baseline 或 candidate application build。
 - Baseline samples加载 baseline root 与 SDK；candidate samples加载 candidate root 与 SDK。Harness module cache key包含绝对 resolved build entry，且每个 sample 位于 fresh process，因此不存在跨 build runtime cache 复用。
 
-### 7.2 Source repair invalidation
+### 7.2 Evidence publication and commit identity
+
+- Stage 1..5 的 qualification contracts、fixtures、tests、runner 与 validator 全部提交后，冻结 `candidateCommit` 和 `harnessCommit`；official run 期间这两个 commit 不再变化。
+- Stage 6..8 是 `--mode all` 内的命名子门，不各自发布 tracked evidence。Stage 9 执行唯一 official `--mode all` invocation，并在结尾一次发布全部 JSON。
+- 发布后的 tracked `evidence/**` 被单独提交为 measurement commit。该提交只封装结果，不改变 evidence header 中已冻结的 candidate/harness build input，也不触发第二次 measurement。
+- Stage 10 authority sync 只能引用该 measurement commit 的 evidence hashes；Stage 11 在 measurement 与 authority-sync commits 后从 clean worktree 做最终验证。
+- 若 official run invalid，外部临时目录保留本地诊断，task-local final evidence 不变。若必须重跑，先记录 invalid reason，恢复到同一 frozen harness commit 的 clean 状态，再整次运行；不得从分阶段输出拼装结论。
+
+### 7.3 Source repair invalidation
 
 若 repair 改变 `src/**`：
 
@@ -298,12 +308,16 @@ interface QualificationEvidenceHeaderV1 {
   readonly candidateCommit: string;
   readonly harnessCommit: string;
   readonly generatedAtUtc: string;
+}
+
+interface QualificationFixtureProvenanceV1 {
   readonly generatorVersion: 1;
+  readonly fixtureKind: "representative" | "stress";
   readonly seed: string;
 }
 ```
 
-`generatedAtUtc` 只用于 provenance，不参与排序、结果或 hash。所有结果数组按预定义 enum order；所有地址按 Core canonical order；所有文件按 `/` 分隔的 relative path 排序。
+`generatedAtUtc` 只用于 provenance，不参与排序、结果或 hash。`fixtureProvenance` 只存在于实际构造 representative/stress fixture 的 functional、benchmark、memory 和 stress artifacts；environment、build manifest、contract trace 与 qualification summary 不伪造 generator/seed。所有结果数组按预定义 enum order；所有地址按 Core canonical order；所有文件按 `/` 分隔的 relative path 排序。
 
 Benchmark operation record：
 
@@ -312,8 +326,8 @@ interface QualificationBenchmarkOperationV1 {
   readonly operation: QualificationOperation;
   readonly warmupCount: 5;
   readonly measuredCount: 20;
-  readonly baselineSamplesMs: readonly number[];
-  readonly candidateSamplesMs: readonly number[];
+  readonly fixtureProvenance: QualificationFixtureProvenanceV1;
+  readonly pairs: readonly QualificationBenchmarkPairV1[];
   readonly baselineMedianMs: number;
   readonly baselineP95Ms: number;
   readonly candidateMedianMs: number;
@@ -325,9 +339,27 @@ interface QualificationBenchmarkOperationV1 {
   readonly absoluteBudgetApplied: boolean;
   readonly absoluteBudgetPassed: boolean | null;
 }
+
+interface QualificationBenchmarkPairV1 {
+  readonly pairIndex: number; // exact dense range 0..19
+  readonly invocationOrder:
+    | "baseline-then-candidate"
+    | "candidate-then-baseline";
+  readonly baselineDurationMs: number;
+  readonly candidateDurationMs: number;
+}
 ```
 
+`pairIndex` 偶数使用 `baseline-then-candidate`，奇数使用 `candidate-then-baseline`。Validator 从 20 个 pair records 重建两侧 invocation-order samples，再用独立 sorted copies 计算 aggregates；分离的无顺序 sample arrays 被拒绝。
+
 ## 9. Qualification decision
+
+Runner 子门可以使用下列非最终状态，但它们始终携带 `qualified: false`：
+
+```text
+REFERENCE_GATE_PASSED_PENDING_STRESS
+BLOCKING_EVIDENCE_COMPLETE_PENDING_INDEPENDENT_REVIEW
+```
 
 Final summary 只允许：
 
@@ -343,6 +375,8 @@ REFERENCE_ENVIRONMENT_PENDING
 ```
 
 `REFERENCE_ENVIRONMENT_PENDING` 表示本地/CI 环境与 exact reference environment 不一致，其余阻断门均通过；Core VNext final acceptance 仍等待 reference run。它不是 qualified 状态。
+
+`QUALIFIED` 只能在 functional、portable、exact reference、stress、resource、determinism、build/trace validators 全部通过，并且 independent technical review P0/P1/P2=`0/0/0` 已被记录后生成。Stage 8 reference pass 只能产生 `REFERENCE_GATE_PASSED_PENDING_STRESS`；Stage 9 全部 blocking evidence pass 只能产生 `BLOCKING_EVIDENCE_COMPLETE_PENDING_INDEPENDENT_REVIEW`。
 
 ## 10. File ownership
 
@@ -404,7 +438,7 @@ openspec/**
 - Functional defect：创建 owner-specific repair task；CVN-7 保留 failing evidence reference，不在当前提交修改生产源码。
 - Performance defect：保留原始 samples 和环境；先证明 bottleneck owner，再创建 bounded performance repair task。
 - Environment mismatch：保留 environment evidence，安排 exact reference run，预算不变。
-- Evidence codec/trace mismatch：标记 `EVIDENCE_INVALID`，修 runner/manifest 后完整重跑相关证据。
+- Evidence codec/trace mismatch：标记 `EVIDENCE_INVALID`；修 runner/manifest、重新冻结 candidate/harness inputs 并恢复 clean 后，完整重跑唯一 `--mode all`。禁止局部重跑、复用或拼装旧 per-mode/partial output。
 - 任一 budget/fixture/sample-method 变更：父合同复审、用户批准、新 schemaVersion 或 generatorVersion，并完整重跑。
 
 ## 12. Product boundary

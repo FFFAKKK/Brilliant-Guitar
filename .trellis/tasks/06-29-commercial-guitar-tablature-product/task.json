@@ -117,7 +117,8 @@
     "current_verified_source_baseline": "38afdc3fd508dc67f7aa446fd323837a5d550b70",
     "post_core_roadmap_task": "08-11-post-core-official-plugin-product-roadmap",
     "post_core_roadmap_status": "planning",
-    "post_core_activation_prerequisite": "cvn0_through_cvn7_and_core_vnext_parent_accepted_archived",
+    "post_core_activation_prerequisite": "cvn0_through_cvn7_and_core_vnext_parent_accepted_archived_plus_explicit_user_approval",
+    "post_core_first_child_user_approval_required": true,
     "post_core_first_future_child": "official-guitar-domain-v1",
     "post_core_fixed_delivery_order": "complete_core_then_official_plugins_then_product_loop_then_public_plugins",
     "post_core_production_implementation_authorized": false,
@@ -129,7 +130,7 @@
     "cvn6_status": "completed_archived",
     "cvn6_source_commit": "8da50f90c9c05d87a8e1aa7a4e65b30e6ab82c7f",
     "cvn6_archive_commit": "a0c1d6a7b8b38d053d591dca6586c8fff84bbdd6",
-    "cvn7_status": "planning_independent_review_pending",
+    "cvn7_status": "planning_passed_implementation_authorization_pending",
     "cvn7_task": "08-11-cvn-7-core-vnext-final-qualification"
   }
 }

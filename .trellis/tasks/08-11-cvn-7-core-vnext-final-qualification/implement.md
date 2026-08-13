@@ -8,7 +8,7 @@ qualification base: 38afdc3fd508dc67f7aa446fd323837a5d550b70
 CVN-0 through CVN-6: accepted and archived
 task.py start: false
 production implementation authorization: false
-independent planning review: pending
+independent planning review: passed 2026-08-13, P0/P1/P2=0/0/0 after two bounded planning repairs
 ```
 
 本文件描述未来操作者顺序。规划提交不执行以下 implementation stages，不产生 benchmark 结论，也不创建 post-Core child。
@@ -248,7 +248,9 @@ Baseline repeatability、candidate repeatability 和 expected cross-build equali
 --harness-commit <40-hex>
 ```
 
-Args 缺失、extra、重复、路径不存在、commit 不匹配、worktree dirty 或 build manifest mismatch 都在启动 worker 前失败。
+`functional|portable|reference|stress` 仅用于 harness 开发期 dry diagnostics，输出只能进入 runner 创建的 worktree-external temporary directory，不能产生 tracked final evidence。Official blocking run 固定为一次 `--mode all`。
+
+Args 缺失、extra、重复、路径不存在、commit 不匹配、worktree dirty 或 build manifest mismatch 都在创建 temporary directory 或启动 worker 前失败。Official preflight 不忽略任何既有 dirty path；运行结束后原子发布的精确 `evidence/**` 集合由 measurement commit 收纳，且之后不再启动 worker。
 
 Worker 用 `createRequire` 加载 request 已登记的 baseline/candidate `dist/src/core-kernel/index.js` 和 `module-sdk/index.js`。Boundary test 扫描 qualification output，拒绝任何静态 candidate Core/SDK runtime import，保证 A/B 真正运行各自 build。
 
@@ -271,19 +273,9 @@ Runner dry fixture pass；evidence validator mutation suite pass；package lock 
 
 ## 9. Stage 6 — Representative functional and memory gate
 
-### Commands
+### Execution protocol
 
-```powershell
-npm.cmd run test:cvn7
-npm.cmd test
-npm.cmd run qualify:cvn7 -- --mode functional `
-  --baseline-root E:\desktop\brilliant_ideas\brilliant_guitar\.worktrees\cvn-7-accepted-baseline `
-  --candidate-root E:\desktop\brilliant_ideas\brilliant_guitar\.worktrees\cvn-7-core-vnext-final-qualification `
-  --evidence-dir .trellis\tasks\08-11-cvn-7-core-vnext-final-qualification\evidence `
-  --qualification-base 38afdc3fd508dc67f7aa446fd323837a5d550b70 `
-  --candidate-commit <CANDIDATE_COMMIT> `
-  --harness-commit <HARNESS_COMMIT>
-```
+Stage 6 is the named functional/memory sub-gate inside the single Stage 9 `--mode all` invocation. Before freezing the harness commit, run `npm.cmd run test:cvn7` and `npm.cmd test`; these tests create no tracked evidence. A development-only `--mode functional` run may write only to its externally allocated temporary directory and is discarded after diagnostics. It is never cited as qualification evidence.
 
 ### Exit
 
@@ -303,17 +295,9 @@ npm.cmd run qualify:cvn7 -- --mode functional `
 - runner/harness commit fixed；
 - OS power/thermal state recorded as observation，不进入合同判定。
 
-### Command
+### Execution protocol
 
-```powershell
-npm.cmd run qualify:cvn7 -- --mode portable `
-  --baseline-root E:\desktop\brilliant_ideas\brilliant_guitar\.worktrees\cvn-7-accepted-baseline `
-  --candidate-root E:\desktop\brilliant_ideas\brilliant_guitar\.worktrees\cvn-7-core-vnext-final-qualification `
-  --evidence-dir .trellis\tasks\08-11-cvn-7-core-vnext-final-qualification\evidence `
-  --qualification-base 38afdc3fd508dc67f7aa446fd323837a5d550b70 `
-  --candidate-commit <CANDIDATE_COMMIT> `
-  --harness-commit <HARNESS_COMMIT>
-```
+Stage 7 is the portable sub-gate of the same Stage 9 official `--mode all` invocation. It consumes the same frozen candidate/harness commits and publishes nothing independently. Development-only `--mode portable` output is temporary diagnostic data and cannot be merged into the official artifact set.
 
 ### Exit
 
@@ -321,7 +305,7 @@ npm.cmd run qualify:cvn7 -- --mode portable `
 
 ### Failure
 
-保留 evidence，标记 `NOT_QUALIFIED_PORTABLE_PERFORMANCE`，定位 owner，创建独立 repair task。样本删除或重采直到“出现较好结果”的做法被排除；只在确认环境干扰并记录 invalid reason 后整组重跑。
+在同一次 `--mode all` 中继续收集剩余 determinism/resource evidence；完整集合最终标记 `NOT_QUALIFIED_PORTABLE_PERFORMANCE` 后才允许原子发布，再定位 owner 并创建独立 repair task。样本删除或重采直到“出现较好结果”的做法被排除；只在确认环境干扰并记录 invalid reason 后整组重跑。
 
 ## 11. Stage 8 — Reference Windows qualification
 
@@ -339,9 +323,9 @@ Runner exact 比较：
 - reference worker `process.execArgv` 精确为 `["--expose-gc"]`，`NODE_OPTIONS` 为空；
 - clean build hashes valid。
 
-### Command
+### Execution protocol
 
-同 Stage 7，`--mode reference`。
+Stage 8 is the reference sub-gate of the same Stage 9 official `--mode all` invocation. Development-only `--mode reference` output is temporary diagnostic data and cannot be promoted or merged.
 
 ### Exit
 
@@ -349,16 +333,16 @@ Runner exact 比较：
 - 八项 candidate P95 达到 R009；
 - representative peak RSS `<=1.0 GiB`；
 - functional/determinism/resource gates仍通过；
-- result `QUALIFIED` 还需 Stage 9..11。
+- sub-gate result 为 `REFERENCE_GATE_PASSED_PENDING_STRESS` 且 `qualified: false`；此时严禁写出 `QUALIFIED`。
 
-环境不匹配时 result 为 `REFERENCE_ENVIRONMENT_PENDING`，保留 portable evidence 并等待 exact reference run。
+环境不匹配时当前 sub-gate 记录 reference mismatch，继续同一次 `--mode all` 的 stress 子门；完整集合最终为 `REFERENCE_ENVIRONMENT_PENDING` 且 `qualified: false`。后续 exact reference 证据必须从相同 frozen inputs 的 clean 状态重新执行完整 `--mode all`，不得把一次 reference-only diagnostic 拼入旧集合。
 
 ## 12. Stage 9 — Stress qualification
 
 ### Command
 
 ```powershell
-npm.cmd run qualify:cvn7 -- --mode stress `
+npm.cmd run qualify:cvn7 -- --mode all `
   --baseline-root E:\desktop\brilliant_ideas\brilliant_guitar\.worktrees\cvn-7-accepted-baseline `
   --candidate-root E:\desktop\brilliant_ideas\brilliant_guitar\.worktrees\cvn-7-core-vnext-final-qualification `
   --evidence-dir .trellis\tasks\08-11-cvn-7-core-vnext-final-qualification\evidence `
@@ -366,6 +350,8 @@ npm.cmd run qualify:cvn7 -- --mode stress `
   --candidate-commit <CANDIDATE_COMMIT> `
   --harness-commit <HARNESS_COMMIT>
 ```
+
+这是唯一 official worker invocation。Preflight 在任何 temporary output 前要求两个 worktree clean；中间 functional/portable/reference/stress artifacts 全部位于 `%TEMP%/cvn7-qualification/<HARNESS_COMMIT>/<RUN_ID>/`。只有四个子门都完成并产生结构有效的结果、完整 validator 通过后，coordinator 才一次原子发布 task-local `evidence/`；合法的 `NOT_QUALIFIED_*` 或 `REFERENCE_ENVIRONMENT_PENDING` 仍可作为完整结果发布，worker/shape/timeout 导致的 `EVIDENCE_INVALID` 不发布 partial set。
 
 ### Blocking assertions
 
@@ -381,7 +367,7 @@ npm.cmd run qualify:cvn7 -- --mode stress `
 
 ### Exit
 
-`stress.json` passes evidence validator。
+`stress.json` passes evidence validator；overall result 为 `BLOCKING_EVIDENCE_COMPLETE_PENDING_INDEPENDENT_REVIEW` 且 `qualified: false`。随后立即把完整 published artifact set 提交为一个 path-limited measurement commit；该 commit 不改变 evidence header 中冻结的 candidate/harness input commits，并且本轮不再运行 worker。
 
 ## 13. Stage 10 — Product quality and active authority sync
 
@@ -412,6 +398,7 @@ npm.cmd run qualify:cvn7 -- --mode stress `
 - open/save/playback/render/export/install 等产品数字继续写 `owned by product-release-qualification-v1`；
 - active specs 记录 28-command accepted baseline；
 - post-Core 只切换为“CVN-7 acceptance/archive 后可创建 Guitar Domain planning child”；
+- 该 projection 同时保留“用户明确批准创建第一个 Guitar Domain planning child”，归档本身不自动授权；
 - task 仍 `in_progress`，直到独立技术复审和用户接受。
 
 ## 14. Stage 11 — Final gates and independent review
@@ -452,7 +439,7 @@ Additional gates：
 - qualification base/candidate/harness commits；
 - full diff and allowlist report；
 - all evidence files；
-- raw sample arrays；
+- 每项 operation 的 20 条 ordered pair records，以及 validator 从 pairs 重算的 baseline/candidate samples、median、P95 和 ratios；
 - environment and build manifests；
 - 44-row trace；
 - full test transcript；
@@ -462,7 +449,7 @@ Additional gates：
 
 ### Exit
 
-Independent technical review P0/P1/P2=`0/0/0`。任何 finding 只走 bounded repair + targeted rereview。
+Independent technical review P0/P1/P2=`0/0/0`。任何 finding 只走 bounded repair + targeted rereview。只有该 verdict 被逐字记录到 `independent-technical-review.md` 后，deterministic summary finalizer 才可在不启动 worker的前提下重新验证所有 committed evidence/review hashes，并把 final result 写为 `QUALIFIED`；此前所有 summary 必须保持 `BLOCKING_EVIDENCE_COMPLETE_PENDING_INDEPENDENT_REVIEW` 和 `qualified: false`。Finalizer 变化执行 JSON/JSONL、evidence validator、diff check 和 clean commit verification，不改变任何 measured sample。
 
 ## 15. Stage 12 — Acceptance, archive and handoff
 
