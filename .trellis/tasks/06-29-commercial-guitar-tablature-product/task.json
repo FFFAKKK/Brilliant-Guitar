@@ -131,6 +131,7 @@
     "cvn6_source_commit": "8da50f90c9c05d87a8e1aa7a4e65b30e6ab82c7f",
     "cvn6_archive_commit": "a0c1d6a7b8b38d053d591dca6586c8fff84bbdd6",
     "cvn7_status": "planning_passed_implementation_authorization_pending",
+    "cvn7_reviewed_planning_repair_commit": "c427d2f89a291618325dab273e926db635cca9a6",
     "cvn7_task": "08-11-cvn-7-core-vnext-final-qualification"
   }
 }

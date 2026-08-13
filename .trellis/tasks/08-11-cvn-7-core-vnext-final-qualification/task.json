@@ -44,7 +44,7 @@
     ".trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/",
     ".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/"
   ],
-  "notes": "CVN-7 INDEPENDENT PLANNING REVIEW PASSED 0-0-0 AFTER TWO BOUNDED REPAIRS ON ACCEPTED-ARCHIVED CVN-0 THROUGH CVN-6 BASELINE 38afdc3 / REVIEWED PLANNING REPAIR COMMIT PENDING / QUALIFICATION IMPLEMENTATION AUTHORIZATION PENDING / QUALIFICATION-ONLY / SOURCE DEFAULT ZERO DIFF / TASK START FALSE / PRODUCTION AUTHORIZATION FALSE.",
+  "notes": "CVN-7 INDEPENDENT PLANNING REVIEW PASSED 0-0-0 AFTER TWO BOUNDED REPAIRS ON ACCEPTED-ARCHIVED CVN-0 THROUGH CVN-6 BASELINE 38afdc3 / REVIEWED PLANNING REPAIR COMMIT C427D2F / QUALIFICATION IMPLEMENTATION AUTHORIZATION PENDING / QUALIFICATION-ONLY / SOURCE DEFAULT ZERO DIFF / TASK START FALSE / PRODUCTION AUTHORIZATION FALSE.",
   "meta": {
     "planning_stage": "independent_planning_review_passed_implementation_authorization_pending",
     "qualification_base_commit": "38afdc3fd508dc67f7aa446fd323837a5d550b70",
@@ -125,7 +125,8 @@
       "verdict": "pass"
     },
     "planning_ready_for_user_activation": true,
-    "reviewed_planning_repair_commit_pending": true,
+    "reviewed_planning_repair_commit_pending": false,
+    "reviewed_planning_repair_commit": "c427d2f89a291618325dab273e926db635cca9a6",
     "self_audit_findings": {
       "P0": 0,
       "P1": 0,
@@ -174,7 +175,7 @@
     "post_core_scope": "read_only_until_cvn7_and_parent_accepted_archived",
     "push_authorized": false,
     "archive_authorized": false,
-    "next_gate": "reviewed_planning_repair_commit_then_user_qualification_implementation_authorization",
+    "next_gate": "user_qualification_implementation_authorization",
     "planning_verification": "ancestry198c71a_38afdc3_trellis_child31_27_parent3_3_product0_0_postcore15_16_json_jsonl_unique_child1_fc44_trace44_diffcheck_typecheck_build_full432_production0_postcore0",
     "bounded_planning_repair_verification": "trace44_exact_parent_set_unique_cases_existing_titles_exact_once_trellis31_27_parent3_3_product0_0_postcore15_16_json_jsonl_diffcheck_typecheck_build_full432_protected_delta0",
     "planning_full_test_count": 432,

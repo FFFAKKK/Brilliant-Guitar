@@ -31,6 +31,13 @@ Round 1 returned `RETURN FOR BOUNDED PLANNING REPAIR`, P0/P1/P2=`0/1/1`. The onl
 - Reviewer reproduced CVN-7 Trellis `31/27`, strict JSON/JSONL, residual scan, diff check and protected delta `0` while leaving all files, staging and lifecycle execution untouched.
 - This PASS closes planning review only. Task start, qualification implementation, measurements, staging, commit, acceptance and archive remain separate actions.
 
+## Reviewed planning repair commit
+
+- Commit: `c427d2f89a291618325dab273e926db635cca9a6`.
+- Message: `docs(cvn-7): close independent planning review findings`.
+- Scope: the 14 independently reviewed planning, authority-projection and lifecycle-record paths only; production/test/package/lock/tsconfig delta remains zero.
+- Next gate: separate user authorization for qualification implementation. Task start, production authorization and measurements remain false.
+
 ## Reviewer question
 
 Does this plan fully close the final Core VNext qualification method without adding product behavior, reopening accepted child contracts or leaving fixture/benchmark/evidence choices to the future operator?

@@ -12,6 +12,7 @@
 - Initial independent planning review: `RETURN FOR BOUNDED PLANNING REPAIR`, P0/P1/P2=`0/6/2`.
 - Targeted rereview round 1: `RETURN FOR BOUNDED PLANNING REPAIR`, P0/P1/P2=`0/1/1`.
 - Final targeted planning rereview: `PASS`, P0/P1/P2=`0/0/0`; all initial findings are closed.
+- Reviewed planning repair commit: `c427d2f89a291618325dab273e926db635cca9a6`.
 - Qualification implementation authorization: pending; task start and measurements remain false.
 - Push: not requested.
 
@@ -21,7 +22,7 @@ CVN-7 adds a deterministic qualification harness, cross-stage tests, reproducibl
 
 ## Immediate operator action
 
-Present the reviewed planning repair candidate and its PASS to the user. Commit the reviewed planning paths only after commit authorization, then keep implementation gated until a separate qualification-execution approval; do not run `task.py start` or qualification workers as part of recording this planning verdict.
+Present the reviewed planning repair commit and its PASS to the user. Keep implementation gated until a separate qualification-execution approval; do not run `task.py start` or qualification workers as part of recording this planning verdict.
 
 ## First operator action after targeted planning PASS
 

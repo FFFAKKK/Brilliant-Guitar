@@ -473,6 +473,7 @@
     "cvn7_production_implementation_authorized": false,
     "cvn7_planning_artifacts_complete": true,
     "cvn7_independent_planning_review": "passed_2026_08_13_p0_0_p1_0_p2_0_after_two_bounded_repairs",
+    "cvn7_reviewed_planning_repair_commit": "c427d2f89a291618325dab273e926db635cca9a6",
     "cvn7_independent_planning_review_findings_final": {
       "P0": 0,
       "P1": 0,
