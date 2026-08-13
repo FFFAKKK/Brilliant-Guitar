@@ -7,7 +7,7 @@
 - Qualification base: `38afdc3fd508dc67f7aa446fd323837a5d550b70`.
 - Reviewed harness implementation anchor: `623f94a4308d2a51014256a2616af1bff53fdb56`.
 - First official input `7e3b7e61cc8ee292ee59522df297f43a86210b7c` is invalidated for reuse: direct Windows `execFileSync("npm.cmd", ...)` failed with `npm_cmd_execfile_einval` before worker startup.
-- Launcher repair state: implemented; targeted independent rereview pending. The repair commit will become the next candidate/harness input only after that rereview passes.
+- Launcher repair commit: `5a21284c3b27d36073a3bfc929130e063679b569`; targeted independent rereview of the measurement-head alignment remains pending. After that review passes, the resulting clean docs-only `HEAD` containing this repair becomes the next candidate/harness input.
 - Task: `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/`.
 - Status: `in_progress`; `task_start_run=true`; qualification implementation authorization is true.
 - Independent planning review: final `PASS`, P0/P1/P2=`0/0/0`.
@@ -23,11 +23,11 @@
 - Recorded pre-freeze gates pass: typecheck, build, CVN-7 `69/69`, full `501/501`, four Trellis validations, strict JSON/JSONL, allowlist and `git diff --check`.
 - Bounded launcher repair gates pass: typecheck, build, CVN-7 `73/73`, full `505/505`, strict JSON/JSONL, Trellis `31/27`, parent `3/3`, product `0/0`, post-Core `15/16`, exact 10-file allowlist, protected/evidence zero delta and `git diff --check`.
 - Worker loading is restricted to the coordinator-registered baseline and candidate build roots; evidence decoding rejects accessors, cycles and unreadable dense arrays without caller execution.
-- Fixture, validator, worker, schema, budgets and scripts remain immutable from `623f94a`. The bounded change is limited to the runner launcher, its CVN-7 boundary regressions and direct task-state projections. The resulting clean repair commit requires targeted independent rereview before it may become the runner-required candidate/harness input.
+- `623f94a4308d2a51014256a2616af1bff53fdb56` remains the original harness implementation anchor. Relative to that anchor, the reviewed launcher repair is permitted to change exactly `test/core-kernel/qualification/cvn-7-runner.ts` and `test/core-kernel/cvn-7-qualification-boundary.test.ts`; fixture, validator, worker, schema, budgets and scripts remain unchanged.
 
 ## Immediate operator action after this repair commit
 
-Submit the exact launcher repair diff and regression evidence for targeted independent rereview. Do not execute the command below during the repair session. After rereview passes, resolve the new exact clean repair `HEAD` and use that same value for both commit arguments in one full rerun:
+Submit this docs-only measurement-head alignment for targeted independent rereview. Do not execute the command below during the repair session. After rereview passes, resolve the new exact clean docs-only `HEAD` that contains launcher repair `5a21284` and use that same value for both commit arguments in one full rerun:
 
 ```powershell
 $measurementCommit = (git rev-parse HEAD).Trim()
@@ -45,7 +45,7 @@ This is the only official worker invocation. Development-only partial modes are 
 
 ## Required result handling
 
-1. Before invocation, verify the exact current HEAD is a docs-only descendant of `623f94a` with zero `src/**`, `test/**`, `package*.json`, `tsconfig.json`, `openspec/**` and `evidence/**` delta from that anchor. Preflight must then observe clean baseline and candidate worktrees before temporary output or worker startup.
+1. Before invocation, verify the exact current `HEAD` contains reviewed launcher repair `5a21284c3b27d36073a3bfc929130e063679b569`. Relative to original harness anchor `623f94a4308d2a51014256a2616af1bff53fdb56`, the only permitted `test/**` delta is the exact pair `test/core-kernel/qualification/cvn-7-runner.ts` and `test/core-kernel/cvn-7-qualification-boundary.test.ts`. Relative to the established protected baseline, `src/**`, `package*.json`, lock files, `tsconfig.json`, `openspec/**`, qualification evidence results and every other test must have zero additional delta. The clean docs-only alignment `HEAD` is passed identically as `candidateCommit` and `harnessCommit`; preflight must then observe clean baseline and candidate worktrees before temporary output or worker startup.
 2. The runner executes functional, portable, reference and stress sub-gates within the same `--mode all` run.
 3. Intermediate output stays under the runner-owned OS temporary directory.
 4. Only a complete validator-accepted artifact set is atomically published to task-local `evidence/`.

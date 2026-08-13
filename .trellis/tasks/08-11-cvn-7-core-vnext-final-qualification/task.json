@@ -94,7 +94,7 @@
     "qualification_result": "evidence_invalid_npm_cmd_execfile_einval_before_worker_no_partial_evidence",
     "reviewed_harness_implementation_commit": "623f94a4308d2a51014256a2616af1bff53fdb56",
     "reviewed_harness_implementation_commit_date": "2026-08-13",
-    "official_measurement_commit_policy": "exact_clean_docs_only_status_sync_head_passed_as_equal_candidate_and_harness_commit",
+    "official_measurement_commit_policy": "exact_clean_reviewed_launcher_repair_head_passed_as_equal_candidate_and_harness_commit",
     "frozen_harness_review": "passed_p0_0_p1_0_p2_0_after_negative_path_targeted_rereview",
     "official_measurement_status": "first_attempt_evidence_invalid_launcher_repair_targeted_rereview_pending",
     "official_evidence_status": "readme_only_no_partial_or_reusable_measurement_artifacts",
@@ -273,7 +273,7 @@
       "partial_evidence": false,
       "reusable_evidence": false
     },
-    "launcher_repair_status": "implemented_targeted_independent_rereview_pending",
+    "launcher_repair_status": "reviewed_code_and_tests_docs_alignment_targeted_independent_rereview_pending",
     "failed_official_input_reusable": false,
     "launcher_repair_verification": "typecheck_build_cvn7_73_73_full_505_505_strict_json_jsonl_trellis_31_27_parent_3_3_product_0_0_postcore_15_16_allowlist_10_diffcheck_protected_zero_evidence_readme_only",
     "launcher_repair_test_counts": {
@@ -285,6 +285,26 @@
         "passed": 505,
         "total": 505
       }
-    }
+    },
+    "official_measurement_launcher_repair_ancestor": "5a21284c3b27d36073a3bfc929130e063679b569",
+    "official_measurement_original_harness_anchor": "623f94a4308d2a51014256a2616af1bff53fdb56",
+    "official_measurement_test_repair_allowlist": [
+      "test/core-kernel/qualification/cvn-7-runner.ts",
+      "test/core-kernel/cvn-7-qualification-boundary.test.ts"
+    ],
+    "official_measurement_protected_delta_policy": {
+      "baseline": "established_protected_baseline",
+      "zero_additional_delta": [
+        "src/**",
+        "package*.json",
+        "lock_files",
+        "tsconfig.json",
+        "openspec/**",
+        "qualification_evidence_results",
+        "all_tests_except_official_measurement_test_repair_allowlist"
+      ]
+    },
+    "official_measurement_input_head": "next_clean_docs_only_alignment_head_containing_launcher_repair_5a21284",
+    "launcher_repair_targeted_independent_rereview": "pending_docs_only_measurement_head_alignment"
   }
 }
