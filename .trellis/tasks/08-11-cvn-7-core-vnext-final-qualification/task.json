@@ -44,9 +44,9 @@
     ".trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/",
     ".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/"
   ],
-  "notes": "CVN-7 QUALIFICATION IMPLEMENTATION AUTHORIZED 2026-08-13 / TASK STARTED / STAGE 0 BASELINE FREEZE PENDING / INDEPENDENT PLANNING REVIEW 0-0-0 / REVIEWED PLANNING COMMIT C427D2F / QUALIFICATION-ONLY / SOURCE DEFAULT ZERO DIFF / MEASUREMENTS NOT RUN.",
+  "notes": "CVN-7 QUALIFICATION IMPLEMENTATION AUTHORIZED 2026-08-13 / STAGE 0 BASELINE FREEZE PASSED / LATEST ALL-REJECTED STRESS NEGATIVE-PATH REPAIR INDEPENDENTLY PASSED 0-0-0 / READY FOR SEPARATE PATH-LIMITED FROZEN HARNESS COMMIT DECISION / QUALIFICATION-ONLY / PRODUCTION SOURCE ZERO DIFF / MEASUREMENTS NOT RUN.",
   "meta": {
-    "planning_stage": "stage_0_activation_and_baseline_freeze",
+    "planning_stage": "stage_5_latest_negative_path_rereview_passed_ready_for_frozen_harness_commit_decision",
     "qualification_base_commit": "38afdc3fd508dc67f7aa446fd323837a5d550b70",
     "cvn5_source_commit": "f329ec10bc77c530282db3a6f47dbd6b6112859e",
     "cvn5_acceptance_commit": "b2ad0bc",
@@ -91,7 +91,24 @@
     "user_qualification_implementation_authorization": true,
     "user_qualification_implementation_authorization_date": "2026-08-13",
     "qualification_measurement_run": false,
-    "qualification_result": "not_run_planning_only",
+    "qualification_result": "not_run_bounded_harness_repair",
+    "stage_0_baseline_freeze": {
+      "status": "passed_2026_08_13",
+      "candidate_commit": "616130cc6908f5c8741d12761cdb0ccebff63589",
+      "baseline_commit": "38afdc3fd508dc67f7aa446fd323837a5d550b70",
+      "source_tree_hash": "092a0984530e84fde7e4df40f661dbbae8e94f75",
+      "package_lock_sha256": "1B2651EE9E4ECACAE4AECB13C6A93D3AFE75BB596BD2413539E916E2505EBAF6",
+      "candidate_typecheck": "passed",
+      "candidate_clean_builds": 2,
+      "candidate_full_tests": "432/432",
+      "baseline_typecheck": "passed",
+      "baseline_clean_builds": 2,
+      "baseline_full_tests": "432/432",
+      "production_manifest_file_count": 71,
+      "production_manifest_tree_sha256": "EDB3041C59298AFE0AE5617AAF9A779AB0472544BCADE4C09AB1876A2BDF0330",
+      "same_commit_reproducibility": "passed",
+      "cross_build_equality": "passed"
+    },
     "planning_artifacts_complete": true,
     "independent_planning_review": "passed_2026_08_13_p0_0_p1_0_p2_0_after_two_bounded_repairs",
     "independent_planning_review_findings_initial": {
@@ -177,8 +194,9 @@
     "post_core_scope": "read_only_until_cvn7_and_parent_accepted_archived",
     "push_authorized": false,
     "archive_authorized": false,
-    "operator_state": "stage_0_activation_and_baseline_freeze",
-    "next_gate": "freeze_detached_baseline_and_verify_clean_builds",
+    "operator_state": "stage_5_all_harness_findings_closed_ready_for_separate_path_limited_commit_decision",
+    "next_gate": "separate_path_limited_frozen_harness_commit_decision_before_any_official_measurement",
+    "stage_1_to_5_candidate_verification": "superseded_by_bounded_implementation_repair_verification",
     "planning_verification": "ancestry198c71a_38afdc3_trellis_child31_27_parent3_3_product0_0_postcore15_16_json_jsonl_unique_child1_fc44_trace44_diffcheck_typecheck_build_full432_production0_postcore0",
     "bounded_planning_repair_verification": "trace44_exact_parent_set_unique_cases_existing_titles_exact_once_trellis31_27_parent3_3_product0_0_postcore15_16_json_jsonl_diffcheck_typecheck_build_full432_protected_delta0",
     "planning_full_test_count": 432,
@@ -186,6 +204,57 @@
     "planning_build": "passed_clean_source",
     "planning_environment_probe": "node24_15_0_win32_x64_windows_nt_release10_0_26200_i9_13900hx_32cpu_39_7gib_match",
     "planning_production_delta": "zero",
-    "planning_post_core_delta": "zero"
+    "planning_post_core_delta": "zero",
+    "independent_implementation_review_round_1": {
+      "P0": 0,
+      "P1": 5,
+      "P2": 2,
+      "verdict": "return_for_bounded_implementation_repair"
+    },
+    "bounded_implementation_repair": [
+      "normalize_node_maxrss_kib_to_bytes_on_all_platforms",
+      "exclude_postcondition_validation_hashing_reads_filtering_and_freeze_checks_from_latency_timers",
+      "require_exact_coordinator_registered_baseline_or_candidate_build_root",
+      "validate_and_publish_complete_negative_evidence_with_consistent_summary_routing",
+      "split_stress_functional_determinism_and_resource_subgates",
+      "settle_timeout_only_after_process_tree_termination",
+      "separate_historical_ac001_planning_gate_from_current_implementation_state"
+    ],
+    "bounded_implementation_repair_verification": "typecheck_build_cvn7_69_69_full_501_501_trellis_31_27_parent_3_3_product_0_0_postcore_15_16_diffcheck_protected_zero_existing_test_zero_staging_empty_measurement_not_run",
+    "independent_implementation_targeted_rereview_round_1": {
+      "P0": 0,
+      "P1": 2,
+      "P2": 1,
+      "verdict": "return_for_bounded_implementation_repair"
+    },
+    "second_bounded_implementation_repair": [
+      "prebuild_and_deep_freeze_batch_100_envelope_outside_timed_submit",
+      "allow_dense_partial_stress_statuses_and_preserve_history_negative_booleans_through_decoder",
+      "route_all_timed_out_error_exit_and_grace_paths_through_tree_cleanup_before_rejection"
+    ],
+    "independent_implementation_targeted_rereview_final": {
+      "P0": 0,
+      "P1": 0,
+      "P2": 0,
+      "verdict": "pass"
+    },
+    "independent_implementation_negative_path_probe": {
+      "P0": 0,
+      "P1": 1,
+      "P2": 0,
+      "verdict": "return_for_bounded_implementation_repair",
+      "overrides_prior_pass": true
+    },
+    "third_bounded_implementation_repair": [
+      "encode_missing_stress_assessment_as_explicit_null_for_live_and_replay",
+      "allow_explicit_null_support_in_exact_stress_decoder",
+      "regress_10000_rejected_json_roundtrip_decoder_and_functional_route"
+    ],
+    "independent_implementation_negative_path_targeted_rereview": {
+      "P0": 0,
+      "P1": 0,
+      "P2": 0,
+      "verdict": "pass"
+    }
   }
 }

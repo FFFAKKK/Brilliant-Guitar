@@ -1,4 +1,20 @@
-# CVN-7 Planning Operator Handoff
+# CVN-7 Qualification Harness Operator Handoff
+
+## Current implementation candidate — 2026-08-13
+
+- Independent implementation review round 1 returned P0/P1/P2=`0/5/2`; the current candidate is a bounded harness-only repair awaiting targeted rereview.
+- Repairs cover cross-platform KiB-to-bytes RSS normalization, operation-only timing, exact two-root registration, valid negative-evidence publication, stress failure routing, timeout cleanup settlement and the historical/current AC001 wording split.
+- No official qualification worker has run and no evidence has been published.
+
+- Task is `in_progress`; Stage 0 baseline freeze passed and Stage 1–5 harness implementation is complete.
+- Added exactly the 13 allowlisted CVN-7 TypeScript files and the two approved `package.json` scripts.
+- Production boundary remains unchanged: `src/**`, `package-lock.json`, `tsconfig.json`, `openspec/**` and every existing test have zero diff from `38afdc3`.
+- Local implementation gates pass: typecheck, build, CVN-7 `69/69`, full `501/501`, four Trellis validations, strict JSON/JSONL, allowlist and `git diff --check`.
+- Worker build loading is restricted to coordinator-registered baseline/candidate roots; evidence decoding rejects accessors, cycles and unreadable dense arrays without caller execution.
+- Qualification measurements have not run; `evidence/` still contains only `README.md`.
+- Next action is a separate read-only independent implementation review of this uncommitted candidate. Do not run `qualify:cvn7`, commit, publish evidence, update acceptance or archive during that review.
+
+The planning-era snapshot below is retained as historical context.
 
 ## Current state
 

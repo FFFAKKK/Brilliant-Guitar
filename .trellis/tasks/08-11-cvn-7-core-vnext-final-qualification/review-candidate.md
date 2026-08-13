@@ -1,4 +1,38 @@
-# CVN-7 Independent Planning Review Candidate
+# CVN-7 Independent Planning and Harness Review Candidate
+
+## Harness implementation review target — 2026-08-13
+
+`READY FOR READ-ONLY INDEPENDENT IMPLEMENTATION REVIEW`
+
+### Bounded implementation repair target — 2026-08-13
+
+The first independent implementation review returned `RETURN FOR BOUNDED IMPLEMENTATION REPAIR`, P0/P1/P2=`0/5/2`. The current uncommitted candidate is limited to those direct repairs:
+
+1. normalize Node `maxRSS` from KiB to bytes on every platform;
+2. keep latency timers around Core operations only and move hashes, reads, event filtering and freeze checks after timing;
+3. require exact equality with the two coordinator-supplied baseline/candidate roots;
+4. accept structurally complete negative portable/resource/determinism/functional evidence and preserve its repair route;
+5. split stress functional, determinism and resource gates;
+6. settle worker timeout only after process-tree cleanup;
+7. describe `CVN7-AC001` as a closed historical planning gate plus the current implementation state.
+
+Targeted regression coverage includes Windows RSS conversion, nested-decoy root rejection, measured-region source boundaries, timeout cleanup ordering, and complete valid negative evidence sets for all four repair routes. Official qualification remains unrun; this rereview must remain read-only and must not stage, commit, measure, accept or archive.
+
+Review the current uncommitted Stage 1–5 qualification harness against the already accepted planning contracts. The candidate contains only the 13 allowlisted new CVN-7 TypeScript files, two approved npm scripts and task-local planning/status corrections. Production source, lockfile, tsconfig, OpenSpec and all existing tests remain unchanged from `38afdc3`.
+
+Operator evidence before handoff:
+
+- typecheck/build: pass;
+- `npm.cmd run test:cvn7`: `69/69`;
+- `npm.cmd test`: `501/501`;
+- Trellis: child `31/27`, parent `3/3`, product `0/0`, post-Core `15/16`;
+- strict JSON/JSONL, parent reference, allowlist, protected-path and `git diff --check`: pass;
+- task: `in_progress`, measurement false, archive false, staging empty;
+- official runner/evidence publication: not run.
+
+The implementation reviewer should inspect runner preflight/isolation/timeouts/atomic publication, worker registered-root enforcement, fixture arithmetic, timed-region postconditions, full functional-matrix evidence, validator recomputation and failure precedence. The review is read-only: do not modify, stage, commit, measure, accept or archive.
+
+The planning review record below remains the authority for the already closed planning phase.
 
 ## Status
 

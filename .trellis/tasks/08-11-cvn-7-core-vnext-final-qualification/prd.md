@@ -114,7 +114,7 @@ CVN-7 消费并验证矩阵中全部 44 个实际存在的 `CVN-FC` 行：
 - 每 Voice `start=0/1`，恰好 8 个 `1/8` Event；偶数索引是含一 Note 的 Notes Event，奇数索引是 Rest；
 - Event 恰好 `25,600`，Note 恰好 `12,800`；
 - score-owned schema-1 block 恰好一个；每个 Part 各有一个 part-owned schema-1 block；
-- 恰好两个 synthetic official contributions，按 score module 后 part module 的 catalog order；
+- 恰好两个 synthetic official contributions；输入 registration entries 固定为 score module 后 part module，用于证明输入顺序不形成运行时权威；编译后的 catalog 与 callback 执行采用 accepted CVN-2 lexical canonical order，即 part module 后 score module；
 - 两个 contribution 均有 validator、classifier、command 和 owned effect；
 - cross-module batch 各含一个 effective module command；
 - long-history case 恰好保留 `2,000` 个 committed entries，undo/redo depth 无空洞。
@@ -161,7 +161,7 @@ Representative fixture 上的八项 operation 固定为：
 - 任一 measured duration 非有限数或 `<=0`，整项报告为 invalid evidence。
 - median 是排序后第 10/11 项算术平均；P95 是 nearest-rank 第 19 项。
 - 报告 20 个 dense pair records；每条保存 pair index、真实 invocation order、baseline/candidate duration。Validator 从 pair records 重建两侧样本、median 和 P95；不接受丢失执行顺序的两组独立 arrays。
-- memory run 与 latency run 分离；RSS 使用 worker exit 前的 `process.resourceUsage().maxRSS` 并保存原始值、平台单位和归一化 bytes；heap 保存 setup 前、operation 前、operation 后、result encode 后的 `heapUsed`，以四个观测点最大值记为 `observedPeakHeapUsedBytes`。
+- memory run 与 latency run 分离；Node `process.resourceUsage().maxRSS` 在全部支持平台均按 KiB 解释，证据保存原始 KiB 值并固定乘 `1024` 得到归一化 bytes；heap 保存 setup 前、operation 前、operation 后、result encode 后的 `heapUsed`，以四个观测点最大值记为 `observedPeakHeapUsedBytes`。
 
 ### CVN7-R009 — Reference environment 与预算
 
@@ -284,7 +284,7 @@ CVN-7 排除：
 
 ## 6. Acceptance criteria
 
-- [ ] `CVN7-AC001`：任务保持 `planning`，`task_start_run=false`，`production_implementation_authorized=false`，独立规划复审 P0/P1/P2=`0/0/0`。
+- [x] `CVN7-AC001`：历史规划门已在独立规划复审 P0/P1/P2=`0/0/0` 后关闭；当前实施期任务为 `in_progress`，`task_start_run=true`、`production_implementation_authorized=true`，`qualification_measurement_run=false`，正式测量仍受冻结 harness commit 门禁约束。
 - [ ] `CVN7-AC002`：规划基线包含 CVN-0 through CVN-6、Extensibility Reservation 和 GD-0 的 accepted/archive ancestry；CVN-5 archive `198c71a` 存在。
 - [ ] `CVN7-AC003`：primary owner 精确为九个已存在的 `130..134/140..143` 行；`135..139` 明确未分配。
 - [ ] `CVN7-AC004`：未来实现默认 `src/**` 零差异；发现生产缺陷时使用 owner-specific repair task。

@@ -74,7 +74,7 @@ note:    cvn7-n-{partIndex:02}-{measureIndex:04}-{voiceIndex:01}-{eventIndex:01}
 
 规则：
 
-- registration entry order 固定为 score 后 part；
+- 输入 registration entry order 固定为 score 后 part，用于覆盖 compiler order-independence；编译后的 catalog 和 callback trace 必须遵循 accepted CVN-2 lexical canonical order，即 part 后 score；
 - 两个 contribution 都使用 accepted 九字段 ABI；
 - 每个 command 请求两个有序 forward effects：一个 WrittenPitch replacement，随后一个自有 ExtensionBlock replacement；
 - score command 拥有 score block，目标为 canonical first Note；

@@ -128,7 +128,7 @@ node --test dist/test/core-kernel/cvn-7-contract-trace.test.js
 - generator version/seed mismatch rejection；
 - catalog `2` contributions exact；
 - inventory parity；
-- callback trace score-before-part；
+- callback trace part-before-score，与 accepted CVN-2 compiled catalog lexical order 完全一致；输入 registration entries 仍保持 score-before-part 以证明 normalization；
 - one score block + N part blocks + one unknown block。
 
 ### Exit

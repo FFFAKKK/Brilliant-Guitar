@@ -36,7 +36,7 @@ Latency and memory runs are separate. Memory worker records:
 - operation-before `heapUsed`/RSS;
 - operation-after `heapUsed`/RSS;
 - result-encode-after `heapUsed`/RSS;
-- `process.resourceUsage().maxRSS` raw value and platform unit;
+- `process.resourceUsage().maxRSS` raw KiB value; normalize to bytes by multiplying by `1024` on every supported platform, including Windows;
 - normalized max RSS bytes;
 - observed peak heapUsed = maximum of four explicit checkpoints.
 

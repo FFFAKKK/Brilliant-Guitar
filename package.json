@@ -6,7 +6,9 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run build && node --test \"dist/test/**/*.test.js\""
+    "test": "npm run build && node --test \"dist/test/**/*.test.js\"",
+    "test:cvn7": "npm run build && node --test \"dist/test/core-kernel/cvn-7-*.test.js\"",
+    "qualify:cvn7": "node --expose-gc dist/test/core-kernel/qualification/cvn-7-runner.js"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

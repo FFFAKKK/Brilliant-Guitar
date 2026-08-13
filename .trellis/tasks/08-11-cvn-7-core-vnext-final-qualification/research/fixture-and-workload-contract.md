@@ -31,7 +31,8 @@ Each Voice has eight eighth-note events. Even event positions are one-note Notes
 - known score blocks: 1;
 - known part blocks: one per Part;
 - unknown opaque blocks: 1 score-owned;
-- catalog order: score contribution, then part contribution;
+- input registration-entry order: score contribution, then part contribution;
+- compiled catalog and callback order: part contribution, then score contribution, following the accepted CVN-2 lexical canonical order;
 - each known contribution supplies one command, validator, classifier and owned effect;
 - each module command requests WrittenPitch replacement followed by owned block replacement.
 
