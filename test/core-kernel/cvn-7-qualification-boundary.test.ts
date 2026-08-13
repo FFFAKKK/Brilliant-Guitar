@@ -1,6 +1,7 @@
 import assert = require("node:assert/strict");
 import { execFileSync, spawnSync } from "node:child_process";
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -43,12 +44,14 @@ import {
 } from "./qualification/cvn-7-evidence-validator";
 import {
   CAPTURED_NPM_EXEC_PATH,
+  canonicalizeWorktreeRoot,
   completeTimedOutWorkerCleanup,
   decodeStressWorkerEnvelope,
   nativeExecutableOutput,
   npmCliOutput,
   parseNodeTestSummary,
   validateNpmCliJavaScriptPath,
+  worktreeScopedGitOutput,
 } from "./qualification/cvn-7-runner";
 import { CVN7_CONTRACT_TRACE } from "./qualification/cvn-7-contract-trace";
 import {
@@ -660,6 +663,150 @@ test("CVN7 runner rejects a missing startup npm identity before evidence publica
   }
 });
 
+test("CVN7 worktree-scoped Git binds each canonical root with exact argv boundaries", () => {
+  const temporaryRoot = mkdtempSync(join(tmpdir(), "cvn7 git roots "));
+  try {
+    const candidateRoot = join(temporaryRoot, "candidate root");
+    const baselineRoot = join(temporaryRoot, "baseline root");
+    mkdirSync(candidateRoot);
+    mkdirSync(baselineRoot);
+    const candidateCanonicalRoot = canonicalizeWorktreeRoot(candidateRoot);
+    const baselineCanonicalRoot = canonicalizeWorktreeRoot(baselineRoot);
+    const calls: Array<{
+      readonly executable: string;
+      readonly arguments_: readonly string[];
+      readonly cwd: string;
+    }> = [];
+    const execute = (
+      executable: string,
+      arguments_: readonly string[],
+      options: { readonly cwd: string },
+    ): string => {
+      calls.push({ executable, arguments_: [...arguments_], cwd: options.cwd });
+      return "clean\r\n";
+    };
+    assert.equal(
+      worktreeScopedGitOutput(candidateRoot, ["status", "--porcelain=v1"], execute),
+      "clean",
+    );
+    assert.equal(
+      worktreeScopedGitOutput(baselineRoot, ["rev-parse", "HEAD"], execute),
+      "clean",
+    );
+    assert.deepEqual(calls, [
+      {
+        executable: "git",
+        arguments_: [
+          "-c",
+          `safe.directory=${candidateCanonicalRoot}`,
+          "status",
+          "--porcelain=v1",
+        ],
+        cwd: candidateCanonicalRoot,
+      },
+      {
+        executable: "git",
+        arguments_: [
+          "-c",
+          `safe.directory=${baselineCanonicalRoot}`,
+          "rev-parse",
+          "HEAD",
+        ],
+        cwd: baselineCanonicalRoot,
+      },
+    ]);
+    for (const call of calls) {
+      assert.equal(call.arguments_.filter((value) => value === "-c").length, 1);
+      assert.equal(call.arguments_[1], `safe.directory=${call.cwd}`);
+    }
+
+    const propagated = new Error("scoped-git-failed");
+    assert.throws(
+      () => worktreeScopedGitOutput(candidateRoot, ["status"], () => { throw propagated; }),
+      (error) => error === propagated,
+    );
+  } finally {
+    rmSync(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("CVN7 worktree root validation rejects before Git or qualification side effects", () => {
+  const temporaryRoot = mkdtempSync(join(tmpdir(), "cvn7 git invalid "));
+  try {
+    const evidenceRoot = join(temporaryRoot, "evidence");
+    mkdirSync(evidenceRoot);
+    const regularFile = join(temporaryRoot, "not-a-directory");
+    writeFileSync(regularFile, "fixture", "utf8");
+    const invalidRoots: readonly unknown[] = [
+      undefined,
+      "",
+      "relative/worktree",
+      join(temporaryRoot, "missing"),
+      regularFile,
+    ];
+    let gitCalls = 0;
+    for (const invalidRoot of invalidRoots) {
+      assert.throws(
+        () => worktreeScopedGitOutput(invalidRoot, ["status"], () => {
+          gitCalls += 1;
+          return "";
+        }),
+        /worktree root/u,
+      );
+    }
+    assert.throws(
+      () => worktreeScopedGitOutput(temporaryRoot, ["config", "safe.directory", temporaryRoot], () => {
+        gitCalls += 1;
+        return "";
+      }),
+      /may not override or persist configuration/u,
+    );
+    assert.equal(gitCalls, 0);
+    assert.deepEqual(readdirSync(evidenceRoot), []);
+  } finally {
+    rmSync(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("CVN7 runner rejects a missing worktree before npm evidence or worker-capable preflight", () => {
+  const temporaryRoot = mkdtempSync(join(tmpdir(), "cvn7 git process "));
+  try {
+    const missingRoot = join(temporaryRoot, "missing baseline");
+    const evidenceRoot = join(temporaryRoot, "evidence");
+    mkdirSync(evidenceRoot);
+    const result = spawnSync(process.execPath, [
+      resolve(__dirname, "qualification/cvn-7-runner.js"),
+      "--mode", "functional",
+      "--baseline-root", missingRoot,
+      "--candidate-root", process.cwd(),
+      "--evidence-dir", evidenceRoot,
+      "--qualification-base", CVN7_QUALIFICATION_BASE,
+      "--candidate-commit", "1".repeat(40),
+      "--harness-commit", "1".repeat(40),
+    ], {
+      cwd: process.cwd(),
+      encoding: "utf8",
+      env: process.env,
+      windowsHide: true,
+    });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /worktree root must identify an existing directory/u);
+    assert.equal(result.stdout, "");
+    assert.deepEqual(readdirSync(evidenceRoot), []);
+  } finally {
+    rmSync(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("CVN7 scoped native Git probes the frozen baseline as clean", () => {
+  const baselineRoot = resolve(process.cwd(), "..", "cvn-7-accepted-baseline");
+  if (!existsSync(baselineRoot)) return;
+  assert.equal(
+    worktreeScopedGitOutput(baselineRoot, ["status", "--porcelain=v1", "--untracked-files=all"]),
+    "",
+  );
+});
+
 test("CVN7 preflight preserves npm ordering and the native git launcher", () => {
   const runnerSource = readFileSync(
     resolve("test/core-kernel/qualification/cvn-7-runner.ts"),
@@ -686,11 +833,19 @@ test("CVN7 preflight preserves npm ordering and the native git launcher", () => 
   );
   const qualificationStart = runnerSource.indexOf("export async function runQualification(");
   const qualificationSource = runnerSource.slice(qualificationStart);
+  const rootValidationIndex = qualificationSource.indexOf("canonicalizeWorktreeRoot(arguments_.baselineRoot)");
   const validationIndex = qualificationSource.indexOf("validateNpmCliJavaScriptPath(CAPTURED_NPM_EXEC_PATH)");
+  assert.notEqual(rootValidationIndex, -1);
   assert.notEqual(validationIndex, -1);
+  assert.equal(rootValidationIndex < validationIndex, true);
   for (const laterSideEffect of ["assertPreflight(", "mkdtempSync(", "invokeWorker(", "publishAtomically("]) {
     assert.equal(validationIndex < qualificationSource.indexOf(laterSideEffect), true);
   }
+  assert.equal(
+    Array.from(preflightSource.matchAll(/worktreeScopedGitOutput\(/gu)).length,
+    4,
+  );
+  assert.doesNotMatch(runnerSource, /function gitOutput\(|safe\.directory=\*|config["'],\s*["']--(?:global|system|local)/u);
 
   const calls: Array<{ readonly executable: string; readonly arguments_: readonly string[] }> = [];
   const gitOutput = nativeExecutableOutput(

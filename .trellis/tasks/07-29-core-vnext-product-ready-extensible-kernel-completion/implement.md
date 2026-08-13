@@ -2,7 +2,7 @@
 
 ## 1. Execution Status
 
-`PLANNING COORDINATION / CVN-0 THROUGH CVN-6, EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-7 IN PROGRESS; FIRST OFFICIAL ATTEMPT AT 7e3b7e6 ENDED EVIDENCE_INVALID BEFORE WORKER START (npm_cmd_execfile_einval), WITH NO PARTIAL EVIDENCE / BOUNDED NODE-PLUS-NPM-CLI LAUNCHER REPAIR IMPLEMENTED / TARGETED INDEPENDENT REREVIEW PENDING / CVN-7 AND PARENT ACCEPTANCE/ARCHIVE STILL OPEN`.
+`PLANNING COORDINATION / CVN-0 THROUGH CVN-6, EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-7 IN PROGRESS; INVALID INPUTS 7e3b7e6 AND e510ed1 BOTH ENDED BEFORE WORKER START WITH NO PARTIAL EVIDENCE / BOUNDED WORKTREE-SCOPED GIT OWNERSHIP REPAIR IMPLEMENTED / TARGETED INDEPENDENT REREVIEW PENDING / CVN-7 AND PARENT ACCEPTANCE/ARCHIVE STILL OPEN`.
 
 This parent task coordinates independently verifiable children. It does not batch all production changes into one implementation branch. Each child must receive its own PRD/design/implement review, `task.py start`, independent technical audit and archive decision.
 
@@ -216,7 +216,7 @@ Numeric labels organize scope; the arrows above are the actual execution depende
 
 ### CVN-7 — Core VNext Compatibility, Reliability and Scale Gate
 
-**Formal child:** `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/`; status `in_progress`, qualification base `38afdc3fd508dc67f7aa446fd323837a5d550b70`, task start and qualification implementation authorization true. The first official input `7e3b7e6` ended `EVIDENCE_INVALID` with `npm_cmd_execfile_einval` before worker startup and produced no partial evidence. A bounded Node-plus-npm-CLI launcher repair is implemented and awaits targeted independent rereview; only its later clean reviewed HEAD may be passed equally as candidate and harness commit for a fresh full run. Measurement completion, acceptance and archive remain false.
+**Formal child:** `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/`; status `in_progress`, qualification base `38afdc3fd508dc67f7aa446fd323837a5d550b70`, task start and qualification implementation authorization true. Inputs `7e3b7e6` and `e510ed1` both ended before worker startup, respectively at npm launcher and baseline Git ownership preflight, with no partial evidence. A bounded worktree-scoped native Git repair is implemented and awaits targeted independent rereview; only its later clean reviewed HEAD may be passed equally as candidate and harness commit for a fresh full run. Measurement completion, acceptance and archive remain false.
 
 **Purpose:** close the product-ready extensible kernel only after every mechanism is integrated.
 

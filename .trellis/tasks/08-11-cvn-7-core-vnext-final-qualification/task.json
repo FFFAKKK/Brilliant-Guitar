@@ -44,9 +44,9 @@
     ".trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/",
     ".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/"
   ],
-  "notes": "CVN-7 IN PROGRESS / FIRST OFFICIAL INPUT 7e3b7e6 ENDED EVIDENCE_INVALID: npm_cmd_execfile_einval BEFORE WORKER START / NO PARTIAL OR REUSABLE EVIDENCE / BOUNDED NODE-PLUS-NPM-CLI LAUNCHER REPAIR IMPLEMENTED / TARGETED INDEPENDENT REREVIEW PENDING / MEASUREMENT, ACCEPTANCE, ARCHIVE AND PUSH REMAIN OPEN.",
+  "notes": "CVN-7 IN PROGRESS / INVALID OFFICIAL INPUTS 7e3b7e6 AND e510ed1 BOTH ENDED BEFORE WORKER START WITH NO PARTIAL EVIDENCE / SECOND FAILURE git_dubious_ownership_preflight / BOUNDED WORKTREE-SCOPED GIT OWNERSHIP REPAIR IMPLEMENTED / TARGETED INDEPENDENT REREVIEW PENDING / MEASUREMENT, ACCEPTANCE, ARCHIVE AND PUSH REMAIN OPEN.",
   "meta": {
-    "planning_stage": "stage_5_bounded_npm_launcher_repair_implemented_targeted_independent_rereview_pending",
+    "planning_stage": "stage_5_bounded_git_worktree_ownership_repair_implemented_targeted_independent_rereview_pending",
     "qualification_base_commit": "38afdc3fd508dc67f7aa446fd323837a5d550b70",
     "cvn5_source_commit": "f329ec10bc77c530282db3a6f47dbd6b6112859e",
     "cvn5_acceptance_commit": "b2ad0bc",
@@ -91,12 +91,12 @@
     "user_qualification_implementation_authorization": true,
     "user_qualification_implementation_authorization_date": "2026-08-13",
     "qualification_measurement_run": false,
-    "qualification_result": "evidence_invalid_npm_cmd_execfile_einval_before_worker_no_partial_evidence",
+    "qualification_result": "evidence_invalid_git_dubious_ownership_preflight_before_worker_no_partial_evidence",
     "reviewed_harness_implementation_commit": "623f94a4308d2a51014256a2616af1bff53fdb56",
     "reviewed_harness_implementation_commit_date": "2026-08-13",
-    "official_measurement_commit_policy": "exact_clean_reviewed_launcher_repair_head_passed_as_equal_candidate_and_harness_commit",
+    "official_measurement_commit_policy": "exact_clean_reviewed_worktree_scoped_git_repair_head_passed_as_equal_candidate_and_harness_commit",
     "frozen_harness_review": "passed_p0_0_p1_0_p2_0_after_negative_path_targeted_rereview",
-    "official_measurement_status": "first_attempt_evidence_invalid_launcher_repair_targeted_rereview_pending",
+    "official_measurement_status": "second_attempt_evidence_invalid_git_ownership_repair_targeted_rereview_pending",
     "official_evidence_status": "readme_only_no_partial_or_reusable_measurement_artifacts",
     "stage_0_baseline_freeze": {
       "status": "passed_2026_08_13",
@@ -200,8 +200,8 @@
     "post_core_scope": "read_only_until_cvn7_and_parent_accepted_archived",
     "push_authorized": false,
     "archive_authorized": false,
-    "operator_state": "bounded_npm_launcher_repair_committed_candidate_pending_targeted_independent_rereview",
-    "next_gate": "targeted_independent_launcher_rereview_then_new_clean_head_full_mode_all_measurement",
+    "operator_state": "bounded_git_worktree_ownership_repair_candidate_pending_targeted_independent_rereview",
+    "next_gate": "targeted_independent_git_ownership_repair_rereview_then_new_clean_head_full_mode_all_measurement",
     "stage_1_to_5_candidate_verification": "superseded_by_bounded_implementation_repair_verification",
     "planning_verification": "ancestry198c71a_38afdc3_trellis_child31_27_parent3_3_product0_0_postcore15_16_json_jsonl_unique_child1_fc44_trace44_diffcheck_typecheck_build_full432_production0_postcore0",
     "bounded_planning_repair_verification": "trace44_exact_parent_set_unique_cases_existing_titles_exact_once_trellis31_27_parent3_3_product0_0_postcore15_16_json_jsonl_diffcheck_typecheck_build_full432_protected_delta0",
@@ -273,7 +273,7 @@
       "partial_evidence": false,
       "reusable_evidence": false
     },
-    "launcher_repair_status": "reviewed_code_and_tests_docs_alignment_targeted_independent_rereview_pending",
+    "launcher_repair_status": "reviewed_node_plus_npm_cli_repair_retained",
     "failed_official_input_reusable": false,
     "launcher_repair_verification": "typecheck_build_cvn7_73_73_full_505_505_strict_json_jsonl_trellis_31_27_parent_3_3_product_0_0_postcore_15_16_allowlist_10_diffcheck_protected_zero_evidence_readme_only",
     "launcher_repair_test_counts": {
@@ -304,7 +304,51 @@
         "all_tests_except_official_measurement_test_repair_allowlist"
       ]
     },
-    "official_measurement_input_head": "next_clean_docs_only_alignment_head_containing_launcher_repair_5a21284",
-    "launcher_repair_targeted_independent_rereview": "pending_docs_only_measurement_head_alignment"
+    "official_measurement_input_head": "next_clean_worktree_scoped_git_repair_head_after_targeted_independent_rereview",
+    "launcher_repair_targeted_independent_rereview": "passed_docs_only_measurement_head_alignment",
+    "second_official_measurement_attempt": {
+      "candidate_and_harness_commit": "e510ed1d88f646c41143d94e3513af3f79f7d943",
+      "status": "evidence_invalid",
+      "stage": "baseline_worktree_git_clean_status_preflight",
+      "reason": "git_dubious_ownership_preflight",
+      "worker_started": false,
+      "partial_evidence": false,
+      "reusable_evidence": false
+    },
+    "official_measurement_attempts": [
+      {
+        "candidate_and_harness_commit": "7e3b7e61cc8ee292ee59522df297f43a86210b7c",
+        "status": "evidence_invalid",
+        "reason": "npm_cmd_execfile_einval",
+        "worker_started": false,
+        "partial_evidence": false,
+        "reusable_evidence": false
+      },
+      {
+        "candidate_and_harness_commit": "e510ed1d88f646c41143d94e3513af3f79f7d943",
+        "status": "evidence_invalid",
+        "stage": "baseline_worktree_git_clean_status_preflight",
+        "reason": "git_dubious_ownership_preflight",
+        "worker_started": false,
+        "partial_evidence": false,
+        "reusable_evidence": false
+      }
+    ],
+    "failed_official_inputs": [
+      "7e3b7e61cc8ee292ee59522df297f43a86210b7c",
+      "e510ed1d88f646c41143d94e3513af3f79f7d943"
+    ],
+    "git_worktree_ownership_repair_status": "implemented_targeted_independent_rereview_pending",
+    "git_worktree_ownership_repair_verification": "typecheck_build_cvn7_77_77_full_509_509_strict_json_jsonl_trellis_31_27_parent_3_3_product_0_0_postcore_15_16_allowlist_10_diffcheck_protected_zero_evidence_readme_only_scoped_baseline_status_clean",
+    "git_worktree_ownership_repair_test_counts": {
+      "cvn7": {
+        "passed": 77,
+        "total": 77
+      },
+      "full": {
+        "passed": 509,
+        "total": 509
+      }
+    }
   }
 }

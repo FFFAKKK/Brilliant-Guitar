@@ -3,13 +3,14 @@
 ## 1. Current gate
 
 ```text
-IN PROGRESS — BOUNDED NPM LAUNCHER REPAIR IMPLEMENTED
+IN PROGRESS — BOUNDED GIT WORKTREE OWNERSHIP REPAIR IMPLEMENTED
 qualification measurement complete: false
 evidence valid: false
 first official attempt: EVIDENCE_INVALID / npm_cmd_execfile_einval
+second official attempt: EVIDENCE_INVALID / git_dubious_ownership_preflight
 worker started: false
 partial or reusable evidence: false
-next gate: targeted independent launcher rereview, then one full mode-all run from the new clean frozen HEAD
+next gate: targeted independent Git ownership repair rereview, then one full mode-all run from the new clean frozen HEAD
 ```
 
 The historical planning gate below records the pre-activation state and is not the live task state.
@@ -235,6 +236,14 @@ The first official attempt at input `7e3b7e61cc8ee292ee59522df297f43a86210b7c` e
 The bounded repair captures `process.env.npm_execpath` at module startup, validates it before every preflight side effect as a nonempty absolute existing regular `npm-cli.js`, then launches npm through `execFileSync(process.execPath, [validatedNpmExecPath, ...npmArgs], options)`. Baseline and candidate use the same validated identity; Git remains on the native executable helper. The repair adds regressions for Windows launcher selection, paths/arguments containing spaces, invalid identities, npm stage ordering/output/failure propagation, unchanged Git behavior, zero side effects on preflight failure, and unchanged schema/budget/fixture/repeat/seed contracts.
 
 This repair receives a single path-limited commit and targeted independent rereview before measurement. The repair commit, not `7e3b7e6`, becomes the next candidate/harness frozen input after rereview. This repair session does not run `--mode all`.
+
+### Bounded Git worktree ownership repair — 2026-08-13
+
+The second official input `e510ed1d88f646c41143d94e3513af3f79f7d943` ended during baseline `git status --porcelain=v1 --untracked-files=all`: native Git rejected the frozen worktree as dubious ownership under the runner identity. No worker, temporary measurement or evidence publication occurred. Record `git_dubious_ownership_preflight`, `worker_started=false`, `partial_evidence=false`, `measurement_complete=false` and `evidence_valid=false`.
+
+The bounded repair canonicalizes each worktree root before npm, temporary output, evidence or worker side effects and routes all runner Git calls through one native argv helper: `git -c safe.directory=<that exact canonical root> ...`, with `cwd` bound to the same root. It never writes Git config, never uses wildcard safe-directory scope, and keeps candidate/baseline roots separate. Regressions cover exact argv/cwd boundaries including spaces, invalid roots before side effects, all Git call-site routing, actual frozen-baseline status, failure propagation and retained Node-to-npm launcher behavior.
+
+The new repair commit becomes the next equal candidate/harness input only after targeted independent rereview. Neither prior invalid input is reused, and this repair session does not run `--mode all`.
 
 ### Files
 

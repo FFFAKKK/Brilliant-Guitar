@@ -2,7 +2,7 @@
 
 > **Purpose:** durable context-recovery entry for CVN-0 through CVN-7.
 > **Snapshot date:** 2026-08-11.
-> **Current active coordination gate at this snapshot:** CVN-0 through CVN-6 are accepted and archived. CVN-7 child `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/` is `in_progress` on base `38afdc3`. The first official attempt at `7e3b7e6` ended `EVIDENCE_INVALID` with `npm_cmd_execfile_einval` before worker startup and produced no partial evidence. A bounded Node-plus-npm-CLI launcher repair is implemented and awaits targeted independent rereview; measurement completion, acceptance and archive remain open.
+> **Current active coordination gate at this snapshot:** CVN-0 through CVN-6 are accepted and archived. CVN-7 child `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/` is `in_progress` on base `38afdc3`. Invalid inputs `7e3b7e6` and `e510ed1` both ended before worker startup with no partial evidence; the second failed at baseline Git ownership preflight. A bounded worktree-scoped Git repair is implemented and awaits targeted independent rereview; measurement completion, acceptance and archive remain open.
 > **Status authority:** live child and parent `task.json` files override the snapshot status table below.
 > **Behavior authority:** `feature-contract-matrix.md` overrides this summary for exact public contracts, command payloads, failure priority, limits, fixtures and budgets.
 
@@ -704,9 +704,9 @@ Accepted coordination gates:
 
 - `.trellis/tasks/archive/2026-08/08-09-core-vnext-extensibility-reservation-review/`
 
-Current planning child: none. Active qualification child: `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/` (`in_progress`; first input `7e3b7e6` invalidated by `npm_cmd_execfile_einval` before worker startup; no partial evidence; bounded launcher repair implemented and targeted rereview pending).
+Current planning child: none. Active qualification child: `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/` (`in_progress`; inputs `7e3b7e6` and `e510ed1` invalidated before worker startup; no partial evidence; bounded worktree-scoped Git ownership repair implemented and targeted rereview pending).
 
-Active coordination gate at this snapshot: CVN-6 source `8da50f9` and CVN-5 source `f329ec1` are accepted and archived; CVN-5 archive is `198c71a`. CVN-2 remains accepted/archived and its compiler/catalog/SDK are exact. CVN-7 is the sole active qualification child: task start and authorization are true; the first Windows launch attempt failed before workers with no reusable evidence; the bounded launcher repair awaits targeted independent rereview and a new clean frozen HEAD before one full rerun. Post-Core activation remains gated by CVN-7 plus parent acceptance/archive and explicit user approval.
+Active coordination gate at this snapshot: CVN-6 source `8da50f9` and CVN-5 source `f329ec1` are accepted and archived; CVN-5 archive is `198c71a`. CVN-2 remains accepted/archived and its compiler/catalog/SDK are exact. CVN-7 is the sole active qualification child: task start and authorization are true; two pre-worker invalid attempts produced no reusable evidence; the bounded scoped-Git ownership repair awaits targeted independent rereview and a new clean frozen HEAD before one full rerun. Post-Core activation remains gated by CVN-7 plus parent acceptance/archive and explicit user approval.
 
 GD-0 dependency authority:
 

@@ -2,7 +2,7 @@
 
 ## Current status — 2026-08-13
 
-`BOUNDED NPM LAUNCHER REPAIR IMPLEMENTED / TARGETED INDEPENDENT REREVIEW PENDING`
+`BOUNDED GIT OWNERSHIP REPAIR IMPLEMENTED / TARGETED INDEPENDENT REREVIEW PENDING`
 
 - Qualification base: `38afdc3fd508dc67f7aa446fd323837a5d550b70`.
 - Reviewed harness implementation anchor before the launcher finding: `623f94a4308d2a51014256a2616af1bff53fdb56` (`test(cvn-7): freeze qualification harness`). The bounded launcher repair is a new implementation delta and has no independent verdict yet.
@@ -11,6 +11,7 @@
 - Independent implementation review final verdict after all bounded repairs and the rejected-stress negative-path probe: `PASS`, P0/P1/P2=`0/0/0`.
 - Recorded pre-freeze verification: typecheck/build pass, CVN-7 `69/69`, full `501/501`, Trellis/JSON/JSONL/allowlist/diff gates pass, production source delta zero.
 - First official input `7e3b7e61cc8ee292ee59522df297f43a86210b7c` ended `EVIDENCE_INVALID` at direct Windows `execFileSync("npm.cmd", ...)`: reason `npm_cmd_execfile_einval`, `worker_started=false`, `partial_evidence=false`. Task-local `evidence/` still contains only `README.md`; nothing from that attempt is reusable.
+- Second official input `e510ed1d88f646c41143d94e3513af3f79f7d943` ended at baseline clean-status Git preflight: reason `git_dubious_ownership_preflight`, `worker_started=false`, `partial_evidence=false`, `measurement_complete=false`, `evidence_valid=false`. Evidence remains README-only and that input is not reusable.
 - CVN-7 remains unaccepted and unarchived. The Core VNext parent and all post-Core children remain gated.
 
 ## Implementation review closure
@@ -20,6 +21,10 @@ The current repair captures and strictly validates `process.env.npm_execpath`, i
 Repair-candidate verification is green: typecheck, build, CVN-7 `73/73`, full `505/505`, strict JSON/JSONL, Trellis child `31/27`, Core parent `3/3`, product parent `0/0`, post-Core `15/16`, exact 10-file changed allowlist, protected paths/evidence zero delta and `git diff --check`. No `--mode all` worker was started.
 
 The next review is a targeted independent launcher rereview of this bounded delta and its direct regressions. It is not the final evidence review. No official `--mode all`, acceptance, archive or push occurs before that verdict.
+
+The current bounded repair resolves each candidate/baseline root to an existing canonical directory before side effects and routes every runner Git call through native `git` with exact argv `-c safe.directory=<that root>` and matching `cwd`. It adds no persistent configuration, wildcard scope, shell, command concatenation or second launcher. Targeted rereview is limited to this helper, its four preflight call sites, actual frozen-baseline probe, invalid-root/evidence-zero regressions, retained Node-to-npm behavior and the updated two-attempt ledger.
+
+Repair-candidate verification is green: typecheck, build, CVN-7 `77/77`, full `509/509`, strict JSON/JSONL, Trellis child `31/27`, Core parent `3/3`, product parent `0/0`, post-Core `15/16`, exact 10-file allowlist, protected/evidence zero delta and `git diff --check`. The scoped native Git probe returned clean for the frozen baseline under the current runner identity. No official measurement was invoked during repair.
 
 The review sequence is retained here so later technical reviewers can distinguish superseded interim verdicts from the frozen result:
 

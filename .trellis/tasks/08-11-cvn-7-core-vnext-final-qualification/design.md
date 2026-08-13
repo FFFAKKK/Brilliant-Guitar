@@ -160,6 +160,10 @@ Windows host 上的 npm preflight 只使用进程启动时捕获的 `process.env
 
 2026-08-13 的首次 official attempt 使用输入 `7e3b7e61cc8ee292ee59522df297f43a86210b7c`，在 Windows direct `execFileSync("npm.cmd", ...)` 处以 `npm_cmd_execfile_einval` 结束。该次 `worker_started=false`、`partial_evidence=false`，task-local `evidence/` 仍只有 `README.md`，因此没有可复用 measurement artifact；该 commit 不再作为后续 official input。Launcher repair 必须先形成新的 clean、复审通过的 frozen candidate/harness HEAD，之后才从头执行一次完整 `--mode all`。
 
+第二次 official attempt 使用输入 `e510ed1d88f646c41143d94e3513af3f79f7d943`，在 worker 启动前的 baseline clean-status Git preflight 以 `git_dubious_ownership_preflight` 结束。该次同样为 `worker_started=false`、`partial_evidence=false`、`measurement_complete=false`、`evidence_valid=false`，且 `evidence/` 仍只有 `README.md`；`e510ed1` 仅作为后续修复祖先，不再作为 official input。
+
+所有 candidate/baseline Git preflight 调用统一通过 worktree-scoped native helper。Helper 在首次 Git 子进程前要求非空绝对、存在目录并解析 real/canonical root，然后以独立 argv 调用 `git -c safe.directory=<canonical exact worktree root> <existing args...>`，同时把 `cwd` 设为同一 canonical root。Candidate 与 baseline 各自绑定自己的 root；禁止 wildcard safe directory、持久 Git config、shell、`cmd.exe /c` 或字符串命令。
+
 固定 process-liveness timeout 不是 latency/resource qualification budget：functional/fixture worker 为 `1,800,000 ms`，每个 latency 或 memory sample worker 为 `600,000 ms`，stress submit worker 与 stress replay worker各为 `10,800,000 ms`。超时后 coordinator 给予 `5,000 ms` 终止宽限，再终止该 worker process tree；任一 timeout 使整次运行成为 `EVIDENCE_INVALID`，不产生任何 `NOT_QUALIFIED_*` 性能结论，也不发布 partial evidence。改变这些 liveness timeout 属于 evidence-method/schema 变更，必须重新规划复审；它们不为 stress latency 创建绝对预算。
 
 ### 3.6 Evidence validator

@@ -6,6 +6,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  realpathSync,
   readdirSync,
   renameSync,
   rmSync,
@@ -187,8 +188,44 @@ export function nativeExecutableOutput(
   }).trim();
 }
 
-function gitOutput(root: string, arguments_: readonly string[]): string {
-  return nativeExecutableOutput("git", arguments_, root);
+export function canonicalizeWorktreeRoot(value: unknown): string {
+  if (
+    typeof value !== "string" ||
+    value.length === 0 ||
+    value !== value.trim() ||
+    !isAbsolute(value)
+  ) {
+    throw new TypeError("worktree root must be a nonempty absolute path");
+  }
+  const resolvedRoot = resolve(value);
+  if (!existsSync(resolvedRoot) || !statSync(resolvedRoot).isDirectory()) {
+    throw new TypeError("worktree root must identify an existing directory");
+  }
+  const canonicalRoot = resolve(realpathSync.native(resolvedRoot));
+  if (!statSync(canonicalRoot).isDirectory()) {
+    throw new TypeError("canonical worktree root must identify a directory");
+  }
+  return canonicalRoot;
+}
+
+export function worktreeScopedGitOutput(
+  worktreeRoot: unknown,
+  gitArguments: readonly string[],
+  execute: TextCommandExecutor = executeTextCommand,
+): string {
+  const canonicalRoot = canonicalizeWorktreeRoot(worktreeRoot);
+  if (
+    gitArguments.includes("-c") ||
+    gitArguments[0] === "config"
+  ) {
+    throw new TypeError("worktree-scoped Git arguments may not override or persist configuration");
+  }
+  return nativeExecutableOutput(
+    "git",
+    ["-c", `safe.directory=${canonicalRoot}`, ...gitArguments],
+    canonicalRoot,
+    execute,
+  );
 }
 
 export function validateNpmCliJavaScriptPath(value: unknown): string {
@@ -322,15 +359,15 @@ function assertPreflight(
 ): PreflightResult {
   for (const root of [arguments_.baselineRoot, arguments_.candidateRoot]) {
     if (!existsSync(root) || !statSync(root).isDirectory()) throw new TypeError("worktree root missing");
-    if (gitOutput(root, ["status", "--porcelain=v1", "--untracked-files=all"]) !== "") {
+    if (worktreeScopedGitOutput(root, ["status", "--porcelain=v1", "--untracked-files=all"]) !== "") {
       throw new TypeError("worktree must be completely clean before qualification");
     }
   }
   if (arguments_.qualificationBase !== CVN7_QUALIFICATION_BASE) throw new TypeError("qualification base mismatch");
-  if (gitOutput(arguments_.baselineRoot, ["rev-parse", "HEAD"]) !== arguments_.qualificationBase) {
+  if (worktreeScopedGitOutput(arguments_.baselineRoot, ["rev-parse", "HEAD"]) !== arguments_.qualificationBase) {
     throw new TypeError("baseline commit mismatch");
   }
-  if (gitOutput(arguments_.candidateRoot, ["rev-parse", "HEAD"]) !== arguments_.candidateCommit) {
+  if (worktreeScopedGitOutput(arguments_.candidateRoot, ["rev-parse", "HEAD"]) !== arguments_.candidateCommit) {
     throw new TypeError("candidate commit mismatch");
   }
   if (arguments_.harnessCommit !== arguments_.candidateCommit) {
@@ -355,7 +392,7 @@ function assertPreflight(
   const candidateSecond = cleanBuildManifest(arguments_.candidateRoot, npmExecPath);
   if (JSON.stringify(baselineFirst) !== JSON.stringify(baselineSecond)) throw new TypeError("baseline build is not reproducible");
   if (JSON.stringify(candidateFirst) !== JSON.stringify(candidateSecond)) throw new TypeError("candidate build is not reproducible");
-  const sourceDiff = gitOutput(arguments_.candidateRoot, [
+  const sourceDiff = worktreeScopedGitOutput(arguments_.candidateRoot, [
     "diff", "--no-ext-diff", "--name-only", arguments_.qualificationBase, "--", "src",
   ]);
   if (sourceDiff !== "") throw new TypeError("candidate production source differs from qualification base");
@@ -793,6 +830,11 @@ function pathIsWithin(root: string, target: string): boolean {
 }
 
 export async function runQualification(arguments_: RunnerArguments): Promise<string> {
+  arguments_ = {
+    ...arguments_,
+    baselineRoot: canonicalizeWorktreeRoot(arguments_.baselineRoot),
+    candidateRoot: canonicalizeWorktreeRoot(arguments_.candidateRoot),
+  };
   const npmExecPath = validateNpmCliJavaScriptPath(CAPTURED_NPM_EXEC_PATH);
   const manifests = assertPreflight(arguments_, npmExecPath);
   const evidenceHeader = Object.freeze(header(arguments_));
