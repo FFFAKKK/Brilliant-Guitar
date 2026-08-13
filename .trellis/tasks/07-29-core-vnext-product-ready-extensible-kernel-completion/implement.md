@@ -2,7 +2,7 @@
 
 ## 1. Execution Status
 
-`PLANNING COORDINATION / CVN-0 THROUGH CVN-6, EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-5 ACCEPTED AND ARCHIVED AT 198c71a / CVN-7 FORMAL PLANNING CANDIDATE CREATED ON 38afdc3; INDEPENDENT REVIEW PENDING; TASK START AND PRODUCTION AUTHORIZATION FALSE`.
+`PLANNING COORDINATION / CVN-0 THROUGH CVN-6, EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-5 ACCEPTED AND ARCHIVED AT 198c71a / CVN-7 IN PROGRESS; PLANNING AND HARNESS REVIEWS PASSED; HARNESS IMPLEMENTATION ANCHOR 623f94a; CLEAN DOCS-ONLY STATUS-SYNC HEAD IS THE OFFICIAL CANDIDATE-HARNESS INPUT; SINGLE MODE-ALL MEASUREMENT PENDING; CVN-7 AND PARENT ACCEPTANCE/ARCHIVE STILL OPEN`.
 
 This parent task coordinates independently verifiable children. It does not batch all production changes into one implementation branch. Each child must receive its own PRD/design/implement review, `task.py start`, independent technical audit and archive decision.
 
@@ -216,7 +216,7 @@ Numeric labels organize scope; the arrows above are the actual execution depende
 
 ### CVN-7 — Core VNext Compatibility, Reliability and Scale Gate
 
-**Formal child:** `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/`; status `planning`, qualification base `38afdc3fd508dc67f7aa446fd323837a5d550b70`, independent planning review pending, task start false and production implementation authorization false.
+**Formal child:** `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/`; status `in_progress`, qualification base `38afdc3fd508dc67f7aa446fd323837a5d550b70`, planning review and final harness rereview passed P0/P1/P2=`0/0/0`, task start and qualification implementation authorization true, reviewed harness implementation anchor `623f94a4308d2a51014256a2616af1bff53fdb56`; the exact clean docs-only status-sync HEAD must be passed as both candidate and harness commit. Official measurement and evidence publication are pending.
 
 **Purpose:** close the product-ready extensible kernel only after every mechanism is integrated.
 

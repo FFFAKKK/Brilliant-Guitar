@@ -8,7 +8,7 @@
 - 负责人: ATOM
 - 文档策略: 每个需求先写独立文档，最终再合并为收敛后的 PRD。
 - 当前 Core 基线: K1-1 已在 `30894e2` 正式验收；K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 正式验收并通过 102/102 测试；`.trellis/spec/core-kernel/` 是活动代码契约。本文较早的决策记录若与其冲突，以活动规范与独立 Block 任务为准。
-- 当前交付状态: K1-2～K1-6 已完成独立验收并归档，Pure Core Kernel V1 已关闭。Core VNext 的 CVN-0、CVN-1、CVN-3、CVN-4、扩展性预留门禁与 GD-0 文档/架构合同均已通过独立验收；当前规范化回归为 312/312。CVN-2 现为下一个依赖满足的规划门，但仍需单独批准；CVN-5、CVN-6、CVN-7 以及 Guitar Domain 生产实现均未由本状态记录激活。
+- 当前交付状态: Pure Core Kernel V1 已关闭；Core VNext 的 CVN-0～CVN-6、扩展性预留门禁与 GD-0 均已独立验收归档。CVN-7 已启动，规划与最终 harness 复审均通过 P0/P1/P2=`0/0/0`，资格 harness 实现锚定于 `623f94a`，生产源码相对 `38afdc3` 零差异，冻结前全量回归为 `501/501`；干净的 docs-only 状态同步 HEAD 将作为 runner 要求的相同 candidate/harness commit。单次正式 `--mode all` 测量、最终独立技术审计、CVN-7/Core 父任务验收归档仍待完成。Guitar Domain 生产实现尚未启动。
 - Post-Core 路线状态: `.trellis/tasks/08-11-post-core-official-plugin-product-roadmap/` 已作为 planning-only 父任务建立；它等待 CVN-0～CVN-7 全部独立验收归档，不构成任何官方插件、产品宿主或公共插件生产授权。
 
 ## 产品目标

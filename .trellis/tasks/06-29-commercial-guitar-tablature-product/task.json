@@ -81,14 +81,14 @@
     ".trellis/tasks/06-29-commercial-guitar-tablature-product/research/tech-stack-comparison.md",
     ".trellis/tasks/06-29-commercial-guitar-tablature-product/research/vexflow-rendering-evaluation.md"
   ],
-  "notes": "用户要求需求粒度细，并按每个需求一个文档推进，最后再合并。Core-first 路线当前已归档 CVN-0/1/3/4 与扩展性预留门禁；GD-0 文档/架构合同已验收，当前执行门仍是 CVN-2。Post-Core 父任务已建立为 planning-only 路线：CVN-7 关闭后依次进入官方 Guitar Domain、官方产品服务、产品宿主/Guitar Core Loop、产品资格门和公共视觉/功能插件。",
+  "notes": "用户要求需求粒度细，并按每个需求一个文档推进，最后再合并。Core-first 路线的 CVN-0 至 CVN-6、扩展性预留门禁与 GD-0 已验收归档；CVN-7 处于 in_progress，规划与 harness 复审通过，harness 实现锚点为 623f94a，干净的状态同步 HEAD 将作为正式 candidate/harness 输入，下一门是单次正式 mode-all 资格测量。Post-Core 父任务保持 planning-only：CVN-7 与 Core VNext 父任务验收归档并获得用户明确批准后，才创建官方 Guitar Domain 规划子任务。",
   "meta": {
     "pure_core_kernel_v1_status": "closed",
     "pure_core_kernel_v1_completed_at": "2026-07-26",
     "k1_6_status": "accepted_archived",
     "k1_6_test_baseline": "355512aba4a8057d2d75aa665d74df49cdd2e23c",
     "k1_6_review_baseline": "989c1f7a4056b14d3d59918c9b96874ad71591a8",
-    "next_implementation_stage": "cvn7_independent_planning_review",
+    "next_implementation_stage": "cvn7_single_official_mode_all_measurement",
     "gd0_status": "completed_archived",
     "gd0_accepted_baseline": "451627e605695c95ecdc85e32bd471fcc81885c4",
     "gd0_independent_review_findings": "P0_0_P1_0_P2_0_after_one_p1_mapping_repair",
@@ -97,7 +97,7 @@
     "gd0_archive_path": ".trellis/tasks/archive/2026-08/07-28-gd-0-guitar-domain-core-transaction-contract/",
     "gd0_planning_base": "064dc2bffe26022bc58f0690986b09a0c6a257aa",
     "gd0_production_implementation_authorized": false,
-    "core_vnext_parent_status": "planning_coordination_cvn0_cvn1_cvn3_cvn4_extensibility_accepted_archived",
+    "core_vnext_parent_status": "planning_coordination_cvn0_through_cvn6_accepted_archived_cvn7_in_progress",
     "core_vnext_total_core_commands": 28,
     "core_vnext_task": "07-29-core-vnext-product-ready-extensible-kernel-completion",
     "core_vnext_production_implementation_authorized": false,
@@ -122,7 +122,7 @@
     "post_core_first_future_child": "official-guitar-domain-v1",
     "post_core_fixed_delivery_order": "complete_core_then_official_plugins_then_product_loop_then_public_plugins",
     "post_core_production_implementation_authorized": false,
-    "core_vnext_current_stage": "cvn7_formal_planning_candidate_review_pending",
+    "core_vnext_current_stage": "cvn7_frozen_harness_committed_official_measurement_pending",
     "cvn2_status": "completed_archived",
     "cvn5_status": "completed_archived",
     "cvn5_source_commit": "f329ec10bc77c530282db3a6f47dbd6b6112859e",
@@ -130,8 +130,12 @@
     "cvn6_status": "completed_archived",
     "cvn6_source_commit": "8da50f90c9c05d87a8e1aa7a4e65b30e6ab82c7f",
     "cvn6_archive_commit": "a0c1d6a7b8b38d053d591dca6586c8fff84bbdd6",
-    "cvn7_status": "planning_passed_implementation_authorization_pending",
+    "cvn7_status": "in_progress_harness_review_passed_measurement_pending",
     "cvn7_reviewed_planning_repair_commit": "c427d2f89a291618325dab273e926db635cca9a6",
+    "cvn7_activation_commit": "616130cc6908f5c8741d12761cdb0ccebff63589",
+    "cvn7_reviewed_harness_implementation_commit": "623f94a4308d2a51014256a2616af1bff53fdb56",
+    "cvn7_official_measurement_commit_policy": "exact_clean_docs_only_status_sync_head_passed_as_equal_candidate_and_harness_commit",
+    "cvn7_official_measurement_status": "pending_not_run",
     "cvn7_task": "08-11-cvn-7-core-vnext-final-qualification"
   }
 }

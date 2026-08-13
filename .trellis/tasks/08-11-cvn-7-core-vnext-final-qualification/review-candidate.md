@@ -1,44 +1,41 @@
-# CVN-7 Independent Planning and Harness Review Candidate
+# CVN-7 Review Record and Frozen Harness Handoff
 
-## Harness implementation review target — 2026-08-13
+## Current status — 2026-08-13
 
-`READY FOR READ-ONLY INDEPENDENT IMPLEMENTATION REVIEW`
+`HARNESS REVIEW PASSED / IMPLEMENTATION ANCHOR 623f94a / CLEAN STATUS-SYNC HEAD IS THE OFFICIAL INPUT`
 
-### Bounded implementation repair target — 2026-08-13
+- Qualification base: `38afdc3fd508dc67f7aa446fd323837a5d550b70`.
+- Reviewed harness implementation anchor: `623f94a4308d2a51014256a2616af1bff53fdb56` (`test(cvn-7): freeze qualification harness`). The runner-required candidate/harness commit is the exact clean docs-only status-sync `HEAD`, passed identically to both arguments and recorded by the official evidence.
+- Task status: `in_progress`; task start and qualification implementation authorization are true.
+- Independent planning review final verdict: `PASS`, P0/P1/P2=`0/0/0`.
+- Independent implementation review final verdict after all bounded repairs and the rejected-stress negative-path probe: `PASS`, P0/P1/P2=`0/0/0`.
+- Recorded pre-freeze verification: typecheck/build pass, CVN-7 `69/69`, full `501/501`, Trellis/JSON/JSONL/allowlist/diff gates pass, production source delta zero.
+- Worktree is clean; official `--mode all` has not run; task-local `evidence/` contains only `README.md`.
+- CVN-7 remains unaccepted and unarchived. The Core VNext parent and all post-Core children remain gated.
 
-The first independent implementation review returned `RETURN FOR BOUNDED IMPLEMENTATION REPAIR`, P0/P1/P2=`0/5/2`. The current uncommitted candidate is limited to those direct repairs:
+## Implementation review closure
 
-1. normalize Node `maxRSS` from KiB to bytes on every platform;
-2. keep latency timers around Core operations only and move hashes, reads, event filtering and freeze checks after timing;
-3. require exact equality with the two coordinator-supplied baseline/candidate roots;
-4. accept structurally complete negative portable/resource/determinism/functional evidence and preserve its repair route;
-5. split stress functional, determinism and resource gates;
-6. settle worker timeout only after process-tree cleanup;
-7. describe `CVN7-AC001` as a closed historical planning gate plus the current implementation state.
+The review sequence is retained here so later technical reviewers can distinguish superseded interim verdicts from the frozen result:
 
-Targeted regression coverage includes Windows RSS conversion, nested-decoy root rejection, measured-region source boundaries, timeout cleanup ordering, and complete valid negative evidence sets for all four repair routes. Official qualification remains unrun; this rereview must remain read-only and must not stage, commit, measure, accept or archive.
+1. Initial independent implementation review: `RETURN FOR BOUNDED IMPLEMENTATION REPAIR`, P0/P1/P2=`0/5/2`.
+2. First targeted rereview: `RETURN FOR BOUNDED IMPLEMENTATION REPAIR`, P0/P1/P2=`0/2/1`.
+3. Targeted rereview after the second repair: `PASS`, P0/P1/P2=`0/0/0`.
+4. Additional all-rejected stress negative-path probe: `RETURN FOR BOUNDED IMPLEMENTATION REPAIR`, P0/P1/P2=`0/1/0`; this explicitly superseded the preceding interim PASS.
+5. Final negative-path targeted rereview: `PASS`, P0/P1/P2=`0/0/0`.
 
-Review the current uncommitted Stage 1–5 qualification harness against the already accepted planning contracts. The candidate contains only the 13 allowlisted new CVN-7 TypeScript files, two approved npm scripts and task-local planning/status corrections. Production source, lockfile, tsconfig, OpenSpec and all existing tests remain unchanged from `38afdc3`.
+The final repair encodes absent stress assessment as explicit `null`, accepts that exact shape in the decoder, and regresses the 10,000-rejected JSON round trip and functional routing. Commit `623f94a` contains the reviewed harness implementation. The later status-sync commit changes documentation only; its clean HEAD becomes the exact official candidate/harness input because the runner requires both values to equal candidate worktree HEAD.
 
-Operator evidence before handoff:
+## Next review target
 
-- typecheck/build: pass;
-- `npm.cmd run test:cvn7`: `69/69`;
-- `npm.cmd test`: `501/501`;
-- Trellis: child `31/27`, parent `3/3`, product `0/0`, post-Core `15/16`;
-- strict JSON/JSONL, parent reference, allowlist, protected-path and `git diff --check`: pass;
-- task: `in_progress`, measurement false, archive false, staging empty;
-- official runner/evidence publication: not run.
+The next independent review is the final Core technical review after the single official `--mode all` run, atomic evidence publication, path-limited measurement commit and evidence-based authority sync. Its package must include the two frozen input commits, all published evidence, ordered benchmark pairs, build/environment manifests, 44-row trace, full regression transcript, owner-routing table and quality-spec diff. Until that review records P0/P1/P2=`0/0/0`, summaries remain `qualified: false`.
 
-The implementation reviewer should inspect runner preflight/isolation/timeouts/atomic publication, worker registered-root enforcement, fixture arithmetic, timed-region postconditions, full functional-matrix evidence, validator recomputation and failure precedence. The review is read-only: do not modify, stage, commit, measure, accept or archive.
+The planning-era record below is historical authority for the closed planning phase; its `planning`, authorization-pending and uncommitted-candidate wording describes the state at that earlier gate rather than the current lifecycle.
 
-The planning review record below remains the authority for the already closed planning phase.
+## Historical planning status
 
-## Status
+`INDEPENDENT PLANNING REVIEW PASSED / LATER ACTIVATED AT 616130c`
 
-`INDEPENDENT PLANNING REVIEW PASSED / IMPLEMENTATION AUTHORIZATION PENDING`
-
-The initial independent planning review returned `RETURN FOR BOUNDED PLANNING REPAIR`, P0/P1/P2=`0/6/2`. The bounded candidate remains docs-only; task status is `planning`, task start is false, production implementation authorization is false and qualification measurements remain unrun.
+At the time of the initial planning review, the candidate was docs-only, task status was `planning`, task start and production implementation authorization were false, and qualification measurements had not run. That historical state was later superseded by activation commit `616130cc6908f5c8741d12761cdb0ccebff63589` and reviewed harness implementation commit `623f94a4308d2a51014256a2616af1bff53fdb56`.
 
 ## Bounded repair under rereview
 

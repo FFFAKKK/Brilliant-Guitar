@@ -1,80 +1,78 @@
 # CVN-7 Qualification Harness Operator Handoff
 
-## Current implementation candidate — 2026-08-13
-
-- Independent implementation review round 1 returned P0/P1/P2=`0/5/2`; the current candidate is a bounded harness-only repair awaiting targeted rereview.
-- Repairs cover cross-platform KiB-to-bytes RSS normalization, operation-only timing, exact two-root registration, valid negative-evidence publication, stress failure routing, timeout cleanup settlement and the historical/current AC001 wording split.
-- No official qualification worker has run and no evidence has been published.
-
-- Task is `in_progress`; Stage 0 baseline freeze passed and Stage 1–5 harness implementation is complete.
-- Added exactly the 13 allowlisted CVN-7 TypeScript files and the two approved `package.json` scripts.
-- Production boundary remains unchanged: `src/**`, `package-lock.json`, `tsconfig.json`, `openspec/**` and every existing test have zero diff from `38afdc3`.
-- Local implementation gates pass: typecheck, build, CVN-7 `69/69`, full `501/501`, four Trellis validations, strict JSON/JSONL, allowlist and `git diff --check`.
-- Worker build loading is restricted to coordinator-registered baseline/candidate roots; evidence decoding rejects accessors, cycles and unreadable dense arrays without caller execution.
-- Qualification measurements have not run; `evidence/` still contains only `README.md`.
-- Next action is a separate read-only independent implementation review of this uncommitted candidate. Do not run `qualify:cvn7`, commit, publish evidence, update acceptance or archive during that review.
-
-The planning-era snapshot below is retained as historical context.
-
-## Current state
+## Current frozen harness state — 2026-08-13
 
 - Worktree: `E:\desktop\brilliant_ideas\brilliant_guitar\.worktrees\cvn-7-core-vnext-final-qualification`.
 - Branch: `codex/cvn-7-core-vnext-final-qualification`.
 - Qualification base: `38afdc3fd508dc67f7aa446fd323837a5d550b70`.
+- Reviewed harness implementation anchor: `623f94a4308d2a51014256a2616af1bff53fdb56`.
+- Official candidate/harness input: the exact clean branch `HEAD` after this docs-only status sync; resolve it immediately before the run and pass the same 40-character value to both arguments.
 - Task: `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/`.
-- Status: `planning`.
-- Task start: `false`.
-- Production implementation authorization: `false`.
-- Initial independent planning review: `RETURN FOR BOUNDED PLANNING REPAIR`, P0/P1/P2=`0/6/2`.
-- Targeted rereview round 1: `RETURN FOR BOUNDED PLANNING REPAIR`, P0/P1/P2=`0/1/1`.
-- Final targeted planning rereview: `PASS`, P0/P1/P2=`0/0/0`; all initial findings are closed.
-- Reviewed planning repair commit: `c427d2f89a291618325dab273e926db635cca9a6`.
-- Qualification implementation authorization: pending; task start and measurements remain false.
-- Push: not requested.
+- Status: `in_progress`; `task_start_run=true`; qualification implementation authorization is true.
+- Independent planning review: final `PASS`, P0/P1/P2=`0/0/0`.
+- Independent harness implementation review, including the final rejected-stress negative-path repair: final `PASS`, P0/P1/P2=`0/0/0`.
+- Worktree is clean after `test(cvn-7): freeze qualification harness`.
+- Official qualification measurement has not run; `evidence/` contains only `README.md`.
+- CVN-7 is not accepted or archived, and the Core VNext parent remains open.
 
-## What this task adds
+## Frozen implementation boundary
 
-CVN-7 adds a deterministic qualification harness, cross-stage tests, reproducible-build evidence, representative/portable/reference/stress measurements, product-quality authority synchronization and final Core closure records. Its default production-source delta is zero.
+- Stage 0 baseline freeze passed for both `38afdc3` and the candidate line.
+- The frozen harness adds exactly the 13 allowlisted CVN-7 TypeScript files and the two approved `package.json` scripts.
+- `src/**`, `package-lock.json`, `tsconfig.json`, `openspec/**` and every pre-existing test remain unchanged from `38afdc3`.
+- Recorded pre-freeze gates pass: typecheck, build, CVN-7 `69/69`, full `501/501`, four Trellis validations, strict JSON/JSONL, allowlist and `git diff --check`.
+- Worker loading is restricted to the coordinator-registered baseline and candidate build roots; evidence decoding rejects accessors, cycles and unreadable dense arrays without caller execution.
+- Harness, fixture, runner, validator and script content is immutable from `623f94a`. The later status-sync commit changes documentation only; its exact clean `HEAD` becomes the runner-required candidate/harness input. Any post-sync content change requires a new clean HEAD and renewed boundary verification; any harness or fixture change returns to implementation review.
 
 ## Immediate operator action
 
-Present the reviewed planning repair commit and its PASS to the user. Keep implementation gated until a separate qualification-execution approval; do not run `task.py start` or qualification workers as part of recording this planning verdict.
+Resolve the exact clean measurement input and run the single official blocking qualification invocation from the candidate worktree:
 
-## First operator action after targeted planning PASS
+```powershell
+$measurementCommit = (git rev-parse HEAD).Trim()
 
-1. record the independent planning result;
-2. present the reviewed planning commit to the user;
-3. wait for separate qualification implementation approval;
-4. only after approval run `task.py start`;
-5. begin `implement.md` Stage 0 and create the detached `38afdc3` baseline worktree;
-6. stop before source changes and route any behavior defect to the named primary owner.
+npm.cmd run qualify:cvn7 -- --mode all `
+  --baseline-root E:\desktop\brilliant_ideas\brilliant_guitar\.worktrees\cvn-7-accepted-baseline `
+  --candidate-root E:\desktop\brilliant_ideas\brilliant_guitar\.worktrees\cvn-7-core-vnext-final-qualification `
+  --evidence-dir .trellis\tasks\08-11-cvn-7-core-vnext-final-qualification\evidence `
+  --qualification-base 38afdc3fd508dc67f7aa446fd323837a5d550b70 `
+  --candidate-commit $measurementCommit `
+  --harness-commit $measurementCommit
+```
+
+This is the only official worker invocation. Development-only partial modes are not accepted evidence and are not combined with the official artifact set.
+
+## Required result handling
+
+1. Before invocation, verify the exact current HEAD is a docs-only descendant of `623f94a` with zero `src/**`, `test/**`, `package*.json`, `tsconfig.json`, `openspec/**` and `evidence/**` delta from that anchor. Preflight must then observe clean baseline and candidate worktrees before temporary output or worker startup.
+2. The runner executes functional, portable, reference and stress sub-gates within the same `--mode all` run.
+3. Intermediate output stays under the runner-owned OS temporary directory.
+4. Only a complete validator-accepted artifact set is atomically published to task-local `evidence/`.
+5. Immediately create one path-limited measurement commit containing the published evidence set; do not run another worker after publication.
+6. Before independent technical review, the result remains `BLOCKING_EVIDENCE_COMPLETE_PENDING_INDEPENDENT_REVIEW` with `qualified: false`, or a complete named non-qualified result.
+7. Synchronize `SPEC-010-product-quality.md` and current authority projections only from committed evidence.
+8. Give the frozen commits, evidence, ordered benchmark pairs, build/environment manifests, 44-row trace, full test transcript and authority diff to the independent technical reviewer.
+9. `QUALIFIED` is produced only after independent technical review records P0/P1/P2=`0/0/0` and the deterministic finalizer validates the committed review and evidence hashes.
 
 ## Fixed stop conditions
 
-Return to planning review when any of these appears:
+Return to the owning stage when any of these appears:
 
-- a new public command/type/export/failure/capability/effect or persisted field;
-- any planned `src/**` edit;
-- any edit to an existing accepted test;
-- a dependency or package-lock change;
-- a fixture count, seed, generator version, operation, sample count, budget or exact environment change;
-- a proposal to merge product runtime measurements into Core qualification;
-- a second owner for `SPEC-010-product-quality.md`;
-- a post-Core child activation before CVN-7 and the parent Core VNext task are accepted and archived.
+- a new public command, type, export, failure, capability, effect or persisted field;
+- any `src/**` change or edit to a pre-existing accepted test;
+- a dependency, package-lock or `tsconfig.json` change;
+- a fixture count, seed, generator version, operation, sample count, budget, evidence schema or exact-environment change;
+- dirty baseline/candidate input, build-manifest mismatch, worker timeout, invalid evidence shape or partial publication;
+- a proposed second owner for `SPEC-010-product-quality.md`;
+- post-Core child activation before CVN-7 and the Core VNext parent are accepted and archived.
 
-## Review package
+## Historical review closure
 
-Give the independent planning reviewer:
-
-- `prd.md`, `design.md`, `implement.md`;
-- all `research/**` files;
-- `review-candidate.md`;
-- parent FC matrix/performance baseline/documentation sync/roadmap;
-- archived CVN-5 and CVN-6 implementation reviews;
-- post-Core PRD/design/handoff;
-- planning validation transcript;
-- docs-only allowlist and production-zero-diff proof.
+- Planning review repair commit: `c427d2f89a291618325dab273e926db635cca9a6`.
+- Qualification activation commit: `616130cc6908f5c8741d12761cdb0ccebff63589`.
+- Initial harness findings and all targeted repairs are retained in `review-candidate.md` and `task.json`.
+- The final negative-path targeted rereview supersedes the earlier interim implementation verdicts.
 
 ## Completion handoff
 
-After final technical PASS and user acceptance, archive CVN-7, close and archive the Core VNext parent, then keep the post-Core parent gated until explicit user approval to create the Official Guitar Domain V1 **planning** child. Implementation remains a later explicit decision.
+After committed evidence, final independent technical PASS and explicit user acceptance: record the accepted evidence, archive CVN-7, perform the separate Core VNext parent final acceptance/archive, then keep the post-Core parent in `planning` until explicit approval creates only the `official-guitar-domain-v1` planning child. That child is not automatically started, and no remote push is implied.
