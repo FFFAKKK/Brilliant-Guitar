@@ -3,6 +3,18 @@
 ## 1. Current gate
 
 ```text
+IN PROGRESS — BOUNDED NPM LAUNCHER REPAIR IMPLEMENTED
+qualification measurement complete: false
+evidence valid: false
+first official attempt: EVIDENCE_INVALID / npm_cmd_execfile_einval
+worker started: false
+partial or reusable evidence: false
+next gate: targeted independent launcher rereview, then one full mode-all run from the new clean frozen HEAD
+```
+
+The historical planning gate below records the pre-activation state and is not the live task state.
+
+```text
 PLANNING ONLY
 qualification base: 38afdc3fd508dc67f7aa446fd323837a5d550b70
 CVN-0 through CVN-6: accepted and archived
@@ -215,6 +227,14 @@ Manifest entry exact fields：`relativePath`、`sizeBytes`、`sha256`。Manifest
 Baseline repeatability、candidate repeatability 和 expected cross-build equality 都通过。
 
 ## 8. Stage 5 — Worker, runner, scripts and evidence validation
+
+### Bounded Windows launcher repair — 2026-08-13
+
+The first official attempt at input `7e3b7e61cc8ee292ee59522df297f43a86210b7c` ended before any worker, temporary output or evidence publication because Windows rejected direct `execFileSync("npm.cmd", ...)` with `EINVAL`. Record this as `npm_cmd_execfile_einval`, `worker_started=false`, `partial_evidence=false` and no reusable evidence.
+
+The bounded repair captures `process.env.npm_execpath` at module startup, validates it before every preflight side effect as a nonempty absolute existing regular `npm-cli.js`, then launches npm through `execFileSync(process.execPath, [validatedNpmExecPath, ...npmArgs], options)`. Baseline and candidate use the same validated identity; Git remains on the native executable helper. The repair adds regressions for Windows launcher selection, paths/arguments containing spaces, invalid identities, npm stage ordering/output/failure propagation, unchanged Git behavior, zero side effects on preflight failure, and unchanged schema/budget/fixture/repeat/seed contracts.
+
+This repair receives a single path-limited commit and targeted independent rereview before measurement. The repair commit, not `7e3b7e6`, becomes the next candidate/harness frozen input after rereview. This repair session does not run `--mode all`.
 
 ### Files
 

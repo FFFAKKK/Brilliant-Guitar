@@ -1,18 +1,18 @@
 # CVN-7 Qualification Harness Operator Handoff
 
-## Current frozen harness state — 2026-08-13
+## Current bounded launcher repair state — 2026-08-13
 
 - Worktree: `E:\desktop\brilliant_ideas\brilliant_guitar\.worktrees\cvn-7-core-vnext-final-qualification`.
 - Branch: `codex/cvn-7-core-vnext-final-qualification`.
 - Qualification base: `38afdc3fd508dc67f7aa446fd323837a5d550b70`.
 - Reviewed harness implementation anchor: `623f94a4308d2a51014256a2616af1bff53fdb56`.
-- Official candidate/harness input: the exact clean branch `HEAD` after this docs-only status sync; resolve it immediately before the run and pass the same 40-character value to both arguments.
+- First official input `7e3b7e61cc8ee292ee59522df297f43a86210b7c` is invalidated for reuse: direct Windows `execFileSync("npm.cmd", ...)` failed with `npm_cmd_execfile_einval` before worker startup.
+- Launcher repair state: implemented; targeted independent rereview pending. The repair commit will become the next candidate/harness input only after that rereview passes.
 - Task: `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/`.
 - Status: `in_progress`; `task_start_run=true`; qualification implementation authorization is true.
 - Independent planning review: final `PASS`, P0/P1/P2=`0/0/0`.
 - Independent harness implementation review, including the final rejected-stress negative-path repair: final `PASS`, P0/P1/P2=`0/0/0`.
-- Worktree is clean after `test(cvn-7): freeze qualification harness`.
-- Official qualification measurement has not run; `evidence/` contains only `README.md`.
+- The failed attempt recorded `worker_started=false`, `partial_evidence=false`; `evidence/` still contains only `README.md`, so no partial result may be reused.
 - CVN-7 is not accepted or archived, and the Core VNext parent remains open.
 
 ## Frozen implementation boundary
@@ -21,12 +21,13 @@
 - The frozen harness adds exactly the 13 allowlisted CVN-7 TypeScript files and the two approved `package.json` scripts.
 - `src/**`, `package-lock.json`, `tsconfig.json`, `openspec/**` and every pre-existing test remain unchanged from `38afdc3`.
 - Recorded pre-freeze gates pass: typecheck, build, CVN-7 `69/69`, full `501/501`, four Trellis validations, strict JSON/JSONL, allowlist and `git diff --check`.
+- Bounded launcher repair gates pass: typecheck, build, CVN-7 `73/73`, full `505/505`, strict JSON/JSONL, Trellis `31/27`, parent `3/3`, product `0/0`, post-Core `15/16`, exact 10-file allowlist, protected/evidence zero delta and `git diff --check`.
 - Worker loading is restricted to the coordinator-registered baseline and candidate build roots; evidence decoding rejects accessors, cycles and unreadable dense arrays without caller execution.
-- Harness, fixture, runner, validator and script content is immutable from `623f94a`. The later status-sync commit changes documentation only; its exact clean `HEAD` becomes the runner-required candidate/harness input. Any post-sync content change requires a new clean HEAD and renewed boundary verification; any harness or fixture change returns to implementation review.
+- Fixture, validator, worker, schema, budgets and scripts remain immutable from `623f94a`. The bounded change is limited to the runner launcher, its CVN-7 boundary regressions and direct task-state projections. The resulting clean repair commit requires targeted independent rereview before it may become the runner-required candidate/harness input.
 
-## Immediate operator action
+## Immediate operator action after this repair commit
 
-Resolve the exact clean measurement input and run the single official blocking qualification invocation from the candidate worktree:
+Submit the exact launcher repair diff and regression evidence for targeted independent rereview. Do not execute the command below during the repair session. After rereview passes, resolve the new exact clean repair `HEAD` and use that same value for both commit arguments in one full rerun:
 
 ```powershell
 $measurementCommit = (git rev-parse HEAD).Trim()

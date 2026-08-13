@@ -58,7 +58,7 @@
     ".trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/",
     ".trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/"
   ],
-  "notes": "PLANNING COORDINATION / CVN-0 THROUGH CVN-6, EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-7 IS IN PROGRESS WITH REVIEWED HARNESS IMPLEMENTATION ANCHOR 623f94a / CLEAN DOCS-ONLY STATUS-SYNC HEAD IS THE OFFICIAL CANDIDATE-HARNESS INPUT / SINGLE MODE-ALL MEASUREMENT PENDING / CVN-7 AND THIS PARENT ARE NOT YET ACCEPTED OR ARCHIVED / POST-CORE REMAINS GATED.",
+  "notes": "PLANNING COORDINATION / CVN-0 THROUGH CVN-6, EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-7 FIRST OFFICIAL INPUT 7e3b7e6 ENDED EVIDENCE_INVALID BEFORE WORKER START WITH NO PARTIAL EVIDENCE / BOUNDED NODE-PLUS-NPM-CLI LAUNCHER REPAIR IMPLEMENTED / TARGETED INDEPENDENT REREVIEW PENDING / CVN-7 AND THIS PARENT ARE NOT ACCEPTED OR ARCHIVED / POST-CORE REMAINS GATED.",
   "meta": {
     "compatibility_base": "d92a7586536ac8757c318ae6f75aabd8698f85ac",
     "architecture_style": "stability_first_startup_frozen_microkernel",
@@ -124,7 +124,7 @@
     "extensibility_reservation_acceptance_commit": "253d19e5e9d6a3bfdfa0158833d59872e8be156c",
     "extensibility_reservation_archive_commit": "a4d8cee406e8aa9a6efa05f4e24a8707367dc7b8",
     "extensibility_reservation_archive_path": ".trellis/tasks/archive/2026-08/08-09-core-vnext-extensibility-reservation-review/",
-    "next_dependency_gate": "cvn7_single_official_mode_all_measurement",
+    "next_dependency_gate": "cvn7_targeted_independent_launcher_rereview_then_new_clean_head_full_mode_all_measurement",
     "cvn2_task": "08-10-cvn-2-official-module-sdk-frozen-assembly",
     "cvn2_status": "completed_archived",
     "cvn2_branch": "codex/cvn-2-official-module-sdk-frozen-assembly",
@@ -444,7 +444,7 @@
     "cvn5_archive_commit": "198c71a",
     "cvn5_archive_path": ".trellis/tasks/archive/2026-08/08-11-cvn-5-range-operations-explicit-atomic-batch/",
     "cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
-    "cvn7_status": "in_progress_frozen_harness_committed_official_measurement_pending",
+    "cvn7_status": "in_progress_launcher_repair_implemented_targeted_independent_rereview_pending",
     "cvn7_branch": "codex/cvn-7-core-vnext-final-qualification",
     "cvn7_worktree_path": ".worktrees/cvn-7-core-vnext-final-qualification",
     "cvn7_qualification_base_commit": "38afdc3fd508dc67f7aa446fd323837a5d550b70",
@@ -478,7 +478,7 @@
     "cvn7_reviewed_harness_implementation_commit": "623f94a4308d2a51014256a2616af1bff53fdb56",
     "cvn7_official_measurement_commit_policy": "exact_clean_docs_only_status_sync_head_passed_as_equal_candidate_and_harness_commit",
     "cvn7_harness_review": "passed_2026_08_13_p0_0_p1_0_p2_0_after_negative_path_targeted_rereview",
-    "cvn7_official_measurement_status": "pending_not_run",
+    "cvn7_official_measurement_status": "first_attempt_evidence_invalid_npm_cmd_execfile_einval_before_worker_no_partial_evidence",
     "cvn7_independent_planning_review_findings_final": {
       "P0": 0,
       "P1": 0,
@@ -493,6 +493,17 @@
     "cvn7_stress_fixture": "102400_events_51200_notes_10000_envelopes_rss_2gib",
     "cvn7_post_core_scope": "excluded_until_cvn7_and_parent_accepted_archived",
     "cvn7_planning_self_audit": "historical_pre_review_record_superseded_by_independent_planning_pass",
-    "cvn7_planning_verification": "trellis31_27_parent3_3_product0_0_postcore15_16_fc44_trace44_typecheck_build_full432_production0_postcore0"
+    "cvn7_planning_verification": "trellis31_27_parent3_3_product0_0_postcore15_16_fc44_trace44_typecheck_build_full432_production0_postcore0",
+    "cvn7_measurement_complete": false,
+    "cvn7_evidence_valid": false,
+    "cvn7_first_official_measurement_attempt": {
+      "candidate_and_harness_commit": "7e3b7e61cc8ee292ee59522df297f43a86210b7c",
+      "status": "evidence_invalid",
+      "reason": "npm_cmd_execfile_einval",
+      "worker_started": false,
+      "partial_evidence": false,
+      "reusable_evidence": false
+    },
+    "cvn7_launcher_repair_status": "implemented_targeted_independent_rereview_pending"
   }
 }

@@ -1,7 +1,15 @@
 import assert = require("node:assert/strict");
-import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { execFileSync, spawnSync } from "node:child_process";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import { test } from "node:test";
 
 import {
@@ -34,9 +42,13 @@ import {
   validateQualificationEvidenceSet,
 } from "./qualification/cvn-7-evidence-validator";
 import {
+  CAPTURED_NPM_EXEC_PATH,
   completeTimedOutWorkerCleanup,
   decodeStressWorkerEnvelope,
+  nativeExecutableOutput,
+  npmCliOutput,
   parseNodeTestSummary,
+  validateNpmCliJavaScriptPath,
 } from "./qualification/cvn-7-runner";
 import { CVN7_CONTRACT_TRACE } from "./qualification/cvn-7-contract-trace";
 import {
@@ -521,6 +533,181 @@ test("CVN7 runner keeps postconditions outside every measured operation region",
     );
   }
   assert.match(operationSource, /const durationMs = performance\.now\(\) - start;[\s\S]*if \(!created\.ok\)/u);
+});
+
+test("CVN7 launcher uses Node plus the captured npm CLI with exact argument boundaries", () => {
+  const temporaryRoot = mkdtempSync(join(tmpdir(), "cvn7 launcher "));
+  try {
+    const npmDirectory = join(temporaryRoot, "node modules", "npm", "bin");
+    mkdirSync(npmDirectory, { recursive: true });
+    const npmExecPath = join(npmDirectory, "npm-cli.js");
+    writeFileSync(npmExecPath, "#!/usr/bin/env node\n", "utf8");
+    const calls: Array<{
+      readonly executable: string;
+      readonly arguments_: readonly string[];
+      readonly cwd: string;
+    }> = [];
+    const output = npmCliOutput(
+      npmExecPath,
+      ["run", "typecheck", "--", "--fixture", "value with spaces"],
+      temporaryRoot,
+      (executable, arguments_, options) => {
+        calls.push({ executable, arguments_: [...arguments_], cwd: options.cwd });
+        return "captured output\r\n";
+      },
+    );
+    assert.equal(output, "captured output");
+    assert.deepEqual(calls, [{
+      executable: process.execPath,
+      arguments_: [
+        resolve(npmExecPath),
+        "run",
+        "typecheck",
+        "--",
+        "--fixture",
+        "value with spaces",
+      ],
+      cwd: temporaryRoot,
+    }]);
+
+    const propagated = new Error("npm-preflight-command-failed");
+    assert.throws(
+      () => npmCliOutput(
+        npmExecPath,
+        ["run", "build"],
+        temporaryRoot,
+        () => { throw propagated; },
+      ),
+      (error) => error === propagated,
+    );
+  } finally {
+    rmSync(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("CVN7 launcher rejects invalid npm_execpath identities before side effects", () => {
+  const temporaryRoot = mkdtempSync(join(tmpdir(), "cvn7 launcher invalid "));
+  try {
+    const evidenceRoot = join(temporaryRoot, "evidence");
+    mkdirSync(evidenceRoot);
+    const notRegular = join(temporaryRoot, "npm-cli.js");
+    mkdirSync(notRegular);
+    const wrongIdentity = join(temporaryRoot, "not-npm.js");
+    writeFileSync(wrongIdentity, "#!/usr/bin/env node\n", "utf8");
+    const invalidValues: readonly unknown[] = [
+      undefined,
+      "",
+      "relative/npm-cli.js",
+      join(temporaryRoot, "missing", "npm-cli.js"),
+      notRegular,
+      wrongIdentity,
+    ];
+    let commandCalls = 0;
+    let evidenceWrites = 0;
+    let workerCalls = 0;
+    for (const invalid of invalidValues) {
+      assert.throws(() => {
+        const validated = validateNpmCliJavaScriptPath(invalid);
+        npmCliOutput(validated, ["run", "typecheck"], temporaryRoot, () => {
+          commandCalls += 1;
+          return "";
+        });
+        evidenceWrites += 1;
+        workerCalls += 1;
+      }, /npm_execpath/u);
+    }
+    assert.equal(commandCalls, 0);
+    assert.equal(evidenceWrites, 0);
+    assert.equal(workerCalls, 0);
+    assert.deepEqual(readdirSync(evidenceRoot), []);
+  } finally {
+    rmSync(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("CVN7 runner rejects a missing startup npm identity before evidence publication", () => {
+  const temporaryRoot = mkdtempSync(join(tmpdir(), "cvn7 launcher process "));
+  try {
+    const evidenceRoot = join(temporaryRoot, "evidence");
+    mkdirSync(evidenceRoot);
+    const environment: NodeJS.ProcessEnv = {};
+    for (const [key, value] of Object.entries(process.env)) {
+      if (key.toLowerCase() !== "npm_execpath" && value !== undefined) {
+        environment[key] = value;
+      }
+    }
+    const result = spawnSync(process.execPath, [
+      resolve(__dirname, "qualification/cvn-7-runner.js"),
+      "--mode", "functional",
+      "--baseline-root", temporaryRoot,
+      "--candidate-root", temporaryRoot,
+      "--evidence-dir", evidenceRoot,
+      "--qualification-base", CVN7_QUALIFICATION_BASE,
+      "--candidate-commit", "1".repeat(40),
+      "--harness-commit", "1".repeat(40),
+    ], {
+      cwd: process.cwd(),
+      encoding: "utf8",
+      env: environment,
+      windowsHide: true,
+    });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /npm_execpath must be a nonempty absolute npm CLI JavaScript path/u);
+    assert.equal(result.stdout, "");
+    assert.deepEqual(readdirSync(evidenceRoot), []);
+  } finally {
+    rmSync(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("CVN7 preflight preserves npm ordering and the native git launcher", () => {
+  const runnerSource = readFileSync(
+    resolve("test/core-kernel/qualification/cvn-7-runner.ts"),
+    "utf8",
+  );
+  assert.match(
+    runnerSource,
+    /export const CAPTURED_NPM_EXEC_PATH = process\.env\.npm_execpath;/u,
+  );
+  assert.doesNotMatch(runnerSource, /commandOutput\("npm\.cmd"|shell:\s*true|cmd\.exe|\/c["']/iu);
+  const cleanBuildStart = runnerSource.indexOf("function cleanBuildManifest(");
+  const cleanBuildEnd = runnerSource.indexOf("export function parseNodeTestSummary", cleanBuildStart);
+  const cleanBuildSource = runnerSource.slice(cleanBuildStart, cleanBuildEnd);
+  assert.match(
+    cleanBuildSource,
+    /npmCliOutput\(npmExecPath, \["run", "typecheck"\][\s\S]*npmCliOutput\(npmExecPath, \["run", "build"\]/u,
+  );
+  const preflightStart = runnerSource.indexOf("function assertPreflight(");
+  const preflightEnd = runnerSource.indexOf("function timeoutFor(", preflightStart);
+  const preflightSource = runnerSource.slice(preflightStart, preflightEnd);
+  assert.match(
+    preflightSource,
+    /candidateSecond[\s\S]*\["run", "test:cvn7"\][\s\S]*\["test"\]/u,
+  );
+  const qualificationStart = runnerSource.indexOf("export async function runQualification(");
+  const qualificationSource = runnerSource.slice(qualificationStart);
+  const validationIndex = qualificationSource.indexOf("validateNpmCliJavaScriptPath(CAPTURED_NPM_EXEC_PATH)");
+  assert.notEqual(validationIndex, -1);
+  for (const laterSideEffect of ["assertPreflight(", "mkdtempSync(", "invokeWorker(", "publishAtomically("]) {
+    assert.equal(validationIndex < qualificationSource.indexOf(laterSideEffect), true);
+  }
+
+  const calls: Array<{ readonly executable: string; readonly arguments_: readonly string[] }> = [];
+  const gitOutput = nativeExecutableOutput(
+    "git",
+    ["status", "--porcelain=v1"],
+    process.cwd(),
+    (executable, arguments_) => {
+      calls.push({ executable, arguments_: [...arguments_] });
+      return "clean\n";
+    },
+  );
+  assert.equal(gitOutput, "clean");
+  assert.deepEqual(calls, [{
+    executable: "git",
+    arguments_: ["status", "--porcelain=v1"],
+  }]);
+  assert.equal(CAPTURED_NPM_EXEC_PATH, process.env.npm_execpath);
 });
 
 test("CVN7 worker timeout settlement performs process-tree cleanup before rejection", () => {

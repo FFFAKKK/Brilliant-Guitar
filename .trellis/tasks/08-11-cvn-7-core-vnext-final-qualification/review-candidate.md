@@ -2,18 +2,24 @@
 
 ## Current status — 2026-08-13
 
-`HARNESS REVIEW PASSED / IMPLEMENTATION ANCHOR 623f94a / CLEAN STATUS-SYNC HEAD IS THE OFFICIAL INPUT`
+`BOUNDED NPM LAUNCHER REPAIR IMPLEMENTED / TARGETED INDEPENDENT REREVIEW PENDING`
 
 - Qualification base: `38afdc3fd508dc67f7aa446fd323837a5d550b70`.
-- Reviewed harness implementation anchor: `623f94a4308d2a51014256a2616af1bff53fdb56` (`test(cvn-7): freeze qualification harness`). The runner-required candidate/harness commit is the exact clean docs-only status-sync `HEAD`, passed identically to both arguments and recorded by the official evidence.
+- Reviewed harness implementation anchor before the launcher finding: `623f94a4308d2a51014256a2616af1bff53fdb56` (`test(cvn-7): freeze qualification harness`). The bounded launcher repair is a new implementation delta and has no independent verdict yet.
 - Task status: `in_progress`; task start and qualification implementation authorization are true.
 - Independent planning review final verdict: `PASS`, P0/P1/P2=`0/0/0`.
 - Independent implementation review final verdict after all bounded repairs and the rejected-stress negative-path probe: `PASS`, P0/P1/P2=`0/0/0`.
 - Recorded pre-freeze verification: typecheck/build pass, CVN-7 `69/69`, full `501/501`, Trellis/JSON/JSONL/allowlist/diff gates pass, production source delta zero.
-- Worktree is clean; official `--mode all` has not run; task-local `evidence/` contains only `README.md`.
+- First official input `7e3b7e61cc8ee292ee59522df297f43a86210b7c` ended `EVIDENCE_INVALID` at direct Windows `execFileSync("npm.cmd", ...)`: reason `npm_cmd_execfile_einval`, `worker_started=false`, `partial_evidence=false`. Task-local `evidence/` still contains only `README.md`; nothing from that attempt is reusable.
 - CVN-7 remains unaccepted and unarchived. The Core VNext parent and all post-Core children remain gated.
 
 ## Implementation review closure
+
+The current repair captures and strictly validates `process.env.npm_execpath`, invokes npm as `process.execPath` plus the npm CLI JavaScript argv, preserves the native Git launcher, and rejects invalid npm identity before preflight side effects. CVN-7 boundary regressions cover Windows selection, path/argument spaces, missing/relative/nonexistent/non-file/wrong-identity paths, npm order/output/failure propagation, Git preservation and zero evidence/worker activity on validation failure. Qualification schema, fixture matrix, budgets, repeats and seeds are unchanged.
+
+Repair-candidate verification is green: typecheck, build, CVN-7 `73/73`, full `505/505`, strict JSON/JSONL, Trellis child `31/27`, Core parent `3/3`, product parent `0/0`, post-Core `15/16`, exact 10-file changed allowlist, protected paths/evidence zero delta and `git diff --check`. No `--mode all` worker was started.
+
+The next review is a targeted independent launcher rereview of this bounded delta and its direct regressions. It is not the final evidence review. No official `--mode all`, acceptance, archive or push occurs before that verdict.
 
 The review sequence is retained here so later technical reviewers can distinguish superseded interim verdicts from the frozen result:
 

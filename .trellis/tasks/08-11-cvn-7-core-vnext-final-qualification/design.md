@@ -156,6 +156,10 @@ Worker 使用 `createRequire` 从登记的 `buildRoot/dist/src/core-kernel/index
 
 Official blocking evidence 只由一次 `--mode all` 运行产生。Coordinator 在创建任何临时输出或启动 worker 前验证 baseline、candidate、harness commit 和两个 worktree 都 clean。所有中间输出写入 worktree 外的 OS 临时目录 `%TEMP%/cvn7-qualification/<harnessCommit>/<runId>/`；只有全部 mode 完成且 validator 通过后，才把完整集合原子发布到 task-local `evidence/`。发布后不再启动 worker；`evidence/` 变化作为下一次 measurement commit 的精确 allowlist，不被伪装成 clean input。
 
+Windows host 上的 npm preflight 只使用进程启动时捕获的 `process.env.npm_execpath`。Coordinator 在 typecheck、build、test、temporary directory、evidence write 或 worker startup 之前，要求该值为非空绝对路径、存在的 regular file，且文件身份精确为 `npm-cli.js`。验证后以 `process.execPath` 启动同一份 npm CLI JavaScript，并把 npm 参数作为独立 argv 传递；baseline 与 candidate 共享该 identity。Git 继续使用 native executable helper。禁止 `npm.cmd` direct spawn、`shell: true`、`cmd.exe /c` 或拼接命令字符串。
+
+2026-08-13 的首次 official attempt 使用输入 `7e3b7e61cc8ee292ee59522df297f43a86210b7c`，在 Windows direct `execFileSync("npm.cmd", ...)` 处以 `npm_cmd_execfile_einval` 结束。该次 `worker_started=false`、`partial_evidence=false`，task-local `evidence/` 仍只有 `README.md`，因此没有可复用 measurement artifact；该 commit 不再作为后续 official input。Launcher repair 必须先形成新的 clean、复审通过的 frozen candidate/harness HEAD，之后才从头执行一次完整 `--mode all`。
+
 固定 process-liveness timeout 不是 latency/resource qualification budget：functional/fixture worker 为 `1,800,000 ms`，每个 latency 或 memory sample worker 为 `600,000 ms`，stress submit worker 与 stress replay worker各为 `10,800,000 ms`。超时后 coordinator 给予 `5,000 ms` 终止宽限，再终止该 worker process tree；任一 timeout 使整次运行成为 `EVIDENCE_INVALID`，不产生任何 `NOT_QUALIFIED_*` 性能结论，也不发布 partial evidence。改变这些 liveness timeout 属于 evidence-method/schema 变更，必须重新规划复审；它们不为 stress latency 创建绝对预算。
 
 ### 3.6 Evidence validator

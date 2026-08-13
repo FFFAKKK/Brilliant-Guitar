@@ -110,6 +110,29 @@ const MODES = Object.freeze([
   "functional", "portable", "reference", "stress", "all",
 ] as const);
 const COMMIT_PATTERN = /^[0-9a-f]{40}$/u;
+export const CAPTURED_NPM_EXEC_PATH = process.env.npm_execpath;
+
+interface TextCommandOptions {
+  readonly cwd: string;
+  readonly encoding: "utf8";
+  readonly windowsHide: true;
+  readonly stdio: readonly ["ignore", "pipe", "pipe"];
+}
+
+export type TextCommandExecutor = (
+  executable: string,
+  arguments_: readonly string[],
+  options: TextCommandOptions,
+) => string;
+
+const executeTextCommand: TextCommandExecutor = (
+  executable,
+  arguments_,
+  options,
+) => execFileSync(executable, [...arguments_], {
+  ...options,
+  stdio: [...options.stdio],
+}) as string;
 
 function parseArguments(values: readonly string[]): RunnerArguments {
   if (values.length !== CLI_KEYS.length * 2) throw new TypeError("exact runner arguments required");
@@ -150,8 +173,13 @@ function parseArguments(values: readonly string[]): RunnerArguments {
   };
 }
 
-function commandOutput(command: string, arguments_: readonly string[], cwd: string): string {
-  return execFileSync(command, arguments_, {
+export function nativeExecutableOutput(
+  executable: string,
+  arguments_: readonly string[],
+  cwd: string,
+  execute: TextCommandExecutor = executeTextCommand,
+): string {
+  return execute(executable, arguments_, {
     cwd,
     encoding: "utf8",
     windowsHide: true,
@@ -160,7 +188,41 @@ function commandOutput(command: string, arguments_: readonly string[], cwd: stri
 }
 
 function gitOutput(root: string, arguments_: readonly string[]): string {
-  return commandOutput("git", arguments_, root);
+  return nativeExecutableOutput("git", arguments_, root);
+}
+
+export function validateNpmCliJavaScriptPath(value: unknown): string {
+  if (
+    typeof value !== "string" ||
+    value.length === 0 ||
+    value !== value.trim() ||
+    !isAbsolute(value)
+  ) {
+    throw new TypeError("npm_execpath must be a nonempty absolute npm CLI JavaScript path");
+  }
+  const path = resolve(value);
+  if (!existsSync(path) || !statSync(path).isFile()) {
+    throw new TypeError("npm_execpath must identify an existing regular file");
+  }
+  if (basename(path).toLowerCase() !== "npm-cli.js") {
+    throw new TypeError("npm_execpath must identify npm-cli.js");
+  }
+  return path;
+}
+
+export function npmCliOutput(
+  validatedNpmExecPath: string,
+  npmArguments: readonly string[],
+  cwd: string,
+  execute: TextCommandExecutor = executeTextCommand,
+): string {
+  const npmExecPath = validateNpmCliJavaScriptPath(validatedNpmExecPath);
+  return execute(process.execPath, [npmExecPath, ...npmArguments], {
+    cwd,
+    encoding: "utf8",
+    windowsHide: true,
+    stdio: ["ignore", "pipe", "pipe"],
+  }).trim();
 }
 
 function sha256Bytes(value: Buffer | string): string {
@@ -213,10 +275,10 @@ export function computeProductionBuildManifest(buildRoot: string): BuildManifest
   });
 }
 
-function cleanBuildManifest(root: string): BuildManifestData {
+function cleanBuildManifest(root: string, npmExecPath: string): BuildManifestData {
   rmSync(resolve(root, "dist"), { recursive: true, force: true });
-  commandOutput("npm.cmd", ["run", "typecheck"], root);
-  commandOutput("npm.cmd", ["run", "build"], root);
+  npmCliOutput(npmExecPath, ["run", "typecheck"], root);
+  npmCliOutput(npmExecPath, ["run", "build"], root);
   return computeProductionBuildManifest(root);
 }
 
@@ -246,11 +308,18 @@ export function parseNodeTestSummary(output: string): SuiteResult {
   return { passed: true, testCount: tests, passCount: passed };
 }
 
-function executeTestSuite(root: string, arguments_: readonly string[]): SuiteResult {
-  return parseNodeTestSummary(commandOutput("npm.cmd", arguments_, root));
+function executeTestSuite(
+  root: string,
+  npmExecPath: string,
+  arguments_: readonly string[],
+): SuiteResult {
+  return parseNodeTestSummary(npmCliOutput(npmExecPath, arguments_, root));
 }
 
-function assertPreflight(arguments_: RunnerArguments): PreflightResult {
+function assertPreflight(
+  arguments_: RunnerArguments,
+  npmExecPath: string,
+): PreflightResult {
   for (const root of [arguments_.baselineRoot, arguments_.candidateRoot]) {
     if (!existsSync(root) || !statSync(root).isDirectory()) throw new TypeError("worktree root missing");
     if (gitOutput(root, ["status", "--porcelain=v1", "--untracked-files=all"]) !== "") {
@@ -280,10 +349,10 @@ function assertPreflight(arguments_: RunnerArguments): PreflightResult {
   ) {
     throw new TypeError("package lock hash mismatch");
   }
-  const baselineFirst = cleanBuildManifest(arguments_.baselineRoot);
-  const baselineSecond = cleanBuildManifest(arguments_.baselineRoot);
-  const candidateFirst = cleanBuildManifest(arguments_.candidateRoot);
-  const candidateSecond = cleanBuildManifest(arguments_.candidateRoot);
+  const baselineFirst = cleanBuildManifest(arguments_.baselineRoot, npmExecPath);
+  const baselineSecond = cleanBuildManifest(arguments_.baselineRoot, npmExecPath);
+  const candidateFirst = cleanBuildManifest(arguments_.candidateRoot, npmExecPath);
+  const candidateSecond = cleanBuildManifest(arguments_.candidateRoot, npmExecPath);
   if (JSON.stringify(baselineFirst) !== JSON.stringify(baselineSecond)) throw new TypeError("baseline build is not reproducible");
   if (JSON.stringify(candidateFirst) !== JSON.stringify(candidateSecond)) throw new TypeError("candidate build is not reproducible");
   const sourceDiff = gitOutput(arguments_.candidateRoot, [
@@ -293,8 +362,12 @@ function assertPreflight(arguments_: RunnerArguments): PreflightResult {
   if (JSON.stringify(baselineSecond) !== JSON.stringify(candidateSecond)) {
     throw new TypeError("equal production source produced unequal manifests");
   }
-  const qualificationSuite = executeTestSuite(arguments_.candidateRoot, ["run", "test:cvn7"]);
-  const fullSuite = executeTestSuite(arguments_.candidateRoot, ["test"]);
+  const qualificationSuite = executeTestSuite(
+    arguments_.candidateRoot,
+    npmExecPath,
+    ["run", "test:cvn7"],
+  );
+  const fullSuite = executeTestSuite(arguments_.candidateRoot, npmExecPath, ["test"]);
   return {
     baselineManifest: baselineSecond,
     candidateManifest: candidateSecond,
@@ -720,7 +793,8 @@ function pathIsWithin(root: string, target: string): boolean {
 }
 
 export async function runQualification(arguments_: RunnerArguments): Promise<string> {
-  const manifests = assertPreflight(arguments_);
+  const npmExecPath = validateNpmCliJavaScriptPath(CAPTURED_NPM_EXEC_PATH);
+  const manifests = assertPreflight(arguments_, npmExecPath);
   const evidenceHeader = Object.freeze(header(arguments_));
   const runId = randomBytes(12).toString("hex");
   const operatingSystemTemporaryRoot = resolve(process.env.TEMP ?? process.env.TMP ?? tmpdir());

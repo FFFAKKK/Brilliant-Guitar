@@ -44,9 +44,9 @@
     ".trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/",
     ".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/"
   ],
-  "notes": "CVN-7 REVIEWED HARNESS IMPLEMENTATION ANCHOR 623f94a / FINAL INDEPENDENT HARNESS REVIEW P0-P1-P2 0-0-0 / TASK IN PROGRESS AND AUTHORIZED / CLEAN DOCS-ONLY STATUS-SYNC HEAD MUST BE PASSED AS BOTH CANDIDATE AND HARNESS COMMIT / SINGLE OFFICIAL MODE-ALL MEASUREMENT IS NEXT / NO MEASUREMENT EVIDENCE PUBLISHED YET.",
+  "notes": "CVN-7 IN PROGRESS / FIRST OFFICIAL INPUT 7e3b7e6 ENDED EVIDENCE_INVALID: npm_cmd_execfile_einval BEFORE WORKER START / NO PARTIAL OR REUSABLE EVIDENCE / BOUNDED NODE-PLUS-NPM-CLI LAUNCHER REPAIR IMPLEMENTED / TARGETED INDEPENDENT REREVIEW PENDING / MEASUREMENT, ACCEPTANCE, ARCHIVE AND PUSH REMAIN OPEN.",
   "meta": {
-    "planning_stage": "stage_5_frozen_harness_committed_ready_for_single_official_measurement",
+    "planning_stage": "stage_5_bounded_npm_launcher_repair_implemented_targeted_independent_rereview_pending",
     "qualification_base_commit": "38afdc3fd508dc67f7aa446fd323837a5d550b70",
     "cvn5_source_commit": "f329ec10bc77c530282db3a6f47dbd6b6112859e",
     "cvn5_acceptance_commit": "b2ad0bc",
@@ -91,13 +91,13 @@
     "user_qualification_implementation_authorization": true,
     "user_qualification_implementation_authorization_date": "2026-08-13",
     "qualification_measurement_run": false,
-    "qualification_result": "not_run_frozen_harness_committed",
+    "qualification_result": "evidence_invalid_npm_cmd_execfile_einval_before_worker_no_partial_evidence",
     "reviewed_harness_implementation_commit": "623f94a4308d2a51014256a2616af1bff53fdb56",
     "reviewed_harness_implementation_commit_date": "2026-08-13",
     "official_measurement_commit_policy": "exact_clean_docs_only_status_sync_head_passed_as_equal_candidate_and_harness_commit",
     "frozen_harness_review": "passed_p0_0_p1_0_p2_0_after_negative_path_targeted_rereview",
-    "official_measurement_status": "pending_not_run",
-    "official_evidence_status": "readme_only_no_published_measurement_artifacts",
+    "official_measurement_status": "first_attempt_evidence_invalid_launcher_repair_targeted_rereview_pending",
+    "official_evidence_status": "readme_only_no_partial_or_reusable_measurement_artifacts",
     "stage_0_baseline_freeze": {
       "status": "passed_2026_08_13",
       "candidate_commit": "616130cc6908f5c8741d12761cdb0ccebff63589",
@@ -200,8 +200,8 @@
     "post_core_scope": "read_only_until_cvn7_and_parent_accepted_archived",
     "push_authorized": false,
     "archive_authorized": false,
-    "operator_state": "frozen_harness_clean_ready_for_single_official_mode_all_measurement",
-    "next_gate": "single_official_mode_all_measurement_and_atomic_evidence_publish",
+    "operator_state": "bounded_npm_launcher_repair_committed_candidate_pending_targeted_independent_rereview",
+    "next_gate": "targeted_independent_launcher_rereview_then_new_clean_head_full_mode_all_measurement",
     "stage_1_to_5_candidate_verification": "superseded_by_bounded_implementation_repair_verification",
     "planning_verification": "ancestry198c71a_38afdc3_trellis_child31_27_parent3_3_product0_0_postcore15_16_json_jsonl_unique_child1_fc44_trace44_diffcheck_typecheck_build_full432_production0_postcore0",
     "bounded_planning_repair_verification": "trace44_exact_parent_set_unique_cases_existing_titles_exact_once_trellis31_27_parent3_3_product0_0_postcore15_16_json_jsonl_diffcheck_typecheck_build_full432_protected_delta0",
@@ -261,6 +261,30 @@
       "P1": 0,
       "P2": 0,
       "verdict": "pass"
+    },
+    "qualification_measurement_attempted": true,
+    "measurement_complete": false,
+    "evidence_valid": false,
+    "first_official_measurement_attempt": {
+      "candidate_and_harness_commit": "7e3b7e61cc8ee292ee59522df297f43a86210b7c",
+      "status": "evidence_invalid",
+      "reason": "npm_cmd_execfile_einval",
+      "worker_started": false,
+      "partial_evidence": false,
+      "reusable_evidence": false
+    },
+    "launcher_repair_status": "implemented_targeted_independent_rereview_pending",
+    "failed_official_input_reusable": false,
+    "launcher_repair_verification": "typecheck_build_cvn7_73_73_full_505_505_strict_json_jsonl_trellis_31_27_parent_3_3_product_0_0_postcore_15_16_allowlist_10_diffcheck_protected_zero_evidence_readme_only",
+    "launcher_repair_test_counts": {
+      "cvn7": {
+        "passed": 73,
+        "total": 73
+      },
+      "full": {
+        "passed": 505,
+        "total": 505
+      }
     }
   }
 }
