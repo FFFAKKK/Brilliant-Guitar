@@ -55,6 +55,7 @@ import {
 } from "./qualification/cvn-7-runner";
 import { CVN7_CONTRACT_TRACE } from "./qualification/cvn-7-contract-trace";
 import {
+  assertBatchBenchmarkPostcondition,
   collectStressSubmitOutcomes,
   maxRssKilobytesToBytes,
   runQualificationWorker,
@@ -489,6 +490,65 @@ test("CVN7 worker rejects a build root outside the coordinator registration set"
     [resolve(".."), resolve("..")],
   );
   assert.equal(nestedDecoy.status, "failed");
+});
+
+test("CVN7 batch-100 latency worker accepts the canonical aggregate commit and dirty event", () => {
+  assert.doesNotThrow(() => assertBatchBenchmarkPostcondition(
+    { status: "committed", documentVersion: 1, undoDepth: 1, redoDepth: 0 },
+    [
+      {
+        eventType: "core.document.committed",
+        commandId: "core.transaction.batch",
+        source: { kind: "core" },
+        cause: "submit",
+        documentVersion: 1,
+      },
+      {
+        eventType: "core.session.dirty-state-changed",
+        cause: "submit",
+        documentVersion: 1,
+        dirty: true,
+      },
+    ],
+    100,
+  ));
+  const buildRoot = process.cwd();
+  const result = runQualificationWorker(
+    {
+      schemaVersion: 1,
+      action: "latency-sample",
+      buildRoot,
+      fixture: "representative",
+      operation: "batch-100",
+      phase: "warmup",
+      sampleIndex: 0,
+    },
+    [buildRoot, buildRoot],
+  );
+  if (result.status !== "passed") assert.fail(result.failureKind);
+  assert.equal(result.status, "passed");
+  assert.equal(result.action, "latency-sample");
+  const operationResult = result.result as {
+    readonly durationMs?: unknown;
+    readonly result?: unknown;
+  };
+  assert.equal(
+    typeof operationResult.durationMs === "number" && operationResult.durationMs > 0,
+    true,
+  );
+  assert.deepEqual(operationResult.result, { status: "committed" });
+
+  const workerSource = readFileSync(
+    resolve("test/core-kernel/qualification/cvn-7-worker.ts"),
+    "utf8",
+  );
+  assert.match(workerSource, /childCount !== 100/u);
+  assert.match(workerSource, /"core\.document\.committed"/u);
+  assert.match(workerSource, /"core\.session\.dirty-state-changed"/u);
+  assert.match(workerSource, /"core\.transaction\.batch"/u);
+  assert.match(workerSource, /hasExactCoreSource/u);
+  assert.match(workerSource, /"cause"\) !== "submit"/u);
+  assert.doesNotMatch(workerSource, /"kernel\.command\.committed"/u);
 });
 
 test("CVN7 maxRSS is always converted from KiB to bytes", () => {

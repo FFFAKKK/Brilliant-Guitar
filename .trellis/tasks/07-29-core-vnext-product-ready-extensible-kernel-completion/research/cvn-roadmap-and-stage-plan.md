@@ -2,7 +2,7 @@
 
 > **Purpose:** durable context-recovery entry for CVN-0 through CVN-7.
 > **Snapshot date:** 2026-08-11.
-> **Current active coordination gate at this snapshot:** CVN-0 through CVN-6 are accepted and archived. CVN-7 child `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/` is `in_progress` on base `38afdc3`. Invalid inputs `7e3b7e6` and `e510ed1` both ended before worker startup with no partial evidence; the second failed at baseline Git ownership preflight. A bounded worktree-scoped Git repair is implemented and awaits targeted independent rereview; measurement completion, acceptance and archive remain open.
+> **Current active coordination gate at this snapshot:** CVN-0 through CVN-6 are accepted and archived. CVN-7 child `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/` is `in_progress` on base `38afdc3`. Inputs `7e3b7e6` and `e510ed1` ended before workers; input `330d893` reached baseline `batch-100` warmup and exposed a CVN-7 assertion defect (`kernel.command.committed` versus accepted `core.document.committed`). No task-local partial evidence exists. A bounded assertion repair is implemented and awaits targeted independent rereview; measurement completion, acceptance and archive remain open.
 > **Status authority:** live child and parent `task.json` files override the snapshot status table below.
 > **Behavior authority:** `feature-contract-matrix.md` overrides this summary for exact public contracts, command payloads, failure priority, limits, fixtures and budgets.
 
@@ -98,7 +98,7 @@ The graph is dependency-based rather than numeric-order-based. CVN-2 and CVN-3 a
 | CVN-4 | completed and archived | final local re-review passed at `b0272e2` with P0/P1/P2 = `0/0/0`; focused `92/92`, full `315/315`; acceptance `7f33e7d` | retained as accepted hierarchy-lifecycle prerequisite |
 | CVN-5 | completed and archived | source `f329ec1`; final implementation rereview `0/0/0`; focused `49/49`; full `432/432`; acceptance `b2ad0bc`; archive `198c71a` | retained as accepted CVN-7 prerequisite |
 | CVN-6 | completed and archived | source `8da50f9`, acceptance `160674d`, archive `a0c1d6a`; final implementation review P0/P1/P2=`0/0/0`; full `383/383` | retained as accepted CVN-5 baseline |
-| CVN-7 | in progress; reviewed harness committed | task `08-11-cvn-7-core-vnext-final-qualification`; base `38afdc3`; harness implementation anchor `623f94a`; clean status-sync HEAD is both official commit arguments; reviews passed `0/0/0`; source delta zero; measurement evidence absent | single official `--mode all` qualification run |
+| CVN-7 | in progress; bounded harness assertion repair | task `08-11-cvn-7-core-vnext-final-qualification`; base `38afdc3`; third input `330d893` reached baseline batch warmup then failed on the wrong event-name assertion; independent root-cause P0/P1/P2=`0/1/0`; source delta zero; evidence README-only | targeted assertion rereview, then one fresh full `--mode all` run |
 
 Snapshot evidence:
 
@@ -113,7 +113,7 @@ Snapshot evidence:
 - CVN-2 unified planning base: merge `706802c` with parents `ebd8075` and `7ad1ff1`; planning candidate `73fe18a` and its bounded planning repairs established the accepted contract. Production implementation was activated separately and closed four bounded review rounds covering the common error hierarchy, stable local validation primitives and global Stage 1-8 failure precedence. Accepted source/test candidate `e203136` passed final independent implementation review with P0/P1/P2=`0/0/0`, focused `54/54`, full `350/350`, forbidden dependency `3/3`, GD-0, Trellis, protected-path, allowlist and diff gates. Acceptance is `f3d0be0`; archive is `42110c4`. The archived child owns only `CVN-FC-110/111`; CVN-6 remains separately planned and gated.
 - CVN-6 archived child: `.trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/`; source `8da50f9`, acceptance `160674d`, archive `a0c1d6a`; owns only `CVN-FC-112/120/121/122`; final implementation review passed `0/0/0` and full suite `383/383`.
 - CVN-5 archived child: `.trellis/tasks/archive/2026-08/08-11-cvn-5-range-operations-explicit-atomic-batch/`; base `d521a61`, source `f329ec1`, acceptance `b2ad0bc`, archive `198c71a`; final implementation rereview passed `0/0/0`, focused `49/49`, full `432/432`; owns `CVN-FC-080..102` with `CVN-FC-141` as the CVN-7 consumer.
-- CVN-7 active qualification child: `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/`; base `38afdc3`; owns exact existing rows `CVN-FC-130..134/140..143`, consumes all 44 actual FC rows, leaves `135..139` unallocated, and keeps zero production-source change. Planning and harness reviews passed; harness implementation anchor `623f94a` plus the exact clean docs-only status-sync HEAD policy awaits the single official measurement.
+- CVN-7 active qualification child: `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/`; base `38afdc3`; owns exact existing rows `CVN-FC-130..134/140..143`, consumes all 44 actual FC rows, leaves `135..139` unallocated, and keeps zero production-source change. The third input `330d893` exposed only a CVN-7 event-assertion defect after worker startup; its 253 external diagnostics and both earlier failed inputs are non-reusable. The bounded repair awaits targeted rereview before a fresh full measurement.
 
 ## 5. Exact Command Inventory
 
@@ -704,9 +704,9 @@ Accepted coordination gates:
 
 - `.trellis/tasks/archive/2026-08/08-09-core-vnext-extensibility-reservation-review/`
 
-Current planning child: none. Active qualification child: `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/` (`in_progress`; inputs `7e3b7e6` and `e510ed1` invalidated before worker startup; no partial evidence; bounded worktree-scoped Git ownership repair implemented and targeted rereview pending).
+Current planning child: none. Active qualification child: `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/` (`in_progress`; inputs `7e3b7e6` and `e510ed1` invalidated before worker startup; input `330d893` invalidated after the baseline batch warmup exposed a CVN-7 event-assertion defect; no partial evidence; bounded assertion repair implemented and targeted rereview pending).
 
-Active coordination gate at this snapshot: CVN-6 source `8da50f9` and CVN-5 source `f329ec1` are accepted and archived; CVN-5 archive is `198c71a`. CVN-2 remains accepted/archived and its compiler/catalog/SDK are exact. CVN-7 is the sole active qualification child: task start and authorization are true; two pre-worker invalid attempts produced no reusable evidence; the bounded scoped-Git ownership repair awaits targeted independent rereview and a new clean frozen HEAD before one full rerun. Post-Core activation remains gated by CVN-7 plus parent acceptance/archive and explicit user approval.
+Active coordination gate at this snapshot: CVN-6 source `8da50f9` and CVN-5 source `f329ec1` are accepted and archived; CVN-5 archive is `198c71a`. CVN-2 remains accepted/archived and its compiler/catalog/SDK are exact. CVN-7 is the sole active qualification child: task start and authorization are true; three invalid official inputs produced no reusable evidence, and the third was independently classified as a CVN-7 harness assertion defect rather than a Core/CVN-5 defect. The bounded assertion repair awaits targeted rereview and a new clean frozen HEAD before one full rerun. Post-Core activation remains gated by CVN-7 plus parent acceptance/archive and explicit user approval.
 
 GD-0 dependency authority:
 

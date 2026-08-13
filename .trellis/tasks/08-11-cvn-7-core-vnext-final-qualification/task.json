@@ -44,9 +44,9 @@
     ".trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/",
     ".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/"
   ],
-  "notes": "CVN-7 IN PROGRESS / INVALID OFFICIAL INPUTS 7e3b7e6 AND e510ed1 BOTH ENDED BEFORE WORKER START WITH NO PARTIAL EVIDENCE / SECOND FAILURE git_dubious_ownership_preflight / BOUNDED WORKTREE-SCOPED GIT OWNERSHIP REPAIR IMPLEMENTED / TARGETED INDEPENDENT REREVIEW PENDING / MEASUREMENT, ACCEPTANCE, ARCHIVE AND PUSH REMAIN OPEN.",
+  "notes": "CVN-7 IN PROGRESS / THREE INVALID OFFICIAL INPUTS RETAINED / THIRD INPUT 330d893 REACHED BASELINE BATCH-100 WARMUP AND EXPOSED A CVN-7 COMMITTED-EVENT ASSERTION DEFECT / WORKER STARTED, NO PARTIAL OR REUSABLE EVIDENCE / BOUNDED ASSERTION REPAIR IMPLEMENTED / TARGETED INDEPENDENT REREVIEW PENDING / MEASUREMENT, ACCEPTANCE, ARCHIVE AND PUSH REMAIN OPEN.",
   "meta": {
-    "planning_stage": "stage_5_bounded_git_worktree_ownership_repair_implemented_targeted_independent_rereview_pending",
+    "planning_stage": "stage_5_bounded_batch_committed_event_assertion_repair_implemented_targeted_independent_rereview_pending",
     "qualification_base_commit": "38afdc3fd508dc67f7aa446fd323837a5d550b70",
     "cvn5_source_commit": "f329ec10bc77c530282db3a6f47dbd6b6112859e",
     "cvn5_acceptance_commit": "b2ad0bc",
@@ -91,12 +91,12 @@
     "user_qualification_implementation_authorization": true,
     "user_qualification_implementation_authorization_date": "2026-08-13",
     "qualification_measurement_run": false,
-    "qualification_result": "evidence_invalid_git_dubious_ownership_preflight_before_worker_no_partial_evidence",
+    "qualification_result": "evidence_invalid_worker_failed_batch_result_mismatch_baseline_batch100_warmup_harness_assertion_defect_no_partial_evidence",
     "reviewed_harness_implementation_commit": "623f94a4308d2a51014256a2616af1bff53fdb56",
     "reviewed_harness_implementation_commit_date": "2026-08-13",
-    "official_measurement_commit_policy": "exact_clean_reviewed_worktree_scoped_git_repair_head_passed_as_equal_candidate_and_harness_commit",
+    "official_measurement_commit_policy": "exact_clean_reviewed_batch_event_assertion_repair_head_passed_as_equal_candidate_and_harness_commit",
     "frozen_harness_review": "passed_p0_0_p1_0_p2_0_after_negative_path_targeted_rereview",
-    "official_measurement_status": "second_attempt_evidence_invalid_git_ownership_repair_targeted_rereview_pending",
+    "official_measurement_status": "third_attempt_evidence_invalid_batch_event_assertion_repair_targeted_rereview_pending",
     "official_evidence_status": "readme_only_no_partial_or_reusable_measurement_artifacts",
     "stage_0_baseline_freeze": {
       "status": "passed_2026_08_13",
@@ -290,6 +290,7 @@
     "official_measurement_original_harness_anchor": "623f94a4308d2a51014256a2616af1bff53fdb56",
     "official_measurement_test_repair_allowlist": [
       "test/core-kernel/qualification/cvn-7-runner.ts",
+      "test/core-kernel/qualification/cvn-7-worker.ts",
       "test/core-kernel/cvn-7-qualification-boundary.test.ts"
     ],
     "official_measurement_protected_delta_policy": {
@@ -304,7 +305,7 @@
         "all_tests_except_official_measurement_test_repair_allowlist"
       ]
     },
-    "official_measurement_input_head": "next_clean_worktree_scoped_git_repair_head_after_targeted_independent_rereview",
+    "official_measurement_input_head": "next_clean_batch_event_assertion_repair_head_after_targeted_independent_rereview",
     "launcher_repair_targeted_independent_rereview": "passed_docs_only_measurement_head_alignment",
     "second_official_measurement_attempt": {
       "candidate_and_harness_commit": "e510ed1d88f646c41143d94e3513af3f79f7d943",
@@ -332,13 +333,25 @@
         "worker_started": false,
         "partial_evidence": false,
         "reusable_evidence": false
+      },
+      {
+        "candidate_and_harness_commit": "330d8938997a2c7e7f3835da41588fbef4f05787",
+        "status": "evidence_invalid",
+        "stage": "baseline_latency_sample_batch_100_warmup_sample_index_0",
+        "reason": "worker_failed_batch_result_mismatch",
+        "root_cause": "cvn7_harness_expected_event_name_kernel_command_committed_instead_of_core_document_committed",
+        "worker_started": true,
+        "temporary_diagnostic_pair_count": 253,
+        "partial_evidence": false,
+        "reusable_evidence": false
       }
     ],
     "failed_official_inputs": [
       "7e3b7e61cc8ee292ee59522df297f43a86210b7c",
-      "e510ed1d88f646c41143d94e3513af3f79f7d943"
+      "e510ed1d88f646c41143d94e3513af3f79f7d943",
+      "330d8938997a2c7e7f3835da41588fbef4f05787"
     ],
-    "git_worktree_ownership_repair_status": "implemented_targeted_independent_rereview_pending",
+    "git_worktree_ownership_repair_status": "passed_targeted_independent_rereview",
     "git_worktree_ownership_repair_verification": "typecheck_build_cvn7_77_77_full_509_509_strict_json_jsonl_trellis_31_27_parent_3_3_product_0_0_postcore_15_16_allowlist_10_diffcheck_protected_zero_evidence_readme_only_scoped_baseline_status_clean",
     "git_worktree_ownership_repair_test_counts": {
       "cvn7": {
@@ -349,6 +362,53 @@
         "passed": 509,
         "total": 509
       }
-    }
+    },
+    "third_official_measurement_attempt": {
+      "candidate_and_harness_commit": "330d8938997a2c7e7f3835da41588fbef4f05787",
+      "status": "evidence_invalid",
+      "stage": "baseline_latency_sample_batch_100_warmup_sample_index_0",
+      "reason": "worker_failed_batch_result_mismatch",
+      "root_cause": "cvn7_harness_expected_event_name_kernel_command_committed_instead_of_core_document_committed",
+      "worker_started": true,
+      "temporary_diagnostic_pair_count": 253,
+      "partial_evidence": false,
+      "reusable_evidence": false
+    },
+    "third_official_root_cause_review": {
+      "classification": "A_cvn7_harness_expected_value_assertion_defect",
+      "P0": 0,
+      "P1": 1,
+      "P2": 0,
+      "core_defect": false,
+      "cvn5_contract_defect": false,
+      "verdict": "return_for_bounded_repair"
+    },
+    "batch_event_assertion_repair_status": "implemented_targeted_independent_rereview_pending",
+    "batch_event_assertion_repair_scope": [
+      "test/core-kernel/qualification/cvn-7-worker.ts",
+      "test/core-kernel/cvn-7-qualification-boundary.test.ts"
+    ],
+    "batch_event_assertion_repair_test_counts": {
+      "focused_boundary": {
+        "passed": 21,
+        "total": 21
+      },
+      "cvn7": {
+        "passed": 78,
+        "total": 78
+      },
+      "full": {
+        "passed": 510,
+        "total": 510
+      }
+    },
+    "batch_event_assertion_repair_build_manifest": {
+      "baseline_file_count": 71,
+      "candidate_file_count": 71,
+      "baseline_tree_sha256": "65c1e715409c0631355a60e6f06b4bd7f091d2952cc44205eaae27cba79ba861",
+      "candidate_tree_sha256": "65c1e715409c0631355a60e6f06b4bd7f091d2952cc44205eaae27cba79ba861",
+      "equal": true
+    },
+    "batch_event_assertion_repair_verification": "typecheck_build_boundary21_cvn7_78_full510_baseline_candidate_probe_deep_equal_build_manifest_71_equal_strict_json_jsonl_trellis_31_27_parent_3_3_product_0_0_postcore_15_16_diffcheck_allowlist9_protected_evidence_zero"
   }
 }

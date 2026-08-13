@@ -196,6 +196,54 @@ function timed<T>(operation: () => T): { readonly durationMs: number; readonly r
   return { durationMs, result };
 }
 
+function ownDataValue(value: unknown, key: string): unknown {
+  if (value === null || typeof value !== "object") return undefined;
+  const descriptor = Reflect.getOwnPropertyDescriptor(value, key);
+  return descriptor !== undefined && "value" in descriptor ? descriptor.value : undefined;
+}
+
+function hasExactCoreSource(value: unknown): boolean {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+  const keys = Reflect.ownKeys(value);
+  return keys.length === 1 && keys[0] === "kind" && ownDataValue(value, "kind") === "core";
+}
+
+export function assertBatchBenchmarkPostcondition(
+  result: unknown,
+  emitted: readonly unknown[],
+  childCount: number,
+): void {
+  const committedEvents = emitted.filter(
+    (event) => ownDataValue(event, "eventType") === "core.document.committed",
+  );
+  const dirtyEvents = emitted.filter(
+    (event) => ownDataValue(event, "eventType") === "core.session.dirty-state-changed",
+  );
+  const committedEvent = committedEvents[0];
+  const dirtyEvent = dirtyEvents[0];
+  if (
+    childCount !== 100 ||
+    ownDataValue(result, "status") !== "committed" ||
+    ownDataValue(result, "documentVersion") !== 1 ||
+    ownDataValue(result, "undoDepth") !== 1 ||
+    ownDataValue(result, "redoDepth") !== 0 ||
+    emitted.length !== 2 ||
+    committedEvents.length !== 1 ||
+    dirtyEvents.length !== 1 ||
+    emitted[0] !== committedEvent ||
+    emitted[1] !== dirtyEvent ||
+    ownDataValue(committedEvent, "commandId") !== "core.transaction.batch" ||
+    !hasExactCoreSource(ownDataValue(committedEvent, "source")) ||
+    ownDataValue(committedEvent, "cause") !== "submit" ||
+    ownDataValue(committedEvent, "documentVersion") !== 1 ||
+    ownDataValue(dirtyEvent, "cause") !== "submit" ||
+    ownDataValue(dirtyEvent, "documentVersion") !== 1 ||
+    ownDataValue(dirtyEvent, "dirty") !== true
+  ) {
+    throw new Error("batch-result-mismatch");
+  }
+}
+
 function deeplyFrozen(value: unknown, seen = new Set<object>()): boolean {
   if (value === null || typeof value !== "object" || seen.has(value)) return true;
   seen.add(value);
@@ -333,10 +381,13 @@ function executeOperation(setup: RuntimeSetup, operation: QualificationOperation
   const preparedBatch = operation === "batch-100"
     ? freezeEnvelope(mixedBatch(setup))
     : undefined;
+  let batchChildCount = 0;
   if (operation === "batch-100") {
     if (preparedBatch === undefined || !deeplyFrozen(preparedBatch)) {
       throw new Error("batch-envelope-not-frozen");
     }
+    const commands = ownDataValue(ownDataValue(preparedBatch, "payload"), "commands");
+    batchChildCount = Array.isArray(commands) ? commands.length : 0;
     const subscribed = bus.subscribe((event: unknown) => emitted.push(event));
     if (subscribed.status !== "subscribed") throw new Error("batch-subscribe-failed");
   }
@@ -386,16 +437,7 @@ function executeOperation(setup: RuntimeSetup, operation: QualificationOperation
       throw new Error("snapshot-first-result-mismatch");
     }
   } else if (operation === "batch-100") {
-    const committedEvents = emitted.filter((event) =>
-      event !== null && typeof event === "object" &&
-      (event as { readonly eventType?: unknown }).eventType === "kernel.command.committed",
-    );
-    if (
-      !("documentVersion" in result) || result.status !== "committed" ||
-      result.documentVersion !== 1 || result.undoDepth !== 1 || committedEvents.length !== 1
-    ) {
-      throw new Error("batch-result-mismatch");
-    }
+    assertBatchBenchmarkPostcondition(result, emitted, batchChildCount);
   }
   return { durationMs: measured.durationMs, result: { status } };
 }

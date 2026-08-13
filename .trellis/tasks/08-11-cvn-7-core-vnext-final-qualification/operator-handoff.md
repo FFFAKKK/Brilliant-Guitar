@@ -1,6 +1,6 @@
 # CVN-7 Qualification Harness Operator Handoff
 
-## Current bounded Git ownership repair state — 2026-08-13
+## Current bounded batch assertion repair state - 2026-08-14
 
 - Worktree: `E:\desktop\brilliant_ideas\brilliant_guitar\.worktrees\cvn-7-core-vnext-final-qualification`.
 - Branch: `codex/cvn-7-core-vnext-final-qualification`.
@@ -8,13 +8,15 @@
 - Reviewed harness implementation anchor: `623f94a4308d2a51014256a2616af1bff53fdb56`.
 - First official input `7e3b7e61cc8ee292ee59522df297f43a86210b7c` is invalidated for reuse: direct Windows `execFileSync("npm.cmd", ...)` failed with `npm_cmd_execfile_einval` before worker startup.
 - Second official input `e510ed1d88f646c41143d94e3513af3f79f7d943` is also invalidated for reuse: baseline clean-status Git preflight failed with `git_dubious_ownership_preflight` before worker startup.
-- Git ownership compatibility repair: implemented; targeted independent rereview pending. After that review passes, the new exact clean repair `HEAD` becomes the next equal candidate/harness input.
+- Third official input `330d8938997a2c7e7f3835da41588fbef4f05787` is invalidated for reuse: baseline `latency-sample / batch-100 / warmup / sampleIndex=0` failed with `worker-failed-batch-result-mismatch` after worker startup because the CVN-7 worker expected `kernel.command.committed` instead of accepted `core.document.committed`.
+- Independent root-cause review classified the third failure as a CVN-7 harness assertion defect, P0/P1/P2=`0/1/0`; Core and CVN-5 remain unchanged. The bounded batch event assertion repair is implemented and awaits targeted independent rereview; only the later clean reviewed repair `HEAD` may become the next equal candidate/harness input.
 - Task: `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/`.
 - Status: `in_progress`; `task_start_run=true`; qualification implementation authorization is true.
 - Independent planning review: final `PASS`, P0/P1/P2=`0/0/0`.
 - Independent harness implementation review, including the final rejected-stress negative-path repair: final `PASS`, P0/P1/P2=`0/0/0`.
 - The failed attempt recorded `worker_started=false`, `partial_evidence=false`; `evidence/` still contains only `README.md`, so no partial result may be reused.
 - The second failed attempt also recorded `worker_started=false`, `partial_evidence=false`, `measurement_complete=false` and `evidence_valid=false`; no measurement artifact exists.
+- The third failed attempt recorded `worker_started=true`, `partial_evidence=false`, `measurement_complete=false` and `evidence_valid=false`. Its 253 worktree-external diagnostic request/result pairs are non-published and non-reusable; task-local evidence remains README-only.
 - CVN-7 is not accepted or archived, and the Core VNext parent remains open.
 
 ## Frozen implementation boundary
@@ -26,12 +28,15 @@
 - Bounded launcher repair gates pass: typecheck, build, CVN-7 `73/73`, full `505/505`, strict JSON/JSONL, Trellis `31/27`, parent `3/3`, product `0/0`, post-Core `15/16`, exact 10-file allowlist, protected/evidence zero delta and `git diff --check`.
 - Bounded Git ownership repair gates pass: typecheck, build, CVN-7 `77/77`, full `509/509`, strict JSON/JSONL, Trellis `31/27`, parent `3/3`, product `0/0`, post-Core `15/16`, exact 10-file allowlist, protected/evidence zero delta, actual scoped baseline Git status clean and `git diff --check`.
 - Worker loading is restricted to the coordinator-registered baseline and candidate build roots; evidence decoding rejects accessors, cycles and unreadable dense arrays without caller execution.
-- `623f94a4308d2a51014256a2616af1bff53fdb56` remains the original harness implementation anchor. Relative to that anchor, the reviewed launcher repair is permitted to change exactly `test/core-kernel/qualification/cvn-7-runner.ts` and `test/core-kernel/cvn-7-qualification-boundary.test.ts`; fixture, validator, worker, schema, budgets and scripts remain unchanged.
+- `623f94a4308d2a51014256a2616af1bff53fdb56` remains the original harness implementation anchor. Relative to that anchor, the reviewed launcher/Git repairs may change `test/core-kernel/qualification/cvn-7-runner.ts` and the boundary test; this bounded assertion repair additionally changes only `test/core-kernel/qualification/cvn-7-worker.ts` and that same boundary test. Fixture, validator, schema, budgets and scripts remain unchanged.
+- The repaired batch worker checks the accepted aggregate envelope exactly: 100 children, committed version 1, undo/redo depth 1/0, one `core.document.committed` for `core.transaction.batch` with source `{kind: "core"}`, cause `submit` and version 1, then one independent dirty-state event. Controlled baseline/candidate probes pass with deep-equal normalized results.
+
+- Bounded repair verification: typecheck/build pass; focused boundary `21/21`; CVN-7 `78/78`; full suite `510/510`; strict JSON/JSONL, four Trellis validations and `git diff --check` pass; baseline/candidate `dist/src` manifests are identical at 71 files with tree SHA-256 `65c1e715409c0631355a60e6f06b4bd7f091d2952cc44205eaae27cba79ba861`; protected paths and evidence remain unchanged.
 - All runner Git calls now use one worktree-scoped native helper with exact canonical root, one `-c safe.directory=<root>` argv pair and matching `cwd`; candidate and baseline roots remain distinct and no persistent Git configuration is written.
 
-## Immediate operator action after this repair commit
+## Immediate operator action after the batch assertion repair commit
 
-Submit the bounded Git ownership repair and its regressions for targeted independent rereview. Do not execute the command below during the repair session. After rereview passes, resolve the new exact clean repair `HEAD` containing both earlier launcher repair `5a21284` and this scoped-Git repair, then use that same value for both commit arguments in one full rerun:
+Submit the bounded batch event assertion repair and its regression for targeted independent rereview. Do not execute the command below during the repair session. After rereview passes, resolve the new exact clean repair `HEAD` containing the reviewed launcher and scoped-Git repairs plus this assertion repair, then use that same value for both commit arguments in one full rerun:
 
 ```powershell
 $measurementCommit = (git rev-parse HEAD).Trim()
@@ -49,7 +54,7 @@ This is the only official worker invocation. Development-only partial modes are 
 
 ## Required result handling
 
-1. Before invocation, verify the exact current `HEAD` is the independently reviewed clean Git-ownership-repair commit and contains launcher repair ancestor `5a21284c3b27d36073a3bfc929130e063679b569`. Relative to original harness anchor `623f94a4308d2a51014256a2616af1bff53fdb56`, the only permitted `test/**` delta remains the exact pair `test/core-kernel/qualification/cvn-7-runner.ts` and `test/core-kernel/cvn-7-qualification-boundary.test.ts`. Relative to the established protected baseline, `src/**`, `package*.json`, lock files, `tsconfig.json`, `openspec/**`, qualification evidence results and every other test must have zero additional delta. Pass the new clean repair `HEAD` identically as `candidateCommit` and `harnessCommit`; preflight must observe both canonical worktree roots as clean before temporary output or worker startup.
+1. Before invocation, verify the exact current `HEAD` is the independently reviewed clean batch-assertion-repair commit and contains the reviewed launcher and scoped-Git repair ancestors. Relative to original harness anchor `623f94a4308d2a51014256a2616af1bff53fdb56`, the permitted `test/**` delta is exactly `test/core-kernel/qualification/cvn-7-runner.ts`, `test/core-kernel/qualification/cvn-7-worker.ts` and `test/core-kernel/cvn-7-qualification-boundary.test.ts`. Relative to the established protected baseline, `src/**`, `package*.json`, lock files, `tsconfig.json`, `openspec/**`, qualification evidence results and every other test must have zero additional delta. Pass the new clean repair `HEAD` identically as `candidateCommit` and `harnessCommit`; preflight must observe both canonical worktree roots as clean before temporary output or worker startup.
 2. The runner executes functional, portable, reference and stress sub-gates within the same `--mode all` run.
 3. Intermediate output stays under the runner-owned OS temporary directory.
 4. Only a complete validator-accepted artifact set is atomically published to task-local `evidence/`.
@@ -77,7 +82,7 @@ Return to the owning stage when any of these appears:
 - Qualification activation commit: `616130cc6908f5c8741d12761cdb0ccebff63589`.
 - Initial harness findings and all targeted repairs are retained in `review-candidate.md` and `task.json`.
 - The final negative-path targeted rereview supersedes the earlier interim implementation verdicts.
-- Invalid official inputs `7e3b7e6` and `e510ed1` are retained only in the failure ledger and are never reused.
+- Invalid official inputs `7e3b7e6`, `e510ed1` and `330d893` are retained only in the failure ledger and are never reused; the third attempt's 253 external diagnostics are likewise non-reusable.
 
 ## Completion handoff
 

@@ -3,14 +3,14 @@
 ## 1. Current gate
 
 ```text
-IN PROGRESS — BOUNDED GIT WORKTREE OWNERSHIP REPAIR IMPLEMENTED
+IN PROGRESS - BOUNDED BATCH EVENT ASSERTION REPAIR IMPLEMENTED
 qualification measurement complete: false
 evidence valid: false
-first official attempt: EVIDENCE_INVALID / npm_cmd_execfile_einval
-second official attempt: EVIDENCE_INVALID / git_dubious_ownership_preflight
-worker started: false
+first official attempt: EVIDENCE_INVALID / npm_cmd_execfile_einval / worker_started=false
+second official attempt: EVIDENCE_INVALID / git_dubious_ownership_preflight / worker_started=false
+third official attempt: EVIDENCE_INVALID / worker-failed-batch-result-mismatch / worker_started=true
 partial or reusable evidence: false
-next gate: targeted independent Git ownership repair rereview, then one full mode-all run from the new clean frozen HEAD
+next gate: targeted independent batch assertion rereview, then one full mode-all run from the new clean frozen HEAD
 ```
 
 The historical planning gate below records the pre-activation state and is not the live task state.
@@ -244,6 +244,14 @@ The second official input `e510ed1d88f646c41143d94e3513af3f79f7d943` ended durin
 The bounded repair canonicalizes each worktree root before npm, temporary output, evidence or worker side effects and routes all runner Git calls through one native argv helper: `git -c safe.directory=<that exact canonical root> ...`, with `cwd` bound to the same root. It never writes Git config, never uses wildcard safe-directory scope, and keeps candidate/baseline roots separate. Regressions cover exact argv/cwd boundaries including spaces, invalid roots before side effects, all Git call-site routing, actual frozen-baseline status, failure propagation and retained Node-to-npm launcher behavior.
 
 The new repair commit becomes the next equal candidate/harness input only after targeted independent rereview. Neither prior invalid input is reused, and this repair session does not run `--mode all`.
+
+### Bounded batch committed-event assertion repair - 2026-08-14
+
+The third official input `330d8938997a2c7e7f3835da41588fbef4f05787` passed preflight and started workers, then ended on the frozen baseline at `latency-sample / batch-100 / warmup / sampleIndex=0` with `worker-failed-batch-result-mismatch`. The worker incorrectly filtered `kernel.command.committed`; accepted CVN-5/K1-3 behavior emits one `core.document.committed` aggregate event plus one separate legal `core.session.dirty-state-changed` event. Independent root-cause review classified this as a CVN-7 expected-value/assertion defect, P0/P1/P2=`0/1/0`, with no Core or CVN-5 defect.
+
+The bounded repair changes only the test-only worker postcondition and its CVN-7 boundary regression. It requires 100 children, committed result, document version 1, undo/redo depth 1/0, exactly one `core.document.committed` whose commandId is `core.transaction.batch`, exact source `{kind: "core"}`, cause `submit` and documentVersion 1, followed by one separately validated dirty-state event. Baseline and candidate each pass one controlled non-official worker probe with deep-equal normalized results. The 253 external temporary diagnostic request/result pairs from the failed attempt are not published and are never reused.
+
+The repair commit becomes the next equal candidate/harness input only after targeted independent rereview. Measurement remains incomplete, evidence remains README-only, and this repair session does not run `--mode all`.
 
 ### Files
 

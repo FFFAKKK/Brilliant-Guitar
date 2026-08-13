@@ -58,7 +58,7 @@
     ".trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/",
     ".trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/"
   ],
-  "notes": "PLANNING COORDINATION / CVN-0 THROUGH CVN-6, EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-7 INVALID INPUTS 7e3b7e6 AND e510ed1 BOTH ENDED BEFORE WORKER START WITH NO PARTIAL EVIDENCE / BOUNDED WORKTREE-SCOPED GIT OWNERSHIP REPAIR IMPLEMENTED / TARGETED INDEPENDENT REREVIEW PENDING / CVN-7 AND THIS PARENT ARE NOT ACCEPTED OR ARCHIVED / POST-CORE REMAINS GATED.",
+  "notes": "PLANNING COORDINATION / CVN-0 THROUGH CVN-6, EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-7 THIRD INPUT 330d893 REACHED BASELINE BATCH-100 WARMUP AND EXPOSED A CVN-7 ASSERTION DEFECT / NO PARTIAL EVIDENCE / BOUNDED ASSERTION REPAIR IMPLEMENTED / TARGETED INDEPENDENT REREVIEW PENDING / CVN-7 AND THIS PARENT ARE NOT ACCEPTED OR ARCHIVED / POST-CORE REMAINS GATED.",
   "meta": {
     "compatibility_base": "d92a7586536ac8757c318ae6f75aabd8698f85ac",
     "architecture_style": "stability_first_startup_frozen_microkernel",
@@ -444,7 +444,7 @@
     "cvn5_archive_commit": "198c71a",
     "cvn5_archive_path": ".trellis/tasks/archive/2026-08/08-11-cvn-5-range-operations-explicit-atomic-batch/",
     "cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
-    "cvn7_status": "in_progress_git_worktree_ownership_repair_implemented_targeted_independent_rereview_pending",
+    "cvn7_status": "in_progress_batch_event_assertion_repair_implemented_targeted_independent_rereview_pending",
     "cvn7_branch": "codex/cvn-7-core-vnext-final-qualification",
     "cvn7_worktree_path": ".worktrees/cvn-7-core-vnext-final-qualification",
     "cvn7_qualification_base_commit": "38afdc3fd508dc67f7aa446fd323837a5d550b70",
@@ -476,9 +476,9 @@
     "cvn7_reviewed_planning_repair_commit": "c427d2f89a291618325dab273e926db635cca9a6",
     "cvn7_activation_commit": "616130cc6908f5c8741d12761cdb0ccebff63589",
     "cvn7_reviewed_harness_implementation_commit": "623f94a4308d2a51014256a2616af1bff53fdb56",
-    "cvn7_official_measurement_commit_policy": "exact_clean_docs_only_status_sync_head_passed_as_equal_candidate_and_harness_commit",
+    "cvn7_official_measurement_commit_policy": "exact_clean_reviewed_batch_event_assertion_repair_head_passed_as_equal_candidate_and_harness_commit",
     "cvn7_harness_review": "passed_2026_08_13_p0_0_p1_0_p2_0_after_negative_path_targeted_rereview",
-    "cvn7_official_measurement_status": "second_attempt_evidence_invalid_git_dubious_ownership_preflight_before_worker_no_partial_evidence",
+    "cvn7_official_measurement_status": "third_attempt_evidence_invalid_worker_failed_batch_result_mismatch_harness_assertion_defect_no_partial_evidence",
     "cvn7_independent_planning_review_findings_final": {
       "P0": 0,
       "P1": 0,
@@ -516,8 +516,36 @@
     },
     "cvn7_failed_official_inputs": [
       "7e3b7e61cc8ee292ee59522df297f43a86210b7c",
-      "e510ed1d88f646c41143d94e3513af3f79f7d943"
+      "e510ed1d88f646c41143d94e3513af3f79f7d943",
+      "330d8938997a2c7e7f3835da41588fbef4f05787"
     ],
-    "cvn7_git_worktree_ownership_repair_status": "implemented_targeted_independent_rereview_pending"
+    "cvn7_git_worktree_ownership_repair_status": "passed_targeted_independent_rereview",
+    "cvn7_third_official_measurement_attempt": {
+      "candidate_and_harness_commit": "330d8938997a2c7e7f3835da41588fbef4f05787",
+      "status": "evidence_invalid",
+      "stage": "baseline_latency_sample_batch_100_warmup_sample_index_0",
+      "reason": "worker_failed_batch_result_mismatch",
+      "root_cause": "cvn7_harness_expected_event_name_kernel_command_committed_instead_of_core_document_committed",
+      "worker_started": true,
+      "temporary_diagnostic_pair_count": 253,
+      "partial_evidence": false,
+      "reusable_evidence": false
+    },
+    "cvn7_batch_event_assertion_repair_status": "implemented_targeted_independent_rereview_pending",
+    "cvn7_batch_event_assertion_repair_verification": "typecheck_build_boundary21_cvn7_78_full510_baseline_candidate_probe_deep_equal_build_manifest_71_equal_strict_json_jsonl_trellis_31_27_parent_3_3_product_0_0_postcore_15_16_diffcheck_allowlist9_protected_evidence_zero",
+    "cvn7_batch_event_assertion_repair_test_counts": {
+      "focused_boundary": {
+        "passed": 21,
+        "total": 21
+      },
+      "cvn7": {
+        "passed": 78,
+        "total": 78
+      },
+      "full": {
+        "passed": 510,
+        "total": 510
+      }
+    }
   }
 }
