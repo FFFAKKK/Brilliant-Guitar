@@ -58,7 +58,7 @@
     ".trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/",
     ".trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/"
   ],
-  "notes": "PLANNING COORDINATION / CVN-0 THROUGH CVN-6, EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-7 THIRD INPUT 330d893 REACHED BASELINE BATCH-100 WARMUP AND EXPOSED A CVN-7 ASSERTION DEFECT / NO PARTIAL EVIDENCE / BOUNDED ASSERTION REPAIR IMPLEMENTED / TARGETED INDEPENDENT REREVIEW PENDING / CVN-7 AND THIS PARENT ARE NOT ACCEPTED OR ARCHIVED / POST-CORE REMAINS GATED.",
+  "notes": "PLANNING COORDINATION / CVN-0 THROUGH CVN-6, EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-7 FOURTH INPUT 075de27 ENDED AT CANDIDATE TEST PREFLIGHT WITHOUT NATIVE CHILD DIAGNOSTICS / NO WORKER, TEMP RUN OR PARTIAL EVIDENCE / BOUNDED PREFLIGHT DIAGNOSTICS REPAIR IMPLEMENTED / TARGETED INDEPENDENT REREVIEW PENDING / CVN-7 AND THIS PARENT ARE NOT ACCEPTED OR ARCHIVED / POST-CORE REMAINS GATED.",
   "meta": {
     "compatibility_base": "d92a7586536ac8757c318ae6f75aabd8698f85ac",
     "architecture_style": "stability_first_startup_frozen_microkernel",
@@ -124,7 +124,7 @@
     "extensibility_reservation_acceptance_commit": "253d19e5e9d6a3bfdfa0158833d59872e8be156c",
     "extensibility_reservation_archive_commit": "a4d8cee406e8aa9a6efa05f4e24a8707367dc7b8",
     "extensibility_reservation_archive_path": ".trellis/tasks/archive/2026-08/08-09-core-vnext-extensibility-reservation-review/",
-    "next_dependency_gate": "cvn7_targeted_independent_git_ownership_repair_rereview_then_new_clean_head_full_mode_all_measurement",
+    "next_dependency_gate": "cvn7_targeted_independent_preflight_diagnostics_repair_rereview_then_new_clean_head_full_mode_all_measurement",
     "cvn2_task": "08-10-cvn-2-official-module-sdk-frozen-assembly",
     "cvn2_status": "completed_archived",
     "cvn2_branch": "codex/cvn-2-official-module-sdk-frozen-assembly",
@@ -444,7 +444,7 @@
     "cvn5_archive_commit": "198c71a",
     "cvn5_archive_path": ".trellis/tasks/archive/2026-08/08-11-cvn-5-range-operations-explicit-atomic-batch/",
     "cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
-    "cvn7_status": "in_progress_batch_event_assertion_repair_implemented_targeted_independent_rereview_pending",
+    "cvn7_status": "in_progress_preflight_diagnostics_repair_implemented_targeted_independent_rereview_pending",
     "cvn7_branch": "codex/cvn-7-core-vnext-final-qualification",
     "cvn7_worktree_path": ".worktrees/cvn-7-core-vnext-final-qualification",
     "cvn7_qualification_base_commit": "38afdc3fd508dc67f7aa446fd323837a5d550b70",
@@ -476,9 +476,9 @@
     "cvn7_reviewed_planning_repair_commit": "c427d2f89a291618325dab273e926db635cca9a6",
     "cvn7_activation_commit": "616130cc6908f5c8741d12761cdb0ccebff63589",
     "cvn7_reviewed_harness_implementation_commit": "623f94a4308d2a51014256a2616af1bff53fdb56",
-    "cvn7_official_measurement_commit_policy": "exact_clean_reviewed_batch_event_assertion_repair_head_passed_as_equal_candidate_and_harness_commit",
+    "cvn7_official_measurement_commit_policy": "exact_clean_reviewed_preflight_diagnostics_repair_head_passed_as_equal_candidate_and_harness_commit",
     "cvn7_harness_review": "passed_2026_08_13_p0_0_p1_0_p2_0_after_negative_path_targeted_rereview",
-    "cvn7_official_measurement_status": "third_attempt_evidence_invalid_worker_failed_batch_result_mismatch_harness_assertion_defect_no_partial_evidence",
+    "cvn7_official_measurement_status": "fourth_attempt_evidence_invalid_native_preflight_diagnostics_lost_no_worker_temp_or_partial_evidence",
     "cvn7_independent_planning_review_findings_final": {
       "P0": 0,
       "P1": 0,
@@ -504,7 +504,7 @@
       "partial_evidence": false,
       "reusable_evidence": false
     },
-    "cvn7_launcher_repair_status": "implemented_targeted_independent_rereview_pending",
+    "cvn7_launcher_repair_status": "passed_targeted_independent_rereview",
     "cvn7_second_official_measurement_attempt": {
       "candidate_and_harness_commit": "e510ed1d88f646c41143d94e3513af3f79f7d943",
       "status": "evidence_invalid",
@@ -517,7 +517,8 @@
     "cvn7_failed_official_inputs": [
       "7e3b7e61cc8ee292ee59522df297f43a86210b7c",
       "e510ed1d88f646c41143d94e3513af3f79f7d943",
-      "330d8938997a2c7e7f3835da41588fbef4f05787"
+      "330d8938997a2c7e7f3835da41588fbef4f05787",
+      "075de27a03a7bf5c3cc0949f85a36f209954435e"
     ],
     "cvn7_git_worktree_ownership_repair_status": "passed_targeted_independent_rereview",
     "cvn7_third_official_measurement_attempt": {
@@ -531,7 +532,7 @@
       "partial_evidence": false,
       "reusable_evidence": false
     },
-    "cvn7_batch_event_assertion_repair_status": "implemented_targeted_independent_rereview_pending",
+    "cvn7_batch_event_assertion_repair_status": "passed_targeted_independent_rereview",
     "cvn7_batch_event_assertion_repair_verification": "typecheck_build_boundary21_cvn7_78_full510_baseline_candidate_probe_deep_equal_build_manifest_71_equal_strict_json_jsonl_trellis_31_27_parent_3_3_product_0_0_postcore_15_16_diffcheck_allowlist9_protected_evidence_zero",
     "cvn7_batch_event_assertion_repair_test_counts": {
       "focused_boundary": {
@@ -546,6 +547,47 @@
         "passed": 510,
         "total": 510
       }
+    },
+    "cvn7_fourth_official_measurement_attempt": {
+      "candidate_and_harness_commit": "075de27a03a7bf5c3cc0949f85a36f209954435e",
+      "status": "evidence_invalid",
+      "started_at_local": "2026-08-14T16:15:17+08:00",
+      "ended_at_local": "2026-08-14T16:16:18+08:00",
+      "stage": "candidate.test.cvn7",
+      "reason": "preflight_child_nonzero_native_status_signal_stdout_stderr_not_retained",
+      "outer_wrapper_exit_code": 254,
+      "outer_wrapper_exit_code_role": "sentinel_not_native_child_status",
+      "worker_started": false,
+      "measurement_temp_run_created": false,
+      "partial_evidence": false,
+      "reusable_evidence": false,
+      "trigger_classification": "A_or_E_unresolved",
+      "same_node_npm_cli_cwd_reproduction": "passed_78_78",
+      "pipe_shape_reproduction": "passed_78_78",
+      "reproduction_stdout_bytes_approx": 5168
+    },
+    "cvn7_preflight_diagnostics_repair_status": "implemented_targeted_independent_rereview_pending",
+    "cvn7_preflight_diagnostics_repair_test_counts": {
+      "focused_boundary": {
+        "passed": 25,
+        "total": 25
+      },
+      "cvn7": {
+        "passed": 82,
+        "total": 82
+      },
+      "full": {
+        "passed": 514,
+        "total": 514
+      }
+    },
+    "cvn7_preflight_diagnostics_repair_verification": "typecheck_build_boundary25_cvn7_82_full514_direct_node_npm_cli_cvn7_82_structured_failure_injection_cap_utf8_stage_order_zero_worker_temp_evidence_build_manifest_71_equal_strict_json_jsonl_trellis_31_27_parent_3_3_product_0_0_postcore_15_16_diffcheck_allowlist9_protected_evidence_zero",
+    "cvn7_preflight_diagnostics_repair_build_manifest": {
+      "baseline_file_count": 71,
+      "candidate_file_count": 71,
+      "baseline_tree_sha256": "2fd30bbd33294454f142e160bf88d2755c67e6639e154b282bd566c13d6e7ad2",
+      "candidate_tree_sha256": "2fd30bbd33294454f142e160bf88d2755c67e6639e154b282bd566c13d6e7ad2",
+      "equal": true
     }
   }
 }

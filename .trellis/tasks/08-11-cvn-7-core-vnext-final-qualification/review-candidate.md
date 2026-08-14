@@ -2,10 +2,10 @@
 
 ## Current status - 2026-08-14
 
-`BOUNDED BATCH EVENT ASSERTION REPAIR IMPLEMENTED / TARGETED INDEPENDENT REREVIEW PENDING`
+`BOUNDED PREFLIGHT DIAGNOSTICS REPAIR IMPLEMENTED / TARGETED INDEPENDENT REREVIEW PENDING`
 
 - Qualification base: `38afdc3fd508dc67f7aa446fd323837a5d550b70`.
-- Original reviewed harness implementation anchor: `623f94a4308d2a51014256a2616af1bff53fdb56` (`test(cvn-7): freeze qualification harness`). The later launcher and scoped-Git repairs passed their targeted rereviews; the current batch-event assertion repair is the only implementation delta awaiting targeted rereview.
+- Original reviewed harness implementation anchor: `623f94a4308d2a51014256a2616af1bff53fdb56` (`test(cvn-7): freeze qualification harness`). The launcher, scoped-Git and batch-event assertion repairs passed targeted rereviews; the current preflight diagnostics repair is the only implementation delta awaiting targeted rereview.
 - Task status: `in_progress`; task start and qualification implementation authorization are true.
 - Independent planning review final verdict: `PASS`, P0/P1/P2=`0/0/0`.
 - Independent implementation review final verdict after all bounded repairs and the rejected-stress negative-path probe: `PASS`, P0/P1/P2=`0/0/0`.
@@ -13,6 +13,7 @@
 - First official input `7e3b7e61cc8ee292ee59522df297f43a86210b7c` ended `EVIDENCE_INVALID` at direct Windows `execFileSync("npm.cmd", ...)`: reason `npm_cmd_execfile_einval`, `worker_started=false`, `partial_evidence=false`. Task-local `evidence/` still contains only `README.md`; nothing from that attempt is reusable.
 - Second official input `e510ed1d88f646c41143d94e3513af3f79f7d943` ended at baseline clean-status Git preflight: reason `git_dubious_ownership_preflight`, `worker_started=false`, `partial_evidence=false`, `measurement_complete=false`, `evidence_valid=false`. Evidence remains README-only and that input is not reusable.
 - Third official input `330d8938997a2c7e7f3835da41588fbef4f05787` reached the baseline `batch-100` warmup worker and ended `EVIDENCE_INVALID` with `worker-failed-batch-result-mismatch`, `worker_started=true`, `partial_evidence=false`. Independent root-cause review returned classification A, P0/P1/P2=`0/1/0`: the harness filtered `kernel.command.committed`, while accepted Core emits `core.document.committed`; Core/CVN-5 behavior is correct. All 253 external diagnostics are non-reusable.
+- Fourth official input `075de27a03a7bf5c3cc0949f85a36f209954435e` ran persistently from 16:15:17 to 16:16:18 and ended at nonzero `candidate.test.cvn7` preflight. The old runner discarded native status/signal/stdout/stderr, and the outer `254` was a wrapper sentinel. No worker or qualification TEMP run started, evidence remained README-only, and later same-identity/cwd/pipe reproduction passed `78/78`; the original A/E trigger remains unresolved and this input/log is non-reusable.
 - CVN-7 remains unaccepted and unarchived. The Core VNext parent and all post-Core children remain gated.
 
 ## Implementation review closure
@@ -31,6 +32,10 @@ The current bounded repair changes the worker's aggregate committed-event expect
 
 Repair verification is green: typecheck/build, focused boundary `21/21`, CVN-7 `78/78`, full `510/510`, strict JSON/JSONL, Trellis child `31/27`, Core parent `3/3`, product `0/0`, post-Core `15/16`, exact nine-file allowlist and diff check. Baseline/candidate normalized probes are deep-equal; both `dist/src` manifests contain 71 files and tree SHA-256 `65c1e715409c0631355a60e6f06b4bd7f091d2952cc44205eaae27cba79ba861`. Production, other tests, package/lock/config/OpenSpec/evidence and fixture/budget/schema paths have zero additional delta.
 
+The current bounded diagnostics repair labels every preflight subprocess stage and serializes a stable schema-version-1 `preflight-command-failed` record to stderr. It preserves the canonical root, executable, argv, native integer-or-null status, string-or-null signal, and separately bounded stdout/stderr with original byte counts and truncation flags. Each stream retains the longest complete UTF-8 prefix within 65,536 bytes. Injection regressions cover build/test stage identity, path/argv spaces, cap-minus-one/cap/cap-plus-one and split Unicode, top-level serialization, and zero later npm/worker/measurement-TEMP/evidence side effects. Success order and all qualification contracts remain unchanged.
+
+Diagnostics repair verification is green: typecheck/build, focused boundary `25/25`, CVN-7 `82/82`, full `514/514`, direct Node plus npm CLI JavaScript reproduction `82/82`, strict JSON/JSONL, Trellis child `31/27`, Core parent `3/3`, product `0/0`, post-Core `15/16`, exact nine-file allowlist and diff check. Baseline/candidate production manifests are equal at 71 files and tree SHA-256 `2fd30bbd33294454f142e160bf88d2755c67e6639e154b282bd566c13d6e7ad2`. Schema, fixtures, budgets, timeouts, samples, repeats and seeds are unchanged. Official `--mode all` was not invoked.
+
 The review sequence is retained here so later technical reviewers can distinguish superseded interim verdicts from the frozen result:
 
 1. Initial independent implementation review: `RETURN FOR BOUNDED IMPLEMENTATION REPAIR`, P0/P1/P2=`0/5/2`.
@@ -38,9 +43,10 @@ The review sequence is retained here so later technical reviewers can distinguis
 3. Targeted rereview after the second repair: `PASS`, P0/P1/P2=`0/0/0`.
 4. Additional all-rejected stress negative-path probe: `RETURN FOR BOUNDED IMPLEMENTATION REPAIR`, P0/P1/P2=`0/1/0`; this explicitly superseded the preceding interim PASS.
 5. Final negative-path targeted rereview: `PASS`, P0/P1/P2=`0/0/0`.
-6. Third official-run root-cause review: classification A / CVN-7 harness assertion defect, `RETURN FOR BOUNDED REPAIR`, P0/P1/P2=`0/1/0`; the current assertion repair awaits targeted rereview.
+6. Third official-run root-cause review: classification A / CVN-7 harness assertion defect, `RETURN FOR BOUNDED REPAIR`, P0/P1/P2=`0/1/0`; the batch assertion repair later passed targeted rereview.
+7. Fourth official-run observability review: `RETURN FOR MORE EVIDENCE`, classification A / confirmed CVN-7 harness observability defect, P0/P1/P2=`0/1/0`; the current diagnostics repair awaits targeted rereview.
 
-The rejected-stress repair encodes absent assessment as explicit `null`, accepts that exact shape in the decoder, and regresses the 10,000-rejected JSON round trip and functional routing. Commit `623f94a` remains the original reviewed harness anchor. After the current batch-event assertion repair passes targeted rereview, its new clean commit becomes the exact equal candidate/harness input; `330d893` and all earlier failed inputs remain invalid for reuse.
+The rejected-stress repair encodes absent assessment as explicit `null`, accepts that exact shape in the decoder, and regresses the 10,000-rejected JSON round trip and functional routing. Commit `623f94a` remains the original reviewed harness anchor. After the current diagnostics repair passes targeted rereview, its new clean commit becomes the exact equal candidate/harness input; `075de27`, `330d893` and all earlier failed inputs remain invalid for reuse.
 
 ## Next review target
 

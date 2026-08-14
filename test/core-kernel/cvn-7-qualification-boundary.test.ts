@@ -44,12 +44,18 @@ import {
 } from "./qualification/cvn-7-evidence-validator";
 import {
   CAPTURED_NPM_EXEC_PATH,
+  CVN7_PREFLIGHT_STREAM_BYTE_CAP,
+  PreflightCommandFailure,
   canonicalizeWorktreeRoot,
+  captureBoundedPreflightStream,
   completeTimedOutWorkerCleanup,
   decodeStressWorkerEnvelope,
   nativeExecutableOutput,
   npmCliOutput,
   parseNodeTestSummary,
+  runQualification,
+  serializeQualificationRunnerFailure,
+  type PreflightDependencies,
   validateNpmCliJavaScriptPath,
   worktreeScopedGitOutput,
 } from "./qualification/cvn-7-runner";
@@ -614,6 +620,7 @@ test("CVN7 launcher uses Node plus the captured npm CLI with exact argument boun
       npmExecPath,
       ["run", "typecheck", "--", "--fixture", "value with spaces"],
       temporaryRoot,
+      "candidate.typecheck.first",
       (executable, arguments_, options) => {
         calls.push({ executable, arguments_: [...arguments_], cwd: options.cwd });
         return "captured output\r\n";
@@ -639,11 +646,264 @@ test("CVN7 launcher uses Node plus the captured npm CLI with exact argument boun
         npmExecPath,
         ["run", "build"],
         temporaryRoot,
+        "candidate.build.first",
         () => { throw propagated; },
       ),
-      (error) => error === propagated,
+      (error) =>
+        error instanceof PreflightCommandFailure &&
+        error.diagnostic.stage === "candidate.build.first" &&
+        error.diagnostic.status === null,
     );
   } finally {
+    rmSync(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("CVN7 preflight failure preserves native command diagnostics and top-level serialization", () => {
+  const temporaryRoot = mkdtempSync(join(tmpdir(), "cvn7 diagnostic root "));
+  try {
+    const npmDirectory = join(temporaryRoot, "node modules", "npm", "bin");
+    mkdirSync(npmDirectory, { recursive: true });
+    const npmExecPath = join(npmDirectory, "npm-cli.js");
+    writeFileSync(npmExecPath, "#!/usr/bin/env node\n", "utf8");
+    const nativeFailure = Object.assign(new Error("native child failed"), {
+      status: 23,
+      signal: "SIGTERM",
+      stdout: Buffer.from("captured stdout", "utf8"),
+      stderr: Buffer.from("captured stderr", "utf8"),
+    });
+
+    assert.throws(
+      () => npmCliOutput(
+        npmExecPath,
+        ["run", "test:cvn7", "--", "value with spaces"],
+        temporaryRoot,
+        "candidate.test.cvn7",
+        () => { throw nativeFailure; },
+      ),
+      (error) => {
+        assert.equal(error instanceof PreflightCommandFailure, true);
+        if (!(error instanceof PreflightCommandFailure)) return false;
+        assert.deepEqual(error.diagnostic, {
+          schemaVersion: 1,
+          kind: "preflight-command-failed",
+          stage: "candidate.test.cvn7",
+          worktreeRoot: canonicalizeWorktreeRoot(temporaryRoot),
+          executable: process.execPath,
+          argv: [
+            resolve(npmExecPath),
+            "run",
+            "test:cvn7",
+            "--",
+            "value with spaces",
+          ],
+          status: 23,
+          signal: "SIGTERM",
+          stdout: "captured stdout",
+          stderr: "captured stderr",
+          stdoutBytes: 15,
+          stderrBytes: 15,
+          stdoutTruncated: false,
+          stderrTruncated: false,
+        });
+        assert.deepEqual(
+          JSON.parse(serializeQualificationRunnerFailure(error)),
+          error.diagnostic,
+        );
+        return true;
+      },
+    );
+
+    assert.throws(
+      () => nativeExecutableOutput(
+        "C:\\Program Files\\Fixture Node\\node.exe",
+        ["fixture script.js", "value with spaces"],
+        temporaryRoot,
+        "candidate.test.full",
+        () => {
+          throw Object.assign(new Error("native executable failed"), {
+            status: null,
+            signal: "SIGKILL",
+            stdout: "",
+            stderr: "terminated",
+          });
+        },
+      ),
+      (error) =>
+        error instanceof PreflightCommandFailure &&
+        error.diagnostic.executable ===
+          "C:\\Program Files\\Fixture Node\\node.exe" &&
+        error.diagnostic.argv[0] === "fixture script.js" &&
+        error.diagnostic.argv[1] === "value with spaces" &&
+        error.diagnostic.status === null &&
+        error.diagnostic.signal === "SIGKILL",
+    );
+
+    const runnerSource = readFileSync(
+      resolve("test/core-kernel/qualification/cvn-7-runner.ts"),
+      "utf8",
+    );
+    assert.match(
+      runnerSource,
+      /process\.stderr\.write\(`\$\{serializeQualificationRunnerFailure\(error\)\}\\n`\)/u,
+    );
+  } finally {
+    rmSync(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("CVN7 preflight diagnostics distinguish build and Node test stages", () => {
+  const temporaryRoot = mkdtempSync(join(tmpdir(), "cvn7 diagnostic stages "));
+  try {
+    const npmExecPath = join(temporaryRoot, "npm-cli.js");
+    writeFileSync(npmExecPath, "#!/usr/bin/env node\n", "utf8");
+    const stages = [
+      "baseline.build.second",
+      "candidate.test.cvn7",
+      "candidate.test.full",
+    ] as const;
+    for (const stage of stages) {
+      assert.throws(
+        () => npmCliOutput(
+          npmExecPath,
+          ["run", stage.includes("build") ? "build" : "test:cvn7"],
+          temporaryRoot,
+          stage,
+          () => {
+            throw Object.assign(new Error(stage), {
+              status: 1,
+              signal: null,
+              stdout: "",
+              stderr: stage,
+            });
+          },
+        ),
+        (error) =>
+          error instanceof PreflightCommandFailure &&
+          error.diagnostic.stage === stage &&
+          error.diagnostic.status === 1 &&
+          error.diagnostic.signal === null,
+      );
+    }
+  } finally {
+    rmSync(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("CVN7 preflight stream capture has exact byte caps and UTF-8 prefix semantics", () => {
+  const cap = CVN7_PREFLIGHT_STREAM_BYTE_CAP;
+  for (const length of [cap - 1, cap, cap + 1]) {
+    const captured = captureBoundedPreflightStream("a".repeat(length));
+    assert.equal(captured.bytes, length);
+    assert.equal(captured.truncated, length > cap);
+    assert.equal(Buffer.byteLength(captured.text, "utf8"), Math.min(length, cap));
+  }
+
+  const exactUnicode = `${"a".repeat(cap - 3)}€`;
+  assert.deepEqual(captureBoundedPreflightStream(exactUnicode), {
+    text: exactUnicode,
+    bytes: cap,
+    truncated: false,
+  });
+  const splitUnicode = Buffer.concat([
+    Buffer.from("a".repeat(cap - 1), "utf8"),
+    Buffer.from("€-tail", "utf8"),
+  ]);
+  const splitCapture = captureBoundedPreflightStream(splitUnicode);
+  assert.equal(splitCapture.bytes, splitUnicode.length);
+  assert.equal(splitCapture.truncated, true);
+  assert.equal(splitCapture.text, "a".repeat(cap - 1));
+  assert.doesNotMatch(splitCapture.text, /�/u);
+});
+
+test("CVN7 injected preflight failure stops later qualification side effects", async () => {
+  const temporaryRoot = mkdtempSync(join(tmpdir(), "cvn7 diagnostic effects "));
+  const previousTemp = process.env.TEMP;
+  try {
+    const baselineRoot = join(temporaryRoot, "baseline root");
+    const candidateRoot = join(temporaryRoot, "candidate root");
+    const npmExecPath = join(temporaryRoot, "npm-cli.js");
+    const evidenceRoot = join(
+      candidateRoot,
+      ".trellis",
+      "tasks",
+      "08-11-cvn-7-core-vnext-final-qualification",
+      "evidence",
+    );
+    const measurementRoot = join(temporaryRoot, "operating temp");
+    mkdirSync(baselineRoot);
+    mkdirSync(candidateRoot);
+    mkdirSync(evidenceRoot, { recursive: true });
+    writeFileSync(npmExecPath, "#!/usr/bin/env node\n", "utf8");
+    process.env.TEMP = measurementRoot;
+    const candidateCommit = "1".repeat(40);
+    const stages: string[] = [];
+    const manifest = Object.freeze({
+      fileCount: 0,
+      treeSha256: EMPTY_SHA256,
+      entries: Object.freeze([]),
+    });
+    const dependencies: PreflightDependencies = {
+      gitOutput: (_root, _arguments, stage) => {
+        stages.push(stage);
+        if (stage === "baseline.git.head") return CVN7_QUALIFICATION_BASE;
+        if (stage === "candidate.git.head") return candidateCommit;
+        return "";
+      },
+      npmOutput: (_validatedNpmExecPath, arguments_, cwd, stage) => {
+        stages.push(stage);
+        if (stage !== "candidate.test.cvn7") return "";
+        return npmCliOutput(npmExecPath, arguments_, cwd, stage, () => {
+          throw Object.assign(new Error("test failed"), {
+            status: 1,
+            signal: null,
+            stdout: "partial TAP",
+            stderr: "test failure",
+          });
+        });
+      },
+      computeManifest: () => manifest,
+      removeBuildOutput: () => undefined,
+      hashFile: () => EMPTY_SHA256,
+    };
+
+    await assert.rejects(
+      () => runQualification({
+        mode: "functional",
+        baselineRoot,
+        candidateRoot,
+        evidenceDir: evidenceRoot,
+        qualificationBase: CVN7_QUALIFICATION_BASE,
+        candidateCommit,
+        harnessCommit: candidateCommit,
+      }, dependencies, npmExecPath),
+      (error) =>
+        error instanceof PreflightCommandFailure &&
+        error.diagnostic.stage === "candidate.test.cvn7" &&
+        error.diagnostic.status === 1,
+    );
+
+    assert.deepEqual(stages, [
+      "baseline.git.status",
+      "candidate.git.status",
+      "baseline.git.head",
+      "candidate.git.head",
+      "baseline.typecheck.first",
+      "baseline.build.first",
+      "baseline.typecheck.second",
+      "baseline.build.second",
+      "candidate.typecheck.first",
+      "candidate.build.first",
+      "candidate.typecheck.second",
+      "candidate.build.second",
+      "candidate.git.source-diff",
+      "candidate.test.cvn7",
+    ]);
+    assert.equal(existsSync(measurementRoot), false);
+    assert.deepEqual(readdirSync(evidenceRoot), []);
+  } finally {
+    if (previousTemp === undefined) delete process.env.TEMP;
+    else process.env.TEMP = previousTemp;
     rmSync(temporaryRoot, { recursive: true, force: true });
   }
 });
@@ -671,7 +931,7 @@ test("CVN7 launcher rejects invalid npm_execpath identities before side effects"
     for (const invalid of invalidValues) {
       assert.throws(() => {
         const validated = validateNpmCliJavaScriptPath(invalid);
-        npmCliOutput(validated, ["run", "typecheck"], temporaryRoot, () => {
+        npmCliOutput(validated, ["run", "typecheck"], temporaryRoot, "candidate.typecheck.first", () => {
           commandCalls += 1;
           return "";
         });
@@ -746,11 +1006,21 @@ test("CVN7 worktree-scoped Git binds each canonical root with exact argv boundar
       return "clean\r\n";
     };
     assert.equal(
-      worktreeScopedGitOutput(candidateRoot, ["status", "--porcelain=v1"], execute),
+      worktreeScopedGitOutput(
+        candidateRoot,
+        ["status", "--porcelain=v1"],
+        "candidate.git.status",
+        execute,
+      ),
       "clean",
     );
     assert.equal(
-      worktreeScopedGitOutput(baselineRoot, ["rev-parse", "HEAD"], execute),
+      worktreeScopedGitOutput(
+        baselineRoot,
+        ["rev-parse", "HEAD"],
+        "baseline.git.head",
+        execute,
+      ),
       "clean",
     );
     assert.deepEqual(calls, [
@@ -782,8 +1052,15 @@ test("CVN7 worktree-scoped Git binds each canonical root with exact argv boundar
 
     const propagated = new Error("scoped-git-failed");
     assert.throws(
-      () => worktreeScopedGitOutput(candidateRoot, ["status"], () => { throw propagated; }),
-      (error) => error === propagated,
+      () => worktreeScopedGitOutput(
+        candidateRoot,
+        ["status"],
+        "candidate.git.status",
+        () => { throw propagated; },
+      ),
+      (error) =>
+        error instanceof PreflightCommandFailure &&
+        error.diagnostic.stage === "candidate.git.status",
     );
   } finally {
     rmSync(temporaryRoot, { recursive: true, force: true });
@@ -807,7 +1084,7 @@ test("CVN7 worktree root validation rejects before Git or qualification side eff
     let gitCalls = 0;
     for (const invalidRoot of invalidRoots) {
       assert.throws(
-        () => worktreeScopedGitOutput(invalidRoot, ["status"], () => {
+        () => worktreeScopedGitOutput(invalidRoot, ["status"], "candidate.git.status", () => {
           gitCalls += 1;
           return "";
         }),
@@ -815,10 +1092,15 @@ test("CVN7 worktree root validation rejects before Git or qualification side eff
       );
     }
     assert.throws(
-      () => worktreeScopedGitOutput(temporaryRoot, ["config", "safe.directory", temporaryRoot], () => {
+      () => worktreeScopedGitOutput(
+        temporaryRoot,
+        ["config", "safe.directory", temporaryRoot],
+        "candidate.git.config",
+        () => {
         gitCalls += 1;
         return "";
-      }),
+        },
+      ),
       /may not override or persist configuration/u,
     );
     assert.equal(gitCalls, 0);
@@ -862,7 +1144,11 @@ test("CVN7 scoped native Git probes the frozen baseline as clean", () => {
   const baselineRoot = resolve(process.cwd(), "..", "cvn-7-accepted-baseline");
   if (!existsSync(baselineRoot)) return;
   assert.equal(
-    worktreeScopedGitOutput(baselineRoot, ["status", "--porcelain=v1", "--untracked-files=all"]),
+    worktreeScopedGitOutput(
+      baselineRoot,
+      ["status", "--porcelain=v1", "--untracked-files=all"],
+      "baseline.git.status",
+    ),
     "",
   );
 });
@@ -882,7 +1168,7 @@ test("CVN7 preflight preserves npm ordering and the native git launcher", () => 
   const cleanBuildSource = runnerSource.slice(cleanBuildStart, cleanBuildEnd);
   assert.match(
     cleanBuildSource,
-    /npmCliOutput\(npmExecPath, \["run", "typecheck"\][\s\S]*npmCliOutput\(npmExecPath, \["run", "build"\]/u,
+    /dependencies\.npmOutput\([\s\S]*\["run", "typecheck"\][\s\S]*dependencies\.npmOutput\([\s\S]*\["run", "build"\]/u,
   );
   const preflightStart = runnerSource.indexOf("function assertPreflight(");
   const preflightEnd = runnerSource.indexOf("function timeoutFor(", preflightStart);
@@ -894,7 +1180,7 @@ test("CVN7 preflight preserves npm ordering and the native git launcher", () => 
   const qualificationStart = runnerSource.indexOf("export async function runQualification(");
   const qualificationSource = runnerSource.slice(qualificationStart);
   const rootValidationIndex = qualificationSource.indexOf("canonicalizeWorktreeRoot(arguments_.baselineRoot)");
-  const validationIndex = qualificationSource.indexOf("validateNpmCliJavaScriptPath(CAPTURED_NPM_EXEC_PATH)");
+  const validationIndex = qualificationSource.indexOf("validateNpmCliJavaScriptPath(startupNpmExecPath)");
   assert.notEqual(rootValidationIndex, -1);
   assert.notEqual(validationIndex, -1);
   assert.equal(rootValidationIndex < validationIndex, true);
@@ -902,8 +1188,12 @@ test("CVN7 preflight preserves npm ordering and the native git launcher", () => 
     assert.equal(validationIndex < qualificationSource.indexOf(laterSideEffect), true);
   }
   assert.equal(
-    Array.from(preflightSource.matchAll(/worktreeScopedGitOutput\(/gu)).length,
+    Array.from(preflightSource.matchAll(/dependencies\.gitOutput\(/gu)).length,
     4,
+  );
+  assert.match(
+    runnerSource,
+    /startupNpmExecPath: unknown = CAPTURED_NPM_EXEC_PATH/u,
   );
   assert.doesNotMatch(runnerSource, /function gitOutput\(|safe\.directory=\*|config["'],\s*["']--(?:global|system|local)/u);
 
@@ -912,6 +1202,7 @@ test("CVN7 preflight preserves npm ordering and the native git launcher", () => 
     "git",
     ["status", "--porcelain=v1"],
     process.cwd(),
+    "candidate.git.status",
     (executable, arguments_) => {
       calls.push({ executable, arguments_: [...arguments_] });
       return "clean\n";

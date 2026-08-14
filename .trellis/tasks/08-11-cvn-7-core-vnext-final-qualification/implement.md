@@ -3,14 +3,15 @@
 ## 1. Current gate
 
 ```text
-IN PROGRESS - BOUNDED BATCH EVENT ASSERTION REPAIR IMPLEMENTED
+IN PROGRESS - BOUNDED PREFLIGHT DIAGNOSTICS REPAIR IMPLEMENTED
 qualification measurement complete: false
 evidence valid: false
 first official attempt: EVIDENCE_INVALID / npm_cmd_execfile_einval / worker_started=false
 second official attempt: EVIDENCE_INVALID / git_dubious_ownership_preflight / worker_started=false
 third official attempt: EVIDENCE_INVALID / worker-failed-batch-result-mismatch / worker_started=true
+fourth official attempt: EVIDENCE_INVALID / candidate.test.cvn7 nonzero with native diagnostics lost / worker_started=false
 partial or reusable evidence: false
-next gate: targeted independent batch assertion rereview, then one full mode-all run from the new clean frozen HEAD
+next gate: targeted independent preflight diagnostics rereview, then one full mode-all run from the new clean frozen HEAD
 ```
 
 The historical planning gate below records the pre-activation state and is not the live task state.
@@ -252,6 +253,14 @@ The third official input `330d8938997a2c7e7f3835da41588fbef4f05787` passed prefl
 The bounded repair changes only the test-only worker postcondition and its CVN-7 boundary regression. It requires 100 children, committed result, document version 1, undo/redo depth 1/0, exactly one `core.document.committed` whose commandId is `core.transaction.batch`, exact source `{kind: "core"}`, cause `submit` and documentVersion 1, followed by one separately validated dirty-state event. Baseline and candidate each pass one controlled non-official worker probe with deep-equal normalized results. The 253 external temporary diagnostic request/result pairs from the failed attempt are not published and are never reused.
 
 The repair commit becomes the next equal candidate/harness input only after targeted independent rereview. Measurement remains incomplete, evidence remains README-only, and this repair session does not run `--mode all`.
+
+### Bounded preflight diagnostics repair - 2026-08-14
+
+The fourth official input `075de27a03a7bf5c3cc0949f85a36f209954435e` ran persistently from 16:15:17 to 16:16:18 and ended at `candidate.test.cvn7` preflight with a nonzero child result. The runner retained only `error.message`, so native `status`, `signal`, `stdout` and `stderr` were lost; the outer wrapper's `254` was a sentinel rather than the child exit code. No qualification request/result temporary run was created, `worker_started=false`, `partial_evidence=false`, and task-local evidence remains README-only. The original trigger stays classified A/E unresolved: the same Node plus npm CLI identity, same cwd, and a pipe-shaped reproduction later passed `78/78` with about 5,168 stdout bytes. Neither this input nor its log is reusable.
+
+The bounded repair gives every preflight subprocess a stable stage and preserves one structured `preflight-command-failed` diagnostic with schema version 1, canonical worktree root, executable, argv, native integer-or-null status, string-or-null signal, and separately bounded stdout/stderr. Each stream retains the longest complete UTF-8 prefix within 65,536 bytes, records original byte length and truncation, and the top-level runner serializes the structure to stderr. Injected regressions distinguish nested build and Node-test stages, cover cap-minus-one/cap/cap-plus-one and split UTF-8 boundaries, preserve argv elements containing spaces, and prove the failed stage prevents later npm, worker, measurement-TEMP and evidence side effects. Success order, build manifests, schema, fixtures, budgets, timeouts, samples, repeats and seeds remain unchanged.
+
+This diagnostics repair receives one path-limited commit and targeted independent rereview. Only the later clean reviewed repair HEAD may become the next equal candidate/harness input; this repair session does not run `--mode all`.
 
 ### Files
 

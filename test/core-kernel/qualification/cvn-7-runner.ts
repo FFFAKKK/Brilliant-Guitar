@@ -42,7 +42,7 @@ import {
   validateQualificationEvidenceSet,
 } from "./cvn-7-evidence-validator";
 
-interface RunnerArguments {
+export interface RunnerArguments {
   readonly mode: QualificationRunMode;
   readonly baselineRoot: string;
   readonly candidateRoot: string;
@@ -58,7 +58,7 @@ interface BuildManifestEntry {
   readonly sha256: string;
 }
 
-interface BuildManifestData {
+export interface BuildManifestData {
   readonly fileCount: number;
   readonly treeSha256: string;
   readonly entries: readonly BuildManifestEntry[];
@@ -120,11 +120,63 @@ interface TextCommandOptions {
   readonly stdio: readonly ["ignore", "pipe", "pipe"];
 }
 
+export const CVN7_PREFLIGHT_STREAM_BYTE_CAP = 65_536 as const;
+
+export interface PreflightCommandFailureDiagnosticV1 {
+  readonly schemaVersion: 1;
+  readonly kind: "preflight-command-failed";
+  readonly stage: string;
+  readonly worktreeRoot: string;
+  readonly executable: string;
+  readonly argv: readonly string[];
+  readonly status: number | null;
+  readonly signal: string | null;
+  readonly stdout: string;
+  readonly stderr: string;
+  readonly stdoutBytes: number;
+  readonly stderrBytes: number;
+  readonly stdoutTruncated: boolean;
+  readonly stderrTruncated: boolean;
+}
+
+export interface BoundedPreflightStream {
+  readonly text: string;
+  readonly bytes: number;
+  readonly truncated: boolean;
+}
+
+export class PreflightCommandFailure extends Error {
+  public readonly diagnostic: PreflightCommandFailureDiagnosticV1;
+
+  public constructor(diagnostic: PreflightCommandFailureDiagnosticV1) {
+    super(`preflight command failed at ${diagnostic.stage}`);
+    this.name = "PreflightCommandFailure";
+    this.diagnostic = diagnostic;
+  }
+}
+
 export type TextCommandExecutor = (
   executable: string,
   arguments_: readonly string[],
   options: TextCommandOptions,
 ) => string;
+
+export interface PreflightDependencies {
+  readonly gitOutput: (
+    worktreeRoot: unknown,
+    gitArguments: readonly string[],
+    stage: string,
+  ) => string;
+  readonly npmOutput: (
+    validatedNpmExecPath: string,
+    npmArguments: readonly string[],
+    cwd: string,
+    stage: string,
+  ) => string;
+  readonly computeManifest: (buildRoot: string) => BuildManifestData;
+  readonly removeBuildOutput: (buildRoot: string) => void;
+  readonly hashFile: (path: string) => string;
+}
 
 const executeTextCommand: TextCommandExecutor = (
   executable,
@@ -134,6 +186,114 @@ const executeTextCommand: TextCommandExecutor = (
   ...options,
   stdio: [...options.stdio],
 }) as string;
+
+function errorField(error: unknown, key: string): unknown {
+  if ((typeof error !== "object" && typeof error !== "function") || error === null) return undefined;
+  try {
+    return (error as Record<string, unknown>)[key];
+  } catch {
+    return undefined;
+  }
+}
+
+function commandStreamBytes(value: unknown): Buffer {
+  if (typeof value === "string") return Buffer.from(value, "utf8");
+  if (Buffer.isBuffer(value)) return Buffer.from(value);
+  if (value instanceof Uint8Array) {
+    return Buffer.from(value.buffer, value.byteOffset, value.byteLength);
+  }
+  return Buffer.alloc(0);
+}
+
+function completeUtf8PrefixLength(value: Buffer): number {
+  if (value.length === 0) return 0;
+  let leadIndex = value.length - 1;
+  while (leadIndex >= 0 && (value[leadIndex]! & 0xc0) === 0x80) leadIndex -= 1;
+  if (leadIndex < 0) return 0;
+  const lead = value[leadIndex]!;
+  const expectedLength =
+    lead >= 0xf0 && lead <= 0xf4 ? 4 :
+      lead >= 0xe0 && lead <= 0xef ? 3 :
+        lead >= 0xc2 && lead <= 0xdf ? 2 : 1;
+  const availableLength = value.length - leadIndex;
+  return expectedLength > availableLength ? leadIndex : value.length;
+}
+
+export function captureBoundedPreflightStream(
+  value: unknown,
+  byteCap: number = CVN7_PREFLIGHT_STREAM_BYTE_CAP,
+): BoundedPreflightStream {
+  if (!Number.isSafeInteger(byteCap) || byteCap < 0) {
+    throw new TypeError("preflight stream byte cap must be a nonnegative safe integer");
+  }
+  const bytes = commandStreamBytes(value);
+  if (bytes.length <= byteCap) {
+    return Object.freeze({
+      text: bytes.toString("utf8"),
+      bytes: bytes.length,
+      truncated: false,
+    });
+  }
+  const prefix = bytes.subarray(0, byteCap);
+  return Object.freeze({
+    text: prefix.subarray(0, completeUtf8PrefixLength(prefix)).toString("utf8"),
+    bytes: bytes.length,
+    truncated: true,
+  });
+}
+
+function commandFailureDiagnostic(
+  error: unknown,
+  stage: string,
+  worktreeRoot: string,
+  executable: string,
+  arguments_: readonly string[],
+): PreflightCommandFailureDiagnosticV1 {
+  const stdout = captureBoundedPreflightStream(errorField(error, "stdout"));
+  const stderr = captureBoundedPreflightStream(errorField(error, "stderr"));
+  const statusValue = errorField(error, "status");
+  const signalValue = errorField(error, "signal");
+  return Object.freeze({
+    schemaVersion: 1,
+    kind: "preflight-command-failed",
+    stage,
+    worktreeRoot,
+    executable,
+    argv: Object.freeze([...arguments_]),
+    status: typeof statusValue === "number" && Number.isInteger(statusValue) ? statusValue : null,
+    signal: typeof signalValue === "string" ? signalValue : null,
+    stdout: stdout.text,
+    stderr: stderr.text,
+    stdoutBytes: stdout.bytes,
+    stderrBytes: stderr.bytes,
+    stdoutTruncated: stdout.truncated,
+    stderrTruncated: stderr.truncated,
+  });
+}
+
+function preflightTextCommandOutput(
+  stage: string,
+  worktreeRoot: string,
+  executable: string,
+  arguments_: readonly string[],
+  execute: TextCommandExecutor,
+): string {
+  if (stage.length === 0 || stage !== stage.trim()) {
+    throw new TypeError("preflight command stage must be nonempty and trimmed");
+  }
+  try {
+    return execute(executable, arguments_, {
+      cwd: worktreeRoot,
+      encoding: "utf8",
+      windowsHide: true,
+      stdio: ["ignore", "pipe", "pipe"],
+    }).trim();
+  } catch (error) {
+    throw new PreflightCommandFailure(
+      commandFailureDiagnostic(error, stage, worktreeRoot, executable, arguments_),
+    );
+  }
+}
 
 function parseArguments(values: readonly string[]): RunnerArguments {
   if (values.length !== CLI_KEYS.length * 2) throw new TypeError("exact runner arguments required");
@@ -178,14 +338,17 @@ export function nativeExecutableOutput(
   executable: string,
   arguments_: readonly string[],
   cwd: string,
+  stage: string,
   execute: TextCommandExecutor = executeTextCommand,
 ): string {
-  return execute(executable, arguments_, {
-    cwd,
-    encoding: "utf8",
-    windowsHide: true,
-    stdio: ["ignore", "pipe", "pipe"],
-  }).trim();
+  const canonicalRoot = canonicalizeWorktreeRoot(cwd);
+  return preflightTextCommandOutput(
+    stage,
+    canonicalRoot,
+    executable,
+    arguments_,
+    execute,
+  );
 }
 
 export function canonicalizeWorktreeRoot(value: unknown): string {
@@ -211,6 +374,7 @@ export function canonicalizeWorktreeRoot(value: unknown): string {
 export function worktreeScopedGitOutput(
   worktreeRoot: unknown,
   gitArguments: readonly string[],
+  stage: string,
   execute: TextCommandExecutor = executeTextCommand,
 ): string {
   const canonicalRoot = canonicalizeWorktreeRoot(worktreeRoot);
@@ -224,6 +388,7 @@ export function worktreeScopedGitOutput(
     "git",
     ["-c", `safe.directory=${canonicalRoot}`, ...gitArguments],
     canonicalRoot,
+    stage,
     execute,
   );
 }
@@ -251,15 +416,18 @@ export function npmCliOutput(
   validatedNpmExecPath: string,
   npmArguments: readonly string[],
   cwd: string,
+  stage: string,
   execute: TextCommandExecutor = executeTextCommand,
 ): string {
   const npmExecPath = validateNpmCliJavaScriptPath(validatedNpmExecPath);
-  return execute(process.execPath, [npmExecPath, ...npmArguments], {
-    cwd,
-    encoding: "utf8",
-    windowsHide: true,
-    stdio: ["ignore", "pipe", "pipe"],
-  }).trim();
+  const canonicalRoot = canonicalizeWorktreeRoot(cwd);
+  return preflightTextCommandOutput(
+    stage,
+    canonicalRoot,
+    process.execPath,
+    [npmExecPath, ...npmArguments],
+    execute,
+  );
 }
 
 function sha256Bytes(value: Buffer | string): string {
@@ -312,11 +480,37 @@ export function computeProductionBuildManifest(buildRoot: string): BuildManifest
   });
 }
 
-function cleanBuildManifest(root: string, npmExecPath: string): BuildManifestData {
-  rmSync(resolve(root, "dist"), { recursive: true, force: true });
-  npmCliOutput(npmExecPath, ["run", "typecheck"], root);
-  npmCliOutput(npmExecPath, ["run", "build"], root);
-  return computeProductionBuildManifest(root);
+const DEFAULT_PREFLIGHT_DEPENDENCIES: PreflightDependencies = Object.freeze({
+  gitOutput: worktreeScopedGitOutput,
+  npmOutput: npmCliOutput,
+  computeManifest: computeProductionBuildManifest,
+  removeBuildOutput: (buildRoot: string): void => {
+    rmSync(resolve(buildRoot, "dist"), { recursive: true, force: true });
+  },
+  hashFile: fileSha256,
+});
+
+function cleanBuildManifest(
+  root: string,
+  npmExecPath: string,
+  role: "baseline" | "candidate",
+  pass: "first" | "second",
+  dependencies: PreflightDependencies,
+): BuildManifestData {
+  dependencies.removeBuildOutput(root);
+  dependencies.npmOutput(
+    npmExecPath,
+    ["run", "typecheck"],
+    root,
+    `${role}.typecheck.${pass}`,
+  );
+  dependencies.npmOutput(
+    npmExecPath,
+    ["run", "build"],
+    root,
+    `${role}.build.${pass}`,
+  );
+  return dependencies.computeManifest(root);
 }
 
 export function parseNodeTestSummary(output: string): SuiteResult {
@@ -349,25 +543,51 @@ function executeTestSuite(
   root: string,
   npmExecPath: string,
   arguments_: readonly string[],
+  stage: string,
+  dependencies: PreflightDependencies,
 ): SuiteResult {
-  return parseNodeTestSummary(npmCliOutput(npmExecPath, arguments_, root));
+  return parseNodeTestSummary(
+    dependencies.npmOutput(npmExecPath, arguments_, root, stage),
+  );
 }
 
-function assertPreflight(
+export function assertPreflight(
   arguments_: RunnerArguments,
   npmExecPath: string,
+  dependencies: PreflightDependencies = DEFAULT_PREFLIGHT_DEPENDENCIES,
 ): PreflightResult {
-  for (const root of [arguments_.baselineRoot, arguments_.candidateRoot]) {
+  for (const [role, root] of [
+    ["baseline", arguments_.baselineRoot],
+    ["candidate", arguments_.candidateRoot],
+  ] as const) {
     if (!existsSync(root) || !statSync(root).isDirectory()) throw new TypeError("worktree root missing");
-    if (worktreeScopedGitOutput(root, ["status", "--porcelain=v1", "--untracked-files=all"]) !== "") {
+    if (
+      dependencies.gitOutput(
+        root,
+        ["status", "--porcelain=v1", "--untracked-files=all"],
+        `${role}.git.status`,
+      ) !== ""
+    ) {
       throw new TypeError("worktree must be completely clean before qualification");
     }
   }
   if (arguments_.qualificationBase !== CVN7_QUALIFICATION_BASE) throw new TypeError("qualification base mismatch");
-  if (worktreeScopedGitOutput(arguments_.baselineRoot, ["rev-parse", "HEAD"]) !== arguments_.qualificationBase) {
+  if (
+    dependencies.gitOutput(
+      arguments_.baselineRoot,
+      ["rev-parse", "HEAD"],
+      "baseline.git.head",
+    ) !== arguments_.qualificationBase
+  ) {
     throw new TypeError("baseline commit mismatch");
   }
-  if (worktreeScopedGitOutput(arguments_.candidateRoot, ["rev-parse", "HEAD"]) !== arguments_.candidateCommit) {
+  if (
+    dependencies.gitOutput(
+      arguments_.candidateRoot,
+      ["rev-parse", "HEAD"],
+      "candidate.git.head",
+    ) !== arguments_.candidateCommit
+  ) {
     throw new TypeError("candidate commit mismatch");
   }
   if (arguments_.harnessCommit !== arguments_.candidateCommit) {
@@ -381,20 +601,30 @@ function assertPreflight(
     throw new TypeError("evidence directory must be the CVN-7 task-local evidence directory");
   }
   if (
-    fileSha256(resolve(arguments_.baselineRoot, "package-lock.json")) !==
-    fileSha256(resolve(arguments_.candidateRoot, "package-lock.json"))
+    dependencies.hashFile(resolve(arguments_.baselineRoot, "package-lock.json")) !==
+    dependencies.hashFile(resolve(arguments_.candidateRoot, "package-lock.json"))
   ) {
     throw new TypeError("package lock hash mismatch");
   }
-  const baselineFirst = cleanBuildManifest(arguments_.baselineRoot, npmExecPath);
-  const baselineSecond = cleanBuildManifest(arguments_.baselineRoot, npmExecPath);
-  const candidateFirst = cleanBuildManifest(arguments_.candidateRoot, npmExecPath);
-  const candidateSecond = cleanBuildManifest(arguments_.candidateRoot, npmExecPath);
+  const baselineFirst = cleanBuildManifest(
+    arguments_.baselineRoot, npmExecPath, "baseline", "first", dependencies,
+  );
+  const baselineSecond = cleanBuildManifest(
+    arguments_.baselineRoot, npmExecPath, "baseline", "second", dependencies,
+  );
+  const candidateFirst = cleanBuildManifest(
+    arguments_.candidateRoot, npmExecPath, "candidate", "first", dependencies,
+  );
+  const candidateSecond = cleanBuildManifest(
+    arguments_.candidateRoot, npmExecPath, "candidate", "second", dependencies,
+  );
   if (JSON.stringify(baselineFirst) !== JSON.stringify(baselineSecond)) throw new TypeError("baseline build is not reproducible");
   if (JSON.stringify(candidateFirst) !== JSON.stringify(candidateSecond)) throw new TypeError("candidate build is not reproducible");
-  const sourceDiff = worktreeScopedGitOutput(arguments_.candidateRoot, [
-    "diff", "--no-ext-diff", "--name-only", arguments_.qualificationBase, "--", "src",
-  ]);
+  const sourceDiff = dependencies.gitOutput(
+    arguments_.candidateRoot,
+    ["diff", "--no-ext-diff", "--name-only", arguments_.qualificationBase, "--", "src"],
+    "candidate.git.source-diff",
+  );
   if (sourceDiff !== "") throw new TypeError("candidate production source differs from qualification base");
   if (JSON.stringify(baselineSecond) !== JSON.stringify(candidateSecond)) {
     throw new TypeError("equal production source produced unequal manifests");
@@ -403,8 +633,16 @@ function assertPreflight(
     arguments_.candidateRoot,
     npmExecPath,
     ["run", "test:cvn7"],
+    "candidate.test.cvn7",
+    dependencies,
   );
-  const fullSuite = executeTestSuite(arguments_.candidateRoot, npmExecPath, ["test"]);
+  const fullSuite = executeTestSuite(
+    arguments_.candidateRoot,
+    npmExecPath,
+    ["test"],
+    "candidate.test.full",
+    dependencies,
+  );
   return {
     baselineManifest: baselineSecond,
     candidateManifest: candidateSecond,
@@ -829,14 +1067,18 @@ function pathIsWithin(root: string, target: string): boolean {
   return relation === "" || (!relation.startsWith(`..${sep}`) && relation !== ".." && !isAbsolute(relation));
 }
 
-export async function runQualification(arguments_: RunnerArguments): Promise<string> {
+export async function runQualification(
+  arguments_: RunnerArguments,
+  preflightDependencies: PreflightDependencies = DEFAULT_PREFLIGHT_DEPENDENCIES,
+  startupNpmExecPath: unknown = CAPTURED_NPM_EXEC_PATH,
+): Promise<string> {
   arguments_ = {
     ...arguments_,
     baselineRoot: canonicalizeWorktreeRoot(arguments_.baselineRoot),
     candidateRoot: canonicalizeWorktreeRoot(arguments_.candidateRoot),
   };
-  const npmExecPath = validateNpmCliJavaScriptPath(CAPTURED_NPM_EXEC_PATH);
-  const manifests = assertPreflight(arguments_, npmExecPath);
+  const npmExecPath = validateNpmCliJavaScriptPath(startupNpmExecPath);
+  const manifests = assertPreflight(arguments_, npmExecPath, preflightDependencies);
   const evidenceHeader = Object.freeze(header(arguments_));
   const runId = randomBytes(12).toString("hex");
   const operatingSystemTemporaryRoot = resolve(process.env.TEMP ?? process.env.TMP ?? tmpdir());
@@ -1172,13 +1414,20 @@ export async function runQualification(arguments_: RunnerArguments): Promise<str
   return artifactsRoot;
 }
 
+export function serializeQualificationRunnerFailure(error: unknown): string {
+  if (error instanceof PreflightCommandFailure) {
+    return JSON.stringify(error.diagnostic);
+  }
+  return error instanceof Error ? error.message : "qualification-runner-failed";
+}
+
 async function main(): Promise<void> {
   try {
     const arguments_ = parseArguments(process.argv.slice(2));
     const output = await runQualification(arguments_);
     process.stdout.write(`${output}\n`);
   } catch (error) {
-    process.stderr.write(`${error instanceof Error ? error.message : "qualification-runner-failed"}\n`);
+    process.stderr.write(`${serializeQualificationRunnerFailure(error)}\n`);
     process.exitCode = 1;
   }
 }
