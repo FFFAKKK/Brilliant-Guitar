@@ -3,7 +3,7 @@
 ## 1. Current gate
 
 ```text
-IN PROGRESS - BOUNDED PREFLIGHT DIAGNOSTICS REPAIR IMPLEMENTED
+IN PROGRESS - BOUNDED CVN-7 PREFLIGHT STAGE SPLIT REPAIR IMPLEMENTED
 qualification measurement complete: false
 evidence valid: false
 first official attempt: EVIDENCE_INVALID / npm_cmd_execfile_einval / worker_started=false
@@ -11,7 +11,7 @@ second official attempt: EVIDENCE_INVALID / git_dubious_ownership_preflight / wo
 third official attempt: EVIDENCE_INVALID / worker-failed-batch-result-mismatch / worker_started=true
 fourth official attempt: EVIDENCE_INVALID / candidate.test.cvn7 nonzero with native diagnostics lost / worker_started=false
 partial or reusable evidence: false
-next gate: targeted independent preflight diagnostics rereview, then one full mode-all run from the new clean frozen HEAD
+next gate: targeted independent CVN-7 preflight stage-split rereview, then one full mode-all run from the new clean frozen HEAD
 ```
 
 The historical planning gate below records the pre-activation state and is not the live task state.
@@ -261,6 +261,14 @@ The fourth official input `075de27a03a7bf5c3cc0949f85a36f209954435e` ran persist
 The bounded repair gives every preflight subprocess a stable stage and preserves one structured `preflight-command-failed` diagnostic with schema version 1, canonical worktree root, executable, argv, native integer-or-null status, string-or-null signal, and separately bounded stdout/stderr. Each stream retains the longest complete UTF-8 prefix within 65,536 bytes, records original byte length and truncation, and the top-level runner serializes the structure to stderr. Injected regressions distinguish nested build and Node-test stages, cover cap-minus-one/cap/cap-plus-one and split UTF-8 boundaries, preserve argv elements containing spaces, and prove the failed stage prevents later npm, worker, measurement-TEMP and evidence side effects. Success order, build manifests, schema, fixtures, budgets, timeouts, samples, repeats and seeds remain unchanged.
 
 This diagnostics repair receives one path-limited commit and targeted independent rereview. Only the later clean reviewed repair HEAD may become the next equal candidate/harness input; this repair session does not run `--mode all`.
+
+### Bounded CVN-7 preflight stage split repair - 2026-08-14
+
+Targeted independent rereview of commit `5e6be662216f3aeef0cb086fa91ef43b7ccaa015` returned P0/P1/P2=`0/1/0`. The diagnostic schema, native fields, independent 65,536-byte stream caps, UTF-8 truncation, top-level stderr serialization and zero-side-effect failure behavior passed. The sole P1 was that candidate `test:cvn7` still ran the compound package script `npm run build && node --test ...` under one `candidate.test.cvn7` stage, so nested build and Node-test failures remained indistinguishable.
+
+The bounded repair leaves `package.json` unchanged and splits the real candidate qualification preflight into `candidate.test.cvn7.build` (`process.execPath` plus the validated npm CLI and `run build`) and `candidate.test.cvn7.node-test` (direct current Node `--test` with one argv element per discovered file). Discovery reads only immediate regular, non-symlink files whose basename matches `cvn-7-*.test.js`, sorts by ordinal basename, rejects missing/empty/unreadable/nonregular/symlink sets with the Node-test stage diagnostic, and ignores nonmatching entries. Only Node-test stdout is parsed as the qualification suite summary; build stdout is never parsed. Full test remains the existing independent `candidate.test.full` npm stage.
+
+Real `runQualification()` injection proves build failure prevents Node test/full/worker/measurement TEMP/evidence, and Node-test failure prevents full/worker/measurement TEMP/evidence. A success-path `assertPreflight()` regression proves build output cannot spoof counts, Node output yields the exact `84/84` suite, and deterministic paths containing spaces remain separate argv elements. Focused boundary is `27/27`, CVN-7 is `84/84`, and full is `516/516`. The new repair commit alone becomes the next equal candidate/harness input after targeted independent rereview; this session does not run `--mode all`.
 
 ### Files
 

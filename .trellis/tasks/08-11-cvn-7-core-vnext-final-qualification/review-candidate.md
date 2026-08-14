@@ -2,10 +2,10 @@
 
 ## Current status - 2026-08-14
 
-`BOUNDED PREFLIGHT DIAGNOSTICS REPAIR IMPLEMENTED / TARGETED INDEPENDENT REREVIEW PENDING`
+`BOUNDED CVN-7 PREFLIGHT STAGE SPLIT REPAIR IMPLEMENTED / TARGETED INDEPENDENT REREVIEW PENDING`
 
 - Qualification base: `38afdc3fd508dc67f7aa446fd323837a5d550b70`.
-- Original reviewed harness implementation anchor: `623f94a4308d2a51014256a2616af1bff53fdb56` (`test(cvn-7): freeze qualification harness`). The launcher, scoped-Git and batch-event assertion repairs passed targeted rereviews; the current preflight diagnostics repair is the only implementation delta awaiting targeted rereview.
+- Original reviewed harness implementation anchor: `623f94a4308d2a51014256a2616af1bff53fdb56` (`test(cvn-7): freeze qualification harness`). The launcher, scoped-Git and batch-event assertion repairs passed targeted rereviews. Diagnostics commit `5e6be66` closed every observability item except compound CVN-7 build/test stage identity; the current split-stage repair is the only implementation delta awaiting targeted rereview.
 - Task status: `in_progress`; task start and qualification implementation authorization are true.
 - Independent planning review final verdict: `PASS`, P0/P1/P2=`0/0/0`.
 - Independent implementation review final verdict after all bounded repairs and the rejected-stress negative-path probe: `PASS`, P0/P1/P2=`0/0/0`.
@@ -36,6 +36,10 @@ The current bounded diagnostics repair labels every preflight subprocess stage a
 
 Diagnostics repair verification is green: typecheck/build, focused boundary `25/25`, CVN-7 `82/82`, full `514/514`, direct Node plus npm CLI JavaScript reproduction `82/82`, strict JSON/JSONL, Trellis child `31/27`, Core parent `3/3`, product `0/0`, post-Core `15/16`, exact nine-file allowlist and diff check. Baseline/candidate production manifests are equal at 71 files and tree SHA-256 `2fd30bbd33294454f142e160bf88d2755c67e6639e154b282bd566c13d6e7ad2`. Schema, fixtures, budgets, timeouts, samples, repeats and seeds are unchanged. Official `--mode all` was not invoked.
 
+Targeted rereview of `5e6be662216f3aeef0cb086fa91ef43b7ccaa015` returned `RETURN FOR BOUNDED REPAIR`, P0/P1/P2=`0/1/0`. It explicitly passed the diagnostic schema/native fields, both 65,536-byte caps, UTF-8 boundary behavior, top-level stderr and zero side effects. Its sole finding was that the real candidate path still invoked compound `npm run test:cvn7`, so nested build and Node test shared one stage and argv.
+
+The current repair executes `candidate.test.cvn7.build` through Node plus validated npm CLI `run build`, discovers a nonempty ordinal list of immediate regular non-symlink `cvn-7-*.test.js` files, then executes direct Node `--test` as `candidate.test.cvn7.node-test`. It parses only the second subprocess stdout. Real `runQualification()` failure injections prove build failure suppresses Node/full/worker/TEMP/evidence and Node failure suppresses full/worker/TEMP/evidence; success injection proves build output is ignored for counts. Discovery regressions cover empty/missing, extra nonmatching, spaces, nonregular and symlink cases. Verification is boundary `27/27`, CVN-7 `84/84`, full `516/516`, strict JSON/JSONL, Trellis child `31/27`, Core parent `3/3`, product `0/0`, post-Core `15/16`, exact nine-file allowlist and diff check. Baseline/candidate production manifests are equal at 71 files and tree SHA-256 `2fd30bbd33294454f142e160bf88d2755c67e6639e154b282bd566c13d6e7ad2`; package/script/schema/fixture/budget/timeout/seed/repeat contracts remain unchanged. Official `--mode all` was not invoked.
+
 The review sequence is retained here so later technical reviewers can distinguish superseded interim verdicts from the frozen result:
 
 1. Initial independent implementation review: `RETURN FOR BOUNDED IMPLEMENTATION REPAIR`, P0/P1/P2=`0/5/2`.
@@ -44,9 +48,10 @@ The review sequence is retained here so later technical reviewers can distinguis
 4. Additional all-rejected stress negative-path probe: `RETURN FOR BOUNDED IMPLEMENTATION REPAIR`, P0/P1/P2=`0/1/0`; this explicitly superseded the preceding interim PASS.
 5. Final negative-path targeted rereview: `PASS`, P0/P1/P2=`0/0/0`.
 6. Third official-run root-cause review: classification A / CVN-7 harness assertion defect, `RETURN FOR BOUNDED REPAIR`, P0/P1/P2=`0/1/0`; the batch assertion repair later passed targeted rereview.
-7. Fourth official-run observability review: `RETURN FOR MORE EVIDENCE`, classification A / confirmed CVN-7 harness observability defect, P0/P1/P2=`0/1/0`; the current diagnostics repair awaits targeted rereview.
+7. Fourth official-run observability review: `RETURN FOR MORE EVIDENCE`, classification A / confirmed CVN-7 harness observability defect, P0/P1/P2=`0/1/0`.
+8. Targeted diagnostics rereview at `5e6be66`: `RETURN FOR BOUNDED REPAIR`, P0/P1/P2=`0/1/0`; all diagnostics behavior passed, with only compound candidate build/Node-test stage ambiguity remaining. The current split-stage repair awaits targeted rereview.
 
-The rejected-stress repair encodes absent assessment as explicit `null`, accepts that exact shape in the decoder, and regresses the 10,000-rejected JSON round trip and functional routing. Commit `623f94a` remains the original reviewed harness anchor. After the current diagnostics repair passes targeted rereview, its new clean commit becomes the exact equal candidate/harness input; `075de27`, `330d893` and all earlier failed inputs remain invalid for reuse.
+The rejected-stress repair encodes absent assessment as explicit `null`, accepts that exact shape in the decoder, and regresses the 10,000-rejected JSON round trip and functional routing. Commit `623f94a` remains the original reviewed harness anchor. After the current split-stage repair passes targeted rereview, its new clean commit becomes the exact equal candidate/harness input; `075de27`, `330d893` and all earlier failed inputs remain invalid for reuse.
 
 ## Next review target
 

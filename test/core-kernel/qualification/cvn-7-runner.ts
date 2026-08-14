@@ -3,6 +3,7 @@ import { execFileSync, spawn } from "node:child_process";
 import {
   copyFileSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -171,6 +172,11 @@ export interface PreflightDependencies {
     validatedNpmExecPath: string,
     npmArguments: readonly string[],
     cwd: string,
+    stage: string,
+  ) => string;
+  readonly nodeOutput: (
+    worktreeRoot: string,
+    nodeArguments: readonly string[],
     stage: string,
   ) => string;
   readonly computeManifest: (buildRoot: string) => BuildManifestData;
@@ -483,6 +489,17 @@ export function computeProductionBuildManifest(buildRoot: string): BuildManifest
 const DEFAULT_PREFLIGHT_DEPENDENCIES: PreflightDependencies = Object.freeze({
   gitOutput: worktreeScopedGitOutput,
   npmOutput: npmCliOutput,
+  nodeOutput: (
+    worktreeRoot: string,
+    nodeArguments: readonly string[],
+    stage: string,
+  ) =>
+    nativeExecutableOutput(
+      process.execPath,
+      nodeArguments,
+      worktreeRoot,
+      stage,
+    ),
   computeManifest: computeProductionBuildManifest,
   removeBuildOutput: (buildRoot: string): void => {
     rmSync(resolve(buildRoot, "dist"), { recursive: true, force: true });
@@ -549,6 +566,121 @@ function executeTestSuite(
   return parseNodeTestSummary(
     dependencies.npmOutput(npmExecPath, arguments_, root, stage),
   );
+}
+
+const CVN7_NODE_TEST_BASENAME_PATTERN = /^cvn-7-.*\.test\.js$/u;
+
+function throwNodeTestPreflightFailure(
+  worktreeRoot: string,
+  nodeArguments: readonly string[],
+  message: string,
+): never {
+  const error = Object.assign(new Error(message), {
+    status: null,
+    signal: null,
+    stdout: "",
+    stderr: message,
+  });
+  throw new PreflightCommandFailure(commandFailureDiagnostic(
+    error,
+    "candidate.test.cvn7.node-test",
+    worktreeRoot,
+    process.execPath,
+    nodeArguments,
+  ));
+}
+
+export function discoverCvn7NodeTestFiles(
+  candidateRoot: string,
+): readonly string[] {
+  const canonicalRoot = canonicalizeWorktreeRoot(candidateRoot);
+  const testDirectory = resolve(
+    canonicalRoot,
+    "dist",
+    "test",
+    "core-kernel",
+  );
+  const emptyArguments = Object.freeze(["--test"]);
+  let directoryStat: ReturnType<typeof lstatSync>;
+  try {
+    directoryStat = lstatSync(testDirectory);
+  } catch {
+    return throwNodeTestPreflightFailure(
+      canonicalRoot,
+      emptyArguments,
+      "CVN-7 Node test directory is missing or unreadable",
+    );
+  }
+  if (directoryStat.isSymbolicLink() || !directoryStat.isDirectory()) {
+    return throwNodeTestPreflightFailure(
+      canonicalRoot,
+      emptyArguments,
+      "CVN-7 Node test directory must be a regular directory",
+    );
+  }
+
+  let matchingNames: readonly string[];
+  try {
+    matchingNames = readdirSync(testDirectory)
+      .filter((name) => CVN7_NODE_TEST_BASENAME_PATTERN.test(name))
+      .sort((left, right) => left < right ? -1 : left > right ? 1 : 0);
+  } catch {
+    return throwNodeTestPreflightFailure(
+      canonicalRoot,
+      emptyArguments,
+      "CVN-7 Node test directory is unreadable",
+    );
+  }
+  if (matchingNames.length === 0) {
+    return throwNodeTestPreflightFailure(
+      canonicalRoot,
+      emptyArguments,
+      "CVN-7 Node test file set must be nonempty",
+    );
+  }
+
+  const files: string[] = [];
+  for (const name of matchingNames) {
+    const path = resolve(testDirectory, name);
+    let fileStat: ReturnType<typeof lstatSync>;
+    try {
+      fileStat = lstatSync(path);
+    } catch {
+      return throwNodeTestPreflightFailure(
+        canonicalRoot,
+        Object.freeze(["--test", path]),
+        "CVN-7 Node test entry is missing or unreadable",
+      );
+    }
+    if (fileStat.isSymbolicLink() || !fileStat.isFile()) {
+      return throwNodeTestPreflightFailure(
+        canonicalRoot,
+        Object.freeze(["--test", path]),
+        "CVN-7 Node test entry must be a regular non-symlink file",
+      );
+    }
+    files.push(path);
+  }
+  return Object.freeze(files);
+}
+
+function executeCvn7QualificationSuite(
+  root: string,
+  npmExecPath: string,
+  dependencies: PreflightDependencies,
+): SuiteResult {
+  dependencies.npmOutput(
+    npmExecPath,
+    ["run", "build"],
+    root,
+    "candidate.test.cvn7.build",
+  );
+  const testFiles = discoverCvn7NodeTestFiles(root);
+  return parseNodeTestSummary(dependencies.nodeOutput(
+    root,
+    ["--test", ...testFiles],
+    "candidate.test.cvn7.node-test",
+  ));
 }
 
 export function assertPreflight(
@@ -629,11 +761,9 @@ export function assertPreflight(
   if (JSON.stringify(baselineSecond) !== JSON.stringify(candidateSecond)) {
     throw new TypeError("equal production source produced unequal manifests");
   }
-  const qualificationSuite = executeTestSuite(
+  const qualificationSuite = executeCvn7QualificationSuite(
     arguments_.candidateRoot,
     npmExecPath,
-    ["run", "test:cvn7"],
-    "candidate.test.cvn7",
     dependencies,
   );
   const fullSuite = executeTestSuite(

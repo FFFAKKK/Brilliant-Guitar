@@ -44,9 +44,9 @@
     ".trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/",
     ".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/"
   ],
-  "notes": "CVN-7 IN PROGRESS / FOUR INVALID OFFICIAL INPUTS RETAINED / FOURTH INPUT 075de27 ENDED AT CANDIDATE.TEST.CVN7 PREFLIGHT WITH NATIVE CHILD DIAGNOSTICS LOST / WORKER AND MEASUREMENT TEMP RUN ZERO / NO PARTIAL OR REUSABLE EVIDENCE / BOUNDED PREFLIGHT DIAGNOSTICS REPAIR IMPLEMENTED / TARGETED INDEPENDENT REREVIEW PENDING / MEASUREMENT, ACCEPTANCE, ARCHIVE AND PUSH REMAIN OPEN.",
+  "notes": "CVN-7 IN PROGRESS / FOUR INVALID OFFICIAL INPUTS RETAINED / DIAGNOSTICS COMMIT 5e6be66 TARGETED REREVIEW LEFT ONE COMPOUND CVN7 BUILD/NODE-TEST STAGE P1 / BOUNDED SPLIT-STAGE REPAIR IMPLEMENTED / NO OFFICIAL RERUN OR EVIDENCE / TARGETED INDEPENDENT REREVIEW PENDING / MEASUREMENT, ACCEPTANCE, ARCHIVE AND PUSH REMAIN OPEN.",
   "meta": {
-    "planning_stage": "stage_6_bounded_preflight_diagnostics_repair_implemented_targeted_independent_rereview_pending",
+    "planning_stage": "stage_7_bounded_cvn7_preflight_stage_split_repair_implemented_targeted_independent_rereview_pending",
     "qualification_base_commit": "38afdc3fd508dc67f7aa446fd323837a5d550b70",
     "cvn5_source_commit": "f329ec10bc77c530282db3a6f47dbd6b6112859e",
     "cvn5_acceptance_commit": "b2ad0bc",
@@ -91,12 +91,12 @@
     "user_qualification_implementation_authorization": true,
     "user_qualification_implementation_authorization_date": "2026-08-13",
     "qualification_measurement_run": false,
-    "qualification_result": "evidence_invalid_candidate_test_cvn7_preflight_nonzero_native_child_diagnostics_lost_no_worker_no_temp_no_partial_evidence_trigger_A_E_unresolved",
+    "qualification_result": "evidence_invalid_fourth_input_native_diagnostics_lost_diagnostics_repair_rereview_left_compound_cvn7_build_node_test_stage_p1_no_new_measurement",
     "reviewed_harness_implementation_commit": "623f94a4308d2a51014256a2616af1bff53fdb56",
     "reviewed_harness_implementation_commit_date": "2026-08-13",
-    "official_measurement_commit_policy": "exact_clean_reviewed_preflight_diagnostics_repair_head_passed_as_equal_candidate_and_harness_commit",
+    "official_measurement_commit_policy": "exact_clean_reviewed_cvn7_preflight_stage_split_repair_head_passed_as_equal_candidate_and_harness_commit",
     "frozen_harness_review": "passed_p0_0_p1_0_p2_0_after_negative_path_targeted_rereview",
-    "official_measurement_status": "fourth_attempt_evidence_invalid_preflight_diagnostics_repair_targeted_rereview_pending",
+    "official_measurement_status": "fourth_attempt_evidence_invalid_stage_split_repair_targeted_rereview_pending",
     "official_evidence_status": "readme_only_no_partial_or_reusable_measurement_artifacts",
     "stage_0_baseline_freeze": {
       "status": "passed_2026_08_13",
@@ -200,8 +200,8 @@
     "post_core_scope": "read_only_until_cvn7_and_parent_accepted_archived",
     "push_authorized": false,
     "archive_authorized": false,
-    "operator_state": "bounded_preflight_diagnostics_repair_candidate_pending_targeted_independent_rereview",
-    "next_gate": "targeted_independent_preflight_diagnostics_repair_rereview_then_new_clean_head_full_mode_all_measurement",
+    "operator_state": "bounded_cvn7_preflight_stage_split_repair_candidate_pending_targeted_independent_rereview",
+    "next_gate": "targeted_independent_cvn7_preflight_stage_split_repair_rereview_then_new_clean_head_full_mode_all_measurement",
     "stage_1_to_5_candidate_verification": "superseded_by_bounded_implementation_repair_verification",
     "planning_verification": "ancestry198c71a_38afdc3_trellis_child31_27_parent3_3_product0_0_postcore15_16_json_jsonl_unique_child1_fc44_trace44_diffcheck_typecheck_build_full432_production0_postcore0",
     "bounded_planning_repair_verification": "trace44_exact_parent_set_unique_cases_existing_titles_exact_once_trellis31_27_parent3_3_product0_0_postcore15_16_json_jsonl_diffcheck_typecheck_build_full432_protected_delta0",
@@ -305,7 +305,7 @@
         "all_tests_except_official_measurement_test_repair_allowlist"
       ]
     },
-    "official_measurement_input_head": "next_clean_preflight_diagnostics_repair_head_after_targeted_independent_rereview",
+    "official_measurement_input_head": "next_clean_cvn7_preflight_stage_split_repair_head_after_targeted_independent_rereview",
     "launcher_repair_targeted_independent_rereview": "passed_docs_only_measurement_head_alignment",
     "second_official_measurement_attempt": {
       "candidate_and_harness_commit": "e510ed1d88f646c41143d94e3513af3f79f7d943",
@@ -447,7 +447,7 @@
       "pipe_shape_reproduction": "passed_78_78",
       "reproduction_stdout_bytes_approx": 5168
     },
-    "preflight_diagnostics_repair_status": "implemented_targeted_independent_rereview_pending",
+    "preflight_diagnostics_repair_status": "targeted_independent_rereview_returned_p1_compound_cvn7_build_node_test_stage_ambiguity",
     "preflight_diagnostics_repair_scope": [
       "test/core-kernel/qualification/cvn-7-runner.ts",
       "test/core-kernel/cvn-7-qualification-boundary.test.ts"
@@ -479,6 +479,69 @@
     },
     "preflight_diagnostics_repair_verification": "typecheck_build_boundary25_cvn7_82_full514_direct_node_npm_cli_cvn7_82_structured_failure_injection_cap_utf8_stage_order_zero_worker_temp_evidence_build_manifest_71_equal_strict_json_jsonl_trellis_31_27_parent_3_3_product_0_0_postcore_15_16_diffcheck_allowlist9_protected_evidence_zero",
     "preflight_diagnostics_repair_build_manifest": {
+      "baseline_file_count": 71,
+      "candidate_file_count": 71,
+      "baseline_tree_sha256": "2fd30bbd33294454f142e160bf88d2755c67e6639e154b282bd566c13d6e7ad2",
+      "candidate_tree_sha256": "2fd30bbd33294454f142e160bf88d2755c67e6639e154b282bd566c13d6e7ad2",
+      "equal": true
+    },
+    "preflight_diagnostics_targeted_independent_rereview": {
+      "reviewed_commit": "5e6be662216f3aeef0cb086fa91ef43b7ccaa015",
+      "P0": 0,
+      "P1": 1,
+      "P2": 0,
+      "verdict": "return_for_bounded_repair",
+      "passed_contracts": [
+        "diagnostic_schema",
+        "native_status_signal_stdout_stderr",
+        "stdout_stderr_65536_byte_caps",
+        "utf8_prefix_truncation",
+        "top_level_stderr_serialization",
+        "preflight_failure_zero_side_effects"
+      ],
+      "finding": "compound_npm_test_cvn7_nested_build_and_node_test_share_candidate_test_cvn7_stage_and_argv"
+    },
+    "cvn7_preflight_stage_split_repair_status": "implemented_targeted_independent_rereview_pending",
+    "cvn7_preflight_stage_split_repair_scope": [
+      "test/core-kernel/qualification/cvn-7-runner.ts",
+      "test/core-kernel/cvn-7-qualification-boundary.test.ts"
+    ],
+    "cvn7_preflight_stage_split_contract": {
+      "build_stage": "candidate.test.cvn7.build",
+      "build_executable": "process.execPath_plus_validated_npm_cli",
+      "build_argv": [
+        "run",
+        "build"
+      ],
+      "node_test_stage": "candidate.test.cvn7.node-test",
+      "node_test_executable": "process.execPath",
+      "node_test_argv_prefix": [
+        "--test"
+      ],
+      "file_pattern": "cvn-7-*.test.js",
+      "file_scope": "dist/test/core-kernel_immediate_regular_non_symlink_files",
+      "ordering": "ordinal_basename",
+      "nonempty": true,
+      "summary_source": "node_test_stdout_only",
+      "full_test_stage": "candidate.test.full",
+      "package_json_changed": false
+    },
+    "cvn7_preflight_stage_split_repair_test_counts": {
+      "focused_boundary": {
+        "passed": 27,
+        "total": 27
+      },
+      "cvn7": {
+        "passed": 84,
+        "total": 84
+      },
+      "full": {
+        "passed": 516,
+        "total": 516
+      }
+    },
+    "cvn7_preflight_stage_split_repair_verification": "typecheck_build_boundary27_cvn7_84_full516_real_build_and_node_failure_injection_deterministic_discovery_zero_later_worker_temp_evidence_build_manifest_71_equal_strict_json_jsonl_trellis_31_27_parent_3_3_product_0_0_postcore_15_16_diffcheck_allowlist9_protected_evidence_zero",
+    "cvn7_preflight_stage_split_repair_build_manifest": {
       "baseline_file_count": 71,
       "candidate_file_count": 71,
       "baseline_tree_sha256": "2fd30bbd33294454f142e160bf88d2755c67e6639e154b282bd566c13d6e7ad2",

@@ -2,7 +2,7 @@
 
 ## 1. Execution Status
 
-`PLANNING COORDINATION / CVN-0 THROUGH CVN-6, EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-7 IN PROGRESS; FOURTH INPUT 075de27 ENDED AT CANDIDATE TEST PREFLIGHT WITHOUT NATIVE CHILD DIAGNOSTICS / NO WORKER, TEMP RUN OR PARTIAL EVIDENCE / BOUNDED PREFLIGHT DIAGNOSTICS REPAIR IMPLEMENTED / TARGETED INDEPENDENT REREVIEW PENDING / CVN-7 AND PARENT ACCEPTANCE/ARCHIVE STILL OPEN`.
+`PLANNING COORDINATION / CVN-0 THROUGH CVN-6, EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-7 IN PROGRESS; DIAGNOSTICS COMMIT 5e6be66 REREVIEW LEFT ONE COMPOUND BUILD/NODE-TEST STAGE P1 / BOUNDED SPLIT-STAGE REPAIR IMPLEMENTED / NO OFFICIAL RERUN OR EVIDENCE / TARGETED INDEPENDENT REREVIEW PENDING / CVN-7 AND PARENT ACCEPTANCE/ARCHIVE STILL OPEN`.
 
 This parent task coordinates independently verifiable children. It does not batch all production changes into one implementation branch. Each child must receive its own PRD/design/implement review, `task.py start`, independent technical audit and archive decision.
 
@@ -216,7 +216,7 @@ Numeric labels organize scope; the arrows above are the actual execution depende
 
 ### CVN-7 — Core VNext Compatibility, Reliability and Scale Gate
 
-**Formal child:** `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/`; status `in_progress`, qualification base `38afdc3fd508dc67f7aa446fd323837a5d550b70`, task start and qualification implementation authorization true. Inputs `7e3b7e6` and `e510ed1` ended before worker startup; input `330d893` exposed and then closed the batch committed-event assertion defect. Input `075de27` ended at nonzero `candidate.test.cvn7` preflight without retained native status/signal/stdout/stderr; no worker or measurement TEMP run started, evidence remains README-only, and later `78/78` reproduction leaves the original A/E trigger unresolved. Independent review classifies the retained-diagnostics gap as a CVN-7 harness observability defect, P0/P1/P2=`0/1/0`. A bounded diagnostics repair is implemented and awaits targeted rereview; only its later clean reviewed HEAD may be passed equally as candidate and harness commit for a fresh full run. All attempts have `partial_evidence=false`; measurement completion, acceptance and archive remain false.
+**Formal child:** `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/`; status `in_progress`, qualification base `38afdc3fd508dc67f7aa446fd323837a5d550b70`, task start and qualification implementation authorization true. Four invalid official inputs remain non-reusable and evidence remains README-only. Targeted rereview of diagnostics commit `5e6be66` passed its schema/native/cap/UTF-8/stderr/zero-side-effect goals but returned one P1 because compound `npm run test:cvn7` mapped nested build and Node test to one stage. The bounded split-stage repair now uses `candidate.test.cvn7.build` and deterministic direct-Node `candidate.test.cvn7.node-test`; it awaits targeted rereview, and only its later clean reviewed HEAD may be passed equally as candidate and harness commit for a fresh full run. Measurement completion, acceptance and archive remain false.
 
 **Purpose:** close the product-ready extensible kernel only after every mechanism is integrated.
 
