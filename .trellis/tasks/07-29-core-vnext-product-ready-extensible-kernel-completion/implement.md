@@ -313,3 +313,7 @@ Stop the active child and return to planning if any of the following occurs:
 - [ ] Final catalog/export evidence reports exactly 28 Core command IDs: six preserved V1 plus twenty-two additive VNext.
 - [ ] Parent PRD acceptance criteria are all evidenced.
 - [ ] User approves final Core VNext closure before archive.
+
+## RKP-0 transition reservation — 2026-08-15
+
+RKP-0 is the sole active descendant of the Rust-remediation coordinator. It freezes TypeScript authority/oracle and Qualification V2 contract data only; it neither changes the accepted TypeScript Core runtime nor authorizes Rust/native production work. Its candidate must receive independent audit before any later RKP stage is considered.

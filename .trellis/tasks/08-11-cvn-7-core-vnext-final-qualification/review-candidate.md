@@ -137,3 +137,7 @@ Does this plan fully close the final Core VNext qualification method without add
 - worktree clean after a docs-only planning commit.
 
 Operator bounded-repair verification reproduced typecheck/build and full `432/432`; strict JSON/JSONL, 44-row parent-set equality, 44 unique qualification titles, every existing decisive title exactly once, Trellis child `31/27`, parent `3/3`, product `0/0`, post-Core `15/16`, diff check and protected production zero-diff gates pass. The worktree intentionally contains only this reviewed docs repair candidate pending a separate planning commit decision and qualification implementation authorization; qualification measurements remain unrun.
+
+## Fifth input status projection — 2026-08-15
+
+The fifth official `--mode all` input terminated at `stress-submit` with a worker timeout after `411` requests and `410` results. It is a single `EVIDENCE_INVALID` ledger entry, not a qualification result: no partial output, latency/RSS figure, completion claim, or reusable evidence is published. A future run must begin from a separately reviewed clean head.

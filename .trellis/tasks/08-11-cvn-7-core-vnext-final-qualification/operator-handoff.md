@@ -92,3 +92,7 @@ Return to the owning stage when any of these appears:
 ## Completion handoff
 
 After committed evidence, final independent technical PASS and explicit user acceptance: record the accepted evidence, archive CVN-7, perform the separate Core VNext parent final acceptance/archive, then keep the post-Core parent in `planning` until explicit approval creates only the `official-guitar-domain-v1` planning child. That child is not automatically started, and no remote push is implied.
+
+## Fifth invalid official input — 2026-08-15
+
+`research/official-run-failure-ledger.jsonl` is the sole task-local record of official input five. The fresh `--mode all` attempt reached `stress-submit`, wrote `411` requests and received `410` results before `worker-timeout`; it is `EVIDENCE_INVALID`, incomplete, non-reusable, and publishes no partial evidence or performance verdict. The next coordination boundary is independent RKP-0 implementation audit, then a separately authorized clean-head CVN-7 rereview and measurement decision.

@@ -7,6 +7,8 @@ For changes that consume the accepted kernel, read `backend/score-document-model
 
 The K1-1 data path is `unknown -> decode -> semantic validation -> ScoreFeatureProfile`. Unknown extension data must survive semantic round-trip.
 
+The future Rust transition is governed by [backend/rust-runtime-transition.md](backend/rust-runtime-transition.md). It is an authority/oracle reservation only until a separately authorized and independently reviewed implementation stage changes the runtime.
+
 > Entry point for Pure Core Kernel V1 development in this single-repo Trellis workspace.
 
 ---

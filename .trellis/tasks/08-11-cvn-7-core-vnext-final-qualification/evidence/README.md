@@ -1,6 +1,6 @@
 # CVN-7 Evidence Directory
 
-This directory is a planning scaffold. No qualification measurement has been run or claimed by the planning candidate.
+This directory contains no published qualification measurement evidence. Official input five is retained only as an `EVIDENCE_INVALID` failure-ledger record outside this directory; it timed out at `stress-submit` and is incomplete/non-reusable, so no partial result is claimed here.
 
 Future accepted evidence filenames:
 

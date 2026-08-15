@@ -38,7 +38,7 @@
     ".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/",
     ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/research/planning-candidate-self-audit.md"
   ],
-  "notes": "RUST PERFORMANCE REMEDIATION PLANNING REVIEW PASSED / ONLY RKP-0 CREATED / PARENT AND CHILD REMAIN PLANNING / TASK START FALSE / PRODUCTION AUTHORIZATION FALSE / INDEPENDENT REVIEW HISTORY P1=5 THEN P1=1 THEN PASS 0/0/0 / READY FOR RKP-0 OPERATOR ACTIVATION / CVN-7 FIFTH INPUT REMAINS EVIDENCE_INVALID / NO RUST OR PRODUCTION IMPLEMENTATION.",
+  "notes": "RUST PERFORMANCE REMEDIATION PLANNING REVIEW PASSED / ONLY RKP-0 CREATED AND ACTIVE / PARENT REMAINS PLANNING WITH TASK START FALSE / PRODUCTION AUTHORIZATION FALSE / RKP-0 IMPLEMENTATION CANDIDATE PENDING INDEPENDENT AUDIT / CVN-7 FIFTH INPUT EVIDENCE_INVALID / NO RUST OR PRODUCTION IMPLEMENTATION.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
@@ -75,7 +75,7 @@
     "planning_production_delta": "zero",
     "push_authorized": false,
     "archive_authorized": false,
-    "next_gate": "rkp0_operator_activation",
+    "next_gate": "independent_rkp0_implementation_audit_before_any_next_stage",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,

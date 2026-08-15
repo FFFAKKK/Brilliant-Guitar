@@ -65,3 +65,7 @@ npm.cmd test
 ```
 
 Also verify JSON/JSONL parse, unique parent/child references, `status=planning`, authorization flags false, and zero relative delta under production/test/build-config paths.
+
+## RKP-0 active-child projection — 2026-08-15
+
+Only `08-15-rkp-0-authority-contract-oracle-freeze` is active. Its implementation candidate is docs/test-only authority work pending an independent implementation audit; the coordination parent remains `planning`, its task start and production authorization remain false, and no successor child may be created from this update.

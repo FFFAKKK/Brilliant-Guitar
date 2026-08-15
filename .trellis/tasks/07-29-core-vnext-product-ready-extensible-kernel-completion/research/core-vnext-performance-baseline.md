@@ -87,3 +87,7 @@ The stress fixture must complete deterministically with deeply equal replay outp
 - A release-blocking 25,600-event fixture is likely achievable with clone-once candidates plus focused indexing/validation work.
 - Requiring near-immediate edits at 100,000+ events would likely trigger structural sharing, incremental semantic validation and incremental snapshot work inside Core VNext rather than leaving them as optional later optimization.
 - Benchmark harnesses must generate deterministic fixtures, warm up before measured runs, execute multiple samples, report median/P95, and record Node/OS/CPU/memory/build hash.
+
+## Qualification V2 reservation — 2026-08-15
+
+RKP-0 fixes the next qualification method as a fresh process with `5` warmups and `20` measured public-call samples, nearest-rank P95/P99, RSS capture, and evidence-validity/liveness precedence. It is a data contract, not an executed measurement or a Rust runtime implementation. The fifth CVN-7 official input (`worker-timeout` during `stress-submit`, `411` requests / `410` results) remains incomplete, invalid, non-reusable, and unpublished.
