@@ -1,0 +1,16 @@
+{"file":".trellis/spec/core-kernel/backend/quality-guidelines.md","reason":"Check deterministic fixtures, strict boundaries and regression quality."}
+{"file":".trellis/spec/core-kernel/backend/errors-reports.md","reason":"Check public failures, issues, diagnostics and report privacy."}
+{"file":".trellis/spec/core-kernel/backend/registry-capability.md","reason":"Check command/selector inventories and frozen assembly behavior."}
+{"file":".trellis/spec/core-kernel/backend/score-document-model.md","reason":"Check oracle documents and persisted-schema fidelity."}
+{"file":".trellis/spec/core-kernel/backend/snapshot-events.md","reason":"Check observations capture only public detached state and events."}
+{"file":".trellis/tasks/06-29-commercial-guitar-tablature-product/requirements/REQ-015-commercial-quality-attributes.md","reason":"Check the 60 FPS and Windows-first quality intent."}
+{"file":".trellis/tasks/06-29-commercial-guitar-tablature-product/requirements/REQ-017-kernel-module-communication.md","reason":"Check oracle and transition maintain command-only writes."}
+{"file":".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-roadmap-and-stage-plan.md","reason":"Check one-child stage routing and post-CVN exit."}
+{"file":".trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/research/benchmark-method-and-evidence-schema.md","reason":"Check no official-run or liveness-budget conflation enters RKP-0."}
+{"file":".trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/research/file-test-evidence-ownership-matrix.md","reason":"Check evidence and test ownership remains explicit."}
+{"file":".trellis/tasks/archive/2026-08/08-10-cvn-2-official-module-sdk-frozen-assembly/implementation-review.md","reason":"Check the frozen SDK behavior and counts against accepted evidence."}
+{"file":".trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/implementation-review.md","reason":"Check integrated behavior against accepted evidence."}
+{"file":".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/prd.md","reason":"Check RKP-0 has no Guitar/product/public-plugin implementation scope."}
+{"file":".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/authority-and-evidence-input-audit.md","reason":"Check exact failure-ledger projection."}
+{"file":".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/golden-oracle-and-performance-contract.md","reason":"Check 64-scenario completeness and budgets."}
+{"file":".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/file-and-test-ownership-matrix.md","reason":"Check allowed paths and zero production delta."}

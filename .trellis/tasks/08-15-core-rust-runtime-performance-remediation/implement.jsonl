@@ -1,0 +1,16 @@
+{"file":".trellis/spec/core-kernel/backend/pure-kernel-boundary.md","reason":"Preserve the current Core-only ownership and product-layer exclusions while planning the runtime-language transition."}
+{"file":".trellis/spec/core-kernel/backend/score-document-model.md","reason":"Preserve persisted ScoreDocument identity, exact-time and ExtensionBlock contracts."}
+{"file":".trellis/spec/core-kernel/backend/command-transaction.md","reason":"Preserve command, transaction, inverse, history and rejection semantics."}
+{"file":".trellis/spec/core-kernel/backend/domain-transaction-integration.md","reason":"Preserve integrated assembly, module validation, migration and public export contracts."}
+{"file":".trellis/spec/core-kernel/backend/snapshot-events.md","reason":"Preserve read, snapshot, event sequence and dirty-state behavior."}
+{"file":".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/feature-contract-matrix.md","reason":"Trace accepted CVN contract owners and avoid reopening unrelated functionality."}
+{"file":".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/core-vnext-performance-baseline.md","reason":"Consume the existing performance authority and reference environment."}
+{"file":".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-roadmap-and-stage-plan.md","reason":"Synchronize the new remediation exit without changing post-Core order."}
+{"file":".trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/prd.md","reason":"Preserve frozen fixtures, budgets, evidence validity and qualification lifecycle."}
+{"file":".trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/design.md","reason":"Preserve official measurement method, worker boundaries and atomic evidence publication."}
+{"file":".trellis/tasks/archive/2026-08/08-10-cvn-2-official-module-sdk-frozen-assembly/design.md","reason":"Preserve the accepted official-module ABI as migration-oracle input."}
+{"file":".trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/design.md","reason":"Preserve integrated validation, migration, assembly and callback ordering behavior."}
+{"file":".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/prd.md","reason":"Keep Guitar, services, product host and public plugin work outside Core remediation."}
+{"file":".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/design.md","reason":"Preserve Application Assembly and Extension Host ownership fences."}
+{"file":".trellis/tasks/08-15-core-rust-runtime-performance-remediation/research/current-authority-and-hotpath-audit.md","reason":"Use live baseline and decisive complexity evidence for implementation planning."}
+{"file":".trellis/tasks/08-15-core-rust-runtime-performance-remediation/research/stage-dependency-and-rollback-map.md","reason":"Enforce the one-child sequence, acceptance gates and rollback boundaries."}
