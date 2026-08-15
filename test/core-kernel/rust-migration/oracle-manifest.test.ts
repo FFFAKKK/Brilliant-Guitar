@@ -1,6 +1,6 @@
 import assert = require("node:assert/strict");
 import { execFileSync } from "node:child_process";
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { test } from "node:test";
 
@@ -32,12 +32,16 @@ import {
 const MANIFEST_PATH = "test/core-kernel/rust-migration/fixtures/oracle-manifest-v1.json";
 const SCENARIOS_PATH = "test/core-kernel/rust-migration/fixtures/oracle-scenarios-v1.jsonl";
 const QUALIFICATION_PATH = "test/core-kernel/rust-migration/fixtures/qualification-v2-contract.json";
-const MATRIX_PATH = ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/oracle-scenario-matrix.md";
-const SDK_MATRIX_PATH = ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/sdk-surface-migration-matrix.md";
+const ARCHIVED_RKP0_AUTHORITY_PATH = ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze";
+const ACTIVE_RKP0_AUTHORITY_PATH = ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze";
+const MATRIX_PATH = ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/oracle-scenario-matrix.md";
+const SDK_MATRIX_PATH = ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/sdk-surface-migration-matrix.md";
 const FAILURE_LEDGER_PATH = ".trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/research/official-run-failure-ledger.jsonl";
+const BOUNDED_REPAIR_BASE = "6073b2a9c4478d5313d4a4206324eaf0c0dfa1ef";
+const BOUNDED_REPAIR_CANDIDATE = "9bc53901a0e205a99865b21c56dc80ff1112f3a7";
 
 const RAW_FIXTURES = [
-  { path: MANIFEST_PATH, byteLength: 15136, sha256: "8b99419f822ad02535f6aec655c95641a8d77f4f1d3ed61cfe1d15a97a1f310d" },
+  { path: MANIFEST_PATH, byteLength: 15168, sha256: "3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7" },
   { path: SCENARIOS_PATH, byteLength: 1307605, sha256: "9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2" },
   { path: QUALIFICATION_PATH, byteLength: 2982, sha256: "7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05" },
 ] as const;
@@ -58,7 +62,7 @@ function assertDeepFrozen(value: unknown, label: string): void {
   for (const [key, child] of Object.entries(value)) assertDeepFrozen(child, `${label}.${key}`);
 }
 
-test("RKP0-MANIFEST freezes exact public inventory names instead of count-only projections", () => {
+test("RKP0-MANIFEST freezes exact public inventory, SDK, and ABI names instead of count-only projections", () => {
   const manifest = decodeOracleManifestText(readText(MANIFEST_PATH));
   assert.equal(manifest.baselineCommit, BASELINE_COMMIT);
   assert.equal(manifest.persistedSchema, "brilliant-score-1");
@@ -76,9 +80,6 @@ test("RKP0-MANIFEST freezes exact public inventory names instead of count-only p
   assert.deepEqual(Object.keys(moduleSdk).sort(), [...MODULE_SDK_RUNTIME_EXPORTS].sort());
   assert.deepEqual(CORE_COMMAND_DEFINITIONS.map((entry) => entry.commandId), COMMAND_IDS);
   assert.deepEqual(manifest.factoryModes, ["core-only", "integrated"]);
-});
-
-test("RKP0-MANIFEST compares the frozen CVN-2 8/34 SDK names and nine ABI fields", () => {
   const source = readText("src/core-kernel/module-sdk/index.ts");
   const typeNames = Array.from(source.matchAll(/export type\s*\{([\s\S]*?)\}\s*from/gmu), (match) => match[1] ?? "")
     .flatMap((group) => group.split(","))
@@ -221,7 +222,7 @@ test("RKP0-MANIFEST freezes the sole fifth CVN-7 invalid-input ledger row withou
   });
 });
 
-test("RKP0-MANIFEST enforces the bounded repair allowlist and keeps later RKP tasks absent", () => {
+test("RKP0-MANIFEST enforces the immutable bounded repair allowlist", () => {
   const allowed = new Set([
     ".gitattributes",
     ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/prd.md",
@@ -232,15 +233,17 @@ test("RKP0-MANIFEST enforces the bounded repair allowlist and keeps later RKP ta
     "test/core-kernel/rust-migration/ts-oracle-capture.test.ts",
     "test/core-kernel/rust-migration/oracle-manifest.test.ts",
   ]);
-  const changed = [...new Set([
-    ...execFileSync("git", ["diff", "--name-only", "6073b2a9c4478d5313d4a4206324eaf0c0dfa1ef", "--"], { encoding: "utf8" })
-      .split(/\r?\n/u),
-    ...execFileSync("git", ["diff", "--cached", "--name-only", "6073b2a9c4478d5313d4a4206324eaf0c0dfa1ef", "--"], { encoding: "utf8" })
-      .split(/\r?\n/u),
-    ...execFileSync("git", ["ls-files", "--others", "--exclude-standard"], { encoding: "utf8" })
-      .split(/\r?\n/u),
-  ])].filter((path) => path.length > 0);
+  assert.doesNotThrow(() => execFileSync("git", ["merge-base", "--is-ancestor", BOUNDED_REPAIR_CANDIDATE, "HEAD"]));
+  const changed = execFileSync("git", ["diff", "--name-only", BOUNDED_REPAIR_BASE, BOUNDED_REPAIR_CANDIDATE, "--"], { encoding: "utf8" })
+    .split(/\r?\n/u)
+    .filter((path) => path.length > 0);
   assert.deepEqual(changed.filter((path) => !allowed.has(path)), []);
+});
+
+test("RKP0-MANIFEST verifies the archived lifecycle separately from the immutable bounded repair allowlist", () => {
+  assert.equal(existsSync(resolve(ARCHIVED_RKP0_AUTHORITY_PATH)), true, "archived authority exists");
+  assert.equal(existsSync(resolve(ACTIVE_RKP0_AUTHORITY_PATH)), false, "active authority is absent");
   const taskDirectories = readdirSync(resolve(".trellis/tasks"));
   assert.deepEqual(taskDirectories.filter((name) => /^08-15-rkp-[1-9]/u.test(name)), []);
+  assert.equal(execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }), "", "committed lifecycle is clean");
 });

@@ -72,8 +72,8 @@
     "fresh_checkout_eol_validation": {
       "core_autocrlf": true,
       "oracle_manifest_v1_json": {
-        "bytes": 15136,
-        "sha256": "8b99419f822ad02535f6aec655c95641a8d77f4f1d3ed61cfe1d15a97a1f310d",
+        "bytes": 15168,
+        "sha256": "3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7",
         "cr_bytes": 0,
         "final_lf": true
       },

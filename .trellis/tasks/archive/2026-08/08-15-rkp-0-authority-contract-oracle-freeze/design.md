@@ -112,11 +112,11 @@ interface RustMigrationOracleManifestV1 {
   readonly scenariosFileSha256: string;
   readonly qualificationV2ContractSha256: string;
   readonly scenarioSpecification: {
-    readonly file: ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/oracle-scenario-matrix.md";
+    readonly file: ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/oracle-scenario-matrix.md";
     readonly sha256: string;
   };
   readonly sdkSurfaceSpecification: {
-    readonly file: ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/sdk-surface-migration-matrix.md";
+    readonly file: ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/sdk-surface-migration-matrix.md";
     readonly sha256: string;
   };
 }
