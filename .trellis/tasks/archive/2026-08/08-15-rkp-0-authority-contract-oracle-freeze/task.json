@@ -21,17 +21,17 @@
   "children": [],
   "parent": "08-15-core-rust-runtime-performance-remediation",
   "relatedFiles": [
-    ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/prd.md",
-    ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/design.md",
-    ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/implement.md",
-    ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/operator-handoff.md",
-    ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/review-candidate.md",
-    ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/authority-and-evidence-input-audit.md",
-    ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/golden-oracle-and-performance-contract.md",
-    ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/oracle-scenario-matrix.md",
-    ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/sdk-surface-migration-matrix.md",
-    ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/file-and-test-ownership-matrix.md",
-    ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/planning-candidate-self-audit.md"
+    ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/prd.md",
+    ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/design.md",
+    ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/implement.md",
+    ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/operator-handoff.md",
+    ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/review-candidate.md",
+    ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/authority-and-evidence-input-audit.md",
+    ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/golden-oracle-and-performance-contract.md",
+    ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/oracle-scenario-matrix.md",
+    ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/sdk-surface-migration-matrix.md",
+    ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/file-and-test-ownership-matrix.md",
+    ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/planning-candidate-self-audit.md"
   ],
   "notes": "RKP-0 ACCEPTED AND ARCHIVED / DOCS AND TEST-ONLY ORACLE SCOPE / INDEPENDENT IMPLEMENTATION REVIEW PASS 0/0/0 AT 9bc53901a0e205a99865b21c56dc80ff1112f3a7 / TASK START HISTORY TRUE / PRODUCTION AUTHORIZATION FALSE / TYPECHECK AND BUILD PASS / RKP-0 15/15 / CVN-7 84/84 / FULL 531/531 / FRESH core.autocrlf=true FIXTURE HASHES VERIFIED / RKP-1 THROUGH RKP-9 ABSENT.",
   "meta": {

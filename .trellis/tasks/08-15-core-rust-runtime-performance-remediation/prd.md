@@ -49,7 +49,7 @@ Every incremental validator shall declare its dependency scope. Test/debug compa
 - visual contributions may add React components through the future Extension Host;
 - all writes remain semantic commands, and mutable runtime storage stays private.
 
-The accepted CVN-2 callback API becomes migration-oracle input; it is not the future public third-party plugin SDK. Its exact eight runtime names, thirty-four type names and nine contribution ABI fields remain a protected compatibility surface after RKP-9 until a separately accepted deprecation task. RKP-8 removes it from the Product Application Assembly rather than deleting or renaming it. The authoritative three-surface disposition is `../08-15-rkp-0-authority-contract-oracle-freeze/research/sdk-surface-migration-matrix.md`.
+The accepted CVN-2 callback API becomes migration-oracle input; it is not the future public third-party plugin SDK. Its exact eight runtime names, thirty-four type names and nine contribution ABI fields remain a protected compatibility surface after RKP-9 until a separately accepted deprecation task. RKP-8 removes it from the Product Application Assembly rather than deleting or renaming it. The authoritative three-surface disposition is `.trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/sdk-surface-migration-matrix.md`.
 
 ### RUST-R008 — One implementation child at a time
 
