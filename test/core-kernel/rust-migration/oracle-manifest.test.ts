@@ -18,10 +18,10 @@ import {
   QUALIFICATION_V2_CONTRACT,
 } from "./ts-oracle-fixtures";
 import {
-  assertExactJsonShape,
   canonicalJson,
-  decodeOracleJsonl,
-  decodeOracleManifest,
+  decodeExactJsonText,
+  decodeOracleJsonlText,
+  decodeOracleManifestText,
   sha256,
   type JsonData,
 } from "./oracle-schema";
@@ -36,15 +36,30 @@ const MATRIX_PATH = ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze
 const SDK_MATRIX_PATH = ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/sdk-surface-migration-matrix.md";
 const FAILURE_LEDGER_PATH = ".trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/research/official-run-failure-ledger.jsonl";
 
-function readJson(path: string): unknown { return JSON.parse(readFileSync(resolve(path), "utf8")); }
-function normalizeLf(path: string): string { return readFileSync(resolve(path), "utf8").replace(/\r\n/g, "\n"); }
+const RAW_FIXTURES = [
+  { path: MANIFEST_PATH, byteLength: 15136, sha256: "8b99419f822ad02535f6aec655c95641a8d77f4f1d3ed61cfe1d15a97a1f310d" },
+  { path: SCENARIOS_PATH, byteLength: 1307605, sha256: "9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2" },
+  { path: QUALIFICATION_PATH, byteLength: 2982, sha256: "7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05" },
+] as const;
+
+function readText(path: string): string { return readFileSync(resolve(path), "utf8"); }
+function parseTrustedJson(text: string): Record<string, unknown> { return JSON.parse(text) as Record<string, unknown>; }
+function readTrackedBlob(path: string): string {
+  return execFileSync("git", ["show", `HEAD:${path}`], { encoding: "utf8" });
+}
 
 function expectThrow(callback: () => void, label: string): void {
   assert.throws(callback, TypeError, label);
 }
 
+function assertDeepFrozen(value: unknown, label: string): void {
+  if (value === null || typeof value !== "object") return;
+  assert.equal(Object.isFrozen(value), true, `${label} frozen`);
+  for (const [key, child] of Object.entries(value)) assertDeepFrozen(child, `${label}.${key}`);
+}
+
 test("RKP0-MANIFEST freezes exact public inventory names instead of count-only projections", () => {
-  const manifest = decodeOracleManifest(readJson(MANIFEST_PATH));
+  const manifest = decodeOracleManifestText(readText(MANIFEST_PATH));
   assert.equal(manifest.baselineCommit, BASELINE_COMMIT);
   assert.equal(manifest.persistedSchema, "brilliant-score-1");
   assert.deepEqual(manifest.applicationRuntimeExports, APPLICATION_RUNTIME_EXPORTS);
@@ -64,7 +79,7 @@ test("RKP0-MANIFEST freezes exact public inventory names instead of count-only p
 });
 
 test("RKP0-MANIFEST compares the frozen CVN-2 8/34 SDK names and nine ABI fields", () => {
-  const source = readFileSync(resolve("src/core-kernel/module-sdk/index.ts"), "utf8");
+  const source = readText("src/core-kernel/module-sdk/index.ts");
   const typeNames = Array.from(source.matchAll(/export type\s*\{([\s\S]*?)\}\s*from/gmu), (match) => match[1] ?? "")
     .flatMap((group) => group.split(","))
     .map((name) => name.trim())
@@ -77,47 +92,106 @@ test("RKP0-MANIFEST compares the frozen CVN-2 8/34 SDK names and nine ABI fields
 });
 
 test("RKP0-MANIFEST verifies canonical scenario hashes, whole-file hash, and authority hashes", () => {
-  const manifest = decodeOracleManifest(readJson(MANIFEST_PATH));
-  const text = readFileSync(resolve(SCENARIOS_PATH), "utf8");
-  const scenarios = decodeOracleJsonl(text);
+  const manifest = decodeOracleManifestText(readText(MANIFEST_PATH));
+  const text = readText(SCENARIOS_PATH);
+  const scenarios = decodeOracleJsonlText(text);
   assert.equal(manifest.scenarioCount, 64);
   assert.deepEqual(manifest.scenarioIds, scenarios.map((scenario) => scenario.scenarioId));
   assert.equal(manifest.scenariosFileSha256, sha256(text));
   for (const scenario of scenarios) {
     assert.equal(manifest.scenarioHashes[scenario.scenarioId], sha256(canonicalJson(scenario)), scenario.scenarioId);
   }
-  assert.equal(manifest.qualificationV2ContractSha256, sha256(readFileSync(resolve(QUALIFICATION_PATH), "utf8")));
+  assert.equal(manifest.qualificationV2ContractSha256, sha256(readFileSync(resolve(QUALIFICATION_PATH))));
   assert.equal(manifest.scenarioSpecification.file, MATRIX_PATH);
-  assert.equal(manifest.scenarioSpecification.sha256, sha256(normalizeLf(MATRIX_PATH)));
+  assert.equal(manifest.scenarioSpecification.sha256, sha256(readTrackedBlob(MATRIX_PATH)));
   assert.equal(manifest.sdkSurfaceSpecification.file, SDK_MATRIX_PATH);
-  assert.equal(manifest.sdkSurfaceSpecification.sha256, sha256(normalizeLf(SDK_MATRIX_PATH)));
+  assert.equal(manifest.sdkSurfaceSpecification.sha256, sha256(readTrackedBlob(SDK_MATRIX_PATH)));
 });
 
-test("RKP0-MANIFEST strictly decodes manifest, scenario, and Qualification V2 data", () => {
-  const manifest = readJson(MANIFEST_PATH) as Record<string, unknown>;
-  decodeOracleManifest(manifest);
-  expectThrow(() => decodeOracleManifest({ ...manifest, unexpected: true }), "manifest extra field");
+test("RKP0-MANIFEST decoders accept raw text only and reject exact-shape drift", () => {
+  const manifestText = readText(MANIFEST_PATH);
+  const manifest = parseTrustedJson(manifestText);
+  decodeOracleManifestText(manifestText);
+  expectThrow(() => decodeOracleManifestText(JSON.stringify({ ...manifest, unexpected: true })), "manifest extra field");
   const { scenarioIds: _scenarioIds, ...missingManifest } = manifest;
-  expectThrow(() => decodeOracleManifest(missingManifest), "manifest missing field");
-  expectThrow(() => decodeOracleManifest({ ...manifest, scenarioHashes: { ...(manifest.scenarioHashes as Record<string, unknown>), unexpected: "hash" } }), "manifest scenario hash extra field");
+  expectThrow(() => decodeOracleManifestText(JSON.stringify(missingManifest)), "manifest missing field");
+  expectThrow(() => decodeOracleManifestText(JSON.stringify({ ...manifest, scenarioHashes: { ...(manifest.scenarioHashes as Record<string, unknown>), unexpected: "hash" } })), "manifest scenario hash extra field");
 
-  const rows = readFileSync(resolve(SCENARIOS_PATH), "utf8").split("\n");
-  const firstScenario = JSON.parse(rows[0] ?? "") as Record<string, unknown>;
-  expectThrow(() => decodeOracleJsonl(`${JSON.stringify({ ...firstScenario, unexpected: true })}\n`), "scenario extra field");
+  const rows = readText(SCENARIOS_PATH).split("\n");
+  const firstScenario = parseTrustedJson(rows[0] ?? "");
+  expectThrow(() => decodeOracleJsonlText(`${JSON.stringify({ ...firstScenario, unexpected: true })}\n`), "scenario extra field");
   const { observations: _observations, ...missingScenario } = firstScenario;
-  expectThrow(() => decodeOracleJsonl(`${JSON.stringify(missingScenario)}\n`), "scenario missing field");
+  expectThrow(() => decodeOracleJsonlText(`${JSON.stringify(missingScenario)}\n`), "scenario missing field");
 
-  const qualification = readJson(QUALIFICATION_PATH);
-  assertExactJsonShape(qualification, QUALIFICATION_V2_CONTRACT as unknown as JsonData, "qualification");
-  expectThrow(() => assertExactJsonShape({ ...(qualification as Record<string, unknown>), unexpected: true }, QUALIFICATION_V2_CONTRACT as unknown as JsonData, "qualification"), "qualification extra field");
-  const { liveness: _liveness, ...missingQualification } = qualification as Record<string, unknown>;
-  expectThrow(() => assertExactJsonShape(missingQualification, QUALIFICATION_V2_CONTRACT as unknown as JsonData, "qualification"), "qualification missing field");
+  const qualificationText = readText(QUALIFICATION_PATH);
+  const qualification = parseTrustedJson(qualificationText);
+  decodeExactJsonText(qualificationText, QUALIFICATION_V2_CONTRACT as unknown as JsonData, "qualification");
+  expectThrow(() => decodeExactJsonText(JSON.stringify({ ...qualification, unexpected: true }), QUALIFICATION_V2_CONTRACT as unknown as JsonData, "qualification"), "qualification extra field");
+  const { liveness: _liveness, ...missingQualification } = qualification;
+  expectThrow(() => decodeExactJsonText(JSON.stringify(missingQualification), QUALIFICATION_V2_CONTRACT as unknown as JsonData, "qualification"), "qualification missing field");
+});
+
+test("RKP0-MANIFEST rejects hostile non-string inputs before reflection and freezes detached results", () => {
+  let getterCalls = 0;
+  const accessor = {};
+  Object.defineProperty(accessor, "unexpected", {
+    enumerable: true,
+    get: () => { getterCalls += 1; return "never-read"; },
+  });
+  let proxyTraps = 0;
+  const proxy = new Proxy({}, {
+    get: () => { proxyTraps += 1; return undefined; },
+    getOwnPropertyDescriptor: () => { proxyTraps += 1; return undefined; },
+    ownKeys: () => { proxyTraps += 1; return []; },
+  });
+  const sparseArray = new Array(2);
+  sparseArray[1] = "present";
+  const sparseObject = { 0: "present", 2: "present" };
+  const decoders: readonly ((input: unknown) => unknown)[] = [
+    (input) => decodeOracleManifestText(input),
+    (input) => decodeOracleJsonlText(input),
+    (input) => decodeExactJsonText(input, QUALIFICATION_V2_CONTRACT as unknown as JsonData, "qualification"),
+  ];
+  for (const decode of decoders) {
+    expectThrow(() => decode(accessor), "accessor input");
+    expectThrow(() => decode(proxy), "Proxy input");
+    expectThrow(() => decode(sparseArray), "sparse array input");
+    expectThrow(() => decode(sparseObject), "sparse object input");
+  }
+  assert.equal(getterCalls, 0);
+  assert.equal(proxyTraps, 0);
+
+  const manifest = decodeOracleManifestText(readText(MANIFEST_PATH));
+  const qualification = decodeExactJsonText(readText(QUALIFICATION_PATH), QUALIFICATION_V2_CONTRACT as unknown as JsonData, "qualification");
+  assertDeepFrozen(manifest, "manifest");
+  assertDeepFrozen(qualification, "qualification");
+  const originalCommandId = manifest.commandIds[0];
+  assert.throws(() => { (manifest.commandIds as string[])[0] = "mutated"; }, TypeError);
+  assert.equal(manifest.commandIds[0], originalCommandId);
+});
+
+test("RKP0-MANIFEST preserves raw fixture LF bytes and exact attributes", () => {
+  const attributes = execFileSync("git", ["check-attr", "text", "eol", "--", ...RAW_FIXTURES.map((fixture) => fixture.path)], { encoding: "utf8" })
+    .split(/\r?\n/u).filter((line) => line.length > 0);
+  assert.deepEqual(attributes, RAW_FIXTURES.flatMap((fixture) => [
+    `${fixture.path}: text: set`,
+    `${fixture.path}: eol: lf`,
+  ]));
+  for (const fixture of RAW_FIXTURES) {
+    const raw = readFileSync(resolve(fixture.path));
+    assert.equal(raw.includes(0x0d), false, `${fixture.path} has no CR`);
+    assert.equal(raw[raw.length - 1], 0x0a, `${fixture.path} has final LF`);
+    assert.equal(raw.byteLength, fixture.byteLength, `${fixture.path} byte size`);
+    assert.equal(sha256(raw), fixture.sha256, `${fixture.path} hash`);
+  }
+  const manifest = decodeOracleManifestText(readText(MANIFEST_PATH));
+  assert.equal(manifest.scenariosFileSha256, RAW_FIXTURES[1].sha256);
+  assert.equal(manifest.qualificationV2ContractSha256, RAW_FIXTURES[2].sha256);
 });
 
 test("RKP0-MANIFEST freezes Qualification V2 sampling, RSS, complexity, and validity precedence", () => {
-  const qualification = readJson(QUALIFICATION_PATH) as Record<string, unknown>;
-  assertExactJsonShape(qualification, QUALIFICATION_V2_CONTRACT as unknown as JsonData, "qualification");
-  assert.deepEqual((qualification.fixtureContracts as unknown), FIXTURE_CONTRACTS);
+  const qualification = decodeExactJsonText(readText(QUALIFICATION_PATH), QUALIFICATION_V2_CONTRACT as unknown as JsonData, "qualification") as Record<string, unknown>;
+  assert.deepEqual(qualification.fixtureContracts, FIXTURE_CONTRACTS);
   const sampling = qualification.sampling as Record<string, unknown>;
   assert.equal(sampling.warmupCount, 5);
   assert.equal(sampling.measuredCount, 20);
@@ -132,7 +206,7 @@ test("RKP0-MANIFEST freezes Qualification V2 sampling, RSS, complexity, and vali
 });
 
 test("RKP0-MANIFEST freezes the sole fifth CVN-7 invalid-input ledger row without partial evidence", () => {
-  const lines = readFileSync(resolve(FAILURE_LEDGER_PATH), "utf8").split("\n");
+  const lines = readText(FAILURE_LEDGER_PATH).split("\n");
   assert.equal(lines.length, 2);
   assert.equal(lines[1], "");
   assert.deepEqual(JSON.parse(lines[0] ?? ""), {
@@ -147,32 +221,21 @@ test("RKP0-MANIFEST freezes the sole fifth CVN-7 invalid-input ledger row withou
   });
 });
 
-test("RKP0-MANIFEST enforces the exact implementation allowlist and keeps later RKP tasks absent", () => {
+test("RKP0-MANIFEST enforces the bounded repair allowlist and keeps later RKP tasks absent", () => {
   const allowed = new Set([
-    ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/task.json",
-    ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/operator-handoff.md",
-    ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/review-candidate.md",
-    ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json",
-    ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/implement.md",
-    ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/task.json",
-    ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/implement.md",
-    ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/core-vnext-performance-baseline.md",
-    ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-roadmap-and-stage-plan.md",
-    ".trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/task.json",
-    ".trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/operator-handoff.md",
-    ".trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/review-candidate.md",
-    ".trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/evidence/README.md",
-    ".trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/research/official-run-failure-ledger.jsonl",
-    ".trellis/spec/core-kernel/index.md", ".trellis/spec/core-kernel/backend/index.md",
-    ".trellis/spec/core-kernel/backend/rust-runtime-transition.md",
-    "test/core-kernel/rust-migration/oracle-schema.ts", "test/core-kernel/rust-migration/ts-oracle-fixtures.ts",
-    "test/core-kernel/rust-migration/ts-oracle-capture.test.ts", "test/core-kernel/rust-migration/oracle-manifest.test.ts",
-    "test/core-kernel/rust-migration/fixtures/oracle-manifest-v1.json",
-    "test/core-kernel/rust-migration/fixtures/oracle-scenarios-v1.jsonl",
-    "test/core-kernel/rust-migration/fixtures/qualification-v2-contract.json",
+    ".gitattributes",
+    ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/prd.md",
+    ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/design.md",
+    ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/implement.md",
+    ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/file-and-test-ownership-matrix.md",
+    "test/core-kernel/rust-migration/oracle-schema.ts",
+    "test/core-kernel/rust-migration/ts-oracle-capture.test.ts",
+    "test/core-kernel/rust-migration/oracle-manifest.test.ts",
   ]);
   const changed = [...new Set([
-    ...execFileSync("git", ["diff", "--name-only", "06dccbdb927c4e80070b41718123f06b2e3ab1b2", "--"], { encoding: "utf8" })
+    ...execFileSync("git", ["diff", "--name-only", "6073b2a9c4478d5313d4a4206324eaf0c0dfa1ef", "--"], { encoding: "utf8" })
+      .split(/\r?\n/u),
+    ...execFileSync("git", ["diff", "--cached", "--name-only", "6073b2a9c4478d5313d4a4206324eaf0c0dfa1ef", "--"], { encoding: "utf8" })
       .split(/\r?\n/u),
     ...execFileSync("git", ["ls-files", "--others", "--exclude-standard"], { encoding: "utf8" })
       .split(/\r?\n/u),

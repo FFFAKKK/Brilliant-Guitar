@@ -5,7 +5,7 @@ import { test } from "node:test";
 
 import {
   canonicalJsonl,
-  decodeOracleJsonl,
+  decodeOracleJsonlText,
   type JsonData,
   type RustMigrationOracleScenarioV1,
 } from "./oracle-schema";
@@ -39,7 +39,7 @@ test("RKP0-ORACLE capture is byte-stable across two independent TypeScript runs"
 
 test("RKP0-ORACLE corpus has the exact 28 accepted, 28 rejected, and 8 cross-cutting rows", async () => {
   const text = readFileSync(resolve(SCENARIOS_PATH), "utf8");
-  const scenarios = decodeOracleJsonl(text);
+  const scenarios = decodeOracleJsonlText(text);
   assert.equal(scenarios.length, 64);
   assert.deepEqual(scenarios.map((scenario) => scenario.scenarioId), EXPECTED_SCENARIO_IDS);
   assert.equal(new Set(scenarios.map((scenario) => scenario.scenarioId)).size, 64);
@@ -53,7 +53,7 @@ test("RKP0-ORACLE corpus has the exact 28 accepted, 28 rejected, and 8 cross-cut
 });
 
 test("RKP0-ORACLE records one dense observation per public operation and preserves literal source authority", () => {
-  const scenarios = decodeOracleJsonl(readFileSync(resolve(SCENARIOS_PATH), "utf8"));
+  const scenarios = decodeOracleJsonlText(readFileSync(resolve(SCENARIOS_PATH), "utf8"));
   for (const scenario of scenarios) {
     assert.equal(scenario.operations.length, scenario.observations.length, scenario.scenarioId);
     assert.deepEqual(scenario.operations.map((operation) => operation.operationIndex), Array.from({ length: scenario.operations.length }, (_, index) => index), scenario.scenarioId);
@@ -64,7 +64,7 @@ test("RKP0-ORACLE records one dense observation per public operation and preserv
 });
 
 test("RKP0-ORACLE accepted A8 rows prove submit undo redo inverse equality", () => {
-  const scenarios = decodeOracleJsonl(readFileSync(resolve(SCENARIOS_PATH), "utf8"));
+  const scenarios = decodeOracleJsonlText(readFileSync(resolve(SCENARIOS_PATH), "utf8"));
   for (const scenario of scenarios.slice(0, 28)) {
     assert.equal(scenario.inverseProof.kind, "undo-redo", scenario.scenarioId);
     if (scenario.inverseProof.kind !== "undo-redo") continue;
@@ -75,7 +75,7 @@ test("RKP0-ORACLE accepted A8 rows prove submit undo redo inverse equality", () 
 });
 
 test("RKP0-ORACLE rejected R4 rows are fixed missing-target zero-delta rejections", () => {
-  const scenarios = decodeOracleJsonl(readFileSync(resolve(SCENARIOS_PATH), "utf8"));
+  const scenarios = decodeOracleJsonlText(readFileSync(resolve(SCENARIOS_PATH), "utf8"));
   for (const scenario of scenarios.slice(28, 56)) {
     assert.deepEqual(scenario.operations.map((operation) => operation.kind), ["subscribe", "submit", "read", "unsubscribe"], scenario.scenarioId);
     const result = object(scenario.observations[1]?.result ?? null, `${scenario.scenarioId}.submit`);
@@ -92,7 +92,7 @@ test("RKP0-ORACLE rejected R4 rows are fixed missing-target zero-delta rejection
 });
 
 test("RKP0-ORACLE keeps declared cross-cutting zero-delta operations explicit", () => {
-  const scenarios = decodeOracleJsonl(readFileSync(resolve(SCENARIOS_PATH), "utf8"));
+  const scenarios = decodeOracleJsonlText(readFileSync(resolve(SCENARIOS_PATH), "utf8"));
   const byId = new Map(scenarios.map((scenario) => [scenario.scenarioId, scenario]));
   for (const scenarioId of [
     "cross.batch-child-rejection-zero-delta",

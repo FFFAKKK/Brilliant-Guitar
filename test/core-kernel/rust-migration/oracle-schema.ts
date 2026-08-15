@@ -1,5 +1,13 @@
 import { createHash } from "node:crypto";
 
+const PRIMORDIAL_JSON_PARSE = JSON.parse;
+const PRIMORDIAL_ARRAY_IS_ARRAY = Array.isArray;
+const PRIMORDIAL_OBJECT_ENTRIES = Object.entries;
+const PRIMORDIAL_OBJECT_FREEZE = Object.freeze;
+const PRIMORDIAL_OBJECT_GET_OWN_PROPERTY_DESCRIPTOR = Object.getOwnPropertyDescriptor;
+const PRIMORDIAL_OBJECT_KEYS = Object.keys;
+const PRIMORDIAL_NUMBER_IS_FINITE = Number.isFinite;
+
 export type JsonScalar = null | boolean | number | string;
 export type JsonData = JsonScalar | readonly JsonData[] | { readonly [key: string]: JsonData };
 
@@ -72,30 +80,50 @@ export interface RustMigrationOracleManifestV1 {
   readonly sdkSurfaceSpecification: { readonly file: string; readonly sha256: string };
 }
 
-function ownDataEntries(value: object): readonly [string, unknown][] {
-  const keys = Object.keys(value).sort();
-  return keys.map((key) => {
-    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+function ownDataEntries(value: object, label: string): readonly [string, unknown][] {
+  const keys = PRIMORDIAL_OBJECT_KEYS(value).sort();
+  const entries: [string, unknown][] = [];
+  for (const key of keys) {
+    const descriptor = PRIMORDIAL_OBJECT_GET_OWN_PROPERTY_DESCRIPTOR(value, key);
     if (descriptor === undefined || !("value" in descriptor)) {
-      throw new TypeError(`canonical JSON requires data property: ${key}`);
+      throw new TypeError(`${label} requires data property: ${key}`);
     }
-    return [key, descriptor.value];
-  });
+    entries.push([key, descriptor.value]);
+  }
+  return entries;
 }
 
-export function toJsonData(value: unknown): JsonData {
-  if (value === null || typeof value === "string" || typeof value === "boolean") {
-    return value;
+function copyDenseArray(value: readonly unknown[], label: string): readonly JsonData[] {
+  const lengthDescriptor = PRIMORDIAL_OBJECT_GET_OWN_PROPERTY_DESCRIPTOR(value, "length");
+  if (lengthDescriptor === undefined || !("value" in lengthDescriptor) || !PRIMORDIAL_NUMBER_IS_FINITE(lengthDescriptor.value)) {
+    throw new TypeError(`${label} requires a finite own length`);
   }
+  const length = lengthDescriptor.value;
+  if (!Number.isSafeInteger(length) || length < 0 || PRIMORDIAL_OBJECT_KEYS(value).length !== length) {
+    throw new TypeError(`${label} rejects sparse or extra array properties`);
+  }
+  const result: JsonData[] = [];
+  for (let index = 0; index < length; index += 1) {
+    const descriptor = PRIMORDIAL_OBJECT_GET_OWN_PROPERTY_DESCRIPTOR(value, String(index));
+    if (descriptor === undefined || !("value" in descriptor)) {
+      throw new TypeError(`${label} rejects sparse or accessor array entries`);
+    }
+    result.push(toJsonData(descriptor.value, `${label}[${index}]`));
+  }
+  return PRIMORDIAL_OBJECT_FREEZE(result);
+}
+
+export function toJsonData(value: unknown, label = "JSON data"): JsonData {
+  if (value === null || typeof value === "string" || typeof value === "boolean") return value;
   if (typeof value === "number") {
-    if (!Number.isFinite(value)) throw new TypeError("canonical JSON rejects non-finite numbers");
+    if (!PRIMORDIAL_NUMBER_IS_FINITE(value)) throw new TypeError(`${label} rejects non-finite numbers`);
     return value;
   }
-  if (Array.isArray(value)) return value.map((item) => toJsonData(item));
-  if (typeof value !== "object") throw new TypeError(`canonical JSON rejects ${typeof value}`);
+  if (PRIMORDIAL_ARRAY_IS_ARRAY(value)) return copyDenseArray(value, label);
+  if (typeof value !== "object") throw new TypeError(`${label} rejects ${typeof value}`);
   const result: Record<string, JsonData> = {};
-  for (const [key, item] of ownDataEntries(value)) result[key] = toJsonData(item);
-  return result;
+  for (const [key, item] of ownDataEntries(value, label)) result[key] = toJsonData(item, `${label}.${key}`);
+  return PRIMORDIAL_OBJECT_FREEZE(result);
 }
 
 export function canonicalJson(value: unknown): string {
@@ -107,14 +135,25 @@ export function sha256(value: string | Uint8Array): string {
 }
 
 export function canonicalJsonl(rows: readonly unknown[]): string {
-  return rows.map((row) => `${canonicalJson(row)}\n`).join("");
+  let text = "";
+  for (let index = 0; index < rows.length; index += 1) text += `${canonicalJson(rows[index])}\n`;
+  return text;
+}
+
+function parseRawJsonText(input: unknown, label: string): unknown {
+  if (typeof input !== "string") throw new TypeError(`${label} must be raw UTF-8 JSON text`);
+  try {
+    return PRIMORDIAL_JSON_PARSE(input);
+  } catch {
+    throw new TypeError(`${label} is not valid JSON text`);
+  }
 }
 
 function expectRecord(value: unknown, keys: readonly string[], label: string): Record<string, unknown> {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+  if (value === null || typeof value !== "object" || PRIMORDIAL_ARRAY_IS_ARRAY(value)) {
     throw new TypeError(`${label} must be a record`);
   }
-  const actual = Object.keys(value).sort();
+  const actual = PRIMORDIAL_OBJECT_KEYS(value).sort();
   const expected = [...keys].sort();
   if (actual.length !== expected.length || actual.some((key, index) => key !== expected[index])) {
     throw new TypeError(`${label} has extra or missing fields`);
@@ -128,7 +167,7 @@ function expectString(value: unknown, label: string): string {
 }
 
 function expectNumber(value: unknown, label: string): number {
-  if (typeof value !== "number" || !Number.isFinite(value)) throw new TypeError(`${label} must be finite`);
+  if (typeof value !== "number" || !PRIMORDIAL_NUMBER_IS_FINITE(value)) throw new TypeError(`${label} must be finite`);
   return value;
 }
 
@@ -138,14 +177,28 @@ function expectBoolean(value: unknown, label: string): boolean {
 }
 
 function expectArray(value: unknown, label: string): readonly unknown[] {
-  if (!Array.isArray(value)) throw new TypeError(`${label} must be an array`);
+  if (!PRIMORDIAL_ARRAY_IS_ARRAY(value)) throw new TypeError(`${label} must be an array`);
   return value;
+}
+
+function stringArray(value: unknown, label: string): readonly string[] {
+  const parsed = expectArray(value, label);
+  const result: string[] = [];
+  for (let index = 0; index < parsed.length; index += 1) result.push(expectString(parsed[index], `${label}[${index}]`));
+  return PRIMORDIAL_OBJECT_FREEZE(result);
+}
+
+function jsonArray(value: unknown, label: string): readonly JsonData[] {
+  const parsed = expectArray(value, label);
+  const result: JsonData[] = [];
+  for (let index = 0; index < parsed.length; index += 1) result.push(toJsonData(parsed[index], `${label}[${index}]`));
+  return PRIMORDIAL_OBJECT_FREEZE(result);
 }
 
 function decodeState(value: unknown, label: string): OracleStateProjectionV1 {
   const record = expectRecord(value, ["documentSha256", "documentVersion", "history", "dirty", "eventSequence"], label);
   const history = expectRecord(record.history, ["undoDepth", "redoDepth"], `${label}.history`);
-  return {
+  return toJsonData({
     documentSha256: expectString(record.documentSha256, `${label}.documentSha256`),
     documentVersion: expectNumber(record.documentVersion, `${label}.documentVersion`),
     history: {
@@ -154,11 +207,11 @@ function decodeState(value: unknown, label: string): OracleStateProjectionV1 {
     },
     dirty: expectBoolean(record.dirty, `${label}.dirty`),
     eventSequence: expectNumber(record.eventSequence, `${label}.eventSequence`),
-  };
+  }, label) as unknown as OracleStateProjectionV1;
 }
 
 function decodeOperation(value: unknown, index: number): OracleOperationV1 {
-  const record = value === null || typeof value !== "object" || Array.isArray(value)
+  const record = value === null || typeof value !== "object" || PRIMORDIAL_ARRAY_IS_ARRAY(value)
     ? undefined
     : value as Record<string, unknown>;
   if (record === undefined) throw new TypeError(`operations[${index}] must be a record`);
@@ -179,7 +232,7 @@ function decodeOperation(value: unknown, index: number): OracleOperationV1 {
   if (record.operationVersion !== 1 || record.operationIndex !== index) {
     throw new TypeError(`operations[${index}] has invalid version or index`);
   }
-  return toJsonData(record) as OracleOperationV1;
+  return toJsonData(record, `operations[${index}]`) as OracleOperationV1;
 }
 
 function decodeObservation(value: unknown, index: number): OracleObservationV1 {
@@ -187,17 +240,17 @@ function decodeObservation(value: unknown, index: number): OracleObservationV1 {
   if (record.observationVersion !== 1 || record.operationIndex !== index) {
     throw new TypeError(`observations[${index}] has invalid version or index`);
   }
-  return {
+  return toJsonData({
     observationVersion: 1,
     operationIndex: index,
-    result: toJsonData(record.result),
+    result: toJsonData(record.result, `observations[${index}].result`),
     state: decodeState(record.state, `observations[${index}].state`),
-    publishedEvents: expectArray(record.publishedEvents, `observations[${index}].publishedEvents`).map(toJsonData),
-    callbackTrace: expectArray(record.callbackTrace, `observations[${index}].callbackTrace`).map((entry, traceIndex) => expectString(entry, `observations[${index}].callbackTrace[${traceIndex}]`)),
-  };
+    publishedEvents: jsonArray(record.publishedEvents, `observations[${index}].publishedEvents`),
+    callbackTrace: stringArray(record.callbackTrace, `observations[${index}].callbackTrace`),
+  }, `observations[${index}]`) as unknown as OracleObservationV1;
 }
 
-export function decodeOracleScenario(value: unknown): RustMigrationOracleScenarioV1 {
+function decodeOracleScenarioParsed(value: unknown): RustMigrationOracleScenarioV1 {
   const record = expectRecord(value, [
     "schemaVersion", "scenarioId", "scenarioClass", "coveredCommandIds", "assemblyKind", "sourceAuthority",
     "initialDocument", "initialState", "operations", "observations", "finalDocument", "finalState", "inverseProof",
@@ -208,12 +261,18 @@ export function decodeOracleScenario(value: unknown): RustMigrationOracleScenari
   const assemblyKind = expectString(record.assemblyKind, "scenario.assemblyKind");
   if (assemblyKind !== "core-only" && assemblyKind !== "integrated") throw new TypeError("scenario.assemblyKind invalid");
   const sourceAuthority = expectRecord(record.sourceAuthority, ["file", "testTitle"], "scenario.sourceAuthority");
-  const operations = expectArray(record.operations, "scenario.operations").map(decodeOperation);
-  const observations = expectArray(record.observations, "scenario.observations").map(decodeObservation);
-  if (operations.length !== observations.length) throw new TypeError("scenario operation/observation count mismatch");
+  const rawOperations = expectArray(record.operations, "scenario.operations");
+  const rawObservations = expectArray(record.observations, "scenario.observations");
+  if (rawOperations.length !== rawObservations.length) throw new TypeError("scenario operation/observation count mismatch");
+  const operations: OracleOperationV1[] = [];
+  const observations: OracleObservationV1[] = [];
+  for (let index = 0; index < rawOperations.length; index += 1) {
+    operations.push(decodeOperation(rawOperations[index], index));
+    observations.push(decodeObservation(rawObservations[index], index));
+  }
   const inverse = record.inverseProof;
   let inverseProof: RustMigrationOracleScenarioV1["inverseProof"];
-  if (inverse !== null && typeof inverse === "object" && !Array.isArray(inverse) && (inverse as { kind?: unknown }).kind === "not-applicable") {
+  if (inverse !== null && typeof inverse === "object" && !PRIMORDIAL_ARRAY_IS_ARRAY(inverse) && (inverse as { kind?: unknown }).kind === "not-applicable") {
     expectRecord(inverse, ["kind"], "scenario.inverseProof");
     inverseProof = { kind: "not-applicable" };
   } else {
@@ -227,34 +286,44 @@ export function decodeOracleScenario(value: unknown): RustMigrationOracleScenari
       afterRedoDocumentSha256: expectString(proof.afterRedoDocumentSha256, "scenario.inverseProof.afterRedoDocumentSha256"),
     };
   }
-  return {
+  return toJsonData({
     schemaVersion: 1,
     scenarioId: expectString(record.scenarioId, "scenario.scenarioId"),
     scenarioClass,
-    coveredCommandIds: expectArray(record.coveredCommandIds, "scenario.coveredCommandIds").map((entry, index) => expectString(entry, `scenario.coveredCommandIds[${index}]`)),
+    coveredCommandIds: stringArray(record.coveredCommandIds, "scenario.coveredCommandIds"),
     assemblyKind,
-    sourceAuthority: { file: expectString(sourceAuthority.file, "scenario.sourceAuthority.file"), testTitle: expectString(sourceAuthority.testTitle, "scenario.sourceAuthority.testTitle") },
-    initialDocument: toJsonData(record.initialDocument),
+    sourceAuthority: {
+      file: expectString(sourceAuthority.file, "scenario.sourceAuthority.file"),
+      testTitle: expectString(sourceAuthority.testTitle, "scenario.sourceAuthority.testTitle"),
+    },
+    initialDocument: toJsonData(record.initialDocument, "scenario.initialDocument"),
     initialState: decodeState(record.initialState, "scenario.initialState"),
     operations,
     observations,
-    finalDocument: toJsonData(record.finalDocument),
+    finalDocument: toJsonData(record.finalDocument, "scenario.finalDocument"),
     finalState: decodeState(record.finalState, "scenario.finalState"),
     inverseProof,
-  };
+  }, "scenario") as unknown as RustMigrationOracleScenarioV1;
 }
 
-export function decodeOracleJsonl(text: string): readonly RustMigrationOracleScenarioV1[] {
-  if (!text.endsWith("\n")) throw new TypeError("oracle JSONL requires final LF");
-  const lines = text.slice(0, -1).split("\n");
+export function decodeOracleJsonlText(input: unknown): readonly RustMigrationOracleScenarioV1[] {
+  if (typeof input !== "string") throw new TypeError("oracle JSONL must be raw UTF-8 JSON text");
+  if (!input.endsWith("\n")) throw new TypeError("oracle JSONL requires final LF");
+  const lines = input.slice(0, -1).split("\n");
   if (lines.length === 0 || lines.some((line) => line.length === 0)) throw new TypeError("oracle JSONL has empty rows");
-  return lines.map((line, index) => {
-    try { return decodeOracleScenario(JSON.parse(line)); }
-    catch (error) { throw new TypeError(`oracle row ${index}: ${error instanceof Error ? error.message : "invalid"}`); }
-  });
+  const scenarios: RustMigrationOracleScenarioV1[] = [];
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    try {
+      scenarios.push(decodeOracleScenarioParsed(parseRawJsonText(line, `oracle row ${index}`)));
+    } catch (error) {
+      throw new TypeError(`oracle row ${index}: ${error instanceof Error ? error.message : "invalid"}`);
+    }
+  }
+  return toJsonData(scenarios, "oracle JSONL") as unknown as readonly RustMigrationOracleScenarioV1[];
 }
 
-export function decodeOracleManifest(value: unknown): RustMigrationOracleManifestV1 {
+function decodeOracleManifestParsed(value: unknown): RustMigrationOracleManifestV1 {
   const record = expectRecord(value, [
     "schemaVersion", "baselineCommit", "persistedSchema", "applicationRuntimeExports", "moduleSdkRuntimeExports",
     "moduleSdkTypeExports", "contributionAbiFields", "commandIds", "factoryModes", "publicContractFamilies",
@@ -262,15 +331,19 @@ export function decodeOracleManifest(value: unknown): RustMigrationOracleManifes
     "qualificationV2ContractSha256", "scenarioSpecification", "sdkSurfaceSpecification",
   ], "manifest");
   if (record.schemaVersion !== 1) throw new TypeError("manifest.schemaVersion must be 1");
-  const stringArray = (entry: unknown, label: string): readonly string[] => expectArray(entry, label).map((item, index) => expectString(item, `${label}[${index}]`));
   const scenarioIds = stringArray(record.scenarioIds, "manifest.scenarioIds");
   if (new Set(scenarioIds).size !== scenarioIds.length) throw new TypeError("manifest.scenarioIds must be unique");
   const hashMap = expectRecord(record.scenarioHashes, scenarioIds, "manifest.scenarioHashes");
-  const spec = (entry: unknown, label: string) => {
+  const scenarioHashes: Record<string, string> = {};
+  for (const [key, hash] of PRIMORDIAL_OBJECT_ENTRIES(hashMap)) scenarioHashes[key] = expectString(hash, `manifest.scenarioHashes.${key}`);
+  const specification = (entry: unknown, label: string) => {
     const parsed = expectRecord(entry, ["file", "sha256"], label);
-    return { file: expectString(parsed.file, `${label}.file`), sha256: expectString(parsed.sha256, `${label}.sha256`) };
+    return {
+      file: expectString(parsed.file, `${label}.file`),
+      sha256: expectString(parsed.sha256, `${label}.sha256`),
+    };
   };
-  return {
+  return toJsonData({
     schemaVersion: 1,
     baselineCommit: expectString(record.baselineCommit, "manifest.baselineCommit"),
     persistedSchema: expectString(record.persistedSchema, "manifest.persistedSchema"),
@@ -281,28 +354,42 @@ export function decodeOracleManifest(value: unknown): RustMigrationOracleManifes
     commandIds: stringArray(record.commandIds, "manifest.commandIds"),
     factoryModes: stringArray(record.factoryModes, "manifest.factoryModes"),
     publicContractFamilies: stringArray(record.publicContractFamilies, "manifest.publicContractFamilies"),
-    fixtureContracts: expectArray(record.fixtureContracts, "manifest.fixtureContracts").map(toJsonData),
+    fixtureContracts: jsonArray(record.fixtureContracts, "manifest.fixtureContracts"),
     scenarioCount: expectNumber(record.scenarioCount, "manifest.scenarioCount"),
     scenarioIds,
-    scenarioHashes: Object.fromEntries(Object.entries(hashMap).map(([key, hash]) => [key, expectString(hash, `manifest.scenarioHashes.${key}`)])),
+    scenarioHashes,
     scenariosFileSha256: expectString(record.scenariosFileSha256, "manifest.scenariosFileSha256"),
     qualificationV2ContractSha256: expectString(record.qualificationV2ContractSha256, "manifest.qualificationV2ContractSha256"),
-    scenarioSpecification: spec(record.scenarioSpecification, "manifest.scenarioSpecification"),
-    sdkSurfaceSpecification: spec(record.sdkSurfaceSpecification, "manifest.sdkSurfaceSpecification"),
-  };
+    scenarioSpecification: specification(record.scenarioSpecification, "manifest.scenarioSpecification"),
+    sdkSurfaceSpecification: specification(record.sdkSurfaceSpecification, "manifest.sdkSurfaceSpecification"),
+  }, "manifest") as unknown as RustMigrationOracleManifestV1;
 }
 
-export function assertExactJsonShape(actual: unknown, expected: JsonData, label = "value"): void {
+export function decodeOracleManifestText(input: unknown): RustMigrationOracleManifestV1 {
+  return decodeOracleManifestParsed(parseRawJsonText(input, "manifest"));
+}
+
+function assertExactJsonShapeParsed(actual: unknown, expected: JsonData, label: string): void {
   if (expected === null || typeof expected === "string" || typeof expected === "number" || typeof expected === "boolean") {
     if (actual !== expected) throw new TypeError(`${label} differs`);
     return;
   }
-  if (Array.isArray(expected)) {
+  if (PRIMORDIAL_ARRAY_IS_ARRAY(expected)) {
     const actualArray = expectArray(actual, label);
     if (actualArray.length !== expected.length) throw new TypeError(`${label} length differs`);
-    expected.forEach((item, index) => assertExactJsonShape(actualArray[index], item, `${label}[${index}]`));
+    for (let index = 0; index < expected.length; index += 1) {
+      assertExactJsonShapeParsed(actualArray[index], expected[index] as JsonData, `${label}[${index}]`);
+    }
     return;
   }
-  const actualRecord = expectRecord(actual, Object.keys(expected), label);
-  for (const [key, value] of Object.entries(expected)) assertExactJsonShape(actualRecord[key], value, `${label}.${key}`);
+  const actualRecord = expectRecord(actual, PRIMORDIAL_OBJECT_KEYS(expected), label);
+  for (const [key, value] of PRIMORDIAL_OBJECT_ENTRIES(expected)) {
+    assertExactJsonShapeParsed(actualRecord[key], value, `${label}.${key}`);
+  }
+}
+
+export function decodeExactJsonText(input: unknown, expected: JsonData, label = "value"): JsonData {
+  const parsed = parseRawJsonText(input, label);
+  assertExactJsonShapeParsed(parsed, expected, label);
+  return toJsonData(parsed, label);
 }

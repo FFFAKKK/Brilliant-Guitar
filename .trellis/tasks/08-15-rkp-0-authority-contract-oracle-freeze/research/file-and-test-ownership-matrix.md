@@ -8,6 +8,7 @@
 | CVN-7 task/status | only `task.json`, `operator-handoff.md`, `review-candidate.md`, `evidence/README.md` | record invalid input/status without evidence publication |
 | CVN-7 failure ledger | only new `research/official-run-failure-ledger.jsonl` | exact fifth invalid-input row; outside `evidence/` |
 | Core spec | only `index.md`, `backend/index.md`, new `backend/rust-runtime-transition.md` | current-vs-target authority |
+| `.gitattributes` | add exactly three literal oracle-fixture `text eol=lf` entries; preserve all existing lines | raw canonical bytes and SHA-256 remain stable across fresh worktrees |
 | `test/core-kernel/rust-migration/oracle-schema.ts` | create | strict data-only oracle contracts and decoders |
 | `test/core-kernel/rust-migration/ts-oracle-fixtures.ts` | create | literal fixture, assembly and 64-scenario construction |
 | `test/core-kernel/rust-migration/ts-oracle-capture.test.ts` | create | deterministic TypeScript oracle capture and regeneration checks |
@@ -33,6 +34,8 @@
 7. exact SDK 8/34 and nine ABI name equality;
 8. closed changed-path subset against the full PRD allowlist;
 9. current CVN-7 and full regressions.
+10. raw-text decoder rejects accessor/Proxy/sparse object inputs without traps and freezes detached accepted values;
+11. a second fresh worktree has LF-only bytes and matching sizes/hashes for all three oracle fixtures.
 
 This matrix is a projection of the explicit repository-relative allowlist in `prd.md`; it cannot add, imply or widen an allowed path. Directory wildcards and sibling files are excluded.
 
