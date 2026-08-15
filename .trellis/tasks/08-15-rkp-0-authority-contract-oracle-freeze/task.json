@@ -33,14 +33,14 @@
     ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/file-and-test-ownership-matrix.md",
     ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/planning-candidate-self-audit.md"
   ],
-  "notes": "RKP-0 FORMAL PLANNING CANDIDATE / DOCS AND TEST-ONLY ORACLE SCOPE / TASK START FALSE / PRODUCTION AUTHORIZATION FALSE / FIRST INDEPENDENT REVIEW P1=5 / BOUNDED DOCS-ONLY REPAIR COMPLETE / TARGETED REREVIEW PENDING / RKP-1 THROUGH RKP-9 ABSENT.",
+  "notes": "RKP-0 PLANNING REVIEW PASSED / DOCS AND TEST-ONLY ORACLE SCOPE / TASK START FALSE / PRODUCTION AUTHORIZATION FALSE / INDEPENDENT REVIEW HISTORY P1=5 THEN P1=1 THEN PASS 0/0/0 / READY FOR OPERATOR ACTIVATION / RKP-1 THROUGH RKP-9 ABSENT.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "planning_parent_commit": null,
     "task_start_run": false,
     "production_implementation_authorized": false,
-    "independent_planning_review": "pending",
-    "planning_review_cycle": "bounded_repair_complete_targeted_rereview_pending",
+    "independent_planning_review": "passed",
+    "planning_review_cycle": "final_targeted_rereview_passed",
     "implementation_review": "not_started",
     "oracle_schema_version": 1,
     "oracle_scenario_count": 64,
@@ -58,12 +58,12 @@
     "planning_production_delta": "zero",
     "push_authorized": false,
     "archive_authorized": false,
-    "next_gate": "independent_rkp0_planning_review",
+    "next_gate": "operator_activation_and_task_start",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
       "P2": 0,
-      "verdict": "bounded_repair_complete_targeted_rereview_pending"
+      "verdict": "pass"
     },
     "first_independent_planning_review": {
       "P0": 0,
@@ -71,6 +71,21 @@
       "P2": 0,
       "candidate": "561a2ec37a361df6299ad1c0b83a023e679a2506",
       "verdict": "return_for_bounded_planning_repair"
+    },
+    "second_independent_planning_review": {
+      "P0": 0,
+      "P1": 1,
+      "P2": 0,
+      "candidate": "05df623ca6ab4a82b126b4f9d0fdb08f43e31520",
+      "verdict": "return_for_bounded_planning_repair"
+    },
+    "final_independent_planning_review": {
+      "P0": 0,
+      "P1": 0,
+      "P2": 0,
+      "candidate": "9a9f957ce4fcaded8ec87365f0f59f3f621b73da",
+      "verdict": "pass",
+      "scope": "five_original_findings_plus_exact_path_owner_direct_regressions"
     },
     "planning_validation": "trellis_json_jsonl_unique_hierarchy_diffcheck_typecheck_build_full516_protected_delta0"
   }

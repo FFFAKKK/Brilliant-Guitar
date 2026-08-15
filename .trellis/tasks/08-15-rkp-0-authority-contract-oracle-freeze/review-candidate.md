@@ -1,6 +1,8 @@
 # RKP-0 Planning Review Candidate
 
-Status: `READY FOR TARGETED INDEPENDENT PLANNING REREVIEW` after bounded repair of five P1 findings.
+Status: `INDEPENDENT PLANNING REVIEW PASSED / READY FOR RKP-0 OPERATOR HANDOFF`.
+
+Review history: `561a2ec` returned `0/5/0`; `05df623` returned `0/1/0`; the exact-path repair at `9a9f957ce4fcaded8ec87365f0f59f3f621b73da` passed `0/0/0`. The final authority-projection commit changes only review metadata and requires one final read-only projection check before operator activation.
 
 ## Required findings check
 

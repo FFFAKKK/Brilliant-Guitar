@@ -2,7 +2,7 @@
 
 ## Verdict
 
-First independent planning review returned P0/P1/P2=`0/5/0`. The bounded planning repair self-audits at `0/0/0`; targeted rereview remains pending.
+Independent review history is `0/5/0` at `561a2ec`, `0/1/0` at `05df623`, then `0/0/0 PASS` at `9a9f957ce4fcaded8ec87365f0f59f3f621b73da`. The final authority projection changes review metadata only and awaits a last read-only projection check before operator activation.
 
 ## Checks
 

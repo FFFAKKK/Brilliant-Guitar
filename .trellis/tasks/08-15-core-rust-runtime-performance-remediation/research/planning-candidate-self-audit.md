@@ -2,13 +2,13 @@
 
 ## Verdict
 
-First independent planning review returned P0/P1/P2=`0/5/0`. The bounded docs-only repair now self-audits at `0/0/0`; targeted independent rereview remains pending.
+Independent review history is `0/5/0` at `561a2ec`, `0/1/0` at `05df623`, then `0/0/0 PASS` at `9a9f957ce4fcaded8ec87365f0f59f3f621b73da`. The final authority projection changes review metadata only and awaits a last read-only projection check before operator activation.
 
 ## Evidence
 
 - planning base ancestor: `b21540fa3636e6c8e827ff24c2099f4ff331285d`;
-- parent context validation: implement 16 / check 17;
-- RKP-0 context validation: implement 15 / check 16;
+- parent context validation: implement 18 / check 19;
+- RKP-0 context validation: implement 17 / check 18;
 - Core parent validation: 3 / 3;
 - product parent validation: 0 / 0;
 - post-Core validation: implement 15 / check 16;
@@ -33,6 +33,6 @@ First independent planning review returned P0/P1/P2=`0/5/0`. The bounded docs-on
 4. Qualification V2 now fixes fresh-process isolation, timed region, nearest-rank P95/P99, RSS sampling and liveness precedence.
 5. RKP-0 implementation paths are a closed repository-relative list and the failure ledger has an exact schema and unique key outside `evidence/`.
 
-## Residual review questions
+## Final projection check
 
-The targeted reviewer should verify only the five repaired findings and direct regressions: matrix constructibility, manifest/schema alignment, SDK disposition, percentile method, and mechanical path closure.
+The final reviewer verifies only that this metadata projection accurately records the `9a9f957` PASS, keeps both tasks in `planning`, leaves task start and production authorization false, and introduces no contract or protected-path delta.

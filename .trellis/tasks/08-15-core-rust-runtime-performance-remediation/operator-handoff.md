@@ -10,6 +10,6 @@
 - Created implementation child: `08-15-rkp-0-authority-contract-oracle-freeze`
 - Future RKP-1 through RKP-9 children: not created
 
-The parent is never a production implementation target. After targeted independent planning rereview passes, an operator receives RKP-0 only. The operator follows the closed path allowlist, exact 64-row scenario matrix, exact SDK surface matrix and strict Qualification V2 method; fixture, rejection, percentile and SDK-disposition choices are already frozen. The operator stops after RKP-0 evidence and commit; the planner then routes a separate implementation audit. RKP-1 remains absent until RKP-0 is accepted and archived.
+The parent is never a production implementation target. Independent planning review passed `0/0/0` at `9a9f957ce4fcaded8ec87365f0f59f3f621b73da`; after the final metadata-projection check, an operator receives RKP-0 only. The operator follows the closed path allowlist, exact 64-row scenario matrix, exact SDK surface matrix and strict Qualification V2 method; fixture, rejection, percentile and SDK-disposition choices are already frozen. The operator stops after RKP-0 evidence and commit; the planner then routes a separate implementation audit. RKP-1 remains absent until RKP-0 is accepted and archived.
 
 No push, archive, CVN-7 official rerun or post-Core activation is part of this handoff.
