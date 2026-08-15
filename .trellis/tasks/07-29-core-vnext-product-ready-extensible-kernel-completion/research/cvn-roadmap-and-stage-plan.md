@@ -735,3 +735,7 @@ For a status-only update:
 5. run `git diff --check` and confirm no planning update touched `src/**` or `test/**`.
 
 For a contract change, update `feature-contract-matrix.md` first, perform parent review, then synchronize this file and affected child plans. A future reservation becoming an implementation target must also update CVN-D012/CVN-R012/CVN-AC018 and create its own accepted version-lane contract. This roadmap never silently changes an owning FC contract.
+
+## RKP-0 transition acceptance — 2026-08-15
+
+RKP-0 authority/oracle freeze is accepted and archived at `.trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/` after independent implementation review passed `P0/P1/P2=0/0/0` for `9bc53901a0e205a99865b21c56dc80ff1112f3a7`. It owns docs and new test-only oracle fixtures only, not `src/**`, existing tests, native bindings, or an official qualification run. The Rust-remediation parent remains `planning` with active implementation child `none`; RKP-1 through RKP-9 remain absent and require separate planning, review, and authorization.

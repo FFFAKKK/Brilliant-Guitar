@@ -5,6 +5,8 @@
 > K1-5 implementation baseline `51fa2177cbd25dea53f1ebaf23bd8b8426471589` was independently accepted at documentation baseline `ed801a9fa1a69222188c3ca04ee243b48d7a92d2` with 161/161 tests passing. K1-6 test baseline `355512aba4a8057d2d75aa665d74df49cdd2e23c` passed 8/8 focused and 169/169 full tests and was independently accepted at review baseline `989c1f7a4056b14d3d59918c9b96874ad71591a8`; Pure Core Kernel V1 is closed.
 > CVN-3 was accepted and archived at source/test candidate `d9500f5a8ac285071586ba8eda380370eafd022f`; CVN-4's final accepted repair/source line is `b0272e2eabd0d222baea12cbaae3e08f9f61bfdd`; CVN-5 source `f329ec10bc77c530282db3a6f47dbd6b6112859e` was accepted and archived at `198c71a039defee19d3e435664b9bd9b682cd135`. The accepted `38afdc3` production line has 28 Core commands and passed 432/432 normalized-HEAD tests. The `623f94a` CVN-7 candidate adds qualification tests/harness only and recorded 501/501 before freeze; it is not part of the accepted Core claim until measurement, final technical review, acceptance and archive complete.
 
+> **RKP-0 transition state (2026-08-15):** the TypeScript runtime remains current authority. The Rust path is limited to the [rust runtime transition contract](rust-runtime-transition.md), deterministic test-only oracle data, and Qualification V2 contract data; no native/runtime cutover is authorized. CVN-7 official input five is invalid/incomplete and has no published partial evidence.
+
 > Coding rules for the Pure Core Kernel V1 implementation.
 
 ---

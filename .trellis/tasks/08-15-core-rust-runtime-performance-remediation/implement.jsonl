@@ -14,5 +14,5 @@
 {"file":".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/design.md","reason":"Preserve Application Assembly and Extension Host ownership fences."}
 {"file":".trellis/tasks/08-15-core-rust-runtime-performance-remediation/research/current-authority-and-hotpath-audit.md","reason":"Use live baseline and decisive complexity evidence for implementation planning."}
 {"file":".trellis/tasks/08-15-core-rust-runtime-performance-remediation/research/stage-dependency-and-rollback-map.md","reason":"Enforce the one-child sequence, acceptance gates and rollback boundaries."}
-{"file":".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/oracle-scenario-matrix.md","reason":"Freeze every oracle fixture, operation, result, inverse and zero-delta expectation before implementation."}
-{"file":".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/sdk-surface-migration-matrix.md","reason":"Preserve exact CVN-2 exports while separating Rust official and future public TypeScript extension surfaces."}
+{"file":".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/oracle-scenario-matrix.md","reason":"Freeze every oracle fixture, operation, result, inverse and zero-delta expectation before implementation."}
+{"file":".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/sdk-surface-migration-matrix.md","reason":"Preserve exact CVN-2 exports while separating Rust official and future public TypeScript extension surfaces."}

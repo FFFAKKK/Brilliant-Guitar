@@ -54,7 +54,7 @@ Create only after RKP-8 archive. Run one fresh official qualification, complete 
 
 ```powershell
 python .\.trellis\scripts\task.py validate 08-15-core-rust-runtime-performance-remediation
-python .\.trellis\scripts\task.py validate 08-15-rkp-0-authority-contract-oracle-freeze
+python .\.trellis\scripts\task.py validate .trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze
 python .\.trellis\scripts\task.py validate 07-29-core-vnext-product-ready-extensible-kernel-completion
 python .\.trellis\scripts\task.py validate 06-29-commercial-guitar-tablature-product
 python .\.trellis\scripts\task.py validate 08-11-post-core-official-plugin-product-roadmap
@@ -65,3 +65,7 @@ npm.cmd test
 ```
 
 Also verify JSON/JSONL parse, unique parent/child references, `status=planning`, authorization flags false, and zero relative delta under production/test/build-config paths.
+
+## RKP-0 acceptance/archive projection — 2026-08-15
+
+`08-15-rkp-0-authority-contract-oracle-freeze` is accepted and archived at `.trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/` after the independent implementation review passed `P0/P1/P2=0/0/0` for `9bc53901a0e205a99865b21c56dc80ff1112f3a7`. Evidence records typecheck/build, RKP-0 `15/15`, CVN-7 `84/84`, full `531/531`, and fresh-checkout fixture hashes; no official qualification ran. The coordination parent remains `planning`, `task_start_run=false`, `production_implementation_authorized=false`, and active implementation child `none`. RKP-1 through RKP-9 remain absent until a separate planning/review/authorization decision.

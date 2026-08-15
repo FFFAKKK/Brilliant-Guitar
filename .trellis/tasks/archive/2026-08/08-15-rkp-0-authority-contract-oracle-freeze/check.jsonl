@@ -11,8 +11,8 @@
 {"file":".trellis/tasks/archive/2026-08/08-10-cvn-2-official-module-sdk-frozen-assembly/implementation-review.md","reason":"Check the frozen SDK behavior and counts against accepted evidence."}
 {"file":".trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/implementation-review.md","reason":"Check integrated behavior against accepted evidence."}
 {"file":".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/prd.md","reason":"Check RKP-0 has no Guitar/product/public-plugin implementation scope."}
-{"file":".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/authority-and-evidence-input-audit.md","reason":"Check exact failure-ledger projection."}
-{"file":".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/golden-oracle-and-performance-contract.md","reason":"Check 64-scenario completeness and budgets."}
-{"file":".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/file-and-test-ownership-matrix.md","reason":"Check allowed paths and zero production delta."}
-{"file":".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/oracle-scenario-matrix.md","reason":"Check exact 28+28+8 row construction, observation counts, inverses and rejection zero delta."}
-{"file":".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/sdk-surface-migration-matrix.md","reason":"Check the exact 8/34 names and prevent implicit SDK deletion during RKP-9."}
+{"file":".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/authority-and-evidence-input-audit.md","reason":"Check exact failure-ledger projection."}
+{"file":".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/golden-oracle-and-performance-contract.md","reason":"Check 64-scenario completeness and budgets."}
+{"file":".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/file-and-test-ownership-matrix.md","reason":"Check allowed paths and zero production delta."}
+{"file":".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/oracle-scenario-matrix.md","reason":"Check exact 28+28+8 row construction, observation counts, inverses and rejection zero delta."}
+{"file":".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/sdk-surface-migration-matrix.md","reason":"Check the exact 8/34 names and prevent implicit SDK deletion during RKP-9."}

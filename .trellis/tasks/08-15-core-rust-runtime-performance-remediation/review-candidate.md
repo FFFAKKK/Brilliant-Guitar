@@ -16,3 +16,7 @@ Review history: `561a2ec` returned `0/5/0`; `05df623` returned `0/1/0`; the exac
 8. RKP-8 is the only product-default switch; no permanent dual runtime ships.
 9. Production, test and build-config paths have zero planning-candidate delta.
 10. The 64 literal scenario rows, manifest fixture fields, exact CVN-2 SDK names, percentile method and closed RKP-0 path list resolve every first-review P1 without widening production scope.
+
+## RKP-0 acceptance projection — 2026-08-15
+
+RKP-0 passed its separate independent implementation review `P0/P1/P2=0/0/0` at `9bc53901a0e205a99865b21c56dc80ff1112f3a7` and is archived. The evidence records typecheck/build, RKP-0 `15/15`, CVN-7 `84/84`, full `531/531`, hostile decoder probes, and fresh-checkout fixture byte/hash checks. This does not authorize RKP-1, Rust production work, CVN-7 official qualification, or parent acceptance/archive.

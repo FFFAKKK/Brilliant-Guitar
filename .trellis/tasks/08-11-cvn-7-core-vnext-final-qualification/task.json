@@ -44,7 +44,7 @@
     ".trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/",
     ".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/"
   ],
-  "notes": "CVN-7 IN PROGRESS / FOUR INVALID OFFICIAL INPUTS RETAINED / DIAGNOSTICS COMMIT 5e6be66 TARGETED REREVIEW LEFT ONE COMPOUND CVN7 BUILD/NODE-TEST STAGE P1 / BOUNDED SPLIT-STAGE REPAIR IMPLEMENTED / NO OFFICIAL RERUN OR EVIDENCE / TARGETED INDEPENDENT REREVIEW PENDING / MEASUREMENT, ACCEPTANCE, ARCHIVE AND PUSH REMAIN OPEN.",
+  "notes": "CVN-7 IN PROGRESS / FIVE INVALID OFFICIAL INPUTS RETAINED / FIFTH INPUT worker-timeout AT stress-submit IS INCOMPLETE, EVIDENCE_INVALID AND NON-REUSABLE / NO PARTIAL EVIDENCE PUBLISHED / TARGETED INDEPENDENT REREVIEW PENDING / MEASUREMENT, ACCEPTANCE, ARCHIVE AND PUSH REMAIN OPEN.",
   "meta": {
     "planning_stage": "stage_7_bounded_cvn7_preflight_stage_split_repair_implemented_targeted_independent_rereview_pending",
     "qualification_base_commit": "38afdc3fd508dc67f7aa446fd323837a5d550b70",
@@ -201,7 +201,7 @@
     "push_authorized": false,
     "archive_authorized": false,
     "operator_state": "bounded_cvn7_preflight_stage_split_repair_candidate_pending_targeted_independent_rereview",
-    "next_gate": "targeted_independent_cvn7_preflight_stage_split_repair_rereview_then_new_clean_head_full_mode_all_measurement",
+    "next_gate": "independent_rkp0_audit_then_targeted_cvn7_preflight_rereview_then_new_clean_head_full_mode_all_measurement",
     "stage_1_to_5_candidate_verification": "superseded_by_bounded_implementation_repair_verification",
     "planning_verification": "ancestry198c71a_38afdc3_trellis_child31_27_parent3_3_product0_0_postcore15_16_json_jsonl_unique_child1_fc44_trace44_diffcheck_typecheck_build_full432_production0_postcore0",
     "bounded_planning_repair_verification": "trace44_exact_parent_set_unique_cases_existing_titles_exact_once_trellis31_27_parent3_3_product0_0_postcore15_16_json_jsonl_diffcheck_typecheck_build_full432_protected_delta0",
