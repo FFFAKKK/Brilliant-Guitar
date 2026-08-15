@@ -19,12 +19,13 @@
 
 ## Step 2 — Oracle schema and deterministic fixtures
 
-1. Implement the exact manifest/scenario/operation/observation TypeScript types and strict data-only decoders from design sections 4-5.
-2. Implement only the literal fixture and assembly recipes in `research/oracle-scenario-matrix.md`; do not choose or substitute a fixture.
-3. Generate the exact rows 1-64 from that matrix in fixed order, including `A8` inverse proofs, `R4` missing-target zero delta and all cross-cutting operation programs.
-4. Canonicalize, hash and compare with committed JSON/JSONL artifacts.
-5. Assert two independent in-process generations return byte-identical output.
-6. Assert every command ID appears once in each command scenario partition, every operation has one same-index observation, all source path/title literals still exist, and the exact SDK 8/34/ABI name lists equal `research/sdk-surface-migration-matrix.md`.
+1. Add only the three literal `.gitattributes` entries from `prd.md`; preserve every existing attribute line and reject wildcard expansion.
+2. Implement the exact manifest/scenario/operation/observation TypeScript types and raw-text-only strict data decoders from design sections 4-5 and 7. Reject non-string input before reflection, keep parsed-value validators private, detach and deeply freeze accepted results.
+3. Implement only the literal fixture and assembly recipes in `research/oracle-scenario-matrix.md`; do not choose or substitute a fixture.
+4. Generate the exact rows 1-64 from that matrix in fixed order, including `A8` inverse proofs, `R4` missing-target zero delta and all cross-cutting operation programs.
+5. Canonicalize, hash and compare with committed JSON/JSONL artifacts.
+6. Assert two independent in-process generations return byte-identical output and a fresh worktree observes the same raw LF bytes, sizes and hashes.
+7. Assert every command ID appears once in each command scenario partition, every operation has one same-index observation, all source path/title literals still exist, and the exact SDK 8/34/ABI name lists equal `research/sdk-surface-migration-matrix.md`.
 
 **Rollback point:** oracle code and fixtures form one isolated group; authority files remain valid if this group is reverted for repair.
 
@@ -60,6 +61,8 @@ Then verify:
 - exactly 64 scenario rows and 64 unique IDs;
 - exact ordered row equality with `research/oracle-scenario-matrix.md`, dense operation/observation indices, 28 inverse proofs and all declared rejection zero-delta proofs;
 - generation is byte-identical and all hashes verify;
+- `git check-attr text eol` returns `text: set` and `eol: lf` for exactly the three oracle fixtures, and a fresh checkout has zero CR bytes plus the manifest-declared hashes;
+- raw-text decoders reject non-string accessor/Proxy/sparse inputs with zero traps and return detached deeply frozen accepted values;
 - exact SDK/runtime/ABI names and all fixture provenance/count fields verify;
 - the strict Qualification V2 contract rejects changed percentile indices, timed region, fixture facts, RSS method, liveness precedence or extra fields;
 - changed paths are a subset of the explicit repository-relative allowlist in `prd.md`; directory wildcard matching is not used;

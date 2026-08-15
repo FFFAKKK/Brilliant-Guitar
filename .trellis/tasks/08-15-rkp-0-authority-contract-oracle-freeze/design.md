@@ -256,7 +256,9 @@ The implementation uses the exact fixtures, envelopes, source tests, `A8`/`R4` p
 
 Canonicalization recursively sorts object keys using ordinal JavaScript string order, preserves array order, rejects unsupported values and writes compact JSON. Each row is `canonicalJson + "\n"`. SHA-256 uses the UTF-8 bytes of the row without relying on platform paths or timestamps. The file hash covers the complete concatenated JSONL bytes.
 
-The capture test builds the expected bytes in memory and compares them with committed fixtures. A separate manifest test parses every line, verifies exact counts/IDs/hashes, and validates the qualification contract.
+The three committed oracle fixtures are listed individually in `.gitattributes` with `text eol=lf`; no wildcard attribute is allowed and existing attribute entries remain unchanged. The capture test builds the expected bytes in memory and compares them with committed raw fixtures. A separate manifest test parses every line, verifies exact counts/IDs/hashes, and validates the qualification contract. A fresh-worktree gate reads the raw bytes without EOL normalization and requires the same byte sizes, final LF and SHA-256 values.
+
+Artifact decoding has one untrusted boundary: `decode*Text(input: unknown)`. It checks `typeof input === "string"` before any reflection, parses through a captured primordial `JSON.parse`, applies exact-shape validation only to that parse result, detaches it, and deeply freezes the accepted value. Object, array, accessor, Proxy and sparse-array inputs are rejected without property access because they never enter structural validation. Internal parsed-value validators are not exported. Negative tests prove zero getter/Proxy invocation, sparse rejection, exact-shape rejection and alias-mutation isolation.
 
 ## 8. Qualification V2 data contract
 

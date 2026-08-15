@@ -44,7 +44,7 @@ The oracle manifest shall record and automatically verify:
 - representative and stress fixture source path, generator export, version, seed and exact counts;
 - the SHA-256 of `qualification-v2-contract.json`, the canonical scenario-matrix authority and the SDK-surface migration authority.
 
-The manifest exact shape is defined by `design.md` section 4. A strict decoder rejects extra/missing fields. Counts alone never satisfy the export or ABI gate.
+The manifest exact shape is defined by `design.md` section 4. A strict decoder rejects extra/missing fields. Counts alone never satisfy the export or ABI gate. Artifact decode entry points accept only raw UTF-8 JSON text, reject every non-string input before reflection, parse with the captured JSON primordial, validate only the parse result, and return a detached deeply frozen value. No public decoder accepts an object graph supplied by a caller.
 
 ### RKP0-R004 — Create exactly 64 canonical oracle scenarios
 
@@ -89,7 +89,8 @@ Host paths, timestamps, process IDs, object identity and machine-specific values
 - one compact JSON object per JSONL line;
 - final LF required;
 - manifest records ordered scenario IDs, per-scenario hash and whole-file SHA-256;
-- regenerating twice from clean `b21540fa` must produce byte-identical files.
+- regenerating twice from clean `b21540fa` must produce byte-identical files;
+- a fresh worktree under the repository's normal `core.autocrlf` policy must preserve the committed raw UTF-8/LF bytes and hashes without normalization inside the test.
 
 ### RKP0-R007 — Freeze Qualification V2 budgets
 
@@ -123,6 +124,15 @@ Relative to `b21540fa`, RKP-0 has zero delta under:
 - accepted archived tasks.
 
 ## Allowed Files
+
+### Canonical checkout normalization
+
+- `.gitattributes`, limited to adding exactly these three entries and changing no existing attribute:
+  - `test/core-kernel/rust-migration/fixtures/oracle-manifest-v1.json text eol=lf`;
+  - `test/core-kernel/rust-migration/fixtures/oracle-scenarios-v1.jsonl text eol=lf`;
+  - `test/core-kernel/rust-migration/fixtures/qualification-v2-contract.json text eol=lf`.
+
+No wildcard attribute is permitted. These entries only preserve the raw canonical bytes already required by RKP-0; they do not change runtime or schema semantics.
 
 ### Authority and task state
 
@@ -173,11 +183,11 @@ Any extra path returns to planning review.
 - [ ] `RKP0-AC002`: transition spec distinguishes current TypeScript authority from future Rust authority.
 - [ ] `RKP0-AC003`: manifest verifies exact names for 28 commands, 51 application runtime exports, SDK `8/34`, ABI 9, plus both fixture contracts and `brilliant-score-1`.
 - [ ] `RKP0-AC004`: corpus contains exactly the 64 unique ordered scenarios in `research/oracle-scenario-matrix.md`, with one observation per operation, per-command inverse proof and rejection zero delta.
-- [ ] `RKP0-AC005`: two clean regenerations are byte-identical and all stored hashes verify.
+- [ ] `RKP0-AC005`: two clean regenerations are byte-identical, all stored hashes verify, and a second fresh worktree observes the same LF bytes, sizes and SHA-256 values.
 - [ ] `RKP0-AC006`: the 60 FPS, scale, memory, complexity and liveness contracts are machine-readable and documentation-aligned.
 - [ ] `RKP0-AC007`: new oracle tests, CVN-7 tests and full tests pass; existing full baseline remains at least 516 plus the new RKP-0 tests.
 - [ ] `RKP0-AC008`: production/build-config/post-Core/archives show zero prohibited delta.
 - [ ] `RKP0-AC009`: RKP-1 through RKP-9 task directories are absent.
 - [ ] `RKP0-AC010`: independent implementation review returns P0/P1/P2=`0/0/0` before acceptance/archive.
 - [ ] `RKP0-AC011`: the exact SDK migration matrix protects the CVN-2 8/34 entry from implicit RKP-9 cleanup and separates Rust official extensions from the later public TypeScript/React surface.
-- [ ] `RKP0-AC012`: the allowed-file comparison is mechanically equal to the explicit repository-relative path list above; directory wildcards are not accepted.
+- [ ] `RKP0-AC012`: the allowed-file comparison is mechanically equal to the explicit repository-relative path list above; directory wildcards are not accepted and `.gitattributes` changes equal the three literal entries above.
