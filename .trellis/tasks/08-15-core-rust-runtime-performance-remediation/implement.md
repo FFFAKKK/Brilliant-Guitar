@@ -48,7 +48,7 @@ Create only after RKP-7 archive. Switch the application facade to Rust in one is
 
 ## Stage 9 — Qualification V2 and oracle cleanup
 
-Create only after RKP-8 archive. Run one fresh official qualification, complete independent review, then remove executable TypeScript oracle code in a separate commit while retaining the golden corpus.
+Create only after RKP-8 archive. Run one fresh official qualification, complete independent review, then remove the executable legacy TypeScript transaction engine and differential runner in a separate commit while retaining the golden corpus. Keep `src/core-kernel/module-sdk/index.ts`, its exact 8/34 export/ABI tests and compatibility fixtures; changing that surface requires a separate deprecation plan.
 
 ## Parent planning validation
 

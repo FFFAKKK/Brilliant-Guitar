@@ -23,7 +23,7 @@ The fifth official input has these fixed fields:
 | partial evidence | false |
 | reusable evidence | false |
 
-The frozen workload and 2 GiB ceiling remain unchanged. TEMP diagnostics remain diagnostic material and are not copied into task-local evidence.
+The frozen workload and 2 GiB ceiling remain unchanged. TEMP diagnostics remain diagnostic material and are not copied into task-local evidence. The normalized record is written only to `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/research/official-run-failure-ledger.jsonl` under unique key `cvn7-official-2026-08-15-b21540fa-stress-submit-memory`; it is never placed in `evidence/`.
 
 ## Authority files consumed
 

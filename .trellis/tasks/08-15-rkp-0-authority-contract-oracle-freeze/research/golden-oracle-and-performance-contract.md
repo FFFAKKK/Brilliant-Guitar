@@ -37,7 +37,7 @@ The capture test derives and compares the live catalog rather than trusting this
 
 ## Scenario source discipline
 
-Positive and rejection input comes from accepted existing tests for the owning command adapter. The RKP-0 operator selects the smallest existing fixture that reaches the already-accepted branch. When several negative branches exist, choose the earliest exact public precedence already asserted by an existing test. The corpus records that result; it does not broaden the command contract.
+`oracle-scenario-matrix.md` is the sole row-construction authority. It fixes the source test, fixture recipe, assembly, accepted envelope, rejected target replacement, operation program and expected state relation for every row. The RKP-0 operator does not choose a fixture or negative branch. All 28 rejected rows use the fixed well-formed missing-target path and must return `command.target-not-found`; any drift returns to planning instead of changing the corpus recipe.
 
 ## Eight cross-cutting scenarios
 
@@ -59,4 +59,4 @@ RKP-0 freezes budgets as data and runs no benchmark. Later measurements have two
 - Rust internal microbenchmarks for mechanism diagnosis;
 - TypeScript/native/Rust end-to-end results for acceptance.
 
-Only the second layer satisfies the 60 FPS gate. The representative and stress generators, counts, seeds and RSS ceilings remain inherited from CVN-7. Liveness is calibrated after the Rust engine exists, then independently reviewed as an evidence-method change.
+Only the second layer satisfies the 60 FPS gate. The representative and stress source file, generator exports, version, seeds, counts and RSS ceilings are literal manifest data. Qualification V2 uses fresh-process samples, a public-call-only timed region, nearest-rank P95/P99 (`sorted[18]`/`sorted[19]` for 20 samples), separate RSS workers and evidence-validity-before-performance precedence. Liveness is calibrated after the Rust engine exists, then independently reviewed as an evidence-method change.

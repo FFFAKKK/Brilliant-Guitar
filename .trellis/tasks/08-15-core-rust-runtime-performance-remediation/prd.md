@@ -42,14 +42,14 @@ History shall use one append-oriented vector plus a cursor, ordered forward/inve
 
 Every incremental validator shall declare its dependency scope. Test/debug comparison shall prove that incremental diagnostics equal the accepted full validator. Unknown change classes fall back to full validation until assigned an accepted dependency closure.
 
-### RUST-R007 — Two extension surfaces remain distinct
+### RUST-R007 — Three extension surfaces remain distinct
 
 - official and advanced source-built extensions use a versioned Rust Kernel Extension SDK and register at build/startup assembly time;
 - public functional plugins use a future TypeScript Extension SDK;
 - visual contributions may add React components through the future Extension Host;
 - all writes remain semantic commands, and mutable runtime storage stays private.
 
-The accepted CVN-2 callback API becomes migration-oracle input; it is not the future public third-party plugin SDK.
+The accepted CVN-2 callback API becomes migration-oracle input; it is not the future public third-party plugin SDK. Its exact eight runtime names, thirty-four type names and nine contribution ABI fields remain a protected compatibility surface after RKP-9 until a separately accepted deprecation task. RKP-8 removes it from the Product Application Assembly rather than deleting or renaming it. The authoritative three-surface disposition is `../08-15-rkp-0-authority-contract-oracle-freeze/research/sdk-surface-migration-matrix.md`.
 
 ### RUST-R008 — One implementation child at a time
 
@@ -71,14 +71,14 @@ On the frozen Windows x64 reference environment, release-build end-to-end measur
 | representative submit/undo/redo | p95 <= 8 ms, p99 <= 16 ms |
 | one edit on the 102,400-Event fixture | p95 <= 16 ms, p99 <= 33 ms |
 | cached selector/read | p95 <= 1 ms |
-| batch-100 | <= 100 ms |
-| replay-100 | <= 500 ms |
-| stress 10,000 submit | <= 180 s |
-| stress 10,000 replay | <= 180 s |
+| batch-100 | p95 <= 100 ms |
+| replay-100 | p95 <= 500 ms |
+| one complete stress 10,000 submit sequence | <= 180 s |
+| one complete stress 10,000 replay sequence | <= 180 s |
 | representative peak RSS | <= 1 GiB |
 | stress peak RSS | <= 2 GiB |
 
-Performance budgets are qualification gates. Process-liveness timeouts remain evidence-validity guards and are calibrated separately.
+Performance budgets are qualification gates. Process-liveness timeouts remain evidence-validity guards and are calibrated separately. Qualification V2 uses twenty fresh-process measured samples after five fresh-process warmups for representative, 102,400-Event, cached, batch-100 and replay-100 operations. Nearest-rank percentile index is `ceil(p * n) - 1`, therefore P95=`sorted[18]` and P99=`sorted[19]` for `n=20`; non-finite/non-positive values invalidate evidence. Stress targets use one complete deterministic sequence per operation. The exact timed region, RSS sampling and liveness precedence are frozen by RKP-0 and may not be selected later by RKP-7.
 
 ## Stage Map
 
@@ -93,7 +93,7 @@ Performance budgets are qualification gates. Process-liveness timeouts remain ev
 | RKP-6 | official/synthetic module migration | no |
 | RKP-7 | complete TypeScript/Rust behavioral differential gate | no |
 | RKP-8 | one-commit production default cutover | no |
-| RKP-9 | Qualification V2 and executable TypeScript-oracle cleanup | no |
+| RKP-9 | Qualification V2 and executable TypeScript transaction-oracle cleanup; CVN-2 SDK surface retained | no |
 
 ## Out of Scope
 
@@ -114,3 +114,4 @@ Performance budgets are qualification gates. Process-liveness timeouts remain ev
 - [ ] `RUST-AC006`: relative to `b21540fa`, `src/**`, `test/**`, `package*.json`, `tsconfig.json`, Cargo files and post-Core roadmap files have zero planning-candidate delta.
 - [ ] `RUST-AC007`: Trellis, JSON/JSONL, parent-child uniqueness, diff check, typecheck, build and the 516-test baseline pass.
 - [ ] `RUST-AC008`: an independent planning auditor returns P0/P1/P2=`0/0/0` before RKP-0 is handed to an operator.
+- [ ] `RUST-AC009`: the exact 64-row scenario matrix, exact CVN-2 SDK names, strict Qualification V2 percentile method and closed RKP-0 path allowlist leave no fixture/method/SDK disposition choice to a later operator.

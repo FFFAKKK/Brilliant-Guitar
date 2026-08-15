@@ -1,6 +1,6 @@
 # RKP-0 Planning Review Candidate
 
-Status: `READY FOR INDEPENDENT PLANNING REVIEW` after local planning validation.
+Status: `READY FOR TARGETED INDEPENDENT PLANNING REREVIEW` after bounded repair of five P1 findings.
 
 ## Required findings check
 
@@ -12,3 +12,5 @@ Status: `READY FOR INDEPENDENT PLANNING REVIEW` after local planning validation.
 6. The test allowlist is sufficient without package or production changes.
 7. RKP-0 does not introduce Rust, native bindings, production indices or official measurement.
 8. Later stage tasks remain absent and unactivated.
+9. Every one of the 64 scenarios has a fixed construction/result/state/inverse contract and one observation per operation.
+10. Manifest fixture fields, exact CVN-2 export names, P99 method and the explicit file allowlist are internally aligned.

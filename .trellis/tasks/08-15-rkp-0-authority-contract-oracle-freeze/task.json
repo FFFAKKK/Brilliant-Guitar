@@ -28,16 +28,19 @@
     ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/review-candidate.md",
     ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/authority-and-evidence-input-audit.md",
     ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/golden-oracle-and-performance-contract.md",
+    ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/oracle-scenario-matrix.md",
+    ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/sdk-surface-migration-matrix.md",
     ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/file-and-test-ownership-matrix.md",
     ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/planning-candidate-self-audit.md"
   ],
-  "notes": "RKP-0 FORMAL PLANNING CANDIDATE / DOCS AND TEST-ONLY ORACLE SCOPE / TASK START FALSE / PRODUCTION AUTHORIZATION FALSE / INDEPENDENT PLANNING REVIEW PENDING / RKP-1 THROUGH RKP-9 ABSENT.",
+  "notes": "RKP-0 FORMAL PLANNING CANDIDATE / DOCS AND TEST-ONLY ORACLE SCOPE / TASK START FALSE / PRODUCTION AUTHORIZATION FALSE / FIRST INDEPENDENT REVIEW P1=5 / BOUNDED DOCS-ONLY REPAIR COMPLETE / TARGETED REREVIEW PENDING / RKP-1 THROUGH RKP-9 ABSENT.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "planning_parent_commit": null,
     "task_start_run": false,
     "production_implementation_authorized": false,
     "independent_planning_review": "pending",
+    "planning_review_cycle": "bounded_repair_complete_targeted_rereview_pending",
     "implementation_review": "not_started",
     "oracle_schema_version": 1,
     "oracle_scenario_count": 64,
@@ -60,7 +63,14 @@
       "P0": 0,
       "P1": 0,
       "P2": 0,
-      "verdict": "ready_for_independent_planning_review"
+      "verdict": "bounded_repair_complete_targeted_rereview_pending"
+    },
+    "first_independent_planning_review": {
+      "P0": 0,
+      "P1": 5,
+      "P2": 0,
+      "candidate": "561a2ec37a361df6299ad1c0b83a023e679a2506",
+      "verdict": "return_for_bounded_planning_repair"
     },
     "planning_validation": "trellis_json_jsonl_unique_hierarchy_diffcheck_typecheck_build_full516_protected_delta0"
   }

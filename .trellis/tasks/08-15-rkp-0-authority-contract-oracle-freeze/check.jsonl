@@ -14,3 +14,5 @@
 {"file":".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/authority-and-evidence-input-audit.md","reason":"Check exact failure-ledger projection."}
 {"file":".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/golden-oracle-and-performance-contract.md","reason":"Check 64-scenario completeness and budgets."}
 {"file":".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/file-and-test-ownership-matrix.md","reason":"Check allowed paths and zero production delta."}
+{"file":".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/oracle-scenario-matrix.md","reason":"Check exact 28+28+8 row construction, observation counts, inverses and rejection zero delta."}
+{"file":".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/sdk-surface-migration-matrix.md","reason":"Check the exact 8/34 names and prevent implicit SDK deletion during RKP-9."}

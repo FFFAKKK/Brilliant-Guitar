@@ -11,6 +11,6 @@
 | RKP-6 | accepted RKP-5 | official providers | synthetic two-module parity | revert provider migration |
 | RKP-7 | accepted RKP-6 | full differential/performance | 516 baseline + seeded oracle + budgets | Rust remains non-default |
 | RKP-8 | accepted RKP-7 | production cutover | complete regression on Rust default | revert one cutover commit |
-| RKP-9 | accepted RKP-8 | Qualification V2/cleanup | fresh official evidence + audit | revert cleanup; Rust default stays |
+| RKP-9 | accepted RKP-8 | Qualification V2 plus legacy transaction-engine/differential-runner cleanup | fresh official evidence + audit; CVN-2 SDK 8/34 retained | revert cleanup; Rust default stays |
 
 Tree membership does not imply activation. The parent metadata and child artifacts must explicitly state the accepted predecessor. One failed or returned child blocks all later creation.

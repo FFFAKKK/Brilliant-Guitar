@@ -2,10 +2,12 @@
 
 | Area | Allowed change | Purpose |
 |---|---|---|
-| RKP parent/task dirs | yes | planning, state and handoff |
-| Core VNext parent selected docs | yes | next-gate and durable roadmap projection |
-| CVN-7 selected task/evidence docs | yes | exact fifth invalid-input ledger |
-| Core spec indices + transition spec | yes | current-vs-target authority |
+| RKP-0 task state | only `task.json`, `operator-handoff.md`, `review-candidate.md` | activation/result handoff only |
+| Rust parent state | only `task.json`, `implement.md` | current-child and gate projection |
+| Core VNext parent | only `task.json`, `implement.md`, `research/core-vnext-performance-baseline.md`, `research/cvn-roadmap-and-stage-plan.md` | next-gate and durable roadmap projection |
+| CVN-7 task/status | only `task.json`, `operator-handoff.md`, `review-candidate.md`, `evidence/README.md` | record invalid input/status without evidence publication |
+| CVN-7 failure ledger | only new `research/official-run-failure-ledger.jsonl` | exact fifth invalid-input row; outside `evidence/` |
+| Core spec | only `index.md`, `backend/index.md`, new `backend/rust-runtime-transition.md` | current-vs-target authority |
 | `test/core-kernel/rust-migration/**` exact files | yes | deterministic oracle and data contracts |
 | `src/**` | zero | production runtime begins later |
 | existing tests outside exact new directory | zero | preserve accepted baseline tests |
@@ -22,6 +24,8 @@
 4. two-generation byte equality;
 5. per-row and whole-file hash verification;
 6. qualification V2 data alignment with parent PRD and CVN-7 fixture constants;
-7. current CVN-7 and full regressions.
+7. exact SDK 8/34 and nine ABI name equality;
+8. closed changed-path subset against the full PRD allowlist;
+9. current CVN-7 and full regressions.
 
 The full suite count after RKP-0 equals the 516 baseline plus the newly discovered RKP-0 test cases. The operator reports both baseline and new totals rather than hard-coding an assumed final number in task metadata.

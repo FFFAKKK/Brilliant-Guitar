@@ -30,13 +30,15 @@
     ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/review-candidate.md",
     ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/research/current-authority-and-hotpath-audit.md",
     ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/research/stage-dependency-and-rollback-map.md",
+    ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/oracle-scenario-matrix.md",
+    ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/sdk-surface-migration-matrix.md",
     ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/",
     ".trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/",
     ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/",
     ".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/",
     ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/research/planning-candidate-self-audit.md"
   ],
-  "notes": "RUST PERFORMANCE REMEDIATION FORMAL PLANNING CANDIDATE / ONLY RKP-0 CREATED / PARENT AND CHILD REMAIN PLANNING / PRODUCTION AUTHORIZATION FALSE / INDEPENDENT PLANNING REVIEW PENDING / CVN-7 FIFTH INPUT REMAINS EVIDENCE_INVALID / NO RUST OR PRODUCTION IMPLEMENTATION.",
+  "notes": "RUST PERFORMANCE REMEDIATION FORMAL PLANNING CANDIDATE / ONLY RKP-0 CREATED / PARENT AND CHILD REMAIN PLANNING / PRODUCTION AUTHORIZATION FALSE / FIRST INDEPENDENT REVIEW P1=5 / BOUNDED DOCS-ONLY REPAIR COMPLETE / TARGETED REREVIEW PENDING / CVN-7 FIFTH INPUT REMAINS EVIDENCE_INVALID / NO RUST OR PRODUCTION IMPLEMENTATION.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
@@ -58,6 +60,7 @@
     "task_start_run": false,
     "production_implementation_authorized": false,
     "independent_planning_review": "pending",
+    "planning_review_cycle": "bounded_repair_complete_targeted_rereview_pending",
     "planner_production_code_ownership": "none",
     "operator_activation_policy": "one_reviewed_child_only",
     "auditor_policy": "separate_read_only_session_per_planning_and_implementation_gate",
@@ -77,7 +80,14 @@
       "P0": 0,
       "P1": 0,
       "P2": 0,
-      "verdict": "ready_for_independent_planning_review"
+      "verdict": "bounded_repair_complete_targeted_rereview_pending"
+    },
+    "first_independent_planning_review": {
+      "P0": 0,
+      "P1": 5,
+      "P2": 0,
+      "candidate": "561a2ec37a361df6299ad1c0b83a023e679a2506",
+      "verdict": "return_for_bounded_planning_repair"
     },
     "planning_validation": "trellis_json_jsonl_unique_hierarchy_diffcheck_typecheck_build_full516_protected_delta0"
   }

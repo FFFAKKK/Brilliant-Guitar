@@ -10,6 +10,6 @@ Implement only `.trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze` aft
 - Task state before operator activation: `planning`
 - Production implementation authorization: false until the reviewed handoff explicitly activates RKP-0
 
-Read `prd.md`, `design.md`, `implement.md` and both JSONL manifests. Respect the exact allowlist. This task owns authority/test-only oracle work and zero production runtime work.
+Read `prd.md`, `design.md`, `implement.md`, both JSONL manifests, `research/oracle-scenario-matrix.md` and `research/sdk-surface-migration-matrix.md`. Respect the exact repository-relative allowlist. Implement rows 1-64 verbatim; use the exact ledger schema and Qualification V2 method. This task owns authority/test-only oracle work and zero production runtime work.
 
 Stop after one verified implementation commit and clean status. Acceptance, archive, push, RKP-1 creation and any official qualification run remain outside the assignment.

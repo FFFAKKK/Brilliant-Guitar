@@ -84,7 +84,7 @@ RKP-5 cannot accept an incremental validator until a test demonstrates equality 
 
 The Rust SDK exposes versioned source-level traits for manifest, command, effect, validator, classifier and migration providers. Providers receive read-only views and return typed data. Runtime handles and mutable storage are not SDK values. Provider assembly is constructed atomically and frozen for the ready session.
 
-The existing CVN-2 TypeScript callback SDK remains a migration oracle until RKP-9. Official providers move to Rust in RKP-6. Future public TypeScript plugins receive read, commands, filtered events, reports and view contributions through the Product Extension Host; React is optional for visual contributions.
+The existing CVN-2 TypeScript callback SDK remains a migration oracle and protected compatibility entry. Official providers move to Rust in RKP-6, RKP-8 removes TypeScript callbacks from the live Product Application Assembly, and RKP-9 may remove the legacy transaction engine/differential runner while retaining `src/core-kernel/module-sdk/index.ts`, its exact 8/34 exports and compile tests. Future public TypeScript plugins use the separate `@brilliant-guitar/extension-sdk` package through the Product Extension Host; React is optional for visual contributions. `../08-15-rkp-0-authority-contract-oracle-freeze/research/sdk-surface-migration-matrix.md` is the authoritative ownership/disposition table.
 
 ## 8. Rollout and rollback
 
@@ -92,8 +92,8 @@ The existing CVN-2 TypeScript callback SDK remains a migration oracle until RKP-
 - Every stage is an independent task/branch/commit and can be reverted to the prior accepted stage.
 - RKP-8 is a single default-engine cutover commit after complete behavioral and performance gates.
 - Runtime dual-selection is not shipped.
-- RKP-9 removes executable TypeScript oracle code in a separate revertible commit after Qualification V2.
+- RKP-9 removes executable legacy transaction-engine/differential-oracle code in a separate revertible commit after Qualification V2. It does not implicitly delete or rename the accepted CVN-2 Module SDK surface.
 
 ## 9. Qualification relationship
 
-The `b21540fa` official run is an invalid evidence input and a scalability diagnostic. RKP-0 records it; no partial results become qualification evidence. Qualification V2 retains the frozen representative/stress data shape and resource ceilings, adds the 60 FPS latency budgets and complexity counters, calibrates liveness independently, and publishes only after a fresh complete run and independent technical review.
+The `b21540fa` official run is an invalid evidence input and a scalability diagnostic. RKP-0 records it; no partial results become qualification evidence. Qualification V2 retains the frozen representative/stress generators, seeds, counts and resource ceilings, adds the 60 FPS latency budgets and complexity counters, and freezes the public-call timed region plus nearest-rank P95/P99 algorithm. Liveness remains an evidence-validity guard, is calibrated independently by RKP-7, and takes precedence over any partial performance classification. Publication follows only one fresh complete run and independent technical review.

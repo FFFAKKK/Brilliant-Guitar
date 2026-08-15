@@ -15,9 +15,12 @@ The `b21540fa` CVN-7 candidate is clean and passes typecheck/build, CVN-7 `84/84
 Update the CVN-7 task ledger and durable Core roadmap with:
 
 - candidate/harness `b21540fa3636e6c8e827ff24c2099f4ff331285d`;
+- baseline `38afdc3fd508dc67f7aa446fd323837a5d550b70`;
+- request-written/coordinator-completed times `2026-08-15T00:35:09.7269066+08:00` / `2026-08-15T03:35:10.0778114+08:00`;
 - action `stress-submit`, fixture `stress`, phase `memory`;
 - `worker_started=true`, requests/results `411/410`;
 - timeout `10,800,000 ms`, stderr classification `worker-timeout`;
+- native exit `1`, signal `null`, launcher failure `null`;
 - `measurement_complete=false`, `evidence_valid=false`, `partial_evidence=false`, `reusable_evidence=false`;
 - frozen workload `102,400 Event / 51,200 Note / 10,000 envelopes / 2 GiB` unchanged;
 - CVN-7 qualification and post-Core activation remain pending.
@@ -33,12 +36,15 @@ The oracle manifest shall record and automatically verify:
 - planning baseline commit;
 - schema `brilliant-score-1`;
 - 28 ordered Core command IDs;
-- 51 application runtime exports;
-- Module SDK 8 runtime / 34 type exports;
-- nine-field compiled contribution ABI;
+- the exact ordered names of all 51 application runtime exports;
+- the exact ordered names of all Module SDK 8 runtime / 34 type exports;
+- the exact ordered names of the nine compiled contribution ABI fields;
 - Core-only and integrated factory modes;
 - public failure/result/event/diagnostic families;
-- representative and stress fixture provenance and counts.
+- representative and stress fixture source path, generator export, version, seed and exact counts;
+- the SHA-256 of `qualification-v2-contract.json`, the canonical scenario-matrix authority and the SDK-surface migration authority.
+
+The manifest exact shape is defined by `design.md` section 4. A strict decoder rejects extra/missing fields. Counts alone never satisfy the export or ABI gate.
 
 ### RKP0-R004 — Create exactly 64 canonical oracle scenarios
 
@@ -56,7 +62,7 @@ Commit a deterministic JSONL corpus:
    - detached ExtensionBlock migration;
    - assembly mismatch plus subscriber-failure isolation.
 
-Existing accepted test fixtures and failure precedence are the source of each scenario. RKP-0 creates no new command semantics.
+`research/oracle-scenario-matrix.md` fixes all 64 scenario IDs, source tests, fixtures, assembly recipes, operation programs, success/failure results and state/history/event/inverse expectations. The operator implements that matrix verbatim and does not select a substitute fixture or rejection branch. RKP-0 creates no new command semantics.
 
 ### RKP0-R005 — Freeze observable output
 
@@ -70,6 +76,8 @@ Each scenario shall record:
 - ordered committed/dirty events;
 - final document;
 - canonical scenario SHA-256.
+
+Operation indices are dense from zero and every operation has exactly one same-index observation. Every accepted command performs submit/undo/redo and proves inverse equality. Every rejected command uses the fixed missing-target branch and records byte-identical document, history, dirty, event sequence and event list.
 
 Host paths, timestamps, process IDs, object identity and machine-specific values are excluded.
 
@@ -85,7 +93,7 @@ Host paths, timestamps, process IDs, object identity and machine-specific values
 
 ### RKP0-R007 — Freeze Qualification V2 budgets
 
-Add a data-only performance contract containing the parent 60 FPS targets, current 5 warmups/20 measured samples, the existing reference environment fingerprint, unchanged RSS ceilings and separate liveness calibration rules. RKP-0 runs no official qualification measurement.
+Add a strict data-only performance contract containing the parent 60 FPS targets, current 5 warmups/20 measured fresh-process samples, exact public-call timed region, nearest-rank P95/P99 (`ceil(p*n)-1`, indices 18/19 for 20 samples), non-finite handling, unchanged fixture generators/seeds/counts, RSS sampling, and evidence-validity/liveness precedence. RKP-0 runs no official qualification measurement and leaves the replacement liveness constant unset for RKP-7 calibration.
 
 ### RKP0-R008 — Freeze future complexity counters
 
@@ -118,11 +126,25 @@ Relative to `b21540fa`, RKP-0 has zero delta under:
 
 ### Authority and task state
 
-- this RKP-0 task directory;
-- the new Rust remediation parent task directory;
-- Core VNext parent `task.json`, `implement.md`, performance baseline and durable roadmap;
-- CVN-7 `task.json`, `operator-handoff.md`, `review-candidate.md`, `evidence/README.md` and a new failure ledger;
-- Core Kernel spec indices and one new `backend/rust-runtime-transition.md`.
+- `.trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/task.json`;
+- `.trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/operator-handoff.md`;
+- `.trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/review-candidate.md`;
+- `.trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json`;
+- `.trellis/tasks/08-15-core-rust-runtime-performance-remediation/implement.md`;
+- `.trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/task.json`;
+- `.trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/implement.md`;
+- `.trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/core-vnext-performance-baseline.md`;
+- `.trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-roadmap-and-stage-plan.md`;
+- `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/task.json`;
+- `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/operator-handoff.md`;
+- `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/review-candidate.md`;
+- `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/evidence/README.md`;
+- new `.trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/research/official-run-failure-ledger.jsonl`;
+- `.trellis/spec/core-kernel/index.md`;
+- `.trellis/spec/core-kernel/backend/index.md`;
+- new `.trellis/spec/core-kernel/backend/rust-runtime-transition.md`.
+
+The failure ledger is UTF-8/LF JSONL outside `evidence/`. It uses the exact schema and unique `failureId` in `design.md` section 2; duplicate keys, extra fields or a partial artifact under `evidence/` fail the gate.
 
 ### Test-only oracle
 
@@ -149,11 +171,13 @@ Any extra path returns to planning review.
 
 - [ ] `RKP0-AC001`: CVN-7 and Core roadmap record the exact fifth invalid input without reusing partial evidence.
 - [ ] `RKP0-AC002`: transition spec distinguishes current TypeScript authority from future Rust authority.
-- [ ] `RKP0-AC003`: manifest verifies 28 commands, 51 application runtime exports, SDK `8/34`, ABI 9 and `brilliant-score-1`.
-- [ ] `RKP0-AC004`: corpus contains exactly 64 unique ordered scenarios with the required 28+28+8 partition.
+- [ ] `RKP0-AC003`: manifest verifies exact names for 28 commands, 51 application runtime exports, SDK `8/34`, ABI 9, plus both fixture contracts and `brilliant-score-1`.
+- [ ] `RKP0-AC004`: corpus contains exactly the 64 unique ordered scenarios in `research/oracle-scenario-matrix.md`, with one observation per operation, per-command inverse proof and rejection zero delta.
 - [ ] `RKP0-AC005`: two clean regenerations are byte-identical and all stored hashes verify.
 - [ ] `RKP0-AC006`: the 60 FPS, scale, memory, complexity and liveness contracts are machine-readable and documentation-aligned.
 - [ ] `RKP0-AC007`: new oracle tests, CVN-7 tests and full tests pass; existing full baseline remains at least 516 plus the new RKP-0 tests.
 - [ ] `RKP0-AC008`: production/build-config/post-Core/archives show zero prohibited delta.
 - [ ] `RKP0-AC009`: RKP-1 through RKP-9 task directories are absent.
 - [ ] `RKP0-AC010`: independent implementation review returns P0/P1/P2=`0/0/0` before acceptance/archive.
+- [ ] `RKP0-AC011`: the exact SDK migration matrix protects the CVN-2 8/34 entry from implicit RKP-9 cleanup and separates Rust official extensions from the later public TypeScript/React surface.
+- [ ] `RKP0-AC012`: the allowed-file comparison is mechanically equal to the explicit repository-relative path list above; directory wildcards are not accepted.

@@ -13,3 +13,5 @@
 {"file":".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/authority-and-evidence-input-audit.md","reason":"Use the exact baseline and fifth invalid-input fields."}
 {"file":".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/golden-oracle-and-performance-contract.md","reason":"Implement exact command order, scenario partition and performance data contract."}
 {"file":".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/file-and-test-ownership-matrix.md","reason":"Stay within the first-stage docs/test-only allowlist."}
+{"file":".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/oracle-scenario-matrix.md","reason":"Implement the literal 64-row fixture, operation, result and inverse authority."}
+{"file":".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/sdk-surface-migration-matrix.md","reason":"Implement exact SDK name checks and preserve stage-by-stage compatibility disposition."}

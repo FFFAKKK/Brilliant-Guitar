@@ -7,7 +7,7 @@
 - Current baseline tests: typecheck/build pass, CVN-7 `84/84`, full `516/516`
 - Current application runtime exports: 51
 - Current Core commands: 28
-- Current Module SDK: 8 runtime / 34 type exports
+- Current Module SDK: the exact 8 runtime / 34 type names frozen in `../08-15-rkp-0-authority-contract-oracle-freeze/research/sdk-surface-migration-matrix.md`
 - Current contribution ABI: nine fields
 - Persisted schema: `brilliant-score-1`
 

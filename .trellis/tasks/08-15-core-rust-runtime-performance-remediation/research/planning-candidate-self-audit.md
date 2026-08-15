@@ -2,7 +2,7 @@
 
 ## Verdict
 
-Local self-audit: P0/P1/P2=`0/0/0`; independent planning review remains pending.
+First independent planning review returned P0/P1/P2=`0/5/0`. The bounded docs-only repair now self-audits at `0/0/0`; targeted independent rereview remains pending.
 
 ## Evidence
 
@@ -25,6 +25,14 @@ Local self-audit: P0/P1/P2=`0/0/0`; independent planning review remains pending.
 - task start and production authorization: false;
 - worktree changes: selected Core parent metadata plus the two new planning task directories only.
 
+## Bounded repair closure
+
+1. `oracle-scenario-matrix.md` fixes all 64 rows, exact fixtures, operations, outcomes, inverse proofs and zero-delta cases.
+2. Manifest schema now contains exact export/ABI names, fixture provenance/counts and contract/specification hashes.
+3. `sdk-surface-migration-matrix.md` protects the CVN-2 8/34 entry and separates Rust official extensions from the future public TypeScript/React SDK.
+4. Qualification V2 now fixes fresh-process isolation, timed region, nearest-rank P95/P99, RSS sampling and liveness precedence.
+5. RKP-0 implementation paths are a closed repository-relative list and the failure ledger has an exact schema and unique key outside `evidence/`.
+
 ## Residual review questions
 
-The independent reviewer should challenge scenario sufficiency, current-vs-transition authority wording, the source-compatibility treatment of the CVN-2 callback SDK, and whether the 60 FPS/complexity gates have unique later owners. These are review targets, not known findings.
+The targeted reviewer should verify only the five repaired findings and direct regressions: matrix constructibility, manifest/schema alignment, SDK disposition, percentile method, and mechanical path closure.

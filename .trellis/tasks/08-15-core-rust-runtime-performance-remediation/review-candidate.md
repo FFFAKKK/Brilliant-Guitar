@@ -1,6 +1,6 @@
 # Independent Planning Review Candidate
 
-Status: `READY FOR INDEPENDENT PLANNING REVIEW` after local validation.
+Status: `READY FOR TARGETED INDEPENDENT PLANNING REREVIEW` after bounded repair of the first review's five P1 findings.
 
 ## Review focus
 
@@ -13,3 +13,4 @@ Status: `READY FOR INDEPENDENT PLANNING REVIEW` after local validation.
 7. Planner/operator/auditor roles and stop points are enforceable.
 8. RKP-8 is the only product-default switch; no permanent dual runtime ships.
 9. Production, test and build-config paths have zero planning-candidate delta.
+10. The 64 literal scenario rows, manifest fixture fields, exact CVN-2 SDK names, percentile method and closed RKP-0 path list resolve every first-review P1 without widening production scope.
