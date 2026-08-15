@@ -20,3 +20,9 @@ Stop after one verified implementation commit and clean status. Acceptance, arch
 - The candidate adds the strict manifest/schema, 64-row TypeScript public-API oracle, fixed command/SDK/ABI inventories, and Qualification V2 data contract solely under the RKP-0 allowlist.
 - The CVN-7 fifth input is represented only by its invalid-input ledger row. No official measurement, Rust runtime, production source, or partial evidence was produced.
 - Next owner: an independent RKP-0 implementation auditor. Do not accept, archive, push, or create another RKP task from this candidate.
+
+## Independent implementation review and acceptance — 2026-08-15
+
+The independent implementation review passed `P0/P1/P2=0/0/0` for `9bc53901a0e205a99865b21c56dc80ff1112f3a7`. Raw-text decoder hostile probes, fresh `core.autocrlf=true` fixture bytes/hashes, the eight-path repair boundary and protected production/existing-test zero-delta all passed. Recorded suite totals are RKP-0 `15/15`, CVN-7 `84/84`, and full `531/531`; no official qualification was run.
+
+This task is accepted and archived. `production_implementation_authorized` remains `false`; the Rust-remediation parent remains `planning` with no active implementation child, and RKP-1 through RKP-9 remain absent pending separate authorization.

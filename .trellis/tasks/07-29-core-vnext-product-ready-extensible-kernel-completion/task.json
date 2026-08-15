@@ -59,7 +59,7 @@
     ".trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/",
     ".trellis/tasks/08-11-cvn-5-range-operations-explicit-atomic-batch/"
   ],
-  "notes": "PLANNING COORDINATION / CVN-0 THROUGH CVN-6, EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-7 DIAGNOSTICS COMMIT 5e6be66 REREVIEW LEFT ONE COMPOUND BUILD/NODE-TEST STAGE P1 / BOUNDED SPLIT-STAGE REPAIR IMPLEMENTED / NO OFFICIAL RERUN OR EVIDENCE / TARGETED INDEPENDENT REREVIEW PENDING / CVN-7 AND THIS PARENT ARE NOT ACCEPTED OR ARCHIVED / POST-CORE REMAINS GATED. RUST RUNTIME PERFORMANCE REMEDIATION PLANNING CANDIDATE CREATED; ONLY RKP-0 EXISTS; PRODUCTION AUTHORIZATION FALSE.",
+  "notes": "PLANNING COORDINATION / CVN-0 THROUGH CVN-6, EXTENSIBILITY RESERVATION AND GD-0 ACCEPTED AND ARCHIVED / CVN-7 DIAGNOSTICS COMMIT 5e6be66 REREVIEW LEFT ONE COMPOUND BUILD/NODE-TEST STAGE P1 / BOUNDED SPLIT-STAGE REPAIR IMPLEMENTED / NO OFFICIAL RERUN OR EVIDENCE / TARGETED INDEPENDENT REREVIEW PENDING / CVN-7 AND THIS PARENT ARE NOT ACCEPTED OR ARCHIVED / POST-CORE REMAINS GATED. RUST RUNTIME PERFORMANCE REMEDIATION REMAINS PLANNING; RKP-0 IS ACCEPTED/ARCHIVED AFTER IMPLEMENTATION REVIEW PASS 0/0/0, ACTIVE RUST IMPLEMENTATION CHILD IS NONE, AND PRODUCTION AUTHORIZATION IS FALSE.",
   "meta": {
     "compatibility_base": "d92a7586536ac8757c318ae6f75aabd8698f85ac",
     "architecture_style": "stability_first_startup_frozen_microkernel",
@@ -650,11 +650,14 @@
       "equal": true
     },
     "rust_runtime_remediation_task": "08-15-core-rust-runtime-performance-remediation",
-    "rust_runtime_remediation_status": "formal_planning_candidate_independent_review_pending",
+    "rust_runtime_remediation_status": "planning_rkp0_accepted_archived",
     "rust_runtime_remediation_base": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
-    "rust_runtime_current_child": "08-15-rkp-0-authority-contract-oracle-freeze",
+    "rust_runtime_current_child": null,
     "rust_runtime_future_children_created": false,
     "rust_runtime_production_authorized": false,
-    "rust_runtime_next_gate": "independent_parent_and_rkp0_planning_review"
+    "rust_runtime_rkp0_candidate_commit": "9bc53901a0e205a99865b21c56dc80ff1112f3a7",
+    "rust_runtime_rkp0_archive_path": ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/",
+    "rust_runtime_rkp0_independent_implementation_review": "passed_p0_0_p1_0_p2_0_rkp0_15_of_15_cvn7_84_of_84_full_531_of_531_fresh_checkout_hashes_verified",
+    "rust_runtime_next_gate": "rust_parent_planning_active_implementation_child_none_separate_rkp1_planning_review_and_authorization_required"
   }
 }

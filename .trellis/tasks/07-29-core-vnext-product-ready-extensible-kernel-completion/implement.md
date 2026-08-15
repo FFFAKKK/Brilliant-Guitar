@@ -314,6 +314,6 @@ Stop the active child and return to planning if any of the following occurs:
 - [ ] Parent PRD acceptance criteria are all evidenced.
 - [ ] User approves final Core VNext closure before archive.
 
-## RKP-0 transition reservation — 2026-08-15
+## RKP-0 transition acceptance — 2026-08-15
 
-RKP-0 is the sole active descendant of the Rust-remediation coordinator. It freezes TypeScript authority/oracle and Qualification V2 contract data only; it neither changes the accepted TypeScript Core runtime nor authorizes Rust/native production work. Its candidate must receive independent audit before any later RKP stage is considered.
+RKP-0 is accepted and archived after its independent implementation review passed `P0/P1/P2=0/0/0` at `9bc53901a0e205a99865b21c56dc80ff1112f3a7`. It froze TypeScript authority/oracle and Qualification V2 contract data only; it did not change the accepted TypeScript Core runtime or authorize Rust/native production work. The Rust-remediation coordinator remains `planning` with active implementation child `none`, and RKP-1 through RKP-9 remain absent pending separate authorization.

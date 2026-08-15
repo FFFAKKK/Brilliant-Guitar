@@ -27,3 +27,7 @@ The activated RKP-0 candidate implements the planned authority only: determinist
 - RKP-0 oracle suite — `13/13` pass; CVN-7 related suite — `84/84` pass; full suite — `529/529` pass.
 - Five Trellis task validations pass; `git diff --check` passes; all changed and untracked paths match the PRD's explicit allowlist; `src/**`, existing test files, package files, `tsconfig`, and native/Cargo paths have zero delta from `b21540fa3636e6c8e827ff24c2099f4ff331285d`.
 - This is a candidate only: independent implementation audit, acceptance, archive, push, later RKP stages, and any official qualification measurement remain out of scope.
+
+## Final independent implementation review and acceptance — 2026-08-15
+
+`9bc53901a0e205a99865b21c56dc80ff1112f3a7` passed the targeted independent implementation review with `P0/P1/P2=0/0/0`. The review verified raw UTF-8 JSON text entry, no getter/proxy reflection before rejection, sparse rejection, detached deep-frozen accepted results, fresh `core.autocrlf=true` raw bytes/hashes for all three fixtures, and the exact eight-path bounded-repair delta. Typecheck/build and RKP-0 `15/15`, CVN-7 `84/84`, full `531/531` passed; official qualification was not run. The candidate is accepted and this task is archived without changing production authorization.

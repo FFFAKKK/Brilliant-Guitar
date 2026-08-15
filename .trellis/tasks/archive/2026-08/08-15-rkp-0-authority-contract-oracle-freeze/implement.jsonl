@@ -10,8 +10,8 @@
 {"file":".trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/research/fixture-and-workload-contract.md","reason":"Reuse exact deterministic representative and stress generators."}
 {"file":".trellis/tasks/archive/2026-08/08-10-cvn-2-official-module-sdk-frozen-assembly/design.md","reason":"Freeze module SDK/catalog behavior in the oracle."}
 {"file":".trellis/tasks/archive/2026-08/08-11-cvn-6-module-runtime-validation-migration-integration/design.md","reason":"Freeze integrated runtime, two-module and detached migration behavior."}
-{"file":".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/authority-and-evidence-input-audit.md","reason":"Use the exact baseline and fifth invalid-input fields."}
-{"file":".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/golden-oracle-and-performance-contract.md","reason":"Implement exact command order, scenario partition and performance data contract."}
-{"file":".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/file-and-test-ownership-matrix.md","reason":"Stay within the first-stage docs/test-only allowlist."}
-{"file":".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/oracle-scenario-matrix.md","reason":"Implement the literal 64-row fixture, operation, result and inverse authority."}
-{"file":".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/sdk-surface-migration-matrix.md","reason":"Implement exact SDK name checks and preserve stage-by-stage compatibility disposition."}
+{"file":".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/authority-and-evidence-input-audit.md","reason":"Use the exact baseline and fifth invalid-input fields."}
+{"file":".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/golden-oracle-and-performance-contract.md","reason":"Implement exact command order, scenario partition and performance data contract."}
+{"file":".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/file-and-test-ownership-matrix.md","reason":"Stay within the first-stage docs/test-only allowlist."}
+{"file":".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/oracle-scenario-matrix.md","reason":"Implement the literal 64-row fixture, operation, result and inverse authority."}
+{"file":".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/sdk-surface-migration-matrix.md","reason":"Implement exact SDK name checks and preserve stage-by-stage compatibility disposition."}

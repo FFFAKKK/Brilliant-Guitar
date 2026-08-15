@@ -14,6 +14,6 @@
 {"file":".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/operator-handoff.md","reason":"Check that post-Core activation remains gated."}
 {"file":".trellis/tasks/08-15-core-rust-runtime-performance-remediation/research/current-authority-and-hotpath-audit.md","reason":"Check all architecture claims against current evidence."}
 {"file":".trellis/tasks/08-15-core-rust-runtime-performance-remediation/research/stage-dependency-and-rollback-map.md","reason":"Check that every stage has a unique owner and rollback point."}
-{"file":".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/file-and-test-ownership-matrix.md","reason":"Check planning and first-child file boundaries."}
-{"file":".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/oracle-scenario-matrix.md","reason":"Check all 64 rows are constructible and leave no fixture or failure choice."}
-{"file":".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/sdk-surface-migration-matrix.md","reason":"Check exact legacy, Rust official and public TypeScript SDK ownership and cleanup fences."}
+{"file":".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/file-and-test-ownership-matrix.md","reason":"Check planning and first-child file boundaries."}
+{"file":".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/oracle-scenario-matrix.md","reason":"Check all 64 rows are constructible and leave no fixture or failure choice."}
+{"file":".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/sdk-surface-migration-matrix.md","reason":"Check exact legacy, Rust official and public TypeScript SDK ownership and cleanup fences."}

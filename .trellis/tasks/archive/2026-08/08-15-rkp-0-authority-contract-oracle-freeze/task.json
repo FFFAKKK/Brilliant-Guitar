@@ -3,7 +3,7 @@
   "name": "rkp-0-authority-contract-oracle-freeze",
   "title": "RKP-0 Authority Contract and Oracle Freeze",
   "description": "Freeze authority, external behavior, failure evidence, golden-oracle method and performance gates before any Rust production implementation.",
-  "status": "in_progress",
+  "status": "completed",
   "dev_type": null,
   "scope": "Docs, transition authority, exact CVN-7 fifth-input ledger, deterministic TypeScript behavior oracle and Qualification V2 data contract only; zero production runtime or Rust implementation.",
   "package": null,
@@ -11,11 +11,11 @@
   "creator": "ATOM",
   "assignee": "ATOM",
   "createdAt": "2026-08-15",
-  "completedAt": null,
+  "completedAt": "2026-08-15",
   "branch": "codex/rkp-0-authority-contract-oracle-freeze",
   "base_branch": "codex/core-rust-runtime-performance-remediation",
   "worktree_path": ".worktrees/rkp-0-authority-contract-oracle-freeze",
-  "commit": null,
+  "commit": "9bc53901a0e205a99865b21c56dc80ff1112f3a7",
   "pr_url": null,
   "subtasks": [],
   "children": [],
@@ -33,7 +33,7 @@
     ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/file-and-test-ownership-matrix.md",
     ".trellis/tasks/08-15-rkp-0-authority-contract-oracle-freeze/research/planning-candidate-self-audit.md"
   ],
-  "notes": "RKP-0 IMPLEMENTATION CANDIDATE / DOCS AND TEST-ONLY ORACLE SCOPE / TASK START TRUE / PRODUCTION AUTHORIZATION FALSE / INDEPENDENT PLANNING REVIEW PASS 0/0/0 RETAINED / INDEPENDENT IMPLEMENTATION AUDIT PENDING / RKP-1 THROUGH RKP-9 ABSENT.",
+  "notes": "RKP-0 ACCEPTED AND ARCHIVED / DOCS AND TEST-ONLY ORACLE SCOPE / INDEPENDENT IMPLEMENTATION REVIEW PASS 0/0/0 AT 9bc53901a0e205a99865b21c56dc80ff1112f3a7 / TASK START HISTORY TRUE / PRODUCTION AUTHORIZATION FALSE / TYPECHECK AND BUILD PASS / RKP-0 15/15 / CVN-7 84/84 / FULL 531/531 / FRESH core.autocrlf=true FIXTURE HASHES VERIFIED / RKP-1 THROUGH RKP-9 ABSENT.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "planning_parent_commit": null,
@@ -56,12 +56,44 @@
     "future_children_created": false,
     "planning_production_delta": "zero",
     "push_authorized": false,
-    "archive_authorized": false,
-    "implementation_review": "candidate_pending_independent_audit",
+    "archive_authorized": true,
+    "implementation_review": "passed_independent_implementation_review_p0_0_p1_0_p2_0",
     "operator_execution_ref": "detached_06dccbdb927c4e80070b41718123f06b2e3ab1b2",
     "operator_execution_worktree": "C:/Users/ATOM/.codex/worktrees/9bc3/brilliant_guitar",
-    "implementation_validation": "typecheck_pass_build_pass_rkp0_13_of_13_cvn7_84_of_84_full_529_of_529_trellis_5_of_5_diffcheck_pass_protected_delta_zero",
-    "next_gate": "independent_rkp0_implementation_audit_before_acceptance",
+    "implementation_validation": "typecheck_pass_build_pass_rkp0_15_of_15_cvn7_84_of_84_full_531_of_531_trellis_json_jsonl_unique_diffcheck_pass_protected_delta_zero",
+    "final_independent_implementation_review": {
+      "P0": 0,
+      "P1": 0,
+      "P2": 0,
+      "candidate": "9bc53901a0e205a99865b21c56dc80ff1112f3a7",
+      "verdict": "pass",
+      "scope": "raw_decoder_hostile_probes_fresh_checkout_eol_and_exact_repair_boundary"
+    },
+    "fresh_checkout_eol_validation": {
+      "core_autocrlf": true,
+      "oracle_manifest_v1_json": {
+        "bytes": 15136,
+        "sha256": "8b99419f822ad02535f6aec655c95641a8d77f4f1d3ed61cfe1d15a97a1f310d",
+        "cr_bytes": 0,
+        "final_lf": true
+      },
+      "oracle_scenarios_v1_jsonl": {
+        "bytes": 1307605,
+        "sha256": "9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2",
+        "cr_bytes": 0,
+        "final_lf": true
+      },
+      "qualification_v2_contract_json": {
+        "bytes": 2982,
+        "sha256": "7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05",
+        "cr_bytes": 0,
+        "final_lf": true
+      }
+    },
+    "acceptance_recorded": true,
+    "archive_recorded": true,
+    "archive_path": ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/",
+    "next_gate": "accepted_archived_parent_planning_active_implementation_child_none_separate_rkp1_authorization_required",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
