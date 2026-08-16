@@ -6,7 +6,8 @@
 - Branch: `codex/brilliant-guitar-architecture-reset-v2`
 - Base: `5e1599598b1468784ae9b7410383ef63b33201b8`
 - Task: `.trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2`
-- Planned commit: `docs(architecture): propose Brilliant Guitar Architecture Reset V2`
+- Initial candidate commit: `d9293ee84b1c547af77eeab2cde907a3261c9999`
+- Bounded repair commit: current clean HEAD with subject `docs(architecture): repair plugin runtime semantics`
 
 ## What this candidate delivers
 
@@ -16,6 +17,7 @@
 4. An old-authority conflict/supersession map.
 5. A staged document review/promotion procedure.
 6. Exact compatibility inventories and future implementation test gates.
+7. Repaired unified Instrument Plugin, Level A/B/C validation, deterministic WASM, migration, namespace, service and composition contracts.
 
 ## What it does not deliver
 
@@ -23,7 +25,7 @@
 - Rust/Cargo/Node/Tauri/React production code;
 - RKP-1 task or activation;
 - authority synchronization into old documents;
-- Guitar Domain/product service/plugin implementation;
+- Guitar Instrument Plugin/product service/plugin implementation;
 - archive or remote push.
 
 ## Next actor
@@ -51,7 +53,8 @@ Only after independent PASS and explicit user acceptance:
 - RKP-8 is the one default switch;
 - RKP-9 qualifies/cleans later;
 - rollback to previous accepted stage;
-- first post-RKP work is the Guitar Core Loop, not a new generic registry/plugin framework.
+- RKP-1 uses seven crates; RKP-5 owns Extension Protocol/domain validation; RKP-6 proves two external synthetic Instrument Plugins;
+- first post-RKP work is the default Guitar Instrument Plugin/Core Loop, not a new generic registry/plugin framework.
 
 ## Protected scope
 
@@ -64,7 +67,7 @@ status=planning
 task_start_run=false
 production_implementation_authorized=false
 candidate_authority_status=proposed_not_current
-independent_architecture_review=pending
+independent_architecture_review=targeted_rereview_pending_after_bounded_plugin_runtime_repair
 rkp1_created=false
 rkp1_started=false
 archive_authorized=false

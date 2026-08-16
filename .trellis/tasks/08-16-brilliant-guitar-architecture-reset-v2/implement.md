@@ -85,11 +85,14 @@ Phase A evidence exists and no production path changed.
 3. Include:
    - current physical architecture and complexity root cause;
    - Brilliant Core Platform terminology;
-   - five-crate dependency law;
+   - seven-crate dependency law with Core Types and Kernel Session boundaries;
    - ScoreDocument/LiveScoreStore and three-identity design;
    - indices and complexity contract;
    - transaction/history/validation/snapshot/event/thread model;
-   - extension surfaces and the two Assembly owners;
+   - unified Instrument Plugin surfaces, three-level validation and the two composition owners;
+   - Plugin Command → Proposal → Kernel Request golden path;
+   - deterministic declarative/WASM validation, pre-session migration and namespace ownership;
+   - canonical BGP Persistence qualification and Layout → Render Scene separation;
    - FFI, compatibility, performance, RKP sequence and Guitar Core Loop;
    - old-design disposition and future test matrix;
    - exact protected inventory appendix.
@@ -112,8 +115,8 @@ Revert only the candidate task files; the existing authorities remain untouched.
 
 ### Checklist
 
-1. **Terminology:** `Brilliant Core Platform` contains six named layers; Kernel Runtime alone is the narrow microkernel.
-2. **Dependencies:** five crate graph is acyclic; Use Cases is not a sixth crate.
+1. **Terminology:** `Brilliant Core Platform` contains seven named contexts; Kernel Runtime alone is the narrow microkernel mechanism.
+2. **Dependencies:** seven-crate graph is acyclic; Core Types is the leaf; Runtime and Session/Use Cases are separate.
 3. **Data:** ScoreDocument and LiveScoreStore share semantic truth but have explicit conversion; no second truth.
 4. **Identity:** EntityId, RuntimeHandle and MusicalLocation cannot leak into each other's public/persisted roles.
 5. **Time:** Event/Voice sequence remains the rhythmic truth; Note has no duplicate time/duration/string/fret.
@@ -121,12 +124,17 @@ Revert only the candidate task files; the existing authorities remain untouched.
 7. **Transactions:** one runtime owner; overlay rejection zero-delta; history contains changes, not documents.
 8. **Validation:** incremental path has a full-parity acceptance gate.
 9. **Snapshots/events:** explicit full materialization and stable public identity; no handles/pointers.
-10. **Assemblies:** KernelProviderAssembly and Product ApplicationAssembly each have one distinct owner.
-11. **Plugins:** official Rust, public TypeScript and React visual surfaces do not cross boundaries; lifecycle stays in Product Host.
-12. **Compatibility:** 28/51/8/34/9 and `brilliant-score-1` match RKP-0 oracle.
-13. **Migration:** RKP-0 to RKP-9 is ordered and reversible; only RKP-8 switches default.
-14. **Product:** Guitar Core Loop starts after RKP-9 and before more generic horizontal APIs.
-15. **Candidate lifecycle:** proposed/pending only; no authority sync, implementation, archive or push.
+10. **Composition:** KernelSessionComposition and Product ApplicationAssembly each have one distinct owner/identity.
+11. **Plugins:** Guitar/Piano/Bass/third-party instruments use one public protocol; official status adds no Runtime privilege.
+12. **Golden path:** Plugin Command, DomainChangeProposal and Kernel Request are distinct and Rust registers no instrument handler.
+13. **Validation:** Level A/B/C order, declarative/WASM execution and structural-only limits are complete.
+14. **Migration/revision:** plugin migration is detached/pre-session; stale revision rejects in Core and host recomputation is bounded to one.
+15. **Ownership:** namespace writes are owner-only; cross-plugin collaboration is declared/versioned.
+16. **Services:** Official BGP Persistence is canonical; Layout contributions do not call Renderer APIs.
+17. **Compatibility:** 28/51/8/34/9 and `brilliant-score-1` match RKP-0 oracle.
+18. **RKP migration:** RKP-0 to RKP-9 is ordered and reversible; RKP-1/5/6/9 own the repaired decisions and only RKP-8 switches default.
+19. **Product:** default Guitar Instrument Plugin/Core Loop starts after RKP-9 before broader horizontal APIs.
+20. **Candidate lifecycle:** proposed/pending only; no authority sync, implementation, archive or push.
 
 Self-audit may be recorded `0/0/0` only after all direct inconsistencies are repaired and automated document gates pass. It never replaces independent review.
 
@@ -165,7 +173,7 @@ Verify:
 - Mermaid blocks close;
 - required headings are present;
 - no unresolved placeholder remains in normative documents;
-- `design.md` contains every protected count and the two Assembly owners.
+- `design.md` contains every protected count plus the unique KernelSessionComposition and Product ApplicationAssembly owners.
 
 ### 5.4 Baseline regression
 
@@ -207,13 +215,13 @@ On return, the planner changes only candidate docs, creates a narrow docs-only r
 
 ## 7. Phase F — candidate commit
 
-After local self-audit and automated gates, create one docs-only commit:
+The original candidate commit is `d9293ee84b1c547af77eeab2cde907a3261c9999`. After the plugin-runtime audit repair and automated gates, create one additional bounded docs-only repair commit:
 
 ```text
-docs(architecture): propose Brilliant Guitar Architecture Reset V2
+docs(architecture): repair plugin runtime semantics
 ```
 
-The commit includes only candidate task files and the parent's unique child reference. After commit:
+The bounded repair commit includes only candidate task files. The cumulative candidate relative to the fixed base still contains only this task directory plus the product parent's already-committed unique child reference. After commit:
 
 ```powershell
 git status --short --branch
@@ -232,7 +240,7 @@ The future docs-only authority-sync commit will:
 1. mark V2 current;
 2. point product PRD/current architecture index to V2;
 3. point Core spec index to V2;
-4. update Rust remediation parent from four to five crates and make RKP-1 consume V2;
+4. update Rust remediation parent from four to seven crates and make RKP-1 consume the repaired V2;
 5. update post-Core roadmap to the Core Platform/Product Host boundary;
 6. mark old microkernel/software/project/modular-plugin architecture texts historical/superseded where conflicting;
 7. preserve old files for decision traceability;
@@ -247,7 +255,14 @@ Stop and return to planning if any of these occurs:
 - an owner is duplicated or absent;
 - a RuntimeHandle crosses a public/persisted boundary;
 - a proposed local-edit path allows full scan/clone/full validation by default;
-- five-crate dependency graph cycles;
+- seven-crate dependency graph cycles or Core Types gains score/command/runtime dependencies;
+- Plugin Semantic Command execution or arbitrary JavaScript/WASM mutation enters Runtime directly;
+- Instrument Plugin lacks required Level C validation but remains writable;
+- plugin migration creates a partially migrated writable session;
+- a plugin writes another plugin's namespace without a declared public contribution contract;
+- canonical `.bgp` ownership becomes implicitly replaceable;
+- an Instrument Plugin directly calls a Renderer/drawing API;
+- stale proposal is rebased inside Rust Core;
 - observable 28/51/8/34/9/schema compatibility changes;
 - ExtensionBlock ownership changes;
 - a product service/plugin lifecycle moves into Kernel Runtime;

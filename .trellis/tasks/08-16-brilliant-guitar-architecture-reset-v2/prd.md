@@ -23,7 +23,7 @@ Architecture Reset V2 必须把这个目标落实为可实施架构，而不是�
 1. 当前 TypeScript Core 为什么在大谱面编辑下出现不可接受的复杂度；
 2. 哪些已验收合同继续作为迁移 oracle，哪些内部实现需要替换；
 3. Rust 内部如何分层、存储、索引、编辑、验证、撤销、快照和编码；
-4. 官方领域 provider、产品服务、公共 TypeScript 功能插件和 React 视觉贡献如何分别接入；
+4. 官方与第三方 Instrument Plugin、产品服务、公共 TypeScript 功能插件和 React 视觉贡献如何通过同一扩展体系接入；
 5. 如何分阶段迁移、逐阶段回滚，并在 Rust 切换后尽快证明第一个 Guitar Core Loop。
 
 ## 3. 必须保持的迁移输入
@@ -59,27 +59,30 @@ Architecture Reset V2 必须把这个目标落实为可实施架构，而不是�
 
 ```text
 Brilliant Core Platform
+├── Core Types
 ├── Score Foundation
+├── Extension Protocol
 ├── Kernel Contracts
 ├── Kernel Runtime
-├── Kernel Use Cases
-├── Kernel Extension SDK
+├── Kernel Session / Use Cases
 └── Native Bridge
 ```
 
 只有 `Kernel Runtime` 使用狭义微内核机制。产品核心、谱面语义、事务引擎和插件生命周期不得继续共用一个模糊的 `Core Kernel` 所有者。
 
-### ARV2-R004 — 五 crate Rust 边界
+### ARV2-R004 — 七 crate Rust 边界
 
 目标 Cargo workspace 必须精确包含：
 
-1. `brilliant-score-foundation`；
-2. `brilliant-kernel-contracts`；
-3. `brilliant-kernel-extension-sdk`；
-4. `brilliant-kernel-runtime`；
-5. `brilliant-kernel-node`。
+1. `brilliant-core-types`；
+2. `brilliant-score-foundation`；
+3. `brilliant-extension-protocol`；
+4. `brilliant-kernel-contracts`；
+5. `brilliant-kernel-runtime`；
+6. `brilliant-kernel-session`；
+7. `brilliant-kernel-node`。
 
-`Kernel Use Cases` 首版属于 runtime 内部模块，不建立第六个 crate。依赖图必须无环，Foundation 不反向依赖 Runtime，SDK 不暴露 mutable store，Node/Tauri adapter 不形成第二套业务状态或验证。
+`core-types` 是最小叶子层；Score Foundation 与 Extension Protocol 分别消费它；Kernel Contracts 组合公开命令/结果 DTO；Kernel Runtime 只拥有状态机制；Kernel Session 拥有 Use Cases、28 个 Core handlers 和唯一 Composition Root。依赖图必须无环，Node/Tauri adapter 不形成第二套状态、验证或事务。
 
 ### ARV2-R005 — 单一语义真相、双表示
 
@@ -121,26 +124,27 @@ validator 必须声明直接实体、parent/reference closure、document-wide in
 
 selector 优先直接读取 LiveScoreStore/indices；完整 snapshot 只在显式请求时按 revision 物化并可缓存。一个 KernelSession 只有一个顺序写 owner；provider 在事务中同步、不可重入写；事件只携带稳定身份和 facts，不携带 ChangeSet、RuntimeHandle、整文档或宿主对象。
 
-### ARV2-R012 — 三类扩展面不得混用
+### ARV2-R012 — 统一插件生态与三类贡献面
 
 架构必须分别定义：
 
-1. Rust official provider：使用版本化 Rust SDK，进入冻结 KernelProviderAssembly；
-2. Public TypeScript functional plugin：由 Product Extension Host 通过版本化 facade 映射；
-3. React visual contribution：仅进入 Workbench 容器，不持有 Core 真相。
+1. Instrument Plugin：Guitar、Piano、Bass 和第三方乐器插件平级，使用同一协议；
+2. TypeScript functional contribution：由 Product Extension Host 执行插件语义；
+3. React visual contribution：只进入 Workbench 容器，不持有 Core 真相；
+4. Product service contribution：通过 Layout、Renderer、Playback、Import/Export 等端口装配。
 
-React 是视觉技术选择，不是所有插件的通用语言；公共插件不直接进入 raw Registry、KernelProviderAssembly 或 mutable store。
+“官方”只表示默认安装、项目维护和资格等级，不授予特殊 Rust API。插件不直接进入 mutable store，也不把任意 JavaScript 实例放入 KernelSession。
 
-### ARV2-R013 — 两个 Assembly 的唯一所有者
+### ARV2-R013 — Product Assembly 与 Kernel Session Composition
 
-- `KernelProviderAssembly`：由 Kernel Runtime composition root 构造，包含 Core handlers、official Rust providers、compatibility、namespace ownership、frozen order 和 private identity；
-- `Product ApplicationAssembly`：由未来 Product Host 唯一拥有，组合 accepted runtime、官方领域/服务、Workbench、i18n 和公共贡献映射。
+- `KernelSessionComposition`：由 `brilliant-kernel-session` 唯一拥有，组合 Kernel Runtime、Kernel Use Cases、28 个 Core handlers、ExtensionTransactionGateway 和 FrozenKernelContributionCatalog；
+- `Product ApplicationAssembly`：由 Product Host 唯一拥有，组合 accepted KernelSession factory、选定插件、服务、Workbench、i18n 和公共贡献映射。
 
-两者均为 `ready | failed` 原子结果，失败不得发布部分 session/provider directory；两个 identity 不得互换或被第二 owner 重建。
+两者均形成 `ready | failed` 原子结果。Kernel Runtime 本身不拥有 handler 目录；Product Host 不重建 Runtime 私有状态；两个 identity 不互换。
 
-### ARV2-R014 — Score/Guitar/Persistence 所有权保持
+### ARV2-R014 — Score、Instrument Plugin 与 Persistence 所有权
 
-Event 继续拥有 duration，Voice sequence 派生 start，Chord Notes 共享 Event 时间，Note 只保存 stable ID 与 WrittenPitch。Guitar Domain 首版使用 Part-owned ExtensionBlock 保存 fingering/technique/tuning/domain references。`.bgp` package、manifest、atomic replace、autosave、recovery 和资源字节属于 Persistence，不进入 Core Platform。
+Event 继续拥有 duration，Voice sequence 派生 start，Chord Notes 共享 Event 时间，Note 只保存 stable ID 与 WrittenPitch。Guitar/Piano/Bass 等 Instrument Plugin 使用自己拥有的 Part-owned ExtensionBlock namespace 保存领域数据。Canonical `.bgp` package、manifest、atomic replace、autosave、recovery 和资源字节由 mandatory Official BGP Persistence 拥有；公共扩展优先进入 Import/Export/DocumentFormat Provider 端口。
 
 ### ARV2-R015 — 小 DTO Native Bridge
 
@@ -152,7 +156,7 @@ RKP-0～RKP-9 必须保持严格依赖序列，每阶段独立任务、分支、
 
 ### ARV2-R017 — Rust 完成后优先 Guitar Core Loop
 
-RKP-9 接受归档后，必须先完成“单吉他谱 → 普通音符/休止符 → 弦品 → Layout → SVG → 基础 Playback → `.bgp` Save/Open → Undo/Redo”的首个纵向闭环，再继续新增通用 Registry、公共插件 API 或高级 capability。
+RKP-9 接受归档后，必须先以统一协议所需的最小公共 Plugin SDK 完成“单吉他谱 → 普通音符/休止符 → 弦品 → Layout → SVG → 基础 Playback → `.bgp` Save/Open → Undo/Redo”的首个纵向闭环，再继续扩展 marketplace/lifecycle API、通用 Registry 或高级 capability。
 
 ### ARV2-R018 — 性能与资源资格可观测
 
@@ -166,6 +170,46 @@ V2 必须固定交互、stress、RSS 目标，并增加 full scan、full clone�
 
 未来实现必须覆盖数据正确性、确定性、性能、资源上限、故障隔离、兼容、可回滚、可观测和端到端产品旅程。绿色 typecheck/build/full suite 只是必要条件，不能替代复杂度计数、differential oracle、hostile boundary 和真实 Guitar Core Loop 证据。
 
+### ARV2-R021 — Plugin Command、Proposal 与 Kernel Request 分离
+
+Plugin Semantic Command 在 Extension Host 中解释用户意图；插件只产生 detached `DomainChangeProposal`；Gateway 将其封装成固定的 `KernelExtensionTransactionRequest`。Rust Core 只认识 CoreCommand 与 ExtensionProposal，不注册 `guitar.*`、`piano.*` 或 `bass.*` handler。
+
+### ARV2-R022 — 三层权威验证
+
+每个 Extension transaction 按固定顺序执行：Core Semantic Validation、Rust Extension Protocol Validation、Plugin Domain Validation。Instrument Plugin 的可写领域数据必须提供 `DeclarativeDomainRules` 或确定性 WASM validator；缺少可接受的领域 validator 时，该 namespace 保持无损读取并停止写入。
+
+### ARV2-R023 — 确定性 WASM 合同
+
+事务级 WASM 仅接收规范化 detached input 并返回 data-only diagnostics/classification。它不直接修改 Store；不观察墙钟、随机数、文件、UI 或线程；执行受版本、内存、fuel、输出条数和输出字节上限约束。trap、超限或 malformed return 映射为原子 rejection。
+
+### ARV2-R024 — Plugin migration 前置于 Session
+
+插件 migration 在 detached 文档上、KernelSession 创建之前执行：Core decode/migration → Extension Host resolution → installed plugin migrations → 三层验证 → KernelSession composition。插件缺失时保留原 ExtensionBlock；migration 失败时不发布 writable/partially migrated session，并保留 lossless read-only 结果及 diagnostics。
+
+### ARV2-R025 — Namespace 所有权与跨插件协作
+
+插件只写自己声明且被 assembly 接受的 namespace。跨插件协作只能读取对方公开、版本化 contribution/capability；任何插件都不直接修改另一个插件的 ExtensionBlock。依赖和能力在新 Session 构造时解析并冻结。
+
+### ARV2-R026 — Layout Contribution 与 Renderer 分离
+
+Instrument Plugin 描述需要表达的语义对象；Layout Engine 决定位置；Render Scene 是稳定中间表示；Renderer 决定 SVG、Canvas、WebGPU 或 PDF 输出。乐器插件不持有 Renderer 对象或直接发出绘图调用。
+
+### ARV2-R027 — Persistence 资格分层
+
+Official BGP Persistence 是首版 mandatory trusted product service，唯一负责 canonical `.bgp` 保存、原子替换、恢复和 unknown extension 保真。MusicXML、MIDI、PDF、PNG 和附加文档格式通过 Import/Export/DocumentFormat Provider 扩展；替换 canonical `.bgp` owner 需要独立产品架构决策。
+
+### ARV2-R028 — Stale revision 固定策略
+
+Kernel 对 `expectedRevision != currentRevision` 返回稳定 `extension.stale-revision`，不在 Core 内自动 rebase。Extension Host 可以获取最新 snapshot 并重新执行原始 Plugin Semantic Command，最多自动重算一次；位置破坏或语义歧义操作返回 UI 重新确认。
+
+### ARV2-R029 — FrozenKernelContributionCatalog
+
+Product Extension Host 只提交严格 data-only 的 `KernelContributionCatalogDescriptorV1`。`KernelSessionComposition` 对其做 exact decode、重复/依赖/namespace/version/hash/order/cap 校验，再编译成不会跨 FFI、带私有 composition identity 的 `FrozenKernelContributionCatalog`。请求中的 fingerprint 只用于确定性 session mismatch，不作为真实性来源；任意 TypeScript/React 插件实例、DOM、回调和宿主对象都留在 Product Extension Host。
+
+### ARV2-R030 — 混合架构定位
+
+Brilliant Guitar 正式定义为 Microkernel/Plugin Architecture、Domain Model、Ports & Adapters、Command/Handler、CQRS-like read/write separation 与 Transactional Runtime Core 的混合架构，而非把全部产品能力强行归入单一微内核。
+
 ## 5. 范围外
 
 本 planning candidate 明确排除：
@@ -173,7 +217,7 @@ V2 必须固定交互、stress、RSS 目标，并增加 full scan、full clone�
 - `src/**`、`test/**`、`package*.json`、`tsconfig*.json`、Cargo、Tauri、React 或构建配置修改；
 - RKP-1 创建、启动或生产实现；
 - Score schema V2、entity-owned/Note-owned ExtensionBlock；
-- Guitar Domain、Layout、Renderer、Playback、Persistence、Workbench、Extension Host 的生产实现；
+- Guitar Instrument Plugin、Layout、Renderer、Playback、Persistence、Workbench、Extension Host 的生产实现；
 - ready session 内 hot reload、unload、replace；
 - 旧公开 export 或 command ID 删除；
 - CVN-7 stress method 的再次正式测量；
@@ -185,19 +229,23 @@ V2 必须固定交互、stress、RSS 目标，并增加 full scan、full clone�
 ### 6.1 架构内容
 
 - [ ] 主文档自包含并覆盖现状、目标、迁移、产品闭环和旧设计 disposition。
-- [ ] Brilliant Core Platform 六层及 Product Application 边界唯一。
-- [ ] 五 crate 依赖图无环，Kernel Use Cases 未形成第六 crate。
+- [ ] Brilliant Core Platform 各上下文及 Product Application 边界唯一。
+- [ ] 七 crate 依赖图无环，Core Types 保持最小叶子层。
 - [ ] ScoreDocument/LiveScoreStore、EntityId/RuntimeHandle/MusicalLocation 无混用。
 - [ ] transaction、history、validation、snapshot、event、thread owner 唯一。
-- [ ] KernelProviderAssembly 和 ApplicationAssembly 各有且只有一个 owner。
-- [ ] 三类扩展面和插件生命周期边界完整。
+- [ ] KernelSessionComposition 和 Product ApplicationAssembly 各有且只有一个 owner。
+- [ ] Instrument、functional、visual、service contributions 与插件生命周期边界完整。
+- [ ] Plugin Command、DomainChangeProposal、Kernel Request 三者没有混用。
+- [ ] 三层验证、WASM、migration、namespace 和 stale revision 合同完整。
+- [ ] `.bgp` canonical Persistence 与 Import/Export Provider 的资格边界完整。
+- [ ] Layout Contribution、Layout Engine、Render Scene、Renderer 的责任链完整。
 - [ ] Note/Event/time 与 ExtensionBlock owner 没有隐式 schema 漂移。
 - [ ] RKP-0～RKP-9 顺序、rollback 和 post-RKP Guitar Core Loop 一致。
 - [ ] 28/51/8/34/9/`brilliant-score-1` 兼容清单完整。
 
 ### 6.2 规划工件
 
-- [ ] `prd.md`、`design.md`、`implement.md`、两份 research、handoff、review、JSON/JSONL 全部存在。
+- [ ] `prd.md`、`design.md`、`implement.md`、研究资料、handoff、review、JSON/JSONL 全部存在。
 - [ ] 新任务在产品父任务 `children` 中精确出现一次。
 - [ ] task 仍为 `planning`，start/auth/accept/archive/push 均为 false 或 pending。
 - [ ] 旧架构和 Rust/post-Core 权威文档在候选阶段零差异。

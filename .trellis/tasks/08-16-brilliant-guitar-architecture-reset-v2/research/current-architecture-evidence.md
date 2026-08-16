@@ -92,7 +92,7 @@ At the base:
 - `task_start_run=false` and production authorization is false;
 - current parent text still describes four Rust crates.
 
-Architecture Reset V2 proposes five crates by extracting Score Foundation. Because the candidate is not current authority, it does not edit the Rust parent. The later authority-sync commit must reconcile this before RKP-1 planning.
+Architecture Reset V2 now proposes seven crates: a minimal Core Types leaf, separate Score Foundation and Extension Protocol, Kernel Contracts, state-only Kernel Runtime, Kernel Session/Composition, and Node adapter. This closes both the dependency-direction and handler/composition ownership findings. Because the candidate is not current authority, it does not edit the Rust parent. A later accepted authority-sync commit must reconcile this before RKP-1 planning.
 
 ## 7. Evidence conclusion
 

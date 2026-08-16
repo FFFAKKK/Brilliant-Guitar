@@ -6,7 +6,7 @@
 {"file":".trellis/spec/core-kernel/backend/registry-capability.md","reason":"Bound registry/capability behavior while replacing runtime internals."}
 {"file":".trellis/spec/core-kernel/backend/errors-reports.md","reason":"Preserve data-only deterministic failures, issues and reports."}
 {"file":".trellis/spec/core-kernel/backend/domain-transaction-integration.md","reason":"Preserve accepted official-module integration, assembly and migration behavior."}
-{"file":".trellis/spec/core-kernel/backend/rust-runtime-transition.md","reason":"Consume the current transition contract and identify the later five-crate sync."}
+{"file":".trellis/spec/core-kernel/backend/rust-runtime-transition.md","reason":"Consume the current transition contract and identify the later seven-crate/session/plugin authority sync."}
 {"file":".trellis/spec/guides/long-term-maintenance-guide.md","reason":"Follow repository planning, evidence and maintainability conventions."}
 {"file":".trellis/tasks/06-29-commercial-guitar-tablature-product/requirements/REQ-002-score-document-model.md","reason":"Align score truth with the product document model."}
 {"file":".trellis/tasks/06-29-commercial-guitar-tablature-product/requirements/REQ-007-extension-system.md","reason":"Keep public visual and functional extensibility as a product requirement."}
@@ -24,3 +24,4 @@
 {"file":".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/operator-handoff.md","reason":"Preserve the existing official-plugin/product dependency handoff boundary."}
 {"file":".trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/research/current-architecture-evidence.md","reason":"Use the candidate's reproducible physical and hot-path evidence."}
 {"file":".trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/research/authority-conflict-and-supersession-map.md","reason":"Apply explicit retain/refine/supersede/historical/defer decisions."}
+{"file":".trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/research/plugin-runtime-semantics-audit-and-decisions.md","reason":"Implement the bounded decisions for plugin commands, validation, WASM, migration, composition, namespace and services."}

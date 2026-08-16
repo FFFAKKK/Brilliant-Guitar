@@ -3,7 +3,7 @@
 {"file":".trellis/spec/core-kernel/backend/score-document-model.md","reason":"Check Event/Note/time and ExtensionBlock ownership for schema drift."}
 {"file":".trellis/spec/core-kernel/backend/command-transaction.md","reason":"Check atomicity, no-op, history, undo, redo and replay compatibility."}
 {"file":".trellis/spec/core-kernel/backend/snapshot-events.md","reason":"Check stable snapshot/event behavior and RuntimeHandle exclusion."}
-{"file":".trellis/spec/core-kernel/backend/domain-transaction-integration.md","reason":"Check official provider assembly and callback boundaries."}
+{"file":".trellis/spec/core-kernel/backend/domain-transaction-integration.md","reason":"Check accepted CVN provider assembly and callback behavior as a migration oracle, not as future plugin placement."}
 {"file":".trellis/spec/core-kernel/backend/quality-guidelines.md","reason":"Check determinism, hostile boundary and commercial quality gates."}
 {"file":".trellis/spec/core-kernel/backend/rust-runtime-transition.md","reason":"Check staged migration, compatibility and default-runtime cutover rules."}
 {"file":".trellis/tasks/06-29-commercial-guitar-tablature-product/prd.md","reason":"Check V2 against the overall open-source commercial guitar product goal."}
@@ -23,4 +23,5 @@
 {"file":".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/design.md","reason":"Check ApplicationAssembly has one host owner distinct from kernel assembly."}
 {"file":".trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/research/current-architecture-evidence.md","reason":"Verify each material current-state and hot-path claim."}
 {"file":".trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/research/authority-conflict-and-supersession-map.md","reason":"Verify every direct old-authority conflict has a future sync disposition."}
+{"file":".trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/research/plugin-runtime-semantics-audit-and-decisions.md","reason":"Check all bounded plugin-runtime audit decisions are closed without second owners or executable loopholes."}
 {"file":".trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/review-candidate.md","reason":"Use the exact focused independent architecture review checklist."}

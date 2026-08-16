@@ -28,7 +28,7 @@ We retain the product goal, general ScoreDocument semantics, 28 Core commands, c
 
 We replace nested-array full scans on writes, full-document clone-per-effect-set transactions, growing history arrays copied per operation, repeated full semantic validation, complete callback-view cloning, and the overloaded use of “Core Kernel” for unrelated owners.
 
-The replacement is an indexed Rust live store, typed generational handles, isolated overlays, compact ChangeSets, cursor history, incremental validation, explicit snapshot materialization, a frozen official-provider assembly, and small DTO bridges.
+The replacement is an indexed Rust live store, typed generational handles, isolated overlays, compact ChangeSets, cursor history, incremental validation, explicit snapshot materialization, a KernelSessionComposition consuming a data-only FrozenKernelContributionCatalog, and small DTO bridges. Guitar/Piano/Bass/third-party Instrument Plugins are equal Product Extension Host consumers of one protocol; official status adds distribution/qualification rather than Runtime privilege.
 
 > Rust is the target runtime, but language replacement alone is not the fix. Translating the current full-scan/full-clone algorithm literally fails this architecture.
 
@@ -83,17 +83,22 @@ For `K` commands against `E` entities, current work includes a component approxi
 
 ```text
 Brilliant Core Platform
+├── Core Types
 ├── Score Foundation
+├── Extension Protocol
 ├── Kernel Contracts
 ├── Kernel Runtime
-├── Kernel Use Cases
-├── Kernel Extension SDK
+├── Kernel Session / Use Cases
 └── Native Bridge
 ```
 
-`Brilliant Core Platform` is the stable product core. “Microkernel” applies narrowly to Kernel Runtime: a small state/transaction owner with frozen providers around versioned data contracts. It does not put music primitives, product workflows, installation and rendering into one module. Imported uses of `LIN` are replaced by `Brilliant Guitar`.
+`Brilliant Core Platform` is the stable product core. “Microkernel” applies narrowly to Kernel Runtime: a small state/transaction owner that consumes one frozen, data-only contribution catalog through versioned contracts. It does not put music primitives, product workflows, installation and rendering into one module. Imported uses of `LIN` are replaced by `Brilliant Guitar`.
 
 ### 3.2 Context ownership
+
+#### Core Types
+
+Owns only cross-context primitives that must remain stable without importing score, command or plugin implementations: EntityId and other stable identifiers, PluginId, ContributionId, NamespaceId, Revision, SchemaVersion, ErrorCode and bounded JSON value primitives. It is the dependency leaf and contains no command DTO, ScoreDocument, runtime state or host object.
 
 #### Score Foundation
 
@@ -103,59 +108,71 @@ It MUST NOT own command routing, session state, history, RuntimeHandle, Guitar f
 
 #### Kernel Contracts
 
-Owns versioned data-only command/result/failure/issue/event/selector/snapshot DTOs, public schema versions, provider descriptors, capability/assembly data contracts, and FFI-safe types. It MUST NOT depend on runtime internals, Node, Tauri, React, or official domains.
+Owns versioned Core command/result/failure/issue/event/selector/snapshot DTOs, public schema versions and FFI-safe session types. It composes Core Types, Score Foundation and Extension Protocol types, and does not depend on runtime internals, Node, Tauri, React or any instrument plugin.
+
+#### Extension Protocol
+
+Owns language-neutral, data-only namespace ownership, `ExtensionMutationOperation` fragments, schema/reference/capability declarations, deterministic domain-rule descriptors, WASM module descriptors, migration descriptors and `KernelContributionCatalogDescriptorV1`. The composite DomainChangeProposal/KernelExtensionTransactionRequest belongs to Kernel Contracts because it may combine a fixed CoreCommand envelope with Extension Protocol operations. Extension Protocol contains no TypeScript instance, DOM object, mutable store or instrument-specific type. The compiled `FrozenKernelContributionCatalog` is a private Kernel Session object, not an FFI DTO.
 
 #### Kernel Runtime
 
-Owns KernelSession, LiveScoreStore, every live index, TransactionOverlay, ChangeSet, validation execution, history cursor/checkpoints, snapshot cache, event sequencing, dirty/replay state, and frozen KernelProviderAssembly. It is the **only** state/transaction/history/event owner.
+Owns LiveScoreStore, every live index, TransactionOverlay, ChangeSet adoption, validation execution, history cursor/checkpoints, snapshot cache, event sequencing and dirty/replay mechanics. It is the **only** state/transaction/history/event owner, but it does not own Core handler registration or plugin instances.
 
 #### Kernel Use Cases
 
-Owns orchestration of the 28 Core commands, routes, indexed target resolution, Core/provider validation/classification, no-op, batch, undo, redo, and replay. V2 keeps it as an internal `brilliant-kernel-runtime` module rather than a sixth crate.
+Owns orchestration of the 28 Core commands, routes, indexed target resolution, three-level extension validation, no-op, batch, undo, redo and replay. It lives in `brilliant-kernel-session` with the Core handlers and calls Runtime through explicit transaction APIs.
 
-#### Kernel Extension SDK
+#### Kernel Session / Composition Root
 
-Owns versioned Rust traits and data-only descriptors for source-built official providers. It exposes restricted read views and ChangeSet construction, never the mutable store or RuntimeHandle.
+`KernelSessionComposition` is the unique composition root. It combines Kernel Runtime, Kernel Use Cases, the 28 Core handlers, ExtensionTransactionGateway and a FrozenKernelContributionCatalog into one atomic `ready | failed` KernelSession result. Runtime itself does not discover or instantiate handlers.
 
 #### Native Bridge
 
-Owns adapters only. Node-API supports compatibility/differential migration. A future Tauri host links runtime directly. Adapters cannot own state or repeat transaction/validation logic.
+Owns adapters only. Node-API supports compatibility/differential migration. A future Tauri host links Kernel Session directly. Adapters cannot own state or repeat transaction/validation logic.
 
 #### Product Application
 
-Outside Rust Core, it owns Desktop Shell, Workbench, Editor Session, ApplicationAssembly, create/open/save/close/recover workflows, official product-service collaboration, Extension Host, public plugin lifecycle/configuration, i18n, and presentation.
+Outside Rust Core, it owns Desktop Shell, Workbench, Editor Session, Product ApplicationAssembly, create/open/save/close/recover workflows, Product Extension Host, service composition, public plugin lifecycle/configuration, i18n and presentation. Guitar, Piano, Bass and third-party instruments are equal Instrument Plugins selected here.
 
 ### 3.3 Context graph
 
 ```mermaid
 flowchart TB
     UI["Desktop Shell / Workbench"]
-    App["Product Application / ApplicationAssembly"]
+    App["Product ApplicationAssembly"]
     Host["Product Extension Host"]
-    PublicTS["Public TypeScript functional plugins"]
+    Instruments["Instrument Plugins: Guitar / Piano / Bass / third-party"]
+    PublicTS["TypeScript functional contributions"]
     ReactVisual["React visual contributions"]
-    Services["Layout / Renderer / Playback / Persistence / Export"]
-    Guitar["Official Guitar Domain provider"]
+    Services["Product Service Host"]
     Bridge["Native Bridge"]
-    Runtime["Kernel Runtime and Use Cases"]
-    SDK["Kernel Extension SDK"]
+    Session["Kernel Session / Use Cases / Composition"]
+    Runtime["Kernel Runtime"]
+    Extension["Extension Protocol"]
     Contracts["Kernel Contracts"]
     Score["Score Foundation"]
+    Types["Core Types"]
 
     UI --> App
     App --> Services
     App --> Bridge
     App --> Host
+    Host --> Instruments
     Host --> PublicTS
     Host --> ReactVisual
-    Bridge --> Runtime
-    Guitar --> SDK
-    Runtime --> SDK
+    Host --> Bridge
+    Bridge --> Session
+    Session --> Runtime
+    Session --> Extension
+    Session --> Contracts
     Runtime --> Contracts
+    Runtime --> Extension
     Runtime --> Score
-    SDK --> Contracts
-    SDK --> Score
     Contracts --> Score
+    Contracts --> Extension
+    Contracts --> Types
+    Score --> Types
+    Extension --> Types
 ```
 
 ---
@@ -166,55 +183,64 @@ flowchart TB
 
 ```text
 crates/
+├── brilliant-core-types/
 ├── brilliant-score-foundation/
+├── brilliant-extension-protocol/
 ├── brilliant-kernel-contracts/
-├── brilliant-kernel-extension-sdk/
 ├── brilliant-kernel-runtime/
+├── brilliant-kernel-session/
 └── brilliant-kernel-node/
 ```
 
-This five-crate shape revises the older four-crate remediation proposal by separating pure score semantics from kernel contracts. It takes effect only after V2 acceptance and a separate Rust-parent authority sync.
+This seven-crate shape closes two problems in the earlier candidate: a minimal leaf prevents Score Foundation from depending on oversized command contracts, and a separate Kernel Session crate prevents Runtime from owning Core handlers/composition. It takes effect only after V2 acceptance and a separate Rust-parent authority sync.
 
 ### 4.2 Dependency graph
 
-An arrow points from a dependency to its consumer.
+Every arrow below is labeled `depends on` and points from the consumer to its dependency.
 
 ```mermaid
 flowchart LR
+    Types["core-types"]
     Score["score-foundation"]
+    Extension["extension-protocol"]
     Contracts["kernel-contracts"]
-    SDK["kernel-extension-sdk"]
     Runtime["kernel-runtime"]
+    Session["kernel-session"]
     Node["kernel-node"]
     Tauri["future Tauri Host"]
-    Guitar["future Guitar Domain"]
 
-    Score --> Contracts
-    Score --> SDK
-    Contracts --> SDK
-    Score --> Runtime
-    Contracts --> Runtime
-    SDK --> Runtime
-    Runtime --> Node
-    Contracts --> Node
-    Runtime --> Tauri
-    SDK --> Guitar
-    Score --> Guitar
+    Score -->|depends on| Types
+    Extension -->|depends on| Types
+    Contracts -->|depends on| Types
+    Contracts -->|depends on| Score
+    Contracts -->|depends on| Extension
+    Runtime -->|depends on| Types
+    Runtime -->|depends on| Score
+    Runtime -->|depends on| Extension
+    Runtime -->|depends on| Contracts
+    Session -->|depends on| Runtime
+    Session -->|depends on| Contracts
+    Session -->|depends on| Extension
+    Node -->|depends on| Session
+    Node -->|depends on| Contracts
+    Tauri -->|depends on| Session
 ```
 
 ### 4.3 Crate owner table
 
 | Crate | Owns | Does not own |
 |---|---|---|
-| `score-foundation` | Values, DTO semantic model, schema semantics, codec ordering | Sessions, commands, history, providers |
-| `kernel-contracts` | Public/kernel DTOs and versions | Store, callbacks, domains |
-| `kernel-extension-sdk` | Official provider traits/descriptors/builders/views | Mutable store, handles, public plugin lifecycle |
-| `kernel-runtime` | Store, indices, transactions, use cases, validation, history, snapshots, events, kernel assembly | UI, package/files, Guitar implementation |
+| `core-types` | Stable IDs, revisions, schema/version/error primitives and bounded JSON values | ScoreDocument, commands, runtime, plugins |
+| `score-foundation` | Musical values, DTO semantic model, schema semantics, codec ordering | Sessions, commands, history, plugins |
+| `extension-protocol` | Extension mutations, namespace/reference/capability/schema/rule/WASM/migration/catalog contracts | Core command envelope, plugin executable instances, store, UI |
+| `kernel-contracts` | Core commands plus composite plugin proposal/request/result/event/snapshot/session DTOs and versions | Store, host callbacks, instrument implementations |
+| `kernel-runtime` | Store, indices, overlay adoption, validation execution, history, snapshots, events | Core handler directory, UI, plugin lifecycle |
+| `kernel-session` | Use Cases, 28 Core handlers, Extension Gateway and unique composition root | Product plugin discovery, UI, files |
 | `kernel-node` | Node capture/mapping, opaque handle, DTO conversion, panic containment | Business truth or second state/validation |
 
 ### 4.4 Forbidden dependencies
 
-Architecture checks MUST reject Foundation importing another project crate; Contracts importing Runtime/Node/Tauri/React/Guitar; SDK importing store/history/overlay/RuntimeHandle; Runtime importing Guitar/product services/React/Tauri/public plugins; Node implementing semantic validation/adoption; Product Host obtaining mutable store; and public plugins linking Rust runtime.
+Architecture checks enforce: Core Types imports no project crate; Foundation imports only Core Types; Extension Protocol imports only Core Types; Contracts never import Runtime/Session/Node/Tauri/React/instrument plugins; Runtime never imports Session/Guitar/product services/React/Tauri/plugin instances; Session never discovers product plugins; Node never implements semantic validation/adoption; Product Host never obtains mutable store; public plugins never link Runtime internals.
 
 ---
 
@@ -306,11 +332,11 @@ Voice time indices may cache aggregates, but they are rebuildable implementation
 
 ### 6.2 ExtensionBlock V1
 
-Owner stays `score` or `part(partId)`. Official Guitar Domain stores Part-owned payloads such as `fingeringByNoteId`, `techniqueByEventId`, `tuning`, and domain references. The runtime may index declared references; encoding restores the accepted envelope. Entity/Note-owned blocks require a separate schema task.
+Owner stays `score` or `part(partId)`. Guitar, Piano, Bass and third-party Instrument Plugins are equal protocol consumers and store their data only in accepted namespaces they own. The default official Guitar Plugin may store Part-owned `fingeringByNoteId`, `techniqueByEventId`, `tuning` and domain references; “official” adds no Runtime privilege. Runtime may index declared references, and encoding restores the accepted envelope. Entity/Note-owned blocks require a separate schema task.
 
 ### 6.3 `.bgp` boundary
 
-Core Platform owns `brilliant-score-1` meaning, strict semantic codec, migration entry and extension compatibility. Persistence owns zip/package, manifest, paths, atomic replacement, autosave, crash recovery, resource bytes and permissions. Core never opens a user path or owns product save lifecycle.
+Core Platform owns `brilliant-score-1` meaning, strict semantic codec, Core migration entry and extension compatibility. Mandatory Official BGP Persistence is the sole V1 canonical `.bgp` package owner: zip/package, manifest, paths, atomic replacement, autosave, crash recovery, resource bytes, permissions and unknown-block preservation. Public providers extend import/export/additional formats. Replacing the canonical `.bgp` owner requires a separate product architecture decision. Core never opens a user path or owns product save lifecycle.
 
 ---
 
@@ -351,7 +377,7 @@ The future Tauri host links runtime directly rather than passing through Node. I
 
 ## 8. Command and transaction protocol
 
-### 8.1 Submission pipeline
+### 8.1 Core command pipeline
 
 ```mermaid
 flowchart TD
@@ -362,35 +388,135 @@ flowchart TD
     Overlay["Stage in TransactionOverlay"]
     Closure["Compute affected closure"]
     CoreValidate["Core incremental semantic validation"]
-    ProviderValidate["Provider validators"]
+    ProtocolValidate["Extension protocol validation where affected"]
+    DomainValidate["Applicable deterministic domain validation"]
     Profile["Core feature profile"]
-    Classify["Provider classifiers"]
+    Classify["Applicable deterministic domain classifiers"]
     Precommit["Canonical facts, caps, event data, commit plan"]
     Commit["Atomically adopt store and indices"]
     History["Append HistoryEntry and move cursor"]
     Event["Publish deterministic event(s)"]
 
     Decode --> Route --> Resolve --> Prepare --> Overlay
-    Overlay --> Closure --> CoreValidate --> ProviderValidate
-    ProviderValidate --> Profile --> Classify --> Precommit --> Commit
+    Overlay --> Closure --> CoreValidate --> ProtocolValidate
+    ProtocolValidate --> DomainValidate --> Profile --> Classify --> Precommit --> Commit
     Commit --> History --> Event
 ```
 
-### 8.2 Handler boundary
+### 8.2 Plugin golden path and three distinct objects
 
-A Core/official handler receives exact decoded payload, stable target IDs, a restricted detached read view, a restricted typed ChangeSet builder and declared namespace/effect capability. It returns ordered forward changes or data-only failures/issues.
+```mermaid
+flowchart TD
+    Intent["User intent in React / Workbench"]
+    PluginCommand["Plugin Semantic Command: e.g. guitar.fingering.set"]
+    Slice["Filtered ScoreSlice at revision R"]
+    Proposal["Detached DomainChangeProposal"]
+    Host["Product Extension Host"]
+    Request["KernelExtensionTransactionRequest with expectedRevision R"]
+    Gateway["ExtensionTransactionGateway"]
+    Preflight["Catalog / namespace / revision / cap preflight"]
+    Overlay2["TransactionOverlay candidate"]
+    CoreValidation["Level A: Core semantic validation"]
+    ProtocolValidation["Level B: extension protocol validation"]
+    DomainValidation["Level C: declarative or WASM domain validation"]
+    Commit2["Atomic commit / history / event"]
+
+    Intent --> PluginCommand --> Slice --> Proposal --> Host --> Request --> Gateway
+    Gateway --> Preflight --> Overlay2 --> CoreValidation --> ProtocolValidation --> DomainValidation --> Commit2
+```
+
+The three objects are never aliases:
+
+| Object | Owner/executor | Meaning |
+|---|---|---|
+| Plugin Semantic Command | TypeScript plugin in Extension Host | Interprets user intent, such as `guitar.fingering.set`. |
+| DomainChangeProposal | Plugin output | Detached data-only proposed Core/extension operations based on revision R. |
+| KernelExtensionTransactionRequest | Fixed host-to-kernel protocol | Authenticated identity, namespace, expected revision, canonical operation list and declared validation policy. |
+
+Rust registers only fixed Core commands and the generic Extension transaction entry. It does not register or dispatch `guitar.*`, `piano.*` or `bass.*` handlers.
+
+The minimum versioned request shape is equivalent to:
+
+```text
+KernelExtensionTransactionRequestV1 {
+  protocolVersion: 1
+  pluginId
+  contributionId
+  originPluginCommandId
+  expectedRevision
+  catalogFingerprint
+  proposal: DomainChangeProposalV1
+}
+
+DomainChangeProposalV1 {
+  operations: nonempty ordered list of
+    | CoreCommandOperation(fixed accepted Core command envelope)
+    | ReplaceOwnedExtensionBlock(owner, namespace, schemaVersion, payload)
+    | RemoveOwnedExtensionBlock(owner, namespace)
+}
+```
+
+The request does not select or downgrade validation policy. KernelSession resolves policy, owned namespaces, allowed Core command IDs, schema versions, reference rules and budgets from its frozen catalog. `CoreCommandOperation` is permitted only when the contribution explicitly declares that fixed Core command capability; every Core operation is still routed through the accepted Core handler and all operations share one overlay/history/event unit.
+
+Stable preflight precedence is:
+
+```text
+exact root request decode
+→ catalog/session identity
+→ contribution and namespace ownership
+→ expectedRevision
+→ proposal/operation exact decode and caps
+→ overlay candidate
+→ Level A
+→ Level B candidate/reference/schema validation
+→ Level C domain validation
+→ facts/event/cap precommit
+→ atomic adoption
+```
+
+Stale revision exits before proposal operation decoding, WASM, overlay mutation, history or event work. Validation policy and WASM identity come only from the catalog.
+
+### 8.3 Three-level validation authority
+
+| Level | Owner | Mandatory checks |
+|---|---|---|
+| A — Core Semantic | Score Foundation defines rules; Kernel Session invokes them over the Runtime overlay | Score hierarchy, stable identities, references, rhythm/time, Core music invariants. |
+| B — Extension Protocol | Extension Protocol defines codec/rules; Kernel Session invokes them | catalog authenticity, namespace owner, schema version, operation allowlist, reference declarations, ownership and resource caps. |
+| C — Plugin Domain | Plugin supplies accepted rule/WASM data; Kernel Session owns the deterministic executor | Instrument/domain consistency such as tuning/string/fret/pitch, pedal state or technique relationships. |
+
+An Instrument Plugin whose persisted data influences layout, playback, migration or later writes declares `validationPolicy=domain-required` and provides either accepted DeclarativeDomainRules or a deterministic WASM validator. Missing/unavailable Level C support preserves bytes and read access but makes that namespace non-writable. A `structural-only` policy is limited to opaque/advisory metadata that does not claim instrument-domain validity.
+
+Validators return diagnostics/classification only. The only writer remains Runtime through Overlay/ChangeSet.
+
+### 8.4 Deterministic WASM execution contract
+
+Transaction WASM receives canonical detached input containing the compatible filtered ScoreSlice, current ExtensionBlock data, proposal, declared schema and resource budget. It returns one exact data-only result:
+
+```text
+valid
+| invalid(ordered diagnostics)
+| unsupported(ordered facts)
+```
+
+The host environment exposes no mutable store, wall clock, random source, filesystem, UI/DOM, thread creation or arbitrary host callback. Execution is bounded by accepted module hash/version, linear-memory pages, fuel/instruction budget, recursion/stack policy, diagnostics count, facts count and output bytes. Trap, timeout/fuel exhaustion, malformed output or cap overflow produces an atomic contribution failure; later domain validators do not run and state remains zero-delta.
+
+Simple plugin authors can use TypeScript SDK builders for DeclarativeDomainRules. Complex domains may ship a WASM module produced by any toolchain that conforms to the same versioned protocol; Rust knowledge is not an application-level privilege.
+
+### 8.5 Handler and proposal boundary
+
+A Core handler receives exact decoded payload, stable target IDs, a restricted detached read view and a restricted typed ChangeSet builder. A plugin handler executes in Product Extension Host and returns DomainChangeProposal data; it never receives a Rust builder.
 
 It never receives mutable LiveScoreStore, RuntimeHandles, mutable indices, history, event dispatcher, Node/React/Tauri objects, or async/Promise callbacks.
 
-### 8.3 ChangeSet and inverse
+### 8.6 ChangeSet and inverse
 
 Each change records a typed stable address, necessary precondition and forward action/value. Runtime reads the overlay-aware current value and derives inverse before staging forward. Inverses are stored in reverse-safe order.
 
 Required change classes include scalar replacement, entity insert/remove, ordered-child insert/remove/move, ExtensionBlock replace/remove, and declared reference update. RKP-3 freezes exact enums and resource caps. History/FFI never stores closures or trait/function pointers.
 
-### 8.4 Atomicity and rejection
+### 8.7 Atomicity and rejection
 
-Before commit the runtime completes decode, route, indexed resolve, prepare, overlay checks, affected closure, Core/provider assessment, profile/classification, resource caps, canonical facts/addresses/event data, and the entire store/index commit plan.
+Before commit the session completes decode, route, indexed resolve, proposal/request checks, overlay checks, affected closure, Level A/B/C assessment, profile/classification, resource caps, canonical facts/addresses/event data and the entire store/index commit plan.
 
 On rejection, all are unchanged:
 
@@ -403,13 +529,19 @@ On rejection, all are unchanged:
 
 Subscriber failure occurs after commit, is isolated, and cannot roll back the transaction.
 
-### 8.5 Batch
+### 8.8 Stale revision
+
+Every plugin request carries `expectedRevision`. If it differs from current revision, Kernel Session returns stable `extension.stale-revision` before proposal application or domain validation. Runtime performs no automatic rebase.
+
+Extension Host may reacquire the latest ScoreSlice and re-execute the original Plugin Semantic Command once when the command descriptor marks it `recomputable`. It submits a newly derived proposal; it never edits/rebases the old proposal. Positional/destructive commands or a second stale result return to Workbench for explicit user confirmation.
+
+### 8.9 Batch
 
 Batch children share one overlay and later children see earlier staged changes. Any child rejection discards the whole overlay. One accepted batch creates exactly one revision, history entry and committed event unit while preserving child boundaries in history/facts. V2 does not create an arbitrary public transaction callback.
 
-### 8.6 No-op
+### 8.10 No-op
 
-A semantic no-op still performs target resolution, Core semantic assessment, applicable provider validation, profile and classification. It does not adopt store/indices, increment revision/history, change dirty state, or publish a committed event.
+A semantic no-op still performs target resolution, Level A Core assessment, applicable Level B extension validation, applicable Level C domain validation, profile and classification. It does not adopt store/indices, increment revision/history, change dirty state, or publish a committed event.
 
 ---
 
@@ -432,7 +564,7 @@ It never stores a full document, RuntimeHandle, handler/function, wall clock, ra
 - accepted submit after undo truncates entries after cursor;
 - undo applies inverse without command preparer;
 - redo applies forward without command preparer;
-- undo/redo rerun semantic/provider validation and classification under accepted behavior;
+- undo/redo rerun Level A/B/C validation and classification under accepted behavior;
 - replay reroutes original semantic envelopes and never uses stored ChangeSets as commands;
 - empty undo/redo retains existing stable failures;
 - history is never silently evicted.
@@ -493,7 +625,7 @@ Compare code, location, severity, issue order, facts, support classification and
 - FFI results are detached/immutable;
 - RuntimeHandle never appears in results.
 
-Provider views are filtered by capability, target/owner and compatibility. They are detached semantic views, not clones of unrelated sections.
+Domain-validation views are filtered by capability, target/owner and compatibility. They are detached semantic views, not clones of unrelated sections.
 
 ### 11.2 Events
 
@@ -503,7 +635,7 @@ Retain committed and dirty-state-changed events with stable command identity, af
 
 - one KernelSession has one sequential write owner;
 - submit/undo/redo/replay/markPersisted execute in call order;
-- provider invocation is synchronous during transaction;
+- Level C declarative/WASM validation is synchronous and bounded during transaction; arbitrary TypeScript/React plugin code remains outside the transaction;
 - reentrant write retains stable rejection behavior;
 - immutable snapshots may be read by background tasks;
 - Node-API V1 is synchronous/owner-thread bound;
@@ -513,67 +645,139 @@ Retain committed and dirty-state-changed events with stable command identity, af
 
 ## 12. Extension and assembly architecture
 
-### 12.1 Rust official provider
+### 12.1 Unified plugin package
 
-Source-built, reviewed, composed at compile/startup time, using the versioned Rust SDK. It may contribute declared command/effect/validator/classifier/migration data and enters KernelProviderAssembly. It cannot access mutable store.
+Guitar, Piano, Bass, other instruments, functional plugins and visual contributions use one Product Extension Host lifecycle and versioned public plugin protocol. “Official” means default distribution, project maintenance and qualification level; it never grants direct Store access or a private handler API.
 
-### 12.2 Public TypeScript functional plugin
-
-Loaded by Product Extension Host through a versioned product facade. It reads filtered snapshots/selectors and writes through approved semantic command adapters. It never enters raw Registry/KernelProviderAssembly and never gets RuntimeHandle, pointer, or unrestricted file/UI objects.
-
-### 12.3 React visual contribution
-
-React is an optional visual implementation technology mounted in Workbench-owned containers. It receives host state/actions, does not own score truth, and never writes component/DOM state to ScoreDocument.
-
-### 12.4 KernelProviderAssembly
-
-Owned exactly once by the Kernel Runtime composition root. It contains Core handlers, accepted official Rust providers, compatibility, namespace ownership, deterministic frozen provider order, and a private assembly identity.
-
-Construction is atomic:
+An Instrument Plugin package may contain:
 
 ```text
-ready(complete directory + identity)
-| failed(data-only diagnostics)
+plugin manifest
+TypeScript semantic command handlers
+Extension namespace/schema/reference declarations
+DeclarativeDomainRules and/or deterministic validator WASM
+detached pre-session migrations
+React Workbench contributions
+Layout contributions
+Playback contributions
+optional bounded compute WASM
 ```
 
-Failure exposes zero session and zero partial directory. A ready session's provider set never mutates; configuration changes require a new assembly/session.
+### 12.2 Namespace ownership and cross-plugin collaboration
+
+Each accepted contribution has one owner `(pluginId, contributionId)` and a declared namespace set. Default write authority is exactly its own namespaces. Read authority is the filtered Core snapshot plus explicitly published contribution APIs/capabilities.
+
+Plugin A never mutates Plugin B's ExtensionBlock. Cross-plugin collaboration uses a versioned, declared, read-only/public contribution contract or asks B through a Product Host capability. Dependencies, versions, namespace collisions and capabilities are resolved before session composition and frozen for the session.
+
+### 12.3 FrozenKernelContributionCatalog
+
+Product Extension Host resolves the selected plugins and produces a strict `KernelContributionCatalogDescriptorV1` containing identities, namespaces, schema versions, reference policies, validation policies, rule descriptors, accepted WASM identities/hashes, resource budgets and deterministic order. It contains no TypeScript/React instance, DOM object, arbitrary callback, local path or mutable alias.
+
+`KernelSessionComposition` exact-decodes that descriptor, rejects duplicate plugin/contribution/namespace ownership, unresolved dependencies, unsupported protocol/schema/rule/WASM versions, hash mismatch, noncanonical order and cap overflow, then compiles one private `FrozenKernelContributionCatalog`. The compiled catalog remains data-only but gains a process-local composition identity and canonical content fingerprint; it is never serialized or accepted back from FFI. A request's `catalogFingerprint` is only a deterministic session-mismatch check, not proof of authenticity. Structural lookalikes cannot manufacture the private composition identity. Ready-session contribution membership is immutable; plugin configuration changes take effect in a new session.
+
+### 12.4 KernelSessionComposition
+
+Owned exactly once by `brilliant-kernel-session`. It combines:
+
+```text
+KernelRuntime
+KernelUseCases
+28 CoreHandlers
+ExtensionTransactionGateway
+FrozenKernelContributionCatalog
+```
+
+It returns `ready(session + composition identity) | failed(data-only diagnostics)` atomically. Failure publishes zero session and zero partial catalog/directory. Kernel Runtime itself neither discovers plugins nor owns the Core handler count.
 
 ### 12.5 Product ApplicationAssembly
 
-Owned exactly once by future Product Host. It combines one accepted Core runtime factory, official Guitar Domain, Layout/Renderer/Playback/Persistence/Export, Workbench contributions, i18n, and Product Extension Host mappings.
+Owned exactly once by Product Host. It combines an accepted KernelSession factory, Product Extension Host, selected Instrument/functional/visual plugins, Workbench contributions, service providers, Official BGP Persistence and i18n. It returns `ready | failed` and freezes after ready.
 
-It also returns `ready | failed` atomically and freezes after ready. Its identity is different from the private kernel identity. Product wiring consumes the accepted kernel factory and cannot reconstruct internal provider state.
+Product assembly identity is distinct from KernelSession composition identity. Product Host passes only the catalog descriptor and fixed DTOs through the bridge; KernelSessionComposition alone compiles the private frozen catalog and never exposes it back to the host. Product Host never reconstructs Runtime private state.
 
-### 12.6 Plugin lifecycle
+### 12.6 Pre-session plugin migration
 
-Product Extension Host owns discovery, install/remove, enable/disable config, manifest, dependency resolution, permissions, isolation, version compatibility and restart prompts. V1 changes apply to a new session; ready-session hot reload/unload/replace is excluded.
+Opening a document uses this detached pipeline:
+
+```mermaid
+flowchart TD
+    Decode["Strict Core document decode"]
+    CoreMigration["Core schema migration"]
+    Resolve["Extension Host resolves installed plugins"]
+    Inventory["Classify every ExtensionBlock"]
+    PluginMigration["Run installed plugin migrations on detached candidates"]
+    ValidateA["Level A Core full validation"]
+    ValidateB["Level B extension validation"]
+    ValidateC["Level C installed-domain validation"]
+    Compose["KernelSessionComposition"]
+    Ready["Writable ready session"]
+    Preserve["Lossless read-only result + diagnostics"]
+
+    Decode --> CoreMigration --> Resolve --> Inventory --> PluginMigration
+    PluginMigration --> ValidateA --> ValidateB --> ValidateC --> Compose --> Ready
+    Inventory -->|plugin missing or version unavailable| Preserve
+    PluginMigration -->|failure| Preserve
+    ValidateA -->|failure| Preserve
+    ValidateB -->|failure| Preserve
+    ValidateC -->|failure or domain validator unavailable| Preserve
+    Compose -->|failure| Preserve
+```
+
+TypeScript migration executes in Product Extension Host before any session exists. A migration transforms only a detached block/candidate and is subject to exact owner/namespace/source/target checks and final strict round-trip validation. Optional deterministic WASM migration follows the same boundary. A missing plugin leaves original ExtensionBlock bytes/semantics preserved. Failure produces no partially migrated writable session.
+
+### 12.7 Plugin lifecycle
+
+Product Extension Host owns discovery, install/remove, enable/disable config, manifest, dependency resolution, permission/capability mapping, fault isolation, version compatibility and restart prompts. V1 changes apply to a new session; ready-session hot reload/unload/replace remains outside the first architecture.
 
 ---
 
 ## 13. Product service data flow
 
 ```mermaid
-flowchart LR
+flowchart TB
     Workbench["Workbench / Editor Session"]
-    Commands["Semantic command facade"]
+    Host["Product Extension Host"]
+    Instrument["Instrument Plugin"]
+    Gateway["ExtensionTransactionGateway"]
     Session["KernelSession"]
     Selectors["Selectors / immutable snapshots"]
-    Guitar["Official Guitar provider"]
-    Layout["Layout service"]
-    Render["SVG Renderer"]
-    Playback["Playback service"]
-    Persistence["Persistence / .bgp package"]
+    LayoutIntent["Semantic Layout Contributions"]
+    Layout["Layout Engine"]
+    Scene["Stable Render Scene"]
+    Renderers["SVG / Canvas / WebGPU / PDF Renderer"]
+    Playback["Playback Provider"]
+    BGP["Mandatory Official BGP Persistence"]
+    Formats["Import / Export / DocumentFormat Providers"]
 
-    Workbench --> Commands --> Session
-    Session --> Selectors --> Workbench
-    Guitar --> Session
-    Selectors --> Layout --> Render --> Workbench
+    Workbench --> Host
+    Host -->|filtered state + user intent| Instrument
+    Instrument -->|DomainChangeProposal| Host
+    Host --> Gateway --> Session
+    Session --> Selectors --> Host
+    Host --> Workbench
+    Instrument --> LayoutIntent --> Layout --> Scene --> Renderers --> Workbench
     Selectors --> Playback
-    Persistence --> Session
-    Session --> Persistence
+    Host -->|save snapshot DTO| BGP
+    BGP -->|opened package DTO| Host
+    Host --> Formats
+    Formats --> Host
 ```
 
-KernelSession owns truth/transactions. Guitar contributes semantic extension behavior. Layout/Playback derive from immutable reads. Renderer renders layout primitives. Persistence calls decode/load and encode/snapshot boundaries and owns package/files. Workbench may cache selection/viewport/input state but cannot become an alternative mutable score.
+### 13.1 Layout and rendering separation
+
+Instrument Plugin describes **what must be represented** using versioned semantic layout contributions such as `StringNumber`, `FretLabel`, `BendCurve` or `TabStaff`. Layout Engine decides position/spacing and produces a renderer-neutral Render Scene. Renderer decides how that scene becomes SVG, Canvas, WebGPU or PDF. Instrument plugins never receive renderer objects or issue `drawLine`/DOM calls.
+
+### 13.2 Service qualification levels
+
+Layout, Renderer, Playback and Import/Export can have replaceable providers behind Product Host ports. Canonical `.bgp` durability is different: Official BGP Persistence is a mandatory qualified product service and the sole V1 owner of save, atomic replacement, autosave/recovery and unknown-extension preservation. Additional `DocumentFormatProvider` implementations do not replace canonical save implicitly.
+
+### 13.3 No second truth
+
+KernelSession owns score truth/transactions. Services and plugins consume immutable/filtered reads and return DTOs/proposals. Workbench may cache selection, viewport and input state but cannot become an alternative mutable score.
+
+### 13.4 Architectural style
+
+Brilliant Guitar is intentionally a hybrid: Microkernel/Plugin Architecture + Domain Model + Ports & Adapters + Command/Handler + CQRS-like read/write separation + Transactional Runtime Core. “Microkernel” does not force Product Host, plugins, persistence or rendering into Kernel Runtime.
 
 ---
 
@@ -590,7 +794,7 @@ Architecture Reset preserves these observable inventories as migration inputs:
 | Contribution ABI | 9 fields |
 | Persisted schema | `brilliant-score-1` |
 
-The accepted TypeScript SDK remains a compatibility/oracle surface. RKP-8 removes it from the live Product ApplicationAssembly when Rust becomes default. RKP-9 may clean obsolete internal transaction code only after differential and qualification acceptance. Public names are not silently deleted.
+The accepted TypeScript Module SDK remains a compatibility/oracle surface for CVN behavior. V2's future public Plugin SDK is a separate Product Extension Host surface and does not reinterpret the old SDK as a privileged instrument API. RKP-8 removes obsolete TypeScript transaction execution from the live Product ApplicationAssembly when Rust becomes default. RKP-9 may clean internal oracle code only after differential and qualification acceptance. Public names remain until an independently versioned compatibility decision.
 
 ---
 
@@ -631,17 +835,17 @@ Accepted CVN caps remain migration inputs. Rust allocations, recursion, callback
 | Stage | Unique deliverable | Default runtime after acceptance |
 |---|---|---|
 | RKP-0 | Current authority, 64-row oracle, qualification method | TypeScript |
-| RKP-1 | Five-crate workspace, contracts, bridge smoke | TypeScript |
+| RKP-1 | Seven-crate workspace, Core Types, contracts and bridge/session smoke | TypeScript |
 | RKP-2 | Indexed LiveScoreStore, load/encode/index parity | TypeScript |
 | RKP-3 | Overlay/ChangeSet and 28 Core commands | TypeScript |
 | RKP-4 | History, selectors/snapshots, events, replay | TypeScript |
-| RKP-5 | Incremental validation and Rust Extension SDK | TypeScript |
-| RKP-6 | Synthetic official providers and integrated assembly | TypeScript |
-| RKP-7 | Full TS/Rust differential and performance gate | TypeScript |
-| RKP-8 | One reviewed commit switches default assembly | Rust |
-| RKP-9 | Qualification V2 and obsolete internal TS-oracle cleanup | Rust |
+| RKP-5 | Incremental validation, Extension Protocol, DeclarativeDomainRules and deterministic WASM contract | TypeScript |
+| RKP-6 | Product-host fixture, two external synthetic Instrument Plugins, FrozenCatalog and KernelSessionComposition | TypeScript |
+| RKP-7 | Full TS/Rust differential, plugin golden-path and performance gate | TypeScript |
+| RKP-8 | One reviewed commit switches the default KernelSession implementation | Rust |
+| RKP-9 | Qualification V2 including migration/namespace/WASM/persistence boundaries and obsolete TS-oracle cleanup | Rust |
 
-RKP-0 remains accepted input. After V2 acceptance, RKP-1 planning must adopt the five-crate split and V2 boundaries through a separate authority-sync; it may not start from the older four-crate proposal unchanged.
+RKP-0 remains accepted input. After V2 acceptance, RKP-1 planning must adopt the seven-crate split and repaired plugin/session boundaries through a separate authority-sync; it may not start from the older four/five-crate proposals unchanged.
 
 ### 16.2 Stage protocol
 
@@ -652,7 +856,7 @@ No long-lived product-visible dual-engine switch exists. TypeScript remains defa
 ### 16.3 Rollback
 
 - RKP-1–RKP-7: abandon/revert new Rust artifacts; TypeScript default never moved.
-- RKP-8: revert the single default-assembly switch to accepted RKP-7.
+- RKP-8: revert the single default-KernelSession switch to accepted RKP-7.
 - RKP-9: cleanup is later than qualification; failure leaves accepted RKP-8 and retained oracle evidence.
 
 ---
@@ -662,7 +866,7 @@ No long-lived product-visible dual-engine switch exists. TypeScript remains defa
 Immediately after RKP-9 acceptance/archive:
 
 ```text
-Official Guitar Domain
+Default Official Guitar Instrument Plugin through the public plugin protocol
 → create one default guitar Part
 → insert ordinary notes/rests
 → attach basic fingering
@@ -675,7 +879,7 @@ Official Guitar Domain
 
 V1 is limited to one default Guitar Part, bounded measures, ordinary note/rest entry, basic string/fret assignment, visible notation/tab, basic playback, save/reopen semantic equality, and undo/redo across the journey.
 
-This is the first real vertical consumer of Core Platform. Until it passes, pause new generic Registry layers, public plugin APIs, advanced techniques, complex engraving, and broad capability frameworks.
+This is the first real vertical consumer of Core Platform and the same protocol later used by Piano, Bass and third parties. The minimum public Plugin SDK required for this one plugin is implemented with the loop; broader marketplace/lifecycle APIs, generic registries, advanced techniques, complex engraving and broad capability frameworks wait until it passes.
 
 ---
 
@@ -685,17 +889,20 @@ This is the first real vertical consumer of Core Platform. Until it passes, paus
 |---|---|---|
 | Rust Core equals Microkernel | Revised | Core Platform has several contexts; only Runtime is microkernel-like. |
 | Kernel owns plugin lifecycle | Superseded | Product Extension Host owns it. |
-| Multiple generic registries | Superseded | KernelProviderAssembly plus Product Application provider directory. |
-| Application Layer all in Rust | Revised | Kernel Use Cases in Rust; Product Application host-side. |
+| Multiple generic registries | Superseded | FrozenKernelContributionCatalog plus Product Application provider directory. |
+| Application Layer all in Rust | Revised | Kernel Use Cases/Composition in `kernel-session`; Product Application host-side. |
 | Note stores time/duration | Rejected | Event/Voice sequence is truth. |
 | Runtime slot forms stable ID | Rejected | EntityId and RuntimeHandle stay separate. |
 | per-Note ExtensionBlock in performance work | Deferred | V1 remains score/Part-owned. |
-| TypeScript and React are both plugin languages | Revised | TypeScript functional; React optional visual. |
+| TypeScript and React are both plugin languages | Revised | TypeScript executes plugin semantics; React is optional visual contribution; deterministic declarative/WASM logic may enter the transaction. |
 | Translate old full-document algorithm into Rust | Rejected | Indexed store/overlay/incremental validation required. |
 | Permanent TS/Rust dual engine | Rejected | RKP-8 cutover, RKP-9 cleanup. |
 | Continue horizontal Kernel work after Rust | Rejected | Guitar Core Loop first. |
 | `PURE_CORE_KERNEL_V1_SCOPE` describes future physical architecture | Historical compatibility name | Retain export; V2 defines physical contexts. |
-| ApplicationAssembly equals private kernel assembly | Rejected | Separate owner, identity, content and failure boundary. |
+| Instrument Domain is a privileged official Rust provider | Rejected | Guitar/Piano/Bass/third-party plugins use the same Product Extension Host protocol. |
+| ApplicationAssembly equals kernel composition | Rejected | Product ApplicationAssembly and KernelSessionComposition have separate owners, identities and failure boundaries. |
+| Every persistence provider may replace `.bgp` | Rejected | Official BGP Persistence is mandatory canonical owner; other formats use provider ports. |
+| Instrument plugin draws through Renderer APIs | Rejected | Semantic Layout Contribution → Layout Engine → Render Scene → Renderer. |
 
 Old documents remain for traceability. Candidate creation does not edit them. A later accepted docs-only sync marks conflicts `historical/superseded` and updates current indexes.
 
@@ -712,12 +919,17 @@ Old documents remain for traceability. Candidate creation does not edit them. A 
 | History | submit/undo/redo; tail truncation; empty cases; 512/32MiB checkpoint; no document copies |
 | Replay | semantic reroute; no stored-effect command input; deterministic state/event |
 | Validation | incremental/full parity; fallback; canonical issues/facts/availability |
-| Providers | frozen order; missing/incompatible; throw/panic/malformed isolation; restricted view/builder |
+| Domain contributions | frozen order; missing/incompatible; throw/panic/malformed isolation; restricted view/builder |
+| Plugin request | Plugin Command/Proposal/Kernel Request separation; stale revision; one recomputation; no Core rebase |
+| Domain validation | Level A/B/C order; declarative/WASM parity; trap/fuel/memory/output caps; zero-delta |
+| Namespace | owner-only writes; collision; declared cross-plugin contribution; missing dependency degradation |
+| Migration | detached pre-session TS/WASM migration; missing plugin preservation; zero partial writable session |
 | Snapshot/event | old snapshot stability; cache; detached aliases; event identity/order/dirty |
 | Boundary | hostile JS; exact Rust decode; no handle/pointer/path/backtrace leaks; FFI caps |
 | Differential | 64-row oracle; 28 commands; 51 exports; SDK 8/34; ABI 9; schema V1 |
 | Performance | 60 FPS; 102,400-Event edit; batch/replay; 10,000 operations; RSS; complexity counters |
 | Product | Guitar edit, fingering, layout, SVG, playback, `.bgp`, reopen, undo/redo |
+| Services | semantic layout chain; renderer replacement; mandatory canonical BGP owner; import/export providers |
 
 ---
 
@@ -891,12 +1103,16 @@ effects
 7. History stores changes, not documents.
 8. Incremental validation is gated by full parity.
 9. Public ordering is semantic, not hash/allocation order.
-10. Official providers never access mutable store.
-11. Public TypeScript plugins never access raw kernel internals.
-12. React contributes views, not score truth.
-13. KernelProviderAssembly and Product ApplicationAssembly have different unique owners.
-14. Product files and plugin lifecycle remain outside Core Platform.
-15. Every RKP stage remains reversible until the one reviewed cutover.
-16. RKP-9 is followed by a real Guitar vertical slice before more horizontal abstraction.
+10. Guitar, Piano, Bass and third-party Instrument Plugins use the same protocol and never access mutable store.
+11. Plugin Semantic Commands execute in Extension Host; Rust receives only fixed data-only requests.
+12. Domain-required writes pass DeclarativeDomainRules or bounded deterministic WASM inside the transaction.
+13. Plugins write only owned namespaces; cross-plugin collaboration uses declared public contributions.
+14. React contributes views, not score truth; Instrument Plugins contribute semantics, not renderer calls.
+15. KernelSessionComposition and Product ApplicationAssembly have different unique owners.
+16. Plugin migrations finish on detached data before a writable session exists.
+17. Official BGP Persistence uniquely owns canonical `.bgp` durability in V1.
+18. Product files and plugin lifecycle remain outside Core Platform.
+19. Every RKP stage remains reversible until the one reviewed cutover.
+20. RKP-9 is followed by a real Guitar Plugin vertical slice before broader horizontal abstraction.
 
 Any future task needing to violate an invariant returns to architecture planning and independent review rather than stretching a stage.
