@@ -11,6 +11,15 @@
 - 当前交付状态: Pure Core Kernel V1 已关闭；Core VNext 的 CVN-0～CVN-6、扩展性预留门禁与 GD-0 均已独立验收归档。CVN-7 已启动，规划与最终 harness 复审均通过 P0/P1/P2=`0/0/0`，资格 harness 实现锚定于 `623f94a`，生产源码相对 `38afdc3` 零差异，冻结前全量回归为 `501/501`；干净的 docs-only 状态同步 HEAD 将作为 runner 要求的相同 candidate/harness commit。单次正式 `--mode all` 测量、最终独立技术审计、CVN-7/Core 父任务验收归档仍待完成。Guitar Domain 生产实现尚未启动。
 - Post-Core 路线状态: `.trellis/tasks/08-11-post-core-official-plugin-product-roadmap/` 已作为 planning-only 父任务建立；它等待 CVN-0～CVN-7 全部独立验收归档，不构成任何官方插件、产品宿主或公共插件生产授权。
 
+## 当前架构权威（Architecture Reset V2）
+
+- 当前架构权威：`.trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/design.md`，内容提交 `e81c739b1452a41a412966ee1f40367476011916`。
+- 独立审计记录：任务 `01a01da3-548c-7513-a53c-0e10d1aa7350`，审计记录提交 `ea574ec4495ac2c82445d1275ad6648035231fc6`，结果 `PASS`，P0/P1/P2=`0/0/0`，清单 `34/34`，typecheck/build/full=`531/531`。
+- Authority sync：`.trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/`；本同步候选仍 `in_progress`/`review-pending`，不构成 RKP-1 创建或生产授权。
+- 产品架构索引规则：本 PRD 与 `.trellis/spec/core-kernel/index.md` 只把 V2 作为 current architecture pointer；四份 `technical/*-architecture.md` 正文保留为 historical/superseded 追溯材料。
+- Rust 迁移目标严格为七 crate：`brilliant-core-types`、`brilliant-score-foundation`、`brilliant-extension-protocol`、`brilliant-kernel-contracts`、`brilliant-kernel-runtime`、`brilliant-kernel-session`、`brilliant-kernel-node`。RKP-1 必须在 authority sync 独立审计/接受后另立 planning task。
+- Kernel Runtime、Kernel Session/Composition、Product ApplicationAssembly、Product Extension Host 各自只有一个 owner；Kernel private identity 与 Product ApplicationAssembly identity 分离。Guitar/Piano/Bass/第三方 Instrument Plugin 平级消费同一公共协议，Guitar Domain 不进入 Rust privileged provider。
+
 ## 产品目标
 
 做一款面向吉他手的工业化、开源打谱软件。它需要覆盖 Guitar Pro 8 类产品的核心能力，但在可扩展性、输入效率、文件结构、二次开发和现代工作流上更进一步。项目按商业级软件质量标准建设，但近期不做商业化变现。

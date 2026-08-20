@@ -36,9 +36,11 @@
     ".trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/",
     ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/",
     ".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/",
-    ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/research/planning-candidate-self-audit.md"
+    ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/research/planning-candidate-self-audit.md",
+    ".trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/design.md",
+    ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/"
   ],
-  "notes": "RUST PERFORMANCE REMEDIATION PLANNING REVIEW PASSED / RKP-0 ACCEPTED AND ARCHIVED AFTER INDEPENDENT IMPLEMENTATION REVIEW PASS 0/0/0 AT 9bc53901a0e205a99865b21c56dc80ff1112f3a7 / PARENT REMAINS PLANNING WITH TASK START FALSE, ACTIVE IMPLEMENTATION CHILD NONE, AND PRODUCTION AUTHORIZATION FALSE / RKP-1 THROUGH RKP-9 ABSENT / CVN-7 FIFTH INPUT EVIDENCE_INVALID / NO RUST OR PRODUCTION IMPLEMENTATION.",
+  "notes": "RUST PERFORMANCE REMEDIATION PLANNING REVIEW PASSED / ARCHITECTURE RESET V2 IS CURRENT AUTHORITY AT E81C739B WITH AUDIT RECORD EA574EC AND PASS 0/0/0, 34/34 / RKP-0 ACCEPTED AND ARCHIVED AFTER INDEPENDENT IMPLEMENTATION REVIEW PASS 0/0/0 AT 9bc53901a0e205a99865b21c56dc80ff1112f3a7 / PARENT REMAINS PLANNING WITH TASK START FALSE, ACTIVE IMPLEMENTATION CHILD NONE, AND PRODUCTION AUTHORIZATION FALSE / RKP-1 THROUGH RKP-9 ABSENT / CVN-7 FIFTH INPUT EVIDENCE_INVALID / NO RUST OR PRODUCTION IMPLEMENTATION.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
@@ -115,6 +117,30 @@
       "verdict": "pass",
       "scope": "five_original_findings_plus_exact_path_owner_direct_regressions"
     },
-    "planning_validation": "trellis_json_jsonl_unique_hierarchy_diffcheck_typecheck_build_full516_protected_delta0"
+    "planning_validation": "trellis_json_jsonl_unique_hierarchy_diffcheck_typecheck_build_full531_protected_delta0",
+    "current_architecture_authority": ".trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/design.md",
+    "current_architecture_authority_content_commit": "e81c739b1452a41a412966ee1f40367476011916",
+    "current_architecture_authority_audit_record_commit": "ea574ec4495ac2c82445d1275ad6648035231fc6",
+    "current_architecture_authority_audit_task": "01a01da3-548c-7513-a53c-0e10d1aa7350",
+    "authority_sync_task": "08-20-brilliant-guitar-architecture-reset-v2-authority-sync",
+    "authority_sync_status": "in_progress_review_pending",
+    "rkp1_creation_gate": "after independent authority-sync audit and acceptance",
+    "rkp1_created": false,
+    "rkp1_started": false,
+    "target_rust_crates": [
+      "brilliant-core-types",
+      "brilliant-score-foundation",
+      "brilliant-extension-protocol",
+      "brilliant-kernel-contracts",
+      "brilliant-kernel-runtime",
+      "brilliant-kernel-session",
+      "brilliant-kernel-node"
+    ],
+    "kernel_runtime_owner": "brilliant-kernel-runtime",
+    "kernel_session_composition_owner": "brilliant-kernel-session",
+    "product_application_assembly_owner": "Product Host",
+    "product_extension_host_owner": "Product Host",
+    "instrument_plugin_protocol_privilege": "equal Guitar/Piano/Bass/third-party consumers; no privileged Guitar Rust provider",
+    "kernel_private_identity_separate_from_product_assembly_identity": true
   }
 }

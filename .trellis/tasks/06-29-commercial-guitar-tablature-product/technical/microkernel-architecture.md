@@ -1,5 +1,7 @@
 # 微内核架构图与模块职责
 
+> **Historical / superseded:** 本文的九类机制与微内核表述属于 Architecture Reset V2 之前的历史架构材料，正文保留用于追溯，不再定义 current crate/owner 边界。当前权威请参阅 [`Architecture Reset V2`](../../08-16-brilliant-guitar-architecture-reset-v2/design.md)；authority-sync 记录见 [`08-20-brilliant-guitar-architecture-reset-v2-authority-sync`](../../08-20-brilliant-guitar-architecture-reset-v2-authority-sync/)。
+
 > **当前 Core 状态（2026-07-26）：** K1-1～K1-6 已验收；K1-6 测试基线 `355512aba4a8057d2d75aa665d74df49cdd2e23c` 在审查基线 `989c1f7a4056b14d3d59918c9b96874ad71591a8` 通过独立验收，8/8 聚焦、169/169 完整测试通过。Pure Core Kernel V1 已正式关闭；第三方模块章节仍是后续路线图并需独立批准。
 
 ## 架构结论

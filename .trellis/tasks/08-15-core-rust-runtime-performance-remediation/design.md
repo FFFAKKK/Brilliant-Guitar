@@ -1,37 +1,42 @@
 # Design — Core Rust Runtime Performance Remediation
 
+> **V2 projection:** This design is a planning projection of accepted Architecture Reset V2, not a replacement architecture. Source: `.trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/design.md` at `e81c739b...`; authority sync: `.trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync`.
+
 ## 1. Transition architecture
 
 ```text
-React visual contributions
+Product Extension Host / public TypeScript facade
         |
-TypeScript Extension Host / future public SDK
-        |
-TypeScript application compatibility facade
-        |  small command/result DTOs only
+Product ApplicationAssembly (Product Host)
+        |  accepted KernelSession factory + small DTO bridge
 Node-API adapter now / Tauri adapter later
         |
-Rust KernelSession
-  - contracts
-  - indexed entity store
+KernelSessionComposition (`brilliant-kernel-session`)
+  - 28 use-case handlers
+  - ExtensionTransactionGateway
+  - FrozenKernelContributionCatalog
+        |
+Kernel Runtime (`brilliant-kernel-runtime`)
+  - live store / indices
   - transaction overlay + ChangeSet
-  - history/replay/events
-  - incremental validation
-  - frozen Rust extension assembly
+  - history/replay/events/validation
 ```
 
-The TypeScript facade preserves the accepted application entry points. It does not remain a second transaction owner. During RKP-1 through RKP-7, the legacy engine remains the product default and is used only as an offline behavioral oracle for the new engine. RKP-8 is the only default-engine switch. RKP-9 removes executable oracle code after qualification.
+The TypeScript facade preserves accepted observable entry points and remains the migration oracle through RKP-7; it is not a second transaction owner. Product ApplicationAssembly is owned by Product Host and has a separate assembly identity from the private KernelSessionComposition identity. During RKP-1 through RKP-7, the legacy engine remains the product default and is used only as an offline behavioral oracle. RKP-8 is the only default-engine switch. RKP-9 removes executable oracle code after qualification.
 
-## 2. Rust crate boundaries
+## 2. Seven Rust crate boundaries
 
 | Crate | Owns | Excludes |
 |---|---|---|
-| `brilliant-kernel-contracts` | Serde shapes for score, commands, results, errors, events, reports | runtime state, UI, file IO |
-| `brilliant-kernel-runtime` | live store, indices, transactions, history, validation, replay | React, Tauri objects, physical IO |
-| `brilliant-kernel-extension-sdk` | source-level manifest and provider traits | raw mutable store, runtime handles, dynamic loading |
-| `brilliant-kernel-node` | native `KernelSession` handle and TS DTO conversion | business ownership, full-document command transfer |
+| `brilliant-core-types` | minimal leaf types, IDs, Fraction and shared value contracts | score semantics, runtime state, plugins |
+| `brilliant-score-foundation` | `ScoreDocument`, semantic schema, migration and score invariants | runtime state, Guitar interpretation, physical IO |
+| `brilliant-extension-protocol` | shared versioned Instrument Plugin/contribution protocol and detached descriptors | privileged Guitar provider, mutable store, runtime state |
+| `brilliant-kernel-contracts` | public command/result/error/event/report DTOs composed from foundation/protocol | runtime state, UI, file IO |
+| `brilliant-kernel-runtime` | live store, indices, overlay/ChangeSet, history cursor, validation, replay and event mechanisms | handlers/use-case catalog, Product Host, UI, physical IO |
+| `brilliant-kernel-session` | KernelSessionComposition, 28 Core handlers/use cases, gateway and frozen private catalog | Product ApplicationAssembly, public Extension Host, mutable duplicate state |
+| `brilliant-kernel-node` | opaque native session handle and small DTO bridge | semantic ownership, second validation/transaction path, full-document command transfer |
 
-The later Tauri host links the runtime crate directly. Node-API exists to preserve the current Node/TypeScript test and integration surface; it is not the public plugin runtime.
+The dependency direction is acyclic: `core-types` is the leaf; Score Foundation and Extension Protocol consume it; Contracts composes the public DTOs; Runtime and Session consume the contracts; Node adapts the accepted Session. The later Tauri host links the accepted session/runtime boundary directly. Node-API exists to preserve the current Node/TypeScript test and integration surface; it is not the public plugin runtime.
 
 ## 3. Runtime state model
 
@@ -84,7 +89,7 @@ RKP-5 cannot accept an incremental validator until a test demonstrates equality 
 
 The Rust SDK exposes versioned source-level traits for manifest, command, effect, validator, classifier and migration providers. Providers receive read-only views and return typed data. Runtime handles and mutable storage are not SDK values. Provider assembly is constructed atomically and frozen for the ready session.
 
-The existing CVN-2 TypeScript callback SDK remains a migration oracle and protected compatibility entry. Official providers move to Rust in RKP-6, RKP-8 removes TypeScript callbacks from the live Product Application Assembly, and RKP-9 may remove the legacy transaction engine/differential runner while retaining `src/core-kernel/module-sdk/index.ts`, its exact 8/34 exports and compile tests. Future public TypeScript plugins use the separate `@brilliant-guitar/extension-sdk` package through the Product Extension Host; React is optional for visual contributions. `.trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/sdk-surface-migration-matrix.md` is the authoritative ownership/disposition table.
+The existing CVN-2 TypeScript callback SDK remains a migration oracle and protected compatibility entry. Instrument Plugins use `brilliant-extension-protocol` equally; no Rust privileged Guitar provider exists. RKP-6 migrates accepted protocol consumers, RKP-8 removes TypeScript callbacks from the live Product ApplicationAssembly, and RKP-9 may remove the legacy transaction engine/differential runner while retaining `src/core-kernel/module-sdk/index.ts`, its exact 8/34 exports and compile tests. Future public TypeScript plugins use a versioned facade through the Product Extension Host. `.trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/sdk-surface-migration-matrix.md` remains the compatibility disposition table.
 
 ## 8. Rollout and rollback
 

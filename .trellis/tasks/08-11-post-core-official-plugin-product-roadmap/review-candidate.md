@@ -1,5 +1,7 @@
 # Independent Planning Review Record
 
+> **V2 authority-sync projection:** this roadmap consumes accepted Architecture Reset V2; the separate sync candidate remains review-pending and no post-Core child is activated by this record.
+
 ## Review scope
 
 - Branch: `codex/post-core-official-plugin-product-roadmap`
@@ -53,3 +55,10 @@ The final independent targeted re-review verified:
 - task status remains `planning`, production authorization and future-child creation remain false, the parent reference is unique, protected production paths are unchanged, and Trellis/diff checks pass.
 
 Final planner verification after the review record was applied: child Trellis implement `15/15` and check `16/16`, product parent implement/check `0/0`, JSON/JSONL and parent/child structure pass, protected production delta is zero, typecheck/build pass and the full baseline is `315/315`.
+
+## V2 synchronization checks
+
+- Core Platform boundaries are consumed from V2; Kernel Runtime and Kernel Session/Composition are not duplicated by this parent.
+- Product Host uniquely owns Product ApplicationAssembly and the future Product Extension Host; their identities are separate from private Kernel identity.
+- Guitar, Piano, Bass and third-party Instrument Plugins are equal consumers of the shared protocol; Guitar Domain is not a privileged Rust provider.
+- RKP-9 remains before this product route; after RKP-9, Guitar Core Loop is first, before broad public plugin expansion.

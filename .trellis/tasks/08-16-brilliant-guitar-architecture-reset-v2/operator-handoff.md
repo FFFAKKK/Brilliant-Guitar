@@ -8,7 +8,11 @@
 - Task: `.trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2`
 - Initial candidate commit: `d9293ee84b1c547af77eeab2cde907a3261c9999`
 - First bounded repair: `812f154e18bafd8cc2cef858be4cfa46603563ed`, `docs(architecture): repair plugin runtime semantics`
-- Current bounded repair: resolve clean HEAD with subject `docs(architecture): close extension preparation contracts`
+- Current audited content: `e81c739b1452a41a412966ee1f40367476011916`
+- Audit-record commit: `ea574ec4495ac2c82445d1275ad6648035231fc6`
+- Independent audit task: `01a01da3-548c-7513-a53c-0e10d1aa7350`, result `PASS`, P0/P1/P2=`0/0/0`, checklist `34/34`, full `531/531`
+- Accepted by user: `2026-08-20`
+- Authority-sync task: `.trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync`
 
 ## What this candidate delivers
 
@@ -24,10 +28,9 @@
 
 ## What it does not deliver
 
-- accepted/current architecture status;
+- further architecture content changes;
 - Rust/Cargo/Node/Tauri/React production code;
 - RKP-1 task or activation;
-- authority synchronization into old documents;
 - Guitar Instrument Plugin/product service/plugin implementation;
 - archive or remote push.
 
@@ -39,14 +42,13 @@ After explicit acceptance, create a separate docs-only authority-sync task/commi
 
 ## Post-acceptance sequence
 
-Only after independent PASS and explicit user acceptance:
+After the independent PASS and explicit user acceptance, the next bounded action is the separate authority-sync task:
 
-1. create a separate docs-only authority-sync candidate;
-2. update the product/Core/Rust/post-Core authority pointers and historical labels;
-3. independently audit and accept that sync;
-4. create only the RKP-1 **planning** child;
-5. review RKP-1 planning;
-6. obtain explicit activation authorization before any Rust production implementation.
+1. synchronize the product/Core/Rust/post-Core authority pointers and historical labels in `08-20...authority-sync`;
+2. independently audit and accept that sync;
+3. create only the RKP-1 **planning** child after that audit/acceptance;
+4. review RKP-1 planning;
+5. obtain explicit activation authorization before any Rust production implementation.
 
 ## RKP execution law after sync
 
@@ -62,7 +64,7 @@ Only after independent PASS and explicit user acceptance:
 
 ## Protected scope
 
-At candidate commit, only the new task directory and the product parent’s single child reference may differ from the base. Any `src/**`, `test/**`, package/tsconfig/Cargo, Rust-parent, post-Core-parent, product PRD or old technical architecture diff is a stop condition.
+The original V2 candidate was limited to its task directory and product-parent child reference. After user acceptance, the separate `08-20...authority-sync` task owns the explicit docs-only allowlist for product/Core/Rust/post-Core pointers and historical banners. Any `src/**`, `test/**`, package/tsconfig/Cargo, `crates/**`, archived RKP-0/CVN path or RKP-1 creation remains a stop condition.
 
 ## Lifecycle flags
 
@@ -70,7 +72,10 @@ At candidate commit, only the new task directory and the product parent’s sing
 status=planning
 task_start_run=false
 production_implementation_authorized=false
-candidate_authority_status=proposed_not_current
+candidate_authority_status=accepted_current_authority
+user_acceptance=accepted_2026-08-20
+authority_sync_task=08-20-brilliant-guitar-architecture-reset-v2-authority-sync
+authority_sync_status=in_progress_review_pending
 independent_architecture_review=passed_on_e81c739b1452a41a412966ee1f40367476011916
 independent_architecture_review_thread=01a01da3-548c-7513-a53c-0e10d1aa7350
 rkp1_created=false

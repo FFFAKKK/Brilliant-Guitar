@@ -38,15 +38,15 @@
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/",
     ".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/"
   ],
-  "notes": "ARCHITECTURE RESET V2 DOCS-ONLY CANDIDATE / BOUNDED REPAIR CLOSES INDEPENDENT KNOWN INVENTORY, GLOBAL READ-ONLY SESSION, CATALOG-ONLY REQUEST POLICY, RUST-OWNED WASM ARTIFACT PREPARATION, PRE-SESSION ORDER, AND UNIQUE RKP-5-TO-RKP-9 OWNERS / DEDICATED CROSS-THREAD AUDIT PASSED EXACT CONTENT COMMIT E81C739B WITH P0-P1-P2 0-0-0 / STATUS REMAINS PLANNING AND AWAITS EXPLICIT USER ACCEPTANCE / CURRENT AUTHORITIES UNCHANGED / RKP-1 NOT CREATED OR STARTED / PRODUCTION DELTA ZERO.",
+  "notes": "ARCHITECTURE RESET V2 ACCEPTED CURRENT ARCHITECTURE AUTHORITY / DEDICATED CROSS-THREAD AUDIT PASSED EXACT CONTENT COMMIT E81C739B WITH P0-P1-P2 0-0-0 AND 34/34 / AUTHORITY SYNC CANDIDATE 08-20 IS IN PROGRESS AND AWAITS INDEPENDENT SYNC AUDIT / RKP-1 NOT CREATED OR STARTED / PRODUCTION DELTA ZERO.",
   "meta": {
     "planning_base_commit": "5e1599598b1468784ae9b7410383ef63b33201b8",
     "planning_branch": "codex/brilliant-guitar-architecture-reset-v2",
     "planning_worktree": ".worktrees/brilliant-guitar-architecture-reset-v2",
     "task_start_run": false,
     "production_implementation_authorized": false,
-    "candidate_authority_status": "proposed_not_current",
-    "current_architecture_authorities_changed": false,
+    "candidate_authority_status": "accepted_current_authority",
+    "current_architecture_authorities_changed": true,
     "independent_architecture_review": "passed_dedicated_cross_thread_on_e81c739b1452a41a412966ee1f40367476011916",
     "formal_cross_thread_architecture_review_run": true,
     "formal_cross_thread_architecture_review": {
@@ -176,6 +176,12 @@
     },
     "push_authorized": false,
     "archive_authorized": false,
-    "authority_sync_authorized": false
+    "authority_sync_authorized": true,
+    "authority_sync_task": "08-20-brilliant-guitar-architecture-reset-v2-authority-sync",
+    "authority_sync_status": "in_progress_review_pending",
+    "user_acceptance": "accepted",
+    "user_acceptance_date": "2026-08-20",
+    "user_acceptance_recorded_by": "source delegation",
+    "authority_sync_audit_required": true
   }
 }

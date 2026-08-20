@@ -1,5 +1,7 @@
 # 软件架构
 
+> **Historical / superseded:** 本文保留 Architecture Reset V2 之前的 Core Kernel + 用户态服务投影，仅用于追溯，不再是 current architecture authority。当前权威请参阅 [`Architecture Reset V2`](../../08-16-brilliant-guitar-architecture-reset-v2/design.md)；authority-sync 记录见 [`08-20-brilliant-guitar-architecture-reset-v2-authority-sync`](../../08-20-brilliant-guitar-architecture-reset-v2-authority-sync/)。
+
 ## 状态
 
 - 状态: 草案，已按当前需求重新设计。

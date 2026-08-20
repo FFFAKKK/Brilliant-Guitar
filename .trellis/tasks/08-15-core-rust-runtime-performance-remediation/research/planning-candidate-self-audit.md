@@ -1,5 +1,12 @@
 # Planning Candidate Self-Audit
 
+## V2 authority-sync projection
+
+- Current architecture authority: `.trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/design.md` at `e81c739b...`; user accepted, independent audit `PASS`, 34/34.
+- Authority-sync candidate: `.trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync`; RKP-1 remains absent until independent sync audit/acceptance.
+- Exact target crates: `brilliant-core-types`, `brilliant-score-foundation`, `brilliant-extension-protocol`, `brilliant-kernel-contracts`, `brilliant-kernel-runtime`, `brilliant-kernel-session`, `brilliant-kernel-node`.
+- Unique owners: Runtime mechanisms=`brilliant-kernel-runtime`; Session/use cases/composition=`brilliant-kernel-session`; Product ApplicationAssembly and Product Extension Host=`Product Host`; Instrument Plugin protocol is equal/no privileged Guitar provider.
+
 ## Verdict
 
 Independent review history is `0/5/0` at `561a2ec`, `0/1/0` at `05df623`, then `0/0/0 PASS` at `9a9f957ce4fcaded8ec87365f0f59f3f621b73da`. The final authority projection changes review metadata only and awaits a last read-only projection check before operator activation.
@@ -18,7 +25,7 @@ Independent review history is `0/5/0` at `561a2ec`, `0/1/0` at `05df623`, then `
 - RKP-1 through RKP-9 task-directory count: 0;
 - typecheck: pass;
 - build: pass;
-- full tests: 516 / 516;
+- full tests: 531 / 531;
 - `git diff --check`: pass;
 - protected production/test/build-config/post-Core/archive delta: empty;
 - task states: parent and child `planning`;

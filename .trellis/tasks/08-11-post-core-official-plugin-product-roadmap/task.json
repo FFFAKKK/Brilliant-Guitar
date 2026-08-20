@@ -31,7 +31,9 @@
     ".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/research/roadmap-sync-matrix.md",
     ".trellis/tasks/06-29-commercial-guitar-tablature-product/prd.md",
     ".trellis/tasks/06-29-commercial-guitar-tablature-product/task.json",
-    ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-roadmap-and-stage-plan.md"
+    ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-roadmap-and-stage-plan.md",
+    ".trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/design.md",
+    ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/"
   ],
   "notes": "PLANNING REVIEW PASSED P0/P1/P2=0/0/0; PARENT REMAINS PLANNING ONLY. Core VNext remains the active priority. This parent freezes the post-CVN-7 sequence: Official Guitar Domain, official product services, product host/Guitar Core Loop, product qualification, then public visual and functional plugins. Do not start this parent or create implementation children before accepted and archived CVN-0 through CVN-7 plus explicit user approval.",
   "meta": {
@@ -59,8 +61,23 @@
       "tsconfig.json"
     ],
     "runtime_hot_plug": false,
-    "application_assembly_owner": "workbench-editor-session-v1",
+    "application_assembly_owner": "Product Host / workbench-editor-session-v1",
     "application_assembly_result": "atomic_ready_or_failed_zero_partial_session",
+    "current_architecture_authority": ".trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/design.md",
+    "current_architecture_authority_content_commit": "e81c739b1452a41a412966ee1f40367476011916",
+    "current_architecture_authority_audit_record_commit": "ea574ec4495ac2c82445d1275ad6648035231fc6",
+    "current_architecture_authority_audit_task": "01a01da3-548c-7513-a53c-0e10d1aa7350",
+    "authority_sync_task": "08-20-brilliant-guitar-architecture-reset-v2-authority-sync",
+    "authority_sync_status": "in_progress_review_pending",
+    "core_platform_owner": "Brilliant Core Platform",
+    "kernel_runtime_owner": "brilliant-kernel-runtime",
+    "kernel_session_composition_owner": "brilliant-kernel-session",
+    "product_application_assembly_owner": "Product Host / workbench-editor-session-v1",
+    "product_extension_host_owner": "Product Host / future public-extension-platform-v1",
+    "instrument_plugin_protocol": "shared equal protocol for Guitar/Piano/Bass/third-party",
+    "guitar_domain_rust_privilege": "none",
+    "kernel_private_identity_separate_from_product_assembly_identity": true,
+    "post_rkp_first_product_loop": "guitar-core-loop-integration-v1",
     "lineage_convergence_before": "cvn-6",
     "merge_into_dirty_cvn2_candidate": false,
     "independent_planning_review_initial": {

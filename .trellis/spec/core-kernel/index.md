@@ -1,5 +1,9 @@
 # Core Kernel Guidelines
 
+> **Current architecture authority (2026-08-20):** Architecture Reset V2 is accepted by the user and is the current architecture authority at [`.trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/design.md`](../../tasks/08-16-brilliant-guitar-architecture-reset-v2/design.md), audited content commit `e81c739b1452a41a412966ee1f40367476011916`, audit task `01a01da3-548c-7513-a53c-0e10d1aa7350`, audit-record commit `ea574ec4495ac2c82445d1275ad6648035231fc6`, result `PASS`, P0/P1/P2=`0/0/0`, checklist `34/34`. The separate pointer synchronization task is `.trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync` and remains `review-pending` pending independent sync audit.
+>
+> **Contract/oracle boundary:** This index and the active TypeScript Core specs remain the current TypeScript observable contracts and migration/differential oracle (`28/51/8/34/9`, `brilliant-score-1`, failure/event facts and zero-delta behavior). They do not authorize a Rust cutover, do not define the V2 internal crate graph, and do not make Guitar Domain a Rust privileged provider. The V2 seven-crate projection and owner boundaries are authoritative for future planning; implementation still requires separate RKP stage authorization.
+
 > **Current staged workflow (2026-08-10):** Pure Core Kernel V1 is accepted and closed. Core VNext CVN-0/CVN-1/CVN-3/CVN-4, the extensibility reservation gate, and the GD-0 documentation/architecture contract are accepted. CVN-2 is now the next dependency-satisfied planning gate but still requires separate approval; Guitar-owned work remains post-CVN-7.
 > K1-6 test baseline `355512aba4a8057d2d75aa665d74df49cdd2e23c` passed 8/8 focused and 169/169 full tests and was independently accepted at review baseline `989c1f7a4056b14d3d59918c9b96874ad71591a8` on 2026-07-26. Pure Core Kernel V1 is formally closed; Guitar Domain and product implementation require separate planning and approval.
 

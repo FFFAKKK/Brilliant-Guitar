@@ -1,5 +1,7 @@
 # 项目架构
 
+> **Historical / superseded:** 本文是 Architecture Reset V2 之前的项目结构草案，仅用于追溯，正文保留但不再作为 current architecture authority。当前权威请参阅 [`Architecture Reset V2`](../../08-16-brilliant-guitar-architecture-reset-v2/design.md)；authority-sync 记录见 [`08-20-brilliant-guitar-architecture-reset-v2-authority-sync`](../../08-20-brilliant-guitar-architecture-reset-v2-authority-sync/)。
+
 ## 状态
 
 - 状态: 草案

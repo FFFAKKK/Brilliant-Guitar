@@ -1,18 +1,20 @@
 # Post-Core 官方插件与产品路线设计
 
+> **V2 authority projection:** The current architecture is `.trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/design.md` at `e81c739b...`, independently audited PASS (`01a01da3...`, 34/34). This roadmap consumes V2; its sync task is `.trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync`.
+
 ## 1. 设计目的
 
 本设计把“内核扩展性优先、官方插件随后、产品闭环再后、公共插件最终开放”固化为可执行的层次、数据流和依赖合同。它只定义未来边界，不批准生产实现。
 
-## 2. 五层架构
+## 2. V2 五层产品投影与唯一 owner
 
 ```mermaid
 flowchart TD
-  Core["Layer 1: Core Kernel\nScoreDocument / Command / Transaction / Snapshot / Event / Module Runtime"]
-  Domain["Layer 2: Official Domain Plugins\nGuitar Domain first"]
+  Core["Layer 1: Brilliant Core Platform\nScore Foundation / Contracts / Runtime / Session"]
+  Domain["Layer 2: Equal Instrument Plugins\nGuitar / Piano / Bass / third-party"]
   Services["Layer 3: Official Product Services\nLayout / Renderer / Playback / Persistence / Export"]
-  Host["Layer 4: Product Host\nDesktop / Workbench / Editor Session / Application Assembly / future Extension Host"]
-  Public["Layer 5: Public Plugins\nVisual and functional contributions"]
+  Host["Layer 4: Product Host\nApplicationAssembly / Workbench / Editor Session"]
+  Public["Layer 5: Product Extension Host\nversioned public visual/functional facade"]
 
   Domain --> Core
   Services --> Core
@@ -23,7 +25,17 @@ flowchart TD
   Public --> Host
 ```
 
-依赖箭头表示调用稳定公开合同。Core 不导入上层包；具体领域、平台、视觉、播放和物理 IO 始终位于 Core 外。公共插件只进入产品宿主的 Extension Host/versioned facade，由宿主映射到已批准 Core 或产品贡献合同，不直接访问 raw Core Registry。
+依赖箭头表示调用稳定公开合同。Core Platform 不导入上层包；具体领域、平台、视觉、播放和物理 IO 始终位于 Core 外。公共插件只进入 Product Host 的 Product Extension Host/versioned facade，由宿主映射到已批准 Core 或产品贡献合同，不直接访问 raw Core Registry。
+
+| V2 boundary | Unique owner | Identity rule |
+|---|---|---|
+| Kernel Runtime mechanisms | `brilliant-kernel-runtime` | private runtime state and kernel identity only |
+| Kernel Session / Composition | `brilliant-kernel-session` | one composition root, 28 handlers, gateway and private catalog |
+| Product ApplicationAssembly | Product Host / `workbench-editor-session-v1` | separate application assembly identity/fingerprint |
+| Product Extension Host | Product Host / future public-extension child | separate public facade identity; no kernel private state |
+| Instrument Plugin protocol | `brilliant-extension-protocol` | Guitar/Piano/Bass/third-party equal consumers; no privileged Guitar path |
+
+`KernelSessionComposition` and `Product ApplicationAssembly` each return atomic `ready | failed`; their identities never substitute for one another. The old `Core Kernel` name in this roadmap is a product projection label, not a second owner.
 
 ## 3. Core 完成边界
 

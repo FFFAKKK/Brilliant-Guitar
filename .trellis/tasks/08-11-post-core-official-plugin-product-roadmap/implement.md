@@ -1,10 +1,13 @@
 # Post-Core 官方插件与产品路线执行计划
 
+> **V2 authority:** consume accepted Architecture Reset V2 and the independently audited authority-sync result. `RKP-9` remains the Rust qualification boundary; only after it passes does the product route begin with the accepted official Instrument Plugin/Product Host contracts and then the Guitar Core Loop.
+
 ## 0. 当前交接状态
 
 - 本父任务状态固定为 `planning`。
 - 当前直接动作仍是完成 CVN-2 独立实现复审、提交、验收和归档。
 - post-Core 生产动作等待 CVN-0 至 CVN-7 全部独立验收归档。
+- V2 Rust stages RKP-1～RKP-9 are owned by the separate Rust remediation parent; this parent does not create or implement them.
 - 本父任务不是实现 target；每个交付物都由未来独立 child task 拥有。
 
 ## 1. 当前规划工件收尾
@@ -48,9 +51,9 @@
 
 所有 child 必须保持：一个谱面真相、一个 CommandBus/transaction/history/replay/event owner、模块读取冻结数据、模块写入语义化、未知 extension 保真。
 
-## 4. Child 1 — Official Guitar Domain V1
+## 4. Child 1 — Official Guitar Instrument Plugin / Domain V1
 
-建议 slug：`official-guitar-domain-v1`。
+建议 slug：`official-guitar-domain-v1`。Guitar 是第一位实现者，但必须与 Piano、Bass 和第三方 Instrument Plugin 使用同一 `brilliant-extension-protocol`，不获得 Rust privileged provider。
 
 ### 实施前研究
 
@@ -120,9 +123,9 @@
 
 建议 slug：`workbench-editor-session-v1`。
 
-依赖：File/Persistence、Layout、Renderer、Playback、Guitar Domain、Core commands。
+依赖：File/Persistence、Layout、Renderer、Playback、Guitar Instrument Plugin、Core commands。
 
-交付：Desktop/Workbench 入口、Editor Session、cursor/selection、Input Controller、命令面板、快捷键、属性检查器、状态栏、打开/保存/恢复绑定、播放 transport/cursor 绑定、未来 Export contribution port、简中/英文和可读错误定位；同时唯一拥有 Application Assembly、官方 Core/Domain/service-provider 目录、稳定 session identity/assembly fingerprint 和原子 `ready | failed` 装配结果。
+交付：Desktop/Workbench 入口、Editor Session、cursor/selection、Input Controller、命令面板、快捷键、属性检查器、状态栏、打开/保存/恢复绑定、播放 transport/cursor 绑定、未来 Export contribution port、简中/英文和可读错误定位；同时唯一拥有 Product ApplicationAssembly、官方 Core/Instrument Plugin/service-provider 目录、稳定 application assembly identity/fingerprint 和原子 `ready | failed` 装配结果。Product Extension Host 由 Product Host 的后续 public-extension child 唯一拥有，不进入 Kernel Runtime/Session。
 
 退出门：用户仅使用键盘可完成四小节核心编辑、保存重开和播放校对；所有谱面改变映射到已注册语义命令；UI 会话状态不持久化到 ScoreDocument；缺失、重复、不兼容或初始化失败的 required provider 发布零会话和零部分目录；成功装配深冻结 provider 集合，ready 后无法改变贡献集合。
 
@@ -130,7 +133,7 @@
 
 建议 slug：`pdf-png-export-v1`。
 
-依赖：Layout、Renderer、已接受的 Workbench contribution API。
+依赖：Layout、Renderer、已接受的 Product Host contribution API；Product Extension Host 仍由其未来唯一 owner 管理。
 
 交付：页面模型、PDF/PNG 输出、Workbench 调用 contribution、忙碌/进度/结果、golden fixture 和失败状态隔离。
 
@@ -140,7 +143,7 @@
 
 建议 slug：`guitar-core-loop-integration-v1`。
 
-依赖：Child 1～7 全部接受归档，其中 Child 6 已提供 accepted Application Assembly，Child 7 已提供 accepted Export provider。
+依赖：Child 1～7 全部接受归档，其中 Child 6 已提供 accepted Product ApplicationAssembly，Child 7 已提供 accepted Export provider；RKP-9 已完成资格并未把公共插件平台提前激活。
 
 唯一验收旅程：
 

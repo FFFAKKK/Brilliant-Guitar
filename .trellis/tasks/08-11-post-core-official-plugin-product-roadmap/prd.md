@@ -1,5 +1,7 @@
 # Post-Core 官方插件与产品路线 PRD
 
+> **Current architecture authority:** accepted Architecture Reset V2 at `.trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/design.md` (`e81c739b...`; audit `01a01da3...`, PASS, 34/34). This parent is synchronized by `.trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync` and remains planning-only/review-pending.
+
 ## 状态与权威
 
 - 状态：`planning`。
@@ -7,17 +9,30 @@
 - 当前基线：`faaf424cf370bbf055ad2cf9862e472a50edc22f`。
 - 当前优先级：继续完成 CVN-2、CVN-6、CVN-5、CVN-7；本任务在 CVN-7 独立验收归档前保持未激活。
 - 实施边界：本任务本身只维护路线、合同、子任务映射和最终集成门；生产实现必须由后续独立子任务拥有。
+- 当前架构指针：V2 是唯一 current architecture authority；本文件的旧五层文字仅在明确映射到 V2 owner 时继续作为路线说明。
 
 ## 目标
 
 在不扩大 Core VNext 范围的前提下，固定以下长期交付顺序，并为后续操作者提供无歧义的进入条件、依赖、职责和验收边界：
 
-`完整内核 → 官方插件 → 产品宿主与 Guitar Core Loop → 产品资格门 → 公共视觉与功能插件生态`
+`Core Platform/RKP-9 → equal Instrument Plugins → Product Host/Guitar Core Loop → Product Qualification → Product Extension Host/public plugins`
 
 本任务要保护两项同等重要的长期资产：
 
 1. 内核扩展性本身属于 Core 完成定义，必须先做到稳定、统一、可度量；
 2. 完整软件随后通过官方插件和产品宿主消费该内核，而不是把具体吉他、视觉、播放或文件实现重新塞回 Core。
+
+## Architecture Reset V2 边界同步
+
+| Boundary | 唯一 owner | 关键禁止事项 |
+|---|---|---|
+| Core Platform / Kernel Runtime mechanisms | `brilliant-kernel-runtime` | 不拥有 Product Host、插件宿主或 Guitar 私有业务 |
+| Kernel Session / Composition / 28 use cases | `brilliant-kernel-session` | 不重建 Product ApplicationAssembly，不形成第二状态/事务 owner |
+| Product ApplicationAssembly | Product Host / `workbench-editor-session-v1` | 不把 Kernel private identity 当作应用 assembly identity |
+| Product Extension Host | Product Host / `public-extension-platform-v1` future child | 不暴露 raw Registry、裸事件总线或 mutable ScoreDocument |
+| Instrument Plugin protocol | `brilliant-extension-protocol` shared public contract | Guitar/Piano/Bass/third-party 平级；Guitar 不获得 Rust privileged provider |
+
+`KernelSessionComposition` 与 `Product ApplicationAssembly` 各自返回原子 `ready | failed` 结果，并拥有不同 identity。RKP-9 完成后先进入 Guitar Core Loop；公共 Extension Host/marketplace/广泛 plugin API 仍在其后。
 
 ## 已确认事实
 

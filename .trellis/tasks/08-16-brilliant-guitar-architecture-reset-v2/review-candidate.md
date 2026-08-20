@@ -2,7 +2,7 @@
 
 ## Candidate status
 
-**Status: `DEDICATED CROSS-THREAD ARCHITECTURE REVIEW PASSED — AWAITING EXPLICIT USER ACCEPTANCE`.** Dedicated audit task `01a01da3-548c-7513-a53c-0e10d1aa7350` reviewed exact content commit `e81c739b1452a41a412966ee1f40367476011916` and returned `PASS`, P0/P1/P2=`0/0/0`. The task remains `planning`; this record does not promote V2, synchronize authorities or authorize RKP-1.
+**Status: `DEDICATED CROSS-THREAD ARCHITECTURE REVIEW PASSED — USER ACCEPTED — AUTHORITY SYNC IN PROGRESS`.** Dedicated audit task `01a01da3-548c-7513-a53c-0e10d1aa7350` reviewed exact content commit `e81c739b1452a41a412966ee1f40367476011916` and returned `PASS`, P0/P1/P2=`0/0/0`, checklist `34/34`. User acceptance is recorded on `2026-08-20`; separate authority-sync task `.trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync` is now the only task allowed to update pointers and historical labels. RKP-1 remains uncreated and unauthorized pending independent sync audit.
 
 ## Exact review input
 
@@ -101,8 +101,9 @@ Latest inventory/preparation bounded-repair evidence:
 - Formal independent architecture review: `PASS on e81c739b1452a41a412966ee1f40367476011916`, P0/P1/P2=`0/0/0`.
 - Dedicated audit task: `01a01da3-548c-7513-a53c-0e10d1aa7350`; read-only final verdict received.
 - Advisory subagent result: `not formal evidence; four reproduced planning findings consumed`.
-- V2 current authority: `false`.
+- V2 current authority: `true` after user acceptance; synchronized pointers remain `review-pending` until the separate sync audit.
+- Authority-sync task: `.trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync`.
 - Production implementation authorization: `false`.
 - RKP-1 created/started: `false/false`.
 - Archive/push: `false/false`.
-- Next gate: explicit user acceptance before any authority-sync task or RKP-1 planning/implementation action.
+- Next gate: independent audit and acceptance of the authority-sync candidate before any RKP-1 planning/implementation action.

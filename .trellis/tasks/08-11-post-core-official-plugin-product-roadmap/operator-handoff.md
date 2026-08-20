@@ -1,5 +1,7 @@
 # Operator Handoff — Post-Core Official Plugin and Product Roadmap
 
+> **Current architecture authority:** accepted Architecture Reset V2 at `.trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/design.md` (`e81c739b...`, audit `01a01da3...`, PASS, 34/34). Authority sync is `.trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync`; this parent remains `planning` and must not activate before its independent sync audit.
+
 ## Planning branch
 
 - Branch: `codex/post-core-official-plugin-product-roadmap`
@@ -13,6 +15,8 @@
 
 - durable Core-first hierarchy;
 - official plugin and product-host responsibility split;
+- V2 Core Platform / Kernel Runtime / Kernel Session and Product Host / Product Extension Host owner split;
+- equal Guitar/Piano/Bass/third-party Instrument Plugin protocol with no privileged Guitar Rust provider;
 - product-layer gap audit;
 - exact child sequence and dependencies;
 - CVN-7 activation stop;
@@ -36,7 +40,7 @@ Keep this parent task in `planning`. Do not run `task.py start` on the parent. D
 
 After CVN-7 closes and the user approves the next stage:
 
-1. return to this parent task;
+1. verify RKP-9 qualification and return to this parent task;
 2. verify all gates in `implement.md` section 2;
 3. create only `official-guitar-domain-v1` as the first child;
 4. plan and independently review that child before implementation activation.
@@ -47,7 +51,7 @@ After CVN-7 closes and the user approves the next stage:
 - one CommandBus/transaction/history/replay/dirty/event owner;
 - Core remains free of Guitar/UI/render/playback/physical IO dependencies;
 - official modules read detached state and write through semantic commands;
-- `workbench-editor-session-v1` uniquely owns Application Assembly; assembly failure publishes no session/partial provider catalog and ready sessions keep a fixed contribution set;
+- `workbench-editor-session-v1` uniquely owns Product ApplicationAssembly; Product Host also owns the future Product Extension Host; assembly failure publishes no session/partial provider catalog and ready sessions keep a fixed contribution set; Kernel private identity and application assembly identity remain separate;
 - future public plugins enter through an Extension Host/versioned facade and never raw Registry, bare event bus or mutable ScoreDocument access;
 - public visual/functional plugin work remains after the official product loop and Product Qualification.
 

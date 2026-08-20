@@ -1,5 +1,7 @@
 # Independent Planning Review Candidate
 
+> **Authority projection under sync:** accepted Architecture Reset V2 is the current architecture source. This parent must use the exact seven-crate graph and unique Runtime/Session/Product Host owners; the authority-sync task remains independently review-pending.
+
 Status: `INDEPENDENT PLANNING REVIEW PASSED / READY FOR RKP-0 OPERATOR HANDOFF`.
 
 Review history: `561a2ec` returned `0/5/0`; `05df623` returned `0/1/0`; the exact-path repair at `9a9f957ce4fcaded8ec87365f0f59f3f621b73da` passed `0/0/0`. The final authority-projection commit changes only review metadata and requires one final read-only projection check before operator activation.
@@ -10,12 +12,12 @@ Review history: `561a2ec` returned `0/5/0`; `05df623` returned `0/1/0`; the exac
 2. The plan changes the internal runtime while preserving accepted application behavior.
 3. Persisted identity, runtime handle and musical location remain separate.
 4. Ordinary edits have explicit zero-full-scan/clone/validation/snapshot complexity gates.
-5. Official Rust SDK and future public TypeScript/React plugin surfaces have distinct owners.
-6. Only RKP-0 exists; RKP-1 through RKP-9 remain uncreated.
+5. `brilliant-extension-protocol` is shared by equal Instrument Plugin consumers; future public TypeScript/React contributions have a Product Extension Host owner, with no privileged Guitar Rust provider.
+6. The exact seven crates are a V2 planning projection only; only RKP-0 exists and RKP-1 through RKP-9 remain uncreated.
 7. Planner/operator/auditor roles and stop points are enforceable.
 8. RKP-8 is the only product-default switch; no permanent dual runtime ships.
 9. Production, test and build-config paths have zero planning-candidate delta.
-10. The 64 literal scenario rows, manifest fixture fields, exact CVN-2 SDK names, percentile method and closed RKP-0 path list resolve every first-review P1 without widening production scope.
+10. The 64 literal scenario rows, manifest fixture fields, exact CVN-2 SDK names, percentile method, closed RKP-0 path list and V2 authority pointer resolve every first-review P1 without widening production scope.
 
 ## RKP-0 acceptance projection — 2026-08-15
 

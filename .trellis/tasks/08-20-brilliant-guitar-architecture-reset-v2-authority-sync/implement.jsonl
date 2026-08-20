@@ -1,0 +1,5 @@
+{"file":".trellis/spec/core-kernel/index.md","reason":"Current TypeScript Core contract index must point to accepted Architecture Reset V2 and be labeled migration-oracle/observable-contract authority."}
+{"file":".trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/design.md","reason":"Accepted V2 source architecture and exact seven-crate/owner contract."}
+{"file":".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/research/authority-sync-matrix.md","reason":"Complete old-authority disposition, owner, retention and rollback matrix for this sync."}
+{"file":".trellis/tasks/08-15-core-rust-runtime-performance-remediation/research/stage-dependency-and-rollback-map.md","reason":"Rust RKP stage ownership and rollback projection to V2."}
+{"file":".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/research/roadmap-sync-matrix.md","reason":"Post-Core boundary and roadmap synchronization evidence."}

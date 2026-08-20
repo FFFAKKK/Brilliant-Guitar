@@ -1,5 +1,7 @@
 # Implementation Plan — Core Rust Runtime Performance Remediation
 
+> **Authority:** consume accepted Architecture Reset V2 and the authority-sync result before creating RKP-1. The V2 target is exactly seven crates; this parent remains planning-only.
+
 ## Global operating rule
 
 Only one implementation child may be active. Each child is planned, independently reviewed, implemented by an operator, independently audited, accepted and archived before the planner creates the next child.
@@ -14,9 +16,9 @@ Only one implementation child may be active. Each child is planned, independentl
 
 **Rollback:** revert the RKP-0 docs/test-only commit; `b21540fa` remains the unchanged runtime baseline.
 
-## Stage 1 — Rust workspace, contract crate and Node-API smoke
+## Stage 1 — Seven-crate Rust workspace, contracts and Node-API smoke
 
-Create only after RKP-0 archive. Pin the Rust toolchain, create the four-crate workspace, encode/decode the accepted DTOs, and prove one native session create/read smoke path. TypeScript remains default.
+Create only after RKP-0 archive and independent authority-sync acceptance. Pin the Rust toolchain, create exactly `brilliant-core-types`, `brilliant-score-foundation`, `brilliant-extension-protocol`, `brilliant-kernel-contracts`, `brilliant-kernel-runtime`, `brilliant-kernel-session` and `brilliant-kernel-node`, encode/decode the accepted DTOs, and prove one native session create/read smoke path. TypeScript remains default.
 
 ## Stage 2 — Indexed entity store
 
@@ -30,13 +32,13 @@ Create only after RKP-2 archive. Port ordered effects, atomic batch adoption, in
 
 Create only after RKP-3 archive. Implement vector+cursor history, undo/redo, checkpoints, cached projections, dirty state, event sequence and semantic replay parity.
 
-## Stage 5 — Incremental validation and Rust Extension SDK
+## Stage 5 — Incremental validation and Extension Protocol
 
-Create only after RKP-4 archive. Implement dependency closures, full-validation parity checks, profile/compatibility and versioned source-built provider traits.
+Create only after RKP-4 archive. Implement dependency closures, full-validation parity checks, profile/compatibility and the versioned `brilliant-extension-protocol` request/descriptor/validation/WASM preparation contracts. No privileged Guitar provider is introduced.
 
-## Stage 6 — Official module migration
+## Stage 6 — Kernel Session composition and equal protocol consumers
 
-Create only after RKP-5 archive. Port the accepted official-module behavior and both CVN-6 synthetic modules to Rust providers, retaining deterministic assembly, caps, migration and failure semantics.
+Create only after RKP-5 archive. Implement the `brilliant-kernel-session` composition root, gateway, catalog/inventory/migration behavior and both synthetic Instrument Plugin consumers, retaining deterministic assembly, caps, migration and failure semantics. Guitar/Piano/Bass/third-party consumers use the same protocol; no Guitar privileged path is added.
 
 ## Stage 7 — Complete differential gate
 
@@ -64,7 +66,7 @@ npm.cmd run build
 npm.cmd test
 ```
 
-Also verify JSON/JSONL parse, unique parent/child references, `status=planning`, authorization flags false, and zero relative delta under production/test/build-config paths.
+Also verify JSON/JSONL parse, unique parent/child references, `status=planning`, authorization flags false, V2 authority-sync acceptance before RKP-1 creation, exact seven-crate wording, and zero relative delta under production/test/build-config paths.
 
 ## RKP-0 acceptance/archive projection — 2026-08-15
 

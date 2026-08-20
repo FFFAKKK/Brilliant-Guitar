@@ -1,10 +1,17 @@
 # Current Authority and Hot-Path Audit
 
+## Architecture authority after V2 acceptance
+
+- Current architecture authority: `.trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/design.md` at `e81c739b...`, independently audited by `01a01da3...` with `PASS`, P0/P1/P2=`0/0/0`, 34/34.
+- Current TypeScript implementation/specs: observable migration oracle only; active specs remain authoritative for accepted behavior until a separately accepted Rust stage changes implementation.
+- Authority sync: `.trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync`; RKP-1 must consume its independently audited/accepted result and is not created here.
+- Rust target: exactly seven crates; Kernel Runtime owns mechanisms, Kernel Session owns use cases/composition, Product Host owns ApplicationAssembly/Extension Host, and Instrument Plugins are equal protocol consumers.
+
 ## Live baseline
 
 - Worktree source: clean `codex/cvn-7-core-vnext-final-qualification`
 - HEAD: `b21540fa3636e6c8e827ff24c2099f4ff331285d`
-- Current baseline tests: typecheck/build pass, CVN-7 `84/84`, full `516/516`
+- Current baseline tests: typecheck/build pass, CVN-7 `84/84`, full `531/531`
 - Current application runtime exports: 51
 - Current Core commands: 28
 - Current Module SDK: the exact 8 runtime / 34 type names frozen in `.trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/sdk-surface-migration-matrix.md`
