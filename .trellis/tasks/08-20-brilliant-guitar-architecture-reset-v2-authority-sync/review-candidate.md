@@ -45,3 +45,11 @@ P0/P1/P2 = 0/0/0
 ```
 
 or return only a bounded docs finding with exact file/line and no lifecycle advancement. The candidate remains `in_progress`/`review-pending` until that independent sync result is recorded by the next actor.
+
+## Independent sync audit return and bounded repair candidate
+
+- Audit task: `01a01de4-f187-73d0-b1f0-c37f67b6a467`.
+- Returned verdict: `RETURN FOR BOUNDED AUTHORITY-SYNC REPAIR`, P0/P1/P2=`0/2/0`.
+- P1-1 is repaired in the product parent PRD/task: latest CVN-7 official evidence is `EVIDENCE_INVALID`; targeted qualification measurement-contract preflight rereview is the next gate, and only a passing rereview permits a new complete official `--mode all` measurement.
+- P1-2 is repaired in the post-Core PRD/matrix: current accepted Core is `28/51/8/34/9`; `25` is explicitly CVN-4 historical-only.
+- The targeted rereview remains pending. This repair does not alter Architecture Reset V2 normative content, historical architecture bodies, Rust crate/owner/plugin boundaries, production code, archived CVN/RKP-0 inputs or lifecycle authorization.

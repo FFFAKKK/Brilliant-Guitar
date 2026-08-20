@@ -40,7 +40,7 @@
     ".trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/design.md",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "AUTHORITY SYNC CANDIDATE / V2 ACCEPTED BY USER AFTER INDEPENDENT AUDIT PASS ON E81C739B / AUDIT RECORD EA574EC / STATUS IN_PROGRESS WITH REVIEW_PENDING SYNC AUDIT / PRODUCTION IMPLEMENTATION, RKP-1, ARCHIVE AND PUSH FALSE.",
+  "notes": "AUTHORITY SYNC CANDIDATE / V2 ACCEPTED BY USER AFTER INDEPENDENT AUDIT PASS ON E81C739B / AUDIT RECORD EA574EC / INDEPENDENT SYNC AUDIT 01A01DE4 RETURNED BOUNDED REPAIR P0/P1/P2=0/2/0 / STATUS IN_PROGRESS WITH REVIEW_PENDING TARGETED REREVIEW / PRODUCTION IMPLEMENTATION, RKP-1, ARCHIVE AND PUSH FALSE.",
   "meta": {
     "base_head": "ea574ec4495ac2c82445d1275ad6648035231fc6",
     "task_start_run": true,
@@ -69,6 +69,11 @@
       "brilliant-kernel-node"
     ],
     "protected_production_delta": 0,
-    "sync_matrix": ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/research/authority-sync-matrix.md"
+    "sync_matrix": ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/research/authority-sync-matrix.md",
+    "last_independent_sync_audit_task": "01a01de4-f187-73d0-b1f0-c37f67b6a467",
+    "last_independent_sync_audit_result": "RETURN FOR BOUNDED AUTHORITY-SYNC REPAIR",
+    "last_independent_sync_audit_findings": "P0/P1/P2=0/2/0; P1-1 product CVN-7 status projection; P1-2 post-Core 25/28 historical snapshot wording",
+    "bounded_repair_status": "targeted_rereview_pending",
+    "bounded_repair_commit_subject": "docs(architecture): repair authority sync status facts"
   }
 }

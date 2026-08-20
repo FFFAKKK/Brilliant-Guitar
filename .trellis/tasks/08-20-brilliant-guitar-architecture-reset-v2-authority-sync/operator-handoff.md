@@ -25,3 +25,11 @@
 The next actor must review the exact candidate commit and its allowlist diff. Focus on: V2 is the only current architecture authority; active TS specs are oracle/observable contracts; the seven crate names and dependency direction are exact; Kernel Runtime, Kernel Session/Composition, Product ApplicationAssembly and Product Extension Host each have one owner; private kernel identity is separate from application assembly identity; Instrument Plugins are equal protocol consumers; RKP-1 is absent; RKP-9 still leads to Guitar Core Loop; and no archived RKP-0/CVN or production path changed.
 
 If the sync audit returns findings, repair only the named docs and rerun all gates. Do not archive, push, activate RKP-1 or implement production code in the repair.
+
+## Independent sync audit return — bounded repair
+
+- Audit task: `01a01de4-f187-73d0-b1f0-c37f67b6a467`.
+- Verdict: `RETURN FOR BOUNDED AUTHORITY-SYNC REPAIR`, P0/P1/P2=`0/2/0`.
+- P1-1: product parent PRD/task had the obsolete “next formal mode-all measurement” snapshot. It now records latest official evidence `EVIDENCE_INVALID` and the next gate as qualification measurement contract targeted preflight rereview before any new complete official measurement.
+- P1-2: post-Core had the obsolete `25` current / `28` final wording. It now records current accepted `28/51/8/34/9`, with `25` historical-only as the CVN-4 snapshot.
+- Targeted rereview: pending. Keep task `in_progress`/`review-pending`, `production_implementation_authorized=false`, `rkp1_created=false`, `rkp1_started=false`; do not accept, archive, push or create RKP-1.

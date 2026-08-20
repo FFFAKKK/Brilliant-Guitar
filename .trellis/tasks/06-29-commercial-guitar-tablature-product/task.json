@@ -85,14 +85,14 @@
     ".trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2",
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync"
   ],
-  "notes": "用户要求需求粒度细，并按每个需求一个文档推进，最后再合并。Core-first 路线的 CVN-0 至 CVN-6、扩展性预留门禁与 GD-0 已验收归档；CVN-7 处于 in_progress，规划与 harness 复审通过，harness 实现锚点为 623f94a，干净的状态同步 HEAD 将作为正式 candidate/harness 输入，下一门是单次正式 mode-all 资格测量。Post-Core 父任务保持 planning-only：CVN-7 与 Core VNext 父任务验收归档并获得用户明确批准后，才创建官方 Guitar Domain 规划子任务。",
+  "notes": "用户要求需求粒度细，并按每个需求一个文档推进，最后再合并。Core-first 路线的 CVN-0 至 CVN-6、扩展性预留门禁与 GD-0 已验收归档；CVN-7 处于 in_progress，规划与 harness 复审通过，harness 实现锚点为 623f94a，最新 official evidence 为 EVIDENCE_INVALID（第五次 official input 在 stress-submit 超时且不可复用），当前下一门是 qualification measurement contract 的 targeted preflight rereview，通过后才允许在新的 clean/frozen candidate+harness 上进行一次完整 official mode-all 资格测量。Post-Core 父任务保持 planning-only：CVN-7 与 Core VNext 父任务验收归档并获得用户明确批准后，才创建官方 Guitar Domain 规划子任务。",
   "meta": {
     "pure_core_kernel_v1_status": "closed",
     "pure_core_kernel_v1_completed_at": "2026-07-26",
     "k1_6_status": "accepted_archived",
     "k1_6_test_baseline": "355512aba4a8057d2d75aa665d74df49cdd2e23c",
     "k1_6_review_baseline": "989c1f7a4056b14d3d59918c9b96874ad71591a8",
-    "next_implementation_stage": "cvn7_single_official_mode_all_measurement",
+    "next_implementation_stage": "cvn7_targeted_preflight_rereview_before_new_full_official_measurement",
     "gd0_status": "completed_archived",
     "gd0_accepted_baseline": "451627e605695c95ecdc85e32bd471fcc81885c4",
     "gd0_independent_review_findings": "P0_0_P1_0_P2_0_after_one_p1_mapping_repair",
@@ -142,7 +142,7 @@
       "brilliant-kernel-session",
       "brilliant-kernel-node"
     ],
-    "core_vnext_current_stage": "cvn7_frozen_harness_committed_official_measurement_pending",
+    "core_vnext_current_stage": "cvn7_official_evidence_invalid_targeted_preflight_rereview_pending",
     "cvn2_status": "completed_archived",
     "cvn5_status": "completed_archived",
     "cvn5_source_commit": "f329ec10bc77c530282db3a6f47dbd6b6112859e",
@@ -150,12 +150,12 @@
     "cvn6_status": "completed_archived",
     "cvn6_source_commit": "8da50f90c9c05d87a8e1aa7a4e65b30e6ab82c7f",
     "cvn6_archive_commit": "a0c1d6a7b8b38d053d591dca6586c8fff84bbdd6",
-    "cvn7_status": "in_progress_harness_review_passed_measurement_pending",
+    "cvn7_status": "in_progress_official_evidence_invalid_targeted_preflight_rereview_pending",
     "cvn7_reviewed_planning_repair_commit": "c427d2f89a291618325dab273e926db635cca9a6",
     "cvn7_activation_commit": "616130cc6908f5c8741d12761cdb0ccebff63589",
     "cvn7_reviewed_harness_implementation_commit": "623f94a4308d2a51014256a2616af1bff53fdb56",
-    "cvn7_official_measurement_commit_policy": "exact_clean_docs_only_status_sync_head_passed_as_equal_candidate_and_harness_commit",
-    "cvn7_official_measurement_status": "pending_not_run",
+    "cvn7_official_measurement_commit_policy": "after_targeted_preflight_rereview_new_clean_frozen_candidate_and_harness_must_be_equal_before_complete_official_mode_all",
+    "cvn7_official_measurement_status": "evidence_invalid_targeted_preflight_rereview_pending",
     "cvn7_task": "08-11-cvn-7-core-vnext-final-qualification"
   }
 }

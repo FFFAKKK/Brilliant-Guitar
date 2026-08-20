@@ -8,7 +8,7 @@
 - 负责人: ATOM
 - 文档策略: 每个需求先写独立文档，最终再合并为收敛后的 PRD。
 - 当前 Core 基线: K1-1 已在 `30894e2` 正式验收；K1-3 已在 `7369eeac60fecea66c2c9164c04439625c2d78b0` 正式验收并通过 102/102 测试；`.trellis/spec/core-kernel/` 是活动代码契约。本文较早的决策记录若与其冲突，以活动规范与独立 Block 任务为准。
-- 当前交付状态: Pure Core Kernel V1 已关闭；Core VNext 的 CVN-0～CVN-6、扩展性预留门禁与 GD-0 均已独立验收归档。CVN-7 已启动，规划与最终 harness 复审均通过 P0/P1/P2=`0/0/0`，资格 harness 实现锚定于 `623f94a`，生产源码相对 `38afdc3` 零差异，冻结前全量回归为 `501/501`；干净的 docs-only 状态同步 HEAD 将作为 runner 要求的相同 candidate/harness commit。单次正式 `--mode all` 测量、最终独立技术审计、CVN-7/Core 父任务验收归档仍待完成。Guitar Domain 生产实现尚未启动。
+- 当前交付状态: Pure Core Kernel V1 已关闭；Core VNext 的 CVN-0～CVN-6、扩展性预留门禁与 GD-0 均已独立验收归档。CVN-7 已启动，规划与最终 harness 复审均通过 P0/P1/P2=`0/0/0`，资格 harness 实现锚定于 `623f94a`，生产源码相对 `38afdc3` 零差异，冻结前全量回归为 `501/501`；最新 official evidence 为 `EVIDENCE_INVALID`，第五次 official input 在 `stress-submit` 超时且未发布可复用 partial evidence。当前下一门是 qualification measurement contract 的 targeted preflight rereview，通过后才允许在新的 clean/frozen candidate+harness 上启动一次完整 official `--mode all` measurement；最终独立技术审计、CVN-7/Core 父任务验收归档仍待完成。Guitar Domain 生产实现尚未启动。
 - Post-Core 路线状态: `.trellis/tasks/08-11-post-core-official-plugin-product-roadmap/` 已作为 planning-only 父任务建立；它等待 CVN-0～CVN-7 全部独立验收归档，不构成任何官方插件、产品宿主或公共插件生产授权。
 
 ## 当前架构权威（Architecture Reset V2）

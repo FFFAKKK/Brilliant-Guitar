@@ -4,6 +4,14 @@
 
 This matrix is the executable disposition for every current or historical architecture authority touched by the sync. `V2 current` means `.trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/design.md` at `e81c739b...`, with acceptance/audit evidence recorded at `ea574ec...`. `TS oracle` means an existing active TypeScript contract remains usable for differential/compatibility observation but does not own the future Rust architecture. `Historical` means the original body remains available for traceability and is not a current decision source.
 
+## Bounded repair after independent sync audit
+
+- Independent audit task: `01a01de4-f187-73d0-b1f0-c37f67b6a467`.
+- Verdict: `RETURN FOR BOUNDED AUTHORITY-SYNC REPAIR`, P0/P1/P2=`0/2/0`.
+- P1-1 repair: product PRD/task status now records the latest CVN-7 official evidence as `EVIDENCE_INVALID`; the next gate is qualification measurement contract targeted preflight rereview, followed only then by a new complete official `--mode all` measurement.
+- P1-2 repair: post-Core records the accepted current Core contract as `28/51/8/34/9`; `25` is retained only as a CVN-4 historical snapshot and is prohibited as a current value.
+- Targeted rereview is pending. This overlay changes only the named product/status projections and this task's audit records; V2 normative design/PRD/implement/research, historical architecture bodies, Rust owner/crate/plugin boundaries, production paths and archived CVN/RKP-0 inputs remain unchanged.
+
 | Old authority file / set | Original state | V2 disposition | Concrete synchronization line | Unique owner | Content retained | Rollback action |
 |---|---|---|---|---|---|---|
 | `.trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/design.md` | Audited architecture candidate, content `e81c739b...` | V2 current architecture source | Keep content immutable; point all indexes/parents here | Architecture Reset V2 task | Yes, unchanged | Revert only sync pointers; do not edit audited content |

@@ -40,7 +40,7 @@ The durable documents must agree on all of the following:
 
 ## Prohibited synchronization drift
 
-- changing 25-current/28-final Core command counts;
+- treating the CVN-4 historical 25-command snapshot as a current value, or changing the accepted current Core contract `28/51/8/34/9`;
 - moving Guitar rules into Core;
 - marking CVN-2 or future CVN stages accepted;
 - creating future implementation children;
