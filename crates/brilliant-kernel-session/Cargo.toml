@@ -1,0 +1,15 @@
+[package]
+name = "brilliant-kernel-session"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[features]
+default = []
+
+[dependencies]
+brilliant-extension-protocol = { path = "../brilliant-extension-protocol" }
+brilliant-kernel-contracts = { path = "../brilliant-kernel-contracts" }
+brilliant-kernel-runtime = { path = "../brilliant-kernel-runtime" }

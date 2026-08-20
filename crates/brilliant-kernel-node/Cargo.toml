@@ -1,0 +1,24 @@
+[package]
+name = "brilliant-kernel-node"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+build = "build.rs"
+
+[lib]
+crate-type = ["cdylib"]
+
+[features]
+default = ["node-api-v8"]
+node-api-v8 = ["napi/napi8"]
+
+[dependencies]
+brilliant-kernel-contracts = { path = "../brilliant-kernel-contracts" }
+brilliant-kernel-session = { path = "../brilliant-kernel-session" }
+napi.workspace = true
+napi-derive.workspace = true
+
+[build-dependencies]
+napi-build.workspace = true

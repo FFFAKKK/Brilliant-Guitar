@@ -1,0 +1,16 @@
+[package]
+name = "brilliant-kernel-runtime"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[features]
+default = []
+
+[dependencies]
+brilliant-core-types = { path = "../brilliant-core-types" }
+brilliant-score-foundation = { path = "../brilliant-score-foundation" }
+brilliant-extension-protocol = { path = "../brilliant-extension-protocol" }
+brilliant-kernel-contracts = { path = "../brilliant-kernel-contracts" }
