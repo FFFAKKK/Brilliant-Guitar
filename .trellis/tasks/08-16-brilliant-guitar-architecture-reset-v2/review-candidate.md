@@ -2,14 +2,15 @@
 
 ## Candidate status
 
-**Status: `READY FOR DEDICATED CROSS-THREAD ARCHITECTURE REVIEW`.** The inventory/preparation bounded repair and local clean-HEAD gates passed. The task remains `planning`. An advisory subagent finding is planning input only and is not the formal independent verdict.
+**Status: `DEDICATED CROSS-THREAD ARCHITECTURE REVIEW PASSED — AWAITING EXPLICIT USER ACCEPTANCE`.** Dedicated audit task `01a01da3-548c-7513-a53c-0e10d1aa7350` reviewed exact content commit `e81c739b1452a41a412966ee1f40367476011916` and returned `PASS`, P0/P1/P2=`0/0/0`. The task remains `planning`; this record does not promote V2, synchronize authorities or authorize RKP-1.
 
 ## Exact review input
 
 - Worktree: `E:\desktop\brilliant_ideas\brilliant_guitar\.worktrees\brilliant-guitar-architecture-reset-v2`
 - Branch: `codex/brilliant-guitar-architecture-reset-v2`
 - Base: `5e1599598b1468784ae9b7410383ef63b33201b8`
-- Candidate HEAD: the docs-only commit containing this file; resolve with `git rev-parse HEAD` and compare with the final planner report
+- Audited candidate content commit: `e81c739b1452a41a412966ee1f40367476011916`
+- Audit-record commit: the current docs-only HEAD; its diff from the audited content commit is restricted to review/task/handoff evidence
 - Task: `.trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2`
 - Parent: `.trellis/tasks/06-29-commercial-guitar-tablature-product`
 
@@ -97,9 +98,11 @@ Latest inventory/preparation bounded-repair evidence:
 
 ## Current lifecycle declaration
 
-- Formal independent architecture review: `pending dedicated cross-thread review after inventory/preparation repair`.
+- Formal independent architecture review: `PASS on e81c739b1452a41a412966ee1f40367476011916`, P0/P1/P2=`0/0/0`.
+- Dedicated audit task: `01a01da3-548c-7513-a53c-0e10d1aa7350`; read-only final verdict received.
 - Advisory subagent result: `not formal evidence; four reproduced planning findings consumed`.
 - V2 current authority: `false`.
 - Production implementation authorization: `false`.
 - RKP-1 created/started: `false/false`.
 - Archive/push: `false/false`.
+- Next gate: explicit user acceptance before any authority-sync task or RKP-1 planning/implementation action.

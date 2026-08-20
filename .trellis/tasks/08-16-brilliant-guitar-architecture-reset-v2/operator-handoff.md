@@ -33,9 +33,9 @@
 
 ## Next actor
 
-The next actor is a **dedicated separate read-only architecture-auditor Codex thread**, reached through cross-thread communication, not a local subagent and not a production operator. Use the review focus in `review-candidate.md`, inspect exact HEAD and diff, and report P0/P1/P2 without modifying the worktree.
+Dedicated cross-thread audit task `01a01da3-548c-7513-a53c-0e10d1aa7350` has completed a read-only review of exact content commit `e81c739b1452a41a412966ee1f40367476011916` with `PASS`, P0/P1/P2=`0/0/0`. The next actor is the project owner for explicit acceptance. A production operator is not activated by the technical PASS.
 
-If the auditor returns a finding, return it to the planning session for one bounded docs-only repair and targeted rereview. If the auditor passes, stop for explicit user acceptance.
+After explicit acceptance, create a separate docs-only authority-sync task/commit. RKP-1 planning follows only after that sync is independently checked; production implementation remains a later, separately authorized operator task.
 
 ## Post-acceptance sequence
 
@@ -71,7 +71,8 @@ status=planning
 task_start_run=false
 production_implementation_authorized=false
 candidate_authority_status=proposed_not_current
-independent_architecture_review=pending_dedicated_cross_thread_review_after_inventory_preparation_repair
+independent_architecture_review=passed_on_e81c739b1452a41a412966ee1f40367476011916
+independent_architecture_review_thread=01a01da3-548c-7513-a53c-0e10d1aa7350
 rkp1_created=false
 rkp1_started=false
 archive_authorized=false
