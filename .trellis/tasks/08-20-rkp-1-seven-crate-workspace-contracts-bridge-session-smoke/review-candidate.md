@@ -1,17 +1,17 @@
-# RKP-1 Targeted Independent Planning Rereview Candidate
+# RKP-1 Implementation Review Candidate
 
 ## Required verdict
 
-Current status: `TARGETED PLANNING REREVIEW REQUIRED`.
+Current status: `IMPLEMENTATION ACTIVATED / REVIEW CANDIDATE NOT YET COMPLETE`.
 
-Return either:
+After all five implementation stages and gates, an independent auditor must return either:
 
 ```text
 PASS
 P0/P1/P2 = 0/0/0
 ```
 
-or a bounded planning return with exact file/line, severity and violated authority. Initial `b619f240...` returned P0/P1/P2=`0/3/1`, first r1 `922da5e...` returned `0/2/0`, and second amended candidate `9741abfee76d009dbea985192e5dfb162e16902a` returned `0/1/0`. This rereview is limited to the remaining status-dependent `napi_remove_wrap` ownership-state repair and its direct regressions; every previously passed contract is regression-only. The prior P2 is not claimed closed or silently accepted. Do not edit the candidate, run `task.py start`, implement Rust, accept/archive, push or advance the parent lifecycle.
+or a bounded implementation return with exact file/line, severity and violated authority. Planning passed P0/P1/P2=`0/0/0` at `89115daedc623c0d35386a4a433cc7fd95215223` in audit task `01a01e48-1934-77b0-821e-a8026cd9e5f7`; the user authorized implementation and `task.py start` has run. Do not accept/archive, push, change the default runtime, create RKP-2, or advance the parent beyond implementation-review-pending.
 
 ## Candidate boundary
 

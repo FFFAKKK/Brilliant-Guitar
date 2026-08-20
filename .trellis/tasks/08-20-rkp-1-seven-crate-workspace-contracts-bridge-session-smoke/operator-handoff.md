@@ -2,21 +2,21 @@
 
 ## Current status
 
-`TARGETED PLANNING REREVIEW REQUIRED`.
+`IMPLEMENTATION IN PROGRESS / STAGE 1 PENDING`.
 
-This task is planning-only. Initial candidate `b619f240...` returned P0/P1/P2=`0/3/1`, first r1 candidate `922da5e...` returned `0/2/0`, and second amended candidate `9741abf...` returned `0/1/0`. This amend closes only the remaining status-dependent `napi_remove_wrap` ownership-state P1 and direct tests; all other passed contracts remain unchanged, no prior P2 is claimed closed, and targeted rereview is pending. `task_start_run=false`, `production_implementation_authorized=false`, independent planning review is `pending`, and TypeScript remains the default runtime. Do not run `task.py start`, install/download Rust dependencies, create Cargo/Rust files, modify production/test/build files, or begin any implementation from this handoff.
+The final targeted planning audit independently passed P0/P1/P2=`0/0/0` at exact candidate `89115daedc623c0d35386a4a433cc7fd95215223` in planning-audit task `01a01e48-1934-77b0-821e-a8026cd9e5f7`. The user then explicitly authorized RKP-1 implementation. The operator created `codex/rkp-1-seven-crate-workspace-contracts-bridge-session-smoke` from that exact candidate and ran `task.py start`. `task_start_run=true`, `production_implementation_authorized=true`, independent planning review is `passed`, implementation review is `pending`, and TypeScript remains the default runtime.
 
-## Exact future entry gate
+## Satisfied implementation entry gate
 
-Implementation may begin only after all of the following are visible in this task:
+The following entry facts are satisfied and recorded:
 
-1. a separate read-only planning auditor performs a targeted rereview of the exact status-sync plus amended RKP-1 docs-only chain;
-2. the auditor returns `PASS`, `P0/P1/P2=0/0/0`;
-3. the user sends a later message authorizing implementation in this same task;
-4. the worktree is clean on `codex/rkp-1-seven-crate-workspace-contracts-bridge-smoke-planning-r1`; status-sync `7174c5ac50655ae0cb8807e21c7045a0c1b6d15e` is a direct child of `463c851...`; the accepted amended HEAD is the unique RKP-1 planning direct child of `7174c5a...`; and preserved original candidate `b619f240...` remains the untouched sibling of `7174c5a...`;
-5. parent `current_planning_child` names only this task and `current_implementation_child` is still null.
+1. the separate read-only planning auditor returned `PASS`, P0/P1/P2=`0/0/0` for `89115da...`;
+2. the user explicitly authorized implementation in the same delegated task;
+3. activation began from a clean worktree at exact audited HEAD `89115da...`;
+4. the implementation branch was created without rewriting `7174c5a...`, `89115da...`, or preserved sibling `b619f240...`;
+5. parent `current_planning_child` and `current_implementation_child` both name only this RKP-1 child.
 
-Only then may the operator run `task.py start` and execute `implement.md` Stage 1.
+Execute `implement.md` Stages 1 through 5 as separate, independently revertible commits. Stop at the first failed stage gate.
 
 ## Fixed inputs
 
