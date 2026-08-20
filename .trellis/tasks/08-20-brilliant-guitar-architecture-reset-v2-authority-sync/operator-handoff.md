@@ -6,7 +6,9 @@
 - Branch: `codex/brilliant-guitar-architecture-v2-authority-sync`
 - Base/initial HEAD: `ea574ec4495ac2c82445d1275ad6648035231fc6`
 - Candidate commit subject: `docs(architecture): synchronize Architecture Reset V2 authority`
-- Lifecycle after commit: `in_progress`, `review-pending`
+- Audited repaired commit: `d72278927468d93fd8817defaa18e7eb0976b1bb`
+- Lifecycle before final closeout: `in_progress`, `review-pending`
+- Lifecycle after final closeout: `completed`, `accepted`
 - Production implementation authorized: `false`
 - RKP-1 created/started: `false/false`
 - Archive/push authorized: `false/false`
@@ -18,7 +20,7 @@
 - Audit-record commit: `ea574ec4495ac2c82445d1275ad6648035231fc6`
 - Independent audit task: `01a01da3-548c-7513-a53c-0e10d1aa7350`
 - Result: `PASS`, P0/P1/P2=`0/0/0`, checklist `34/34`, typecheck/build/full `531/531`
-- User acceptance: recorded on `2026-08-20`; this sync is the next independently auditable candidate.
+- User acceptance: recorded on `2026-08-20`; after the bounded repair, this sync was independently audited and accepted on `d72278927468d93fd8817defaa18e7eb0976b1bb`.
 
 ## Handoff contract
 
@@ -33,3 +35,12 @@ If the sync audit returns findings, repair only the named docs and rerun all gat
 - P1-1: product parent PRD/task had the obsolete “next formal mode-all measurement” snapshot. It now records latest official evidence `EVIDENCE_INVALID` and the next gate as qualification measurement contract targeted preflight rereview before any new complete official measurement.
 - P1-2: post-Core had the obsolete `25` current / `28` final wording. It now records current accepted `28/51/8/34/9`, with `25` historical-only as the CVN-4 snapshot.
 - Targeted rereview: pending. Keep task `in_progress`/`review-pending`, `production_implementation_authorized=false`, `rkp1_created=false`, `rkp1_started=false`; do not accept, archive, push or create RKP-1.
+
+## Final lifecycle closeout — accepted
+
+- Independent sync audit task: `01a01de4-f187-73d0-b1f0-c37f67b6a467`.
+- Audited repaired commit: `d72278927468d93fd8817defaa18e7eb0976b1bb`.
+- Verdict: `PASS`, P0/P1/P2=`0/0/0`.
+- User acceptance: recorded `true` on `2026-08-20`; authority sync status is `completed`/`accepted`.
+- Architecture Reset V2 remains the current authority. The next gate is only creation of the separate RKP-1 planning task; RKP-1 is not created or started.
+- `production_implementation_authorized=false`; `archive_authorized=false`; `push_authorized=false`.

@@ -38,7 +38,7 @@
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/",
     ".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/"
   ],
-  "notes": "ARCHITECTURE RESET V2 ACCEPTED CURRENT ARCHITECTURE AUTHORITY / DEDICATED CROSS-THREAD AUDIT PASSED EXACT CONTENT COMMIT E81C739B WITH P0-P1-P2 0-0-0 AND 34/34 / AUTHORITY SYNC CANDIDATE 08-20 IS IN PROGRESS AND AWAITS INDEPENDENT SYNC AUDIT / RKP-1 NOT CREATED OR STARTED / PRODUCTION DELTA ZERO.",
+  "notes": "ARCHITECTURE RESET V2 ACCEPTED CURRENT ARCHITECTURE AUTHORITY / AUTHORITY SYNC 08-20 ACCEPTED AFTER PASS ON REPAIRED COMMIT D722789 / RKP-1 NOT CREATED OR STARTED / NEXT GATE CREATE RKP-1 PLANNING TASK ONLY / PRODUCTION DELTA ZERO.",
   "meta": {
     "planning_base_commit": "5e1599598b1468784ae9b7410383ef63b33201b8",
     "planning_branch": "codex/brilliant-guitar-architecture-reset-v2",
@@ -178,10 +178,17 @@
     "archive_authorized": false,
     "authority_sync_authorized": true,
     "authority_sync_task": "08-20-brilliant-guitar-architecture-reset-v2-authority-sync",
-    "authority_sync_status": "in_progress_review_pending",
+    "authority_sync_status": "completed_accepted",
     "user_acceptance": "accepted",
     "user_acceptance_date": "2026-08-20",
     "user_acceptance_recorded_by": "source delegation",
-    "authority_sync_audit_required": true
+    "authority_sync_audit_required": false,
+    "authority_sync_current_authority": true,
+    "authority_sync_audit_task": "01a01de4-f187-73d0-b1f0-c37f67b6a467",
+    "authority_sync_audit_result": "PASS",
+    "authority_sync_audit_findings": "P0/P1/P2=0/0/0",
+    "authority_sync_audited_repaired_commit": "d72278927468d93fd8817defaa18e7eb0976b1bb",
+    "authority_sync_user_acceptance_recorded": true,
+    "authority_sync_next_gate": "create_rkp1_planning_task_only"
   }
 }

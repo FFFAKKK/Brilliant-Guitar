@@ -63,3 +63,10 @@ This matrix is the executable disposition for every current or historical archit
 ## Rollback
 
 The rollback unit is the single authority-sync commit. Reverting it restores the prior current/historical labels and parent projections while preserving the accepted V2 source, audit evidence, archived RKP-0/CVN inputs and all production paths. A returned sync audit does not permit lifecycle advancement; it triggers a bounded docs-only repair and rerun.
+
+## Final lifecycle closeout — accepted
+
+- Independent sync audit task: `01a01de4-f187-73d0-b1f0-c37f67b6a467` audited repaired commit `d72278927468d93fd8817defaa18e7eb0976b1bb` and returned `PASS`, P0/P1/P2=`0/0/0`.
+- User acceptance is recorded `true` on `2026-08-20`; the authority-sync task is `completed`/`accepted`.
+- Architecture Reset V2 is the current authority. The only next gate is creation of the separate RKP-1 planning task; no RKP-1 task is created or started by this closeout.
+- Production implementation, archive and push remain unauthorized.

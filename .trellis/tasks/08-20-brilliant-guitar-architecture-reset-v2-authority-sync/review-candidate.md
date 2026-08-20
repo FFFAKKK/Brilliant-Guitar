@@ -2,7 +2,7 @@
 
 ## Proposed verdict
 
-`REVIEW-PENDING`: this candidate records user acceptance and synchronizes pointers only. It is not an acceptance/archive record and does not authorize RKP-1.
+`ACCEPTED`: the repaired authority-sync candidate was independently accepted after PASS on `d72278927468d93fd8817defaa18e7eb0976b1bb`. This lifecycle closeout records acceptance only; it does not authorize production implementation or create RKP-1.
 
 ## Exact review input
 
@@ -44,7 +44,7 @@ PASS
 P0/P1/P2 = 0/0/0
 ```
 
-or return only a bounded docs finding with exact file/line and no lifecycle advancement. The candidate remains `in_progress`/`review-pending` until that independent sync result is recorded by the next actor.
+or return only a bounded docs finding with exact file/line and no lifecycle advancement. Before this closeout, the candidate remained `in_progress`/`review-pending`; the final independent result is recorded below.
 
 ## Independent sync audit return and bounded repair candidate
 
@@ -53,3 +53,12 @@ or return only a bounded docs finding with exact file/line and no lifecycle adva
 - P1-1 is repaired in the product parent PRD/task: latest CVN-7 official evidence is `EVIDENCE_INVALID`; targeted qualification measurement-contract preflight rereview is the next gate, and only a passing rereview permits a new complete official `--mode all` measurement.
 - P1-2 is repaired in the post-Core PRD/matrix: current accepted Core is `28/51/8/34/9`; `25` is explicitly CVN-4 historical-only.
 - The targeted rereview remains pending. This repair does not alter Architecture Reset V2 normative content, historical architecture bodies, Rust crate/owner/plugin boundaries, production code, archived CVN/RKP-0 inputs or lifecycle authorization.
+
+## Final lifecycle closeout — accepted
+
+- Independent sync audit task: `01a01de4-f187-73d0-b1f0-c37f67b6a467`.
+- Audited repaired commit: `d72278927468d93fd8817defaa18e7eb0976b1bb`.
+- Final verdict: `PASS`, P0/P1/P2=`0/0/0`.
+- User acceptance recorded: `true` on `2026-08-20`; task lifecycle is `completed`/`accepted`.
+- Architecture Reset V2 current authority: `true`; next gate: create RKP-1 planning task only.
+- RKP-1 created/started: `false/false`; production implementation/archive/push: `false/false/false`.

@@ -40,6 +40,14 @@ Dedicated cross-thread audit task `01a01da3-548c-7513-a53c-0e10d1aa7350` has com
 
 After explicit acceptance, create a separate docs-only authority-sync task/commit. RKP-1 planning follows only after that sync is independently checked; production implementation remains a later, separately authorized operator task.
 
+## Authority sync final acceptance — 2026-08-20
+
+- Authority-sync task: `.trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync`.
+- Audited repaired commit: `d72278927468d93fd8817defaa18e7eb0976b1bb`.
+- Independent sync audit task `01a01de4-f187-73d0-b1f0-c37f67b6a467`: `PASS`, P0/P1/P2=`0/0/0`.
+- V2 current authority: `true`; authority sync: `completed`/`accepted`; user acceptance recorded `true`.
+- Next gate is only creation of the separate RKP-1 planning task. RKP-1 remains uncreated/unstarted and production implementation remains unauthorized.
+
 ## Post-acceptance sequence
 
 After the independent PASS and explicit user acceptance, the next bounded action is the separate authority-sync task:
@@ -75,7 +83,7 @@ production_implementation_authorized=false
 candidate_authority_status=accepted_current_authority
 user_acceptance=accepted_2026-08-20
 authority_sync_task=08-20-brilliant-guitar-architecture-reset-v2-authority-sync
-authority_sync_status=in_progress_review_pending
+authority_sync_status=completed_accepted
 independent_architecture_review=passed_on_e81c739b1452a41a412966ee1f40367476011916
 independent_architecture_review_thread=01a01da3-548c-7513-a53c-0e10d1aa7350
 rkp1_created=false
