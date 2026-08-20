@@ -1,36 +1,35 @@
-# RKP-1 Implementation Review Candidate
+# RKP-1 Stage E Blocked Review Record
 
 ## Required verdict
 
-Current status: `IMPLEMENTATION ACTIVATED / REVIEW CANDIDATE NOT YET COMPLETE`.
+Current status: `BOUNDED PLANNING REPAIR REQUIRED BEFORE IMPLEMENTATION REVIEW`.
 
-After all five implementation stages and gates, an independent auditor must return either:
-
-```text
-PASS
-P0/P1/P2 = 0/0/0
-```
-
-or a bounded implementation return with exact file/line, severity and violated authority. Planning passed P0/P1/P2=`0/0/0` at `89115daedc623c0d35386a4a433cc7fd95215223` in audit task `01a01e48-1934-77b0-821e-a8026cd9e5f7`; the user authorized implementation and `task.py start` has run. Do not accept/archive, push, change the default runtime, create RKP-2, or advance the parent beyond implementation-review-pending.
+Do not issue an implementation verdict yet. A bounded planning repair must first reconcile the mandatory private adapter with the historical CVN-7 zero-production-drift assertion, then receive independent planning rereview. Local self-checks cannot widen the 39-path allowlist. Do not accept/archive, push, change the default runtime, create RKP-2 or run official qualification.
 
 ## Candidate boundary
 
-- Exact ancestor/base: `463c8514a61a61a39c8a5d2736261ae9e82b0fba`.
-- Branch: `codex/rkp-1-seven-crate-workspace-contracts-bridge-smoke-planning-r1`.
-- Expected graph: lifecycle-header-only `7174c5ac50655ae0cb8807e21c7045a0c1b6d15e` is a direct child of exact base `463c851...`; amended HEAD is the unique RKP-1 planning direct child of `7174c5a...`; original `b619f240...` remains the untouched sibling of `7174c5a...`.
-- Expected diff: two lifecycle headers, this RKP-1 task directory, and only the Rust parent `task.json` current-child/gate projection.
-- Expected production/test/build/Cargo/crates delta: zero.
-- Expected lifecycle: child and parent planning, both task-start false, production false, RKP-1 planning review pending, implementation child null, RKP-2–RKP-9 absent.
+- Planning authority HEAD: `89115daedc623c0d35386a4a433cc7fd95215223` (independent planning PASS `0/0/0`).
+- Implementation branch: `codex/rkp-1-seven-crate-workspace-contracts-bridge-session-smoke`.
+- Review range: `89115daedc623c0d35386a4a433cc7fd95215223..HEAD`.
+- Lifecycle activation: `84918e1e293b26554fbff9f161c6222510f378b9`.
+- Stages A-D: `6b64616690ddf9e11e71cf4caeb1b4be5df74b8d`, `632ebcda54adba07c106984c16999cb84bc9bc2c`, `f5ca93c77e800465b65b947172fca1c9f8ee650f`, `8ae5b7158ea45cfc4c47902ff8a17ce5c949678c`.
+- Stage E gate record is HEAD with subject `test(rust): expose RKP-1 regression-gate conflict`.
+- Expected lifecycle: child `in_progress`; planning review passed; implementation review pending; parent names only RKP-1 as active implementation child.
 
-## Mandatory audit focus
+## Exact bounded planning finding
 
-1. Prove the objective graph only: `7174c5a...` is a direct child of `463c851...`; amended HEAD is the unique RKP-1 planning direct child of `7174c5a...`; preserved `b619f240...` is an untouched sibling of `7174c5a...`. Do not require `7174c5a...` to be the sole child of the base.
-2. Remaining P1: prove the guard has exactly `PreWrapOwned -> WrappedFinalizerOwns -> RemovedGuardOwns -> Released`; `napi_wrap` failure leaves one guard release, while success immediately makes the finalizer sole token releaser. Prove complete result, fresh key and `try_reserve(1)` capacity preflight occur before wrap and tag-success insertion is the last infallible action.
-3. Prove `napi_remove_wrap` status is checked before its out pointer: `napi_ok` cancels finalization and transfers expected-token release to the guard even on mismatched/null return, permitting only one address comparison and no unknown-pointer dereference/free; non-`napi_ok` leaves finalizer ownership/table absent, with zero out-pointer read/compare/dereference/free and zero guard token release. Finalizer must remove only matching allocation+generation and drop token/envelope once. Fault injection must prove canonical `bridge.internal`, unpublished session/result, the exact counter table in `design.md`, zero observable delta, no hang/double-free/leak/status-pointer exposure.
-4. Direct regressions from the prior three-P1 repair: verify exact Windows `cdylib` build/load/clean-clone law, all 22 failure variants/wrappers/eight-stage precedence/no-leak, and owner environment/thread/reentrant/`try_lock`/zero-delta rules remain exact.
-5. Broader direct regressions: prove exactly seven crates/acyclic graph; Node-API v8/toolchain/MSRV/pins/features/panic policy; one byte decoder; full DTO only at create/read; TypeScript default; no RKP-2+ scope; exact allowlist; five revertible stages.
-6. Re-run Trellis child/parent/V2/sync, JSON/JSONL/related-path/unique-hierarchy, Markdown/Mermaid/fences, `git diff --check`, typecheck/build/full `531/531`, objective ancestry and exact zero protected delta on a clean candidate.
+`test/core-kernel/cvn-7-qualification-boundary.test.ts` freezes a historical CVN-7 qualification boundary by asserting no `src/**` delta from `38afdc3...`. The accepted RKP-1 `design.md`, `implement.md` and file matrix require `src/core-kernel/native/rust-kernel-smoke.ts`. The existing CVN-7 test is explicitly outside the implementation allowlist and all existing tests are zero-delta. A repair must decide the exact future-safe invariant and add only the minimal reviewed path; implementation must not guess it.
 
-## Local self-audit is non-authoritative
+## Preserved later implementation audit focus
 
-The evidence in `research/planning-candidate-self-audit.md` is a reproducibility aid only. It cannot satisfy this independent review or change `independent_planning_review` from `pending`.
+1. Prove the diff is a literal subset of the 39 audited paths and that package files, tsconfig files, existing public indexes/tests and unrelated authority bodies have zero delta.
+2. Prove exactly seven crates, the frozen direct graph/pins/features/toolchain/MSRV/panic policy, six non-Node unsafe forbids and Node `cdylib`/Node-API v8.
+3. Review DTO ownership and strict codec behavior: exact create/read bytes, closed 22-code/key failure union, caps, hostile input, eight-stage precedence, detached immutable results and no raw error leakage.
+4. Review `boundary.rs` as the only unsafe owner: fixed tag; result/fresh-key/reserve preflight; wrap -> tag -> final insert; four-state ownership; status-before-out remove rollback; unknown-pointer non-touch; matching-generation finalizer; validate-before-unwrap/table; owner env/thread, reentrant and non-blocking busy/poison precedence; panic hook scope.
+5. Reproduce the Windows MSVC debug `.dll -> .node` literal copy, `process.dlopen` and `require` exact-two-export probes and clean-clone native/TS smoke. Do not infer a non-Windows claim.
+6. After planning repair, re-run Rust `1.97.1` workspace check/test/clippy/fmt, MSRV `1.88.0` check, TypeScript typecheck/build/full regression, workspace-law, RKP-0 `28/51/8/34/9`/schema/default-runtime gates, Trellis/JSON/JSONL/hierarchy and clean status.
+7. Confirm all explicit exclusions remain absent: indexed store, commands/transactions/history/events, incremental validation, providers/WASM, instruments, Product Host/Tauri/public plugins, default cutover, RKP-2+ and official qualification.
+
+## Non-authoritative local evidence
+
+`research/implementation-evidence.md` records commands, stage hashes, clean-clone details and gate results for reproduction. It is not an independent review verdict.

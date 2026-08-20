@@ -41,7 +41,7 @@
     ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "PLANNING AUDIT PASS 0-0-0 AT 89115DA / USER AUTHORIZED RKP-1 IMPLEMENTATION / TASK STARTED / IMPLEMENTATION IN PROGRESS / TYPESCRIPT DEFAULT / EXACT SEVEN CRATES / NO RKP-2 THROUGH RKP-9 / IMPLEMENTATION REVIEW REQUIRED BEFORE ACCEPTANCE / NO ARCHIVE PUSH OR OFFICIAL QUALIFICATION.",
+  "notes": "PLANNING AUDIT PASS 0-0-0 AT 89115DA / USER AUTHORIZED RKP-1 IMPLEMENTATION / STAGES A-D PASS / STAGE E FULL REGRESSION BLOCKED BY CVN7 ZERO-PRODUCTION-DRIFT ASSERTION VERSUS REQUIRED PRIVATE TS ADAPTER / BOUNDED PLANNING REPAIR REQUIRED BEFORE IMPLEMENTATION REVIEW / TYPESCRIPT DEFAULT / NO ACCEPT ARCHIVE PUSH OR OFFICIAL QUALIFICATION.",
   "meta": {
     "planning_base_commit": "463c8514a61a61a39c8a5d2736261ae9e82b0fba",
     "required_ancestor_commit": "463c8514a61a61a39c8a5d2736261ae9e82b0fba",
@@ -141,9 +141,23 @@
     "expected_contribution_abi_field_count": 9,
     "expected_persisted_schema": "brilliant-score-1",
     "expected_planning_full_test_count": 531,
-    "current_planning_stage": "implementation_activated_stage_1_pending",
+    "current_planning_stage": "stage_5_regression_gate_blocked_bounded_planning_repair_required",
     "current_implementation_child": "08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke",
     "future_rkp_children_created": false,
-    "planning_production_test_build_cargo_crates_delta": "zero"
+    "planning_production_test_build_cargo_crates_delta": "zero",
+    "implementation_candidate": {
+      "activation_commit": "84918e1e293b26554fbff9f161c6222510f378b9",
+      "stage_1_workspace_commit": "6b64616690ddf9e11e71cf4caeb1b4be5df74b8d",
+      "stage_2_contracts_commit": "632ebcda54adba07c106984c16999cb84bc9bc2c",
+      "stage_3_runtime_session_commit": "f5ca93c77e800465b65b947172fca1c9f8ee650f",
+      "stage_4_node_bridge_commit": "8ae5b7158ea45cfc4c47902ff8a17ce5c949678c",
+      "stage_5_gate_record_commit": "review_head_this_commit"
+    },
+    "stage_4_clean_clone": "passed_at_8ae5b7158ea45cfc4c47902ff8a17ce5c949678c_windows_x86_64_pc_windows_msvc_debug_dlopen_require_typecheck_build_bridge_6_of_6_clean",
+    "implementation_gate_summary": "stages_a_through_d_pass_stage_e_workspace_law_pass_full_ts_regression_blocked_by_preexisting_cvn7_test_asserting_zero_src_delta_from_qualification_baseline",
+    "implementation_blocker": "required_src_core_kernel_native_rust_kernel_smoke_ts_conflicts_with_existing_cvn7_qualification_boundary_test_which_is_explicitly_outside_the_audited_allowlist",
+    "implementation_candidate_ready": false,
+    "bounded_planning_repair_required": true,
+    "implementation_review_required_after_repair": true
   }
 }

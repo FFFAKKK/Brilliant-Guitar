@@ -90,7 +90,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "rkp1_stage_1_workspace_toolchain_gate_then_independent_implementation_review_before_acceptance",
+    "next_gate": "rkp1_bounded_planning_repair_for_cvn7_regression_boundary_before_implementation_review",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -160,6 +160,16 @@
     "rkp1_status_sync_commit": "7174c5ac50655ae0cb8807e21c7045a0c1b6d15e",
     "rkp1_repair_branch": "codex/rkp-1-seven-crate-workspace-contracts-bridge-smoke-planning-r1",
     "current_implementation_child": "08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke",
+    "rkp1_implementation_stage": "stages_a_through_d_complete_stage_e_regression_gate_blocked",
+    "rkp1_implementation_commits": {
+      "activation": "84918e1e293b26554fbff9f161c6222510f378b9",
+      "workspace": "6b64616690ddf9e11e71cf4caeb1b4be5df74b8d",
+      "contracts": "632ebcda54adba07c106984c16999cb84bc9bc2c",
+      "runtime_session": "f5ca93c77e800465b65b947172fca1c9f8ee650f",
+      "node_bridge": "8ae5b7158ea45cfc4c47902ff8a17ce5c949678c",
+      "stage_e_gate_record": "review_head_this_commit"
+    },
+    "rkp1_stage_e_blocker": "existing_cvn7_zero_production_drift_test_rejects_required_private_ts_adapter_and_is_outside_the_audited_39_path_allowlist",
     "rkp2_through_rkp9_created": false,
     "target_rust_crates": [
       "brilliant-core-types",
