@@ -19,7 +19,8 @@
   "pr_url": null,
   "subtasks": [],
   "children": [
-    "08-15-rkp-0-authority-contract-oracle-freeze"
+    "08-15-rkp-0-authority-contract-oracle-freeze",
+    "08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke"
   ],
   "parent": "07-29-core-vnext-product-ready-extensible-kernel-completion",
   "relatedFiles": [
@@ -38,15 +39,16 @@
     ".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/",
     ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/research/planning-candidate-self-audit.md",
     ".trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/design.md",
-    ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/"
+    ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
+    ".trellis/tasks/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RUST PERFORMANCE REMEDIATION PLANNING REVIEW PASSED / ARCHITECTURE RESET V2 IS CURRENT AUTHORITY AT E81C739B WITH AUDIT RECORD EA574EC AND PASS 0/0/0, 34/34 / RKP-0 ACCEPTED AND ARCHIVED AFTER INDEPENDENT IMPLEMENTATION REVIEW PASS 0/0/0 AT 9bc53901a0e205a99865b21c56dc80ff1112f3a7 / PARENT REMAINS PLANNING WITH TASK START FALSE, ACTIVE IMPLEMENTATION CHILD NONE, AND PRODUCTION AUTHORIZATION FALSE / RKP-1 THROUGH RKP-9 ABSENT / CVN-7 FIFTH INPUT EVIDENCE_INVALID / NO RUST OR PRODUCTION IMPLEMENTATION.",
+  "notes": "RUST PERFORMANCE REMEDIATION PLANNING REVIEW PASSED / ARCHITECTURE RESET V2 AND AUTHORITY SYNC ACCEPTED / RKP-0 ACCEPTED AND ARCHIVED AT 9BC5390 / RKP-1 IS THE SOLE CURRENT PLANNING CHILD AND IS NOT STARTED / INITIAL RKP-1 RETURN 0-3-1 / SECOND TARGETED RETURN AT 922DA5E 0-2-0 / THIRD TARGETED RETURN AT 9741ABF 0-1-0 / ONLY STATUS-DEPENDENT NAPI_REMOVE_WRAP OWNERSHIP REPAIR IS TARGETED-REREVIEW PENDING; PRIOR P2 NOT CLAIMED CLOSED / PARENT AND CHILD TASK START FALSE / ACTIVE IMPLEMENTATION CHILD NONE / PRODUCTION AUTHORIZATION FALSE / RKP-2 THROUGH RKP-9 ABSENT / TYPESCRIPT DEFAULT / NO RUST OR PRODUCTION IMPLEMENTATION.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
     "source_cvn7_status": "in_progress_measurement_incomplete_evidence_invalid",
-    "current_planning_child": null,
-    "future_children_created": false,
+    "current_planning_child": "08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke",
+    "future_children_created": true,
     "stage_sequence": [
       "RKP-0",
       "RKP-1",
@@ -88,7 +90,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "parent_planning_active_implementation_child_none_waiting_for_separate_rkp1_planning_review_and_authorization",
+    "next_gate": "targeted_independent_rkp1_planning_rereview_of_third_round_status_dependent_remove_wrap_ownership_repair_required_before_task_start_or_implementation",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -123,10 +125,40 @@
     "current_architecture_authority_audit_record_commit": "ea574ec4495ac2c82445d1275ad6648035231fc6",
     "current_architecture_authority_audit_task": "01a01da3-548c-7513-a53c-0e10d1aa7350",
     "authority_sync_task": "08-20-brilliant-guitar-architecture-reset-v2-authority-sync",
-    "authority_sync_status": "in_progress_review_pending",
-    "rkp1_creation_gate": "after independent authority-sync audit and acceptance",
-    "rkp1_created": false,
+    "authority_sync_status": "accepted_pass_p0_0_p1_0_p2_0_at_d72278927468d93fd8817defaa18e7eb0976b1bb",
+    "rkp1_creation_gate": "satisfied_by_accepted_rkp0_and_accepted_authority_sync",
+    "rkp1_created": true,
     "rkp1_started": false,
+    "rkp1_planning_review": "targeted_rereview_pending_after_third_return_p0_0_p1_1_p2_0",
+    "rkp1_initial_planning_review": {
+      "P0": 0,
+      "P1": 3,
+      "P2": 1,
+      "candidate": "b619f2409c1624900de352e5c28dde0f8c49767e",
+      "verdict": "return_for_bounded_planning_repair",
+      "repair_scope": "three_user_authorized_p1_findings_only",
+      "p2_disposition": "not_claimed_closed"
+    },
+    "rkp1_second_targeted_planning_review": {
+      "P0": 0,
+      "P1": 2,
+      "P2": 0,
+      "candidate": "922da5e826bea82267ce82eb4aa6be3df3eb1a5a",
+      "verdict": "return_for_bounded_planning_repair",
+      "repair_scope": "napi_unsafe_type_tag_lifecycle_and_objective_commit_graph_only"
+    },
+    "rkp1_third_targeted_planning_review": {
+      "P0": 0,
+      "P1": 1,
+      "P2": 0,
+      "candidate": "9741abfee76d009dbea985192e5dfb162e16902a",
+      "verdict": "return_for_bounded_planning_repair",
+      "repair_scope": "status_dependent_napi_remove_wrap_ownership_state_machine_and_direct_tests_only"
+    },
+    "rkp1_status_sync_commit": "7174c5ac50655ae0cb8807e21c7045a0c1b6d15e",
+    "rkp1_repair_branch": "codex/rkp-1-seven-crate-workspace-contracts-bridge-smoke-planning-r1",
+    "current_implementation_child": null,
+    "rkp2_through_rkp9_created": false,
     "target_rust_crates": [
       "brilliant-core-types",
       "brilliant-score-foundation",

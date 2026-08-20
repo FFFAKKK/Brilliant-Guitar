@@ -1,0 +1,8 @@
+{"file":".trellis/spec/core-kernel/index.md","reason":"Preserve the current TypeScript Core observable contract and public-surface boundary while Rust remains non-default."}
+{"file":".trellis/spec/core-kernel/backend/index.md","reason":"Preserve the current CVN-7 evidence-invalid qualification state while RKP-1 remains a separate planning-only child."}
+{"file":".trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/design.md","reason":"Normative seven-crate graph, unique owners, Node-API boundary, compatibility inventory and RKP stage law."}
+{"file":".trellis/tasks/08-15-core-rust-runtime-performance-remediation/research/stage-dependency-and-rollback-map.md","reason":"RKP-1 predecessor, one-child ordering and rollback boundary."}
+{"file":".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/sdk-surface-migration-matrix.md","reason":"Protected 8/34 Module SDK and nine-field contribution ABI disposition."}
+{"file":".trellis/tasks/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/research/workspace-contract-and-bridge-freeze.md","reason":"Exact toolchain, crate graph, sole unsafe owner and status-dependent wrap/tag/remove/finalizer ownership ABI."}
+{"file":".trellis/tasks/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/research/file-test-and-rollback-matrix.md","reason":"Literal allowlist, five stages, four-state ownership and remove-wrap fault-injection tests."}
+{"file":".trellis/tasks/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/research/bounded-planning-repair-r1.md","reason":"Three review returns, final one-P1 ownership repair and targeted-rereview disposition."}
