@@ -25,3 +25,4 @@
 {"file":".trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/research/authority-conflict-and-supersession-map.md","reason":"Verify every direct old-authority conflict has a future sync disposition."}
 {"file":".trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/research/plugin-runtime-semantics-audit-and-decisions.md","reason":"Check all bounded plugin-runtime audit decisions are closed without second owners or executable loopholes."}
 {"file":".trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/review-candidate.md","reason":"Use the exact focused independent architecture review checklist."}
+{"file":".trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/research/inventory-preparation-and-rkp-owner-repair.md","reason":"Verify inventory reachability, read-only Session semantics, artifact preparation order, Catalog-only policy and RKP owner closure."}

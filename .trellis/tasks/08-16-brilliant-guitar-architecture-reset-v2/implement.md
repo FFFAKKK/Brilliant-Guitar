@@ -91,8 +91,9 @@ Phase A evidence exists and no production path changed.
    - transaction/history/validation/snapshot/event/thread model;
    - unified Instrument Plugin surfaces, three-level validation and the two composition owners;
    - Plugin Command → Proposal → Kernel Request golden path;
-   - deterministic declarative/WASM validation, pre-session migration and namespace ownership;
-   - canonical BGP Persistence qualification and Layout → Render Scene separation;
+   - independent known inventory, global read-only Session and canonical availability facts;
+   - Catalog-only request policy, deterministic declarative/WASM validation, bounded artifact preparation, pre-session migration and namespace ownership;
+   - canonical BGP Persistence ownership/post-RKP qualification boundary and Layout → Render Scene separation;
    - FFI, compatibility, performance, RKP sequence and Guitar Core Loop;
    - old-design disposition and future test matrix;
    - exact protected inventory appendix.
@@ -127,14 +128,16 @@ Revert only the candidate task files; the existing authorities remain untouched.
 10. **Composition:** KernelSessionComposition and Product ApplicationAssembly each have one distinct owner/identity.
 11. **Plugins:** Guitar/Piano/Bass/third-party instruments use one public protocol; official status adds no Runtime privilege.
 12. **Golden path:** Plugin Command, DomainChangeProposal and Kernel Request are distinct and Rust registers no instrument handler.
-13. **Validation:** Level A/B/C order, declarative/WASM execution and structural-only limits are complete.
-14. **Migration/revision:** plugin migration is detached/pre-session; stale revision rejects in Core and host recomputation is bounded to one.
-15. **Ownership:** namespace writes are owner-only; cross-plugin collaboration is declared/versioned.
-16. **Services:** Official BGP Persistence is canonical; Layout contributions do not call Renderer APIs.
-17. **Compatibility:** 28/51/8/34/9 and `brilliant-score-1` match RKP-0 oracle.
-18. **RKP migration:** RKP-0 to RKP-9 is ordered and reversible; RKP-1/5/6/9 own the repaired decisions and only RKP-8 switches default.
-19. **Product:** default Guitar Instrument Plugin/Core Loop starts after RKP-9 before broader horizontal APIs.
-20. **Candidate lifecycle:** proposed/pending only; no authority sync, implementation, archive or push.
+13. **Availability:** known inventory is independent from installed catalog; unavailable/incompatible/mixed produce a complete global read-only Session; only inventory miss is unknown.
+14. **Validation:** Level A/B/C order, Catalog-only policy, declarative/WASM execution and structural-only limits are complete.
+15. **Preparation:** WASM bytes have one bounded capture/hash/ABI/compile path before WASM migration or validation.
+16. **Migration/revision:** plugin migration is detached/pre-session; stale revision rejects in Core and host recomputation is bounded to one.
+17. **Ownership:** namespace writes are owner-only; cross-plugin collaboration is declared/versioned.
+18. **Services:** Official BGP Persistence is canonical but post-RKP; Layout contributions do not call Renderer APIs.
+19. **Compatibility:** 28/51/8/34/9 and `brilliant-score-1` match RKP-0 oracle.
+20. **RKP migration:** RKP-5 implements protocol/WASM, RKP-6 inventory/composition/gateway/migration, RKP-7 proves, RKP-8 only switches, RKP-9 only qualifies accepted fixtures/cleans after PASS.
+21. **Product:** default Guitar Instrument Plugin/Core Loop and real Persistence/Layout qualification start after RKP-9 before broader horizontal APIs.
+22. **Candidate lifecycle:** proposed/pending only; formal review must use a separate Codex thread; no authority sync, implementation, archive or push.
 
 Self-audit may be recorded `0/0/0` only after all direct inconsistencies are repaired and automated document gates pass. It never replaces independent review.
 
@@ -189,12 +192,12 @@ Required result: typecheck/build green and full suite 531/531.
 
 ### Handoff
 
-A separate read-only architecture-auditor session receives:
+A dedicated read-only architecture-auditor Codex thread receives through cross-thread communication:
 
 - exact branch/worktree/HEAD;
 - base commit;
 - task path;
-- this candidate and both research files;
+- this candidate and all task research files;
 - protected diff and automated results;
 - the focused review list in `review-candidate.md`.
 
@@ -213,12 +216,14 @@ A separate read-only architecture-auditor session receives:
 
 On return, the planner changes only candidate docs, creates a narrow docs-only repair commit, reruns direct/automated gates, and sends a targeted rereview.
 
+A planner subagent or planner self-audit may discover useful defects but is not formal independent-review evidence. The formal verdict must be returned by the dedicated peer thread.
+
 ## 7. Phase F — candidate commit
 
-The original candidate commit is `d9293ee84b1c547af77eeab2cde907a3261c9999`. After the plugin-runtime audit repair and automated gates, create one additional bounded docs-only repair commit:
+The original candidate commit is `d9293ee84b1c547af77eeab2cde907a3261c9999`; the first plugin-runtime repair is `812f154e18bafd8cc2cef858be4cfa46603563ed`. After closing the inventory/preparation/RKP-owner defects and automated gates, create one additional bounded docs-only repair commit:
 
 ```text
-docs(architecture): repair plugin runtime semantics
+docs(architecture): close extension preparation contracts
 ```
 
 The bounded repair commit includes only candidate task files. The cumulative candidate relative to the fixed base still contains only this task directory plus the product parent's already-committed unique child reference. After commit:
@@ -258,6 +263,10 @@ Stop and return to planning if any of these occurs:
 - seven-crate dependency graph cycles or Core Types gains score/command/runtime dependencies;
 - Plugin Semantic Command execution or arbitrary JavaScript/WASM mutation enters Runtime directly;
 - Instrument Plugin lacks required Level C validation but remains writable;
+- known requirements are derived only from installed catalog state, or inventory miss is classified as unavailable;
+- any known unavailable/incompatible requirement leaves a writable Session or returns an untyped result outside KernelSessionComposition;
+- a request can carry validation policy, namespace grants, schema or WASM/capability authority;
+- WASM migration/validation runs before Rust-owned bytes are hashed, ABI-checked, capped and privately compiled;
 - plugin migration creates a partially migrated writable session;
 - a plugin writes another plugin's namespace without a declared public contribution contract;
 - canonical `.bgp` ownership becomes implicitly replaceable;
@@ -267,5 +276,6 @@ Stop and return to planning if any of these occurs:
 - ExtensionBlock ownership changes;
 - a product service/plugin lifecycle moves into Kernel Runtime;
 - RKP-1 or production paths appear in the candidate diff;
+- RKP-7/RKP-9 acquire implementation ownership or RKP-9 claims qualification of unimplemented Persistence/Layout/Guitar product services;
 - full regression differs from 531/531 for reasons caused by this docs-only candidate;
 - independent reviewer returns any P0/P1/P2 finding.

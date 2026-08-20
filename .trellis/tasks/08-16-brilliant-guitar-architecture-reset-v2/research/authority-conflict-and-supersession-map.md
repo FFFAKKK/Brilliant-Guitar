@@ -25,8 +25,8 @@ Disposition terms:
 | `PURE_CORE_KERNEL_V1_SCOPE` export | Public compatibility | Name resembles a future architecture declaration | Retain as compatibility name only | Document as historical public surface; do not rename during migration. |
 | GD-0 | Guitar data/transaction fences | Calls Guitar an official domain provider and predates equal Instrument Plugins | Retain data/semantic fences as oracle; supersede privileged placement | Default Guitar Instrument Plugin uses the same public protocol as Piano/Bass/third parties. |
 | CVN-2 SDK and catalog | Frozen Module SDK ABI/oracle | Can be mistaken for the future public Plugin SDK | Retain exactly as compatibility/oracle; refine audience | New Product Plugin SDK/protocol is separate; old 8/34/9 remains migration evidence. |
-| CVN-6 integrated assembly | Accepted TypeScript runtime behavior/oracle | “assembly” and executable official providers conflict with future Session Composition | Retain observable behavior; supersede future physical placement | `KernelSessionComposition` consumes a data-only FrozenCatalog; Product ApplicationAssembly remains host-owned. |
-| CVN-7 qualification | Workload, correctness/performance gates | Original liveness method produced invalid evidence | Retain targets; method versioned later | RKP-9 Qualification V2 owns executable measurement method. |
+| CVN-6 integrated assembly | Accepted TypeScript runtime behavior/oracle, independent known inventory and global read-only degradation | “assembly” and executable official providers conflict with future Session Composition | Retain observable behavior/inventory/availability; supersede future physical placement | `KernelSessionComposition` consumes independent inventory plus a prepared private FrozenCatalog; Product ApplicationAssembly remains host-owned. |
+| CVN-7 qualification | Workload, correctness/performance gates | Original liveness method produced invalid evidence | Retain targets; method versioned later | RKP-9 Qualification V2 owns executable measurement for already implemented Core/Session/plugin fixtures, not future product services. |
 | Rust remediation parent | Staged migration, compatibility, rollback, targets | Current plan has four crates and predates Core Types, Extension Protocol and Session Composition | Retain sequence; supersede crate shape after acceptance | Separate authority-sync changes parent to seven crates and makes RKP-1 consume repaired V2. |
 | RKP-0 archive | 64-row oracle, exact surfaces, qualification fixtures | None for observable compatibility | Retain exactly | RKP-1–RKP-9 consume it; V2 does not rewrite archived files. |
 | post-Core roadmap | Official Domain → services → host/loop → public plugins | Places Guitar before a unified public protocol and predates RKP-9 | Retain vertical/product intent; revise plugin order | RKP-9 → minimum Plugin Platform → default Guitar Instrument Plugin/Core Loop; preserve host-owned ApplicationAssembly. |
@@ -38,16 +38,18 @@ Disposition terms:
 | Cross-context stable primitives | Core Types | Score implementation, commands, Runtime, Product Host |
 | Pure score semantics/schema order | Score Foundation | Runtime, Instrument Plugins, Persistence |
 | Extension mutation/namespace/rule/WASM/catalog contracts | Extension Protocol | Core command envelope, plugin executable instance, Runtime store, Product UI |
+| Known-requirement inventory contract and canonical form | Extension Protocol; prepared/frozen consumption by Kernel Session | Installed catalog as replacement inventory, package metadata as write authority |
 | Composite Core/plugin request and public kernel DTO versions | Kernel Contracts | Node adapter, Product Host |
 | Mutable score/store/indices | Kernel Runtime | Workbench, provider, plugin, Persistence |
 | Core command/use-case orchestration and composition | Kernel Session | Runtime mechanism, Node adapter, Plugin Semantic Command handlers |
 | Plugin Semantic Command execution | Product Extension Host/plugin | Kernel Session/Runtime |
-| Transaction-level plugin domain validation | Declarative rule engine or bounded deterministic WASM invoked by Kernel Session | Arbitrary TypeScript callback, UI, Renderer |
+| Transaction-level plugin domain validation | Kernel Session deterministic rule/WASM executor using a prepared private artifact | Arbitrary TypeScript callback, UI, Renderer, Runtime store |
+| WASM byte capture/hash/ABI/compile | Kernel Session preparation, implemented in RKP-5 | Product plugin path/lazy loader, transaction-time host callback, Runtime store |
 | Native DTO conversion/panic boundary | Native Bridge | Runtime semantic layer |
 | KernelSessionComposition | `brilliant-kernel-session` | Runtime mechanism, Product Host integration child |
 | Product ApplicationAssembly | Product Host | Kernel Runtime, Core-loop integration task as second owner |
 | Public plugin lifecycle | Product Extension Host | Kernel registry/runtime |
-| Canonical `.bgp` package/save/autosave/recovery | Mandatory Official BGP Persistence | public replacement provider, Score Foundation/Runtime |
+| Canonical `.bgp` package/save/autosave/recovery | Mandatory Official BGP Persistence post-RKP product child | RKP-9 fixture, public replacement provider, Score Foundation/Runtime |
 | Semantic layout contributions and placement | Instrument Plugin then Layout Engine | Core store, Renderer |
 | Stable Render Scene | Layout Engine output contract | Instrument Plugin drawing APIs |
 | SVG output | Renderer | Layout or Runtime |
@@ -85,6 +87,10 @@ Disposition terms:
 15. Layout contributions describe meaning; Layout produces Render Scene; Renderer draws it.
 16. Public lifecycle moves to Product Extension Host.
 17. After RKP-9 the project executes the default Guitar Plugin vertical slice before broad horizontal frameworks.
+18. Known requirements remain independent from installed contributions; only inventory miss is unknown and any known unavailable/incompatible fact produces a global read-only Session.
+19. Transaction validation policy is Catalog-only; a request cannot declare or downgrade it.
+20. Rust captures, hashes and compiles bounded WASM bytes before migration or validation.
+21. RKP-5 implements protocol/WASM mechanisms, RKP-6 implements inventory/composition/gateway/migration behavior, RKP-7 proves, RKP-8 switches, and RKP-9 qualifies accepted fixtures only.
 
 ## 6. Deferred decisions
 

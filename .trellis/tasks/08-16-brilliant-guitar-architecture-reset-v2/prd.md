@@ -176,7 +176,7 @@ Plugin Semantic Command 在 Extension Host 中解释用户意图；插件只产�
 
 ### ARV2-R022 — 三层权威验证
 
-每个 Extension transaction 按固定顺序执行：Core Semantic Validation、Rust Extension Protocol Validation、Plugin Domain Validation。Instrument Plugin 的可写领域数据必须提供 `DeclarativeDomainRules` 或确定性 WASM validator；缺少可接受的领域 validator 时，该 namespace 保持无损读取并停止写入。
+每个 Extension transaction 按固定顺序执行：Core Semantic Validation、Rust Extension Protocol Validation、Plugin Domain Validation。Instrument Plugin 的可写领域数据必须提供 `DeclarativeDomainRules` 或确定性 WASM validator；任何已知 required contribution 缺失或版本不兼容时，沿用已接受 oracle，发布完整的全局 read-only KernelSession，而不是引入 namespace 局部写入。已安装 `domain-required` descriptor 缺少其声明 rule/artifact 属于 malformed preparation，发布零 session。
 
 ### ARV2-R023 — 确定性 WASM 合同
 
@@ -184,7 +184,7 @@ Plugin Semantic Command 在 Extension Host 中解释用户意图；插件只产�
 
 ### ARV2-R024 — Plugin migration 前置于 Session
 
-插件 migration 在 detached 文档上、KernelSession 创建之前执行：Core decode/migration → Extension Host resolution → installed plugin migrations → 三层验证 → KernelSession composition。插件缺失时保留原 ExtensionBlock；migration 失败时不发布 writable/partially migrated session，并保留 lossless read-only 结果及 diagnostics。
+插件 migration 在 detached 文档上、KernelSession 创建之前执行：Core decode/migration → Extension Host resolution + known inventory → detached TypeScript migration → 捕获 document/descriptor/inventory/WASM bytes → Rust preparation → prepared-WASM migration → 三层验证 → KernelSession composition。插件缺失或 migration 不可用时保留原 ExtensionBlock，并发布具有 selector/snapshot/encode/availability 能力的完整 read-only KernelSession；malformed preparation 或 exact-compatible domain semantic invalid 发布零 session 的 failed 结果。
 
 ### ARV2-R025 — Namespace 所有权与跨插件协作
 
@@ -204,11 +204,27 @@ Kernel 对 `expectedRevision != currentRevision` 返回稳定 `extension.stale-r
 
 ### ARV2-R029 — FrozenKernelContributionCatalog
 
-Product Extension Host 只提交严格 data-only 的 `KernelContributionCatalogDescriptorV1`。`KernelSessionComposition` 对其做 exact decode、重复/依赖/namespace/version/hash/order/cap 校验，再编译成不会跨 FFI、带私有 composition identity 的 `FrozenKernelContributionCatalog`。请求中的 fingerprint 只用于确定性 session mismatch，不作为真实性来源；任意 TypeScript/React 插件实例、DOM、回调和宿主对象都留在 Product Extension Host。
+Product Extension Host 只提交严格 data-only 的 `KernelContributionCatalogDescriptorV1`、独立 `KernelKnownRequirementInventoryV1` 和 bounded `KernelWasmArtifactBundleV1`。`KernelSessionComposition` 对其做 exact decode、inventory/catalog parity、重复/依赖/namespace/version/order/cap、Rust SHA-256、WASM ABI/role/compile 校验，再编译成不会跨 FFI、带私有 composition identity 的 `FrozenKernelContributionCatalog`。请求中的 fingerprint 只用于确定性 session mismatch，不作为真实性来源；任意 TypeScript/React 插件实例、DOM、回调、路径和宿主对象都留在 Product Extension Host。
 
 ### ARV2-R030 — 混合架构定位
 
 Brilliant Guitar 正式定义为 Microkernel/Plugin Architecture、Domain Model、Ports & Adapters、Command/Handler、CQRS-like read/write separation 与 Transactional Runtime Core 的混合架构，而非把全部产品能力强行归入单一微内核。
+
+### ARV2-R031 — 独立 Known Requirement Inventory
+
+Known requirements 与 installed contribution catalog 必须分开，并保持已接受 `KernelKnownRequirementInventoryV1`/`ExtensionRuntimeRequirementV1` 精确形状。Inventory 至多 1,024 行，每行保存 `requirementVersion: 1`、namespace、moduleId、contributionId、最多 256 个非空严格递增 supported schema versions 和 `requiredForWrite: true`。严格 codec 接受任意 dense 行顺序后按 namespace/moduleId/contributionId canonical normalize；duplicate namespace、extra field、accessor、malformed row 或 cap overflow 拒绝。每个 installed requirement row 必须与 inventory 中对应行精确一致，inventory 可以保留 absent contribution 的 requirement。Product `pluginId` 在 V1 以相同词法值进入 runtime `moduleId`，不建立别名表。只有合法 inventory miss 才是 unknown opaque；known unavailable/incompatible 产生完整 canonical facts 和全局 read-only KernelSession。Validation policy 只属于 installed private catalog。
+
+### ARV2-R032 — 有界 WASM Artifact Preparation
+
+每次 Session preparation 最多捕获 256 个 WASM artifacts，单项不超过 8 MiB、总量不超过 64 MiB。Bridge 一次性复制 immutable bytes；Rust 负责 SHA-256、ABI、role、引用完整性、资源上限和 compile。路径、lazy loader、共享可变 buffer 和 host callback 不进入 Catalog。Transaction WASM 继续受 32 MiB linear memory、10,000,000 fuel、1 MiB stack/output、1,024 callback diagnostics、4,096 aggregate diagnostics 和 131,072 facts 限制。
+
+### ARV2-R033 — Validation Policy Catalog-only
+
+`KernelExtensionTransactionRequestV1` 只包含 protocolVersion、pluginId、contributionId、originPluginCommandId、expectedRevision、catalogFingerprint 和 proposal。Validation policy、namespace grants、schema、rule/WASM identity、budget 与 Core command capability 只从 private prepared catalog 解析；请求携带这些字段时按 extra-field exact-decode failure 处理。
+
+### ARV2-R034 — RKP 实施所有权与产品资格边界
+
+RKP-5 唯一实现 Extension Protocol/request codecs、Catalog-only policy、DeclarativeDomainRules、WASM artifact preparation 和 deterministic executor；RKP-6 唯一实现 known inventory、private catalog/composition identity、global read-only Session、gateway/stale revision/namespace enforcement、TS/WASM migration orchestration和双 synthetic plugin 闭环；RKP-7 只做 differential/performance；RKP-8 只切换默认 Session；RKP-9 只资格验证已经实现的 Core/Session/plugin fixture并在 PASS 后清理 oracle。Official BGP Persistence、Layout、Renderer 和真实 Guitar Plugin 由 post-RKP 独立产品子任务实施和资格审计。
 
 ## 5. 范围外
 
@@ -236,11 +252,12 @@ Brilliant Guitar 正式定义为 Microkernel/Plugin Architecture、Domain Model�
 - [ ] KernelSessionComposition 和 Product ApplicationAssembly 各有且只有一个 owner。
 - [ ] Instrument、functional、visual、service contributions 与插件生命周期边界完整。
 - [ ] Plugin Command、DomainChangeProposal、Kernel Request 三者没有混用。
-- [ ] 三层验证、WASM、migration、namespace 和 stale revision 合同完整。
+- [ ] 三层验证、known inventory、global read-only Session、WASM preparation、migration、namespace 和 stale revision 合同完整。
+- [ ] Validation policy 仅来自 private catalog，Request extra-field 规则唯一。
 - [ ] `.bgp` canonical Persistence 与 Import/Export Provider 的资格边界完整。
 - [ ] Layout Contribution、Layout Engine、Render Scene、Renderer 的责任链完整。
 - [ ] Note/Event/time 与 ExtensionBlock owner 没有隐式 schema 漂移。
-- [ ] RKP-0～RKP-9 顺序、rollback 和 post-RKP Guitar Core Loop 一致。
+- [ ] RKP-0～RKP-9 顺序、唯一 owner、rollback、qualification 边界和 post-RKP Guitar Core Loop 一致。
 - [ ] 28/51/8/34/9/`brilliant-score-1` 兼容清单完整。
 
 ### 6.2 规划工件

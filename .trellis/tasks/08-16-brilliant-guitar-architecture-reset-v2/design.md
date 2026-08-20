@@ -28,7 +28,7 @@ We retain the product goal, general ScoreDocument semantics, 28 Core commands, c
 
 We replace nested-array full scans on writes, full-document clone-per-effect-set transactions, growing history arrays copied per operation, repeated full semantic validation, complete callback-view cloning, and the overloaded use of “Core Kernel” for unrelated owners.
 
-The replacement is an indexed Rust live store, typed generational handles, isolated overlays, compact ChangeSets, cursor history, incremental validation, explicit snapshot materialization, a KernelSessionComposition consuming a data-only FrozenKernelContributionCatalog, and small DTO bridges. Guitar/Piano/Bass/third-party Instrument Plugins are equal Product Extension Host consumers of one protocol; official status adds distribution/qualification rather than Runtime privilege.
+The replacement is an indexed Rust live store, typed generational handles, isolated overlays, compact ChangeSets, cursor history, incremental validation, explicit snapshot materialization, and a KernelSessionComposition that prepares an independent known-requirement inventory plus a private FrozenKernelContributionCatalog from bounded data-only inputs. Guitar/Piano/Bass/third-party Instrument Plugins are equal Product Extension Host consumers of one protocol; official status adds distribution/qualification rather than Runtime privilege.
 
 > Rust is the target runtime, but language replacement alone is not the fix. Translating the current full-scan/full-clone algorithm literally fails this architecture.
 
@@ -112,11 +112,11 @@ Owns versioned Core command/result/failure/issue/event/selector/snapshot DTOs, p
 
 #### Extension Protocol
 
-Owns language-neutral, data-only namespace ownership, `ExtensionMutationOperation` fragments, schema/reference/capability declarations, deterministic domain-rule descriptors, WASM module descriptors, migration descriptors and `KernelContributionCatalogDescriptorV1`. The composite DomainChangeProposal/KernelExtensionTransactionRequest belongs to Kernel Contracts because it may combine a fixed CoreCommand envelope with Extension Protocol operations. Extension Protocol contains no TypeScript instance, DOM object, mutable store or instrument-specific type. The compiled `FrozenKernelContributionCatalog` is a private Kernel Session object, not an FFI DTO.
+Owns language-neutral, data-only namespace ownership, `ExtensionMutationOperation` fragments, schema/reference/capability declarations, deterministic domain-rule descriptors, WASM module descriptors, migration descriptors, `KernelKnownRequirementInventoryV1`, `KernelContributionCatalogDescriptorV1` and bounded WASM artifact-bundle descriptors. The composite DomainChangeProposal/KernelExtensionTransactionRequest belongs to Kernel Contracts because it may combine a fixed CoreCommand envelope with Extension Protocol operations. Extension Protocol contains no TypeScript instance, DOM object, mutable store or instrument-specific type. The compiled `PreparedKernelContributionCatalog` and `FrozenKernelContributionCatalog` are private Kernel Session objects, not FFI DTOs.
 
 #### Kernel Runtime
 
-Owns LiveScoreStore, every live index, TransactionOverlay, ChangeSet adoption, validation execution, history cursor/checkpoints, snapshot cache, event sequencing and dirty/replay mechanics. It is the **only** state/transaction/history/event owner, but it does not own Core handler registration or plugin instances.
+Owns LiveScoreStore, every live index, TransactionOverlay, ChangeSet adoption, affected-closure/incremental-validation caches and execution substrate, history cursor/checkpoints, snapshot cache, event sequencing and dirty/replay mechanics. It is the **only** state/transaction/history/event owner, but it does not own validation policy, deterministic WASM preparation/execution, Core handler registration or plugin instances.
 
 #### Kernel Use Cases
 
@@ -124,7 +124,7 @@ Owns orchestration of the 28 Core commands, routes, indexed target resolution, t
 
 #### Kernel Session / Composition Root
 
-`KernelSessionComposition` is the unique composition root. It combines Kernel Runtime, Kernel Use Cases, the 28 Core handlers, ExtensionTransactionGateway and a FrozenKernelContributionCatalog into one atomic `ready | failed` KernelSession result. Runtime itself does not discover or instantiate handlers.
+`KernelSessionComposition` is the unique composition root. It captures the document candidate, independent known-requirement inventory, installed contribution descriptor and bounded WASM artifact bundle; prepares one private catalog; then combines Kernel Runtime, Kernel Use Cases, the 28 Core handlers and ExtensionTransactionGateway. Its atomic result is `ready(writable session | global read-only session) | failed`; Runtime itself does not discover or instantiate handlers.
 
 #### Native Bridge
 
@@ -232,10 +232,10 @@ flowchart LR
 |---|---|---|
 | `core-types` | Stable IDs, revisions, schema/version/error primitives and bounded JSON values | ScoreDocument, commands, runtime, plugins |
 | `score-foundation` | Musical values, DTO semantic model, schema semantics, codec ordering | Sessions, commands, history, plugins |
-| `extension-protocol` | Extension mutations, namespace/reference/capability/schema/rule/WASM/migration/catalog contracts | Core command envelope, plugin executable instances, store, UI |
+| `extension-protocol` | Extension mutations, known inventory, namespace/reference/capability/schema/rule/WASM artifact/migration/catalog data contracts | Core command envelope, plugin executable instances, compiled artifacts, store, UI |
 | `kernel-contracts` | Core commands plus composite plugin proposal/request/result/event/snapshot/session DTOs and versions | Store, host callbacks, instrument implementations |
-| `kernel-runtime` | Store, indices, overlay adoption, validation execution, history, snapshots, events | Core handler directory, UI, plugin lifecycle |
-| `kernel-session` | Use Cases, 28 Core handlers, Extension Gateway and unique composition root | Product plugin discovery, UI, files |
+| `kernel-runtime` | Store, indices, overlay adoption, affected closure/validation substrate, history, snapshots, events | validation policy/WASM executor, Core handler directory, UI, plugin lifecycle |
+| `kernel-session` | Use Cases, 28 Core handlers, inventory/catalog/artifact preparation, deterministic validation executor, Extension Gateway and unique composition root | Product plugin discovery, UI, files |
 | `kernel-node` | Node capture/mapping, opaque handle, DTO conversion, panic containment | Business truth or second state/validation |
 
 ### 4.4 Forbidden dependencies
@@ -431,7 +431,7 @@ The three objects are never aliases:
 |---|---|---|
 | Plugin Semantic Command | TypeScript plugin in Extension Host | Interprets user intent, such as `guitar.fingering.set`. |
 | DomainChangeProposal | Plugin output | Detached data-only proposed Core/extension operations based on revision R. |
-| KernelExtensionTransactionRequest | Fixed host-to-kernel protocol | Authenticated identity, namespace, expected revision, canonical operation list and declared validation policy. |
+| KernelExtensionTransactionRequest | Fixed host-to-kernel protocol | Contribution identity, expected revision, prepared-catalog fingerprint and canonical proposal. Validation policy is not a request field. |
 
 Rust registers only fixed Core commands and the generic Extension transaction entry. It does not register or dispatch `guitar.*`, `piano.*` or `bass.*` handlers.
 
@@ -456,7 +456,7 @@ DomainChangeProposalV1 {
 }
 ```
 
-The request does not select or downgrade validation policy. KernelSession resolves policy, owned namespaces, allowed Core command IDs, schema versions, reference rules and budgets from its frozen catalog. `CoreCommandOperation` is permitted only when the contribution explicitly declares that fixed Core command capability; every Core operation is still routed through the accepted Core handler and all operations share one overlay/history/event unit.
+The request does not select or downgrade validation policy. `validationPolicy`, namespace grants, schema allowlists, rule/WASM identities, budgets or Core command capabilities appearing as extra request fields fail exact-shape decoding. KernelSession resolves all of them only from its private frozen catalog. `CoreCommandOperation` is permitted only when the contribution explicitly declares that fixed Core command capability; every Core operation is still routed through the accepted Core handler and all operations share one overlay/history/event unit.
 
 Stable preflight precedence is:
 
@@ -484,21 +484,21 @@ Stale revision exits before proposal operation decoding, WASM, overlay mutation,
 | B — Extension Protocol | Extension Protocol defines codec/rules; Kernel Session invokes them | catalog authenticity, namespace owner, schema version, operation allowlist, reference declarations, ownership and resource caps. |
 | C — Plugin Domain | Plugin supplies accepted rule/WASM data; Kernel Session owns the deterministic executor | Instrument/domain consistency such as tuning/string/fret/pitch, pedal state or technique relationships. |
 
-An Instrument Plugin whose persisted data influences layout, playback, migration or later writes declares `validationPolicy=domain-required` and provides either accepted DeclarativeDomainRules or a deterministic WASM validator. Missing/unavailable Level C support preserves bytes and read access but makes that namespace non-writable. A `structural-only` policy is limited to opaque/advisory metadata that does not claim instrument-domain validity.
+An Instrument Plugin whose persisted data influences layout, playback, migration or later writes declares `validationPolicy=domain-required` only in its installed contribution descriptor and provides either accepted DeclarativeDomainRules or a deterministic WASM validator. The independent inventory retains the accepted `requiredForWrite: true` fact rather than duplicating policy. A known required contribution that is absent or version-incompatible makes the entire KernelSession read-only under the accepted availability oracle; namespace-local write degradation is not introduced by V2. An installed `domain-required` descriptor lacking its declared rule/artifact is malformed preparation and publishes zero session rather than silently degrading its claimed validation. A `structural-only` policy is limited to installed opaque/advisory metadata that does not claim instrument-domain validity.
 
 Validators return diagnostics/classification only. The only writer remains Runtime through Overlay/ChangeSet.
 
 ### 8.4 Deterministic WASM execution contract
 
-Transaction WASM receives canonical detached input containing the compatible filtered ScoreSlice, current ExtensionBlock data, proposal, declared schema and resource budget. It returns one exact data-only result:
+Transaction WASM receives canonical detached input containing the compatible filtered ScoreSlice, current ExtensionBlock data, proposal, declared schema and resource budget. Output is exact and role-specific:
 
 ```text
-valid
-| invalid(ordered diagnostics)
-| unsupported(ordered facts)
+validator: valid | invalid(ordered diagnostics)
+classifier: supported | unsupported(ordered facts)
+migration: target-version replace-owned-block candidate
 ```
 
-The host environment exposes no mutable store, wall clock, random source, filesystem, UI/DOM, thread creation or arbitrary host callback. Execution is bounded by accepted module hash/version, linear-memory pages, fuel/instruction budget, recursion/stack policy, diagnostics count, facts count and output bytes. Trap, timeout/fuel exhaustion, malformed output or cap overflow produces an atomic contribution failure; later domain validators do not run and state remains zero-delta.
+Validator `unsupported`, classifier `valid`, migration diagnostics, or any cross-role union is malformed output. The host environment exposes no mutable store, wall clock, random source, filesystem, UI/DOM, thread creation or arbitrary host callback. Execution is bounded by the Rust-computed module hash, exact ABI version, at most 512 linear-memory pages (32 MiB), 10,000,000 fuel units per call, a 1 MiB engine stack limit, 1 MiB returned bytes, 1,024 diagnostics per callback, 4,096 aggregate transaction diagnostics and 131,072 canonical facts. Trap, timeout/fuel exhaustion, malformed output or cap overflow produces an atomic contribution failure; later domain validators do not run and state remains zero-delta. Changing these V1 limits requires a versioned protocol decision.
 
 Simple plugin authors can use TypeScript SDK builders for DeclarativeDomainRules. Complex domains may ship a WASM module produced by any toolchain that conforms to the same versioned protocol; Rust knowledge is not an application-level privilege.
 
@@ -669,13 +669,59 @@ Each accepted contribution has one owner `(pluginId, contributionId)` and a decl
 
 Plugin A never mutates Plugin B's ExtensionBlock. Cross-plugin collaboration uses a versioned, declared, read-only/public contribution contract or asks B through a Product Host capability. Dependencies, versions, namespace collisions and capabilities are resolved before session composition and frozen for the session.
 
-### 12.3 FrozenKernelContributionCatalog
+### 12.3 Independent known-requirement inventory
 
-Product Extension Host resolves the selected plugins and produces a strict `KernelContributionCatalogDescriptorV1` containing identities, namespaces, schema versions, reference policies, validation policies, rule descriptors, accepted WASM identities/hashes, resource budgets and deterministic order. It contains no TypeScript/React instance, DOM object, arbitrary callback, local path or mutable alias.
+Installed contributions and known document requirements are separate inputs. V2 retains the accepted `KernelKnownRequirementInventoryV1` shape and extends no authority through it:
 
-`KernelSessionComposition` exact-decodes that descriptor, rejects duplicate plugin/contribution/namespace ownership, unresolved dependencies, unsupported protocol/schema/rule/WASM versions, hash mismatch, noncanonical order and cap overflow, then compiles one private `FrozenKernelContributionCatalog`. The compiled catalog remains data-only but gains a process-local composition identity and canonical content fingerprint; it is never serialized or accepted back from FFI. A request's `catalogFingerprint` is only a deterministic session-mismatch check, not proof of authenticity. Structural lookalikes cannot manufacture the private composition identity. Ready-session contribution membership is immutable; plugin configuration changes take effect in a new session.
+```text
+KernelKnownRequirementInventoryV1 {
+  inventoryVersion: 1
+  requirements: up to 1,024 exact rows {
+    requirementVersion: 1
+    namespace
+    moduleId
+    contributionId
+    supportedSchemaVersions: 1..256 strictly ascending positive safe integers
+    requiredForWrite: true
+  }
+}
+```
 
-### 12.4 KernelSessionComposition
+The strict codec accepts a dense requirement array in any input order, rejects accessors, extra fields and malformed rows, then normalizes rows canonically by namespace, moduleId and contributionId. `supportedSchemaVersions` itself must already be nonempty, strictly ascending and duplicate-free. Duplicate namespace rows, more than 1,024 rows or more than 256 versions in one row reject preparation. Every installed catalog **requirement row** must appear exactly once with identical data; inventory may additionally retain a requirement whose module/contribution identity is absent. Reusing an installed identity with a namespace, versions or required-for-write fact that does not match one of that contribution's real requirement rows rejects parity rather than borrowing authority. In V1 the Product Plugin `pluginId` is captured as the exact same lexical runtime `moduleId`; there is no alias map, and a future rename requires protocol versioning.
+
+The inventory is assembled from the application-known plugin registry plus package requirement metadata. Future Official BGP Persistence carries this exact data in the `.bgp` manifest; before that product service exists, RKP fixtures and explicit application construction supply it. Package/inventory data can only restrict availability and identify an absent requirement; it never grants namespace write authority, Core command capability or executable identity.
+
+The existing catalog-only compatibility overload remains exact and derives an installed-only inventory. New Product Application session construction uses the explicit inventory form so absent requirements are reachable. Neither path changes the accepted application runtime export count, Module SDK `8/34` surface or nine-field contribution ABI.
+
+After a valid inventory decode, a matching row means **known** even when its plugin is absent. A row with a matching block version and no installed contribution is unavailable; an unlisted/future version is incompatible whether or not the contribution is installed. Only an inventory miss is unknown opaque data. Unknown blocks remain losslessly preserved and writable under Core rules but are excluded from installed-domain completeness claims.
+
+### 12.4 Preparation descriptor, WASM artifacts and private catalog
+
+Product Extension Host resolves selected plugins and produces a strict `KernelContributionCatalogDescriptorV1` containing identities, namespaces, schema versions, reference policies, validation policies, rule descriptors, WASM references, resource budgets and deterministic order. It contains no TypeScript/React instance, DOM object, arbitrary callback, local path or mutable alias.
+
+WASM reaches Rust only through a one-time `KernelWasmArtifactBundleV1` captured with session preparation:
+
+```text
+KernelWasmArtifactBundleV1 {
+  artifactBundleVersion: 1
+  artifacts: up to 256 exact rows {
+    artifactId
+    role: validator | classifier | migration
+    abiVersion
+    declaredSha256
+    bytes: detached immutable byte sequence, at most 8 MiB
+  }
+}
+aggregate artifact bytes: at most 64 MiB
+```
+
+The Node bridge copies a contiguous byte carrier once into Rust-owned memory before validation; Tauri passes an owned byte vector. Local paths, lazy loaders, shared mutable buffers and host callbacks are excluded. Every catalog reference resolves exactly one artifact and every supplied artifact must be referenced. Rust computes SHA-256 from captured bytes, compares it to the descriptor, checks the exact ABI/role, applies the count/per-artifact/aggregate caps, and compiles a private prepared artifact. Hash mismatch, unsupported ABI/role, duplicate or unused artifact, cap overflow and compile failure are distinct deterministic preparation diagnostics and publish no partial catalog or runtime.
+
+`KernelSessionComposition` then compiles a private `PreparedKernelContributionCatalog` from the authentic descriptor, independent inventory and prepared artifacts. Construction priority is fixed: Core strict decode/schema migration/semantic validity; descriptor exact decode/authenticity; inventory decode/caps; installed-inventory parity; artifact bundle exact decode/caps; Rust hash; ABI/role; compile; private composition identity; extension compatibility/availability; migrations; final Level A/B/C; Runtime construction. Current accepted failure precedence and data-only mappings remain migration oracles; RKP-5 freezes the Rust enum/mapping without adding an application runtime export.
+
+The final `FrozenKernelContributionCatalog` contains data-only normalized entries plus private prepared artifact handles, a process-local composition identity and a canonical fingerprint over descriptor + inventory + artifact hashes + limits. It is never serialized or accepted back from FFI. A request's `catalogFingerprint` is only a deterministic session-mismatch check, not authenticity. Structural lookalikes cannot manufacture the private identity. Ready-session membership is immutable; plugin configuration changes take effect in a new session.
+
+### 12.5 KernelSessionComposition and availability
 
 Owned exactly once by `brilliant-kernel-session`. It combines:
 
@@ -684,48 +730,65 @@ KernelRuntime
 KernelUseCases
 28 CoreHandlers
 ExtensionTransactionGateway
+KernelKnownRequirementInventoryV1
 FrozenKernelContributionCatalog
 ```
 
-It returns `ready(session + composition identity) | failed(data-only diagnostics)` atomically. Failure publishes zero session and zero partial catalog/directory. Kernel Runtime itself neither discovers plugins nor owns the Core handler count.
+Its atomic result is:
 
-### 12.5 Product ApplicationAssembly
+```text
+ready {
+  session
+  mode: writable | read-only
+  writeAvailability
+  validationAvailability
+  compositionIdentity
+}
+| failed { data-only diagnostics }
+```
+
+Known unavailable or incompatible blocks produce a complete **read-only KernelSession**, not a result outside composition. That session retains decode/encode, immutable snapshot, selectors, inspection, checkpoint bookkeeping, incomplete validation reporting and exact opaque ExtensionBlock preservation. Submit, undo, redo and the first replay write run one cached global availability preflight before request decoding, empty-history checks, proposal handling, WASM or other callbacks. Incompatible wins the public failure code over unavailable while the result carries the complete canonical mixed fact list. Empty replay remains the accepted no-write exception. Namespace-local write mode is outside V2.
+
+Malformed Core data, malformed preparation inputs, catalog/inventory parity failure, artifact preparation failure or installed exact-compatible domain semantic invalidity yields `failed` and publishes zero session. Missing plugins, unsupported block versions or an unavailable migration preserve the Core-valid document and publish a read-only session with canonical availability/diagnostic facts. Kernel Runtime itself neither discovers plugins nor owns the Core handler count.
+
+### 12.6 Product ApplicationAssembly
 
 Owned exactly once by Product Host. It combines an accepted KernelSession factory, Product Extension Host, selected Instrument/functional/visual plugins, Workbench contributions, service providers, Official BGP Persistence and i18n. It returns `ready | failed` and freezes after ready.
 
-Product assembly identity is distinct from KernelSession composition identity. Product Host passes only the catalog descriptor and fixed DTOs through the bridge; KernelSessionComposition alone compiles the private frozen catalog and never exposes it back to the host. Product Host never reconstructs Runtime private state.
+Product assembly identity is distinct from KernelSession composition identity. Product Host passes only the detached document candidate, inventory, catalog descriptor, migration outcomes, bounded artifact bundle and fixed DTOs through the bridge; KernelSessionComposition alone prepares the private catalog and never exposes it back to the host. Product Host never reconstructs Runtime private state.
 
-### 12.6 Pre-session plugin migration
+### 12.7 Pre-session preparation and migration
 
-Opening a document uses this detached pipeline:
+Opening a document uses this sequence:
 
 ```mermaid
 flowchart TD
-    Decode["Strict Core document decode"]
-    CoreMigration["Core schema migration"]
-    Resolve["Extension Host resolves installed plugins"]
-    Inventory["Classify every ExtensionBlock"]
-    PluginMigration["Run installed plugin migrations on detached candidates"]
-    ValidateA["Level A Core full validation"]
-    ValidateB["Level B extension validation"]
-    ValidateC["Level C installed-domain validation"]
-    Compose["KernelSessionComposition"]
-    Ready["Writable ready session"]
-    Preserve["Lossless read-only result + diagnostics"]
+    Decode["Strict Core decode + Core schema migration + Core semantic gate"]
+    Resolve["Extension Host resolves installed plugins + independent known inventory"]
+    TSMigrate["Detached TypeScript migrations; retain original on failure"]
+    Capture["Capture document + migration outcomes + descriptor + inventory + bounded WASM bytes"]
+    Prepare["Kernel Session exact decode, parity, Rust hash/ABI/caps, private catalog preparation"]
+    WasmMigrate["Optional prepared WASM migrations on detached candidate"]
+    Validate["Final full Level A/B/C + compatibility/availability"]
+    Construct["Construct Runtime and KernelSession"]
+    Writable["Publish writable ready session"]
+    ReadOnly["Publish complete read-only ready session + facts"]
+    Failed["Publish failed diagnostics; zero session"]
 
-    Decode --> CoreMigration --> Resolve --> Inventory --> PluginMigration
-    PluginMigration --> ValidateA --> ValidateB --> ValidateC --> Compose --> Ready
-    Inventory -->|plugin missing or version unavailable| Preserve
-    PluginMigration -->|failure| Preserve
-    ValidateA -->|failure| Preserve
-    ValidateB -->|failure| Preserve
-    ValidateC -->|failure or domain validator unavailable| Preserve
-    Compose -->|failure| Preserve
+    Decode --> Resolve --> TSMigrate --> Capture --> Prepare --> WasmMigrate --> Validate --> Construct
+    Construct -->|complete + compatible| Writable
+    Construct -->|known unavailable/incompatible or migration unavailable| ReadOnly
+    Decode -->|invalid Core| Failed
+    Capture -->|malformed input| Failed
+    Prepare -->|catalog/inventory/artifact failure| Failed
+    Validate -->|exact-compatible domain semantic invalid| Failed
 ```
 
-TypeScript migration executes in Product Extension Host before any session exists. A migration transforms only a detached block/candidate and is subject to exact owner/namespace/source/target checks and final strict round-trip validation. Optional deterministic WASM migration follows the same boundary. A missing plugin leaves original ExtensionBlock bytes/semantics preserved. Failure produces no partially migrated writable session.
+TypeScript migration executes in Product Extension Host before any session exists and may transform only a detached block/candidate. A throw, malformed return or failed owner/namespace/source/target check discards that candidate and records a data-only migration-unavailable outcome against the unchanged Core-valid document. After capture, arbitrary TypeScript no longer runs.
 
-### 12.7 Plugin lifecycle
+Optional WASM migration executes only through the prepared private artifact after Rust hash/ABI/cap checks. It must return a target-version owned-block replacement; remove, cross-namespace change, wrong version, trap, fuel exhaustion or malformed output discards the candidate. Rust performs strict round-trip decode and final Level A/B/C validation before publishing. Missing plugins and failed/unavailable migrations preserve the original ExtensionBlock and enter the complete read-only session path; no partially migrated writable session exists.
+
+### 12.8 Plugin lifecycle
 
 Product Extension Host owns discovery, install/remove, enable/disable config, manifest, dependency resolution, permission/capability mapping, fault isolation, version compatibility and restart prompts. V1 changes apply to a new session; ready-session hot reload/unload/replace remains outside the first architecture.
 
@@ -839,11 +902,11 @@ Accepted CVN caps remain migration inputs. Rust allocations, recursion, callback
 | RKP-2 | Indexed LiveScoreStore, load/encode/index parity | TypeScript |
 | RKP-3 | Overlay/ChangeSet and 28 Core commands | TypeScript |
 | RKP-4 | History, selectors/snapshots, events, replay | TypeScript |
-| RKP-5 | Incremental validation, Extension Protocol, DeclarativeDomainRules and deterministic WASM contract | TypeScript |
-| RKP-6 | Product-host fixture, two external synthetic Instrument Plugins, FrozenCatalog and KernelSessionComposition | TypeScript |
-| RKP-7 | Full TS/Rust differential, plugin golden-path and performance gate | TypeScript |
+| RKP-5 | Incremental validation; Extension Protocol/request codecs; Catalog-only policy; DeclarativeDomainRules; bounded WASM artifact capture, hash/ABI compilation and deterministic executor | TypeScript |
+| RKP-6 | Known inventory; descriptor/inventory parity; private catalog/composition identity; global read-only KernelSession; gateway/stale revision/namespace enforcement; detached TS/prepared-WASM migration orchestration; two external synthetic Instrument Plugins | TypeScript |
+| RKP-7 | Full TS/Rust differential and performance gates for Core plus unavailable/incompatible/unknown/mixed, artifact preparation, migration and plugin transaction golden paths | TypeScript |
 | RKP-8 | One reviewed commit switches the default KernelSession implementation | Rust |
-| RKP-9 | Qualification V2 including migration/namespace/WASM/persistence boundaries and obsolete TS-oracle cleanup | Rust |
+| RKP-9 | Qualification V2 of already implemented Core/Session/plugin-protocol capabilities; persistence/layout product-port fixtures only; obsolete TS-oracle cleanup after PASS | Rust |
 
 RKP-0 remains accepted input. After V2 acceptance, RKP-1 planning must adopt the seven-crate split and repaired plugin/session boundaries through a separate authority-sync; it may not start from the older four/five-crate proposals unchanged.
 
@@ -852,6 +915,8 @@ RKP-0 remains accepted input. After V2 acceptance, RKP-1 planning must adopt the
 Every stage has one dependency-satisfied child, independent branch/worktree, exact allowlist, frozen rollback point, focused/full/differential gates, separate implementation audit, explicit acceptance and archive. Failure returns to the previous accepted stage.
 
 No long-lived product-visible dual-engine switch exists. TypeScript remains default through RKP-7; RKP-8 performs one reviewed switch; RKP-9 cleans only after qualification.
+
+RKP-5 is the sole owner of the deterministic rule/WASM preparation and executor mechanism. RKP-6 is the sole owner of composition-time inventory, availability, gateway, namespace, stale-revision and migration orchestration. RKP-7 only proves parity/performance and returns feature changes to RKP-5 or RKP-6. RKP-8 only changes the default KernelSession implementation. RKP-9 qualifies accepted capabilities and may clean the old oracle only after PASS; it does not implement Official BGP Persistence, Layout, Renderer or the real Guitar Plugin. Those remain independent post-RKP product children with their own implementation and qualification.
 
 ### 16.3 Rollback
 
@@ -919,17 +984,20 @@ Old documents remain for traceability. Candidate creation does not edit them. A 
 | History | submit/undo/redo; tail truncation; empty cases; 512/32MiB checkpoint; no document copies |
 | Replay | semantic reroute; no stored-effect command input; deterministic state/event |
 | Validation | incremental/full parity; fallback; canonical issues/facts/availability |
-| Domain contributions | frozen order; missing/incompatible; throw/panic/malformed isolation; restricted view/builder |
-| Plugin request | Plugin Command/Proposal/Kernel Request separation; stale revision; one recomputation; no Core rebase |
-| Domain validation | Level A/B/C order; declarative/WASM parity; trap/fuel/memory/output caps; zero-delta |
+| Known requirements | exact `requirementVersion: 1`; explicit inventory 1,024/1,025 rows; versions 256/257; duplicate namespace/parity; arbitrary dense input-order normalization; unavailable/incompatible/unknown/mixed; canonical facts; complete read-only Session |
+| Domain contributions | installed catalog order; inventory parity; zero-compatible callbacks; throw/panic/malformed isolation; restricted view/builder |
+| Plugin request | Plugin Command/Proposal/Kernel Request separation; `validationPolicy` extra-field rejection; stale revision; one recomputation; no Core rebase |
+| WASM preparation | artifacts 256/257; 8 MiB and aggregate 64 MiB boundaries; detached-byte alias isolation; Rust SHA-256; hash/ABI/role/unused/compile precedence |
+| Domain validation | Level A/B/C order; declarative/WASM parity; trap/fuel/memory/stack/output/issue/fact caps; zero-delta |
 | Namespace | owner-only writes; collision; declared cross-plugin contribution; missing dependency degradation |
-| Migration | detached pre-session TS/WASM migration; missing plugin preservation; zero partial writable session |
+| Migration | detached pre-session TS then prepared-WASM migration; original-candidate preservation; missing/failed migration read-only Session; zero partial writable session |
 | Snapshot/event | old snapshot stability; cache; detached aliases; event identity/order/dirty |
 | Boundary | hostile JS; exact Rust decode; no handle/pointer/path/backtrace leaks; FFI caps |
 | Differential | 64-row oracle; 28 commands; 51 exports; SDK 8/34; ABI 9; schema V1 |
 | Performance | 60 FPS; 102,400-Event edit; batch/replay; 10,000 operations; RSS; complexity counters |
-| Product | Guitar edit, fingering, layout, SVG, playback, `.bgp`, reopen, undo/redo |
-| Services | semantic layout chain; renderer replacement; mandatory canonical BGP owner; import/export providers |
+| RKP qualification | RKP-7 differential/performance; RKP-8 switch only; RKP-9 qualifies already implemented Core/Session/plugin fixtures and cleans only after PASS |
+| Post-RKP product | Guitar edit, fingering, layout, SVG, playback, `.bgp`, reopen, undo/redo through separately implemented product children |
+| Product services | semantic layout chain; renderer replacement; mandatory canonical BGP owner; import/export providers; no premature RKP-9 service qualification claim |
 
 ---
 
@@ -1105,14 +1173,18 @@ effects
 9. Public ordering is semantic, not hash/allocation order.
 10. Guitar, Piano, Bass and third-party Instrument Plugins use the same protocol and never access mutable store.
 11. Plugin Semantic Commands execute in Extension Host; Rust receives only fixed data-only requests.
-12. Domain-required writes pass DeclarativeDomainRules or bounded deterministic WASM inside the transaction.
-13. Plugins write only owned namespaces; cross-plugin collaboration uses declared public contributions.
-14. React contributes views, not score truth; Instrument Plugins contribute semantics, not renderer calls.
-15. KernelSessionComposition and Product ApplicationAssembly have different unique owners.
-16. Plugin migrations finish on detached data before a writable session exists.
-17. Official BGP Persistence uniquely owns canonical `.bgp` durability in V1.
-18. Product files and plugin lifecycle remain outside Core Platform.
-19. Every RKP stage remains reversible until the one reviewed cutover.
-20. RKP-9 is followed by a real Guitar Plugin vertical slice before broader horizontal abstraction.
+12. Known requirements and installed contributions are separate; only a valid inventory miss is unknown opaque data.
+13. Any known unavailable/incompatible requirement makes the complete KernelSession globally read-only while preserving selectors, snapshots and encode.
+14. Transaction requests never carry validation policy; private prepared catalog data is the sole transaction-time source.
+15. Domain-required writes pass DeclarativeDomainRules or bounded deterministic WASM inside the transaction.
+16. WASM bytes are captured once, hashed and compiled by Rust before any WASM migration or validation.
+17. Plugins write only owned namespaces; cross-plugin collaboration uses declared public contributions.
+18. React contributes views, not score truth; Instrument Plugins contribute semantics, not renderer calls.
+19. KernelSessionComposition and Product ApplicationAssembly have different unique owners.
+20. Plugin migrations finish on detached data before a writable session exists; unavailable migration publishes only a read-only Session over preserved data.
+21. Official BGP Persistence uniquely owns canonical `.bgp` durability in V1 and is implemented after RKP qualification.
+22. Product files and plugin lifecycle remain outside Core Platform.
+23. Every RKP stage remains reversible until the one reviewed cutover.
+24. RKP-9 qualifies implemented Core/Session/plugin fixtures; real Persistence/Layout/Guitar qualification belongs to their post-RKP product children.
 
 Any future task needing to violate an invariant returns to architecture planning and independent review rather than stretching a stage.

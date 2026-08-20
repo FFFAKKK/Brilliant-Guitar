@@ -25,3 +25,4 @@
 {"file":".trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/research/current-architecture-evidence.md","reason":"Use the candidate's reproducible physical and hot-path evidence."}
 {"file":".trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/research/authority-conflict-and-supersession-map.md","reason":"Apply explicit retain/refine/supersede/historical/defer decisions."}
 {"file":".trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/research/plugin-runtime-semantics-audit-and-decisions.md","reason":"Implement the bounded decisions for plugin commands, validation, WASM, migration, composition, namespace and services."}
+{"file":".trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/research/inventory-preparation-and-rkp-owner-repair.md","reason":"Consume the bounded repair for independent inventory, global read-only Session, Catalog-only policy, Rust-owned WASM preparation and unique RKP owners."}

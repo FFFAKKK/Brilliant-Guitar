@@ -7,7 +7,8 @@
 - Base: `5e1599598b1468784ae9b7410383ef63b33201b8`
 - Task: `.trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2`
 - Initial candidate commit: `d9293ee84b1c547af77eeab2cde907a3261c9999`
-- Bounded repair commit: current clean HEAD with subject `docs(architecture): repair plugin runtime semantics`
+- First bounded repair: `812f154e18bafd8cc2cef858be4cfa46603563ed`, `docs(architecture): repair plugin runtime semantics`
+- Current bounded repair: resolve clean HEAD with subject `docs(architecture): close extension preparation contracts`
 
 ## What this candidate delivers
 
@@ -18,6 +19,8 @@
 5. A staged document review/promotion procedure.
 6. Exact compatibility inventories and future implementation test gates.
 7. Repaired unified Instrument Plugin, Level A/B/C validation, deterministic WASM, migration, namespace, service and composition contracts.
+8. Independent known inventory, global read-only KernelSession, Catalog-only request policy and bounded Rust-owned WASM preparation.
+9. Unique RKP-5/6 implementation owners with RKP-7 proof, RKP-8 switch and RKP-9 qualification-only boundaries.
 
 ## What it does not deliver
 
@@ -30,7 +33,7 @@
 
 ## Next actor
 
-The next actor is a **separate read-only architecture auditor**, not a production operator. Use the review focus in `review-candidate.md`, inspect exact HEAD and diff, and report P0/P1/P2. Do not modify the worktree.
+The next actor is a **dedicated separate read-only architecture-auditor Codex thread**, reached through cross-thread communication, not a local subagent and not a production operator. Use the review focus in `review-candidate.md`, inspect exact HEAD and diff, and report P0/P1/P2 without modifying the worktree.
 
 If the auditor returns a finding, return it to the planning session for one bounded docs-only repair and targeted rereview. If the auditor passes, stop for explicit user acceptance.
 
@@ -51,9 +54,10 @@ Only after independent PASS and explicit user acceptance:
 - independent branch/worktree and exact allowlist;
 - TypeScript remains default through RKP-7;
 - RKP-8 is the one default switch;
-- RKP-9 qualifies/cleans later;
+- RKP-9 qualifies already implemented Core/Session/plugin fixtures and cleans only after PASS;
 - rollback to previous accepted stage;
-- RKP-1 uses seven crates; RKP-5 owns Extension Protocol/domain validation; RKP-6 proves two external synthetic Instrument Plugins;
+- RKP-1 uses seven crates; RKP-5 implements Extension Protocol/request codecs and WASM preparation/executor; RKP-6 implements known inventory, global read-only Session, gateway/namespace/stale revision/migration and two external synthetic Instrument Plugins; RKP-7 only proves them;
+- Official BGP Persistence, Layout/Renderer and the real Guitar Plugin are implemented and qualified by post-RKP product children, not RKP-9;
 - first post-RKP work is the default Guitar Instrument Plugin/Core Loop, not a new generic registry/plugin framework.
 
 ## Protected scope
@@ -67,7 +71,7 @@ status=planning
 task_start_run=false
 production_implementation_authorized=false
 candidate_authority_status=proposed_not_current
-independent_architecture_review=targeted_rereview_pending_after_bounded_plugin_runtime_repair
+independent_architecture_review=pending_dedicated_cross_thread_review_after_inventory_preparation_repair
 rkp1_created=false
 rkp1_started=false
 archive_authorized=false

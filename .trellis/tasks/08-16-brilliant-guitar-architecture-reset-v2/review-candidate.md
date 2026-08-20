@@ -2,7 +2,7 @@
 
 ## Candidate status
 
-**Status: `READY FOR TARGETED INDEPENDENT ARCHITECTURE REREVIEW`.** The bounded plugin-runtime repair and local clean-HEAD gates passed. The task remains `planning`; this self-audit does not replace the separate read-only architecture rereview.
+**Status: `READY FOR DEDICATED CROSS-THREAD ARCHITECTURE REVIEW`.** The inventory/preparation bounded repair and local clean-HEAD gates passed. The task remains `planning`. An advisory subagent finding is planning input only and is not the formal independent verdict.
 
 ## Exact review input
 
@@ -31,21 +31,26 @@ The auditor should assess architecture completeness and internal consistency, no
 12. Are Guitar, Piano, Bass and third-party Instrument Plugins equal protocol consumers with no official Runtime privilege?
 13. Are Plugin Semantic Command, DomainChangeProposal and KernelExtensionTransactionRequest distinct, with no instrument handler registered in Rust?
 14. Does Level A/B/C validation close authoritative domain writes, including structural-only limits and deterministic declarative/WASM behavior?
-15. Are WASM inputs/outputs pure and exact, with fuel/memory/output caps and atomic trap/overflow behavior?
-16. Does KernelSessionComposition have one `kernel-session` owner and Product ApplicationAssembly one Product Host owner, with different identities?
-17. Does pre-session migration preserve missing-plugin blocks and avoid a partially migrated writable session?
-18. Are namespace writes owner-only and cross-plugin collaboration limited to declared/versioned public contributions?
-19. Is stale revision rejected by Kernel, with at most one host-side recomputation and no Core rebase?
-20. Is Official BGP Persistence the unique canonical V1 durability owner while other formats use provider ports?
-21. Does Instrument semantic contribution flow through Layout Engine and Render Scene before Renderer?
-22. Are Event/Voice time truth, Note fields and score/Part ExtensionBlock V1 preserved?
-23. Does Node/Tauri bridging use small DTOs and avoid a second validation/transaction path?
-24. Do the exact 28/51/8/34/9/schema inventories match accepted RKP-0 fixtures?
-25. Are performance targets paired with complexity counters and executable future gates?
-26. Do RKP-1/5/6/9 uniquely own the repaired contracts while RKP-8 remains the only cutover?
-27. Does RKP-9 lead to the default Guitar Instrument Plugin/Core Loop before broad horizontal expansion?
-28. Does every old-document conflict have an explicit retain/refine/supersede/historical/defer disposition?
-29. Is candidate scope docs-only and are current authorities/RKP-1 untouched?
+15. Are known requirements independent from installed contributions, with exact `requirementVersion: 1`, 1,024-row/256-version caps, arbitrary dense input-order canonicalization, installed-requirement parity and only inventory miss classified unknown?
+16. Do unavailable-only, incompatible-only and mixed states publish a complete global read-only KernelSession with selector/snapshot/encode and zero write callbacks?
+17. Are WASM bytes captured once with 256/8 MiB/64 MiB caps, Rust SHA-256, ABI/role/reference checks and private compilation before migration or validation?
+18. Is validation policy Catalog-only, with policy/namespace/schema/WASM/capability request fields rejected as extras?
+19. Are WASM inputs/outputs pure and exact, with fuel/memory/stack/output/issue/fact caps and atomic trap/overflow behavior?
+20. Does KernelSessionComposition have one `kernel-session` owner and Product ApplicationAssembly one Product Host owner, with different identities?
+21. Does pre-session TypeScript migration precede capture, while prepared-WASM migration follows Rust preparation and every unavailable path preserves an original read-only Session?
+22. Are namespace writes owner-only and cross-plugin collaboration limited to declared/versioned public contributions?
+23. Is stale revision rejected by Kernel, with at most one host-side recomputation and no Core rebase?
+24. Is Official BGP Persistence the unique canonical V1 durability owner while other formats use provider ports?
+25. Does Instrument semantic contribution flow through Layout Engine and Render Scene before Renderer?
+26. Are Event/Voice time truth, Note fields and score/Part ExtensionBlock V1 preserved?
+27. Does Node/Tauri bridging use small DTOs and avoid a second validation/transaction path?
+28. Do the exact 28/51/8/34/9/schema inventories match accepted RKP-0 fixtures?
+29. Are performance targets paired with complexity counters and executable future gates?
+30. Does RKP-5 implement protocol/WASM and RKP-6 inventory/composition/gateway/migration, while RKP-7 only proves, RKP-8 only switches and RKP-9 only qualifies accepted fixtures?
+31. Are real BGP Persistence, Layout/Renderer and Guitar implementation/qualification left to post-RKP product children?
+32. Does RKP-9 lead to the default Guitar Instrument Plugin/Core Loop before broad horizontal expansion?
+33. Does every old-document conflict have an explicit retain/refine/supersede/historical/defer disposition?
+34. Is candidate scope docs-only and are current authorities/RKP-1 untouched?
 
 ## Review exclusions
 
@@ -72,27 +77,28 @@ P0/P1/P2 = x/y/z
 
 ## Local candidate evidence
 
-Latest bounded-repair evidence:
+Latest inventory/preparation bounded-repair evidence:
 
-- New-task Trellis: `PASS`, 27 + 27 entries.
+- New-task Trellis: `PASS`, 28 + 28 entries.
 - Product-parent Trellis: `PASS`, 0 + 0 entries.
 - Rust-parent Trellis: `PASS`, 18 + 19 entries.
 - Post-Core-parent Trellis: `PASS`, 15 + 16 entries.
-- JSON/JSONL/path uniqueness: `PASS`, 27 unique existing paths in each context file.
+- JSON/JSONL/path uniqueness: `PASS`, 28 unique existing paths in each context file.
 - Parent child count: `PASS`, exactly 1.
-- Markdown/Mermaid fences: `PASS`.
+- Markdown/Mermaid fences: `PASS`, 96 fence lines, 6 Mermaid openers, zero odd files.
 - `git diff --check`: `PASS`.
-- Protected production delta: `PASS`, zero.
+- Protected production delta: `PASS`, zero across `src/**`, `test/**`, package/tsconfig/Cargo and `crates/**`.
 - Typecheck: `PASS`.
 - Build: `PASS`.
-- Full suite: `PASS`, 531/531 on the clean repair HEAD.
+- Full suite: `PASS`, 531/531 on the clean repair commit; the planner report must also supply the post-amend clean-HEAD rerun result and resolved commit hash.
 - Planning self-audit: `PASS`, P0/P1/P2=`0/0/0`.
-- Repair commit scope: `PASS`, candidate task directory only; cumulative base diff retains the already-committed parent child reference.
-- Worktree after final amended commit: `PASS`, clean and staged empty; the final planner report supplies the resolved HEAD.
+- Repair commit scope: `PASS`, 11 files and all are inside this candidate task directory.
+- Worktree: the planner report must supply final clean/staged-empty status after the evidence amend.
 
 ## Current lifecycle declaration
 
-- Independent architecture review: `targeted rereview pending after bounded plugin-runtime repair`.
+- Formal independent architecture review: `pending dedicated cross-thread review after inventory/preparation repair`.
+- Advisory subagent result: `not formal evidence; four reproduced planning findings consumed`.
 - V2 current authority: `false`.
 - Production implementation authorization: `false`.
 - RKP-1 created/started: `false/false`.
