@@ -2,9 +2,18 @@
 
 ## Required verdict
 
-Current status: `IMPLEMENTATION REVIEW REQUIRED`.
+Current status: `BOUNDED IMPLEMENTATION REPAIR ACTIVE / CANDIDATE NOT READY`.
 
-An independent read-only implementation auditor must return either `PASS`, P0/P1/P2=`0/0/0`, or a bounded implementation return with exact file/line, severity and violated authority. A technical PASS does not accept/archive RKP-1, authorize push/default cutover/official qualification, or create RKP-2.
+The full implementation audit returned `RETURN FOR BOUNDED IMPLEMENTATION REPAIR`, P0/P1/P2=`0/4/0`, for exact candidate `efe3bbc9852aef2cf7949c3ae221218b1c2590dd` in task `01a01e48-1934-77b0-821e-a8026cd9e5f7`. No rereview is requested until all four independently revertible repairs and the final gates pass.
+
+## Active four-P1 repair scope
+
+1. deterministic structural failure collection and canonical precedence/path selection;
+2. request length rejection before allocation and truly capped response encoding;
+3. remove-wrap/finalizer tests exercising the production ownership state machine;
+4. `rustfmt` `newline_style = "Auto"` with both `core.autocrlf=true` and `false` detached-clone evidence.
+
+The 40 implementation paths and seven accepted planning-only paths remain exact. TypeScript stays default; no acceptance, archive, push, official qualification or RKP-2 is authorized.
 
 ## Candidate boundary
 

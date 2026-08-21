@@ -1,6 +1,6 @@
 # RKP-1 Implementation Evidence
 
-Status: `STAGES A-D COMPLETE / STAGE E BOUNDED REPAIR COMPLETE / IMPLEMENTATION REVIEW REQUIRED`.
+Status: `FULL IMPLEMENTATION AUDIT RETURNED 0/4/0 / FOUR-P1 BOUNDED IMPLEMENTATION REPAIR ACTIVE / CANDIDATE NOT READY`.
 
 The final targeted planning audit passed P0/P1/P2=`0/0/0` for exact planning HEAD `89115daedc623c0d35386a4a433cc7fd95215223` in audit task `01a01e48-1934-77b0-821e-a8026cd9e5f7`. The user then authorized implementation. Activation began from a clean worktree at that exact HEAD, created branch `codex/rkp-1-seven-crate-workspace-contracts-bridge-session-smoke`, and ran the Trellis start command. The child remains `in_progress`; implementation review is `pending`; TypeScript remains default; acceptance, archive, push, RKP-2+ creation, default cutover and official qualification remain unauthorized.
 
@@ -99,3 +99,14 @@ The repair formed two narrow commits:
 The first clean-clone `npm ci` attempts against the shared Windows npm cache failed `EPERM` while statting one cache object. They are retained as non-passing environment evidence. A task-specific cache outside the clone removed the contention; the clean-clone repository and tracked files were not modified. The first isolated-cache run then found CRLF-sensitive workspace-law comparisons, producing `9/11`; the authorized workspace-law-only follow-up fixed that portability defect, and a new clean clone at `0c1a1da...` passed `11/11` with tracked status empty.
 
 No `src/**`, `crates/**`, Cargo/package/tsconfig or other test path changed in this bounded repair. CVN-7 evidence, qualification state, budgets and runner are unchanged; TypeScript remains default; public `28/51/8/34/9` and `brilliant-score-1` remain exact. The candidate stays `in_progress` with implementation review pending. This ledger is not acceptance, archive, push, official qualification or RKP-2 authority.
+
+## Full implementation audit return at `efe3bbc`
+
+Independent full implementation audit task `01a01e48-1934-77b0-821e-a8026cd9e5f7` returned P0/P1/P2=`0/4/0` for exact candidate `efe3bbc9852aef2cf7949c3ae221218b1c2590dd`. The four bounded findings are:
+
+1. structural codec winner selection still depends on traversal/source order and Foundation errors collapse nested paths;
+2. request bytes can be fully copied before the cap, while response bytes are fully allocated before the cap check;
+3. remove-wrap fault tests simulate counters instead of exercising the production rollback/finalizer ownership path;
+4. `rustfmt.toml` is not stable across both Windows `core.autocrlf=true` and `false` checkouts.
+
+This is an implementation repair, not a planning expansion. The exact matrix remains 40 implementation paths plus seven independently accepted planning-only paths. Candidate readiness is revoked until four small commits and the complete integration gate pass. No default-runtime switch, acceptance, archive, push, official measurement or RKP-2 action is authorized.

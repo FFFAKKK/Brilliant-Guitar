@@ -2,11 +2,11 @@
 
 ## Current status
 
-`IMPLEMENTATION CANDIDATE / IMPLEMENTATION REVIEW REQUIRED`.
+`FOUR-P1 BOUNDED IMPLEMENTATION REPAIR ACTIVE / CANDIDATE NOT READY`.
 
-The bounded-repair planning candidate `b944876aefc2b359b459bb8565afa38c0635765b` received independent targeted planning rereview `PASS`, P0/P1/P2=`0/0/0`, in audit task `01a01e48-1934-77b0-821e-a8026cd9e5f7`. The user then authorized the bounded implementation repair on branch `codex/rkp-1-cvn7-historical-boundary-implementation-repair`.
+The full implementation audit returned P0/P1/P2=`0/4/0` for `efe3bbc9852aef2cf7949c3ae221218b1c2590dd` in task `01a01e48-1934-77b0-821e-a8026cd9e5f7`. The user authorized only the four bounded repairs already required by the accepted RKP-1 plan. Branch `codex/rkp-1-four-p1-bounded-implementation-repair` starts at that exact rejected candidate.
 
-The child remains `in_progress`, `task_start_run=true`, `production_implementation_authorized=true`, `implementation_paused_for_bounded_planning_repair=false`, `implementation_candidate_ready=true`, `independent_planning_rereview=passed`, and `implementation_review=pending`. TypeScript remains the product default. Acceptance, archive, push, official CVN-7 measurement, default cutover and RKP-2+ creation remain unauthorized.
+The child remains `in_progress`, `task_start_run=true`, `production_implementation_authorized=true`, `implementation_candidate_ready=false`, `implementation_repair_active=true`, and `implementation_review=returned_for_bounded_implementation_repair`. TypeScript remains the product default. Acceptance, archive, push, official CVN-7 measurement, default cutover and RKP-2+ creation remain unauthorized.
 
 ## Commit chain and rollback points
 
