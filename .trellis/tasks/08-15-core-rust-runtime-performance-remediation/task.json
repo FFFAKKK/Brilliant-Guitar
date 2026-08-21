@@ -42,7 +42,7 @@
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
     ".trellis/tasks/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RUST PERFORMANCE REMEDIATION PLANNING REVIEW PASSED / ARCHITECTURE RESET V2 AND AUTHORITY SYNC ACCEPTED / RKP-0 ACCEPTED AND ARCHIVED AT 9BC5390 / RKP-1 PLANNING AUDIT PASS 0-0-0 AT 89115DA / USER AUTHORIZED AND RKP-1 STARTED / RKP-1 IS THE ONLY ACTIVE IMPLEMENTATION CHILD / IMPLEMENTATION REVIEW PENDING / RKP-2 THROUGH RKP-9 ABSENT / TYPESCRIPT DEFAULT / NO ACCEPT ARCHIVE PUSH OR OFFICIAL QUALIFICATION.",
+  "notes": "RUST PERFORMANCE REMEDIATION PLANNING REVIEW PASSED / ARCHITECTURE RESET V2 AND AUTHORITY SYNC ACCEPTED / RKP-0 ACCEPTED AND ARCHIVED AT 9BC5390 / RKP-1 STARTED AND REMAINS THE ONLY ACTIVE IMPLEMENTATION CHILD / STAGE E PRE-REPAIR RESULT 541-OF-542 / RKP-1 IMPLEMENTATION PAUSED FOR DOCS-ONLY CVN7 HISTORICAL BOUNDARY PLANNING REPAIR / PLANNING REREVIEW PENDING / RKP-2 THROUGH RKP-9 ABSENT / TYPESCRIPT DEFAULT / NO ACCEPT ARCHIVE PUSH OR OFFICIAL QUALIFICATION.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
@@ -90,7 +90,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "rkp1_bounded_planning_repair_for_cvn7_regression_boundary_before_implementation_review",
+    "next_gate": "rkp1_cvn7_historical_boundary_planning_rereview_before_closed_interval_and_workspace_law_test_repair",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -160,16 +160,27 @@
     "rkp1_status_sync_commit": "7174c5ac50655ae0cb8807e21c7045a0c1b6d15e",
     "rkp1_repair_branch": "codex/rkp-1-seven-crate-workspace-contracts-bridge-smoke-planning-r1",
     "current_implementation_child": "08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke",
-    "rkp1_implementation_stage": "stages_a_through_d_complete_stage_e_regression_gate_blocked",
+    "rkp1_implementation_stage": "stages_a_through_d_complete_stage_e_paused_for_cvn7_historical_boundary_planning_rereview",
     "rkp1_implementation_commits": {
       "activation": "84918e1e293b26554fbff9f161c6222510f378b9",
       "workspace": "6b64616690ddf9e11e71cf4caeb1b4be5df74b8d",
       "contracts": "632ebcda54adba07c106984c16999cb84bc9bc2c",
       "runtime_session": "f5ca93c77e800465b65b947172fca1c9f8ee650f",
       "node_bridge": "8ae5b7158ea45cfc4c47902ff8a17ce5c949678c",
-      "stage_e_gate_record": "review_head_this_commit"
+      "stage_e_gate_record": "669364128cd4402a478f247393908ff170112794"
     },
-    "rkp1_stage_e_blocker": "existing_cvn7_zero_production_drift_test_rejects_required_private_ts_adapter_and_is_outside_the_audited_39_path_allowlist",
+    "rkp1_stage_e_blocker": "existing_cvn7_zero_production_drift_test_uses_open_upper_bound_and_rejects_required_rkp1_private_ts_adapter",
+    "rkp1_implementation_paused_for_bounded_planning_repair": true,
+    "rkp1_implementation_candidate_ready": false,
+    "rkp1_independent_planning_rereview": "pending",
+    "rkp1_bounded_planning_repair_branch": "codex/rkp-1-cvn7-historical-boundary-planning-repair",
+    "rkp1_bounded_planning_repair_base": "669364128cd4402a478f247393908ff170112794",
+    "rkp1_bounded_planning_repair_candidate": "review_head_this_commit",
+    "rkp1_cvn7_historical_production_base": "38afdc3fd508dc67f7aa446fd323837a5d550b70",
+    "rkp1_cvn7_historical_final_input_head": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
+    "rkp1_repaired_implementation_allowlist": "original_39_plus_only_test_core_kernel_cvn_7_qualification_boundary_test_ts",
+    "rkp1_workspace_law_repair_pin_policy": "full_implementation_diff_base_89115da_repaired_planning_commit_matrix_source_only",
+    "rkp1_pre_repair_full_test_result": "541_of_542",
     "rkp2_through_rkp9_created": false,
     "target_rust_crates": [
       "brilliant-core-types",

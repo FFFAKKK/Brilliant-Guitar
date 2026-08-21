@@ -48,6 +48,14 @@ test/core-kernel/rust-migration/rkp-1-workspace-contracts.test.ts
 test/core-kernel/rust-migration/rkp-1-node-bridge-smoke.test.ts
 ```
 
+### Bounded historical-boundary repair addition
+
+```text
+test/core-kernel/cvn-7-qualification-boundary.test.ts
+```
+
+This is the only path added to the original independently reviewed 39-path implementation allowlist, producing exactly 40 literal paths. Its ownership is limited to replacing the open CVN-7 production-drift upper bound with frozen final head `b21540fa3636e6c8e827ff24c2099f4ff331285d`, plus direct commit-existence/ancestry assertions. It cannot change any other CVN-7 test, evidence, budget, qualification state or implementation behavior.
+
 ### Task state/evidence
 
 ```text
@@ -58,7 +66,7 @@ test/core-kernel/rust-migration/rkp-1-node-bridge-smoke.test.ts
 .trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json
 ```
 
-`package.json`, `package-lock.json`, all `tsconfig*.json`, `src/core-kernel/index.ts`, all existing tests, archived tasks and other authority bodies are explicit zero-delta paths even during implementation. The native build/load smoke uses direct Cargo/PowerShell/Node commands and the two named new tests; it must not add a package script or widen this allowlist.
+`package.json`, `package-lock.json`, all `tsconfig*.json`, `src/core-kernel/index.ts`, every existing test except the one literal CVN-7 file above, archived tasks and other authority bodies are explicit zero-delta paths even during implementation. The native build/load smoke uses direct Cargo/PowerShell/Node commands and the two named new RKP-1 tests; it must not add a package script or widen this allowlist.
 
 ## Stage ownership and rollback
 
@@ -69,6 +77,7 @@ test/core-kernel/rust-migration/rkp-1-node-bridge-smoke.test.ts
 | 3 runtime/session | Runtime/Session source files | immutable create/read Rust tests | revert Stage 3; contracts remain |
 | 4 Node bridge | Node source, private TS adapter, Node smoke test | exact Windows `.dll`→`.node` copy/load/export and clean-clone smoke; four-state ownership machine, status-dependent remove-wrap, unsafe/type-tag/finalizer rollback, failure/hostile/panic/owner-handle tests | revert Stage 4; Rust session remains |
 | 5 evidence | workspace-law test and exact task/parent evidence files | full matrices/regression/allowlist | revert Stage 5; code candidate unchanged |
+| 5a CVN-7 historical boundary | newly allowed CVN-7 test plus already-allowed `rkp-1-workspace-contracts.test.ts` direct regression | both commits exist; base ancestor of final head; exact closed-range `src`/package-lock/tsconfig diff is empty; original `89115da...` remains full diff base; accepted repair commit is matrix-only pin; 39+1 set proof; focused plus `542/542` and all Rust/Node gates | revert two-test repair commit; blocker returns, Stages A-D and CVN-7 evidence stay unchanged |
 
 ## Test matrix
 
@@ -86,8 +95,9 @@ test/core-kernel/rust-migration/rkp-1-node-bridge-smoke.test.ts
 | hostile boundary | getter/Proxy/sparse/cycle/poisoned primordials, detached immutable return, invalid native type mapping, exact first-failure bytes |
 | panic | exact contained-panic bytes, no message/path/backtrace/pointer/thread ID, hook forwards unrelated panic, no session partial state |
 | compatibility | schema and exact RKP-0 manifest `28/51/8/34/9`, existing app exports unchanged, TypeScript default unchanged |
+| CVN-7 historical boundary | exact base `38afdc3fd508dc67f7aa446fd323837a5d550b70`; exact final head `b21540fa3636e6c8e827ff24c2099f4ff331285d`; both are commits; ancestry passes; explicit two-revision `git diff --name-only` over only `src`, `package-lock.json`, `tsconfig.json` is empty; no `HEAD`, omitted upper revision, index or working-tree dependency; evidence/qualification/budgets unchanged |
 | regression | focused Rust/Node tests, clean-clone Windows native smoke, typecheck, build, full TypeScript suite; no official qualification |
 
 ## File-boundary check
 
-The implementation auditor must generate the changed-path set from the accepted planning commit to implementation head, normalize `/`, compare every path to the literal list above, and separately assert protected groups have zero unlisted delta. A directory prefix match is insufficient.
+The implementation auditor must generate the changed-path set from original accepted implementation-planning head `89115daedc623c0d35386a4a433cc7fd95215223` to implementation head, while reading the exact 40-path matrix from the independently accepted bounded-repair planning commit. Normalize `/`, compare every changed path to that literal list, and separately assert protected groups have zero unlisted delta. The auditor must also prove the original `89115da...` matrix had exactly 39 paths and the repaired set difference is exactly `test/core-kernel/cvn-7-qualification-boundary.test.ts`. The repaired-planning commit must never replace the original implementation diff base. A directory prefix match is insufficient.

@@ -1,10 +1,16 @@
 # Implementation Plan — RKP-1 Seven-Crate Workspace Contracts Bridge Session Smoke
 
-## Stop gate before implementation
+## Original stop gate before implementation (historical)
 
-This file is future execution authority only. Current state is `TARGETED PLANNING REREVIEW REQUIRED`. Do not run `task.py start`, install Rust, create Cargo/Rust files or modify `src/**`/`test/**` until an independent targeted planning rereview returns PASS and the user sends a later implementation instruction in this same task.
+This original gate was satisfied by independent planning PASS at `89115daedc623c0d35386a4a433cc7fd95215223` and later user implementation authorization. It is retained to preserve the lifecycle record; the active gate is the bounded-repair pause below.
 
 At implementation start, record the accepted planning commit, verify it descends from `463c851...`, verify the worktree is clean, then and only then run `python .\.trellis\scripts\task.py start 08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke`.
+
+## Current bounded planning-repair pause
+
+The original planning gate passed and Stages A-D were implemented. Stage E stopped at candidate `669364128cd4402a478f247393908ff170112794` with a clean full result of `541/542`: the sole failure is the CVN-7 zero-production-drift assertion's omitted upper revision. This planning repair does not rerun `task.py start`, modify code/tests, or resume Stage E. Keep `status=in_progress`, both prior authorizations true, `implementation_paused_for_bounded_planning_repair=true`, `implementation_candidate_ready=false`, and `independent_planning_rereview=pending` until an independent planning rereview passes and the user explicitly resumes implementation.
+
+The only newly authorized implementation path is the existing file `test/core-kernel/cvn-7-qualification-boundary.test.ts`. Add one literal final-head constant `b21540fa3636e6c8e827ff24c2099f4ff331285d`; keep the literal base `38afdc3fd508dc67f7aa446fd323837a5d550b70`; verify both commit objects exist and base ancestry; and pass both revisions to the historical `git diff --name-only` assertion. The already-authorized `test/core-kernel/rust-migration/rkp-1-workspace-contracts.test.ts` must receive the direct regression update: retain original planning head `89115daedc623c0d35386a4a433cc7fd95215223` as the complete implementation-diff base, add the accepted repaired-planning commit as a separate matrix-source pin, require exactly 40 allowlist paths, prove the set addition is only the CVN-7 test, and add that test to the expected runtime change set. Do not shrink diff coverage to the repaired-planning commit, use `HEAD` as the CVN-7 interval upper bound, omit the upper revision, modify any CVN-7 evidence/budget/qualification behavior, or touch RKP-1 production/public contracts.
 
 ## Stage 1 — Workspace and toolchain
 
@@ -148,10 +154,38 @@ Also mechanically validate exact changed-path allowlist, exact seven members/dir
 
 Commit boundary: `test(rust): lock RKP-1 bridge and compatibility gates`. Rollback: revert this evidence/state commit independently; Stage 4 code remains testable.
 
+### Stage 5a — Historical CVN-7 assertion repair after planning rereview
+
+This substage is blocked until the docs-only repair receives independent planning PASS and the user resumes implementation. Then modify exactly two existing test paths: the newly added `test/core-kernel/cvn-7-qualification-boundary.test.ts` and the already-authorized `test/core-kernel/rust-migration/rkp-1-workspace-contracts.test.ts`:
+
+1. retain the exact base `38afdc3fd508dc67f7aa446fd323837a5d550b70`;
+2. add exact final CVN-7 input/head `b21540fa3636e6c8e827ff24c2099f4ff331285d`;
+3. assert `git cat-file -e <commit>^{commit}` succeeds for both values;
+4. assert `git merge-base --is-ancestor <base> <final-head>` succeeds;
+5. call `git diff --name-only <base> <final-head> -- src package-lock.json tsconfig.json` and require empty output;
+6. leave every other CVN-7 assertion and all production files byte-unchanged;
+7. keep `89115daedc623c0d35386a4a433cc7fd95215223` as the implementation-diff base, add the independently accepted repaired-planning commit only as the repaired-matrix source, assert allowlist size `40`, prove the set difference from the original 39 is exactly the CVN-7 test, and include that test in the exact runtime-path projection.
+
+Focused and resumed final gate:
+
+```powershell
+npm.cmd run typecheck
+npm.cmd run build
+node --test dist/test/core-kernel/cvn-7-qualification-boundary.test.js
+node --test dist/test/core-kernel/rust-migration/rkp-1-node-bridge-smoke.test.js dist/test/core-kernel/rust-migration/rkp-1-workspace-contracts.test.js
+npm.cmd test
+cargo +1.97.1 test --manifest-path Cargo.toml --workspace --all-targets --all-features --locked
+cargo +1.97.1 clippy --manifest-path Cargo.toml --workspace --all-targets --all-features --locked -- -D warnings
+cargo +1.97.1 fmt --all -- --check
+cargo +1.88.0 check --manifest-path Cargo.toml --workspace --all-targets --locked
+```
+
+The full TypeScript expectation after implementation is exactly `542/542`. Repeat the frozen Windows `.dll -> .node` build/copy/`process.dlopen`/`require`/two-export and clean-clone gates from Stage 4, then rerun Trellis/JSON/JSONL/40-path/protected-delta/clean checks. Commit boundary: `test(cvn-7): freeze historical production-drift interval`. Rollback: revert this two-test repair commit; the pre-repair `541/542` blocker returns without changing Stages A-D or CVN-7 evidence.
+
 ## Future implementation review gate
 
-After the five commits, stop with `IMPLEMENTATION REVIEW REQUIRED`. An independent read-only auditor must review the exact implementation range and return `P0/P1/P2=0/0/0`. A technical PASS is not permission to switch default runtime, create RKP-2, accept/archive, push or run official qualification.
+After the planning repair passes rereview, Stage 5a and the resumed full gates pass, stop with `IMPLEMENTATION REVIEW REQUIRED`. An independent read-only auditor must review the exact implementation range and return `P0/P1/P2=0/0/0`. A technical PASS is not permission to switch default runtime, create RKP-2, accept/archive, push or run official qualification.
 
 ## Exact scope control
 
-The only permissible implementation files are enumerated one-by-one in `research/file-test-and-rollback-matrix.md`. If a needed path is absent, stop and return the planning task for bounded repair and independent rereview. Do not widen by directory, glob or convenience refactor.
+The only permissible implementation files are the 40 paths enumerated one-by-one in `research/file-test-and-rollback-matrix.md`: the original 39 plus only `test/core-kernel/cvn-7-qualification-boundary.test.ts`. If another path is needed, stop and return the planning task for another bounded repair and independent rereview. Do not widen by directory, glob or convenience refactor.

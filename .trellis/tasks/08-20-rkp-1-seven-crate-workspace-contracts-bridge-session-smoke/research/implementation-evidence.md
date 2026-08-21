@@ -1,6 +1,6 @@
 # RKP-1 Implementation Evidence
 
-Status: `STAGES A-D COMPLETE / STAGE E REGRESSION GATE BLOCKED / BOUNDED PLANNING REPAIR REQUIRED`.
+Status: `STAGES A-D COMPLETE / STAGE E PAUSED / BOUNDED PLANNING REPAIR CANDIDATE / PLANNING REREVIEW REQUIRED`.
 
 The final targeted planning audit passed P0/P1/P2=`0/0/0` for exact planning HEAD `89115daedc623c0d35386a4a433cc7fd95215223` in audit task `01a01e48-1934-77b0-821e-a8026cd9e5f7`. The user then authorized implementation. Activation began from a clean worktree at that exact HEAD, created branch `codex/rkp-1-seven-crate-workspace-contracts-bridge-session-smoke`, and ran the Trellis start command. The child remains `in_progress`; implementation review is `pending`; TypeScript remains default; acceptance, archive, push, RKP-2+ creation, default cutover and official qualification remain unauthorized.
 
@@ -59,3 +59,11 @@ After committing the Stage E gate record so the tracked tree was clean, the comp
 This is not repairable inside the accepted 39-path implementation allowlist. `test/core-kernel/cvn-7-qualification-boundary.test.ts` is an existing test explicitly frozen at zero delta by `research/file-test-and-rollback-matrix.md`, while `design.md` and `implement.md` explicitly require the private TypeScript adapter. Removing the adapter would violate the audited RKP-1 contract; changing the CVN-7 assertion would modify an unreviewed path. Stage E therefore stops here and requests a bounded planning repair that reconciles this legacy qualification-only invariant with authorized later production phases. No out-of-allowlist file was changed.
 
 Stages A-D remain reproducible and independently revertible. This gate record is not an implementation review candidate, independent PASS, acceptance or archive authority.
+
+## Bounded planning repair projection
+
+The docs-only repair starts at exact clean candidate `669364128cd4402a478f247393908ff170112794` on branch `codex/rkp-1-cvn7-historical-boundary-planning-repair`. It freezes CVN-7 production-drift proof to base `38afdc3fd508dc67f7aa446fd323837a5d550b70` and final CVN-7 input/head `b21540fa3636e6c8e827ff24c2099f4ff331285d`. Local read-only probes establish that both commits exist, the base is an ancestor of the final head, and their closed-range diff over `src`, `package-lock.json`, and `tsconfig.json` is empty.
+
+The proposed future implementation adds only `test/core-kernel/cvn-7-qualification-boundary.test.ts` to the original 39-path allowlist. It will make both revisions explicit, add commit-existence/ancestry assertions, and forbid `HEAD`, omitted upper revision, index or working-tree upper bounds. The already-allowed RKP-1 workspace-law test must preserve `89115da...` as the complete implementation-diff base, use the accepted repaired-planning commit only as the 40-path matrix source, and prove exact 39+1 membership. Both target tests and all production files remain unchanged in this planning commit.
+
+The `541/542` result above remains the authoritative pre-repair evidence. No code fix or pass claim occurs here. After independent planning rereview and later explicit implementation resumption, the required gates are focused CVN-7 plus both RKP-1 suites, typecheck/build, full `542/542`, Rust 1.97.1/MSRV/clippy/fmt, Windows Node build/load/two-export/clean-clone, 40-path/protected-delta, Trellis and clean status.

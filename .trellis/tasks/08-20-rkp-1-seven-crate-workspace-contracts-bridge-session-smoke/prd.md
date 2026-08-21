@@ -13,12 +13,14 @@ Create an independently reviewable plan for the first Rust implementation child:
 - Predecessor: archived RKP-0 at `.trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/`, accepted commit `9bc5390...`.
 - Current observable oracle: `brilliant-score-1`, 28 commands, 51 application runtime exports, Module SDK 8 runtime/34 type exports, nine contribution ABI fields, and full `531/531`.
 - Independent review history: initial `b619f240...` returned P0/P1/P2=`0/3/1`; first r1 candidate `922da5e...` returned `0/2/0`; second amended candidate `9741abfee76d009dbea985192e5dfb162e16902a` returned `0/1/0`. This amend repairs only the final authorized status-dependent `napi_remove_wrap` ownership-state finding and its direct tests. All previously passed contracts remain unchanged, targeted planning rereview remains pending, and no prior P2 is claimed closed.
+- Implementation state at repair entry: candidate `669364128cd4402a478f247393908ff170112794` completed Stages A-D and the Stage E workspace-law gate, but the clean full suite is `541/542`. The sole failure is the CVN-7 historical zero-production-drift test using an open upper bound; this bounded planning repair pauses implementation without changing the failed result.
+- Frozen CVN-7 historical production-drift interval: base `38afdc3fd508dc67f7aa446fd323837a5d550b70`, final CVN-7 input/head `b21540fa3636e6c8e827ff24c2099f4ff331285d`. Both commits must exist and the base must be an ancestor of the final head.
 
 ## Requirements
 
-### RKP1-R001 — Planning gate remains closed
+### RKP1-R001 — Bounded planning repair pauses the active implementation
 
-This candidate stays `status=planning`, `task_start_run=false`, `production_implementation_authorized=false`, and `independent_planning_review=pending`. It must end with `TARGETED PLANNING REREVIEW REQUIRED`. No Rust or TypeScript production implementation may begin until a separate read-only targeted planning rereview returns PASS and the user sends a later implementation instruction in this same task.
+The original planning candidate passed independent review and implementation was authorized. During this repair the child stays `status=in_progress`, `task_start_run=true`, `production_implementation_authorized=true`, `implementation_paused_for_bounded_planning_repair=true`, `implementation_candidate_ready=false`, and `independent_planning_rereview=pending`. The repair must end with `PLANNING REREVIEW REQUIRED`. It does not run `task.py start` again, modify the CVN-7 test or production code, resume Stage E, accept/archive, push, create RKP-2+, or reinterpret the prior planning PASS.
 
 ### RKP1-R002 — Workspace membership is exactly seven crates
 
@@ -82,11 +84,34 @@ The bridge enforces a 64 MiB request and response ceiling, depth `64`, captured 
 
 ### RKP1-R008 — Future implementation is closed to an exact allowlist
 
-Only the exact paths in `research/file-test-and-rollback-matrix.md` may change during the later implementation. New sibling files, directory wildcards, changes to unrelated Trellis authority, archived tasks, Product Host, other tests, or RKP-2+ paths require a returned planning repair and new review.
+Only the exact paths in `research/file-test-and-rollback-matrix.md` may change during later implementation. The accepted 39 paths remain unchanged; this repair proposes exactly one additional existing test path, `test/core-kernel/cvn-7-qualification-boundary.test.ts`, solely for the frozen historical-interval assertion. The resulting allowlist is exactly 40 literal paths. New sibling files, directory wildcards, changes to unrelated Trellis authority, archived tasks, Product Host, any other existing test, or RKP-2+ paths require another returned planning repair and review.
 
 ### RKP1-R009 — Planning and implementation evidence are separate
 
 Phase A validates only the docs-only candidate against Trellis/JSON/JSONL/hierarchy/diff/typecheck/build/full `531/531` and zero protected delta. Future implementation adds Cargo/MSRV/feature/workspace law, Rust unit tests, native smoke, hostile boundary tests and full TypeScript regression. Neither local self-audit is an independent review or lifecycle acceptance.
+
+This bounded repair validates only docs and task state relative to `669364128cd4402a478f247393908ff170112794`: Trellis, JSON/JSONL, related-path/unique hierarchy, literal planning-repair allowlist, `git diff --check`, and zero `src/**`, `test/**`, Cargo/package/tsconfig production delta. The pre-repair `541/542` remains evidence, not a pass. After independent planning rereview and later implementation authorization, the two-test repair with one allowlist addition must be followed by focused CVN-7/RKP-1 tests, full `542/542`, typecheck/build, and the frozen Rust/Node/Windows gates before implementation review.
+
+### RKP1-R010 — CVN-7 production-drift proof is a closed historical interval
+
+The future historical assertion repair must prove only the immutable CVN-7 range `38afdc3fd508dc67f7aa446fd323837a5d550b70..b21540fa3636e6c8e827ff24c2099f4ff331285d`. It must:
+
+- verify both frozen objects exist as commits and the base is an ancestor of the final head;
+- pass both commits explicitly to `git diff --name-only` before `-- src package-lock.json tsconfig.json` and require empty output;
+- never use `HEAD`, an omitted upper revision, the index, or working-tree state as the upper bound;
+- leave RKP-1's reviewed `src/core-kernel/native/rust-kernel-smoke.ts` entirely outside CVN-7's historical interval and authority;
+- preserve CVN-7's `EVIDENCE_INVALID`/measurement-incomplete conclusion, qualification status, budgets and evidence, and preserve every RKP-1 public/default-runtime/DTO/failure contract.
+
+The existing RKP-1 workspace-law test is already one of the original 39 paths. Future implementation must preserve `89115daedc623c0d35386a4a433cc7fd95215223` as the complete implementation-diff base and add a second pin for the independently accepted repaired-planning commit solely to read the repaired matrix. It must require allowlist size `40`, prove the original 39-path set plus exactly the one CVN-7 test addition, keep diff coverage over all A-E implementation paths, and include the CVN-7 test in the exact changed-runtime set. This is a direct regression update, not a second allowlist addition.
+
+## Bounded planning-repair acceptance criteria
+
+- [ ] `RKP1-BPR001`: exact repair entry `669364128cd4402a478f247393908ff170112794`, isolated branch and docs-only diff are recorded.
+- [ ] `RKP1-BPR002`: base `38afdc3fd508dc67f7aa446fd323837a5d550b70` and final head `b21540fa3636e6c8e827ff24c2099f4ff331285d` exist and ancestry is exact.
+- [ ] `RKP1-BPR003`: future implementation adds only `test/core-kernel/cvn-7-qualification-boundary.test.ts` to the original 39-path allowlist and freezes the closed-range command/no-`HEAD` law.
+- [ ] `RKP1-BPR004`: child stays in progress and authorized but paused; implementation candidate is not ready and independent planning rereview remains pending.
+- [ ] `RKP1-BPR005`: no production/test file changes in this planning commit; the pre-repair full result remains `541/542` with the exact sole failure.
+- [ ] `RKP1-BPR006`: Trellis child/parent, JSON/JSONL, path/unique hierarchy, Markdown, allowlist, `git diff --check`, clean and staged-empty gates pass.
 
 ## Out of scope
 
@@ -99,7 +124,9 @@ Phase A validates only the docs-only candidate against Trellis/JSON/JSONL/hierar
 - Guitar/Piano/Bass, Product Host, Product Extension Host, Product ApplicationAssembly, Tauri, public plugins, persistence, layout, renderer, playback, export or `.bgp` physical format;
 - archive, push, official measurement, Rust installation/download, or production implementation during Phase A.
 
-## Planning-candidate acceptance criteria
+## Original planning-candidate acceptance criteria (historical)
+
+These criteria describe the independently passed original planning candidate and are retained as history. The active bounded-repair criteria are the `RKP1-BPR` items above; they do not reset the started task to planning or revoke prior authorization.
 
 - [ ] `RKP1-PAC001`: task metadata and all required artifacts exist; status/authorization/review fields are exactly planning/false/false/pending.
 - [ ] `RKP1-PAC002`: both accepted authority chains and exact commit pins are present and the base/ancestor is `463c851...`.

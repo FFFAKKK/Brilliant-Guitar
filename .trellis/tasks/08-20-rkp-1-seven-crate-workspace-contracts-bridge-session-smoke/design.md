@@ -2,7 +2,28 @@
 
 ## 0. Status and authority
 
-This is a planning candidate, not an implementation. It consumes accepted Architecture Reset V2, the accepted `d722789...` authority sync, the Rust remediation parent and archived RKP-0. Any conflict resolves in that order; this design may narrow RKP-1 but may not reinterpret those authorities.
+This design was the independently accepted planning authority used for implementation. The current edit is a docs-only bounded planning repair, not a code implementation or lifecycle acceptance. It consumes accepted Architecture Reset V2, the accepted `d722789...` authority sync, the Rust remediation parent and archived RKP-0. Any conflict resolves in that order; this design may narrow RKP-1 but may not reinterpret those authorities.
+
+### 0.1 Bounded repair — frozen CVN-7 historical production boundary
+
+Implementation candidate `669364128cd4402a478f247393908ff170112794` exposed one planning defect: the test named `CVN7 qualification remains a zero-production-drift test-only boundary` supplies only `38afdc3fd508dc67f7aa446fd323837a5d550b70` to `git diff`, so Git implicitly compares that historical baseline to the current working tree. That open upper bound incorrectly converts a CVN-7-local invariant into a permanent ban on every later authorized production phase.
+
+The repaired contract is the immutable closed interval:
+
+```text
+CVN7_PRODUCTION_BASE = 38afdc3fd508dc67f7aa446fd323837a5d550b70
+CVN7_FINAL_INPUT_HEAD = b21540fa3636e6c8e827ff24c2099f4ff331285d
+```
+
+Future implementation in `test/core-kernel/cvn-7-qualification-boundary.test.ts` must first prove both values resolve to commit objects and `CVN7_PRODUCTION_BASE` is an ancestor of `CVN7_FINAL_INPUT_HEAD`. The production-drift assertion then runs the exact logical command:
+
+```text
+git diff --name-only 38afdc3fd508dc67f7aa446fd323837a5d550b70 b21540fa3636e6c8e827ff24c2099f4ff331285d -- src package-lock.json tsconfig.json
+```
+
+and requires empty output. The assertion may not use `HEAD`, omit the upper revision, inspect the index/working tree, or derive either commit from current branch state. This proves only that CVN-7's own frozen historical interval had zero production drift. RKP-1's reviewed `src/core-kernel/native/rust-kernel-smoke.ts` is later history, stays RKP-1-owned, and is neither copied into nor attributed to CVN-7.
+
+The change is assertion-scope maintenance only. It cannot change CVN-7 evidence bytes, `EVIDENCE_INVALID`/measurement-incomplete status, qualification verdict, sampling/RSS/timeout/performance budgets, official-run authorization, or any RKP-1 crate, DTO, failure, handle, export, default-runtime or compatibility contract. The sole future code owner added by this repair is the existing test file above; all original 39 paths remain frozen as already reviewed.
 
 ## 1. Exact workspace and dependency law
 
