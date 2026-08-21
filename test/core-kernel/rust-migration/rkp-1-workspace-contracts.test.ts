@@ -245,6 +245,13 @@ test("Cargo workspace, pins, features and direct dependency graph are exact", ()
   assert.match(toolchain, /channel\s*=\s*"1\.97\.1"/u);
   assert.match(toolchain, /profile\s*=\s*"minimal"/u);
   assert.match(toolchain, /components\s*=\s*\["rustfmt", "clippy"\]/u);
+  assert.equal(
+    readText("rustfmt.toml"),
+    'edition = "2024"\nnewline_style = "Auto"\n',
+  );
+  for (const file of rustFiles("crates")) {
+    assert.doesNotMatch(readText(file), /\r/u, `non-normalized scan input: ${file}`);
+  }
   assert.equal(readText("Cargo.lock").includes('name = "brilliant-kernel-node"'), true);
 
   const allManifests = ["Cargo.toml", ...CRATES.map((crate) => `crates/${crate}/Cargo.toml`)]
