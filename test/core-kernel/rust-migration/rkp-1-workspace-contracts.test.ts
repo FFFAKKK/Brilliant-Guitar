@@ -75,7 +75,7 @@ const EXPECTED_GRAPH: Readonly<Record<(typeof CRATES)[number], readonly string[]
 };
 
 function readText(path: string): string {
-  return readFileSync(resolve(path), "utf8");
+  return readFileSync(resolve(path), "utf8").replaceAll("\r\n", "\n");
 }
 
 function git(args: readonly string[]): string {
