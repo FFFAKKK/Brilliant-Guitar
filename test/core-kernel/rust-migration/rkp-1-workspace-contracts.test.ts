@@ -13,6 +13,8 @@ import { CORE_COMMAND_DEFINITIONS } from "../../../src/core-kernel/commands/cata
 import * as moduleSdk from "../../../src/core-kernel/module-sdk/index";
 
 const PLANNING_HEAD = "89115daedc623c0d35386a4a433cc7fd95215223";
+const REPAIRED_PLANNING_HEAD =
+  "b944876aefc2b359b459bb8565afa38c0635765b";
 const MATRIX_PATH =
   ".trellis/tasks/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/research/file-test-and-rollback-matrix.md";
 const TASK_PATH =
@@ -21,6 +23,16 @@ const PARENT_PATH =
   ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json";
 const MANIFEST_PATH =
   "test/core-kernel/rust-migration/fixtures/oracle-manifest-v1.json";
+
+const ACCEPTED_PLANNING_ONLY_PATHS = new Set([
+  ".trellis/tasks/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/check.jsonl",
+  ".trellis/tasks/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/design.md",
+  ".trellis/tasks/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/implement.jsonl",
+  ".trellis/tasks/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/implement.md",
+  ".trellis/tasks/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/prd.md",
+  ".trellis/tasks/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/research/cvn7-historical-boundary-repair.md",
+  ".trellis/tasks/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/research/file-test-and-rollback-matrix.md",
+]);
 
 const CRATES = [
   "brilliant-core-types",
@@ -111,13 +123,13 @@ function rustFiles(root: string): string[] {
   return result;
 }
 
-function reviewedAllowlist(): Set<string> {
-  const matrix = git(["show", `${PLANNING_HEAD}:${MATRIX_PATH}`]);
+function reviewedAllowlistAt(commit: string): string[] {
+  const matrix = git(["show", `${commit}:${MATRIX_PATH}`]);
   const futureSection = matrix.split("## Stage ownership and rollback", 1)[0] ?? "";
-  const paths = new Set<string>();
+  const paths: string[] = [];
   for (const match of futureSection.matchAll(/```text\r?\n([\s\S]*?)```/gu)) {
     for (const path of lines(match[1] ?? "")) {
-      paths.add(path.trim());
+      paths.push(path.trim());
     }
   }
   return paths;
@@ -138,13 +150,33 @@ function candidateChangedPaths(): Set<string> {
       paths.add(status.slice(3));
     }
   }
+  for (const path of ACCEPTED_PLANNING_ONLY_PATHS) {
+    paths.delete(path);
+  }
   return paths;
 }
 
 test("implementation diff is a literal subset of the audited allowlist", () => {
-  const allowlist = reviewedAllowlist();
+  const originalPaths = reviewedAllowlistAt(PLANNING_HEAD);
+  const repairedPaths = reviewedAllowlistAt(REPAIRED_PLANNING_HEAD);
+  const originalAllowlist = new Set(originalPaths);
+  const allowlist = new Set(repairedPaths);
   const changed = candidateChangedPaths();
-  assert.equal(allowlist.size, 39);
+  assert.equal(originalPaths.length, 39);
+  assert.equal(originalAllowlist.size, 39);
+  assert.equal(repairedPaths.length, 40);
+  assert.equal(allowlist.size, 40);
+  assert.deepEqual(
+    [...originalAllowlist].filter((path) => !allowlist.has(path)),
+    [],
+  );
+  assert.deepEqual(
+    [...allowlist].filter((path) => !originalAllowlist.has(path)),
+    ["test/core-kernel/cvn-7-qualification-boundary.test.ts"],
+  );
+  for (const path of allowlist) {
+    assert.equal(statSync(resolve(path)).isFile(), true, `missing allowlist path: ${path}`);
+  }
   for (const path of changed) {
     assert.equal(allowlist.has(path), true, `unreviewed changed path: ${path}`);
   }
@@ -154,6 +186,7 @@ test("implementation diff is a literal subset of the audited allowlist", () => {
   );
   assert.deepEqual(changedRuntimePaths.sort(), [
     "src/core-kernel/native/rust-kernel-smoke.ts",
+    "test/core-kernel/cvn-7-qualification-boundary.test.ts",
     "test/core-kernel/rust-migration/rkp-1-node-bridge-smoke.test.ts",
     "test/core-kernel/rust-migration/rkp-1-workspace-contracts.test.ts",
   ]);

@@ -72,6 +72,8 @@ import {
 
 const PROTECTED_BASELINE =
   "38afdc3fd508dc67f7aa446fd323837a5d550b70" as const;
+const FINAL_CVN7_HISTORICAL_HEAD =
+  "b21540fa3636e6c8e827ff24c2099f4ff331285d" as const;
 
 function gitOutput(args: readonly string[]): string {
   return execFileSync("git", args, {
@@ -425,10 +427,28 @@ test("CVN7-D-FC134 portable and reference budgets are exact", () => {
 
 test("CVN7 qualification remains a zero-production-drift test-only boundary", () => {
   assert.equal(
+    gitOutput(["cat-file", "-t", `${PROTECTED_BASELINE}^{commit}`]),
+    "commit",
+  );
+  assert.equal(
+    gitOutput(["cat-file", "-t", `${FINAL_CVN7_HISTORICAL_HEAD}^{commit}`]),
+    "commit",
+  );
+  assert.equal(
+    gitOutput([
+      "merge-base",
+      "--is-ancestor",
+      PROTECTED_BASELINE,
+      FINAL_CVN7_HISTORICAL_HEAD,
+    ]),
+    "",
+  );
+  assert.equal(
     gitOutput([
       "diff",
       "--name-only",
       PROTECTED_BASELINE,
+      FINAL_CVN7_HISTORICAL_HEAD,
       "--",
       "src",
       "package-lock.json",
