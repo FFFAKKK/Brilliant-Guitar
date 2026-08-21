@@ -44,7 +44,7 @@
     ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "RKP-1 TARGETED CODEC LINEAR-BOUND IMPLEMENTATION REPAIR ACTIVE AFTER P0/P1/P2 0/1/0 / PRIOR CAP REMOVE-WRAP AND WINDOWS CHECKOUT REPAIRS REMAIN PASSED / CANDIDATE NOT READY / CHILD REMAINS IN PROGRESS / TYPESCRIPT DEFAULT / NO ACCEPT ARCHIVE PUSH OFFICIAL QUALIFICATION OR RKP-2.",
+  "notes": "RKP-1 TARGETED CODEC LINEAR-BOUND IMPLEMENTATION REPAIR GATES PASS / CANDIDATE READY FOR TARGETED IMPLEMENTATION REREVIEW / PRIOR CAP REMOVE-WRAP AND WINDOWS CHECKOUT REPAIRS REMAIN PASSED / CHILD REMAINS IN PROGRESS / TYPESCRIPT DEFAULT / NO ACCEPT ARCHIVE PUSH OFFICIAL QUALIFICATION OR RKP-2.",
   "meta": {
     "planning_base_commit": "463c8514a61a61a39c8a5d2736261ae9e82b0fba",
     "required_ancestor_commit": "463c8514a61a61a39c8a5d2736261ae9e82b0fba",
@@ -176,7 +176,7 @@
     "expected_contribution_abi_field_count": 9,
     "expected_persisted_schema": "brilliant-score-1",
     "expected_planning_full_test_count": 531,
-    "current_planning_stage": "codec_linear_bound_bounded_implementation_repair_active",
+    "current_planning_stage": "codec_linear_bound_bounded_implementation_repair_complete_targeted_rereview_pending",
     "current_implementation_child": "08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke",
     "future_rkp_children_created": false,
     "planning_production_test_build_cargo_crates_delta": "zero",
@@ -191,8 +191,8 @@
       "stage_5a_clean_clone_portability_commit": "0c1a1da966687f2faa366dc3bcb4915b8a790fc7"
     },
     "stage_4_clean_clone": "passed_at_8ae5b7158ea45cfc4c47902ff8a17ce5c949678c_windows_x86_64_pc_windows_msvc_debug_dlopen_require_typecheck_build_bridge_6_of_6_clean",
-    "implementation_gate_summary": "targeted_codec_linear_bound_repair_active_prior_cap_remove_wrap_windows_checkout_gates_preserved",
-    "implementation_blocker": "codec_unique_key_lookup_and_fault_retention_show_near_quadratic_native_growth",
+    "implementation_gate_summary": "codec_linear_bound_repair_gates_pass_rust_40_of_40_node_9_of_9_workspace_law_6_of_6_full_ts_545_pass_one_expected_gc_skip",
+    "implementation_blocker": null,
     "pre_repair_full_test_result": "541_of_542_single_failure_cvn7_zero_production_drift_open_upper_bound",
     "cvn7_historical_production_base": "38afdc3fd508dc67f7aa446fd323837a5d550b70",
     "cvn7_historical_final_input_head": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
@@ -211,8 +211,8 @@
       "0c1a1da966687f2faa366dc3bcb4915b8a790fc7"
     ],
     "implementation_paused_for_bounded_planning_repair": false,
-    "implementation_candidate_ready": false,
-    "implementation_repair_active": true,
+    "implementation_candidate_ready": true,
+    "implementation_repair_active": false,
     "bounded_planning_repair_required": false,
     "planning_repair_production_test_delta": "zero_relative_to_669364128cd4402a478f247393908ff170112794",
     "implementation_review_required_after_repair": true,
@@ -239,10 +239,20 @@
       "rejected_candidate": "8fe02932fa7b5eb81b6f0cd56d1776ba9287c709",
       "audit_result": "P0_0_P1_1_P2_0",
       "branch": "codex/rkp-1-codec-linear-bound-repair",
-      "status": "active",
+      "status": "complete_targeted_rereview_pending",
       "scope": "codec_linear_lookup_bounded_fault_slots_scan_only_retention_and_direct_regressions",
       "implementation_matrix_count": 40,
-      "accepted_planning_only_path_count": 7
+      "accepted_planning_only_path_count": 7,
+      "status_freeze_commit": "310baf4471b967230fc7aa1178cc00a711b3f527",
+      "codec_repair_commit": "e8d496d75a25553132a135e23d99c80b167b6a49",
+      "rust_workspace_result": "40_of_40",
+      "node_expose_gc_result": "9_of_9",
+      "workspace_law_result": "6_of_6",
+      "full_typescript_result": "546_discovered_545_passed_0_failed_1_expected_gc_skip",
+      "unique_key_median_ms": "14.612_30.639_51.443",
+      "unique_key_adjacent_ratios": "2.097_1.679",
+      "duplicate_key_median_ms": "4.261_9.016_17.035",
+      "duplicate_key_adjacent_ratios": "2.116_1.890"
     }
   }
 }

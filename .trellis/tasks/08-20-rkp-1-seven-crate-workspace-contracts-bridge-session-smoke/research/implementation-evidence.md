@@ -152,3 +152,25 @@ Targeted rereview task `01a01e48-1934-77b0-821e-a8026cd9e5f7` returned P0/P1/P2=
 Observed real-addon unique-key timings at approximately 5k/10k/20k members were `127/488/1965 ms`, consistent with the source's per-key linear duplicate scan. The same implementation retained duplicate values, an unbounded fault vector and post-limit placeholder members. This bounded repair changes no public contract: it replaces lookup and retention internals only, keeps the 40 implementation paths plus seven accepted planning-only paths exact, and preserves TypeScript default, 22 stable failures, cap/remove-wrap/two-export behavior and all RKP-1 exclusions.
 
 Branch `codex/rkp-1-codec-linear-bound-repair` starts at the exact rejected candidate. The child remains `in_progress`; `implementation_candidate_ready=false`, `implementation_repair_active=true`, and implementation review remains pending. This state-freeze step is docs-only and does not accept, archive, push, run official qualification or create RKP-2.
+
+## Targeted Codec linear-bound repair result
+
+The repair formed two independently revertible commits before this evidence projection:
+
+| Stage | Commit | Scope |
+|---|---|---|
+| audit-state freeze | `310baf4471b967230fc7aa1178cc00a711b3f527` | existing child/parent evidence paths; P0/P1/P2=`0/1/0`, candidate not ready, repair active |
+| Codec linear bound | `e8d496d75a25553132a135e23d99c80b167b6a49` | Contracts Codec plus the two existing direct test paths |
+
+`StrictValue::Object` now has one `BTreeMap` owner and O(log n) worst-case lookup. The first value is retained; a duplicate records only the best canonical fault, fully consumes its value to preserve syntax/resource classification, and discards it without tree growth. Four `Option` slots retain only the canonical depth, property, shape and number winners. Node/member counters saturate without wrap, while the public property actual remains the exact frozen `1048577`.
+
+Once property overflow or depth is observed, global scan-only mode stops constructing retained values, keys and parent placeholders. It continues parsing the complete JSON, counts every visited value and detects a later depth fault, which still wins over property. Rust instrumentation proves 20k unique members are visited once, 20k duplicate values retain one member and discard `19999`, `post_limit_retained=0`, fault-slot high-water `<=4`, and property-limit scanning followed by depth returns exact `codec.depth-limit` bytes.
+
+Real Windows addon hostile medians for 5k/10k/20k members were:
+
+- unique: `14.612/30.639/51.443 ms`, adjacent ratios `2.097/1.679`, endpoint `3.521`;
+- duplicate: `4.261/9.016/17.035 ms`, adjacent ratios `2.116/1.890`, endpoint `3.998`.
+
+The regression freezes each adjacent ratio below `3.25`, the 20k/5k endpoint below `8.5`, three-sample medians after warmup, exact failure bytes and a 30-second no-hang timeout. A source-structure gate rejects `.iter().any` duplicate scans in `visit_map` while permitting any O(log n) ordered or expected-O(1) entry-based replacement.
+
+Integration gates pass before evidence projection: Rust `1.97.1` fmt/check/workspace tests `40/40` and clippy `-D warnings`; MSRV `1.88.0` all-targets locked check; Node `--expose-gc` `9/9`; workspace-law `6/6`; Windows DLL-to-`.node`, both loaders and exact two exports; TypeScript typecheck/build; full discovery `546`, pass `545`, fail `0`, skip `1` for the ordinary runner's GC journey already passed under `--expose-gc`. The prior cap, remove-wrap and checkout implementations are unchanged. The child remains `in_progress`; candidate readiness is restored only for targeted rereview, not acceptance/archive/push/default cutover/official qualification/RKP-2.

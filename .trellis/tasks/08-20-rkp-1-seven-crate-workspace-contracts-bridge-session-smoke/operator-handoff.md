@@ -2,11 +2,11 @@
 
 ## Current status
 
-`BOUNDED IMPLEMENTATION REPAIR ACTIVE`.
+`IMPLEMENTATION REREVIEW REQUIRED`.
 
-The targeted rereview of `8fe02932fa7b5eb81b6f0cd56d1776ba9287c709` returned P0/P1/P2=`0/1/0` in task `01a01e48-1934-77b0-821e-a8026cd9e5f7`. Cap enforcement, remove-wrap ownership and Windows checkout portability passed; Codec functional precedence passed. The sole active repair is the Codec's direct linear-time and bounded-retention behavior on large unique/duplicate objects. Branch `codex/rkp-1-codec-linear-bound-repair` starts at that exact rejected candidate.
+The targeted rereview of `8fe02932fa7b5eb81b6f0cd56d1776ba9287c709` returned P0/P1/P2=`0/1/0` in task `01a01e48-1934-77b0-821e-a8026cd9e5f7`. Cap enforcement, remove-wrap ownership, Windows checkout portability and Codec functional precedence passed. The sole Codec linear-time/bounded-retention repair now passes on branch `codex/rkp-1-codec-linear-bound-repair`, which starts at that exact rejected candidate.
 
-The child remains `in_progress`, `task_start_run=true`, `production_implementation_authorized=true`, `implementation_candidate_ready=false`, `implementation_repair_active=true`, and `implementation_review=pending`. TypeScript remains the product default. The 40 implementation paths and seven accepted planning-only paths remain exact. Acceptance, archive, push, official CVN-7 measurement, default cutover and RKP-2+ creation remain unauthorized.
+The child remains `in_progress`, `task_start_run=true`, `production_implementation_authorized=true`, `implementation_candidate_ready=true`, `implementation_repair_active=false`, and `implementation_review=pending`. TypeScript remains the product default. The 40 implementation paths and seven accepted planning-only paths remain exact. Acceptance, archive, push, official CVN-7 measurement, default cutover and RKP-2+ creation remain unauthorized.
 
 ## Commit chain and rollback points
 
@@ -25,6 +25,8 @@ The child remains `in_progress`, `task_start_run=true`, `production_implementati
 13. allocation-before-cap: `009c086822eefa5f3b898fc5f4bd646ecaacdbc0`;
 14. production remove-wrap ownership proof: `a8ceed5b27fd68ca53b4c5947039184f3d9e8637`;
 15. checkout-portable rustfmt policy: `47f80198155a2bb896206dd575b008c7180d0d74`.
+16. Codec linear-bound repair-state freeze: `310baf4471b967230fc7aa1178cc00a711b3f527`;
+17. Codec linear lookup/retention repair: `e8d496d75a25553132a135e23d99c80b167b6a49`.
 
 The historical-boundary commits and each four-P1 code commit are independently revertible. Reverting any four-P1 commit restores only its audited finding without changing the other repairs, Stages A-D or any CVN-7 evidence, budget, runner or qualification state.
 
@@ -38,10 +40,12 @@ The historical-boundary commits and each four-P1 code commit are independently r
 - Node request capture checks borrowed Buffer length before the sole full copy. Response encoding uses a capped counting writer that counts every produced byte, retains at most `67108864`, preserves in-cap canonical bytes and lets response overflow precede a later encode failure.
 - Tag rollback production and tests now share one private `RemoveWrapOps` seam. Real Box/Arc/Weak/table/guard/finalizer tests cover `napi_ok` expected/null/mismatch and non-ok, prove status-before-out-pointer, exactly-once token/envelope drops, absent publication, no unknown-pointer dereference/free, no hang and generation-matched finalization.
 - `rustfmt.toml` is exactly `newline_style = "Auto"`. Fresh detached clones with `core.autocrlf=true` (`w/crlf`) and `false` (`w/lf`) both pass `cargo +1.97.1 fmt --all -- --check` and remain clean.
+- The strict object tree now has one `BTreeMap` owner, O(log n) worst-case lookup, first-value duplicate retention and immediate duplicate-value discard after complete syntax/resource scanning. Depth/property/shape/number use four bounded canonical winner slots. Once a resource fault is known, scan-only mode retains no further key/value/placeholder while still counting values and detecting a later higher-priority depth fault.
+- Real-addon medians for 5k/10k/20k unique keys are `14.612/30.639/51.443 ms` with adjacent ratios `2.097/1.679`; duplicate keys are `4.261/9.016/17.035 ms` with ratios `2.116/1.890`. The frozen gates are adjacent ratio `<3.25`, endpoint ratio `<8.5`, and a bounded 30-second no-hang timeout.
 
 ## Gate summary
 
-The pre-repair full result remains recorded as `541/542`, and the historical-boundary repair result remains `542/542`. Four-P1 gates pass: Rust `1.97.1` fmt/check/test (`38/38`) and clippy `-D warnings`; MSRV `1.88.0` locked all-targets check; Node bridge `8/8` under `--expose-gc`; workspace-law `5/5`; Windows MSVC DLL-to-`.node`, `process.dlopen`, `require` and exact two exports; and a fresh detached CRLF clone native create/read/two-export smoke with tracked status empty. The final clean full TypeScript rerun occurs after this evidence commit so the archived clean-lifecycle assertion observes committed state; its exact out-of-band result must be included in the review request.
+The pre-repair full result remains recorded as `541/542`, and the historical-boundary repair result remains `542/542`. Current gates pass: Rust `1.97.1` fmt/check/test (`40/40`) and clippy `-D warnings`; MSRV `1.88.0` locked all-targets check; Node bridge `9/9` under `--expose-gc`; workspace-law `6/6`; Windows MSVC DLL-to-`.node`, `process.dlopen`, `require` and exact two exports; TypeScript typecheck/build; and full TypeScript discovery `546` with `545` passed, zero failed and one ordinary-run GC skip covered by the focused gate. Final dual-autocrlf and clean lifecycle probes run at the committed evidence HEAD and are reported out of band.
 
 ## Independent review boundary
 

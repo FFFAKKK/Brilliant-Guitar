@@ -2,16 +2,18 @@
 
 ## Required verdict
 
-Current status: `BOUNDED IMPLEMENTATION REPAIR ACTIVE`.
+Current status: `IMPLEMENTATION REREVIEW REQUIRED`.
 
-The targeted rereview returned `RETURN FOR BOUNDED IMPLEMENTATION REPAIR`, P0/P1/P2=`0/1/0`, for exact candidate `8fe02932fa7b5eb81b6f0cd56d1776ba9287c709` in task `01a01e48-1934-77b0-821e-a8026cd9e5f7`. Cap enforcement, remove-wrap ownership, Windows checkout portability and Codec functional precedence passed. Only the Codec's direct linear-time and bounded-retained-memory regression remains active.
+The targeted rereview returned `RETURN FOR BOUNDED IMPLEMENTATION REPAIR`, P0/P1/P2=`0/1/0`, for exact candidate `8fe02932fa7b5eb81b6f0cd56d1776ba9287c709` in task `01a01e48-1934-77b0-821e-a8026cd9e5f7`. Cap enforcement, remove-wrap ownership, Windows checkout portability and Codec functional precedence passed. The remaining Codec direct linear-time and bounded-retained-memory repair now passes and is ready for targeted implementation rereview.
 
-## Active Codec linear-bound repair
+## Completed Codec linear-bound repair
 
 - Branch: `codex/rkp-1-codec-linear-bound-repair`, exact base `8fe02932fa7b5eb81b6f0cd56d1776ba9287c709`.
-- Candidate readiness is false and targeted implementation repair is active until focused and complete gates pass.
+- State freeze commit: `310baf4471b967230fc7aa1178cc00a711b3f527`; independently revertible Codec/test commit: `e8d496d75a25553132a135e23d99c80b167b6a49`.
+- Candidate readiness is true only for targeted rereview; implementation review remains pending.
 - Owner paths remain inside the existing 40-path matrix: Contracts Codec, existing direct tests and existing evidence/state files only.
-- The prior cap, remove-wrap, checkout, 22-failure, exact-two-export and TypeScript-default contracts must not move.
+- The prior cap, remove-wrap, checkout, 22-failure, exact-two-export and TypeScript-default contracts did not move.
+- Reproduce the Rust 20k unique/duplicate instrumentation, four-slot high-water, post-property-limit zero-retention and later-depth-wins cases. Reproduce real-addon 5k/10k/20k medians with adjacent ratio `<3.25`, endpoint ratio `<8.5`, and 30-second timeout.
 
 ## Active four-P1 repair scope
 
