@@ -2,11 +2,11 @@
 
 ## Current status
 
-`IMPLEMENTATION REREVIEW REQUIRED`.
+`BOUNDED IMPLEMENTATION REPAIR ACTIVE`.
 
-The full implementation audit returned P0/P1/P2=`0/4/0` for `efe3bbc9852aef2cf7949c3ae221218b1c2590dd` in task `01a01e48-1934-77b0-821e-a8026cd9e5f7`. The four bounded repairs already required by the accepted RKP-1 plan are now implemented on branch `codex/rkp-1-four-p1-bounded-implementation-repair`, which starts at that exact rejected candidate.
+The targeted rereview of `8fe02932fa7b5eb81b6f0cd56d1776ba9287c709` returned P0/P1/P2=`0/1/0` in task `01a01e48-1934-77b0-821e-a8026cd9e5f7`. Cap enforcement, remove-wrap ownership and Windows checkout portability passed; Codec functional precedence passed. The sole active repair is the Codec's direct linear-time and bounded-retention behavior on large unique/duplicate objects. Branch `codex/rkp-1-codec-linear-bound-repair` starts at that exact rejected candidate.
 
-The child remains `in_progress`, `task_start_run=true`, `production_implementation_authorized=true`, `implementation_candidate_ready=true`, `implementation_repair_active=false`, and `implementation_review=pending`. TypeScript remains the product default. Acceptance, archive, push, official CVN-7 measurement, default cutover and RKP-2+ creation remain unauthorized.
+The child remains `in_progress`, `task_start_run=true`, `production_implementation_authorized=true`, `implementation_candidate_ready=false`, `implementation_repair_active=true`, and `implementation_review=pending`. TypeScript remains the product default. The 40 implementation paths and seven accepted planning-only paths remain exact. Acceptance, archive, push, official CVN-7 measurement, default cutover and RKP-2+ creation remain unauthorized.
 
 ## Commit chain and rollback points
 

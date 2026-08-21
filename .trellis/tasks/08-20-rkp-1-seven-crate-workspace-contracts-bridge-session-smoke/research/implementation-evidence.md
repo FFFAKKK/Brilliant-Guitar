@@ -144,3 +144,11 @@ Stage 4 created two fresh detached clones at exact commit `47f80198155a2bb896206
 - The implementation diff remains governed by the repaired 40 literal paths and the same seven exact accepted planning-only paths. No package/tsconfig/default-runtime/public-index drift, no new crate/export/failure code, no RKP-2 through RKP-9 and no official CVN-7 measurement occurred.
 
 The child remains `in_progress`; candidate readiness is true only for targeted implementation rereview. This evidence does not accept, complete, archive or push RKP-1 and does not authorize default cutover, official qualification or RKP-2.
+
+## Targeted Codec linear-bound audit return and state freeze
+
+Targeted rereview task `01a01e48-1934-77b0-821e-a8026cd9e5f7` returned P0/P1/P2=`0/1/0` for exact rejected candidate `8fe02932fa7b5eb81b6f0cd56d1776ba9287c709`. The previously repaired cap boundary, remove-wrap production ownership path and Windows checkout portability passed. Codec functional failure precedence also passed; the only remaining finding is its direct performance and retained-memory behavior.
+
+Observed real-addon unique-key timings at approximately 5k/10k/20k members were `127/488/1965 ms`, consistent with the source's per-key linear duplicate scan. The same implementation retained duplicate values, an unbounded fault vector and post-limit placeholder members. This bounded repair changes no public contract: it replaces lookup and retention internals only, keeps the 40 implementation paths plus seven accepted planning-only paths exact, and preserves TypeScript default, 22 stable failures, cap/remove-wrap/two-export behavior and all RKP-1 exclusions.
+
+Branch `codex/rkp-1-codec-linear-bound-repair` starts at the exact rejected candidate. The child remains `in_progress`; `implementation_candidate_ready=false`, `implementation_repair_active=true`, and implementation review remains pending. This state-freeze step is docs-only and does not accept, archive, push, run official qualification or create RKP-2.

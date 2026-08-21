@@ -42,7 +42,7 @@
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
     ".trellis/tasks/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RUST PERFORMANCE REMEDIATION PLANNING REVIEW PASSED / RKP-1 REMAINS THE ONLY ACTIVE IMPLEMENTATION CHILD / FOUR-P1 BOUNDED IMPLEMENTATION REPAIR GATES PASS AND CANDIDATE AWAITS TARGETED IMPLEMENTATION REREVIEW / RKP-2 THROUGH RKP-9 ABSENT / TYPESCRIPT DEFAULT / NO ACCEPT ARCHIVE PUSH OR OFFICIAL QUALIFICATION.",
+  "notes": "RUST PERFORMANCE REMEDIATION PLANNING REVIEW PASSED / RKP-1 REMAINS THE ONLY ACTIVE IMPLEMENTATION CHILD / TARGETED CODEC LINEAR-BOUND REPAIR ACTIVE AFTER P0/P1/P2 0/1/0 / RKP-2 THROUGH RKP-9 ABSENT / TYPESCRIPT DEFAULT / NO ACCEPT ARCHIVE PUSH OR OFFICIAL QUALIFICATION.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
@@ -90,7 +90,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "rkp1-independent-implementation-rereview",
+    "next_gate": "rkp1-codec-linear-bound-bounded-implementation-repair",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -160,7 +160,7 @@
     "rkp1_status_sync_commit": "7174c5ac50655ae0cb8807e21c7045a0c1b6d15e",
     "rkp1_repair_branch": "codex/rkp-1-seven-crate-workspace-contracts-bridge-smoke-planning-r1",
     "current_implementation_child": "08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke",
-    "rkp1_implementation_stage": "four_p1_bounded_implementation_repair_complete_targeted_rereview_pending",
+    "rkp1_implementation_stage": "codec_linear_bound_bounded_implementation_repair_active",
     "rkp1_implementation_commits": {
       "activation": "84918e1e293b26554fbff9f161c6222510f378b9",
       "workspace": "6b64616690ddf9e11e71cf4caeb1b4be5df74b8d",
@@ -171,8 +171,8 @@
     },
     "rkp1_stage_e_blocker": "existing_cvn7_zero_production_drift_test_uses_open_upper_bound_and_rejects_required_rkp1_private_ts_adapter",
     "rkp1_implementation_paused_for_bounded_planning_repair": false,
-    "rkp1_implementation_candidate_ready": true,
-    "rkp1_implementation_repair_active": false,
+    "rkp1_implementation_candidate_ready": false,
+    "rkp1_implementation_repair_active": true,
     "rkp1_implementation_review": "pending",
     "rkp1_implementation_audit_return": {
       "task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
@@ -181,6 +181,15 @@
       "P2": 0,
       "candidate": "efe3bbc9852aef2cf7949c3ae221218b1c2590dd",
       "verdict": "return_for_bounded_implementation_repair"
+    },
+    "rkp1_codec_linear_bound_audit_return": {
+      "task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
+      "P0": 0,
+      "P1": 1,
+      "P2": 0,
+      "candidate": "8fe02932fa7b5eb81b6f0cd56d1776ba9287c709",
+      "verdict": "return_for_bounded_implementation_repair",
+      "scope": "codec_direct_linear_time_and_bounded_retained_memory_only"
     },
     "rkp1_independent_planning_rereview": "passed",
     "rkp1_bounded_planning_repair_branch": "codex/rkp-1-cvn7-historical-boundary-planning-repair",

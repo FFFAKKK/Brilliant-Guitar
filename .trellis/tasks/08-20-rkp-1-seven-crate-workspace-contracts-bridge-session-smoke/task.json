@@ -12,7 +12,7 @@
   "assignee": "ATOM",
   "createdAt": "2026-08-20",
   "completedAt": null,
-  "branch": "codex/rkp-1-four-p1-bounded-implementation-repair",
+  "branch": "codex/rkp-1-codec-linear-bound-repair",
   "base_branch": "codex/brilliant-guitar-architecture-v2-authority-sync",
   "worktree_path": "C:/Users/ATOM/.codex/worktrees/0589/brilliant_guitar",
   "commit": null,
@@ -44,7 +44,7 @@
     ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "RKP-1 FOUR-P1 BOUNDED IMPLEMENTATION REPAIR IMPLEMENTED IN FOUR REVERTIBLE CODE COMMITS / INTEGRATION GATES PASS / CANDIDATE READY FOR TARGETED IMPLEMENTATION REREVIEW / CHILD REMAINS IN PROGRESS / TYPESCRIPT DEFAULT / NO ACCEPT ARCHIVE PUSH OFFICIAL QUALIFICATION OR RKP-2.",
+  "notes": "RKP-1 TARGETED CODEC LINEAR-BOUND IMPLEMENTATION REPAIR ACTIVE AFTER P0/P1/P2 0/1/0 / PRIOR CAP REMOVE-WRAP AND WINDOWS CHECKOUT REPAIRS REMAIN PASSED / CANDIDATE NOT READY / CHILD REMAINS IN PROGRESS / TYPESCRIPT DEFAULT / NO ACCEPT ARCHIVE PUSH OFFICIAL QUALIFICATION OR RKP-2.",
   "meta": {
     "planning_base_commit": "463c8514a61a61a39c8a5d2736261ae9e82b0fba",
     "required_ancestor_commit": "463c8514a61a61a39c8a5d2736261ae9e82b0fba",
@@ -121,6 +121,15 @@
       "verdict": "return_for_bounded_implementation_repair",
       "scope": "deterministic_codec_precedence_allocation_before_cap_remove_wrap_production_path_proof_windows_checkout_portability"
     },
+    "codec_linear_bound_audit_return": {
+      "task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
+      "P0": 0,
+      "P1": 1,
+      "P2": 0,
+      "candidate": "8fe02932fa7b5eb81b6f0cd56d1776ba9287c709",
+      "verdict": "return_for_bounded_implementation_repair",
+      "scope": "codec_direct_linear_time_and_bounded_retained_memory_only"
+    },
     "default_runtime": "typescript",
     "default_runtime_switch_authorized": false,
     "archive_authorized": false,
@@ -167,7 +176,7 @@
     "expected_contribution_abi_field_count": 9,
     "expected_persisted_schema": "brilliant-score-1",
     "expected_planning_full_test_count": 531,
-    "current_planning_stage": "four_p1_bounded_implementation_repair_complete_implementation_rereview_pending",
+    "current_planning_stage": "codec_linear_bound_bounded_implementation_repair_active",
     "current_implementation_child": "08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke",
     "future_rkp_children_created": false,
     "planning_production_test_build_cargo_crates_delta": "zero",
@@ -182,8 +191,8 @@
       "stage_5a_clean_clone_portability_commit": "0c1a1da966687f2faa366dc3bcb4915b8a790fc7"
     },
     "stage_4_clean_clone": "passed_at_8ae5b7158ea45cfc4c47902ff8a17ce5c949678c_windows_x86_64_pc_windows_msvc_debug_dlopen_require_typecheck_build_bridge_6_of_6_clean",
-    "implementation_gate_summary": "four_p1_repair_code_gates_pass_final_status_projected_for_full_rerun_ts_node_rust_msrv_windows_clean_clone_and_dual_autocrlf",
-    "implementation_blocker": null,
+    "implementation_gate_summary": "targeted_codec_linear_bound_repair_active_prior_cap_remove_wrap_windows_checkout_gates_preserved",
+    "implementation_blocker": "codec_unique_key_lookup_and_fault_retention_show_near_quadratic_native_growth",
     "pre_repair_full_test_result": "541_of_542_single_failure_cvn7_zero_production_drift_open_upper_bound",
     "cvn7_historical_production_base": "38afdc3fd508dc67f7aa446fd323837a5d550b70",
     "cvn7_historical_final_input_head": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
@@ -202,8 +211,8 @@
       "0c1a1da966687f2faa366dc3bcb4915b8a790fc7"
     ],
     "implementation_paused_for_bounded_planning_repair": false,
-    "implementation_candidate_ready": true,
-    "implementation_repair_active": false,
+    "implementation_candidate_ready": false,
+    "implementation_repair_active": true,
     "bounded_planning_repair_required": false,
     "planning_repair_production_test_delta": "zero_relative_to_669364128cd4402a478f247393908ff170112794",
     "implementation_review_required_after_repair": true,
@@ -224,6 +233,16 @@
       "dual_autocrlf_fmt": "true_crlf_pass_false_lf_pass",
       "windows_clean_clone_smoke": "created_read_exact_two_exports_clean",
       "final_full_test_result": "pending_status_projection_rerun"
+    },
+    "codec_linear_bound_repair": {
+      "audit_task": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
+      "rejected_candidate": "8fe02932fa7b5eb81b6f0cd56d1776ba9287c709",
+      "audit_result": "P0_0_P1_1_P2_0",
+      "branch": "codex/rkp-1-codec-linear-bound-repair",
+      "status": "active",
+      "scope": "codec_linear_lookup_bounded_fault_slots_scan_only_retention_and_direct_regressions",
+      "implementation_matrix_count": 40,
+      "accepted_planning_only_path_count": 7
     }
   }
 }

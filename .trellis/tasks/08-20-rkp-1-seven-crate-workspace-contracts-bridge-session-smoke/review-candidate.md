@@ -2,9 +2,16 @@
 
 ## Required verdict
 
-Current status: `IMPLEMENTATION REREVIEW REQUIRED`.
+Current status: `BOUNDED IMPLEMENTATION REPAIR ACTIVE`.
 
-The full implementation audit returned `RETURN FOR BOUNDED IMPLEMENTATION REPAIR`, P0/P1/P2=`0/4/0`, for exact candidate `efe3bbc9852aef2cf7949c3ae221218b1c2590dd` in task `01a01e48-1934-77b0-821e-a8026cd9e5f7`. All four independently revertible repairs and their integration gates now pass; a targeted independent implementation rereview is requested.
+The targeted rereview returned `RETURN FOR BOUNDED IMPLEMENTATION REPAIR`, P0/P1/P2=`0/1/0`, for exact candidate `8fe02932fa7b5eb81b6f0cd56d1776ba9287c709` in task `01a01e48-1934-77b0-821e-a8026cd9e5f7`. Cap enforcement, remove-wrap ownership, Windows checkout portability and Codec functional precedence passed. Only the Codec's direct linear-time and bounded-retained-memory regression remains active.
+
+## Active Codec linear-bound repair
+
+- Branch: `codex/rkp-1-codec-linear-bound-repair`, exact base `8fe02932fa7b5eb81b6f0cd56d1776ba9287c709`.
+- Candidate readiness is false and targeted implementation repair is active until focused and complete gates pass.
+- Owner paths remain inside the existing 40-path matrix: Contracts Codec, existing direct tests and existing evidence/state files only.
+- The prior cap, remove-wrap, checkout, 22-failure, exact-two-export and TypeScript-default contracts must not move.
 
 ## Active four-P1 repair scope
 
