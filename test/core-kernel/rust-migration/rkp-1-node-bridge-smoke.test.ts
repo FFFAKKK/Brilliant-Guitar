@@ -1,5 +1,6 @@
 import assert = require("node:assert/strict");
 import { resolve } from "node:path";
+import { performance } from "node:perf_hooks";
 import { test } from "node:test";
 
 import {
@@ -46,6 +47,34 @@ function assertDeepFrozen(value: unknown, seen = new WeakSet<object>()): void {
       assertDeepFrozen(descriptor.value, seen);
     }
   }
+}
+
+function median(values: readonly number[]): number {
+  const sorted = [...values].sort((left, right) => left - right);
+  return sorted[Math.floor(sorted.length / 2)] ?? Number.POSITIVE_INFINITY;
+}
+
+function largeObjectRequest(memberCount: number, duplicate: boolean): Buffer {
+  const members = new Array<string>(memberCount);
+  for (let index = 0; index < memberCount; index += 1) {
+    const key = duplicate ? "repeated" : `extra-${index.toString().padStart(5, "0")}`;
+    members[index] = `${JSON.stringify(key)}:0`;
+  }
+  return Buffer.from(
+    `{"apiVersion":1,"document":{},${members.join(",")}}`,
+    "utf8",
+  );
+}
+
+function timedCreate(request: Buffer): number {
+  const started = performance.now();
+  const result = addon.createKernelSessionV1(request);
+  const elapsed = performance.now() - started;
+  assert.equal(
+    result.payload.toString("utf8"),
+    '{"apiVersion":1,"status":"rejected","failure":{"failureVersion":1,"code":"codec.invalid-shape","path":["document","extensions"],"violation":"missing-field"}}',
+  );
+  return elapsed;
 }
 
 test("raw addon exposes exactly two free functions and performs native create/read", () => {
@@ -220,6 +249,41 @@ test("real addon selects the same canonical structural winner for reversed keys"
     assert.equal(result.payload.toString("utf8"), expected);
   }
 });
+
+test(
+  "real addon large unique and duplicate objects stay below the frozen near-quadratic ratio",
+  { timeout: 30_000 },
+  (context) => {
+    const sizes = [5_000, 10_000, 20_000] as const;
+    for (const duplicate of [false, true]) {
+      const requests = sizes.map((size) => largeObjectRequest(size, duplicate));
+      for (const request of requests) {
+        timedCreate(request);
+      }
+      const medians = requests.map((request) =>
+        median([timedCreate(request), timedCreate(request), timedCreate(request)]),
+      );
+      const [small = Number.POSITIVE_INFINITY, medium = Number.POSITIVE_INFINITY, large = Number.POSITIVE_INFINITY] =
+        medians;
+      const adjacentRatios = [medium / small, large / medium];
+      context.diagnostic(
+        `${duplicate ? "duplicate" : "unique"} medians_ms=${medians
+          .map((value) => value.toFixed(3))
+          .join(",")} adjacent_ratios=${adjacentRatios
+          .map((value) => value.toFixed(3))
+          .join(",")} endpoint_ratio=${(large / small).toFixed(3)}`,
+      );
+      assert.ok(
+        adjacentRatios.every((ratio) => ratio < 3.25),
+        `${duplicate ? "duplicate" : "unique"} adjacent ratios ${adjacentRatios.join(",")}`,
+      );
+      assert.ok(
+        large / small < 8.5,
+        `${duplicate ? "duplicate" : "unique"} endpoint ratio ${large / small}`,
+      );
+    }
+  },
+);
 
 test("wrong kind and wrong tag fail stably without native detail leakage", () => {
   for (const handle of [null, 1, "handle", {}, []]) {

@@ -1,4 +1,4 @@
-use std::{fmt, io::Write};
+use std::{collections::BTreeMap, fmt, io::Write};
 
 use brilliant_core_types::{
     API_VERSION_V1, JS_SAFE_INTEGER_MAX, JSON_DEPTH_LIMIT, JSON_PROPERTY_LIMIT,
@@ -7,7 +7,7 @@ use brilliant_core_types::{
 use brilliant_extension_protocol::EXTENSION_PROTOCOL_VERSION_V1;
 use brilliant_score_foundation::{FoundationDecodeFailure, decode_score_document_value};
 use serde::{
-    Deserialize, Deserializer,
+    Deserializer,
     de::{self, DeserializeSeed, MapAccess, SeqAccess, Visitor},
 };
 use serde_json::{Map, Number, Value};
@@ -125,7 +125,7 @@ enum StrictValue {
     Number(Number),
     String(String),
     Array(Vec<Self>),
-    Object(Vec<(String, Self)>),
+    Object(BTreeMap<String, Self>),
 }
 
 impl StrictValue {
@@ -150,95 +150,140 @@ impl StrictValue {
 }
 
 #[derive(Clone, Debug)]
-enum ResourceFault {
-    Depth { actual: usize, path: CanonicalPath },
-    Property { actual: usize },
-}
-
-#[derive(Clone, Debug)]
 struct ShapeFault {
     rank: u8,
     path: CanonicalPath,
     violation: ShapeViolationV1,
 }
 
+#[derive(Clone, Debug)]
+struct DepthFault {
+    actual: u64,
+    path: CanonicalPath,
+}
+
+#[cfg(test)]
 #[derive(Default)]
+struct StrictMetrics {
+    members_visited: u64,
+    unique_retained: u64,
+    duplicate_discarded: u64,
+    post_limit_retained: u64,
+    fault_slot_high_water: usize,
+}
+
 struct StrictState {
-    nodes: usize,
-    resource_faults: Vec<ResourceFault>,
-    shape_faults: Vec<ShapeFault>,
-    number_faults: Vec<CanonicalPath>,
+    nodes_visited: u64,
+    depth_fault: Option<DepthFault>,
+    property_fault: Option<u64>,
+    shape_fault: Option<ShapeFault>,
+    number_fault: Option<CanonicalPath>,
+    retain_values: bool,
+    #[cfg(test)]
+    metrics: StrictMetrics,
+}
+
+impl Default for StrictState {
+    fn default() -> Self {
+        Self {
+            nodes_visited: 0,
+            depth_fault: None,
+            property_fault: None,
+            shape_fault: None,
+            number_fault: None,
+            retain_values: true,
+            #[cfg(test)]
+            metrics: StrictMetrics::default(),
+        }
+    }
 }
 
 impl StrictState {
-    fn should_skip(&mut self, depth: usize, path: &CanonicalPath) -> bool {
+    fn observe_value(&mut self, depth: usize, path: &CanonicalPath) -> bool {
+        self.nodes_visited = self.nodes_visited.saturating_add(1);
         if depth > JSON_DEPTH_LIMIT {
-            self.resource_faults.push(ResourceFault::Depth {
-                actual: depth,
+            let candidate = DepthFault {
+                actual: u64::try_from(depth).unwrap_or(u64::MAX),
                 path: path.clone(),
-            });
-            return true;
-        }
-        self.nodes = self.nodes.saturating_add(1);
-        if self.nodes > JSON_PROPERTY_LIMIT {
-            if !self
-                .resource_faults
-                .iter()
-                .any(|fault| matches!(fault, ResourceFault::Property { .. }))
-            {
-                self.resource_faults
-                    .push(ResourceFault::Property { actual: self.nodes });
+            };
+            if self.depth_fault.as_ref().is_none_or(|current| {
+                (&candidate.path, candidate.actual) < (&current.path, current.actual)
+            }) {
+                self.depth_fault = Some(candidate);
             }
-            return true;
+            self.retain_values = false;
+            self.observe_fault_slots();
         }
-        false
+        if self.nodes_visited > JSON_PROPERTY_LIMIT as u64 && self.property_fault.is_none() {
+            self.property_fault = Some(JSON_PROPERTY_LIMIT as u64 + 1);
+            self.retain_values = false;
+            self.observe_fault_slots();
+        }
+        self.retain_values
+    }
+
+    fn can_retain(&self) -> bool {
+        self.retain_values
     }
 
     fn record_shape(&mut self, rank: u8, path: CanonicalPath, violation: ShapeViolationV1) {
-        self.shape_faults.push(ShapeFault {
+        let candidate = ShapeFault {
             rank,
             path,
             violation,
-        });
+        };
+        if self.shape_fault.as_ref().is_none_or(|current| {
+            (&candidate.rank, &candidate.path) < (&current.rank, &current.path)
+        }) {
+            self.shape_fault = Some(candidate);
+            self.observe_fault_slots();
+        }
     }
 
+    fn record_number(&mut self, path: CanonicalPath) {
+        if self
+            .number_fault
+            .as_ref()
+            .is_none_or(|current| path < *current)
+        {
+            self.number_fault = Some(path);
+            self.observe_fault_slots();
+        }
+    }
+
+    #[cfg(test)]
+    fn observe_fault_slots(&mut self) {
+        let slots = usize::from(self.depth_fault.is_some())
+            + usize::from(self.property_fault.is_some())
+            + usize::from(self.shape_fault.is_some())
+            + usize::from(self.number_fault.is_some());
+        self.metrics.fault_slot_high_water = self.metrics.fault_slot_high_water.max(slots);
+    }
+
+    #[cfg(not(test))]
+    fn observe_fault_slots(&mut self) {}
+
     fn failure(&self) -> Option<StableFailureV1> {
-        let depth = self
-            .resource_faults
-            .iter()
-            .filter_map(|fault| match fault {
-                ResourceFault::Depth { actual, path } => Some((*actual, path)),
-                ResourceFault::Property { .. } => None,
-            })
-            .min_by(|left, right| left.1.cmp(right.1));
-        if let Some((actual, _)) = depth {
+        if let Some(fault) = &self.depth_fault {
             return Some(StableFailureV1::CodecDepthLimit {
                 limit: JSON_DEPTH_LIMIT as u64,
-                actual: actual as u64,
+                actual: fault.actual,
             });
         }
-        if let Some(actual) = self.resource_faults.iter().find_map(|fault| match fault {
-            ResourceFault::Property { actual } => Some(*actual),
-            ResourceFault::Depth { .. } => None,
-        }) {
+        if let Some(actual) = self.property_fault {
             return Some(StableFailureV1::CodecPropertyLimit {
                 limit: JSON_PROPERTY_LIMIT as u64,
-                actual: actual as u64,
+                actual,
             });
         }
-        if let Some(fault) = self
-            .shape_faults
-            .iter()
-            .min_by(|left, right| (left.rank, &left.path).cmp(&(right.rank, &right.path)))
-        {
+        if let Some(fault) = &self.shape_fault {
             return Some(StableFailureV1::CodecInvalidShape {
                 path: fault.path.stable(),
                 violation: fault.violation,
             });
         }
-        self.number_faults
-            .iter()
-            .min()
+        self.number_fault
+            .as_ref()
             .map(|path| StableFailureV1::CodecNumberOutOfRange {
                 path: path.stable(),
             })
@@ -249,22 +294,23 @@ struct StrictSeed<'a> {
     state: &'a mut StrictState,
     depth: usize,
     path: CanonicalPath,
+    retain: bool,
 }
 
 impl<'de> DeserializeSeed<'de> for StrictSeed<'_> {
-    type Value = StrictValue;
+    type Value = Option<StrictValue>;
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
         D: Deserializer<'de>,
     {
-        if self.state.should_skip(self.depth, &self.path) {
-            return serde::de::IgnoredAny::deserialize(deserializer).map(|_| StrictValue::Null);
-        }
+        let state_allows_retention = self.state.observe_value(self.depth, &self.path);
+        let retain = self.retain && state_allows_retention;
         deserializer.deserialize_any(StrictVisitor {
             state: self.state,
             depth: self.depth,
             path: self.path,
+            retain,
         })
     }
 }
@@ -273,25 +319,26 @@ struct StrictVisitor<'a> {
     state: &'a mut StrictState,
     depth: usize,
     path: CanonicalPath,
+    retain: bool,
 }
 
 impl<'de> Visitor<'de> for StrictVisitor<'_> {
-    type Value = StrictValue;
+    type Value = Option<StrictValue>;
 
     fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str("one strict JSON value")
     }
 
     fn visit_unit<E>(self) -> Result<Self::Value, E> {
-        Ok(StrictValue::Null)
+        Ok(self.retain.then_some(StrictValue::Null))
     }
 
     fn visit_none<E>(self) -> Result<Self::Value, E> {
-        Ok(StrictValue::Null)
+        Ok(self.retain.then_some(StrictValue::Null))
     }
 
     fn visit_bool<E>(self, value: bool) -> Result<Self::Value, E> {
-        Ok(StrictValue::Bool(value))
+        Ok(self.retain.then_some(StrictValue::Bool(value)))
     }
 
     fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
@@ -299,10 +346,12 @@ impl<'de> Visitor<'de> for StrictVisitor<'_> {
         E: de::Error,
     {
         if !(-JS_SAFE_INTEGER_MAX..=JS_SAFE_INTEGER_MAX).contains(&value) {
-            self.state.number_faults.push(self.path);
-            return Ok(StrictValue::Number(Number::from(0)));
+            self.state.record_number(self.path);
+            return Ok(self.retain.then_some(StrictValue::Number(Number::from(0))));
         }
-        Ok(StrictValue::Number(Number::from(value)))
+        Ok(self
+            .retain
+            .then_some(StrictValue::Number(Number::from(value))))
     }
 
     fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
@@ -310,10 +359,12 @@ impl<'de> Visitor<'de> for StrictVisitor<'_> {
         E: de::Error,
     {
         if value > JS_SAFE_INTEGER_MAX as u64 {
-            self.state.number_faults.push(self.path);
-            return Ok(StrictValue::Number(Number::from(0)));
+            self.state.record_number(self.path);
+            return Ok(self.retain.then_some(StrictValue::Number(Number::from(0))));
         }
-        Ok(StrictValue::Number(Number::from(value)))
+        Ok(self
+            .retain
+            .then_some(StrictValue::Number(Number::from(value))))
     }
 
     fn visit_f64<E>(self, value: f64) -> Result<Self::Value, E>
@@ -324,18 +375,20 @@ impl<'de> Visitor<'de> for StrictVisitor<'_> {
             || value < -JS_SAFE_INTEGER_MAX as f64
             || value > JS_SAFE_INTEGER_MAX as f64
         {
-            self.state.number_faults.push(self.path);
-            return Ok(StrictValue::Number(Number::from(0)));
+            self.state.record_number(self.path);
+            return Ok(self.retain.then_some(StrictValue::Number(Number::from(0))));
         }
-        Ok(StrictValue::Number(Number::from(value as i64)))
+        Ok(self
+            .retain
+            .then_some(StrictValue::Number(Number::from(value as i64))))
     }
 
     fn visit_str<E>(self, value: &str) -> Result<Self::Value, E> {
-        Ok(StrictValue::String(value.to_owned()))
+        Ok(self.retain.then(|| StrictValue::String(value.to_owned())))
     }
 
     fn visit_string<E>(self, value: String) -> Result<Self::Value, E> {
-        Ok(StrictValue::String(value))
+        Ok(self.retain.then_some(StrictValue::String(value)))
     }
 
     fn visit_seq<A>(self, mut sequence: A) -> Result<Self::Value, A::Error>
@@ -343,42 +396,150 @@ impl<'de> Visitor<'de> for StrictVisitor<'_> {
         A: SeqAccess<'de>,
     {
         let mut values = Vec::new();
+        let mut index = 0_usize;
         while let Some(value) = sequence.next_element_seed(StrictSeed {
             state: self.state,
             depth: self.depth + 1,
-            path: self.path.index(values.len()),
+            path: self.path.index(index),
+            retain: self.retain,
         })? {
-            values.push(value);
+            #[cfg(test)]
+            {
+                self.state.metrics.members_visited =
+                    self.state.metrics.members_visited.saturating_add(1);
+            }
+            if let Some(value) = value {
+                values.push(value);
+                #[cfg(test)]
+                {
+                    self.state.metrics.unique_retained =
+                        self.state.metrics.unique_retained.saturating_add(1);
+                }
+            }
+            index = index.saturating_add(1);
         }
-        Ok(StrictValue::Array(values))
+        Ok((self.retain && self.state.can_retain()).then_some(StrictValue::Array(values)))
     }
 
     fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
     where
         A: MapAccess<'de>,
     {
-        let mut values = Vec::new();
-        while let Some(key) = map.next_key::<String>()? {
-            let path = self.path.raw_field(&key);
-            if values
-                .iter()
-                .any(|(existing, _): &(String, StrictValue)| existing == &key)
+        let mut values = BTreeMap::new();
+        loop {
+            let retain_key = self.retain && self.state.can_retain();
+            let Some(key) = map.next_key_seed(StrictMapKeySeed { retain: retain_key })? else {
+                break;
+            };
+            #[cfg(test)]
             {
-                self.state
-                    .record_shape(2, path.clone(), ShapeViolationV1::DuplicateField);
+                self.state.metrics.members_visited =
+                    self.state.metrics.members_visited.saturating_add(1);
             }
-            let value = map.next_value_seed(StrictSeed {
-                state: self.state,
-                depth: self.depth + 1,
-                path,
-            })?;
-            values.push((key, value));
+            match key {
+                StrictMapKey::Retained(key) => {
+                    let path = self.path.raw_field(&key);
+                    let duplicate = values.contains_key(&key);
+                    if duplicate {
+                        self.state
+                            .record_shape(2, path.clone(), ShapeViolationV1::DuplicateField);
+                        #[cfg(test)]
+                        {
+                            self.state.metrics.duplicate_discarded =
+                                self.state.metrics.duplicate_discarded.saturating_add(1);
+                        }
+                    }
+                    let value = map.next_value_seed(StrictSeed {
+                        state: self.state,
+                        depth: self.depth + 1,
+                        path,
+                        retain: self.retain && !duplicate,
+                    })?;
+                    if let Some(value) = value {
+                        if self.state.can_retain() {
+                            values.insert(key, value);
+                            #[cfg(test)]
+                            {
+                                self.state.metrics.unique_retained =
+                                    self.state.metrics.unique_retained.saturating_add(1);
+                            }
+                        } else {
+                            #[cfg(test)]
+                            {
+                                self.state.metrics.post_limit_retained =
+                                    self.state.metrics.post_limit_retained.saturating_add(1);
+                            }
+                        }
+                    }
+                }
+                StrictMapKey::Scanned(canonical) => {
+                    let path =
+                        canonical.map_or_else(|| self.path.clone(), |field| self.path.field(field));
+                    let value = map.next_value_seed(StrictSeed {
+                        state: self.state,
+                        depth: self.depth + 1,
+                        path,
+                        retain: false,
+                    })?;
+                    debug_assert!(value.is_none());
+                }
+            }
         }
-        Ok(StrictValue::Object(values))
+        Ok((self.retain && self.state.can_retain()).then_some(StrictValue::Object(values)))
     }
 }
 
-fn strict_json(bytes: &[u8]) -> Result<(StrictValue, StrictState), StableFailureV1> {
+enum StrictMapKey {
+    Retained(String),
+    Scanned(Option<&'static str>),
+}
+
+struct StrictMapKeySeed {
+    retain: bool,
+}
+
+impl<'de> DeserializeSeed<'de> for StrictMapKeySeed {
+    type Value = StrictMapKey;
+
+    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_str(StrictMapKeyVisitor {
+            retain: self.retain,
+        })
+    }
+}
+
+struct StrictMapKeyVisitor {
+    retain: bool,
+}
+
+impl<'de> Visitor<'de> for StrictMapKeyVisitor {
+    type Value = StrictMapKey;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str("one JSON object key")
+    }
+
+    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E> {
+        Ok(if self.retain {
+            StrictMapKey::Retained(value.to_owned())
+        } else {
+            StrictMapKey::Scanned(canonical_field(value))
+        })
+    }
+
+    fn visit_string<E>(self, value: String) -> Result<Self::Value, E> {
+        Ok(if self.retain {
+            StrictMapKey::Retained(value)
+        } else {
+            StrictMapKey::Scanned(canonical_field(&value))
+        })
+    }
+}
+
+fn strict_json(bytes: &[u8]) -> Result<(Option<StrictValue>, StrictState), StableFailureV1> {
     let text = std::str::from_utf8(bytes).map_err(|_| StableFailureV1::CodecInvalidUtf8)?;
     let mut deserializer = serde_json::Deserializer::from_str(text);
     let mut state = StrictState::default();
@@ -386,6 +547,7 @@ fn strict_json(bytes: &[u8]) -> Result<(StrictValue, StrictState), StableFailure
         state: &mut state,
         depth: 1,
         path: CanonicalPath::default(),
+        retain: true,
     }
     .deserialize(&mut deserializer)
     .map_err(|_| StableFailureV1::CodecInvalidJson)?;
@@ -405,17 +567,17 @@ fn exact_object<'a>(
     required: &[&'static str],
     optional: &[&'static str],
     state: &mut StrictState,
-) -> Option<&'a [(String, StrictValue)]> {
+) -> Option<&'a BTreeMap<String, StrictValue>> {
     let StrictValue::Object(entries) = value else {
         record_wrong_type(state, path);
         return None;
     };
     for field in required {
-        if !entries.iter().any(|(key, _)| key == field) {
+        if !entries.contains_key(*field) {
             state.record_shape(0, path.field(field), ShapeViolationV1::MissingField);
         }
     }
-    if entries.iter().any(|(key, _)| {
+    if entries.keys().any(|key| {
         !required
             .iter()
             .chain(optional)
@@ -427,12 +589,10 @@ fn exact_object<'a>(
 }
 
 fn field_values<'a>(
-    entries: &'a [(String, StrictValue)],
+    entries: &'a BTreeMap<String, StrictValue>,
     field: &'static str,
 ) -> impl Iterator<Item = &'a StrictValue> {
-    entries
-        .iter()
-        .filter_map(move |(key, value)| (key == field).then_some(value))
+    entries.get(field).into_iter()
 }
 
 fn exact_array<'a>(
@@ -949,10 +1109,15 @@ pub fn decode_create_request(
         });
     }
     let (strict_value, mut state) = strict_json(bytes)?;
-    validate_create_shape(&strict_value, &mut state);
+    if state.can_retain()
+        && let Some(value) = &strict_value
+    {
+        validate_create_shape(value, &mut state);
+    }
     if let Some(failure) = state.failure() {
         return Err(failure);
     }
+    let strict_value = strict_value.ok_or(StableFailureV1::BridgeInternal)?;
     let value = strict_value.into_json();
     let object = value
         .as_object()
@@ -1366,6 +1531,14 @@ mod tests {
         let expected = br#"{"apiVersion":1,"status":"rejected","failure":{"failureVersion":1,"code":"codec.invalid-shape","path":["document","id"],"violation":"wrong-type"}}"#;
         assert_eq!(rejected_bytes(forward), expected);
         assert_eq!(rejected_bytes(reversed), expected);
+
+        let shallow = format!("{}0{}", "[".repeat(63), "]".repeat(63));
+        let deep = format!("{}0{}", "[".repeat(64), "]".repeat(64));
+        let forward_depth = format!(r#"{{"z":{deep},"a":{shallow}}}"#);
+        let reversed_depth = format!(r#"{{"a":{shallow},"z":{deep}}}"#);
+        let expected_depth = br#"{"apiVersion":1,"status":"rejected","failure":{"failureVersion":1,"code":"codec.depth-limit","limit":64,"actual":65}}"#;
+        assert_eq!(rejected_bytes(forward_depth.as_bytes()), expected_depth);
+        assert_eq!(rejected_bytes(reversed_depth.as_bytes()), expected_depth);
     }
 
     #[test]
@@ -1406,6 +1579,102 @@ mod tests {
             rejected_bytes(property_and_shape.as_bytes()),
             br#"{"apiVersion":1,"status":"rejected","failure":{"failureVersion":1,"code":"codec.property-limit","limit":1048576,"actual":1048577}}"#
         );
+    }
+
+    #[test]
+    fn large_unique_and_duplicate_objects_have_linear_visits_and_bounded_fault_slots() {
+        let unique_count = 20_000_usize;
+        let unique_members = (0..unique_count)
+            .map(|index| format!(r#""extra-{index:05}":0"#))
+            .collect::<Vec<_>>()
+            .join(",");
+        let unique_request = SMOKE_REQUEST.replacen(
+            r#""apiVersion":1,"#,
+            &format!(r#""apiVersion":1,{unique_members},"#),
+            1,
+        );
+        let (unique_value, mut unique_state) =
+            strict_json(unique_request.as_bytes()).expect("unique object syntax");
+        validate_create_shape(
+            unique_value.as_ref().expect("unique object retained"),
+            &mut unique_state,
+        );
+        assert_eq!(
+            unique_state.metrics.members_visited,
+            unique_state.nodes_visited - 1
+        );
+        assert!(unique_state.metrics.unique_retained >= unique_count as u64);
+        assert_eq!(unique_state.metrics.duplicate_discarded, 0);
+        assert_eq!(unique_state.metrics.post_limit_retained, 0);
+        assert!(unique_state.metrics.fault_slot_high_water <= 4);
+        assert_eq!(
+            unique_state.failure(),
+            Some(StableFailureV1::CodecInvalidShape {
+                path: StablePathV1::root(),
+                violation: ShapeViolationV1::ExtraField,
+            })
+        );
+
+        let duplicate_count = 20_000_usize;
+        let duplicate_request = format!(
+            "{{{}}}",
+            std::iter::repeat_n(r#""repeated":0"#, duplicate_count)
+                .collect::<Vec<_>>()
+                .join(",")
+        );
+        let (duplicate_value, duplicate_state) =
+            strict_json(duplicate_request.as_bytes()).expect("duplicate object syntax");
+        let StrictValue::Object(entries) =
+            duplicate_value.expect("duplicate object keeps first value")
+        else {
+            panic!("expected duplicate object");
+        };
+        assert_eq!(entries.len(), 1);
+        assert_eq!(
+            duplicate_state.metrics.members_visited,
+            duplicate_count as u64
+        );
+        assert_eq!(duplicate_state.metrics.unique_retained, 1);
+        assert_eq!(
+            duplicate_state.metrics.duplicate_discarded,
+            duplicate_count as u64 - 1
+        );
+        assert_eq!(duplicate_state.metrics.post_limit_retained, 0);
+        assert!(duplicate_state.metrics.fault_slot_high_water <= 4);
+        assert_eq!(
+            duplicate_state.failure(),
+            Some(StableFailureV1::CodecInvalidShape {
+                path: StablePathV1::root(),
+                violation: ShapeViolationV1::DuplicateField,
+            })
+        );
+    }
+
+    #[test]
+    fn property_scan_only_mode_retains_nothing_new_and_later_depth_still_wins() {
+        let prefix = std::iter::repeat_n("0", JSON_PROPERTY_LIMIT)
+            .collect::<Vec<_>>()
+            .join(",");
+        let later_depth = format!(
+            "{}0{}",
+            "[".repeat(JSON_DEPTH_LIMIT),
+            "]".repeat(JSON_DEPTH_LIMIT)
+        );
+        let request = format!("[{prefix},{later_depth}]");
+        let (value, state) = strict_json(request.as_bytes()).expect("scan-only syntax");
+        assert!(value.is_none());
+        assert_eq!(
+            state.failure(),
+            Some(StableFailureV1::CodecDepthLimit {
+                limit: JSON_DEPTH_LIMIT as u64,
+                actual: JSON_DEPTH_LIMIT as u64 + 1,
+            })
+        );
+        assert_eq!(state.property_fault, Some(JSON_PROPERTY_LIMIT as u64 + 1));
+        assert_eq!(state.metrics.post_limit_retained, 0);
+        assert!(state.metrics.unique_retained <= JSON_PROPERTY_LIMIT as u64);
+        assert!(state.metrics.fault_slot_high_water <= 4);
+        assert_eq!(state.metrics.members_visited, state.nodes_visited - 1);
     }
 
     #[test]

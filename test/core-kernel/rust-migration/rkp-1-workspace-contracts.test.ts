@@ -269,6 +269,17 @@ test("Cargo workspace, pins, features and direct dependency graph are exact", ()
   }
 });
 
+test("strict codec duplicate lookup cannot regress to a per-member linear scan", () => {
+  const codec = readText("crates/brilliant-kernel-contracts/src/codec.rs");
+  const mapVisitorStart = codec.indexOf("fn visit_map");
+  const mapVisitorEnd = codec.indexOf("fn strict_json", mapVisitorStart);
+  assert.notEqual(mapVisitorStart, -1);
+  assert.notEqual(mapVisitorEnd, -1);
+  const mapVisitor = codec.slice(mapVisitorStart, mapVisitorEnd);
+  assert.doesNotMatch(mapVisitor, /\.iter\(\)\s*\.any\s*\(/u);
+  assert.match(mapVisitor, /BTreeMap|\.entry\s*\(/u);
+});
+
 test("unsafe ownership is confined to boundary.rs with exact production call sites", () => {
   const files = rustFiles("crates");
   const boundaryPath = "crates/brilliant-kernel-node/src/boundary.rs";
