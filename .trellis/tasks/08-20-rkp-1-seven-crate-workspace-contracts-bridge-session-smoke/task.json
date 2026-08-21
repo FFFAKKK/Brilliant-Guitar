@@ -44,7 +44,7 @@
     ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "RKP-1 FULL IMPLEMENTATION AUDIT RETURNED P0-P1-P2 0-4-0 AT EFE3BBC / FOUR-P1 BOUNDED IMPLEMENTATION REPAIR ACTIVE / CANDIDATE NOT READY / CHILD REMAINS IN PROGRESS / TYPESCRIPT DEFAULT / NO ACCEPT ARCHIVE PUSH OFFICIAL QUALIFICATION OR RKP-2.",
+  "notes": "RKP-1 FOUR-P1 BOUNDED IMPLEMENTATION REPAIR IMPLEMENTED IN FOUR REVERTIBLE CODE COMMITS / INTEGRATION GATES PASS / CANDIDATE READY FOR TARGETED IMPLEMENTATION REREVIEW / CHILD REMAINS IN PROGRESS / TYPESCRIPT DEFAULT / NO ACCEPT ARCHIVE PUSH OFFICIAL QUALIFICATION OR RKP-2.",
   "meta": {
     "planning_base_commit": "463c8514a61a61a39c8a5d2736261ae9e82b0fba",
     "required_ancestor_commit": "463c8514a61a61a39c8a5d2736261ae9e82b0fba",
@@ -109,7 +109,8 @@
     },
     "bounded_repair_scope": "cvn7_historical_zero_production_drift_closed_interval_and_one_existing_test_allowlist_addition_only",
     "p2_repair_disposition": "outside_authorized_bounded_repair_scope_not_claimed_closed",
-    "implementation_review": "returned_for_bounded_implementation_repair",
+    "implementation_review": "pending",
+    "implementation_rereview": "pending",
     "rejected_implementation_candidate": "efe3bbc9852aef2cf7949c3ae221218b1c2590dd",
     "implementation_audit_return": {
       "task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
@@ -166,7 +167,7 @@
     "expected_contribution_abi_field_count": 9,
     "expected_persisted_schema": "brilliant-score-1",
     "expected_planning_full_test_count": 531,
-    "current_planning_stage": "four_p1_bounded_implementation_repair_active",
+    "current_planning_stage": "four_p1_bounded_implementation_repair_complete_implementation_rereview_pending",
     "current_implementation_child": "08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke",
     "future_rkp_children_created": false,
     "planning_production_test_build_cargo_crates_delta": "zero",
@@ -181,7 +182,7 @@
       "stage_5a_clean_clone_portability_commit": "0c1a1da966687f2faa366dc3bcb4915b8a790fc7"
     },
     "stage_4_clean_clone": "passed_at_8ae5b7158ea45cfc4c47902ff8a17ce5c949678c_windows_x86_64_pc_windows_msvc_debug_dlopen_require_typecheck_build_bridge_6_of_6_clean",
-    "implementation_gate_summary": "stages_a_through_d_pass_stage_e_historical_boundary_repair_pass_full_ts_542_of_542_rust_29_of_29_node_6_of_6_workspace_law_5_of_5_windows_clean_clone_pass",
+    "implementation_gate_summary": "four_p1_repair_code_gates_pass_final_status_projected_for_full_rerun_ts_node_rust_msrv_windows_clean_clone_and_dual_autocrlf",
     "implementation_blocker": null,
     "pre_repair_full_test_result": "541_of_542_single_failure_cvn7_zero_production_drift_open_upper_bound",
     "cvn7_historical_production_base": "38afdc3fd508dc67f7aa446fd323837a5d550b70",
@@ -201,10 +202,28 @@
       "0c1a1da966687f2faa366dc3bcb4915b8a790fc7"
     ],
     "implementation_paused_for_bounded_planning_repair": false,
-    "implementation_candidate_ready": false,
-    "implementation_repair_active": true,
+    "implementation_candidate_ready": true,
+    "implementation_repair_active": false,
     "bounded_planning_repair_required": false,
     "planning_repair_production_test_delta": "zero_relative_to_669364128cd4402a478f247393908ff170112794",
-    "implementation_review_required_after_repair": true
+    "implementation_review_required_after_repair": true,
+    "four_p1_bounded_implementation_repair": {
+      "audit_task": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
+      "rejected_candidate": "efe3bbc9852aef2cf7949c3ae221218b1c2590dd",
+      "audit_result": "P0_0_P1_4_P2_0",
+      "status_freeze_commit": "513b32113d7a3a814c98002dfb809ff469b2ab48",
+      "codec_precedence_commit": "05ada5cb631508c1d27fb0f833ed155e24f0894f",
+      "allocation_cap_commit": "009c086822eefa5f3b898fc5f4bd646ecaacdbc0",
+      "remove_wrap_proof_commit": "a8ceed5b27fd68ca53b4c5947039184f3d9e8637",
+      "checkout_portability_commit": "47f80198155a2bb896206dd575b008c7180d0d74",
+      "implementation_matrix_count": 40,
+      "accepted_planning_only_path_count": 7,
+      "rust_unit_result": "38_of_38",
+      "node_bridge_expose_gc_result": "8_of_8",
+      "msrv_locked_check": "passed",
+      "dual_autocrlf_fmt": "true_crlf_pass_false_lf_pass",
+      "windows_clean_clone_smoke": "created_read_exact_two_exports_clean",
+      "final_full_test_result": "pending_status_projection_rerun"
+    }
   }
 }

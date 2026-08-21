@@ -1,6 +1,6 @@
 # RKP-1 Implementation Evidence
 
-Status: `FULL IMPLEMENTATION AUDIT RETURNED 0/4/0 / FOUR-P1 BOUNDED IMPLEMENTATION REPAIR ACTIVE / CANDIDATE NOT READY`.
+Status: `FOUR-P1 BOUNDED IMPLEMENTATION REPAIR GATES PASS / IMPLEMENTATION REREVIEW REQUIRED`.
 
 The final targeted planning audit passed P0/P1/P2=`0/0/0` for exact planning HEAD `89115daedc623c0d35386a4a433cc7fd95215223` in audit task `01a01e48-1934-77b0-821e-a8026cd9e5f7`. The user then authorized implementation. Activation began from a clean worktree at that exact HEAD, created branch `codex/rkp-1-seven-crate-workspace-contracts-bridge-session-smoke`, and ran the Trellis start command. The child remains `in_progress`; implementation review is `pending`; TypeScript remains default; acceptance, archive, push, RKP-2+ creation, default cutover and official qualification remain unauthorized.
 
@@ -110,3 +110,37 @@ Independent full implementation audit task `01a01e48-1934-77b0-821e-a8026cd9e5f7
 4. `rustfmt.toml` is not stable across both Windows `core.autocrlf=true` and `false` checkouts.
 
 This is an implementation repair, not a planning expansion. The exact matrix remains 40 implementation paths plus seven independently accepted planning-only paths. Candidate readiness is revoked until four small commits and the complete integration gate pass. No default-runtime switch, acceptance, archive, push, official measurement or RKP-2 action is authorized.
+
+## Four-P1 bounded implementation repair result
+
+Branch `codex/rkp-1-four-p1-bounded-implementation-repair` was created from exact rejected candidate `efe3bbc9852aef2cf7949c3ae221218b1c2590dd`. The repair stayed inside the existing RKP-1 child and formed one docs-only state freeze plus four code commits:
+
+| Stage | Commit | Owned paths | Mechanism / rollback |
+|---|---|---|---|
+| 0 audit-state freeze | `513b32113d7a3a814c98002dfb809ff469b2ab48` | existing child/parent evidence paths | records P0/P1/P2=`0/4/0`, candidate not ready and repair active; docs-only rollback |
+| 1 deterministic codec | `05ada5cb631508c1d27fb0f833ed155e24f0894f` | Contracts/Foundation codecs and existing Node smoke test | retains duplicate members, collects the bounded tree, ranks resource/shape/number candidates and preserves exact static nested paths; revert independently |
+| 2 allocation-before-cap | `009c086822eefa5f3b898fc5f4bd646ecaacdbc0` | Contracts codec and Node boundary | borrowed request length precedes copy; response uses a full-count/capped-retention writer; revert independently |
+| 3 production remove-wrap proof | `a8ceed5b27fd68ca53b4c5947039184f3d9e8637` | Node boundary and existing Node smoke test | production and tests share private `RemoveWrapOps`; real ownership/drop/finalizer paths plus JS GC journey; revert independently |
+| 4 checkout portability | `47f80198155a2bb896206dd575b008c7180d0d74` | `rustfmt.toml` and existing workspace-law test | `newline_style="Auto"` plus LF-normalized scans and dual-autocrlf proof; revert independently |
+
+Stage 1 proves reversed object-key order produces identical exact failure bytes in Rust and through the real `.node`. Compound cases cover duplicate+number, depth+number, property+shape and shape+number; exact shape is ranked `missing`, `extra`, `duplicate`, `wrong-type`, `invalid-tag`, then safe-number. The 22-code failure union, wrappers, DTOs and two Node exports do not change. Foundation duplicate/reference/value failures now retain their exact static field/index path instead of collapsing to root.
+
+Stage 2's request seam observes one copy at exactly `67108864` bytes and zero additional copies for `67108865`; the latter returns exact `bridge.request-too-large`. `CappedWriter` completes serialization accounting, retains no more than the cap, preserves canonical bytes at the cap, returns exact `actualBytes=67108865` at cap+1, and preserves response-cap precedence over a later encoder error without exposing that error.
+
+Stage 3 replaces the old hand-counted simulation. `rollback_failed_tag_with_ops` is called by the real `rollback_failed_tag` production path and accepts a private, non-exported Rust-only ops seam. Real `ConstructionGuard`, Box, Arc, Weak, table and drop probes cover `napi_ok+expected`, `napi_ok+null`, `napi_ok+mismatch` and non-ok. Ok compares the untrusted address once, never dereferences/frees mismatch, releases expected exactly once and publishes nothing. Non-ok never compares/touches the out pointer, keeps the finalizer as owner and releases exactly once through the actual finalizer. Each case is bounded under one second, leaves no live Weak allocation/table entry and emits only canonical `bridge.internal`. The direct finalizer test preserves a newer same-allocation generation while removing the exact old generation. The JS `--expose-gc` FinalizationRegistry journey observes one collection only; Node exports remain exactly two.
+
+Stage 4 created two fresh detached clones at exact commit `47f80198155a2bb896206dd575b008c7180d0d74`:
+
+- `C:/Users/ATOM/AppData/Local/Temp/rkp1-autocrlf-true-55fcea674dae4f96a9bc7ebcc2856875`: `git ls-files --eol` reports `i/lf w/crlf` for `rustfmt.toml`, Contracts codec and Node boundary; fmt exit `0`, tracked status empty. The same clone passed Windows MSVC locked native build, literal DLL-to-`.node` copy, exact two exports and native create/read, with tracked status still empty.
+- `C:/Users/ATOM/AppData/Local/Temp/rkp1-autocrlf-false-c9e553b3abd745f2be872146d15218aa`: the same files report `i/lf w/lf`; fmt exit `0`, tracked status empty.
+
+## Four-P1 integration gate ledger
+
+- Rust `1.97.1`: fmt, workspace locked check, workspace tests `38/38`, and workspace/all-targets clippy with `-D warnings` pass.
+- MSRV `1.88.0`: workspace/all-targets/locked check passes; installed default remains `1.97.1`.
+- Node/Windows: exact source DLL and `.node` suffix exist; `process.dlopen` and `require` each expose `createKernelSessionV1,readKernelSessionV1`; focused `--expose-gc` bridge tests pass `8/8`.
+- TypeScript: typecheck and build pass. Before the evidence commit, the full suite discovers `544`: every functional/lifecycle assertion passes except the expected archived clean-worktree assertion while evidence files are modified; the GC journey is the one ordinary-run skip and separately passes in the focused gate. A clean committed full rerun is mandatory and reported out of band with the final HEAD.
+- Trellis child and parent context validation pass (`11/12` and `18/19` JSONL entries respectively); JSON parses; workspace-law passes `5/5` after lifecycle projection.
+- The implementation diff remains governed by the repaired 40 literal paths and the same seven exact accepted planning-only paths. No package/tsconfig/default-runtime/public-index drift, no new crate/export/failure code, no RKP-2 through RKP-9 and no official CVN-7 measurement occurred.
+
+The child remains `in_progress`; candidate readiness is true only for targeted implementation rereview. This evidence does not accept, complete, archive or push RKP-1 and does not authorize default cutover, official qualification or RKP-2.

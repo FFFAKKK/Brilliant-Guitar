@@ -2,9 +2,9 @@
 
 ## Required verdict
 
-Current status: `BOUNDED IMPLEMENTATION REPAIR ACTIVE / CANDIDATE NOT READY`.
+Current status: `IMPLEMENTATION REREVIEW REQUIRED`.
 
-The full implementation audit returned `RETURN FOR BOUNDED IMPLEMENTATION REPAIR`, P0/P1/P2=`0/4/0`, for exact candidate `efe3bbc9852aef2cf7949c3ae221218b1c2590dd` in task `01a01e48-1934-77b0-821e-a8026cd9e5f7`. No rereview is requested until all four independently revertible repairs and the final gates pass.
+The full implementation audit returned `RETURN FOR BOUNDED IMPLEMENTATION REPAIR`, P0/P1/P2=`0/4/0`, for exact candidate `efe3bbc9852aef2cf7949c3ae221218b1c2590dd` in task `01a01e48-1934-77b0-821e-a8026cd9e5f7`. All four independently revertible repairs and their integration gates now pass; a targeted independent implementation rereview is requested.
 
 ## Active four-P1 repair scope
 
@@ -20,11 +20,13 @@ The 40 implementation paths and seven accepted planning-only paths remain exact.
 - Original accepted planning authority: `89115daedc623c0d35386a4a433cc7fd95215223`.
 - Pre-repair implementation evidence: `669364128cd4402a478f247393908ff170112794`, full `541/542` with one CVN-7 open-bound failure.
 - Accepted bounded-repair planning authority: `b944876aefc2b359b459bb8565afa38c0635765b`, targeted planning rereview `PASS` P0/P1/P2=`0/0/0`, audit task `01a01e48-1934-77b0-821e-a8026cd9e5f7`.
-- Implementation repair branch: `codex/rkp-1-cvn7-historical-boundary-implementation-repair`.
-- Repair commits: `654578bded13b0f6da8b8c55cf71145f176d38f8`, then `0c1a1da966687f2faa366dc3bcb4915b8a790fc7`.
-- Lifecycle: child `in_progress`; start and production authorization true; planning rereview passed; pause false; candidate ready true; implementation review pending; parent next gate `rkp1-independent-implementation-review`.
+- Rejected full implementation candidate: `efe3bbc9852aef2cf7949c3ae221218b1c2590dd`.
+- Four-P1 repair branch: `codex/rkp-1-four-p1-bounded-implementation-repair`.
+- Repair-state commit: `513b32113d7a3a814c98002dfb809ff469b2ab48`.
+- Independently revertible code commits: `05ada5cb631508c1d27fb0f833ed155e24f0894f`, `009c086822eefa5f3b898fc5f4bd646ecaacdbc0`, `a8ceed5b27fd68ca53b4c5947039184f3d9e8637`, `47f80198155a2bb896206dd575b008c7180d0d74`.
+- Lifecycle: child `in_progress`; start and production authorization true; planning rereview passed; repair inactive; candidate ready true; implementation review pending; parent next gate `rkp1-independent-implementation-rereview`.
 
-## Mandatory repair review
+## Mandatory historical-boundary repair review
 
 1. Confirm `test/core-kernel/cvn-7-qualification-boundary.test.ts` contains both literal commits, proves both commit objects and ancestry, and uses exactly two explicit revisions for the historical `src`/`package-lock.json`/`tsconfig.json` diff. It must not use `HEAD`, the index, working tree or an omitted upper bound.
 2. Confirm CVN-7 evidence, `EVIDENCE_INVALID`/measurement-incomplete status, runner, budgets and qualification state did not change.
@@ -33,11 +35,19 @@ The 40 implementation paths and seven accepted planning-only paths remain exact.
 5. Confirm the exact runtime projection adds only that CVN-7 test and that the seven independently accepted planning-only authority paths are separated by exact names rather than a prefix/glob.
 6. Confirm CRLF normalization changes only workspace-law text comparison portability and does not weaken source/unsafe/dependency assertions.
 
+## Mandatory four-P1 rereview
+
+1. Reproduce reversed-key, duplicate+number, depth+number, property+shape, shape+number and adjacent-stage exact-byte cases. Confirm the complete bounded walk and canonical path ranking do not depend on source member order, and Foundation failure paths are nested and static.
+2. Confirm Node Buffer length is checked before `to_vec` or equivalent full copy and the cap+1 copy counter remains zero. Confirm response serialization counts complete output while retained bytes never exceed `67108864`, preserves in-cap bytes and reports exact cap+1 actual bytes.
+3. Confirm `rollback_failed_tag_with_ops` is the production path called by the real N-API wrapper and the Rust-only ops seam adds no Node export. Reproduce expected/null/mismatch/non-ok with real Box/Arc/Weak/table/drop probes and verify exactly-one owner/finalizer release and matching-generation table removal.
+4. Run the JS `--expose-gc` FinalizationRegistry journey and confirm the addon still exposes exactly two free functions. Recheck the workspace-law production call-site count and sole unsafe owner.
+5. Confirm `rustfmt.toml` locks `Auto`, workspace-law still normalizes scans to LF without weakening unsafe checks, and fresh `core.autocrlf=true` and `false` detached clones both pass fmt while exhibiting CRLF and LF working-tree bytes respectively.
+
 ## Full implementation audit focus
 
-1. Reproduce TypeScript typecheck/build/full `542/542`, focused Node bridge `6/6`, workspace-law `5/5`, and the two repaired source/compiled test paths.
-2. Reproduce Rust `1.97.1` fmt/check/test (`29/29`), clippy `-D warnings`, and MSRV `1.88.0` locked check.
-3. Reproduce Windows `x86_64-pc-windows-msvc` debug DLL-to-`.node`, `process.dlopen`, `require`, exact two exports and clean detached-clone `11/11` with tracked status empty.
+1. Reproduce TypeScript typecheck/build/full discovered count reported out of band, focused Node bridge `8/8` under `--expose-gc`, workspace-law `5/5`, and the two repaired source/compiled test paths.
+2. Reproduce Rust `1.97.1` fmt/check/test (`38/38`), clippy `-D warnings`, and MSRV `1.88.0` locked all-targets check.
+3. Reproduce Windows `x86_64-pc-windows-msvc` debug DLL-to-`.node`, `process.dlopen`, `require`, exact two exports and clean detached-clone create/read with tracked status empty.
 4. Recheck exactly seven crates, dependency/features/toolchain/MSRV locks, `boundary.rs` sole unsafe ownership, 22 failure variants, opaque handle/finalizer/owner-thread/reentrancy contracts and no second state owner.
 5. Recheck TypeScript default, schema `brilliant-score-1`, public `28/51/8/34/9`, no public native export, and zero package/tsconfig/default-runtime drift.
 6. Recheck Trellis child/parent, JSON/JSONL/path/hierarchy, `git diff --check`, exact implementation allowlist projection, protected zero delta and clean/staged-empty status.
@@ -45,4 +55,4 @@ The 40 implementation paths and seven accepted planning-only paths remain exact.
 
 ## Evidence status
 
-`research/implementation-evidence.md` is local implementation evidence, not an independent verdict. The pre-repair `541/542` and post-repair `542/542` are recorded separately. The first global npm-cache `EPERM` clean-clone attempt is retained as non-passing environment evidence; the task-specific isolated-cache clean-clone rerun is the passing evidence.
+`research/implementation-evidence.md` is local implementation evidence, not an independent verdict. Historical `541/542` and `542/542` results remain separate from the four-P1 candidate. The final clean full-suite result and exact evidence HEAD are reported out of band after committing this state projection because the archived lifecycle test requires a clean committed worktree.
