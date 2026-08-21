@@ -12,7 +12,7 @@
   "assignee": "ATOM",
   "createdAt": "2026-08-20",
   "completedAt": null,
-  "branch": "codex/rkp-1-cvn7-historical-boundary-planning-repair",
+  "branch": "codex/rkp-1-cvn7-historical-boundary-implementation-repair",
   "base_branch": "codex/brilliant-guitar-architecture-v2-authority-sync",
   "worktree_path": "C:/Users/ATOM/.codex/worktrees/0589/brilliant_guitar",
   "commit": null,
@@ -44,7 +44,7 @@
     ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "PLANNING AUDIT PASS 0-0-0 AT 89115DA / USER AUTHORIZED RKP-1 IMPLEMENTATION / STAGES A-D PASS / STAGE E PRE-REPAIR FULL RESULT 541-OF-542 / IMPLEMENTATION PAUSED FOR DOCS-ONLY CVN7 HISTORICAL CLOSED-INTERVAL PLANNING REPAIR / INDEPENDENT PLANNING REREVIEW PENDING / TYPESCRIPT DEFAULT / NO CODE REPAIR ACCEPT ARCHIVE PUSH OR OFFICIAL QUALIFICATION.",
+  "notes": "PLANNING AUDIT PASS 0-0-0 AT 89115DA / CVN7 HISTORICAL BOUNDED-REPAIR PLANNING REREVIEW PASS 0-0-0 AT B944876 / USER AUTHORIZED IMPLEMENTATION REPAIR / PRE-REPAIR 541-OF-542 PRESERVED / REPAIRED FULL 542-OF-542 AND RUST-NODE-WINDOWS GATES PASS / IMPLEMENTATION CANDIDATE READY FOR INDEPENDENT REVIEW / TYPESCRIPT DEFAULT / NO ACCEPT ARCHIVE PUSH OFFICIAL QUALIFICATION OR RKP-2.",
   "meta": {
     "planning_base_commit": "463c8514a61a61a39c8a5d2736261ae9e82b0fba",
     "required_ancestor_commit": "463c8514a61a61a39c8a5d2736261ae9e82b0fba",
@@ -62,8 +62,8 @@
     "task_start_run": true,
     "production_implementation_authorized": true,
     "independent_planning_review": "passed",
-    "independent_planning_rereview": "pending",
-    "planning_review_cycle": "cvn7_historical_boundary_bounded_repair_rereview_pending",
+    "independent_planning_rereview": "passed",
+    "planning_review_cycle": "cvn7_historical_boundary_bounded_repair_rereview_passed",
     "audited_planning_head": "89115daedc623c0d35386a4a433cc7fd95215223",
     "planning_audit_thread": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
     "final_targeted_planning_review": {
@@ -74,10 +74,18 @@
       "verdict": "pass"
     },
     "user_implementation_authorization": true,
-    "implementation_branch": "codex/rkp-1-seven-crate-workspace-contracts-bridge-session-smoke",
+    "implementation_branch": "codex/rkp-1-cvn7-historical-boundary-implementation-repair",
     "bounded_planning_repair_branch": "codex/rkp-1-cvn7-historical-boundary-planning-repair",
     "bounded_planning_repair_base": "669364128cd4402a478f247393908ff170112794",
-    "bounded_planning_repair_candidate_commit": "review_head_this_commit",
+    "bounded_planning_repair_candidate_commit": "b944876aefc2b359b459bb8565afa38c0635765b",
+    "bounded_planning_repair_review": {
+      "task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
+      "P0": 0,
+      "P1": 0,
+      "P2": 0,
+      "candidate": "b944876aefc2b359b459bb8565afa38c0635765b",
+      "verdict": "pass"
+    },
     "first_independent_planning_review": {
       "P0": 0,
       "P1": 3,
@@ -148,7 +156,7 @@
     "expected_contribution_abi_field_count": 9,
     "expected_persisted_schema": "brilliant-score-1",
     "expected_planning_full_test_count": 531,
-    "current_planning_stage": "implementation_paused_cvn7_historical_boundary_planning_rereview_pending",
+    "current_planning_stage": "bounded_implementation_repair_complete_independent_implementation_review_pending",
     "current_implementation_child": "08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke",
     "future_rkp_children_created": false,
     "planning_production_test_build_cargo_crates_delta": "zero",
@@ -158,11 +166,13 @@
       "stage_2_contracts_commit": "632ebcda54adba07c106984c16999cb84bc9bc2c",
       "stage_3_runtime_session_commit": "f5ca93c77e800465b65b947172fca1c9f8ee650f",
       "stage_4_node_bridge_commit": "8ae5b7158ea45cfc4c47902ff8a17ce5c949678c",
-      "stage_5_gate_record_commit": "669364128cd4402a478f247393908ff170112794"
+      "stage_5_gate_record_commit": "669364128cd4402a478f247393908ff170112794",
+      "stage_5a_historical_boundary_commit": "654578bded13b0f6da8b8c55cf71145f176d38f8",
+      "stage_5a_clean_clone_portability_commit": "0c1a1da966687f2faa366dc3bcb4915b8a790fc7"
     },
     "stage_4_clean_clone": "passed_at_8ae5b7158ea45cfc4c47902ff8a17ce5c949678c_windows_x86_64_pc_windows_msvc_debug_dlopen_require_typecheck_build_bridge_6_of_6_clean",
-    "implementation_gate_summary": "stages_a_through_d_pass_stage_e_workspace_law_pass_full_ts_regression_blocked_by_preexisting_cvn7_test_asserting_zero_src_delta_from_qualification_baseline",
-    "implementation_blocker": "required_src_core_kernel_native_rust_kernel_smoke_ts_conflicts_with_existing_cvn7_qualification_boundary_test_which_is_explicitly_outside_the_audited_allowlist",
+    "implementation_gate_summary": "stages_a_through_d_pass_stage_e_historical_boundary_repair_pass_full_ts_542_of_542_rust_29_of_29_node_6_of_6_workspace_law_5_of_5_windows_clean_clone_pass",
+    "implementation_blocker": null,
     "pre_repair_full_test_result": "541_of_542_single_failure_cvn7_zero_production_drift_open_upper_bound",
     "cvn7_historical_production_base": "38afdc3fd508dc67f7aa446fd323837a5d550b70",
     "cvn7_historical_final_input_head": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
@@ -175,9 +185,14 @@
       "test/core-kernel/cvn-7-qualification-boundary.test.ts",
       "test/core-kernel/rust-migration/rkp-1-workspace-contracts.test.ts"
     ],
-    "implementation_paused_for_bounded_planning_repair": true,
-    "implementation_candidate_ready": false,
-    "bounded_planning_repair_required": true,
+    "post_repair_full_test_result": "542_of_542",
+    "bounded_implementation_repair_commits": [
+      "654578bded13b0f6da8b8c55cf71145f176d38f8",
+      "0c1a1da966687f2faa366dc3bcb4915b8a790fc7"
+    ],
+    "implementation_paused_for_bounded_planning_repair": false,
+    "implementation_candidate_ready": true,
+    "bounded_planning_repair_required": false,
     "planning_repair_production_test_delta": "zero_relative_to_669364128cd4402a478f247393908ff170112794",
     "implementation_review_required_after_repair": true
   }

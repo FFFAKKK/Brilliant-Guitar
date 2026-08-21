@@ -2,32 +2,38 @@
 
 ## Current status
 
-`BOUNDED PLANNING REPAIR CANDIDATE / PLANNING REREVIEW REQUIRED`.
+`IMPLEMENTATION CANDIDATE / IMPLEMENTATION REVIEW REQUIRED`.
 
-Planning independently passed P0/P1/P2=`0/0/0` at `89115daedc623c0d35386a4a433cc7fd95215223` in task `01a01e48-1934-77b0-821e-a8026cd9e5f7`; the user authorized implementation. The implementation candidate stopped cleanly at `669364128cd4402a478f247393908ff170112794` with `541/542`. The implementation branch remains untouched; this docs-only repair uses `codex/rkp-1-cvn7-historical-boundary-planning-repair`. The child remains `in_progress`, `task_start_run=true`, production implementation authorization remains true, `implementation_paused_for_bounded_planning_repair=true`, `implementation_candidate_ready=false`, `independent_planning_rereview=pending`, and `implementation_review=pending`.
+The bounded-repair planning candidate `b944876aefc2b359b459bb8565afa38c0635765b` received independent targeted planning rereview `PASS`, P0/P1/P2=`0/0/0`, in audit task `01a01e48-1934-77b0-821e-a8026cd9e5f7`. The user then authorized the bounded implementation repair on branch `codex/rkp-1-cvn7-historical-boundary-implementation-repair`.
 
-## Formed commits and blocked Stage E record
+The child remains `in_progress`, `task_start_run=true`, `production_implementation_authorized=true`, `implementation_paused_for_bounded_planning_repair=false`, `implementation_candidate_ready=true`, `independent_planning_rereview=passed`, and `implementation_review=pending`. TypeScript remains the product default. Acceptance, archive, push, official CVN-7 measurement, default cutover and RKP-2+ creation remain unauthorized.
 
-1. activation: `84918e1e293b26554fbff9f161c6222510f378b9`;
-2. workspace/toolchain: `6b64616690ddf9e11e71cf4caeb1b4be5df74b8d`;
-3. contracts: `632ebcda54adba07c106984c16999cb84bc9bc2c`;
-4. runtime/session: `f5ca93c77e800465b65b947172fca1c9f8ee650f`;
-5. private Node bridge: `8ae5b7158ea45cfc4c47902ff8a17ce5c949678c`;
-6. Stage E workspace-law/blocker record: `669364128cd4402a478f247393908ff170112794`, subject `test(rust): expose RKP-1 regression-gate conflict`.
-7. bounded planning repair: current docs-only HEAD, subject `docs(rkp-1): plan historical CVN-7 boundary repair`.
+## Commit chain and rollback points
 
-Stages A-D are independently revertible and passed their owned gates. Stage E workspace-law passed, but the full suite exposed the historical open-upper-bound defect. This repair changes planning authority only; it does not repair the test or resume Stage E.
+1. original planning authority: `89115daedc623c0d35386a4a433cc7fd95215223`;
+2. activation: `84918e1e293b26554fbff9f161c6222510f378b9`;
+3. workspace/toolchain: `6b64616690ddf9e11e71cf4caeb1b4be5df74b8d`;
+4. contracts: `632ebcda54adba07c106984c16999cb84bc9bc2c`;
+5. runtime/session: `f5ca93c77e800465b65b947172fca1c9f8ee650f`;
+6. private Node bridge: `8ae5b7158ea45cfc4c47902ff8a17ce5c949678c`;
+7. Stage E pre-repair gate record: `669364128cd4402a478f247393908ff170112794`;
+8. accepted bounded-repair planning: `b944876aefc2b359b459bb8565afa38c0635765b`;
+9. historical boundary repair: `654578bded13b0f6da8b8c55cf71145f176d38f8`;
+10. clean-clone CRLF portability regression: `0c1a1da966687f2faa366dc3bcb4915b8a790fc7`.
 
-## Audit entry points
+The two repair commits are independently revertible. Reverting them restores the documented pre-repair `541/542` blocker without changing Stages A-D or any CVN-7 evidence, budget, runner or qualification state.
 
-- exact implementation authority: `prd.md`, `design.md`, `implement.md`;
-- literal path/test/rollback law: `research/file-test-and-rollback-matrix.md`;
-- command/results ledger: `research/implementation-evidence.md`;
-- exact historical interval and repair self-audit: `research/cvn7-historical-boundary-repair.md`;
-- implementation review focus: `review-candidate.md`.
+## Repair result
 
-Independent planning rereview must verify the exact closed interval `38afdc3fd508dc67f7aa446fd323837a5d550b70..b21540fa3636e6c8e827ff24c2099f4ff331285d`, both commit objects and ancestry, explicit two-revision diff, no `HEAD`/working-tree upper bound, and the exact allowlist expansion from 39 to 40 by only `test/core-kernel/cvn-7-qualification-boundary.test.ts`.
+- `test/core-kernel/cvn-7-qualification-boundary.test.ts` now proves both frozen objects are commits, proves base ancestry, and compares only `38afdc3fd508dc67f7aa446fd323837a5d550b70..b21540fa3636e6c8e827ff24c2099f4ff331285d` over `src`, `package-lock.json` and `tsconfig.json`.
+- `test/core-kernel/rust-migration/rkp-1-workspace-contracts.test.ts` keeps `89115da...` as the implementation diff base, reads the repaired matrix only from `b944876...`, proves literal unique existing `39+1=40`, and includes the CVN-7 test in the exact runtime projection.
+- Seven accepted planning-only authority paths introduced between `6693641..b944876` are separated from the implementation projection by exact literal names; no unknown path is ignored.
+- Clean clone testing exposed `core.autocrlf` sensitivity in source scans. The workspace-law text reader now normalizes CRLF to LF before semantic comparisons; production bytes and contracts are unchanged.
 
-## Frozen stop boundary
+## Gate summary
 
-TypeScript remains the default product runtime. The pre-repair result remains `541/542`; the failing test and all production paths are unchanged in this planning commit. Do not modify code, resume implementation, accept/archive, push, switch the default, create a later child, run official qualification or request implementation review until this repair receives independent planning PASS and the user explicitly resumes implementation.
+The pre-repair full result remains recorded as `541/542`. The repaired result is separately `542/542`. Rust `1.97.1` fmt/check/test (`29/29`) and clippy `-D warnings`, MSRV `1.88.0` locked check, Node bridge `6/6`, workspace-law `5/5`, Windows MSVC DLL-to-`.node`, `process.dlopen`, `require`, exact two exports, and a fresh detached clean-clone native/typecheck/build/`11/11` run all pass. The first clean-clone npm attempt hit the recorded Windows global-cache `EPERM`; the task-specific isolated cache rerun passed and left tracked status empty.
+
+## Independent review boundary
+
+Review the exact implementation candidate range from `89115daedc623c0d35386a4a433cc7fd95215223` while treating `6693641..b944876` as the independently accepted docs-only planning-repair range. Verify the two repaired tests, 40-path implementation projection, protected zero delta, public `28/51/8/34/9`, seven-crate/unsafe/Node contracts, TypeScript default and all exclusions. Stop after an implementation verdict; do not accept, archive, push, run official qualification or create RKP-2.

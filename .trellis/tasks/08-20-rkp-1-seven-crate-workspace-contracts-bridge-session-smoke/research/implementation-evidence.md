@@ -1,6 +1,6 @@
 # RKP-1 Implementation Evidence
 
-Status: `STAGES A-D COMPLETE / STAGE E PAUSED / BOUNDED PLANNING REPAIR CANDIDATE / PLANNING REREVIEW REQUIRED`.
+Status: `STAGES A-D COMPLETE / STAGE E BOUNDED REPAIR COMPLETE / IMPLEMENTATION REVIEW REQUIRED`.
 
 The final targeted planning audit passed P0/P1/P2=`0/0/0` for exact planning HEAD `89115daedc623c0d35386a4a433cc7fd95215223` in audit task `01a01e48-1934-77b0-821e-a8026cd9e5f7`. The user then authorized implementation. Activation began from a clean worktree at that exact HEAD, created branch `codex/rkp-1-seven-crate-workspace-contracts-bridge-session-smoke`, and ran the Trellis start command. The child remains `in_progress`; implementation review is `pending`; TypeScript remains default; acceptance, archive, push, RKP-2+ creation, default cutover and official qualification remain unauthorized.
 
@@ -66,4 +66,36 @@ The docs-only repair starts at exact clean candidate `669364128cd4402a478f247393
 
 The proposed future implementation adds only `test/core-kernel/cvn-7-qualification-boundary.test.ts` to the original 39-path allowlist. It will make both revisions explicit, add commit-existence/ancestry assertions, and forbid `HEAD`, omitted upper revision, index or working-tree upper bounds. The already-allowed RKP-1 workspace-law test must preserve `89115da...` as the complete implementation-diff base, use the accepted repaired-planning commit only as the 40-path matrix source, and prove exact 39+1 membership. Both target tests and all production files remain unchanged in this planning commit.
 
-The `541/542` result above remains the authoritative pre-repair evidence. No code fix or pass claim occurs here. After independent planning rereview and later explicit implementation resumption, the required gates are focused CVN-7 plus both RKP-1 suites, typecheck/build, full `542/542`, Rust 1.97.1/MSRV/clippy/fmt, Windows Node build/load/two-export/clean-clone, 40-path/protected-delta, Trellis and clean status.
+The `541/542` result above remains the authoritative pre-repair evidence. It is not overwritten by the later repaired result.
+
+## Bounded implementation repair
+
+Targeted planning rereview passed P0/P1/P2=`0/0/0` for exact planning-repair HEAD `b944876aefc2b359b459bb8565afa38c0635765b` in audit task `01a01e48-1934-77b0-821e-a8026cd9e5f7`. The user explicitly authorized implementation repair. Branch `codex/rkp-1-cvn7-historical-boundary-implementation-repair` was created from that exact clean HEAD.
+
+The repair formed two narrow commits:
+
+| Commit | Paths | Result / rollback |
+|---|---|---|
+| `654578bded13b0f6da8b8c55cf71145f176d38f8` | the CVN-7 boundary test and RKP-1 workspace-law test | freezes the closed historical interval and exact 39+1 allowlist; reverting restores the open-bound blocker |
+| `0c1a1da966687f2faa366dc3bcb4915b8a790fc7` | RKP-1 workspace-law test only | normalizes CRLF text reads found by clean-clone testing; reverting restores checkout-sensitive source scans |
+
+`test/core-kernel/cvn-7-qualification-boundary.test.ts` preserves base `38afdc3fd508dc67f7aa446fd323837a5d550b70`, adds final historical head `b21540fa3636e6c8e827ff24c2099f4ff331285d`, verifies both commit objects and ancestry, and passes both explicit revisions to the zero-production-drift diff. No `HEAD`, omitted upper bound, index or working-tree comparison remains in that assertion.
+
+`test/core-kernel/rust-migration/rkp-1-workspace-contracts.test.ts` retains `89115daedc623c0d35386a4a433cc7fd95215223` as the candidate-diff base, pins `b944876...` only for reading the repaired matrix blob, proves the original 39 and repaired 40 literal paths are unique/existing, proves the sole set addition is the CVN-7 test, and includes that test in the exact runtime projection. Seven exact planning-only authority paths introduced by the independently accepted `6693641..b944876` docs range are separated from the implementation projection by literal name; no directory wildcard or unknown path is ignored.
+
+## Post-repair gate ledger
+
+- focused repaired CVN-7 plus workspace-law compiled tests: `32/32`;
+- Node bridge plus workspace-law: `11/11` (`6/6` + `5/5`);
+- `npm.cmd run typecheck` and `npm.cmd run build`: pass;
+- complete `npm.cmd test`: exactly `542/542`, separately from pre-repair `541/542`;
+- Rust toolchain: `rustc 1.97.1 (8bab26f4f 2026-07-14)`, Cargo `1.97.1`;
+- `cargo +1.97.1 fmt --all -- --check`, workspace locked check and test: pass; Rust unit total `29/29`;
+- `cargo +1.97.1 clippy --workspace --all-targets --locked -- -D warnings`: pass;
+- MSRV `rustc 1.88.0 (6b00bc388 2025-06-23)` workspace/all-targets/locked check: pass;
+- Windows MSVC debug source DLL exists, literal copy to `.node` succeeds, and `process.dlopen` plus `require` each expose exactly `createKernelSessionV1,readKernelSessionV1`;
+- fresh detached clone at `0c1a1da966687f2faa366dc3bcb4915b8a790fc7` passes native build/load, isolated-cache `npm ci`, typecheck, build and `11/11`; tracked status is empty.
+
+The first clean-clone `npm ci` attempts against the shared Windows npm cache failed `EPERM` while statting one cache object. They are retained as non-passing environment evidence. A task-specific cache outside the clone removed the contention; the clean-clone repository and tracked files were not modified. The first isolated-cache run then found CRLF-sensitive workspace-law comparisons, producing `9/11`; the authorized workspace-law-only follow-up fixed that portability defect, and a new clean clone at `0c1a1da...` passed `11/11` with tracked status empty.
+
+No `src/**`, `crates/**`, Cargo/package/tsconfig or other test path changed in this bounded repair. CVN-7 evidence, qualification state, budgets and runner are unchanged; TypeScript remains default; public `28/51/8/34/9` and `brilliant-score-1` remain exact. The candidate stays `in_progress` with implementation review pending. This ledger is not acceptance, archive, push, official qualification or RKP-2 authority.
