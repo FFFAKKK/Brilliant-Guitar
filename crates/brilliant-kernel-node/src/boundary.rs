@@ -52,12 +52,36 @@ struct HandleEnvelope {
     environment: usize,
     owner_thread: ThreadId,
     session: Mutex<KernelSession>,
+    drop_probe: Option<Arc<DropProbe>>,
 }
 
 #[derive(Debug)]
 struct HandleToken {
     key: HandleKey,
     envelope: Arc<HandleEnvelope>,
+    drop_probe: Option<Arc<DropProbe>>,
+}
+
+#[derive(Debug, Default)]
+struct DropProbe {
+    token_drops: std::sync::atomic::AtomicUsize,
+    envelope_drops: std::sync::atomic::AtomicUsize,
+}
+
+impl Drop for HandleToken {
+    fn drop(&mut self) {
+        if let Some(probe) = &self.drop_probe {
+            probe.token_drops.fetch_add(1, Ordering::Relaxed);
+        }
+    }
+}
+
+impl Drop for HandleEnvelope {
+    fn drop(&mut self) {
+        if let Some(probe) = &self.drop_probe {
+            probe.envelope_drops.fetch_add(1, Ordering::Relaxed);
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -69,9 +93,27 @@ enum ReleaseState {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-enum RemoveOutcome {
-    GuardOwns { returned_expected: bool },
-    FinalizerOwns,
+struct RollbackObservation {
+    owner: ReleaseState,
+    out_pointer_compared: bool,
+    returned_expected: Option<bool>,
+}
+
+trait RemoveWrapOps {
+    fn remove_wrap(&mut self, returned: &mut *mut c_void) -> sys::napi_status;
+}
+
+struct NativeRemoveWrapOps {
+    env: sys::napi_env,
+    object: sys::napi_value,
+}
+
+impl RemoveWrapOps for NativeRemoveWrapOps {
+    fn remove_wrap(&mut self, returned: &mut *mut c_void) -> sys::napi_status {
+        // SAFETY: the object was successfully wrapped by this module and is not published; the out
+        // pointer is initialized and remains untrusted until the returned status is checked.
+        unsafe { sys::napi_remove_wrap(self.env, self.object, returned) }
+    }
 }
 
 struct ConstructionGuard {
@@ -309,6 +351,7 @@ fn install_handle(
         environment: env.raw() as usize,
         owner_thread: thread::current().id(),
         session: Mutex::new(session),
+        drop_probe: None,
     });
     let token = Box::new(HandleToken {
         key: HandleKey {
@@ -316,6 +359,7 @@ fn install_handle(
             generation,
         },
         envelope,
+        drop_probe: None,
     });
     let expected = Box::into_raw(token);
     let allocation = expected as usize;
@@ -377,30 +421,30 @@ fn rollback_failed_tag(
     object: sys::napi_value,
     construction: &mut ConstructionGuard,
 ) {
-    let mut removed_pointer = ptr::null_mut();
-    // SAFETY: the object was successfully wrapped by this function and is not published; the out
-    // pointer is initialized and remains untrusted until the returned status is checked.
-    let remove_status = unsafe { sys::napi_remove_wrap(env, object, &mut removed_pointer) };
-    match classify_remove_status(remove_status, || removed_pointer, construction.expected) {
-        RemoveOutcome::GuardOwns { returned_expected } => {
-            construction.removed();
-            let _returned_expected_address = returned_expected;
-            construction.release_if_owned();
-        }
-        RemoveOutcome::FinalizerOwns => {}
-    }
+    let mut ops = NativeRemoveWrapOps { env, object };
+    let _observation = rollback_failed_tag_with_ops(&mut ops, construction);
 }
 
-fn classify_remove_status(
-    status: sys::napi_status,
-    read_returned_pointer: impl FnOnce() -> *mut c_void,
-    expected: *mut HandleToken,
-) -> RemoveOutcome {
+fn rollback_failed_tag_with_ops(
+    ops: &mut impl RemoveWrapOps,
+    construction: &mut ConstructionGuard,
+) -> RollbackObservation {
+    let mut returned_pointer = ptr::null_mut();
+    let status = ops.remove_wrap(&mut returned_pointer);
     if status != sys::Status::napi_ok {
-        return RemoveOutcome::FinalizerOwns;
+        return RollbackObservation {
+            owner: ReleaseState::WrappedFinalizerOwns,
+            out_pointer_compared: false,
+            returned_expected: None,
+        };
     }
-    RemoveOutcome::GuardOwns {
-        returned_expected: read_returned_pointer() == expected.cast(),
+    let returned_expected = returned_pointer == construction.expected.cast();
+    construction.removed();
+    construction.release_if_owned();
+    RollbackObservation {
+        owner: ReleaseState::Released,
+        out_pointer_compared: true,
+        returned_expected: Some(returned_expected),
     }
 }
 
@@ -547,15 +591,18 @@ mod tests {
     fn test_token() -> (
         ManuallyDrop<Box<HandleToken>>,
         std::sync::Weak<HandleEnvelope>,
+        Arc<DropProbe>,
     ) {
         let request = decode_create_request(SMOKE_REQUEST.as_bytes()).expect("smoke request");
         let accepted = KernelSession::create(request).expect("smoke session");
         let generation = NEXT_GENERATION.fetch_add(1, Ordering::Relaxed);
+        let probe = Arc::new(DropProbe::default());
         let envelope = Arc::new(HandleEnvelope {
             generation,
             environment: 1,
             owner_thread: thread::current().id(),
             session: Mutex::new(accepted.session),
+            drop_probe: Some(Arc::clone(&probe)),
         });
         let weak = Arc::downgrade(&envelope);
         let token = ManuallyDrop::new(Box::new(HandleToken {
@@ -564,67 +611,98 @@ mod tests {
                 generation,
             },
             envelope,
+            drop_probe: Some(Arc::clone(&probe)),
         }));
-        (token, weak)
+        (token, weak, probe)
     }
 
-    #[derive(Default)]
-    struct FaultCounters {
-        address_compares: u8,
-        unknown_pointer_reads: u8,
-        unknown_pointer_frees: u8,
-        guard_releases: u8,
-        finalizer_releases: u8,
-        token_drops: u8,
-        envelope_drops: u8,
-        table_entries: u8,
-        observable_delta: u8,
+    struct FakeRemoveWrapOps {
+        status: sys::napi_status,
+        returned: *mut c_void,
+        calls: usize,
     }
 
-    fn simulate_tag_rollback(remove_ok: bool, returned_matches: bool) -> FaultCounters {
-        let mut counters = FaultCounters::default();
-        let mut state = ReleaseState::WrappedFinalizerOwns;
-        assert_eq!(state, ReleaseState::WrappedFinalizerOwns);
-        let pointer_reads = Cell::new(0_u8);
-        let expected = ptr::dangling_mut::<HandleToken>();
-        let returned = if returned_matches {
-            expected.cast()
-        } else {
-            ptr::null_mut()
-        };
-        let status = if remove_ok {
-            sys::Status::napi_ok
-        } else {
-            sys::Status::napi_generic_failure
-        };
-        let outcome = classify_remove_status(
-            status,
-            || {
-                pointer_reads.set(pointer_reads.get() + 1);
-                returned
-            },
-            expected,
-        );
-        counters.address_compares = pointer_reads.get();
-        match outcome {
-            RemoveOutcome::GuardOwns { returned_expected } => {
-                assert_eq!(returned_expected, returned_matches);
-                state = ReleaseState::RemovedGuardOwns;
-                assert_eq!(state, ReleaseState::RemovedGuardOwns);
-                counters.guard_releases += 1;
-                counters.token_drops += 1;
-                counters.envelope_drops += 1;
-                state = ReleaseState::Released;
-            }
-            RemoveOutcome::FinalizerOwns => {
-                counters.finalizer_releases += 1;
-                counters.token_drops += 1;
-                counters.envelope_drops += 1;
-                state = ReleaseState::Released;
-            }
+    impl RemoveWrapOps for FakeRemoveWrapOps {
+        fn remove_wrap(&mut self, returned: &mut *mut c_void) -> sys::napi_status {
+            self.calls += 1;
+            *returned = self.returned;
+            self.status
         }
-        assert_eq!(state, ReleaseState::Released);
-        counters
+    }
+
+    #[derive(Clone, Copy)]
+    enum ReturnedPointer {
+        Expected,
+        Null,
+        Mismatch,
+    }
+
+    fn assert_tag_rollback(status: sys::napi_status, returned: ReturnedPointer) {
+        let (mut token, weak_envelope, probe) = test_token();
+        let token_pointer: *mut HandleToken = &mut **token;
+        token.key.allocation = token_pointer as usize;
+        let key = token.key;
+        assert!(!table_lock().expect("initial table").contains_key(&key));
+
+        let returned_pointer = match returned {
+            ReturnedPointer::Expected => token_pointer.cast(),
+            ReturnedPointer::Null => ptr::null_mut(),
+            ReturnedPointer::Mismatch => usize::MAX as *mut c_void,
+        };
+        let mut ops = FakeRemoveWrapOps {
+            status,
+            returned: returned_pointer,
+            calls: 0,
+        };
+        let mut construction = ConstructionGuard::new(token_pointer);
+        construction.wrapped();
+        let started = std::time::Instant::now();
+        let observation = rollback_failed_tag_with_ops(&mut ops, &mut construction);
+        assert!(started.elapsed() < std::time::Duration::from_secs(1));
+        assert_eq!(ops.calls, 1);
+        assert!(!table_lock().expect("rollback table").contains_key(&key));
+        assert_eq!(
+            encode_create_failure(StableFailureV1::BridgeInternal),
+            INTERNAL_CREATE_BYTES
+        );
+
+        if status == sys::Status::napi_ok {
+            assert_eq!(observation.owner, ReleaseState::Released);
+            assert!(observation.out_pointer_compared);
+            assert_eq!(
+                observation.returned_expected,
+                Some(matches!(returned, ReturnedPointer::Expected))
+            );
+            assert_eq!(construction.state, ReleaseState::Released);
+            assert!(weak_envelope.upgrade().is_none());
+            assert_eq!(probe.token_drops.load(Ordering::Relaxed), 1);
+            assert_eq!(probe.envelope_drops.load(Ordering::Relaxed), 1);
+            drop(construction);
+            assert_eq!(probe.token_drops.load(Ordering::Relaxed), 1);
+            assert_eq!(probe.envelope_drops.load(Ordering::Relaxed), 1);
+        } else {
+            assert_eq!(observation.owner, ReleaseState::WrappedFinalizerOwns);
+            assert!(!observation.out_pointer_compared);
+            assert_eq!(observation.returned_expected, None);
+            assert_eq!(construction.state, ReleaseState::WrappedFinalizerOwns);
+            assert!(weak_envelope.upgrade().is_some());
+            assert_eq!(probe.token_drops.load(Ordering::Relaxed), 0);
+            assert_eq!(probe.envelope_drops.load(Ordering::Relaxed), 0);
+            drop(construction);
+            assert_eq!(probe.token_drops.load(Ordering::Relaxed), 0);
+            // SAFETY: non-ok keeps this exact wrapped token owned by its unique finalizer; this
+            // invocation is the only releaser and no test accesses the token afterward.
+            unsafe {
+                finalize_kernel_session_handle(
+                    ptr::null_mut(),
+                    token_pointer.cast(),
+                    ptr::null_mut(),
+                );
+            }
+            assert!(weak_envelope.upgrade().is_none());
+            assert_eq!(probe.token_drops.load(Ordering::Relaxed), 1);
+            assert_eq!(probe.envelope_drops.load(Ordering::Relaxed), 1);
+        }
     }
 
     #[test]
@@ -656,31 +734,23 @@ mod tests {
     }
 
     #[test]
-    fn remove_wrap_non_ok_leaves_the_finalizer_as_the_only_releaser() {
-        let counters = simulate_tag_rollback(false, false);
-        assert_eq!(counters.address_compares, 0);
-        assert_eq!(counters.unknown_pointer_reads, 0);
-        assert_eq!(counters.unknown_pointer_frees, 0);
-        assert_eq!(counters.guard_releases, 0);
-        assert_eq!(counters.finalizer_releases, 1);
-        assert_eq!(counters.token_drops, 1);
-        assert_eq!(counters.envelope_drops, 1);
-        assert_eq!(counters.table_entries, 0);
-        assert_eq!(counters.observable_delta, 0);
+    fn production_rollback_non_ok_leaves_the_finalizer_as_the_only_releaser() {
+        assert_tag_rollback(sys::Status::napi_generic_failure, ReturnedPointer::Mismatch);
     }
 
     #[test]
-    fn remove_wrap_ok_mismatch_never_touches_the_unknown_pointer() {
-        let counters = simulate_tag_rollback(true, false);
-        assert_eq!(counters.address_compares, 1);
-        assert_eq!(counters.unknown_pointer_reads, 0);
-        assert_eq!(counters.unknown_pointer_frees, 0);
-        assert_eq!(counters.guard_releases, 1);
-        assert_eq!(counters.finalizer_releases, 0);
-        assert_eq!(counters.token_drops, 1);
-        assert_eq!(counters.envelope_drops, 1);
-        assert_eq!(counters.table_entries, 0);
-        assert_eq!(counters.observable_delta, 0);
+    fn production_rollback_ok_expected_releases_once() {
+        assert_tag_rollback(sys::Status::napi_ok, ReturnedPointer::Expected);
+    }
+
+    #[test]
+    fn production_rollback_ok_null_releases_expected_once() {
+        assert_tag_rollback(sys::Status::napi_ok, ReturnedPointer::Null);
+    }
+
+    #[test]
+    fn production_rollback_ok_mismatch_never_touches_the_unknown_pointer() {
+        assert_tag_rollback(sys::Status::napi_ok, ReturnedPointer::Mismatch);
     }
 
     #[test]
@@ -698,16 +768,18 @@ mod tests {
 
     #[test]
     fn wrap_failure_keeps_pre_wrap_guard_as_the_single_releaser() {
-        let (mut token, weak_envelope) = test_token();
+        let (mut token, weak_envelope, probe) = test_token();
         let token_pointer: *mut HandleToken = &mut **token;
         let construction = ConstructionGuard::new(token_pointer);
         drop(construction);
         assert!(weak_envelope.upgrade().is_none());
+        assert_eq!(probe.token_drops.load(Ordering::Relaxed), 1);
+        assert_eq!(probe.envelope_drops.load(Ordering::Relaxed), 1);
     }
 
     #[test]
     fn remove_wrap_non_ok_keeps_guard_non_owning_until_the_finalizer() {
-        let (mut token, weak_envelope) = test_token();
+        let (mut token, weak_envelope, probe) = test_token();
         let token_pointer: *mut HandleToken = &mut **token;
         token.key.allocation = token_pointer as usize;
         let mut construction = ConstructionGuard::new(token_pointer);
@@ -721,6 +793,8 @@ mod tests {
             finalize_kernel_session_handle(ptr::null_mut(), token_pointer.cast(), ptr::null_mut());
         }
         assert!(weak_envelope.upgrade().is_none());
+        assert_eq!(probe.token_drops.load(Ordering::Relaxed), 1);
+        assert_eq!(probe.envelope_drops.load(Ordering::Relaxed), 1);
     }
 
     #[test]
@@ -728,11 +802,13 @@ mod tests {
         let request = decode_create_request(SMOKE_REQUEST.as_bytes()).expect("smoke request");
         let accepted = KernelSession::create(request).expect("smoke session");
         let generation = NEXT_GENERATION.fetch_add(1, Ordering::Relaxed);
+        let probe = Arc::new(DropProbe::default());
         let envelope = Arc::new(HandleEnvelope {
             generation,
             environment: 1,
             owner_thread: thread::current().id(),
             session: Mutex::new(accepted.session),
+            drop_probe: Some(Arc::clone(&probe)),
         });
         let weak_envelope = Arc::downgrade(&envelope);
         let mut token = ManuallyDrop::new(Box::new(HandleToken {
@@ -741,6 +817,7 @@ mod tests {
                 generation,
             },
             envelope: Arc::clone(&envelope),
+            drop_probe: Some(Arc::clone(&probe)),
         }));
         let token_pointer: *mut HandleToken = &mut **token;
         let key = HandleKey {
@@ -748,9 +825,28 @@ mod tests {
             generation,
         };
         token.key = key;
+        let replacement_request =
+            decode_create_request(SMOKE_REQUEST.as_bytes()).expect("replacement request");
+        let replacement = KernelSession::create(replacement_request).expect("replacement session");
+        let replacement_key = HandleKey {
+            allocation: key.allocation,
+            generation: generation + 1,
+        };
+        let replacement_envelope = Arc::new(HandleEnvelope {
+            generation: replacement_key.generation,
+            environment: 1,
+            owner_thread: thread::current().id(),
+            session: Mutex::new(replacement.session),
+            drop_probe: None,
+        });
         {
             let mut table = table_lock().expect("live table");
             assert!(table.insert(key, Arc::clone(&envelope)).is_none());
+            assert!(
+                table
+                    .insert(replacement_key, Arc::clone(&replacement_envelope))
+                    .is_none()
+            );
         }
         drop(envelope);
 
@@ -761,7 +857,12 @@ mod tests {
         }
 
         assert!(weak_envelope.upgrade().is_none());
-        assert!(!table_lock().expect("final table").contains_key(&key));
+        assert_eq!(probe.token_drops.load(Ordering::Relaxed), 1);
+        assert_eq!(probe.envelope_drops.load(Ordering::Relaxed), 1);
+        let mut table = table_lock().expect("final table");
+        assert!(!table.contains_key(&key));
+        assert!(table.contains_key(&replacement_key));
+        table.remove(&replacement_key);
     }
 
     #[test]

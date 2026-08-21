@@ -80,6 +80,45 @@ test("raw addon exposes exactly two free functions and performs native create/re
   assert.deepEqual(snapshot.document, document);
 });
 
+const forceGc = (globalThis as typeof globalThis & { gc?: () => void }).gc;
+
+test(
+  "wrapped handle GC runs one bounded FinalizationRegistry journey",
+  { skip: forceGc === undefined, timeout: 10_000 },
+  async () => {
+    if (forceGc === undefined) {
+      throw new Error("test requires --expose-gc");
+    }
+    let finalizations = 0;
+    const registry = new FinalizationRegistry(() => {
+      finalizations += 1;
+    });
+    const weakHandle = (() => {
+      const created = addon.createKernelSessionV1(
+        canonicalCreateBytes(createCoreScoreFixture()),
+      );
+      if (created.handle === undefined) {
+        throw new Error("expected wrapped handle");
+      }
+      registry.register(created.handle, "rkp-1-handle");
+      return new WeakRef(created.handle);
+    })();
+
+    for (let attempt = 0; attempt < 200 && finalizations === 0; attempt += 1) {
+      forceGc();
+      await new Promise<void>((resolvePromise) => setImmediate(resolvePromise));
+    }
+    assert.equal(weakHandle.deref(), undefined);
+    assert.equal(finalizations, 1);
+
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      forceGc();
+      await new Promise<void>((resolvePromise) => setImmediate(resolvePromise));
+    }
+    assert.equal(finalizations, 1);
+  },
+);
+
 test("private adapter returns detached deeply frozen data and an opaque handle", () => {
   const source = createCoreScoreFixture();
   const expected = structuredClone(source);
