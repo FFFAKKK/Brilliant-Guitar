@@ -14,8 +14,8 @@ use std::{
 };
 
 use brilliant_kernel_contracts::{
-    KernelSessionCreateResultV1, KernelSessionReadResultV1, StableFailureV1, decode_create_request,
-    encode_create_result, encode_read_result,
+    KernelSessionCreateResultV1, KernelSessionReadResultV1, REQUEST_BYTE_LIMIT, StableFailureV1,
+    decode_create_request, encode_create_result, encode_read_result,
 };
 use brilliant_kernel_session::KernelSession;
 use napi::{
@@ -249,9 +249,22 @@ fn capture_buffer(value: &Unknown<'_>) -> Result<Vec<u8>, StableFailureV1> {
     if !is_buffer {
         return Err(StableFailureV1::BridgeCaptureInvalid);
     }
-    Buffer::from_unknown(*value)
-        .map(|buffer| buffer.as_ref().to_vec())
-        .map_err(|_| StableFailureV1::BridgeInternal)
+    let buffer = Buffer::from_unknown(*value).map_err(|_| StableFailureV1::BridgeInternal)?;
+    copy_bounded_request(buffer.as_ref(), <[u8]>::to_vec)
+}
+
+fn copy_bounded_request(
+    borrowed: &[u8],
+    copy: impl FnOnce(&[u8]) -> Vec<u8>,
+) -> Result<Vec<u8>, StableFailureV1> {
+    let actual_bytes = borrowed.len();
+    if actual_bytes > REQUEST_BYTE_LIMIT {
+        return Err(StableFailureV1::BridgeRequestTooLarge {
+            limit_bytes: REQUEST_BYTE_LIMIT as u64,
+            actual_bytes: actual_bytes as u64,
+        });
+    }
+    Ok(copy(borrowed))
 }
 
 fn new_object(env: &Env) -> napi::Result<Object<'static>> {
@@ -612,6 +625,34 @@ mod tests {
         }
         assert_eq!(state, ReleaseState::Released);
         counters
+    }
+
+    #[test]
+    fn request_cap_is_checked_on_borrowed_length_before_copy() {
+        let copies = Cell::new(0_u8);
+        let at_cap = vec![0_u8; REQUEST_BYTE_LIMIT];
+        let copied = copy_bounded_request(&at_cap, |bytes| {
+            copies.set(copies.get() + 1);
+            bytes.to_vec()
+        })
+        .expect("at-cap request");
+        assert_eq!(copied.len(), REQUEST_BYTE_LIMIT);
+        assert_eq!(copies.get(), 1);
+        drop(copied);
+        drop(at_cap);
+
+        let over_cap = vec![0_u8; REQUEST_BYTE_LIMIT + 1];
+        assert_eq!(
+            copy_bounded_request(&over_cap, |_| {
+                copies.set(copies.get() + 1);
+                Vec::new()
+            }),
+            Err(StableFailureV1::BridgeRequestTooLarge {
+                limit_bytes: REQUEST_BYTE_LIMIT as u64,
+                actual_bytes: REQUEST_BYTE_LIMIT as u64 + 1,
+            })
+        );
+        assert_eq!(copies.get(), 1);
     }
 
     #[test]

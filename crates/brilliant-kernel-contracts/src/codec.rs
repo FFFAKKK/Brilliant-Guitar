@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, io::Write};
 
 use brilliant_core_types::{
     API_VERSION_V1, JS_SAFE_INTEGER_MAX, JSON_DEPTH_LIMIT, JSON_PROPERTY_LIMIT,
@@ -1047,14 +1047,53 @@ pub fn encode_read_result(result: &KernelSessionReadResultV1) -> Result<Vec<u8>,
 }
 
 fn encode_capped<T: serde::Serialize>(value: &T) -> Result<Vec<u8>, StableFailureV1> {
-    let bytes = serde_json::to_vec(value).map_err(|_| StableFailureV1::BridgeInternal)?;
-    if bytes.len() > RESPONSE_BYTE_LIMIT {
+    encode_capped_with_limit(value, RESPONSE_BYTE_LIMIT)
+}
+
+struct CappedWriter {
+    retained: Vec<u8>,
+    actual_bytes: u64,
+    limit: usize,
+}
+
+impl CappedWriter {
+    fn new(limit: usize) -> Self {
+        Self {
+            retained: Vec::new(),
+            actual_bytes: 0,
+            limit,
+        }
+    }
+}
+
+impl Write for CappedWriter {
+    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        self.actual_bytes = self.actual_bytes.saturating_add(bytes.len() as u64);
+        let remaining = self.limit.saturating_sub(self.retained.len());
+        let retained = remaining.min(bytes.len());
+        self.retained.extend_from_slice(&bytes[..retained]);
+        Ok(bytes.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+fn encode_capped_with_limit<T: serde::Serialize>(
+    value: &T,
+    limit: usize,
+) -> Result<Vec<u8>, StableFailureV1> {
+    let mut writer = CappedWriter::new(limit);
+    let encoded = serde_json::to_writer(&mut writer, value);
+    if writer.actual_bytes > limit as u64 {
         return Err(StableFailureV1::BridgeResponseTooLarge {
-            limit_bytes: RESPONSE_BYTE_LIMIT as u64,
-            actual_bytes: bytes.len() as u64,
+            limit_bytes: limit as u64,
+            actual_bytes: writer.actual_bytes,
         });
     }
-    Ok(bytes)
+    encoded.map_err(|_| StableFailureV1::BridgeInternal)?;
+    Ok(writer.retained)
 }
 
 #[cfg(test)]
@@ -1161,6 +1200,71 @@ mod tests {
         assert_eq!(
             encode_create_result(&rejected).expect("rejected bytes"),
             br#"{"apiVersion":1,"status":"rejected","failure":{"failureVersion":1,"code":"codec.invalid-utf8"}}"#
+        );
+    }
+
+    #[test]
+    fn response_writer_counts_all_bytes_and_never_retains_above_cap() {
+        let at_cap = "x".repeat(RESPONSE_BYTE_LIMIT - 2);
+        let encoded =
+            encode_capped_with_limit(&at_cap, RESPONSE_BYTE_LIMIT).expect("exact-cap response");
+        assert_eq!(encoded.len(), RESPONSE_BYTE_LIMIT);
+        assert_eq!(encoded.first(), Some(&b'"'));
+        assert_eq!(encoded.last(), Some(&b'"'));
+        drop(encoded);
+        drop(at_cap);
+
+        let over_cap = "x".repeat(RESPONSE_BYTE_LIMIT - 1);
+        assert_eq!(
+            encode_capped_with_limit(&over_cap, RESPONSE_BYTE_LIMIT),
+            Err(StableFailureV1::BridgeResponseTooLarge {
+                limit_bytes: RESPONSE_BYTE_LIMIT as u64,
+                actual_bytes: RESPONSE_BYTE_LIMIT as u64 + 1,
+            })
+        );
+
+        let mut writer = CappedWriter::new(8);
+        writer.write_all(&[7_u8; 17]).expect("counted write");
+        assert_eq!(writer.actual_bytes, 17);
+        assert_eq!(writer.retained, vec![7_u8; 8]);
+    }
+
+    #[test]
+    fn response_cap_precedes_encode_failure_without_changing_internal_fallback() {
+        use serde::ser::{Error as _, SerializeSeq};
+
+        struct FailsImmediately;
+        impl serde::Serialize for FailsImmediately {
+            fn serialize<S>(&self, _serializer: S) -> Result<S::Ok, S::Error>
+            where
+                S: serde::Serializer,
+            {
+                Err(S::Error::custom("test-only encode failure"))
+            }
+        }
+
+        struct WritesThenFails;
+        impl serde::Serialize for WritesThenFails {
+            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+            where
+                S: serde::Serializer,
+            {
+                let mut sequence = serializer.serialize_seq(None)?;
+                sequence.serialize_element("0123456789")?;
+                Err(S::Error::custom("test-only encode failure"))
+            }
+        }
+
+        assert_eq!(
+            encode_capped_with_limit(&FailsImmediately, 8),
+            Err(StableFailureV1::BridgeInternal)
+        );
+        assert_eq!(
+            encode_capped_with_limit(&WritesThenFails, 4),
+            Err(StableFailureV1::BridgeResponseTooLarge {
+                limit_bytes: 4,
+                actual_bytes: 13,
+            })
         );
     }
 
