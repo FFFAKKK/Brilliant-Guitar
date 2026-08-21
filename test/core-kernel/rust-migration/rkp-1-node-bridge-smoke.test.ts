@@ -127,7 +127,14 @@ test("raw rejection bytes preserve cap, UTF-8, shape and precedence with no hand
   );
 
   const extraField = addon.createKernelSessionV1(
-    Buffer.from('{"apiVersion":1,"document":{},"extra":true}', "utf8"),
+    Buffer.from(
+      JSON.stringify({
+        apiVersion: 1,
+        document: createCoreScoreFixture(),
+        extra: true,
+      }),
+      "utf8",
+    ),
   );
   assert.deepEqual(parsePayload(extraField.payload), {
     apiVersion: 1,
@@ -154,6 +161,25 @@ test("raw rejection bytes preserve cap, UTF-8, shape and precedence with no hand
       actualBytes: 67_108_865,
     },
   });
+});
+
+test("real addon selects the same canonical structural winner for reversed keys", () => {
+  const forward = Buffer.from(
+    '{"apiVersion":1,"document":{"schemaVersion":"brilliant-score-1","id":false,"metadata":{"title":false,"authors":[],"tempo":{"bpm":120}},"measureDefinitions":[],"parts":[],"extensions":[]}}',
+    "utf8",
+  );
+  const reversed = Buffer.from(
+    '{"document":{"extensions":[],"parts":[],"measureDefinitions":[],"metadata":{"tempo":{"bpm":120},"authors":[],"title":false},"id":false,"schemaVersion":"brilliant-score-1"},"apiVersion":1}',
+    "utf8",
+  );
+  const expected =
+    '{"apiVersion":1,"status":"rejected","failure":{"failureVersion":1,"code":"codec.invalid-shape","path":["document","id"],"violation":"wrong-type"}}';
+
+  for (const request of [forward, reversed]) {
+    const result = addon.createKernelSessionV1(request);
+    assert.deepEqual(Object.keys(result), ["payload"]);
+    assert.equal(result.payload.toString("utf8"), expected);
+  }
 });
 
 test("wrong kind and wrong tag fail stably without native detail leakage", () => {
