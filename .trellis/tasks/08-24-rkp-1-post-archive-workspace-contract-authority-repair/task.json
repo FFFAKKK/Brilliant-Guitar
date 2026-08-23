@@ -33,7 +33,7 @@
     "test/core-kernel/rust-migration/rkp-1-workspace-contracts.test.ts",
     ".trellis/tasks/08-24-rkp-1-post-archive-workspace-contract-authority-repair/research/bounded-planning-repair-r1.md"
   ],
-  "notes": "FIRST INDEPENDENT PLANNING REVIEW RETURNED 0/3/0 / THREE-ITEM BOUNDED REPAIR COMPLETE / TARGETED REREVIEW PENDING / STATUS PLANNING / TYPESCRIPT DEFAULT / RKP-2 PAUSED / NO START IMPLEMENTATION PUSH CUTOVER OR QUALIFICATION.",
+  "notes": "FIRST REVIEW 0/3/0 / TARGETED REREVIEW R1 0/1/0 ON ROLLBACK DESTINATION / BOUNDED REPAIR R2 COMPLETE / TARGETED REREVIEW R2 PENDING / STATUS PLANNING / TYPESCRIPT DEFAULT / RKP-2 PAUSED / NO START IMPLEMENTATION PUSH CUTOVER OR QUALIFICATION.",
   "meta": {
     "planning_base_commit": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "audited_rkp1_implementation_commit": "94387b339b5e4d9ce6b7f97597a1b56edd051f01",
@@ -61,9 +61,9 @@
       "P0": 0,
       "P1": 0,
       "P2": 0,
-      "verdict": "ready_for_targeted_independent_planning_rereview"
+      "verdict": "ready_for_targeted_independent_planning_rereview_r2"
     },
-    "planning_review_cycle": "bounded_repair_r1_targeted_rereview_pending",
+    "planning_review_cycle": "bounded_repair_r2_targeted_rereview_pending",
     "first_independent_planning_review": {
       "task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
       "P0": 0,
@@ -72,6 +72,15 @@
       "candidate": "1e09a2071b9b957e6fdebc64d20ebe4faa0c01a3",
       "verdict": "return_for_bounded_planning_repair",
       "scope": "completion_date_literal_task_allowlist_four_commit_ready_gate"
+    },
+    "targeted_independent_planning_rereview_r1": {
+      "task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
+      "P0": 0,
+      "P1": 1,
+      "P2": 0,
+      "candidate": "47a32d26909bbe3550c5858cd4d4ea793ec68a16",
+      "verdict": "return_for_bounded_planning_repair",
+      "scope": "implementation_rollback_destination"
     }
   }
 }

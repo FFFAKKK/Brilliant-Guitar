@@ -43,7 +43,7 @@
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RKP-0 AND RKP-1 ACCEPTED ARCHIVED / POST-ARCHIVE CONTRACT REPAIR FIRST PLANNING REVIEW 0/3/0 / BOUNDED REPAIR R1 COMPLETE TARGETED REREVIEW PENDING / RKP-2 PAUSED / TYPESCRIPT DEFAULT / NO PUSH CUTOVER OR QUALIFICATION.",
+  "notes": "RKP-0 AND RKP-1 ACCEPTED ARCHIVED / POST-ARCHIVE REPAIR FIRST REVIEW 0/3/0 AND R1 REREVIEW 0/1/0 / R2 COMPLETE TARGETED REREVIEW PENDING / RKP-2 PAUSED / TYPESCRIPT DEFAULT / NO PUSH CUTOVER OR QUALIFICATION.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
@@ -91,7 +91,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "rkp1-post-archive-repair-targeted-planning-rereview",
+    "next_gate": "rkp1-post-archive-repair-targeted-planning-rereview-r2",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -249,7 +249,7 @@
     "instrument_plugin_protocol_privilege": "equal Guitar/Piano/Bass/third-party consumers; no privileged Guitar Rust provider",
     "kernel_private_identity_separate_from_product_assembly_identity": true,
     "rkp1_post_archive_repair_created": true,
-    "rkp1_post_archive_repair_status": "bounded_planning_repair_r1_targeted_rereview_pending",
+    "rkp1_post_archive_repair_status": "bounded_planning_repair_r2_targeted_rereview_pending",
     "rkp1_post_archive_repair_base": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "rkp1_post_archive_repair_reproduction": "workspace_contract_4_of_6_longpath_plus_archived_task_path",
     "rkp2_planning_resume_gate": "rkp1_post_archive_repair_accepted_archived",
@@ -259,6 +259,14 @@
       "P2": 0,
       "candidate": "1e09a2071b9b957e6fdebc64d20ebe4faa0c01a3",
       "verdict": "return_for_bounded_planning_repair"
+    },
+    "rkp1_post_archive_repair_targeted_rereview_r1": {
+      "P0": 0,
+      "P1": 1,
+      "P2": 0,
+      "candidate": "47a32d26909bbe3550c5858cd4d4ea793ec68a16",
+      "verdict": "return_for_bounded_planning_repair",
+      "scope": "implementation_rollback_destination"
     }
   }
 }
