@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 18
-- **Last Active**: 2026-08-11
+- **Total Sessions**: 19
+- **Last Active**: 2026-08-24
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~664 | Active |
+| `journal-1.md` | ~698 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 19 | 2026-08-24 | RKP-1 owner closeout | `94387b339b5e4d9ce6b7f97597a1b56edd051f01`, `fc298dea46973ecb643045cd4483068c56eb48fe` | `codex/rkp-1-codec-linear-bound-repair` |
 | 18 | 2026-08-11 | Accept and archive CVN-5 range and atomic batch | `f329ec10bc77c530282db3a6f47dbd6b6112859e`, `10e5242`, `b2ad0bc`, `3123a6a` | `codex/cvn-5-range-operations-explicit-atomic-batch` |
 | 17 | 2026-08-11 | Complete and archive CVN-6 runtime integration | `8da50f90c9c05d87a8e1aa7a4e65b30e6ab82c7f`, `160674deb805a30837e4a7a3a815ca4981e3a767`, `602ca57` | `codex/cvn-6-unified-planning-base` |
 | 16 | 2026-08-11 | CVN-2 independent acceptance and archive | `e203136a0e6d995d543dbe615be27dc4ca38d6c1`, `f3d0be0de3c0ad3481e179c40bd1efe76f2a1512` | `codex/cvn-2-official-module-sdk-frozen-assembly` |
