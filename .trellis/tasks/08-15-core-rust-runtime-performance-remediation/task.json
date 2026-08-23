@@ -161,7 +161,7 @@
     "rkp1_repair_branch": "codex/rkp-1-seven-crate-workspace-contracts-bridge-smoke-planning-r1",
     "current_implementation_child": null,
     "active_implementation_child": null,
-    "rkp1_implementation_stage": "accepted_archive_pending_same_closeout",
+    "rkp1_implementation_stage": "accepted_archived",
     "rkp1_implementation_commits": {
       "activation": "84918e1e293b26554fbff9f161c6222510f378b9",
       "workspace": "6b64616690ddf9e11e71cf4caeb1b4be5df74b8d",
@@ -176,9 +176,11 @@
     "rkp1_implementation_repair_active": false,
     "rkp1_implementation_review": "passed",
     "rkp1_implementation_rereview": "passed",
-    "rkp1_status": "accepted_archive_pending_same_closeout",
+    "rkp1_status": "accepted_archived",
     "rkp1_archive_authorized": true,
     "rkp1_archive_path": ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/",
+    "rkp1_archive_commit": "08792d52eb33ab3b9901eae818e8a53adc742bdc",
+    "rkp1_closeout_journal_commit": "8443960841fbf64bf7041bd2b87f2b2e0ba7131f",
     "rkp1_audited_implementation_commit": "94387b339b5e4d9ce6b7f97597a1b56edd051f01",
     "rkp1_implementation_blocker": null,
     "rkp1_final_independent_implementation_review": {
