@@ -1,8 +1,8 @@
 # RKP-1 Implementation Evidence
 
-Status: `FOUR-P1 BOUNDED IMPLEMENTATION REPAIR GATES PASS / IMPLEMENTATION REREVIEW REQUIRED`.
+Status: `RKP-1 IMPLEMENTATION TECHNICALLY ACCEPTABLE FOR OWNER CLOSEOUT / ARCHIVE AUTHORIZED`.
 
-The final targeted planning audit passed P0/P1/P2=`0/0/0` for exact planning HEAD `89115daedc623c0d35386a4a433cc7fd95215223` in audit task `01a01e48-1934-77b0-821e-a8026cd9e5f7`. The user then authorized implementation. Activation began from a clean worktree at that exact HEAD, created branch `codex/rkp-1-seven-crate-workspace-contracts-bridge-session-smoke`, and ran the Trellis start command. The child remains `in_progress`; implementation review is `pending`; TypeScript remains default; acceptance, archive, push, RKP-2+ creation, default cutover and official qualification remain unauthorized.
+The final targeted planning audit passed P0/P1/P2=`0/0/0` for exact planning HEAD `89115daedc623c0d35386a4a433cc7fd95215223` in audit task `01a01e48-1934-77b0-821e-a8026cd9e5f7`. The user then authorized implementation. Activation began from a clean worktree at that exact HEAD, created branch `codex/rkp-1-seven-crate-workspace-contracts-bridge-session-smoke`, and ran the Trellis start command. Independent implementation rereview in the same auditor task now passes P0/P1/P2=`0/0/0` for exact audited implementation commit `94387b339b5e4d9ce6b7f97597a1b56edd051f01`. Before the native archive command the child remains `in_progress`; implementation review/rereview are passed; TypeScript remains default; archive is authorized, while push, RKP-2+ creation, default cutover and official qualification remain unauthorized.
 
 ## Stage ledger and rollback points
 
@@ -173,4 +173,12 @@ Real Windows addon hostile medians for 5k/10k/20k members were:
 
 The regression freezes each adjacent ratio below `3.25`, the 20k/5k endpoint below `8.5`, three-sample medians after warmup, exact failure bytes and a 30-second no-hang timeout. A source-structure gate rejects `.iter().any` duplicate scans in `visit_map` while permitting any O(log n) ordered or expected-O(1) entry-based replacement.
 
-Integration gates pass before evidence projection: Rust `1.97.1` fmt/check/workspace tests `40/40` and clippy `-D warnings`; MSRV `1.88.0` all-targets locked check; Node `--expose-gc` `9/9`; workspace-law `6/6`; Windows DLL-to-`.node`, both loaders and exact two exports; TypeScript typecheck/build; full discovery `546`, pass `545`, fail `0`, skip `1` for the ordinary runner's GC journey already passed under `--expose-gc`. The prior cap, remove-wrap and checkout implementations are unchanged. The child remains `in_progress`; candidate readiness is restored only for targeted rereview, not acceptance/archive/push/default cutover/official qualification/RKP-2.
+Integration gates pass before evidence projection: Rust `1.97.1` fmt/check/workspace tests `40/40` and clippy `-D warnings`; MSRV `1.88.0` all-targets locked check; Node `--expose-gc` `9/9`; workspace-law `6/6`; Windows DLL-to-`.node`, both loaders and exact two exports; TypeScript typecheck/build; full discovery `546`, pass `545`, fail `0`, skip `1` for the ordinary runner's GC journey already passed under `--expose-gc`. The prior cap, remove-wrap and checkout implementations are unchanged. The child remains `in_progress` until the native archive command; the independent rereview accepted the exact technical candidate, but push/default cutover/official qualification/RKP-2 remain unauthorized.
+
+## Independent implementation acceptance and Phase 3.3 decision
+
+Independent auditor task `01a01e48-1934-77b0-821e-a8026cd9e5f7` returned `RKP-1 IMPLEMENTATION TECHNICALLY ACCEPTABLE FOR OWNER CLOSEOUT`, P0/P1/P2=`0/0/0`, for exact commit `94387b339b5e4d9ce6b7f97597a1b56edd051f01`. Reused technical evidence is Rust `40/40`; Contracts/Foundation `16/16`; Windows DLL-to-`.node` with both loaders and exact two exports; dedicated `--expose-gc` `9/9`; workspace-law `6/6`; TypeScript `545` passed, one expected ordinary-run GC skip and zero failed; clean `core.autocrlf=true/false` clones; exact 40 implementation plus seven accepted planning-only paths; and clean/staged-empty state. No expensive technical audit was rerun for lifecycle closeout.
+
+The user authorized archive. Production authorization and `task_start_run` retain their true historical values. The accepted review clears the implementation blocker and passes both implementation review fields. This docs-only acceptance sync, the native archive commit and the session journal commit are lifecycle records after `94387b...`; none masquerades as the audited production candidate.
+
+Phase 3.3 adds no `.trellis/spec/**` content inside the audited RKP-1 scope. RKP-1-specific rules remain authoritative in the archived task and serve as future RKP-2 planning input. Any later promotion to active specs requires a separate docs-only authority/spec-sync task. RKP-2 is not created, planned or activated by this closeout.

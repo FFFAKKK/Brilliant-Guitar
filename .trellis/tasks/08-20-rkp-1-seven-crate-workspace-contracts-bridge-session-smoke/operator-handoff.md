@@ -2,11 +2,11 @@
 
 ## Current status
 
-`IMPLEMENTATION REREVIEW REQUIRED`.
+`RKP-1 IMPLEMENTATION TECHNICALLY ACCEPTABLE FOR OWNER CLOSEOUT`.
 
-The targeted rereview of `8fe02932fa7b5eb81b6f0cd56d1776ba9287c709` returned P0/P1/P2=`0/1/0` in task `01a01e48-1934-77b0-821e-a8026cd9e5f7`. Cap enforcement, remove-wrap ownership, Windows checkout portability and Codec functional precedence passed. The sole Codec linear-time/bounded-retention repair now passes on branch `codex/rkp-1-codec-linear-bound-repair`, which starts at that exact rejected candidate.
+Independent auditor task `01a01e48-1934-77b0-821e-a8026cd9e5f7` returned final P0/P1/P2=`0/0/0` for exact audited implementation commit `94387b339b5e4d9ce6b7f97597a1b56edd051f01`. Later accepted-review, archive and journal commits are lifecycle-only and must not be presented as re-audited production candidates.
 
-The child remains `in_progress`, `task_start_run=true`, `production_implementation_authorized=true`, `implementation_candidate_ready=true`, `implementation_repair_active=false`, and `implementation_review=pending`. TypeScript remains the product default. The 40 implementation paths and seven accepted planning-only paths remain exact. Acceptance, archive, push, official CVN-7 measurement, default cutover and RKP-2+ creation remain unauthorized.
+Before `task.py archive`, the child remains `in_progress`; `task_start_run=true` and `production_implementation_authorized=true` retain their historical values; `implementation_candidate_ready=true`, repair inactive, implementation review/rereview passed and blocker null. Archive is authorized for this closeout. TypeScript remains the product default, and the 40 implementation paths plus seven accepted planning-only paths remain exact. Push, official CVN-7 measurement, default cutover and RKP-2+ creation/activation remain unauthorized.
 
 ## Commit chain and rollback points
 
@@ -47,6 +47,8 @@ The historical-boundary commits and each four-P1 code commit are independently r
 
 The pre-repair full result remains recorded as `541/542`, and the historical-boundary repair result remains `542/542`. Current gates pass: Rust `1.97.1` fmt/check/test (`40/40`) and clippy `-D warnings`; MSRV `1.88.0` locked all-targets check; Node bridge `9/9` under `--expose-gc`; workspace-law `6/6`; Windows MSVC DLL-to-`.node`, `process.dlopen`, `require` and exact two exports; TypeScript typecheck/build; and full TypeScript discovery `546` with `545` passed, zero failed and one ordinary-run GC skip covered by the focused gate. Final dual-autocrlf and clean lifecycle probes run at the committed evidence HEAD and are reported out of band.
 
-## Independent review boundary
+## Owner closeout boundary
 
-Review the exact implementation candidate range from `89115daedc623c0d35386a4a433cc7fd95215223` through the final evidence HEAD while treating `6693641..b944876` as the independently accepted docs-only planning-repair range. Recheck all four repaired mechanisms, the exact 40-path implementation projection and seven planning-only exclusions, protected zero delta, public `28/51/8/34/9`, seven-crate/unsafe/Node contracts, dual-autocrlf evidence, TypeScript default and all exclusions. Stop after a targeted implementation verdict; do not accept, archive, push, run official qualification or create RKP-2.
+Archive this child only through the native Trellis command. Preserve `94387b339b5e4d9ce6b7f97597a1b56edd051f01` as the audited implementation commit, retain the child once in the parent's `children` array, and clear active/current child projections. The archive target is `.trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/`; the next gate is only `rkp2-planning-creation`, not RKP-2 implementation authorization.
+
+Phase 3.3 adds no active `.trellis/spec/**` change. RKP-1-specific rules remain in the archived task for future RKP-2 planning; any promotion to active specs requires a separate docs-only authority/spec-sync.

@@ -1,16 +1,16 @@
-# RKP-1 Implementation Review Candidate
+# RKP-1 Accepted Implementation Review
 
-## Required verdict
+## Final verdict
 
-Current status: `IMPLEMENTATION REREVIEW REQUIRED`.
+Current status: `RKP-1 IMPLEMENTATION TECHNICALLY ACCEPTABLE FOR OWNER CLOSEOUT`.
 
-The targeted rereview returned `RETURN FOR BOUNDED IMPLEMENTATION REPAIR`, P0/P1/P2=`0/1/0`, for exact candidate `8fe02932fa7b5eb81b6f0cd56d1776ba9287c709` in task `01a01e48-1934-77b0-821e-a8026cd9e5f7`. Cap enforcement, remove-wrap ownership, Windows checkout portability and Codec functional precedence passed. The remaining Codec direct linear-time and bounded-retained-memory repair now passes and is ready for targeted implementation rereview.
+Independent auditor task `01a01e48-1934-77b0-821e-a8026cd9e5f7` returned final P0/P1/P2=`0/0/0` for exact audited implementation commit `94387b339b5e4d9ce6b7f97597a1b56edd051f01`. That commit remains the technical candidate boundary; this document and later archive/journal commits are lifecycle-only and do not claim renewed technical audit coverage.
 
 ## Completed Codec linear-bound repair
 
 - Branch: `codex/rkp-1-codec-linear-bound-repair`, exact base `8fe02932fa7b5eb81b6f0cd56d1776ba9287c709`.
 - State freeze commit: `310baf4471b967230fc7aa1178cc00a711b3f527`; independently revertible Codec/test commit: `e8d496d75a25553132a135e23d99c80b167b6a49`.
-- Candidate readiness is true only for targeted rereview; implementation review remains pending.
+- Implementation review and rereview are `passed`; candidate readiness remains true as accepted historical evidence.
 - Owner paths remain inside the existing 40-path matrix: Contracts Codec, existing direct tests and existing evidence/state files only.
 - The prior cap, remove-wrap, checkout, 22-failure, exact-two-export and TypeScript-default contracts did not move.
 - Reproduce the Rust 20k unique/duplicate instrumentation, four-slot high-water, post-property-limit zero-retention and later-depth-wins cases. Reproduce real-addon 5k/10k/20k medians with adjacent ratio `<3.25`, endpoint ratio `<8.5`, and 30-second timeout.
@@ -22,7 +22,7 @@ The targeted rereview returned `RETURN FOR BOUNDED IMPLEMENTATION REPAIR`, P0/P1
 3. remove-wrap/finalizer tests exercising the production ownership state machine;
 4. `rustfmt` `newline_style = "Auto"` with both `core.autocrlf=true` and `false` detached-clone evidence.
 
-The 40 implementation paths and seven accepted planning-only paths remain exact. TypeScript stays default; no acceptance, archive, push, official qualification or RKP-2 is authorized.
+The 40 implementation paths and seven accepted planning-only paths remain exact. TypeScript stays default. Owner acceptance and archive are authorized for this closeout; push, official qualification, default cutover and RKP-2 creation/activation are not authorized.
 
 ## Candidate boundary
 
@@ -33,7 +33,7 @@ The 40 implementation paths and seven accepted planning-only paths remain exact.
 - Four-P1 repair branch: `codex/rkp-1-four-p1-bounded-implementation-repair`.
 - Repair-state commit: `513b32113d7a3a814c98002dfb809ff469b2ab48`.
 - Independently revertible code commits: `05ada5cb631508c1d27fb0f833ed155e24f0894f`, `009c086822eefa5f3b898fc5f4bd646ecaacdbc0`, `a8ceed5b27fd68ca53b4c5947039184f3d9e8637`, `47f80198155a2bb896206dd575b008c7180d0d74`.
-- Lifecycle: child `in_progress`; start and production authorization true; planning rereview passed; repair inactive; candidate ready true; implementation review pending; parent next gate `rkp1-independent-implementation-rereview`.
+- Lifecycle before the native archive command: child `in_progress`; start and production authorization retain their true historical values; implementation review/rereview passed; repair inactive; candidate ready true; archive authorized; parent next gate `rkp2-planning-creation`, with no RKP-2 task created or started.
 
 ## Mandatory historical-boundary repair review
 
@@ -64,4 +64,6 @@ The 40 implementation paths and seven accepted planning-only paths remain exact.
 
 ## Evidence status
 
-`research/implementation-evidence.md` is local implementation evidence, not an independent verdict. Historical `541/542` and `542/542` results remain separate from the four-P1 candidate. The final clean full-suite result and exact evidence HEAD are reported out of band after committing this state projection because the archived lifecycle test requires a clean committed worktree.
+The independent verdict applies exactly to `94387b339b5e4d9ce6b7f97597a1b56edd051f01`: Rust `40/40`; Contracts/Foundation `16/16`; Windows dual-loader smoke; dedicated `--expose-gc` `9/9`; workspace-law `6/6`; TypeScript `545` passed, one expected ordinary-run GC skip and zero failed; clean `core.autocrlf=true/false` clones; exact 40 implementation plus seven accepted planning-only paths; clean worktree and empty staging.
+
+Phase 3.3 decision: this closeout adds no `.trellis/spec/**` rule. RKP-1-specific rules remain authoritative in the archived task and are inputs to future RKP-2 planning. Any later promotion into active specifications requires a separate docs-only authority/spec-sync task and must not be folded into this closeout.

@@ -40,14 +40,14 @@
     ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/research/planning-candidate-self-audit.md",
     ".trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/design.md",
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
-    ".trellis/tasks/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
+    ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RUST PERFORMANCE REMEDIATION PLANNING REVIEW PASSED / RKP-1 REMAINS THE ONLY ACTIVE IMPLEMENTATION CHILD / TARGETED CODEC LINEAR-BOUND REPAIR GATES PASS AND CANDIDATE AWAITS IMPLEMENTATION REREVIEW / RKP-2 THROUGH RKP-9 ABSENT / TYPESCRIPT DEFAULT / NO ACCEPT ARCHIVE PUSH OR OFFICIAL QUALIFICATION.",
+  "notes": "RUST PERFORMANCE REMEDIATION PLANNING REVIEW PASSED / RKP-1 INDEPENDENT IMPLEMENTATION REREVIEW PASSED 0/0/0 AT AUDITED HEAD 94387B3 AND IS ACCEPTED WITH ARCHIVE PENDING IN THIS CLOSEOUT / NO ACTIVE IMPLEMENTATION CHILD / RKP-2 THROUGH RKP-9 ABSENT / TYPESCRIPT DEFAULT / NO PUSH OR OFFICIAL QUALIFICATION.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
     "source_cvn7_status": "in_progress_measurement_incomplete_evidence_invalid",
-    "current_planning_child": "08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke",
+    "current_planning_child": null,
     "future_children_created": true,
     "stage_sequence": [
       "RKP-0",
@@ -90,7 +90,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "rkp1-independent-implementation-rereview",
+    "next_gate": "rkp2-planning-creation",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -159,8 +159,9 @@
     },
     "rkp1_status_sync_commit": "7174c5ac50655ae0cb8807e21c7045a0c1b6d15e",
     "rkp1_repair_branch": "codex/rkp-1-seven-crate-workspace-contracts-bridge-smoke-planning-r1",
-    "current_implementation_child": "08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke",
-    "rkp1_implementation_stage": "codec_linear_bound_bounded_implementation_repair_complete_targeted_rereview_pending",
+    "current_implementation_child": null,
+    "active_implementation_child": null,
+    "rkp1_implementation_stage": "accepted_archive_pending_same_closeout",
     "rkp1_implementation_commits": {
       "activation": "84918e1e293b26554fbff9f161c6222510f378b9",
       "workspace": "6b64616690ddf9e11e71cf4caeb1b4be5df74b8d",
@@ -169,11 +170,27 @@
       "node_bridge": "8ae5b7158ea45cfc4c47902ff8a17ce5c949678c",
       "stage_e_gate_record": "669364128cd4402a478f247393908ff170112794"
     },
-    "rkp1_stage_e_blocker": "existing_cvn7_zero_production_drift_test_uses_open_upper_bound_and_rejects_required_rkp1_private_ts_adapter",
+    "rkp1_stage_e_blocker": null,
     "rkp1_implementation_paused_for_bounded_planning_repair": false,
     "rkp1_implementation_candidate_ready": true,
     "rkp1_implementation_repair_active": false,
-    "rkp1_implementation_review": "pending",
+    "rkp1_implementation_review": "passed",
+    "rkp1_implementation_rereview": "passed",
+    "rkp1_status": "accepted_archive_pending_same_closeout",
+    "rkp1_archive_authorized": true,
+    "rkp1_archive_path": ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/",
+    "rkp1_audited_implementation_commit": "94387b339b5e4d9ce6b7f97597a1b56edd051f01",
+    "rkp1_implementation_blocker": null,
+    "rkp1_final_independent_implementation_review": {
+      "task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
+      "P0": 0,
+      "P1": 0,
+      "P2": 0,
+      "candidate": "94387b339b5e4d9ce6b7f97597a1b56edd051f01",
+      "verdict": "rkp1_implementation_technically_acceptable_for_owner_closeout"
+    },
+    "rkp1_phase_3_3_spec_sync_decision": "no_active_spec_change_in_rkp1_closeout_task_archive_remains_authority_and_future_rkp2_planning_input_any_later_active_spec_promotion_requires_separate_docs_only_authority_spec_sync",
+    "rkp2_implementation_authorized": false,
     "rkp1_implementation_audit_return": {
       "task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
       "P0": 0,
