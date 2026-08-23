@@ -20,7 +20,8 @@
   "subtasks": [],
   "children": [
     "08-15-rkp-0-authority-contract-oracle-freeze",
-    "08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke"
+    "08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke",
+    "08-24-rkp-1-post-archive-workspace-contract-authority-repair"
   ],
   "parent": "07-29-core-vnext-product-ready-extensible-kernel-completion",
   "relatedFiles": [
@@ -42,12 +43,12 @@
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RUST PERFORMANCE REMEDIATION PLANNING REVIEW PASSED / RKP-1 INDEPENDENT IMPLEMENTATION REREVIEW PASSED 0/0/0 AT AUDITED HEAD 94387B3 AND IS ACCEPTED WITH ARCHIVE PENDING IN THIS CLOSEOUT / NO ACTIVE IMPLEMENTATION CHILD / RKP-2 THROUGH RKP-9 ABSENT / TYPESCRIPT DEFAULT / NO PUSH OR OFFICIAL QUALIFICATION.",
+  "notes": "RKP-0 AND RKP-1 ACCEPTED ARCHIVED / POST-ARCHIVE WORKSPACE-CONTRACT BASELINE REGRESSION REPRODUCED 4/6 / BOUNDED REPAIR PLANNING CANDIDATE REVIEW PENDING / RKP-2 PLANNING PAUSED UNTIL REPAIR ACCEPTED ARCHIVED / TYPESCRIPT DEFAULT / NO PUSH CUTOVER OR OFFICIAL QUALIFICATION.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
     "source_cvn7_status": "in_progress_measurement_incomplete_evidence_invalid",
-    "current_planning_child": null,
+    "current_planning_child": "08-24-rkp-1-post-archive-workspace-contract-authority-repair",
     "future_children_created": true,
     "stage_sequence": [
       "RKP-0",
@@ -90,7 +91,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "rkp2-planning-creation",
+    "next_gate": "rkp1-post-archive-repair-independent-planning-review",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -246,6 +247,11 @@
     "product_application_assembly_owner": "Product Host",
     "product_extension_host_owner": "Product Host",
     "instrument_plugin_protocol_privilege": "equal Guitar/Piano/Bass/third-party consumers; no privileged Guitar Rust provider",
-    "kernel_private_identity_separate_from_product_assembly_identity": true
+    "kernel_private_identity_separate_from_product_assembly_identity": true,
+    "rkp1_post_archive_repair_created": true,
+    "rkp1_post_archive_repair_status": "planning_candidate_review_pending",
+    "rkp1_post_archive_repair_base": "063b332dd48c05796fb3450a8004f42ff2148b20",
+    "rkp1_post_archive_repair_reproduction": "workspace_contract_4_of_6_longpath_plus_archived_task_path",
+    "rkp2_planning_resume_gate": "rkp1_post_archive_repair_accepted_archived"
   }
 }
