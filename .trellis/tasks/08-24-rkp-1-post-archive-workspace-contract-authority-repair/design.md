@@ -42,7 +42,7 @@ Historical allowlist file existence is checked with `git cat-file -e 94387b:ALLO
 
 ## 5. Current lifecycle projection
 
-The lifecycle assertion reads the archived child and active parent. It verifies child `completed`, exact completion date, passed implementation reviews, exact audited head, parent RKP-1 `accepted_archived`, one child occurrence, TypeScript default and no default cutover. Mutable future-stage coordination fields are excluded.
+The lifecycle assertion reads the archived child and active parent. It verifies child `completed`, passed implementation reviews, exact audited head, parent RKP-1 `accepted_archived`, one child occurrence, TypeScript default and no default cutover. Completion date and mutable future-stage coordination fields are excluded.
 
 ## 6. Authority repair
 
@@ -67,8 +67,17 @@ test/core-kernel/rust-migration/rkp-1-workspace-contracts.test.ts
 .trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json
 ```
 
-The repair task's own state, handoff and evidence files may also change. No wildcard expands this allowlist.
+Future implementation owns exactly these repair-task lifecycle paths:
+
+```text
+.trellis/tasks/08-24-rkp-1-post-archive-workspace-contract-authority-repair/task.json
+.trellis/tasks/08-24-rkp-1-post-archive-workspace-contract-authority-repair/operator-handoff.md
+.trellis/tasks/08-24-rkp-1-post-archive-workspace-contract-authority-repair/review-candidate.md
+.trellis/tasks/08-24-rkp-1-post-archive-workspace-contract-authority-repair/research/implementation-evidence.md
+```
+
+The task PRD, design, implement plan, both JSONL manifests, baseline evidence, planning self-audit and bounded-planning-repair record are protected implementation-time zero-delta paths. No wildcard expands the allowlist.
 
 ## 8. Rollback
 
-Implementation is one test commit plus narrow authority projection. Reverting them returns to `063b332d`; product runtime artifacts never move. RKP-2 planning resumes only after independent implementation PASS and repair archive.
+Implementation uses four ordered stateful commits: activation, test repair, authority sync with candidate still not ready, then full-gate evidence/status with candidate ready. Each commit has the owned paths and rollback point fixed in `implement.md`. Reverting those commits in reverse order returns to `063b332d`; product runtime artifacts never move. RKP-2 planning resumes only after independent implementation PASS and repair archive.

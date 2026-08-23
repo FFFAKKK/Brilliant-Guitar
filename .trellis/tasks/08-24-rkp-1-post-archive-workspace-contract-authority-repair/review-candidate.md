@@ -2,9 +2,9 @@
 
 ## Verdict requested
 
-`READY FOR INDEPENDENT PLANNING REVIEW`
+`READY FOR TARGETED INDEPENDENT PLANNING REREVIEW`
 
-Review the exact docs-only planning commit and report P0/P1/P2. Keep the review read-only; task activation, implementation, acceptance, archive, push, RKP-2 creation and official qualification remain outside this review.
+Review the exact bounded-repair docs-only commit and report P0/P1/P2. The first review returned `0/3/0`; this rereview is limited to those three findings and direct regressions. Keep the review read-only; task activation, implementation, acceptance, archive, push, RKP-2 creation and official qualification remain outside this review.
 
 ## Review focus
 
@@ -16,3 +16,4 @@ Review the exact docs-only planning commit and report P0/P1/P2. Keep the review 
 6. One existing test plus narrow lifecycle authority allowlist.
 7. Production, Rust, Cargo, public API, CVN-7 and RKP-2 boundary preservation.
 8. Explicit rollback, full gates and independent implementation review.
+9. Completion date is excluded; repair-task lifecycle paths are literal; readiness is set only in Commit 4 after full verification.
