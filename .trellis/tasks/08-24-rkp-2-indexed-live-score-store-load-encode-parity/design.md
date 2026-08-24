@@ -477,7 +477,7 @@ crates/brilliant-score-foundation/src/validation.rs
 crates/brilliant-kernel-contracts/src/codec.rs
 crates/brilliant-kernel-runtime/Cargo.toml
 crates/brilliant-kernel-runtime/src/lib.rs
-crates/brilliant-kernel-runtime/src/smoke_runtime.rs              # delete
+crates/brilliant-kernel-runtime/src/smoke_runtime.rs
 crates/brilliant-kernel-runtime/src/handles.rs
 crates/brilliant-kernel-runtime/src/records.rs
 crates/brilliant-kernel-runtime/src/topology.rs
