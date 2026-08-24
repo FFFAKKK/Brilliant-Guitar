@@ -696,3 +696,40 @@ RKP-1 audited implementation head 94387b339b5e4d9ce6b7f97597a1b56edd051f01 passe
 ### Next Steps
 
 - None - task complete
+
+
+## Session 20: RKP-1 post-archive workspace-contract repair owner closeout
+
+**Date**: 2026-08-24
+**Task**: RKP-1 post-archive workspace-contract repair owner closeout
+**Branch**: `codex/rkp-1-post-archive-contract-repair`
+
+### Summary
+
+Audited implementation candidate 267a63bc passed independent review 0/0/0, was owner-accepted and archived through native Trellis; later commits are lifecycle-only, TypeScript remains default, and RKP-2 implementation was neither created nor started by this closeout.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `716a9113f8961953ccf848191b4edabc15ab4a62` | (see git log) |
+| `ce4e32d59ec72626e1ab8358632d46be35fe647e` | (see git log) |
+| `c9fd2652bf0af88402f5e5953f5786f471e85fb6` | (see git log) |
+| `267a63bc6ff35b49842fb713c34f4099c8829e18` | (see git log) |
+| `4197b5c315524391733fb67cfbbf98f36a8b6201` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 19
+- **Total Sessions**: 20
 - **Last Active**: 2026-08-24
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~698 | Active |
+| `journal-1.md` | ~735 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 20 | 2026-08-24 | RKP-1 post-archive workspace-contract repair owner closeout | `716a9113f8961953ccf848191b4edabc15ab4a62`, `ce4e32d59ec72626e1ab8358632d46be35fe647e`, `c9fd2652bf0af88402f5e5953f5786f471e85fb6`, `267a63bc6ff35b49842fb713c34f4099c8829e18`, `4197b5c315524391733fb67cfbbf98f36a8b6201` | `codex/rkp-1-post-archive-contract-repair` |
 | 19 | 2026-08-24 | RKP-1 owner closeout | `94387b339b5e4d9ce6b7f97597a1b56edd051f01`, `fc298dea46973ecb643045cd4483068c56eb48fe` | `codex/rkp-1-codec-linear-bound-repair` |
 | 18 | 2026-08-11 | Accept and archive CVN-5 range and atomic batch | `f329ec10bc77c530282db3a6f47dbd6b6112859e`, `10e5242`, `b2ad0bc`, `3123a6a` | `codex/cvn-5-range-operations-explicit-atomic-batch` |
 | 17 | 2026-08-11 | Complete and archive CVN-6 runtime integration | `8da50f90c9c05d87a8e1aa7a4e65b30e6ab82c7f`, `160674deb805a30837e4a7a3a815ca4981e3a767`, `602ca57` | `codex/cvn-6-unified-planning-base` |
