@@ -43,7 +43,7 @@
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RKP-0 AND RKP-1 ACCEPTED ARCHIVED / POST-ARCHIVE REPAIR INDEPENDENT IMPLEMENTATION AUDIT PASSED 0/0/0 AT 267A63BC / OWNER ACCEPTED AND NATIVE ARCHIVE PENDING IN SAME CLOSEOUT / RKP-2 IMPLEMENTATION NOT AUTHORIZED / TYPESCRIPT DEFAULT / NO PUSH CUTOVER OR QUALIFICATION.",
+  "notes": "RKP-0 RKP-1 AND RKP-1 POST-ARCHIVE REPAIR ACCEPTED ARCHIVED / REPAIR AUDITED IMPLEMENTATION CANDIDATE REMAINS 267A63BC AND LATER CLOSEOUT COMMITS ARE LIFECYCLE ONLY / NO ACTIVE IMPLEMENTATION CHILD / NEXT GATE IS CREATION OF A REPAIRED UNIFIED RKP-2 IMPLEMENTATION BASE / RKP-2 IMPLEMENTATION NOT AUTHORIZED / TYPESCRIPT DEFAULT / NO PUSH CUTOVER OR QUALIFICATION.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
@@ -91,7 +91,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "rkp1-post-archive-repair-native-archive",
+    "next_gate": "rkp2-repaired-unified-implementation-base-creation",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -160,8 +160,8 @@
     },
     "rkp1_status_sync_commit": "7174c5ac50655ae0cb8807e21c7045a0c1b6d15e",
     "rkp1_repair_branch": "codex/rkp-1-seven-crate-workspace-contracts-bridge-smoke-planning-r1",
-    "current_implementation_child": "08-24-rkp-1-post-archive-workspace-contract-authority-repair",
-    "active_implementation_child": "08-24-rkp-1-post-archive-workspace-contract-authority-repair",
+    "current_implementation_child": null,
+    "active_implementation_child": null,
     "rkp1_implementation_stage": "accepted_archived",
     "rkp1_implementation_commits": {
       "activation": "84918e1e293b26554fbff9f161c6222510f378b9",
@@ -249,10 +249,10 @@
     "instrument_plugin_protocol_privilege": "equal Guitar/Piano/Bass/third-party consumers; no privileged Guitar Rust provider",
     "kernel_private_identity_separate_from_product_assembly_identity": true,
     "rkp1_post_archive_repair_created": true,
-    "rkp1_post_archive_repair_status": "accepted_archive_pending_same_closeout",
+    "rkp1_post_archive_repair_status": "accepted_archived",
     "rkp1_post_archive_repair_base": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "rkp1_post_archive_repair_reproduction": "workspace_contract_4_of_6_longpath_plus_archived_task_path",
-    "rkp2_planning_resume_gate": "rkp1_post_archive_repair_accepted_archived",
+    "rkp2_planning_resume_gate": "satisfied_repair_accepted_archived_next_repaired_unified_implementation_base_creation",
     "rkp1_post_archive_repair_first_review": {
       "P0": 0,
       "P1": 3,
@@ -303,6 +303,10 @@
     "rkp1_post_archive_repair_rust_result": "40_of_40_fmt_check_clippy_msrv_pass",
     "rkp1_post_archive_repair_node_result": "9_of_9_expose_gc_and_two_loaders_pass",
     "rkp1_post_archive_repair_typescript_result": "546_total_545_pass_1_expected_gc_skip_0_fail",
-    "rkp1_post_archive_repair_governance_result": "trellis_json_jsonl_allowlist_protected_delta_diff_check_pass"
+    "rkp1_post_archive_repair_governance_result": "trellis_json_jsonl_allowlist_protected_delta_diff_check_pass",
+    "rkp1_post_archive_repair_acceptance_sync_commit": "4197b5c315524391733fb67cfbbf98f36a8b6201",
+    "rkp1_post_archive_repair_archive_commit": "99f0e3955530675d68262835b4bc028cdb2c40c2",
+    "rkp1_post_archive_repair_closeout_journal_commit": "f60e3a9429ed6c12632f13e20e9d2b68bb8f326d",
+    "rkp2_repaired_unified_implementation_base_created": false
   }
 }
