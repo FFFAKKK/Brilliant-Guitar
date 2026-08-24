@@ -2,15 +2,19 @@
 
 ## Current status
 
-`PLANNING APPROVED — ACTIVATION BLOCKED`.
+`STAGE 1 IMPLEMENTATION READY — ACTIVATION COMMIT 0 ONLY`.
 
-- Branch: `codex/rkp-2-indexed-live-score-store-load-encode-parity`.
-- Worktree: `.worktrees/rkp-2-indexed-live-score-store-load-encode-parity`.
+- Branch: `codex/rkp-2-indexed-live-score-store-implementation`.
+- Worktree: `.worktrees/rkp-2-indexed-live-score-store-implementation`.
 - Planning base: `063b332dd48c05796fb3450a8004f42ff2148b20`.
 - Task: `.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity`.
 - Approved planning head: `625054ec78e6410e0fb6034ab0c8f60bbf110d08`.
+- Approved planning-state head: `53646c92b81bc3ac160ec5d72b0d3f80c97b7eb0`.
+- Accepted repair closeout first parent: `b5d63006a4c286bad01fdb56112b9a6741f648b0`.
+- Clean unified implementation base: `df40aef391440ae64ad3e266419579bee5887a1f`.
 - Independent planning review: P0/P1/P2=`0/0/0` in dedicated task `01a01e48-1934-77b0-821e-a8026cd9e5f7`.
-- State: `planning`, `task_start_run=false`, `production_implementation_authorized=false`.
+- State: `in_progress`, `task_start_run=true`, `production_implementation_authorized=true`, `user_implementation_authorization=true`, `implementation_candidate_ready=false`.
+- Authorization in this turn stops after Activation Commit 0; Stage 1 production/test work has not started.
 - TypeScript is the default runtime.
 
 ## What this plan delivers
@@ -30,17 +34,17 @@ Frozen choices:
 - exact 22 stable failures and two Node exports;
 - six reversible implementation stages after activation.
 
-## Pre-activation blocker
+## Activation gate resolution
 
-The sibling RKP-1 post-archive repair planning head `f7fecdcf...` passed targeted planning review, while its implementation/acceptance/archive remain pending. The operator first completes that repair through its own audit and archive. Then create the RKP-2 implementation branch from the repaired accepted head and incorporate this approved planning commit.
+The RKP-1 post-archive repair is independently accepted and archived. Its audited implementation remains `267a63bc6ff35b49842fb713c34f4099c8829e18`; lifecycle closeout reaches `b5d63006a4c286bad01fdb56112b9a6741f648b0`. The non-fast-forward unified base `df40aef391440ae64ad3e266419579bee5887a1f` has exact parents `b5d63006...` and `53646c92...`, preserves both ancestries, and contains no new production/test/Cargo/package/tsconfig changes relative to the repair closeout.
 
-The initial RKP-2 planning review of `6a349b6...` returned `0/5/1`; `f4ed2bc...` returned `0/1/0`; `135af27...` returned `0/0/1`; the final exact `625054e...` rereview passed `0/0/0`. The technical plan is approved. This remains a future operator handoff rather than an active implementation task until the sibling repair and authorization gates below are satisfied.
+The initial RKP-2 planning review of `6a349b6...` returned `0/5/1`; `f4ed2bc...` returned `0/1/0`; `135af27...` returned `0/0/1`; the final exact `625054e...` rereview passed `0/0/0`. The approved plan is now active, but no implementation stage beyond Commit 0 has begun.
 
-Do not copy one parent `task.json` over the other. Preserve the child-set union and set RKP-2 as the only active child only during authorized activation.
+The parent was resolved field by field: RKP-0, RKP-1, the post-archive repair and RKP-2 each remain referenced exactly once. RKP-2 is now the sole current/active implementation child.
 
-## First operator action after later authorization
+## Next operator action
 
-Follow `implement.md` Section 1 exactly. Record the final base, prove ancestry/full green baseline/clean state, then create the activation commit. Stop after every stage gate. A new file/dependency/public shape returns to planning review.
+Start Stage 1 only in a later authorized continuation and follow `implement.md` exactly. The activation baseline already passed Rust `40/40`, fmt/check/clippy/MSRV, Windows dual-loader and exact-two-export probes, Node bridge `9/9`, workspace-law `6/6`, TypeScript typecheck/build and full `546` discovery with `545` pass, one expected GC skip and zero failures. Stop after every stage gate. A new file/dependency/public shape outside the approved matrix returns to planning review.
 
 ## Audit and closeout
 

@@ -44,12 +44,12 @@
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RKP-0 RKP-1 AND RKP-1 POST-ARCHIVE REPAIR ACCEPTED ARCHIVED / RKP-2 APPROVED PLANNING HISTORY INTEGRATED / RKP-2 IS THE SOLE CURRENT PLANNING CHILD / NO ACTIVE IMPLEMENTATION CHILD / NEXT GATE IS ACTIVATION COMMIT 0 / RKP-2 IMPLEMENTATION NOT YET AUTHORIZED / TYPESCRIPT DEFAULT / NO PUSH CUTOVER OR QUALIFICATION.",
+  "notes": "RKP-0 RKP-1 AND RKP-1 POST-ARCHIVE REPAIR ACCEPTED ARCHIVED / RKP-2 APPROVED PLANNING HISTORY INTEGRATED AT CLEAN UNIFIED BASE DF40AEF / RKP-2 IS THE SOLE CURRENT AND ACTIVE IMPLEMENTATION CHILD / ACTIVATION COMMIT 0 ONLY AND STAGE 1 NOT STARTED / TYPESCRIPT DEFAULT / NO CUTOVER PUSH QUALIFICATION ARCHIVE OR RKP-3.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
     "source_cvn7_status": "in_progress_measurement_incomplete_evidence_invalid",
-    "current_planning_child": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
+    "current_planning_child": null,
     "future_children_created": true,
     "stage_sequence": [
       "RKP-0",
@@ -92,7 +92,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "rkp2-activation-commit-0",
+    "next_gate": "rkp2-stage-1-dependency-and-contract-skeleton",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -161,8 +161,8 @@
     },
     "rkp1_status_sync_commit": "7174c5ac50655ae0cb8807e21c7045a0c1b6d15e",
     "rkp1_repair_branch": "codex/rkp-1-seven-crate-workspace-contracts-bridge-smoke-planning-r1",
-    "current_implementation_child": null,
-    "active_implementation_child": null,
+    "current_implementation_child": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
+    "active_implementation_child": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
     "rkp1_implementation_stage": "accepted_archived",
     "rkp1_implementation_commits": {
       "activation": "84918e1e293b26554fbff9f161c6222510f378b9",
@@ -194,14 +194,23 @@
       "verdict": "rkp1_implementation_technically_acceptable_for_owner_closeout"
     },
     "rkp1_phase_3_3_spec_sync_decision": "no_active_spec_change_in_rkp1_closeout_task_archive_remains_authority_and_future_rkp2_planning_input_any_later_active_spec_promotion_requires_separate_docs_only_authority_spec_sync",
-    "rkp2_implementation_authorized": false,
-    "rkp2_user_implementation_authorization": false,
+    "rkp2_implementation_authorized": true,
+    "rkp2_user_implementation_authorization": true,
     "rkp2_created": true,
-    "rkp2_status": "planning_approved_unified_base_ready_activation_pending",
+    "rkp2_status": "in_progress_activation_commit_0_stage_1_ready",
     "rkp2_task": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
     "rkp2_planning_base": "063b332dd48c05796fb3450a8004f42ff2148b20",
-    "rkp2_branch": "codex/rkp-2-indexed-live-score-store-load-encode-parity",
+    "rkp2_branch": "codex/rkp-2-indexed-live-score-store-implementation",
     "rkp2_planning_branch": "codex/rkp-2-indexed-live-score-store-load-encode-parity",
+    "rkp2_implementation_worktree": ".worktrees/rkp-2-indexed-live-score-store-implementation",
+    "rkp2_implementation_base_commit": "df40aef391440ae64ad3e266419579bee5887a1f",
+    "rkp2_task_start_run": true,
+    "rkp2_activation_commit_0_complete": true,
+    "rkp2_stage_1_started": false,
+    "rkp2_implementation_candidate_ready": false,
+    "rkp2_implementation_review": "pending",
+    "rkp2_default_runtime": "typescript",
+    "rkp2_default_runtime_switch_authorized": false,
     "rkp2_approved_planning_head": "625054ec78e6410e0fb6034ab0c8f60bbf110d08",
     "rkp2_approved_planning_state_head": "53646c92b81bc3ac160ec5d72b0d3f80c97b7eb0",
     "rkp2_independent_planning_review": {
@@ -213,7 +222,7 @@
       "verdict": "pass"
     },
     "rkp2_future_implementation_allowlist_count": 21,
-    "rkp2_activation_gate": "satisfied_by_approved_planning_plus_rkp1_post_archive_repair_accepted_archived_and_unified_green_base",
+    "rkp2_activation_gate": "satisfied_and_activation_commit_0_complete",
     "rkp1_implementation_audit_return": {
       "task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
       "P0": 0,
@@ -273,7 +282,7 @@
     "rkp1_post_archive_repair_status": "accepted_archived",
     "rkp1_post_archive_repair_base": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "rkp1_post_archive_repair_reproduction": "workspace_contract_4_of_6_longpath_plus_archived_task_path",
-    "rkp2_planning_resume_gate": "satisfied_repair_accepted_archived_and_approved_planning_integrated_next_activation_commit_0",
+    "rkp2_planning_resume_gate": "satisfied_repair_accepted_archived_approved_planning_integrated_and_rkp2_activated",
     "rkp1_post_archive_repair_planning_candidate": "f7fecdcf7f2194b978ff2841b7913b670a2f7f8f",
     "rkp1_post_archive_repair_planning_review": "passed_p0_0_p1_0_p2_0_then_implemented_audited_accepted_archived",
     "rkp1_post_archive_repair_first_review": {

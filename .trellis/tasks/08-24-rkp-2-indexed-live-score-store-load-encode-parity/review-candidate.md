@@ -1,10 +1,18 @@
-# Review Candidate — RKP-2 Planning
+# Review Candidate — RKP-2 Activation Commit 0
+
+## Current lifecycle result
+
+`STAGE 1 IMPLEMENTATION READY`.
+
+Activation is based on clean non-fast-forward merge `df40aef391440ae64ad3e266419579bee5887a1f`, whose exact parents are accepted repair closeout `b5d63006a4c286bad01fdb56112b9a6741f648b0` and approved RKP-2 planning state `53646c92b81bc3ac160ec5d72b0d3f80c97b7eb0`. Both are ancestors, as is audited RKP-1 implementation `94387b339b5e4d9ce6b7f97597a1b56edd051f01`.
+
+The unified base passes Trellis validation for RKP-2, its parent, archived RKP-1, archived post-archive repair and Architecture Reset V2; JSON/JSONL and exact parent children; `git diff --check`; protected delta zero; Rust fmt/check/test `40/40`/clippy/MSRV; Windows `.dll` to `.node` with both loaders and exactly two exports; dedicated Node `9/9`; workspace-law `6/6`; TypeScript typecheck/build and full `546` discovery with `545` pass, one expected GC skip and zero fail. RKP-2 remains `implementation_candidate_ready=false`; no Stage 1 file or dependency exists yet.
 
 ## Recorded verdict
 
 `PASS — P0/P1/P2=0/0/0` for exact technical planning head `625054ec78e6410e0fb6034ab0c8f60bbf110d08`.
 
-The dedicated read-only auditor task `01a01e48-1934-77b0-821e-a8026cd9e5f7` recorded the final PASS after review cycles `6a349b6=0/5/1`, `f4ed2bc=0/1/0`, `135af27=0/0/1`, and `625054e=0/0/0`. This record does not start implementation, archive, push, run official qualification or create RKP-3.
+The dedicated read-only auditor task `01a01e48-1934-77b0-821e-a8026cd9e5f7` recorded the final PASS after review cycles `6a349b6=0/5/1`, `f4ed2bc=0/1/0`, `135af27=0/0/1`, and `625054e=0/0/0`. The approved planning record is preserved. `task.py start` has now activated RKP-2 for Commit 0 only; this record does not implement Stage 1, archive, push, run official qualification, switch the default runtime or create RKP-3.
 
 ## Bounded repair under rereview
 
