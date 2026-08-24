@@ -1198,6 +1198,7 @@ fn map_foundation_failure(failure: FoundationDecodeFailure) -> StableFailureV1 {
             path,
             violation: ScoreStructureViolationV1::InvalidValue,
         },
+        FoundationDecodeFailure::InternalCapacity => StableFailureV1::BridgeInternal,
     }
 }
 
@@ -1365,6 +1366,60 @@ mod tests {
         assert_eq!(
             encode_create_result(&rejected).expect("rejected bytes"),
             br#"{"apiVersion":1,"status":"rejected","failure":{"failureVersion":1,"code":"codec.invalid-utf8"}}"#
+        );
+    }
+
+    #[test]
+    fn foundation_capacity_failure_maps_to_existing_internal_wire_shape() {
+        let failure = map_foundation_failure(FoundationDecodeFailure::InternalCapacity);
+        assert_eq!(failure, StableFailureV1::BridgeInternal);
+        assert_eq!(
+            encode_create_result(&KernelSessionCreateResultV1::Rejected(failure))
+                .expect("capacity failure bytes"),
+            br#"{"apiVersion":1,"status":"rejected","failure":{"failureVersion":1,"code":"bridge.internal"}}"#
+        );
+    }
+
+    #[test]
+    fn foundation_empty_collection_wire_classes_and_paths_are_frozen() {
+        fn mutated_request(mutator: impl FnOnce(&mut Value)) -> Vec<u8> {
+            let mut request: Value = serde_json::from_str(SMOKE_REQUEST).expect("request JSON");
+            mutator(&mut request);
+            serde_json::to_vec(&request).expect("mutated request bytes")
+        }
+
+        assert_eq!(
+            rejected_bytes(&mutated_request(|request| {
+                request["document"]["measureDefinitions"] = Value::Array(Vec::new());
+            })),
+            br#"{"apiVersion":1,"status":"rejected","failure":{"failureVersion":1,"code":"score.invalid-structure","path":["measureDefinitions"],"violation":"invalid-value"}}"#
+        );
+        assert_eq!(
+            rejected_bytes(&mutated_request(|request| {
+                request["document"]["parts"] = Value::Array(Vec::new());
+            })),
+            br#"{"apiVersion":1,"status":"rejected","failure":{"failureVersion":1,"code":"score.invalid-structure","path":["parts"],"violation":"invalid-value"}}"#
+        );
+        assert_eq!(
+            rejected_bytes(&mutated_request(|request| {
+                request["document"]["parts"][0]["staves"] = Value::Array(Vec::new());
+            })),
+            br#"{"apiVersion":1,"status":"rejected","failure":{"failureVersion":1,"code":"score.invalid-structure","path":["parts",0,"staves"],"violation":"invalid-reference"}}"#
+        );
+        assert_eq!(
+            rejected_bytes(&mutated_request(|request| {
+                request["document"]["parts"][0]["measureContents"][0]["voices"] =
+                    Value::Array(Vec::new());
+            })),
+            br#"{"apiVersion":1,"status":"rejected","failure":{"failureVersion":1,"code":"score.invalid-structure","path":["parts",0,"measureContents",0,"voices"],"violation":"invalid-reference"}}"#
+        );
+        assert_eq!(
+            rejected_bytes(&mutated_request(|request| {
+                request["document"]["parts"][0]["measureContents"][0]["voices"][0]
+                    ["sequence"]["events"][0]["content"] =
+                    serde_json::json!({"kind": "notes", "notes": []});
+            })),
+            br#"{"apiVersion":1,"status":"rejected","failure":{"failureVersion":1,"code":"score.invalid-structure","path":["parts",0,"measureContents",0,"voices",0,"sequence","events",0,"content","notes"],"violation":"invalid-value"}}"#
         );
     }
 

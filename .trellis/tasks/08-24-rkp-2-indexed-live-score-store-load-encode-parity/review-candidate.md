@@ -1,18 +1,22 @@
-# Review Candidate — RKP-2 Stage 1 Checkpoint
+# Review Candidate — RKP-2 Stage 2 Checkpoint
 
 ## Current lifecycle result
 
-`STAGE 1 COMPLETE — IMPLEMENTATION CANDIDATE NOT READY`.
+`STAGE 2 COMPLETE — IMPLEMENTATION CANDIDATE NOT READY`.
 
 Activation is based on clean non-fast-forward merge `df40aef391440ae64ad3e266419579bee5887a1f`, whose exact parents are accepted repair closeout `b5d63006a4c286bad01fdb56112b9a6741f648b0` and approved RKP-2 planning state `53646c92b81bc3ac160ec5d72b0d3f80c97b7eb0`. Both are ancestors, as is audited RKP-1 implementation `94387b339b5e4d9ce6b7f97597a1b56edd051f01`.
 
-The unified base passed its activation gates. Stage 1 now adds only the exact slotmap manifest/lock changes and two executable RKP-2 test/fixture paths, plus the allowlisted lifecycle projection. Metadata proves version `1.1.1`, features `default,std`, exactly seven workspace members and Runtime as the sole consumer. Focused RKP-2 workspace-law is `6/6`; Rust remains `40/40` with fmt/check/clippy/MSRV green; existing Node bridge is `9/9`; RKP-1 workspace-law is `6/6`; TypeScript typecheck/build pass. The clean committed HEAD receives the final full-suite rerun. RKP-2 remains `implementation_candidate_ready=false`; Stage 2 is not started or authorized.
+The unified base passed its activation gates. Stage 1 pins the exact Runtime-only slotmap dependency and its executable contract skeleton. Independent auditor `01a01e48-1934-77b0-821e-a8026cd9e5f7` accepted exact Stage 1 candidate `8af8e63e1d22a6d5e22796a9e5ffa19a66b902ae` with P0/P1/P2=`0/0/0`.
+
+Stage 2 now adds only the five approved Foundation/Contracts paths plus allowlisted lifecycle projection. One exact Fraction implementation owns comparison, gcd-reduced addition, dotted/tuplet duration and safe-integer checks. Full load validation uses checked pre-count, fallible reserve and borrowed ID/owner keys before its fixed traversal. Diagnostics never derive from hash iteration; the root document ID is registered first; later duplicates retain the later path. Empty collection/reference mappings and the 22 stable failures remain exact. Private reserve-fault injection selects pathless `InternalCapacity` before semantic faults, and Contracts maps it to the existing exact `bridge.internal` bytes.
+
+Focused Stage 2 Rust passes Foundation `16/16` and Contracts `15/15`; full workspace Rust passes `55/55`. The clean committed HEAD receives the final TypeScript/Node/Trellis regressions. RKP-2 remains `implementation_candidate_ready=false`; Stage 3 is not started or authorized.
 
 ## Recorded verdict
 
 `PASS — P0/P1/P2=0/0/0` for exact technical planning head `625054ec78e6410e0fb6034ab0c8f60bbf110d08`.
 
-The dedicated read-only auditor task `01a01e48-1934-77b0-821e-a8026cd9e5f7` recorded the final planning PASS after review cycles `6a349b6=0/5/1`, `f4ed2bc=0/1/0`, `135af27=0/0/1`, and `625054e=0/0/0`. The approved planning record is preserved. Stage 1 does not implement LiveScoreStore, RuntimeHandle, topology, indices or Stage 2 validation; it does not archive, push, run official qualification, switch the default runtime or create RKP-3.
+The dedicated read-only auditor task `01a01e48-1934-77b0-821e-a8026cd9e5f7` recorded the final planning PASS after review cycles `6a349b6=0/5/1`, `f4ed2bc=0/1/0`, `135af27=0/0/1`, and `625054e=0/0/0`, then accepted Stage 1 candidate `8af8e63=0/0/0`. The approved planning record is preserved. Stage 2 does not implement LiveScoreStore, RuntimeHandle, topology, indices, Session replacement or Stage 3 behavior; it does not archive, push, run official qualification, switch the default runtime or create RKP-3.
 
 ## Bounded repair under rereview
 

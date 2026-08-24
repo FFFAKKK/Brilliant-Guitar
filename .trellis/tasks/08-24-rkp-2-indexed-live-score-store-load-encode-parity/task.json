@@ -38,7 +38,7 @@
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "RKP-2 PLANNING PASS 0-0-0 AT 625054E / CLEAN UNIFIED BASE DF40AEF / ACTIVATION E10C7DC / STAGE 1 DEPENDENCY AND EXECUTABLE CONTRACT SKELETON COMPLETE / STAGE 2 NOT STARTED OR AUTHORIZED / TYPESCRIPT DEFAULT / CANDIDATE NOT READY / NO CUTOVER PUSH QUALIFICATION ARCHIVE RKP-3.",
+  "notes": "RKP-2 PLANNING PASS 0-0-0 AT 625054E / CLEAN UNIFIED BASE DF40AEF / ACTIVATION E10C7DC / STAGE 1 AUDITED PASS 0-0-0 AT 8AF8E63 / STAGE 2 FOUNDATION EXACT TIME AND FULL LOAD VALIDATION COMPLETE / STAGE 3 NOT STARTED OR AUTHORIZED / TYPESCRIPT DEFAULT / CANDIDATE NOT READY / NO CUTOVER PUSH QUALIFICATION ARCHIVE RKP-3.",
   "meta": {
     "planning_base_commit": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "accepted_rkp1_audited_implementation_commit": "94387b339b5e4d9ce6b7f97597a1b56edd051f01",
@@ -64,7 +64,7 @@
     "task_start_run": true,
     "production_implementation_authorized": true,
     "user_implementation_authorization": true,
-    "user_authorization_scope": "stage_1_only_stage_2_not_authorized",
+    "user_authorization_scope": "stage_2_only_stage_3_not_authorized",
     "independent_planning_review": "passed",
     "planning_review_cycle": "final_targeted_rereview_passed",
     "initial_independent_planning_review": {
@@ -100,7 +100,7 @@
       "verdict": "pass"
     },
     "approved_planning_head": "625054ec78e6410e0fb6034ab0c8f60bbf110d08",
-    "implementation_stage": "stage_1_complete_stage_2_not_started",
+    "implementation_stage": "stage_2_complete_stage_3_not_started",
     "stage_1_started": true,
     "stage_1_completed": true,
     "stage_1_commit_subject": "build(rkp-2): pin typed generational store dependency",
@@ -108,7 +108,23 @@
     "stage_1_contract_test_result": "6_of_6",
     "stage_1_rust_result": "40_of_40_fmt_check_clippy_msrv_pass",
     "stage_1_node_regression": "rkp1_node_9_of_9_workspace_law_6_of_6",
-    "stage_2_started": false,
+    "stage_1_independent_implementation_review": {
+      "task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
+      "candidate_commit": "8af8e63e1d22a6d5e22796a9e5ffa19a66b902ae",
+      "P0": 0,
+      "P1": 0,
+      "P2": 0,
+      "verdict": "pass_technically_acceptable_as_stage_2_prerequisite"
+    },
+    "stage_2_started": true,
+    "stage_2_authorized": true,
+    "stage_2_completed": true,
+    "stage_2_commit_subject": "feat(rkp-2): complete score load validation and exact time arithmetic",
+    "stage_2_focused_rust_result": "foundation_16_of_16_contracts_15_of_15",
+    "stage_2_workspace_rust_result": "55_of_55_fmt_check_pass",
+    "stage_2_contract": "checked_exact_fraction_fixed_order_full_load_validation_borrowed_validation_scratch_internal_capacity_to_existing_bridge_internal",
+    "stage_3_started": false,
+    "stage_3_authorized": false,
     "implementation_review": "pending",
     "implementation_candidate_ready": false,
     "archive_authorized": false,
