@@ -24,22 +24,26 @@ flowchart LR
   KR[brilliant-kernel-runtime]
   KS[brilliant-kernel-session]
   KN[brilliant-kernel-node]
+  Tauri[future Tauri Host]
 
-  CT --> SF
-  CT --> EP
-  CT --> KC
-  SF --> KC
-  EP --> KC
-  CT --> KR
-  SF --> KR
-  KC --> KR
-  KR --> KS
-  KC --> KS
-  KS --> KN
-  KC --> KN
+  SF -->|depends on| CT
+  EP -->|depends on| CT
+  KC -->|depends on| CT
+  KC -->|depends on| SF
+  KC -->|depends on| EP
+  KR -->|depends on| CT
+  KR -->|depends on| SF
+  KR -->|depends on| EP
+  KR -->|depends on| KC
+  KS -->|depends on| KR
+  KS -->|depends on| KC
+  KS -->|depends on| EP
+  KN -->|depends on| KS
+  KN -->|depends on| KC
+  Tauri -->|depends on| KS
 ```
 
-RKP-2 preserves all seven crates. `slotmap` is a workspace dependency consumed only by Runtime. Foundation owns pure DTO/music validation. Runtime owns live storage and indices. Session maps internal build outcomes to the existing stable contract. Node remains an adapter and owns no score state.
+Every arrow points from a consumer to its dependency, exactly matching Architecture Reset V2. Tauri is shown only as the frozen future consumer; it is not implemented by RKP-2. RKP-2 preserves all seven Rust crates. `slotmap` is a workspace dependency consumed only by Runtime. Foundation owns pure DTO/music validation. Runtime owns live storage and indices. Session maps internal build outcomes to the existing stable contract. Node remains an adapter and owns no score state.
 
 ## 2. Concrete dependency decision
 
@@ -66,15 +70,17 @@ Rejected for RKP-2:
 ```mermaid
 flowchart TD
   Capture[Node descriptor-first capture]
-  Decode[Contracts exact decode]
+  Decode[Contracts exact decode delegates Score shape decode]
   DTO[ScoreDocumentV1]
+  ValidationCapacity[Foundation checked pre-count and fallible validation-scratch reserve]
   Validate[Foundation full load validation]
+  StoreCapacity[Runtime checked pre-count and fallible store-container reserve]
   Builder[LiveScoreStoreBuilder]
   Store[LiveScoreStore]
   Export[Detached export_document]
   Encode[Foundation canonical encode]
 
-  Capture --> Decode --> DTO --> Validate --> Builder --> Store
+  Capture --> Decode --> DTO --> ValidationCapacity --> Validate --> StoreCapacity --> Builder --> Store
   Store --> Export --> DTO
   DTO --> Encode
 ```
@@ -256,7 +262,9 @@ The later occurrence wins as the reported duplicate path. The first issue in thi
 | globally repeated document/entity ID | `duplicate-id` |
 | missing measure/staff/Part owner | `invalid-reference` |
 | duplicate/missing measure coverage | `invalid-reference` |
-| empty required structural collection | `invalid-reference` for child requirements; current top-level required measure/part remains `invalid-value` to retain RKP-1 behavior |
+| empty top-level `measureDefinitions` or `parts` | `invalid-value` |
+| empty `NotesContent.notes` | `invalid-value` |
+| empty `Part.staves` or `PartMeasureContent.voices` | `invalid-reference` |
 | tempo/meter/fraction/transposition/clef/pitch/duration/time bounds | `invalid-value` |
 | extension namespace/version/payload/owner-namespace duplicate | `invalid-value`, except missing Part owner -> `invalid-reference` |
 
@@ -280,13 +288,13 @@ Response-size failure occurs only when an accepted session is read/encoded. It d
 
 ## 8. Atomic import protocol
 
-### 8.1 Pre-count
+### 8.1 Foundation validation-capacity phase
 
-A read-only canonical traversal computes exact counts for each record type, topology vector, reference edge, time entry, validation map and bounded payload contribution. All additions and conversions use checked arithmetic. Counts exceeding representable container capacity reject as `bridge.internal`; accepted public request/property caps remain unchanged.
+After exact Score shape decode has produced a transient `ScoreDocumentV1`, Foundation performs a read-only canonical pre-count for the maps/vectors needed by full semantic validation. All additions and conversions use checked arithmetic. Foundation then fallibly reserves only this validation scratch before running the deterministic full validator. `decode_score_document_value` retains its current public-to-workspace role and returns only an already validated DTO; Kernel Contracts remains zero-delta and does not acquire a second validation seam.
 
-### 8.2 Reservation
+### 8.2 Runtime store-capacity phase
 
-Before semantic validation or insertion, validation scratch maps and the builder call fallible reserve on all SlotMaps, HashMaps and Vecs for the computed counts. Per-voice/per-parent vectors reserve their exact child count when created. A reserve error returns private `LiveStoreBuildFailure::InternalCapacity`, later mapped to `bridge.internal`.
+After Contracts returns the already validated DTO, Runtime independently pre-counts exact record, topology, reference-edge, time-entry and store-index capacities. It fallibly reserves all target SlotMaps, HashMaps and Vecs before inserting records. Per-voice/per-parent vectors reserve their exact child count when created. A checked-count or reserve failure returns private `LiveStoreBuildFailure::InternalCapacity`, later mapped to `bridge.internal`. Runtime never assumes the Foundation scratch reservation also reserves store capacity.
 
 ### 8.3 Build
 
@@ -388,6 +396,8 @@ The representative/stress worker has a 180-second liveness guard and reports ela
 - checked compare/add, dot and tuplet durations, safe-integer overflow;
 - document ID collision with each entity type;
 - deterministic first failure and exact path for every mapping class;
+- exact wire/path assertions freezing empty top-level measures/parts and empty notes as `invalid-value`;
+- exact wire/path assertions freezing empty staves/voices and missing/duplicate coverage/reference as `invalid-reference`;
 - measure coverage, staff/event references, sequence bounds;
 - extension namespace/version/owner/duplicate/payload cases.
 
@@ -420,7 +430,19 @@ The representative/stress worker has a 180-second liveness guard and reports ela
 This docs-only candidate may change only:
 
 ```text
-.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/**
+.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/check.jsonl
+.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/design.md
+.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/implement.jsonl
+.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/implement.md
+.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/operator-handoff.md
+.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/prd.md
+.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/review-candidate.md
+.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json
+.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/research/container-and-index-decision.md
+.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/research/current-rust-and-ts-baseline-audit.md
+.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/research/file-test-and-rollback-matrix.md
+.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/research/planning-candidate-self-audit.md
+.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/research/rkp1-repair-and-rkp2-entry-gate.md
 .trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json
 .trellis/tasks/08-15-core-rust-runtime-performance-remediation/implement.md
 .trellis/tasks/08-15-core-rust-runtime-performance-remediation/research/stage-dependency-and-rollback-map.md

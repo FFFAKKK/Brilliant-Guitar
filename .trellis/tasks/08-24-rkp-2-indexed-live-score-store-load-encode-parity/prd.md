@@ -98,15 +98,16 @@ No float, tick, frame, wall-clock value or persisted event/note time field is in
 
 ### RKP2-R008 — Atomic import
 
-`KernelSession::create` performs this fixed sequence:
+The session-create pipeline performs this fixed two-capacity-phase sequence:
 
 1. preserve RKP-1 descriptor-first capture, request byte cap, strict JSON/shape/API/schema decoding and failure precedence;
-2. pre-count records, topology edges, reference edges, time entries and validation scratch space with checked arithmetic;
-3. reserve fallible validation/build SlotMap/HashMap/Vec capacity before construction;
-4. run deterministic full Foundation semantic validation required for a valid live store;
-5. build all records, topology and derived indices in canonical input order inside a private builder without ID scans;
-6. run constant/linear local invariant checks over the private candidate;
-7. publish exactly one revision-zero runtime/session only after the production checks pass.
+2. after Foundation exact Score shape decode, pre-count only validation scratch with checked arithmetic and fallibly reserve that scratch;
+3. run deterministic full Foundation semantic validation, after which the existing Contracts seam returns an already validated DTO without any Contracts change;
+4. inside Runtime, independently pre-count records, topology edges, reference edges, time entries and store-index capacities with checked arithmetic;
+5. fallibly reserve all Runtime SlotMap/HashMap/Vec store containers before insertion;
+6. build all records, topology and derived indices in canonical input order inside a private builder without ID scans;
+7. run constant/linear local invariant checks over the private candidate;
+8. publish exactly one revision-zero runtime/session only after the production checks pass.
 
 Independent index rebuild and canonical export round-trip are mandatory RKP-2 verification paths exercised by Rust/Node tests and differential evidence. They are not repeated on every release-mode session creation; this preserves linear proof without adding a second full build/encode to normal file open.
 
@@ -120,6 +121,8 @@ The public stable failure union remains exactly 22 variants. Semantic load failu
 
 - duplicate ID -> `duplicate-id` at the later ID path;
 - missing, duplicate or inconsistent structural reference/coverage -> `invalid-reference`;
+- empty top-level measures/parts and empty `NotesContent.notes` -> `invalid-value`;
+- empty `Part.staves` and `PartMeasureContent.voices` -> `invalid-reference`;
 - other semantic value/arithmetic/namespace/payload violations -> `invalid-value`.
 
 Canonical first-failure order is document ID/metadata, measures in input order, parts and descendants in input order, then extensions in input order. Within one record, `design.md` fixes field order. An impossible builder/index/export parity failure maps to existing `bridge.internal` and publishes no session. No raw Rust error or allocation detail crosses the bridge.

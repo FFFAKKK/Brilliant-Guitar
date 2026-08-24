@@ -4,7 +4,19 @@
 
 | Path | Planning action |
 |---|---|
-| `.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/**` | create complete candidate |
+| `.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/check.jsonl` | define exact review context |
+| `.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/design.md` | freeze implementation-level architecture |
+| `.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/implement.jsonl` | define exact implementation context |
+| `.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/implement.md` | freeze staged execution and rollback |
+| `.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/operator-handoff.md` | delimit later operator action |
+| `.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/prd.md` | freeze requirements and gates |
+| `.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/review-candidate.md` | define independent review target |
+| `.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json` | keep lifecycle and metadata |
+| `.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/research/container-and-index-decision.md` | record container/index evidence |
+| `.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/research/current-rust-and-ts-baseline-audit.md` | record current baseline |
+| `.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/research/file-test-and-rollback-matrix.md` | own literal path/test/rollback matrix |
+| `.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/research/planning-candidate-self-audit.md` | record self-audit and external review history |
+| `.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/research/rkp1-repair-and-rkp2-entry-gate.md` | freeze sibling integration gate |
 | `.trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json` | add unique child/current planning projection and activation gate |
 | `.trellis/tasks/08-15-core-rust-runtime-performance-remediation/implement.md` | add dated RKP-2 planning projection |
 | `.trellis/tasks/08-15-core-rust-runtime-performance-remediation/research/stage-dependency-and-rollback-map.md` | freeze repair-aware RKP-2 entry gate |

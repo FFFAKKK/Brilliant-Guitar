@@ -19,10 +19,10 @@
 
 Primary Rust documentation records that slotmap 1.1.1 provides versioned keys, average O(1) insert/delete/access, distinct key types through `new_key_type!`, and fallible `try_reserve`; it also states that SlotMap iteration order is arbitrary. That last property is treated as a design fence rather than ignored.
 
-- https://docs.rs/crate/slotmap/latest
-- https://docs.rs/slotmap/latest/slotmap/struct.SlotMap.html
-- https://docs.rs/slotmap/latest/slotmap/macro.new_key_type.html
-- https://docs.rs/crate/slotmap/latest/features
+- https://docs.rs/crate/slotmap/1.1.1
+- https://docs.rs/slotmap/1.1.1/slotmap/struct.SlotMap.html
+- https://docs.rs/slotmap/1.1.1/slotmap/macro.new_key_type.html
+- https://docs.rs/crate/slotmap/1.1.1/features
 
 The project pins exactly 1.1.1. Its documented MSRV is below the project's 1.88.0. The permissive library license is compatible with later open-source distribution review; legal/NOTICE packaging remains a product release task.
 

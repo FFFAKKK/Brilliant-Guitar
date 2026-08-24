@@ -103,8 +103,10 @@ crates/brilliant-score-foundation/src/validation.rs
 3. Register document ID before every entity ID.
 4. Cover metadata, measures, Parts, Staffs, coverage, Voices, Events, Notes, exact sequence arithmetic, pitch/transposition and extensions.
 5. Preserve `FoundationDecodeFailure` categories and exact `StablePathV1`; do not add stable failure variants.
-6. Make `decode_score_document_value` consume the completed validator.
-7. Add direct tests for every failure class, multiple-error precedence and arithmetic overflow.
+6. After exact Score shape decode, checked-pre-count and fallibly reserve the validator's scratch maps/vectors before semantic traversal; do not reserve Runtime store containers here.
+7. Make `decode_score_document_value` consume the completed validator while preserving the existing Contracts call seam and keeping `brilliant-kernel-contracts` zero-delta.
+8. Add direct tests for every failure class, multiple-error precedence and arithmetic overflow.
+9. Freeze exact wire/path mapping: empty top-level measures/parts and empty notes are `invalid-value`; empty staves/voices and missing/duplicate coverage/reference are `invalid-reference`.
 
 ### Focused gate
 
@@ -136,7 +138,7 @@ crates/brilliant-kernel-runtime/src/store.rs
 
 1. Define seven private typed keys and `RuntimeEntityRef`.
 2. Define scalar records, DocumentHeader, PartMeasureKey/record and ScoreTopology.
-3. Add checked pre-count and fallible reservation.
+3. After Session receives the Contracts-returned, already validated DTO, independently checked-pre-count and fallibly reserve only Runtime record/topology/index containers before insertion.
 4. Build the private store in canonical input order; publish no Runtime yet.
 5. Add private lookup/ownership/topology APIs needed by Stage 4 and tests.
 6. Prove global IDs include document root and no original ScoreDocument field remains in store.
@@ -207,7 +209,7 @@ test/core-kernel/rust-migration/rkp-2-store-fixtures.ts
 ### Actions
 
 1. Implement `export_document` by explicit topology traversal.
-2. Complete semantic equality and encode/decode/encode proof before store publication.
+2. Complete semantic equality and encode/decode/encode proof in focused test/differential paths before candidate acceptance; normal production creation publishes after local invariant checks and does not run this round-trip.
 3. Replace internal `SmokeRuntime` with `KernelRuntime` owning LiveScoreStore and revision zero.
 4. Route Session create through fallible Runtime construction and map semantic/internal failures to the unchanged 22-variant contract.
 5. Keep Node source untouched and use the existing two create/read exports.

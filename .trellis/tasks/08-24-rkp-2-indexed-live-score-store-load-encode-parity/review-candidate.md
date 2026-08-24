@@ -2,9 +2,18 @@
 
 ## Requested verdict
 
-`READY FOR INDEPENDENT PLANNING REVIEW` after the docs-only candidate commit and mechanical evidence are recorded.
+`READY FOR TARGETED INDEPENDENT PLANNING REREVIEW` after the bounded docs-only repair commit and refreshed mechanical evidence are recorded.
 
-Review the exact planning commit read-only and report P0/P1/P2. Do not start implementation, archive, push, run official qualification or create RKP-3.
+The first independent review of `6a349b6fe166c6551ea2ceb480a44c3b2547407c` returned `RETURN FOR BOUNDED PLANNING REPAIR`, P0/P1/P2=`0/5/1`. Review the new exact planning HEAD read-only and verify the six repairs plus direct regressions. Do not start implementation, archive, push, run official qualification or create RKP-3.
+
+## Bounded repair under rereview
+
+1. The authority dependency graph now uses the complete consumer-to-dependency arrows, each labeled `depends on`, including Runtime/Session dependencies on Extension Protocol and the future Tauri-to-Session edge; Tauri remains out of RKP-2 implementation scope.
+2. Atomic import now has two explicit capacity phases: Foundation validation scratch after shape decode, then Runtime store containers after Contracts returns the validated DTO; Contracts remains protected.
+3. Full export/encode/decode/encode round-trip is a test/differential acceptance proof, not a normal production publication prerequisite.
+4. Empty-collection failure mapping is frozen per existing wire behavior: top-level measures/parts and notes use `invalid-value`; staves/voices and coverage/reference use `invalid-reference`.
+5. The planning allowlist enumerates exactly 13 task files plus three Rust-parent files; no task-directory wildcard remains.
+6. All slotmap evidence URLs are pinned to documentation version `1.1.1`.
 
 ## Review focus
 
@@ -15,11 +24,11 @@ Review the exact planning commit read-only and report P0/P1/P2. Do not start imp
 5. Complete scalar record/topology model, including non-entity PartMeasureContent.
 6. Entity/owner/content/time/extension/reference indices and claimed complexity.
 7. Exact Fraction/duration/time-range correctness without ticks/floats.
-8. Atomic pre-count/reserve/build/rebuild/export/publish and zero-session rejection.
+8. Two-phase Foundation-validation/Runtime-store pre-count and reserve, followed by build/local checks/publication and zero-session rejection.
 9. Deterministic full-validation order plus mapping into the unchanged 22 failures.
 10. Canonical/lossless export, unknown extensions and index normalized parity.
 11. Public `28/51/8/34/9`, two Node exports, TypeScript default and resource-cap freeze.
-12. Literal planning/implementation allowlists, six reversible stages, protected paths and downstream RKP boundaries.
+12. Literal 16-path planning allowlist, literal implementation allowlist, six reversible stages, protected paths and downstream RKP boundaries.
 13. Stress evidence is a diagnostic liveness/linearity gate, not a weakened product performance budget.
 14. Parent conflict integration rule preserves repair and RKP-2 child references.
 

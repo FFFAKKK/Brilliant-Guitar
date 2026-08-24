@@ -2,12 +2,20 @@
 
 ## Result
 
-P0/P1/P2=`0/0/0` — ready for independent planning review after mechanical gates and docs-only commit.
+P0/P1/P2=`0/0/0` self-audit after bounded repair — targeted independent planning rereview remains pending.
+
+## Independent review history
+
+- Exact initial candidate: `6a349b6fe166c6551ea2ceb480a44c3b2547407c`.
+- Dedicated read-only review task: `01a01e48-1934-77b0-821e-a8026cd9e5f7`.
+- Initial verdict: `RETURN FOR BOUNDED PLANNING REPAIR`, P0/P1/P2=`0/5/1`.
+- Repair scope is limited to the dependency graph, two-phase import capacity order, round-trip placement, empty-collection wire mapping, literal planning allowlist and version-pinned slotmap evidence.
+- No production, test, Cargo, package, tsconfig, crate or active-spec path is part of the repair.
 
 ## Scope checks
 
 - Task remains planning; start and production authorization are false.
-- Planning delta is limited to the new task directory and three named Rust-parent documents.
+- Planning delta is limited to the literal 13 task files and three named Rust-parent documents.
 - No `src/**`, test, Cargo, package, tsconfig, crate or active-spec file is changed.
 - TypeScript remains default; Node remains private create/read only.
 - RKP-3 through RKP-9 responsibilities are excluded.
@@ -33,7 +41,7 @@ P0/P1/P2=`0/0/0` — ready for independent planning review after mechanical gate
 ## Feasibility checks
 
 - Concrete slotmap version/features and sole consumer are fixed.
-- Import pre-count/reserve/build/rebuild/export/publish order is fixed.
+- Foundation validation-scratch pre-count/reserve and Runtime store pre-count/reserve are separate, ordered phases; production build/local-check/publish and test-only rebuild/round-trip proof are unambiguous.
 - Voice point/range algorithms and complexity are fixed.
 - Stale-handle proof uses private tests and adds no bridge hook.
 - Representative/stress evidence is structural/liveness only; product budgets are not weakened or claimed.

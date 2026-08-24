@@ -2,7 +2,7 @@
 
 ## Current status
 
-`PLANNING CANDIDATE — INDEPENDENT REVIEW PENDING`.
+`BOUNDED PLANNING REPAIR — TARGETED INDEPENDENT REREVIEW PENDING`.
 
 - Branch: `codex/rkp-2-indexed-live-score-store-load-encode-parity`.
 - Worktree: `.worktrees/rkp-2-indexed-live-score-store-load-encode-parity`.
@@ -22,13 +22,16 @@ Frozen choices:
 - explicit order topology;
 - HashMap private lookup with no iteration-derived output;
 - exact Fraction sorted-Vec Voice time index;
-- atomic pre-count/reserve/build/rebuild/export/publish;
+- Foundation validation-scratch pre-count/reserve followed by independent Runtime store pre-count/reserve/build/local-check/publish;
+- full index rebuild and encode/decode/encode parity remain verification paths rather than per-open production work;
 - exact 22 stable failures and two Node exports;
 - six reversible implementation stages after activation.
 
 ## Pre-activation blocker
 
 The sibling RKP-1 post-archive repair planning head `f7fecdcf...` passed targeted planning review, while its implementation/acceptance/archive remain pending. The operator first completes that repair through its own audit and archive. Then create the RKP-2 implementation branch from the repaired accepted head and incorporate this approved planning commit.
+
+The initial RKP-2 planning review of `6a349b6...` returned P0/P1/P2=`0/5/1`; the six bounded documentation findings have been repaired and still require a dedicated targeted rereview returning `0/0/0`. Until then this document is not an implementation handoff.
 
 Do not copy one parent `task.json` over the other. Preserve the child-set union and set RKP-2 as the only active child only during authorized activation.
 

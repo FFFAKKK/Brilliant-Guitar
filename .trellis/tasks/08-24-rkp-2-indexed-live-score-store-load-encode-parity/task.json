@@ -38,7 +38,7 @@
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "FORMAL RKP-2 PLANNING CANDIDATE / INDEPENDENT PLANNING REVIEW PENDING / RKP-1 POST-ARCHIVE REPAIR IMPLEMENTATION ACCEPTANCE ARCHIVE REQUIRED BEFORE ACTIVATION / TYPESCRIPT DEFAULT / NO START PRODUCTION CUTOVER PUSH OR QUALIFICATION.",
+  "notes": "FORMAL RKP-2 PLANNING CANDIDATE / INITIAL REVIEW 0-5-1 BOUNDED DOCS REPAIR APPLIED / TARGETED INDEPENDENT REREVIEW PENDING / RKP-1 POST-ARCHIVE REPAIR IMPLEMENTATION ACCEPTANCE ARCHIVE REQUIRED BEFORE ACTIVATION / TYPESCRIPT DEFAULT / NO START PRODUCTION CUTOVER PUSH OR QUALIFICATION.",
   "meta": {
     "planning_base_commit": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "accepted_rkp1_audited_implementation_commit": "94387b339b5e4d9ce6b7f97597a1b56edd051f01",
@@ -59,7 +59,15 @@
     "production_implementation_authorized": false,
     "user_implementation_authorization": false,
     "independent_planning_review": "pending",
-    "planning_review_cycle": "initial_full_review_pending",
+    "planning_review_cycle": "bounded_repair_targeted_rereview_pending",
+    "initial_independent_planning_review": {
+      "task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
+      "candidate_commit": "6a349b6fe166c6551ea2ceb480a44c3b2547407c",
+      "P0": 0,
+      "P1": 5,
+      "P2": 1,
+      "verdict": "return_for_bounded_planning_repair"
+    },
     "implementation_review": "not_started",
     "implementation_candidate_ready": false,
     "archive_authorized": false,
@@ -82,6 +90,7 @@
     "stable_identity_split": "EntityId_RuntimeHandle_MusicalLocation",
     "part_measure_content_identity": "typed_part_measure_pair_no_persisted_id",
     "reference_index_scope": "core_structural_references_only_no_opaque_payload_inference",
+    "atomic_import_capacity_phases": "foundation_validation_scratch_then_runtime_store_containers",
     "expected_core_command_count": 28,
     "expected_application_runtime_export_count": 51,
     "expected_module_sdk_runtime_export_count": 8,
@@ -99,7 +108,7 @@
       "P0": 0,
       "P1": 0,
       "P2": 0,
-      "verdict": "ready_for_independent_planning_review_after_final_amended_head_probe"
+      "verdict": "bounded_repair_ready_for_targeted_independent_rereview"
     }
   }
 }
