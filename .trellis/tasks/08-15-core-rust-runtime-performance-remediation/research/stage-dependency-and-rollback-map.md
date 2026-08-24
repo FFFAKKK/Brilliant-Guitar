@@ -6,7 +6,7 @@
 |---|---|---|---|---|
 | RKP-0 | `b21540fa` | authority/oracle contract | deterministic oracle + docs/test-only diff | revert RKP-0 commit |
 | RKP-1 | accepted RKP-0 + accepted V2 authority sync | exact seven-crate Rust workspace/contracts | cargo + Node native smoke | remove RKP-1 workspace commit |
-| RKP-2 | accepted RKP-1 | entity store/indices | round-trip, stale handle, index tests | revert store commit |
+| RKP-2 | accepted/archived RKP-1 + accepted/archived post-archive workspace/authority repair | indexed LiveScoreStore/load/encode | round-trip, stale handle, lookup/time/index-rebuild parity | reverse six bounded RKP-2 commits, then activation |
 | RKP-3 | accepted RKP-2 | transactions/ChangeSet | atomicity + complexity counters | revert transaction commit |
 | RKP-4 | accepted RKP-3 | history/read/event/replay | behavioral differential | revert RKP-4 commit |
 | RKP-5 | accepted RKP-4 | Extension Protocol, validation/WASM preparation | incremental/full equality | revert RKP-5 commit |
@@ -16,3 +16,5 @@
 | RKP-9 | accepted RKP-8 | Qualification V2 plus legacy transaction-engine/differential-runner cleanup | fresh official evidence + audit; CVN-2 SDK 8/34 retained | revert cleanup; Rust default stays |
 
 Tree membership does not imply activation. The parent metadata and child artifacts must explicitly state the accepted predecessor. One failed or returned child blocks all later creation.
+
+RKP-2 planning was created from `063b332dd48c05796fb3450a8004f42ff2148b20` while the post-archive repair remained a sibling planning line. Planning review may proceed; implementation activation requires a new exact base containing the independently audited/accepted/archived repair and the approved RKP-2 planning contract. Parent `children` merge by set union, with only one current/active implementation child.

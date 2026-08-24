@@ -21,7 +21,8 @@
   "children": [
     "08-15-rkp-0-authority-contract-oracle-freeze",
     "08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke",
-    "08-24-rkp-1-post-archive-workspace-contract-authority-repair"
+    "08-24-rkp-1-post-archive-workspace-contract-authority-repair",
+    "08-24-rkp-2-indexed-live-score-store-load-encode-parity"
   ],
   "parent": "07-29-core-vnext-product-ready-extensible-kernel-completion",
   "relatedFiles": [
@@ -43,12 +44,12 @@
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RKP-0 RKP-1 AND RKP-1 POST-ARCHIVE REPAIR ACCEPTED ARCHIVED / REPAIR AUDITED IMPLEMENTATION CANDIDATE REMAINS 267A63BC AND LATER CLOSEOUT COMMITS ARE LIFECYCLE ONLY / NO ACTIVE IMPLEMENTATION CHILD / NEXT GATE IS CREATION OF A REPAIRED UNIFIED RKP-2 IMPLEMENTATION BASE / RKP-2 IMPLEMENTATION NOT AUTHORIZED / TYPESCRIPT DEFAULT / NO PUSH CUTOVER OR QUALIFICATION.",
+  "notes": "RKP-0 RKP-1 AND RKP-1 POST-ARCHIVE REPAIR ACCEPTED ARCHIVED / RKP-2 APPROVED PLANNING HISTORY INTEGRATED / RKP-2 IS THE SOLE CURRENT PLANNING CHILD / NO ACTIVE IMPLEMENTATION CHILD / NEXT GATE IS ACTIVATION COMMIT 0 / RKP-2 IMPLEMENTATION NOT YET AUTHORIZED / TYPESCRIPT DEFAULT / NO PUSH CUTOVER OR QUALIFICATION.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
     "source_cvn7_status": "in_progress_measurement_incomplete_evidence_invalid",
-    "current_planning_child": null,
+    "current_planning_child": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
     "future_children_created": true,
     "stage_sequence": [
       "RKP-0",
@@ -91,7 +92,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "rkp2-repaired-unified-implementation-base-creation",
+    "next_gate": "rkp2-activation-commit-0",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -194,6 +195,25 @@
     },
     "rkp1_phase_3_3_spec_sync_decision": "no_active_spec_change_in_rkp1_closeout_task_archive_remains_authority_and_future_rkp2_planning_input_any_later_active_spec_promotion_requires_separate_docs_only_authority_spec_sync",
     "rkp2_implementation_authorized": false,
+    "rkp2_user_implementation_authorization": false,
+    "rkp2_created": true,
+    "rkp2_status": "planning_approved_unified_base_ready_activation_pending",
+    "rkp2_task": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
+    "rkp2_planning_base": "063b332dd48c05796fb3450a8004f42ff2148b20",
+    "rkp2_branch": "codex/rkp-2-indexed-live-score-store-load-encode-parity",
+    "rkp2_planning_branch": "codex/rkp-2-indexed-live-score-store-load-encode-parity",
+    "rkp2_approved_planning_head": "625054ec78e6410e0fb6034ab0c8f60bbf110d08",
+    "rkp2_approved_planning_state_head": "53646c92b81bc3ac160ec5d72b0d3f80c97b7eb0",
+    "rkp2_independent_planning_review": {
+      "task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
+      "P0": 0,
+      "P1": 0,
+      "P2": 0,
+      "candidate": "625054ec78e6410e0fb6034ab0c8f60bbf110d08",
+      "verdict": "pass"
+    },
+    "rkp2_future_implementation_allowlist_count": 21,
+    "rkp2_activation_gate": "satisfied_by_approved_planning_plus_rkp1_post_archive_repair_accepted_archived_and_unified_green_base",
     "rkp1_implementation_audit_return": {
       "task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
       "P0": 0,
@@ -233,6 +253,7 @@
       "0c1a1da966687f2faa366dc3bcb4915b8a790fc7"
     ],
     "rkp2_through_rkp9_created": false,
+    "rkp3_through_rkp9_created": false,
     "target_rust_crates": [
       "brilliant-core-types",
       "brilliant-score-foundation",
@@ -252,7 +273,9 @@
     "rkp1_post_archive_repair_status": "accepted_archived",
     "rkp1_post_archive_repair_base": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "rkp1_post_archive_repair_reproduction": "workspace_contract_4_of_6_longpath_plus_archived_task_path",
-    "rkp2_planning_resume_gate": "satisfied_repair_accepted_archived_next_repaired_unified_implementation_base_creation",
+    "rkp2_planning_resume_gate": "satisfied_repair_accepted_archived_and_approved_planning_integrated_next_activation_commit_0",
+    "rkp1_post_archive_repair_planning_candidate": "f7fecdcf7f2194b978ff2841b7913b670a2f7f8f",
+    "rkp1_post_archive_repair_planning_review": "passed_p0_0_p1_0_p2_0_then_implemented_audited_accepted_archived",
     "rkp1_post_archive_repair_first_review": {
       "P0": 0,
       "P1": 3,
@@ -307,6 +330,6 @@
     "rkp1_post_archive_repair_acceptance_sync_commit": "4197b5c315524391733fb67cfbbf98f36a8b6201",
     "rkp1_post_archive_repair_archive_commit": "99f0e3955530675d68262835b4bc028cdb2c40c2",
     "rkp1_post_archive_repair_closeout_journal_commit": "f60e3a9429ed6c12632f13e20e9d2b68bb8f326d",
-    "rkp2_repaired_unified_implementation_base_created": false
+    "rkp2_repaired_unified_implementation_base_created": true
   }
 }

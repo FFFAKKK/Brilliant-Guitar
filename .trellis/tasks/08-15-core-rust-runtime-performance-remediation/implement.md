@@ -71,3 +71,13 @@ Also verify JSON/JSONL parse, unique parent/child references, `status=planning`,
 ## RKP-0 acceptance/archive projection — 2026-08-15
 
 `08-15-rkp-0-authority-contract-oracle-freeze` is accepted and archived at `.trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/` after the independent implementation review passed `P0/P1/P2=0/0/0` for `9bc53901a0e205a99865b21c56dc80ff1112f3a7`. Evidence records typecheck/build, RKP-0 `15/15`, CVN-7 `84/84`, full `531/531`, and fresh-checkout fixture hashes; no official qualification ran. The coordination parent remains `planning`, `task_start_run=false`, `production_implementation_authorized=false`, and active implementation child `none`. RKP-1 through RKP-9 remain absent until a separate planning/review/authorization decision.
+
+## RKP-2 planning projection — 2026-08-24
+
+RKP-1 is accepted/archived and RKP-2 now has a formal docs-only planning candidate at `.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/`. Its planning base is `063b332dd48c05796fb3450a8004f42ff2148b20`; task status remains `planning`, `task_start_run=false`, `production_implementation_authorized=false`, and there is no active implementation child.
+
+The sibling RKP-1 post-archive workspace/authority repair planning candidate `f7fecdcf7f2194b978ff2841b7913b670a2f7f8f` received targeted planning PASS, while its implementation, independent implementation audit, acceptance and archive remain the RKP-2 activation gate. RKP-2 planning review can close independently. The later implementation branch must start from a green accepted repair base, incorporate the approved RKP-2 planning commit, and merge the parent child set rather than replacing either sibling projection.
+
+RKP-2 owns only indexed `LiveScoreStore`, strict atomic load, deterministic index rebuild and exact encode parity. TypeScript remains default. RKP-3 command/transaction work stays absent until RKP-2 implementation passes independent audit and is accepted/archived.
+
+RKP-2 technical planning passed dedicated independent review at exact head `625054ec78e6410e0fb6034ab0c8f60bbf110d08` with P0/P1/P2=`0/0/0`. Planning approval does not activate implementation: the sibling post-archive repair must first be implemented, independently audited, accepted and archived; a new integrated green base must preserve both parent-child projections; user implementation authorization remains a separate final gate.
