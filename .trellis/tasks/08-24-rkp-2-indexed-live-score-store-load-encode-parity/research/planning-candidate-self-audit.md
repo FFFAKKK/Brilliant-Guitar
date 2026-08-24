@@ -2,7 +2,7 @@
 
 ## Result
 
-P0/P1/P2=`0/0/0` self-audit after the second bounded repair — second targeted independent planning rereview remains pending.
+P0/P1/P2=`0/0/0` independent planning PASS recorded for exact technical head `625054ec78e6410e0fb6034ab0c8f60bbf110d08`.
 
 ## Independent review history
 
@@ -12,6 +12,8 @@ P0/P1/P2=`0/0/0` self-audit after the second bounded repair — second targeted 
 - Repair scope is limited to the dependency graph, two-phase import capacity order, round-trip placement, empty-collection wire mapping, literal planning allowlist and version-pinned slotmap evidence.
 - First targeted rereview candidate: `f4ed2bc505f8b4bfbfd5053b361ccaadb673fea7`; verdict `RETURN FOR BOUNDED PLANNING REPAIR`, P0/P1/P2=`0/1/0`.
 - Its sole direct regression was the absent Foundation validation-scratch capacity channel. The second bounded repair adds workspace-internal `FoundationDecodeFailure::InternalCapacity`, the one-file Contracts mapping to existing `bridge.internal`, exact precedence and two fault-injection contracts without changing the 22 public failures.
+- Second targeted rereview candidate `135af27e8c5e13d9e0a8ea168a52cb9cc4aebd93` returned P0/P1/P2=`0/0/1` solely for a trailing allowlist comment.
+- Final one-line candidate `625054ec78e6410e0fb6034ab0c8f60bbf110d08` passed P0/P1/P2=`0/0/0`; raw design/matrix future allowlist sets are exactly 21/21 with zero difference.
 - No production, test, Cargo, package, tsconfig, crate or active-spec path is part of the repair.
 
 ## Scope checks

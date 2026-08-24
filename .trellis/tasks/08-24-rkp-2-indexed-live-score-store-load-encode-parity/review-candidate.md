@@ -1,10 +1,10 @@
 # Review Candidate — RKP-2 Planning
 
-## Requested verdict
+## Recorded verdict
 
-`READY FOR SECOND TARGETED INDEPENDENT PLANNING REREVIEW` after the direct-regression docs-only repair commit and refreshed mechanical evidence are recorded.
+`PASS — P0/P1/P2=0/0/0` for exact technical planning head `625054ec78e6410e0fb6034ab0c8f60bbf110d08`.
 
-The first independent review of `6a349b6fe166c6551ea2ceb480a44c3b2547407c` returned P0/P1/P2=`0/5/1`. The targeted rereview of `f4ed2bc505f8b4bfbfd5053b361ccaadb673fea7` verified those six fixes but returned `0/1/0` for one direct capacity-mapping regression. Review the new exact planning HEAD read-only and verify that single repair plus all prior direct regressions. Do not start implementation, archive, push, run official qualification or create RKP-3.
+The dedicated read-only auditor task `01a01e48-1934-77b0-821e-a8026cd9e5f7` recorded the final PASS after review cycles `6a349b6=0/5/1`, `f4ed2bc=0/1/0`, `135af27=0/0/1`, and `625054e=0/0/0`. This record does not start implementation, archive, push, run official qualification or create RKP-3.
 
 ## Bounded repair under rereview
 

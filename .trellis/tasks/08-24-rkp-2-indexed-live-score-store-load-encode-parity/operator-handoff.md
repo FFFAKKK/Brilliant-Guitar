@@ -2,12 +2,14 @@
 
 ## Current status
 
-`BOUNDED PLANNING REPAIR — TARGETED INDEPENDENT REREVIEW PENDING`.
+`PLANNING APPROVED — ACTIVATION BLOCKED`.
 
 - Branch: `codex/rkp-2-indexed-live-score-store-load-encode-parity`.
 - Worktree: `.worktrees/rkp-2-indexed-live-score-store-load-encode-parity`.
 - Planning base: `063b332dd48c05796fb3450a8004f42ff2148b20`.
 - Task: `.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity`.
+- Approved planning head: `625054ec78e6410e0fb6034ab0c8f60bbf110d08`.
+- Independent planning review: P0/P1/P2=`0/0/0` in dedicated task `01a01e48-1934-77b0-821e-a8026cd9e5f7`.
 - State: `planning`, `task_start_run=false`, `production_implementation_authorized=false`.
 - TypeScript is the default runtime.
 
@@ -32,7 +34,7 @@ Frozen choices:
 
 The sibling RKP-1 post-archive repair planning head `f7fecdcf...` passed targeted planning review, while its implementation/acceptance/archive remain pending. The operator first completes that repair through its own audit and archive. Then create the RKP-2 implementation branch from the repaired accepted head and incorporate this approved planning commit.
 
-The initial RKP-2 planning review of `6a349b6...` returned P0/P1/P2=`0/5/1`. The first targeted rereview of `f4ed2bc...` returned `0/1/0` because Foundation capacity failure lacked an internal-to-wire mapping. That direct regression is now closed in planning and still requires a dedicated targeted rereview returning `0/0/0`. Until then this document is not an implementation handoff.
+The initial RKP-2 planning review of `6a349b6...` returned `0/5/1`; `f4ed2bc...` returned `0/1/0`; `135af27...` returned `0/0/1`; the final exact `625054e...` rereview passed `0/0/0`. The technical plan is approved. This remains a future operator handoff rather than an active implementation task until the sibling repair and authorization gates below are satisfied.
 
 Do not copy one parent `task.json` over the other. Preserve the child-set union and set RKP-2 as the only active child only during authorized activation.
 
