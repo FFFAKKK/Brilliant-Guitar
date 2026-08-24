@@ -20,7 +20,8 @@
   "subtasks": [],
   "children": [
     "08-15-rkp-0-authority-contract-oracle-freeze",
-    "08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke"
+    "08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke",
+    "08-24-rkp-2-indexed-live-score-store-load-encode-parity"
   ],
   "parent": "07-29-core-vnext-product-ready-extensible-kernel-completion",
   "relatedFiles": [
@@ -42,12 +43,12 @@
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RUST PERFORMANCE REMEDIATION PLANNING REVIEW PASSED / RKP-1 INDEPENDENT IMPLEMENTATION REREVIEW PASSED 0/0/0 AT AUDITED HEAD 94387B3 AND IS ACCEPTED WITH ARCHIVE PENDING IN THIS CLOSEOUT / NO ACTIVE IMPLEMENTATION CHILD / RKP-2 THROUGH RKP-9 ABSENT / TYPESCRIPT DEFAULT / NO PUSH OR OFFICIAL QUALIFICATION.",
+  "notes": "RKP-0 AND RKP-1 ACCEPTED ARCHIVED / RKP-2 FORMAL DOCS-ONLY PLANNING CANDIDATE CREATED ON 063B332D / RKP-1 POST-ARCHIVE REPAIR PLANNING PASS AT F7FECDC BUT IMPLEMENTATION ACCEPTANCE ARCHIVE STILL GATE RKP-2 ACTIVATION / NO ACTIVE IMPLEMENTATION CHILD / TYPESCRIPT DEFAULT / NO PUSH CUTOVER OR QUALIFICATION.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
     "source_cvn7_status": "in_progress_measurement_incomplete_evidence_invalid",
-    "current_planning_child": null,
+    "current_planning_child": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
     "future_children_created": true,
     "stage_sequence": [
       "RKP-0",
@@ -90,7 +91,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "rkp2-planning-creation",
+    "next_gate": "rkp2-independent-planning-review",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -193,6 +194,14 @@
     },
     "rkp1_phase_3_3_spec_sync_decision": "no_active_spec_change_in_rkp1_closeout_task_archive_remains_authority_and_future_rkp2_planning_input_any_later_active_spec_promotion_requires_separate_docs_only_authority_spec_sync",
     "rkp2_implementation_authorized": false,
+    "rkp2_created": true,
+    "rkp2_status": "formal_planning_candidate_independent_review_pending",
+    "rkp2_task": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
+    "rkp2_planning_base": "063b332dd48c05796fb3450a8004f42ff2148b20",
+    "rkp2_branch": "codex/rkp-2-indexed-live-score-store-load-encode-parity",
+    "rkp2_activation_gate": "rkp2_planning_pass_plus_rkp1_post_archive_repair_implemented_independently_audited_accepted_archived_integrated_green_base",
+    "rkp1_post_archive_repair_planning_candidate": "f7fecdcf7f2194b978ff2841b7913b670a2f7f8f",
+    "rkp1_post_archive_repair_planning_review": "passed_p0_0_p1_0_p2_0_out_of_band_implementation_pending",
     "rkp1_implementation_audit_return": {
       "task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
       "P0": 0,
@@ -231,7 +240,7 @@
       "654578bded13b0f6da8b8c55cf71145f176d38f8",
       "0c1a1da966687f2faa366dc3bcb4915b8a790fc7"
     ],
-    "rkp2_through_rkp9_created": false,
+    "rkp3_through_rkp9_created": false,
     "target_rust_crates": [
       "brilliant-core-types",
       "brilliant-score-foundation",

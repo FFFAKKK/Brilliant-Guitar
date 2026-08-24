@@ -1,0 +1,20 @@
+{"file":".trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/design.md","reason":"Audit LiveScoreStore, identity/index, crate owner and RKP stage conformance."}
+{"file":".trellis/tasks/08-15-core-rust-runtime-performance-remediation/research/stage-dependency-and-rollback-map.md","reason":"Audit predecessor, activation and rollback ordering."}
+{"file":".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/review-candidate.md","reason":"Recheck accepted audited RKP-1 public/resource/bridge boundary."}
+{"file":".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/research/implementation-evidence.md","reason":"Verify exact predecessor production head and green evidence."}
+{"file":".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/golden-oracle-and-performance-contract.md","reason":"Distinguish RKP-2 structural liveness evidence from later product budgets."}
+{"file":".trellis/spec/core-kernel/backend/rust-runtime-transition.md","reason":"Audit current active transition boundary without spec drift."}
+{"file":".trellis/spec/core-kernel/backend/score-document-model.md","reason":"Audit ScoreDocument/Event/Note/time/Extension ownership."}
+{"file":"crates/brilliant-score-foundation/src/codec.rs","reason":"Audit current Foundation failure and canonical encode seam consumed by the plan."}
+{"file":"crates/brilliant-kernel-runtime/src/smoke_runtime.rs","reason":"Confirm exact whole-DTO holder being replaced and no broader Runtime exists."}
+{"file":"crates/brilliant-kernel-session/src/session.rs","reason":"Confirm create/read integration boundary and TypeScript-default status."}
+{"file":"crates/brilliant-kernel-contracts/src/session.rs","reason":"Confirm exact stable failure and read/create public inventory."}
+{"file":"src/core-kernel/validation/validate-score-semantics.ts","reason":"Compare planned load validation traversal and semantic classes."}
+{"file":".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/prd.md","reason":"Audit complete requirements, acceptance and exclusions."}
+{"file":".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/design.md","reason":"Audit concrete implementation decisions and owners."}
+{"file":".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/implement.md","reason":"Audit staged execution, gates and rollback."}
+{"file":".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/research/current-rust-and-ts-baseline-audit.md","reason":"Audit factual current-state and known baseline blocker attribution."}
+{"file":".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/research/container-and-index-decision.md","reason":"Audit exact slotmap/time/index choice and determinism fences."}
+{"file":".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/research/file-test-and-rollback-matrix.md","reason":"Audit literal changed paths, test coverage and per-stage rollback."}
+{"file":".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/research/rkp1-repair-and-rkp2-entry-gate.md","reason":"Audit sibling repair integration and unique parent-child merge projection."}
+{"file":".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/research/planning-candidate-self-audit.md","reason":"Cross-check claimed P0/P1/P2 and mechanical evidence."}
