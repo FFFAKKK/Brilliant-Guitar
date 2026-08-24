@@ -48,7 +48,7 @@
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
     "source_cvn7_status": "in_progress_measurement_incomplete_evidence_invalid",
-    "current_planning_child": "08-24-rkp-1-post-archive-workspace-contract-authority-repair",
+    "current_planning_child": null,
     "future_children_created": true,
     "stage_sequence": [
       "RKP-0",
@@ -91,7 +91,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "rkp1-post-archive-repair-targeted-planning-rereview-r2",
+    "next_gate": "rkp1-post-archive-repair-independent-implementation-review",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -160,8 +160,8 @@
     },
     "rkp1_status_sync_commit": "7174c5ac50655ae0cb8807e21c7045a0c1b6d15e",
     "rkp1_repair_branch": "codex/rkp-1-seven-crate-workspace-contracts-bridge-smoke-planning-r1",
-    "current_implementation_child": null,
-    "active_implementation_child": null,
+    "current_implementation_child": "08-24-rkp-1-post-archive-workspace-contract-authority-repair",
+    "active_implementation_child": "08-24-rkp-1-post-archive-workspace-contract-authority-repair",
     "rkp1_implementation_stage": "accepted_archived",
     "rkp1_implementation_commits": {
       "activation": "84918e1e293b26554fbff9f161c6222510f378b9",
@@ -249,7 +249,7 @@
     "instrument_plugin_protocol_privilege": "equal Guitar/Piano/Bass/third-party consumers; no privileged Guitar Rust provider",
     "kernel_private_identity_separate_from_product_assembly_identity": true,
     "rkp1_post_archive_repair_created": true,
-    "rkp1_post_archive_repair_status": "bounded_planning_repair_r2_targeted_rereview_pending",
+    "rkp1_post_archive_repair_status": "in_progress_stage_1_activation",
     "rkp1_post_archive_repair_base": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "rkp1_post_archive_repair_reproduction": "workspace_contract_4_of_6_longpath_plus_archived_task_path",
     "rkp2_planning_resume_gate": "rkp1_post_archive_repair_accepted_archived",
@@ -267,6 +267,19 @@
       "candidate": "47a32d26909bbe3550c5858cd4d4ea793ec68a16",
       "verdict": "return_for_bounded_planning_repair",
       "scope": "implementation_rollback_destination"
-    }
+    },
+    "rkp1_post_archive_repair_final_targeted_planning_rereview_r2": {
+      "task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
+      "P0": 0,
+      "P1": 0,
+      "P2": 0,
+      "candidate": "f7fecdcf7f2194b978ff2841b7913b670a2f7f8f",
+      "verdict": "pass",
+      "scope": "rollback_destination_and_direct_regressions"
+    },
+    "rkp1_post_archive_repair_implementation_authorized": true,
+    "rkp1_post_archive_repair_candidate_ready": false,
+    "rkp1_post_archive_repair_implementation_review": "pending",
+    "rkp1_post_archive_repair_accepted_planning_head": "f7fecdcf7f2194b978ff2841b7913b670a2f7f8f"
   }
 }
