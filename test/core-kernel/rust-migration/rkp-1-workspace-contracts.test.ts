@@ -15,10 +15,12 @@ import * as moduleSdk from "../../../src/core-kernel/module-sdk/index";
 const PLANNING_HEAD = "89115daedc623c0d35386a4a433cc7fd95215223";
 const REPAIRED_PLANNING_HEAD =
   "b944876aefc2b359b459bb8565afa38c0635765b";
+const AUDITED_IMPLEMENTATION_HEAD =
+  "94387b339b5e4d9ce6b7f97597a1b56edd051f01";
 const MATRIX_PATH =
   ".trellis/tasks/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/research/file-test-and-rollback-matrix.md";
-const TASK_PATH =
-  ".trellis/tasks/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/task.json";
+const ARCHIVED_TASK_PATH =
+  ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/task.json";
 const PARENT_PATH =
   ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json";
 const MANIFEST_PATH =
@@ -79,7 +81,7 @@ function readText(path: string): string {
 }
 
 function git(args: readonly string[]): string {
-  return execFileSync("git", args, {
+  return execFileSync("git", ["-c", "core.longpaths=true", ...args], {
     cwd: process.cwd(),
     encoding: "utf8",
   }).trim();
@@ -135,21 +137,16 @@ function reviewedAllowlistAt(commit: string): string[] {
   return paths;
 }
 
-function candidateChangedPaths(): Set<string> {
+function auditedImplementationChangedPaths(): Set<string> {
   const paths = new Set<string>(
-    lines(git(["diff", "--name-only", `${PLANNING_HEAD}..HEAD`])),
+    lines(
+      git([
+        "diff",
+        "--name-only",
+        `${PLANNING_HEAD}..${AUDITED_IMPLEMENTATION_HEAD}`,
+      ]),
+    ),
   );
-  for (const path of lines(git(["diff", "--name-only"]))) {
-    paths.add(path);
-  }
-  for (const path of lines(git(["diff", "--cached", "--name-only"]))) {
-    paths.add(path);
-  }
-  for (const status of lines(git(["status", "--porcelain"]))) {
-    if (status.startsWith("?? ")) {
-      paths.add(status.slice(3));
-    }
-  }
   for (const path of ACCEPTED_PLANNING_ONLY_PATHS) {
     paths.delete(path);
   }
@@ -161,7 +158,7 @@ test("implementation diff is a literal subset of the audited allowlist", () => {
   const repairedPaths = reviewedAllowlistAt(REPAIRED_PLANNING_HEAD);
   const originalAllowlist = new Set(originalPaths);
   const allowlist = new Set(repairedPaths);
-  const changed = candidateChangedPaths();
+  const changed = auditedImplementationChangedPaths();
   assert.equal(originalPaths.length, 39);
   assert.equal(originalAllowlist.size, 39);
   assert.equal(repairedPaths.length, 40);
@@ -175,7 +172,10 @@ test("implementation diff is a literal subset of the audited allowlist", () => {
     ["test/core-kernel/cvn-7-qualification-boundary.test.ts"],
   );
   for (const path of allowlist) {
-    assert.equal(statSync(resolve(path)).isFile(), true, `missing allowlist path: ${path}`);
+    assert.doesNotThrow(
+      () => git(["cat-file", "-e", `${AUDITED_IMPLEMENTATION_HEAD}:${path}`]),
+      `missing audited allowlist path: ${path}`,
+    );
   }
   for (const path of changed) {
     assert.equal(allowlist.has(path), true, `unreviewed changed path: ${path}`);
@@ -380,32 +380,30 @@ test("RKP-0 inventories and the TypeScript default public surface have zero drif
   assert.doesNotMatch(readText("src/core-kernel/index.ts"), /rust-kernel-smoke/u);
 });
 
-test("task lifecycle stays in progress with one RKP-1 implementation child", () => {
-  const task = JSON.parse(readText(TASK_PATH)) as {
+test("archived RKP-1 lifecycle facts remain durable", () => {
+  const task = JSON.parse(readText(ARCHIVED_TASK_PATH)) as {
     readonly status: string;
     readonly meta: Record<string, unknown>;
   };
   const parent = JSON.parse(readText(PARENT_PATH)) as {
     readonly status: string;
+    readonly children: readonly string[];
     readonly meta: Record<string, unknown>;
   };
-  assert.equal(task.status, "in_progress");
-  assert.equal(task.meta.task_start_run, true);
-  assert.equal(task.meta.production_implementation_authorized, true);
-  assert.equal(task.meta.independent_planning_review, "passed");
-  assert.equal(task.meta.implementation_review, "pending");
+  assert.equal(task.status, "completed");
+  assert.equal(task.meta.implementation_review, "passed");
+  assert.equal(task.meta.implementation_rereview, "passed");
+  assert.equal(task.meta.audited_implementation_commit, AUDITED_IMPLEMENTATION_HEAD);
   assert.equal(task.meta.default_runtime, "typescript");
   assert.equal(task.meta.default_runtime_switch_authorized, false);
-  assert.equal(task.meta.archive_authorized, false);
-  assert.equal(task.meta.push_authorized, false);
-  assert.equal(parent.meta.current_implementation_child, "08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke");
-
-  const activeTasks = readdirSync(resolve(".trellis/tasks"));
-  for (let stage = 2; stage <= 9; stage += 1) {
-    assert.equal(
-      activeTasks.some((entry) => entry.includes(`rkp-${stage}`)),
-      false,
-      `RKP-${stage}`,
-    );
-  }
+  assert.equal(parent.meta.rkp1_status, "accepted_archived");
+  assert.equal(parent.meta.rkp1_implementation_stage, "accepted_archived");
+  assert.equal(parent.meta.rkp1_audited_implementation_commit, AUDITED_IMPLEMENTATION_HEAD);
+  assert.equal(
+    parent.children.filter(
+      (child) =>
+        child === "08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke",
+    ).length,
+    1,
+  );
 });
