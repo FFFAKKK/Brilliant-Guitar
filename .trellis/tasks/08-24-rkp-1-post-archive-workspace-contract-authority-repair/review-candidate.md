@@ -2,9 +2,9 @@
 
 ## Verdict requested
 
-`IMPLEMENTATION REVIEW REQUIRED`
+`OWNER ACCEPTED / ARCHIVE PENDING`
 
-Final targeted planning rereview R2 passed P0/P1/P2=`0/0/0` at `f7fecdcf7f2194b978ff2841b7913b670a2f7f8f`. Activation `716a9113f8961953ccf848191b4edabc15ab4a62`, isolated workspace-contract test repair `ce4e32d59ec72626e1ab8358632d46be35fe647e`, authority synchronization `c9fd2652bf0af88402f5e5953f5786f471e85fb6`, every Stage 4 gate and the long RKP-2 planning-worktree focused rerun are complete. Candidate readiness is true while implementation review remains pending. Acceptance, archive, push, RKP-2 implementation and official qualification remain outside this implementation candidate.
+The dedicated independent implementation audit passed P0/P1/P2=`0/0/0` in auditor task `01a01e48-1934-77b0-821e-a8026cd9e5f7`. Its exact technical candidate is `267a63bc6ff35b49842fb713c34f4099c8829e18`, covering `f7fecdcf7f2194b978ff2841b7913b670a2f7f8f..267a63bc6ff35b49842fb713c34f4099c8829e18`. The owner accepts that candidate and authorizes native archive in this closeout. This later lifecycle record does not impersonate the audited implementation HEAD. Push, RKP-2 implementation and official qualification remain outside the closeout.
 
 ## Verified candidate evidence
 
@@ -13,6 +13,7 @@ Final targeted planning rereview R2 passed P0/P1/P2=`0/0/0` at `f7fecdcf7f2194b9
 - Node bridge 9/9 with `--expose-gc`; workspace-law 6/6 in the repair worktree and 6/6 from the long-path RKP-2 planning worktree.
 - TypeScript typecheck/build pass; full suite 546 total, 545 pass, one expected GC skip, zero fail.
 - The implementation range stays inside the ten literal accepted paths; protected implementation-time paths and all production/Rust/Cargo/package/tsconfig/spec/CVN-7 surfaces have zero delta.
+- The independent auditor reproduced the focused workspace contract at 6/6 in both the repair worktree and the long RKP-2 planning worktree, and confirmed protected zero delta.
 
 ## Review focus
 

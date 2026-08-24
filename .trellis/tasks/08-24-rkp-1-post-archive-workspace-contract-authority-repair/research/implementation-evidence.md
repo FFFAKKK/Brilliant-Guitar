@@ -59,4 +59,10 @@ From `.worktrees/rkp-2-indexed-live-score-store-load-encode-parity`, the absolut
 3. Historical matrix/file checks use commit objects while lifecycle assertions use the current archived child and active parent.
 4. The durable lifecycle assertion excludes completion-date literals and future-stage absence assertions.
 5. The implementation diff is exactly bounded by the ten accepted paths and leaves product/Rust/Cargo/CVN-7/RKP-2 surfaces untouched.
-6. The task remains `in_progress`, candidate-ready true, implementation review pending, with TypeScript still the default runtime.
+6. At the audited candidate the task was `in_progress`, candidate-ready true and implementation review pending, with TypeScript still the default runtime; the owner-closeout record changes only the review/lifecycle state after the independent PASS.
+
+## Independent implementation acceptance
+
+The dedicated auditor task `01a01e48-1934-77b0-821e-a8026cd9e5f7` returned PASS with P0/P1/P2=`0/0/0` for exact candidate `267a63bc6ff35b49842fb713c34f4099c8829e18` and range `f7fecdcf7f2194b978ff2841b7913b670a2f7f8f..267a63bc6ff35b49842fb713c34f4099c8829e18`. The auditor independently reproduced focused 6/6 in both the repair worktree and the long RKP-2 planning worktree, and confirmed protected zero delta. The conclusion was that the exact candidate is technically acceptable for owner acceptance and archive.
+
+The owner accepted the audited candidate and authorized archive on 2026-08-24. No heavy technical suite was rerun during closeout; this record reuses the exact independent audit. Subsequent acceptance, archive, journal and parent-projection commits are lifecycle-only and must not be represented as re-audited implementation heads.
