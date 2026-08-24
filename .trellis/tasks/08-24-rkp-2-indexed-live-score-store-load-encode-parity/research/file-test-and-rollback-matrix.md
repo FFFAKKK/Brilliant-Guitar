@@ -36,6 +36,7 @@ All other paths are planning-time zero delta.
 | `crates/brilliant-score-foundation/src/codec.rs` | 2 | completed load validation call and preserved canonical encode | Stage 2 |
 | `crates/brilliant-score-foundation/src/fraction.rs` | 2 | exact checked Fraction/time primitives | Stage 2 |
 | `crates/brilliant-score-foundation/src/validation.rs` | 2 | deterministic complete load validation | Stage 2 |
+| `crates/brilliant-kernel-contracts/src/codec.rs` | 2 | map Foundation internal capacity to existing bridge.internal; no public shape/count change | Stage 2 |
 | `crates/brilliant-kernel-runtime/src/lib.rs` | 3-5 | private modules and final KernelRuntime export | matching stage |
 | `crates/brilliant-kernel-runtime/src/handles.rs` | 3 | typed private generational keys | Stage 3 |
 | `crates/brilliant-kernel-runtime/src/records.rs` | 3 | scalar record model | Stage 3 |
@@ -71,7 +72,7 @@ Explicitly protected:
 - `package.json`, `package-lock.json`, `tsconfig.json`;
 - `rust-toolchain.toml`, `rustfmt.toml`;
 - `crates/brilliant-core-types/**`;
-- `crates/brilliant-kernel-contracts/**`;
+- all `crates/brilliant-kernel-contracts/**` except the single allowlisted `src/codec.rs` mapping;
 - `crates/brilliant-extension-protocol/**`;
 - `crates/brilliant-kernel-node/**`;
 - active `.trellis/spec/**`;
@@ -95,7 +96,7 @@ Explicitly protected:
 | Encode | minimal, all optional fields, representative, repeated read | semantic and canonical byte equality |
 | Hostile | wrong schema/shape/value/reference, cap edges | existing stable failure codes only; zero handle on create reject |
 | Public surface | native export/failure counts and TS 28/51/8/34/9 | exact baseline |
-| Resource | checked count/reserve seam, response cap | internal/no session or existing response-too-large |
+| Resource | semantic-invalid + Foundation reserve fault; semantic-valid + Runtime reserve fault; response cap | exact existing bridge.internal/no publication for reserve faults; existing response-too-large for response cap |
 | Scale | 102,400 Events / 51,200 Notes | completes liveness worker; linear structural counters |
 | Regression | Rust workspace, Node GC, TS typecheck/build/full | zero unexpected failures on activation base |
 

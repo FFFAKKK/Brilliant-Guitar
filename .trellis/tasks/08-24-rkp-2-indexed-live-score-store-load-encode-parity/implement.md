@@ -94,6 +94,7 @@ crates/brilliant-score-foundation/src/lib.rs
 crates/brilliant-score-foundation/src/codec.rs
 crates/brilliant-score-foundation/src/fraction.rs
 crates/brilliant-score-foundation/src/validation.rs
+crates/brilliant-kernel-contracts/src/codec.rs
 ```
 
 ### Actions
@@ -102,25 +103,27 @@ crates/brilliant-score-foundation/src/validation.rs
 2. Move/extend structural validation into one deterministic load validator.
 3. Register document ID before every entity ID.
 4. Cover metadata, measures, Parts, Staffs, coverage, Voices, Events, Notes, exact sequence arithmetic, pitch/transposition and extensions.
-5. Preserve `FoundationDecodeFailure` categories and exact `StablePathV1`; do not add stable failure variants.
-6. After exact Score shape decode, checked-pre-count and fallibly reserve the validator's scratch maps/vectors before semantic traversal; do not reserve Runtime store containers here.
-7. Make `decode_score_document_value` consume the completed validator while preserving the existing Contracts call seam and keeping `brilliant-kernel-contracts` zero-delta.
-8. Add direct tests for every failure class, multiple-error precedence and arithmetic overflow.
-9. Freeze exact wire/path mapping: empty top-level measures/parts and empty notes are `invalid-value`; empty staves/voices and missing/duplicate coverage/reference are `invalid-reference`.
+5. Preserve the five existing `FoundationDecodeFailure` shape/semantic categories and exact `StablePathV1`; add only pathless workspace-internal `InternalCapacity`, and do not add any stable failure variant.
+6. After exact Score shape decode, checked-pre-count and fallibly reserve borrowed-key `HashSet`/`HashMap` validation scratch plus exact-size `Vec` worklists before semantic traversal; replace allocation-per-node `BTreeSet<String>`, forbid scratch iteration from determining diagnostics, and do not reserve Runtime store containers here.
+7. Make `decode_score_document_value` consume the completed validator while preserving its signature and the existing Contracts call seam.
+8. In the single allowlisted Contracts codec, exhaustively map `FoundationDecodeFailure::InternalCapacity` to `StableFailureV1::BridgeInternal`; change no DTO, code string, public count or other Contracts path.
+9. Add direct tests for every failure class, multiple-error precedence and arithmetic overflow.
+10. Freeze exact wire/path mapping: empty top-level measures/parts and empty notes are `invalid-value`; empty staves/voices and missing/duplicate coverage/reference are `invalid-reference`.
+11. Add a private reserve-fault seam used only by Rust tests: semantic-invalid plus Foundation reserve fault must select `InternalCapacity`, and the Contracts mapper must encode exact existing `bridge.internal`.
 
 ### Focused gate
 
 ```powershell
 cargo +1.97.1 fmt --all -- --check
-cargo +1.97.1 test -p brilliant-score-foundation --locked
-cargo +1.97.1 clippy -p brilliant-score-foundation --all-targets --locked -- -D warnings
+cargo +1.97.1 test -p brilliant-score-foundation -p brilliant-kernel-contracts --locked
+cargo +1.97.1 clippy -p brilliant-score-foundation -p brilliant-kernel-contracts --all-targets --locked -- -D warnings
 ```
 
 ### Commit and rollback
 
 `feat(rkp-2): complete score load validation and exact time arithmetic`
 
-Reverting Stage 2 restores RKP-1 Foundation behavior without touching dependency/tests.
+Reverting Stage 2 restores RKP-1 Foundation validation and Contracts capacity mapping without touching dependency/tests.
 
 ## 4. Stage 3 — Typed records, topology and atomic private import
 
@@ -143,6 +146,7 @@ crates/brilliant-kernel-runtime/src/store.rs
 5. Add private lookup/ownership/topology APIs needed by Stage 4 and tests.
 6. Prove global IDs include document root and no original ScoreDocument field remains in store.
 7. Add private stale-handle remove/reinsert tests; no Node mutation hook.
+8. Add a private Runtime reserve-fault test proving a semantic-valid DTO produces `LiveStoreBuildFailure::InternalCapacity` and zero Runtime construction.
 
 ### Focused gate
 
@@ -215,6 +219,7 @@ test/core-kernel/rust-migration/rkp-2-store-fixtures.ts
 5. Keep Node source untouched and use the existing two create/read exports.
 6. Prove repeated read bytes, detached aliases, optional fields, array order and unknown extensions.
 7. Run valid and invalid RKP-0/TS fixture subsets through native create/read.
+8. Route real Runtime creation through a private Session coordinator/factory seam; in Session unit tests substitute `LiveStoreBuildFailure::InternalCapacity`, assert exact existing `bridge.internal` and no `KernelSession`, then rely on the unchanged RKP-1 Node publish-after-accepted-Session law rather than adding a Node export or production fault hook.
 
 ### Focused gate
 
@@ -284,7 +289,8 @@ Also verify:
 - parent child reference exactly once;
 - exact dependency/features and seven crates;
 - exact two Node exports, 22 failures and public 28/51/8/34/9 inventories;
-- `git diff --name-only IMPLEMENTATION_BASE..HEAD -- src package.json package-lock.json tsconfig.json crates/brilliant-kernel-node crates/brilliant-kernel-contracts crates/brilliant-core-types crates/brilliant-extension-protocol .trellis/spec` is empty except no allowlisted path exists in those protected roots;
+- `git diff --name-only IMPLEMENTATION_BASE..HEAD -- src package.json package-lock.json tsconfig.json crates/brilliant-kernel-node crates/brilliant-core-types crates/brilliant-extension-protocol .trellis/spec` is empty;
+- the Kernel Contracts delta is exactly the optional allowlisted `crates/brilliant-kernel-contracts/src/codec.rs` capacity mapping and no other Contracts path;
 - implementation changed paths equal the literal allowlist subset actually required by the six stages;
 - clean worktree and empty index after evidence commit.
 

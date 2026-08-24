@@ -102,7 +102,7 @@ The session-create pipeline performs this fixed two-capacity-phase sequence:
 
 1. preserve RKP-1 descriptor-first capture, request byte cap, strict JSON/shape/API/schema decoding and failure precedence;
 2. after Foundation exact Score shape decode, pre-count only validation scratch with checked arithmetic and fallibly reserve that scratch;
-3. run deterministic full Foundation semantic validation, after which the existing Contracts seam returns an already validated DTO without any Contracts change;
+3. on checked-count/reserve failure return workspace-internal `FoundationDecodeFailure::InternalCapacity`, which the existing Contracts seam maps to the existing `bridge.internal`; otherwise run deterministic full Foundation semantic validation and return an already validated DTO;
 4. inside Runtime, independently pre-count records, topology edges, reference edges, time entries and store-index capacities with checked arithmetic;
 5. fallibly reserve all Runtime SlotMap/HashMap/Vec store containers before insertion;
 6. build all records, topology and derived indices in canonical input order inside a private builder without ID scans;
@@ -124,6 +124,8 @@ The public stable failure union remains exactly 22 variants. Semantic load failu
 - empty top-level measures/parts and empty `NotesContent.notes` -> `invalid-value`;
 - empty `Part.staves` and `PartMeasureContent.voices` -> `invalid-reference`;
 - other semantic value/arithmetic/namespace/payload violations -> `invalid-value`.
+
+Foundation validation-scratch count/reserve failure is not a semantic load failure. It uses new workspace-internal `FoundationDecodeFailure::InternalCapacity`, mapped by `crates/brilliant-kernel-contracts/src/codec.rs` to the existing `bridge.internal`; it adds no 23rd stable failure. With injected simultaneous semantic-invalid data and Foundation reserve failure, `bridge.internal` wins because reserve precedes semantic traversal. A semantic-valid DTO plus injected Runtime store reserve failure also yields `bridge.internal`; both cases publish zero Runtime/Session/Node handle.
 
 Canonical first-failure order is document ID/metadata, measures in input order, parts and descendants in input order, then extensions in input order. Within one record, `design.md` fixes field order. An impossible builder/index/export parity failure maps to existing `bridge.internal` and publishes no session. No raw Rust error or allocation detail crosses the bridge.
 
@@ -208,7 +210,7 @@ Each stage runs its focused Rust tests before the next. The full Rust and TypeSc
 
 ### RKP2-R017 — Exact implementation ownership
 
-Future production/test/config edits are restricted to the literal allowlist in `design.md` and `research/file-test-and-rollback-matrix.md`. Node source, Contracts DTOs, Core Types, Extension Protocol, TypeScript production, package/tsconfig, active specs and product/plugin paths are protected zero-delta paths.
+Future production/test/config edits are restricted to the literal allowlist in `design.md` and `research/file-test-and-rollback-matrix.md`. Kernel Contracts ownership is limited to `crates/brilliant-kernel-contracts/src/codec.rs`, solely to map `FoundationDecodeFailure::InternalCapacity` to existing `bridge.internal`; Contracts DTO/session files remain protected. Node source, Core Types, Extension Protocol, TypeScript production, package/tsconfig, active specs and product/plugin paths are protected zero-delta paths.
 
 A newly required production path, dependency or public contract returns to planning review before it is edited.
 

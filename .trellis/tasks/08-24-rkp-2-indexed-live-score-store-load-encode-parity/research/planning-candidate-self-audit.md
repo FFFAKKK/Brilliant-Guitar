@@ -2,7 +2,7 @@
 
 ## Result
 
-P0/P1/P2=`0/0/0` self-audit after bounded repair — targeted independent planning rereview remains pending.
+P0/P1/P2=`0/0/0` self-audit after the second bounded repair — second targeted independent planning rereview remains pending.
 
 ## Independent review history
 
@@ -10,6 +10,8 @@ P0/P1/P2=`0/0/0` self-audit after bounded repair — targeted independent planni
 - Dedicated read-only review task: `01a01e48-1934-77b0-821e-a8026cd9e5f7`.
 - Initial verdict: `RETURN FOR BOUNDED PLANNING REPAIR`, P0/P1/P2=`0/5/1`.
 - Repair scope is limited to the dependency graph, two-phase import capacity order, round-trip placement, empty-collection wire mapping, literal planning allowlist and version-pinned slotmap evidence.
+- First targeted rereview candidate: `f4ed2bc505f8b4bfbfd5053b361ccaadb673fea7`; verdict `RETURN FOR BOUNDED PLANNING REPAIR`, P0/P1/P2=`0/1/0`.
+- Its sole direct regression was the absent Foundation validation-scratch capacity channel. The second bounded repair adds workspace-internal `FoundationDecodeFailure::InternalCapacity`, the one-file Contracts mapping to existing `bridge.internal`, exact precedence and two fault-injection contracts without changing the 22 public failures.
 - No production, test, Cargo, package, tsconfig, crate or active-spec path is part of the repair.
 
 ## Scope checks
@@ -42,6 +44,7 @@ P0/P1/P2=`0/0/0` self-audit after bounded repair — targeted independent planni
 
 - Concrete slotmap version/features and sole consumer are fixed.
 - Foundation validation-scratch pre-count/reserve and Runtime store pre-count/reserve are separate, ordered phases; production build/local-check/publish and test-only rebuild/round-trip proof are unambiguous.
+- Capacity precedence and wire mapping are closed: Foundation reserve faults precede semantic traversal; Runtime reserve faults occur only after a validated DTO; both map to existing `bridge.internal` and publish zero session.
 - Voice point/range algorithms and complexity are fixed.
 - Stale-handle proof uses private tests and adds no bridge hook.
 - Representative/stress evidence is structural/liveness only; product budgets are not weakened or claimed.

@@ -38,7 +38,7 @@
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "FORMAL RKP-2 PLANNING CANDIDATE / INITIAL REVIEW 0-5-1 BOUNDED DOCS REPAIR APPLIED / TARGETED INDEPENDENT REREVIEW PENDING / RKP-1 POST-ARCHIVE REPAIR IMPLEMENTATION ACCEPTANCE ARCHIVE REQUIRED BEFORE ACTIVATION / TYPESCRIPT DEFAULT / NO START PRODUCTION CUTOVER PUSH OR QUALIFICATION.",
+  "notes": "FORMAL RKP-2 PLANNING CANDIDATE / INITIAL REVIEW 0-5-1 AND FIRST TARGETED REREVIEW 0-1-0 REPAIRED IN DOCS / SECOND TARGETED INDEPENDENT REREVIEW PENDING / RKP-1 POST-ARCHIVE REPAIR IMPLEMENTATION ACCEPTANCE ARCHIVE REQUIRED BEFORE ACTIVATION / TYPESCRIPT DEFAULT / NO START PRODUCTION CUTOVER PUSH OR QUALIFICATION.",
   "meta": {
     "planning_base_commit": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "accepted_rkp1_audited_implementation_commit": "94387b339b5e4d9ce6b7f97597a1b56edd051f01",
@@ -59,13 +59,21 @@
     "production_implementation_authorized": false,
     "user_implementation_authorization": false,
     "independent_planning_review": "pending",
-    "planning_review_cycle": "bounded_repair_targeted_rereview_pending",
+    "planning_review_cycle": "second_bounded_repair_targeted_rereview_pending",
     "initial_independent_planning_review": {
       "task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
       "candidate_commit": "6a349b6fe166c6551ea2ceb480a44c3b2547407c",
       "P0": 0,
       "P1": 5,
       "P2": 1,
+      "verdict": "return_for_bounded_planning_repair"
+    },
+    "first_targeted_independent_planning_rereview": {
+      "task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
+      "candidate_commit": "f4ed2bc505f8b4bfbfd5053b361ccaadb673fea7",
+      "P0": 0,
+      "P1": 1,
+      "P2": 0,
       "verdict": "return_for_bounded_planning_repair"
     },
     "implementation_review": "not_started",
@@ -101,14 +109,14 @@
     "expected_stable_failure_variant_count": 22,
     "implementation_stage_count": 6,
     "implementation_activation_commit_count": 1,
-    "future_implementation_allowlist_count": 20,
+    "future_implementation_allowlist_count": 21,
     "planning_production_test_cargo_package_tsconfig_delta": "zero",
     "planning_validation": "trellis_child25_check20_parent18_19_product_architecture_json_jsonl_unique_child1_fences_diffcheck_rust40_node9_typecheck_build_protected_delta0_clean_full_546_discovered_543_pass_2_known_repair_fail_1_expected_gc_skip",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
       "P2": 0,
-      "verdict": "bounded_repair_ready_for_targeted_independent_rereview"
+      "verdict": "second_bounded_repair_ready_for_targeted_independent_rereview"
     }
   }
 }

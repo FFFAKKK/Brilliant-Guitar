@@ -2,18 +2,19 @@
 
 ## Requested verdict
 
-`READY FOR TARGETED INDEPENDENT PLANNING REREVIEW` after the bounded docs-only repair commit and refreshed mechanical evidence are recorded.
+`READY FOR SECOND TARGETED INDEPENDENT PLANNING REREVIEW` after the direct-regression docs-only repair commit and refreshed mechanical evidence are recorded.
 
-The first independent review of `6a349b6fe166c6551ea2ceb480a44c3b2547407c` returned `RETURN FOR BOUNDED PLANNING REPAIR`, P0/P1/P2=`0/5/1`. Review the new exact planning HEAD read-only and verify the six repairs plus direct regressions. Do not start implementation, archive, push, run official qualification or create RKP-3.
+The first independent review of `6a349b6fe166c6551ea2ceb480a44c3b2547407c` returned P0/P1/P2=`0/5/1`. The targeted rereview of `f4ed2bc505f8b4bfbfd5053b361ccaadb673fea7` verified those six fixes but returned `0/1/0` for one direct capacity-mapping regression. Review the new exact planning HEAD read-only and verify that single repair plus all prior direct regressions. Do not start implementation, archive, push, run official qualification or create RKP-3.
 
 ## Bounded repair under rereview
 
 1. The authority dependency graph now uses the complete consumer-to-dependency arrows, each labeled `depends on`, including Runtime/Session dependencies on Extension Protocol and the future Tauri-to-Session edge; Tauri remains out of RKP-2 implementation scope.
-2. Atomic import now has two explicit capacity phases: Foundation validation scratch after shape decode, then Runtime store containers after Contracts returns the validated DTO; Contracts remains protected.
+2. Atomic import has two explicit capacity phases. Foundation adds pathless workspace-internal `InternalCapacity`; the single allowlisted Contracts codec maps it to existing `bridge.internal`; Runtime capacity uses its private internal failure. The stable failure union remains 22.
 3. Full export/encode/decode/encode round-trip is a test/differential acceptance proof, not a normal production publication prerequisite.
 4. Empty-collection failure mapping is frozen per existing wire behavior: top-level measures/parts and notes use `invalid-value`; staves/voices and coverage/reference use `invalid-reference`.
 5. The planning allowlist enumerates exactly 13 task files plus three Rust-parent files; no task-directory wildcard remains.
 6. All slotmap evidence URLs are pinned to documentation version `1.1.1`.
+7. Failure order is now codec/API/schema -> Foundation scratch capacity -> Foundation semantic -> Runtime store capacity/local checks -> created; the two reserve-fault matrices select exact existing `bridge.internal` and publish zero session/handle.
 
 ## Review focus
 
@@ -24,7 +25,7 @@ The first independent review of `6a349b6fe166c6551ea2ceb480a44c3b2547407c` retur
 5. Complete scalar record/topology model, including non-entity PartMeasureContent.
 6. Entity/owner/content/time/extension/reference indices and claimed complexity.
 7. Exact Fraction/duration/time-range correctness without ticks/floats.
-8. Two-phase Foundation-validation/Runtime-store pre-count and reserve, followed by build/local checks/publication and zero-session rejection.
+8. Two-phase Foundation-validation/Runtime-store pre-count and reserve, explicit internal-capacity mappings, followed by build/local checks/publication and zero-session rejection.
 9. Deterministic full-validation order plus mapping into the unchanged 22 failures.
 10. Canonical/lossless export, unknown extensions and index normalized parity.
 11. Public `28/51/8/34/9`, two Node exports, TypeScript default and resource-cap freeze.

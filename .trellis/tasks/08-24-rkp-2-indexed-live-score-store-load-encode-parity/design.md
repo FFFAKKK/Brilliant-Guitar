@@ -279,10 +279,13 @@ capture/request bytes
 → UTF-8/JSON/depth/property
 → exact shape/tag/safe number
 → API/schema
+→ Foundation validation-scratch checked-count/reserve
 → Foundation semantic first failure
-→ capacity/internal index/export parity
+→ Runtime store checked-count/reserve/local checks
 → created
 ```
+
+Capacity failures do not masquerade as semantic failures. A Foundation scratch count/reserve failure precedes semantic traversal and therefore wins over any latent semantic fault in the same decoded DTO. A Foundation semantic failure prevents Runtime construction entirely. Runtime store capacity/local-check failures are reachable only after Foundation validation succeeds.
 
 Response-size failure occurs only when an accepted session is read/encoded. It does not destroy or mutate that session.
 
@@ -290,11 +293,17 @@ Response-size failure occurs only when an accepted session is read/encoded. It d
 
 ### 8.1 Foundation validation-capacity phase
 
-After exact Score shape decode has produced a transient `ScoreDocumentV1`, Foundation performs a read-only canonical pre-count for the maps/vectors needed by full semantic validation. All additions and conversions use checked arithmetic. Foundation then fallibly reserves only this validation scratch before running the deterministic full validator. `decode_score_document_value` retains its current public-to-workspace role and returns only an already validated DTO; Kernel Contracts remains zero-delta and does not acquire a second validation seam.
+After exact Score shape decode has produced a transient `ScoreDocumentV1`, Foundation performs a read-only canonical pre-count for the maps/vectors needed by full semantic validation. All additions and conversions use checked arithmetic. Foundation then fallibly reserves only this validation scratch before running the deterministic full validator. `decode_score_document_value` retains its current signature and returns only an already validated DTO.
+
+Validation scratch uses pre-sized `HashSet`/`HashMap` entries with borrowed StableId/namespace/owner keys plus exact-size `Vec` worklists where traversal requires one. It replaces the current allocation-per-node `BTreeSet<String>` pattern, clones no StableId string merely for membership, never derives diagnostics from hash iteration, and invokes `try_reserve` on every scratch collection before its first insertion. A private `#[cfg(test)]` reservation adapter can force a reserve error; production always calls the real standard-library reserve path, and no environment flag, Node export or public fault hook is added.
+
+`FoundationDecodeFailure` keeps its five existing shape/semantic variants and adds exactly one workspace-internal `InternalCapacity` variant with no path, allocator detail or payload. Kernel Contracts keeps the existing decode seam and maps only that new internal variant to existing `StableFailureV1::BridgeInternal`. This changes no public DTO, discriminant or failure count: the stable union remains exactly 22. No other Kernel Contracts code is owned by RKP-2.
 
 ### 8.2 Runtime store-capacity phase
 
 After Contracts returns the already validated DTO, Runtime independently pre-counts exact record, topology, reference-edge, time-entry and store-index capacities. It fallibly reserves all target SlotMaps, HashMaps and Vecs before inserting records. Per-voice/per-parent vectors reserve their exact child count when created. A checked-count or reserve failure returns private `LiveStoreBuildFailure::InternalCapacity`, later mapped to `bridge.internal`. Runtime never assumes the Foundation scratch reservation also reserves store capacity.
+
+Runtime's store builder has a private Rust-test reservation adapter analogous to Foundation's. Session routes real construction through one private coordinator that accepts the production Runtime factory; Session unit tests substitute a failing factory and prove `LiveStoreBuildFailure::InternalCapacity -> StableFailureV1::BridgeInternal` with no `KernelSession` value. Neither seam is exported from its crate's public application surface. The existing unchanged Node rule—wrap/table publication occurs only after Session returns accepted—then proves zero Node handle without a Node fault-injection API.
 
 ### 8.3 Build
 
@@ -398,6 +407,8 @@ The representative/stress worker has a 180-second liveness guard and reports ela
 - deterministic first failure and exact path for every mapping class;
 - exact wire/path assertions freezing empty top-level measures/parts and empty notes as `invalid-value`;
 - exact wire/path assertions freezing empty staves/voices and missing/duplicate coverage/reference as `invalid-reference`;
+- private Foundation reserve-fault injection on a semantic-invalid DTO returns `FoundationDecodeFailure::InternalCapacity` before semantic traversal;
+- Contracts maps `FoundationDecodeFailure::InternalCapacity` to exact existing `bridge.internal` bytes with no new stable variant;
 - measure coverage, staff/event references, sequence bounds;
 - extension namespace/version/owner/duplicate/payload cases.
 
@@ -420,6 +431,8 @@ The representative/stress worker has a 180-second liveness guard and reports ela
 - repeated read exact bytes and detached input/output aliases;
 - valid RKP-0 representative fixtures canonical parity;
 - invalid create yields no handle;
+- private Runtime/Session fault tests map semantic-valid DTO plus Runtime reserve failure to exact `bridge.internal` and construct zero Runtime/Session;
+- unchanged RKP-1 Node publish-after-accepted-Session characterization closes zero Node-handle publication without a Node fault hook;
 - exact two Node exports and 22 stable failures;
 - request/response/depth/property/safe-number caps unchanged;
 - 102,400-event load/export diagnostic worker completes with linear counters;
@@ -461,6 +474,7 @@ crates/brilliant-score-foundation/src/lib.rs
 crates/brilliant-score-foundation/src/codec.rs
 crates/brilliant-score-foundation/src/fraction.rs
 crates/brilliant-score-foundation/src/validation.rs
+crates/brilliant-kernel-contracts/src/codec.rs
 crates/brilliant-kernel-runtime/Cargo.toml
 crates/brilliant-kernel-runtime/src/lib.rs
 crates/brilliant-kernel-runtime/src/smoke_runtime.rs              # delete
@@ -489,7 +503,7 @@ Only these task/coordination paths may change during implementation:
 
 The PRD, design, implement plan, JSONL manifests and planning research stay zero-delta during implementation. New task-local `research/implementation-evidence.md` is created only at implementation Stage 6.
 
-Protected examples include all `src/**`, all other `test/**`, `package*.json`, `tsconfig.json`, `rust-toolchain.toml`, `rustfmt.toml`, Core Types, Contracts, Extension Protocol, Node source, active specs, CVN tasks, Guitar/product/plugin paths and qualification code.
+Protected examples include all `src/**`, all other `test/**`, `package*.json`, `tsconfig.json`, `rust-toolchain.toml`, `rustfmt.toml`, Core Types, all Kernel Contracts paths except the single allowlisted `crates/brilliant-kernel-contracts/src/codec.rs` mapping, Extension Protocol, Node source, active specs, CVN tasks, Guitar/product/plugin paths and qualification code.
 
 ## 15. Rollout and rollback
 
