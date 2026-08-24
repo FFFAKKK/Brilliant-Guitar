@@ -44,7 +44,7 @@
     ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "RKP-1 INDEPENDENT IMPLEMENTATION REREVIEW PASSED P0/P1/P2 0/0/0 AT AUDITED HEAD 94387B3 / TECHNICALLY ACCEPTABLE FOR OWNER CLOSEOUT / ARCHIVE AUTHORIZED AND PENDING SAME CLOSEOUT / TYPESCRIPT DEFAULT / NO PUSH OFFICIAL QUALIFICATION DEFAULT CUTOVER OR RKP-2.",
+  "notes": "RKP-1 INDEPENDENT IMPLEMENTATION REREVIEW PASSED P0/P1/P2 0/0/0 AT AUDITED HEAD 94387B3 / ACCEPTED AND ARCHIVED AT 08792D52 / JOURNALED AT 84439608 / POST-ARCHIVE WORKSPACE-CONTRACT REPAIR ACTIVE WITH FULL GATES PENDING / TYPESCRIPT DEFAULT / NO PUSH OFFICIAL QUALIFICATION DEFAULT CUTOVER OR RKP-2 IMPLEMENTATION.",
   "meta": {
     "planning_base_commit": "463c8514a61a61a39c8a5d2736261ae9e82b0fba",
     "required_ancestor_commit": "463c8514a61a61a39c8a5d2736261ae9e82b0fba",
@@ -186,7 +186,7 @@
     "expected_contribution_abi_field_count": 9,
     "expected_persisted_schema": "brilliant-score-1",
     "expected_planning_full_test_count": 531,
-    "current_planning_stage": "implementation_accepted_archive_pending_same_closeout",
+    "current_planning_stage": "accepted_archived",
     "current_implementation_child": null,
     "future_rkp_children_created": false,
     "planning_production_test_build_cargo_crates_delta": "zero",
@@ -226,9 +226,17 @@
     "bounded_planning_repair_required": false,
     "planning_repair_production_test_delta": "zero_relative_to_669364128cd4402a478f247393908ff170112794",
     "implementation_review_required_after_repair": false,
-    "implementation_closeout_state": "accepted_archive_pending_same_closeout",
+    "implementation_closeout_state": "accepted_archived",
     "archive_path": ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/",
     "phase_3_3_spec_sync_decision": "no_active_spec_change_in_rkp1_closeout_task_archive_remains_authority_and_future_rkp2_planning_input_any_later_active_spec_promotion_requires_separate_docs_only_authority_spec_sync",
+    "post_archive_workspace_contract_repair": {
+      "task": "08-24-rkp-1-post-archive-workspace-contract-authority-repair",
+      "accepted_planning_head": "f7fecdcf7f2194b978ff2841b7913b670a2f7f8f",
+      "activation_commit": "716a9113f8961953ccf848191b4edabc15ab4a62",
+      "test_repair_commit": "ce4e32d59ec72626e1ab8358632d46be35fe647e",
+      "historical_interval": "89115daedc623c0d35386a4a433cc7fd95215223..94387b339b5e4d9ce6b7f97597a1b56edd051f01",
+      "status": "authority_sync_complete_full_verification_pending"
+    },
     "four_p1_bounded_implementation_repair": {
       "audit_task": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
       "rejected_candidate": "efe3bbc9852aef2cf7949c3ae221218b1c2590dd",

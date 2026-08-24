@@ -2,9 +2,9 @@
 
 ## Verdict requested
 
-`READY FOR TARGETED INDEPENDENT PLANNING REREVIEW R2`
+`IMPLEMENTATION IN PROGRESS / FULL VERIFICATION REQUIRED`
 
-Review the exact bounded-repair docs-only commit and report P0/P1/P2. The first review returned `0/3/0`; targeted rereview R1 of `47a32d26909bbe3550c5858cd4d4ea793ec68a16` returned `0/1/0` on the aggregate rollback destination only. R2 is limited to that correction and direct regressions. Keep the review read-only; task activation, implementation, acceptance, archive, push, RKP-2 creation and official qualification remain outside this review.
+Final targeted planning rereview R2 passed P0/P1/P2=`0/0/0` at `f7fecdcf7f2194b978ff2841b7913b670a2f7f8f`. Activation `716a9113f8961953ccf848191b4edabc15ab4a62`, isolated workspace-contract test repair `ce4e32d59ec72626e1ab8358632d46be35fe647e` and authority synchronization are complete. Candidate readiness remains false until all Stage 4 gates and the long RKP-2 planning-worktree focused rerun pass. Acceptance, archive, push, RKP-2 implementation and official qualification remain outside this implementation candidate.
 
 ## Review focus
 

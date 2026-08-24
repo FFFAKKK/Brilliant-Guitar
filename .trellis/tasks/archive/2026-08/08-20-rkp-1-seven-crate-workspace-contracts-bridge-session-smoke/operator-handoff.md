@@ -2,11 +2,11 @@
 
 ## Current status
 
-`RKP-1 IMPLEMENTATION TECHNICALLY ACCEPTABLE FOR OWNER CLOSEOUT`.
+`RKP-1 ACCEPTED / ARCHIVED`.
 
 Independent auditor task `01a01e48-1934-77b0-821e-a8026cd9e5f7` returned final P0/P1/P2=`0/0/0` for exact audited implementation commit `94387b339b5e4d9ce6b7f97597a1b56edd051f01`. Later accepted-review, archive and journal commits are lifecycle-only and must not be presented as re-audited production candidates.
 
-Before `task.py archive`, the child remains `in_progress`; `task_start_run=true` and `production_implementation_authorized=true` retain their historical values; `implementation_candidate_ready=true`, repair inactive, implementation review/rereview passed and blocker null. Archive is authorized for this closeout. TypeScript remains the product default, and the 40 implementation paths plus seven accepted planning-only paths remain exact. Push, official CVN-7 measurement, default cutover and RKP-2+ creation/activation remain unauthorized.
+The child is `completed` at the archive path; `task_start_run=true` and `production_implementation_authorized=true` retain their historical values, implementation review/rereview passed and blocker null. TypeScript remains the product default, and the 40 implementation paths plus seven accepted planning-only paths remain exact. Push, official CVN-7 measurement, default cutover and RKP-2 implementation remain unauthorized.
 
 ## Commit chain and rollback points
 
@@ -52,3 +52,5 @@ The pre-repair full result remains recorded as `541/542`, and the historical-bou
 Archive this child only through the native Trellis command. Preserve `94387b339b5e4d9ce6b7f97597a1b56edd051f01` as the audited implementation commit, retain the child once in the parent's `children` array, and clear active/current child projections. The archive target is `.trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/`; the next gate is only `rkp2-planning-creation`, not RKP-2 implementation authorization.
 
 Phase 3.3 adds no active `.trellis/spec/**` change. RKP-1-specific rules remain in the archived task for future RKP-2 planning; any promotion to active specs requires a separate docs-only authority/spec-sync.
+
+The separately gated post-archive workspace-contract repair is active at planning HEAD `f7fecdcf7f2194b978ff2841b7913b670a2f7f8f`. Activation commit `716a9113f8961953ccf848191b4edabc15ab4a62` and isolated test commit `ce4e32d59ec72626e1ab8358632d46be35fe647e` freeze the historical interval and read current lifecycle facts from this archive. Full gates and independent implementation review remain pending; RKP-2 production stays paused.

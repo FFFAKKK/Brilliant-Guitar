@@ -33,7 +33,7 @@
     "test/core-kernel/rust-migration/rkp-1-workspace-contracts.test.ts",
     ".trellis/tasks/08-24-rkp-1-post-archive-workspace-contract-authority-repair/research/bounded-planning-repair-r1.md"
   ],
-  "notes": "FINAL TARGETED PLANNING REREVIEW R2 PASSED 0/0/0 AT F7FECDCF / USER AUTHORIZED BOUNDED REPAIR IMPLEMENTATION / ACTIVATION IN PROGRESS / CANDIDATE NOT READY / TYPESCRIPT DEFAULT / RKP-2 PRODUCTION PAUSED / NO ACCEPT ARCHIVE PUSH CUTOVER OR QUALIFICATION.",
+  "notes": "FINAL TARGETED PLANNING REREVIEW R2 PASSED 0/0/0 AT F7FECDCF / ACTIVATION TEST REPAIR AND AUTHORITY SYNC COMPLETE / FULL VERIFICATION PENDING / CANDIDATE NOT READY / TYPESCRIPT DEFAULT / RKP-2 PRODUCTION PAUSED / NO ACCEPT ARCHIVE PUSH CUTOVER OR QUALIFICATION.",
   "meta": {
     "planning_base_commit": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "audited_rkp1_implementation_commit": "94387b339b5e4d9ce6b7f97597a1b56edd051f01",
@@ -65,7 +65,10 @@
     },
     "planning_review_cycle": "bounded_repair_r2_targeted_rereview_passed",
     "accepted_planning_head": "f7fecdcf7f2194b978ff2841b7913b670a2f7f8f",
-    "current_implementation_stage": "stage_1_activation",
+    "current_implementation_stage": "stage_3_authority_sync_complete_full_verification_pending",
+    "activation_commit": "716a9113f8961953ccf848191b4edabc15ab4a62",
+    "test_repair_commit": "ce4e32d59ec72626e1ab8358632d46be35fe647e",
+    "focused_workspace_contract_result": "6_of_6_repair_worktree",
     "final_targeted_independent_planning_rereview_r2": {
       "task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
       "P0": 0,

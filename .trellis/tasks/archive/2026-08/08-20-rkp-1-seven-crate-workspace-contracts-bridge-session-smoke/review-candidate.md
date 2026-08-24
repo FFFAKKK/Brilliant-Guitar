@@ -2,7 +2,7 @@
 
 ## Final verdict
 
-Current status: `RKP-1 IMPLEMENTATION TECHNICALLY ACCEPTABLE FOR OWNER CLOSEOUT`.
+Current status: `RKP-1 ACCEPTED / ARCHIVED`.
 
 Independent auditor task `01a01e48-1934-77b0-821e-a8026cd9e5f7` returned final P0/P1/P2=`0/0/0` for exact audited implementation commit `94387b339b5e4d9ce6b7f97597a1b56edd051f01`. That commit remains the technical candidate boundary; this document and later archive/journal commits are lifecycle-only and do not claim renewed technical audit coverage.
 
@@ -67,3 +67,7 @@ The 40 implementation paths and seven accepted planning-only paths remain exact.
 The independent verdict applies exactly to `94387b339b5e4d9ce6b7f97597a1b56edd051f01`: Rust `40/40`; Contracts/Foundation `16/16`; Windows dual-loader smoke; dedicated `--expose-gc` `9/9`; workspace-law `6/6`; TypeScript `545` passed, one expected ordinary-run GC skip and zero failed; clean `core.autocrlf=true/false` clones; exact 40 implementation plus seven accepted planning-only paths; clean worktree and empty staging.
 
 Phase 3.3 decision: this closeout adds no `.trellis/spec/**` rule. RKP-1-specific rules remain authoritative in the archived task and are inputs to future RKP-2 planning. Any later promotion into active specifications requires a separate docs-only authority/spec-sync task and must not be folded into this closeout.
+
+## Post-archive workspace-contract repair
+
+The bounded repair task `08-24-rkp-1-post-archive-workspace-contract-authority-repair` preserves this archive as current lifecycle authority while freezing historical implementation evidence to `89115daedc623c0d35386a4a433cc7fd95215223..94387b339b5e4d9ce6b7f97597a1b56edd051f01`. Planning HEAD `f7fecdcf7f2194b978ff2841b7913b670a2f7f8f` passed independent review P0/P1/P2=`0/0/0`; activation `716a9113f8961953ccf848191b4edabc15ab4a62` and isolated test repair `ce4e32d59ec72626e1ab8358632d46be35fe647e` are complete. Full implementation verification and independent review remain pending; this appendix does not reopen or replace the audited RKP-1 implementation commit.
