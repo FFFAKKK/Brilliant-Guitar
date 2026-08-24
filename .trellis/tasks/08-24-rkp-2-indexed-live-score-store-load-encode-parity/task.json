@@ -38,7 +38,7 @@
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "RKP-2 PLANNING PASS 0-0-0 AT 625054E / APPROVED PLANNING STATE 53646C9 INTEGRATED WITH ACCEPTED REPAIR CLOSEOUT B5D6300 AT CLEAN UNIFIED BASE DF40AEF / TASK.PY START RUN / ACTIVATION COMMIT 0 ONLY / STAGE 1 NOT STARTED / TYPESCRIPT DEFAULT / NO CUTOVER PUSH QUALIFICATION ARCHIVE RKP-3.",
+  "notes": "RKP-2 PLANNING PASS 0-0-0 AT 625054E / CLEAN UNIFIED BASE DF40AEF / ACTIVATION E10C7DC / STAGE 1 DEPENDENCY AND EXECUTABLE CONTRACT SKELETON COMPLETE / STAGE 2 NOT STARTED OR AUTHORIZED / TYPESCRIPT DEFAULT / CANDIDATE NOT READY / NO CUTOVER PUSH QUALIFICATION ARCHIVE RKP-3.",
   "meta": {
     "planning_base_commit": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "accepted_rkp1_audited_implementation_commit": "94387b339b5e4d9ce6b7f97597a1b56edd051f01",
@@ -64,7 +64,7 @@
     "task_start_run": true,
     "production_implementation_authorized": true,
     "user_implementation_authorization": true,
-    "user_authorization_scope": "activation_commit_0_only_this_turn_stage_1_not_started",
+    "user_authorization_scope": "stage_1_only_stage_2_not_authorized",
     "independent_planning_review": "passed",
     "planning_review_cycle": "final_targeted_rereview_passed",
     "initial_independent_planning_review": {
@@ -100,8 +100,15 @@
       "verdict": "pass"
     },
     "approved_planning_head": "625054ec78e6410e0fb6034ab0c8f60bbf110d08",
-    "implementation_stage": "activation_commit_0_complete_stage_1_ready",
-    "stage_1_started": false,
+    "implementation_stage": "stage_1_complete_stage_2_not_started",
+    "stage_1_started": true,
+    "stage_1_completed": true,
+    "stage_1_commit_subject": "build(rkp-2): pin typed generational store dependency",
+    "stage_1_dependency": "slotmap_exact_1_1_1_runtime_only_default_std_no_serde_no_unstable",
+    "stage_1_contract_test_result": "6_of_6",
+    "stage_1_rust_result": "40_of_40_fmt_check_clippy_msrv_pass",
+    "stage_1_node_regression": "rkp1_node_9_of_9_workspace_law_6_of_6",
+    "stage_2_started": false,
     "implementation_review": "pending",
     "implementation_candidate_ready": false,
     "archive_authorized": false,

@@ -2,7 +2,7 @@
 
 ## Current status
 
-`STAGE 1 IMPLEMENTATION READY — ACTIVATION COMMIT 0 ONLY`.
+`STAGE 1 COMPLETE — STAGE 2 NOT STARTED`.
 
 - Branch: `codex/rkp-2-indexed-live-score-store-implementation`.
 - Worktree: `.worktrees/rkp-2-indexed-live-score-store-implementation`.
@@ -14,7 +14,7 @@
 - Clean unified implementation base: `df40aef391440ae64ad3e266419579bee5887a1f`.
 - Independent planning review: P0/P1/P2=`0/0/0` in dedicated task `01a01e48-1934-77b0-821e-a8026cd9e5f7`.
 - State: `in_progress`, `task_start_run=true`, `production_implementation_authorized=true`, `user_implementation_authorization=true`, `implementation_candidate_ready=false`.
-- Authorization in this turn stops after Activation Commit 0; Stage 1 production/test work has not started.
+- Stage 1 authorization is consumed; Stage 2 is not started or authorized.
 - TypeScript is the default runtime.
 
 ## What this plan delivers
@@ -42,9 +42,15 @@ The initial RKP-2 planning review of `6a349b6...` returned `0/5/1`; `f4ed2bc...`
 
 The parent was resolved field by field: RKP-0, RKP-1, the post-archive repair and RKP-2 each remain referenced exactly once. RKP-2 is now the sole current/active implementation child.
 
+## Stage 1 checkpoint
+
+Stage 1 pins workspace `slotmap = "=1.1.1"`, consumed only through `slotmap.workspace = true` in Runtime. Cargo metadata resolves features exactly `default,std`; neither `serde` nor `unstable` is enabled. The executable RKP-2 workspace law passes `6/6` and freezes the literal allowlists, seven-crate graph, Runtime-only dependency, RuntimeHandle boundary, exact two Node exports, 22 stable failures, TypeScript default and public `28/51/8/34/9`. Deterministic fixture helpers contain no store-dependent assertion or production implementation.
+
+Rust fmt/check/test `40/40`/clippy/MSRV, existing Node bridge `9/9`, RKP-1 workspace-law `6/6`, TypeScript typecheck/build and the focused RKP-2 test pass. The full TypeScript suite is rerun at the clean committed Stage 1 HEAD because its RKP-0 lifecycle guard intentionally rejects any dirty worktree.
+
 ## Next operator action
 
-Start Stage 1 only in a later authorized continuation and follow `implement.md` exactly. The activation baseline already passed Rust `40/40`, fmt/check/clippy/MSRV, Windows dual-loader and exact-two-export probes, Node bridge `9/9`, workspace-law `6/6`, TypeScript typecheck/build and full `546` discovery with `545` pass, one expected GC skip and zero failures. Stop after every stage gate. A new file/dependency/public shape outside the approved matrix returns to planning review.
+Do not start Stage 2 without a later explicit user continuation. Stage 2 is the Foundation exact-time/load-validation commit in `implement.md`; a new file/dependency/public shape outside the approved matrix returns to planning review.
 
 ## Audit and closeout
 

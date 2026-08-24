@@ -44,7 +44,7 @@
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RKP-0 RKP-1 AND RKP-1 POST-ARCHIVE REPAIR ACCEPTED ARCHIVED / RKP-2 APPROVED PLANNING HISTORY INTEGRATED AT CLEAN UNIFIED BASE DF40AEF / RKP-2 IS THE SOLE CURRENT AND ACTIVE IMPLEMENTATION CHILD / ACTIVATION COMMIT 0 ONLY AND STAGE 1 NOT STARTED / TYPESCRIPT DEFAULT / NO CUTOVER PUSH QUALIFICATION ARCHIVE OR RKP-3.",
+  "notes": "RKP-0 RKP-1 AND POST-ARCHIVE REPAIR ACCEPTED ARCHIVED / RKP-2 SOLE CURRENT AND ACTIVE IMPLEMENTATION CHILD / ACTIVATION E10C7DC AND STAGE 1 DEPENDENCY CONTRACT SKELETON COMPLETE / STAGE 2 NOT STARTED OR AUTHORIZED / TYPESCRIPT DEFAULT / CANDIDATE NOT READY / NO CUTOVER PUSH QUALIFICATION ARCHIVE OR RKP-3.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
@@ -92,7 +92,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "rkp2-stage-1-dependency-and-contract-skeleton",
+    "next_gate": "rkp2-stage-2-foundation-exact-time-and-load-validation-authorization",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -197,7 +197,7 @@
     "rkp2_implementation_authorized": true,
     "rkp2_user_implementation_authorization": true,
     "rkp2_created": true,
-    "rkp2_status": "in_progress_activation_commit_0_stage_1_ready",
+    "rkp2_status": "in_progress_stage_1_complete_stage_2_not_started",
     "rkp2_task": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
     "rkp2_planning_base": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "rkp2_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -206,7 +206,12 @@
     "rkp2_implementation_base_commit": "df40aef391440ae64ad3e266419579bee5887a1f",
     "rkp2_task_start_run": true,
     "rkp2_activation_commit_0_complete": true,
-    "rkp2_stage_1_started": false,
+    "rkp2_stage_1_started": true,
+    "rkp2_stage_1_completed": true,
+    "rkp2_stage_1_commit_subject": "build(rkp-2): pin typed generational store dependency",
+    "rkp2_stage_1_dependency": "slotmap_exact_1_1_1_runtime_only_default_std_no_serde_no_unstable",
+    "rkp2_stage_2_started": false,
+    "rkp2_stage_2_authorized": false,
     "rkp2_implementation_candidate_ready": false,
     "rkp2_implementation_review": "pending",
     "rkp2_default_runtime": "typescript",

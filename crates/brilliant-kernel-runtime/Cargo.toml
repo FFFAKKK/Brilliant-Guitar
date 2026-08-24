@@ -14,3 +14,4 @@ brilliant-core-types = { path = "../brilliant-core-types" }
 brilliant-score-foundation = { path = "../brilliant-score-foundation" }
 brilliant-extension-protocol = { path = "../brilliant-extension-protocol" }
 brilliant-kernel-contracts = { path = "../brilliant-kernel-contracts" }
+slotmap.workspace = true
