@@ -474,22 +474,23 @@ function validateAuthorityProjectionFixture(
   }
 }
 
-type PlannedTestEvent = Readonly<{
-  type: string;
+type PlannedRunnerSignal = Readonly<{
+  type:
+    | "test:pass"
+    | "test:fail"
+    | "test:interrupted"
+    | "stream:error"
+    | "stream:abort"
+    | "stream:premature-close"
+    | "stream:end"
+    | "reporter:failure"
+    | "reporter:flush";
   data?: Readonly<{
     nesting?: unknown;
     file?: unknown;
     name?: unknown;
     details?: Readonly<{ type?: string }>;
   }>;
-}>;
-
-type PlannedStreamState = Readonly<{
-  ended: boolean;
-  errored?: boolean;
-  aborted?: boolean;
-  prematureClose?: boolean;
-  reporterFlushed: boolean;
 }>;
 
 function normalizedAbsolute(path: string): string {
@@ -499,8 +500,7 @@ function normalizedAbsolute(path: string): string {
 function evaluatePlannedFileCoverage(
   manifestFiles: readonly string[],
   runFiles: readonly string[],
-  events: readonly PlannedTestEvent[],
-  state: PlannedStreamState,
+  signals: readonly PlannedRunnerSignal[],
 ): string {
   const normalizedManifestFiles = manifestFiles.map(normalizedAbsolute);
   const normalizedRunFiles = runFiles.map(normalizedAbsolute);
@@ -512,25 +512,60 @@ function evaluatePlannedFileCoverage(
   }
   const manifest = new Set(normalizedManifestFiles);
   const seenManifestFiles = new Set<string>();
-  for (const event of events) {
-    if (event.type === "test:interrupted") return "runner.test-interrupted";
-    if (event.type === "test:fail") return "runner.test-failed";
-    if (event.type !== "test:pass") continue;
+  let firstFailure: string | undefined;
+  let ended = false;
+  let reporterFlushed = false;
+  const fail = (code: string): void => {
+    firstFailure ??= code;
+  };
 
-    const file = event.data?.file;
-    if (typeof file !== "string" || file.length === 0 || !isAbsolute(file)) {
-      return "runner.outcome-path-missing";
+  for (const signal of signals) {
+    switch (signal.type) {
+      case "test:pass": {
+        const file = signal.data?.file;
+        if (typeof file !== "string" || file.length === 0 || !isAbsolute(file)) {
+          fail("runner.outcome-path-missing");
+          break;
+        }
+        const normalizedFile = normalizedAbsolute(file);
+        if (!manifest.has(normalizedFile)) {
+          fail("runner.outcome-unknown");
+          break;
+        }
+        seenManifestFiles.add(normalizedFile);
+        break;
+      }
+      case "test:fail":
+        fail("runner.test-failed");
+        break;
+      case "test:interrupted":
+        fail("runner.test-interrupted");
+        break;
+      case "stream:error":
+        fail("runner.stream-error");
+        break;
+      case "stream:abort":
+        fail("runner.stream-aborted");
+        break;
+      case "stream:premature-close":
+        fail("runner.stream-incomplete");
+        break;
+      case "stream:end":
+        ended = true;
+        break;
+      case "reporter:failure":
+        fail("runner.reporter-failed");
+        break;
+      case "reporter:flush":
+        if (!ended) fail("runner.stream-incomplete");
+        reporterFlushed = true;
+        break;
     }
-    const normalizedFile = normalizedAbsolute(file);
-    if (!manifest.has(normalizedFile)) return "runner.outcome-unknown";
-    seenManifestFiles.add(normalizedFile);
   }
-  if (state.errored === true) return "runner.stream-error";
-  if (state.aborted === true) return "runner.stream-aborted";
-  if (state.prematureClose === true || !state.ended) {
-    return "runner.stream-incomplete";
-  }
-  if (!state.reporterFlushed) return "runner.reporter-flush-failed";
+
+  if (firstFailure !== undefined) return firstFailure;
+  if (!ended) return "runner.stream-incomplete";
+  if (!reporterFlushed) return "runner.reporter-flush-failed";
   if (seenManifestFiles.size !== manifest.size) return "runner.outcome-missing";
   return "ok";
 }
@@ -733,8 +768,7 @@ async function assertCrossVersionOutcomeFixtures(): Promise<void> {
   const second = resolve("dist/test/nested/beta.test.js");
   const manifest = [first, second];
   const runFiles = [...manifest];
-  const ended = { ended: true, reporterFlushed: true } as const;
-  const passEvents: readonly PlannedTestEvent[] = [
+  const passSignals: readonly PlannedRunnerSignal[] = [
     {
       type: "test:pass",
       data: { nesting: 0, file: first, name: "internal alpha pass" },
@@ -748,127 +782,159 @@ async function assertCrossVersionOutcomeFixtures(): Promise<void> {
       data: { nesting: -1, file: second, name: "opaque beta title" },
     },
   ];
-  assert.equal(
-    evaluatePlannedFileCoverage(manifest, runFiles, passEvents, ended),
-    "ok",
-  );
-  assert.equal(
-    evaluatePlannedFileCoverage(
-      manifest,
-      runFiles,
-      [{ type: "test:fail", data: { nesting: 4 } }, ...passEvents],
-      ended,
-    ),
+  const complete = (
+    signals: readonly PlannedRunnerSignal[],
+  ): readonly PlannedRunnerSignal[] => [
+    ...signals,
+    { type: "stream:end" },
+    { type: "reporter:flush" },
+  ];
+  const assertOutcome = (
+    signals: readonly PlannedRunnerSignal[],
+    expected: string,
+  ): void => {
+    assert.equal(evaluatePlannedFileCoverage(manifest, runFiles, signals), expected);
+  };
+
+  assertOutcome(complete(passSignals), "ok");
+  assertOutcome(
+    complete([{ type: "test:fail", data: { nesting: 4 } }, ...passSignals]),
     "runner.test-failed",
   );
-  assert.equal(
-    evaluatePlannedFileCoverage(
-      manifest,
-      runFiles,
-      [{ type: "test:interrupted", data: { nesting: 0 } }, ...passEvents],
-      ended,
-    ),
+  assertOutcome(
+    complete([{ type: "test:fail", data: { nesting: 0 } }, ...passSignals]),
+    "runner.test-failed",
+  );
+  assertOutcome(
+    complete([{ type: "test:interrupted", data: { nesting: 0 } }, ...passSignals]),
     "runner.test-interrupted",
   );
-  assert.equal(
-    evaluatePlannedFileCoverage(
-      manifest,
-      runFiles,
-      [
-        { type: "test:complete", data: { nesting: 0, file: first } },
-        {
-          type: "diagnostic",
-          data: { nesting: 0, file: second, details: { type: "pass" } },
-        },
-      ],
-      ended,
-    ),
-    "runner.outcome-missing",
-  );
-  assert.equal(
-    evaluatePlannedFileCoverage(
-      manifest,
-      runFiles,
-      [...passEvents, passEvents[0]!],
-      ended,
-    ),
+  assertOutcome(complete([...passSignals, passSignals[0]!]), "ok");
+  assertOutcome(complete(passSignals.slice(0, 2)), "runner.outcome-missing");
+  assertOutcome(
+    complete([
+      { type: "test:pass", data: { nesting: 0, file: first, name: second } },
+      { type: "test:pass", data: { file: second, name: first } },
+    ]),
     "ok",
   );
-  assert.equal(
-    evaluatePlannedFileCoverage(manifest, runFiles, passEvents.slice(0, 2), ended),
-    "runner.outcome-missing",
-  );
-  assert.equal(
-    evaluatePlannedFileCoverage(
-      manifest,
-      runFiles,
-      [
-        {
-          type: "test:pass",
-          data: { nesting: 0, file: first, name: second },
-        },
-        { type: "test:pass", data: { file: second, name: first } },
-      ],
-      ended,
-    ),
-    "ok",
-  );
+
   for (const malformedFile of [undefined, 42, "", "dist/test/alpha.test.js"]) {
-    assert.equal(
-      evaluatePlannedFileCoverage(
-        manifest,
-        runFiles,
-        [{ type: "test:pass", data: { file: malformedFile } }],
-        ended,
-      ),
+    assertOutcome(
+      complete([{ type: "test:pass", data: { file: malformedFile } }]),
       "runner.outcome-path-missing",
     );
   }
-  assert.equal(
-    evaluatePlannedFileCoverage(
-      manifest,
-      runFiles,
-      [{ type: "test:pass", data: { file: resolve("dist/test/unknown.test.js") } }],
-      ended,
-    ),
+  assertOutcome(
+    complete([
+      {
+        type: "test:pass",
+        data: { file: resolve("dist/test/unknown.test.js") },
+      },
+    ]),
     "runner.outcome-unknown",
   );
   assert.equal(
-    evaluatePlannedFileCoverage(manifest, [second, first], passEvents, ended),
+    evaluatePlannedFileCoverage(manifest, [second, first], complete(passSignals)),
     "runner.manifest-mismatch",
   );
-  assert.equal(
-    evaluatePlannedFileCoverage(manifest, runFiles, passEvents, {
-      ended: false,
-      prematureClose: true,
-      reporterFlushed: true,
-    }),
-    "runner.stream-incomplete",
+
+  assertOutcome(
+    [
+      { type: "stream:error" },
+      { type: "test:fail" },
+      ...passSignals,
+      { type: "stream:end" },
+      { type: "reporter:flush" },
+    ],
+    "runner.stream-error",
   );
-  assert.equal(
-    evaluatePlannedFileCoverage(manifest, runFiles, passEvents, {
-      ended: true,
-      reporterFlushed: false,
-    }),
-    "runner.reporter-flush-failed",
-  );
-  assert.equal(
-    evaluatePlannedFileCoverage(
-      manifest,
-      runFiles,
-      [{ type: "test:fail", data: { nesting: 4 } }, ...passEvents],
-      { ended: true, reporterFlushed: false },
-    ),
+  assertOutcome(
+    [
+      { type: "test:fail" },
+      { type: "stream:error" },
+      ...passSignals,
+      { type: "stream:end" },
+      { type: "reporter:flush" },
+    ],
     "runner.test-failed",
   );
-  assert.equal(
-    evaluatePlannedFileCoverage(
-      manifest,
-      runFiles,
-      [{ type: "test:pass", data: {} }, ...passEvents],
-      { ended: true, reporterFlushed: false },
-    ),
-    "runner.outcome-path-missing",
+
+  for (const malformedFile of [undefined, 42, "", "dist/test/alpha.test.js"]) {
+    const malformedPass: PlannedRunnerSignal = {
+      type: "test:pass",
+      data: { file: malformedFile },
+    };
+    assertOutcome(
+      complete([{ type: "stream:abort" }, malformedPass, ...passSignals]),
+      "runner.stream-aborted",
+    );
+    assertOutcome(
+      complete([malformedPass, { type: "stream:abort" }, ...passSignals]),
+      "runner.outcome-path-missing",
+    );
+  }
+
+  const observerFailures: readonly Readonly<{
+    signal: PlannedRunnerSignal;
+    code: string;
+  }>[] = [
+    { signal: { type: "test:fail", data: { nesting: 7 } }, code: "runner.test-failed" },
+    { signal: { type: "test:interrupted" }, code: "runner.test-interrupted" },
+    {
+      signal: { type: "test:pass", data: {} },
+      code: "runner.outcome-path-missing",
+    },
+    {
+      signal: {
+        type: "test:pass",
+        data: { file: resolve("dist/test/unknown.test.js") },
+      },
+      code: "runner.outcome-unknown",
+    },
+  ];
+  for (const { signal, code } of observerFailures) {
+    assertOutcome(
+      complete([signal, { type: "reporter:failure" }, ...passSignals]),
+      code,
+    );
+    assertOutcome(
+      complete([{ type: "reporter:failure" }, signal, ...passSignals]),
+      "runner.reporter-failed",
+    );
+  }
+
+  assertOutcome(
+    complete([
+      { type: "test:interrupted" },
+      { type: "stream:error" },
+      ...passSignals,
+    ]),
+    "runner.test-interrupted",
+  );
+  assertOutcome(
+    complete([
+      { type: "stream:error" },
+      { type: "test:interrupted" },
+      ...passSignals,
+    ]),
+    "runner.stream-error",
+  );
+  assertOutcome(
+    complete([...passSignals, { type: "reporter:failure" }]),
+    "runner.reporter-failed",
+  );
+  assertOutcome(
+    [...passSignals, { type: "stream:end" }],
+    "runner.reporter-flush-failed",
+  );
+  assertOutcome(
+    [...passSignals, { type: "reporter:flush" }, { type: "stream:end" }],
+    "runner.stream-incomplete",
+  );
+  assertOutcome(
+    complete([...passSignals, { type: "stream:premature-close" }]),
+    "runner.stream-incomplete",
   );
 
   const stream = new EventEmitter();
