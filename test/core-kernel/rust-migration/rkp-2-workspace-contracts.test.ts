@@ -249,15 +249,15 @@ const FROZEN_POST_STAGE_5_AUTHORITY_CONTENT = [
   },
   {
     path: DESIGN_PATH,
-    sha256: "bf61b994b67f697f8d575a19d964f108bdababa45368f774c0d3f62e162a34d8",
+    sha256: "38072235844c255a138857f517db85dcae22563766b4c6978f53aca13907a1b5",
   },
   {
     path: IMPLEMENT_PATH,
-    sha256: "2a6c5bc09079dbd1aa156e3d81a494d70a980d41ab55a5edbdb759915b8546eb",
+    sha256: "acab6009631131c13b7ceaec9ee6c4ddf4c39ff8135186a4542a2d13e31d6177",
   },
   {
     path: FILE_TEST_ROLLBACK_MATRIX_PATH,
-    sha256: "498f82e0bb423706e0fecf13f5adcb7901c7951a3adb0498f8523ff5b7f3bcba",
+    sha256: "74dfc883774b6a8f47fb326eaacf89c37d63e6b3bb075131e6b5b27c2ba375a7",
   },
 ] as const;
 

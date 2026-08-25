@@ -2,7 +2,7 @@
 
 ## Current implementation state
 
-`BOUNDED WORKSPACE-LAW ORACLE REPAIR ACTIVE — CANDIDATE NOT READY`.
+`READY FOR INDEPENDENT IMPLEMENTATION REREVIEW`.
 
 - implementation branch: `codex/rkp-2-cross-platform-full-test-runner-contract-repair`
 - planning base: `eed4871a86191783d539b7d4097be3627e98e4a0`
@@ -18,6 +18,7 @@
 - first implementation review of exact `15c84a1929d1365ebf466088e896fd5309a4fa57`: RETURN, P0/P1/P2=`0/1/1`; first-observed structured-failure precedence and direct fail-closed branch evidence are the only repair scope
 - bounded implementation repair: state `04364ecaf6f329bd2a4d3671a75bac7b15d23c49`; first-failure precedence `f77549ef429dd2611d7f6144c164511599da9129`; fail-closed evidence `139f1271b651af0c1b70e151ba9604ef154442d7`
 - targeted implementation rereview of exact `6dac686d7f7dcaa447330209c6da04e414b7615c`: RETURN, P0/P1/P2=`0/1/0`; production runner and prior P2 evidence are accepted, and only the workspace-law oracle's first-observed signal ordering is reopened
+- workspace-law oracle repair: state `dd63ff2677c063bb78686b28a73b92c0f22a9d1b`; ordered-signal model and bidirectional fixtures `adaea920c8f8e92282c8871923d0c9e7ea156eab`; final evidence commit hash is reported after commit
 - child status: `in_progress`
 - `task_start_run=true`
 - `production_implementation_authorized=true`
@@ -59,11 +60,11 @@ Execute the four reversible implementation stages, then send the exact candidate
 8. exact 13-path archive including implementation evidence, phase-specific rollback and explicit integration gate;
 9. lifecycle truth: in progress, implementation review pending, no Stage 6.
 
-The child remains authorized only for the bounded workspace-law oracle repair. Candidate readiness is false until the ordered-signal oracle, bidirectional fixtures and all gates close. Production runner, package entry and focused runner test must remain byte-identical to `6dac686d`; no PASS is claimed. Keep `610d20b` excluded. Acceptance, archive, closeout, integration into RKP-2 and Stage 6 remain unauthorized.
+The bounded workspace-law oracle repair is complete and the child is candidate-ready only for targeted independent implementation rereview. The independent oracle consumes one ordered signal sequence, uses mechanical first-failure selection and locks both directions for stream/test/outcome/interrupted/reporter combinations. Production runner, package entry and focused runner test are byte-identical to `6dac686d`; no PASS is claimed. Keep `610d20b` excluded. Acceptance, archive, closeout, integration into RKP-2 and Stage 6 remain unauthorized.
 
 ## Candidate gate evidence
 
 - Node 20.20.2 and 24.15.0 run the same 78-file manifest `e4445a175cedaa34eaed455f48a98735ac2fa4808cc94314ff5148db6b6523d5`; each reports 576 tests, 575 pass, 1 expected skip, 0 fail.
 - Focused runner plus workspace-law passes 26/26 on both Node versions; runner-focused is 19/19 and directly covers combined observer/reporter precedence, root/entry/repository pre-run failures, and reporter factory/sink/transform failures.
-- A `core.autocrlf=false` detached checkout of `ce9598e` contains LF source and passes Rust workspace 70/70, fmt, check, Clippy `-D warnings` and MSRV 1.88.
+- A `core.autocrlf=false` detached checkout of `adaea920c8f8e92282c8871923d0c9e7ea156eab` contains zero CRLF Rust source and passes Rust workspace 70/70, fmt, check, Clippy `-D warnings` and MSRV 1.88.
 - `P..candidate` is mechanically constrained to four technical plus eleven active lifecycle paths. The child is candidate-ready; targeted implementation rereview is pending.

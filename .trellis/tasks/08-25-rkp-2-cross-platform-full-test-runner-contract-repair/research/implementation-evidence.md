@@ -10,6 +10,8 @@
 - hostile/version/range proof: `ce9598eca3ad4df30854b8cc9383f4034e2e55a3`
 - implementation-review return: exact `15c84a1929d1365ebf466088e896fd5309a4fa57`, P0/P1/P2=`0/1/1`, auditor `01a01e48-1934-77b0-821e-a8026cd9e5f7`
 - bounded repair state / precedence / branch evidence: `04364ecaf6f329bd2a4d3671a75bac7b15d23c49`, `f77549ef429dd2611d7f6144c164511599da9129`, `139f1271b651af0c1b70e151ba9604ef154442d7`
+- targeted implementation rereview return: exact `6dac686d7f7dcaa447330209c6da04e414b7615c`, P0/P1/P2=`0/1/0`, auditor `01a01e48-1934-77b0-821e-a8026cd9e5f7`
+- workspace-law oracle repair state / model: `dd63ff2677c063bb78686b28a73b92c0f22a9d1b`, `adaea920c8f8e92282c8871923d0c9e7ea156eab`
 - discarded diagnostic `610d20b` is not an ancestor
 - final docs/evidence commit: exact hash is reported after commit; it changes lifecycle/evidence only
 
@@ -23,6 +25,8 @@ Focused tests cover duplicate and nested passes, opaque and absolute-looking tit
 
 The P1 repair retains observer first-failure wins across event handling, finalize and pipeline catch. A later reporter sink, transform or flush failure cannot replace an already selected `runner.test-failed`, `runner.test-interrupted`, outcome-path or stream code; reporter-only construction/pipeline failure remains `runner.reporter-failed`. The P2 evidence directly executes real root and entry junction rejection, an injected unsupported directory entry and a real repository missing `package.json`, each with `runCalls=0`, plus separate reporter factory, reporter-sink factory and transform-callback failures under bounded timeouts.
 
+The rereview-only oracle repair is independent from production: a RED fixture showed the old model returned `runner.test-failed` for `stream:error -> test:fail`. The replacement processes `test:pass`, `test:fail`, `test:interrupted`, stream error/abort/premature-close/end and reporter failure/flush in one sequence and updates only `firstFailure ??=`. Bidirectional fixtures prove whichever stable failure is observed first survives; pass membership and seen-set coverage still execute, while normal success requires stream end before reporter flush and exact manifest coverage.
+
 ## Cross-version and full-run evidence
 
 Node 20.20.2 and Node 24.15.0 each pass the focused runner/workspace-law set 26/26 (runner 19/19, workspace-law 7/7). On the same clean compiled tree, both use:
@@ -33,7 +37,7 @@ Each complete run reports 576 tests, 575 pass, 1 expected GC skip, 0 fail, 0 can
 
 ## Rust and compatibility evidence
 
-The main Windows checkout exposes the known CRLF-only source-text introspection mismatch without product-code drift. A detached checkout created with per-command `core.autocrlf=false` at `ce9598e` contains zero CRLF in the inspected Runtime source and passes:
+The main Windows checkout exposes the known CRLF-only source-text introspection mismatch without product-code drift. A detached checkout created with per-command `core.autocrlf=false` at `adaea920c8f8e92282c8871923d0c9e7ea156eab` contains zero CRLF in the inspected Rust source and passes:
 
 - Rust 1.97.1 fmt and workspace all-target check;
 - Rust workspace tests 70/70;
@@ -44,4 +48,4 @@ Final TypeScript, Node bridge, Trellis, JSON/JSONL, path, hash, protected-delta 
 
 ## Lifecycle result
 
-Independent implementation review of exact `15c84a1929d1365ebf466088e896fd5309a4fa57` returned P0/P1/P2=`0/1/1`, and the first bounded repair closed those production/P2 findings. Targeted implementation rereview of exact `6dac686d7f7dcaa447330209c6da04e414b7615c` then returned P0/P1/P2=`0/1/0`: production runner behavior remains accepted, while the workspace-law oracle must model ordered signals and first-observed failure. The child remains `in_progress`; candidate readiness is false during this oracle-only repair and rereview remains pending. No implementation audit PASS, acceptance, archive, closeout, integration into RKP-2, Stage 6 authorization, push, qualification, RKP-3 or default-runtime switch is claimed.
+Independent implementation review of exact `15c84a1929d1365ebf466088e896fd5309a4fa57` returned P0/P1/P2=`0/1/1`, and the first bounded repair closed those production/P2 findings. Targeted implementation rereview of exact `6dac686d7f7dcaa447330209c6da04e414b7615c` then returned P0/P1/P2=`0/1/0`: production runner behavior remains accepted, while the workspace-law oracle required ordered signals and first-observed failure. That oracle repair is complete. The child remains `in_progress`; candidate readiness is true only for a new targeted independent implementation rereview, which remains pending. No implementation audit PASS, acceptance, archive, closeout, integration into RKP-2, Stage 6 authorization, push, qualification, RKP-3 or default-runtime switch is claimed.
