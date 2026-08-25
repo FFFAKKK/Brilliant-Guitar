@@ -92,7 +92,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "rkp2-stage-6-separate-user-authorization",
+    "next_gate": "rkp2-stage-6-hostile-resource-finality-tests",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -197,7 +197,7 @@
     "rkp2_implementation_authorized": true,
     "rkp2_user_implementation_authorization": true,
     "rkp2_created": true,
-    "rkp2_status": "in_progress_stage_5_complete_runner_repair_accepted_archived_stage_6_not_authorized",
+    "rkp2_status": "in_progress_stage_6_authorized_started_hostile_resource_finality_tests_pending",
     "rkp2_task": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
     "rkp2_planning_base": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "rkp2_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -285,8 +285,10 @@
       "targeted_independent_planning_rereview": "pending",
       "auditor_task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7"
     },
-    "rkp2_stage_6_started": false,
-    "rkp2_stage_6_authorized": false,
+    "rkp2_stage_6_started": true,
+    "rkp2_stage_6_authorized": true,
+    "rkp2_stage_6_completed": false,
+    "rkp2_stage_6_user_authorization": "post_p1_runner_repair_user_requested_continue_to_later_content_as_separate_stage_6_authorization",
     "rkp2_implementation_candidate_ready": false,
     "rkp2_implementation_review": "pending",
     "rkp2_default_runtime": "typescript",
