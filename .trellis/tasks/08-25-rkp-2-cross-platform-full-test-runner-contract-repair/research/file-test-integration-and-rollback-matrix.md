@@ -10,14 +10,14 @@
 | RKP-2 workspace-law test | 1 | literal coordination allowlist and content freeze |
 | Rust parent task | 1 | current gate projection |
 
-The four research paths are `current-runner-reproduction.md`, `node-test-api-and-version-contract.md`, this file and `planning-self-audit.md`. Total planning delta is exactly 20 paths. Package, runner source/test, product/Rust/native code and all other tests stay zero-delta.
+The four research paths are `current-runner-reproduction.md`, `node-test-api-and-version-contract.md`, this file and `planning-self-audit.md`. The fixed planning interval begins at `eed4871a86191783d539b7d4097be3627e98e4a0`; first reviewed head `c43a34e7d02a57cfd90de506cf97787ff5571a9e` is its direct child, and this repair stays within the same exact 20 paths. Package, runner source/test, product/Rust/native code and all other tests stay zero-delta.
 
 ## Future technical implementation
 
 | Path | Stage | Responsibility | Rollback |
 |---|---:|---|---|
-| `test/test-infrastructure/run-compiled-tests.ts` | 1-3 | enumeration, manifest, programmatic runner, reporter and CLI | revert matching stage |
-| `test/test-infrastructure/run-compiled-tests.test.ts` | 1-3 | hostile, exact invocation, outcome, partial/version/shell contracts | revert matching stage |
+| `test/test-infrastructure/run-compiled-tests.ts` | 1-3 | enumeration, physical identity, manifest, structured outcome observer, reporter and CLI | revert matching stage |
+| `test/test-infrastructure/run-compiled-tests.test.ts` | 1-3 | hard-link, identity, exact invocation, event normalization, partial/version/shell contracts | revert matching stage |
 | `package.json` | 2 | replace only full `test` script | restore old script |
 | `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts` | 3/integration | freeze accepted child ownership/paths without duplicate discovery | remove child projection |
 
@@ -25,26 +25,48 @@ The four research paths are `current-runner-reproduction.md`, `node-test-api-and
 
 ## Future lifecycle/authority projection
 
-The exact eleven paths are the four child task/evidence paths, six RKP-2 authority/lifecycle paths and Rust-parent `task.json` listed in design section 8. Planning authority not listed there is frozen. A required extra path stops for planning rereview.
+The exact eleven paths are the four child task/evidence paths, six RKP-2 authority/lifecycle paths and Rust-parent `task.json` listed in design section 8. Together with the four technical paths they form the exact fifteen-path implementation-candidate changed set after actual overlap deduplication; the 4- and 11-path ownership sets are also asserted independently. Package/runner/test/evidence remain child-owned and are not inserted into RKP-2's own 21 technical + 22 coordination sets. Planning authority not listed there is frozen. A required extra path stops for planning rereview.
 
 ## Focused and complete gates
 
 | Contract | Focused proof | Complete proof |
 |---|---|---|
-| discovery/manifest | fixture tree, count/hash, mutation rejection | independent current-tree set equality |
-| completion | injected pass/fail/cancel/throw/stream/reporter/partial cases | actual full suite zero failure |
-| entry/version | imported module + direct CLI | PowerShell and cmd/npm on Node 20.20.2/24.15.0 |
-| governance | child/RKP-2 workspace law | Trellis/JSON/JSONL/allowlist/hashes/protected delta |
+| discovery/manifest | fixture tree, count/hash, mutation rejection, real `linkSync` alias, `(dev,ino)` failures | independent current-tree set equality; run called zero on alias |
+| completion | injected nested fail/interrupted/wrong-field/duplicate/missing/throw/abort/premature-close/reporter cases | actual full suite zero failure only after normal end + flush |
+| entry/version | imported module + direct CLI; earliest post-return emit/close | PowerShell and cmd/npm on Node 20.20.2/24.15.0; real event fixtures consume only type/nesting/file/name |
+| governance | real 20-path planning interval; fixture 4+11 candidate and 22-active/23-archive sets | actual candidate range before audit; actual archive/integration ranges after PASS |
 | regression | focused runner | Rust, Node bridge, typecheck/build/full TS |
 
-## Integration rule
+## Candidate, archive and integration rule
 
-After accepted child archive, create a reviewable RKP-2 prerequisite base containing both accepted child and current RKP-2 ancestry. Update RKP-2 hashes and lifecycle projection field by field. Stage 6 consumes the runner; it neither copies enumeration nor begins without new authorization.
+Pre-review Stage 4 ends at `READY FOR INDEPENDENT IMPLEMENTATION REVIEW`. Its immutable lower bound is the exact independently accepted planning HEAD; its actual changed set is child technical four plus active lifecycle eleven. RKP-2 remains at technical 21 and coordination 22. No archive, post-archive hashes or accepted integration is claimed.
+
+Only after implementation PASS and owner authorization, native archive writes exactly:
+
+```text
+.trellis/tasks/archive/2026-08/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/task.json
+.trellis/tasks/archive/2026-08/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/prd.md
+.trellis/tasks/archive/2026-08/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/design.md
+.trellis/tasks/archive/2026-08/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/implement.md
+.trellis/tasks/archive/2026-08/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/implement.jsonl
+.trellis/tasks/archive/2026-08/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/check.jsonl
+.trellis/tasks/archive/2026-08/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/operator-handoff.md
+.trellis/tasks/archive/2026-08/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/review-candidate.md
+.trellis/tasks/archive/2026-08/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/research/current-runner-reproduction.md
+.trellis/tasks/archive/2026-08/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/research/node-test-api-and-version-contract.md
+.trellis/tasks/archive/2026-08/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/research/file-test-integration-and-rollback-matrix.md
+.trellis/tasks/archive/2026-08/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/research/planning-self-audit.md
+.trellis/tasks/archive/2026-08/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/research/implementation-evidence.md
+```
+
+The bounded closeout removes all twelve active child paths and adds all thirteen archived successors, producing RKP-2 coordination 23 = historical 10 + archive 13. Workspace-law rejects active/archive dual authority and missing implementation evidence, pins implementation/archive commits, updates range projections and five hashes, and keeps both RKP-2 JSONLs unchanged. The original RKP-2 branch then consumes the accepted descendant through an explicit fast-forward/merge gate to form a new Stage 6 prerequisite. Stage 6 remains separately unauthorized.
 
 ## Rollback chain
 
 ```text
-evidence/projection -> cross-version proof -> execution/package -> enumeration -> activation
+pre-review candidate -> accepted planning HEAD
+archive + closeout -> restore active planning child and 22-path authority
+RKP-2 integration -> eed4871a Stage-5 base
 ```
 
-Every reverse step keeps Stage 6 blocked. No rollback touches RKP-2 Stage 1–5 or changes the TypeScript default.
+The archive and closeout projections roll back jointly; no intermediate state may expose active and archived authority together. Every reverse step keeps Stage 6 blocked. No rollback touches RKP-2 Stage 1–5 or changes the TypeScript default.

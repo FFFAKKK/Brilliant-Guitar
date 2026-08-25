@@ -5,5 +5,5 @@
 {"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"Keep one enumerator/manifest implementation and avoid duplicate discovery logic."}
 {"file":".trellis/spec/guides/long-term-maintenance-guide.md","reason":"Freeze explicit ownership, rollback and later-stage integration gates."}
 {"file":".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/research/current-runner-reproduction.md","reason":"Use the reproduced partial/full discovery and historical package zero-delta as the implementation baseline."}
-{"file":".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/research/node-test-api-and-version-contract.md","reason":"Implement only the cross-version node:test run(files) option subset and process-isolation contract."}
-{"file":".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/research/file-test-integration-and-rollback-matrix.md","reason":"Follow the literal future allowlist, focused gates, staged commits and rollback ownership."}
+{"file":".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/research/node-test-api-and-version-contract.md","reason":"Implement only the Node 20/24 run(files) subset and the test:pass/test:fail structured outcome normalizer."}
+{"file":".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/research/file-test-integration-and-rollback-matrix.md","reason":"Follow exact 20 planning, 4+11 candidate, 13 archive and phase-specific rollback ownership sets."}

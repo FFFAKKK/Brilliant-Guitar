@@ -93,9 +93,9 @@ The accepted design's former permanent JSONL zero-delta rule made that planned s
 
 - `check.jsonl`: `7e12f6d00ba17e1967ef57e884e7b5d6ca7efedbb2aaf94de04fc4b3091251c3`
 - `implement.jsonl`: `cd0a42070a76a18e782d7da4ebc0e9a88d2ed5dece0d093125d4fc8982229705`
-- `design.md`: `d14824292db1b6030a45d95a1705addd25548f1ffa64863d321c57ebf50a53d3`
-- `implement.md`: `8370e5467867cb04edb632097b5c50251c0609219b6916765f1706ba8981d1e5`
-- `research/file-test-and-rollback-matrix.md`: `aaff7f6d4c9124d9f5ea4431d35464f0d167c2a5b487df5c6500ad8e22347b7a`
+- `design.md`: `5f6ee49c9aa83f475cffcb40bf5aab31a6975129658c9af1d99e4471e8e934ee`
+- `implement.md`: `e535c8bf5fbc170d4a148d9cd1d57d96743b33d96767a01ec441fb9eb29e013b`
+- `research/file-test-and-rollback-matrix.md`: `31f84635a074a4a06279b6a33ad9b63f8cfa79e32e7674369f92ed1b6ce8f1a9`
 
 This remains planning-authority governance, not Stage 6 implementation or evidence freeze. The five files freeze at the exact current candidate after their hashes are recomputed; both JSONL contents/hashes remain unchanged. Later changes require a new planning review.
 
@@ -103,11 +103,13 @@ This remains planning-authority governance, not Stage 6 implementation or eviden
 
 Independent full-runner evidence at `eed4871a86191783d539b7d4097be3627e98e4a0` found one P1: the quoted wildcard may run only 29 files/261 tests on Node 24 and still exit zero, while a literal complete run covers 77 files/557 tests; Node 20.20.2 rejects the literal wildcard. Package and lock files are unchanged from `df40aef...`, so the defect is test infrastructure, not Stage 5 product behavior.
 
-Child `08-25-rkp-2-cross-platform-full-test-runner-contract-repair` is now the sole planning owner. It remains `planning`, start/production authorization false and independent review pending. It freezes deterministic literal enumeration, `full-test-manifest-v1`, cross-version programmatic `run({ files })`, reporter/error/outcome completeness and exact future allowlists. RKP-2 Stage 6 only consumes an accepted runner after review/acceptance/archive/integration and remains separately unauthorized.
+Child `08-25-rkp-2-cross-platform-full-test-runner-contract-repair` is now the sole planning owner. Its first candidate `c43a34e7d02a57cfd90de506cf97787ff5571a9e` was returned P0/P1/P2=`0/3/0`; this bounded repair freezes common `test:pass`/`test:fail` outcomes, BigInt `(dev,ino)` hard-link rejection and separate candidate/archive projections. It remains `planning`, start/production authorization false and targeted independent rereview pending.
+
+The real planning interval stays at exactly twenty paths. A future Stage 4 candidate is exactly child technical 4 plus active lifecycle 11 and stops for implementation review while RKP-2 remains 21 technical + 22 coordination. Only after implementation PASS may native archive create the exact thirteen archived artifacts, replace the twelve active child paths and yield coordination 23; explicit integration then creates a new prerequisite. RKP-2 Stage 6 remains separately unauthorized.
 
 ## Next operator action
 
-Send the exact child planning candidate and its RKP-2 projection to dedicated independent planning review. Do not start the child or Stage 6. A planning PASS authorizes neither implementation nor integration; each requires its later explicit lifecycle gate. Candidate readiness, implementation audit and lifecycle closeout remain pending.
+Send the exact bounded-repair child candidate and its RKP-2 projection to the same dedicated targeted planning rereview. Focus on pass/fail-only event normalization, hard-link identity, exact 20/4+11/13/22/23 projections and the review-before-archive sequence. Do not start the child or Stage 6. A planning PASS authorizes neither implementation nor integration; each requires its later explicit lifecycle gate. Candidate readiness, implementation audit and lifecycle closeout remain pending.
 
 ## Audit and closeout
 

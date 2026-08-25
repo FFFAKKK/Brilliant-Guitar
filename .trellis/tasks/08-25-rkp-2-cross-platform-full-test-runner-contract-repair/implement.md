@@ -36,10 +36,11 @@ test/test-infrastructure/run-compiled-tests.test.ts
 
 ### Actions
 
-1. Add the focused test first for shuffled/nested/spaces/Unicode/deep files, non-tests, missing/file/empty roots, symbolic/junction entries, duplicates/aliases and immutable detached results.
-2. Implement root preflight, non-following traversal, regular-file filter, `/` normalization, explicit code-unit sort, duplicate rejection and dynamic selection.
-3. Implement `full-test-manifest-v1` count/hash/header from the frozen array.
-4. Prove an added fixture changes manifest without editing a count constant.
+1. Add the focused test first for shuffled/nested/spaces/Unicode/deep files, non-tests, missing/file/empty roots, symbolic/junction entries, normalized duplicates, physical aliases and immutable detached results.
+2. Implement root preflight, non-following traversal, regular-file filter, `/` normalization, explicit code-unit sort, normalized duplicate rejection and dynamic selection.
+3. For each candidate use `lstat(path,{bigint:true})`, require a regular file and usable nonzero BigInt `(dev,ino)`, and reject a repeated tuple as `runner.physical-alias` before any runner call. A real `linkSync` test must fail rather than skip when hard links cannot be created.
+4. Implement `full-test-manifest-v1` count/hash/header from the frozen array.
+5. Prove an added fixture changes manifest without editing a count constant.
 
 ### Gate
 
@@ -68,10 +69,12 @@ test/test-infrastructure/run-compiled-tests.test.ts
 
 1. Add the injectable semantic request and actual `run()` options capture.
 2. Verify repo CWD, supported Node version and process-isolation default, then call `run({ files: absoluteFiles, concurrency: true })`.
-3. Connect the stable built-in reporter and await flush/completion.
-4. Track exact top-level file outcomes; fail test failure, cancellation, duplicate/unknown/missing outcome, runner/stream/reporter error or manifest mismatch.
-5. Use `require.main === module`; importing the CommonJS module must not execute the suite.
-6. Replace only the package `test` script. Confirm `package-lock.json` byte-delta is empty.
+3. Immediately after `run()` returns, synchronously attach an independent structured observer and the stable built-in reporter pipeline. The reporter is display-only.
+4. Normalize only `test:pass`/`test:fail` using event type plus `data.nesting`, `data.file` and `data.name`. Any fail at any nesting fails. Only nesting-zero outcomes enter the manifest-file result map; absent/conflicting/out-of-manifest paths and duplicate/missing outcomes fail. Do not consume `test:complete`, `details.type` or reporter text.
+5. Treat any available `test:interrupted`, stream error/abort/premature close/missing normal end, reporter sink/pipeline/flush failure or manifest mismatch as nonzero. Exit zero requires normal end, exact observer equality, no fail/interrupted and reporter flush success.
+6. Add injected earliest-post-return emission/close races so listener attachment cannot regress.
+7. Use `require.main === module`; importing the CommonJS module must not execute the suite.
+8. Replace only the package `test` script. Confirm `package-lock.json` byte-delta is empty.
 
 ### Focused gate
 
@@ -101,11 +104,12 @@ test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts
 
 ### Actions
 
-1. Run the focused and full runner on Node 20.20.2 and 24.15.0 using the same compiled source and literal manifest.
+1. Run the focused and full runner on Node 20.20.2 and 24.15.0 using the same compiled source and literal manifest; capture real characterization fixtures for `test:pass`/`test:fail` and prove the only consumed fields are type, `data.nesting`, `data.file` and `data.name`.
 2. Add/execute a partial-discovery fake that reports a strict subset; it must fail despite an otherwise successful runner.
 3. Independently enumerate the current compiled tree and compare the set, count and hash to the printed manifest.
-4. Extend RKP-2 workspace-law only to freeze accepted child ownership/integration and exact runner/package paths. Do not duplicate traversal implementation.
-5. Preserve the RKP-2 21-path technical matrix, existing JSONL successor contract and public inventories.
+4. Exercise nested failure, interrupted, duplicate/missing/unknown outcome, wrong event fields, premature close and reporter failure on both the normalizer seam and real-version fixtures.
+5. Extend RKP-2 workspace-law only to freeze the child candidate's exact four technical plus eleven active lifecycle paths. Do not duplicate production traversal implementation.
+6. Preserve the RKP-2 21-path technical matrix, current 22-path coordination matrix, existing JSONL successor contract and public inventories.
 
 ### Gate
 
@@ -139,9 +143,10 @@ Revert Stage 3 to remove only cross-version/integration proof. Stage 2 runner re
 
 1. Run every complete gate below at the exact clean implementation candidate.
 2. Record actual cross-version manifests/totals and protected deltas.
-3. Recompute the five RKP-2 content hashes after accepted integration projection; keep both RKP-2 JSONLs unchanged.
-4. Set child candidate readiness true only after gates; implementation review remains pending.
-5. Keep RKP-2 Stage 6 not started/authorized.
+3. Prove the immutable planning interval (accepted planning HEAD) and implementation candidate interval: exactly four child technical plus eleven active lifecycle/authority paths, with ownership sets independently asserted and their changed-path union deduplicated.
+4. Keep the current RKP-2 twenty-one technical and twenty-two coordination paths frozen. Do not recompute post-archive hashes and keep both RKP-2 JSONLs unchanged.
+5. Set child candidate readiness true only after gates; implementation review remains pending.
+6. Mark only `READY FOR INDEPENDENT IMPLEMENTATION REVIEW`. Do not accept, archive, integrate or claim Stage 6 readiness.
 
 ### Complete gate
 
@@ -172,10 +177,22 @@ Also run existing Node bridge `9/9`, RKP-1 workspace-law `6/6`, RKP-2 workspace-
 
 `docs(rkp-2): freeze full test runner repair evidence`
 
-Revert Stage 4 to remove evidence/status/projection only. Do not accept/archive or resume Stage 6.
+Revert Stage 4 to the exact accepted planning HEAD to remove the entire unaccepted implementation candidate. Do not accept/archive or resume Stage 6.
 
-## 6. Independent review, acceptance and integration
+## 6. Independent review
 
-A dedicated read-only implementation review receives the exact activation-through-evidence range and cross-version evidence. Owner acceptance/archive follows only after P0/P1/P2=`0/0/0` and separate authorization.
+A dedicated read-only implementation review receives the exact accepted-planning-through-evidence range and cross-version evidence. A non-PASS returns to a bounded implementation repair. No archive, post-archive hash, integration or Stage 6 projection exists before exact P0/P1/P2=`0/0/0` and later owner closeout authorization.
 
-Integration must produce a reviewable RKP-2 prerequisite base containing both accepted child and current RKP-2 history. It updates no Stage 1–5 product code, preserves TypeScript default and leaves Stage 6 unauthorized until a later explicit user message.
+## 7. Post-PASS owner closeout, archive and integration
+
+Execute only after implementation PASS and explicit owner authorization, in this order:
+
+1. Record the exact audited candidate and PASS/acceptance in docs-only lifecycle state.
+2. Run Trellis native archive into `.trellis/tasks/archive/2026-08/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/`.
+3. Verify the exact thirteen archived artifacts: eight root task artifacts, four planning research files and `research/implementation-evidence.md`.
+4. In one bounded closeout candidate, replace all twelve active-child coordination paths with all thirteen archived successor paths, so RKP-2 coordination becomes historical ten plus archived thirteen = twenty-three. Mechanically reject active/archive dual authority and missing implementation evidence.
+5. Pin exact accepted implementation/archive commits, update range projections, recompute the five LF hashes and prove the RKP-2 JSONLs remain unchanged.
+6. Run the complete gates and create a reversible closeout/integration commit.
+7. Consume that accepted descendant on the original RKP-2 implementation branch only through an explicit fast-forward/merge gate. The resulting HEAD is the new Stage 6 prerequisite, but Stage 6 remains unauthorized.
+
+Rollback is phase-specific: the pre-review candidate returns to accepted planning HEAD; archive/closeout is jointly reverted to restore the active planning child; integration returns to `eed4871a86191783d539b7d4097be3627e98e4a0`. No rollback may leave both active and archived authority visible.

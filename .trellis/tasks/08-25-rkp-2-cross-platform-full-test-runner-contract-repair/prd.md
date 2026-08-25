@@ -25,7 +25,7 @@ Create `test/test-infrastructure/run-compiled-tests.ts`. It recursively enumerat
 
 ### R2 — deterministic, hostile-safe enumeration
 
-The root is exactly `<repo cwd>/dist/test`. Missing, non-directory and empty roots fail nonzero. Traversal rejects symbolic-link/junction-style entries and selects only regular files whose normalized relative path ends with `.test.js`. Paths use `/`, are sorted with an explicit UTF-16 code-unit comparator, deduplicated and preserve spaces, Unicode and arbitrary nesting. The returned manifest input is deeply detached and frozen.
+The root is exactly `<repo cwd>/dist/test`. Missing, non-directory and empty roots fail nonzero. Traversal rejects symbolic-link/junction-style entries and selects only regular files whose normalized relative path ends with `.test.js`. Every candidate is rechecked with `lstat(path,{bigint:true})`; missing/invalid/zero `(dev,ino)` identity fails and different paths sharing one tuple are rejected as physical aliases before `run()`. Paths use `/`, are sorted with an explicit UTF-16 code-unit comparator, deduplicated and preserve spaces, Unicode and arbitrary nesting. The returned manifest input is deeply detached and frozen.
 
 ### R3 — immutable manifest
 
@@ -37,11 +37,11 @@ Use the stable official `node:test` `run({ files })` API. The supported contract
 
 ### R5 — reliable completion and exit
 
-Connect `TestsStream` to a stable built-in reporter. Setup, synchronous runner, stream and reporter failures all become nonzero. Any failed, cancelled or missing top-level file outcome, any manifest/file-array mismatch, or any runner error is nonzero. Only the complete successful set exits zero. Preserve ordinary test output and expected skips.
+Connect `TestsStream` to a stable built-in reporter for display and a separate structured observer for truth. Only common `test:pass`/`test:fail` events establish outcomes; any fail at any nesting fails, while only nesting-zero outcomes populate the file set from normalized `data.file`/`data.name`. Unknown/duplicate/missing outcomes, conflicting names, interrupted events, stream abort/error/premature close/missing end, manifest mismatch or reporter flush failure are nonzero. `test:complete`, `details.type` and reporter text are forbidden truth sources. Only normal end plus exact set equality and successful reporter flush exits zero.
 
 ### R6 — executable contract tests
 
-Create `test/test-infrastructure/run-compiled-tests.test.ts` with injectable filesystem/runner/reporter seams. No production environment variable, public product API or third Node export is added. Tests cover deterministic enumeration, hostile paths/entries, manifest/hash, exact runner options, all nonzero propagation cases, partial discovery, current-tree parity, Node 20/24 and PowerShell/cmd/npm entry paths.
+Create `test/test-infrastructure/run-compiled-tests.test.ts` with injectable filesystem/runner/reporter seams. No production environment variable, public product API or third Node export is added. Tests cover deterministic enumeration, real `linkSync` hard-link rejection with zero runner calls, hostile paths/entries/identity, manifest/hash, exact runner options, synchronous observer attachment races, all nonzero propagation cases, partial discovery, current-tree parity, real Node 20.20.2/24.15.0 event characterization and PowerShell/cmd/npm entry paths.
 
 ### R7 — package integration without dependency drift
 
@@ -63,18 +63,19 @@ No `src/**`, Rust crate, Cargo/toolchain, Node native source, CVN/qualification 
 
 ### R10 — lifecycle boundary
 
-Planning self-audit is not independent acceptance. Implementation, review, acceptance, archive, integration, Stage 6 authorization and push are distinct later gates.
+Planning self-audit is not independent acceptance. The pre-review candidate, implementation audit, accepted archive/closeout, explicit RKP-2 integration, Stage 6 authorization and push are distinct gates. Stage 4 stops at `READY FOR INDEPENDENT IMPLEMENTATION REVIEW`; the exact thirteen-path archive and twenty-two-active to twenty-three-archived authority replacement happen only after implementation PASS.
 
 ## 4. Acceptance criteria
 
 - [ ] Planning candidate contains every required task/research artifact and exact literal allowlists.
 - [ ] Independent planning review returns P0/P1/P2=`0/0/0` for the exact planning HEAD.
 - [ ] Later implementation enumerates the same literal set from PowerShell, `cmd.exe`/`npm.cmd`, Node 20.20.2 and Node 24.15.0.
-- [ ] Missing/non-directory/empty/symbolic roots, duplicate aliases, setup/stream/reporter/runner failures and partial discovery are nonzero.
+- [ ] Missing/non-directory/empty/symbolic roots, duplicate normalized paths, unavailable physical identity, hard-link aliases, setup/stream/reporter/runner failures and partial discovery are nonzero before false success.
 - [ ] Exact `files`, repo CWD, process isolation semantics, concurrency, manifest count/hash and top-level outcome completeness are mechanically proved.
 - [ ] A clean current compiled tree produces manifest equality and 557 discovered / 556 pass / 1 expected skip / 0 fail as evidence only, never as a hard-coded contract.
 - [ ] `package-lock.json`, product/Rust/native/CVN/qualification/default-runtime/public contracts remain zero-delta.
-- [ ] Repair acceptance/integration creates a new RKP-2 Stage 6 prerequisite base; Stage 6 still requires separate user authorization.
+- [ ] The implementation candidate range is exactly child technical four plus active lifecycle eleven; Stage 4 stops for audit.
+- [ ] After audit PASS only, native archive produces the exact thirteen-path authority, replaces the twelve active paths without dual authority, and explicit integration creates a new RKP-2 Stage 6 prerequisite base; Stage 6 still requires separate user authorization.
 
 ## 5. Out of scope
 

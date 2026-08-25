@@ -37,11 +37,13 @@ RKP-2 workspace-law validates the child's accepted projection and later consumes
 2. `lstat` the root without following links. Missing, non-directory or symbolic/junction-style root is an infrastructure error.
 3. Recursively call `readdir(..., { withFileTypes: true })`. Reject every `Dirent.isSymbolicLink()` entry before any follow operation. A Windows junction/reparse link is treated as a symbolic entry and rejected, not traversed. Recheck traversed entries with `lstat`; only real directories recurse and only real regular files are candidates. Other entry kinds fail rather than silently disappear.
 4. Convert every relative candidate separator to `/`. Select only paths ending exactly `.test.js`.
-5. Deduplicate normalized relative paths. Any duplicate/alias is an error; it is never silently collapsed into a claimed full run.
-6. Sort with the explicit code-unit comparator `a < b ? -1 : a > b ? 1 : 0`. `localeCompare` and filesystem enumeration order are forbidden.
-7. Preserve spaces, Unicode and deep nesting as literal path data. No shell escaping or command-line reconstruction is used.
-8. Empty selection is an infrastructure error.
-9. Return a new recursively frozen manifest record whose `files` is a copied frozen array. Callers never receive or mutate traversal scratch.
+5. Reject duplicate normalized relative paths as `runner.path-duplicate`; this check is distinct from physical identity.
+6. For every selected regular file, call `lstat(path, { bigint: true })`, recheck `isFile()`, and define physical identity as the exact BigInt tuple `(stats.dev, stats.ino)`. Missing/non-BigInt identity or `(0n, 0n)` fails as `runner.identity-unavailable`. Two different normalized paths sharing the tuple fail as `runner.physical-alias` before `run()` is called. There is no path-only fallback.
+7. Symbolic links and junction-style entries are rejected during traversal; hard links are rejected by the physical-identity gate. A real `linkSync` fixture must prove zero runner calls. An unsupported filesystem or permission error is explicit test-environment failure evidence, never a skip.
+8. Sort with the explicit code-unit comparator `a < b ? -1 : a > b ? 1 : 0`. `localeCompare` and filesystem enumeration order are forbidden.
+9. Preserve spaces, Unicode and deep nesting as literal path data. No shell escaping or command-line reconstruction is used.
+10. Empty selection is an infrastructure error.
+11. Return a new recursively frozen manifest record whose `files` is a copied frozen array. Callers never receive or mutate traversal scratch.
 
 ## 3. Manifest contract
 
@@ -81,22 +83,15 @@ Supported versions are Node `>=20.0.0`; implementation evidence must run 20.20.2
 
 No shell glob, `globPatterns`, dependency, loader flag or per-platform branch is permitted.
 
-## 5. Stream, reporter and exit contract
+## 5. Stream, outcome normalizer, reporter and exit contract
 
-The `TestsStream` is connected to one built-in stable reporter (`spec`) through an internal reporter factory. The operator does not replace ordinary test output or expected skip rendering.
+The `TestsStream` is connected to one built-in stable reporter (`spec`) through an internal reporter factory, while a separate observer consumes structured events. Reporter text is display-only and never controls success. Listeners are attached synchronously immediately after `run()` returns; focused injection must emit/close at the earliest post-return turn to prove no event is lost.
 
-The coordinator has one completion promise and one terminal result. It catches:
+The only cross-version terminal event sources are the common stable `test:pass` and `test:fail` events. The normalizer must not consume `test:complete`, `data.details.type`, diagnostic/reporter text or version-private fields. The only consumed fields are event type plus `data.nesting`, `data.file` and `data.name`. Real Node 20.20.2 and 24.15.0 characterization fixtures freeze those events and fields.
 
-- enumeration/manifest/version/direct-entry setup errors;
-- synchronous `run()` throw;
-- stream `error` or premature close;
-- reporter construction/composition/pipeline error;
-- any `test:fail` or cancelled top-level file;
-- duplicate, unknown or missing top-level file outcome;
-- a top-level outcome set/count unequal to the frozen manifest; and
-- any mismatch between manifest projection and the exact `files` array received by the injected runner.
+Any `test:fail` at any nesting fails the run. File-outcome collection consumes only `test:pass`/`test:fail` with `data.nesting === 0`. At least one of `data.file` and `data.name` must exist; when both exist, absolute normalization must produce the same path. The selected path must be an exact member of the frozen manifest absolute-file set. Every manifest file must have exactly one top-level terminal outcome; unknown, duplicate or missing outcomes are contract violations.
 
-Every listed condition sets a nonzero process exit. Exit zero is written only after reporter completion and exact set equality. A skipped nested test is preserved, while an entire missing/cancelled file cannot be mistaken for success. File outcomes are compared as normalized paths, never by event arrival order.
+On a supported version, any `test:interrupted` fails. Enumeration/manifest/version/direct-entry setup errors, synchronous `run()` throw, stream `error`/abort, close before normal `end`, missing `end`, reporter construction/pipeline/sink/flush failure, manifest/files mismatch and every outcome violation are nonzero. Exit zero is possible only after normal stream end, exact observer set equality, zero fail/interrupted events and successful reporter pipeline flush. `process.exitCode` is set after completion; eager `process.exit()` remains forbidden.
 
 The production CLI maps success to exit `0` and every contract/infrastructure/test failure to exit `1`. It sets `process.exitCode`; it does not truncate reporter flushing with an eager `process.exit()`.
 
@@ -116,11 +111,11 @@ Compilation remains CommonJS. Direct entry is `require.main === module`, which c
 | Exclusion | non-test regular file | absent |
 | Roots | missing, file root, empty directory | nonzero |
 | Links | symlink and Windows junction-style entry | rejected before follow |
-| Alias | duplicate normalized/aliased file | nonzero, no run |
+| Alias | duplicate normalized path; real `linkSync` hard link; missing/zero identity | `runner.path-duplicate`, `runner.physical-alias` or `runner.identity-unavailable`; no run |
 | Manifest | exact count and SHA-256 | canonical header and immutable detached data |
 | Invocation | exact absolute files, cwd, isolation semantics, concurrency | captured request equals manifest projection |
-| Completion | all pass | zero after reporter flush |
-| Failure | test failure, cancellation, run throw, stream error, reporter error | nonzero |
+| Completion | Node 20.20.2/24.15.0 top-level `test:pass` fixtures; synchronous attach/emit/close race | zero only after normal end and reporter flush |
+| Failure | nested/top-level `test:fail`, `test:interrupted`, wrong field/event source, duplicate/unknown/missing outcome, run throw, abort/premature close/no end, reporter error | nonzero |
 | Partial discovery | fake runner completes only a strict subset while claiming full | contract failure/nonzero |
 | Current tree | independent enumerator versus emitted manifest | exact set equality |
 | Entry/version | PowerShell, cmd.exe/npm.cmd; Node 20.20.2 and 24.15.0 | same manifest/set and expected exit |
@@ -157,14 +152,31 @@ Only these lifecycle/authority projection paths may change:
 
 `package-lock.json` is deliberately excluded. Every `src/**`, `crates/**`, Cargo/toolchain, Node native, CVN/qualification, other test, active spec and product/public path remains protected. A needed path outside these two literal blocks stops for planning rereview.
 
-## 9. Integration and freeze
+## 9. Pre-review candidate projection
 
-The planning commit may add this child's twelve planning artifacts to the RKP-2 coordination allowlist and update the existing RKP-2 workspace-law test. RKP-2's 21 technical paths remain unchanged. The existing RKP-2 JSONL successor projection remains byte-identical.
+Planning owns one fixed interval from `eed4871a86191783d539b7d4097be3627e98e4a0` through the exact planning HEAD and exactly the twenty paths in the planning matrix. First reviewed candidate `c43a34e7d02a57cfd90de506cf97787ff5571a9e` is the direct child of that base; this bounded repair remains within the same twenty-path set. Before activation, the accepted repaired planning HEAD must be pinned and become the immutable lower bound of the implementation range.
 
-The five RKP-2 frozen authority/manifest hashes are recomputed for this exact planning candidate: JSONL hashes remain unchanged; design/implement/matrix hashes change only because they record this blocking child. Workspace-law continues to require literal paths and exact content hashes—no wildcard or permanent task-directory exemption.
+RKP-2 keeps its own twenty-one technical paths and current twenty-two coordination paths (historical ten plus the active child's twelve planning artifacts). The child implementation candidate range, from accepted planning HEAD through Stage 4, owns exactly four technical paths plus eleven active lifecycle/authority paths. These ownership sets are asserted separately and their actual changed-path union is deduplicated mechanically. Child package/runner/test/implementation-evidence paths are not inserted into RKP-2's twenty-one-plus-twenty-two owner sets.
 
-After independent planning PASS and separate implementation authorization, the child is activated and implemented in reversible stages. Only after independent implementation PASS and owner acceptance/archive may its accepted history be integrated into a new RKP-2 Stage 6 prerequisite base. RKP-2 Stage 6 then requires a separate user authorization and only consumes the runner/manifest.
+Stage 4 records gates and creates only `READY FOR INDEPENDENT IMPLEMENTATION REVIEW`. It must not claim implementation acceptance, archive, accepted integration, post-archive content hashes or Stage 6 readiness.
 
-## 10. Rollback
+## 10. Post-PASS owner closeout and integration
 
-Reverse the later implementation stages in order. Reverting the child runner restores the prior package script but must keep Stage 6 blocked. Reverting RKP-2 integration removes only the accepted child projection and restores its prior content hashes. No rollback touches Stage 1–5 production work or changes TypeScript default.
+Only a dedicated implementation audit PASS P0/P1/P2=`0/0/0` and later owner authorization open this projection:
+
+1. Record the exact audited implementation candidate and PASS, then accept it without changing technical files.
+2. Use Trellis native archive into `.trellis/tasks/archive/2026-08/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/`.
+3. The archive authority set is exactly thirteen paths: `task.json`, `prd.md`, `design.md`, `implement.md`, `implement.jsonl`, `check.jsonl`, `operator-handoff.md`, `review-candidate.md`, the four planning research files, and `research/implementation-evidence.md`.
+4. In the same bounded closeout candidate, replace RKP-2's twelve active-child planning paths byte-for-byte by the thirteen archived successor paths. The result is exactly twenty-three coordination paths: historical ten plus archived thirteen. Mechanically prove active removal, archived addition, implementation-evidence presence and absence of active/archive dual authority.
+5. Pin the exact accepted implementation and archive commits; update range projections and recompute the five LF-normalized RKP-2 authority hashes. The two RKP-2 JSONLs stay zero-delta.
+6. Run full gates and create one reviewable, reversible closeout/integration commit. The original RKP-2 implementation branch consumes that accepted descendant only through an explicit fast-forward/merge gate, producing a new Stage 6 prerequisite HEAD. Stage 6 still requires a later user authorization.
+
+The current planning workspace-law executes only the real planning-range assertion. Candidate and archive projections are executable data fixtures until their actual states exist; planning never fabricates acceptance or archived paths.
+
+## 11. Rollback
+
+- Pre-review implementation candidate: revert to the exact accepted planning HEAD.
+- Accepted archive/closeout: jointly revert the closeout projection so the active planning child and its twenty-two-path RKP-2 authority are restored; never leave active and archive authority together.
+- RKP-2 integration: revert to `eed4871a86191783d539b7d4097be3627e98e4a0`, the Stage 5 blocking base.
+
+Every rollback keeps Stage 6 blocked, preserves the twenty-one RKP-2 technical paths and TypeScript default, and does not touch Stage 1–5 product work.

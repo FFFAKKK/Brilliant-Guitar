@@ -92,7 +92,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "rkp2-cross-platform-full-test-runner-contract-repair-independent-planning-review",
+    "next_gate": "rkp2-cross-platform-full-test-runner-contract-repair-targeted-independent-planning-rereview",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -298,6 +298,16 @@
       "task_start_run": false,
       "production_implementation_authorized": false,
       "independent_planning_review": "pending",
+      "first_planning_audit": {
+        "auditor_task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
+        "candidate_commit": "c43a34e7d02a57cfd90de506cf97787ff5571a9e",
+        "P0": 0,
+        "P1": 3,
+        "P2": 0,
+        "verdict": "return_for_bounded_planning_repair"
+      },
+      "targeted_independent_planning_rereview": "pending",
+      "projection_counts": "planning_20_candidate_technical_4_active_lifecycle_11_active_coordination_22_archive_13_post_archive_coordination_23",
       "stage_6_blocked": true,
       "rkp2_remains_active_implementation_child": true
     },

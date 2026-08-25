@@ -1,13 +1,20 @@
 import assert = require("node:assert/strict");
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
+import { EventEmitter } from "node:events";
 import {
   existsSync,
+  linkSync,
+  lstatSync,
+  mkdtempSync,
   readFileSync,
   readdirSync,
+  rmSync,
   statSync,
+  writeFileSync,
 } from "node:fs";
-import { relative, resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { join, relative, resolve } from "node:path";
 import { test } from "node:test";
 
 import * as coreKernel from "../../../src/core-kernel/index";
@@ -27,6 +34,10 @@ import {
 } from "./rkp-2-store-fixtures";
 
 const IMPLEMENTATION_BASE = "df40aef391440ae64ad3e266419579bee5887a1f";
+const FULL_RUNNER_PLANNING_BASE =
+  "eed4871a86191783d539b7d4097be3627e98e4a0";
+const FIRST_REVIEWED_FULL_RUNNER_PLANNING_HEAD =
+  "c43a34e7d02a57cfd90de506cf97787ff5571a9e";
 const APPROVED_PLANNING_STATE =
   "53646c92b81bc3ac160ec5d72b0d3f80c97b7eb0";
 const MANIFEST_PROJECTION_PARENT =
@@ -49,6 +60,16 @@ const PARENT_PATH =
   ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json";
 const MANIFEST_PATH =
   "test/core-kernel/rust-migration/fixtures/oracle-manifest-v1.json";
+const FULL_RUNNER_ACTIVE_ROOT =
+  ".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair";
+const FULL_RUNNER_ARCHIVE_ROOT =
+  ".trellis/tasks/archive/2026-08/08-25-rkp-2-cross-platform-full-test-runner-contract-repair";
+const PLANNED_OUTCOME_FIELDS = [
+  "type",
+  "data.nesting",
+  "data.file",
+  "data.name",
+] as const;
 
 const CRATES = [
   "brilliant-core-types",
@@ -112,7 +133,7 @@ const EXPECTED_IMPLEMENTATION_PATHS = [
   "test/core-kernel/rust-migration/rkp-2-store-fixtures.ts",
 ] as const;
 
-const EXPECTED_COORDINATION_PATHS = [
+const RKP2_HISTORICAL_COORDINATION_PATHS = [
   ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json",
   ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/operator-handoff.md",
   ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/review-candidate.md",
@@ -123,18 +144,91 @@ const EXPECTED_COORDINATION_PATHS = [
   DESIGN_PATH,
   IMPLEMENT_PATH,
   FILE_TEST_ROLLBACK_MATRIX_PATH,
-  ".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/task.json",
-  ".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/prd.md",
-  ".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/design.md",
-  ".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/implement.md",
-  ".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/implement.jsonl",
-  ".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/check.jsonl",
-  ".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/operator-handoff.md",
-  ".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/review-candidate.md",
-  ".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/research/current-runner-reproduction.md",
-  ".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/research/node-test-api-and-version-contract.md",
-  ".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/research/file-test-integration-and-rollback-matrix.md",
-  ".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/research/planning-self-audit.md",
+] as const;
+
+const ACTIVE_CHILD_PLANNING_PATHS = [
+  `${FULL_RUNNER_ACTIVE_ROOT}/task.json`,
+  `${FULL_RUNNER_ACTIVE_ROOT}/prd.md`,
+  `${FULL_RUNNER_ACTIVE_ROOT}/design.md`,
+  `${FULL_RUNNER_ACTIVE_ROOT}/implement.md`,
+  `${FULL_RUNNER_ACTIVE_ROOT}/implement.jsonl`,
+  `${FULL_RUNNER_ACTIVE_ROOT}/check.jsonl`,
+  `${FULL_RUNNER_ACTIVE_ROOT}/operator-handoff.md`,
+  `${FULL_RUNNER_ACTIVE_ROOT}/review-candidate.md`,
+  `${FULL_RUNNER_ACTIVE_ROOT}/research/current-runner-reproduction.md`,
+  `${FULL_RUNNER_ACTIVE_ROOT}/research/node-test-api-and-version-contract.md`,
+  `${FULL_RUNNER_ACTIVE_ROOT}/research/file-test-integration-and-rollback-matrix.md`,
+  `${FULL_RUNNER_ACTIVE_ROOT}/research/planning-self-audit.md`,
+] as const;
+
+const ARCHIVED_CHILD_PATHS = [
+  `${FULL_RUNNER_ARCHIVE_ROOT}/task.json`,
+  `${FULL_RUNNER_ARCHIVE_ROOT}/prd.md`,
+  `${FULL_RUNNER_ARCHIVE_ROOT}/design.md`,
+  `${FULL_RUNNER_ARCHIVE_ROOT}/implement.md`,
+  `${FULL_RUNNER_ARCHIVE_ROOT}/implement.jsonl`,
+  `${FULL_RUNNER_ARCHIVE_ROOT}/check.jsonl`,
+  `${FULL_RUNNER_ARCHIVE_ROOT}/operator-handoff.md`,
+  `${FULL_RUNNER_ARCHIVE_ROOT}/review-candidate.md`,
+  `${FULL_RUNNER_ARCHIVE_ROOT}/research/current-runner-reproduction.md`,
+  `${FULL_RUNNER_ARCHIVE_ROOT}/research/node-test-api-and-version-contract.md`,
+  `${FULL_RUNNER_ARCHIVE_ROOT}/research/file-test-integration-and-rollback-matrix.md`,
+  `${FULL_RUNNER_ARCHIVE_ROOT}/research/planning-self-audit.md`,
+  `${FULL_RUNNER_ARCHIVE_ROOT}/research/implementation-evidence.md`,
+] as const;
+
+const EXPECTED_COORDINATION_PATHS = [
+  ...RKP2_HISTORICAL_COORDINATION_PATHS,
+  ...ACTIVE_CHILD_PLANNING_PATHS,
+] as const;
+
+const EXPECTED_POST_ARCHIVE_COORDINATION_PATHS = [
+  ...RKP2_HISTORICAL_COORDINATION_PATHS,
+  ...ARCHIVED_CHILD_PATHS,
+] as const;
+
+const FULL_RUNNER_PLANNING_PATHS = [
+  PARENT_PATH,
+  DESIGN_PATH,
+  IMPLEMENT_PATH,
+  ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/operator-handoff.md",
+  FILE_TEST_ROLLBACK_MATRIX_PATH,
+  ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/review-candidate.md",
+  TASK_PATH,
+  `${FULL_RUNNER_ACTIVE_ROOT}/check.jsonl`,
+  `${FULL_RUNNER_ACTIVE_ROOT}/design.md`,
+  `${FULL_RUNNER_ACTIVE_ROOT}/implement.jsonl`,
+  `${FULL_RUNNER_ACTIVE_ROOT}/implement.md`,
+  `${FULL_RUNNER_ACTIVE_ROOT}/operator-handoff.md`,
+  `${FULL_RUNNER_ACTIVE_ROOT}/prd.md`,
+  `${FULL_RUNNER_ACTIVE_ROOT}/research/current-runner-reproduction.md`,
+  `${FULL_RUNNER_ACTIVE_ROOT}/research/file-test-integration-and-rollback-matrix.md`,
+  `${FULL_RUNNER_ACTIVE_ROOT}/research/node-test-api-and-version-contract.md`,
+  `${FULL_RUNNER_ACTIVE_ROOT}/research/planning-self-audit.md`,
+  `${FULL_RUNNER_ACTIVE_ROOT}/review-candidate.md`,
+  `${FULL_RUNNER_ACTIVE_ROOT}/task.json`,
+  "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
+] as const;
+
+const CHILD_TECHNICAL_PATHS = [
+  "package.json",
+  "test/test-infrastructure/run-compiled-tests.ts",
+  "test/test-infrastructure/run-compiled-tests.test.ts",
+  "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
+] as const;
+
+const CHILD_ACTIVE_LIFECYCLE_PATHS = [
+  `${FULL_RUNNER_ACTIVE_ROOT}/task.json`,
+  `${FULL_RUNNER_ACTIVE_ROOT}/operator-handoff.md`,
+  `${FULL_RUNNER_ACTIVE_ROOT}/review-candidate.md`,
+  `${FULL_RUNNER_ACTIVE_ROOT}/research/implementation-evidence.md`,
+  DESIGN_PATH,
+  IMPLEMENT_PATH,
+  FILE_TEST_ROLLBACK_MATRIX_PATH,
+  TASK_PATH,
+  ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/operator-handoff.md",
+  ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/review-candidate.md",
+  PARENT_PATH,
 ] as const;
 
 const FROZEN_POST_STAGE_5_AUTHORITY_CONTENT = [
@@ -148,15 +242,15 @@ const FROZEN_POST_STAGE_5_AUTHORITY_CONTENT = [
   },
   {
     path: DESIGN_PATH,
-    sha256: "d14824292db1b6030a45d95a1705addd25548f1ffa64863d321c57ebf50a53d3",
+    sha256: "5f6ee49c9aa83f475cffcb40bf5aab31a6975129658c9af1d99e4471e8e934ee",
   },
   {
     path: IMPLEMENT_PATH,
-    sha256: "8370e5467867cb04edb632097b5c50251c0609219b6916765f1706ba8981d1e5",
+    sha256: "e535c8bf5fbc170d4a148d9cd1d57d96743b33d96767a01ec441fb9eb29e013b",
   },
   {
     path: FILE_TEST_ROLLBACK_MATRIX_PATH,
-    sha256: "aaff7f6d4c9124d9f5ea4431d35464f0d167c2a5b487df5c6500ad8e22347b7a",
+    sha256: "31f84635a074a4a06279b6a33ad9b63f8cfa79e32e7674369f92ed1b6ce8f1a9",
   },
 ] as const;
 
@@ -280,7 +374,171 @@ function currentImplementationChanges(): Set<string> {
   return new Set(commands.flatMap((args) => lines(git(args))));
 }
 
-test("implementation changes stay inside the literal RKP-2 allowlists", () => {
+function currentFullRunnerPlanningChanges(): Set<string> {
+  const commands: readonly (readonly string[])[] = [
+    ["diff", "--name-only", `${FULL_RUNNER_PLANNING_BASE}..HEAD`],
+    ["diff", "--name-only"],
+    ["diff", "--cached", "--name-only"],
+    ["ls-files", "--others", "--exclude-standard"],
+  ];
+  return new Set(commands.flatMap((args) => lines(git(args))));
+}
+
+function assertExactPathSet(
+  actual: ReadonlySet<string>,
+  expected: readonly string[],
+  label: string,
+): void {
+  assert.deepEqual(
+    [...actual].sort(),
+    [...expected].sort(),
+    `${label} path set must be exact`,
+  );
+}
+
+function validateImplementationCandidateFixture(paths: readonly string[]): void {
+  const expected = new Set<string>([
+    ...CHILD_TECHNICAL_PATHS,
+    ...CHILD_ACTIVE_LIFECYCLE_PATHS,
+  ]);
+  assert.equal(CHILD_TECHNICAL_PATHS.length, 4);
+  assert.equal(CHILD_ACTIVE_LIFECYCLE_PATHS.length, 11);
+  assert.equal(expected.size, 15);
+  assertExactPathSet(new Set(paths), [...expected], "implementation candidate");
+  assert.equal(
+    CHILD_TECHNICAL_PATHS.some((path) =>
+      EXPECTED_IMPLEMENTATION_PATHS.includes(
+        path as (typeof EXPECTED_IMPLEMENTATION_PATHS)[number],
+      ),
+    ),
+    true,
+    "the workspace-law is intentionally shared by the RKP-2 and child projections",
+  );
+}
+
+function validateAuthorityProjectionFixture(
+  paths: readonly string[],
+  phase: "active" | "archived",
+): void {
+  const actual = new Set(paths);
+  const expected =
+    phase === "active"
+      ? EXPECTED_COORDINATION_PATHS
+      : EXPECTED_POST_ARCHIVE_COORDINATION_PATHS;
+  const forbidden =
+    phase === "active" ? ARCHIVED_CHILD_PATHS : ACTIVE_CHILD_PLANNING_PATHS;
+  assertExactPathSet(actual, expected, `${phase} authority projection`);
+  for (const path of forbidden) {
+    assert.equal(actual.has(path), false, `dual authority is forbidden: ${path}`);
+  }
+  if (phase === "archived") {
+    assert.equal(
+      actual.has(`${FULL_RUNNER_ARCHIVE_ROOT}/research/implementation-evidence.md`),
+      true,
+      "archived authority requires implementation evidence",
+    );
+  }
+}
+
+type PlannedTestEvent = Readonly<{
+  type: string;
+  data?: Readonly<{
+    nesting?: number;
+    file?: string;
+    name?: string;
+    details?: Readonly<{ type?: string }>;
+  }>;
+}>;
+
+type PlannedStreamState = Readonly<{
+  ended: boolean;
+  errored?: boolean;
+  aborted?: boolean;
+  prematureClose?: boolean;
+  reporterFlushed: boolean;
+}>;
+
+function normalizedAbsolute(path: string): string {
+  return resolve(path).replaceAll("\\", "/");
+}
+
+function evaluatePlannedFileOutcomes(
+  manifestFiles: readonly string[],
+  events: readonly PlannedTestEvent[],
+  state: PlannedStreamState,
+): string {
+  if (state.errored === true) return "runner.stream-error";
+  if (state.aborted === true) return "runner.stream-aborted";
+  if (state.prematureClose === true || !state.ended) {
+    return "runner.stream-incomplete";
+  }
+  if (!state.reporterFlushed) return "runner.reporter-flush-failed";
+
+  const manifest = new Set(manifestFiles.map(normalizedAbsolute));
+  const outcomes = new Map<string, "pass" | "fail">();
+  for (const event of events) {
+    if (event.type === "test:interrupted") return "runner.test-interrupted";
+    if (event.type === "test:fail") return "runner.test-failed";
+    if (event.type !== "test:pass" || event.data?.nesting !== 0) continue;
+
+    const file = event.data.file;
+    const name = event.data.name;
+    if (file === undefined && name === undefined) {
+      return "runner.outcome-path-missing";
+    }
+    const normalizedFile = file === undefined ? undefined : normalizedAbsolute(file);
+    const normalizedName = name === undefined ? undefined : normalizedAbsolute(name);
+    if (
+      normalizedFile !== undefined &&
+      normalizedName !== undefined &&
+      normalizedFile !== normalizedName
+    ) {
+      return "runner.outcome-path-mismatch";
+    }
+    const outcomePath = normalizedFile ?? normalizedName;
+    assert.ok(outcomePath);
+    if (!manifest.has(outcomePath)) return "runner.outcome-unknown";
+    if (outcomes.has(outcomePath)) return "runner.outcome-duplicate";
+    outcomes.set(outcomePath, "pass");
+  }
+  if (outcomes.size !== manifest.size) return "runner.outcome-missing";
+  return "ok";
+}
+
+type PlannedIdentityEntry = Readonly<{
+  path: string;
+  isFile: boolean;
+  dev: unknown;
+  ino: unknown;
+}>;
+
+function validatePhysicalIdentitiesBeforeRun(
+  entries: readonly PlannedIdentityEntry[],
+  run: () => void,
+): string {
+  const normalizedPaths = new Set<string>();
+  const identities = new Set<string>();
+  for (const entry of entries) {
+    const path = normalizedAbsolute(entry.path);
+    if (normalizedPaths.has(path)) return "runner.path-duplicate";
+    normalizedPaths.add(path);
+    if (!entry.isFile) return "runner.not-regular-file";
+    if (
+      typeof entry.dev !== "bigint" ||
+      typeof entry.ino !== "bigint" ||
+      (entry.dev === 0n && entry.ino === 0n)
+    ) {
+      return "runner.identity-unavailable";
+    }
+    const identity = `${entry.dev}:${entry.ino}`;
+    if (identities.has(identity)) return "runner.physical-alias";
+    identities.add(identity);
+  }
+  run();
+  return "ok";
+}
+
+test("implementation changes stay inside the literal RKP-2 allowlists", async () => {
   const [implementation, coordination] = designAllowlistBlocks();
   assert.deepEqual(implementation, [...EXPECTED_IMPLEMENTATION_PATHS]);
   assert.deepEqual(coordination, [...EXPECTED_COORDINATION_PATHS]);
@@ -291,7 +549,248 @@ test("implementation changes stay inside the literal RKP-2 allowlists", () => {
   for (const path of currentImplementationChanges()) {
     assert.equal(allowed.has(path), true, `unreviewed implementation path: ${path}`);
   }
+  assertFullRunnerLifecycleFixtures();
+  await assertCrossVersionOutcomeFixtures();
+  assertPhysicalIdentityFixtures();
 });
+
+function assertFullRunnerLifecycleFixtures(): void {
+  for (const commit of [
+    FULL_RUNNER_PLANNING_BASE,
+    FIRST_REVIEWED_FULL_RUNNER_PLANNING_HEAD,
+  ]) {
+    assert.doesNotThrow(() => git(["cat-file", "-e", `${commit}^{commit}`]));
+  }
+  assert.deepEqual(
+    git([
+      "rev-list",
+      "--parents",
+      "-n",
+      "1",
+      FIRST_REVIEWED_FULL_RUNNER_PLANNING_HEAD,
+    ]).split(" "),
+    [FIRST_REVIEWED_FULL_RUNNER_PLANNING_HEAD, FULL_RUNNER_PLANNING_BASE],
+  );
+  assert.doesNotThrow(() =>
+    git([
+      "merge-base",
+      "--is-ancestor",
+      FIRST_REVIEWED_FULL_RUNNER_PLANNING_HEAD,
+      "HEAD",
+    ]),
+  );
+  assertExactPathSet(
+    currentFullRunnerPlanningChanges(),
+    FULL_RUNNER_PLANNING_PATHS,
+    "approved base through current planning candidate",
+  );
+  assert.equal(new Set(FULL_RUNNER_PLANNING_PATHS).size, 20);
+
+  validateImplementationCandidateFixture([
+    ...CHILD_TECHNICAL_PATHS,
+    ...CHILD_ACTIVE_LIFECYCLE_PATHS,
+  ]);
+  assert.throws(() =>
+    validateImplementationCandidateFixture(CHILD_TECHNICAL_PATHS),
+  );
+
+  validateAuthorityProjectionFixture(EXPECTED_COORDINATION_PATHS, "active");
+  validateAuthorityProjectionFixture(
+    EXPECTED_POST_ARCHIVE_COORDINATION_PATHS,
+    "archived",
+  );
+  assert.equal(EXPECTED_COORDINATION_PATHS.length, 22);
+  assert.equal(EXPECTED_POST_ARCHIVE_COORDINATION_PATHS.length, 23);
+  assert.throws(() =>
+    validateAuthorityProjectionFixture(
+      [...EXPECTED_COORDINATION_PATHS, ...ARCHIVED_CHILD_PATHS],
+      "active",
+    ),
+  );
+  assert.throws(() =>
+    validateAuthorityProjectionFixture(
+      EXPECTED_POST_ARCHIVE_COORDINATION_PATHS.filter(
+        (path) => path !== `${FULL_RUNNER_ARCHIVE_ROOT}/research/implementation-evidence.md`,
+      ),
+      "archived",
+    ),
+  );
+}
+
+async function assertCrossVersionOutcomeFixtures(): Promise<void> {
+  const first = resolve("dist/test/alpha.test.js");
+  const second = resolve("dist/test/nested/beta.test.js");
+  const manifest = [first, second];
+  const ended = { ended: true, reporterFlushed: true } as const;
+  const passEvents: readonly PlannedTestEvent[] = [
+    { type: "test:pass", data: { nesting: 0, file: first, name: first } },
+    { type: "test:pass", data: { nesting: 0, name: second } },
+  ];
+  assert.equal(evaluatePlannedFileOutcomes(manifest, passEvents, ended), "ok");
+  assert.equal(
+    evaluatePlannedFileOutcomes(
+      manifest,
+      [{ type: "test:fail", data: { nesting: 4 } }, ...passEvents],
+      ended,
+    ),
+    "runner.test-failed",
+  );
+  assert.equal(
+    evaluatePlannedFileOutcomes(
+      manifest,
+      [{ type: "test:interrupted", data: { nesting: 0 } }, ...passEvents],
+      ended,
+    ),
+    "runner.test-interrupted",
+  );
+  assert.equal(
+    evaluatePlannedFileOutcomes(
+      manifest,
+      [
+        { type: "test:complete", data: { nesting: 0, file: first } },
+        {
+          type: "diagnostic",
+          data: { nesting: 0, file: second, details: { type: "pass" } },
+        },
+      ],
+      ended,
+    ),
+    "runner.outcome-missing",
+  );
+  assert.equal(
+    evaluatePlannedFileOutcomes(manifest, [...passEvents, passEvents[0]!], ended),
+    "runner.outcome-duplicate",
+  );
+  assert.equal(
+    evaluatePlannedFileOutcomes(manifest, passEvents.slice(0, 1), ended),
+    "runner.outcome-missing",
+  );
+  assert.equal(
+    evaluatePlannedFileOutcomes(
+      manifest,
+      [
+        {
+          type: "test:pass",
+          data: { nesting: 0, file: first, name: second },
+        },
+      ],
+      ended,
+    ),
+    "runner.outcome-path-mismatch",
+  );
+  assert.equal(
+    evaluatePlannedFileOutcomes(manifest, passEvents, {
+      ended: false,
+      prematureClose: true,
+      reporterFlushed: true,
+    }),
+    "runner.stream-incomplete",
+  );
+  assert.equal(
+    evaluatePlannedFileOutcomes(manifest, passEvents, {
+      ended: true,
+      reporterFlushed: false,
+    }),
+    "runner.reporter-flush-failed",
+  );
+
+  const stream = new EventEmitter();
+  const observed: string[] = [];
+  const returnedStream = stream;
+  returnedStream.on("test:pass", () => observed.push("pass"));
+  returnedStream.on("end", () => observed.push("end"));
+  await new Promise<void>((done) => {
+    queueMicrotask(() => {
+      stream.emit("test:pass", { nesting: 0, file: first });
+      stream.emit("end");
+      done();
+    });
+  });
+  assert.deepEqual(observed, ["pass", "end"]);
+  assert.deepEqual(PLANNED_OUTCOME_FIELDS, [
+    "type",
+    "data.nesting",
+    "data.file",
+    "data.name",
+  ]);
+  assert.equal(
+    PLANNED_OUTCOME_FIELDS.includes(
+      "data.details.type" as (typeof PLANNED_OUTCOME_FIELDS)[number],
+    ),
+    false,
+  );
+}
+
+function assertPhysicalIdentityFixtures(): void {
+  const root = mkdtempSync(join(tmpdir(), "rkp2-runner-hardlink-"));
+  try {
+    const first = join(root, "first.test.js");
+    const alias = join(root, "alias.test.js");
+    writeFileSync(first, "// fixture\n", "utf8");
+    linkSync(first, alias);
+    const firstStats = lstatSync(first, { bigint: true });
+    const aliasStats = lstatSync(alias, { bigint: true });
+    let runCalls = 0;
+    assert.equal(
+      validatePhysicalIdentitiesBeforeRun(
+        [
+          {
+            path: first,
+            isFile: firstStats.isFile(),
+            dev: firstStats.dev,
+            ino: firstStats.ino,
+          },
+          {
+            path: alias,
+            isFile: aliasStats.isFile(),
+            dev: aliasStats.dev,
+            ino: aliasStats.ino,
+          },
+        ],
+        () => {
+          runCalls += 1;
+        },
+      ),
+      "runner.physical-alias",
+    );
+    assert.equal(runCalls, 0);
+    assert.equal(
+      validatePhysicalIdentitiesBeforeRun(
+        [{ path: first, isFile: true, dev: 1, ino: 2n }],
+        () => {
+          runCalls += 1;
+        },
+      ),
+      "runner.identity-unavailable",
+    );
+    assert.equal(runCalls, 0);
+    assert.equal(
+      validatePhysicalIdentitiesBeforeRun(
+        [{ path: first, isFile: true, dev: 0n, ino: 0n }],
+        () => {
+          runCalls += 1;
+        },
+      ),
+      "runner.identity-unavailable",
+    );
+    assert.equal(runCalls, 0);
+    assert.equal(
+      validatePhysicalIdentitiesBeforeRun(
+        [
+          { path: first, isFile: true, dev: 1n, ino: 2n },
+          { path: first, isFile: true, dev: 3n, ino: 4n },
+        ],
+        () => {
+          runCalls += 1;
+        },
+      ),
+      "runner.path-duplicate",
+    );
+    assert.equal(runCalls, 0);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
 
 test("one-time post-Stage-5 manifest successor projection is exact and content-frozen", () => {
   for (const commit of [

@@ -193,9 +193,9 @@
     "post_stage_5_manifest_authority_hashes_lf_normalized_sha256": {
       "check_jsonl": "7e12f6d00ba17e1967ef57e884e7b5d6ca7efedbb2aaf94de04fc4b3091251c3",
       "implement_jsonl": "cd0a42070a76a18e782d7da4ebc0e9a88d2ed5dece0d093125d4fc8982229705",
-      "design_md": "d14824292db1b6030a45d95a1705addd25548f1ffa64863d321c57ebf50a53d3",
-      "implement_md": "8370e5467867cb04edb632097b5c50251c0609219b6916765f1706ba8981d1e5",
-      "file_test_and_rollback_matrix_md": "aaff7f6d4c9124d9f5ea4431d35464f0d167c2a5b487df5c6500ad8e22347b7a"
+      "design_md": "5f6ee49c9aa83f475cffcb40bf5aab31a6975129658c9af1d99e4471e8e934ee",
+      "implement_md": "e535c8bf5fbc170d4a148d9cd1d57d96743b33d96767a01ec441fb9eb29e013b",
+      "file_test_and_rollback_matrix_md": "31f84635a074a4a06279b6a33ad9b63f8cfa79e32e7674369f92ed1b6ce8f1a9"
     },
     "cross_platform_full_test_runner_contract_repair": {
       "child": "08-25-rkp-2-cross-platform-full-test-runner-contract-repair",
@@ -206,10 +206,27 @@
       "node24_complete_literal": "77_files_557_discovered_556_pass_1_expected_gc_skip_0_fail",
       "node20_literal_glob": "20_20_2_exit_1",
       "package_and_lock_df40aef_to_eed4871a_delta": "zero",
-      "status": "planning_candidate_targeted_independent_review_pending",
+      "status": "bounded_planning_repair_candidate_targeted_independent_rereview_pending",
+      "first_planning_audit": {
+        "auditor_task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
+        "candidate_commit": "c43a34e7d02a57cfd90de506cf97787ff5571a9e",
+        "P0": 0,
+        "P1": 3,
+        "P2": 0,
+        "verdict": "return_for_bounded_planning_repair"
+      },
+      "targeted_independent_planning_rereview": "pending",
+      "planning_range_path_count": 20,
+      "implementation_candidate_technical_path_count": 4,
+      "implementation_candidate_lifecycle_path_count": 11,
+      "active_coordination_path_count": 22,
+      "post_pass_archive_path_count": 13,
+      "post_archive_coordination_path_count": 23,
+      "archive_destination": ".trellis/tasks/archive/2026-08/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/",
       "sole_test_infrastructure_owner": true,
       "task_start_run": false,
       "production_implementation_authorized": false,
+      "post_pass_closeout_authorized": false,
       "stage_6_blocked_until_accepted_archived_integrated": true
     },
     "stage_6_started": false,

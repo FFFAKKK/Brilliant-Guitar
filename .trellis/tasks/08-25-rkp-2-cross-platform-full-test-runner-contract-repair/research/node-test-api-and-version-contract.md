@@ -14,7 +14,7 @@ The Node test runner is stable from Node 20.0.0. Both target versions expose pro
 3. Verify the CLI is running at repository root.
 4. Call only `run({ files: absoluteFiles, concurrency: true })`.
 5. Treat semantic request as repo CWD plus process isolation. Verify target-version default before run; do not pass unsupported options or branch on OS.
-6. Connect a stable built-in reporter and wait for its completion/errors.
+6. Connect a stable built-in reporter for display and a separate structured observer for truth; attach both synchronously after `run()` returns.
 
 ## Rejected choices
 
@@ -29,4 +29,8 @@ The Node test runner is stable from Node 20.0.0. Both target versions expose pro
 
 ## Reporter/outcome compatibility gate
 
-The focused test must execute the real programmatic stream on both pinned versions. It verifies top-level file result names/counts, failure/cancellation signaling, stable reporter completion and expected skips. If event details differ across the supported versions, the implementation must use a tested normalization internal to the runner; it may not weaken completeness or silently drop a version.
+The cross-version normalizer is frozen to common stable `test:pass` and `test:fail` events. It consumes only event type plus `data.nesting`, `data.file` and `data.name`; it must never infer outcomes from `test:complete`, `data.details.type`, diagnostic payloads or reporter text. Any `test:fail` at any nesting fails. Only nesting-zero pass/fail events may identify manifest-file terminal outcomes. `data.file` or `data.name` is required; if both exist they must normalize to the same absolute manifest member. Every manifest file has exactly one outcome; unknown, duplicate or missing outcomes fail.
+
+Any supported-version `test:interrupted`, stream error/abort, close before normal end, missing end or reporter sink/pipeline/flush failure is nonzero. Exit zero waits for normal stream end, exact outcome-set equality, zero fail/interrupted and completed reporter flush. Listener attachment occurs synchronously after `run()` returns, with injected earliest-post-return emission/close coverage.
+
+The implementation test matrix records real Node 20.20.2 and 24.15.0 event characterization fixtures. Each fixture documents emitted event types and the exact four consumed fields above; version-only fields may be retained as unconsumed evidence but may not control the result. A supported version whose common fields cannot prove one exact top-level outcome per manifest file fails the compatibility gate rather than weakening completeness.

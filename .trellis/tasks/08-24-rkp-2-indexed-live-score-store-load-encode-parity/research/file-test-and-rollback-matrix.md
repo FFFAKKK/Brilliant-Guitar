@@ -77,15 +77,16 @@ The repair has one authority owner: the exact docs-only closure candidate submit
 
 ## Blocking cross-platform full-runner child
 
-Child `08-25-rkp-2-cross-platform-full-test-runner-contract-repair` owns complete-suite discovery, immutable manifest, programmatic `node:test` execution and reporter/exit semantics. Its twelve planning artifacts are appended as literal RKP-2 coordination paths for this candidate only. They are not RKP-2 production/test paths and do not authorize implementation.
+Child `08-25-rkp-2-cross-platform-full-test-runner-contract-repair` owns complete-suite discovery, BigInt physical identity, immutable manifest, programmatic `node:test` execution, structured outcome normalization and reporter/exit semantics. Its twelve planning artifacts are appended as literal RKP-2 coordination paths for this candidate only. They are not RKP-2 production/test paths and do not authorize implementation.
 
 | Child boundary | Exact ownership | RKP-2 relationship | Rollback |
 |---|---|---|---|
-| planning candidate | child task/prd/design/implement/jsonl/handoff/review plus four named research files | RKP-2 records the blocker and freezes exact paths/hashes | revert this planning projection; Stage 6 stays blocked |
-| later technical repair | `package.json`, runner source, runner focused test and existing RKP-2 workspace-law only | RKP-2 Stage 6 consumes accepted runner/manifest, never discovery logic | revert child stages in reverse order |
-| later lifecycle/integration | eleven exact child/RKP-2/Rust-parent paths from child design section 8 | create a new prerequisite base only after review/acceptance/archive | revert integration; Stage 1–5 remain intact |
+| planning candidate | exact `eed4871a..planning HEAD` twenty-path set | RKP-2 records the blocker and freezes 21 technical + 22 active coordination paths | revert this planning projection; Stage 6 stays blocked |
+| pre-review implementation candidate | four child technical plus eleven active lifecycle paths, exact deduplicated range | Stage 4 stops at independent implementation review; no archive/hash integration | revert to accepted planning HEAD |
+| post-PASS archive/closeout | exact thirteen archived child artifacts including implementation evidence; replace twelve active paths | RKP-2 becomes 10 historical + 13 archive = 23 coordination paths with no dual authority | joint revert restores active planning child and 22 paths |
+| RKP-2 integration | explicit fast-forward/merge of accepted descendant | create a new prerequisite base only after review/acceptance/archive | revert to `eed4871a`; Stage 1–5 remain intact |
 
-`package-lock.json` is excluded. The existing RKP-2 21-path technical matrix and both JSONL files remain unchanged by this planning child. The five LF-normalized RKP-2 content hashes are recomputed after this authority projection; JSONL hashes stay identical. No wildcard or task-directory exemption is introduced.
+`package-lock.json` is excluded. The existing RKP-2 21-path technical matrix and both JSONL files remain unchanged by this planning child. The five LF-normalized RKP-2 content hashes are frozen for the current 22-path planning authority; they are recomputed for 23-path archived authority only after implementation PASS. JSONL hashes stay identical. No wildcard or task-directory exemption is introduced.
 
 Stage 6 remains not started/authorized until the accepted child is integrated and the user supplies a later explicit authorization. This preserves one test-infrastructure owner and the original six-stage technical sequence.
 
