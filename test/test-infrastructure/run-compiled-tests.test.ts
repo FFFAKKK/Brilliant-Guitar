@@ -339,15 +339,66 @@ test("observer attaches synchronously and accepts Node 20 and Node 24 top-level 
   }
 });
 
-test("outcome normalizer rejects fail, interruption and every incomplete file set", async () => {
+test("outcome normalizer uses pass data.file as idempotent manifest coverage", async () => {
+  const root = fixtureRoot("coverage-success");
+  try {
+    writePackage(root);
+    writeFixture(root, "alpha.test.js");
+    writeFixture(root, "nested/beta.test.js");
+    await executeCompiledTests(root, {
+      ...passingExecutionSeams(root),
+      run(options) {
+        return scheduledStream((stream) => {
+          const [alpha, beta] = options.files;
+          assert.ok(alpha);
+          assert.ok(beta);
+          emitTestEvent(stream, "test:pass", {
+            nesting: 0,
+            file: alpha,
+            name: "opaque internal title",
+            details: { type: "fail" },
+          });
+          emitTestEvent(stream, "test:pass", {
+            nesting: 7,
+            file: alpha,
+            name: resolve(root, "absolute-title-is-not-identity.test.js"),
+          });
+          emitTestEvent(stream, "test:pass", {
+            nesting: 0,
+            file: alpha,
+            name: beta,
+          });
+          emitTestEvent(stream, "test:pass", {
+            nesting: 3,
+            file: beta,
+            name: "second opaque title",
+          });
+          stream.end();
+        });
+      },
+    });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("outcome normalizer rejects fail, interruption and malformed or partial coverage", async () => {
   const cases: readonly Readonly<{
     code: RunnerContractError["code"];
     emit(stream: PassThrough, files: readonly string[]): void;
+    files?: readonly string[];
   }>[] = [
     {
       code: "runner.test-failed",
       emit(stream) {
         emitTestEvent(stream, "test:fail", { nesting: 4 });
+        stream.end();
+      },
+    },
+    {
+      code: "runner.test-failed",
+      emit(stream) {
+        emitTestEvent(stream, "test:fail", { nesting: 0 });
         stream.end();
       },
     },
@@ -372,40 +423,55 @@ test("outcome normalizer rejects fail, interruption and every incomplete file se
     },
     {
       code: "runner.outcome-path-missing",
-      emit(stream) {
-        emitTestEvent(stream, "test:pass", { nesting: 0 });
+      emit(stream, files) {
+        emitTestEvent(stream, "test:pass", {
+          nesting: 0,
+          name: files[0],
+        });
         stream.end();
       },
     },
     {
-      code: "runner.outcome-path-mismatch",
+      code: "runner.outcome-path-missing",
       emit(stream, files) {
         emitTestEvent(stream, "test:pass", {
           nesting: 0,
-          file: files[0],
-          name: resolve(files[0] ?? "", "..", "other.test.js"),
+          file: 42,
+          name: files[0],
+        });
+        stream.end();
+      },
+    },
+    {
+      code: "runner.outcome-path-missing",
+      emit(stream) {
+        emitTestEvent(stream, "test:pass", {
+          nesting: 0,
+          file: "dist/test/single.test.js",
         });
         stream.end();
       },
     },
     {
       code: "runner.outcome-unknown",
-      emit(stream) {
-        const unknown = resolve("outside.test.js");
+      emit(stream, files) {
         emitTestEvent(stream, "test:pass", {
           nesting: 0,
-          file: unknown,
-          name: unknown,
+          file: resolve(files[0] ?? "", "..", "outside.test.js"),
+          name: files[0],
         });
         stream.end();
       },
     },
     {
-      code: "runner.outcome-duplicate",
+      code: "runner.outcome-missing",
+      files: ["alpha.test.js", "beta.test.js"],
       emit(stream, files) {
-        const data = { nesting: 0, file: files[0], name: files[0] };
-        emitTestEvent(stream, "test:pass", data);
-        emitTestEvent(stream, "test:pass", data);
+        emitTestEvent(stream, "test:pass", {
+          nesting: 2,
+          file: files[0],
+          name: "only alpha was discovered",
+        });
         stream.end();
       },
     },
@@ -415,7 +481,9 @@ test("outcome normalizer rejects fail, interruption and every incomplete file se
     const root = fixtureRoot(`outcome-${index}`);
     try {
       writePackage(root);
-      writeFixture(root, "single.test.js");
+      for (const file of fixture.files ?? ["single.test.js"]) {
+        writeFixture(root, file);
+      }
       await rejectsWithCode(
         () =>
           executeCompiledTests(root, {
@@ -471,6 +539,25 @@ test("stream, run and reporter failures never produce a successful result", asyn
           run() {
             return scheduledStream((stream) => {
               stream.emit("aborted");
+              stream.end();
+            });
+          },
+        };
+      },
+    },
+    {
+      code: "runner.stream-incomplete",
+      overrides(root) {
+        return {
+          ...passingExecutionSeams(root),
+          run(options) {
+            return scheduledStream((stream) => {
+              emitTestEvent(stream, "test:pass", {
+                nesting: 0,
+                file: options.files[0],
+                name: "pass before premature close",
+              });
+              stream.emit("close");
               stream.end();
             });
           },

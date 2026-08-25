@@ -30,9 +30,7 @@ export type RunnerContractErrorCode =
   | "runner.test-failed"
   | "runner.test-interrupted"
   | "runner.outcome-path-missing"
-  | "runner.outcome-path-mismatch"
   | "runner.outcome-unknown"
-  | "runner.outcome-duplicate"
   | "runner.outcome-missing"
   | "runner.manifest-mismatch";
 
@@ -327,7 +325,7 @@ function attachOutcomeObserver(
       resolve(repoRoot, COMPILED_TEST_ROOT, file),
     ),
   );
-  const outcomes = new Map<string, "pass" | "fail">();
+  const seenManifestFiles = new Set<string>();
   let failure: RunnerContractErrorCode | undefined;
   let ended = false;
   let closedBeforeEnd = false;
@@ -337,56 +335,29 @@ function attachOutcomeObserver(
   const fail = (code: RunnerContractErrorCode): void => {
     failure ??= code;
   };
-  const captureFileOutcome = (
-    kind: "pass" | "fail",
-    data: unknown,
-  ): void => {
+  const capturePassingFile = (data: unknown): void => {
     if (typeof data !== "object" || data === null) {
       fail("runner.outcome-path-missing");
       return;
     }
-    const value = data as {
-      nesting?: unknown;
-      file?: unknown;
-      name?: unknown;
-    };
-    if (value.nesting !== 0) {
-      return;
-    }
-    const file =
-      typeof value.file === "string" && value.file !== ""
-        ? normalizedAbsolute(repoRoot, value.file)
-        : undefined;
-    const name =
-      typeof value.name === "string" && value.name !== ""
-        ? normalizedAbsolute(repoRoot, value.name)
-        : undefined;
-    if (file === undefined && name === undefined) {
+    const file = (data as { file?: unknown }).file;
+    if (typeof file !== "string" || file.length === 0 || !isAbsolute(file)) {
       fail("runner.outcome-path-missing");
       return;
     }
-    if (file !== undefined && name !== undefined && file !== name) {
-      fail("runner.outcome-path-mismatch");
-      return;
-    }
-    const outcomePath = file ?? name;
-    if (outcomePath === undefined || !manifest.has(outcomePath)) {
+    const outcomePath = normalizedAbsolute(repoRoot, file);
+    if (!manifest.has(outcomePath)) {
       fail("runner.outcome-unknown");
       return;
     }
-    if (outcomes.has(outcomePath)) {
-      fail("runner.outcome-duplicate");
-      return;
-    }
-    outcomes.set(outcomePath, kind);
+    seenManifestFiles.add(outcomePath);
   };
 
   stream.on("test:pass", (data: unknown) => {
-    captureFileOutcome("pass", data);
+    capturePassingFile(data);
   });
-  stream.on("test:fail", (data: unknown) => {
+  stream.on("test:fail", () => {
     fail("runner.test-failed");
-    captureFileOutcome("fail", data);
   });
   stream.on("test:interrupted", () => {
     fail("runner.test-interrupted");
@@ -423,12 +394,12 @@ function attachOutcomeObserver(
       if (failure !== undefined) {
         throw new RunnerContractError(failure);
       }
-      if (outcomes.size !== manifest.size) {
+      if (seenManifestFiles.size !== manifest.size) {
         throw new RunnerContractError("runner.outcome-missing");
       }
       for (const file of manifest) {
-        if (outcomes.get(file) !== "pass") {
-          throw new RunnerContractError("runner.test-failed");
+        if (!seenManifestFiles.has(file)) {
+          throw new RunnerContractError("runner.outcome-missing");
         }
       }
     },
