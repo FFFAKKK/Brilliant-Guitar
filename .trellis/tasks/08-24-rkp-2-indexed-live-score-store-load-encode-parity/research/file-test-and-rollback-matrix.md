@@ -61,7 +61,19 @@ No other production/test/config path is implied by a directory wildcard.
 | RKP-2 `research/implementation-evidence.md` | no | create | update only for bounded audited evidence |
 | Rust parent `task.json` | yes | yes | yes |
 
-Planning authority files stay byte-identical during implementation.
+Planning authority files stay byte-identical during implementation except for the following one-time post-Stage-5 successor-projection repair. Once its targeted planning rereview accepts the exact candidate, the repaired authority files freeze again.
+
+## One-time post-Stage-5 successor-projection repair
+
+| Path | One-time ownership | Frozen result / rollback |
+|---|---|---|
+| `implement.jsonl` | manifest projection commit `bda15099f4932aced965eabc6b6e147accd9b5ce` changes only the deleted `smoke_runtime.rs` context row | one `runtime.rs` row, 25 rows total; revert with the authority closure when abandoning the repair |
+| `check.jsonl` | manifest projection commit `bda15099f4932aced965eabc6b6e147accd9b5ce` changes only the deleted `smoke_runtime.rs` review row | one `runtime.rs` row, 20 rows total; revert with the authority closure when abandoning the repair |
+| `design.md`, `implement.md`, `research/file-test-and-rollback-matrix.md` | this bounded planning-authority closure only | exact content SHA-256 frozen by workspace-law after targeted rereview; later edits require a new planning review |
+| `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts` | mechanically enforce the exact ten-path allowlist, both single-row projections and five final content hashes | revert only with the complete authority closure; no wildcard or task-directory exemption |
+| RKP-2 `task.json`, `operator-handoff.md`, `review-candidate.md`; Rust parent `task.json` | project the pending targeted rereview without changing Stage 5/6/default-runtime facts | remove the pending repair projection if the candidate is rejected; do not alter technical stage history |
+
+The repair has one authority owner: the exact docs-only closure candidate submitted for targeted planning rereview. The preceding `bda15099...` commit is only its manifest projection input, not a second planning authority. Other JSONL rows remain byte-semantic identical to `bda15099...`; the Stage 5 production commit and six-stage technical sequence remain unchanged.
 
 ## Protected boundary
 

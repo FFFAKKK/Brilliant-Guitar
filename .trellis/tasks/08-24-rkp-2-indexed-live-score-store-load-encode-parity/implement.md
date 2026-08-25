@@ -220,6 +220,8 @@ test/core-kernel/rust-migration/rkp-2-store-fixtures.ts
 6. Prove repeated read bytes, detached aliases, optional fields, array order and unknown extensions.
 7. Run valid and invalid RKP-0/TS fixture subsets through native create/read.
 8. Route real Runtime creation through a private Session coordinator/factory seam; in Session unit tests substitute `LiveStoreBuildFailure::InternalCapacity`, assert exact existing `bridge.internal` and no `KernelSession`, then rely on the unchanged RKP-1 Node publish-after-accepted-Session law rather than adding a Node export or production fault hook.
+9. After deleting `smoke_runtime.rs`, perform the one-time successor projection in the context manifests: replace exactly its one row in `implement.jsonl` and its one row in `check.jsonl` with `runtime.rs`; preserve row counts `25/20`, valid per-line JSON, existing paths, per-file path uniqueness and every other row.
+10. Before Stage 6 authorization, close the one-time projection in `design.md`, this implementation plan and `research/file-test-and-rollback-matrix.md`; make workspace-law enforce both the exact ten-path coordination allowlist and SHA-256 content freezes for the five repaired authority/manifest files. The resulting docs-only candidate requires a dedicated targeted planning rereview and does not itself authorize Stage 6.
 
 ### Focused gate
 
@@ -235,7 +237,7 @@ The operator uses the existing RKP-1 native build/load procedure. Exact two expo
 
 `feat(rkp-2): integrate indexed live store load and deterministic export`
 
-Revert Stage 5 to restore `SmokeRuntime`; Stages 1–4 remain non-default and unused.
+Revert Stage 5 to restore `SmokeRuntime`; Stages 1–4 remain non-default and unused. If the one-time successor-projection repair has already been committed, revert its authority-closure commit and manifest-projection commit together before restoring the pre-Stage-5 context; neither commit is a second Runtime owner.
 
 ## 7. Stage 6 — Hostile/resource/scale evidence and candidate freeze
 

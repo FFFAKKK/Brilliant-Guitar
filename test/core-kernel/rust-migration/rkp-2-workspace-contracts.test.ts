@@ -1,6 +1,8 @@
 import assert = require("node:assert/strict");
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
+  existsSync,
   readFileSync,
   readdirSync,
   statSync,
@@ -25,8 +27,20 @@ import {
 } from "./rkp-2-store-fixtures";
 
 const IMPLEMENTATION_BASE = "df40aef391440ae64ad3e266419579bee5887a1f";
+const MANIFEST_PROJECTION_PARENT =
+  "4f5f45a5f5a97968ef5280524cd4e6ab8dbebda8";
+const MANIFEST_PROJECTION_COMMIT =
+  "bda15099f4932aced965eabc6b6e147accd9b5ce";
 const DESIGN_PATH =
   ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/design.md";
+const IMPLEMENT_PATH =
+  ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/implement.md";
+const IMPLEMENT_CONTEXT_PATH =
+  ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/implement.jsonl";
+const CHECK_CONTEXT_PATH =
+  ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/check.jsonl";
+const FILE_TEST_ROLLBACK_MATRIX_PATH =
+  ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/research/file-test-and-rollback-matrix.md";
 const TASK_PATH =
   ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json";
 const PARENT_PATH =
@@ -102,6 +116,34 @@ const EXPECTED_COORDINATION_PATHS = [
   ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/review-candidate.md",
   ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/research/implementation-evidence.md",
   ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json",
+  CHECK_CONTEXT_PATH,
+  IMPLEMENT_CONTEXT_PATH,
+  DESIGN_PATH,
+  IMPLEMENT_PATH,
+  FILE_TEST_ROLLBACK_MATRIX_PATH,
+] as const;
+
+const FROZEN_POST_STAGE_5_AUTHORITY_CONTENT = [
+  {
+    path: CHECK_CONTEXT_PATH,
+    sha256: "7e12f6d00ba17e1967ef57e884e7b5d6ca7efedbb2aaf94de04fc4b3091251c3",
+  },
+  {
+    path: IMPLEMENT_CONTEXT_PATH,
+    sha256: "cd0a42070a76a18e782d7da4ebc0e9a88d2ed5dece0d093125d4fc8982229705",
+  },
+  {
+    path: DESIGN_PATH,
+    sha256: "819f1881c88125b38c34b95450d885fa0f6fc9d225aa5d6105b8c98b9009dc4d",
+  },
+  {
+    path: IMPLEMENT_PATH,
+    sha256: "32a40740bbd0e426d3bee6cf65257b6a702bdf0a5d3533f7553ef2ba253b8fe8",
+  },
+  {
+    path: FILE_TEST_ROLLBACK_MATRIX_PATH,
+    sha256: "48ab82cc7bda5355e9e48b201a0674f69dafda91ff340590659d3a895ac6a26d",
+  },
 ] as const;
 
 const STABLE_FAILURE_CODES = [
@@ -144,6 +186,18 @@ function git(args: readonly string[]): string {
     cwd: process.cwd(),
     encoding: "utf8",
   }).trim();
+}
+
+function gitTextAt(commit: string, path: string): string {
+  return execFileSync(
+    "git",
+    ["-c", "core.longpaths=true", "show", `${commit}:${path}`],
+    { cwd: process.cwd(), encoding: "utf8" },
+  ).replaceAll("\r\n", "\n");
+}
+
+function sha256(value: string): string {
+  return createHash("sha256").update(value, "utf8").digest("hex");
 }
 
 function section(source: string, name: string): string {
@@ -217,11 +271,73 @@ test("implementation changes stay inside the literal RKP-2 allowlists", () => {
   assert.deepEqual(implementation, [...EXPECTED_IMPLEMENTATION_PATHS]);
   assert.deepEqual(coordination, [...EXPECTED_COORDINATION_PATHS]);
   assert.equal(new Set(implementation).size, 21);
-  assert.equal(new Set(coordination).size, 5);
+  assert.equal(new Set(coordination).size, 10);
 
   const allowed = new Set<string>([...implementation, ...coordination]);
   for (const path of currentImplementationChanges()) {
     assert.equal(allowed.has(path), true, `unreviewed implementation path: ${path}`);
+  }
+});
+
+test("one-time post-Stage-5 manifest successor projection is exact and content-frozen", () => {
+  assert.equal(
+    git(["rev-parse", `${MANIFEST_PROJECTION_COMMIT}^`]),
+    MANIFEST_PROJECTION_PARENT,
+  );
+
+  const projections = [
+    {
+      path: IMPLEMENT_CONTEXT_PATH,
+      count: 25,
+      before:
+        '{"file":"crates/brilliant-kernel-runtime/src/smoke_runtime.rs","reason":"Whole-DTO holder replaced only in implementation Stage 5."}',
+      after:
+        '{"file":"crates/brilliant-kernel-runtime/src/runtime.rs","reason":"Current KernelRuntime is the sole Runtime owner of LiveScoreStore plus revision zero for remaining implementation context."}',
+    },
+    {
+      path: CHECK_CONTEXT_PATH,
+      count: 20,
+      before:
+        '{"file":"crates/brilliant-kernel-runtime/src/smoke_runtime.rs","reason":"Confirm exact whole-DTO holder being replaced and no broader Runtime exists."}',
+      after:
+        '{"file":"crates/brilliant-kernel-runtime/src/runtime.rs","reason":"Audit KernelRuntime no longer retains a complete ScoreDocument and has no second state owner or alias."}',
+    },
+  ] as const;
+
+  for (const projection of projections) {
+    const beforeRows = lines(
+      gitTextAt(MANIFEST_PROJECTION_PARENT, projection.path),
+    );
+    const projectedText = gitTextAt(MANIFEST_PROJECTION_COMMIT, projection.path);
+    const projectedRows = lines(projectedText);
+    const currentText = readText(projection.path);
+    const currentRows = lines(currentText);
+    assert.equal(currentText, projectedText, `${projection.path} changed after projection`);
+    assert.equal(beforeRows.length, projection.count);
+    assert.equal(projectedRows.length, projection.count);
+    assert.equal(currentRows.length, projection.count);
+
+    const changedIndices = projectedRows.flatMap((row, index) =>
+      row === beforeRows[index] ? [] : [index],
+    );
+    const projectionIndex = beforeRows.indexOf(projection.before);
+    assert.notEqual(projectionIndex, -1);
+    assert.deepEqual(changedIndices, [projectionIndex]);
+    assert.equal(projectedRows[projectionIndex], projection.after);
+
+    const decoded = currentRows.map(
+      (row) => JSON.parse(row) as { readonly file: string; readonly reason: string },
+    );
+    assert.equal(new Set(decoded.map((entry) => entry.file)).size, projection.count);
+    for (const entry of decoded) {
+      assert.deepEqual(Object.keys(entry), ["file", "reason"]);
+      assert.equal(typeof entry.reason, "string");
+      assert.equal(existsSync(resolve(entry.file)), true, entry.file);
+    }
+  }
+
+  for (const frozen of FROZEN_POST_STAGE_5_AUTHORITY_CONTENT) {
+    assert.equal(sha256(readText(frozen.path)), frozen.sha256, frozen.path);
   }
 });
 

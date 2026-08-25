@@ -1,8 +1,8 @@
-# Review Candidate — RKP-2 Stage 5 Checkpoint
+# Review Candidate — RKP-2 Post-Stage-5 Manifest Authority Closure
 
 ## Current lifecycle result
 
-`STAGE 5 COMPLETE — IMPLEMENTATION CANDIDATE NOT READY`.
+`TARGETED PLANNING REREVIEW REQUIRED — STAGE 5 COMPLETE — STAGE 6 NOT STARTED`.
 
 Activation is based on clean non-fast-forward merge `df40aef391440ae64ad3e266419579bee5887a1f`, whose exact parents are accepted repair closeout `b5d63006a4c286bad01fdb56112b9a6741f648b0` and approved RKP-2 planning state `53646c92b81bc3ac160ec5d72b0d3f80c97b7eb0`. Both are ancestors, as is audited RKP-1 implementation `94387b339b5e4d9ce6b7f97597a1b56edd051f01`.
 
@@ -17,6 +17,14 @@ Stage 3 adds only the five approved Runtime paths plus allowlisted lifecycle pro
 Stage 4 adds only the four approved Runtime paths plus allowlisted lifecycle projection. Entity/Ownership/Extension/Core Reference indices and exact per-Voice time indices are built during canonical import; Part/Measure content keeps its single primary map. Stable-ID and owner queries are map/typed-slot based, while exact-start and half-open overlap queries use binary bounds and return semantic-order slices. Independent rebuild normalizes handles to stable IDs, exact fractions and stable paths; clean parity passes and deliberate corruption fails. Minimal/representative structural counters are exact and contain no full-document lookup-scan counter. Focused indices `4/4`, time-index `3/3`, store `6/6`; full workspace Rust `67/67`. Exact Stage 4 candidate `72cf0769cb66deb58691a39b664395ed28670da1` is owner-accepted as the Stage 5 prerequisite; no independent Stage 4 audit is claimed.
 
 Stage 5 changes only the seven approved Runtime/Session/parity paths plus allowlisted lifecycle projection. Explicit topology traversal reconstructs the full DTO in canonical array order without HashMap/SlotMap iteration or RuntimeHandle leakage. `KernelRuntime` exclusively owns the indexed Store and revision zero; the complete source DTO is transient. The private Session factory maps Runtime semantic/capacity/invariant failures into existing stable failures and publishes no Session on rejection. Node source remains byte-identical and retains two exports. Repeated native reads are byte-identical and detached; optional values, array order and unknown Extension payloads survive. Focused Rust passes Runtime `15/15`, Session `4/4`; workspace Rust passes `70/70`; two native loaders/two exports and combined native tests pass `13/13`; both workspace laws pass `6/6`; the clean-head full runner discovers `556` tests with `555` pass, `1` expected GC skip and `0` fail. RKP-2 remains `implementation_candidate_ready=false`; Stage 6 is not started or authorized.
+
+## Bounded successor-governance closure candidate
+
+Manifest projection commit `bda15099f4932aced965eabc6b6e147accd9b5ce` replaced only the deleted `smoke_runtime.rs` row in each JSONL with `runtime.rs`. The current docs-only candidate updates the accepted design/implementation/matrix authority and the executable workspace-law so that the projection is allowed exactly once and then frozen again.
+
+The mechanical contract is narrow: 21 production/test paths remain unchanged; coordination is exactly ten literal paths; `implement.jsonl` and `check.jsonl` remain exactly 25/20 rows with one successor projection each; all other rows match the pre-projection parent; every JSONL path exists and is unique; and LF-normalized SHA-256 freezes `check.jsonl`, `implement.jsonl`, `design.md`, `implement.md` and `research/file-test-and-rollback-matrix.md`. There is no wildcard or permanent task-directory exemption.
+
+The targeted independent planning rereview is pending in dedicated auditor task `01a01e48-1934-77b0-821e-a8026cd9e5f7`. No new planning PASS, Stage 6 authorization, implementation readiness or implementation-review result is claimed.
 
 ## Recorded verdict
 
@@ -36,20 +44,24 @@ The dedicated read-only auditor task `01a01e48-1934-77b0-821e-a8026cd9e5f7` reco
 
 ## Review focus
 
-1. Planning base and accepted RKP-1 ancestry; sibling post-archive repair correctly blocks activation rather than planning.
-2. One semantic truth/two representations and absence of retained ScoreDocument in the target Runtime.
-3. Exact slotmap pin/features, typed-key privacy and arbitrary-iteration fence.
-4. Document/entity global StableId uniqueness and strict separation from RuntimeHandle/MusicalLocation.
-5. Complete scalar record/topology model, including non-entity PartMeasureContent.
-6. Entity/owner/content/time/extension/reference indices and claimed complexity.
-7. Exact Fraction/duration/time-range correctness without ticks/floats.
-8. Two-phase Foundation-validation/Runtime-store pre-count and reserve, explicit internal-capacity mappings, followed by build/local checks/publication and zero-session rejection.
-9. Deterministic full-validation order plus mapping into the unchanged 22 failures.
-10. Canonical/lossless export, unknown extensions and index normalized parity.
-11. Public `28/51/8/34/9`, two Node exports, TypeScript default and resource-cap freeze.
-12. Literal 16-path planning allowlist, literal implementation allowlist, six reversible stages, protected paths and downstream RKP boundaries.
-13. Stress evidence is a diagnostic liveness/linearity gate, not a weakened product performance budget.
-14. Parent conflict integration rule preserves repair and RKP-2 child references.
+1. `bda15099...` changes exactly one row per JSONL from the `4f5f45a...` parent, and the closure candidate changes neither manifest further.
+2. The coordination allowlist is exactly ten literal paths while the technical allowlist remains exactly 21; no wildcard or directory-level exemption exists.
+3. Five LF-normalized content hashes freeze the repaired manifests/authority, and all other JSONL rows, counts, valid JSON, existence and uniqueness remain exact.
+4. Stage 5 remains complete while Stage 6, candidate readiness, implementation review, default cutover and lifecycle closeout remain untouched.
+5. Planning base and accepted RKP-1 ancestry remain intact.
+6. One semantic truth/two representations and absence of retained ScoreDocument in the target Runtime.
+7. Exact slotmap pin/features, typed-key privacy and arbitrary-iteration fence.
+8. Document/entity global StableId uniqueness and strict separation from RuntimeHandle/MusicalLocation.
+9. Complete scalar record/topology model, including non-entity PartMeasureContent.
+10. Entity/owner/content/time/extension/reference indices and claimed complexity.
+11. Exact Fraction/duration/time-range correctness without ticks/floats.
+12. Two-phase Foundation-validation/Runtime-store pre-count and reserve, explicit internal-capacity mappings, followed by build/local checks/publication and zero-session rejection.
+13. Deterministic full-validation order plus mapping into the unchanged 22 failures.
+14. Canonical/lossless export, unknown extensions and index normalized parity.
+15. Public `28/51/8/34/9`, two Node exports, TypeScript default and resource-cap freeze.
+16. Six reversible stages, protected paths and downstream RKP boundaries.
+17. Stress evidence is a diagnostic liveness/linearity gate, not a weakened product performance budget.
+18. Parent conflict integration rule preserves repair and RKP-2 child references.
 
 ## Evidence expected
 

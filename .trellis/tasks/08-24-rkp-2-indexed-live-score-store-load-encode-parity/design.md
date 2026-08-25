@@ -499,9 +499,16 @@ Only these task/coordination paths may change during implementation:
 .trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/review-candidate.md
 .trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/research/implementation-evidence.md
 .trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json
+.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/check.jsonl
+.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/implement.jsonl
+.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/design.md
+.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/implement.md
+.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/research/file-test-and-rollback-matrix.md
 ```
 
-The PRD, design, implement plan, JSONL manifests and planning research stay zero-delta during implementation. New task-local `research/implementation-evidence.md` is created only at implementation Stage 6.
+The five appended authority-repair paths are a one-time exception used only after the planned Stage 5 deletion of `smoke_runtime.rs`: `implement.jsonl` and `check.jsonl` may each project their single stale `smoke_runtime.rs` row to the live successor `runtime.rs`, while `design.md`, `implement.md` and `research/file-test-and-rollback-matrix.md` close that projection under executable governance. This bounded repair is not a regular implementation-time planning edit. Its exact candidate must pass a dedicated targeted planning rereview before these five files freeze again; any later change requires a new planning review.
+
+The PRD and all other planning authority/research stay zero-delta during implementation. The two JSONL manifests stay zero-delta except for the one successor projection in each file; their row counts, every other row and per-file path uniqueness remain unchanged. New task-local `research/implementation-evidence.md` is created only at implementation Stage 6.
 
 Protected examples include all `src/**`, all other `test/**`, `package*.json`, `tsconfig.json`, `rust-toolchain.toml`, `rustfmt.toml`, Core Types, all Kernel Contracts paths except the single allowlisted `crates/brilliant-kernel-contracts/src/codec.rs` mapping, Extension Protocol, Node source, active specs, CVN tasks, Guitar/product/plugin paths and qualification code.
 
