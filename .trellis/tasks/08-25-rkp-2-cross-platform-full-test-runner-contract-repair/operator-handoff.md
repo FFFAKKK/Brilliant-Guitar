@@ -2,7 +2,7 @@
 
 ## Current implementation state
 
-`EVENT-COVERAGE AMENDMENT MERGED — STAGE 2 COMPLETE — PHASE 2B NOT STARTED`.
+`READY FOR INDEPENDENT IMPLEMENTATION REVIEW`.
 
 - implementation branch: `codex/rkp-2-cross-platform-full-test-runner-contract-repair`
 - planning base: `eed4871a86191783d539b7d4097be3627e98e4a0`
@@ -11,6 +11,9 @@
 - event-coverage content P: `44832ad01d136368c1b61203e9207ca4a521241f`
 - independently accepted event-coverage anchor A: `c69d7b76175e2b818f4d276504a39b741e6e1975`, PASS P0/P1/P2=`0/0/0`, auditor `01a01e48-1934-77b0-821e-a8026cd9e5f7`
 - implementation evidence preserved: activation `9da6ba6`, Stage 1 `912a68a`, clean Stage 2 `d366653788a42eb56cd5755a63b1e73700c67310`
+- bounded amendment merge: `b4906ac64a44cc735de7b923818817300d5c70fd`
+- event-coverage correction: `b20016882c16906db350feade4811821d55dad93`
+- hostile/version/range proof: `ce9598eca3ad4df30854b8cc9383f4034e2e55a3`
 - discarded diagnostic Stage 3 `610d20b` remains outside the current parent chain
 - child status: `in_progress`
 - `task_start_run=true`
@@ -53,4 +56,11 @@ Execute the four reversible implementation stages, then send the exact candidate
 8. exact 13-path archive including implementation evidence, phase-specific rollback and explicit integration gate;
 9. lifecycle truth: in progress, implementation review pending, no Stage 6.
 
-Implementation is unpaused and authorized only for this repair. Resume at Phase 2B, keep `610d20b` excluded, and stop at `READY FOR INDEPENDENT IMPLEMENTATION REVIEW`; Stage 6 remains unauthorized.
+Implementation is unpaused and complete for this pre-review repair candidate. Send the exact final docs/evidence HEAD to a dedicated read-only implementation auditor. Keep `610d20b` excluded. Acceptance, archive, closeout, integration into RKP-2 and Stage 6 remain unauthorized.
+
+## Candidate gate evidence
+
+- Node 20.20.2 and 24.15.0 run the same 78-file manifest `e4445a175cedaa34eaed455f48a98735ac2fa4808cc94314ff5148db6b6523d5`; each reports 573 tests, 572 pass, 1 expected skip, 0 fail.
+- Focused runner plus workspace-law passes 23/23 on both Node versions, including real hard-link rejection, empty/all-skipped files, reporter backpressure and event coverage.
+- A `core.autocrlf=false` detached checkout of `ce9598e` contains LF source and passes Rust workspace 70/70, fmt, check, Clippy `-D warnings` and MSRV 1.88.
+- `P..candidate` is mechanically constrained to four technical plus eleven active lifecycle paths. The child is candidate-ready; its implementation review is still pending.

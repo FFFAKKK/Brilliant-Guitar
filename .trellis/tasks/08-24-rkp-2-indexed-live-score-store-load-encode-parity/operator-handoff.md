@@ -2,7 +2,7 @@
 
 ## Current status
 
-`STAGE 5 COMPLETE — STAGE 6 NOT STARTED — MANIFEST AUTHORITY CLOSURE REREVIEW PENDING`.
+`STAGE 5 COMPLETE — BLOCKING RUNNER CHILD READY FOR INDEPENDENT IMPLEMENTATION REVIEW — STAGE 6 NOT STARTED`.
 
 - Branch: `codex/rkp-2-indexed-live-score-store-implementation`.
 - Worktree: `.worktrees/rkp-2-indexed-live-score-store-implementation`.
@@ -93,9 +93,9 @@ The accepted design's former permanent JSONL zero-delta rule made that planned s
 
 - `check.jsonl`: `7e12f6d00ba17e1967ef57e884e7b5d6ca7efedbb2aaf94de04fc4b3091251c3`
 - `implement.jsonl`: `cd0a42070a76a18e782d7da4ebc0e9a88d2ed5dece0d093125d4fc8982229705`
-- `design.md`: `5f6ee49c9aa83f475cffcb40bf5aab31a6975129658c9af1d99e4471e8e934ee`
-- `implement.md`: `e535c8bf5fbc170d4a148d9cd1d57d96743b33d96767a01ec441fb9eb29e013b`
-- `research/file-test-and-rollback-matrix.md`: `31f84635a074a4a06279b6a33ad9b63f8cfa79e32e7674369f92ed1b6ce8f1a9`
+- `design.md`: `91a6245bddf56ac98f24ff336c0ad26d7ac8ef3724a7ff92441b1d06af290a91`
+- `implement.md`: `1909c3a2d9901a63500935959475a30606b3a7a742770d5c19045eda5a87e0ec`
+- `research/file-test-and-rollback-matrix.md`: `8135656225a02d5392e4f66967a280797d09105b4823a1734c53b2ac1fef8053`
 
 This remains planning-authority governance, not Stage 6 implementation or evidence freeze. The five files freeze at the exact current candidate after their hashes are recomputed; both JSONL contents/hashes remain unchanged. Later changes require a new planning review.
 
@@ -103,7 +103,7 @@ This remains planning-authority governance, not Stage 6 implementation or eviden
 
 Independent full-runner evidence at `eed4871a86191783d539b7d4097be3627e98e4a0` found one P1: the quoted wildcard may run only 29 files/261 tests on Node 24 and still exit zero, while a literal complete run covers 77 files/557 tests; Node 20.20.2 rejects the literal wildcard. Package and lock files are unchanged from `df40aef...`, so the defect is test infrastructure, not Stage 5 product behavior.
 
-Child `08-25-rkp-2-cross-platform-full-test-runner-contract-repair` is the sole test-infrastructure owner. Its first candidate `c43a34e7d02a57cfd90de506cf97787ff5571a9e` was returned P0/P1/P2=`0/3/0`; bounded repair `cc82ba168ed45b8c3e0182ea8e1370b1474f1155` passed at `0/0/0`. The implementation line reached clean Stage 2 `d366653788a42eb56cd5755a63b1e73700c67310`, then event-coverage content P `44832ad01d136368c1b61203e9207ca4a521241f` and anchor A `c69d7b76175e2b818f4d276504a39b741e6e1975` corrected the disproved unique-terminal premise. A passed dedicated rereview at `0/0/0` and is explicitly merged. The child is `in_progress`, started and production-authorized for this repair only; candidate readiness remains false and implementation review pending. Discarded Stage 3 `610d20b` remains outside current ancestry.
+Child `08-25-rkp-2-cross-platform-full-test-runner-contract-repair` is the sole test-infrastructure owner. Its first candidate `c43a34e7d02a57cfd90de506cf97787ff5571a9e` was returned P0/P1/P2=`0/3/0`; bounded repair `cc82ba168ed45b8c3e0182ea8e1370b1474f1155` passed at `0/0/0`. Event-coverage P/A also passed `0/0/0` and is explicitly merged at `b4906ac`. Corrections `b200168` and `ce9598e` now form the technical/proof boundaries. The child is `in_progress`, started and production-authorized for this repair only; it is ready for independent implementation review, which remains pending. Discarded Stage 3 `610d20b` remains outside current ancestry.
 
 The amendment consumes only event type plus pass `data.file`, allows duplicate passes, rejects missing/non-string/relative/unknown files, keeps any-nesting fail fatal and requires enumerator manifest, exact `run()` files and pass-seen set equality. Name/nesting/details/reporter text are not truth. Enumeration, physical alias, stream/reporter failures, 4+11 and 22/23 governance are unchanged.
 
@@ -111,7 +111,7 @@ This anchor A pins exact P `44832ad01d136368c1b61203e9207ca4a521241f`; `eed4871a
 
 ## Next operator action
 
-Resume at Phase 2B on the preserved implementation line, then complete the remaining reversible implementation/evidence stages and send the exact pre-review candidate to a dedicated implementation auditor. Focus on pass-`data.file` seen coverage, three-way non-tautological equality, unchanged hard-link/stream/reporter rules, exact P-anchored 20/4+11/13/22/23 projections and the review-before-archive sequence. Do not start Stage 6. Acceptance, archive, integration and lifecycle closeout remain pending.
+Send the exact child candidate to a dedicated read-only implementation auditor. Focus on pass-`data.file` seen coverage, three-way non-tautological equality, hard-link/stream/reporter rules, dual Node manifest/totals, exact P-anchored 20/4+11/13/22/23 projections and review-before-archive sequencing. Do not start Stage 6. Acceptance, archive, integration and lifecycle closeout remain pending.
 
 ## Audit and closeout
 
