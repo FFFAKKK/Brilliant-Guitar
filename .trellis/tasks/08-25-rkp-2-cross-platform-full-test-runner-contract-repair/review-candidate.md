@@ -2,13 +2,15 @@
 
 ## Current checkpoint
 
-`READY FOR INDEPENDENT IMPLEMENTATION REREVIEW`.
+`RETURNED FOR BOUNDED WORKSPACE-LAW ORACLE REPAIR — P0/P1/P2=0/1/0`.
 
 Planning head `cc82ba168ed45b8c3e0182ea8e1370b1474f1155` passed targeted independent rereview at P0/P1/P2=`0/0/0` in auditor task `01a01e48-1934-77b0-821e-a8026cd9e5f7`. The user authorized this repair implementation only. This activation claims no implementation candidate, Stage 6 readiness, acceptance/archive/integration, qualification, push, RKP-3 or default-runtime cutover.
 
 Dedicated implementation review of exact candidate `15c84a1929d1365ebf466088e896fd5309a4fa57` returned P0/P1/P2=`0/1/1`. Candidate readiness is withdrawn while the bounded repair preserves the first observer-selected failure over later reporter failure and adds direct evidence for the already implemented fail-closed branches. Targeted implementation rereview remains pending.
 
 State commit `04364ecaf6f329bd2a4d3671a75bac7b15d23c49` reopened only those findings. Repair `f77549ef429dd2611d7f6144c164511599da9129` makes observer first-failure selection authoritative through finalize and pipeline catch; proof `139f1271b651af0c1b70e151ba9604ef154442d7` locks root junction, unsupported entry, invalid repository, reporter factory, sink factory and transform callback failures. Candidate readiness is restored for rereview; no PASS is claimed.
+
+Targeted implementation rereview of exact `6dac686d7f7dcaa447330209c6da04e414b7615c` returned P0/P1/P2=`0/1/0`. It confirms the production runner and prior P2 evidence, but reopens the independent workspace-law oracle because separate event and terminal-state inputs cannot mechanically distinguish opposite first-failure orders. Candidate readiness is withdrawn during this single oracle repair; Stage 6 remains false.
 
 Planning head `cc82ba168ed45b8c3e0182ea8e1370b1474f1155` passed its dedicated review. Its implementation line reached clean Stage 2 `d366653788a42eb56cd5755a63b1e73700c67310`, where real events disproved only the unique-file-terminal premise. Content P `44832ad01d136368c1b61203e9207ca4a521241f` and anchor A `c69d7b76175e2b818f4d276504a39b741e6e1975` close that drift; the dedicated auditor returned PASS P0/P1/P2=`0/0/0` for A. A is explicitly merged, implementation is unpaused, and discarded Stage 3 `610d20b` remains outside the parent chain.
 

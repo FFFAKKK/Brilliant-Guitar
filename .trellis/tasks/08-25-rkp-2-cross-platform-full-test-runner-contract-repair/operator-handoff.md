@@ -2,7 +2,7 @@
 
 ## Current implementation state
 
-`READY FOR INDEPENDENT IMPLEMENTATION REREVIEW`.
+`BOUNDED WORKSPACE-LAW ORACLE REPAIR ACTIVE — CANDIDATE NOT READY`.
 
 - implementation branch: `codex/rkp-2-cross-platform-full-test-runner-contract-repair`
 - planning base: `eed4871a86191783d539b7d4097be3627e98e4a0`
@@ -17,6 +17,7 @@
 - discarded diagnostic Stage 3 `610d20b` remains outside the current parent chain
 - first implementation review of exact `15c84a1929d1365ebf466088e896fd5309a4fa57`: RETURN, P0/P1/P2=`0/1/1`; first-observed structured-failure precedence and direct fail-closed branch evidence are the only repair scope
 - bounded implementation repair: state `04364ecaf6f329bd2a4d3671a75bac7b15d23c49`; first-failure precedence `f77549ef429dd2611d7f6144c164511599da9129`; fail-closed evidence `139f1271b651af0c1b70e151ba9604ef154442d7`
+- targeted implementation rereview of exact `6dac686d7f7dcaa447330209c6da04e414b7615c`: RETURN, P0/P1/P2=`0/1/0`; production runner and prior P2 evidence are accepted, and only the workspace-law oracle's first-observed signal ordering is reopened
 - child status: `in_progress`
 - `task_start_run=true`
 - `production_implementation_authorized=true`
@@ -58,7 +59,7 @@ Execute the four reversible implementation stages, then send the exact candidate
 8. exact 13-path archive including implementation evidence, phase-specific rollback and explicit integration gate;
 9. lifecycle truth: in progress, implementation review pending, no Stage 6.
 
-Both bounded findings are repaired and the child is candidate-ready for targeted independent implementation rereview. The review/rereview state remains pending and no PASS is claimed. Keep `610d20b` excluded. Acceptance, archive, closeout, integration into RKP-2 and Stage 6 remain unauthorized.
+The child remains authorized only for the bounded workspace-law oracle repair. Candidate readiness is false until the ordered-signal oracle, bidirectional fixtures and all gates close. Production runner, package entry and focused runner test must remain byte-identical to `6dac686d`; no PASS is claimed. Keep `610d20b` excluded. Acceptance, archive, closeout, integration into RKP-2 and Stage 6 remain unauthorized.
 
 ## Candidate gate evidence
 

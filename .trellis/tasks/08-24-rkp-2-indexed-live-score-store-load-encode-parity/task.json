@@ -40,7 +40,7 @@
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "RKP-2 STAGE 5 COMPLETE / BLOCKING FULL-RUNNER CHILD BOUNDED IMPLEMENTATION REPAIR ACTIVE AFTER 0/1/1 REVIEW / CHILD CANDIDATE NOT READY / RKP-2 STAGE 6 NOT STARTED OR AUTHORIZED / TYPESCRIPT DEFAULT / NO CUTOVER PUSH QUALIFICATION ARCHIVE RKP-3.",
+  "notes": "RKP-2 STAGE 5 COMPLETE / BLOCKING FULL-RUNNER CHILD WORKSPACE-LAW ORACLE REPAIR ACTIVE AFTER TARGETED 0/1/0 REREVIEW / PRODUCTION RUNNER AND PRIOR P2 UNCHANGED / CHILD CANDIDATE NOT READY / RKP-2 STAGE 6 NOT STARTED OR AUTHORIZED / TYPESCRIPT DEFAULT / NO CUTOVER PUSH QUALIFICATION ARCHIVE RKP-3.",
   "meta": {
     "planning_base_commit": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "accepted_rkp1_audited_implementation_commit": "94387b339b5e4d9ce6b7f97597a1b56edd051f01",
@@ -207,7 +207,7 @@
       "node24_complete_literal": "77_files_557_discovered_556_pass_1_expected_gc_skip_0_fail",
       "node20_literal_glob": "20_20_2_exit_1",
       "package_and_lock_df40aef_to_eed4871a_delta": "zero",
-      "status": "ready_for_independent_implementation_rereview",
+      "status": "bounded_workspace_law_oracle_repair_active",
       "first_planning_audit": {
         "auditor_task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
         "candidate_commit": "c43a34e7d02a57cfd90de506cf97787ff5571a9e",
@@ -253,10 +253,11 @@
       "task_start_run": true,
       "production_implementation_authorized": true,
       "user_implementation_authorization": true,
-      "implementation_candidate_ready": true,
-      "implementation_review": "pending",
+      "implementation_candidate_ready": false,
+      "implementation_review": "returned_for_bounded_implementation_repair",
       "implementation_rereview": "pending",
-      "implementation_repair_active": false,
+      "implementation_repair_active": true,
+      "runner_oracle_repair_active": true,
       "first_independent_implementation_review": {
         "auditor_task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
         "candidate_commit": "15c84a1929d1365ebf466088e896fd5309a4fa57",
@@ -264,6 +265,15 @@
         "P1": 1,
         "P2": 1,
         "verdict": "return_for_bounded_implementation_repair"
+      },
+      "targeted_independent_implementation_rereview": {
+        "auditor_task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
+        "candidate_commit": "6dac686d7f7dcaa447330209c6da04e414b7615c",
+        "P0": 0,
+        "P1": 1,
+        "P2": 0,
+        "verdict": "return_for_bounded_implementation_repair",
+        "finding": "workspace_law_oracle_must_model_first_observed_signal_order"
       },
       "bounded_implementation_repair_commits": {
         "state_reopen": "04364ecaf6f329bd2a4d3671a75bac7b15d23c49",
