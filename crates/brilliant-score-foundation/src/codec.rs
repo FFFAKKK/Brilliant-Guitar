@@ -50,6 +50,45 @@ mod tests {
     use brilliant_core_types::StableId;
 
     use super::*;
+    use crate::ExtensionOwnerV1;
+
+    #[test]
+    fn extension_owner_exact_score_and_public_part_wire_round_trip() {
+        let score: ExtensionOwnerV1 =
+            serde_json::from_str(r#"{"kind":"score"}"#).expect("exact score owner");
+        assert_eq!(score, ExtensionOwnerV1::Score);
+        assert_eq!(
+            serde_json::to_value(&score).expect("encode score owner"),
+            serde_json::json!({"kind": "score"})
+        );
+
+        let part: ExtensionOwnerV1 = serde_json::from_str(r#"{"kind":"part","partId":"part-1"}"#)
+            .expect("public partId owner");
+        assert_eq!(
+            part,
+            ExtensionOwnerV1::Part {
+                part_id: StableId::new("part-1").expect("stable part id"),
+            }
+        );
+        assert_eq!(
+            serde_json::to_value(&part).expect("encode part owner"),
+            serde_json::json!({"kind": "part", "partId": "part-1"})
+        );
+    }
+
+    #[test]
+    fn extension_owner_part_rejects_private_or_extra_fields() {
+        for rejected in [
+            r#"{"kind":"part","part_id":"part-1"}"#,
+            r#"{"kind":"part","partId":"part-1","part_id":"part-1"}"#,
+            r#"{"kind":"part","partId":"part-1","extra":true}"#,
+        ] {
+            assert!(
+                serde_json::from_str::<ExtensionOwnerV1>(rejected).is_err(),
+                "Part owner shape must reject: {rejected}"
+            );
+        }
+    }
 
     #[test]
     fn canonical_smoke_round_trip_preserves_unknown_extension_data() {

@@ -188,8 +188,11 @@ pub struct ExtensionBlockV1 {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "kebab-case")]
+#[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum ExtensionOwnerV1 {
     Score,
-    Part { part_id: StableId },
+    Part {
+        #[serde(rename = "partId")]
+        part_id: StableId,
+    },
 }
