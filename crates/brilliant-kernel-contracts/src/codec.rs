@@ -1517,6 +1517,45 @@ mod tests {
     }
 
     #[test]
+    fn extension_owner_public_wire_and_exact_shape_failures_are_frozen() {
+        fn request_with_owner(owner: Value) -> Vec<u8> {
+            let mut request: Value = serde_json::from_str(SMOKE_REQUEST).expect("request JSON");
+            request["document"]["extensions"] = serde_json::json!([{
+                "namespace": "unknown.example.owner",
+                "schemaVersion": 1,
+                "owner": owner,
+                "payload": {"nested": [true, null, {"z": 1}]}
+            }]);
+            serde_json::to_vec(&request).expect("owner request bytes")
+        }
+
+        let decoded = decode_create_request(&request_with_owner(serde_json::json!({
+            "kind": "part",
+            "partId": "part-1"
+        })))
+        .expect("public partId owner must decode");
+        assert_eq!(decoded.document.extensions.len(), 1);
+
+        assert_eq!(
+            rejected_bytes(&request_with_owner(serde_json::json!({
+                "kind": "part",
+                "part_id": "part-1"
+            }))),
+            br#"{"apiVersion":1,"status":"rejected","failure":{"failureVersion":1,"code":"codec.invalid-shape","path":["document","extensions",0,"owner","partId"],"violation":"missing-field"}}"#
+        );
+        for owner in [
+            serde_json::json!({"kind": "part", "partId": "part-1", "part_id": "part-1"}),
+            serde_json::json!({"kind": "part", "partId": "part-1", "extra": true}),
+            serde_json::json!({"kind": "score", "partId": "part-1"}),
+        ] {
+            assert_eq!(
+                rejected_bytes(&request_with_owner(owner)),
+                br#"{"apiVersion":1,"status":"rejected","failure":{"failureVersion":1,"code":"codec.invalid-shape","path":["document","extensions",0,"owner"],"violation":"extra-field"}}"#
+            );
+        }
+    }
+
+    #[test]
     fn first_failure_precedence_is_stable() {
         let over_cap = vec![0xff; REQUEST_BYTE_LIMIT + 1];
         assert!(matches!(

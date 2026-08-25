@@ -2,8 +2,41 @@ import type { ScoreDocument } from "../../../src/core-kernel/index";
 import { createCoreScoreFixture } from "../fixtures/core-score";
 
 export interface Rkp2StoreFixture {
-  readonly fixtureId: "minimal-score-v1" | "topology-optionals-v1";
+  readonly fixtureId:
+    | "minimal-score-v1"
+    | "part-owner-extensions-v1"
+    | "topology-optionals-v1";
   readonly document: ScoreDocument;
+}
+
+export function createPartOwnerExtensionRkp2StoreFixture(): Rkp2StoreFixture {
+  const source = createTopologyOptionalRkp2StoreFixture().document;
+  const document: ScoreDocument = {
+    ...source,
+    id: "score-rkp2-part-owner",
+    extensions: [
+      {
+        namespace: "unknown.example.score-owner",
+        schemaVersion: 3,
+        owner: { kind: "score" },
+        payload: {
+          order: ["score-first", { nested: [true, null, 7] }],
+        },
+      },
+      {
+        namespace: "unknown.example.part-owner",
+        schemaVersion: 5,
+        owner: { kind: "part", partId: "part-z" },
+        payload: {
+          order: ["part-second", { nested: [false, { value: "kept" }] }],
+        },
+      },
+    ],
+  };
+  return {
+    fixtureId: "part-owner-extensions-v1",
+    document,
+  };
 }
 
 export function createMinimalRkp2StoreFixture(): Rkp2StoreFixture {

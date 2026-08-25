@@ -82,6 +82,10 @@ const FULL_RUNNER_ACTIVE_ROOT =
   ".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair";
 const FULL_RUNNER_ARCHIVE_ROOT =
   ".trellis/tasks/archive/2026-08/08-25-rkp-2-cross-platform-full-test-runner-contract-repair";
+const PART_OWNER_REPAIR_ACCEPTED_PLANNING_HEAD =
+  "ee1af9409b4140d322c88389a4c1df1368655a31";
+const PART_OWNER_REPAIR_ROOT =
+  ".trellis/tasks/08-26-rkp-2-part-owner-wire-contract-repair";
 const PLANNED_TRUTH_FIELDS = ["type", "data.file"] as const;
 
 const CRATES = [
@@ -247,6 +251,34 @@ const CHILD_ACTIVE_LIFECYCLE_PATHS = [
   PARENT_PATH,
 ] as const;
 
+const PART_OWNER_REPAIR_TECHNICAL_PATHS = [
+  "crates/brilliant-score-foundation/src/dto.rs",
+  "crates/brilliant-score-foundation/src/codec.rs",
+  "crates/brilliant-kernel-contracts/src/codec.rs",
+  "test/core-kernel/rust-migration/rkp-2-store-fixtures.ts",
+  "test/core-kernel/rust-migration/rkp-2-live-score-store-parity.test.ts",
+  "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
+] as const;
+
+const PART_OWNER_REPAIR_LIFECYCLE_PATHS = [
+  `${PART_OWNER_REPAIR_ROOT}/task.json`,
+  `${PART_OWNER_REPAIR_ROOT}/prd.md`,
+  `${PART_OWNER_REPAIR_ROOT}/design.md`,
+  `${PART_OWNER_REPAIR_ROOT}/implement.md`,
+  `${PART_OWNER_REPAIR_ROOT}/implement.jsonl`,
+  `${PART_OWNER_REPAIR_ROOT}/check.jsonl`,
+  `${PART_OWNER_REPAIR_ROOT}/operator-handoff.md`,
+  `${PART_OWNER_REPAIR_ROOT}/review-candidate.md`,
+  `${PART_OWNER_REPAIR_ROOT}/research/root-cause-and-public-wire-authority.md`,
+  `${PART_OWNER_REPAIR_ROOT}/research/file-test-and-rollback-matrix.md`,
+  `${PART_OWNER_REPAIR_ROOT}/research/planning-self-audit.md`,
+  `${PART_OWNER_REPAIR_ROOT}/research/implementation-evidence.md`,
+  TASK_PATH,
+  ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/operator-handoff.md",
+  ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/review-candidate.md",
+  PARENT_PATH,
+] as const;
+
 const FROZEN_POST_STAGE_5_AUTHORITY_CONTENT = [
   {
     path: CHECK_CONTEXT_PATH,
@@ -383,6 +415,16 @@ function designAllowlistBlocks(): readonly [string[], string[]] {
 function currentImplementationChanges(): Set<string> {
   const commands: readonly (readonly string[])[] = [
     ["diff", "--name-only", `${IMPLEMENTATION_BASE}..HEAD`],
+    ["diff", "--name-only"],
+    ["diff", "--cached", "--name-only"],
+    ["ls-files", "--others", "--exclude-standard"],
+  ];
+  return new Set(commands.flatMap((args) => lines(git(args))));
+}
+
+function currentPartOwnerRepairChanges(): Set<string> {
+  const commands: readonly (readonly string[])[] = [
+    ["diff", "--name-only", `${PART_OWNER_REPAIR_ACCEPTED_PLANNING_HEAD}..HEAD`],
     ["diff", "--name-only"],
     ["diff", "--cached", "--name-only"],
     ["ls-files", "--others", "--exclude-standard"],
@@ -631,6 +673,8 @@ test("implementation changes stay inside the literal RKP-2 allowlists", async ()
     ...implementation,
     ...coordination,
     ...CHILD_TECHNICAL_PATHS,
+    ...PART_OWNER_REPAIR_TECHNICAL_PATHS,
+    ...PART_OWNER_REPAIR_LIFECYCLE_PATHS,
   ]);
   assert.equal(CHILD_TECHNICAL_PATHS.length, 4);
   assert.equal(CHILD_ACTIVE_LIFECYCLE_PATHS.length, 11);
@@ -640,6 +684,50 @@ test("implementation changes stay inside the literal RKP-2 allowlists", async ()
   assertFullRunnerLifecycleFixtures();
   await assertCrossVersionOutcomeFixtures();
   assertPhysicalIdentityFixtures();
+});
+
+test("part owner repair stays anchored to its accepted six-path wire contract", () => {
+  assert.doesNotThrow(() =>
+    git(["cat-file", "-e", `${PART_OWNER_REPAIR_ACCEPTED_PLANNING_HEAD}^{commit}`]),
+  );
+  assert.doesNotThrow(() =>
+    git([
+      "merge-base",
+      "--is-ancestor",
+      PART_OWNER_REPAIR_ACCEPTED_PLANNING_HEAD,
+      "HEAD",
+    ]),
+  );
+  assert.equal(PART_OWNER_REPAIR_TECHNICAL_PATHS.length, 6);
+  assert.equal(PART_OWNER_REPAIR_LIFECYCLE_PATHS.length, 16);
+  const allowed = new Set<string>([
+    ...PART_OWNER_REPAIR_TECHNICAL_PATHS,
+    ...PART_OWNER_REPAIR_LIFECYCLE_PATHS,
+  ]);
+  assert.equal(allowed.size, 22);
+  const actual = currentPartOwnerRepairChanges();
+  for (const path of actual) {
+    assert.equal(allowed.has(path), true, `unreviewed part-owner repair path: ${path}`);
+  }
+  assertExactPathSet(
+    new Set(
+      [...actual].filter((path) =>
+        PART_OWNER_REPAIR_TECHNICAL_PATHS.includes(
+          path as (typeof PART_OWNER_REPAIR_TECHNICAL_PATHS)[number],
+        ),
+      ),
+    ),
+    PART_OWNER_REPAIR_TECHNICAL_PATHS,
+    "part-owner repair technical delta",
+  );
+
+  const dto = readText("crates/brilliant-score-foundation/src/dto.rs");
+  assert.match(
+    dto,
+    /#\[serde\(tag = "kind", rename_all = "kebab-case", deny_unknown_fields\)\]\s*pub enum ExtensionOwnerV1/gu,
+  );
+  assert.match(dto, /#\[serde\(rename = "partId"\)\]\s*part_id: StableId/gu);
+  assert.doesNotMatch(dto, /serde\([^\]]*alias\s*=\s*"part_id"/gu);
 });
 
 function assertFullRunnerLifecycleFixtures(): void {

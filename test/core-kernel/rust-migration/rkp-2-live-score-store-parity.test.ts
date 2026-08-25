@@ -4,6 +4,7 @@ import { test } from "node:test";
 
 import type { RustKernelSmokeNativeAddon } from "../../../src/core-kernel/native/rust-kernel-smoke";
 import {
+  createPartOwnerExtensionRkp2StoreFixture,
   createRkp2DuplicateIdFixture,
   createRkp2MissingStaffReferenceFixture,
   createRkp2StoreFixtureCatalog,
@@ -127,6 +128,79 @@ test("native export preserves optional fields, array order, and opaque extension
     false,
   );
   assert.deepEqual(document.extensions, fixture.document.extensions);
+});
+
+test("native part owner uses only partId and preserves ordered unknown blocks", () => {
+  const fixture = createPartOwnerExtensionRkp2StoreFixture();
+  const expected = structuredClone(fixture.document);
+  const created = createAccepted(fixture.document);
+
+  const firstBytes = addon.readKernelSessionV1(created.handle);
+  const secondBytes = addon.readKernelSessionV1(created.handle);
+  assert.deepEqual(firstBytes, secondBytes);
+  const wire = firstBytes.toString("utf8");
+  assert.match(wire, /"owner":\{"kind":"part","partId":"part-z"\}/u);
+  assert.equal(wire.includes("part_id"), false);
+
+  const first = JSON.parse(wire) as {
+    value: { snapshot: { document: typeof fixture.document } };
+  };
+  assert.deepEqual(first.value.snapshot.document.extensions, expected.extensions);
+  const firstPartPayload = first.value.snapshot.document.extensions[1]?.payload as {
+    order?: unknown[];
+  };
+  firstPartPayload.order?.push("mutated detached output");
+  const third = readPayload(created.handle);
+  assert.deepEqual(
+    (third.value.snapshot.document as typeof fixture.document).extensions,
+    expected.extensions,
+  );
+});
+
+test("native malformed extension owners keep stable failures and publish zero handle", () => {
+  const fixture = createPartOwnerExtensionRkp2StoreFixture();
+  const ownerPath = ["document", "extensions", 1, "owner"] as const;
+  const cases = [
+    {
+      owner: { kind: "part", part_id: "part-z" },
+      path: [...ownerPath, "partId"],
+      violation: "missing-field",
+    },
+    {
+      owner: { kind: "part", partId: "part-z", part_id: "part-z" },
+      path: ownerPath,
+      violation: "extra-field",
+    },
+    {
+      owner: { kind: "part", partId: "part-z", extra: true },
+      path: ownerPath,
+      violation: "extra-field",
+    },
+    {
+      owner: { kind: "score", partId: "part-z" },
+      path: ownerPath,
+      violation: "extra-field",
+    },
+  ] as const;
+
+  for (const entry of cases) {
+    const document = structuredClone(fixture.document) as unknown as {
+      extensions: Array<{ owner: unknown }>;
+    };
+    document.extensions[1]!.owner = entry.owner;
+    const result = addon.createKernelSessionV1(canonicalCreateBytes(document));
+    assert.deepEqual(Object.keys(result), ["payload"]);
+    assert.deepEqual(JSON.parse(result.payload.toString("utf8")), {
+      apiVersion: 1,
+      status: "rejected",
+      failure: {
+        failureVersion: 1,
+        code: "codec.invalid-shape",
+        path: entry.path,
+        violation: entry.violation,
+      },
+    });
+  }
 });
 
 test("native invalid TS fixtures keep existing stable failures and publish no handle", () => {
