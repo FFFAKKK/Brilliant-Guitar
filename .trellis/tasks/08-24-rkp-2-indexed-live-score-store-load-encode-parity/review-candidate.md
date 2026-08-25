@@ -2,7 +2,15 @@
 
 ## Current lifecycle result
 
-`BLOCKING RUNNER CHILD READY FOR INDEPENDENT IMPLEMENTATION REREVIEW — RKP-2 STAGE 6 NOT STARTED`.
+`RKP-2 STAGE 6 S6.0 COMPLETE — BLOCKED ON PART-OWNER WIRE-CONTRACT PLANNING REVIEW`.
+
+## Current blocking planning projection
+
+Exact Stage 6 activation/state commit `ce673a2ad62348fa73458d493a45f9c005bf0288` remains preserved. S6.1/S6.2/S6.3 are false and the RKP-2 implementation candidate is not ready.
+
+Child `08-26-rkp-2-part-owner-wire-contract-repair` owns only the bounded `ExtensionOwnerV1::Part` public `partId` serde repair. Its planning base is `ce673a2...`; status is planning; start/production authorization are false; independent planning review is pending. The child freezes exact score/Part owner shapes, forbids a `part_id` alias, allows six future technical paths, and requires R0–R3 plus independent implementation review before archive/integration and S6.1 resume.
+
+This RKP-2 review file records the block only. It does not accept the child, authorize implementation, change TypeScript default, or claim a Stage 6 candidate.
 
 Activation is based on clean non-fast-forward merge `df40aef391440ae64ad3e266419579bee5887a1f`, whose exact parents are accepted repair closeout `b5d63006a4c286bad01fdb56112b9a6741f648b0` and approved RKP-2 planning state `53646c92b81bc3ac160ec5d72b0d3f80c97b7eb0`. Both are ancestors, as is audited RKP-1 implementation `94387b339b5e4d9ce6b7f97597a1b56edd051f01`.
 

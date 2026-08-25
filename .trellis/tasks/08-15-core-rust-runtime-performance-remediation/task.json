@@ -44,12 +44,12 @@
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RKP-0 RKP-1 AND POST-ARCHIVE REPAIR ACCEPTED ARCHIVED / RKP-2 STAGE 5 COMPLETE / FULL-RUNNER REPAIR EXACT 8D9A2A4 ACCEPTED AND NATIVELY ARCHIVED AT A1895F3 / RKP-2 STAGE 6 REQUIRES SEPARATE USER AUTHORIZATION / TYPESCRIPT DEFAULT / NO CUTOVER PUSH QUALIFICATION OR RKP-3.",
+  "notes": "RKP-0 RKP-1 AND PRIOR REPAIRS ACCEPTED ARCHIVED / RKP-2 REMAINS SOLE ACTIVE IMPLEMENTATION CHILD / STAGE 6 S6.0 COMMIT CE673A2 PRESERVED / S6.1-S6.3 PAUSED FOR PLANNING-ONLY PART-OWNER WIRE CONTRACT CHILD / INDEPENDENT PLANNING REVIEW PENDING / TYPESCRIPT DEFAULT / NO CUTOVER PUSH QUALIFICATION OR RKP-3.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
     "source_cvn7_status": "in_progress_measurement_incomplete_evidence_invalid",
-    "current_planning_child": null,
+    "current_planning_child": "08-26-rkp-2-part-owner-wire-contract-repair",
     "future_children_created": true,
     "stage_sequence": [
       "RKP-0",
@@ -92,7 +92,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "rkp2-stage-6-hostile-resource-finality-tests",
+    "next_gate": "rkp2-part-owner-wire-contract-repair-independent-planning-review",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -197,7 +197,7 @@
     "rkp2_implementation_authorized": true,
     "rkp2_user_implementation_authorization": true,
     "rkp2_created": true,
-    "rkp2_status": "in_progress_stage_6_authorized_started_hostile_resource_finality_tests_pending",
+    "rkp2_status": "in_progress_stage_6_s6_0_complete_operationally_paused_for_part_owner_wire_contract_planning_review",
     "rkp2_task": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
     "rkp2_planning_base": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "rkp2_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -289,10 +289,27 @@
     "rkp2_stage_6_authorized": true,
     "rkp2_stage_6_completed": false,
     "rkp2_stage_6_user_authorization": "post_p1_runner_repair_user_requested_continue_to_later_content_as_separate_stage_6_authorization",
+    "rkp2_stage_6_s6_0_commit": "ce673a2ad62348fa73458d493a45f9c005bf0288",
+    "rkp2_stage_6_operationally_paused": true,
+    "rkp2_stage_6_s6_1_started": false,
+    "rkp2_stage_6_s6_2_started": false,
+    "rkp2_stage_6_s6_3_started": false,
     "rkp2_implementation_candidate_ready": false,
     "rkp2_implementation_review": "pending",
     "rkp2_default_runtime": "typescript",
-    "rkp2_current_blocking_descendant": null,
+    "rkp2_current_blocking_descendant": "08-26-rkp-2-part-owner-wire-contract-repair",
+    "rkp2_part_owner_wire_contract_repair": {
+      "parent": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
+      "planning_base": "ce673a2ad62348fa73458d493a45f9c005bf0288",
+      "status": "planning",
+      "task_start_run": false,
+      "production_implementation_authorized": false,
+      "independent_planning_review": "pending",
+      "implementation_candidate_ready": false,
+      "root_cause_audit": "P0_0_P1_1_P2_0",
+      "future_technical_allowlist_count": 6,
+      "stage_6_resume": "blocked_until_repair_accepted_archived_integrated"
+    },
     "rkp2_cross_platform_full_runner_repair": {
       "planning_base": "eed4871a86191783d539b7d4097be3627e98e4a0",
       "parent": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",

@@ -19,7 +19,8 @@
   "pr_url": null,
   "subtasks": [],
   "children": [
-    "08-25-rkp-2-cross-platform-full-test-runner-contract-repair"
+    "08-25-rkp-2-cross-platform-full-test-runner-contract-repair",
+    "08-26-rkp-2-part-owner-wire-contract-repair"
   ],
   "parent": "08-15-core-rust-runtime-performance-remediation",
   "relatedFiles": [
@@ -40,7 +41,7 @@
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "RKP-2 STAGE 5 COMPLETE / FULL-RUNNER REPAIR EXACT 8D9A2A4 ACCEPTED AND NATIVELY ARCHIVED AT A1895F3 / CURRENT COORDINATION HISTORICAL 10 PLUS ARCHIVED 13 / FAST-FORWARD INTEGRATION IS THE ONLY REMAINING CLOSEOUT ACTION / RKP-2 STAGE 6 NOT STARTED OR AUTHORIZED / TYPESCRIPT DEFAULT / NO CUTOVER PUSH QUALIFICATION RKP-3.",
+  "notes": "RKP-2 STAGE 6 S6.0 AUTHORIZATION COMMIT CE673A2 PRESERVED / S6.1-S6.3 OPERATIONALLY PAUSED FOR PLANNING-ONLY CHILD 08-26-RKP-2-PART-OWNER-WIRE-CONTRACT-REPAIR / CHILD START AND PRODUCTION AUTHORIZATION FALSE / INDEPENDENT PLANNING REVIEW PENDING / TYPESCRIPT DEFAULT / NO CUTOVER PUSH QUALIFICATION RKP-3.",
   "meta": {
     "planning_base_commit": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "accepted_rkp1_audited_implementation_commit": "94387b339b5e4d9ce6b7f97597a1b56edd051f01",
@@ -102,9 +103,9 @@
       "verdict": "pass"
     },
     "approved_planning_head": "625054ec78e6410e0fb6034ab0c8f60bbf110d08",
-    "current_planning_child": null,
+    "current_planning_child": "08-26-rkp-2-part-owner-wire-contract-repair",
     "current_implementation_child": null,
-    "implementation_stage": "stage_6_authorized_started_hostile_resource_finality_tests_pending",
+    "implementation_stage": "stage_6_s6_0_complete_operationally_paused_for_part_owner_wire_contract_planning_review",
     "stage_1_started": true,
     "stage_1_completed": true,
     "stage_1_commit_subject": "build(rkp-2): pin typed generational store dependency",
@@ -307,11 +308,30 @@
       "post_pass_closeout_authorized": true,
       "stage_6_blocked_until_accepted_archived_integrated": false
     },
-    "next_gate": "rkp2-stage-6-hostile-resource-finality-tests",
+    "next_gate": "rkp2-part-owner-wire-contract-repair-independent-planning-review",
     "stage_6_started": true,
     "stage_6_authorized": true,
     "stage_6_completed": false,
     "stage_6_user_authorization": "post_p1_runner_repair_user_requested_continue_to_later_content_as_separate_stage_6_authorization",
+    "stage_6_s6_0_commit": "ce673a2ad62348fa73458d493a45f9c005bf0288",
+    "stage_6_operationally_paused": true,
+    "stage_6_s6_1_started": false,
+    "stage_6_s6_2_started": false,
+    "stage_6_s6_3_started": false,
+    "part_owner_wire_contract_repair": {
+      "child": "08-26-rkp-2-part-owner-wire-contract-repair",
+      "planning_base": "ce673a2ad62348fa73458d493a45f9c005bf0288",
+      "branch": "codex/rkp-2-part-owner-wire-contract-repair",
+      "status": "planning",
+      "task_start_run": false,
+      "production_implementation_authorized": false,
+      "independent_planning_review": "pending",
+      "implementation_candidate_ready": false,
+      "root_cause_audit": "P0_0_P1_1_P2_0_foundation_ExtensionOwnerV1_part_id_missing_public_partId_serde_rename",
+      "public_wire": "score_kind_only_or_part_kind_plus_partId_only_no_part_id_alias",
+      "future_technical_allowlist_count": 6,
+      "next_resume_gate": "accepted_archived_integrated_repair_then_resume_preserved_s6_1"
+    },
     "implementation_review": "pending",
     "implementation_candidate_ready": false,
     "archive_authorized": false,

@@ -2,7 +2,7 @@
 
 ## Current status
 
-`STAGE 5 COMPLETE — BLOCKING RUNNER CHILD READY FOR INDEPENDENT IMPLEMENTATION REREVIEW — STAGE 6 NOT STARTED`.
+`STAGE 6 S6.0 COMPLETE — OPERATIONALLY PAUSED FOR PART-OWNER WIRE-CONTRACT PLANNING REVIEW`.
 
 - Branch: `codex/rkp-2-indexed-live-score-store-implementation`.
 - Worktree: `.worktrees/rkp-2-indexed-live-score-store-implementation`.
@@ -18,11 +18,19 @@
 - Stage 2 exact candidate `a4ede43d944edc7e25860a9eda821889a8a581d8` is owner-accepted as the Stage 3 prerequisite; no independent Stage 2 audit is claimed.
 - Stage 3 exact candidate `c348e2f332d4e96e3b3dd74def7263c95770a868` is owner-accepted as the Stage 4 prerequisite; no independent Stage 3 audit is claimed.
 - Stage 4 exact candidate `72cf0769cb66deb58691a39b664395ed28670da1` is owner-accepted as the Stage 5 prerequisite; no independent Stage 4 audit is claimed.
-- Stage 5 authorization is consumed; Stage 6 is not started or authorized.
+- Stage 6 is started and authorized only through S6.0 commit `ce673a2ad62348fa73458d493a45f9c005bf0288`; S6.1/S6.2/S6.3 are not started.
 - Post-Stage-5 manifest projection: `bda15099f4932aced965eabc6b6e147accd9b5ce`.
 - Previous planning-authority closure candidate `e3829dafe0e7bfc4b3cc1d615dd20b2d5eed8e9b` was returned by dedicated auditor task `01a01e48-1934-77b0-821e-a8026cd9e5f7` with `P0/P1/P2=0/1/0` because its historical JSONL invariant was anchored only to the Stage 5 parent.
 - Current approved-planning-state anchor repair candidate: this docs-only commit, exact hash reported after commit; dedicated targeted planning rereview is pending and no PASS is claimed.
 - TypeScript is the default runtime.
+
+## Current blocking Part-owner wire-contract child
+
+Independent root-cause review found P0/P1/P2=`0/1/0`: the accepted public Part-owner wire uses `partId`, but Foundation's `ExtensionOwnerV1::Part` field `part_id` lacks a serde rename. Contracts and TypeScript already require `partId`; Runtime only clones the validated owner.
+
+Planning child `08-26-rkp-2-part-owner-wire-contract-repair` is the sole current planning child. It is based on exact S6.0 commit `ce673a2ad62348fa73458d493a45f9c005bf0288`, remains `planning`, has `task_start_run=false`, `production_implementation_authorized=false`, `independent_planning_review=pending`, and `implementation_candidate_ready=false`.
+
+RKP-2 remains the active implementation child of the Rust parent, but Stage 6 is operationally paused. The next gate is independent planning review of the child. Do not resume S6.1 until the repair is separately implemented, audited, accepted, natively archived and integrated back into this branch.
 
 ## What this plan delivers
 
