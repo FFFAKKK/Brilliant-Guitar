@@ -92,7 +92,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "rkp2-post-stage-5-manifest-approved-planning-anchor-repair-targeted-rereview",
+    "next_gate": "rkp2-cross-platform-full-test-runner-contract-repair-independent-planning-review",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -197,7 +197,7 @@
     "rkp2_implementation_authorized": true,
     "rkp2_user_implementation_authorization": true,
     "rkp2_created": true,
-    "rkp2_status": "in_progress_stage_5_complete_stage_6_not_started_manifest_approved_planning_anchor_repair_rereview_pending",
+    "rkp2_status": "in_progress_stage_5_complete_stage_6_blocked_by_cross_platform_full_runner_planning_review",
     "rkp2_task": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
     "rkp2_planning_base": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "rkp2_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -290,6 +290,17 @@
     "rkp2_implementation_candidate_ready": false,
     "rkp2_implementation_review": "pending",
     "rkp2_default_runtime": "typescript",
+    "rkp2_current_blocking_descendant": "08-25-rkp-2-cross-platform-full-test-runner-contract-repair",
+    "rkp2_cross_platform_full_runner_repair": {
+      "planning_base": "eed4871a86191783d539b7d4097be3627e98e4a0",
+      "parent": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
+      "status": "planning",
+      "task_start_run": false,
+      "production_implementation_authorized": false,
+      "independent_planning_review": "pending",
+      "stage_6_blocked": true,
+      "rkp2_remains_active_implementation_child": true
+    },
     "rkp2_default_runtime_switch_authorized": false,
     "rkp2_approved_planning_head": "625054ec78e6410e0fb6034ab0c8f60bbf110d08",
     "rkp2_approved_planning_state_head": "53646c92b81bc3ac160ec5d72b0d3f80c97b7eb0",
@@ -302,7 +313,7 @@
       "verdict": "pass"
     },
     "rkp2_future_implementation_allowlist_count": 21,
-    "rkp2_future_implementation_coordination_allowlist_count": 10,
+    "rkp2_future_implementation_coordination_allowlist_count": 22,
     "rkp2_activation_gate": "satisfied_and_activation_commit_0_complete",
     "rkp1_implementation_audit_return": {
       "task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",

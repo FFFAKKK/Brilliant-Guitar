@@ -22,9 +22,17 @@ Stage 5 changes only the seven approved Runtime/Session/parity paths plus allowl
 
 Manifest projection commit `bda15099f4932aced965eabc6b6e147accd9b5ce` replaced only the deleted `smoke_runtime.rs` row in each JSONL with `runtime.rs`. The previous closure candidate `e3829dafe0e7bfc4b3cc1d615dd20b2d5eed8e9b` was returned `P0/P1/P2=0/1/0` because it anchored historical zero drift only to the Stage 5 parent. The current docs-only candidate repairs that single P1 by anchoring the executable invariant to approved planning state `53646c92b81bc3ac160ec5d72b0d3f80c97b7eb0`.
 
-The mechanical contract is narrow: the approved-state and Stage 5-parent manifests are LF-normalized identical; all three historical commits exist with the approved state ancestral to the Stage 5 parent and that parent directly parenting the projection; `bda15099...` changes only the designated row's `file` and `reason` fields relative to approved planning. The 21 production/test paths remain unchanged; coordination is exactly ten literal paths; `implement.jsonl` and `check.jsonl` remain exactly 25/20 rows; every other row and field matches approved planning; every JSONL path exists and is unique; and LF-normalized SHA-256 freezes the same five files. There is no wildcard or permanent task-directory exemption.
+The mechanical successor contract remains narrow: the approved-state and Stage 5-parent manifests are LF-normalized identical; all three historical commits exist with the approved state ancestral to the Stage 5 parent and that parent directly parenting the projection; `bda15099...` changes only the designated row's `file` and `reason` fields relative to approved planning. The 21 RKP-2 production/test paths remain unchanged; `implement.jsonl` and `check.jsonl` remain exactly 25/20 rows; every other row and field matches approved planning; every JSONL path exists and is unique.
 
-The targeted independent planning rereview is pending in dedicated auditor task `01a01e48-1934-77b0-821e-a8026cd9e5f7`. No new planning PASS, Stage 6 authorization, implementation readiness or implementation-review result is claimed.
+The current candidate adds exactly twelve child-planning artifacts to the historical ten coordination paths, producing 22 literal paths. The same five LF-normalized files are content-frozen after recomputing only design/implement/matrix hashes; both JSONL contents/hashes are unchanged. There is no wildcard or permanent task-directory exemption.
+
+## Blocking full-runner child candidate
+
+At exact base `eed4871a86191783d539b7d4097be3627e98e4a0`, independent full-runner review found one P1: the quoted wildcard is not a cross-platform completeness contract. Node 24 can return 29 files/261 tests with exit zero while the true literal tree is 77 files/557 tests; Node 20.20.2 exits one for the literal glob. Package/package-lock are unchanged from `df40aef...`, so the finding is inherited infrastructure debt.
+
+Child `08-25-rkp-2-cross-platform-full-test-runner-contract-repair` freezes one deterministic owner: literal recursive enumeration, link rejection, code-unit sorting, immutable `full-test-manifest-v1`, Node 20/24 common `run({ files, concurrency })`, complete top-level outcome equality, reporter completion and nonzero propagation. It changes no implementation path in planning.
+
+Dedicated independent planning review of the exact child candidate is pending. No planning PASS, child implementation, Stage 6 authorization, implementation readiness or implementation-review result is claimed.
 
 ## Recorded verdict
 
@@ -45,23 +53,24 @@ The dedicated read-only auditor task `01a01e48-1934-77b0-821e-a8026cd9e5f7` reco
 ## Review focus
 
 1. Approved planning state `53646c92...` and Stage 5 parent `4f5f45a...` contain LF-normalized identical JSONLs; both and projection `bda15099...` exist; the approved state is ancestral to the Stage 5 parent; and that parent is the projection's sole direct parent.
-2. The coordination allowlist is exactly ten literal paths while the technical allowlist remains exactly 21; no wildcard or directory-level exemption exists.
+2. The coordination allowlist is exactly 22 literal paths (historical ten plus twelve child planning artifacts) while the RKP-2 technical allowlist remains exactly 21; no wildcard or directory-level exemption exists.
 3. Relative to approved planning state, `bda15099...` changes only the designated successor row's `file` and `reason` fields; five LF-normalized content hashes then freeze the repaired manifests/authority, and all other JSONL rows and fields, counts, valid JSON, existence and uniqueness remain exact.
-4. Stage 5 remains complete while Stage 6, candidate readiness, implementation review, default cutover and lifecycle closeout remain untouched.
-5. Planning base and accepted RKP-1 ancestry remain intact.
-6. One semantic truth/two representations and absence of retained ScoreDocument in the target Runtime.
-7. Exact slotmap pin/features, typed-key privacy and arbitrary-iteration fence.
-8. Document/entity global StableId uniqueness and strict separation from RuntimeHandle/MusicalLocation.
-9. Complete scalar record/topology model, including non-entity PartMeasureContent.
-10. Entity/owner/content/time/extension/reference indices and claimed complexity.
-11. Exact Fraction/duration/time-range correctness without ticks/floats.
-12. Two-phase Foundation-validation/Runtime-store pre-count and reserve, explicit internal-capacity mappings, followed by build/local checks/publication and zero-session rejection.
-13. Deterministic full-validation order plus mapping into the unchanged 22 failures.
-14. Canonical/lossless export, unknown extensions and index normalized parity.
-15. Public `28/51/8/34/9`, two Node exports, TypeScript default and resource-cap freeze.
-16. Six reversible stages, protected paths and downstream RKP boundaries.
-17. Stress evidence is a diagnostic liveness/linearity gate, not a weakened product performance budget.
-18. Parent conflict integration rule preserves repair and RKP-2 child references.
+4. The child is the sole test-infrastructure owner; RKP-2 Stage 6 is a consumer only and remains blocked pending planning/implementation reviews, acceptance/archive, integration and separate authorization.
+5. Stage 5 remains complete while Stage 6, candidate readiness, implementation review, default cutover and lifecycle closeout remain untouched.
+6. Planning base and accepted RKP-1 ancestry remain intact.
+7. One semantic truth/two representations and absence of retained ScoreDocument in the target Runtime.
+8. Exact slotmap pin/features, typed-key privacy and arbitrary-iteration fence.
+9. Document/entity global StableId uniqueness and strict separation from RuntimeHandle/MusicalLocation.
+10. Complete scalar record/topology model, including non-entity PartMeasureContent.
+11. Entity/owner/content/time/extension/reference indices and claimed complexity.
+12. Exact Fraction/duration/time-range correctness without ticks/floats.
+13. Two-phase Foundation-validation/Runtime-store pre-count and reserve, explicit internal-capacity mappings, followed by build/local checks/publication and zero-session rejection.
+14. Deterministic full-validation order plus mapping into the unchanged 22 failures.
+15. Canonical/lossless export, unknown extensions and index normalized parity.
+16. Public `28/51/8/34/9`, two Node exports, TypeScript default and resource-cap freeze.
+17. Six reversible stages, protected paths and downstream RKP boundaries.
+18. Stress evidence is a diagnostic liveness/linearity gate, not a weakened product performance budget.
+19. Parent conflict integration rule preserves repair and RKP-2 child references.
 
 ## Evidence expected
 

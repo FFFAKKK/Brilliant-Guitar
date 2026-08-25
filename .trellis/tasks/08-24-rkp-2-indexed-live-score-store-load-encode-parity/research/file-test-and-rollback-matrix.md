@@ -75,6 +75,20 @@ Planning authority files stay byte-identical during implementation except for th
 
 The repair has one authority owner: the exact docs-only closure candidate submitted for targeted planning rereview. The preceding `bda15099...` commit is only its manifest projection input, not a second planning authority. Workspace-law must prove approved planning state `53646c92...`, Stage 5 parent `4f5f45a...` and projection `bda15099...` exist; `53646c92...` is an ancestor of `4f5f45a...`; `4f5f45a...` is the direct parent of `bda15099...`; and the LF-normalized approved manifests equal the Stage 5-parent manifests. Relative to approved planning state, `bda15099...` changes only the designated successor row's `file` and `reason` fields; every other row and field is identical. The Stage 5 production commit and six-stage technical sequence remain unchanged.
 
+## Blocking cross-platform full-runner child
+
+Child `08-25-rkp-2-cross-platform-full-test-runner-contract-repair` owns complete-suite discovery, immutable manifest, programmatic `node:test` execution and reporter/exit semantics. Its twelve planning artifacts are appended as literal RKP-2 coordination paths for this candidate only. They are not RKP-2 production/test paths and do not authorize implementation.
+
+| Child boundary | Exact ownership | RKP-2 relationship | Rollback |
+|---|---|---|---|
+| planning candidate | child task/prd/design/implement/jsonl/handoff/review plus four named research files | RKP-2 records the blocker and freezes exact paths/hashes | revert this planning projection; Stage 6 stays blocked |
+| later technical repair | `package.json`, runner source, runner focused test and existing RKP-2 workspace-law only | RKP-2 Stage 6 consumes accepted runner/manifest, never discovery logic | revert child stages in reverse order |
+| later lifecycle/integration | eleven exact child/RKP-2/Rust-parent paths from child design section 8 | create a new prerequisite base only after review/acceptance/archive | revert integration; Stage 1–5 remain intact |
+
+`package-lock.json` is excluded. The existing RKP-2 21-path technical matrix and both JSONL files remain unchanged by this planning child. The five LF-normalized RKP-2 content hashes are recomputed after this authority projection; JSONL hashes stay identical. No wildcard or task-directory exemption is introduced.
+
+Stage 6 remains not started/authorized until the accepted child is integrated and the user supplies a later explicit authorization. This preserves one test-infrastructure owner and the original six-stage technical sequence.
+
 ## Protected boundary
 
 Explicitly protected:

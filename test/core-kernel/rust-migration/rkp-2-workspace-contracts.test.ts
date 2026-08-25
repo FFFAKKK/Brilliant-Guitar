@@ -123,6 +123,18 @@ const EXPECTED_COORDINATION_PATHS = [
   DESIGN_PATH,
   IMPLEMENT_PATH,
   FILE_TEST_ROLLBACK_MATRIX_PATH,
+  ".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/task.json",
+  ".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/prd.md",
+  ".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/design.md",
+  ".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/implement.md",
+  ".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/implement.jsonl",
+  ".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/check.jsonl",
+  ".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/operator-handoff.md",
+  ".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/review-candidate.md",
+  ".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/research/current-runner-reproduction.md",
+  ".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/research/node-test-api-and-version-contract.md",
+  ".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/research/file-test-integration-and-rollback-matrix.md",
+  ".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/research/planning-self-audit.md",
 ] as const;
 
 const FROZEN_POST_STAGE_5_AUTHORITY_CONTENT = [
@@ -136,15 +148,15 @@ const FROZEN_POST_STAGE_5_AUTHORITY_CONTENT = [
   },
   {
     path: DESIGN_PATH,
-    sha256: "03ac7dcca317f472fd7fb7181b99d96861c3692524982ef37268e130d7d5149e",
+    sha256: "d14824292db1b6030a45d95a1705addd25548f1ffa64863d321c57ebf50a53d3",
   },
   {
     path: IMPLEMENT_PATH,
-    sha256: "97d2cdaf1088b7f53fbf51e374e02f7e3863ef62609afbebe8f3e7093bbaa906",
+    sha256: "8370e5467867cb04edb632097b5c50251c0609219b6916765f1706ba8981d1e5",
   },
   {
     path: FILE_TEST_ROLLBACK_MATRIX_PATH,
-    sha256: "99989324eceb8cb81c0f7db1073b0a829005898bc9d07447ca6cd20acfe93a94",
+    sha256: "aaff7f6d4c9124d9f5ea4431d35464f0d167c2a5b487df5c6500ad8e22347b7a",
   },
 ] as const;
 
@@ -273,7 +285,7 @@ test("implementation changes stay inside the literal RKP-2 allowlists", () => {
   assert.deepEqual(implementation, [...EXPECTED_IMPLEMENTATION_PATHS]);
   assert.deepEqual(coordination, [...EXPECTED_COORDINATION_PATHS]);
   assert.equal(new Set(implementation).size, 21);
-  assert.equal(new Set(coordination).size, 10);
+  assert.equal(new Set(coordination).size, 22);
 
   const allowed = new Set<string>([...implementation, ...coordination]);
   for (const path of currentImplementationChanges()) {

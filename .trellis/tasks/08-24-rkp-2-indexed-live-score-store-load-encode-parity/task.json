@@ -18,7 +18,9 @@
   "commit": null,
   "pr_url": null,
   "subtasks": [],
-  "children": [],
+  "children": [
+    "08-25-rkp-2-cross-platform-full-test-runner-contract-repair"
+  ],
   "parent": "08-15-core-rust-runtime-performance-remediation",
   "relatedFiles": [
     ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/prd.md",
@@ -64,7 +66,7 @@
     "task_start_run": true,
     "production_implementation_authorized": true,
     "user_implementation_authorization": true,
-    "user_authorization_scope": "post_stage_5_manifest_approved_planning_anchor_repair_only_stage_6_not_authorized",
+    "user_authorization_scope": "cross_platform_full_test_runner_planning_only_stage_6_not_authorized",
     "independent_planning_review": "passed",
     "planning_review_cycle": "final_targeted_rereview_passed",
     "initial_independent_planning_review": {
@@ -100,7 +102,8 @@
       "verdict": "pass"
     },
     "approved_planning_head": "625054ec78e6410e0fb6034ab0c8f60bbf110d08",
-    "implementation_stage": "stage_5_complete_stage_6_not_started_manifest_approved_planning_anchor_repair_rereview_pending",
+    "current_planning_child": "08-25-rkp-2-cross-platform-full-test-runner-contract-repair",
+    "implementation_stage": "stage_5_complete_stage_6_blocked_by_cross_platform_full_runner_planning_review",
     "stage_1_started": true,
     "stage_1_completed": true,
     "stage_1_commit_subject": "build(rkp-2): pin typed generational store dependency",
@@ -190,9 +193,24 @@
     "post_stage_5_manifest_authority_hashes_lf_normalized_sha256": {
       "check_jsonl": "7e12f6d00ba17e1967ef57e884e7b5d6ca7efedbb2aaf94de04fc4b3091251c3",
       "implement_jsonl": "cd0a42070a76a18e782d7da4ebc0e9a88d2ed5dece0d093125d4fc8982229705",
-      "design_md": "03ac7dcca317f472fd7fb7181b99d96861c3692524982ef37268e130d7d5149e",
-      "implement_md": "97d2cdaf1088b7f53fbf51e374e02f7e3863ef62609afbebe8f3e7093bbaa906",
-      "file_test_and_rollback_matrix_md": "99989324eceb8cb81c0f7db1073b0a829005898bc9d07447ca6cd20acfe93a94"
+      "design_md": "d14824292db1b6030a45d95a1705addd25548f1ffa64863d321c57ebf50a53d3",
+      "implement_md": "8370e5467867cb04edb632097b5c50251c0609219b6916765f1706ba8981d1e5",
+      "file_test_and_rollback_matrix_md": "aaff7f6d4c9124d9f5ea4431d35464f0d167c2a5b487df5c6500ad8e22347b7a"
+    },
+    "cross_platform_full_test_runner_contract_repair": {
+      "child": "08-25-rkp-2-cross-platform-full-test-runner-contract-repair",
+      "planning_base": "eed4871a86191783d539b7d4097be3627e98e4a0",
+      "root_cause": "quoted_literal_glob_delegates_complete_discovery_to_runtime_or_shell",
+      "audit_finding": "independent_full_runner_P1_partial_discovery_can_exit_zero",
+      "node24_partial": "29_files_261_tests_exit_0",
+      "node24_complete_literal": "77_files_557_discovered_556_pass_1_expected_gc_skip_0_fail",
+      "node20_literal_glob": "20_20_2_exit_1",
+      "package_and_lock_df40aef_to_eed4871a_delta": "zero",
+      "status": "planning_candidate_targeted_independent_review_pending",
+      "sole_test_infrastructure_owner": true,
+      "task_start_run": false,
+      "production_implementation_authorized": false,
+      "stage_6_blocked_until_accepted_archived_integrated": true
     },
     "stage_6_started": false,
     "stage_6_authorized": false,
@@ -230,7 +248,7 @@
     "implementation_stage_count": 6,
     "implementation_activation_commit_count": 1,
     "future_implementation_allowlist_count": 21,
-    "future_implementation_coordination_allowlist_count": 10,
+    "future_implementation_coordination_allowlist_count": 22,
     "planning_production_test_cargo_package_tsconfig_delta": "zero",
     "unified_base_validation": "trellis_rkp2_parent_archived_rkp1_archived_repair_architecture_pass_json_jsonl_unique_children4_diffcheck_protected_delta0_rust40_fmt_check_clippy_msrv_node9_workspace_law6_windows_two_loaders_typecheck_build_full546_545_pass_1_expected_gc_skip_0_fail_clean",
     "planning_validation": "approved_planning_head_625054e_pass_0_0_0_preserved",

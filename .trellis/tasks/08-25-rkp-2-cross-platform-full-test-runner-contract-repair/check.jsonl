@@ -1,0 +1,7 @@
+{"file":".trellis/spec/core-kernel/backend/quality-guidelines.md","reason":"Audit deterministic discovery, hostile cases, exact exit propagation and protected public boundaries."}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Audit that this child is the sole test-infrastructure owner and RKP-2 is only a consumer."}
+{"file":".trellis/spec/guides/long-term-maintenance-guide.md","reason":"Audit lifecycle separation, literal allowlists, content freezes and reversible integration."}
+{"file":".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/research/current-runner-reproduction.md","reason":"Verify the root-cause reproduction, complete literal baseline and package history attribution."}
+{"file":".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/research/node-test-api-and-version-contract.md","reason":"Verify Node 20/24 option compatibility, default isolation and direct-entry contract."}
+{"file":".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/research/file-test-integration-and-rollback-matrix.md","reason":"Verify every planned file, focused test, gate and rollback owner is literal and unique."}
+{"file":".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/research/planning-self-audit.md","reason":"Confirm planning self-audit is bounded and independent review remains pending."}

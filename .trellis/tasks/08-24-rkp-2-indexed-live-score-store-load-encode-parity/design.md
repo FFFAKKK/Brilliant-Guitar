@@ -504,13 +504,27 @@ Only these task/coordination paths may change during implementation:
 .trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/design.md
 .trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/implement.md
 .trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/research/file-test-and-rollback-matrix.md
+.trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/task.json
+.trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/prd.md
+.trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/design.md
+.trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/implement.md
+.trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/implement.jsonl
+.trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/check.jsonl
+.trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/operator-handoff.md
+.trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/review-candidate.md
+.trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/research/current-runner-reproduction.md
+.trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/research/node-test-api-and-version-contract.md
+.trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/research/file-test-integration-and-rollback-matrix.md
+.trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/research/planning-self-audit.md
 ```
 
 The five appended authority-repair paths are a one-time exception used only after the planned Stage 5 deletion of `smoke_runtime.rs`: `implement.jsonl` and `check.jsonl` may each project their single stale `smoke_runtime.rs` row to the live successor `runtime.rs`, while `design.md`, `implement.md` and `research/file-test-and-rollback-matrix.md` close that projection under executable governance. The historical invariant is anchored to approved planning state `53646c92b81bc3ac160ec5d72b0d3f80c97b7eb0`: its LF-normalized manifests must equal those at Stage 5 parent `4f5f45a5f5a97968ef5280524cd4e6ab8dbebda8`, and manifest projection `bda15099f4932aced965eabc6b6e147accd9b5ce` may differ from that approved state only in the `file` and `reason` fields of the one designated successor row per manifest. The three commits must exist, the approved state must be an ancestor of the Stage 5 parent, and the Stage 5 parent must be the direct parent of the projection. This bounded repair is not a regular implementation-time planning edit. Its exact candidate must pass a dedicated targeted planning rereview before these five files freeze again; any later change requires a new planning review.
 
+The twelve appended `08-25-rkp-2-cross-platform-full-test-runner-contract-repair` paths are a second, separate planning-time coordination projection for the blocking full-runner child. They authorize only this complete docs-only planning candidate and make that child the sole test-infrastructure owner; they do not add an RKP-2 technical path, authorize child implementation or Stage 6, or create a directory wildcard. After the child planning candidate is independently accepted, these twelve artifacts freeze. Later child implementation uses only the child's own literal future allowlist, and accepted/archive integration must recompute the same five RKP-2 content hashes without changing the JSONL successor contract.
+
 The PRD and all other planning authority/research stay zero-delta during implementation. Relative to approved planning state `53646c92b81bc3ac160ec5d72b0d3f80c97b7eb0`, the two JSONL manifests stay zero-delta except for the one successor projection in each file; their row counts, every other row and field, and per-file path uniqueness remain unchanged. New task-local `research/implementation-evidence.md` is created only at implementation Stage 6.
 
-Protected examples include all `src/**`, all other `test/**`, `package*.json`, `tsconfig.json`, `rust-toolchain.toml`, `rustfmt.toml`, Core Types, all Kernel Contracts paths except the single allowlisted `crates/brilliant-kernel-contracts/src/codec.rs` mapping, Extension Protocol, Node source, active specs, CVN tasks, Guitar/product/plugin paths and qualification code.
+Protected examples include all `src/**`, all other `test/**`, `package*.json`, `tsconfig.json`, `rust-toolchain.toml`, `rustfmt.toml`, Core Types, all Kernel Contracts paths except the single allowlisted `crates/brilliant-kernel-contracts/src/codec.rs` mapping, Extension Protocol, Node source, active specs, CVN tasks, Guitar/product/plugin paths and qualification code. The child planning candidate changes only the one existing allowlisted RKP-2 workspace-law test; `package.json` and the new runner/test paths remain future child implementation paths and are zero-delta now.
 
 ## 15. Rollout and rollback
 

@@ -239,6 +239,18 @@ The operator uses the existing RKP-1 native build/load procedure. Exact two expo
 
 Revert Stage 5 to restore `SmokeRuntime`; Stages 1–4 remain non-default and unused. If the one-time successor-projection repair has already been committed, revert its authority-closure commit and manifest-projection commit together before restoring the pre-Stage-5 context; neither commit is a second Runtime owner.
 
+## 6.1 Blocking child — cross-platform complete test runner
+
+Stage 6 cannot start or freeze an implementation candidate while complete TypeScript discovery still depends on `node --test "dist/test/**/*.test.js"`. Child `08-25-rkp-2-cross-platform-full-test-runner-contract-repair` is the sole test-infrastructure owner and must complete these gates first:
+
+1. its exact planning candidate passes dedicated independent planning review P0/P1/P2=`0/0/0`;
+2. separate user authorization activates and implements its deterministic literal enumeration, `full-test-manifest-v1`, programmatic `node:test` execution and complete outcome/exit contract;
+3. Node 20.20.2 and 24.15.0, PowerShell and `cmd.exe`/`npm.cmd` evidence pass without a shell glob, new dependency or fixed file/test total;
+4. independent implementation review passes, then owner acceptance/archive occurs as separate lifecycle actions; and
+5. a reviewable integration commit creates a new RKP-2 Stage 6 prerequisite base containing the accepted child and current RKP-2 ancestry.
+
+RKP-2 consumes the accepted runner and printed manifest only; it must not copy enumeration/reporting logic or become a second owner. The accepted package target is `npm run build && node dist/test/test-infrastructure/run-compiled-tests.js`. `package-lock.json`, product/Rust/native/CVN/qualification code and individual test contents remain unchanged. Even after integration, Stage 6 requires a new explicit user authorization.
+
 ## 7. Stage 6 — Hostile/resource/scale evidence and candidate freeze
 
 ### Files
@@ -287,6 +299,7 @@ git status --short --branch
 
 Also verify:
 
+- the accepted child runner prints a dynamic `full-test-manifest-v1`; its independently enumerated literal file set, actual `run({ files })` set and complete top-level file outcomes are equal, with actual file/test totals recorded rather than hard-coded;
 - JSON/JSONL parsing and unique paths;
 - parent child reference exactly once;
 - exact dependency/features and seven crates;

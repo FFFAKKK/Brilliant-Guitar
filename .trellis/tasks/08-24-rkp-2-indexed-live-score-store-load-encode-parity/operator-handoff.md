@@ -89,19 +89,25 @@ Focused Rust passes Runtime `15/15` and Session `4/4`; full workspace Rust passe
 
 Stage 5 deleted `crates/brilliant-kernel-runtime/src/smoke_runtime.rs`. Approved planning state `53646c92b81bc3ac160ec5d72b0d3f80c97b7eb0` is the historical JSONL anchor: its LF-normalized manifests must equal those at Stage 5 parent `4f5f45a5f5a97968ef5280524cd4e6ab8dbebda8`. Commit `bda15099...` then changes exactly one row in each context manifest to the live successor `crates/brilliant-kernel-runtime/src/runtime.rs`; only that row's `file` and `reason` fields change relative to the approved state. All other rows and fields remain identical, the counts remain `implement=25` and `check=20`, and every path remains existing and unique. Workspace-law also proves all three commits exist, the approved state is an ancestor of the Stage 5 parent, and the Stage 5 parent is the projection's sole direct parent.
 
-The accepted design's former permanent JSONL zero-delta rule made that planned successor projection fail workspace-law. This candidate closes the drift without a directory exemption: the coordination allowlist is exactly ten literal paths, and workspace-law freezes the LF-normalized SHA-256 of the five repaired authority/manifest files:
+The accepted design's former permanent JSONL zero-delta rule made that planned successor projection fail workspace-law. At the pre-child authority closure, coordination was exactly ten literal paths and workspace-law froze the LF-normalized SHA-256 of five repaired authority/manifest files. The current planning candidate preserves that invariant and adds exactly twelve literal child-planning artifacts, producing 22 coordination paths without a wildcard or directory exemption.
 
 - `check.jsonl`: `7e12f6d00ba17e1967ef57e884e7b5d6ca7efedbb2aaf94de04fc4b3091251c3`
 - `implement.jsonl`: `cd0a42070a76a18e782d7da4ebc0e9a88d2ed5dece0d093125d4fc8982229705`
-- `design.md`: `03ac7dcca317f472fd7fb7181b99d96861c3692524982ef37268e130d7d5149e`
-- `implement.md`: `97d2cdaf1088b7f53fbf51e374e02f7e3863ef62609afbebe8f3e7093bbaa906`
-- `research/file-test-and-rollback-matrix.md`: `99989324eceb8cb81c0f7db1073b0a829005898bc9d07447ca6cd20acfe93a94`
+- `design.md`: `d14824292db1b6030a45d95a1705addd25548f1ffa64863d321c57ebf50a53d3`
+- `implement.md`: `8370e5467867cb04edb632097b5c50251c0609219b6916765f1706ba8981d1e5`
+- `research/file-test-and-rollback-matrix.md`: `aaff7f6d4c9124d9f5ea4431d35464f0d167c2a5b487df5c6500ad8e22347b7a`
 
-This is a one-time planning-authority closure, not Stage 6 implementation or evidence freeze. The five files freeze again only after a dedicated targeted planning rereview accepts the exact candidate; later changes require a new planning review.
+This remains planning-authority governance, not Stage 6 implementation or evidence freeze. The five files freeze at the exact current candidate after their hashes are recomputed; both JSONL contents/hashes remain unchanged. Later changes require a new planning review.
+
+## Blocking full-runner planning child
+
+Independent full-runner evidence at `eed4871a86191783d539b7d4097be3627e98e4a0` found one P1: the quoted wildcard may run only 29 files/261 tests on Node 24 and still exit zero, while a literal complete run covers 77 files/557 tests; Node 20.20.2 rejects the literal wildcard. Package and lock files are unchanged from `df40aef...`, so the defect is test infrastructure, not Stage 5 product behavior.
+
+Child `08-25-rkp-2-cross-platform-full-test-runner-contract-repair` is now the sole planning owner. It remains `planning`, start/production authorization false and independent review pending. It freezes deterministic literal enumeration, `full-test-manifest-v1`, cross-version programmatic `run({ files })`, reporter/error/outcome completeness and exact future allowlists. RKP-2 Stage 6 only consumes an accepted runner after review/acceptance/archive/integration and remains separately unauthorized.
 
 ## Next operator action
 
-Send this exact docs-only candidate to the dedicated targeted planning rereview. Do not start Stage 6 unless that rereview passes and the user later provides separate Stage 6 authorization. Candidate readiness, implementation audit and lifecycle closeout remain pending.
+Send the exact child planning candidate and its RKP-2 projection to dedicated independent planning review. Do not start the child or Stage 6. A planning PASS authorizes neither implementation nor integration; each requires its later explicit lifecycle gate. Candidate readiness, implementation audit and lifecycle closeout remain pending.
 
 ## Audit and closeout
 
