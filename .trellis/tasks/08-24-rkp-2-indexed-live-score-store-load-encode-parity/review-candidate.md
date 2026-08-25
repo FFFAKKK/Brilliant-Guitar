@@ -20,9 +20,9 @@ Stage 5 changes only the seven approved Runtime/Session/parity paths plus allowl
 
 ## Bounded successor-governance closure candidate
 
-Manifest projection commit `bda15099f4932aced965eabc6b6e147accd9b5ce` replaced only the deleted `smoke_runtime.rs` row in each JSONL with `runtime.rs`. The current docs-only candidate updates the accepted design/implementation/matrix authority and the executable workspace-law so that the projection is allowed exactly once and then frozen again.
+Manifest projection commit `bda15099f4932aced965eabc6b6e147accd9b5ce` replaced only the deleted `smoke_runtime.rs` row in each JSONL with `runtime.rs`. The previous closure candidate `e3829dafe0e7bfc4b3cc1d615dd20b2d5eed8e9b` was returned `P0/P1/P2=0/1/0` because it anchored historical zero drift only to the Stage 5 parent. The current docs-only candidate repairs that single P1 by anchoring the executable invariant to approved planning state `53646c92b81bc3ac160ec5d72b0d3f80c97b7eb0`.
 
-The mechanical contract is narrow: 21 production/test paths remain unchanged; coordination is exactly ten literal paths; `implement.jsonl` and `check.jsonl` remain exactly 25/20 rows with one successor projection each; all other rows match the pre-projection parent; every JSONL path exists and is unique; and LF-normalized SHA-256 freezes `check.jsonl`, `implement.jsonl`, `design.md`, `implement.md` and `research/file-test-and-rollback-matrix.md`. There is no wildcard or permanent task-directory exemption.
+The mechanical contract is narrow: the approved-state and Stage 5-parent manifests are LF-normalized identical; all three historical commits exist with the approved state ancestral to the Stage 5 parent and that parent directly parenting the projection; `bda15099...` changes only the designated row's `file` and `reason` fields relative to approved planning. The 21 production/test paths remain unchanged; coordination is exactly ten literal paths; `implement.jsonl` and `check.jsonl` remain exactly 25/20 rows; every other row and field matches approved planning; every JSONL path exists and is unique; and LF-normalized SHA-256 freezes the same five files. There is no wildcard or permanent task-directory exemption.
 
 The targeted independent planning rereview is pending in dedicated auditor task `01a01e48-1934-77b0-821e-a8026cd9e5f7`. No new planning PASS, Stage 6 authorization, implementation readiness or implementation-review result is claimed.
 
@@ -44,9 +44,9 @@ The dedicated read-only auditor task `01a01e48-1934-77b0-821e-a8026cd9e5f7` reco
 
 ## Review focus
 
-1. `bda15099...` changes exactly one row per JSONL from the `4f5f45a...` parent, and the closure candidate changes neither manifest further.
+1. Approved planning state `53646c92...` and Stage 5 parent `4f5f45a...` contain LF-normalized identical JSONLs; both and projection `bda15099...` exist; the approved state is ancestral to the Stage 5 parent; and that parent is the projection's sole direct parent.
 2. The coordination allowlist is exactly ten literal paths while the technical allowlist remains exactly 21; no wildcard or directory-level exemption exists.
-3. Five LF-normalized content hashes freeze the repaired manifests/authority, and all other JSONL rows, counts, valid JSON, existence and uniqueness remain exact.
+3. Relative to approved planning state, `bda15099...` changes only the designated successor row's `file` and `reason` fields; five LF-normalized content hashes then freeze the repaired manifests/authority, and all other JSONL rows and fields, counts, valid JSON, existence and uniqueness remain exact.
 4. Stage 5 remains complete while Stage 6, candidate readiness, implementation review, default cutover and lifecycle closeout remain untouched.
 5. Planning base and accepted RKP-1 ancestry remain intact.
 6. One semantic truth/two representations and absence of retained ScoreDocument in the target Runtime.

@@ -67,13 +67,13 @@ Planning authority files stay byte-identical during implementation except for th
 
 | Path | One-time ownership | Frozen result / rollback |
 |---|---|---|
-| `implement.jsonl` | manifest projection commit `bda15099f4932aced965eabc6b6e147accd9b5ce` changes only the deleted `smoke_runtime.rs` context row | one `runtime.rs` row, 25 rows total; revert with the authority closure when abandoning the repair |
-| `check.jsonl` | manifest projection commit `bda15099f4932aced965eabc6b6e147accd9b5ce` changes only the deleted `smoke_runtime.rs` review row | one `runtime.rs` row, 20 rows total; revert with the authority closure when abandoning the repair |
+| `implement.jsonl` | from approved planning state `53646c92b81bc3ac160ec5d72b0d3f80c97b7eb0`, projection commit `bda15099f4932aced965eabc6b6e147accd9b5ce` changes only the deleted `smoke_runtime.rs` context row's `file` and `reason` fields | one `runtime.rs` row, 25 rows total; revert with the authority closure when abandoning the repair |
+| `check.jsonl` | from approved planning state `53646c92b81bc3ac160ec5d72b0d3f80c97b7eb0`, projection commit `bda15099f4932aced965eabc6b6e147accd9b5ce` changes only the deleted `smoke_runtime.rs` review row's `file` and `reason` fields | one `runtime.rs` row, 20 rows total; revert with the authority closure when abandoning the repair |
 | `design.md`, `implement.md`, `research/file-test-and-rollback-matrix.md` | this bounded planning-authority closure only | exact content SHA-256 frozen by workspace-law after targeted rereview; later edits require a new planning review |
 | `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts` | mechanically enforce the exact ten-path allowlist, both single-row projections and five final content hashes | revert only with the complete authority closure; no wildcard or task-directory exemption |
 | RKP-2 `task.json`, `operator-handoff.md`, `review-candidate.md`; Rust parent `task.json` | project the pending targeted rereview without changing Stage 5/6/default-runtime facts | remove the pending repair projection if the candidate is rejected; do not alter technical stage history |
 
-The repair has one authority owner: the exact docs-only closure candidate submitted for targeted planning rereview. The preceding `bda15099...` commit is only its manifest projection input, not a second planning authority. Other JSONL rows remain byte-semantic identical to `bda15099...`; the Stage 5 production commit and six-stage technical sequence remain unchanged.
+The repair has one authority owner: the exact docs-only closure candidate submitted for targeted planning rereview. The preceding `bda15099...` commit is only its manifest projection input, not a second planning authority. Workspace-law must prove approved planning state `53646c92...`, Stage 5 parent `4f5f45a...` and projection `bda15099...` exist; `53646c92...` is an ancestor of `4f5f45a...`; `4f5f45a...` is the direct parent of `bda15099...`; and the LF-normalized approved manifests equal the Stage 5-parent manifests. Relative to approved planning state, `bda15099...` changes only the designated successor row's `file` and `reason` fields; every other row and field is identical. The Stage 5 production commit and six-stage technical sequence remain unchanged.
 
 ## Protected boundary
 

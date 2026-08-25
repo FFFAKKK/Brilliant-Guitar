@@ -20,7 +20,8 @@
 - Stage 4 exact candidate `72cf0769cb66deb58691a39b664395ed28670da1` is owner-accepted as the Stage 5 prerequisite; no independent Stage 4 audit is claimed.
 - Stage 5 authorization is consumed; Stage 6 is not started or authorized.
 - Post-Stage-5 manifest projection: `bda15099f4932aced965eabc6b6e147accd9b5ce`.
-- Current bounded planning-authority closure candidate: this docs-only commit, exact hash reported after commit; dedicated targeted planning rereview is pending and no PASS is claimed.
+- Previous planning-authority closure candidate `e3829dafe0e7bfc4b3cc1d615dd20b2d5eed8e9b` was returned by dedicated auditor task `01a01e48-1934-77b0-821e-a8026cd9e5f7` with `P0/P1/P2=0/1/0` because its historical JSONL invariant was anchored only to the Stage 5 parent.
+- Current approved-planning-state anchor repair candidate: this docs-only commit, exact hash reported after commit; dedicated targeted planning rereview is pending and no PASS is claimed.
 - TypeScript is the default runtime.
 
 ## What this plan delivers
@@ -86,15 +87,15 @@ Focused Rust passes Runtime `15/15` and Session `4/4`; full workspace Rust passe
 
 ## Post-Stage-5 manifest authority closure
 
-Stage 5 deleted `crates/brilliant-kernel-runtime/src/smoke_runtime.rs`. Commit `bda15099...` therefore changed exactly one row in each context manifest to the live successor `crates/brilliant-kernel-runtime/src/runtime.rs`; all other rows remain identical, the counts remain `implement=25` and `check=20`, and every path remains existing and unique.
+Stage 5 deleted `crates/brilliant-kernel-runtime/src/smoke_runtime.rs`. Approved planning state `53646c92b81bc3ac160ec5d72b0d3f80c97b7eb0` is the historical JSONL anchor: its LF-normalized manifests must equal those at Stage 5 parent `4f5f45a5f5a97968ef5280524cd4e6ab8dbebda8`. Commit `bda15099...` then changes exactly one row in each context manifest to the live successor `crates/brilliant-kernel-runtime/src/runtime.rs`; only that row's `file` and `reason` fields change relative to the approved state. All other rows and fields remain identical, the counts remain `implement=25` and `check=20`, and every path remains existing and unique. Workspace-law also proves all three commits exist, the approved state is an ancestor of the Stage 5 parent, and the Stage 5 parent is the projection's sole direct parent.
 
 The accepted design's former permanent JSONL zero-delta rule made that planned successor projection fail workspace-law. This candidate closes the drift without a directory exemption: the coordination allowlist is exactly ten literal paths, and workspace-law freezes the LF-normalized SHA-256 of the five repaired authority/manifest files:
 
 - `check.jsonl`: `7e12f6d00ba17e1967ef57e884e7b5d6ca7efedbb2aaf94de04fc4b3091251c3`
 - `implement.jsonl`: `cd0a42070a76a18e782d7da4ebc0e9a88d2ed5dece0d093125d4fc8982229705`
-- `design.md`: `819f1881c88125b38c34b95450d885fa0f6fc9d225aa5d6105b8c98b9009dc4d`
-- `implement.md`: `32a40740bbd0e426d3bee6cf65257b6a702bdf0a5d3533f7553ef2ba253b8fe8`
-- `research/file-test-and-rollback-matrix.md`: `48ab82cc7bda5355e9e48b201a0674f69dafda91ff340590659d3a895ac6a26d`
+- `design.md`: `03ac7dcca317f472fd7fb7181b99d96861c3692524982ef37268e130d7d5149e`
+- `implement.md`: `97d2cdaf1088b7f53fbf51e374e02f7e3863ef62609afbebe8f3e7093bbaa906`
+- `research/file-test-and-rollback-matrix.md`: `99989324eceb8cb81c0f7db1073b0a829005898bc9d07447ca6cd20acfe93a94`
 
 This is a one-time planning-authority closure, not Stage 6 implementation or evidence freeze. The five files freeze again only after a dedicated targeted planning rereview accepts the exact candidate; later changes require a new planning review.
 

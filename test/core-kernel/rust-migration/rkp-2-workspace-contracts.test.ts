@@ -27,6 +27,8 @@ import {
 } from "./rkp-2-store-fixtures";
 
 const IMPLEMENTATION_BASE = "df40aef391440ae64ad3e266419579bee5887a1f";
+const APPROVED_PLANNING_STATE =
+  "53646c92b81bc3ac160ec5d72b0d3f80c97b7eb0";
 const MANIFEST_PROJECTION_PARENT =
   "4f5f45a5f5a97968ef5280524cd4e6ab8dbebda8";
 const MANIFEST_PROJECTION_COMMIT =
@@ -134,15 +136,15 @@ const FROZEN_POST_STAGE_5_AUTHORITY_CONTENT = [
   },
   {
     path: DESIGN_PATH,
-    sha256: "819f1881c88125b38c34b95450d885fa0f6fc9d225aa5d6105b8c98b9009dc4d",
+    sha256: "03ac7dcca317f472fd7fb7181b99d96861c3692524982ef37268e130d7d5149e",
   },
   {
     path: IMPLEMENT_PATH,
-    sha256: "32a40740bbd0e426d3bee6cf65257b6a702bdf0a5d3533f7553ef2ba253b8fe8",
+    sha256: "97d2cdaf1088b7f53fbf51e374e02f7e3863ef62609afbebe8f3e7093bbaa906",
   },
   {
     path: FILE_TEST_ROLLBACK_MATRIX_PATH,
-    sha256: "48ab82cc7bda5355e9e48b201a0674f69dafda91ff340590659d3a895ac6a26d",
+    sha256: "99989324eceb8cb81c0f7db1073b0a829005898bc9d07447ca6cd20acfe93a94",
   },
 ] as const;
 
@@ -280,9 +282,35 @@ test("implementation changes stay inside the literal RKP-2 allowlists", () => {
 });
 
 test("one-time post-Stage-5 manifest successor projection is exact and content-frozen", () => {
-  assert.equal(
-    git(["rev-parse", `${MANIFEST_PROJECTION_COMMIT}^`]),
+  for (const commit of [
+    APPROVED_PLANNING_STATE,
     MANIFEST_PROJECTION_PARENT,
+    MANIFEST_PROJECTION_COMMIT,
+  ]) {
+    assert.doesNotThrow(
+      () => git(["cat-file", "-e", `${commit}^{commit}`]),
+      `${commit} must exist as a commit`,
+    );
+  }
+  assert.doesNotThrow(
+    () =>
+      git([
+        "merge-base",
+        "--is-ancestor",
+        APPROVED_PLANNING_STATE,
+        MANIFEST_PROJECTION_PARENT,
+      ]),
+    "approved planning state must be an ancestor of the Stage 5 parent",
+  );
+  assert.deepEqual(
+    git([
+      "rev-list",
+      "--parents",
+      "-n",
+      "1",
+      MANIFEST_PROJECTION_COMMIT,
+    ]).split(" "),
+    [MANIFEST_PROJECTION_COMMIT, MANIFEST_PROJECTION_PARENT],
   );
 
   const projections = [
@@ -305,25 +333,52 @@ test("one-time post-Stage-5 manifest successor projection is exact and content-f
   ] as const;
 
   for (const projection of projections) {
-    const beforeRows = lines(
-      gitTextAt(MANIFEST_PROJECTION_PARENT, projection.path),
+    const approvedText = gitTextAt(APPROVED_PLANNING_STATE, projection.path);
+    const stage5ParentText = gitTextAt(
+      MANIFEST_PROJECTION_PARENT,
+      projection.path,
     );
+    assert.equal(
+      approvedText,
+      stage5ParentText,
+      `${projection.path} drifted between approved planning and Stage 5`,
+    );
+    const approvedRows = lines(approvedText);
     const projectedText = gitTextAt(MANIFEST_PROJECTION_COMMIT, projection.path);
     const projectedRows = lines(projectedText);
     const currentText = readText(projection.path);
     const currentRows = lines(currentText);
     assert.equal(currentText, projectedText, `${projection.path} changed after projection`);
-    assert.equal(beforeRows.length, projection.count);
+    assert.equal(approvedRows.length, projection.count);
     assert.equal(projectedRows.length, projection.count);
     assert.equal(currentRows.length, projection.count);
 
     const changedIndices = projectedRows.flatMap((row, index) =>
-      row === beforeRows[index] ? [] : [index],
+      row === approvedRows[index] ? [] : [index],
     );
-    const projectionIndex = beforeRows.indexOf(projection.before);
+    const projectionIndex = approvedRows.indexOf(projection.before);
     assert.notEqual(projectionIndex, -1);
     assert.deepEqual(changedIndices, [projectionIndex]);
     assert.equal(projectedRows[projectionIndex], projection.after);
+
+    const approvedDecoded = approvedRows.map(
+      (row) => JSON.parse(row) as { readonly file: string; readonly reason: string },
+    );
+    const projectedDecoded = projectedRows.map(
+      (row) => JSON.parse(row) as { readonly file: string; readonly reason: string },
+    );
+    for (const [index, approvedEntry] of approvedDecoded.entries()) {
+      const projectedEntry = projectedDecoded[index];
+      assert.ok(projectedEntry);
+      if (index === projectionIndex) {
+        assert.deepEqual(Object.keys(approvedEntry), ["file", "reason"]);
+        assert.deepEqual(Object.keys(projectedEntry), ["file", "reason"]);
+        assert.notEqual(projectedEntry.file, approvedEntry.file);
+        assert.notEqual(projectedEntry.reason, approvedEntry.reason);
+      } else {
+        assert.deepEqual(projectedEntry, approvedEntry);
+      }
+    }
 
     const decoded = currentRows.map(
       (row) => JSON.parse(row) as { readonly file: string; readonly reason: string },

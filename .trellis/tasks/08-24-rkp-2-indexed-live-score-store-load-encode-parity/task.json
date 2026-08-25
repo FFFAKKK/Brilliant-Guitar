@@ -38,7 +38,7 @@
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "RKP-2 PLANNING PASS 0-0-0 AT 625054E / CLEAN UNIFIED BASE DF40AEF / ACTIVATION E10C7DC / STAGE 1 AUDITED PASS 0-0-0 AT 8AF8E63 / STAGE 2 OWNER-ACCEPTED PREREQUISITE AT A4EDE43 WITHOUT CLAIMING AN INDEPENDENT AUDIT / STAGE 3 OWNER-ACCEPTED PREREQUISITE AT C348E2F WITHOUT CLAIMING AN INDEPENDENT AUDIT / STAGE 4 OWNER-ACCEPTED PREREQUISITE AT 72CF076 WITHOUT CLAIMING AN INDEPENDENT AUDIT / STAGE 5 DETERMINISTIC EXPORT AND RUNTIME-SESSION INTEGRATION COMPLETE / BDA15099 MANIFEST SUCCESSOR PROJECTION RECORDED / BOUNDED PLANNING-AUTHORITY CLOSURE TARGETED REREVIEW PENDING / STAGE 6 NOT STARTED OR AUTHORIZED / TYPESCRIPT DEFAULT / CANDIDATE NOT READY / NO CUTOVER PUSH QUALIFICATION ARCHIVE RKP-3.",
+  "notes": "RKP-2 PLANNING PASS 0-0-0 AT 625054E / CLEAN UNIFIED BASE DF40AEF / ACTIVATION E10C7DC / STAGE 1 AUDITED PASS 0-0-0 AT 8AF8E63 / STAGE 2 OWNER-ACCEPTED PREREQUISITE AT A4EDE43 WITHOUT CLAIMING AN INDEPENDENT AUDIT / STAGE 3 OWNER-ACCEPTED PREREQUISITE AT C348E2F WITHOUT CLAIMING AN INDEPENDENT AUDIT / STAGE 4 OWNER-ACCEPTED PREREQUISITE AT 72CF076 WITHOUT CLAIMING AN INDEPENDENT AUDIT / STAGE 5 DETERMINISTIC EXPORT AND RUNTIME-SESSION INTEGRATION COMPLETE / BDA15099 MANIFEST SUCCESSOR PROJECTION RECORDED / E3829DA AUTHORITY CLOSURE RETURNED 0-1-0 FOR LATE HISTORICAL ANCHOR / APPROVED-PLANNING-STATE ANCHOR REPAIR TARGETED REREVIEW PENDING / STAGE 6 NOT STARTED OR AUTHORIZED / TYPESCRIPT DEFAULT / CANDIDATE NOT READY / NO CUTOVER PUSH QUALIFICATION ARCHIVE RKP-3.",
   "meta": {
     "planning_base_commit": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "accepted_rkp1_audited_implementation_commit": "94387b339b5e4d9ce6b7f97597a1b56edd051f01",
@@ -64,7 +64,7 @@
     "task_start_run": true,
     "production_implementation_authorized": true,
     "user_implementation_authorization": true,
-    "user_authorization_scope": "post_stage_5_manifest_authority_closure_only_stage_6_not_authorized",
+    "user_authorization_scope": "post_stage_5_manifest_approved_planning_anchor_repair_only_stage_6_not_authorized",
     "independent_planning_review": "passed",
     "planning_review_cycle": "final_targeted_rereview_passed",
     "initial_independent_planning_review": {
@@ -100,7 +100,7 @@
       "verdict": "pass"
     },
     "approved_planning_head": "625054ec78e6410e0fb6034ab0c8f60bbf110d08",
-    "implementation_stage": "stage_5_complete_stage_6_not_started_manifest_authority_closure_rereview_pending",
+    "implementation_stage": "stage_5_complete_stage_6_not_started_manifest_approved_planning_anchor_repair_rereview_pending",
     "stage_1_started": true,
     "stage_1_completed": true,
     "stage_1_commit_subject": "build(rkp-2): pin typed generational store dependency",
@@ -165,18 +165,34 @@
     "post_stage_5_manifest_projection_commit": "bda15099f4932aced965eabc6b6e147accd9b5ce",
     "post_stage_5_manifest_projection_contract": "exactly_one_smoke_runtime_to_runtime_successor_row_in_each_implement_and_check_jsonl_other_rows_unchanged_counts_25_20",
     "post_stage_5_manifest_authority_closure": {
-      "candidate": "this_docs_only_commit_exact_hash_reported_after_commit",
+      "candidate": "e3829dafe0e7bfc4b3cc1d615dd20b2d5eed8e9b",
       "subject": "docs(rkp-2): close manifest successor governance contract",
       "scope": "exact_ten_path_coordination_allowlist_plus_five_content_hashes_no_stage_6",
+      "targeted_independent_planning_rereview": "returned_for_bounded_planning_repair",
+      "audit": {
+        "task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
+        "P0": 0,
+        "P1": 1,
+        "P2": 0,
+        "finding": "jsonl_historical_zero_drift_anchor_was_stage_5_parent_instead_of_approved_planning_state"
+      }
+    },
+    "post_stage_5_manifest_approved_planning_anchor_repair": {
+      "candidate": "this_docs_only_commit_exact_hash_reported_after_commit",
+      "subject": "docs(rkp-2): anchor manifest repair to approved planning state",
+      "approved_planning_state": "53646c92b81bc3ac160ec5d72b0d3f80c97b7eb0",
+      "stage_5_parent": "4f5f45a5f5a97968ef5280524cd4e6ab8dbebda8",
+      "manifest_projection": "bda15099f4932aced965eabc6b6e147accd9b5ce",
+      "scope": "approved_state_to_stage_5_lf_identity_plus_exact_two_field_successor_projection_no_stage_6",
       "targeted_independent_planning_rereview": "pending",
       "auditor_task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7"
     },
     "post_stage_5_manifest_authority_hashes_lf_normalized_sha256": {
       "check_jsonl": "7e12f6d00ba17e1967ef57e884e7b5d6ca7efedbb2aaf94de04fc4b3091251c3",
       "implement_jsonl": "cd0a42070a76a18e782d7da4ebc0e9a88d2ed5dece0d093125d4fc8982229705",
-      "design_md": "819f1881c88125b38c34b95450d885fa0f6fc9d225aa5d6105b8c98b9009dc4d",
-      "implement_md": "32a40740bbd0e426d3bee6cf65257b6a702bdf0a5d3533f7553ef2ba253b8fe8",
-      "file_test_and_rollback_matrix_md": "48ab82cc7bda5355e9e48b201a0674f69dafda91ff340590659d3a895ac6a26d"
+      "design_md": "03ac7dcca317f472fd7fb7181b99d96861c3692524982ef37268e130d7d5149e",
+      "implement_md": "97d2cdaf1088b7f53fbf51e374e02f7e3863ef62609afbebe8f3e7093bbaa906",
+      "file_test_and_rollback_matrix_md": "99989324eceb8cb81c0f7db1073b0a829005898bc9d07447ca6cd20acfe93a94"
     },
     "stage_6_started": false,
     "stage_6_authorized": false,
