@@ -2,7 +2,7 @@
 
 ## Current lifecycle result
 
-`BLOCKING RUNNER CHILD READY FOR INDEPENDENT IMPLEMENTATION REVIEW — RKP-2 STAGE 6 NOT STARTED`.
+`BLOCKING RUNNER CHILD READY FOR INDEPENDENT IMPLEMENTATION REREVIEW — RKP-2 STAGE 6 NOT STARTED`.
 
 Activation is based on clean non-fast-forward merge `df40aef391440ae64ad3e266419579bee5887a1f`, whose exact parents are accepted repair closeout `b5d63006a4c286bad01fdb56112b9a6741f648b0` and approved RKP-2 planning state `53646c92b81bc3ac160ec5d72b0d3f80c97b7eb0`. Both are ancestors, as is audited RKP-1 implementation `94387b339b5e4d9ce6b7f97597a1b56edd051f01`.
 
@@ -32,7 +32,7 @@ At exact base `eed4871a86191783d539b7d4097be3627e98e4a0`, independent full-runne
 
 Child `08-25-rkp-2-cross-platform-full-test-runner-contract-repair` freezes one deterministic owner: literal recursive enumeration, BigInt `(dev,ino)` alias rejection, code-unit sorting, immutable `full-test-manifest-v1`, Node 20/24 common `run({ files, concurrency })`, event-type-plus-pass-`data.file` seen coverage, separate reporter completion and nonzero propagation. Duplicate passes are valid; any fail is fatal; success requires independent manifest/run-files/seen equality. It changes no runner/package implementation path in planning.
 
-Dedicated review of first child candidate `c43a34e7d02a57cfd90de506cf97787ff5571a9e` returned P0/P1/P2=`0/3/0`. Bounded repair `cc82ba168ed45b8c3e0182ea8e1370b1474f1155` passed targeted rereview at `0/0/0`. Content P `44832ad01d136368c1b61203e9207ca4a521241f` and anchor A `c69d7b76175e2b818f4d276504a39b741e6e1975` also passed dedicated rereview at `0/0/0` and were explicitly merged at `b4906ac`. Corrections `b200168` and `ce9598e` implement and prove the amended coverage model. The child is now an implementation candidate; no implementation-review result, Stage 6 authorization, acceptance, archive or integration is claimed.
+Dedicated planning repairs passed and P/A were explicitly merged at `b4906ac`. Corrections `b200168` and `ce9598e` formed implementation candidate `15c84a1929d1365ebf466088e896fd5309a4fa57`; dedicated implementation review returned P0/P1/P2=`0/1/1`. State `04364ec`, precedence repair `f77549e` and branch evidence `139f127` close exactly those findings. The child is ready only for targeted implementation rereview; no PASS, Stage 6 authorization, acceptance, archive or integration is claimed.
 
 This exact anchor A pins P `44832ad01d136368c1b61203e9207ca4a521241f`; `eed4871a..P` remains twenty planning paths. Only after amendment PASS and explicit integration does future `P..candidate` Stage 4 use child technical 4 plus active lifecycle 11 and stop at independent implementation review, with RKP-2 still 21 technical + 22 active coordination. The thirteen-path archive and 23-path post-archive projection remain unchanged.
 

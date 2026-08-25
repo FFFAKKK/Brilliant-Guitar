@@ -44,7 +44,7 @@
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RKP-0 RKP-1 AND POST-ARCHIVE REPAIR ACCEPTED ARCHIVED / RKP-2 STAGE 5 COMPLETE / BLOCKING FULL-RUNNER CHILD BOUNDED IMPLEMENTATION REPAIR ACTIVE AFTER 0/1/1 REVIEW / RKP-2 STAGE 6 NOT AUTHORIZED / TYPESCRIPT DEFAULT / NO CUTOVER PUSH QUALIFICATION ARCHIVE OR RKP-3.",
+  "notes": "RKP-0 RKP-1 AND POST-ARCHIVE REPAIR ACCEPTED ARCHIVED / RKP-2 STAGE 5 COMPLETE / BLOCKING FULL-RUNNER CHILD READY FOR INDEPENDENT IMPLEMENTATION REREVIEW AFTER BOUNDED 0/1/1 REPAIR / RKP-2 STAGE 6 NOT AUTHORIZED / TYPESCRIPT DEFAULT / NO CUTOVER PUSH QUALIFICATION ARCHIVE OR RKP-3.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
@@ -92,7 +92,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "rkp2-cross-platform-full-test-runner-contract-repair-bounded-implementation-repair",
+    "next_gate": "rkp2-cross-platform-full-test-runner-contract-repair-independent-implementation-rereview",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -334,10 +334,10 @@
       "event_coverage_contract": "event_type_plus_pass_data_file_three_way_set_equality",
       "projection_counts": "planning_20_candidate_technical_4_active_lifecycle_11_active_coordination_22_archive_13_post_archive_coordination_23",
       "stage_6_blocked": true,
-      "implementation_candidate_ready": false,
-      "implementation_review": "returned_for_bounded_implementation_repair",
+      "implementation_candidate_ready": true,
+      "implementation_review": "pending",
       "implementation_rereview": "pending",
-      "implementation_repair_active": true,
+      "implementation_repair_active": false,
       "first_independent_implementation_review": {
         "auditor_task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
         "candidate_commit": "15c84a1929d1365ebf466088e896fd5309a4fa57",
@@ -345,6 +345,11 @@
         "P1": 1,
         "P2": 1,
         "verdict": "return_for_bounded_implementation_repair"
+      },
+      "bounded_implementation_repair_commits": {
+        "state_reopen": "04364ecaf6f329bd2a4d3671a75bac7b15d23c49",
+        "first_observed_failure": "f77549ef429dd2611d7f6144c164511599da9129",
+        "fail_closed_branch_evidence": "139f1271b651af0c1b70e151ba9604ef154442d7"
       },
       "implementation_paused_for_bounded_planning_repair": false,
       "amendment_merge_commit": "b4906ac64a44cc735de7b923818817300d5c70fd",

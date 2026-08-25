@@ -50,7 +50,7 @@
     "package-lock.json",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "BOUNDED IMPLEMENTATION REPAIR ACTIVE. Independent implementation review of exact candidate 15c84a1929d1365ebf466088e896fd5309a4fa57 returned P0/P1/P2=0/1/1. Candidate readiness is false until first-observed-failure precedence and missing fail-closed branch evidence are repaired and all gates rerun. No acceptance, archive, integration into RKP-2, push, Stage 6, RKP-3, qualification or default-runtime cutover.",
+  "notes": "READY FOR INDEPENDENT IMPLEMENTATION REREVIEW. Independent review of 15c84a1929d1365ebf466088e896fd5309a4fa57 returned P0/P1/P2=0/1/1; the bounded repair now preserves the first observer-selected failure and directly locks the missing fail-closed branches. Candidate readiness is true only for this runner-repair child; rereview remains pending. No acceptance, archive, integration into RKP-2, push, Stage 6, RKP-3, qualification or default-runtime cutover.",
   "meta": {
     "source_worktree": ".worktrees/rkp-2-indexed-live-score-store-implementation",
     "source_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -101,11 +101,11 @@
       "stage_2": "d366653788a42eb56cd5755a63b1e73700c67310"
     },
     "discarded_stage_3_diagnostic_commit": "610d20b_not_in_current_parent_chain",
-    "implementation_candidate_ready": false,
-    "implementation_review": "returned_for_bounded_implementation_repair",
+    "implementation_candidate_ready": true,
+    "implementation_review": "pending",
     "implementation_rereview": "pending",
-    "implementation_repair_active": true,
-    "implementation_stage": "bounded_implementation_repair_active",
+    "implementation_repair_active": false,
+    "implementation_stage": "ready_for_independent_implementation_rereview",
     "first_independent_implementation_review": {
       "auditor_task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
       "candidate_commit": "15c84a1929d1365ebf466088e896fd5309a4fa57",
@@ -117,6 +117,11 @@
         "first_structured_failure_must_survive_later_reporter_failure",
         "focused_fail_closed_branch_evidence_incomplete"
       ]
+    },
+    "bounded_implementation_repair_commits": {
+      "state_reopen": "04364ecaf6f329bd2a4d3671a75bac7b15d23c49",
+      "first_observed_failure": "f77549ef429dd2611d7f6144c164511599da9129",
+      "fail_closed_branch_evidence": "139f1271b651af0c1b70e151ba9604ef154442d7"
     },
     "amendment_merge_commit": "b4906ac64a44cc735de7b923818817300d5c70fd",
     "event_coverage_implementation_commit": "b20016882c16906db350feade4811821d55dad93",
@@ -170,7 +175,7 @@
     "post_pass_archive_artifact_count": 13,
     "rkp2_post_archive_coordination_count": 23,
     "archive_destination": ".trellis/tasks/archive/2026-08/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/",
-    "pre_review_candidate_state": "bounded_implementation_repair_active_candidate_not_ready",
+    "pre_review_candidate_state": "ready_for_independent_implementation_rereview",
     "post_pass_closeout_authorized": false,
     "rkp2_jsonl_successor_contract_delta": "zero",
     "rkp2_stage_5_completed": true,

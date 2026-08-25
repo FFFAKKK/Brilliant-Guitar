@@ -8,6 +8,8 @@
 - bounded merge: `b4906ac64a44cc735de7b923818817300d5c70fd`
 - event-coverage correction: `b20016882c16906db350feade4811821d55dad93`
 - hostile/version/range proof: `ce9598eca3ad4df30854b8cc9383f4034e2e55a3`
+- implementation-review return: exact `15c84a1929d1365ebf466088e896fd5309a4fa57`, P0/P1/P2=`0/1/1`, auditor `01a01e48-1934-77b0-821e-a8026cd9e5f7`
+- bounded repair state / precedence / branch evidence: `04364ecaf6f329bd2a4d3671a75bac7b15d23c49`, `f77549ef429dd2611d7f6144c164511599da9129`, `139f1271b651af0c1b70e151ba9604ef154442d7`
 - discarded diagnostic `610d20b` is not an ancestor
 - final docs/evidence commit: exact hash is reported after commit; it changes lifecycle/evidence only
 
@@ -19,13 +21,15 @@ Before the correction, accepted amendment tests reproduced `runner.outcome-path-
 
 Focused tests cover duplicate and nested passes, opaque and absolute-looking titles, missing/non-string/relative/unknown files, partial coverage, nested/top-level fail, interrupted, abort, premature close, reporter flush/backpressure, synchronous observer attachment, real empty/all-skipped files, real hard-link rejection before `run()`, invalid physical identity and independent compiled-tree manifest equality.
 
+The P1 repair retains observer first-failure wins across event handling, finalize and pipeline catch. A later reporter sink, transform or flush failure cannot replace an already selected `runner.test-failed`, `runner.test-interrupted`, outcome-path or stream code; reporter-only construction/pipeline failure remains `runner.reporter-failed`. The P2 evidence directly executes real root and entry junction rejection, an injected unsupported directory entry and a real repository missing `package.json`, each with `runCalls=0`, plus separate reporter factory, reporter-sink factory and transform-callback failures under bounded timeouts.
+
 ## Cross-version and full-run evidence
 
-Node 20.20.2 and Node 24.15.0 each pass the focused runner/workspace-law set 23/23. On the same clean compiled tree, both use:
+Node 20.20.2 and Node 24.15.0 each pass the focused runner/workspace-law set 26/26 (runner 19/19, workspace-law 7/7). On the same clean compiled tree, both use:
 
 `{"kind":"full-test-manifest-v1","fileCount":78,"sha256":"e4445a175cedaa34eaed455f48a98735ac2fa4808cc94314ff5148db6b6523d5"}`
 
-Each complete run reports 573 tests, 572 pass, 1 expected GC skip, 0 fail, 0 cancelled and exits zero. Totals are evidence snapshots only; the runner discovers them dynamically.
+Each complete run reports 576 tests, 575 pass, 1 expected GC skip, 0 fail, 0 cancelled and exits zero. Totals are evidence snapshots only; the runner discovers them dynamically.
 
 ## Rust and compatibility evidence
 
@@ -40,4 +44,4 @@ Final TypeScript, Node bridge, Trellis, JSON/JSONL, path, hash, protected-delta 
 
 ## Lifecycle result
 
-Independent implementation review of exact `15c84a1929d1365ebf466088e896fd5309a4fa57` returned P0/P1/P2=`0/1/1`. The bounded repair reopens only first-observed structured-failure precedence and direct fail-closed branch evidence. The child remains `in_progress`; candidate readiness is false and targeted implementation rereview is pending. No implementation audit PASS, acceptance, archive, closeout, integration into RKP-2, Stage 6 authorization, push, qualification, RKP-3 or default-runtime switch is claimed.
+Independent implementation review of exact `15c84a1929d1365ebf466088e896fd5309a4fa57` returned P0/P1/P2=`0/1/1`. The bounded repair closes only first-observed structured-failure precedence and direct fail-closed branch evidence. The child remains `in_progress`; candidate readiness is true only for targeted independent implementation rereview, which remains pending. No implementation audit PASS, acceptance, archive, closeout, integration into RKP-2, Stage 6 authorization, push, qualification, RKP-3 or default-runtime switch is claimed.
