@@ -4,7 +4,7 @@
 
 This child is the only test-infrastructure owner blocking RKP-2 Stage 6. Its planning base is `eed4871a86191783d539b7d4097be3627e98e4a0`; its parent remains in progress with Stage 5 complete, Stage 6 not started/authorized, candidate readiness false, implementation review pending and TypeScript default.
 
-The planning candidate changes no package, runner source, product source, Rust/native code or ordinary test. It requires dedicated independent planning review. A later implementation requires a new user authorization and `task.py start`; acceptance/archive/integration and Stage 6 authorization remain later gates.
+The planning candidate changes no package, runner source, product source, Rust/native code or ordinary test other than the already allowlisted RKP-2 workspace-law governance test. Accepted planning head `cc82ba168ed45b8c3e0182ea8e1370b1474f1155` led to a separate implementation line through clean Stage 2 `d366653788a42eb56cd5755a63b1e73700c67310`; that implementation is paused and remains outside this amendment ancestry. This branch creates content commit P and then immutable anchor commit A. Only A is submitted to dedicated independent planning rereview; later resumption still requires a PASS and an explicit merge into the paused implementation line.
 
 ## 1. Root cause and ownership
 
@@ -17,7 +17,7 @@ flowchart LR
   Enum[deterministic literal files]
   Manifest[full-test-manifest-v1]
   NodeTest[node:test run files]
-  Outcomes[complete top-level file outcomes]
+  Outcomes[independent pass.data.file coverage set]
   Stage6[RKP-2 Stage 6 consumer]
 
   Package --> Runner
@@ -83,15 +83,19 @@ Supported versions are Node `>=20.0.0`; implementation evidence must run 20.20.2
 
 No shell glob, `globPatterns`, dependency, loader flag or per-platform branch is permitted.
 
-## 5. Stream, outcome normalizer, reporter and exit contract
+## 5. Stream, event coverage normalizer, reporter and exit contract
 
 The `TestsStream` is connected to one built-in stable reporter (`spec`) through an internal reporter factory, while a separate observer consumes structured events. Reporter text is display-only and never controls success. Listeners are attached synchronously immediately after `run()` returns; focused injection must emit/close at the earliest post-return turn to prove no event is lost.
 
-The only cross-version terminal event sources are the common stable `test:pass` and `test:fail` events. The normalizer must not consume `test:complete`, `data.details.type`, diagnostic/reporter text or version-private fields. The only consumed fields are event type plus `data.nesting`, `data.file` and `data.name`. Real Node 20.20.2 and 24.15.0 characterization fixtures freeze those events and fields.
+The only cross-version truth events are the common stable `test:pass` and `test:fail`; `test:interrupted` is a failure signal. The normalizer must not consume `test:complete`, `data.details.type`, diagnostic/reporter text or version-private fields. Truth-consumed fields are exactly event type plus `data.file`. `data.name` is an opaque test title and `data.nesting` is retained only in characterization evidence; neither participates in identity, completion or success.
 
-Any `test:fail` at any nesting fails the run. File-outcome collection consumes only `test:pass`/`test:fail` with `data.nesting === 0`. At least one of `data.file` and `data.name` must exist; when both exist, absolute normalization must produce the same path. The selected path must be an exact member of the frozen manifest absolute-file set. Every manifest file must have exactly one top-level terminal outcome; unknown, duplicate or missing outcomes are contract violations.
+Any `test:fail`, at any nesting and regardless of its fields, immediately selects `runner.test-failed`; coverage need not also be proved on that path. Each `test:pass` must carry a non-empty absolute-string `data.file`. Missing, non-string, empty or relative values select `runner.outcome-path-missing`; after separator/path normalization, an absolute file outside the frozen manifest set selects `runner.outcome-unknown`. A pass adds its file to `seenManifestFiles`; repeated passes for one file are expected and idempotent. There is no duplicate-outcome error and no file/name equality rule.
 
-On a supported version, any `test:interrupted` fails. Enumeration/manifest/version/direct-entry setup errors, synchronous `run()` throw, stream `error`/abort, close before normal `end`, missing `end`, reporter construction/pipeline/sink/flush failure, manifest/files mismatch and every outcome violation are nonzero. Exit zero is possible only after normal stream end, exact observer set equality, zero fail/interrupted events and successful reporter pipeline flush. `process.exitCode` is set after completion; eager `process.exit()` remains forbidden.
+The enumerator's frozen manifest, the absolute files array passed to `run()`, and `seenManifestFiles` are independent projections. Before success, manifest and run arrays must be element-for-element equal and the final seen set must equal the manifest set. A file with no internal tests is covered by Node's file-level `test:pass`; a file with internal tests is covered by one or more internal pass events. If a manifest member emits neither pass nor fail, final coverage selects `runner.outcome-missing`. Absolute-looking titles do not change identity.
+
+On a supported version, any `test:interrupted` fails. Enumeration/manifest/version/direct-entry setup errors, synchronous `run()` throw, stream `error`/abort, close before normal `end`, missing `end`, reporter construction/pipeline/sink/flush failure, manifest/files mismatch, malformed/unknown pass or coverage mismatch are nonzero. Exit zero is possible only after normal stream end, exact three-way equality, zero fail/interrupted events and successful reporter pipeline flush. `process.exitCode` is set after completion; eager `process.exit()` remains forbidden. Listeners attach synchronously immediately after `run()` returns.
+
+Node 20.20.2 and 24.15.0 characterization used the same TEMP two-file fixture and the real Stage-2 78-file compiled tree under raw drain, fast reporter sink and backpressured slow sink. All three consumption modes produced the same structured event sets on both versions. The two-file fixture included an empty-file pass with absolute equal `file`/`name`, an internal pass with manifest `file` and opaque title `name`, and an internal fail. The real tree produced 567 passes and one governance-only fail; all 78 manifest files were attributable through `data.file`, while no unique per-file terminal row existed. These counts are diagnostic snapshots, not future constants; the one fail only reflects the not-yet-landed Stage-3 candidate projection.
 
 The production CLI maps success to exit `0` and every contract/infrastructure/test failure to exit `1`. It sets `process.exitCode`; it does not truncate reporter flushing with an eager `process.exit()`.
 
@@ -114,8 +118,8 @@ Compilation remains CommonJS. Direct entry is `require.main === module`, which c
 | Alias | duplicate normalized path; real `linkSync` hard link; missing/zero identity | `runner.path-duplicate`, `runner.physical-alias` or `runner.identity-unavailable`; no run |
 | Manifest | exact count and SHA-256 | canonical header and immutable detached data |
 | Invocation | exact absolute files, cwd, isolation semantics, concurrency | captured request equals manifest projection |
-| Completion | Node 20.20.2/24.15.0 top-level `test:pass` fixtures; synchronous attach/emit/close race | zero only after normal end and reporter flush |
-| Failure | nested/top-level `test:fail`, `test:interrupted`, wrong field/event source, duplicate/unknown/missing outcome, run throw, abort/premature close/no end, reporter error | nonzero |
+| Completion | Node 20.20.2/24.15.0 empty-file and internal-pass fixtures; duplicate pass allowed; opaque name/nesting/details; synchronous attach/emit/close race | zero only after manifest/run-files/seen equality, normal end and reporter flush |
+| Failure | any nested/top-level `test:fail`, `test:interrupted`, missing/non-string/relative/unknown `data.file`, partial seen set, run throw, abort/premature close/no end, reporter error | nonzero |
 | Partial discovery | fake runner completes only a strict subset while claiming full | contract failure/nonzero |
 | Current tree | independent enumerator versus emitted manifest | exact set equality |
 | Entry/version | PowerShell, cmd.exe/npm.cmd; Node 20.20.2 and 24.15.0 | same manifest/set and expected exit |
@@ -154,11 +158,11 @@ Only these lifecycle/authority projection paths may change:
 
 ## 9. Pre-review candidate projection
 
-Planning owns one fixed interval from `eed4871a86191783d539b7d4097be3627e98e4a0` through the exact planning HEAD and exactly the twenty paths in the planning matrix. First reviewed candidate `c43a34e7d02a57cfd90de506cf97787ff5571a9e` is the direct child of that base; this bounded repair remains within the same twenty-path set. Before activation, the accepted repaired planning HEAD must be pinned and become the immutable lower bound of the implementation range.
+Planning owns one fixed interval from `eed4871a86191783d539b7d4097be3627e98e4a0` through content commit P and exactly the twenty paths in the planning matrix. First reviewed candidate `c43a34e7d02a57cfd90de506cf97787ff5571a9e` and accepted planning head `cc82ba168ed45b8c3e0182ea8e1370b1474f1155` are historical ancestors of P. Anchor commit A pins exact P in workspace-law and defines `P..implementation candidate` as the future four-technical plus eleven-lifecycle interval; no assertion uses mutable `HEAD`. P and A remain outside the paused `d366653` implementation ancestry until A passes independent rereview and is explicitly merged.
 
 RKP-2 keeps its own twenty-one technical paths and current twenty-two coordination paths (historical ten plus the active child's twelve planning artifacts). The child implementation candidate range, from accepted planning HEAD through Stage 4, owns exactly four technical paths plus eleven active lifecycle/authority paths. These ownership sets are asserted separately and their actual changed-path union is deduplicated mechanically. Child package/runner/test/implementation-evidence paths are not inserted into RKP-2's twenty-one-plus-twenty-two owner sets.
 
-Stage 4 records gates and creates only `READY FOR INDEPENDENT IMPLEMENTATION REVIEW`. It must not claim implementation acceptance, archive, accepted integration, post-archive content hashes or Stage 6 readiness.
+Stage 4 records gates and creates only `READY FOR INDEPENDENT IMPLEMENTATION REVIEW`. It must not claim implementation acceptance, archive, accepted integration, post-archive content hashes or Stage 6 readiness. `runner.outcome-path-mismatch` and `runner.outcome-duplicate` are removed from the future implementation error union and tests when implementation resumes from the accepted amendment.
 
 ## 10. Post-PASS owner closeout and integration
 
@@ -175,7 +179,7 @@ The current planning workspace-law executes only the real planning-range asserti
 
 ## 11. Rollback
 
-- Pre-review implementation candidate: revert to the exact accepted planning HEAD.
+- Pre-review implementation candidate: revert to exact amendment anchor A after its independent PASS and explicit integration into the paused implementation branch.
 - Accepted archive/closeout: jointly revert the closeout projection so the active planning child and its twenty-two-path RKP-2 authority are restored; never leave active and archive authority together.
 - RKP-2 integration: revert to `eed4871a86191783d539b7d4097be3627e98e4a0`, the Stage 5 blocking base.
 

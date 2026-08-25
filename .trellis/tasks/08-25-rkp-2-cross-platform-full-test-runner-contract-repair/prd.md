@@ -2,9 +2,11 @@
 
 ## 1. Status and purpose
 
-This is a planning-only blocking child of `08-24-rkp-2-indexed-live-score-store-load-encode-parity`. It repairs the complete TypeScript test runner contract before RKP-2 Stage 6 may be separately authorized. The child remains `planning`; `task_start_run=false`, `production_implementation_authorized=false`, and `independent_planning_review=pending`.
+This is a planning-only blocking child of `08-24-rkp-2-indexed-live-score-store-load-encode-parity`. It repairs the complete TypeScript test runner contract before RKP-2 Stage 6 may be separately authorized. The child remains `planning`; `task_start_run=false`, `production_implementation_authorized=false`, and the bounded event-coverage amendment requires a new independent planning rereview.
 
 The exact planning base is `eed4871a86191783d539b7d4097be3627e98e4a0`. This candidate does not run `task.py start`, edit the runner/package, accept/archive/push, authorize Stage 6, create RKP-3, switch the default runtime, or run qualification.
+
+Planning head `cc82ba168ed45b8c3e0182ea8e1370b1474f1155` passed its dedicated planning review, after which activation `9da6ba6`, Stage 1 `912a68a` and Stage 2 `d366653788a42eb56cd5755a63b1e73700c67310` were committed on a separate implementation branch. Real Node events then disproved the accepted unique-file-terminal premise. Implementation is paused at clean Stage 2; `d366653` and discarded diagnostic Stage 3 object `610d20b` remain outside this amendment branch ancestry.
 
 ## 2. Confirmed problem
 
@@ -37,11 +39,15 @@ Use the stable official `node:test` `run({ files })` API. The supported contract
 
 ### R5 — reliable completion and exit
 
-Connect `TestsStream` to a stable built-in reporter for display and a separate structured observer for truth. Only common `test:pass`/`test:fail` events establish outcomes; any fail at any nesting fails, while only nesting-zero outcomes populate the file set from normalized `data.file`/`data.name`. Unknown/duplicate/missing outcomes, conflicting names, interrupted events, stream abort/error/premature close/missing end, manifest mismatch or reporter flush failure are nonzero. `test:complete`, `details.type` and reporter text are forbidden truth sources. Only normal end plus exact set equality and successful reporter flush exits zero.
+Connect `TestsStream` to a stable built-in reporter for display and a separate structured observer for truth. Only common `test:pass`/`test:fail` events establish test truth; `test:interrupted` is a failure signal. Any `test:fail` at any nesting immediately selects `runner.test-failed`. Successful file coverage consumes only each `test:pass.data.file`: it must be a non-empty absolute string whose normalized value is an exact member of the frozen manifest absolute-file set. Missing, non-string or relative `data.file` selects `runner.outcome-path-missing`; an absolute non-member selects `runner.outcome-unknown`.
+
+`data.name` is an opaque test title and `data.nesting` is characterization-only. Neither identifies a file, a terminal outcome or success, including when a title happens to look absolute. A `seenManifestFiles` set permits multiple passes from one file. After normal end, that set must equal the manifest set; a strict subset selects `runner.outcome-missing`. Empty test files are covered by Node's file-level pass under the same `data.file` rule, while files containing tests are covered by their internal passes. `runner.outcome-path-mismatch` and `runner.outcome-duplicate` are removed from the future error union and tests. `test:complete`, `details.type`, reporter text and version-private fields remain forbidden truth sources.
+
+The manifest relative-file projection, the absolute array actually passed to `run()`, and the pass-event `data.file` seen set are independently constructed and must compare exactly. Unknown/malformed passes remain deterministic failures; any fail already makes coverage proof unnecessary. Stream abort/error/premature close/missing end, interrupted, manifest/run-files mismatch and reporter sink/pipeline/flush failure remain nonzero. Only normal end, exact three-way equality, zero failure/interruption and successful reporter flush exits zero.
 
 ### R6 — executable contract tests
 
-Create `test/test-infrastructure/run-compiled-tests.test.ts` with injectable filesystem/runner/reporter seams. No production environment variable, public product API or third Node export is added. Tests cover deterministic enumeration, real `linkSync` hard-link rejection with zero runner calls, hostile paths/entries/identity, manifest/hash, exact runner options, synchronous observer attachment races, all nonzero propagation cases, partial discovery, current-tree parity, real Node 20.20.2/24.15.0 event characterization and PowerShell/cmd/npm entry paths.
+Create `test/test-infrastructure/run-compiled-tests.test.ts` with injectable filesystem/runner/reporter seams. No production environment variable, public product API or third Node export is added. Tests cover deterministic enumeration, real `linkSync` hard-link rejection with zero runner calls, hostile paths/entries/identity, manifest/hash, exact runner options, synchronous observer attachment races, all nonzero propagation cases, partial seen-file coverage, duplicate passes, opaque names/nesting/details, current-tree parity, real Node 20.20.2/24.15.0 event characterization and PowerShell/cmd/npm entry paths.
 
 ### R7 — package integration without dependency drift
 
@@ -71,11 +77,12 @@ Planning self-audit is not independent acceptance. The pre-review candidate, imp
 - [ ] Independent planning review returns P0/P1/P2=`0/0/0` for the exact planning HEAD.
 - [ ] Later implementation enumerates the same literal set from PowerShell, `cmd.exe`/`npm.cmd`, Node 20.20.2 and Node 24.15.0.
 - [ ] Missing/non-directory/empty/symbolic roots, duplicate normalized paths, unavailable physical identity, hard-link aliases, setup/stream/reporter/runner failures and partial discovery are nonzero before false success.
-- [ ] Exact `files`, repo CWD, process isolation semantics, concurrency, manifest count/hash and top-level outcome completeness are mechanically proved.
+- [ ] Exact `files`, repo CWD, process isolation semantics, concurrency, manifest count/hash and independent manifest/run-files/pass-seen equality are mechanically proved.
 - [ ] A clean current compiled tree produces manifest equality and 557 discovered / 556 pass / 1 expected skip / 0 fail as evidence only, never as a hard-coded contract.
 - [ ] `package-lock.json`, product/Rust/native/CVN/qualification/default-runtime/public contracts remain zero-delta.
 - [ ] The implementation candidate range is exactly child technical four plus active lifecycle eleven; Stage 4 stops for audit.
 - [ ] After audit PASS only, native archive produces the exact thirteen-path authority, replaces the twelve active paths without dual authority, and explicit integration creates a new RKP-2 Stage 6 prerequisite base; Stage 6 still requires separate user authorization.
+- [ ] Planning content commit P and its following anchor commit A remain within the exact original twenty-path planning interval; only A is the independent amendment review object, and only a PASS on A may be merged into paused Stage 2.
 
 ## 5. Out of scope
 

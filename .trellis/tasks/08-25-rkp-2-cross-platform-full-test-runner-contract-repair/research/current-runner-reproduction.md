@@ -15,7 +15,21 @@
 | Node 24 quoted/literal-glob path observed by package/direct runner | 29 | 261 discovered with no reported failure | 0 |
 | Node 20.20.2 literal wildcard | not complete | runner rejects literal glob | 1 |
 
-The partial Node 24 result is decisive: exit code 0 does not prove complete discovery. The runner contract must compare a deterministic manifest with exact top-level file outcomes. The first planning audit also showed that “top-level outcome” must not be delegated to version-specific `test:complete`, `details.type` or reporter text: the repair freezes common `test:pass`/`test:fail` normalization and requires real Node 20.20.2/24.15.0 structured-event characterization.
+The partial Node 24 result is decisive: exit code 0 does not prove complete discovery. The runner contract must compare deterministic enumeration, the exact `run()` array and observed structured-event coverage. The first planning audit correctly prohibited `test:complete`, `details.type` and reporter text, but later Stage-2 characterization disproved its assumption that every manifest file produces exactly one nesting-zero terminal outcome.
+
+## Post-Stage-2 event characterization
+
+The accepted planning head was `cc82ba168ed45b8c3e0182ea8e1370b1474f1155`. A separate implementation line committed activation `9da6ba6`, Stage 1 `912a68a` and clean Stage 2 `d366653788a42eb56cd5755a63b1e73700c67310`, then paused. Discarded diagnostic Stage 3 object `610d20b` is not a current ancestor.
+
+The same TEMP two-file fixture and real Stage-2 compiled tree were executed with Node 20.20.2 and 24.15.0 under raw drain, fast reporter sink and backpressured slow reporter sink. Structured event sets were identical across all three consumption modes and both versions:
+
+| Fixture | Structured result per version/mode | Decisive fields |
+|---|---|---|
+| empty `a.test.js` | one `test:pass` | `nesting=0`; absolute manifest `file`; absolute `name === file` |
+| tested `b.test.js` | one internal pass and one internal fail | `nesting=0`; absolute manifest `file`; opaque non-absolute title in `name` |
+| real 78-file Stage-2 tree | 567 pass / 1 governance fail; all 78 files attributable by `data.file`; no unique file-terminal rows | every pass/fail has absolute manifest-member `data.file`; `name` is a test title |
+
+The real-tree fail is the expected workspace-law failure because the Stage-3 candidate-range projection was deliberately not landed after implementation paused. It is not a product regression or a future total. Reporter/backpressure changed consumption timing only; it did not change the observed event set. The durable truth fields are event type and `data.file`. `data.name` and `data.nesting` remain evidence-only.
 
 ## Attribution
 
@@ -27,4 +41,4 @@ Expected output is empty. The Stage 5 range did not create or alter this method.
 
 ## Evidence rule
 
-Current counts are a reproduction snapshot only. The accepted runner must enumerate dynamically, reject normalized duplicates and `(dev,ino)` physical aliases, print its file manifest and accept a growing test tree without updating constants. Evidence records exact Node version, shell entry, fileCount/hash, consumed event fields and actual test totals for each run.
+Current counts are reproduction snapshots only. The accepted runner must enumerate dynamically, reject normalized duplicates and `(dev,ino)` physical aliases, print its file manifest and accept a growing test tree without updating constants. Evidence records exact Node version, shell entry, fileCount/hash, truth-consumed event fields and actual test totals for each run. Completeness is the non-tautological equality of enumerator manifest, actual `run()` absolute files and the set of manifest-member `test:pass.data.file` observations; any `test:fail` remains immediately fatal.
