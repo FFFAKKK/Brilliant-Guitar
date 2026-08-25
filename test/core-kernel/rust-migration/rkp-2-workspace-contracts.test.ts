@@ -42,6 +42,12 @@ const ACCEPTED_FULL_RUNNER_PLANNING_HEAD =
   "cc82ba168ed45b8c3e0182ea8e1370b1474f1155";
 const FULL_RUNNER_EVENT_COVERAGE_CONTENT_HEAD =
   "44832ad01d136368c1b61203e9207ca4a521241f";
+const FULL_RUNNER_EVENT_COVERAGE_ANCHOR =
+  "c69d7b76175e2b818f4d276504a39b741e6e1975";
+const PAUSED_FULL_RUNNER_IMPLEMENTATION_HEAD =
+  "d366653788a42eb56cd5755a63b1e73700c67310";
+const FULL_RUNNER_AMENDMENT_MERGE_COMMIT =
+  "b4906ac64a44cc735de7b923818817300d5c70fd";
 const FULL_RUNNER_FUTURE_IMPLEMENTATION_BASE =
   FULL_RUNNER_EVENT_COVERAGE_CONTENT_HEAD;
 const APPROVED_PLANNING_STATE =
@@ -387,6 +393,27 @@ function fullRunnerPlanningChangesAtContentHead(): Set<string> {
   );
 }
 
+function currentFullRunnerImplementationChanges(): Set<string> {
+  const commands: readonly (readonly string[])[] = [
+    [
+      "diff",
+      "--name-only",
+      `${FULL_RUNNER_FUTURE_IMPLEMENTATION_BASE}..HEAD`,
+    ],
+    ["diff", "--name-only"],
+    ["diff", "--cached", "--name-only"],
+    ["ls-files", "--others", "--exclude-standard"],
+  ];
+  return new Set(commands.flatMap((args) => lines(git(args))));
+}
+
+function childImplementationCandidateReady(): boolean {
+  const task = JSON.parse(
+    readText(`${FULL_RUNNER_ACTIVE_ROOT}/task.json`),
+  ) as { meta?: { implementation_candidate_ready?: unknown } };
+  return task.meta?.implementation_candidate_ready === true;
+}
+
 function assertExactPathSet(
   actual: ReadonlySet<string>,
   expected: readonly string[],
@@ -571,6 +598,9 @@ function assertFullRunnerLifecycleFixtures(): void {
     FIRST_REVIEWED_FULL_RUNNER_PLANNING_HEAD,
     ACCEPTED_FULL_RUNNER_PLANNING_HEAD,
     FULL_RUNNER_EVENT_COVERAGE_CONTENT_HEAD,
+    FULL_RUNNER_EVENT_COVERAGE_ANCHOR,
+    PAUSED_FULL_RUNNER_IMPLEMENTATION_HEAD,
+    FULL_RUNNER_AMENDMENT_MERGE_COMMIT,
   ]) {
     assert.doesNotThrow(() => git(["cat-file", "-e", `${commit}^{commit}`]));
   }
@@ -602,12 +632,80 @@ function assertFullRunnerLifecycleFixtures(): void {
     ]).split(" "),
     [FULL_RUNNER_EVENT_COVERAGE_CONTENT_HEAD, ACCEPTED_FULL_RUNNER_PLANNING_HEAD],
   );
+  assert.deepEqual(
+    git([
+      "rev-list",
+      "--parents",
+      "-n",
+      "1",
+      FULL_RUNNER_EVENT_COVERAGE_ANCHOR,
+    ]).split(" "),
+    [FULL_RUNNER_EVENT_COVERAGE_ANCHOR, FULL_RUNNER_EVENT_COVERAGE_CONTENT_HEAD],
+  );
+  assert.deepEqual(
+    git([
+      "rev-list",
+      "--parents",
+      "-n",
+      "1",
+      FULL_RUNNER_AMENDMENT_MERGE_COMMIT,
+    ]).split(" "),
+    [
+      FULL_RUNNER_AMENDMENT_MERGE_COMMIT,
+      PAUSED_FULL_RUNNER_IMPLEMENTATION_HEAD,
+      FULL_RUNNER_EVENT_COVERAGE_ANCHOR,
+    ],
+  );
+  assert.doesNotThrow(() =>
+    git([
+      "merge-base",
+      "--is-ancestor",
+      FULL_RUNNER_AMENDMENT_MERGE_COMMIT,
+      "HEAD",
+    ]),
+  );
   assertExactPathSet(
     fullRunnerPlanningChangesAtContentHead(),
     FULL_RUNNER_PLANNING_PATHS,
     "approved base through pinned event-coverage content head",
   );
   assert.equal(new Set(FULL_RUNNER_PLANNING_PATHS).size, 20);
+
+  const candidateChanges = currentFullRunnerImplementationChanges();
+  const candidateAllowlist = new Set<string>([
+    ...CHILD_TECHNICAL_PATHS,
+    ...CHILD_ACTIVE_LIFECYCLE_PATHS,
+  ]);
+  for (const path of candidateChanges) {
+    assert.equal(
+      candidateAllowlist.has(path),
+      true,
+      `unreviewed child implementation path: ${path}`,
+    );
+  }
+  for (const path of CHILD_TECHNICAL_PATHS) {
+    assert.equal(
+      candidateChanges.has(path),
+      true,
+      `candidate must contain child technical path: ${path}`,
+    );
+  }
+  if (childImplementationCandidateReady()) {
+    assertExactPathSet(
+      candidateChanges,
+      [...candidateAllowlist],
+      "ready child implementation candidate",
+    );
+  } else {
+    assertExactPathSet(
+      candidateChanges,
+      [...candidateAllowlist].filter(
+        (path) =>
+          path !== `${FULL_RUNNER_ACTIVE_ROOT}/research/implementation-evidence.md`,
+      ),
+      "in-progress child implementation candidate",
+    );
+  }
 
   validateImplementationCandidateFixture([
     ...CHILD_TECHNICAL_PATHS,

@@ -1,9 +1,12 @@
 import assert = require("node:assert/strict");
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   linkSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -48,15 +51,39 @@ function quietReporter(): Transform {
   });
 }
 
-function quietSink(options?: { fail?: boolean }): Writable {
+function quietSink(options?: { fail?: boolean; slow?: boolean }): Writable {
   return new Writable({
     write(_chunk, _encoding, callback) {
-      callback();
+      if (options?.slow === true) {
+        setImmediate(callback);
+      } else {
+        callback();
+      }
     },
     final(callback) {
       callback(options?.fail === true ? new Error("sink failed") : undefined);
     },
   });
+}
+
+function independentlyEnumerateCompiledTests(repoRoot: string): string[] {
+  const root = resolve(repoRoot, "dist/test");
+  const files: string[] = [];
+  const visit = (directory: string): void => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      assert.equal(entry.isSymbolicLink(), false);
+      const absolute = resolve(directory, entry.name);
+      const stats = lstatSync(absolute);
+      assert.equal(stats.isSymbolicLink(), false);
+      if (stats.isDirectory()) {
+        visit(absolute);
+      } else if (stats.isFile() && entry.name.endsWith(".test.js")) {
+        files.push(absolute.slice(root.length + 1).replaceAll("\\", "/"));
+      }
+    }
+  };
+  visit(root);
+  return files.sort(codeUnitCompare);
 }
 
 function scheduledStream(
@@ -324,14 +351,29 @@ test("programmatic run receives the exact manifest array and common Node 20 opti
 });
 
 test("observer attaches synchronously and accepts Node 20 and Node 24 top-level fixtures", async () => {
-  for (const version of ["20.20.2", "24.15.0"]) {
-    const root = fixtureRoot(`events-${version}`);
+  const fixtures = [
+    { version: "20.20.2", details: { duration_ms: 1 } },
+    { version: "24.15.0", details: { duration_ms: 1, type: "test" } },
+  ] as const;
+  for (const fixture of fixtures) {
+    const root = fixtureRoot(`events-${fixture.version}`);
     try {
       writePackage(root);
       writeFixture(root, "single.test.js");
       await executeCompiledTests(root, {
         ...passingExecutionSeams(root),
-        nodeVersion: () => version,
+        nodeVersion: () => fixture.version,
+        run(options) {
+          return scheduledStream((stream) => {
+            emitTestEvent(stream, "test:pass", {
+              nesting: 9,
+              file: options.files[0],
+              name: "opaque title",
+              details: fixture.details,
+            });
+            stream.end();
+          });
+        },
       });
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -380,6 +422,136 @@ test("outcome normalizer uses pass data.file as idempotent manifest coverage", a
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+test("reporter backpressure cannot change structured file coverage", async () => {
+  for (const slow of [false, true]) {
+    const root = fixtureRoot(`reporter-${slow ? "slow" : "fast"}`);
+    try {
+      writePackage(root);
+      writeFixture(root, "first.test.js");
+      writeFixture(root, "second.test.js");
+      await executeCompiledTests(root, {
+        ...passingExecutionSeams(root),
+        reporterSink: () => quietSink({ slow }),
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }
+});
+
+test("real Node empty and all-skipped files satisfy the same data.file coverage", () => {
+  const root = fixtureRoot("real-empty-skip");
+  try {
+    writePackage(root);
+    writeFixture(root, "empty.test.js");
+    const skipped = writeFixture(root, "nested/all-skipped.test.js");
+    writeFileSync(
+      skipped,
+      'const { test } = require("node:test");\ntest.skip("skipped", () => {});\n',
+      "utf8",
+    );
+    const result = spawnSync(
+      process.execPath,
+      [resolve(__dirname, "run-compiled-tests.js")],
+      {
+        cwd: root,
+        encoding: "utf8",
+        timeout: 30_000,
+        env: { ...process.env, NODE_TEST_CONTEXT: undefined },
+      },
+    );
+    assert.equal(result.error, undefined, result.error?.message);
+    assert.equal(result.status, 0, `${result.stderr}\n${result.stdout}`);
+    const header = JSON.parse(result.stdout.split(/\r?\n/u)[0] ?? "") as {
+      kind?: unknown;
+      fileCount?: unknown;
+      sha256?: unknown;
+    };
+    const files = ["empty.test.js", "nested/all-skipped.test.js"];
+    assert.deepEqual(header, {
+      kind: "full-test-manifest-v1",
+      fileCount: 2,
+      sha256: createHash("sha256")
+        .update(`${files.join("\n")}\n`, "utf8")
+        .digest("hex"),
+    });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("hard-link aliases and invalid identity prevent every runner call", async () => {
+  const root = fixtureRoot("pre-run-identity");
+  try {
+    writePackage(root);
+    const original = writeFixture(root, "original.test.js");
+    linkSync(original, resolve(root, "dist/test/alias.test.js"));
+    let runCalls = 0;
+    await rejectsWithCode(
+      () =>
+        executeCompiledTests(root, {
+          ...passingExecutionSeams(root),
+          run() {
+            runCalls += 1;
+            return new PassThrough({ objectMode: true });
+          },
+        }),
+      "runner.physical-alias",
+    );
+    assert.equal(runCalls, 0);
+
+    rmSync(resolve(root, "dist/test/alias.test.js"));
+    const nonBigIntIdentity: DiscoverySeams = {
+      async lstat(path) {
+        const stats = await lstat(path, { bigint: true });
+        return path === original
+          ? {
+              dev: 1,
+              ino: 2n,
+              isDirectory: () => stats.isDirectory(),
+              isFile: () => stats.isFile(),
+              isSymbolicLink: () => stats.isSymbolicLink(),
+            }
+          : stats;
+      },
+      async readdir(path) {
+        return readdir(path, { withFileTypes: true });
+      },
+    };
+    await rejectsWithCode(
+      () =>
+        executeCompiledTests(
+          root,
+          {
+            ...passingExecutionSeams(root),
+            run() {
+              runCalls += 1;
+              return new PassThrough({ objectMode: true });
+            },
+          },
+          nonBigIntIdentity,
+        ),
+      "runner.identity-unavailable",
+    );
+    assert.equal(runCalls, 0);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("current compiled tree independently equals the emitted manifest set and hash", async () => {
+  const discovery = await enumerateCompiledTests(process.cwd());
+  const independent = independentlyEnumerateCompiledTests(process.cwd());
+  assert.deepEqual(discovery.manifest.files, independent);
+  assert.equal(discovery.manifest.fileCount, independent.length);
+  assert.equal(
+    discovery.manifest.sha256,
+    createHash("sha256")
+      .update(`${independent.join("\n")}\n`, "utf8")
+      .digest("hex"),
+  );
 });
 
 test("outcome normalizer rejects fail, interruption and malformed or partial coverage", async () => {
