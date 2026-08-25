@@ -2,9 +2,9 @@
 
 ## Verdict requested
 
-`READY FOR TARGETED INDEPENDENT PLANNING REREVIEW`.
+`IMPLEMENTATION IN PROGRESS — R0 ACTIVATED`.
 
-This is a docs-only planning candidate. It does not claim planning acceptance or authorize implementation.
+Exact repaired planning head `ee1af9409b4140d322c88389a4c1df1368655a31` passed targeted independent planning rereview at P0/P1/P2=`0/0/0`. The user authorized only this bounded child through R3; implementation review remains pending and no later lifecycle action is authorized.
 
 ## Exact object
 
@@ -14,7 +14,7 @@ This is a docs-only planning candidate. It does not claim planning acceptance or
 - Parent: `.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity`
 - Root-cause audit: P0/P1/P2=`0/1/0`, bounded blocking planning child required
 - First planning review of `7e211869b7ab8d5ead3916ca8d98107d55f182db`: RETURN FOR BOUNDED PLANNING REPAIR, P0/P1/P2=`0/1/0`
-- Child targeted rereview state: pending
+- Child targeted rereview: PASS, P0/P1/P2=`0/0/0`, exact head `ee1af9409b4140d322c88389a4c1df1368655a31`
 
 ## Candidate decision
 
@@ -48,7 +48,7 @@ Future technical ownership is exactly the six paths listed in `design.md`; all o
 
 ## Current lifecycle truth
 
-RKP-2 S6.0 remains committed and is not rewritten. Stage 6 remains started/authorized but operationally paused. S6.1/S6.2/S6.3 are false. This child is planning-only with start/production authorization false, candidate-ready false, review pending, archive/push/cutover/measurement/RKP-3 false.
+RKP-2 S6.0 remains committed and is not rewritten. Stage 6 remains started/authorized but operationally paused. S6.1/S6.2/S6.3 are false. This child is `in_progress` with start/production authorization true only for R0–R3, candidate-ready false, implementation review pending, and archive/push/cutover/measurement/RKP-3 false.
 
 ## Self-audit
 

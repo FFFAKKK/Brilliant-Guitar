@@ -2,16 +2,18 @@
 
 ## Current status
 
-`READY FOR TARGETED INDEPENDENT PLANNING REREVIEW`.
+`R0 ACTIVATED — R1 READY`.
 
 - Branch: `codex/rkp-2-part-owner-wire-contract-repair`
 - Worktree: `.worktrees/rkp-2-part-owner-wire-contract-repair`
 - Exact planning base: `ce673a2ad62348fa73458d493a45f9c005bf0288`
 - Parent: `08-24-rkp-2-indexed-live-score-store-load-encode-parity`
-- Status: `planning`
-- `task_start_run=false`
-- `production_implementation_authorized=false`
-- `independent_planning_review=pending`
+- Status: `in_progress`
+- `task_start_run=true`
+- `production_implementation_authorized=true`
+- `independent_planning_review=passed`
+- Accepted planning head: `ee1af9409b4140d322c88389a4c1df1368655a31`
+- Targeted planning rereview: PASS, P0/P1/P2=`0/0/0`
 - `implementation_candidate_ready=false`
 - TypeScript remains default.
 
@@ -53,12 +55,12 @@ Execution is R0 activation, R1 Foundation Part mapping/direct serde tests, R2 Co
 
 ## Next action
 
-Send the repaired docs-only planning commit to the same dedicated read-only planner. Review field rename directionality, Part struct-field closure, Contracts/TypeScript ownership of score-extra rejection, malformed-owner stable paths, no-alias enforcement, six-path completeness and the review/archive/integration gate before S6.1 resumes.
+Proceed only to R1 Foundation serde mapping/tests. The implementation authorization covers R0–R3 of this child, not RKP-2 S6.1, acceptance, archive, integration, push, cutover, qualification or RKP-3.
 
-The first independent planning review of `7e211869b7ab8d5ead3916ca8d98107d55f182db` returned P0/P1/P2=`0/1/0` because it incorrectly required Foundation to reject score extras directly. This bounded repair closes only that responsibility drift; targeted rereview remains pending.
+The first independent planning review of `7e211869b7ab8d5ead3916ca8d98107d55f182db` returned P0/P1/P2=`0/1/0` because it incorrectly required Foundation to reject score extras directly. Exact repaired head `ee1af9409b4140d322c88389a4c1df1368655a31` passed targeted rereview at `0/0/0` and is the sole implementation authority.
 
 Planning validation used the exact clean `ce673a2...` technical baseline because the accepted RKP-2 workspace-law must reject this not-yet-reviewed child until R2 updates the already allowlisted governance test. Baseline evidence is Rust `70/70`, native `13/13`, and dynamic runner 78 files / manifest `e4445a175cedaa34eaed455f48a98735ac2fa4808cc94314ff5148db6b6523d5` / `576 discovered, 575 pass, 1 expected GC skip, 0 fail`.
 
 The planning candidate workspace-law remains fail-closed at `6/7`; the exact clean base remains `7/7`. The repair does not modify or relax that test.
 
-Do not run `task.py start`, edit production/test code, continue RKP-2 Stage 6, accept/archive, push, qualify, cut over or create RKP-3 before planning PASS plus new user implementation authorization.
+Do not continue RKP-2 Stage 6, accept/archive/integrate, push, qualify, cut over or create RKP-3. Stop after R3 at independent implementation review.

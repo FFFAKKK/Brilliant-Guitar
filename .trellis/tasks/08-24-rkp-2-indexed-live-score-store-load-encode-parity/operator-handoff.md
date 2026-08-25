@@ -28,9 +28,9 @@
 
 Independent root-cause review found P0/P1/P2=`0/1/0`: the accepted public Part-owner wire uses `partId`, but Foundation's `ExtensionOwnerV1::Part` field `part_id` lacks a serde rename. Contracts and TypeScript already require `partId`; Runtime only clones the validated owner.
 
-Planning child `08-26-rkp-2-part-owner-wire-contract-repair` is the sole current planning child. It is based on exact S6.0 commit `ce673a2ad62348fa73458d493a45f9c005bf0288`, remains `planning`, has `task_start_run=false`, `production_implementation_authorized=false`, `independent_planning_review=pending`, targeted rereview pending, and `implementation_candidate_ready=false`. Its first reviewed candidate `7e211869b7ab8d5ead3916ca8d98107d55f182db` returned P0/P1/P2=`0/1/0`; the bounded repair keeps Foundation responsible only for Part field mapping/Part extras while Contracts and TypeScript retain score-extra exact-shape ownership.
+Child `08-26-rkp-2-part-owner-wire-contract-repair` is the sole current nested implementation child. Exact repaired planning head `ee1af9409b4140d322c88389a4c1df1368655a31` passed targeted planning rereview at P0/P1/P2=`0/0/0`; the user authorized only its R0–R3 repair. It is `in_progress`, start/production authorization are true, R0 is complete, R1 is not started and `implementation_candidate_ready=false`.
 
-RKP-2 remains the active implementation child of the Rust parent, but Stage 6 is operationally paused. The next gate is targeted independent planning rereview of the child. Do not resume S6.1 until the repair is separately implemented, audited, accepted, natively archived and integrated back into this branch.
+RKP-2 remains the active implementation child of the Rust parent, but Stage 6 is operationally paused. The next gate is the child's R1 Foundation serde repair. Do not resume S6.1 until the repair is separately implemented, audited, accepted, natively archived and integrated back into this branch.
 
 ## What this plan delivers
 
