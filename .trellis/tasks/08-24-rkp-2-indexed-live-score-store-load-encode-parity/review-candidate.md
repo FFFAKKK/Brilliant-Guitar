@@ -1,8 +1,8 @@
-# Review Candidate — RKP-2 Stage 4 Checkpoint
+# Review Candidate — RKP-2 Stage 5 Checkpoint
 
 ## Current lifecycle result
 
-`STAGE 4 COMPLETE — IMPLEMENTATION CANDIDATE NOT READY`.
+`STAGE 5 COMPLETE — IMPLEMENTATION CANDIDATE NOT READY`.
 
 Activation is based on clean non-fast-forward merge `df40aef391440ae64ad3e266419579bee5887a1f`, whose exact parents are accepted repair closeout `b5d63006a4c286bad01fdb56112b9a6741f648b0` and approved RKP-2 planning state `53646c92b81bc3ac160ec5d72b0d3f80c97b7eb0`. Both are ancestors, as is audited RKP-1 implementation `94387b339b5e4d9ce6b7f97597a1b56edd051f01`.
 
@@ -14,13 +14,15 @@ Focused Stage 2 Rust passes Foundation `16/16` and Contracts `15/15`; full works
 
 Stage 3 adds only the five approved Runtime paths plus allowlisted lifecycle projection. It defines exactly seven private typed slotmap handles, scalar-only records, typed part/measure content identity and explicit canonical-order topology. The private `LiveScoreStore` independently pre-counts and fallibly reserves every Stage-3-owned structural container, inserts once in DTO order and publishes only after local invariants succeed. It retains no complete `ScoreDocumentV1`, remains disconnected from `SmokeRuntime`/Session/Node, and exposes no handle or slot/generation detail outside Runtime. Exact Stage 3 candidate `c348e2f332d4e96e3b3dd74def7263c95770a868` is owner-accepted as the Stage 4 prerequisite; no independent Stage 3 audit is claimed.
 
-Stage 4 adds only the four approved Runtime paths plus allowlisted lifecycle projection. Entity/Ownership/Extension/Core Reference indices and exact per-Voice time indices are built during canonical import; Part/Measure content keeps its single primary map. Stable-ID and owner queries are map/typed-slot based, while exact-start and half-open overlap queries use binary bounds and return semantic-order slices. Independent rebuild normalizes handles to stable IDs, exact fractions and stable paths; clean parity passes and deliberate corruption fails. Minimal/representative structural counters are exact and contain no full-document lookup-scan counter. Focused indices `4/4`, time-index `3/3`, store `6/6`; full workspace Rust `67/67`. The unchanged full TypeScript runner discovers `552` tests with `551` pass, `1` expected GC skip and `0` fail; its compiled RKP-2 workspace-law file independently passes `6/6`. RKP-2 remains `implementation_candidate_ready=false`; Stage 5 is not started or authorized.
+Stage 4 adds only the four approved Runtime paths plus allowlisted lifecycle projection. Entity/Ownership/Extension/Core Reference indices and exact per-Voice time indices are built during canonical import; Part/Measure content keeps its single primary map. Stable-ID and owner queries are map/typed-slot based, while exact-start and half-open overlap queries use binary bounds and return semantic-order slices. Independent rebuild normalizes handles to stable IDs, exact fractions and stable paths; clean parity passes and deliberate corruption fails. Minimal/representative structural counters are exact and contain no full-document lookup-scan counter. Focused indices `4/4`, time-index `3/3`, store `6/6`; full workspace Rust `67/67`. Exact Stage 4 candidate `72cf0769cb66deb58691a39b664395ed28670da1` is owner-accepted as the Stage 5 prerequisite; no independent Stage 4 audit is claimed.
+
+Stage 5 changes only the seven approved Runtime/Session/parity paths plus allowlisted lifecycle projection. Explicit topology traversal reconstructs the full DTO in canonical array order without HashMap/SlotMap iteration or RuntimeHandle leakage. `KernelRuntime` exclusively owns the indexed Store and revision zero; the complete source DTO is transient. The private Session factory maps Runtime semantic/capacity/invariant failures into existing stable failures and publishes no Session on rejection. Node source remains byte-identical and retains two exports. Repeated native reads are byte-identical and detached; optional values, array order and unknown Extension payloads survive. Focused Rust passes Runtime `15/15`, Session `4/4`; workspace Rust passes `70/70`; two native loaders/two exports and combined native tests pass `13/13`; both workspace laws pass `6/6`; the clean-head full runner discovers `556` tests with `555` pass, `1` expected GC skip and `0` fail. RKP-2 remains `implementation_candidate_ready=false`; Stage 6 is not started or authorized.
 
 ## Recorded verdict
 
 `PASS — P0/P1/P2=0/0/0` for exact technical planning head `625054ec78e6410e0fb6034ab0c8f60bbf110d08`.
 
-The dedicated read-only auditor task `01a01e48-1934-77b0-821e-a8026cd9e5f7` recorded the final planning PASS after review cycles `6a349b6=0/5/1`, `f4ed2bc=0/1/0`, `135af27=0/0/1`, and `625054e=0/0/0`, then accepted Stage 1 candidate `8af8e63=0/0/0`. The approved planning record is preserved. Stage 4 does not implement deterministic DTO export, Runtime/Session replacement, Node integration, public selectors or Stage 5 behavior; it does not archive, push, run official qualification, switch the default runtime or create RKP-3.
+The dedicated read-only auditor task `01a01e48-1934-77b0-821e-a8026cd9e5f7` recorded the final planning PASS after review cycles `6a349b6=0/5/1`, `f4ed2bc=0/1/0`, `135af27=0/0/1`, and `625054e=0/0/0`, then accepted Stage 1 candidate `8af8e63=0/0/0`. The approved planning record is preserved. No independent Stage 2, Stage 3, Stage 4 or Stage 5 audit is claimed. Stage 5 does not implement commands, transactions, history, events, selectors, incremental validation, providers or Stage 6 behavior; it does not archive, push, run official qualification, switch the default runtime or create RKP-3.
 
 ## Bounded repair under rereview
 

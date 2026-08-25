@@ -2,7 +2,7 @@
 
 ## Current status
 
-`STAGE 4 COMPLETE — STAGE 5 NOT STARTED`.
+`STAGE 5 COMPLETE — STAGE 6 NOT STARTED`.
 
 - Branch: `codex/rkp-2-indexed-live-score-store-implementation`.
 - Worktree: `.worktrees/rkp-2-indexed-live-score-store-implementation`.
@@ -17,7 +17,8 @@
 - State: `in_progress`, `task_start_run=true`, `production_implementation_authorized=true`, `user_implementation_authorization=true`, `implementation_candidate_ready=false`.
 - Stage 2 exact candidate `a4ede43d944edc7e25860a9eda821889a8a581d8` is owner-accepted as the Stage 3 prerequisite; no independent Stage 2 audit is claimed.
 - Stage 3 exact candidate `c348e2f332d4e96e3b3dd74def7263c95770a868` is owner-accepted as the Stage 4 prerequisite; no independent Stage 3 audit is claimed.
-- Stage 4 authorization is consumed; Stage 5 is not started or authorized.
+- Stage 4 exact candidate `72cf0769cb66deb58691a39b664395ed28670da1` is owner-accepted as the Stage 5 prerequisite; no independent Stage 4 audit is claimed.
+- Stage 5 authorization is consumed; Stage 6 is not started or authorized.
 - TypeScript is the default runtime.
 
 ## What this plan delivers
@@ -73,9 +74,17 @@ Stage 4 builds private Entity, typed Ownership, VoiceTime, Extension and Core Re
 
 Per-Voice exact intervals are built once from canonical sequence start and positive exact durations. Exact-start and half-open overlap `[start,end)` use binary-search bounds and return semantic-order slices; empty or reversed ranges reject privately. A fresh `rebuild_indices_from_store` produces a handle-free normalized projection of stable IDs, canonical fractions and stable paths. Primary/rebuilt equality passes; a corrupted entity index is rejected. Minimal and representative metrics assert exact linear entity/topology/reference/time/index counts. Focused Rust is indices `4/4`, time-index `3/3`, store `6/6`; full workspace Rust is `67/67` with fmt/check/clippy/MSRV passing. The unchanged full TypeScript runner discovers `552` tests: `551` pass, `1` expected GC skip and `0` fail; the compiled RKP-2 workspace-law contributes its independently passing `6/6` tests.
 
+## Stage 5 checkpoint
+
+Stage 5 replaces `SmokeRuntime` with one `KernelRuntime` that owns exactly one `LiveScoreStore` plus revision zero and retains no second `ScoreDocumentV1` holder. `LiveScoreStore::export_document` walks only the explicit measure/part/staff/content/voice/event/note/extension topology vectors and dereferences typed records; no HashMap or SlotMap iteration decides output order and no RuntimeHandle reaches DTO, diagnostics or Node.
+
+Session create now uses a private fallible Runtime factory seam. Runtime capacity and invariant failures map to the existing `bridge.internal`; semantic build failures map to the existing `score.invalid-structure` variants; rejection returns no `KernelSession`. Node source is unchanged and keeps the existing publish-after-accepted-Session law with exactly two free-function exports. Native reads deterministically materialize the Store export, preserve optional fields and unknown score-owned Extension payloads, produce repeated identical bytes, and remain detached from input/output aliases.
+
+Focused Rust passes Runtime `15/15` and Session `4/4`; full workspace Rust passes `70/70` with fmt/check/clippy/MSRV. The rebuilt Windows addon passes both loaders with two exports and combined RKP-1 bridge plus RKP-2 parity `13/13`; RKP-1 and RKP-2 workspace laws each pass `6/6`. At the clean committed Stage 5 head, the real full runner discovers `556` tests: `555` pass, `1` expected GC skip and `0` fail, including the clean-worktree lifecycle guard.
+
 ## Next operator action
 
-Do not start Stage 5 without a later explicit user continuation. Stage 5 is the deterministic-export and Runtime/Session integration commit in `implement.md`; a new file/dependency/public shape outside the approved matrix returns to planning review.
+Do not start Stage 6 without a later explicit user continuation. Stage 6 is the hostile/resource/scale evidence and candidate-freeze commit in `implement.md`; Stage 5 does not authorize it, candidate readiness, independent audit or lifecycle closeout.
 
 ## Audit and closeout
 

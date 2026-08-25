@@ -2,11 +2,11 @@ use brilliant_kernel_contracts::{
     KernelSessionCreateRequestV1, KernelSessionCreateResultV1, KernelSessionCreateSuccessValueV1,
     KernelSessionReadResultV1, StableFailureV1,
 };
-use brilliant_kernel_runtime::SmokeRuntime;
+use brilliant_kernel_runtime::{KernelRuntime, KernelRuntimeCreateFailure};
 
 #[derive(Debug)]
 pub struct KernelSession {
-    runtime: SmokeRuntime,
+    runtime: KernelRuntime,
 }
 
 #[derive(Debug)]
@@ -19,6 +19,20 @@ impl KernelSession {
     pub fn create(
         request: KernelSessionCreateRequestV1,
     ) -> Result<KernelSessionCreateAccepted, StableFailureV1> {
+        Self::create_with_runtime_factory(request, |validated| {
+            KernelRuntime::create(validated.document)
+        })
+    }
+
+    fn create_with_runtime_factory<F>(
+        request: KernelSessionCreateRequestV1,
+        runtime_factory: F,
+    ) -> Result<KernelSessionCreateAccepted, StableFailureV1>
+    where
+        F: FnOnce(
+            KernelSessionCreateRequestV1,
+        ) -> Result<KernelRuntime, KernelRuntimeCreateFailure>,
+    {
         if request.api_version != 1 {
             return Err(StableFailureV1::ContractUnsupportedApiVersion {
                 supported_version: 1,
@@ -30,7 +44,8 @@ impl KernelSession {
             });
         }
 
-        let runtime = SmokeRuntime::new(request.document);
+        let runtime =
+            runtime_factory(request).map_err(KernelRuntimeCreateFailure::into_stable_failure)?;
         let result = KernelSessionCreateResultV1::Created(KernelSessionCreateSuccessValueV1 {
             document_id: runtime.document_id().clone(),
             document_version: runtime.document_version(),
@@ -42,15 +57,18 @@ impl KernelSession {
     }
 
     pub fn read_state(&self) -> KernelSessionReadResultV1 {
-        KernelSessionReadResultV1::Ok(Box::new(self.runtime.read_state()))
+        match self.runtime.read_state() {
+            Ok(state) => KernelSessionReadResultV1::Ok(Box::new(state)),
+            Err(failure) => KernelSessionReadResultV1::Rejected(failure.into_stable_failure()),
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use brilliant_kernel_contracts::{
-        KernelSessionCreateRequestV1, decode_create_request, encode_create_result,
-        encode_read_result,
+        KernelSessionCreateRequestV1, ScoreStructureViolationV1, decode_create_request,
+        encode_create_result, encode_read_result,
     };
 
     use super::*;
@@ -122,5 +140,35 @@ mod tests {
             KernelSession::create(invalid_schema),
             Err(StableFailureV1::ScoreUnsupportedSchema { .. })
         ));
+    }
+
+    #[test]
+    fn private_runtime_factory_failures_publish_no_session_and_use_existing_failures() {
+        let capacity = KernelSession::create_with_runtime_factory(
+            decode_create_request(SMOKE_REQUEST.as_bytes()).expect("request"),
+            |_| Err(KernelRuntimeCreateFailure::InternalCapacity),
+        );
+        assert_eq!(
+            capacity.expect_err("capacity rejection"),
+            StableFailureV1::BridgeInternal
+        );
+
+        for violation in [
+            ScoreStructureViolationV1::DuplicateId,
+            ScoreStructureViolationV1::InvalidReference,
+            ScoreStructureViolationV1::InvalidValue,
+        ] {
+            let rejected = KernelSession::create_with_runtime_factory(
+                decode_create_request(SMOKE_REQUEST.as_bytes()).expect("request"),
+                |_| Err(KernelRuntimeCreateFailure::InvalidDocument(violation)),
+            );
+            assert!(matches!(
+                rejected,
+                Err(StableFailureV1::ScoreInvalidStructure {
+                    path,
+                    violation: actual,
+                }) if path == Default::default() && actual == violation
+            ));
+        }
     }
 }

@@ -38,7 +38,7 @@
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "RKP-2 PLANNING PASS 0-0-0 AT 625054E / CLEAN UNIFIED BASE DF40AEF / ACTIVATION E10C7DC / STAGE 1 AUDITED PASS 0-0-0 AT 8AF8E63 / STAGE 2 OWNER-ACCEPTED PREREQUISITE AT A4EDE43 WITHOUT CLAIMING AN INDEPENDENT AUDIT / STAGE 3 OWNER-ACCEPTED PREREQUISITE AT C348E2F WITHOUT CLAIMING AN INDEPENDENT AUDIT / STAGE 4 DERIVED INDICES EXACT-TIME QUERY AND REBUILD PARITY COMPLETE / STAGE 5 NOT STARTED OR AUTHORIZED / TYPESCRIPT DEFAULT / CANDIDATE NOT READY / NO CUTOVER PUSH QUALIFICATION ARCHIVE RKP-3.",
+  "notes": "RKP-2 PLANNING PASS 0-0-0 AT 625054E / CLEAN UNIFIED BASE DF40AEF / ACTIVATION E10C7DC / STAGE 1 AUDITED PASS 0-0-0 AT 8AF8E63 / STAGE 2 OWNER-ACCEPTED PREREQUISITE AT A4EDE43 WITHOUT CLAIMING AN INDEPENDENT AUDIT / STAGE 3 OWNER-ACCEPTED PREREQUISITE AT C348E2F WITHOUT CLAIMING AN INDEPENDENT AUDIT / STAGE 4 OWNER-ACCEPTED PREREQUISITE AT 72CF076 WITHOUT CLAIMING AN INDEPENDENT AUDIT / STAGE 5 DETERMINISTIC EXPORT AND RUNTIME-SESSION INTEGRATION COMPLETE / STAGE 6 NOT STARTED OR AUTHORIZED / TYPESCRIPT DEFAULT / CANDIDATE NOT READY / NO CUTOVER PUSH QUALIFICATION ARCHIVE RKP-3.",
   "meta": {
     "planning_base_commit": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "accepted_rkp1_audited_implementation_commit": "94387b339b5e4d9ce6b7f97597a1b56edd051f01",
@@ -64,7 +64,7 @@
     "task_start_run": true,
     "production_implementation_authorized": true,
     "user_implementation_authorization": true,
-    "user_authorization_scope": "stage_4_only_stage_5_not_authorized",
+    "user_authorization_scope": "stage_5_only_stage_6_not_authorized",
     "independent_planning_review": "passed",
     "planning_review_cycle": "final_targeted_rereview_passed",
     "initial_independent_planning_review": {
@@ -100,7 +100,7 @@
       "verdict": "pass"
     },
     "approved_planning_head": "625054ec78e6410e0fb6034ab0c8f60bbf110d08",
-    "implementation_stage": "stage_4_complete_stage_5_not_started",
+    "implementation_stage": "stage_5_complete_stage_6_not_started",
     "stage_1_started": true,
     "stage_1_completed": true,
     "stage_1_commit_subject": "build(rkp-2): pin typed generational store dependency",
@@ -148,8 +148,22 @@
     "stage_4_workspace_rust_result": "67_of_67_fmt_check_clippy_msrv_pass",
     "stage_4_typescript_result": "552_discovered_551_pass_1_expected_gc_skip_0_fail",
     "stage_4_contract": "private_entity_ownership_extension_core_reference_indices_exact_voice_binary_queries_fresh_rebuild_normalized_parity_corruption_rejection_linear_metrics",
-    "stage_5_started": false,
-    "stage_5_authorized": false,
+    "stage_4_owner_acceptance": {
+      "candidate_commit": "72cf0769cb66deb58691a39b664395ed28670da1",
+      "status": "owner_accepted_as_stage_5_prerequisite",
+      "independent_review": "not_run_not_claimed"
+    },
+    "stage_5_started": true,
+    "stage_5_authorized": true,
+    "stage_5_completed": true,
+    "stage_5_commit_subject": "feat(rkp-2): integrate indexed live store load and deterministic export",
+    "stage_5_contract": "explicit_topology_export_single_live_store_runtime_revision_zero_private_fallible_session_factory_existing_failure_mapping_repeated_detached_native_read",
+    "stage_5_focused_rust_result": "runtime_15_of_15_session_4_of_4",
+    "stage_5_workspace_rust_result": "70_of_70_fmt_check_clippy_msrv_pass",
+    "stage_5_node_result": "rkp1_bridge_9_plus_rkp2_parity_4_equals_13_of_13_two_loaders_two_exports",
+    "stage_5_typescript_result": "556_discovered_555_pass_1_expected_gc_skip_0_fail",
+    "stage_6_started": false,
+    "stage_6_authorized": false,
     "implementation_review": "pending",
     "implementation_candidate_ready": false,
     "archive_authorized": false,

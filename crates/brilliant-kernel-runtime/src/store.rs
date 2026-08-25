@@ -5,7 +5,9 @@ use std::{
 
 use brilliant_core_types::StableId;
 use brilliant_score_foundation::{
-    ExactFraction, ExtensionOwnerV1, RhythmicContentV1, ScoreDocumentV1,
+    ExactFraction, ExtensionBlockV1, ExtensionOwnerV1, MeasureDefinitionV1, MusicSequenceV1,
+    PartMeasureContentV1, PartV1, RhythmicContentV1, RhythmicEventV1, ScoreDocumentV1, ScoreNoteV1,
+    StaffDefinitionV1, VoiceV1,
 };
 use slotmap::{Key, SlotMap};
 
@@ -89,6 +91,201 @@ fn stage3_owned_store_shape(store: &LiveScoreStore) {
 
 #[used]
 static STAGE3_OWNED_STORE_SHAPE: fn(&LiveScoreStore) = stage3_owned_store_shape;
+
+// Export is intentionally separate from the Stage 4 query implementation:
+// export traverses canonical topology, while stable-ID queries must remain scan-free.
+impl crate::store::LiveScoreStore {
+    pub(crate) fn export_document(&self) -> Result<ScoreDocumentV1, LiveStoreBuildFailure> {
+        let mut measure_definitions = Vec::with_capacity(self.topology.measure_order.len());
+        for handle in &self.topology.measure_order {
+            let record = self
+                .measures
+                .get(*handle)
+                .ok_or(local(StoreInvariantFailure::MissingRecord))?;
+            measure_definitions.push(MeasureDefinitionV1 {
+                id: record.id.clone(),
+                meter: record.meter.clone(),
+                pickup_duration: record.pickup_duration.clone(),
+            });
+        }
+
+        let mut parts = Vec::with_capacity(self.topology.part_order.len());
+        for part_handle in &self.topology.part_order {
+            parts.push(self.export_part(*part_handle)?);
+        }
+
+        let mut extensions = Vec::with_capacity(self.topology.extension_order.len());
+        for handle in &self.topology.extension_order {
+            let record = self
+                .extensions
+                .get(*handle)
+                .ok_or(local(StoreInvariantFailure::MissingRecord))?;
+            extensions.push(ExtensionBlockV1 {
+                namespace: record.namespace.clone(),
+                schema_version: record.schema_version,
+                owner: record.owner.clone(),
+                payload: record.payload.clone(),
+            });
+        }
+
+        Ok(ScoreDocumentV1 {
+            schema_version: "brilliant-score-1".to_owned(),
+            id: self.header.id.clone(),
+            metadata: self.header.metadata.clone(),
+            measure_definitions,
+            parts,
+            extensions,
+        })
+    }
+
+    fn export_part(&self, part_handle: PartHandle) -> Result<PartV1, LiveStoreBuildFailure> {
+        let record = self
+            .parts
+            .get(part_handle)
+            .ok_or(local(StoreInvariantFailure::MissingRecord))?;
+        let staff_order = self
+            .topology
+            .staff_order
+            .get(&part_handle)
+            .ok_or(local(StoreInvariantFailure::MissingRecord))?;
+        let mut staves = Vec::with_capacity(staff_order.len());
+        for handle in staff_order {
+            let staff = self
+                .staffs
+                .get(*handle)
+                .ok_or(local(StoreInvariantFailure::MissingRecord))?;
+            staves.push(StaffDefinitionV1 {
+                id: staff.id.clone(),
+                line_count: staff.line_count,
+                default_clef: staff.default_clef.clone(),
+            });
+        }
+
+        let content_order = self
+            .topology
+            .content_order
+            .get(&part_handle)
+            .ok_or(local(StoreInvariantFailure::MissingRecord))?;
+        let mut measure_contents = Vec::with_capacity(content_order.len());
+        for measure_handle in content_order {
+            measure_contents.push(self.export_content(part_handle, *measure_handle)?);
+        }
+
+        Ok(PartV1 {
+            id: record.id.clone(),
+            name: record.name.clone(),
+            instrument: record.instrument.clone(),
+            staves,
+            measure_contents,
+        })
+    }
+
+    fn export_content(
+        &self,
+        part_handle: PartHandle,
+        measure_handle: MeasureHandle,
+    ) -> Result<PartMeasureContentV1, LiveStoreBuildFailure> {
+        let key = PartMeasureKey {
+            part: part_handle,
+            measure: measure_handle,
+        };
+        let content = self
+            .topology
+            .contents
+            .get(&key)
+            .ok_or(local(StoreInvariantFailure::MissingRecord))?;
+        if content.part != part_handle || content.measure != measure_handle {
+            return Err(local(StoreInvariantFailure::ContentRecordMismatch));
+        }
+        let measure = self
+            .measures
+            .get(measure_handle)
+            .ok_or(local(StoreInvariantFailure::MissingRecord))?;
+        let voice_order = self
+            .topology
+            .voice_order
+            .get(&key)
+            .ok_or(local(StoreInvariantFailure::MissingRecord))?;
+        let mut voices = Vec::with_capacity(voice_order.len());
+        for handle in voice_order {
+            voices.push(self.export_voice(*handle)?);
+        }
+        Ok(PartMeasureContentV1 {
+            measure_id: measure.id.clone(),
+            voices,
+        })
+    }
+
+    fn export_voice(&self, voice_handle: VoiceHandle) -> Result<VoiceV1, LiveStoreBuildFailure> {
+        let record = self
+            .voices
+            .get(voice_handle)
+            .ok_or(local(StoreInvariantFailure::MissingRecord))?;
+        let event_order = self
+            .topology
+            .event_order
+            .get(&voice_handle)
+            .ok_or(local(StoreInvariantFailure::MissingRecord))?;
+        let mut events = Vec::with_capacity(event_order.len());
+        for handle in event_order {
+            events.push(self.export_event(*handle)?);
+        }
+        Ok(VoiceV1 {
+            id: record.id.clone(),
+            default_staff_id: record.default_staff_id.clone(),
+            sequence: MusicSequenceV1 {
+                start: record.sequence_start.clone(),
+                events,
+            },
+        })
+    }
+
+    fn export_event(
+        &self,
+        event_handle: EventHandle,
+    ) -> Result<RhythmicEventV1, LiveStoreBuildFailure> {
+        let record = self
+            .events
+            .get(event_handle)
+            .ok_or(local(StoreInvariantFailure::MissingRecord))?;
+        let note_order = self
+            .topology
+            .note_order
+            .get(&event_handle)
+            .ok_or(local(StoreInvariantFailure::MissingRecord))?;
+        let content = match record.content_kind {
+            EventContentKind::Rest => {
+                if !note_order.is_empty() {
+                    return Err(local(StoreInvariantFailure::ContentRecordMismatch));
+                }
+                RhythmicContentV1::Rest
+            }
+            EventContentKind::Notes => {
+                if note_order.is_empty() {
+                    return Err(local(StoreInvariantFailure::ContentRecordMismatch));
+                }
+                let mut notes = Vec::with_capacity(note_order.len());
+                for handle in note_order {
+                    let note = self
+                        .notes
+                        .get(*handle)
+                        .ok_or(local(StoreInvariantFailure::MissingRecord))?;
+                    notes.push(ScoreNoteV1 {
+                        id: note.id.clone(),
+                        written_pitch: note.written_pitch.clone(),
+                    });
+                }
+                RhythmicContentV1::Notes { notes }
+            }
+        };
+        Ok(RhythmicEventV1 {
+            id: record.id.clone(),
+            duration: record.duration.clone(),
+            staff_id: record.staff_id.clone(),
+            content,
+        })
+    }
+}
 
 impl LiveScoreStore {
     pub(crate) fn lookup_entity(&mut self, id: &StableId) -> Option<RuntimeEntityRef> {
@@ -1490,5 +1687,33 @@ pub(crate) mod tests {
             result,
             Err(LiveStoreBuildFailure::InternalCapacity)
         ));
+    }
+
+    #[test]
+    fn export_uses_canonical_topology_and_preserves_optional_and_extension_values() {
+        let mut document = fixture();
+        document.measure_definitions[1].pickup_duration =
+            Some(brilliant_score_foundation::FractionV1 {
+                numerator: brilliant_core_types::SafeInteger::new(1).expect("safe integer"),
+                denominator: brilliant_core_types::SafeInteger::new(1).expect("safe integer"),
+            });
+        document.parts[0].measure_contents[0].voices[0]
+            .sequence
+            .events[0]
+            .duration
+            .time_modification = Some(brilliant_score_foundation::TimeModificationV1 {
+            actual_notes: brilliant_core_types::SafeInteger::new(1).expect("safe integer"),
+            normal_notes: brilliant_core_types::SafeInteger::new(1).expect("safe integer"),
+        });
+
+        let store = build_live_score_store(&document).expect("store");
+        let exported = store.export_document().expect("canonical export");
+        assert_eq!(exported, document);
+        assert_eq!(exported.measure_definitions[0].id.as_str(), "measure-z");
+        assert_eq!(
+            exported.parts[0].measure_contents[0].measure_id.as_str(),
+            "measure-a"
+        );
+        assert_eq!(exported.extensions[0].namespace, "example.score");
     }
 }
