@@ -30,9 +30,9 @@ After a separately reviewed and authorized implementation of this child:
    - `{ "kind": "score" }`
    - `{ "kind": "part", "partId": "part-1" }`
 2. `part_id` is a private Rust identifier only. It must not be a public alias, accepted input, encoded output, DTO addition or schema migration.
-3. The bounded repair is owned by `ExtensionOwnerV1` serde configuration in Foundation. Contracts and TypeScript strict codecs remain the public shape authorities; Runtime remains a consumer of the validated DTO.
+3. The bounded field-name repair is owned by `ExtensionOwnerV1` serde configuration in Foundation. Contracts and TypeScript strict codecs remain the public exact-shape authorities, including rejection of extra fields on the internally tagged unit `Score` variant; Runtime remains a consumer of the validated DTO.
 4. The repair must be bidirectional: exact `partId` deserialize and serialize.
-5. Unknown fields on either enum variant must be rejected. In particular, `partId` plus `part_id` must reject rather than silently selecting one.
+5. Unknown fields on either public wire variant must be rejected. Foundation directly rejects unknown fields on the struct-like `Part` variant, including `partId` plus `part_id`; Contracts' descriptor-first strict walk and the TypeScript strict codec reject extras on `Score`. Foundation must not add a custom deserializer or change the unit variant to become a second exact-shape owner.
 6. No public diagnostic code, failure variant, discriminant, DTO, schema version, Node export or inventory count may change.
 7. TypeScript remains the default product runtime. No default cutover, qualification, RKP-3, command/history/provider work or public plugin work is authorized.
 8. Implementation must remain within the six literal technical paths frozen by `design.md`; lifecycle changes remain within the child and the three RKP-2 projection files plus the Rust parent `task.json`.
@@ -41,9 +41,9 @@ After a separately reviewed and authorized implementation of this child:
 
 ## 4. Acceptance criteria
 
-- [ ] Foundation directly decodes and re-encodes both exact public variants; Part output is byte-keyed with `partId` only.
-- [ ] Foundation rejects `part_id`, `partId+part_id`, and extra fields on the score variant.
-- [ ] Contracts accept a valid Part-owned public request and preserve exact existing stable failures for malformed owners.
+- [ ] Foundation directly decodes and re-encodes exact Part `partId` and exact `Score`; Part output is byte-keyed with `partId` only.
+- [ ] Foundation rejects `part_id`, `partId+part_id`, and other extra fields on the Part variant without a custom deserializer.
+- [ ] Contracts accept a valid Part-owned public request and preserve exact existing stable failures for malformed Part owners and any extra field on a score owner.
 - [ ] A document containing ordered score-owned and Part-owned unknown blocks survives native create/read with nested JSON, array order and block order unchanged.
 - [ ] Native output contains `partId` and contains no `part_id`; malformed owner requests publish no handle.
 - [ ] Repeated reads are byte-identical and detached; canonical encode/decode/encode remains equal.

@@ -2,7 +2,7 @@
 
 ## Verdict requested
 
-`READY FOR INDEPENDENT PLANNING REVIEW`.
+`READY FOR TARGETED INDEPENDENT PLANNING REREVIEW`.
 
 This is a docs-only planning candidate. It does not claim planning acceptance or authorize implementation.
 
@@ -13,11 +13,12 @@ This is a docs-only planning candidate. It does not claim planning acceptance or
 - Task: `.trellis/tasks/08-26-rkp-2-part-owner-wire-contract-repair`
 - Parent: `.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity`
 - Root-cause audit: P0/P1/P2=`0/1/0`, bounded blocking planning child required
-- Child review state: pending
+- First planning review of `7e211869b7ab8d5ead3916ca8d98107d55f182db`: RETURN FOR BOUNDED PLANNING REPAIR, P0/P1/P2=`0/1/0`
+- Child targeted rereview state: pending
 
 ## Candidate decision
 
-The public owner wire remains exactly score `{kind}` or Part `{kind,partId}`. The Rust identifier `part_id` receives only `#[serde(rename = "partId")]`; the enum receives `deny_unknown_fields`. No alias is accepted. This restores both decode and encode without changing TypeScript, schema, Runtime, Node or stable failures.
+The public owner wire remains exactly score `{kind}` or Part `{kind,partId}`. The Rust identifier `part_id` receives only `#[serde(rename = "partId")]`; the enum receives `deny_unknown_fields`. No alias is accepted. Foundation directly proves Part mapping/Part-extra rejection and exact Score normal decode/encode. Because internally tagged unit `Score` does not reject extras under this derived serde configuration, Contracts and TypeScript remain the sole public score-extra exact-shape owners; no custom Foundation deserializer or unit-variant change is allowed.
 
 ## Scope proof
 
@@ -34,7 +35,8 @@ Future technical ownership is exactly the six paths listed in `design.md`; all o
 ## Review checklist
 
 - [ ] Public `partId` and forbidden `part_id` are unambiguous.
-- [ ] Field rename is bidirectional; enum unknown fields are closed.
+- [ ] Field rename is bidirectional and Part struct fields are closed without claiming derived-serde score-extra closure.
+- [ ] Contracts/TypeScript exclusively enforce score-extra public exact shape; Foundation adds no custom deserializer or unit-variant change.
 - [ ] No alias, migration or second codec owner exists.
 - [ ] Root cause is Foundation, not Contracts, TypeScript or Runtime.
 - [ ] Existing stable code/path/violation and zero-publication behavior are preserved.
@@ -50,7 +52,7 @@ RKP-2 S6.0 remains committed and is not rewritten. Stage 6 remains started/autho
 
 ## Self-audit
 
-Planning self-audit reports P0/P1/P2=`0/0/0`. This is not an independent verdict. Independent review remains required.
+Bounded-repair planning self-audit reports P0/P1/P2=`0/0/0` after recording the first independent P1. This is not an independent verdict. Targeted independent rereview remains required.
 
 ## Gate evidence
 
@@ -61,5 +63,6 @@ Planning self-audit reports P0/P1/P2=`0/0/0`. This is not an independent verdict
 - Clean exact-base dynamic runner: 78 files, manifest `e4445a175cedaa34eaed455f48a98735ac2fa4808cc94314ff5148db6b6523d5`, 576 discovered / 575 pass / 1 expected GC skip / 0 fail.
 - Native baseline: 13/13.
 - Fresh LF Rust baseline: 70/70 plus fmt/check/clippy/MSRV PASS.
+- Candidate workspace-law: expected fail-closed `6/7`; exact clean base: `7/7`. Neither the test nor its accepted allowlist is modified during planning.
 
 The candidate-level RKP-2 workspace-law intentionally does not yet recognize an unreviewed child. Updating that executable allowlist during planning would violate this task's zero-test-delta boundary; the future R2 stage owns the already allowlisted workspace-law change after planning PASS and activation.

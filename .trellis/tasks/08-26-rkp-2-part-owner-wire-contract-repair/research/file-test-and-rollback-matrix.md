@@ -13,8 +13,8 @@
 
 | Path | Stage | Purpose | Rollback |
 | --- | --- | --- | --- |
-| `crates/brilliant-score-foundation/src/dto.rs` | R1 | exact serde rename and closed enum | revert R1 |
-| `crates/brilliant-score-foundation/src/codec.rs` | R1 | direct exact-shape/round-trip tests | revert R1 |
+| `crates/brilliant-score-foundation/src/dto.rs` | R1 | exact Part field serde rename and Part unknown-field closure | revert R1 |
+| `crates/brilliant-score-foundation/src/codec.rs` | R1 | direct Part mapping/Part-extra rejection and exact Score round-trip tests | revert R1 |
 | `crates/brilliant-kernel-contracts/src/codec.rs` | R2 | public request and stable failure bytes | revert R2 |
 | `test/core-kernel/rust-migration/rkp-2-store-fixtures.ts` | R2 | ordered score/Part unknown blocks | revert R2 |
 | `test/core-kernel/rust-migration/rkp-2-live-score-store-parity.test.ts` | R2 | native create/read and zero handle | revert R2 |
@@ -38,7 +38,8 @@ The lifecycle set records blocking/resume state only. It does not own the public
 | Part owner `partId` | yes | yes | yes | accepted, only camelCase output |
 | `part_id` only | yes | yes | yes | reject, no alias/handle |
 | both spellings | yes | yes | yes | reject extra, no handle |
-| score owner extra | yes | yes | optional | reject closed variant |
+| Part owner other extra | yes | yes | yes | Foundation struct fields and public boundary reject |
+| score owner extra | no | yes | yes | Contracts/TypeScript public exact-shape owner rejects; zero handle |
 | Part ID wrong type/empty | optional | yes | yes | existing exact stable failure |
 | missing Part reference | validation | yes | yes | existing invalid-reference |
 | score + Part unknown blocks | canonical | request | create/read | nested/order lossless |

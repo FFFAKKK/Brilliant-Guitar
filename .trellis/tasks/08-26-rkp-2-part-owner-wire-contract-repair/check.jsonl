@@ -7,7 +7,7 @@
 {"file":".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json","reason":"Audit Stage 6 S6.0 preservation and blocking-child projection."}
 {"file":".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json","reason":"Audit unique active RKP-2 implementation child and blocking descendant."}
 {"file":"crates/brilliant-score-foundation/src/dto.rs","reason":"Audit exact field rename and enum deny_unknown_fields implementation."}
-{"file":"crates/brilliant-score-foundation/src/codec.rs","reason":"Audit direct serde exact-shape coverage."}
+{"file":"crates/brilliant-score-foundation/src/codec.rs","reason":"Audit direct Part mapping and Part-extra rejection plus exact Score normal round-trip without claiming score-extra closure."}
 {"file":"crates/brilliant-kernel-contracts/src/codec.rs","reason":"Audit public strict shape and stable failure bytes."}
 {"file":"test/core-kernel/rust-migration/rkp-2-store-fixtures.ts","reason":"Audit deterministic score and Part unknown-extension fixture."}
 {"file":"test/core-kernel/rust-migration/rkp-2-live-score-store-parity.test.ts","reason":"Audit real native create/read, zero-handle and detached parity proof."}

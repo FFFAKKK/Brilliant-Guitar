@@ -8,7 +8,7 @@
 
 Exact Stage 6 activation/state commit `ce673a2ad62348fa73458d493a45f9c005bf0288` remains preserved. S6.1/S6.2/S6.3 are false and the RKP-2 implementation candidate is not ready.
 
-Child `08-26-rkp-2-part-owner-wire-contract-repair` owns only the bounded `ExtensionOwnerV1::Part` public `partId` serde repair. Its planning base is `ce673a2...`; status is planning; start/production authorization are false; independent planning review is pending. The child freezes exact score/Part owner shapes, forbids a `part_id` alias, allows six future technical paths, and requires R0–R3 plus independent implementation review before archive/integration and S6.1 resume.
+Child `08-26-rkp-2-part-owner-wire-contract-repair` owns only the bounded `ExtensionOwnerV1::Part` public `partId` serde repair. Its planning base is `ce673a2...`; status is planning; start/production authorization are false; independent targeted planning rereview is pending. The first candidate `7e211869b7ab8d5ead3916ca8d98107d55f182db` returned P0/P1/P2=`0/1/0` because it incorrectly made Foundation directly own score-extra rejection. The bounded repair retains exact score/Part public shapes, assigns direct Foundation tests only to Part mapping/Part extras plus exact Score normal round-trip, leaves score-extra closure with Contracts/TypeScript, forbids a `part_id` alias, allows six future technical paths, and requires R0–R3 plus independent implementation review before archive/integration and S6.1 resume.
 
 This RKP-2 review file records the block only. It does not accept the child, authorize implementation, change TypeScript default, or claim a Stage 6 candidate.
 

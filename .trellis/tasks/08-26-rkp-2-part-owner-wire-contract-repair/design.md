@@ -79,10 +79,12 @@ Contract consequences:
 
 - `rename = "partId"` applies in both deserialize and serialize directions;
 - no `alias = "part_id"` is permitted;
-- enum-level `deny_unknown_fields` rejects unknown fields for both variants;
+- enum-level `deny_unknown_fields` rejects unknown fields on the struct-like `Part` variant, including the simultaneous `partId` and `part_id` case;
+- serde's internally tagged unit `Score` variant still accepts otherwise unused fields, so Foundation does not claim direct score-extra closure;
+- score-owner extra-field rejection remains owned by the existing Contracts descriptor-first strict walk and TypeScript strict codec;
 - `{kind:"part", partId, part_id}` rejects rather than selecting one spelling;
 - the private Rust field remains idiomatic `part_id`; the public DTO and JSON remain camelCase;
-- no custom serializer/deserializer, migration layer or secondary owner type is introduced.
+- no custom serializer/deserializer, unit-variant change, migration layer or secondary exact-shape owner is introduced.
 
 ## 5. Boundary flow and ownership
 
@@ -97,15 +99,16 @@ request bytes
   -> Session/Node existing read result
 ```
 
-There is one public shape owner: the accepted score schema. Foundation implements its Rust DTO mapping; Contracts captures hostile shape and stable failure precedence; Runtime owns no wire conversion.
+There is one accepted public shape. Foundation implements the narrow Rust DTO field mapping and direct Part-field closure; Contracts and TypeScript remain the exact-shape boundary owners, including score extras. Runtime owns no wire conversion.
 
 ## 6. Failure and publication contract
 
 - `part_id` alone is rejected by the existing Contracts exact-shape gate as `codec.invalid-shape` at `document/extensions/<index>/owner/partId` with `missing-field`; the later extra-field candidate must not replace the higher-ranked missing-field result.
 - `partId` plus `part_id` is rejected as `codec.invalid-shape` at `document/extensions/<index>/owner` with `extra-field`.
-- score owner plus any extra field is rejected at that owner path with `extra-field`.
+- score owner plus `partId` or any other extra field is rejected by Contracts at that owner path with `extra-field`; TypeScript enforces the same closed public shape.
 - invalid/empty/non-string `partId` retains existing shape/semantic mapping and exact stable bytes.
-- direct Foundation tests bypass Contracts only to prove serde exactness; a serde shape error remains workspace-internal and does not create a public failure variant.
+- direct Foundation tests bypass Contracts only to prove exact Part `partId` mapping, Part unknown-field rejection, and exact `Score` decode/encode. They do not require Foundation to reject score extras.
+- Foundation gains no custom deserializer or alternate unit representation; a serde error remains workspace-internal and does not create a public failure variant.
 - every rejected native create returns payload only and publishes zero handle/session/runtime/store.
 - the StableFailureV1 union remains exactly 22.
 
@@ -135,11 +138,10 @@ All other `crates/**`, `src/**`, `test/**`, Cargo/toolchain/rustfmt, package/tsc
 | Layer | Required proof | Frozen outcome |
 | --- | --- | --- |
 | Foundation DTO | exact Part `partId` deserialize/serialize | round-trip equal; encoded owner has only `kind,partId` |
-| Foundation DTO | `part_id` only | reject; no alias |
-| Foundation DTO | `partId` plus `part_id` | reject unknown field |
-| Foundation DTO | score owner exact / score owner extra | exact succeeds; extra rejects |
+| Foundation DTO | `part_id` only / `partId` plus `part_id` / other Part extra | reject; no alias and struct fields remain closed |
+| Foundation DTO | exact score owner | decode/encode succeeds; no direct score-extra rejection claim |
 | Contracts | public `partId` create request | decode succeeds and reaches validated DTO |
-| Contracts | malformed owner variants | existing exact stable code/path/violation and canonical bytes |
+| Contracts | malformed Part owner and score owner plus any extra | existing exact stable code/path/violation and canonical bytes |
 | Fixture/native | ordered score + Part unknown blocks | nested JSON, arrays and block order preserved |
 | Native | create then repeated read | accepted; byte-repeatable; detached; only `partId` |
 | Native | `part_id` and combined extra | rejected payload only; zero handle |
@@ -174,8 +176,9 @@ No commands, transactions, history, incremental validation, provider/WASM, Guita
 
 The independent planner should verify:
 
-1. field-level `rename` plus enum-level `deny_unknown_fields` is the unique narrow serde repair;
+1. field-level `rename` plus enum-level `deny_unknown_fields` is the unique narrow Part serde repair, without claiming that derived serde closes extras on the unit `Score` variant;
 2. `part_id` cannot be accepted through an alias or escape Contracts;
-3. strict failure paths and publication behavior are frozen;
-4. the six technical paths and lifecycle projections are complete but not expansive;
-5. R0–R3, independent implementation review, archive/integration and S6.1 resume are distinct gates.
+3. Contracts/TypeScript retain score-extra exact-shape ownership while Foundation adds no custom deserializer or unit-variant change;
+4. strict failure paths and publication behavior are frozen;
+5. the six technical paths and lifecycle projections are complete but not expansive;
+6. R0–R3, independent implementation review, archive/integration and S6.1 resume are distinct gates.

@@ -32,7 +32,7 @@ Gate: child/RKP-2/Rust-parent Trellis, JSON/JSONL, unique parent reference, lite
 
 Rollback: revert only R0 to the accepted planning commit.
 
-## 3. R1 — Foundation DTO serde repair and direct exact-shape tests
+## 3. R1 — Foundation DTO serde repair and direct mapping tests
 
 Technical ownership:
 
@@ -43,14 +43,15 @@ RED first:
 
 1. Public Part owner with `partId` fails at the Foundation decoder on the base.
 2. Base serialization of a constructed Part owner would use `part_id`.
-3. Exact score owner succeeds, while extra fields need an explicit closed-enum assertion.
+3. Exact score owner succeeds through direct decode/encode. Score-extra rejection is not a Foundation RED because derived serde for an internally tagged unit variant does not close those fields.
 
 GREEN:
 
 1. Apply exactly the serde contract from `design.md`: enum `deny_unknown_fields`; field `#[serde(rename = "partId")]`; no alias.
-2. Add direct tests for exact score/Part decode and encode.
-3. Assert `part_id`, `partId+part_id`, and score-owner extras reject.
-4. Assert nested extension payload and owner values remain detached/equal through canonical encode/decode/encode.
+2. Add direct tests for exact Part `partId` decode/encode and exact `Score` decode/encode.
+3. Assert `part_id`, `partId+part_id`, and other Part extra fields reject.
+4. Do not add a custom deserializer, alter the `Score` unit variant or assert direct Foundation rejection of score extras.
+5. Assert nested extension payload and owner values remain detached/equal through canonical encode/decode/encode.
 
 Focused gate:
 
@@ -77,7 +78,7 @@ Actions:
 2. Freeze exact malformed owner bytes:
    - `part_id` only -> existing missing `partId` stable shape winner;
    - `partId+part_id` -> existing owner extra-field winner;
-   - score plus extra -> existing owner extra-field winner;
+   - score plus `partId` or any other extra -> existing owner extra-field winner through the Contracts descriptor-first strict walk;
    - wrong-type/empty/unresolved Part IDs retain existing shape/semantic mapping.
 3. Add deterministic fixture helpers containing score-owned and Part-owned unknown blocks, nested objects/arrays and nontrivial block order.
 4. Through the real Windows addon, assert create/read success, only `partId` output, zero snake_case, repeated identical bytes and detached input/output aliases.
@@ -96,7 +97,7 @@ node --test dist/test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.
 node --expose-gc --test dist/test/core-kernel/rust-migration/rkp-1-node-bridge-smoke.test.js dist/test/core-kernel/rust-migration/rkp-2-live-score-store-parity.test.js
 ```
 
-Rollback: revert R2 only. R1 remains directly testable Foundation behavior; RKP-2 stays paused.
+Rollback: revert R2 only. R1 remains directly testable Foundation Part mapping/exact-Score behavior; RKP-2 stays paused.
 
 ## 5. R3 — full gates, evidence and candidate freeze
 

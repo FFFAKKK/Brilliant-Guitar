@@ -48,7 +48,7 @@
     "test/core-kernel/rust-migration/rkp-2-live-score-store-parity.test.ts",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "PLANNING CANDIDATE ONLY. RKP-2 Stage 6 remains started and authorized historically at S6.0 commit ce673a2, but operationally paused before S6.1. This child has not run task.py start and has no production implementation authority. Independent planning review is required before activation.",
+  "notes": "BOUNDED PLANNING REPAIR CANDIDATE ONLY. The first review of 7e211869 returned 0/1/0 for incorrect Foundation score-extra ownership. RKP-2 Stage 6 remains started and authorized historically at S6.0 commit ce673a2, but operationally paused before S6.1. This child has not run task.py start and has no production implementation authority. Targeted independent planning rereview is required before activation.",
   "meta": {
     "planning_base_commit": "ce673a2ad62348fa73458d493a45f9c005bf0288",
     "source_rkp2_task": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
@@ -61,6 +61,7 @@
     "user_implementation_authorization": false,
     "planning_candidate_ready": true,
     "independent_planning_review": "pending",
+    "independent_planning_rereview": "pending",
     "implementation_candidate_ready": false,
     "implementation_review": "not_started",
     "archive_authorized": false,
@@ -76,6 +77,25 @@
       "P2": 0,
       "verdict": "blocking_bounded_planning_child_required",
       "finding": "rust_extension_owner_part_field_lacks_public_partId_serde_rename"
+    },
+    "first_independent_planning_review": {
+      "audited_commit": "7e211869b7ab8d5ead3916ca8d98107d55f182db",
+      "P0": 0,
+      "P1": 1,
+      "P2": 0,
+      "verdict": "return_for_bounded_planning_repair",
+      "finding": "derived_serde_unit_score_does_not_reject_extra_fields_so_foundation_cannot_own_direct_score_extra_closure"
+    },
+    "bounded_planning_repair": {
+      "status": "completed_candidate_targeted_rereview_pending",
+      "serde_configuration_changed": false,
+      "foundation_direct_scope": "part_partId_decode_encode_part_unknown_rejection_and_exact_score_normal_round_trip",
+      "score_extra_public_boundary_owners": [
+        "crates/brilliant-kernel-contracts/src/codec.rs_descriptor_first_strict_walk",
+        "src/core-kernel/codec/score-component-codec.ts_strict_codec"
+      ],
+      "foundation_custom_deserializer_authorized": false,
+      "score_unit_variant_change_authorized": false
     },
     "public_wire": [
       "{\"kind\":\"score\"}",
@@ -99,14 +119,14 @@
     "future_technical_allowlist_count": 6,
     "future_implementation_stages": [
       "R0_activation_lifecycle_only",
-      "R1_foundation_dto_serde_rename_and_direct_exact_shape_tests",
+      "R1_foundation_dto_serde_rename_and_direct_part_mapping_tests",
       "R2_contracts_mapping_ts_fixture_native_round_trip_workspace_law",
       "R3_full_gates_evidence_candidate_freeze"
     ],
     "rkp2_stage_6_s6_1_started": false,
     "rkp2_stage_6_s6_2_started": false,
     "rkp2_stage_6_s6_3_started": false,
-    "next_gate": "independent-planning-review",
+    "next_gate": "targeted-independent-planning-rereview",
     "planning_validation": {
       "trellis": "child_14_14_parent_rkp2_25_20_rust_parent_18_19_pass",
       "planning_changed_path_count": 15,
@@ -116,13 +136,15 @@
       "dynamic_full_runner": "node_24_15_0_manifest_78_sha256_e4445a175cedaa34eaed455f48a98735ac2fa4808cc94314ff5148db6b6523d5_576_discovered_575_pass_1_expected_gc_skip_0_fail",
       "native": "rkp1_bridge_plus_rkp2_stage5_parity_13_of_13",
       "rust": "fresh_core_autocrlf_false_detached_clone_fmt_check_test_70_of_70_clippy_msrv_1_88_pass",
-      "rkp2_jsonl_delta": "zero"
+      "rkp2_jsonl_delta": "zero",
+      "workspace_law": "planning_candidate_expected_fail_closed_6_of_7_exact_base_7_of_7_no_test_change"
     },
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
       "P2": 0,
-      "verdict": "planning_self_audit_only_independent_review_pending"
+      "verdict": "bounded_repair_self_audit_only_targeted_independent_rereview_pending",
+      "previous_independent_planning_review": "0_1_0_bounded_responsibility_repair_completed"
     }
   }
 }
