@@ -2,7 +2,7 @@
 
 ## Current implementation state
 
-`READY FOR INDEPENDENT IMPLEMENTATION REVIEW`.
+`BOUNDED IMPLEMENTATION REPAIR ACTIVE — CANDIDATE NOT READY`.
 
 - implementation branch: `codex/rkp-2-cross-platform-full-test-runner-contract-repair`
 - planning base: `eed4871a86191783d539b7d4097be3627e98e4a0`
@@ -15,6 +15,7 @@
 - event-coverage correction: `b20016882c16906db350feade4811821d55dad93`
 - hostile/version/range proof: `ce9598eca3ad4df30854b8cc9383f4034e2e55a3`
 - discarded diagnostic Stage 3 `610d20b` remains outside the current parent chain
+- first implementation review of exact `15c84a1929d1365ebf466088e896fd5309a4fa57`: RETURN, P0/P1/P2=`0/1/1`; first-observed structured-failure precedence and direct fail-closed branch evidence are the only repair scope
 - child status: `in_progress`
 - `task_start_run=true`
 - `production_implementation_authorized=true`
@@ -56,7 +57,7 @@ Execute the four reversible implementation stages, then send the exact candidate
 8. exact 13-path archive including implementation evidence, phase-specific rollback and explicit integration gate;
 9. lifecycle truth: in progress, implementation review pending, no Stage 6.
 
-Implementation is unpaused and complete for this pre-review repair candidate. Send the exact final docs/evidence HEAD to a dedicated read-only implementation auditor. Keep `610d20b` excluded. Acceptance, archive, closeout, integration into RKP-2 and Stage 6 remain unauthorized.
+Implementation remains authorized only for this bounded repair. Candidate readiness is false until both findings and all gates close. Keep `610d20b` excluded. Acceptance, archive, closeout, integration into RKP-2 and Stage 6 remain unauthorized.
 
 ## Candidate gate evidence
 

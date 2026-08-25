@@ -2,9 +2,11 @@
 
 ## Current checkpoint
 
-`READY FOR INDEPENDENT IMPLEMENTATION REVIEW`.
+`RETURNED FOR BOUNDED IMPLEMENTATION REPAIR — P0/P1/P2=0/1/1`.
 
 Planning head `cc82ba168ed45b8c3e0182ea8e1370b1474f1155` passed targeted independent rereview at P0/P1/P2=`0/0/0` in auditor task `01a01e48-1934-77b0-821e-a8026cd9e5f7`. The user authorized this repair implementation only. This activation claims no implementation candidate, Stage 6 readiness, acceptance/archive/integration, qualification, push, RKP-3 or default-runtime cutover.
+
+Dedicated implementation review of exact candidate `15c84a1929d1365ebf466088e896fd5309a4fa57` returned P0/P1/P2=`0/1/1`. Candidate readiness is withdrawn while the bounded repair preserves the first observer-selected failure over later reporter failure and adds direct evidence for the already implemented fail-closed branches. Targeted implementation rereview remains pending.
 
 Planning head `cc82ba168ed45b8c3e0182ea8e1370b1474f1155` passed its dedicated review. Its implementation line reached clean Stage 2 `d366653788a42eb56cd5755a63b1e73700c67310`, where real events disproved only the unique-file-terminal premise. Content P `44832ad01d136368c1b61203e9207ca4a521241f` and anchor A `c69d7b76175e2b818f4d276504a39b741e6e1975` close that drift; the dedicated auditor returned PASS P0/P1/P2=`0/0/0` for A. A is explicitly merged, implementation is unpaused, and discarded Stage 3 `610d20b` remains outside the parent chain.
 

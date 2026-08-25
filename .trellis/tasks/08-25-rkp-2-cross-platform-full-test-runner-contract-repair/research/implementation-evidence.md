@@ -40,4 +40,4 @@ Final TypeScript, Node bridge, Trellis, JSON/JSONL, path, hash, protected-delta 
 
 ## Lifecycle result
 
-`READY FOR INDEPENDENT IMPLEMENTATION REVIEW`. The child remains `in_progress`; implementation review is `pending`. No implementation audit PASS, acceptance, archive, closeout, integration into RKP-2, Stage 6 authorization, push, qualification, RKP-3 or default-runtime switch is claimed.
+Independent implementation review of exact `15c84a1929d1365ebf466088e896fd5309a4fa57` returned P0/P1/P2=`0/1/1`. The bounded repair reopens only first-observed structured-failure precedence and direct fail-closed branch evidence. The child remains `in_progress`; candidate readiness is false and targeted implementation rereview is pending. No implementation audit PASS, acceptance, archive, closeout, integration into RKP-2, Stage 6 authorization, push, qualification, RKP-3 or default-runtime switch is claimed.
