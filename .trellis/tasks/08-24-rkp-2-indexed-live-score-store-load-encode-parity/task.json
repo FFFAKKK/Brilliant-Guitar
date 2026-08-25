@@ -66,7 +66,7 @@
     "task_start_run": true,
     "production_implementation_authorized": true,
     "user_implementation_authorization": true,
-    "user_authorization_scope": "cross_platform_full_test_runner_planning_only_stage_6_not_authorized",
+    "user_authorization_scope": "cross_platform_full_test_runner_repair_implementation_only_stage_6_not_authorized",
     "independent_planning_review": "passed",
     "planning_review_cycle": "final_targeted_rereview_passed",
     "initial_independent_planning_review": {
@@ -102,8 +102,9 @@
       "verdict": "pass"
     },
     "approved_planning_head": "625054ec78e6410e0fb6034ab0c8f60bbf110d08",
-    "current_planning_child": "08-25-rkp-2-cross-platform-full-test-runner-contract-repair",
-    "implementation_stage": "stage_5_complete_stage_6_blocked_by_cross_platform_full_runner_planning_review",
+    "current_planning_child": null,
+    "current_implementation_child": "08-25-rkp-2-cross-platform-full-test-runner-contract-repair",
+    "implementation_stage": "stage_5_complete_stage_6_blocked_by_cross_platform_full_runner_implementation_review",
     "stage_1_started": true,
     "stage_1_completed": true,
     "stage_1_commit_subject": "build(rkp-2): pin typed generational store dependency",
@@ -206,7 +207,7 @@
       "node24_complete_literal": "77_files_557_discovered_556_pass_1_expected_gc_skip_0_fail",
       "node20_literal_glob": "20_20_2_exit_1",
       "package_and_lock_df40aef_to_eed4871a_delta": "zero",
-      "status": "bounded_planning_repair_candidate_targeted_independent_rereview_pending",
+      "status": "in_progress_activation_complete_stage_1_not_started",
       "first_planning_audit": {
         "auditor_task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
         "candidate_commit": "c43a34e7d02a57cfd90de506cf97787ff5571a9e",
@@ -215,7 +216,14 @@
         "P2": 0,
         "verdict": "return_for_bounded_planning_repair"
       },
-      "targeted_independent_planning_rereview": "pending",
+      "targeted_independent_planning_rereview": {
+        "auditor_task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
+        "candidate_commit": "cc82ba168ed45b8c3e0182ea8e1370b1474f1155",
+        "P0": 0,
+        "P1": 0,
+        "P2": 0,
+        "verdict": "pass"
+      },
       "planning_range_path_count": 20,
       "implementation_candidate_technical_path_count": 4,
       "implementation_candidate_lifecycle_path_count": 11,
@@ -224,8 +232,11 @@
       "post_archive_coordination_path_count": 23,
       "archive_destination": ".trellis/tasks/archive/2026-08/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/",
       "sole_test_infrastructure_owner": true,
-      "task_start_run": false,
-      "production_implementation_authorized": false,
+      "task_start_run": true,
+      "production_implementation_authorized": true,
+      "user_implementation_authorization": true,
+      "implementation_candidate_ready": false,
+      "implementation_review": "pending",
       "post_pass_closeout_authorized": false,
       "stage_6_blocked_until_accepted_archived_integrated": true
     },

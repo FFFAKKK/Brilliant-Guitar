@@ -1,12 +1,12 @@
 # Review Candidate — RKP-2 Cross-platform Full Test Runner Contract Repair
 
-## Verdict requested
+## Current checkpoint
 
-`PLANNING REVIEW REQUIRED` for the exact docs/test-governance-only candidate based on `eed4871a86191783d539b7d4097be3627e98e4a0`.
+`IMPLEMENTATION IN PROGRESS — STAGE 1 NOT STARTED`.
 
-This candidate claims only planning completeness. It does not claim implementation, independent PASS, Stage 6 readiness, acceptance/archive, qualification, push, RKP-3 or default-runtime cutover.
+Planning head `cc82ba168ed45b8c3e0182ea8e1370b1474f1155` passed targeted independent rereview at P0/P1/P2=`0/0/0` in auditor task `01a01e48-1934-77b0-821e-a8026cd9e5f7`. The user authorized this repair implementation only. This activation claims no implementation candidate, Stage 6 readiness, acceptance/archive/integration, qualification, push, RKP-3 or default-runtime cutover.
 
-The first independent review of exact candidate `c43a34e7d02a57cfd90de506cf97787ff5571a9e` returned P0/P1/P2=`0/3/0`. This candidate closes only those three bounded planning findings; targeted rereview remains pending.
+The first independent review of exact candidate `c43a34e7d02a57cfd90de506cf97787ff5571a9e` returned P0/P1/P2=`0/3/0`; the bounded planning repair at `cc82ba168ed45b8c3e0182ea8e1370b1474f1155` is the accepted implementation authority.
 
 ## Candidate claim
 
@@ -35,6 +35,6 @@ Post-PASS closeout is distinct: native archive creates exactly 13 archived artif
 9. Is Stage 4 review-only, with archive/closeout/integration deferred until implementation PASS and reversible to the frozen baselines?
 10. Are all Trellis/JSON/JSONL/path/fence/hash/full-suite gates specified and planning status truthful?
 
-## Required output
+## Required implementation output
 
-Return `PASS` only at P0/P1/P2=`0/0/0`; otherwise return a bounded planning repair. Implementation remains forbidden until the owner receives the independent verdict and separately authorizes activation.
+After all four stages and gates, mark only `READY FOR INDEPENDENT IMPLEMENTATION REVIEW`. Independent implementation PASS, acceptance, archive, closeout, integration and RKP-2 Stage 6 remain later gates.

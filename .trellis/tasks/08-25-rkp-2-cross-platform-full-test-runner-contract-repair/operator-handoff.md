@@ -1,21 +1,23 @@
 # Operator Handoff — RKP-2 Cross-platform Full Test Runner Contract Repair
 
-## Current stop state
+## Current implementation state
 
-`PLANNING REVIEW REQUIRED — IMPLEMENTATION NOT STARTED`.
+`ACTIVATED — STAGE 1 NOT STARTED`.
 
 - branch: `codex/rkp-2-cross-platform-full-test-runner-contract-repair`
 - planning base: `eed4871a86191783d539b7d4097be3627e98e4a0`
 - parent: `08-24-rkp-2-indexed-live-score-store-load-encode-parity`
-- child status: `planning`
-- `task_start_run=false`
-- `production_implementation_authorized=false`
-- `independent_planning_review=pending`
-- first independent planning audit of `c43a34e7d02a57cfd90de506cf97787ff5571a9e`: RETURN, P0/P1/P2=`0/3/0`; bounded repair applied, targeted rereview pending
+- accepted planning head: `cc82ba168ed45b8c3e0182ea8e1370b1474f1155`
+- child status: `in_progress`
+- `task_start_run=true`
+- `production_implementation_authorized=true`
+- `user_implementation_authorization=true` for this repair only
+- first independent planning audit of `c43a34e7d02a57cfd90de506cf97787ff5571a9e`: RETURN, P0/P1/P2=`0/3/0`
+- targeted independent planning rereview of `cc82ba168ed45b8c3e0182ea8e1370b1474f1155`: PASS, P0/P1/P2=`0/0/0`, auditor `01a01e48-1934-77b0-821e-a8026cd9e5f7`
 - RKP-2 Stage 5 complete; Stage 6 not started/authorized
 - TypeScript remains default
 
-Do not run `task.py start`, modify package/test production paths, accept/archive/push, create RKP-3, run qualification or resume Stage 6 from this candidate.
+Implement only the accepted four-stage repair contract. Do not accept/archive/integrate/push, create RKP-3, run qualification or resume Stage 6 from this child.
 
 ## Root-cause handoff
 
@@ -31,9 +33,9 @@ Every regular candidate has a BigInt `lstat` physical identity `(dev,ino)`. Miss
 
 Stage 4 is only a pre-review candidate: exact child technical 4 plus active lifecycle 11, with RKP-2 still at 21 technical and 22 coordination paths. Only after implementation PASS may native archive create the exact 13 archived paths and replace the 12 active paths, yielding coordination 23; explicit RKP-2 integration then creates a new Stage 6 prerequisite, still without Stage 6 authorization.
 
-## Review handoff
+## Implementation handoff
 
-Send the exact docs-only candidate to the dedicated planning auditor. Focus on:
+Execute the four reversible implementation stages, then send the exact candidate to a dedicated implementation auditor. Focus on:
 
 1. Node 20.20.2/24.15.0 compatibility without unsupported option leakage;
 2. symlink/junction non-following traversal and explicit code-unit ordering;
@@ -43,6 +45,6 @@ Send the exact docs-only candidate to the dedicated planning auditor. Focus on:
 6. literal future allowlist and package-lock/product zero-delta;
 7. exact real 20-path planning range, 4+11 candidate projection, and 22-active/23-archived mutually exclusive authority sets;
 8. exact 13-path archive including implementation evidence, phase-specific rollback and explicit integration gate;
-9. lifecycle truth: planning/pending/no start/no Stage 6.
+9. lifecycle truth: in progress, implementation review pending, no Stage 6.
 
-Implementation begins only after exact planning PASS and later user authorization.
+Implementation is authorized only for this repair and must stop at `READY FOR INDEPENDENT IMPLEMENTATION REVIEW`.
