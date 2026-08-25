@@ -40,7 +40,7 @@
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "RKP-2 STAGE 5 COMPLETE / BLOCKING FULL-RUNNER CHILD READY FOR TARGETED IMPLEMENTATION REREVIEW AFTER ORDERED-SIGNAL WORKSPACE-LAW ORACLE REPAIR / PRODUCTION RUNNER AND PRIOR P2 UNCHANGED / RKP-2 STAGE 6 NOT STARTED OR AUTHORIZED / TYPESCRIPT DEFAULT / NO CUTOVER PUSH QUALIFICATION ARCHIVE RKP-3.",
+  "notes": "RKP-2 STAGE 5 COMPLETE / FULL-RUNNER CHILD EXACT 8D9A2A4 ACCEPTED BY INDEPENDENT IMPLEMENTATION REREVIEW 0/0/0 / NATIVE ARCHIVE AND AUTHORITY INTEGRATION PENDING SAME OWNER CLOSEOUT / RKP-2 STAGE 6 NOT STARTED OR AUTHORIZED / TYPESCRIPT DEFAULT / NO CUTOVER PUSH QUALIFICATION RKP-3.",
   "meta": {
     "planning_base_commit": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "accepted_rkp1_audited_implementation_commit": "94387b339b5e4d9ce6b7f97597a1b56edd051f01",
@@ -104,7 +104,7 @@
     "approved_planning_head": "625054ec78e6410e0fb6034ab0c8f60bbf110d08",
     "current_planning_child": null,
     "current_implementation_child": "08-25-rkp-2-cross-platform-full-test-runner-contract-repair",
-    "implementation_stage": "stage_5_complete_stage_6_blocked_by_active_runner_repair_implementation_candidate",
+    "implementation_stage": "stage_5_complete_stage_6_blocked_by_accepted_runner_repair_archive_integration",
     "stage_1_started": true,
     "stage_1_completed": true,
     "stage_1_commit_subject": "build(rkp-2): pin typed generational store dependency",
@@ -207,7 +207,7 @@
       "node24_complete_literal": "77_files_557_discovered_556_pass_1_expected_gc_skip_0_fail",
       "node20_literal_glob": "20_20_2_exit_1",
       "package_and_lock_df40aef_to_eed4871a_delta": "zero",
-      "status": "ready_for_independent_implementation_rereview",
+      "status": "accepted_archive_pending_same_owner_closeout",
       "first_planning_audit": {
         "auditor_task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
         "candidate_commit": "c43a34e7d02a57cfd90de506cf97787ff5571a9e",
@@ -254,9 +254,10 @@
       "production_implementation_authorized": true,
       "user_implementation_authorization": true,
       "implementation_candidate_ready": true,
-      "implementation_review": "pending",
-      "implementation_rereview": "pending",
+      "implementation_review": "passed",
+      "implementation_rereview": "passed",
       "implementation_repair_active": false,
+      "implementation_blocker": null,
       "runner_oracle_repair_active": false,
       "first_independent_implementation_review": {
         "auditor_task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
@@ -275,10 +276,18 @@
         "verdict": "return_for_bounded_implementation_repair",
         "finding": "workspace_law_oracle_must_model_first_observed_signal_order"
       },
+      "final_independent_implementation_rereview": {
+        "auditor_task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
+        "candidate_commit": "8d9a2a4a35c7707fad5398733eb43c08984bea2b",
+        "P0": 0,
+        "P1": 0,
+        "P2": 0,
+        "verdict": "pass_for_implementation_acceptance"
+      },
       "runner_oracle_repair_commits": {
         "state_reopen": "dd63ff2677c063bb78686b28a73b92c0f22a9d1b",
         "ordered_signal_oracle": "adaea920c8f8e92282c8871923d0c9e7ea156eab",
-        "evidence_refresh": "this_docs_commit_exact_hash_reported_after_commit"
+        "evidence_refresh": "8d9a2a4a35c7707fad5398733eb43c08984bea2b"
       },
       "bounded_implementation_repair_commits": {
         "state_reopen": "04364ecaf6f329bd2a4d3671a75bac7b15d23c49",
@@ -289,9 +298,10 @@
       "amendment_merge_commit": "b4906ac64a44cc735de7b923818817300d5c70fd",
       "event_coverage_implementation_commit": "b20016882c16906db350feade4811821d55dad93",
       "hostile_version_range_commit": "ce9598eca3ad4df30854b8cc9383f4034e2e55a3",
-      "implementation_evidence_commit": "this_stage_4_docs_commit_exact_hash_reported_after_commit",
+      "implementation_evidence_commit": "8d9a2a4a35c7707fad5398733eb43c08984bea2b",
       "candidate_projection": "P_to_candidate_exact_4_technical_plus_11_active_lifecycle",
-      "post_pass_closeout_authorized": false,
+      "accepted_audited_candidate": "8d9a2a4a35c7707fad5398733eb43c08984bea2b",
+      "post_pass_closeout_authorized": true,
       "stage_6_blocked_until_accepted_archived_integrated": true
     },
     "stage_6_started": false,

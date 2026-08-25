@@ -44,7 +44,7 @@
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RKP-0 RKP-1 AND POST-ARCHIVE REPAIR ACCEPTED ARCHIVED / RKP-2 STAGE 5 COMPLETE / BLOCKING FULL-RUNNER CHILD READY FOR TARGETED IMPLEMENTATION REREVIEW AFTER ORDERED-SIGNAL WORKSPACE-LAW ORACLE REPAIR / PRODUCTION RUNNER AND PRIOR P2 UNCHANGED / RKP-2 STAGE 6 NOT AUTHORIZED / TYPESCRIPT DEFAULT / NO CUTOVER PUSH QUALIFICATION ARCHIVE OR RKP-3.",
+  "notes": "RKP-0 RKP-1 AND POST-ARCHIVE REPAIR ACCEPTED ARCHIVED / RKP-2 STAGE 5 COMPLETE / FULL-RUNNER CHILD EXACT 8D9A2A4 ACCEPTED 0/0/0 WITH NATIVE ARCHIVE AND AUTHORITY INTEGRATION PENDING SAME OWNER CLOSEOUT / RKP-2 STAGE 6 NOT AUTHORIZED / TYPESCRIPT DEFAULT / NO CUTOVER PUSH QUALIFICATION OR RKP-3.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
@@ -92,7 +92,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "rkp2-cross-platform-full-test-runner-contract-repair-independent-implementation-rereview",
+    "next_gate": "rkp2-cross-platform-full-test-runner-contract-repair-native-archive-and-authority-integration",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -197,7 +197,7 @@
     "rkp2_implementation_authorized": true,
     "rkp2_user_implementation_authorization": true,
     "rkp2_created": true,
-    "rkp2_status": "in_progress_stage_5_complete_stage_6_blocked_by_active_runner_repair_implementation_candidate",
+    "rkp2_status": "in_progress_stage_5_complete_stage_6_blocked_by_accepted_runner_repair_archive_integration",
     "rkp2_task": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
     "rkp2_planning_base": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "rkp2_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -294,7 +294,7 @@
     "rkp2_cross_platform_full_runner_repair": {
       "planning_base": "eed4871a86191783d539b7d4097be3627e98e4a0",
       "parent": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
-      "status": "in_progress",
+      "status": "accepted_archive_pending_same_owner_closeout",
       "task_start_run": true,
       "production_implementation_authorized": true,
       "user_implementation_authorization": true,
@@ -335,9 +335,10 @@
       "projection_counts": "planning_20_candidate_technical_4_active_lifecycle_11_active_coordination_22_archive_13_post_archive_coordination_23",
       "stage_6_blocked": true,
       "implementation_candidate_ready": true,
-      "implementation_review": "pending",
-      "implementation_rereview": "pending",
+      "implementation_review": "passed",
+      "implementation_rereview": "passed",
       "implementation_repair_active": false,
+      "implementation_blocker": null,
       "runner_oracle_repair_active": false,
       "first_independent_implementation_review": {
         "auditor_task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
@@ -356,10 +357,18 @@
         "verdict": "return_for_bounded_implementation_repair",
         "finding": "workspace_law_oracle_must_model_first_observed_signal_order"
       },
+      "final_independent_implementation_rereview": {
+        "auditor_task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
+        "candidate_commit": "8d9a2a4a35c7707fad5398733eb43c08984bea2b",
+        "P0": 0,
+        "P1": 0,
+        "P2": 0,
+        "verdict": "pass_for_implementation_acceptance"
+      },
       "runner_oracle_repair_commits": {
         "state_reopen": "dd63ff2677c063bb78686b28a73b92c0f22a9d1b",
         "ordered_signal_oracle": "adaea920c8f8e92282c8871923d0c9e7ea156eab",
-        "evidence_refresh": "this_docs_commit_exact_hash_reported_after_commit"
+        "evidence_refresh": "8d9a2a4a35c7707fad5398733eb43c08984bea2b"
       },
       "bounded_implementation_repair_commits": {
         "state_reopen": "04364ecaf6f329bd2a4d3671a75bac7b15d23c49",
@@ -370,7 +379,10 @@
       "amendment_merge_commit": "b4906ac64a44cc735de7b923818817300d5c70fd",
       "event_coverage_implementation_commit": "b20016882c16906db350feade4811821d55dad93",
       "hostile_version_range_commit": "ce9598eca3ad4df30854b8cc9383f4034e2e55a3",
-      "implementation_evidence_commit": "this_stage_4_docs_commit_exact_hash_reported_after_commit",
+      "implementation_evidence_commit": "8d9a2a4a35c7707fad5398733eb43c08984bea2b",
+      "accepted_audited_candidate": "8d9a2a4a35c7707fad5398733eb43c08984bea2b",
+      "post_pass_closeout_authorized": true,
+      "archive_pending_same_owner_closeout": true,
       "rkp2_remains_active_implementation_child": true
     },
     "rkp2_default_runtime_switch_authorized": false,

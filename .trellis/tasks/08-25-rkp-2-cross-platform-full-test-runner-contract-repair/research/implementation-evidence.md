@@ -49,3 +49,8 @@ Final TypeScript, Node bridge, Trellis, JSON/JSONL, path, hash, protected-delta 
 ## Lifecycle result
 
 Independent implementation review of exact `15c84a1929d1365ebf466088e896fd5309a4fa57` returned P0/P1/P2=`0/1/1`, and the first bounded repair closed those production/P2 findings. Targeted implementation rereview of exact `6dac686d7f7dcaa447330209c6da04e414b7615c` then returned P0/P1/P2=`0/1/0`: production runner behavior remains accepted, while the workspace-law oracle required ordered signals and first-observed failure. That oracle repair is complete. The child remains `in_progress`; candidate readiness is true only for a new targeted independent implementation rereview, which remains pending. No implementation audit PASS, acceptance, archive, closeout, integration into RKP-2, Stage 6 authorization, push, qualification, RKP-3 or default-runtime switch is claimed.
+## Owner acceptance record - exact audited candidate
+
+Dedicated independent implementation rereview task 01a01e48-1934-77b0-821e-a8026cd9e5f7 returned PASS FOR IMPLEMENTATION ACCEPTANCE, P0/P1/P2=0/0/0, for exact technical candidate 8d9a2a4a35c7707fad5398733eb43c08984bea2b. The earlier ordered-signal workspace-law oracle P1 is closed. This lifecycle record does not alter or impersonate that audited implementation commit.
+
+Owner closeout is authorized to use Trellis native archive and then replace the twelve active-child authority paths with the exact thirteen archived successors. RKP-2 Stage 5 remains complete; Stage 6 remains not started and not authorized; TypeScript remains the default runtime. No push, qualification, RKP-3 or default cutover is authorized.

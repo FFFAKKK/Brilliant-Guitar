@@ -50,7 +50,7 @@
     "package-lock.json",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "READY FOR INDEPENDENT IMPLEMENTATION REREVIEW. Targeted rereview of 6dac686d7f7dcaa447330209c6da04e414b7615c returned P0/P1/P2=0/1/0 only for the workspace-law oracle. State dd63ff2677c063bb78686b28a73b92c0f22a9d1b and ordered-signal repair adaea920c8f8e92282c8871923d0c9e7ea156eab close that governance gap while production runner files remain byte-identical. Candidate readiness is true only for this runner-repair child; rereview remains pending. No acceptance, archive, integration into RKP-2, push, Stage 6, RKP-3, qualification or default-runtime cutover.",
+  "notes": "IMPLEMENTATION ACCEPTED / ARCHIVE PENDING SAME OWNER CLOSEOUT. Dedicated implementation rereview of exact audited candidate 8d9a2a4a35c7707fad5398733eb43c08984bea2b returned PASS FOR IMPLEMENTATION ACCEPTANCE at P0/P1/P2=0/0/0 in auditor task 01a01e48-1934-77b0-821e-a8026cd9e5f7. The previous workspace-law oracle P1 is closed. This docs-only record does not alter the audited technical candidate. Native archive and RKP-2 authority integration remain the next closeout steps; Stage 6, push, RKP-3, qualification and default-runtime cutover remain unauthorized.",
   "meta": {
     "source_worktree": ".worktrees/rkp-2-indexed-live-score-store-implementation",
     "source_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -102,11 +102,12 @@
     },
     "discarded_stage_3_diagnostic_commit": "610d20b_not_in_current_parent_chain",
     "implementation_candidate_ready": true,
-    "implementation_review": "pending",
-    "implementation_rereview": "pending",
+    "implementation_review": "passed",
+    "implementation_rereview": "passed",
     "implementation_repair_active": false,
+    "implementation_blocker": null,
     "runner_oracle_repair_active": false,
-    "implementation_stage": "ready_for_independent_implementation_rereview",
+    "implementation_stage": "accepted_archive_pending_same_owner_closeout",
     "first_independent_implementation_review": {
       "auditor_task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
       "candidate_commit": "15c84a1929d1365ebf466088e896fd5309a4fa57",
@@ -128,10 +129,18 @@
       "verdict": "return_for_bounded_implementation_repair",
       "finding": "workspace_law_oracle_must_model_first_observed_signal_order"
     },
+    "final_independent_implementation_rereview": {
+      "auditor_task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
+      "candidate_commit": "8d9a2a4a35c7707fad5398733eb43c08984bea2b",
+      "P0": 0,
+      "P1": 0,
+      "P2": 0,
+      "verdict": "pass_for_implementation_acceptance"
+    },
     "runner_oracle_repair_commits": {
       "state_reopen": "dd63ff2677c063bb78686b28a73b92c0f22a9d1b",
       "ordered_signal_oracle": "adaea920c8f8e92282c8871923d0c9e7ea156eab",
-      "evidence_refresh": "this_docs_commit_exact_hash_reported_after_commit"
+      "evidence_refresh": "8d9a2a4a35c7707fad5398733eb43c08984bea2b"
     },
     "bounded_implementation_repair_commits": {
       "state_reopen": "04364ecaf6f329bd2a4d3671a75bac7b15d23c49",
@@ -141,8 +150,8 @@
     "amendment_merge_commit": "b4906ac64a44cc735de7b923818817300d5c70fd",
     "event_coverage_implementation_commit": "b20016882c16906db350feade4811821d55dad93",
     "hostile_version_range_commit": "ce9598eca3ad4df30854b8cc9383f4034e2e55a3",
-    "implementation_evidence_commit": "this_stage_4_docs_commit_exact_hash_reported_after_commit",
-    "implementation_candidate_range": "44832ad01d136368c1b61203e9207ca4a521241f..this_stage_4_docs_commit",
+    "implementation_evidence_commit": "8d9a2a4a35c7707fad5398733eb43c08984bea2b",
+    "implementation_candidate_range": "44832ad01d136368c1b61203e9207ca4a521241f..8d9a2a4a35c7707fad5398733eb43c08984bea2b",
     "implementation_candidate_path_projection": "exact_4_technical_plus_11_active_lifecycle_15_unique",
     "activation_user_authorization_scope": "full_runner_repair_only_rkp2_stage_6_not_authorized",
     "planning_self_audit": {
@@ -190,19 +199,19 @@
     "post_pass_archive_artifact_count": 13,
     "rkp2_post_archive_coordination_count": 23,
     "archive_destination": ".trellis/tasks/archive/2026-08/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/",
-    "pre_review_candidate_state": "ready_for_independent_implementation_rereview",
-    "post_pass_closeout_authorized": false,
+    "pre_review_candidate_state": "accepted_exact_8d9a2a4_archive_pending_same_owner_closeout",
+    "post_pass_closeout_authorized": true,
     "rkp2_jsonl_successor_contract_delta": "zero",
     "rkp2_stage_5_completed": true,
     "rkp2_stage_6_started": false,
     "rkp2_stage_6_authorized": false,
     "rkp2_implementation_candidate_ready": false,
     "rkp2_implementation_review": "pending",
-    "stage_6_blocker": "cross_platform_full_test_runner_repair_must_be_planned_audited_implemented_audited_accepted_archived_and_integrated",
+    "stage_6_blocker": "accepted_full_runner_repair_must_be_natively_archived_and_fast_forward_integrated_before_separate_stage_6_authorization",
     "default_runtime": "typescript",
     "default_runtime_switch_authorized": false,
     "rkp3_creation_authorized": false,
-    "archive_authorized": false,
+    "archive_authorized": true,
     "push_authorized": false,
     "official_measurement_authorized": false
   }
