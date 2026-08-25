@@ -86,7 +86,7 @@ Child `08-25-rkp-2-cross-platform-full-test-runner-contract-repair` owns complet
 | post-PASS archive/closeout | exact thirteen archived child artifacts including implementation evidence; replace twelve active paths | RKP-2 becomes 10 historical + 13 archive = 23 coordination paths with no dual authority | joint revert restores active planning child and 22 paths |
 | RKP-2 integration | explicit fast-forward/merge of accepted descendant | create a new prerequisite base only after review/acceptance/archive | revert to `eed4871a`; Stage 1–5 remain intact |
 
-`package-lock.json` is excluded. The existing RKP-2 21-path technical matrix and both JSONL files remain unchanged by this planning child. The five LF-normalized RKP-2 content hashes are frozen for the current 22-path planning authority; they are recomputed for 23-path archived authority only after implementation PASS. JSONL hashes stay identical. No wildcard or task-directory exemption is introduced.
+package-lock.json is excluded. The existing RKP-2 21-path technical matrix and both JSONL files remain unchanged. Following implementation PASS and native archive, the five LF-normalized RKP-2 content hashes are recomputed for the current 23-path archived authority; both JSONL hashes stay identical. No wildcard or task-directory exemption is introduced.
 
 Stage 6 remains not started/authorized until the accepted child is integrated and the user supplies a later explicit authorization. This preserves one test-infrastructure owner and the original six-stage technical sequence.
 
@@ -140,3 +140,8 @@ C6 scale/evidence
 ```
 
 Reverse `C6 -> C0`. Every commit owns only its rows. No partial candidate is accepted or made default.
+## Accepted full-runner archive projection
+
+Dedicated implementation rereview accepted exact candidate 8d9a2a4a35c7707fad5398733eb43c08984bea2b at P0/P1/P2=0/0/0. Trellis native archive commit a1895f36090aafaa8865ffc21e1b6f15679e3be9 moved the child into the frozen 2026-08 archive destination with exactly thirteen artifacts, including research/implementation-evidence.md.
+
+RKP-2 current coordination is now exactly historical ten plus archived thirteen = twenty-three. All twelve active-child paths are absent and mechanically forbidden; both RKP-2 JSONLs remain byte-identical. The accepted descendant is consumable only by fast-forward-only integration from eed4871a86191783d539b7d4097be3627e98e4a0. Stage 6 remains not started and not authorized, and TypeScript remains the default runtime.

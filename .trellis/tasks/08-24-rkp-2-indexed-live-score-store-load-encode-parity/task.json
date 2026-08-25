@@ -40,7 +40,7 @@
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "RKP-2 STAGE 5 COMPLETE / FULL-RUNNER CHILD EXACT 8D9A2A4 ACCEPTED BY INDEPENDENT IMPLEMENTATION REREVIEW 0/0/0 / NATIVE ARCHIVE AND AUTHORITY INTEGRATION PENDING SAME OWNER CLOSEOUT / RKP-2 STAGE 6 NOT STARTED OR AUTHORIZED / TYPESCRIPT DEFAULT / NO CUTOVER PUSH QUALIFICATION RKP-3.",
+  "notes": "RKP-2 STAGE 5 COMPLETE / FULL-RUNNER REPAIR EXACT 8D9A2A4 ACCEPTED AND NATIVELY ARCHIVED AT A1895F3 / CURRENT COORDINATION HISTORICAL 10 PLUS ARCHIVED 13 / FAST-FORWARD INTEGRATION IS THE ONLY REMAINING CLOSEOUT ACTION / RKP-2 STAGE 6 NOT STARTED OR AUTHORIZED / TYPESCRIPT DEFAULT / NO CUTOVER PUSH QUALIFICATION RKP-3.",
   "meta": {
     "planning_base_commit": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "accepted_rkp1_audited_implementation_commit": "94387b339b5e4d9ce6b7f97597a1b56edd051f01",
@@ -103,8 +103,8 @@
     },
     "approved_planning_head": "625054ec78e6410e0fb6034ab0c8f60bbf110d08",
     "current_planning_child": null,
-    "current_implementation_child": "08-25-rkp-2-cross-platform-full-test-runner-contract-repair",
-    "implementation_stage": "stage_5_complete_stage_6_blocked_by_accepted_runner_repair_archive_integration",
+    "current_implementation_child": null,
+    "implementation_stage": "stage_5_complete_runner_repair_accepted_archived_stage_6_not_authorized",
     "stage_1_started": true,
     "stage_1_completed": true,
     "stage_1_commit_subject": "build(rkp-2): pin typed generational store dependency",
@@ -194,9 +194,9 @@
     "post_stage_5_manifest_authority_hashes_lf_normalized_sha256": {
       "check_jsonl": "7e12f6d00ba17e1967ef57e884e7b5d6ca7efedbb2aaf94de04fc4b3091251c3",
       "implement_jsonl": "cd0a42070a76a18e782d7da4ebc0e9a88d2ed5dece0d093125d4fc8982229705",
-      "design_md": "38072235844c255a138857f517db85dcae22563766b4c6978f53aca13907a1b5",
-      "implement_md": "acab6009631131c13b7ceaec9ee6c4ddf4c39ff8135186a4542a2d13e31d6177",
-      "file_test_and_rollback_matrix_md": "74dfc883774b6a8f47fb326eaacf89c37d63e6b3bb075131e6b5b27c2ba375a7"
+      "design_md": "2ff749eba520ab44b5a6dd68033d1e3a7b4cee5c8723a1183a618e031e296d34",
+      "implement_md": "a9204e7c809879a921c3923f914272b945fa96df0a8e8fc4a1d9c610e289d0e1",
+      "file_test_and_rollback_matrix_md": "20b6ab8eeb4e0b0c010157a4120c6edc494091173f75d912a12ecf3a8567adad"
     },
     "cross_platform_full_test_runner_contract_repair": {
       "child": "08-25-rkp-2-cross-platform-full-test-runner-contract-repair",
@@ -207,7 +207,7 @@
       "node24_complete_literal": "77_files_557_discovered_556_pass_1_expected_gc_skip_0_fail",
       "node20_literal_glob": "20_20_2_exit_1",
       "package_and_lock_df40aef_to_eed4871a_delta": "zero",
-      "status": "accepted_archive_pending_same_owner_closeout",
+      "status": "accepted_archived",
       "first_planning_audit": {
         "auditor_task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
         "candidate_commit": "c43a34e7d02a57cfd90de506cf97787ff5571a9e",
@@ -249,6 +249,9 @@
       "post_pass_archive_path_count": 13,
       "post_archive_coordination_path_count": 23,
       "archive_destination": ".trellis/tasks/archive/2026-08/08-25-rkp-2-cross-platform-full-test-runner-contract-repair/",
+      "archive_commit": "a1895f36090aafaa8865ffc21e1b6f15679e3be9",
+      "active_authority_present": false,
+      "archived_authority_artifact_count": 13,
       "sole_test_infrastructure_owner": true,
       "task_start_run": true,
       "production_implementation_authorized": true,
@@ -302,8 +305,9 @@
       "candidate_projection": "P_to_candidate_exact_4_technical_plus_11_active_lifecycle",
       "accepted_audited_candidate": "8d9a2a4a35c7707fad5398733eb43c08984bea2b",
       "post_pass_closeout_authorized": true,
-      "stage_6_blocked_until_accepted_archived_integrated": true
+      "stage_6_blocked_until_accepted_archived_integrated": false
     },
+    "next_gate": "rkp2-stage-6-separate-user-authorization",
     "stage_6_started": false,
     "stage_6_authorized": false,
     "implementation_review": "pending",

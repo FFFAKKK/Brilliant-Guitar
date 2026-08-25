@@ -24,7 +24,7 @@ Manifest projection commit `bda15099f4932aced965eabc6b6e147accd9b5ce` replaced o
 
 The mechanical successor contract remains narrow: the approved-state and Stage 5-parent manifests are LF-normalized identical; all three historical commits exist with the approved state ancestral to the Stage 5 parent and that parent directly parenting the projection; `bda15099...` changes only the designated row's `file` and `reason` fields relative to approved planning. The 21 RKP-2 production/test paths remain unchanged; `implement.jsonl` and `check.jsonl` remain exactly 25/20 rows; every other row and field matches approved planning; every JSONL path exists and is unique.
 
-The current candidate adds exactly twelve child-planning artifacts to the historical ten coordination paths, producing 22 literal paths. The same five LF-normalized files are content-frozen after recomputing only design/implement/matrix hashes; both JSONL contents/hashes are unchanged. There is no wildcard or permanent task-directory exemption.
+The pre-archive implementation candidate added exactly twelve child-planning artifacts to the historical ten coordination paths, producing the historical 22-path active projection. The same five LF-normalized files remain content-frozen; both JSONL contents and hashes are unchanged.
 
 ## Blocking full-runner child candidate
 
@@ -55,7 +55,7 @@ The dedicated read-only auditor task `01a01e48-1934-77b0-821e-a8026cd9e5f7` reco
 ## Review focus
 
 1. Approved planning state `53646c92...` and Stage 5 parent `4f5f45a...` contain LF-normalized identical JSONLs; both and projection `bda15099...` exist; the approved state is ancestral to the Stage 5 parent; and that parent is the projection's sole direct parent.
-2. The coordination allowlist is exactly 22 literal paths (historical ten plus twelve child planning artifacts) while the RKP-2 technical allowlist remains exactly 21; no wildcard or directory-level exemption exists.
+2. The current coordination allowlist is exactly 23 literal paths (historical ten plus thirteen archived child artifacts) while the RKP-2 technical allowlist remains exactly 21; all twelve active child paths are absent and no wildcard or directory-level exemption exists.
 3. Relative to approved planning state, `bda15099...` changes only the designated successor row's `file` and `reason` fields; five LF-normalized content hashes then freeze the repaired manifests/authority, and all other JSONL rows and fields, counts, valid JSON, existence and uniqueness remain exact.
 4. The child is the sole test-infrastructure owner; RKP-2 Stage 6 is a consumer only and remains blocked pending planning/implementation reviews, acceptance/archive, integration and separate authorization.
 5. Stage 5 remains complete while Stage 6, candidate readiness, implementation review, default cutover and lifecycle closeout remain untouched.
@@ -89,3 +89,8 @@ The dedicated read-only auditor task `01a01e48-1934-77b0-821e-a8026cd9e5f7` reco
 Dedicated independent implementation rereview task 01a01e48-1934-77b0-821e-a8026cd9e5f7 returned PASS FOR IMPLEMENTATION ACCEPTANCE, P0/P1/P2=0/0/0, for exact technical candidate 8d9a2a4a35c7707fad5398733eb43c08984bea2b. The earlier ordered-signal workspace-law oracle P1 is closed. This lifecycle record does not alter or impersonate that audited implementation commit.
 
 Owner closeout is authorized to use Trellis native archive and then replace the twelve active-child authority paths with the exact thirteen archived successors. RKP-2 Stage 5 remains complete; Stage 6 remains not started and not authorized; TypeScript remains the default runtime. No push, qualification, RKP-3 or default cutover is authorized.
+## Accepted full-runner archive projection
+
+Dedicated implementation rereview accepted exact candidate 8d9a2a4a35c7707fad5398733eb43c08984bea2b at P0/P1/P2=0/0/0. Trellis native archive commit a1895f36090aafaa8865ffc21e1b6f15679e3be9 moved the child into the frozen 2026-08 archive destination with exactly thirteen artifacts, including research/implementation-evidence.md.
+
+RKP-2 current coordination is now exactly historical ten plus archived thirteen = twenty-three. All twelve active-child paths are absent and mechanically forbidden; both RKP-2 JSONLs remain byte-identical. The accepted descendant is consumable only by fast-forward-only integration from eed4871a86191783d539b7d4097be3627e98e4a0. Stage 6 remains not started and not authorized, and TypeScript remains the default runtime.

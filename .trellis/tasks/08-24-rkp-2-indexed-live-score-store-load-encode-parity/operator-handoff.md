@@ -89,13 +89,13 @@ Focused Rust passes Runtime `15/15` and Session `4/4`; full workspace Rust passe
 
 Stage 5 deleted `crates/brilliant-kernel-runtime/src/smoke_runtime.rs`. Approved planning state `53646c92b81bc3ac160ec5d72b0d3f80c97b7eb0` is the historical JSONL anchor: its LF-normalized manifests must equal those at Stage 5 parent `4f5f45a5f5a97968ef5280524cd4e6ab8dbebda8`. Commit `bda15099...` then changes exactly one row in each context manifest to the live successor `crates/brilliant-kernel-runtime/src/runtime.rs`; only that row's `file` and `reason` fields change relative to the approved state. All other rows and fields remain identical, the counts remain `implement=25` and `check=20`, and every path remains existing and unique. Workspace-law also proves all three commits exist, the approved state is an ancestor of the Stage 5 parent, and the Stage 5 parent is the projection's sole direct parent.
 
-The accepted design's former permanent JSONL zero-delta rule made that planned successor projection fail workspace-law. At the pre-child authority closure, coordination was exactly ten literal paths and workspace-law froze the LF-normalized SHA-256 of five repaired authority/manifest files. The current planning candidate preserves that invariant and adds exactly twelve literal child-planning artifacts, producing 22 coordination paths without a wildcard or directory exemption.
+The accepted design's former permanent JSONL zero-delta rule made the planned successor projection fail workspace-law. At the pre-child authority closure, coordination was ten literal paths and workspace-law froze five LF-normalized files. The pre-archive planning/candidate authority added twelve child artifacts, producing the historical 22-path active projection without a wildcard or directory exemption.
 
 - `check.jsonl`: `7e12f6d00ba17e1967ef57e884e7b5d6ca7efedbb2aaf94de04fc4b3091251c3`
 - `implement.jsonl`: `cd0a42070a76a18e782d7da4ebc0e9a88d2ed5dece0d093125d4fc8982229705`
-- `design.md`: `91a6245bddf56ac98f24ff336c0ad26d7ac8ef3724a7ff92441b1d06af290a91`
-- `implement.md`: `1909c3a2d9901a63500935959475a30606b3a7a742770d5c19045eda5a87e0ec`
-- `research/file-test-and-rollback-matrix.md`: `8135656225a02d5392e4f66967a280797d09105b4823a1734c53b2ac1fef8053`
+- `design.md`: `2ff749eba520ab44b5a6dd68033d1e3a7b4cee5c8723a1183a618e031e296d34`
+- `implement.md`: `a9204e7c809879a921c3923f914272b945fa96df0a8e8fc4a1d9c610e289d0e1`
+- `research/file-test-and-rollback-matrix.md`: `20b6ab8eeb4e0b0c010157a4120c6edc494091173f75d912a12ecf3a8567adad`
 
 This remains planning-authority governance, not Stage 6 implementation or evidence freeze. The five files freeze at the exact current candidate after their hashes are recomputed; both JSONL contents/hashes remain unchanged. Later changes require a new planning review.
 
@@ -107,7 +107,7 @@ Child `08-25-rkp-2-cross-platform-full-test-runner-contract-repair` is the sole 
 
 The amendment consumes only event type plus pass `data.file`, allows duplicate passes, rejects missing/non-string/relative/unknown files, keeps any-nesting fail fatal and requires enumerator manifest, exact `run()` files and pass-seen set equality. Name/nesting/details/reporter text are not truth. Enumeration, physical alias, stream/reporter failures, 4+11 and 22/23 governance are unchanged.
 
-This anchor A pins exact P `44832ad01d136368c1b61203e9207ca4a521241f`; `eed4871a..P` stays exactly twenty paths. After amendment PASS and explicit integration, future `P..candidate` Stage 4 is exactly child technical 4 plus active lifecycle 11 and stops for implementation review while RKP-2 remains 21 technical + 22 coordination. Only after implementation PASS may native archive create the exact thirteen archived artifacts, replace the twelve active child paths and yield coordination 23; explicit integration then creates a new prerequisite. RKP-2 Stage 6 remains separately unauthorized.
+Anchor A pins exact P 44832ad01d136368c1b61203e9207ca4a521241f; eed4871a..P stays exactly twenty paths. The accepted P..8d9a2a4 candidate is exactly child technical 4 plus active lifecycle 11. Native archive has now created the exact thirteen archived artifacts and replaced the twelve active child paths, yielding current coordination 23. Fast-forward-only integration creates the new prerequisite; RKP-2 Stage 6 remains separately unauthorized.
 
 ## Next operator action
 
@@ -121,3 +121,8 @@ The operator stops at an implementation candidate. A dedicated read-only auditor
 Dedicated independent implementation rereview task 01a01e48-1934-77b0-821e-a8026cd9e5f7 returned PASS FOR IMPLEMENTATION ACCEPTANCE, P0/P1/P2=0/0/0, for exact technical candidate 8d9a2a4a35c7707fad5398733eb43c08984bea2b. The earlier ordered-signal workspace-law oracle P1 is closed. This lifecycle record does not alter or impersonate that audited implementation commit.
 
 Owner closeout is authorized to use Trellis native archive and then replace the twelve active-child authority paths with the exact thirteen archived successors. RKP-2 Stage 5 remains complete; Stage 6 remains not started and not authorized; TypeScript remains the default runtime. No push, qualification, RKP-3 or default cutover is authorized.
+## Accepted full-runner archive projection
+
+Dedicated implementation rereview accepted exact candidate 8d9a2a4a35c7707fad5398733eb43c08984bea2b at P0/P1/P2=0/0/0. Trellis native archive commit a1895f36090aafaa8865ffc21e1b6f15679e3be9 moved the child into the frozen 2026-08 archive destination with exactly thirteen artifacts, including research/implementation-evidence.md.
+
+RKP-2 current coordination is now exactly historical ten plus archived thirteen = twenty-three. All twelve active-child paths are absent and mechanically forbidden; both RKP-2 JSONLs remain byte-identical. The accepted descendant is consumable only by fast-forward-only integration from eed4871a86191783d539b7d4097be3627e98e4a0. Stage 6 remains not started and not authorized, and TypeScript remains the default runtime.

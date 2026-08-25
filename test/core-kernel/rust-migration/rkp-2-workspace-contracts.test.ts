@@ -48,6 +48,12 @@ const PAUSED_FULL_RUNNER_IMPLEMENTATION_HEAD =
   "d366653788a42eb56cd5755a63b1e73700c67310";
 const FULL_RUNNER_AMENDMENT_MERGE_COMMIT =
   "b4906ac64a44cc735de7b923818817300d5c70fd";
+const FULL_RUNNER_ACCEPTED_IMPLEMENTATION_HEAD =
+  "8d9a2a4a35c7707fad5398733eb43c08984bea2b";
+const FULL_RUNNER_ACCEPTANCE_SYNC_COMMIT =
+  "163a371bc572d062ef335d52ef5a33c71b513b66";
+const FULL_RUNNER_ARCHIVE_COMMIT =
+  "a1895f36090aafaa8865ffc21e1b6f15679e3be9";
 const FULL_RUNNER_FUTURE_IMPLEMENTATION_BASE =
   FULL_RUNNER_EVENT_COVERAGE_CONTENT_HEAD;
 const APPROVED_PLANNING_STATE =
@@ -184,15 +190,18 @@ const ARCHIVED_CHILD_PATHS = [
   `${FULL_RUNNER_ARCHIVE_ROOT}/research/implementation-evidence.md`,
 ] as const;
 
-const EXPECTED_COORDINATION_PATHS = [
+const EXPECTED_ACTIVE_COORDINATION_PATHS = [
   ...RKP2_HISTORICAL_COORDINATION_PATHS,
   ...ACTIVE_CHILD_PLANNING_PATHS,
 ] as const;
 
-const EXPECTED_POST_ARCHIVE_COORDINATION_PATHS = [
+const EXPECTED_COORDINATION_PATHS = [
   ...RKP2_HISTORICAL_COORDINATION_PATHS,
   ...ARCHIVED_CHILD_PATHS,
 ] as const;
+
+const EXPECTED_POST_ARCHIVE_COORDINATION_PATHS =
+  EXPECTED_COORDINATION_PATHS;
 
 const FULL_RUNNER_PLANNING_PATHS = [
   PARENT_PATH,
@@ -249,15 +258,15 @@ const FROZEN_POST_STAGE_5_AUTHORITY_CONTENT = [
   },
   {
     path: DESIGN_PATH,
-    sha256: "38072235844c255a138857f517db85dcae22563766b4c6978f53aca13907a1b5",
+    sha256: "2ff749eba520ab44b5a6dd68033d1e3a7b4cee5c8723a1183a618e031e296d34",
   },
   {
     path: IMPLEMENT_PATH,
-    sha256: "acab6009631131c13b7ceaec9ee6c4ddf4c39ff8135186a4542a2d13e31d6177",
+    sha256: "a9204e7c809879a921c3923f914272b945fa96df0a8e8fc4a1d9c610e289d0e1",
   },
   {
     path: FILE_TEST_ROLLBACK_MATRIX_PATH,
-    sha256: "74dfc883774b6a8f47fb326eaacf89c37d63e6b3bb075131e6b5b27c2ba375a7",
+    sha256: "20b6ab8eeb4e0b0c010157a4120c6edc494091173f75d912a12ecf3a8567adad",
   },
 ] as const;
 
@@ -393,25 +402,33 @@ function fullRunnerPlanningChangesAtContentHead(): Set<string> {
   );
 }
 
-function currentFullRunnerImplementationChanges(): Set<string> {
-  const commands: readonly (readonly string[])[] = [
-    [
-      "diff",
-      "--name-only",
-      `${FULL_RUNNER_FUTURE_IMPLEMENTATION_BASE}..HEAD`,
-    ],
-    ["diff", "--name-only"],
-    ["diff", "--cached", "--name-only"],
-    ["ls-files", "--others", "--exclude-standard"],
-  ];
-  return new Set(commands.flatMap((args) => lines(git(args))));
+function acceptedFullRunnerImplementationChanges(): Set<string> {
+  return new Set(
+    lines(
+      git([
+        "diff",
+        "--name-only",
+        `${FULL_RUNNER_FUTURE_IMPLEMENTATION_BASE}..${FULL_RUNNER_ACCEPTED_IMPLEMENTATION_HEAD}`,
+      ]),
+    ),
+  );
 }
 
-function childImplementationCandidateReady(): boolean {
+function childImplementationAcceptedAndArchived(): boolean {
   const task = JSON.parse(
-    readText(`${FULL_RUNNER_ACTIVE_ROOT}/task.json`),
-  ) as { meta?: { implementation_candidate_ready?: unknown } };
-  return task.meta?.implementation_candidate_ready === true;
+    readText(`${FULL_RUNNER_ARCHIVE_ROOT}/task.json`),
+  ) as {
+    status?: unknown;
+    meta?: {
+      implementation_review?: unknown;
+      implementation_rereview?: unknown;
+    };
+  };
+  return (
+    task.status === "completed" &&
+    task.meta?.implementation_review === "passed" &&
+    task.meta?.implementation_rereview === "passed"
+  );
 }
 
 function assertExactPathSet(
@@ -457,8 +474,8 @@ function validateAuthorityProjectionFixture(
   const actual = new Set(paths);
   const expected =
     phase === "active"
-      ? EXPECTED_COORDINATION_PATHS
-      : EXPECTED_POST_ARCHIVE_COORDINATION_PATHS;
+      ? EXPECTED_ACTIVE_COORDINATION_PATHS
+      : EXPECTED_COORDINATION_PATHS;
   const forbidden =
     phase === "active" ? ARCHIVED_CHILD_PATHS : ACTIVE_CHILD_PLANNING_PATHS;
   assertExactPathSet(actual, expected, `${phase} authority projection`);
@@ -608,13 +625,12 @@ test("implementation changes stay inside the literal RKP-2 allowlists", async ()
   assert.deepEqual(implementation, [...EXPECTED_IMPLEMENTATION_PATHS]);
   assert.deepEqual(coordination, [...EXPECTED_COORDINATION_PATHS]);
   assert.equal(new Set(implementation).size, 21);
-  assert.equal(new Set(coordination).size, 22);
+  assert.equal(new Set(coordination).size, 23);
 
   const allowed = new Set<string>([
     ...implementation,
     ...coordination,
     ...CHILD_TECHNICAL_PATHS,
-    ...CHILD_ACTIVE_LIFECYCLE_PATHS,
   ]);
   assert.equal(CHILD_TECHNICAL_PATHS.length, 4);
   assert.equal(CHILD_ACTIVE_LIFECYCLE_PATHS.length, 11);
@@ -635,6 +651,9 @@ function assertFullRunnerLifecycleFixtures(): void {
     FULL_RUNNER_EVENT_COVERAGE_ANCHOR,
     PAUSED_FULL_RUNNER_IMPLEMENTATION_HEAD,
     FULL_RUNNER_AMENDMENT_MERGE_COMMIT,
+    FULL_RUNNER_ACCEPTED_IMPLEMENTATION_HEAD,
+    FULL_RUNNER_ACCEPTANCE_SYNC_COMMIT,
+    FULL_RUNNER_ARCHIVE_COMMIT,
   ]) {
     assert.doesNotThrow(() => git(["cat-file", "-e", `${commit}^{commit}`]));
   }
@@ -705,7 +724,22 @@ function assertFullRunnerLifecycleFixtures(): void {
   );
   assert.equal(new Set(FULL_RUNNER_PLANNING_PATHS).size, 20);
 
-  const candidateChanges = currentFullRunnerImplementationChanges();
+  assert.deepEqual(
+    git(["rev-list", "--parents", "-n", "1", FULL_RUNNER_ACCEPTANCE_SYNC_COMMIT]).split(" "),
+    [FULL_RUNNER_ACCEPTANCE_SYNC_COMMIT, FULL_RUNNER_ACCEPTED_IMPLEMENTATION_HEAD],
+  );
+  assert.deepEqual(
+    git(["rev-list", "--parents", "-n", "1", FULL_RUNNER_ARCHIVE_COMMIT]).split(" "),
+    [FULL_RUNNER_ARCHIVE_COMMIT, FULL_RUNNER_ACCEPTANCE_SYNC_COMMIT],
+  );
+  assert.equal(existsSync(FULL_RUNNER_ACTIVE_ROOT), false);
+  assert.equal(ARCHIVED_CHILD_PATHS.length, 13);
+  for (const path of ARCHIVED_CHILD_PATHS) {
+    assert.equal(existsSync(path), true, `missing archived authority path: ${path}`);
+  }
+  assert.equal(childImplementationAcceptedAndArchived(), true);
+
+  const candidateChanges = acceptedFullRunnerImplementationChanges();
   const candidateAllowlist = new Set<string>([
     ...CHILD_TECHNICAL_PATHS,
     ...CHILD_ACTIVE_LIFECYCLE_PATHS,
@@ -727,9 +761,7 @@ function assertFullRunnerLifecycleFixtures(): void {
   assertExactPathSet(
     candidateChanges,
     [...candidateAllowlist],
-    childImplementationCandidateReady()
-      ? "ready child implementation candidate"
-      : "bounded-repair child implementation candidate",
+    "accepted child implementation candidate",
   );
 
   validateImplementationCandidateFixture([
@@ -740,16 +772,17 @@ function assertFullRunnerLifecycleFixtures(): void {
     validateImplementationCandidateFixture(CHILD_TECHNICAL_PATHS),
   );
 
-  validateAuthorityProjectionFixture(EXPECTED_COORDINATION_PATHS, "active");
+  validateAuthorityProjectionFixture(EXPECTED_ACTIVE_COORDINATION_PATHS, "active");
   validateAuthorityProjectionFixture(
     EXPECTED_POST_ARCHIVE_COORDINATION_PATHS,
     "archived",
   );
-  assert.equal(EXPECTED_COORDINATION_PATHS.length, 22);
+  assert.equal(EXPECTED_ACTIVE_COORDINATION_PATHS.length, 22);
+  assert.equal(EXPECTED_COORDINATION_PATHS.length, 23);
   assert.equal(EXPECTED_POST_ARCHIVE_COORDINATION_PATHS.length, 23);
   assert.throws(() =>
     validateAuthorityProjectionFixture(
-      [...EXPECTED_COORDINATION_PATHS, ...ARCHIVED_CHILD_PATHS],
+      [...EXPECTED_ACTIVE_COORDINATION_PATHS, ...ARCHIVED_CHILD_PATHS],
       "active",
     ),
   );
