@@ -38,7 +38,7 @@
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "RKP-2 PLANNING PASS 0-0-0 AT 625054E / CLEAN UNIFIED BASE DF40AEF / ACTIVATION E10C7DC / STAGE 1 AUDITED PASS 0-0-0 AT 8AF8E63 / STAGE 2 FOUNDATION EXACT TIME AND FULL LOAD VALIDATION COMPLETE / STAGE 3 NOT STARTED OR AUTHORIZED / TYPESCRIPT DEFAULT / CANDIDATE NOT READY / NO CUTOVER PUSH QUALIFICATION ARCHIVE RKP-3.",
+  "notes": "RKP-2 PLANNING PASS 0-0-0 AT 625054E / CLEAN UNIFIED BASE DF40AEF / ACTIVATION E10C7DC / STAGE 1 AUDITED PASS 0-0-0 AT 8AF8E63 / STAGE 2 OWNER-ACCEPTED PREREQUISITE AT A4EDE43 WITHOUT CLAIMING AN INDEPENDENT AUDIT / STAGE 3 TYPED RECORDS TOPOLOGY AND ATOMIC PRIVATE IMPORT COMPLETE / STAGE 4 NOT STARTED OR AUTHORIZED / TYPESCRIPT DEFAULT / CANDIDATE NOT READY / NO CUTOVER PUSH QUALIFICATION ARCHIVE RKP-3.",
   "meta": {
     "planning_base_commit": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "accepted_rkp1_audited_implementation_commit": "94387b339b5e4d9ce6b7f97597a1b56edd051f01",
@@ -64,7 +64,7 @@
     "task_start_run": true,
     "production_implementation_authorized": true,
     "user_implementation_authorization": true,
-    "user_authorization_scope": "stage_2_only_stage_3_not_authorized",
+    "user_authorization_scope": "stage_3_only_stage_4_not_authorized",
     "independent_planning_review": "passed",
     "planning_review_cycle": "final_targeted_rereview_passed",
     "initial_independent_planning_review": {
@@ -100,7 +100,7 @@
       "verdict": "pass"
     },
     "approved_planning_head": "625054ec78e6410e0fb6034ab0c8f60bbf110d08",
-    "implementation_stage": "stage_2_complete_stage_3_not_started",
+    "implementation_stage": "stage_3_complete_stage_4_not_started",
     "stage_1_started": true,
     "stage_1_completed": true,
     "stage_1_commit_subject": "build(rkp-2): pin typed generational store dependency",
@@ -123,8 +123,20 @@
     "stage_2_focused_rust_result": "foundation_16_of_16_contracts_15_of_15",
     "stage_2_workspace_rust_result": "55_of_55_fmt_check_pass",
     "stage_2_contract": "checked_exact_fraction_fixed_order_full_load_validation_borrowed_validation_scratch_internal_capacity_to_existing_bridge_internal",
-    "stage_3_started": false,
-    "stage_3_authorized": false,
+    "stage_2_owner_acceptance": {
+      "candidate_commit": "a4ede43d944edc7e25860a9eda821889a8a581d8",
+      "status": "owner_accepted_as_stage_3_prerequisite",
+      "independent_review": "not_run_not_claimed"
+    },
+    "stage_3_started": true,
+    "stage_3_authorized": true,
+    "stage_3_completed": true,
+    "stage_3_commit_subject": "feat(rkp-2): add typed live score records and atomic import",
+    "stage_3_focused_rust_result": "runtime_store_5_of_5_clippy_pass",
+    "stage_3_workspace_rust_result": "60_of_60_fmt_check_clippy_msrv_pass",
+    "stage_3_contract": "seven_private_typed_slotmap_handles_scalar_records_explicit_canonical_topology_independent_capacity_preflight_atomic_private_import_local_invariants_stale_generation",
+    "stage_4_started": false,
+    "stage_4_authorized": false,
     "implementation_review": "pending",
     "implementation_candidate_ready": false,
     "archive_authorized": false,

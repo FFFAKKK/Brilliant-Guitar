@@ -2,7 +2,7 @@
 
 ## Current status
 
-`STAGE 2 COMPLETE — STAGE 3 NOT STARTED`.
+`STAGE 3 COMPLETE — STAGE 4 NOT STARTED`.
 
 - Branch: `codex/rkp-2-indexed-live-score-store-implementation`.
 - Worktree: `.worktrees/rkp-2-indexed-live-score-store-implementation`.
@@ -15,7 +15,8 @@
 - Independent planning review: P0/P1/P2=`0/0/0` in dedicated task `01a01e48-1934-77b0-821e-a8026cd9e5f7`.
 - Stage 1 independent implementation review: exact candidate `8af8e63e1d22a6d5e22796a9e5ffa19a66b902ae`, dedicated auditor `01a01e48-1934-77b0-821e-a8026cd9e5f7`, PASS P0/P1/P2=`0/0/0`.
 - State: `in_progress`, `task_start_run=true`, `production_implementation_authorized=true`, `user_implementation_authorization=true`, `implementation_candidate_ready=false`.
-- Stage 2 authorization is consumed; Stage 3 is not started or authorized.
+- Stage 2 exact candidate `a4ede43d944edc7e25860a9eda821889a8a581d8` is owner-accepted as the Stage 3 prerequisite; no independent Stage 2 audit is claimed.
+- Stage 3 authorization is consumed; Stage 4 is not started or authorized.
 - TypeScript is the default runtime.
 
 ## What this plan delivers
@@ -59,9 +60,15 @@ The unchanged `decode_score_document_value` seam returns only a fully validated 
 
 Focused Rust is Foundation `16/16` plus Contracts `15/15`; the workspace total is `55/55`. Stage 2 changes no Runtime, Session, Node, Core Types, Extension Protocol, TypeScript production or public contract.
 
+## Stage 3 checkpoint
+
+Stage 3 adds exactly seven private slotmap handle types, scalar-only Runtime records, a typed part/measure content key and explicit canonical-order topology. `LiveScoreStore` is built privately from the already decoded and Stage-2-validated DTO; it owns only records, topology and scalars and retains no complete `ScoreDocumentV1` tree. The store remains disconnected from `SmokeRuntime`, Session and Node until Stage 5, so the four new private modules use a narrow reasoned `dead_code` allowance rather than widening the public API.
+
+Runtime independently checked-pre-counts and fallibly reserves all Stage-3-owned slotmaps, maps and vectors before insertion. It inserts once in DTO order, resolves references through typed/local maps and returns no store until deterministic local invariants pass. The private reserve-fault seam returns `InternalCapacity` with zero publication. Store tests pass `5/5`, including root identity, exact topology/coverage, record resolution without retaining the original tree, stale-generation invalidation and reserve-fault atomicity; full workspace Rust is `60/60` with fmt/check/clippy/MSRV passing.
+
 ## Next operator action
 
-Do not start Stage 3 without a later explicit user continuation. Stage 3 is the typed-record/topology/atomic-private-import commit in `implement.md`; a new file/dependency/public shape outside the approved matrix returns to planning review.
+Do not start Stage 4 without a later explicit user continuation. Stage 4 is the derived-index/time-query/parity commit in `implement.md`; a new file/dependency/public shape outside the approved matrix returns to planning review.
 
 ## Audit and closeout
 
