@@ -4,7 +4,9 @@ use std::{
 };
 
 use brilliant_core_types::StableId;
-use brilliant_score_foundation::{ExtensionOwnerV1, RhythmicContentV1, ScoreDocumentV1};
+use brilliant_score_foundation::{
+    ExactFraction, ExtensionOwnerV1, RhythmicContentV1, ScoreDocumentV1,
+};
 use slotmap::{Key, SlotMap};
 
 use crate::{
@@ -12,10 +14,17 @@ use crate::{
         EventHandle, ExtensionHandle, MeasureHandle, NoteHandle, PartHandle, RuntimeEntityRef,
         StaffHandle, VoiceHandle,
     },
+    indices::{
+        DerivedIndices, ExtensionIndexKey, ExtensionIndexOwner, IndexBuildFailure, IndexCapacities,
+        ReferenceCapacityPlan, Rkp2StoreMetrics, event_staff_reference_path,
+        extension_part_reference_path, increment, mark_index_entry, measure_reference_path,
+        voice_staff_reference_path,
+    },
     records::{
         DocumentHeader, EventContentKind, EventRecord, ExtensionRecord, MeasureRecord, NoteRecord,
         PartMeasureContentRecord, PartMeasureKey, PartRecord, StaffRecord, VoiceRecord,
     },
+    time_index::{TimeIndexFailure, VoiceTimeEntry, VoiceTimeIndex},
     topology::ScoreTopology,
 };
 
@@ -26,6 +35,8 @@ pub(crate) enum StoreInvariantFailure {
     CountMismatch,
     CoverageMismatch,
     ContentRecordMismatch,
+    IndexMismatch,
+    InvalidExactTime,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -50,6 +61,8 @@ pub(crate) struct LiveScoreStore {
     pub(crate) notes: SlotMap<NoteHandle, NoteRecord>,
     pub(crate) extensions: SlotMap<ExtensionHandle, ExtensionRecord>,
     pub(crate) topology: ScoreTopology,
+    pub(crate) indices: DerivedIndices,
+    pub(crate) metrics: Rkp2StoreMetrics,
 }
 
 // This compile-only anchor keeps the private Stage 3 ownership shape checked in
@@ -65,14 +78,120 @@ fn stage3_owned_store_shape(store: &LiveScoreStore) {
         notes,
         extensions,
         topology,
+        indices,
+        metrics,
     } = store;
     let _ = (
-        header, measures, parts, staffs, voices, events, notes, extensions, topology,
+        header, measures, parts, staffs, voices, events, notes, extensions, topology, indices,
+        metrics,
     );
 }
 
 #[used]
 static STAGE3_OWNED_STORE_SHAPE: fn(&LiveScoreStore) = stage3_owned_store_shape;
+
+impl LiveScoreStore {
+    pub(crate) fn lookup_entity(&mut self, id: &StableId) -> Option<RuntimeEntityRef> {
+        let entity = self.indices.lookup_entity(id, &mut self.metrics).ok()?;
+        self.entity_is_live(entity).then_some(entity)
+    }
+
+    pub(crate) fn lookup_owner(
+        &mut self,
+        id: &StableId,
+    ) -> Option<crate::indices::RuntimeOwnerRef> {
+        let entity = self.lookup_entity(id)?;
+        self.indices.lookup_owner(entity, &mut self.metrics).ok()
+    }
+
+    pub(crate) fn part_measure_content(
+        &mut self,
+        part_id: &StableId,
+        measure_id: &StableId,
+    ) -> Option<&PartMeasureContentRecord> {
+        let RuntimeEntityRef::Part(part) = self.lookup_entity(part_id)? else {
+            return None;
+        };
+        let RuntimeEntityRef::Measure(measure) = self.lookup_entity(measure_id)? else {
+            return None;
+        };
+        self.topology
+            .contents
+            .get(&PartMeasureKey { part, measure })
+    }
+
+    pub(crate) fn exact_voice_start(
+        &mut self,
+        voice_id: &StableId,
+        start: ExactFraction,
+    ) -> Result<&[VoiceTimeEntry], TimeIndexFailure> {
+        let RuntimeEntityRef::Voice(voice) = self
+            .lookup_entity(voice_id)
+            .ok_or(TimeIndexFailure::MissingVoice)?
+        else {
+            return Err(TimeIndexFailure::MissingVoice);
+        };
+        self.indices
+            .voice_time
+            .get(&voice)
+            .ok_or(TimeIndexFailure::MissingVoice)?
+            .exact_start(start, &mut self.metrics.time_index_comparisons)
+    }
+
+    pub(crate) fn overlapping_voice_range(
+        &mut self,
+        voice_id: &StableId,
+        start: ExactFraction,
+        end: ExactFraction,
+    ) -> Result<&[VoiceTimeEntry], TimeIndexFailure> {
+        let RuntimeEntityRef::Voice(voice) = self
+            .lookup_entity(voice_id)
+            .ok_or(TimeIndexFailure::MissingVoice)?
+        else {
+            return Err(TimeIndexFailure::MissingVoice);
+        };
+        self.indices
+            .voice_time
+            .get(&voice)
+            .ok_or(TimeIndexFailure::MissingVoice)?
+            .overlap(start, end, &mut self.metrics.time_index_comparisons)
+    }
+
+    fn entity_is_live(&self, entity: RuntimeEntityRef) -> bool {
+        match entity {
+            RuntimeEntityRef::Document => true,
+            RuntimeEntityRef::Measure(handle) => self.measures.get(handle).is_some(),
+            RuntimeEntityRef::Part(handle) => self.parts.get(handle).is_some(),
+            RuntimeEntityRef::Staff(handle) => self.staffs.get(handle).is_some(),
+            RuntimeEntityRef::Voice(handle) => self.voices.get(handle).is_some(),
+            RuntimeEntityRef::Event(handle) => self.events.get(handle).is_some(),
+            RuntimeEntityRef::Note(handle) => self.notes.get(handle).is_some(),
+        }
+    }
+}
+
+fn stage4_private_query_contract(
+    store: &mut LiveScoreStore,
+    first_id: &StableId,
+    second_id: &StableId,
+    start: ExactFraction,
+    end: ExactFraction,
+) {
+    let _ = store.lookup_entity(first_id);
+    let _ = store.lookup_owner(first_id);
+    let _ = store.part_measure_content(first_id, second_id);
+    let _ = store.exact_voice_start(first_id, start);
+    let _ = store.overlapping_voice_range(first_id, start, end);
+}
+
+#[used]
+static STAGE4_PRIVATE_QUERY_CONTRACT: fn(
+    &mut LiveScoreStore,
+    &StableId,
+    &StableId,
+    ExactFraction,
+    ExactFraction,
+) = stage4_private_query_contract;
 
 pub(crate) fn build_live_score_store(
     document: &ScoreDocumentV1,
@@ -90,7 +209,11 @@ fn build_live_score_store_with_policy(
     policy: ReservationPolicy,
 ) -> Result<LiveScoreStore, LiveStoreBuildFailure> {
     let counts = StoreCounts::checked(document)?;
-    let mut builder = LiveScoreStoreBuilder::prepare(document, counts, policy)?;
+    let reference_capacities =
+        ReferenceCapacityPlan::from_document(document, counts.reference_edges)
+            .map_err(index_failure)?;
+    let mut builder =
+        LiveScoreStoreBuilder::prepare(document, counts, reference_capacities, policy)?;
     builder.import(document)?;
     builder.finish()
 }
@@ -106,6 +229,7 @@ struct StoreCounts {
     events: usize,
     notes: usize,
     extensions: usize,
+    reference_edges: usize,
 }
 
 impl StoreCounts {
@@ -120,6 +244,7 @@ impl StoreCounts {
             events: 0,
             notes: 0,
             extensions: document.extensions.len(),
+            reference_edges: 0,
         };
         counts.entity_ids = counts
             .entity_ids
@@ -131,19 +256,29 @@ impl StoreCounts {
             counts.contents = checked_add(counts.contents, part.measure_contents.len())?;
             counts.entity_ids = checked_add(counts.entity_ids, part.staves.len())?;
             for content in &part.measure_contents {
+                counts.reference_edges = checked_add(counts.reference_edges, 1)?;
                 counts.voices = checked_add(counts.voices, content.voices.len())?;
                 counts.entity_ids = checked_add(counts.entity_ids, content.voices.len())?;
                 for voice in &content.voices {
+                    counts.reference_edges = checked_add(counts.reference_edges, 1)?;
                     counts.events = checked_add(counts.events, voice.sequence.events.len())?;
                     counts.entity_ids =
                         checked_add(counts.entity_ids, voice.sequence.events.len())?;
                     for event in &voice.sequence.events {
+                        if event.staff_id.is_some() {
+                            counts.reference_edges = checked_add(counts.reference_edges, 1)?;
+                        }
                         if let RhythmicContentV1::Notes { notes } = &event.content {
                             counts.notes = checked_add(counts.notes, notes.len())?;
                             counts.entity_ids = checked_add(counts.entity_ids, notes.len())?;
                         }
                     }
                 }
+            }
+        }
+        for extension in &document.extensions {
+            if matches!(extension.owner, ExtensionOwnerV1::Part { .. }) {
+                counts.reference_edges = checked_add(counts.reference_edges, 1)?;
             }
         }
         Ok(counts)
@@ -228,7 +363,7 @@ impl ReservationPolicy {
     }
 }
 
-struct LiveScoreStoreBuilder<'a> {
+struct LiveScoreStoreBuilder {
     policy: ReservationPolicy,
     counts: StoreCounts,
     header: DocumentHeader,
@@ -240,15 +375,16 @@ struct LiveScoreStoreBuilder<'a> {
     notes: SlotMap<NoteHandle, NoteRecord>,
     extensions: SlotMap<ExtensionHandle, ExtensionRecord>,
     topology: ScoreTopology,
-    entity_refs: HashMap<&'a StableId, RuntimeEntityRef>,
-    measure_handles: HashMap<&'a StableId, MeasureHandle>,
-    part_handles: HashMap<&'a StableId, PartHandle>,
+    indices: DerivedIndices,
+    reference_capacities: ReferenceCapacityPlan,
+    metrics: Rkp2StoreMetrics,
 }
 
-impl<'a> LiveScoreStoreBuilder<'a> {
+impl LiveScoreStoreBuilder {
     fn prepare(
-        document: &'a ScoreDocumentV1,
+        document: &ScoreDocumentV1,
         counts: StoreCounts,
+        reference_capacities: ReferenceCapacityPlan,
         policy: ReservationPolicy,
     ) -> Result<Self, LiveStoreBuildFailure> {
         let mut measures = SlotMap::with_key();
@@ -277,13 +413,30 @@ impl<'a> LiveScoreStoreBuilder<'a> {
         policy.hash_map(&mut topology.note_order, counts.events)?;
         policy.vector(&mut topology.extension_order, counts.extensions)?;
 
-        let mut entity_refs = HashMap::new();
-        let mut measure_handles = HashMap::new();
-        let mut part_handles = HashMap::new();
-        policy.hash_map(&mut entity_refs, counts.entity_ids)?;
-        policy.hash_map(&mut measure_handles, counts.measures)?;
-        policy.hash_map(&mut part_handles, counts.parts)?;
-        entity_refs.insert(&document.id, RuntimeEntityRef::Document);
+        let mut indices = DerivedIndices::with_capacities(IndexCapacities {
+            entity_ids: counts.entity_ids,
+            measures: counts.measures,
+            parts: counts.parts,
+            staffs: counts.staffs,
+            voices: counts.voices,
+            events: counts.events,
+            notes: counts.notes,
+            extensions: counts.extensions,
+            reference_edges: counts.reference_edges,
+        })
+        .map_err(index_failure)?;
+        let mut metrics = Rkp2StoreMetrics {
+            entities_visited: 1,
+            ..Rkp2StoreMetrics::default()
+        };
+        indices
+            .insert_entity(
+                &document.id,
+                RuntimeEntityRef::Document,
+                &mut metrics,
+                false,
+            )
+            .map_err(index_failure)?;
 
         Ok(Self {
             policy,
@@ -300,24 +453,23 @@ impl<'a> LiveScoreStoreBuilder<'a> {
             notes,
             extensions,
             topology,
-            entity_refs,
-            measure_handles,
-            part_handles,
+            indices,
+            reference_capacities,
+            metrics,
         })
     }
 
-    fn import(&mut self, document: &'a ScoreDocumentV1) -> Result<(), LiveStoreBuildFailure> {
+    fn import(&mut self, document: &ScoreDocumentV1) -> Result<(), LiveStoreBuildFailure> {
         self.import_measures(document)?;
-        for part in &document.parts {
-            self.import_part(part)?;
+        for (part_ordinal, part) in document.parts.iter().enumerate() {
+            self.import_part(part_ordinal, part)?;
         }
-        self.import_extensions(document)
+        self.import_extensions(document)?;
+        self.indices.sort_reference_buckets();
+        Ok(())
     }
 
-    fn import_measures(
-        &mut self,
-        document: &'a ScoreDocumentV1,
-    ) -> Result<(), LiveStoreBuildFailure> {
+    fn import_measures(&mut self, document: &ScoreDocumentV1) -> Result<(), LiveStoreBuildFailure> {
         for measure in &document.measure_definitions {
             self.ensure_identity_available(&measure.id)?;
             let handle = self.measures.insert(MeasureRecord {
@@ -325,17 +477,30 @@ impl<'a> LiveScoreStoreBuilder<'a> {
                 meter: measure.meter.clone(),
                 pickup_duration: measure.pickup_duration.clone(),
             });
-            self.entity_refs
-                .insert(&measure.id, RuntimeEntityRef::Measure(handle));
-            self.measure_handles.insert(&measure.id, handle);
+            increment(&mut self.metrics.entities_visited).map_err(index_failure)?;
+            increment(&mut self.metrics.records_inserted_by_type.measures)
+                .map_err(index_failure)?;
+            self.indices
+                .insert_entity(
+                    &measure.id,
+                    RuntimeEntityRef::Measure(handle),
+                    &mut self.metrics,
+                    false,
+                )
+                .map_err(index_failure)?;
+            self.indices
+                .insert_measure_owner(handle, &mut self.metrics, false)
+                .map_err(index_failure)?;
             self.topology.measure_order.push(handle);
+            increment(&mut self.metrics.topology_edges_visited).map_err(index_failure)?;
         }
         Ok(())
     }
 
     fn import_part(
         &mut self,
-        part: &'a brilliant_score_foundation::PartV1,
+        part_ordinal: usize,
+        part: &brilliant_score_foundation::PartV1,
     ) -> Result<(), LiveStoreBuildFailure> {
         self.ensure_identity_available(&part.id)?;
         let part_handle = self.parts.insert(PartRecord {
@@ -343,16 +508,24 @@ impl<'a> LiveScoreStoreBuilder<'a> {
             name: part.name.clone(),
             instrument: part.instrument.clone(),
         });
-        self.entity_refs
-            .insert(&part.id, RuntimeEntityRef::Part(part_handle));
-        self.part_handles.insert(&part.id, part_handle);
+        increment(&mut self.metrics.entities_visited).map_err(index_failure)?;
+        increment(&mut self.metrics.records_inserted_by_type.parts).map_err(index_failure)?;
+        self.indices
+            .insert_entity(
+                &part.id,
+                RuntimeEntityRef::Part(part_handle),
+                &mut self.metrics,
+                false,
+            )
+            .map_err(index_failure)?;
+        self.indices
+            .insert_part_owner(part_handle, &mut self.metrics, false)
+            .map_err(index_failure)?;
         self.topology.part_order.push(part_handle);
+        increment(&mut self.metrics.topology_edges_visited).map_err(index_failure)?;
 
         let mut staff_order = Vec::new();
-        let mut local_staff_handles = HashMap::new();
         self.policy.vector(&mut staff_order, part.staves.len())?;
-        self.policy
-            .hash_map(&mut local_staff_handles, part.staves.len())?;
         for staff in &part.staves {
             self.ensure_identity_available(&staff.id)?;
             let handle = self.staffs.insert(StaffRecord {
@@ -360,21 +533,35 @@ impl<'a> LiveScoreStoreBuilder<'a> {
                 line_count: staff.line_count,
                 default_clef: staff.default_clef.clone(),
             });
-            self.entity_refs
-                .insert(&staff.id, RuntimeEntityRef::Staff(handle));
-            local_staff_handles.insert(&staff.id, handle);
+            increment(&mut self.metrics.entities_visited).map_err(index_failure)?;
+            increment(&mut self.metrics.records_inserted_by_type.staffs).map_err(index_failure)?;
+            self.indices
+                .insert_entity(
+                    &staff.id,
+                    RuntimeEntityRef::Staff(handle),
+                    &mut self.metrics,
+                    false,
+                )
+                .map_err(index_failure)?;
+            self.indices
+                .insert_staff_owner(handle, part_handle, &mut self.metrics, false)
+                .map_err(index_failure)?;
             staff_order.push(handle);
+            increment(&mut self.metrics.topology_edges_visited).map_err(index_failure)?;
         }
         self.topology.staff_order.insert(part_handle, staff_order);
 
         let mut content_order = Vec::new();
         self.policy
             .vector(&mut content_order, part.measure_contents.len())?;
-        for content in &part.measure_contents {
-            let measure_handle = *self
-                .measure_handles
-                .get(&content.measure_id)
-                .ok_or(LiveStoreBuildFailure::MissingMeasureReference)?;
+        for (content_ordinal, content) in part.measure_contents.iter().enumerate() {
+            let measure = self
+                .indices
+                .lookup_entity(&content.measure_id, &mut self.metrics)
+                .map_err(|_| LiveStoreBuildFailure::MissingMeasureReference)?;
+            let RuntimeEntityRef::Measure(measure_handle) = measure else {
+                return Err(LiveStoreBuildFailure::MissingMeasureReference);
+            };
             let key = PartMeasureKey {
                 part: part_handle,
                 measure: measure_handle,
@@ -383,6 +570,7 @@ impl<'a> LiveScoreStoreBuilder<'a> {
                 return Err(LiveStoreBuildFailure::DuplicatePartMeasureContent);
             }
             content_order.push(measure_handle);
+            increment(&mut self.metrics.topology_edges_visited).map_err(index_failure)?;
             self.topology.contents.insert(
                 key,
                 PartMeasureContentRecord {
@@ -390,31 +578,97 @@ impl<'a> LiveScoreStoreBuilder<'a> {
                     measure: measure_handle,
                 },
             );
+            mark_index_entry(&mut self.metrics, false).map_err(index_failure)?;
+            self.indices
+                .push_reference(
+                    &content.measure_id,
+                    measure_reference_path(part_ordinal, content_ordinal).map_err(index_failure)?,
+                    &self.reference_capacities,
+                    &mut self.metrics,
+                    false,
+                )
+                .map_err(index_failure)?;
 
             let mut voice_order = Vec::new();
             self.policy.vector(&mut voice_order, content.voices.len())?;
-            for voice in &content.voices {
-                if !local_staff_handles.contains_key(&voice.default_staff_id) {
+            for (voice_ordinal, voice) in content.voices.iter().enumerate() {
+                let staff = self
+                    .indices
+                    .lookup_entity(&voice.default_staff_id, &mut self.metrics)
+                    .map_err(|_| LiveStoreBuildFailure::MissingStaffReference)?;
+                let RuntimeEntityRef::Staff(staff) = staff else {
                     return Err(LiveStoreBuildFailure::MissingStaffReference);
-                }
+                };
+                self.indices
+                    .check_staff_owner(staff, part_handle, &mut self.metrics)
+                    .map_err(|_| LiveStoreBuildFailure::MissingStaffReference)?;
                 self.ensure_identity_available(&voice.id)?;
                 let voice_handle = self.voices.insert(VoiceRecord {
                     id: voice.id.clone(),
                     default_staff_id: voice.default_staff_id.clone(),
                     sequence_start: voice.sequence.start.clone(),
                 });
-                self.entity_refs
-                    .insert(&voice.id, RuntimeEntityRef::Voice(voice_handle));
+                increment(&mut self.metrics.entities_visited).map_err(index_failure)?;
+                increment(&mut self.metrics.records_inserted_by_type.voices)
+                    .map_err(index_failure)?;
+                self.indices
+                    .insert_entity(
+                        &voice.id,
+                        RuntimeEntityRef::Voice(voice_handle),
+                        &mut self.metrics,
+                        false,
+                    )
+                    .map_err(index_failure)?;
+                self.indices
+                    .insert_voice_owner(voice_handle, key, &mut self.metrics, false)
+                    .map_err(index_failure)?;
+                self.indices
+                    .push_reference(
+                        &voice.default_staff_id,
+                        voice_staff_reference_path(part_ordinal, content_ordinal, voice_ordinal)
+                            .map_err(index_failure)?,
+                        &self.reference_capacities,
+                        &mut self.metrics,
+                        false,
+                    )
+                    .map_err(index_failure)?;
                 voice_order.push(voice_handle);
+                increment(&mut self.metrics.topology_edges_visited).map_err(index_failure)?;
 
                 let mut event_order = Vec::new();
                 self.policy
                     .vector(&mut event_order, voice.sequence.events.len())?;
-                for event in &voice.sequence.events {
-                    if let Some(staff_id) = &event.staff_id
-                        && !local_staff_handles.contains_key(staff_id)
-                    {
-                        return Err(LiveStoreBuildFailure::MissingStaffReference);
+                let mut voice_time = VoiceTimeIndex::with_capacity(voice.sequence.events.len())
+                    .map_err(time_failure)?;
+                let mut event_start = ExactFraction::from_canonical(&voice.sequence.start)
+                    .map_err(|_| local(StoreInvariantFailure::InvalidExactTime))?;
+                for (event_ordinal, event) in voice.sequence.events.iter().enumerate() {
+                    if let Some(staff_id) = &event.staff_id {
+                        let staff = self
+                            .indices
+                            .lookup_entity(staff_id, &mut self.metrics)
+                            .map_err(|_| LiveStoreBuildFailure::MissingStaffReference)?;
+                        let RuntimeEntityRef::Staff(staff) = staff else {
+                            return Err(LiveStoreBuildFailure::MissingStaffReference);
+                        };
+                        self.indices
+                            .check_staff_owner(staff, part_handle, &mut self.metrics)
+                            .map_err(|_| LiveStoreBuildFailure::MissingStaffReference)?;
+                        self.indices
+                            .push_reference(
+                                staff_id,
+                                event_staff_reference_path(
+                                    part_ordinal,
+                                    content_ordinal,
+                                    voice_ordinal,
+                                    event_ordinal,
+                                )
+                                .map_err(index_failure)?,
+                                &self.reference_capacities,
+                                &mut self.metrics,
+                                false,
+                            )
+                            .map_err(index_failure)?;
                     }
                     self.ensure_identity_available(&event.id)?;
                     let content_kind = match &event.content {
@@ -427,9 +681,40 @@ impl<'a> LiveScoreStoreBuilder<'a> {
                         staff_id: event.staff_id.clone(),
                         content_kind,
                     });
-                    self.entity_refs
-                        .insert(&event.id, RuntimeEntityRef::Event(event_handle));
+                    increment(&mut self.metrics.entities_visited).map_err(index_failure)?;
+                    increment(&mut self.metrics.records_inserted_by_type.events)
+                        .map_err(index_failure)?;
+                    self.indices
+                        .insert_entity(
+                            &event.id,
+                            RuntimeEntityRef::Event(event_handle),
+                            &mut self.metrics,
+                            false,
+                        )
+                        .map_err(index_failure)?;
+                    self.indices
+                        .insert_event_owner(event_handle, voice_handle, &mut self.metrics, false)
+                        .map_err(index_failure)?;
                     event_order.push(event_handle);
+                    increment(&mut self.metrics.topology_edges_visited).map_err(index_failure)?;
+
+                    let duration = ExactFraction::note_value_duration(&event.duration)
+                        .map_err(|_| local(StoreInvariantFailure::InvalidExactTime))?;
+                    let event_end = event_start
+                        .checked_add(duration)
+                        .map_err(|_| local(StoreInvariantFailure::InvalidExactTime))?;
+                    voice_time
+                        .push(
+                            event_start,
+                            event_end,
+                            u32::try_from(event_ordinal)
+                                .map_err(|_| local(StoreInvariantFailure::IndexMismatch))?,
+                            event_handle,
+                        )
+                        .map_err(time_failure)?;
+                    increment(&mut self.metrics.time_entries_built).map_err(index_failure)?;
+                    mark_index_entry(&mut self.metrics, false).map_err(index_failure)?;
+                    event_start = event_end;
 
                     let note_count = match &event.content {
                         RhythmicContentV1::Rest => 0,
@@ -444,13 +729,35 @@ impl<'a> LiveScoreStoreBuilder<'a> {
                                 id: note.id.clone(),
                                 written_pitch: note.written_pitch.clone(),
                             });
-                            self.entity_refs
-                                .insert(&note.id, RuntimeEntityRef::Note(note_handle));
+                            increment(&mut self.metrics.entities_visited).map_err(index_failure)?;
+                            increment(&mut self.metrics.records_inserted_by_type.notes)
+                                .map_err(index_failure)?;
+                            self.indices
+                                .insert_entity(
+                                    &note.id,
+                                    RuntimeEntityRef::Note(note_handle),
+                                    &mut self.metrics,
+                                    false,
+                                )
+                                .map_err(index_failure)?;
+                            self.indices
+                                .insert_note_owner(
+                                    note_handle,
+                                    event_handle,
+                                    &mut self.metrics,
+                                    false,
+                                )
+                                .map_err(index_failure)?;
                             note_order.push(note_handle);
+                            increment(&mut self.metrics.topology_edges_visited)
+                                .map_err(index_failure)?;
                         }
                     }
                     self.topology.note_order.insert(event_handle, note_order);
                 }
+                self.indices
+                    .insert_voice_time(voice_handle, voice_time, &mut self.metrics, false)
+                    .map_err(index_failure)?;
                 self.topology.event_order.insert(voice_handle, event_order);
             }
             self.topology.voice_order.insert(key, voice_order);
@@ -463,27 +770,62 @@ impl<'a> LiveScoreStoreBuilder<'a> {
 
     fn import_extensions(
         &mut self,
-        document: &'a ScoreDocumentV1,
+        document: &ScoreDocumentV1,
     ) -> Result<(), LiveStoreBuildFailure> {
-        for extension in &document.extensions {
-            if let ExtensionOwnerV1::Part { part_id } = &extension.owner
-                && !self.part_handles.contains_key(part_id)
-            {
-                return Err(LiveStoreBuildFailure::MissingPartReference);
-            }
+        for (extension_ordinal, extension) in document.extensions.iter().enumerate() {
+            let owner = match &extension.owner {
+                ExtensionOwnerV1::Score => ExtensionIndexOwner::Score,
+                ExtensionOwnerV1::Part { part_id } => {
+                    let entity = self
+                        .indices
+                        .lookup_entity(part_id, &mut self.metrics)
+                        .map_err(|_| LiveStoreBuildFailure::MissingPartReference)?;
+                    let RuntimeEntityRef::Part(part) = entity else {
+                        return Err(LiveStoreBuildFailure::MissingPartReference);
+                    };
+                    self.indices
+                        .push_reference(
+                            part_id,
+                            extension_part_reference_path(extension_ordinal)
+                                .map_err(index_failure)?,
+                            &self.reference_capacities,
+                            &mut self.metrics,
+                            false,
+                        )
+                        .map_err(index_failure)?;
+                    ExtensionIndexOwner::Part(part)
+                }
+            };
             let handle = self.extensions.insert(ExtensionRecord {
                 namespace: extension.namespace.clone(),
                 schema_version: extension.schema_version,
                 owner: extension.owner.clone(),
                 payload: extension.payload.clone(),
             });
+            increment(&mut self.metrics.records_inserted_by_type.extensions)
+                .map_err(index_failure)?;
+            self.indices
+                .insert_extension_owner(handle, owner, &mut self.metrics, false)
+                .map_err(index_failure)?;
+            self.indices
+                .push_extension(
+                    ExtensionIndexKey {
+                        namespace: extension.namespace.clone(),
+                        owner,
+                    },
+                    handle,
+                    &mut self.metrics,
+                    false,
+                )
+                .map_err(index_failure)?;
             self.topology.extension_order.push(handle);
+            increment(&mut self.metrics.topology_edges_visited).map_err(index_failure)?;
         }
         Ok(())
     }
 
     fn ensure_identity_available(&self, id: &StableId) -> Result<(), LiveStoreBuildFailure> {
-        if self.entity_refs.contains_key(id) {
+        if self.indices.entity.by_id.contains_key(id) {
             Err(LiveStoreBuildFailure::DuplicateStableId)
         } else {
             Ok(())
@@ -502,6 +844,8 @@ impl<'a> LiveScoreStoreBuilder<'a> {
             notes: self.notes,
             extensions: self.extensions,
             topology: self.topology,
+            indices: self.indices,
+            metrics: self.metrics,
         })
     }
 
@@ -638,7 +982,25 @@ impl<'a> LiveScoreStoreBuilder<'a> {
         check_count(self.topology.voice_order.len(), self.counts.contents)?;
         check_count(self.topology.event_order.len(), self.counts.voices)?;
         check_count(self.topology.note_order.len(), self.counts.events)?;
-        check_count(self.entity_refs.len(), self.counts.entity_ids)?;
+        check_count(self.indices.entity.by_id.len(), self.counts.entity_ids)?;
+        check_count(self.indices.ownership.measures.len(), self.counts.measures)?;
+        check_count(self.indices.ownership.parts.len(), self.counts.parts)?;
+        check_count(self.indices.ownership.staffs.len(), self.counts.staffs)?;
+        check_count(self.indices.ownership.voices.len(), self.counts.voices)?;
+        check_count(self.indices.ownership.events.len(), self.counts.events)?;
+        check_count(self.indices.ownership.notes.len(), self.counts.notes)?;
+        check_count(
+            self.indices.ownership.extensions.len(),
+            self.counts.extensions,
+        )?;
+        check_count(self.indices.voice_time.len(), self.counts.voices)?;
+        check_count(reference_count(&self.indices)?, self.counts.reference_edges)?;
+        check_count(
+            extension_index_count(&self.indices)?,
+            self.counts.extensions,
+        )?;
+
+        self.check_derived_index_invariants()?;
 
         check_root_order(
             &self.topology.extension_order,
@@ -646,6 +1008,270 @@ impl<'a> LiveScoreStoreBuilder<'a> {
             self.counts.extensions,
             self.policy,
         )
+    }
+
+    fn check_derived_index_invariants(&self) -> Result<(), LiveStoreBuildFailure> {
+        if self.indices.entity.by_id.get(&self.header.id) != Some(&RuntimeEntityRef::Document) {
+            return Err(local(StoreInvariantFailure::IndexMismatch));
+        }
+        for measure in &self.topology.measure_order {
+            let record = self
+                .measures
+                .get(*measure)
+                .ok_or(local(StoreInvariantFailure::MissingRecord))?;
+            if self.indices.entity.by_id.get(&record.id)
+                != Some(&RuntimeEntityRef::Measure(*measure))
+                || !self.indices.ownership.measures.contains_key(measure)
+            {
+                return Err(local(StoreInvariantFailure::IndexMismatch));
+            }
+        }
+        for (part_ordinal, part) in self.topology.part_order.iter().enumerate() {
+            let part_record = self
+                .parts
+                .get(*part)
+                .ok_or(local(StoreInvariantFailure::MissingRecord))?;
+            if self.indices.entity.by_id.get(&part_record.id)
+                != Some(&RuntimeEntityRef::Part(*part))
+                || !self.indices.ownership.parts.contains_key(part)
+            {
+                return Err(local(StoreInvariantFailure::IndexMismatch));
+            }
+            for staff in self
+                .topology
+                .staff_order
+                .get(part)
+                .ok_or(local(StoreInvariantFailure::MissingRecord))?
+            {
+                let record = self
+                    .staffs
+                    .get(*staff)
+                    .ok_or(local(StoreInvariantFailure::MissingRecord))?;
+                if self.indices.entity.by_id.get(&record.id)
+                    != Some(&RuntimeEntityRef::Staff(*staff))
+                    || self.indices.ownership.staffs.get(staff) != Some(part)
+                {
+                    return Err(local(StoreInvariantFailure::IndexMismatch));
+                }
+            }
+            for (content_ordinal, measure) in self
+                .topology
+                .content_order
+                .get(part)
+                .ok_or(local(StoreInvariantFailure::MissingRecord))?
+                .iter()
+                .enumerate()
+            {
+                let measure_record = self
+                    .measures
+                    .get(*measure)
+                    .ok_or(local(StoreInvariantFailure::MissingRecord))?;
+                check_reference(
+                    &self.indices,
+                    &measure_record.id,
+                    &measure_reference_path(part_ordinal, content_ordinal)
+                        .map_err(index_failure)?,
+                )?;
+                let key = PartMeasureKey {
+                    part: *part,
+                    measure: *measure,
+                };
+                for (voice_ordinal, voice) in self
+                    .topology
+                    .voice_order
+                    .get(&key)
+                    .ok_or(local(StoreInvariantFailure::MissingRecord))?
+                    .iter()
+                    .enumerate()
+                {
+                    let voice_record = self
+                        .voices
+                        .get(*voice)
+                        .ok_or(local(StoreInvariantFailure::MissingRecord))?;
+                    if self.indices.entity.by_id.get(&voice_record.id)
+                        != Some(&RuntimeEntityRef::Voice(*voice))
+                        || self.indices.ownership.voices.get(voice) != Some(&key)
+                    {
+                        return Err(local(StoreInvariantFailure::IndexMismatch));
+                    }
+                    check_reference(
+                        &self.indices,
+                        &voice_record.default_staff_id,
+                        &voice_staff_reference_path(part_ordinal, content_ordinal, voice_ordinal)
+                            .map_err(index_failure)?,
+                    )?;
+                    let events = self
+                        .topology
+                        .event_order
+                        .get(voice)
+                        .ok_or(local(StoreInvariantFailure::MissingRecord))?;
+                    let time = self
+                        .indices
+                        .voice_time
+                        .get(voice)
+                        .ok_or(local(StoreInvariantFailure::IndexMismatch))?;
+                    if time.entries.len() != events.len() {
+                        return Err(local(StoreInvariantFailure::IndexMismatch));
+                    }
+                    let mut expected_start =
+                        ExactFraction::from_canonical(&voice_record.sequence_start)
+                            .map_err(|_| local(StoreInvariantFailure::InvalidExactTime))?;
+                    for (event_ordinal, (event, entry)) in
+                        events.iter().zip(&time.entries).enumerate()
+                    {
+                        let event_record = self
+                            .events
+                            .get(*event)
+                            .ok_or(local(StoreInvariantFailure::MissingRecord))?;
+                        let duration =
+                            ExactFraction::note_value_duration(&event_record.duration)
+                                .map_err(|_| local(StoreInvariantFailure::InvalidExactTime))?;
+                        let expected_end = expected_start
+                            .checked_add(duration)
+                            .map_err(|_| local(StoreInvariantFailure::InvalidExactTime))?;
+                        if entry
+                            != &(VoiceTimeEntry {
+                                start: expected_start,
+                                end: expected_end,
+                                semantic_ordinal: u32::try_from(event_ordinal)
+                                    .map_err(|_| local(StoreInvariantFailure::IndexMismatch))?,
+                                event: *event,
+                            })
+                            || self.indices.entity.by_id.get(&event_record.id)
+                                != Some(&RuntimeEntityRef::Event(*event))
+                            || self.indices.ownership.events.get(event) != Some(voice)
+                        {
+                            return Err(local(StoreInvariantFailure::IndexMismatch));
+                        }
+                        if let Some(staff_id) = &event_record.staff_id {
+                            check_reference(
+                                &self.indices,
+                                staff_id,
+                                &event_staff_reference_path(
+                                    part_ordinal,
+                                    content_ordinal,
+                                    voice_ordinal,
+                                    event_ordinal,
+                                )
+                                .map_err(index_failure)?,
+                            )?;
+                        }
+                        for note in self
+                            .topology
+                            .note_order
+                            .get(event)
+                            .ok_or(local(StoreInvariantFailure::MissingRecord))?
+                        {
+                            let record = self
+                                .notes
+                                .get(*note)
+                                .ok_or(local(StoreInvariantFailure::MissingRecord))?;
+                            if self.indices.entity.by_id.get(&record.id)
+                                != Some(&RuntimeEntityRef::Note(*note))
+                                || self.indices.ownership.notes.get(note) != Some(event)
+                            {
+                                return Err(local(StoreInvariantFailure::IndexMismatch));
+                            }
+                        }
+                        expected_start = expected_end;
+                    }
+                }
+            }
+        }
+
+        for (ordinal, extension) in self.topology.extension_order.iter().enumerate() {
+            let record = self
+                .extensions
+                .get(*extension)
+                .ok_or(local(StoreInvariantFailure::MissingRecord))?;
+            let owner = *self
+                .indices
+                .ownership
+                .extensions
+                .get(extension)
+                .ok_or(local(StoreInvariantFailure::IndexMismatch))?;
+            let expected_owner = match &record.owner {
+                ExtensionOwnerV1::Score => ExtensionIndexOwner::Score,
+                ExtensionOwnerV1::Part { part_id } => {
+                    let Some(RuntimeEntityRef::Part(part)) =
+                        self.indices.entity.by_id.get(part_id).copied()
+                    else {
+                        return Err(local(StoreInvariantFailure::IndexMismatch));
+                    };
+                    ExtensionIndexOwner::Part(part)
+                }
+            };
+            if owner != expected_owner {
+                return Err(local(StoreInvariantFailure::IndexMismatch));
+            }
+            let key = ExtensionIndexKey {
+                namespace: record.namespace.clone(),
+                owner,
+            };
+            if self.indices.extensions.by_key.get(&key).map(Vec::as_slice)
+                != Some([*extension].as_slice())
+            {
+                return Err(local(StoreInvariantFailure::IndexMismatch));
+            }
+            if let ExtensionOwnerV1::Part { part_id } = &record.owner {
+                check_reference(
+                    &self.indices,
+                    part_id,
+                    &extension_part_reference_path(ordinal).map_err(index_failure)?,
+                )?;
+            }
+        }
+        Ok(())
+    }
+}
+
+fn index_failure(failure: IndexBuildFailure) -> LiveStoreBuildFailure {
+    match failure {
+        IndexBuildFailure::Capacity => LiveStoreBuildFailure::InternalCapacity,
+        IndexBuildFailure::InvalidExactTime => local(StoreInvariantFailure::InvalidExactTime),
+        IndexBuildFailure::DuplicateEntry
+        | IndexBuildFailure::MissingRecord
+        | IndexBuildFailure::CountOverflow
+        | IndexBuildFailure::ParityMismatch => local(StoreInvariantFailure::IndexMismatch),
+    }
+}
+
+fn time_failure(failure: TimeIndexFailure) -> LiveStoreBuildFailure {
+    match failure {
+        TimeIndexFailure::Capacity => LiveStoreBuildFailure::InternalCapacity,
+        TimeIndexFailure::InvalidExactTime
+        | TimeIndexFailure::OverlapOrOrder
+        | TimeIndexFailure::EmptyOrReversedRange
+        | TimeIndexFailure::MissingVoice
+        | TimeIndexFailure::CounterOverflow => local(StoreInvariantFailure::InvalidExactTime),
+    }
+}
+
+fn reference_count(indices: &DerivedIndices) -> Result<usize, LiveStoreBuildFailure> {
+    indices
+        .references
+        .by_target
+        .values()
+        .try_fold(0_usize, |total, values| checked_add(total, values.len()))
+}
+
+fn extension_index_count(indices: &DerivedIndices) -> Result<usize, LiveStoreBuildFailure> {
+    indices
+        .extensions
+        .by_key
+        .values()
+        .try_fold(0_usize, |total, values| checked_add(total, values.len()))
+}
+
+fn check_reference(
+    indices: &DerivedIndices,
+    target: &StableId,
+    address: &crate::indices::StableReferenceAddress,
+) -> Result<(), LiveStoreBuildFailure> {
+    if indices.contains_reference(target, address) {
+        Ok(())
+    } else {
+        Err(local(StoreInvariantFailure::IndexMismatch))
     }
 }
 
@@ -687,7 +1313,7 @@ const fn local(failure: StoreInvariantFailure) -> LiveStoreBuildFailure {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use std::{any::TypeId, collections::HashSet};
 
     use brilliant_kernel_contracts::decode_create_request;
@@ -696,7 +1322,7 @@ mod tests {
 
     const STORE_REQUEST: &str = r#"{"apiVersion":1,"document":{"schemaVersion":"brilliant-score-1","id":"score-root","metadata":{"title":"Store","authors":["Brilliant"],"tempo":{"bpm":120}},"measureDefinitions":[{"id":"measure-z","meter":{"numerator":4,"denominator":4}},{"id":"measure-a","meter":{"numerator":4,"denominator":4}}],"parts":[{"id":"part-z","name":"Part","instrument":{"name":"Piano","writtenToSounding":{"diatonicSteps":0,"chromaticSemitones":0}},"staves":[{"id":"staff-z","lineCount":5,"defaultClef":{"sign":"G","line":2}},{"id":"staff-a","lineCount":5,"defaultClef":{"sign":"F","line":4}}],"measureContents":[{"measureId":"measure-a","voices":[{"id":"voice-a","defaultStaffId":"staff-a","sequence":{"start":{"numerator":0,"denominator":1},"events":[{"id":"event-a","duration":{"base":1,"dots":0},"staffId":"staff-a","content":{"kind":"notes","notes":[{"id":"note-a","writtenPitch":{"step":"C","alter":0,"octave":4}}]}}]}}]},{"measureId":"measure-z","voices":[{"id":"voice-z","defaultStaffId":"staff-z","sequence":{"start":{"numerator":0,"denominator":1},"events":[{"id":"event-z","duration":{"base":1,"dots":0},"content":{"kind":"rest"}}]}}]}]}],"extensions":[{"namespace":"example.score","schemaVersion":1,"owner":{"kind":"score"},"payload":{"z":1}},{"namespace":"example.second","schemaVersion":2,"owner":{"kind":"score"},"payload":{"a":[true,null]}}]}}"#;
 
-    fn fixture() -> ScoreDocumentV1 {
+    pub(crate) fn fixture() -> ScoreDocumentV1 {
         decode_create_request(STORE_REQUEST.as_bytes())
             .expect("valid Stage 2 document")
             .document
@@ -722,15 +1348,21 @@ mod tests {
         let document = fixture();
         let counts = StoreCounts::checked(&document).expect("checked counts");
         assert_eq!(counts.entity_ids, 11);
-        let mut builder =
-            LiveScoreStoreBuilder::prepare(&document, counts, ReservationPolicy::production())
-                .expect("reserved builder");
+        let references = ReferenceCapacityPlan::from_document(&document, counts.reference_edges)
+            .expect("reference capacities");
+        let mut builder = LiveScoreStoreBuilder::prepare(
+            &document,
+            counts,
+            references,
+            ReservationPolicy::production(),
+        )
+        .expect("reserved builder");
         builder.import(&document).expect("canonical import");
         assert_eq!(
-            builder.entity_refs.get(&document.id),
+            builder.indices.entity.by_id.get(&document.id),
             Some(&RuntimeEntityRef::Document)
         );
-        assert_eq!(builder.entity_refs.len(), counts.entity_ids);
+        assert_eq!(builder.indices.entity.by_id.len(), counts.entity_ids);
         let store = builder.finish().expect("publishable store");
         assert_eq!(store.header.id.as_str(), "score-root");
         assert_eq!(store.measures.len(), 2);

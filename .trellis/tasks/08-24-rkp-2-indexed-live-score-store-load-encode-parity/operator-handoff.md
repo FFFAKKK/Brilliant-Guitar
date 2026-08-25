@@ -2,7 +2,7 @@
 
 ## Current status
 
-`STAGE 3 COMPLETE — STAGE 4 NOT STARTED`.
+`STAGE 4 COMPLETE — STAGE 5 NOT STARTED`.
 
 - Branch: `codex/rkp-2-indexed-live-score-store-implementation`.
 - Worktree: `.worktrees/rkp-2-indexed-live-score-store-implementation`.
@@ -16,7 +16,8 @@
 - Stage 1 independent implementation review: exact candidate `8af8e63e1d22a6d5e22796a9e5ffa19a66b902ae`, dedicated auditor `01a01e48-1934-77b0-821e-a8026cd9e5f7`, PASS P0/P1/P2=`0/0/0`.
 - State: `in_progress`, `task_start_run=true`, `production_implementation_authorized=true`, `user_implementation_authorization=true`, `implementation_candidate_ready=false`.
 - Stage 2 exact candidate `a4ede43d944edc7e25860a9eda821889a8a581d8` is owner-accepted as the Stage 3 prerequisite; no independent Stage 2 audit is claimed.
-- Stage 3 authorization is consumed; Stage 4 is not started or authorized.
+- Stage 3 exact candidate `c348e2f332d4e96e3b3dd74def7263c95770a868` is owner-accepted as the Stage 4 prerequisite; no independent Stage 3 audit is claimed.
+- Stage 4 authorization is consumed; Stage 5 is not started or authorized.
 - TypeScript is the default runtime.
 
 ## What this plan delivers
@@ -62,13 +63,19 @@ Focused Rust is Foundation `16/16` plus Contracts `15/15`; the workspace total i
 
 ## Stage 3 checkpoint
 
-Stage 3 adds exactly seven private slotmap handle types, scalar-only Runtime records, a typed part/measure content key and explicit canonical-order topology. `LiveScoreStore` is built privately from the already decoded and Stage-2-validated DTO; it owns only records, topology and scalars and retains no complete `ScoreDocumentV1` tree. The store remains disconnected from `SmokeRuntime`, Session and Node until Stage 5, so the four new private modules use a narrow reasoned `dead_code` allowance rather than widening the public API.
+Stage 3 adds exactly seven private slotmap handle types, scalar-only Runtime records, a typed part/measure content key and explicit canonical-order topology. `LiveScoreStore` is built privately from the already decoded and Stage-2-validated DTO; it owns only records, topology and scalars and retains no complete `ScoreDocumentV1` tree. The store remains disconnected from `SmokeRuntime`, Session and Node until Stage 5; private `#[used]` function-pointer anchors keep the staged implementation compiled without widening the public API or lowering lints.
 
 Runtime independently checked-pre-counts and fallibly reserves all Stage-3-owned slotmaps, maps and vectors before insertion. It inserts once in DTO order, resolves references through typed/local maps and returns no store until deterministic local invariants pass. The private reserve-fault seam returns `InternalCapacity` with zero publication. Store tests pass `5/5`, including root identity, exact topology/coverage, record resolution without retaining the original tree, stale-generation invalidation and reserve-fault atomicity; full workspace Rust is `60/60` with fmt/check/clippy/MSRV passing.
 
+## Stage 4 checkpoint
+
+Stage 4 builds private Entity, typed Ownership, VoiceTime, Extension and Core Reference indices during the canonical import. The existing `PartMeasureKey` content map remains the sole direct Part/Measure lookup. Stable-ID lookup performs one EntityIndex map lookup plus one typed slot lookup; owner relations are typed maps. Extension payloads remain opaque and are never scanned for references.
+
+Per-Voice exact intervals are built once from canonical sequence start and positive exact durations. Exact-start and half-open overlap `[start,end)` use binary-search bounds and return semantic-order slices; empty or reversed ranges reject privately. A fresh `rebuild_indices_from_store` produces a handle-free normalized projection of stable IDs, canonical fractions and stable paths. Primary/rebuilt equality passes; a corrupted entity index is rejected. Minimal and representative metrics assert exact linear entity/topology/reference/time/index counts. Focused Rust is indices `4/4`, time-index `3/3`, store `6/6`; full workspace Rust is `67/67` with fmt/check/clippy/MSRV passing. The unchanged full TypeScript runner discovers `552` tests: `551` pass, `1` expected GC skip and `0` fail; the compiled RKP-2 workspace-law contributes its independently passing `6/6` tests.
+
 ## Next operator action
 
-Do not start Stage 4 without a later explicit user continuation. Stage 4 is the derived-index/time-query/parity commit in `implement.md`; a new file/dependency/public shape outside the approved matrix returns to planning review.
+Do not start Stage 5 without a later explicit user continuation. Stage 5 is the deterministic-export and Runtime/Session integration commit in `implement.md`; a new file/dependency/public shape outside the approved matrix returns to planning review.
 
 ## Audit and closeout
 

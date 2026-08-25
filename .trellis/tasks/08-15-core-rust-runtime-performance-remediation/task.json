@@ -44,7 +44,7 @@
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RKP-0 RKP-1 AND POST-ARCHIVE REPAIR ACCEPTED ARCHIVED / RKP-2 SOLE CURRENT AND ACTIVE IMPLEMENTATION CHILD / ACTIVATION E10C7DC / STAGE 1 AUDITED PASS 0-0-0 AT 8AF8E63 / STAGE 2 OWNER-ACCEPTED PREREQUISITE AT A4EDE43 WITHOUT CLAIMING AN INDEPENDENT AUDIT / STAGE 3 TYPED RECORDS TOPOLOGY AND ATOMIC PRIVATE IMPORT COMPLETE / STAGE 4 NOT STARTED OR AUTHORIZED / TYPESCRIPT DEFAULT / CANDIDATE NOT READY / NO CUTOVER PUSH QUALIFICATION ARCHIVE OR RKP-3.",
+  "notes": "RKP-0 RKP-1 AND POST-ARCHIVE REPAIR ACCEPTED ARCHIVED / RKP-2 SOLE CURRENT AND ACTIVE IMPLEMENTATION CHILD / ACTIVATION E10C7DC / STAGE 1 AUDITED PASS 0-0-0 AT 8AF8E63 / STAGE 2 OWNER-ACCEPTED PREREQUISITE AT A4EDE43 WITHOUT CLAIMING AN INDEPENDENT AUDIT / STAGE 3 OWNER-ACCEPTED PREREQUISITE AT C348E2F WITHOUT CLAIMING AN INDEPENDENT AUDIT / STAGE 4 DERIVED INDICES EXACT-TIME QUERY AND REBUILD PARITY COMPLETE / STAGE 5 NOT STARTED OR AUTHORIZED / TYPESCRIPT DEFAULT / CANDIDATE NOT READY / NO CUTOVER PUSH QUALIFICATION ARCHIVE OR RKP-3.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
@@ -92,7 +92,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "rkp2-stage-4-derived-indices-time-query-parity-authorization",
+    "next_gate": "rkp2-stage-5-deterministic-export-runtime-session-integration-authorization",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -197,7 +197,7 @@
     "rkp2_implementation_authorized": true,
     "rkp2_user_implementation_authorization": true,
     "rkp2_created": true,
-    "rkp2_status": "in_progress_stage_3_complete_stage_4_not_started",
+    "rkp2_status": "in_progress_stage_4_complete_stage_5_not_started",
     "rkp2_task": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
     "rkp2_planning_base": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "rkp2_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -236,8 +236,21 @@
     "rkp2_stage_3_focused_rust_result": "runtime_store_5_of_5_clippy_pass",
     "rkp2_stage_3_workspace_rust_result": "60_of_60_fmt_check_clippy_msrv_pass",
     "rkp2_stage_3_contract": "seven_private_typed_slotmap_handles_scalar_records_explicit_canonical_topology_independent_capacity_preflight_atomic_private_import_local_invariants_stale_generation",
-    "rkp2_stage_4_started": false,
-    "rkp2_stage_4_authorized": false,
+    "rkp2_stage_3_owner_acceptance": {
+      "candidate_commit": "c348e2f332d4e96e3b3dd74def7263c95770a868",
+      "status": "owner_accepted_as_stage_4_prerequisite",
+      "independent_review": "not_run_not_claimed"
+    },
+    "rkp2_stage_4_started": true,
+    "rkp2_stage_4_authorized": true,
+    "rkp2_stage_4_completed": true,
+    "rkp2_stage_4_commit_subject": "feat(rkp-2): add deterministic score indices and parity rebuild",
+    "rkp2_stage_4_focused_rust_result": "indices_4_of_4_time_index_3_of_3_store_6_of_6_clippy_pass",
+    "rkp2_stage_4_workspace_rust_result": "67_of_67_fmt_check_clippy_msrv_pass",
+    "rkp2_stage_4_typescript_result": "552_discovered_551_pass_1_expected_gc_skip_0_fail",
+    "rkp2_stage_4_contract": "private_entity_ownership_extension_core_reference_indices_exact_voice_binary_queries_fresh_rebuild_normalized_parity_corruption_rejection_linear_metrics",
+    "rkp2_stage_5_started": false,
+    "rkp2_stage_5_authorized": false,
     "rkp2_implementation_candidate_ready": false,
     "rkp2_implementation_review": "pending",
     "rkp2_default_runtime": "typescript",
