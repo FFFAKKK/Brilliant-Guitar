@@ -40,7 +40,7 @@
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "RKP-2 PLANNING PASS 0-0-0 AT 625054E / CLEAN UNIFIED BASE DF40AEF / ACTIVATION E10C7DC / STAGE 1 AUDITED PASS 0-0-0 AT 8AF8E63 / STAGE 2 OWNER-ACCEPTED PREREQUISITE AT A4EDE43 WITHOUT CLAIMING AN INDEPENDENT AUDIT / STAGE 3 OWNER-ACCEPTED PREREQUISITE AT C348E2F WITHOUT CLAIMING AN INDEPENDENT AUDIT / STAGE 4 OWNER-ACCEPTED PREREQUISITE AT 72CF076 WITHOUT CLAIMING AN INDEPENDENT AUDIT / STAGE 5 DETERMINISTIC EXPORT AND RUNTIME-SESSION INTEGRATION COMPLETE / BDA15099 MANIFEST SUCCESSOR PROJECTION RECORDED / E3829DA AUTHORITY CLOSURE RETURNED 0-1-0 FOR LATE HISTORICAL ANCHOR / APPROVED-PLANNING-STATE ANCHOR REPAIR TARGETED REREVIEW PENDING / STAGE 6 NOT STARTED OR AUTHORIZED / TYPESCRIPT DEFAULT / CANDIDATE NOT READY / NO CUTOVER PUSH QUALIFICATION ARCHIVE RKP-3.",
+  "notes": "RKP-2 STAGE 5 COMPLETE / FULL-RUNNER PLANNING PASSED AT CC82BA1 / SEPARATE RUNNER IMPLEMENTATION PAUSED CLEAN AT STAGE 2 D366653 AFTER REAL NODE EVENTS INVALIDATED UNIQUE FILE-TERMINAL PREMISE / EVENT-COVERAGE CONTENT P AND ANCHOR A TARGETED PLANNING REREVIEW PENDING / STAGE 3 AND STAGE 6 NOT STARTED OR AUTHORIZED / TYPESCRIPT DEFAULT / CANDIDATE NOT READY / NO CUTOVER PUSH QUALIFICATION ARCHIVE RKP-3.",
   "meta": {
     "planning_base_commit": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "accepted_rkp1_audited_implementation_commit": "94387b339b5e4d9ce6b7f97597a1b56edd051f01",
@@ -103,7 +103,7 @@
     },
     "approved_planning_head": "625054ec78e6410e0fb6034ab0c8f60bbf110d08",
     "current_planning_child": "08-25-rkp-2-cross-platform-full-test-runner-contract-repair",
-    "implementation_stage": "stage_5_complete_stage_6_blocked_by_cross_platform_full_runner_planning_review",
+    "implementation_stage": "stage_5_complete_stage_6_blocked_runner_stage_2_paused_for_event_coverage_planning_amendment",
     "stage_1_started": true,
     "stage_1_completed": true,
     "stage_1_commit_subject": "build(rkp-2): pin typed generational store dependency",
@@ -193,9 +193,9 @@
     "post_stage_5_manifest_authority_hashes_lf_normalized_sha256": {
       "check_jsonl": "7e12f6d00ba17e1967ef57e884e7b5d6ca7efedbb2aaf94de04fc4b3091251c3",
       "implement_jsonl": "cd0a42070a76a18e782d7da4ebc0e9a88d2ed5dece0d093125d4fc8982229705",
-      "design_md": "5f6ee49c9aa83f475cffcb40bf5aab31a6975129658c9af1d99e4471e8e934ee",
-      "implement_md": "e535c8bf5fbc170d4a148d9cd1d57d96743b33d96767a01ec441fb9eb29e013b",
-      "file_test_and_rollback_matrix_md": "31f84635a074a4a06279b6a33ad9b63f8cfa79e32e7674369f92ed1b6ce8f1a9"
+      "design_md": "d51e9f5f650e97aac2ae9ad84bb939e8ef40402844ef744c98ddaafe4db63808",
+      "implement_md": "6bd66cb315688522f1f4d8d4623ea83196849f787acdf9123c041d835577140a",
+      "file_test_and_rollback_matrix_md": "c447cce8b9df35c7310ae04ae9dcb0295b1153838b00ccd5439850b6dd387da0"
     },
     "cross_platform_full_test_runner_contract_repair": {
       "child": "08-25-rkp-2-cross-platform-full-test-runner-contract-repair",
@@ -206,7 +206,7 @@
       "node24_complete_literal": "77_files_557_discovered_556_pass_1_expected_gc_skip_0_fail",
       "node20_literal_glob": "20_20_2_exit_1",
       "package_and_lock_df40aef_to_eed4871a_delta": "zero",
-      "status": "bounded_planning_repair_candidate_targeted_independent_rereview_pending",
+      "status": "event_coverage_planning_amendment_targeted_independent_rereview_pending",
       "first_planning_audit": {
         "auditor_task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
         "candidate_commit": "c43a34e7d02a57cfd90de506cf97787ff5571a9e",
@@ -216,6 +216,15 @@
         "verdict": "return_for_bounded_planning_repair"
       },
       "targeted_independent_planning_rereview": "pending",
+      "accepted_planning_head": "cc82ba168ed45b8c3e0182ea8e1370b1474f1155",
+      "accepted_planning_audit": "PASS_0_0_0_auditor_01a01e48-1934-77b0-821e-a8026cd9e5f7",
+      "paused_implementation_head": "d366653788a42eb56cd5755a63b1e73700c67310",
+      "paused_implementation_commits": "activation_9da6ba6_stage1_912a68a_stage2_d366653",
+      "discarded_stage3": "610d20b_not_in_current_parent_chain",
+      "planning_amendment_content_commit": "pending_content_commit_P_reported_after_commit",
+      "planning_amendment_anchor_commit": "pending_anchor_commit_A_after_P",
+      "event_coverage_contract": "event_type_plus_pass_data_file_seen_set_manifest_equals_run_files_equals_seen",
+      "event_characterization": "node20_20_2_node24_15_0_two_file_and_real_78_file_raw_fast_slow_identical",
       "planning_range_path_count": 20,
       "implementation_candidate_technical_path_count": 4,
       "implementation_candidate_lifecycle_path_count": 11,
@@ -226,6 +235,7 @@
       "sole_test_infrastructure_owner": true,
       "task_start_run": false,
       "production_implementation_authorized": false,
+      "implementation_paused_for_bounded_planning_repair": true,
       "post_pass_closeout_authorized": false,
       "stage_6_blocked_until_accepted_archived_integrated": true
     },

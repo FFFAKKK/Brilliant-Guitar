@@ -14,7 +14,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, relative, resolve } from "node:path";
+import { isAbsolute, join, relative, resolve } from "node:path";
 import { test } from "node:test";
 
 import * as coreKernel from "../../../src/core-kernel/index";
@@ -64,12 +64,7 @@ const FULL_RUNNER_ACTIVE_ROOT =
   ".trellis/tasks/08-25-rkp-2-cross-platform-full-test-runner-contract-repair";
 const FULL_RUNNER_ARCHIVE_ROOT =
   ".trellis/tasks/archive/2026-08/08-25-rkp-2-cross-platform-full-test-runner-contract-repair";
-const PLANNED_OUTCOME_FIELDS = [
-  "type",
-  "data.nesting",
-  "data.file",
-  "data.name",
-] as const;
+const PLANNED_TRUTH_FIELDS = ["type", "data.file"] as const;
 
 const CRATES = [
   "brilliant-core-types",
@@ -242,15 +237,15 @@ const FROZEN_POST_STAGE_5_AUTHORITY_CONTENT = [
   },
   {
     path: DESIGN_PATH,
-    sha256: "5f6ee49c9aa83f475cffcb40bf5aab31a6975129658c9af1d99e4471e8e934ee",
+    sha256: "d51e9f5f650e97aac2ae9ad84bb939e8ef40402844ef744c98ddaafe4db63808",
   },
   {
     path: IMPLEMENT_PATH,
-    sha256: "e535c8bf5fbc170d4a148d9cd1d57d96743b33d96767a01ec441fb9eb29e013b",
+    sha256: "6bd66cb315688522f1f4d8d4623ea83196849f787acdf9123c041d835577140a",
   },
   {
     path: FILE_TEST_ROLLBACK_MATRIX_PATH,
-    sha256: "31f84635a074a4a06279b6a33ad9b63f8cfa79e32e7674369f92ed1b6ce8f1a9",
+    sha256: "c447cce8b9df35c7310ae04ae9dcb0295b1153838b00ccd5439850b6dd387da0",
   },
 ] as const;
 
@@ -443,9 +438,9 @@ function validateAuthorityProjectionFixture(
 type PlannedTestEvent = Readonly<{
   type: string;
   data?: Readonly<{
-    nesting?: number;
-    file?: string;
-    name?: string;
+    nesting?: unknown;
+    file?: unknown;
+    name?: unknown;
     details?: Readonly<{ type?: string }>;
   }>;
 }>;
@@ -462,8 +457,9 @@ function normalizedAbsolute(path: string): string {
   return resolve(path).replaceAll("\\", "/");
 }
 
-function evaluatePlannedFileOutcomes(
+function evaluatePlannedFileCoverage(
   manifestFiles: readonly string[],
+  runFiles: readonly string[],
   events: readonly PlannedTestEvent[],
   state: PlannedStreamState,
 ): string {
@@ -474,34 +470,30 @@ function evaluatePlannedFileOutcomes(
   }
   if (!state.reporterFlushed) return "runner.reporter-flush-failed";
 
-  const manifest = new Set(manifestFiles.map(normalizedAbsolute));
-  const outcomes = new Map<string, "pass" | "fail">();
+  const normalizedManifestFiles = manifestFiles.map(normalizedAbsolute);
+  const normalizedRunFiles = runFiles.map(normalizedAbsolute);
+  if (
+    normalizedManifestFiles.length !== normalizedRunFiles.length ||
+    normalizedManifestFiles.some((file, index) => file !== normalizedRunFiles[index])
+  ) {
+    return "runner.manifest-mismatch";
+  }
+  const manifest = new Set(normalizedManifestFiles);
+  const seenManifestFiles = new Set<string>();
   for (const event of events) {
     if (event.type === "test:interrupted") return "runner.test-interrupted";
     if (event.type === "test:fail") return "runner.test-failed";
-    if (event.type !== "test:pass" || event.data?.nesting !== 0) continue;
+    if (event.type !== "test:pass") continue;
 
-    const file = event.data.file;
-    const name = event.data.name;
-    if (file === undefined && name === undefined) {
+    const file = event.data?.file;
+    if (typeof file !== "string" || file.length === 0 || !isAbsolute(file)) {
       return "runner.outcome-path-missing";
     }
-    const normalizedFile = file === undefined ? undefined : normalizedAbsolute(file);
-    const normalizedName = name === undefined ? undefined : normalizedAbsolute(name);
-    if (
-      normalizedFile !== undefined &&
-      normalizedName !== undefined &&
-      normalizedFile !== normalizedName
-    ) {
-      return "runner.outcome-path-mismatch";
-    }
-    const outcomePath = normalizedFile ?? normalizedName;
-    assert.ok(outcomePath);
-    if (!manifest.has(outcomePath)) return "runner.outcome-unknown";
-    if (outcomes.has(outcomePath)) return "runner.outcome-duplicate";
-    outcomes.set(outcomePath, "pass");
+    const normalizedFile = normalizedAbsolute(file);
+    if (!manifest.has(normalizedFile)) return "runner.outcome-unknown";
+    seenManifestFiles.add(normalizedFile);
   }
-  if (outcomes.size !== manifest.size) return "runner.outcome-missing";
+  if (seenManifestFiles.size !== manifest.size) return "runner.outcome-missing";
   return "ok";
 }
 
@@ -621,31 +613,48 @@ async function assertCrossVersionOutcomeFixtures(): Promise<void> {
   const first = resolve("dist/test/alpha.test.js");
   const second = resolve("dist/test/nested/beta.test.js");
   const manifest = [first, second];
+  const runFiles = [...manifest];
   const ended = { ended: true, reporterFlushed: true } as const;
   const passEvents: readonly PlannedTestEvent[] = [
-    { type: "test:pass", data: { nesting: 0, file: first, name: first } },
-    { type: "test:pass", data: { nesting: 0, name: second } },
+    {
+      type: "test:pass",
+      data: { nesting: 0, file: first, name: "internal alpha pass" },
+    },
+    {
+      type: "test:pass",
+      data: { nesting: 8, file: first, name: second, details: { type: "ignored" } },
+    },
+    {
+      type: "test:pass",
+      data: { nesting: -1, file: second, name: "opaque beta title" },
+    },
   ];
-  assert.equal(evaluatePlannedFileOutcomes(manifest, passEvents, ended), "ok");
   assert.equal(
-    evaluatePlannedFileOutcomes(
+    evaluatePlannedFileCoverage(manifest, runFiles, passEvents, ended),
+    "ok",
+  );
+  assert.equal(
+    evaluatePlannedFileCoverage(
       manifest,
+      runFiles,
       [{ type: "test:fail", data: { nesting: 4 } }, ...passEvents],
       ended,
     ),
     "runner.test-failed",
   );
   assert.equal(
-    evaluatePlannedFileOutcomes(
+    evaluatePlannedFileCoverage(
       manifest,
+      runFiles,
       [{ type: "test:interrupted", data: { nesting: 0 } }, ...passEvents],
       ended,
     ),
     "runner.test-interrupted",
   );
   assert.equal(
-    evaluatePlannedFileOutcomes(
+    evaluatePlannedFileCoverage(
       manifest,
+      runFiles,
       [
         { type: "test:complete", data: { nesting: 0, file: first } },
         {
@@ -658,28 +667,59 @@ async function assertCrossVersionOutcomeFixtures(): Promise<void> {
     "runner.outcome-missing",
   );
   assert.equal(
-    evaluatePlannedFileOutcomes(manifest, [...passEvents, passEvents[0]!], ended),
-    "runner.outcome-duplicate",
+    evaluatePlannedFileCoverage(
+      manifest,
+      runFiles,
+      [...passEvents, passEvents[0]!],
+      ended,
+    ),
+    "ok",
   );
   assert.equal(
-    evaluatePlannedFileOutcomes(manifest, passEvents.slice(0, 1), ended),
+    evaluatePlannedFileCoverage(manifest, runFiles, passEvents.slice(0, 2), ended),
     "runner.outcome-missing",
   );
   assert.equal(
-    evaluatePlannedFileOutcomes(
+    evaluatePlannedFileCoverage(
       manifest,
+      runFiles,
       [
         {
           type: "test:pass",
           data: { nesting: 0, file: first, name: second },
         },
+        { type: "test:pass", data: { file: second, name: first } },
       ],
       ended,
     ),
-    "runner.outcome-path-mismatch",
+    "ok",
+  );
+  for (const malformedFile of [undefined, 42, "", "dist/test/alpha.test.js"]) {
+    assert.equal(
+      evaluatePlannedFileCoverage(
+        manifest,
+        runFiles,
+        [{ type: "test:pass", data: { file: malformedFile } }],
+        ended,
+      ),
+      "runner.outcome-path-missing",
+    );
+  }
+  assert.equal(
+    evaluatePlannedFileCoverage(
+      manifest,
+      runFiles,
+      [{ type: "test:pass", data: { file: resolve("dist/test/unknown.test.js") } }],
+      ended,
+    ),
+    "runner.outcome-unknown",
   );
   assert.equal(
-    evaluatePlannedFileOutcomes(manifest, passEvents, {
+    evaluatePlannedFileCoverage(manifest, [second, first], passEvents, ended),
+    "runner.manifest-mismatch",
+  );
+  assert.equal(
+    evaluatePlannedFileCoverage(manifest, runFiles, passEvents, {
       ended: false,
       prematureClose: true,
       reporterFlushed: true,
@@ -687,7 +727,7 @@ async function assertCrossVersionOutcomeFixtures(): Promise<void> {
     "runner.stream-incomplete",
   );
   assert.equal(
-    evaluatePlannedFileOutcomes(manifest, passEvents, {
+    evaluatePlannedFileCoverage(manifest, runFiles, passEvents, {
       ended: true,
       reporterFlushed: false,
     }),
@@ -707,18 +747,19 @@ async function assertCrossVersionOutcomeFixtures(): Promise<void> {
     });
   });
   assert.deepEqual(observed, ["pass", "end"]);
-  assert.deepEqual(PLANNED_OUTCOME_FIELDS, [
-    "type",
-    "data.nesting",
-    "data.file",
-    "data.name",
-  ]);
+  assert.deepEqual(PLANNED_TRUTH_FIELDS, ["type", "data.file"]);
   assert.equal(
-    PLANNED_OUTCOME_FIELDS.includes(
-      "data.details.type" as (typeof PLANNED_OUTCOME_FIELDS)[number],
+    PLANNED_TRUTH_FIELDS.includes(
+      "data.details.type" as (typeof PLANNED_TRUTH_FIELDS)[number],
     ),
     false,
   );
+  for (const ignored of ["data.name", "data.nesting"]) {
+    assert.equal(
+      PLANNED_TRUTH_FIELDS.includes(ignored as (typeof PLANNED_TRUTH_FIELDS)[number]),
+      false,
+    );
+  }
 }
 
 function assertPhysicalIdentityFixtures(): void {

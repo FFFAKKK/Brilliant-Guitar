@@ -4,7 +4,7 @@
 
 This candidate is docs/test-governance planning only. Do not edit `package.json`, create runner/test source, run `task.py start`, authorize RKP-2 Stage 6, accept/archive/push, create RKP-3, switch the default runtime or run qualification.
 
-Entry to implementation requires dedicated independent planning PASS P0/P1/P2=`0/0/0` on the exact planning HEAD and a later explicit user authorization.
+The implementation line is paused at clean Stage 2 `d366653788a42eb56cd5755a63b1e73700c67310`. Entry to Stage 3 requires dedicated independent planning PASS P0/P1/P2=`0/0/0` on exact amendment anchor A, explicit integration of A into that paused line, and a later explicit user authorization. Content commit P alone is not an implementation base.
 
 ## 1. Stage 0 — activation
 
@@ -70,8 +70,8 @@ test/test-infrastructure/run-compiled-tests.test.ts
 1. Add the injectable semantic request and actual `run()` options capture.
 2. Verify repo CWD, supported Node version and process-isolation default, then call `run({ files: absoluteFiles, concurrency: true })`.
 3. Immediately after `run()` returns, synchronously attach an independent structured observer and the stable built-in reporter pipeline. The reporter is display-only.
-4. Normalize only `test:pass`/`test:fail` using event type plus `data.nesting`, `data.file` and `data.name`. Any fail at any nesting fails. Only nesting-zero outcomes enter the manifest-file result map; absent/conflicting/out-of-manifest paths and duplicate/missing outcomes fail. Do not consume `test:complete`, `details.type` or reporter text.
-5. Treat any available `test:interrupted`, stream error/abort/premature close/missing normal end, reporter sink/pipeline/flush failure or manifest mismatch as nonzero. Exit zero requires normal end, exact observer equality, no fail/interrupted and reporter flush success.
+4. Normalize only `test:pass`/`test:fail` using event type plus `data.file`. Any fail at any nesting immediately selects `runner.test-failed`. Every pass requires a non-empty absolute manifest-member `data.file`; missing/non-string/relative selects `runner.outcome-path-missing`, and an absolute non-member selects `runner.outcome-unknown`. Add passes to an idempotent `seenManifestFiles` set. Do not consume `data.name`, `data.nesting`, `test:complete`, `details.type` or reporter text for truth.
+5. Prove the frozen enumerator manifest, exact absolute files array passed to `run()` and final pass-seen set independently and exactly equal. Duplicate passes are allowed; partial coverage selects `runner.outcome-missing`. Remove `runner.outcome-path-mismatch` and `runner.outcome-duplicate` from the future error union and tests. Treat any available `test:interrupted`, stream error/abort/premature close/missing normal end, reporter sink/pipeline/flush failure or manifest mismatch as nonzero. Exit zero requires normal end, exact three-way equality, no fail/interrupted and reporter flush success.
 6. Add injected earliest-post-return emission/close races so listener attachment cannot regress.
 7. Use `require.main === module`; importing the CommonJS module must not execute the suite.
 8. Replace only the package `test` script. Confirm `package-lock.json` byte-delta is empty.
@@ -104,10 +104,10 @@ test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts
 
 ### Actions
 
-1. Run the focused and full runner on Node 20.20.2 and 24.15.0 using the same compiled source and literal manifest; capture real characterization fixtures for `test:pass`/`test:fail` and prove the only consumed fields are type, `data.nesting`, `data.file` and `data.name`.
+1. Run the focused and full runner on Node 20.20.2 and 24.15.0 using the same compiled source and literal manifest; capture raw/fast/slow characterization fixtures for `test:pass`/`test:fail` and prove the only truth-consumed fields are event type and `data.file`.
 2. Add/execute a partial-discovery fake that reports a strict subset; it must fail despite an otherwise successful runner.
 3. Independently enumerate the current compiled tree and compare the set, count and hash to the printed manifest.
-4. Exercise nested failure, interrupted, duplicate/missing/unknown outcome, wrong event fields, premature close and reporter failure on both the normalizer seam and real-version fixtures.
+4. Exercise any-nesting failure, interrupted, missing/non-string/relative/unknown `data.file`, duplicate-pass success, opaque name/nesting/details, partial seen set, premature close and reporter failure on both the normalizer seam and real-version fixtures.
 5. Extend RKP-2 workspace-law only to freeze the child candidate's exact four technical plus eleven active lifecycle paths. Do not duplicate production traversal implementation.
 6. Preserve the RKP-2 21-path technical matrix, current 22-path coordination matrix, existing JSONL successor contract and public inventories.
 
@@ -143,7 +143,7 @@ Revert Stage 3 to remove only cross-version/integration proof. Stage 2 runner re
 
 1. Run every complete gate below at the exact clean implementation candidate.
 2. Record actual cross-version manifests/totals and protected deltas.
-3. Prove the immutable planning interval (accepted planning HEAD) and implementation candidate interval: exactly four child technical plus eleven active lifecycle/authority paths, with ownership sets independently asserted and their changed-path union deduplicated.
+3. Prove the immutable planning interval `eed4871a..P` is exactly twenty paths and the implementation candidate interval `P..candidate` is exactly four child technical plus eleven active lifecycle/authority paths, with ownership sets independently asserted and their changed-path union deduplicated. P is pinned by exact anchor A; mutable `HEAD` is forbidden.
 4. Keep the current RKP-2 twenty-one technical and twenty-two coordination paths frozen. Do not recompute post-archive hashes and keep both RKP-2 JSONLs unchanged.
 5. Set child candidate readiness true only after gates; implementation review remains pending.
 6. Mark only `READY FOR INDEPENDENT IMPLEMENTATION REVIEW`. Do not accept, archive, integrate or claim Stage 6 readiness.
@@ -177,7 +177,7 @@ Also run existing Node bridge `9/9`, RKP-1 workspace-law `6/6`, RKP-2 workspace-
 
 `docs(rkp-2): freeze full test runner repair evidence`
 
-Revert Stage 4 to the exact accepted planning HEAD to remove the entire unaccepted implementation candidate. Do not accept/archive or resume Stage 6.
+Revert Stage 4 to the exact independently accepted amendment anchor A to remove the entire unaccepted implementation candidate. Do not accept/archive or resume Stage 6.
 
 ## 6. Independent review
 

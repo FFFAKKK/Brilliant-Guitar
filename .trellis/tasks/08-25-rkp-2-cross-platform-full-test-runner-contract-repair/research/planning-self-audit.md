@@ -6,8 +6,10 @@ Planning base `eed4871a86191783d539b7d4097be3627e98e4a0`; child planning artifac
 
 ## Boundary checks
 
-- child remains planning; start/production authorization false;
-- first independent planning review of `c43a34e7d02a57cfd90de506cf97787ff5571a9e` returned P0/P1/P2=`0/3/0`; this candidate performs only that bounded planning repair and targeted rereview remains pending;
+- child amendment branch remains planning; start/production authorization false;
+- accepted planning head `cc82ba168ed45b8c3e0182ea8e1370b1474f1155` is followed only on a separate implementation line by activation `9da6ba6`, Stage 1 `912a68a` and paused clean Stage 2 `d366653`; none is an ancestor of this amendment;
+- real Node events exposed one new bounded planning drift: `nesting===0` and `data.file`/`data.name` equality cannot define one terminal outcome per manifest file; discarded diagnostic Stage 3 `610d20b` is outside every current parent chain;
+- content commit P corrects only event/file coverage, and anchor A pins P for a new dedicated independent planning rereview; no PASS is claimed here;
 - Stage 5 remains complete; Stage 6 start/authorization and candidate readiness remain false;
 - TypeScript remains default; no RKP-3, qualification, archive or push;
 - future technical allowlist is four literal paths and package-lock is excluded;
@@ -20,13 +22,13 @@ Planning base `eed4871a86191783d539b7d4097be3627e98e4a0`; child planning artifac
 
 - deterministic root/traversal/link/order/dedup/manifest behavior is explicit;
 - Node 20/24 common `run` options are separated from verified CWD/isolation semantics;
-- manifest versus actual files uses common `test:pass`/`test:fail`, exact nesting-zero path normalization and one terminal outcome per manifest file; version-private fields and reporter text are forbidden;
+- manifest versus actual execution uses common `test:pass`/`test:fail`, event type plus pass `data.file` only, idempotent seen-file coverage and independent manifest/run-files/seen equality; version-private fields, name, nesting and reporter text are forbidden truth inputs;
 - reporter and structured observer are separate; normal end, exact outcome equality and reporter flush are jointly required;
 - physical identity uses BigInt `(dev,ino)` and a real hard-link fixture proves alias rejection before runner invocation;
-- current 77/557 is evidence, not a hard-coded invariant;
+- 77/557 is the pre-runner base snapshot and 78 files with 567 pass/1 governance fail is the paused Stage-2 characterization snapshot; neither is a future invariant;
 - partial-discovery and version/shell-entry regressions have executable tests;
 - Stage 4 stops for implementation audit; archive/closeout/integration is a separate post-PASS projection with exact 13 archived paths and phase-specific rollback.
 
 ## Self-audit result
 
-The three first-review P1 findings are bounded to cross-version outcome normalization, physical alias identity and candidate-versus-closeout projection. Self-audit P0/P1/P2=`0/0/0` for the repaired planning contract only. This is not an independent verdict. `independent_planning_review=pending`; the exact committed repair candidate must be sent to the same dedicated planning auditor before any activation.
+The previous three planning P1 findings remain closed. This amendment addresses only the newly disproved unique-file-terminal premise and leaves every other accepted contract unchanged. Self-audit P0/P1/P2=`0/0/0` for the amended planning contract only. This is not an independent verdict. Exact anchor A must be sent to the same dedicated planning auditor; implementation remains paused until PASS and explicit integration.

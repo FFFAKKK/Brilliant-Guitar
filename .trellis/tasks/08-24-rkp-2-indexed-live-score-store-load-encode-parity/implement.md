@@ -244,12 +244,14 @@ Revert Stage 5 to restore `SmokeRuntime`; Stages 1–4 remain non-default and un
 Stage 6 cannot start or freeze an implementation candidate while complete TypeScript discovery still depends on `node --test "dist/test/**/*.test.js"`. Child `08-25-rkp-2-cross-platform-full-test-runner-contract-repair` is the sole test-infrastructure owner and must complete these gates first:
 
 1. its exact planning candidate passes dedicated independent planning review P0/P1/P2=`0/0/0`;
-2. separate user authorization activates and implements its deterministic literal enumeration, BigInt `(dev,ino)` physical-alias gate, `full-test-manifest-v1`, programmatic `node:test` execution and `test:pass`/`test:fail`-only outcome/exit contract;
+2. separate user authorization activates and implements its deterministic literal enumeration, BigInt `(dev,ino)` physical-alias gate, `full-test-manifest-v1`, programmatic `node:test` execution and event-type-plus-pass-`data.file` coverage/exit contract;
 3. Node 20.20.2 and 24.15.0, PowerShell and `cmd.exe`/`npm.cmd` evidence pass without a shell glob, new dependency or fixed file/test total;
-4. Stage 4 freezes only the exact 4-technical + 11-active-lifecycle implementation range and stops at `READY FOR INDEPENDENT IMPLEMENTATION REVIEW`;
-5. independent implementation review passes, then owner acceptance and native archive occur as separate lifecycle actions into the exact thirteen-path archive including implementation evidence;
-6. the bounded closeout replaces all twelve active-child coordination paths by all thirteen archived successors, proves no dual authority, pins implementation/archive commits and recomputes five hashes while both RKP-2 JSONLs remain unchanged; and
-7. an explicit fast-forward/merge integration gate creates a new RKP-2 Stage 6 prerequisite base containing the accepted child and current RKP-2 ancestry.
+4. after real events exposed the impossible unique-file-terminal premise, content commit P corrects only event coverage and anchor A pins `eed4871a..P` as exact twenty paths; implementation remains paused at `d366653` until A passes independent planning rereview and is explicitly integrated;
+5. resumed Stage 3 accepts duplicate passes, rejects malformed/unknown/partial pass-file coverage, preserves any-nesting fail and proves independent manifest/run-files/seen equality on Node 20.20.2 and 24.15.0;
+6. Stage 4 freezes only exact `P..candidate`, the 4-technical + 11-active-lifecycle implementation range, and stops at `READY FOR INDEPENDENT IMPLEMENTATION REVIEW`;
+7. independent implementation review passes, then owner acceptance and native archive occur as separate lifecycle actions into the exact thirteen-path archive including implementation evidence;
+8. the bounded closeout replaces all twelve active-child coordination paths by all thirteen archived successors, proves no dual authority, pins implementation/archive commits and recomputes five hashes while both RKP-2 JSONLs remain unchanged; and
+9. an explicit fast-forward/merge integration gate creates a new RKP-2 Stage 6 prerequisite base containing the accepted child and current RKP-2 ancestry.
 
 RKP-2 consumes the accepted runner and printed manifest only; it must not copy enumeration/reporting logic or become a second owner. During child planning/candidate review, RKP-2 remains at technical 21 and coordination 22; only post-PASS closeout may project coordination 23 (historical 10 + archive 13). The accepted package target is `npm run build && node dist/test/test-infrastructure/run-compiled-tests.js`. `package-lock.json`, product/Rust/native/CVN/qualification code and individual test contents remain unchanged. Even after integration, Stage 6 requires a new explicit user authorization.
 
@@ -301,7 +303,7 @@ git status --short --branch
 
 Also verify:
 
-- the accepted child runner prints a dynamic `full-test-manifest-v1`; its independently enumerated literal file set, actual `run({ files })` set and complete top-level file outcomes are equal, with actual file/test totals recorded rather than hard-coded;
+- the accepted child runner prints a dynamic `full-test-manifest-v1`; its independently enumerated literal file set, actual `run({ files })` set and manifest-member `test:pass.data.file` seen set are equal, with actual file/test totals recorded rather than hard-coded;
 - JSON/JSONL parsing and unique paths;
 - parent child reference exactly once;
 - exact dependency/features and seven crates;

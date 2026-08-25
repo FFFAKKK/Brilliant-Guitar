@@ -10,7 +10,7 @@
 | RKP-2 workspace-law test | 1 | literal coordination allowlist and content freeze |
 | Rust parent task | 1 | current gate projection |
 
-The four research paths are `current-runner-reproduction.md`, `node-test-api-and-version-contract.md`, this file and `planning-self-audit.md`. The fixed planning interval begins at `eed4871a86191783d539b7d4097be3627e98e4a0`; first reviewed head `c43a34e7d02a57cfd90de506cf97787ff5571a9e` is its direct child, and this repair stays within the same exact 20 paths. Package, runner source/test, product/Rust/native code and all other tests stay zero-delta.
+The four research paths are `current-runner-reproduction.md`, `node-test-api-and-version-contract.md`, this file and `planning-self-audit.md`. The fixed planning interval begins at `eed4871a86191783d539b7d4097be3627e98e4a0`; first reviewed head `c43a34e7d02a57cfd90de506cf97787ff5571a9e`, accepted planning head `cc82ba168ed45b8c3e0182ea8e1370b1474f1155`, event-coverage content commit P and anchor commit A remain within the same exact 20 paths. A pins P; only exact A is independently rereviewed. Package, runner source/test, product/Rust/native code and all other tests stay zero-delta.
 
 ## Future technical implementation
 
@@ -32,14 +32,14 @@ The exact eleven paths are the four child task/evidence paths, six RKP-2 authori
 | Contract | Focused proof | Complete proof |
 |---|---|---|
 | discovery/manifest | fixture tree, count/hash, mutation rejection, real `linkSync` alias, `(dev,ino)` failures | independent current-tree set equality; run called zero on alias |
-| completion | injected nested fail/interrupted/wrong-field/duplicate/missing/throw/abort/premature-close/reporter cases | actual full suite zero failure only after normal end + flush |
-| entry/version | imported module + direct CLI; earliest post-return emit/close | PowerShell and cmd/npm on Node 20.20.2/24.15.0; real event fixtures consume only type/nesting/file/name |
+| completion | missing/non-string/relative/unknown `data.file`, duplicate pass allowed, partial seen set, any nested fail/interrupted/throw/abort/premature-close/reporter cases | actual full suite zero only after independent manifest/run-files/pass-seen equality + normal end + flush |
+| entry/version | imported module + direct CLI; earliest post-return emit/close; name/nesting/details ignored for truth | PowerShell and cmd/npm on Node 20.20.2/24.15.0; raw/fast/slow fixtures consume only event type + `data.file` |
 | governance | real 20-path planning interval; fixture 4+11 candidate and 22-active/23-archive sets | actual candidate range before audit; actual archive/integration ranges after PASS |
 | regression | focused runner | Rust, Node bridge, typecheck/build/full TS |
 
 ## Candidate, archive and integration rule
 
-Pre-review Stage 4 ends at `READY FOR INDEPENDENT IMPLEMENTATION REVIEW`. Its immutable lower bound is the exact independently accepted planning HEAD; its actual changed set is child technical four plus active lifecycle eleven. RKP-2 remains at technical 21 and coordination 22. No archive, post-archive hashes or accepted integration is claimed.
+Pre-review Stage 4 ends at `READY FOR INDEPENDENT IMPLEMENTATION REVIEW`. Its immutable lower bound is exact content commit P, pinned by independently accepted amendment anchor A and explicitly merged into the paused Stage-2 line; its actual changed set is child technical four plus active lifecycle eleven. RKP-2 remains at technical 21 and coordination 22. No archive, post-archive hashes or accepted integration is claimed.
 
 Only after implementation PASS and owner authorization, native archive writes exactly:
 
@@ -64,7 +64,7 @@ The bounded closeout removes all twelve active child paths and adds all thirteen
 ## Rollback chain
 
 ```text
-pre-review candidate -> accepted planning HEAD
+pre-review candidate -> accepted amendment anchor A / content head P
 archive + closeout -> restore active planning child and 22-path authority
 RKP-2 integration -> eed4871a Stage-5 base
 ```
