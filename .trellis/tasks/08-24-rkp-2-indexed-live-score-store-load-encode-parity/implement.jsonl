@@ -12,7 +12,7 @@
 {"file":".trellis/spec/core-kernel/backend/score-document-model.md","reason":"Active ScoreDocument semantics and identity/time ownership."}
 {"file":"crates/brilliant-score-foundation/src/dto.rs","reason":"Current immutable DTO shape that RKP-2 preserves."}
 {"file":"crates/brilliant-score-foundation/src/codec.rs","reason":"Current strict Foundation decode/validation/canonical encode seam."}
-{"file":"crates/brilliant-kernel-runtime/src/smoke_runtime.rs","reason":"Whole-DTO holder replaced only in implementation Stage 5."}
+{"file":"crates/brilliant-kernel-runtime/src/runtime.rs","reason":"Current KernelRuntime is the sole Runtime owner of LiveScoreStore plus revision zero for remaining implementation context."}
 {"file":"crates/brilliant-kernel-session/src/session.rs","reason":"Current create/read composition and stable mapping seam."}
 {"file":"crates/brilliant-kernel-contracts/src/session.rs","reason":"Exact 22 failures and create/read DTO surface."}
 {"file":"crates/brilliant-kernel-contracts/src/codec.rs","reason":"RKP-1 bridge/codec precedence and Foundation failure mapping."}

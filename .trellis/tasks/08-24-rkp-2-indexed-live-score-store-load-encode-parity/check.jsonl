@@ -6,7 +6,7 @@
 {"file":".trellis/spec/core-kernel/backend/rust-runtime-transition.md","reason":"Audit current active transition boundary without spec drift."}
 {"file":".trellis/spec/core-kernel/backend/score-document-model.md","reason":"Audit ScoreDocument/Event/Note/time/Extension ownership."}
 {"file":"crates/brilliant-score-foundation/src/codec.rs","reason":"Audit current Foundation failure and canonical encode seam consumed by the plan."}
-{"file":"crates/brilliant-kernel-runtime/src/smoke_runtime.rs","reason":"Confirm exact whole-DTO holder being replaced and no broader Runtime exists."}
+{"file":"crates/brilliant-kernel-runtime/src/runtime.rs","reason":"Audit KernelRuntime no longer retains a complete ScoreDocument and has no second state owner or alias."}
 {"file":"crates/brilliant-kernel-session/src/session.rs","reason":"Confirm create/read integration boundary and TypeScript-default status."}
 {"file":"crates/brilliant-kernel-contracts/src/session.rs","reason":"Confirm exact stable failure and read/create public inventory."}
 {"file":"src/core-kernel/validation/validate-score-semantics.ts","reason":"Compare planned load validation traversal and semantic classes."}
