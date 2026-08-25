@@ -107,7 +107,7 @@ Child `08-25-rkp-2-cross-platform-full-test-runner-contract-repair` is the sole 
 
 The amendment consumes only event type plus pass `data.file`, allows duplicate passes, rejects missing/non-string/relative/unknown files, keeps any-nesting fail fatal and requires enumerator manifest, exact `run()` files and pass-seen set equality. Name/nesting/details/reporter text are not truth. Enumeration, physical alias, stream/reporter failures, 4+11 and 22/23 governance are unchanged.
 
-Anchor A pins exact P; `eed4871a..P` stays exactly twenty paths. After amendment PASS and explicit integration, future `P..candidate` Stage 4 is exactly child technical 4 plus active lifecycle 11 and stops for implementation review while RKP-2 remains 21 technical + 22 coordination. Only after implementation PASS may native archive create the exact thirteen archived artifacts, replace the twelve active child paths and yield coordination 23; explicit integration then creates a new prerequisite. RKP-2 Stage 6 remains separately unauthorized.
+This anchor A pins exact P `44832ad01d136368c1b61203e9207ca4a521241f`; `eed4871a..P` stays exactly twenty paths. After amendment PASS and explicit integration, future `P..candidate` Stage 4 is exactly child technical 4 plus active lifecycle 11 and stops for implementation review while RKP-2 remains 21 technical + 22 coordination. Only after implementation PASS may native archive create the exact thirteen archived artifacts, replace the twelve active child paths and yield coordination 23; explicit integration then creates a new prerequisite. RKP-2 Stage 6 remains separately unauthorized.
 
 ## Next operator action
 

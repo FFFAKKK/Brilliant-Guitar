@@ -33,7 +33,7 @@ Node 20.20.2 and 24.15.0 produced identical raw/fast/slow structured sets for th
 
 Every regular candidate has a BigInt `lstat` physical identity `(dev,ino)`. Missing/zero identity, normalized duplicate or hard-link alias fails before `run()`. The future implementation must use a real `linkSync` fixture with zero runner calls and must not skip an environment unable to create it.
 
-Content commit P carries the corrected contract; following anchor A pins P, freezes `eed4871a..P` as exact 20 paths and defines future `P..candidate` as 4 technical plus 11 lifecycle paths. Only A is the amendment audit object. Stage 4 remains only a pre-review candidate, with RKP-2 still at 21 technical and 22 coordination paths. The accepted 13-archive/23-coordination projection is unchanged.
+Content commit P is exactly `44832ad01d136368c1b61203e9207ca4a521241f`; this following anchor commit A pins P, freezes `eed4871a..P` as exact 20 paths and defines future `P..candidate` as 4 technical plus 11 lifecycle paths. Only exact A, reported after commit, is the amendment audit object. Stage 4 remains only a pre-review candidate, with RKP-2 still at 21 technical and 22 coordination paths. The accepted 13-archive/23-coordination projection is unchanged.
 
 ## Review handoff
 
@@ -49,4 +49,4 @@ Send the exact docs-only candidate to the dedicated planning auditor. Focus on:
 8. exact 13-path archive including implementation evidence, phase-specific rollback and explicit integration gate;
 9. lifecycle truth: planning/pending/no start/no Stage 6.
 
-Implementation remains paused at `d366653` until exact anchor A passes planning rereview and is explicitly integrated. Stage 3 and Stage 6 are not authorized.
+Implementation remains paused at `d366653` until exact anchor A passes planning rereview and is explicitly integrated. Send A together with pinned P `44832ad01d136368c1b61203e9207ca4a521241f`; Stage 3 and Stage 6 are not authorized.

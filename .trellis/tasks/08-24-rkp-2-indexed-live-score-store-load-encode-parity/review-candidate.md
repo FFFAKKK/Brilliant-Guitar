@@ -34,7 +34,7 @@ Child `08-25-rkp-2-cross-platform-full-test-runner-contract-repair` freezes one 
 
 Planning head `cc82ba168ed45b8c3e0182ea8e1370b1474f1155` passed, then its separate implementation line reached clean Stage 2 `d366653788a42eb56cd5755a63b1e73700c67310`. Real Node events disproved only the unique nesting-zero file-terminal premise. Content P and anchor A correct that premise without changing prior accepted contracts; A requires targeted independent planning rereview. No Stage 3 resumption, Stage 6 authorization, implementation readiness or implementation-review result is claimed.
 
-Exact anchor A pins P; `eed4871a..P` remains twenty planning paths. Only after amendment PASS and explicit integration does future `P..candidate` Stage 4 use child technical 4 plus active lifecycle 11 and stop at independent implementation review, with RKP-2 still 21 technical + 22 active coordination. The thirteen-path archive and 23-path post-archive projection remain unchanged.
+This exact anchor A pins P `44832ad01d136368c1b61203e9207ca4a521241f`; `eed4871a..P` remains twenty planning paths. Only after amendment PASS and explicit integration does future `P..candidate` Stage 4 use child technical 4 plus active lifecycle 11 and stop at independent implementation review, with RKP-2 still 21 technical + 22 active coordination. The thirteen-path archive and 23-path post-archive projection remain unchanged.
 
 ## Recorded verdict
 

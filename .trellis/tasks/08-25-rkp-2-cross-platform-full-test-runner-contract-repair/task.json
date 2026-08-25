@@ -49,7 +49,7 @@
     "package-lock.json",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "BOUNDED EVENT-COVERAGE PLANNING AMENDMENT REREVIEW REQUIRED. Separate implementation is paused clean at Stage 2 d366653; no Stage 3, acceptance, archive, push, Stage 6, RKP-3, qualification or default-runtime cutover.",
+  "notes": "BOUNDED EVENT-COVERAGE PLANNING AMENDMENT REREVIEW REQUIRED. Content P=44832ad01d136368c1b61203e9207ca4a521241f; this following anchor commit A is the sole rereview object. Separate implementation is paused clean at Stage 2 d366653; no Stage 3, acceptance, archive, push, Stage 6, RKP-3, qualification or default-runtime cutover.",
   "meta": {
     "source_worktree": ".worktrees/rkp-2-indexed-live-score-store-implementation",
     "source_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -59,7 +59,7 @@
     "task_start_run": false,
     "production_implementation_authorized": false,
     "user_implementation_authorization": false,
-    "planning_candidate_ready": false,
+    "planning_candidate_ready": true,
     "independent_planning_review": "pending_event_coverage_amendment_rereview",
     "first_independent_planning_review": {
       "auditor_task_id": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
@@ -80,8 +80,9 @@
     },
     "bounded_planning_repair_scope": "replace_impossible_unique_nesting_zero_file_terminal_with_pass_data_file_seen_coverage_only",
     "planning_amendment_base": "cc82ba168ed45b8c3e0182ea8e1370b1474f1155",
-    "planning_amendment_content_commit": "pending_content_commit_P_reported_after_commit",
-    "planning_amendment_anchor_commit": "pending_anchor_commit_A_after_P",
+    "planning_amendment_content_commit": "44832ad01d136368c1b61203e9207ca4a521241f",
+    "planning_amendment_anchor_commit": "this_docs_only_anchor_commit_exact_hash_reported_after_commit",
+    "planning_amendment_anchor_role": "pins_exact_P_and_immutable_eed4871a_to_P_and_P_to_future_candidate_ranges",
     "planning_amendment_rereview": "pending",
     "implementation_paused_for_bounded_planning_repair": true,
     "paused_implementation_head": "d366653788a42eb56cd5755a63b1e73700c67310",

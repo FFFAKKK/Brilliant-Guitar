@@ -2,7 +2,7 @@
 
 ## Verdict requested
 
-`TARGETED PLANNING AMENDMENT REREVIEW REQUIRED` for exact anchor A, whose content parent P remains inside the original `eed4871a86191783d539b7d4097be3627e98e4a0` twenty-path planning interval.
+`TARGETED PLANNING AMENDMENT REREVIEW REQUIRED` for this exact anchor A, whose direct content parent is P `44832ad01d136368c1b61203e9207ca4a521241f` inside the original `eed4871a86191783d539b7d4097be3627e98e4a0` twenty-path planning interval.
 
 This candidate claims only planning completeness. It does not claim implementation, independent PASS, Stage 6 readiness, acceptance/archive, qualification, push, RKP-3 or default-runtime cutover.
 
@@ -18,7 +18,7 @@ The plan dynamically discovers later tests and never hard-codes 77/557. The 77-f
 
 The new child is the sole test-infrastructure owner. RKP-2 Stage 6 consumes an accepted runner only after independent implementation review, acceptance/archive and explicit integration into a new prerequisite base. Stage 6 remains separately unauthorized.
 
-RKP-2 keeps its 21 technical paths and adds exactly twelve child planning artifacts to its ten coordination paths, producing 22 literal active coordination paths. Content commit P owns the corrected contract; anchor A pins P and freezes `eed4871a..P` as the exact 20-path interval. The future `P..candidate` pre-review implementation range is child technical 4 plus active lifecycle 11 and stops at `READY FOR INDEPENDENT IMPLEMENTATION REVIEW`.
+RKP-2 keeps its 21 technical paths and adds exactly twelve child planning artifacts to its ten coordination paths, producing 22 literal active coordination paths. Content commit P `44832ad01d136368c1b61203e9207ca4a521241f` owns the corrected contract; this anchor A pins P and freezes `eed4871a..P` as the exact 20-path interval without mutable `HEAD`. The future `P..candidate` pre-review implementation range is child technical 4 plus active lifecycle 11 and stops at `READY FOR INDEPENDENT IMPLEMENTATION REVIEW`.
 
 Post-PASS closeout is distinct: native archive creates exactly 13 archived artifacts including implementation evidence, mechanically replaces the 12 active paths, and yields RKP-2 coordination 23 = historical 10 + archive 13. Active/archive dual authority is forbidden. Only then may exact commits and five hashes be updated and the accepted descendant explicitly integrated into a new, still-unauthorized Stage 6 prerequisite. The two RKP-2 JSONLs remain byte-identical throughout.
 

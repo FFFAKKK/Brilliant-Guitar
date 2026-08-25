@@ -38,6 +38,12 @@ const FULL_RUNNER_PLANNING_BASE =
   "eed4871a86191783d539b7d4097be3627e98e4a0";
 const FIRST_REVIEWED_FULL_RUNNER_PLANNING_HEAD =
   "c43a34e7d02a57cfd90de506cf97787ff5571a9e";
+const ACCEPTED_FULL_RUNNER_PLANNING_HEAD =
+  "cc82ba168ed45b8c3e0182ea8e1370b1474f1155";
+const FULL_RUNNER_EVENT_COVERAGE_CONTENT_HEAD =
+  "44832ad01d136368c1b61203e9207ca4a521241f";
+const FULL_RUNNER_FUTURE_IMPLEMENTATION_BASE =
+  FULL_RUNNER_EVENT_COVERAGE_CONTENT_HEAD;
 const APPROVED_PLANNING_STATE =
   "53646c92b81bc3ac160ec5d72b0d3f80c97b7eb0";
 const MANIFEST_PROJECTION_PARENT =
@@ -237,15 +243,15 @@ const FROZEN_POST_STAGE_5_AUTHORITY_CONTENT = [
   },
   {
     path: DESIGN_PATH,
-    sha256: "d51e9f5f650e97aac2ae9ad84bb939e8ef40402844ef744c98ddaafe4db63808",
+    sha256: "6ac606e2691b5f6aef9a244267c090138d6b15d064761008cb7417db15bbf0a0",
   },
   {
     path: IMPLEMENT_PATH,
-    sha256: "6bd66cb315688522f1f4d8d4623ea83196849f787acdf9123c041d835577140a",
+    sha256: "0aba6aa95a535b9c8ef66b4457e3ba459d7ca3564cff40b56739d3955fc511ab",
   },
   {
     path: FILE_TEST_ROLLBACK_MATRIX_PATH,
-    sha256: "c447cce8b9df35c7310ae04ae9dcb0295b1153838b00ccd5439850b6dd387da0",
+    sha256: "4f7f888f295b31929db5e10203ac0221e4d8e441fc2350abb6b518820165f017",
   },
 ] as const;
 
@@ -369,14 +375,16 @@ function currentImplementationChanges(): Set<string> {
   return new Set(commands.flatMap((args) => lines(git(args))));
 }
 
-function currentFullRunnerPlanningChanges(): Set<string> {
-  const commands: readonly (readonly string[])[] = [
-    ["diff", "--name-only", `${FULL_RUNNER_PLANNING_BASE}..HEAD`],
-    ["diff", "--name-only"],
-    ["diff", "--cached", "--name-only"],
-    ["ls-files", "--others", "--exclude-standard"],
-  ];
-  return new Set(commands.flatMap((args) => lines(git(args))));
+function fullRunnerPlanningChangesAtContentHead(): Set<string> {
+  return new Set(
+    lines(
+      git([
+        "diff",
+        "--name-only",
+        `${FULL_RUNNER_PLANNING_BASE}..${FULL_RUNNER_EVENT_COVERAGE_CONTENT_HEAD}`,
+      ]),
+    ),
+  );
 }
 
 function assertExactPathSet(
@@ -392,6 +400,10 @@ function assertExactPathSet(
 }
 
 function validateImplementationCandidateFixture(paths: readonly string[]): void {
+  assert.equal(
+    FULL_RUNNER_FUTURE_IMPLEMENTATION_BASE,
+    FULL_RUNNER_EVENT_COVERAGE_CONTENT_HEAD,
+  );
   const expected = new Set<string>([
     ...CHILD_TECHNICAL_PATHS,
     ...CHILD_ACTIVE_LIFECYCLE_PATHS,
@@ -550,6 +562,8 @@ function assertFullRunnerLifecycleFixtures(): void {
   for (const commit of [
     FULL_RUNNER_PLANNING_BASE,
     FIRST_REVIEWED_FULL_RUNNER_PLANNING_HEAD,
+    ACCEPTED_FULL_RUNNER_PLANNING_HEAD,
+    FULL_RUNNER_EVENT_COVERAGE_CONTENT_HEAD,
   ]) {
     assert.doesNotThrow(() => git(["cat-file", "-e", `${commit}^{commit}`]));
   }
@@ -567,14 +581,24 @@ function assertFullRunnerLifecycleFixtures(): void {
     git([
       "merge-base",
       "--is-ancestor",
-      FIRST_REVIEWED_FULL_RUNNER_PLANNING_HEAD,
-      "HEAD",
+      ACCEPTED_FULL_RUNNER_PLANNING_HEAD,
+      FULL_RUNNER_EVENT_COVERAGE_CONTENT_HEAD,
     ]),
   );
+  assert.deepEqual(
+    git([
+      "rev-list",
+      "--parents",
+      "-n",
+      "1",
+      FULL_RUNNER_EVENT_COVERAGE_CONTENT_HEAD,
+    ]).split(" "),
+    [FULL_RUNNER_EVENT_COVERAGE_CONTENT_HEAD, ACCEPTED_FULL_RUNNER_PLANNING_HEAD],
+  );
   assertExactPathSet(
-    currentFullRunnerPlanningChanges(),
+    fullRunnerPlanningChangesAtContentHead(),
     FULL_RUNNER_PLANNING_PATHS,
-    "approved base through current planning candidate",
+    "approved base through pinned event-coverage content head",
   );
   assert.equal(new Set(FULL_RUNNER_PLANNING_PATHS).size, 20);
 

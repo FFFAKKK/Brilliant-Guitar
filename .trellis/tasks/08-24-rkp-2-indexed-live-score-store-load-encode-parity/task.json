@@ -193,9 +193,9 @@
     "post_stage_5_manifest_authority_hashes_lf_normalized_sha256": {
       "check_jsonl": "7e12f6d00ba17e1967ef57e884e7b5d6ca7efedbb2aaf94de04fc4b3091251c3",
       "implement_jsonl": "cd0a42070a76a18e782d7da4ebc0e9a88d2ed5dece0d093125d4fc8982229705",
-      "design_md": "d51e9f5f650e97aac2ae9ad84bb939e8ef40402844ef744c98ddaafe4db63808",
-      "implement_md": "6bd66cb315688522f1f4d8d4623ea83196849f787acdf9123c041d835577140a",
-      "file_test_and_rollback_matrix_md": "c447cce8b9df35c7310ae04ae9dcb0295b1153838b00ccd5439850b6dd387da0"
+      "design_md": "6ac606e2691b5f6aef9a244267c090138d6b15d064761008cb7417db15bbf0a0",
+      "implement_md": "0aba6aa95a535b9c8ef66b4457e3ba459d7ca3564cff40b56739d3955fc511ab",
+      "file_test_and_rollback_matrix_md": "4f7f888f295b31929db5e10203ac0221e4d8e441fc2350abb6b518820165f017"
     },
     "cross_platform_full_test_runner_contract_repair": {
       "child": "08-25-rkp-2-cross-platform-full-test-runner-contract-repair",
@@ -221,8 +221,9 @@
       "paused_implementation_head": "d366653788a42eb56cd5755a63b1e73700c67310",
       "paused_implementation_commits": "activation_9da6ba6_stage1_912a68a_stage2_d366653",
       "discarded_stage3": "610d20b_not_in_current_parent_chain",
-      "planning_amendment_content_commit": "pending_content_commit_P_reported_after_commit",
-      "planning_amendment_anchor_commit": "pending_anchor_commit_A_after_P",
+      "planning_amendment_content_commit": "44832ad01d136368c1b61203e9207ca4a521241f",
+      "planning_amendment_anchor_commit": "this_docs_only_anchor_commit_exact_hash_reported_after_commit",
+      "planning_amendment_anchor_role": "pins_exact_P_without_HEAD_and_defines_future_P_to_candidate_range",
       "event_coverage_contract": "event_type_plus_pass_data_file_seen_set_manifest_equals_run_files_equals_seen",
       "event_characterization": "node20_20_2_node24_15_0_two_file_and_real_78_file_raw_fast_slow_identical",
       "planning_range_path_count": 20,
