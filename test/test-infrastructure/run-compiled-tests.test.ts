@@ -232,17 +232,108 @@ test("missing, non-directory and empty compiled roots fail closed", async () => 
 test("symbolic and junction-style entries are rejected before traversal", async () => {
   const root = fixtureRoot("symbolic");
   try {
+    writePackage(root);
     writeFixture(root, "real/inside.test.js");
     const testRoot = resolve(root, "dist/test");
     symlinkSync(resolve(testRoot, "real"), resolve(testRoot, "linked"), "junction");
+    let runCalls = 0;
     await rejectsWithCode(
-      () => enumerateCompiledTests(root),
+      () =>
+        executeCompiledTests(root, {
+          ...passingExecutionSeams(root),
+          run() {
+            runCalls += 1;
+            return new PassThrough({ objectMode: true });
+          },
+        }),
       "runner.entry-symbolic",
     );
+    assert.equal(runCalls, 0);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test(
+  "root junction, unsupported entry and invalid repository fail before run",
+  { timeout: 5_000 },
+  async () => {
+    const rootSymbolic = fixtureRoot("root-symbolic");
+    const unsupported = fixtureRoot("unsupported-entry");
+    const invalidRepository = fixtureRoot("invalid-repository");
+    try {
+      writePackage(rootSymbolic);
+      const target = resolve(rootSymbolic, "compiled-target");
+      mkdirSync(target, { recursive: true });
+      writeFileSync(resolve(target, "inside.test.js"), "// compiled fixture\n", "utf8");
+      mkdirSync(resolve(rootSymbolic, "dist"), { recursive: true });
+      symlinkSync(target, resolve(rootSymbolic, "dist/test"), "junction");
+
+      writePackage(unsupported);
+      const unsupportedPath = writeFixture(unsupported, "unsupported.entry");
+      const unsupportedSeams: DiscoverySeams = {
+        async lstat(path) {
+          const stats = await lstat(path, { bigint: true });
+          return path === unsupportedPath
+            ? {
+                dev: stats.dev,
+                ino: stats.ino,
+                isDirectory: () => false,
+                isFile: () => false,
+                isSymbolicLink: () => false,
+              }
+            : stats;
+        },
+        async readdir(path) {
+          return readdir(path, { withFileTypes: true });
+        },
+      };
+
+      writeFixture(invalidRepository, "single.test.js");
+
+      const fixtures: readonly Readonly<{
+        root: string;
+        code: RunnerContractError["code"];
+        discovery?: DiscoverySeams;
+      }>[] = [
+        { root: rootSymbolic, code: "runner.root-symbolic" },
+        {
+          root: unsupported,
+          code: "runner.entry-unsupported",
+          discovery: unsupportedSeams,
+        },
+        {
+          root: invalidRepository,
+          code: "runner.repository-invalid",
+        },
+      ];
+
+      for (const fixture of fixtures) {
+        let runCalls = 0;
+        await rejectsWithCode(
+          () =>
+            executeCompiledTests(
+              fixture.root,
+              {
+                ...passingExecutionSeams(fixture.root),
+                run() {
+                  runCalls += 1;
+                  return new PassThrough({ objectMode: true });
+                },
+              },
+              fixture.discovery,
+            ),
+          fixture.code,
+        );
+        assert.equal(runCalls, 0, `${fixture.code} must fail before run()`);
+      }
+    } finally {
+      rmSync(rootSymbolic, { recursive: true, force: true });
+      rmSync(unsupported, { recursive: true, force: true });
+      rmSync(invalidRepository, { recursive: true, force: true });
+    }
+  },
+);
 
 test("real hard links are rejected as physical aliases before publication", async () => {
   const root = fixtureRoot("hardlink");
@@ -897,6 +988,63 @@ test(
               reporterSink: () => quietSink({ fail: true }),
             }),
           fixture.code,
+        );
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    }
+  },
+);
+
+test(
+  "reporter factory, sink factory and transform failures settle fail closed",
+  { timeout: 5_000 },
+  async () => {
+    const cases: readonly Readonly<{
+      label: string;
+      overrides(root: string): Partial<ExecutionSeams>;
+    }>[] = [
+      {
+        label: "reporter-factory",
+        overrides(root) {
+          return {
+            ...passingExecutionSeams(root),
+            reporter() {
+              throw new Error("reporter factory failed");
+            },
+          };
+        },
+      },
+      {
+        label: "reporter-sink-factory",
+        overrides(root) {
+          return {
+            ...passingExecutionSeams(root),
+            reporterSink() {
+              throw new Error("reporter sink factory failed");
+            },
+          };
+        },
+      },
+      {
+        label: "reporter-transform-callback",
+        overrides(root) {
+          return {
+            ...passingExecutionSeams(root),
+            reporter: failingReporterTransform,
+          };
+        },
+      },
+    ];
+
+    for (const fixture of cases) {
+      const root = fixtureRoot(fixture.label);
+      try {
+        writePackage(root);
+        writeFixture(root, "single.test.js");
+        await rejectsWithCode(
+          () => executeCompiledTests(root, fixture.overrides(root)),
+          "runner.reporter-failed",
         );
       } finally {
         rmSync(root, { recursive: true, force: true });
