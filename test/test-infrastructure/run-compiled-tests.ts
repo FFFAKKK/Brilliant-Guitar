@@ -382,6 +382,9 @@ function attachOutcomeObserver(
 
   return Object.freeze({
     finalize(): void {
+      if (failure !== undefined) {
+        throw new RunnerContractError(failure);
+      }
       if (errored) {
         throw new RunnerContractError("runner.stream-error");
       }
@@ -390,9 +393,6 @@ function attachOutcomeObserver(
       }
       if (closedBeforeEnd || !ended) {
         throw new RunnerContractError("runner.stream-incomplete");
-      }
-      if (failure !== undefined) {
-        throw new RunnerContractError(failure);
       }
       if (seenManifestFiles.size !== manifest.size) {
         throw new RunnerContractError("runner.outcome-missing");
@@ -470,11 +470,7 @@ export async function executeCompiledTests(
     await pipeline(stream, reporter, sink);
   } catch {
     const observedFailure = observer.failureCode();
-    if (
-      observedFailure === "runner.stream-error" ||
-      observedFailure === "runner.stream-aborted" ||
-      observedFailure === "runner.stream-incomplete"
-    ) {
+    if (observedFailure !== undefined) {
       throw new RunnerContractError(observedFailure);
     }
     throw new RunnerContractError("runner.reporter-failed");

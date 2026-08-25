@@ -502,13 +502,6 @@ function evaluatePlannedFileCoverage(
   events: readonly PlannedTestEvent[],
   state: PlannedStreamState,
 ): string {
-  if (state.errored === true) return "runner.stream-error";
-  if (state.aborted === true) return "runner.stream-aborted";
-  if (state.prematureClose === true || !state.ended) {
-    return "runner.stream-incomplete";
-  }
-  if (!state.reporterFlushed) return "runner.reporter-flush-failed";
-
   const normalizedManifestFiles = manifestFiles.map(normalizedAbsolute);
   const normalizedRunFiles = runFiles.map(normalizedAbsolute);
   if (
@@ -532,6 +525,12 @@ function evaluatePlannedFileCoverage(
     if (!manifest.has(normalizedFile)) return "runner.outcome-unknown";
     seenManifestFiles.add(normalizedFile);
   }
+  if (state.errored === true) return "runner.stream-error";
+  if (state.aborted === true) return "runner.stream-aborted";
+  if (state.prematureClose === true || !state.ended) {
+    return "runner.stream-incomplete";
+  }
+  if (!state.reporterFlushed) return "runner.reporter-flush-failed";
   if (seenManifestFiles.size !== manifest.size) return "runner.outcome-missing";
   return "ok";
 }
@@ -690,22 +689,13 @@ function assertFullRunnerLifecycleFixtures(): void {
       `candidate must contain child technical path: ${path}`,
     );
   }
-  if (childImplementationCandidateReady()) {
-    assertExactPathSet(
-      candidateChanges,
-      [...candidateAllowlist],
-      "ready child implementation candidate",
-    );
-  } else {
-    assertExactPathSet(
-      candidateChanges,
-      [...candidateAllowlist].filter(
-        (path) =>
-          path !== `${FULL_RUNNER_ACTIVE_ROOT}/research/implementation-evidence.md`,
-      ),
-      "in-progress child implementation candidate",
-    );
-  }
+  assertExactPathSet(
+    candidateChanges,
+    [...candidateAllowlist],
+    childImplementationCandidateReady()
+      ? "ready child implementation candidate"
+      : "bounded-repair child implementation candidate",
+  );
 
   validateImplementationCandidateFixture([
     ...CHILD_TECHNICAL_PATHS,
@@ -861,6 +851,24 @@ async function assertCrossVersionOutcomeFixtures(): Promise<void> {
       reporterFlushed: false,
     }),
     "runner.reporter-flush-failed",
+  );
+  assert.equal(
+    evaluatePlannedFileCoverage(
+      manifest,
+      runFiles,
+      [{ type: "test:fail", data: { nesting: 4 } }, ...passEvents],
+      { ended: true, reporterFlushed: false },
+    ),
+    "runner.test-failed",
+  );
+  assert.equal(
+    evaluatePlannedFileCoverage(
+      manifest,
+      runFiles,
+      [{ type: "test:pass", data: {} }, ...passEvents],
+      { ended: true, reporterFlushed: false },
+    ),
+    "runner.outcome-path-missing",
   );
 
   const stream = new EventEmitter();

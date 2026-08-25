@@ -66,6 +66,15 @@ function quietSink(options?: { fail?: boolean; slow?: boolean }): Writable {
   });
 }
 
+function failingReporterTransform(): Transform {
+  return new Transform({
+    writableObjectMode: true,
+    transform(_event, _encoding, callback) {
+      callback(new Error("reporter transform failed"));
+    },
+  });
+}
+
 function independentlyEnumerateCompiledTests(repoRoot: string): string[] {
   const root = resolve(repoRoot, "dist/test");
   const files: string[] = [];
@@ -761,6 +770,140 @@ test("stream, run and reporter failures never produce a successful result", asyn
     }
   }
 });
+
+test(
+  "first structured failure survives a later reporter pipeline failure",
+  { timeout: 5_000 },
+  async () => {
+    const cases: readonly Readonly<{
+      label: string;
+      code: RunnerContractError["code"];
+      emit(stream: PassThrough, files: readonly string[]): void;
+      reporterFailure: "sink-final" | "transform";
+    }>[] = [
+      {
+        label: "nested-fail-then-sink-final",
+        code: "runner.test-failed",
+        emit(stream) {
+          emitTestEvent(stream, "test:fail", { nesting: 4 });
+          stream.end();
+        },
+        reporterFailure: "sink-final",
+      },
+      {
+        label: "top-level-fail-then-transform",
+        code: "runner.test-failed",
+        emit(stream) {
+          emitTestEvent(stream, "test:fail", { nesting: 0 });
+          stream.end();
+        },
+        reporterFailure: "transform",
+      },
+      {
+        label: "interrupted-then-sink-final",
+        code: "runner.test-interrupted",
+        emit(stream) {
+          stream.emit("test:interrupted", { nesting: 0 });
+          stream.end();
+        },
+        reporterFailure: "sink-final",
+      },
+      {
+        label: "missing-pass-file-then-sink-final",
+        code: "runner.outcome-path-missing",
+        emit(stream) {
+          emitTestEvent(stream, "test:pass", { nesting: 0 });
+          stream.end();
+        },
+        reporterFailure: "sink-final",
+      },
+      {
+        label: "non-string-pass-file-then-transform",
+        code: "runner.outcome-path-missing",
+        emit(stream) {
+          emitTestEvent(stream, "test:pass", { nesting: 0, file: 42 });
+          stream.end();
+        },
+        reporterFailure: "transform",
+      },
+      {
+        label: "relative-pass-file-then-sink-final",
+        code: "runner.outcome-path-missing",
+        emit(stream) {
+          emitTestEvent(stream, "test:pass", {
+            nesting: 0,
+            file: "dist/test/single.test.js",
+          });
+          stream.end();
+        },
+        reporterFailure: "sink-final",
+      },
+      {
+        label: "unknown-pass-file-then-transform",
+        code: "runner.outcome-unknown",
+        emit(stream, files) {
+          emitTestEvent(stream, "test:pass", {
+            nesting: 0,
+            file: resolve(files[0] ?? "", "..", "unknown.test.js"),
+          });
+          stream.end();
+        },
+        reporterFailure: "transform",
+      },
+      {
+        label: "valid-pass-then-sink-final",
+        code: "runner.reporter-failed",
+        emit(stream, files) {
+          emitTestEvent(stream, "test:pass", { nesting: 0, file: files[0] });
+          stream.end();
+        },
+        reporterFailure: "sink-final",
+      },
+      {
+        label: "stream-error-before-reporter-failure",
+        code: "runner.stream-error",
+        emit(stream) {
+          stream.destroy(new Error("stream failed first"));
+        },
+        reporterFailure: "sink-final",
+      },
+      {
+        label: "stream-abort-before-reporter-failure",
+        code: "runner.stream-aborted",
+        emit(stream) {
+          stream.emit("aborted");
+          stream.end();
+        },
+        reporterFailure: "sink-final",
+      },
+    ];
+
+    for (const fixture of cases) {
+      const root = fixtureRoot(`first-failure-${fixture.label}`);
+      try {
+        writePackage(root);
+        writeFixture(root, "single.test.js");
+        await rejectsWithCode(
+          () =>
+            executeCompiledTests(root, {
+              ...passingExecutionSeams(root),
+              run(options) {
+                return scheduledStream((stream) => fixture.emit(stream, options.files));
+              },
+              reporter:
+                fixture.reporterFailure === "transform"
+                  ? failingReporterTransform
+                  : quietReporter,
+              reporterSink: () => quietSink({ fail: true }),
+            }),
+          fixture.code,
+        );
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    }
+  },
+);
 
 test("repository and supported-version preflights fail before run", async () => {
   const root = fixtureRoot("preflight");
