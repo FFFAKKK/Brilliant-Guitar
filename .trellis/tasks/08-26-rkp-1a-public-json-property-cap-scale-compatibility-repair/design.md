@@ -67,16 +67,24 @@ Passing the decoder is necessary but not sufficient. Entry evidence is decoder s
 | Foundation / extensions | large bounded payload decodes without schema drift | none |
 | Runtime / Session | accepted document publishes once and reads deterministically | none |
 | Node | existing two-export private bridge admits and reads request | none |
-| TypeScript | remains product default; inventories unchanged | none |
+| TypeScript native wire adapter | successor property failure remains stable instead of becoming internal | `rust-kernel-smoke.ts` only |
+| TypeScript strict capture | separate member/element descriptor bound remains read-only | none |
+
+### 7.1 TypeScript responsibility split
+
+`src/core-kernel/native/rust-kernel-smoke.ts` validates the Rust native response envelope. Its current hard-coded `codec.property-limit.limit===1_048_576` is a real successor-wire consumer and must change to `1_572_864`. Both a fake native rejection and a real native `newCap+1` rejection must remain `codec.property-limit` with exact `1572864/1572865`; neither may downgrade to `bridge.internal`.
+
+`src/core-kernel/codec/strict-input-capture.ts#STRICT_INPUT_MAX_PROPERTIES` stays exactly `1_048_576`. That TypeScript capture contract counts object members and array elements while safely reading JavaScript descriptors. Rust `JSON_PROPERTY_LIMIT` counts every serialized JSON object, array and primitive while excluding keys. Equal historical numbers do not make them one authority. RKP-1A changes no TypeScript capture threshold or default codec path.
 
 ## 8. Exact future technical allowlist
 
 1. `crates/brilliant-core-types/src/json.rs`
 2. `crates/brilliant-kernel-contracts/src/codec.rs`
-3. `test/core-kernel/rust-migration/rkp-1a-property-cap-compatibility.test.ts` (new dedicated compatibility/native consumer test)
-4. `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts` (literal governance projection only)
+3. `src/core-kernel/native/rust-kernel-smoke.ts`
+4. `test/core-kernel/rust-migration/rkp-1a-property-cap-compatibility.test.ts` (new dedicated compatibility/native consumer test)
+5. `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts` (literal governance projection only)
 
-No other Rust, `src/**`, fixture, Node adapter, Cargo, package, tsconfig, toolchain, spec or test path may change. Existing unit tests live in the two Rust owner files, so no second Rust test file is needed.
+No other Rust, `src/**`, fixture, Node adapter, Cargo, package, tsconfig, toolchain, spec or test path may change. `strict-input-capture.ts` is explicitly read-only. Existing unit tests live in the two Rust owner files, so no second Rust test file is needed.
 
 ## 9. Future lifecycle allowlist
 
@@ -89,6 +97,21 @@ Only child `task.json`, `operator-handoff.md`, `review-candidate.md`, future `re
 - Shrinking the stress fixture invalidates the frozen scale evidence.
 - A dynamic cap derived from fixture size destroys a stable public resource contract.
 
-## 11. Rollback and resume
+## 11. Audited phase gates and rollback
 
-Each future phase is a separate commit. Reverting P1 restores the former cap and Core Types tests. Reverting P2 restores Contracts behavior without touching P1. Reverting P3 removes integration evidence only. P4 is docs/evidence freeze only. RKP-2 E2 remains paused until independent implementation PASS, owner acceptance/archive and explicit integration gates consume the accepted successor.
+P1 changes only `crates/brilliant-core-types/src/json.rs`. Contracts immediately imports the new limit, but its old exact-byte snapshot and the TypeScript native adapter still encode/accept the predecessor wire. P1 is therefore a deliberate bounded RED checkpoint, not a green integration candidate.
+
+The exact P1 allowed RED set is:
+
+1. Rust test `codec::tests::structural_rank_beats_source_order_for_compound_faults`: actual property failure bytes contain `1572864/1572865` while its predecessor snapshot still expects `1048576/1048577`.
+2. Non-mutating diagnostic `P1-RED-TS-NATIVE-SUCCESSOR-MAPPING`: a fake native rejected envelope carrying exact `1572864/1572865` is currently normalized by `createRustKernelSmokeSession` to `bridge.internal` because `rust-kernel-smoke.ts` still accepts only the predecessor limit. The future committed test is named `fake and real native successor property-limit stays stable`.
+
+The operator records exact commands, test names and failure diffs. Any additional failing test, changed failure code, hang, resource regression or protected-path delta blocks P1. After the P1 commit the operator stops for an independent P1 implementation audit. P2 requires that audit to PASS and separate user authorization.
+
+P2 updates Contracts plus the native TypeScript validator and its dedicated compatibility test. P2 must make the allowed RED set green without widening failures elsewhere, then stops for an independent P2 implementation audit. P3 requires that audit to PASS and separate user authorization.
+
+Reverting P2 returns to the audited P1 RED checkpoint; it does not restore a green tree. Reverting P1 after that restores the former cap and old-wire green state. Reverting P3 removes integration evidence only. P4 is docs/evidence freeze only. RKP-2 E2 remains paused until independent final implementation PASS, owner acceptance/archive and explicit integration gates consume the accepted successor.
+
+## 12. Resume boundary
+
+P0 through P4 remain separate commits. Neither P1 nor P2 audit is the final implementation acceptance audit. P3 consumer/stress work and P4 candidate freeze remain separately authorized future steps.

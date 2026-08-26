@@ -42,7 +42,7 @@
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "RKP-2 STAGE 6 S6.1 RETAINED COMPLETE AT 4A302BC / S6.2-S6.3 FALSE AND OPERATIONALLY PAUSED / PRIVATE SCALE EVIDENCE SEAM CHILD IS PLANNING AND AWAITS INDEPENDENT REVIEW / TYPESCRIPT DEFAULT / NO START IMPLEMENTATION CUTOVER PUSH QUALIFICATION OR RKP-3.",
+  "notes": "RKP-2 IN_PROGRESS AND SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 SEAM CHILD IN_PROGRESS WITH E1+E1R GREEN / S6.2-S6.3 FALSE AND OPERATIONALLY PAUSED ON PUBLIC JSON PROPERTY CAP BLOCKER / RKP-1A TARGETED PLANNING REREVIEW IS NEXT / TYPESCRIPT DEFAULT / NO CUTOVER PUSH QUALIFICATION OR RKP-3.",
   "meta": {
     "planning_base_commit": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "accepted_rkp1_audited_implementation_commit": "94387b339b5e4d9ce6b7f97597a1b56edd051f01",
@@ -309,7 +309,7 @@
       "post_pass_closeout_authorized": true,
       "stage_6_blocked_until_accepted_archived_integrated": false
     },
-    "next_gate": "rkp1a-independent-planning-review",
+    "next_gate": "rkp1a-targeted-independent-planning-rereview",
     "stage_6_started": true,
     "stage_6_authorized": true,
     "stage_6_completed": false,
@@ -349,7 +349,7 @@
       "implementation_stage": "E1_and_E1R_private_rust_seam_green_E2_not_started",
       "external_blocker": "public-json-property-cap-contract-conflict",
       "external_blocking_task": "08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair",
-      "next_gate": "rkp1a-independent-planning-review"
+      "next_gate": "rkp1a-targeted-independent-planning-rereview"
     },
     "part_owner_wire_contract_repair": {
       "child": "08-26-rkp-2-part-owner-wire-contract-repair",
@@ -397,10 +397,13 @@
       "status": "planning",
       "planning_base": "639e93555c15b46c54c8e9bb7ec610d4a77c7478",
       "independent_planning_review": "pending",
+      "first_independent_planning_review": "c02c830_return_0_3_1_for_bounded_planning_repair",
+      "targeted_independent_planning_rereview": "pending",
       "task_start_run": false,
       "production_implementation_authorized": false,
       "successor_limit": 1572864,
-      "stage_6_e2_started": false
+      "stage_6_e2_started": false,
+      "next_gate": "targeted_independent_planning_rereview"
     },
     "archive_authorized": false,
     "push_authorized": false,

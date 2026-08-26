@@ -7,4 +7,6 @@
 {"file":".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/implement.md","reason":"Follow P0 through P4 as separate rollback commits and stop at implementation review."}
 {"file":".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/research/root-cause-and-exact-node-count.md","reason":"Use exact value-count and headroom evidence; do not treat first overflow as total."}
 {"file":".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/research/file-test-ownership-matrix.md","reason":"Enforce literal technical and lifecycle allowlists and test ownership."}
+{"file":"src/core-kernel/native/rust-kernel-smoke.ts","reason":"Update only the existing native property-limit wire validator to the exact successor limit during P2."}
+{"file":"src/core-kernel/codec/strict-input-capture.ts","reason":"Read the independent TypeScript member/element-count contract and preserve its 1048576 limit byte-zero."}
 {"file":".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/task.json","reason":"Keep E1/E1R green and E2 blocked until the accepted successor is integrated."}

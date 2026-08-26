@@ -40,7 +40,7 @@
     "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "PLANNING ONLY / ROOT-CAUSE AUDIT 0/1/0 / FIRST PLANNING REVIEW 0/2/0 / SECOND TARGETED PLANNING REVIEW 0/1/0 / FINAL TARGETED PLANNING REVIEW 0/1/0 / THIRD BOUNDED REPAIR COMPLETE / FINAL TARGETED INDEPENDENT PLANNING REREVIEW REQUIRED / S6.1 RETAINED COMPLETE AT 4A302BC / S6.2-S6.3 NOT STARTED / STAGE 6 OPERATIONALLY PAUSED / TYPESCRIPT DEFAULT.",
+  "notes": "IN_PROGRESS / ACCEPTED PLANNING AUTHORITY D638B81 / E0 COMPLETE / E1+E1R GREEN / E2-E3 NOT STARTED / EXTERNAL BLOCKER PUBLIC JSON PROPERTY CAP CONTRACT CONFLICT / RKP-2 OPERATIONALLY PAUSED / RKP-1A TARGETED PLANNING REREVIEW IS NEXT / TYPESCRIPT DEFAULT.",
   "meta": {
     "planning_base_commit": "4a302bc9f9981940336fc97941b08e09bd0d1f67",
     "source_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -103,7 +103,9 @@
       "planning_base": "639e93555c15b46c54c8e9bb7ec610d4a77c7478",
       "root_cause_audit": "P0_0_P1_1_P2_0",
       "status": "planning",
-      "independent_planning_review": "pending"
+      "independent_planning_review": "pending",
+      "first_independent_planning_review": "c02c830_return_0_3_1_for_bounded_planning_repair",
+      "targeted_independent_planning_rereview": "pending"
     },
     "e3_candidate_freeze_started": false,
     "root_cause_audit": {
@@ -209,7 +211,7 @@
       "E2_unique_request_worker_protocol_and_first_real_stress_run",
       "E3_fresh_request_formal_evidence_and_candidate_freeze"
     ],
-    "next_gate": "rkp1a-independent-planning-review",
+    "next_gate": "rkp1a-targeted-independent-planning-rereview",
     "archive_authorized": false,
     "push_authorized": false,
     "default_runtime_switch_authorized": false,

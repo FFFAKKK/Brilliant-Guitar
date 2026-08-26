@@ -14,7 +14,11 @@ No active spec is changed in this candidate. A later spec/authority promotion, i
 
 `JSON_PROPERTY_LIMIT` → Core Types bounded data-only JSON → Foundation extension payloads → Contracts strict public request decoder → Runtime import → Session publication → existing two-export Node bridge.
 
-Only the first two code owners may change. Downstream layers receive tests, not implementation edits.
+Core Types owns the numeric resource constant. Contracts imports it. The existing TypeScript native response validator in `src/core-kernel/native/rust-kernel-smoke.ts` is a wire consumer and must update its accepted `codec.property-limit.limit` to `1_572_864`; it does not become a cap authority.
+
+`src/core-kernel/codec/strict-input-capture.ts#STRICT_INPUT_MAX_PROPERTIES=1_048_576` remains read-only. It counts JavaScript object members/array elements during descriptor capture, unlike Rust's object/array/primitive serialized-value count. The equal predecessor number is coincidental contract history, not shared ownership.
+
+Foundation, Runtime, Session and Node native production layers receive tests, not implementation edits.
 
 ## Stable compatibility
 
@@ -25,4 +29,4 @@ Only the first two code owners may change. Downstream layers receive tests, not 
 
 ## Blocker projection
 
-The current Stage-6 seam child remains in progress with E1/E1R green and E2 not started. Its external blocker is `public-json-property-cap-contract-conflict`. RKP-2 stays in progress and operationally paused. The Rust parent points its planning gate to this child's independent review while retaining the active implementation relationships.
+The current Stage-6 seam child is in progress with E1/E1R green and E2 not started. Its external blocker is `public-json-property-cap-contract-conflict`. RKP-2 stays the sole active implementation child and is operationally paused. This RKP-1A task is the Rust parent's current planning child; the next gate is targeted independent planning rereview, not E2.
