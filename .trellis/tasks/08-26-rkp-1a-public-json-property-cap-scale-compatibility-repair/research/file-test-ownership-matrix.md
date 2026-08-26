@@ -45,10 +45,10 @@ All `src/**`, `test/**`, `crates/**`, Cargo/package/tsconfig/toolchain and specs
 | capture profiles | default/native cap-1/cap/cap+1; create and read select native; default hostile behavior unchanged |
 | representation | DAG capture `1,045,635`; cloned document `1,199,232`; create/read exact member counts |
 | canonical roles | input/export exact SHAs, semantic equality, repeated reads, 18/16/1 extension deep equality |
-| P3B self-worker entry | direct compiled `.test.js` + exact `--rkp1a-p3b-self-worker-v1` + exact `BRILLIANT_RKP1A_P3B_SELF_WORKER_V1=1`; partial marker and recursive spawn reject |
+| P3B self-worker entry | CommonJS `path.resolve(process.argv[1] ?? "") === path.resolve(__filename)` + exact argv/env + absent `NODE_TEST_CONTEXT`; partial marker and recursive spawn reject |
 | P3B success protocol | one `BRILLIANT_RKP1A_P3B_SELF_WORKER_V1:` LF line; exact recursive schema/types/ranges/order; result bytes equal payload; stderr empty; extra fields reject |
-| P3B process resources | stdout/stderr each cap `1,048,576`; `180000 ms` from spawn through normal settlement; kill/wait/reap bounded `5000 ms`; cleanup two attempts/25 ms under E: scratch only |
-| P3B failure matrix | recursion, timeout, nonzero/signal, both overflows, missing/duplicate/malformed/mixed/extra sentinel, result mismatch, evidence mismatch and cleanup failure; exact precedence and zero partial success |
+| P3B process resources | stdout/stderr each cap `1,048,576`; `180000 ms` spawn-to-settlement; exact taskkill argv and independent taskkill/reap `5000 ms` guards; cleanup leaf twice with `5000 ms` guards and `100 ms` delay under E: only |
+| P3B failure matrix | first-observed `primary ??=`; CommonJS/recursion, both event orderings, taskkill launch/nonzero/timeout, reap timeout, cleanup recovery/two-failure, sentinel/output/evidence faults; no partial success |
 | compatibility | two exports, 22 failures, `28/51/8/34/9`, `brilliant-score-1`, TS default |
 
 ## Audited RED and rollback matrix
@@ -66,4 +66,4 @@ The P1 diagnostic performs no repository write and supplies a fake native reject
 
 Future heavy gates use session-only `TEMP`/`TMP` under `E:\desktop\brilliant_ideas\brilliant_guitar\.worktrees\.scratch\rkp1a-property-cap\tmp`, `CARGO_TARGET_DIR` under its `target` child and `CARGO_INCREMENTAL=0`. Resolve the exact prefix before creation or cleanup; do not change global configuration.
 
-P3B uses no additional source path: its compatibility test is both the ordinary `node:test` file and the sole direct self-worker. The exact argv/env/direct-entry guard, sentinel schema, `1 MiB` per-stream caps, fixed failure order and cleanup protocol live in `design.md` section 12.1. All `request.json`, `result.json`, `stdout.bin`, `stderr.bin` and related native scratch are descendants of the resolved `E:\desktop\brilliant_ideas\brilliant_guitar\.worktrees\.scratch\rkp1a-property-cap\p3b` leaf. Timeout, signal/nonzero, overflow, sentinel or assertion failure rejects with no partial evidence; cleanup only becomes primary after an otherwise successful workload. Wall time and RSS are diagnostic only and are not qualification budgets.
+P3B uses no additional source path: its compatibility test is both the ordinary CommonJS `node:test` file and the sole direct self-worker. The exact `__filename` formula, argv/env/`NODE_TEST_CONTEXT` guard, sentinel schema, `1 MiB` caps, first-observed failure rule, taskkill/reap secondary states and cleanup recovery contract live in design section 12.1. All request/result/stdout/stderr/native scratch descends from the resolved `E:\desktop\brilliant_ideas\brilliant_guitar\.worktrees\.scratch\rkp1a-property-cap\p3b` leaf. Every failure rejects without partial evidence; cleanup first-fail/second-success is recorded recovery, while two failures reject. Wall time and RSS are diagnostic only.

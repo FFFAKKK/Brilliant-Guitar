@@ -40,7 +40,7 @@
     "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "IN_PROGRESS / ACCEPTED PLANNING AUTHORITY D638B81 / E0 COMPLETE / E1+E1R GREEN / E2-E3 NOT STARTED / EXTERNAL BLOCKER PUBLIC JSON PROPERTY CAP CONTRACT CONFLICT / RKP-2 OPERATIONALLY PAUSED / RKP-1A P0-P2 COMPLETE AND AUDITED 0/0/0 / FIRST P3 AMENDMENT 978160E RETURN 0/1/1 / P3B ONE-FILE WORKER + P2 TENSE DOCS REPAIR TARGETED REREVIEW PENDING / CURRENT RKP-1A PRODUCTION AUTH FALSE / TYPESCRIPT DEFAULT.",
+  "notes": "IN_PROGRESS / ACCEPTED PLANNING D638B81 / E0 COMPLETE / E1+E1R GREEN / E2-E3 NOT STARTED / PUBLIC JSON PROPERTY CAP BLOCKER / RKP-2 PAUSED / RKP-1A P0-P2 AUDITED / 978160E RETURN 0/1/1 / 1402302 RETURN 0/2/0 COMMONJS+SETTLEMENT / SECOND DOCS-ONLY REPAIR TARGETED REREVIEW PENDING / RKP-1A PRODUCTION AUTH FALSE / TYPESCRIPT DEFAULT.",
   "meta": {
     "planning_base_commit": "4a302bc9f9981940336fc97941b08e09bd0d1f67",
     "source_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -119,7 +119,8 @@
       "p2_independent_implementation_audit": "passed_0f652729_P0_0_P1_0_P2_0",
       "p3_attempt": "no_commit_reverted_clean",
       "p3_amendment_review": "978160e69b69d643c3d61ca946bde10bfe4aefb0_return_P0_0_P1_1_P2_1_worker_protocol_and_P2_tense",
-      "bounded_planning_repair": "P3B_single_file_self_worker_protocol_and_P2_historical_wire_tense_ready_for_targeted_rereview",
+      "second_p3_amendment_review": "14023029878be7c785ac0de7828628c5e3f4f8b1_return_P0_0_P1_2_P2_0_commonjs_entry_and_windows_settlement",
+      "bounded_planning_repair": "P3B_CommonJS_direct_entry_first_observed_taskkill_reap_cleanup_contract_ready_for_targeted_rereview",
       "p3a_started": false,
       "p3a_authorized": false,
       "p3b_started": false,

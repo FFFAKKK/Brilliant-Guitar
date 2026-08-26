@@ -2,7 +2,7 @@
 
 ## Verdict
 
-The first independent planning audit returned P0/P1/P2=`0/3/1` and its bounded repair passed. P0-P2 are complete and independently audited. A later uncommitted P3 attempt was reverted; root-cause audit returned P0/P1/P2=`0/2/0` for missing native capture-profile ownership and an incorrect raw-byte canonical assumption. Candidate `978160e69b69d643c3d61ca946bde10bfe4aefb0` then returned P0/P1/P2=`0/1/1`: P3B did not freeze an executable self-worker protocol, and design used future tense for the P2 wire validator already changed at `0f652729...`. This bounded docs-only repair closes exactly those two findings without production/test changes.
+The first independent planning audit returned P0/P1/P2=`0/3/1` and its bounded repair passed. P0-P2 are complete and independently audited. A later uncommitted P3 attempt was reverted; root-cause audit returned P0/P1/P2=`0/2/0` for missing native capture-profile ownership and an incorrect raw-byte canonical assumption. Candidate `978160e69b69d643c3d61ca946bde10bfe4aefb0` then returned `0/1/1`; its repair `14023029878be7c785ac0de7828628c5e3f4f8b1` returned `0/2/0` because an ESM-only entry contradicted CommonJS and Windows settlement was not mechanically closed. This second bounded docs-only repair fixes only those two findings without production/test changes.
 
 Current self-audit P0/P1/P2=`0/0/0`. This is not an independent verdict. Targeted independent planning rereview remains pending.
 
@@ -19,7 +19,7 @@ Current self-audit P0/P1/P2=`0/0/0`. This is not an independent verdict. Targete
 - `captureStrictInput` is the sole profile owner: default `1,048,576`, native-wire-v1 `1,572,864`; create and response captures both select native without repeated numeric call-site constants.
 - Exact Rust-value/TS-member counts distinguish DAG sharing from the JSON-cloned tree.
 - Canonical evidence assigns distinct fixed input/export SHAs, Foundation BTreeMap ordering and semantic equality; it does not require raw input bytes to equal export bytes.
-- P3B has one source/direct worker path, an exact direct-entry/argv/env recursion guard, one exact compact sentinel schema, fixed stream/timing/shutdown/cleanup bounds, deterministic failure precedence and executable negative fixtures; success is withheld until cleanup.
+- P3B has one CommonJS source/direct worker path using exact `path.resolve(process.argv[1] ?? "") === path.resolve(__filename)`, exact argv/env and absent `NODE_TEST_CONTEXT`; it has one compact sentinel schema, first-observed `primary ??=`, exact taskkill/reap secondary states and two-attempt bounded cleanup; success is withheld until cleanup.
 - P2 is correctly historical: its audited head already validates successor failure wire, while P3A owns only the capture profile and its create/read selections.
 - Archived RKP-1 is immutable and no active spec is promoted.
 - P1 and P2 have separate independent implementation audits; P1's exact bounded RED set and two-step rollback are executable.
@@ -36,8 +36,8 @@ Current self-audit P0/P1/P2=`0/0/0`. This is not an independent verdict. Targete
 
 `npm.cmd run typecheck` and `npm.cmd run build` pass under the fixed E: scratch environment. Clean first-amendment head `978160e69b69d643c3d61ca946bde10bfe4aefb0` discovers 79 files with manifest SHA-256 `afbd0246012b61c3670b31cc01180c4a90586e30ac3ff177d91cddfc2eb09357` and reports 584 discovered / 580 pass / 1 expected GC skip / 3 fail. The same three workspace-law test names fail at `6/9`, first rejecting the unaccepted RKP-1A child `check.jsonl`; no product, capture, native, codec or consumer test fails. This task does not edit or relax workspace-law during planning, and the result is truthful fail-closed baseline evidence rather than full green.
 
-The older 78-file `639e935...` / `c02c830...` characterization remains historical attribution only. The current uncommitted bounded repair prints the same 79-file manifest and the same three governance failures. A clean-HEAD full rerun after the single repair commit is the final execution gate.
+The older 78-file `639e935...` / `c02c830...` characterization remains historical attribution only. This second uncommitted bounded repair must retain the same 79-file manifest and same three governance failures. A clean-HEAD full rerun after the single repair commit is the final execution gate.
 
 ## Review focus
 
-Targeted rereview should verify the closed capture profile, both native capture call sites, exact DAG/cloned/read counts, distinct canonical SHA roles, P2 historical tense, P3B one-file entry/protocol/negative matrix, P3A/P3B audit stops, seven-path allowlist, excluded `indices.rs`, Stage6 follow-up ownership and current lifecycle projections.
+Targeted rereview should verify the CommonJS `__filename` entry and recursion guard, first-observed overflow/timeout ordering, exact taskkill/reap secondary states, cleanup recovery/two-failure behavior, unchanged sentinel/schema/count/SHA contracts, P3A/P3B audit stops, 7/5/1 allowlists, excluded `indices.rs`, Stage6 follow-up ownership and current lifecycle projections.

@@ -4,7 +4,7 @@
 
 READY FOR TARGETED PLANNING REREVIEW.
 
-Exact planning head `1cd0caadff218c1471f67cdf1a1ab78f5653a605`, exact P1 head `712c6dbb0b7556b4c345fab9ad8215fdbcec6990` and exact P2 head `0f65272951fd23080b6f536b2e58f50afe249b02` each passed their required independent review at P0/P1/P2=`0/0/0`. A no-commit P3 attempt was reverted. Independent root-cause audit returned `0/2/0`; first amendment candidate `978160e69b69d643c3d61ca946bde10bfe4aefb0` then returned `0/1/1` for the under-specified P3B worker and stale P2 tense. This bounded docs-only repair is the targeted planning rereview candidate. P3A/P3B/P4 remain unauthorized.
+Exact planning head `1cd0caadff218c1471f67cdf1a1ab78f5653a605`, exact P1 head `712c6dbb0b7556b4c345fab9ad8215fdbcec6990` and exact P2 head `0f65272951fd23080b6f536b2e58f50afe249b02` each passed their required independent review at P0/P1/P2=`0/0/0`. A no-commit P3 attempt was reverted. Independent root-cause audit returned `0/2/0`; first amendment `978160e...` returned `0/1/1`, and its repair `14023029878be7c785ac0de7828628c5e3f4f8b1` returned `0/2/0` for CommonJS entry and Windows settlement. This second bounded docs-only repair is the targeted planning rereview candidate. P3A/P3B/P4 remain unauthorized.
 
 ## Candidate claims
 
@@ -21,7 +21,7 @@ Exact planning head `1cd0caadff218c1471f67cdf1a1ab78f5653a605`, exact P1 head `7
 
 P3A has exactly five incremental technical paths: `strict-input-capture.ts`, `rust-kernel-smoke.ts`, `cvn-3-strict-input.test.ts`, the RKP-1A compatibility test and RKP-2 workspace-law. It freezes default/native boundaries, direct DAG and JSON-cloned create, public read and hostile capture behavior, then stops for independent audit.
 
-P3B technically changes only the RKP-1A compatibility test, with workspace-law projection only if required. That same file is the sole normal test and direct self-worker entry; no helper path exists. Its exact argv/env/direct-entry recursion guard, one compact sentinel schema, stream caps, 180000 ms timer, kill/reap/cleanup bounds, primary precedence and negative matrix are frozen in design section 12.1. It proves real decoder/raw+public journeys, repeated reads, semantic equality and exact SHA roles. Input SHA is `5a8a318e58bc08a82a822c166ed11239ed4ed7b9ea45d50bb7dcb81d7c57f91e`; Rust canonical export SHA is `4d8597437cc8b07df6cfef9400086218636adb27257ad72d055e1e3a3deafff7`. Both are `15,013,904` bytes but are not raw-byte equal.
+P3B technically changes only the RKP-1A compatibility test, with workspace-law projection only if required. That same CommonJS file is the sole normal test and direct self-worker; no helper path exists. Its exact `__filename` direct entry, argv/env/absent-`NODE_TEST_CONTEXT` guard, one compact sentinel schema, stream caps, 180000 ms timer, first-observed primary, exact taskkill/reap secondary states and recovered/two-failure cleanup matrix are frozen in design section 12.1. It proves real decoder/raw+public journeys, repeated reads, semantic equality and exact SHA roles. Input SHA is `5a8a318e58bc08a82a822c166ed11239ed4ed7b9ea45d50bb7dcb81d7c57f91e`; Rust canonical export SHA is `4d8597437cc8b07df6cfef9400086218636adb27257ad72d055e1e3a3deafff7`. Both are `15,013,904` bytes but are not raw-byte equal.
 
 ## Audit focus
 
@@ -32,8 +32,8 @@ P3B technically changes only the RKP-1A compatibility test, with workspace-law p
 - Confirm default capture remains byte-identical at `1,048,576`, `native-wire-v1` is `1,572,864`, and both native create/read calls select it without duplicate numbers.
 - Confirm exact document/create/read value/member counts and DAG versus cloned-tree coverage.
 - Confirm P3B proves real decoder/native behavior without a second fixture or admission path and never treats the raw input SHA as Foundation canonical.
-- Confirm the one compatibility test is the only P3B source/worker, its direct-entry/argv/env triple cannot recurse under `node:test`, and partial/mismatched markers fail before spawn.
-- Validate the exact sentinel recursive shape, safe-integer/literal ranges, result byte match, 1 MiB stream caps, 180000 ms timing origin, shutdown/cleanup bounds and fixed primary precedence using every negative fixture.
+- Confirm the one compatibility test is the only P3B source/worker, CommonJS `__filename` compiles without ESM, exact argv/env plus absent `NODE_TEST_CONTEXT` cannot recurse, and partial markers fail before spawn.
+- Validate the exact sentinel shape and caps plus first-observed ordering in both directions, exact taskkill launch/nonzero/timeout and reap-timeout secondary states, cleanup recovery/two-failure, bounded settlement and zero partial publication.
 - Confirm all request/result/stdout/stderr artifacts resolve under E: scratch and no partial success is published before cleanup.
 - Confirm P2 head `0f652729...` already owns the successor wire validator; P3A changes only capture profile and its two call-site selections.
 - Confirm P3A and P3B each stop for independent audit and separate authorization; RKP-2 S6.2/S6.3 remain false.

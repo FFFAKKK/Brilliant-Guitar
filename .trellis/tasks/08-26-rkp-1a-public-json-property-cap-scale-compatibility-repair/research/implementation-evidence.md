@@ -7,7 +7,7 @@
 - P1 technical candidate: `712c6dbb0b7556b4c345fab9ad8215fdbcec6990`; independent implementation audit PASS at P0/P1/P2=`0/0/0`.
 - P2 technical candidate and audited head: `0f65272951fd23080b6f536b2e58f50afe249b02`; independent implementation audit PASS at P0/P1/P2=`0/0/0`.
 - A later P3 attempt created no commit and was fully reverted. Root-cause audit returned `0/2/0` for native capture-profile admission and canonical-byte role drift.
-- First docs amendment candidate `978160e69b69d643c3d61ca946bde10bfe4aefb0` was returned at `0/1/1` for planning-only P3B self-worker protocol and P2 tense defects; no P3 technical work was started.
+- First docs amendment candidate `978160e69b69d643c3d61ca946bde10bfe4aefb0` was returned at `0/1/1` for planning-only P3B self-worker protocol and P2 tense defects. Its repair `14023029878be7c785ac0de7828628c5e3f4f8b1` was returned at `0/2/0` for CommonJS direct-entry and Windows first-observed terminate/reap/cleanup gaps. This second bounded repair remains docs-only; no P3 technical work was started.
 - P3A/P3B/P4, RKP-2 Stage6 E2, acceptance, archive, integration and default cutover are not authorized.
 
 ## P1 technical change
@@ -63,7 +63,7 @@ The current checkout's full Runtime unit run exposes four known CRLF source-self
 
 ## P3 amendment boundary
 
-The amendment splits future work into P3A and P3B. P3A owns only the closed TypeScript capture profile and its create/read call sites/tests; P2 already changed the successor failure-wire validator at exact audited head `0f652729...`. P3B owns only frozen real-consumer evidence, with distinct input/export SHA roles and semantic equality, and uses the compatibility test itself as its sole direct self-worker. Its protocol is exact and fail-closed but remains planning-only. `indices.rs`, fixture, TypeScript encoder and Foundation BTreeMap stay byte-zero. No P3 evidence has been committed.
+The amendment splits future work into P3A and P3B. P3A owns only the closed TypeScript capture profile and its create/read call sites/tests; P2 already changed the successor failure-wire validator at exact audited head `0f652729...`. P3B owns only frozen real-consumer evidence, with distinct input/export SHA roles and semantic equality, and uses the compatibility test itself as its sole CommonJS direct self-worker. Its exact `__filename` guard, first-observed settlement, taskkill/reap secondary state and two-attempt E:-scratch cleanup are fail closed but remain planning-only. `indices.rs`, fixture, TypeScript encoder and Foundation BTreeMap stay byte-zero. No P3 evidence has been committed.
 
 ## Rollback and next gate
 

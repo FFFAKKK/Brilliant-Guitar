@@ -45,7 +45,7 @@
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RKP-0 RKP-1 AND PRIOR REPAIRS ACCEPTED ARCHIVED / RKP-2 REMAINS SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 SEAM E1+E1R GREEN E2 NOT STARTED / RKP-2 PAUSED ON PUBLIC JSON PROPERTY CAP BLOCKER / RKP-1A P0-P2 COMPLETE AND INDEPENDENTLY AUDITED 0/0/0 / FIRST P3 AMENDMENT 978160E RETURN 0/1/1 / P3B ONE-FILE WORKER + P2 TENSE DOCS REPAIR READY FOR TARGETED REREVIEW / CURRENT RKP-1A PRODUCTION AUTH FALSE / TYPESCRIPT DEFAULT / NO P3A IMPLEMENTATION CUTOVER PUSH QUALIFICATION OR RKP-3.",
+  "notes": "RKP-0 RKP-1 AND PRIOR REPAIRS ACCEPTED ARCHIVED / RKP-2 SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 E1+E1R GREEN E2 NOT STARTED / RKP-1A P0-P2 AUDITED / 978160E RETURN 0/1/1 / 1402302 RETURN 0/2/0 COMMONJS+SETTLEMENT / SECOND DOCS-ONLY REPAIR READY FOR TARGETED REREVIEW / RKP-1A PRODUCTION AUTH FALSE / TYPESCRIPT DEFAULT / NO P3A CUTOVER PUSH QUALIFICATION OR RKP-3.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
@@ -332,7 +332,8 @@
       "p3_attempt": "no_commit_reverted_clean",
       "p3_root_cause_audit": "P0_0_P1_2_P2_0_capture_profile_and_raw_canonical_role_drift",
       "p3_amendment_review": "978160e69b69d643c3d61ca946bde10bfe4aefb0_return_P0_0_P1_1_P2_1_worker_protocol_and_P2_tense",
-      "bounded_planning_repair": "P3B_single_file_self_worker_protocol_and_P2_historical_wire_tense_ready_for_targeted_rereview",
+      "second_p3_amendment_review": "14023029878be7c785ac0de7828628c5e3f4f8b1_return_P0_0_P1_2_P2_0_commonjs_entry_and_windows_settlement",
+      "bounded_planning_repair": "P3B_CommonJS_direct_entry_first_observed_taskkill_reap_cleanup_contract_ready_for_targeted_rereview",
       "p3a_started": false,
       "p3a_authorized": false,
       "p3b_started": false,
