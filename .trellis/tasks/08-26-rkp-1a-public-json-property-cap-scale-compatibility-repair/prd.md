@@ -9,7 +9,7 @@ Create a versioned successor to the archived RKP-1 JSON resource-limit authority
 - Exact planning base is `639e93555c15b46c54c8e9bb7ec610d4a77c7478`. RKP-2 Stage 6 E1 and E1R are green; E2 is not started.
 - Independent root-cause audit classified P0/P1/P2 as `0/1/0`: the public JSON value-count cap rejects the frozen request before the scale seam can run.
 - The first independent planning audit returned P0/P1/P2=`0/3/1`; its bounded repair was accepted at `1cd0caadff218c1471f67cdf1a1ab78f5653a605`. P0, P1 and P2 are implemented and independently audited at `0/0/0` through exact P2 head `0f65272951fd23080b6f536b2e58f50afe249b02`.
-- A later P3 attempt produced no commit and was fully reverted. Independent root-cause audit returned P0/P1/P2=`0/2/0`: the remaining blockers are the TypeScript native capture profile and an incorrect raw-byte canonical-parity assumption. This docs-only amendment closes both contracts; targeted planning rereview remains pending.
+- A later P3 attempt produced no commit and was fully reverted. Independent root-cause audit returned P0/P1/P2=`0/2/0`: the remaining blockers are the TypeScript native capture profile and an incorrect raw-byte canonical-parity assumption. The first amendment candidate at `978160e69b69d643c3d61ca946bde10bfe4aefb0` then received P0/P1/P2=`0/1/1`: its P3B self-worker protocol was under-specified and one P2 wire-validator sentence was stale. This bounded docs-only repair closes only those findings; targeted planning rereview remains pending.
 - The request has `1,199,235` counted JSON values. The existing `1,048,576` limit records `1,048,577` only because that is the first rejected value, not the complete request count.
 - `brilliant-core-types` owns `JSON_PROPERTY_LIMIT`; `brilliant-kernel-contracts::StrictState` imports it. Archived RKP-1 remains immutable and this child is the successor authority.
 
@@ -67,12 +67,21 @@ P2 closes Contracts snapshots/resources and the native TypeScript failure-wire c
 
 This amendment does not authorize P3A, P3B, P4, acceptance, archive, integration, push, Stage 6 E2, RKP-3, default cutover or qualification. The RKP-2 seam repair remains paused after green E1/E1R.
 
+### R11 — one-file P3B self-worker evidence protocol
+
+P3B adds no helper, worker or process file. Its only technical owner remains `test/core-kernel/rust-migration/rkp-1a-property-cap-compatibility.test.ts`, whose compiled `.test.js` is both the normal `node:test` module and the sole direct self-worker entry. Worker mode requires the exact direct-entry check, exact argv `--rkp1a-p3b-self-worker-v1` and exact environment marker `BRILLIANT_RKP1A_P3B_SELF_WORKER_V1=1`; partial/mismatched markers fail before test registration or child spawn, and worker mode never registers tests or recursively spawns itself.
+
+The parent launches `process.execPath` directly with `shell:false`, `windowsHide:true` and bounded pipes. The worker emits exactly one LF-terminated `BRILLIANT_RKP1A_P3B_SELF_WORKER_V1:` compact-JSON sentinel and an exact matching TEMP-only result payload. The recursively exact schema, literal values, safe-integer ranges and no-extra-field rule are frozen in `design.md`; success requires exit 0, no signal, bounded stdout/stderr, exactly one valid sentinel, all semantic/hash/count assertions and completed cleanup. No partial evidence is publishable.
+
+The liveness timer is `180000 ms` from immediately before spawn until normal settlement; it is never restarted. Spawn/start, timeout, spontaneous signal/nonzero, output overflow, sentinel missing/duplicate/malformed, semantic/hash/count mismatch and cleanup have the fixed precedence in `design.md`. Termination, wait/reap and cleanup are separately bounded. Every request/result/stdout/stderr artifact lives below the resolved E: scratch root; neither default C: TEMP nor a default C: Cargo target is permitted.
+
 ## Acceptance Criteria
 
 - [x] P0/P1/P2 are complete and independently audited at `0/0/0`; exact P2 head is `0f65272951fd23080b6f536b2e58f50afe249b02`.
 - [ ] Targeted planning rereview accepts this P3A/P3B amendment at P0/P1/P2=`0/0/0`.
 - [ ] Future P3A proves default/native capture boundaries, DAG and JSON-cloned create, public read and hostile capture regressions, then passes independent audit before separately authorized P3B.
 - [ ] Future P3B proves the unchanged frozen request passes real decoder plus raw/public native create/read/export, exact SHA roles, semantic equality and extension preservation, then passes independent audit before P4.
+- [ ] Future P3B negative tests exercise recursion guard, timeout, nonzero/signal, both output caps, missing/duplicate/malformed/extra-field sentinel and cleanup failure using the same single-file harness.
 - [ ] Public `28/51/8/34/9`, two exports, 22 failures, `brilliant-score-1` and TypeScript default show zero drift.
 - [ ] Every implementation phase is independently revertible and no path outside the exact allowlists changes.
 

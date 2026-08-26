@@ -6,6 +6,8 @@ The original independent root-cause audit returned P0/P1/P2=`0/1/0`: RKP-2 E2 mu
 
 A later P3 attempt was not committed and was fully reverted. Its independent root-cause audit returned P0/P1/P2=`0/2/0`: the remaining blockers are (1) the native TypeScript capture profile still uses the default `1,048,576` member/element cap and (2) the attempted evidence equated raw input bytes with Foundation-canonical exported bytes. Neither finding is a fixture, E1 seam, qualification-method or disk-space defect.
 
+The first docs amendment candidate `978160e69b69d643c3d61ca946bde10bfe4aefb0` then returned P0/P1/P2=`0/1/1`: the scale facts below were correct, but the P3B isolated journey lacked an executable one-file self-worker protocol and `design.md` described the already-audited P2 successor-wire edit as future work. This repair changes planning authority only; it does not change any count, fixture, SHA or technical path.
+
 The live threshold is `JSON_PROPERTY_LIMIT=1,048,576`. `StrictState` stops retaining at the first value beyond it and therefore reports `actual=1,048,577`; that value is the first overflow observation, not total input size.
 
 ## Exact count semantics

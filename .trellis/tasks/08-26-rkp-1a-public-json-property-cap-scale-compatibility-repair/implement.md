@@ -87,17 +87,22 @@ Gate: focused capture/native/workspace-law tests on current Node and Node 20.20.
 
 ## P3B — frozen consumer proof
 
-Technical owner: `test/core-kernel/rust-migration/rkp-1a-property-cap-compatibility.test.ts`; a necessary workspace-law projection may only use its already allowlisted workspace-law path.
+Technical owner and sole self-worker source: `test/core-kernel/rust-migration/rkp-1a-property-cap-compatibility.test.ts`; a necessary workspace-law projection may only use its already allowlisted workspace-law path. Do not add a helper, worker or process path.
 
 - Consume `createStressCvn7Score()` read-only; assert exact entity/extension/value/member/byte facts for direct DAG and JSON-cloned equivalent trees.
 - Pass the unchanged request through real `decode_create_request` and both raw/public native create/read/export journeys with no bypass, slicing or field removal.
 - Assert input SHA `5a8a318e58bc08a82a822c166ed11239ed4ed7b9ea45d50bb7dcb81d7c57f91e`, Rust canonical export SHA `4d8597437cc8b07df6cfef9400086218636adb27257ad72d055e1e3a3deafff7`, semantic deep equality, repeated raw/public read stability and 18/16/1 extension preservation. Do not assert raw input bytes equal Rust output bytes.
 - Prove the predecessor cap rejects the same request deterministically at `1_048_576/1_048_577` without rewriting history.
-- Use an isolated child process, 180-second liveness guard, one versioned success sentinel, bounded cleanup and fail-closed timeout/nonzero/malformed/missing output with zero partial publication. Record wall/RSS only as non-qualification diagnostics; do not run 10,000 submit/replay.
+- Compile the same test file, then spawn `process.execPath <absolute compiled test> --rkp1a-p3b-self-worker-v1` with `BRILLIANT_RKP1A_P3B_SELF_WORKER_V1=1`, exact request/result path variables, `shell:false`, `windowsHide:true`, bounded pipes and no inherited `NODE_TEST_CONTEXT`. Direct-entry + argv + env must all match; partial mode markers reject before test registration/spawn, and worker mode never registers tests or recursively launches itself.
+- Implement the exact `BRILLIANT_RKP1A_P3B_SELF_WORKER_V1:` compact-JSON schema from `design.md` in this file only. Require exact recursive keys/types/ranges/order, exact literal counts/bytes/hashes/proofs, positive safe-integer elapsed/RSS, result-file byte equality, empty stderr and one LF-terminated stdout sentinel with no mixed output.
+- Cap raw stdout and stderr separately at `1_048_576` bytes. Start the `180000 ms` timer immediately before spawn and keep it through normal settlement; bound Windows tree kill, wait/reap and cleanup as frozen in design. Use only the resolved E: scratch leaf for request/result/stdout/stderr/native artifacts, with no default C: TEMP or target.
+- Apply the frozen failure order: recursion/spawn → timeout → spontaneous signal/nonzero → stdout/stderr overflow → missing/duplicate/malformed sentinel → evidence mismatch → cleanup. Termination-induced status cannot replace timeout/overflow, and cleanup cannot replace earlier workload failure; cleanup after otherwise successful evidence fails closed. Publish no partial success.
+- Add executable negative fixtures in this same file for recursion guard, timeout, nonzero, signal, cap+1 on each stream, sentinel missing/duplicate/invalid JSON/mixed output/extra fields, result mismatch and cleanup failure. Use test-local injectable seams to avoid a real 180-second wait; do not expose a product hook.
+- Record wall/RSS only as non-qualification diagnostics; do not run 10,000 submit/replay.
 
 Commit: `test(rkp-1a): prove frozen stress request through real consumers`.
 
-Gate: focused current/Node20 raw and public journey, native bridge, full dynamic runner with identical manifest/hash/totals, Rust workspace gates, exact hashes and protected zero-delta. Stop for dedicated independent P3B implementation audit. P4 requires PASS and separate authorization. Rollback: revert P3B only, retaining audited P3A.
+Gate: focused current/Node20 raw and public journey plus the complete negative matrix, native bridge, full dynamic runner with identical manifest/hash/totals, Rust workspace gates, exact hashes, single-file changed-path proof, E:-only artifact proof and protected zero-delta. Stop for dedicated independent P3B implementation audit. P4 requires PASS and separate authorization. Rollback: revert P3B only, retaining audited P3A.
 
 ## P4 — candidate freeze
 

@@ -3,15 +3,15 @@
 {"file":".trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/design.md","reason":"Verify TypeScript remains default and the staged migration scope does not expand."}
 {"file":".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/design.md","reason":"Compare the successor against immutable RKP-1 depth, byte-cap and failure contracts."}
 {"file":".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/prd.md","reason":"Check every requirement and acceptance criterion is testable and scope closed."}
-{"file":".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/design.md","reason":"Audit sole authority, exact threshold, precedence, resource laws and rejected routes."}
-{"file":".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/implement.md","reason":"Check audited P0-P2 plus separate P3A, P3B and P4 ownership, audit stops and rollback points."}
+{"file":".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/design.md","reason":"Audit sole authority, exact threshold, P2 historical wire state and the executable one-file P3B worker protocol."}
+{"file":".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/implement.md","reason":"Check audited P0-P2 plus separate P3A, single-file P3B and P4 ownership, review stops and rollback points."}
 {"file":".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/research/root-cause-and-exact-node-count.md","reason":"Recompute exact request/document/read Rust values, TypeScript members, DAG count, bytes and SHA roles."}
 {"file":".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/research/authority-and-consumer-impact-map.md","reason":"Verify downstream layers receive tests only and no second admission owner appears."}
-{"file":".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/research/file-test-ownership-matrix.md","reason":"Mechanically verify seven technical paths, seven lifecycle paths and separate P3A/P3B audit stops."}
+{"file":".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/research/file-test-ownership-matrix.md","reason":"Mechanically verify seven technical paths, no P3B helper path, exact negative matrix and separate P3A/P3B audit stops."}
 {"file":"src/core-kernel/native/rust-kernel-smoke.ts","reason":"Verify successor wire remains stable and both native create/read capture call sites select native-wire-v1."}
 {"file":"src/core-kernel/codec/strict-input-capture.ts","reason":"Verify the closed default/native-wire-v1 profile union has one implementation and no duplicated limits."}
 {"file":"test/core-kernel/cvn-3-strict-input.test.ts","reason":"Verify default/native edges and accessor/proxy/cycle/depth hostile behavior are explicit."}
-{"file":"test/core-kernel/rust-migration/rkp-1a-property-cap-compatibility.test.ts","reason":"Verify DAG/cloned counts, real consumer journeys, distinct SHA roles and semantic extension equality."}
+{"file":"test/core-kernel/rust-migration/rkp-1a-property-cap-compatibility.test.ts","reason":"Verify the only direct self-worker has exact argv/env/schema/limits/precedence plus DAG/cloned consumer and SHA evidence."}
 {"file":".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json","reason":"Verify the child reference occurs once and the next gate is targeted independent planning rereview."}
 {"file":".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json","reason":"Verify RKP-2 remains paused with S6.2/S6.3 false and TypeScript default."}
 {"file":".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/task.json","reason":"Verify E1/E1R remain green, E2 is not started and the external blocker is exact."}

@@ -100,7 +100,7 @@ The raw input hash is never called the Foundation canonical hash. P3B proves sem
 
 ### 8.1 TypeScript responsibility split
 
-`src/core-kernel/native/rust-kernel-smoke.ts` validates the Rust native response envelope. Its current hard-coded `codec.property-limit.limit===1_048_576` is a real successor-wire consumer and must change to `1_572_864`. Both a fake native rejection and a real native `newCap+1` rejection must remain `codec.property-limit` with exact `1572864/1572865`; neither may downgrade to `bridge.internal`.
+`src/core-kernel/native/rust-kernel-smoke.ts` validates the Rust native response envelope. The P1 predecessor still hard-coded `codec.property-limit.limit===1_048_576`; P2 changed that wire validator at exact audited head `0f65272951fd23080b6f536b2e58f50afe249b02` to accept only successor `1_572_864`. Its fake and real `newCap+1` regressions preserve exact `codec.property-limit` facts `1572864/1572865` and reject predecessor/extra/malformed facts as `bridge.internal`. P3A does not edit that validator again: it owns only the capture-profile definition and selection of `native-wire-v1` at both create-document and read-response capture call sites.
 
 `src/core-kernel/codec/strict-input-capture.ts#STRICT_INPUT_MAX_PROPERTIES` stays exactly `1_048_576` as the default profile. That contract counts object members and array elements while safely reading JavaScript descriptors. Rust `JSON_PROPERTY_LIMIT` counts every serialized JSON object, array and primitive while excluding keys. Equal historical numbers do not make them one authority. The only change is adding the closed `native-wire-v1` profile and selecting it for both native create document capture and native response capture.
 
@@ -142,9 +142,117 @@ P2 updated Contracts plus the native TypeScript failure-wire validator and dedic
 
 P3A changes exactly five incremental technical paths: `strict-input-capture.ts`, `rust-kernel-smoke.ts`, `cvn-3-strict-input.test.ts`, the RKP-1A compatibility test and RKP-2 workspace-law. It adds the closed profile, selects it for both native create and response capture, and proves default/native cap-1/cap/cap+1 plus DAG/cloned create, public read and hostile accessor/proxy/cycle/depth/extra/malformed behavior. It stops for independent audit; P3B needs PASS and separate authorization. Reverting P3A returns to audited P2.
 
-P3B technically changes only the RKP-1A compatibility test; any necessary workspace-law projection is limited to its already allowlisted path. It uses the real decoder without bypass, raw and public native journeys, DAG and cloned inputs, repeated reads, exact SHA roles, semantic/extension equality, predecessor rejection, a 180-second isolated-process guard, one success sentinel, bounded cleanup and no partial publication. It records wall/RSS as diagnostics only. It stops for independent audit before P4.
+P3B technically changes only the RKP-1A compatibility test; any necessary workspace-law projection is limited to its already allowlisted path. It uses the real decoder without bypass, raw and public native journeys, DAG and cloned inputs, repeated reads, exact SHA roles, semantic/extension equality, predecessor rejection and the single-file self-worker protocol in section 12.1. It records wall/RSS as diagnostics only. It stops for independent audit before P4.
 
 Reverting P2 returns to the audited P1 RED checkpoint; reverting P1 after that restores the former cap and old-wire green state. P4 is docs/evidence freeze only. RKP-2 E2 remains paused until P3A, P3B, P4 and final independent implementation audit PASS, then owner acceptance/archive and explicit integration consume the accepted successor.
+
+### 12.1 P3B single-file self-worker v1
+
+#### Entry and recursion guard
+
+The sole source and worker entry is `test/core-kernel/rust-migration/rkp-1a-property-cap-compatibility.test.ts`; the compiled path is the corresponding `dist/test/core-kernel/rust-migration/rkp-1a-property-cap-compatibility.test.js`. No helper/worker file is added.
+
+The normal test parent launches exactly:
+
+```text
+process.execPath <absolute-compiled-test-file> --rkp1a-p3b-self-worker-v1
+```
+
+with `child_process.spawn(..., { cwd: repoRoot, shell: false, windowsHide: true, stdio: ["ignore", "pipe", "pipe"] })`. The child environment inherits the session environment after deleting `NODE_TEST_CONTEXT`, then sets:
+
+- `BRILLIANT_RKP1A_P3B_SELF_WORKER_V1=1`;
+- `BRILLIANT_RKP1A_P3B_REQUEST_V1=<absolute E:-scratch request.json>`;
+- `BRILLIANT_RKP1A_P3B_RESULT_V1=<absolute E:-scratch result.json>`;
+- `TEMP` and `TMP` to the owned E:-scratch leaf; `CARGO_TARGET_DIR` remains the session E: target and `CARGO_INCREMENTAL=0`.
+
+The module computes direct entry only as `pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url`. Worker mode is active only when direct entry is true, `process.argv.slice(2)` is exactly `['--rkp1a-p3b-self-worker-v1']`, and the mode environment value is exactly `1`. If any worker argv/environment marker is present without the complete triple, the module rejects the recursion guard before registering `node:test` cases or spawning a child. Normal runner import has no marker and registers tests; worker mode registers no tests, calls the worker body once and contains no path that can spawn another self-worker. The parent also rejects if it inherits the mode marker.
+
+#### Success sentinel and exact evidence schema
+
+The internal prefix is exactly `BRILLIANT_RKP1A_P3B_SELF_WORKER_V1:`. On workload success the worker atomically writes `result.json`, then writes to stdout exactly `<prefix><compact-json>\n`. The result-file UTF-8 bytes must equal the compact JSON bytes after the prefix. Stderr must be empty.
+
+The JSON object has exactly the keys and nesting below, in the shown serialization order. Every integer is a JSON integer in `0..=Number.MAX_SAFE_INTEGER`; all frozen counters/bytes equal the literals below, `workloadElapsedMicros > 0`, and `peakRssBytes > 0`. Hashes are exact lowercase 64-hex literals. Every proof field is literal `true`. Missing, duplicate or extra keys at any depth, wrong types, non-integers, out-of-range numbers, non-finite/coerced values or a different key order are malformed protocol.
+
+```json
+{
+  "schemaVersion": 1,
+  "status": "ok",
+  "fixtureId": "cvn7-stress-v1",
+  "counts": {
+    "measures": 400,
+    "parts": 16,
+    "staves": 16,
+    "measureContents": 6400,
+    "voices": 12800,
+    "events": 102400,
+    "notes": 51200,
+    "extensions": 18,
+    "partOwnedExtensions": 16,
+    "unknownExtensions": 1,
+    "documentRustValues": 1199233,
+    "documentTypescriptMembers": 1199232,
+    "createRequestRustValues": 1199235,
+    "createRequestTypescriptMembers": 1199234,
+    "requestEnvelopeValues": 2,
+    "readResponseRustValues": 1199245,
+    "readResponseTypescriptMembers": 1199244,
+    "directDagCaptureMembers": 1045635
+  },
+  "bytes": {
+    "inputScore": 15013904,
+    "createRequest": 15013932,
+    "readResponse": 15014112,
+    "rustCanonicalExport": 15013904
+  },
+  "hashes": {
+    "inputScoreSha256": "5a8a318e58bc08a82a822c166ed11239ed4ed7b9ea45d50bb7dcb81d7c57f91e",
+    "rustCanonicalExportSha256": "4d8597437cc8b07df6cfef9400086218636adb27257ad72d055e1e3a3deafff7"
+  },
+  "proofs": {
+    "realDecodeCreateRequest": true,
+    "directDagRawJourney": true,
+    "directDagPublicJourney": true,
+    "clonedTreeRawJourney": true,
+    "clonedTreePublicJourney": true,
+    "repeatedRawReadStable": true,
+    "repeatedPublicReadStable": true,
+    "semanticDeepEqual": true,
+    "extensionsDeepEqual": true,
+    "predecessorRejected": true,
+    "zeroPartialPublication": true
+  },
+  "diagnostics": {
+    "workloadElapsedMicros": 1,
+    "peakRssBytes": 1
+  }
+}
+```
+
+The two diagnostic `1` values above denote their minimum allowed value, not frozen observed evidence; the final candidate records the actual safe integers. No path, raw native output, stack, handle, RuntimeHandle, partial counters or partial success object is allowed in the sentinel.
+
+#### Output, timeout, shutdown and cleanup
+
+Raw stdout and stderr are each capped at exactly `1_048_576` bytes while streaming; the harness stops retaining at the cap and triggers bounded termination on the first additional byte. Successful stdout is exactly one LF-terminated sentinel line and nothing else, and successful stderr is zero bytes. Prefix count zero is `p3b.sentinel-missing`; prefix count greater than one is `p3b.sentinel-duplicate`; one prefix plus leading/trailing/multiple-line output, invalid UTF-8/JSON, result-file mismatch or exact-schema violation is `p3b.sentinel-malformed`.
+
+The `180000 ms` timer starts immediately before the single `spawn()` call and is cleared only after normal child close, both stream ends, result/sentinel validation, evidence assertions and cleanup settle; it is never reset after start or exit. Timeout or output overflow initiates a Windows process-tree termination using `taskkill.exe /PID <pid> /T /F` with `shell:false` and `windowsHide:true`. Termination wait and child `close`/reap are each capped at `5000 ms`. These fixed shutdown bounds do not create a second workload window and their induced signal/nonzero result does not replace the already selected timeout/overflow cause.
+
+The parent exclusively owns the resolved temporary leaf after creation. All `request.json`, `result.json`, `stdout.bin`, `stderr.bin` and any native/request scratch live below `E:\desktop\brilliant_ideas\brilliant_guitar\.worktrees\.scratch\rkp1a-property-cap\p3b`; default `C:\Users\ATOM\AppData\Local\Temp`, an implicit C: temp and a default C: Cargo target are forbidden. Cleanup runs in `request → result → stdout → stderr → owned leaf` order, with existence checks, at most two attempts per resource and `25 ms` between attempts. Handles close before deletion. A cleanup failure after a workload failure is secondary and cannot replace it; a cleanup failure after otherwise successful evidence becomes `p3b.cleanup-failed` and the run rejects.
+
+The fixed primary precedence is:
+
+1. `p3b.recursion-guard` / `p3b.spawn-failed`;
+2. `p3b.timeout`;
+3. spontaneous `p3b.signal` then `p3b.nonzero-exit`;
+4. `p3b.stdout-overflow` then `p3b.stderr-overflow`;
+5. `p3b.sentinel-missing`, `p3b.sentinel-duplicate`, `p3b.sentinel-malformed`;
+6. `p3b.evidence-mismatch` for semantic/hash/count assertions;
+7. `p3b.cleanup-failed` only when no earlier primary exists.
+
+Only exit code zero, no signal, both bounded streams, exactly one exact sentinel/result pair, every frozen assertion and successful cleanup constitute evidence. Every rejection resolves nonzero, exposes only its local stable test code and publishes no partial success.
+
+#### Executable negative matrix
+
+The same test file owns test-local injectable spawn/clock/filesystem seams and self-worker fault modes; they are not product exports or environment contracts. Focused tests must cover: partial/mismatched recursion markers with zero child spawns; timeout without waiting the production 180 seconds; explicit nonzero and spontaneous signal; stdout cap+1 and stderr cap+1; missing and duplicate sentinel; invalid JSON; mixed output; missing/wrong/extra nested fields; result/sentinel byte mismatch; and cleanup failure. Each case asserts bounded settlement, the exact precedence above, zero partial publication and no residual E:-scratch artifact after the test fixture releases any deliberate fault.
 
 ## 13. Stage-6 follow-up ownership and resume boundary
 
