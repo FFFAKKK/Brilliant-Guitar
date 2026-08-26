@@ -164,3 +164,10 @@ RKP-2 preserves S6.0, remains operationally paused before S6.1, and keeps TypeSc
 - Current planning child is `08-26-rkp-2-stage-6-private-scale-evidence-seam-repair`. It remains planning, start/production authorization false, independent planning review pending.
 - S6.2 and S6.3 remain false and Stage 6 is operationally paused. TypeScript remains default.
 - The only next gate is the child's independent planning review. Do not run its E0–E3 implementation, resume S6.2, push, archive, cut over, qualify or create RKP-3.
+
+## Stage 6 private scale evidence seam bounded planning repair
+
+- Dedicated review of planning candidate `df686882efa30f489da138d2730acbdd4fb9cd30` returned P0/P1/P2=`0/2/0`. The repair closes only the mutable-authority and executable-worker-protocol gaps; it does not start E0 or resume S6.2.
+- Nine planning-authority files are immutable during E0–E3 and are pinned by LF-normalized UTF-8 SHA-256 in the child `task.json`. The only mutable implementation lifecycle set is the exact eight paths declared there; a ninth path fails closed. The technical set remains five paths.
+- The v1 libtest FQN, Cargo artifact predicate, owner probe, internal/process sentinels, exact result shapes, closed failure union, first-failure precedence, PowerShell parameters and E1/E2/E3 execution split are now implementation decisions rather than implementation-time choices.
+- The child remains `planning`, start/production authorization and candidate readiness remain false, and targeted independent planning rereview is pending. S6.1 remains retained complete; S6.2/S6.3 remain false; TypeScript remains default.

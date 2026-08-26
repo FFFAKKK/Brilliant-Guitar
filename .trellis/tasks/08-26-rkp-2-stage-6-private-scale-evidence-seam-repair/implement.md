@@ -1,143 +1,144 @@
 # Implementation Plan: Private Scale Evidence Seam Repair
 
-Implementation is forbidden until the exact planning candidate receives an independent PASS and the user separately authorizes implementation. `task.py start` is not part of this planning turn.
+Implementation is forbidden until the exact repaired planning candidate receives an independent PASS and the user separately authorizes implementation. `task.py start` is not part of this planning repair.
 
-## 0. Entry gate
+## 0. Immutable entry gate
 
 Before E0:
 
-1. verify the implementation branch descends from this accepted planning head and exact base `4a302bc9f9981940336fc97941b08e09bd0d1f67`;
-2. verify clean/staged-empty worktree;
-3. record the independent planning auditor, exact accepted planning commit and `P0/P1/P2=0/0/0`;
-4. verify RKP-2 S6.1 remains complete, S6.2/S6.3 remain false and TypeScript remains default;
-5. verify the exact five technical paths and seventeen lifecycle paths; stop for a new planning review if another path is needed.
+1. verify the implementation branch descends from the accepted repaired planning head and base `4a302bc9f9981940336fc97941b08e09bd0d1f67`;
+2. verify clean/staged-empty worktree and RKP-2 S6.1 retained complete, S6.2/S6.3 false, TypeScript default;
+3. record the independent planning PASS and explicit implementation authorization;
+4. load `task.json.meta.immutable_planning_authority`, LF-normalize each listed file (`CRLF` and lone `CR` become `LF`), encode UTF-8 without BOM, compute SHA-256 and exact-match all nine entries;
+5. verify the future technical allowlist is exactly five and implementation lifecycle mutable allowlist exactly eight; any extra path stops for planning review.
+
+The nine immutable authorities are `prd.md`, `design.md`, `implement.md`, `implement.jsonl`, `check.jsonl`, and the four planning research files. E0-E3 never modify them.
+
+The eight mutable lifecycle paths are child `task.json`, `operator-handoff.md`, `review-candidate.md`, future `research/implementation-evidence.md`; RKP-2 parent `task.json`, `operator-handoff.md`, `review-candidate.md`; Rust parent `task.json`.
 
 ## E0 — Activation and lifecycle only
 
-Run Trellis native start for this child only. Update only allowlisted lifecycle projections:
+Run Trellis native start for this child only. Modify only the eight lifecycle paths that exist at activation:
 
-- child `status=in_progress`;
-- `task_start_run=true` and production/user authorization true only for this repair;
-- candidate ready false and implementation review pending;
-- RKP-2/Rust parents show this child as the sole current blocking planning/implementation descendant;
-- RKP-2 Stage 6 remains paused with S6.1 retained complete and S6.2/S6.3 false.
+- child `status=in_progress`, start/production/user authorization true only for this repair;
+- candidate ready false, implementation review pending;
+- planning audit PASS and exact accepted planning head pinned;
+- RKP-2/Rust parents retain S6.1 complete and show this child as the sole nested blocker;
+- S6.2/S6.3 remain false.
+
+Required checks: all nine immutable hashes, Trellis/JSON/JSONL, parent reference once, exact changed paths, protected delta zero, `git diff --check`, clean commit.
 
 Suggested commit: `chore(rkp-2): activate private scale evidence seam repair`.
 
-Gate: child/RKP-2/Rust-parent Trellis, JSON/JSONL, exact parent reference, literal allowlist, `git diff --check`, protected zero delta and clean commit.
+Rollback: revert E0; return to accepted planning with RKP-2 paused.
 
-Rollback: revert E0; planning authority remains intact and RKP-2 stays paused.
+## E1 — cfg(test) Rust seam and small proof
 
-## E1 — cfg(test) Runtime seam
+Technical owner: `crates/brilliant-kernel-runtime/src/indices.rs` only.
 
-Owner: `crates/brilliant-kernel-runtime/src/indices.rs` only.
+### E1.1 Exact identities
 
-1. Add the versioned test-only evidence record and one ignored exact libtest.
-2. Read the absolute request path from the test-process environment and decode with the real Contracts create-request codec.
-3. Build the validated Store and capture existing import/index metrics.
-4. Probe one known owner lookup and assert its exact counter delta.
-5. Invoke private `verify_index_parity` and capture rebuild metrics.
-6. Export exactly once, canonical-encode exactly once, and populate the two local evidence fields.
-7. Assert all frozen counts, order/parity, `15013904` canonical bytes and `15013932` request bytes using checked arithmetic.
-8. Print one machine-identifiable internal record for the captured child output. Do not expose a public item, product hook or persistent counter.
+- ignored FQN: `indices::tests::rkp2_stage_6_private_scale_evidence_v1`;
+- request env: `BRILLIANT_RKP2_SCALE_REQUEST_V1`;
+- Rust prefix: `BRILLIANT_RKP2_SCALE_RUST_V1:`;
+- compile command: `cargo +1.97.1 test -p brilliant-kernel-runtime --lib --no-run --locked --message-format=json`;
+- eligible artifact: `reason=compiler-artifact`, `target.name=brilliant_kernel_runtime`, `target.kind=["lib"]`, `profile.test=true`, non-empty absolute existing Windows `.exe`, exactly one match;
+- later execution argv: `<exe> --exact indices::tests::rkp2_stage_6_private_scale_evidence_v1 --ignored --nocapture --test-threads=1`.
 
-Suggested commit: `test(rkp-2): add private scale evidence seam`.
+### E1.2 Seam behavior
 
-Focused RED/GREEN:
+Add the exact-shape internal evidence structure from `design.md` under `cfg(test)`. The ignored test reads the request path, decodes through Contracts, imports, captures existing metrics, performs the exact two-step owner probe, verifies parity, exports once, encodes once and prints exactly one compact internal sentinel.
 
-- before the seam, exact ignored libtest selection is absent;
-- valid stress request yields exact counters/parity;
-- invalid/missing request path, malformed request, counter/byte/order mismatch and overflow fail without a success record;
-- the production library/API and Node exports remain byte/shape unchanged.
+Owner probe:
 
-Gate:
+1. `LiveScoreStore::lookup_entity("cvn7-e-00-0000-0-0", &mut metrics)` resolves `RuntimeEntityRef::Event`; entity delta exactly one.
+2. Take a fresh snapshot, call private `DerivedIndices::lookup_owner(ref, &mut metrics)` directly; owner is Voice `cvn7-v-00-0000-0`, owner delta exactly one, all other deltas zero.
+3. Do not call `LiveScoreStore::lookup_owner` in step two and do not add probe deltas to import/rebuild totals.
+
+### E1.3 E1 RED/GREEN gate
+
+E1 does not generate or require the stress request. It proves compile/artifact identity and uses an existing small Rust test fixture/helper to unit-test evidence exact shape, local materialization/encode accounting, owner-probe delta logic, extra-field rejection and no persistent mutation. The ignored stress test may compile but is first executed in E2.
+
+Run:
 
 ```powershell
 cargo +1.97.1 fmt --all -- --check
-cargo +1.97.1 test -p brilliant-kernel-runtime --locked
+cargo +1.97.1 test -p brilliant-kernel-runtime --lib --locked
+cargo +1.97.1 test -p brilliant-kernel-runtime --lib --no-run --locked --message-format=json
 cargo +1.97.1 clippy -p brilliant-kernel-runtime --all-targets --locked -- -D warnings
 cargo +1.88.0 check -p brilliant-kernel-runtime --all-targets --locked
 ```
 
-Rollback: revert E1; no worker files exist yet.
+Also mechanically prove no non-test/public symbol, Node export, DTO, persistent metric field, environment hook or second owner was added.
 
-## E2 — Worker, process boundary and workspace law
+Suggested commit: `test(rkp-2): add private scale evidence seam`.
 
-Owners:
+Rollback: revert E1; no worker or stress request exists.
 
-- `test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts`
-- `test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.test.ts`
-- `test/core-kernel/rust-migration/rkp-2-scale-evidence-process.ps1`
-- `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts`
+## E2 — Worker/process, hostile protocol and first real stress run
 
-### E2.1 Fixture/request worker
+Technical owners are the three new worker/process files and existing RKP-2 workspace-law test. No other file changes.
 
-Call only `createStressCvn7Score()`. Assert counts and owner/unknown extension composition, encode with the existing canonical codec, write one temporary create request, and pass its literal absolute path to the process wrapper. Do not modify or wrap the fixture module.
+### E2.1 Single fixture and Cargo artifact
 
-### E2.2 Executable resolution
+TypeScript calls only `createStressCvn7Score()`, validates the frozen counts/order/bytes, canonical-encodes once and writes a unique TEMP create-request file. Rust has no second generator. Cold compile runs before the workload timer using the exact E1 command. Parse Cargo JSON and require exactly one eligible artifact; zero or multiple is rejection before process start.
 
-Precompile Runtime tests using Cargo JSON messages. Accept exactly one existing executable artifact for the `brilliant-kernel-runtime` libtest. Reject zero/multiple artifacts. Compilation is outside the liveness window.
+### E2.2 Exact PowerShell call
 
-### E2.3 Hidden PowerShell process
+Invoke exactly:
 
-Use `Start-Process -WindowStyle Hidden -PassThru` with `-LiteralPath`-derived arguments and explicit redirected files. Invoke the exact ignored test with `--exact --ignored --nocapture`. Sample `PeakWorkingSet64`; impose 180 seconds only on the child workload; terminate that exact child on timeout.
+```text
+pwsh -NoProfile -NonInteractive -ExecutionPolicy Bypass -File <absolute-script> -ExecutablePath <absolute-exe> -RequestPath <absolute-request> -TestName indices::tests::rkp2_stage_6_private_scale_evidence_v1 -TimeoutMs 180000 -PollIntervalMs 25 -MaxStdoutBytes 1048576 -MaxStderrBytes 1048576
+```
 
-### E2.4 Sentinel and failure tests
+The script accepts only those fixed named values. It temporarily sets `BRILLIANT_RKP2_SCALE_REQUEST_V1`, starts the exact libtest hidden with separate unique stdout/stderr files, restores/removes the environment variable in `finally`, polls every `25ms`, refreshes before each RSS read, caps each stream at `1048576`, times only the child workload, tree-terminates with validated `taskkill /T /F`, reaps within `5000ms`, waits for redirect flush on normal exit and performs a final refresh.
 
-The final worker accepts exactly one `rkp2-private-scale-evidence-v1` sentinel. Focused fixtures cover success plus timeout, non-zero exit, abnormal termination, missing/duplicate/malformed sentinel, invalid schema/type, RSS failure, request/canonical byte mismatch, counter mismatch, overflow, parity/order/payload mismatch and cleanup failure. Each failure returns non-zero, settles within a bounded timeout and publishes no partial evidence.
+### E2.3 Exact protocol and precedence
 
-Workspace law freezes:
+Consume exactly one Rust prefix and emit exactly one `BRILLIANT_RKP2_SCALE_PROCESS_V1:` line. Success/rejection shapes, integer ranges, closed codes/details and forbidden fields are exactly those in `design.md` section 6. Rejection contains no internal evidence/raw output/path/backtrace/partial counter and always has `partialEvidence=false`.
 
-- exact five technical paths;
-- exact accepted planning and later implementation ranges;
-- `cfg(test)` placement and no public/Node/export/dependency change;
-- no second fixture builder;
-- precompile-before-timer and exact libtest selection;
-- no hard-coded performance pass budget or official qualification claim.
+First-failure selection is: start → sampling/refresh → output caps → timeout → terminate → reap → exit code → sentinel count → JSON parse → protocol/range → RSS validity → counts/bytes/counters → parity → ordering → payload/round-trip → cleanup. Later cleanup never replaces an existing primary; it only changes fixed `cleanupStatus`.
+
+Focused tests directly lock every failure code and combinations, including output overflow, timeout plus terminate/reap failure, primary plus cleanup failure, malformed/duplicate/missing sentinel, exact-shape/range/extra-field rejection, RSS unavailable/invalid, every evidence mismatch class and bounded no-hang. They inject at the process/test-infrastructure seam and do not copy product logic.
+
+### E2.4 First real integration run
+
+After hostile tests pass, E2 creates the real stress request and invokes the actual precompiled ignored libtest once. It must produce exact frozen counts/bytes/counters, owner probe, parity/order/payload and a positive safe elapsed/RSS diagnostic. This is integration proof, not formal child evidence freeze.
+
+Workspace law verifies exact five technical paths, eight mutable lifecycle paths, nine immutable hashes, `cfg(test)` visibility, no second fixture, exact command/argv/prefix/parameters/precedence and protected zero delta.
 
 Suggested commit: `test(rkp-2): add fail-closed scale evidence worker`.
 
-Gate: focused worker tests under current Node and Node `20.20.2`, RKP-2 workspace law, typecheck/build, literal changed-path checks and E1 Rust gates.
+Rollback: revert E2; E1 remains independently unit-tested.
 
-Rollback: revert E2; E1 remains a private independently testable seam.
+## E3 — Fresh run, implementation evidence and candidate freeze
 
-## E3 — Actual stress evidence and candidate freeze
+Create a new temporary request from the sole fixture; do not reuse the E2 request or captured output. Precompile/resolve again, perform the full worker journey and freeze only the successful exact final protocol plus toolchain/OS/commit/manifest context into future `research/implementation-evidence.md`.
 
-Run the real single-owner fixture journey once per required environment after clean build. Record only the final accepted data-only diagnostics in future `research/implementation-evidence.md`:
+Update only the eight mutable lifecycle paths:
 
-- exact fixture/request/canonical sizes;
-- exact structural counters and owner lookup delta;
-- Rust workload elapsed milliseconds;
-- sampled peak working set bytes;
-- executable identity, toolchain and sentinel version;
-- full gate results and exact commit range.
-
-Then update allowlisted lifecycle projections:
-
+- `stage_6_private_scale_evidence_seam_repair_completed=true`;
 - child remains `in_progress`;
 - `implementation_candidate_ready=true`;
-- `implementation_review=pending`;
+- implementation review pending;
 - RKP-2 remains paused before its own S6.2 consumption;
-- no acceptance, archive, integration, cutover, official measurement or RKP-3 claim.
+- no PASS/accept/archive/integration/cutover/qualification/RKP-3 claim.
+
+All nine immutable authority hashes must still exact-match.
 
 Suggested commit: `docs(rkp-2): freeze private scale evidence candidate`.
 
-Rollback: revert E3 to the green E2 technical head without changing the seam/worker.
+Rollback: revert E3 to the green E2 technical head.
 
-## Final implementation candidate gates
+## Final candidate gates
 
-1. `cargo +1.97.1 fmt --all -- --check`
-2. `cargo +1.97.1 check --workspace --all-targets --locked`
-3. `cargo +1.97.1 test --workspace --all-targets --locked`
-4. `cargo +1.97.1 clippy --workspace --all-targets --locked -- -D warnings`
-5. `cargo +1.88.0 check --workspace --all-targets --locked`
-6. LF clean checkout for Rust source-law tests.
-7. `npm.cmd run typecheck` and `npm.cmd run build`.
-8. Focused worker/workspace-law under Node current and `20.20.2`.
-9. Accepted dynamic full runner under both Node versions with identical manifest/hash/totals and zero failure.
-10. Native `--expose-gc` bridge/parity gates.
-11. Child/RKP-2/Rust-parent Trellis, JSON/JSONL/path uniqueness, parent reference once, Markdown fences and `git diff --check`.
-12. Exact accepted-planning-to-candidate allowlist; protected source/config/task/spec delta zero.
-13. Clean/staged-empty status and no push.
+1. Rust 1.97.1 fmt/check/test/clippy `-D warnings`; MSRV 1.88 locked check; LF clean checkout.
+2. TypeScript typecheck/build; focused worker/workspace-law under Node current and 20.20.2.
+3. Accepted dynamic full runner under both Node versions with identical manifest/hash/totals and zero failure.
+4. Native `--expose-gc` bridge/parity.
+5. Exact real E3 stress evidence and all hostile process/protocol fixtures.
+6. Child/RKP-2/Rust-parent Trellis, JSON/JSONL/path uniqueness, parent once, Markdown fences, `git diff --check`.
+7. Nine LF-normalized hashes exact; implementation range exactly five technical plus actually changed subset of eight lifecycle paths; any ninth lifecycle path fails.
+8. Protected source/config/task/spec delta zero; clean/staged-empty; no push.
 
-The terminal message is `READY FOR INDEPENDENT IMPLEMENTATION REVIEW`. Only after a dedicated implementation PASS may the owner accept, archive, integrate and resume the original RKP-2 S6.2 as an evidence consumer.
+Terminal state: `READY FOR INDEPENDENT IMPLEMENTATION REVIEW`. Acceptance/archive/integration and original RKP-2 S6.2 resumption are separate later gates.

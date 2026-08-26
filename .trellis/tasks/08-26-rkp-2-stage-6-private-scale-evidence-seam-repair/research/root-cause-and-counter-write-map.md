@@ -4,6 +4,8 @@
 
 The independent root-cause audit found P0/P1/P2=`0/1/0`. The P1 is a planning/allowlist gap: current S6.2 cannot collect its required private Runtime evidence using only the three authorized TypeScript paths. It is not evidence that the production Store violates its complexity contract.
 
+The first independent planning audit of candidate `df686882efa30f489da138d2730acbdd4fb9cd30` returned P0/P1/P2=`0/2/0`: planning authority was incorrectly mutable during implementation, and private libtest/worker/protocol choices were incomplete. This bounded repair closes those planning findings; targeted independent planning rereview remains pending.
+
 ## Source findings at `4a302bc9f9981940336fc97941b08e09bd0d1f67`
 
 `Rkp2StoreMetrics` is declared in `crates/brilliant-kernel-runtime/src/indices.rs`. Existing checked write sites cover ten categories:
@@ -36,7 +38,12 @@ No interior mutable field, global accumulator or Store/Runtime mutation is intro
 
 ## Read-side lookup proof
 
-The seam records query metrics, executes one known owner lookup, and compares post-query metrics. `owner_index_lookups` increases by exactly one; unrelated query counters retain their expected values. The returned semantic owner matches the canonical fixture owner.
+The exact probe stable ID is `cvn7-e-00-0000-0-0`.
+
+1. Call `LiveScoreStore::lookup_entity` with its own metrics snapshot. Require `RuntimeEntityRef::Event` and `entity_index_lookups` delta exactly `1`.
+2. Start a separate metrics snapshot and call private `DerivedIndices::lookup_owner(runtime_entity_ref, &mut metrics)` directly. Require Voice owner `cvn7-v-00-0000-0`, `owner_index_lookups` delta exactly `1`, and every other counter delta `0`.
+3. Do not call `LiveScoreStore::lookup_owner` in step two; it performs another entity lookup and would confound the read proof.
+4. Report probe deltas separately; import and rebuild totals remain the frozen values.
 
 ## Classification guard
 

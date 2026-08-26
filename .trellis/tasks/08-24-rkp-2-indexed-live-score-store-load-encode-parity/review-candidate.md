@@ -129,3 +129,9 @@ The child is candidate-ready only for targeted independent implementation rerevi
 The current blocking child is `08-26-rkp-2-stage-6-private-scale-evidence-seam-repair`, created from exact S6.1 head `4a302bc9f9981940336fc97941b08e09bd0d1f67`. S6.1 is retained complete; S6.2/S6.3 remain false. The child plans one `cfg(test)` Runtime seam plus a fail-closed worker because the prior TypeScript-only S6.2 allowlist cannot invoke private parity/export/encode evidence.
 
 This projection does not claim an implementation defect or planning PASS. The child is `READY FOR INDEPENDENT PLANNING REVIEW`, start/production authorization and candidate readiness remain false, and TypeScript remains default. No S6.2 work, acceptance, archive, push, cutover, qualification or RKP-3 is authorized.
+
+## Stage 6 private scale evidence seam targeted planning rereview
+
+The first independent review of exact planning candidate `df686882efa30f489da138d2730acbdd4fb9cd30` returned P0/P1/P2=`0/2/0`. This bounded repair freezes the nine planning-authority files by LF-normalized SHA-256, reduces the future mutable lifecycle allowlist to exactly eight paths, and closes the previously open libtest/artifact/owner-probe/sentinel/PowerShell/precedence/stage-order decisions.
+
+Targeted rereview should verify: the nine hashes recompute exactly; no ninth mutable lifecycle path is permitted; E1 never requires the stress request; E2 owns the sole request plus first real stress run; E3 uses a fresh request; the exact two sentinels and closed failure/detail union fail closed with first-failure precedence; and no qualification claim is inferred from RSS or elapsed diagnostics. The task is still planning, start/production authorization and candidate readiness are false, S6.2/S6.3 remain false, and no PASS is claimed.

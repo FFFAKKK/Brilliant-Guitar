@@ -1,15 +1,35 @@
 # Scale Worker and Failure Matrix
 
+## Fixed identities
+
+| Item | Exact contract |
+| --- | --- |
+| Rust test | `indices::tests::rkp2_stage_6_private_scale_evidence_v1` |
+| Request env | `BRILLIANT_RKP2_SCALE_REQUEST_V1` |
+| Rust prefix | `BRILLIANT_RKP2_SCALE_RUST_V1:` |
+| Process prefix | `BRILLIANT_RKP2_SCALE_PROCESS_V1:` |
+| Compile | `cargo +1.97.1 test -p brilliant-kernel-runtime --lib --no-run --locked --message-format=json` |
+| Execute argv | `<exe> --exact indices::tests::rkp2_stage_6_private_scale_evidence_v1 --ignored --nocapture --test-threads=1` |
+
+Cargo accepts exactly one `compiler-artifact` with `target.name=brilliant_kernel_runtime`, `target.kind=["lib"]`, `profile.test=true`, and a non-empty absolute existing Windows `.exe`. Zero or multiple matches fail before process start.
+
+## Exact PowerShell call
+
+```text
+pwsh -NoProfile -NonInteractive -ExecutionPolicy Bypass -File <script> -ExecutablePath <exe> -RequestPath <request> -TestName indices::tests::rkp2_stage_6_private_scale_evidence_v1 -TimeoutMs 180000 -PollIntervalMs 25 -MaxStdoutBytes 1048576 -MaxStderrBytes 1048576
+```
+
+The seven named parameters accept only those exact values/types. The script temporarily sets the request env in its own process, starts the child hidden, redirects stdout/stderr to unique TEMP files, polls after `Refresh`, samples checked maximum `PeakWorkingSet64`, checks both caps, tree-terminates with validated `taskkill /T /F` and reaps within `5000ms`. Normal exit calls `WaitForExit` and final `Refresh`. `finally` restores/removes the env and deletes request/stdout/stderr/temp-directory.
+
 ## Single successful journey
 
-1. TypeScript imports `createStressCvn7Score()` from the existing CVN-7 fixture module.
-2. It asserts exact counts, extension ownership/order and canonical byte count.
-3. It writes one temporary create request and verifies `15013932 < 67108864`.
-4. It precompiles Runtime tests with Cargo JSON messages and selects exactly one Runtime libtest executable.
-5. PowerShell launches that executable hidden with the exact ignored test and request-path environment.
-6. Rust decodes through Contracts, imports, probes owner lookup, rebuilds parity, exports once and encodes once.
-7. The wrapper samples peak working set, enforces workload liveness and returns one v1 evidence sentinel.
-8. TypeScript validates every field before publication and removes the temporary directory.
+1. E2 TypeScript calls only `createStressCvn7Score()` and writes one temporary create request.
+2. Cold compile and exact artifact selection finish before the timer.
+3. PowerShell starts the exact ignored libtest; the 180-second clock covers workload only.
+4. Rust decodes through Contracts, imports, performs the exact two-step owner probe, rebuilds parity, exports once and encodes once.
+5. Rust emits exactly one compact internal sentinel; PowerShell captures rather than relays raw libtest output.
+6. PowerShell emits exactly one compact final sentinel with process diagnostics and `partialEvidence=false`.
+7. E2 proves a real integration run; E3 generates a fresh request and reruns for formal child evidence/candidate freeze.
 
 ## Frozen fixture and evidence
 
@@ -21,35 +41,54 @@
 | extensions / Part-owned / unknown | `18 / 16 / 1` |
 | canonical score / create request bytes | `15013904 / 15013932` |
 | entities visited | `166833` |
+| records measure/part/staff/voice/event/note/extension | `400/16/16/12800/102400/51200/18` |
 | topology / reference / time edges | `173250 / 19216 / 102400` |
 | index entries / rebuild entries | `474517 / 474517` |
 | full-document materializations | `1` |
 | canonical encode bytes | `15013904` |
+| entity/owner/other probe deltas | `1 / 1 / 0` |
 
-## Failure matrix
+## Exact success/rejection boundary
 
-| Fault | Required result |
+Rust internal JSON is the exact section-3.3 shape in `design.md`. Final success is exact `{schemaVersion:1,status:"ok",evidence,process,partialEvidence:false}`; `process` has only `exitCode=0`, `timedOut=false`, positive safe `peakWorkingSetBytes`, safe `stdoutBytes`, safe `stderrBytes`, and `cleanupStatus="ok"`.
+
+Final rejection is exact `{schemaVersion:1,status:"rejected",failure,process,partialEvidence:false}` and forbids internal evidence, raw streams, paths, backtraces and partial counters. `failure` is the closed `{code,details}` union in `design.md`; `process` has only nullable exit/RSS, timeout boolean, output byte counts and cleanup status.
+
+## Closed failure fixtures
+
+| Code | Required focused trigger and proof |
 | --- | --- |
-| fixture count/order/owner mismatch | fail before process start; no evidence |
-| canonical or request byte mismatch/cap breach | fail before process start; no evidence |
-| Cargo non-zero or zero/multiple matching executables | fail; process calls `0` |
-| missing/unreadable/malformed request | Rust test fails; no final evidence |
-| Contracts decode/semantic failure | no Store/evidence publication |
-| 180-second workload timeout | terminate exact child, non-zero, no evidence |
-| non-zero/abnormal child exit | non-zero, no evidence |
-| RSS sampling/read failure | non-zero, no evidence |
-| absent/duplicate/malformed sentinel | stable worker failure, no evidence |
-| counter/record/lookup mismatch | stable worker failure, no evidence |
-| overflow or lossy conversion | fail closed, no evidence |
-| parity/order/payload/byte mismatch | fail closed, no evidence |
-| cleanup failure | preserve first failure; never publish evidence |
+| `process.start-failed` | start factory throws before child; no partial evidence |
+| `process.output-limit-exceeded` | stdout and stderr cap+1 independently; process tree terminated/reaped |
+| `process.timeout` | live child crosses `180000`; bounded termination/reap |
+| `process.terminate-failed` | injected termination failure settles, no hang |
+| `process.reap-failed` | injected bounded reap failure settles |
+| `process.nonzero-exit` | safe normalized nonzero Windows exit code |
+| `process.sentinel-count-invalid` | zero and two internal prefixes |
+| `process.sentinel-malformed` | invalid JSON after the sole prefix |
+| `process.protocol-invalid` | arguments/artifact/internal/final shape, type, range, version, extra-field and identity cases |
+| `process.rss-unavailable` | poll and final-refresh access failure |
+| `process.rss-invalid` | zero, negative and unsafe-integer projection |
+| `evidence.counter-mismatch` | every closed metric/probe leaf can identify expected/actual |
+| `evidence.overflow` | checked metric/bytes/elapsed/process numeric conversion |
+| `evidence.parity-mismatch` | normalized projection and count branches |
+| `evidence.bytes-mismatch` | canonical and request bytes independently |
+| `evidence.order-mismatch` | topology and extensions independently |
+| `evidence.payload-mismatch` | fixture/counts/ownerProbe/roundTrip independently |
+| `process.cleanup-failed` | each request/stdout/stderr/temp-directory cleanup target |
 
-Each hostile test has a bounded settle assertion. Injectable process/Cargo seams exist only inside test infrastructure; the real path uses an actual libtest process.
+All tests assert exact code/details/shape, nonzero exit, bounded settlement and `partialEvidence=false`. No free-form message or copied production parser is allowed.
 
-## Timing and RSS meaning
+## First-failure matrix
 
+Precedence is exact: start → sampling/refresh → output caps → timeout → terminate → reap → exit → sentinel count → JSON parse → protocol/range → RSS validity → counts/bytes/counters → parity → ordering → payload/round-trip → cleanup.
+
+Focused combinations cover both the primary and later failure. Examples: RSS failure then timeout remains RSS; cap then timeout remains cap; timeout then terminate/reap remains timeout; nonzero exit then malformed sentinel remains nonzero; counter mismatch then parity remains counter; parity then order remains parity; payload then cleanup remains payload with `cleanupStatus=failed`. Cleanup alone is `process.cleanup-failed`. Later failures never replace the first.
+
+## Timing and qualification meaning
+
+- E1 does not run the stress fixture.
 - Compilation and fixture generation are outside the 180-second interval.
-- Rust `Instant` reports workload elapsed time.
-- `PeakWorkingSet64` is sampled while the exact child is alive.
-- Neither value has a pass threshold beyond liveness and successful observation.
-- Diagnostics carry toolchain/OS/commit identity and are not an official measurement or budget qualification.
+- Rust `Instant` reports workload microseconds; PowerShell reports peak working set bytes.
+- Both are mandatory observable safe integers but have no pass budget beyond liveness and valid sampling.
+- The run is not CVN-7 official measurement, RKP-7 product budget evidence or RKP-9 Qualification V2.

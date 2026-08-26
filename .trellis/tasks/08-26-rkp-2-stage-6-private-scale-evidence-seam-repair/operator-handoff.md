@@ -2,35 +2,37 @@
 
 ## Current state
 
-- Planning base: `4a302bc9f9981940336fc97941b08e09bd0d1f67`.
-- Branch: `codex/rkp-2-stage-6-private-scale-evidence-seam-repair`.
-- Task status: `planning`.
-- `task_start_run=false`; production/user implementation authorization false.
-- Independent planning review: pending.
-- RKP-2 S6.1 is retained complete at the base. S6.2 and S6.3 are not started; Stage 6 is operationally paused.
-- TypeScript remains default. No push, archive, cutover, qualification or RKP-3.
+- Exact base: `4a302bc9f9981940336fc97941b08e09bd0d1f67`.
+- First planning candidate: `df686882efa30f489da138d2730acbdd4fb9cd30`.
+- First independent planning audit: RETURN FOR BOUNDED PLANNING REPAIR, P0/P1/P2=`0/2/0`.
+- This docs-only bounded repair closes mutable-authority and incomplete-worker-protocol findings; targeted rereview remains pending.
+- Task remains `planning`; start/production authorization/candidate readiness false.
+- RKP-2 S6.1 retained complete; S6.2/S6.3 false and operationally paused; TypeScript default.
 
-## Why this child exists
+## Frozen ownership
 
-Independent root-cause audit returned P0/P1/P2=`0/1/0`. Ten of twelve metric categories already have checked write points, but the S6.2 evidence journey needs local proof of one full-document export and the resulting canonical byte count. Those two values have no non-zero write point, and private `verify_index_parity` cannot be reached through the current TypeScript-only allowlist. This is an evidence/allowlist defect, not a proven product-complexity defect.
+Future technical ownership remains exactly five paths. Planning authority is now nine immutable files whose LF-normalized UTF-8 SHA-256 values live only in child `task.json`. E0-E3 may mutate exactly eight lifecycle paths: child task/handoff/review/future implementation evidence, RKP-2 parent task/handoff/review, and Rust parent task. Any ninth path or any immutable digest change fails closed.
 
-## Frozen decision
+## Exact v1 seam and worker
 
-Use one `cfg(test)`-only Runtime libtest seam in `indices.rs`. It decodes the temporary request through Contracts, composes existing import/rebuild/query metrics, exports once, encodes once, and produces one versioned data-only record. `full_document_materializations=1` and `canonical_encode_bytes=encoded.len()` remain local and are never persisted.
+- FQN `indices::tests::rkp2_stage_6_private_scale_evidence_v1`.
+- Request env `BRILLIANT_RKP2_SCALE_REQUEST_V1`.
+- Compile command and Cargo artifact predicate are literal; exactly one absolute existing Runtime libtest `.exe`.
+- Execution uses `--exact`, `--ignored`, `--nocapture`, `--test-threads=1`.
+- Entity `cvn7-e-00-0000-0-0` is resolved once, then private `DerivedIndices::lookup_owner` is called directly from a fresh metrics snapshot; deltas `1/1/0` and Voice owner `cvn7-v-00-0000-0` are exact.
+- Rust prefix `BRILLIANT_RKP2_SCALE_RUST_V1:` and process prefix `BRILLIANT_RKP2_SCALE_PROCESS_V1:` each occur exactly once on success.
+- Exact success/rejection shapes, closed 18-code details union and first-failure precedence are in immutable `design.md`.
+- PowerShell named args are fixed at timeout `180000`, poll `25`, stdout/stderr caps `1048576`; env restoration, hidden process, refresh/RSS, output caps, tree termination, `5000ms` reap, redirect flush and cleanup are mandatory.
+- Rejection has `partialEvidence=false`, no internal evidence, raw stream, path, backtrace or partial counter.
 
-The worker consumes only `createStressCvn7Score()`, precompiles and uniquely resolves the Runtime libtest, then invokes the exact ignored test through a hidden PowerShell process. Cold compilation is outside the 180-second workload guard. Peak RSS and Rust elapsed time are diagnostics only. Every timeout/process/sentinel/RSS/counter/parity/byte/order error fails closed with no partial evidence.
+## Stage order
 
-## Future stages
+E0 lifecycle activation only. E1 compiles and proves the seam with a small existing Rust fixture but does not consume a stress request. E2 is the sole fixture/request owner, runs hostile protocol tests and one real stress integration. E3 creates a fresh request, reruns and freezes candidate evidence. Each commit is independently reversible.
 
-1. E0 activation/lifecycle only.
-2. E1 private Rust seam and exact unit evidence.
-3. E2 worker/process failure fixtures and workspace law.
-4. E3 actual stress run, evidence and candidate freeze.
+## Baseline evidence
 
-Each is separately reversible. After an independent implementation PASS, separate acceptance/archive/integration gates must complete before the original RKP-2 S6.2 resumes as a consumer.
+Clean base: TypeScript `78` files, manifest `e4445a175cedaa34eaed455f48a98735ac2fa4808cc94314ff5148db6b6523d5`, `582/581/1/0`; Rust `73/73` with fmt/check/clippy/MSRV; native `17/17`. Candidate workspace law remains intentionally fail-closed at `6/9`, all three failures naming the same unaccepted child path.
 
 ## Next action
 
-Send the exact docs-only planning candidate to a dedicated read-only planning auditor. Focus on the five-path sufficiency, no persistent/second owner, single fixture, exact libtest identity, 180-second boundary, sentinel/RSS failure closure, counter equations and truthful parent S6.1/S6.2 projection. Do not run `task.py start` or implement before PASS and new implementation authorization.
-
-Baseline evidence is `78` files with manifest `e4445a175cedaa34eaed455f48a98735ac2fa4808cc94314ff5148db6b6523d5`, `582/581/1/0`; Rust `73/73`; native `17/17`. Candidate workspace-law status is intentionally `6/9`, with all three failures pointing to the same not-yet-accepted child lifecycle path; base is `9/9`.
+Send the exact repaired planning HEAD to the same dedicated read-only auditor. Review the nine hash map, eight mutable paths, exact artifact/argv, direct owner probe, complete protocol/failure union, first-failure cleanup rules and E1/E2/E3 request ownership. Do not start or implement before targeted PASS and new authorization.

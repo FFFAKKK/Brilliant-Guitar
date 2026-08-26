@@ -309,7 +309,7 @@
       "post_pass_closeout_authorized": true,
       "stage_6_blocked_until_accepted_archived_integrated": false
     },
-    "next_gate": "rkp2-private-scale-evidence-seam-independent-planning-review",
+    "next_gate": "rkp2-private-scale-evidence-seam-targeted-independent-planning-rereview",
     "stage_6_started": true,
     "stage_6_authorized": true,
     "stage_6_completed": false,
@@ -329,11 +329,17 @@
       "task_start_run": false,
       "production_implementation_authorized": false,
       "independent_planning_review": "pending",
+      "targeted_independent_planning_rereview": "pending",
       "implementation_candidate_ready": false,
       "root_cause_audit": "P0_0_P1_1_P2_0_current_s6_2_allowlist_cannot_own_private_rust_evidence_seam",
       "classification": "planning_allowlist_gap_not_proven_production_complexity_failure",
+      "initial_planning_candidate": "df686882efa30f489da138d2730acbdd4fb9cd30",
+      "first_independent_planning_review": "P0_0_P1_2_P2_0_return_for_bounded_planning_repair",
+      "bounded_planning_repair": "nine_immutable_authority_hashes_eight_mutable_lifecycle_paths_and_exact_v1_worker_protocol_completed",
+      "immutable_planning_authority_count": 9,
+      "future_mutable_lifecycle_allowlist_count": 8,
       "future_technical_allowlist_count": 5,
-      "next_gate": "independent_planning_review"
+      "next_gate": "targeted_independent_planning_rereview"
     },
     "part_owner_wire_contract_repair": {
       "child": "08-26-rkp-2-part-owner-wire-contract-repair",
@@ -375,7 +381,7 @@
     },
     "implementation_review": "pending",
     "implementation_candidate_ready": false,
-    "implementation_blocker": "private_scale_evidence_seam_independent_planning_review_required",
+    "implementation_blocker": "private_scale_evidence_seam_targeted_independent_planning_rereview_required",
     "archive_authorized": false,
     "push_authorized": false,
     "official_measurement_authorized": false,

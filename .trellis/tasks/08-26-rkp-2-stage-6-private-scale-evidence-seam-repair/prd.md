@@ -25,13 +25,15 @@ This task must not reclassify that gap as a proven production performance or com
 
 ## 4. Required future behavior
 
-1. Add one `cfg(test)`-only Runtime libtest seam in `indices.rs`. It may compose existing private import metrics, `verify_index_parity` rebuild metrics, exactly one `export_document`, and exactly one canonical score encoding.
+1. Add one `cfg(test)`-only Runtime libtest seam in `indices.rs`. Its exact FQN is `indices::tests::rkp2_stage_6_private_scale_evidence_v1`; its sole request environment variable is `BRILLIANT_RKP2_SCALE_REQUEST_V1`.
 2. Record `full_document_materializations=1` locally after the single export and `canonical_encode_bytes=bytes.len()` locally after canonical encoding. Neither value may be written into persistent `KernelRuntime`, `LiveScoreStore` or another owner.
-3. Emit one versioned, data-only evidence record for test consumption. No public export, DTO, Node surface, example binary, product binary, interior mutability, global state or second score owner is permitted.
+3. Emit exactly one compact, exact-shape internal JSON after prefix `BRILLIANT_RKP2_SCALE_RUST_V1:`. The final process protocol emits exactly one compact JSON after `BRILLIANT_RKP2_SCALE_PROCESS_V1:` and never relays raw libtest stdout/stderr.
 4. Use only `createStressCvn7Score()` from `test/core-kernel/fixtures/cvn-7-qualification-score.ts`. The TypeScript worker writes a temporary create-request JSON and the Rust seam decodes it through the real Contracts codec. Rust must not recreate the fixture.
-5. Precompile and uniquely resolve the `brilliant-kernel-runtime` libtest executable. The 180-second liveness interval starts only for the exact ignored/private test invocation, after compilation.
-6. The Windows process wrapper must start the libtest hidden, sample `PeakWorkingSet64`, and fail closed on timeout, non-zero/abnormal termination, missing or malformed output, RSS sampling failure, counter/size/parity mismatch or any duplicate/missing sentinel.
-7. Elapsed time and peak RSS are diagnostics. They are not RKP-7 product budgets, RKP-9 Qualification V2 results or official measurements.
+5. Precompile with exactly `cargo +1.97.1 test -p brilliant-kernel-runtime --lib --no-run --locked --message-format=json`. Accept exactly one existing absolute Windows executable from a `compiler-artifact` whose `target.name=brilliant_kernel_runtime`, `target.kind=["lib"]` and `profile.test=true`.
+6. Invoke exactly `<executable> --exact indices::tests::rkp2_stage_6_private_scale_evidence_v1 --ignored --nocapture --test-threads=1`.
+7. Resolve the known entity `cvn7-e-00-0000-0-0` through `LiveScoreStore::lookup_entity`, then snapshot metrics and call private `DerivedIndices::lookup_owner` directly. Entity and owner lookup deltas are separately exactly one; no second entity lookup is permitted.
+8. The Windows process wrapper uses the exact parameters, `pwsh` argv, hidden `Start-Process`, polling, caps, timeout, reap, sentinel and cleanup protocol in `design.md`. Every rejection is exact-shape, `partialEvidence=false`, and contains no raw output, path, backtrace or partial counters.
+9. Elapsed time and peak RSS are diagnostics. They are not RKP-7 product budgets, RKP-9 Qualification V2 results or official measurements.
 
 ## 5. Frozen future technical allowlist
 
@@ -44,6 +46,24 @@ Exactly five paths:
 5. `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts`
 
 Every other Runtime source, Store/Session/Node/Contracts source, `src/**`, Cargo/package/tsconfig/toolchain file, public API and unrelated test/task/spec is protected.
+
+## 5.1 Immutable planning authority and mutable lifecycle
+
+After this bounded repair is committed, these nine files are implementation-immutable:
+
+1. `prd.md`
+2. `design.md`
+3. `implement.md`
+4. `implement.jsonl`
+5. `check.jsonl`
+6. `research/root-cause-and-counter-write-map.md`
+7. `research/scale-worker-and-failure-matrix.md`
+8. `research/file-ownership-and-rollback.md`
+9. `research/planning-self-audit.md`
+
+Their LF-normalized UTF-8 SHA-256 values live only in `task.json.meta.immutable_planning_authority`. E0-E3 workspace law recomputes and exact-matches every digest. Any mutation fails closed and requires a new planning review.
+
+The implementation lifecycle mutable allowlist is exactly eight paths: child `task.json`, `operator-handoff.md`, `review-candidate.md`, future `research/implementation-evidence.md`; RKP-2 parent `task.json`, `operator-handoff.md`, `review-candidate.md`; and Rust parent `task.json`. A ninth mutable lifecycle path fails closed.
 
 ## 6. Frozen fixture and structural evidence
 
@@ -72,7 +92,8 @@ All arithmetic and conversions must be checked. Overflow is failure, never wrapa
 ## 7. Acceptance criteria for this planning candidate
 
 - [x] Root cause, counter write map, single fixture owner, private seam and worker boundary are frozen.
-- [x] Five technical paths and exact lifecycle/rollback ownership are enumerated without wildcard.
+- [x] Five technical paths, nine immutable authorities and eight mutable lifecycle paths are enumerated without wildcard.
+- [x] Exact libtest identity, owner probe, internal/final protocol, process parameters and failure precedence are closed in `design.md`.
 - [x] E0 activation, E1 Rust seam, E2 worker/contracts and E3 evidence freeze are independently reversible.
 - [x] Parent projections retain S6.1 and pause S6.2/S6.3 at independent planning review.
 - [x] Planning changes are docs-only relative to the exact base.
