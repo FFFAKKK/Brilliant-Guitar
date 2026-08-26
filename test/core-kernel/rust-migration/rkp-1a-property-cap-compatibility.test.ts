@@ -718,6 +718,112 @@ function collectStressCounts(document: ReturnType<typeof createStressCvn7Score>[
   };
 }
 
+type StressDocument = ReturnType<typeof createStressCvn7Score>["document"];
+
+interface P3bJourneyOutcome {
+  readonly handle: object;
+  readonly exportedDocument: StressDocument;
+  readonly rawResponse?: Buffer;
+  readonly repeatedReadStable: true;
+  readonly semanticEqual: true;
+  readonly extensionsEqual: true;
+  readonly aliasIsolated: true;
+}
+
+function assertTrueProof(value: boolean, label: string): true {
+  assert.equal(value, true, label);
+  return true;
+}
+
+function assertP3bExport(
+  exportedDocument: StressDocument,
+  expectedSemanticHash: string,
+  expectedExtensionsHash: string,
+  expectedTitle: string,
+): void {
+  assert.equal(semanticHash(exportedDocument), expectedSemanticHash);
+  assert.equal(semanticHash(exportedDocument.extensions), expectedExtensionsHash);
+  assert.equal(exportedDocument.extensions.length, 18);
+  assert.equal(
+    exportedDocument.extensions.filter((extension) => extension.owner.kind === "part")
+      .length,
+    16,
+  );
+  assert.equal(
+    exportedDocument.extensions.filter(
+      (extension) => extension.namespace === "fixture.cvn7.unknown",
+    ).length,
+    1,
+  );
+  assert.equal(exportedDocument.metadata.title, expectedTitle);
+}
+
+function runP3bRawJourney(
+  document: StressDocument,
+  expectedSemanticHash: string,
+  expectedExtensionsHash: string,
+  expectedTitle: string,
+  mutationTitle: string,
+): P3bJourneyOutcome {
+  const requestBytes = Buffer.from(
+    JSON.stringify({ apiVersion: 1, document }),
+    "utf8",
+  );
+  assert.equal(requestBytes.byteLength, STRESS_CREATE_REQUEST_BYTES);
+  const handle = requireRawHandle(addon.createKernelSessionV1(requestBytes));
+  (document.metadata as { title: string }).title = mutationTitle;
+  const firstRead = addon.readKernelSessionV1(handle);
+  const secondRead = addon.readKernelSessionV1(handle);
+  assert.deepEqual(firstRead, secondRead);
+  assert.equal(firstRead.byteLength, STRESS_READ_WRAPPER_BYTES);
+  const payload = parseRawPayload(firstRead);
+  const value = payload.value as {
+    readonly snapshot: { readonly document: StressDocument };
+  };
+  const exportedDocument = value.snapshot.document;
+  assertP3bExport(exportedDocument, expectedSemanticHash, expectedExtensionsHash, expectedTitle);
+  return {
+    handle,
+    exportedDocument,
+    rawResponse: firstRead,
+    repeatedReadStable: true,
+    semanticEqual: true,
+    extensionsEqual: true,
+    aliasIsolated: true,
+  };
+}
+
+function runP3bPublicJourney(
+  document: StressDocument,
+  expectedSemanticHash: string,
+  expectedExtensionsHash: string,
+  expectedTitle: string,
+  mutationTitle: string,
+): P3bJourneyOutcome {
+  const created = createRustKernelSmokeSession(addon, document);
+  const handle = requirePublicHandle(created);
+  (document.metadata as { title: string }).title = mutationTitle;
+  const firstRead = readRustKernelSmokeSession(addon, handle);
+  const secondRead = readRustKernelSmokeSession(addon, handle);
+  assert.equal(firstRead.status, "ok");
+  assert.equal(secondRead.status, "ok");
+  if (firstRead.status !== "ok" || secondRead.status !== "ok") {
+    assert.fail("public create/read/repeated-read journey must remain accepted");
+  }
+  assert.equal(JSON.stringify(firstRead), JSON.stringify(secondRead));
+  const exportedDocument = firstRead.value.snapshot.document as StressDocument;
+  assertP3bExport(exportedDocument, expectedSemanticHash, expectedExtensionsHash, expectedTitle);
+  assert.equal(Object.isFrozen(exportedDocument), true);
+  return {
+    handle,
+    exportedDocument,
+    repeatedReadStable: true,
+    semanticEqual: true,
+    extensionsEqual: true,
+    aliasIsolated: true,
+  };
+}
+
 function runP3bWorker(): void {
   const requestPath = process.env[P3B_WORKER_REQUEST_ENV];
   const resultPath = process.env[P3B_WORKER_RESULT_ENV];
@@ -727,23 +833,30 @@ function runP3bWorker(): void {
   assert.equal(path.parse(resultPath).root.toUpperCase(), "E:\\");
 
   const started = process.hrtime.bigint();
-  const directDocument = createStressCvn7Score().document;
-  const clonedDocument = JSON.parse(JSON.stringify(directDocument)) as typeof directDocument;
-  const expectedDocument = structuredClone(clonedDocument);
-  const inputScoreJson = JSON.stringify(clonedDocument);
-  const createRequestJson = JSON.stringify({ apiVersion: 1, document: clonedDocument });
+  const directRawDocument = createStressCvn7Score().document;
+  const inputScoreJson = JSON.stringify(directRawDocument);
+  const directPublicDocument = createStressCvn7Score().document;
+  const clonedRawDocument = JSON.parse(inputScoreJson) as StressDocument;
+  const clonedPublicDocument = JSON.parse(inputScoreJson) as StressDocument;
+  const expectedDocument = JSON.parse(inputScoreJson) as StressDocument;
+  const createRequestJson = JSON.stringify({
+    apiVersion: 1,
+    document: expectedDocument,
+  });
   const suppliedRequest = readFileSync(requestPath);
   assert.equal(suppliedRequest.toString("utf8"), createRequestJson);
   assert.equal(Buffer.byteLength(inputScoreJson, "utf8"), STRESS_INPUT_SCORE_BYTES);
   assert.equal(suppliedRequest.byteLength, STRESS_CREATE_REQUEST_BYTES);
   assert.equal(sha256(inputScoreJson), STRESS_INPUT_SCORE_SHA256);
-  assert.equal(countCapturedMembers(directDocument), STRESS_DIRECT_DAG_MEMBERS);
-  assert.equal(countCapturedMembers(clonedDocument), STRESS_CLONED_TREE_MEMBERS);
+  assert.equal(countCapturedMembers(directRawDocument), STRESS_DIRECT_DAG_MEMBERS);
+  assert.equal(countCapturedMembers(directPublicDocument), STRESS_DIRECT_DAG_MEMBERS);
+  assert.equal(countCapturedMembers(clonedRawDocument), STRESS_CLONED_TREE_MEMBERS);
+  assert.equal(countCapturedMembers(clonedPublicDocument), STRESS_CLONED_TREE_MEMBERS);
   assert.equal(
     countCapturedMembers(JSON.parse(createRequestJson)),
     STRESS_CREATE_REQUEST_TYPESCRIPT_MEMBERS,
   );
-  assert.equal(countJsonValues(clonedDocument), STRESS_DOCUMENT_RUST_VALUES);
+  assert.equal(countJsonValues(expectedDocument), STRESS_DOCUMENT_RUST_VALUES);
   const createRequestRustValues = countJsonValues(JSON.parse(createRequestJson));
   assert.equal(createRequestRustValues, STRESS_CREATE_REQUEST_RUST_VALUES);
   assert.equal(
@@ -757,55 +870,73 @@ function runP3bWorker(): void {
     actual: DEFAULT_CAPTURE_PROPERTY_LIMIT + 1,
   });
 
-  const directPublic = createRustKernelSmokeSession(addon, directDocument);
-  const directPublicHandle = requirePublicHandle(directPublic);
-  const clonedRawHandle = requireRawHandle(addon.createKernelSessionV1(suppliedRequest));
-  const firstRawRead = addon.readKernelSessionV1(directPublicHandle);
-  const secondRawRead = addon.readKernelSessionV1(directPublicHandle);
-  assert.deepEqual(firstRawRead, secondRawRead);
-  assert.equal(firstRawRead.byteLength, STRESS_READ_WRAPPER_BYTES);
-  const firstRawPayload = parseRawPayload(firstRawRead);
+  const expectedSemanticHash = semanticHash(expectedDocument);
+  const expectedExtensionsHash = semanticHash(expectedDocument.extensions);
+  const expectedTitle = expectedDocument.metadata.title;
+  let directDagRawJourney = false;
+  let directDagPublicJourney = false;
+  let clonedTreeRawJourney = false;
+  let clonedTreePublicJourney = false;
+
+  const directRaw = runP3bRawJourney(
+    directRawDocument,
+    expectedSemanticHash,
+    expectedExtensionsHash,
+    expectedTitle,
+    "mutated direct raw input after create",
+  );
+  directDagRawJourney = true;
+  const directPublic = runP3bPublicJourney(
+    directPublicDocument,
+    expectedSemanticHash,
+    expectedExtensionsHash,
+    expectedTitle,
+    "mutated direct public input after create",
+  );
+  directDagPublicJourney = true;
+  const clonedRaw = runP3bRawJourney(
+    clonedRawDocument,
+    expectedSemanticHash,
+    expectedExtensionsHash,
+    expectedTitle,
+    "mutated cloned raw input after create",
+  );
+  clonedTreeRawJourney = true;
+  const clonedPublic = runP3bPublicJourney(
+    clonedPublicDocument,
+    expectedSemanticHash,
+    expectedExtensionsHash,
+    expectedTitle,
+    "mutated cloned public input after create",
+  );
+  clonedTreePublicJourney = true;
+
+  assert.equal(
+    new Set([
+      directRaw.handle,
+      directPublic.handle,
+      clonedRaw.handle,
+      clonedPublic.handle,
+    ]).size,
+    4,
+    "each RAW/PUBLIC representation journey must own its create handle",
+  );
+  const rawResponse = clonedRaw.rawResponse;
+  assert.ok(rawResponse);
+  const firstRawPayload = parseRawPayload(rawResponse);
   assert.equal(countJsonValues(firstRawPayload), STRESS_READ_RESPONSE_RUST_VALUES);
   assert.equal(countCapturedMembers(firstRawPayload), STRESS_READ_RESPONSE_TYPESCRIPT_MEMBERS);
   const rawValue = firstRawPayload.value as {
-    readonly snapshot: { readonly document: typeof clonedDocument };
+    readonly snapshot: { readonly document: StressDocument };
   };
   const rawExport = rawValue.snapshot.document;
   const canonicalExportJson = JSON.stringify(rawExport);
   assert.equal(Buffer.byteLength(canonicalExportJson, "utf8"), STRESS_INPUT_SCORE_BYTES);
   assert.equal(sha256(canonicalExportJson), STRESS_RUST_CANONICAL_EXPORT_SHA256);
   assert.notEqual(canonicalExportJson, inputScoreJson);
-  const expectedSemanticHash = semanticHash(expectedDocument);
-  assert.equal(semanticHash(rawExport), expectedSemanticHash);
-  const expectedExtensionsHash = semanticHash(expectedDocument.extensions);
-  assert.equal(semanticHash(rawExport.extensions), expectedExtensionsHash);
-
-  (clonedDocument.metadata as { title: string }).title = "mutated after create";
-  const firstPublicRead = readRustKernelSmokeSession(
-    addon,
-    clonedRawHandle as OpaqueKernelSessionHandle,
-  );
-  const secondPublicRead = readRustKernelSmokeSession(
-    addon,
-    clonedRawHandle as OpaqueKernelSessionHandle,
-  );
-  assert.equal(
-    sha256(JSON.stringify(firstPublicRead)),
-    sha256(JSON.stringify(secondPublicRead)),
-  );
-  assert.equal(firstPublicRead.status, "ok");
-  if (firstPublicRead.status !== "ok") assert.fail("public read must succeed");
-  assert.equal(
-    semanticHash(firstPublicRead.value.snapshot.document),
-    expectedSemanticHash,
-  );
-  assert.equal(
-    semanticHash(
-      (firstPublicRead.value.snapshot.document as typeof clonedDocument).extensions,
-    ),
-    expectedExtensionsHash,
-  );
-  assert.equal(Object.isFrozen(firstPublicRead.value.snapshot.document), true);
+  for (const journey of [directRaw, directPublic, clonedRaw, clonedPublic]) {
+    assert.equal(JSON.stringify(journey.exportedDocument), canonicalExportJson);
+  }
 
   const counts = collectStressCounts(expectedDocument);
   assert.deepEqual(counts, {
@@ -861,17 +992,56 @@ function runP3bWorker(): void {
       rustCanonicalExportSha256: STRESS_RUST_CANONICAL_EXPORT_SHA256,
     },
     proofs: {
-      realDecodeCreateRequest: true,
-      directDagRawJourney: true,
-      directDagPublicJourney: true,
-      clonedTreeRawJourney: true,
-      clonedTreePublicJourney: true,
-      repeatedRawReadStable: true,
-      repeatedPublicReadStable: true,
-      semanticDeepEqual: true,
-      extensionsDeepEqual: true,
-      predecessorRejected: true,
-      zeroPartialPublication: true,
+      realDecodeCreateRequest: assertTrueProof(
+        directDagRawJourney && clonedTreeRawJourney,
+        "both RAW creates reached the real decoder",
+      ),
+      directDagRawJourney: assertTrueProof(
+        directDagRawJourney,
+        "direct RAW journey completed",
+      ),
+      directDagPublicJourney: assertTrueProof(
+        directDagPublicJourney,
+        "direct PUBLIC journey completed",
+      ),
+      clonedTreeRawJourney: assertTrueProof(
+        clonedTreeRawJourney,
+        "cloned RAW journey completed",
+      ),
+      clonedTreePublicJourney: assertTrueProof(
+        clonedTreePublicJourney,
+        "cloned PUBLIC journey completed",
+      ),
+      repeatedRawReadStable: assertTrueProof(
+        directRaw.repeatedReadStable && clonedRaw.repeatedReadStable,
+        "both RAW journeys repeated-read exactly",
+      ),
+      repeatedPublicReadStable: assertTrueProof(
+        directPublic.repeatedReadStable && clonedPublic.repeatedReadStable,
+        "both PUBLIC journeys repeated-read exactly",
+      ),
+      semanticDeepEqual: assertTrueProof(
+        [directRaw, directPublic, clonedRaw, clonedPublic].every(
+          (journey) => journey.semanticEqual,
+        ),
+        "all four journeys matched the iterative semantic digest",
+      ),
+      extensionsDeepEqual: assertTrueProof(
+        [directRaw, directPublic, clonedRaw, clonedPublic].every(
+          (journey) => journey.extensionsEqual,
+        ),
+        "all four journeys preserved all extensions",
+      ),
+      predecessorRejected: assertTrueProof(
+        createRequestRustValues > DEFAULT_CAPTURE_PROPERTY_LIMIT,
+        "predecessor diagnostic rejected the frozen request",
+      ),
+      zeroPartialPublication: assertTrueProof(
+        [directRaw, directPublic, clonedRaw, clonedPublic].every(
+          (journey) => journey.aliasIsolated,
+        ),
+        "all published sessions remained detached from their input",
+      ),
     },
     diagnostics: {
       workloadElapsedMicros: elapsedMicros,
@@ -886,50 +1056,158 @@ function runP3bWorker(): void {
   writeSync(process.stdout.fd, `${P3B_SENTINEL_PREFIX}${compact}\n`, undefined, "utf8");
 }
 
-async function terminateChildTree(
-  child: ChildProcess,
-  state: P3bSettlementState,
-): Promise<void> {
-  if (child.pid === undefined || state.terminateStatus !== "not-required") return;
+interface P3bCloseResult {
+  readonly code: number | null;
+  readonly signal: NodeJS.Signals | null;
+}
+
+interface P3bProcessObservers {
+  readonly stdout: (chunk: Buffer) => void;
+  readonly stderr: (chunk: Buffer) => void;
+  readonly error: () => void;
+  readonly close: (result: P3bCloseResult) => void;
+}
+
+interface P3bChildController {
+  readonly pid?: number;
+  readonly nativeChild?: ChildProcess;
+  readonly destroyStreams: () => void;
+}
+
+interface P3bPreparedRun {
+  readonly leaf: string;
+  readonly childTemp: string;
+  readonly requestPath: string;
+  readonly resultPath: string;
+  readonly stdoutPath: string;
+  readonly stderrPath: string;
+}
+
+interface P3bScheduledGuard {
+  readonly cancel: () => void;
+}
+
+interface P3bHarnessControls {
+  readonly requestTermination: () => void;
+}
+
+interface P3bHarnessDependencies {
+  readonly nowMs: () => number;
+  readonly scheduleGuard: (
+    delayMs: number,
+    callback: () => void,
+  ) => P3bScheduledGuard;
+  readonly prepareRun: () => Promise<P3bPreparedRun>;
+  readonly spawnWorker: (
+    run: P3bPreparedRun,
+    observers: P3bProcessObservers,
+  ) => P3bChildController;
+  readonly afterSpawn?: (
+    child: P3bChildController,
+    controls: P3bHarnessControls,
+  ) => void | Promise<void>;
+  readonly terminate: (
+    child: P3bChildController,
+    guardMs: number,
+  ) => Promise<Exclude<P3bSettlementState["terminateStatus"], "not-required">>;
+  readonly reap: (
+    closeObserved: Promise<P3bCloseResult>,
+    guardMs: number,
+  ) => Promise<P3bCloseResult | undefined>;
+  readonly writeCapturedOutputs: (
+    run: P3bPreparedRun,
+    stdout: Buffer,
+    stderr: Buffer,
+  ) => void;
+  readonly readResult: (run: P3bPreparedRun) => string;
+  readonly cleanup: (
+    leaf: string,
+    guardMs: number,
+    retryDelayMs: number,
+  ) => Promise<{ readonly status: "succeeded" | "failed"; readonly recovered: boolean }>;
+}
+
+interface P3bSuccessfulProcessResult {
+  readonly status: "ok";
+  readonly evidence: P3bEvidenceV1;
+  readonly settlement: Readonly<P3bSettlementState>;
+  readonly cleanupRecovered: boolean;
+  readonly partialEvidence: false;
+  readonly wallElapsedMicros: number;
+}
+
+interface P3bRejectedProcessResult {
+  readonly status: "rejected";
+  readonly failure: P3bFailureCode;
+  readonly settlement: Readonly<P3bSettlementState>;
+  readonly cleanupRecovered: boolean;
+  readonly partialEvidence: false;
+  readonly wallElapsedMicros: number;
+}
+
+type P3bProcessResult = P3bSuccessfulProcessResult | P3bRejectedProcessResult;
+
+async function terminateRealP3bChild(
+  child: P3bChildController,
+  guardMs: number,
+): Promise<Exclude<P3bSettlementState["terminateStatus"], "not-required">> {
+  if (child.pid === undefined) return "launch-error";
   const invocation = taskkillInvocation(child.pid);
-  await new Promise<void>((resolveTermination) => {
+  return await new Promise((resolveTermination) => {
     let settled = false;
-    const taskkill = spawn(invocation.file, invocation.args, {
-      shell: invocation.shell,
-      windowsHide: invocation.windowsHide,
-      stdio: "ignore",
-    });
+    let taskkill: ChildProcess;
+    try {
+      taskkill = spawn(invocation.file, invocation.args, {
+        shell: invocation.shell,
+        windowsHide: invocation.windowsHide,
+        stdio: "ignore",
+      });
+    } catch {
+      resolveTermination("launch-error");
+      return;
+    }
     const guard = setTimeout(() => {
       if (settled) return;
       settled = true;
       taskkill.kill();
-      recordTerminateStatus(state, "timeout");
-      resolveTermination();
-    }, P3B_SETTLEMENT_GUARD_MS);
+      resolveTermination("timeout");
+    }, guardMs);
     taskkill.once("error", () => {
       if (settled) return;
       settled = true;
       clearTimeout(guard);
-      recordTerminateStatus(state, "launch-error");
-      resolveTermination();
+      resolveTermination("launch-error");
     });
     taskkill.once("close", (code) => {
       if (settled) return;
       settled = true;
       clearTimeout(guard);
-      recordTerminateStatus(state, code === 0 ? "succeeded" : "nonzero");
-      resolveTermination();
+      resolveTermination(code === 0 ? "succeeded" : "nonzero");
     });
   });
 }
 
-interface P3bProcessResult {
-  readonly evidence: P3bEvidenceV1;
-  readonly cleanupRecovered: boolean;
-  readonly wallElapsedMicros: number;
+async function reapRealP3bChild(
+  closeObserved: Promise<P3bCloseResult>,
+  guardMs: number,
+): Promise<P3bCloseResult | undefined> {
+  return await new Promise((resolveReap) => {
+    let settled = false;
+    const guard = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      resolveReap(undefined);
+    }, guardMs);
+    void closeObserved.then((close) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(guard);
+      resolveReap(close);
+    });
+  });
 }
 
-async function runP3bSelfWorkerProcess(): Promise<P3bProcessResult> {
+async function prepareRealP3bRun(): Promise<P3bPreparedRun> {
   const scratchRoot = path.resolve(
     process.cwd(),
     "..",
@@ -956,106 +1234,218 @@ async function runP3bSelfWorkerProcess(): Promise<P3bProcessResult> {
   );
   assert.equal(request.byteLength, STRESS_CREATE_REQUEST_BYTES);
   writeFileSync(requestPath, request);
+  return { leaf, childTemp, requestPath, resultPath, stdoutPath, stderrPath };
+}
+
+function spawnRealP3bWorker(
+  run: P3bPreparedRun,
+  observers: P3bProcessObservers,
+): P3bChildController {
+  const env = { ...process.env };
+  delete env.NODE_TEST_CONTEXT;
+  Object.assign(env, {
+    [P3B_WORKER_MODE_ENV]: "1",
+    [P3B_WORKER_REQUEST_ENV]: run.requestPath,
+    [P3B_WORKER_RESULT_ENV]: run.resultPath,
+    TEMP: run.childTemp,
+    TMP: run.childTemp,
+    CARGO_INCREMENTAL: "0",
+  });
+  const child = spawn(process.execPath, [path.resolve(__filename), P3B_WORKER_ARGUMENT], {
+    cwd: process.cwd(),
+    env,
+    shell: false,
+    windowsHide: true,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  child.stdout?.on("data", observers.stdout);
+  child.stderr?.on("data", observers.stderr);
+  child.once("error", observers.error);
+  child.once("close", (code, signal) => observers.close({ code, signal }));
+  return {
+    ...(child.pid === undefined ? {} : { pid: child.pid }),
+    nativeChild: child,
+    destroyStreams: () => {
+      child.stdout?.destroy();
+      child.stderr?.destroy();
+    },
+  };
+}
+
+const REAL_P3B_HARNESS_DEPENDENCIES: P3bHarnessDependencies = {
+  nowMs: () => Number(process.hrtime.bigint() / 1_000_000n),
+  scheduleGuard(delayMs, callback) {
+    const timer = setTimeout(callback, delayMs);
+    return { cancel: () => clearTimeout(timer) };
+  },
+  prepareRun: prepareRealP3bRun,
+  spawnWorker: spawnRealP3bWorker,
+  terminate: terminateRealP3bChild,
+  reap: reapRealP3bChild,
+  writeCapturedOutputs(run, stdout, stderr) {
+    writeFileSync(run.stdoutPath, stdout);
+    writeFileSync(run.stderrPath, stderr);
+  },
+  readResult: (run) => readFileSync(run.resultPath, "utf8"),
+  cleanup: async (leaf) => await cleanupOwnedLeaf(leaf),
+};
+
+async function runP3bSelfWorkerProcess(
+  dependencies: P3bHarnessDependencies = REAL_P3B_HARNESS_DEPENDENCIES,
+): Promise<P3bProcessResult> {
+  const run = await dependencies.prepareRun();
 
   const state = newSettlementState();
-  const started = process.hrtime.bigint();
+  const startedMs = dependencies.nowMs();
+  const deadlineMs = startedMs + P3B_TIMEOUT_MS;
   let stdout = Buffer.alloc(0);
   let stderr = Buffer.alloc(0);
-  let child: ChildProcess;
-  try {
-    const env = { ...process.env };
-    delete env.NODE_TEST_CONTEXT;
-    Object.assign(env, {
-      [P3B_WORKER_MODE_ENV]: "1",
-      [P3B_WORKER_REQUEST_ENV]: requestPath,
-      [P3B_WORKER_RESULT_ENV]: resultPath,
-      TEMP: childTemp,
-      TMP: childTemp,
-      CARGO_INCREMENTAL: "0",
-    });
-    child = spawn(process.execPath, [path.resolve(__filename), P3B_WORKER_ARGUMENT], {
-      cwd: process.cwd(),
-      env,
-      shell: false,
-      windowsHide: true,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-  } catch {
-    observeFailure(state, "p3b.spawn-failed");
-    const cleanup = await cleanupOwnedLeaf(leaf);
-    state.cleanupStatus = cleanup.status;
-    state.cleanupRecovered = cleanup.recovered;
-    if (cleanup.status === "failed") observeFailure(state, "p3b.cleanup-failed");
-    throw new Error(state.primary);
-  }
-
-  type CloseResult = {
-    readonly code: number | null;
-    readonly signal: NodeJS.Signals | null;
-  };
-  let resolveClose!: (result: CloseResult) => void;
-  const closeObserved = new Promise<CloseResult>((resolve) => {
+  let child: P3bChildController | undefined;
+  let pendingTermination = false;
+  let termination: Promise<void> | undefined;
+  let resolveClose!: (result: P3bCloseResult) => void;
+  const closeObserved = new Promise<P3bCloseResult>((resolve) => {
     resolveClose = resolve;
   });
-  let resolveSettlement!: (result: CloseResult) => void;
-  const settled = new Promise<CloseResult>((resolve) => {
+  let resolveSettlement!: (result: P3bCloseResult) => void;
+  const settled = new Promise<P3bCloseResult>((resolve) => {
     resolveSettlement = resolve;
   });
   void closeObserved.then(resolveSettlement);
-  let termination: Promise<void> | undefined;
+
+  const finish = async (evidence?: P3bEvidenceV1): Promise<P3bProcessResult> => {
+    child?.destroyStreams();
+    const cleanup = await dependencies.cleanup(
+      run.leaf,
+      P3B_SETTLEMENT_GUARD_MS,
+      P3B_CLEANUP_RETRY_DELAY_MS,
+    );
+    state.cleanupStatus = cleanup.status;
+    state.cleanupRecovered = cleanup.recovered;
+    if (cleanup.status === "failed") observeFailure(state, "p3b.cleanup-failed");
+    if (state.primary === undefined && evidence === undefined) {
+      observeFailure(state, "p3b.semantic-mismatch");
+    }
+    const wallElapsedMicros = Math.max(
+      0,
+      Math.round((dependencies.nowMs() - startedMs) * 1_000),
+    );
+    const settlement = { ...state };
+    if (state.primary !== undefined || evidence === undefined) {
+      return {
+        status: "rejected",
+        failure: state.primary ?? "p3b.semantic-mismatch",
+        settlement,
+        cleanupRecovered: state.cleanupRecovered,
+        partialEvidence: false,
+        wallElapsedMicros,
+      };
+    }
+    return {
+      status: "ok",
+      evidence,
+      settlement,
+      cleanupRecovered: state.cleanupRecovered,
+      partialEvidence: false,
+      wallElapsedMicros,
+    };
+  };
+
   const requestTermination = () => {
+    if (child === undefined) {
+      pendingTermination = true;
+      return;
+    }
     termination ??= (async () => {
-      await terminateChildTree(child, state);
-      const reaped = await Promise.race([
-        closeObserved.then(() => true),
-        delay(P3B_SETTLEMENT_GUARD_MS).then(() => false),
-      ]);
-      if (reaped) {
+      let terminateStatus: Exclude<
+        P3bSettlementState["terminateStatus"],
+        "not-required"
+      >;
+      try {
+        terminateStatus = await dependencies.terminate(
+          child!,
+          P3B_SETTLEMENT_GUARD_MS,
+        );
+      } catch {
+        terminateStatus = "launch-error";
+      }
+      recordTerminateStatus(state, terminateStatus);
+      let reaped: P3bCloseResult | undefined;
+      try {
+        reaped = await dependencies.reap(
+          closeObserved,
+          P3B_SETTLEMENT_GUARD_MS,
+        );
+      } catch {
+        reaped = undefined;
+      }
+      if (reaped !== undefined) {
         recordReapStatus(state, "succeeded");
+        resolveSettlement(reaped);
       } else {
         recordReapStatus(state, "timeout");
         resolveSettlement({ code: null, signal: null });
       }
     })();
   };
-  child.stdout?.on("data", (chunk: Buffer) => {
-    if (stdout.byteLength + chunk.byteLength > P3B_OUTPUT_LIMIT) {
-      observeFailure(state, "p3b.stdout-overflow");
-      void requestTermination();
-      return;
-    }
-    stdout = Buffer.concat([stdout, chunk]);
-  });
-  child.stderr?.on("data", (chunk: Buffer) => {
-    if (stderr.byteLength + chunk.byteLength > P3B_OUTPUT_LIMIT) {
-      observeFailure(state, "p3b.stderr-overflow");
-      void requestTermination();
-      return;
-    }
-    stderr = Buffer.concat([stderr, chunk]);
-  });
-  const timeout = setTimeout(() => {
-    observeFailure(state, "p3b.timeout");
-    void requestTermination();
-  }, P3B_TIMEOUT_MS);
-  child.once("error", () => {
+
+  const timeoutGuard = dependencies.scheduleGuard(
+    Math.max(0, deadlineMs - dependencies.nowMs()),
+    () => {
+      observeFailure(state, "p3b.timeout");
+      requestTermination();
+    },
+  );
+  const observers: P3bProcessObservers = {
+    stdout(chunk) {
+      if (stdout.byteLength + chunk.byteLength > P3B_OUTPUT_LIMIT) {
+        observeFailure(state, "p3b.stdout-overflow");
+        requestTermination();
+        return;
+      }
+      stdout = Buffer.concat([stdout, chunk]);
+    },
+    stderr(chunk) {
+      if (stderr.byteLength + chunk.byteLength > P3B_OUTPUT_LIMIT) {
+        observeFailure(state, "p3b.stderr-overflow");
+        requestTermination();
+        return;
+      }
+      stderr = Buffer.concat([stderr, chunk]);
+    },
+    error() {
+      observeFailure(state, "p3b.spawn-failed");
+      requestTermination();
+    },
+    close: resolveClose,
+  };
+
+  try {
+    child = dependencies.spawnWorker(run, observers);
+  } catch {
     observeFailure(state, "p3b.spawn-failed");
-    void requestTermination();
-  });
-  child.once("close", (code, signal) => resolveClose({ code, signal }));
+    timeoutGuard.cancel();
+    return await finish();
+  }
+  if (pendingTermination) requestTermination();
+  try {
+    await dependencies.afterSpawn?.(child, { requestTermination });
+  } catch {
+    observeFailure(state, "p3b.spawn-failed");
+    requestTermination();
+  }
+
   const close = await settled;
-  clearTimeout(timeout);
-  if (termination) await termination;
+  timeoutGuard.cancel();
+  if (termination !== undefined) await termination;
   if (close.signal !== null) observeFailure(state, "p3b.signal");
   if (close.code !== 0) observeFailure(state, "p3b.nonzero-exit");
-  writeFileSync(stdoutPath, stdout);
-  writeFileSync(stderrPath, stderr);
+  dependencies.writeCapturedOutputs(run, stdout, stderr);
 
   let evidence: P3bEvidenceV1 | undefined;
   if (state.primary === undefined) {
     try {
       evidence = parseSingleP3bSentinel(stdout, stderr);
-      assert.equal(readFileSync(resultPath, "utf8"), JSON.stringify(evidence));
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
       const known = message as P3bFailureCode;
@@ -1064,21 +1454,17 @@ async function runP3bSelfWorkerProcess(): Promise<P3bProcessResult> {
         known.startsWith("p3b.") ? known : "p3b.sentinel-malformed",
       );
     }
+    if (evidence !== undefined) {
+      try {
+        if (dependencies.readResult(run) !== JSON.stringify(evidence)) {
+          observeFailure(state, "p3b.semantic-mismatch");
+        }
+      } catch {
+        observeFailure(state, "p3b.semantic-mismatch");
+      }
+    }
   }
-  child.stdout?.destroy();
-  child.stderr?.destroy();
-  const cleanup = await cleanupOwnedLeaf(leaf);
-  state.cleanupStatus = cleanup.status;
-  state.cleanupRecovered = cleanup.recovered;
-  if (cleanup.status === "failed") observeFailure(state, "p3b.cleanup-failed");
-  if (state.primary !== undefined || evidence === undefined) {
-    throw new Error(state.primary ?? "p3b.semantic-mismatch");
-  }
-  return {
-    evidence,
-    cleanupRecovered: state.cleanupRecovered,
-    wallElapsedMicros: Number((process.hrtime.bigint() - started) / 1_000n),
-  };
+  return await finish(evidence);
 }
 
 const P3B_WORKER_ENTRY = isP3bWorkerEntry({
@@ -1317,31 +1703,6 @@ test("P3B self-worker entry, settlement, sentinel, and cleanup fail closed", asy
     false,
   );
 
-  const overflowFirst = newSettlementState();
-  observeFailure(overflowFirst, "p3b.stdout-overflow");
-  observeFailure(overflowFirst, "p3b.timeout");
-  recordTerminateStatus(overflowFirst, "nonzero");
-  recordReapStatus(overflowFirst, "timeout");
-  assert.equal(overflowFirst.primary, "p3b.stdout-overflow");
-
-  const timeoutFirst = newSettlementState();
-  observeFailure(timeoutFirst, "p3b.timeout");
-  observeFailure(timeoutFirst, "p3b.signal");
-  observeFailure(timeoutFirst, "p3b.nonzero-exit");
-  assert.equal(timeoutFirst.primary, "p3b.timeout");
-
-  for (const [status, expected] of [
-    ["launch-error", "p3b.taskkill-launch-error"],
-    ["nonzero", "p3b.taskkill-nonzero"],
-    ["timeout", "p3b.taskkill-timeout"],
-  ] as const) {
-    const state = newSettlementState();
-    recordTerminateStatus(state, status);
-    assert.equal(state.primary, expected);
-  }
-  const reap = newSettlementState();
-  recordReapStatus(reap, "timeout");
-  assert.equal(reap.primary, "p3b.reap-timeout");
   assert.deepEqual(taskkillInvocation(1234), {
     file: "taskkill.exe",
     args: ["/PID", "1234", "/T", "/F"],
@@ -1400,33 +1761,318 @@ test("P3B self-worker entry, settlement, sentinel, and cleanup fail closed", asy
   };
   const compact = JSON.stringify(fixtureEvidence);
   const valid = Buffer.from(`${P3B_SENTINEL_PREFIX}${compact}\n`, "utf8");
-  assert.deepEqual(parseSingleP3bSentinel(valid, Buffer.alloc(0)), fixtureEvidence);
-  const sentinelFailures: readonly [Buffer, Buffer, string][] = [
-    [Buffer.alloc(0), Buffer.alloc(0), "p3b.sentinel-missing"],
-    [Buffer.from(`${P3B_SENTINEL_PREFIX}${compact}\n${P3B_SENTINEL_PREFIX}${compact}\n`), Buffer.alloc(0), "p3b.sentinel-duplicate"],
-    [Buffer.from(`${P3B_SENTINEL_PREFIX}{bad}\n`), Buffer.alloc(0), "p3b.sentinel-malformed"],
-    [Buffer.from(`noise\n${P3B_SENTINEL_PREFIX}${compact}\n`), Buffer.alloc(0), "p3b.sentinel-malformed"],
-    [Buffer.from(`${P3B_SENTINEL_PREFIX}${JSON.stringify({ ...fixtureEvidence, extra: true })}\n`), Buffer.alloc(0), "p3b.sentinel-malformed"],
-    [valid, Buffer.from("unexpected stderr"), "p3b.sentinel-malformed"],
-    [Buffer.alloc(P3B_OUTPUT_LIMIT + 1), Buffer.alloc(0), "p3b.stdout-overflow"],
-    [valid, Buffer.alloc(P3B_OUTPUT_LIMIT + 1), "p3b.stderr-overflow"],
-  ];
-  for (const [stdout, stderr, expected] of sentinelFailures) {
-    assert.throws(() => parseSingleP3bSentinel(stdout, stderr), {
-      message: expected,
-    });
+
+  type FakeAction =
+    | { readonly kind: "stdout"; readonly value: Buffer }
+    | { readonly kind: "stderr"; readonly value: Buffer }
+    | { readonly kind: "timeout" }
+    | { readonly kind: "error" }
+    | { readonly kind: "terminate" }
+    | {
+        readonly kind: "close";
+        readonly code: number | null;
+        readonly signal: NodeJS.Signals | null;
+      };
+  interface FakeScenario {
+    readonly actions?: readonly FakeAction[];
+    readonly spawnThrows?: boolean;
+    readonly terminateStatus?: Exclude<
+      P3bSettlementState["terminateStatus"],
+      "not-required"
+    >;
+    readonly reapResult?: P3bCloseResult | "timeout" | "observed";
+    readonly resultText?: string;
+    readonly cleanupAttempts?: readonly ("failed" | "succeeded")[];
+  }
+  interface FakeObservations {
+    readonly callOrder: string[];
+    readonly mainGuardMs: number[];
+    readonly terminateGuardMs: number[];
+    readonly reapGuardMs: number[];
+    readonly cleanupGuardMs: number[];
+    readonly cleanupRetryDelayMs: number[];
+    spawnCalls: number;
+    streamsDestroyed: boolean;
   }
 
-  let cleanupAttempts = 0;
-  const recovered = await cleanupOwnedLeaf("test-leaf", async () => {
-    cleanupAttempts += 1;
-    if (cleanupAttempts === 1) throw new Error("injected first cleanup failure");
+  function fakeDependencies(scenario: FakeScenario): {
+    readonly dependencies: P3bHarnessDependencies;
+    readonly observations: FakeObservations;
+  } {
+    const observations: FakeObservations = {
+      callOrder: [],
+      mainGuardMs: [],
+      terminateGuardMs: [],
+      reapGuardMs: [],
+      cleanupGuardMs: [],
+      cleanupRetryDelayMs: [],
+      spawnCalls: 0,
+      streamsDestroyed: false,
+    };
+    const timers: { readonly callback: () => void; cancelled: boolean }[] = [];
+    let observers: P3bProcessObservers | undefined;
+    const dependencies: P3bHarnessDependencies = {
+      nowMs() {
+        observations.callOrder.push("now");
+        return 1_000;
+      },
+      scheduleGuard(delayMs, callback) {
+        observations.callOrder.push(`main-guard:${delayMs}`);
+        observations.mainGuardMs.push(delayMs);
+        const timer = { callback, cancelled: false };
+        timers.push(timer);
+        return { cancel: () => (timer.cancelled = true) };
+      },
+      async prepareRun() {
+        observations.callOrder.push("prepare");
+        return {
+          leaf: "E:\\fake-owned-leaf",
+          childTemp: "E:\\fake-owned-leaf\\tmp",
+          requestPath: "E:\\fake-owned-leaf\\request.json",
+          resultPath: "E:\\fake-owned-leaf\\result.json",
+          stdoutPath: "E:\\fake-owned-leaf\\stdout.txt",
+          stderrPath: "E:\\fake-owned-leaf\\stderr.txt",
+        };
+      },
+      spawnWorker(_run, nextObservers) {
+        observations.callOrder.push("spawn");
+        observations.spawnCalls += 1;
+        if (scenario.spawnThrows === true) throw new Error("injected spawn failure");
+        observers = nextObservers;
+        return {
+          pid: 1234,
+          destroyStreams: () => {
+            observations.streamsDestroyed = true;
+          },
+        };
+      },
+      async afterSpawn(_child, controls) {
+        assert.ok(observers);
+        for (const action of scenario.actions ?? []) {
+          if (action.kind === "stdout") observers.stdout(action.value);
+          if (action.kind === "stderr") observers.stderr(action.value);
+          if (action.kind === "error") observers.error();
+          if (action.kind === "terminate") controls.requestTermination();
+          if (action.kind === "timeout") {
+            assert.ok(timers[0]);
+            timers[0].callback();
+          }
+          if (action.kind === "close") {
+            observers.close({ code: action.code, signal: action.signal });
+          }
+        }
+      },
+      async terminate(_child, guardMs) {
+        observations.terminateGuardMs.push(guardMs);
+        return scenario.terminateStatus ?? "succeeded";
+      },
+      async reap(closeObserved, guardMs) {
+        observations.reapGuardMs.push(guardMs);
+        if (scenario.reapResult === "timeout") return undefined;
+        if (scenario.reapResult === "observed") return await closeObserved;
+        return scenario.reapResult ?? { code: 0, signal: null };
+      },
+      writeCapturedOutputs() {},
+      readResult: () => scenario.resultText ?? compact,
+      async cleanup(_leaf, guardMs, retryDelayMs) {
+        observations.cleanupGuardMs.push(guardMs);
+        observations.cleanupRetryDelayMs.push(retryDelayMs);
+        const attempts = scenario.cleanupAttempts ?? ["succeeded"];
+        for (let index = 0; index < Math.min(attempts.length, 2); index += 1) {
+          if (attempts[index] === "succeeded") {
+            return { status: "succeeded", recovered: index > 0 };
+          }
+        }
+        return { status: "failed", recovered: false };
+      },
+    };
+    return { dependencies, observations };
+  }
+
+  async function rejectedScenario(
+    scenario: FakeScenario,
+    expected: P3bFailureCode,
+  ): Promise<{
+    readonly result: P3bRejectedProcessResult;
+    readonly observations: FakeObservations;
+  }> {
+    const fake = fakeDependencies(scenario);
+    const result = await runP3bSelfWorkerProcess(fake.dependencies);
+    assert.equal(result.status, "rejected");
+    if (result.status !== "rejected") assert.fail("scenario must reject");
+    assert.equal(result.failure, expected);
+    assert.equal(result.partialEvidence, false);
+    assert.equal(fake.observations.mainGuardMs[0], P3B_TIMEOUT_MS);
+    assert.ok(
+      fake.observations.callOrder.indexOf(`main-guard:${P3B_TIMEOUT_MS}`) <
+        fake.observations.callOrder.indexOf("spawn"),
+      "absolute liveness guard must be installed before spawn",
+    );
+    assert.deepEqual(fake.observations.cleanupGuardMs, [P3B_SETTLEMENT_GUARD_MS]);
+    assert.deepEqual(fake.observations.cleanupRetryDelayMs, [P3B_CLEANUP_RETRY_DELAY_MS]);
+    return { result, observations: fake.observations };
+  }
+
+  const spawnFailure = await rejectedScenario(
+    { spawnThrows: true },
+    "p3b.spawn-failed",
+  );
+  assert.equal(spawnFailure.observations.spawnCalls, 1);
+
+  const overflowFirst = await rejectedScenario(
+    {
+      actions: [
+        { kind: "stdout", value: Buffer.alloc(P3B_OUTPUT_LIMIT + 1) },
+        { kind: "timeout" },
+        { kind: "close", code: 1, signal: "SIGTERM" },
+      ],
+      reapResult: "observed",
+    },
+    "p3b.stdout-overflow",
+  );
+  assert.equal(overflowFirst.result.settlement.terminateStatus, "succeeded");
+  assert.equal(overflowFirst.result.settlement.reapStatus, "succeeded");
+
+  const timeoutFirst = await rejectedScenario(
+    {
+      actions: [
+        { kind: "timeout" },
+        { kind: "close", code: 1, signal: "SIGTERM" },
+      ],
+      reapResult: "observed",
+    },
+    "p3b.timeout",
+  );
+  assert.deepEqual(timeoutFirst.observations.terminateGuardMs, [P3B_SETTLEMENT_GUARD_MS]);
+  assert.deepEqual(timeoutFirst.observations.reapGuardMs, [P3B_SETTLEMENT_GUARD_MS]);
+
+  await rejectedScenario(
+    {
+      actions: [
+        { kind: "stderr", value: Buffer.alloc(P3B_OUTPUT_LIMIT + 1) },
+        { kind: "close", code: 1, signal: null },
+      ],
+      reapResult: "observed",
+    },
+    "p3b.stderr-overflow",
+  );
+  await rejectedScenario(
+    { actions: [{ kind: "close", code: 0, signal: null }] },
+    "p3b.sentinel-missing",
+  );
+  await rejectedScenario(
+    {
+      actions: [
+        {
+          kind: "stdout",
+          value: Buffer.from(
+            `${P3B_SENTINEL_PREFIX}${compact}\n${P3B_SENTINEL_PREFIX}${compact}\n`,
+          ),
+        },
+        { kind: "close", code: 0, signal: null },
+      ],
+    },
+    "p3b.sentinel-duplicate",
+  );
+  for (const malformed of [
+    Buffer.from(`${P3B_SENTINEL_PREFIX}{bad}\n`),
+    Buffer.from(`noise\n${P3B_SENTINEL_PREFIX}${compact}\n`),
+    Buffer.from(
+      `${P3B_SENTINEL_PREFIX}${JSON.stringify({ ...fixtureEvidence, extra: true })}\n`,
+    ),
+  ]) {
+    await rejectedScenario(
+      {
+        actions: [
+          { kind: "stdout", value: malformed },
+          { kind: "close", code: 0, signal: null },
+        ],
+      },
+      "p3b.sentinel-malformed",
+    );
+  }
+  await rejectedScenario(
+    {
+      actions: [
+        { kind: "stdout", value: valid },
+        { kind: "stderr", value: Buffer.from("unexpected stderr") },
+        { kind: "close", code: 0, signal: null },
+      ],
+    },
+    "p3b.sentinel-malformed",
+  );
+  await rejectedScenario(
+    { actions: [{ kind: "close", code: null, signal: "SIGTERM" }] },
+    "p3b.signal",
+  );
+  await rejectedScenario(
+    { actions: [{ kind: "close", code: 1, signal: null }] },
+    "p3b.nonzero-exit",
+  );
+  await rejectedScenario(
+    {
+      actions: [
+        { kind: "stdout", value: valid },
+        { kind: "close", code: 0, signal: null },
+      ],
+      resultText: "{}",
+    },
+    "p3b.semantic-mismatch",
+  );
+
+  for (const [terminateStatus, failure] of [
+    ["launch-error", "p3b.taskkill-launch-error"],
+    ["nonzero", "p3b.taskkill-nonzero"],
+    ["timeout", "p3b.taskkill-timeout"],
+  ] as const) {
+    const terminated = await rejectedScenario(
+      {
+        actions: [{ kind: "terminate" }],
+        terminateStatus,
+        reapResult: { code: 0, signal: null },
+      },
+      failure,
+    );
+    assert.deepEqual(terminated.observations.terminateGuardMs, [
+      P3B_SETTLEMENT_GUARD_MS,
+    ]);
+  }
+  const reapTimeout = await rejectedScenario(
+    {
+      actions: [{ kind: "terminate" }],
+      terminateStatus: "succeeded",
+      reapResult: "timeout",
+    },
+    "p3b.reap-timeout",
+  );
+  assert.deepEqual(reapTimeout.observations.reapGuardMs, [
+    P3B_SETTLEMENT_GUARD_MS,
+  ]);
+
+  const cleanupRecoveredFake = fakeDependencies({
+    actions: [
+      { kind: "stdout", value: valid },
+      { kind: "close", code: 0, signal: null },
+    ],
+    cleanupAttempts: ["failed", "succeeded"],
   });
-  assert.deepEqual(recovered, { status: "succeeded", recovered: true });
-  const failed = await cleanupOwnedLeaf("test-leaf", async () => {
-    throw new Error("injected persistent cleanup failure");
-  });
-  assert.deepEqual(failed, { status: "failed", recovered: false });
+  const cleanupRecovered = await runP3bSelfWorkerProcess(
+    cleanupRecoveredFake.dependencies,
+  );
+  assert.equal(cleanupRecovered.status, "ok");
+  assert.equal(cleanupRecovered.cleanupRecovered, true);
+
+  const cleanupFailed = await rejectedScenario(
+    {
+      actions: [
+        { kind: "stdout", value: valid },
+        { kind: "close", code: 0, signal: null },
+      ],
+      cleanupAttempts: ["failed", "failed"],
+    },
+    "p3b.cleanup-failed",
+  );
+  assert.equal(cleanupFailed.result.settlement.cleanupStatus, "failed");
 });
 
 test(
@@ -1434,6 +2080,10 @@ test(
   { timeout: P3B_TIMEOUT_MS + 15_000 },
   async (context) => {
     const result = await runP3bSelfWorkerProcess();
+    if (result.status !== "ok") {
+      assert.fail(`real P3B worker rejected with ${result.failure}`);
+    }
+    assert.equal(result.status, "ok");
     assert.equal(result.cleanupRecovered, false);
     assertSafeInteger(result.wallElapsedMicros, "wall elapsed", true);
     assert.equal(result.evidence.counts.events, 102_400);
