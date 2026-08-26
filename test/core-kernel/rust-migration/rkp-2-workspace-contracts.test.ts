@@ -92,6 +92,48 @@ const PART_OWNER_REPAIR_ARCHIVE_ROOT =
   ".trellis/tasks/archive/2026-08/08-26-rkp-2-part-owner-wire-contract-repair";
 const STAGE_6_PREREQUISITE_HEAD =
   "1bea1b4baeb6547e3a2b5cca645b2fe00d66abc7";
+const RKP1A_IMPLEMENTATION_BASE =
+  "639e93555c15b46c54c8e9bb7ec610d4a77c7478";
+const RKP1A_AUDITED_P2_HEAD =
+  "0f65272951fd23080b6f536b2e58f50afe249b02";
+const RKP1A_ACCEPTED_P3A_PLANNING_HEAD =
+  "1494b5582622d99dd5ad12787bf22e2f1596ebe5";
+const RKP1A_ACTIVE_ROOT =
+  ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair";
+const RKP1A_TECHNICAL_PATHS = [
+  "crates/brilliant-core-types/src/json.rs",
+  "crates/brilliant-kernel-contracts/src/codec.rs",
+  "src/core-kernel/codec/strict-input-capture.ts",
+  "src/core-kernel/native/rust-kernel-smoke.ts",
+  "test/core-kernel/cvn-3-strict-input.test.ts",
+  "test/core-kernel/rust-migration/rkp-1a-property-cap-compatibility.test.ts",
+  "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
+] as const;
+const RKP1A_P3A_TECHNICAL_PATHS = [
+  "src/core-kernel/codec/strict-input-capture.ts",
+  "src/core-kernel/native/rust-kernel-smoke.ts",
+  "test/core-kernel/cvn-3-strict-input.test.ts",
+  "test/core-kernel/rust-migration/rkp-1a-property-cap-compatibility.test.ts",
+  "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
+] as const;
+const RKP1A_PLANNING_PATHS = [
+  PARENT_PATH,
+  TASK_PATH,
+  `${RKP1A_ACTIVE_ROOT}/check.jsonl`,
+  `${RKP1A_ACTIVE_ROOT}/design.md`,
+  `${RKP1A_ACTIVE_ROOT}/implement.jsonl`,
+  `${RKP1A_ACTIVE_ROOT}/implement.md`,
+  `${RKP1A_ACTIVE_ROOT}/operator-handoff.md`,
+  `${RKP1A_ACTIVE_ROOT}/prd.md`,
+  `${RKP1A_ACTIVE_ROOT}/research/authority-and-consumer-impact-map.md`,
+  `${RKP1A_ACTIVE_ROOT}/research/file-test-ownership-matrix.md`,
+  `${RKP1A_ACTIVE_ROOT}/research/implementation-evidence.md`,
+  `${RKP1A_ACTIVE_ROOT}/research/planning-self-audit.md`,
+  `${RKP1A_ACTIVE_ROOT}/research/root-cause-and-exact-node-count.md`,
+  `${RKP1A_ACTIVE_ROOT}/review-candidate.md`,
+  `${RKP1A_ACTIVE_ROOT}/task.json`,
+  ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/task.json",
+] as const;
 const STAGE_6_TECHNICAL_PATHS = [
   "test/core-kernel/rust-migration/rkp-2-live-score-store-parity.test.ts",
   "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
@@ -495,6 +537,26 @@ function currentStage6Changes(): Set<string> {
   return new Set(commands.flatMap((args) => lines(git(args))));
 }
 
+function currentRkp1aChanges(): Set<string> {
+  const commands: readonly (readonly string[])[] = [
+    ["diff", "--name-only", `${RKP1A_IMPLEMENTATION_BASE}..HEAD`],
+    ["diff", "--name-only"],
+    ["diff", "--cached", "--name-only"],
+    ["ls-files", "--others", "--exclude-standard"],
+  ];
+  return new Set(commands.flatMap((args) => lines(git(args))));
+}
+
+function currentRkp1aP3aChanges(): Set<string> {
+  const commands: readonly (readonly string[])[] = [
+    ["diff", "--name-only", `${RKP1A_ACCEPTED_P3A_PLANNING_HEAD}..HEAD`],
+    ["diff", "--name-only"],
+    ["diff", "--cached", "--name-only"],
+    ["ls-files", "--others", "--exclude-standard"],
+  ];
+  return new Set(commands.flatMap((args) => lines(git(args))));
+}
+
 function fullRunnerPlanningChangesAtContentHead(): Set<string> {
   return new Set(
     lines(
@@ -738,6 +800,8 @@ test("implementation changes stay inside the literal RKP-2 allowlists", async ()
     ...CHILD_TECHNICAL_PATHS,
     ...PART_OWNER_REPAIR_TECHNICAL_PATHS,
     ...PART_OWNER_REPAIR_LIFECYCLE_PATHS,
+    ...RKP1A_TECHNICAL_PATHS,
+    ...RKP1A_PLANNING_PATHS,
   ]);
   assert.equal(CHILD_TECHNICAL_PATHS.length, 4);
   assert.equal(CHILD_ACTIVE_LIFECYCLE_PATHS.length, 11);
@@ -812,13 +876,24 @@ test("part owner repair stays anchored to its accepted six-path wire contract", 
   assert.equal(Object.keys(PART_OWNER_REPAIR_ACCEPTED_TECHNICAL_BLOBS).length, 6);
   assert.deepEqual(Object.keys(PART_OWNER_REPAIR_ACCEPTED_TECHNICAL_BLOBS), [...PART_OWNER_REPAIR_TECHNICAL_PATHS]);
   const actual = currentPartOwnerRepairChanges();
+  const expectedPartOwnerAndRkp1a = new Set<string>([
+    ...PART_OWNER_REPAIR_TECHNICAL_PATHS,
+    ...PART_OWNER_REPAIR_ACTIVE_AUTHORITY_PATHS.slice(0, 11),
+    ...PART_OWNER_REPAIR_LIFECYCLE_PATHS,
+    ...RKP1A_TECHNICAL_PATHS,
+    ...RKP1A_PLANNING_PATHS,
+  ]);
   for (const path of actual) {
-    assert.equal(allowed.has(path), true, `unreviewed part-owner repair path: ${path}`);
+    assert.equal(
+      expectedPartOwnerAndRkp1a.has(path),
+      true,
+      `unreviewed part-owner or RKP-1A path: ${path}`,
+    );
   }
   assertExactPathSet(
     actual,
-    [...PART_OWNER_REPAIR_TECHNICAL_PATHS, ...PART_OWNER_REPAIR_ACTIVE_AUTHORITY_PATHS.slice(0, 11), ...PART_OWNER_REPAIR_LIFECYCLE_PATHS],
-    "accepted archived part-owner repair",
+    [...expectedPartOwnerAndRkp1a],
+    "accepted archived part-owner repair plus bounded RKP-1A descendant",
   );
   assertExactPathSet(
     new Set(
@@ -855,6 +930,8 @@ test("Stage 6 hostile and resource evidence consumes the existing private Rust s
   const allowed = new Set<string>([
     ...STAGE_6_TECHNICAL_PATHS,
     ...STAGE_6_LIFECYCLE_PATHS,
+    ...RKP1A_TECHNICAL_PATHS,
+    ...RKP1A_PLANNING_PATHS,
   ]);
   for (const path of stage6Changes) {
     assert.equal(allowed.has(path), true, `unreviewed Stage 6 path: ${path}`);
@@ -931,6 +1008,88 @@ test("Stage 6 hostile and resource evidence consumes the existing private Rust s
   assert.match(session, /fn private_runtime_factory_failures_publish_no_session_and_use_existing_failures\(\)/u);
   const nodeBoundary = readText("crates/brilliant-kernel-node/src/boundary.rs");
   assert.match(nodeBoundary, /fn request_cap_is_checked_on_borrowed_length_before_copy\(\)/u);
+});
+
+test("RKP-1A P3A candidate is exact and remains closed to P3B", () => {
+  for (const commit of [
+    RKP1A_IMPLEMENTATION_BASE,
+    RKP1A_AUDITED_P2_HEAD,
+    RKP1A_ACCEPTED_P3A_PLANNING_HEAD,
+  ]) {
+    assert.doesNotThrow(() => git(["cat-file", "-e", `${commit}^{commit}`]));
+  }
+  assert.doesNotThrow(() =>
+    git([
+      "merge-base",
+      "--is-ancestor",
+      RKP1A_AUDITED_P2_HEAD,
+      RKP1A_ACCEPTED_P3A_PLANNING_HEAD,
+    ]),
+  );
+  assert.doesNotThrow(() =>
+    git([
+      "merge-base",
+      "--is-ancestor",
+      RKP1A_ACCEPTED_P3A_PLANNING_HEAD,
+      "HEAD",
+    ]),
+  );
+  assertExactPathSet(
+    new Set(
+      lines(
+        git([
+          "diff",
+          "--name-only",
+          `${RKP1A_AUDITED_P2_HEAD}..${RKP1A_ACCEPTED_P3A_PLANNING_HEAD}`,
+        ]),
+      ),
+    ),
+    RKP1A_PLANNING_PATHS,
+    "accepted RKP-1A P3A planning amendment",
+  );
+  assert.equal(RKP1A_TECHNICAL_PATHS.length, 7);
+  assert.equal(RKP1A_P3A_TECHNICAL_PATHS.length, 5);
+  assert.equal(RKP1A_PLANNING_PATHS.length, 16);
+  assertExactPathSet(
+    currentRkp1aChanges(),
+    [...RKP1A_TECHNICAL_PATHS, ...RKP1A_PLANNING_PATHS],
+    "bounded RKP-1A implementation descendant",
+  );
+  assertExactPathSet(
+    currentRkp1aP3aChanges(),
+    RKP1A_P3A_TECHNICAL_PATHS,
+    "unreviewed RKP-1A P3A candidate",
+  );
+
+  const capture = readText("src/core-kernel/codec/strict-input-capture.ts");
+  assert.match(
+    capture,
+    /export const STRICT_INPUT_MAX_PROPERTIES = 1_048_576 as const/u,
+  );
+  assert.match(
+    capture,
+    /const STRICT_INPUT_NATIVE_WIRE_MAX_PROPERTIES = 1_572_864 as const/u,
+  );
+  assert.match(
+    capture,
+    /type StrictInputCaptureProfile = "default" \| "native-wire-v1"/u,
+  );
+
+  const native = readText("src/core-kernel/native/rust-kernel-smoke.ts");
+  assert.equal(
+    Array.from(
+      native.matchAll(/captureStrictInput\([^;]*?, "native-wire-v1"\)/gu),
+    ).length,
+    2,
+    "create and response capture must both select native-wire-v1",
+  );
+
+  const p3aTest = readText(
+    "test/core-kernel/rust-migration/rkp-1a-property-cap-compatibility.test.ts",
+  );
+  assert.doesNotMatch(p3aTest, /BRILLIANT_RKP1A_P3B_SELF_WORKER_V1/u);
+  assert.doesNotMatch(p3aTest, /--rkp1a-p3b-self-worker-v1/u);
+  assert.doesNotMatch(p3aTest, /\bspawn(?:Sync)?\s*\(/u);
 });
 
 function assertFullRunnerLifecycleFixtures(): void {

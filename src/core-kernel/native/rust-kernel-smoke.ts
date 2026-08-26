@@ -278,7 +278,7 @@ function decodePayload<T>(payload: unknown, validate: (value: unknown) => value 
     const detached = reflectApply(bufferFrom, Buffer, [payload]) as Buffer;
     const text = new TextDecoder("utf-8", { fatal: true }).decode(detached);
     const parsed = reflectApply(jsonParse, JSON, [text]) as unknown;
-    const captured = captureStrictInput(parsed);
+    const captured = captureStrictInput(parsed, "native-wire-v1");
     if (captured.status !== "captured" || !validate(captured.value)) {
       return undefined;
     }
@@ -320,7 +320,7 @@ export function createRustKernelSmokeSession(
   addon: RustKernelSmokeNativeAddon,
   document: unknown,
 ): RustKernelSmokeCreateOutcome {
-  const captured = captureStrictInput(document);
+  const captured = captureStrictInput(document, "native-wire-v1");
   if (captured.status !== "captured") {
     return rejectedCreate("bridge.capture-invalid");
   }

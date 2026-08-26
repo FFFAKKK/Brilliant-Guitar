@@ -9,6 +9,18 @@ import {
   type CaptureStrictInputResult,
 } from "../../src/core-kernel/codec/strict-input-capture";
 
+const NATIVE_WIRE_MAX_PROPERTIES = 1_572_864;
+
+type CaptureProfile = "default" | "native-wire-v1";
+
+function captureWithProfile(
+  input: unknown,
+  profile: CaptureProfile,
+): CaptureStrictInputResult {
+  return Reflect.apply(captureStrictInput, undefined, [input, profile]) as
+    CaptureStrictInputResult;
+}
+
 function requireCaptured(result: CaptureStrictInputResult): unknown {
   assert.equal(result.status, "captured");
   if (result.status !== "captured") {
@@ -255,3 +267,58 @@ test("bounded strict capture enforces exact depth and property limits", () => {
     actual: 1_048_577,
   });
 });
+
+test(
+  "bounded strict capture keeps default and native-wire-v1 property limits distinct",
+  { timeout: 120_000 },
+  () => {
+    assert.equal(
+      captureWithProfile(
+        new Array<null>(STRICT_INPUT_MAX_PROPERTIES + 1).fill(null),
+        "default",
+      ).status,
+      "resource-limit-exceeded",
+    );
+
+    for (const propertyCount of [
+      NATIVE_WIRE_MAX_PROPERTIES - 1,
+      NATIVE_WIRE_MAX_PROPERTIES,
+    ]) {
+      assert.equal(
+        captureWithProfile(
+          new Array<null>(propertyCount).fill(null),
+          "native-wire-v1",
+        ).status,
+        "captured",
+      );
+    }
+
+    assert.deepEqual(
+      captureWithProfile(
+        new Array<null>(NATIVE_WIRE_MAX_PROPERTIES + 1).fill(null),
+        "native-wire-v1",
+      ),
+      {
+        status: "resource-limit-exceeded",
+        limitKind: "input-properties",
+        limit: 1_572_864,
+        actual: 1_572_865,
+      },
+    );
+
+    assert.deepEqual(
+      Reflect.apply(captureStrictInput, undefined, [
+        { accepted: true },
+        "unknown-profile",
+      ]),
+      {
+        status: "invalid",
+        diagnostic: {
+          code: "decode.unreadable-input",
+          messageKey: "core.decode.unreadable-input",
+          path: [],
+        },
+      },
+    );
+  },
+);

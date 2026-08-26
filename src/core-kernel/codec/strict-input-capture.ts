@@ -7,6 +7,12 @@ import {
 
 export const STRICT_INPUT_MAX_DEPTH = 64 as const;
 export const STRICT_INPUT_MAX_PROPERTIES = 1_048_576 as const;
+const STRICT_INPUT_NATIVE_WIRE_MAX_PROPERTIES = 1_572_864 as const;
+
+type StrictInputCaptureProfile = "default" | "native-wire-v1";
+type StrictInputPropertyLimit =
+  | typeof STRICT_INPUT_MAX_PROPERTIES
+  | typeof STRICT_INPUT_NATIVE_WIRE_MAX_PROPERTIES;
 
 export type StrictInputLimitKind = "input-depth" | "input-properties";
 
@@ -15,9 +21,21 @@ export type CaptureStrictInputResult =
   | { readonly status: "invalid"; readonly diagnostic: DecodeDiagnostic }
   | {
       readonly status: "resource-limit-exceeded";
-      readonly limitKind: StrictInputLimitKind;
-      readonly limit: 64 | 1_048_576;
-      readonly actual: 65 | 1_048_577;
+      readonly limitKind: "input-depth";
+      readonly limit: 64;
+      readonly actual: 65;
+    }
+  | {
+      readonly status: "resource-limit-exceeded";
+      readonly limitKind: "input-properties";
+      readonly limit: 1_048_576;
+      readonly actual: 1_048_577;
+    }
+  | {
+      readonly status: "resource-limit-exceeded";
+      readonly limitKind: "input-properties";
+      readonly limit: 1_572_864;
+      readonly actual: 1_572_865;
     };
 
 interface DataDescriptor extends PropertyDescriptor {
@@ -205,13 +223,33 @@ function depthLimit(): CaptureStrictInputResult {
   };
 }
 
-function propertyLimit(): CaptureStrictInputResult {
-  return {
-    status: "resource-limit-exceeded",
-    limitKind: "input-properties",
-    limit: STRICT_INPUT_MAX_PROPERTIES,
-    actual: 1_048_577,
-  };
+function propertyLimit(limit: StrictInputPropertyLimit): CaptureStrictInputResult {
+  return limit === STRICT_INPUT_MAX_PROPERTIES
+    ? {
+        status: "resource-limit-exceeded",
+        limitKind: "input-properties",
+        limit: STRICT_INPUT_MAX_PROPERTIES,
+        actual: 1_048_577,
+      }
+    : {
+        status: "resource-limit-exceeded",
+        limitKind: "input-properties",
+        limit: STRICT_INPUT_NATIVE_WIRE_MAX_PROPERTIES,
+        actual: 1_572_865,
+      };
+}
+
+function propertyLimitForProfile(
+  profile: StrictInputCaptureProfile,
+): StrictInputPropertyLimit | undefined {
+  switch (profile) {
+    case "default":
+      return STRICT_INPUT_MAX_PROPERTIES;
+    case "native-wire-v1":
+      return STRICT_INPUT_NATIVE_WIRE_MAX_PROPERTIES;
+    default:
+      return undefined;
+  }
 }
 
 function describeArray(
@@ -311,7 +349,14 @@ function freezeCapturedContainers(containers: readonly object[]): void {
  * Descriptor-first bounded capture for CVN-3 inputs. It never reads an input
  * through ordinary property access and creates a fresh, deeply frozen graph.
  */
-export function captureStrictInput(input: unknown): CaptureStrictInputResult {
+export function captureStrictInput(
+  input: unknown,
+  profile: StrictInputCaptureProfile = "default",
+): CaptureStrictInputResult {
+  const maxProperties = propertyLimitForProfile(profile);
+  if (maxProperties === undefined) {
+    return invalid("decode.unreadable-input", []);
+  }
   let unreadablePath: DiagnosticPath = [];
   try {
     const activePath = new weakSetConstructor<object>();
@@ -446,8 +491,8 @@ export function captureStrictInput(input: unknown): CaptureStrictInputResult {
       if (childDepth > STRICT_INPUT_MAX_DEPTH) {
         return depthLimit();
       }
-      if (propertyCount >= STRICT_INPUT_MAX_PROPERTIES) {
-        return propertyLimit();
+      if (propertyCount >= maxProperties) {
+        return propertyLimit(maxProperties);
       }
       propertyCount += 1;
 
