@@ -98,6 +98,8 @@ const RKP1A_AUDITED_P2_HEAD =
   "0f65272951fd23080b6f536b2e58f50afe249b02";
 const RKP1A_ACCEPTED_P3A_PLANNING_HEAD =
   "1494b5582622d99dd5ad12787bf22e2f1596ebe5";
+const RKP1A_AUDITED_P3A_HEAD =
+  "bd8946e83137d88a8084ac5851e8b5de8463313a";
 const RKP1A_ACTIVE_ROOT =
   ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair";
 const RKP1A_TECHNICAL_PATHS = [
@@ -113,6 +115,10 @@ const RKP1A_P3A_TECHNICAL_PATHS = [
   "src/core-kernel/codec/strict-input-capture.ts",
   "src/core-kernel/native/rust-kernel-smoke.ts",
   "test/core-kernel/cvn-3-strict-input.test.ts",
+  "test/core-kernel/rust-migration/rkp-1a-property-cap-compatibility.test.ts",
+  "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
+] as const;
+const RKP1A_P3B_TECHNICAL_PATHS = [
   "test/core-kernel/rust-migration/rkp-1a-property-cap-compatibility.test.ts",
   "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
 ] as const;
@@ -1010,11 +1016,12 @@ test("Stage 6 hostile and resource evidence consumes the existing private Rust s
   assert.match(nodeBoundary, /fn request_cap_is_checked_on_borrowed_length_before_copy\(\)/u);
 });
 
-test("RKP-1A P3A candidate is exact and remains closed to P3B", () => {
+test("RKP-1A P3B candidate is exact and remains closed to P4", () => {
   for (const commit of [
     RKP1A_IMPLEMENTATION_BASE,
     RKP1A_AUDITED_P2_HEAD,
     RKP1A_ACCEPTED_P3A_PLANNING_HEAD,
+    RKP1A_AUDITED_P3A_HEAD,
   ]) {
     assert.doesNotThrow(() => git(["cat-file", "-e", `${commit}^{commit}`]));
   }
@@ -1031,8 +1038,13 @@ test("RKP-1A P3A candidate is exact and remains closed to P3B", () => {
       "merge-base",
       "--is-ancestor",
       RKP1A_ACCEPTED_P3A_PLANNING_HEAD,
-      "HEAD",
+      RKP1A_AUDITED_P3A_HEAD,
     ]),
+  );
+  assert.deepEqual(
+    lines(git(["rev-list", "--parents", "-n", "1", "HEAD"])),
+    [`${git(["rev-parse", "HEAD"])} ${RKP1A_AUDITED_P3A_HEAD}`],
+    "P3B must remain one independently revertible commit on audited P3A",
   );
   assertExactPathSet(
     new Set(
@@ -1049,6 +1061,7 @@ test("RKP-1A P3A candidate is exact and remains closed to P3B", () => {
   );
   assert.equal(RKP1A_TECHNICAL_PATHS.length, 7);
   assert.equal(RKP1A_P3A_TECHNICAL_PATHS.length, 5);
+  assert.equal(RKP1A_P3B_TECHNICAL_PATHS.length, 2);
   assert.equal(RKP1A_PLANNING_PATHS.length, 16);
   assertExactPathSet(
     currentRkp1aChanges(),
@@ -1058,7 +1071,20 @@ test("RKP-1A P3A candidate is exact and remains closed to P3B", () => {
   assertExactPathSet(
     currentRkp1aP3aChanges(),
     RKP1A_P3A_TECHNICAL_PATHS,
-    "unreviewed RKP-1A P3A candidate",
+    "bounded RKP-1A P3A and P3B technical candidate",
+  );
+  assertExactPathSet(
+    new Set(
+      lines(
+        git([
+          "diff",
+          "--name-only",
+          `${RKP1A_AUDITED_P3A_HEAD}..HEAD`,
+        ]),
+      ),
+    ),
+    RKP1A_P3B_TECHNICAL_PATHS,
+    "P3B exact two-path candidate",
   );
 
   const capture = readText("src/core-kernel/codec/strict-input-capture.ts");
@@ -1084,12 +1110,18 @@ test("RKP-1A P3A candidate is exact and remains closed to P3B", () => {
     "create and response capture must both select native-wire-v1",
   );
 
-  const p3aTest = readText(
+  const p3bTest = readText(
     "test/core-kernel/rust-migration/rkp-1a-property-cap-compatibility.test.ts",
   );
-  assert.doesNotMatch(p3aTest, /BRILLIANT_RKP1A_P3B_SELF_WORKER_V1/u);
-  assert.doesNotMatch(p3aTest, /--rkp1a-p3b-self-worker-v1/u);
-  assert.doesNotMatch(p3aTest, /\bspawn(?:Sync)?\s*\(/u);
+  assert.match(p3bTest, /BRILLIANT_RKP1A_P3B_SELF_WORKER_V1:/u);
+  assert.match(p3bTest, /--rkp1a-p3b-self-worker-v1/u);
+  assert.match(
+    p3bTest,
+    /path\.resolve\(input\.argv\[1\] \?\? ""\) === path\.resolve\(input\.filename\)/u,
+  );
+  assert.match(p3bTest, /spawn\(process\.execPath/u);
+  assert.match(p3bTest, /delete env\.NODE_TEST_CONTEXT/u);
+  assert.doesNotMatch(p3bTest, /implementation_candidate_ready\s*[=:]\s*true/u);
 });
 
 function assertFullRunnerLifecycleFixtures(): void {
