@@ -8,7 +8,7 @@
 
 Exact Stage 6 activation/state commit `ce673a2ad62348fa73458d493a45f9c005bf0288` remains preserved. S6.1/S6.2/S6.3 are false and the RKP-2 implementation candidate is not ready.
 
-Child `08-26-rkp-2-part-owner-wire-contract-repair` owns only the bounded `ExtensionOwnerV1::Part` public `partId` serde repair. Exact repaired planning head `ee1af9409b4140d322c88389a4c1df1368655a31` passed targeted rereview at P0/P1/P2=`0/0/0`; R0 `dd6f927`, R1 `4510fd9`, technical R2 `738f746` and the R3 docs-only candidate freeze are complete. Candidate-ready is true and independent implementation review remains pending. The repair retains exact score/Part public shapes, assigns direct Foundation tests only to Part mapping/Part extras plus exact Score normal round-trip, leaves score-extra closure with Contracts/TypeScript, forbids a `part_id` alias, changes exactly six technical paths, and requires independent implementation review before archive/integration and S6.1 resume.
+Archived child `08-26-rkp-2-part-owner-wire-contract-repair` owns only the bounded `ExtensionOwnerV1::Part` public `partId` serde repair. Exact repaired planning head `ee1af9409b4140d322c88389a4c1df1368655a31` and exact implementation candidate `c77d2dd5d3405e9ee24c5168851b2cc7816ec1aa` both passed their independent gates at P0/P1/P2=`0/0/0`. The repair retains exact score/Part public shapes, assigns Foundation only the derived-serde Part mapping scope, leaves score-extra closure with Contracts/TypeScript, forbids a `part_id` alias or custom deserializer, changes exactly six technical paths, and is now accepted/archived before S6.1 resume.
 
 This RKP-2 review file records the active bounded child candidate only. It does not claim an independent implementation PASS, accept/archive/integrate the child, change TypeScript default or claim a Stage 6 candidate.
 
@@ -116,3 +116,10 @@ The child is candidate-ready only for targeted independent implementation rerevi
 - Verdict: `PASS FOR IMPLEMENTATION ACCEPTANCE`, P0/P1/P2=`0/0/0`.
 - Owner closeout/native archive are authorized; the subsequent lifecycle heads must not impersonate the audited technical candidate.
 - RKP-2 candidate freeze is not resumed: S6.0 remains preserved, S6.1+ false, TypeScript default, and no push/cutover/qualification/RKP-3.
+
+## Part-owner wire repair archived authority
+
+- Exact archive: `.trellis/tasks/archive/2026-08/08-26-rkp-2-part-owner-wire-contract-repair`, 12 artifacts; active authority absent.
+- Accepted audited implementation: `c77d2dd5d3405e9ee24c5168851b2cc7816ec1aa`; later lifecycle commits do not replace it.
+- Acceptance sync: `b761be55597e641b9b1ee83fe277653377ffb41a`; native archive: `b5e4952438f2d3a11c0b1667071a8c3c3fff3d46`.
+- Parent current blocking child is clear. S6.0 is retained, S6.1+ remain false, and fast-forward-only integration plus full gates precede any Stage 6 technical resume.

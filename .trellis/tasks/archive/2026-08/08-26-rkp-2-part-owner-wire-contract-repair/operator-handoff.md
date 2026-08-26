@@ -81,3 +81,10 @@ Proceed only with this owner closeout: record acceptance, invoke Trellis native 
 - Audited implementation candidate: `c77d2dd5d3405e9ee24c5168851b2cc7816ec1aa`.
 - Verdict: `PASS FOR IMPLEMENTATION ACCEPTANCE`, P0/P1/P2=`0/0/0`.
 - Accepted planning authority remains `ee1af9409b4140d322c88389a4c1df1368655a31`; later docs-only closeout commits are lifecycle heads, not technical audit heads.
+
+## Native archive closeout
+
+- Lifecycle status: `accepted_archived`; archive path: `.trellis/tasks/archive/2026-08/08-26-rkp-2-part-owner-wire-contract-repair`.
+- Acceptance sync: `b761be55597e641b9b1ee83fe277653377ffb41a`; native archive: `b5e4952438f2d3a11c0b1667071a8c3c3fff3d46`.
+- Exact audited implementation candidate remains `c77d2dd5d3405e9ee24c5168851b2cc7816ec1aa`, PASS P0/P1/P2=`0/0/0`.
+- Active authority is absent. RKP-2 S6.0 is retained, S6.1+ false, and only fast-forward integration gates may precede a later separate S6.1 instruction.

@@ -76,3 +76,10 @@ Bounded-repair planning review passed P0/P1/P2=`0/0/0`. The first independent im
 - Audited implementation candidate: `c77d2dd5d3405e9ee24c5168851b2cc7816ec1aa`.
 - Technical verdict: `PASS FOR IMPLEMENTATION ACCEPTANCE`, P0/P1/P2=`0/0/0`.
 - Subsequent acceptance/archive/projection commits are lifecycle-only and do not replace the audited technical candidate.
+
+## Accepted and archived
+
+- Independent implementation rereview accepted exact `c77d2dd5d3405e9ee24c5168851b2cc7816ec1aa` at P0/P1/P2=`0/0/0`.
+- Trellis native archive commit: `b5e4952438f2d3a11c0b1667071a8c3c3fff3d46`; acceptance sync: `b761be55597e641b9b1ee83fe277653377ffb41a`.
+- This archive contains 12 exact artifacts including `research/implementation-evidence.md`; its JSONL references resolve inside the archive.
+- No active child authority, Stage 6 technical resume, push, default cutover, qualification or RKP-3 is implied.

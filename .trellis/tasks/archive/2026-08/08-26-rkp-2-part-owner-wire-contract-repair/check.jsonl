@@ -1,9 +1,9 @@
-{"file":".trellis/tasks/08-26-rkp-2-part-owner-wire-contract-repair/prd.md","reason":"Audit requirements, non-goals and acceptance criteria."}
-{"file":".trellis/tasks/08-26-rkp-2-part-owner-wire-contract-repair/design.md","reason":"Audit exact wire, deny-unknown policy and no-alias decision."}
-{"file":".trellis/tasks/08-26-rkp-2-part-owner-wire-contract-repair/implement.md","reason":"Audit R0-R3 separation and independent review gates."}
-{"file":".trellis/tasks/08-26-rkp-2-part-owner-wire-contract-repair/research/planning-self-audit.md","reason":"Planning-only self-audit; independent review remains pending."}
-{"file":".trellis/tasks/08-26-rkp-2-part-owner-wire-contract-repair/research/file-test-and-rollback-matrix.md","reason":"Audit six technical paths, lifecycle projections and rollbacks."}
-{"file":".trellis/tasks/08-26-rkp-2-part-owner-wire-contract-repair/task.json","reason":"Audit planning/start/authorization/review state."}
+{"file":".trellis/tasks/archive/2026-08/08-26-rkp-2-part-owner-wire-contract-repair/prd.md","reason":"Audit requirements, non-goals and acceptance criteria."}
+{"file":".trellis/tasks/archive/2026-08/08-26-rkp-2-part-owner-wire-contract-repair/design.md","reason":"Audit exact wire, deny-unknown policy and no-alias decision."}
+{"file":".trellis/tasks/archive/2026-08/08-26-rkp-2-part-owner-wire-contract-repair/implement.md","reason":"Audit R0-R3 separation and independent review gates."}
+{"file":".trellis/tasks/archive/2026-08/08-26-rkp-2-part-owner-wire-contract-repair/research/planning-self-audit.md","reason":"Planning-only self-audit; independent review remains pending."}
+{"file":".trellis/tasks/archive/2026-08/08-26-rkp-2-part-owner-wire-contract-repair/research/file-test-and-rollback-matrix.md","reason":"Audit six technical paths, lifecycle projections and rollbacks."}
+{"file":".trellis/tasks/archive/2026-08/08-26-rkp-2-part-owner-wire-contract-repair/task.json","reason":"Audit planning/start/authorization/review state."}
 {"file":".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json","reason":"Audit Stage 6 S6.0 preservation and blocking-child projection."}
 {"file":".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json","reason":"Audit unique active RKP-2 implementation child and blocking descendant."}
 {"file":"crates/brilliant-score-foundation/src/dto.rs","reason":"Audit exact field rename and enum deny_unknown_fields implementation."}

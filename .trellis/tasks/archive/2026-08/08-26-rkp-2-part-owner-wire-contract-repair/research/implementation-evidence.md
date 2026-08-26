@@ -61,3 +61,11 @@ The original RKP-2 implementation worktree remains at S6.0 commit `ce673a2ad6234
 - Verdict: `PASS FOR IMPLEMENTATION ACCEPTANCE`, P0/P1/P2=`0/0/0`.
 - The accepted technical implementation remains pinned to `c77d2dd`; the acceptance sync and all later archive/projection commits are lifecycle-only heads.
 - Reused technical evidence: Rust 73/73; Foundation 18/18; Contracts 16/16; Node 20.20.2/24.15.0 focused 23/23; dynamic runner 78 files, manifest `e4445a175cedaa34eaed455f48a98735ac2fa4808cc94314ff5148db6b6523d5`, 579 discovered/578 pass/1 expected skip/0 fail.
+
+## Closeout evidence
+
+- Accepted technical candidate: `c77d2dd5d3405e9ee24c5168851b2cc7816ec1aa`; targeted implementation rereview P0/P1/P2=`0/0/0`.
+- Acceptance sync: `b761be55597e641b9b1ee83fe277653377ffb41a`.
+- Native archive: `b5e4952438f2d3a11c0b1667071a8c3c3fff3d46`.
+- Archive authority: `.trellis/tasks/archive/2026-08/08-26-rkp-2-part-owner-wire-contract-repair`; 12 artifacts, active authority absent.
+- Later post-archive and integration lifecycle heads do not replace the audited technical candidate. Stage 6 remains paused before S6.1.

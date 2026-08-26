@@ -84,8 +84,12 @@ const FULL_RUNNER_ARCHIVE_ROOT =
   ".trellis/tasks/archive/2026-08/08-25-rkp-2-cross-platform-full-test-runner-contract-repair";
 const PART_OWNER_REPAIR_ACCEPTED_PLANNING_HEAD =
   "ee1af9409b4140d322c88389a4c1df1368655a31";
-const PART_OWNER_REPAIR_ROOT =
+const PART_OWNER_REPAIR_ACCEPTED_CANDIDATE =
+  "c77d2dd5d3405e9ee24c5168851b2cc7816ec1aa";
+const PART_OWNER_REPAIR_ACTIVE_ROOT =
   ".trellis/tasks/08-26-rkp-2-part-owner-wire-contract-repair";
+const PART_OWNER_REPAIR_ARCHIVE_ROOT =
+  ".trellis/tasks/archive/2026-08/08-26-rkp-2-part-owner-wire-contract-repair";
 const PLANNED_TRUTH_FIELDS = ["type", "data.file"] as const;
 
 const CRATES = [
@@ -259,25 +263,60 @@ const PART_OWNER_REPAIR_TECHNICAL_PATHS = [
   "test/core-kernel/rust-migration/rkp-2-live-score-store-parity.test.ts",
   "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
 ] as const;
+const PART_OWNER_REPAIR_ACCEPTED_TECHNICAL_BLOBS = {
+  "crates/brilliant-score-foundation/src/dto.rs": "cf394c056915f14f42f4adbe12d0d2b9efbc8b43",
+  "crates/brilliant-score-foundation/src/codec.rs": "b6f08257fae0e0f24896a58df9c043739b8b3c7c",
+  "crates/brilliant-kernel-contracts/src/codec.rs": "6830b482e0b4b17b476023162227afafc28dd4dc",
+  "test/core-kernel/rust-migration/rkp-2-store-fixtures.ts": "37a59da1946f5f1e699836fc197961eaf15784bc",
+  "test/core-kernel/rust-migration/rkp-2-live-score-store-parity.test.ts": "fe8b81368e106f4526a40ca98b12408701d54a93",
+  "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts": "00ea2621212fc607d5302412a6124786d2f088ec",
+} as const;
+
 
 const PART_OWNER_REPAIR_LIFECYCLE_PATHS = [
-  `${PART_OWNER_REPAIR_ROOT}/task.json`,
-  `${PART_OWNER_REPAIR_ROOT}/prd.md`,
-  `${PART_OWNER_REPAIR_ROOT}/design.md`,
-  `${PART_OWNER_REPAIR_ROOT}/implement.md`,
-  `${PART_OWNER_REPAIR_ROOT}/implement.jsonl`,
-  `${PART_OWNER_REPAIR_ROOT}/check.jsonl`,
-  `${PART_OWNER_REPAIR_ROOT}/operator-handoff.md`,
-  `${PART_OWNER_REPAIR_ROOT}/review-candidate.md`,
-  `${PART_OWNER_REPAIR_ROOT}/research/root-cause-and-public-wire-authority.md`,
-  `${PART_OWNER_REPAIR_ROOT}/research/file-test-and-rollback-matrix.md`,
-  `${PART_OWNER_REPAIR_ROOT}/research/planning-self-audit.md`,
-  `${PART_OWNER_REPAIR_ROOT}/research/implementation-evidence.md`,
+  `${PART_OWNER_REPAIR_ARCHIVE_ROOT}/task.json`,
+  `${PART_OWNER_REPAIR_ARCHIVE_ROOT}/prd.md`,
+  `${PART_OWNER_REPAIR_ARCHIVE_ROOT}/design.md`,
+  `${PART_OWNER_REPAIR_ARCHIVE_ROOT}/implement.md`,
+  `${PART_OWNER_REPAIR_ARCHIVE_ROOT}/implement.jsonl`,
+  `${PART_OWNER_REPAIR_ARCHIVE_ROOT}/check.jsonl`,
+  `${PART_OWNER_REPAIR_ARCHIVE_ROOT}/operator-handoff.md`,
+  `${PART_OWNER_REPAIR_ARCHIVE_ROOT}/review-candidate.md`,
+  `${PART_OWNER_REPAIR_ARCHIVE_ROOT}/research/root-cause-and-public-wire-authority.md`,
+  `${PART_OWNER_REPAIR_ARCHIVE_ROOT}/research/file-test-and-rollback-matrix.md`,
+  `${PART_OWNER_REPAIR_ARCHIVE_ROOT}/research/planning-self-audit.md`,
+  `${PART_OWNER_REPAIR_ARCHIVE_ROOT}/research/implementation-evidence.md`,
   TASK_PATH,
   ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/operator-handoff.md",
   ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/review-candidate.md",
   PARENT_PATH,
 ] as const;
+const PART_OWNER_REPAIR_ACTIVE_AUTHORITY_PATHS = [
+  `${PART_OWNER_REPAIR_ACTIVE_ROOT}/task.json`,
+  `${PART_OWNER_REPAIR_ACTIVE_ROOT}/prd.md`,
+  `${PART_OWNER_REPAIR_ACTIVE_ROOT}/design.md`,
+  `${PART_OWNER_REPAIR_ACTIVE_ROOT}/implement.md`,
+  `${PART_OWNER_REPAIR_ACTIVE_ROOT}/implement.jsonl`,
+  `${PART_OWNER_REPAIR_ACTIVE_ROOT}/check.jsonl`,
+  `${PART_OWNER_REPAIR_ACTIVE_ROOT}/operator-handoff.md`,
+  `${PART_OWNER_REPAIR_ACTIVE_ROOT}/review-candidate.md`,
+  `${PART_OWNER_REPAIR_ACTIVE_ROOT}/research/root-cause-and-public-wire-authority.md`,
+  `${PART_OWNER_REPAIR_ACTIVE_ROOT}/research/file-test-and-rollback-matrix.md`,
+  `${PART_OWNER_REPAIR_ACTIVE_ROOT}/research/planning-self-audit.md`,
+  `${PART_OWNER_REPAIR_ACTIVE_ROOT}/research/implementation-evidence.md`,
+] as const;
+
+const PART_OWNER_REPAIR_CANDIDATE_LIFECYCLE_PATHS = [
+  `${PART_OWNER_REPAIR_ACTIVE_ROOT}/task.json`,
+  `${PART_OWNER_REPAIR_ACTIVE_ROOT}/operator-handoff.md`,
+  `${PART_OWNER_REPAIR_ACTIVE_ROOT}/review-candidate.md`,
+  `${PART_OWNER_REPAIR_ACTIVE_ROOT}/research/implementation-evidence.md`,
+  TASK_PATH,
+  ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/operator-handoff.md",
+  ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/review-candidate.md",
+  PARENT_PATH,
+] as const;
+
 
 const FROZEN_POST_STAGE_5_AUTHORITY_CONTENT = [
   {
@@ -424,7 +463,7 @@ function currentImplementationChanges(): Set<string> {
 
 function currentPartOwnerRepairChanges(): Set<string> {
   const commands: readonly (readonly string[])[] = [
-    ["diff", "--name-only", `${PART_OWNER_REPAIR_ACCEPTED_PLANNING_HEAD}..HEAD`],
+    ["diff", "--no-renames", "--name-only", `${PART_OWNER_REPAIR_ACCEPTED_PLANNING_HEAD}..HEAD`],
     ["diff", "--name-only"],
     ["diff", "--cached", "--name-only"],
     ["ls-files", "--others", "--exclude-standard"],
@@ -698,17 +737,61 @@ test("part owner repair stays anchored to its accepted six-path wire contract", 
       "HEAD",
     ]),
   );
+  assert.doesNotThrow(() =>
+    git(["cat-file", "-e", `${PART_OWNER_REPAIR_ACCEPTED_CANDIDATE}^{commit}`]),
+  );
+  assert.doesNotThrow(() =>
+    git([
+      "merge-base",
+      "--is-ancestor",
+      PART_OWNER_REPAIR_ACCEPTED_PLANNING_HEAD,
+      PART_OWNER_REPAIR_ACCEPTED_CANDIDATE,
+    ]),
+  );
+  assert.doesNotThrow(() =>
+    git(["merge-base", "--is-ancestor", PART_OWNER_REPAIR_ACCEPTED_CANDIDATE, "HEAD"]),
+  );
   assert.equal(PART_OWNER_REPAIR_TECHNICAL_PATHS.length, 6);
   assert.equal(PART_OWNER_REPAIR_LIFECYCLE_PATHS.length, 16);
   const allowed = new Set<string>([
     ...PART_OWNER_REPAIR_TECHNICAL_PATHS,
+    ...PART_OWNER_REPAIR_ACTIVE_AUTHORITY_PATHS.slice(0, 11),
     ...PART_OWNER_REPAIR_LIFECYCLE_PATHS,
   ]);
-  assert.equal(allowed.size, 22);
+  assert.equal(allowed.size, 33);
+  assert.equal(PART_OWNER_REPAIR_ACTIVE_AUTHORITY_PATHS.length, 12);
+  assert.equal(PART_OWNER_REPAIR_CANDIDATE_LIFECYCLE_PATHS.length, 8);
+  for (const path of PART_OWNER_REPAIR_ACTIVE_AUTHORITY_PATHS) {
+    assert.equal(existsSync(resolve(path)), false, `active repair authority remains: ${path}`);
+  }
+  for (const path of PART_OWNER_REPAIR_LIFECYCLE_PATHS.slice(0, 12)) {
+    assert.equal(existsSync(resolve(path)), true, `archived repair authority missing: ${path}`);
+  }
+  const historicalCandidate = new Set(
+    lines(git(["diff", "--name-only", `${PART_OWNER_REPAIR_ACCEPTED_PLANNING_HEAD}..${PART_OWNER_REPAIR_ACCEPTED_CANDIDATE}`])),
+  );
+  assertExactPathSet(
+    historicalCandidate,
+    [...PART_OWNER_REPAIR_TECHNICAL_PATHS, ...PART_OWNER_REPAIR_CANDIDATE_LIFECYCLE_PATHS],
+    "accepted part-owner repair candidate",
+  );
+  for (const [path, expectedBlob] of Object.entries(PART_OWNER_REPAIR_ACCEPTED_TECHNICAL_BLOBS)) {
+    assert.equal(git(["rev-parse", `${PART_OWNER_REPAIR_ACCEPTED_CANDIDATE}:${path}`]), expectedBlob);
+    if (path !== "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts") {
+      assert.equal(readText(path), gitTextAt(PART_OWNER_REPAIR_ACCEPTED_CANDIDATE, path));
+    }
+  }
+  assert.equal(Object.keys(PART_OWNER_REPAIR_ACCEPTED_TECHNICAL_BLOBS).length, 6);
+  assert.deepEqual(Object.keys(PART_OWNER_REPAIR_ACCEPTED_TECHNICAL_BLOBS), [...PART_OWNER_REPAIR_TECHNICAL_PATHS]);
   const actual = currentPartOwnerRepairChanges();
   for (const path of actual) {
     assert.equal(allowed.has(path), true, `unreviewed part-owner repair path: ${path}`);
   }
+  assertExactPathSet(
+    actual,
+    [...PART_OWNER_REPAIR_TECHNICAL_PATHS, ...PART_OWNER_REPAIR_ACTIVE_AUTHORITY_PATHS.slice(0, 11), ...PART_OWNER_REPAIR_LIFECYCLE_PATHS],
+    "accepted archived part-owner repair",
+  );
   assertExactPathSet(
     new Set(
       [...actual].filter((path) =>

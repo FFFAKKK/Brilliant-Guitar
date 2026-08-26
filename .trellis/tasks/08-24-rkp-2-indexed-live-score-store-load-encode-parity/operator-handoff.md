@@ -28,7 +28,7 @@
 
 Independent root-cause review found P0/P1/P2=`0/1/0`: the accepted public Part-owner wire uses `partId`, but Foundation's `ExtensionOwnerV1::Part` field `part_id` lacks a serde rename. Contracts and TypeScript already require `partId`; Runtime only clones the validated owner.
 
-Child `08-26-rkp-2-part-owner-wire-contract-repair` is the sole current nested implementation child. Exact repaired planning head `ee1af9409b4140d322c88389a4c1df1368655a31` passed targeted planning rereview at P0/P1/P2=`0/0/0`; the user authorized only its R0–R3 repair. R0 `dd6f927`, R1 `4510fd9` and technical R2 `738f746` are complete; the R3 docs-only HEAD is ready for independent implementation review with `implementation_candidate_ready=true` and review still pending.
+Archived child `08-26-rkp-2-part-owner-wire-contract-repair` is retained once in parent history and is no longer a current nested implementation child. Exact repaired planning head `ee1af9409b4140d322c88389a4c1df1368655a31` passed planning rereview; exact implementation candidate `c77d2dd5d3405e9ee24c5168851b2cc7816ec1aa` passed targeted implementation rereview at P0/P1/P2=`0/0/0` and was natively archived by `b5e4952438f2d3a11c0b1667071a8c3c3fff3d46`.
 
 RKP-2 remains the active implementation child of the Rust parent, but Stage 6 is operationally paused. The next gate is the child's independent implementation review. Do not resume S6.1 until the repair is separately audited, accepted, natively archived and integrated back into this branch.
 
@@ -148,3 +148,11 @@ RKP-2 preserves S6.0, remains operationally paused before S6.1, and keeps TypeSc
 - Owner closeout and Trellis native archive are authorized for the child. Until archive completes, its active reference remains exact once.
 - RKP-2 S6.0 stays preserved; S6.1/S6.2/S6.3 remain false and operationally paused. TypeScript remains the default runtime.
 - Next action is native archive followed by archived-authority projection and fast-forward-only integration; no Stage 6 technical work, push, cutover, qualification or RKP-3 is authorized.
+
+## Part-owner wire repair post-archive projection
+
+- Archive authority: `.trellis/tasks/archive/2026-08/08-26-rkp-2-part-owner-wire-contract-repair` with 12 exact artifacts, including `research/implementation-evidence.md`.
+- Active task authority is absent and mechanically forbidden; parent `children` retains the completed child once while `current_implementation_child=null`.
+- Accepted candidate remains `c77d2dd5d3405e9ee24c5168851b2cc7816ec1aa`; acceptance `b761be55597e641b9b1ee83fe277653377ffb41a` and archive `b5e4952438f2d3a11c0b1667071a8c3c3fff3d46` are lifecycle heads.
+- S6.0 remains exact; S6.1/S6.2/S6.3 are false and no technical Stage 6 work is performed by closeout.
+- Next gate after fast-forward-only integration and full integrated validation is resuming preserved S6.1 under a separate instruction. TypeScript remains default; no push/cutover/qualification/RKP-3.

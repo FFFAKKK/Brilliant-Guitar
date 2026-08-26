@@ -1,7 +1,7 @@
-{"file":".trellis/tasks/08-26-rkp-2-part-owner-wire-contract-repair/design.md","reason":"Exact public wire, serde repair, boundaries, allowlists and lifecycle gates."}
-{"file":".trellis/tasks/08-26-rkp-2-part-owner-wire-contract-repair/implement.md","reason":"R0-R3 implementation order, gates and rollback points."}
-{"file":".trellis/tasks/08-26-rkp-2-part-owner-wire-contract-repair/research/root-cause-and-public-wire-authority.md","reason":"Evidence that Foundation serde field naming is the sole root cause."}
-{"file":".trellis/tasks/08-26-rkp-2-part-owner-wire-contract-repair/research/file-test-and-rollback-matrix.md","reason":"Literal ownership, regression matrix and protected-path proof."}
+{"file":".trellis/tasks/archive/2026-08/08-26-rkp-2-part-owner-wire-contract-repair/design.md","reason":"Exact public wire, serde repair, boundaries, allowlists and lifecycle gates."}
+{"file":".trellis/tasks/archive/2026-08/08-26-rkp-2-part-owner-wire-contract-repair/implement.md","reason":"R0-R3 implementation order, gates and rollback points."}
+{"file":".trellis/tasks/archive/2026-08/08-26-rkp-2-part-owner-wire-contract-repair/research/root-cause-and-public-wire-authority.md","reason":"Evidence that Foundation serde field naming is the sole root cause."}
+{"file":".trellis/tasks/archive/2026-08/08-26-rkp-2-part-owner-wire-contract-repair/research/file-test-and-rollback-matrix.md","reason":"Literal ownership, regression matrix and protected-path proof."}
 {"file":".trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/design.md","reason":"Accepted architecture and Rust ownership authority."}
 {"file":".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/design.md","reason":"Accepted RKP-2 load/export and unknown-extension preservation contract."}
 {"file":".trellis/spec/core-kernel/backend/score-document-model.md","reason":"Authoritative brilliant-score-1 ExtensionOwner public shape."}
