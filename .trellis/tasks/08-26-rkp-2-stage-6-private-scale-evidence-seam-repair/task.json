@@ -91,9 +91,11 @@
     "implementation_candidate_ready": false,
     "implementation_review": "pending",
     "implementation_blocker": null,
-    "implementation_stage": "E0_activation_complete_E1_not_started",
+    "implementation_stage": "E1_private_rust_seam_complete_E2_not_started",
     "e0_activation_completed": true,
-    "e1_private_rust_seam_started": false,
+    "e1_private_rust_seam_started": true,
+    "e1_private_rust_seam_completed": true,
+    "e1_verification": "focused_1_of_1_artifact_exactly_one_clippy_msrv_and_lf_clone_16_pass_1_ignored",
     "e2_worker_process_started": false,
     "e3_candidate_freeze_started": false,
     "root_cause_audit": {
@@ -199,7 +201,7 @@
       "E2_unique_request_worker_protocol_and_first_real_stress_run",
       "E3_fresh_request_formal_evidence_and_candidate_freeze"
     ],
-    "next_gate": "E1_private_rust_seam",
+    "next_gate": "E2_worker_process_and_first_real_stress_run",
     "archive_authorized": false,
     "push_authorized": false,
     "default_runtime_switch_authorized": false,

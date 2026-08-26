@@ -190,3 +190,8 @@ RKP-2 preserves S6.0, remains operationally paused before S6.1, and keeps TypeSc
 - Dedicated planning audit accepted exact authority `d638b81a3c9b3d7461f75a91c8d5b090f06adea2` at P0/P1/P2=`0/0/0`; the user authorized this bounded child E0-E3 implementation only.
 - Native child activation is complete and the child is the sole current implementation repair child. E1 has not started and candidate readiness remains false.
 - RKP-2 S6.1 remains retained complete. S6.2/S6.3 remain false and operationally paused; TypeScript remains the default runtime. No acceptance, archive, integration, push, qualification, cutover or RKP-3 is authorized.
+
+## Private scale evidence repair E1 checkpoint
+
+- E1 is locally complete at the private child boundary: focused `1/1`, one exact Runtime libtest artifact, Clippy/MSRV PASS, and a fresh LF clone Runtime result of `16` passed plus `1` intentionally ignored stress test.
+- The child remains `in_progress` with candidate readiness false. E2/E3 and parent RKP-2 S6.2/S6.3 have not started; TypeScript remains default.

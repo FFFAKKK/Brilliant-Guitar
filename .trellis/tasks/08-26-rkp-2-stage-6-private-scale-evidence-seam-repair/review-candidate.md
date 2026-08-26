@@ -43,3 +43,10 @@ Single fixture owner, exact `102400` Events / `51200` Notes / `18` Extensions, b
 6. wrapper cleanup is sole-owner, exact-order, two-attempt/`25ms`, reports only `succeeded|failed`, and precedes the sole external sentinel;
 7. E1/E2/E3 request/evidence ownership is executable without a sixth technical path;
 8. parent projections keep S6.1 and pause S6.2/S6.3.
+
+## E1 private Rust seam complete
+
+- The `cfg(test)` Runtime seam is implemented only in `indices.rs`; exact FQN, request env and internal prefix match the accepted authority.
+- The small real fixture proves Contracts decode, atomic Store import, separated entity/owner probes, parity rebuild, one export, one canonical encode and zero persistent materialization/byte counters.
+- E1 gates: focused `1/1`; exact Cargo artifact `1`; Clippy and MSRV pass; fresh `core.autocrlf=false` E: clone passes Runtime `16/16` with the stress test intentionally ignored.
+- E2 has not started. Candidate readiness remains false; RKP-2 S6.2/S6.3 remain paused and TypeScript stays default.

@@ -1369,8 +1369,11 @@ fn reference_index_len(index: &ReferenceDependencyIndex) -> Result<usize, IndexB
 
 #[cfg(test)]
 mod tests {
+    use std::{fmt::Write as _, fs, path::Path, time::Instant};
+
     use brilliant_core_types::StableId;
-    use brilliant_score_foundation::ExactFraction;
+    use brilliant_kernel_contracts::decode_create_request;
+    use brilliant_score_foundation::{ExactFraction, RhythmicContentV1, canonical_score_bytes};
 
     use super::*;
     use crate::{
@@ -1386,6 +1389,503 @@ mod tests {
         ExactFraction::from_parts(numerator, denominator).expect("exact fraction")
     }
 
+    const SCALE_REQUEST_ENV: &str = "BRILLIANT_RKP2_SCALE_REQUEST_V1";
+    const SCALE_RUST_PREFIX: &str = "BRILLIANT_RKP2_SCALE_RUST_V1:";
+    const CREATE_REQUEST_PREFIX: &[u8] = br#"{"apiVersion":1,"document":"#;
+    const MAX_SAFE_INTEGER: usize = 9_007_199_254_740_991;
+
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+    struct ScaleCounts {
+        measures: usize,
+        parts: usize,
+        staves: usize,
+        measure_contents: usize,
+        voices: usize,
+        events: usize,
+        notes: usize,
+        extensions: usize,
+        part_owned_extensions: usize,
+        unknown_extensions: usize,
+    }
+
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+    struct ScaleBytes {
+        canonical_score_bytes: usize,
+        create_request_bytes: usize,
+    }
+
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+    struct EntityProbe {
+        entity_index_lookups_delta: usize,
+        other_counter_delta: usize,
+    }
+
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+    struct OwnerProbe {
+        owner_index_lookups_delta: usize,
+        other_counter_delta: usize,
+    }
+
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+    struct PrivateScaleEvidence {
+        counts: ScaleCounts,
+        bytes: ScaleBytes,
+        metrics: Rkp2StoreMetrics,
+        entity_probe: EntityProbe,
+        owner_probe: OwnerProbe,
+        workload_elapsed_micros: usize,
+    }
+
+    fn push_number(output: &mut String, key: &str, value: usize, first: bool) {
+        if !first {
+            output.push(',');
+        }
+        write!(output, "\"{key}\":{value}").expect("write scale evidence JSON");
+    }
+
+    impl PrivateScaleEvidence {
+        fn compact_json(self) -> String {
+            let mut output = String::new();
+            output.push_str(
+                "{\"schemaVersion\":1,\"status\":\"ok\",\"fixtureId\":\"cvn7-stress-v1\",\"counts\":{",
+            );
+            push_number(&mut output, "measures", self.counts.measures, true);
+            push_number(&mut output, "parts", self.counts.parts, false);
+            push_number(&mut output, "staves", self.counts.staves, false);
+            push_number(
+                &mut output,
+                "measureContents",
+                self.counts.measure_contents,
+                false,
+            );
+            push_number(&mut output, "voices", self.counts.voices, false);
+            push_number(&mut output, "events", self.counts.events, false);
+            push_number(&mut output, "notes", self.counts.notes, false);
+            push_number(&mut output, "extensions", self.counts.extensions, false);
+            push_number(
+                &mut output,
+                "partOwnedExtensions",
+                self.counts.part_owned_extensions,
+                false,
+            );
+            push_number(
+                &mut output,
+                "unknownExtensions",
+                self.counts.unknown_extensions,
+                false,
+            );
+            output.push_str("},\"bytes\":{");
+            push_number(
+                &mut output,
+                "canonicalScoreBytes",
+                self.bytes.canonical_score_bytes,
+                true,
+            );
+            push_number(
+                &mut output,
+                "createRequestBytes",
+                self.bytes.create_request_bytes,
+                false,
+            );
+            output.push_str("},\"metrics\":{");
+            push_number(
+                &mut output,
+                "entitiesVisited",
+                self.metrics.entities_visited,
+                true,
+            );
+            output.push_str("\"records\":{");
+            push_number(
+                &mut output,
+                "measures",
+                self.metrics.records_inserted_by_type.measures,
+                true,
+            );
+            push_number(
+                &mut output,
+                "parts",
+                self.metrics.records_inserted_by_type.parts,
+                false,
+            );
+            push_number(
+                &mut output,
+                "staves",
+                self.metrics.records_inserted_by_type.staffs,
+                false,
+            );
+            push_number(
+                &mut output,
+                "voices",
+                self.metrics.records_inserted_by_type.voices,
+                false,
+            );
+            push_number(
+                &mut output,
+                "events",
+                self.metrics.records_inserted_by_type.events,
+                false,
+            );
+            push_number(
+                &mut output,
+                "notes",
+                self.metrics.records_inserted_by_type.notes,
+                false,
+            );
+            push_number(
+                &mut output,
+                "extensions",
+                self.metrics.records_inserted_by_type.extensions,
+                false,
+            );
+            output.push('}');
+            push_number(
+                &mut output,
+                "topologyEdgesVisited",
+                self.metrics.topology_edges_visited,
+                false,
+            );
+            push_number(
+                &mut output,
+                "referenceEdgesBuilt",
+                self.metrics.reference_edges_built,
+                false,
+            );
+            push_number(
+                &mut output,
+                "timeEntriesBuilt",
+                self.metrics.time_entries_built,
+                false,
+            );
+            push_number(
+                &mut output,
+                "entityIndexLookups",
+                self.metrics.entity_index_lookups,
+                false,
+            );
+            push_number(
+                &mut output,
+                "ownerIndexLookups",
+                self.metrics.owner_index_lookups,
+                false,
+            );
+            push_number(
+                &mut output,
+                "timeIndexComparisons",
+                self.metrics.time_index_comparisons,
+                false,
+            );
+            push_number(
+                &mut output,
+                "indexEntriesBuilt",
+                self.metrics.index_entries_built,
+                false,
+            );
+            push_number(
+                &mut output,
+                "indexRebuildEntries",
+                self.metrics.index_rebuild_entries,
+                false,
+            );
+            push_number(
+                &mut output,
+                "fullDocumentMaterializations",
+                self.metrics.full_document_materializations,
+                false,
+            );
+            push_number(
+                &mut output,
+                "canonicalEncodeBytes",
+                self.metrics.canonical_encode_bytes,
+                false,
+            );
+            output.push_str(
+                "},\"entityProbe\":{\"stableId\":\"cvn7-e-00-0000-0-0\",\"entityKind\":\"event\"",
+            );
+            push_number(
+                &mut output,
+                "entityIndexLookupsDelta",
+                self.entity_probe.entity_index_lookups_delta,
+                false,
+            );
+            push_number(
+                &mut output,
+                "otherCounterDelta",
+                self.entity_probe.other_counter_delta,
+                false,
+            );
+            output.push_str(
+                "},\"ownerProbe\":{\"entityKind\":\"event\",\"ownerKind\":\"voice\",\"ownerStableId\":\"cvn7-v-00-0000-0\"",
+            );
+            push_number(
+                &mut output,
+                "ownerIndexLookupsDelta",
+                self.owner_probe.owner_index_lookups_delta,
+                false,
+            );
+            push_number(
+                &mut output,
+                "otherCounterDelta",
+                self.owner_probe.other_counter_delta,
+                false,
+            );
+            output.push_str(
+                "},\"parity\":{\"normalizedProjectionEqual\":true,\"indexEntryCountEqual\":true},\"roundTrip\":{\"semanticEqual\":true,\"canonicalBytesEqual\":true},\"ordering\":{\"topologyCanonical\":true,\"extensionsPreserved\":true}",
+            );
+            push_number(
+                &mut output,
+                "workloadElapsedMicros",
+                self.workload_elapsed_micros,
+                false,
+            );
+            output.push('}');
+            output
+        }
+    }
+
+    fn checked_add(total: &mut usize, value: usize) {
+        *total = total.checked_add(value).expect("scale evidence count");
+    }
+
+    fn document_counts(document: &ScoreDocumentV1) -> ScaleCounts {
+        let mut counts = ScaleCounts {
+            measures: document.measure_definitions.len(),
+            parts: document.parts.len(),
+            staves: 0,
+            measure_contents: 0,
+            voices: 0,
+            events: 0,
+            notes: 0,
+            extensions: document.extensions.len(),
+            part_owned_extensions: 0,
+            unknown_extensions: 0,
+        };
+        for part in &document.parts {
+            checked_add(&mut counts.staves, part.staves.len());
+            checked_add(&mut counts.measure_contents, part.measure_contents.len());
+            for content in &part.measure_contents {
+                checked_add(&mut counts.voices, content.voices.len());
+                for voice in &content.voices {
+                    checked_add(&mut counts.events, voice.sequence.events.len());
+                    for event in &voice.sequence.events {
+                        if let RhythmicContentV1::Notes { notes } = &event.content {
+                            checked_add(&mut counts.notes, notes.len());
+                        }
+                    }
+                }
+            }
+        }
+        for extension in &document.extensions {
+            if matches!(&extension.owner, ExtensionOwnerV1::Part { .. }) {
+                checked_add(&mut counts.part_owned_extensions, 1);
+            }
+            if extension.namespace == "fixture.cvn7.unknown" {
+                checked_add(&mut counts.unknown_extensions, 1);
+            }
+        }
+        counts
+    }
+
+    fn create_request_bytes(score_bytes: &[u8]) -> Vec<u8> {
+        let capacity = CREATE_REQUEST_PREFIX
+            .len()
+            .checked_add(score_bytes.len())
+            .and_then(|value| value.checked_add(1))
+            .expect("create request length");
+        let mut request = Vec::new();
+        request
+            .try_reserve_exact(capacity)
+            .expect("create request reserve");
+        request.extend_from_slice(CREATE_REQUEST_PREFIX);
+        request.extend_from_slice(score_bytes);
+        request.push(b'}');
+        request
+    }
+
+    fn metric_other_than_entity_lookup_changed(
+        before: Rkp2StoreMetrics,
+        after: Rkp2StoreMetrics,
+    ) -> bool {
+        before.entities_visited != after.entities_visited
+            || before.records_inserted_by_type != after.records_inserted_by_type
+            || before.topology_edges_visited != after.topology_edges_visited
+            || before.reference_edges_built != after.reference_edges_built
+            || before.time_entries_built != after.time_entries_built
+            || before.owner_index_lookups != after.owner_index_lookups
+            || before.time_index_comparisons != after.time_index_comparisons
+            || before.index_entries_built != after.index_entries_built
+            || before.index_rebuild_entries != after.index_rebuild_entries
+            || before.full_document_materializations != after.full_document_materializations
+            || before.canonical_encode_bytes != after.canonical_encode_bytes
+    }
+
+    fn assert_safe_metrics(metrics: Rkp2StoreMetrics) {
+        for value in [
+            metrics.entities_visited,
+            metrics.records_inserted_by_type.measures,
+            metrics.records_inserted_by_type.parts,
+            metrics.records_inserted_by_type.staffs,
+            metrics.records_inserted_by_type.voices,
+            metrics.records_inserted_by_type.events,
+            metrics.records_inserted_by_type.notes,
+            metrics.records_inserted_by_type.extensions,
+            metrics.topology_edges_visited,
+            metrics.reference_edges_built,
+            metrics.time_entries_built,
+            metrics.entity_index_lookups,
+            metrics.owner_index_lookups,
+            metrics.time_index_comparisons,
+            metrics.index_entries_built,
+            metrics.index_rebuild_entries,
+            metrics.full_document_materializations,
+            metrics.canonical_encode_bytes,
+        ] {
+            assert!(value <= MAX_SAFE_INTEGER, "unsafe metric value");
+        }
+    }
+
+    fn collect_scale_evidence(
+        request_bytes: &[u8],
+        entity_id: &str,
+        expected_owner_id: &str,
+    ) -> PrivateScaleEvidence {
+        let started = Instant::now();
+        assert!(request_bytes.starts_with(CREATE_REQUEST_PREFIX));
+        assert_eq!(request_bytes.last(), Some(&b'}'));
+        let input_score_bytes =
+            &request_bytes[CREATE_REQUEST_PREFIX.len()..request_bytes.len() - 1];
+        let request = decode_create_request(request_bytes).expect("decode scale create request");
+        let document = request.document;
+        let counts = document_counts(&document);
+        let mut store = build_live_score_store(&document).expect("build scale live store");
+        let import_metrics = store.metrics;
+
+        let stable_id = StableId::new(entity_id).expect("stable evidence entity id");
+        let entity_before = store.metrics;
+        let entity = store
+            .lookup_entity(&stable_id)
+            .expect("known evidence entity");
+        let entity_after = store.metrics;
+        assert!(matches!(entity, RuntimeEntityRef::Event(_)));
+        let entity_delta = entity_after
+            .entity_index_lookups
+            .checked_sub(entity_before.entity_index_lookups)
+            .expect("entity lookup delta");
+        assert_eq!(entity_delta, 1);
+        assert!(!metric_other_than_entity_lookup_changed(
+            entity_before,
+            entity_after
+        ));
+
+        let mut owner_probe_metrics = Rkp2StoreMetrics::default();
+        let owner = store
+            .indices
+            .lookup_owner(entity, &mut owner_probe_metrics)
+            .expect("known evidence owner");
+        let RuntimeOwnerRef::Voice(owner_handle) = owner else {
+            panic!("event owner must be voice");
+        };
+        assert_eq!(
+            store.voices.get(owner_handle).expect("owner voice").id,
+            id(expected_owner_id)
+        );
+        assert_eq!(
+            owner_probe_metrics,
+            Rkp2StoreMetrics {
+                owner_index_lookups: 1,
+                ..Rkp2StoreMetrics::default()
+            }
+        );
+
+        let rebuild_metrics =
+            verify_index_parity(&store, &store.indices).expect("verify scale index parity");
+        assert_eq!(
+            rebuild_metrics.index_rebuild_entries,
+            import_metrics.index_entries_built
+        );
+        let exported = store.export_document().expect("export scale document");
+        let encoded = canonical_score_bytes(&exported).expect("canonical scale encode");
+        assert_eq!(encoded, input_score_bytes);
+        assert_eq!(exported, document);
+        let round_trip = decode_create_request(&create_request_bytes(&encoded))
+            .expect("decode exported scale document")
+            .document;
+        assert_eq!(round_trip, document);
+
+        assert_eq!(store.metrics.full_document_materializations, 0);
+        assert_eq!(store.metrics.canonical_encode_bytes, 0);
+        let metrics = Rkp2StoreMetrics {
+            entities_visited: import_metrics.entities_visited,
+            records_inserted_by_type: import_metrics.records_inserted_by_type,
+            topology_edges_visited: import_metrics.topology_edges_visited,
+            reference_edges_built: import_metrics.reference_edges_built,
+            time_entries_built: import_metrics.time_entries_built,
+            entity_index_lookups: 0,
+            owner_index_lookups: 0,
+            time_index_comparisons: 0,
+            index_entries_built: import_metrics.index_entries_built,
+            index_rebuild_entries: rebuild_metrics.index_rebuild_entries,
+            full_document_materializations: 1,
+            canonical_encode_bytes: encoded.len(),
+        };
+        assert_safe_metrics(metrics);
+        let elapsed = usize::try_from(started.elapsed().as_micros()).expect("elapsed micros");
+        assert!(elapsed <= MAX_SAFE_INTEGER);
+        PrivateScaleEvidence {
+            counts,
+            bytes: ScaleBytes {
+                canonical_score_bytes: encoded.len(),
+                create_request_bytes: request_bytes.len(),
+            },
+            metrics,
+            entity_probe: EntityProbe {
+                entity_index_lookups_delta: entity_delta,
+                other_counter_delta: 0,
+            },
+            owner_probe: OwnerProbe {
+                owner_index_lookups_delta: owner_probe_metrics.owner_index_lookups,
+                other_counter_delta: 0,
+            },
+            workload_elapsed_micros: elapsed,
+        }
+    }
+
+    #[test]
+    fn private_scale_evidence_small_fixture_is_exact_and_non_persistent() {
+        let document = fixture();
+        let score_bytes = canonical_score_bytes(&document).expect("canonical small fixture");
+        let request = create_request_bytes(&score_bytes);
+        let evidence = collect_scale_evidence(&request, "event-a", "voice-a");
+        assert_eq!(evidence.counts.measures, 2);
+        assert_eq!(evidence.counts.events, 2);
+        assert_eq!(evidence.metrics.full_document_materializations, 1);
+        assert_eq!(evidence.metrics.canonical_encode_bytes, score_bytes.len());
+        let json = evidence.compact_json();
+        assert!(json.starts_with(
+            "{\"schemaVersion\":1,\"status\":\"ok\",\"fixtureId\":\"cvn7-stress-v1\""
+        ));
+        assert!(json.contains("\"entityIndexLookupsDelta\":1,\"otherCounterDelta\":0"));
+        assert!(json.contains("\"ownerIndexLookupsDelta\":1,\"otherCounterDelta\":0"));
+        assert!(json.ends_with('}'));
+        assert!(!json.contains("RuntimeHandle"));
+    }
+
+    #[test]
+    #[ignore = "executed only by the isolated Stage 6 evidence worker"]
+    fn rkp2_stage_6_private_scale_evidence_v1() {
+        let request_path = std::env::var_os(SCALE_REQUEST_ENV).expect("scale request env");
+        let request_path = Path::new(&request_path);
+        assert!(
+            request_path.is_absolute(),
+            "scale request path must be absolute"
+        );
+        assert!(
+            request_path.is_file(),
+            "scale request path must be a regular file"
+        );
+        let request = fs::read(request_path).expect("read scale request");
+        let evidence = collect_scale_evidence(&request, "cvn7-e-00-0000-0-0", "cvn7-v-00-0000-0");
+        println!("{SCALE_RUST_PREFIX}{}", evidence.compact_json());
+    }
     fn minimal_fixture() -> ScoreDocumentV1 {
         let mut document = fixture();
         document.measure_definitions.remove(0);
