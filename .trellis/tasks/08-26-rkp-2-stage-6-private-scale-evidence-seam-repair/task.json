@@ -91,11 +91,11 @@
     "implementation_candidate_ready": false,
     "implementation_review": "pending",
     "implementation_blocker": null,
-    "implementation_stage": "E1_private_rust_seam_complete_E2_not_started",
+    "implementation_stage": "E1_and_E1R_private_rust_seam_green_E2_not_started",
     "e0_activation_completed": true,
     "e1_private_rust_seam_started": true,
     "e1_private_rust_seam_completed": true,
-    "e1_verification": "focused_1_of_1_artifact_exactly_one_clippy_msrv_and_lf_clone_16_pass_1_ignored",
+    "e1_verification": "focused_1_of_1_exact_compact_json_framing_artifact_exactly_one_clippy_msrv_and_lf_clone_16_pass_1_ignored",
     "e2_worker_process_started": false,
     "e3_candidate_freeze_started": false,
     "root_cause_audit": {

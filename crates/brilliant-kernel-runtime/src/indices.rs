@@ -1494,7 +1494,7 @@ mod tests {
                 self.metrics.entities_visited,
                 true,
             );
-            output.push_str("\"records\":{");
+            output.push_str(",\"records\":{");
             push_number(
                 &mut output,
                 "measures",
@@ -1859,14 +1859,24 @@ mod tests {
         assert_eq!(evidence.counts.events, 2);
         assert_eq!(evidence.metrics.full_document_materializations, 1);
         assert_eq!(evidence.metrics.canonical_encode_bytes, score_bytes.len());
+        let elapsed = evidence.workload_elapsed_micros.to_string();
         let json = evidence.compact_json();
-        assert!(json.starts_with(
-            "{\"schemaVersion\":1,\"status\":\"ok\",\"fixtureId\":\"cvn7-stress-v1\""
-        ));
-        assert!(json.contains("\"entityIndexLookupsDelta\":1,\"otherCounterDelta\":0"));
-        assert!(json.contains("\"ownerIndexLookupsDelta\":1,\"otherCounterDelta\":0"));
-        assert!(json.ends_with('}'));
-        assert!(!json.contains("RuntimeHandle"));
+        let expected = [
+            "{\"schemaVersion\":1,\"status\":\"ok\",\"fixtureId\":\"cvn7-stress-v1\",\"counts\":{\"measures\":2,\"parts\":1,\"staves\":2,\"measureContents\":2,\"voices\":2,\"events\":2,\"notes\":1,\"extensions\":2,\"partOwnedExtensions\":0,\"unknownExtensions\":0},\"bytes\":{\"canonicalScoreBytes\":1309,\"createRequestBytes\":1337},\"metrics\":{\"entitiesVisited\":11,\"records\":{\"measures\":2,\"parts\":1,\"staves\":2,\"voices\":2,\"events\":2,\"notes\":1,\"extensions\":2},\"topologyEdgesVisited\":14,\"referenceEdgesBuilt\":5,\"timeEntriesBuilt\":2,\"entityIndexLookups\":0,\"ownerIndexLookups\":0,\"timeIndexComparisons\":0,\"indexEntriesBuilt\":36,\"indexRebuildEntries\":36,\"fullDocumentMaterializations\":1,\"canonicalEncodeBytes\":1309},\"entityProbe\":{\"stableId\":\"cvn7-e-00-0000-0-0\",\"entityKind\":\"event\",\"entityIndexLookupsDelta\":1,\"otherCounterDelta\":0},\"ownerProbe\":{\"entityKind\":\"event\",\"ownerKind\":\"voice\",\"ownerStableId\":\"cvn7-v-00-0000-0\",\"ownerIndexLookupsDelta\":1,\"otherCounterDelta\":0},\"parity\":{\"normalizedProjectionEqual\":true,\"indexEntryCountEqual\":true},\"roundTrip\":{\"semanticEqual\":true,\"canonicalBytesEqual\":true},\"ordering\":{\"topologyCanonical\":true,\"extensionsPreserved\":true},\"workloadElapsedMicros\":",
+            elapsed.as_str(),
+            "}",
+        ]
+        .concat();
+        assert_eq!(json, expected);
+        assert!(json.contains("\"entitiesVisited\":11,\"records\":{"));
+        let sentinel = format!("{SCALE_RUST_PREFIX}{json}");
+        assert_eq!(sentinel.matches(SCALE_RUST_PREFIX).count(), 1);
+        assert_eq!(
+            sentinel.strip_prefix(SCALE_RUST_PREFIX),
+            Some(json.as_str())
+        );
+        assert!(sentinel.ends_with('}'));
+        assert!(!sentinel.contains("RuntimeHandle"));
     }
 
     #[test]

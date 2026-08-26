@@ -346,7 +346,7 @@
       "immutable_planning_authority_count": 9,
       "future_mutable_lifecycle_allowlist_count": 8,
       "future_technical_allowlist_count": 5,
-      "implementation_stage": "E1_private_rust_seam_complete_E2_not_started",
+      "implementation_stage": "E1_and_E1R_private_rust_seam_green_E2_not_started",
       "next_gate": "E2_worker_process_and_first_real_stress_run"
     },
     "part_owner_wire_contract_repair": {
