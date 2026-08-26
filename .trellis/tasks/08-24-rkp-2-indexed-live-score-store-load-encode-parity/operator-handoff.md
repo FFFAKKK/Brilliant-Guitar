@@ -134,3 +134,9 @@ Owner closeout is authorized to use Trellis native archive and then replace the 
 Dedicated implementation rereview accepted exact candidate 8d9a2a4a35c7707fad5398733eb43c08984bea2b at P0/P1/P2=0/0/0. Trellis native archive commit a1895f36090aafaa8865ffc21e1b6f15679e3be9 moved the child into the frozen 2026-08 archive destination with exactly thirteen artifacts, including research/implementation-evidence.md.
 
 RKP-2 current coordination is now exactly historical ten plus archived thirteen = twenty-three. All twelve active-child paths are absent and mechanically forbidden; both RKP-2 JSONLs remain byte-identical. The accepted descendant is consumable only by fast-forward-only integration from eed4871a86191783d539b7d4097be3627e98e4a0. Stage 6 remains not started and not authorized, and TypeScript remains the default runtime.
+
+## Part-owner wire repair targeted rereview gate
+
+The first independent implementation review of child candidate `cb721507e405778a7b8ae2ec4e48d4d40e395366` returned P0/P1/P2=`0/1/0` only for current-tense and changed-range evidence. The technical implementation is unchanged. A docs-only bounded repair now records the implemented serde state and the exact 15-planning, 6+7 technical-head, 6+8 candidate and R3-eight-lifecycle intervals; targeted implementation rereview remains pending and no PASS is claimed.
+
+RKP-2 preserves S6.0, remains operationally paused before S6.1, and keeps TypeScript as default. The only next gate is the child targeted independent implementation rereview; acceptance/archive/integration and Stage 6 resume remain unauthorized here.

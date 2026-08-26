@@ -6,8 +6,10 @@
 - R0 activation: `dd6f92759e0254742fd4bf2761fe0d020ec4d3aa`
 - R1 Foundation fix: `4510fd95f406acc109cad8f120a0050a0e678c2e`
 - R2 Contracts/native/governance and exact technical head: `738f746085a2b3f9e3e5520523cf5356b6f6f576`
-- R3 evidence/candidate freeze: this docs-only HEAD; report its exact hash after commit.
-- Review state: `implementation_candidate_ready=true`, `implementation_review=pending`.
+- R3 evidence/candidate freeze: `cb721507e405778a7b8ae2ec4e48d4d40e395366`.
+- First independent implementation review of `cb721507...`: RETURN FOR BOUNDED IMPLEMENTATION REPAIR, P0/P1/P2=`0/1/0`, limited to current-tense and range evidence.
+- Docs-only evidence repair: this HEAD; report its exact hash after commit.
+- Review state: `implementation_candidate_ready=true`, `implementation_review=pending`, `targeted_implementation_rereview=pending`.
 
 No independent implementation PASS, acceptance, archive, integration, RKP-2 S6.1 resume, push, default cutover, qualification or RKP-3 is claimed.
 
@@ -19,7 +21,14 @@ Foundation directly proves exact Score normal encode/decode, exact Part `partId`
 
 ## Exact changed-path proof
 
-The accepted planning head through technical head changes exactly thirteen paths: the six frozen technical paths plus seven activation/parent lifecycle projections. R3 adds only the already-authorized implementation-evidence and lifecycle projection paths. RKP-2 `implement.jsonl` and `check.jsonl`, Runtime/Session/Node production, `src/**`, Cargo/toolchain/rustfmt, package/tsconfig, active specs and unrelated tests remain unchanged.
+The exact range proof is:
+
+- `ce673a2...ee1af940`: 15 docs-only planning paths;
+- `ee1af940...738f746`: six frozen technical plus seven lifecycle paths, thirteen total;
+- `ee1af940...cb721507`: six frozen technical plus eight lifecycle/evidence paths, fourteen total;
+- R3 `738f746...cb721507`: eight lifecycle/evidence paths only.
+
+The current docs-only evidence repair changes only already-authorized lifecycle/evidence paths and leaves all six technical paths byte-identical to `cb721507`. RKP-2 `implement.jsonl` and `check.jsonl`, Runtime/Session/Node production, `src/**`, Cargo/toolchain/rustfmt, package/tsconfig, active specs and unrelated tests remain unchanged. The protected-delta claim applies outside the six technical plus eight lifecycle/evidence allowlists; it does not claim that `ce673a2...candidate` has zero `crates/**` or `test/**` changes.
 
 ## Verification
 
@@ -43,4 +52,4 @@ The original RKP-2 implementation worktree remains at S6.0 commit `ce673a2ad6234
 2. Confirm Foundation does not claim Score-extra closure and Contracts/TypeScript remain the public strict-shape owners.
 3. Reproduce exact failure paths/bytes and zero-handle publication for snake, dual, Part-extra and Score-extra owners.
 4. Reproduce ordered unknown score+Part extension round-trip, canonical repeated reads and zero snake_case output through the real addon.
-5. Verify accepted planning head anchoring, exact six technical paths, lifecycle-only R3 delta and all protected/public zero-drift claims.
+5. Verify all four immutable intervals, exact six technical paths, lifecycle-only R3 delta, byte-zero technical delta after `cb721507`, and protected/public zero-drift outside the literal allowlists.
