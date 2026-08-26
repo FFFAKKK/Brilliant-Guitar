@@ -100,6 +100,10 @@ const RKP1A_ACCEPTED_P3A_PLANNING_HEAD =
   "1494b5582622d99dd5ad12787bf22e2f1596ebe5";
 const RKP1A_AUDITED_P3A_HEAD =
   "bd8946e83137d88a8084ac5851e8b5de8463313a";
+const RKP1A_AUDITED_P3B_HEAD =
+  "f06c57b2a7be8d6bb57736e585bd8519b7ecc889";
+const RKP1A_P3B_REPAIR_HEAD =
+  "673a2b961d0f627b5f9e53002da3d8c0bcdfc3cd";
 const RKP1A_ACTIVE_ROOT =
   ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair";
 const RKP1A_TECHNICAL_PATHS = [
@@ -1042,9 +1046,24 @@ test("RKP-1A P3B candidate is exact and remains closed to P4", () => {
     ]),
   );
   assert.deepEqual(
+    lines(
+      git(["rev-list", "--parents", "-n", "1", RKP1A_AUDITED_P3B_HEAD]),
+    ),
+    [`${RKP1A_AUDITED_P3B_HEAD} ${RKP1A_AUDITED_P3A_HEAD}`],
+    "the audited P3B candidate must remain one commit on audited P3A",
+  );
+  assert.deepEqual(
+    lines(
+      git(["rev-list", "--parents", "-n", "1", RKP1A_P3B_REPAIR_HEAD]),
+    ),
+    [`${RKP1A_P3B_REPAIR_HEAD} ${RKP1A_AUDITED_P3B_HEAD}`],
+    "the bounded P3B repair must remain one compatibility-only commit",
+  );
+  const currentHead = git(["rev-parse", "HEAD"]);
+  assert.deepEqual(
     lines(git(["rev-list", "--parents", "-n", "1", "HEAD"])),
-    [`${git(["rev-parse", "HEAD"])} ${RKP1A_AUDITED_P3A_HEAD}`],
-    "P3B must remain one independently revertible commit on audited P3A",
+    [`${currentHead} ${RKP1A_P3B_REPAIR_HEAD}`],
+    "the current governance projection must be exactly one commit on the fixed repair",
   );
   assertExactPathSet(
     new Set(
@@ -1085,6 +1104,62 @@ test("RKP-1A P3B candidate is exact and remains closed to P4", () => {
     ),
     RKP1A_P3B_TECHNICAL_PATHS,
     "P3B exact two-path candidate",
+  );
+  assertExactPathSet(
+    new Set(
+      lines(
+        git([
+          "diff",
+          "--name-only",
+          `${RKP1A_AUDITED_P3A_HEAD}..${RKP1A_AUDITED_P3B_HEAD}`,
+        ]),
+      ),
+    ),
+    RKP1A_P3B_TECHNICAL_PATHS,
+    "audited P3B exact two-path candidate",
+  );
+  assertExactPathSet(
+    new Set(
+      lines(
+        git([
+          "diff",
+          "--name-only",
+          `${RKP1A_AUDITED_P3B_HEAD}..${RKP1A_P3B_REPAIR_HEAD}`,
+        ]),
+      ),
+    ),
+    [
+      "test/core-kernel/rust-migration/rkp-1a-property-cap-compatibility.test.ts",
+    ],
+    "bounded P3B repair exact compatibility-only projection",
+  );
+  assertExactPathSet(
+    new Set(
+      lines(
+        git([
+          "diff",
+          "--name-only",
+          `${RKP1A_P3B_REPAIR_HEAD}..HEAD`,
+        ]),
+      ),
+    ),
+    [
+      "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
+    ],
+    "current bounded workspace-law projection",
+  );
+  assertExactPathSet(
+    new Set(
+      lines(
+        git([
+          "diff",
+          "--name-only",
+          `${RKP1A_AUDITED_P3A_HEAD}..HEAD`,
+        ]),
+      ),
+    ),
+    RKP1A_P3B_TECHNICAL_PATHS,
+    "bounded P3B cumulative two-path projection",
   );
 
   const capture = readText("src/core-kernel/codec/strict-input-capture.ts");
