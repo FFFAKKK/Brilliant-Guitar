@@ -3,9 +3,9 @@
   "name": "rkp-2-stage-6-private-scale-evidence-seam-repair",
   "title": "RKP-2 Stage 6 Private Scale Evidence Seam Repair",
   "description": "Plan the bounded cfg(test)-only Rust scale-evidence seam and fail-closed worker required before RKP-2 Stage 6 S6.2 can resume.",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": "test-infrastructure",
-  "scope": "Planning only for one private Runtime libtest evidence seam, one deterministic scale worker/process boundary and exact Stage 6 governance coverage; no production implementation or Stage 6 S6.2 execution.",
+  "scope": "Bounded implementation of one private Runtime libtest evidence seam, one deterministic scale worker/process boundary and exact Stage 6 governance coverage; no RKP-2 S6.2 resume, acceptance, archive, integration, cutover, qualification or push.",
   "package": "core-kernel",
   "priority": "P0",
   "creator": "ATOM",
@@ -46,11 +46,20 @@
     "source_branch": "codex/rkp-2-indexed-live-score-store-implementation",
     "source_worktree": ".worktrees/rkp-2-indexed-live-score-store-implementation",
     "planning_branch": "codex/rkp-2-stage-6-private-scale-evidence-seam-repair",
-    "task_start_run": false,
-    "production_implementation_authorized": false,
-    "user_implementation_authorization": false,
-    "independent_planning_review": "pending",
-    "targeted_independent_planning_rereview": "pending",
+    "task_start_run": true,
+    "production_implementation_authorized": true,
+    "user_implementation_authorization": true,
+    "user_implementation_authorization_scope": "this_private_scale_evidence_repair_E0_through_E3_only",
+    "independent_planning_review": "passed",
+    "targeted_independent_planning_rereview": "passed",
+    "accepted_planning_authority_head": "d638b81a3c9b3d7461f75a91c8d5b090f06adea2",
+    "final_targeted_independent_planning_rereview": {
+      "candidate_commit": "d638b81a3c9b3d7461f75a91c8d5b090f06adea2",
+      "P0": 0,
+      "P1": 0,
+      "P2": 0,
+      "verdict": "pass_for_bounded_implementation"
+    },
     "first_independent_planning_review": {
       "candidate_commit": "df686882efa30f489da138d2730acbdd4fb9cd30",
       "P0": 0,
@@ -78,11 +87,22 @@
       "verdict": "return_for_bounded_planning_repair",
       "finding": "start_failure_cleanup_status_contradicted_post_handoff_wrapper_cleanup_ownership"
     },
-    "bounded_planning_repair": "round_3_cleanup_ownership_and_post_cleanup_envelope_completed_final_targeted_rereview_pending",
+    "bounded_planning_repair": "round_3_cleanup_ownership_and_post_cleanup_envelope_accepted",
     "implementation_candidate_ready": false,
-    "implementation_review": "not_started",
-    "implementation_blocker": "final_targeted_independent_planning_rereview_required",
-    "root_cause_audit": {"P0": 0, "P1": 1, "P2": 0, "verdict": "bounded_planning_child_required", "classification": "stage_6_evidence_allowlist_gap_not_proven_production_complexity_failure"},
+    "implementation_review": "pending",
+    "implementation_blocker": null,
+    "implementation_stage": "E0_activation_complete_E1_not_started",
+    "e0_activation_completed": true,
+    "e1_private_rust_seam_started": false,
+    "e2_worker_process_started": false,
+    "e3_candidate_freeze_started": false,
+    "root_cause_audit": {
+      "P0": 0,
+      "P1": 1,
+      "P2": 0,
+      "verdict": "bounded_planning_child_required",
+      "classification": "stage_6_evidence_allowlist_gap_not_proven_production_complexity_failure"
+    },
     "rkp2_stage_6_authorized": true,
     "rkp2_stage_6_started": true,
     "rkp2_stage_6_operationally_paused": true,
@@ -138,20 +158,48 @@
     "private_scale_process_prefix": "BRILLIANT_RKP2_SCALE_PROCESS_V1:",
     "primary_failure_code_count": 16,
     "shutdown_secondary_statuses": {
-      "terminationStatus": ["not-required", "succeeded", "failed"],
-      "reapStatus": ["not-required", "succeeded", "failed"],
-      "cleanupStatus": ["succeeded", "failed"]
+      "terminationStatus": [
+        "not-required",
+        "succeeded",
+        "failed"
+      ],
+      "reapStatus": [
+        "not-required",
+        "succeeded",
+        "failed"
+      ],
+      "cleanupStatus": [
+        "succeeded",
+        "failed"
+      ]
     },
     "pre_handoff_cleanup_owner": "typescript",
     "post_handoff_cleanup_owner": "powershell_wrapper",
-    "cleanup_order": ["request", "stdout", "stderr", "owned_temp_root"],
+    "cleanup_order": [
+      "request",
+      "stdout",
+      "stderr",
+      "owned_temp_root"
+    ],
     "cleanup_max_attempts_per_resource": 2,
     "cleanup_retry_interval_ms": 25,
     "final_process_sentinel_after_cleanup": true,
     "private_scale_compile_command": "cargo +1.97.1 test -p brilliant-kernel-runtime --lib --no-run --locked --message-format=json",
-    "private_scale_execute_argv": ["<exact executable>", "--exact", "indices::tests::rkp2_stage_6_private_scale_evidence_v1", "--ignored", "--nocapture", "--test-threads=1"],
-    "implementation_stage_order": ["E0_activation", "E1_private_rust_seam_compile_and_small_proof_without_stress_request", "E2_unique_request_worker_protocol_and_first_real_stress_run", "E3_fresh_request_formal_evidence_and_candidate_freeze"],
-    "next_gate": "final_targeted_independent_planning_rereview",
+    "private_scale_execute_argv": [
+      "<exact executable>",
+      "--exact",
+      "indices::tests::rkp2_stage_6_private_scale_evidence_v1",
+      "--ignored",
+      "--nocapture",
+      "--test-threads=1"
+    ],
+    "implementation_stage_order": [
+      "E0_activation",
+      "E1_private_rust_seam_compile_and_small_proof_without_stress_request",
+      "E2_unique_request_worker_protocol_and_first_real_stress_run",
+      "E3_fresh_request_formal_evidence_and_candidate_freeze"
+    ],
+    "next_gate": "E1_private_rust_seam",
     "archive_authorized": false,
     "push_authorized": false,
     "default_runtime_switch_authorized": false,

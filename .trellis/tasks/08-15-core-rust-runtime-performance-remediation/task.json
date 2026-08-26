@@ -49,7 +49,7 @@
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
     "source_cvn7_status": "in_progress_measurement_incomplete_evidence_invalid",
-    "current_planning_child": "08-26-rkp-2-stage-6-private-scale-evidence-seam-repair",
+    "current_planning_child": null,
     "future_children_created": true,
     "stage_sequence": [
       "RKP-0",
@@ -92,7 +92,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "rkp2-private-scale-evidence-seam-final-targeted-independent-planning-rereview",
+    "next_gate": "rkp2-private-scale-evidence-seam-E1",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -303,11 +303,14 @@
     "rkp2_stage_6_private_scale_evidence_seam_repair": {
       "parent": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
       "planning_base": "4a302bc9f9981940336fc97941b08e09bd0d1f67",
-      "status": "planning",
-      "task_start_run": false,
-      "production_implementation_authorized": false,
-      "independent_planning_review": "pending",
-      "targeted_independent_planning_rereview": "pending",
+      "status": "in_progress",
+      "task_start_run": true,
+      "production_implementation_authorized": true,
+      "user_implementation_authorization": true,
+      "independent_planning_review": "passed",
+      "targeted_independent_planning_rereview": "passed",
+      "accepted_planning_authority_head": "d638b81a3c9b3d7461f75a91c8d5b090f06adea2",
+      "final_targeted_independent_planning_rereview": "P0_0_P1_0_P2_0_pass_for_bounded_implementation",
       "implementation_candidate_ready": false,
       "root_cause_audit": "P0_0_P1_1_P2_0_allowlist_cannot_own_private_scale_evidence_seam",
       "classification": "planning_allowlist_gap_not_proven_production_complexity_failure",
@@ -321,7 +324,8 @@
       "immutable_planning_authority_count": 9,
       "future_mutable_lifecycle_allowlist_count": 8,
       "future_technical_allowlist_count": 5,
-      "next_gate": "final_targeted_independent_planning_rereview"
+      "implementation_stage": "E0_activation_complete_E1_not_started",
+      "next_gate": "E1_private_rust_seam"
     },
     "rkp2_part_owner_wire_contract_repair": {
       "parent": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",

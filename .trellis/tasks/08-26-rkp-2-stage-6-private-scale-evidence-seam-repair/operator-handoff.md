@@ -39,4 +39,6 @@ Clean base: TypeScript `78` files, manifest `e4445a175cedaa34eaed455f48a98735ac2
 
 ## Next action
 
-Send the exact third repaired planning HEAD to the same dedicated read-only auditor. Review the nine hash map, eight mutable paths, exact artifact/argv, compilable two-record probe, sixteen primary codes, secondary shutdown fields, the sole post-handoff cleanup owner, two-attempt cleanup matrix, post-cleanup sentinel rule and E1/E2/E3 request ownership. Do not start or implement before final targeted PASS and new authorization.
+Final targeted independent planning rereview accepted exact authority head `d638b81a3c9b3d7461f75a91c8d5b090f06adea2` with P0/P1/P2=`0/0/0` and verdict `PASS FOR BOUNDED IMPLEMENTATION`. The user separately authorized this child's E0-E3 implementation. Native `task.py start` completed; E0 is active/complete, candidate readiness remains false and implementation review remains pending.
+
+Proceed only to E1 using the frozen five-path technical and eight-path mutable lifecycle allowlists. RKP-2 S6.1 stays retained complete while S6.2/S6.3 remain false and operationally paused; TypeScript remains the default runtime. No acceptance, archive, integration, push, qualification, cutover or RKP-3 is authorized.

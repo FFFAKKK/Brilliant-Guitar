@@ -184,3 +184,9 @@ RKP-2 preserves S6.0, remains operationally paused before S6.1, and keeps TypeSc
 - Final targeted review of `8d773b8e9d39ac21aba9cad715609fffc80eefec` returned P0/P1/P2=`0/1/0`, limited to a start-failure envelope that contradicted the wrapper's post-handoff cleanup ownership.
 - The repaired contract makes TypeScript the pre-handoff owner and PowerShell the sole post-handoff owner, removes cleanup `not-attempted`, fixes exact request/stdout/stderr/root two-attempt cleanup and emits the final sentinel only after cleanup status is known.
 - Final targeted planning rereview remains pending. S6.1 is retained; S6.2/S6.3 and all implementation/lifecycle advancement remain unauthorized.
+
+## Stage 6 private scale evidence seam activation
+
+- Dedicated planning audit accepted exact authority `d638b81a3c9b3d7461f75a91c8d5b090f06adea2` at P0/P1/P2=`0/0/0`; the user authorized this bounded child E0-E3 implementation only.
+- Native child activation is complete and the child is the sole current implementation repair child. E1 has not started and candidate readiness remains false.
+- RKP-2 S6.1 remains retained complete. S6.2/S6.3 remain false and operationally paused; TypeScript remains the default runtime. No acceptance, archive, integration, push, qualification, cutover or RKP-3 is authorized.
