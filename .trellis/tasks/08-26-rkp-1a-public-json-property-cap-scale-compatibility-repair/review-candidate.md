@@ -2,9 +2,9 @@
 
 ## Status
 
-P2 SUCCESSOR WIRE COMPLETE — INDEPENDENT IMPLEMENTATION AUDIT REQUIRED.
+READY FOR TARGETED PLANNING REREVIEW.
 
-Exact planning head `1cd0caadff218c1471f67cdf1a1ab78f5653a605` passed targeted independent planning rereview at P0/P1/P2=`0/0/0`. Exact P1 head `712c6dbb0b7556b4c345fab9ad8215fdbcec6990` passed independent implementation audit at `0/0/0`. P2 is a single child commit that makes both bounded REDs GREEN and now stops for independent P2 audit; P3-P4 remain unauthorized.
+Exact planning head `1cd0caadff218c1471f67cdf1a1ab78f5653a605`, exact P1 head `712c6dbb0b7556b4c345fab9ad8215fdbcec6990` and exact P2 head `0f65272951fd23080b6f536b2e58f50afe249b02` each passed their required independent review at P0/P1/P2=`0/0/0`. A no-commit P3 attempt was reverted. Independent root-cause audit returned `0/2/0`; this docs-only amendment is the targeted planning rereview candidate. P3A/P3B/P4 remain unauthorized.
 
 ## Candidate claims
 
@@ -13,13 +13,15 @@ Exact planning head `1cd0caadff218c1471f67cdf1a1ab78f5653a605` passed targeted i
 3. Core Types stays the sole numeric owner and Contracts stays a consumer.
 4. Stable failure 22, `codec.property-limit`, exact fields, depth 64, 64 MiB caps and precedence are unchanged.
 5. The frozen fixture and RKP-2 E1/E1R are untouched; E2 remains blocked.
-6. `rust-kernel-smoke.ts` is the fifth technical path because it validates the native failure limit; `strict-input-capture.ts` remains a read-only different counting contract.
+6. The cumulative future technical allowlist is exactly seven paths. `captureStrictInput` owns a closed default/native profile; both create and response native captures select `native-wire-v1`; `indices.rs` is excluded.
 7. P1 and P2 each stop for independent implementation audit; P2 rollback returns to audited P1 RED, not directly to a green predecessor.
 8. The first planning review P0/P1/P2=`0/3/1` is recorded and bounded; exact repaired head `1cd0caa...` passed targeted rereview at `0/0/0`.
 
-## P2 range
+## Amended P3 contracts
 
-Relative to audited P1 head `712c6dbb0b7556b4c345fab9ad8215fdbcec6990`, the exact P2 technical range is `crates/brilliant-kernel-contracts/src/codec.rs`, `src/core-kernel/native/rust-kernel-smoke.ts` and `test/core-kernel/rust-migration/rkp-1a-property-cap-compatibility.test.ts`, plus the seven accepted lifecycle/evidence paths. Core Types, strict-input capture, workspace-law, fixture, Runtime/Session/Node native source, Cargo/package/tsconfig/toolchain, specs and archives are byte-zero.
+P3A has exactly five incremental technical paths: `strict-input-capture.ts`, `rust-kernel-smoke.ts`, `cvn-3-strict-input.test.ts`, the RKP-1A compatibility test and RKP-2 workspace-law. It freezes default/native boundaries, direct DAG and JSON-cloned create, public read and hostile capture behavior, then stops for independent audit.
+
+P3B technically changes only the RKP-1A compatibility test, with workspace-law projection only if required. It proves real decoder/raw+public journeys, repeated reads, semantic equality and exact SHA roles. Input SHA is `5a8a318e58bc08a82a822c166ed11239ed4ed7b9ea45d50bb7dcb81d7c57f91e`; Rust canonical export SHA is `4d8597437cc8b07df6cfef9400086218636adb27257ad72d055e1e3a3deafff7`. Both are `15,013,904` bytes but are not raw-byte equal.
 
 ## Audit focus
 
@@ -27,12 +29,14 @@ Relative to audited P1 head `712c6dbb0b7556b4c345fab9ad8215fdbcec6990`, the exac
 - Confirm one live authority and exact failure precedence.
 - Challenge inclusive edges, exact actual semantics and bounded scan-only behavior.
 - Confirm both P1 bounded REDs are GREEN and the P2 audit gates P3.
-- Confirm the native TypeScript wire consumer changes while `strict-input-capture.ts` remains read-only.
-- Confirm P3 proves real decoder/native behavior without a second fixture or admission path.
-- Confirm RKP-2 S6.2/S6.3 remain false and all lifecycle permissions stay closed.
+- Confirm default capture remains byte-identical at `1,048,576`, `native-wire-v1` is `1,572,864`, and both native create/read calls select it without duplicate numbers.
+- Confirm exact document/create/read value/member counts and DAG versus cloned-tree coverage.
+- Confirm P3B proves real decoder/native behavior without a second fixture or admission path and never treats the raw input SHA as Foundation canonical.
+- Confirm P3A and P3B each stop for independent audit and separate authorization; RKP-2 S6.2/S6.3 remain false.
 - Verify `json.rs` is byte-zero relative to audited P1 and remains the sole `JSON_PROPERTY_LIMIT` owner at `1_572_864`; Contracts imports it directly and is 17/17. Verify new-cap inclusive/exclusive boundaries, exact `1572864/1572865` wire, depth→property→shape→number precedence, bounded scan-only retention and 64 MiB caps.
 - Verify the dedicated TypeScript test uses the production adapter: exact successor fake and real native envelopes preserve `codec.property-limit`, while predecessor, extra, missing and wrong-type variants remain `bridge.internal`; the real rejection publishes no handle.
-- Verify the P2 parent is exact audited P1, so reverting this one commit mechanically restores the two audited REDs; P1 rollback alone restores predecessor-wire green.
+- Verify the exact seven-path cumulative allowlist excludes `indices.rs`, fixture, encoder, Cargo/package/spec/archive paths; this amendment changes only 16 docs/governance paths.
+- Verify Stage6 follow-up remains a later independent docs-only authority amendment followed by planning review, E1R2 audit and separate E2 authorization.
 
 ## Validation note
 
@@ -40,4 +44,4 @@ Typecheck/build pass. Clean source `639e935...` and planning candidate `c02c830.
 
 The first rejected path is not the same: source `639e935...` first rejects the unaccepted Stage-6 child `check.jsonl`; candidate `c02c830...` first rejects the unaccepted RKP-1A child `check.jsonl`. Both are expected fail-closed governance evidence; workspace-law remains byte-zero in this planning repair.
 
-P2 focused evidence is GREEN: Core Types 6/6, Contracts 17/17 and the dedicated fake/real native compatibility suite 2/2. Clean-head full-runner totals and the E-only LF Rust checkout result are reported with the exact P2 commit; the same three unaccepted-child workspace-law failures remain separately attributed and are not relaxed.
+P2 focused evidence remains GREEN: Core Types 6/6, Contracts 17/17 and the dedicated fake/real native compatibility suite 2/2. This planning amendment changes no production/test path. The same three unaccepted-child workspace-law failures remain separately attributed and are not relaxed or called green.

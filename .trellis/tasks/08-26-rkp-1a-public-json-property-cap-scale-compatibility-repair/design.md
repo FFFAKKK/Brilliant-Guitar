@@ -43,22 +43,50 @@ The selected `1,572,864` value leaves `373,629` values, or `31.156%`, above the 
 
 `BoundedJsonValue` remains data-only and bounded. This task changes no DTO representation, serialization discriminant or extension payload ownership.
 
-## 6. Frozen scale request
+## 6. TypeScript capture profiles
+
+`captureStrictInput` is the sole capture implementation and the sole owner of profile-to-limit selection. The accepted profile union is closed to `default | native-wire-v1`:
+
+| Profile | Exact maximum members/elements | Consumers |
+| --- | ---: | --- |
+| `default` | `1,048,576` | every existing default TypeScript capture caller |
+| `native-wire-v1` | `1,572,864` | native create-document capture and native read-response capture in `rust-kernel-smoke.ts` |
+
+Call sites select a profile and never repeat either number. The default profile and its hostile accessor/proxy/cycle/depth behavior remain byte-for-byte unchanged. Create capture overflow remains `bridge.capture-invalid`; response capture overflow or malformed response remains `bridge.internal`; no stable failure, export or DTO is added.
+
+Exact cross-model counts are:
+
+| Projection | Rust JSON values | TypeScript members/elements | Bytes |
+| --- | ---: | ---: | ---: |
+| document | `1,199,233` | `1,199,232` | `15,013,904` input |
+| create request | `1,199,235` | `1,199,234` | `15,013,932` |
+| read response wrapper | `1,199,245` | `1,199,244` | `15,014,112` raw payload |
+
+Rust counts the root as a value, hence values equal members plus one; the read wrapper adds twelve edges. `createStressCvn7Score()` is a shared-reference DAG: WeakMap capture observes `1,045,635` members. `JSON.parse(JSON.stringify(score))` is the semantically equivalent tree with `1,199,232` members and fails the predecessor default profile before native code. P3A and P3B cover both representations.
+
+## 7. Frozen scale request and canonical evidence
 
 The only fixture owner remains `test/core-kernel/fixtures/cvn-7-qualification-score.ts#createStressCvn7Score`; it is read-only for this task. Its request traverses production `decode_create_request`. A new dedicated TypeScript test may generate the exact request and load the existing private native bridge, but it may not modify the fixture, Node adapter, Runtime seam or package scripts.
 
 Exact frozen facts:
 
 - `102,400` Events and `51,200` Notes;
-- canonical score bytes `15,013,904`;
+- input and Rust-export score bytes `15,013,904` each;
 - create-request bytes `15,013,932`;
 - request values `1,199,235`;
 - document values `1,199,233`;
 - envelope values `2`.
 
-Passing the decoder is necessary but not sufficient. Entry evidence is decoder success followed by native create, repeated read/export, canonical bytes and detached output. Only accepted and integrated RKP-1A evidence may unblock RKP-2 E2.
+Passing the decoder is necessary but not sufficient. Entry evidence is decoder success followed by raw and public native create, repeated read/export, semantic equality, detached output and exact canonical roles. Only accepted and integrated RKP-1A evidence may unblock RKP-2 E2.
 
-## 7. Consumer impact
+RKP-2 authority is `canonical(input) == canonical(exported)`, not raw input bytes equal raw output bytes. Foundation `BTreeMap` ordering owns payload-object canonical order. Input and export are semantically equal and the same length, but the first difference is zero-based byte `15,011,087` / one-based `15,011,088` at `$.extensions[0].payload`: TypeScript input orders `marker` then `generatorVersion`; Rust orders `generatorVersion` then `marker`.
+
+- input SHA-256: `5a8a318e58bc08a82a822c166ed11239ed4ed7b9ea45d50bb7dcb81d7c57f91e`;
+- Rust canonical export SHA-256: `4d8597437cc8b07df6cfef9400086218636adb27257ad72d055e1e3a3deafff7`.
+
+The raw input hash is never called the Foundation canonical hash. P3B proves semantic/value/array/entity equality, repeated raw/public read stability, and deep equality for all 18 extensions, 16 Part-owned blocks and the one unknown block. Neither TypeScript encoder, Foundation ordering nor fixture changes.
+
+## 8. Consumer impact
 
 | Consumer | Required proof | Production change |
 | --- | --- | --- |
@@ -68,36 +96,38 @@ Passing the decoder is necessary but not sufficient. Entry evidence is decoder s
 | Runtime / Session | accepted document publishes once and reads deterministically | none |
 | Node | existing two-export private bridge admits and reads request | none |
 | TypeScript native wire adapter | successor property failure remains stable instead of becoming internal | `rust-kernel-smoke.ts` only |
-| TypeScript strict capture | separate member/element descriptor bound remains read-only | none |
+| TypeScript strict capture | default remains `1,048,576`; `native-wire-v1` is `1,572,864` | `strict-input-capture.ts` plus native caller selection |
 
-### 7.1 TypeScript responsibility split
+### 8.1 TypeScript responsibility split
 
 `src/core-kernel/native/rust-kernel-smoke.ts` validates the Rust native response envelope. Its current hard-coded `codec.property-limit.limit===1_048_576` is a real successor-wire consumer and must change to `1_572_864`. Both a fake native rejection and a real native `newCap+1` rejection must remain `codec.property-limit` with exact `1572864/1572865`; neither may downgrade to `bridge.internal`.
 
-`src/core-kernel/codec/strict-input-capture.ts#STRICT_INPUT_MAX_PROPERTIES` stays exactly `1_048_576`. That TypeScript capture contract counts object members and array elements while safely reading JavaScript descriptors. Rust `JSON_PROPERTY_LIMIT` counts every serialized JSON object, array and primitive while excluding keys. Equal historical numbers do not make them one authority. RKP-1A changes no TypeScript capture threshold or default codec path.
+`src/core-kernel/codec/strict-input-capture.ts#STRICT_INPUT_MAX_PROPERTIES` stays exactly `1_048_576` as the default profile. That contract counts object members and array elements while safely reading JavaScript descriptors. Rust `JSON_PROPERTY_LIMIT` counts every serialized JSON object, array and primitive while excluding keys. Equal historical numbers do not make them one authority. The only change is adding the closed `native-wire-v1` profile and selecting it for both native create document capture and native response capture.
 
-## 8. Exact future technical allowlist
+## 9. Exact cumulative future technical allowlist
 
 1. `crates/brilliant-core-types/src/json.rs`
 2. `crates/brilliant-kernel-contracts/src/codec.rs`
-3. `src/core-kernel/native/rust-kernel-smoke.ts`
-4. `test/core-kernel/rust-migration/rkp-1a-property-cap-compatibility.test.ts` (new dedicated compatibility/native consumer test)
-5. `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts` (literal governance projection only)
+3. `src/core-kernel/codec/strict-input-capture.ts`
+4. `src/core-kernel/native/rust-kernel-smoke.ts`
+5. `test/core-kernel/cvn-3-strict-input.test.ts`
+6. `test/core-kernel/rust-migration/rkp-1a-property-cap-compatibility.test.ts`
+7. `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts`
 
-No other Rust, `src/**`, fixture, Node adapter, Cargo, package, tsconfig, toolchain, spec or test path may change. `strict-input-capture.ts` is explicitly read-only. Existing unit tests live in the two Rust owner files, so no second Rust test file is needed.
+No other Rust, `src/**`, fixture, Node adapter, Cargo, package, tsconfig, toolchain, spec or test path may change. In particular, `crates/brilliant-kernel-runtime/src/indices.rs` remains solely owned by the Stage-6 child and is excluded here. Existing Rust unit tests live in the two Rust owner files.
 
-## 9. Future lifecycle allowlist
+## 10. Future lifecycle allowlist
 
 Only child `task.json`, `operator-handoff.md`, `review-candidate.md`, future `research/implementation-evidence.md`, Rust parent `task.json`, RKP-2 `task.json`, and the current Stage-6 seam-repair `task.json` may record activation, gates, acceptance projection and blocker removal. Planning authority files freeze after independent planning PASS.
 
-## 10. Rejected routes
+## 11. Rejected routes
 
 - Excluding the envelope saves only two values and still rejects `1,199,233`; it also forks counting semantics.
 - A test/internal bypass creates a second admission path and cannot prove the product decoder.
 - Shrinking the stress fixture invalidates the frozen scale evidence.
 - A dynamic cap derived from fixture size destroys a stable public resource contract.
 
-## 11. Audited phase gates and rollback
+## 12. Audited phase gates and rollback
 
 P1 changes only `crates/brilliant-core-types/src/json.rs`. Contracts immediately imports the new limit, but its old exact-byte snapshot and the TypeScript native adapter still encode/accept the predecessor wire. P1 is therefore a deliberate bounded RED checkpoint, not a green integration candidate.
 
@@ -108,10 +138,16 @@ The exact P1 allowed RED set is:
 
 The operator records exact commands, test names and failure diffs. Any additional failing test, changed failure code, hang, resource regression or protected-path delta blocks P1. After the P1 commit the operator stops for an independent P1 implementation audit. P2 requires that audit to PASS and separate user authorization.
 
-P2 updates Contracts plus the native TypeScript validator and its dedicated compatibility test. P2 must make the allowed RED set green without widening failures elsewhere, then stops for an independent P2 implementation audit. P3 requires that audit to PASS and separate user authorization.
+P2 updated Contracts plus the native TypeScript failure-wire validator and dedicated compatibility test; exact head `0f65272951fd23080b6f536b2e58f50afe249b02` passed independent audit at `0/0/0`.
 
-Reverting P2 returns to the audited P1 RED checkpoint; it does not restore a green tree. Reverting P1 after that restores the former cap and old-wire green state. Reverting P3 removes integration evidence only. P4 is docs/evidence freeze only. RKP-2 E2 remains paused until independent final implementation PASS, owner acceptance/archive and explicit integration gates consume the accepted successor.
+P3A changes exactly five incremental technical paths: `strict-input-capture.ts`, `rust-kernel-smoke.ts`, `cvn-3-strict-input.test.ts`, the RKP-1A compatibility test and RKP-2 workspace-law. It adds the closed profile, selects it for both native create and response capture, and proves default/native cap-1/cap/cap+1 plus DAG/cloned create, public read and hostile accessor/proxy/cycle/depth/extra/malformed behavior. It stops for independent audit; P3B needs PASS and separate authorization. Reverting P3A returns to audited P2.
 
-## 12. Resume boundary
+P3B technically changes only the RKP-1A compatibility test; any necessary workspace-law projection is limited to its already allowlisted path. It uses the real decoder without bypass, raw and public native journeys, DAG and cloned inputs, repeated reads, exact SHA roles, semantic/extension equality, predecessor rejection, a 180-second isolated-process guard, one success sentinel, bounded cleanup and no partial publication. It records wall/RSS as diagnostics only. It stops for independent audit before P4.
 
-P0 through P4 remain separate commits. Neither P1 nor P2 audit is the final implementation acceptance audit. P3 consumer/stress work and P4 candidate freeze remain separately authorized future steps.
+Reverting P2 returns to the audited P1 RED checkpoint; reverting P1 after that restores the former cap and old-wire green state. P4 is docs/evidence freeze only. RKP-2 E2 remains paused until P3A, P3B, P4 and final independent implementation audit PASS, then owner acceptance/archive and explicit integration consume the accepted successor.
+
+## 13. Stage-6 follow-up ownership and resume boundary
+
+P0, P1 and P2 remain immutable audited history. P3A, P3B and P4 are separate commits and separate review gates; this amendment authorizes none of them.
+
+After accepted RKP-1A is archived and integrated into the Stage-6 descendant, Stage6 must create an independent docs-only authority amendment. It freezes semantic versus canonical equality, exactly one Store export, a primary encode plus verification encode, and the two SHA roles. After that amendment passes planning rereview, its technical allowlist is exactly `crates/brilliant-kernel-runtime/src/indices.rs` and `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts`. The seam removes raw-input-byte equality and proves semantic equality plus encode/decode/verification re-encode canonical equality; `canonicalBytesEqual` means Rust canonical encode equals verification re-encode. E1R2 then needs independent implementation audit PASS before separate authorization can resume E2.

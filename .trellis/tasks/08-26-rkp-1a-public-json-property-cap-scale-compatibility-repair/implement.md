@@ -2,12 +2,12 @@
 
 ## 0. Phase gate
 
-This file is planning authority only. Do not run `task.py start` until an independent planning audit returns P0/P1/P2=`0/0/0` and the user separately authorizes implementation.
+P0, P1 and P2 are complete and independently audited; exact P2 head is `0f65272951fd23080b6f536b2e58f50afe249b02`. This docs-only authority amendment does not authorize P3A, P3B or P4. Do not run `task.py start` again.
 
 Before every phase:
 
 1. verify exact accepted planning HEAD, branch, clean worktree and staged-empty state;
-2. verify the five technical and seven lifecycle paths are the complete allowlists;
+2. verify the seven cumulative technical and seven lifecycle paths are the complete allowlists;
 3. verify archived RKP-1 and the frozen stress fixture are byte-zero;
 4. use session-only `TEMP`, `TMP` and `CARGO_TARGET_DIR` under `E:\desktop\brilliant_ideas\brilliant_guitar\.worktrees\.scratch\rkp1a-property-cap`, with `CARGO_INCREMENTAL=0`;
 5. stage only the current phase and run `git diff --check`.
@@ -60,24 +60,44 @@ Owners: `crates/brilliant-kernel-contracts/src/codec.rs`, `src/core-kernel/nativ
 
 Commit: `fix(rkp-1a): align strict decoder resource contract`.
 
-Gate: Contracts/Core Types focused tests, fake/real native successor mapping, exact wire snapshots, fmt/check/clippy/MSRV and protected-path checks must be green. Then stop for a dedicated independent P2 implementation audit. Only PASS plus separate user authorization permits P3.
+Historical gate: Contracts/Core Types focused tests, fake/real native successor mapping, exact wire snapshots, fmt/check/clippy/MSRV and protected-path checks were green; exact P2 head passed dedicated independent audit. The amended P3A still requires targeted planning PASS plus separate user authorization.
 
 Rollback: revert P2 to the independently audited P1 bounded RED state. A second rollback of P1 is required to restore the old-cap/old-wire green state.
 
-## P3 — consumers and frozen real-decoder proof
+## P3A — TypeScript native-wire capture profile repair
 
 Owners:
 
+- `src/core-kernel/codec/strict-input-capture.ts`;
+- `src/core-kernel/native/rust-kernel-smoke.ts`;
+- `test/core-kernel/cvn-3-strict-input.test.ts`;
 - `test/core-kernel/rust-migration/rkp-1a-property-cap-compatibility.test.ts`;
 - `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts`.
 
-Extend the P2 dedicated test with the existing `createStressCvn7Score()` without modifying its source, assert exact Event/Note counts and exact bytes, build the public create envelope and pass it through the real native create path. Then prove repeated detached read/export canonical parity, unknown score/Part extension payload preservation and consumer compatibility across Foundation, Runtime, Session and Node.
+- Keep `captureStrictInput` as the sole capture implementation and limit/profile owner. Add the closed `default | native-wire-v1` profile union; default is `1_048_576`, native is `1_572_864`. Callers select a profile and never repeat a number.
+- Select `native-wire-v1` for both create-document capture and native response capture. Preserve create overflow as `bridge.capture-invalid` and response overflow/malformed as `bridge.internal`.
+- Prove default and native cap-1/cap/cap+1; DAG and JSON-cloned create; public read; accessor/proxy/cycle/depth/extra/malformed handling; 64 MiB caps; no new failure/export/DTO.
+- Freeze document/create/read Rust-value, TS-member and byte counts, including DAG WeakMap count `1,045,635` and cloned-tree count `1,199,232`.
 
-Workspace-law freezes the accepted planning interval, exact technical/lifecycle allowlists, single cap authority and protected paths. It also asserts two Node exports, 22 stable failures, public `28/51/8/34/9`, `brilliant-score-1` and TypeScript default.
+Workspace-law freezes the accepted amended planning interval, exact seven technical/seven lifecycle allowlists, single Rust cap authority and closed capture profiles. It also asserts two Node exports, 22 stable failures, public `28/51/8/34/9`, `brilliant-score-1`, TypeScript default and excluded `indices.rs`.
 
-Commit: `test(rkp-1a): prove frozen scale request compatibility`.
+Commit: `fix(rkp-1a): add native wire capture profile`.
 
-Gate: focused compiled test on current Node and Node 20.20.2, native bridge, full dynamic runner with identical manifest/hash/totals, Rust workspace gates and protected zero-delta. Rollback: revert P3 only.
+Gate: focused capture/native/workspace-law tests on current Node and Node 20.20.2, native bridge, full dynamic runner, protected zero-delta and exact default-byte behavior. Stop for dedicated independent P3A implementation audit. P3B requires PASS and separate user authorization. Rollback: revert P3A exactly to audited P2.
+
+## P3B — frozen consumer proof
+
+Technical owner: `test/core-kernel/rust-migration/rkp-1a-property-cap-compatibility.test.ts`; a necessary workspace-law projection may only use its already allowlisted workspace-law path.
+
+- Consume `createStressCvn7Score()` read-only; assert exact entity/extension/value/member/byte facts for direct DAG and JSON-cloned equivalent trees.
+- Pass the unchanged request through real `decode_create_request` and both raw/public native create/read/export journeys with no bypass, slicing or field removal.
+- Assert input SHA `5a8a318e58bc08a82a822c166ed11239ed4ed7b9ea45d50bb7dcb81d7c57f91e`, Rust canonical export SHA `4d8597437cc8b07df6cfef9400086218636adb27257ad72d055e1e3a3deafff7`, semantic deep equality, repeated raw/public read stability and 18/16/1 extension preservation. Do not assert raw input bytes equal Rust output bytes.
+- Prove the predecessor cap rejects the same request deterministically at `1_048_576/1_048_577` without rewriting history.
+- Use an isolated child process, 180-second liveness guard, one versioned success sentinel, bounded cleanup and fail-closed timeout/nonzero/malformed/missing output with zero partial publication. Record wall/RSS only as non-qualification diagnostics; do not run 10,000 submit/replay.
+
+Commit: `test(rkp-1a): prove frozen stress request through real consumers`.
+
+Gate: focused current/Node20 raw and public journey, native bridge, full dynamic runner with identical manifest/hash/totals, Rust workspace gates, exact hashes and protected zero-delta. Stop for dedicated independent P3B implementation audit. P4 requires PASS and separate authorization. Rollback: revert P3B only, retaining audited P3A.
 
 ## P4 — candidate freeze
 
@@ -103,4 +123,4 @@ Commit: `docs(rkp-1a): freeze property cap repair candidate`.
 - implementation-base-to-HEAD literal allowlist and all protected paths zero
 - final clean/staged empty
 
-Only an accepted, archived and explicitly integrated RKP-1A descendant may remove `public-json-property-cap-contract-conflict` and restore RKP-2 E2.
+Only an accepted, archived and explicitly integrated RKP-1A descendant may begin a separate Stage-6 docs-only authority amendment. That amendment freezes semantic/canonical roles, one Store export, primary plus verification encode, and exactly `indices.rs` plus workspace-law as its technical allowlist. After planning PASS, E1R2 implementation and independent audit PASS, E2 still requires separate authorization.

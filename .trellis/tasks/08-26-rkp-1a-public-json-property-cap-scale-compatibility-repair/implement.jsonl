@@ -3,10 +3,13 @@
 {"file":".trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/design.md","reason":"Preserve Architecture Reset V2 default-runtime and staged Rust migration boundaries."}
 {"file":".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/design.md","reason":"Read immutable RKP-1 property, depth, byte-cap and StableFailure predecessor authority."}
 {"file":".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/research/workspace-contract-and-bridge-freeze.md","reason":"Preserve wider decoder-stage precedence, native bridge and compatibility freeze."}
-{"file":".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/design.md","reason":"Implement the exact successor cap, ownership, resource and consumer contract."}
-{"file":".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/implement.md","reason":"Follow P0 through P4 as separate rollback commits and stop at implementation review."}
-{"file":".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/research/root-cause-and-exact-node-count.md","reason":"Use exact value-count and headroom evidence; do not treat first overflow as total."}
-{"file":".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/research/file-test-ownership-matrix.md","reason":"Enforce literal technical and lifecycle allowlists and test ownership."}
-{"file":"src/core-kernel/native/rust-kernel-smoke.ts","reason":"Update only the existing native property-limit wire validator to the exact successor limit during P2."}
-{"file":"src/core-kernel/codec/strict-input-capture.ts","reason":"Read the independent TypeScript member/element-count contract and preserve its 1048576 limit byte-zero."}
+{"file":".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/design.md","reason":"Implement the exact successor cap, closed capture profiles, canonical roles, ownership and resource contract."}
+{"file":".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/implement.md","reason":"Preserve audited P0-P2, then follow separately reviewed P3A, P3B and P4 rollback commits."}
+{"file":".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/research/root-cause-and-exact-node-count.md","reason":"Use exact Rust-value, TypeScript-member, DAG, cloned-tree, byte and SHA evidence."}
+{"file":".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/research/file-test-ownership-matrix.md","reason":"Enforce seven cumulative technical paths, seven lifecycle paths and separate P3A/P3B ownership."}
+{"file":"src/core-kernel/native/rust-kernel-smoke.ts","reason":"During P3A select native-wire-v1 for both create-document and read-response capture without new wire failures."}
+{"file":"src/core-kernel/codec/strict-input-capture.ts","reason":"During P3A keep the default profile at 1048576 and add the sole native-wire-v1 profile at 1572864."}
+{"file":"test/core-kernel/cvn-3-strict-input.test.ts","reason":"During P3A prove default/native boundaries and hostile capture behavior without changing the default contract."}
+{"file":"test/core-kernel/rust-migration/rkp-1a-property-cap-compatibility.test.ts","reason":"Prove P3A DAG/cloned capture and P3B real decoder, SHA-role and semantic consumer contracts."}
+{"file":"test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts","reason":"Mechanically freeze the amended planning interval, seven-path allowlist and excluded Stage6 indices owner."}
 {"file":".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/task.json","reason":"Keep E1/E1R green and E2 blocked until the accepted successor is integrated."}

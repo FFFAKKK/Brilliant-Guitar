@@ -2,7 +2,7 @@
 
 ## Verdict
 
-The first independent planning audit returned P0/P1/P2=`0/3/1`. This bounded repair closes all four findings without implementation or allowlist expansion beyond the audited correction.
+The first independent planning audit returned P0/P1/P2=`0/3/1` and its bounded repair passed. P0-P2 are complete and independently audited. A later uncommitted P3 attempt was reverted; root-cause audit returned P0/P1/P2=`0/2/0` for missing native capture-profile ownership and an incorrect raw-byte canonical assumption. This bounded amendment closes both findings without production/test changes.
 
 Current self-audit P0/P1/P2=`0/0/0`. This is not an independent verdict. Targeted independent planning rereview remains pending.
 
@@ -15,12 +15,14 @@ Current self-audit P0/P1/P2=`0/0/0`. This is not an independent verdict. Targete
 - Old/new migration boundaries and exact failure bytes are testable.
 - Scan-only, zero retention, bounded fault slots and linear traversal are retained.
 - The frozen fixture is read-only and only the real decoder/native path can unblock E2.
-- Five technical paths and seven lifecycle paths are literal; `rust-kernel-smoke.ts` is the added wire consumer and no wildcard exists.
-- `strict-input-capture.ts` remains read-only at a distinct member/element-count contract.
+- Seven cumulative technical paths and seven lifecycle paths are literal; no wildcard exists and `indices.rs` is excluded.
+- `captureStrictInput` is the sole profile owner: default `1,048,576`, native-wire-v1 `1,572,864`; create and response captures both select native without repeated numeric call-site constants.
+- Exact Rust-value/TS-member counts distinguish DAG sharing from the JSON-cloned tree.
+- Canonical evidence assigns distinct fixed input/export SHAs, Foundation BTreeMap ordering and semantic equality; it does not require raw input bytes to equal export bytes.
 - Archived RKP-1 is immutable and no active spec is promoted.
 - P1 and P2 have separate independent implementation audits; P1's exact bounded RED set and two-step rollback are executable.
-- P0–P4 remain separate rollback commits.
-- Planning/start/production authorization/candidate readiness remain false; E2 remains false; TypeScript remains default.
+- P0-P2 remain accepted audited history. P3A, P3B and P4 are separate rollback commits and separate independent audit gates.
+- Task remains in progress, but P3A/P3B/P4 authorization and candidate readiness remain false; E2 remains false; TypeScript remains default.
 
 ## Severity accounting
 
@@ -36,4 +38,4 @@ The bounded-repair working tree rerun used the same 78-file manifest and reporte
 
 ## Review focus
 
-Targeted rereview should verify the fifth native TypeScript owner, the read-only strict-input distinction, exact P1 bounded RED set and independent audit stop, P2-to-P3 audit gate/two-step rollback, current lifecycle projections, and corrected workspace-law path attribution.
+Targeted rereview should verify the closed capture profile, both native capture call sites, exact DAG/cloned/read counts, distinct canonical SHA roles, P3A/P3B audit stops, seven-path allowlist, excluded `indices.rs`, Stage6 follow-up ownership and current lifecycle projections.

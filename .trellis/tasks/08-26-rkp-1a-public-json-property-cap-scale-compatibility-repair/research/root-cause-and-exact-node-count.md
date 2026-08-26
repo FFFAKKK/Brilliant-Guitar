@@ -2,7 +2,9 @@
 
 ## Classification
 
-Independent root-cause audit returned P0/P1/P2=`0/1/0`: RKP-2 E2 must remain paused until a versioned public JSON property-cap successor is accepted. This is not a fixture, E1 seam, qualification-method or disk-space defect.
+The original independent root-cause audit returned P0/P1/P2=`0/1/0`: RKP-2 E2 must remain paused until a versioned public JSON property-cap successor is accepted. P0-P2 closed that Rust/wire boundary and passed independent audits.
+
+A later P3 attempt was not committed and was fully reverted. Its independent root-cause audit returned P0/P1/P2=`0/2/0`: the remaining blockers are (1) the native TypeScript capture profile still uses the default `1,048,576` member/element cap and (2) the attempted evidence equated raw input bytes with Foundation-canonical exported bytes. Neither finding is a fixture, E1 seam, qualification-method or disk-space defect.
 
 The live threshold is `JSON_PROPERTY_LIMIT=1,048,576`. `StrictState` stops retaining at the first value beyond it and therefore reports `actual=1,048,577`; that value is the first overflow observation, not total input size.
 
@@ -29,7 +31,28 @@ Document decomposition:
 | extensions | 166 |
 | total | 1,199,233 |
 
-Frozen size facts are `102,400` Events, `51,200` Notes, `15,013,904` canonical score bytes and `15,013,932` create-request bytes.
+Frozen size facts are `102,400` Events, `51,200` Notes, `15,013,904` input score bytes and `15,013,932` create-request bytes. Rust canonical export is also `15,013,904` bytes but has a distinct SHA and payload-object key order.
+
+## TypeScript capture counts
+
+TypeScript capture counts members/elements rather than Rust JSON values. Rust counts the root value, so each projection has exactly one more value than TypeScript members:
+
+| Projection | Rust values | TypeScript members | Bytes |
+| --- | ---: | ---: | ---: |
+| document | `1,199,233` | `1,199,232` | `15,013,904` input |
+| create request | `1,199,235` | `1,199,234` | `15,013,932` |
+| read response | `1,199,245` | `1,199,244` | `15,014,112` raw payload |
+
+The response wrapper adds twelve edges. The direct fixture is a shared-reference DAG; WeakMap capture sees only `1,045,635` members and therefore accidentally fits the default cap. A JSON-cloned equivalent tree has `1,199,232` members and fails before native code under the predecessor profile. Both forms are required evidence.
+
+## Canonical byte roles
+
+The input and Rust export are both `15,013,904` bytes and semantically equal. Their first difference is zero-based `15,011,087` / one-based `15,011,088` at `$.extensions[0].payload`: input order is `marker` then `generatorVersion`; Foundation `BTreeMap` canonical order is `generatorVersion` then `marker`.
+
+- input SHA-256: `5a8a318e58bc08a82a822c166ed11239ed4ed7b9ea45d50bb7dcb81d7c57f91e`;
+- Rust canonical export SHA-256: `4d8597437cc8b07df6cfef9400086218636adb27257ad72d055e1e3a3deafff7`.
+
+The input hash is not a Foundation canonical hash. The correct proof is semantic equality plus Rust encode/decode/re-encode canonical equality.
 
 ## Successor value
 

@@ -40,7 +40,7 @@
     "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "IN_PROGRESS / ACCEPTED PLANNING AUTHORITY D638B81 / E0 COMPLETE / E1+E1R GREEN / E2-E3 NOT STARTED / EXTERNAL BLOCKER PUBLIC JSON PROPERTY CAP CONTRACT CONFLICT / RKP-2 OPERATIONALLY PAUSED / RKP-1A PLANNING PASS 0/0/0 P0 ACTIVATED P1 AUDITED PASS 0/0/0 AND P2 SUCCESSOR WIRE COMPLETE / P2 INDEPENDENT IMPLEMENTATION AUDIT IS NEXT / TYPESCRIPT DEFAULT.",
+  "notes": "IN_PROGRESS / ACCEPTED PLANNING AUTHORITY D638B81 / E0 COMPLETE / E1+E1R GREEN / E2-E3 NOT STARTED / EXTERNAL BLOCKER PUBLIC JSON PROPERTY CAP CONTRACT CONFLICT / RKP-2 OPERATIONALLY PAUSED / RKP-1A P0-P2 COMPLETE AND AUDITED 0/0/0 / UNCOMMITTED P3 ATTEMPT REVERTED / P3A CAPTURE PROFILE + P3B CANONICAL CONSUMER AMENDMENT TARGETED PLANNING REREVIEW PENDING / TYPESCRIPT DEFAULT.",
   "meta": {
     "planning_base_commit": "4a302bc9f9981940336fc97941b08e09bd0d1f67",
     "source_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -101,7 +101,7 @@
       "code": "public-json-property-cap-contract-conflict",
       "task": "08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair",
       "planning_base": "639e93555c15b46c54c8e9bb7ec610d4a77c7478",
-      "root_cause_audit": "P0_0_P1_1_P2_0",
+      "root_cause_audit": "P0_0_P1_2_P2_0_P3_capture_profile_and_canonical_role",
       "status": "in_progress",
       "independent_planning_review": "passed",
       "first_independent_planning_review": "c02c830_return_0_3_1_for_bounded_planning_repair",
@@ -109,15 +109,20 @@
       "accepted_planning_head": "1cd0caadff218c1471f67cdf1a1ab78f5653a605",
       "task_start_run": true,
       "production_implementation_authorized": true,
-      "user_implementation_authorization_scope": "P0_P1_and_P2_only_P3_not_authorized",
+      "user_implementation_authorization_scope": "P0_P1_and_P2_only_P3A_P3B_P4_not_authorized",
       "p0_activation_completed": true,
       "p1_core_types_completed": true,
       "p1_state": "bounded_RED_complete_exact_two_allowed_failures_zero_extra",
       "p1_independent_implementation_audit": "passed_712c6db_P0_0_P1_0_P2_0",
       "p2_contracts_native_successor_wire_completed": true,
       "p2_state": "both_bounded_REDs_green_zero_extra_failures",
-      "p2_independent_implementation_audit": "pending",
-      "p3_started": false
+      "p2_independent_implementation_audit": "passed_0f652729_P0_0_P1_0_P2_0",
+      "p3_attempt": "no_commit_reverted_clean",
+      "p3a_started": false,
+      "p3b_started": false,
+      "p4_started": false,
+      "targeted_planning_rereview": "pending",
+      "follow_up_order": "P3A_audit_then_P3B_audit_then_P4_final_audit_accept_archive_integrate_then_stage6_docs_authority_amendment_planning_review_E1R2_audit_then_separate_E2_authorization"
     },
     "e3_candidate_freeze_started": false,
     "root_cause_audit": {
@@ -223,7 +228,7 @@
       "E2_unique_request_worker_protocol_and_first_real_stress_run",
       "E3_fresh_request_formal_evidence_and_candidate_freeze"
     ],
-    "next_gate": "rkp1a-P2-independent-implementation-audit",
+    "next_gate": "rkp1a-targeted-P3A-P3B-planning-rereview",
     "archive_authorized": false,
     "push_authorized": false,
     "default_runtime_switch_authorized": false,

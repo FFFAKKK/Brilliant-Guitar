@@ -5,8 +5,9 @@
 - Accepted planning authority: `1cd0caadff218c1471f67cdf1a1ab78f5653a605`.
 - P0 activation: `39e91e86bf696a30cc77b42bd1ec5e2ae6cc4fbe`.
 - P1 technical candidate: `712c6dbb0b7556b4c345fab9ad8215fdbcec6990`; independent implementation audit PASS at P0/P1/P2=`0/0/0`.
-- P2 technical candidate: the next single commit after audited P1; its exact hash is reported after commit and does not replace either audited planning or P1 heads.
-- P3-P4, RKP-2 Stage6 E2, acceptance, archive, integration and default cutover are not authorized.
+- P2 technical candidate and audited head: `0f65272951fd23080b6f536b2e58f50afe249b02`; independent implementation audit PASS at P0/P1/P2=`0/0/0`.
+- A later P3 attempt created no commit and was fully reverted. Root-cause audit returned `0/2/0` for native capture-profile admission and canonical-byte role drift.
+- P3A/P3B/P4, RKP-2 Stage6 E2, acceptance, archive, integration and default cutover are not authorized.
 
 ## P1 technical change
 
@@ -59,6 +60,10 @@ P2 changes exactly three technical paths: Contracts codec tests/wire samples, th
 
 The current checkout's full Runtime unit run exposes four known CRLF source-self-introspection failures in unchanged Runtime files. Final P2 evidence therefore uses the accepted LF detached-checkout gate; no Runtime source or test is modified.
 
+## P3 amendment boundary
+
+The amendment splits future work into P3A and P3B. P3A owns only the closed TypeScript capture profile and its create/read call sites/tests. P3B owns only frozen real-consumer evidence, with distinct input/export SHA roles and semantic equality. `indices.rs`, fixture, TypeScript encoder and Foundation BTreeMap stay byte-zero. No P3 evidence has been committed.
+
 ## Rollback and next gate
 
-The P2 commit is a single direct child of audited P1 head `712c6dbb0b7556b4c345fab9ad8215fdbcec6990`. Reverting only P2 restores the exact audited P1 tree and therefore the same two bounded REDs; reverting P1 after that restores the old cap and old-wire green state. Stop for independent P2 implementation audit. Only PASS plus separate user authorization may begin P3.
+The P2 commit is a single direct child of audited P1 head `712c6dbb0b7556b4c345fab9ad8215fdbcec6990`. Reverting only P2 restores the exact audited P1 tree and therefore the same two bounded REDs; reverting P1 after that restores the old cap and old-wire green state. P2 audit passed. The current gate is targeted planning rereview of this P3A/P3B amendment; only PASS plus separate user authorization may begin P3A.
