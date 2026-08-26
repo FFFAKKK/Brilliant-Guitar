@@ -2,10 +2,10 @@
   "id": "rkp-1a-public-json-property-cap-scale-compatibility-repair",
   "name": "rkp-1a-public-json-property-cap-scale-compatibility-repair",
   "title": "RKP-1A Public JSON Property-Cap Scale Compatibility Repair",
-  "description": "Implement the independently accepted bounded public JSON property-cap compatibility successor through the separately gated P0 and P1 checkpoints.",
+  "description": "Implement the independently accepted bounded public JSON property-cap compatibility successor through the separately audited P0, P1 and P2 checkpoints.",
   "status": "in_progress",
   "dev_type": "bugfix",
-  "scope": "P0 activation plus P1 Core Types single-authority bounded RED checkpoint only; P2-P4, E2 resume, qualification and lifecycle acceptance remain unauthorized.",
+  "scope": "P0 activation, audited P1 Core Types bounded RED and P2 Contracts/native successor-wire closure only; P3-P4, E2 resume, qualification and lifecycle acceptance remain unauthorized.",
   "package": "core-kernel",
   "priority": "P1",
   "creator": "ATOM",
@@ -43,7 +43,7 @@
     "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "IN_PROGRESS / ACCEPTED PLANNING HEAD 1CD0CAA PASS 0/0/0 / P0 COMMIT 39E91E8 / P1 CORE TYPES COMPLETE AS EXACT TWO-ITEM BOUNDED RED / INDEPENDENT P1 IMPLEMENTATION AUDIT REQUIRED / P2-P4 NOT AUTHORIZED / STAGE6 SEAM E1+E1R GREEN E2 NOT STARTED / RKP-2 OPERATIONALLY PAUSED / TYPESCRIPT DEFAULT.",
+  "notes": "IN_PROGRESS / ACCEPTED PLANNING HEAD 1CD0CAA PASS 0/0/0 / P0 COMMIT 39E91E8 / P1 AUDITED HEAD 712C6DB PASS 0/0/0 / P2 CONTRACTS AND NATIVE SUCCESSOR WIRE COMPLETE WITH BOTH BOUNDED REDS GREEN / INDEPENDENT P2 IMPLEMENTATION AUDIT REQUIRED / P3-P4 NOT AUTHORIZED / STAGE6 SEAM E1+E1R GREEN E2 NOT STARTED / RKP-2 OPERATIONALLY PAUSED / TYPESCRIPT DEFAULT.",
   "meta": {
     "planning_base_commit": "639e93555c15b46c54c8e9bb7ec610d4a77c7478",
     "source_branch": "codex/rkp-2-stage-6-private-scale-evidence-seam-repair",
@@ -52,7 +52,7 @@
     "task_start_run": true,
     "production_implementation_authorized": true,
     "user_implementation_authorization": true,
-    "user_implementation_authorization_scope": "P0_activation_and_P1_core_types_bounded_red_checkpoint_only_P2_through_P4_not_authorized",
+    "user_implementation_authorization_scope": "P0_activation_P1_core_types_bounded_red_and_P2_contracts_native_successor_wire_only_P3_P4_not_authorized",
     "independent_planning_review": "passed",
     "targeted_independent_planning_rereview": "passed",
     "accepted_planning_authority_head": "1cd0caadff218c1471f67cdf1a1ab78f5653a605",
@@ -83,8 +83,15 @@
     "p0_activation_commit": "39e91e86bf696a30cc77b42bd1ec5e2ae6cc4fbe",
     "p1_core_types_started": true,
     "p1_core_types_completed_as_bounded_red": true,
-    "p1_core_types_candidate_commit": "this_phase_commit_exact_hash_reported_after_commit",
-    "p1_independent_implementation_audit": "pending",
+    "p1_core_types_candidate_commit": "712c6dbb0b7556b4c345fab9ad8215fdbcec6990",
+    "p1_independent_implementation_audit": "passed",
+    "p1_independent_implementation_audit_result": {
+      "candidate_commit": "712c6dbb0b7556b4c345fab9ad8215fdbcec6990",
+      "P0": 0,
+      "P1": 0,
+      "P2": 0,
+      "verdict": "pass_for_bounded_rkp1a_P2_implementation"
+    },
     "p1_bounded_red_evidence": {
       "core_types": "6_pass_0_fail_fmt_check_clippy_msrv_green_single_owner_1572864",
       "contracts": "15_pass_1_expected_fail_structural_rank_beats_source_order_for_compound_faults_actual_1572864_1572865_expected_1048576_1048577",
@@ -92,7 +99,18 @@
       "dirty_full_runner": "78_files_manifest_e4445a175cedaa34eaed455f48a98735ac2fa4808cc94314ff5148db6b6523d5_582_discovered_577_pass_1_expected_skip_4_fail_one_dirty_status_plus_three_expected_workspace_law_6_of_9",
       "extra_p1_failures": 0
     },
-    "p2_contracts_started": false,
+    "p2_contracts_started": true,
+    "p2_contracts_completed": true,
+    "p2_contracts_candidate_commit": "this_phase_commit_exact_hash_reported_after_commit",
+    "p2_independent_implementation_audit": "pending",
+    "p2_green_evidence": {
+      "contracts": "17_pass_0_fail_successor_boundaries_exact_wire_precedence_scan_only_and_resource_regressions_green",
+      "typescript_native": "2_pass_0_fail_fake_and_real_successor_wire_preserved_predecessor_extra_missing_and_wrong_type_fail_closed_to_bridge_internal",
+      "bounded_reds_closed": 2,
+      "extra_p2_failures": 0
+    },
+    "p3_consumers_started": false,
+    "p4_candidate_freeze_started": false,
     "root_cause_audit": {
       "P0": 0,
       "P1": 1,
@@ -186,6 +204,6 @@
     },
     "bounded_planning_repair_candidate": "1cd0caadff218c1471f67cdf1a1ab78f5653a605",
     "planning_validation": "trellis_four_tasks_pass_json_jsonl_27_paths_unique_hash9_parent_once_fences_diffcheck_planning_range15_protected0_typecheck_build_pass_dirty_full_78_files_manifest_e4445a175cedaa34eaed455f48a98735ac2fa4808cc94314ff5148db6b6523d5_582_discovered_577_pass_1_expected_skip_4_fail_one_dirty_status_plus_same_three_workspace_law_6_of_9_first_rkp1a_check_jsonl_clean_head_full_required_post_commit",
-    "next_gate": "independent_P1_implementation_audit_then_separate_P2_authorization"
+    "next_gate": "independent_P2_implementation_audit_then_separate_P3_authorization"
   }
 }

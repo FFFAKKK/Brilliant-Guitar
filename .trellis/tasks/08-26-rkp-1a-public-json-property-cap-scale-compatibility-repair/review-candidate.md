@@ -2,9 +2,9 @@
 
 ## Status
 
-P1 BOUNDED RED COMPLETE — INDEPENDENT IMPLEMENTATION AUDIT REQUIRED.
+P2 SUCCESSOR WIRE COMPLETE — INDEPENDENT IMPLEMENTATION AUDIT REQUIRED.
 
-Exact planning head `1cd0caadff218c1471f67cdf1a1ab78f5653a605` passed targeted independent planning rereview at P0/P1/P2=`0/0/0`. P0 and P1 are implemented as separate commits; P1 intentionally stops with exactly the two accepted RED observations. P2-P4 remain unauthorized.
+Exact planning head `1cd0caadff218c1471f67cdf1a1ab78f5653a605` passed targeted independent planning rereview at P0/P1/P2=`0/0/0`. Exact P1 head `712c6dbb0b7556b4c345fab9ad8215fdbcec6990` passed independent implementation audit at `0/0/0`. P2 is a single child commit that makes both bounded REDs GREEN and now stops for independent P2 audit; P3-P4 remain unauthorized.
 
 ## Candidate claims
 
@@ -17,20 +17,22 @@ Exact planning head `1cd0caadff218c1471f67cdf1a1ab78f5653a605` passed targeted i
 7. P1 and P2 each stop for independent implementation audit; P2 rollback returns to audited P1 RED, not directly to a green predecessor.
 8. The first planning review P0/P1/P2=`0/3/1` is recorded and bounded; exact repaired head `1cd0caa...` passed targeted rereview at `0/0/0`.
 
-## Planning range
+## P2 range
 
-Relative to `639e93555c15b46c54c8e9bb7ec610d4a77c7478`, the exact planning allowlist is 12 child artifacts plus three task-state projections. Production, tests, Cargo/package/tsconfig/toolchain, active specs and archived authorities are zero-delta.
+Relative to audited P1 head `712c6dbb0b7556b4c345fab9ad8215fdbcec6990`, the exact P2 technical range is `crates/brilliant-kernel-contracts/src/codec.rs`, `src/core-kernel/native/rust-kernel-smoke.ts` and `test/core-kernel/rust-migration/rkp-1a-property-cap-compatibility.test.ts`, plus the seven accepted lifecycle/evidence paths. Core Types, strict-input capture, workspace-law, fixture, Runtime/Session/Node native source, Cargo/package/tsconfig/toolchain, specs and archives are byte-zero.
 
 ## Audit focus
 
 - Recompute the node-count table and headroom.
 - Confirm one live authority and exact failure precedence.
 - Challenge inclusive edges, exact actual semantics and bounded scan-only behavior.
-- Confirm P1's exact bounded RED allowlist, audit stop and two-step rollback; confirm P2 audit gates P3.
+- Confirm both P1 bounded REDs are GREEN and the P2 audit gates P3.
 - Confirm the native TypeScript wire consumer changes while `strict-input-capture.ts` remains read-only.
 - Confirm P3 proves real decoder/native behavior without a second fixture or admission path.
 - Confirm RKP-2 S6.2/S6.3 remain false and all lifecycle permissions stay closed.
-- Verify that `json.rs` is the only P1 technical path, `JSON_PROPERTY_LIMIT` has one production owner at `1_572_864`, Core Types is 6/6 green, Contracts has exactly one failing snapshot at `1572864/1572865` versus `1048576/1048577`, and the no-write fake-native diagnostic alone demonstrates the predecessor adapter downgrade to `bridge.internal`.
+- Verify `json.rs` is byte-zero relative to audited P1 and remains the sole `JSON_PROPERTY_LIMIT` owner at `1_572_864`; Contracts imports it directly and is 17/17. Verify new-cap inclusive/exclusive boundaries, exact `1572864/1572865` wire, depth→property→shape→number precedence, bounded scan-only retention and 64 MiB caps.
+- Verify the dedicated TypeScript test uses the production adapter: exact successor fake and real native envelopes preserve `codec.property-limit`, while predecessor, extra, missing and wrong-type variants remain `bridge.internal`; the real rejection publishes no handle.
+- Verify the P2 parent is exact audited P1, so reverting this one commit mechanically restores the two audited REDs; P1 rollback alone restores predecessor-wire green.
 
 ## Validation note
 
@@ -38,4 +40,4 @@ Typecheck/build pass. Clean source `639e935...` and planning candidate `c02c830.
 
 The first rejected path is not the same: source `639e935...` first rejects the unaccepted Stage-6 child `check.jsonl`; candidate `c02c830...` first rejects the unaccepted RKP-1A child `check.jsonl`. Both are expected fail-closed governance evidence; workspace-law remains byte-zero in this planning repair.
 
-At the dirty P1 checkpoint, the same manifest discovers 582 tests: 577 pass, 1 expected skip and 4 fail. One is only the clean-worktree assertion against uncommitted `json.rs`; the remaining three are the same expected workspace-law 6/9 failures. Clean-head full runner evidence is reported after the P1 commit.
+P2 focused evidence is GREEN: Core Types 6/6, Contracts 17/17 and the dedicated fake/real native compatibility suite 2/2. Clean-head full-runner totals and the E-only LF Rust checkout result are reported with the exact P2 commit; the same three unaccepted-child workspace-law failures remain separately attributed and are not relaxed.

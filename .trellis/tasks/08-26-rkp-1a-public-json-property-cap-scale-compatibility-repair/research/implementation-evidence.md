@@ -1,11 +1,12 @@
-# RKP-1A P0/P1 Implementation Evidence
+# RKP-1A P0/P1/P2 Implementation Evidence
 
 ## Fixed range
 
 - Accepted planning authority: `1cd0caadff218c1471f67cdf1a1ab78f5653a605`.
 - P0 activation: `39e91e86bf696a30cc77b42bd1ec5e2ae6cc4fbe`.
-- P1 technical candidate: the next single commit after P0; its exact hash is reported after commit and does not replace the audited planning head.
-- P2-P4, RKP-2 Stage6 E2, acceptance, archive, integration and default cutover are not authorized.
+- P1 technical candidate: `712c6dbb0b7556b4c345fab9ad8215fdbcec6990`; independent implementation audit PASS at P0/P1/P2=`0/0/0`.
+- P2 technical candidate: the next single commit after audited P1; its exact hash is reported after commit and does not replace either audited planning or P1 heads.
+- P3-P4, RKP-2 Stage6 E2, acceptance, archive, integration and default cutover are not authorized.
 
 ## P1 technical change
 
@@ -45,6 +46,19 @@ No other P1-specific failure occurred.
 
 The dirty P1 checkpoint prints `full-test-manifest-v1` for 78 files with SHA-256 `e4445a175cedaa34eaed455f48a98735ac2fa4808cc94314ff5148db6b6523d5`: 582 discovered, 577 passed, 1 expected skip and 4 failed. One failure is only the required clean-worktree assertion against the uncommitted `json.rs`; the other three are the pre-existing workspace-law 6/9 fail-closed results whose first rejected path is the unaccepted RKP-1A child `check.jsonl`. No product, codec or native TypeScript test newly fails. A clean-head full runner is required after the P1 commit.
 
+## P2 successor-wire closure
+
+P2 changes exactly three technical paths: Contracts codec tests/wire samples, the production TypeScript native failure validator and a new dedicated compatibility test. Contracts continues to import `brilliant_core_types::JSON_PROPERTY_LIMIT`; no second production constant or admission path exists.
+
+- RED before the native adapter edit: the new focused TypeScript suite ran 0/2. The exact successor envelope downgraded to `bridge.internal`, and the predecessor envelope was still accepted, proving the suite detects both under-acceptance and accidental dual-wire widening.
+- GREEN after P2: Core Types 6/6, Contracts 17/17, focused TypeScript fake+real native compatibility 2/2.
+- Successor boundary: `newCap-1` and `newCap` accept; `newCap+1` returns exact canonical `codec.property-limit` bytes with `limit=1_572_864` and `actual=1_572_865`.
+- Compatibility boundary: `oldCap` and `oldCap+1` now accept inside the shared Rust value-count cap. The TypeScript public native validator accepts only the successor wire; predecessor, extra, missing and wrong-type failure payloads remain exact `bridge.internal`.
+- Resource/precedence regression: depth→property→shape→number, duplicate/unique linearity, saturating overflow, zero post-limit retention, request/response 64 MiB caps and depth 64 remain covered by the Contracts package.
+- The real addon request is below 64 MiB, exceeds the successor property cap by exactly one counted value, returns no handle and preserves the exact successor failure through the production adapter.
+
+The current checkout's full Runtime unit run exposes four known CRLF source-self-introspection failures in unchanged Runtime files. Final P2 evidence therefore uses the accepted LF detached-checkout gate; no Runtime source or test is modified.
+
 ## Rollback and next gate
 
-Reverting P1 returns to P0 with the old cap and old-wire green state. The current P1 commit is not a final implementation candidate: stop for independent P1 implementation audit. Only PASS plus separate user authorization may begin P2.
+The P2 commit is a single direct child of audited P1 head `712c6dbb0b7556b4c345fab9ad8215fdbcec6990`. Reverting only P2 restores the exact audited P1 tree and therefore the same two bounded REDs; reverting P1 after that restores the old cap and old-wire green state. Stop for independent P2 implementation audit. Only PASS plus separate user authorization may begin P3.

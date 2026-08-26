@@ -42,7 +42,7 @@
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "RKP-2 IN_PROGRESS AND SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 SEAM CHILD IN_PROGRESS WITH E1+E1R GREEN / S6.2-S6.3 FALSE AND OPERATIONALLY PAUSED ON PUBLIC JSON PROPERTY CAP BLOCKER / RKP-1A PLANNING PASS 0/0/0 P0 ACTIVATED AND P1 CORE TYPES BOUNDED RED COMPLETE / P1 INDEPENDENT IMPLEMENTATION AUDIT IS NEXT / TYPESCRIPT DEFAULT / NO P2 CUTOVER PUSH QUALIFICATION OR RKP-3.",
+  "notes": "RKP-2 IN_PROGRESS AND SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 SEAM CHILD IN_PROGRESS WITH E1+E1R GREEN / S6.2-S6.3 FALSE AND OPERATIONALLY PAUSED ON PUBLIC JSON PROPERTY CAP BLOCKER / RKP-1A PLANNING PASS 0/0/0 P0 ACTIVATED P1 AUDITED PASS 0/0/0 AND P2 SUCCESSOR WIRE COMPLETE / P2 INDEPENDENT IMPLEMENTATION AUDIT IS NEXT / TYPESCRIPT DEFAULT / NO P3 CUTOVER PUSH QUALIFICATION OR RKP-3.",
   "meta": {
     "planning_base_commit": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "accepted_rkp1_audited_implementation_commit": "94387b339b5e4d9ce6b7f97597a1b56edd051f01",
@@ -309,7 +309,7 @@
       "post_pass_closeout_authorized": true,
       "stage_6_blocked_until_accepted_archived_integrated": false
     },
-    "next_gate": "rkp1a-P1-independent-implementation-audit",
+    "next_gate": "rkp1a-P2-independent-implementation-audit",
     "stage_6_started": true,
     "stage_6_authorized": true,
     "stage_6_completed": false,
@@ -349,7 +349,7 @@
       "implementation_stage": "E1_and_E1R_private_rust_seam_green_E2_not_started",
       "external_blocker": "public-json-property-cap-contract-conflict",
       "external_blocking_task": "08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair",
-      "next_gate": "rkp1a-P1-independent-implementation-audit"
+      "next_gate": "rkp1a-P2-independent-implementation-audit"
     },
     "part_owner_wire_contract_repair": {
       "child": "08-26-rkp-2-part-owner-wire-contract-repair",
@@ -402,14 +402,18 @@
       "accepted_planning_head": "1cd0caadff218c1471f67cdf1a1ab78f5653a605",
       "task_start_run": true,
       "production_implementation_authorized": true,
-      "user_implementation_authorization_scope": "P0_and_P1_only_P2_not_authorized",
+      "user_implementation_authorization_scope": "P0_P1_and_P2_only_P3_not_authorized",
       "p0_activation_completed": true,
       "p1_core_types_completed": true,
       "p1_state": "bounded_RED_complete_exact_two_allowed_failures_zero_extra",
-      "p1_independent_implementation_audit": "pending",
+      "p1_independent_implementation_audit": "passed_712c6db_P0_0_P1_0_P2_0",
+      "p2_contracts_native_successor_wire_completed": true,
+      "p2_state": "both_bounded_REDs_green_zero_extra_failures",
+      "p2_independent_implementation_audit": "pending",
+      "p3_started": false,
       "successor_limit": 1572864,
       "stage_6_e2_started": false,
-      "next_gate": "P1_independent_implementation_audit_then_separate_P2_authorization"
+      "next_gate": "P2_independent_implementation_audit_then_separate_P3_authorization"
     },
     "archive_authorized": false,
     "push_authorized": false,

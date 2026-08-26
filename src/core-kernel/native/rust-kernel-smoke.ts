@@ -199,7 +199,7 @@ function isFailure(value: unknown): value is StableFailureWireV1 {
     case "codec.depth-limit":
       return value.limit === 64 && isSafeNonNegativeInteger(value.actual);
     case "codec.property-limit":
-      return value.limit === 1_048_576 && isSafeNonNegativeInteger(value.actual);
+      return value.limit === 1_572_864 && isSafeNonNegativeInteger(value.actual);
     case "codec.number-out-of-range":
       return isStablePath(value.path);
     default:

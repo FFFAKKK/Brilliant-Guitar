@@ -1311,8 +1311,8 @@ mod tests {
                 actual: 65,
             },
             StableFailureV1::CodecPropertyLimit {
-                limit: 1_048_576,
-                actual: 1_048_577,
+                limit: 1_572_864,
+                actual: 1_572_865,
             },
             StableFailureV1::CodecNumberOutOfRange { path: root },
             StableFailureV1::BridgeHandleUnknown,
@@ -1619,6 +1619,56 @@ mod tests {
     }
 
     #[test]
+    fn property_limit_successor_wire_and_compatibility_boundaries_are_exact() {
+        fn state_after(node_count: usize) -> StrictState {
+            let mut state = StrictState::default();
+            let path = CanonicalPath::default();
+            for _ in 0..node_count {
+                state.observe_value(1, &path);
+            }
+            state
+        }
+
+        assert_eq!(JSON_PROPERTY_LIMIT, 1_572_864);
+        for accepted_count in [
+            1_048_576,
+            1_048_577,
+            JSON_PROPERTY_LIMIT - 1,
+            JSON_PROPERTY_LIMIT,
+        ] {
+            let state = state_after(accepted_count);
+            assert_eq!(state.nodes_visited, accepted_count as u64);
+            assert_eq!(state.property_fault, None);
+            assert_eq!(state.failure(), None);
+        }
+
+        let overflow = state_after(JSON_PROPERTY_LIMIT + 1);
+        assert_eq!(overflow.nodes_visited, 1_572_865);
+        assert_eq!(overflow.property_fault, Some(1_572_865));
+        let failure = overflow.failure().expect("successor property failure");
+        assert_eq!(
+            failure,
+            StableFailureV1::CodecPropertyLimit {
+                limit: JSON_PROPERTY_LIMIT as u64,
+                actual: JSON_PROPERTY_LIMIT as u64 + 1,
+            }
+        );
+        assert_eq!(
+            encode_create_result(&KernelSessionCreateResultV1::Rejected(failure))
+                .expect("successor property failure bytes"),
+            br#"{"apiVersion":1,"status":"rejected","failure":{"failureVersion":1,"code":"codec.property-limit","limit":1572864,"actual":1572865}}"#
+        );
+
+        let mut saturated = StrictState {
+            nodes_visited: u64::MAX,
+            ..StrictState::default()
+        };
+        saturated.observe_value(1, &CanonicalPath::default());
+        assert_eq!(saturated.nodes_visited, u64::MAX);
+        assert_eq!(saturated.property_fault, Some(1_572_865));
+    }
+
+    #[test]
     fn structural_candidates_are_order_independent_and_use_canonical_paths() {
         let forward = br#"{"apiVersion":1,"document":{"schemaVersion":"brilliant-score-1","id":false,"metadata":{"title":false,"authors":[],"tempo":{"bpm":120}},"measureDefinitions":[],"parts":[],"extensions":[]}}"#;
         let reversed = br#"{"document":{"extensions":[],"parts":[],"measureDefinitions":[],"metadata":{"tempo":{"bpm":120},"authors":[],"title":false},"id":false,"schemaVersion":"brilliant-score-1"},"apiVersion":1}"#;
@@ -1671,7 +1721,7 @@ mod tests {
         );
         assert_eq!(
             rejected_bytes(property_and_shape.as_bytes()),
-            br#"{"apiVersion":1,"status":"rejected","failure":{"failureVersion":1,"code":"codec.property-limit","limit":1048576,"actual":1048577}}"#
+            br#"{"apiVersion":1,"status":"rejected","failure":{"failureVersion":1,"code":"codec.property-limit","limit":1572864,"actual":1572865}}"#
         );
     }
 
