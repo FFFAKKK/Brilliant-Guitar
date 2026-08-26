@@ -90,6 +90,20 @@ const PART_OWNER_REPAIR_ACTIVE_ROOT =
   ".trellis/tasks/08-26-rkp-2-part-owner-wire-contract-repair";
 const PART_OWNER_REPAIR_ARCHIVE_ROOT =
   ".trellis/tasks/archive/2026-08/08-26-rkp-2-part-owner-wire-contract-repair";
+const STAGE_6_PREREQUISITE_HEAD =
+  "1bea1b4baeb6547e3a2b5cca645b2fe00d66abc7";
+const STAGE_6_TECHNICAL_PATHS = [
+  "test/core-kernel/rust-migration/rkp-2-live-score-store-parity.test.ts",
+  "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
+  "test/core-kernel/rust-migration/rkp-2-store-fixtures.ts",
+] as const;
+const STAGE_6_LIFECYCLE_PATHS = [
+  TASK_PATH,
+  ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/operator-handoff.md",
+  ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/review-candidate.md",
+  ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/research/implementation-evidence.md",
+  PARENT_PATH,
+] as const;
 const PLANNED_TRUTH_FIELDS = ["type", "data.file"] as const;
 
 const CRATES = [
@@ -471,6 +485,16 @@ function currentPartOwnerRepairChanges(): Set<string> {
   return new Set(commands.flatMap((args) => lines(git(args))));
 }
 
+function currentStage6Changes(): Set<string> {
+  const commands: readonly (readonly string[])[] = [
+    ["diff", "--name-only", `${STAGE_6_PREREQUISITE_HEAD}..HEAD`],
+    ["diff", "--name-only"],
+    ["diff", "--cached", "--name-only"],
+    ["ls-files", "--others", "--exclude-standard"],
+  ];
+  return new Set(commands.flatMap((args) => lines(git(args))));
+}
+
 function fullRunnerPlanningChangesAtContentHead(): Set<string> {
   return new Set(
     lines(
@@ -777,7 +801,11 @@ test("part owner repair stays anchored to its accepted six-path wire contract", 
   );
   for (const [path, expectedBlob] of Object.entries(PART_OWNER_REPAIR_ACCEPTED_TECHNICAL_BLOBS)) {
     assert.equal(git(["rev-parse", `${PART_OWNER_REPAIR_ACCEPTED_CANDIDATE}:${path}`]), expectedBlob);
-    if (path !== "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts") {
+    if (
+      !STAGE_6_TECHNICAL_PATHS.includes(
+        path as (typeof STAGE_6_TECHNICAL_PATHS)[number],
+      )
+    ) {
       assert.equal(readText(path), gitTextAt(PART_OWNER_REPAIR_ACCEPTED_CANDIDATE, path));
     }
   }
@@ -811,6 +839,98 @@ test("part owner repair stays anchored to its accepted six-path wire contract", 
   );
   assert.match(dto, /#\[serde\(rename = "partId"\)\]\s*part_id: StableId/gu);
   assert.doesNotMatch(dto, /serde\([^\]]*alias\s*=\s*"part_id"/gu);
+});
+
+test("Stage 6 hostile and resource evidence consumes the existing private Rust seams", () => {
+  assert.doesNotThrow(() =>
+    git(["cat-file", "-e", `${STAGE_6_PREREQUISITE_HEAD}^{commit}`]),
+  );
+  assert.doesNotThrow(() =>
+    git(["merge-base", "--is-ancestor", STAGE_6_PREREQUISITE_HEAD, "HEAD"]),
+  );
+  const task = JSON.parse(readText(TASK_PATH)) as {
+    meta?: { stage_6_completed?: unknown };
+  };
+  const stage6Changes = currentStage6Changes();
+  const allowed = new Set<string>([
+    ...STAGE_6_TECHNICAL_PATHS,
+    ...STAGE_6_LIFECYCLE_PATHS,
+  ]);
+  for (const path of stage6Changes) {
+    assert.equal(allowed.has(path), true, `unreviewed Stage 6 path: ${path}`);
+  }
+  assertExactPathSet(
+    new Set(
+      [...stage6Changes].filter((path) =>
+        STAGE_6_TECHNICAL_PATHS.includes(
+          path as (typeof STAGE_6_TECHNICAL_PATHS)[number],
+        ),
+      ),
+    ),
+    STAGE_6_TECHNICAL_PATHS,
+    "Stage 6 technical evidence",
+  );
+  if (task.meta?.stage_6_completed === true) {
+    assertExactPathSet(
+      stage6Changes,
+      [...STAGE_6_TECHNICAL_PATHS, ...STAGE_6_LIFECYCLE_PATHS],
+      "completed Stage 6 candidate",
+    );
+  }
+
+  const foundation = readText("crates/brilliant-score-foundation/src/validation.rs");
+  assert.match(foundation, /fn reserve_fault_precedes_latent_semantic_failure\(\)/u);
+  assert.match(
+    foundation,
+    /validate_score_document_with_reserve_fault\(&document\)[\s\S]*FoundationDecodeFailure::InternalCapacity/u,
+  );
+
+  const contracts = readText("crates/brilliant-kernel-contracts/src/codec.rs");
+  for (const proof of [
+    "foundation_capacity_failure_maps_to_existing_internal_wire_shape",
+    "response_writer_counts_all_bytes_and_never_retains_above_cap",
+    "response_cap_precedes_encode_failure_without_changing_internal_fallback",
+  ]) {
+    assert.match(contracts, new RegExp(`fn ${proof}\\(\\)`, "u"), proof);
+  }
+
+  const store = readText("crates/brilliant-kernel-runtime/src/store.rs");
+  assert.match(store, /fn stale_generation_is_rejected_and_key_types_are_nominally_distinct\(\)/u);
+  assert.match(store, /fn runtime_reserve_fault_returns_internal_capacity_without_store_publication\(\)/u);
+
+  const indices = readText("crates/brilliant-kernel-runtime/src/indices.rs");
+  for (const proof of [
+    "indices_cover_entity_owner_content_extension_and_core_references",
+    "indices_metrics_are_exact_and_linear_for_minimal_and_representative_stores",
+    "indices_voice_lookup_then_binary_time_queries_are_exact_and_half_open",
+    "indices_rebuild_normalizes_without_handles_and_corruption_never_passes_parity",
+  ]) {
+    assert.match(indices, new RegExp(`fn ${proof}\\(\\)`, "u"), proof);
+  }
+  for (const field of [
+    "entities_visited",
+    "topology_edges_visited",
+    "reference_edges_built",
+    "time_entries_built",
+    "entity_index_lookups",
+    "owner_index_lookups",
+    "time_index_comparisons",
+    "index_rebuild_entries",
+    "full_document_materializations",
+    "canonical_encode_bytes",
+  ]) {
+    assert.match(indices, new RegExp(`pub\\(crate\\) ${field}: usize`, "u"), field);
+  }
+  const metricsDeclaration = indices
+    .split("pub(crate) struct Rkp2StoreMetrics {")[1]
+    ?.split("}\n\n", 1)[0];
+  assert.ok(metricsDeclaration);
+  assert.doesNotMatch(metricsDeclaration, /full_document_lookup_scan/u);
+
+  const session = readText("crates/brilliant-kernel-session/src/session.rs");
+  assert.match(session, /fn private_runtime_factory_failures_publish_no_session_and_use_existing_failures\(\)/u);
+  const nodeBoundary = readText("crates/brilliant-kernel-node/src/boundary.rs");
+  assert.match(nodeBoundary, /fn request_cap_is_checked_on_borrowed_length_before_copy\(\)/u);
 });
 
 function assertFullRunnerLifecycleFixtures(): void {

@@ -5,10 +5,13 @@ import { test } from "node:test";
 import type { RustKernelSmokeNativeAddon } from "../../../src/core-kernel/native/rust-kernel-smoke";
 import {
   createPartOwnerExtensionRkp2StoreFixture,
+  createPaddedRkp2CreateRequest,
+  createRejectedRkp2StoreFixtureCatalog,
   createRkp2DuplicateIdFixture,
   createRkp2MissingStaffReferenceFixture,
   createRkp2StoreFixtureCatalog,
   createTopologyOptionalRkp2StoreFixture,
+  RKP2_REQUEST_BYTE_LIMIT,
 } from "./rkp-2-store-fixtures";
 
 interface RawNativeCreateResult {
@@ -253,4 +256,47 @@ test("native invalid TS fixtures keep existing stable failures and publish no ha
       failure: entry.failure,
     });
   }
+});
+
+test("native hostile schema, shape, value, and reference inputs fail closed", () => {
+  for (const fixture of createRejectedRkp2StoreFixtureCatalog()) {
+    const result = addon.createKernelSessionV1(canonicalCreateBytes(fixture.document));
+    assert.deepEqual(Object.keys(result), ["payload"], fixture.fixtureId);
+    assert.deepEqual(
+      JSON.parse(result.payload.toString("utf8")),
+      {
+        apiVersion: 1,
+        status: "rejected",
+        failure: fixture.failure,
+      },
+      fixture.fixtureId,
+    );
+  }
+});
+
+test("native request cap accepts exact bytes and rejects cap plus one before publication", () => {
+  const document = createPartOwnerExtensionRkp2StoreFixture().document;
+  const atCap = addon.createKernelSessionV1(
+    createPaddedRkp2CreateRequest(document, RKP2_REQUEST_BYTE_LIMIT),
+  );
+  assert.equal(
+    (JSON.parse(atCap.payload.toString("utf8")) as { status?: unknown }).status,
+    "created",
+  );
+  assert.ok(atCap.handle);
+
+  const overCap = addon.createKernelSessionV1(
+    Buffer.alloc(RKP2_REQUEST_BYTE_LIMIT + 1, 0x20),
+  );
+  assert.deepEqual(Object.keys(overCap), ["payload"]);
+  assert.deepEqual(JSON.parse(overCap.payload.toString("utf8")), {
+    apiVersion: 1,
+    status: "rejected",
+    failure: {
+      failureVersion: 1,
+      code: "bridge.request-too-large",
+      limitBytes: RKP2_REQUEST_BYTE_LIMIT,
+      actualBytes: RKP2_REQUEST_BYTE_LIMIT + 1,
+    },
+  });
 });

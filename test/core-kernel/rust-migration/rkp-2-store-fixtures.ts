@@ -9,6 +9,103 @@ export interface Rkp2StoreFixture {
   readonly document: ScoreDocument;
 }
 
+export interface Rkp2RejectedStoreFixture {
+  readonly fixtureId:
+    | "wrong-schema-v1"
+    | "wrong-shape-v1"
+    | "wrong-value-v1"
+    | "wrong-reference-v1";
+  readonly document: unknown;
+  readonly failure: Readonly<Record<string, unknown>>;
+}
+
+export const RKP2_REQUEST_BYTE_LIMIT = 64 * 1024 * 1024;
+
+export function createPaddedRkp2CreateRequest(
+  document: unknown,
+  byteLength: number,
+): Buffer {
+  const canonical = Buffer.from(
+    JSON.stringify({ apiVersion: 1, document }),
+    "utf8",
+  );
+  if (!Number.isSafeInteger(byteLength) || byteLength < canonical.length) {
+    throw new RangeError("requested byte length cannot contain canonical request");
+  }
+  const request = Buffer.alloc(byteLength, 0x20);
+  canonical.copy(request);
+  return request;
+}
+
+export function createRejectedRkp2StoreFixtureCatalog(): readonly Rkp2RejectedStoreFixture[] {
+  const wrongSchema = structuredClone(createMinimalRkp2StoreFixture().document) as unknown as {
+    schemaVersion: string;
+  };
+  wrongSchema.schemaVersion = "future-score";
+
+  const wrongShape = structuredClone(createMinimalRkp2StoreFixture().document) as unknown as {
+    metadata: { title?: string };
+  };
+  delete wrongShape.metadata.title;
+
+  const wrongValue = structuredClone(
+    createMinimalRkp2StoreFixture().document,
+  ) as unknown as { metadata: { tempo: { bpm: number } } };
+  wrongValue.metadata.tempo.bpm = 0;
+
+  const wrongReference = createRkp2MissingStaffReferenceFixture();
+
+  return [
+    {
+      fixtureId: "wrong-schema-v1",
+      document: wrongSchema,
+      failure: {
+        failureVersion: 1,
+        code: "score.unsupported-schema",
+        supportedSchema: "brilliant-score-1",
+      },
+    },
+    {
+      fixtureId: "wrong-shape-v1",
+      document: wrongShape,
+      failure: {
+        failureVersion: 1,
+        code: "codec.invalid-shape",
+        path: ["document", "metadata", "title"],
+        violation: "missing-field",
+      },
+    },
+    {
+      fixtureId: "wrong-value-v1",
+      document: wrongValue,
+      failure: {
+        failureVersion: 1,
+        code: "score.invalid-structure",
+        path: ["metadata", "tempo", "bpm"],
+        violation: "invalid-value",
+      },
+    },
+    {
+      fixtureId: "wrong-reference-v1",
+      document: wrongReference,
+      failure: {
+        failureVersion: 1,
+        code: "score.invalid-structure",
+        path: [
+          "parts",
+          0,
+          "measureContents",
+          0,
+          "voices",
+          0,
+          "defaultStaffId",
+        ],
+        violation: "invalid-reference",
+      },
+    },
+  ];
+}
+
 export function createPartOwnerExtensionRkp2StoreFixture(): Rkp2StoreFixture {
   const source = createTopologyOptionalRkp2StoreFixture().document;
   const document: ScoreDocument = {
