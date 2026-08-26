@@ -52,14 +52,14 @@ The two absent non-zero evidence write points are `full_document_materialization
 The seam reads `BRILLIANT_RKP2_SCALE_REQUEST_V1`, which must be a non-empty absolute existing regular-file path. The environment variable is visible only to the libtest child and is not a product fault hook. It reads bytes once and calls the real Contracts request decoder. It then performs:
 
 1. validated import and existing primary/index metric capture;
-2. `LiveScoreStore::lookup_entity("cvn7-e-00-0000-0-0", &mut entity_metrics)`, requiring `RuntimeEntityRef::Event` and exactly `entity_index_lookups` delta `1`;
-3. a fresh independent metrics snapshot followed by direct private `DerivedIndices::lookup_owner(runtime_entity_ref, &mut owner_metrics)`, requiring Voice owner `cvn7-v-00-0000-0`, exactly `owner_index_lookups` delta `1`, and every other counter delta `0`;
+2. construct `let stable_id = StableId::new("cvn7-e-00-0000-0-0").expect("stable evidence entity id")`, then execute `let entity_before = store.metrics; let entity = store.lookup_entity(&stable_id).expect("known evidence entity"); let entity_after = store.metrics;` and require `RuntimeEntityRef::Event`, `entity_index_lookups` delta `1`, and every other `Rkp2StoreMetrics` field delta `0`;
+3. execute `let mut owner_probe_metrics = Rkp2StoreMetrics::default(); let owner = store.indices.lookup_owner(entity, &mut owner_probe_metrics).expect("known evidence owner");`, requiring Voice owner `cvn7-v-00-0000-0`, `owner_probe_metrics.owner_index_lookups=1`, and every other field in `owner_probe_metrics=0`;
 4. `verify_index_parity`, capturing fresh rebuild metrics;
 5. exactly one `export_document` into a local value;
 6. exactly one `canonical_score_bytes` of that local value;
 7. local evidence assignments `full_document_materializations=1` and `canonical_encode_bytes=encoded.len()`.
 
-The second step must not call `LiveScoreStore::lookup_owner`, because that convenience path performs another entity lookup. Probe deltas are reported separately and do not alter the frozen import or rebuild totals.
+The second probe must not call `LiveScoreStore::lookup_owner`, because that convenience path performs another entity lookup. `entityProbe` is derived only from `entity_before/entity_after`; `ownerProbe` is derived only from `owner_probe_metrics`. They are separate internal-sentinel records and do not alter the frozen import or rebuild totals.
 
 The exported DTO and encoded bytes live only for the test. The two local fields are never written back into `KernelRuntime`, `LiveScoreStore`, an atomic/global, interior-mutability cell or another retained owner.
 
@@ -75,7 +75,8 @@ Rust emits exactly one line beginning `BRILLIANT_RKP2_SCALE_RUST_V1:` followed i
 | `counts` | exact object: `measures`, `parts`, `staves`, `measureContents`, `voices`, `events`, `notes`, `extensions`, `partOwnedExtensions`, `unknownExtensions` |
 | `bytes` | exact object: `canonicalScoreBytes`, `createRequestBytes` |
 | `metrics` | exact object: `entitiesVisited`, `records`, `topologyEdgesVisited`, `referenceEdgesBuilt`, `timeEntriesBuilt`, `entityIndexLookups`, `ownerIndexLookups`, `timeIndexComparisons`, `indexEntriesBuilt`, `indexRebuildEntries`, `fullDocumentMaterializations`, `canonicalEncodeBytes`; `records` is exact `measures/parts/staves/voices/events/notes/extensions` |
-| `ownerProbe` | exact object: `stableId="cvn7-e-00-0000-0-0"`, `entityKind="event"`, `ownerKind="voice"`, `ownerStableId="cvn7-v-00-0000-0"`, `entityIndexLookupsDelta=1`, `ownerIndexLookupsDelta=1`, `otherCounterDelta=0` |
+| `entityProbe` | exact object: `stableId="cvn7-e-00-0000-0-0"`, `entityKind="event"`, `entityIndexLookupsDelta=1`, `otherCounterDelta=0` |
+| `ownerProbe` | exact object: `entityKind="event"`, `ownerKind="voice"`, `ownerStableId="cvn7-v-00-0000-0"`, `ownerIndexLookupsDelta=1`, `otherCounterDelta=0` |
 | `parity` | exact object: `normalizedProjectionEqual=true`, `indexEntryCountEqual=true` |
 | `roundTrip` | exact object: `semanticEqual=true`, `canonicalBytesEqual=true` |
 | `ordering` | exact object: `topologyCanonical=true`, `extensionsPreserved=true` |
@@ -126,7 +127,7 @@ All additions, products, byte lengths and conversions use checked operations. Fa
 | `full_document_materializations` | `1` |
 | `canonical_encode_bytes` | `15013904` |
 
-The owner probe is a separate read-side result, not part of those import/rebuild totals. First, stable ID `cvn7-e-00-0000-0-0` is resolved by `LiveScoreStore::lookup_entity`, producing `RuntimeEntityRef::Event` and `entity_index_lookups` delta `1`. A fresh metrics snapshot is then passed with that ref directly to private `DerivedIndices::lookup_owner`; it returns Voice `cvn7-v-00-0000-0`, increments only `owner_index_lookups` by `1`, and leaves every other counter delta `0`. Calling `LiveScoreStore::lookup_owner` for the second step is forbidden because it would repeat entity lookup.
+The two probes are separate read-side results, not part of those import/rebuild totals. `entity_before=store.metrics`, real `store.lookup_entity(&stable_id)`, and `entity_after=store.metrics` prove only `entity_index_lookups` changed by `1`. A distinct `Rkp2StoreMetrics::default()` passed to `store.indices.lookup_owner(entity, &mut owner_probe_metrics)` proves exactly `owner_index_lookups=1` and every other field `0`, returning Voice `cvn7-v-00-0000-0`. Calling `LiveScoreStore::lookup_owner` for the second probe is forbidden because it would repeat entity lookup.
 
 ## 6. Worker/process contract
 
@@ -158,7 +159,7 @@ The script saves whether `BRILLIANT_RKP2_SCALE_REQUEST_V1` existed and its prior
 
 The script creates unique TEMP stdout/stderr files and uses `Start-Process -WindowStyle Hidden -PassThru -RedirectStandardOutput <stdout> -RedirectStandardError <stderr>` with exact libtest argv. The liveness clock begins only after `Start-Process` succeeds. Cold compilation, fixture generation and request writing are outside it.
 
-Every `25ms` poll performs, in order: `Refresh()`, checked `PeakWorkingSet64` max update, checked stdout length, checked stderr length, elapsed/timeout check, then bounded wait. Output over `1048576` bytes or `180000ms` triggers termination of the visible process tree using validated `%SystemRoot%\System32\taskkill.exe /PID <pid> /T /F`, followed by bounded reap (`5000ms`). Terminate and reap failures are stable failures. Normal exit calls `WaitForExit()` to flush redirected streams and then performs one final `Refresh`, RSS and output-cap check.
+Every `25ms` poll performs, in order: `Refresh()`, checked `PeakWorkingSet64` max update, checked stdout length, checked stderr length, elapsed/timeout check, then bounded wait. Output over `1048576` bytes or `180000ms` selects the cap/timeout primary, requests termination of the visible process tree using validated `%SystemRoot%\System32\taskkill.exe /PID <pid> /T /F`, and then performs bounded reap (`5000ms`) regardless of termination outcome. Termination and reap outcomes are recorded only in the fixed secondary statuses and never replace the primary. Normal/nonzero exit does not request termination, calls `WaitForExit()` to flush redirected streams, records the actual reap result, and then performs one final `Refresh`, RSS and output-cap check.
 
 Rust `Instant` measures decode/import/index/probe/rebuild/export/encode only. `PeakWorkingSet64` must be available, positive and safe-integer representable. Both are required diagnostics with no latency or RSS pass budget.
 
@@ -175,10 +176,19 @@ Success shape, key order and allowed fields are exactly:
 | `schemaVersion` | integer `1` |
 | `status` | string `ok` |
 | `evidence` | exact Rust internal evidence object from section 3.3 |
-| `process` | exact object `exitCode=0`, `timedOut=false`, positive safe integer `peakWorkingSetBytes`, safe integers `stdoutBytes` and `stderrBytes`, `cleanupStatus="ok"` |
+| `process` | exact object `exitCode=0`, `timedOut=false`, positive safe integer `peakWorkingSetBytes`, safe integers `stdoutBytes` and `stderrBytes`, `terminationStatus="not-required"`, `reapStatus="succeeded"`, `cleanupStatus="succeeded"` |
 | `partialEvidence` | boolean `false` |
 
-Rejection shape has exactly `schemaVersion=1`, `status="rejected"`, `failure`, `process`, `partialEvidence=false`; it must not contain `evidence`. `failure` is exactly `{code,details}`. Rejection `process` is exactly `{exitCode,timedOut,peakWorkingSetBytes,stdoutBytes,stderrBytes,cleanupStatus}`: `exitCode` and `peakWorkingSetBytes` are safe integers or `null`; the byte counts are safe integers; `cleanupStatus` is `ok` or `failed`. No raw stdout/stderr, filesystem path, OS error, backtrace, payload or partial counter is allowed.
+Rejection shape has exactly `schemaVersion=1`, `status="rejected"`, `failure`, `process`, `partialEvidence=false`; it must not contain `evidence`. `failure` is exactly `{code,details}`. Rejection `process` is exactly `{exitCode,timedOut,peakWorkingSetBytes,stdoutBytes,stderrBytes,terminationStatus,reapStatus,cleanupStatus}`: `exitCode` and `peakWorkingSetBytes` are safe integers or `null`; byte counts are safe integers; `terminationStatus` and `reapStatus` are exactly `not-required|succeeded|failed`; `cleanupStatus` is exactly `not-attempted|succeeded|failed`. No raw stdout/stderr, filesystem path, OS error, backtrace, payload or partial counter is allowed.
+
+Status reachability is frozen:
+
+- start failure: `exitCode=null`, `timedOut=false`, `peakWorkingSetBytes=null`, both byte counts `0`, `terminationStatus="not-required"`, `reapStatus="not-required"`, `cleanupStatus="not-attempted"`;
+- output cap or timeout: the selected primary remains cap/timeout; termination is requested and records `succeeded|failed`; bounded reap always follows and records `succeeded|failed`; cleanup records `succeeded|failed`;
+- normal or nonzero exit: `terminationStatus="not-required"`; reap and cleanup record their real `succeeded|failed` outcomes;
+- success requires normal zero exit plus `reapStatus="succeeded"` and `cleanupStatus="succeeded"`;
+- a normal zero-exit `reapStatus="failed"` with no earlier primary selects existing `process.protocol-invalid` details `{stage:"process",reason:"identity"}` at the protocol stage, because complete redirected output cannot be proven;
+- cleanup failure with no earlier primary selects `process.cleanup-failed`; with an earlier primary it changes only `cleanupStatus="failed"`.
 
 ### 6.4 Closed failure union
 
@@ -187,8 +197,6 @@ Rejection shape has exactly `schemaVersion=1`, `status="rejected"`, `failure`, `
 | `process.start-failed` | `{stage:"start"}` |
 | `process.output-limit-exceeded` | `{stream:"stdout"|"stderr",limitBytes:1048576}` |
 | `process.timeout` | `{timeoutMs:180000}` |
-| `process.terminate-failed` | `{stage:"terminate"}` |
-| `process.reap-failed` | `{stage:"reap",timeoutMs:5000}` |
 | `process.nonzero-exit` | `{exitCode:<safe unsigned Windows exit code>}` |
 | `process.sentinel-count-invalid` | `{expected:1,actual:<safe integer>}` |
 | `process.sentinel-malformed` | `{stage:"json"}` |
@@ -200,16 +208,16 @@ Rejection shape has exactly `schemaVersion=1`, `status="rejected"`, `failure`, `
 | `evidence.parity-mismatch` | `{check:"normalized-index-projection"|"index-entry-count"}` |
 | `evidence.bytes-mismatch` | `{field:"canonicalScoreBytes"|"createRequestBytes",expected:<safe integer>,actual:<safe integer>}` |
 | `evidence.order-mismatch` | `{field:"topology"|"extensions"}` |
-| `evidence.payload-mismatch` | `{field:"fixtureId"|"counts"|"ownerProbe"|"roundTrip"}` |
+| `evidence.payload-mismatch` | `{field:"fixtureId"|"counts"|"entityProbe"|"ownerProbe"|"roundTrip"}` |
 | `process.cleanup-failed` | `{target:"request"|"stdout"|"stderr"|"temp-directory"}` |
 
-The closed counter names are every leaf in `metrics` plus `ownerProbe.entityIndexLookupsDelta`, `ownerProbe.ownerIndexLookupsDelta`, and `ownerProbe.otherCounterDelta`. The closed numeric field names are those counters plus both `bytes` leaves, `workloadElapsedMicros`, and the four numeric `process` leaves. No free-form message/detail field exists.
+The closed counter names are every leaf in `metrics` plus `entityProbe.entityIndexLookupsDelta`, `entityProbe.otherCounterDelta`, `ownerProbe.ownerIndexLookupsDelta`, and `ownerProbe.otherCounterDelta`. The closed numeric field names are those counters plus both `bytes` leaves, `workloadElapsedMicros`, and the four numeric `process` leaves. No free-form message/detail field exists.
 
 ### 6.5 First-failure precedence
 
-Selection order is exact: start → sampling/refresh → stdout/stderr cap → timeout → terminate → reap → exit code → internal sentinel count → JSON parse → exact protocol/range → RSS validity → frozen counts/bytes/counters → parity → ordering → payload/round-trip → cleanup.
+Primary selection order is exact: start → sampling/refresh → stdout/stderr cap → timeout → exit code → internal sentinel count → JSON parse → exact protocol/range → RSS validity → frozen counts/bytes/counters → parity → ordering → payload/round-trip → cleanup. Shutdown secondary statuses do not participate in primary selection.
 
-The first selected failure is immutable. Later terminate/reap/cleanup faults do not replace an earlier primary. If cleanup is the only failure, use `process.cleanup-failed`; otherwise keep the primary `failure` and set only `process.cleanupStatus="failed"`. Every rejection remains `partialEvidence=false`. Focused injected fixtures make each code and both directions of relevant combinations reachable without copying production parsing logic.
+The first selected failure is immutable. Cap plus termination failure remains `process.output-limit-exceeded` with `terminationStatus="failed"`; timeout plus reap failure remains `process.timeout` with `reapStatus="failed"`. Cleanup failure is `process.cleanup-failed` only when no earlier primary exists; otherwise it changes only `cleanupStatus="failed"`. Every rejection remains `partialEvidence=false`. Focused injected fixtures cover those exact combinations and every reachable primary code without copying production parsing logic.
 
 ## 7. Ownership and allowlists
 

@@ -171,3 +171,10 @@ RKP-2 preserves S6.0, remains operationally paused before S6.1, and keeps TypeSc
 - Nine planning-authority files are immutable during E0–E3 and are pinned by LF-normalized UTF-8 SHA-256 in the child `task.json`. The only mutable implementation lifecycle set is the exact eight paths declared there; a ninth path fails closed. The technical set remains five paths.
 - The v1 libtest FQN, Cargo artifact predicate, owner probe, internal/process sentinels, exact result shapes, closed failure union, first-failure precedence, PowerShell parameters and E1/E2/E3 execution split are now implementation decisions rather than implementation-time choices.
 - The child remains `planning`, start/production authorization and candidate readiness remain false, and targeted independent planning rereview is pending. S6.1 remains retained complete; S6.2/S6.3 remain false; TypeScript remains default.
+
+## Stage 6 private scale evidence seam second bounded planning repair
+
+- Targeted review of `176fd3670d3015631fc1553a59cc8e4d3a941221` returned P0/P1/P2=`0/1/0`, limited to a nonexistent owner-probe argument and contradictory shutdown primary codes.
+- The repaired contract now uses real `store.lookup_entity(&stable_id)` snapshots plus direct `store.indices.lookup_owner` with independent default metrics, emitting separate `entityProbe`/`ownerProbe` records.
+- The primary union is sixteen codes. Termination/reap are fixed secondary statuses; cap/timeout remain primary, and cleanup alone becomes `process.cleanup-failed` only without an earlier primary.
+- Final targeted planning rereview is pending. The child stays planning; S6.2/S6.3, start/implementation, archive/integration/push and default cutover remain unauthorized.

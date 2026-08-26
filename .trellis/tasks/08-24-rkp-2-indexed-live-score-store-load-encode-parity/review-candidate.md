@@ -135,3 +135,9 @@ This projection does not claim an implementation defect or planning PASS. The ch
 The first independent review of exact planning candidate `df686882efa30f489da138d2730acbdd4fb9cd30` returned P0/P1/P2=`0/2/0`. This bounded repair freezes the nine planning-authority files by LF-normalized SHA-256, reduces the future mutable lifecycle allowlist to exactly eight paths, and closes the previously open libtest/artifact/owner-probe/sentinel/PowerShell/precedence/stage-order decisions.
 
 Targeted rereview should verify: the nine hashes recompute exactly; no ninth mutable lifecycle path is permitted; E1 never requires the stress request; E2 owns the sole request plus first real stress run; E3 uses a fresh request; the exact two sentinels and closed failure/detail union fail closed with first-failure precedence; and no qualification claim is inferred from RSS or elapsed diagnostics. The task is still planning, start/production authorization and candidate readiness are false, S6.2/S6.3 remain false, and no PASS is claimed.
+
+## Stage 6 private scale evidence seam final targeted planning rereview
+
+Candidate `176fd3670d3015631fc1553a59cc8e4d3a941221` received a second targeted P0/P1/P2=`0/1/0`. The final bounded repair replaces the nonexistent `lookup_entity` metrics argument with real `store.metrics` before/after snapshots, uses direct `store.indices.lookup_owner` with an independent default metric, and emits two separate probe records.
+
+It also removes shutdown outcomes from the primary failure union: cap/timeout stay primary while `terminationStatus`, `reapStatus` and `cleanupStatus` record secondary outcomes. The review target remains planning-only, final targeted rereview pending, with S6.1 retained and S6.2/S6.3 false.

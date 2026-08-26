@@ -1,8 +1,8 @@
 # Planning Self-Audit
 
-Planning self-audit after bounded repair: P0/P1/P2=`0/0/0`. This is an operator self-check only; targeted independent planning rereview remains pending and no acceptance is claimed.
+Planning self-audit after the second bounded repair: P0/P1/P2=`0/0/0`. This is an operator self-check only; final targeted independent planning rereview remains pending and no acceptance is claimed.
 
-The first independent audit of `df686882efa30f489da138d2730acbdd4fb9cd30` returned `0/2/0`: implementation could mutate planning authority, and libtest/owner/protocol/process choices were incomplete. This repair closes only those two findings without changing the five-path technical allowlist or starting implementation.
+The first independent audit of `df686882efa30f489da138d2730acbdd4fb9cd30` returned `0/2/0`: implementation could mutate planning authority, and libtest/owner/protocol/process choices were incomplete. Candidate `176fd3670d3015631fc1553a59cc8e4d3a941221` then received a second targeted result `0/1/0`: its owner probe used a nonexistent metrics argument and its shutdown outcomes were contradictory primary codes. This second bounded repair closes only that related P1 without changing the five-path technical allowlist or starting implementation.
 
 ## Checked contracts
 
@@ -13,7 +13,7 @@ The first independent audit of `df686882efa30f489da138d2730acbdd4fb9cd30` return
 - Exact five technical paths, nine immutable planning authorities and eight mutable implementation lifecycle paths are enumerated without wildcard.
 - `task.json` is the sole LF-normalized SHA-256 registry; workspace law must recompute all nine digests during E0-E3.
 - No Node/public export, DTO, product binary, interior mutability, second Store/fixture owner or dependency is introduced.
-- Libtest FQN/env/compile predicate/argv, two-step owner probe, both sentinel prefixes, exact success/rejection shapes, closed failure details, process parameters and first-failure precedence are explicit.
+- Libtest FQN/env/compile predicate/argv, the real `store.lookup_entity(&stable_id)` plus direct `store.indices.lookup_owner` sequence, separate `entityProbe`/`ownerProbe`, both sentinel prefixes, exact success/rejection shapes, sixteen reachable primary codes, shutdown secondary statuses, process parameters and primary precedence are explicit.
 - E1 has no stress request; E2 owns the sole fixture generation and first real run; E3 uses a fresh request for candidate evidence.
 - E0–E3 are independently reversible and implementation cannot start before dedicated PASS plus user authorization.
 - RKP-2 S6.1 is retained complete; S6.2/S6.3 remain false and TypeScript remains default.
@@ -34,9 +34,9 @@ The first independent audit of `df686882efa30f489da138d2730acbdd4fb9cd30` return
 1. Is `indices.rs` the narrowest safe private owner?
 2. Can local materialization/encode evidence avoid persistent state and second ownership?
 3. Do the exact Cargo artifact predicate and argv exclude compilation from the 180-second window?
-4. Are the Rust/process exact shapes, closed details union and first-failure/cleanup rules mechanically implementable?
-5. Does the direct `DerivedIndices::lookup_owner` probe avoid a second entity lookup?
+4. Are the Rust/process exact shapes, sixteen-code primary union, shutdown secondary statuses and first-failure/cleanup rules mechanically implementable?
+5. Does the real `store.lookup_entity(&stable_id)` plus direct `store.indices.lookup_owner` sequence compile, produce two separate records and avoid a second entity lookup?
 6. Are five technical paths, nine immutable hashes and eight mutable lifecycle paths complete and non-overlapping?
 7. Do E1/E2/E3 request ownership and parent projections truthfully preserve S6.1 and pause S6.2/S6.3?
 
-Status: `READY FOR TARGETED INDEPENDENT PLANNING REREVIEW`; start/production authorization remain false.
+Status: `READY FOR FINAL TARGETED INDEPENDENT PLANNING REREVIEW`; start/production authorization remain false.

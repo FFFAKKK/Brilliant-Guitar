@@ -40,9 +40,9 @@ No interior mutable field, global accumulator or Store/Runtime mutation is intro
 
 The exact probe stable ID is `cvn7-e-00-0000-0-0`.
 
-1. Call `LiveScoreStore::lookup_entity` with its own metrics snapshot. Require `RuntimeEntityRef::Event` and `entity_index_lookups` delta exactly `1`.
-2. Start a separate metrics snapshot and call private `DerivedIndices::lookup_owner(runtime_entity_ref, &mut metrics)` directly. Require Voice owner `cvn7-v-00-0000-0`, `owner_index_lookups` delta exactly `1`, and every other counter delta `0`.
-3. Do not call `LiveScoreStore::lookup_owner` in step two; it performs another entity lookup and would confound the read proof.
+1. Construct `StableId::new("cvn7-e-00-0000-0-0")`, copy `entity_before=store.metrics`, call the real `store.lookup_entity(&stable_id)`, then copy `entity_after=store.metrics`. Require `RuntimeEntityRef::Event`, `entity_index_lookups` delta exactly `1`, and every other metrics delta `0`.
+2. Create `owner_probe_metrics=Rkp2StoreMetrics::default()` and call `store.indices.lookup_owner(entity, &mut owner_probe_metrics)` directly. Require Voice owner `cvn7-v-00-0000-0`, `owner_index_lookups=1`, and every other field `0`.
+3. Emit separate `entityProbe` and `ownerProbe` records. Do not call `LiveScoreStore::lookup_owner`; it performs another entity lookup and would confound the read proof. Neither probe is added to import/rebuild totals.
 4. Report probe deltas separately; import and rebuild totals remain the frozen values.
 
 ## Classification guard

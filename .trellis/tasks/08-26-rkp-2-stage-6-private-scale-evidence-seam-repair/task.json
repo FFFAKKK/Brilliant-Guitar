@@ -40,7 +40,7 @@
     "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "PLANNING ONLY / ROOT-CAUSE AUDIT 0/1/0 / FIRST INDEPENDENT PLANNING REVIEW 0/2/0 BOUNDED REPAIR COMPLETE / TARGETED INDEPENDENT PLANNING REREVIEW REQUIRED / S6.1 RETAINED COMPLETE AT 4A302BC / S6.2-S6.3 NOT STARTED / STAGE 6 OPERATIONALLY PAUSED / TYPESCRIPT DEFAULT.",
+  "notes": "PLANNING ONLY / ROOT-CAUSE AUDIT 0/1/0 / FIRST PLANNING REVIEW 0/2/0 / SECOND TARGETED PLANNING REVIEW 0/1/0 / SECOND BOUNDED REPAIR COMPLETE / FINAL TARGETED INDEPENDENT PLANNING REREVIEW REQUIRED / S6.1 RETAINED COMPLETE AT 4A302BC / S6.2-S6.3 NOT STARTED / STAGE 6 OPERATIONALLY PAUSED / TYPESCRIPT DEFAULT.",
   "meta": {
     "planning_base_commit": "4a302bc9f9981940336fc97941b08e09bd0d1f67",
     "source_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -62,10 +62,18 @@
         "private_scale_seam_worker_and_process_protocol_left_implementation_decisions_open"
       ]
     },
-    "bounded_planning_repair": "completed_targeted_rereview_pending",
+    "second_targeted_independent_planning_rereview": {
+      "candidate_commit": "176fd3670d3015631fc1553a59cc8e4d3a941221",
+      "P0": 0,
+      "P1": 1,
+      "P2": 0,
+      "verdict": "return_for_bounded_planning_repair",
+      "finding": "owner_probe_nonexistent_metrics_argument_and_shutdown_secondary_outcomes_in_primary_union"
+    },
+    "bounded_planning_repair": "round_2_completed_final_targeted_rereview_pending",
     "implementation_candidate_ready": false,
     "implementation_review": "not_started",
-    "implementation_blocker": "targeted_independent_planning_rereview_required",
+    "implementation_blocker": "final_targeted_independent_planning_rereview_required",
     "root_cause_audit": {"P0": 0, "P1": 1, "P2": 0, "verdict": "bounded_planning_child_required", "classification": "stage_6_evidence_allowlist_gap_not_proven_production_complexity_failure"},
     "rkp2_stage_6_authorized": true,
     "rkp2_stage_6_started": true,
@@ -86,15 +94,15 @@
     "immutable_planning_authority_hash_contract": "lf_normalized_utf8_sha256",
     "immutable_planning_authority_count": 9,
     "immutable_planning_authority": {
-      ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/prd.md": "a7efdc5f38ea254bd9f75d51788702df542a311cdabfdb3b0e440da6f8a20029",
-      ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/design.md": "724e2532d18427ad13fecc56f7b5f804f2e1e1c2cac48cc020143a35cbc10238",
-      ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/implement.md": "374217adf5ab5e018f9c33cf588ffb0dd9eea6c7a414cad308b0ee0c095acbc2",
-      ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/implement.jsonl": "04703ba41c8394d8592986bccdec717e500a0aed88a4050a88d0db7c5e6c0bf8",
-      ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/check.jsonl": "4543fe1d0543af7c03189360b40ccc301a45700bb61a04fdea16a04186a59fa1",
-      ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/research/root-cause-and-counter-write-map.md": "49d9254a28ab9ce1f14429ed8bce57aa2b2c79912fc5a52ddfe7a79e34b7c3b5",
-      ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/research/scale-worker-and-failure-matrix.md": "2096984ed3f2aa6dbff012bf3e304c82e8ae5aba8e0c8af5915c16db37aa78b5",
+      ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/prd.md": "c011c580ffb157010cdef6c4c325114a2eedee39ac29bd1ed3ffd1b6f321013f",
+      ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/design.md": "cf519b5755ac758ce2d826396f2f79bab907660f51b94a5f59e155ce59a96eb7",
+      ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/implement.md": "5f90d170aa0d1b32a61efc745880e142ad33c9dd056d163423bf7f1c27cc4083",
+      ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/implement.jsonl": "5e89601f3973e58c13c699e248d6c6e5c4104460e32bb87607acd5a6561ac589",
+      ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/check.jsonl": "ac49f1746bc87520021f88b496412aa9c53f602a3d36ec9731b6ff41b9db7517",
+      ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/research/root-cause-and-counter-write-map.md": "f7038c7f551c6e0b93cb12d7bee790819b03ab709f83188c17780a41f49ae06f",
+      ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/research/scale-worker-and-failure-matrix.md": "7f573489b7fb48c78bdfd13b9d5686b08c8dd0ae39427485764a0436af3de9a4",
       ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/research/file-ownership-and-rollback.md": "79db8e5b3116fb83db3d08827ff47b0e7fd9831eae9d4726c0a6b9f0fdf61776",
-      ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/research/planning-self-audit.md": "90d7cf57ce403be60c64d7184f628ead539b1ddff230343d3b54f130f2581bb7"
+      ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/research/planning-self-audit.md": "2e0c3b0f157ebe4d16bc18ddec9593fe1f4a52e081c4d798bb926f4288331236"
     },
     "future_lifecycle_allowlist": [
       ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/task.json",
@@ -120,10 +128,16 @@
     "private_scale_request_env": "BRILLIANT_RKP2_SCALE_REQUEST_V1",
     "private_scale_rust_prefix": "BRILLIANT_RKP2_SCALE_RUST_V1:",
     "private_scale_process_prefix": "BRILLIANT_RKP2_SCALE_PROCESS_V1:",
+    "primary_failure_code_count": 16,
+    "shutdown_secondary_statuses": {
+      "terminationStatus": ["not-required", "succeeded", "failed"],
+      "reapStatus": ["not-required", "succeeded", "failed"],
+      "cleanupStatus": ["not-attempted", "succeeded", "failed"]
+    },
     "private_scale_compile_command": "cargo +1.97.1 test -p brilliant-kernel-runtime --lib --no-run --locked --message-format=json",
     "private_scale_execute_argv": ["<exact executable>", "--exact", "indices::tests::rkp2_stage_6_private_scale_evidence_v1", "--ignored", "--nocapture", "--test-threads=1"],
     "implementation_stage_order": ["E0_activation", "E1_private_rust_seam_compile_and_small_proof_without_stress_request", "E2_unique_request_worker_protocol_and_first_real_stress_run", "E3_fresh_request_formal_evidence_and_candidate_freeze"],
-    "next_gate": "targeted_independent_planning_rereview",
+    "next_gate": "final_targeted_independent_planning_rereview",
     "archive_authorized": false,
     "push_authorized": false,
     "default_runtime_switch_authorized": false,

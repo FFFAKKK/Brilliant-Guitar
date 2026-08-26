@@ -19,7 +19,7 @@ Cargo accepts exactly one `compiler-artifact` with `target.name=brilliant_kernel
 pwsh -NoProfile -NonInteractive -ExecutionPolicy Bypass -File <script> -ExecutablePath <exe> -RequestPath <request> -TestName indices::tests::rkp2_stage_6_private_scale_evidence_v1 -TimeoutMs 180000 -PollIntervalMs 25 -MaxStdoutBytes 1048576 -MaxStderrBytes 1048576
 ```
 
-The seven named parameters accept only those exact values/types. The script temporarily sets the request env in its own process, starts the child hidden, redirects stdout/stderr to unique TEMP files, polls after `Refresh`, samples checked maximum `PeakWorkingSet64`, checks both caps, tree-terminates with validated `taskkill /T /F` and reaps within `5000ms`. Normal exit calls `WaitForExit` and final `Refresh`. `finally` restores/removes the env and deletes request/stdout/stderr/temp-directory.
+The seven named parameters accept only those exact values/types. The script temporarily sets the request env in its own process, starts the child hidden, redirects stdout/stderr to unique TEMP files, polls after `Refresh`, samples checked maximum `PeakWorkingSet64`, checks both caps, tree-terminates with validated `taskkill /T /F` after cap/timeout and always attempts bounded reap within `5000ms`. Normal/nonzero exit uses `terminationStatus=not-required`, calls `WaitForExit`, records actual reap, and performs final `Refresh`. `finally` restores/removes the env and deletes request/stdout/stderr/temp-directory.
 
 ## Single successful journey
 
@@ -50,7 +50,9 @@ The seven named parameters accept only those exact values/types. The script temp
 
 ## Exact success/rejection boundary
 
-Rust internal JSON is the exact section-3.3 shape in `design.md`. Final success is exact `{schemaVersion:1,status:"ok",evidence,process,partialEvidence:false}`; `process` has only `exitCode=0`, `timedOut=false`, positive safe `peakWorkingSetBytes`, safe `stdoutBytes`, safe `stderrBytes`, and `cleanupStatus="ok"`.
+Rust internal JSON is the exact section-3.3 shape in `design.md`, including separate `entityProbe` and `ownerProbe`. Final success is exact `{schemaVersion:1,status:"ok",evidence,process,partialEvidence:false}`; `process` has only `exitCode=0`, `timedOut=false`, positive safe `peakWorkingSetBytes`, safe `stdoutBytes`, safe `stderrBytes`, `terminationStatus="not-required"`, `reapStatus="succeeded"`, and `cleanupStatus="succeeded"`.
+
+Final rejection has the same exact process keys. Start failure freezes `not-required/not-required/not-attempted`; cap/timeout freezes attempted termination and reap as `succeeded|failed`; normal/nonzero exit freezes `terminationStatus="not-required"` and actual reap; cleanup is always `not-attempted|succeeded|failed`. Shutdown outcomes are secondary fields, not failure codes.
 
 Final rejection is exact `{schemaVersion:1,status:"rejected",failure,process,partialEvidence:false}` and forbids internal evidence, raw streams, paths, backtraces and partial counters. `failure` is the closed `{code,details}` union in `design.md`; `process` has only nullable exit/RSS, timeout boolean, output byte counts and cleanup status.
 
@@ -59,10 +61,8 @@ Final rejection is exact `{schemaVersion:1,status:"rejected",failure,process,par
 | Code | Required focused trigger and proof |
 | --- | --- |
 | `process.start-failed` | start factory throws before child; no partial evidence |
-| `process.output-limit-exceeded` | stdout and stderr cap+1 independently; process tree terminated/reaped |
-| `process.timeout` | live child crosses `180000`; bounded termination/reap |
-| `process.terminate-failed` | injected termination failure settles, no hang |
-| `process.reap-failed` | injected bounded reap failure settles |
+| `process.output-limit-exceeded` | stdout and stderr cap+1 independently; primary survives `terminationStatus="failed"` |
+| `process.timeout` | live child crosses `180000`; primary survives `reapStatus="failed"` |
 | `process.nonzero-exit` | safe normalized nonzero Windows exit code |
 | `process.sentinel-count-invalid` | zero and two internal prefixes |
 | `process.sentinel-malformed` | invalid JSON after the sole prefix |
@@ -74,16 +74,18 @@ Final rejection is exact `{schemaVersion:1,status:"rejected",failure,process,par
 | `evidence.parity-mismatch` | normalized projection and count branches |
 | `evidence.bytes-mismatch` | canonical and request bytes independently |
 | `evidence.order-mismatch` | topology and extensions independently |
-| `evidence.payload-mismatch` | fixture/counts/ownerProbe/roundTrip independently |
+| `evidence.payload-mismatch` | fixture/counts/entityProbe/ownerProbe/roundTrip independently |
 | `process.cleanup-failed` | each request/stdout/stderr/temp-directory cleanup target |
 
 All tests assert exact code/details/shape, nonzero exit, bounded settlement and `partialEvidence=false`. No free-form message or copied production parser is allowed.
 
 ## First-failure matrix
 
-Precedence is exact: start → sampling/refresh → output caps → timeout → terminate → reap → exit → sentinel count → JSON parse → protocol/range → RSS validity → counts/bytes/counters → parity → ordering → payload/round-trip → cleanup.
+Primary precedence is exact: start → sampling/refresh → output caps → timeout → exit → sentinel count → JSON parse → protocol/range → RSS validity → counts/bytes/counters → parity → ordering → payload/round-trip → cleanup. Termination and reap statuses are secondary and never participate in primary selection.
 
-Focused combinations cover both the primary and later failure. Examples: RSS failure then timeout remains RSS; cap then timeout remains cap; timeout then terminate/reap remains timeout; nonzero exit then malformed sentinel remains nonzero; counter mismatch then parity remains counter; parity then order remains parity; payload then cleanup remains payload with `cleanupStatus=failed`. Cleanup alone is `process.cleanup-failed`. Later failures never replace the first.
+Focused combinations cover both the primary and later shutdown/cleanup status. Exact required rows include: cap plus termination failure remains `process.output-limit-exceeded` with `terminationStatus="failed"`; timeout plus reap failure remains `process.timeout` with `reapStatus="failed"`; clean-path cleanup failure alone is `process.cleanup-failed` with `cleanupStatus="failed"`; an existing primary plus cleanup failure keeps that primary. Nonzero exit plus malformed sentinel remains nonzero; counter mismatch plus parity remains counter; parity plus order remains parity. Later secondary statuses never replace the first primary.
+
+Start failure records `terminationStatus="not-required"`, `reapStatus="not-required"`, and `cleanupStatus="not-attempted"`. Cap/timeout records attempted termination and reap as `succeeded|failed`. Normal/nonzero exit records `terminationStatus="not-required"` and actual reap. No focused test expects a shutdown-secondary result as a primary code.
 
 ## Timing and qualification meaning
 

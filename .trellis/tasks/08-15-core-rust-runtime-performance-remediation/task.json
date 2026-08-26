@@ -92,7 +92,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "rkp2-private-scale-evidence-seam-targeted-independent-planning-rereview",
+    "next_gate": "rkp2-private-scale-evidence-seam-final-targeted-independent-planning-rereview",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -313,11 +313,13 @@
       "classification": "planning_allowlist_gap_not_proven_production_complexity_failure",
       "initial_planning_candidate": "df686882efa30f489da138d2730acbdd4fb9cd30",
       "first_independent_planning_review": "P0_0_P1_2_P2_0_return_for_bounded_planning_repair",
-      "bounded_planning_repair": "nine_immutable_authority_hashes_eight_mutable_lifecycle_paths_and_exact_v1_worker_protocol_completed",
+      "first_bounded_planning_repair_commit": "176fd3670d3015631fc1553a59cc8e4d3a941221",
+      "second_targeted_independent_planning_rereview": "P0_0_P1_1_P2_0_return_owner_probe_api_and_shutdown_secondary_contract",
+      "bounded_planning_repair": "round_2_real_probe_api_sixteen_primary_codes_and_shutdown_secondary_statuses_completed",
       "immutable_planning_authority_count": 9,
       "future_mutable_lifecycle_allowlist_count": 8,
       "future_technical_allowlist_count": 5,
-      "next_gate": "targeted_independent_planning_rereview"
+      "next_gate": "final_targeted_independent_planning_rereview"
     },
     "rkp2_part_owner_wire_contract_repair": {
       "parent": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",

@@ -49,11 +49,12 @@ Technical owner: `crates/brilliant-kernel-runtime/src/indices.rs` only.
 
 Add the exact-shape internal evidence structure from `design.md` under `cfg(test)`. The ignored test reads the request path, decodes through Contracts, imports, captures existing metrics, performs the exact two-step owner probe, verifies parity, exports once, encodes once and prints exactly one compact internal sentinel.
 
-Owner probe:
+Owner probes use the real API sequence:
 
-1. `LiveScoreStore::lookup_entity("cvn7-e-00-0000-0-0", &mut metrics)` resolves `RuntimeEntityRef::Event`; entity delta exactly one.
-2. Take a fresh snapshot, call private `DerivedIndices::lookup_owner(ref, &mut metrics)` directly; owner is Voice `cvn7-v-00-0000-0`, owner delta exactly one, all other deltas zero.
-3. Do not call `LiveScoreStore::lookup_owner` in step two and do not add probe deltas to import/rebuild totals.
+1. `let stable_id = StableId::new("cvn7-e-00-0000-0-0").expect("stable evidence entity id");`
+2. `let entity_before = store.metrics; let entity = store.lookup_entity(&stable_id).expect("known evidence entity"); let entity_after = store.metrics;` Require Event, `entity_index_lookups` delta `1`, every other `Rkp2StoreMetrics` delta `0`.
+3. `let mut owner_probe_metrics = Rkp2StoreMetrics::default(); let owner = store.indices.lookup_owner(entity, &mut owner_probe_metrics).expect("known evidence owner");` Require Voice `cvn7-v-00-0000-0`, `owner_index_lookups=1`, every other field `0`.
+4. Emit separate exact `entityProbe` and `ownerProbe` records. Do not call `LiveScoreStore::lookup_owner` and do not add either probe to import/rebuild totals.
 
 ### E1.3 E1 RED/GREEN gate
 
@@ -91,15 +92,15 @@ Invoke exactly:
 pwsh -NoProfile -NonInteractive -ExecutionPolicy Bypass -File <absolute-script> -ExecutablePath <absolute-exe> -RequestPath <absolute-request> -TestName indices::tests::rkp2_stage_6_private_scale_evidence_v1 -TimeoutMs 180000 -PollIntervalMs 25 -MaxStdoutBytes 1048576 -MaxStderrBytes 1048576
 ```
 
-The script accepts only those fixed named values. It temporarily sets `BRILLIANT_RKP2_SCALE_REQUEST_V1`, starts the exact libtest hidden with separate unique stdout/stderr files, restores/removes the environment variable in `finally`, polls every `25ms`, refreshes before each RSS read, caps each stream at `1048576`, times only the child workload, tree-terminates with validated `taskkill /T /F`, reaps within `5000ms`, waits for redirect flush on normal exit and performs a final refresh.
+The script accepts only those fixed named values. It temporarily sets `BRILLIANT_RKP2_SCALE_REQUEST_V1`, starts the exact libtest hidden with separate unique stdout/stderr files, restores/removes the environment variable in `finally`, polls every `25ms`, refreshes before each RSS read, caps each stream at `1048576`, times only the child workload, tree-terminates with validated `taskkill /T /F` after cap/timeout, always attempts bounded reap within `5000ms`, waits for redirect flush on normal exit and performs a final refresh. Termination, reap and cleanup are recorded as the exact secondary statuses from `design.md`.
 
 ### E2.3 Exact protocol and precedence
 
 Consume exactly one Rust prefix and emit exactly one `BRILLIANT_RKP2_SCALE_PROCESS_V1:` line. Success/rejection shapes, integer ranges, closed codes/details and forbidden fields are exactly those in `design.md` section 6. Rejection contains no internal evidence/raw output/path/backtrace/partial counter and always has `partialEvidence=false`.
 
-First-failure selection is: start → sampling/refresh → output caps → timeout → terminate → reap → exit code → sentinel count → JSON parse → protocol/range → RSS validity → counts/bytes/counters → parity → ordering → payload/round-trip → cleanup. Later cleanup never replaces an existing primary; it only changes fixed `cleanupStatus`.
+Primary first-failure selection is: start → sampling/refresh → output caps → timeout → exit code → sentinel count → JSON parse → protocol/range → RSS validity → counts/bytes/counters → parity → ordering → payload/round-trip → cleanup. Shutdown secondary statuses never participate in primary selection. Later cleanup never replaces an existing primary; it changes only fixed `cleanupStatus`.
 
-Focused tests directly lock every failure code and combinations, including output overflow, timeout plus terminate/reap failure, primary plus cleanup failure, malformed/duplicate/missing sentinel, exact-shape/range/extra-field rejection, RSS unavailable/invalid, every evidence mismatch class and bounded no-hang. They inject at the process/test-infrastructure seam and do not copy product logic.
+Focused tests directly lock every reachable primary code and combinations, including cap plus termination failure retaining `process.output-limit-exceeded`, timeout plus reap failure retaining `process.timeout`, cleanup-only failure selecting `process.cleanup-failed`, primary plus cleanup failure, malformed/duplicate/missing sentinel, exact-shape/range/extra-field rejection, RSS unavailable/invalid, every evidence mismatch class and bounded no-hang. They assert exact `terminationStatus/reapStatus/cleanupStatus`, inject at the process/test-infrastructure seam and do not copy product logic.
 
 ### E2.4 First real integration run
 

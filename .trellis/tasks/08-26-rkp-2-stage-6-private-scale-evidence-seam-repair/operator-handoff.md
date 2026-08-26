@@ -5,7 +5,9 @@
 - Exact base: `4a302bc9f9981940336fc97941b08e09bd0d1f67`.
 - First planning candidate: `df686882efa30f489da138d2730acbdd4fb9cd30`.
 - First independent planning audit: RETURN FOR BOUNDED PLANNING REPAIR, P0/P1/P2=`0/2/0`.
-- This docs-only bounded repair closes mutable-authority and incomplete-worker-protocol findings; targeted rereview remains pending.
+- First bounded repair candidate: `176fd3670d3015631fc1553a59cc8e4d3a941221`.
+- Second targeted planning review: RETURN FOR BOUNDED PLANNING REPAIR, P0/P1/P2=`0/1/0`, limited to the real owner-probe API and shutdown-primary contradiction.
+- This second docs-only bounded repair closes that related P1; final targeted rereview remains pending.
 - Task remains `planning`; start/production authorization/candidate readiness false.
 - RKP-2 S6.1 retained complete; S6.2/S6.3 false and operationally paused; TypeScript default.
 
@@ -19,9 +21,9 @@ Future technical ownership remains exactly five paths. Planning authority is now
 - Request env `BRILLIANT_RKP2_SCALE_REQUEST_V1`.
 - Compile command and Cargo artifact predicate are literal; exactly one absolute existing Runtime libtest `.exe`.
 - Execution uses `--exact`, `--ignored`, `--nocapture`, `--test-threads=1`.
-- Entity `cvn7-e-00-0000-0-0` is resolved once, then private `DerivedIndices::lookup_owner` is called directly from a fresh metrics snapshot; deltas `1/1/0` and Voice owner `cvn7-v-00-0000-0` are exact.
+- Entity `cvn7-e-00-0000-0-0` is resolved by real `store.lookup_entity(&stable_id)` between `store.metrics` snapshots; then `store.indices.lookup_owner(entity, &mut Rkp2StoreMetrics::default())` is called directly. Separate `entityProbe` and `ownerProbe` records prove exact deltas without changing import/rebuild totals.
 - Rust prefix `BRILLIANT_RKP2_SCALE_RUST_V1:` and process prefix `BRILLIANT_RKP2_SCALE_PROCESS_V1:` each occur exactly once on success.
-- Exact success/rejection shapes, closed 18-code details union and first-failure precedence are in immutable `design.md`.
+- Exact success/rejection shapes, sixteen-code primary union, shutdown secondary statuses and first-failure precedence are in immutable `design.md`.
 - PowerShell named args are fixed at timeout `180000`, poll `25`, stdout/stderr caps `1048576`; env restoration, hidden process, refresh/RSS, output caps, tree termination, `5000ms` reap, redirect flush and cleanup are mandatory.
 - Rejection has `partialEvidence=false`, no internal evidence, raw stream, path, backtrace or partial counter.
 
@@ -35,4 +37,4 @@ Clean base: TypeScript `78` files, manifest `e4445a175cedaa34eaed455f48a98735ac2
 
 ## Next action
 
-Send the exact repaired planning HEAD to the same dedicated read-only auditor. Review the nine hash map, eight mutable paths, exact artifact/argv, direct owner probe, complete protocol/failure union, first-failure cleanup rules and E1/E2/E3 request ownership. Do not start or implement before targeted PASS and new authorization.
+Send the exact second repaired planning HEAD to the same dedicated read-only auditor. Review the nine hash map, eight mutable paths, exact artifact/argv, compilable two-record probe, sixteen primary codes, secondary shutdown fields, first-failure cleanup rules and E1/E2/E3 request ownership. Do not start or implement before final targeted PASS and new authorization.
