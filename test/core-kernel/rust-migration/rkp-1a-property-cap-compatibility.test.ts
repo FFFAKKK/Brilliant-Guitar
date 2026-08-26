@@ -8,6 +8,7 @@ import {
   type OpaqueKernelSessionHandle,
   type RustKernelSmokeNativeAddon,
 } from "../../../src/core-kernel/native/rust-kernel-smoke";
+import { createStressCvn7Score } from "../fixtures/cvn-7-qualification-score";
 
 interface RawNativeCreateResult {
   readonly payload: Buffer;
@@ -22,6 +23,10 @@ interface RawNativeAddon extends RustKernelSmokeNativeAddon {
 const SUCCESSOR_PROPERTY_LIMIT = 1_572_864;
 const SUCCESSOR_PROPERTY_ACTUAL = SUCCESSOR_PROPERTY_LIMIT + 1;
 const DEFAULT_CAPTURE_PROPERTY_LIMIT = 1_048_576;
+const STRESS_DIRECT_DAG_MEMBERS = 1_045_635;
+const STRESS_CLONED_TREE_MEMBERS = 1_199_232;
+const STRESS_CREATE_REQUEST_BYTES = 15_013_932;
+const STRESS_READ_WRAPPER_BYTES = 15_014_112;
 
 const addonPath = resolve(
   process.cwd(),
@@ -91,6 +96,77 @@ function readPayload(document: unknown): Buffer {
   );
 }
 
+type MemberCountTask =
+  | { readonly kind: "value"; readonly value: unknown }
+  | { readonly kind: "complete"; readonly value: object };
+
+function countCapturedMembers(input: unknown): number {
+  const active = new WeakSet<object>();
+  const completed = new WeakSet<object>();
+  const tasks: MemberCountTask[] = [{ kind: "value", value: input }];
+  let memberCount = 0;
+
+  while (tasks.length > 0) {
+    const task = tasks.pop();
+    assert.ok(task, "member-count task must exist");
+    if (task.kind === "complete") {
+      active.delete(task.value);
+      completed.add(task.value);
+      continue;
+    }
+
+    const value = task.value;
+    if (value === null || typeof value !== "object") {
+      continue;
+    }
+    assert.equal(active.has(value), false, "fixture must remain acyclic");
+    if (completed.has(value)) {
+      continue;
+    }
+
+    active.add(value);
+    tasks.push({ kind: "complete", value });
+    if (Array.isArray(value)) {
+      const length = value.length;
+      assert.equal(Reflect.ownKeys(value).length, length + 1);
+      memberCount += length;
+      for (let index = length - 1; index >= 0; index -= 1) {
+        const descriptor = Reflect.getOwnPropertyDescriptor(value, String(index));
+        assert.ok(
+          descriptor?.enumerable === true && "value" in descriptor,
+          `array member ${index} must be an enumerable data property`,
+        );
+        tasks.push({ kind: "value", value: descriptor.value });
+      }
+      continue;
+    }
+
+    const prototype = Reflect.getPrototypeOf(value);
+    assert.ok(
+      prototype === Object.prototype || prototype === null,
+      "fixture records must be plain or null-prototype objects",
+    );
+    const keys = Reflect.ownKeys(value);
+    memberCount += keys.length;
+    for (let index = keys.length - 1; index >= 0; index -= 1) {
+      const key = keys[index];
+      if (key === undefined) {
+        assert.fail("fixture record key must exist");
+      }
+      assert.equal(typeof key, "string", "fixture record keys must be strings");
+      const descriptor = Reflect.getOwnPropertyDescriptor(value, key);
+      assert.ok(
+        descriptor?.enumerable === true && "value" in descriptor,
+        `record member ${String(key)} must be an enumerable data property`,
+      );
+      tasks.push({ kind: "value", value: descriptor.value });
+    }
+  }
+
+  assert.equal(Number.isSafeInteger(memberCount), true);
+  return memberCount;
+}
+
 test(
   "fake and real native successor property-limit stays stable",
   { timeout: 60_000 },
@@ -145,36 +221,71 @@ test("predecessor and malformed property-limit failures stay internal", () => {
 });
 
 test(
-  "native create capture selects native-wire-v1 and remains detached",
+  "native create and read capture admit stress DAG and cloned tree representations",
   { timeout: 120_000 },
   () => {
-    const document: unknown[] = new Array<null>(
-      DEFAULT_CAPTURE_PROPERTY_LIMIT + 1,
-    ).fill(null);
+    const directDocument = createStressCvn7Score().document;
+    const clonedDocument = JSON.parse(
+      JSON.stringify(directDocument),
+    ) as unknown;
+    assert.equal(
+      countCapturedMembers(directDocument),
+      STRESS_DIRECT_DAG_MEMBERS,
+      "shared fixture references are a DAG representation fact below the predecessor cap",
+    );
+    assert.ok(STRESS_DIRECT_DAG_MEMBERS <= DEFAULT_CAPTURE_PROPERTY_LIMIT);
+    assert.equal(
+      countCapturedMembers(clonedDocument),
+      STRESS_CLONED_TREE_MEMBERS,
+      "the equivalent JSON tree requires the successor native-wire-v1 profile",
+    );
+    assert.ok(STRESS_CLONED_TREE_MEMBERS > DEFAULT_CAPTURE_PROPERTY_LIMIT);
+
     let createCalls = 0;
-    let requestBytes: Buffer | undefined;
+    let readCalls = 0;
+    const capturedRequests: Buffer[] = [];
+    const readBytes = readPayload(clonedDocument);
+    assert.equal(readBytes.byteLength, STRESS_READ_WRAPPER_BYTES);
     const profileAddon: RustKernelSmokeNativeAddon = {
       createKernelSessionV1(request) {
         createCalls += 1;
         assert.ok(Buffer.isBuffer(request));
-        requestBytes = Buffer.from(request as Buffer);
+        capturedRequests.push(Buffer.from(request as Buffer));
         return { payload: createdPayload(), handle: {} };
       },
       readKernelSessionV1() {
-        throw new Error("read is not part of create profile selection");
+        readCalls += 1;
+        return readBytes;
       },
     };
 
-    const outcome = createRustKernelSmokeSession(profileAddon, document);
-    assert.equal(createCalls, 1);
-    assert.equal(outcome.result.status, "created");
-    assert.ok(requestBytes);
-    document[0] = "mutated-after-capture";
-    const request = JSON.parse(requestBytes.toString("utf8")) as {
-      readonly document: readonly unknown[];
-    };
-    assert.equal(request.document.length, DEFAULT_CAPTURE_PROPERTY_LIMIT + 1);
-    assert.equal(request.document[0], null);
+    const directOutcome = createRustKernelSmokeSession(
+      profileAddon,
+      directDocument,
+    );
+    const clonedOutcome = createRustKernelSmokeSession(
+      profileAddon,
+      clonedDocument,
+    );
+    assert.equal(createCalls, 2);
+    assert.equal(capturedRequests.length, 2);
+    assert.equal(directOutcome.result.status, "created");
+    assert.equal(clonedOutcome.result.status, "created");
+    for (const request of capturedRequests) {
+      assert.equal(request.byteLength, STRESS_CREATE_REQUEST_BYTES);
+    }
+    assert.equal(capturedRequests[0]?.equals(capturedRequests[1]!), true);
+    if (!("handle" in clonedOutcome)) {
+      assert.fail("cloned-tree create must publish one accepted fake handle");
+    }
+
+    const read = readRustKernelSmokeSession(profileAddon, clonedOutcome.handle);
+    assert.equal(readCalls, 1);
+    assert.equal(read.status, "ok");
+    if (read.status !== "ok") {
+      assert.fail("cloned-tree public read must use native-wire-v1 capture");
+    }
+    assert.equal(Object.isFrozen(read.value.snapshot.document), true);
   },
 );
 
