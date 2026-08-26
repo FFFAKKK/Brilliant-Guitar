@@ -9,7 +9,7 @@ use serde::{
 use crate::{CoreTypeFailure, JS_SAFE_INTEGER_MAX, SafeInteger};
 
 pub const JSON_DEPTH_LIMIT: usize = 64;
-pub const JSON_PROPERTY_LIMIT: usize = 1_048_576;
+pub const JSON_PROPERTY_LIMIT: usize = 1_572_864;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum BoundedJsonValue {
@@ -223,6 +223,13 @@ impl StablePathV1 {
 mod tests {
     use super::*;
 
+    const OLD_JSON_PROPERTY_LIMIT: usize = 1_048_576;
+
+    fn array_with_total_value_count(total: usize) -> BoundedJsonValue {
+        assert!(total >= 1);
+        BoundedJsonValue::Array(vec![BoundedJsonValue::Null; total - 1])
+    }
+
     #[test]
     fn object_keys_are_lexical() {
         let value = BoundedJsonValue::Object(std::collections::BTreeMap::from([
@@ -248,6 +255,30 @@ mod tests {
             Err(CoreTypeFailure::JsonDepthLimit {
                 actual: JSON_DEPTH_LIMIT + 1
             })
+        );
+    }
+
+    #[test]
+    fn property_limit_compatibility_migration_is_inclusive() {
+        assert_eq!(JSON_PROPERTY_LIMIT, 1_572_864);
+
+        for total in [
+            OLD_JSON_PROPERTY_LIMIT,
+            OLD_JSON_PROPERTY_LIMIT + 1,
+            JSON_PROPERTY_LIMIT - 1,
+            JSON_PROPERTY_LIMIT,
+        ] {
+            let value = array_with_total_value_count(total);
+            assert_eq!(value.validate_limits(), Ok(()), "total={total}");
+        }
+    }
+
+    #[test]
+    fn property_limit_reports_the_first_value_above_the_successor_cap() {
+        let value = array_with_total_value_count(JSON_PROPERTY_LIMIT + 1);
+        assert_eq!(
+            value.validate_limits(),
+            Err(CoreTypeFailure::JsonPropertyLimit { actual: 1_572_865 })
         );
     }
 

@@ -43,7 +43,7 @@
     "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "IN_PROGRESS / ACCEPTED PLANNING HEAD 1CD0CAA PASS 0/0/0 / P0 ACTIVATED / P1 CORE TYPES BOUNDED RED CHECKPOINT AUTHORIZED / P2-P4 NOT AUTHORIZED / STAGE6 SEAM IN_PROGRESS E1+E1R GREEN E2 NOT STARTED / RKP-2 OPERATIONALLY PAUSED / TYPESCRIPT DEFAULT.",
+  "notes": "IN_PROGRESS / ACCEPTED PLANNING HEAD 1CD0CAA PASS 0/0/0 / P0 COMMIT 39E91E8 / P1 CORE TYPES COMPLETE AS EXACT TWO-ITEM BOUNDED RED / INDEPENDENT P1 IMPLEMENTATION AUDIT REQUIRED / P2-P4 NOT AUTHORIZED / STAGE6 SEAM E1+E1R GREEN E2 NOT STARTED / RKP-2 OPERATIONALLY PAUSED / TYPESCRIPT DEFAULT.",
   "meta": {
     "planning_base_commit": "639e93555c15b46c54c8e9bb7ec610d4a77c7478",
     "source_branch": "codex/rkp-2-stage-6-private-scale-evidence-seam-repair",
@@ -80,8 +80,18 @@
     "implementation_review": "pending",
     "p0_activation_started": true,
     "p0_activation_completed": true,
-    "p1_core_types_started": false,
-    "p1_core_types_completed_as_bounded_red": false,
+    "p0_activation_commit": "39e91e86bf696a30cc77b42bd1ec5e2ae6cc4fbe",
+    "p1_core_types_started": true,
+    "p1_core_types_completed_as_bounded_red": true,
+    "p1_core_types_candidate_commit": "this_phase_commit_exact_hash_reported_after_commit",
+    "p1_independent_implementation_audit": "pending",
+    "p1_bounded_red_evidence": {
+      "core_types": "6_pass_0_fail_fmt_check_clippy_msrv_green_single_owner_1572864",
+      "contracts": "15_pass_1_expected_fail_structural_rank_beats_source_order_for_compound_faults_actual_1572864_1572865_expected_1048576_1048577",
+      "typescript_native_diagnostic": "P1-RED-TS-NATIVE-SUCCESSOR-MAPPING_exit_1_actual_bridge_internal_expected_codec_property_limit_1572864_1572865",
+      "dirty_full_runner": "78_files_manifest_e4445a175cedaa34eaed455f48a98735ac2fa4808cc94314ff5148db6b6523d5_582_discovered_577_pass_1_expected_skip_4_fail_one_dirty_status_plus_three_expected_workspace_law_6_of_9",
+      "extra_p1_failures": 0
+    },
     "p2_contracts_started": false,
     "root_cause_audit": {
       "P0": 0,
@@ -176,6 +186,6 @@
     },
     "bounded_planning_repair_candidate": "1cd0caadff218c1471f67cdf1a1ab78f5653a605",
     "planning_validation": "trellis_four_tasks_pass_json_jsonl_27_paths_unique_hash9_parent_once_fences_diffcheck_planning_range15_protected0_typecheck_build_pass_dirty_full_78_files_manifest_e4445a175cedaa34eaed455f48a98735ac2fa4808cc94314ff5148db6b6523d5_582_discovered_577_pass_1_expected_skip_4_fail_one_dirty_status_plus_same_three_workspace_law_6_of_9_first_rkp1a_check_jsonl_clean_head_full_required_post_commit",
-    "next_gate": "P1_core_types_single_authority_bounded_red_checkpoint"
+    "next_gate": "independent_P1_implementation_audit_then_separate_P2_authorization"
   }
 }

@@ -40,7 +40,7 @@
     "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "IN_PROGRESS / ACCEPTED PLANNING AUTHORITY D638B81 / E0 COMPLETE / E1+E1R GREEN / E2-E3 NOT STARTED / EXTERNAL BLOCKER PUBLIC JSON PROPERTY CAP CONTRACT CONFLICT / RKP-2 OPERATIONALLY PAUSED / RKP-1A PLANNING PASS 0/0/0 P0 ACTIVATED AND P1 CORE TYPES BOUNDED RED IS NEXT / TYPESCRIPT DEFAULT.",
+  "notes": "IN_PROGRESS / ACCEPTED PLANNING AUTHORITY D638B81 / E0 COMPLETE / E1+E1R GREEN / E2-E3 NOT STARTED / EXTERNAL BLOCKER PUBLIC JSON PROPERTY CAP CONTRACT CONFLICT / RKP-2 OPERATIONALLY PAUSED / RKP-1A PLANNING PASS 0/0/0 P0 ACTIVATED AND P1 CORE TYPES BOUNDED RED COMPLETE / P1 INDEPENDENT IMPLEMENTATION AUDIT IS NEXT / TYPESCRIPT DEFAULT.",
   "meta": {
     "planning_base_commit": "4a302bc9f9981940336fc97941b08e09bd0d1f67",
     "source_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -111,7 +111,9 @@
       "production_implementation_authorized": true,
       "user_implementation_authorization_scope": "P0_and_P1_only_P2_not_authorized",
       "p0_activation_completed": true,
-      "p1_core_types_completed": false
+      "p1_core_types_completed": true,
+      "p1_state": "bounded_RED_complete_exact_two_allowed_failures_zero_extra",
+      "p1_independent_implementation_audit": "pending"
     },
     "e3_candidate_freeze_started": false,
     "root_cause_audit": {
@@ -217,7 +219,7 @@
       "E2_unique_request_worker_protocol_and_first_real_stress_run",
       "E3_fresh_request_formal_evidence_and_candidate_freeze"
     ],
-    "next_gate": "rkp1a-P1-core-types-bounded-red-checkpoint",
+    "next_gate": "rkp1a-P1-independent-implementation-audit",
     "archive_authorized": false,
     "push_authorized": false,
     "default_runtime_switch_authorized": false,

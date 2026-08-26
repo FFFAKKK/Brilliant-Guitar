@@ -2,9 +2,9 @@
 
 ## Status
 
-P0 ACTIVATED — P1 CORE TYPES BOUNDED RED CHECKPOINT AUTHORIZED.
+P1 BOUNDED RED COMPLETE — INDEPENDENT IMPLEMENTATION AUDIT REQUIRED.
 
-Exact planning head `1cd0caadff218c1471f67cdf1a1ab78f5653a605` passed targeted independent planning rereview at P0/P1/P2=`0/0/0`. User authorization is limited to P0 and P1; P2-P4 remain unauthorized.
+Exact planning head `1cd0caadff218c1471f67cdf1a1ab78f5653a605` passed targeted independent planning rereview at P0/P1/P2=`0/0/0`. P0 and P1 are implemented as separate commits; P1 intentionally stops with exactly the two accepted RED observations. P2-P4 remain unauthorized.
 
 ## Candidate claims
 
@@ -30,9 +30,12 @@ Relative to `639e93555c15b46c54c8e9bb7ec610d4a77c7478`, the exact planning allow
 - Confirm the native TypeScript wire consumer changes while `strict-input-capture.ts` remains read-only.
 - Confirm P3 proves real decoder/native behavior without a second fixture or admission path.
 - Confirm RKP-2 S6.2/S6.3 remain false and all lifecycle permissions stay closed.
+- Verify that `json.rs` is the only P1 technical path, `JSON_PROPERTY_LIMIT` has one production owner at `1_572_864`, Core Types is 6/6 green, Contracts has exactly one failing snapshot at `1572864/1572865` versus `1048576/1048577`, and the no-write fake-native diagnostic alone demonstrates the predecessor adapter downgrade to `bridge.internal`.
 
 ## Validation note
 
 Typecheck/build pass. Clean source `639e935...` and planning candidate `c02c830...` each discover 78 files with manifest `e4445a175cedaa34eaed455f48a98735ac2fa4808cc94314ff5148db6b6523d5`, 582 discovered / 578 pass / 1 expected GC skip / 3 known workspace-law fail-closed results; the same three test names fail at `6/9` and no product/native/codec test fails.
 
 The first rejected path is not the same: source `639e935...` first rejects the unaccepted Stage-6 child `check.jsonl`; candidate `c02c830...` first rejects the unaccepted RKP-1A child `check.jsonl`. Both are expected fail-closed governance evidence; workspace-law remains byte-zero in this planning repair.
+
+At the dirty P1 checkpoint, the same manifest discovers 582 tests: 577 pass, 1 expected skip and 4 fail. One is only the clean-worktree assertion against uncommitted `json.rs`; the remaining three are the same expected workspace-law 6/9 failures. Clean-head full runner evidence is reported after the P1 commit.
