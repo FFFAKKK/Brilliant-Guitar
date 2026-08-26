@@ -44,7 +44,7 @@
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RKP-0 RKP-1 AND PRIOR REPAIRS ACCEPTED ARCHIVED / RKP-2 REMAINS SOLE ACTIVE IMPLEMENTATION CHILD / STAGE 6 S6.0 COMMIT CE673A2 PRESERVED / S6.1-S6.3 PAUSED FOR ACTIVE BOUNDED PART-OWNER WIRE CONTRACT CHILD / PLANNING PASS 0/0/0 / R0 COMPLETE / TYPESCRIPT DEFAULT / NO ACCEPT ARCHIVE INTEGRATION CUTOVER PUSH QUALIFICATION OR RKP-3.",
+  "notes": "RKP-0 RKP-1 AND PRIOR REPAIRS ACCEPTED ARCHIVED / RKP-2 REMAINS SOLE ACTIVE IMPLEMENTATION CHILD / STAGE 6 S6.0 COMMIT CE673A2 PRESERVED / S6.1-S6.3 PAUSED / PART-OWNER WIRE REPAIR EXACT CANDIDATE C77D2DD ACCEPTED BY TARGETED IMPLEMENTATION REREVIEW 0/0/0 / NATIVE ARCHIVE NEXT / TYPESCRIPT DEFAULT / NO STAGE6 RESUME CUTOVER PUSH QUALIFICATION OR RKP-3.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
@@ -92,7 +92,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "rkp2-part-owner-wire-contract-repair-targeted-independent-implementation-rereview",
+    "next_gate": "rkp2-part-owner-wire-contract-repair-native-archive",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -301,7 +301,7 @@
     "rkp2_part_owner_wire_contract_repair": {
       "parent": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
       "planning_base": "ce673a2ad62348fa73458d493a45f9c005bf0288",
-      "status": "docs_evidence_repair_complete_ready_for_targeted_independent_implementation_rereview",
+      "status": "accepted_archive_pending_same_closeout",
       "task_start_run": true,
       "production_implementation_authorized": true,
       "user_implementation_authorization": true,
@@ -310,21 +310,24 @@
       "accepted_planning_head": "ee1af9409b4140d322c88389a4c1df1368655a31",
       "planning_rereview": "P0_0_P1_0_P2_0_pass_for_implementation_activation",
       "implementation_candidate_ready": true,
-      "implementation_review": "pending",
-      "implementation_rereview": "pending",
+      "implementation_review": "passed",
+      "implementation_rereview": "passed",
       "implementation_blocker": null,
       "first_independent_implementation_review": "cb721507e405778a7b8ae2ec4e48d4d40e395366_return_0_1_0_current_tense_and_range_evidence_only",
-      "docs_evidence_repair": "completed_targeted_implementation_rereview_pending_no_technical_delta",
+      "docs_evidence_repair": "c77d2dd5d3405e9ee24c5168851b2cc7816ec1aa_completed_and_targeted_implementation_rereview_passed",
+      "accepted_audited_candidate": "c77d2dd5d3405e9ee24c5168851b2cc7816ec1aa",
+      "final_targeted_implementation_rereview": "P0_0_P1_0_P2_0_pass_for_implementation_acceptance",
+      "archive_authorized": true,
       "root_cause_audit": "P0_0_P1_1_P2_0",
       "first_planning_review": "7e211869b7ab8d5ead3916ca8d98107d55f182db_return_0_1_0_foundation_score_extra_responsibility_drift",
       "bounded_repair": "foundation_part_mapping_only_score_extra_remains_contracts_typescript_accepted_for_r0_r3_implementation",
-      "implementation_stage": "docs_evidence_repair_complete_targeted_rereview_pending",
+      "implementation_stage": "accepted_archive_pending_same_closeout",
       "implementation_technical_head": "738f746085a2b3f9e3e5520523cf5356b6f6f576",
-      "implementation_commits": "r0_dd6f92759e0254742fd4bf2761fe0d020ec4d3aa_r1_4510fd95f406acc109cad8f120a0050a0e678c2e_r2_738f746085a2b3f9e3e5520523cf5356b6f6f576_r3_cb721507e405778a7b8ae2ec4e48d4d40e395366_docs_evidence_repair_this_head",
+      "implementation_commits": "r0_dd6f92759e0254742fd4bf2761fe0d020ec4d3aa_r1_4510fd95f406acc109cad8f120a0050a0e678c2e_r2_738f746085a2b3f9e3e5520523cf5356b6f6f576_r3_cb721507e405778a7b8ae2ec4e48d4d40e395366_docs_evidence_repair_c77d2dd5d3405e9ee24c5168851b2cc7816ec1aa",
       "implementation_evidence": "rust_73_of_73_node20_24_focused_23_of_23_dynamic_579_578_1_0_manifest_e4445a175cedaa34eaed455f48a98735ac2fa4808cc94314ff5148db6b6523d5",
       "range_evidence": "ce673a2_to_ee1af940_15_docs_ee1af940_to_738f746_6_technical_plus_7_lifecycle_ee1af940_to_cb721507_6_technical_plus_8_lifecycle_r3_8_lifecycle_only",
       "future_technical_allowlist_count": 6,
-      "stage_6_resume": "blocked_until_repair_accepted_archived_integrated"
+      "stage_6_resume": "blocked_until_native_archive_and_fast_forward_only_integration"
     },
     "rkp2_cross_platform_full_runner_repair": {
       "planning_base": "eed4871a86191783d539b7d4097be3627e98e4a0",

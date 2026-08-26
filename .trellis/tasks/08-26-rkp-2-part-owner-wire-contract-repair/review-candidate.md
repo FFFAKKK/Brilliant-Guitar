@@ -2,9 +2,9 @@
 
 ## Verdict requested
 
-`READY FOR TARGETED INDEPENDENT IMPLEMENTATION REREVIEW`.
+`PASS FOR OWNER ACCEPTANCE AND NATIVE ARCHIVE CLOSEOUT`.
 
-Exact repaired planning head `ee1af9409b4140d322c88389a4c1df1368655a31` passed targeted independent planning rereview at P0/P1/P2=`0/0/0`. The user authorized only this bounded child through R3; implementation review remains pending and no later lifecycle action is authorized.
+Exact repaired planning head `ee1af9409b4140d322c88389a4c1df1368655a31` passed targeted independent planning rereview at P0/P1/P2=`0/0/0`. Exact implementation candidate `c77d2dd5d3405e9ee24c5168851b2cc7816ec1aa` then passed targeted independent implementation rereview at P0/P1/P2=`0/0/0`. Owner acceptance and native archive are authorized; RKP-2 S6.1, push, cutover, qualification and RKP-3 remain unauthorized.
 
 ## Exact object
 
@@ -53,11 +53,11 @@ Technical ownership is exactly the six paths listed in `design.md`. The candidat
 
 ## Current lifecycle truth
 
-RKP-2 S6.0 remains committed and is not rewritten. Stage 6 remains started/authorized but operationally paused. S6.1/S6.2/S6.3 are false. This child is `in_progress` with start/production authorization true only for R0–R3, candidate-ready true and targeted implementation rereview pending. Archive/push/cutover/measurement/RKP-3 remain false.
+RKP-2 S6.0 remains committed and is not rewritten. Stage 6 remains started/authorized but operationally paused. S6.1/S6.2/S6.3 are false. Before the native archive command this child remains `in_progress`; implementation review and rereview are passed, archive is authorized, and push/cutover/measurement/RKP-3 remain false.
 
 ## Self-audit
 
-Bounded-repair planning review passed P0/P1/P2=`0/0/0`. The first independent implementation review of exact candidate `cb721507e405778a7b8ae2ec4e48d4d40e395366` returned P0/P1/P2=`0/1/0` only for current-tense and range evidence. This docs-only repair closes that finding; targeted rereview remains pending and no implementation PASS is claimed.
+Bounded-repair planning review passed P0/P1/P2=`0/0/0`. The first independent implementation review of exact candidate `cb721507e405778a7b8ae2ec4e48d4d40e395366` returned P0/P1/P2=`0/1/0` only for current-tense and range evidence. The docs-only repair closed that finding, and targeted rereview of exact `c77d2dd5d3405e9ee24c5168851b2cc7816ec1aa` passed P0/P1/P2=`0/0/0` for implementation acceptance.
 
 ## Gate evidence
 
@@ -69,3 +69,10 @@ Bounded-repair planning review passed P0/P1/P2=`0/0/0`. The first independent im
 - Node 20/24 focused bridge+parity+workspace-law: 23/23 on both; parity is 6/6 and workspace-law is 8/8.
 - Fresh LF Rust: 73/73 plus fmt/check/clippy/MSRV PASS; Foundation 18/18 and Contracts 16/16.
 - Trellis child/RKP-2/Rust parent, JSON/JSONL/path uniqueness, parent reference, Markdown fences and diff-check: PASS.
+
+## Accepted audit pin
+
+- Auditor thread: `019faec2-f6ec-78e3-bfd9-7dc472d1c3af`.
+- Audited implementation candidate: `c77d2dd5d3405e9ee24c5168851b2cc7816ec1aa`.
+- Technical verdict: `PASS FOR IMPLEMENTATION ACCEPTANCE`, P0/P1/P2=`0/0/0`.
+- Subsequent acceptance/archive/projection commits are lifecycle-only and do not replace the audited technical candidate.

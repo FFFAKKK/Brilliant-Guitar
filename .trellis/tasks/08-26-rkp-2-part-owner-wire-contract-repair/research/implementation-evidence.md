@@ -9,9 +9,9 @@
 - R3 evidence/candidate freeze: `cb721507e405778a7b8ae2ec4e48d4d40e395366`.
 - First independent implementation review of `cb721507...`: RETURN FOR BOUNDED IMPLEMENTATION REPAIR, P0/P1/P2=`0/1/0`, limited to current-tense and range evidence.
 - Docs-only evidence repair: this HEAD; report its exact hash after commit.
-- Review state: `implementation_candidate_ready=true`, `implementation_review=pending`, `targeted_implementation_rereview=pending`.
+- Review state: `implementation_candidate_ready=true`, `implementation_review=passed`, `targeted_implementation_rereview=passed`, `archive_authorized=true`.
 
-No independent implementation PASS, acceptance, archive, integration, RKP-2 S6.1 resume, push, default cutover, qualification or RKP-3 is claimed.
+Dedicated targeted implementation rereview accepted exact candidate `c77d2dd5d3405e9ee24c5168851b2cc7816ec1aa` at P0/P1/P2=`0/0/0`. Owner closeout and native archive are authorized; integration, RKP-2 S6.1 resume, push, default cutover, qualification and RKP-3 are not yet claimed.
 
 ## Implemented contract
 
@@ -53,3 +53,11 @@ The original RKP-2 implementation worktree remains at S6.0 commit `ce673a2ad6234
 3. Reproduce exact failure paths/bytes and zero-handle publication for snake, dual, Part-extra and Score-extra owners.
 4. Reproduce ordered unknown score+Part extension round-trip, canonical repeated reads and zero snake_case output through the real addon.
 5. Verify all four immutable intervals, exact six technical paths, lifecycle-only R3 delta, byte-zero technical delta after `cb721507`, and protected/public zero-drift outside the literal allowlists.
+
+## Accepted implementation audit
+
+- Audit thread: `019faec2-f6ec-78e3-bfd9-7dc472d1c3af`.
+- Exact audited candidate: `c77d2dd5d3405e9ee24c5168851b2cc7816ec1aa`.
+- Verdict: `PASS FOR IMPLEMENTATION ACCEPTANCE`, P0/P1/P2=`0/0/0`.
+- The accepted technical implementation remains pinned to `c77d2dd`; the acceptance sync and all later archive/projection commits are lifecycle-only heads.
+- Reused technical evidence: Rust 73/73; Foundation 18/18; Contracts 16/16; Node 20.20.2/24.15.0 focused 23/23; dynamic runner 78 files, manifest `e4445a175cedaa34eaed455f48a98735ac2fa4808cc94314ff5148db6b6523d5`, 579 discovered/578 pass/1 expected skip/0 fail.

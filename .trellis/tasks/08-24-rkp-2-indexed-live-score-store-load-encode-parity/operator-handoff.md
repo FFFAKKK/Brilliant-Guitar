@@ -140,3 +140,11 @@ RKP-2 current coordination is now exactly historical ten plus archived thirteen 
 The first independent implementation review of child candidate `cb721507e405778a7b8ae2ec4e48d4d40e395366` returned P0/P1/P2=`0/1/0` only for current-tense and changed-range evidence. The technical implementation is unchanged. A docs-only bounded repair now records the implemented serde state and the exact 15-planning, 6+7 technical-head, 6+8 candidate and R3-eight-lifecycle intervals; targeted implementation rereview remains pending and no PASS is claimed.
 
 RKP-2 preserves S6.0, remains operationally paused before S6.1, and keeps TypeScript as default. The only next gate is the child targeted independent implementation rereview; acceptance/archive/integration and Stage 6 resume remain unauthorized here.
+
+## Part-owner wire repair accepted implementation
+
+- Dedicated targeted implementation rereview accepted exact child candidate `c77d2dd5d3405e9ee24c5168851b2cc7816ec1aa` with P0/P1/P2=`0/0/0`.
+- The accepted planning authority remains `ee1af9409b4140d322c88389a4c1df1368655a31`; later lifecycle commits do not replace the audited technical candidate.
+- Owner closeout and Trellis native archive are authorized for the child. Until archive completes, its active reference remains exact once.
+- RKP-2 S6.0 stays preserved; S6.1/S6.2/S6.3 remain false and operationally paused. TypeScript remains the default runtime.
+- Next action is native archive followed by archived-authority projection and fast-forward-only integration; no Stage 6 technical work, push, cutover, qualification or RKP-3 is authorized.
