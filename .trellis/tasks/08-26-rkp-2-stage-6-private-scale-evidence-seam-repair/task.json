@@ -40,7 +40,7 @@
     "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "IN_PROGRESS / ACCEPTED PLANNING AUTHORITY D638B81 / E0 COMPLETE / E1+E1R GREEN / E2-E3 NOT STARTED / EXTERNAL BLOCKER PUBLIC JSON PROPERTY CAP CONTRACT CONFLICT / RKP-2 OPERATIONALLY PAUSED / RKP-1A TARGETED PLANNING REREVIEW IS NEXT / TYPESCRIPT DEFAULT.",
+  "notes": "IN_PROGRESS / ACCEPTED PLANNING AUTHORITY D638B81 / E0 COMPLETE / E1+E1R GREEN / E2-E3 NOT STARTED / EXTERNAL BLOCKER PUBLIC JSON PROPERTY CAP CONTRACT CONFLICT / RKP-2 OPERATIONALLY PAUSED / RKP-1A PLANNING PASS 0/0/0 P0 ACTIVATED AND P1 CORE TYPES BOUNDED RED IS NEXT / TYPESCRIPT DEFAULT.",
   "meta": {
     "planning_base_commit": "4a302bc9f9981940336fc97941b08e09bd0d1f67",
     "source_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -102,10 +102,16 @@
       "task": "08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair",
       "planning_base": "639e93555c15b46c54c8e9bb7ec610d4a77c7478",
       "root_cause_audit": "P0_0_P1_1_P2_0",
-      "status": "planning",
-      "independent_planning_review": "pending",
+      "status": "in_progress",
+      "independent_planning_review": "passed",
       "first_independent_planning_review": "c02c830_return_0_3_1_for_bounded_planning_repair",
-      "targeted_independent_planning_rereview": "pending"
+      "targeted_independent_planning_rereview": "1cd0caadff218c1471f67cdf1a1ab78f5653a605_pass_0_0_0_for_bounded_activation",
+      "accepted_planning_head": "1cd0caadff218c1471f67cdf1a1ab78f5653a605",
+      "task_start_run": true,
+      "production_implementation_authorized": true,
+      "user_implementation_authorization_scope": "P0_and_P1_only_P2_not_authorized",
+      "p0_activation_completed": true,
+      "p1_core_types_completed": false
     },
     "e3_candidate_freeze_started": false,
     "root_cause_audit": {
@@ -211,7 +217,7 @@
       "E2_unique_request_worker_protocol_and_first_real_stress_run",
       "E3_fresh_request_formal_evidence_and_candidate_freeze"
     ],
-    "next_gate": "rkp1a-targeted-independent-planning-rereview",
+    "next_gate": "rkp1a-P1-core-types-bounded-red-checkpoint",
     "archive_authorized": false,
     "push_authorized": false,
     "default_runtime_switch_authorized": false,

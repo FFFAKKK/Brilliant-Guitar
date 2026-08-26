@@ -3,9 +3,9 @@
 ## Current state
 
 - Planning base: `639e93555c15b46c54c8e9bb7ec610d4a77c7478`.
-- Task status planning; `task_start_run=false`; production/user implementation authorization false.
+- Task status `in_progress`; native `task.py start` has run; production/user authorization is true only for P0 activation and P1 Core Types bounded RED checkpoint.
 - First independent planning review returned P0/P1/P2=`0/3/1`; the four findings have been bounded-repaired in planning authority.
-- Targeted independent planning rereview pending.
+- Targeted independent planning rereview accepted exact head `1cd0caadff218c1471f67cdf1a1ab78f5653a605` at P0/P1/P2=`0/0/0`; P0 is activated and P1 is the current gate.
 - RKP-2 Stage 6 seam repair has E1/E1R green; E2/E3 not started; external blocker `public-json-property-cap-contract-conflict`.
 - TypeScript remains default.
 
@@ -21,8 +21,8 @@ The `1,199,235`-value frozen request must then pass real `decode_create_request`
 
 ## Do not do
 
-Do not run `task.py start`, edit production/test files, accept/archive/integrate, resume E2, push, qualify, cut over the runtime or create RKP-3. Do not edit archived RKP-1 or active specs.
+Do not enter P2-P4, edit Contracts/native/other production or tests, accept/archive/integrate, resume E2, push, qualify, cut over the runtime or create RKP-3. P1 may edit only `crates/brilliant-core-types/src/json.rs`; archived RKP-1 and active specs remain immutable.
 
 ## Next gate
 
-Submit the repaired docs-only candidate to the same targeted read-only planning gate. Implementation requires targeted PASS P0/P1/P2=`0/0/0` plus later explicit user authorization.
+Execute and commit P1 as the exact two-item bounded RED checkpoint, then stop for dedicated independent P1 implementation audit. P2 requires that audit to PASS plus separate user authorization.

@@ -2,9 +2,9 @@
 
 ## Status
 
-READY FOR TARGETED PLANNING REREVIEW.
+P0 ACTIVATED — P1 CORE TYPES BOUNDED RED CHECKPOINT AUTHORIZED.
 
-This candidate is planning-only and does not authorize activation or implementation.
+Exact planning head `1cd0caadff218c1471f67cdf1a1ab78f5653a605` passed targeted independent planning rereview at P0/P1/P2=`0/0/0`. User authorization is limited to P0 and P1; P2-P4 remain unauthorized.
 
 ## Candidate claims
 
@@ -15,7 +15,7 @@ This candidate is planning-only and does not authorize activation or implementat
 5. The frozen fixture and RKP-2 E1/E1R are untouched; E2 remains blocked.
 6. `rust-kernel-smoke.ts` is the fifth technical path because it validates the native failure limit; `strict-input-capture.ts` remains a read-only different counting contract.
 7. P1 and P2 each stop for independent implementation audit; P2 rollback returns to audited P1 RED, not directly to a green predecessor.
-8. The first planning review P0/P1/P2=`0/3/1` is recorded and bounded; targeted rereview is pending.
+8. The first planning review P0/P1/P2=`0/3/1` is recorded and bounded; exact repaired head `1cd0caa...` passed targeted rereview at `0/0/0`.
 
 ## Planning range
 
