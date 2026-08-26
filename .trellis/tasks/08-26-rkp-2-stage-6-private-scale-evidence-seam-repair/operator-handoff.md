@@ -7,7 +7,9 @@
 - First independent planning audit: RETURN FOR BOUNDED PLANNING REPAIR, P0/P1/P2=`0/2/0`.
 - First bounded repair candidate: `176fd3670d3015631fc1553a59cc8e4d3a941221`.
 - Second targeted planning review: RETURN FOR BOUNDED PLANNING REPAIR, P0/P1/P2=`0/1/0`, limited to the real owner-probe API and shutdown-primary contradiction.
-- This second docs-only bounded repair closes that related P1; final targeted rereview remains pending.
+- Second bounded repair candidate: `8d773b8e9d39ac21aba9cad715609fffc80eefec`.
+- Final targeted planning review: RETURN FOR BOUNDED PLANNING REPAIR, P0/P1/P2=`0/1/0`, limited to contradictory cleanup ownership/status on `Start-Process` failure.
+- This third docs-only bounded repair closes only that P1; final targeted rereview remains pending.
 - Task remains `planning`; start/production authorization/candidate readiness false.
 - RKP-2 S6.1 retained complete; S6.2/S6.3 false and operationally paused; TypeScript default.
 
@@ -24,7 +26,7 @@ Future technical ownership remains exactly five paths. Planning authority is now
 - Entity `cvn7-e-00-0000-0-0` is resolved by real `store.lookup_entity(&stable_id)` between `store.metrics` snapshots; then `store.indices.lookup_owner(entity, &mut Rkp2StoreMetrics::default())` is called directly. Separate `entityProbe` and `ownerProbe` records prove exact deltas without changing import/rebuild totals.
 - Rust prefix `BRILLIANT_RKP2_SCALE_RUST_V1:` and process prefix `BRILLIANT_RKP2_SCALE_PROCESS_V1:` each occur exactly once on success.
 - Exact success/rejection shapes, sixteen-code primary union, shutdown secondary statuses and first-failure precedence are in immutable `design.md`.
-- PowerShell named args are fixed at timeout `180000`, poll `25`, stdout/stderr caps `1048576`; env restoration, hidden process, refresh/RSS, output caps, tree termination, `5000ms` reap, redirect flush and cleanup are mandatory.
+- PowerShell named args are fixed at timeout `180000`, poll `25`, stdout/stderr caps `1048576`; env restoration, hidden process, refresh/RSS, output caps, tree termination, `5000ms` reap and redirect flush are mandatory. After validated handoff PowerShell is the sole cleanup owner, cleans `request -> stdout -> stderr -> root` with at most two attempts and `25ms` retry, records only `cleanupStatus=succeeded|failed`, and emits the final sentinel after cleanup.
 - Rejection has `partialEvidence=false`, no internal evidence, raw stream, path, backtrace or partial counter.
 
 ## Stage order
@@ -37,4 +39,4 @@ Clean base: TypeScript `78` files, manifest `e4445a175cedaa34eaed455f48a98735ac2
 
 ## Next action
 
-Send the exact second repaired planning HEAD to the same dedicated read-only auditor. Review the nine hash map, eight mutable paths, exact artifact/argv, compilable two-record probe, sixteen primary codes, secondary shutdown fields, first-failure cleanup rules and E1/E2/E3 request ownership. Do not start or implement before final targeted PASS and new authorization.
+Send the exact third repaired planning HEAD to the same dedicated read-only auditor. Review the nine hash map, eight mutable paths, exact artifact/argv, compilable two-record probe, sixteen primary codes, secondary shutdown fields, the sole post-handoff cleanup owner, two-attempt cleanup matrix, post-cleanup sentinel rule and E1/E2/E3 request ownership. Do not start or implement before final targeted PASS and new authorization.

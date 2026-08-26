@@ -12,6 +12,8 @@
 
 The existing fixture source is a read-only dependency, not an implementation path. It remains the sole fixture owner.
 
+Resource ownership is also singular. TypeScript owns validation and any pre-handoff cleanup; it validates before creating the request TEMP root. Once the PowerShell wrapper accepts the request/root, the wrapper alone owns request/stdout/stderr/root cleanup even when `Start-Process` fails. Its final sentinel is generated only after bounded cleanup status is known; the test fixture may release an injected lock after assertions, but that recovery is outside protocol state.
+
 ## Immutable planning authority — exact nine
 
 After the bounded repair commit, implementation must not change:

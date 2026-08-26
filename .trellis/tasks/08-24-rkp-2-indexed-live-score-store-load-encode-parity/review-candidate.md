@@ -141,3 +141,7 @@ Targeted rereview should verify: the nine hashes recompute exactly; no ninth mut
 Candidate `176fd3670d3015631fc1553a59cc8e4d3a941221` received a second targeted P0/P1/P2=`0/1/0`. The final bounded repair replaces the nonexistent `lookup_entity` metrics argument with real `store.metrics` before/after snapshots, uses direct `store.indices.lookup_owner` with an independent default metric, and emits two separate probe records.
 
 It also removes shutdown outcomes from the primary failure union: cap/timeout stay primary while `terminationStatus`, `reapStatus` and `cleanupStatus` record secondary outcomes. The review target remains planning-only, final targeted rereview pending, with S6.1 retained and S6.2/S6.3 false.
+
+## Stage 6 private scale evidence seam cleanup-ownership rereview
+
+Candidate `8d773b8e9d39ac21aba9cad715609fffc80eefec` received another targeted P0/P1/P2=`0/1/0` solely because its start-failure envelope said cleanup was not attempted after PowerShell had become sole owner of handed-off TEMP resources. The bounded repair freezes TypeScript pre-handoff ownership, PowerShell post-handoff ownership, `cleanupStatus=succeeded|failed`, exact two-attempt cleanup and post-cleanup-only sentinel generation. The target remains planning-only and pending final targeted rereview; S6.2/S6.3 remain false.

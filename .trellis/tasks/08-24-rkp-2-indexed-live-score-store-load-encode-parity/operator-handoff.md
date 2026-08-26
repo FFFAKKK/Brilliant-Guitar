@@ -178,3 +178,9 @@ RKP-2 preserves S6.0, remains operationally paused before S6.1, and keeps TypeSc
 - The repaired contract now uses real `store.lookup_entity(&stable_id)` snapshots plus direct `store.indices.lookup_owner` with independent default metrics, emitting separate `entityProbe`/`ownerProbe` records.
 - The primary union is sixteen codes. Termination/reap are fixed secondary statuses; cap/timeout remain primary, and cleanup alone becomes `process.cleanup-failed` only without an earlier primary.
 - Final targeted planning rereview is pending. The child stays planning; S6.2/S6.3, start/implementation, archive/integration/push and default cutover remain unauthorized.
+
+## Stage 6 private scale evidence seam third bounded planning repair
+
+- Final targeted review of `8d773b8e9d39ac21aba9cad715609fffc80eefec` returned P0/P1/P2=`0/1/0`, limited to a start-failure envelope that contradicted the wrapper's post-handoff cleanup ownership.
+- The repaired contract makes TypeScript the pre-handoff owner and PowerShell the sole post-handoff owner, removes cleanup `not-attempted`, fixes exact request/stdout/stderr/root two-attempt cleanup and emits the final sentinel only after cleanup status is known.
+- Final targeted planning rereview remains pending. S6.1 is retained; S6.2/S6.3 and all implementation/lifecycle advancement remain unauthorized.

@@ -93,7 +93,7 @@ The internal payload contains no RuntimeHandle, slot/generation, allocator error
 3. canonicalizes the score with the existing TypeScript codec;
 4. writes the exact create-request JSON to a fresh temporary path;
 5. records file length `15013932` and score length `15013904`;
-6. deletes its temporary directory after the process settles.
+6. hands the request/root to PowerShell and, after the final envelope, asserts that the wrapper removed them; TypeScript cleans only a pre-handoff `pwsh` launch failure for which no process envelope exists.
 
 Rust may parse only that request using the real Contracts codec. It may not contain a mirrored stress builder, embedded score literal or second expected-payload owner.
 
@@ -151,11 +151,13 @@ The script parameter block is frozen:
 | `MaxStdoutBytes` | `[int]` | default and only accepted value `1048576` |
 | `MaxStderrBytes` | `[int]` | default and only accepted value `1048576` |
 
-Any other value is `process.protocol-invalid` before `Start-Process`.
+TypeScript validates every named argument and the executable/script/test identities before creating any owned TEMP resource. A validation failure is therefore a TypeScript pre-call failure: TypeScript fails closed, cleans anything it created before handoff, does not invoke PowerShell and does not fabricate a PowerShell process envelope. Only after validation may TypeScript create the owned TEMP root/request and hand them to the wrapper.
 
 ### 6.2 Exact process lifecycle
 
-The script saves whether `BRILLIANT_RKP2_SCALE_REQUEST_V1` existed and its prior value, sets it only in its own process before `Start-Process`, and restores the prior value or removes the variable in `finally`. The child inherits it; no user/global environment is changed.
+Ownership transfers when the validated PowerShell wrapper accepts the already-created request and owned TEMP root. From that point the wrapper is the sole cleanup owner for the request, redirect stdout/stderr and owned TEMP root, including when `Start-Process` throws. If `pwsh` itself cannot start and no wrapper accepts the handoff, TypeScript retains ownership, performs bounded cleanup and fails closed outside the process-envelope protocol.
+
+The script saves whether `BRILLIANT_RKP2_SCALE_REQUEST_V1` existed and its prior value, sets it only in its own process before `Start-Process`, and restores the prior value or removes the variable in `finally`. The child inherits it; no user/global environment is changed. The same `finally` first closes any process/redirection handles, then restores/removes the environment variable, then cleans owned resources in exact order `request -> stdout -> stderr -> owned TEMP root`.
 
 The script creates unique TEMP stdout/stderr files and uses `Start-Process -WindowStyle Hidden -PassThru -RedirectStandardOutput <stdout> -RedirectStandardError <stderr>` with exact libtest argv. The liveness clock begins only after `Start-Process` succeeds. Cold compilation, fixture generation and request writing are outside it.
 
@@ -163,11 +165,13 @@ Every `25ms` poll performs, in order: `Refresh()`, checked `PeakWorkingSet64` ma
 
 Rust `Instant` measures decode/import/index/probe/rebuild/export/encode only. `PeakWorkingSet64` must be available, positive and safe-integer representable. Both are required diagnostics with no latency or RSS pass budget.
 
-TEMP request/stdout/stderr files and their owning temp directory are deleted. Cleanup is part of the protocol and never publishes partial evidence.
+Cleanup is bounded and idempotent. For each target in the exact order above, the wrapper checks existence, attempts deletion at most twice, and waits exactly `25ms` before the second attempt. Any failed attempt makes final `cleanupStatus="failed"` even if retry succeeds; any resource that remains after the second attempt also makes it failed. The test fixture may release an intentionally injected lock only after protocol assertions and must then prove zero test residue; that fixture cleanup is not part of protocol status.
+
+The wrapper completes this `finally`, observes the actual cleanup result, and only then constructs the sole external final sentinel. It may never publish success before cleanup. A successful workload followed by cleanup failure becomes rejection `process.cleanup-failed` with `partialEvidence=false`.
 
 ### 6.3 Exact final process protocol
 
-The script captures libtest output and never relays it. Its stdout contains exactly one line beginning `BRILLIANT_RKP2_SCALE_PROCESS_V1:` followed by compact exact-shape JSON; stderr is empty for protocol output.
+The script captures libtest output and never relays it. After `finally` has completed, its stdout contains exactly one line beginning `BRILLIANT_RKP2_SCALE_PROCESS_V1:` followed by compact exact-shape JSON; stderr is empty for protocol output.
 
 Success shape, key order and allowed fields are exactly:
 
@@ -179,16 +183,16 @@ Success shape, key order and allowed fields are exactly:
 | `process` | exact object `exitCode=0`, `timedOut=false`, positive safe integer `peakWorkingSetBytes`, safe integers `stdoutBytes` and `stderrBytes`, `terminationStatus="not-required"`, `reapStatus="succeeded"`, `cleanupStatus="succeeded"` |
 | `partialEvidence` | boolean `false` |
 
-Rejection shape has exactly `schemaVersion=1`, `status="rejected"`, `failure`, `process`, `partialEvidence=false`; it must not contain `evidence`. `failure` is exactly `{code,details}`. Rejection `process` is exactly `{exitCode,timedOut,peakWorkingSetBytes,stdoutBytes,stderrBytes,terminationStatus,reapStatus,cleanupStatus}`: `exitCode` and `peakWorkingSetBytes` are safe integers or `null`; byte counts are safe integers; `terminationStatus` and `reapStatus` are exactly `not-required|succeeded|failed`; `cleanupStatus` is exactly `not-attempted|succeeded|failed`. No raw stdout/stderr, filesystem path, OS error, backtrace, payload or partial counter is allowed.
+Rejection shape has exactly `schemaVersion=1`, `status="rejected"`, `failure`, `process`, `partialEvidence=false`; it must not contain `evidence`. `failure` is exactly `{code,details}`. Rejection `process` is exactly `{exitCode,timedOut,peakWorkingSetBytes,stdoutBytes,stderrBytes,terminationStatus,reapStatus,cleanupStatus}`: `exitCode` and `peakWorkingSetBytes` are safe integers or `null`; byte counts are safe integers; `terminationStatus` and `reapStatus` are exactly `not-required|succeeded|failed`; `cleanupStatus` is exactly `succeeded|failed`. No raw stdout/stderr, filesystem path, OS error, backtrace, payload or partial counter is allowed.
 
 Status reachability is frozen:
 
-- start failure: `exitCode=null`, `timedOut=false`, `peakWorkingSetBytes=null`, both byte counts `0`, `terminationStatus="not-required"`, `reapStatus="not-required"`, `cleanupStatus="not-attempted"`;
+- `Start-Process` failure after wrapper handoff: primary `process.start-failed`, `exitCode=null`, `timedOut=false`, `peakWorkingSetBytes=null`, both byte counts `0`, `terminationStatus="not-required"`, `reapStatus="not-required"`, and `cleanupStatus` records the actual `succeeded|failed` result; cleanup failure cannot replace the start primary;
 - output cap or timeout: the selected primary remains cap/timeout; termination is requested and records `succeeded|failed`; bounded reap always follows and records `succeeded|failed`; cleanup records `succeeded|failed`;
 - normal or nonzero exit: `terminationStatus="not-required"`; reap and cleanup record their real `succeeded|failed` outcomes;
 - success requires normal zero exit plus `reapStatus="succeeded"` and `cleanupStatus="succeeded"`;
 - a normal zero-exit `reapStatus="failed"` with no earlier primary selects existing `process.protocol-invalid` details `{stage:"process",reason:"identity"}` at the protocol stage, because complete redirected output cannot be proven;
-- cleanup failure with no earlier primary selects `process.cleanup-failed`; with an earlier primary it changes only `cleanupStatus="failed"`.
+- cleanup failure with no earlier primary selects `process.cleanup-failed`; with an earlier primary it changes only `cleanupStatus="failed"`; successful workload plus cleanup failure is therefore rejected, never success.
 
 ### 6.4 Closed failure union
 
@@ -218,6 +222,8 @@ The closed counter names are every leaf in `metrics` plus `entityProbe.entityInd
 Primary selection order is exact: start → sampling/refresh → stdout/stderr cap → timeout → exit code → internal sentinel count → JSON parse → exact protocol/range → RSS validity → frozen counts/bytes/counters → parity → ordering → payload/round-trip → cleanup. Shutdown secondary statuses do not participate in primary selection.
 
 The first selected failure is immutable. Cap plus termination failure remains `process.output-limit-exceeded` with `terminationStatus="failed"`; timeout plus reap failure remains `process.timeout` with `reapStatus="failed"`. Cleanup failure is `process.cleanup-failed` only when no earlier primary exists; otherwise it changes only `cleanupStatus="failed"`. Every rejection remains `partialEvidence=false`. Focused injected fixtures cover those exact combinations and every reachable primary code without copying production parsing logic.
+
+Cleanup-specific negative fixtures are exact: a syntactically eligible existing `.exe` that passes pre-handoff path validation but is not a valid libtest makes `Start-Process` fail, reports primary `process.start-failed` plus `cleanupStatus="succeeded"`, settles without a hang and leaves no owned TEMP root; an injected first deletion failure followed by successful retry keeps primary `process.start-failed`, reports `cleanupStatus="failed"` and leaves no owned TEMP root; two failed attempts report rejection with the earlier primary (or `process.cleanup-failed` when cleanup is the first failure), `cleanupStatus="failed"` and no partial evidence, after which the fixture releases its injected fault and proves zero test residue.
 
 ## 7. Ownership and allowlists
 
