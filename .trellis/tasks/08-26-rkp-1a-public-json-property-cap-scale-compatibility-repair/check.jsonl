@@ -1,0 +1,13 @@
+{"file":".trellis/spec/core-kernel/index.md","reason":"Verify lifecycle and authority boundaries remain consistent with the Core Kernel entry point."}
+{"file":".trellis/spec/core-kernel/backend/index.md","reason":"Verify no qualification status or performance budget claim changed."}
+{"file":".trellis/tasks/08-16-brilliant-guitar-architecture-reset-v2/design.md","reason":"Verify TypeScript remains default and the staged migration scope does not expand."}
+{"file":".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/design.md","reason":"Compare the successor against immutable RKP-1 depth, byte-cap and failure contracts."}
+{"file":".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/prd.md","reason":"Check every requirement and acceptance criterion is testable and scope closed."}
+{"file":".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/design.md","reason":"Audit sole authority, exact threshold, precedence, resource laws and rejected routes."}
+{"file":".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/implement.md","reason":"Check P0-P4 ownership, commit boundaries, gates and rollback points."}
+{"file":".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/research/root-cause-and-exact-node-count.md","reason":"Recompute exact request, document, envelope counts and successor headroom."}
+{"file":".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/research/authority-and-consumer-impact-map.md","reason":"Verify downstream layers receive tests only and no second admission owner appears."}
+{"file":".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/research/file-test-ownership-matrix.md","reason":"Mechanically verify four technical and seven lifecycle paths."}
+{"file":".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json","reason":"Verify the child reference occurs once and the next gate is independent planning review."}
+{"file":".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json","reason":"Verify RKP-2 remains paused with S6.2/S6.3 false and TypeScript default."}
+{"file":".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/task.json","reason":"Verify E1/E1R remain green, E2 is not started and the external blocker is exact."}

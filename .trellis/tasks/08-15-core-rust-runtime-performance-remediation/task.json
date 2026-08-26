@@ -22,7 +22,8 @@
     "08-15-rkp-0-authority-contract-oracle-freeze",
     "08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke",
     "08-24-rkp-1-post-archive-workspace-contract-authority-repair",
-    "08-24-rkp-2-indexed-live-score-store-load-encode-parity"
+    "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
+    "08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair"
   ],
   "parent": "07-29-core-vnext-product-ready-extensible-kernel-completion",
   "relatedFiles": [
@@ -49,7 +50,7 @@
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
     "source_cvn7_status": "in_progress_measurement_incomplete_evidence_invalid",
-    "current_planning_child": null,
+    "current_planning_child": "08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair",
     "future_children_created": true,
     "stage_sequence": [
       "RKP-0",
@@ -92,7 +93,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "rkp2-private-scale-evidence-seam-E2",
+    "next_gate": "rkp1a-independent-planning-review",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -300,6 +301,22 @@
     "rkp2_implementation_review": "pending",
     "rkp2_default_runtime": "typescript",
     "rkp2_current_blocking_descendant": "08-26-rkp-2-stage-6-private-scale-evidence-seam-repair",
+    "rkp2_external_blocking_task": "08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair",
+    "rkp1a_public_json_property_cap_scale_compatibility_repair": {
+      "parent": "08-15-core-rust-runtime-performance-remediation",
+      "planning_base": "639e93555c15b46c54c8e9bb7ec610d4a77c7478",
+      "branch": "codex/rkp-1a-public-json-property-cap-scale-compatibility-repair",
+      "status": "planning",
+      "task_start_run": false,
+      "production_implementation_authorized": false,
+      "independent_planning_review": "pending",
+      "implementation_candidate_ready": false,
+      "root_cause_audit": "P0_0_P1_1_P2_0_public_json_property_cap_contract_conflict",
+      "old_limit": 1048576,
+      "successor_limit": 1572864,
+      "rkp2_stage_6_state": "E1_and_E1R_green_E2_not_started",
+      "next_gate": "independent_planning_review"
+    },
     "rkp2_stage_6_private_scale_evidence_seam_repair": {
       "parent": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
       "planning_base": "4a302bc9f9981940336fc97941b08e09bd0d1f67",

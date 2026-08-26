@@ -90,13 +90,21 @@
     "bounded_planning_repair": "round_3_cleanup_ownership_and_post_cleanup_envelope_accepted",
     "implementation_candidate_ready": false,
     "implementation_review": "pending",
-    "implementation_blocker": null,
+    "implementation_blocker": "public-json-property-cap-contract-conflict",
     "implementation_stage": "E1_and_E1R_private_rust_seam_green_E2_not_started",
     "e0_activation_completed": true,
     "e1_private_rust_seam_started": true,
     "e1_private_rust_seam_completed": true,
     "e1_verification": "focused_1_of_1_exact_compact_json_framing_artifact_exactly_one_clippy_msrv_and_lf_clone_16_pass_1_ignored",
     "e2_worker_process_started": false,
+    "external_blocker": {
+      "code": "public-json-property-cap-contract-conflict",
+      "task": "08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair",
+      "planning_base": "639e93555c15b46c54c8e9bb7ec610d4a77c7478",
+      "root_cause_audit": "P0_0_P1_1_P2_0",
+      "status": "planning",
+      "independent_planning_review": "pending"
+    },
     "e3_candidate_freeze_started": false,
     "root_cause_audit": {
       "P0": 0,
@@ -201,7 +209,7 @@
       "E2_unique_request_worker_protocol_and_first_real_stress_run",
       "E3_fresh_request_formal_evidence_and_candidate_freeze"
     ],
-    "next_gate": "E2_worker_process_and_first_real_stress_run",
+    "next_gate": "rkp1a-independent-planning-review",
     "archive_authorized": false,
     "push_authorized": false,
     "default_runtime_switch_authorized": false,
