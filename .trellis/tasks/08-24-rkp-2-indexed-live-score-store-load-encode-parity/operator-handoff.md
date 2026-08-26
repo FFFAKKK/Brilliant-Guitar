@@ -156,3 +156,11 @@ RKP-2 preserves S6.0, remains operationally paused before S6.1, and keeps TypeSc
 - Accepted candidate remains `c77d2dd5d3405e9ee24c5168851b2cc7816ec1aa`; acceptance `b761be55597e641b9b1ee83fe277653377ffb41a` and archive `b5e4952438f2d3a11c0b1667071a8c3c3fff3d46` are lifecycle heads.
 - S6.0 remains exact; S6.1/S6.2/S6.3 are false and no technical Stage 6 work is performed by closeout.
 - Next gate after fast-forward-only integration and full integrated validation is resuming preserved S6.1 under a separate instruction. TypeScript remains default; no push/cutover/qualification/RKP-3.
+
+## Stage 6 private scale evidence seam planning blocker
+
+- Integrated S6.1 is retained complete at `4a302bc9f9981940336fc97941b08e09bd0d1f67`; earlier pre-S6.1 wording above is historical.
+- Independent root-cause audit found P0/P1/P2=`0/1/0`: S6.2's three-TypeScript-path allowlist cannot own the private Rust parity/materialization/encode evidence seam. This is a planning/allowlist gap, not a proven production-complexity failure.
+- Current planning child is `08-26-rkp-2-stage-6-private-scale-evidence-seam-repair`. It remains planning, start/production authorization false, independent planning review pending.
+- S6.2 and S6.3 remain false and Stage 6 is operationally paused. TypeScript remains default.
+- The only next gate is the child's independent planning review. Do not run its E0–E3 implementation, resume S6.2, push, archive, cut over, qualify or create RKP-3.

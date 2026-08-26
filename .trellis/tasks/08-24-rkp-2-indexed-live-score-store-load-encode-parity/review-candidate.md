@@ -123,3 +123,9 @@ The child is candidate-ready only for targeted independent implementation rerevi
 - Accepted audited implementation: `c77d2dd5d3405e9ee24c5168851b2cc7816ec1aa`; later lifecycle commits do not replace it.
 - Acceptance sync: `b761be55597e641b9b1ee83fe277653377ffb41a`; native archive: `b5e4952438f2d3a11c0b1667071a8c3c3fff3d46`.
 - Parent current blocking child is clear. S6.0 is retained, S6.1+ remain false, and fast-forward-only integration plus full gates precede any Stage 6 technical resume.
+
+## Stage 6 private scale evidence seam planning projection
+
+The current blocking child is `08-26-rkp-2-stage-6-private-scale-evidence-seam-repair`, created from exact S6.1 head `4a302bc9f9981940336fc97941b08e09bd0d1f67`. S6.1 is retained complete; S6.2/S6.3 remain false. The child plans one `cfg(test)` Runtime seam plus a fail-closed worker because the prior TypeScript-only S6.2 allowlist cannot invoke private parity/export/encode evidence.
+
+This projection does not claim an implementation defect or planning PASS. The child is `READY FOR INDEPENDENT PLANNING REVIEW`, start/production authorization and candidate readiness remain false, and TypeScript remains default. No S6.2 work, acceptance, archive, push, cutover, qualification or RKP-3 is authorized.

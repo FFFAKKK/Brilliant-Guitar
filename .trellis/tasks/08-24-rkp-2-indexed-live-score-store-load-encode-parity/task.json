@@ -20,7 +20,8 @@
   "subtasks": [],
   "children": [
     "08-25-rkp-2-cross-platform-full-test-runner-contract-repair",
-    "08-26-rkp-2-part-owner-wire-contract-repair"
+    "08-26-rkp-2-part-owner-wire-contract-repair",
+    "08-26-rkp-2-stage-6-private-scale-evidence-seam-repair"
   ],
   "parent": "08-15-core-rust-runtime-performance-remediation",
   "relatedFiles": [
@@ -41,7 +42,7 @@
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "RKP-2 STAGE 6 S6.0 AUTHORIZATION COMMIT CE673A2 PRESERVED / S6.1-S6.3 REMAIN FALSE / PART-OWNER WIRE REPAIR C77D2DD ACCEPTED AND NATIVE-ARCHIVED AT B5E4952 / ACTIVE CHILD AUTHORITY ABSENT / FAST-FORWARD INTEGRATION GATES REQUIRED BEFORE S6.1 RESUME / TYPESCRIPT DEFAULT / NO CUTOVER PUSH QUALIFICATION RKP-3.",
+  "notes": "RKP-2 STAGE 6 S6.1 RETAINED COMPLETE AT 4A302BC / S6.2-S6.3 FALSE AND OPERATIONALLY PAUSED / PRIVATE SCALE EVIDENCE SEAM CHILD IS PLANNING AND AWAITS INDEPENDENT REVIEW / TYPESCRIPT DEFAULT / NO START IMPLEMENTATION CUTOVER PUSH QUALIFICATION OR RKP-3.",
   "meta": {
     "planning_base_commit": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "accepted_rkp1_audited_implementation_commit": "94387b339b5e4d9ce6b7f97597a1b56edd051f01",
@@ -103,9 +104,9 @@
       "verdict": "pass"
     },
     "approved_planning_head": "625054ec78e6410e0fb6034ab0c8f60bbf110d08",
-    "current_planning_child": null,
+    "current_planning_child": "08-26-rkp-2-stage-6-private-scale-evidence-seam-repair",
     "current_implementation_child": null,
-    "implementation_stage": "stage_6_s6_0_preserved_part_owner_repair_accepted_archived_s6_1_not_started",
+    "implementation_stage": "stage_6_s6_1_retained_complete_s6_2_paused_for_private_scale_evidence_seam_planning",
     "stage_1_started": true,
     "stage_1_completed": true,
     "stage_1_commit_subject": "build(rkp-2): pin typed generational store dependency",
@@ -308,16 +309,32 @@
       "post_pass_closeout_authorized": true,
       "stage_6_blocked_until_accepted_archived_integrated": false
     },
-    "next_gate": "rkp2-stage6-s6-1-resume-after-accepted-repair-fast-forward-integration-gates",
+    "next_gate": "rkp2-private-scale-evidence-seam-independent-planning-review",
     "stage_6_started": true,
     "stage_6_authorized": true,
     "stage_6_completed": false,
     "stage_6_user_authorization": "post_p1_runner_repair_user_requested_continue_to_later_content_as_separate_stage_6_authorization",
     "stage_6_s6_0_commit": "ce673a2ad62348fa73458d493a45f9c005bf0288",
     "stage_6_operationally_paused": true,
-    "stage_6_s6_1_started": false,
+    "stage_6_s6_1_started": true,
+    "stage_6_s6_1_completed": true,
+    "stage_6_s6_1_commit": "4a302bc9f9981940336fc97941b08e09bd0d1f67",
     "stage_6_s6_2_started": false,
     "stage_6_s6_3_started": false,
+    "stage_6_private_scale_evidence_seam_repair": {
+      "child": "08-26-rkp-2-stage-6-private-scale-evidence-seam-repair",
+      "planning_base": "4a302bc9f9981940336fc97941b08e09bd0d1f67",
+      "branch": "codex/rkp-2-stage-6-private-scale-evidence-seam-repair",
+      "status": "planning",
+      "task_start_run": false,
+      "production_implementation_authorized": false,
+      "independent_planning_review": "pending",
+      "implementation_candidate_ready": false,
+      "root_cause_audit": "P0_0_P1_1_P2_0_current_s6_2_allowlist_cannot_own_private_rust_evidence_seam",
+      "classification": "planning_allowlist_gap_not_proven_production_complexity_failure",
+      "future_technical_allowlist_count": 5,
+      "next_gate": "independent_planning_review"
+    },
     "part_owner_wire_contract_repair": {
       "child": "08-26-rkp-2-part-owner-wire-contract-repair",
       "planning_base": "ce673a2ad62348fa73458d493a45f9c005bf0288",
@@ -358,6 +375,7 @@
     },
     "implementation_review": "pending",
     "implementation_candidate_ready": false,
+    "implementation_blocker": "private_scale_evidence_seam_independent_planning_review_required",
     "archive_authorized": false,
     "push_authorized": false,
     "official_measurement_authorized": false,
