@@ -61,11 +61,19 @@ Foundation DTOs, extension payloads, Runtime records, Session and Node indirect 
 
 P1 is intentionally a bounded RED checkpoint after only the Core Types authority changes. Its exact allowed failures are the old Contracts property-limit exact-byte snapshot and a non-mutating native-adapter successor-limit probe; any other failure blocks. P1 stops for a dedicated independent implementation audit. Only PASS plus separate user authorization permits P2.
 
-P2 closes Contracts snapshots/resources and the native TypeScript failure-wire consumer and has passed independent implementation audit. P3 is split into two separately audited and separately authorized commits. P3A adds `native-wire-v1` and selects it at create and response capture; it stops for independent audit before P3B. P3B alone proves the frozen consumer journey and canonical/semantic roles; it stops for independent audit before P4. Rolling back P3A returns exactly to audited P2. Rolling back P3B removes only consumer evidence.
+P2 closes Contracts snapshots/resources and the native TypeScript failure-wire consumer and has passed independent implementation audit. P3A and P3B each completed their separately authorized implementation and independent audit; P3B's reviewed parent is exact `e4103b779574fcdc728d024c1b8f30244cb332c3`. P4 is not started: its entry audit returned P0/P1/P2=`0/1/0` because a lifecycle-only freeze conflicted with the current workspace-law chain. This A amendment is planning only and must pass a targeted independent review before a separately authorized B governance projection can create the candidate.
 
 ### R10 — lifecycle boundaries
 
-This amendment does not authorize P3A, P3B, P4, acceptance, archive, integration, push, Stage 6 E2, RKP-3, default cutover or qualification. The RKP-2 seam repair remains paused after green E1/E1R.
+This A amendment does not authorize P4 B, candidate freeze, acceptance, archive, integration, push, Stage 6 E2, RKP-3, default cutover or qualification. The RKP-2 seam repair remains paused after green E1/E1R.
+
+### R10.1 — P4 entry and future B governance projection
+
+A is a docs-only amendment whose direct parent is exact `e4103b779574fcdc728d024c1b8f30244cb332c3` and whose changed-path set is exactly the thirteen listed planning/projection paths. It does not name its own future commit hash. A only permits planning review of one later B commit; it does not execute B.
+
+Only after independent planning PASS for the exact A hash and separate user authorization may B be created with direct parent accepted A. B has exactly eight paths: the seven pre-existing lifecycle owners (`task.json`, `operator-handoff.md`, `review-candidate.md`, `research/implementation-evidence.md`, and the Rust-parent, RKP-2-parent and Stage-6-child `task.json` projections) plus `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts`. The test path is mechanical workspace-law projection only and never becomes a second lifecycle owner. B alone may set candidate-ready true; review remains pending and acceptance/archive/integration/E2 stay false.
+
+B must freeze the non-merge, non-empty, one-commit chain `bd8946e → f06c57b → 673a2b9 → e4103b7 → accepted A → HEAD`: preserve every historical segment and cumulative assertion, require `e4103b7..A` to be exactly A's thirteen planning paths, and require `A..HEAD` to be exactly B's eight paths. The law must not hard-code B's own hash, use a wildcard/directory exemption, tolerate an extra commit or accept a merge. A later rollback is not `git revert B`: it is a separately planned exact eight-path governance rollback descendant which restores the seven lifecycle files to A's not-ready state and freezes the B→rollback relation in workspace-law. A itself is never rolled back by that projection.
 
 ### R11 — one-file P3B self-worker evidence protocol
 
@@ -78,9 +86,9 @@ The liveness timer is `180000 ms` from immediately before spawn through settleme
 ## Acceptance Criteria
 
 - [x] P0/P1/P2 are complete and independently audited at `0/0/0`; exact P2 head is `0f65272951fd23080b6f536b2e58f50afe249b02`.
-- [ ] Targeted planning rereview accepts this P3A/P3B amendment at P0/P1/P2=`0/0/0`.
-- [ ] Future P3A proves default/native capture boundaries, DAG and JSON-cloned create, public read and hostile capture regressions, then passes independent audit before separately authorized P3B.
-- [ ] Future P3B proves the unchanged frozen request passes real decoder plus raw/public native create/read/export, exact SHA roles, semantic equality and extension preservation, then passes independent audit before P4.
+- [x] P3A and P3B completed their separately audited bounded implementation gates; P3B's reviewed parent is `e4103b779574fcdc728d024c1b8f30244cb332c3`.
+- [ ] Targeted independent planning review accepts exact A before any separately authorized B candidate-freeze projection.
+- [ ] B preserves the seven lifecycle owners, adds exactly one workspace-law projection path, freezes the historical chain and sets candidate-ready without acceptance/archive/integration/E2.
 - [ ] Future P3B negative tests exercise CommonJS direct-entry and recursion guards, both first-observed orderings, taskkill launch/nonzero/timeout, reap timeout, cleanup recovery/two-failure, nonzero/signal, both output caps and missing/duplicate/malformed/extra-field sentinel using the same single-file harness.
 - [ ] Public `28/51/8/34/9`, two exports, 22 failures, `brilliant-score-1` and TypeScript default show zero drift.
 - [ ] Every implementation phase is independently revertible and no path outside the exact allowlists changes.

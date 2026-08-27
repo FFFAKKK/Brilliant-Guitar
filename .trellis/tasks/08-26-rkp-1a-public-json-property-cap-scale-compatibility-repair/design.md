@@ -118,7 +118,9 @@ No other Rust, `src/**`, fixture, Node adapter, Cargo, package, tsconfig, toolch
 
 ## 10. Future lifecycle allowlist
 
-Only child `task.json`, `operator-handoff.md`, `review-candidate.md`, future `research/implementation-evidence.md`, Rust parent `task.json`, RKP-2 `task.json`, and the current Stage-6 seam-repair `task.json` may record activation, gates, acceptance projection and blocker removal. Planning authority files freeze after independent planning PASS.
+The original seven lifecycle owners are only child `task.json`, `operator-handoff.md`, `review-candidate.md`, future `research/implementation-evidence.md`, Rust parent `task.json`, RKP-2 `task.json`, and the current Stage-6 seam-repair `task.json`. They are the sole P4 lifecycle owners; planning authority files freeze after independent planning PASS.
+
+The current A amendment is not P4 B. Its direct parent is exact `e4103b779574fcdc728d024c1b8f30244cb332c3`, it changes exactly the thirteen A planning/projection paths, and it contains no workspace-law edit. It must not name its own hash. After targeted independent planning PASS for exact A and separate user authorization, B has direct parent accepted A and exactly eight changed paths: the original seven lifecycle owners plus `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts`. That eighth path has only the one-time mechanical governance-projection responsibility; it is not a lifecycle owner.
 
 ## 11. Rejected routes
 
@@ -142,9 +144,11 @@ P2 updated Contracts plus the native TypeScript failure-wire validator and dedic
 
 P3A changes exactly five incremental technical paths: `strict-input-capture.ts`, `rust-kernel-smoke.ts`, `cvn-3-strict-input.test.ts`, the RKP-1A compatibility test and RKP-2 workspace-law. It adds the closed profile, selects it for both native create and response capture, and proves default/native cap-1/cap/cap+1 plus DAG/cloned create, public read and hostile accessor/proxy/cycle/depth/extra/malformed behavior. It stops for independent audit; P3B needs PASS and separate authorization. Reverting P3A returns to audited P2.
 
-P3B technically changes only the RKP-1A compatibility test; any necessary workspace-law projection is limited to its already allowlisted path. It uses the real decoder without bypass, raw and public native journeys, DAG and cloned inputs, repeated reads, exact SHA roles, semantic/extension equality, predecessor rejection and the single-file self-worker protocol in section 12.1. It records wall/RSS as diagnostics only. It stops for independent audit before P4.
+P3B technically changes only the RKP-1A compatibility test; any necessary workspace-law projection is limited to its already allowlisted path. It uses the real decoder without bypass, raw and public native journeys, DAG and cloned inputs, repeated reads, exact SHA roles, semantic/extension equality, predecessor rejection and the single-file self-worker protocol in section 12.1. It records wall/RSS as diagnostics only. Its bounded implementation audit passed at the reviewed parent `e4103b779574fcdc728d024c1b8f30244cb332c3`; the next gate is this P4-entry amendment's targeted planning review.
 
-Reverting P2 returns to the audited P1 RED checkpoint; reverting P1 after that restores the former cap and old-wire green state. P4 is docs/evidence freeze only. RKP-2 E2 remains paused until P3A, P3B, P4 and final independent implementation audit PASS, then owner acceptance/archive and explicit integration consume the accepted successor.
+Reverting P2 returns to the audited P1 RED checkpoint; reverting P1 after that restores the former cap and old-wire green state. P4 B is docs/evidence freeze only and cannot begin until exact A passes targeted planning review and receives separate authority. B's workspace-law projection fixes the non-merge, no-extra-commit history `bd8946e → f06c57b → 673a2b9 → e4103b7 → accepted A → HEAD`: each historical segment and cumulative assertion remains, `e4103b7..A` is exactly A's thirteen planning/projection paths, and `A..HEAD` is exactly B's eight paths. It must not hard-code B's own hash, use a wildcard/directory exemption or tolerate a merge/empty/extra commit. B alone sets candidate-ready true with review pending; archive, integration and E2 remain false.
+
+The rollback projection is deliberately not a normal `git revert B`. If required after B, create one later exact eight-path governance rollback descendant: restore only the seven lifecycle owners to the accepted-A not-ready state, retain the workspace-law path to freeze the B→rollback chain, and reject a second owner. A itself remains intact. RKP-2 E2 remains paused until P4, final independent implementation audit, owner acceptance/archive and explicit integration consume the accepted successor.
 
 ### 12.1 P3B single-file self-worker v1
 

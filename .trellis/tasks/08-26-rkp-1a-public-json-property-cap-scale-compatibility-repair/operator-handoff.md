@@ -3,10 +3,10 @@
 ## Current state
 
 - Planning base: `639e93555c15b46c54c8e9bb7ec610d4a77c7478`.
-- Task status `in_progress`; native `task.py start` has run; production/user authorization covers only P0, audited P1 and audited P2 successor-wire closure. P3A/P3B/P4 are not authorized.
+- Task status `in_progress`; native `task.py start` has run. P3A and P3B have completed their separately audited gates; P4 remains not started, candidate-ready false and implementation review pending.
 - First independent planning review returned P0/P1/P2=`0/3/1`; the four findings have been bounded-repaired in planning authority.
 - Targeted independent planning rereview accepted exact head `1cd0caadff218c1471f67cdf1a1ab78f5653a605` at P0/P1/P2=`0/0/0`; P0 committed at `39e91e86bf696a30cc77b42bd1ec5e2ae6cc4fbe`. Exact P1 `712c6dbb0b7556b4c345fab9ad8215fdbcec6990` and P2 `0f65272951fd23080b6f536b2e58f50afe249b02` each passed independent implementation audit at `0/0/0`.
-- A P3 attempt produced no commit and was fully reverted. Root-cause audit returned `0/2/0`: the product needs a native-specific capture profile at both create and read, and consumer evidence must distinguish semantic/canonical equality from raw input bytes. The first docs amendment at `978160e69b69d643c3d61ca946bde10bfe4aefb0` returned `0/1/1`; its repair `14023029878be7c785ac0de7828628c5e3f4f8b1` returned `0/2/0` for CommonJS direct-entry and Windows settlement gaps. This second repair is docs-only and targeted rereview remains pending.
+- A P3 attempt produced no commit and was fully reverted. Root-cause audit returned `0/2/0`: the product needs a native-specific capture profile at both create and read, and consumer evidence must distinguish semantic/canonical equality from raw input bytes. The first docs amendment at `978160e69b69d643c3d61ca946bde10bfe4aefb0` returned `0/1/1`; its repair `14023029878be7c785ac0de7828628c5e3f4f8b1` returned `0/2/0` for CommonJS direct-entry and Windows settlement gaps. P3A and P3B then passed their bounded implementation gates; P3B is independently reviewed through exact `e4103b779574fcdc728d024c1b8f30244cb332c3`. The P4-entry audit returned `0/1/0`; this A repair waits for targeted independent planning review and authorizes no B work.
 - RKP-2 Stage 6 seam repair has E1/E1R green; E2/E3 not started; external blocker `public-json-property-cap-contract-conflict`.
 - TypeScript remains default.
 
@@ -28,4 +28,4 @@ Do not enter P3A/P3B/P4, edit any technical path, stress fixtures, Runtime/Node 
 
 ## Next gate
 
-Stop now for targeted independent planning rereview of this docs-only P3A/P3B amendment repair. P0-P2 remain audited and unchanged; P2 already owns the successor failure-wire validator, while P3A owns only capture profile/call-site selection. PASS plus separate user authorization is required for P3A; P3A audit PASS plus another authorization is required for P3B.
+Stop now for targeted independent P4-entry planning review of exact A. B may begin only after exact A PASS plus separate user authorization, directly parented by accepted A. B has the original seven lifecycle owners plus one workspace-law projection path, freezes the non-merge chain `bd8946e → f06c57b → 673a2b9 → e4103b7 → accepted A → HEAD`, and alone may set candidate-ready true. A later rollback is a separate exact eight-path governance descendant restoring the seven lifecycle files to A not-ready state; it is not a normal revert of B or A.

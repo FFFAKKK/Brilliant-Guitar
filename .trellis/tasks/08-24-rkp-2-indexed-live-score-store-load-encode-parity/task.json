@@ -42,7 +42,7 @@
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "RKP-2 IN_PROGRESS AND SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 E1+E1R GREEN S6.2-S6.3 FALSE / RKP-1A P0-P2 AUDITED / 978160E RETURN 0/1/1 / 1402302 RETURN 0/2/0 COMMONJS+SETTLEMENT / SECOND DOCS-ONLY REPAIR READY FOR TARGETED REREVIEW / RKP-1A PRODUCTION AUTH FALSE / TYPESCRIPT DEFAULT / NO P3A CUTOVER PUSH QUALIFICATION OR RKP-3.",
+  "notes": "RKP-2 IN_PROGRESS AND SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 E1+E1R GREEN S6.2-S6.3 FALSE / RKP-1A P0-P2 AND P3A-P3B AUDITED THROUGH E4103B7 / P4 ENTRY AUDIT RETURN 0/1/0 / DOCS-ONLY A TARGETED REVIEW PENDING / P4 NOT STARTED CANDIDATE FALSE / TYPESCRIPT DEFAULT / NO E2 CUTOVER PUSH QUALIFICATION OR RKP-3.",
   "meta": {
     "planning_base_commit": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "accepted_rkp1_audited_implementation_commit": "94387b339b5e4d9ce6b7f97597a1b56edd051f01",
@@ -309,7 +309,7 @@
       "post_pass_closeout_authorized": true,
       "stage_6_blocked_until_accepted_archived_integrated": false
     },
-    "next_gate": "rkp1a-targeted-P3A-P3B-planning-rereview",
+    "next_gate": "rkp1a-targeted-P4-entry-planning-review",
     "stage_6_started": true,
     "stage_6_authorized": true,
     "stage_6_completed": false,
@@ -349,9 +349,9 @@
       "implementation_stage": "E1_and_E1R_private_rust_seam_green_E2_not_started",
       "external_blocker": "public-json-property-cap-contract-conflict",
       "external_blocking_task": "08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair",
-      "rkp1a_state": "P0_P1_P2_complete_audited_P3_attempt_reverted_targeted_P3A_P3B_planning_rereview_pending",
-      "rkp1a_follow_up_order": "P3A_audit_then_P3B_audit_then_P4_final_audit_accept_archive_integrate_then_stage6_docs_authority_amendment_planning_review_E1R2_audit_then_separate_E2_authorization",
-      "next_gate": "rkp1a-targeted-P3A-P3B-planning-rereview"
+      "rkp1a_state": "P0_P1_P2_P3A_P3B_complete_audited_through_e4103b7_P4_entry_A_targeted_planning_review_pending",
+      "rkp1a_follow_up_order": "P4_entry_A_review_then_separate_B_authorization_then_P4_implementation_review_accept_archive_integrate_then_stage6_docs_authority_amendment_planning_review_E1R2_audit_then_separate_E2_authorization",
+      "next_gate": "rkp1a-targeted-P4-entry-planning-review"
     },
     "part_owner_wire_contract_repair": {
       "child": "08-26-rkp-2-part-owner-wire-contract-repair",
@@ -417,15 +417,17 @@
       "p3_amendment_review": "978160e69b69d643c3d61ca946bde10bfe4aefb0_return_P0_0_P1_1_P2_1_worker_protocol_and_P2_tense",
       "second_p3_amendment_review": "14023029878be7c785ac0de7828628c5e3f4f8b1_return_P0_0_P1_2_P2_0_commonjs_entry_and_windows_settlement",
       "bounded_planning_repair": "P3B_CommonJS_direct_entry_first_observed_taskkill_reap_cleanup_contract_ready_for_targeted_rereview",
-      "p3a_started": false,
-      "p3a_authorized": false,
-      "p3b_started": false,
-      "p3b_authorized": false,
+      "p3a_started": true,
+      "p3a_authorized": true,
+      "p3b_started": true,
+      "p3b_authorized": true,
       "p4_started": false,
-      "targeted_planning_rereview": "pending",
+      "p3b_independent_implementation_review": "e4103b779574fcdc728d024c1b8f30244cb332c3_pass_P0_0_P1_0_P2_0_for_bounded_P4",
+      "p4_entry_audit": "e4103b7_return_P0_0_P1_1_P2_0_docs_only_A_targeted_review_pending",
+      "targeted_planning_rereview": "P4_entry_pending",
       "successor_limit": 1572864,
       "stage_6_e2_started": false,
-      "next_gate": "targeted_P3A_P3B_planning_rereview"
+      "next_gate": "targeted_P4_entry_planning_review"
     },
     "archive_authorized": false,
     "push_authorized": false,

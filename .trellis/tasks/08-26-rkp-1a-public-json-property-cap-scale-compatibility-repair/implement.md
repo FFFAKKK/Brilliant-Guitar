@@ -2,7 +2,7 @@
 
 ## 0. Phase gate
 
-P0, P1 and P2 are complete and independently audited; exact P2 head is `0f65272951fd23080b6f536b2e58f50afe249b02`. This docs-only authority amendment does not authorize P3A, P3B or P4. Do not run `task.py start` again.
+P0, P1 and P2 are complete and independently audited; exact P2 head is `0f65272951fd23080b6f536b2e58f50afe249b02`. P3A and P3B have completed their separately audited implementation gates; P3B's reviewed parent is `e4103b779574fcdc728d024c1b8f30244cb332c3`. This A docs-only authority amendment does not authorize P4 B. Do not run `task.py start` again.
 
 Before every phase:
 
@@ -107,12 +107,18 @@ Gate: focused current/Node20 raw and public journey plus the complete negative m
 
 ## P4 — candidate freeze
 
-Owners: lifecycle paths only.
+P4 entry A is this docs-only planning amendment. It is directly parented by `e4103b779574fcdc728d024c1b8f30244cb332c3`, changes exactly its thirteen listed planning/projection paths, does not modify workspace-law and never records its own hash. It leaves candidate-ready false and stops for targeted independent P4-entry planning review.
+
+Only after exact A independently passes and separate user authority is given may B begin with direct parent accepted A. B has exactly eight paths: the original seven lifecycle owners plus `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts`, which is a mechanical governance projection only. B freezes `bd8946e → f06c57b → 673a2b9 → e4103b7 → accepted A → HEAD`; historical segment/cumulative checks remain, `e4103b7..A` is exactly A's thirteen paths and `A..HEAD` is exactly B's eight. No self-hash, wildcard/directory exemption, merge, empty commit or extra commit is allowed.
+
+Owners for B: the original seven lifecycle paths only; workspace-law is not a lifecycle owner.
 
 - Run all final gates from a clean HEAD and record exact commands, totals, hashes, elapsed diagnostics and protected deltas in the one future implementation evidence file.
 - Set implementation candidate-ready true and review pending.
 - Keep archive/integration/E2 resume false.
 - Request independent implementation audit; do not claim PASS.
+
+If a post-B rollback is needed, do not use ordinary `git revert B`: make one explicit later eight-path governance rollback descendant. It restores the seven lifecycle files to accepted-A not-ready state, retains only workspace-law to freeze B→rollback, and does not revert A.
 
 Commit: `docs(rkp-1a): freeze property cap repair candidate`.
 

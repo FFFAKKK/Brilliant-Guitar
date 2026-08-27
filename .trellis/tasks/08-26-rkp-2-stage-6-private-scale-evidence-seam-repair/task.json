@@ -40,7 +40,7 @@
     "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "IN_PROGRESS / ACCEPTED PLANNING D638B81 / E0 COMPLETE / E1+E1R GREEN / E2-E3 NOT STARTED / PUBLIC JSON PROPERTY CAP BLOCKER / RKP-2 PAUSED / RKP-1A P0-P2 AUDITED / 978160E RETURN 0/1/1 / 1402302 RETURN 0/2/0 COMMONJS+SETTLEMENT / SECOND DOCS-ONLY REPAIR TARGETED REREVIEW PENDING / RKP-1A PRODUCTION AUTH FALSE / TYPESCRIPT DEFAULT.",
+  "notes": "IN_PROGRESS / ACCEPTED PLANNING D638B81 / E0 COMPLETE / E1+E1R GREEN / E2-E3 NOT STARTED / PUBLIC JSON PROPERTY CAP BLOCKER / RKP-2 PAUSED / RKP-1A P0-P2 AND P3A-P3B AUDITED THROUGH E4103B7 / P4 ENTRY AUDIT RETURN 0/1/0 / DOCS-ONLY A TARGETED REVIEW PENDING / P4 NOT STARTED CANDIDATE FALSE / TYPESCRIPT DEFAULT.",
   "meta": {
     "planning_base_commit": "4a302bc9f9981940336fc97941b08e09bd0d1f67",
     "source_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -121,13 +121,15 @@
       "p3_amendment_review": "978160e69b69d643c3d61ca946bde10bfe4aefb0_return_P0_0_P1_1_P2_1_worker_protocol_and_P2_tense",
       "second_p3_amendment_review": "14023029878be7c785ac0de7828628c5e3f4f8b1_return_P0_0_P1_2_P2_0_commonjs_entry_and_windows_settlement",
       "bounded_planning_repair": "P3B_CommonJS_direct_entry_first_observed_taskkill_reap_cleanup_contract_ready_for_targeted_rereview",
-      "p3a_started": false,
-      "p3a_authorized": false,
-      "p3b_started": false,
-      "p3b_authorized": false,
+      "p3a_started": true,
+      "p3a_authorized": true,
+      "p3b_started": true,
+      "p3b_authorized": true,
       "p4_started": false,
-      "targeted_planning_rereview": "pending",
-      "follow_up_order": "P3A_audit_then_P3B_audit_then_P4_final_audit_accept_archive_integrate_then_stage6_docs_authority_amendment_planning_review_E1R2_audit_then_separate_E2_authorization"
+      "p3b_independent_implementation_review": "e4103b779574fcdc728d024c1b8f30244cb332c3_pass_P0_0_P1_0_P2_0_for_bounded_P4",
+      "p4_entry_audit": "e4103b7_return_P0_0_P1_1_P2_0_docs_only_A_targeted_review_pending",
+      "targeted_planning_rereview": "P4_entry_pending",
+      "follow_up_order": "P4_entry_A_review_then_separate_B_authorization_then_P4_implementation_review_accept_archive_integrate_then_stage6_docs_authority_amendment_planning_review_E1R2_audit_then_separate_E2_authorization"
     },
     "e3_candidate_freeze_started": false,
     "root_cause_audit": {
@@ -233,7 +235,7 @@
       "E2_unique_request_worker_protocol_and_first_real_stress_run",
       "E3_fresh_request_formal_evidence_and_candidate_freeze"
     ],
-    "next_gate": "rkp1a-targeted-P3A-P3B-planning-rereview",
+    "next_gate": "rkp1a-targeted-P4-entry-planning-review",
     "archive_authorized": false,
     "push_authorized": false,
     "default_runtime_switch_authorized": false,

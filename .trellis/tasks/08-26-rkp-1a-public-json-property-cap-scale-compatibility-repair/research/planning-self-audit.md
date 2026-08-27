@@ -2,9 +2,9 @@
 
 ## Verdict
 
-The first independent planning audit returned P0/P1/P2=`0/3/1` and its bounded repair passed. P0-P2 are complete and independently audited. A later uncommitted P3 attempt was reverted; root-cause audit returned P0/P1/P2=`0/2/0` for missing native capture-profile ownership and an incorrect raw-byte canonical assumption. Candidate `978160e69b69d643c3d61ca946bde10bfe4aefb0` then returned `0/1/1`; its repair `14023029878be7c785ac0de7828628c5e3f4f8b1` returned `0/2/0` because an ESM-only entry contradicted CommonJS and Windows settlement was not mechanically closed. This second bounded docs-only repair fixes only those two findings without production/test changes.
+The first independent planning audit returned P0/P1/P2=`0/3/1` and its bounded repair passed. P0-P2 are complete and independently audited. A later uncommitted P3 attempt was reverted; root-cause audit returned P0/P1/P2=`0/2/0` for missing native capture-profile ownership and an incorrect raw-byte canonical assumption. Candidate `978160e69b69d643c3d61ca946bde10bfe4aefb0` then returned `0/1/1`; its repair `14023029878be7c785ac0de7828628c5e3f4f8b1` returned `0/2/0` because an ESM-only entry contradicted CommonJS and Windows settlement was not mechanically closed. P3A and P3B then completed their bounded audits; P3B is independently reviewed through exact `e4103b779574fcdc728d024c1b8f30244cb332c3`. The P4-entry audit returned `0/1/0`; this A repair closes only its lifecycle/workspace-law projection contradiction without production/test changes.
 
-Current self-audit P0/P1/P2=`0/0/0`. This is not an independent verdict. Targeted independent planning rereview remains pending.
+Current self-audit P0/P1/P2=`0/0/0`. This is not an independent verdict. Targeted independent P4-entry planning review remains pending.
 
 ## Checks
 
@@ -23,8 +23,9 @@ Current self-audit P0/P1/P2=`0/0/0`. This is not an independent verdict. Targete
 - P2 is correctly historical: its audited head already validates successor failure wire, while P3A owns only the capture profile and its create/read selections.
 - Archived RKP-1 is immutable and no active spec is promoted.
 - P1 and P2 have separate independent implementation audits; P1's exact bounded RED set and two-step rollback are executable.
-- P0-P2 remain accepted audited history. P3A, P3B and P4 are separate rollback commits and separate independent audit gates.
-- Task remains in progress, but P3A/P3B/P4 authorization and candidate readiness remain false; E2 remains false; TypeScript remains default.
+- P0-P2 remain accepted audited history; P3A/P3B are separately audited history. P4 A is planning only; future B is a separate audit gate and rollback projection.
+- The seven lifecycle owners remain literal. A adds no workspace-law path; only future B adds the one mechanical eighth path, without creating a second lifecycle owner.
+- Task remains in progress, P4 is not started, candidate readiness remains false, E2 remains false and TypeScript remains default.
 
 ## Severity accounting
 
@@ -40,4 +41,4 @@ The older 78-file `639e935...` / `c02c830...` characterization remains historica
 
 ## Review focus
 
-Targeted rereview should verify the CommonJS `__filename` entry and recursion guard, first-observed overflow/timeout ordering, exact taskkill/reap secondary states, cleanup recovery/two-failure behavior, unchanged sentinel/schema/count/SHA contracts, P3A/P3B audit stops, 7/5/1 allowlists, excluded `indices.rs`, Stage6 follow-up ownership and current lifecycle projections.
+Targeted review should verify A has direct parent `e4103b7`, exactly thirteen planning/projection paths and no workspace-law delta; P3A/P3B audit history through `e4103b7`; and future B's exact eight-path, accepted-A-parent, no-self-hash/non-merge chain plus separate governance rollback. Recheck the 7/5/1 technical ownership, seven sole lifecycle owners, excluded `indices.rs`, Stage6 paused state and candidate/review boundaries.

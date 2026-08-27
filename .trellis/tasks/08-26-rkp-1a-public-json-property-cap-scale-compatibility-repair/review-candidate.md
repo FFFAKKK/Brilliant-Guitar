@@ -2,9 +2,9 @@
 
 ## Status
 
-READY FOR TARGETED PLANNING REREVIEW.
+READY FOR TARGETED P4-ENTRY PLANNING REVIEW.
 
-Exact planning head `1cd0caadff218c1471f67cdf1a1ab78f5653a605`, exact P1 head `712c6dbb0b7556b4c345fab9ad8215fdbcec6990` and exact P2 head `0f65272951fd23080b6f536b2e58f50afe249b02` each passed their required independent review at P0/P1/P2=`0/0/0`. A no-commit P3 attempt was reverted. Independent root-cause audit returned `0/2/0`; first amendment `978160e...` returned `0/1/1`, and its repair `14023029878be7c785ac0de7828628c5e3f4f8b1` returned `0/2/0` for CommonJS entry and Windows settlement. This second bounded docs-only repair is the targeted planning rereview candidate. P3A/P3B/P4 remain unauthorized.
+Exact planning head `1cd0caadff218c1471f67cdf1a1ab78f5653a605`, exact P1 head `712c6dbb0b7556b4c345fab9ad8215fdbcec6990` and exact P2 head `0f65272951fd23080b6f536b2e58f50afe249b02` each passed their required independent review at P0/P1/P2=`0/0/0`. A no-commit P3 attempt was reverted. Independent root-cause audit returned `0/2/0`; first amendment `978160e...` returned `0/1/1`, and its repair `14023029878be7c785ac0de7828628c5e3f4f8b1` returned `0/2/0` for CommonJS entry and Windows settlement. P3A and P3B subsequently completed their bounded implementation gates; P3B's independently reviewed parent is `e4103b779574fcdc728d024c1b8f30244cb332c3`. The P4-entry audit returned `0/1/0`; this A docs-only repair is the targeted planning review candidate. P4 B remains unauthorized.
 
 ## Candidate claims
 
@@ -16,12 +16,18 @@ Exact planning head `1cd0caadff218c1471f67cdf1a1ab78f5653a605`, exact P1 head `7
 6. The cumulative future technical allowlist is exactly seven paths. `captureStrictInput` owns a closed default/native profile; both create and response native captures select `native-wire-v1`; `indices.rs` is excluded.
 7. P1 and P2 each stop for independent implementation audit; P2 rollback returns to audited P1 RED, not directly to a green predecessor.
 8. The first planning review P0/P1/P2=`0/3/1` is recorded and bounded; exact repaired head `1cd0caa...` passed targeted rereview at `0/0/0`.
+9. A is directly parented by `e4103b7`, changes exactly thirteen planning/projection paths and does not hard-code its own hash or change workspace-law.
+10. Only accepted A plus separate authority permits B: B has exactly seven lifecycle owners plus the one mechanical workspace-law path, freezes the six-node chain and may set candidate-ready without acceptance/archive/integration/E2.
 
 ## Amended P3 contracts
 
 P3A has exactly five incremental technical paths: `strict-input-capture.ts`, `rust-kernel-smoke.ts`, `cvn-3-strict-input.test.ts`, the RKP-1A compatibility test and RKP-2 workspace-law. It freezes default/native boundaries, direct DAG and JSON-cloned create, public read and hostile capture behavior, then stops for independent audit.
 
 P3B technically changes only the RKP-1A compatibility test, with workspace-law projection only if required. That same CommonJS file is the sole normal test and direct self-worker; no helper path exists. Its exact `__filename` direct entry, argv/env/absent-`NODE_TEST_CONTEXT` guard, one compact sentinel schema, stream caps, 180000 ms timer, first-observed primary, exact taskkill/reap secondary states and recovered/two-failure cleanup matrix are frozen in design section 12.1. It proves real decoder/raw+public journeys, repeated reads, semantic equality and exact SHA roles. Input SHA is `5a8a318e58bc08a82a822c166ed11239ed4ed7b9ea45d50bb7dcb81d7c57f91e`; Rust canonical export SHA is `4d8597437cc8b07df6cfef9400086218636adb27257ad72d055e1e3a3deafff7`. Both are `15,013,904` bytes but are not raw-byte equal.
+
+## P4 entry contract
+
+A is planning-only. B must be directly parented by accepted A and changes exactly eight paths: the original seven lifecycle owners plus `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts`, which only projects mechanical governance. Workspace-law must retain the historical `bd8946e → f06c57b → 673a2b9 → e4103b7` segment/cumulative gates, assert `e4103b7..A` is exactly the thirteen A paths and `A..HEAD` is exactly B's eight paths, and reject self-hash, merge, empty/extra commit, wildcard and directory exemption. Candidate-ready may be set only in B; review stays pending. A later rollback is a separately planned eight-path governance descendant restoring the seven lifecycle paths to A not-ready state and locking B→rollback, not a revert of A.
 
 ## Audit focus
 
@@ -36,10 +42,10 @@ P3B technically changes only the RKP-1A compatibility test, with workspace-law p
 - Validate the exact sentinel shape and caps plus first-observed ordering in both directions, exact taskkill launch/nonzero/timeout and reap-timeout secondary states, cleanup recovery/two-failure, bounded settlement and zero partial publication.
 - Confirm all request/result/stdout/stderr artifacts resolve under E: scratch and no partial success is published before cleanup.
 - Confirm P2 head `0f652729...` already owns the successor wire validator; P3A changes only capture profile and its two call-site selections.
-- Confirm P3A and P3B each stop for independent audit and separate authorization; RKP-2 S6.2/S6.3 remain false.
+- Confirm P3A/P3B are audited history through `e4103b7`; check P4 is not started and only exact A planning review can permit separately authorized B. RKP-2 S6.2/S6.3 remain false.
 - Verify `json.rs` is byte-zero relative to audited P1 and remains the sole `JSON_PROPERTY_LIMIT` owner at `1_572_864`; Contracts imports it directly and is 17/17. Verify new-cap inclusive/exclusive boundaries, exact `1572864/1572865` wire, depth→property→shape→number precedence, bounded scan-only retention and 64 MiB caps.
 - Verify the dedicated TypeScript test uses the production adapter: exact successor fake and real native envelopes preserve `codec.property-limit`, while predecessor, extra, missing and wrong-type variants remain `bridge.internal`; the real rejection publishes no handle.
-- Verify the exact seven-path cumulative allowlist excludes `indices.rs`, fixture, encoder, Cargo/package/spec/archive paths; this amendment changes only 16 docs/governance paths.
+- Verify the exact seven-path cumulative technical allowlist excludes `indices.rs`, fixture, encoder, Cargo/package/spec/archive paths; A changes exactly thirteen planning/projection paths, and B's future eighth governance path is not a lifecycle owner.
 - Verify Stage6 follow-up remains a later independent docs-only authority amendment followed by planning review, E1R2 audit and separate E2 authorization.
 
 ## Validation note
