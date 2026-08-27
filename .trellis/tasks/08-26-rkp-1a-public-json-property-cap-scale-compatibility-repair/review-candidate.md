@@ -4,7 +4,7 @@
 
 READY FOR TARGETED P4-ENTRY PLANNING REVIEW.
 
-Exact planning head `1cd0caadff218c1471f67cdf1a1ab78f5653a605`, exact P1 head `712c6dbb0b7556b4c345fab9ad8215fdbcec6990` and exact P2 head `0f65272951fd23080b6f536b2e58f50afe249b02` each passed their required independent review at P0/P1/P2=`0/0/0`. A no-commit P3 attempt was reverted. Independent root-cause audit returned `0/2/0`; first amendment `978160e...` returned `0/1/1`, and its repair `14023029878be7c785ac0de7828628c5e3f4f8b1` returned `0/2/0` for CommonJS entry and Windows settlement. P3A and P3B subsequently completed their bounded implementation gates; P3B's independently reviewed parent is `e4103b779574fcdc728d024c1b8f30244cb332c3`. The P4-entry audit returned `0/1/0`; this A docs-only repair is the targeted planning review candidate. P4 B remains unauthorized.
+Exact planning head `1cd0caadff218c1471f67cdf1a1ab78f5653a605`, exact P1 head `712c6dbb0b7556b4c345fab9ad8215fdbcec6990` and exact P2 head `0f65272951fd23080b6f536b2e58f50afe249b02` each passed their required independent review at P0/P1/P2=`0/0/0`. A no-commit P3 attempt was reverted. Independent root-cause audit returned `0/2/0`; first amendment `978160e...` returned `0/1/1`, and its repair `14023029878be7c785ac0de7828628c5e3f4f8b1` returned `0/2/0` for CommonJS entry and Windows settlement. P3A and P3B are complete, historically authorized and independently audited; P3B's exact reviewed head is `e4103b779574fcdc728d024c1b8f30244cb332c3`. The P4-entry audit returned `0/1/0`; A1 is the first amendment and this A2 docs-only repair is the targeted planning review candidate. P4 B remains unauthorized.
 
 ## Candidate claims
 
@@ -16,8 +16,8 @@ Exact planning head `1cd0caadff218c1471f67cdf1a1ab78f5653a605`, exact P1 head `7
 6. The cumulative future technical allowlist is exactly seven paths. `captureStrictInput` owns a closed default/native profile; both create and response native captures select `native-wire-v1`; `indices.rs` is excluded.
 7. P1 and P2 each stop for independent implementation audit; P2 rollback returns to audited P1 RED, not directly to a green predecessor.
 8. The first planning review P0/P1/P2=`0/3/1` is recorded and bounded; exact repaired head `1cd0caa...` passed targeted rereview at `0/0/0`.
-9. A is directly parented by `e4103b7`, changes exactly thirteen planning/projection paths and does not hard-code its own hash or change workspace-law.
-10. Only accepted A plus separate authority permits B: B has exactly seven lifecycle owners plus the one mechanical workspace-law path, freezes the six-node chain and may set candidate-ready without acceptance/archive/integration/E2.
+9. A1 is directly parented by `e4103b7`; A2 directly follows A1 and the actual A1..A2 change set is the same thirteen planning/projection paths. Neither hard-codes its own hash or changes workspace-law.
+10. Only accepted A2 plus separate authority permits B: B has exactly seven lifecycle owners plus the one mechanical workspace-law path, freezes the seven-node chain and may set candidate-ready without acceptance/archive/integration/E2.
 
 ## Amended P3 contracts
 
@@ -50,8 +50,8 @@ A is planning-only. B must be directly parented by accepted A and changes exactl
 
 ## Validation note
 
-Typecheck/build pass. Clean first-amendment head `978160e69b69d643c3d61ca946bde10bfe4aefb0` discovers 79 files with manifest `afbd0246012b61c3670b31cc01180c4a90586e30ac3ff177d91cddfc2eb09357`: 584 discovered / 580 pass / 1 expected GC skip / 3 known workspace-law fail-closed results. The same three governance test names fail at `6/9`; their first rejected path is the unaccepted RKP-1A child `check.jsonl`. No product, capture, native or codec test fails.
+Typecheck/build pass. Clean first-amendment head `978160e69b69d643c3d61ca946bde10bfe4aefb0` discovers 79 files with manifest `afbd0246012b61c3670b31cc01180c4a90586e30ac3ff177d91cddfc2eb09357`: 584 discovered / 580 pass / 1 expected GC skip / 3 known workspace-law fail-closed results. That 6/9 evidence is historical only. Current A2 focused workspace-law evidence is exactly 10 tests / 6 pass / 4 fail: `implementation changes stay inside the literal RKP-2 allowlists`, `part owner repair stays anchored to its accepted six-path wire contract`, and `Stage 6 hostile and resource evidence consumes the existing private Rust seams` remain the three existing unaccepted-child fail-closed results; only `RKP-1A P3B candidate is exact and remains closed to P4` is the one new A1/A2 bounded RED caused by the old governance-parent assertion. No product, capture, native or codec test fails; a fifth failure or changed attribution blocks this repair.
 
-The older source/candidate characterization remains historical evidence: source `639e935...` first rejected the unaccepted Stage-6 child `check.jsonl`, while candidate `c02c830...` first rejected the unaccepted RKP-1A child `check.jsonl`. Both were expected fail-closed governance evidence. This repair still does not edit or relax workspace-law.
+The older source/candidate characterization remains historical evidence: source `639e935...` first rejected the unaccepted Stage-6 child `check.jsonl`, while candidate `c02c830...` first rejected the unaccepted RKP-1A child `check.jsonl`. Both were expected fail-closed governance evidence. This repair still does not edit or relax workspace-law; only a future B mechanical projection may close the one new P4-entry bounded RED.
 
 P2 focused evidence remains GREEN: Core Types 6/6, Contracts 17/17 and the dedicated fake/real native compatibility suite 2/2. This planning amendment changes no production/test path. The same three unaccepted-child workspace-law failures remain separately attributed and are not relaxed or called green.

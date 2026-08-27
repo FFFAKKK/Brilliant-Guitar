@@ -45,7 +45,7 @@
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RKP-0 RKP-1 AND PRIOR REPAIRS ACCEPTED ARCHIVED / RKP-2 SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 E1+E1R GREEN E2 NOT STARTED / RKP-1A P0-P2 AND P3A-P3B AUDITED THROUGH E4103B7 / P4 ENTRY AUDIT RETURN 0/1/0 / DOCS-ONLY A TARGETED REVIEW PENDING / P4 NOT STARTED CANDIDATE FALSE / TYPESCRIPT DEFAULT / NO E2 CUTOVER PUSH QUALIFICATION OR RKP-3.",
+  "notes": "RKP-0 RKP-1 AND PRIOR REPAIRS ACCEPTED ARCHIVED / RKP-2 SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 E1+E1R GREEN E2 NOT STARTED / RKP-1A P0-P2 AND P3A-P3B COMPLETE HISTORICALLY AUTHORIZED AND AUDITED THROUGH E4103B7 / P4 ENTRY AUDIT RETURN 0/1/0 THEN A2 BOUNDED PLANNING REPAIR 0/2/0 / A2 TARGETED REVIEW PENDING / P4 NOT STARTED CANDIDATE FALSE / TYPESCRIPT DEFAULT / NO E2 CUTOVER PUSH QUALIFICATION OR RKP-3.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
@@ -94,7 +94,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "rkp1a-targeted-P4-entry-planning-review",
+    "next_gate": "rkp1a-A2-targeted-P4-entry-planning-rereview",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -321,7 +321,7 @@
       "accepted_planning_head": "1cd0caadff218c1471f67cdf1a1ab78f5653a605",
       "task_start_run": true,
       "production_implementation_authorized": false,
-      "user_implementation_authorization_scope": "current_docs_only_planning_repair_historical_P0_P1_P2_authorizations_consumed_P3A_P3B_P4_not_authorized",
+      "user_implementation_authorization_scope": "historical_P0_P1_P2_P3A_P3B_authorizations_consumed_current_A2_docs_only_future_B_P4_freeze_accept_archive_integration_E2_default_and_push_not_authorized",
       "p0_activation_completed": true,
       "p1_core_types_completed": true,
       "p1_state": "bounded_RED_complete_exact_two_allowed_failures_zero_extra",
@@ -333,17 +333,17 @@
       "p3_root_cause_audit": "P0_0_P1_2_P2_0_capture_profile_and_raw_canonical_role_drift",
       "p3_amendment_review": "978160e69b69d643c3d61ca946bde10bfe4aefb0_return_P0_0_P1_1_P2_1_worker_protocol_and_P2_tense",
       "second_p3_amendment_review": "14023029878be7c785ac0de7828628c5e3f4f8b1_return_P0_0_P1_2_P2_0_commonjs_entry_and_windows_settlement",
-      "bounded_planning_repair": "P3B_CommonJS_direct_entry_first_observed_taskkill_reap_cleanup_contract_ready_for_targeted_rereview",
+      "bounded_planning_repair": "P3B_worker_planning_repair_passed_at_1494b5582622d99dd5ad12787bf22e2f1596ebe5_A2_closes_current_state_and_bounded_RED_evidence",
       "p3a_started": true,
       "p3a_authorized": true,
       "p3b_started": true,
       "p3b_authorized": true,
       "p4_started": false,
       "p3b_independent_implementation_review": "e4103b779574fcdc728d024c1b8f30244cb332c3_pass_P0_0_P1_0_P2_0_for_bounded_P4",
-      "p4_entry_audit": "e4103b7_return_P0_0_P1_1_P2_0_docs_only_A_targeted_review_pending",
-      "targeted_planning_rereview": "P4_entry_pending",
+      "p4_entry_audit": "e4103b7_return_P0_0_P1_1_P2_0_then_A2_bounded_planning_repair_P0_0_P1_2_P2_0",
+      "targeted_planning_rereview": "A2_P4_entry_pending",
       "stage6_follow_up_order": "after_RKP1A_accept_archive_integrate_docs_only_authority_amendment_planning_pass_then_E1R2_audit_then_separate_E2_authorization",
-      "next_gate": "targeted_P4_entry_planning_review"
+      "next_gate": "A2_targeted_P4_entry_planning_rereview"
     },
     "rkp2_stage_6_private_scale_evidence_seam_repair": {
       "parent": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
@@ -371,7 +371,7 @@
       "future_technical_allowlist_count": 5,
       "implementation_stage": "E1_and_E1R_private_rust_seam_green_E2_not_started",
       "external_blocker": "public-json-property-cap-contract-conflict",
-      "next_gate": "rkp1a-targeted-P4-entry-planning-review"
+      "next_gate": "rkp1a-A2-targeted-P4-entry-planning-rereview"
     },
     "rkp2_part_owner_wire_contract_repair": {
       "parent": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",

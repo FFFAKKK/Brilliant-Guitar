@@ -5,7 +5,7 @@
   "description": "Preserve audited P0-P2 and plan the separately reviewed native capture-profile and frozen consumer/canonical proof successors.",
   "status": "in_progress",
   "dev_type": "bugfix",
-  "scope": "Audited P0-P2 remain complete; this docs-only amendment splits future P3A native capture-profile work from P3B frozen consumer proof. P3A/P3B/P4, E2 resume and lifecycle advancement remain unauthorized.",
+  "scope": "Audited P0-P2 and historically authorized, independently audited P3A/P3B remain complete. A2 is docs-only P4-entry planning repair; only future B/P4 freeze, acceptance/archive/integration, E2 resume, default cutover and push remain unauthorized.",
   "package": "core-kernel",
   "priority": "P1",
   "creator": "ATOM",
@@ -46,7 +46,7 @@
     "test/core-kernel/rust-migration/rkp-1a-property-cap-compatibility.test.ts",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "IN_PROGRESS / P0-P2 AUDITED 0/0/0 THROUGH 0F65272 / P3A AND P3B AUDITED THROUGH E4103B7 / P4 ENTRY AUDIT RETURN 0/1/0 / A DOCS-ONLY P4-ENTRY AMENDMENT TARGETED REVIEW PENDING / P4 NOT STARTED CANDIDATE FALSE REVIEW PENDING / STAGE6 E1+E1R GREEN E2 NOT STARTED / TYPESCRIPT DEFAULT.",
+  "notes": "IN_PROGRESS / P0-P2 AUDITED 0/0/0 THROUGH 0F65272 / P3A-P3B COMPLETE HISTORICAL AUTHORIZATION CONSUMED AND AUDITED THROUGH E4103B7 / P4 ENTRY AUDIT RETURN 0/1/0 THEN A2 BOUNDED PLANNING REPAIR RETURN 0/2/0 / A2 TARGETED REVIEW PENDING / P4 NOT STARTED CANDIDATE FALSE REVIEW PENDING / STAGE6 E1+E1R GREEN E2 NOT STARTED / TYPESCRIPT DEFAULT.",
   "meta": {
     "planning_base_commit": "639e93555c15b46c54c8e9bb7ec610d4a77c7478",
     "source_branch": "codex/rkp-2-stage-6-private-scale-evidence-seam-repair",
@@ -55,12 +55,14 @@
     "task_start_run": true,
     "production_implementation_authorized": false,
     "user_implementation_authorization": false,
-    "user_implementation_authorization_scope": "current_docs_only_bounded_planning_repair_P3A_P3B_P4_not_authorized_historical_P0_P1_P2_authorizations_consumed",
+    "user_implementation_authorization_scope": "current_A2_docs_only_bounded_planning_repair_future_B_P4_freeze_accept_archive_integration_E2_default_and_push_not_authorized",
     "historical_implementation_authorization": {
       "P0": true,
       "P1": true,
       "P2": true,
-      "scope": "consumed_and_audited_through_0f65272951fd23080b6f536b2e58f50afe249b02"
+      "P3A": true,
+      "P3B": true,
+      "scope": "consumed_and_audited_through_e4103b779574fcdc728d024c1b8f30244cb332c3"
     },
     "independent_planning_review": "passed",
     "targeted_independent_planning_rereview": "passed",
@@ -161,8 +163,8 @@
       ]
     },
     "p3b_worker_planning_repair": {
-      "status": "ready_for_targeted_independent_planning_rereview",
-      "candidate_commit": "this_docs_only_commit_exact_hash_reported_after_commit",
+      "status": "passed",
+      "accepted_amendment_planning_head": "1494b5582622d99dd5ad12787bf22e2f1596ebe5",
       "technical_source_count": 1,
       "technical_source": "test/core-kernel/rust-migration/rkp-1a-property-cap-compatibility.test.ts",
       "helper_or_worker_path_added": false,
@@ -229,18 +231,19 @@
     "p4_candidate_freeze_started": false,
     "p4_production_implementation_authorized": false,
     "p4_entry_planning_amendment": {
-      "direct_parent": "e4103b779574fcdc728d024c1b8f30244cb332c3",
+      "a1_direct_parent": "e4103b779574fcdc728d024c1b8f30244cb332c3",
+      "a2_direct_parent": "A1_exact_hash_reported_before_A2_review",
       "entry_audit": {
         "P0": 0,
         "P1": 1,
         "P2": 0,
         "verdict": "return_for_bounded_P4_entry_planning_repair"
       },
-      "status": "targeted_independent_planning_review_pending",
+      "status": "A2_targeted_independent_planning_review_pending",
       "a_path_count": 13,
       "a_self_hash": "not_hardcoded_report_after_commit",
-      "b_requires": "exact_A_independent_planning_pass_and_separate_user_authorization",
-      "b_direct_parent": "accepted_A",
+      "b_requires": "exact_A2_independent_planning_pass_and_separate_user_authorization",
+      "b_direct_parent": "accepted_A2",
       "b_path_count": 8,
       "b_workspace_law_projection_path": "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
       "b_candidate_ready_only": true,
@@ -340,7 +343,13 @@
       "P0": 0,
       "P1": 0,
       "P2": 0,
-      "verdict": "ready_for_targeted_independent_P4_entry_planning_review_after_e4103b7_entry_audit_return_0_1_0_docs_only_repair"
+      "verdict": "A2_bounded_planning_repair_complete_after_independent_return_0_2_0_targeted_independent_P4_entry_planning_rereview_pending"
+    },
+    "p4_entry_a2_bounded_planning_repair": {
+      "P0": 0,
+      "P1": 2,
+      "P2": 0,
+      "status": "completed_docs_only_targeted_rereview_pending"
     },
     "p1_bounded_red_allowlist": [
       "codec::tests::structural_rank_beats_source_order_for_compound_faults_old_property_limit_exact_bytes",
@@ -359,15 +368,15 @@
     "immutable_planning_authority_hash_contract": "lf_normalized_utf8_sha256",
     "immutable_planning_authority_count": 9,
     "immutable_planning_authority": {
-      ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/prd.md": "e3e055ab9c55ae295ec282bffce5f168704f61c2c04000de98f1b5959e3fec50",
-      ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/design.md": "3a67b0e32b992fa442abd58876ed92ed458032281e66e598a725b746dcee642f",
-      ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/implement.md": "2718009620a5665601d294092b728b3ec04d82cbb789a8a8e495d8c6aaa19b1a",
-      ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/implement.jsonl": "98a959e252e64bdda65276355b9781c268b47989d2a183ebccbfb6daa12415f6",
-      ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/check.jsonl": "480587d3720a23369616be38aa854278c44f3f855487a43b4677e19ae2e562d2",
+      ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/prd.md": "ffae63848807f7f83a8a3d743c4f32a6437e2a1c0e68ceb9c74280a2c49bdd01",
+      ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/design.md": "29d246b18bbf7d9ab5a8c063426fc15e552e959cbc296dd258698d38653e7c50",
+      ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/implement.md": "07ea4fd81b9de247241300bf0f8f37e1ae56b6583625808dffa06f27e148bf76",
+      ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/implement.jsonl": "3a59d424f366c975bbc4df6c0f28fa843650fe0d6e5ee6685497ee6f1d93ae1d",
+      ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/check.jsonl": "7d187ef58a502dec633fabf67284ccac92c126596f58202b3fa1c748e12c001d",
       ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/research/root-cause-and-exact-node-count.md": "7eede03fcf13c55b9e905625ce673c39a6f8a39396302b5283cfc31483b269c9",
       ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/research/authority-and-consumer-impact-map.md": "511295882ece20f4ef1f9abf4dcd88d6aae47608b1e8172faedec82297feeeff",
-      ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/research/file-test-ownership-matrix.md": "de071f5b38c41d92ae75786545f7ac8ec7aee84d85d0a1cdcdb052c1c49e8845",
-      ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/research/planning-self-audit.md": "d622511710b903d60ea8f19ed7555e8edb44886714973c1942f2aa8f66e104ff"
+      ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/research/file-test-ownership-matrix.md": "c1c4c2ec847ecdc0920a7c6dea3fe83b23ae43c71b2e0031a57986abdadb2b9d",
+      ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/research/planning-self-audit.md": "b53064ef8c8ee259b6ad461978df8a79818175dbfcfd0e2250e3b2bbb7b57b4d"
     },
     "bounded_planning_repair_candidate": "P3B_reviewed_parent_e4103b779574fcdc728d024c1b8f30244cb332c3",
     "targeted_p3_planning_rereview": "passed",
@@ -377,7 +386,23 @@
       "crates/brilliant-kernel-runtime/src/indices.rs",
       "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
     ],
-    "planning_validation": "pending_clean_head_post_commit_gates",
+    "planning_validation": {
+      "focused_workspace_law": {
+        "total": 10,
+        "pass": 6,
+        "fail": 4,
+        "existing_unaccepted_child_fail_closed": [
+          "implementation changes stay inside the literal RKP-2 allowlists",
+          "part owner repair stays anchored to its accepted six-path wire contract",
+          "Stage 6 hostile and resource evidence consumes the existing private Rust seams"
+        ],
+        "bounded_new_red": "RKP-1A P3B candidate is exact and remains closed to P4",
+        "bounded_new_red_count": 1,
+        "fourth_failure_cause": "old_HEAD_parent_assertion",
+        "additional_failure_or_attribution_change_blocks": true
+      },
+      "independent_planning_review": "pending"
+    },
     "next_gate": "independent_targeted_P4_entry_planning_review"
   }
 }
