@@ -2,10 +2,10 @@
   "id": "rkp-1a-public-json-property-cap-scale-compatibility-repair",
   "name": "rkp-1a-public-json-property-cap-scale-compatibility-repair",
   "title": "RKP-1A Public JSON Property-Cap Scale Compatibility Repair",
-  "description": "Preserve audited P0-P2 and plan the separately reviewed native capture-profile and frozen consumer/canonical proof successors.",
+  "description": "Preserve audited, completed P0-P3B implementation history and constrain the replacement A3 authority review before any future B/P4 lifecycle work.",
   "status": "in_progress",
   "dev_type": "bugfix",
-  "scope": "Audited P0-P2 and historically authorized, independently audited P3A/P3B remain complete. A2 is docs-only P4-entry planning repair; only future B/P4 freeze, acceptance/archive/integration, E2 resume, default cutover and push remain unauthorized.",
+  "scope": "Audited P0-P2 and historically authorized, independently audited P3A/P3B remain complete. A3 is the final docs-only P4-entry planning repair; only future B/P4 freeze, acceptance/archive/integration, E2 resume, default cutover and push remain unauthorized.",
   "package": "core-kernel",
   "priority": "P1",
   "creator": "ATOM",
@@ -46,7 +46,7 @@
     "test/core-kernel/rust-migration/rkp-1a-property-cap-compatibility.test.ts",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "IN_PROGRESS / P0-P2 AUDITED 0/0/0 THROUGH 0F65272 / P3A-P3B COMPLETE HISTORICAL AUTHORIZATION CONSUMED AND AUDITED THROUGH E4103B7 / P4 ENTRY AUDIT RETURN 0/1/0 THEN A2 BOUNDED PLANNING REPAIR RETURN 0/2/0 / A2 TARGETED REVIEW PENDING / P4 NOT STARTED CANDIDATE FALSE REVIEW PENDING / STAGE6 E1+E1R GREEN E2 NOT STARTED / TYPESCRIPT DEFAULT.",
+  "notes": "IN_PROGRESS / P0-P2 AUDITED 0/0/0 THROUGH 0F65272 / P3A-P3B COMPLETE HISTORICAL AUTHORIZATION CONSUMED AND AUDITED THROUGH E4103B7 / P4 ENTRY AUDIT RETURN 0/1/0 THEN A1/A2 REPAIRS 0/2/0 / A3 TARGETED REVIEW PENDING / B-P4 NOT STARTED CANDIDATE FALSE REVIEW PENDING / STAGE6 E1+E1R GREEN E2 NOT STARTED / TYPESCRIPT DEFAULT.",
   "meta": {
     "planning_base_commit": "639e93555c15b46c54c8e9bb7ec610d4a77c7478",
     "source_branch": "codex/rkp-2-stage-6-private-scale-evidence-seam-repair",
@@ -55,7 +55,7 @@
     "task_start_run": true,
     "production_implementation_authorized": false,
     "user_implementation_authorization": false,
-    "user_implementation_authorization_scope": "current_A2_docs_only_bounded_planning_repair_future_B_P4_freeze_accept_archive_integration_E2_default_and_push_not_authorized",
+    "user_implementation_authorization_scope": "current_A3_docs_only_bounded_planning_repair_future_B_P4_freeze_accept_archive_integration_E2_default_and_push_not_authorized",
     "historical_implementation_authorization": {
       "P0": true,
       "P1": true,
@@ -232,23 +232,32 @@
     "p4_production_implementation_authorized": false,
     "p4_entry_planning_amendment": {
       "a1_direct_parent": "e4103b779574fcdc728d024c1b8f30244cb332c3",
-      "a2_direct_parent": "A1_exact_hash_reported_before_A2_review",
+      "a2_direct_parent": "aacb057af6eaa7c16e88ed94e2ecfc323c540032",
+      "a3_direct_parent": "9e1770b39f01484c860a39a6746f3ef7a638f612",
       "entry_audit": {
         "P0": 0,
         "P1": 1,
         "P2": 0,
         "verdict": "return_for_bounded_P4_entry_planning_repair"
       },
-      "status": "A2_targeted_independent_planning_review_pending",
-      "a_path_count": 13,
-      "a_self_hash": "not_hardcoded_report_after_commit",
-      "b_requires": "exact_A2_independent_planning_pass_and_separate_user_authorization",
-      "b_direct_parent": "accepted_A2",
+      "status": "A3_targeted_independent_planning_review_pending",
+      "a1_path_count": 13,
+      "a2_path_count": 13,
+      "a3_path_count": 15,
+      "a1_change_set": "e4103b7_to_aacb057_exact_13_planning_projection_paths",
+      "a2_change_set": "aacb057_to_9e1770b_exact_13_planning_projection_paths",
+      "a3_change_set": "9e1770b_to_current_repair_commit_exact_15_planning_projection_paths",
+      "cumulative_change_set": "e4103b7_to_accepted_A3_exact_15_planning_projection_paths",
+      "a3_self_hash": "current_repair_commit_independent_audit_input_HEAD_not_hardcoded",
+      "b_requires": "exact_A3_independent_planning_pass_and_separate_user_authorization",
+      "b_direct_parent": "accepted_A3",
+      "b_commit_prefix": "e4103b7_to_aacb057_to_9e1770b_to_accepted_A3_to_B",
+      "b_change_set": "accepted_A3_to_B_exact_8_paths",
       "b_path_count": 8,
       "b_workspace_law_projection_path": "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
       "b_candidate_ready_only": true,
       "b_accept_archive_integration_E2_authorized": false,
-      "rollback": "later_exact_eight_path_governance_descendant_restores_seven_lifecycle_paths_to_A_not_ready_and_locks_B_to_rollback_not_git_revert_B_or_A"
+      "rollback": "later_exact_eight_path_governance_descendant_restores_seven_lifecycle_paths_to_accepted_A3_P4_not_ready_and_locks_B_to_rollback_not_git_revert_B_or_A3"
     },
     "root_cause_audit": {
       "P0": 0,
@@ -343,13 +352,13 @@
       "P0": 0,
       "P1": 0,
       "P2": 0,
-      "verdict": "A2_bounded_planning_repair_complete_after_independent_return_0_2_0_targeted_independent_P4_entry_planning_rereview_pending"
+      "verdict": "A3_final_P4_entry_authority_repair_after_A1_A2_independent_return_0_2_0_targeted_independent_P4_entry_planning_rereview_pending"
     },
-    "p4_entry_a2_bounded_planning_repair": {
+    "p4_entry_a3_bounded_planning_repair": {
       "P0": 0,
       "P1": 2,
       "P2": 0,
-      "status": "completed_docs_only_targeted_rereview_pending"
+      "status": "completed_docs_only_targeted_rereview_pending_no_A3_self_hash_hardcoded"
     },
     "p1_bounded_red_allowlist": [
       "codec::tests::structural_rank_beats_source_order_for_compound_faults_old_property_limit_exact_bytes",
@@ -368,17 +377,17 @@
     "immutable_planning_authority_hash_contract": "lf_normalized_utf8_sha256",
     "immutable_planning_authority_count": 9,
     "immutable_planning_authority": {
-      ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/prd.md": "ffae63848807f7f83a8a3d743c4f32a6437e2a1c0e68ceb9c74280a2c49bdd01",
-      ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/design.md": "29d246b18bbf7d9ab5a8c063426fc15e552e959cbc296dd258698d38653e7c50",
-      ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/implement.md": "07ea4fd81b9de247241300bf0f8f37e1ae56b6583625808dffa06f27e148bf76",
-      ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/implement.jsonl": "3a59d424f366c975bbc4df6c0f28fa843650fe0d6e5ee6685497ee6f1d93ae1d",
-      ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/check.jsonl": "7d187ef58a502dec633fabf67284ccac92c126596f58202b3fa1c748e12c001d",
+      ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/prd.md": "aaa2c375f30e9bf3f12a193de2ee20be39d2937159e3dcfbdf5cf268b5ce22d2",
+      ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/design.md": "21a891b311c1025f7987bdcf8b232b14f778108b739c55e99f47c90fb00bedfe",
+      ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/implement.md": "ef3384a9f1017e30073c1b492919143be5a584e092bc51527ffaf246e580052c",
+      ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/implement.jsonl": "37e859beb22e5e1c2c99312d94b4a479dbd2de1a01d09e5e4ec4c2e69d985264",
+      ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/check.jsonl": "e6e4573017605ccdf948275a324c2164b080c1c1bf5b8da9fd5f2a8c4d094dd0",
       ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/research/root-cause-and-exact-node-count.md": "7eede03fcf13c55b9e905625ce673c39a6f8a39396302b5283cfc31483b269c9",
-      ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/research/authority-and-consumer-impact-map.md": "511295882ece20f4ef1f9abf4dcd88d6aae47608b1e8172faedec82297feeeff",
-      ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/research/file-test-ownership-matrix.md": "c1c4c2ec847ecdc0920a7c6dea3fe83b23ae43c71b2e0031a57986abdadb2b9d",
-      ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/research/planning-self-audit.md": "b53064ef8c8ee259b6ad461978df8a79818175dbfcfd0e2250e3b2bbb7b57b4d"
+      ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/research/authority-and-consumer-impact-map.md": "9992bc77771dee6073f0e98ce0d306b5d6ad32c1c006a69437d94f7ee8f2d13b",
+      ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/research/file-test-ownership-matrix.md": "463b1b7e403993bcdd0d33919707c9c8bfca6c3405f5fe5f5092f4b9d1c21d6f",
+      ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/research/planning-self-audit.md": "40052999607f12f30a41e46b687393828fc3c0c15f24f29709723bd57e6feb12"
     },
-    "bounded_planning_repair_candidate": "P3B_reviewed_parent_e4103b779574fcdc728d024c1b8f30244cb332c3",
+    "bounded_planning_repair_candidate": "A3_current_repair_commit_independent_audit_input_HEAD_after_P3B_reviewed_parent_e4103b779574fcdc728d024c1b8f30244cb332c3",
     "targeted_p3_planning_rereview": "passed",
     "targeted_p4_entry_planning_rereview": "pending",
     "stage6_follow_up": "after_rkp1a_accept_archive_integrate_create_docs_only_authority_amendment_then_planning_pass_then_indices_plus_workspace_law_E1R2_then_independent_audit_then_separate_E2_authorization",

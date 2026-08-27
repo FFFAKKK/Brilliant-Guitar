@@ -1,4 +1,4 @@
-# RKP-1A P0/P1/P2 Implementation Evidence
+# RKP-1A P0/P1/P2 Historical Implementation Evidence
 
 ## Fixed range
 
@@ -6,9 +6,9 @@
 - P0 activation: `39e91e86bf696a30cc77b42bd1ec5e2ae6cc4fbe`.
 - P1 technical candidate: `712c6dbb0b7556b4c345fab9ad8215fdbcec6990`; independent implementation audit PASS at P0/P1/P2=`0/0/0`.
 - P2 technical candidate and audited head: `0f65272951fd23080b6f536b2e58f50afe249b02`; independent implementation audit PASS at P0/P1/P2=`0/0/0`.
-- A later P3 attempt created no commit and was fully reverted. Root-cause audit returned `0/2/0` for native capture-profile admission and canonical-byte role drift.
-- First docs amendment candidate `978160e69b69d643c3d61ca946bde10bfe4aefb0` was returned at `0/1/1` for planning-only P3B self-worker protocol and P2 tense defects. Its repair `14023029878be7c785ac0de7828628c5e3f4f8b1` was returned at `0/2/0` for CommonJS direct-entry and Windows first-observed terminate/reap/cleanup gaps. This second bounded repair remains docs-only; no P3 technical work was started.
-- P3A/P3B/P4, RKP-2 Stage6 E2, acceptance, archive, integration and default cutover are not authorized.
+- P2-time historical snapshot: a later P3 attempt created no commit and was fully reverted. Root-cause audit returned `0/2/0` for native capture-profile admission and canonical-byte role drift.
+- P2-time historical snapshot: first docs amendment candidate `978160e69b69d643c3d61ca946bde10bfe4aefb0` was returned at `0/1/1` for planning-only P3B self-worker protocol and P2 tense defects. Its repair `14023029878be7c785ac0de7828628c5e3f4f8b1` was returned at `0/2/0` for CommonJS direct-entry and Windows first-observed terminate/reap/cleanup gaps. It does not describe the live lifecycle.
+- Subsequent live history: P3A and P3B completed their separately authorized implementation and independent audits through exact `e4103b779574fcdc728d024c1b8f30244cb332c3`. Only future B/P4 lifecycle, RKP-2 Stage6 E2, acceptance, archive, integration and default cutover remain unauthorized.
 
 ## P1 technical change
 
@@ -61,10 +61,10 @@ P2 changes exactly three technical paths: Contracts codec tests/wire samples, th
 
 The current checkout's full Runtime unit run exposes four known CRLF source-self-introspection failures in unchanged Runtime files. Final P2 evidence therefore uses the accepted LF detached-checkout gate; no Runtime source or test is modified.
 
-## P3 amendment boundary
+## P3 amendment boundary — P2-time historical snapshot
 
-The amendment splits future work into P3A and P3B. P3A owns only the closed TypeScript capture profile and its create/read call sites/tests; P2 already changed the successor failure-wire validator at exact audited head `0f652729...`. P3B owns only frozen real-consumer evidence, with distinct input/export SHA roles and semantic equality, and uses the compatibility test itself as its sole CommonJS direct self-worker. Its exact `__filename` guard, first-observed settlement, taskkill/reap secondary state and two-attempt E:-scratch cleanup are fail closed but remain planning-only. `indices.rs`, fixture, TypeScript encoder and Foundation BTreeMap stay byte-zero. No P3 evidence has been committed.
+At P2 time the amendment split future work into P3A and P3B. P3A owned only the closed TypeScript capture profile and its create/read call sites/tests; P2 had already changed the successor failure-wire validator at exact audited head `0f652729...`. P3B owned frozen real-consumer evidence, with distinct input/export SHA roles and semantic equality, and used the compatibility test itself as its sole CommonJS direct self-worker. Its exact `__filename` guard, first-observed settlement, taskkill/reap secondary state and two-attempt E:-scratch cleanup were planned fail-closed. This snapshot is superseded for live lifecycle by completed P3A/P3B audits through `e4103b7`; `indices.rs`, fixture, TypeScript encoder and Foundation BTreeMap remained byte-zero.
 
 ## Rollback and next gate
 
-The P2 commit is a single direct child of audited P1 head `712c6dbb0b7556b4c345fab9ad8215fdbcec6990`. Reverting only P2 restores the exact audited P1 tree and therefore the same two bounded REDs; reverting P1 after that restores the old cap and old-wire green state. P2 audit passed. The current gate is targeted planning rereview of this P3A/P3B amendment; only PASS plus separate user authorization may begin P3A.
+The P2 commit is a single direct child of audited P1 head `712c6dbb0b7556b4c345fab9ad8215fdbcec6990`. Reverting only P2 restores the exact audited P1 tree and therefore the same two bounded REDs; reverting P1 after that restores the old cap and old-wire green state. P2 audit passed. This document's prior P3 gate wording is historical; the current gate is A3 targeted P4-entry planning review, with only future B requiring PASS plus separate user authorization.

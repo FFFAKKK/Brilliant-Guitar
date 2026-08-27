@@ -2,7 +2,7 @@
 
 ## 0. Phase gate
 
-P0, P1 and P2 are complete and independently audited; exact P2 head is `0f65272951fd23080b6f536b2e58f50afe249b02`. P3A and P3B are complete, historically authorized and separately audited; P3B's exact reviewed head is `e4103b779574fcdc728d024c1b8f30244cb332c3`. A1 was the first docs-only authority amendment. This A2 repair does not authorize P4 B. Do not run `task.py start` again.
+P0, P1 and P2 are complete and independently audited; exact P2 head is `0f65272951fd23080b6f536b2e58f50afe249b02`. P3A and P3B are complete, historically authorized and separately audited; P3B's exact reviewed head is `e4103b779574fcdc728d024c1b8f30244cb332c3`. A1 and A2 are completed docs-only P4-entry amendments. This A3 repair does not authorize P4 B. Do not run `task.py start` again.
 
 Before every phase:
 
@@ -60,7 +60,7 @@ Owners: `crates/brilliant-kernel-contracts/src/codec.rs`, `src/core-kernel/nativ
 
 Commit: `fix(rkp-1a): align strict decoder resource contract`.
 
-Historical gate: Contracts/Core Types focused tests, fake/real native successor mapping, exact wire snapshots, fmt/check/clippy/MSRV and protected-path checks were green; exact P2 head passed dedicated independent audit. The amended P3A still requires targeted planning PASS plus separate user authorization.
+Historical gate: Contracts/Core Types focused tests, fake/real native successor mapping, exact wire snapshots, fmt/check/clippy/MSRV and protected-path checks were green; exact P2 head passed dedicated independent audit. P3A subsequently received planning PASS and separate authorization, then completed its independent implementation audit; P3B did likewise and is reviewed through exact `e4103b7`. No P3 authorization remains pending.
 
 Rollback: revert P2 to the independently audited P1 bounded RED state. A second rollback of P1 is required to restore the old-cap/old-wire green state.
 
@@ -107,9 +107,9 @@ Gate: focused current/Node20 raw and public journey plus the complete negative m
 
 ## P4 — candidate freeze
 
-P4 entry A1 is the first docs-only planning amendment, directly parented by `e4103b779574fcdc728d024c1b8f30244cb332c3`, with exactly thirteen listed planning/projection paths. A2 is this bounded docs-only repair, directly parented by A1; its actual changed-path set is the same thirteen paths, it preserves the cumulative thirteen-path set, does not modify workspace-law and never records its own hash. It leaves candidate-ready false and stops for targeted independent P4-entry planning review.
+P4 entry A1 is the first docs-only planning amendment, directly parented by `e4103b779574fcdc728d024c1b8f30244cb332c3`, with exactly thirteen listed planning/projection paths. A2 is directly parented by `aacb057af6eaa7c16e88ed94e2ecfc323c540032` and has the same thirteen paths. A3 is this bounded docs-only repair, directly parented by `9e1770b39f01484c860a39a6746f3ef7a638f612`; it has the expanded fifteen permitted authority/projection paths, with `e4103b7..A2` remaining thirteen and `e4103b7..A3` exactly fifteen. It does not modify workspace-law and never records its own hash. It leaves candidate-ready false and stops for targeted independent P4-entry planning review.
 
-Only after exact A2 independently passes and separate user authority is given may B begin with direct parent accepted A2. B has exactly eight paths: the original seven lifecycle owners plus `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts`, which is a mechanical governance projection only. B freezes `bd8946e → f06c57b → 673a2b9 → e4103b7 → A1 → accepted A2 → HEAD`; historical segment/cumulative checks remain, `e4103b7..A1` is exactly A1's thirteen paths, `A1..A2` is A2's bounded subset, `e4103b7..A2` is the cumulative thirteen paths, and `A2..HEAD` is exactly B's eight. No self-hash, wildcard/directory exemption, merge, empty commit or extra commit is allowed.
+Only after exact A3 independently passes and separate user authority is given may B begin with direct parent accepted A3. B has exactly eight paths: the original seven lifecycle owners plus `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts`, which is a mechanical governance projection only. B freezes `bd8946e → f06c57b → 673a2b9 → e4103b7 → A1 aacb057 → A2 9e1770b → accepted A3 HEAD → B HEAD`; historical segment/cumulative checks remain, individual A1/A2 thirteen-path and A3 fifteen-path commit sets are fixed, `e4103b7..accepted A3` is the cumulative fifteen paths, and `accepted A3..B` is exactly B's eight. No self-hash, wildcard/directory exemption, merge, empty commit or extra commit is allowed.
 
 Owners for B: the original seven lifecycle paths only; workspace-law is not a lifecycle owner.
 
@@ -118,7 +118,7 @@ Owners for B: the original seven lifecycle paths only; workspace-law is not a li
 - Keep archive/integration/E2 resume false.
 - Request independent implementation audit; do not claim PASS.
 
-If a post-B rollback is needed, do not use ordinary `git revert B`: make one explicit later eight-path governance rollback descendant. It restores the seven lifecycle files to accepted-A2 not-ready state, retains only workspace-law to freeze B→rollback, and does not revert A1/A2.
+If a post-B rollback is needed, do not use ordinary `git revert B`: make one explicit later eight-path governance rollback descendant. It restores the seven lifecycle files to accepted-A3 P4-not-ready state, retains only workspace-law to freeze B→rollback, and does not revert A1/A2/A3.
 
 Commit: `docs(rkp-1a): freeze property cap repair candidate`.
 

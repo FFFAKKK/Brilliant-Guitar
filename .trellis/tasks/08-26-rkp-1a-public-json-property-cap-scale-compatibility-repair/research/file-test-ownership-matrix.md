@@ -2,15 +2,15 @@
 
 ## Planning and amendment ownership
 
-The original planning diff is exactly 15 paths: its 12 child files plus the three projections below. A1 is the first P4-entry amendment, exactly 13 paths: the ten listed current planning artifacts (not `research/implementation-evidence.md`) plus the same three projections. A2 directly follows A1 and its bounded actual change set is the same thirteen paths; its cumulative `e4103b7..A2` set remains the same thirteen paths:
+The original planning diff is exactly 15 paths: its 12 child files plus the three projections below. A1 is the first P4-entry amendment, exactly 13 paths: the ten listed current planning artifacts (not `research/implementation-evidence.md`) plus the same three projections. A2 directly follows A1 and has the same thirteen paths. A3 directly follows exact `9e1770b39f01484c860a39a6746f3ef7a638f612`, adds the existing authority-and-consumer impact map and P0/P1/P2 historical evidence, and is exactly the following fifteen paths: `e4103b7..A2` remains thirteen paths; `e4103b7..A3` is fifteen paths.
 
 - `.trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json`
 - `.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json`
 - `.trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/task.json`
 
-All `src/**`, `test/**`, `crates/**`, Cargo/package/tsconfig/toolchain and specs are zero-delta during A planning. A1 directly follows exact `e4103b779574fcdc728d024c1b8f30244cb332c3`; A2 directly follows A1. Neither changes workspace-law or names its own commit hash.
+All `src/**`, `test/**`, `crates/**`, Cargo/package/tsconfig/toolchain and specs are zero-delta during A planning. A1 directly follows exact `e4103b779574fcdc728d024c1b8f30244cb332c3`; A2 directly follows exact `aacb057af6eaa7c16e88ed94e2ecfc323c540032`; A3 directly follows exact `9e1770b39f01484c860a39a6746f3ef7a638f612`. None changes workspace-law or names its own commit hash.
 
-After exact A2 independently passes and separately receives user authorization, B directly follows accepted A2 and owns exactly eight paths: the original seven lifecycle paths in design section 10 plus `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts`. The test path only freezes mechanical governance, never lifecycle state. Workspace-law must retain `bd8946e → f06c57b → 673a2b9 → e4103b7 → A1`, assert `e4103b7..A1` is the thirteen A1 paths, `A1..A2` is A2's bounded subset, `e4103b7..A2` remains the cumulative thirteen paths and `A2..HEAD` is the eight B paths, and reject self-hash, merge, empty/extra commit, wildcard and directory exemption. A rollback is a later exact eight-path governance descendant that restores the seven lifecycle paths to A2 not-ready state and freezes B→rollback; it does not revert A1/A2.
+After exact A3 independently passes and separately receives user authorization, B directly follows accepted A3 and owns exactly eight paths: the original seven lifecycle paths in design section 10 plus `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts`. The test path only freezes mechanical governance, never lifecycle state. Workspace-law must retain `bd8946e → f06c57b → 673a2b9 → e4103b7 → A1 aacb057 → A2 9e1770b`, assert individual A1/A2 thirteen-path and A3 fifteen-path commit sets, assert `e4103b7..accepted A3` is the cumulative fifteen paths and `accepted A3..B` is the eight B paths, and reject self-hash, merge, empty/extra commit, wildcard and directory exemption. A rollback is a later exact eight-path governance descendant that restores the seven lifecycle paths to accepted-A3 P4-not-ready state and freezes B→rollback; it does not revert A1/A2/A3.
 
 ## Cumulative technical ownership
 
@@ -60,9 +60,9 @@ After exact A2 independently passes and separately receives user authorization, 
 | P1 | Core Types green; only `codec::tests::structural_rank_beats_source_order_for_compound_faults` old-byte snapshot and `P1-RED-TS-NATIVE-SUCCESSOR-MAPPING` diagnostic RED | stop for independent P1 implementation audit; no P2 without PASS plus authorization | revert P1 to old-cap/old-wire green |
 | P2 | all prior allowed RED becomes green; no new failure | independent P2 audit passed at `0f652729...`; no P3A without amended planning PASS and authorization | revert P2 to audited P1 RED; then optionally revert P1 to old green |
 | P3A | capture profile, DAG/cloned create and public-read gates green | independently audited history | revert P3A to audited P2 |
-| P3B | real consumer/canonical/native/full gates green | independently reviewed through `e4103b7`; no P4 B without exact A planning PASS plus authorization | revert P3B, retaining audited P3A |
-| P4 A1/A2 | A1 exact 13 planning/projection paths; A2 bounded subset with the same cumulative 13; candidate false | targeted independent P4-entry planning review of exact A2 | retain A1/A2; no B yet |
-| P4 B | seven lifecycle owners plus one workspace-law projection; candidate true/review pending only | independent implementation review; no acceptance/archive/integration/E2 | later exact eight-path governance rollback to A not-ready state, never ordinary `git revert B` |
+| P3B | real consumer/canonical/native/full gates green | independently reviewed through `e4103b7`; no P4 B without exact A3 planning PASS plus authorization | revert P3B, retaining audited P3A |
+| P4 A1/A2/A3 | A1/A2 exact 13 planning/projection paths; A3 exact 15 with cumulative 15; candidate false | targeted independent P4-entry planning review of exact A3 | retain A1/A2/A3; no B yet |
+| P4 B | seven lifecycle owners plus one workspace-law projection; candidate true/review pending only | independent implementation review; no acceptance/archive/integration/E2 | later exact eight-path governance rollback to accepted-A3 P4-not-ready state, never ordinary `git revert B` |
 
 The P1 diagnostic performs no repository write and supplies a fake native rejected envelope with `code=codec.property-limit`, `limit=1572864`, `actual=1572865`; current adapter behavior must be recorded as `bridge.internal`. The eventual committed test name is `fake and real native successor property-limit stays stable`. Any failure outside the two-entry P1 set blocks rather than being relabeled expected.
 
