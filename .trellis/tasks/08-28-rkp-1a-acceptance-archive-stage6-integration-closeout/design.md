@@ -41,27 +41,27 @@ Allowed paths are this task's complete planning artifact set; existing RKP-1A `t
 
 ### C1 — accepted-B authority transition
 
-Only these literal paths may change: the four closeout lifecycle files `task.json`, `operator-handoff.md`, `review-candidate.md`, `research/commit-phase-and-rollback-matrix.md`; the four active RKP-1A lifecycle/evidence files; the three coordination `task.json` files; and `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts`.
+Only these literal paths may change: the three closeout lifecycle files `task.json`, `operator-handoff.md`, `review-candidate.md`; the four active RKP-1A lifecycle/evidence files; the three coordination `task.json` files; and `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts`. The nine planning-authority files registered in `task.json` are byte-immutable after planning PASS.
 
 C1 records owner acceptance only after this planning task passes review and a separate user authorization. It pins accepted B and A3, changes workspace-law to compare immutable ranges, proves A3→B is exact eight paths and direct/non-merge, and does not archive or integrate.
 
 ### C2 — native old-RKP-1A archive
 
-The exact 26-path move set is the thirteen active source paths above plus the thirteen corresponding archive paths under `RKP1A_ARCHIVE_ROOT`. The archive commit contains only the native archive status/completedAt update in moved `task.json` and the exact moves. It must run `python ./.trellis/scripts/task.py archive 08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair` from a clean C1 head.
+The exact 26-path move set is the thirteen active source paths above plus the thirteen corresponding archive paths under `RKP1A_ARCHIVE_ROOT`. Before any C2/C5 mutation, `Get-Date -Format yyyy-MM` must equal exactly `2026-08`, otherwise stop for planning review. The archive commit contains only the native archive status/completedAt update in moved `task.json` and the exact moves.
 
 ### C3 — archive-authority repair
 
-Only these literal paths may change: archived `task.json`, archived `implement.jsonl`, archived `check.jsonl`; closeout `task.json`, `operator-handoff.md`, `review-candidate.md`, `research/commit-phase-and-rollback-matrix.md`; the Rust/RKP-2/Stage6 parent `task.json` files; and `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts`.
+Only these literal paths may change: archived `task.json`, archived `implement.jsonl`, archived `check.jsonl`; closeout `task.json`, `operator-handoff.md`, `review-candidate.md`; the Rust/RKP-2/Stage6 parent `task.json` files; and `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts`.
 
-C3 rewrites only actual active self-references to the archive root. It verifies B's immutable history, archive 13/13 inventory, active absence, archive presence, JSONL parsing/path uniqueness and parent-child exact-once. If another archived file needs mutation, stop for a new planning review.
+C3 rewrites only current self references: archived task relatedFiles[0..11] and nine immutable-authority keys move to archive; relatedFiles[12..23] remain byte-unchanged. Only implement JSONL rows 6-9 and check JSONL rows 5-10 change `file`; all other fields/reasons and historical active spellings stay byte-semantic unchanged. If another archived file needs mutation, stop for planning review.
 
 ### C4 — Stage6 explicit integration
 
-The Stage6 worktree must be clean at `639e93555c15b46c54c8e9bb7ec610d4a77c7478`, and that commit must be an ancestor of C3 closeout head. `git merge --ff-only` is the sole integration command. The following docs-only integration projection may change only archived RKP-1A `task.json`, closeout `task.json`/`operator-handoff.md`/`review-candidate.md`/`research/commit-phase-and-rollback-matrix.md`, and the Rust/RKP-2/Stage6 parent `task.json` files. It records source, archive, accepted-B and integration facts; E2 remains false.
+After C3 PASS the closeout branch freezes at accepted C3. Stage6 must be clean at `639e93555c15b46c54c8e9bb7ec610d4a77c7478`, prove it is an accepted-C3 ancestor, then alone run `git merge --ff-only <accepted-C3>`. Stage6 HEAD equals accepted C3 and owns every C4/C5 commit/current authority; it records frozen closeout source. E2 remains false.
 
 ### C5 — independent closeout audit and archive
 
-The independent audit reviews B→C4, archive authority, integration ancestry and the final workspace-law. Only after PASS may native archive move this closeout task's twelve planning artifacts to `.trellis/tasks/archive/2026-08/08-28-rkp-1a-acceptance-archive-stage6-integration-closeout/`. If a final parent projection is needed, it is a separate docs-only commit limited to the archived closeout `task.json` and the three parent `task.json` files; it must not rewrite acceptance/archive commits.
+The independent audit reviews B→C4, archive authority, integration ancestry and final law. Only after PASS may native archive move this task's twelve artifacts. Terminal projection is mandatory: archived closeout `task.json` plus Rust/RKP-2/Stage6 parent task JSON; its eleven active relatedFiles self paths migrate to archive. Both JSONL files and nine immutable blobs remain byte-zero, then a targeted read-only audit precedes any Stage6 amendment planning.
 
 ## Workspace-law transition contract
 

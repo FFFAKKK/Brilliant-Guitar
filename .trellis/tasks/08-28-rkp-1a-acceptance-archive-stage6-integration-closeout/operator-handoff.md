@@ -13,3 +13,5 @@ Stop for independent closeout planning review. A PASS and separate user authoriz
 ## Closeout handoff facts
 
 The future operator must preserve immutable B history, native archive the exact 13-file old RKP-1A inventory, repair only proven archive self-references, and integrate Stage6 only with `git merge --ff-only` from clean `639e935...`. C2 archive and C4 integration are not authorization substitutes for Stage6 E2.
+
+The current B audit is PASS, not rereview-pending. The old `634ed8be...` return is historical. After planning PASS, the nine authority files are immutable; C4/C5 move to Stage6 ownership only after accepted C3 fast-forward.

@@ -10,3 +10,5 @@
 | C5 | Independent audit of B→C4 PASS | Literal C5 archive inventory and terminal projection list | Archive this closeout task only after PASS. Its JSONL remains archive-safe because it names stable external authorities. |
 
 No stop/rollback rule authorizes Stage6 E2. Acceptance, native archive, integration, closeout-task archive, qualification, default cutover, RKP-3 and push each require their separately frozen future gates.
+
+Archive month is a fail-closed preflight: C2/C5 stop unless exact `2026-08`. C4 recovery never writes closeout history after accepted C3; Stage6 becomes sole C4/C5 owner.

@@ -111,7 +111,6 @@
         ".trellis/tasks/08-28-rkp-1a-acceptance-archive-stage6-integration-closeout/task.json",
         ".trellis/tasks/08-28-rkp-1a-acceptance-archive-stage6-integration-closeout/operator-handoff.md",
         ".trellis/tasks/08-28-rkp-1a-acceptance-archive-stage6-integration-closeout/review-candidate.md",
-        ".trellis/tasks/08-28-rkp-1a-acceptance-archive-stage6-integration-closeout/research/commit-phase-and-rollback-matrix.md",
         ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/task.json",
         ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/operator-handoff.md",
         ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/review-candidate.md",
@@ -156,7 +155,6 @@
         ".trellis/tasks/08-28-rkp-1a-acceptance-archive-stage6-integration-closeout/task.json",
         ".trellis/tasks/08-28-rkp-1a-acceptance-archive-stage6-integration-closeout/operator-handoff.md",
         ".trellis/tasks/08-28-rkp-1a-acceptance-archive-stage6-integration-closeout/review-candidate.md",
-        ".trellis/tasks/08-28-rkp-1a-acceptance-archive-stage6-integration-closeout/research/commit-phase-and-rollback-matrix.md",
         ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json",
         ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json",
         ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/task.json",
@@ -167,7 +165,6 @@
         ".trellis/tasks/08-28-rkp-1a-acceptance-archive-stage6-integration-closeout/task.json",
         ".trellis/tasks/08-28-rkp-1a-acceptance-archive-stage6-integration-closeout/operator-handoff.md",
         ".trellis/tasks/08-28-rkp-1a-acceptance-archive-stage6-integration-closeout/review-candidate.md",
-        ".trellis/tasks/08-28-rkp-1a-acceptance-archive-stage6-integration-closeout/research/commit-phase-and-rollback-matrix.md",
         ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json",
         ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json",
         ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/task.json"
@@ -205,6 +202,20 @@
         ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/task.json"
       ]
     },
-    "next_gate": "independent_closeout_planning_review"
+    "immutable_planning_authority_hash_contract": "lf_normalized_utf8_sha256",
+    "immutable_planning_authority_count": 9,
+    "immutable_planning_authority": {
+      "prd.md": "56c18fdce545094299e581fc44f1179b93933da71727869bdf78199af9efe089",
+      "design.md": "a584135d01e2c1624d7d0cf4a6f1ee4d76b25da3a9c3624c05e2d3e3115aacee",
+      "implement.md": "7c125d395a8f8dbc35d3b387e8713f27e01198d819a6db305611ec9178d5a0a8",
+      "implement.jsonl": "5fa3fbf7700f0b48362dcd5db83d0c4757b0b46b1b701b406334de78b19a5c22",
+      "check.jsonl": "56d72b2c0b84b42fb94b1e12f97254b80cc11549fb02c801daaad9661a2b2eed",
+      "research/current-closeout-feasibility-audit.md": "2f2329c5b2d6afe5727b2d71c168652b6aaef300e35039603de049279ed4d22a",
+      "research/archive-path-and-workspace-law-migration-map.md": "9b4c1eacf92f1072c81a25ae0e2a636d2422a9414623d2f784e6be228410e7af",
+      "research/commit-phase-and-rollback-matrix.md": "74e183c12ebcfea47d69406ccff6b2d86c6e2a634d2797ebd84c6d549ecb614d",
+      "research/planning-self-audit.md": "7f1447108ef3d3370b84656bab0addb5874fa2c4bc37f2ea5e82d04106595aec"
+    },
+    "planning_repair_audit": {"P0":0,"P1":6,"P2":0,"status":"bounded_repair_completed_targeted_rereview_pending"},
+    "next_gate": "targeted_closeout_planning_rereview"
   }
 }

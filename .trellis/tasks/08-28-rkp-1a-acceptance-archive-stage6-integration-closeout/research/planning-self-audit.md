@@ -15,3 +15,5 @@ P0/P1/P2 = `0/0/0` for C0 planning completeness.
 ## Review request
 
 Independent reviewers should verify the exact B/A3 ancestry, C1 immutable-range migration design, C2/C3 archive-self-reference containment, C4 fast-forward-only proof and C5 archive-safe JSONL behavior. Review remains pending.
+
+Bounded repair P0/P1/P2=`0/0/0`: 9/9 authority hashes are recomputed below task metadata; their files are immutable after PASS. The six findings are closed without granting C1.

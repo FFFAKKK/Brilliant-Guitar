@@ -2,9 +2,11 @@
 
 ## Status
 
-READY FOR INDEPENDENT CLOSEOUT PLANNING REVIEW.
+READY FOR TARGETED CLOSEOUT PLANNING REREVIEW.
 
 This C0 candidate is a docs-only descendant of B `08374273b05bc992e749a17a959b64af0f293f0b`. It plans owner acceptance, native archive and fast-forward-only Stage6 integration; it performs none of them.
+
+Current B review is independently passed P0/P1/P2=`0/0/0`; the sole live gate is targeted closeout planning rereview. Historical `634ed8be...` return evidence is not a live rereview state.
 
 ## Audit focus
 

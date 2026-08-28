@@ -51,3 +51,5 @@ Audit B→C4 first. On PASS, native archive this closeout task; its JSONL must c
 ## Validation discipline
 
 Every phase runs exact ancestry/path-set checks, Trellis, JSON/JSONL/path/parent checks, fences and `git diff --check`. Production/src, Cargo/package/tsconfig/spec and all tests except the C1/C3 workspace-law path remain zero delta. Rust/native/full evidence may be reused only where technical bytes have not changed; final C4 rechecks focused law on Node current and Node 20 with a newly printed manifest/hash. All temporary/build output stays on E:.
+
+Planning-PASS authority files are never stage evidence sinks: only closeout `task.json`, `operator-handoff.md`, and `review-candidate.md` may carry C1/C3/C4 evidence. C2's focused transitional law remains exactly `RKP-1A P4 candidate freeze is exact on accepted A3` plus the three existing failures (10/6/4), never final green.

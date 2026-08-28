@@ -18,3 +18,5 @@ The roots are mutually exclusive as current authorities. C1 must preserve histor
 5. C4 repeats the final 10/7/3 after the Stage6 fast-forward and its docs-only integration projection.
 
 No phase may use an unbounded descendant range, wildcard, directory exemption, or an archive path as a replacement for immutable historical B evidence.
+
+C2 transitional law is explicitly 10/6/4: the named A3→B candidate gate is the sole lifecycle transition failure, while the other three remain pre-existing unaccepted-child failures. It is not final evidence.

@@ -15,3 +15,5 @@ The current workspace-law deliberately treats mutable `HEAD` as B's only A3 chil
 ## Non-claims
 
 C0 does not invoke native archive, mutate workspace-law, start Stage6 E2, run qualification, or claim owner acceptance. Technical evidence from B remains historical and unchanged.
+
+B now has an independently recorded 0/0/0 implementation PASS; owner acceptance remains future C1 authority. Closeout planning itself is the only live review gate.

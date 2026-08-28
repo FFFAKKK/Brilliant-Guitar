@@ -88,7 +88,7 @@
       ]
     },
     "implementation_candidate_ready": true,
-    "implementation_review": "pending",
+    "implementation_review": "passed",
     "p0_activation_started": true,
     "p0_activation_completed": true,
     "p0_activation_commit": "39e91e86bf696a30cc77b42bd1ec5e2ae6cc4fbe",
@@ -233,6 +233,8 @@
     "p4_candidate_freeze_user_authorization": "separate_user_authorization_received_after_independently_accepted_replacement_A3",
     "p4_independent_implementation_audit": "passed_08374273b05bc992e749a17a959b64af0f293f0b_P0_0_P1_0_P2_0",
     "p4_independent_implementation_rereview": "passed",
+    "p4_independent_implementation_audit_result": {"candidate_commit":"08374273b05bc992e749a17a959b64af0f293f0b","P0":0,"P1":0,"P2":0,"verdict":"pass_for_bounded_RKP1A_acceptance_closeout_planning_only"},
+    "historical_rejected_B_snapshot": "634ed8be67aea532f45dc4412288a24618543c90_return_P0_0_P1_2_P2_0_historical_not_live_authority",
     "p4_production_implementation_authorized": false,
     "p4_entry_planning_amendment": {
       "a1_direct_parent": "e4103b779574fcdc728d024c1b8f30244cb332c3",

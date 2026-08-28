@@ -33,3 +33,7 @@ Plan, but do not execute, the bounded owner closeout for independently passed RK
 
 - No production, Rust, TypeScript runtime, fixture, Cargo, package, tsconfig, specification, archive or workspace-law change in C0.
 - No performance qualification, CVN-7 official measurement, 10,000 submit/replay, default-runtime switch or RKP-3 creation.
+
+## Bounded planning-repair closure
+
+Live B review is PASS at `08374273b05bc992e749a17a959b64af0f293f0b`; `634ed8be...` is historical rejected-candidate evidence only. Nine registered planning files are LF-hash immutable after planning PASS. C2 preflights exact archive month `2026-08`; C3 uses the frozen task/JSONL subsets only; C4 transfers sole commit ownership to Stage6 after ff-only; C5 terminal projection is mandatory before its dedicated read-only audit.
