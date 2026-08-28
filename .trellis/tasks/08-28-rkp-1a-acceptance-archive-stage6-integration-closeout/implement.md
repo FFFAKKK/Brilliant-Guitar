@@ -40,7 +40,11 @@ Commit: `docs(rkp-1a): repair archived closeout authority`.
 
 ## C4 — Stage6 fast-forward integration (future)
 
-Preconditions: accepted C3 freezes the closeout source branch at exact C3. Clean Stage6 `639e935...` must be its ancestor; only Stage6 runs `git merge --ff-only <accepted-C3>` and obtains HEAD==C3. Its projection changes top-level branch/worktree and current-owner meta to Stage6, preserves planning-source provenance, records frozen C3, and makes Stage6 sole C4/C5 owner. Verify no stale/double owner; E2 false.
+Preconditions: C0-C3 retain `branch`, `worktree_path`, `meta.current_authority_owner_branch`, and `meta.current_authority_owner_worktree` as `codex/rkp-1a-acceptance-archive-stage6-integration-closeout` / `.worktrees/rkp-1a-acceptance-archive-stage6-integration-closeout`; the frozen source fields have those same values, `meta.frozen_closeout_c3_head` is the pending sentinel, and `meta.branch_owner_handoff = not_started_C0_C3_closeout_owner`. Accepted C3 freezes the closeout source branch at exact C3. Only the clean Stage6 worktree may prove `639e935...` is its ancestor, run `git merge --ff-only <accepted-C3>`, and, before any projection edit, prove both Stage6 `HEAD == accepted C3` and closeout-source `HEAD == accepted C3`.
+
+The first and only C4 projection commit is C3's direct child. It must set top-level `branch` and `meta.current_authority_owner_branch` to `codex/rkp-2-stage-6-private-scale-evidence-seam-repair`, top-level `worktree_path` and `meta.current_authority_owner_worktree` to `.worktrees/rkp-2-stage-6-private-scale-evidence-seam-repair`, `meta.frozen_closeout_c3_head` to exact accepted C3, and `meta.branch_owner_handoff` to `completed_by_clean_ff_only_stage6_is_sole_C4_C5_owner`; `meta.frozen_closeout_source_branch` and `meta.frozen_closeout_source_worktree` stay byte-equal. The predeclared `meta.c4_target_*` keys and `meta.c4_frozen_c3_relation` are the exact target comparison values, not prose-only hints.
+
+Mechanically reject missing/pending/stale fields, unequal top-level/current owner, C4 whose parent is not frozen C3, a Stage6 branch not containing C4, a closeout source branch containing C4, or a double owner. Assert `C4 HEAD^ == frozen_closeout_c3_head`, closeout source `HEAD == frozen_closeout_c3_head`, and top-level/current values each equal the Stage6 target. C4/C5 commits occur only in Stage6 and C4 uses its existing literal allowlist without expansion; E2 remains false.
 
 Commit: `docs(rkp-2): record RKP-1A closeout integration`.
 
