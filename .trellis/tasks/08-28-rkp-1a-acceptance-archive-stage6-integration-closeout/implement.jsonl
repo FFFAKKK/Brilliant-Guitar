@@ -1,0 +1,6 @@
+{"file":".trellis/spec/core-kernel/index.md","reason":"Keep TypeScript-default and Core transition authority separate from lifecycle closeout."}
+{"file":".trellis/spec/core-kernel/backend/rust-runtime-transition.md","reason":"Preserve the staged Rust-runtime and no-cutover boundary."}
+{"file":".trellis/scripts/task.py","reason":"C2 and C5 must use the repository-native archive lifecycle command."}
+{"file":".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json","reason":"Coordinate the sole active RKP-2 implementation child and exact closeout planning child."}
+{"file":".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json","reason":"Preserve Stage6 E2/E3 false and TypeScript default through closeout."}
+{"file":".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/task.json","reason":"Freeze the Stage6 source head and blocker projection without starting E2."}

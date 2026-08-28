@@ -23,7 +23,8 @@
     "08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke",
     "08-24-rkp-1-post-archive-workspace-contract-authority-repair",
     "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
-    "08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair"
+    "08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair",
+    "08-28-rkp-1a-acceptance-archive-stage6-integration-closeout"
   ],
   "parent": "07-29-core-vnext-product-ready-extensible-kernel-completion",
   "relatedFiles": [
@@ -45,12 +46,12 @@
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RKP-0 RKP-1 AND PRIOR REPAIRS ACCEPTED ARCHIVED / RKP-2 SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 E1+E1R GREEN E2 NOT STARTED / RKP-1A P0-P2 AND P3A-P3B COMPLETE HISTORICALLY AUTHORIZED AND AUDITED THROUGH E4103B7 / REPLACEMENT A3 3063E097 PLANNING PASS 0/0/0 / P4-B CANDIDATE FREEZE COMPLETE PRIOR AUDIT RETURN 0/2/0 TARGETED REREVIEW PENDING / TYPESCRIPT DEFAULT / NO ACCEPT ARCHIVE INTEGRATION E2 CUTOVER PUSH QUALIFICATION OR RKP-3.",
+  "notes": "RKP-0 RKP-1 AND PRIOR REPAIRS ACCEPTED ARCHIVED / RKP-2 SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 E1+E1R GREEN E2 NOT STARTED / RKP-1A P0-P3B HISTORY AUDITED THROUGH E4103B7 / P4-B 08374273 INDEPENDENT IMPLEMENTATION PASS 0/0/0 / CURRENT GATE RKP-1A CLOSEOUT PLANNING REVIEW / TYPESCRIPT DEFAULT / NO ACCEPT ARCHIVE INTEGRATION E2 CUTOVER PUSH QUALIFICATION OR RKP-3.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
     "source_cvn7_status": "in_progress_measurement_incomplete_evidence_invalid",
-    "current_planning_child": null,
+    "current_planning_child": "08-28-rkp-1a-acceptance-archive-stage6-integration-closeout",
     "current_dependency_repair_child": "08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair",
     "future_children_created": true,
     "stage_sequence": [
@@ -94,7 +95,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "rkp1a-dedicated-independent-P4-implementation-rereview",
+    "next_gate": "rkp1a_acceptance_archive_stage6_closeout_independent_planning_review",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -345,7 +346,9 @@
       "p4_entry_audit": "e4103b7_return_P0_0_P1_1_P2_0_then_A1_A2_bounded_planning_repairs_P0_0_P1_2_P2_0",
       "targeted_planning_rereview": "replacement_A3_3063e097_pass_0_0_0",
       "stage6_follow_up_order": "after_RKP1A_accept_archive_integrate_docs_only_authority_amendment_planning_pass_then_E1R2_audit_then_separate_E2_authorization",
-      "next_gate": "dedicated_independent_P4_implementation_rereview"
+      "p4_independent_implementation_audit": "08374273b05bc992e749a17a959b64af0f293f0b_pass_P0_0_P1_0_P2_0",
+      "closeout_planning_child": "08-28-rkp-1a-acceptance-archive-stage6-integration-closeout",
+      "next_gate": "independent_closeout_planning_review"
     },
     "rkp2_stage_6_private_scale_evidence_seam_repair": {
       "parent": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",

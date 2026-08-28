@@ -4,7 +4,7 @@
 
 - Independently accepted replacement A3 planning head: `3063e0972072e246d43add8640ba1fe1ad02d787`, directly parented by A2 `9e1770b39f01484c860a39a6746f3ef7a638f612`, with independent planning result P0/P1/P2=`0/0/0`.
 - This B candidate is one direct non-merge descendant of accepted A3. It changes exactly seven lifecycle/evidence paths plus the mechanical workspace-law projection. B does not record or depend on its own hash.
-- Candidate-ready is true. The prior B implementation audit returned P0/P1/P2=`0/2/0`, so the only next gate is targeted independent P4 implementation rereview. Acceptance, archive, integration, push, Stage6 E2, default-runtime switch, qualification and RKP-3 remain false/not started.
+- Candidate-ready is true. B `08374273b05bc992e749a17a959b64af0f293f0b` independently passed implementation audit at P0/P1/P2=`0/0/0`; the next gate is independent closeout planning review, not automatic acceptance. Acceptance, archive, integration, push, Stage6 E2, default-runtime switch, qualification and RKP-3 remain false/not started.
 - Fresh final-gate commands, versions, counts, manifest, diagnostics, E:-scratch and protected-delta evidence are recorded below in the P4-B section. They remain applicable technical evidence to this governance-only replacement B; heavyweight dynamic/Rust/native gates are not rerun for the authority-text correction. No raw workload artifact or partial success is retained.
 
 ## P4-B fresh final-gate evidence
@@ -85,4 +85,4 @@ At P2 time the amendment split future work into P3A and P3B. P3A owned only the 
 
 ## Rollback and next gate
 
-The P2 commit is a single direct child of audited P1 head `712c6dbb0b7556b4c345fab9ad8215fdbcec6990`. Reverting only P2 restores the exact audited P1 tree and therefore the same two bounded REDs; reverting P1 after that restores the old cap and old-wire green state. P2 audit passed. This document's prior P3/P4 gate wording is historical; the live B candidate is complete, its prior implementation audit returned `0/2/0`, and the current gate is targeted independent P4 implementation rereview.
+The P2 commit is a single direct child of audited P1 head `712c6dbb0b7556b4c345fab9ad8215fdbcec6990`. Reverting only P2 restores the exact audited P1 tree and therefore the same two bounded REDs; reverting P1 after that restores the old cap and old-wire green state. P2 audit passed. This document's prior P3/P4 gate wording is historical; the live B candidate is complete and independently passed at `08374273b05bc992e749a17a959b64af0f293f0b`, while closeout planning remains the current gate.

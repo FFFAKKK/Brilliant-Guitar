@@ -2,9 +2,9 @@
 
 ## Status
 
-READY FOR TARGETED INDEPENDENT P4 IMPLEMENTATION REREVIEW.
+RKP-1A P4 IMPLEMENTATION REVIEW PASSED; READY FOR INDEPENDENT CLOSEOUT PLANNING REVIEW.
 
-Exact planning head `1cd0caadff218c1471f67cdf1a1ab78f5653a605`, exact P1 head `712c6dbb0b7556b4c345fab9ad8215fdbcec6990` and exact P2 head `0f65272951fd23080b6f536b2e58f50afe249b02` each passed their required independent review at P0/P1/P2=`0/0/0`. A no-commit P3 attempt was reverted. Independent root-cause audit returned `0/2/0`; first amendment `978160e...` returned `0/1/1`, and its repair `14023029878be7c785ac0de7828628c5e3f4f8b1` returned `0/2/0` for CommonJS entry and Windows settlement. P3A and P3B are completed, historically authorized, and independently audited; P3B's exact reviewed head is `e4103b779574fcdc728d024c1b8f30244cb332c3`. Replacement A3 `3063e0972072e246d43add8640ba1fe1ad02d787` passed the independent P4-entry planning review at `0/0/0`. The separately authorized B candidate freeze is complete; its prior implementation audit returned P0/P1/P2=`0/2/0`, so only targeted independent implementation rereview may now advance this task.
+Exact planning head `1cd0caadff218c1471f67cdf1a1ab78f5653a605`, exact P1 head `712c6dbb0b7556b4c345fab9ad8215fdbcec6990` and exact P2 head `0f65272951fd23080b6f536b2e58f50afe249b02` each passed their required independent review at P0/P1/P2=`0/0/0`. A no-commit P3 attempt was reverted. Independent root-cause audit returned `0/2/0`; first amendment `978160e...` returned `0/1/1`, and its repair `14023029878be7c785ac0de7828628c5e3f4f8b1` returned `0/2/0` for CommonJS entry and Windows settlement. P3A and P3B are completed, historically authorized, and independently audited; P3B's exact reviewed head is `e4103b779574fcdc728d024c1b8f30244cb332c3`. Replacement A3 `3063e0972072e246d43add8640ba1fe1ad02d787` passed the independent P4-entry planning review at `0/0/0`. The separately authorized B candidate freeze `08374273b05bc992e749a17a959b64af0f293f0b` independently passed implementation review at P0/P1/P2=`0/0/0`; only a distinct closeout planning review may now define owner acceptance, archive and Stage6 integration.
 
 ## Candidate claims
 
