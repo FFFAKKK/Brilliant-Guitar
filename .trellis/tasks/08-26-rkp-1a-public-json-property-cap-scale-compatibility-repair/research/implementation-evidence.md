@@ -1,3 +1,21 @@
+# RKP-1A P4-B Candidate Freeze Evidence
+
+## Current B candidate boundary
+
+- Independently accepted replacement A3 planning head: `3063e0972072e246d43add8640ba1fe1ad02d787`, directly parented by A2 `9e1770b39f01484c860a39a6746f3ef7a638f612`, with independent planning result P0/P1/P2=`0/0/0`.
+- This B candidate is one direct non-merge descendant of accepted A3. It changes exactly seven lifecycle/evidence paths plus the mechanical workspace-law projection. B does not record or depend on its own hash.
+- Candidate-ready is true. The prior B implementation audit returned P0/P1/P2=`0/2/0`, so the only next gate is targeted independent P4 implementation rereview. Acceptance, archive, integration, push, Stage6 E2, default-runtime switch, qualification and RKP-3 remain false/not started.
+- Fresh final-gate commands, versions, counts, manifest, diagnostics, E:-scratch and protected-delta evidence are recorded below in the P4-B section. They remain applicable technical evidence to this governance-only replacement B; heavyweight dynamic/Rust/native gates are not rerun for the authority-text correction. No raw workload artifact or partial success is retained.
+
+## P4-B fresh final-gate evidence
+
+- Environment: `cargo 1.97.1 (c980f4866 2026-06-30)`, `cargo 1.88.0 (873a06493 2025-05-10)`, current Node `v24.15.0`, and the already installed `D:\nvm\v20.20.2\node.exe` (`v20.20.2`). `TEMP`, `TMP` and `CARGO_TARGET_DIR` were respectively under `E:\desktop\brilliant_ideas\brilliant_guitar\.worktrees\.scratch\rkp1a-p4-b\tmp` and `...\cargo-target`, with `CARGO_INCREMENTAL=0`.
+- Rust clean-LF detached verification at the B candidate ran `cargo +1.97.1 fmt --all -- --check`, `check --workspace --all-targets --locked`, `test --workspace --all-targets --locked`, and `clippy --workspace --all-targets --locked -- -D warnings`, plus `cargo +1.88.0 check --workspace --all-targets --locked`; all passed. The workspace test total was 73 passed, 0 failed and 1 intentional ignored private Stage-6 evidence test. The ordinary CRLF worktree reproduces four pre-existing source-text self-inspection false negatives; the same B commit passes those checks in the clean LF checkout, so no protected Rust source was changed.
+- `npm.cmd run typecheck` and `npm.cmd run build` passed. The deterministic Windows MSVC addon was built from the candidate with the E: target, copied only as the ignored `target/rkp-1-node/brilliant_kernel_node.node` test artifact, and both `process.dlopen` and `require` exposed exactly `createKernelSessionV1,readKernelSessionV1`.
+- Sequential native gates passed: the RKP-1 bridge was 9/9 under `node --expose-gc`; the dedicated RKP-1A compatibility suite was 7/7, including its real P3B worker. Its worker diagnostic was `wallElapsedMicros=119226000`, `workloadElapsedMicros=118861164`, `peakRssBytes=1824169984`, with `qualification=false`. A prior concurrent two-file diagnostic invocation had one old bridge timing-ratio failure while the 1.8 GiB P3B worker was active; the required independent bridge rerun passed, so this is retained only as a resource-concurrency diagnostic, not a hidden green result.
+- Dynamic full runner results were identical on Node 24 and Node 20: `full-test-manifest-v1` file count `79`, SHA-256 `afbd0246012b61c3670b31cc01180c4a90586e30ac3ff177d91cddfc2eb09357`, `591` discovered, `587` passed, `1` expected GC skip, `3` failed and `0` cancelled. The three failures are only the existing unaccepted-child fail-closed workspace-law tests: literal RKP-2 allowlists, accepted part-owner wire contract, and Stage-6 hostile/resource private-seam consumption. `RKP-1A P4 candidate freeze is exact on accepted A3` passed on both runtimes.
+- Structural evidence: child, Rust parent, RKP-2 parent and Stage-6 child Trellis validation passed; JSON/JSONL parsing, related-path existence/uniqueness, parent-child uniqueness, Markdown fences, `git diff --check`, all nine LF-normalized immutable-authority hashes, the direct non-merge B parent, `accepted A3..B` exact eight paths, and protected-path zero delta passed. No official CVN-7 stress/qualification or 10,000 submit/replay was run.
+
 # RKP-1A P0/P1/P2 Historical Implementation Evidence
 
 ## Fixed range
@@ -8,7 +26,7 @@
 - P2 technical candidate and audited head: `0f65272951fd23080b6f536b2e58f50afe249b02`; independent implementation audit PASS at P0/P1/P2=`0/0/0`.
 - P2-time historical snapshot: a later P3 attempt created no commit and was fully reverted. Root-cause audit returned `0/2/0` for native capture-profile admission and canonical-byte role drift.
 - P2-time historical snapshot: first docs amendment candidate `978160e69b69d643c3d61ca946bde10bfe4aefb0` was returned at `0/1/1` for planning-only P3B self-worker protocol and P2 tense defects. Its repair `14023029878be7c785ac0de7828628c5e3f4f8b1` was returned at `0/2/0` for CommonJS direct-entry and Windows first-observed terminate/reap/cleanup gaps. It does not describe the live lifecycle.
-- Subsequent live history: P3A and P3B completed their separately authorized implementation and independent audits through exact `e4103b779574fcdc728d024c1b8f30244cb332c3`. Only future B/P4 lifecycle, RKP-2 Stage6 E2, acceptance, archive, integration and default cutover remain unauthorized.
+- Historical P2 snapshot only: subsequent live history includes completed P3A/P3B audits through exact `e4103b779574fcdc728d024c1b8f30244cb332c3`, accepted A3 planning, and the completed B candidate freeze. The prior B implementation audit returned `0/2/0`; targeted rereview, then separately authorized acceptance/archive/integration, RKP-2 Stage6 E2 and default cutover remain unauthorized.
 
 ## P1 technical change
 
@@ -67,4 +85,4 @@ At P2 time the amendment split future work into P3A and P3B. P3A owned only the 
 
 ## Rollback and next gate
 
-The P2 commit is a single direct child of audited P1 head `712c6dbb0b7556b4c345fab9ad8215fdbcec6990`. Reverting only P2 restores the exact audited P1 tree and therefore the same two bounded REDs; reverting P1 after that restores the old cap and old-wire green state. P2 audit passed. This document's prior P3 gate wording is historical; the current gate is A3 targeted P4-entry planning review, with only future B requiring PASS plus separate user authorization.
+The P2 commit is a single direct child of audited P1 head `712c6dbb0b7556b4c345fab9ad8215fdbcec6990`. Reverting only P2 restores the exact audited P1 tree and therefore the same two bounded REDs; reverting P1 after that restores the old cap and old-wire green state. P2 audit passed. This document's prior P3/P4 gate wording is historical; the live B candidate is complete, its prior implementation audit returned `0/2/0`, and the current gate is targeted independent P4 implementation rereview.

@@ -2,10 +2,10 @@
   "id": "rkp-1a-public-json-property-cap-scale-compatibility-repair",
   "name": "rkp-1a-public-json-property-cap-scale-compatibility-repair",
   "title": "RKP-1A Public JSON Property-Cap Scale Compatibility Repair",
-  "description": "Preserve audited, completed P0-P3B implementation history and constrain the replacement A3 authority review before any future B/P4 lifecycle work.",
+  "description": "Preserve audited P0-P3B history and hold the completed, independently accepted replacement-A3 P4-B candidate for targeted independent implementation rereview.",
   "status": "in_progress",
   "dev_type": "bugfix",
-  "scope": "Audited P0-P2 and historically authorized, independently audited P3A/P3B remain complete. A3 is the final docs-only P4-entry planning repair; only future B/P4 freeze, acceptance/archive/integration, E2 resume, default cutover and push remain unauthorized.",
+  "scope": "Audited P0-P3B remain complete. Accepted A3 planning and the completed P4-B candidate freeze leave targeted independent implementation rereview as the current gate; acceptance/archive/integration, E2 resume, default cutover and push remain unauthorized. B changes only lifecycle/evidence authority plus the mechanical workspace-law projection.",
   "package": "core-kernel",
   "priority": "P1",
   "creator": "ATOM",
@@ -46,7 +46,7 @@
     "test/core-kernel/rust-migration/rkp-1a-property-cap-compatibility.test.ts",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "IN_PROGRESS / P0-P2 AUDITED 0/0/0 THROUGH 0F65272 / P3A-P3B COMPLETE HISTORICAL AUTHORIZATION CONSUMED AND AUDITED THROUGH E4103B7 / P4 ENTRY AUDIT RETURN 0/1/0 THEN A1/A2 REPAIRS 0/2/0 / A3 TARGETED REVIEW PENDING / B-P4 NOT STARTED CANDIDATE FALSE REVIEW PENDING / STAGE6 E1+E1R GREEN E2 NOT STARTED / TYPESCRIPT DEFAULT.",
+  "notes": "IN_PROGRESS / P0-P2 AUDITED 0/0/0 THROUGH 0F65272 / P3A-P3B COMPLETE HISTORICAL AUTHORIZATION CONSUMED AND AUDITED THROUGH E4103B7 / REPLACEMENT A3 3063E097 PLANNING PASS 0/0/0 / P4-B CANDIDATE FREEZE STARTED+COMPLETED CANDIDATE READY / PRIOR B IMPLEMENTATION AUDIT RETURN 0/2/0 / TARGETED IMPLEMENTATION REREVIEW PENDING / STAGE6 E1+E1R GREEN E2 NOT STARTED / TYPESCRIPT DEFAULT.",
   "meta": {
     "planning_base_commit": "639e93555c15b46c54c8e9bb7ec610d4a77c7478",
     "source_branch": "codex/rkp-2-stage-6-private-scale-evidence-seam-repair",
@@ -54,8 +54,8 @@
     "planning_branch": "codex/rkp-1a-public-json-property-cap-scale-compatibility-repair",
     "task_start_run": true,
     "production_implementation_authorized": false,
-    "user_implementation_authorization": false,
-    "user_implementation_authorization_scope": "current_A3_docs_only_bounded_planning_repair_future_B_P4_freeze_accept_archive_integration_E2_default_and_push_not_authorized",
+    "user_implementation_authorization": true,
+    "user_implementation_authorization_scope": "P4_B_candidate_freeze_docs_evidence_and_mechanical_workspace_law_only_accept_archive_integration_E2_default_qualification_RKP3_and_push_not_authorized",
     "historical_implementation_authorization": {
       "P0": true,
       "P1": true,
@@ -87,7 +87,7 @@
         "workspace_law_first_rejected_path_attribution_inaccurate"
       ]
     },
-    "implementation_candidate_ready": false,
+    "implementation_candidate_ready": true,
     "implementation_review": "pending",
     "p0_activation_started": true,
     "p0_activation_completed": true,
@@ -228,7 +228,11 @@
       "P2": 0,
       "verdict": "pass_for_bounded_RKP1A_P4"
     },
-    "p4_candidate_freeze_started": false,
+    "p4_candidate_freeze_started": true,
+    "p4_candidate_freeze_completed": true,
+    "p4_candidate_freeze_user_authorization": "separate_user_authorization_received_after_independently_accepted_replacement_A3",
+    "p4_independent_implementation_audit": "returned_0_2_0_replacement_B_targeted_rereview_pending",
+    "p4_independent_implementation_rereview": "pending",
     "p4_production_implementation_authorized": false,
     "p4_entry_planning_amendment": {
       "a1_direct_parent": "e4103b779574fcdc728d024c1b8f30244cb332c3",
@@ -240,22 +244,32 @@
         "P2": 0,
         "verdict": "return_for_bounded_P4_entry_planning_repair"
       },
-      "status": "A3_targeted_independent_planning_review_pending",
+      "status": "replacement_A3_independently_accepted_B_candidate_freeze_completed",
+      "accepted_replacement_a3_head": "3063e0972072e246d43add8640ba1fe1ad02d787",
+      "accepted_replacement_a3_planning_review": {
+        "candidate_commit": "3063e0972072e246d43add8640ba1fe1ad02d787",
+        "P0": 0,
+        "P1": 0,
+        "P2": 0,
+        "verdict": "pass_for_bounded_RKP1A_P4_entry_planning_repair"
+      },
       "a1_path_count": 13,
       "a2_path_count": 13,
       "a3_path_count": 15,
       "a1_change_set": "e4103b7_to_aacb057_exact_13_planning_projection_paths",
       "a2_change_set": "aacb057_to_9e1770b_exact_13_planning_projection_paths",
-      "a3_change_set": "9e1770b_to_current_repair_commit_exact_15_planning_projection_paths",
+      "a3_change_set": "9e1770b_to_3063e097_exact_15_planning_projection_paths",
       "cumulative_change_set": "e4103b7_to_accepted_A3_exact_15_planning_projection_paths",
-      "a3_self_hash": "current_repair_commit_independent_audit_input_HEAD_not_hardcoded",
-      "b_requires": "exact_A3_independent_planning_pass_and_separate_user_authorization",
-      "b_direct_parent": "accepted_A3",
-      "b_commit_prefix": "e4103b7_to_aacb057_to_9e1770b_to_accepted_A3_to_B",
+      "a3_self_hash": "replacement_A3_was_external_independent_planning_review_input_no_B_self_hash_is_recorded",
+      "b_requires": "satisfied_by_accepted_3063e097_independent_planning_pass_and_separate_user_authorization",
+      "b_direct_parent": "3063e0972072e246d43add8640ba1fe1ad02d787",
+      "b_commit_prefix": "bd8946e_to_f06c57b_to_673a2b9_to_e4103b7_to_aacb057_to_9e1770b_to_accepted_A3_3063e097_to_B_HEAD",
       "b_change_set": "accepted_A3_to_B_exact_8_paths",
       "b_path_count": 8,
       "b_workspace_law_projection_path": "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
       "b_candidate_ready_only": true,
+      "b_execution_authorized": true,
+      "b_status": "current_candidate_freeze_completed_prior_audit_return_0_2_0_targeted_rereview_input_no_self_hash",
       "b_accept_archive_integration_E2_authorized": false,
       "rollback": "later_exact_eight_path_governance_descendant_restores_seven_lifecycle_paths_to_accepted_A3_P4_not_ready_and_locks_B_to_rollback_not_git_revert_B_or_A3"
     },
@@ -352,13 +366,13 @@
       "P0": 0,
       "P1": 0,
       "P2": 0,
-      "verdict": "A3_final_P4_entry_authority_repair_after_A1_A2_independent_return_0_2_0_targeted_independent_P4_entry_planning_rereview_pending"
+      "verdict": "replacement_A3_independent_planning_review_passed_0_0_0_P4_B_candidate_freeze_completed_prior_audit_return_0_2_0_targeted_implementation_rereview_pending"
     },
     "p4_entry_a3_bounded_planning_repair": {
       "P0": 0,
       "P1": 2,
       "P2": 0,
-      "status": "completed_docs_only_targeted_rereview_pending_no_A3_self_hash_hardcoded"
+      "status": "historical_A3_docs_only_planning_repair_completed_and_independently_accepted_3063e097_0_0_0"
     },
     "p1_bounded_red_allowlist": [
       "codec::tests::structural_rank_beats_source_order_for_compound_faults_old_property_limit_exact_bytes",
@@ -387,9 +401,9 @@
       ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/research/file-test-ownership-matrix.md": "463b1b7e403993bcdd0d33919707c9c8bfca6c3405f5fe5f5092f4b9d1c21d6f",
       ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/research/planning-self-audit.md": "40052999607f12f30a41e46b687393828fc3c0c15f24f29709723bd57e6feb12"
     },
-    "bounded_planning_repair_candidate": "A3_current_repair_commit_independent_audit_input_HEAD_after_P3B_reviewed_parent_e4103b779574fcdc728d024c1b8f30244cb332c3",
+    "bounded_planning_repair_candidate": "replacement_A3_3063e097_independently_accepted_after_P3B_reviewed_parent_e4103b779574fcdc728d024c1b8f30244cb332c3",
     "targeted_p3_planning_rereview": "passed",
-    "targeted_p4_entry_planning_rereview": "pending",
+    "targeted_p4_entry_planning_rereview": "passed_replacement_A3_3063e097_P0_0_P1_0_P2_0",
     "stage6_follow_up": "after_rkp1a_accept_archive_integrate_create_docs_only_authority_amendment_then_planning_pass_then_indices_plus_workspace_law_E1R2_then_independent_audit_then_separate_E2_authorization",
     "stage6_follow_up_technical_allowlist": [
       "crates/brilliant-kernel-runtime/src/indices.rs",
@@ -398,20 +412,19 @@
     "planning_validation": {
       "focused_workspace_law": {
         "total": 10,
-        "pass": 6,
-        "fail": 4,
+        "pass": 7,
+        "fail": 3,
         "existing_unaccepted_child_fail_closed": [
           "implementation changes stay inside the literal RKP-2 allowlists",
           "part owner repair stays anchored to its accepted six-path wire contract",
           "Stage 6 hostile and resource evidence consumes the existing private Rust seams"
         ],
-        "bounded_new_red": "RKP-1A P3B candidate is exact and remains closed to P4",
-        "bounded_new_red_count": 1,
-        "fourth_failure_cause": "old_HEAD_parent_assertion",
+        "P4_B_projection": "RKP-1A_P4_candidate_freeze_exact_on_accepted_A3",
+        "bounded_new_red_count": 0,
         "additional_failure_or_attribution_change_blocks": true
       },
-      "independent_planning_review": "pending"
+      "independent_planning_review": "passed_replacement_A3_0_0_0"
     },
-    "next_gate": "independent_targeted_P4_entry_planning_review"
+    "next_gate": "replacement_B_dedicated_independent_P4_implementation_rereview"
   }
 }

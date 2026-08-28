@@ -104,6 +104,14 @@ const RKP1A_AUDITED_P3B_HEAD =
   "f06c57b2a7be8d6bb57736e585bd8519b7ecc889";
 const RKP1A_P3B_REPAIR_HEAD =
   "673a2b961d0f627b5f9e53002da3d8c0bcdfc3cd";
+const RKP1A_P3B_GOVERNANCE_HEAD =
+  "e4103b779574fcdc728d024c1b8f30244cb332c3";
+const RKP1A_P4_A1_HEAD =
+  "aacb057af6eaa7c16e88ed94e2ecfc323c540032";
+const RKP1A_P4_A2_HEAD =
+  "9e1770b39f01484c860a39a6746f3ef7a638f612";
+const RKP1A_ACCEPTED_P4_A3_HEAD =
+  "3063e0972072e246d43add8640ba1fe1ad02d787";
 const RKP1A_ACTIVE_ROOT =
   ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair";
 const RKP1A_TECHNICAL_PATHS = [
@@ -143,6 +151,48 @@ const RKP1A_PLANNING_PATHS = [
   `${RKP1A_ACTIVE_ROOT}/review-candidate.md`,
   `${RKP1A_ACTIVE_ROOT}/task.json`,
   ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/task.json",
+] as const;
+const RKP1A_P4_A1_A2_PATHS = [
+  PARENT_PATH,
+  TASK_PATH,
+  `${RKP1A_ACTIVE_ROOT}/check.jsonl`,
+  `${RKP1A_ACTIVE_ROOT}/design.md`,
+  `${RKP1A_ACTIVE_ROOT}/implement.jsonl`,
+  `${RKP1A_ACTIVE_ROOT}/implement.md`,
+  `${RKP1A_ACTIVE_ROOT}/operator-handoff.md`,
+  `${RKP1A_ACTIVE_ROOT}/prd.md`,
+  `${RKP1A_ACTIVE_ROOT}/research/file-test-ownership-matrix.md`,
+  `${RKP1A_ACTIVE_ROOT}/research/planning-self-audit.md`,
+  `${RKP1A_ACTIVE_ROOT}/review-candidate.md`,
+  `${RKP1A_ACTIVE_ROOT}/task.json`,
+  ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/task.json",
+] as const;
+const RKP1A_P4_A3_PATHS = [
+  PARENT_PATH,
+  TASK_PATH,
+  `${RKP1A_ACTIVE_ROOT}/check.jsonl`,
+  `${RKP1A_ACTIVE_ROOT}/design.md`,
+  `${RKP1A_ACTIVE_ROOT}/implement.jsonl`,
+  `${RKP1A_ACTIVE_ROOT}/implement.md`,
+  `${RKP1A_ACTIVE_ROOT}/operator-handoff.md`,
+  `${RKP1A_ACTIVE_ROOT}/prd.md`,
+  `${RKP1A_ACTIVE_ROOT}/research/authority-and-consumer-impact-map.md`,
+  `${RKP1A_ACTIVE_ROOT}/research/file-test-ownership-matrix.md`,
+  `${RKP1A_ACTIVE_ROOT}/research/implementation-evidence.md`,
+  `${RKP1A_ACTIVE_ROOT}/research/planning-self-audit.md`,
+  `${RKP1A_ACTIVE_ROOT}/review-candidate.md`,
+  `${RKP1A_ACTIVE_ROOT}/task.json`,
+  ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/task.json",
+] as const;
+const RKP1A_P4_B_PATHS = [
+  `${RKP1A_ACTIVE_ROOT}/task.json`,
+  `${RKP1A_ACTIVE_ROOT}/operator-handoff.md`,
+  `${RKP1A_ACTIVE_ROOT}/review-candidate.md`,
+  `${RKP1A_ACTIVE_ROOT}/research/implementation-evidence.md`,
+  PARENT_PATH,
+  TASK_PATH,
+  ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/task.json",
+  "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
 ] as const;
 const STAGE_6_TECHNICAL_PATHS = [
   "test/core-kernel/rust-migration/rkp-2-live-score-store-parity.test.ts",
@@ -1020,12 +1070,18 @@ test("Stage 6 hostile and resource evidence consumes the existing private Rust s
   assert.match(nodeBoundary, /fn request_cap_is_checked_on_borrowed_length_before_copy\(\)/u);
 });
 
-test("RKP-1A P3B candidate is exact and remains closed to P4", () => {
+test("RKP-1A P4 candidate freeze is exact on accepted A3", () => {
   for (const commit of [
     RKP1A_IMPLEMENTATION_BASE,
     RKP1A_AUDITED_P2_HEAD,
     RKP1A_ACCEPTED_P3A_PLANNING_HEAD,
     RKP1A_AUDITED_P3A_HEAD,
+    RKP1A_AUDITED_P3B_HEAD,
+    RKP1A_P3B_REPAIR_HEAD,
+    RKP1A_P3B_GOVERNANCE_HEAD,
+    RKP1A_P4_A1_HEAD,
+    RKP1A_P4_A2_HEAD,
+    RKP1A_ACCEPTED_P4_A3_HEAD,
   ]) {
     assert.doesNotThrow(() => git(["cat-file", "-e", `${commit}^{commit}`]));
   }
@@ -1059,11 +1115,42 @@ test("RKP-1A P3B candidate is exact and remains closed to P4", () => {
     [`${RKP1A_P3B_REPAIR_HEAD} ${RKP1A_AUDITED_P3B_HEAD}`],
     "the bounded P3B repair must remain one compatibility-only commit",
   );
+  assert.deepEqual(
+    lines(
+      git([
+        "rev-list",
+        "--parents",
+        "-n",
+        "1",
+        RKP1A_P3B_GOVERNANCE_HEAD,
+      ]),
+    ),
+    [`${RKP1A_P3B_GOVERNANCE_HEAD} ${RKP1A_P3B_REPAIR_HEAD}`],
+    "the P3B workspace-law projection must remain one commit on the repair",
+  );
+  assert.deepEqual(
+    lines(git(["rev-list", "--parents", "-n", "1", RKP1A_P4_A1_HEAD])),
+    [`${RKP1A_P4_A1_HEAD} ${RKP1A_P3B_GOVERNANCE_HEAD}`],
+    "A1 must remain one planning commit on the fixed P3B governance head",
+  );
+  assert.deepEqual(
+    lines(git(["rev-list", "--parents", "-n", "1", RKP1A_P4_A2_HEAD])),
+    [`${RKP1A_P4_A2_HEAD} ${RKP1A_P4_A1_HEAD}`],
+    "A2 must remain one planning commit on A1",
+  );
+  assert.deepEqual(
+    lines(
+      git(["rev-list", "--parents", "-n", "1", RKP1A_ACCEPTED_P4_A3_HEAD]),
+    ),
+    [`${RKP1A_ACCEPTED_P4_A3_HEAD} ${RKP1A_P4_A2_HEAD}`],
+    "accepted replacement A3 must remain one authority commit on A2",
+  );
   const currentHead = git(["rev-parse", "HEAD"]);
+  assert.notEqual(currentHead, RKP1A_ACCEPTED_P4_A3_HEAD);
   assert.deepEqual(
     lines(git(["rev-list", "--parents", "-n", "1", "HEAD"])),
-    [`${currentHead} ${RKP1A_P3B_REPAIR_HEAD}`],
-    "the current governance projection must be exactly one commit on the fixed repair",
+    [`${currentHead} ${RKP1A_ACCEPTED_P4_A3_HEAD}`],
+    "B must be one non-merge commit directly on independently accepted A3",
   );
   assertExactPathSet(
     new Set(
@@ -1082,6 +1169,9 @@ test("RKP-1A P3B candidate is exact and remains closed to P4", () => {
   assert.equal(RKP1A_P3A_TECHNICAL_PATHS.length, 5);
   assert.equal(RKP1A_P3B_TECHNICAL_PATHS.length, 2);
   assert.equal(RKP1A_PLANNING_PATHS.length, 16);
+  assert.equal(RKP1A_P4_A1_A2_PATHS.length, 13);
+  assert.equal(RKP1A_P4_A3_PATHS.length, 15);
+  assert.equal(RKP1A_P4_B_PATHS.length, 8);
   assertExactPathSet(
     currentRkp1aChanges(),
     [...RKP1A_TECHNICAL_PATHS, ...RKP1A_PLANNING_PATHS],
@@ -1089,21 +1179,8 @@ test("RKP-1A P3B candidate is exact and remains closed to P4", () => {
   );
   assertExactPathSet(
     currentRkp1aP3aChanges(),
-    RKP1A_P3A_TECHNICAL_PATHS,
-    "bounded RKP-1A P3A and P3B technical candidate",
-  );
-  assertExactPathSet(
-    new Set(
-      lines(
-        git([
-          "diff",
-          "--name-only",
-          `${RKP1A_AUDITED_P3A_HEAD}..HEAD`,
-        ]),
-      ),
-    ),
-    RKP1A_P3B_TECHNICAL_PATHS,
-    "P3B exact two-path candidate",
+    [...RKP1A_P3A_TECHNICAL_PATHS, ...RKP1A_P4_A3_PATHS],
+    "bounded RKP-1A P3A through P4-B candidate",
   );
   assertExactPathSet(
     new Set(
@@ -1124,14 +1201,12 @@ test("RKP-1A P3B candidate is exact and remains closed to P4", () => {
         git([
           "diff",
           "--name-only",
-          `${RKP1A_AUDITED_P3B_HEAD}..${RKP1A_P3B_REPAIR_HEAD}`,
+          `${RKP1A_P3B_REPAIR_HEAD}..${RKP1A_P3B_GOVERNANCE_HEAD}`,
         ]),
       ),
     ),
-    [
-      "test/core-kernel/rust-migration/rkp-1a-property-cap-compatibility.test.ts",
-    ],
-    "bounded P3B repair exact compatibility-only projection",
+    ["test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"],
+    "bounded P3B repair workspace-law projection",
   );
   assertExactPathSet(
     new Set(
@@ -1139,14 +1214,12 @@ test("RKP-1A P3B candidate is exact and remains closed to P4", () => {
         git([
           "diff",
           "--name-only",
-          `${RKP1A_P3B_REPAIR_HEAD}..HEAD`,
+          `${RKP1A_P3B_GOVERNANCE_HEAD}..${RKP1A_P4_A1_HEAD}`,
         ]),
       ),
     ),
-    [
-      "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
-    ],
-    "current bounded workspace-law projection",
+    RKP1A_P4_A1_A2_PATHS,
+    "A1 exact thirteen-path P4-entry amendment",
   );
   assertExactPathSet(
     new Set(
@@ -1154,12 +1227,51 @@ test("RKP-1A P3B candidate is exact and remains closed to P4", () => {
         git([
           "diff",
           "--name-only",
-          `${RKP1A_AUDITED_P3A_HEAD}..HEAD`,
+          `${RKP1A_P4_A1_HEAD}..${RKP1A_P4_A2_HEAD}`,
         ]),
       ),
     ),
-    RKP1A_P3B_TECHNICAL_PATHS,
-    "bounded P3B cumulative two-path projection",
+    RKP1A_P4_A1_A2_PATHS,
+    "A2 exact thirteen-path P4-entry amendment",
+  );
+  assertExactPathSet(
+    new Set(
+      lines(
+        git([
+          "diff",
+          "--name-only",
+          `${RKP1A_P4_A2_HEAD}..${RKP1A_ACCEPTED_P4_A3_HEAD}`,
+        ]),
+      ),
+    ),
+    RKP1A_P4_A3_PATHS,
+    "accepted replacement A3 exact fifteen-path authority repair",
+  );
+  assertExactPathSet(
+    new Set(
+      lines(
+        git([
+          "diff",
+          "--name-only",
+          `${RKP1A_P3B_GOVERNANCE_HEAD}..${RKP1A_ACCEPTED_P4_A3_HEAD}`,
+        ]),
+      ),
+    ),
+    RKP1A_P4_A3_PATHS,
+    "P4-entry amendments cumulative exact fifteen-path authority set",
+  );
+  assertExactPathSet(
+    new Set(
+      lines(
+        git([
+          "diff",
+          "--name-only",
+          `${RKP1A_ACCEPTED_P4_A3_HEAD}..HEAD`,
+        ]),
+      ),
+    ),
+    RKP1A_P4_B_PATHS,
+    "P4-B exact candidate-freeze and mechanical workspace-law projection",
   );
 
   const capture = readText("src/core-kernel/codec/strict-input-capture.ts");
