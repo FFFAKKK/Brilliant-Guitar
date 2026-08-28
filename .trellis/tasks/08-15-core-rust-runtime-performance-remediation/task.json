@@ -46,7 +46,7 @@
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RKP-0 RKP-1 AND PRIOR REPAIRS ACCEPTED ARCHIVED / RKP-2 SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 E1+E1R GREEN E2 NOT STARTED / RKP-1A P0-P3B HISTORY AUDITED THROUGH E4103B7 / P4-B 08374273 INDEPENDENT IMPLEMENTATION PASS 0/0/0 / CURRENT GATE RKP-1A CLOSEOUT PLANNING REVIEW / TYPESCRIPT DEFAULT / NO ACCEPT ARCHIVE INTEGRATION E2 CUTOVER PUSH QUALIFICATION OR RKP-3.",
+  "notes": "RKP-0 RKP-1 AND PRIOR REPAIRS ACCEPTED ARCHIVED / RKP-2 SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 E1+E1R GREEN E2 NOT STARTED / RKP-1A P0-P3B HISTORY AUDITED THROUGH E4103B7 / B 08374273 OWNER-ACCEPTED IMPLEMENTATION AUTHORITY / C1 ACCEPTED-B AUTHORITY TRANSITION COMPLETE / CURRENT GATE TARGETED INDEPENDENT C1 AUTHORITY-TRANSITION REREVIEW / TYPESCRIPT DEFAULT / NO C2 ARCHIVE INTEGRATION E2 CUTOVER PUSH QUALIFICATION OR RKP-3.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
@@ -95,7 +95,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "dedicated_independent_C1_accepted_B_authority_transition_audit",
+    "next_gate": "targeted_independent_C1_accepted_B_authority_transition_rereview",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -349,7 +349,7 @@
       "p4_independent_implementation_audit": "08374273b05bc992e749a17a959b64af0f293f0b_pass_P0_0_P1_0_P2_0",
       "closeout_planning_child": "08-28-rkp-1a-acceptance-archive-stage6-integration-closeout",
       "closeout_C1_accepted_B_authority": "08374273b05bc992e749a17a959b64af0f293f0b_owner_accepted_C1_complete",
-      "next_gate": "dedicated_independent_C1_accepted_B_authority_transition_audit"
+      "next_gate": "targeted_independent_C1_accepted_B_authority_transition_rereview"
     },
     "rkp2_stage_6_private_scale_evidence_seam_repair": {
       "parent": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
@@ -377,7 +377,7 @@
       "future_technical_allowlist_count": 5,
       "implementation_stage": "E1_and_E1R_private_rust_seam_green_E2_not_started",
       "external_blocker": "public-json-property-cap-contract-conflict",
-      "next_gate": "rkp1a-dedicated-independent-P4-implementation-rereview"
+      "next_gate": "targeted_independent_C1_accepted_B_authority_transition_rereview"
     },
     "rkp2_part_owner_wire_contract_repair": {
       "parent": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",

@@ -2,13 +2,13 @@
 
 ## C1 accepted-B authority transition (lifecycle-only; no technical rerun)
 
-B `08374273b05bc992e749a17a959b64af0f293f0b`, directly parented by accepted A3 `3063e0972072e246d43add8640ba1fe1ad02d787`, is owner-accepted implementation authority after its independent P0/P1/P2=`0/0/0` review. C1 freezes the immutable implementation range at accepted B, confirms the old active root 13/13 exists and the archive root 0/13 exists before C2, and changes the focused workspace-law projection to 10/7/3. The three remaining failures are only the existing unaccepted-child gates. No Rust/native/full test is rerun because technical bytes are unchanged; this is not a qualification claim. C2-C5, archive, integration and Stage6 E2 remain unstarted.
+B `08374273b05bc992e749a17a959b64af0f293f0b`, directly parented by accepted A3 `3063e0972072e246d43add8640ba1fe1ad02d787`, is owner-accepted implementation authority after its independent P0/P1/P2=`0/0/0` review. C1 freezes the immutable implementation range at accepted B, confirms the old active root 13/13 exists and the archive root 0/13 exists before C2, and changes the focused workspace-law projection to 10/7/3. The three remaining failures are only the existing unaccepted-child gates. The current gate is targeted independent C1 authority-transition rereview. No Rust/native/full test is rerun because technical bytes are unchanged; this is not a qualification claim. C2-C5, archive, integration and Stage6 E2 remain unstarted.
 
-## Current B candidate boundary
+## Current B accepted authority boundary
 
 - Independently accepted replacement A3 planning head: `3063e0972072e246d43add8640ba1fe1ad02d787`, directly parented by A2 `9e1770b39f01484c860a39a6746f3ef7a638f612`, with independent planning result P0/P1/P2=`0/0/0`.
-- This B candidate is one direct non-merge descendant of accepted A3. It changes exactly seven lifecycle/evidence paths plus the mechanical workspace-law projection. B does not record or depend on its own hash.
-- Candidate-ready is true. B `08374273b05bc992e749a17a959b64af0f293f0b` independently passed implementation audit at P0/P1/P2=`0/0/0`; the next gate is independent closeout planning review, not automatic acceptance. Acceptance, archive, integration, push, Stage6 E2, default-runtime switch, qualification and RKP-3 remain false/not started.
+- B is one direct non-merge descendant of accepted A3. It changes exactly seven lifecycle/evidence paths plus the mechanical workspace-law projection. B does not record or depend on its own hash.
+- B `08374273b05bc992e749a17a959b64af0f293f0b` independently passed implementation audit at P0/P1/P2=`0/0/0` and is owner-accepted implementation authority. Its candidate-ready state is historical implementation evidence; the current gate is targeted independent C1 authority-transition rereview. C2 archive, integration, push, Stage6 E2, default-runtime switch, qualification and RKP-3 remain false/not started.
 - Fresh final-gate commands, versions, counts, manifest, diagnostics, E:-scratch and protected-delta evidence are recorded below in the P4-B section. They remain applicable technical evidence to this governance-only replacement B; heavyweight dynamic/Rust/native gates are not rerun for the authority-text correction. No raw workload artifact or partial success is retained.
 
 ## P4-B fresh final-gate evidence
@@ -30,7 +30,7 @@ B `08374273b05bc992e749a17a959b64af0f293f0b`, directly parented by accepted A3 `
 - P2 technical candidate and audited head: `0f65272951fd23080b6f536b2e58f50afe249b02`; independent implementation audit PASS at P0/P1/P2=`0/0/0`.
 - P2-time historical snapshot: a later P3 attempt created no commit and was fully reverted. Root-cause audit returned `0/2/0` for native capture-profile admission and canonical-byte role drift.
 - P2-time historical snapshot: first docs amendment candidate `978160e69b69d643c3d61ca946bde10bfe4aefb0` was returned at `0/1/1` for planning-only P3B self-worker protocol and P2 tense defects. Its repair `14023029878be7c785ac0de7828628c5e3f4f8b1` was returned at `0/2/0` for CommonJS direct-entry and Windows first-observed terminate/reap/cleanup gaps. It does not describe the live lifecycle.
-- Historical P2 snapshot only: subsequent live history includes completed P3A/P3B audits through exact `e4103b779574fcdc728d024c1b8f30244cb332c3`, accepted A3 planning, and B `08374273...` independent implementation PASS `0/0/0`. `634ed8be...` is historical rejected-candidate evidence; targeted closeout planning rereview, then separately authorized acceptance/archive/integration, RKP-2 Stage6 E2 and default cutover remain unauthorized.
+- Historical P2 snapshot only: subsequent live history includes completed P3A/P3B audits through exact `e4103b779574fcdc728d024c1b8f30244cb332c3`, accepted A3 planning, and B `08374273...` independent implementation PASS `0/0/0`. `634ed8be...` is historical rejected-candidate evidence. This historical snapshot predates completed C1; it is not the live lifecycle state. C1 now records owner-accepted B authority and awaits targeted independent C1 authority-transition rereview, while C2 archive/integration, RKP-2 Stage6 E2 and default cutover remain unauthorized.
 
 ## P1 technical change
 
@@ -89,4 +89,4 @@ At P2 time the amendment split future work into P3A and P3B. P3A owned only the 
 
 ## Rollback and next gate
 
-The P2 commit is a single direct child of audited P1 head `712c6dbb0b7556b4c345fab9ad8215fdbcec6990`. Reverting only P2 restores the exact audited P1 tree and therefore the same two bounded REDs; reverting P1 after that restores the old cap and old-wire green state. P2 audit passed. This document's prior P3/P4 gate wording is historical; the live B candidate is complete and independently passed at `08374273b05bc992e749a17a959b64af0f293f0b`, while closeout planning remains the current gate.
+The P2 commit is a single direct child of audited P1 head `712c6dbb0b7556b4c345fab9ad8215fdbcec6990`. Reverting only P2 restores the exact audited P1 tree and therefore the same two bounded REDs; reverting P1 after that restores the old cap and old-wire green state. P2 audit passed. This document's prior P3/P4 gate wording is historical; the live B authority is owner-accepted at `08374273b05bc992e749a17a959b64af0f293f0b`, C1 is complete, and targeted independent C1 authority-transition rereview is current.

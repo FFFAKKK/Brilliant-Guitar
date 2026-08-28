@@ -2,10 +2,10 @@
   "id": "rkp-1a-acceptance-archive-stage6-integration-closeout",
   "name": "rkp-1a-acceptance-archive-stage6-integration-closeout",
   "title": "RKP-1A Acceptance Archive and Stage6 Integration Closeout",
-  "description": "Plan the bounded acceptance, native archive and Stage6 fast-forward-only integration closeout for independently passed RKP-1A P4 candidate 08374273 without executing any lifecycle action.",
+  "description": "C0 planning passed and C1 accepted-B authority transition completed for independently passed RKP-1A P4 candidate 08374273; it now awaits targeted independent authority-transition rereview while C2-C5 remain planned and unexecuted.",
   "status": "in_progress",
   "dev_type": null,
-  "scope": "Planning only: freeze C1 accepted-B authority transition, C2 native archive, C3 archive self-reference repair, C4 Stage6 fast-forward-only integration and C5 independent closeout audit/archive. C0 does not accept, archive, integrate, start Stage6 E2, push or change production/test authority.",
+  "scope": "C0 planning passed and C1 accepted-B authority transition is complete pending targeted independent authority-transition rereview. C2 native archive, C3 archive self-reference repair, C4 Stage6 fast-forward-only integration and C5 independent closeout audit/archive remain planned, unexecuted and unauthorized; no Stage6 E2, push or production/test authority change.",
   "package": null,
   "priority": "P1",
   "creator": "ATOM",
@@ -91,8 +91,8 @@
       ],
       "additional_failure_or_attribution_change_blocks": true
     },
-    "c1_independent_implementation_audit": "pending",
-    "review_status": "C1_COMPLETE_READY_FOR_INDEPENDENT_ACCEPTED_B_AUTHORITY_TRANSITION_AUDIT",
+    "c1_independent_authority_transition_audit": "pending_targeted_rereview",
+    "review_status": "C1_COMPLETE_READY_FOR_TARGETED_INDEPENDENT_ACCEPTED_B_AUTHORITY_TRANSITION_REREVIEW",
     "c0_workspace_law_expected": {
       "total": 10,
       "pass": 6,
@@ -260,6 +260,6 @@
       "P2": 0,
       "status": "bounded_repair_completed_targeted_rereview_pending"
     },
-    "next_gate": "dedicated_independent_C1_accepted_B_authority_transition_audit"
+    "next_gate": "targeted_independent_C1_accepted_B_authority_transition_rereview"
   }
 }
