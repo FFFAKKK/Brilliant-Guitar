@@ -42,6 +42,9 @@
   "notes": "PLANNING ONLY / BASE 08374273 B INDEPENDENT IMPLEMENTATION PASS 0/0/0 / RKP-2 SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 E1+E1R GREEN E2-E3 FALSE / C0 CLOSEOUT PLANNING CANDIDATE / NO START ACCEPT ARCHIVE INTEGRATION PUSH CUTOVER QUALIFICATION OR RKP-3.",
   "meta": {
     "planning_base_commit": "08374273b05bc992e749a17a959b64af0f293f0b",
+    "planning_source_branch": "codex/rkp-1a-acceptance-archive-stage6-integration-closeout",
+    "planning_source_worktree": ".worktrees/rkp-1a-acceptance-archive-stage6-integration-closeout",
+    "planning_source_base": "08374273b05bc992e749a17a959b64af0f293f0b",
     "accepted_rkp1a_candidate": "08374273b05bc992e749a17a959b64af0f293f0b",
     "accepted_rkp1a_A3_parent": "3063e0972072e246d43add8640ba1fe1ad02d787",
     "task_start_run": false,
@@ -207,12 +210,12 @@
     "immutable_planning_authority": {
       "prd.md": "56c18fdce545094299e581fc44f1179b93933da71727869bdf78199af9efe089",
       "design.md": "a584135d01e2c1624d7d0cf4a6f1ee4d76b25da3a9c3624c05e2d3e3115aacee",
-      "implement.md": "7c125d395a8f8dbc35d3b387e8713f27e01198d819a6db305611ec9178d5a0a8",
+      "implement.md": "a8d1fd9bfeb6e0df13e4aed171d6c22cb1c4b5c936b6102a8db2b6c470bb4940",
       "implement.jsonl": "5fa3fbf7700f0b48362dcd5db83d0c4757b0b46b1b701b406334de78b19a5c22",
       "check.jsonl": "56d72b2c0b84b42fb94b1e12f97254b80cc11549fb02c801daaad9661a2b2eed",
       "research/current-closeout-feasibility-audit.md": "2f2329c5b2d6afe5727b2d71c168652b6aaef300e35039603de049279ed4d22a",
       "research/archive-path-and-workspace-law-migration-map.md": "9b4c1eacf92f1072c81a25ae0e2a636d2422a9414623d2f784e6be228410e7af",
-      "research/commit-phase-and-rollback-matrix.md": "74e183c12ebcfea47d69406ccff6b2d86c6e2a634d2797ebd84c6d549ecb614d",
+      "research/commit-phase-and-rollback-matrix.md": "59abd995cc8d01b32d776a750696dbdcb204fe237af30d87c4ccfdc47d8821d3",
       "research/planning-self-audit.md": "7f1447108ef3d3370b84656bab0addb5874fa2c4bc37f2ea5e82d04106595aec"
     },
     "planning_repair_audit": {"P0":0,"P1":6,"P2":0,"status":"bounded_repair_completed_targeted_rereview_pending"},

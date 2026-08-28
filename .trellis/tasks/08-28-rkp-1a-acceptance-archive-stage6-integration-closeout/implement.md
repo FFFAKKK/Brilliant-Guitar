@@ -40,7 +40,7 @@ Commit: `docs(rkp-1a): repair archived closeout authority`.
 
 ## C4 — Stage6 fast-forward integration (future)
 
-Preconditions: Stage6 worktree is clean at `639e935...`; that head is an ancestor of C3 head. Use `git merge --ff-only` only. Then add the narrow docs-only integration projection. Verify integration ancestry, archive authority and final 10/7/3 law. E2 remains false.
+Preconditions: accepted C3 freezes the closeout source branch at exact C3. Clean Stage6 `639e935...` must be its ancestor; only Stage6 runs `git merge --ff-only <accepted-C3>` and obtains HEAD==C3. Its projection changes top-level branch/worktree and current-owner meta to Stage6, preserves planning-source provenance, records frozen C3, and makes Stage6 sole C4/C5 owner. Verify no stale/double owner; E2 false.
 
 Commit: `docs(rkp-2): record RKP-1A closeout integration`.
 
