@@ -3,7 +3,7 @@
   "name": "rkp-1a-acceptance-archive-stage6-integration-closeout",
   "title": "RKP-1A Acceptance Archive and Stage6 Integration Closeout",
   "description": "Plan the bounded acceptance, native archive and Stage6 fast-forward-only integration closeout for independently passed RKP-1A P4 candidate 08374273 without executing any lifecycle action.",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": "Planning only: freeze C1 accepted-B authority transition, C2 native archive, C3 archive self-reference repair, C4 Stage6 fast-forward-only integration and C5 independent closeout audit/archive. C0 does not accept, archive, integrate, start Stage6 E2, push or change production/test authority.",
   "package": null,
@@ -39,7 +39,7 @@
     ".trellis/scripts/task.py",
     ".trellis/spec/core-kernel/backend/rust-runtime-transition.md"
   ],
-  "notes": "PLANNING ONLY / BASE 08374273 B INDEPENDENT IMPLEMENTATION PASS 0/0/0 / RKP-2 SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 E1+E1R GREEN E2-E3 FALSE / C0 CLOSEOUT PLANNING CANDIDATE / NO START ACCEPT ARCHIVE INTEGRATION PUSH CUTOVER QUALIFICATION OR RKP-3.",
+  "notes": "IN_PROGRESS / C1 ACCEPTED-B AUTHORITY TRANSITION COMPLETE / B 08374273 OWNER-ACCEPTED IMPLEMENTATION AUTHORITY / RKP-2 SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 E1+E1R GREEN E2-E3 FALSE / C2-C5 NOT STARTED / NO ARCHIVE INTEGRATION PUSH CUTOVER QUALIFICATION OR RKP-3.",
   "meta": {
     "planning_base_commit": "08374273b05bc992e749a17a959b64af0f293f0b",
     "planning_source_branch": "codex/rkp-1a-acceptance-archive-stage6-integration-closeout",
@@ -59,7 +59,7 @@
     "c4_frozen_c3_relation": "frozen_closeout_c3_head_equals_C4_direct_parent_equals_closeout_source_branch_head",
     "accepted_rkp1a_candidate": "08374273b05bc992e749a17a959b64af0f293f0b",
     "accepted_rkp1a_A3_parent": "3063e0972072e246d43add8640ba1fe1ad02d787",
-    "task_start_run": false,
+    "task_start_run": true,
     "production_implementation_authorized": false,
     "archive_authorized": false,
     "integration_authorized": false,
@@ -67,8 +67,32 @@
     "stage6_e3_authorized": false,
     "default_runtime": "typescript",
     "implementation_candidate_ready": false,
-    "independent_planning_review": "pending",
-    "review_status": "READY_FOR_INDEPENDENT_CLOSEOUT_PLANNING_REVIEW",
+    "independent_planning_review": "passed_C0_35549f9777f8ef3b07412c666927bc353c431c29_P0_0_P1_0_P2_0",
+    "c1_user_authorization": "explicit_user_authorization_accepted_B_authority_transition_only_C2_C3_C4_C5_E2_E3_archive_integration_push_not_authorized",
+    "c1_started": true,
+    "c1_completed": true,
+    "c1_accepted_B_authority": {
+      "candidate_commit": "08374273b05bc992e749a17a959b64af0f293f0b",
+      "direct_parent": "3063e0972072e246d43add8640ba1fe1ad02d787",
+      "independent_implementation_audit": {"P0":0,"P1":0,"P2":0,"verdict":"passed"},
+      "status": "owner_accepted_implementation_authority"
+    },
+    "c1_immutable_implementation_range": "639e93555c15b46c54c8e9bb7ec610d4a77c7478_to_08374273b05bc992e749a17a959b64af0f293f0b_exact_RKP1A_technical_and_planning_path_sets",
+    "c1_current_root_inventory": "historical_active_13_of_13_present_current_archive_0_of_13_present_C2_C3_transition_remains_fail_closed",
+    "c1_workspace_law_result": {
+      "total": 10,
+      "pass": 7,
+      "fail": 3,
+      "closed_red": "RKP-1A P4 candidate freeze is exact on accepted A3",
+      "remaining_expected_fail_closed": [
+        "implementation changes stay inside the literal RKP-2 allowlists",
+        "part owner repair stays anchored to its accepted six-path wire contract",
+        "Stage 6 hostile and resource evidence consumes the existing private Rust seams"
+      ],
+      "additional_failure_or_attribution_change_blocks": true
+    },
+    "c1_independent_implementation_audit": "pending",
+    "review_status": "C1_COMPLETE_READY_FOR_INDEPENDENT_ACCEPTED_B_AUTHORITY_TRANSITION_AUDIT",
     "c0_workspace_law_expected": {
       "total": 10,
       "pass": 6,
@@ -230,7 +254,12 @@
       "research/commit-phase-and-rollback-matrix.md": "cc1468f5aea881a1916d998bd80145bd893373a7fec5873159351784d5e24cbb",
       "research/planning-self-audit.md": "7f1447108ef3d3370b84656bab0addb5874fa2c4bc37f2ea5e82d04106595aec"
     },
-    "planning_repair_audit": {"P0":0,"P1":6,"P2":0,"status":"bounded_repair_completed_targeted_rereview_pending"},
-    "next_gate": "targeted_closeout_planning_rereview"
+    "planning_repair_audit": {
+      "P0": 0,
+      "P1": 6,
+      "P2": 0,
+      "status": "bounded_repair_completed_targeted_rereview_pending"
+    },
+    "next_gate": "dedicated_independent_C1_accepted_B_authority_transition_audit"
   }
 }

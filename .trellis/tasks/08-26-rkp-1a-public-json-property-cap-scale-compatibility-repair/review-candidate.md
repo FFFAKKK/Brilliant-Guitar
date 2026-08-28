@@ -2,9 +2,13 @@
 
 ## Status
 
-RKP-1A P4 IMPLEMENTATION REVIEW PASSED; READY FOR INDEPENDENT CLOSEOUT PLANNING REVIEW.
+RKP-1A B OWNER ACCEPTED THROUGH C1; READY FOR INDEPENDENT C1 ACCEPTED-B AUTHORITY TRANSITION AUDIT.
 
 Exact planning head `1cd0caadff218c1471f67cdf1a1ab78f5653a605`, exact P1 head `712c6dbb0b7556b4c345fab9ad8215fdbcec6990` and exact P2 head `0f65272951fd23080b6f536b2e58f50afe249b02` each passed their required independent review at P0/P1/P2=`0/0/0`. A no-commit P3 attempt was reverted. Independent root-cause audit returned `0/2/0`; first amendment `978160e...` returned `0/1/1`, and its repair `14023029878be7c785ac0de7828628c5e3f4f8b1` returned `0/2/0` for CommonJS entry and Windows settlement. P3A and P3B are completed, historically authorized, and independently audited; P3B's exact reviewed head is `e4103b779574fcdc728d024c1b8f30244cb332c3`. Replacement A3 `3063e0972072e246d43add8640ba1fe1ad02d787` passed the independent P4-entry planning review at `0/0/0`. The separately authorized B candidate freeze `08374273b05bc992e749a17a959b64af0f293f0b` independently passed implementation review at P0/P1/P2=`0/0/0`; only a distinct closeout planning review may now define owner acceptance, archive and Stage6 integration.
+
+## C1 live authority
+
+The preceding P4 chronology is historical pre-C1 evidence. C1 records B `08374273b05bc992e749a17a959b64af0f293f0b` as owner-accepted implementation authority after its independent P0/P1/P2=`0/0/0` audit. The only live gate is the dedicated independent C1 accepted-B authority-transition audit. Archive, integration and E2 remain unauthorized; `634ed8be...` remains only historical rejected-candidate evidence.
 
 ## Candidate claims
 
@@ -42,7 +46,7 @@ A1, A2 and accepted A3 are planning-only history. The completed B candidate is d
 - Validate the exact sentinel shape and caps plus first-observed ordering in both directions, exact taskkill launch/nonzero/timeout and reap-timeout secondary states, cleanup recovery/two-failure, bounded settlement and zero partial publication.
 - Confirm all request/result/stdout/stderr artifacts resolve under E: scratch and no partial success is published before cleanup.
 - Confirm P2 head `0f652729...` already owns the successor wire validator; P3A changes only capture profile and its two call-site selections.
-- Confirm P3A/P3B are audited history through `e4103b7`; B `08374273...` independently passed P4 implementation review. The live next gate is only targeted closeout planning rereview; `634ed8be...` is historical rejected-candidate evidence. Acceptance/archive/integration/E2 remain unauthorized, and RKP-2 S6.2/S6.3 remain false.
+- Confirm P3A/P3B are audited history through `e4103b7`; B `08374273...` independently passed P4 implementation review and is owner-accepted only. The live next gate is the dedicated C1 authority-transition audit; `634ed8be...` is historical rejected-candidate evidence. Archive/integration/E2 remain unauthorized, and RKP-2 S6.2/S6.3 remain false.
 - Verify `json.rs` is byte-zero relative to audited P1 and remains the sole `JSON_PROPERTY_LIMIT` owner at `1_572_864`; Contracts imports it directly and is 17/17. Verify new-cap inclusive/exclusive boundaries, exact `1572864/1572865` wire, depth→property→shape→number precedence, bounded scan-only retention and 64 MiB caps.
 - Verify the dedicated TypeScript test uses the production adapter: exact successor fake and real native envelopes preserve `codec.property-limit`, while predecessor, extra, missing and wrong-type variants remain `bridge.internal`; the real rejection publishes no handle.
 - Verify the exact seven-path cumulative technical allowlist excludes `indices.rs`, fixture, encoder, Cargo/package/spec/archive paths; A1/A2 each change thirteen planning/projection paths, A3 changes fifteen, and B's current eighth governance path is mechanical only, not a lifecycle owner.

@@ -95,7 +95,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "rkp1a_acceptance_archive_stage6_closeout_independent_planning_review",
+    "next_gate": "dedicated_independent_C1_accepted_B_authority_transition_audit",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -348,7 +348,8 @@
       "stage6_follow_up_order": "after_RKP1A_accept_archive_integrate_docs_only_authority_amendment_planning_pass_then_E1R2_audit_then_separate_E2_authorization",
       "p4_independent_implementation_audit": "08374273b05bc992e749a17a959b64af0f293f0b_pass_P0_0_P1_0_P2_0",
       "closeout_planning_child": "08-28-rkp-1a-acceptance-archive-stage6-integration-closeout",
-      "next_gate": "independent_closeout_planning_review"
+      "closeout_C1_accepted_B_authority": "08374273b05bc992e749a17a959b64af0f293f0b_owner_accepted_C1_complete",
+      "next_gate": "dedicated_independent_C1_accepted_B_authority_transition_audit"
     },
     "rkp2_stage_6_private_scale_evidence_seam_repair": {
       "parent": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",

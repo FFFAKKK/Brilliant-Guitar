@@ -112,8 +112,12 @@ const RKP1A_P4_A2_HEAD =
   "9e1770b39f01484c860a39a6746f3ef7a638f612";
 const RKP1A_ACCEPTED_P4_A3_HEAD =
   "3063e0972072e246d43add8640ba1fe1ad02d787";
+const RKP1A_ACCEPTED_B =
+  "08374273b05bc992e749a17a959b64af0f293f0b";
 const RKP1A_ACTIVE_ROOT =
   ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair";
+const RKP1A_ARCHIVE_ROOT =
+  ".trellis/tasks/archive/2026-08/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair";
 const RKP1A_TECHNICAL_PATHS = [
   "crates/brilliant-core-types/src/json.rs",
   "crates/brilliant-kernel-contracts/src/codec.rs",
@@ -193,6 +197,36 @@ const RKP1A_P4_B_PATHS = [
   TASK_PATH,
   ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/task.json",
   "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
+] as const;
+const RKP1A_HISTORICAL_ACTIVE_FILES = [
+  `${RKP1A_ACTIVE_ROOT}/task.json`,
+  `${RKP1A_ACTIVE_ROOT}/prd.md`,
+  `${RKP1A_ACTIVE_ROOT}/design.md`,
+  `${RKP1A_ACTIVE_ROOT}/implement.md`,
+  `${RKP1A_ACTIVE_ROOT}/implement.jsonl`,
+  `${RKP1A_ACTIVE_ROOT}/check.jsonl`,
+  `${RKP1A_ACTIVE_ROOT}/operator-handoff.md`,
+  `${RKP1A_ACTIVE_ROOT}/review-candidate.md`,
+  `${RKP1A_ACTIVE_ROOT}/research/root-cause-and-exact-node-count.md`,
+  `${RKP1A_ACTIVE_ROOT}/research/authority-and-consumer-impact-map.md`,
+  `${RKP1A_ACTIVE_ROOT}/research/file-test-ownership-matrix.md`,
+  `${RKP1A_ACTIVE_ROOT}/research/planning-self-audit.md`,
+  `${RKP1A_ACTIVE_ROOT}/research/implementation-evidence.md`,
+] as const;
+const RKP1A_CURRENT_ARCHIVE_FILES = [
+  `${RKP1A_ARCHIVE_ROOT}/task.json`,
+  `${RKP1A_ARCHIVE_ROOT}/prd.md`,
+  `${RKP1A_ARCHIVE_ROOT}/design.md`,
+  `${RKP1A_ARCHIVE_ROOT}/implement.md`,
+  `${RKP1A_ARCHIVE_ROOT}/implement.jsonl`,
+  `${RKP1A_ARCHIVE_ROOT}/check.jsonl`,
+  `${RKP1A_ARCHIVE_ROOT}/operator-handoff.md`,
+  `${RKP1A_ARCHIVE_ROOT}/review-candidate.md`,
+  `${RKP1A_ARCHIVE_ROOT}/research/root-cause-and-exact-node-count.md`,
+  `${RKP1A_ARCHIVE_ROOT}/research/authority-and-consumer-impact-map.md`,
+  `${RKP1A_ARCHIVE_ROOT}/research/file-test-ownership-matrix.md`,
+  `${RKP1A_ARCHIVE_ROOT}/research/planning-self-audit.md`,
+  `${RKP1A_ARCHIVE_ROOT}/research/implementation-evidence.md`,
 ] as const;
 const STAGE_6_TECHNICAL_PATHS = [
   "test/core-kernel/rust-migration/rkp-2-live-score-store-parity.test.ts",
@@ -590,26 +624,6 @@ function currentPartOwnerRepairChanges(): Set<string> {
 function currentStage6Changes(): Set<string> {
   const commands: readonly (readonly string[])[] = [
     ["diff", "--name-only", `${STAGE_6_PREREQUISITE_HEAD}..HEAD`],
-    ["diff", "--name-only"],
-    ["diff", "--cached", "--name-only"],
-    ["ls-files", "--others", "--exclude-standard"],
-  ];
-  return new Set(commands.flatMap((args) => lines(git(args))));
-}
-
-function currentRkp1aChanges(): Set<string> {
-  const commands: readonly (readonly string[])[] = [
-    ["diff", "--name-only", `${RKP1A_IMPLEMENTATION_BASE}..HEAD`],
-    ["diff", "--name-only"],
-    ["diff", "--cached", "--name-only"],
-    ["ls-files", "--others", "--exclude-standard"],
-  ];
-  return new Set(commands.flatMap((args) => lines(git(args))));
-}
-
-function currentRkp1aP3aChanges(): Set<string> {
-  const commands: readonly (readonly string[])[] = [
-    ["diff", "--name-only", `${RKP1A_ACCEPTED_P3A_PLANNING_HEAD}..HEAD`],
     ["diff", "--name-only"],
     ["diff", "--cached", "--name-only"],
     ["ls-files", "--others", "--exclude-standard"],
@@ -1082,6 +1096,7 @@ test("RKP-1A P4 candidate freeze is exact on accepted A3", () => {
     RKP1A_P4_A1_HEAD,
     RKP1A_P4_A2_HEAD,
     RKP1A_ACCEPTED_P4_A3_HEAD,
+    RKP1A_ACCEPTED_B,
   ]) {
     assert.doesNotThrow(() => git(["cat-file", "-e", `${commit}^{commit}`]));
   }
@@ -1145,12 +1160,13 @@ test("RKP-1A P4 candidate freeze is exact on accepted A3", () => {
     [`${RKP1A_ACCEPTED_P4_A3_HEAD} ${RKP1A_P4_A2_HEAD}`],
     "accepted replacement A3 must remain one authority commit on A2",
   );
-  const currentHead = git(["rev-parse", "HEAD"]);
-  assert.notEqual(currentHead, RKP1A_ACCEPTED_P4_A3_HEAD);
   assert.deepEqual(
-    lines(git(["rev-list", "--parents", "-n", "1", "HEAD"])),
-    [`${currentHead} ${RKP1A_ACCEPTED_P4_A3_HEAD}`],
-    "B must be one non-merge commit directly on independently accepted A3",
+    lines(git(["rev-list", "--parents", "-n", "1", RKP1A_ACCEPTED_B])),
+    [`${RKP1A_ACCEPTED_B} ${RKP1A_ACCEPTED_P4_A3_HEAD}`],
+    "accepted B must remain one non-merge commit directly on independently accepted A3",
+  );
+  assert.doesNotThrow(() =>
+    git(["merge-base", "--is-ancestor", RKP1A_ACCEPTED_B, "HEAD"]),
   );
   assertExactPathSet(
     new Set(
@@ -1173,14 +1189,30 @@ test("RKP-1A P4 candidate freeze is exact on accepted A3", () => {
   assert.equal(RKP1A_P4_A3_PATHS.length, 15);
   assert.equal(RKP1A_P4_B_PATHS.length, 8);
   assertExactPathSet(
-    currentRkp1aChanges(),
+    new Set(
+      lines(
+        git([
+          "diff",
+          "--name-only",
+          `${RKP1A_IMPLEMENTATION_BASE}..${RKP1A_ACCEPTED_B}`,
+        ]),
+      ),
+    ),
     [...RKP1A_TECHNICAL_PATHS, ...RKP1A_PLANNING_PATHS],
-    "bounded RKP-1A implementation descendant",
+    "immutable RKP-1A implementation base through accepted B",
   );
   assertExactPathSet(
-    currentRkp1aP3aChanges(),
+    new Set(
+      lines(
+        git([
+          "diff",
+          "--name-only",
+          `${RKP1A_ACCEPTED_P3A_PLANNING_HEAD}..${RKP1A_ACCEPTED_B}`,
+        ]),
+      ),
+    ),
     [...RKP1A_P3A_TECHNICAL_PATHS, ...RKP1A_P4_A3_PATHS],
-    "bounded RKP-1A P3A through P4-B candidate",
+    "immutable RKP-1A P3A through accepted B",
   );
   assertExactPathSet(
     new Set(
@@ -1266,13 +1298,23 @@ test("RKP-1A P4 candidate freeze is exact on accepted A3", () => {
         git([
           "diff",
           "--name-only",
-          `${RKP1A_ACCEPTED_P4_A3_HEAD}..HEAD`,
+          `${RKP1A_ACCEPTED_P4_A3_HEAD}..${RKP1A_ACCEPTED_B}`,
         ]),
       ),
     ),
     RKP1A_P4_B_PATHS,
-    "P4-B exact candidate-freeze and mechanical workspace-law projection",
+    "accepted B exact candidate-freeze and mechanical workspace-law projection",
   );
+
+  assert.equal(RKP1A_HISTORICAL_ACTIVE_FILES.length, 13);
+  assert.equal(RKP1A_CURRENT_ARCHIVE_FILES.length, 13);
+  for (const path of RKP1A_HISTORICAL_ACTIVE_FILES) {
+    assert.doesNotThrow(() => gitTextAt(RKP1A_ACCEPTED_B, path));
+    assert.equal(existsSync(resolve(path)), true, `historical active file missing: ${path}`);
+  }
+  for (const path of RKP1A_CURRENT_ARCHIVE_FILES) {
+    assert.equal(existsSync(resolve(path)), false, `archive exists before C2: ${path}`);
+  }
 
   const capture = readText("src/core-kernel/codec/strict-input-capture.ts");
   assert.match(

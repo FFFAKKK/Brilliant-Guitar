@@ -2,13 +2,13 @@
 
 ## Current state
 
-- This task is planning-only and has not run `task.py start`.
-- B `08374273b05bc992e749a17a959b64af0f293f0b` is the independently passed RKP-1A implementation candidate; no owner acceptance, archive or integration has occurred here.
+- This closeout task is `in_progress`; C1 was activated through the native Trellis start workflow and completed the accepted-B authority transition only.
+- B `08374273b05bc992e749a17a959b64af0f293f0b` is owner-accepted implementation authority after its independent P0/P1/P2=`0/0/0` audit. C1 freezes immutable implementation history at accepted B, retains the active old RKP-1A root 13/13 and requires the archive root 0/13 before C2; no archive or integration has occurred here.
 - RKP-2 remains the sole active implementation child. Stage6 source is `639e93555c15b46c54c8e9bb7ec610d4a77c7478`; E2/E3 remain false and TypeScript remains default.
 
 ## Next gate
 
-Stop for independent closeout planning review. A PASS and separate user authorization are required before C1. Do not start this task, invoke `task.py archive`, fast-forward Stage6, push or change workspace-law during C0.
+Stop for the dedicated independent C1 accepted-B authority-transition audit. C2-C5 each still require their separately planned review/authorization. Do not invoke `task.py archive`, fast-forward Stage6, push or start E2/E3.
 
 ## Closeout handoff facts
 

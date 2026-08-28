@@ -46,7 +46,7 @@
     "test/core-kernel/rust-migration/rkp-1a-property-cap-compatibility.test.ts",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "IN_PROGRESS / P0-P2 AUDITED 0/0/0 THROUGH 0F65272 / P3A-P3B COMPLETE HISTORICAL AUTHORIZATION CONSUMED AND AUDITED THROUGH E4103B7 / REPLACEMENT A3 3063E097 PLANNING PASS 0/0/0 / P4-B CANDIDATE 08374273 INDEPENDENT IMPLEMENTATION PASS 0/0/0 CANDIDATE READY / CURRENT GATE RKP-1A CLOSEOUT PLANNING REVIEW / NO ACCEPT ARCHIVE INTEGRATION E2 CUTOVER PUSH QUALIFICATION OR RKP-3 / TYPESCRIPT DEFAULT.",
+  "notes": "IN_PROGRESS / P0-P2 AUDITED 0/0/0 THROUGH 0F65272 / P3A-P3B COMPLETE HISTORICAL AUTHORIZATION CONSUMED AND AUDITED THROUGH E4103B7 / REPLACEMENT A3 3063E097 PLANNING PASS 0/0/0 / P4-B 08374273 OWNER-ACCEPTED IMPLEMENTATION AUTHORITY UNDER C1 / CURRENT GATE INDEPENDENT C1 ACCEPTED-B AUTHORITY TRANSITION AUDIT / NO ARCHIVE INTEGRATION E2 CUTOVER PUSH QUALIFICATION OR RKP-3 / TYPESCRIPT DEFAULT.",
   "meta": {
     "planning_base_commit": "639e93555c15b46c54c8e9bb7ec610d4a77c7478",
     "source_branch": "codex/rkp-2-stage-6-private-scale-evidence-seam-repair",
@@ -271,7 +271,7 @@
       "b_workspace_law_projection_path": "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
       "b_candidate_ready_only": true,
       "b_execution_authorized": true,
-      "b_status": "current_candidate_freeze_completed_independent_implementation_pass_08374273_P0_0_P1_0_P2_0_owner_acceptance_archive_and_integration_not_authorized",
+       "b_status": "owner_accepted_implementation_authority_C1_complete_08374273_archive_and_integration_not_authorized",
       "b_accept_archive_integration_E2_authorized": false,
       "rollback": "later_exact_eight_path_governance_descendant_restores_seven_lifecycle_paths_to_accepted_A3_P4_not_ready_and_locks_B_to_rollback_not_git_revert_B_or_A3"
     },
@@ -431,9 +431,10 @@
       "task": "08-28-rkp-1a-acceptance-archive-stage6-integration-closeout",
       "accepted_B": "08374273b05bc992e749a17a959b64af0f293f0b",
       "independent_implementation_audit": "passed_P0_0_P1_0_P2_0",
-      "status": "planning_review_pending",
+       "status": "C1_accepted_B_authority_transition_completed_independent_C1_audit_pending",
+       "owner_acceptance_recorded": true,
       "accept_archive_integration_authorized": false
     },
-    "next_gate": "rkp1a_acceptance_archive_stage6_closeout_independent_planning_review"
+     "next_gate": "dedicated_independent_C1_accepted_B_authority_transition_audit"
   }
 }

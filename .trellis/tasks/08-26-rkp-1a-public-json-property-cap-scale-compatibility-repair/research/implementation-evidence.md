@@ -1,5 +1,9 @@
 # RKP-1A P4-B Candidate Freeze Evidence
 
+## C1 accepted-B authority transition (lifecycle-only; no technical rerun)
+
+B `08374273b05bc992e749a17a959b64af0f293f0b`, directly parented by accepted A3 `3063e0972072e246d43add8640ba1fe1ad02d787`, is owner-accepted implementation authority after its independent P0/P1/P2=`0/0/0` review. C1 freezes the immutable implementation range at accepted B, confirms the old active root 13/13 exists and the archive root 0/13 exists before C2, and changes the focused workspace-law projection to 10/7/3. The three remaining failures are only the existing unaccepted-child gates. No Rust/native/full test is rerun because technical bytes are unchanged; this is not a qualification claim. C2-C5, archive, integration and Stage6 E2 remain unstarted.
+
 ## Current B candidate boundary
 
 - Independently accepted replacement A3 planning head: `3063e0972072e246d43add8640ba1fe1ad02d787`, directly parented by A2 `9e1770b39f01484c860a39a6746f3ef7a638f612`, with independent planning result P0/P1/P2=`0/0/0`.

@@ -309,7 +309,7 @@
       "post_pass_closeout_authorized": true,
       "stage_6_blocked_until_accepted_archived_integrated": false
     },
-    "next_gate": "rkp1a_acceptance_archive_stage6_closeout_independent_planning_review",
+    "next_gate": "dedicated_independent_C1_accepted_B_authority_transition_audit",
     "stage_6_started": true,
     "stage_6_authorized": true,
     "stage_6_completed": false,
@@ -353,7 +353,8 @@
       "rkp1a_follow_up_order": "targeted_P4_implementation_rereview_then_accept_archive_integrate_then_stage6_docs_authority_amendment_planning_review_E1R2_audit_then_separate_E2_authorization",
       "p4_independent_implementation_audit": "08374273b05bc992e749a17a959b64af0f293f0b_pass_P0_0_P1_0_P2_0",
       "closeout_planning_child": "08-28-rkp-1a-acceptance-archive-stage6-integration-closeout",
-      "next_gate": "rkp1a_acceptance_archive_stage6_closeout_independent_planning_review"
+      "closeout_C1_accepted_B_authority": "08374273b05bc992e749a17a959b64af0f293f0b_owner_accepted_C1_complete",
+      "next_gate": "dedicated_independent_C1_accepted_B_authority_transition_audit"
     },
     "part_owner_wire_contract_repair": {
       "child": "08-26-rkp-2-part-owner-wire-contract-repair",
@@ -431,7 +432,8 @@
       "targeted_planning_rereview": "replacement_A3_3063e097_pass_0_0_0",
       "successor_limit": 1572864,
       "stage_6_e2_started": false,
-      "next_gate": "rkp1a_acceptance_archive_stage6_closeout_independent_planning_review"
+      "closeout_C1_accepted_B_authority": "08374273b05bc992e749a17a959b64af0f293f0b_owner_accepted_C1_complete",
+      "next_gate": "dedicated_independent_C1_accepted_B_authority_transition_audit"
     },
     "archive_authorized": false,
     "push_authorized": false,
