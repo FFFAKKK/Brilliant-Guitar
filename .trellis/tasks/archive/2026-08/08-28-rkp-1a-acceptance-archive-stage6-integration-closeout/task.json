@@ -3,7 +3,7 @@
   "name": "rkp-1a-acceptance-archive-stage6-integration-closeout",
   "title": "RKP-1A Acceptance Archive and Stage6 Integration Closeout",
   "description": "C0 planning, C1 accepted-B authority transition, C2 native archive, C3 archived self-authority repair and C4 Stage6 fast-forward-only integration projection are complete for independently passed RKP-1A P4 candidate 08374273; the sole current gate is the dedicated independent B-to-C4 closeout audit while C5 remains planned and unexecuted.",
-  "status": "in_progress",
+  "status": "completed",
   "dev_type": null,
   "scope": "C0 planning, C1 accepted-B authority transition, C2 native archive, C3 archive self-reference repair and C4 Stage6 fast-forward-only integration projection are complete pending the dedicated independent B-to-C4 closeout audit. C5 independent closeout audit/archive, Stage6 E2/E3, push and production/test authority changes remain unexecuted and unauthorized.",
   "package": null,
@@ -11,7 +11,7 @@
   "creator": "ATOM",
   "assignee": "ATOM",
   "createdAt": "2026-08-28",
-  "completedAt": null,
+  "completedAt": "2026-08-29",
   "branch": "codex/rkp-2-stage-6-private-scale-evidence-seam-repair",
   "base_branch": "codex/rkp-1a-public-json-property-cap-scale-compatibility-repair",
   "worktree_path": ".worktrees/rkp-2-stage-6-private-scale-evidence-seam-repair",
@@ -74,7 +74,12 @@
     "c1_accepted_B_authority": {
       "candidate_commit": "08374273b05bc992e749a17a959b64af0f293f0b",
       "direct_parent": "3063e0972072e246d43add8640ba1fe1ad02d787",
-      "independent_implementation_audit": {"P0":0,"P1":0,"P2":0,"verdict":"passed"},
+      "independent_implementation_audit": {
+        "P0": 0,
+        "P1": 0,
+        "P2": 0,
+        "verdict": "passed"
+      },
       "status": "owner_accepted_implementation_authority"
     },
     "c1_immutable_implementation_range": "639e93555c15b46c54c8e9bb7ec610d4a77c7478_to_08374273b05bc992e749a17a959b64af0f293f0b_exact_RKP1A_technical_and_planning_path_sets",
