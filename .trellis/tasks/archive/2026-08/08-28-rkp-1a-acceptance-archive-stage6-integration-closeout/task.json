@@ -2,10 +2,10 @@
   "id": "rkp-1a-acceptance-archive-stage6-integration-closeout",
   "name": "rkp-1a-acceptance-archive-stage6-integration-closeout",
   "title": "RKP-1A Acceptance Archive and Stage6 Integration Closeout",
-  "description": "C0 planning, C1 accepted-B authority transition, C2 native archive, C3 archived self-authority repair and C4 Stage6 fast-forward-only integration projection are complete for independently passed RKP-1A P4 candidate 08374273; the sole current gate is the dedicated independent B-to-C4 closeout audit while C5 remains planned and unexecuted.",
+  "description": "C0-C4 and the C5-A native closeout archive are complete for independently passed RKP-1A P4 candidate 08374273. C5-B terminal projection is not started: its frozen relatedFiles[11] contract is under dedicated independent planning review.",
   "status": "completed",
   "dev_type": null,
-  "scope": "C0 planning, C1 accepted-B authority transition, C2 native archive, C3 archive self-reference repair and C4 Stage6 fast-forward-only integration projection are complete pending the dedicated independent B-to-C4 closeout audit. C5 independent closeout audit/archive, Stage6 E2/E3, push and production/test authority changes remain unexecuted and unauthorized.",
+  "scope": "C0-C4 and C5-A native archive are complete. C5-B remains a separate, unstarted terminal projection: the exact relatedFiles[11] archive-authority migration contract awaits independent planning rereview. Stage6 amendment planning, E2/E3, push and production/test authority changes remain unexecuted and unauthorized.",
   "package": null,
   "priority": "P1",
   "creator": "ATOM",
@@ -39,7 +39,7 @@
     ".trellis/scripts/task.py",
     ".trellis/spec/core-kernel/backend/rust-runtime-transition.md"
   ],
-  "notes": "IN_PROGRESS / C1 ACCEPTED-B AUTHORITY TRANSITION C2 NATIVE ARCHIVE AND C3 ARCHIVE AUTHORITY AUDITED PASS / C4 STAGE6 FF-ONLY INTEGRATION PROJECTION COMPLETE / B 08374273 ACCEPTED ARCHIVED INTEGRATED AUTHORITY / RKP-2 SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 E1+E1R GREEN E2-E3 FALSE / CURRENT GATE DEDICATED INDEPENDENT B-TO-C4 CLOSEOUT AUDIT / C5 NOT STARTED / NO C5 ARCHIVE E2 E3 PUSH CUTOVER QUALIFICATION OR RKP-3.",
+  "notes": "COMPLETED C5-A NATIVE ARCHIVE AT AC0044FA / C1-C3 AND B-TO-C4 AUDITS PASSED / C5-B TERMINAL PROJECTION NOT STARTED / CURRENT GATE DEDICATED INDEPENDENT C5 TERMINAL PROJECTION CONTRACT REPAIR REVIEW / RKP-2 SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 E1+E1R GREEN E2-E3 FALSE / NO STAGE6 AMENDMENT E2 E3 PUSH CUTOVER QUALIFICATION OR RKP-3.",
   "meta": {
     "planning_base_commit": "08374273b05bc992e749a17a959b64af0f293f0b",
     "planning_source_branch": "codex/rkp-1a-acceptance-archive-stage6-integration-closeout",
@@ -61,7 +61,7 @@
     "accepted_rkp1a_A3_parent": "3063e0972072e246d43add8640ba1fe1ad02d787",
     "task_start_run": true,
     "production_implementation_authorized": false,
-    "archive_authorized": false,
+    "archive_authorized": true,
     "integration_authorized": true,
     "stage6_e2_authorized": false,
     "stage6_e3_authorized": false,
@@ -109,10 +109,26 @@
     "c4_started": true,
     "c4_completed": true,
     "c4_fast_forward": "completed_clean_ff_only_639e93555c15b46c54c8e9bb7ec610d4a77c7478_to_782431df5e5e97e931cf869e6e9dafe10c8aff15",
-    "c4_integration_projection": "completed_single_direct_child_of_frozen_C3_pending_dedicated_independent_B_to_C4_closeout_audit",
-    "c4_independent_closeout_integration_audit": "pending_dedicated_independent_B_to_C4_closeout_audit",
-    "c5_started": false,
-    "review_status": "C4_COMPLETE_READY_FOR_DEDICATED_INDEPENDENT_B_TO_C4_CLOSEOUT_AUDIT",
+    "c4_integration_projection": "completed_single_direct_child_of_frozen_C3_audited_passed_by_379df8107bef5589149ef3d945cacca2f698dd5f",
+    "c4_independent_closeout_integration_audit": "passed_379df8107bef5589149ef3d945cacca2f698dd5f_P0_0_P1_0_P2_0_bounded_successor_of_C4_0550a4e2fb88c3671b1025be54bb428c92d94db3",
+    "c5_user_authorization": "explicit_user_authorization_native_closeout_archive_then_separate_terminal_projection_only_Stage6_amendment_E2_E3_push_not_authorized",
+    "c5_started": true,
+    "c5_native_archive_commit": "ac0044faab9be80b1a704ae5dbd8e6ee9b7e7eaa",
+    "c5_native_archive_completed": true,
+    "c5_terminal_projection_completed": false,
+    "c5_terminal_projection_contract_repair": {
+      "status": "pending_independent_planning_rereview",
+      "reason": "relatedFiles[11] is the archived RKP-1A authority, so the former relatedFiles[11..16] byte-zero rule cannot coexist with current-path existence",
+      "relatedFiles_0_through_10": "migrate_each_exact_active_closeout_self_path_to_archive_closeout_root_in_separate_C5_B_commit",
+      "relatedFiles_11_target": ".trellis/tasks/archive/2026-08/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/task.json",
+      "relatedFiles_12_through_16": "byte_semantic_zero",
+      "implement_jsonl_check_jsonl_and_immutable_authority_blobs_and_hashes": "byte_zero",
+      "phase_allowlist": "C5_terminal_projection_exact_existing_4_paths_unchanged",
+      "unknown_or_other_relatedFiles": "forbidden",
+      "C5_B_commit": "separate_terminal_projection_commit_after_independent_planning_rereview_pass_and_user_authorization",
+      "final_terminal_projection_audit": "pending_after_C5_B"
+    },
+    "review_status": "C5_A_NATIVE_ARCHIVE_COMPLETE_READY_FOR_INDEPENDENT_C5_TERMINAL_PROJECTION_CONTRACT_REPAIR_REVIEW",
     "c0_workspace_law_expected": {
       "total": 10,
       "pass": 6,
@@ -280,6 +296,6 @@
       "P2": 0,
       "status": "bounded_repair_completed_targeted_rereview_pending"
     },
-    "next_gate": "dedicated_independent_B_to_C4_closeout_audit"
+    "next_gate": "dedicated_independent_C5_terminal_projection_contract_repair_review_pending"
   }
 }

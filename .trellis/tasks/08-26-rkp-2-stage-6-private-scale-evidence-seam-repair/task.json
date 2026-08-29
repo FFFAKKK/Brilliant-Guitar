@@ -40,7 +40,7 @@
     "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "IN_PROGRESS / ACCEPTED PLANNING D638B81 / E0 COMPLETE / E1+E1R GREEN / E2-E3 NOT STARTED / RKP-2 PAUSED / RKP-1A P0-P3B HISTORY AUDITED THROUGH E4103B7 / P4-B 08374273 ACCEPTED ARCHIVED INTEGRATED AUTHORITY / C1-C3 AUDITED PASS / C4 STAGE6 FF-ONLY INTEGRATION PROJECTION COMPLETE / CURRENT EXTERNAL GATE DEDICATED INDEPENDENT B-TO-C4 CLOSEOUT AUDIT / TYPESCRIPT DEFAULT.",
+  "notes": "IN_PROGRESS / ACCEPTED PLANNING D638B81 / E0 COMPLETE / E1+E1R GREEN / E2-E3 NOT STARTED / RKP-2 PAUSED / RKP-1A P4-B 08374273 ACCEPTED ARCHIVED INTEGRATED AUTHORITY / C1-C3 AND B-TO-C4 AUDITS PASSED / C5-A NATIVE CLOSEOUT ARCHIVE COMPLETE / C5-B NOT STARTED / CURRENT GATE DEDICATED INDEPENDENT C5 TERMINAL PROJECTION CONTRACT REPAIR REVIEW / TYPESCRIPT DEFAULT.",
   "meta": {
     "planning_base_commit": "4a302bc9f9981940336fc97941b08e09bd0d1f67",
     "source_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -90,7 +90,7 @@
     "bounded_planning_repair": "round_3_cleanup_ownership_and_post_cleanup_envelope_accepted",
     "implementation_candidate_ready": false,
     "implementation_review": "pending",
-    "implementation_blocker": "dedicated_independent_B_to_C4_closeout_audit_pending",
+    "implementation_blocker": "dedicated_independent_C5_terminal_projection_contract_repair_review_pending",
     "implementation_stage": "E1_and_E1R_private_rust_seam_green_E2_not_started",
     "e0_activation_completed": true,
     "e1_private_rust_seam_started": true,
@@ -131,7 +131,7 @@
       "p3b_independent_implementation_review": "e4103b779574fcdc728d024c1b8f30244cb332c3_pass_P0_0_P1_0_P2_0_for_bounded_P4",
       "p4_entry_audit": "e4103b7_return_P0_0_P1_1_P2_0_then_A1_A2_bounded_planning_repairs_P0_0_P1_2_P2_0",
       "targeted_planning_rereview": "replacement_A3_3063e097_pass_0_0_0",
-      "follow_up_order": "dedicated_independent_B_to_C4_closeout_audit_then_C5_terminal_archive_then_stage6_docs_authority_amendment_planning_review_E1R2_audit_then_separate_E2_authorization"
+      "follow_up_order": "dedicated_independent_C5_terminal_projection_contract_repair_review_then_separate_C5_B_terminal_projection_then_targeted_C5_audit_then_stage6_docs_authority_amendment_planning_review_E1R2_audit_then_separate_E2_authorization"
     },
     "e3_candidate_freeze_started": false,
     "root_cause_audit": {
@@ -238,13 +238,14 @@
       "E3_fresh_request_formal_evidence_and_candidate_freeze"
     ],
     "rkp1a_closeout_planning": {
-      "task": "08-28-rkp-1a-acceptance-archive-stage6-integration-closeout",
+      "archive_authority": ".trellis/tasks/archive/2026-08/08-28-rkp-1a-acceptance-archive-stage6-integration-closeout/",
       "accepted_B": "08374273b05bc992e749a17a959b64af0f293f0b",
       "independent_implementation_audit": "passed_P0_0_P1_0_P2_0",
-      "status": "C1_C2_C3_audits_passed_C4_stage6_ff_only_integration_projection_completed_dedicated_independent_B_to_C4_closeout_audit_pending",
+      "status": "C1_C2_C3_and_B_to_C4_audits_passed_C4_stage6_ff_only_integration_completed_C5_A_native_archive_completed_C5_B_not_started_contract_repair_review_pending",
+      "terminal_projection_contract_repair": "candidate_in_archived_closeout_task_meta_c5_terminal_projection_contract_repair",
       "E2_authorized": false
     },
-    "next_gate": "dedicated_independent_B_to_C4_closeout_audit",
+    "next_gate": "dedicated_independent_C5_terminal_projection_contract_repair_review_pending",
     "archive_authorized": false,
     "push_authorized": false,
     "default_runtime_switch_authorized": false,
