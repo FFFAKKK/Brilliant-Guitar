@@ -348,7 +348,7 @@
       "future_technical_allowlist_count": 5,
       "implementation_stage": "E1_and_E1R_private_rust_seam_green_E2_not_started",
       "external_blocker": "RKP1A_C5_terminal_projection_audit_pending",
-      "external_blocking_task": "08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair",
+      "external_blocking_task": null,
       "rkp1a_state": "P0_P1_P2_P3A_P3B_complete_historical_authorizations_consumed_audited_through_e4103b7_replacement_A3_3063e097_planning_pass_P4_B_08374273_accepted_archived_C1_C2_C3_and_B_to_C4_passed_C4_stage6_ff_only_integrated_C5_A_native_archive_C5_B_terminal_projection_completed_dedicated_independent_C5_terminal_projection_audit_pending",
       "rkp1a_follow_up_order": "dedicated_independent_C5_terminal_projection_audit_then_stage6_docs_authority_amendment_planning_review_E1R2_audit_then_separate_E2_authorization",
       "p4_independent_implementation_audit": "08374273b05bc992e749a17a959b64af0f293f0b_pass_P0_0_P1_0_P2_0",
@@ -403,7 +403,7 @@
     "implementation_blocker": "dedicated_independent_C5_terminal_projection_audit_pending",
     "public_json_property_cap_scale_compatibility_repair": {
       "task": "08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair",
-      "status": "accepted_archived_integrated_C4_closeout_audit_pending",
+      "status": "accepted_archived_integrated_C5_execution_complete_historical",
       "planning_base": "639e93555c15b46c54c8e9bb7ec610d4a77c7478",
       "independent_planning_review": "passed",
       "first_independent_planning_review": "c02c830_return_0_3_1_for_bounded_planning_repair",
