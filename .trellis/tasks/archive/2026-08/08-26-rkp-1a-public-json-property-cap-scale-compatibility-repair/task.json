@@ -3,7 +3,7 @@
   "name": "rkp-1a-public-json-property-cap-scale-compatibility-repair",
   "title": "RKP-1A Public JSON Property-Cap Scale Compatibility Repair",
   "description": "Preserve audited P0-P3B history and B 08374273 as owner-accepted implementation authority while its separate closeout child has completed C1 accepted-B authority transition and awaits targeted independent authority-transition rereview.",
-  "status": "in_progress",
+  "status": "completed",
   "dev_type": "bugfix",
   "scope": "Audited P0-P3B and P4-B are complete and independently reviewed; B 08374273 is owner-accepted implementation authority and C1 authority transition is complete. Targeted independent C1 authority-transition rereview is the current gate; C2 archive, integration, E2 resume, default cutover and push remain unauthorized.",
   "package": "core-kernel",
@@ -11,7 +11,7 @@
   "creator": "ATOM",
   "assignee": "ATOM",
   "createdAt": "2026-08-26",
-  "completedAt": null,
+  "completedAt": "2026-08-29",
   "branch": "codex/rkp-1a-public-json-property-cap-scale-compatibility-repair",
   "base_branch": "codex/rkp-2-stage-6-private-scale-evidence-seam-repair",
   "worktree_path": ".worktrees/rkp-1a-public-json-property-cap-scale-compatibility-repair",
@@ -233,7 +233,13 @@
     "p4_candidate_freeze_user_authorization": "separate_user_authorization_received_after_independently_accepted_replacement_A3",
     "p4_independent_implementation_audit": "passed_08374273b05bc992e749a17a959b64af0f293f0b_P0_0_P1_0_P2_0",
     "p4_independent_implementation_rereview": "passed",
-    "p4_independent_implementation_audit_result": {"candidate_commit":"08374273b05bc992e749a17a959b64af0f293f0b","P0":0,"P1":0,"P2":0,"verdict":"pass_for_bounded_RKP1A_acceptance_closeout_planning_only"},
+    "p4_independent_implementation_audit_result": {
+      "candidate_commit": "08374273b05bc992e749a17a959b64af0f293f0b",
+      "P0": 0,
+      "P1": 0,
+      "P2": 0,
+      "verdict": "pass_for_bounded_RKP1A_acceptance_closeout_planning_only"
+    },
     "historical_rejected_B_snapshot": "634ed8be67aea532f45dc4412288a24618543c90_return_P0_0_P1_2_P2_0_historical_not_live_authority",
     "p4_production_implementation_authorized": false,
     "p4_entry_planning_amendment": {
@@ -271,7 +277,7 @@
       "b_workspace_law_projection_path": "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
       "b_candidate_ready_only": true,
       "b_execution_authorized": true,
-       "b_status": "owner_accepted_implementation_authority_C1_complete_08374273_archive_and_integration_not_authorized",
+      "b_status": "owner_accepted_implementation_authority_C1_complete_08374273_archive_and_integration_not_authorized",
       "b_accept_archive_integration_E2_authorized": false,
       "rollback": "later_exact_eight_path_governance_descendant_restores_seven_lifecycle_paths_to_accepted_A3_P4_not_ready_and_locks_B_to_rollback_not_git_revert_B_or_A3"
     },
@@ -432,9 +438,9 @@
       "accepted_B": "08374273b05bc992e749a17a959b64af0f293f0b",
       "independent_implementation_audit": "passed_P0_0_P1_0_P2_0",
       "status": "C1_accepted_B_authority_transition_complete_targeted_independent_C1_rereview_pending",
-       "owner_acceptance_recorded": true,
+      "owner_acceptance_recorded": true,
       "accept_archive_integration_authorized": false
     },
-     "next_gate": "targeted_independent_C1_accepted_B_authority_transition_rereview"
+    "next_gate": "targeted_independent_C1_accepted_B_authority_transition_rereview"
   }
 }
