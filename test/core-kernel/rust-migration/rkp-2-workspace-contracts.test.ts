@@ -114,6 +114,8 @@ const RKP1A_ACCEPTED_P4_A3_HEAD =
   "3063e0972072e246d43add8640ba1fe1ad02d787";
 const RKP1A_ACCEPTED_B =
   "08374273b05bc992e749a17a959b64af0f293f0b";
+const RKP1A_C2_ARCHIVE_COMMIT =
+  "00754ca22ea2422ff849b9a7f6e5ba4b8767e094";
 const RKP1A_ACTIVE_ROOT =
   ".trellis/tasks/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair";
 const RKP1A_ARCHIVE_ROOT =
@@ -227,6 +229,17 @@ const RKP1A_CURRENT_ARCHIVE_FILES = [
   `${RKP1A_ARCHIVE_ROOT}/research/file-test-ownership-matrix.md`,
   `${RKP1A_ARCHIVE_ROOT}/research/planning-self-audit.md`,
   `${RKP1A_ARCHIVE_ROOT}/research/implementation-evidence.md`,
+] as const;
+const RKP1A_ARCHIVED_IMMUTABLE_AUTHORITY_FILES = [
+  `${RKP1A_ARCHIVE_ROOT}/prd.md`,
+  `${RKP1A_ARCHIVE_ROOT}/design.md`,
+  `${RKP1A_ARCHIVE_ROOT}/implement.md`,
+  `${RKP1A_ARCHIVE_ROOT}/implement.jsonl`,
+  `${RKP1A_ARCHIVE_ROOT}/check.jsonl`,
+  `${RKP1A_ARCHIVE_ROOT}/research/root-cause-and-exact-node-count.md`,
+  `${RKP1A_ARCHIVE_ROOT}/research/authority-and-consumer-impact-map.md`,
+  `${RKP1A_ARCHIVE_ROOT}/research/file-test-ownership-matrix.md`,
+  `${RKP1A_ARCHIVE_ROOT}/research/planning-self-audit.md`,
 ] as const;
 const STAGE_6_TECHNICAL_PATHS = [
   "test/core-kernel/rust-migration/rkp-2-live-score-store-parity.test.ts",
@@ -1310,10 +1323,91 @@ test("RKP-1A P4 candidate freeze is exact on accepted A3", () => {
   assert.equal(RKP1A_CURRENT_ARCHIVE_FILES.length, 13);
   for (const path of RKP1A_HISTORICAL_ACTIVE_FILES) {
     assert.doesNotThrow(() => gitTextAt(RKP1A_ACCEPTED_B, path));
-    assert.equal(existsSync(resolve(path)), true, `historical active file missing: ${path}`);
+    assert.equal(existsSync(resolve(path)), false, `active authority remains after C2: ${path}`);
   }
   for (const path of RKP1A_CURRENT_ARCHIVE_FILES) {
-    assert.equal(existsSync(resolve(path)), false, `archive exists before C2: ${path}`);
+    assert.equal(existsSync(resolve(path)), true, `archive authority missing after C2: ${path}`);
+  }
+
+  const archivedTaskPath = `${RKP1A_ARCHIVE_ROOT}/task.json`;
+  const archivedTask = JSON.parse(readText(archivedTaskPath)) as {
+    status?: unknown;
+    completedAt?: unknown;
+    relatedFiles?: unknown;
+    meta?: { immutable_planning_authority?: unknown };
+  };
+  const c2ArchivedTask = JSON.parse(
+    gitTextAt(RKP1A_C2_ARCHIVE_COMMIT, archivedTaskPath),
+  ) as {
+    relatedFiles?: unknown;
+    meta?: { immutable_planning_authority?: unknown };
+  };
+  assert.equal(archivedTask.status, "completed");
+  assert.equal(archivedTask.completedAt, "2026-08-29");
+  assert.ok(Array.isArray(archivedTask.relatedFiles));
+  assert.ok(Array.isArray(c2ArchivedTask.relatedFiles));
+  assert.deepEqual(
+    archivedTask.relatedFiles.slice(0, 12),
+    RKP1A_CURRENT_ARCHIVE_FILES.slice(1),
+    "only current self relatedFiles move to the archive root",
+  );
+  assert.deepEqual(
+    archivedTask.relatedFiles.slice(12),
+    c2ArchivedTask.relatedFiles.slice(12),
+    "historical and external relatedFiles remain byte-semantic C2 values",
+  );
+
+  const archivedRegistry = archivedTask.meta?.immutable_planning_authority;
+  const c2Registry = c2ArchivedTask.meta?.immutable_planning_authority;
+  assert.ok(archivedRegistry && typeof archivedRegistry === "object");
+  assert.ok(c2Registry && typeof c2Registry === "object");
+  const archivedHashes = archivedRegistry as Record<string, unknown>;
+  const c2Hashes = c2Registry as Record<string, unknown>;
+  assert.deepEqual(
+    Object.keys(archivedHashes).sort(),
+    [...RKP1A_ARCHIVED_IMMUTABLE_AUTHORITY_FILES].sort(),
+    "archived immutable authority registry has the exact nine current archive paths",
+  );
+  for (const path of RKP1A_ARCHIVED_IMMUTABLE_AUTHORITY_FILES) {
+    const c2Path = path.replace(RKP1A_ARCHIVE_ROOT, RKP1A_ACTIVE_ROOT);
+    assert.equal(archivedHashes[path], sha256(readText(path)), path);
+    if (path.endsWith("implement.jsonl") || path.endsWith("check.jsonl")) {
+      assert.notEqual(archivedHashes[path], c2Hashes[c2Path], path);
+    } else {
+      assert.equal(archivedHashes[path], c2Hashes[c2Path], path);
+    }
+  }
+
+  const archiveRows = (path: string): Array<{ file: string; reason: string }> =>
+    lines(readText(path)).map((line) => JSON.parse(line) as { file: string; reason: string });
+  const c2ArchiveRows = (path: string): Array<{ file: string; reason: string }> =>
+    lines(gitTextAt(RKP1A_C2_ARCHIVE_COMMIT, path)).map(
+      (line) => JSON.parse(line) as { file: string; reason: string },
+    );
+  for (const [path, firstChangedRow, lastChangedRow] of [
+    [`${RKP1A_ARCHIVE_ROOT}/implement.jsonl`, 6, 9],
+    [`${RKP1A_ARCHIVE_ROOT}/check.jsonl`, 5, 10],
+  ] as const) {
+    const currentRows = archiveRows(path);
+    const c2Rows = c2ArchiveRows(path);
+    assert.equal(new Set(currentRows.map((row) => row.file)).size, currentRows.length);
+    assert.equal(currentRows.length, c2Rows.length);
+    for (const [index, row] of currentRows.entries()) {
+      const c2Row = c2Rows[index];
+      assert.ok(c2Row);
+      assert.deepEqual(Object.keys(row), ["file", "reason"]);
+      assert.equal(existsSync(resolve(row.file)), true, row.file);
+      const oneBasedRow = index + 1;
+      if (oneBasedRow >= firstChangedRow && oneBasedRow <= lastChangedRow) {
+        assert.equal(row.reason, c2Row.reason);
+        assert.equal(
+          row.file,
+          c2Row.file.replace(RKP1A_ACTIVE_ROOT, RKP1A_ARCHIVE_ROOT),
+        );
+      } else {
+        assert.deepEqual(row, c2Row);
+      }
+    }
   }
 
   const capture = readText("src/core-kernel/codec/strict-input-capture.ts");

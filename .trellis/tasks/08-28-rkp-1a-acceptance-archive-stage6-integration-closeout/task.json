@@ -2,10 +2,10 @@
   "id": "rkp-1a-acceptance-archive-stage6-integration-closeout",
   "name": "rkp-1a-acceptance-archive-stage6-integration-closeout",
   "title": "RKP-1A Acceptance Archive and Stage6 Integration Closeout",
-  "description": "C0 planning passed and C1 accepted-B authority transition completed for independently passed RKP-1A P4 candidate 08374273; it now awaits targeted independent authority-transition rereview while C2-C5 remain planned and unexecuted.",
+  "description": "C0 planning, C1 accepted-B authority transition, C2 native archive and C3 archived self-authority repair are complete for independently passed RKP-1A P4 candidate 08374273; it now awaits the dedicated independent C3 archive-authority audit while C4-C5 remain planned and unexecuted.",
   "status": "in_progress",
   "dev_type": null,
-  "scope": "C0 planning passed and C1 accepted-B authority transition is complete pending targeted independent authority-transition rereview. C2 native archive, C3 archive self-reference repair, C4 Stage6 fast-forward-only integration and C5 independent closeout audit/archive remain planned, unexecuted and unauthorized; no Stage6 E2, push or production/test authority change.",
+  "scope": "C0 planning, C1 accepted-B authority transition, C2 native archive and C3 archive self-reference repair are complete pending the dedicated independent C3 archive-authority audit. C4 Stage6 fast-forward-only integration and C5 independent closeout audit/archive remain planned, unexecuted and unauthorized; no Stage6 E2, push or production/test authority change.",
   "package": null,
   "priority": "P1",
   "creator": "ATOM",
@@ -39,7 +39,7 @@
     ".trellis/scripts/task.py",
     ".trellis/spec/core-kernel/backend/rust-runtime-transition.md"
   ],
-  "notes": "IN_PROGRESS / C1 ACCEPTED-B AUTHORITY TRANSITION COMPLETE / B 08374273 OWNER-ACCEPTED IMPLEMENTATION AUTHORITY / RKP-2 SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 E1+E1R GREEN E2-E3 FALSE / C2-C5 NOT STARTED / NO ARCHIVE INTEGRATION PUSH CUTOVER QUALIFICATION OR RKP-3.",
+  "notes": "IN_PROGRESS / C1 ACCEPTED-B AUTHORITY TRANSITION AND C2 NATIVE ARCHIVE AUDITED PASS / C3 ARCHIVE AUTHORITY REPAIRED / B 08374273 ACCEPTED ARCHIVED AUTHORITY / RKP-2 SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 E1+E1R GREEN E2-E3 FALSE / CURRENT GATE DEDICATED INDEPENDENT C3 ARCHIVE-AUTHORITY AUDIT / C4-C5 NOT STARTED / NO INTEGRATION PUSH CUTOVER QUALIFICATION OR RKP-3.",
   "meta": {
     "planning_base_commit": "08374273b05bc992e749a17a959b64af0f293f0b",
     "planning_source_branch": "codex/rkp-1a-acceptance-archive-stage6-integration-closeout",
@@ -78,7 +78,7 @@
       "status": "owner_accepted_implementation_authority"
     },
     "c1_immutable_implementation_range": "639e93555c15b46c54c8e9bb7ec610d4a77c7478_to_08374273b05bc992e749a17a959b64af0f293f0b_exact_RKP1A_technical_and_planning_path_sets",
-    "c1_current_root_inventory": "historical_active_13_of_13_present_current_archive_0_of_13_present_C2_C3_transition_remains_fail_closed",
+    "c1_current_root_inventory": "historical_B_active_root_blobs_13_of_13_immutable_current_active_0_of_13_archive_13_of_13_C3_authority_repaired",
     "c1_workspace_law_result": {
       "total": 10,
       "pass": 7,
@@ -91,8 +91,16 @@
       ],
       "additional_failure_or_attribution_change_blocks": true
     },
-    "c1_independent_authority_transition_audit": "pending_targeted_rereview",
-    "review_status": "C1_COMPLETE_READY_FOR_TARGETED_INDEPENDENT_ACCEPTED_B_AUTHORITY_TRANSITION_REREVIEW",
+    "c1_independent_authority_transition_audit": "passed_4639871e0c3187c3e959ffcd84a4738b9d141333_P0_0_P1_0_P2_0",
+    "c2_native_archive_commit": "00754ca22ea2422ff849b9a7f6e5ba4b8767e094",
+    "c2_native_archive_audit": "passed_00754ca22ea2422ff849b9a7f6e5ba4b8767e094_P0_0_P1_0_P2_0_archive_inventory_13_of_13",
+    "c2_archive_inventory": "active_0_of_13_archive_13_of_13_native_archive_complete",
+    "c3_user_authorization": "explicit_user_authorization_archive_authority_repair_only_C4_C5_E2_E3_integration_push_not_authorized",
+    "c3_started": true,
+    "c3_completed": true,
+    "c3_archive_authority": "current_self_references_repaired_active_absent_archive_13_of_13",
+    "c3_independent_archive_authority_audit": "pending_dedicated_independent_C3_archive_authority_audit",
+    "review_status": "C3_COMPLETE_READY_FOR_DEDICATED_INDEPENDENT_ARCHIVE_AUTHORITY_AUDIT",
     "c0_workspace_law_expected": {
       "total": 10,
       "pass": 6,

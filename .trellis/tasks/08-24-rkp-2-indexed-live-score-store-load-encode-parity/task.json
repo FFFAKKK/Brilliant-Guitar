@@ -309,7 +309,7 @@
       "post_pass_closeout_authorized": true,
       "stage_6_blocked_until_accepted_archived_integrated": false
     },
-    "next_gate": "targeted_independent_C1_accepted_B_authority_transition_rereview",
+    "next_gate": "dedicated_independent_C3_archive_authority_audit",
     "stage_6_started": true,
     "stage_6_authorized": true,
     "stage_6_completed": false,
@@ -349,12 +349,12 @@
       "implementation_stage": "E1_and_E1R_private_rust_seam_green_E2_not_started",
       "external_blocker": "public-json-property-cap-contract-conflict",
       "external_blocking_task": "08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair",
-      "rkp1a_state": "P0_P1_P2_P3A_P3B_complete_historical_authorizations_consumed_audited_through_e4103b7_replacement_A3_3063e097_planning_pass_P4_B_08374273_owner_accepted_implementation_authority_C1_accepted_B_authority_transition_complete_targeted_independent_C1_rereview_pending",
-      "rkp1a_follow_up_order": "targeted_independent_C1_authority_transition_rereview_then_C2_C3_C4_C5_closeout_lifecycle_then_stage6_docs_authority_amendment_planning_review_E1R2_audit_then_separate_E2_authorization",
+      "rkp1a_state": "P0_P1_P2_P3A_P3B_complete_historical_authorizations_consumed_audited_through_e4103b7_replacement_A3_3063e097_planning_pass_P4_B_08374273_accepted_archived_authority_C1_transition_pass_C2_archive_pass_C3_authority_repaired_dedicated_independent_C3_audit_pending",
+      "rkp1a_follow_up_order": "dedicated_independent_C3_archive_authority_audit_then_C4_C5_closeout_lifecycle_then_stage6_docs_authority_amendment_planning_review_E1R2_audit_then_separate_E2_authorization",
       "p4_independent_implementation_audit": "08374273b05bc992e749a17a959b64af0f293f0b_pass_P0_0_P1_0_P2_0",
       "closeout_planning_child": "08-28-rkp-1a-acceptance-archive-stage6-integration-closeout",
-      "closeout_C1_accepted_B_authority": "08374273b05bc992e749a17a959b64af0f293f0b_owner_accepted_C1_complete",
-      "next_gate": "targeted_independent_C1_accepted_B_authority_transition_rereview"
+      "closeout_C1_accepted_B_authority": "08374273b05bc992e749a17a959b64af0f293f0b_owner_accepted_C1_complete_C2_archive_pass_C3_authority_repaired",
+      "next_gate": "dedicated_independent_C3_archive_authority_audit"
     },
     "part_owner_wire_contract_repair": {
       "child": "08-26-rkp-2-part-owner-wire-contract-repair",
@@ -432,8 +432,8 @@
       "targeted_planning_rereview": "replacement_A3_3063e097_pass_0_0_0",
       "successor_limit": 1572864,
       "stage_6_e2_started": false,
-      "closeout_C1_accepted_B_authority": "08374273b05bc992e749a17a959b64af0f293f0b_owner_accepted_C1_complete",
-      "next_gate": "targeted_independent_C1_accepted_B_authority_transition_rereview"
+      "closeout_C1_accepted_B_authority": "08374273b05bc992e749a17a959b64af0f293f0b_owner_accepted_C1_complete_C2_archive_pass_C3_authority_repaired",
+      "next_gate": "dedicated_independent_C3_archive_authority_audit"
     },
     "archive_authorized": false,
     "push_authorized": false,

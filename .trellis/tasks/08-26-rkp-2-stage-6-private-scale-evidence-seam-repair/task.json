@@ -241,10 +241,10 @@
       "task": "08-28-rkp-1a-acceptance-archive-stage6-integration-closeout",
       "accepted_B": "08374273b05bc992e749a17a959b64af0f293f0b",
       "independent_implementation_audit": "passed_P0_0_P1_0_P2_0",
-      "status": "C1_accepted_B_authority_transition_completed_independent_C1_audit_pending",
+      "status": "C1_authority_transition_and_C2_native_archive_audits_passed_C3_archive_authority_repaired_dedicated_independent_C3_audit_pending",
       "E2_authorized": false
     },
-    "next_gate": "dedicated_independent_C1_accepted_B_authority_transition_audit",
+    "next_gate": "dedicated_independent_C3_archive_authority_audit",
     "archive_authorized": false,
     "push_authorized": false,
     "default_runtime_switch_authorized": false,
