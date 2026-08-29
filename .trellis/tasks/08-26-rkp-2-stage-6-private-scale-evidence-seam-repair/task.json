@@ -40,7 +40,7 @@
     "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "IN_PROGRESS / ACCEPTED PLANNING D638B81 / E0 COMPLETE / E1+E1R GREEN / E2-E3 NOT STARTED / PUBLIC JSON PROPERTY CAP BLOCKER / RKP-2 PAUSED / RKP-1A P0-P3B HISTORY AUDITED THROUGH E4103B7 / P4-B 08374273 OWNER-ACCEPTED IMPLEMENTATION AUTHORITY C1 COMPLETE / CURRENT EXTERNAL GATE INDEPENDENT C1 AUTHORITY TRANSITION AUDIT / TYPESCRIPT DEFAULT.",
+  "notes": "IN_PROGRESS / ACCEPTED PLANNING D638B81 / E0 COMPLETE / E1+E1R GREEN / E2-E3 NOT STARTED / RKP-2 PAUSED / RKP-1A P0-P3B HISTORY AUDITED THROUGH E4103B7 / P4-B 08374273 ACCEPTED ARCHIVED INTEGRATED AUTHORITY / C1-C3 AUDITED PASS / C4 STAGE6 FF-ONLY INTEGRATION PROJECTION COMPLETE / CURRENT EXTERNAL GATE DEDICATED INDEPENDENT B-TO-C4 CLOSEOUT AUDIT / TYPESCRIPT DEFAULT.",
   "meta": {
     "planning_base_commit": "4a302bc9f9981940336fc97941b08e09bd0d1f67",
     "source_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -102,7 +102,7 @@
       "task": "08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair",
       "planning_base": "639e93555c15b46c54c8e9bb7ec610d4a77c7478",
       "root_cause_audit": "P0_0_P1_2_P2_0_P3_capture_profile_and_canonical_role",
-      "status": "in_progress",
+      "status": "accepted_archived_integrated_C4_closeout_audit_pending",
       "independent_planning_review": "passed",
       "first_independent_planning_review": "c02c830_return_0_3_1_for_bounded_planning_repair",
       "targeted_independent_planning_rereview": "1cd0caadff218c1471f67cdf1a1ab78f5653a605_pass_0_0_0_for_bounded_activation",
@@ -131,7 +131,7 @@
       "p3b_independent_implementation_review": "e4103b779574fcdc728d024c1b8f30244cb332c3_pass_P0_0_P1_0_P2_0_for_bounded_P4",
       "p4_entry_audit": "e4103b7_return_P0_0_P1_1_P2_0_then_A1_A2_bounded_planning_repairs_P0_0_P1_2_P2_0",
       "targeted_planning_rereview": "replacement_A3_3063e097_pass_0_0_0",
-      "follow_up_order": "targeted_P4_implementation_rereview_then_accept_archive_integrate_then_stage6_docs_authority_amendment_planning_review_E1R2_audit_then_separate_E2_authorization"
+      "follow_up_order": "dedicated_independent_B_to_C4_closeout_audit_then_C5_terminal_archive_then_stage6_docs_authority_amendment_planning_review_E1R2_audit_then_separate_E2_authorization"
     },
     "e3_candidate_freeze_started": false,
     "root_cause_audit": {
@@ -241,10 +241,10 @@
       "task": "08-28-rkp-1a-acceptance-archive-stage6-integration-closeout",
       "accepted_B": "08374273b05bc992e749a17a959b64af0f293f0b",
       "independent_implementation_audit": "passed_P0_0_P1_0_P2_0",
-      "status": "C1_authority_transition_and_C2_native_archive_audits_passed_C3_archive_authority_repaired_dedicated_independent_C3_audit_pending",
+      "status": "C1_C2_C3_audits_passed_C4_stage6_ff_only_integration_projection_completed_dedicated_independent_B_to_C4_closeout_audit_pending",
       "E2_authorized": false
     },
-    "next_gate": "dedicated_independent_C3_archive_authority_audit",
+    "next_gate": "dedicated_independent_B_to_C4_closeout_audit",
     "archive_authorized": false,
     "push_authorized": false,
     "default_runtime_switch_authorized": false,
