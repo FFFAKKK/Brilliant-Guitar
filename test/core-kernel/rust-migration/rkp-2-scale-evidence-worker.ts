@@ -2,12 +2,13 @@ import { spawn, spawnSync } from "node:child_process";
 import {
   existsSync,
   lstatSync,
-  mkdtempSync,
+  mkdirSync,
   readFileSync,
   rmSync,
   statSync,
   writeFileSync,
 } from "node:fs";
+import { randomBytes } from "node:crypto";
 import { tmpdir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 
@@ -23,6 +24,8 @@ export const PRIVATE_SCALE_TIMEOUT_MS = 180_000 as const;
 export const PRIVATE_SCALE_POLL_INTERVAL_MS = 25 as const;
 export const PRIVATE_SCALE_STREAM_LIMIT_BYTES = 1_048_576 as const;
 export const PRIVATE_SCALE_REAP_TIMEOUT_MS = 5_000 as const;
+export const PRIVATE_SCALE_LEAF_PREFIX = "rkp2-scale-e2-" as const;
+export const PRIVATE_SCALE_OWNERSHIP_MARKER = "ownership.json" as const;
 
 const MAX_SAFE = Number.MAX_SAFE_INTEGER;
 const FAILURE_CODES = [
@@ -427,6 +430,7 @@ async function spawnPowerShell(script: string, executable: string, requestPath: 
   return await new Promise((resolvePromise) => {
     const stdout: Buffer[] = [];
     const stderr: Buffer[] = [];
+    const deadline = Date.now() + PRIVATE_SCALE_TIMEOUT_MS;
     let child: ReturnType<typeof spawn>;
     try {
       child = spawn(process.env.BRILLIANT_RKP2_PWSH ?? "pwsh", [
@@ -440,6 +444,7 @@ async function spawnPowerShell(script: string, executable: string, requestPath: 
       return;
     }
     let timeout: NodeJS.Timeout | undefined;
+    let acceptancePoll: NodeJS.Timeout | undefined;
     let reapTimeout: NodeJS.Timeout | undefined;
     let settled = false;
     let timedOut = false;
@@ -448,6 +453,7 @@ async function spawnPowerShell(script: string, executable: string, requestPath: 
       if (settled) return;
       settled = true;
       if (timeout !== undefined) clearTimeout(timeout);
+      if (acceptancePoll !== undefined) clearInterval(acceptancePoll);
       if (reapTimeout !== undefined) clearTimeout(reapTimeout);
       resolvePromise({ stdout: Buffer.concat(stdout), stderr: Buffer.concat(stderr), exitCode, timedOut, handoffAccepted, launchFailed });
     };
@@ -472,8 +478,17 @@ async function spawnPowerShell(script: string, executable: string, requestPath: 
     };
     timeout = setTimeout(() => {
       requestTermination();
-    }, PRIVATE_SCALE_TIMEOUT_MS + PRIVATE_SCALE_REAP_TIMEOUT_MS);
-    child.once("spawn", () => { handoffAccepted = true; });
+    }, Math.max(0, deadline - Date.now()));
+    const marker = join(resolve(requestPath, ".."), PRIVATE_SCALE_OWNERSHIP_MARKER);
+    acceptancePoll = setInterval(() => {
+      try {
+        const value = JSON.parse(readFileSync(marker, "utf8")) as { state?: unknown; token?: unknown };
+        if (value.state === "accepted" && typeof value.token === "string" && value.token.length === 64) handoffAccepted = true;
+      } catch {
+        // The wrapper may already have removed an accepted root.  Its final envelope
+        // remains the only protocol result; Node never treats spawn as acceptance.
+      }
+    }, PRIVATE_SCALE_POLL_INTERVAL_MS);
     child.once("error", () => finish(null, true));
     if (child.stdout === null || child.stderr === null) {
       finish(null, true);
@@ -493,9 +508,11 @@ export async function runPrivateScaleEvidenceWorker(options: { readonly repoRoot
   const cargoExecutable = options.cargoExecutable ?? process.env.BRILLIANT_RKP2_CARGO ?? "cargo";
   const executable = selectPrivateScaleExecutable(runCargoCompile(cargoExecutable));
   const created = ensureFixtureRequest();
-  const leaf = mkdtempSync(join(tmpdir(), "rkp2-scale-e2-"));
+  const leaf = join(tmpdir(), `${PRIVATE_SCALE_LEAF_PREFIX}${randomBytes(32).toString("hex")}`);
+  mkdirSync(leaf, { recursive: false });
   const requestPath = join(leaf, "request.json");
   writeFileSync(requestPath, created.request, { flag: "wx" });
+  writeFileSync(join(leaf, PRIVATE_SCALE_OWNERSHIP_MARKER), JSON.stringify({ schemaVersion: 1, state: "offered", token: leaf.slice(leaf.lastIndexOf(PRIVATE_SCALE_LEAF_PREFIX) + PRIVATE_SCALE_LEAF_PREFIX.length) }), { flag: "wx" });
   const started = process.hrtime.bigint();
   let handoffAccepted = false;
   try {

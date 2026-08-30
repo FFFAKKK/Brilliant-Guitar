@@ -18,6 +18,8 @@ $requestEnv = "BRILLIANT_RKP2_SCALE_REQUEST_V1"
 $reapTimeoutMs = 5000
 $maxSafe = 9007199254740991
 $expectedTestName = "indices::tests::rkp2_stage_6_private_scale_evidence_v1"
+$ownershipMarkerName = "ownership.json"
+$ownershipLeafPrefix = "rkp2-scale-e2-"
 
 function New-ProcessState {
   return [ordered]@{
@@ -128,6 +130,22 @@ function Get-PreflightFailure {
     if (($exe.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -or ($request.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -or ($rootItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -or $exe.PSIsContainer -or $request.PSIsContainer) {
       return [ordered]@{ stage = "arguments"; reason = "identity" }
     }
+    $expectedParent = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar)
+    $normalizedRoot = [IO.Path]::GetFullPath($rootPath).TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar)
+    $token = $null
+    if ([IO.Path]::GetDirectoryName($normalizedRoot) -ne $expectedParent -or [IO.Path]::GetFileName($normalizedRoot) -notmatch "^$ownershipLeafPrefix([0-9a-f]{64})$") {
+      return [ordered]@{ stage = "arguments"; reason = "identity" }
+    }
+    $token = $Matches[1]
+    $markerPath = Join-Path $normalizedRoot $ownershipMarkerName
+    if (-not (Test-Path -LiteralPath $markerPath -PathType Leaf)) { return [ordered]@{ stage = "arguments"; reason = "identity" } }
+    $children = @(Get-ChildItem -LiteralPath $normalizedRoot -Force -ErrorAction Stop | ForEach-Object { $_.Name } | Sort-Object)
+    if ($children.Count -ne 2 -or $children[0] -ne $ownershipMarkerName -or $children[1] -ne "request.json") { return [ordered]@{ stage = "arguments"; reason = "identity" } }
+    try { $marker = Get-Content -LiteralPath $markerPath -Raw -Encoding UTF8 | ConvertFrom-Json -AsHashtable -Depth 4 } catch { return [ordered]@{ stage = "arguments"; reason = "identity" } }
+    if ($marker.Count -ne 3 -or $marker.schemaVersion -ne 1 -or $marker.state -ne "offered" -or $marker.token -ne $token) { return [ordered]@{ stage = "arguments"; reason = "identity" } }
+    [IO.File]::WriteAllText($markerPath, ("{`"schemaVersion`":1,`"state`":`"accepted`",`"token`":`"$token`"}"), [Text.UTF8Encoding]::new($false))
+    $script:root = $normalizedRoot
+    $script:handoffAccepted = $true
     return $null
   } catch {
     return [ordered]@{ stage = "arguments"; reason = "identity" }
@@ -140,6 +158,7 @@ $child = $null
 $stdoutPath = $null
 $stderrPath = $null
 $root = $null
+$handoffAccepted = $false
 $hadRequestEnv = Test-Path "Env:$requestEnv"
 $priorRequestEnv = [Environment]::GetEnvironmentVariable($requestEnv, "Process")
 $cleanupTarget = $null
@@ -152,7 +171,7 @@ try {
     # No request/root ownership was accepted, so no recursive cleanup may run.
     $processState.cleanupStatus = "failed"
   } else {
-    $root = [IO.Path]::GetDirectoryName($RequestPath)
+    if (-not $handoffAccepted -or $null -eq $root) { throw "ownership acceptance missing" }
     $stdoutPath = Join-Path $root "libtest.stdout"
     $stderrPath = Join-Path $root "libtest.stderr"
     [Environment]::SetEnvironmentVariable($requestEnv, $RequestPath, "Process")
@@ -207,7 +226,7 @@ try {
 } finally {
   if ($null -ne $child) { try { $child.Dispose() } catch {} }
   if ($hadRequestEnv) { [Environment]::SetEnvironmentVariable($requestEnv, $priorRequestEnv, "Process") } else { [Environment]::SetEnvironmentVariable($requestEnv, $null, "Process") }
-  if ($null -ne $root) {
+  if ($handoffAccepted -and $null -ne $root) {
     Remove-OwnedPath $RequestPath "request"
     if ($null -ne $stdoutPath) { Remove-OwnedPath $stdoutPath "stdout" }
     if ($null -ne $stderrPath) { Remove-OwnedPath $stderrPath "stderr" }

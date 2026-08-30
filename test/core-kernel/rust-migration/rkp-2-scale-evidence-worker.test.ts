@@ -1,5 +1,6 @@
 import assert = require("node:assert/strict");
 import { spawnSync } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { readFileSync } from "node:fs";
@@ -181,7 +182,7 @@ test("Stage 6 E2 preserves the first primary and rejects invalid settlement comb
 
 test("Stage 6 E2 preflight rejects before ownership and leaves external markers intact", () => {
   const root = mkdtempSync(join(tmpdir(), "rkp2-scale-e2-preflight-"));
-  const requestRoot = join(root, "external-marker-root");
+  const requestRoot = join(tmpdir(), `rkp2-scale-e2-${randomBytes(32).toString("hex")}`);
   const marker = join(requestRoot, "marker.txt");
   const script = resolve(process.cwd(), "test", "core-kernel", "rust-migration", "rkp-2-scale-evidence-process.ps1");
   const invalidExe = join(root, "invalid.exe");
@@ -194,11 +195,13 @@ test("Stage 6 E2 preflight rejects before ownership and leaves external markers 
   try {
     mkdirSync(requestRoot);
     writeFileSync(marker, "must-survive", { flag: "wx" });
+    writeFileSync(join(requestRoot, "request.json"), "{}", { flag: "wx" });
     writeFileSync(invalidExe, Buffer.alloc(0), { flag: "wx" });
     writeFileSync(wrongExe, Buffer.alloc(0), { flag: "wx" });
     const preflightCases: ReadonlyArray<readonly [string, string, string]> = [
       [join(requestRoot, "missing-request.json"), "indices::tests::rkp2_stage_6_private_scale_evidence_v1", invalidExe],
       [join(requestRoot, "wrong-leaf.json"), "indices::tests::rkp2_stage_6_private_scale_evidence_v1", invalidExe],
+      [join(requestRoot, "request.json"), "indices::tests::rkp2_stage_6_private_scale_evidence_v1", invalidExe],
       [join(requestRoot, "missing-request.json"), "wrong::test", invalidExe],
       [join(requestRoot, "missing-request.json"), "indices::tests::rkp2_stage_6_private_scale_evidence_v1", wrongExe],
     ];
@@ -217,19 +220,23 @@ test("Stage 6 E2 preflight rejects before ownership and leaves external markers 
       assert.equal(existsSync(requestRoot), true);
     }
   } finally {
+    rmSync(requestRoot, { recursive: true, force: true, maxRetries: 2, retryDelay: 25 });
     rmSync(root, { recursive: true, force: true, maxRetries: 2, retryDelay: 25 });
   }
 });
 
 test("Stage 6 E2 real post-handoff Start-Process failure is bounded and cleans its owned root", () => {
   const root = mkdtempSync(join(tmpdir(), "rkp2-scale-e2-start-failure-"));
-  const requestRoot = join(root, "owned");
+  const token = randomBytes(32).toString("hex");
+  const requestRoot = join(tmpdir(), `rkp2-scale-e2-${token}`);
   const request = join(requestRoot, "request.json");
+  const marker = join(requestRoot, "ownership.json");
   const invalidExe = join(root, "invalid-libtest.exe");
   const script = resolve(process.cwd(), "test", "core-kernel", "rust-migration", "rkp-2-scale-evidence-process.ps1");
   try {
     mkdirSync(requestRoot);
     writeFileSync(request, "{}", { flag: "wx" });
+    writeFileSync(marker, JSON.stringify({ schemaVersion: 1, state: "offered", token }), { flag: "wx" });
     writeFileSync(invalidExe, Buffer.alloc(0), { flag: "wx" });
     const result = spawnSync(process.env.BRILLIANT_RKP2_PWSH ?? "pwsh", [
       "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", script,
@@ -250,6 +257,7 @@ test("Stage 6 E2 real post-handoff Start-Process failure is bounded and cleans i
     }
     assert.equal(existsSync(requestRoot), false);
   } finally {
+    rmSync(requestRoot, { recursive: true, force: true, maxRetries: 2, retryDelay: 25 });
     rmSync(root, { recursive: true, force: true, maxRetries: 2, retryDelay: 25 });
   }
 });
