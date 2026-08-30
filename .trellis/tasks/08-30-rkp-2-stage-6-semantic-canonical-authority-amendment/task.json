@@ -55,7 +55,7 @@
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
     ".trellis/spec/core-kernel/backend/rust-runtime-transition.md"
   ],
-  "notes": "PLANNING PASS EBC13E P0_0_P1_0_P2_0 / A0 ACTIVATED / E1R2 TECHNICAL HEAD DB7AB2 AND TARGETED REREVIEW CA670FD PASS P0_0_P1_0_P2_0 / HISTORICAL E2 AUDIT 2050F386 RETURNED P0_1_P1_4_P2_0 / B328786 BOUNDED E2 WORKER PROCESS REPAIR CANDIDATE READY FOR TARGETED INDEPENDENT REREVIEW / E3 S6_2 S6_3 NOT STARTED / TYPESCRIPT DEFAULT / NO ARCHIVE INTEGRATION PUSH CUTOVER QUALIFICATION OR RKP3.",
+  "notes": "PLANNING PASS EBC13E P0_0_P1_0_P2_0 / A0 ACTIVATED / E1R2 TECHNICAL HEAD DB7AB2 AND TARGETED REREVIEW CA670FD PASS P0_0_P1_0_P2_0 / HISTORICAL E2 AUDITS 2050F386 P0_1_P1_4_P2_0 AND C7AA242 P0_1_P1_3_P2_0 / SECOND FOUR-PATH E2 WORKER PROCESS REPAIR 9718952 CANDIDATE READY FOR TARGETED INDEPENDENT REREVIEW / E3 S6_2 S6_3 NOT STARTED / TYPESCRIPT DEFAULT / NO ARCHIVE INTEGRATION PUSH CUTOVER QUALIFICATION OR RKP3.",
   "meta": {
     "planning_base_commit": "d14d73117e03822a52fd19c55f3024cb2b73ef45",
     "planning_source_branch": "codex/rkp-2-stage-6-private-scale-evidence-seam-repair",
@@ -140,6 +140,15 @@
       },
       "repair_technical_commit": "b328786289323d8de725f777d2bd55eaa2732b74",
       "technical_repair_completed": true,
+      "second_audited_technical_head": "c7aa242b359401f76cd05944404cfc686854bec4",
+      "second_independent_implementation_audit": {
+        "P0": 1,
+        "P1": 3,
+        "P2": 0,
+        "verdict": "return_for_bounded_E2_implementation_repair"
+      },
+      "second_repair_technical_commit": "971895236fa778f370d47a574e9dc79b319150b7",
+      "second_technical_repair_completed": true,
       "candidate_ready": true,
       "targeted_independent_implementation_rereview": "pending",
       "E3_S6_2_S6_3_started": false

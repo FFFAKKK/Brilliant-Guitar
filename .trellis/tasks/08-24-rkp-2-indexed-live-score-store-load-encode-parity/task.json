@@ -42,7 +42,7 @@
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "RKP-2 IN_PROGRESS AND SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 E1+E1R GREEN AND 08-30 E1R2 TARGETED REREVIEW CA670FD PASS P0_0_P1_0_P2_0 / HISTORICAL E2 AUDIT 2050F386 RETURN P0_1_P1_4_P2_0 / B328786 E2 REPAIR CANDIDATE READY FOR TARGETED INDEPENDENT REREVIEW / E3 S6.2-S6.3 FALSE / RKP-1A P4-B 08374273 ACCEPTED ARCHIVED INTEGRATED AUTHORITY / C1-C5 AND FINAL C5 AUDIT D14D731 PASSED / TYPESCRIPT DEFAULT / NO CUTOVER PUSH QUALIFICATION OR RKP-3.",
+  "notes": "RKP-2 IN_PROGRESS AND SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 E1+E1R GREEN AND 08-30 E1R2 TARGETED REREVIEW CA670FD PASS P0_0_P1_0_P2_0 / HISTORICAL E2 AUDITS 2050F386 P0_1_P1_4_P2_0 AND C7AA242 P0_1_P1_3_P2_0 / SECOND FOUR-PATH E2 REPAIR 9718952 CANDIDATE READY FOR TARGETED INDEPENDENT REREVIEW / E3 S6.2-S6.3 FALSE / RKP-1A P4-B 08374273 ACCEPTED ARCHIVED INTEGRATED AUTHORITY / C1-C5 AND FINAL C5 AUDIT D14D731 PASSED / TYPESCRIPT DEFAULT / NO CUTOVER PUSH QUALIFICATION OR RKP-3.",
   "meta": {
     "planning_base_commit": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "accepted_rkp1_audited_implementation_commit": "94387b339b5e4d9ce6b7f97597a1b56edd051f01",
@@ -107,7 +107,7 @@
     "current_planning_child": "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
     "stage6_semantic_canonical_authority_amendment": {
       "task": "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
-      "status": "E1R2_rereview_passed_E2_bounded_repair_candidate_ready_targeted_rereview_pending",
+      "status": "E1R2_rereview_passed_second_E2_bounded_repair_candidate_ready_targeted_rereview_pending",
       "accepted_planning_head": "eb0c13ed5ac218cfec9a983a4bc4e8dfb89acbd7",
       "independent_planning_review": "passed_P0_0_P1_0_P2_0",
       "user_implementation_authorization_scope": "A0_and_E1R2_completed_then_separately_authorized_Stage6_E2_only",
@@ -129,7 +129,7 @@
         "verdict": "pass_for_bounded_E1R2_implementation"
       },
       "implementation_review": "passed_dedicated_independent_E1R2_targeted_implementation_rereview",
-      "e2_bounded_repair": "2050f386_return_P0_1_P1_4_P2_0_repaired_by_b328786289323d8de725f777d2bd55eaa2732b74_targeted_independent_rereview_pending",
+      "e2_bounded_repair": "2050f386_return_P0_1_P1_4_P2_0_then_c7aa242_return_P0_1_P1_3_P2_0_repaired_by_971895236fa778f370d47a574e9dc79b319150b7_targeted_independent_rereview_pending",
       "next_gate": "dedicated_independent_E2_bounded_repair_rereview_pending"
     },
     "current_implementation_child": "08-26-rkp-2-stage-6-private-scale-evidence-seam-repair",
@@ -373,7 +373,7 @@
       "immutable_planning_authority_count": 9,
       "future_mutable_lifecycle_allowlist_count": 8,
       "future_technical_allowlist_count": 5,
-      "implementation_stage": "E1_E1R_E1R2_green_E2_bounded_repair_candidate_ready_targeted_rereview_pending",
+      "implementation_stage": "E1_E1R_E1R2_green_second_E2_bounded_repair_candidate_ready_targeted_rereview_pending",
       "external_blocker": "dedicated_independent_E2_bounded_repair_rereview_pending",
       "external_blocking_task": null,
       "rkp1a_state": "P0_P1_P2_P3A_P3B_complete_historical_authorizations_consumed_audited_through_e4103b7_replacement_A3_3063e097_planning_pass_P4_B_08374273_accepted_archived_C1_C2_C3_and_B_to_C4_passed_C4_stage6_ff_only_integrated_C5_A_native_archive_C5_B_terminal_projection_completed_final_C5_audit_passed_d14d731",
