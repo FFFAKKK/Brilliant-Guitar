@@ -110,12 +110,27 @@ function Get-RustEvidence([string] $Path) {
   }
 }
 
-function Assert-WrapperArguments {
+function Get-PreflightFailure {
   if ($TestName -ne $expectedTestName -or $TimeoutMs -ne 180000 -or $PollIntervalMs -ne 25 -or $MaxStdoutBytes -ne 1048576 -or $MaxStderrBytes -ne 1048576) {
-    Set-FirstFailure "process.protocol-invalid" ([ordered]@{ stage = "arguments"; reason = "identity" })
+    return [ordered]@{ stage = "arguments"; reason = "identity" }
   }
   if (-not [IO.Path]::IsPathFullyQualified($ExecutablePath) -or -not [IO.Path]::IsPathFullyQualified($RequestPath) -or -not (Test-Path -LiteralPath $ExecutablePath -PathType Leaf) -or -not (Test-Path -LiteralPath $RequestPath -PathType Leaf) -or -not $ExecutablePath.EndsWith(".exe", [StringComparison]::OrdinalIgnoreCase)) {
-    Set-FirstFailure "process.protocol-invalid" ([ordered]@{ stage = "arguments"; reason = "identity" })
+    return [ordered]@{ stage = "arguments"; reason = "identity" }
+  }
+  try {
+    $exe = Get-Item -LiteralPath $ExecutablePath -Force -ErrorAction Stop
+    $request = Get-Item -LiteralPath $RequestPath -Force -ErrorAction Stop
+    $rootPath = [IO.Path]::GetDirectoryName($RequestPath)
+    if ([string]::IsNullOrWhiteSpace($rootPath) -or [IO.Path]::GetFileName($RequestPath) -ne "request.json" -or -not (Test-Path -LiteralPath $rootPath -PathType Container)) {
+      return [ordered]@{ stage = "arguments"; reason = "identity" }
+    }
+    $rootItem = Get-Item -LiteralPath $rootPath -Force -ErrorAction Stop
+    if (($exe.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -or ($request.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -or ($rootItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -or $exe.PSIsContainer -or $request.PSIsContainer) {
+      return [ordered]@{ stage = "arguments"; reason = "identity" }
+    }
+    return $null
+  } catch {
+    return [ordered]@{ stage = "arguments"; reason = "identity" }
   }
 }
 
@@ -131,9 +146,13 @@ $cleanupTarget = $null
 $evidence = $null
 
 try {
-  Assert-WrapperArguments
-  $root = [IO.Path]::GetDirectoryName($RequestPath)
-  if ($null -eq $primaryFailure) {
+  $preflightFailure = Get-PreflightFailure
+  if ($null -ne $preflightFailure) {
+    Set-FirstFailure "process.protocol-invalid" $preflightFailure
+    # No request/root ownership was accepted, so no recursive cleanup may run.
+    $processState.cleanupStatus = "failed"
+  } else {
+    $root = [IO.Path]::GetDirectoryName($RequestPath)
     $stdoutPath = Join-Path $root "libtest.stdout"
     $stderrPath = Join-Path $root "libtest.stderr"
     [Environment]::SetEnvironmentVariable($requestEnv, $RequestPath, "Process")
@@ -153,34 +172,37 @@ try {
         if ($rss -le 0) { Set-FirstFailure "process.rss-invalid" ([ordered]@{ reason = "zero" }) }
         elseif ($rss -gt $maxSafe) { Set-FirstFailure "process.rss-invalid" ([ordered]@{ reason = "unsafe-integer" }) }
         elseif ($null -eq $processState.peakWorkingSetBytes -or $rss -gt $processState.peakWorkingSetBytes) { $processState.peakWorkingSetBytes = $rss }
+        $processState.stdoutBytes = Get-FileLength $stdoutPath
+        $processState.stderrBytes = Get-FileLength $stderrPath
       } catch {
         Set-FirstFailure "process.rss-unavailable" ([ordered]@{ stage = "poll" })
       }
-      $processState.stdoutBytes = Get-FileLength $stdoutPath
-      $processState.stderrBytes = Get-FileLength $stderrPath
       if ($processState.stdoutBytes -gt $MaxStdoutBytes) { Set-FirstFailure "process.output-limit-exceeded" ([ordered]@{ stream = "stdout"; limitBytes = 1048576 }) }
       if ($processState.stderrBytes -gt $MaxStderrBytes) { Set-FirstFailure "process.output-limit-exceeded" ([ordered]@{ stream = "stderr"; limitBytes = 1048576 }) }
       if ($clock.ElapsedMilliseconds -ge $TimeoutMs) { $processState.timedOut = $true; Set-FirstFailure "process.timeout" ([ordered]@{ timeoutMs = 180000 }) }
-      if ($null -ne $primaryFailure -and ($primaryFailure.code -eq "process.output-limit-exceeded" -or $primaryFailure.code -eq "process.timeout")) { Invoke-TaskKill $child; Invoke-BoundedReap $child; break }
+      if ($null -ne $primaryFailure) { Invoke-TaskKill $child; Invoke-BoundedReap $child; break }
       Start-Sleep -Milliseconds $PollIntervalMs
     }
 
     if ($processState.reapStatus -eq "not-required") { Invoke-BoundedReap $child }
-    try {
-      $child.Refresh()
-      $rss = [long] $child.PeakWorkingSet64
-      if ($rss -le 0 -and $null -eq $processState.peakWorkingSetBytes) { Set-FirstFailure "process.rss-invalid" ([ordered]@{ reason = "zero" }) }
-      elseif ($rss -gt $maxSafe) { Set-FirstFailure "process.rss-invalid" ([ordered]@{ reason = "unsafe-integer" }) }
-      elseif ($rss -gt 0) { $processState.peakWorkingSetBytes = $rss }
-    } catch { Set-FirstFailure "process.rss-unavailable" ([ordered]@{ stage = "final-refresh" }) }
-    $processState.stdoutBytes = Get-FileLength $stdoutPath
-    $processState.stderrBytes = Get-FileLength $stderrPath
-    if ($processState.stdoutBytes -gt $MaxStdoutBytes) { Set-FirstFailure "process.output-limit-exceeded" ([ordered]@{ stream = "stdout"; limitBytes = 1048576 }) }
-    if ($processState.stderrBytes -gt $MaxStderrBytes) { Set-FirstFailure "process.output-limit-exceeded" ([ordered]@{ stream = "stderr"; limitBytes = 1048576 }) }
-    $processState.exitCode = [int] $child.ExitCode
-    if ($processState.exitCode -ne 0) { Set-FirstFailure "process.nonzero-exit" ([ordered]@{ exitCode = $processState.exitCode }) }
-    if ($processState.reapStatus -ne "succeeded" -and $null -eq $primaryFailure) { Set-FirstFailure "process.protocol-invalid" ([ordered]@{ stage = "process"; reason = "identity" }) }
-    if ($null -eq $primaryFailure) { $evidence = Get-RustEvidence $stdoutPath }
+    if ($processState.reapStatus -eq "succeeded") {
+      try {
+        $child.Refresh()
+        $rss = [long] $child.PeakWorkingSet64
+        if ($rss -le 0 -and $null -eq $processState.peakWorkingSetBytes) { Set-FirstFailure "process.rss-invalid" ([ordered]@{ reason = "zero" }) }
+        elseif ($rss -gt $maxSafe) { Set-FirstFailure "process.rss-invalid" ([ordered]@{ reason = "unsafe-integer" }) }
+        elseif ($rss -gt 0) { $processState.peakWorkingSetBytes = $rss }
+      } catch { Set-FirstFailure "process.rss-unavailable" ([ordered]@{ stage = "final-refresh" }) }
+      $processState.stdoutBytes = Get-FileLength $stdoutPath
+      $processState.stderrBytes = Get-FileLength $stderrPath
+      if ($processState.stdoutBytes -gt $MaxStdoutBytes) { Set-FirstFailure "process.output-limit-exceeded" ([ordered]@{ stream = "stdout"; limitBytes = 1048576 }) }
+      if ($processState.stderrBytes -gt $MaxStderrBytes) { Set-FirstFailure "process.output-limit-exceeded" ([ordered]@{ stream = "stderr"; limitBytes = 1048576 }) }
+      $processState.exitCode = [int] $child.ExitCode
+      if ($processState.exitCode -ne 0) { Set-FirstFailure "process.nonzero-exit" ([ordered]@{ exitCode = $processState.exitCode }) }
+      if ($null -eq $primaryFailure) { $evidence = Get-RustEvidence $stdoutPath }
+    } elseif ($null -eq $primaryFailure) {
+      Set-FirstFailure "process.protocol-invalid" ([ordered]@{ stage = "process"; reason = "identity" })
+    }
   }
 } finally {
   if ($null -ne $child) { try { $child.Dispose() } catch {} }

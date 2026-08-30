@@ -1237,12 +1237,19 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     worker,
     /PRIVATE_SCALE_TEST_NAME[\s\S]*PRIVATE_SCALE_TIMEOUT_MS[\s\S]*PRIVATE_SCALE_POLL_INTERVAL_MS/u,
   );
+  assert.match(worker, /const FAILURE_CODES = \[[\s\S]*process\.cleanup-failed[\s\S]*\] as const/u);
+  assert.match(worker, /function assertFailureProcessCombination[\s\S]*process\.exitCode === 0[\s\S]*process\.protocol-invalid/u);
+  assert.match(worker, /handoffAccepted = processResult\.handoffAccepted[\s\S]*if \(!handoffAccepted && existsSync\(leaf\)\)/u);
+  assert.match(worker, /requestTermination[\s\S]*child\.kill\(\)[\s\S]*reapTimeout = setTimeout[\s\S]*child\.once\("close"/u);
   assert.match(process, /BRILLIANT_RKP2_SCALE_REQUEST_V1/u);
   assert.match(
     process,
     /Start-Process[\s\S]*-WindowStyle Hidden[\s\S]*-RedirectStandardOutput/u,
   );
   assert.match(process, /taskkill\.exe[\s\S]*\/PID[\s\S]*\/T[\s\S]*\/F/u);
+  assert.match(process, /function Get-PreflightFailure[\s\S]*Get-Item -LiteralPath \$ExecutablePath[\s\S]*Get-Item -LiteralPath \$RequestPath[\s\S]*GetDirectoryName\(\$RequestPath\)/u);
+  assert.match(process, /\$preflightFailure = Get-PreflightFailure[\s\S]*\$root = \[IO\.Path\]::GetDirectoryName\(\$RequestPath\)/u);
+  assert.match(process, /if \(\$null -ne \$primaryFailure\) \{ Invoke-TaskKill \$child; Invoke-BoundedReap \$child; break \}/u);
   assert.match(
     process,
     /Remove-OwnedPath \$RequestPath "request"[\s\S]*Remove-OwnedPath \$stdoutPath "stdout"[\s\S]*Remove-OwnedPath \$stderrPath "stderr"[\s\S]*Remove-OwnedPath \$root "temp-directory"/u,

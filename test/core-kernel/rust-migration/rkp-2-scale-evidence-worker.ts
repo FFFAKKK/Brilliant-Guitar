@@ -25,6 +25,24 @@ export const PRIVATE_SCALE_STREAM_LIMIT_BYTES = 1_048_576 as const;
 export const PRIVATE_SCALE_REAP_TIMEOUT_MS = 5_000 as const;
 
 const MAX_SAFE = Number.MAX_SAFE_INTEGER;
+const FAILURE_CODES = [
+  "process.start-failed", "process.output-limit-exceeded", "process.timeout", "process.nonzero-exit",
+  "process.sentinel-count-invalid", "process.sentinel-malformed", "process.protocol-invalid",
+  "process.rss-unavailable", "process.rss-invalid", "evidence.counter-mismatch", "evidence.overflow",
+  "evidence.parity-mismatch", "evidence.bytes-mismatch", "evidence.order-mismatch",
+  "evidence.payload-mismatch", "process.cleanup-failed",
+] as const;
+const COUNTER_NAMES = [
+  "entitiesVisited", "measures", "parts", "staves", "voices", "events", "notes", "extensions",
+  "topologyEdgesVisited", "referenceEdgesBuilt", "timeEntriesBuilt", "entityIndexLookups",
+  "ownerIndexLookups", "timeIndexComparisons", "indexEntriesBuilt", "indexRebuildEntries",
+  "fullDocumentMaterializations", "canonicalEncodeBytes", "entityProbe.entityIndexLookupsDelta",
+  "entityProbe.otherCounterDelta", "ownerProbe.ownerIndexLookupsDelta", "ownerProbe.otherCounterDelta",
+] as const;
+const NUMERIC_FIELDS = [
+  ...COUNTER_NAMES, "canonicalScoreBytes", "createRequestBytes", "workloadElapsedMicros",
+  "exitCode", "peakWorkingSetBytes", "stdoutBytes", "stderrBytes",
+] as const;
 
 type JsonRecord = Record<string, unknown>;
 
@@ -96,6 +114,15 @@ export type ScaleProcessEnvelope =
 export interface WorkerResult {
   readonly envelope: Extract<ScaleProcessEnvelope, { readonly status: "ok" }>;
   readonly wallElapsedMicros: number;
+}
+
+interface PowerShellResult {
+  readonly stdout: Buffer;
+  readonly stderr: Buffer;
+  readonly exitCode: number | null;
+  readonly timedOut: boolean;
+  readonly handoffAccepted: boolean;
+  readonly launchFailed: boolean;
 }
 
 interface CargoArtifactMessage {
@@ -241,15 +268,71 @@ function decodeProcessState(value: unknown): ScaleProcessState {
 
 function decodeFailure(value: unknown): ScaleFailure {
   const failure = assertExactRecord(value, ["code", "details"], "process");
-  const codes: readonly ScaleFailureCode[] = [
-    "process.start-failed", "process.output-limit-exceeded", "process.timeout", "process.nonzero-exit",
-    "process.sentinel-count-invalid", "process.sentinel-malformed", "process.protocol-invalid",
-    "process.rss-unavailable", "process.rss-invalid", "evidence.counter-mismatch", "evidence.overflow",
-    "evidence.parity-mismatch", "evidence.bytes-mismatch", "evidence.order-mismatch",
-    "evidence.payload-mismatch", "process.cleanup-failed",
-  ];
-  if (!codes.includes(failure.code as ScaleFailureCode) || !isRecord(failure.details)) throw protocolFailure("process", "type");
+  if (!FAILURE_CODES.includes(failure.code as ScaleFailureCode) || !isRecord(failure.details)) throw protocolFailure("process", "type");
+  const details = failure.details;
+  const oneOf = (actual: unknown, values: readonly string[]) => typeof actual === "string" && values.includes(actual);
+  const safe = (actual: unknown, positive = false) => safeInteger(actual, positive);
+  switch (failure.code as ScaleFailureCode) {
+    case "process.start-failed":
+      if (!hasExactKeys(details, ["stage"]) || details.stage !== "start") throw protocolFailure("process", "identity");
+      break;
+    case "process.output-limit-exceeded":
+      if (!hasExactKeys(details, ["stream", "limitBytes"]) || !oneOf(details.stream, ["stdout", "stderr"]) || details.limitBytes !== PRIVATE_SCALE_STREAM_LIMIT_BYTES) throw protocolFailure("process", "identity");
+      break;
+    case "process.timeout":
+      if (!hasExactKeys(details, ["timeoutMs"]) || details.timeoutMs !== PRIVATE_SCALE_TIMEOUT_MS) throw protocolFailure("process", "identity");
+      break;
+    case "process.nonzero-exit":
+      if (!hasExactKeys(details, ["exitCode"]) || !safe(details.exitCode, true)) throw protocolFailure("process", "range");
+      break;
+    case "process.sentinel-count-invalid":
+      if (!hasExactKeys(details, ["expected", "actual"]) || details.expected !== 1 || !safe(details.actual)) throw protocolFailure("process", "range");
+      break;
+    case "process.sentinel-malformed":
+      if (!hasExactKeys(details, ["stage"]) || details.stage !== "json") throw protocolFailure("process", "identity");
+      break;
+    case "process.protocol-invalid":
+      if (!hasExactKeys(details, ["stage", "reason"]) || !oneOf(details.stage, ["arguments", "cargo-artifact", "internal", "process"]) || !oneOf(details.reason, ["shape", "type", "range", "version", "extra-field", "identity"])) throw protocolFailure("process", "identity");
+      break;
+    case "process.rss-unavailable":
+      if (!hasExactKeys(details, ["stage"]) || !oneOf(details.stage, ["poll", "final-refresh"])) throw protocolFailure("process", "identity");
+      break;
+    case "process.rss-invalid":
+      if (!hasExactKeys(details, ["reason"]) || !oneOf(details.reason, ["zero", "negative", "unsafe-integer"])) throw protocolFailure("process", "identity");
+      break;
+    case "evidence.counter-mismatch":
+      if (!hasExactKeys(details, ["counter", "expected", "actual"]) || !oneOf(details.counter, COUNTER_NAMES) || !safe(details.expected) || !safe(details.actual)) throw protocolFailure("process", "range");
+      break;
+    case "evidence.overflow":
+      if (!hasExactKeys(details, ["field"]) || !oneOf(details.field, NUMERIC_FIELDS)) throw protocolFailure("process", "identity");
+      break;
+    case "evidence.parity-mismatch":
+      if (!hasExactKeys(details, ["check"]) || !oneOf(details.check, ["normalized-index-projection", "index-entry-count"])) throw protocolFailure("process", "identity");
+      break;
+    case "evidence.bytes-mismatch":
+      if (!hasExactKeys(details, ["field", "expected", "actual"]) || !oneOf(details.field, ["canonicalScoreBytes", "createRequestBytes"]) || !safe(details.expected) || !safe(details.actual)) throw protocolFailure("process", "range");
+      break;
+    case "evidence.order-mismatch":
+      if (!hasExactKeys(details, ["field"]) || !oneOf(details.field, ["topology", "extensions"])) throw protocolFailure("process", "identity");
+      break;
+    case "evidence.payload-mismatch":
+      if (!hasExactKeys(details, ["field"]) || !oneOf(details.field, ["fixtureId", "counts", "entityProbe", "ownerProbe", "roundTrip"])) throw protocolFailure("process", "identity");
+      break;
+    case "process.cleanup-failed":
+      if (!hasExactKeys(details, ["target"]) || !oneOf(details.target, ["request", "stdout", "stderr", "temp-directory"])) throw protocolFailure("process", "identity");
+      break;
+  }
   return failure as unknown as ScaleFailure;
+}
+
+function assertFailureProcessCombination(failure: ScaleFailure, process: ScaleProcessState): void {
+  const details = failure.details;
+  if (failure.code === "process.start-failed" && (process.exitCode !== null || process.timedOut || process.terminationStatus !== "not-required" || process.reapStatus !== "not-required")) throw protocolFailure("process", "identity");
+  if (failure.code === "process.timeout" && (process.timedOut !== true || process.terminationStatus === "not-required")) throw protocolFailure("process", "identity");
+  if (failure.code === "process.output-limit-exceeded" && process.terminationStatus === "not-required") throw protocolFailure("process", "identity");
+  if (failure.code === "process.nonzero-exit" && (process.exitCode === null || process.exitCode === 0 || details.exitCode !== process.exitCode)) throw protocolFailure("process", "identity");
+  if (process.exitCode === 0 && process.reapStatus === "failed" && !(failure.code === "process.protocol-invalid" && details.stage === "process" && details.reason === "identity")) throw protocolFailure("process", "identity");
+  if (failure.code === "process.cleanup-failed" && process.cleanupStatus !== "failed") throw protocolFailure("process", "identity");
 }
 
 /** Accepts only the wrapper's one final line; all other output is a protocol failure. */
@@ -284,7 +367,10 @@ export function decodeProcessEnvelope(stdout: Buffer, stderr: Buffer): ScaleProc
   }
   const record = assertExactRecord(parsed, ["schemaVersion", "status", "failure", "process", "partialEvidence"], "process");
   if (record.partialEvidence !== false) throw protocolFailure("process", "type");
-  return { schemaVersion: 1, status: "rejected", failure: decodeFailure(record.failure), process: decodeProcessState(record.process), partialEvidence: false };
+  const failure = decodeFailure(record.failure);
+  const process = decodeProcessState(record.process);
+  assertFailureProcessCombination(failure, process);
+  return { schemaVersion: 1, status: "rejected", failure, process, partialEvidence: false };
 }
 
 /** Picks exactly one libtest executable from Cargo's JSON stream. */
@@ -337,32 +423,65 @@ function runCargoCompile(cargoExecutable: string): string {
   return result.stdout;
 }
 
-async function spawnPowerShell(script: string, executable: string, requestPath: string): Promise<{ readonly stdout: Buffer; readonly stderr: Buffer; readonly exitCode: number | null; readonly timedOut: boolean }> {
-  return await new Promise((resolvePromise, reject) => {
-    const child = spawn(process.env.BRILLIANT_RKP2_PWSH ?? "pwsh", [
+async function spawnPowerShell(script: string, executable: string, requestPath: string): Promise<PowerShellResult> {
+  return await new Promise((resolvePromise) => {
+    const stdout: Buffer[] = [];
+    const stderr: Buffer[] = [];
+    let child: ReturnType<typeof spawn>;
+    try {
+      child = spawn(process.env.BRILLIANT_RKP2_PWSH ?? "pwsh", [
       "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", script,
       "-ExecutablePath", executable, "-RequestPath", requestPath, "-TestName", PRIVATE_SCALE_TEST_NAME,
       "-TimeoutMs", String(PRIVATE_SCALE_TIMEOUT_MS), "-PollIntervalMs", String(PRIVATE_SCALE_POLL_INTERVAL_MS),
       "-MaxStdoutBytes", String(PRIVATE_SCALE_STREAM_LIMIT_BYTES), "-MaxStderrBytes", String(PRIVATE_SCALE_STREAM_LIMIT_BYTES),
-    ], { windowsHide: true, shell: false, stdio: ["ignore", "pipe", "pipe"] });
-    const stdout: Buffer[] = [];
-    const stderr: Buffer[] = [];
+      ], { windowsHide: true, shell: false, stdio: ["ignore", "pipe", "pipe"] });
+    } catch {
+      resolvePromise({ stdout: Buffer.alloc(0), stderr: Buffer.alloc(0), exitCode: null, timedOut: false, handoffAccepted: false, launchFailed: true });
+      return;
+    }
     let timeout: NodeJS.Timeout | undefined;
+    let reapTimeout: NodeJS.Timeout | undefined;
     let settled = false;
-    const finish = (result: { readonly stdout: Buffer; readonly stderr: Buffer; readonly exitCode: number | null; readonly timedOut: boolean }) => {
+    let timedOut = false;
+    let handoffAccepted = false;
+    const finish = (exitCode: number | null, launchFailed = false) => {
       if (settled) return;
       settled = true;
       if (timeout !== undefined) clearTimeout(timeout);
-      resolvePromise(result);
+      if (reapTimeout !== undefined) clearTimeout(reapTimeout);
+      resolvePromise({ stdout: Buffer.concat(stdout), stderr: Buffer.concat(stderr), exitCode, timedOut, handoffAccepted, launchFailed });
+    };
+    const requestTermination = () => {
+      if (settled) return;
+      timedOut = true;
+      const systemRoot = process.env.SystemRoot;
+      const taskkill = systemRoot === undefined ? undefined : join(systemRoot, "System32", "taskkill.exe");
+      if (taskkill !== undefined && child.pid !== undefined) {
+        try {
+          const killer = spawn(taskkill, ["/PID", String(child.pid), "/T", "/F"], {
+            windowsHide: true,
+            shell: false,
+            stdio: "ignore",
+          });
+          killer.once("error", () => {});
+        } catch {}
+      } else {
+        try { child.kill(); } catch {}
+      }
+      reapTimeout = setTimeout(() => finish(null), PRIVATE_SCALE_REAP_TIMEOUT_MS);
     };
     timeout = setTimeout(() => {
-      child.kill();
-      finish({ stdout: Buffer.concat(stdout), stderr: Buffer.concat(stderr), exitCode: null, timedOut: true });
+      requestTermination();
     }, PRIVATE_SCALE_TIMEOUT_MS + PRIVATE_SCALE_REAP_TIMEOUT_MS);
-    child.once("error", () => reject({ code: "process.start-failed", details: { stage: "start" } } satisfies ScaleFailure));
+    child.once("spawn", () => { handoffAccepted = true; });
+    child.once("error", () => finish(null, true));
+    if (child.stdout === null || child.stderr === null) {
+      finish(null, true);
+      return;
+    }
     child.stdout.on("data", (chunk: Buffer) => stdout.push(Buffer.from(chunk)));
     child.stderr.on("data", (chunk: Buffer) => stderr.push(Buffer.from(chunk)));
-    child.once("close", (exitCode) => finish({ stdout: Buffer.concat(stdout), stderr: Buffer.concat(stderr), exitCode, timedOut: false }));
+    child.once("close", (exitCode) => finish(exitCode));
   });
 }
 
@@ -378,8 +497,11 @@ export async function runPrivateScaleEvidenceWorker(options: { readonly repoRoot
   const requestPath = join(leaf, "request.json");
   writeFileSync(requestPath, created.request, { flag: "wx" });
   const started = process.hrtime.bigint();
+  let handoffAccepted = false;
   try {
     const processResult = await spawnPowerShell(script, executable, requestPath);
+    handoffAccepted = processResult.handoffAccepted;
+    if (processResult.launchFailed) throw { code: "process.start-failed", details: { stage: "start" } } satisfies ScaleFailure;
     if (processResult.timedOut) throw { code: "process.timeout", details: { timeoutMs: PRIVATE_SCALE_TIMEOUT_MS } } satisfies ScaleFailure;
     const envelope = decodeProcessEnvelope(processResult.stdout, processResult.stderr);
     if (envelope.status !== "ok") throw envelope.failure;
@@ -389,7 +511,7 @@ export async function runPrivateScaleEvidenceWorker(options: { readonly repoRoot
     if (existsSync(leaf)) throw { code: "process.cleanup-failed", details: { target: "temp-directory" } } satisfies ScaleFailure;
     return { envelope, wallElapsedMicros: elapsed };
   } finally {
-    if (existsSync(leaf)) rmSync(leaf, { recursive: true, force: true, maxRetries: 2, retryDelay: PRIVATE_SCALE_POLL_INTERVAL_MS });
+    if (!handoffAccepted && existsSync(leaf)) rmSync(leaf, { recursive: true, force: true, maxRetries: 2, retryDelay: PRIVATE_SCALE_POLL_INTERVAL_MS });
   }
 }
 
