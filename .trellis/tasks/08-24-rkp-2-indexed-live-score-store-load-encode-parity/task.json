@@ -107,12 +107,15 @@
     "current_planning_child": "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
     "stage6_semantic_canonical_authority_amendment": {
       "task": "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
-      "status": "in_progress_A0_complete_E1R2_A_next",
+      "status": "E1R2_candidate_ready_implementation_audit_pending",
       "accepted_planning_head": "eb0c13ed5ac218cfec9a983a4bc4e8dfb89acbd7",
       "independent_planning_review": "passed_P0_0_P1_0_P2_0",
       "user_implementation_authorization_scope": "A0_and_E1R2_only",
       "current_owner": "08-26-rkp-2-stage-6-private-scale-evidence-seam-repair",
-      "next_gate": "E1R2_A_accepted_no_write_source_and_authority_characterization"
+      "technical_commit": "db7ab2a4080c78335cccc484a32ea9baa0957a9b",
+      "implementation_candidate_ready": true,
+      "implementation_review": "pending_dedicated_independent_E1R2_implementation_audit",
+      "next_gate": "dedicated_independent_E1R2_implementation_audit"
     },
     "current_implementation_child": "08-26-rkp-2-stage-6-private-scale-evidence-seam-repair",
     "implementation_stage": "stage_6_s6_1_retained_complete_private_seam_E1_E1R_green_s6_2_paused_for_public_json_property_cap_contract_conflict",
@@ -318,7 +321,7 @@
       "post_pass_closeout_authorized": true,
       "stage_6_blocked_until_accepted_archived_integrated": false
     },
-    "next_gate": "E1R2_A_accepted_no_write_source_and_authority_characterization",
+    "next_gate": "dedicated_independent_E1R2_implementation_audit",
     "stage_6_started": true,
     "stage_6_authorized": true,
     "stage_6_completed": false,
@@ -409,7 +412,7 @@
     },
     "implementation_review": "pending",
       "implementation_candidate_ready": false,
-    "implementation_blocker": "dedicated_independent_stage6_semantic_canonical_authority_amendment_planning_review_pending",
+    "implementation_blocker": "dedicated_independent_E1R2_implementation_audit_pending",
     "public_json_property_cap_scale_compatibility_repair": {
       "task": "08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair",
       "status": "accepted_archived_integrated_C5_execution_complete_historical",
