@@ -17,11 +17,12 @@ Candidate status: `READY FOR INDEPENDENT PLANNING REVIEW`.
 7. Are S6.2/S6.3, TypeScript default and all later gates still closed?
 8. Is the one-file technical allowlist sufficient and rollback complete?
 
-## Expected review output
+## Reviewer-derived output format
 
 ```text
-PASS FOR BOUNDED IMPLEMENTATION PLANNING
-P0/P1/P2 = 0/0/0
+<reviewer-derived verdict>
+P0/P1/P2 = <actual counts>
+<findings with exact file:line evidence, or reviewer-derived no-findings statement>
 ```
 
 Any required second technical file, ninth original E3 lifecycle path, evidence regeneration or lifecycle advancement returns the task to planning.
