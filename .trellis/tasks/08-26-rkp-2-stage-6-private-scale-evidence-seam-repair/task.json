@@ -43,7 +43,7 @@
     "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "PLANNING LINE AT 4AD23773 / E3 FRESH RUN OBSERVED COMPLETE IN PRESERVED SOURCE WORKTREE / WORKSPACE LAW 11 TESTS 7 PASS 4 FAIL WITH ONE NEW E3 FINAL-STATE PROJECTION FAILURE / 08-31 ONE-FILE LAW REPAIR PLANNING CHILD CREATED / INDEPENDENT PLANNING REVIEW PENDING / NO TASK START OR IMPLEMENTATION AUTHORIZATION / RKP-2 S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT.",
+  "notes": "PLANNING LINE AT 4AD23773 / E3 FRESH RUN OBSERVED COMPLETE IN PRESERVED SOURCE WORKTREE / WORKSPACE LAW 11 TESTS 7 PASS 4 FAIL WITH ONE NEW E3 FINAL-STATE PROJECTION FAILURE / 08-31 ONE-FILE LAW REPAIR PLANNING HEAD E4EE1D4 PASSED P0_0_P1_0_P2_0 / PHASE A ACTIVATED ONLY / PHASE B SOURCE SNAPSHOT RECONSTRUCTION NEXT BUT NOT STARTED OR AUTHORIZED / NO TECHNICAL CHANGE OR E3 RERUN / RKP-2 S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT.",
   "meta": {
     "planning_base_commit": "4a302bc9f9981940336fc97941b08e09bd0d1f67",
     "source_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -93,8 +93,9 @@
     "bounded_planning_repair": "round_3_cleanup_ownership_and_post_cleanup_envelope_accepted",
     "implementation_candidate_ready": true,
     "implementation_review": "passed_dedicated_independent_E2_fifth_bounded_repair_rereview",
-    "implementation_blocker": "e3_workspace_law_final_state_projection_repair_planning_review_pending",
-    "current_planning_child": "08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair",
+    "implementation_blocker": "e3_workspace_law_final_state_projection_repair_phase_B_source_snapshot_reconstruction_pending_separate_user_authorization",
+    "current_planning_child": null,
+    "current_implementation_child": "08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair",
     "stage6_semantic_canonical_authority_amendment": {
       "task": "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
       "status": "E1R2_rereview_passed_fifth_E2_audited_acceptance_preparation_ready_awaiting_explicit_E3_authorization",
@@ -286,7 +287,7 @@
       "terminal_projection": "completed_separate_C5_B_commit_final_C5_audit_passed_d14d73117e03822a52fd19c55f3024cb2b73ef45",
       "E2_authorized": false
     },
-    "next_gate": "e3_workspace_law_repair_independent_planning_review",
+    "next_gate": "phase_B_source_snapshot_reconstruction",
     "archive_authorized": false,
     "push_authorized": false,
     "default_runtime_switch_authorized": false,
@@ -294,16 +295,24 @@
     "rkp3_creation_authorized": false,
     "e3_workspace_law_final_state_projection_repair": {
       "task": "08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair",
-      "status": "planning",
+      "status": "in_progress_phase_A_activation_complete_phase_B_not_started",
       "planning_base_commit": "4ad23773e9c9e1081667a4eccb84cc464b85bc89",
       "observed_source_worktree": ".worktrees/rkp-2-stage-6-semantic-canonical-authority-amendment",
       "observed_e3_fresh_run_complete": true,
       "observed_e3_protocol_sha256": "64e09779ea34bd04d504d515eb7c391f7db35a0a23a3c366fb2ffb5aa71c2862",
       "observed_workspace_law": "11_tests_7_pass_4_fail_exactly_one_incremental_E3_projection_failure",
-      "task_start_run": false,
-      "production_implementation_authorized": false,
-      "independent_planning_review": "pending",
-      "next_gate": "dedicated_independent_planning_review"
+      "task_start_run": true,
+      "production_implementation_authorized": true,
+      "user_implementation_authorization": true,
+      "user_implementation_authorization_scope": "this_Workspace_Law_repair_Phase_A_activation_only_no_Phase_B_C_D_E_E3_rerun_S6_2_S6_3_acceptance_archive_integration_qualification_cutover_push_or_RKP3",
+      "accepted_planning_head": "e4ee1d43fd29a794d8f0f389d651c556203fe5af",
+      "independent_planning_review": "passed_e4ee1d43fd29a794d8f0f389d651c556203fe5af_P0_0_P1_0_P2_0",
+      "phase_a_activation_completed": true,
+      "phase_b_source_snapshot_reconstruction_authorized": false,
+      "phase_b_source_snapshot_reconstruction_started": false,
+      "implementation_candidate_ready": false,
+      "implementation_review": "pending",
+      "next_gate": "phase_B_source_snapshot_reconstruction"
     }
   }
 }

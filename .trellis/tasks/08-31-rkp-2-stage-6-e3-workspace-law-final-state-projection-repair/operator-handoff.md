@@ -2,9 +2,11 @@
 
 ## Current gate
 
-`READY FOR INDEPENDENT PLANNING REVIEW`
+`PHASE A ACTIVATED — PHASE B SOURCE SNAPSHOT RECONSTRUCTION NEXT`
 
-The task remains `planning`; implementation has not started.
+The task is `in_progress` after `task.py start` was run for this child only. Planning head `e4ee1d43fd29a794d8f0f389d651c556203fe5af` passed independent planning review with `P0/P1/P2=0/0/0` in task `01a05394-7f39-7701-8fc6-f5dfdb580b53`.
+
+The current user authorization is limited to Phase A activation of this Workspace Law repair. The implementation candidate remains false, implementation review remains pending, and Phase B/C/D/E are not started or authorized in this run.
 
 ## Workspace
 
@@ -14,15 +16,9 @@ The task remains `planning`; implementation has not started.
 - Source E3 worktree: `.worktrees/rkp-2-stage-6-semantic-canonical-authority-amendment`
 - Task: `.trellis/tasks/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair`
 
-## Operator boundary after approval
+## Next operator boundary
 
-1. Revalidate the source eight-path snapshot.
-2. Activate this child only after explicit implementation authorization.
-3. Reconstruct the already-measured E3 evidence state without rerunning stress.
-4. Modify only `rkp-2-workspace-contracts.test.ts` technically.
-5. Freeze E2 history at `4ad23773...` and add the independent E3 projection.
-6. Produce the exact 11/8/3 focused classification.
-7. Freeze a clean candidate for independent implementation review.
+Stop after this Phase A commit. A later, separately authorized run may begin Phase B by revalidating the preserved source eight-path snapshot and reconstructing the already-measured E3 evidence state without rerunning stress. Phase C/D remain limited to the one technical owner `rkp-2-workspace-contracts.test.ts`; Phase E remains the later candidate-freeze gate.
 
 No RKP-2 S6.2/S6.3, acceptance, archive, integration, qualification, cutover, push or RKP-3 action is part of this handoff.
 

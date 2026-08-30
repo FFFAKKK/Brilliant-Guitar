@@ -1,10 +1,12 @@
 # Review Candidate
 
-## Verdict requested
+## Status
 
-Independent planning audit of a bounded one-file Workspace Law repair.
+`PHASE A ACTIVATED — NOT AN IMPLEMENTATION CANDIDATE`
 
-Candidate status: `READY FOR INDEPENDENT PLANNING REVIEW`.
+Planning candidate `e4ee1d43fd29a794d8f0f389d651c556203fe5af` passed its independent planning audit in task `01a05394-7f39-7701-8fc6-f5dfdb580b53` with `P0/P1/P2=0/0/0`. `task.py start` has activated this child, but the current authorization ends with Phase A.
+
+`implementation_candidate_ready=false` and `implementation_review=pending`. Phase B source snapshot reconstruction is the next gate; it has not started and is not authorized in this run. No technical file or preserved E3 evidence path changed.
 
 ## Review questions
 
@@ -17,7 +19,7 @@ Candidate status: `READY FOR INDEPENDENT PLANNING REVIEW`.
 7. Are S6.2/S6.3, TypeScript default and all later gates still closed?
 8. Is the one-file technical allowlist sufficient and rollback complete?
 
-## Reviewer-derived output format
+## Future implementation review output format
 
 ```text
 <reviewer-derived verdict>
