@@ -4,7 +4,7 @@
 
 **E2 BOUNDED REPAIR CANDIDATE — TARGETED INDEPENDENT IMPLEMENTATION REREVIEW PENDING**
 
-The bounded repair planning authority `eb0c13ed5ac218cfec9a983a4bc4e8dfb89acbd7` passed independent planning review at `P0/P1/P2=0/0/0`. A0, E1R2-A, E1R2-B, and E1R2-C are complete; the atomic technical head is `db7ab2a4080c78335cccc484a32ea9baa0957a9b`. The targeted independent E1R2 implementation rereview passed at `ca670fdfba250c1590b6e6d387eaef185211cb8a` with `P0/P1/P2=0/0/0`. Historical E2 audit head `2050f38689d0fcec8820ee8ef97925c5403e8a9e` returned `P0/P1/P2=1/4/0`; the bounded repair `b328786289323d8de725f777d2bd55eaa2732b74` is now the candidate for targeted independent E2 implementation rereview. E3, S6.2, S6.3, archive, integration, cutover, qualification, RKP-3, and push remain unauthorized.
+The bounded repair planning authority `eb0c13ed5ac218cfec9a983a4bc4e8dfb89acbd7` passed independent planning review at `P0/P1/P2=0/0/0`. A0, E1R2-A, E1R2-B, and E1R2-C are complete; the atomic technical head is `db7ab2a4080c78335cccc484a32ea9baa0957a9b`. The targeted independent E1R2 implementation rereview passed at `ca670fdfba250c1590b6e6d387eaef185211cb8a` with `P0/P1/P2=0/0/0`. Historical E2 audit head `2050f38689d0fcec8820ee8ef97925c5403e8a9e` returned `P0/P1/P2=1/4/0`; the third settlement-state-machine repair `c2fa29096111337527c23d25c2099fd89fa0e005` is now the candidate for targeted independent E2 implementation rereview. E3, S6.2, S6.3, archive, integration, cutover, qualification, RKP-3, and push remain unauthorized.
 
 ## Review focus
 
@@ -17,4 +17,4 @@ The bounded repair planning authority `eb0c13ed5ac218cfec9a983a4bc4e8dfb89acbd7`
 
 ## Required result
 
-The current gate is the dedicated independent E2 bounded-repair implementation rereview of `b328786289323d8de725f777d2bd55eaa2732b74`. It cannot authorize E3, S6.2 or S6.3.
+The current gate is the dedicated independent E2 bounded-repair implementation rereview of `c2fa29096111337527c23d25c2099fd89fa0e005`. It cannot authorize E3, S6.2 or S6.3.
