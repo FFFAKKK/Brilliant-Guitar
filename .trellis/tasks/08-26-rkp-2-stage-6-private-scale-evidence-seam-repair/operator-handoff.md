@@ -48,4 +48,4 @@ Proceed only to E1 using the frozen five-path technical and eight-path mutable l
 - The `cfg(test)` Runtime seam is implemented only in `indices.rs`; exact FQN, request env and internal prefix match the accepted authority.
 - The small real fixture proves Contracts decode, atomic Store import, separated entity/owner probes, parity rebuild, one export, one canonical encode and zero persistent materialization/byte counters.
 - E1 gates: focused `1/1`; exact Cargo artifact `1`; Clippy and MSRV pass; fresh `core.autocrlf=false` E: clone passes Runtime `16/16` with the stress test intentionally ignored.
-- E2 is started but remains unaccepted after the second bounded repair `971895236fa778f370d47a574e9dc79b319150b7`; the only current gate is targeted independent E2 implementation rereview. E3 and RKP-2 S6.2/S6.3 remain paused and TypeScript stays default.
+- E2 has not started. Candidate readiness remains false; RKP-2 S6.2/S6.3 remain paused and TypeScript stays default.
