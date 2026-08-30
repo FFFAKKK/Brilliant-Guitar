@@ -253,6 +253,24 @@ const STAGE_6_LIFECYCLE_PATHS = [
   ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/research/implementation-evidence.md",
   PARENT_PATH,
 ] as const;
+const STAGE_6_SEMANTIC_CANONICAL_PLANNING_HEAD =
+  "eb0c13ed5ac218cfec9a983a4bc4e8dfb89acbd7";
+const STAGE_6_SEMANTIC_CANONICAL_PLANNING_BASE =
+  "d14d73117e03822a52fd19c55f3024cb2b73ef45";
+const STAGE_6_SEMANTIC_CANONICAL_TASK_ROOT =
+  ".trellis/tasks/08-30-rkp-2-stage-6-semantic-canonical-authority-amendment";
+const STAGE_6_SEMANTIC_CANONICAL_TECHNICAL_PATHS = [
+  "crates/brilliant-kernel-runtime/src/indices.rs",
+  "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
+] as const;
+const STAGE_6_SEMANTIC_CANONICAL_LIFECYCLE_PATHS = [
+  `${STAGE_6_SEMANTIC_CANONICAL_TASK_ROOT}/task.json`,
+  `${STAGE_6_SEMANTIC_CANONICAL_TASK_ROOT}/operator-handoff.md`,
+  `${STAGE_6_SEMANTIC_CANONICAL_TASK_ROOT}/review-candidate.md`,
+  ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/task.json",
+  TASK_PATH,
+  PARENT_PATH,
+] as const;
 const PLANNED_TRUTH_FIELDS = ["type", "data.file"] as const;
 
 const CRATES = [
@@ -637,6 +655,20 @@ function currentPartOwnerRepairChanges(): Set<string> {
 function currentStage6Changes(): Set<string> {
   const commands: readonly (readonly string[])[] = [
     ["diff", "--name-only", `${STAGE_6_PREREQUISITE_HEAD}..HEAD`],
+    ["diff", "--name-only"],
+    ["diff", "--cached", "--name-only"],
+    ["ls-files", "--others", "--exclude-standard"],
+  ];
+  return new Set(commands.flatMap((args) => lines(git(args))));
+}
+
+function currentSemanticCanonicalE1r2Changes(): Set<string> {
+  const commands: readonly (readonly string[])[] = [
+    [
+      "diff",
+      "--name-only",
+      `${STAGE_6_SEMANTIC_CANONICAL_PLANNING_HEAD}..HEAD`,
+    ],
     ["diff", "--name-only"],
     ["diff", "--cached", "--name-only"],
     ["ls-files", "--others", "--exclude-standard"],
@@ -1095,6 +1127,94 @@ test("Stage 6 hostile and resource evidence consumes the existing private Rust s
   assert.match(session, /fn private_runtime_factory_failures_publish_no_session_and_use_existing_failures\(\)/u);
   const nodeBoundary = readText("crates/brilliant-kernel-node/src/boundary.rs");
   assert.match(nodeBoundary, /fn request_cap_is_checked_on_borrowed_length_before_copy\(\)/u);
+});
+
+test("Stage 6 semantic canonical evidence correction is exact and keeps raw bytes out of canonical equality", () => {
+  assert.doesNotThrow(() =>
+    git(["cat-file", "-e", `${STAGE_6_SEMANTIC_CANONICAL_PLANNING_HEAD}^{commit}`]),
+  );
+  assert.doesNotThrow(() =>
+    git([
+      "merge-base",
+      "--is-ancestor",
+      STAGE_6_SEMANTIC_CANONICAL_PLANNING_BASE,
+      STAGE_6_SEMANTIC_CANONICAL_PLANNING_HEAD,
+    ]),
+  );
+  assertExactPathSet(
+    currentSemanticCanonicalE1r2Changes(),
+    [
+      ...STAGE_6_SEMANTIC_CANONICAL_TECHNICAL_PATHS,
+      ...STAGE_6_SEMANTIC_CANONICAL_LIFECYCLE_PATHS,
+    ],
+    "Stage 6 semantic/canonical E1R2 candidate",
+  );
+
+  const task = JSON.parse(
+    readText(`${STAGE_6_SEMANTIC_CANONICAL_TASK_ROOT}/task.json`),
+  ) as {
+    readonly status?: unknown;
+    readonly meta?: {
+      readonly planning_base_commit?: unknown;
+      readonly accepted_planning_authority_head?: unknown;
+      readonly future_technical_allowlist?: unknown;
+      readonly future_lifecycle_allowlist?: unknown;
+      readonly stage6_e2_started?: unknown;
+      readonly stage6_e3_started?: unknown;
+    };
+  };
+  assert.equal(task.status, "in_progress");
+  assert.equal(
+    task.meta?.planning_base_commit,
+    STAGE_6_SEMANTIC_CANONICAL_PLANNING_BASE,
+  );
+  assert.equal(
+    task.meta?.accepted_planning_authority_head,
+    STAGE_6_SEMANTIC_CANONICAL_PLANNING_HEAD,
+  );
+  assert.deepEqual(task.meta?.future_technical_allowlist, [
+    ...STAGE_6_SEMANTIC_CANONICAL_TECHNICAL_PATHS,
+  ]);
+  assert.deepEqual(task.meta?.future_lifecycle_allowlist, [
+    ...STAGE_6_SEMANTIC_CANONICAL_LIFECYCLE_PATHS,
+  ]);
+  assert.equal(task.meta?.stage6_e2_started, false);
+  assert.equal(task.meta?.stage6_e3_started, false);
+
+  const indices = readText("crates/brilliant-kernel-runtime/src/indices.rs");
+  const collectStart = indices.indexOf("fn collect_scale_evidence(");
+  const collectEnd = indices.indexOf("\n    #[test]", collectStart);
+  assert.notEqual(collectStart, -1);
+  assert.notEqual(collectEnd, -1);
+  const collect = indices.slice(collectStart, collectEnd);
+  assert.equal(
+    (collect.match(/decode_create_request\(/gu) ?? []).length,
+    2,
+    "collect_scale_evidence must decode exactly the initial and verification requests",
+  );
+  assert.equal(
+    (collect.match(/store\.export_document\(/gu) ?? []).length,
+    1,
+    "collect_scale_evidence must export exactly once",
+  );
+  assert.equal(
+    (collect.match(/canonical_score_bytes\(/gu) ?? []).length,
+    2,
+    "collect_scale_evidence must encode primary and verification DTOs exactly once each",
+  );
+  assert.doesNotMatch(collect, /input_score_bytes|assert_eq!\(encoded,/u);
+  assert.match(
+    collect,
+    /assert_eq!\(verification_document, document\);[\s\S]*assert_eq!\(verification_document, exported\);[\s\S]*assert_eq!\(primary_canonical, verification_canonical\);/u,
+  );
+  assert.match(
+    collect,
+    /canonical_encode_bytes: primary_canonical\.len\(\),/u,
+  );
+  assert.match(
+    indices,
+    /fn private_scale_evidence_accepts_noncanonical_extension_payload_order\(\)[\s\S]*assert_ne!\(noncanonical_text\.as_bytes\(\), primary_canonical\.as_slice\(\)\);[\s\S]*assert_eq!\(noncanonical_text\.len\(\), primary_canonical\.len\(\)\);/u,
+  );
 });
 
 test("RKP-1A P4 candidate freeze is exact on accepted A3", () => {

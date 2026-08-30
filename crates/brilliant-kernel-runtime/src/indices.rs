@@ -1751,8 +1751,6 @@ mod tests {
         let started = Instant::now();
         assert!(request_bytes.starts_with(CREATE_REQUEST_PREFIX));
         assert_eq!(request_bytes.last(), Some(&b'}'));
-        let input_score_bytes =
-            &request_bytes[CREATE_REQUEST_PREFIX.len()..request_bytes.len() - 1];
         let request = decode_create_request(request_bytes).expect("decode scale create request");
         let document = request.document;
         let counts = document_counts(&document);
@@ -1803,13 +1801,18 @@ mod tests {
             import_metrics.index_entries_built
         );
         let exported = store.export_document().expect("export scale document");
-        let encoded = canonical_score_bytes(&exported).expect("canonical scale encode");
-        assert_eq!(encoded, input_score_bytes);
         assert_eq!(exported, document);
-        let round_trip = decode_create_request(&create_request_bytes(&encoded))
-            .expect("decode exported scale document")
-            .document;
-        assert_eq!(round_trip, document);
+        let primary_canonical =
+            canonical_score_bytes(&exported).expect("primary canonical scale encode");
+        let verification_document =
+            decode_create_request(&create_request_bytes(&primary_canonical))
+                .expect("decode primary canonical scale document")
+                .document;
+        assert_eq!(verification_document, document);
+        assert_eq!(verification_document, exported);
+        let verification_canonical = canonical_score_bytes(&verification_document)
+            .expect("verification canonical scale encode");
+        assert_eq!(primary_canonical, verification_canonical);
 
         assert_eq!(store.metrics.full_document_materializations, 0);
         assert_eq!(store.metrics.canonical_encode_bytes, 0);
@@ -1825,7 +1828,7 @@ mod tests {
             index_entries_built: import_metrics.index_entries_built,
             index_rebuild_entries: rebuild_metrics.index_rebuild_entries,
             full_document_materializations: 1,
-            canonical_encode_bytes: encoded.len(),
+            canonical_encode_bytes: primary_canonical.len(),
         };
         assert_safe_metrics(metrics);
         let elapsed = usize::try_from(started.elapsed().as_micros()).expect("elapsed micros");
@@ -1833,7 +1836,7 @@ mod tests {
         PrivateScaleEvidence {
             counts,
             bytes: ScaleBytes {
-                canonical_score_bytes: encoded.len(),
+                canonical_score_bytes: primary_canonical.len(),
                 create_request_bytes: request_bytes.len(),
             },
             metrics,
@@ -1877,6 +1880,43 @@ mod tests {
         );
         assert!(sentinel.ends_with('}'));
         assert!(!sentinel.contains("RuntimeHandle"));
+    }
+
+    #[test]
+    fn private_scale_evidence_accepts_noncanonical_extension_payload_order() {
+        let canonical_fixture = canonical_score_bytes(&fixture()).expect("canonical small fixture");
+        let canonical_text =
+            String::from_utf8(canonical_fixture).expect("utf8 canonical small fixture");
+        let noncanonical_text = canonical_text.replacen(
+            r#""payload":{"z":1}"#,
+            r#""payload":{"marker":"small","generatorVersion":1}"#,
+            1,
+        );
+        assert_ne!(noncanonical_text, canonical_text);
+        let request = create_request_bytes(noncanonical_text.as_bytes());
+        let input_document = decode_create_request(&request)
+            .expect("decode noncanonical small request")
+            .document;
+        let primary_canonical = canonical_score_bytes(&input_document)
+            .expect("canonicalize noncanonical small request");
+        assert_ne!(noncanonical_text.as_bytes(), primary_canonical.as_slice());
+        assert_eq!(noncanonical_text.len(), primary_canonical.len());
+
+        let evidence = collect_scale_evidence(&request, "event-a", "voice-a");
+        assert_eq!(
+            evidence.bytes.canonical_score_bytes,
+            primary_canonical.len()
+        );
+        assert_eq!(
+            evidence.metrics.canonical_encode_bytes,
+            primary_canonical.len()
+        );
+        assert_eq!(evidence.metrics.full_document_materializations, 1);
+        assert!(
+            evidence
+                .compact_json()
+                .contains(r#""roundTrip":{"semanticEqual":true,"canonicalBytesEqual":true}"#)
+        );
     }
 
     #[test]
