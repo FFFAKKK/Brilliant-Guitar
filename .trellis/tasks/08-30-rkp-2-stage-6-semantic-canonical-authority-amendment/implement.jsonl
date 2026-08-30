@@ -1,0 +1,16 @@
+{"file":".trellis/spec/core-kernel/backend/rust-runtime-transition.md","reason":"Frozen TypeScript-default migration and no-cutover authority for the private evidence-only amendment."}
+{"file":".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/prd.md","reason":"Existing Stage 6 private seam requirements, counts, prefix, failure, and worker ownership authority."}
+{"file":".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/design.md","reason":"Existing one-export/private-metric and sentinel contract that this amendment refines without widening."}
+{"file":".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/implement.md","reason":"Existing E0-E3 order and explicit E2 authorization boundary."}
+{"file":".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/task.json","reason":"Parent lifecycle authority and immutable nine-file registry."}
+{"file":".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/design.md","reason":"RKP-2 Stage 5/6 ownership and detached export parity contract."}
+{"file":".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/implement.md","reason":"Parent stage sequencing and protected implementation boundary."}
+{"file":".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json","reason":"RKP-2 current implementation-owner and paused-stage projection."}
+{"file":".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json","reason":"Rust remediation parent authority and one-current-child projection."}
+{"file":".trellis/tasks/archive/2026-08/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/design.md","reason":"Accepted property-cap, native-wire profile, and canonical-role authority consumed without change."}
+{"file":".trellis/tasks/archive/2026-08/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/research/root-cause-and-exact-node-count.md","reason":"Frozen stress-input counts and the distinction between raw input and canonical representations."}
+{"file":".trellis/tasks/archive/2026-08/08-28-rkp-1a-acceptance-archive-stage6-integration-closeout/task.json","reason":"C5 archived authority and final audit chain required before this successor planning child."}
+{"file":"crates/brilliant-kernel-runtime/src/indices.rs","reason":"Current private cfg(test) seam and exact invalid raw-byte equality assertion; future E1R2 technical owner."}
+{"file":"crates/brilliant-score-foundation/src/codec.rs","reason":"Existing Foundation canonical encoder authority; read-only consumer input."}
+{"file":"crates/brilliant-kernel-contracts/src/codec.rs","reason":"Existing strict decode_create_request authority; read-only consumer input."}
+{"file":"test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts","reason":"Future mechanical workspace-law ownership and call-count projection only."}

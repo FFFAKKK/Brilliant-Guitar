@@ -46,12 +46,12 @@
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RKP-0 RKP-1 AND PRIOR REPAIRS ACCEPTED ARCHIVED / RKP-2 SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 E1+E1R GREEN E2 NOT STARTED / RKP-1A P4-B 08374273 ACCEPTED ARCHIVED INTEGRATED AUTHORITY / C1-C3 AND B-TO-C4 AUDITS PASSED / C5-A NATIVE ARCHIVE AND C5-B TERMINAL PROJECTION COMPLETE / CURRENT GATE DEDICATED INDEPENDENT C5 TERMINAL PROJECTION AUDIT / TYPESCRIPT DEFAULT / NO STAGE6 AMENDMENT E2 CUTOVER PUSH QUALIFICATION OR RKP-3.",
+  "notes": "RKP-0 RKP-1 AND PRIOR REPAIRS ACCEPTED ARCHIVED / RKP-2 SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 E1+E1R GREEN E2 NOT STARTED / RKP-1A P4-B 08374273 ACCEPTED ARCHIVED INTEGRATED AUTHORITY / C1-C5 AND FINAL C5 AUDIT D14D731 PASSED / CURRENT PLANNING CHILD 08-30 STAGE6 SEMANTIC CANONICAL AUTHORITY AMENDMENT / CURRENT GATE DEDICATED INDEPENDENT STAGE6 SEMANTIC CANONICAL AUTHORITY AMENDMENT PLANNING REVIEW / TYPESCRIPT DEFAULT / NO E2 CUTOVER PUSH QUALIFICATION OR RKP-3.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
     "source_cvn7_status": "in_progress_measurement_incomplete_evidence_invalid",
-    "current_planning_child": null,
+    "current_planning_child": "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
     "current_dependency_repair_child": null,
     "future_children_created": true,
     "stage_sequence": [
@@ -95,7 +95,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "dedicated_independent_C5_terminal_projection_audit_pending",
+    "next_gate": "dedicated_independent_stage6_semantic_canonical_authority_amendment_planning_review_pending",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -352,8 +352,8 @@
       "closeout_C4_owner": "codex/rkp-2-stage-6-private-scale-evidence-seam-repair",
       "closeout_C4_frozen_source_head": "782431df5e5e97e931cf869e6e9dafe10c8aff15",
       "closeout_C5_native_archive": "ac0044faab9be80b1a704ae5dbd8e6ee9b7e7eaa_completed",
-      "closeout_C5_terminal_projection": "completed_final_C5_targeted_audit_pending",
-      "next_gate": "dedicated_independent_C5_terminal_projection_audit_pending"
+      "closeout_C5_terminal_projection": "completed_final_C5_audit_passed_d14d73117e03822a52fd19c55f3024cb2b73ef45",
+      "next_gate": "dedicated_independent_stage6_semantic_canonical_authority_amendment_planning_review_pending"
     },
     "rkp2_stage_6_private_scale_evidence_seam_repair": {
       "parent": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
@@ -380,8 +380,8 @@
       "future_mutable_lifecycle_allowlist_count": 8,
       "future_technical_allowlist_count": 5,
       "implementation_stage": "E1_and_E1R_private_rust_seam_green_E2_not_started",
-      "external_blocker": "RKP1A_C5_terminal_projection_audit_pending",
-      "next_gate": "dedicated_independent_C5_terminal_projection_audit_pending"
+      "external_blocker": "stage6_semantic_canonical_authority_amendment_planning_review_pending",
+      "next_gate": "dedicated_independent_stage6_semantic_canonical_authority_amendment_planning_review_pending"
     },
     "rkp2_part_owner_wire_contract_repair": {
       "parent": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
