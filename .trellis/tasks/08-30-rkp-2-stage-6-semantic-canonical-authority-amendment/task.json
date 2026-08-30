@@ -2,7 +2,7 @@
   "id": "rkp-2-stage-6-semantic-canonical-authority-amendment",
   "name": "rkp-2-stage-6-semantic-canonical-authority-amendment",
   "title": "RKP-2 Stage 6 Semantic and Canonical Evidence Authority Amendment",
-  "description": "E1R2 is complete and independently rereviewed PASS as the bounded Stage 6 semantic-versus-canonical test-evidence authority after the accepted RKP-1A property-cap closeout. The separately authorized Stage 6 E2 worker/process implementation is in progress; E3, runtime cutover, qualification, archive, integration, and push remain unauthorized.",
+  "description": "E1R2 is complete and independently rereviewed PASS as the bounded Stage 6 semantic-versus-canonical test-evidence authority after the accepted RKP-1A property-cap closeout. The fifth bounded Stage 6 E2 taskkill-helper reaping repair is complete at bcd7c7f2adda3d16c53bb0e533500f7ead0c0d1b after the 4356b07c5dd5d6b865210ba26e8416330487f3bd audit returned P0/P1/P2=0/1/0; it is ready for targeted independent implementation rereview. E3, runtime cutover, qualification, archive, integration, and push remain unauthorized.",
   "status": "in_progress",
   "dev_type": "planning",
   "scope": "Bounded A0/E1R2 implementation of the Stage 6 cfg(test) evidence seam: distinguish semantic equality from Rust canonical-byte equality while preserving every existing metric, private protocol, failure union, and product contract.",
@@ -55,7 +55,7 @@
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
     ".trellis/spec/core-kernel/backend/rust-runtime-transition.md"
   ],
-  "notes": "PLANNING PASS EBC13E P0_0_P1_0_P2_0 / A0 ACTIVATED / E1R2 TECHNICAL HEAD DB7AB2 AND TARGETED REREVIEW CA670FD PASS P0_0_P1_0_P2_0 / HISTORICAL E2 AUDITS 2050F386 P0_1_P1_4_P2_0, C7AA242 P0_1_P1_3_P2_0, AND 27B65197 P0_0_P1_3_P2_0 / FOURTH FOUR-PATH E2 DEADLINE-OWNERSHIP AND PROCESS-NEGATIVE REPAIR e61db6c634b7163ed8637cf6110995b366f3919e CANDIDATE READY FOR TARGETED INDEPENDENT REREVIEW / E3 S6_2 S6_3 NOT STARTED / TYPESCRIPT DEFAULT / NO ARCHIVE INTEGRATION PUSH CUTOVER QUALIFICATION OR RKP3.",
+  "notes": "PLANNING PASS EBC13E P0_0_P1_0_P2_0 / A0 ACTIVATED / E1R2 TECHNICAL HEAD DB7AB2 AND TARGETED REREVIEW CA670FD PASS P0_0_P1_0_P2_0 / HISTORICAL E2 AUDITS 2050F386 P0_1_P1_4_P2_0, C7AA242 P0_1_P1_3_P2_0, 27B65197 P0_0_P1_3_P2_0, AND 911E285 P0_0_P1_3_P2_0 / FOURTH REPAIR E61DB6C HISTORICAL / FIFTH FOUR-PATH E2 TASKKILL-HELPER REAP REPAIR bcd7c7f2adda3d16c53bb0e533500f7ead0c0d1b AFTER 4356B07 P0_0_P1_1_P2_0 CANDIDATE READY FOR TARGETED INDEPENDENT REREVIEW / E3 S6_2 S6_3 NOT STARTED / TYPESCRIPT DEFAULT / NO ARCHIVE INTEGRATION PUSH CUTOVER QUALIFICATION OR RKP3.",
   "meta": {
     "planning_base_commit": "d14d73117e03822a52fd19c55f3024cb2b73ef45",
     "planning_source_branch": "codex/rkp-2-stage-6-private-scale-evidence-seam-repair",
@@ -84,9 +84,9 @@
     "bounded_planning_repair": "accepted_authority_and_source_characterization_only_noncanonical_regression_deferred_to_E1R2B",
     "targeted_independent_planning_rereview": "passed_eb0c13ed5ac218cfec9a983a4bc4e8dfb89acbd7_P0_0_P1_0_P2_0",
     "implementation_candidate_ready": true,
-    "implementation_review": "pending_targeted_independent_E2_fourth_bounded_repair_rereview",
-    "review_status": "E2_fourth_bounded_repair_candidate_ready_targeted_independent_rereview_pending",
-    "next_gate": "dedicated_independent_E2_fourth_bounded_repair_rereview_pending",
+    "implementation_review": "pending_targeted_independent_E2_fifth_bounded_repair_rereview",
+    "review_status": "E2_fifth_bounded_repair_candidate_ready_targeted_independent_rereview_pending",
+    "next_gate": "dedicated_independent_E2_fifth_bounded_repair_rereview_pending",
     "stage6_e1r2_started": true,
     "stage6_e1r2_completed": true,
     "e1r2_a_no_write_characterization": "passed_source_assertion_archive_authority_SHA_roles_ancestry_and_technical_zero_delta",
@@ -169,8 +169,19 @@
       "fourth_technical_repair_completed": true,
       "fourth_repair_contract": "powershell_owns_180000ms_workload_deadline_node_owns_only_205000ms_outer_settlement_guard_named_stream_1MiB_limits_and_first_observed_failure",
       "fourth_repair_real_authorized_node24_integration": "passed_18_of_18_duration_ms_28865_4425_real_workload_ms_24473_515_nonqualification",
+      "fifth_independent_implementation_audit": {
+        "candidate_commit": "4356b07c5dd5d6b865210ba26e8416330487f3bd",
+        "P0": 0,
+        "P1": 1,
+        "P2": 0,
+        "verdict": "return_for_bounded_E2_implementation_repair"
+      },
+      "fifth_repair_technical_commit": "bcd7c7f2adda3d16c53bb0e533500f7ead0c0d1b",
+      "fifth_technical_repair_completed": true,
+      "fifth_repair_contract": "node_taskkill_helper_waits_for_real_close_or_bounded_reap_guard_and_powershell_second_wait_result_controls_taskkill_reap",
+      "fifth_repair_focused_node_current_and_20": "worker_18_pass_1_explicit_real_stress_skip_0_fail_and_workspace_law_11_tests_8_pass_3_existing_fail_closed",
       "candidate_ready": true,
-      "targeted_independent_implementation_rereview": "pending_fourth_bounded_repair_rereview",
+      "targeted_independent_implementation_rereview": "pending_fifth_bounded_repair_rereview",
       "E3_S6_2_S6_3_started": false
     },
     "stage6_e3_started": false,
@@ -247,6 +258,6 @@
       "P2": 0,
       "verdict": "planning_candidate_ready_for_independent_review_pending_verification"
     },
-    "planning_validation": "trellis_json_jsonl_related_file_parent_child_fence_diffcheck_new_9_of_9_stage6_9_of_9_rkp1a_9_of_9_closeout_9_of_9_typecheck_build_pass_workspace_law_current_10_tests_7_pass_3_existing_fail_closed"
+    "planning_validation": "trellis_json_jsonl_related_file_parent_child_fence_diffcheck_new_9_of_9_stage6_9_of_9_rkp1a_9_of_9_closeout_9_of_9_typecheck_build_pass_workspace_law_current_and_node20_11_tests_8_pass_3_existing_fail_closed_worker_focus_18_pass_1_explicit_stress_skip_0_fail"
   }
 }
