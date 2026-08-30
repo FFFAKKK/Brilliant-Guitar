@@ -15,6 +15,7 @@ $ErrorActionPreference = "Stop"
 $rustPrefix = "BRILLIANT_RKP2_SCALE_RUST_V1:"
 $processPrefix = "BRILLIANT_RKP2_SCALE_PROCESS_V1:"
 $requestEnv = "BRILLIANT_RKP2_SCALE_REQUEST_V1"
+$terminationBudgetMs = 5000
 $reapTimeoutMs = 5000
 $maxSafe = 9007199254740991
 $expectedTestName = "indices::tests::rkp2_stage_6_private_scale_evidence_v1"
@@ -52,11 +53,11 @@ function Invoke-TaskKill([Diagnostics.Process] $Child) {
   $taskkill = $null
   try {
     $taskkill = Start-Process -FilePath (Join-Path $env:SystemRoot "System32\\taskkill.exe") -ArgumentList @("/PID", [string] $Child.Id, "/T", "/F") -PassThru -WindowStyle Hidden
-    if (-not $taskkill.WaitForExit($reapTimeoutMs)) {
+    if (-not $taskkill.WaitForExit($terminationBudgetMs)) {
       # A timed-out taskkill is itself terminated and reaped inside the same
       # bounded settlement budget; its failure remains secondary to the first cause.
       try { Stop-Process -Id $taskkill.Id -Force -ErrorAction Stop } catch {}
-      try { [void] $taskkill.WaitForExit($reapTimeoutMs) } catch {}
+      try { [void] $taskkill.WaitForExit($terminationBudgetMs) } catch {}
       return
     }
     if ($taskkill.ExitCode -ne 0) { return }

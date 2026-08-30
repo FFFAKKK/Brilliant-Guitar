@@ -1196,7 +1196,7 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
       ...STAGE_6_E2_WORKER_TECHNICAL_PATHS,
       ...STAGE_6_SEMANTIC_CANONICAL_LIFECYCLE_PATHS,
     ],
-    "Stage 6 E2 third bounded repair candidate",
+    "Stage 6 E2 fourth bounded repair candidate",
   );
 
   const task = JSON.parse(
@@ -1274,18 +1274,23 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     cleanupBudgetMs: 5_000,
     outerCushionMs: 10_000,
     outerDeadlineMs: 205_000,
+    outerDeadlineFormula: "workload-plus-termination-plus-reap-plus-cleanup-plus-cushion",
+    workloadDeadlineOwner: "powershell-wrapper",
+    nodeWorkloadTermination: "forbidden",
     ownershipStates: ["root-absent", "offered", "accepted-residue", "unknown"],
     terminationStates: ["not-required", "succeeded", "failed"],
     cleanupStates: ["succeeded", "failed"],
   });
   assert.equal(
     PRIVATE_SCALE_PROCESS_STATE_REGISTRY_SHA256,
-    "47911291ed39a657a5534f73c3e45925694d6ffbe28bcce30613a1f5a2b0c149",
+    "bb4ceb53ccf6879838930f3335d2880583334c5529cec18c05628418a0851f8e",
   );
   assert.ok(worker.includes("export async function spawnPowerShell("));
-  assert.ok(worker.includes("const workloadDeadline = startedAt + PRIVATE_SCALE_TIMEOUT_MS;"));
+  assert.ok(worker.includes("PowerShell alone owns the 180-second workload deadline"));
+  assert.equal(worker.includes("workloadTimer = setTimer"), false);
+  assert.ok(worker.includes("actual <= PRIVATE_SCALE_STREAM_LIMIT_BYTES"));
+  assert.ok(worker.includes("outputLimitStream"));
   assert.ok(worker.includes("const outerDeadline = startedAt + PRIVATE_SCALE_OUTER_TIMEOUT_MS;"));
-  assert.ok(worker.includes("workloadTimer = setTimer"));
   assert.ok(worker.includes("outerTimer = setTimer"));
   assert.ok(worker.includes("observePrivateScaleOwnershipForTest"));
   assert.ok(worker.includes("removeOwnedLeafExactlyOnce"));
@@ -1294,11 +1299,12 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
   assert.ok(worker.includes("case \"process.cleanup-failed\":"));
   assert.ok(workerTest.includes("createFakeTimers"));
   assert.ok(workerTest.includes("spawnPowerShell(\"worker.ps1\""));
-  assert.ok(workerTest.includes("Stage 6 E2 drives timeout and overflow through the production outer settlement machine"));
+  assert.ok(workerTest.includes("Stage 6 E2 gives the 180-second deadline exclusively to PowerShell"));
+  assert.ok(workerTest.includes("Stage 6 E2 drives taskkill launch, error, nonzero, timeout, reap, and close-race failures through spawnPowerShell"));
   assert.ok(workerTest.includes("Stage 6 E2 rejects impossible process envelopes rather than inventing state"));
   assert.ok(process.includes("function Invoke-TaskKill"));
   assert.ok(process.includes("Stop-Process -Id $taskkill.Id -Force"));
-  assert.ok(process.includes("$taskkill.WaitForExit($reapTimeoutMs)"));
+  assert.ok(process.includes("$taskkill.WaitForExit($terminationBudgetMs)"));
   assert.ok(process.includes("$script:handoffAccepted = $true"));
   assert.ok(process.includes("Remove-OwnedPath $RequestPath \"request\""));
   const indices = readText("crates/brilliant-kernel-runtime/src/indices.rs");

@@ -44,6 +44,9 @@ export const PRIVATE_SCALE_PROCESS_STATE_REGISTRY = Object.freeze({
   cleanupBudgetMs: PRIVATE_SCALE_CLEANUP_BUDGET_MS,
   outerCushionMs: PRIVATE_SCALE_OUTER_CUSHION_MS,
   outerDeadlineMs: PRIVATE_SCALE_OUTER_TIMEOUT_MS,
+  outerDeadlineFormula: "workload-plus-termination-plus-reap-plus-cleanup-plus-cushion",
+  workloadDeadlineOwner: "powershell-wrapper",
+  nodeWorkloadTermination: "forbidden",
   ownershipStates: ["root-absent", "offered", "accepted-residue", "unknown"] as const,
   terminationStates: ["not-required", "succeeded", "failed"] as const,
   cleanupStates: ["succeeded", "failed"] as const,
@@ -144,18 +147,14 @@ export interface WorkerResult {
   readonly wallElapsedMicros: number;
 }
 
-export type PrivateScaleOuterFailure =
-  | "process.start-failed"
-  | "process.output-limit-exceeded"
-  | "process.timeout";
-
 export interface PowerShellResult {
   readonly stdout: Buffer;
   readonly stderr: Buffer;
   readonly exitCode: number | null;
   readonly timedOut: boolean;
   readonly launchFailed: boolean;
-  readonly firstFailure: PrivateScaleOuterFailure | undefined;
+  readonly firstFailure: ScaleFailure | undefined;
+  readonly outputLimitStream: "stdout" | "stderr" | undefined;
   readonly terminationStatus: "not-required" | "succeeded" | "failed";
   readonly reapStatus: "not-required" | "succeeded" | "failed";
 }
@@ -165,6 +164,8 @@ export interface PrivateScaleSpawnDependencies {
   readonly now?: () => number;
   readonly setTimer?: typeof setTimeout;
   readonly clearTimer?: typeof clearTimeout;
+  /** Test-only override for the system taskkill location; production reads SystemRoot. */
+  readonly systemRoot?: string;
 }
 
 export type PrivateScaleOwnershipState =
@@ -399,9 +400,14 @@ function assertFailureProcessCombination(failure: ScaleFailure, process: ScalePr
         throw protocolFailure("process", "identity");
       }
       return;
-    case "process.output-limit-exceeded":
-      if (process.timedOut || !stopped) throw protocolFailure("process", "identity");
+    case "process.output-limit-exceeded": {
+      const stream = details.stream;
+      const actual = stream === "stdout" ? process.stdoutBytes : process.stderrBytes;
+      if (process.timedOut || !stopped || actual <= PRIVATE_SCALE_STREAM_LIMIT_BYTES) {
+        throw protocolFailure("process", "identity");
+      }
       return;
+    }
     case "process.timeout":
       if (process.timedOut !== true || !stopped) throw protocolFailure("process", "identity");
       return;
@@ -549,19 +555,19 @@ export async function spawnPowerShell(
     const stdout: Buffer[] = [];
     const stderr: Buffer[] = [];
     const startedAt = now();
-    const workloadDeadline = startedAt + PRIVATE_SCALE_TIMEOUT_MS;
     const outerDeadline = startedAt + PRIVATE_SCALE_OUTER_TIMEOUT_MS;
     let child: ReturnType<typeof spawn> | undefined;
     let childExit: number | null = null;
     let childClosed = false;
     let settled = false;
     let terminating = false;
+    let terminationSettled = false;
     let reaping = false;
     let launchFailed = false;
-    let firstFailure: PrivateScaleOuterFailure | undefined;
+    let firstFailure: ScaleFailure | undefined;
+    let outputLimitStream: "stdout" | "stderr" | undefined;
     let terminationStatus: PowerShellResult["terminationStatus"] = "not-required";
     let reapStatus: PowerShellResult["reapStatus"] = "not-required";
-    let workloadTimer: ReturnType<typeof setTimeout> | undefined;
     let outerTimer: ReturnType<typeof setTimeout> | undefined;
     let terminationTimer: ReturnType<typeof setTimeout> | undefined;
     let reapTimer: ReturnType<typeof setTimeout> | undefined;
@@ -569,14 +575,18 @@ export async function spawnPowerShell(
     const finish = () => {
       if (settled) return;
       settled = true;
-      for (const timer of [workloadTimer, outerTimer, terminationTimer, reapTimer]) {
+      for (const timer of [outerTimer, terminationTimer, reapTimer]) {
         if (timer !== undefined) clearTimer(timer);
       }
       resolvePromise({ stdout: Buffer.concat(stdout), stderr: Buffer.concat(stderr), exitCode: childExit,
-        timedOut: firstFailure === "process.timeout", launchFailed, firstFailure, terminationStatus, reapStatus });
+        timedOut: firstFailure?.code === "process.timeout", launchFailed, firstFailure, outputLimitStream, terminationStatus, reapStatus });
     };
-    const recordFailure = (failure: PrivateScaleOuterFailure) => {
-      if (firstFailure === undefined) firstFailure = failure;
+    const recordFailure = (failure: ScaleFailure) => {
+      if (firstFailure !== undefined) return;
+      firstFailure = failure;
+      if (failure.code === "process.output-limit-exceeded") {
+        outputLimitStream = failure.details.stream as "stdout" | "stderr";
+      }
     };
     const beginReap = () => {
       if (settled) return;
@@ -585,23 +595,24 @@ export async function spawnPowerShell(
       reaping = true;
       reapTimer = setTimer(() => { reapStatus = "failed"; finish(); }, PRIVATE_SCALE_REAP_TIMEOUT_MS);
     };
-    const requestTermination = (failure: PrivateScaleOuterFailure) => {
+    const requestTermination = (failure: ScaleFailure) => {
       if (settled) return;
       recordFailure(failure);
       if (terminating) return;
       terminating = true;
-      if (child === undefined || child.pid === undefined) { terminationStatus = "failed"; beginReap(); return; }
-      const systemRoot = process.env.SystemRoot;
+      if (child === undefined || child.pid === undefined) { terminationStatus = "failed"; terminationSettled = true; beginReap(); return; }
+      const systemRoot = dependencies.systemRoot ?? process.env.SystemRoot;
       const taskkill = systemRoot === undefined ? undefined : join(systemRoot, "System32", "taskkill.exe");
-      if (taskkill === undefined) { terminationStatus = "failed"; beginReap(); return; }
+      if (taskkill === undefined) { terminationStatus = "failed"; terminationSettled = true; beginReap(); return; }
       let killer: ReturnType<typeof spawn>;
       try {
         killer = spawnProcess(taskkill, ["/PID", String(child.pid), "/T", "/F"], { windowsHide: true, shell: false, stdio: "ignore" });
-      } catch { terminationStatus = "failed"; beginReap(); return; }
+      } catch { terminationStatus = "failed"; terminationSettled = true; beginReap(); return; }
       let taskkillSettled = false;
       const settleTaskkill = (succeeded: boolean) => {
-        if (taskkillSettled) return;
+        if (taskkillSettled || settled) return;
         taskkillSettled = true;
+        terminationSettled = true;
         if (terminationTimer !== undefined) clearTimer(terminationTimer);
         terminationStatus = succeeded ? "succeeded" : "failed";
         beginReap();
@@ -611,9 +622,12 @@ export async function spawnPowerShell(
       terminationTimer = setTimer(() => { try { killer.kill(); } catch {} settleTaskkill(false); }, PRIVATE_SCALE_TERMINATION_BUDGET_MS);
     };
 
-    // Guards are installed before spawn and never reset after an event.
-    workloadTimer = setTimer(() => requestTermination("process.timeout"), Math.max(0, workloadDeadline - now()));
-    outerTimer = setTimer(() => { if (firstFailure === undefined) requestTermination("process.timeout"); else beginReap(); }, Math.max(0, outerDeadline - now()));
+    // PowerShell alone owns the 180-second workload deadline. Node installs one
+    // independently derived outer hard deadline before spawn and never resets it.
+    outerTimer = setTimer(
+      () => requestTermination({ code: "process.timeout", details: { timeoutMs: PRIVATE_SCALE_TIMEOUT_MS } }),
+      Math.max(0, outerDeadline - now()),
+    );
     try {
       child = spawnProcess(process.env.BRILLIANT_RKP2_PWSH ?? "pwsh", [
         "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", script,
@@ -621,19 +635,29 @@ export async function spawnPowerShell(
         "-TimeoutMs", String(PRIVATE_SCALE_TIMEOUT_MS), "-PollIntervalMs", String(PRIVATE_SCALE_POLL_INTERVAL_MS),
         "-MaxStdoutBytes", String(PRIVATE_SCALE_STREAM_LIMIT_BYTES), "-MaxStderrBytes", String(PRIVATE_SCALE_STREAM_LIMIT_BYTES),
       ], { windowsHide: true, shell: false, stdio: ["ignore", "pipe", "pipe"] });
-    } catch { launchFailed = true; recordFailure("process.start-failed"); finish(); return; }
-    child.once("error", () => { launchFailed = true; recordFailure("process.start-failed"); finish(); });
-    if (child.stdout === null || child.stderr === null) { launchFailed = true; recordFailure("process.start-failed"); finish(); return; }
-    const observeChunk = (target: Buffer[], chunk: Buffer) => {
+    } catch { launchFailed = true; recordFailure({ code: "process.start-failed", details: { stage: "start" } }); finish(); return; }
+    child.once("error", () => {
+      launchFailed = true;
+      recordFailure({ code: "process.start-failed", details: { stage: "start" } });
+      if (!terminating) finish();
+      else if (terminationSettled) beginReap();
+    });
+    if (child.stdout === null || child.stderr === null) { launchFailed = true; recordFailure({ code: "process.start-failed", details: { stage: "start" } }); finish(); return; }
+    const observeChunk = (target: Buffer[], stream: "stdout" | "stderr", chunk: Buffer) => {
       target.push(Buffer.from(chunk));
-      if (target.reduce((sum, value) => sum + value.length, 0) > PRIVATE_SCALE_STREAM_LIMIT_BYTES) requestTermination("process.output-limit-exceeded");
+      const actual = target.reduce((sum, value) => sum + value.length, 0);
+      if (actual > PRIVATE_SCALE_STREAM_LIMIT_BYTES) requestTermination({ code: "process.output-limit-exceeded", details: { stream, limitBytes: PRIVATE_SCALE_STREAM_LIMIT_BYTES } });
     };
-    child.stdout.on("data", (chunk: Buffer) => observeChunk(stdout, chunk));
-    child.stderr.on("data", (chunk: Buffer) => observeChunk(stderr, chunk));
-    child.once("close", (exitCode) => {
+    child.stdout.on("data", (chunk: Buffer) => observeChunk(stdout, "stdout", chunk));
+    child.stderr.on("data", (chunk: Buffer) => observeChunk(stderr, "stderr", chunk));
+    child.once("close", (exitCode, signal) => {
       childClosed = true;
       childExit = exitCode;
-      if (terminating) beginReap(); else { reapStatus = "succeeded"; finish(); }
+      if (signal !== null && signal !== undefined) recordFailure({ code: "process.protocol-invalid", details: { stage: "process", reason: "identity" } });
+      else if (exitCode === null) recordFailure({ code: "process.protocol-invalid", details: { stage: "process", reason: "identity" } });
+      else if (exitCode !== 0) recordFailure({ code: "process.nonzero-exit", details: { exitCode } });
+      if (terminating) { if (terminationSettled) beginReap(); }
+      else { reapStatus = "succeeded"; finish(); }
     });
   });
 }
@@ -674,11 +698,7 @@ export async function runPrivateScaleEvidenceWorker(options: { readonly repoRoot
       if (ownership === "accepted-residue") throw { code: "process.cleanup-failed", details: { target: "temp-directory" } } satisfies ScaleFailure;
       throw protocolFailure("process", "identity");
     }
-    if (processResult.firstFailure !== undefined) {
-      if (processResult.firstFailure === "process.start-failed") throw { code: "process.start-failed", details: { stage: "start" } } satisfies ScaleFailure;
-      if (processResult.firstFailure === "process.timeout") throw { code: "process.timeout", details: { timeoutMs: PRIVATE_SCALE_TIMEOUT_MS } } satisfies ScaleFailure;
-      throw { code: "process.output-limit-exceeded", details: { stream: "stdout", limitBytes: PRIVATE_SCALE_STREAM_LIMIT_BYTES } } satisfies ScaleFailure;
-    }
+    if (processResult.firstFailure !== undefined) throw processResult.firstFailure;
     const envelope = decodeProcessEnvelope(processResult.stdout, processResult.stderr);
     if (envelope.status !== "ok") throw envelope.failure;
     if (processResult.exitCode !== 0) throw { code: "process.nonzero-exit", details: { exitCode: processResult.exitCode ?? 1 } } satisfies ScaleFailure;
