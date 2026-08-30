@@ -18,16 +18,17 @@ This document is a planning candidate only. `task.py start` is prohibited in thi
 - **Gate:** parent ownership remains singular: the Stage 6 seam child is the only active implementation owner and this child is the current planning/authority child.
 - **Rollback:** revert A0 only, returning to the accepted planning state.
 
-## E1R2-A — RED characterization (future, no repository write)
+## E1R2-A — accepted no-write defect characterization (future, no repository write)
 
-- **Action:** demonstrate on the existing noncanonical small raw order that the current assertion `encoded == input_score_bytes` fails although strict decode, Store export, and semantic DTO equality hold.
-- **Gate:** this is an expected in-memory/test-command RED only. It creates no dirty worktree, runs no stress worker, and does not change any contract or fixture.
-- **Stop:** a failure other than this raw-byte assertion, or any indication of a product codec/DTO defect, stops the work for a new bounded plan.
+- **Action:** mechanically confirm that the current/accepted E1 seam still contains `assert_eq!(encoded, input_score_bytes)` in `collect_scale_evidence`; then read the accepted archived RKP-1A authority/evidence to confirm raw SHA `5a8a318e58bc08a82a822c166ed11239ed4ed7b9ea45d50bb7dcb81d7c57f91e`, Rust canonical SHA `4d8597437cc8b07df6cfef9400086218636adb27257ad72d055e1e3a3deafff7`, equal length `15_013_904`, different bytes, DTO semantic equality, and the frozen first-difference/path/order facts.
+- **Action:** confirm accepted B `08374273b05bc992e749a17a959b64af0f293f0b`, C5 authority `d14d73117e03822a52fd19c55f3024cb2b73ef45`, their ancestry/archive authority, and byte-zero values for both future technical paths relative to the accepted planning base.
+- **Gate:** every source assertion and accepted-authority fact above must exist and agree. This phase constructs no nonexistent noncanonical small request, runs no Rust test, stress worker, or process harness, and writes neither repository nor fixture state. It is evidence for the defect premise, not a claim that the future regression already ran.
+- **Stop:** a missing/mismatched source assertion, archive authority, SHA role, ancestry, or technical zero-delta stops the work for a new bounded planning repair.
 
 ## E1R2-B — atomic two-file correction (future)
 
 - **Files:** exactly `crates/brilliant-kernel-runtime/src/indices.rs` and `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts`.
-- **Action:** replace the raw-byte assertion with the flow in `design.md`; add canonical and noncanonical small tests; mechanically pin one export, two strict decodes, two Rust canonical encodes, metric ownership, semantic/canonical field roles, and literal ownership.
+- **Action:** replace the raw-byte assertion with the flow in `design.md`; this atomic two-file commit is the first place that adds and runs the noncanonical small regression, alongside the canonical small test. Mechanically pin one export, two strict decodes, two Rust canonical encodes, metric ownership, semantic/canonical field roles, and literal ownership.
 - **Gate:** focused Rust seam tests and workspace-law are green; Foundation/Contracts/RKP-1A source consumers are byte-zero; no worker/process/sentinel schema drift.
 - **Rollback:** one atomic technical commit restores the current assertion and all pre-E1R2 seam behavior.
 

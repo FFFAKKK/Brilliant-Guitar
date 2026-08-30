@@ -4,8 +4,8 @@
 | --- | --- | --- | --- |
 | P0 | 12 new task artifacts + 3 parent task JSON files | docs-only fifteen-path planning authority; no task start | revert planning commit only |
 | A0 | six lifecycle paths | activation state only; no technical diff | revert A0 only |
-| E1R2-A | none | current raw-byte assertion fails on noncanonical small input only | no dirty tree; unexpected failure stops planning |
-| E1R2-B | `crates/brilliant-kernel-runtime/src/indices.rs`; `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts` | canonical/noncanonical small proof; 1 export/2 decode/2 encode; no metric duplication | revert one atomic technical commit |
+| E1R2-A | none | zero-write characterization: current raw-equality source assertion; accepted B/C5 ancestry and archive evidence; two future technical paths byte-zero; raw/canonical SHA, semantic, and first-difference facts agree | no dirty tree, request, Rust test, worker, or stress; any missing/mismatched fact stops planning |
+| E1R2-B | `crates/brilliant-kernel-runtime/src/indices.rs`; `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts` | first addition and execution of canonical/noncanonical small proof; 1 export/2 decode/2 encode; no metric duplication | revert one atomic technical commit |
 | E1R2-C | six lifecycle paths | full gates and independent-audit candidate metadata | revert lifecycle-only commit |
 | E1R2-D | none | independent read-only audit | PASS only requests separate E2 authorization |
 

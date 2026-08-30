@@ -64,6 +64,16 @@
     "production_implementation_authorized": false,
     "user_implementation_authorization": false,
     "independent_planning_review": "pending",
+    "first_independent_planning_review": {
+      "candidate_commit": "5ef997350a4a7c992be4d73f724e2d95b850d773",
+      "P0": 0,
+      "P1": 1,
+      "P2": 0,
+      "verdict": "return_for_bounded_planning_repair",
+      "finding": "e1r2a_nonexistent_noncanonical_small_no_write_red"
+    },
+    "bounded_planning_repair": "accepted_authority_and_source_characterization_only_noncanonical_regression_deferred_to_E1R2B",
+    "targeted_independent_planning_rereview": "pending",
     "implementation_candidate_ready": false,
     "implementation_review": "pending",
     "review_status": "planning_candidate_only",
@@ -118,13 +128,13 @@
     "immutable_planning_authority": {
       "prd.md": "cbd00dcdfc73bfe3ecffcfdb8569112b58e2a4cde4aaf655170f14b955665386",
       "design.md": "9579a08646e0cfbdc9dfe2b1b0934ee97dde9896e8086ae6ac5ab67b9cc94778",
-      "implement.md": "bbafe347a5be68c6e086bb3578486d7a3bd9353944adf816adcacbf925ef4876",
+      "implement.md": "b43e279fe526cf94aa7db2c104d6fcef9890c571eb3aa811beeeb6f35846b832",
       "implement.jsonl": "c58b7c746b24f362fc70c61229864165f7cdac74c698759f4e1fd80d1bf56756",
       "check.jsonl": "ae2f47a8dbbbf37f16941b8d96b4822a009089876b9ddfd8dc3812b408b2b97a",
       "research/current-seam-and-authority-audit.md": "4c9405a8df0f3221d42a02b342bb3605470ee690906bc61ddde79a99de69acdd",
       "research/semantic-canonical-role-matrix.md": "f538a1575681b9ff01144117f7058d2d35c930126003d9e23626e7418ae4971c",
-      "research/e1r2-file-test-rollback-matrix.md": "eed425d03a43a288d4f220aa77995e4c363316b18807451fab27978adddfd7c4",
-      "research/planning-self-audit.md": "18bdae26fd1549ee62f6000372642f4eab92fd6a78fa0f4d7ccd0688a3dec296"
+      "research/e1r2-file-test-rollback-matrix.md": "c861277a79bc3c8131250216f82a87c4af80938f166141fe698d88c66ef41fcb",
+      "research/planning-self-audit.md": "9eab93aa3385349b9e618d91e4f96f2df5ce727a0966c62d61ac30b39e5e3e2f"
     },
     "frozen_semantic_canonical_contract": {
       "raw_input_sha256": "5a8a318e58bc08a82a822c166ed11239ed4ed7b9ea45d50bb7dcb81d7c57f91e",

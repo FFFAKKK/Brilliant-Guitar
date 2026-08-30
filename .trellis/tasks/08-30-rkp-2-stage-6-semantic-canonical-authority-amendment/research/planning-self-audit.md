@@ -14,6 +14,7 @@
 - E1R2 retains one export, exactly two strict decodes, exactly two Rust canonical encodes, primary-only canonical metrics, no persistent metric write, and no worker/sentinel change.
 - RKP-1A, C5, and original Stage 6 immutable authorities are inputs, not mutable task scope.
 - E2 requires distinct authorization after independent E1R2 audit.
+- First independent planning audit of `5ef997350a4a7c992be4d73f724e2d95b850d773` returned `P0/P1/P2=0/1/0`: E1R2-A planned a no-write execution of a noncanonical small input that does not exist until E1R2-B. This bounded repair instead freezes E1R2-A as zero-write source/authority characterization and reserves the first addition/run of the regression for E1R2-B.
 
 ## Lifecycle check
 
@@ -28,4 +29,4 @@
 
 ## Result
 
-Self-audit: **P0/P1/P2 = 0/0/0**. Independent planning review remains pending.
+Self-audit after bounded repair: **P0/P1/P2 = 0/0/0**. Targeted independent planning rereview remains pending.

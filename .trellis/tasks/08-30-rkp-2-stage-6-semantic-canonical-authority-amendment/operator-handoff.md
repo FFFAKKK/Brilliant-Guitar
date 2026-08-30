@@ -8,7 +8,7 @@ The parent Stage 6 seam remains the sole active implementation child, is operati
 
 ## Handoff contract
 
-An implementation operator may act only after an independent planning PASS and a new user authorization. Then follow `implement.md` in order: A0, no-write E1R2-A, atomic E1R2-B, lifecycle-only E1R2-C, and read-only E1R2-D. Do not start E2 from any E1R2 result.
+An implementation operator may act only after an independent planning PASS and a new user authorization. Then follow `implement.md` in order: A0, accepted no-write authority/source characterization, atomic E1R2-B that first adds the noncanonical small regression, lifecycle-only E1R2-C, and read-only E1R2-D. Do not start E2 from any E1R2 result.
 
 The crucial distinction is non-negotiable: raw TypeScript JSON bytes are a transport/input artifact; Foundation canonical bytes are a Rust canonical artifact. Semantic equality connects those representations. Canonical byte equality connects only the two Rust canonical encodes.
 
