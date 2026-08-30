@@ -1,0 +1,12 @@
+{"file":".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/prd.md","reason":"Original Stage 6 fixed scale, evidence and scope authority; immutable input."}
+{"file":".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/design.md","reason":"Original private seam, worker protocol and lifecycle owner authority; immutable input."}
+{"file":".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/implement.md","reason":"Original E3 exact-eight lifecycle set and final candidate gates."}
+{"file":".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/task.json","reason":"Original immutable hash registry and Stage 6 lifecycle owner."}
+{"file":".trellis/tasks/08-30-rkp-2-stage-6-semantic-canonical-authority-amendment/task.json","reason":"Historical E1R2/E2 child state that must stop owning the live E3 gate."}
+{"file":".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json","reason":"RKP-2 S6.2/S6.3 and TypeScript-default projection."}
+{"file":".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json","reason":"Rust parent lifecycle projection and no-RKP3 boundary."}
+{"file":"test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts","reason":"Only future technical owner for historical E2 freeze and E3 final-state projection."}
+{"file":".trellis/spec/core-kernel/backend/rust-runtime-transition.md","reason":"TypeScript-default, no-cutover and staged RKP authority."}
+{"file":".trellis/tasks/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair/research/current-e3-law-gap-audit.md","reason":"Live 7/4 failure evidence and exact root-cause anchors."}
+{"file":".trellis/tasks/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair/research/final-state-projection-contract.md","reason":"Exact sets, hashes, terminal heads and owner separation for implementation."}
+{"file":".trellis/tasks/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair/research/file-test-and-rollback-matrix.md","reason":"Single-file change, negative tests, validation and rollback boundary."}

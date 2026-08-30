@@ -19,7 +19,8 @@
   "pr_url": null,
   "subtasks": [],
   "children": [
-    "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment"
+    "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
+    "08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair"
   ],
   "parent": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
   "relatedFiles": [
@@ -42,7 +43,7 @@
     "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "IN_PROGRESS / ACCEPTED PLANNING D638B81 / E0 COMPLETE / E1+E1R GREEN / 08-30 E1R2 TARGETED IMPLEMENTATION REREVIEW CA670FD PASS P0_0_P1_0_P2_0 / HISTORICAL E2 AUDITS 2050F386 P0_1_P1_4_P2_0 AND C7AA242 P0_1_P1_3_P2_0 / FOURTH FOUR-PATH E2 DEADLINE-OWNERSHIP AND PROCESS-NEGATIVE REPAIR e61db6c634b7163ed8637cf6110995b366f3919e HISTORICAL / FIFTH FOUR-PATH E2 TASKKILL-HELPER REAP REPAIR BCD7C7 AUDITED AT 0E4928C PASS P0_0_P1_0_P2_0 / E2 ACCEPTANCE PREPARATION READY / E3 EXPLICIT USER AUTHORIZATION REQUIRED / E3 NOT STARTED / RKP-2 PAUSED / RKP-1A P4-B 08374273 ACCEPTED ARCHIVED INTEGRATED AUTHORITY / C1-C5 AND FINAL C5 AUDIT D14D731 PASSED / TYPESCRIPT DEFAULT.",
+  "notes": "PLANNING LINE AT 4AD23773 / E3 FRESH RUN OBSERVED COMPLETE IN PRESERVED SOURCE WORKTREE / WORKSPACE LAW 11 TESTS 7 PASS 4 FAIL WITH ONE NEW E3 FINAL-STATE PROJECTION FAILURE / 08-31 ONE-FILE LAW REPAIR PLANNING CHILD CREATED / INDEPENDENT PLANNING REVIEW PENDING / NO TASK START OR IMPLEMENTATION AUTHORIZATION / RKP-2 S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT.",
   "meta": {
     "planning_base_commit": "4a302bc9f9981940336fc97941b08e09bd0d1f67",
     "source_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -92,8 +93,8 @@
     "bounded_planning_repair": "round_3_cleanup_ownership_and_post_cleanup_envelope_accepted",
     "implementation_candidate_ready": true,
     "implementation_review": "passed_dedicated_independent_E2_fifth_bounded_repair_rereview",
-    "implementation_blocker": "explicit_user_authorization_for_E3_fresh_run_and_candidate_freeze_required",
-    "current_planning_child": "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
+    "implementation_blocker": "e3_workspace_law_final_state_projection_repair_planning_review_pending",
+    "current_planning_child": "08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair",
     "stage6_semantic_canonical_authority_amendment": {
       "task": "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
       "status": "E1R2_rereview_passed_fifth_E2_audited_acceptance_preparation_ready_awaiting_explicit_E3_authorization",
@@ -285,11 +286,24 @@
       "terminal_projection": "completed_separate_C5_B_commit_final_C5_audit_passed_d14d73117e03822a52fd19c55f3024cb2b73ef45",
       "E2_authorized": false
     },
-    "next_gate": "explicit_user_authorization_for_E3_fresh_run_and_candidate_freeze_required",
+    "next_gate": "e3_workspace_law_repair_independent_planning_review",
     "archive_authorized": false,
     "push_authorized": false,
     "default_runtime_switch_authorized": false,
     "official_measurement_authorized": false,
-    "rkp3_creation_authorized": false
+    "rkp3_creation_authorized": false,
+    "e3_workspace_law_final_state_projection_repair": {
+      "task": "08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair",
+      "status": "planning",
+      "planning_base_commit": "4ad23773e9c9e1081667a4eccb84cc464b85bc89",
+      "observed_source_worktree": ".worktrees/rkp-2-stage-6-semantic-canonical-authority-amendment",
+      "observed_e3_fresh_run_complete": true,
+      "observed_e3_protocol_sha256": "64e09779ea34bd04d504d515eb7c391f7db35a0a23a3c366fb2ffb5aa71c2862",
+      "observed_workspace_law": "11_tests_7_pass_4_fail_exactly_one_incremental_E3_projection_failure",
+      "task_start_run": false,
+      "production_implementation_authorized": false,
+      "independent_planning_review": "pending",
+      "next_gate": "dedicated_independent_planning_review"
+    }
   }
 }
