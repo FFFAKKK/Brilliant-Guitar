@@ -2,24 +2,35 @@
 
 ## Status
 
-`PHASE B COMPLETE — NOT AN IMPLEMENTATION CANDIDATE`
+`READY FOR DEDICATED INDEPENDENT IMPLEMENTATION REVIEW`
 
-Planning candidate `e4ee1d43fd29a794d8f0f389d651c556203fe5af` passed its independent planning audit in task `01a05394-7f39-7701-8fc6-f5dfdb580b53` with `P0/P1/P2=0/0/0`. `task.py start` activated this child, and the current continuation authorized Phase B source snapshot reconstruction only.
+Planning authority `e4ee1d43fd29a794d8f0f389d651c556203fe5af` passed its independent planning audit with `P0/P1/P2=0/0/0`. Phases A through E are complete. The sole technical owner is commit `36fe1956ec8660d664eb9606912dbc6e1b6c3ede`, which changes only `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts`.
 
-`implementation_candidate_ready=false` and `implementation_review=pending`. Phase B reconstructed the already-measured original E3 eight-path state without a new stress run: seven files match their frozen LF-normalized hashes and the Stage 6 parent is the required semantic merge. Typecheck and build pass, while the unchanged Workspace Law test remains at the expected pre-repair `11/7/4`. Phase C historical E2 freeze is the next gate; it has not started and is not authorized in this run. No technical file changed.
+The implementation candidate is ready and `implementation_review=pending_dedicated_independent_E3_workspace_law_implementation_review`. No review verdict is prewritten.
+
+## Decisive evidence
+
+- Historical E1R2+E2 and bounded E2 projections remain exact at `11` and `10` paths.
+- The live final-state projection is the exact disjoint union `8 + 1 + 12 = 21`.
+- The original E3 evidence has protocol SHA-256 `64e09779ea34bd04d504d515eb7c391f7db35a0a23a3c366fb2ffb5aa71c2862`, source HEAD `4ad23773...`, tree `9dbcef77...`, exit `0`, timeout false, partial evidence false and peak working set `821886976` bytes.
+- All nine original immutable planning hashes exact-match.
+- Missing evidence, a ninth path, duplicate ownership, protocol drift, premature review PASS, S6.2/S6.3 drift, Rust-default drift and historical-owner drift all fail closed through pure negative fixtures.
+- Focused result: `11 tests / 8 pass / 3 exact historical fail / 0 additional`.
+- Full result with the ignored E:-resident native validation artifact: `611 tests / 606 pass / 3 exact historical fail / 2 skipped`.
+- Typecheck, build, five Trellis validations, JSON/JSONL checks and protected-path zero-delta checks pass.
 
 ## Review questions
 
-1. Does `4ad23773...` correctly close historical E2 and open live E3?
-2. Are the original E3 eight paths preserved without a ninth path?
-3. Are original E3, repair technical and repair governance sets exact and disjoint?
-4. Does the law prove real evidence content rather than only path presence?
-5. Are the three known historical fail-closed tests guaranteed to remain red and visible?
-6. Does 08-26 remain the live E3 owner while 08-30 remains historical?
-7. Are S6.2/S6.3, TypeScript default and all later gates still closed?
-8. Is the one-file technical allowlist sufficient and rollback complete?
+1. Is `4ad23773...` the immutable E2 terminal and E3 range base?
+2. Are the three owner sets exact, disjoint and complete at 21 paths?
+3. Does the single technical commit consume no second technical path?
+4. Does the law verify protocol content, process result and all nine planning hashes rather than path presence alone?
+5. Do all eight negative fixtures reject without filesystem mutation?
+6. Are the three historical reds unchanged and the only remaining failures?
+7. Does 08-26 remain the live E3 owner while 08-30 remains historical?
+8. Are S6.2/S6.3, TypeScript default and all later lifecycle gates unchanged?
 
-## Future implementation review output format
+## Required output
 
 ```text
 <reviewer-derived verdict>
@@ -27,4 +38,4 @@ P0/P1/P2 = <actual counts>
 <findings with exact file:line evidence, or reviewer-derived no-findings statement>
 ```
 
-Any required second technical file, ninth original E3 lifecycle path, evidence regeneration or lifecycle advancement returns the task to planning.
+Any second technical file, ninth original E3 path, evidence regeneration, changed historical-red set or lifecycle advancement returns this candidate to bounded repair.

@@ -2,42 +2,44 @@
 
 ## Current gate
 
-`PHASE B COMPLETE — PHASE C HISTORICAL E2 FREEZE NEXT`
+`PHASE E COMPLETE — DEDICATED INDEPENDENT IMPLEMENTATION REVIEW PENDING`
 
-The task is `in_progress` after `task.py start` was run for this child only. Planning head `e4ee1d43fd29a794d8f0f389d651c556203fe5af` passed independent planning review with `P0/P1/P2=0/0/0` in task `01a05394-7f39-7701-8fc6-f5dfdb580b53`.
+The bounded implementation candidate is frozen. Planning head `e4ee1d43fd29a794d8f0f389d651c556203fe5af` passed independent planning review with `P0/P1/P2=0/0/0`. The one-file technical change is commit `36fe1956ec8660d664eb9606912dbc6e1b6c3ede` (`test(rkp-2): project E3 final workspace law state`).
 
-The current user authorization covers Phase A activation and Phase B reconstruction only. The preserved source was revalidated at HEAD `4ad23773e9c9e1081667a4eccb84cc464b85bc89`, tree `9dbcef77fbcc258e4fe96fdfb2b28839f095d610`, with exactly eight E3 paths. Seven frozen files were copied and the Stage 6 parent `task.json` was semantically merged without rerunning the workload. The implementation candidate remains false, implementation review remains pending, and Phase C/D/E are not started or authorized in this run.
+No E3 workload was rerun. The candidate consumes the already-measured source at HEAD `4ad23773e9c9e1081667a4eccb84cc464b85bc89`, tree `9dbcef77fbcc258e4fe96fdfb2b28839f095d610`, and protocol SHA-256 `64e09779ea34bd04d504d515eb7c391f7db35a0a23a3c366fb2ffb5aa71c2862`.
 
 ## Workspace
 
 - Branch: `codex/rkp-2-stage-6-e3-workspace-law-final-state-projection-repair`
 - Worktree: `.worktrees/e3-law`
 - Planning base: `4ad23773e9c9e1081667a4eccb84cc464b85bc89`
-- Source E3 worktree: `.worktrees/rkp-2-stage-6-semantic-canonical-authority-amendment`
+- Accepted planning head: `e4ee1d43fd29a794d8f0f389d651c556203fe5af`
+- Technical commit: `36fe1956ec8660d664eb9606912dbc6e1b6c3ede`
 - Task: `.trellis/tasks/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair`
 
-## Completed Phase B boundary
+## Candidate evidence
 
-- Source identity and all eight LF-normalized hashes matched the frozen contract.
-- The embedded protocol was independently recomputed as `1,525` bytes with SHA-256 `64e09779ea34bd04d504d515eb7c391f7db35a0a23a3c366fb2ffb5aa71c2862`.
-- Original child `08-30...` and current child `08-31...` each occur once in the Stage 6 parent.
-- E3 result fields, S6.2/S6.3 false and TypeScript default remain preserved.
-- Technical delta remains zero.
-- Typecheck and build pass; the unchanged Workspace Law implementation still reproduces the frozen `11 tests / 7 pass / 4 fail` baseline with the exact four expected failure names.
+- Historical `eb0c13ed...4ad23773` projection: exact 11 paths.
+- Historical `c7aa242b...4ad23773` projection: exact 10 paths.
+- Final candidate projection: `8 original E3 + 1 technical + 12 repair task = 21` disjoint paths.
+- Original E3 lifecycle/evidence paths: exact eight; no ninth path.
+- Original Stage 6 immutable planning hashes: `9/9`.
+- Protocol: `1,525` UTF-8 bytes with the exact SHA-256 above.
+- Typecheck and build: passed.
+- Five Trellis tasks: passed.
+- JSON/JSONL: five task JSON files and 153 JSONL lines parsed; paths exist and are unique within each file.
+- Focused Workspace Law: `11 tests / 8 pass / 3 fail / 0 additional failures`.
+- Full compiled runner after building the ignored Node artifact on the E: worktree target: `611 tests / 606 pass / 3 fail / 2 skipped`.
+- Protected source/Rust/worker/process/fixture/package/Cargo/spec delta: zero.
 
-## Next operator boundary
+The three remaining failures are intentionally preserved historical fail-closed gates:
 
-Stop after the Phase B commit. A later, separately authorized run may begin Phase C by freezing the historical E1R2/E2 projections inside the single technical owner `rkp-2-workspace-contracts.test.ts`. Phase D remains the separate E3 final-state projection step; Phase E remains the later candidate-freeze gate.
+1. `implementation changes stay inside the literal RKP-2 allowlists`
+2. `part owner repair stays anchored to its accepted six-path wire contract`
+3. `Stage 6 hostile and resource evidence consumes the existing private Rust seams`
 
-No RKP-2 S6.2/S6.3, acceptance, archive, integration, qualification, cutover, push or RKP-3 action is part of this handoff.
+## Reviewer boundary
 
-## Required evidence
+Perform a fresh, read-only implementation audit of the candidate HEAD. Verify the exact technical commit, 21-path union, evidence protocol, nine planning hashes, negative fixtures, `11/8/3` focused classification, `611/606/3/2` full classification and protected-path zero delta.
 
-- accepted planning head;
-- exact 21-path final union;
-- original E3 protocol hash;
-- original nine planning hashes;
-- one-file technical delta;
-- exact three historical fail-closed names;
-- protected-path zero delta;
-- clean/staged-empty worktree.
+The implementation review remains pending. RKP-2 S6.2/S6.3, acceptance, archive, integration, qualification, cutover, push and RKP-3 remain later gates.

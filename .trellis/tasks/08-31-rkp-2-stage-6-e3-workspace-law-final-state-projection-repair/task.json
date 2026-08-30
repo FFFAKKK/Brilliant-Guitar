@@ -5,7 +5,7 @@
   "description": "Activate the bounded one-file Workspace Law repair that freezes historical E2 at 4ad23773 and models the exact already-measured E3 final evidence/lifecycle state without changing Rust or product behavior.",
   "status": "in_progress",
   "dev_type": "test-infrastructure",
-  "scope": "Phase A activation and Phase B reconstruction of the already-measured E3 final evidence/lifecycle state only; Phase C/D/E technical implementation, E3 rerun, RKP-2 S6.2/S6.3, acceptance, archive, integration, qualification, cutover, push and RKP-3 are not authorized in this run.",
+  "scope": "Phase A through Phase E bounded Workspace Law implementation and candidate freeze only; the already-measured E3 state is projected without rerunning E3, and RKP-2 S6.2/S6.3, acceptance, archive, integration, qualification, cutover, push and RKP-3 remain outside this run.",
   "package": "core-kernel",
   "priority": "P1",
   "creator": "ATOM",
@@ -43,7 +43,7 @@
     ".trellis/spec/core-kernel/backend/rust-runtime-transition.md",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "ACCEPTED PLANNING HEAD E4EE1D43FD29A794D8F0F389D651C556203FE5AF / INDEPENDENT PLANNING REVIEW PASSED P0_0_P1_0_P2_0 / PHASE A ACTIVATED / PHASE B E3 SOURCE SNAPSHOT RECONSTRUCTION COMPLETE WITHOUT RERUN / ORIGINAL E3 8 PATHS AND PROTOCOL HASH VERIFIED / TASK START TRUE / IMPLEMENTATION CANDIDATE FALSE / IMPLEMENTATION REVIEW PENDING / PHASE C HISTORICAL E2 FREEZE NEXT BUT NOT STARTED OR AUTHORIZED / NO TECHNICAL CHANGE / TYPESCRIPT DEFAULT / S6.2 S6.3 FALSE.",
+  "notes": "IN_PROGRESS / ACCEPTED PLANNING HEAD E4EE1D43FD29A794D8F0F389D651C556203FE5AF / PHASES A_B_C_D_E COMPLETE / TECHNICAL COMMIT 36FE1956EC8660D664EB9606912DBC6E1B6C3EDE / EXACT FINAL UNION 8_PLUS_1_PLUS_12_EQUALS_21 / FOCUSED WORKSPACE LAW 11_TESTS_8_PASS_3_EXACT_HISTORICAL_FAIL_CLOSED / FULL 611_TESTS_606_PASS_3_EXACT_HISTORICAL_FAIL_2_SKIP AFTER E_DRIVE NATIVE ARTIFACT / IMPLEMENTATION CANDIDATE READY / DEDICATED INDEPENDENT IMPLEMENTATION REVIEW PENDING / TYPESCRIPT DEFAULT / S6.2 S6.3 FALSE / NO ACCEPT ARCHIVE INTEGRATION PUSH CUTOVER QUALIFICATION OR RKP3.",
   "meta": {
     "planning_base_commit": "4ad23773e9c9e1081667a4eccb84cc464b85bc89",
     "planning_base_tree": "9dbcef77fbcc258e4fe96fdfb2b28839f095d610",
@@ -69,9 +69,9 @@
     "root_cause": "historical_E2_projection_consumes_live_HEAD_and_dirty_state_so_valid_E3_evidence_paths_are_misclassified_as_E2_drift",
     "current_focused_workspace_law": {
       "tests": 11,
-      "pass": 7,
-      "fail": 4,
-      "incremental_e3_projection_failures": 1
+      "pass": 8,
+      "fail": 3,
+      "incremental_e3_projection_failures": 0
     },
     "expected_post_repair_workspace_law": {
       "tests": 11,
@@ -141,7 +141,7 @@
       "research/planning-self-audit.md": "56eadd2a09285b1a89fa6c9c052c47e5a1a6761efe085880a3664d8159af58bc"
     },
     "planning_validation": "new_parent_rkp2_rust_and_0830_trellis_pass_json_jsonl_21_entries_unique_existing_parent_child_once_diffcheck_typecheck_build_pass_technical_zero_delta_targeted_workspace_law_11_tests_7_pass_4_fail_exactly_one_planned_E3_projection_failure",
-    "user_implementation_authorization_scope": "this_Workspace_Law_repair_Phase_A_activation_and_Phase_B_source_snapshot_reconstruction_only_no_Phase_C_D_E_E3_rerun_S6_2_S6_3_acceptance_archive_integration_qualification_cutover_push_or_RKP3",
+    "user_implementation_authorization_scope": "this_Workspace_Law_repair_Phase_A_through_Phase_E_candidate_freeze_only_no_E3_rerun_S6_2_S6_3_acceptance_archive_integration_qualification_cutover_push_or_RKP3",
     "phase_b_source_snapshot_reconstruction_authorized": true,
     "phase_b_source_snapshot_reconstruction_started": true,
     "phase_b_source_snapshot_reconstruction_completed": true,
@@ -152,12 +152,26 @@
     "phase_b_reconstructed_original_e3_path_count": 8,
     "phase_b_copied_frozen_nonoverlap_file_count": 7,
     "phase_b_parent_semantic_merge_completed": true,
-    "phase_c_freeze_historical_e2_ranges_authorized": false,
-    "phase_c_freeze_historical_e2_ranges_started": false,
-    "implementation_stage": "phase_B_source_snapshot_reconstruction_complete_phase_C_not_started",
-    "implementation_candidate_ready": false,
-    "implementation_review": "pending",
-    "next_gate": "phase_C_freeze_historical_E2_ranges",
+    "phase_c_freeze_historical_e2_ranges_authorized": true,
+    "phase_c_freeze_historical_e2_ranges_started": true,
+    "phase_c_freeze_historical_e2_ranges_completed": true,
+    "phase_c_user_authorization_record": "user_continue_2026_08_31",
+    "phase_d_e3_final_state_projection_authorized": true,
+    "phase_d_e3_final_state_projection_started": true,
+    "phase_d_e3_final_state_projection_completed": true,
+    "phase_d_user_authorization_record": "user_continue_2026_08_31",
+    "phase_e_candidate_freeze_authorized": true,
+    "phase_e_candidate_freeze_started": true,
+    "phase_e_candidate_freeze_completed": true,
+    "phase_e_user_authorization_record": "user_continue_2026_08_31",
+    "technical_commit": "36fe1956ec8660d664eb9606912dbc6e1b6c3ede",
+    "technical_changed_paths": [
+      "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
+    ],
+    "implementation_stage": "phase_E_candidate_freeze_complete_ready_for_dedicated_independent_implementation_review",
+    "implementation_candidate_ready": true,
+    "implementation_review": "pending_dedicated_independent_E3_workspace_law_implementation_review",
+    "next_gate": "dedicated_independent_E3_workspace_law_implementation_review_pending",
     "phase_b_validation": {
       "trellis_tasks_passed": 5,
       "task_json_parsed": 5,
@@ -181,6 +195,49 @@
         ]
       },
       "technical_and_protected_delta": 0,
+      "e3_stress_rerun": false
+    },
+    "phase_e_validation": {
+      "trellis_tasks_passed": 5,
+      "task_json_parsed": 5,
+      "jsonl_files_parsed": 10,
+      "jsonl_lines_parsed": 153,
+      "jsonl_paths_exist_and_unique": true,
+      "parent_child_count": 1,
+      "historical_e1r2_e2_paths": 11,
+      "historical_e2_paths": 10,
+      "final_path_set": "8_plus_1_plus_12_equals_21",
+      "owner_sets_disjoint": true,
+      "original_e3_path_count": 8,
+      "immutable_planning_hashes": "9/9",
+      "protocol_bytes": 1525,
+      "protocol_sha256": "64e09779ea34bd04d504d515eb7c391f7db35a0a23a3c366fb2ffb5aa71c2862",
+      "typecheck": "passed",
+      "build": "passed",
+      "focused_workspace_law": {
+        "tests": 11,
+        "pass": 8,
+        "fail": 3,
+        "failure_names": [
+          "implementation changes stay inside the literal RKP-2 allowlists",
+          "part owner repair stays anchored to its accepted six-path wire contract",
+          "Stage 6 hostile and resource evidence consumes the existing private Rust seams"
+        ],
+        "additional_failures": 0
+      },
+      "full_test_manifest_sha256": "1a50fd28c630bb016ce30f7ca65ae940170705b2eed581e610282b81378a1cf1",
+      "full_test_classification": {
+        "tests": 611,
+        "pass": 606,
+        "fail": 3,
+        "skipped": 2,
+        "failure_names_equal_focused_historical_set": true
+      },
+      "native_validation_artifact": "target/rkp-1-node/brilliant_kernel_node.node",
+      "native_validation_target_volume": "E:",
+      "technical_changed_path_count": 1,
+      "protected_path_delta": 0,
+      "staged_path_count_before_lifecycle_freeze": 0,
       "e3_stress_rerun": false
     }
   }
