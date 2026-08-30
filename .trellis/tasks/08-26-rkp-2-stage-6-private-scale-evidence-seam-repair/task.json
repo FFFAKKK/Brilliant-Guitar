@@ -42,7 +42,7 @@
     "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "IN_PROGRESS / ACCEPTED PLANNING D638B81 / E0 COMPLETE / E1+E1R GREEN / E2-E3 NOT STARTED / RKP-2 PAUSED / RKP-1A P4-B 08374273 ACCEPTED ARCHIVED INTEGRATED AUTHORITY / C1-C5 AND FINAL C5 AUDIT D14D731 PASSED / CURRENT PLANNING CHILD 08-30 STAGE6 SEMANTIC CANONICAL AUTHORITY AMENDMENT / CURRENT GATE DEDICATED INDEPENDENT STAGE6 SEMANTIC CANONICAL AUTHORITY AMENDMENT PLANNING REVIEW / TYPESCRIPT DEFAULT.",
+  "notes": "IN_PROGRESS / ACCEPTED PLANNING D638B81 / E0 COMPLETE / E1+E1R GREEN / E2-E3 NOT STARTED / RKP-2 PAUSED / RKP-1A P4-B 08374273 ACCEPTED ARCHIVED INTEGRATED AUTHORITY / C1-C5 AND FINAL C5 AUDIT D14D731 PASSED / CURRENT AUTHORITY CHILD 08-30 STAGE6 SEMANTIC CANONICAL AMENDMENT E1R2 CANDIDATE RETURNED P0_0_P1_1_P2_0 / CURRENT GATE DEDICATED INDEPENDENT E1R2 TARGETED IMPLEMENTATION REREVIEW / TYPESCRIPT DEFAULT.",
   "meta": {
     "planning_base_commit": "4a302bc9f9981940336fc97941b08e09bd0d1f67",
     "source_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -92,11 +92,11 @@
     "bounded_planning_repair": "round_3_cleanup_ownership_and_post_cleanup_envelope_accepted",
     "implementation_candidate_ready": false,
     "implementation_review": "pending",
-    "implementation_blocker": "dedicated_independent_E1R2_implementation_audit_pending",
+    "implementation_blocker": "dedicated_independent_E1R2_targeted_implementation_rereview_pending",
     "current_planning_child": "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
     "stage6_semantic_canonical_authority_amendment": {
       "task": "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
-      "status": "E1R2_candidate_ready_implementation_audit_pending",
+      "status": "E1R2_candidate_ready_targeted_implementation_rereview_pending",
       "accepted_planning_head": "eb0c13ed5ac218cfec9a983a4bc4e8dfb89acbd7",
       "independent_planning_review": "passed_P0_0_P1_0_P2_0",
       "user_implementation_authorization": true,
@@ -106,10 +106,17 @@
       "stage6_e1r2_completed": true,
       "technical_commit": "db7ab2a4080c78335cccc484a32ea9baa0957a9b",
       "implementation_candidate_ready": true,
-      "implementation_review": "pending_dedicated_independent_E1R2_implementation_audit",
+      "audited_candidate": "1e313e378ef3886547386d95e9d7065d63ec089c",
+      "independent_implementation_audit": {
+        "P0": 0,
+        "P1": 1,
+        "P2": 0,
+        "verdict": "return_for_bounded_E1R2_repair"
+      },
+      "implementation_review": "pending_dedicated_independent_E1R2_targeted_implementation_rereview",
       "stage6_e2_started": false,
       "stage6_e3_started": false,
-      "next_gate": "dedicated_independent_E1R2_implementation_audit"
+      "next_gate": "dedicated_independent_E1R2_targeted_implementation_rereview_pending"
     },
     "c5_terminal_projection_final_audit": "passed_d14d73117e03822a52fd19c55f3024cb2b73ef45_P0_0_P1_0_P2_0",
     "implementation_stage": "E1_and_E1R_private_rust_seam_green_E2_not_started",
@@ -152,7 +159,7 @@
       "p3b_independent_implementation_review": "e4103b779574fcdc728d024c1b8f30244cb332c3_pass_P0_0_P1_0_P2_0_for_bounded_P4",
       "p4_entry_audit": "e4103b7_return_P0_0_P1_1_P2_0_then_A1_A2_bounded_planning_repairs_P0_0_P1_2_P2_0",
       "targeted_planning_rereview": "replacement_A3_3063e097_pass_0_0_0",
-      "follow_up_order": "dedicated_independent_C5_terminal_projection_audit_then_stage6_docs_authority_amendment_planning_review_E1R2_audit_then_separate_E2_authorization"
+      "follow_up_order": "dedicated_independent_C5_terminal_projection_audit_then_stage6_docs_authority_amendment_planning_pass_then_E1R2_targeted_implementation_rereview_then_separate_E2_authorization"
     },
     "e3_candidate_freeze_started": false,
     "root_cause_audit": {
@@ -267,7 +274,7 @@
       "terminal_projection": "completed_separate_C5_B_commit_final_C5_audit_passed_d14d73117e03822a52fd19c55f3024cb2b73ef45",
       "E2_authorized": false
     },
-    "next_gate": "dedicated_independent_E1R2_implementation_audit",
+    "next_gate": "dedicated_independent_E1R2_targeted_implementation_rereview_pending",
     "archive_authorized": false,
     "push_authorized": false,
     "default_runtime_switch_authorized": false,
