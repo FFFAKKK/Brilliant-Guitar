@@ -46,7 +46,7 @@
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RKP-0 RKP-1 AND PRIOR REPAIRS ACCEPTED ARCHIVED / RKP-2 SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 E1+E1R GREEN E2 NOT STARTED / RKP-1A P4-B 08374273 ACCEPTED ARCHIVED INTEGRATED AUTHORITY / C1-C5 AND FINAL C5 AUDIT D14D731 PASSED / CURRENT AUTHORITY CHILD 08-30 STAGE6 SEMANTIC CANONICAL AMENDMENT E1R2 CANDIDATE RETURNED P0_0_P1_1_P2_0 / CURRENT GATE DEDICATED INDEPENDENT E1R2 TARGETED IMPLEMENTATION REREVIEW / TYPESCRIPT DEFAULT / NO E2 CUTOVER PUSH QUALIFICATION OR RKP-3.",
+  "notes": "RKP-0 RKP-1 AND PRIOR REPAIRS ACCEPTED ARCHIVED / RKP-2 SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 E1+E1R GREEN AND 08-30 E1R2 TARGETED REREVIEW CA670FD PASS P0_0_P1_0_P2_0 / SEPARATE E2 USER AUTHORIZATION CONSUMED AND WORKER PROCESS TECHNICAL IMPLEMENTATION IN PROGRESS / E3 S6_2 S6_3 NOT STARTED / RKP-1A P4-B 08374273 ACCEPTED ARCHIVED INTEGRATED AUTHORITY / C1-C5 AND FINAL C5 AUDIT D14D731 PASSED / TYPESCRIPT DEFAULT / NO CUTOVER PUSH QUALIFICATION OR RKP-3.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
@@ -54,22 +54,29 @@
     "current_planning_child": "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
     "rkp2_stage6_semantic_canonical_authority_amendment": {
       "task": "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
-      "status": "E1R2_candidate_ready_targeted_implementation_rereview_pending",
+      "status": "E1R2_targeted_implementation_rereview_passed_Stage6_E2_authorized_in_progress",
       "accepted_planning_head": "eb0c13ed5ac218cfec9a983a4bc4e8dfb89acbd7",
       "independent_planning_review": "passed_P0_0_P1_0_P2_0",
-      "user_implementation_authorization_scope": "A0_and_E1R2_only",
+      "user_implementation_authorization_scope": "A0_and_E1R2_completed_then_separately_authorized_Stage6_E2_only",
       "current_production_owner": "08-26-rkp-2-stage-6-private-scale-evidence-seam-repair",
       "technical_commit": "db7ab2a4080c78335cccc484a32ea9baa0957a9b",
       "implementation_candidate_ready": true,
       "audited_candidate": "1e313e378ef3886547386d95e9d7065d63ec089c",
-      "independent_implementation_audit": {
+      "first_independent_implementation_audit": {
         "P0": 0,
         "P1": 1,
         "P2": 0,
         "verdict": "return_for_bounded_E1R2_repair"
       },
-      "implementation_review": "pending_dedicated_independent_E1R2_targeted_implementation_rereview",
-      "next_gate": "dedicated_independent_E1R2_targeted_implementation_rereview_pending"
+      "targeted_independent_implementation_rereview": {
+        "candidate_commit": "ca670fdfba250c1590b6e6d387eaef185211cb8a",
+        "P0": 0,
+        "P1": 0,
+        "P2": 0,
+        "verdict": "pass_for_bounded_E1R2_implementation"
+      },
+      "implementation_review": "passed_dedicated_independent_E1R2_targeted_implementation_rereview",
+      "next_gate": "stage6_E2_worker_process_technical_implementation_in_progress"
     },
     "current_dependency_repair_child": null,
     "future_children_created": true,
@@ -114,7 +121,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "dedicated_independent_E1R2_targeted_implementation_rereview_pending",
+    "next_gate": "stage6_E2_worker_process_technical_implementation_in_progress",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,

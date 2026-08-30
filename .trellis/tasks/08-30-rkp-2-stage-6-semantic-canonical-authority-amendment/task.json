@@ -2,7 +2,7 @@
   "id": "rkp-2-stage-6-semantic-canonical-authority-amendment",
   "name": "rkp-2-stage-6-semantic-canonical-authority-amendment",
   "title": "RKP-2 Stage 6 Semantic and Canonical Evidence Authority Amendment",
-  "description": "E1R2 is complete as a bounded Stage 6 semantic-versus-canonical test-evidence implementation candidate after the accepted RKP-1A property-cap closeout. It awaits a dedicated independent implementation audit; E2, E3, runtime cutover, qualification, archive, integration, and push remain unauthorized.",
+  "description": "E1R2 is complete and independently rereviewed PASS as the bounded Stage 6 semantic-versus-canonical test-evidence authority after the accepted RKP-1A property-cap closeout. The separately authorized Stage 6 E2 worker/process implementation is in progress; E3, runtime cutover, qualification, archive, integration, and push remain unauthorized.",
   "status": "in_progress",
   "dev_type": "planning",
   "scope": "Bounded A0/E1R2 implementation of the Stage 6 cfg(test) evidence seam: distinguish semantic equality from Rust canonical-byte equality while preserving every existing metric, private protocol, failure union, and product contract.",
@@ -55,7 +55,7 @@
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
     ".trellis/spec/core-kernel/backend/rust-runtime-transition.md"
   ],
-  "notes": "PLANNING PASS EBC13E P0_0_P1_0_P2_0 / A0 ACTIVATED / USER AUTHORIZATION A0_E1R2_ONLY CONSUMED / STAGE6 E1+E1R GREEN / E1R2_A_B_C COMPLETE / CANDIDATE READY / DEDICATED INDEPENDENT E1R2 IMPLEMENTATION AUDIT PENDING / E2 E3 NOT STARTED / TYPESCRIPT DEFAULT / NO ARCHIVE INTEGRATION PUSH CUTOVER QUALIFICATION OR RKP3.",
+  "notes": "PLANNING PASS EBC13E P0_0_P1_0_P2_0 / A0 ACTIVATED / E1R2 TECHNICAL HEAD DB7AB2 AND TARGETED REREVIEW CA670FD PASS P0_0_P1_0_P2_0 / SEPARATE USER AUTHORIZATION E2_ONLY CONSUMED / STAGE6 E1+E1R GREEN / E2 WORKER PROCESS TECHNICAL IMPLEMENTATION IN PROGRESS / E3 S6_2 S6_3 NOT STARTED / TYPESCRIPT DEFAULT / NO ARCHIVE INTEGRATION PUSH CUTOVER QUALIFICATION OR RKP3.",
   "meta": {
     "planning_base_commit": "d14d73117e03822a52fd19c55f3024cb2b73ef45",
     "planning_source_branch": "codex/rkp-2-stage-6-private-scale-evidence-seam-repair",
@@ -63,7 +63,7 @@
     "task_start_run": true,
     "production_implementation_authorized": true,
     "user_implementation_authorization": true,
-    "user_implementation_authorization_scope": "A0_and_E1R2_only_no_E2_E3_S6_2_S6_3_archive_integration_cutover_measurement_qualification_RKP3_or_push",
+    "user_implementation_authorization_scope": "A0_and_E1R2_completed_then_separately_authorized_Stage6_E2_only_no_E3_S6_2_S6_3_archive_integration_cutover_measurement_qualification_RKP3_or_push",
     "independent_planning_review": "passed_eb0c13ed5ac218cfec9a983a4bc4e8dfb89acbd7_P0_0_P1_0_P2_0",
     "accepted_planning_authority_head": "eb0c13ed5ac218cfec9a983a4bc4e8dfb89acbd7",
     "independent_planning_review_result": {
@@ -84,14 +84,21 @@
     "bounded_planning_repair": "accepted_authority_and_source_characterization_only_noncanonical_regression_deferred_to_E1R2B",
     "targeted_independent_planning_rereview": "passed_eb0c13ed5ac218cfec9a983a4bc4e8dfb89acbd7_P0_0_P1_0_P2_0",
     "implementation_candidate_ready": true,
-    "implementation_review": "pending_dedicated_independent_E1R2_implementation_audit",
-    "review_status": "E1R2_B_technical_and_E1R2_C_candidate_freeze_complete",
-    "next_gate": "dedicated_independent_E1R2_implementation_audit",
+    "implementation_review": "passed_dedicated_independent_E1R2_targeted_implementation_rereview",
+    "review_status": "E1R2_independently_rereviewed_passed_and_Stage6_E2_separately_authorized_in_progress",
+    "next_gate": "stage6_E2_worker_process_technical_implementation_in_progress",
     "stage6_e1r2_started": true,
     "stage6_e1r2_completed": true,
     "e1r2_a_no_write_characterization": "passed_source_assertion_archive_authority_SHA_roles_ancestry_and_technical_zero_delta",
     "e1r2_technical_commit": "db7ab2a4080c78335cccc484a32ea9baa0957a9b",
-    "e1r2_candidate_freeze": "completed_after_fresh_detached_E_scratch_full_runner_validation_waiting_for_dedicated_independent_implementation_audit",
+    "e1r2_candidate_freeze": "completed_after_fresh_detached_E_scratch_full_runner_validation_then_targeted_independent_implementation_rereview_passed_at_ca670fdfba250c1590b6e6d387eaef185211cb8a",
+    "targeted_independent_e1r2_implementation_rereview": {
+      "candidate_commit": "ca670fdfba250c1590b6e6d387eaef185211cb8a",
+      "P0": 0,
+      "P1": 0,
+      "P2": 0,
+      "verdict": "pass_for_bounded_E1R2_implementation"
+    },
     "e1r2_c_final_gate": {
       "scratch": "E:/desktop/brilliant_ideas/brilliant_guitar/.worktrees/.scratch/rkp2-semantic-canonical-e1r2",
       "rust": "cargo_1_97_fmt_check_test_clippy_and_msrv_1_88_check_passed",
@@ -122,7 +129,7 @@
       ],
       "classification": "the_only_full_runner_failures_are_historical_unaccepted_governance_children_not_E1R2"
     },
-    "stage6_e2_started": false,
+    "stage6_e2_started": true,
     "stage6_e3_started": false,
     "rkp2_stage6_s6_2_started": false,
     "rkp2_stage6_s6_3_started": false,

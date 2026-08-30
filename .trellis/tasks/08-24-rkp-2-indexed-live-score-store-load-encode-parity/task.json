@@ -42,7 +42,7 @@
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "RKP-2 IN_PROGRESS AND SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 E1+E1R GREEN S6.2-S6.3 FALSE / RKP-1A P4-B 08374273 ACCEPTED ARCHIVED INTEGRATED AUTHORITY / C1-C5 AND FINAL C5 AUDIT D14D731 PASSED / CURRENT AUTHORITY CHILD 08-30 STAGE6 SEMANTIC CANONICAL AMENDMENT E1R2 CANDIDATE RETURNED P0_0_P1_1_P2_0 / CURRENT GATE DEDICATED INDEPENDENT E1R2 TARGETED IMPLEMENTATION REREVIEW / TYPESCRIPT DEFAULT / NO E2 CUTOVER PUSH QUALIFICATION OR RKP-3.",
+  "notes": "RKP-2 IN_PROGRESS AND SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 E1+E1R GREEN AND 08-30 E1R2 TARGETED REREVIEW CA670FD PASS P0_0_P1_0_P2_0 / SEPARATE E2 USER AUTHORIZATION CONSUMED AND WORKER PROCESS TECHNICAL IMPLEMENTATION IN PROGRESS / E3 S6.2-S6.3 FALSE / RKP-1A P4-B 08374273 ACCEPTED ARCHIVED INTEGRATED AUTHORITY / C1-C5 AND FINAL C5 AUDIT D14D731 PASSED / TYPESCRIPT DEFAULT / NO CUTOVER PUSH QUALIFICATION OR RKP-3.",
   "meta": {
     "planning_base_commit": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "accepted_rkp1_audited_implementation_commit": "94387b339b5e4d9ce6b7f97597a1b56edd051f01",
@@ -107,22 +107,29 @@
     "current_planning_child": "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
     "stage6_semantic_canonical_authority_amendment": {
       "task": "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
-      "status": "E1R2_candidate_ready_targeted_implementation_rereview_pending",
+      "status": "E1R2_targeted_implementation_rereview_passed_Stage6_E2_authorized_in_progress",
       "accepted_planning_head": "eb0c13ed5ac218cfec9a983a4bc4e8dfb89acbd7",
       "independent_planning_review": "passed_P0_0_P1_0_P2_0",
-      "user_implementation_authorization_scope": "A0_and_E1R2_only",
+      "user_implementation_authorization_scope": "A0_and_E1R2_completed_then_separately_authorized_Stage6_E2_only",
       "current_owner": "08-26-rkp-2-stage-6-private-scale-evidence-seam-repair",
       "technical_commit": "db7ab2a4080c78335cccc484a32ea9baa0957a9b",
       "implementation_candidate_ready": true,
       "audited_candidate": "1e313e378ef3886547386d95e9d7065d63ec089c",
-      "independent_implementation_audit": {
+      "first_independent_implementation_audit": {
         "P0": 0,
         "P1": 1,
         "P2": 0,
         "verdict": "return_for_bounded_E1R2_repair"
       },
-      "implementation_review": "pending_dedicated_independent_E1R2_targeted_implementation_rereview",
-      "next_gate": "dedicated_independent_E1R2_targeted_implementation_rereview_pending"
+      "targeted_independent_implementation_rereview": {
+        "candidate_commit": "ca670fdfba250c1590b6e6d387eaef185211cb8a",
+        "P0": 0,
+        "P1": 0,
+        "P2": 0,
+        "verdict": "pass_for_bounded_E1R2_implementation"
+      },
+      "implementation_review": "passed_dedicated_independent_E1R2_targeted_implementation_rereview",
+      "next_gate": "stage6_E2_worker_process_technical_implementation_in_progress"
     },
     "current_implementation_child": "08-26-rkp-2-stage-6-private-scale-evidence-seam-repair",
     "implementation_stage": "stage_6_s6_1_retained_complete_private_seam_E1_E1R_green_s6_2_paused_for_public_json_property_cap_contract_conflict",
@@ -328,7 +335,7 @@
       "post_pass_closeout_authorized": true,
       "stage_6_blocked_until_accepted_archived_integrated": false
     },
-    "next_gate": "dedicated_independent_E1R2_targeted_implementation_rereview_pending",
+    "next_gate": "stage6_E2_worker_process_technical_implementation_in_progress",
     "stage_6_started": true,
     "stage_6_authorized": true,
     "stage_6_completed": false,
