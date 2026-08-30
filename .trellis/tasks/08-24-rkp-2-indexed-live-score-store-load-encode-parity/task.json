@@ -381,7 +381,7 @@
       "external_blocker": "explicit_user_authorization_for_E3_fresh_run_and_candidate_freeze_required",
       "external_blocking_task": null,
       "rkp1a_state": "P0_P1_P2_P3A_P3B_complete_historical_authorizations_consumed_audited_through_e4103b7_replacement_A3_3063e097_planning_pass_P4_B_08374273_accepted_archived_C1_C2_C3_and_B_to_C4_passed_C4_stage6_ff_only_integrated_C5_A_native_archive_C5_B_terminal_projection_completed_final_C5_audit_passed_d14d731",
-      "rkp1a_follow_up_order": "dedicated_independent_E2_bounded_repair_rereview_then_separate_E3_or_S6_2_authorization",
+      "rkp1a_follow_up_order": "completed_historical_RKP1A_C1_to_C5_then_E1R2_then_E2_audits_no_live_gate_live_gate_is_explicit_user_authorization_for_E3_fresh_run_and_candidate_freeze",
       "p4_independent_implementation_audit": "08374273b05bc992e749a17a959b64af0f293f0b_pass_P0_0_P1_0_P2_0",
       "closeout_archive_authority": ".trellis/tasks/archive/2026-08/08-28-rkp-1a-acceptance-archive-stage6-integration-closeout/",
       "closeout_C1_accepted_B_authority": "08374273b05bc992e749a17a959b64af0f293f0b_accepted_archived_C1_C2_C3_passed_C4_stage6_ff_only_integrated",

@@ -376,7 +376,7 @@
       "p3b_independent_implementation_review": "e4103b779574fcdc728d024c1b8f30244cb332c3_pass_P0_0_P1_0_P2_0_for_bounded_P4",
       "p4_entry_audit": "e4103b7_return_P0_0_P1_1_P2_0_then_A1_A2_bounded_planning_repairs_P0_0_P1_2_P2_0",
       "targeted_planning_rereview": "replacement_A3_3063e097_pass_0_0_0",
-      "stage6_follow_up_order": "after_RKP1A_accept_archive_integrate_and_E1R2_pass_E2_bounded_repair_targeted_rereview_then_separate_E3_or_S6_2_authorization",
+      "stage6_follow_up_order": "completed_historical_RKP1A_accept_archive_integrate_then_E1R2_then_E2_audits_no_live_gate_live_gate_is_explicit_user_authorization_for_E3_fresh_run_and_candidate_freeze",
       "p4_independent_implementation_audit": "08374273b05bc992e749a17a959b64af0f293f0b_pass_P0_0_P1_0_P2_0",
       "closeout_archive_authority": ".trellis/tasks/archive/2026-08/08-28-rkp-1a-acceptance-archive-stage6-integration-closeout/",
       "closeout_C1_accepted_B_authority": "08374273b05bc992e749a17a959b64af0f293f0b_accepted_archived_C1_C2_C3_passed_C4_stage6_ff_only_integrated",
@@ -384,7 +384,7 @@
       "closeout_C4_frozen_source_head": "782431df5e5e97e931cf869e6e9dafe10c8aff15",
       "closeout_C5_native_archive": "ac0044faab9be80b1a704ae5dbd8e6ee9b7e7eaa_completed",
       "closeout_C5_terminal_projection": "completed_final_C5_audit_passed_d14d73117e03822a52fd19c55f3024cb2b73ef45",
-      "next_gate": "dedicated_independent_E1R2_targeted_implementation_rereview_pending"
+      "next_gate": "completed_historical_no_live_gate"
     },
     "rkp2_stage_6_private_scale_evidence_seam_repair": {
       "parent": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
