@@ -55,7 +55,7 @@
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
     ".trellis/spec/core-kernel/backend/rust-runtime-transition.md"
   ],
-  "notes": "PLANNING PASS EBC13E P0_0_P1_0_P2_0 / A0 ACTIVATED / E1R2 TECHNICAL HEAD DB7AB2 AND TARGETED REREVIEW CA670FD PASS P0_0_P1_0_P2_0 / SEPARATE USER AUTHORIZATION E2_ONLY CONSUMED / STAGE6 E1+E1R GREEN / E2 WORKER PROCESS TECHNICAL IMPLEMENTATION IN PROGRESS / E3 S6_2 S6_3 NOT STARTED / TYPESCRIPT DEFAULT / NO ARCHIVE INTEGRATION PUSH CUTOVER QUALIFICATION OR RKP3.",
+  "notes": "PLANNING PASS EBC13E P0_0_P1_0_P2_0 / A0 ACTIVATED / E1R2 TECHNICAL HEAD DB7AB2 AND TARGETED REREVIEW CA670FD PASS P0_0_P1_0_P2_0 / HISTORICAL E2 AUDIT 2050F386 RETURNED P0_1_P1_4_P2_0 / B328786 BOUNDED E2 WORKER PROCESS REPAIR CANDIDATE READY FOR TARGETED INDEPENDENT REREVIEW / E3 S6_2 S6_3 NOT STARTED / TYPESCRIPT DEFAULT / NO ARCHIVE INTEGRATION PUSH CUTOVER QUALIFICATION OR RKP3.",
   "meta": {
     "planning_base_commit": "d14d73117e03822a52fd19c55f3024cb2b73ef45",
     "planning_source_branch": "codex/rkp-2-stage-6-private-scale-evidence-seam-repair",
@@ -84,9 +84,9 @@
     "bounded_planning_repair": "accepted_authority_and_source_characterization_only_noncanonical_regression_deferred_to_E1R2B",
     "targeted_independent_planning_rereview": "passed_eb0c13ed5ac218cfec9a983a4bc4e8dfb89acbd7_P0_0_P1_0_P2_0",
     "implementation_candidate_ready": true,
-    "implementation_review": "passed_dedicated_independent_E1R2_targeted_implementation_rereview",
-    "review_status": "E1R2_independently_rereviewed_passed_and_Stage6_E2_separately_authorized_in_progress",
-    "next_gate": "stage6_E2_worker_process_technical_implementation_in_progress",
+    "implementation_review": "pending_targeted_independent_E2_bounded_repair_rereview",
+    "review_status": "E2_bounded_repair_candidate_ready_targeted_independent_rereview_pending",
+    "next_gate": "dedicated_independent_E2_bounded_repair_rereview_pending",
     "stage6_e1r2_started": true,
     "stage6_e1r2_completed": true,
     "e1r2_a_no_write_characterization": "passed_source_assertion_archive_authority_SHA_roles_ancestry_and_technical_zero_delta",
@@ -130,6 +130,20 @@
       "classification": "the_only_full_runner_failures_are_historical_unaccepted_governance_children_not_E1R2"
     },
     "stage6_e2_started": true,
+    "e2_bounded_repair": {
+      "audited_technical_head": "2050f38689d0fcec8820ee8ef97925c5403e8a9e",
+      "first_independent_implementation_audit": {
+        "P0": 1,
+        "P1": 4,
+        "P2": 0,
+        "verdict": "return_for_bounded_E2_implementation_repair"
+      },
+      "repair_technical_commit": "b328786289323d8de725f777d2bd55eaa2732b74",
+      "technical_repair_completed": true,
+      "candidate_ready": true,
+      "targeted_independent_implementation_rereview": "pending",
+      "E3_S6_2_S6_3_started": false
+    },
     "stage6_e3_started": false,
     "rkp2_stage6_s6_2_started": false,
     "rkp2_stage6_s6_3_started": false,
