@@ -326,6 +326,7 @@ function createFakeTimers(): {
     fire(delay: number, occurrence = 0): void {
       const timer = scheduled.filter((candidate) => candidate.delay === delay && !candidate.cleared)[occurrence];
       assert.ok(timer, `expected active timer at ${delay}ms`);
+      timer.cleared = true;
       timer.callback();
     },
   };
@@ -409,7 +410,42 @@ test("Stage 6 E2 uses the outer deadline only after the wrapper has failed to se
   assert.equal(result.reapStatus, "succeeded");
 });
 
-test("Stage 6 E2 drives taskkill launch, error, nonzero, timeout, reap, and close-race failures through spawnPowerShell", async () => {
+async function assertPromisePending<T>(promise: Promise<T>): Promise<void> {
+  let settled = false;
+  void promise.then(() => { settled = true; });
+  await Promise.resolve();
+  assert.equal(settled, false);
+}
+
+test("Stage 6 E2 reaps taskkill through the production settlement seam before reaping the wrapper", async () => {
+  const timeout = startHarness();
+  overflow(timeout);
+  timeout.timers.fire(PRIVATE_SCALE_TERMINATION_BUDGET_MS);
+  assert.equal(timeout.killers[0]!.killCalls, 1);
+  await assertPromisePending(timeout.promise);
+  timeout.wrapper.emit("close", null);
+  await assertPromisePending(timeout.promise);
+  timeout.killers[0]!.emit("close", null, "SIGKILL");
+  const timeoutResult = await timeout.promise;
+  assert.equal(timeoutResult.firstFailure?.code, "process.output-limit-exceeded");
+  assert.equal(timeoutResult.terminationStatus, "failed");
+  assert.equal(timeoutResult.reapStatus, "succeeded");
+  assert.equal(timeout.timers.scheduled.filter((timer) => !timer.cleared).length, 0);
+
+  const neverCloses = startHarness();
+  overflow(neverCloses);
+  neverCloses.timers.fire(PRIVATE_SCALE_TERMINATION_BUDGET_MS);
+  neverCloses.timers.fire(PRIVATE_SCALE_REAP_TIMEOUT_MS);
+  neverCloses.timers.fire(PRIVATE_SCALE_REAP_TIMEOUT_MS);
+  const neverClosesResult = await neverCloses.promise;
+  assert.equal(neverClosesResult.firstFailure?.code, "process.output-limit-exceeded");
+  assert.equal(neverClosesResult.terminationStatus, "failed");
+  assert.equal(neverClosesResult.reapStatus, "failed");
+  assert.equal(neverCloses.killers[0]!.killCalls, 1);
+  assert.equal(neverCloses.timers.scheduled.filter((timer) => !timer.cleared).length, 0);
+});
+
+test("Stage 6 E2 drives taskkill launch, error, nonzero, reap, and close-race failures through spawnPowerShell", async () => {
   const launch = startHarness({ taskkill: "throw" });
   overflow(launch);
   launch.wrapper.emit("close", null);
@@ -421,25 +457,21 @@ test("Stage 6 E2 drives taskkill launch, error, nonzero, timeout, reap, and clos
   const error = startHarness();
   overflow(error);
   error.killers[0]!.emit("error", new Error("synthetic taskkill error"));
+  await assertPromisePending(error.promise);
   error.wrapper.emit("close", null);
+  await assertPromisePending(error.promise);
+  error.killers[0]!.emit("error", new Error("duplicate synthetic taskkill error"));
+  error.killers[0]!.emit("close", 0);
   const errorResult = await error.promise;
   assert.equal(errorResult.firstFailure?.code, "process.output-limit-exceeded");
   assert.equal(errorResult.terminationStatus, "failed");
+  error.killers[0]!.emit("close", 0);
 
   const nonzero = startHarness();
   overflow(nonzero);
   const nonzeroResult = await settleTermination(nonzero, 7);
   assert.equal(nonzeroResult.firstFailure?.code, "process.output-limit-exceeded");
   assert.equal(nonzeroResult.terminationStatus, "failed");
-
-  const timeout = startHarness();
-  overflow(timeout);
-  timeout.timers.fire(PRIVATE_SCALE_TERMINATION_BUDGET_MS);
-  timeout.wrapper.emit("close", null);
-  const timeoutResult = await timeout.promise;
-  assert.equal(timeoutResult.firstFailure?.code, "process.output-limit-exceeded");
-  assert.equal(timeoutResult.terminationStatus, "failed");
-  assert.equal(timeout.killers[0]!.killCalls, 1);
 
   const reap = startHarness();
   overflow(reap);
@@ -463,7 +495,6 @@ test("Stage 6 E2 drives taskkill launch, error, nonzero, timeout, reap, and clos
 
 test("Stage 6 E2 settles duplicate child errors and close events exactly once without retaining timers", async () => {
   const harness = startHarness();
-  harness.wrapper.on("error", () => {});
   harness.wrapper.emit("error", new Error("synthetic start failure"));
   harness.wrapper.emit("error", new Error("duplicate start failure"));
   harness.wrapper.emit("close", null);
@@ -503,12 +534,28 @@ test("Stage 6 E2 rejects impossible output-limit envelopes using their actual ca
   }
 });
 
-test("Stage 6 E2 mechanically verifies the PowerShell taskkill timeout branch without regex source matching", () => {
+function invokePowerShellTaskkillSeam(mode: "timeout-reap-success" | "timeout-reap-failure"): Record<string, unknown> {
   const script = join(process.cwd(), "test", "core-kernel", "rust-migration", "rkp-2-scale-evidence-process.ps1");
-  const probe = "$errors=@(); $tokens=@(); $scriptPath=[Environment]::GetEnvironmentVariable('BRILLIANT_RKP2_E2_PROBE_SCRIPT','Process'); $ast=[System.Management.Automation.Language.Parser]::ParseFile($scriptPath,[ref]$tokens,[ref]$errors); if($errors.Count -ne 0){ exit 2 }; $fn=$ast.Find({param($n) $n -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq 'Invoke-TaskKill'},$true); if($null -eq $fn){ exit 3 }; $calls=$fn.FindAll({param($n) $n -is [System.Management.Automation.Language.CommandAst]},$true) | ForEach-Object { $_.GetCommandName() }; if(($calls -contains 'Start-Process') -and ($calls -contains 'Stop-Process') -and $fn.Extent.Text.Contains('WaitForExit($terminationBudgetMs)')){ [Console]::Out.Write('ok') } else { exit 4 }";
-  const result = spawnSync(process.env.BRILLIANT_RKP2_PWSH ?? "pwsh", ["-NoProfile", "-NonInteractive", "-Command", probe], { encoding: "utf8", windowsHide: true, env: { ...process.env, BRILLIANT_RKP2_E2_PROBE_SCRIPT: script } });
+  const result = spawnSync(process.env.BRILLIANT_RKP2_PWSH ?? "pwsh", ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", script, "-ExecutablePath", script, "-RequestPath", script], {
+    encoding: "utf8", windowsHide: true, shell: false,
+    env: { ...process.env, BRILLIANT_RKP2_E2_TASKKILL_TEST_SEAM: mode },
+  });
   assert.equal(result.status, 0);
-  assert.equal(result.stdout, "ok");
+  assert.equal(result.stderr, "");
+  return JSON.parse(result.stdout) as Record<string, unknown>;
+}
+
+test("Stage 6 E2 executes the PowerShell taskkill timeout seam and uses its second reap result", () => {
+  const success = invokePowerShellTaskkillSeam("timeout-reap-success");
+  assert.deepEqual(success, {
+    schemaVersion: 1, mode: "timeout-reap-success", waitCalls: 2, stopCalls: 1,
+    secondWaitResult: true, terminationStatus: "succeeded",
+  });
+  const failure = invokePowerShellTaskkillSeam("timeout-reap-failure");
+  assert.deepEqual(failure, {
+    schemaVersion: 1, mode: "timeout-reap-failure", waitCalls: 2, stopCalls: 1,
+    secondWaitResult: false, terminationStatus: "failed",
+  });
 });
 
 test("Stage 6 E2 settles ownership only after wrapper closure and never re-owns unknown residue", () => {

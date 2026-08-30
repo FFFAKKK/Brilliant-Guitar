@@ -1300,11 +1300,15 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
   assert.ok(workerTest.includes("createFakeTimers"));
   assert.ok(workerTest.includes("spawnPowerShell(\"worker.ps1\""));
   assert.ok(workerTest.includes("Stage 6 E2 gives the 180-second deadline exclusively to PowerShell"));
-  assert.ok(workerTest.includes("Stage 6 E2 drives taskkill launch, error, nonzero, timeout, reap, and close-race failures through spawnPowerShell"));
+  assert.ok(workerTest.includes("Stage 6 E2 reaps taskkill through the production settlement seam before reaping the wrapper"));
+  assert.ok(workerTest.includes("Stage 6 E2 executes the PowerShell taskkill timeout seam and uses its second reap result"));
   assert.ok(workerTest.includes("Stage 6 E2 rejects impossible process envelopes rather than inventing state"));
   assert.ok(process.includes("function Invoke-TaskKill"));
-  assert.ok(process.includes("Stop-Process -Id $taskkill.Id -Force"));
-  assert.ok(process.includes("$taskkill.WaitForExit($terminationBudgetMs)"));
+  assert.ok(worker.includes("taskkillReapTimer"));
+  assert.ok(worker.includes("killRequested"));
+  assert.ok(process.includes("function Invoke-TaskKillTestSeam"));
+  assert.ok(process.includes("Stop-TaskKill $taskkill"));
+  assert.ok(process.includes("$secondWait = $taskkill.WaitForExit($terminationBudgetMs)"));
   assert.ok(process.includes("$script:handoffAccepted = $true"));
   assert.ok(process.includes("Remove-OwnedPath $RequestPath \"request\""));
   const indices = readText("crates/brilliant-kernel-runtime/src/indices.rs");

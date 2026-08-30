@@ -21,6 +21,7 @@ $maxSafe = 9007199254740991
 $expectedTestName = "indices::tests::rkp2_stage_6_private_scale_evidence_v1"
 $ownershipMarkerName = "ownership.json"
 $ownershipLeafPrefix = "rkp2-scale-e2-"
+$taskkillTestMode = [Environment]::GetEnvironmentVariable("BRILLIANT_RKP2_E2_TASKKILL_TEST_SEAM", "Process")
 
 function New-ProcessState {
   return [ordered]@{
@@ -48,17 +49,41 @@ function Test-SafeInteger([object] $Value, [bool] $Positive = $false) {
   return (-not $Positive) -or $number -gt 0
 }
 
-function Invoke-TaskKill([Diagnostics.Process] $Child) {
+function Start-TaskKill([int] $ChildId) {
+  if ($taskkillTestMode -eq "timeout-reap-success" -or $taskkillTestMode -eq "timeout-reap-failure") {
+    $state = [ordered]@{ waitCalls = 0; stopCalls = 0; secondWaitResult = ($taskkillTestMode -eq "timeout-reap-success") }
+    $taskkill = [pscustomobject]@{ Id = 9090; ExitCode = 0; State = $state }
+    $taskkill | Add-Member -MemberType ScriptMethod -Name WaitForExit -Value {
+      param([int] $Milliseconds)
+      $this.State.waitCalls = [int] $this.State.waitCalls + 1
+      if ($this.State.waitCalls -eq 1) { return $false }
+      return [bool] $this.State.secondWaitResult
+    }
+    $script:taskkillTestState = $state
+    return $taskkill
+  }
+  return Start-Process -FilePath (Join-Path $env:SystemRoot "System32\\taskkill.exe") -ArgumentList @("/PID", [string] $ChildId, "/T", "/F") -PassThru -WindowStyle Hidden
+}
+
+function Stop-TaskKill([object] $TaskKill) {
+  if ($null -ne $TaskKill.PSObject.Properties["State"]) {
+    $TaskKill.State.stopCalls = [int] $TaskKill.State.stopCalls + 1
+    return
+  }
+  Stop-Process -Id $TaskKill.Id -Force -ErrorAction Stop
+}
+
+function Invoke-TaskKill([object] $Child) {
   $script:processState.terminationStatus = "failed"
   $taskkill = $null
   try {
-    $taskkill = Start-Process -FilePath (Join-Path $env:SystemRoot "System32\\taskkill.exe") -ArgumentList @("/PID", [string] $Child.Id, "/T", "/F") -PassThru -WindowStyle Hidden
-    if (-not $taskkill.WaitForExit($terminationBudgetMs)) {
-      # A timed-out taskkill is itself terminated and reaped inside the same
-      # bounded settlement budget; its failure remains secondary to the first cause.
-      try { Stop-Process -Id $taskkill.Id -Force -ErrorAction Stop } catch {}
-      try { [void] $taskkill.WaitForExit($terminationBudgetMs) } catch {}
-      return
+    $taskkill = Start-TaskKill $Child.Id
+    $firstWait = $taskkill.WaitForExit($terminationBudgetMs)
+    if (-not $firstWait) {
+      try { Stop-TaskKill $taskkill } catch { return }
+      $secondWait = $false
+      try { $secondWait = $taskkill.WaitForExit($terminationBudgetMs) } catch { return }
+      if (-not $secondWait) { return }
     }
     if ($taskkill.ExitCode -ne 0) { return }
     $script:processState.terminationStatus = "succeeded"
@@ -67,6 +92,20 @@ function Invoke-TaskKill([Diagnostics.Process] $Child) {
   } finally {
     if ($null -ne $taskkill) { try { $taskkill.Dispose() } catch {} }
   }
+}
+
+function Invoke-TaskKillTestSeam([string] $Mode) {
+  $script:processState = New-ProcessState
+  $script:taskkillTestState = $null
+  Invoke-TaskKill ([pscustomobject]@{ Id = 4242 })
+  if ($null -eq $script:taskkillTestState) { throw "taskkill test seam did not create a helper" }
+  $result = [ordered]@{
+    schemaVersion = 1; mode = $Mode; waitCalls = [int] $script:taskkillTestState.waitCalls
+    stopCalls = [int] $script:taskkillTestState.stopCalls; secondWaitResult = [bool] $script:taskkillTestState.secondWaitResult
+    terminationStatus = [string] $script:processState.terminationStatus
+  }
+  [Console]::Out.WriteLine(($result | ConvertTo-Json -Compress))
+  exit 0
 }
 
 function Invoke-BoundedReap([Diagnostics.Process] $Child) {
@@ -173,6 +212,10 @@ $hadRequestEnv = Test-Path "Env:$requestEnv"
 $priorRequestEnv = [Environment]::GetEnvironmentVariable($requestEnv, "Process")
 $cleanupTarget = $null
 $evidence = $null
+
+if ($taskkillTestMode -eq "timeout-reap-success" -or $taskkillTestMode -eq "timeout-reap-failure") {
+  Invoke-TaskKillTestSeam $taskkillTestMode
+}
 
 try {
   $preflightFailure = Get-PreflightFailure

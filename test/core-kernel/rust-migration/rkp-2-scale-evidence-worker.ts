@@ -563,6 +563,15 @@ export async function spawnPowerShell(
     let terminating = false;
     let terminationSettled = false;
     let reaping = false;
+    const taskkillState = {
+      launchStarted: false,
+      errorObserved: false,
+      exitOrCloseObserved: false,
+      killRequested: false,
+      closed: false,
+      reapTimedOut: false,
+      result: "pending" as "pending" | "succeeded" | "failed",
+    };
     let launchFailed = false;
     let firstFailure: ScaleFailure | undefined;
     let outputLimitStream: "stdout" | "stderr" | undefined;
@@ -570,12 +579,13 @@ export async function spawnPowerShell(
     let reapStatus: PowerShellResult["reapStatus"] = "not-required";
     let outerTimer: ReturnType<typeof setTimeout> | undefined;
     let terminationTimer: ReturnType<typeof setTimeout> | undefined;
+    let taskkillReapTimer: ReturnType<typeof setTimeout> | undefined;
     let reapTimer: ReturnType<typeof setTimeout> | undefined;
 
     const finish = () => {
       if (settled) return;
       settled = true;
-      for (const timer of [outerTimer, terminationTimer, reapTimer]) {
+      for (const timer of [outerTimer, terminationTimer, taskkillReapTimer, reapTimer]) {
         if (timer !== undefined) clearTimer(timer);
       }
       resolvePromise({ stdout: Buffer.concat(stdout), stderr: Buffer.concat(stderr), exitCode: childExit,
@@ -605,21 +615,40 @@ export async function spawnPowerShell(
       const taskkill = systemRoot === undefined ? undefined : join(systemRoot, "System32", "taskkill.exe");
       if (taskkill === undefined) { terminationStatus = "failed"; terminationSettled = true; beginReap(); return; }
       let killer: ReturnType<typeof spawn>;
-      try {
-        killer = spawnProcess(taskkill, ["/PID", String(child.pid), "/T", "/F"], { windowsHide: true, shell: false, stdio: "ignore" });
-      } catch { terminationStatus = "failed"; terminationSettled = true; beginReap(); return; }
-      let taskkillSettled = false;
-      const settleTaskkill = (succeeded: boolean) => {
-        if (taskkillSettled || settled) return;
-        taskkillSettled = true;
-        terminationSettled = true;
+      try { killer = spawnProcess(taskkill, ["/PID", String(child.pid), "/T", "/F"], { windowsHide: true, shell: false, stdio: "ignore" }); }
+      catch { terminationStatus = "failed"; terminationSettled = true; beginReap(); return; }
+      taskkillState.launchStarted = true;
+      const settleTaskkillClose = (code: number | null, signal: NodeJS.Signals | null | undefined) => {
+        if (settled || taskkillState.closed) return;
+        taskkillState.exitOrCloseObserved = true;
+        taskkillState.closed = true;
         if (terminationTimer !== undefined) clearTimer(terminationTimer);
-        terminationStatus = succeeded ? "succeeded" : "failed";
+        if (taskkillReapTimer !== undefined) clearTimer(taskkillReapTimer);
+        taskkillState.result = !taskkillState.errorObserved && !taskkillState.killRequested && code === 0 && (signal === null || signal === undefined)
+          ? "succeeded"
+          : "failed";
+        terminationStatus = taskkillState.result === "succeeded" ? "succeeded" : "failed";
+        terminationSettled = true;
         beginReap();
       };
-      killer.once("error", () => settleTaskkill(false));
-      killer.once("close", (code) => settleTaskkill(code === 0));
-      terminationTimer = setTimer(() => { try { killer.kill(); } catch {} settleTaskkill(false); }, PRIVATE_SCALE_TERMINATION_BUDGET_MS);
+      const beginTaskkillReapGuard = () => {
+        if (settled || taskkillState.closed || taskkillState.killRequested) return;
+        taskkillState.killRequested = true;
+        try { killer.kill(); } catch { taskkillState.errorObserved = true; }
+        taskkillReapTimer = setTimer(() => {
+          if (settled || taskkillState.closed || taskkillState.reapTimedOut) return;
+          taskkillState.reapTimedOut = true;
+          taskkillState.result = "failed";
+          terminationStatus = "failed";
+          terminationSettled = true;
+          beginReap();
+        }, PRIVATE_SCALE_REAP_TIMEOUT_MS);
+      };
+      // Persistent handlers consume every delayed helper error. In particular, an
+      // error does not settle the main worker until helper close or its reap guard.
+      killer.on("error", () => { taskkillState.errorObserved = true; });
+      killer.on("close", settleTaskkillClose);
+      terminationTimer = setTimer(beginTaskkillReapGuard, PRIVATE_SCALE_TERMINATION_BUDGET_MS);
     };
 
     // PowerShell alone owns the 180-second workload deadline. Node installs one
@@ -636,13 +665,13 @@ export async function spawnPowerShell(
         "-MaxStdoutBytes", String(PRIVATE_SCALE_STREAM_LIMIT_BYTES), "-MaxStderrBytes", String(PRIVATE_SCALE_STREAM_LIMIT_BYTES),
       ], { windowsHide: true, shell: false, stdio: ["ignore", "pipe", "pipe"] });
     } catch { launchFailed = true; recordFailure({ code: "process.start-failed", details: { stage: "start" } }); finish(); return; }
-    child.once("error", () => {
+    child.on("error", () => {
       launchFailed = true;
       recordFailure({ code: "process.start-failed", details: { stage: "start" } });
-      if (!terminating) finish();
+      if (!terminating) beginReap();
       else if (terminationSettled) beginReap();
     });
-    if (child.stdout === null || child.stderr === null) { launchFailed = true; recordFailure({ code: "process.start-failed", details: { stage: "start" } }); finish(); return; }
+    if (child.stdout === null || child.stderr === null) { launchFailed = true; recordFailure({ code: "process.start-failed", details: { stage: "start" } }); beginReap(); return; }
     const observeChunk = (target: Buffer[], stream: "stdout" | "stderr", chunk: Buffer) => {
       target.push(Buffer.from(chunk));
       const actual = target.reduce((sum, value) => sum + value.length, 0);
