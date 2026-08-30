@@ -52,6 +52,15 @@
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
     "source_cvn7_status": "in_progress_measurement_incomplete_evidence_invalid",
     "current_planning_child": "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
+    "rkp2_stage6_semantic_canonical_authority_amendment": {
+      "task": "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
+      "status": "in_progress_A0_complete_E1R2_A_next",
+      "accepted_planning_head": "eb0c13ed5ac218cfec9a983a4bc4e8dfb89acbd7",
+      "independent_planning_review": "passed_P0_0_P1_0_P2_0",
+      "user_implementation_authorization_scope": "A0_and_E1R2_only",
+      "current_production_owner": "08-26-rkp-2-stage-6-private-scale-evidence-seam-repair",
+      "next_gate": "E1R2_A_accepted_no_write_source_and_authority_characterization"
+    },
     "current_dependency_repair_child": null,
     "future_children_created": true,
     "stage_sequence": [
@@ -95,7 +104,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "dedicated_independent_stage6_semantic_canonical_authority_amendment_planning_review_pending",
+    "next_gate": "E1R2_A_accepted_no_write_source_and_authority_characterization",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,

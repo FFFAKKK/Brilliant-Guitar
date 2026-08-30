@@ -2,9 +2,9 @@
 
 ## Status
 
-**READY FOR TARGETED INDEPENDENT PLANNING REREVIEW**
+**A0 ACTIVATED — E1R2 IN PROGRESS; NOT YET AN IMPLEMENTATION CANDIDATE**
 
-This is a docs-only bounded repair on planning candidate `5ef997350a4a7c992be4d73f724e2d95b850d773`. Its first independent planning audit returned `P0/P1/P2=0/1/0` for exactly one finding: E1R2-A incorrectly required a no-write run of a noncanonical small request that does not exist until E1R2-B. The repair makes E1R2-A an accepted authority/source characterization and defers the first regression addition/run to the atomic E1R2-B commit. It is not an implementation candidate, does not authorize `task.py start`, and does not claim a PASS.
+The bounded repair candidate `eb0c13ed5ac218cfec9a983a4bc4e8dfb89acbd7` passed its independent planning review at `P0/P1/P2=0/0/0`. The native A0 activation is complete, and the user has authorized A0/E1R2 only. E1R2-A remains a no-write authority/source characterization; E1R2-B is the first regression-producing technical stage. This is not yet an implementation candidate and does not authorize E2, E3, S6.2, S6.3, archive, integration, cutover, qualification, RKP-3, or push.
 
 ## Review focus
 
@@ -17,4 +17,4 @@ This is a docs-only bounded repair on planning candidate `5ef997350a4a7c992be4d7
 
 ## Required result
 
-An independent reviewer may return only a planning result. Even a PASS does not start A0/E1R2, E2, E3, S6.2, or S6.3 without separate user authorization.
+The next independent review is E1R2-D after E1R2-B/C. Its PASS may request, but cannot itself authorize, a separate E2 user authorization.
