@@ -50,3 +50,11 @@ Single fixture owner, exact `102400` Events / `51200` Notes / `18` Extensions, b
 - The small real fixture proves Contracts decode, atomic Store import, separated entity/owner probes, parity rebuild, one export, one canonical encode and zero persistent materialization/byte counters.
 - E1 gates: focused `1/1`; exact Cargo artifact `1`; Clippy and MSRV pass; fresh `core.autocrlf=false` E: clone passes Runtime `16/16` with the stress test intentionally ignored.
 - E2 has not started. Candidate readiness remains false; RKP-2 S6.2/S6.3 remain paused and TypeScript stays default.
+
+## E3 implementation candidate
+
+**READY FOR DEDICATED INDEPENDENT IMPLEMENTATION REVIEW**
+
+The separately authorized E3 run used a fresh request at source HEAD `4ad23773e9c9e1081667a4eccb84cc464b85bc89` and returned the exact successful process protocol frozen in `research/implementation-evidence.md`. The protocol hash is `64e09779ea34bd04d504d515eb7c391f7db35a0a23a3c366fb2ffb5aa71c2862`; the worker completed in `14077309 us` with peak working set `821886976` bytes, no timeout, successful reap/cleanup and no partial evidence.
+
+Review must verify the fresh-request boundary, six-file input manifest, exact protocol, all nine immutable planning hashes, lifecycle-only E3 diff, retained TypeScript default and the unchanged false S6.2/S6.3 gates. A technical PASS would authorize only a later owner acceptance decision; it does not itself archive, integrate, qualify, cut over, push or start RKP-3.

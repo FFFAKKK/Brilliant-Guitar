@@ -2,11 +2,11 @@
 
 ## Status
 
-`PHASE A ACTIVATED — NOT AN IMPLEMENTATION CANDIDATE`
+`PHASE B COMPLETE — NOT AN IMPLEMENTATION CANDIDATE`
 
-Planning candidate `e4ee1d43fd29a794d8f0f389d651c556203fe5af` passed its independent planning audit in task `01a05394-7f39-7701-8fc6-f5dfdb580b53` with `P0/P1/P2=0/0/0`. `task.py start` has activated this child, but the current authorization ends with Phase A.
+Planning candidate `e4ee1d43fd29a794d8f0f389d651c556203fe5af` passed its independent planning audit in task `01a05394-7f39-7701-8fc6-f5dfdb580b53` with `P0/P1/P2=0/0/0`. `task.py start` activated this child, and the current continuation authorized Phase B source snapshot reconstruction only.
 
-`implementation_candidate_ready=false` and `implementation_review=pending`. Phase B source snapshot reconstruction is the next gate; it has not started and is not authorized in this run. No technical file or preserved E3 evidence path changed.
+`implementation_candidate_ready=false` and `implementation_review=pending`. Phase B reconstructed the already-measured original E3 eight-path state without a new stress run: seven files match their frozen LF-normalized hashes and the Stage 6 parent is the required semantic merge. Typecheck and build pass, while the unchanged Workspace Law test remains at the expected pre-repair `11/7/4`. Phase C historical E2 freeze is the next gate; it has not started and is not authorized in this run. No technical file changed.
 
 ## Review questions
 

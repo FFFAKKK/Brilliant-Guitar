@@ -195,3 +195,9 @@ RKP-2 preserves S6.0, remains operationally paused before S6.1, and keeps TypeSc
 
 - E1 is locally complete at the private child boundary: focused `1/1`, one exact Runtime libtest artifact, Clippy/MSRV PASS, and a fresh LF clone Runtime result of `16` passed plus `1` intentionally ignored stress test.
 - The child remains `in_progress` with candidate readiness false. E2/E3 and parent RKP-2 S6.2/S6.3 have not started; TypeScript remains default.
+
+## Private scale evidence repair E3 candidate freeze
+
+The Stage 6 repair child has completed its separately authorized fresh E3 run and frozen the exact successful protocol at source HEAD `4ad23773e9c9e1081667a4eccb84cc464b85bc89`. The run covered the fixed `102400`-Event / `51200`-Note score, exact entity/owner index probes, parity rebuild, one export/canonical encode, semantic/canonical round trip, RSS/liveness and post-process cleanup. It completed without timeout or partial evidence; the exact evidence is child-local `research/implementation-evidence.md`.
+
+The child is candidate-ready only for dedicated independent implementation review. RKP-2 remains the sole active implementation child and stays operationally paused after retained S6.1; S6.2/S6.3 are false and TypeScript remains default. Acceptance, archive, integration, qualification, cutover, push and RKP-3 remain separate gates.

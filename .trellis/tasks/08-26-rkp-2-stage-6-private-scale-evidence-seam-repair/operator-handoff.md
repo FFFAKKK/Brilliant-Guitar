@@ -49,3 +49,11 @@ Proceed only to E1 using the frozen five-path technical and eight-path mutable l
 - The small real fixture proves Contracts decode, atomic Store import, separated entity/owner probes, parity rebuild, one export, one canonical encode and zero persistent materialization/byte counters.
 - E1 gates: focused `1/1`; exact Cargo artifact `1`; Clippy and MSRV pass; fresh `core.autocrlf=false` E: clone passes Runtime `16/16` with the stress test intentionally ignored.
 - E2 has not started. Candidate readiness remains false; RKP-2 S6.2/S6.3 remain paused and TypeScript stays default.
+
+## E3 fresh evidence candidate freeze
+
+The user explicitly authorized E3 after the fifth E2 repair passed its dedicated independent rereview. A new request was generated from the sole stress fixture at source HEAD `4ad23773e9c9e1081667a4eccb84cc464b85bc89`; no E2 request or output was reused. Cargo was resolved again and the complete Rust worker journey returned `status=ok`.
+
+The frozen result is `102400` Events / `51200` Notes, exact index and owner probes, `474517/474517` import/rebuild entries, semantic and canonical-byte parity, deterministic topology and extension preservation. Rust workload time was `12964590 us`, end-to-end worker time `14077309 us`, and peak working set `821886976` bytes. Exit/reap/cleanup were `0/succeeded/succeeded`, timeout was false and partial evidence was false. The exact protocol and input manifest are in `research/implementation-evidence.md`.
+
+This child remains `in_progress` and is now ready only for a dedicated independent implementation review. RKP-2 stays paused before S6.2; S6.2/S6.3, acceptance, archive, integration, qualification, cutover, push and RKP-3 remain unstarted.
