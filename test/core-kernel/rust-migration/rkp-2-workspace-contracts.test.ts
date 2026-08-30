@@ -268,6 +268,44 @@ const STAGE_6_SEMANTIC_CANONICAL_TECHNICAL_PATHS = [
   "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
 ] as const;
 const STAGE_6_E2_CANDIDATE_BASE = "c7aa242b359401f76cd05944404cfc686854bec4";
+const STAGE_6_E2_TERMINAL_HEAD = "4ad23773e9c9e1081667a4eccb84cc464b85bc89";
+const STAGE_6_E3_SOURCE_TREE = "9dbcef77fbcc258e4fe96fdfb2b28839f095d610";
+const STAGE_6_E3_PROTOCOL_PREFIX = "BRILLIANT_RKP2_SCALE_PROCESS_V1:";
+const STAGE_6_E3_PROTOCOL_SHA256 =
+  "64e09779ea34bd04d504d515eb7c391f7db35a0a23a3c366fb2ffb5aa71c2862";
+const STAGE_6_PRIVATE_SCALE_TASK_ROOT =
+  ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair";
+const STAGE_6_E3_EVIDENCE_PATH =
+  `${STAGE_6_PRIVATE_SCALE_TASK_ROOT}/research/implementation-evidence.md`;
+const STAGE_6_ORIGINAL_E3_PATHS = [
+  `${STAGE_6_PRIVATE_SCALE_TASK_ROOT}/task.json`,
+  `${STAGE_6_PRIVATE_SCALE_TASK_ROOT}/operator-handoff.md`,
+  `${STAGE_6_PRIVATE_SCALE_TASK_ROOT}/review-candidate.md`,
+  STAGE_6_E3_EVIDENCE_PATH,
+  TASK_PATH,
+  ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/operator-handoff.md",
+  ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/review-candidate.md",
+  PARENT_PATH,
+] as const;
+const STAGE_6_E3_LAW_TASK_ROOT =
+  ".trellis/tasks/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair";
+const STAGE_6_E3_LAW_TECHNICAL_PATHS = [
+  "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
+] as const;
+const STAGE_6_E3_LAW_TASK_PATHS = [
+  `${STAGE_6_E3_LAW_TASK_ROOT}/task.json`,
+  `${STAGE_6_E3_LAW_TASK_ROOT}/prd.md`,
+  `${STAGE_6_E3_LAW_TASK_ROOT}/design.md`,
+  `${STAGE_6_E3_LAW_TASK_ROOT}/implement.md`,
+  `${STAGE_6_E3_LAW_TASK_ROOT}/implement.jsonl`,
+  `${STAGE_6_E3_LAW_TASK_ROOT}/check.jsonl`,
+  `${STAGE_6_E3_LAW_TASK_ROOT}/operator-handoff.md`,
+  `${STAGE_6_E3_LAW_TASK_ROOT}/review-candidate.md`,
+  `${STAGE_6_E3_LAW_TASK_ROOT}/research/current-e3-law-gap-audit.md`,
+  `${STAGE_6_E3_LAW_TASK_ROOT}/research/final-state-projection-contract.md`,
+  `${STAGE_6_E3_LAW_TASK_ROOT}/research/file-test-and-rollback-matrix.md`,
+  `${STAGE_6_E3_LAW_TASK_ROOT}/research/planning-self-audit.md`,
+] as const;
 const STAGE_6_E2_WORKER_TECHNICAL_PATHS = [
   "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts",
   "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.test.ts",
@@ -677,33 +715,124 @@ function currentStage6Changes(): Set<string> {
   return new Set(commands.flatMap((args) => lines(git(args))));
 }
 
-function currentSemanticCanonicalE1r2Changes(): Set<string> {
-  const commands: readonly (readonly string[])[] = [
-    [
-      "diff",
-      "--name-only",
-      `${STAGE_6_SEMANTIC_CANONICAL_PLANNING_HEAD}..HEAD`,
-    ],
-    ["diff", "--name-only"],
-    ["diff", "--cached", "--name-only"],
-    ["ls-files", "--others", "--exclude-standard"],
-  ];
-  return new Set(commands.flatMap((args) => lines(git(args))));
+function historicalSemanticCanonicalE2Changes(): Set<string> {
+  return new Set(
+    lines(
+      git([
+        "diff",
+        "--no-renames",
+        "--name-only",
+        `${STAGE_6_SEMANTIC_CANONICAL_PLANNING_HEAD}..${STAGE_6_E2_TERMINAL_HEAD}`,
+      ]),
+    ),
+  );
 }
 
-function currentE2WorkerCandidateChanges(): Set<string> {
+function historicalE2WorkerChanges(): Set<string> {
+  return new Set(
+    lines(
+      git([
+        "diff",
+        "--no-renames",
+        "--name-only",
+        `${STAGE_6_E2_CANDIDATE_BASE}..${STAGE_6_E2_TERMINAL_HEAD}`,
+      ]),
+    ),
+  );
+}
+
+function currentE3FinalStateChanges(): Set<string> {
   const commands: readonly (readonly string[])[] = [
     [
       "diff",
       "--no-renames",
       "--name-only",
-      `${STAGE_6_E2_CANDIDATE_BASE}..HEAD`,
+      `${STAGE_6_E2_TERMINAL_HEAD}..HEAD`,
     ],
-    ["diff", "--name-only"],
-    ["diff", "--cached", "--name-only"],
+    ["diff", "--no-renames", "--name-only"],
+    ["diff", "--cached", "--no-renames", "--name-only"],
     ["ls-files", "--others", "--exclude-standard"],
   ];
   return new Set(commands.flatMap((args) => lines(git(args))));
+}
+
+function lfNormalizedText(path: string): string {
+  const value = readFileSync(resolve(path), "utf8");
+  assert.notEqual(value.charCodeAt(0), 0xfeff, `${path} must not contain a BOM`);
+  return value.replaceAll("\r\n", "\n").replaceAll("\r", "\n");
+}
+
+interface E3ProtocolEnvelope {
+  readonly schemaVersion: number;
+  readonly status: string;
+  readonly evidence: {
+    readonly schemaVersion: number;
+    readonly status: string;
+    readonly fixtureId: string;
+    readonly counts: {
+      readonly measures: number;
+      readonly parts: number;
+      readonly staves: number;
+      readonly measureContents: number;
+      readonly voices: number;
+      readonly events: number;
+      readonly notes: number;
+      readonly extensions: number;
+      readonly partOwnedExtensions: number;
+      readonly unknownExtensions: number;
+    };
+    readonly workloadElapsedMicros: number;
+  };
+  readonly process: {
+    readonly exitCode: number;
+    readonly timedOut: boolean;
+    readonly peakWorkingSetBytes: number;
+    readonly stdoutBytes: number;
+    readonly stderrBytes: number;
+    readonly terminationStatus: string;
+    readonly reapStatus: string;
+    readonly cleanupStatus: string;
+  };
+  readonly partialEvidence: boolean;
+}
+
+interface E3LifecycleProjection {
+  readonly stage6Status: unknown;
+  readonly stage6ImplementationCandidateReady: unknown;
+  readonly stage6ImplementationReview: unknown;
+  readonly stage6CurrentImplementationChild: unknown;
+  readonly stage6S62Started: unknown;
+  readonly stage6S63Started: unknown;
+  readonly stage6DefaultRuntime: unknown;
+  readonly stage6ArchiveAuthorized: unknown;
+  readonly stage6PushAuthorized: unknown;
+  readonly stage6RuntimeSwitchAuthorized: unknown;
+  readonly stage6OfficialMeasurementAuthorized: unknown;
+  readonly stage6Rkp3CreationAuthorized: unknown;
+  readonly historicalE2Status: unknown;
+  readonly historicalE2Stage6E3Started: unknown;
+  readonly rkp2Status: unknown;
+  readonly rkp2CurrentImplementationChild: unknown;
+  readonly rkp2S62Started: unknown;
+  readonly rkp2S63Started: unknown;
+  readonly rkp2DefaultRuntime: unknown;
+  readonly rkp2ArchiveAuthorized: unknown;
+  readonly rkp2PushAuthorized: unknown;
+  readonly rkp2RuntimeSwitchAuthorized: unknown;
+  readonly rkp2OfficialMeasurementAuthorized: unknown;
+  readonly rkp2Rkp3CreationAuthorized: unknown;
+  readonly rustCurrentImplementationChild: unknown;
+  readonly rustS62Started: unknown;
+  readonly rustS63Started: unknown;
+  readonly rustDefaultRuntime: unknown;
+  readonly rustRuntimeSwitchAuthorized: unknown;
+  readonly lawTaskStatus: unknown;
+  readonly lawIntegrationAuthorized: unknown;
+  readonly lawQualificationAuthorized: unknown;
+  readonly lawArchiveAuthorized: unknown;
+  readonly lawPushAuthorized: unknown;
+  readonly lawRuntimeSwitchAuthorized: unknown;
+  readonly lawRkp3CreationAuthorized: unknown;
 }
 
 function fullRunnerPlanningChangesAtContentHead(): Set<string> {
@@ -757,6 +886,187 @@ function assertExactPathSet(
     [...expected].sort(),
     `${label} path set must be exact`,
   );
+}
+
+function assertE3FinalStateProjection(
+  actual: ReadonlySet<string>,
+  originalE3Paths: readonly string[] = STAGE_6_ORIGINAL_E3_PATHS,
+  repairTechnicalPaths: readonly string[] = STAGE_6_E3_LAW_TECHNICAL_PATHS,
+  repairTaskPaths: readonly string[] = STAGE_6_E3_LAW_TASK_PATHS,
+): void {
+  assertExactPathSet(
+    new Set(originalE3Paths),
+    STAGE_6_ORIGINAL_E3_PATHS,
+    "original E3 lifecycle and evidence declaration",
+  );
+  assertExactPathSet(
+    new Set(repairTechnicalPaths),
+    STAGE_6_E3_LAW_TECHNICAL_PATHS,
+    "E3 law repair technical declaration",
+  );
+  assertExactPathSet(
+    new Set(repairTaskPaths),
+    STAGE_6_E3_LAW_TASK_PATHS,
+    "E3 law repair task declaration",
+  );
+  assert.equal(originalE3Paths.length, 8);
+  assert.equal(repairTechnicalPaths.length, 1);
+  assert.equal(repairTaskPaths.length, 12);
+
+  const declared = [
+    ...originalE3Paths,
+    ...repairTechnicalPaths,
+    ...repairTaskPaths,
+  ];
+  assert.equal(
+    new Set(declared).size,
+    declared.length,
+    "E3 final-state owner sets must be disjoint before union",
+  );
+  assert.equal(declared.length, 21);
+  assertExactPathSet(actual, declared, "E3 final-state projection");
+}
+
+function extractE3ProtocolLine(source: string): string {
+  const protocol = lines(source).find((line) =>
+    line.startsWith(STAGE_6_E3_PROTOCOL_PREFIX),
+  );
+  assert.ok(protocol, "E3 evidence must contain exactly one process protocol");
+  assert.equal(
+    lines(source).filter((line) =>
+      line.startsWith(STAGE_6_E3_PROTOCOL_PREFIX),
+    ).length,
+    1,
+  );
+  return protocol;
+}
+
+function assertE3EvidenceProjection(
+  evidenceSource: string,
+  protocolLine: string,
+): E3ProtocolEnvelope {
+  assert.match(evidenceSource, new RegExp(STAGE_6_E2_TERMINAL_HEAD, "u"));
+  assert.match(evidenceSource, new RegExp(STAGE_6_E3_SOURCE_TREE, "u"));
+  assert.match(
+    evidenceSource,
+    /It is not a product benchmark, RKP-7 budget result, RKP-9 qualification result/u,
+  );
+  assert.equal(Buffer.byteLength(protocolLine, "utf8"), 1_525);
+  assert.equal(sha256(protocolLine), STAGE_6_E3_PROTOCOL_SHA256);
+  assert.equal(protocolLine.startsWith(STAGE_6_E3_PROTOCOL_PREFIX), true);
+
+  const envelope = JSON.parse(
+    protocolLine.slice(STAGE_6_E3_PROTOCOL_PREFIX.length),
+  ) as E3ProtocolEnvelope;
+  assert.equal(envelope.schemaVersion, 1);
+  assert.equal(envelope.status, "ok");
+  assert.equal(envelope.evidence.schemaVersion, 1);
+  assert.equal(envelope.evidence.status, "ok");
+  assert.equal(envelope.evidence.fixtureId, "cvn7-stress-v1");
+  assert.deepEqual(envelope.evidence.counts, {
+    measures: 400,
+    parts: 16,
+    staves: 16,
+    measureContents: 6_400,
+    voices: 12_800,
+    events: 102_400,
+    notes: 51_200,
+    extensions: 18,
+    partOwnedExtensions: 16,
+    unknownExtensions: 1,
+  });
+  assert.equal(envelope.evidence.workloadElapsedMicros, 12_964_590);
+  assert.deepEqual(envelope.process, {
+    exitCode: 0,
+    timedOut: false,
+    peakWorkingSetBytes: 821_886_976,
+    stdoutBytes: 1_438,
+    stderrBytes: 0,
+    terminationStatus: "not-required",
+    reapStatus: "succeeded",
+    cleanupStatus: "succeeded",
+  });
+  assert.equal(envelope.partialEvidence, false);
+  return envelope;
+}
+
+function assertE3LifecycleProjection(projection: E3LifecycleProjection): void {
+  assert.equal(projection.stage6Status, "in_progress");
+  assert.equal(projection.stage6ImplementationCandidateReady, true);
+  assert.equal(
+    projection.stage6ImplementationReview,
+    "pending_dedicated_independent_E3_candidate_review",
+  );
+  assert.equal(
+    projection.stage6CurrentImplementationChild,
+    "08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair",
+  );
+  assert.equal(projection.stage6S62Started, false);
+  assert.equal(projection.stage6S63Started, false);
+  assert.equal(projection.stage6DefaultRuntime, "typescript");
+  assert.equal(projection.stage6ArchiveAuthorized, false);
+  assert.equal(projection.stage6PushAuthorized, false);
+  assert.equal(projection.stage6RuntimeSwitchAuthorized, false);
+  assert.equal(projection.stage6OfficialMeasurementAuthorized, false);
+  assert.equal(projection.stage6Rkp3CreationAuthorized, false);
+  assert.equal(
+    projection.historicalE2Status,
+    "completed_historical_E1R2_and_E2_authority_consumed_parent_Stage6_E3_owned_elsewhere",
+  );
+  assert.equal(projection.historicalE2Stage6E3Started, false);
+
+  assert.equal(projection.rkp2Status, "in_progress");
+  assert.equal(
+    projection.rkp2CurrentImplementationChild,
+    "08-26-rkp-2-stage-6-private-scale-evidence-seam-repair",
+  );
+  assert.equal(projection.rkp2S62Started, false);
+  assert.equal(projection.rkp2S63Started, false);
+  assert.equal(projection.rkp2DefaultRuntime, "typescript");
+  assert.equal(projection.rkp2ArchiveAuthorized, false);
+  assert.equal(projection.rkp2PushAuthorized, false);
+  assert.equal(projection.rkp2RuntimeSwitchAuthorized, false);
+  assert.equal(projection.rkp2OfficialMeasurementAuthorized, false);
+  assert.equal(projection.rkp2Rkp3CreationAuthorized, false);
+
+  assert.equal(
+    projection.rustCurrentImplementationChild,
+    "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
+  );
+  assert.equal(projection.rustS62Started, false);
+  assert.equal(projection.rustS63Started, false);
+  assert.equal(projection.rustDefaultRuntime, "typescript");
+  assert.equal(projection.rustRuntimeSwitchAuthorized, false);
+
+  assert.equal(projection.lawTaskStatus, "in_progress");
+  assert.equal(projection.lawIntegrationAuthorized, false);
+  assert.equal(projection.lawQualificationAuthorized, false);
+  assert.equal(projection.lawArchiveAuthorized, false);
+  assert.equal(projection.lawPushAuthorized, false);
+  assert.equal(projection.lawRuntimeSwitchAuthorized, false);
+  assert.equal(projection.lawRkp3CreationAuthorized, false);
+}
+
+function assertImmutablePlanningAuthority(
+  contract: unknown,
+  count: unknown,
+  registry: unknown,
+): void {
+  assert.equal(contract, "lf_normalized_utf8_sha256");
+  assert.equal(count, 9);
+  assert.ok(registry !== null && typeof registry === "object");
+  assert.equal(Array.isArray(registry), false);
+  const entries = Object.entries(registry as Readonly<Record<string, unknown>>);
+  assert.equal(entries.length, 9);
+  for (const [path, expected] of entries) {
+    assert.equal(typeof expected, "string", `${path} digest must be a string`);
+    assert.equal(existsSync(resolve(path)), true, `${path} must exist`);
+    assert.equal(
+      sha256(lfNormalizedText(path)),
+      expected,
+      `${path} immutable planning digest`,
+    );
+  }
 }
 
 function validateImplementationCandidateFixture(paths: readonly string[]): void {
@@ -1175,15 +1485,26 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     git(["cat-file", "-e", `${STAGE_6_E2_CANDIDATE_BASE}^{commit}`]),
   );
   assert.doesNotThrow(() =>
+    git(["cat-file", "-e", `${STAGE_6_E2_TERMINAL_HEAD}^{commit}`]),
+  );
+  assert.doesNotThrow(() =>
+    git([
+      "merge-base",
+      "--is-ancestor",
+      STAGE_6_SEMANTIC_CANONICAL_PLANNING_HEAD,
+      STAGE_6_E2_TERMINAL_HEAD,
+    ]),
+  );
+  assert.doesNotThrow(() =>
     git([
       "merge-base",
       "--is-ancestor",
       STAGE_6_E2_CANDIDATE_BASE,
-      "HEAD",
+      STAGE_6_E2_TERMINAL_HEAD,
     ]),
   );
   assertExactPathSet(
-    currentSemanticCanonicalE1r2Changes(),
+    historicalSemanticCanonicalE2Changes(),
     [
       ...STAGE_6_E2_TECHNICAL_PATHS,
       ...STAGE_6_SEMANTIC_CANONICAL_LIFECYCLE_PATHS,
@@ -1191,12 +1512,39 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     "Stage 6 semantic/canonical E1R2 plus E2 worker candidate",
   );
   assertExactPathSet(
-    currentE2WorkerCandidateChanges(),
+    historicalE2WorkerChanges(),
     [
       ...STAGE_6_E2_WORKER_TECHNICAL_PATHS,
       ...STAGE_6_SEMANTIC_CANONICAL_LIFECYCLE_PATHS,
     ],
     "Stage 6 E2 fourth bounded repair candidate",
+  );
+
+  assert.equal(
+    git(["rev-parse", `${STAGE_6_E2_TERMINAL_HEAD}^{tree}`]),
+    STAGE_6_E3_SOURCE_TREE,
+  );
+  const currentE3Paths = currentE3FinalStateChanges();
+  assertE3FinalStateProjection(currentE3Paths);
+
+  const withoutEvidence = new Set(currentE3Paths);
+  withoutEvidence.delete(STAGE_6_E3_EVIDENCE_PATH);
+  assert.throws(() => assertE3FinalStateProjection(withoutEvidence));
+  assert.throws(() =>
+    assertE3FinalStateProjection(currentE3Paths, [
+      ...STAGE_6_ORIGINAL_E3_PATHS,
+      `${STAGE_6_PRIVATE_SCALE_TASK_ROOT}/ninth-e3-lifecycle-path.md`,
+    ]),
+  );
+  assert.throws(() =>
+    assertE3FinalStateProjection(
+      currentE3Paths,
+      STAGE_6_ORIGINAL_E3_PATHS,
+      [
+        ...STAGE_6_E3_LAW_TECHNICAL_PATHS,
+        STAGE_6_E3_EVIDENCE_PATH,
+      ],
+    ),
   );
 
   const task = JSON.parse(
@@ -1232,12 +1580,37 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
 
   const stage6Task = JSON.parse(
     readText(
-      ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/task.json",
+      `${STAGE_6_PRIVATE_SCALE_TASK_ROOT}/task.json`,
     ),
   ) as {
+    readonly status?: unknown;
+    readonly children?: unknown;
     readonly meta?: {
       readonly future_technical_allowlist?: unknown;
+      readonly future_lifecycle_allowlist?: unknown;
+      readonly implementation_candidate_ready?: unknown;
+      readonly implementation_review?: unknown;
+      readonly current_implementation_child?: unknown;
+      readonly rkp2_stage_6_s6_2_started?: unknown;
+      readonly rkp2_stage_6_s6_3_started?: unknown;
+      readonly default_runtime?: unknown;
+      readonly archive_authorized?: unknown;
+      readonly push_authorized?: unknown;
+      readonly default_runtime_switch_authorized?: unknown;
+      readonly official_measurement_authorized?: unknown;
+      readonly rkp3_creation_authorized?: unknown;
+      readonly e3_evidence_source_head?: unknown;
+      readonly e3_evidence_source_tree?: unknown;
+      readonly e3_protocol_sha256?: unknown;
+      readonly e3_workload_elapsed_micros?: unknown;
+      readonly e3_wall_elapsed_micros?: unknown;
+      readonly e3_peak_working_set_bytes?: unknown;
+      readonly e3_partial_evidence?: unknown;
+      readonly immutable_planning_authority_hash_contract?: unknown;
+      readonly immutable_planning_authority_count?: unknown;
+      readonly immutable_planning_authority?: unknown;
       readonly stage6_semantic_canonical_authority_amendment?: {
+        readonly status?: unknown;
         readonly stage6_e2_started?: unknown;
         readonly stage6_e3_started?: unknown;
       };
@@ -1245,6 +1618,13 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
   };
   assert.deepEqual(stage6Task.meta?.future_technical_allowlist, [
     ...STAGE_6_E2_WORKER_TECHNICAL_PATHS,
+  ]);
+  assert.deepEqual(stage6Task.meta?.future_lifecycle_allowlist, [
+    ...STAGE_6_ORIGINAL_E3_PATHS,
+  ]);
+  assert.deepEqual(stage6Task.children, [
+    "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
+    "08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair",
   ]);
   assert.equal(
     stage6Task.meta?.stage6_semantic_canonical_authority_amendment
@@ -1255,6 +1635,141 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     stage6Task.meta?.stage6_semantic_canonical_authority_amendment
       ?.stage6_e3_started,
     false,
+  );
+
+  const evidenceSource = readText(STAGE_6_E3_EVIDENCE_PATH);
+  const protocolLine = extractE3ProtocolLine(evidenceSource);
+  assertE3EvidenceProjection(evidenceSource, protocolLine);
+  assert.throws(() =>
+    assertE3EvidenceProjection(
+      evidenceSource,
+      protocolLine.replace(
+        '"fixtureId":"cvn7-stress-v1"',
+        '"fixtureId":"cvn7-stress-v2"',
+      ),
+    ),
+  );
+  assert.equal(
+    stage6Task.meta?.e3_evidence_source_head,
+    STAGE_6_E2_TERMINAL_HEAD,
+  );
+  assert.equal(stage6Task.meta?.e3_evidence_source_tree, STAGE_6_E3_SOURCE_TREE);
+  assert.equal(stage6Task.meta?.e3_protocol_sha256, STAGE_6_E3_PROTOCOL_SHA256);
+  assert.equal(stage6Task.meta?.e3_workload_elapsed_micros, 12_964_590);
+  assert.equal(stage6Task.meta?.e3_wall_elapsed_micros, 14_077_309);
+  assert.equal(stage6Task.meta?.e3_peak_working_set_bytes, 821_886_976);
+  assert.equal(stage6Task.meta?.e3_partial_evidence, false);
+  assertImmutablePlanningAuthority(
+    stage6Task.meta?.immutable_planning_authority_hash_contract,
+    stage6Task.meta?.immutable_planning_authority_count,
+    stage6Task.meta?.immutable_planning_authority,
+  );
+
+  const rkp2Task = JSON.parse(readText(TASK_PATH)) as {
+    readonly status?: unknown;
+    readonly meta?: {
+      readonly current_implementation_child?: unknown;
+      readonly stage_6_s6_2_started?: unknown;
+      readonly stage_6_s6_3_started?: unknown;
+      readonly default_runtime?: unknown;
+      readonly archive_authorized?: unknown;
+      readonly push_authorized?: unknown;
+      readonly default_runtime_switch_authorized?: unknown;
+      readonly official_measurement_authorized?: unknown;
+      readonly rkp3_creation_authorized?: unknown;
+    };
+  };
+  const rustTask = JSON.parse(readText(PARENT_PATH)) as {
+    readonly meta?: {
+      readonly current_implementation_child?: unknown;
+      readonly rkp2_stage_6_s6_2_started?: unknown;
+      readonly rkp2_stage_6_s6_3_started?: unknown;
+      readonly rkp2_default_runtime?: unknown;
+      readonly rkp2_default_runtime_switch_authorized?: unknown;
+    };
+  };
+  const lawTask = JSON.parse(
+    readText(`${STAGE_6_E3_LAW_TASK_ROOT}/task.json`),
+  ) as {
+    readonly status?: unknown;
+    readonly meta?: {
+      readonly integration_authorized?: unknown;
+      readonly qualification_authorized?: unknown;
+      readonly archive_authorized?: unknown;
+      readonly push_authorized?: unknown;
+      readonly default_runtime_switch_authorized?: unknown;
+      readonly rkp3_creation_authorized?: unknown;
+    };
+  };
+  const lifecycle: E3LifecycleProjection = {
+    stage6Status: stage6Task.status,
+    stage6ImplementationCandidateReady:
+      stage6Task.meta?.implementation_candidate_ready,
+    stage6ImplementationReview: stage6Task.meta?.implementation_review,
+    stage6CurrentImplementationChild:
+      stage6Task.meta?.current_implementation_child,
+    stage6S62Started: stage6Task.meta?.rkp2_stage_6_s6_2_started,
+    stage6S63Started: stage6Task.meta?.rkp2_stage_6_s6_3_started,
+    stage6DefaultRuntime: stage6Task.meta?.default_runtime,
+    stage6ArchiveAuthorized: stage6Task.meta?.archive_authorized,
+    stage6PushAuthorized: stage6Task.meta?.push_authorized,
+    stage6RuntimeSwitchAuthorized:
+      stage6Task.meta?.default_runtime_switch_authorized,
+    stage6OfficialMeasurementAuthorized:
+      stage6Task.meta?.official_measurement_authorized,
+    stage6Rkp3CreationAuthorized: stage6Task.meta?.rkp3_creation_authorized,
+    historicalE2Status:
+      stage6Task.meta?.stage6_semantic_canonical_authority_amendment?.status,
+    historicalE2Stage6E3Started: task.meta?.stage6_e3_started,
+    rkp2Status: rkp2Task.status,
+    rkp2CurrentImplementationChild:
+      rkp2Task.meta?.current_implementation_child,
+    rkp2S62Started: rkp2Task.meta?.stage_6_s6_2_started,
+    rkp2S63Started: rkp2Task.meta?.stage_6_s6_3_started,
+    rkp2DefaultRuntime: rkp2Task.meta?.default_runtime,
+    rkp2ArchiveAuthorized: rkp2Task.meta?.archive_authorized,
+    rkp2PushAuthorized: rkp2Task.meta?.push_authorized,
+    rkp2RuntimeSwitchAuthorized:
+      rkp2Task.meta?.default_runtime_switch_authorized,
+    rkp2OfficialMeasurementAuthorized:
+      rkp2Task.meta?.official_measurement_authorized,
+    rkp2Rkp3CreationAuthorized: rkp2Task.meta?.rkp3_creation_authorized,
+    rustCurrentImplementationChild: rustTask.meta?.current_implementation_child,
+    rustS62Started: rustTask.meta?.rkp2_stage_6_s6_2_started,
+    rustS63Started: rustTask.meta?.rkp2_stage_6_s6_3_started,
+    rustDefaultRuntime: rustTask.meta?.rkp2_default_runtime,
+    rustRuntimeSwitchAuthorized:
+      rustTask.meta?.rkp2_default_runtime_switch_authorized,
+    lawTaskStatus: lawTask.status,
+    lawIntegrationAuthorized: lawTask.meta?.integration_authorized,
+    lawQualificationAuthorized: lawTask.meta?.qualification_authorized,
+    lawArchiveAuthorized: lawTask.meta?.archive_authorized,
+    lawPushAuthorized: lawTask.meta?.push_authorized,
+    lawRuntimeSwitchAuthorized:
+      lawTask.meta?.default_runtime_switch_authorized,
+    lawRkp3CreationAuthorized: lawTask.meta?.rkp3_creation_authorized,
+  };
+  assertE3LifecycleProjection(lifecycle);
+  assert.throws(() =>
+    assertE3LifecycleProjection({
+      ...lifecycle,
+      stage6ImplementationReview: "passed",
+    }),
+  );
+  assert.throws(() =>
+    assertE3LifecycleProjection({ ...lifecycle, stage6S62Started: true }),
+  );
+  assert.throws(() =>
+    assertE3LifecycleProjection({ ...lifecycle, stage6S63Started: true }),
+  );
+  assert.throws(() =>
+    assertE3LifecycleProjection({ ...lifecycle, stage6DefaultRuntime: "rust" }),
+  );
+  assert.throws(() =>
+    assertE3LifecycleProjection({
+      ...lifecycle,
+      historicalE2Stage6E3Started: true,
+    }),
   );
 
   const worker = readText(
