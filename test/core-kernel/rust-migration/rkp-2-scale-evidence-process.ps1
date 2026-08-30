@@ -49,13 +49,22 @@ function Test-SafeInteger([object] $Value, [bool] $Positive = $false) {
 
 function Invoke-TaskKill([Diagnostics.Process] $Child) {
   $script:processState.terminationStatus = "failed"
+  $taskkill = $null
   try {
     $taskkill = Start-Process -FilePath (Join-Path $env:SystemRoot "System32\\taskkill.exe") -ArgumentList @("/PID", [string] $Child.Id, "/T", "/F") -PassThru -WindowStyle Hidden
-    if (-not $taskkill.WaitForExit($reapTimeoutMs)) { return }
+    if (-not $taskkill.WaitForExit($reapTimeoutMs)) {
+      # A timed-out taskkill is itself terminated and reaped inside the same
+      # bounded settlement budget; its failure remains secondary to the first cause.
+      try { Stop-Process -Id $taskkill.Id -Force -ErrorAction Stop } catch {}
+      try { [void] $taskkill.WaitForExit($reapTimeoutMs) } catch {}
+      return
+    }
     if ($taskkill.ExitCode -ne 0) { return }
     $script:processState.terminationStatus = "succeeded"
   } catch {
     return
+  } finally {
+    if ($null -ne $taskkill) { try { $taskkill.Dispose() } catch {} }
   }
 }
 
@@ -168,8 +177,8 @@ try {
   $preflightFailure = Get-PreflightFailure
   if ($null -ne $preflightFailure) {
     Set-FirstFailure "process.protocol-invalid" $preflightFailure
-    # No request/root ownership was accepted, so no recursive cleanup may run.
-    $processState.cleanupStatus = "failed"
+    # No request/root ownership was accepted: Node observes the still-offered
+    # marker after this wrapper closes and performs its one pre-handoff cleanup.
   } else {
     if (-not $handoffAccepted -or $null -eq $root) { throw "ownership acceptance missing" }
     $stdoutPath = Join-Path $root "libtest.stdout"

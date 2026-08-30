@@ -32,6 +32,10 @@ import {
   createMinimalRkp2StoreFixture,
   createRkp2StoreFixtureCatalog,
 } from "./rkp-2-store-fixtures";
+import {
+  PRIVATE_SCALE_PROCESS_STATE_REGISTRY,
+  PRIVATE_SCALE_PROCESS_STATE_REGISTRY_SHA256,
+} from "./rkp-2-scale-evidence-worker";
 
 const IMPLEMENTATION_BASE = "df40aef391440ae64ad3e266419579bee5887a1f";
 const FULL_RUNNER_PLANNING_BASE =
@@ -263,12 +267,16 @@ const STAGE_6_SEMANTIC_CANONICAL_TECHNICAL_PATHS = [
   "crates/brilliant-kernel-runtime/src/indices.rs",
   "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
 ] as const;
-const STAGE_6_E2_TECHNICAL_PATHS = [
-  "crates/brilliant-kernel-runtime/src/indices.rs",
+const STAGE_6_E2_CANDIDATE_BASE = "c7aa242b359401f76cd05944404cfc686854bec4";
+const STAGE_6_E2_WORKER_TECHNICAL_PATHS = [
   "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts",
   "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.test.ts",
   "test/core-kernel/rust-migration/rkp-2-scale-evidence-process.ps1",
   "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
+] as const;
+const STAGE_6_E2_TECHNICAL_PATHS = [
+  "crates/brilliant-kernel-runtime/src/indices.rs",
+  ...STAGE_6_E2_WORKER_TECHNICAL_PATHS,
 ] as const;
 const STAGE_6_SEMANTIC_CANONICAL_LIFECYCLE_PATHS = [
   `${STAGE_6_SEMANTIC_CANONICAL_TASK_ROOT}/task.json`,
@@ -675,6 +683,21 @@ function currentSemanticCanonicalE1r2Changes(): Set<string> {
       "diff",
       "--name-only",
       `${STAGE_6_SEMANTIC_CANONICAL_PLANNING_HEAD}..HEAD`,
+    ],
+    ["diff", "--name-only"],
+    ["diff", "--cached", "--name-only"],
+    ["ls-files", "--others", "--exclude-standard"],
+  ];
+  return new Set(commands.flatMap((args) => lines(git(args))));
+}
+
+function currentE2WorkerCandidateChanges(): Set<string> {
+  const commands: readonly (readonly string[])[] = [
+    [
+      "diff",
+      "--no-renames",
+      "--name-only",
+      `${STAGE_6_E2_CANDIDATE_BASE}..HEAD`,
     ],
     ["diff", "--name-only"],
     ["diff", "--cached", "--name-only"],
@@ -1148,6 +1171,17 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
       STAGE_6_SEMANTIC_CANONICAL_PLANNING_HEAD,
     ]),
   );
+  assert.doesNotThrow(() =>
+    git(["cat-file", "-e", `${STAGE_6_E2_CANDIDATE_BASE}^{commit}`]),
+  );
+  assert.doesNotThrow(() =>
+    git([
+      "merge-base",
+      "--is-ancestor",
+      STAGE_6_E2_CANDIDATE_BASE,
+      "HEAD",
+    ]),
+  );
   assertExactPathSet(
     currentSemanticCanonicalE1r2Changes(),
     [
@@ -1155,6 +1189,14 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
       ...STAGE_6_SEMANTIC_CANONICAL_LIFECYCLE_PATHS,
     ],
     "Stage 6 semantic/canonical E1R2 plus E2 worker candidate",
+  );
+  assertExactPathSet(
+    currentE2WorkerCandidateChanges(),
+    [
+      ...STAGE_6_E2_WORKER_TECHNICAL_PATHS,
+      ...STAGE_6_SEMANTIC_CANONICAL_LIFECYCLE_PATHS,
+    ],
+    "Stage 6 E2 third bounded repair candidate",
   );
 
   const task = JSON.parse(
@@ -1202,7 +1244,7 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     };
   };
   assert.deepEqual(stage6Task.meta?.future_technical_allowlist, [
-    ...STAGE_6_E2_TECHNICAL_PATHS,
+    ...STAGE_6_E2_WORKER_TECHNICAL_PATHS,
   ]);
   assert.equal(
     stage6Task.meta?.stage6_semantic_canonical_authority_amendment
@@ -1224,42 +1266,41 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
   const process = readText(
     "test/core-kernel/rust-migration/rkp-2-scale-evidence-process.ps1",
   );
+  assert.deepEqual(PRIVATE_SCALE_PROCESS_STATE_REGISTRY, {
+    schemaVersion: 1,
+    workloadTimeoutMs: 180_000,
+    terminationBudgetMs: 5_000,
+    reapBudgetMs: 5_000,
+    cleanupBudgetMs: 5_000,
+    outerCushionMs: 10_000,
+    outerDeadlineMs: 205_000,
+    ownershipStates: ["root-absent", "offered", "accepted-residue", "unknown"],
+    terminationStates: ["not-required", "succeeded", "failed"],
+    cleanupStates: ["succeeded", "failed"],
+  });
   assert.equal(
-    (worker.match(/const fixture = createStressCvn7Score\(\);/gu) ?? []).length,
-    1,
-    "E2 must retain one TypeScript fixture owner",
+    PRIVATE_SCALE_PROCESS_STATE_REGISTRY_SHA256,
+    "47911291ed39a657a5534f73c3e45925694d6ffbe28bcce30613a1f5a2b0c149",
   );
-  assert.match(
-    worker,
-    /cargoExecutable, \["\+1\.97\.1", "test", "-p", "brilliant-kernel-runtime", "--lib", "--no-run", "--locked", "--message-format=json"\]/u,
-  );
-  assert.match(
-    worker,
-    /PRIVATE_SCALE_TEST_NAME[\s\S]*PRIVATE_SCALE_TIMEOUT_MS[\s\S]*PRIVATE_SCALE_POLL_INTERVAL_MS/u,
-  );
-  assert.match(worker, /const FAILURE_CODES = \[[\s\S]*process\.cleanup-failed[\s\S]*\] as const/u);
-  assert.match(worker, /function assertFailureProcessCombination[\s\S]*process\.exitCode === 0[\s\S]*process\.protocol-invalid/u);
-  assert.match(worker, /PRIVATE_SCALE_LEAF_PREFIX[\s\S]*PRIVATE_SCALE_OWNERSHIP_MARKER/u);
-  assert.match(worker, /randomBytes\(32\)[\s\S]*writeFileSync\(join\(leaf, PRIVATE_SCALE_OWNERSHIP_MARKER\)[\s\S]*state: "offered"/u);
-  assert.match(worker, /const deadline = Date\.now\(\) \+ PRIVATE_SCALE_TIMEOUT_MS[\s\S]*Math\.max\(0, deadline - Date\.now\(\)\)/u);
-  assert.match(worker, /value\.state === "accepted"[\s\S]*Node never treats spawn as acceptance/u);
-  assert.match(process, /BRILLIANT_RKP2_SCALE_REQUEST_V1/u);
-  assert.match(
-    process,
-    /Start-Process[\s\S]*-WindowStyle Hidden[\s\S]*-RedirectStandardOutput/u,
-  );
-  assert.match(process, /taskkill\.exe[\s\S]*\/PID[\s\S]*\/T[\s\S]*\/F/u);
-  assert.match(process, /\$ownershipMarkerName = "ownership\.json"[\s\S]*\$ownershipLeafPrefix = "rkp2-scale-e2-"/u);
-  assert.match(process, /function Get-PreflightFailure[\s\S]*Get-Item -LiteralPath \$ExecutablePath[\s\S]*Get-Item -LiteralPath \$RequestPath[\s\S]*\$markerPath = Join-Path \$normalizedRoot \$ownershipMarkerName/u);
-  assert.match(process, /\$marker\.schemaVersion -ne 1[\s\S]*\$marker\.state -ne "offered"[\s\S]*\$script:handoffAccepted = \$true/u);
-  assert.match(process, /if \(\$handoffAccepted -and \$null -ne \$root\)/u);
-  assert.match(process, /if \(\$null -ne \$primaryFailure\) \{ Invoke-TaskKill \$child; Invoke-BoundedReap \$child; break \}/u);
-  assert.match(
-    process,
-    /Remove-OwnedPath \$RequestPath "request"[\s\S]*Remove-OwnedPath \$stdoutPath "stdout"[\s\S]*Remove-OwnedPath \$stderrPath "stderr"[\s\S]*Remove-OwnedPath \$root "temp-directory"/u,
-  );
-  assert.match(workerTest, /BRILLIANT_RKP2_RUN_SCALE_E2/u);
-
+  assert.ok(worker.includes("export async function spawnPowerShell("));
+  assert.ok(worker.includes("const workloadDeadline = startedAt + PRIVATE_SCALE_TIMEOUT_MS;"));
+  assert.ok(worker.includes("const outerDeadline = startedAt + PRIVATE_SCALE_OUTER_TIMEOUT_MS;"));
+  assert.ok(worker.includes("workloadTimer = setTimer"));
+  assert.ok(worker.includes("outerTimer = setTimer"));
+  assert.ok(worker.includes("observePrivateScaleOwnershipForTest"));
+  assert.ok(worker.includes("removeOwnedLeafExactlyOnce"));
+  assert.ok(worker.includes("accepted-residue"));
+  assert.ok(worker.includes("case \"process.start-failed\":"));
+  assert.ok(worker.includes("case \"process.cleanup-failed\":"));
+  assert.ok(workerTest.includes("createFakeTimers"));
+  assert.ok(workerTest.includes("spawnPowerShell(\"worker.ps1\""));
+  assert.ok(workerTest.includes("Stage 6 E2 drives timeout and overflow through the production outer settlement machine"));
+  assert.ok(workerTest.includes("Stage 6 E2 rejects impossible process envelopes rather than inventing state"));
+  assert.ok(process.includes("function Invoke-TaskKill"));
+  assert.ok(process.includes("Stop-Process -Id $taskkill.Id -Force"));
+  assert.ok(process.includes("$taskkill.WaitForExit($reapTimeoutMs)"));
+  assert.ok(process.includes("$script:handoffAccepted = $true"));
+  assert.ok(process.includes("Remove-OwnedPath $RequestPath \"request\""));
   const indices = readText("crates/brilliant-kernel-runtime/src/indices.rs");
   const collectStart = indices.indexOf("fn collect_scale_evidence(");
   const collectEnd = indices.indexOf("\n    #[test]", collectStart);

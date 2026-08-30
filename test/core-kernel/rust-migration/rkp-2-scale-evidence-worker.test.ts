@@ -1,6 +1,7 @@
 import assert = require("node:assert/strict");
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
+import { EventEmitter } from "node:events";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { readFileSync } from "node:fs";
@@ -9,6 +10,12 @@ import { test } from "node:test";
 
 import {
   PRIVATE_SCALE_PROCESS_PREFIX,
+  PRIVATE_SCALE_OUTER_TIMEOUT_MS,
+  PRIVATE_SCALE_REAP_TIMEOUT_MS,
+  PRIVATE_SCALE_STREAM_LIMIT_BYTES,
+  PRIVATE_SCALE_TIMEOUT_MS,
+  observePrivateScaleOwnershipForTest,
+  spawnPowerShell,
   PRIVATE_SCALE_RUST_PREFIX,
   decodeProcessEnvelope,
   decodeRustEvidenceLine,
@@ -172,7 +179,7 @@ test("Stage 6 E2 preserves the first primary and rejects invalid settlement comb
   const zeroExitReapFailure = JSON.parse(rejectedEnvelope("process.protocol-invalid").toString("utf8").slice(PRIVATE_SCALE_PROCESS_PREFIX.length)) as { process: Record<string, unknown> };
   zeroExitReapFailure.process.exitCode = 0;
   zeroExitReapFailure.process.reapStatus = "failed";
-  assert.equal(decodeProcessEnvelope(Buffer.from(`${PRIVATE_SCALE_PROCESS_PREFIX}${JSON.stringify(zeroExitReapFailure)}\n`, "utf8"), Buffer.alloc(0)).status, "rejected");
+  assert.throws(() => decodeProcessEnvelope(Buffer.from(`${PRIVATE_SCALE_PROCESS_PREFIX}${JSON.stringify(zeroExitReapFailure)}\n`, "utf8"), Buffer.alloc(0)), (error: unknown) => (error as { code?: string }).code === "process.protocol-invalid");
 
   const invalidZeroExitReapFailure = JSON.parse(rejectedEnvelope("process.rss-invalid").toString("utf8").slice(PRIVATE_SCALE_PROCESS_PREFIX.length)) as { process: Record<string, unknown> };
   invalidZeroExitReapFailure.process.exitCode = 0;
@@ -275,4 +282,128 @@ test("Stage 6 E2 runs the one real private scale journey only when explicitly en
   assert.equal(result.envelope.evidence.counts.events, 102400);
   assert.equal(result.envelope.evidence.metrics.fullDocumentMaterializations, 1);
   assert.ok(result.wallElapsedMicros > 0);
+});
+
+class FakeChild extends EventEmitter {
+  readonly stdout = new EventEmitter();
+  readonly stderr = new EventEmitter();
+  readonly pid = 4242;
+  killCalls = 0;
+  kill(): boolean { this.killCalls += 1; return true; }
+}
+
+function asSpawnChild(child: FakeChild): ReturnType<typeof spawn> {
+  return child as unknown as ReturnType<typeof spawn>;
+}
+
+function createFakeTimers(): {
+  readonly scheduled: Array<{ readonly delay: number; readonly callback: () => void; cleared: boolean }>;
+  readonly setTimer: typeof setTimeout;
+  readonly clearTimer: typeof clearTimeout;
+} {
+  const scheduled: Array<{ readonly delay: number; readonly callback: () => void; cleared: boolean }> = [];
+  return {
+    scheduled,
+    setTimer: ((callback: () => void, delay?: number) => {
+      const timer = { delay: delay ?? 0, callback, cleared: false };
+      scheduled.push(timer);
+      return timer as unknown as NodeJS.Timeout;
+    }) as typeof setTimeout,
+    clearTimer: ((timer: NodeJS.Timeout) => { (timer as unknown as { cleared: boolean }).cleared = true; }) as typeof clearTimeout,
+  };
+}
+
+async function settleFakeCase(first: "overflow" | "timeout"): Promise<{
+  readonly result: Awaited<ReturnType<typeof spawnPowerShell>>;
+  readonly scheduled: ReadonlyArray<{ readonly delay: number; readonly callback: () => void; cleared: boolean }>;
+  readonly calls: readonly string[];
+}> {
+  const wrapper = new FakeChild();
+  const taskkill = new FakeChild();
+  const timers = createFakeTimers();
+  const calls: string[] = [];
+  const promise = spawnPowerShell("worker.ps1", "libtest.exe", "request.json", {
+    now: () => 0,
+    setTimer: timers.setTimer,
+    clearTimer: timers.clearTimer,
+    spawnProcess: ((command: string) => {
+      calls.push(command);
+      return asSpawnChild(calls.length === 1 ? wrapper : taskkill);
+    }) as typeof spawn,
+  });
+  if (first === "overflow") {
+    wrapper.stdout.emit("data", Buffer.alloc(PRIVATE_SCALE_STREAM_LIMIT_BYTES + 1));
+  } else {
+    const workload = timers.scheduled.find((timer) => timer.delay === PRIVATE_SCALE_TIMEOUT_MS);
+    assert.ok(workload);
+    workload.callback();
+  }
+  taskkill.emit("close", 0);
+  wrapper.emit("close", null);
+  return { result: await promise, scheduled: timers.scheduled, calls };
+}
+
+test("Stage 6 E2 drives timeout and overflow through the production outer settlement machine", async () => {
+  const overflow = await settleFakeCase("overflow");
+  assert.equal(overflow.result.firstFailure, "process.output-limit-exceeded");
+  assert.equal(overflow.result.terminationStatus, "succeeded");
+  assert.equal(overflow.result.reapStatus, "succeeded");
+  assert.equal(overflow.calls.length, 2);
+  assert.ok(overflow.scheduled.some((timer) => timer.delay === PRIVATE_SCALE_TIMEOUT_MS));
+  assert.ok(overflow.scheduled.some((timer) => timer.delay === PRIVATE_SCALE_OUTER_TIMEOUT_MS));
+  assert.ok(overflow.scheduled.some((timer) => timer.delay === PRIVATE_SCALE_REAP_TIMEOUT_MS));
+
+  const timeout = await settleFakeCase("timeout");
+  assert.equal(timeout.result.firstFailure, "process.timeout");
+  assert.equal(timeout.result.timedOut, true);
+  assert.equal(timeout.result.terminationStatus, "succeeded");
+  assert.equal(timeout.result.reapStatus, "succeeded");
+});
+
+test("Stage 6 E2 outer settlement rejects start failures before any process state is fabricated", async () => {
+  const timers = createFakeTimers();
+  const result = await spawnPowerShell("worker.ps1", "libtest.exe", "request.json", {
+    now: () => 0,
+    setTimer: timers.setTimer,
+    clearTimer: timers.clearTimer,
+    spawnProcess: (() => { throw new Error("synthetic start failure"); }) as typeof spawn,
+  });
+  assert.equal(result.firstFailure, "process.start-failed");
+  assert.equal(result.exitCode, null);
+  assert.equal(result.terminationStatus, "not-required");
+  assert.equal(result.reapStatus, "not-required");
+  assert.ok(timers.scheduled.every((timer) => timer.cleared));
+});
+
+test("Stage 6 E2 settles ownership only after wrapper closure and never re-owns unknown residue", () => {
+  const token = randomBytes(32).toString("hex");
+  const leaf = join(tmpdir(), `rkp2-scale-e2-${token}`);
+  try {
+    mkdirSync(leaf);
+    writeFileSync(join(leaf, "request.json"), "{}", { flag: "wx" });
+    writeFileSync(join(leaf, "ownership.json"), JSON.stringify({ schemaVersion: 1, state: "offered", token }), { flag: "wx" });
+    assert.equal(observePrivateScaleOwnershipForTest(leaf, token), "offered");
+    writeFileSync(join(leaf, "ownership.json"), JSON.stringify({ schemaVersion: 1, state: "accepted", token }), { flag: "w" });
+    assert.equal(observePrivateScaleOwnershipForTest(leaf, token), "accepted-residue");
+    writeFileSync(join(leaf, "ownership.json"), "{", { flag: "w" });
+    assert.equal(observePrivateScaleOwnershipForTest(leaf, token), "unknown");
+    rmSync(leaf, { recursive: true, force: true });
+    assert.equal(observePrivateScaleOwnershipForTest(leaf, token), "root-absent");
+  } finally {
+    rmSync(leaf, { recursive: true, force: true, maxRetries: 2, retryDelay: 25 });
+  }
+});
+
+test("Stage 6 E2 rejects impossible process envelopes rather than inventing state", () => {
+  const startWithRss = JSON.parse(rejectedEnvelope("process.start-failed").toString("utf8").slice(PRIVATE_SCALE_PROCESS_PREFIX.length)) as { process: Record<string, unknown> };
+  startWithRss.process.peakWorkingSetBytes = 1;
+  assert.throws(() => decodeProcessEnvelope(Buffer.from(`${PRIVATE_SCALE_PROCESS_PREFIX}${JSON.stringify(startWithRss)}\\n`, "utf8"), Buffer.alloc(0)));
+  const cleanupWithoutNormalExit = JSON.parse(rejectedEnvelope("process.cleanup-failed").toString("utf8").slice(PRIVATE_SCALE_PROCESS_PREFIX.length)) as { process: Record<string, unknown> };
+  cleanupWithoutNormalExit.process.exitCode = null;
+  cleanupWithoutNormalExit.process.reapStatus = "not-required";
+  assert.throws(() => decodeProcessEnvelope(Buffer.from(`${PRIVATE_SCALE_PROCESS_PREFIX}${JSON.stringify(cleanupWithoutNormalExit)}\\n`, "utf8"), Buffer.alloc(0)));
+  const counterWithAbnormalExit = JSON.parse(rejectedEnvelope("evidence.counter-mismatch").toString("utf8").slice(PRIVATE_SCALE_PROCESS_PREFIX.length)) as { process: Record<string, unknown> };
+  counterWithAbnormalExit.process.exitCode = null;
+  counterWithAbnormalExit.process.reapStatus = "not-required";
+  assert.throws(() => decodeProcessEnvelope(Buffer.from(`${PRIVATE_SCALE_PROCESS_PREFIX}${JSON.stringify(counterWithAbnormalExit)}\\n`, "utf8"), Buffer.alloc(0)));
 });

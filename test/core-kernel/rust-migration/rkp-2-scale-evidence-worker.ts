@@ -8,7 +8,7 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { tmpdir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 
@@ -24,8 +24,33 @@ export const PRIVATE_SCALE_TIMEOUT_MS = 180_000 as const;
 export const PRIVATE_SCALE_POLL_INTERVAL_MS = 25 as const;
 export const PRIVATE_SCALE_STREAM_LIMIT_BYTES = 1_048_576 as const;
 export const PRIVATE_SCALE_REAP_TIMEOUT_MS = 5_000 as const;
+export const PRIVATE_SCALE_TERMINATION_BUDGET_MS = 5_000 as const;
+export const PRIVATE_SCALE_CLEANUP_BUDGET_MS = 5_000 as const;
+export const PRIVATE_SCALE_OUTER_CUSHION_MS = 10_000 as const;
+export const PRIVATE_SCALE_OUTER_TIMEOUT_MS =
+  PRIVATE_SCALE_TIMEOUT_MS +
+  PRIVATE_SCALE_TERMINATION_BUDGET_MS +
+  PRIVATE_SCALE_REAP_TIMEOUT_MS +
+  PRIVATE_SCALE_CLEANUP_BUDGET_MS +
+  PRIVATE_SCALE_OUTER_CUSHION_MS;
 export const PRIVATE_SCALE_LEAF_PREFIX = "rkp2-scale-e2-" as const;
 export const PRIVATE_SCALE_OWNERSHIP_MARKER = "ownership.json" as const;
+
+export const PRIVATE_SCALE_PROCESS_STATE_REGISTRY = Object.freeze({
+  schemaVersion: 1,
+  workloadTimeoutMs: PRIVATE_SCALE_TIMEOUT_MS,
+  terminationBudgetMs: PRIVATE_SCALE_TERMINATION_BUDGET_MS,
+  reapBudgetMs: PRIVATE_SCALE_REAP_TIMEOUT_MS,
+  cleanupBudgetMs: PRIVATE_SCALE_CLEANUP_BUDGET_MS,
+  outerCushionMs: PRIVATE_SCALE_OUTER_CUSHION_MS,
+  outerDeadlineMs: PRIVATE_SCALE_OUTER_TIMEOUT_MS,
+  ownershipStates: ["root-absent", "offered", "accepted-residue", "unknown"] as const,
+  terminationStates: ["not-required", "succeeded", "failed"] as const,
+  cleanupStates: ["succeeded", "failed"] as const,
+});
+export const PRIVATE_SCALE_PROCESS_STATE_REGISTRY_SHA256 = createHash("sha256")
+  .update(JSON.stringify(PRIVATE_SCALE_PROCESS_STATE_REGISTRY), "utf8")
+  .digest("hex");
 
 const MAX_SAFE = Number.MAX_SAFE_INTEGER;
 const FAILURE_CODES = [
@@ -119,14 +144,34 @@ export interface WorkerResult {
   readonly wallElapsedMicros: number;
 }
 
-interface PowerShellResult {
+export type PrivateScaleOuterFailure =
+  | "process.start-failed"
+  | "process.output-limit-exceeded"
+  | "process.timeout";
+
+export interface PowerShellResult {
   readonly stdout: Buffer;
   readonly stderr: Buffer;
   readonly exitCode: number | null;
   readonly timedOut: boolean;
-  readonly handoffAccepted: boolean;
   readonly launchFailed: boolean;
+  readonly firstFailure: PrivateScaleOuterFailure | undefined;
+  readonly terminationStatus: "not-required" | "succeeded" | "failed";
+  readonly reapStatus: "not-required" | "succeeded" | "failed";
 }
+
+export interface PrivateScaleSpawnDependencies {
+  readonly spawnProcess?: typeof spawn;
+  readonly now?: () => number;
+  readonly setTimer?: typeof setTimeout;
+  readonly clearTimer?: typeof clearTimeout;
+}
+
+export type PrivateScaleOwnershipState =
+  | "root-absent"
+  | "offered"
+  | "accepted-residue"
+  | "unknown";
 
 interface CargoArtifactMessage {
   readonly reason: unknown;
@@ -330,12 +375,50 @@ function decodeFailure(value: unknown): ScaleFailure {
 
 function assertFailureProcessCombination(failure: ScaleFailure, process: ScaleProcessState): void {
   const details = failure.details;
-  if (failure.code === "process.start-failed" && (process.exitCode !== null || process.timedOut || process.terminationStatus !== "not-required" || process.reapStatus !== "not-required")) throw protocolFailure("process", "identity");
-  if (failure.code === "process.timeout" && (process.timedOut !== true || process.terminationStatus === "not-required")) throw protocolFailure("process", "identity");
-  if (failure.code === "process.output-limit-exceeded" && process.terminationStatus === "not-required") throw protocolFailure("process", "identity");
-  if (failure.code === "process.nonzero-exit" && (process.exitCode === null || process.exitCode === 0 || details.exitCode !== process.exitCode)) throw protocolFailure("process", "identity");
-  if (process.exitCode === 0 && process.reapStatus === "failed" && !(failure.code === "process.protocol-invalid" && details.stage === "process" && details.reason === "identity")) throw protocolFailure("process", "identity");
-  if (failure.code === "process.cleanup-failed" && process.cleanupStatus !== "failed") throw protocolFailure("process", "identity");
+  const startup = process.exitCode === null && process.timedOut === false &&
+    process.peakWorkingSetBytes === null && process.stdoutBytes === 0 && process.stderrBytes === 0 &&
+    process.terminationStatus === "not-required" && process.reapStatus === "not-required";
+  const normal = process.exitCode === 0 && process.timedOut === false &&
+    process.terminationStatus === "not-required" && process.reapStatus === "succeeded";
+  const stopped = process.exitCode === null && process.terminationStatus !== "not-required" &&
+    process.reapStatus !== "not-required";
+  const normalEvidenceFailure = [
+    "process.sentinel-count-invalid", "process.sentinel-malformed", "process.rss-unavailable",
+    "process.rss-invalid", "evidence.counter-mismatch", "evidence.overflow",
+    "evidence.parity-mismatch", "evidence.bytes-mismatch", "evidence.order-mismatch",
+    "evidence.payload-mismatch",
+  ] as const;
+  switch (failure.code) {
+    case "process.start-failed":
+      if (!startup) throw protocolFailure("process", "identity");
+      return;
+    case "process.protocol-invalid":
+      if (details.stage === "arguments" || details.stage === "cargo-artifact") {
+        if (!startup || process.cleanupStatus !== "succeeded") throw protocolFailure("process", "identity");
+      } else if (!normal) {
+        throw protocolFailure("process", "identity");
+      }
+      return;
+    case "process.output-limit-exceeded":
+      if (process.timedOut || !stopped) throw protocolFailure("process", "identity");
+      return;
+    case "process.timeout":
+      if (process.timedOut !== true || !stopped) throw protocolFailure("process", "identity");
+      return;
+    case "process.nonzero-exit":
+      if (process.exitCode === null || process.exitCode === 0 || details.exitCode !== process.exitCode ||
+          process.timedOut || process.terminationStatus !== "not-required" || process.reapStatus !== "succeeded") {
+        throw protocolFailure("process", "identity");
+      }
+      return;
+    case "process.cleanup-failed":
+      if (!normal || process.cleanupStatus !== "failed") throw protocolFailure("process", "identity");
+      return;
+    default:
+      if (!(normalEvidenceFailure as readonly string[]).includes(failure.code) || !normal) {
+        throw protocolFailure("process", "identity");
+      }
+  }
 }
 
 /** Accepts only the wrapper's one final line; all other output is a protocol failure. */
@@ -426,77 +509,132 @@ function runCargoCompile(cargoExecutable: string): string {
   return result.stdout;
 }
 
-async function spawnPowerShell(script: string, executable: string, requestPath: string): Promise<PowerShellResult> {
+export function observePrivateScaleOwnershipForTest(leaf: string, token: string): PrivateScaleOwnershipState {
+  if (!existsSync(leaf)) return "root-absent";
+  try {
+    const marker = JSON.parse(readFileSync(join(leaf, PRIVATE_SCALE_OWNERSHIP_MARKER), "utf8")) as JsonRecord;
+    if (!hasExactKeys(marker, ["schemaVersion", "state", "token"]) || marker.schemaVersion !== 1 || marker.token !== token) return "unknown";
+    if (marker.state === "offered") return "offered";
+    if (marker.state === "accepted") return "accepted-residue";
+  } catch {
+    // A root that still exists without its exact marker is never re-owned by Node.
+  }
+  return "unknown";
+}
+
+function removeOwnedLeafExactlyOnce(leaf: string): boolean {
+  try {
+    rmSync(leaf, { recursive: true, force: true, maxRetries: 2, retryDelay: PRIVATE_SCALE_POLL_INTERVAL_MS });
+  } catch {
+    return false;
+  }
+  return !existsSync(leaf);
+}
+
+/**
+ * Spawns the frozen wrapper and owns only Node's outer settlement. The seam
+ * replaces process/time primitives in tests; production uses Node defaults.
+ */
+export async function spawnPowerShell(
+  script: string,
+  executable: string,
+  requestPath: string,
+  dependencies: PrivateScaleSpawnDependencies = {},
+): Promise<PowerShellResult> {
   return await new Promise((resolvePromise) => {
+    const spawnProcess = dependencies.spawnProcess ?? spawn;
+    const now = dependencies.now ?? Date.now;
+    const setTimer = dependencies.setTimer ?? setTimeout;
+    const clearTimer = dependencies.clearTimer ?? clearTimeout;
     const stdout: Buffer[] = [];
     const stderr: Buffer[] = [];
-    const deadline = Date.now() + PRIVATE_SCALE_TIMEOUT_MS;
-    let child: ReturnType<typeof spawn>;
-    try {
-      child = spawn(process.env.BRILLIANT_RKP2_PWSH ?? "pwsh", [
-      "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", script,
-      "-ExecutablePath", executable, "-RequestPath", requestPath, "-TestName", PRIVATE_SCALE_TEST_NAME,
-      "-TimeoutMs", String(PRIVATE_SCALE_TIMEOUT_MS), "-PollIntervalMs", String(PRIVATE_SCALE_POLL_INTERVAL_MS),
-      "-MaxStdoutBytes", String(PRIVATE_SCALE_STREAM_LIMIT_BYTES), "-MaxStderrBytes", String(PRIVATE_SCALE_STREAM_LIMIT_BYTES),
-      ], { windowsHide: true, shell: false, stdio: ["ignore", "pipe", "pipe"] });
-    } catch {
-      resolvePromise({ stdout: Buffer.alloc(0), stderr: Buffer.alloc(0), exitCode: null, timedOut: false, handoffAccepted: false, launchFailed: true });
-      return;
-    }
-    let timeout: NodeJS.Timeout | undefined;
-    let acceptancePoll: NodeJS.Timeout | undefined;
-    let reapTimeout: NodeJS.Timeout | undefined;
+    const startedAt = now();
+    const workloadDeadline = startedAt + PRIVATE_SCALE_TIMEOUT_MS;
+    const outerDeadline = startedAt + PRIVATE_SCALE_OUTER_TIMEOUT_MS;
+    let child: ReturnType<typeof spawn> | undefined;
+    let childExit: number | null = null;
+    let childClosed = false;
     let settled = false;
-    let timedOut = false;
-    let handoffAccepted = false;
-    const finish = (exitCode: number | null, launchFailed = false) => {
+    let terminating = false;
+    let reaping = false;
+    let launchFailed = false;
+    let firstFailure: PrivateScaleOuterFailure | undefined;
+    let terminationStatus: PowerShellResult["terminationStatus"] = "not-required";
+    let reapStatus: PowerShellResult["reapStatus"] = "not-required";
+    let workloadTimer: ReturnType<typeof setTimeout> | undefined;
+    let outerTimer: ReturnType<typeof setTimeout> | undefined;
+    let terminationTimer: ReturnType<typeof setTimeout> | undefined;
+    let reapTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const finish = () => {
       if (settled) return;
       settled = true;
-      if (timeout !== undefined) clearTimeout(timeout);
-      if (acceptancePoll !== undefined) clearInterval(acceptancePoll);
-      if (reapTimeout !== undefined) clearTimeout(reapTimeout);
-      resolvePromise({ stdout: Buffer.concat(stdout), stderr: Buffer.concat(stderr), exitCode, timedOut, handoffAccepted, launchFailed });
+      for (const timer of [workloadTimer, outerTimer, terminationTimer, reapTimer]) {
+        if (timer !== undefined) clearTimer(timer);
+      }
+      resolvePromise({ stdout: Buffer.concat(stdout), stderr: Buffer.concat(stderr), exitCode: childExit,
+        timedOut: firstFailure === "process.timeout", launchFailed, firstFailure, terminationStatus, reapStatus });
     };
-    const requestTermination = () => {
+    const recordFailure = (failure: PrivateScaleOuterFailure) => {
+      if (firstFailure === undefined) firstFailure = failure;
+    };
+    const beginReap = () => {
       if (settled) return;
-      timedOut = true;
+      if (childClosed) { reapStatus = "succeeded"; finish(); return; }
+      if (reaping) return;
+      reaping = true;
+      reapTimer = setTimer(() => { reapStatus = "failed"; finish(); }, PRIVATE_SCALE_REAP_TIMEOUT_MS);
+    };
+    const requestTermination = (failure: PrivateScaleOuterFailure) => {
+      if (settled) return;
+      recordFailure(failure);
+      if (terminating) return;
+      terminating = true;
+      if (child === undefined || child.pid === undefined) { terminationStatus = "failed"; beginReap(); return; }
       const systemRoot = process.env.SystemRoot;
       const taskkill = systemRoot === undefined ? undefined : join(systemRoot, "System32", "taskkill.exe");
-      if (taskkill !== undefined && child.pid !== undefined) {
-        try {
-          const killer = spawn(taskkill, ["/PID", String(child.pid), "/T", "/F"], {
-            windowsHide: true,
-            shell: false,
-            stdio: "ignore",
-          });
-          killer.once("error", () => {});
-        } catch {}
-      } else {
-        try { child.kill(); } catch {}
-      }
-      reapTimeout = setTimeout(() => finish(null), PRIVATE_SCALE_REAP_TIMEOUT_MS);
-    };
-    timeout = setTimeout(() => {
-      requestTermination();
-    }, Math.max(0, deadline - Date.now()));
-    const marker = join(resolve(requestPath, ".."), PRIVATE_SCALE_OWNERSHIP_MARKER);
-    acceptancePoll = setInterval(() => {
+      if (taskkill === undefined) { terminationStatus = "failed"; beginReap(); return; }
+      let killer: ReturnType<typeof spawn>;
       try {
-        const value = JSON.parse(readFileSync(marker, "utf8")) as { state?: unknown; token?: unknown };
-        if (value.state === "accepted" && typeof value.token === "string" && value.token.length === 64) handoffAccepted = true;
-      } catch {
-        // The wrapper may already have removed an accepted root.  Its final envelope
-        // remains the only protocol result; Node never treats spawn as acceptance.
-      }
-    }, PRIVATE_SCALE_POLL_INTERVAL_MS);
-    child.once("error", () => finish(null, true));
-    if (child.stdout === null || child.stderr === null) {
-      finish(null, true);
-      return;
-    }
-    child.stdout.on("data", (chunk: Buffer) => stdout.push(Buffer.from(chunk)));
-    child.stderr.on("data", (chunk: Buffer) => stderr.push(Buffer.from(chunk)));
-    child.once("close", (exitCode) => finish(exitCode));
+        killer = spawnProcess(taskkill, ["/PID", String(child.pid), "/T", "/F"], { windowsHide: true, shell: false, stdio: "ignore" });
+      } catch { terminationStatus = "failed"; beginReap(); return; }
+      let taskkillSettled = false;
+      const settleTaskkill = (succeeded: boolean) => {
+        if (taskkillSettled) return;
+        taskkillSettled = true;
+        if (terminationTimer !== undefined) clearTimer(terminationTimer);
+        terminationStatus = succeeded ? "succeeded" : "failed";
+        beginReap();
+      };
+      killer.once("error", () => settleTaskkill(false));
+      killer.once("close", (code) => settleTaskkill(code === 0));
+      terminationTimer = setTimer(() => { try { killer.kill(); } catch {} settleTaskkill(false); }, PRIVATE_SCALE_TERMINATION_BUDGET_MS);
+    };
+
+    // Guards are installed before spawn and never reset after an event.
+    workloadTimer = setTimer(() => requestTermination("process.timeout"), Math.max(0, workloadDeadline - now()));
+    outerTimer = setTimer(() => { if (firstFailure === undefined) requestTermination("process.timeout"); else beginReap(); }, Math.max(0, outerDeadline - now()));
+    try {
+      child = spawnProcess(process.env.BRILLIANT_RKP2_PWSH ?? "pwsh", [
+        "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", script,
+        "-ExecutablePath", executable, "-RequestPath", requestPath, "-TestName", PRIVATE_SCALE_TEST_NAME,
+        "-TimeoutMs", String(PRIVATE_SCALE_TIMEOUT_MS), "-PollIntervalMs", String(PRIVATE_SCALE_POLL_INTERVAL_MS),
+        "-MaxStdoutBytes", String(PRIVATE_SCALE_STREAM_LIMIT_BYTES), "-MaxStderrBytes", String(PRIVATE_SCALE_STREAM_LIMIT_BYTES),
+      ], { windowsHide: true, shell: false, stdio: ["ignore", "pipe", "pipe"] });
+    } catch { launchFailed = true; recordFailure("process.start-failed"); finish(); return; }
+    child.once("error", () => { launchFailed = true; recordFailure("process.start-failed"); finish(); });
+    if (child.stdout === null || child.stderr === null) { launchFailed = true; recordFailure("process.start-failed"); finish(); return; }
+    const observeChunk = (target: Buffer[], chunk: Buffer) => {
+      target.push(Buffer.from(chunk));
+      if (target.reduce((sum, value) => sum + value.length, 0) > PRIVATE_SCALE_STREAM_LIMIT_BYTES) requestTermination("process.output-limit-exceeded");
+    };
+    child.stdout.on("data", (chunk: Buffer) => observeChunk(stdout, chunk));
+    child.stderr.on("data", (chunk: Buffer) => observeChunk(stderr, chunk));
+    child.once("close", (exitCode) => {
+      childClosed = true;
+      childExit = exitCode;
+      if (terminating) beginReap(); else { reapStatus = "succeeded"; finish(); }
+    });
   });
 }
 
@@ -508,30 +646,51 @@ export async function runPrivateScaleEvidenceWorker(options: { readonly repoRoot
   const cargoExecutable = options.cargoExecutable ?? process.env.BRILLIANT_RKP2_CARGO ?? "cargo";
   const executable = selectPrivateScaleExecutable(runCargoCompile(cargoExecutable));
   const created = ensureFixtureRequest();
-  const leaf = join(tmpdir(), `${PRIVATE_SCALE_LEAF_PREFIX}${randomBytes(32).toString("hex")}`);
-  mkdirSync(leaf, { recursive: false });
-  const requestPath = join(leaf, "request.json");
-  writeFileSync(requestPath, created.request, { flag: "wx" });
-  writeFileSync(join(leaf, PRIVATE_SCALE_OWNERSHIP_MARKER), JSON.stringify({ schemaVersion: 1, state: "offered", token: leaf.slice(leaf.lastIndexOf(PRIVATE_SCALE_LEAF_PREFIX) + PRIVATE_SCALE_LEAF_PREFIX.length) }), { flag: "wx" });
-  const started = process.hrtime.bigint();
-  let handoffAccepted = false;
+  let leaf: string | undefined;
+  let nodeOwnsLeaf = false;
+  let nodeCleanupAttempted = false;
+  const cleanupNodeLeaf = () => {
+    if (leaf === undefined || nodeCleanupAttempted) return true;
+    nodeCleanupAttempted = true;
+    return removeOwnedLeafExactlyOnce(leaf);
+  };
   try {
+    leaf = join(tmpdir(), `${PRIVATE_SCALE_LEAF_PREFIX}${randomBytes(32).toString("hex")}`);
+    mkdirSync(leaf, { recursive: false });
+    nodeOwnsLeaf = true;
+    const requestPath = join(leaf, "request.json");
+    const token = leaf.slice(leaf.lastIndexOf(PRIVATE_SCALE_LEAF_PREFIX) + PRIVATE_SCALE_LEAF_PREFIX.length);
+    writeFileSync(requestPath, created.request, { flag: "wx" });
+    writeFileSync(join(leaf, PRIVATE_SCALE_OWNERSHIP_MARKER), JSON.stringify({ schemaVersion: 1, state: "offered", token }), { flag: "wx" });
+    const started = process.hrtime.bigint();
     const processResult = await spawnPowerShell(script, executable, requestPath);
-    handoffAccepted = processResult.handoffAccepted;
-    if (processResult.launchFailed) throw { code: "process.start-failed", details: { stage: "start" } } satisfies ScaleFailure;
-    if (processResult.timedOut) throw { code: "process.timeout", details: { timeoutMs: PRIVATE_SCALE_TIMEOUT_MS } } satisfies ScaleFailure;
+    const ownership = observePrivateScaleOwnershipForTest(leaf, token);
+    if (ownership === "root-absent") nodeOwnsLeaf = false;
+    else if (ownership === "offered") {
+      if (!cleanupNodeLeaf()) throw { code: "process.cleanup-failed", details: { target: "temp-directory" } } satisfies ScaleFailure;
+      nodeOwnsLeaf = false;
+    } else {
+      nodeOwnsLeaf = false;
+      if (ownership === "accepted-residue") throw { code: "process.cleanup-failed", details: { target: "temp-directory" } } satisfies ScaleFailure;
+      throw protocolFailure("process", "identity");
+    }
+    if (processResult.firstFailure !== undefined) {
+      if (processResult.firstFailure === "process.start-failed") throw { code: "process.start-failed", details: { stage: "start" } } satisfies ScaleFailure;
+      if (processResult.firstFailure === "process.timeout") throw { code: "process.timeout", details: { timeoutMs: PRIVATE_SCALE_TIMEOUT_MS } } satisfies ScaleFailure;
+      throw { code: "process.output-limit-exceeded", details: { stream: "stdout", limitBytes: PRIVATE_SCALE_STREAM_LIMIT_BYTES } } satisfies ScaleFailure;
+    }
     const envelope = decodeProcessEnvelope(processResult.stdout, processResult.stderr);
     if (envelope.status !== "ok") throw envelope.failure;
     if (processResult.exitCode !== 0) throw { code: "process.nonzero-exit", details: { exitCode: processResult.exitCode ?? 1 } } satisfies ScaleFailure;
     const elapsed = Number((process.hrtime.bigint() - started) / 1_000n);
     if (!safeInteger(elapsed, true)) throw { code: "evidence.overflow", details: { field: "workloadElapsedMicros" } } satisfies ScaleFailure;
-    if (existsSync(leaf)) throw { code: "process.cleanup-failed", details: { target: "temp-directory" } } satisfies ScaleFailure;
     return { envelope, wallElapsedMicros: elapsed };
   } finally {
-    if (!handoffAccepted && existsSync(leaf)) rmSync(leaf, { recursive: true, force: true, maxRetries: 2, retryDelay: PRIVATE_SCALE_POLL_INTERVAL_MS });
+    if (nodeOwnsLeaf && !cleanupNodeLeaf()) {
+      // The original failure remains primary; no partial success is published.
+    }
   }
 }
-
 export function readRequestForTest(path: string): Buffer {
   return readFileSync(path);
 }
