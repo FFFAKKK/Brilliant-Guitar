@@ -263,6 +263,13 @@ const STAGE_6_SEMANTIC_CANONICAL_TECHNICAL_PATHS = [
   "crates/brilliant-kernel-runtime/src/indices.rs",
   "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
 ] as const;
+const STAGE_6_E2_TECHNICAL_PATHS = [
+  "crates/brilliant-kernel-runtime/src/indices.rs",
+  "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts",
+  "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.test.ts",
+  "test/core-kernel/rust-migration/rkp-2-scale-evidence-process.ps1",
+  "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
+] as const;
 const STAGE_6_SEMANTIC_CANONICAL_LIFECYCLE_PATHS = [
   `${STAGE_6_SEMANTIC_CANONICAL_TASK_ROOT}/task.json`,
   `${STAGE_6_SEMANTIC_CANONICAL_TASK_ROOT}/operator-handoff.md`,
@@ -1129,7 +1136,7 @@ test("Stage 6 hostile and resource evidence consumes the existing private Rust s
   assert.match(nodeBoundary, /fn request_cap_is_checked_on_borrowed_length_before_copy\(\)/u);
 });
 
-test("Stage 6 semantic canonical evidence correction is exact and keeps raw bytes out of canonical equality", () => {
+test("Stage 6 semantic canonical evidence correction and E2 worker stay inside the accepted contracts", () => {
   assert.doesNotThrow(() =>
     git(["cat-file", "-e", `${STAGE_6_SEMANTIC_CANONICAL_PLANNING_HEAD}^{commit}`]),
   );
@@ -1144,10 +1151,10 @@ test("Stage 6 semantic canonical evidence correction is exact and keeps raw byte
   assertExactPathSet(
     currentSemanticCanonicalE1r2Changes(),
     [
-      ...STAGE_6_SEMANTIC_CANONICAL_TECHNICAL_PATHS,
+      ...STAGE_6_E2_TECHNICAL_PATHS,
       ...STAGE_6_SEMANTIC_CANONICAL_LIFECYCLE_PATHS,
     ],
-    "Stage 6 semantic/canonical E1R2 candidate",
+    "Stage 6 semantic/canonical E1R2 plus E2 worker candidate",
   );
 
   const task = JSON.parse(
@@ -1178,8 +1185,69 @@ test("Stage 6 semantic canonical evidence correction is exact and keeps raw byte
   assert.deepEqual(task.meta?.future_lifecycle_allowlist, [
     ...STAGE_6_SEMANTIC_CANONICAL_LIFECYCLE_PATHS,
   ]);
-  assert.equal(task.meta?.stage6_e2_started, false);
+  assert.equal(task.meta?.stage6_e2_started, true);
   assert.equal(task.meta?.stage6_e3_started, false);
+
+  const stage6Task = JSON.parse(
+    readText(
+      ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/task.json",
+    ),
+  ) as {
+    readonly meta?: {
+      readonly future_technical_allowlist?: unknown;
+      readonly stage6_semantic_canonical_authority_amendment?: {
+        readonly stage6_e2_started?: unknown;
+        readonly stage6_e3_started?: unknown;
+      };
+    };
+  };
+  assert.deepEqual(stage6Task.meta?.future_technical_allowlist, [
+    ...STAGE_6_E2_TECHNICAL_PATHS,
+  ]);
+  assert.equal(
+    stage6Task.meta?.stage6_semantic_canonical_authority_amendment
+      ?.stage6_e2_started,
+    true,
+  );
+  assert.equal(
+    stage6Task.meta?.stage6_semantic_canonical_authority_amendment
+      ?.stage6_e3_started,
+    false,
+  );
+
+  const worker = readText(
+    "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts",
+  );
+  const workerTest = readText(
+    "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.test.ts",
+  );
+  const process = readText(
+    "test/core-kernel/rust-migration/rkp-2-scale-evidence-process.ps1",
+  );
+  assert.equal(
+    (worker.match(/const fixture = createStressCvn7Score\(\);/gu) ?? []).length,
+    1,
+    "E2 must retain one TypeScript fixture owner",
+  );
+  assert.match(
+    worker,
+    /cargoExecutable, \["\+1\.97\.1", "test", "-p", "brilliant-kernel-runtime", "--lib", "--no-run", "--locked", "--message-format=json"\]/u,
+  );
+  assert.match(
+    worker,
+    /PRIVATE_SCALE_TEST_NAME[\s\S]*PRIVATE_SCALE_TIMEOUT_MS[\s\S]*PRIVATE_SCALE_POLL_INTERVAL_MS/u,
+  );
+  assert.match(process, /BRILLIANT_RKP2_SCALE_REQUEST_V1/u);
+  assert.match(
+    process,
+    /Start-Process[\s\S]*-WindowStyle Hidden[\s\S]*-RedirectStandardOutput/u,
+  );
+  assert.match(process, /taskkill\.exe[\s\S]*\/PID[\s\S]*\/T[\s\S]*\/F/u);
+  assert.match(
+    process,
+    /Remove-OwnedPath \$RequestPath "request"[\s\S]*Remove-OwnedPath \$stdoutPath "stdout"[\s\S]*Remove-OwnedPath \$stderrPath "stderr"[\s\S]*Remove-OwnedPath \$root "temp-directory"/u,
+  );
+  assert.match(workerTest, /BRILLIANT_RKP2_RUN_SCALE_E2/u);
 
   const indices = readText("crates/brilliant-kernel-runtime/src/indices.rs");
   const collectStart = indices.indexOf("fn collect_scale_evidence(");
