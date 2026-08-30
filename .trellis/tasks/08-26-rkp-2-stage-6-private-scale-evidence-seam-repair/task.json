@@ -42,7 +42,7 @@
     "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "IN_PROGRESS / ACCEPTED PLANNING D638B81 / E0 COMPLETE / E1+E1R GREEN / 08-30 E1R2 TARGETED IMPLEMENTATION REREVIEW CA670FD PASS P0_0_P1_0_P2_0 / HISTORICAL E2 AUDITS 2050F386 P0_1_P1_4_P2_0 AND C7AA242 P0_1_P1_3_P2_0 / FOURTH FOUR-PATH E2 DEADLINE-OWNERSHIP AND PROCESS-NEGATIVE REPAIR e61db6c634b7163ed8637cf6110995b366f3919e HISTORICAL / FIFTH FOUR-PATH E2 TASKKILL-HELPER REAP REPAIR bcd7c7f2adda3d16c53bb0e533500f7ead0c0d1b AFTER 4356b07c5dd5d6b865210ba26e8416330487f3bd RETURN P0_0_P1_1_P2_0 CANDIDATE READY FOR TARGETED INDEPENDENT REREVIEW / E3 NOT STARTED / RKP-2 PAUSED / RKP-1A P4-B 08374273 ACCEPTED ARCHIVED INTEGRATED AUTHORITY / C1-C5 AND FINAL C5 AUDIT D14D731 PASSED / TYPESCRIPT DEFAULT.",
+  "notes": "IN_PROGRESS / ACCEPTED PLANNING D638B81 / E0 COMPLETE / E1+E1R GREEN / 08-30 E1R2 TARGETED IMPLEMENTATION REREVIEW CA670FD PASS P0_0_P1_0_P2_0 / HISTORICAL E2 AUDITS 2050F386 P0_1_P1_4_P2_0 AND C7AA242 P0_1_P1_3_P2_0 / FOURTH FOUR-PATH E2 DEADLINE-OWNERSHIP AND PROCESS-NEGATIVE REPAIR e61db6c634b7163ed8637cf6110995b366f3919e HISTORICAL / FIFTH FOUR-PATH E2 TASKKILL-HELPER REAP REPAIR BCD7C7 AUDITED AT 0E4928C PASS P0_0_P1_0_P2_0 / E2 ACCEPTANCE PREPARATION READY / E3 EXPLICIT USER AUTHORIZATION REQUIRED / E3 NOT STARTED / RKP-2 PAUSED / RKP-1A P4-B 08374273 ACCEPTED ARCHIVED INTEGRATED AUTHORITY / C1-C5 AND FINAL C5 AUDIT D14D731 PASSED / TYPESCRIPT DEFAULT.",
   "meta": {
     "planning_base_commit": "4a302bc9f9981940336fc97941b08e09bd0d1f67",
     "source_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -91,12 +91,12 @@
     },
     "bounded_planning_repair": "round_3_cleanup_ownership_and_post_cleanup_envelope_accepted",
     "implementation_candidate_ready": true,
-    "implementation_review": "pending_targeted_independent_E2_fifth_bounded_repair_rereview",
-    "implementation_blocker": "dedicated_independent_E2_fifth_bounded_repair_rereview_pending",
+    "implementation_review": "passed_dedicated_independent_E2_fifth_bounded_repair_rereview",
+    "implementation_blocker": "explicit_user_authorization_for_E3_fresh_run_and_candidate_freeze_required",
     "current_planning_child": "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
     "stage6_semantic_canonical_authority_amendment": {
       "task": "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
-      "status": "E1R2_rereview_passed_fifth_E2_bounded_repair_candidate_ready_targeted_rereview_pending",
+      "status": "E1R2_rereview_passed_fifth_E2_audited_acceptance_preparation_ready_awaiting_explicit_E3_authorization",
       "accepted_planning_head": "eb0c13ed5ac218cfec9a983a4bc4e8dfb89acbd7",
       "independent_planning_review": "passed_P0_0_P1_0_P2_0",
       "user_implementation_authorization": true,
@@ -123,11 +123,15 @@
       "implementation_review": "passed_dedicated_independent_E1R2_targeted_implementation_rereview",
       "stage6_e2_started": true,
       "stage6_e3_started": false,
-      "e2_bounded_repair": "2050f386_return_P0_1_P1_4_P2_0_then_c7aa242_return_P0_1_P1_3_P2_0_then_27b65197c3c236577e6882fac712659931cacfb6_return_P0_0_P1_3_P2_0_repaired_by_c2fa29096111337527c23d25c2099fd89fa0e005_then_911e2858583ccd8cc032d2bea241ef372e9522f9_return_P0_0_P1_3_P2_0_repaired_by_e61db6c634b7163ed8637cf6110995b366f3919e_then_4356b07c5dd5d6b865210ba26e8416330487f3bd_return_P0_0_P1_1_P2_0_repaired_by_bcd7c7f2adda3d16c53bb0e533500f7ead0c0d1b_targeted_independent_rereview_pending",
-      "next_gate": "dedicated_independent_E2_fifth_bounded_repair_rereview_pending"
+      "e2_technical_implementation_completed": true,
+      "e2_targeted_independent_implementation_rereview": "passed_0e4928ca08aea4c6eb61a305fd249efda934c6a3_P0_0_P1_0_P2_0",
+      "e2_acceptance_preparation_ready": true,
+      "e3_fresh_request_and_candidate_freeze_requires_explicit_user_authorization": true,
+      "e2_bounded_repair": "2050f386_return_P0_1_P1_4_P2_0_then_c7aa242_return_P0_1_P1_3_P2_0_then_27b65197c3c236577e6882fac712659931cacfb6_return_P0_0_P1_3_P2_0_repaired_by_c2fa29096111337527c23d25c2099fd89fa0e005_then_911e2858583ccd8cc032d2bea241ef372e9522f9_return_P0_0_P1_3_P2_0_repaired_by_e61db6c634b7163ed8637cf6110995b366f3919e_then_4356b07c5dd5d6b865210ba26e8416330487f3bd_return_P0_0_P1_1_P2_0_repaired_by_bcd7c7f2adda3d16c53bb0e533500f7ead0c0d1b_audited_by_0e4928ca08aea4c6eb61a305fd249efda934c6a3_pass_P0_0_P1_0_P2_0_E2_acceptance_preparation_ready",
+      "next_gate": "explicit_user_authorization_for_E3_fresh_run_and_candidate_freeze_required"
     },
     "c5_terminal_projection_final_audit": "passed_d14d73117e03822a52fd19c55f3024cb2b73ef45_P0_0_P1_0_P2_0",
-    "implementation_stage": "E1_E1R_and_E1R2_green_fifth_E2_bounded_repair_candidate_ready_targeted_rereview_pending",
+    "implementation_stage": "E1_E1R_and_E1R2_green_fifth_E2_audited_acceptance_preparation_ready_awaiting_explicit_E3_authorization",
     "e0_activation_completed": true,
     "e1_private_rust_seam_started": true,
     "e1_private_rust_seam_completed": true,
@@ -281,7 +285,7 @@
       "terminal_projection": "completed_separate_C5_B_commit_final_C5_audit_passed_d14d73117e03822a52fd19c55f3024cb2b73ef45",
       "E2_authorized": false
     },
-    "next_gate": "dedicated_independent_E2_fifth_bounded_repair_rereview_pending",
+    "next_gate": "explicit_user_authorization_for_E3_fresh_run_and_candidate_freeze_required",
     "archive_authorized": false,
     "push_authorized": false,
     "default_runtime_switch_authorized": false,
