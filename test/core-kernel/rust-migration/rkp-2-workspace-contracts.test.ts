@@ -1043,7 +1043,9 @@ interface AcceptanceArchiveLifecycleProjection {
   readonly targetStatus: unknown;
   readonly targetCompletedAt: unknown;
   readonly targetImplementationCandidateReady: unknown;
+  readonly targetImplementationStage: unknown;
   readonly targetImplementationReview: unknown;
+  readonly targetNextGate: unknown;
   readonly targetAcceptanceAuthorized: unknown;
   readonly targetArchiveAuthorized: unknown;
   readonly targetDefaultRuntime: unknown;
@@ -1490,10 +1492,24 @@ function assertAcceptanceArchiveLifecycleProjection(
   assert.equal(projection.targetCompletedAt, targetArchived ? "2026-08-31" : null);
   assert.equal(projection.targetImplementationCandidateReady, true);
   assert.equal(
+    projection.targetImplementationStage,
+    targetArchived
+      ? "accepted_archived_completed_historical_no_live_gate"
+      : "terminal_candidate_ready_for_dedicated_independent_implementation_review",
+  );
+  assert.equal(
     projection.targetImplementationReview,
     ownerAccepted
       ? "passed_dedicated_independent_acceptance_projection_implementation_review"
       : "pending_dedicated_independent_acceptance_projection_implementation_review",
+  );
+  assert.equal(
+    projection.targetNextGate,
+    targetArchived
+      ? "completed_historical_no_live_gate"
+      : ownerAccepted
+        ? "native_target_archive_clock_preflight_required"
+        : "dedicated_independent_acceptance_projection_implementation_review_pending",
   );
   assert.equal(projection.targetAcceptanceAuthorized, ownerAccepted);
   assert.equal(projection.targetArchiveAuthorized, ownerAccepted);
@@ -2996,7 +3012,9 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     targetCompletedAt: liveTargetTask.completedAt,
     targetImplementationCandidateReady:
       liveTargetMeta.implementation_candidate_ready,
+    targetImplementationStage: liveTargetMeta.implementation_stage,
     targetImplementationReview: liveTargetMeta.implementation_review,
+    targetNextGate: liveTargetMeta.next_gate,
     targetAcceptanceAuthorized: liveTargetMeta.acceptance_authorized,
     targetArchiveAuthorized: liveTargetMeta.archive_authorized,
     targetDefaultRuntime: liveTargetMeta.default_runtime,
@@ -3062,6 +3080,15 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     archiveClosurePhase,
   );
   for (const mutation of [
+    {
+      targetImplementationStage:
+        "terminal_candidate_ready_for_dedicated_independent_implementation_review",
+    },
+    { targetNextGate: "native_target_archive_clock_preflight_required" },
+    {
+      targetNextGate:
+        "dedicated_independent_acceptance_projection_implementation_review_pending",
+    },
     { closureProductionAuthorized: true },
     { closureE3StressRerun: true },
     { closureS62Started: true },

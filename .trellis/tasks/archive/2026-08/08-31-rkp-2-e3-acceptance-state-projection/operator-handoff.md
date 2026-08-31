@@ -1,31 +1,26 @@
 # Operator Handoff: RKP-2 E3 Acceptance-State Projection
 
-## Owner-accepted state
+## Completed archived state
 
-Dedicated review accepted candidate `f27daf7b514731adaabbe8f7814d2b57e12a7df7` at P0/P1/P2=`0/0/0`. The 334-byte record is owned only by `.trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/task.json`, SHA-256 `8559f7aed98ddc45154f90dd459688530ba5e24efedeb573389e06ca7d099436`. Owner acceptance and native archive authorization are recorded; the next action is the fail-closed `2026-08-31` before-`23:50` clock preflight followed by native archive.
+Dedicated review accepted candidate `f27daf7b514731adaabbe8f7814d2b57e12a7df7` at P0/P1/P2=`0/0/0`. Owner acceptance was recorded, the fail-closed clock preflight passed, and native archive commit `1c76dbf9d9cd1ece12299b148f0c6de09d1391e1` moved the exact 11-artifact task to `.trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-state-projection`.
 
-## Current state
+The 334-byte review record is owned only by `.trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/task.json`, SHA-256 `8559f7aed98ddc45154f90dd459688530ba5e24efedeb573389e06ca7d099436`. This archived task has no current implementation child and no live next gate.
 
-Planning authority `8261ad373e849eab08479570f8c03cbcb60ba68e` passed dedicated independent planning review with `P0/P1/P2=0/0/0`. The separately authorized implementation is complete through the bounded candidate-freeze gate. Base `0c561d14193374436361eec09b361cab0170278a` remains the exact independently audited E3 Workspace Law candidate; technical commit `4abfef9b3f7620d6428382af287cccd662aa7bf7` changes only the Workspace Law test.
+## Historical fixed objects
 
-## Fixed objects
-
-- Branch: `codex/rkp-2-e3-acceptance-state-projection`.
-- Worktree: `.worktrees/e3-acceptance-state-projection`.
-- Task: `.trellis/tasks/08-31-rkp-2-e3-acceptance-state-projection`.
+- Historical branch: `codex/rkp-2-e3-acceptance-state-projection`.
+- Historical worktree: `.worktrees/e3-acceptance-state-projection`.
+- Archive task: `.trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-state-projection`.
 - Parent: `08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair`.
-- Audit record SHA-256: `dee0b92ce8a2ff6c8a9737c5b98104e39633b85aaad70e594f61e4847fdd7589`.
+- Planning authority: `8261ad373e849eab08479570f8c03cbcb60ba68e`.
+- Technical commit: `4abfef9b3f7620d6428382af287cccd662aa7bf7`.
+- Accepted candidate: `f27daf7b514731adaabbe8f7814d2b57e12a7df7`.
 - Historical audited range: `4ad23773..0c561d14`, exact 21 paths.
-- Terminal transition range: `0c561d14..HEAD`, exact 18 paths.
+- Terminal transition range: `0c561d14..f27daf7`, exact 18 paths.
 - Focused Node 24 and Node 20.20.2: `11 tests / 8 pass / 3 exact historical fail`.
-- Audit authority: one 323-byte structured record in the E3 law parent; this child and Stage 6 keep only its path and digest.
 
-## Next gate
+## Remaining owner and exclusions
 
-Run a fresh dedicated independent implementation review of the terminal candidate. Pin the exact candidate HEAD and verify the historical 21-path range, terminal 18-path range, canonical audit record, negative fixtures, dual-Node `11/8/3`, full classification and protected-path zero delta.
+The active task `.trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure` owns the dedicated closure implementation review and any later explicit owner-closeout decision. No action should be sent back to this archived target.
 
-The implementation candidate is only ready for review. It has not been accepted, archived, integrated or used to start any later stage.
-
-## Exclusions
-
-No E3 stress, S6.2/S6.3, acceptance, archive, integration, qualification, cutover, push or RKP-3.
+E3 stress, S6.2/S6.3, integration, qualification, cutover, push and RKP-3 remain outside this archived task and remain unstarted.
