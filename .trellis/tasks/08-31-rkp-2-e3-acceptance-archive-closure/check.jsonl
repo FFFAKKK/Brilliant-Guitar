@@ -1,5 +1,5 @@
-{"file":".trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/prd.md","reason":"Check all acceptance, archive and later-gate requirements."}
-{"file":".trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/design.md","reason":"Check the non-recursive state machine and audit ownership."}
-{"file":".trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/implement.md","reason":"Check ordered stages, validation and rollback gates."}
-{"file":".trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/research/current-state-and-recursion-audit.md","reason":"Verify the current rejection is closed without weakening fail-closed behavior."}
-{"file":".trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/research/file-state-test-matrix.md","reason":"Verify exact active/archive paths and negative fixtures."}
+{"file":".trellis/tasks/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair/task.json","reason":"Check the stable parent owns the exact child archive projection and next gate."}
+{"file":".trellis/tasks/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair/operator-handoff.md","reason":"Check the stable parent handoff preserves acceptance and archive boundaries."}
+{"file":".trellis/tasks/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair/review-candidate.md","reason":"Check the stable parent review record keeps all later gates separate."}
+{"file":".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/task.json","reason":"Check Stage 6 remains active with S6.2 and S6.3 false."}
+{"file":".trellis/spec/core-kernel/backend/rust-runtime-transition.md","reason":"Check qualification, cutover, push and RKP-3 remain outside this closeout."}

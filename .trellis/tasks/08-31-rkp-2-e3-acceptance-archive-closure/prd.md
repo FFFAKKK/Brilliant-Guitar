@@ -48,7 +48,10 @@ The law consumes the source audit record from exactly one active-or-archived clo
 - Each target task contains exactly 11 artifacts before and after its move.
 - Active and archived copies may never coexist.
 - An archived task has `status=completed`, a non-null `completedAt`, retained parent identity, and the exact reviewed candidate record.
+- Before each native archive, a fail-closed local-clock preflight must prove `yyyy-MM=2026-08`, `yyyy-MM-dd=2026-08-31`, and at least ten minutes remain before local midnight. A mismatch stops before any move and returns this task to bounded planning repair; the operator may not change the literal month, scan another archive month, set the clock, or move files manually.
 - Manual move, copy/delete, path rewriting, and `--no-commit` archive are excluded.
+
+Before the target archive, an exact three-path docs successor projection updates only its `task.json`, `implement.jsonl`, and `check.jsonl`. The four moving self-references are replaced by stable E3-law-parent paths and only the two JSONL hashes in the target's live immutable-authority projection change. Historical blobs at `f27daf7` remain exact and are always read commit-to-commit.
 
 ### E3AAC-R005 — Fixed technical and lifecycle ownership
 
@@ -89,6 +92,8 @@ Planning review, implementation authorization, implementation review, owner acce
 - [ ] The source review record is exactly 334 bytes and SHA-256 `8559f7ae...9436`, with one structured owner.
 - [ ] Workspace Law supports transition, target-archived candidate, and closeout-archived terminal states without a third technical change.
 - [ ] Both archives use native `task.py archive`; each task has exactly 11 artifacts and no active/archive duplicate.
+- [ ] Both archive commands pass the exact date/month/midnight-margin preflight before any move; a clock mismatch produces no filesystem or Git delta.
+- [ ] Closure JSONL contains only stable parent/spec references, and the target's exact three-path successor projection leaves zero missing JSONL reference after P3/P4.
 - [ ] Candidate and post-closeout no-rename projections are each exact 40 paths.
 - [ ] Focused Node 20 and supported Node remain `11/8/3` with zero additional failure.
 - [ ] Dynamic full classification remains `611/606/3/2` unless a separately reviewed manifest change is proven; E3 stress remains skipped.

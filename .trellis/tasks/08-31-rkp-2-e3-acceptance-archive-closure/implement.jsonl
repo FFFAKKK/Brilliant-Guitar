@@ -1,5 +1,5 @@
 {"file":".trellis/spec/core-kernel/backend/rust-runtime-transition.md","reason":"Preserve the RKP lifecycle, TypeScript default, qualification and cutover boundaries."}
-{"file":".trellis/tasks/08-31-rkp-2-e3-acceptance-state-projection/design.md","reason":"Consume the accepted historical-candidate and audit-bound acceptance projection design."}
-{"file":".trellis/tasks/08-31-rkp-2-e3-acceptance-state-projection/implement.md","reason":"Preserve the prior terminal candidate and later-gate exclusions."}
-{"file":".trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/research/current-state-and-recursion-audit.md","reason":"Consume the live archive blocker and fixed-point closeout decision."}
-{"file":".trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/research/file-state-test-matrix.md","reason":"Implement only the exact phase, path, test and rollback matrix."}
+{"file":".trellis/tasks/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair/prd.md","reason":"Consume the stable parent requirements after both child tasks archive."}
+{"file":".trellis/tasks/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair/design.md","reason":"Consume the stable parent authority and lifecycle design after archive."}
+{"file":".trellis/tasks/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair/implement.md","reason":"Preserve the stable parent execution and later-gate exclusions."}
+{"file":".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/design.md","reason":"Preserve the stable Stage 6 boundary while S6.2 and S6.3 remain false."}

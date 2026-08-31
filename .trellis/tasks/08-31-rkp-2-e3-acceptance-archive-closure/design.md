@@ -81,6 +81,34 @@ The target acceptance task must be `archive-only` in P3/P4. The closure task is 
 
 The resolver uses literal repository-relative paths. It does not scan arbitrary archive months or select the newest matching slug.
 
+### 5.1 Execution-clock preflight
+
+Native archive derives both `completedAt` and the `YYYY-MM` destination from the local clock at execution time. Immediately before each archive, in the same PowerShell command sequence and before `task.py archive`, the operator must assert:
+
+```text
+local yyyy-MM    == 2026-08
+local yyyy-MM-dd == 2026-08-31
+local time       < 23:50:00
+```
+
+The ten-minute margin prevents a date rollover between preflight and the native move. Any mismatch terminates the step with zero moved files and returns for bounded planning repair. There is no fallback month, archive-directory scan, manual destination, clock change, or `--no-commit` path.
+
+### 5.2 Archive-safe JSONL successor
+
+The closure task's `implement.jsonl` and `check.jsonl` contain only stable E3-law-parent, Stage-6-parent, and active-spec paths from this repaired planning commit.
+
+Immediately before target acceptance, exactly three target paths receive a docs-only successor projection:
+
+```text
+.trellis/tasks/08-31-rkp-2-e3-acceptance-state-projection/task.json
+.trellis/tasks/08-31-rkp-2-e3-acceptance-state-projection/implement.jsonl
+.trellis/tasks/08-31-rkp-2-e3-acceptance-state-projection/check.jsonl
+```
+
+Only the four moving self-references are replaced. The successor `implement.jsonl` SHA-256 is `d3fb185b510bc384e8234e7c179c66a9a47323c86acbfa39de565b60d50913c3`; successor `check.jsonl` SHA-256 is `f500d9871a1e877874c0d962ce2a2c086897aa23f02f5127532d648b776b24fe`. The target `task.json` changes exactly those two values in `immutable_planning_authority` while retaining all other hashes. Workspace Law reads the historical eight hashes from `git show f27daf7:<path>` and the live successor pair separately.
+
+All JSONL references must exist both immediately before and immediately after each native archive. The archive command itself performs no JSONL rewriting.
+
 ## 6. Path-set contract
 
 Path evidence uses:
@@ -132,6 +160,7 @@ Each task has its own literal 11-name manifest; `or` above describes the two dif
 - `acceptance_authorized=true`, `archive_authorized=true`;
 - `integration/qualification/cutover/push/RKP3=false`;
 - S6.2/S6.3 false, TypeScript default.
+- archived `implement.jsonl` and `check.jsonl` exact-match the two successor hashes and contain no active target self-reference.
 
 ### E3 law parent
 
@@ -176,6 +205,9 @@ Repository I/O remains in the owning top-level test. Pure negative fixtures cove
 | active and archived owner both present | reject |
 | target active in P3/P4 | reject |
 | missing or twelfth archive artifact | reject |
+| active self-reference survives in either archived JSONL | reject |
+| successor JSONL/hash differs from the exact pair | reject |
+| local month/date differs or time is `23:50:00` or later | stop before native archive |
 | wrong A/M/D status or rename-collapsed path set | reject |
 | archive marked complete without reviewed `f27daf7` | reject |
 | closure archived before implementation PASS | reject |

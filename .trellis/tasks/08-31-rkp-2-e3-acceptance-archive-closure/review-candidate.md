@@ -30,5 +30,15 @@ P0/P1/P2 = 0/0/0
 ## Current verdict
 
 ```text
-PENDING — DEDICATED INDEPENDENT PLANNING REVIEW
+RETURNED P0/P1/P2=0/2/0 — BOUNDED REPAIR COMPLETE — TARGETED REREVIEW PENDING
 ```
+
+## Bounded repair focus
+
+The first review pinned `c35af97da235f075857181c72d64dc2c8506dfed`. Targeted rereview should confirm only:
+
+1. closure `implement.jsonl`/`check.jsonl` reference stable parent/spec paths that still exist after P4;
+2. target pre-archive successor owns exactly `task.json`, `implement.jsonl`, `check.jsonl`, with exact JSONL hashes `d3fb185b...13c3` and `f500d987...24fe`;
+3. all JSONL references exist after P3 and P4 without archive-time rewriting;
+4. each native archive has a pre-mutation `2026-08` / `2026-08-31` / before-`23:50` preflight;
+5. one technical path, 40-path P3/P4 arithmetic, later false gates, and production/protected zero delta remain unchanged.

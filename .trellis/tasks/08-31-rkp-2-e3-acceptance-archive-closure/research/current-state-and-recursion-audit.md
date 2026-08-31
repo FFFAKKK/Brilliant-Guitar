@@ -41,3 +41,12 @@ The closure task's own audit is lifecycle evidence, not another input to the tec
 ## Boundary decision
 
 This closure accepts/archives the target and later itself. It leaves the E3 law parent active because accepting that parent is a separate owner decision. It does not continue Stage 6.
+
+## Independent planning review findings and bounded repair
+
+Review of `c35af97da235f075857181c72d64dc2c8506dfed` returned P0/P1/P2=`0/2/0`.
+
+1. Native archive moves a task directory without rewriting JSONL. The original target contained four moving self-references; the first closure plan also contained self/target-active references. The repair makes closure JSONL stable now and freezes an exact three-path target successor projection with two replacement hashes before target archive.
+2. Native archive derives month and completion date from execution-time local clock. The repair adds a pre-mutation fail-closed check for `2026-08`, `2026-08-31`, and a ten-minute midnight margin before both archive calls.
+
+Neither repair changes the one-file technical allowlist or 40-path P3/P4 arithmetic. Target/closure JSONL already belong to the declared task manifests. Historical `f27daf7` blobs remain immutable. Targeted independent planning rereview remains pending.

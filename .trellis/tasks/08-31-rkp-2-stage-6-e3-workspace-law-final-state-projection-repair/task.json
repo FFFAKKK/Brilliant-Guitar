@@ -54,7 +54,7 @@
     ".trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/design.md",
     ".trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/implement.md"
   ],
-  "notes": "IN_PROGRESS / ACCEPTANCE-STATE PROJECTION F27DAF7 PASSED DEDICATED REVIEW P0_P1_P2 0_0_0 / EXACT 334-BYTE SOURCE RECORD SHA256 8559F7AE...9436 / ARCHIVE-CLOSURE PLANNING CHILD CREATED / TARGET REMAINS ACTIVE AND UNACCEPTED / TYPESCRIPT DEFAULT / S6.2 S6.3 FALSE / NO ARCHIVE INTEGRATION QUALIFICATION CUTOVER PUSH OR RKP3.",
+  "notes": "IN_PROGRESS / ACCEPTANCE-STATE PROJECTION F27DAF7 PASSED DEDICATED REVIEW P0_P1_P2 0_0_0 / ARCHIVE-CLOSURE FIRST PLANNING REVIEW C35AF97 RETURNED 0_2_0 / JSONL ARCHIVE-SAFETY AND CLOCK-PREFLIGHT BOUNDED REPAIR COMPLETE / TARGETED REREVIEW PENDING / TARGET REMAINS ACTIVE AND UNACCEPTED / TYPESCRIPT DEFAULT / S6.2 S6.3 FALSE / NO ARCHIVE INTEGRATION QUALIFICATION CUTOVER PUSH OR RKP3.",
   "meta": {
     "planning_base_commit": "4ad23773e9c9e1081667a4eccb84cc464b85bc89",
     "planning_base_tree": "9dbcef77fbcc258e4fe96fdfb2b28839f095d610",
@@ -182,7 +182,7 @@
     "implementation_stage": "independent_E3_audit_bound_acceptance_projection_candidate_ready",
     "implementation_candidate_ready": true,
     "implementation_review": "passed_external_audit_bound_0c561d14193374436361eec09b361cab0170278a_P0_0_P1_0_P2_0",
-    "next_gate": "dedicated_independent_acceptance_archive_closure_planning_review",
+    "next_gate": "targeted_dedicated_independent_acceptance_archive_closure_planning_rereview",
     "phase_b_validation": {
       "trellis_tasks_passed": 5,
       "task_json_parsed": 5,
@@ -272,6 +272,15 @@
     "acceptance_archive_closure_task": "08-31-rkp-2-e3-acceptance-archive-closure",
     "acceptance_archive_closure_planning_base": "f27daf7b514731adaabbe8f7814d2b57e12a7df7",
     "acceptance_archive_closure_source_review_sha256": "8559f7aed98ddc45154f90dd459688530ba5e24efedeb573389e06ca7d099436",
+    "acceptance_archive_closure_first_planning_review": {
+      "review_task": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
+      "review_turn": "01a05654-87f1-70d0-8a1e-d119c9162cbd",
+      "candidate_commit": "c35af97da235f075857181c72d64dc2c8506dfed",
+      "P0": 0,
+      "P1": 2,
+      "P2": 0,
+      "status": "bounded_repair_complete_targeted_rereview_pending"
+    },
     "acceptance_state_projection_independent_planning_review": {
       "review_task": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
       "review_turn": "01a055b2-f2a3-7d61-9169-3ac24f0486d0",
