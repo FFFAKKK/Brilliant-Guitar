@@ -18,7 +18,9 @@
   "commit": null,
   "pr_url": null,
   "subtasks": [],
-  "children": [],
+  "children": [
+    "08-31-rkp-2-e3-acceptance-state-projection"
+  ],
   "parent": "08-26-rkp-2-stage-6-private-scale-evidence-seam-repair",
   "relatedFiles": [
     ".trellis/tasks/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair/task.json",
@@ -41,9 +43,13 @@
     ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json",
     ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json",
     ".trellis/spec/core-kernel/backend/rust-runtime-transition.md",
-    "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
+    "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
+    ".trellis/tasks/08-31-rkp-2-e3-acceptance-state-projection/task.json",
+    ".trellis/tasks/08-31-rkp-2-e3-acceptance-state-projection/prd.md",
+    ".trellis/tasks/08-31-rkp-2-e3-acceptance-state-projection/design.md",
+    ".trellis/tasks/08-31-rkp-2-e3-acceptance-state-projection/implement.md"
   ],
-  "notes": "IN_PROGRESS / ACCEPTED PLANNING HEAD E4EE1D43FD29A794D8F0F389D651C556203FE5AF / PHASES A_B_C_D_E COMPLETE / TECHNICAL COMMIT 36FE1956EC8660D664EB9606912DBC6E1B6C3EDE / EXACT FINAL UNION 8_PLUS_1_PLUS_12_EQUALS_21 / FOCUSED WORKSPACE LAW 11_TESTS_8_PASS_3_EXACT_HISTORICAL_FAIL_CLOSED / FULL 611_TESTS_606_PASS_3_EXACT_HISTORICAL_FAIL_2_SKIP AFTER E_DRIVE NATIVE ARTIFACT / IMPLEMENTATION CANDIDATE READY / DEDICATED INDEPENDENT IMPLEMENTATION REVIEW PENDING / TYPESCRIPT DEFAULT / S6.2 S6.3 FALSE / NO ACCEPT ARCHIVE INTEGRATION PUSH CUTOVER QUALIFICATION OR RKP3.",
+  "notes": "IN_PROGRESS / AUDITED CANDIDATE 0C561D14193374436361EEC09B361CAB0170278A / DEDICATED IMPLEMENTATION AUDIT PASS P0_P1_P2 0_0_0 / EXACT 21-PATH CANDIDATE PRESERVED / ACCEPTANCE-STATE PROJECTION CHILD PLANNING / IMPLEMENTATION_REVIEW FIELD TRANSITION PENDING / TYPESCRIPT DEFAULT / S6.2 S6.3 FALSE / NO ACCEPT ARCHIVE INTEGRATION QUALIFICATION CUTOVER PUSH OR RKP3.",
   "meta": {
     "planning_base_commit": "4ad23773e9c9e1081667a4eccb84cc464b85bc89",
     "planning_base_tree": "9dbcef77fbcc258e4fe96fdfb2b28839f095d610",
@@ -168,10 +174,10 @@
     "technical_changed_paths": [
       "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
     ],
-    "implementation_stage": "phase_E_candidate_freeze_complete_ready_for_dedicated_independent_implementation_review",
+    "implementation_stage": "independent_implementation_audit_passed_acceptance_state_projection_planning",
     "implementation_candidate_ready": true,
     "implementation_review": "pending_dedicated_independent_E3_workspace_law_implementation_review",
-    "next_gate": "dedicated_independent_E3_workspace_law_implementation_review_pending",
+    "next_gate": "dedicated_independent_acceptance_state_projection_planning_review_pending",
     "phase_b_validation": {
       "trellis_tasks_passed": 5,
       "task_json_parsed": 5,
@@ -239,6 +245,22 @@
       "protected_path_delta": 0,
       "staged_path_count_before_lifecycle_freeze": 0,
       "e3_stress_rerun": false
-    }
+    },
+    "external_independent_implementation_audit_result": {
+      "schemaVersion": 1,
+      "reviewTaskId": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
+      "reviewTurnId": "01a05589-d996-7ec1-ab58-b6f2db049e69",
+      "candidateCommit": "0c561d14193374436361eec09b361cab0170278a",
+      "technicalCommit": "36fe1956ec8660d664eb9606912dbc6e1b6c3ede",
+      "verdict": "PASS_READY_FOR_E3_ACCEPTANCE_PREPARATION",
+      "P0": 0,
+      "P1": 0,
+      "P2": 0
+    },
+    "external_independent_implementation_audit_canonical_bytes": 323,
+    "external_independent_implementation_audit_sha256": "dee0b92ce8a2ff6c8a9737c5b98104e39633b85aaad70e594f61e4847fdd7589",
+    "acceptance_state_projection_required": true,
+    "acceptance_state_projection_task": "08-31-rkp-2-e3-acceptance-state-projection",
+    "current_planning_child": "08-31-rkp-2-e3-acceptance-state-projection"
   }
 }
