@@ -2,16 +2,12 @@
 
 ## Current state
 
-- Exact base: `4a302bc9f9981940336fc97941b08e09bd0d1f67`.
-- First planning candidate: `df686882efa30f489da138d2730acbdd4fb9cd30`.
-- First independent planning audit: RETURN FOR BOUNDED PLANNING REPAIR, P0/P1/P2=`0/2/0`.
-- First bounded repair candidate: `176fd3670d3015631fc1553a59cc8e4d3a941221`.
-- Second targeted planning review: RETURN FOR BOUNDED PLANNING REPAIR, P0/P1/P2=`0/1/0`, limited to the real owner-probe API and shutdown-primary contradiction.
-- Second bounded repair candidate: `8d773b8e9d39ac21aba9cad715609fffc80eefec`.
-- Final targeted planning review: RETURN FOR BOUNDED PLANNING REPAIR, P0/P1/P2=`0/1/0`, limited to contradictory cleanup ownership/status on `Start-Process` failure.
-- This third docs-only bounded repair closes only that P1; final targeted rereview remains pending.
-- Task remains `planning`; start/production authorization/candidate readiness false.
-- RKP-2 S6.1 retained complete; S6.2/S6.3 false and operationally paused; TypeScript default.
+- E3 Workspace Law candidate `0c561d14193374436361eec09b361cab0170278a` received dedicated implementation audit PASS, P0/P1/P2=`0/0/0`.
+- The sole canonical audit record is owned by the 08-31 law task; this Stage 6 task stores only its path and SHA-256 `dee0b92ce8a2ff6c8a9737c5b98104e39633b85aaad70e594f61e4847fdd7589`.
+- Acceptance-projection technical commit `4abfef9b3f7620d6428382af287cccd662aa7bf7` preserves the historical 21-path candidate and produces an exact 18-path terminal transition.
+- Dual-Node focused Workspace Law is `11/8/3`, with only the three unchanged historical fail-closed tests remaining.
+- The transition is ready for a dedicated independent implementation review; it is not accepted, archived or integrated.
+- RKP-2 S6.1 remains retained complete; S6.2/S6.3 are false and operationally paused; TypeScript remains default.
 
 ## Frozen ownership
 
@@ -57,3 +53,7 @@ The user explicitly authorized E3 after the fifth E2 repair passed its dedicated
 The frozen result is `102400` Events / `51200` Notes, exact index and owner probes, `474517/474517` import/rebuild entries, semantic and canonical-byte parity, deterministic topology and extension preservation. Rust workload time was `12964590 us`, end-to-end worker time `14077309 us`, and peak working set `821886976` bytes. Exit/reap/cleanup were `0/succeeded/succeeded`, timeout was false and partial evidence was false. The exact protocol and input manifest are in `research/implementation-evidence.md`.
 
 This child remains `in_progress` and is now ready only for a dedicated independent implementation review. RKP-2 stays paused before S6.2; S6.2/S6.3, acceptance, archive, integration, qualification, cutover, push and RKP-3 remain unstarted.
+
+## Acceptance-projection current gate
+
+The dedicated E3 Workspace Law implementation review has now passed and is bound to the single audit record described above. The next and only live gate is a fresh read-only review of the acceptance-projection candidate. No E3 stress rerun occurred, and the PASS did not authorize acceptance, archive, integration, S6.2/S6.3, qualification, runtime cutover, push or RKP-3.

@@ -2,14 +2,14 @@
 
 ## Current implementation state
 
-Exact planning authority `d638b81a3c9b3d7461f75a91c8d5b090f06adea2` received `PASS FOR BOUNDED IMPLEMENTATION`, P0/P1/P2=`0/0/0`, from the dedicated independent planning auditor. The user authorized only this child's E0-E3 implementation. Native activation is complete; E1 has not started, the implementation candidate is not ready, and implementation review remains pending.
+Exact planning authority `d638b81a3c9b3d7461f75a91c8d5b090f06adea2` received `PASS FOR BOUNDED IMPLEMENTATION`, P0/P1/P2=`0/0/0`, from the dedicated independent planning auditor. E1 through E3 later completed, and frozen E3 Workspace Law candidate `0c561d14193374436361eec09b361cab0170278a` received its own dedicated implementation audit PASS with P0/P1/P2=`0/0/0`.
 
 The first candidate `df686882efa30f489da138d2730acbdd4fb9cd30` received P0/P1/P2=`0/2/0`. This bounded repair closes only:
 
 1. implementation-time planning authority mutability;
 2. unresolved private libtest, owner-probe, sentinel, process and failure-protocol decisions.
 
-No implementation, start, acceptance, archive, integration, push, Stage 6 S6.2, cutover, qualification or RKP-3 is claimed.
+Acceptance-projection technical commit `4abfef9b3f7620d6428382af287cccd662aa7bf7` binds that PASS to one canonical record and an exact 18-path transition. Acceptance, archive, integration, push, Stage 6 S6.2/S6.3, cutover, qualification and RKP-3 remain unclaimed.
 
 The first bounded repair candidate `176fd3670d3015631fc1553a59cc8e4d3a941221` received a second targeted result P0/P1/P2=`0/1/0`. The second repair candidate `8d773b8e9d39ac21aba9cad715609fffc80eefec` then received the final targeted result P0/P1/P2=`0/1/0`, limited to its contradiction between post-handoff wrapper ownership and a start-failure envelope that incorrectly claimed cleanup had not run. This third repair changes only that cleanup ownership/status contract.
 
@@ -58,3 +58,9 @@ Single fixture owner, exact `102400` Events / `51200` Notes / `18` Extensions, b
 The separately authorized E3 run used a fresh request at source HEAD `4ad23773e9c9e1081667a4eccb84cc464b85bc89` and returned the exact successful process protocol frozen in `research/implementation-evidence.md`. The protocol hash is `64e09779ea34bd04d504d515eb7c391f7db35a0a23a3c366fb2ffb5aa71c2862`; the worker completed in `14077309 us` with peak working set `821886976` bytes, no timeout, successful reap/cleanup and no partial evidence.
 
 Review must verify the fresh-request boundary, six-file input manifest, exact protocol, all nine immutable planning hashes, lifecycle-only E3 diff, retained TypeScript default and the unchanged false S6.2/S6.3 gates. A technical PASS would authorize only a later owner acceptance decision; it does not itself archive, integrate, qualify, cut over, push or start RKP-3.
+
+## Acceptance-projection review candidate
+
+**READY FOR DEDICATED INDEPENDENT ACCEPTANCE-PROJECTION IMPLEMENTATION REVIEW**
+
+The E3 audit record remains owned only by the 08-31 Workspace Law task and canonicalizes to 323 UTF-8 bytes with SHA-256 `dee0b92ce8a2ff6c8a9737c5b98104e39633b85aaad70e594f61e4847fdd7589`. This Stage 6 task stores only its owner path and digest. Review must pin the terminal candidate HEAD, verify historical 21-path and transition 18-path sets, reproduce dual-Node `11/8/3`, and confirm every later lifecycle flag remains false. The candidate remains `in_progress` and unaccepted.

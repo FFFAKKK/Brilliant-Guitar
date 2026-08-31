@@ -2,11 +2,13 @@
 
 ## Status
 
-`READY FOR DEDICATED INDEPENDENT IMPLEMENTATION REVIEW`
+`E3 IMPLEMENTATION AUDIT PASSED — ACCEPTANCE-PROJECTION IMPLEMENTATION REVIEW PENDING`
 
 Planning authority `e4ee1d43fd29a794d8f0f389d651c556203fe5af` passed its independent planning audit with `P0/P1/P2=0/0/0`. Phases A through E are complete. The sole technical owner is commit `36fe1956ec8660d664eb9606912dbc6e1b6c3ede`, which changes only `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts`.
 
-The implementation candidate is ready and `implementation_review=pending_dedicated_independent_E3_workspace_law_implementation_review`. No review verdict is prewritten.
+The frozen candidate `0c561d14193374436361eec09b361cab0170278a` received independent implementation audit verdict `PASS_READY_FOR_E3_ACCEPTANCE_PREPARATION`, P0/P1/P2=`0/0/0`, in task `01a01e48-1934-77b0-821e-a8026cd9e5f7`, turn `01a05589-d996-7ec1-ab58-b6f2db049e69`. The exact record is owned here and is bound to 323 canonical bytes plus SHA-256 `dee0b92ce8a2ff6c8a9737c5b98104e39633b85aaad70e594f61e4847fdd7589`.
+
+The follow-up acceptance-projection technical commit is `4abfef9b3f7620d6428382af287cccd662aa7bf7`. It does not change the audited 21-path historical candidate; it introduces the separately reviewable exact 18-path transition.
 
 ## Decisive evidence
 
@@ -30,7 +32,7 @@ The implementation candidate is ready and `implementation_review=pending_dedicat
 7. Does 08-26 remain the live E3 owner while 08-30 remains historical?
 8. Are S6.2/S6.3, TypeScript default and all later lifecycle gates unchanged?
 
-## Required output
+## Required acceptance-projection review output
 
 ```text
 <reviewer-derived verdict>
@@ -38,4 +40,4 @@ P0/P1/P2 = <actual counts>
 <findings with exact file:line evidence, or reviewer-derived no-findings statement>
 ```
 
-Any second technical file, ninth original E3 path, evidence regeneration, changed historical-red set or lifecycle advancement returns this candidate to bounded repair.
+Any second technical file, non-18-path transition, duplicate audit record, evidence regeneration, changed historical-red set or lifecycle advancement returns the acceptance projection to bounded repair. This task remains `in_progress`; audit PASS is not acceptance or archive.

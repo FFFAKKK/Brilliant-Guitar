@@ -2,7 +2,7 @@
 
 ## Current state
 
-Planning authority `8261ad373e849eab08479570f8c03cbcb60ba68e` passed dedicated independent planning review with `P0/P1/P2=0/0/0`. The user separately authorized the bounded implementation after planning-PASS synchronization, and `task.py start` moved this task to `in_progress`. Base `0c561d14193374436361eec09b361cab0170278a` remains the exact independently audited E3 Workspace Law candidate. Activation is complete; the one-file technical transition has not started.
+Planning authority `8261ad373e849eab08479570f8c03cbcb60ba68e` passed dedicated independent planning review with `P0/P1/P2=0/0/0`. The separately authorized implementation is complete through the bounded candidate-freeze gate. Base `0c561d14193374436361eec09b361cab0170278a` remains the exact independently audited E3 Workspace Law candidate; technical commit `4abfef9b3f7620d6428382af287cccd662aa7bf7` changes only the Workspace Law test.
 
 ## Fixed objects
 
@@ -12,13 +12,15 @@ Planning authority `8261ad373e849eab08479570f8c03cbcb60ba68e` passed dedicated i
 - Parent: `08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair`.
 - Audit record SHA-256: `dee0b92ce8a2ff6c8a9737c5b98104e39633b85aaad70e594f61e4847fdd7589`.
 - Historical audited range: `4ad23773..0c561d14`, exact 21 paths.
-- Future terminal transition range: `0c561d14..HEAD`, exact 18 paths.
+- Terminal transition range: `0c561d14..HEAD`, exact 18 paths.
+- Focused Node 24 and Node 20.20.2: `11 tests / 8 pass / 3 exact historical fail`.
+- Audit authority: one 323-byte structured record in the E3 law parent; this child and Stage 6 keep only its path and digest.
 
 ## Next gate
 
-Implement Phase 2 only in `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts`, then run the frozen focused gate before projecting terminal lifecycle state.
+Run a fresh dedicated independent implementation review of the terminal candidate. Pin the exact candidate HEAD and verify the historical 21-path range, terminal 18-path range, canonical audit record, negative fixtures, dual-Node `11/8/3`, full classification and protected-path zero delta.
 
-The independent planning audit was read-only and returned `PASS — READY FOR BOUNDED ACCEPTANCE-STATE PROJECTION IMPLEMENTATION`, `P0/P1/P2=0/0/0`, in task `01a01e48-1934-77b0-821e-a8026cd9e5f7`, turn `01a055b2-f2a3-7d61-9169-3ac24f0486d0`. The authorization consumed here covers only the frozen technical and lifecycle projection plan.
+The implementation candidate is only ready for review. It has not been accepted, archived, integrated or used to start any later stage.
 
 ## Exclusions
 

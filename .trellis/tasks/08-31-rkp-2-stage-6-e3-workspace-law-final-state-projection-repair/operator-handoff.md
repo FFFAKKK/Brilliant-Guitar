@@ -2,9 +2,9 @@
 
 ## Current gate
 
-`PHASE E COMPLETE — DEDICATED INDEPENDENT IMPLEMENTATION REVIEW PENDING`
+`EXTERNAL IMPLEMENTATION AUDIT PASSED — ACCEPTANCE-PROJECTION CANDIDATE READY FOR REVIEW`
 
-The bounded implementation candidate is frozen. Planning head `e4ee1d43fd29a794d8f0f389d651c556203fe5af` passed independent planning review with `P0/P1/P2=0/0/0`. The one-file technical change is commit `36fe1956ec8660d664eb9606912dbc6e1b6c3ede` (`test(rkp-2): project E3 final workspace law state`).
+The frozen E3 Workspace Law candidate `0c561d14193374436361eec09b361cab0170278a` received a dedicated read-only implementation audit PASS with `P0/P1/P2=0/0/0`. Its sole canonical audit record remains in this task's `task.json`: 323 UTF-8 bytes, SHA-256 `dee0b92ce8a2ff6c8a9737c5b98104e39633b85aaad70e594f61e4847fdd7589`. The acceptance-projection technical commit is `4abfef9b3f7620d6428382af287cccd662aa7bf7`.
 
 No E3 workload was rerun. The candidate consumes the already-measured source at HEAD `4ad23773e9c9e1081667a4eccb84cc464b85bc89`, tree `9dbcef77fbcc258e4fe96fdfb2b28839f095d610`, and protocol SHA-256 `64e09779ea34bd04d504d515eb7c391f7db35a0a23a3c366fb2ffb5aa71c2862`.
 
@@ -40,6 +40,6 @@ The three remaining failures are intentionally preserved historical fail-closed 
 
 ## Reviewer boundary
 
-Perform a fresh, read-only implementation audit of the candidate HEAD. Verify the exact technical commit, 21-path union, evidence protocol, nine planning hashes, negative fixtures, `11/8/3` focused classification, `611/606/3/2` full classification and protected-path zero delta.
+Perform a fresh, read-only implementation audit of the acceptance-projection candidate HEAD. Verify that the historical E3 candidate remains exact at 21 paths, the new transition is exact at 18 paths, this task is the only structured audit-record owner, both references match the digest, all negative fixtures fail closed, dual-Node focused classification is `11/8/3`, and protected paths remain unchanged.
 
-The implementation review remains pending. RKP-2 S6.2/S6.3, acceptance, archive, integration, qualification, cutover, push and RKP-3 remain later gates.
+The E3 candidate audit is complete, but the acceptance-projection implementation review remains pending. RKP-2 S6.2/S6.3, acceptance, archive, integration, qualification, cutover, push and RKP-3 remain later gates.

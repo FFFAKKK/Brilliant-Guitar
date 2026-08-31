@@ -2,7 +2,7 @@
 
 ## Status
 
-`IMPLEMENTATION ACTIVATED — TECHNICAL TRANSITION NOT STARTED`
+`READY FOR DEDICATED INDEPENDENT ACCEPTANCE-PROJECTION IMPLEMENTATION REVIEW`
 
 Dedicated independent planning review of exact candidate `8261ad373e849eab08479570f8c03cbcb60ba68e` returned:
 
@@ -11,7 +11,7 @@ PASS — READY FOR BOUNDED ACCEPTANCE-STATE PROJECTION IMPLEMENTATION
 P0/P1/P2 = 0/0/0
 ```
 
-Review task `01a01e48-1934-77b0-821e-a8026cd9e5f7`, turn `01a055b2-f2a3-7d61-9169-3ac24f0486d0`, remained read-only and changed no lifecycle state.
+Review task `01a01e48-1934-77b0-821e-a8026cd9e5f7`, turn `01a055b2-f2a3-7d61-9169-3ac24f0486d0`, remained read-only and changed no lifecycle state. The bounded implementation then produced technical commit `4abfef9b3f7620d6428382af287cccd662aa7bf7` and the exact nine-file terminal lifecycle projection.
 
 ## Review focus
 
@@ -24,12 +24,12 @@ Review task `01a01e48-1934-77b0-821e-a8026cd9e5f7`, turn `01a055b2-f2a3-7d61-916
 7. Are `11/8/3`, S6.2/S6.3=false and TypeScript default preserved?
 8. Are acceptance, archive, integration, qualification, cutover, push and RKP-3 still later gates?
 
-Planning-gate evidence is exact 12 paths, Typecheck PASS, Build PASS and focused `11/7/4`: three historical fail-closed names plus one planned acceptance-projection failure.
+Candidate evidence is exact historical `8 + 1 + 12 = 21`, terminal `8 + 1 + 9 = 18`, Typecheck PASS, Build PASS, and focused Node 24 plus Node 20.20.2 `11/8/3`. The three remaining failures are the unchanged historical fail-closed names; the acceptance-projection failure is closed.
 
 ## Recorded verdict
 
 ```text
-PASS — READY FOR BOUNDED ACCEPTANCE-STATE PROJECTION IMPLEMENTATION
+PENDING — DEDICATED INDEPENDENT ACCEPTANCE-PROJECTION IMPLEMENTATION REVIEW
 ```
 
-This PASS approved the planning contract. The user subsequently authorized only the bounded implementation and the task is now `in_progress`; the technical transition and terminal lifecycle projection remain uncommitted. Independent implementation review, acceptance, archive, integration, S6.2/S6.3, qualification, cutover, push and RKP-3 remain separate gates.
+The prior PASS approved only the planning contract. This terminal candidate remains `in_progress` and unaccepted. Independent implementation review, acceptance, archive, integration, S6.2/S6.3, qualification, cutover, push and RKP-3 remain separate gates.
