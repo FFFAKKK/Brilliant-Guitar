@@ -289,6 +289,13 @@ const STAGE_6_ORIGINAL_E3_PATHS = [
 ] as const;
 const STAGE_6_E3_LAW_TASK_ROOT =
   ".trellis/tasks/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair";
+const STAGE_6_E3_AUDITED_CANDIDATE =
+  "0c561d14193374436361eec09b361cab0170278a";
+const STAGE_6_E3_AUDIT_RECORD_BYTES = 323;
+const STAGE_6_E3_AUDIT_RECORD_SHA256 =
+  "dee0b92ce8a2ff6c8a9737c5b98104e39633b85aaad70e594f61e4847fdd7589";
+const STAGE_6_E3_AUDIT_BOUND_REVIEW_PASS =
+  "passed_external_audit_bound_0c561d14193374436361eec09b361cab0170278a_P0_0_P1_0_P2_0";
 const STAGE_6_E3_LAW_TECHNICAL_PATHS = [
   "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
 ] as const;
@@ -306,6 +313,49 @@ const STAGE_6_E3_LAW_TASK_PATHS = [
   `${STAGE_6_E3_LAW_TASK_ROOT}/research/file-test-and-rollback-matrix.md`,
   `${STAGE_6_E3_LAW_TASK_ROOT}/research/planning-self-audit.md`,
 ] as const;
+const STAGE_6_E3_ACCEPTANCE_TASK_ROOT =
+  ".trellis/tasks/08-31-rkp-2-e3-acceptance-state-projection";
+const STAGE_6_E3_ACCEPTANCE_IMMUTABLE_PLANNING_PATHS = [
+  `${STAGE_6_E3_ACCEPTANCE_TASK_ROOT}/prd.md`,
+  `${STAGE_6_E3_ACCEPTANCE_TASK_ROOT}/design.md`,
+  `${STAGE_6_E3_ACCEPTANCE_TASK_ROOT}/implement.md`,
+  `${STAGE_6_E3_ACCEPTANCE_TASK_ROOT}/implement.jsonl`,
+  `${STAGE_6_E3_ACCEPTANCE_TASK_ROOT}/check.jsonl`,
+  `${STAGE_6_E3_ACCEPTANCE_TASK_ROOT}/research/audit-pass-and-transition-gap.md`,
+  `${STAGE_6_E3_ACCEPTANCE_TASK_ROOT}/research/file-test-and-rollback-matrix.md`,
+  `${STAGE_6_E3_ACCEPTANCE_TASK_ROOT}/research/planning-self-audit.md`,
+] as const;
+const STAGE_6_E3_ACCEPTANCE_TECHNICAL_PATHS = [
+  "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
+] as const;
+const STAGE_6_E3_ACCEPTANCE_LIFECYCLE_PATHS = [
+  `${STAGE_6_E3_ACCEPTANCE_TASK_ROOT}/task.json`,
+  `${STAGE_6_E3_ACCEPTANCE_TASK_ROOT}/operator-handoff.md`,
+  `${STAGE_6_E3_ACCEPTANCE_TASK_ROOT}/review-candidate.md`,
+  `${STAGE_6_E3_LAW_TASK_ROOT}/task.json`,
+  `${STAGE_6_E3_LAW_TASK_ROOT}/operator-handoff.md`,
+  `${STAGE_6_E3_LAW_TASK_ROOT}/review-candidate.md`,
+  `${STAGE_6_PRIVATE_SCALE_TASK_ROOT}/task.json`,
+  `${STAGE_6_PRIVATE_SCALE_TASK_ROOT}/operator-handoff.md`,
+  `${STAGE_6_PRIVATE_SCALE_TASK_ROOT}/review-candidate.md`,
+] as const;
+const STAGE_6_E3_ACCEPTANCE_ACTIVATION_LIFECYCLE_PATHS = [
+  `${STAGE_6_E3_ACCEPTANCE_TASK_ROOT}/task.json`,
+  `${STAGE_6_E3_ACCEPTANCE_TASK_ROOT}/operator-handoff.md`,
+  `${STAGE_6_E3_ACCEPTANCE_TASK_ROOT}/review-candidate.md`,
+  `${STAGE_6_E3_LAW_TASK_ROOT}/task.json`,
+] as const;
+const STAGE_6_E3_AUDIT_RECORD = {
+  schemaVersion: 1,
+  reviewTaskId: "01a01e48-1934-77b0-821e-a8026cd9e5f7",
+  reviewTurnId: "01a05589-d996-7ec1-ab58-b6f2db049e69",
+  candidateCommit: STAGE_6_E3_AUDITED_CANDIDATE,
+  technicalCommit: "36fe1956ec8660d664eb9606912dbc6e1b6c3ede",
+  verdict: "PASS_READY_FOR_E3_ACCEPTANCE_PREPARATION",
+  P0: 0,
+  P1: 0,
+  P2: 0,
+} as const;
 const STAGE_6_E2_WORKER_TECHNICAL_PATHS = [
   "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts",
   "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.test.ts",
@@ -741,13 +791,26 @@ function historicalE2WorkerChanges(): Set<string> {
   );
 }
 
-function currentE3FinalStateChanges(): Set<string> {
+function historicalE3AuditedCandidateChanges(): Set<string> {
+  return new Set(
+    lines(
+      git([
+        "diff",
+        "--no-renames",
+        "--name-only",
+        `${STAGE_6_E2_TERMINAL_HEAD}..${STAGE_6_E3_AUDITED_CANDIDATE}`,
+      ]),
+    ),
+  );
+}
+
+function currentAcceptanceProjectionChanges(): Set<string> {
   const commands: readonly (readonly string[])[] = [
     [
       "diff",
       "--no-renames",
       "--name-only",
-      `${STAGE_6_E2_TERMINAL_HEAD}..HEAD`,
+      `${STAGE_6_E3_AUDITED_CANDIDATE}..HEAD`,
     ],
     ["diff", "--no-renames", "--name-only"],
     ["diff", "--cached", "--no-renames", "--name-only"],
@@ -827,13 +890,43 @@ interface E3LifecycleProjection {
   readonly rustDefaultRuntime: unknown;
   readonly rustRuntimeSwitchAuthorized: unknown;
   readonly lawTaskStatus: unknown;
+  readonly lawImplementationReview: unknown;
+  readonly lawCurrentPlanningChild: unknown;
+  readonly lawCurrentImplementationChild: unknown;
+  readonly lawAuditRecord: unknown;
+  readonly lawAuditRecordBytes: unknown;
+  readonly lawAuditRecordSha256: unknown;
   readonly lawIntegrationAuthorized: unknown;
   readonly lawQualificationAuthorized: unknown;
   readonly lawArchiveAuthorized: unknown;
   readonly lawPushAuthorized: unknown;
   readonly lawRuntimeSwitchAuthorized: unknown;
   readonly lawRkp3CreationAuthorized: unknown;
+  readonly stage6AuditRecord: unknown;
+  readonly stage6AuditRecordOwner: unknown;
+  readonly stage6AuditRecordSha256: unknown;
+  readonly acceptanceTaskStatus: unknown;
+  readonly acceptanceTaskStartRun: unknown;
+  readonly acceptanceTaskProductionAuthorized: unknown;
+  readonly acceptanceTaskUserAuthorized: unknown;
+  readonly acceptanceTaskCandidateReady: unknown;
+  readonly acceptanceTaskImplementationReview: unknown;
+  readonly acceptanceTaskAuditRecord: unknown;
+  readonly acceptanceTaskAuditRecordOwner: unknown;
+  readonly acceptanceTaskAuditRecordSha256: unknown;
+  readonly acceptanceTaskS62Started: unknown;
+  readonly acceptanceTaskS63Started: unknown;
+  readonly acceptanceTaskDefaultRuntime: unknown;
+  readonly acceptanceTaskAcceptanceAuthorized: unknown;
+  readonly acceptanceTaskArchiveAuthorized: unknown;
+  readonly acceptanceTaskIntegrationAuthorized: unknown;
+  readonly acceptanceTaskQualificationAuthorized: unknown;
+  readonly acceptanceTaskRuntimeSwitchAuthorized: unknown;
+  readonly acceptanceTaskPushAuthorized: unknown;
+  readonly acceptanceTaskRkp3CreationAuthorized: unknown;
 }
+
+type E3AcceptanceProjectionPhase = "technical-transition" | "terminal-candidate";
 
 function fullRunnerPlanningChangesAtContentHead(): Set<string> {
   return new Set(
@@ -888,7 +981,7 @@ function assertExactPathSet(
   );
 }
 
-function assertE3FinalStateProjection(
+function assertHistoricalE3AuditedCandidateProjection(
   actual: ReadonlySet<string>,
   originalE3Paths: readonly string[] = STAGE_6_ORIGINAL_E3_PATHS,
   repairTechnicalPaths: readonly string[] = STAGE_6_E3_LAW_TECHNICAL_PATHS,
@@ -924,7 +1017,85 @@ function assertE3FinalStateProjection(
     "E3 final-state owner sets must be disjoint before union",
   );
   assert.equal(declared.length, 21);
-  assertExactPathSet(actual, declared, "E3 final-state projection");
+  assertExactPathSet(actual, declared, "historical E3 audited candidate");
+}
+
+function canonicalizeE3AuditRecord(record: unknown): string {
+  assert.ok(record !== null && typeof record === "object");
+  assert.equal(Array.isArray(record), false);
+  const value = record as Readonly<Record<string, unknown>>;
+  assert.deepEqual(Object.keys(value), Object.keys(STAGE_6_E3_AUDIT_RECORD));
+  assert.deepEqual(value, STAGE_6_E3_AUDIT_RECORD);
+  const canonical = JSON.stringify({
+    schemaVersion: value.schemaVersion,
+    reviewTaskId: value.reviewTaskId,
+    reviewTurnId: value.reviewTurnId,
+    candidateCommit: value.candidateCommit,
+    technicalCommit: value.technicalCommit,
+    verdict: value.verdict,
+    P0: value.P0,
+    P1: value.P1,
+    P2: value.P2,
+  });
+  assert.equal(Buffer.byteLength(canonical, "utf8"), STAGE_6_E3_AUDIT_RECORD_BYTES);
+  assert.equal(sha256(canonical), STAGE_6_E3_AUDIT_RECORD_SHA256);
+  return canonical;
+}
+
+function assertSingleE3AuditRecordOwner(records: readonly unknown[]): void {
+  const owners = records.filter((record) => record !== undefined);
+  assert.equal(owners.length, 1, "E3 audit record must have one structured owner");
+  canonicalizeE3AuditRecord(owners[0]);
+}
+
+function assertAcceptanceProjectionPathSet(
+  actual: ReadonlySet<string>,
+  phase: E3AcceptanceProjectionPhase,
+  immutablePlanningPaths: readonly string[] = STAGE_6_E3_ACCEPTANCE_IMMUTABLE_PLANNING_PATHS,
+  technicalPaths: readonly string[] = STAGE_6_E3_ACCEPTANCE_TECHNICAL_PATHS,
+  lifecyclePaths: readonly string[] = STAGE_6_E3_ACCEPTANCE_LIFECYCLE_PATHS,
+): void {
+  assertExactPathSet(
+    new Set(immutablePlanningPaths),
+    STAGE_6_E3_ACCEPTANCE_IMMUTABLE_PLANNING_PATHS,
+    "acceptance immutable planning declaration",
+  );
+  assertExactPathSet(
+    new Set(technicalPaths),
+    STAGE_6_E3_ACCEPTANCE_TECHNICAL_PATHS,
+    "acceptance technical declaration",
+  );
+  assertExactPathSet(
+    new Set(lifecyclePaths),
+    STAGE_6_E3_ACCEPTANCE_LIFECYCLE_PATHS,
+    "acceptance lifecycle declaration",
+  );
+  assert.equal(immutablePlanningPaths.length, 8);
+  assert.equal(technicalPaths.length, 1);
+  assert.equal(lifecyclePaths.length, 9);
+
+  const declaredOwners = [
+    ...immutablePlanningPaths,
+    ...technicalPaths,
+    ...lifecyclePaths,
+  ];
+  assert.equal(
+    new Set(declaredOwners).size,
+    declaredOwners.length,
+    "acceptance owner sets must be disjoint",
+  );
+  assert.equal(declaredOwners.length, 18);
+
+  const expected =
+    phase === "technical-transition"
+      ? [
+          ...immutablePlanningPaths,
+          ...technicalPaths,
+          ...STAGE_6_E3_ACCEPTANCE_ACTIVATION_LIFECYCLE_PATHS,
+        ]
+      : declaredOwners;
+  assert.equal(expected.length, phase === "technical-transition" ? 13 : 18);
+  assertExactPathSet(actual, expected, `acceptance ${phase}`);
 }
 
 function extractE3ProtocolLine(source: string): string {
@@ -990,12 +1161,17 @@ function assertE3EvidenceProjection(
   return envelope;
 }
 
-function assertE3LifecycleProjection(projection: E3LifecycleProjection): void {
+function assertE3LifecycleProjection(
+  projection: E3LifecycleProjection,
+  phase: E3AcceptanceProjectionPhase,
+): void {
   assert.equal(projection.stage6Status, "in_progress");
   assert.equal(projection.stage6ImplementationCandidateReady, true);
   assert.equal(
     projection.stage6ImplementationReview,
-    "pending_dedicated_independent_E3_candidate_review",
+    phase === "technical-transition"
+      ? "pending_dedicated_independent_E3_candidate_review"
+      : STAGE_6_E3_AUDIT_BOUND_REVIEW_PASS,
   );
   assert.equal(
     projection.stage6CurrentImplementationChild,
@@ -1009,6 +1185,17 @@ function assertE3LifecycleProjection(projection: E3LifecycleProjection): void {
   assert.equal(projection.stage6RuntimeSwitchAuthorized, false);
   assert.equal(projection.stage6OfficialMeasurementAuthorized, false);
   assert.equal(projection.stage6Rkp3CreationAuthorized, false);
+  assert.equal(projection.stage6AuditRecord, undefined);
+  assert.equal(
+    projection.stage6AuditRecordOwner,
+    phase === "technical-transition"
+      ? undefined
+      : `${STAGE_6_E3_LAW_TASK_ROOT}/task.json`,
+  );
+  assert.equal(
+    projection.stage6AuditRecordSha256,
+    phase === "technical-transition" ? undefined : STAGE_6_E3_AUDIT_RECORD_SHA256,
+  );
   assert.equal(
     projection.historicalE2Status,
     "completed_historical_E1R2_and_E2_authority_consumed_parent_Stage6_E3_owned_elsewhere",
@@ -1039,12 +1226,66 @@ function assertE3LifecycleProjection(projection: E3LifecycleProjection): void {
   assert.equal(projection.rustRuntimeSwitchAuthorized, false);
 
   assert.equal(projection.lawTaskStatus, "in_progress");
+  assert.equal(
+    projection.lawImplementationReview,
+    phase === "technical-transition"
+      ? "pending_dedicated_independent_E3_workspace_law_implementation_review"
+      : STAGE_6_E3_AUDIT_BOUND_REVIEW_PASS,
+  );
+  assert.equal(projection.lawCurrentPlanningChild, null);
+  assert.equal(
+    projection.lawCurrentImplementationChild,
+    "08-31-rkp-2-e3-acceptance-state-projection",
+  );
+  canonicalizeE3AuditRecord(projection.lawAuditRecord);
+  assert.equal(projection.lawAuditRecordBytes, STAGE_6_E3_AUDIT_RECORD_BYTES);
+  assert.equal(projection.lawAuditRecordSha256, STAGE_6_E3_AUDIT_RECORD_SHA256);
   assert.equal(projection.lawIntegrationAuthorized, false);
   assert.equal(projection.lawQualificationAuthorized, false);
   assert.equal(projection.lawArchiveAuthorized, false);
   assert.equal(projection.lawPushAuthorized, false);
   assert.equal(projection.lawRuntimeSwitchAuthorized, false);
   assert.equal(projection.lawRkp3CreationAuthorized, false);
+
+  assert.equal(projection.acceptanceTaskStatus, "in_progress");
+  assert.equal(projection.acceptanceTaskStartRun, true);
+  assert.equal(projection.acceptanceTaskProductionAuthorized, true);
+  assert.equal(projection.acceptanceTaskUserAuthorized, true);
+  assert.equal(
+    projection.acceptanceTaskCandidateReady,
+    phase === "terminal-candidate",
+  );
+  assert.equal(
+    projection.acceptanceTaskImplementationReview,
+    phase === "technical-transition"
+      ? "pending_not_started"
+      : "pending_dedicated_independent_acceptance_projection_implementation_review",
+  );
+  assert.equal(projection.acceptanceTaskAuditRecord, undefined);
+  assert.equal(
+    projection.acceptanceTaskAuditRecordOwner,
+    `${STAGE_6_E3_LAW_TASK_ROOT}/task.json`,
+  );
+  assert.equal(
+    projection.acceptanceTaskAuditRecordSha256,
+    STAGE_6_E3_AUDIT_RECORD_SHA256,
+  );
+  assert.equal(projection.acceptanceTaskS62Started, false);
+  assert.equal(projection.acceptanceTaskS63Started, false);
+  assert.equal(projection.acceptanceTaskDefaultRuntime, "typescript");
+  assert.equal(projection.acceptanceTaskAcceptanceAuthorized, false);
+  assert.equal(projection.acceptanceTaskArchiveAuthorized, false);
+  assert.equal(projection.acceptanceTaskIntegrationAuthorized, false);
+  assert.equal(projection.acceptanceTaskQualificationAuthorized, false);
+  assert.equal(projection.acceptanceTaskRuntimeSwitchAuthorized, false);
+  assert.equal(projection.acceptanceTaskPushAuthorized, false);
+  assert.equal(projection.acceptanceTaskRkp3CreationAuthorized, false);
+
+  assertSingleE3AuditRecordOwner([
+    projection.lawAuditRecord,
+    projection.stage6AuditRecord,
+    projection.acceptanceTaskAuditRecord,
+  ]);
 }
 
 function assertImmutablePlanningAuthority(
@@ -1524,25 +1765,108 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     git(["rev-parse", `${STAGE_6_E2_TERMINAL_HEAD}^{tree}`]),
     STAGE_6_E3_SOURCE_TREE,
   );
-  const currentE3Paths = currentE3FinalStateChanges();
-  assertE3FinalStateProjection(currentE3Paths);
+  const historicalE3Paths = historicalE3AuditedCandidateChanges();
+  assertHistoricalE3AuditedCandidateProjection(historicalE3Paths);
 
-  const withoutEvidence = new Set(currentE3Paths);
+  const withoutEvidence = new Set(historicalE3Paths);
   withoutEvidence.delete(STAGE_6_E3_EVIDENCE_PATH);
-  assert.throws(() => assertE3FinalStateProjection(withoutEvidence));
   assert.throws(() =>
-    assertE3FinalStateProjection(currentE3Paths, [
+    assertHistoricalE3AuditedCandidateProjection(withoutEvidence),
+  );
+  assert.throws(() =>
+    assertHistoricalE3AuditedCandidateProjection(historicalE3Paths, [
       ...STAGE_6_ORIGINAL_E3_PATHS,
       `${STAGE_6_PRIVATE_SCALE_TASK_ROOT}/ninth-e3-lifecycle-path.md`,
     ]),
   );
   assert.throws(() =>
-    assertE3FinalStateProjection(
-      currentE3Paths,
+    assertHistoricalE3AuditedCandidateProjection(
+      historicalE3Paths,
       STAGE_6_ORIGINAL_E3_PATHS,
       [
         ...STAGE_6_E3_LAW_TECHNICAL_PATHS,
         STAGE_6_E3_EVIDENCE_PATH,
+      ],
+    ),
+  );
+  const historicalLawTask = JSON.parse(
+    gitTextAt(
+      STAGE_6_E3_AUDITED_CANDIDATE,
+      `${STAGE_6_E3_LAW_TASK_ROOT}/task.json`,
+    ),
+  ) as {
+    readonly meta?: {
+      readonly implementation_review?: unknown;
+      readonly external_independent_implementation_audit_result?: unknown;
+    };
+  };
+  assert.equal(
+    historicalLawTask.meta?.implementation_review,
+    "pending_dedicated_independent_E3_workspace_law_implementation_review",
+  );
+  assert.equal(
+    historicalLawTask.meta?.external_independent_implementation_audit_result,
+    undefined,
+  );
+
+  const acceptanceTask = JSON.parse(
+    readText(`${STAGE_6_E3_ACCEPTANCE_TASK_ROOT}/task.json`),
+  ) as {
+    readonly status?: unknown;
+    readonly meta?: {
+      readonly task_start_run?: unknown;
+      readonly production_implementation_authorized?: unknown;
+      readonly user_implementation_authorization?: unknown;
+      readonly implementation_candidate_ready?: unknown;
+      readonly implementation_review?: unknown;
+      readonly source_audit_record_owner?: unknown;
+      readonly source_audit_record_sha256?: unknown;
+      readonly external_independent_implementation_audit_result?: unknown;
+      readonly rkp2_stage6_s6_2_started?: unknown;
+      readonly rkp2_stage6_s6_3_started?: unknown;
+      readonly default_runtime?: unknown;
+      readonly acceptance_authorized?: unknown;
+      readonly archive_authorized?: unknown;
+      readonly integration_authorized?: unknown;
+      readonly qualification_authorized?: unknown;
+      readonly default_runtime_switch_authorized?: unknown;
+      readonly push_authorized?: unknown;
+      readonly rkp3_creation_authorized?: unknown;
+    };
+  };
+  const acceptancePhase: E3AcceptanceProjectionPhase =
+    acceptanceTask.meta?.implementation_candidate_ready === true
+      ? "terminal-candidate"
+      : "technical-transition";
+  const currentAcceptancePaths = currentAcceptanceProjectionChanges();
+  assertAcceptanceProjectionPathSet(currentAcceptancePaths, acceptancePhase);
+
+  const withoutAcceptanceTechnical = new Set(currentAcceptancePaths);
+  withoutAcceptanceTechnical.delete(STAGE_6_E3_ACCEPTANCE_TECHNICAL_PATHS[0]);
+  assert.throws(() =>
+    assertAcceptanceProjectionPathSet(
+      withoutAcceptanceTechnical,
+      acceptancePhase,
+    ),
+  );
+  assert.throws(() =>
+    assertAcceptanceProjectionPathSet(
+      new Set([
+        ...currentAcceptancePaths,
+        `${STAGE_6_E3_ACCEPTANCE_TASK_ROOT}/undeclared.md`,
+      ]),
+      acceptancePhase,
+    ),
+  );
+  assert.throws(() =>
+    assertAcceptanceProjectionPathSet(
+      currentAcceptancePaths,
+      acceptancePhase,
+      STAGE_6_E3_ACCEPTANCE_IMMUTABLE_PLANNING_PATHS,
+      STAGE_6_E3_ACCEPTANCE_TECHNICAL_PATHS,
+      [
+        ...STAGE_6_E3_ACCEPTANCE_LIFECYCLE_PATHS,
+        STAGE_6_E3_ACCEPTANCE_TECHNICAL_PATHS[0],
       ],
     ),
   );
@@ -1599,6 +1923,9 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
       readonly default_runtime_switch_authorized?: unknown;
       readonly official_measurement_authorized?: unknown;
       readonly rkp3_creation_authorized?: unknown;
+      readonly external_independent_implementation_audit_result?: unknown;
+      readonly e3_workspace_law_audit_record_owner?: unknown;
+      readonly e3_workspace_law_audit_record_sha256?: unknown;
       readonly e3_evidence_source_head?: unknown;
       readonly e3_evidence_source_tree?: unknown;
       readonly e3_protocol_sha256?: unknown;
@@ -1693,6 +2020,12 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
   ) as {
     readonly status?: unknown;
     readonly meta?: {
+      readonly implementation_review?: unknown;
+      readonly current_planning_child?: unknown;
+      readonly current_implementation_child?: unknown;
+      readonly external_independent_implementation_audit_result?: unknown;
+      readonly external_independent_implementation_audit_canonical_bytes?: unknown;
+      readonly external_independent_implementation_audit_sha256?: unknown;
       readonly integration_authorized?: unknown;
       readonly qualification_authorized?: unknown;
       readonly archive_authorized?: unknown;
@@ -1718,6 +2051,12 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     stage6OfficialMeasurementAuthorized:
       stage6Task.meta?.official_measurement_authorized,
     stage6Rkp3CreationAuthorized: stage6Task.meta?.rkp3_creation_authorized,
+    stage6AuditRecord:
+      stage6Task.meta?.external_independent_implementation_audit_result,
+    stage6AuditRecordOwner:
+      stage6Task.meta?.e3_workspace_law_audit_record_owner,
+    stage6AuditRecordSha256:
+      stage6Task.meta?.e3_workspace_law_audit_record_sha256,
     historicalE2Status:
       stage6Task.meta?.stage6_semantic_canonical_authority_amendment?.status,
     historicalE2Stage6E3Started: task.meta?.stage6_e3_started,
@@ -1741,6 +2080,15 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     rustRuntimeSwitchAuthorized:
       rustTask.meta?.rkp2_default_runtime_switch_authorized,
     lawTaskStatus: lawTask.status,
+    lawImplementationReview: lawTask.meta?.implementation_review,
+    lawCurrentPlanningChild: lawTask.meta?.current_planning_child,
+    lawCurrentImplementationChild: lawTask.meta?.current_implementation_child,
+    lawAuditRecord:
+      lawTask.meta?.external_independent_implementation_audit_result,
+    lawAuditRecordBytes:
+      lawTask.meta?.external_independent_implementation_audit_canonical_bytes,
+    lawAuditRecordSha256:
+      lawTask.meta?.external_independent_implementation_audit_sha256,
     lawIntegrationAuthorized: lawTask.meta?.integration_authorized,
     lawQualificationAuthorized: lawTask.meta?.qualification_authorized,
     lawArchiveAuthorized: lawTask.meta?.archive_authorized,
@@ -1748,28 +2096,170 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     lawRuntimeSwitchAuthorized:
       lawTask.meta?.default_runtime_switch_authorized,
     lawRkp3CreationAuthorized: lawTask.meta?.rkp3_creation_authorized,
+    acceptanceTaskStatus: acceptanceTask.status,
+    acceptanceTaskStartRun: acceptanceTask.meta?.task_start_run,
+    acceptanceTaskProductionAuthorized:
+      acceptanceTask.meta?.production_implementation_authorized,
+    acceptanceTaskUserAuthorized:
+      acceptanceTask.meta?.user_implementation_authorization,
+    acceptanceTaskCandidateReady:
+      acceptanceTask.meta?.implementation_candidate_ready,
+    acceptanceTaskImplementationReview:
+      acceptanceTask.meta?.implementation_review,
+    acceptanceTaskAuditRecord:
+      acceptanceTask.meta?.external_independent_implementation_audit_result,
+    acceptanceTaskAuditRecordOwner:
+      acceptanceTask.meta?.source_audit_record_owner,
+    acceptanceTaskAuditRecordSha256:
+      acceptanceTask.meta?.source_audit_record_sha256,
+    acceptanceTaskS62Started:
+      acceptanceTask.meta?.rkp2_stage6_s6_2_started,
+    acceptanceTaskS63Started:
+      acceptanceTask.meta?.rkp2_stage6_s6_3_started,
+    acceptanceTaskDefaultRuntime: acceptanceTask.meta?.default_runtime,
+    acceptanceTaskAcceptanceAuthorized:
+      acceptanceTask.meta?.acceptance_authorized,
+    acceptanceTaskArchiveAuthorized: acceptanceTask.meta?.archive_authorized,
+    acceptanceTaskIntegrationAuthorized:
+      acceptanceTask.meta?.integration_authorized,
+    acceptanceTaskQualificationAuthorized:
+      acceptanceTask.meta?.qualification_authorized,
+    acceptanceTaskRuntimeSwitchAuthorized:
+      acceptanceTask.meta?.default_runtime_switch_authorized,
+    acceptanceTaskPushAuthorized: acceptanceTask.meta?.push_authorized,
+    acceptanceTaskRkp3CreationAuthorized:
+      acceptanceTask.meta?.rkp3_creation_authorized,
   };
-  assertE3LifecycleProjection(lifecycle);
+  assertE3LifecycleProjection(lifecycle, acceptancePhase);
+
+  canonicalizeE3AuditRecord(lifecycle.lawAuditRecord);
+  const missingAuditKey = {
+    ...STAGE_6_E3_AUDIT_RECORD,
+  } as Record<string, unknown>;
+  delete missingAuditKey.P2;
+  const malformedAuditRecords: readonly unknown[] = [
+    undefined,
+    missingAuditKey,
+    { ...STAGE_6_E3_AUDIT_RECORD, schemaVersion: 2 },
+    { ...STAGE_6_E3_AUDIT_RECORD, reviewTaskId: "wrong-task" },
+    { ...STAGE_6_E3_AUDIT_RECORD, reviewTurnId: "wrong-turn" },
+    { ...STAGE_6_E3_AUDIT_RECORD, candidateCommit: "wrong-candidate" },
+    { ...STAGE_6_E3_AUDIT_RECORD, technicalCommit: "wrong-technical" },
+    { ...STAGE_6_E3_AUDIT_RECORD, verdict: "PASS" },
+    { ...STAGE_6_E3_AUDIT_RECORD, P0: 1 },
+    { ...STAGE_6_E3_AUDIT_RECORD, P1: 1 },
+    { ...STAGE_6_E3_AUDIT_RECORD, P2: 1 },
+    { ...STAGE_6_E3_AUDIT_RECORD, extra: true },
+    {
+      reviewTaskId: STAGE_6_E3_AUDIT_RECORD.reviewTaskId,
+      schemaVersion: STAGE_6_E3_AUDIT_RECORD.schemaVersion,
+      reviewTurnId: STAGE_6_E3_AUDIT_RECORD.reviewTurnId,
+      candidateCommit: STAGE_6_E3_AUDIT_RECORD.candidateCommit,
+      technicalCommit: STAGE_6_E3_AUDIT_RECORD.technicalCommit,
+      verdict: STAGE_6_E3_AUDIT_RECORD.verdict,
+      P0: 0,
+      P1: 0,
+      P2: 0,
+    },
+  ];
+  for (const malformedAuditRecord of malformedAuditRecords) {
+    assert.throws(() => canonicalizeE3AuditRecord(malformedAuditRecord));
+  }
+
+  const terminalLifecycle: E3LifecycleProjection = {
+    ...lifecycle,
+    stage6ImplementationReview: STAGE_6_E3_AUDIT_BOUND_REVIEW_PASS,
+    stage6AuditRecordOwner: `${STAGE_6_E3_LAW_TASK_ROOT}/task.json`,
+    stage6AuditRecordSha256: STAGE_6_E3_AUDIT_RECORD_SHA256,
+    lawImplementationReview: STAGE_6_E3_AUDIT_BOUND_REVIEW_PASS,
+    acceptanceTaskCandidateReady: true,
+    acceptanceTaskImplementationReview:
+      "pending_dedicated_independent_acceptance_projection_implementation_review",
+  };
+  assert.doesNotThrow(() =>
+    assertE3LifecycleProjection(terminalLifecycle, "terminal-candidate"),
+  );
+
+  const rejectedTerminalMutations: readonly Partial<E3LifecycleProjection>[] = [
+    { lawAuditRecord: undefined },
+    { lawAuditRecordBytes: STAGE_6_E3_AUDIT_RECORD_BYTES + 1 },
+    { lawAuditRecordSha256: "wrong-law-digest" },
+    { stage6AuditRecord: STAGE_6_E3_AUDIT_RECORD },
+    { stage6AuditRecordOwner: undefined },
+    { stage6AuditRecordSha256: "wrong-stage6-digest" },
+    { acceptanceTaskAuditRecord: STAGE_6_E3_AUDIT_RECORD },
+    { acceptanceTaskAuditRecordOwner: "wrong-owner" },
+    { acceptanceTaskAuditRecordSha256: "wrong-child-digest" },
+    { stage6S62Started: true },
+    { stage6S63Started: true },
+    { stage6ArchiveAuthorized: true },
+    { stage6PushAuthorized: true },
+    { stage6RuntimeSwitchAuthorized: true },
+    { stage6OfficialMeasurementAuthorized: true },
+    { stage6Rkp3CreationAuthorized: true },
+    { lawIntegrationAuthorized: true },
+    { lawQualificationAuthorized: true },
+    { lawArchiveAuthorized: true },
+    { lawPushAuthorized: true },
+    { lawRuntimeSwitchAuthorized: true },
+    { lawRkp3CreationAuthorized: true },
+    { acceptanceTaskS62Started: true },
+    { acceptanceTaskS63Started: true },
+    { acceptanceTaskAcceptanceAuthorized: true },
+    { acceptanceTaskArchiveAuthorized: true },
+    { acceptanceTaskIntegrationAuthorized: true },
+    { acceptanceTaskQualificationAuthorized: true },
+    { acceptanceTaskRuntimeSwitchAuthorized: true },
+    { acceptanceTaskPushAuthorized: true },
+    { acceptanceTaskRkp3CreationAuthorized: true },
+    { stage6DefaultRuntime: "rust" },
+    { acceptanceTaskDefaultRuntime: "rust" },
+    { historicalE2Stage6E3Started: true },
+  ];
+  for (const mutation of rejectedTerminalMutations) {
+    assert.throws(() =>
+      assertE3LifecycleProjection(
+        { ...terminalLifecycle, ...mutation },
+        "terminal-candidate",
+      ),
+    );
+  }
+
   assert.throws(() =>
-    assertE3LifecycleProjection({
-      ...lifecycle,
-      stage6ImplementationReview: "passed",
-    }),
+    assertE3LifecycleProjection(
+      {
+        ...lifecycle,
+        stage6ImplementationReview: "passed",
+      },
+      acceptancePhase,
+    ),
   );
   assert.throws(() =>
-    assertE3LifecycleProjection({ ...lifecycle, stage6S62Started: true }),
+    assertE3LifecycleProjection(
+      { ...lifecycle, stage6S62Started: true },
+      acceptancePhase,
+    ),
   );
   assert.throws(() =>
-    assertE3LifecycleProjection({ ...lifecycle, stage6S63Started: true }),
+    assertE3LifecycleProjection(
+      { ...lifecycle, stage6S63Started: true },
+      acceptancePhase,
+    ),
   );
   assert.throws(() =>
-    assertE3LifecycleProjection({ ...lifecycle, stage6DefaultRuntime: "rust" }),
+    assertE3LifecycleProjection(
+      { ...lifecycle, stage6DefaultRuntime: "rust" },
+      acceptancePhase,
+    ),
   );
   assert.throws(() =>
-    assertE3LifecycleProjection({
-      ...lifecycle,
-      historicalE2Stage6E3Started: true,
-    }),
+    assertE3LifecycleProjection(
+      {
+        ...lifecycle,
+        historicalE2Stage6E3Started: true,
+      },
+      acceptancePhase,
+    ),
   );
 
   const worker = readText(
