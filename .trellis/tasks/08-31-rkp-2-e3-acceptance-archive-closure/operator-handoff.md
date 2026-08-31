@@ -2,7 +2,7 @@
 
 ## Current state
 
-`BOUNDED PLANNING REPAIR CANDIDATE — TARGETED REREVIEW PENDING — IMPLEMENTATION UNAUTHORIZED`.
+`PLANNING ACCEPTED — SEPARATE IMPLEMENTATION AUTHORIZATION REQUIRED`.
 
 - Base: `f27daf7b514731adaabbe8f7814d2b57e12a7df7`.
 - Branch: `codex/rkp-2-e3-acceptance-archive-closure`.
@@ -23,6 +23,6 @@ The only future technical file is the Workspace Law test. Product/Rust/source/ev
 
 ## Next gate
 
-The first review of `c35af97da235f075857181c72d64dc2c8506dfed` returned P0/P1/P2=`0/2/0`. The docs-only repair removes every closure self/target-active JSONL reference, freezes the target's exact three-path JSONL successor, and adds a fail-closed local-clock preflight before both native archives.
+The first review of `c35af97da235f075857181c72d64dc2c8506dfed` returned P0/P1/P2=`0/2/0`. The docs-only repair removes every closure self/target-active JSONL reference, freezes the target's exact three-path JSONL successor, and adds a fail-closed local-clock preflight before both native archives. Targeted rereview accepted exact authority `f84c84387fa21d4bdbc05b838397fb091ce664e9` with P0/P1/P2=`0/0/0`.
 
-Next gate is targeted dedicated independent planning rereview of the repair commit. Do not run `task.py start`, edit the technical test, accept/archive any task, or advance Stage 6 before rereview PASS and separate user implementation authorization.
+Next gate is a separate explicit user implementation authorization. Do not run `task.py start`, edit the technical test, accept/archive any task, or advance Stage 6 until that authorization is received.

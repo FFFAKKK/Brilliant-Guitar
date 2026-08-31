@@ -30,7 +30,9 @@ P0/P1/P2 = 0/0/0
 ## Current verdict
 
 ```text
-RETURNED P0/P1/P2=0/2/0 — BOUNDED REPAIR COMPLETE — TARGETED REREVIEW PENDING
+PASS FOR BOUNDED IMPLEMENTATION PLANNING
+P0/P1/P2=0/0/0
+EXACT AUTHORITY=f84c84387fa21d4bdbc05b838397fb091ce664e9
 ```
 
 ## Bounded repair focus
@@ -42,3 +44,5 @@ The first review pinned `c35af97da235f075857181c72d64dc2c8506dfed`. Targeted rer
 3. all JSONL references exist after P3 and P4 without archive-time rewriting;
 4. each native archive has a pre-mutation `2026-08` / `2026-08-31` / before-`23:50` preflight;
 5. one technical path, 40-path P3/P4 arithmetic, later false gates, and production/protected zero delta remain unchanged.
+
+Targeted rereview completed all five checks. This PASS accepts planning only; it does not authorize `task.py start`, implementation, acceptance, archive, integration, Stage 6 continuation, qualification, cutover, push, or RKP-3.

@@ -31,7 +31,7 @@
     ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/operator-handoff.md",
     ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/review-candidate.md"
   ],
-  "notes": "PLANNING BOUNDED REPAIR / FIRST REVIEW C35AF97 RETURNED P0_P1_P2 0_2_0 / ARCHIVE-SAFE CLOSURE JSONL AND EXACT TARGET THREE-PATH SUCCESSOR / DUAL NATIVE ARCHIVE CLOCK PREFLIGHT / SOURCE REVIEW RECORD 334 BYTES SHA256 8559F7AE...9436 / IMPLEMENTATION AND ARCHIVE UNAUTHORIZED / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO E3 STRESS INTEGRATION QUALIFICATION CUTOVER PUSH OR RKP3.",
+  "notes": "PLANNING ACCEPTED / EXACT AUTHORITY F84C84387FA21D4BDBC05B838397FB091CE664E9 / TARGETED REREVIEW PASS P0_P1_P2 0_0_0 / ARCHIVE-SAFE JSONL AND DUAL NATIVE ARCHIVE CLOCK PREFLIGHT CLOSED / IMPLEMENTATION REQUIRES SEPARATE USER AUTHORIZATION / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO E3 STRESS ACCEPT ARCHIVE INTEGRATION QUALIFICATION CUTOVER PUSH OR RKP3.",
   "meta": {
     "planning_base_commit": "f27daf7b514731adaabbe8f7814d2b57e12a7df7",
     "planning_branch": "codex/rkp-2-e3-acceptance-archive-closure",
@@ -41,11 +41,11 @@
     "task_start_run": false,
     "production_implementation_authorized": false,
     "user_implementation_authorization": false,
-    "independent_planning_review": "targeted_rereview_pending_after_c35af97_P0_0_P1_2_P2_0",
-    "accepted_planning_authority_head": null,
+    "independent_planning_review": "passed_f84c84387fa21d4bdbc05b838397fb091ce664e9_P0_0_P1_0_P2_0",
+    "accepted_planning_authority_head": "f84c84387fa21d4bdbc05b838397fb091ce664e9",
     "implementation_candidate_ready": false,
     "implementation_review": "pending_not_started",
-    "next_gate": "targeted_dedicated_independent_acceptance_archive_closure_planning_rereview",
+    "next_gate": "explicit_user_implementation_authorization_required",
     "source_acceptance_projection_task": "08-31-rkp-2-e3-acceptance-state-projection",
     "source_acceptance_projection_candidate": "f27daf7b514731adaabbe8f7814d2b57e12a7df7",
     "source_acceptance_projection_technical_commit": "4abfef9b3f7620d6428382af287cccd662aa7bf7",
@@ -127,6 +127,15 @@
         "native_archives_leave_active_self_references_in_target_and_closure_jsonl",
         "literal_2026_08_archive_roots_lack_execution_clock_preflight"
       ]
+    },
+    "final_targeted_independent_planning_rereview": {
+      "review_task": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
+      "review_turn": "01a05667-d729-7da3-8356-47c9db9bb546",
+      "candidate_commit": "f84c84387fa21d4bdbc05b838397fb091ce664e9",
+      "P0": 0,
+      "P1": 0,
+      "P2": 0,
+      "verdict": "pass_for_bounded_e3_acceptance_archive_closure_implementation_planning"
     },
     "target_acceptance_authorized": false,
     "target_archive_authorized": false,

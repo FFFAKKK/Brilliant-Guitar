@@ -54,7 +54,7 @@
     ".trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/design.md",
     ".trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/implement.md"
   ],
-  "notes": "IN_PROGRESS / ACCEPTANCE-STATE PROJECTION F27DAF7 PASSED DEDICATED REVIEW P0_P1_P2 0_0_0 / ARCHIVE-CLOSURE FIRST PLANNING REVIEW C35AF97 RETURNED 0_2_0 / JSONL ARCHIVE-SAFETY AND CLOCK-PREFLIGHT BOUNDED REPAIR COMPLETE / TARGETED REREVIEW PENDING / TARGET REMAINS ACTIVE AND UNACCEPTED / TYPESCRIPT DEFAULT / S6.2 S6.3 FALSE / NO ARCHIVE INTEGRATION QUALIFICATION CUTOVER PUSH OR RKP3.",
+  "notes": "IN_PROGRESS / ACCEPTANCE-STATE PROJECTION F27DAF7 REVIEW PASS 0_0_0 / ARCHIVE-CLOSURE PLANNING AUTHORITY F84C843 TARGETED REREVIEW PASS 0_0_0 / EXPLICIT USER IMPLEMENTATION AUTHORIZATION REQUIRED / TARGET REMAINS ACTIVE AND UNACCEPTED / TYPESCRIPT DEFAULT / S6.2 S6.3 FALSE / NO ARCHIVE INTEGRATION QUALIFICATION CUTOVER PUSH OR RKP3.",
   "meta": {
     "planning_base_commit": "4ad23773e9c9e1081667a4eccb84cc464b85bc89",
     "planning_base_tree": "9dbcef77fbcc258e4fe96fdfb2b28839f095d610",
@@ -182,7 +182,7 @@
     "implementation_stage": "independent_E3_audit_bound_acceptance_projection_candidate_ready",
     "implementation_candidate_ready": true,
     "implementation_review": "passed_external_audit_bound_0c561d14193374436361eec09b361cab0170278a_P0_0_P1_0_P2_0",
-    "next_gate": "targeted_dedicated_independent_acceptance_archive_closure_planning_rereview",
+    "next_gate": "explicit_user_acceptance_archive_closure_implementation_authorization_required",
     "phase_b_validation": {
       "trellis_tasks_passed": 5,
       "task_json_parsed": 5,
@@ -280,6 +280,15 @@
       "P1": 2,
       "P2": 0,
       "status": "bounded_repair_complete_targeted_rereview_pending"
+    },
+    "acceptance_archive_closure_final_targeted_planning_rereview": {
+      "review_task": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
+      "review_turn": "01a05667-d729-7da3-8356-47c9db9bb546",
+      "candidate_commit": "f84c84387fa21d4bdbc05b838397fb091ce664e9",
+      "P0": 0,
+      "P1": 0,
+      "P2": 0,
+      "status": "planning_accepted_implementation_authorization_required"
     },
     "acceptance_state_projection_independent_planning_review": {
       "review_task": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
