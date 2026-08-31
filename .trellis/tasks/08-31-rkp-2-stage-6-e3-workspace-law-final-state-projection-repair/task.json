@@ -49,7 +49,7 @@
     ".trellis/tasks/08-31-rkp-2-e3-acceptance-state-projection/design.md",
     ".trellis/tasks/08-31-rkp-2-e3-acceptance-state-projection/implement.md"
   ],
-  "notes": "IN_PROGRESS / AUDITED CANDIDATE 0C561D14193374436361EEC09B361CAB0170278A / DEDICATED IMPLEMENTATION AUDIT PASS P0_P1_P2 0_0_0 / EXACT 21-PATH CANDIDATE PRESERVED / ACCEPTANCE-STATE PROJECTION CHILD PLANNING / IMPLEMENTATION_REVIEW FIELD TRANSITION PENDING / TYPESCRIPT DEFAULT / S6.2 S6.3 FALSE / NO ACCEPT ARCHIVE INTEGRATION QUALIFICATION CUTOVER PUSH OR RKP3.",
+  "notes": "IN_PROGRESS / AUDITED CANDIDATE 0C561D14193374436361EEC09B361CAB0170278A / DEDICATED IMPLEMENTATION AUDIT PASS P0_P1_P2 0_0_0 / EXACT 21-PATH CANDIDATE PRESERVED / ACCEPTANCE-STATE PROJECTION PLANNING PASS AT 8261AD373E849EAB08479570F8C03CBCB60BA68E / SEPARATE USER IMPLEMENTATION AUTHORIZATION PENDING / IMPLEMENTATION_REVIEW FIELD TRANSITION PENDING / TYPESCRIPT DEFAULT / S6.2 S6.3 FALSE / NO ACCEPT ARCHIVE INTEGRATION QUALIFICATION CUTOVER PUSH OR RKP3.",
   "meta": {
     "planning_base_commit": "4ad23773e9c9e1081667a4eccb84cc464b85bc89",
     "planning_base_tree": "9dbcef77fbcc258e4fe96fdfb2b28839f095d610",
@@ -177,7 +177,7 @@
     "implementation_stage": "independent_implementation_audit_passed_acceptance_state_projection_planning",
     "implementation_candidate_ready": true,
     "implementation_review": "pending_dedicated_independent_E3_workspace_law_implementation_review",
-    "next_gate": "dedicated_independent_acceptance_state_projection_planning_review_pending",
+    "next_gate": "explicit_user_authorization_for_bounded_acceptance_state_projection_implementation",
     "phase_b_validation": {
       "trellis_tasks_passed": 5,
       "task_json_parsed": 5,
@@ -261,6 +261,15 @@
     "external_independent_implementation_audit_sha256": "dee0b92ce8a2ff6c8a9737c5b98104e39633b85aaad70e594f61e4847fdd7589",
     "acceptance_state_projection_required": true,
     "acceptance_state_projection_task": "08-31-rkp-2-e3-acceptance-state-projection",
+    "acceptance_state_projection_independent_planning_review": {
+      "review_task": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
+      "review_turn": "01a055b2-f2a3-7d61-9169-3ac24f0486d0",
+      "candidate_commit": "8261ad373e849eab08479570f8c03cbcb60ba68e",
+      "P0": 0,
+      "P1": 0,
+      "P2": 0,
+      "verdict": "PASS_READY_FOR_BOUNDED_ACCEPTANCE_STATE_PROJECTION_IMPLEMENTATION"
+    },
     "current_planning_child": "08-31-rkp-2-e3-acceptance-state-projection"
   }
 }
