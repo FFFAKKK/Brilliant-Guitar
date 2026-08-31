@@ -10,10 +10,10 @@ task: .trellis/tasks/08-31-rkp-2-e3-workspace-law-acceptance-archive-closure
 status: planning
 task_start_run: false
 production_implementation_authorized: false
-independent_planning_review: first review returned 0/3/0; second targeted review of 63212ae returned 0/1/0; third targeted review of bf15f20 confirmed Q4 closure and returned 0/1/0 only for the month rollover; bounded 2026-09-01 archive-date repair complete; fresh targeted rereview pending
+independent_planning_review: PASS on 9bf82a221f0585719f36f36906dfc292d0e2bd5c; P0/P1/P2=0/0/0; review does not authorize implementation
 ```
 
-This handoff is for a dedicated planning reviewer, not a production operator.
+The dedicated planning review is complete. This remains a planning handoff until the user separately authorizes bounded implementation.
 
 ## Why this task exists
 
@@ -35,7 +35,11 @@ Future lifecycle/context owners are exactly:
 
 Count: 11. No other files are authorized.
 
-## Required review before implementation
+## Completed review evidence
+
+Dedicated audit task `01a05893-1f82-74d1-8764-c115e6cfa550`, turn `01a058b7-58ca-7a71-89c2-ab50e82bc0a3`, returned `PASS FOR BOUNDED IMPLEMENTATION PLANNING` with P0/P1/P2=`0/0/0` for exact candidate `9bf82a221f0585719f36f36906dfc292d0e2bd5c`.
+
+It verified the following implementation-entry contract:
 
 The dedicated planning reviewer must verify:
 
@@ -54,7 +58,7 @@ The dedicated planning reviewer must verify:
 13. production/Rust/evidence/later gates have zero planning delta.
 14. missing the `2026-09-01` execution window returns for another bounded date sync and never enables fallback month, manual move or system-clock change.
 
-Required verdict: P0/P1/P2=`0/0/0`.
+Recorded verdict: P0/P1/P2=`0/0/0`.
 
 ## Operator gate after planning PASS
 
@@ -73,5 +77,5 @@ Do not:
 ## Immediate next gate
 
 ```text
-READY FOR FRESH DEDICATED INDEPENDENT TARGETED PLANNING REREVIEW
+WAITING FOR SEPARATE USER IMPLEMENTATION AUTHORIZATION
 ```

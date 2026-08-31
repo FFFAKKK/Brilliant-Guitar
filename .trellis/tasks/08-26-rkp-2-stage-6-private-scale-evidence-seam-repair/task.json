@@ -45,7 +45,7 @@
     "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "IN_PROGRESS / E3 WORKSPACE LAW TARGET REVIEW PASSED AND PRIOR ACCEPTANCE-ARCHIVE CLOSURE COMPLETED / NEW SIBLING CLOSURE THIRD TARGETED PLANNING REVIEW CONFIRMED Q4 PREFLIGHT CLOSED AND RETURNED 0-1-0 ONLY FOR THE 2026-09 MONTH ROLLOVER / THIRD BOUNDED REPAIR RESYNCS FUTURE ARCHIVE ROOTS AND CLOCK TO 2026-09-01 WHILE HISTORICAL 2026-08 ARCHIVES STAY FIXED / FRESH REREVIEW PENDING / TARGET REMAINS CURRENT IMPLEMENTATION CHILD / RKP-2 PAUSED BEFORE S6.2 / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO E3 STRESS INTEGRATION PUSH CUTOVER QUALIFICATION OR RKP3.",
+  "notes": "IN_PROGRESS / E3 WORKSPACE LAW TARGET REVIEW PASSED AND PRIOR ACCEPTANCE-ARCHIVE CLOSURE COMPLETED / SIBLING CLOSURE FINAL TARGETED PLANNING REREVIEW PASSED 9BF82A2 P0-0 P1-0 P2-0 / NEXT GATE IS SEPARATE USER IMPLEMENTATION AUTHORIZATION / TARGET REMAINS CURRENT IMPLEMENTATION CHILD UNTIL ACTIVATION / RKP-2 PAUSED BEFORE S6.2 / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO E3 STRESS INTEGRATION PUSH CUTOVER QUALIFICATION OR RKP3.",
   "meta": {
     "planning_base_commit": "4a302bc9f9981940336fc97941b08e09bd0d1f67",
     "source_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -95,7 +95,7 @@
     "bounded_planning_repair": "round_3_cleanup_ownership_and_post_cleanup_envelope_accepted",
     "implementation_candidate_ready": true,
     "implementation_review": "passed_external_audit_bound_0c561d14193374436361eec09b361cab0170278a_P0_0_P1_0_P2_0",
-    "implementation_blocker": "e3_workspace_law_acceptance_archive_closure_fresh_targeted_planning_rereview_pending_after_third_review_0_1_0_archive_month_rollover",
+    "implementation_blocker": "separate_user_implementation_authorization_for_e3_workspace_law_acceptance_archive_closure",
     "e3_workspace_law_audit_record_owner": ".trellis/tasks/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair/task.json",
     "e3_workspace_law_audit_record_sha256": "dee0b92ce8a2ff6c8a9737c5b98104e39633b85aaad70e594f61e4847fdd7589",
     "e3_acceptance_archive_closure_source_review_owner": ".trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-archive-closure/task.json",
@@ -138,7 +138,7 @@
       "e3_user_authorization_consumed_by_parent_stage6_owner": true
     },
     "c5_terminal_projection_final_audit": "passed_d14d73117e03822a52fd19c55f3024cb2b73ef45_P0_0_P1_0_P2_0",
-    "implementation_stage": "E3_workspace_law_acceptance_archive_closure_third_bounded_archive_date_repair_fresh_targeted_rereview_pending",
+    "implementation_stage": "E3_workspace_law_acceptance_archive_closure_planning_review_passed_waiting_user_authorization",
     "e0_activation_completed": true,
     "e1_private_rust_seam_started": true,
     "e1_private_rust_seam_completed": true,
@@ -312,7 +312,7 @@
     "e3_partial_evidence": false,
     "current_planning_child": "08-31-rkp-2-e3-workspace-law-acceptance-archive-closure",
     "current_implementation_child": "08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair",
-    "next_gate": "e3_workspace_law_acceptance_archive_closure_post_month_rollover_fresh_targeted_planning_rereview_pending",
+    "next_gate": "separate_user_implementation_authorization_for_e3_workspace_law_acceptance_archive_closure",
     "e3_acceptance_projection_native_archive_commit": "1c76dbf9d9cd1ece12299b148f0c6de09d1391e1",
     "e3_acceptance_projection_native_archive_path": ".trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-state-projection",
     "e3_workspace_law_final_state_projection_repair": {
@@ -399,7 +399,7 @@
       "status": "planning",
       "task_start_run": false,
       "production_implementation_authorized": false,
-      "independent_planning_review": "first_review_0_3_0_second_targeted_review_0_1_0_third_targeted_review_0_1_0_fresh_targeted_rereview_pending",
+      "independent_planning_review": "passed_9bf82a221f0585719f36f36906dfc292d0e2bd5c_P0_0_P1_0_P2_0",
       "first_independent_planning_review": {
         "reviewTaskId": "01a057bc-ce6b-7b31-a667-afd1a1a91dcf",
         "reviewTurnId": "01a057bc-d3e2-7121-beb4-d2b3a36bb4f3",
@@ -431,6 +431,16 @@
         "q4_untracked_and_commit_membership_finding_closed": true,
         "finding": "future_archive_clock_and_roots_expired_after_2026_09_month_rollover"
       },
+      "final_targeted_independent_planning_rereview": {
+        "reviewTaskId": "01a05893-1f82-74d1-8764-c115e6cfa550",
+        "reviewTurnId": "01a058b7-58ca-7a71-89c2-ab50e82bc0a3",
+        "candidateCommit": "9bf82a221f0585719f36f36906dfc292d0e2bd5c",
+        "verdict": "PASS_FOR_BOUNDED_IMPLEMENTATION_PLANNING",
+        "P0": 0,
+        "P1": 0,
+        "P2": 0,
+        "implementation_authorized_by_review": false
+      },
       "target_task": "08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair",
       "target_archive_root": ".trellis/tasks/archive/2026-09/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair",
       "closure_archive_root": ".trellis/tasks/archive/2026-09/08-31-rkp-2-e3-workspace-law-acceptance-archive-closure",
@@ -447,7 +457,7 @@
       ],
       "future_lifecycle_allowlist_count": 11,
       "archive_clock_contract": "2026-09_2026-09-01_before_23_50_local_same_sequence_no_fallback_historical_2026-08_archives_unchanged",
-      "next_gate": "fresh_dedicated_independent_targeted_planning_rereview",
+      "next_gate": "separate_user_implementation_authorization_for_bounded_Q0_through_Q3",
       "rkp2_stage6_s6_2_started": false,
       "rkp2_stage6_s6_3_started": false,
       "default_runtime": "typescript"
