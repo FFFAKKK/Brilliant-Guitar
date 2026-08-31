@@ -2,14 +2,14 @@
 
 ## Current state
 
-- Acceptance-projection candidate `f27daf7b514731adaabbe8f7814d2b57e12a7df7` passed its dedicated review and is now owner-accepted/archive-authorized.
+- Acceptance-projection candidate `f27daf7b514731adaabbe8f7814d2b57e12a7df7` passed its dedicated review, was owner-accepted and was natively archived by `1c76dbf9d9cd1ece12299b148f0c6de09d1391e1`.
 - The new 334-byte review record is single-owned by `.trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/task.json`, SHA-256 `8559f7aed98ddc45154f90dd459688530ba5e24efedeb573389e06ca7d099436`.
-- Next action is the same-sequence native target archive clock preflight; S6.2/S6.3 remain false.
+- Next action is a dedicated read-only audit of the exact P3 closure candidate; S6.2/S6.3 remain false.
 - E3 Workspace Law candidate `0c561d14193374436361eec09b361cab0170278a` received dedicated implementation audit PASS, P0/P1/P2=`0/0/0`.
 - The sole canonical audit record is owned by the 08-31 law task; this Stage 6 task stores only its path and SHA-256 `dee0b92ce8a2ff6c8a9737c5b98104e39633b85aaad70e594f61e4847fdd7589`.
 - Acceptance-projection technical commit `4abfef9b3f7620d6428382af287cccd662aa7bf7` preserves the historical 21-path candidate and produces an exact 18-path terminal transition.
 - Dual-Node focused Workspace Law is `11/8/3`, with only the three unchanged historical fail-closed tests remaining.
-- The transition is ready for a dedicated independent implementation review; it is not accepted, archived or integrated.
+- The target transition is accepted and archived; the active acceptance/archive closure remains unaccepted and unarchived pending its own dedicated independent implementation review.
 - RKP-2 S6.1 remains retained complete; S6.2/S6.3 are false and operationally paused; TypeScript remains default.
 
 ## Frozen ownership
@@ -59,4 +59,4 @@ This child remains `in_progress` and is now ready only for a dedicated independe
 
 ## Acceptance-projection current gate
 
-The dedicated E3 Workspace Law implementation review has now passed and is bound to the single audit record described above. The next and only live gate is a fresh read-only review of the acceptance-projection candidate. No E3 stress rerun occurred, and the PASS did not authorize acceptance, archive, integration, S6.2/S6.3, qualification, runtime cutover, push or RKP-3.
+The dedicated E3 Workspace Law and acceptance-projection implementation reviews passed. The target was moved intact to `.trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-state-projection`. The next and only live gate is a fresh read-only review of the exact 40-path acceptance/archive-closure P3 candidate. No E3 stress rerun occurred, and no closure/parent acceptance, archive, integration, S6.2/S6.3, qualification, runtime cutover, push or RKP-3 is authorized.

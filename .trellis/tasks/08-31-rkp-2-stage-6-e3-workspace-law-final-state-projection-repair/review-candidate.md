@@ -2,9 +2,9 @@
 
 ## Status
 
-`E3 AND ACCEPTANCE-PROJECTION REVIEWS PASSED — P2 OWNER ACCEPTED`
+`P3 TARGET ARCHIVED — CLOSURE IMPLEMENTATION REVIEW CANDIDATE`
 
-The acceptance-projection candidate `f27daf7b514731adaabbe8f7814d2b57e12a7df7` passed its dedicated review. Archive-closure technical checkpoint `387c61b4a04b45c35f14d01c342dca4307804d05` now closes the archive-aware law. The target is accepted and archive-authorized but remains active until the native archive preflight; the closure candidate is not yet review-ready.
+The acceptance-projection candidate `f27daf7b514731adaabbe8f7814d2b57e12a7df7` passed its dedicated review. Archive-closure technical checkpoint `387c61b4a04b45c35f14d01c342dca4307804d05` closes the archive-aware law. Native commit `1c76dbf9d9cd1ece12299b148f0c6de09d1391e1` moved the accepted target to the exact `2026-08` archive location. The closure candidate is now ready only for its dedicated read-only implementation review.
 
 Planning authority `e4ee1d43fd29a794d8f0f389d651c556203fe5af` passed its independent planning audit with `P0/P1/P2=0/0/0`. Phases A through E are complete. The sole technical owner is commit `36fe1956ec8660d664eb9606912dbc6e1b6c3ede`, which changes only `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts`.
 
@@ -42,4 +42,4 @@ P0/P1/P2 = <actual counts>
 <findings with exact file:line evidence, or reviewer-derived no-findings statement>
 ```
 
-Any second technical file, non-18-path transition, duplicate audit record, evidence regeneration, changed historical-red set or lifecycle advancement returns the acceptance projection to bounded repair. This task remains `in_progress`; audit PASS is not acceptance or archive.
+Any second technical file, non-40-path no-rename P3 projection, duplicate audit record, broken successor reference, evidence regeneration, changed historical-red set or later lifecycle advancement returns the closure candidate to bounded repair. This task remains `in_progress`; closure audit PASS is not parent acceptance, archive, S6.2 or S6.3 authorization.

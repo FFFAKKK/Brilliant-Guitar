@@ -2,7 +2,7 @@
 
 ## Current state
 
-`P2 OWNER ACCEPTANCE COMPLETE — NATIVE TARGET ARCHIVE CLOCK PREFLIGHT NEXT`.
+`P3 TARGET ARCHIVED — DEDICATED INDEPENDENT IMPLEMENTATION REVIEW REQUIRED`.
 
 - Base: `f27daf7b514731adaabbe8f7814d2b57e12a7df7`.
 - Branch: `codex/rkp-2-e3-acceptance-archive-closure`.
@@ -28,4 +28,4 @@ The only future technical file is the Workspace Law test. Product/Rust/source/ev
 
 The first review of `c35af97da235f075857181c72d64dc2c8506dfed` returned P0/P1/P2=`0/2/0`. The docs-only repair removes every closure self/target-active JSONL reference, freezes the target's exact three-path JSONL successor, and adds a fail-closed local-clock preflight before both native archives. Targeted rereview accepted exact authority `f84c84387fa21d4bdbc05b838397fb091ce664e9` with P0/P1/P2=`0/0/0`.
 
-The archive-aware P1/P2/P3/P4 law is now implemented in the single allowed test file and the target's exact successor JSONL hashes match the frozen pair. Candidate `f27daf7` is owner-accepted and native archive is authorized. Next, run the local `2026-08` / `2026-08-31` / before-`23:50` preflight and native archive in one PowerShell sequence. Any clock mismatch stops before mutation.
+The target was natively archived by commit `1c76dbf9d9cd1ece12299b148f0c6de09d1391e1` after the same-sequence clock preflight passed at `2026-08-31 14:36:15 +08:00`. The closure remains active and unaccepted. Next gate is a dedicated read-only implementation audit of the exact P3 HEAD; technical PASS alone does not authorize closure archive.

@@ -44,7 +44,7 @@
     "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "IN_PROGRESS / E3 WORKSPACE LAW AND ACCEPTANCE-PROJECTION REVIEWS PASS 0_0_0 / TARGET F27DAF7 OWNER ACCEPTED AND ARCHIVE AUTHORIZED / ACCEPTANCE-ARCHIVE CLOSURE RECORD SINGLE-OWNED BY ACTIVE CLOSURE TASK SHA256 8559F7AE...9436 / NATIVE TARGET ARCHIVE CLOCK PREFLIGHT NEXT / RKP-2 PAUSED BEFORE S6.2 / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO INTEGRATION PUSH CUTOVER QUALIFICATION OR RKP3.",
+  "notes": "IN_PROGRESS / E3 WORKSPACE LAW AND ACCEPTANCE-PROJECTION REVIEWS PASS 0_0_0 / TARGET F27DAF7 OWNER ACCEPTED AND NATIVELY ARCHIVED AT 1C76DBF9 / ACCEPTANCE-ARCHIVE CLOSURE RECORD SINGLE-OWNED BY ACTIVE CLOSURE TASK SHA256 8559F7AE...9436 / DEDICATED CLOSURE IMPLEMENTATION REVIEW PENDING / RKP-2 PAUSED BEFORE S6.2 / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO INTEGRATION PUSH CUTOVER QUALIFICATION OR RKP3.",
   "meta": {
     "planning_base_commit": "4a302bc9f9981940336fc97941b08e09bd0d1f67",
     "source_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -94,7 +94,7 @@
     "bounded_planning_repair": "round_3_cleanup_ownership_and_post_cleanup_envelope_accepted",
     "implementation_candidate_ready": true,
     "implementation_review": "passed_external_audit_bound_0c561d14193374436361eec09b361cab0170278a_P0_0_P1_0_P2_0",
-    "implementation_blocker": "native_target_archive_clock_preflight_required",
+    "implementation_blocker": "dedicated_independent_E3_acceptance_archive_closure_implementation_review_pending",
     "e3_workspace_law_audit_record_owner": ".trellis/tasks/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair/task.json",
     "e3_workspace_law_audit_record_sha256": "dee0b92ce8a2ff6c8a9737c5b98104e39633b85aaad70e594f61e4847fdd7589",
     "e3_acceptance_archive_closure_source_review_owner": ".trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/task.json",
@@ -137,7 +137,7 @@
       "e3_user_authorization_consumed_by_parent_stage6_owner": true
     },
     "c5_terminal_projection_final_audit": "passed_d14d73117e03822a52fd19c55f3024cb2b73ef45_P0_0_P1_0_P2_0",
-    "implementation_stage": "E3_acceptance_projection_owner_accepted_native_target_archive_preflight_next",
+    "implementation_stage": "E3_target_archived_acceptance_archive_closure_review_candidate_ready",
     "e0_activation_completed": true,
     "e1_private_rust_seam_started": true,
     "e1_private_rust_seam_completed": true,
@@ -311,7 +311,9 @@
     "e3_partial_evidence": false,
     "current_planning_child": null,
     "current_implementation_child": "08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair",
-    "next_gate": "native_target_archive_clock_preflight_required",
+    "next_gate": "dedicated_independent_E3_acceptance_archive_closure_implementation_review_pending",
+    "e3_acceptance_projection_native_archive_commit": "1c76dbf9d9cd1ece12299b148f0c6de09d1391e1",
+    "e3_acceptance_projection_native_archive_path": ".trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-state-projection",
     "e3_workspace_law_final_state_projection_repair": {
       "task": "08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair",
       "planning_base_commit": "4ad23773e9c9e1081667a4eccb84cc464b85bc89",
@@ -325,7 +327,7 @@
       "accepted_planning_head": "e4ee1d43fd29a794d8f0f389d651c556203fe5af",
       "independent_planning_review": "passed_e4ee1d43fd29a794d8f0f389d651c556203fe5af_P0_0_P1_0_P2_0",
       "phase_a_activation_completed": true,
-      "status": "in_progress_external_audit_passed_acceptance_projection_candidate_ready",
+      "status": "in_progress_target_archived_acceptance_archive_closure_review_candidate_ready",
       "user_implementation_authorization_scope": "Phase_A_through_Phase_E_candidate_freeze_only_no_E3_rerun_S6_2_S6_3_acceptance_archive_integration_qualification_cutover_push_or_RKP3",
       "phase_b_source_snapshot_reconstruction_authorized": true,
       "phase_b_source_snapshot_reconstruction_started": true,
@@ -347,7 +349,7 @@
       "audit_record_sha256": "dee0b92ce8a2ff6c8a9737c5b98104e39633b85aaad70e594f61e4847fdd7589",
       "acceptance_projection_technical_commit": "4abfef9b3f7620d6428382af287cccd662aa7bf7",
       "acceptance_projection_terminal_path_count": 18,
-      "next_gate": "native_target_archive_clock_preflight_required",
+      "next_gate": "dedicated_independent_E3_acceptance_archive_closure_implementation_review_pending",
       "phase_b_validation": {
         "trellis_tasks_passed": 5,
         "task_json_parsed": 5,

@@ -2,7 +2,7 @@
 
 ## Current implementation state
 
-Acceptance-projection candidate `f27daf7b514731adaabbe8f7814d2b57e12a7df7` has now passed dedicated review and received bounded owner acceptance/archive authorization. Archive-closure technical checkpoint `387c61b4a04b45c35f14d01c342dca4307804d05` is active; native target archive preflight is next. This does not start S6.2/S6.3 or any later gate.
+Acceptance-projection candidate `f27daf7b514731adaabbe8f7814d2b57e12a7df7` passed dedicated review, received bounded owner acceptance and was natively archived by `1c76dbf9d9cd1ece12299b148f0c6de09d1391e1`. Archive-closure technical checkpoint `387c61b4a04b45c35f14d01c342dca4307804d05` is active; the exact P3 closure candidate now awaits dedicated implementation review. This does not start S6.2/S6.3 or any later gate.
 
 Exact planning authority `d638b81a3c9b3d7461f75a91c8d5b090f06adea2` received `PASS FOR BOUNDED IMPLEMENTATION`, P0/P1/P2=`0/0/0`, from the dedicated independent planning auditor. E1 through E3 later completed, and frozen E3 Workspace Law candidate `0c561d14193374436361eec09b361cab0170278a` received its own dedicated implementation audit PASS with P0/P1/P2=`0/0/0`.
 
@@ -11,7 +11,7 @@ The first candidate `df686882efa30f489da138d2730acbdd4fb9cd30` received P0/P1/P2
 1. implementation-time planning authority mutability;
 2. unresolved private libtest, owner-probe, sentinel, process and failure-protocol decisions.
 
-Acceptance-projection technical commit `4abfef9b3f7620d6428382af287cccd662aa7bf7` binds that PASS to one canonical record and an exact 18-path transition. Acceptance, archive, integration, push, Stage 6 S6.2/S6.3, cutover, qualification and RKP-3 remain unclaimed.
+Acceptance-projection technical commit `4abfef9b3f7620d6428382af287cccd662aa7bf7` binds that PASS to one canonical record and an exact 18-path transition. Target acceptance/archive are now complete; closure and parent acceptance/archive, integration, push, Stage 6 S6.2/S6.3, cutover, qualification and RKP-3 remain unclaimed.
 
 The first bounded repair candidate `176fd3670d3015631fc1553a59cc8e4d3a941221` received a second targeted result P0/P1/P2=`0/1/0`. The second repair candidate `8d773b8e9d39ac21aba9cad715609fffc80eefec` then received the final targeted result P0/P1/P2=`0/1/0`, limited to its contradiction between post-handoff wrapper ownership and a start-failure envelope that incorrectly claimed cleanup had not run. This third repair changes only that cleanup ownership/status contract.
 

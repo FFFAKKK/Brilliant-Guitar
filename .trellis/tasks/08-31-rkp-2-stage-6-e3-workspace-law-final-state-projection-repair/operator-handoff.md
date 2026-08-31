@@ -2,9 +2,9 @@
 
 ## Current gate
 
-`P2 OWNER ACCEPTANCE COMPLETE — NATIVE TARGET ARCHIVE PREFLIGHT NEXT`
+`P3 TARGET ARCHIVED — DEDICATED CLOSURE IMPLEMENTATION REVIEW PENDING`
 
-The closure planning authority `f84c84387fa21d4bdbc05b838397fb091ce664e9` passed targeted independent planning rereview at `P0/P1/P2=0/0/0`. Technical checkpoint `387c61b4a04b45c35f14d01c342dca4307804d05` now enforces P1-P4. Target `f27daf7` is owner-accepted and archive-authorized, but remains active until the fail-closed clock preflight and native archive run in one sequence.
+The closure planning authority `f84c84387fa21d4bdbc05b838397fb091ce664e9` passed targeted independent planning rereview at `P0/P1/P2=0/0/0`. Technical checkpoint `387c61b4a04b45c35f14d01c342dca4307804d05` enforces P1-P4. The fail-closed clock preflight passed at `2026-08-31 14:36:15 +08:00`, and native commit `1c76dbf9d9cd1ece12299b148f0c6de09d1391e1` moved the exact target manifest to `.trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-state-projection`.
 
 The frozen E3 Workspace Law candidate `0c561d14193374436361eec09b361cab0170278a` received a dedicated read-only implementation audit PASS with `P0/P1/P2=0/0/0`. Its sole canonical audit record remains in this task's `task.json`: 323 UTF-8 bytes, SHA-256 `dee0b92ce8a2ff6c8a9737c5b98104e39633b85aaad70e594f61e4847fdd7589`. The acceptance-projection technical commit is `4abfef9b3f7620d6428382af287cccd662aa7bf7`.
 
@@ -42,6 +42,6 @@ The three remaining failures are intentionally preserved historical fail-closed 
 
 ## Reviewer boundary
 
-Perform a fresh, read-only implementation audit of the acceptance-projection candidate HEAD. Verify that the historical E3 candidate remains exact at 21 paths, the new transition is exact at 18 paths, this task is the only structured audit-record owner, both references match the digest, all negative fixtures fail closed, dual-Node focused classification is `11/8/3`, and protected paths remain unchanged.
+Perform a fresh, read-only implementation audit of the exact P3 acceptance/archive-closure candidate HEAD. Verify the exact 40 no-rename A/M/D identities, archive-only target resolution, successor JSONL hashes and existing references, single review-record ownership, all negative fixtures, dual-Node focused classification `11/8/3`, unchanged source evidence and zero protected-path delta.
 
-The acceptance-projection implementation review has passed at `f27daf7`, but its owner acceptance and archive remain pending behind the active closure law. RKP-2 S6.2/S6.3, integration, qualification, cutover, push and RKP-3 remain later gates.
+The acceptance-projection implementation review passed at `f27daf7`; owner acceptance and its native archive are complete. The active closure task remains unaccepted and unarchived pending its dedicated implementation audit and a later explicit owner closeout decision. RKP-2 S6.2/S6.3, integration, qualification, cutover, push and RKP-3 remain later gates.

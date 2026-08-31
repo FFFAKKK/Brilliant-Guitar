@@ -30,7 +30,7 @@ P0/P1/P2 = 0/0/0
 ## Current verdict
 
 ```text
-PLANNING PASS RECORDED — P2 OWNER ACCEPTANCE COMPLETE
+P3 IMPLEMENTATION CANDIDATE — TARGET NATIVELY ARCHIVED
 P0/P1/P2=0/0/0
 EXACT AUTHORITY=f84c84387fa21d4bdbc05b838397fb091ce664e9
 ```
@@ -50,3 +50,5 @@ Targeted rereview completed all five checks. This PASS accepts planning only; it
 The user subsequently authorized this bounded implementation with `继续吧` on `2026-08-31`. Activation changes lifecycle metadata only; the implementation candidate remains unready and its independent implementation review remains pending. Target acceptance/archive and closure acceptance/archive are still false.
 
 Technical checkpoint `387c61b4a04b45c35f14d01c342dca4307804d05` adds the archive-aware law in the sole technical file. The reviewed target `f27daf7` is now accepted and archive-authorized; closure acceptance/archive remain false. P3 independent implementation review begins only after the native target archive and exact 40-path projection pass.
+
+Native archive commit `1c76dbf9d9cd1ece12299b148f0c6de09d1391e1` moved the exact 11-file target after the clock preflight. This P3 candidate must prove exact `40` no-rename A/M/D identities, valid post-archive JSONL references, three unchanged historical reds and zero protected-path delta.
