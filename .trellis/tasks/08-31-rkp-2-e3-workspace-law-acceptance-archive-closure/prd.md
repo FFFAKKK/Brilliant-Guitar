@@ -88,7 +88,7 @@ active exists XOR archive exists
 相对 `c73e213...`：
 
 - 规划候选精确 12 条：本任务新增 11 条，Stage 6 `task.json` 修改 1 条；
-- Q2 精确 18 条：`A11/M7/D0`；
+- Q2 精确 20 条：`A11/M9/D0`；
 - Q3 精确 39 条：`A23/M4/D12`；
 - Q4 仍精确 39 条：`A23/M4/D12`。
 
@@ -110,7 +110,7 @@ test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts
 
 不得新增第二个技术文件。测试只扩展归档状态解析、生命周期投影、路径集合、审计记录和负向 fixture；不得修改运行时、Rust、E3 workload、evidence 或公开合同。
 
-### E3LAC-R007 — 九个生命周期文件
+### E3LAC-R007 — 十一个生命周期/上下文文件
 
 未来生命周期 allowlist 精确为：
 
@@ -120,15 +120,19 @@ test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts
 4. 目标任务 `task.json`；
 5. 目标任务 `operator-handoff.md`；
 6. 目标任务 `review-candidate.md`；
-7. Stage 6 `task.json`；
-8. Stage 6 `operator-handoff.md`；
-9. Stage 6 `review-candidate.md`。
+7. 目标任务 `implement.jsonl`；
+8. 目标任务 `check.jsonl`；
+9. Stage 6 `task.json`；
+10. Stage 6 `operator-handoff.md`；
+11. Stage 6 `review-candidate.md`。
+
+目标两份 JSONL 只允许在 Q2 删除六条随目标 active root 移动而失效的 self-reference；目标 `task.json` 同步登记两份新 digest 和 bounded archive-stability repair。不得修改目标 PRD、design、implement、research、生产文件或其既有 323-byte 审计记录。
 
 RKP-2 parent 与 Rust remediation parent 保持 byte-semantic 零差异。
 
 ### E3LAC-R008 — 审计记录单一所有权
 
-现有 323-byte E3 Workspace Law 审计记录随目标任务原生移动，内容、字段顺序和 SHA-256 不变。
+现有 323-byte E3 Workspace Law 审计记录随目标任务原生移动，内容、字段顺序和 SHA-256 不变。本任务只保存目标 owner task/path、`323` bytes 与 digest；不得复制该结构化记录。
 
 新的 Q3 专用实现审计记录只由本任务 `task.json` 拥有，结构固定为：
 
@@ -150,7 +154,9 @@ Stage 6 只保存 owner path 与 digest，不复制结构化记录。Q3 审计�
 
 ### E3LAC-R009 — JSONL 归档稳定性
 
-本任务 `implement.jsonl` 与 `check.jsonl` 只引用本轮不会移动的 active authority 或既有 archive authority；不得引用本任务 active root 或目标 active root。目标任务原生归档前，必须验证其现有 JSONL 在归档后仍可解析且所有引用存在。
+本任务 `implement.jsonl` 与 `check.jsonl` 只引用本轮不会移动的 active authority 或既有 archive authority；不得引用本任务 active root 或目标 active root。
+
+目标任务当前两份 JSONL 共含六条 active self-reference。Q2 必须在显式十一文件 lifecycle/context allowlist 内删除这些条目、更新目标 `task.json` 中对应 digest，并在提交后同时证明：active 状态 Trellis/JSONL 通过，模拟 archive successor 时不存在 active target prefix，剩余路径全部存在且单文件内唯一。原生归档后不得再手工重写。
 
 ### E3LAC-R010 — 原生归档与时钟合同
 
@@ -163,6 +169,8 @@ local time < 23:50:00
 ```
 
 不允许 fallback month、手工移动、调整系统时钟或 `--no-commit`。任一条件不满足时，在移动前返回 bounded planning repair。
+
+Q4 不允许先形成“closure 仍 active 但 Stage 6 child 已清空”或“closure 已 archive 但 Stage 6 仍指向它”的中间提交。Q3 审计 PASS 与 owner closeout authorization 后，必须先把 closure 的真实审计记录、接受/归档状态投影和 Stage 6 终态精确预暂存，校验 staged allowlist 和全工作树无其它 delta，再在同一 PowerShell 序列执行时钟检查与原生 archive；`session_auto_commit` 必须为有效开启状态，原生 archive 的单一提交同时采用这些 staged changes。真实 Q4 Workspace Law 只在该提交完成后运行。
 
 ### E3LAC-R011 — Stage 6 终态
 
@@ -192,6 +200,9 @@ Q4 后 Stage 6 保持 `in_progress`，但：
 - [ ] Stage 6 child 引用精确一次，并保持目标为当前 implementation child。
 - [ ] Q0–Q4、manifest、no-rename 路径和 audit record 均有正负测试矩阵。
 - [ ] 唯一技术 allowlist 为 Workspace Law 测试文件。
+- [ ] lifecycle/context allowlist 精确 11 个文件；Q2 精确 `A11/M9/D0=20`，Q3/Q4 仍为 `A23/M4/D12=39`。
+- [ ] 目标 JSONL 的六条 active self-reference 在 Q2 显式移除，active 与 archive-successor 两种解析均通过。
+- [ ] Q4 的 Stage 6 终态与 closure 原生归档处于同一 archive commit，提交前后均不存在可提交的非法中间态。
 - [ ] planning candidate 的 Node 24 与 Node 20.20.2 精确为 `11/7/4`：三项历史 fail 加一项 planned closeout gap，零额外失败。
 - [ ] planning candidate full 精确为 `611/605/4/2`；未来 Q1T 后恢复 `611/606/3/2`。
 - [ ] Trellis、JSON/JSONL、Markdown fence、diff check、typecheck、build 全部通过。

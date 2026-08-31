@@ -22,10 +22,10 @@ Count: 1.
 | Owner | Files |
 | --- | --- |
 | closure | `task.json`, `operator-handoff.md`, `review-candidate.md` |
-| target law | `task.json`, `operator-handoff.md`, `review-candidate.md` |
+| target law | `task.json`, `operator-handoff.md`, `review-candidate.md`, `implement.jsonl`, `check.jsonl` |
 | Stage 6 | `task.json`, `operator-handoff.md`, `review-candidate.md` |
 
-Count: 9.
+Count: 11. The two target JSONL files are context-manifest lifecycle projections only; no target PRD/design/implementation/research authority changes.
 
 ## 4. Protected zero-delta paths
 
@@ -58,7 +58,7 @@ Count: 9.
 | State | A | M | D | Total |
 | --- | ---: | ---: | ---: | ---: |
 | planning | 11 | 1 | 0 | 12 |
-| Q2 | 11 | 7 | 0 | 18 |
+| Q2 | 11 | 9 | 0 | 20 |
 | Q3 | 23 | 4 | 12 | 39 |
 | Q4 | 23 | 4 | 12 | 39 |
 
@@ -75,7 +75,8 @@ All comparisons use base `c73e213...` and `--no-renames`.
 | target record | 323 bytes + exact hash | field/order/bytes/hash drift |
 | Q3 record | one closure owner | duplicate or fake pending values |
 | archive clock | exact month/date/time | mismatch reaches move |
-| JSONL | all stable refs exist | archived active self-reference |
+| JSONL | Q2 removes six enumerated target self-refs; active/archive-successor refs exist | residual active prefix, changed non-self row, unregistered digest |
+| Q4 atomicity | Stage 6 terminal projection and closure move share one archive commit | committed active-childless or archived-still-referenced intermediate state |
 | Stage 6 | Q4 childless/active | early S6.2/S6.3 or parent archive |
 | runtime gates | TypeScript default | Rust default/cutover/qualification |
 | evidence | byte-semantic unchanged | E3 mutation or rerun |
@@ -102,6 +103,6 @@ All comparisons use base `c73e213...` and `--no-renames`.
 | Q1T | revert technical, then activation |
 | Q2 | revert owner acceptance, then technical/activation |
 | Q3 | revert Stage 6 projection, native target archive, acceptance |
-| Q4 | revert native closure archive to audited Q3 |
+| Q4 | revert the single native closure archive/Stage 6 terminal commit to audited Q3 |
 
 Manual move is never a rollback mechanism.

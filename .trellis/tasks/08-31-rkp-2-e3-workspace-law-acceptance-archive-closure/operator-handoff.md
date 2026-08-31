@@ -10,7 +10,7 @@ task: .trellis/tasks/08-31-rkp-2-e3-workspace-law-acceptance-archive-closure
 status: planning
 task_start_run: false
 production_implementation_authorized: false
-independent_planning_review: pending
+independent_planning_review: first review returned 0/3/0; targeted rereview pending
 ```
 
 This handoff is for a dedicated planning reviewer, not a production operator.
@@ -27,13 +27,13 @@ Future technical owner:
 test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts
 ```
 
-Future lifecycle owners are exactly the three lifecycle files for each of:
+Future lifecycle/context owners are exactly:
 
-- this closure task;
-- the E3 Workspace Law target;
-- the Stage 6 parent.
+- three lifecycle files for this closure task;
+- three lifecycle files plus `implement.jsonl` and `check.jsonl` for the E3 Workspace Law target;
+- three lifecycle files for the Stage 6 parent.
 
-No other files are authorized.
+Count: 11. No other files are authorized.
 
 ## Required review before implementation
 
@@ -42,13 +42,14 @@ The dedicated planning reviewer must verify:
 1. this task is a Stage 6 sibling, not a target child;
 2. 12-file target and 11-file closure manifests are exact;
 3. Q0–Q4 cannot skip technical review or owner decisions;
-4. planning/Q2/Q3/Q4 no-rename path arithmetic is correct;
+4. planning/Q2/Q3/Q4 no-rename path arithmetic is `12/20/39/39`;
 5. target 323-byte audit record moves unchanged;
 6. new Q3 review record has exactly one owner;
-7. JSONL remains valid after both archives;
+7. the exact six target active self-references are removed in Q2 and JSONL remains valid after both archives;
 8. literal archive clock policy is executable and fail-before-move;
 9. Stage 6 terminal state does not start S6.2/S6.3;
-10. production/Rust/evidence/later gates have zero planning delta.
+10. Q4 uses one pre-staged native archive commit with no illegal committed intermediate state;
+11. production/Rust/evidence/later gates have zero planning delta.
 
 Required verdict: P0/P1/P2=`0/0/0`.
 
@@ -69,5 +70,5 @@ Do not:
 ## Immediate next gate
 
 ```text
-READY FOR DEDICATED INDEPENDENT PLANNING REVIEW
+READY FOR DEDICATED INDEPENDENT TARGETED PLANNING REREVIEW
 ```

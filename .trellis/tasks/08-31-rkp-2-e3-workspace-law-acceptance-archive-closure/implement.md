@@ -72,7 +72,7 @@ Rollback: revert this one technical commit. Do not edit the E3 evidence.
 
 ## 3. Phase Q2 — Target owner acceptance
 
-Only after Q1T gates pass, update the nine lifecycle allowlist files as needed.
+Only after Q1T gates pass, update the eleven lifecycle/context allowlist files as needed.
 
 Required target state:
 
@@ -82,6 +82,11 @@ Required target state:
 - `archive_authorized=true`;
 - next gate `native_e3_workspace_law_archive_clock_preflight_required`;
 - no completedAt until native archive.
+- `implement.jsonl` and `check.jsonl` delete exactly their six active-target self-reference rows;
+- the remaining JSONL rows parse, exist and are unique in both active and pure archive-successor projections;
+- `task.json` updates only the two JSONL authority digests plus a bounded archive-stability repair record; the existing 323-byte audit structure is byte-for-byte unchanged.
+
+The successor tuple is literal: `implement.jsonl` becomes `9 rows / 1492 bytes / 54c6912c5829a69d6d92a3f12825537e8489b30a906463bd9c41724a39174ca9`; `check.jsonl` becomes `6 rows / 1117 bytes / 83aaf6771c56066982f718cbe39b66fa7399f8ec116800eec2b9efbd1fe2aa52`. Source tuples and the six exact paths are defined in `design.md` and `task.json`; any other row mutation stops the phase.
 
 Required closure state:
 
@@ -96,7 +101,7 @@ Required Stage 6 state:
 - target acceptance projection referenced, not duplicated;
 - S6.2/S6.3 false and later gates false.
 
-Gate: exact Q2 `A11/M7/D0=18`, all JSONL successor paths exist, worktree clean after commit.
+Gate: exact Q2 `A11/M9/D0=20`, all JSONL successor paths exist, no target active-prefix remains in either JSONL, worktree clean after commit.
 
 Rollback: revert owner acceptance before reverting Q1T or Q1.
 
@@ -126,7 +131,7 @@ Then verify:
 8. focused dual-Node, full, Trellis, JSONL and protected-zero-delta gates pass;
 9. worktree is clean and staged empty.
 
-If native archive auto-commit leaves Stage 6 lifecycle projection pending, create one narrow docs-only projection commit before the Q3 freeze. No technical edit occurs after Q1T.
+The native target archive commit must leave Stage 6 pointing to the active closure task. No technical edit occurs after Q1T. Any unrelated staged path or pending projection stops before the Q3 freeze.
 
 Candidate marker:
 
@@ -155,22 +160,48 @@ Required verdict is P0/P1/P2=`0/0/0`. The review task and turn IDs are populated
 
 ## 6. Phase Q4 — Owner closeout and native closure archive
 
-Only after Q3 review PASS and a separate owner closeout authorization:
+Only after Q3 review PASS and a separate owner closeout authorization, execute one atomic pre-stage/archive sequence:
 
-1. record the exact Q3 review structure in this task only;
-2. record only owner path and digest in Stage 6;
+1. write the exact Q3 review structure into this task only;
+2. write only the resolved closure owner path and digest into Stage 6;
 3. set closure acceptance/archive authorization true;
-4. set Stage 6 current planning/implementation child null;
-5. set Stage 6 next gate `explicit_owner_decision_for_stage6_parent_acceptance_archive`;
-6. run Q4 Workspace Law using the existing technical commit; no test edit;
-7. verify exact Q4 `A23/M4/D12=39`;
-8. run the same local clock preflight immediately followed by:
+4. set Stage 6 current planning/implementation child null and next gate to `explicit_owner_decision_for_stage6_parent_acceptance_archive`;
+5. require the whole worktree to have no unrelated dirty path, then stage exactly the allowed closure and Stage 6 lifecycle paths; verify cached diff, no extra staged path and no unstaged delta anywhere;
+6. without creating a pre-archive commit, run one PowerShell sequence that revalidates the staged set, checks the local clock and immediately invokes:
 
 ```powershell
+$expectedStaged = @(
+  '.trellis/tasks/08-31-rkp-2-e3-workspace-law-acceptance-archive-closure/task.json',
+  '.trellis/tasks/08-31-rkp-2-e3-workspace-law-acceptance-archive-closure/operator-handoff.md',
+  '.trellis/tasks/08-31-rkp-2-e3-workspace-law-acceptance-archive-closure/review-candidate.md',
+  '.trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/task.json',
+  '.trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/operator-handoff.md',
+  '.trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/review-candidate.md'
+) | Sort-Object
+$actualStaged = @(git diff --cached --name-only) | Sort-Object
+if (@(Compare-Object $expectedStaged $actualStaged).Count -ne 0) {
+  throw 'q4-staged-allowlist-mismatch'
+}
+if (@(git diff --name-only).Count -ne 0) {
+  throw 'q4-unstaged-delta-present'
+}
+$now = Get-Date
+if ($now.ToString('yyyy-MM') -ne '2026-08' -or
+    $now.ToString('yyyy-MM-dd') -ne '2026-08-31' -or
+    $now.TimeOfDay -ge [TimeSpan]::Parse('23:50:00')) {
+  throw 'archive-clock-contract-mismatch'
+}
 python .\.trellis\scripts\task.py archive 08-31-rkp-2-e3-workspace-law-acceptance-archive-closure
+if ($LASTEXITCODE -ne 0) {
+  throw 'native-closure-archive-failed'
+}
 ```
 
+7. require the native archive auto-commit to contain both the closure move and the already-staged Stage 6 terminal projection;
+8. only after that commit completes, run the real Q4 Workspace Law using the existing technical commit and verify exact `A23/M4/D12=39`;
 9. rerun Trellis, JSON/JSONL, focused, full, path and clean gates.
+
+There is no legal committed state with closure active and Stage 6 child null, and no legal committed state with closure archived while Stage 6 still points to it. A Q4 post-commit failure reverts the single native archive commit to the exact Q3 reviewed HEAD.
 
 Final state does not accept/archive Stage 6 and does not start S6.2.
 
@@ -213,7 +244,7 @@ Return to planning review if:
 - a second technical file is needed;
 - either manifest changes;
 - the literal archive time contract is no longer satisfiable;
-- target JSONL cannot survive native archive without editing immutable authority;
+- target JSONL repair needs anything beyond deleting the six enumerated self-reference rows and updating their two registered digests;
 - path totals differ;
 - one historical failure changes outside this task;
 - E3 evidence or performance inputs need modification;
@@ -228,7 +259,6 @@ docs(rkp-2): record E3 Workspace Law owner acceptance
 chore(task): archive 08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair
 docs(rkp-2): freeze E3 Workspace Law archive review candidate
 <dedicated read-only audit>
-docs(rkp-2): record accepted E3 Workspace Law archive closure
 chore(task): archive 08-31-rkp-2-e3-workspace-law-acceptance-archive-closure
 ```
 

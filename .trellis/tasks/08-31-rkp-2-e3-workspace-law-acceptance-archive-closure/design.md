@@ -128,6 +128,7 @@ The existing Workspace Law is extended first. Focused tests must prove Q0–Q4 w
 target acceptance_authorized=true
 target archive_authorized=true
 target next_gate=native_e3_workspace_law_archive_clock_preflight_required
+target implement/check JSONL contain no active-target self-reference
 closure target_owner_decision=<explicit record>
 Stage 6 current_implementation_child=closure
 ```
@@ -158,13 +159,14 @@ Q3 HEAD is the exact input to a dedicated independent implementation review task
 
 Only after Q3 review PASS and a separate owner closeout authorization:
 
-1. record the Q3 audit record in this task only;
-2. record digest-only reference in Stage 6;
-3. set Stage 6 current planning/implementation child to null;
-4. set Stage 6 next gate to `explicit_owner_decision_for_stage6_parent_acceptance_archive`;
-5. verify Q4 with the already-reviewed Workspace Law and no technical edit;
-6. run the second same-command archive clock preflight;
-7. natively archive this 11-file task.
+1. write the Q3 audit record into this task only and prepare closure acceptance/archive metadata;
+2. prepare the digest-only reference and terminal child/gate projection in Stage 6;
+3. require the whole worktree to contain no unrelated dirty path, then stage exactly those closure and Stage 6 lifecycle paths and reject any extra staged path;
+4. in the same PowerShell sequence run the second archive clock preflight and native archive;
+5. let the native archive auto-commit adopt the pre-staged lifecycle projection together with the 11-file move;
+6. only after that commit exists, verify the real Q4 state with the already-reviewed Workspace Law and no technical edit.
+
+There is no separately committed pre-archive Q4 state and no follow-up docs projection commit. A post-commit Q4 failure reverts the single native archive commit back to the exact reviewed Q3 HEAD.
 
 No new closeout task is created.
 
@@ -180,12 +182,12 @@ M  1  Stage 6 task.json
 D  0
 ```
 
-### Q2 — 18
+### Q2 — 20
 
 ```text
 A 11  this closeout active task
 M  1  Workspace Law test
-M  3  target lifecycle files
+M  5  target lifecycle/context files (three lifecycle files plus implement/check JSONL)
 M  3  Stage 6 lifecycle files
 D  0
 ```
@@ -206,7 +208,7 @@ Totals: `A23/M4/D12=39`. Moving this task between active and archive roots in Q4
 
 ### Existing target record
 
-The canonical 323-byte record and SHA-256 `dee0b92c...7589` remain inside the target `task.json`. Native archive moves the owner path but never rewrites the record.
+The canonical 323-byte record and SHA-256 `dee0b92c...7589` remain inside the target `task.json`. Native archive moves the owner path but never rewrites the record. This closure stores only the target task identity, active/archive owner paths, byte count and digest; it never stores a second copy of the structured record.
 
 ### New Q3 record
 
@@ -238,7 +240,47 @@ Because both this task and the target move, active self-references are unsafe. T
 - RKP-2 and Rust parent files, which do not move here;
 - already archived predecessor closeout authority.
 
-Before target archive, a scripted gate must verify the target's JSONL successor paths resolve after the move. No post-archive manual rewrite is permitted.
+The target's current JSONL contains six references under its own active root. Q2 removes only those six entries inside the explicit lifecycle/context allowlist, updates the two corresponding immutable-authority digests in target `task.json`, and records this bounded archive-stability projection. The remaining entries already point at stable Stage 6/RKP/spec/test authorities.
+
+Exact transformation:
+
+| File | Source rows/bytes/SHA-256 | Removed rows | Successor rows/bytes/SHA-256 |
+| --- | --- | --- | --- |
+| `implement.jsonl` | `12 / 2129 / 7258f1d0...7c5f84` | the three target-root `research/current-e3-law-gap-audit.md`, `research/final-state-projection-contract.md`, `research/file-test-and-rollback-matrix.md` rows | `9 / 1492 / 54c6912c...174ca9` |
+| `check.jsonl` | `9 / 1795 / 11371426...d707c` | the three target-root `research/current-e3-law-gap-audit.md`, `research/final-state-projection-contract.md`, `research/planning-self-audit.md` rows | `6 / 1117 / 83aaf677...2aa52` |
+
+Hashes are LF-normalized UTF-8 SHA-256 and the full values are frozen in `task.json`. Target `task.json` must update exactly `immutable_planning_authority["implement.jsonl"]` and `["check.jsonl"]`, plus one data-only archive-stability repair record containing the source/successor tuples. No other immutable-authority entry changes.
+
+The target record field is exactly `post_implementation_context_archive_stability_repair` with this closed shape:
+
+```json
+{
+  "schemaVersion": 1,
+  "authorityTask": "08-31-rkp-2-e3-workspace-law-acceptance-archive-closure",
+  "sourceHead": "<EXACT_Q1T_HEAD>",
+  "implementJsonl": {
+    "sourceRows": 12,
+    "sourceBytes": 2129,
+    "sourceSha256": "7258f1d0758be729f902205406c84bf4d9836bae6966f0fc894b7777797c5f84",
+    "successorRows": 9,
+    "successorBytes": 1492,
+    "successorSha256": "54c6912c5829a69d6d92a3f12825537e8489b30a906463bd9c41724a39174ca9"
+  },
+  "checkJsonl": {
+    "sourceRows": 9,
+    "sourceBytes": 1795,
+    "sourceSha256": "11371426f57123fd0058463ca9baaaa05c9e59d07d4ae7ff3faa333f48ed707c",
+    "successorRows": 6,
+    "successorBytes": 1117,
+    "successorSha256": "83aaf6771c56066982f718cbe39b66fa7399f8ec116800eec2b9efbd1fe2aa52"
+  },
+  "removedActiveSelfReferenceCount": 6,
+  "otherRowMutation": false,
+  "existingAuditRecordMutation": false
+}
+```
+
+Before target archive, a scripted gate must verify both the real active JSONL and a pure archive-successor projection: every remaining path exists, is unique per file, and no string starts with the target active root. No post-archive manual rewrite is permitted.
 
 ## 9. Archive clock contract
 
@@ -263,10 +305,12 @@ The check and archive call cannot be split across shells or turns. Any mismatch 
 - target active-only exact 12 and archive-only exact 12;
 - closure active-only exact 11 and archive-only exact 11;
 - Q0, Q1, Q2, Q3, Q4 exact lifecycle matrices;
-- Q2 exact `A11/M7/D0` and Q3/Q4 exact `A23/M4/D12`;
+- Q2 exact `A11/M9/D0` and Q3/Q4 exact `A23/M4/D12`;
 - 323-byte record remains exact before and after target move;
 - Q3 record has one owner and exact canonical digest;
 - Stage 6 child and next-gate projections are exact;
+- target JSONL active and projected-archive states contain no target active-root reference;
+- Q4 exists only after the one native archive commit that also adopts the pre-staged Stage 6 terminal projection;
 - planning candidate 在 Node 24 和 20.20.2 精确为 `11/7/4`，第四项是本任务尚未被 law 接受的 planned gap；
 - future Q1T 后 focused 恢复 `11/8/3`；
 - planning full 精确为 `611/605/4/2`，future Q1T 后恢复 `611/606/3/2`。

@@ -4,3 +4,5 @@
 {"file":".trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-archive-closure/review-candidate.md","reason":"Check dedicated review remains separate from owner archive authorization."}
 {"file":".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json","reason":"Check RKP-2 remains paused before S6.2 and TypeScript remains default."}
 {"file":".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json","reason":"Check integration, qualification, cutover, push and RKP-3 remain unauthorized."}
+{"file":".trellis/scripts/common/task_store.py","reason":"Check Q4 uses native archive and that its single auto-commit is the only terminal state transition."}
+{"file":".trellis/scripts/common/safe_commit.py","reason":"Check the pre-staged allowlist cannot silently absorb unrelated dirty task paths."}

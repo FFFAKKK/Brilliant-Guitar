@@ -3,7 +3,7 @@
 ## Verdict requested
 
 ```text
-READY FOR DEDICATED INDEPENDENT PLANNING REVIEW
+READY FOR DEDICATED INDEPENDENT TARGETED PLANNING REREVIEW
 ```
 
 This is a docs-only planning candidate. It is not an implementation, acceptance or archive candidate.
@@ -40,12 +40,19 @@ Expected production, Rust, test, evidence, package, Cargo, tsconfig and spec del
 - no recursive closeout child exists;
 - literal `2026-08-31` clock mismatch stops before any move.
 
+### Bounded-repair checks
+
+- first independent review of `7b1c0e31...` returned P0/P1/P2=`0/3/0`;
+- closure contains no structural copy of the target 323-byte audit record;
+- target `implement.jsonl`/`check.jsonl` are explicitly within the future allowlist and lose exactly six active self-reference rows at Q2;
+- Q3 review record, Stage 6 terminal projection and closure archive enter one native Q4 commit before the real Q4 law runs.
+
 ### Path and ownership checks
 
 - planning `A11/M1/D0=12`;
-- Q2 `A11/M7/D0=18`;
+- Q2 `A11/M9/D0=20`;
 - Q3/Q4 `A23/M4/D12=39`;
-- one technical file and nine lifecycle files only;
+- one technical file and eleven lifecycle/context files only;
 - existing 323-byte record stays in target;
 - new Q3 review record exists only in closure task;
 - Stage 6 stores only owner path/digest.
