@@ -20,7 +20,8 @@
   "subtasks": [],
   "children": [
     "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
-    "08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair"
+    "08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair",
+    "08-31-rkp-2-e3-workspace-law-acceptance-archive-closure"
   ],
   "parent": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
   "relatedFiles": [
@@ -44,7 +45,7 @@
     "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "IN_PROGRESS / E3 WORKSPACE LAW TARGET AND ACCEPTANCE-ARCHIVE CLOSURE REVIEWS PASS 0_0_0 / TARGET AND CLOSURE TASKS COMPLETED AT THEIR 2026-08 ARCHIVE PATHS / E3 LAW PARENT REMAINS CURRENT IMPLEMENTATION CHILD / NEXT GATE EXPLICIT OWNER DECISION FOR E3 LAW PARENT ACCEPTANCE ARCHIVE / RKP-2 PAUSED BEFORE S6.2 / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO INTEGRATION PUSH CUTOVER QUALIFICATION OR RKP3.",
+  "notes": "IN_PROGRESS / E3 WORKSPACE LAW TARGET REVIEW PASSED AND PRIOR ACCEPTANCE-ARCHIVE CLOSURE COMPLETED / NEW SIBLING E3 WORKSPACE LAW ACCEPTANCE-ARCHIVE CLOSURE IS PLANNING REVIEW PENDING / TARGET REMAINS CURRENT IMPLEMENTATION CHILD / RKP-2 PAUSED BEFORE S6.2 / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO E3 STRESS INTEGRATION PUSH CUTOVER QUALIFICATION OR RKP3.",
   "meta": {
     "planning_base_commit": "4a302bc9f9981940336fc97941b08e09bd0d1f67",
     "source_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -94,7 +95,7 @@
     "bounded_planning_repair": "round_3_cleanup_ownership_and_post_cleanup_envelope_accepted",
     "implementation_candidate_ready": true,
     "implementation_review": "passed_external_audit_bound_0c561d14193374436361eec09b361cab0170278a_P0_0_P1_0_P2_0",
-    "implementation_blocker": "explicit_owner_decision_for_e3_law_parent_acceptance_archive",
+    "implementation_blocker": "e3_workspace_law_acceptance_archive_closure_independent_planning_review_pending",
     "e3_workspace_law_audit_record_owner": ".trellis/tasks/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair/task.json",
     "e3_workspace_law_audit_record_sha256": "dee0b92ce8a2ff6c8a9737c5b98104e39633b85aaad70e594f61e4847fdd7589",
     "e3_acceptance_archive_closure_source_review_owner": ".trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-archive-closure/task.json",
@@ -137,7 +138,7 @@
       "e3_user_authorization_consumed_by_parent_stage6_owner": true
     },
     "c5_terminal_projection_final_audit": "passed_d14d73117e03822a52fd19c55f3024cb2b73ef45_P0_0_P1_0_P2_0",
-    "implementation_stage": "E3_acceptance_archive_closure_completed_e3_law_parent_owner_decision_pending",
+    "implementation_stage": "E3_workspace_law_acceptance_archive_closure_planning_candidate_review_pending",
     "e0_activation_completed": true,
     "e1_private_rust_seam_started": true,
     "e1_private_rust_seam_completed": true,
@@ -309,9 +310,9 @@
     "e3_wall_elapsed_micros": 14077309,
     "e3_peak_working_set_bytes": 821886976,
     "e3_partial_evidence": false,
-    "current_planning_child": null,
+    "current_planning_child": "08-31-rkp-2-e3-workspace-law-acceptance-archive-closure",
     "current_implementation_child": "08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair",
-    "next_gate": "explicit_owner_decision_for_e3_law_parent_acceptance_archive",
+    "next_gate": "e3_workspace_law_acceptance_archive_closure_independent_planning_review_pending",
     "e3_acceptance_projection_native_archive_commit": "1c76dbf9d9cd1ece12299b148f0c6de09d1391e1",
     "e3_acceptance_projection_native_archive_path": ".trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-state-projection",
     "e3_workspace_law_final_state_projection_repair": {
@@ -389,6 +390,34 @@
         "protocol_sha256": "64e09779ea34bd04d504d515eb7c391f7db35a0a23a3c366fb2ffb5aa71c2862",
         "e3_stress_rerun": false
       }
+    },
+    "e3_workspace_law_acceptance_archive_closure": {
+      "task": "08-31-rkp-2-e3-workspace-law-acceptance-archive-closure",
+      "planning_base_commit": "c73e2139d3a1a9e89e4ec6071678d75be1c02abb",
+      "branch": "codex/rkp-2-e3-law-acceptance-archive-closure",
+      "worktree": ".worktrees/e3-law-acceptance-archive-closure",
+      "status": "planning",
+      "task_start_run": false,
+      "production_implementation_authorized": false,
+      "independent_planning_review": "pending",
+      "target_task": "08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair",
+      "target_current_implementation_review": "passed_external_audit_bound_0c561d14193374436361eec09b361cab0170278a_P0_0_P1_0_P2_0",
+      "target_acceptance_authorized": false,
+      "target_archive_authorized": false,
+      "target_artifact_count": 12,
+      "closure_artifact_count": 11,
+      "planning_path_count": 12,
+      "q2_no_rename_projection": "A11_M7_D0_total18",
+      "q3_q4_no_rename_projection": "A23_M4_D12_total39",
+      "future_technical_allowlist": [
+        "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
+      ],
+      "future_lifecycle_allowlist_count": 9,
+      "archive_clock_contract": "2026-08_2026-08-31_before_23_50_local_same_sequence_no_fallback",
+      "next_gate": "dedicated_independent_planning_review",
+      "rkp2_stage6_s6_2_started": false,
+      "rkp2_stage6_s6_3_started": false,
+      "default_runtime": "typescript"
     }
   }
 }

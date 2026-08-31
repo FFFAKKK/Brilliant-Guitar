@@ -1,0 +1,235 @@
+# Implementation Plan — E3 Workspace Law Acceptance and Archive Closure
+
+## 0. Planning-only precondition
+
+No implementation action begins until all are true:
+
+1. this exact planning commit receives dedicated independent planning PASS with P0/P1/P2=`0/0/0`;
+2. the accepted planning head is recorded without amend;
+3. the user separately authorizes implementation;
+4. `task.py start` is run for this task only;
+5. base ancestry, clean source state and target 323-byte audit record revalidate;
+6. archive clock still permits the literal `2026-08` path;
+7. S6.2/S6.3 remain false and TypeScript remains default.
+
+Task creation consent does not satisfy items 1–4.
+
+## 1. Phase Q1 — Activate only
+
+Allowed files:
+
+- this task `task.json`, `operator-handoff.md`, `review-candidate.md`;
+- Stage 6 `task.json`, `operator-handoff.md`, `review-candidate.md`.
+
+Actions:
+
+1. run `python .\.trellis\scripts\task.py start 08-31-rkp-2-e3-workspace-law-acceptance-archive-closure`;
+2. record accepted planning head and separate implementation authorization;
+3. set this task `in_progress`, `task_start_run=true`;
+4. set Stage 6 current planning child null and implementation child to this task;
+5. leave target active, unaccepted and unarchived;
+6. commit docs-only activation.
+
+Gate: JSON/Trellis/child uniqueness/diff check pass; technical and production deltas are zero.
+
+Rollback: revert the activation commit.
+
+## 2. Phase Q1T — Extend the existing Workspace Law
+
+Modify only:
+
+```text
+test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts
+```
+
+Actions:
+
+1. add exact active/archive roots and 12/11 manifests;
+2. add `resolveExactlyOneTaskLocation()` and pure fixture inputs;
+3. encode Q0–Q4 lifecycle matrices;
+4. encode planning/Q2/Q3/Q4 no-rename path contracts;
+5. preserve and revalidate the existing 323-byte target audit record;
+6. add the new Q3 review-record owner/digest contract;
+7. add clock, JSONL, Stage 6 terminal and later-gate exclusions;
+8. add all negative cases from `design.md`;
+9. keep the three historical failing test names exact and executed.
+
+Gate:
+
+```text
+Node supported: 11 tests / 8 pass / 3 exact historical fail
+Node 20.20.2:   11 tests / 8 pass / 3 exact historical fail
+additional unexpected failures: 0
+```
+
+Suggested commit:
+
+```text
+test(rkp-2): make E3 Workspace Law archive-aware
+```
+
+Rollback: revert this one technical commit. Do not edit the E3 evidence.
+
+## 3. Phase Q2 — Target owner acceptance
+
+Only after Q1T gates pass, update the nine lifecycle allowlist files as needed.
+
+Required target state:
+
+- status still `in_progress`;
+- implementation review remains bound to `0c561d1419...`;
+- owner acceptance explicitly recorded;
+- `archive_authorized=true`;
+- next gate `native_e3_workspace_law_archive_clock_preflight_required`;
+- no completedAt until native archive.
+
+Required closure state:
+
+- active/in progress;
+- target owner record stored;
+- Q3 audit pending;
+- closure acceptance/archive false.
+
+Required Stage 6 state:
+
+- implementation child=this task;
+- target acceptance projection referenced, not duplicated;
+- S6.2/S6.3 false and later gates false.
+
+Gate: exact Q2 `A11/M7/D0=18`, all JSONL successor paths exist, worktree clean after commit.
+
+Rollback: revert owner acceptance before reverting Q1T or Q1.
+
+## 4. Phase Q3 — Native target archive
+
+In one PowerShell sequence:
+
+```powershell
+$now = Get-Date
+if ($now.ToString('yyyy-MM') -ne '2026-08' -or
+    $now.ToString('yyyy-MM-dd') -ne '2026-08-31' -or
+    $now.TimeOfDay -ge [TimeSpan]::Parse('23:50:00')) {
+  throw 'archive-clock-contract-mismatch'
+}
+python .\.trellis\scripts\task.py archive 08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair
+```
+
+Then verify:
+
+1. active target root absent;
+2. archive target root exact 12 files;
+3. target completed on `2026-08-31`;
+4. existing audit record exact 323 bytes and digest;
+5. closure remains active/review-pending;
+6. Stage 6 implementation child remains closure;
+7. exact Q3 `A23/M4/D12=39`;
+8. focused dual-Node, full, Trellis, JSONL and protected-zero-delta gates pass;
+9. worktree is clean and staged empty.
+
+If native archive auto-commit leaves Stage 6 lifecycle projection pending, create one narrow docs-only projection commit before the Q3 freeze. No technical edit occurs after Q1T.
+
+Candidate marker:
+
+```text
+READY FOR DEDICATED INDEPENDENT E3 WORKSPACE LAW ACCEPTANCE-ARCHIVE CLOSURE IMPLEMENTATION REVIEW
+```
+
+Stop and hand the exact Q3 HEAD to a separate dedicated audit task.
+
+Rollback: revert Stage 6 projection if present, then revert the native target archive commit, then owner acceptance.
+
+## 5. Phase Q3R — Dedicated independent implementation review
+
+The reviewer receives:
+
+- exact Q3 HEAD and Q1T technical commit;
+- `c73e213...` base;
+- exact Q3 39-path list and A/M/D counts;
+- target and closure manifests;
+- 323-byte record bytes/digest;
+- dual-Node focused and full results;
+- protected-zero-delta report;
+- clean/staged-empty evidence.
+
+Required verdict is P0/P1/P2=`0/0/0`. The review task and turn IDs are populated only from the real external review result. PASS does not itself authorize Q4.
+
+## 6. Phase Q4 — Owner closeout and native closure archive
+
+Only after Q3 review PASS and a separate owner closeout authorization:
+
+1. record the exact Q3 review structure in this task only;
+2. record only owner path and digest in Stage 6;
+3. set closure acceptance/archive authorization true;
+4. set Stage 6 current planning/implementation child null;
+5. set Stage 6 next gate `explicit_owner_decision_for_stage6_parent_acceptance_archive`;
+6. run Q4 Workspace Law using the existing technical commit; no test edit;
+7. verify exact Q4 `A23/M4/D12=39`;
+8. run the same local clock preflight immediately followed by:
+
+```powershell
+python .\.trellis\scripts\task.py archive 08-31-rkp-2-e3-workspace-law-acceptance-archive-closure
+```
+
+9. rerun Trellis, JSON/JSONL, focused, full, path and clean gates.
+
+Final state does not accept/archive Stage 6 and does not start S6.2.
+
+Rollback: revert the closure native archive commit to the exact Q3 reviewed state.
+
+## 7. Validation commands
+
+```powershell
+python .\.trellis\scripts\task.py validate 08-31-rkp-2-e3-workspace-law-acceptance-archive-closure
+python .\.trellis\scripts\task.py validate 08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair
+python .\.trellis\scripts\task.py validate 08-26-rkp-2-stage-6-private-scale-evidence-seam-repair
+python .\.trellis\scripts\task.py validate 08-24-rkp-2-indexed-live-score-store-load-encode-parity
+python .\.trellis\scripts\task.py validate 08-15-core-rust-runtime-performance-remediation
+
+npm run typecheck
+npm run build
+node --test dist/test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.js
+npm test
+
+git diff --check
+git status --short --branch
+```
+
+Additional mechanical checks:
+
+- every task JSON parses;
+- every JSONL line parses, path exists, and path is unique per file;
+- parent contains each child exactly once;
+- Markdown fences balance;
+- exact artifact manifests and A/M/D projections;
+- immutable planning hashes exact;
+- target existing and new Q3 audit record canonical bytes/digests;
+- `src/**`, `crates/**`, Cargo/package/tsconfig/spec/evidence zero delta;
+- no E3 stress process or new TEMP evidence.
+
+## 8. Stop conditions
+
+Return to planning review if:
+
+- a second technical file is needed;
+- either manifest changes;
+- the literal archive time contract is no longer satisfiable;
+- target JSONL cannot survive native archive without editing immutable authority;
+- path totals differ;
+- one historical failure changes outside this task;
+- E3 evidence or performance inputs need modification;
+- S6.2/S6.3 or any later lifecycle gate must advance.
+
+## 9. Expected commits
+
+```text
+docs(rkp-2): activate E3 Workspace Law archive closure
+test(rkp-2): make E3 Workspace Law archive-aware
+docs(rkp-2): record E3 Workspace Law owner acceptance
+chore(task): archive 08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair
+docs(rkp-2): freeze E3 Workspace Law archive review candidate
+<dedicated read-only audit>
+docs(rkp-2): record accepted E3 Workspace Law archive closure
+chore(task): archive 08-31-rkp-2-e3-workspace-law-acceptance-archive-closure
+```
+
+No amend, merge, push, stress rerun, qualification, cutover or RKP-3 action occurs.

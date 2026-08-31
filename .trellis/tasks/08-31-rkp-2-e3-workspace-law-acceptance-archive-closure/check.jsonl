@@ -1,0 +1,6 @@
+{"file":".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/task.json","reason":"Check Stage 6 remains active, owns this child once and preserves the current target implementation child during planning."}
+{"file":".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/operator-handoff.md","reason":"Check S6.2/S6.3 and later actions remain outside this closeout."}
+{"file":".trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-archive-closure/task.json","reason":"Check the accepted predecessor archive contract, review ownership and clock policy."}
+{"file":".trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-archive-closure/review-candidate.md","reason":"Check dedicated review remains separate from owner archive authorization."}
+{"file":".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json","reason":"Check RKP-2 remains paused before S6.2 and TypeScript remains default."}
+{"file":".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json","reason":"Check integration, qualification, cutover, push and RKP-3 remain unauthorized."}

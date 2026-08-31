@@ -1,0 +1,81 @@
+# Review Candidate — E3 Workspace Law Acceptance and Archive Closure
+
+## Verdict requested
+
+```text
+READY FOR DEDICATED INDEPENDENT PLANNING REVIEW
+```
+
+This is a docs-only planning candidate. It is not an implementation, acceptance or archive candidate.
+
+## Candidate identity
+
+| Item | Value |
+| --- | --- |
+| base | `c73e2139d3a1a9e89e4ec6071678d75be1c02abb` |
+| branch | `codex/rkp-2-e3-law-acceptance-archive-closure` |
+| worktree | `.worktrees/e3-law-acceptance-archive-closure` |
+| task state | `planning` |
+| implementation authorization | `false` |
+| task start | `false` |
+
+## Exact planning diff
+
+Expected 12 paths:
+
+- 11 files under this task root;
+- Stage 6 parent `task.json` only.
+
+Expected production, Rust, test, evidence, package, Cargo, tsconfig and spec delta: zero.
+
+## Independent review focus
+
+### P0/P1 contract checks
+
+- direct target archive is still blocked until the Workspace Law technical extension passes;
+- owner acceptance and archive authorization are explicit separate gates;
+- target and closure each resolve active XOR archive with exact manifest;
+- Q3 is externally audited before Q4;
+- Q4 requires a second owner closeout authorization;
+- no recursive closeout child exists;
+- literal `2026-08-31` clock mismatch stops before any move.
+
+### Path and ownership checks
+
+- planning `A11/M1/D0=12`;
+- Q2 `A11/M7/D0=18`;
+- Q3/Q4 `A23/M4/D12=39`;
+- one technical file and nine lifecycle files only;
+- existing 323-byte record stays in target;
+- new Q3 review record exists only in closure task;
+- Stage 6 stores only owner path/digest.
+
+### Boundary checks
+
+- S6.2/S6.3 false;
+- TypeScript default;
+- no E3 stress rerun;
+- no production/Rust/public contract change;
+- no integration, qualification, cutover, push or RKP-3;
+- Stage 6 itself remains active at Q4.
+
+## Expected local validation
+
+```text
+new task artifacts: 11
+planning paths: 12
+Trellis validations: all pass
+JSON/JSONL: parse, exist, unique
+Markdown fences: balanced
+git diff --check: pass
+typecheck/build: pass
+focused supported Node and Node 20.20.2: 11/7/4, exactly three historical plus one planned closeout gap
+full: 611/605/4/2, exactly one additional planned closeout gap
+protected delta: 0
+worktree after planning commit: clean
+```
+
+## Result handling
+
+- PASS P0/P1/P2=`0/0/0`: record the exact planning review in this task, then wait for separate implementation authorization.
+- Any finding: bounded planning repair only; do not start, archive or edit the technical file.
