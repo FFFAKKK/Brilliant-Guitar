@@ -345,6 +345,79 @@ const STAGE_6_E3_ACCEPTANCE_ACTIVATION_LIFECYCLE_PATHS = [
   `${STAGE_6_E3_ACCEPTANCE_TASK_ROOT}/review-candidate.md`,
   `${STAGE_6_E3_LAW_TASK_ROOT}/task.json`,
 ] as const;
+const STAGE_6_E3_ACCEPTANCE_REVIEWED_CANDIDATE =
+  "f27daf7b514731adaabbe8f7814d2b57e12a7df7";
+const STAGE_6_E3_ACCEPTANCE_ARCHIVE_ROOT =
+  ".trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-state-projection";
+const STAGE_6_E3_ACCEPTANCE_ARCHIVE_CLOSURE_ROOT =
+  ".trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure";
+const STAGE_6_E3_ACCEPTANCE_ARCHIVE_CLOSURE_ARCHIVE_ROOT =
+  ".trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-archive-closure";
+const STAGE_6_E3_ACCEPTANCE_PROJECTION_AUDIT_RECORD_BYTES = 334;
+const STAGE_6_E3_ACCEPTANCE_PROJECTION_AUDIT_RECORD_SHA256 =
+  "8559f7aed98ddc45154f90dd459688530ba5e24efedeb573389e06ca7d099436";
+const STAGE_6_E3_ACCEPTANCE_TARGET_SUCCESSOR_IMPLEMENT_SHA256 =
+  "d3fb185b510bc384e8234e7c179c66a9a47323c86acbfa39de565b60d50913c3";
+const STAGE_6_E3_ACCEPTANCE_TARGET_SUCCESSOR_CHECK_SHA256 =
+  "f500d9871a1e877874c0d962ce2a2c086897aa23f02f5127532d648b776b24fe";
+const STAGE_6_E3_ACCEPTANCE_TASK_MANIFEST = [
+  "check.jsonl",
+  "design.md",
+  "implement.jsonl",
+  "implement.md",
+  "operator-handoff.md",
+  "prd.md",
+  "research/audit-pass-and-transition-gap.md",
+  "research/file-test-and-rollback-matrix.md",
+  "research/planning-self-audit.md",
+  "review-candidate.md",
+  "task.json",
+] as const;
+const STAGE_6_E3_ACCEPTANCE_ARCHIVE_CLOSURE_MANIFEST = [
+  "check.jsonl",
+  "design.md",
+  "implement.jsonl",
+  "implement.md",
+  "operator-handoff.md",
+  "prd.md",
+  "research/current-state-and-recursion-audit.md",
+  "research/file-state-test-matrix.md",
+  "research/planning-self-audit.md",
+  "review-candidate.md",
+  "task.json",
+] as const;
+const STAGE_6_E3_ACCEPTANCE_ARCHIVE_CLOSURE_TECHNICAL_PATH =
+  "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts";
+const STAGE_6_E3_LAW_PARENT_LIFECYCLE_PATHS = [
+  `${STAGE_6_E3_LAW_TASK_ROOT}/task.json`,
+  `${STAGE_6_E3_LAW_TASK_ROOT}/operator-handoff.md`,
+  `${STAGE_6_E3_LAW_TASK_ROOT}/review-candidate.md`,
+] as const;
+const STAGE_6_PARENT_LIFECYCLE_PATHS = [
+  `${STAGE_6_PRIVATE_SCALE_TASK_ROOT}/task.json`,
+  `${STAGE_6_PRIVATE_SCALE_TASK_ROOT}/operator-handoff.md`,
+  `${STAGE_6_PRIVATE_SCALE_TASK_ROOT}/review-candidate.md`,
+] as const;
+const STAGE_6_E3_ACCEPTANCE_TARGET_SUCCESSOR_PATHS = [
+  `${STAGE_6_E3_ACCEPTANCE_TASK_ROOT}/task.json`,
+  `${STAGE_6_E3_ACCEPTANCE_TASK_ROOT}/implement.jsonl`,
+  `${STAGE_6_E3_ACCEPTANCE_TASK_ROOT}/check.jsonl`,
+] as const;
+const STAGE_6_E3_ACCEPTANCE_TARGET_LIFECYCLE_PATHS = [
+  `${STAGE_6_E3_ACCEPTANCE_TASK_ROOT}/operator-handoff.md`,
+  `${STAGE_6_E3_ACCEPTANCE_TASK_ROOT}/review-candidate.md`,
+] as const;
+const STAGE_6_E3_ACCEPTANCE_PROJECTION_AUDIT_RECORD = {
+  schemaVersion: 1,
+  reviewTaskId: "01a01e48-1934-77b0-821e-a8026cd9e5f7",
+  reviewTurnId: "01a0562d-c544-7371-861f-0ead4d04cea2",
+  candidateCommit: STAGE_6_E3_ACCEPTANCE_REVIEWED_CANDIDATE,
+  technicalCommit: "4abfef9b3f7620d6428382af287cccd662aa7bf7",
+  verdict: "PASS_READY_FOR_OWNER_ACCEPTANCE_AND_ARCHIVE_CLOSURE",
+  P0: 0,
+  P1: 0,
+  P2: 0,
+} as const;
 const STAGE_6_E3_AUDIT_RECORD = {
   schemaVersion: 1,
   reviewTaskId: "01a01e48-1934-77b0-821e-a8026cd9e5f7",
@@ -804,19 +877,40 @@ function historicalE3AuditedCandidateChanges(): Set<string> {
   );
 }
 
-function currentAcceptanceProjectionChanges(): Set<string> {
-  const commands: readonly (readonly string[])[] = [
-    [
+function historicalAcceptanceProjectionChanges(): Set<string> {
+  return new Set(
+    lines(
+      git([
+        "diff",
+        "--no-renames",
+        "--name-only",
+        `${STAGE_6_E3_AUDITED_CANDIDATE}..${STAGE_6_E3_ACCEPTANCE_REVIEWED_CANDIDATE}`,
+      ]),
+    ),
+  );
+}
+
+function currentAcceptanceArchiveClosureChanges(): Map<string, "A" | "M" | "D"> {
+  const result = new Map<string, "A" | "M" | "D">();
+  for (const line of lines(
+    git([
       "diff",
       "--no-renames",
-      "--name-only",
-      `${STAGE_6_E3_AUDITED_CANDIDATE}..HEAD`,
-    ],
-    ["diff", "--no-renames", "--name-only"],
-    ["diff", "--cached", "--no-renames", "--name-only"],
-    ["ls-files", "--others", "--exclude-standard"],
-  ];
-  return new Set(commands.flatMap((args) => lines(git(args))));
+      "--name-status",
+      STAGE_6_E3_ACCEPTANCE_REVIEWED_CANDIDATE,
+    ]),
+  )) {
+    const [status, path, extra] = line.split("\t");
+    assert.equal(extra, undefined, "rename-collapsed paths are forbidden");
+    assert.ok(status === "A" || status === "M" || status === "D");
+    assert.ok(path);
+    result.set(path, status);
+  }
+  for (const path of lines(git(["ls-files", "--others", "--exclude-standard"]))) {
+    assert.equal(result.has(path), false, `${path} must have one cumulative status`);
+    result.set(path, "A");
+  }
+  return result;
 }
 
 function lfNormalizedText(path: string): string {
@@ -927,6 +1021,81 @@ interface E3LifecycleProjection {
 }
 
 type E3AcceptanceProjectionPhase = "technical-transition" | "terminal-candidate";
+
+type E3AcceptanceArchiveClosurePhase =
+  | "activation"
+  | "owner-acceptance"
+  | "target-archived"
+  | "closure-archived";
+
+interface ExactTaskLocationInput {
+  readonly activeFiles: readonly string[] | null;
+  readonly archiveFiles: readonly string[] | null;
+}
+
+interface ExactTaskLocation {
+  readonly kind: "active" | "archive";
+  readonly root: string;
+}
+
+interface AcceptanceArchiveLifecycleProjection {
+  readonly targetLocation: "active" | "archive";
+  readonly targetStatus: unknown;
+  readonly targetCompletedAt: unknown;
+  readonly targetImplementationCandidateReady: unknown;
+  readonly targetImplementationReview: unknown;
+  readonly targetAcceptanceAuthorized: unknown;
+  readonly targetArchiveAuthorized: unknown;
+  readonly targetDefaultRuntime: unknown;
+  readonly targetS62Started: unknown;
+  readonly targetS63Started: unknown;
+  readonly targetIntegrationAuthorized: unknown;
+  readonly targetQualificationAuthorized: unknown;
+  readonly targetRuntimeSwitchAuthorized: unknown;
+  readonly targetPushAuthorized: unknown;
+  readonly targetRkp3CreationAuthorized: unknown;
+  readonly closureLocation: "active" | "archive";
+  readonly closureStatus: unknown;
+  readonly closureCompletedAt: unknown;
+  readonly closureTaskStartRun: unknown;
+  readonly closureProductionAuthorized: unknown;
+  readonly closureUserAuthorized: unknown;
+  readonly closureImplementationCandidateReady: unknown;
+  readonly closureImplementationReview: unknown;
+  readonly closureTargetAcceptanceAuthorized: unknown;
+  readonly closureTargetArchiveAuthorized: unknown;
+  readonly closureAcceptanceAuthorized: unknown;
+  readonly closureArchiveAuthorized: unknown;
+  readonly closureDefaultRuntime: unknown;
+  readonly closureS62Started: unknown;
+  readonly closureS63Started: unknown;
+  readonly closureIntegrationAuthorized: unknown;
+  readonly closureQualificationAuthorized: unknown;
+  readonly closureRuntimeSwitchAuthorized: unknown;
+  readonly closurePushAuthorized: unknown;
+  readonly closureRkp3CreationAuthorized: unknown;
+  readonly closureE3StressRerun: unknown;
+  readonly lawStatus: unknown;
+  readonly lawCurrentPlanningChild: unknown;
+  readonly lawCurrentImplementationChild: unknown;
+  readonly lawNextGate: unknown;
+  readonly lawIntegrationAuthorized: unknown;
+  readonly lawQualificationAuthorized: unknown;
+  readonly lawArchiveAuthorized: unknown;
+  readonly lawRuntimeSwitchAuthorized: unknown;
+  readonly lawPushAuthorized: unknown;
+  readonly lawRkp3CreationAuthorized: unknown;
+  readonly stage6Status: unknown;
+  readonly stage6CurrentImplementationChild: unknown;
+  readonly stage6S62Started: unknown;
+  readonly stage6S63Started: unknown;
+  readonly stage6DefaultRuntime: unknown;
+  readonly stage6ArchiveAuthorized: unknown;
+  readonly stage6OfficialMeasurementAuthorized: unknown;
+  readonly stage6RuntimeSwitchAuthorized: unknown;
+  readonly stage6PushAuthorized: unknown;
+  readonly stage6Rkp3CreationAuthorized: unknown;
+}
 
 function fullRunnerPlanningChangesAtContentHead(): Set<string> {
   return new Set(
@@ -1096,6 +1265,315 @@ function assertAcceptanceProjectionPathSet(
       : declaredOwners;
   assert.equal(expected.length, phase === "technical-transition" ? 13 : 18);
   assertExactPathSet(actual, expected, `acceptance ${phase}`);
+}
+
+function filesUnder(root: string): string[] {
+  const absoluteRoot = resolve(root);
+  if (!existsSync(absoluteRoot)) {
+    return [];
+  }
+  const result: string[] = [];
+  const visit = (absolute: string, prefix: string): void => {
+    for (const entry of readdirSync(absolute)) {
+      const child = join(absolute, entry);
+      const childRelative = prefix === "" ? entry : `${prefix}/${entry}`;
+      const stat = lstatSync(child);
+      assert.equal(stat.isSymbolicLink(), false, `${childRelative} must not be a symlink`);
+      if (stat.isDirectory()) {
+        visit(child, childRelative);
+      } else {
+        assert.equal(stat.isFile(), true, `${childRelative} must be a regular file`);
+        result.push(childRelative.replaceAll("\\", "/"));
+      }
+    }
+  };
+  visit(absoluteRoot, "");
+  return result.sort();
+}
+
+function resolveExactTaskLocation(
+  activeRoot: string,
+  archiveRoot: string,
+  manifest: readonly string[],
+  input: ExactTaskLocationInput = {
+    activeFiles: existsSync(resolve(activeRoot)) ? filesUnder(activeRoot) : null,
+    archiveFiles: existsSync(resolve(archiveRoot)) ? filesUnder(archiveRoot) : null,
+  },
+): ExactTaskLocation {
+  assert.notEqual(
+    input.activeFiles !== null,
+    input.archiveFiles !== null,
+    "exactly one active/archive task root must exist",
+  );
+  const kind = input.activeFiles !== null ? "active" : "archive";
+  const files = input.activeFiles ?? input.archiveFiles ?? [];
+  assert.deepEqual([...files].sort(), [...manifest].sort());
+  return { kind, root: kind === "active" ? activeRoot : archiveRoot };
+}
+
+function canonicalizeAcceptanceProjectionAuditRecord(record: unknown): string {
+  assert.ok(record !== null && typeof record === "object");
+  assert.equal(Array.isArray(record), false);
+  const value = record as Readonly<Record<string, unknown>>;
+  assert.deepEqual(
+    Object.keys(value),
+    Object.keys(STAGE_6_E3_ACCEPTANCE_PROJECTION_AUDIT_RECORD),
+  );
+  assert.deepEqual(value, STAGE_6_E3_ACCEPTANCE_PROJECTION_AUDIT_RECORD);
+  const canonical = JSON.stringify({
+    schemaVersion: value.schemaVersion,
+    reviewTaskId: value.reviewTaskId,
+    reviewTurnId: value.reviewTurnId,
+    candidateCommit: value.candidateCommit,
+    technicalCommit: value.technicalCommit,
+    verdict: value.verdict,
+    P0: value.P0,
+    P1: value.P1,
+    P2: value.P2,
+  });
+  assert.equal(
+    Buffer.byteLength(canonical, "utf8"),
+    STAGE_6_E3_ACCEPTANCE_PROJECTION_AUDIT_RECORD_BYTES,
+  );
+  assert.equal(
+    sha256(canonical),
+    STAGE_6_E3_ACCEPTANCE_PROJECTION_AUDIT_RECORD_SHA256,
+  );
+  return canonical;
+}
+
+function assertSingleAcceptanceProjectionAuditRecordOwner(
+  records: readonly unknown[],
+): void {
+  const owners = records.filter((record) => record !== undefined);
+  assert.equal(
+    owners.length,
+    1,
+    "acceptance-projection audit record must have one structured owner",
+  );
+  canonicalizeAcceptanceProjectionAuditRecord(owners[0]);
+}
+
+function assertArchiveClockContract(input: {
+  readonly month: string;
+  readonly date: string;
+  readonly time: string;
+}): void {
+  assert.equal(input.month, "2026-08");
+  assert.equal(input.date, "2026-08-31");
+  assert.match(input.time, /^\d{2}:\d{2}:\d{2}$/u);
+  assert.ok(input.time < "23:50:00", "native archive preflight must retain rollover margin");
+}
+
+function expectedAcceptanceArchiveClosureChanges(
+  phase: E3AcceptanceArchiveClosurePhase,
+): Map<string, "A" | "M" | "D"> {
+  const result = new Map<string, "A" | "M" | "D">();
+  const setAll = (
+    status: "A" | "M" | "D",
+    paths: readonly string[],
+  ): void => {
+    for (const path of paths) {
+      assert.equal(result.has(path), false, `${path} must have one declared owner`);
+      result.set(path, status);
+    }
+  };
+
+  const closureRoot =
+    phase === "closure-archived"
+      ? STAGE_6_E3_ACCEPTANCE_ARCHIVE_CLOSURE_ARCHIVE_ROOT
+      : STAGE_6_E3_ACCEPTANCE_ARCHIVE_CLOSURE_ROOT;
+  setAll(
+    "A",
+    STAGE_6_E3_ACCEPTANCE_ARCHIVE_CLOSURE_MANIFEST.map(
+      (path) => `${closureRoot}/${path}`,
+    ),
+  );
+  setAll("M", [STAGE_6_E3_ACCEPTANCE_ARCHIVE_CLOSURE_TECHNICAL_PATH]);
+  setAll("M", STAGE_6_E3_LAW_PARENT_LIFECYCLE_PATHS);
+
+  if (phase === "owner-acceptance") {
+    setAll("M", STAGE_6_PARENT_LIFECYCLE_PATHS);
+    setAll("M", STAGE_6_E3_ACCEPTANCE_TARGET_SUCCESSOR_PATHS);
+    setAll("M", STAGE_6_E3_ACCEPTANCE_TARGET_LIFECYCLE_PATHS);
+  }
+
+  if (phase === "target-archived" || phase === "closure-archived") {
+    setAll("M", STAGE_6_PARENT_LIFECYCLE_PATHS);
+    setAll(
+      "D",
+      STAGE_6_E3_ACCEPTANCE_TASK_MANIFEST.map(
+        (path) => `${STAGE_6_E3_ACCEPTANCE_TASK_ROOT}/${path}`,
+      ),
+    );
+    setAll(
+      "A",
+      STAGE_6_E3_ACCEPTANCE_TASK_MANIFEST.map(
+        (path) => `${STAGE_6_E3_ACCEPTANCE_ARCHIVE_ROOT}/${path}`,
+      ),
+    );
+  }
+
+  return result;
+}
+
+function assertAcceptanceArchiveClosurePathSet(
+  actual: ReadonlyMap<string, "A" | "M" | "D">,
+  phase: E3AcceptanceArchiveClosurePhase,
+): void {
+  const expected = expectedAcceptanceArchiveClosureChanges(phase);
+  const project = (value: ReadonlyMap<string, "A" | "M" | "D">): string[] =>
+    [...value].map(([path, status]) => `${status}\t${path}`).sort();
+  assert.deepEqual(project(actual), project(expected));
+  if (phase === "target-archived" || phase === "closure-archived") {
+    assert.equal(actual.size, 40);
+  }
+}
+
+function assertJsonlReferencesExist(root: string): void {
+  for (const name of ["implement.jsonl", "check.jsonl"] as const) {
+    const seen = new Set<string>();
+    for (const line of lines(readText(`${root}/${name}`))) {
+      const row = JSON.parse(line) as { readonly file?: unknown };
+      assert.equal(typeof row.file, "string");
+      const path = row.file as string;
+      assert.equal(seen.has(path), false, `${root}/${name} repeats ${path}`);
+      seen.add(path);
+      assert.equal(existsSync(resolve(path)), true, `${root}/${name} references ${path}`);
+    }
+  }
+}
+
+function assertTargetSuccessorJsonl(root: string): void {
+  const implement = lfNormalizedText(`${root}/implement.jsonl`);
+  const check = lfNormalizedText(`${root}/check.jsonl`);
+  assert.equal(
+    sha256(implement),
+    STAGE_6_E3_ACCEPTANCE_TARGET_SUCCESSOR_IMPLEMENT_SHA256,
+  );
+  assert.equal(
+    sha256(check),
+    STAGE_6_E3_ACCEPTANCE_TARGET_SUCCESSOR_CHECK_SHA256,
+  );
+  assert.equal(implement.includes(STAGE_6_E3_ACCEPTANCE_TASK_ROOT), false);
+  assert.equal(check.includes(STAGE_6_E3_ACCEPTANCE_TASK_ROOT), false);
+  assertJsonlReferencesExist(root);
+}
+
+function assertTaskImmutablePlanningAuthority(
+  root: string,
+  contract: unknown,
+  count: unknown,
+  authority: unknown,
+): void {
+  assert.equal(contract, "lf_normalized_utf8_sha256");
+  assert.ok(authority !== null && typeof authority === "object");
+  assert.equal(Array.isArray(authority), false);
+  const entries = Object.entries(authority as Readonly<Record<string, unknown>>);
+  assert.equal(count, entries.length);
+  for (const [path, digest] of entries) {
+    assert.equal(typeof digest, "string");
+    assert.equal(sha256(lfNormalizedText(`${root}/${path}`)), digest);
+  }
+}
+
+function assertAcceptanceArchiveLifecycleProjection(
+  projection: AcceptanceArchiveLifecycleProjection,
+  phase: E3AcceptanceArchiveClosurePhase,
+): void {
+  const targetArchived = phase === "target-archived" || phase === "closure-archived";
+  const closureArchived = phase === "closure-archived";
+  const ownerAccepted = phase !== "activation";
+
+  assert.equal(projection.targetLocation, targetArchived ? "archive" : "active");
+  assert.equal(projection.targetStatus, targetArchived ? "completed" : "in_progress");
+  assert.equal(projection.targetCompletedAt, targetArchived ? "2026-08-31" : null);
+  assert.equal(projection.targetImplementationCandidateReady, true);
+  assert.equal(
+    projection.targetImplementationReview,
+    ownerAccepted
+      ? "passed_dedicated_independent_acceptance_projection_implementation_review"
+      : "pending_dedicated_independent_acceptance_projection_implementation_review",
+  );
+  assert.equal(projection.targetAcceptanceAuthorized, ownerAccepted);
+  assert.equal(projection.targetArchiveAuthorized, ownerAccepted);
+  assert.equal(projection.targetDefaultRuntime, "typescript");
+  assert.equal(projection.targetS62Started, false);
+  assert.equal(projection.targetS63Started, false);
+  assert.equal(projection.targetIntegrationAuthorized, false);
+  assert.equal(projection.targetQualificationAuthorized, false);
+  assert.equal(projection.targetRuntimeSwitchAuthorized, false);
+  assert.equal(projection.targetPushAuthorized, false);
+  assert.equal(projection.targetRkp3CreationAuthorized, false);
+
+  assert.equal(projection.closureLocation, closureArchived ? "archive" : "active");
+  assert.equal(projection.closureStatus, closureArchived ? "completed" : "in_progress");
+  assert.equal(projection.closureCompletedAt, closureArchived ? "2026-08-31" : null);
+  assert.equal(projection.closureTaskStartRun, true);
+  assert.equal(projection.closureProductionAuthorized, false);
+  assert.equal(projection.closureUserAuthorized, true);
+  assert.equal(
+    projection.closureImplementationCandidateReady,
+    phase === "target-archived" || closureArchived,
+  );
+  assert.equal(
+    projection.closureImplementationReview,
+    closureArchived
+      ? "passed_dedicated_independent_E3_acceptance_archive_closure_implementation_review"
+      : phase === "target-archived"
+        ? "pending_dedicated_independent_E3_acceptance_archive_closure_implementation_review"
+        : "pending_not_started",
+  );
+  assert.equal(projection.closureTargetAcceptanceAuthorized, ownerAccepted);
+  assert.equal(projection.closureTargetArchiveAuthorized, ownerAccepted);
+  assert.equal(projection.closureAcceptanceAuthorized, closureArchived);
+  assert.equal(projection.closureArchiveAuthorized, closureArchived);
+  assert.equal(projection.closureDefaultRuntime, "typescript");
+  assert.equal(projection.closureS62Started, false);
+  assert.equal(projection.closureS63Started, false);
+  assert.equal(projection.closureIntegrationAuthorized, false);
+  assert.equal(projection.closureQualificationAuthorized, false);
+  assert.equal(projection.closureRuntimeSwitchAuthorized, false);
+  assert.equal(projection.closurePushAuthorized, false);
+  assert.equal(projection.closureRkp3CreationAuthorized, false);
+  assert.equal(projection.closureE3StressRerun, false);
+
+  assert.equal(projection.lawStatus, "in_progress");
+  assert.equal(projection.lawCurrentPlanningChild, null);
+  assert.equal(
+    projection.lawCurrentImplementationChild,
+    closureArchived ? null : "08-31-rkp-2-e3-acceptance-archive-closure",
+  );
+  assert.equal(
+    projection.lawNextGate,
+    closureArchived
+      ? "explicit_owner_decision_for_e3_law_parent_acceptance_archive"
+      : phase === "target-archived"
+        ? "dedicated_independent_E3_acceptance_archive_closure_implementation_review_pending"
+        : phase === "owner-acceptance"
+          ? "native_target_archive_clock_preflight_required"
+          : "acceptance_archive_closure_archive_aware_workspace_law_technical_checkpoint",
+  );
+  assert.equal(projection.lawIntegrationAuthorized, false);
+  assert.equal(projection.lawQualificationAuthorized, false);
+  assert.equal(projection.lawArchiveAuthorized, false);
+  assert.equal(projection.lawRuntimeSwitchAuthorized, false);
+  assert.equal(projection.lawPushAuthorized, false);
+  assert.equal(projection.lawRkp3CreationAuthorized, false);
+
+  assert.equal(projection.stage6Status, "in_progress");
+  assert.equal(
+    projection.stage6CurrentImplementationChild,
+    "08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair",
+  );
+  assert.equal(projection.stage6S62Started, false);
+  assert.equal(projection.stage6S63Started, false);
+  assert.equal(projection.stage6DefaultRuntime, "typescript");
+  assert.equal(projection.stage6ArchiveAuthorized, false);
+  assert.equal(projection.stage6OfficialMeasurementAuthorized, false);
+  assert.equal(projection.stage6RuntimeSwitchAuthorized, false);
+  assert.equal(projection.stage6PushAuthorized, false);
+  assert.equal(projection.stage6Rkp3CreationAuthorized, false);
 }
 
 function extractE3ProtocolLine(source: string): string {
@@ -1810,7 +2288,10 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
   );
 
   const acceptanceTask = JSON.parse(
-    readText(`${STAGE_6_E3_ACCEPTANCE_TASK_ROOT}/task.json`),
+    gitTextAt(
+      STAGE_6_E3_ACCEPTANCE_REVIEWED_CANDIDATE,
+      `${STAGE_6_E3_ACCEPTANCE_TASK_ROOT}/task.json`,
+    ),
   ) as {
     readonly status?: unknown;
     readonly meta?: {
@@ -1834,11 +2315,8 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
       readonly rkp3_creation_authorized?: unknown;
     };
   };
-  const acceptancePhase: E3AcceptanceProjectionPhase =
-    acceptanceTask.meta?.implementation_candidate_ready === true
-      ? "terminal-candidate"
-      : "technical-transition";
-  const currentAcceptancePaths = currentAcceptanceProjectionChanges();
+  const acceptancePhase: E3AcceptanceProjectionPhase = "terminal-candidate";
+  const currentAcceptancePaths = historicalAcceptanceProjectionChanges();
   assertAcceptanceProjectionPathSet(currentAcceptancePaths, acceptancePhase);
 
   const withoutAcceptanceTechnical = new Set(currentAcceptancePaths);
@@ -1903,7 +2381,8 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
   assert.equal(task.meta?.stage6_e3_started, false);
 
   const stage6Task = JSON.parse(
-    readText(
+    gitTextAt(
+      STAGE_6_E3_ACCEPTANCE_REVIEWED_CANDIDATE,
       `${STAGE_6_PRIVATE_SCALE_TASK_ROOT}/task.json`,
     ),
   ) as {
@@ -2016,7 +2495,10 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     };
   };
   const lawTask = JSON.parse(
-    readText(`${STAGE_6_E3_LAW_TASK_ROOT}/task.json`),
+    gitTextAt(
+      STAGE_6_E3_ACCEPTANCE_REVIEWED_CANDIDATE,
+      `${STAGE_6_E3_LAW_TASK_ROOT}/task.json`,
+    ),
   ) as {
     readonly status?: unknown;
     readonly meta?: {
@@ -2261,6 +2743,348 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
       acceptancePhase,
     ),
   );
+
+  const targetLocation = resolveExactTaskLocation(
+    STAGE_6_E3_ACCEPTANCE_TASK_ROOT,
+    STAGE_6_E3_ACCEPTANCE_ARCHIVE_ROOT,
+    STAGE_6_E3_ACCEPTANCE_TASK_MANIFEST,
+  );
+  const closureLocation = resolveExactTaskLocation(
+    STAGE_6_E3_ACCEPTANCE_ARCHIVE_CLOSURE_ROOT,
+    STAGE_6_E3_ACCEPTANCE_ARCHIVE_CLOSURE_ARCHIVE_ROOT,
+    STAGE_6_E3_ACCEPTANCE_ARCHIVE_CLOSURE_MANIFEST,
+  );
+  const liveTargetTask = JSON.parse(
+    readText(`${targetLocation.root}/task.json`),
+  ) as {
+    readonly status?: unknown;
+    readonly completedAt?: unknown;
+    readonly meta?: Readonly<Record<string, unknown>>;
+  };
+  const liveClosureTask = JSON.parse(
+    readText(`${closureLocation.root}/task.json`),
+  ) as {
+    readonly status?: unknown;
+    readonly completedAt?: unknown;
+    readonly meta?: Readonly<Record<string, unknown>>;
+  };
+  const liveLawTask = JSON.parse(
+    readText(`${STAGE_6_E3_LAW_TASK_ROOT}/task.json`),
+  ) as {
+    readonly status?: unknown;
+    readonly meta?: Readonly<Record<string, unknown>>;
+  };
+  const liveStage6Task = JSON.parse(
+    readText(`${STAGE_6_PRIVATE_SCALE_TASK_ROOT}/task.json`),
+  ) as {
+    readonly status?: unknown;
+    readonly meta?: Readonly<Record<string, unknown>>;
+  };
+  const liveTargetMeta = liveTargetTask.meta ?? {};
+  const liveClosureMeta = liveClosureTask.meta ?? {};
+  const liveLawMeta = liveLawTask.meta ?? {};
+  const liveStage6Meta = liveStage6Task.meta ?? {};
+  const archiveClosurePhase: E3AcceptanceArchiveClosurePhase =
+    targetLocation.kind === "active" && closureLocation.kind === "active"
+      ? liveTargetMeta.acceptance_authorized === true
+        ? "owner-acceptance"
+        : "activation"
+      : targetLocation.kind === "archive" && closureLocation.kind === "active"
+        ? "target-archived"
+        : targetLocation.kind === "archive" && closureLocation.kind === "archive"
+          ? "closure-archived"
+          : assert.fail("closure archive cannot precede target archive");
+
+  const archiveClosureChanges = currentAcceptanceArchiveClosureChanges();
+  assertAcceptanceArchiveClosurePathSet(
+    archiveClosureChanges,
+    archiveClosurePhase,
+  );
+  const withoutClosureTechnical = new Map(archiveClosureChanges);
+  withoutClosureTechnical.delete(
+    STAGE_6_E3_ACCEPTANCE_ARCHIVE_CLOSURE_TECHNICAL_PATH,
+  );
+  assert.throws(() =>
+    assertAcceptanceArchiveClosurePathSet(
+      withoutClosureTechnical,
+      archiveClosurePhase,
+    ),
+  );
+  const withUndeclaredClosurePath = new Map(archiveClosureChanges);
+  withUndeclaredClosurePath.set(
+    `${STAGE_6_E3_ACCEPTANCE_ARCHIVE_CLOSURE_ROOT}/undeclared.md`,
+    "A",
+  );
+  assert.throws(() =>
+    assertAcceptanceArchiveClosurePathSet(
+      withUndeclaredClosurePath,
+      archiveClosurePhase,
+    ),
+  );
+  const withWrongClosureStatus = new Map(archiveClosureChanges);
+  withWrongClosureStatus.set(
+    STAGE_6_E3_ACCEPTANCE_ARCHIVE_CLOSURE_TECHNICAL_PATH,
+    "A",
+  );
+  assert.throws(() =>
+    assertAcceptanceArchiveClosurePathSet(
+      withWrongClosureStatus,
+      archiveClosurePhase,
+    ),
+  );
+  for (const phase of [
+    "activation",
+    "owner-acceptance",
+    "target-archived",
+    "closure-archived",
+  ] as const) {
+    assert.doesNotThrow(() =>
+      assertAcceptanceArchiveClosurePathSet(
+        expectedAcceptanceArchiveClosureChanges(phase),
+        phase,
+      ),
+    );
+  }
+
+  canonicalizeAcceptanceProjectionAuditRecord(
+    liveClosureMeta.source_review_record,
+  );
+  assert.equal(
+    liveClosureMeta.source_review_record_canonical_bytes,
+    STAGE_6_E3_ACCEPTANCE_PROJECTION_AUDIT_RECORD_BYTES,
+  );
+  assert.equal(
+    liveClosureMeta.source_review_record_sha256,
+    STAGE_6_E3_ACCEPTANCE_PROJECTION_AUDIT_RECORD_SHA256,
+  );
+  assert.notEqual(
+    STAGE_6_E3_ACCEPTANCE_PROJECTION_AUDIT_RECORD_SHA256,
+    STAGE_6_E3_AUDIT_RECORD_SHA256,
+  );
+  assertSingleAcceptanceProjectionAuditRecordOwner([
+    liveClosureMeta.source_review_record,
+    liveLawMeta.acceptance_projection_audit_record,
+    liveStage6Meta.acceptance_projection_audit_record,
+  ]);
+  const missingAcceptanceAuditKey = {
+    ...STAGE_6_E3_ACCEPTANCE_PROJECTION_AUDIT_RECORD,
+  } as Record<string, unknown>;
+  delete missingAcceptanceAuditKey.P2;
+  for (const malformedRecord of [
+    undefined,
+    missingAcceptanceAuditKey,
+    { ...STAGE_6_E3_ACCEPTANCE_PROJECTION_AUDIT_RECORD, schemaVersion: 2 },
+    { ...STAGE_6_E3_ACCEPTANCE_PROJECTION_AUDIT_RECORD, reviewTaskId: "wrong" },
+    { ...STAGE_6_E3_ACCEPTANCE_PROJECTION_AUDIT_RECORD, reviewTurnId: "wrong" },
+    { ...STAGE_6_E3_ACCEPTANCE_PROJECTION_AUDIT_RECORD, candidateCommit: "wrong" },
+    { ...STAGE_6_E3_ACCEPTANCE_PROJECTION_AUDIT_RECORD, technicalCommit: "wrong" },
+    { ...STAGE_6_E3_ACCEPTANCE_PROJECTION_AUDIT_RECORD, verdict: "PASS" },
+    { ...STAGE_6_E3_ACCEPTANCE_PROJECTION_AUDIT_RECORD, P0: 1 },
+    { ...STAGE_6_E3_ACCEPTANCE_PROJECTION_AUDIT_RECORD, P1: 1 },
+    { ...STAGE_6_E3_ACCEPTANCE_PROJECTION_AUDIT_RECORD, P2: 1 },
+    { ...STAGE_6_E3_ACCEPTANCE_PROJECTION_AUDIT_RECORD, extra: true },
+  ] as const) {
+    assert.throws(() => canonicalizeAcceptanceProjectionAuditRecord(malformedRecord));
+  }
+  assert.throws(() =>
+    assertSingleAcceptanceProjectionAuditRecordOwner([
+      liveClosureMeta.source_review_record,
+      STAGE_6_E3_ACCEPTANCE_PROJECTION_AUDIT_RECORD,
+    ]),
+  );
+
+  assert.deepEqual(
+    resolveExactTaskLocation("active", "archive", ["task.json"], {
+      activeFiles: ["task.json"],
+      archiveFiles: null,
+    }),
+    { kind: "active", root: "active" },
+  );
+  assert.deepEqual(
+    resolveExactTaskLocation("active", "archive", ["task.json"], {
+      activeFiles: null,
+      archiveFiles: ["task.json"],
+    }),
+    { kind: "archive", root: "archive" },
+  );
+  for (const invalidLocation of [
+    { activeFiles: ["task.json"], archiveFiles: ["task.json"] },
+    { activeFiles: null, archiveFiles: null },
+    { activeFiles: [], archiveFiles: null },
+    { activeFiles: ["task.json", "twelfth.md"], archiveFiles: null },
+  ] as const) {
+    assert.throws(() =>
+      resolveExactTaskLocation("active", "archive", ["task.json"], invalidLocation),
+    );
+  }
+
+  assertArchiveClockContract({
+    month: "2026-08",
+    date: "2026-08-31",
+    time: "23:49:59",
+  });
+  for (const invalidClock of [
+    { month: "2026-09", date: "2026-08-31", time: "12:00:00" },
+    { month: "2026-08", date: "2026-09-01", time: "00:00:00" },
+    { month: "2026-08", date: "2026-08-31", time: "23:50:00" },
+    { month: "2026-08", date: "2026-08-31", time: "23:59:59" },
+  ] as const) {
+    assert.throws(() => assertArchiveClockContract(invalidClock));
+  }
+
+  assertTaskImmutablePlanningAuthority(
+    closureLocation.root,
+    liveClosureMeta.immutable_planning_authority_hash_contract,
+    liveClosureMeta.immutable_planning_authority_count,
+    liveClosureMeta.immutable_planning_authority,
+  );
+  const historicalTargetAuthorityTask = JSON.parse(
+    gitTextAt(
+      STAGE_6_E3_ACCEPTANCE_REVIEWED_CANDIDATE,
+      `${STAGE_6_E3_ACCEPTANCE_TASK_ROOT}/task.json`,
+    ),
+  ) as {
+    readonly meta?: {
+      readonly immutable_planning_authority?: Readonly<Record<string, unknown>>;
+    };
+  };
+  const expectedTargetAuthority = {
+    ...(historicalTargetAuthorityTask.meta?.immutable_planning_authority ?? {}),
+    ...(archiveClosurePhase === "activation"
+      ? {}
+      : {
+          "implement.jsonl":
+            STAGE_6_E3_ACCEPTANCE_TARGET_SUCCESSOR_IMPLEMENT_SHA256,
+          "check.jsonl": STAGE_6_E3_ACCEPTANCE_TARGET_SUCCESSOR_CHECK_SHA256,
+        }),
+  };
+  assert.deepEqual(
+    liveTargetMeta.immutable_planning_authority,
+    expectedTargetAuthority,
+  );
+  assertTaskImmutablePlanningAuthority(
+    targetLocation.root,
+    liveTargetMeta.immutable_planning_authority_hash_contract,
+    liveTargetMeta.immutable_planning_authority_count,
+    liveTargetMeta.immutable_planning_authority,
+  );
+  assertJsonlReferencesExist(closureLocation.root);
+  if (archiveClosurePhase !== "activation") {
+    assertTargetSuccessorJsonl(targetLocation.root);
+    const selectedOwner = `${closureLocation.root}/task.json`;
+    assert.equal(
+      liveLawMeta.acceptance_archive_closure_source_review_owner,
+      selectedOwner,
+    );
+    assert.equal(
+      liveLawMeta.acceptance_archive_closure_source_review_sha256,
+      STAGE_6_E3_ACCEPTANCE_PROJECTION_AUDIT_RECORD_SHA256,
+    );
+    assert.equal(
+      liveStage6Meta.e3_acceptance_archive_closure_source_review_owner,
+      selectedOwner,
+    );
+    assert.equal(
+      liveStage6Meta.e3_acceptance_archive_closure_source_review_sha256,
+      STAGE_6_E3_ACCEPTANCE_PROJECTION_AUDIT_RECORD_SHA256,
+    );
+  }
+
+  const archiveLifecycle: AcceptanceArchiveLifecycleProjection = {
+    targetLocation: targetLocation.kind,
+    targetStatus: liveTargetTask.status,
+    targetCompletedAt: liveTargetTask.completedAt,
+    targetImplementationCandidateReady:
+      liveTargetMeta.implementation_candidate_ready,
+    targetImplementationReview: liveTargetMeta.implementation_review,
+    targetAcceptanceAuthorized: liveTargetMeta.acceptance_authorized,
+    targetArchiveAuthorized: liveTargetMeta.archive_authorized,
+    targetDefaultRuntime: liveTargetMeta.default_runtime,
+    targetS62Started: liveTargetMeta.rkp2_stage6_s6_2_started,
+    targetS63Started: liveTargetMeta.rkp2_stage6_s6_3_started,
+    targetIntegrationAuthorized: liveTargetMeta.integration_authorized,
+    targetQualificationAuthorized: liveTargetMeta.qualification_authorized,
+    targetRuntimeSwitchAuthorized:
+      liveTargetMeta.default_runtime_switch_authorized,
+    targetPushAuthorized: liveTargetMeta.push_authorized,
+    targetRkp3CreationAuthorized: liveTargetMeta.rkp3_creation_authorized,
+    closureLocation: closureLocation.kind,
+    closureStatus: liveClosureTask.status,
+    closureCompletedAt: liveClosureTask.completedAt,
+    closureTaskStartRun: liveClosureMeta.task_start_run,
+    closureProductionAuthorized:
+      liveClosureMeta.production_implementation_authorized,
+    closureUserAuthorized: liveClosureMeta.user_implementation_authorization,
+    closureImplementationCandidateReady:
+      liveClosureMeta.implementation_candidate_ready,
+    closureImplementationReview: liveClosureMeta.implementation_review,
+    closureTargetAcceptanceAuthorized:
+      liveClosureMeta.target_acceptance_authorized,
+    closureTargetArchiveAuthorized: liveClosureMeta.target_archive_authorized,
+    closureAcceptanceAuthorized: liveClosureMeta.closure_acceptance_authorized,
+    closureArchiveAuthorized: liveClosureMeta.closure_archive_authorized,
+    closureDefaultRuntime: liveClosureMeta.default_runtime,
+    closureS62Started: liveClosureMeta.rkp2_stage6_s6_2_started,
+    closureS63Started: liveClosureMeta.rkp2_stage6_s6_3_started,
+    closureIntegrationAuthorized: liveClosureMeta.integration_authorized,
+    closureQualificationAuthorized: liveClosureMeta.qualification_authorized,
+    closureRuntimeSwitchAuthorized:
+      liveClosureMeta.default_runtime_switch_authorized,
+    closurePushAuthorized: liveClosureMeta.push_authorized,
+    closureRkp3CreationAuthorized: liveClosureMeta.rkp3_creation_authorized,
+    closureE3StressRerun: liveClosureMeta.e3_stress_rerun,
+    lawStatus: liveLawTask.status,
+    lawCurrentPlanningChild: liveLawMeta.current_planning_child,
+    lawCurrentImplementationChild: liveLawMeta.current_implementation_child,
+    lawNextGate: liveLawMeta.next_gate,
+    lawIntegrationAuthorized: liveLawMeta.integration_authorized,
+    lawQualificationAuthorized: liveLawMeta.qualification_authorized,
+    lawArchiveAuthorized: liveLawMeta.archive_authorized,
+    lawRuntimeSwitchAuthorized: liveLawMeta.default_runtime_switch_authorized,
+    lawPushAuthorized: liveLawMeta.push_authorized,
+    lawRkp3CreationAuthorized: liveLawMeta.rkp3_creation_authorized,
+    stage6Status: liveStage6Task.status,
+    stage6CurrentImplementationChild:
+      liveStage6Meta.current_implementation_child,
+    stage6S62Started: liveStage6Meta.rkp2_stage_6_s6_2_started,
+    stage6S63Started: liveStage6Meta.rkp2_stage_6_s6_3_started,
+    stage6DefaultRuntime: liveStage6Meta.default_runtime,
+    stage6ArchiveAuthorized: liveStage6Meta.archive_authorized,
+    stage6OfficialMeasurementAuthorized:
+      liveStage6Meta.official_measurement_authorized,
+    stage6RuntimeSwitchAuthorized:
+      liveStage6Meta.default_runtime_switch_authorized,
+    stage6PushAuthorized: liveStage6Meta.push_authorized,
+    stage6Rkp3CreationAuthorized: liveStage6Meta.rkp3_creation_authorized,
+  };
+  assertAcceptanceArchiveLifecycleProjection(
+    archiveLifecycle,
+    archiveClosurePhase,
+  );
+  for (const mutation of [
+    { closureProductionAuthorized: true },
+    { closureE3StressRerun: true },
+    { closureS62Started: true },
+    { closureS63Started: true },
+    { closureIntegrationAuthorized: true },
+    { closureQualificationAuthorized: true },
+    { closureRuntimeSwitchAuthorized: true },
+    { closurePushAuthorized: true },
+    { closureRkp3CreationAuthorized: true },
+    { targetDefaultRuntime: "rust" },
+    { stage6S62Started: true },
+    { stage6S63Started: true },
+    { stage6DefaultRuntime: "rust" },
+    { stage6OfficialMeasurementAuthorized: true },
+    { lawCurrentImplementationChild: "wrong-child" },
+  ] as const) {
+    assert.throws(() =>
+      assertAcceptanceArchiveLifecycleProjection(
+        { ...archiveLifecycle, ...mutation },
+        archiveClosurePhase,
+      ),
+    );
+  }
 
   const worker = readText(
     "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts",
