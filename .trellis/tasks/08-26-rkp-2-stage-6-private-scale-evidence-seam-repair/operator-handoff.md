@@ -3,13 +3,13 @@
 ## Current state
 
 - Acceptance-projection candidate `f27daf7b514731adaabbe8f7814d2b57e12a7df7` passed its dedicated review, was owner-accepted and was natively archived by `1c76dbf9d9cd1ece12299b148f0c6de09d1391e1`.
-- The new 334-byte review record is single-owned by `.trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/task.json`, SHA-256 `8559f7aed98ddc45154f90dd459688530ba5e24efedeb573389e06ca7d099436`.
-- Next action is a dedicated read-only audit of the exact P3 closure candidate; S6.2/S6.3 remain false.
+- The 334-byte review record is single-owned by `.trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-archive-closure/task.json`, SHA-256 `8559f7aed98ddc45154f90dd459688530ba5e24efedeb573389e06ca7d099436`.
+- Closure repair candidate `11cb12ae063f91565009b85be9ba7d210a0372a6` passed targeted dedicated rereview at P0/P1/P2=`0/0/0`; separate owner closeout authorization and native archive completed P4.
 - E3 Workspace Law candidate `0c561d14193374436361eec09b361cab0170278a` received dedicated implementation audit PASS, P0/P1/P2=`0/0/0`.
 - The sole canonical audit record is owned by the 08-31 law task; this Stage 6 task stores only its path and SHA-256 `dee0b92ce8a2ff6c8a9737c5b98104e39633b85aaad70e594f61e4847fdd7589`.
 - Acceptance-projection technical commit `4abfef9b3f7620d6428382af287cccd662aa7bf7` preserves the historical 21-path candidate and produces an exact 18-path terminal transition.
 - Dual-Node focused Workspace Law is `11/8/3`, with only the three unchanged historical fail-closed tests remaining.
-- The target transition is accepted and archived; the active acceptance/archive closure remains unaccepted and unarchived pending its own dedicated independent implementation review.
+- The target and acceptance/archive closure transitions are accepted, archived and completed; the E3 law parent remains active and is the only live owner.
 - RKP-2 S6.1 remains retained complete; S6.2/S6.3 are false and operationally paused; TypeScript remains default.
 
 ## Frozen ownership
@@ -55,8 +55,8 @@ The user explicitly authorized E3 after the fifth E2 repair passed its dedicated
 
 The frozen result is `102400` Events / `51200` Notes, exact index and owner probes, `474517/474517` import/rebuild entries, semantic and canonical-byte parity, deterministic topology and extension preservation. Rust workload time was `12964590 us`, end-to-end worker time `14077309 us`, and peak working set `821886976` bytes. Exit/reap/cleanup were `0/succeeded/succeeded`, timeout was false and partial evidence was false. The exact protocol and input manifest are in `research/implementation-evidence.md`.
 
-This child remains `in_progress` and is now ready only for a dedicated independent implementation review. RKP-2 stays paused before S6.2; S6.2/S6.3, acceptance, archive, integration, qualification, cutover, push and RKP-3 remain unstarted.
+At the E3 candidate-freeze checkpoint, this child remained `in_progress` and was ready only for a dedicated independent implementation review. Later review and acceptance/archive closure facts are recorded in the final section below. RKP-2 stays paused before S6.2; S6.2/S6.3, integration, qualification, cutover, push and RKP-3 remain unstarted.
 
 ## Acceptance-projection current gate
 
-The dedicated E3 Workspace Law and acceptance-projection implementation reviews passed. The target was moved intact to `.trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-state-projection`. The next and only live gate is a fresh read-only review of the exact 40-path acceptance/archive-closure P3 candidate. No E3 stress rerun occurred, and no closure/parent acceptance, archive, integration, S6.2/S6.3, qualification, runtime cutover, push or RKP-3 is authorized.
+The dedicated E3 Workspace Law, acceptance-projection and closure implementation reviews passed. The target and closure were moved intact to their exact `.trellis/tasks/archive/2026-08/...` locations. The exact P4 Workspace Law remains `11/8/3` with a 40-path no-rename projection and zero protected-path delta. The next and only live gate is `explicit_owner_decision_for_e3_law_parent_acceptance_archive`. No E3 stress rerun occurred; the E3 law parent and this Stage 6 task remain active, and no S6.2/S6.3, integration, qualification, runtime cutover, push or RKP-3 is authorized.

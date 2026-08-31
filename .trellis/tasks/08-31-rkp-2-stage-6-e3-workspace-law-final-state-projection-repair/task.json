@@ -49,12 +49,12 @@
     ".trellis/tasks/08-31-rkp-2-e3-acceptance-state-projection/prd.md",
     ".trellis/tasks/08-31-rkp-2-e3-acceptance-state-projection/design.md",
     ".trellis/tasks/08-31-rkp-2-e3-acceptance-state-projection/implement.md",
-    ".trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/task.json",
-    ".trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/prd.md",
-    ".trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/design.md",
-    ".trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/implement.md"
+    ".trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-archive-closure/task.json",
+    ".trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-archive-closure/prd.md",
+    ".trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-archive-closure/design.md",
+    ".trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-archive-closure/implement.md"
   ],
-  "notes": "IN_PROGRESS P3 / TARGET ACCEPTANCE-STATE TASK NATIVELY ARCHIVED AT 1C76DBF9 / ARCHIVE-CLOSURE LAW TECHNICAL CHECKPOINT 387C61B / CURRENT IMPLEMENTATION CHILD 08-31-RKP-2-E3-ACCEPTANCE-ARCHIVE-CLOSURE / DEDICATED INDEPENDENT CLOSURE IMPLEMENTATION REVIEW PENDING / TYPESCRIPT DEFAULT / S6.2 S6.3 FALSE / NO INTEGRATION QUALIFICATION CUTOVER PUSH OR RKP3.",
+  "notes": "IN_PROGRESS P4 / TARGET AND ACCEPTANCE-ARCHIVE CLOSURE TASKS COMPLETED AT THEIR 2026-08 ARCHIVE PATHS / CLOSURE TARGETED IMPLEMENTATION REREVIEW PASS 11CB12A P0_P1_P2 0_0_0 / NO CURRENT PLANNING OR IMPLEMENTATION CHILD / NEXT GATE EXPLICIT OWNER DECISION FOR THIS E3 LAW PARENT / TYPESCRIPT DEFAULT / S6.2 S6.3 FALSE / NO INTEGRATION QUALIFICATION CUTOVER PUSH OR RKP3.",
   "meta": {
     "planning_base_commit": "4ad23773e9c9e1081667a4eccb84cc464b85bc89",
     "planning_base_tree": "9dbcef77fbcc258e4fe96fdfb2b28839f095d610",
@@ -179,10 +179,10 @@
     "technical_changed_paths": [
       "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
     ],
-    "implementation_stage": "P3_target_archived_acceptance_archive_closure_review_candidate_ready",
+    "implementation_stage": "P4_closure_archived_completed_owner_decision_for_e3_law_parent_pending",
     "implementation_candidate_ready": true,
     "implementation_review": "passed_external_audit_bound_0c561d14193374436361eec09b361cab0170278a_P0_0_P1_0_P2_0",
-    "next_gate": "dedicated_independent_E3_acceptance_archive_closure_implementation_review_pending",
+    "next_gate": "explicit_owner_decision_for_e3_law_parent_acceptance_archive",
     "phase_b_validation": {
       "trellis_tasks_passed": 5,
       "task_json_parsed": 5,
@@ -272,7 +272,7 @@
     "acceptance_archive_closure_task": "08-31-rkp-2-e3-acceptance-archive-closure",
     "acceptance_archive_closure_planning_base": "f27daf7b514731adaabbe8f7814d2b57e12a7df7",
     "acceptance_archive_closure_source_review_sha256": "8559f7aed98ddc45154f90dd459688530ba5e24efedeb573389e06ca7d099436",
-    "acceptance_archive_closure_source_review_owner": ".trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/task.json",
+    "acceptance_archive_closure_source_review_owner": ".trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-archive-closure/task.json",
     "acceptance_archive_closure_technical_commit": "387c61b4a04b45c35f14d01c342dca4307804d05",
     "acceptance_state_projection_owner_accepted": true,
     "acceptance_state_projection_archive_authorized": true,
@@ -302,6 +302,17 @@
       "scope": "closure_activation_single_workspace_law_test_target_acceptance_and_native_archive_then_independent_review_only",
       "production_implementation_authorized": false
     },
+    "acceptance_archive_closure_targeted_implementation_rereview": {
+      "review_task": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
+      "review_turn": "01a056ae-f0fd-7a70-9019-8d03a0ddad45",
+      "candidate_commit": "11cb12ae063f91565009b85be9ba7d210a0372a6",
+      "P0": 0,
+      "P1": 0,
+      "P2": 0,
+      "verdict": "pass_for_explicit_owner_closeout_decision_not_archive_authorization"
+    },
+    "acceptance_archive_closure_owner_closeout_authorized": true,
+    "acceptance_archive_closure_native_archive_path": ".trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-archive-closure",
     "acceptance_state_projection_independent_planning_review": {
       "review_task": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
       "review_turn": "01a055b2-f2a3-7d61-9169-3ac24f0486d0",
@@ -312,6 +323,6 @@
       "verdict": "PASS_READY_FOR_BOUNDED_ACCEPTANCE_STATE_PROJECTION_IMPLEMENTATION"
     },
     "current_planning_child": null,
-    "current_implementation_child": "08-31-rkp-2-e3-acceptance-archive-closure"
+    "current_implementation_child": null
   }
 }

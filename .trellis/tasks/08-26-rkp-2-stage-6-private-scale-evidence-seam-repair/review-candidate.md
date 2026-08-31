@@ -2,7 +2,7 @@
 
 ## Current implementation state
 
-Acceptance-projection candidate `f27daf7b514731adaabbe8f7814d2b57e12a7df7` passed dedicated review, received bounded owner acceptance and was natively archived by `1c76dbf9d9cd1ece12299b148f0c6de09d1391e1`. Archive-closure technical checkpoint `387c61b4a04b45c35f14d01c342dca4307804d05` is active; the exact P3 closure candidate now awaits dedicated implementation review. This does not start S6.2/S6.3 or any later gate.
+Acceptance-projection candidate `f27daf7b514731adaabbe8f7814d2b57e12a7df7` passed dedicated review, received bounded owner acceptance and was natively archived by `1c76dbf9d9cd1ece12299b148f0c6de09d1391e1`. Archive-closure technical checkpoint `387c61b4a04b45c35f14d01c342dca4307804d05` remained the sole technical owner. Closure repair candidate `11cb12ae063f91565009b85be9ba7d210a0372a6` passed targeted dedicated rereview at P0/P1/P2=`0/0/0`; separate owner closeout authorization and native archive completed P4. This does not start S6.2/S6.3 or any later gate.
 
 Exact planning authority `d638b81a3c9b3d7461f75a91c8d5b090f06adea2` received `PASS FOR BOUNDED IMPLEMENTATION`, P0/P1/P2=`0/0/0`, from the dedicated independent planning auditor. E1 through E3 later completed, and frozen E3 Workspace Law candidate `0c561d14193374436361eec09b361cab0170278a` received its own dedicated implementation audit PASS with P0/P1/P2=`0/0/0`.
 
@@ -11,7 +11,7 @@ The first candidate `df686882efa30f489da138d2730acbdd4fb9cd30` received P0/P1/P2
 1. implementation-time planning authority mutability;
 2. unresolved private libtest, owner-probe, sentinel, process and failure-protocol decisions.
 
-Acceptance-projection technical commit `4abfef9b3f7620d6428382af287cccd662aa7bf7` binds that PASS to one canonical record and an exact 18-path transition. Target acceptance/archive are now complete; closure and parent acceptance/archive, integration, push, Stage 6 S6.2/S6.3, cutover, qualification and RKP-3 remain unclaimed.
+Acceptance-projection technical commit `4abfef9b3f7620d6428382af287cccd662aa7bf7` binds that PASS to one canonical record and an exact 18-path transition. Target and closure acceptance/archive are complete. The E3 law and Stage 6 parents remain active and unaccepted; integration, push, Stage 6 S6.2/S6.3, cutover, qualification and RKP-3 remain unclaimed.
 
 The first bounded repair candidate `176fd3670d3015631fc1553a59cc8e4d3a941221` received a second targeted result P0/P1/P2=`0/1/0`. The second repair candidate `8d773b8e9d39ac21aba9cad715609fffc80eefec` then received the final targeted result P0/P1/P2=`0/1/0`, limited to its contradiction between post-handoff wrapper ownership and a start-failure envelope that incorrectly claimed cleanup had not run. This third repair changes only that cleanup ownership/status contract.
 
@@ -53,7 +53,7 @@ Single fixture owner, exact `102400` Events / `51200` Notes / `18` Extensions, b
 - E1 gates: focused `1/1`; exact Cargo artifact `1`; Clippy and MSRV pass; fresh `core.autocrlf=false` E: clone passes Runtime `16/16` with the stress test intentionally ignored.
 - E2 has not started. Candidate readiness remains false; RKP-2 S6.2/S6.3 remain paused and TypeScript stays default.
 
-## E3 implementation candidate
+## Historical E3 implementation candidate
 
 **READY FOR DEDICATED INDEPENDENT IMPLEMENTATION REVIEW**
 
@@ -61,8 +61,12 @@ The separately authorized E3 run used a fresh request at source HEAD `4ad23773e9
 
 Review must verify the fresh-request boundary, six-file input manifest, exact protocol, all nine immutable planning hashes, lifecycle-only E3 diff, retained TypeScript default and the unchanged false S6.2/S6.3 gates. A technical PASS would authorize only a later owner acceptance decision; it does not itself archive, integrate, qualify, cut over, push or start RKP-3.
 
-## Acceptance-projection review candidate
+## Historical acceptance-projection review candidate
 
 **READY FOR DEDICATED INDEPENDENT ACCEPTANCE-PROJECTION IMPLEMENTATION REVIEW**
 
 The E3 audit record remains owned only by the 08-31 Workspace Law task and canonicalizes to 323 UTF-8 bytes with SHA-256 `dee0b92ce8a2ff6c8a9737c5b98104e39633b85aaad70e594f61e4847fdd7589`. This Stage 6 task stores only its owner path and digest. Review must pin the terminal candidate HEAD, verify historical 21-path and transition 18-path sets, reproduce dual-Node `11/8/3`, and confirm every later lifecycle flag remains false. The candidate remains `in_progress` and unaccepted.
+
+## Acceptance/archive closure completed
+
+The closure's first implementation audit returned P0/P1/P2=`0/1/0`; the bounded repair and targeted rereview of exact candidate `11cb12ae063f91565009b85be9ba7d210a0372a6` returned `0/0/0`. Owner closeout was separately authorized. Both child tasks now exist only in the `2026-08` archive, while the E3 law task stays the current Stage 6 implementation child. The sole next gate is an explicit owner decision for that law parent. S6.2/S6.3, integration, qualification, cutover, push and RKP-3 remain false.

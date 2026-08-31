@@ -2,9 +2,9 @@
 
 ## Status
 
-`P3 TARGET ARCHIVED — CLOSURE IMPLEMENTATION REVIEW CANDIDATE`
+`P4 TARGET AND CLOSURE ARCHIVED — E3 LAW-PARENT OWNER DECISION PENDING`
 
-The acceptance-projection candidate `f27daf7b514731adaabbe8f7814d2b57e12a7df7` passed its dedicated review. Archive-closure technical checkpoint `387c61b4a04b45c35f14d01c342dca4307804d05` closes the archive-aware law. Native commit `1c76dbf9d9cd1ece12299b148f0c6de09d1391e1` moved the accepted target to the exact `2026-08` archive location. The closure candidate is now ready only for its dedicated read-only implementation review.
+The acceptance-projection candidate `f27daf7b514731adaabbe8f7814d2b57e12a7df7` passed its dedicated review. Archive-closure technical checkpoint `387c61b4a04b45c35f14d01c342dca4307804d05` closes the archive-aware law. Native commit `1c76dbf9d9cd1ece12299b148f0c6de09d1391e1` moved the accepted target to the exact `2026-08` archive location. Closure repair candidate `11cb12ae063f91565009b85be9ba7d210a0372a6` then passed targeted dedicated rereview at P0/P1/P2=`0/0/0`; separate owner closeout authorization preceded its native archive to the matching `2026-08` closure path.
 
 Planning authority `e4ee1d43fd29a794d8f0f389d651c556203fe5af` passed its independent planning audit with `P0/P1/P2=0/0/0`. Phases A through E are complete. The sole technical owner is commit `36fe1956ec8660d664eb9606912dbc6e1b6c3ede`, which changes only `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts`.
 
@@ -34,12 +34,12 @@ The follow-up acceptance-projection technical commit is `4abfef9b3f7620d6428382a
 7. Does 08-26 remain the live E3 owner while 08-30 remains historical?
 8. Are S6.2/S6.3, TypeScript default and all later lifecycle gates unchanged?
 
-## Required acceptance-projection review output
+## Recorded closure verdict and remaining gate
 
 ```text
-<reviewer-derived verdict>
-P0/P1/P2 = <actual counts>
-<findings with exact file:line evidence, or reviewer-derived no-findings statement>
+PASS FOR EXPLICIT OWNER CLOSEOUT DECISION — NOT ARCHIVE AUTHORIZATION
+P0/P1/P2 = 0/0/0
+AUDITED CANDIDATE = 11cb12ae063f91565009b85be9ba7d210a0372a6
 ```
 
-Any second technical file, non-40-path no-rename P3 projection, duplicate audit record, broken successor reference, evidence regeneration, changed historical-red set or later lifecycle advancement returns the closure candidate to bounded repair. This task remains `in_progress`; closure audit PASS is not parent acceptance, archive, S6.2 or S6.3 authorization.
+The user supplied the separate closure closeout authorization, and native archive completed the P4 projection without a second technical edit. This E3 law task remains `in_progress`, has no current child, and is neither accepted nor archive-authorized. The next gate is an explicit owner decision for this E3 law parent; S6.2/S6.3 and every later gate remain false.
