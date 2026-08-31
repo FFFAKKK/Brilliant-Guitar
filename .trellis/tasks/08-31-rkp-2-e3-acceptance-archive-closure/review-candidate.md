@@ -30,7 +30,7 @@ P0/P1/P2 = 0/0/0
 ## Current verdict
 
 ```text
-PASS FOR BOUNDED IMPLEMENTATION PLANNING
+PLANNING PASS RECORDED — BOUNDED IMPLEMENTATION ACTIVE
 P0/P1/P2=0/0/0
 EXACT AUTHORITY=f84c84387fa21d4bdbc05b838397fb091ce664e9
 ```
@@ -46,3 +46,5 @@ The first review pinned `c35af97da235f075857181c72d64dc2c8506dfed`. Targeted rer
 5. one technical path, 40-path P3/P4 arithmetic, later false gates, and production/protected zero delta remain unchanged.
 
 Targeted rereview completed all five checks. This PASS accepts planning only; it does not authorize `task.py start`, implementation, acceptance, archive, integration, Stage 6 continuation, qualification, cutover, push, or RKP-3.
+
+The user subsequently authorized this bounded implementation with `继续吧` on `2026-08-31`. Activation changes lifecycle metadata only; the implementation candidate remains unready and its independent implementation review remains pending. Target acceptance/archive and closure acceptance/archive are still false.

@@ -2,7 +2,9 @@
 
 ## Status
 
-`E3 IMPLEMENTATION AUDIT PASSED — ACCEPTANCE-PROJECTION IMPLEMENTATION REVIEW PENDING`
+`E3 AND ACCEPTANCE-PROJECTION REVIEWS PASSED — ARCHIVE-CLOSURE IMPLEMENTATION ACTIVE`
+
+The acceptance-projection candidate `f27daf7b514731adaabbe8f7814d2b57e12a7df7` passed its dedicated review. Archive-closure planning authority `f84c84387fa21d4bdbc05b838397fb091ce664e9` then passed targeted planning rereview at `P0/P1/P2=0/0/0` and has received bounded user implementation authorization. The target remains active and unaccepted while the archive-aware Workspace Law technical checkpoint is built.
 
 Planning authority `e4ee1d43fd29a794d8f0f389d651c556203fe5af` passed its independent planning audit with `P0/P1/P2=0/0/0`. Phases A through E are complete. The sole technical owner is commit `36fe1956ec8660d664eb9606912dbc6e1b6c3ede`, which changes only `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts`.
 

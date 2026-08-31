@@ -54,7 +54,7 @@
     ".trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/design.md",
     ".trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/implement.md"
   ],
-  "notes": "IN_PROGRESS / ACCEPTANCE-STATE PROJECTION F27DAF7 REVIEW PASS 0_0_0 / ARCHIVE-CLOSURE PLANNING AUTHORITY F84C843 TARGETED REREVIEW PASS 0_0_0 / EXPLICIT USER IMPLEMENTATION AUTHORIZATION REQUIRED / TARGET REMAINS ACTIVE AND UNACCEPTED / TYPESCRIPT DEFAULT / S6.2 S6.3 FALSE / NO ARCHIVE INTEGRATION QUALIFICATION CUTOVER PUSH OR RKP3.",
+  "notes": "IN_PROGRESS / ACCEPTANCE-ARCHIVE CLOSURE CHILD ACTIVATED AFTER USER AUTHORIZATION / PLANNING AUTHORITY F84C843 PASS 0_0_0 / TARGET REMAINS ACTIVE AND UNACCEPTED / CURRENT IMPLEMENTATION CHILD IS 08-31-RKP-2-E3-ACCEPTANCE-ARCHIVE-CLOSURE / TYPESCRIPT DEFAULT / S6.2 S6.3 FALSE / NO ARCHIVE INTEGRATION QUALIFICATION CUTOVER PUSH OR RKP3.",
   "meta": {
     "planning_base_commit": "4ad23773e9c9e1081667a4eccb84cc464b85bc89",
     "planning_base_tree": "9dbcef77fbcc258e4fe96fdfb2b28839f095d610",
@@ -182,7 +182,7 @@
     "implementation_stage": "independent_E3_audit_bound_acceptance_projection_candidate_ready",
     "implementation_candidate_ready": true,
     "implementation_review": "passed_external_audit_bound_0c561d14193374436361eec09b361cab0170278a_P0_0_P1_0_P2_0",
-    "next_gate": "explicit_user_acceptance_archive_closure_implementation_authorization_required",
+    "next_gate": "acceptance_archive_closure_archive_aware_workspace_law_technical_checkpoint",
     "phase_b_validation": {
       "trellis_tasks_passed": 5,
       "task_json_parsed": 5,
@@ -288,7 +288,13 @@
       "P0": 0,
       "P1": 0,
       "P2": 0,
-      "status": "planning_accepted_implementation_authorization_required"
+      "status": "planning_accepted_implementation_authorized_and_activated"
+    },
+    "acceptance_archive_closure_user_implementation_authorization": {
+      "date": "2026-08-31",
+      "record": "user_continue_after_explicit_E3_acceptance_archive_closure_implementation_gate",
+      "scope": "closure_activation_single_workspace_law_test_target_acceptance_and_native_archive_then_independent_review_only",
+      "production_implementation_authorized": false
     },
     "acceptance_state_projection_independent_planning_review": {
       "review_task": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
@@ -299,7 +305,7 @@
       "P2": 0,
       "verdict": "PASS_READY_FOR_BOUNDED_ACCEPTANCE_STATE_PROJECTION_IMPLEMENTATION"
     },
-    "current_planning_child": "08-31-rkp-2-e3-acceptance-archive-closure",
-    "current_implementation_child": "08-31-rkp-2-e3-acceptance-state-projection"
+    "current_planning_child": null,
+    "current_implementation_child": "08-31-rkp-2-e3-acceptance-archive-closure"
   }
 }

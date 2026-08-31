@@ -2,7 +2,9 @@
 
 ## Current gate
 
-`EXTERNAL IMPLEMENTATION AUDIT PASSED — ACCEPTANCE-PROJECTION CANDIDATE READY FOR REVIEW`
+`ACCEPTANCE-ARCHIVE CLOSURE IMPLEMENTATION ACTIVE — TARGET REMAINS ACTIVE`
+
+The closure planning authority `f84c84387fa21d4bdbc05b838397fb091ce664e9` passed targeted independent planning rereview at `P0/P1/P2=0/0/0`. The user authorized its bounded implementation on `2026-08-31`; the current implementation child is now `08-31-rkp-2-e3-acceptance-archive-closure`, with no current planning child. This activation does not accept or archive the target.
 
 The frozen E3 Workspace Law candidate `0c561d14193374436361eec09b361cab0170278a` received a dedicated read-only implementation audit PASS with `P0/P1/P2=0/0/0`. Its sole canonical audit record remains in this task's `task.json`: 323 UTF-8 bytes, SHA-256 `dee0b92ce8a2ff6c8a9737c5b98104e39633b85aaad70e594f61e4847fdd7589`. The acceptance-projection technical commit is `4abfef9b3f7620d6428382af287cccd662aa7bf7`.
 
@@ -42,4 +44,4 @@ The three remaining failures are intentionally preserved historical fail-closed 
 
 Perform a fresh, read-only implementation audit of the acceptance-projection candidate HEAD. Verify that the historical E3 candidate remains exact at 21 paths, the new transition is exact at 18 paths, this task is the only structured audit-record owner, both references match the digest, all negative fixtures fail closed, dual-Node focused classification is `11/8/3`, and protected paths remain unchanged.
 
-The E3 candidate audit is complete, but the acceptance-projection implementation review remains pending. RKP-2 S6.2/S6.3, acceptance, archive, integration, qualification, cutover, push and RKP-3 remain later gates.
+The acceptance-projection implementation review has passed at `f27daf7`, but its owner acceptance and archive remain pending behind the active closure law. RKP-2 S6.2/S6.3, integration, qualification, cutover, push and RKP-3 remain later gates.
