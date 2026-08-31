@@ -166,10 +166,30 @@ Only after Q3 review PASS and a separate owner closeout authorization, execute o
 2. write only the resolved closure owner path and digest into Stage 6;
 3. set closure acceptance/archive authorization true;
 4. set Stage 6 current planning/implementation child null and next gate to `explicit_owner_decision_for_stage6_parent_acceptance_archive`;
-5. require the whole worktree to have no unrelated dirty path, then stage exactly the allowed closure and Stage 6 lifecycle paths; verify cached diff, no extra staged path and no unstaged delta anywhere;
-6. without creating a pre-archive commit, run one PowerShell sequence that revalidates the staged set, checks the local clock and immediately invokes:
+5. require the whole worktree to have no unrelated dirty or untracked path, then stage exactly the allowed closure and Stage 6 lifecycle paths;
+6. without creating a pre-archive commit, run one PowerShell sequence that parses NUL-delimited all-untracked status, revalidates the six staged entries and blank worktree columns, checks the local clock, invokes native archive, then verifies the archive commit parent and exact commit-local membership:
 
 ```powershell
+# Exact status contract: git status --porcelain=v1 -z --untracked-files=all
+function Get-GitStatusPorcelainZ {
+  $psi = [System.Diagnostics.ProcessStartInfo]::new()
+  $psi.FileName = 'git'
+  $psi.UseShellExecute = $false
+  $psi.RedirectStandardOutput = $true
+  $psi.RedirectStandardError = $true
+  foreach ($argument in @('status', '--porcelain=v1', '-z', '--untracked-files=all')) {
+    [void]$psi.ArgumentList.Add($argument)
+  }
+  $process = [System.Diagnostics.Process]::Start($psi)
+  $stdout = $process.StandardOutput.ReadToEnd()
+  $stderr = $process.StandardError.ReadToEnd()
+  $process.WaitForExit()
+  if ($process.ExitCode -ne 0) {
+    throw "q4-status-preflight-failed: $stderr"
+  }
+  return $stdout
+}
+
 $expectedStaged = @(
   '.trellis/tasks/08-31-rkp-2-e3-workspace-law-acceptance-archive-closure/task.json',
   '.trellis/tasks/08-31-rkp-2-e3-workspace-law-acceptance-archive-closure/operator-handoff.md',
@@ -178,12 +198,28 @@ $expectedStaged = @(
   '.trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/operator-handoff.md',
   '.trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/review-candidate.md'
 ) | Sort-Object
+$statusRaw = Get-GitStatusPorcelainZ
+$statusEntries = @($statusRaw.Split([char]0, [System.StringSplitOptions]::RemoveEmptyEntries))
+if ($statusEntries.Count -ne 6) {
+  throw 'q4-whole-worktree-entry-count-mismatch'
+}
+$actualStatusPaths = @(
+  foreach ($entry in $statusEntries) {
+    if ($entry.StartsWith('??')) {
+      throw 'q4-untracked-path-present'
+    }
+    if ($entry.Length -lt 4 -or $entry.Substring(0, 2) -ne 'M ') {
+      throw "q4-index-or-worktree-column-mismatch: $entry"
+    }
+    $entry.Substring(3)
+  }
+) | Sort-Object
+if (@(Compare-Object $expectedStaged $actualStatusPaths).Count -ne 0) {
+  throw 'q4-whole-worktree-path-mismatch'
+}
 $actualStaged = @(git diff --cached --name-only) | Sort-Object
 if (@(Compare-Object $expectedStaged $actualStaged).Count -ne 0) {
   throw 'q4-staged-allowlist-mismatch'
-}
-if (@(git diff --name-only).Count -ne 0) {
-  throw 'q4-unstaged-delta-present'
 }
 $now = Get-Date
 if ($now.ToString('yyyy-MM') -ne '2026-08' -or
@@ -191,17 +227,64 @@ if ($now.ToString('yyyy-MM') -ne '2026-08' -or
     $now.TimeOfDay -ge [TimeSpan]::Parse('23:50:00')) {
   throw 'archive-clock-contract-mismatch'
 }
+$q3Head = (git rev-parse HEAD).Trim()
 python .\.trellis\scripts\task.py archive 08-31-rkp-2-e3-workspace-law-acceptance-archive-closure
 if ($LASTEXITCODE -ne 0) {
   throw 'native-closure-archive-failed'
 }
+$archiveHead = (git rev-parse HEAD).Trim()
+try {
+  $parents = @((git show -s --format=%P $archiveHead).Trim() -split '\s+' | Where-Object { $_ })
+  if ($parents.Count -ne 1 -or $parents[0] -ne $q3Head) {
+    throw 'q4-archive-parent-mismatch'
+  }
+
+  $closureArtifacts = @(
+    'check.jsonl',
+    'design.md',
+    'implement.jsonl',
+    'implement.md',
+    'operator-handoff.md',
+    'prd.md',
+    'review-candidate.md',
+    'task.json',
+    'research/current-state-and-archive-gap-audit.md',
+    'research/file-state-and-test-matrix.md',
+    'research/planning-self-audit.md'
+  )
+  $closureActive = '.trellis/tasks/08-31-rkp-2-e3-workspace-law-acceptance-archive-closure'
+  $closureArchive = '.trellis/tasks/archive/2026-08/08-31-rkp-2-e3-workspace-law-acceptance-archive-closure'
+  $stage6 = '.trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair'
+  $expectedCommitRows = @(
+    foreach ($artifact in $closureArtifacts) {
+      "D`t$closureActive/$artifact"
+      "A`t$closureArchive/$artifact"
+    }
+    "M`t$stage6/task.json"
+    "M`t$stage6/operator-handoff.md"
+    "M`t$stage6/review-candidate.md"
+  ) | Sort-Object
+  $actualCommitRows = @(git diff-tree --no-commit-id --name-status --no-renames -r $archiveHead) | Sort-Object
+  if (@(Compare-Object $expectedCommitRows $actualCommitRows).Count -ne 0) {
+    throw 'q4-archive-commit-membership-mismatch'
+  }
+  if ((Get-GitStatusPorcelainZ).Length -ne 0) {
+    throw 'q4-post-archive-worktree-not-clean'
+  }
+} catch {
+  git revert --no-edit $archiveHead
+  if ($LASTEXITCODE -ne 0) {
+    throw "q4-archive-verification-and-revert-failed: $($_.Exception.Message)"
+  }
+  throw
+}
 ```
 
-7. require the native archive auto-commit to contain both the closure move and the already-staged Stage 6 terminal projection;
-8. only after that commit completes, run the real Q4 Workspace Law using the existing technical commit and verify exact `A23/M4/D12=39`;
+7. require the native archive auto-commit to contain only closure `A11/D11` plus the already-staged Stage 6 `M3`, with exact Q3 as its sole parent;
+8. only after that commit-membership check completes, run the real Q4 Workspace Law using the existing technical commit and verify exact `A23/M4/D12=39`;
 9. rerun Trellis, JSON/JSONL, focused, full, path and clean gates.
 
-There is no legal committed state with closure active and Stage 6 child null, and no legal committed state with closure archived while Stage 6 still points to it. A Q4 post-commit failure reverts the single native archive commit to the exact Q3 reviewed HEAD.
+There is no legal committed state with closure active and Stage 6 child null, and no legal committed state with closure archived while Stage 6 still points to it. The NUL-delimited porcelain preflight rejects every untracked, unstaged or extra path before native archive can stage the archive root. A parent, commit-membership or later Q4 failure reverts the single native archive commit to the exact Q3 reviewed HEAD.
 
 Final state does not accept/archive Stage 6 and does not start S6.2.
 

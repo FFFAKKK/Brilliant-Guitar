@@ -76,7 +76,8 @@ All comparisons use base `c73e213...` and `--no-renames`.
 | Q3 record | one closure owner | duplicate or fake pending values |
 | archive clock | exact month/date/time | mismatch reaches move |
 | JSONL | Q2 removes six enumerated target self-refs; active/archive-successor refs exist | residual active prefix, changed non-self row, unregistered digest |
-| Q4 atomicity | Stage 6 terminal projection and closure move share one archive commit | committed active-childless or archived-still-referenced intermediate state |
+| Q4 preflight | exactly six staged lifecycle paths; blank worktree columns; zero `??`; zero other path | untracked/unstaged/extra path reaches native archive |
+| Q4 atomicity | Stage 6 terminal projection and closure move share one archive commit; exact Q3 is sole parent; commit-local closure `A11/D11` + Stage 6 `M3` | committed active-childless, archived-still-referenced, extra-member or wrong-parent state |
 | Stage 6 | Q4 childless/active | early S6.2/S6.3 or parent archive |
 | runtime gates | TypeScript default | Rust default/cutover/qualification |
 | evidence | byte-semantic unchanged | E3 mutation or rerun |
@@ -87,7 +88,7 @@ All comparisons use base `c73e213...` and `--no-renames`.
 - JSON: all task JSONs parse;
 - JSONL: every line parses, exists and is unique per file;
 - Markdown fences: balanced;
-- Git: diff check, exact path set, parent child count one;
+- Git: diff check, exact path set, parent child count one, NUL-delimited all-untracked preflight, archive single-parent and commit-local manifest;
 - TypeScript: typecheck and build;
 - planning focused: Node supported and 20.20.2 exact `11/7/4` with three historical plus one planned gap;
 - planning full: exact `611/605/4/2`;

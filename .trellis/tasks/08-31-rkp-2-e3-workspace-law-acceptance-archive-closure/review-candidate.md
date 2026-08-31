@@ -3,7 +3,7 @@
 ## Verdict requested
 
 ```text
-READY FOR DEDICATED INDEPENDENT TARGETED PLANNING REREVIEW
+READY FOR FRESH DEDICATED INDEPENDENT TARGETED PLANNING REREVIEW
 ```
 
 This is a docs-only planning candidate. It is not an implementation, acceptance or archive candidate.
@@ -43,9 +43,12 @@ Expected production, Rust, test, evidence, package, Cargo, tsconfig and spec del
 ### Bounded-repair checks
 
 - first independent review of `7b1c0e31...` returned P0/P1/P2=`0/3/0`;
+- second targeted independent review of `63212ae...` confirmed the original three findings closed but returned P0/P1/P2=`0/1/0` because the Q4 preflight omitted untracked paths;
 - closure contains no structural copy of the target 323-byte audit record;
 - target `implement.jsonl`/`check.jsonl` are explicitly within the future allowlist and lose exactly six active self-reference rows at Q2;
-- Q3 review record, Stage 6 terminal projection and closure archive enter one native Q4 commit before the real Q4 law runs.
+- Q3 review record, Stage 6 terminal projection and closure archive enter one native Q4 commit before the real Q4 law runs;
+- `git status --porcelain=v1 -z --untracked-files=all` proves the whole pre-archive worktree contains exactly the six staged lifecycle paths, no worktree-column delta, no `??` and no other path;
+- the archive commit is single-parented by exact Q3 and has the exact commit-local closure `A11/D11` plus Stage 6 `M3` manifest before the real Q4 law runs.
 
 ### Path and ownership checks
 

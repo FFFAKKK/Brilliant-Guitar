@@ -10,7 +10,7 @@ task: .trellis/tasks/08-31-rkp-2-e3-workspace-law-acceptance-archive-closure
 status: planning
 task_start_run: false
 production_implementation_authorized: false
-independent_planning_review: first review returned 0/3/0; targeted rereview pending
+independent_planning_review: first review returned 0/3/0; second targeted review of 63212ae returned 0/1/0; bounded untracked-preflight repair complete; fresh targeted rereview pending
 ```
 
 This handoff is for a dedicated planning reviewer, not a production operator.
@@ -49,7 +49,9 @@ The dedicated planning reviewer must verify:
 8. literal archive clock policy is executable and fail-before-move;
 9. Stage 6 terminal state does not start S6.2/S6.3;
 10. Q4 uses one pre-staged native archive commit with no illegal committed intermediate state;
-11. production/Rust/evidence/later gates have zero planning delta.
+11. NUL-delimited porcelain status rejects every untracked, unstaged or extra path before archive;
+12. the archive commit has exact Q3 as its only parent and commit-local closure `A11/D11` plus Stage 6 `M3` membership before the real Q4 law runs;
+13. production/Rust/evidence/later gates have zero planning delta.
 
 Required verdict: P0/P1/P2=`0/0/0`.
 
@@ -70,5 +72,5 @@ Do not:
 ## Immediate next gate
 
 ```text
-READY FOR DEDICATED INDEPENDENT TARGETED PLANNING REREVIEW
+READY FOR FRESH DEDICATED INDEPENDENT TARGETED PLANNING REREVIEW
 ```

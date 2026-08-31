@@ -4,12 +4,12 @@
 
 ```text
 P0/P1/P2 = 0/0/0
-BOUNDED REPAIR COMPLETE — READY FOR DEDICATED TARGETED PLANNING REREVIEW
+SECOND BOUNDED REPAIR COMPLETE — READY FOR FRESH DEDICATED TARGETED PLANNING REREVIEW
 ```
 
 This is a planner self-check, not the independent review required for implementation.
 
-The first independent review audited commit `7b1c0e31f768ab802635c20d77909ba9b345e558` and returned P0/P1/P2=`0/3/0`. This repair addresses only those three findings; the external result is preserved in `task.json`, and independent review remains pending.
+The first independent review audited commit `7b1c0e31f768ab802635c20d77909ba9b345e558` and returned P0/P1/P2=`0/3/0`. The second targeted review audited `63212ae9021427b5d8af118dc677c7fe0499871e`, confirmed all three original findings closed, and returned P0/P1/P2=`0/1/0` for the untracked-file preflight gap. This second bounded repair addresses only that finding; both external results are preserved in `task.json`, and a fresh independent targeted review remains pending.
 
 ## Contract checks
 
@@ -24,6 +24,8 @@ The first independent review audited commit `7b1c0e31f768ab802635c20d77909ba9b34
 - [x] Archive clock fails before move and allows no fallback/manual move.
 - [x] Planning `11/7/4` and future Q1T `11/8/3` are explicitly separated; the planned fourth failure is not hidden.
 - [x] Q4 has one atomic pre-stage/native-archive commit and no committed illegal intermediate state.
+- [x] Q4 preflight parses NUL-delimited porcelain status with all untracked files, requires exactly six staged lifecycle paths, blank worktree columns, no `??` and no other path.
+- [x] Q4 verifies exact Q3 as the archive commit's only parent and exact commit-local closure `A11/D11` plus Stage 6 `M3` membership before the real law.
 
 ## Ownership checks
 
@@ -52,4 +54,4 @@ The first independent review audited commit `7b1c0e31f768ab802635c20d77909ba9b34
 
 ## Pending external gate
 
-The dedicated targeted planning reviewer must validate the exact repaired commit and the three repaired contracts. Any finding returns to bounded planning repair; no implementation, archive or task start occurs first.
+The fresh dedicated targeted planning reviewer must validate the exact second-repair commit, with special focus on untracked fail-closed behavior and post-archive commit membership. Any finding returns to bounded planning repair; no implementation, archive or task start occurs first.

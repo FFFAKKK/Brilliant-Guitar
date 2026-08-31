@@ -161,12 +161,13 @@ Only after Q3 review PASS and a separate owner closeout authorization:
 
 1. write the Q3 audit record into this task only and prepare closure acceptance/archive metadata;
 2. prepare the digest-only reference and terminal child/gate projection in Stage 6;
-3. require the whole worktree to contain no unrelated dirty path, then stage exactly those closure and Stage 6 lifecycle paths and reject any extra staged path;
+3. read `git status --porcelain=v1 -z --untracked-files=all` in the same PowerShell process and require exactly six `M ` index entries for the allowed closure/Stage 6 lifecycle paths, blank worktree columns, no `??` entry and no other path;
 4. in the same PowerShell sequence run the second archive clock preflight and native archive;
 5. let the native archive auto-commit adopt the pre-staged lifecycle projection together with the 11-file move;
-6. only after that commit exists, verify the real Q4 state with the already-reviewed Workspace Law and no technical edit.
+6. before running the real Q4 law, require the new HEAD to have exact Q3 HEAD as its only parent and require its commit-local `--no-renames` manifest to be exactly closure `D11/A11` plus Stage 6 `M3`;
+7. only after the commit membership check passes, verify the real Q4 state with the already-reviewed Workspace Law and no technical edit.
 
-There is no separately committed pre-archive Q4 state and no follow-up docs projection commit. A post-commit Q4 failure reverts the single native archive commit back to the exact reviewed Q3 HEAD.
+There is no separately committed pre-archive Q4 state and no follow-up docs projection commit. `git diff --name-only` alone is forbidden as the clean-worktree preflight because it omits untracked files. A parent/manifest mismatch or later Q4 failure reverts the single native archive commit back to the exact reviewed Q3 HEAD.
 
 No new closeout task is created.
 
@@ -311,6 +312,8 @@ The check and archive call cannot be split across shells or turns. Any mismatch 
 - Stage 6 child and next-gate projections are exact;
 - target JSONL active and projected-archive states contain no target active-root reference;
 - Q4 exists only after the one native archive commit that also adopts the pre-staged Stage 6 terminal projection;
+- Q4 preflight sees exactly six staged `M ` entries, blank worktree columns, no `??` and no other status entry;
+- Q4 archive commit has exact Q3 as its sole parent and exact commit-local closure `A11/D11` plus Stage 6 `M3` rows;
 - planning candidate 在 Node 24 和 20.20.2 精确为 `11/7/4`，第四项是本任务尚未被 law 接受的 planned gap；
 - future Q1T 后 focused 恢复 `11/8/3`；
 - planning full 精确为 `611/605/4/2`，future Q1T 后恢复 `611/606/3/2`。
@@ -327,6 +330,8 @@ The check and archive call cannot be split across shells or turns. Any mismatch 
 - audit field, insertion order, candidate, technical commit, verdict, bytes or digest mismatch;
 - duplicate structured review owner;
 - active self-reference in any archived JSONL;
+- untracked file under `.trellis/tasks/archive`, untracked file elsewhere, unstaged delta, extra staged path or nonblank worktree column before Q4 archive;
+- archive commit with the wrong/multiple parent, an extra/missing path, rename-collapsed membership or wrong status code; each post-archive mismatch must revert the single commit before rejection;
 - archive month/date/time mismatch;
 - Stage 6 child cleared early or points to the archived target;
 - S6.2/S6.3 true, Rust default, integration/qualification/cutover/push/RKP-3 true;

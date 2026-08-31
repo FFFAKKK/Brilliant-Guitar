@@ -30,7 +30,7 @@
     ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/operator-handoff.md",
     ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/review-candidate.md"
   ],
-  "notes": "PLANNING ONLY / FIRST INDEPENDENT REVIEW RETURNED P0-P1-P2 0-3-0 / BOUNDED REPAIR REMOVES DUPLICATED TARGET AUDIT STRUCTURE, MAKES TARGET JSONL ARCHIVE-STABLE, AND MAKES Q3-Q4 ONE ATOMIC ARCHIVE COMMIT / TARGETED PLANNING REREVIEW PENDING / TASK START FALSE / PRODUCTION AUTHORIZATION FALSE / TYPESCRIPT DEFAULT / S6.2 S6.3 FALSE / NO E3 STRESS INTEGRATION QUALIFICATION CUTOVER PUSH OR RKP3.",
+  "notes": "PLANNING ONLY / FIRST INDEPENDENT REVIEW RETURNED 0-3-0 / SECOND TARGETED REVIEW OF 63212AE RETURNED 0-1-0 AFTER CONFIRMING THE ORIGINAL THREE FINDINGS CLOSED / SECOND BOUNDED REPAIR ADDS ALL-UNTRACKED FAIL-CLOSED PREFLIGHT AND EXACT ARCHIVE COMMIT MEMBERSHIP / FRESH TARGETED REREVIEW PENDING / TASK START FALSE / PRODUCTION AUTHORIZATION FALSE / TYPESCRIPT DEFAULT / S6.2 S6.3 FALSE / NO E3 STRESS INTEGRATION QUALIFICATION CUTOVER PUSH OR RKP3.",
   "meta": {
     "planning_base_commit": "c73e2139d3a1a9e89e4ec6071678d75be1c02abb",
     "planning_branch": "codex/rkp-2-e3-law-acceptance-archive-closure",
@@ -40,11 +40,11 @@
     "task_start_run": false,
     "production_implementation_authorized": false,
     "user_implementation_authorization": false,
-    "independent_planning_review": "targeted_rereview_pending_after_bounded_repair",
-    "implementation_stage": "bounded_planning_repair_targeted_rereview_pending",
+    "independent_planning_review": "fresh_targeted_rereview_pending_after_second_bounded_repair",
+    "implementation_stage": "second_bounded_planning_repair_fresh_targeted_rereview_pending",
     "implementation_candidate_ready": false,
     "implementation_review": "not_started",
-    "next_gate": "dedicated_independent_targeted_planning_rereview",
+    "next_gate": "fresh_dedicated_independent_targeted_planning_rereview",
     "target_task": "08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair",
     "target_current_status": "in_progress",
     "target_current_implementation_review": "passed_external_audit_bound_0c561d14193374436361eec09b361cab0170278a_P0_0_P1_0_P2_0",
@@ -128,6 +128,24 @@
       "manual_move_allowed": false,
       "no_commit_allowed": false
     },
+    "q4_prearchive_whole_worktree_contract": {
+      "command": "git status --porcelain=v1 -z --untracked-files=all",
+      "expected_entry_count": 6,
+      "expected_index_state": "M",
+      "required_worktree_column": "blank",
+      "untracked_allowed": false,
+      "other_paths_allowed": false,
+      "git_diff_name_only_is_sufficient": false
+    },
+    "q4_archive_commit_membership_contract": {
+      "only_parent": "exact_q3_reviewed_head",
+      "closure_active_deletions": 11,
+      "closure_archive_additions": 11,
+      "stage6_lifecycle_modifications": 3,
+      "rename_detection": false,
+      "verification_order": "before_real_q4_workspace_law",
+      "mismatch_action": "revert_single_native_archive_commit_then_fail_closed"
+    },
     "stage6_terminal_projection": {
       "status": "in_progress",
       "current_planning_child": null,
@@ -150,14 +168,14 @@
     "immutable_planning_authority_hash_contract": "lf_normalized_utf8_sha256",
     "immutable_planning_authority_count": 8,
     "immutable_planning_authority": {
-      "prd.md": "fce07c51df6dbc871df6f1ecd7bacd08ebb929881cb22588b4289c00b990e42f",
-      "design.md": "66562b82d7af655514b9249175bb6b48cdd8e7cd71cf134dbad7e9c05b631e43",
-      "implement.md": "c238e6e2c899a92b37123c9e6e2c3b749a2de8cbc92f6c1c6c2e7b302771e924",
-      "implement.jsonl": "c7fb6db32d2ce342ffe3122a1c1ea52339426551fb3d0b4669451b0cc811807a",
-      "check.jsonl": "c4de58768ac7063bf84c4f40eae7f8dcdc63188073bf1d462df9630d037ee64f",
-      "research/current-state-and-archive-gap-audit.md": "d93c9263cdc5c88882e9bb8780813ed04a7cd78580920a9fae1d6079e550ca1c",
-      "research/file-state-and-test-matrix.md": "4798a6f998a6972c814808316d9bd1424cd762aecb3e551dd9077e8c23cb090b",
-      "research/planning-self-audit.md": "f09c86f1587190e67038a6ad203879cbf56b124ba91bd99b8ba2a5f0b69f6e10"
+      "prd.md": "e7a2178e86b4e416743f35164d43d2510288fb38a09780fb6785df304b99d056",
+      "design.md": "bd545cd88a7ad141cf1507546d7face00815e24f827a67ca2af35f51291ef26a",
+      "implement.md": "c4b5d77a407dd7beb93e3fcaff90ae2a17bdca342167a83f95697e6a04a83780",
+      "implement.jsonl": "fdcb892747eb1b9be8d1a51386baa9fe749dcc5b5ac24f644045383866ff4ba1",
+      "check.jsonl": "e4baafa4172a8dd0e2c43c7be6a4565f0a4358c630a8c51ea3bcad2b9e9eb12e",
+      "research/current-state-and-archive-gap-audit.md": "c752f4a4182806c92a7c1fdf18cf4472844e5b82f5b9722b3a28309f6799a00b",
+      "research/file-state-and-test-matrix.md": "c70e2cfa399cd39e1b2765bfb064f84344750c7babcd2e2a708d65d0a88b6982",
+      "research/planning-self-audit.md": "7136475a397f4fa53958aa31cd5ea17cf807f2b28225a2b50ff643b35499fbce"
     },
     "first_independent_planning_review": {
       "reviewTaskId": "01a057bc-ce6b-7b31-a667-afd1a1a91dcf",
@@ -173,14 +191,25 @@
         "q3_q4_transition_not_atomic"
       ]
     },
+    "second_targeted_independent_planning_review": {
+      "reviewTaskId": "01a05842-edbd-7e10-842e-ce936fa6a727",
+      "reviewTurnId": "01a05842-f31a-78a2-9c4e-efab66309d52",
+      "candidateCommit": "63212ae9021427b5d8af118dc677c7fe0499871e",
+      "verdict": "RETURN_FOR_BOUNDED_PLANNING_REPAIR",
+      "P0": 0,
+      "P1": 1,
+      "P2": 0,
+      "original_three_findings_closed": true,
+      "finding": "q4_prearchive_check_omitted_untracked_paths_and_commit_membership_was_not_mechanically_fail_closed"
+    },
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
       "P2": 0,
-      "verdict": "bounded_repair_complete_ready_for_dedicated_targeted_planning_rereview"
+      "verdict": "second_bounded_repair_complete_ready_for_fresh_dedicated_targeted_planning_rereview"
     },
     "planning_validation": {
-      "status": "bounded_repair_precommit_gates_passed_final_clean_candidate_full_pending_post_commit",
+      "status": "second_bounded_repair_precommit_gates_passed_final_clean_full_required_after_single_commit",
       "trellis_tasks_passed": 5,
       "json_files_parsed": 5,
       "jsonl_lines_parsed": 144,
@@ -222,7 +251,12 @@
       "source_clean_full_baseline": "611_tests_606_pass_3_historical_fail_2_skipped",
       "final_clean_planning_candidate_expected": "611_tests_605_pass_4_fail_2_skipped_exactly_one_planned_closeout_gap",
       "production_and_protected_delta": 0,
-      "e3_stress_rerun": false
+      "e3_stress_rerun": false,
+      "q4_untracked_preflight_parser_smoke": "passed_real_porcelain_z_capture_12_current_modified_entries",
+      "q4_future_prearchive_expected": "6_index_M_blank_worktree_zero_untracked_zero_other",
+      "q4_future_archive_commit_expected": "sole_parent_exact_q3_closure_A11_D11_stage6_M3",
+      "second_bounded_repair_path_count": 12,
+      "final_clean_full_after_commit_required": true
     }
   }
 }

@@ -170,7 +170,9 @@ local time < 23:50:00
 
 不允许 fallback month、手工移动、调整系统时钟或 `--no-commit`。任一条件不满足时，在移动前返回 bounded planning repair。
 
-Q4 不允许先形成“closure 仍 active 但 Stage 6 child 已清空”或“closure 已 archive 但 Stage 6 仍指向它”的中间提交。Q3 审计 PASS 与 owner closeout authorization 后，必须先把 closure 的真实审计记录、接受/归档状态投影和 Stage 6 终态精确预暂存，校验 staged allowlist 和全工作树无其它 delta，再在同一 PowerShell 序列执行时钟检查与原生 archive；`session_auto_commit` 必须为有效开启状态，原生 archive 的单一提交同时采用这些 staged changes。真实 Q4 Workspace Law 只在该提交完成后运行。
+Q4 不允许先形成“closure 仍 active 但 Stage 6 child 已清空”或“closure 已 archive 但 Stage 6 仍指向它”的中间提交。Q3 审计 PASS 与 owner closeout authorization 后，必须先把 closure 的真实审计记录、接受/归档状态投影和 Stage 6 终态精确预暂存。在同一 PowerShell 序列中，使用 `git status --porcelain=v1 -z --untracked-files=all` 机械证明 index 精确只有六个预暂存 lifecycle paths、所有 worktree 列为空、没有 `??` 且不存在其它路径；只检查 `git diff --name-only` 不构成合格预检。随后才执行时钟检查与原生 archive；`session_auto_commit` 必须为有效开启状态，原生 archive 的单一提交同时采用这些 staged changes。
+
+原生 archive 返回后、真实 Q4 Workspace Law 运行前，必须证明新 HEAD 只有 exact Q3 HEAD 一个 parent，且 commit-local `--no-renames` 集合精确为 closure active manifest 的 `D11`、closure archive manifest 的 `A11` 和 Stage 6 lifecycle files 的 `M3`。任一不符时先 revert 该单一 archive commit，再 fail closed；真实 Q4 Workspace Law 只在以上提交成员验证通过后运行。
 
 ### E3LAC-R011 — Stage 6 终态
 
@@ -202,7 +204,7 @@ Q4 后 Stage 6 保持 `in_progress`，但：
 - [ ] 唯一技术 allowlist 为 Workspace Law 测试文件。
 - [ ] lifecycle/context allowlist 精确 11 个文件；Q2 精确 `A11/M9/D0=20`，Q3/Q4 仍为 `A23/M4/D12=39`。
 - [ ] 目标 JSONL 的六条 active self-reference 在 Q2 显式移除，active 与 archive-successor 两种解析均通过。
-- [ ] Q4 的 Stage 6 终态与 closure 原生归档处于同一 archive commit，提交前后均不存在可提交的非法中间态。
+- [ ] Q4 的 Stage 6 终态与 closure 原生归档处于同一 archive commit；提交前 NUL-delimited status 排除全部 untracked/unstaged/extra paths，提交后 parent 与 commit-local `A11/D11/M3` manifest 精确，且不存在可提交的非法中间态。
 - [ ] planning candidate 的 Node 24 与 Node 20.20.2 精确为 `11/7/4`：三项历史 fail 加一项 planned closeout gap，零额外失败。
 - [ ] planning candidate full 精确为 `611/605/4/2`；未来 Q1T 后恢复 `611/606/3/2`。
 - [ ] Trellis、JSON/JSONL、Markdown fence、diff check、typecheck、build 全部通过。

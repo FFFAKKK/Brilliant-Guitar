@@ -4,5 +4,5 @@
 {"file":".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/design.md","reason":"Preserve RKP-2 store scope and keep this work limited to lifecycle law."}
 {"file":".trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-archive-closure/design.md","reason":"Reuse the accepted finite archive-aware transition pattern without recursive children."}
 {"file":".trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-archive-closure/implement.md","reason":"Reuse the accepted native archive, audit and rollback ordering."}
-{"file":".trellis/scripts/common/task_store.py","reason":"Implement the Q4 sequence against the real native archive status, move and auto-commit behavior."}
-{"file":".trellis/scripts/common/safe_commit.py","reason":"Account for the archive command's narrow staging paths while explicitly validating pre-staged Stage 6 terminal changes."}
+{"file":".trellis/scripts/common/task_store.py","reason":"Implement the Q4 sequence against the real native archive status, move and single-parent auto-commit behavior."}
+{"file":".trellis/scripts/common/safe_commit.py","reason":"Account for archive-root staging by rejecting all untracked or extra worktree paths before archive and validating exact commit-local membership afterward."}
