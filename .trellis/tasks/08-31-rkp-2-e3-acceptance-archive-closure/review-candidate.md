@@ -30,7 +30,7 @@ P0/P1/P2 = 0/0/0
 ## Current verdict
 
 ```text
-PLANNING PASS RECORDED — BOUNDED IMPLEMENTATION ACTIVE
+PLANNING PASS RECORDED — P2 OWNER ACCEPTANCE COMPLETE
 P0/P1/P2=0/0/0
 EXACT AUTHORITY=f84c84387fa21d4bdbc05b838397fb091ce664e9
 ```
@@ -48,3 +48,5 @@ The first review pinned `c35af97da235f075857181c72d64dc2c8506dfed`. Targeted rer
 Targeted rereview completed all five checks. This PASS accepts planning only; it does not authorize `task.py start`, implementation, acceptance, archive, integration, Stage 6 continuation, qualification, cutover, push, or RKP-3.
 
 The user subsequently authorized this bounded implementation with `继续吧` on `2026-08-31`. Activation changes lifecycle metadata only; the implementation candidate remains unready and its independent implementation review remains pending. Target acceptance/archive and closure acceptance/archive are still false.
+
+Technical checkpoint `387c61b4a04b45c35f14d01c342dca4307804d05` adds the archive-aware law in the sole technical file. The reviewed target `f27daf7` is now accepted and archive-authorized; closure acceptance/archive remain false. P3 independent implementation review begins only after the native target archive and exact 40-path projection pass.

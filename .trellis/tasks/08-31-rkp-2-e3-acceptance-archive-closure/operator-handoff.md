@@ -2,7 +2,7 @@
 
 ## Current state
 
-`IMPLEMENTATION ACTIVE — ARCHIVE-AWARE WORKSPACE LAW TECHNICAL CHECKPOINT NEXT`.
+`P2 OWNER ACCEPTANCE COMPLETE — NATIVE TARGET ARCHIVE CLOCK PREFLIGHT NEXT`.
 
 - Base: `f27daf7b514731adaabbe8f7814d2b57e12a7df7`.
 - Branch: `codex/rkp-2-e3-acceptance-archive-closure`.
@@ -28,4 +28,4 @@ The only future technical file is the Workspace Law test. Product/Rust/source/ev
 
 The first review of `c35af97da235f075857181c72d64dc2c8506dfed` returned P0/P1/P2=`0/2/0`. The docs-only repair removes every closure self/target-active JSONL reference, freezes the target's exact three-path JSONL successor, and adds a fail-closed local-clock preflight before both native archives. Targeted rereview accepted exact authority `f84c84387fa21d4bdbc05b838397fb091ce664e9` with P0/P1/P2=`0/0/0`.
 
-The separate user implementation authorization has been received and the activation checkpoint is complete. Next, modify only `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts` to add the archive-aware P1/P2/P3/P4 law. The target task stays active and unaccepted until that technical checkpoint passes; no archive or later Stage 6 gate is authorized by activation.
+The archive-aware P1/P2/P3/P4 law is now implemented in the single allowed test file and the target's exact successor JSONL hashes match the frozen pair. Candidate `f27daf7` is owner-accepted and native archive is authorized. Next, run the local `2026-08` / `2026-08-31` / before-`23:50` preflight and native archive in one PowerShell sequence. Any clock mismatch stops before mutation.

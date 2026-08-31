@@ -1,5 +1,9 @@
 # Operator Handoff: RKP-2 E3 Acceptance-State Projection
 
+## Owner-accepted state
+
+Dedicated review accepted candidate `f27daf7b514731adaabbe8f7814d2b57e12a7df7` at P0/P1/P2=`0/0/0`. The 334-byte record is owned only by `.trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/task.json`, SHA-256 `8559f7aed98ddc45154f90dd459688530ba5e24efedeb573389e06ca7d099436`. Owner acceptance and native archive authorization are recorded; the next action is the fail-closed `2026-08-31` before-`23:50` clock preflight followed by native archive.
+
 ## Current state
 
 Planning authority `8261ad373e849eab08479570f8c03cbcb60ba68e` passed dedicated independent planning review with `P0/P1/P2=0/0/0`. The separately authorized implementation is complete through the bounded candidate-freeze gate. Base `0c561d14193374436361eec09b361cab0170278a` remains the exact independently audited E3 Workspace Law candidate; technical commit `4abfef9b3f7620d6428382af287cccd662aa7bf7` changes only the Workspace Law test.

@@ -2,6 +2,8 @@
 
 ## Current implementation state
 
+Acceptance-projection candidate `f27daf7b514731adaabbe8f7814d2b57e12a7df7` has now passed dedicated review and received bounded owner acceptance/archive authorization. Archive-closure technical checkpoint `387c61b4a04b45c35f14d01c342dca4307804d05` is active; native target archive preflight is next. This does not start S6.2/S6.3 or any later gate.
+
 Exact planning authority `d638b81a3c9b3d7461f75a91c8d5b090f06adea2` received `PASS FOR BOUNDED IMPLEMENTATION`, P0/P1/P2=`0/0/0`, from the dedicated independent planning auditor. E1 through E3 later completed, and frozen E3 Workspace Law candidate `0c561d14193374436361eec09b361cab0170278a` received its own dedicated implementation audit PASS with P0/P1/P2=`0/0/0`.
 
 The first candidate `df686882efa30f489da138d2730acbdd4fb9cd30` received P0/P1/P2=`0/2/0`. This bounded repair closes only:

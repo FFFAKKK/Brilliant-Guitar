@@ -1,8 +1,8 @@
-{"file":".trellis/tasks/08-31-rkp-2-e3-acceptance-state-projection/task.json","reason":"Check planning and implementation authorization, audit digest, allowlists and later false gates."}
+{"file":".trellis/tasks/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair/operator-handoff.md","reason":"Check the stable parent handoff records the exact accepted target and archive boundary."}
 {"file":".trellis/tasks/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair/task.json","reason":"Check the canonical audit record has one owner and the audited candidate remains exact."}
 {"file":".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/task.json","reason":"Check Stage 6 references rather than duplicates the audit record."}
 {"file":".trellis/tasks/08-30-rkp-2-stage-6-semantic-canonical-authority-amendment/task.json","reason":"Check the historical task does not reclaim live E3 ownership."}
 {"file":".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json","reason":"Check S6.2/S6.3 remain false and TypeScript remains default."}
 {"file":".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json","reason":"Check qualification, cutover, push and RKP-3 remain false."}
 {"file":"test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts","reason":"Check exact 21-path history, 18-path transition, audit record and negative fixtures."}
-{"file":".trellis/tasks/08-31-rkp-2-e3-acceptance-state-projection/research/file-test-and-rollback-matrix.md","reason":"Check every planned file, test and rollback checkpoint is represented."}
+{"file":".trellis/tasks/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair/review-candidate.md","reason":"Check the stable parent review record preserves all implementation and later-gate exclusions."}

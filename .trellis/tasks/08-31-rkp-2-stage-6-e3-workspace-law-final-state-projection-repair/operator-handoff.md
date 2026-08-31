@@ -2,9 +2,9 @@
 
 ## Current gate
 
-`ACCEPTANCE-ARCHIVE CLOSURE IMPLEMENTATION ACTIVE — TARGET REMAINS ACTIVE`
+`P2 OWNER ACCEPTANCE COMPLETE — NATIVE TARGET ARCHIVE PREFLIGHT NEXT`
 
-The closure planning authority `f84c84387fa21d4bdbc05b838397fb091ce664e9` passed targeted independent planning rereview at `P0/P1/P2=0/0/0`. The user authorized its bounded implementation on `2026-08-31`; the current implementation child is now `08-31-rkp-2-e3-acceptance-archive-closure`, with no current planning child. This activation does not accept or archive the target.
+The closure planning authority `f84c84387fa21d4bdbc05b838397fb091ce664e9` passed targeted independent planning rereview at `P0/P1/P2=0/0/0`. Technical checkpoint `387c61b4a04b45c35f14d01c342dca4307804d05` now enforces P1-P4. Target `f27daf7` is owner-accepted and archive-authorized, but remains active until the fail-closed clock preflight and native archive run in one sequence.
 
 The frozen E3 Workspace Law candidate `0c561d14193374436361eec09b361cab0170278a` received a dedicated read-only implementation audit PASS with `P0/P1/P2=0/0/0`. Its sole canonical audit record remains in this task's `task.json`: 323 UTF-8 bytes, SHA-256 `dee0b92ce8a2ff6c8a9737c5b98104e39633b85aaad70e594f61e4847fdd7589`. The acceptance-projection technical commit is `4abfef9b3f7620d6428382af287cccd662aa7bf7`.
 

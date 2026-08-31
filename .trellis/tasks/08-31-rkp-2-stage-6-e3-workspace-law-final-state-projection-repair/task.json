@@ -54,7 +54,7 @@
     ".trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/design.md",
     ".trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/implement.md"
   ],
-  "notes": "IN_PROGRESS / ACCEPTANCE-ARCHIVE CLOSURE CHILD ACTIVATED AFTER USER AUTHORIZATION / PLANNING AUTHORITY F84C843 PASS 0_0_0 / TARGET REMAINS ACTIVE AND UNACCEPTED / CURRENT IMPLEMENTATION CHILD IS 08-31-RKP-2-E3-ACCEPTANCE-ARCHIVE-CLOSURE / TYPESCRIPT DEFAULT / S6.2 S6.3 FALSE / NO ARCHIVE INTEGRATION QUALIFICATION CUTOVER PUSH OR RKP3.",
+  "notes": "IN_PROGRESS P2 / ARCHIVE-CLOSURE LAW TECHNICAL CHECKPOINT 387C61B / TARGET F27DAF7 REVIEW PASS OWNER ACCEPTED AND ARCHIVE AUTHORIZED / NATIVE TARGET ARCHIVE CLOCK PREFLIGHT NEXT / CURRENT IMPLEMENTATION CHILD 08-31-RKP-2-E3-ACCEPTANCE-ARCHIVE-CLOSURE / TYPESCRIPT DEFAULT / S6.2 S6.3 FALSE / NO INTEGRATION QUALIFICATION CUTOVER PUSH OR RKP3.",
   "meta": {
     "planning_base_commit": "4ad23773e9c9e1081667a4eccb84cc464b85bc89",
     "planning_base_tree": "9dbcef77fbcc258e4fe96fdfb2b28839f095d610",
@@ -182,7 +182,7 @@
     "implementation_stage": "independent_E3_audit_bound_acceptance_projection_candidate_ready",
     "implementation_candidate_ready": true,
     "implementation_review": "passed_external_audit_bound_0c561d14193374436361eec09b361cab0170278a_P0_0_P1_0_P2_0",
-    "next_gate": "acceptance_archive_closure_archive_aware_workspace_law_technical_checkpoint",
+    "next_gate": "native_target_archive_clock_preflight_required",
     "phase_b_validation": {
       "trellis_tasks_passed": 5,
       "task_json_parsed": 5,
@@ -272,6 +272,10 @@
     "acceptance_archive_closure_task": "08-31-rkp-2-e3-acceptance-archive-closure",
     "acceptance_archive_closure_planning_base": "f27daf7b514731adaabbe8f7814d2b57e12a7df7",
     "acceptance_archive_closure_source_review_sha256": "8559f7aed98ddc45154f90dd459688530ba5e24efedeb573389e06ca7d099436",
+    "acceptance_archive_closure_source_review_owner": ".trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/task.json",
+    "acceptance_archive_closure_technical_commit": "387c61b4a04b45c35f14d01c342dca4307804d05",
+    "acceptance_state_projection_owner_accepted": true,
+    "acceptance_state_projection_archive_authorized": true,
     "acceptance_archive_closure_first_planning_review": {
       "review_task": "01a01e48-1934-77b0-821e-a8026cd9e5f7",
       "review_turn": "01a05654-87f1-70d0-8a1e-d119c9162cbd",
