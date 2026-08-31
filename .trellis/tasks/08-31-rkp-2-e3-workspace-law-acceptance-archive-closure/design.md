@@ -140,13 +140,13 @@ The target remains active until the same-command clock preflight succeeds.
 Native archive moves the complete 12-file target manifest to:
 
 ```text
-.trellis/tasks/archive/2026-08/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair
+.trellis/tasks/archive/2026-09/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair
 ```
 
 Q3 requires:
 
 - active target absent, archive target exact 12 files;
-- archived target `status=completed`, `completedAt=2026-08-31`;
+- archived target `status=completed`, `completedAt=2026-09-01`;
 - existing 323-byte review record unchanged;
 - closure remains active and `implementation_review=pending`;
 - Stage 6 current implementation child remains closure;
@@ -158,6 +158,10 @@ Q3 HEAD is the exact input to a dedicated independent implementation review task
 ### Q4 — Closure archive terminal
 
 Only after Q3 review PASS and a separate owner closeout authorization:
+
+```text
+.trellis/tasks/archive/2026-09/08-31-rkp-2-e3-workspace-law-acceptance-archive-closure
+```
 
 1. write the Q3 audit record into this task only and prepare closure acceptance/archive metadata;
 2. prepare the digest-only reference and terminal child/gate projection in Stage 6;
@@ -289,15 +293,15 @@ Both native moves use the same exact preflight immediately before the archive co
 
 ```powershell
 $now = Get-Date
-if ($now.ToString('yyyy-MM') -ne '2026-08' -or
-    $now.ToString('yyyy-MM-dd') -ne '2026-08-31' -or
+if ($now.ToString('yyyy-MM') -ne '2026-09' -or
+    $now.ToString('yyyy-MM-dd') -ne '2026-09-01' -or
     $now.TimeOfDay -ge [TimeSpan]::Parse('23:50:00')) {
   throw 'archive-clock-contract-mismatch'
 }
 python .\.trellis\scripts\task.py archive <TASK_ID>
 ```
 
-The check and archive call cannot be split across shells or turns. Any mismatch is a planning input change, not permission to select another directory.
+The check and archive call cannot be split across shells or turns. Any mismatch is a planning input change that returns for another bounded date sync, not permission to select another directory, move manually or change the system clock. Historical accepted `archive/2026-08` paths are not rewritten.
 
 ## 10. Test design
 

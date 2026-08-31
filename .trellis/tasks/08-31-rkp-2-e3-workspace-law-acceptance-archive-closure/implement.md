@@ -9,7 +9,7 @@ No implementation action begins until all are true:
 3. the user separately authorizes implementation;
 4. `task.py start` is run for this task only;
 5. base ancestry, clean source state and target 323-byte audit record revalidate;
-6. archive clock still permits the literal `2026-08` path;
+6. archive clock still permits the literal `2026-09` path on `2026-09-01`;
 7. S6.2/S6.3 remain false and TypeScript remains default.
 
 Task creation consent does not satisfy items 1–4.
@@ -111,8 +111,8 @@ In one PowerShell sequence:
 
 ```powershell
 $now = Get-Date
-if ($now.ToString('yyyy-MM') -ne '2026-08' -or
-    $now.ToString('yyyy-MM-dd') -ne '2026-08-31' -or
+if ($now.ToString('yyyy-MM') -ne '2026-09' -or
+    $now.ToString('yyyy-MM-dd') -ne '2026-09-01' -or
     $now.TimeOfDay -ge [TimeSpan]::Parse('23:50:00')) {
   throw 'archive-clock-contract-mismatch'
 }
@@ -123,7 +123,7 @@ Then verify:
 
 1. active target root absent;
 2. archive target root exact 12 files;
-3. target completed on `2026-08-31`;
+3. target completed on `2026-09-01`;
 4. existing audit record exact 323 bytes and digest;
 5. closure remains active/review-pending;
 6. Stage 6 implementation child remains closure;
@@ -222,8 +222,8 @@ if (@(Compare-Object $expectedStaged $actualStaged).Count -ne 0) {
   throw 'q4-staged-allowlist-mismatch'
 }
 $now = Get-Date
-if ($now.ToString('yyyy-MM') -ne '2026-08' -or
-    $now.ToString('yyyy-MM-dd') -ne '2026-08-31' -or
+if ($now.ToString('yyyy-MM') -ne '2026-09' -or
+    $now.ToString('yyyy-MM-dd') -ne '2026-09-01' -or
     $now.TimeOfDay -ge [TimeSpan]::Parse('23:50:00')) {
   throw 'archive-clock-contract-mismatch'
 }
@@ -253,7 +253,7 @@ try {
     'research/planning-self-audit.md'
   )
   $closureActive = '.trellis/tasks/08-31-rkp-2-e3-workspace-law-acceptance-archive-closure'
-  $closureArchive = '.trellis/tasks/archive/2026-08/08-31-rkp-2-e3-workspace-law-acceptance-archive-closure'
+  $closureArchive = '.trellis/tasks/archive/2026-09/08-31-rkp-2-e3-workspace-law-acceptance-archive-closure'
   $stage6 = '.trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair'
   $expectedCommitRows = @(
     foreach ($artifact in $closureArtifacts) {

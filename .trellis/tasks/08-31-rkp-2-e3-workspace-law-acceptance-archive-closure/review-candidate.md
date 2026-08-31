@@ -38,12 +38,15 @@ Expected production, Rust, test, evidence, package, Cargo, tsconfig and spec del
 - Q3 is externally audited before Q4;
 - Q4 requires a second owner closeout authorization;
 - no recursive closeout child exists;
-- literal `2026-08-31` clock mismatch stops before any move.
+- future target and closure archives resolve only under `archive/2026-09`, and a local `2026-09-01` or `23:50:00` clock mismatch stops before any move;
+- accepted historical `archive/2026-08` paths remain literal and unchanged; no bulk replacement, fallback month, manual move or system-clock change is allowed.
 
 ### Bounded-repair checks
 
 - first independent review of `7b1c0e31...` returned P0/P1/P2=`0/3/0`;
 - second targeted independent review of `63212ae...` confirmed the original three findings closed but returned P0/P1/P2=`0/1/0` because the Q4 preflight omitted untracked paths;
+- third targeted independent review of `bf15f20...` confirmed the Q4 preflight/commit-membership finding closed but returned P0/P1/P2=`0/1/0` because the future archive date had expired after the `2026-09` month rollover;
+- this bounded repair changes only future target/closure archive roots and the two clock checks to `2026-09-01`; it preserves owners, manifests, callbacks, path arithmetic and every historical `archive/2026-08` reference;
 - closure contains no structural copy of the target 323-byte audit record;
 - target `implement.jsonl`/`check.jsonl` are explicitly within the future allowlist and lose exactly six active self-reference rows at Q2;
 - Q3 review record, Stage 6 terminal projection and closure archive enter one native Q4 commit before the real Q4 law runs;

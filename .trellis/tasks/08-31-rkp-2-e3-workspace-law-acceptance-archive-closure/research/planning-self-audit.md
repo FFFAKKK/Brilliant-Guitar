@@ -4,12 +4,12 @@
 
 ```text
 P0/P1/P2 = 0/0/0
-SECOND BOUNDED REPAIR COMPLETE — READY FOR FRESH DEDICATED TARGETED PLANNING REREVIEW
+THIRD BOUNDED ARCHIVE-DATE REPAIR COMPLETE — READY FOR FRESH DEDICATED TARGETED PLANNING REREVIEW
 ```
 
 This is a planner self-check, not the independent review required for implementation.
 
-The first independent review audited commit `7b1c0e31f768ab802635c20d77909ba9b345e558` and returned P0/P1/P2=`0/3/0`. The second targeted review audited `63212ae9021427b5d8af118dc677c7fe0499871e`, confirmed all three original findings closed, and returned P0/P1/P2=`0/1/0` for the untracked-file preflight gap. This second bounded repair addresses only that finding; both external results are preserved in `task.json`, and a fresh independent targeted review remains pending.
+The first independent review audited commit `7b1c0e31f768ab802635c20d77909ba9b345e558` and returned P0/P1/P2=`0/3/0`. The second targeted review audited `63212ae9021427b5d8af118dc677c7fe0499871e`, confirmed all three original findings closed, and returned P0/P1/P2=`0/1/0` for the untracked-file preflight gap. The third targeted review audited `bf15f20379aee873430981b72f68a55d235d5bb6`, confirmed that Q4 gap closed, and returned P0/P1/P2=`0/1/0` only because the execution calendar rolled from August to September. This third bounded repair resynchronizes only the two future archive roots and clock checks to `2026-09-01`; all three external results are preserved in `task.json`, and a fresh independent targeted review remains pending.
 
 ## Contract checks
 
@@ -22,6 +22,8 @@ The first independent review audited commit `7b1c0e31f768ab802635c20d77909ba9b34
 - [x] Q3 external audit is required before Q4.
 - [x] Owner authorization remains separate from review PASS.
 - [x] Archive clock fails before move and allows no fallback/manual move.
+- [x] Future target and closure archives resolve under `archive/2026-09` on local `2026-09-01` before `23:50:00`; accepted historical `archive/2026-08` references remain unchanged.
+- [x] Missing the execution day returns for another bounded date sync; it never authorizes a fallback month, manual move or system-clock change.
 - [x] Planning `11/7/4` and future Q1T `11/8/3` are explicitly separated; the planned fourth failure is not hidden.
 - [x] Q4 has one atomic pre-stage/native-archive commit and no committed illegal intermediate state.
 - [x] Q4 preflight parses NUL-delimited porcelain status with all untracked files, requires exactly six staged lifecycle paths, blank worktree columns, no `??` and no other path.
@@ -54,4 +56,4 @@ The first independent review audited commit `7b1c0e31f768ab802635c20d77909ba9b34
 
 ## Pending external gate
 
-The fresh dedicated targeted planning reviewer must validate the exact second-repair commit, with special focus on untracked fail-closed behavior and post-archive commit membership. Any finding returns to bounded planning repair; no implementation, archive or task start occurs first.
+The fresh dedicated targeted planning reviewer must validate the exact third-repair commit, with special focus on future-versus-historical archive-path separation, the `2026-09-01` fail-before-move clock, unchanged path arithmetic, and the already repaired Q4 preflight/commit membership. Any finding returns to bounded planning repair; no implementation, archive or task start occurs first.

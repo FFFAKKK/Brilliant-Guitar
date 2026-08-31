@@ -47,6 +47,12 @@ Dedicated audit task `01a05842-edbd-7e10-842e-ce936fa6a727`, turn `01a05842-f31a
 
 The second bounded repair changes no owner, phase, allowlist or A/M/D projection. It replaces that incomplete preflight with NUL-delimited porcelain status over all untracked files, requires exactly six staged lifecycle entries with blank worktree columns and no other path, and adds a post-archive single-parent plus exact commit-local `A11/D11/M3` membership check before the real Q4 law. Any mismatch reverts the one native archive commit.
 
+## Third targeted planning review
+
+Dedicated audit task `01a05893-1f82-74d1-8764-c115e6cfa550`, turn `01a05893-3360-7d31-ba12-5eb4a80d9b85`, reviewed candidate `bf15f20379aee873430981b72f68a55d235d5bb6` and returned P0/P1/P2=`0/1/0`. It confirmed the Q4 all-untracked preflight and archive-commit membership repair closed, then found one execution-clock drift: the calendar had rolled to `2026-09-01` while the two future native archive roots and fail-before-move checks still named `2026-08-31`.
+
+The third bounded repair changes only future execution projections. The target and closure native archives now resolve under `archive/2026-09`, both clock checks require local date `2026-09-01` before `23:50:00`, and a missed execution day requires another bounded date sync. Already accepted historical archives remain under their real `archive/2026-08` locations. Owners, manifests, phases and path arithmetic remain unchanged.
+
 ## Rejected routes
 
 ### Direct archive
@@ -71,7 +77,7 @@ Rejected because Stage 6 lifecycle closure is an independent gate and S6.2 remai
 
 ## Selected route
 
-One Stage 6 sibling task models a finite five-phase law. It reuses the accepted archive-aware pattern, expands only the existing Workspace Law test, performs the bounded two-JSONL context projection before target archive, requires a Q3 external audit, and ends with Stage 6 active but childless through one atomic Q4 archive commit whose pre-state and commit membership both fail closed.
+One Stage 6 sibling task models a finite five-phase law. It reuses the accepted archive-aware pattern, expands only the existing Workspace Law test, performs the bounded two-JSONL context projection before target archive, requires a Q3 external audit, and ends with Stage 6 active but childless through one atomic Q4 archive commit whose pre-state and commit membership both fail closed. Its future archive month/date is an execution-day contract, not historical authority; expiry returns to bounded date sync rather than falling back, moving manually or changing the system clock.
 
 ## Evidence classification
 

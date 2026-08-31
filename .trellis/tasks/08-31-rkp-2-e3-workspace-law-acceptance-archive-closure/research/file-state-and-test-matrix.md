@@ -74,7 +74,7 @@ All comparisons use base `c73e213...` and `--no-renames`.
 | paths | exact A/M/D | rename collapse, extra/missing path |
 | target record | 323 bytes + exact hash | field/order/bytes/hash drift |
 | Q3 record | one closure owner | duplicate or fake pending values |
-| archive clock | exact month/date/time | mismatch reaches move |
+| archive clock | future target/closure roots under `archive/2026-09`; local `2026-09-01` before `23:50:00`; historical `archive/2026-08` references unchanged | mismatch reaches move, fallback/manual move/system-clock change, or stale date reused on a later day |
 | JSONL | Q2 removes six enumerated target self-refs; active/archive-successor refs exist | residual active prefix, changed non-self row, unregistered digest |
 | Q4 preflight | exactly six staged lifecycle paths; blank worktree columns; zero `??`; zero other path | untracked/unstaged/extra path reaches native archive |
 | Q4 atomicity | Stage 6 terminal projection and closure move share one archive commit; exact Q3 is sole parent; commit-local closure `A11/D11` + Stage 6 `M3` | committed active-childless, archived-still-referenced, extra-member or wrong-parent state |

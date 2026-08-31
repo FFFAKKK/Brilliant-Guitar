@@ -163,8 +163,8 @@ Stage 6 只保存 owner path 与 digest，不复制结构化记录。Q3 审计�
 两次归档都只允许使用 `task.py archive`。执行归档的同一个 PowerShell 序列必须先验证：
 
 ```text
-month = 2026-08
-date = 2026-08-31
+month = 2026-09
+date = 2026-09-01
 local time < 23:50:00
 ```
 

@@ -23,14 +23,14 @@
   "relatedFiles": [
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
     ".trellis/tasks/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair",
-    ".trellis/tasks/archive/2026-08/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair",
+    ".trellis/tasks/archive/2026-09/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair",
     ".trellis/tasks/08-31-rkp-2-e3-workspace-law-acceptance-archive-closure",
-    ".trellis/tasks/archive/2026-08/08-31-rkp-2-e3-workspace-law-acceptance-archive-closure",
+    ".trellis/tasks/archive/2026-09/08-31-rkp-2-e3-workspace-law-acceptance-archive-closure",
     ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/task.json",
     ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/operator-handoff.md",
     ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/review-candidate.md"
   ],
-  "notes": "PLANNING ONLY / FIRST INDEPENDENT REVIEW RETURNED 0-3-0 / SECOND TARGETED REVIEW OF 63212AE RETURNED 0-1-0 AFTER CONFIRMING THE ORIGINAL THREE FINDINGS CLOSED / SECOND BOUNDED REPAIR ADDS ALL-UNTRACKED FAIL-CLOSED PREFLIGHT AND EXACT ARCHIVE COMMIT MEMBERSHIP / FRESH TARGETED REREVIEW PENDING / TASK START FALSE / PRODUCTION AUTHORIZATION FALSE / TYPESCRIPT DEFAULT / S6.2 S6.3 FALSE / NO E3 STRESS INTEGRATION QUALIFICATION CUTOVER PUSH OR RKP3.",
+  "notes": "PLANNING ONLY / FIRST INDEPENDENT REVIEW RETURNED 0-3-0 / SECOND TARGETED REVIEW OF 63212AE RETURNED 0-1-0 / THIRD TARGETED REVIEW OF BF15F20 CONFIRMED Q4 PREFLIGHT CLOSED AND RETURNED 0-1-0 ONLY FOR THE 2026-08 TO 2026-09 ARCHIVE CLOCK ROLLOVER / THIRD BOUNDED REPAIR RESYNCS ONLY FUTURE TARGET AND CLOSURE ARCHIVE ROOTS TO 2026-09-01 / HISTORICAL 2026-08 ARCHIVES UNCHANGED / FRESH TARGETED REREVIEW PENDING / TASK START FALSE / PRODUCTION AUTHORIZATION FALSE / TYPESCRIPT DEFAULT / S6.2 S6.3 FALSE / NO E3 STRESS INTEGRATION QUALIFICATION CUTOVER PUSH OR RKP3.",
   "meta": {
     "planning_base_commit": "c73e2139d3a1a9e89e4ec6071678d75be1c02abb",
     "planning_branch": "codex/rkp-2-e3-law-acceptance-archive-closure",
@@ -40,8 +40,8 @@
     "task_start_run": false,
     "production_implementation_authorized": false,
     "user_implementation_authorization": false,
-    "independent_planning_review": "fresh_targeted_rereview_pending_after_second_bounded_repair",
-    "implementation_stage": "second_bounded_planning_repair_fresh_targeted_rereview_pending",
+    "independent_planning_review": "third_targeted_review_0_1_0_fresh_targeted_rereview_pending_after_third_bounded_repair",
+    "implementation_stage": "third_bounded_planning_repair_fresh_targeted_rereview_pending",
     "implementation_candidate_ready": false,
     "implementation_review": "not_started",
     "next_gate": "fresh_dedicated_independent_targeted_planning_rereview",
@@ -51,14 +51,14 @@
     "target_acceptance_authorized": false,
     "target_archive_authorized": false,
     "target_active_root": ".trellis/tasks/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair",
-    "target_archive_root": ".trellis/tasks/archive/2026-08/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair",
+    "target_archive_root": ".trellis/tasks/archive/2026-09/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair",
     "target_task_artifact_count": 12,
     "closure_active_root": ".trellis/tasks/08-31-rkp-2-e3-workspace-law-acceptance-archive-closure",
-    "closure_archive_root": ".trellis/tasks/archive/2026-08/08-31-rkp-2-e3-workspace-law-acceptance-archive-closure",
+    "closure_archive_root": ".trellis/tasks/archive/2026-09/08-31-rkp-2-e3-workspace-law-acceptance-archive-closure",
     "closure_task_artifact_count": 11,
     "existing_workspace_law_audit_record_owner_task": "08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair",
     "existing_workspace_law_audit_record_active_owner_path": ".trellis/tasks/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair/task.json",
-    "existing_workspace_law_audit_record_archive_owner_path": ".trellis/tasks/archive/2026-08/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair/task.json",
+    "existing_workspace_law_audit_record_archive_owner_path": ".trellis/tasks/archive/2026-09/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair/task.json",
     "existing_workspace_law_audit_record_canonical_bytes": 323,
     "existing_workspace_law_audit_record_sha256": "dee0b92ce8a2ff6c8a9737c5b98104e39633b85aaad70e594f61e4847fdd7589",
     "planning_candidate_expected_path_count": 12,
@@ -120,8 +120,8 @@
       "targetAuditRecordMutationAllowed": false
     },
     "archive_clock_contract": {
-      "expected_month": "2026-08",
-      "expected_date": "2026-08-31",
+      "expected_month": "2026-09",
+      "expected_date": "2026-09-01",
       "latest_allowed_local_time_exclusive": "23:50:00",
       "mismatch_action": "stop_before_any_move_and_return_for_bounded_planning_repair",
       "fallback_month_allowed": false,
@@ -168,14 +168,14 @@
     "immutable_planning_authority_hash_contract": "lf_normalized_utf8_sha256",
     "immutable_planning_authority_count": 8,
     "immutable_planning_authority": {
-      "prd.md": "e7a2178e86b4e416743f35164d43d2510288fb38a09780fb6785df304b99d056",
-      "design.md": "bd545cd88a7ad141cf1507546d7face00815e24f827a67ca2af35f51291ef26a",
-      "implement.md": "c4b5d77a407dd7beb93e3fcaff90ae2a17bdca342167a83f95697e6a04a83780",
+      "prd.md": "97136bef0e2eb4074c560d4306af4b77f54e5c5e76678d2f8a4a518c978caffe",
+      "design.md": "fabd26326acc30a52cc41ec8b88ece01ecfef63a109901a0abad864cae26927f",
+      "implement.md": "8ef90feba58caf2f392264417142f5aa9de875de3f84b025159ede2c41cff665",
       "implement.jsonl": "fdcb892747eb1b9be8d1a51386baa9fe749dcc5b5ac24f644045383866ff4ba1",
       "check.jsonl": "e4baafa4172a8dd0e2c43c7be6a4565f0a4358c630a8c51ea3bcad2b9e9eb12e",
-      "research/current-state-and-archive-gap-audit.md": "c752f4a4182806c92a7c1fdf18cf4472844e5b82f5b9722b3a28309f6799a00b",
-      "research/file-state-and-test-matrix.md": "c70e2cfa399cd39e1b2765bfb064f84344750c7babcd2e2a708d65d0a88b6982",
-      "research/planning-self-audit.md": "7136475a397f4fa53958aa31cd5ea17cf807f2b28225a2b50ff643b35499fbce"
+      "research/current-state-and-archive-gap-audit.md": "d8c1b18df81e00dbc1b25c4c7f074710429952e9ee5512d1198c545b87a6c7b2",
+      "research/file-state-and-test-matrix.md": "fe13410a4ea0bbb62c603fdb50ac6e25a090755ca48f73b4831a433086126476",
+      "research/planning-self-audit.md": "d47937f08b7f871e8390f8ec79260f0c104ff0e51061b3eb9aef4eae6aa0f2dc"
     },
     "first_independent_planning_review": {
       "reviewTaskId": "01a057bc-ce6b-7b31-a667-afd1a1a91dcf",
@@ -202,14 +202,25 @@
       "original_three_findings_closed": true,
       "finding": "q4_prearchive_check_omitted_untracked_paths_and_commit_membership_was_not_mechanically_fail_closed"
     },
+    "third_targeted_independent_planning_review": {
+      "reviewTaskId": "01a05893-1f82-74d1-8764-c115e6cfa550",
+      "reviewTurnId": "01a05893-3360-7d31-ba12-5eb4a80d9b85",
+      "candidateCommit": "bf15f20379aee873430981b72f68a55d235d5bb6",
+      "verdict": "RETURN_FOR_BOUNDED_PLANNING_REPAIR",
+      "P0": 0,
+      "P1": 1,
+      "P2": 0,
+      "q4_untracked_and_commit_membership_finding_closed": true,
+      "finding": "future_target_and_closure_archive_clock_and_roots_expired_after_2026_09_month_rollover"
+    },
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
       "P2": 0,
-      "verdict": "second_bounded_repair_complete_ready_for_fresh_dedicated_targeted_planning_rereview"
+      "verdict": "third_bounded_archive_date_repair_complete_ready_for_fresh_dedicated_targeted_planning_rereview"
     },
     "planning_validation": {
-      "status": "second_bounded_repair_precommit_gates_passed_final_clean_full_required_after_single_commit",
+      "status": "third_bounded_archive_date_repair_precommit_gates_passed_final_clean_full_required_after_single_commit",
       "trellis_tasks_passed": 5,
       "json_files_parsed": 5,
       "jsonl_lines_parsed": 144,
@@ -256,6 +267,8 @@
       "q4_future_prearchive_expected": "6_index_M_blank_worktree_zero_untracked_zero_other",
       "q4_future_archive_commit_expected": "sole_parent_exact_q3_closure_A11_D11_stage6_M3",
       "second_bounded_repair_path_count": 12,
+      "third_bounded_repair_scope": "future_archive_roots_and_2026_09_01_clock_only_historical_2026_08_archives_unchanged",
+      "third_bounded_repair_archive_clock": "2026_09_2026_09_01_before_23_50_local_verified",
       "final_clean_full_after_commit_required": true
     }
   }
