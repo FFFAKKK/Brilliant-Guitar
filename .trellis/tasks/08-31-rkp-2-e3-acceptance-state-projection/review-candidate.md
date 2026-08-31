@@ -2,7 +2,7 @@
 
 ## Status
 
-`PLANNING PASS — READY FOR SEPARATE USER AUTHORIZATION OF BOUNDED IMPLEMENTATION`
+`IMPLEMENTATION ACTIVATED — TECHNICAL TRANSITION NOT STARTED`
 
 Dedicated independent planning review of exact candidate `8261ad373e849eab08479570f8c03cbcb60ba68e` returned:
 
@@ -32,4 +32,4 @@ Planning-gate evidence is exact 12 paths, Typecheck PASS, Build PASS and focused
 PASS — READY FOR BOUNDED ACCEPTANCE-STATE PROJECTION IMPLEMENTATION
 ```
 
-This PASS approves the planning contract only. Implementation activation, the technical transition, implementation review, acceptance, archive, integration, S6.2/S6.3, qualification, cutover, push and RKP-3 remain separate gates.
+This PASS approved the planning contract. The user subsequently authorized only the bounded implementation and the task is now `in_progress`; the technical transition and terminal lifecycle projection remain uncommitted. Independent implementation review, acceptance, archive, integration, S6.2/S6.3, qualification, cutover, push and RKP-3 remain separate gates.
