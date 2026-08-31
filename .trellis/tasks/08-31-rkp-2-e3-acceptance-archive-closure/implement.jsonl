@@ -1,0 +1,5 @@
+{"file":".trellis/spec/core-kernel/backend/rust-runtime-transition.md","reason":"Preserve the RKP lifecycle, TypeScript default, qualification and cutover boundaries."}
+{"file":".trellis/tasks/08-31-rkp-2-e3-acceptance-state-projection/design.md","reason":"Consume the accepted historical-candidate and audit-bound acceptance projection design."}
+{"file":".trellis/tasks/08-31-rkp-2-e3-acceptance-state-projection/implement.md","reason":"Preserve the prior terminal candidate and later-gate exclusions."}
+{"file":".trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/research/current-state-and-recursion-audit.md","reason":"Consume the live archive blocker and fixed-point closeout decision."}
+{"file":".trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/research/file-state-test-matrix.md","reason":"Implement only the exact phase, path, test and rollback matrix."}

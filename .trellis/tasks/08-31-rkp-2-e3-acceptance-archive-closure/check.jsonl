@@ -1,0 +1,5 @@
+{"file":".trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/prd.md","reason":"Check all acceptance, archive and later-gate requirements."}
+{"file":".trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/design.md","reason":"Check the non-recursive state machine and audit ownership."}
+{"file":".trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/implement.md","reason":"Check ordered stages, validation and rollback gates."}
+{"file":".trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/research/current-state-and-recursion-audit.md","reason":"Verify the current rejection is closed without weakening fail-closed behavior."}
+{"file":".trellis/tasks/08-31-rkp-2-e3-acceptance-archive-closure/research/file-state-test-matrix.md","reason":"Verify exact active/archive paths and negative fixtures."}
