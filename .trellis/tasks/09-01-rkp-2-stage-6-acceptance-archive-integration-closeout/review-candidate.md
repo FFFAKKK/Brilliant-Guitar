@@ -2,7 +2,7 @@
 
 ## Status
 
-`BOUNDED PLANNING REPAIR APPLIED — TARGETED REREVIEW PENDING`
+`TARGETED PLANNING REREVIEW PASSED — L1 ACTIVATED — L2 NEXT`
 
 ## Review focus
 
@@ -17,4 +17,4 @@
 
 ## Verdict slot
 
-First independent audit returned P0/P1/P2=`0/1/1`: PASS-to-authorization wording and one Trellis count label only. Both bounded repairs are applied. Targeted rereview is pending; production implementation remains false throughout this closeout, and evidence PASS never creates lifecycle authorization.
+First independent audit returned P0/P1/P2=`0/1/1`: PASS-to-authorization wording and one Trellis count label only. Both bounded repairs were applied at `e7708bf84ffb6ac71818f46d367ff6e8bba7beb6`. Targeted rereview task `01a05d0e-5eee-7ea1-bff1-eb4b39d7f98e`, turn `01a05d19-f6c7-7ec0-b8dd-31ccef41cedd`, returned P0/P1/P2=`0/0/0`, `PASS FOR BOUNDED LIFECYCLE IMPLEMENTATION`. Production implementation remains false throughout this closeout, and evidence PASS creates no lifecycle authorization. L1 native activation is complete; L2 consumed-child closeout is next under the separately recorded bounded user continuation authorization.

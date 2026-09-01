@@ -46,7 +46,7 @@
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RKP-0/RKP-1 ACCEPTED ARCHIVED / RKP-2 SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 TECHNICAL PASS AND Q4 ARCHIVED / STAGE6 CLOSEOUT PLANNING REVIEW PENDING / RKP2 PAUSED BEFORE S6.2 / TYPESCRIPT DEFAULT / NO QUALIFICATION CUTOVER PUSH OR RKP3.",
+  "notes": "RKP-0/RKP-1 ACCEPTED ARCHIVED / RKP-2 SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 TECHNICAL PASS AND Q4 ARCHIVED / STAGE6 CLOSEOUT TARGETED PLANNING REREVIEW PASS AT E7708BF AND L1 ACTIVATED / L2 SEMANTIC CHILD CLOSEOUT NEXT / RKP2 PAUSED BEFORE S6.2 / TYPESCRIPT DEFAULT / NO QUALIFICATION CUTOVER PUSH OR RKP3.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
@@ -128,7 +128,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "dedicated_independent_stage6_closeout_planning_review_pending",
+    "next_gate": "stage6_closeout_L2_semantic_child_owner_acceptance_and_native_archive",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -233,7 +233,7 @@
     "rkp2_implementation_authorized": true,
     "rkp2_user_implementation_authorization": true,
     "rkp2_created": true,
-    "rkp2_status": "in_progress_stage_6_closeout_planning_review_pending",
+    "rkp2_status": "in_progress_stage_6_closeout_L1_activated_L2_semantic_child_closeout_next",
     "rkp2_task": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
     "rkp2_planning_base": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "rkp2_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -695,9 +695,14 @@
     "rkp2_repaired_unified_implementation_base_created": true,
     "stage6_acceptance_archive_integration_closeout": {
       "task": "09-01-rkp-2-stage-6-acceptance-archive-integration-closeout",
-      "status": "planning",
+      "status": "in_progress",
       "planning_base": "65debd52d379004c966cefe59f54d72ac1136eb4",
-      "independent_planning_review": "pending"
+      "independent_planning_review": "passed_targeted_rereview_e7708bf84ffb6ac71818f46d367ff6e8bba7beb6_P0_0_P1_0_P2_0",
+      "accepted_planning_authority_head": "e7708bf84ffb6ac71818f46d367ff6e8bba7beb6",
+      "task_start_run": true,
+      "implementation_stage": "L1_native_activation_in_progress_L2_semantic_child_closeout_next",
+      "next_gate": "L2_semantic_child_owner_acceptance_and_native_archive",
+      "production_implementation_authorized": false
     }
   }
 }

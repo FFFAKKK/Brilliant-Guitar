@@ -3,7 +3,7 @@
   "name": "rkp-2-stage-6-acceptance-archive-integration-closeout",
   "title": "RKP-2 Stage 6 Acceptance, Archive and Integration Closeout",
   "description": "Plan and execute the bounded owner acceptance, native archives, fast-forward integration and terminal projection that closes RKP-2 Stage 6 and stops before S6.2.",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": "lifecycle-test-governance",
   "scope": "Bounded lifecycle closeout that accepts and archives the consumed semantic/canonical child, accepts and archives Stage 6, fast-forward integrates the accepted authority into RKP-2, archives this closeout, and leaves RKP-2 paused before S6.2 with TypeScript default; no S6.2/S6.3 execution, qualification, cutover, RKP-3, push, or product changes.",
   "package": null,
@@ -38,7 +38,7 @@
     ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "PLANNING CANDIDATE / CLOSE CONSUMED SEMANTIC CHILD THEN STAGE6 / FF-ONLY INTEGRATE INTO ORIGINAL RKP2 / ARCHIVE CLOSEOUT / STOP BEFORE S6.2 / TYPESCRIPT DEFAULT / NO STRESS QUALIFICATION CUTOVER RKP3 PUSH OR PRODUCTION CHANGE.",
+  "notes": "IN_PROGRESS / TARGETED PLANNING REREVIEW PASS P0_0_P1_0_P2_0 AT E7708BF / L1 NATIVE ACTIVATION / L2 CONSUMED SEMANTIC CHILD ACCEPTANCE-ARCHIVE NEXT / PRODUCTION IMPLEMENTATION FALSE / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO STRESS QUALIFICATION CUTOVER RKP3 PUSH OR PRODUCTION CHANGE.",
   "meta": {
     "planning_base_commit": "65debd52d379004c966cefe59f54d72ac1136eb4",
     "original_rkp2_preintegration_head": "4a302bc9f9981940336fc97941b08e09bd0d1f67",
@@ -49,12 +49,15 @@
       "P2": 0,
       "verdict": "passed_external_audit"
     },
-    "task_start_run": false,
+    "task_start_run": true,
+    "l1_native_activation_completed": true,
+    "l1_activation_status_transition": "planning_to_in_progress_via_native_task_py_start",
     "production_implementation_authorized": false,
     "user_lifecycle_continuation_authorization": true,
     "user_lifecycle_continuation_record": "user_requested_continue_until_this_stage_is_complete_then_report",
-    "independent_planning_review": "returned_P0_0_P1_1_P2_1_for_bounded_planning_repair",
-    "implementation_stage": "L0_planning_candidate",
+    "independent_planning_review": "passed_targeted_rereview_e7708bf84ffb6ac71818f46d367ff6e8bba7beb6_P0_0_P1_0_P2_0",
+    "accepted_planning_authority_head": "e7708bf84ffb6ac71818f46d367ff6e8bba7beb6",
+    "implementation_stage": "L1_native_activation_in_progress_L2_semantic_child_closeout_next",
     "implementation_candidate_ready": false,
     "implementation_review": "pending_not_started",
     "archive_candidate_review": "pending_not_started",
@@ -95,7 +98,7 @@
     "future_technical_allowlist": [
       "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
     ],
-    "next_gate": "targeted_independent_stage6_closeout_planning_rereview_pending",
+    "next_gate": "L2_semantic_child_owner_acceptance_and_native_archive",
     "planning_validation": {
       "trellis_closeout": "passed_implement_6_check_5_total_11",
       "trellis_stage6": "passed_25_25_context_entries",
@@ -125,7 +128,16 @@
         "trellis_validation_count_label_mismatch"
       ]
     },
-    "targeted_independent_planning_rereview": "pending",
-    "bounded_planning_repair_commit": "pending_this_commit"
+    "targeted_independent_planning_rereview": {
+      "review_task_id": "01a05d0e-5eee-7ea1-bff1-eb4b39d7f98e",
+      "review_turn_id": "01a05d19-f6c7-7ec0-b8dd-31ccef41cedd",
+      "candidate_commit": "e7708bf84ffb6ac71818f46d367ff6e8bba7beb6",
+      "P0": 0,
+      "P1": 0,
+      "P2": 0,
+      "verdict": "PASS_FOR_BOUNDED_LIFECYCLE_IMPLEMENTATION",
+      "implementation_authorized_by_review": false
+    },
+    "bounded_planning_repair_commit": "e7708bf84ffb6ac71818f46d367ff6e8bba7beb6"
   }
 }

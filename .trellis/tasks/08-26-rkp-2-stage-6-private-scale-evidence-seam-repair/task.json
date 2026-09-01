@@ -45,7 +45,7 @@
     "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "IN_PROGRESS / E3 Q4 ACCEPTED ARCHIVED / STAGE6 CLOSEOUT PLANNING CANDIDATE CREATED AS RKP2 SIBLING / INDEPENDENT PLANNING REVIEW PENDING / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO ACCEPT ARCHIVE INTEGRATION QUALIFICATION CUTOVER PUSH OR RKP3.",
+  "notes": "IN_PROGRESS / E3 Q4 ACCEPTED ARCHIVED / STAGE6 CLOSEOUT TARGETED PLANNING REREVIEW PASS AT E7708BF AND L1 ACTIVATED AS RKP2 SIBLING / L2 CONSUMED SEMANTIC CHILD CLOSEOUT NEXT / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO QUALIFICATION CUTOVER PUSH OR RKP3.",
   "meta": {
     "planning_base_commit": "4a302bc9f9981940336fc97941b08e09bd0d1f67",
     "source_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -312,7 +312,7 @@
     "e3_partial_evidence": false,
     "current_planning_child": null,
     "current_implementation_child": null,
-    "next_gate": "dedicated_independent_stage6_closeout_planning_review_pending",
+    "next_gate": "closeout_L2_semantic_child_owner_acceptance_and_native_archive",
     "e3_acceptance_projection_native_archive_commit": "1c76dbf9d9cd1ece12299b148f0c6de09d1391e1",
     "e3_acceptance_projection_native_archive_path": ".trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-state-projection",
     "e3_workspace_law_final_state_projection_repair": {
@@ -492,11 +492,15 @@
     "e3_workspace_law_acceptance_archive_closure_q3_audit_record_sha256": "a75970a089aca2ef97a14d25c69e8d9ff4df5227face43461fb3df9e3ab0aeb6",
     "stage6_acceptance_archive_integration_closeout": {
       "task": "09-01-rkp-2-stage-6-acceptance-archive-integration-closeout",
-      "status": "planning",
+      "status": "in_progress",
       "planning_base": "65debd52d379004c966cefe59f54d72ac1136eb4",
       "branch": "codex/rkp-2-stage-6-acceptance-archive-integration-closeout",
       "worktree": ".worktrees/rkp-2-stage-6-acceptance-archive-integration-closeout",
-      "independent_planning_review": "pending",
+      "independent_planning_review": "passed_targeted_rereview_e7708bf84ffb6ac71818f46d367ff6e8bba7beb6_P0_0_P1_0_P2_0",
+      "accepted_planning_authority_head": "e7708bf84ffb6ac71818f46d367ff6e8bba7beb6",
+      "task_start_run": true,
+      "implementation_stage": "L1_native_activation_in_progress_L2_semantic_child_closeout_next",
+      "next_gate": "L2_semantic_child_owner_acceptance_and_native_archive",
       "production_implementation_authorized": false
     }
   }
