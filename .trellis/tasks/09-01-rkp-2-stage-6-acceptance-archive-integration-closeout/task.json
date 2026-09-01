@@ -38,7 +38,7 @@
     ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "IN_PROGRESS / TARGETED PLANNING REREVIEW PASS P0_0_P1_0_P2_0 AT E7708BF / L1 NATIVE ACTIVATION COMPLETE / L2 CONSUMED SEMANTIC CHILD ACCEPTED-ARCHIVED / L3 STAGE6 OWNER ACCEPTED AND NATIVELY ARCHIVED EXACT 13 AT BCC1C905 / FIRST INDEPENDENT IMPLEMENTATION AUDIT RETURN P0_0_P1_2_P2_0 AT 1F024630 / BOUNDED L3 REPAIR COMPLETE / TARGETED REREVIEW PENDING / PRODUCTION IMPLEMENTATION FALSE / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO INTEGRATION STRESS QUALIFICATION CUTOVER RKP3 PUSH OR PRODUCTION CHANGE.",
+  "notes": "IN_PROGRESS / TARGETED PLANNING REREVIEW PASS P0_0_P1_0_P2_0 AT E7708BF / L1 NATIVE ACTIVATION COMPLETE / L2 CONSUMED SEMANTIC CHILD ACCEPTED-ARCHIVED / L3 STAGE6 OWNER ACCEPTED AND NATIVELY ARCHIVED EXACT 13 AT BCC1C905 / FIRST INDEPENDENT IMPLEMENTATION AUDIT RETURN P0_0_P1_2_P2_0 AT 1F024630 / FIRST BOUNDED L3 REPAIR BAF2655 TARGETED REREVIEW RETURN P0_0_P1_0_P2_1 / TEST-ONLY P2 NEGATIVE MATRIX REPAIR COMPLETE / TARGETED REREVIEW PENDING / PRODUCTION IMPLEMENTATION FALSE / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO INTEGRATION STRESS QUALIFICATION CUTOVER RKP3 PUSH OR PRODUCTION CHANGE.",
   "meta": {
     "planning_base_commit": "65debd52d379004c966cefe59f54d72ac1136eb4",
     "original_rkp2_preintegration_head": "4a302bc9f9981940336fc97941b08e09bd0d1f67",
@@ -58,10 +58,10 @@
     "user_lifecycle_continuation_record": "user_requested_continue_until_this_stage_is_complete_then_report",
     "independent_planning_review": "passed_targeted_rereview_e7708bf84ffb6ac71818f46d367ff6e8bba7beb6_P0_0_P1_0_P2_0",
     "accepted_planning_authority_head": "e7708bf84ffb6ac71818f46d367ff6e8bba7beb6",
-    "implementation_stage": "L3_bounded_repair_complete_targeted_independent_rereview_pending",
+    "implementation_stage": "L3_test_only_P2_negative_matrix_repair_complete_targeted_independent_rereview_pending",
     "implementation_candidate_ready": true,
-    "implementation_review": "pending_targeted_independent_l3_rereview_after_bounded_repair",
-    "archive_candidate_review": "pending_targeted_independent_l3_rereview_after_bounded_repair",
+    "implementation_review": "pending_targeted_independent_l3_rereview_after_test_only_P2_negative_matrix_repair",
+    "archive_candidate_review": "pending_targeted_independent_l3_rereview_after_test_only_P2_negative_matrix_repair",
     "integration_review": "pending_not_started",
     "terminal_projection_review": "pending_not_started",
     "semantic_child_acceptance_authorized": true,
@@ -116,9 +116,17 @@
         "workspace_law_missing_semantic_archive_membership_full_parent_chain_and_projection_negative_variants"
       ]
     },
+    "targeted_independent_l3_rereview": {
+      "candidate_commit": "baf2655c58949b415e2663169d3d238c48c4c1f0",
+      "P0": 0,
+      "P1": 0,
+      "P2": 1,
+      "verdict": "return_for_test_only_P2_negative_matrix_repair",
+      "finding": "workspace_law_negative_projection_and_authorization_matrix_incomplete"
+    },
     "bounded_l3_repair": {
-      "status": "complete_candidate_pending_targeted_rereview",
-      "scope": "semantic_archived_no_live_owner_plus_workspace_law_archive_chain_and_projection_negative_variants_only",
+      "status": "test_only_P2_negative_matrix_repair_complete_candidate_pending_targeted_rereview",
+      "scope": "semantic_archived_no_live_owner_plus_workspace_law_archive_chain_projection_and_authorization_negative_variants_only",
       "targeted_rereview": "pending"
     },
     "semantic_child_acceptance": {

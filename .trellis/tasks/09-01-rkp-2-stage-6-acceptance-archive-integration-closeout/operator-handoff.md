@@ -11,7 +11,8 @@
 - The planning PASS is evidence only. The pre-existing user continuation record authorizes the bounded L1-L3 sequence; review itself authorizes nothing.
 - Stage 6 technical evidence is the externally audited candidate `0c561d14193374436361eec09b361cab0170278a`, P0/P1/P2=`0/0/0`. Owner acceptance and the exact 13-file native archive are authorized by the same bounded continuation record; `production_implementation_authorized` remains false.
 - First independent implementation audit input `1f024630e0a09bb252790c6e80ea59375906f9e4` returned P0/P1/P2=`0/2/0`, `RETURN FOR BOUNDED L3 REPAIR`: one archived semantic-child live-owner projection and one Workspace Law coverage gap.
-- Current stop: `stage6-archived`. The bounded L3 repair is complete and **TARGETED INDEPENDENT REREVIEW IS PENDING**. L4-L6, integration, closeout archive, qualification, cutover, RKP-3 and push are not authorized in this operator.
+- Targeted rereview input `baf2655c58949b415e2663169d3d238c48c4c1f0` returned P0/P1/P2=`0/0/1`: both P1 findings are closed; the only remaining P2 is the incomplete Workspace Law negative projection/authorization matrix.
+- Current stop: `stage6-archived`. The test-only P2 matrix repair is complete and **TARGETED INDEPENDENT REREVIEW IS PENDING**. L4-L6, integration, closeout archive, qualification, cutover, RKP-3 and push are not authorized in this operator.
 
 ## Exact outcome
 

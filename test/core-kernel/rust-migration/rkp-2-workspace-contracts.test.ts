@@ -2211,6 +2211,7 @@ interface Stage6CloseoutLifecycleProjection {
   readonly closeoutCandidateReady: unknown;
   readonly closeoutArchiveCandidateReview: unknown;
   readonly closeoutIntegrationAuthorized: unknown;
+  readonly closeoutIntegrationCompleted: unknown;
   readonly closeoutAcceptanceAuthorized: unknown;
   readonly closeoutArchiveAuthorized: unknown;
   readonly rkp2Status: unknown;
@@ -2219,6 +2220,7 @@ interface Stage6CloseoutLifecycleProjection {
   readonly rkp2CurrentPlanningChild: unknown;
   readonly rkp2CurrentImplementationChild: unknown;
   readonly rkp2NextGate: unknown;
+  readonly rkp2Stage6Completed: unknown;
   readonly s62Started: unknown;
   readonly s63Started: unknown;
   readonly defaultRuntime: unknown;
@@ -2229,10 +2231,13 @@ interface Stage6CloseoutLifecycleProjection {
   readonly rustCurrentImplementationChild: unknown;
   readonly rustActiveImplementationChild: unknown;
   readonly rustNextGate: unknown;
+  readonly rustRkp2Stage6Completed: unknown;
   readonly rustS62Started: unknown;
   readonly rustS63Started: unknown;
   readonly rustDefaultRuntime: unknown;
+  readonly rustRkp3ThroughRkp9Created: unknown;
   readonly pushAuthorized: unknown;
+  readonly officialMeasurementAuthorized: unknown;
   readonly qualificationAuthorized: unknown;
   readonly runtimeSwitchAuthorized: unknown;
   readonly rkp3CreationAuthorized: unknown;
@@ -2301,7 +2306,11 @@ function assertStage6CloseoutLifecycleProjection(
     projection.closeoutStatus,
     phase === "planning" ? "planning" : closeoutArchived ? "completed" : "in_progress",
   );
-  assert.equal(projection.closeoutProductionAuthorized, false);
+  assert.equal(
+    projection.closeoutProductionAuthorized,
+    false,
+    "closeout production implementation authorization must remain false",
+  );
   assert.equal(
     projection.closeoutPlanningAuthority,
     phase === "planning" ? undefined : STAGE_6_CLOSEOUT_PLANNING_AUTHORITY,
@@ -2320,10 +2329,19 @@ function assertStage6CloseoutLifecycleProjection(
     stage6Archived
       ? integrated
         ? "passed_dedicated_independent_stage6_archive_candidate_review"
-        : "pending_targeted_independent_l3_rereview_after_bounded_repair"
+        : "pending_targeted_independent_l3_rereview_after_test_only_P2_negative_matrix_repair"
       : "pending_not_started",
   );
-  assert.equal(projection.closeoutIntegrationAuthorized, integrated);
+  assert.equal(
+    projection.closeoutIntegrationAuthorized,
+    integrated,
+    "closeout integration authorization must match the lifecycle phase",
+  );
+  assert.equal(
+    projection.closeoutIntegrationCompleted,
+    integrated ? true : undefined,
+    "closeout integration completion must match the lifecycle phase",
+  );
   assert.equal(projection.closeoutAcceptanceAuthorized, closeoutArchived);
   assert.equal(projection.closeoutArchiveAuthorized, closeoutArchived);
   assert.equal(projection.rkp2Status, "in_progress");
@@ -2347,16 +2365,30 @@ function assertStage6CloseoutLifecycleProjection(
       "targeted_independent_l3_bounded_repair_rereview_pending",
     );
   }
+  assert.equal(
+    projection.rkp2Stage6Completed,
+    false,
+    "RKP-2 Stage 6 completion must remain false before qualification",
+  );
   assert.equal(projection.s62Started, false);
   assert.equal(projection.s63Started, false);
-  assert.equal(projection.defaultRuntime, "typescript");
+  assert.equal(
+    projection.defaultRuntime,
+    "typescript",
+    "RKP-2 default runtime must remain TypeScript before cutover",
+  );
   assert.equal(projection.rustStatus, "planning");
   assert.equal(
     projection.rustParent,
     "07-29-core-vnext-product-ready-extensible-kernel-completion",
+    "Rust parent must remain on the accepted architecture lineage",
   );
   assert.deepEqual(projection.rustChildren, RUST_PARENT_CURRENT_CHILDREN);
-  assert.equal(projection.rustCurrentPlanningChild, null);
+  assert.equal(
+    projection.rustCurrentPlanningChild,
+    null,
+    "Rust parent current planning child must remain null",
+  );
   assert.equal(
     projection.rustCurrentImplementationChild,
     "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
@@ -2371,13 +2403,48 @@ function assertStage6CloseoutLifecycleProjection(
       "stage6_closeout_targeted_independent_l3_bounded_repair_rereview_pending",
     );
   }
+  assert.equal(
+    projection.rustRkp2Stage6Completed,
+    false,
+    "Rust parent RKP-2 Stage 6 completion must remain false before qualification",
+  );
   assert.equal(projection.rustS62Started, false);
   assert.equal(projection.rustS63Started, false);
-  assert.equal(projection.rustDefaultRuntime, "typescript");
-  assert.equal(projection.pushAuthorized, false);
-  assert.equal(projection.qualificationAuthorized, false);
-  assert.equal(projection.runtimeSwitchAuthorized, false);
-  assert.equal(projection.rkp3CreationAuthorized, false);
+  assert.equal(
+    projection.rustDefaultRuntime,
+    "typescript",
+    "Rust parent default runtime projection must remain TypeScript before cutover",
+  );
+  assert.equal(
+    projection.rustRkp3ThroughRkp9Created,
+    false,
+    "Rust parent must record that RKP-3 through RKP-9 are not created",
+  );
+  assert.equal(
+    projection.pushAuthorized,
+    false,
+    "closeout push authorization must remain false",
+  );
+  assert.equal(
+    projection.officialMeasurementAuthorized,
+    false,
+    "closeout official measurement authorization must remain false",
+  );
+  assert.equal(
+    projection.qualificationAuthorized,
+    false,
+    "closeout qualification authorization must remain false",
+  );
+  assert.equal(
+    projection.runtimeSwitchAuthorized,
+    false,
+    "closeout runtime switch authorization must remain false",
+  );
+  assert.equal(
+    projection.rkp3CreationAuthorized,
+    false,
+    "closeout RKP-3 creation authorization must remain false",
+  );
 }
 
 interface WorkspaceLawJsonlProjectionContract {
@@ -5127,6 +5194,7 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     closeoutCandidateReady: closeoutMeta.implementation_candidate_ready,
     closeoutArchiveCandidateReview: closeoutMeta.archive_candidate_review,
     closeoutIntegrationAuthorized: closeoutMeta.integration_authorized,
+    closeoutIntegrationCompleted: closeoutMeta.integration_completed,
     closeoutAcceptanceAuthorized: closeoutMeta.closeout_acceptance_authorized,
     closeoutArchiveAuthorized: closeoutMeta.closeout_archive_authorized,
     rkp2Status: currentRkp2Task.status,
@@ -5136,6 +5204,7 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     rkp2CurrentImplementationChild:
       currentRkp2Meta.current_implementation_child,
     rkp2NextGate: currentRkp2Meta.next_gate,
+    rkp2Stage6Completed: currentRkp2Meta.stage_6_completed,
     s62Started: currentRkp2Meta.stage_6_s6_2_started,
     s63Started: currentRkp2Meta.stage_6_s6_3_started,
     defaultRuntime: currentRkp2Meta.default_runtime,
@@ -5146,10 +5215,13 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     rustCurrentImplementationChild: currentRustMeta.current_implementation_child,
     rustActiveImplementationChild: currentRustMeta.active_implementation_child,
     rustNextGate: currentRustMeta.next_gate,
+    rustRkp2Stage6Completed: currentRustMeta.rkp2_stage_6_completed,
     rustS62Started: currentRustMeta.rkp2_stage_6_s6_2_started,
     rustS63Started: currentRustMeta.rkp2_stage_6_s6_3_started,
     rustDefaultRuntime: currentRustMeta.rkp2_default_runtime,
+    rustRkp3ThroughRkp9Created: currentRustMeta.rkp3_through_rkp9_created,
     pushAuthorized: closeoutMeta.push_authorized,
+    officialMeasurementAuthorized: closeoutMeta.official_measurement_authorized,
     qualificationAuthorized: closeoutMeta.qualification_authorized,
     runtimeSwitchAuthorized: closeoutMeta.default_runtime_switch_authorized,
     rkp3CreationAuthorized: closeoutMeta.rkp3_creation_authorized,
@@ -5158,7 +5230,12 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     stage6CloseoutLifecycle,
     stage6CloseoutPhase,
   );
-  for (const variant of [
+  type Stage6CloseoutLifecycleNegativeVariant =
+    Partial<Stage6CloseoutLifecycleProjection> & {
+      readonly negativeCase?: string;
+      readonly expectedError?: RegExp;
+    };
+  const stage6CloseoutLifecycleNegativeVariants: readonly Stage6CloseoutLifecycleNegativeVariant[] = [
     {
       semanticParentOwnership:
         "08-26-rkp-2-stage-6-private-scale-evidence-seam-repair_remains_the_only_active_implementation_owner_this_child_is_the_only_current_planning_owner",
@@ -5195,17 +5272,109 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     },
     { rkp2NextGate: "wrong-rkp2-gate" },
     { rustStatus: "completed" },
+    {
+      rustParent: "wrong-rust-parent",
+      negativeCase: "rust-parent-lineage-drift",
+      expectedError: /Rust parent must remain on the accepted architecture lineage/u,
+    },
     { rustChildren: ["wrong-rust-child"] },
+    {
+      rustCurrentPlanningChild: "wrong-rust-planning-child",
+      negativeCase: "rust-current-planning-child-drift",
+      expectedError: /Rust parent current planning child must remain null/u,
+    },
     { rustCurrentImplementationChild: "wrong-rust-child" },
     { rustActiveImplementationChild: "wrong-rust-child" },
     { rustNextGate: "wrong-rust-gate" },
-  ]) {
-    assert.throws(() =>
+    {
+      closeoutProductionAuthorized: true,
+      negativeCase: "closeout-production-authorization-drift",
+      expectedError:
+        /closeout production implementation authorization must remain false/u,
+    },
+    {
+      closeoutIntegrationAuthorized: true,
+      negativeCase: "closeout-integration-authorization-drift",
+      expectedError:
+        /closeout integration authorization must match the lifecycle phase/u,
+    },
+    {
+      closeoutIntegrationCompleted: true,
+      negativeCase: "closeout-integration-occurrence-drift",
+      expectedError:
+        /closeout integration completion must match the lifecycle phase/u,
+    },
+    {
+      pushAuthorized: true,
+      negativeCase: "closeout-push-authorization-drift",
+      expectedError: /closeout push authorization must remain false/u,
+    },
+    {
+      officialMeasurementAuthorized: true,
+      negativeCase: "closeout-official-measurement-authorization-drift",
+      expectedError:
+        /closeout official measurement authorization must remain false/u,
+    },
+    {
+      qualificationAuthorized: true,
+      negativeCase: "closeout-qualification-authorization-drift",
+      expectedError: /closeout qualification authorization must remain false/u,
+    },
+    {
+      rkp2Stage6Completed: true,
+      negativeCase: "rkp2-qualification-occurrence-drift",
+      expectedError:
+        /RKP-2 Stage 6 completion must remain false before qualification/u,
+    },
+    {
+      rustRkp2Stage6Completed: true,
+      negativeCase: "rust-parent-qualification-occurrence-drift",
+      expectedError:
+        /Rust parent RKP-2 Stage 6 completion must remain false before qualification/u,
+    },
+    {
+      runtimeSwitchAuthorized: true,
+      negativeCase: "closeout-runtime-switch-authorization-drift",
+      expectedError: /closeout runtime switch authorization must remain false/u,
+    },
+    {
+      defaultRuntime: "rust",
+      negativeCase: "rkp2-runtime-cutover-drift",
+      expectedError: /RKP-2 default runtime must remain TypeScript before cutover/u,
+    },
+    {
+      rustDefaultRuntime: "rust",
+      negativeCase: "rust-parent-runtime-cutover-drift",
+      expectedError:
+        /Rust parent default runtime projection must remain TypeScript before cutover/u,
+    },
+    {
+      rkp3CreationAuthorized: true,
+      negativeCase: "closeout-rkp3-authorization-drift",
+      expectedError: /closeout RKP-3 creation authorization must remain false/u,
+    },
+    {
+      rustRkp3ThroughRkp9Created: true,
+      negativeCase: "rust-parent-rkp3-start-drift",
+      expectedError:
+        /Rust parent must record that RKP-3 through RKP-9 are not created/u,
+    },
+  ];
+  for (const {
+    negativeCase,
+    expectedError,
+    ...mutation
+  } of stage6CloseoutLifecycleNegativeVariants) {
+    const assertMutation = (): void =>
       assertStage6CloseoutLifecycleProjection(
-        { ...stage6CloseoutLifecycle, ...variant },
+        { ...stage6CloseoutLifecycle, ...mutation },
         stage6CloseoutPhase,
-      ),
-    );
+      );
+    if (expectedError === undefined) {
+      assert.throws(assertMutation, negativeCase);
+    } else {
+      assert.throws(assertMutation, expectedError, negativeCase);
+    }
   }
 
   const worker = readText(
