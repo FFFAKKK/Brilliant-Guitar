@@ -136,7 +136,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "stage6_closeout_targeted_independent_l3_bounded_repair_rereview_pending",
+    "next_gate": "stage6_closeout_dedicated_independent_integration_projection_review_pending",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -241,7 +241,7 @@
     "rkp2_implementation_authorized": true,
     "rkp2_user_implementation_authorization": true,
     "rkp2_created": true,
-    "rkp2_status": "in_progress_stage_6_closeout_L3_bounded_repair_complete_targeted_rereview_pending",
+    "rkp2_status": "in_progress_stage_6_closeout_L5_integrated_projection_candidate_ready_for_dedicated_independent_integration_review",
     "rkp2_task": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
     "rkp2_planning_base": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "rkp2_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -708,13 +708,25 @@
       "independent_planning_review": "passed_targeted_rereview_e7708bf84ffb6ac71818f46d367ff6e8bba7beb6_P0_0_P1_0_P2_0",
       "accepted_planning_authority_head": "e7708bf84ffb6ac71818f46d367ff6e8bba7beb6",
       "task_start_run": true,
-      "implementation_stage": "L3_bounded_repair_complete_targeted_independent_rereview_pending",
-      "next_gate": "targeted_independent_l3_bounded_repair_rereview_pending",
+      "implementation_stage": "L5_integrated_projection_candidate_ready_for_dedicated_independent_integration_review",
+      "next_gate": "dedicated_independent_integration_projection_review_pending",
       "stage6_native_archive_commit": "bcc1c905bc58ab9810e076c23891d6683a2ae607",
       "stage6_archive_root": ".trellis/tasks/archive/2026-09/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair",
       "production_implementation_authorized": false,
       "first_independent_implementation_audit": "1f024630e0a09bb252790c6e80ea59375906f9e4_return_P0_0_P1_2_P2_0",
-      "bounded_l3_repair": "complete_targeted_rereview_pending"
+      "bounded_l3_repair": "passed_b3850a48b67f24b1176f573fa143b33c784348ec_P0_0_P1_0_P2_0",
+      "archive_candidate_review": "passed_dedicated_independent_stage6_archive_candidate_review",
+      "integration_authorized": true,
+      "integration_completed": true,
+      "integration_review": "pending_dedicated_independent_integration_projection_review",
+      "integration_candidate": "b3850a48b67f24b1176f573fa143b33c784348ec",
+      "integration_target_branch": "codex/rkp-2-indexed-live-score-store-implementation",
+      "integration_target_worktree": ".worktrees/rkp-2-indexed-live-score-store-implementation",
+      "frozen_source_branch": "codex/rkp-2-stage-6-acceptance-archive-integration-closeout",
+      "frozen_source_worktree": ".worktrees/rkp-2-stage-6-acceptance-archive-integration-closeout",
+      "frozen_source_head": "b3850a48b67f24b1176f573fa143b33c784348ec",
+      "closeout_acceptance_authorized": false,
+      "closeout_archive_authorized": false
     }
   }
 }

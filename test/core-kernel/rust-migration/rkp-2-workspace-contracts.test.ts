@@ -537,6 +537,20 @@ const STAGE_6_NATIVE_ARCHIVE_COMMIT =
   "bcc1c905bc58ab9810e076c23891d6683a2ae607";
 const STAGE_6_ARCHIVE_CANDIDATE_COMMIT =
   "1f024630e0a09bb252790c6e80ea59375906f9e4";
+const STAGE_6_CLOSEOUT_L3_REPAIR_COMMIT =
+  "baf2655c58949b415e2663169d3d238c48c4c1f0";
+const STAGE_6_CLOSEOUT_L3_AUDITED_CANDIDATE =
+  "b3850a48b67f24b1176f573fa143b33c784348ec";
+const STAGE_6_CLOSEOUT_INTEGRATION_PRE_HEAD =
+  "4a302bc9f9981940336fc97941b08e09bd0d1f67";
+const STAGE_6_CLOSEOUT_SOURCE_BRANCH =
+  "codex/rkp-2-stage-6-acceptance-archive-integration-closeout";
+const STAGE_6_CLOSEOUT_SOURCE_WORKTREE =
+  ".worktrees/rkp-2-stage-6-acceptance-archive-integration-closeout";
+const STAGE_6_CLOSEOUT_TARGET_BRANCH =
+  "codex/rkp-2-indexed-live-score-store-implementation";
+const STAGE_6_CLOSEOUT_TARGET_WORKTREE =
+  ".worktrees/rkp-2-indexed-live-score-store-implementation";
 const STAGE_6_CLOSEOUT_FROZEN_PARENT_CHAIN = [
   {
     commit: STAGE_6_CLOSEOUT_ACTIVATION_COMMIT,
@@ -565,6 +579,14 @@ const STAGE_6_CLOSEOUT_FROZEN_PARENT_CHAIN = [
   {
     commit: STAGE_6_ARCHIVE_CANDIDATE_COMMIT,
     parent: STAGE_6_NATIVE_ARCHIVE_COMMIT,
+  },
+  {
+    commit: STAGE_6_CLOSEOUT_L3_REPAIR_COMMIT,
+    parent: STAGE_6_ARCHIVE_CANDIDATE_COMMIT,
+  },
+  {
+    commit: STAGE_6_CLOSEOUT_L3_AUDITED_CANDIDATE,
+    parent: STAGE_6_CLOSEOUT_L3_REPAIR_COMMIT,
   },
 ] as const;
 const STAGE_6_CLOSEOUT_ROOT =
@@ -2204,6 +2226,10 @@ interface Stage6CloseoutLifecycleProjection {
   readonly stage6ArchiveAuthorityPresent: unknown;
   readonly closeoutLocation: "active" | "archive";
   readonly closeoutStatus: unknown;
+  readonly closeoutImplementationStage: unknown;
+  readonly closeoutImplementationReview: unknown;
+  readonly closeoutIntegrationReview: unknown;
+  readonly closeoutNextGate: unknown;
   readonly closeoutProductionAuthorized: unknown;
   readonly closeoutPlanningAuthority: unknown;
   readonly closeoutStage6AcceptanceAuthorized: unknown;
@@ -2212,6 +2238,28 @@ interface Stage6CloseoutLifecycleProjection {
   readonly closeoutArchiveCandidateReview: unknown;
   readonly closeoutIntegrationAuthorized: unknown;
   readonly closeoutIntegrationCompleted: unknown;
+  readonly closeoutCurrentAuthorityOwnerBranch: unknown;
+  readonly closeoutCurrentAuthorityOwnerWorktree: unknown;
+  readonly closeoutFrozenSourceBranch: unknown;
+  readonly closeoutFrozenSourceWorktree: unknown;
+  readonly closeoutFrozenSourceHead: unknown;
+  readonly closeoutIntegrationTargetBranch: unknown;
+  readonly closeoutIntegrationTargetWorktree: unknown;
+  readonly closeoutIntegrationTargetPreHead: unknown;
+  readonly closeoutIntegrationCandidate: unknown;
+  readonly closeoutIntegrationMode: unknown;
+  readonly closeoutL4FastForwardCompleted: unknown;
+  readonly closeoutL4NoMergeCommit: unknown;
+  readonly closeoutL3AuditCandidate: unknown;
+  readonly closeoutL3AuditP0: unknown;
+  readonly closeoutL3AuditP1: unknown;
+  readonly closeoutL3AuditP2: unknown;
+  readonly closeoutL3AuditVerdict: unknown;
+  readonly closeoutL3AuditTaskId: unknown;
+  readonly closeoutL3AuditThreadId: unknown;
+  readonly closeoutL3AuditTurnId: unknown;
+  readonly closeoutL3AuditReviewGeneratedAuthorization: unknown;
+  readonly closeoutL3AuditAuthorizationSource: unknown;
   readonly closeoutAcceptanceAuthorized: unknown;
   readonly closeoutArchiveAuthorized: unknown;
   readonly rkp2Status: unknown;
@@ -2219,7 +2267,13 @@ interface Stage6CloseoutLifecycleProjection {
   readonly rkp2Children: unknown;
   readonly rkp2CurrentPlanningChild: unknown;
   readonly rkp2CurrentImplementationChild: unknown;
+  readonly rkp2ImplementationStage: unknown;
   readonly rkp2NextGate: unknown;
+  readonly rkp2CloseoutStatus: unknown;
+  readonly rkp2CloseoutImplementationStage: unknown;
+  readonly rkp2CloseoutNextGate: unknown;
+  readonly rkp2CloseoutIntegrationCompleted: unknown;
+  readonly rkp2CloseoutIntegrationReview: unknown;
   readonly rkp2Stage6Completed: unknown;
   readonly s62Started: unknown;
   readonly s63Started: unknown;
@@ -2230,7 +2284,13 @@ interface Stage6CloseoutLifecycleProjection {
   readonly rustCurrentPlanningChild: unknown;
   readonly rustCurrentImplementationChild: unknown;
   readonly rustActiveImplementationChild: unknown;
+  readonly rustRkp2Status: unknown;
   readonly rustNextGate: unknown;
+  readonly rustCloseoutStatus: unknown;
+  readonly rustCloseoutImplementationStage: unknown;
+  readonly rustCloseoutNextGate: unknown;
+  readonly rustCloseoutIntegrationCompleted: unknown;
+  readonly rustCloseoutIntegrationReview: unknown;
   readonly rustRkp2Stage6Completed: unknown;
   readonly rustS62Started: unknown;
   readonly rustS63Started: unknown;
@@ -2306,6 +2366,99 @@ function assertStage6CloseoutLifecycleProjection(
     projection.closeoutStatus,
     phase === "planning" ? "planning" : closeoutArchived ? "completed" : "in_progress",
   );
+  if (phase === "integrated") {
+    assert.equal(
+      projection.closeoutImplementationStage,
+      "L5_integrated_projection_candidate_ready_for_dedicated_independent_integration_review",
+    );
+    assert.equal(
+      projection.closeoutImplementationReview,
+      "passed_dedicated_independent_stage6_archive_candidate_review",
+    );
+    assert.equal(
+      projection.closeoutIntegrationReview,
+      "pending_dedicated_independent_integration_projection_review",
+    );
+    assert.equal(
+      projection.closeoutNextGate,
+      "dedicated_independent_integration_projection_review_pending",
+    );
+    assert.equal(
+      projection.closeoutCurrentAuthorityOwnerBranch,
+      STAGE_6_CLOSEOUT_TARGET_BRANCH,
+      "integrated authority must belong only to the original RKP-2 branch",
+    );
+    assert.equal(
+      projection.closeoutCurrentAuthorityOwnerWorktree,
+      STAGE_6_CLOSEOUT_TARGET_WORKTREE,
+      "integrated authority must belong only to the original RKP-2 worktree",
+    );
+    assert.equal(projection.closeoutFrozenSourceBranch, STAGE_6_CLOSEOUT_SOURCE_BRANCH);
+    assert.equal(
+      projection.closeoutFrozenSourceWorktree,
+      STAGE_6_CLOSEOUT_SOURCE_WORKTREE,
+    );
+    assert.equal(
+      projection.closeoutFrozenSourceHead,
+      STAGE_6_CLOSEOUT_L3_AUDITED_CANDIDATE,
+      "the L3 audit source must remain frozen at the exact reviewed candidate",
+    );
+    assert.equal(
+      projection.closeoutIntegrationTargetBranch,
+      STAGE_6_CLOSEOUT_TARGET_BRANCH,
+    );
+    assert.equal(
+      projection.closeoutIntegrationTargetWorktree,
+      STAGE_6_CLOSEOUT_TARGET_WORKTREE,
+    );
+    assert.equal(
+      projection.closeoutIntegrationTargetPreHead,
+      STAGE_6_CLOSEOUT_INTEGRATION_PRE_HEAD,
+    );
+    assert.equal(
+      projection.closeoutIntegrationCandidate,
+      STAGE_6_CLOSEOUT_L3_AUDITED_CANDIDATE,
+    );
+    assert.equal(projection.closeoutIntegrationMode, "ff-only");
+    assert.equal(projection.closeoutL4FastForwardCompleted, true);
+    assert.equal(
+      projection.closeoutL4NoMergeCommit,
+      true,
+      "L4 must not create a merge commit",
+    );
+    assert.equal(
+      projection.closeoutL3AuditCandidate,
+      STAGE_6_CLOSEOUT_L3_AUDITED_CANDIDATE,
+    );
+    assert.equal(projection.closeoutL3AuditP0, 0);
+    assert.equal(projection.closeoutL3AuditP1, 0);
+    assert.equal(projection.closeoutL3AuditP2, 0);
+    assert.equal(
+      projection.closeoutL3AuditVerdict,
+      "PASS FOR OWNER-AUTHORIZED FF-ONLY INTEGRATION",
+    );
+    assert.equal(
+      projection.closeoutL3AuditTaskId,
+      "01a05d4e-5a18-7923-8aae-bcc30ad95c60",
+    );
+    assert.equal(
+      projection.closeoutL3AuditThreadId,
+      "01a05d4e-5a18-7923-8aae-bcc30ad95c60",
+    );
+    assert.equal(
+      projection.closeoutL3AuditTurnId,
+      "01a05da1-f9dc-7a72-8c11-75985d5a1e19",
+    );
+    assert.equal(
+      projection.closeoutL3AuditReviewGeneratedAuthorization,
+      false,
+      "the independent PASS must remain evidence only",
+    );
+    assert.equal(
+      projection.closeoutL3AuditAuthorizationSource,
+      "prior_scope_limited_user_lifecycle_continuation",
+    );
+  }
   assert.equal(
     projection.closeoutProductionAuthorized,
     false,
@@ -2364,6 +2517,29 @@ function assertStage6CloseoutLifecycleProjection(
       projection.rkp2NextGate,
       "targeted_independent_l3_bounded_repair_rereview_pending",
     );
+  } else if (phase === "integrated") {
+    assert.equal(
+      projection.rkp2ImplementationStage,
+      "stage_6_closeout_L5_integrated_projection_candidate_ready_for_dedicated_independent_integration_review_rkp2_paused_before_s6_2",
+    );
+    assert.equal(
+      projection.rkp2NextGate,
+      "dedicated_independent_integration_projection_review_pending",
+    );
+    assert.equal(projection.rkp2CloseoutStatus, "in_progress");
+    assert.equal(
+      projection.rkp2CloseoutImplementationStage,
+      "L5_integrated_projection_candidate_ready_for_dedicated_independent_integration_review",
+    );
+    assert.equal(
+      projection.rkp2CloseoutNextGate,
+      "dedicated_independent_integration_projection_review_pending",
+    );
+    assert.equal(projection.rkp2CloseoutIntegrationCompleted, true);
+    assert.equal(
+      projection.rkp2CloseoutIntegrationReview,
+      "pending_dedicated_independent_integration_projection_review",
+    );
   }
   assert.equal(
     projection.rkp2Stage6Completed,
@@ -2401,6 +2577,29 @@ function assertStage6CloseoutLifecycleProjection(
     assert.equal(
       projection.rustNextGate,
       "stage6_closeout_targeted_independent_l3_bounded_repair_rereview_pending",
+    );
+  } else if (phase === "integrated") {
+    assert.equal(
+      projection.rustRkp2Status,
+      "in_progress_stage_6_closeout_L5_integrated_projection_candidate_ready_for_dedicated_independent_integration_review",
+    );
+    assert.equal(
+      projection.rustNextGate,
+      "stage6_closeout_dedicated_independent_integration_projection_review_pending",
+    );
+    assert.equal(projection.rustCloseoutStatus, "in_progress");
+    assert.equal(
+      projection.rustCloseoutImplementationStage,
+      "L5_integrated_projection_candidate_ready_for_dedicated_independent_integration_review",
+    );
+    assert.equal(
+      projection.rustCloseoutNextGate,
+      "dedicated_independent_integration_projection_review_pending",
+    );
+    assert.equal(projection.rustCloseoutIntegrationCompleted, true);
+    assert.equal(
+      projection.rustCloseoutIntegrationReview,
+      "pending_dedicated_independent_integration_projection_review",
     );
   }
   assert.equal(
@@ -5156,6 +5355,20 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
   assert.equal(stage6AuditRecord.P1, 0);
   assert.equal(stage6AuditRecord.P2, 0);
   assert.equal(stage6AuditRecord.verdict, "passed_external_audit");
+  const closeoutL3AuditRecord = closeoutMeta.l3_independent_archive_candidate_review as
+    | Readonly<Record<string, unknown>>
+    | undefined;
+  const rkp2CloseoutProjection = currentRkp2Meta
+    .stage6_acceptance_archive_integration_closeout as
+    | Readonly<Record<string, unknown>>
+    | undefined;
+  const rustCloseoutProjection = currentRustMeta
+    .stage6_acceptance_archive_integration_closeout as
+    | Readonly<Record<string, unknown>>
+    | undefined;
+  assert.ok(closeoutL3AuditRecord);
+  assert.ok(rkp2CloseoutProjection);
+  assert.ok(rustCloseoutProjection);
 
   const stage6CloseoutLifecycle: Stage6CloseoutLifecycleProjection = {
     semanticLocation: semanticLocation.kind,
@@ -5185,6 +5398,10 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     stage6ArchiveAuthorityPresent: currentStage6Meta.archive_authority_present,
     closeoutLocation: closeoutLocation.kind,
     closeoutStatus: closeoutTask.status,
+    closeoutImplementationStage: closeoutMeta.implementation_stage,
+    closeoutImplementationReview: closeoutMeta.implementation_review,
+    closeoutIntegrationReview: closeoutMeta.integration_review,
+    closeoutNextGate: closeoutMeta.next_gate,
     closeoutProductionAuthorized:
       closeoutMeta.production_implementation_authorized,
     closeoutPlanningAuthority: closeoutMeta.accepted_planning_authority_head,
@@ -5195,6 +5412,31 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     closeoutArchiveCandidateReview: closeoutMeta.archive_candidate_review,
     closeoutIntegrationAuthorized: closeoutMeta.integration_authorized,
     closeoutIntegrationCompleted: closeoutMeta.integration_completed,
+    closeoutCurrentAuthorityOwnerBranch:
+      closeoutMeta.current_authority_owner_branch,
+    closeoutCurrentAuthorityOwnerWorktree:
+      closeoutMeta.current_authority_owner_worktree,
+    closeoutFrozenSourceBranch: closeoutMeta.frozen_source_branch,
+    closeoutFrozenSourceWorktree: closeoutMeta.frozen_source_worktree,
+    closeoutFrozenSourceHead: closeoutMeta.frozen_source_head,
+    closeoutIntegrationTargetBranch: closeoutMeta.integration_target_branch,
+    closeoutIntegrationTargetWorktree: closeoutMeta.integration_target_worktree,
+    closeoutIntegrationTargetPreHead: closeoutMeta.integration_target_pre_head,
+    closeoutIntegrationCandidate: closeoutMeta.integration_candidate,
+    closeoutIntegrationMode: closeoutMeta.integration_mode,
+    closeoutL4FastForwardCompleted: closeoutMeta.l4_ff_only_integration_completed,
+    closeoutL4NoMergeCommit: closeoutMeta.l4_no_merge_commit,
+    closeoutL3AuditCandidate: closeoutL3AuditRecord.candidate_commit,
+    closeoutL3AuditP0: closeoutL3AuditRecord.P0,
+    closeoutL3AuditP1: closeoutL3AuditRecord.P1,
+    closeoutL3AuditP2: closeoutL3AuditRecord.P2,
+    closeoutL3AuditVerdict: closeoutL3AuditRecord.verdict,
+    closeoutL3AuditTaskId: closeoutL3AuditRecord.review_task_id,
+    closeoutL3AuditThreadId: closeoutL3AuditRecord.review_thread_id,
+    closeoutL3AuditTurnId: closeoutL3AuditRecord.review_turn_id,
+    closeoutL3AuditReviewGeneratedAuthorization:
+      closeoutL3AuditRecord.review_generated_authorization,
+    closeoutL3AuditAuthorizationSource: closeoutL3AuditRecord.authorization_source,
     closeoutAcceptanceAuthorized: closeoutMeta.closeout_acceptance_authorized,
     closeoutArchiveAuthorized: closeoutMeta.closeout_archive_authorized,
     rkp2Status: currentRkp2Task.status,
@@ -5203,7 +5445,13 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     rkp2CurrentPlanningChild: currentRkp2Meta.current_planning_child,
     rkp2CurrentImplementationChild:
       currentRkp2Meta.current_implementation_child,
+    rkp2ImplementationStage: currentRkp2Meta.implementation_stage,
     rkp2NextGate: currentRkp2Meta.next_gate,
+    rkp2CloseoutStatus: rkp2CloseoutProjection.status,
+    rkp2CloseoutImplementationStage: rkp2CloseoutProjection.implementation_stage,
+    rkp2CloseoutNextGate: rkp2CloseoutProjection.next_gate,
+    rkp2CloseoutIntegrationCompleted: rkp2CloseoutProjection.integration_completed,
+    rkp2CloseoutIntegrationReview: rkp2CloseoutProjection.integration_review,
     rkp2Stage6Completed: currentRkp2Meta.stage_6_completed,
     s62Started: currentRkp2Meta.stage_6_s6_2_started,
     s63Started: currentRkp2Meta.stage_6_s6_3_started,
@@ -5214,7 +5462,13 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     rustCurrentPlanningChild: currentRustMeta.current_planning_child,
     rustCurrentImplementationChild: currentRustMeta.current_implementation_child,
     rustActiveImplementationChild: currentRustMeta.active_implementation_child,
+    rustRkp2Status: currentRustMeta.rkp2_status,
     rustNextGate: currentRustMeta.next_gate,
+    rustCloseoutStatus: rustCloseoutProjection.status,
+    rustCloseoutImplementationStage: rustCloseoutProjection.implementation_stage,
+    rustCloseoutNextGate: rustCloseoutProjection.next_gate,
+    rustCloseoutIntegrationCompleted: rustCloseoutProjection.integration_completed,
+    rustCloseoutIntegrationReview: rustCloseoutProjection.integration_review,
     rustRkp2Stage6Completed: currentRustMeta.rkp2_stage_6_completed,
     rustS62Started: currentRustMeta.rkp2_stage_6_s6_2_started,
     rustS63Started: currentRustMeta.rkp2_stage_6_s6_3_started,
@@ -5270,7 +5524,13 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
       rkp2CurrentImplementationChild:
         "08-26-rkp-2-stage-6-private-scale-evidence-seam-repair",
     },
+    { rkp2ImplementationStage: "wrong-rkp2-implementation-stage" },
     { rkp2NextGate: "wrong-rkp2-gate" },
+    { rkp2CloseoutStatus: "completed" },
+    { rkp2CloseoutImplementationStage: "wrong-rkp2-closeout-stage" },
+    { rkp2CloseoutNextGate: "wrong-rkp2-closeout-gate" },
+    { rkp2CloseoutIntegrationCompleted: false },
+    { rkp2CloseoutIntegrationReview: "passed_without_independent_review" },
     { rustStatus: "completed" },
     {
       rustParent: "wrong-rust-parent",
@@ -5285,7 +5545,61 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     },
     { rustCurrentImplementationChild: "wrong-rust-child" },
     { rustActiveImplementationChild: "wrong-rust-child" },
+    { rustRkp2Status: "wrong-rust-rkp2-status" },
     { rustNextGate: "wrong-rust-gate" },
+    { rustCloseoutStatus: "completed" },
+    { rustCloseoutImplementationStage: "wrong-rust-closeout-stage" },
+    { rustCloseoutNextGate: "wrong-rust-closeout-gate" },
+    { rustCloseoutIntegrationCompleted: false },
+    { rustCloseoutIntegrationReview: "passed_without_independent_review" },
+    { closeoutImplementationStage: "wrong-closeout-stage" },
+    { closeoutImplementationReview: "pending" },
+    { closeoutIntegrationReview: "passed_without_independent_review" },
+    { closeoutNextGate: "closeout_archive" },
+    {
+      closeoutCurrentAuthorityOwnerBranch: STAGE_6_CLOSEOUT_SOURCE_BRANCH,
+      negativeCase: "integrated-authority-owner-branch-drift",
+      expectedError:
+        /integrated authority must belong only to the original RKP-2 branch/u,
+    },
+    {
+      closeoutCurrentAuthorityOwnerWorktree: STAGE_6_CLOSEOUT_SOURCE_WORKTREE,
+      negativeCase: "integrated-authority-owner-worktree-drift",
+      expectedError:
+        /integrated authority must belong only to the original RKP-2 worktree/u,
+    },
+    { closeoutFrozenSourceBranch: STAGE_6_CLOSEOUT_TARGET_BRANCH },
+    { closeoutFrozenSourceWorktree: STAGE_6_CLOSEOUT_TARGET_WORKTREE },
+    {
+      closeoutFrozenSourceHead: STAGE_6_CLOSEOUT_L3_REPAIR_COMMIT,
+      negativeCase: "frozen-source-head-drift",
+      expectedError: /the L3 audit source must remain frozen at the exact reviewed candidate/u,
+    },
+    { closeoutIntegrationTargetBranch: STAGE_6_CLOSEOUT_SOURCE_BRANCH },
+    { closeoutIntegrationTargetWorktree: STAGE_6_CLOSEOUT_SOURCE_WORKTREE },
+    { closeoutIntegrationTargetPreHead: STAGE_6_CLOSEOUT_L3_AUDITED_CANDIDATE },
+    { closeoutIntegrationCandidate: STAGE_6_CLOSEOUT_L3_REPAIR_COMMIT },
+    { closeoutIntegrationMode: "merge-commit" },
+    { closeoutL4FastForwardCompleted: false },
+    {
+      closeoutL4NoMergeCommit: false,
+      negativeCase: "l4-merge-commit-drift",
+      expectedError: /L4 must not create a merge commit/u,
+    },
+    { closeoutL3AuditCandidate: STAGE_6_CLOSEOUT_L3_REPAIR_COMMIT },
+    { closeoutL3AuditP0: 1 },
+    { closeoutL3AuditP1: 1 },
+    { closeoutL3AuditP2: 1 },
+    { closeoutL3AuditVerdict: "PASS" },
+    { closeoutL3AuditTaskId: "wrong-review-task" },
+    { closeoutL3AuditThreadId: "wrong-review-thread" },
+    { closeoutL3AuditTurnId: "wrong-review-turn" },
+    {
+      closeoutL3AuditReviewGeneratedAuthorization: true,
+      negativeCase: "review-generated-authorization-drift",
+      expectedError: /the independent PASS must remain evidence only/u,
+    },
+    { closeoutL3AuditAuthorizationSource: "independent_review_pass" },
     {
       closeoutProductionAuthorized: true,
       negativeCase: "closeout-production-authorization-drift",
@@ -5293,13 +5607,13 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
         /closeout production implementation authorization must remain false/u,
     },
     {
-      closeoutIntegrationAuthorized: true,
+      closeoutIntegrationAuthorized: false,
       negativeCase: "closeout-integration-authorization-drift",
       expectedError:
         /closeout integration authorization must match the lifecycle phase/u,
     },
     {
-      closeoutIntegrationCompleted: true,
+      closeoutIntegrationCompleted: false,
       negativeCase: "closeout-integration-occurrence-drift",
       expectedError:
         /closeout integration completion must match the lifecycle phase/u,

@@ -2,22 +2,35 @@
 
 ## Status
 
-`READY FOR TARGETED INDEPENDENT L3 REREVIEW — BOUNDED REPAIR COMPLETE — L4-L6 NOT STARTED`
+`L5 INTEGRATED PROJECTION CANDIDATE READY FOR DEDICATED INDEPENDENT INTEGRATION / PROJECTION REVIEW — STATUS IN_PROGRESS — L6 NOT STARTED`
 
-## Review focus
+## Frozen L3 evidence
 
-1. Consumed semantic/canonical child closes before Stage 6 archive.
-2. Active/archive roots are mutually exclusive with exact 12/13/12 manifests.
-3. S6.2/S6.3 remain false and TypeScript remains default.
-4. Fast-forward integration is owned only by original RKP-2.
-5. Frozen source provenance differs correctly from current authority after handoff.
-6. Native archive cannot detach a live child or create dual authority.
-7. Workspace Law is the sole technical file and protected paths remain zero-delta.
-8. Audit, acceptance, archive, integration, terminal projection and later S6.2 authorization are separate.
-9. Semantic native archive `1e3759d9fef2524e68c2667a4a5363802c4ccd36` is a one-parent exact 12-file move and Stage 6 native archive `bcc1c905bc58ab9810e076c23891d6683a2ae607` is a one-parent exact 13-file move.
-10. The complete accepted-planning-through-L3 parent chain and semantic/Stage6/RKP-2/Rust-parent projections reject mutated parents, membership, live-owner fields and current-child fields.
-11. Named negative variants fail on their expected errors for Rust-parent lineage/planning child, closeout production/integration/push/measurement/qualification/runtime-switch/RKP-3 authorization, integration/qualification occurrence, TypeScript runtime and RKP-3-not-created state.
+- Audited candidate: `b3850a48b67f24b1176f573fa143b33c784348ec`.
+- Review task/thread: `01a05d4e-5a18-7923-8aae-bcc30ad95c60`; review turn: `01a05da1-f9dc-7a72-8c11-75985d5a1e19`.
+- Findings: P0/P1/P2=`0/0/0`.
+- Verdict: `PASS FOR OWNER-AUTHORIZED FF-ONLY INTEGRATION`.
+- The PASS is evidence only. L4-L5 authority came from the prior scope-limited user lifecycle continuation; the review generated no authorization.
+- Frozen source branch/worktree/head: `codex/rkp-2-stage-6-acceptance-archive-integration-closeout` / `.worktrees/rkp-2-stage-6-acceptance-archive-integration-closeout` / `b3850a48b67f24b1176f573fa143b33c784348ec`.
 
-## Verdict slot
+## L4-L5 projection
 
-Planning audit history is unchanged: the first planning audit returned P0/P1/P2=`0/1/1`, its bounded repairs landed at `e7708bf84ffb6ac71818f46d367ff6e8bba7beb6`, and targeted planning rereview returned `0/0/0`, `PASS FOR BOUNDED LIFECYCLE IMPLEMENTATION`. The first independent implementation audit of `1f024630e0a09bb252790c6e80ea59375906f9e4` returned P0/P1/P2=`0/2/0`, `RETURN FOR BOUNDED L3 REPAIR`. Candidate `baf2655c58949b415e2663169d3d238c48c4c1f0` closed both P1 findings; its targeted rereview returned `0/0/1` for an incomplete negative projection/authorization matrix. The test-only P2 repair adds named fail-closed mutations over the existing authority model, each matched to its expected assertion error. Targeted implementation rereview is pending. Production implementation remains false, and L4-L6 have not started.
+- L4 fast-forwarded only the accepted candidate into `codex/rkp-2-indexed-live-score-store-implementation` at `.worktrees/rkp-2-indexed-live-score-store-implementation` from pre-integration head `4a302bc9f9981940336fc97941b08e09bd0d1f67`.
+- Merge mode was `--ff-only`; target became exact `b3850a48b67f24b1176f573fa143b33c784348ec` before this L5 projection commit, with no merge commit.
+- L5 changes only the closeout, RKP-2 and Rust-parent authority projections plus Workspace Law. The active closeout remains the current RKP-2 implementation child.
+- Workspace Law phase is `integrated`; the only next gate is `dedicated_independent_integration_projection_review_pending`.
+- The Stage 6 archive and semantic/canonical archive remain immutable historical authority. Their manifests and native archive commits are unchanged.
+
+## Independent review focus
+
+1. Reproduce the L3 audit identity, candidate, P0/P1/P2 and exact verdict.
+2. Prove the frozen source is still clean at `b3850a48` and differs from the current sole authority owner.
+3. Prove `4a302bc9..b3850a48` was a fast-forward ancestry transition and `b3850a48` has one parent, not a merge commit.
+4. Prove the closeout task remains `in_progress`, its RKP-2 child ownership remains live, and L6 has not started.
+5. Prove RKP-2 and Rust-parent projections both say integrated-review-pending while S6.2/S6.3 remain false and TypeScript remains default.
+6. Prove production implementation, closeout acceptance/archive, qualification, cutover, RKP-3 and push remain unauthorized and unperformed.
+7. Prove Workspace Law rejects drift in audit identity, frozen provenance, target ownership, integration mode/occurrence, current child, next gates and all later-stage authorization boundaries.
+
+## Stop boundary
+
+Do not accept or archive this closeout, do not start L6, and do not start S6.2, S6.3, official measurement, qualification, cutover, RKP-3 or push. A dedicated independent integration/projection review is the sole next action.

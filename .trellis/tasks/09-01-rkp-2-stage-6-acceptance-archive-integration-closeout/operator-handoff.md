@@ -2,22 +2,21 @@
 
 ## Current boundary
 
-- Task: `.trellis/tasks/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout`
-- Status: `in_progress`; L1 is complete, L2 archived the exact 12-file semantic child at `1e3759d9fef2524e68c2667a4a5363802c4ccd36`, and L3 archived the exact 13-file Stage 6 root at `bcc1c905bc58ab9810e076c23891d6683a2ae607`.
-- Base: `65debd52d379004c966cefe59f54d72ac1136eb4`
-- Branch/worktree: `codex/rkp-2-stage-6-acceptance-archive-integration-closeout` / `.worktrees/rkp-2-stage-6-acceptance-archive-integration-closeout`
-- Production implementation authorization: false for the entire closeout; this task never authorizes production implementation.
-- Targeted planning rereview: task `01a05d0e-5eee-7ea1-bff1-eb4b39d7f98e`, turn `01a05d19-f6c7-7ec0-b8dd-31ccef41cedd`, candidate `e7708bf84ffb6ac71818f46d367ff6e8bba7beb6`, P0/P1/P2=`0/0/0`, `PASS FOR BOUNDED LIFECYCLE IMPLEMENTATION`.
-- The planning PASS is evidence only. The pre-existing user continuation record authorizes the bounded L1-L3 sequence; review itself authorizes nothing.
-- Stage 6 technical evidence is the externally audited candidate `0c561d14193374436361eec09b361cab0170278a`, P0/P1/P2=`0/0/0`. Owner acceptance and the exact 13-file native archive are authorized by the same bounded continuation record; `production_implementation_authorized` remains false.
-- First independent implementation audit input `1f024630e0a09bb252790c6e80ea59375906f9e4` returned P0/P1/P2=`0/2/0`, `RETURN FOR BOUNDED L3 REPAIR`: one archived semantic-child live-owner projection and one Workspace Law coverage gap.
-- Targeted rereview input `baf2655c58949b415e2663169d3d238c48c4c1f0` returned P0/P1/P2=`0/0/1`: both P1 findings are closed; the only remaining P2 is the incomplete Workspace Law negative projection/authorization matrix.
-- Current stop: `stage6-archived`. The test-only P2 matrix repair is complete and **TARGETED INDEPENDENT REREVIEW IS PENDING**. L4-L6, integration, closeout archive, qualification, cutover, RKP-3 and push are not authorized in this operator.
+- Task: `.trellis/tasks/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout`.
+- Status: `in_progress`; L1-L5 are complete, L6 has not started, and the task is not archived.
+- Current sole authority owner: `codex/rkp-2-indexed-live-score-store-implementation` / `.worktrees/rkp-2-indexed-live-score-store-implementation`.
+- Frozen source provenance: `codex/rkp-2-stage-6-acceptance-archive-integration-closeout` / `.worktrees/rkp-2-stage-6-acceptance-archive-integration-closeout` remains clean at `b3850a48b67f24b1176f573fa143b33c784348ec`.
+- L2 semantic/canonical native archive: exact 12-file move at `1e3759d9fef2524e68c2667a4a5363802c4ccd36`; unchanged.
+- L3 Stage 6 native archive: exact 13-file move at `bcc1c905bc58ab9810e076c23891d6683a2ae607`; unchanged.
+- L3 independent archive-candidate audit: task/thread `01a05d4e-5a18-7923-8aae-bcc30ad95c60`, turn `01a05da1-f9dc-7a72-8c11-75985d5a1e19`, candidate `b3850a48b67f24b1176f573fa143b33c784348ec`, P0/P1/P2=`0/0/0`, `PASS FOR OWNER-AUTHORIZED FF-ONLY INTEGRATION`.
+- That PASS is evidence only. The prior scope-limited user lifecycle continuation independently authorized L4-L5; it does not authorize L6 or any later stage.
+- L4: original RKP-2 moved from `4a302bc9f9981940336fc97941b08e09bd0d1f67` to exact `b3850a48b67f24b1176f573fa143b33c784348ec` via `git merge --ff-only`; no merge commit was created.
+- L5: closeout, RKP-2, Rust-parent and Workspace Law now project `integrated` / `dedicated_independent_integration_projection_review_pending`.
 
-## Exact outcome
+## Sole next action
 
-Close the consumed semantic/canonical child, close Stage 6, integrate the exact accepted chain by fast-forward into original RKP-2, archive this closeout, and stop before S6.2. Do not repeat E3, modify product/Rust code, qualify, cut over, create RKP-3 or push.
+Run a dedicated independent integration/projection review over the L5 candidate. Review must verify the frozen source, fast-forward ancestry, one-parent candidate, exact audit record, sole-owner transfer, current-child ownership, three authority projections and the Workspace Law negative matrix.
 
-## Discipline
+## Hard stop
 
-Follow L1–L6 in `implement.md`. This operator is currently bounded to L1–L3 only. Native archive commits are immutable. The source branch freezes before L4; L4–L6 execute only in original RKP-2 after their separate review/authority gates. Each independent PASS satisfies only its named evidence gate and produces no authorization. A later action may proceed only when a pre-existing, explicit, named and scope-limited user/owner authorization independently covers that action.
+No L6 acceptance/archive is authorized here. Closeout acceptance/archive, production implementation, S6.2/S6.3, official measurement, stress qualification, default cutover, RKP-3 and push all remain false or unstarted. TypeScript remains the default runtime. Native Stage 6 and semantic/canonical archives must not be changed.
