@@ -2660,9 +2660,11 @@ function assertImmutablePlanningAuthority(
   assert.equal(entries.length, 9);
   for (const [path, expected] of entries) {
     assert.equal(typeof expected, "string", `${path} digest must be a string`);
-    assert.equal(existsSync(resolve(path)), true, `${path} must exist`);
+    const source = gitTextAt(STAGE_6_CLOSEOUT_BASE, path)
+      .replaceAll("\r\n", "\n")
+      .replaceAll("\r", "\n");
     assert.equal(
-      sha256(lfNormalizedText(path)),
+      sha256(source),
       expected,
       `${path} immutable planning digest`,
     );
@@ -3355,7 +3357,7 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     stage6Task.meta?.immutable_planning_authority,
   );
 
-  const rkp2Task = JSON.parse(readText(TASK_PATH)) as {
+  const rkp2Task = JSON.parse(gitTextAt(STAGE_6_CLOSEOUT_BASE, TASK_PATH)) as {
     readonly status?: unknown;
     readonly meta?: {
       readonly current_implementation_child?: unknown;
@@ -3369,7 +3371,7 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
       readonly rkp3_creation_authorized?: unknown;
     };
   };
-  const rustTask = JSON.parse(readText(PARENT_PATH)) as {
+  const rustTask = JSON.parse(gitTextAt(STAGE_6_CLOSEOUT_BASE, PARENT_PATH)) as {
     readonly meta?: {
       readonly current_implementation_child?: unknown;
       readonly rkp2_stage_6_s6_2_started?: unknown;
@@ -4684,6 +4686,8 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     readText(`${stage6Location.root}/task.json`),
   ) as {
     readonly status?: unknown;
+    readonly completedAt?: unknown;
+    readonly relatedFiles?: unknown;
     readonly meta?: Readonly<Record<string, unknown>>;
   };
   const closeoutTask = JSON.parse(
@@ -4729,6 +4733,45 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
   assert.equal(STAGE_6_SEMANTIC_CANONICAL_MANIFEST.length, 12);
   assert.equal(STAGE_6_PRIVATE_SCALE_MANIFEST.length, 13);
   assert.equal(STAGE_6_CLOSEOUT_MANIFEST.length, 12);
+  if (stage6Location.kind === "archive") {
+    assert.equal(currentStage6Task.completedAt, "2026-09-01");
+    assert.ok(Array.isArray(currentStage6Task.relatedFiles));
+    const stage6SelfRelatedFiles = currentStage6Task.relatedFiles.filter(
+      (path): path is string =>
+        typeof path === "string" &&
+        path.startsWith(`${STAGE_6_PRIVATE_SCALE_ARCHIVE_ROOT}/`),
+    );
+    assert.equal(stage6SelfRelatedFiles.length, 12);
+    for (const path of stage6SelfRelatedFiles) {
+      assert.equal(existsSync(resolve(path)), true, path);
+    }
+    for (const name of ["implement.jsonl", "check.jsonl"] as const) {
+      const source = readText(`${stage6Location.root}/${name}`);
+      assert.equal(source.includes(`${STAGE_6_PRIVATE_SCALE_TASK_ROOT}/`), false);
+    }
+    assertJsonlReferencesExist(stage6Location.root);
+    assert.equal(
+      currentStage6Task.meta?.native_archive_commit,
+      "bcc1c905bc58ab9810e076c23891d6683a2ae607",
+    );
+    const nativeArchiveRows = lines(
+      git([
+        "diff-tree",
+        "--no-commit-id",
+        "--name-status",
+        "--no-renames",
+        "-r",
+        "bcc1c905bc58ab9810e076c23891d6683a2ae607",
+      ]),
+    ).sort();
+    const expectedNativeArchiveRows = STAGE_6_PRIVATE_SCALE_MANIFEST.flatMap(
+      (artifact) => [
+        `D\t${STAGE_6_PRIVATE_SCALE_TASK_ROOT}/${artifact}`,
+        `A\t${STAGE_6_PRIVATE_SCALE_ARCHIVE_ROOT}/${artifact}`,
+      ],
+    ).sort();
+    assert.deepEqual(nativeArchiveRows, expectedNativeArchiveRows);
+  }
 
   const stage6AuditRecord = closeoutMeta.stage6_technical_audit as
     | Readonly<Record<string, unknown>>
@@ -5162,7 +5205,7 @@ test("RKP-1A P4 candidate freeze is exact on accepted A3", () => {
       const c2Row = c2Rows[index];
       assert.ok(c2Row);
       assert.deepEqual(Object.keys(row), ["file", "reason"]);
-      assert.equal(existsSync(resolve(row.file)), true, row.file);
+      assert.equal(jsonlReferenceExists(row.file), true, row.file);
       const oneBasedRow = index + 1;
       if (oneBasedRow >= firstChangedRow && oneBasedRow <= lastChangedRow) {
         assert.equal(row.reason, c2Row.reason);
@@ -5746,7 +5789,7 @@ test("one-time post-Stage-5 manifest successor projection is exact and content-f
     for (const entry of decoded) {
       assert.deepEqual(Object.keys(entry), ["file", "reason"]);
       assert.equal(typeof entry.reason, "string");
-      assert.equal(existsSync(resolve(entry.file)), true, entry.file);
+      assert.equal(jsonlReferenceExists(entry.file), true, entry.file);
     }
   }
 

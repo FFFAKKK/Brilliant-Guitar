@@ -263,12 +263,19 @@
       "prd.md": "cbd00dcdfc73bfe3ecffcfdb8569112b58e2a4cde4aaf655170f14b955665386",
       "design.md": "9579a08646e0cfbdc9dfe2b1b0934ee97dde9896e8086ae6ac5ab67b9cc94778",
       "implement.md": "b43e279fe526cf94aa7db2c104d6fcef9890c571eb3aa811beeeb6f35846b832",
-      "implement.jsonl": "c58b7c746b24f362fc70c61229864165f7cdac74c698759f4e1fd80d1bf56756",
-      "check.jsonl": "ae2f47a8dbbbf37f16941b8d96b4822a009089876b9ddfd8dc3812b408b2b97a",
+      "implement.jsonl": "b1a6fb299d4729f5725a5c0b5e27366e634a6b7625eac5a1ada8191bd7837ec3",
+      "check.jsonl": "d890235fb318819e72fc8200b5e10a7a7f45ec594c54466444abe7abfb40c552",
       "research/current-seam-and-authority-audit.md": "4c9405a8df0f3221d42a02b342bb3605470ee690906bc61ddde79a99de69acdd",
       "research/semantic-canonical-role-matrix.md": "f538a1575681b9ff01144117f7058d2d35c930126003d9e23626e7418ae4971c",
       "research/e1r2-file-test-rollback-matrix.md": "c861277a79bc3c8131250216f82a87c4af80938f166141fe698d88c66ef41fcb",
       "research/planning-self-audit.md": "9eab93aa3385349b9e618d91e4f96f2df5ce727a0966c62d61ac30b39e5e3e2f"
+    },
+    "downstream_stage6_archive_projection_repair": {
+      "stage6_native_archive_commit": "bcc1c905bc58ab9810e076c23891d6683a2ae607",
+      "active_stage6_references_removed": 5,
+      "implement_jsonl_lf_sha256": "b1a6fb299d4729f5725a5c0b5e27366e634a6b7625eac5a1ada8191bd7837ec3",
+      "check_jsonl_lf_sha256": "d890235fb318819e72fc8200b5e10a7a7f45ec594c54466444abe7abfb40c552",
+      "other_row_mutation": false
     },
     "frozen_semantic_canonical_contract": {
       "raw_input_sha256": "5a8a318e58bc08a82a822c166ed11239ed4ed7b9ea45d50bb7dcb81d7c57f91e",

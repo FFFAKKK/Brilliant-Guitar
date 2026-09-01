@@ -43,7 +43,7 @@
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "RKP-2 IN_PROGRESS / STAGE6 TECHNICAL PASS 0C561D1 P0_0_P1_0_P2_0 AND E3 Q4 ARCHIVED / CONSUMED SEMANTIC CHILD ACCEPTED AND NATIVELY ARCHIVED EXACT 12 AT 1E3759D / STAGE6 OWNER ACCEPTED AND NATIVE ARCHIVE PREFLIGHT NEXT / RKP2 PAUSED BEFORE S6.2 / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO QUALIFICATION CUTOVER PUSH OR RKP3.",
+  "notes": "RKP-2 IN_PROGRESS / STAGE6 TECHNICAL PASS 0C561D1 P0_0_P1_0_P2_0 AND E3 Q4 ARCHIVED / CONSUMED SEMANTIC CHILD ACCEPTED AND NATIVELY ARCHIVED EXACT 12 AT 1E3759D / STAGE6 OWNER ACCEPTED AND NATIVELY ARCHIVED EXACT 13 AT BCC1C905 / CLOSEOUT IS CURRENT IMPLEMENTATION CHILD AND ARCHIVE CANDIDATE REVIEW PENDING / RKP2 PAUSED BEFORE S6.2 / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO INTEGRATION QUALIFICATION CUTOVER PUSH OR RKP3.",
   "meta": {
     "planning_base_commit": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "accepted_rkp1_audited_implementation_commit": "94387b339b5e4d9ce6b7f97597a1b56edd051f01",
@@ -147,8 +147,8 @@
       "stage6_e3_started": false,
       "e3_user_authorization_consumed_by_parent_stage6_owner": true
     },
-    "current_implementation_child": "08-26-rkp-2-stage-6-private-scale-evidence-seam-repair",
-    "implementation_stage": "stage_6_closeout_L3_stage6_owner_accepted_archive_preflight_rkp2_paused_before_s6_2",
+    "current_implementation_child": "09-01-rkp-2-stage-6-acceptance-archive-integration-closeout",
+    "implementation_stage": "stage_6_closeout_L3_stage6_archived_candidate_review_pending_rkp2_paused_before_s6_2",
     "stage_1_started": true,
     "stage_1_completed": true,
     "stage_1_commit_subject": "build(rkp-2): pin typed generational store dependency",
@@ -351,7 +351,7 @@
       "post_pass_closeout_authorized": true,
       "stage_6_blocked_until_accepted_archived_integrated": false
     },
-    "next_gate": "closeout_L3_native_stage6_archive_clock_preflight_and_archive",
+    "next_gate": "dedicated_independent_stage6_archive_candidate_review_pending",
     "stage_6_started": true,
     "stage_6_authorized": true,
     "stage_6_completed": false,
@@ -457,7 +457,7 @@
     },
     "implementation_review": "pending",
     "implementation_candidate_ready": false,
-    "implementation_blocker": "closeout_L3_native_stage6_archive_clock_preflight_and_archive",
+    "implementation_blocker": "dedicated_independent_stage6_archive_candidate_review_pending",
     "public_json_property_cap_scale_compatibility_repair": {
       "task": "08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair",
       "status": "accepted_archived_integrated_C5_execution_complete_historical",
@@ -547,8 +547,10 @@
       "independent_planning_review": "passed_targeted_rereview_e7708bf84ffb6ac71818f46d367ff6e8bba7beb6_P0_0_P1_0_P2_0",
       "accepted_planning_authority_head": "e7708bf84ffb6ac71818f46d367ff6e8bba7beb6",
       "task_start_run": true,
-      "implementation_stage": "L1_native_activation_in_progress_L2_semantic_child_closeout_next",
-      "next_gate": "L2_semantic_child_owner_acceptance_and_native_archive",
+      "implementation_stage": "L3_stage6_archived_candidate_ready_for_dedicated_independent_implementation_review",
+      "next_gate": "dedicated_independent_stage6_archive_candidate_review_pending",
+      "stage6_native_archive_commit": "bcc1c905bc58ab9810e076c23891d6683a2ae607",
+      "stage6_archive_root": ".trellis/tasks/archive/2026-09/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair",
       "production_implementation_authorized": false
     },
     "rkp2_stage_6_s6_2_started": false,

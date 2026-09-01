@@ -1,5 +1,5 @@
 {"file":".trellis/spec/guides/long-term-maintenance-guide.md","reason":"Long-lived authority, reversible change and lifecycle maintenance guidance"}
-{"file":".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/design.md","reason":"Accepted Stage 6 integration and S6.2 resume boundary"}
+{"file":".trellis/tasks/archive/2026-09/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/design.md","reason":"Accepted Stage 6 integration and S6.2 resume boundary"}
 {"file":".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/implement.md","reason":"RKP-2 Stage 6 and parent acceptance ordering"}
 {"file":".trellis/tasks/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout/research/current-state-and-branch-topology.md","reason":"Frozen ancestry and sole-owner handoff facts"}
 {"file":".trellis/tasks/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout/research/archive-inventory-and-authority-map.md","reason":"Exact active/archive inventories and child ordering"}
