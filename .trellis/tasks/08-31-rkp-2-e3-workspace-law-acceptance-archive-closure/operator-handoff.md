@@ -1,4 +1,4 @@
-# Operator Handoff — Planning Candidate Only
+# Operator Handoff — Q1 Activation Complete
 
 ## Current state
 
@@ -7,13 +7,14 @@ base: c73e2139d3a1a9e89e4ec6071678d75be1c02abb
 branch: codex/rkp-2-e3-law-acceptance-archive-closure
 worktree: .worktrees/e3-law-acceptance-archive-closure
 task: .trellis/tasks/08-31-rkp-2-e3-workspace-law-acceptance-archive-closure
-status: planning
-task_start_run: false
-production_implementation_authorized: false
+status: in_progress
+task_start_run: true
+production_implementation_authorized: false (no production paths are in scope)
+user_implementation_authorization: true for bounded Q1 through Q3 only
 independent_planning_review: PASS on 9bf82a221f0585719f36f36906dfc292d0e2bd5c; P0/P1/P2=0/0/0; review does not authorize implementation
 ```
 
-The dedicated planning review is complete. This remains a planning handoff until the user separately authorizes bounded implementation.
+The dedicated planning review is complete and the user separately authorized bounded Q1 through Q3 on `2026-09-01`. Native `task.py start` completed. The target remains active, unaccepted and unarchived; Q1T is the only next action.
 
 ## Why this task exists
 
@@ -60,13 +61,13 @@ The dedicated planning reviewer must verify:
 
 Recorded verdict: P0/P1/P2=`0/0/0`.
 
-## Operator gate after planning PASS
+## Current bounded implementation gate
 
-Even after planning PASS, wait for a separate user implementation authorization. Then follow `implement.md` phase by phase and stop at Q3 for a dedicated implementation audit.
+Proceed only to Q1T in the single Workspace Law test file. After its dual-Node and full-suite gates pass, proceed to Q2 owner acceptance and Q3 native target archive, then stop for a dedicated implementation audit.
 
 Do not:
 
-- run `task.py start` during planning;
+- run `task.py start` again;
 - archive either task during planning;
 - edit the technical file during planning;
 - rerun E3 stress;
@@ -77,5 +78,5 @@ Do not:
 ## Immediate next gate
 
 ```text
-WAITING FOR SEPARATE USER IMPLEMENTATION AUTHORIZATION
+Q1T ARCHIVE-AWARE WORKSPACE LAW TECHNICAL CHECKPOINT
 ```

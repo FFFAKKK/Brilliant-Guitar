@@ -45,7 +45,7 @@
     "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "IN_PROGRESS / E3 WORKSPACE LAW TARGET REVIEW PASSED AND PRIOR ACCEPTANCE-ARCHIVE CLOSURE COMPLETED / SIBLING CLOSURE FINAL TARGETED PLANNING REREVIEW PASSED 9BF82A2 P0-0 P1-0 P2-0 / NEXT GATE IS SEPARATE USER IMPLEMENTATION AUTHORIZATION / TARGET REMAINS CURRENT IMPLEMENTATION CHILD UNTIL ACTIVATION / RKP-2 PAUSED BEFORE S6.2 / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO E3 STRESS INTEGRATION PUSH CUTOVER QUALIFICATION OR RKP3.",
+  "notes": "IN_PROGRESS / E3 WORKSPACE LAW ACCEPTANCE-ARCHIVE CLOSURE Q1 ACTIVATED AFTER USER AUTHORIZATION / PLANNING AUTHORITY 9BF82A2 PASS 0-0-0 / CURRENT IMPLEMENTATION CHILD IS CLOSURE / Q1T NEXT / TARGET ACTIVE UNACCEPTED UNARCHIVED / RKP-2 PAUSED BEFORE S6.2 / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO E3 STRESS INTEGRATION PUSH CUTOVER QUALIFICATION OR RKP3.",
   "meta": {
     "planning_base_commit": "4a302bc9f9981940336fc97941b08e09bd0d1f67",
     "source_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -310,9 +310,9 @@
     "e3_wall_elapsed_micros": 14077309,
     "e3_peak_working_set_bytes": 821886976,
     "e3_partial_evidence": false,
-    "current_planning_child": "08-31-rkp-2-e3-workspace-law-acceptance-archive-closure",
-    "current_implementation_child": "08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair",
-    "next_gate": "separate_user_implementation_authorization_for_e3_workspace_law_acceptance_archive_closure",
+    "current_planning_child": null,
+    "current_implementation_child": "08-31-rkp-2-e3-workspace-law-acceptance-archive-closure",
+    "next_gate": "Q1T_archive_aware_workspace_law_technical_checkpoint",
     "e3_acceptance_projection_native_archive_commit": "1c76dbf9d9cd1ece12299b148f0c6de09d1391e1",
     "e3_acceptance_projection_native_archive_path": ".trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-state-projection",
     "e3_workspace_law_final_state_projection_repair": {
@@ -396,8 +396,8 @@
       "planning_base_commit": "c73e2139d3a1a9e89e4ec6071678d75be1c02abb",
       "branch": "codex/rkp-2-e3-law-acceptance-archive-closure",
       "worktree": ".worktrees/e3-law-acceptance-archive-closure",
-      "status": "planning",
-      "task_start_run": false,
+      "status": "in_progress",
+      "task_start_run": true,
       "production_implementation_authorized": false,
       "independent_planning_review": "passed_9bf82a221f0585719f36f36906dfc292d0e2bd5c_P0_0_P1_0_P2_0",
       "first_independent_planning_review": {
@@ -457,10 +457,23 @@
       ],
       "future_lifecycle_allowlist_count": 11,
       "archive_clock_contract": "2026-09_2026-09-01_before_23_50_local_same_sequence_no_fallback_historical_2026-08_archives_unchanged",
-      "next_gate": "separate_user_implementation_authorization_for_bounded_Q0_through_Q3",
+      "next_gate": "Q1T_archive_aware_workspace_law_technical_checkpoint",
       "rkp2_stage6_s6_2_started": false,
       "rkp2_stage6_s6_3_started": false,
-      "default_runtime": "typescript"
+      "default_runtime": "typescript",
+      "user_implementation_authorization": true,
+      "user_implementation_authorization_record": "user_approved_2026_09_01_after_explicit_bounded_Q1_through_Q3_gate",
+      "accepted_planning_authority_head": "9bf82a221f0585719f36f36906dfc292d0e2bd5c",
+      "implementation_stage": "Q1_activation_checkpoint_complete_Q1T_workspace_law_next",
+      "implementation_candidate_ready": false,
+      "implementation_review": "pending_not_started"
+    },
+    "e3_workspace_law_acceptance_archive_closure_user_implementation_authorization": {
+      "date": "2026-09-01",
+      "record": "user_approved_after_explicit_bounded_Q1_through_Q3_gate",
+      "scope": "Q1_activation_Q1T_single_workspace_law_test_Q2_target_owner_acceptance_Q3_native_target_archive_and_candidate_freeze_only",
+      "production_paths_authorized": false,
+      "Q4_authorized": false
     }
   }
 }

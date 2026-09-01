@@ -57,6 +57,8 @@ The frozen result is `102400` Events / `51200` Notes, exact index and owner prob
 
 At the E3 candidate-freeze checkpoint, this child remained `in_progress` and was ready only for a dedicated independent implementation review. Later review and acceptance/archive closure facts are recorded in the final section below. RKP-2 stays paused before S6.2; S6.2/S6.3, integration, qualification, cutover, push and RKP-3 remain unstarted.
 
-## Acceptance-projection current gate
+## E3 Workspace Law acceptance/archive closure current gate
 
-The dedicated E3 Workspace Law, acceptance-projection and closure implementation reviews passed. The target and closure were moved intact to their exact `.trellis/tasks/archive/2026-08/...` locations. The exact P4 Workspace Law remains `11/8/3` with a 40-path no-rename projection and zero protected-path delta. The next and only live gate is `explicit_owner_decision_for_e3_law_parent_acceptance_archive`. No E3 stress rerun occurred; the E3 law parent and this Stage 6 task remain active, and no S6.2/S6.3, integration, qualification, runtime cutover, push or RKP-3 is authorized.
+The earlier E3 acceptance-projection and its archive closure remain completed under their exact `.trellis/tasks/archive/2026-08/...` locations. The still-active E3 Workspace Law target has a dedicated implementation PASS but is not yet owner-accepted or archived.
+
+Its sibling closeout `08-31-rkp-2-e3-workspace-law-acceptance-archive-closure` received planning PASS on exact `9bf82a221f0585719f36f36906dfc292d0e2bd5c`, then separate bounded user authorization on `2026-09-01`. Native Q1 activation is complete: the Stage 6 planning child is null and the current implementation child is that closeout. Q1T is the only next gate. No E3 stress rerun occurred; S6.2/S6.3, integration, qualification, runtime cutover, push and RKP-3 remain false.

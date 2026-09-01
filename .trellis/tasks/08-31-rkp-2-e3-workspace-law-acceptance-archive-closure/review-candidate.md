@@ -1,12 +1,12 @@
-# Review Candidate — E3 Workspace Law Acceptance and Archive Closure
+# Review Candidate — Q1 Activation Checkpoint
 
 ## Verdict requested
 
 ```text
-PASS RECORDED FOR EXACT CANDIDATE 9BF82A2 — WAITING FOR SEPARATE USER IMPLEMENTATION AUTHORIZATION
+PLANNING PASS RECORDED FOR 9BF82A2 — Q1 ACTIVATED — Q1T NEXT
 ```
 
-This is a docs-only planning candidate. It is not an implementation, acceptance or archive candidate.
+This is the docs-only activation checkpoint. It records the separate user authorization for bounded Q1 through Q3, but it is not yet the Q3 implementation-review candidate.
 
 ## Independent result
 
@@ -18,7 +18,7 @@ P0/P1/P2 = 0/0/0
 findings = 0
 ```
 
-This result closes planning review only. `task_start_run=false` and `production_implementation_authorized=false` remain unchanged.
+This result closed planning review only. The user separately authorized Q1 through Q3 on `2026-09-01`; `task_start_run=true` now records native activation. Production paths remain outside scope.
 
 ## Candidate identity
 
@@ -27,18 +27,19 @@ This result closes planning review only. `task_start_run=false` and `production_
 | base | `c73e2139d3a1a9e89e4ec6071678d75be1c02abb` |
 | branch | `codex/rkp-2-e3-law-acceptance-archive-closure` |
 | worktree | `.worktrees/e3-law-acceptance-archive-closure` |
-| task state | `planning` |
-| implementation authorization | `false` |
-| task start | `false` |
+| task state | `in_progress` |
+| bounded user implementation authorization | `true`, Q1 through Q3 only |
+| production-path authorization | `false` |
+| task start | `true` |
 
-## Exact planning diff
+## Q1 boundary
 
 Expected 12 paths:
 
 - 11 files under this task root;
 - Stage 6 parent `task.json` only.
 
-Expected production, Rust, test, evidence, package, Cargo, tsconfig and spec delta: zero.
+Q1 changes only the six closure/Stage 6 lifecycle files. Production, Rust, test, evidence, package, Cargo, tsconfig and spec delta remains zero. The only next technical owner is `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts`.
 
 ## Independent review focus
 
