@@ -46,7 +46,7 @@
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RKP-0/RKP-1 ACCEPTED ARCHIVED / RKP-2 SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 TECHNICAL PASS AND Q4 ARCHIVED / CLOSEOUT L2 OWNER ACCEPTED CONSUMED SEMANTIC CHILD AND AUTHORIZED EXACT 12-ARTIFACT NATIVE ARCHIVE / ARCHIVE PENDING / RKP2 PAUSED BEFORE S6.2 / TYPESCRIPT DEFAULT / NO QUALIFICATION CUTOVER PUSH OR RKP3.",
+  "notes": "RKP-0/RKP-1 ACCEPTED ARCHIVED / RKP-2 SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 TECHNICAL PASS AND Q4 ARCHIVED / CONSUMED SEMANTIC CHILD ACCEPTED AND NATIVELY ARCHIVED EXACT 12 AT 1E3759D / CLOSEOUT L3 STAGE6 OWNER ACCEPTANCE-WORKSPACE LAW-ARCHIVE NEXT / RKP2 PAUSED BEFORE S6.2 / TYPESCRIPT DEFAULT / NO QUALIFICATION CUTOVER PUSH OR RKP3.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
@@ -54,7 +54,7 @@
     "current_planning_child": null,
     "rkp2_stage6_semantic_canonical_authority_amendment": {
       "task": "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
-      "status": "owner_accepted_archive_authorized_native_archive_pending",
+      "status": "accepted_archived_completed_historical_no_live_gate",
       "accepted_planning_head": "eb0c13ed5ac218cfec9a983a4bc4e8dfb89acbd7",
       "independent_planning_review": "passed_P0_0_P1_0_P2_0",
       "user_implementation_authorization_scope": "A0_and_E1R2_completed_then_separately_authorized_Stage6_E2_only",
@@ -85,8 +85,11 @@
       "archive_authorized": true,
       "archive_root": ".trellis/tasks/archive/2026-09/08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
       "archive_manifest_count": 12,
+      "native_archive_commit": "1e3759d9fef2524e68c2667a4a5363802c4ccd36",
+      "active_authority_present": false,
+      "archive_authority_present": true,
       "owner_acceptance_record": "closeout_L2_user_requested_continue_until_this_stage_is_complete_then_report",
-      "next_gate": "native_archive_authorized_by_stage6_closeout_L2",
+      "next_gate": "completed_historical_no_live_gate",
       "stage6_e3_started": false,
       "e3_user_authorization_consumed_by_parent_stage6_owner": true
     },
@@ -133,7 +136,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "stage6_closeout_L2_native_archive_semantic_child_exact_12",
+    "next_gate": "stage6_closeout_L3_stage6_owner_acceptance_workspace_law_and_native_archive",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,

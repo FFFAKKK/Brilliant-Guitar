@@ -43,7 +43,7 @@
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "RKP-2 IN_PROGRESS / STAGE6 TECHNICAL PASS AND E3 Q4 ARCHIVED / CLOSEOUT L2 OWNER ACCEPTED CONSUMED SEMANTIC CHILD AND AUTHORIZED EXACT 12-ARTIFACT NATIVE ARCHIVE / ARCHIVE PENDING / RKP2 PAUSED BEFORE S6.2 / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO QUALIFICATION CUTOVER PUSH OR RKP3.",
+  "notes": "RKP-2 IN_PROGRESS / STAGE6 TECHNICAL PASS AND E3 Q4 ARCHIVED / CONSUMED SEMANTIC CHILD ACCEPTED AND NATIVELY ARCHIVED EXACT 12 AT 1E3759D / CLOSEOUT L3 STAGE6 OWNER ACCEPTANCE-WORKSPACE LAW-ARCHIVE NEXT / RKP2 PAUSED BEFORE S6.2 / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO QUALIFICATION CUTOVER PUSH OR RKP3.",
   "meta": {
     "planning_base_commit": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "accepted_rkp1_audited_implementation_commit": "94387b339b5e4d9ce6b7f97597a1b56edd051f01",
@@ -108,7 +108,7 @@
     "current_planning_child": null,
     "stage6_semantic_canonical_authority_amendment": {
       "task": "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
-      "status": "owner_accepted_archive_authorized_native_archive_pending",
+      "status": "accepted_archived_completed_historical_no_live_gate",
       "accepted_planning_head": "eb0c13ed5ac218cfec9a983a4bc4e8dfb89acbd7",
       "independent_planning_review": "passed_P0_0_P1_0_P2_0",
       "user_implementation_authorization_scope": "A0_and_E1R2_completed_then_separately_authorized_Stage6_E2_only",
@@ -139,8 +139,11 @@
       "archive_authorized": true,
       "archive_root": ".trellis/tasks/archive/2026-09/08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
       "archive_manifest_count": 12,
+      "native_archive_commit": "1e3759d9fef2524e68c2667a4a5363802c4ccd36",
+      "active_authority_present": false,
+      "archive_authority_present": true,
       "owner_acceptance_record": "closeout_L2_user_requested_continue_until_this_stage_is_complete_then_report",
-      "next_gate": "native_archive_authorized_by_stage6_closeout_L2",
+      "next_gate": "completed_historical_no_live_gate",
       "stage6_e3_started": false,
       "e3_user_authorization_consumed_by_parent_stage6_owner": true
     },
@@ -348,7 +351,7 @@
       "post_pass_closeout_authorized": true,
       "stage_6_blocked_until_accepted_archived_integrated": false
     },
-    "next_gate": "closeout_L2_native_archive_semantic_child_exact_12",
+    "next_gate": "closeout_L3_stage6_owner_acceptance_workspace_law_and_native_archive",
     "stage_6_started": true,
     "stage_6_authorized": true,
     "stage_6_completed": false,
@@ -454,7 +457,7 @@
     },
     "implementation_review": "pending",
     "implementation_candidate_ready": false,
-    "implementation_blocker": "closeout_L2_native_archive_semantic_child_exact_12",
+    "implementation_blocker": "closeout_L3_stage6_owner_acceptance_workspace_law_and_native_archive",
     "public_json_property_cap_scale_compatibility_repair": {
       "task": "08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair",
       "status": "accepted_archived_integrated_C5_execution_complete_historical",
