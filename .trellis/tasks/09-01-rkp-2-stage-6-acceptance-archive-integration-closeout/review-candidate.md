@@ -2,7 +2,7 @@
 
 ## Status
 
-`PLANNING CANDIDATE — INDEPENDENT REVIEW PENDING`
+`BOUNDED PLANNING REPAIR APPLIED — TARGETED REREVIEW PENDING`
 
 ## Review focus
 
@@ -17,4 +17,4 @@
 
 ## Verdict slot
 
-Pending independent planning audit. Implementation remains unauthorized.
+First independent audit returned P0/P1/P2=`0/1/1`: PASS-to-authorization wording and one Trellis count label only. Both bounded repairs are applied. Targeted rereview is pending; production implementation remains false throughout this closeout, and evidence PASS never creates lifecycle authorization.

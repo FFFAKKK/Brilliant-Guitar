@@ -53,7 +53,7 @@
     "production_implementation_authorized": false,
     "user_lifecycle_continuation_authorization": true,
     "user_lifecycle_continuation_record": "user_requested_continue_until_this_stage_is_complete_then_report",
-    "independent_planning_review": "pending",
+    "independent_planning_review": "returned_P0_0_P1_1_P2_1_for_bounded_planning_repair",
     "implementation_stage": "L0_planning_candidate",
     "implementation_candidate_ready": false,
     "implementation_review": "pending_not_started",
@@ -95,9 +95,9 @@
     "future_technical_allowlist": [
       "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
     ],
-    "next_gate": "dedicated_independent_stage6_closeout_planning_review_pending",
+    "next_gate": "targeted_independent_stage6_closeout_planning_rereview_pending",
     "planning_validation": {
-      "trellis_closeout": "passed_6_6",
+      "trellis_closeout": "passed_implement_6_check_5_total_11",
       "trellis_stage6": "passed_25_25_context_entries",
       "trellis_rkp2": "passed_45_45_context_entries",
       "trellis_rust_parent": "passed_37_37_context_entries",
@@ -111,6 +111,21 @@
       "dynamic_manifest_files": 80,
       "protected_delta": "zero",
       "git_diff_check": "passed"
-    }
+    },
+    "first_independent_planning_review": {
+      "review_task_id": "01a05d0e-5eee-7ea1-bff1-eb4b39d7f98e",
+      "review_turn_id": "01a05d0e-63a2-7dc1-82cc-ec14bee2b07d",
+      "candidate_commit": "fc02bd79207ffb99921bb41a60440f39d15e967e",
+      "P0": 0,
+      "P1": 1,
+      "P2": 1,
+      "verdict": "return_for_bounded_planning_repair",
+      "findings": [
+        "pass_wording_implied_authorization",
+        "trellis_validation_count_label_mismatch"
+      ]
+    },
+    "targeted_independent_planning_rereview": "pending",
+    "bounded_planning_repair_commit": "pending_this_commit"
   }
 }

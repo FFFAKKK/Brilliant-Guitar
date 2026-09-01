@@ -2,7 +2,7 @@
 
 ## Result
 
-P0/P1/P2=`0/0/0` locally. Independent planning review remains pending.
+The initial local self-check claimed P0/P1/P2=`0/0/0`, but the dedicated independent audit correctly returned `0/1/1`: one PASS/authorization wording drift and one mislabeled Trellis count. Both bounded repairs are applied; targeted independent rereview remains pending.
 
 ## Checks
 
