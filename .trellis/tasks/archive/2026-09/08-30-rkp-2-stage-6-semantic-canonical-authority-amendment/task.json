@@ -226,7 +226,10 @@
     "official_measurement_authorized": false,
     "qualification_authorized": false,
     "rkp3_creation_authorized": false,
-    "parent_ownership": "08-26-rkp-2-stage-6-private-scale-evidence-seam-repair_remains_the_only_active_implementation_owner_this_child_is_the_only_current_planning_owner",
+    "parent_ownership": "archived_lineage_evidence_only_stage6_and_semantic_child_completed_historical_no_live_gate",
+    "current_planning_owner": null,
+    "active_implementation_owner": null,
+    "live_owner": null,
     "accepted_inputs": {
       "stage6_e1_commit": "6cae1cbb742bcd31c3669f1e82b5a12b0e33ea15",
       "stage6_current_technical_seam_head": "639e93555c15b46c54c8e9bb7ec610d4a77c7478",

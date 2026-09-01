@@ -523,6 +523,50 @@ const STAGE_6_E3_LAW_CLOSEOUT_Q3_AUDIT_KEYS = [
 const STAGE_6_CLOSEOUT_BASE = STAGE_6_E3_LAW_CLOSEOUT_ARCHIVED_HEAD;
 const STAGE_6_CLOSEOUT_PLANNING_AUTHORITY =
   "e7708bf84ffb6ac71818f46d367ff6e8bba7beb6";
+const STAGE_6_CLOSEOUT_ACTIVATION_COMMIT =
+  "ddfb596ffcd4c2ea13d4b3aa703eab852ce2c2be";
+const STAGE_6_SEMANTIC_ACCEPTANCE_COMMIT =
+  "2a0fe4eb3b77c8498a5067fc4dfee91a69020ea4";
+const STAGE_6_SEMANTIC_NATIVE_ARCHIVE_COMMIT =
+  "1e3759d9fef2524e68c2667a4a5363802c4ccd36";
+const STAGE_6_SEMANTIC_ARCHIVE_PROJECTION_COMMIT =
+  "974a9875db07de907647cf93e251406e280cce4f";
+const STAGE_6_OWNER_ACCEPTANCE_COMMIT =
+  "6a71733a2c148b14f0048e7d050f69b63636551e";
+const STAGE_6_NATIVE_ARCHIVE_COMMIT =
+  "bcc1c905bc58ab9810e076c23891d6683a2ae607";
+const STAGE_6_ARCHIVE_CANDIDATE_COMMIT =
+  "1f024630e0a09bb252790c6e80ea59375906f9e4";
+const STAGE_6_CLOSEOUT_FROZEN_PARENT_CHAIN = [
+  {
+    commit: STAGE_6_CLOSEOUT_ACTIVATION_COMMIT,
+    parent: STAGE_6_CLOSEOUT_PLANNING_AUTHORITY,
+  },
+  {
+    commit: STAGE_6_SEMANTIC_ACCEPTANCE_COMMIT,
+    parent: STAGE_6_CLOSEOUT_ACTIVATION_COMMIT,
+  },
+  {
+    commit: STAGE_6_SEMANTIC_NATIVE_ARCHIVE_COMMIT,
+    parent: STAGE_6_SEMANTIC_ACCEPTANCE_COMMIT,
+  },
+  {
+    commit: STAGE_6_SEMANTIC_ARCHIVE_PROJECTION_COMMIT,
+    parent: STAGE_6_SEMANTIC_NATIVE_ARCHIVE_COMMIT,
+  },
+  {
+    commit: STAGE_6_OWNER_ACCEPTANCE_COMMIT,
+    parent: STAGE_6_SEMANTIC_ARCHIVE_PROJECTION_COMMIT,
+  },
+  {
+    commit: STAGE_6_NATIVE_ARCHIVE_COMMIT,
+    parent: STAGE_6_OWNER_ACCEPTANCE_COMMIT,
+  },
+  {
+    commit: STAGE_6_ARCHIVE_CANDIDATE_COMMIT,
+    parent: STAGE_6_NATIVE_ARCHIVE_COMMIT,
+  },
+] as const;
 const STAGE_6_CLOSEOUT_ROOT =
   ".trellis/tasks/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout";
 const STAGE_6_CLOSEOUT_ARCHIVE_ROOT =
@@ -575,6 +619,25 @@ const STAGE_6_CLOSEOUT_MANIFEST = [
   "research/planning-self-audit.md",
   "review-candidate.md",
   "task.json",
+] as const;
+const STAGE_6_ARCHIVED_CHILDREN = [
+  "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
+  "08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair",
+  "08-31-rkp-2-e3-workspace-law-acceptance-archive-closure",
+] as const;
+const RKP_2_CURRENT_CHILDREN = [
+  "08-25-rkp-2-cross-platform-full-test-runner-contract-repair",
+  "08-26-rkp-2-part-owner-wire-contract-repair",
+  "08-26-rkp-2-stage-6-private-scale-evidence-seam-repair",
+  "09-01-rkp-2-stage-6-acceptance-archive-integration-closeout",
+] as const;
+const RUST_PARENT_CURRENT_CHILDREN = [
+  "08-15-rkp-0-authority-contract-oracle-freeze",
+  "08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke",
+  "08-24-rkp-1-post-archive-workspace-contract-authority-repair",
+  "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
+  "08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair",
+  "08-28-rkp-1a-acceptance-archive-stage6-integration-closeout",
 ] as const;
 const STAGE_6_E2_WORKER_TECHNICAL_PATHS = [
   "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts",
@@ -2056,11 +2119,89 @@ function assertStage6CloseoutPathSet(
   assert.deepEqual(counts, expectedCounts[phase]);
 }
 
+interface NativeTaskArchiveCommitProjection {
+  readonly parents: readonly string[];
+  readonly rows: readonly string[];
+}
+
+function readCommitProjection(commit: string): NativeTaskArchiveCommitProjection {
+  const parentLine = git(["show", "-s", "--format=%P", commit]);
+  return {
+    parents: parentLine === "" ? [] : parentLine.split(/\s+/u),
+    rows: lines(
+      git([
+        "diff-tree",
+        "--no-commit-id",
+        "--name-status",
+        "--no-renames",
+        "-r",
+        commit,
+      ]),
+    ),
+  };
+}
+
+function assertNativeTaskArchiveCommitProjection(
+  projection: NativeTaskArchiveCommitProjection,
+  expectedParent: string,
+  activeRoot: string,
+  archiveRoot: string,
+  manifest: readonly string[],
+): void {
+  assert.deepEqual(projection.parents, [expectedParent]);
+  assert.deepEqual(
+    [...projection.rows].sort(),
+    manifest
+      .flatMap((artifact) => [
+        `D\t${activeRoot}/${artifact}`,
+        `A\t${archiveRoot}/${artifact}`,
+      ])
+      .sort(),
+  );
+}
+
+interface ExactCommitParentProjection {
+  readonly commit: string;
+  readonly parents: readonly string[];
+}
+
+function assertStage6CloseoutFrozenParentChain(
+  projections: readonly ExactCommitParentProjection[],
+): void {
+  assert.deepEqual(
+    projections,
+    STAGE_6_CLOSEOUT_FROZEN_PARENT_CHAIN.map(({ commit, parent }) => ({
+      commit,
+      parents: [parent],
+    })),
+  );
+}
+
 interface Stage6CloseoutLifecycleProjection {
   readonly semanticLocation: "active" | "archive";
   readonly semanticStatus: unknown;
+  readonly semanticCompletedAt: unknown;
+  readonly semanticParent: unknown;
+  readonly semanticChildren: unknown;
+  readonly semanticImplementationStage: unknown;
+  readonly semanticNextGate: unknown;
+  readonly semanticParentOwnership: unknown;
+  readonly semanticCurrentPlanningOwner: unknown;
+  readonly semanticActiveImplementationOwner: unknown;
+  readonly semanticLiveOwner: unknown;
+  readonly semanticActiveAuthorityPresent: unknown;
+  readonly semanticArchiveAuthorityPresent: unknown;
   readonly stage6Location: "active" | "archive";
   readonly stage6Status: unknown;
+  readonly stage6CompletedAt: unknown;
+  readonly stage6Parent: unknown;
+  readonly stage6Children: unknown;
+  readonly stage6CurrentPlanningChild: unknown;
+  readonly stage6CurrentImplementationChild: unknown;
+  readonly stage6ImplementationStage: unknown;
+  readonly stage6NextGate: unknown;
+  readonly stage6ActiveAuthorityPresent: unknown;
+  readonly stage6ArchiveAuthorityPresent: unknown;
   readonly closeoutLocation: "active" | "archive";
   readonly closeoutStatus: unknown;
   readonly closeoutProductionAuthorized: unknown;
@@ -2072,10 +2213,25 @@ interface Stage6CloseoutLifecycleProjection {
   readonly closeoutIntegrationAuthorized: unknown;
   readonly closeoutAcceptanceAuthorized: unknown;
   readonly closeoutArchiveAuthorized: unknown;
+  readonly rkp2Status: unknown;
+  readonly rkp2Parent: unknown;
+  readonly rkp2Children: unknown;
+  readonly rkp2CurrentPlanningChild: unknown;
   readonly rkp2CurrentImplementationChild: unknown;
+  readonly rkp2NextGate: unknown;
   readonly s62Started: unknown;
   readonly s63Started: unknown;
   readonly defaultRuntime: unknown;
+  readonly rustStatus: unknown;
+  readonly rustParent: unknown;
+  readonly rustChildren: unknown;
+  readonly rustCurrentPlanningChild: unknown;
+  readonly rustCurrentImplementationChild: unknown;
+  readonly rustActiveImplementationChild: unknown;
+  readonly rustNextGate: unknown;
+  readonly rustS62Started: unknown;
+  readonly rustS63Started: unknown;
+  readonly rustDefaultRuntime: unknown;
   readonly pushAuthorized: unknown;
   readonly qualificationAuthorized: unknown;
   readonly runtimeSwitchAuthorized: unknown;
@@ -2099,8 +2255,47 @@ function assertStage6CloseoutLifecycleProjection(
   const closeoutArchived = phase === "closeout-archived";
   assert.equal(projection.semanticLocation, semanticArchived ? "archive" : "active");
   assert.equal(projection.semanticStatus, semanticArchived ? "completed" : "in_progress");
+  if (semanticArchived) {
+    assert.equal(projection.semanticCompletedAt, "2026-09-01");
+    assert.equal(
+      projection.semanticParent,
+      "08-26-rkp-2-stage-6-private-scale-evidence-seam-repair",
+    );
+    assert.deepEqual(projection.semanticChildren, []);
+    assert.equal(
+      projection.semanticImplementationStage,
+      "accepted_archived_completed_historical_no_live_gate",
+    );
+    assert.equal(projection.semanticNextGate, "completed_historical_no_live_gate");
+    assert.equal(
+      projection.semanticParentOwnership,
+      "archived_lineage_evidence_only_stage6_and_semantic_child_completed_historical_no_live_gate",
+    );
+    assert.equal(projection.semanticCurrentPlanningOwner, null);
+    assert.equal(projection.semanticActiveImplementationOwner, null);
+    assert.equal(projection.semanticLiveOwner, null);
+    assert.equal(projection.semanticActiveAuthorityPresent, false);
+    assert.equal(projection.semanticArchiveAuthorityPresent, true);
+  }
   assert.equal(projection.stage6Location, stage6Archived ? "archive" : "active");
   assert.equal(projection.stage6Status, stage6Archived ? "completed" : "in_progress");
+  if (stage6Archived) {
+    assert.equal(projection.stage6CompletedAt, "2026-09-01");
+    assert.equal(
+      projection.stage6Parent,
+      "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
+    );
+    assert.deepEqual(projection.stage6Children, STAGE_6_ARCHIVED_CHILDREN);
+    assert.equal(projection.stage6CurrentPlanningChild, null);
+    assert.equal(projection.stage6CurrentImplementationChild, null);
+    assert.equal(
+      projection.stage6ImplementationStage,
+      "accepted_archived_completed_historical_no_live_gate",
+    );
+    assert.equal(projection.stage6NextGate, "completed_historical_no_live_gate");
+    assert.equal(projection.stage6ActiveAuthorityPresent, false);
+    assert.equal(projection.stage6ArchiveAuthorityPresent, true);
+  }
   assert.equal(projection.closeoutLocation, closeoutArchived ? "archive" : "active");
   assert.equal(
     projection.closeoutStatus,
@@ -2125,12 +2320,19 @@ function assertStage6CloseoutLifecycleProjection(
     stage6Archived
       ? integrated
         ? "passed_dedicated_independent_stage6_archive_candidate_review"
-        : "pending_dedicated_independent_stage6_archive_candidate_review"
+        : "pending_targeted_independent_l3_rereview_after_bounded_repair"
       : "pending_not_started",
   );
   assert.equal(projection.closeoutIntegrationAuthorized, integrated);
   assert.equal(projection.closeoutAcceptanceAuthorized, closeoutArchived);
   assert.equal(projection.closeoutArchiveAuthorized, closeoutArchived);
+  assert.equal(projection.rkp2Status, "in_progress");
+  assert.equal(
+    projection.rkp2Parent,
+    "08-15-core-rust-runtime-performance-remediation",
+  );
+  assert.deepEqual(projection.rkp2Children, RKP_2_CURRENT_CHILDREN);
+  assert.equal(projection.rkp2CurrentPlanningChild, null);
   assert.equal(
     projection.rkp2CurrentImplementationChild,
     closeoutArchived
@@ -2139,9 +2341,39 @@ function assertStage6CloseoutLifecycleProjection(
         ? "09-01-rkp-2-stage-6-acceptance-archive-integration-closeout"
         : "08-26-rkp-2-stage-6-private-scale-evidence-seam-repair",
   );
+  if (phase === "stage6-archived") {
+    assert.equal(
+      projection.rkp2NextGate,
+      "targeted_independent_l3_bounded_repair_rereview_pending",
+    );
+  }
   assert.equal(projection.s62Started, false);
   assert.equal(projection.s63Started, false);
   assert.equal(projection.defaultRuntime, "typescript");
+  assert.equal(projection.rustStatus, "planning");
+  assert.equal(
+    projection.rustParent,
+    "07-29-core-vnext-product-ready-extensible-kernel-completion",
+  );
+  assert.deepEqual(projection.rustChildren, RUST_PARENT_CURRENT_CHILDREN);
+  assert.equal(projection.rustCurrentPlanningChild, null);
+  assert.equal(
+    projection.rustCurrentImplementationChild,
+    "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
+  );
+  assert.equal(
+    projection.rustActiveImplementationChild,
+    "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
+  );
+  if (phase === "stage6-archived") {
+    assert.equal(
+      projection.rustNextGate,
+      "stage6_closeout_targeted_independent_l3_bounded_repair_rereview_pending",
+    );
+  }
+  assert.equal(projection.rustS62Started, false);
+  assert.equal(projection.rustS63Started, false);
+  assert.equal(projection.rustDefaultRuntime, "typescript");
   assert.equal(projection.pushAuthorized, false);
   assert.equal(projection.qualificationAuthorized, false);
   assert.equal(projection.runtimeSwitchAuthorized, false);
@@ -4681,12 +4913,18 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     readText(`${semanticLocation.root}/task.json`),
   ) as {
     readonly status?: unknown;
+    readonly completedAt?: unknown;
+    readonly parent?: unknown;
+    readonly children?: unknown;
+    readonly meta?: Readonly<Record<string, unknown>>;
   };
   const currentStage6Task = JSON.parse(
     readText(`${stage6Location.root}/task.json`),
   ) as {
     readonly status?: unknown;
     readonly completedAt?: unknown;
+    readonly parent?: unknown;
+    readonly children?: unknown;
     readonly relatedFiles?: unknown;
     readonly meta?: Readonly<Record<string, unknown>>;
   };
@@ -4697,10 +4935,22 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     readonly meta?: Readonly<Record<string, unknown>>;
   };
   const currentRkp2Task = JSON.parse(readText(TASK_PATH)) as {
+    readonly status?: unknown;
+    readonly parent?: unknown;
+    readonly children?: unknown;
     readonly meta?: Readonly<Record<string, unknown>>;
   };
+  const currentRustTask = JSON.parse(readText(PARENT_PATH)) as {
+    readonly status?: unknown;
+    readonly parent?: unknown;
+    readonly children?: unknown;
+    readonly meta?: Readonly<Record<string, unknown>>;
+  };
+  const semanticMeta = semanticTask.meta ?? {};
+  const currentStage6Meta = currentStage6Task.meta ?? {};
   const closeoutMeta = closeoutTask.meta ?? {};
   const currentRkp2Meta = currentRkp2Task.meta ?? {};
+  const currentRustMeta = currentRustTask.meta ?? {};
   const stage6CloseoutPhase: Stage6CloseoutPhase =
     closeoutLocation.kind === "archive"
       ? "closeout-archived"
@@ -4733,6 +4983,80 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
   assert.equal(STAGE_6_SEMANTIC_CANONICAL_MANIFEST.length, 12);
   assert.equal(STAGE_6_PRIVATE_SCALE_MANIFEST.length, 13);
   assert.equal(STAGE_6_CLOSEOUT_MANIFEST.length, 12);
+  assert.equal(
+    semanticMeta.native_archive_commit,
+    STAGE_6_SEMANTIC_NATIVE_ARCHIVE_COMMIT,
+  );
+  const semanticNativeArchiveProjection = readCommitProjection(
+    STAGE_6_SEMANTIC_NATIVE_ARCHIVE_COMMIT,
+  );
+  assertNativeTaskArchiveCommitProjection(
+    semanticNativeArchiveProjection,
+    STAGE_6_SEMANTIC_ACCEPTANCE_COMMIT,
+    STAGE_6_SEMANTIC_CANONICAL_TASK_ROOT,
+    STAGE_6_SEMANTIC_CANONICAL_ARCHIVE_ROOT,
+    STAGE_6_SEMANTIC_CANONICAL_MANIFEST,
+  );
+  for (const variant of [
+    { ...semanticNativeArchiveProjection, parents: ["wrong-parent"] },
+    {
+      ...semanticNativeArchiveProjection,
+      rows: semanticNativeArchiveProjection.rows.slice(1),
+    },
+    {
+      ...semanticNativeArchiveProjection,
+      rows: [...semanticNativeArchiveProjection.rows, "M\tundeclared-semantic-path"],
+    },
+  ]) {
+    assert.throws(() =>
+      assertNativeTaskArchiveCommitProjection(
+        variant,
+        STAGE_6_SEMANTIC_ACCEPTANCE_COMMIT,
+        STAGE_6_SEMANTIC_CANONICAL_TASK_ROOT,
+        STAGE_6_SEMANTIC_CANONICAL_ARCHIVE_ROOT,
+        STAGE_6_SEMANTIC_CANONICAL_MANIFEST,
+      ),
+    );
+  }
+  const stage6NativeArchiveProjection = readCommitProjection(
+    STAGE_6_NATIVE_ARCHIVE_COMMIT,
+  );
+  assertNativeTaskArchiveCommitProjection(
+    stage6NativeArchiveProjection,
+    STAGE_6_OWNER_ACCEPTANCE_COMMIT,
+    STAGE_6_PRIVATE_SCALE_TASK_ROOT,
+    STAGE_6_PRIVATE_SCALE_ARCHIVE_ROOT,
+    STAGE_6_PRIVATE_SCALE_MANIFEST,
+  );
+  for (const variant of [
+    { ...stage6NativeArchiveProjection, parents: ["wrong-parent"] },
+    {
+      ...stage6NativeArchiveProjection,
+      rows: stage6NativeArchiveProjection.rows.slice(1),
+    },
+    {
+      ...stage6NativeArchiveProjection,
+      rows: [...stage6NativeArchiveProjection.rows, "M\tundeclared-stage6-path"],
+    },
+  ]) {
+    assert.throws(() =>
+      assertNativeTaskArchiveCommitProjection(
+        variant,
+        STAGE_6_OWNER_ACCEPTANCE_COMMIT,
+        STAGE_6_PRIVATE_SCALE_TASK_ROOT,
+        STAGE_6_PRIVATE_SCALE_ARCHIVE_ROOT,
+        STAGE_6_PRIVATE_SCALE_MANIFEST,
+      ),
+    );
+  }
+  const frozenParentChain = STAGE_6_CLOSEOUT_FROZEN_PARENT_CHAIN.map(
+    ({ commit }) => ({ commit, parents: readCommitProjection(commit).parents }),
+  );
+  assertStage6CloseoutFrozenParentChain(frozenParentChain);
+  const brokenParentChain = frozenParentChain.map((entry, index) =>
+    index === 3 ? { ...entry, parents: ["wrong-parent"] } : entry,
+  );
+  assert.throws(() => assertStage6CloseoutFrozenParentChain(brokenParentChain));
   if (stage6Location.kind === "archive") {
     assert.equal(currentStage6Task.completedAt, "2026-09-01");
     assert.ok(Array.isArray(currentStage6Task.relatedFiles));
@@ -4752,25 +5076,8 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     assertJsonlReferencesExist(stage6Location.root);
     assert.equal(
       currentStage6Task.meta?.native_archive_commit,
-      "bcc1c905bc58ab9810e076c23891d6683a2ae607",
+      STAGE_6_NATIVE_ARCHIVE_COMMIT,
     );
-    const nativeArchiveRows = lines(
-      git([
-        "diff-tree",
-        "--no-commit-id",
-        "--name-status",
-        "--no-renames",
-        "-r",
-        "bcc1c905bc58ab9810e076c23891d6683a2ae607",
-      ]),
-    ).sort();
-    const expectedNativeArchiveRows = STAGE_6_PRIVATE_SCALE_MANIFEST.flatMap(
-      (artifact) => [
-        `D\t${STAGE_6_PRIVATE_SCALE_TASK_ROOT}/${artifact}`,
-        `A\t${STAGE_6_PRIVATE_SCALE_ARCHIVE_ROOT}/${artifact}`,
-      ],
-    ).sort();
-    assert.deepEqual(nativeArchiveRows, expectedNativeArchiveRows);
   }
 
   const stage6AuditRecord = closeoutMeta.stage6_technical_audit as
@@ -4786,8 +5093,29 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
   const stage6CloseoutLifecycle: Stage6CloseoutLifecycleProjection = {
     semanticLocation: semanticLocation.kind,
     semanticStatus: semanticTask.status,
+    semanticCompletedAt: semanticTask.completedAt,
+    semanticParent: semanticTask.parent,
+    semanticChildren: semanticTask.children,
+    semanticImplementationStage: semanticMeta.implementation_stage,
+    semanticNextGate: semanticMeta.next_gate,
+    semanticParentOwnership: semanticMeta.parent_ownership,
+    semanticCurrentPlanningOwner: semanticMeta.current_planning_owner,
+    semanticActiveImplementationOwner: semanticMeta.active_implementation_owner,
+    semanticLiveOwner: semanticMeta.live_owner,
+    semanticActiveAuthorityPresent: semanticMeta.active_authority_present,
+    semanticArchiveAuthorityPresent: semanticMeta.archive_authority_present,
     stage6Location: stage6Location.kind,
     stage6Status: currentStage6Task.status,
+    stage6CompletedAt: currentStage6Task.completedAt,
+    stage6Parent: currentStage6Task.parent,
+    stage6Children: currentStage6Task.children,
+    stage6CurrentPlanningChild: currentStage6Meta.current_planning_child,
+    stage6CurrentImplementationChild:
+      currentStage6Meta.current_implementation_child,
+    stage6ImplementationStage: currentStage6Meta.implementation_stage,
+    stage6NextGate: currentStage6Meta.next_gate,
+    stage6ActiveAuthorityPresent: currentStage6Meta.active_authority_present,
+    stage6ArchiveAuthorityPresent: currentStage6Meta.archive_authority_present,
     closeoutLocation: closeoutLocation.kind,
     closeoutStatus: closeoutTask.status,
     closeoutProductionAuthorized:
@@ -4801,11 +5129,26 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     closeoutIntegrationAuthorized: closeoutMeta.integration_authorized,
     closeoutAcceptanceAuthorized: closeoutMeta.closeout_acceptance_authorized,
     closeoutArchiveAuthorized: closeoutMeta.closeout_archive_authorized,
+    rkp2Status: currentRkp2Task.status,
+    rkp2Parent: currentRkp2Task.parent,
+    rkp2Children: currentRkp2Task.children,
+    rkp2CurrentPlanningChild: currentRkp2Meta.current_planning_child,
     rkp2CurrentImplementationChild:
       currentRkp2Meta.current_implementation_child,
+    rkp2NextGate: currentRkp2Meta.next_gate,
     s62Started: currentRkp2Meta.stage_6_s6_2_started,
     s63Started: currentRkp2Meta.stage_6_s6_3_started,
     defaultRuntime: currentRkp2Meta.default_runtime,
+    rustStatus: currentRustTask.status,
+    rustParent: currentRustTask.parent,
+    rustChildren: currentRustTask.children,
+    rustCurrentPlanningChild: currentRustMeta.current_planning_child,
+    rustCurrentImplementationChild: currentRustMeta.current_implementation_child,
+    rustActiveImplementationChild: currentRustMeta.active_implementation_child,
+    rustNextGate: currentRustMeta.next_gate,
+    rustS62Started: currentRustMeta.rkp2_stage_6_s6_2_started,
+    rustS63Started: currentRustMeta.rkp2_stage_6_s6_3_started,
+    rustDefaultRuntime: currentRustMeta.rkp2_default_runtime,
     pushAuthorized: closeoutMeta.push_authorized,
     qualificationAuthorized: closeoutMeta.qualification_authorized,
     runtimeSwitchAuthorized: closeoutMeta.default_runtime_switch_authorized,
@@ -4815,6 +5158,55 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     stage6CloseoutLifecycle,
     stage6CloseoutPhase,
   );
+  for (const variant of [
+    {
+      semanticParentOwnership:
+        "08-26-rkp-2-stage-6-private-scale-evidence-seam-repair_remains_the_only_active_implementation_owner_this_child_is_the_only_current_planning_owner",
+    },
+    {
+      semanticCurrentPlanningOwner:
+        "08-26-rkp-2-stage-6-private-scale-evidence-seam-repair",
+    },
+    {
+      semanticActiveImplementationOwner:
+        "08-26-rkp-2-stage-6-private-scale-evidence-seam-repair",
+    },
+    { semanticLiveOwner: "08-26-rkp-2-stage-6-private-scale-evidence-seam-repair" },
+    { semanticParent: "wrong-semantic-parent" },
+    { semanticChildren: ["wrong-semantic-child"] },
+    { semanticStatus: "in_progress" },
+    { stage6Parent: "wrong-stage6-parent" },
+    { stage6Children: ["wrong-stage6-child"] },
+    {
+      stage6CurrentImplementationChild:
+        "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
+    },
+    { stage6Status: "in_progress" },
+    { rkp2Status: "completed" },
+    { rkp2Parent: "wrong-rkp2-parent" },
+    { rkp2Children: ["wrong-rkp2-child"] },
+    {
+      rkp2CurrentPlanningChild:
+        "09-01-rkp-2-stage-6-acceptance-archive-integration-closeout",
+    },
+    {
+      rkp2CurrentImplementationChild:
+        "08-26-rkp-2-stage-6-private-scale-evidence-seam-repair",
+    },
+    { rkp2NextGate: "wrong-rkp2-gate" },
+    { rustStatus: "completed" },
+    { rustChildren: ["wrong-rust-child"] },
+    { rustCurrentImplementationChild: "wrong-rust-child" },
+    { rustActiveImplementationChild: "wrong-rust-child" },
+    { rustNextGate: "wrong-rust-gate" },
+  ]) {
+    assert.throws(() =>
+      assertStage6CloseoutLifecycleProjection(
+        { ...stage6CloseoutLifecycle, ...variant },
+        stage6CloseoutPhase,
+      ),
+    );
+  }
 
   const worker = readText(
     "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts",

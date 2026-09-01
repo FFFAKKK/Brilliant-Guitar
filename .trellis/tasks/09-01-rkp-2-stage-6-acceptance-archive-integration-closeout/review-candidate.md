@@ -2,7 +2,7 @@
 
 ## Status
 
-`READY FOR DEDICATED INDEPENDENT IMPLEMENTATION REVIEW — L3 STAGE6-ARCHIVED — L4-L6 NOT STARTED`
+`READY FOR TARGETED INDEPENDENT L3 REREVIEW — BOUNDED REPAIR COMPLETE — L4-L6 NOT STARTED`
 
 ## Review focus
 
@@ -14,7 +14,9 @@
 6. Native archive cannot detach a live child or create dual authority.
 7. Workspace Law is the sole technical file and protected paths remain zero-delta.
 8. Audit, acceptance, archive, integration, terminal projection and later S6.2 authorization are separate.
+9. Semantic native archive `1e3759d9fef2524e68c2667a4a5363802c4ccd36` is a one-parent exact 12-file move and Stage 6 native archive `bcc1c905bc58ab9810e076c23891d6683a2ae607` is a one-parent exact 13-file move.
+10. The complete accepted-planning-through-L3 parent chain and semantic/Stage6/RKP-2/Rust-parent projections reject mutated parents, membership, live-owner fields and current-child fields.
 
 ## Verdict slot
 
-First independent audit returned P0/P1/P2=`0/1/1`: PASS-to-authorization wording and one Trellis count label only. Both bounded repairs were applied at `e7708bf84ffb6ac71818f46d367ff6e8bba7beb6`. Targeted rereview task `01a05d0e-5eee-7ea1-bff1-eb4b39d7f98e`, turn `01a05d19-f6c7-7ec0-b8dd-31ccef41cedd`, returned P0/P1/P2=`0/0/0`, `PASS FOR BOUNDED LIFECYCLE IMPLEMENTATION`. Production implementation remains false throughout this closeout, and evidence PASS creates no lifecycle authorization. L2 accepted and natively archived the exact 12-file consumed child. The Stage 6 technical candidate `0c561d14193374436361eec09b361cab0170278a` has external P0/P1/P2=`0/0/0`; owner acceptance and exact 13-file native archive completed at `bcc1c905bc58ab9810e076c23891d6683a2ae607`. The outer Stage 6 archive candidate is now frozen for dedicated independent implementation review. L4-L6 have not started.
+Planning audit history is unchanged: the first planning audit returned P0/P1/P2=`0/1/1`, its bounded repairs landed at `e7708bf84ffb6ac71818f46d367ff6e8bba7beb6`, and targeted planning rereview returned `0/0/0`, `PASS FOR BOUNDED LIFECYCLE IMPLEMENTATION`. The first independent implementation audit of `1f024630e0a09bb252790c6e80ea59375906f9e4` returned P0/P1/P2=`0/2/0`, `RETURN FOR BOUNDED L3 REPAIR`. The repair removes the archived semantic child's current-tense live-owner projection and extends Workspace Law over both native archive memberships, the complete L1-L3 parent chain, four-level parent/current-child state, and negative variants. Targeted implementation rereview is pending. Production implementation remains false, and L4-L6 have not started.

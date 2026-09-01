@@ -527,11 +527,13 @@
       "independent_planning_review": "passed_targeted_rereview_e7708bf84ffb6ac71818f46d367ff6e8bba7beb6_P0_0_P1_0_P2_0",
       "accepted_planning_authority_head": "e7708bf84ffb6ac71818f46d367ff6e8bba7beb6",
       "task_start_run": true,
-      "implementation_stage": "L3_stage6_archived_candidate_ready_for_dedicated_independent_implementation_review",
-      "next_gate": "dedicated_independent_stage6_archive_candidate_review_pending",
+      "implementation_stage": "L3_bounded_repair_complete_targeted_independent_rereview_pending",
+      "next_gate": "targeted_independent_l3_bounded_repair_rereview_pending",
       "stage6_native_archive_commit": "bcc1c905bc58ab9810e076c23891d6683a2ae607",
       "stage6_archive_root": ".trellis/tasks/archive/2026-09/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair",
-      "production_implementation_authorized": false
+      "production_implementation_authorized": false,
+      "first_independent_implementation_audit": "1f024630e0a09bb252790c6e80ea59375906f9e4_return_P0_0_P1_2_P2_0",
+      "bounded_l3_repair": "complete_targeted_rereview_pending"
     }
   }
 }

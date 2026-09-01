@@ -148,7 +148,7 @@
       "e3_user_authorization_consumed_by_parent_stage6_owner": true
     },
     "current_implementation_child": "09-01-rkp-2-stage-6-acceptance-archive-integration-closeout",
-    "implementation_stage": "stage_6_closeout_L3_stage6_archived_candidate_review_pending_rkp2_paused_before_s6_2",
+    "implementation_stage": "stage_6_closeout_L3_bounded_repair_complete_targeted_rereview_pending_rkp2_paused_before_s6_2",
     "stage_1_started": true,
     "stage_1_completed": true,
     "stage_1_commit_subject": "build(rkp-2): pin typed generational store dependency",
@@ -351,7 +351,7 @@
       "post_pass_closeout_authorized": true,
       "stage_6_blocked_until_accepted_archived_integrated": false
     },
-    "next_gate": "dedicated_independent_stage6_archive_candidate_review_pending",
+    "next_gate": "targeted_independent_l3_bounded_repair_rereview_pending",
     "stage_6_started": true,
     "stage_6_authorized": true,
     "stage_6_completed": false,
@@ -457,7 +457,7 @@
     },
     "implementation_review": "pending",
     "implementation_candidate_ready": false,
-    "implementation_blocker": "dedicated_independent_stage6_archive_candidate_review_pending",
+    "implementation_blocker": "targeted_independent_l3_bounded_repair_rereview_pending",
     "public_json_property_cap_scale_compatibility_repair": {
       "task": "08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair",
       "status": "accepted_archived_integrated_C5_execution_complete_historical",
@@ -547,11 +547,13 @@
       "independent_planning_review": "passed_targeted_rereview_e7708bf84ffb6ac71818f46d367ff6e8bba7beb6_P0_0_P1_0_P2_0",
       "accepted_planning_authority_head": "e7708bf84ffb6ac71818f46d367ff6e8bba7beb6",
       "task_start_run": true,
-      "implementation_stage": "L3_stage6_archived_candidate_ready_for_dedicated_independent_implementation_review",
-      "next_gate": "dedicated_independent_stage6_archive_candidate_review_pending",
+      "implementation_stage": "L3_bounded_repair_complete_targeted_independent_rereview_pending",
+      "next_gate": "targeted_independent_l3_bounded_repair_rereview_pending",
       "stage6_native_archive_commit": "bcc1c905bc58ab9810e076c23891d6683a2ae607",
       "stage6_archive_root": ".trellis/tasks/archive/2026-09/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair",
-      "production_implementation_authorized": false
+      "production_implementation_authorized": false,
+      "first_independent_implementation_audit": "1f024630e0a09bb252790c6e80ea59375906f9e4_return_P0_0_P1_2_P2_0",
+      "bounded_l3_repair": "complete_targeted_rereview_pending"
     },
     "rkp2_stage_6_s6_2_started": false,
     "rkp2_stage_6_s6_3_started": false

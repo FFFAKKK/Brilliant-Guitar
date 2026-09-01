@@ -38,7 +38,7 @@
     ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "IN_PROGRESS / TARGETED PLANNING REREVIEW PASS P0_0_P1_0_P2_0 AT E7708BF / L1 NATIVE ACTIVATION COMPLETE / L2 CONSUMED SEMANTIC CHILD ACCEPTED-ARCHIVED / L3 STAGE6 OWNER ACCEPTED AND NATIVELY ARCHIVED EXACT 13 AT BCC1C905 / READY FOR DEDICATED INDEPENDENT IMPLEMENTATION REVIEW / PRODUCTION IMPLEMENTATION FALSE / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO INTEGRATION STRESS QUALIFICATION CUTOVER RKP3 PUSH OR PRODUCTION CHANGE.",
+  "notes": "IN_PROGRESS / TARGETED PLANNING REREVIEW PASS P0_0_P1_0_P2_0 AT E7708BF / L1 NATIVE ACTIVATION COMPLETE / L2 CONSUMED SEMANTIC CHILD ACCEPTED-ARCHIVED / L3 STAGE6 OWNER ACCEPTED AND NATIVELY ARCHIVED EXACT 13 AT BCC1C905 / FIRST INDEPENDENT IMPLEMENTATION AUDIT RETURN P0_0_P1_2_P2_0 AT 1F024630 / BOUNDED L3 REPAIR COMPLETE / TARGETED REREVIEW PENDING / PRODUCTION IMPLEMENTATION FALSE / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO INTEGRATION STRESS QUALIFICATION CUTOVER RKP3 PUSH OR PRODUCTION CHANGE.",
   "meta": {
     "planning_base_commit": "65debd52d379004c966cefe59f54d72ac1136eb4",
     "original_rkp2_preintegration_head": "4a302bc9f9981940336fc97941b08e09bd0d1f67",
@@ -58,10 +58,10 @@
     "user_lifecycle_continuation_record": "user_requested_continue_until_this_stage_is_complete_then_report",
     "independent_planning_review": "passed_targeted_rereview_e7708bf84ffb6ac71818f46d367ff6e8bba7beb6_P0_0_P1_0_P2_0",
     "accepted_planning_authority_head": "e7708bf84ffb6ac71818f46d367ff6e8bba7beb6",
-    "implementation_stage": "L3_stage6_archived_candidate_ready_for_dedicated_independent_implementation_review",
+    "implementation_stage": "L3_bounded_repair_complete_targeted_independent_rereview_pending",
     "implementation_candidate_ready": true,
-    "implementation_review": "pending_dedicated_independent_stage6_archive_candidate_review",
-    "archive_candidate_review": "pending_dedicated_independent_stage6_archive_candidate_review",
+    "implementation_review": "pending_targeted_independent_l3_rereview_after_bounded_repair",
+    "archive_candidate_review": "pending_targeted_independent_l3_rereview_after_bounded_repair",
     "integration_review": "pending_not_started",
     "terminal_projection_review": "pending_not_started",
     "semantic_child_acceptance_authorized": true,
@@ -99,12 +99,28 @@
     "future_technical_allowlist": [
       "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
     ],
-    "next_gate": "dedicated_independent_stage6_archive_candidate_review_pending",
+    "next_gate": "targeted_independent_l3_bounded_repair_rereview_pending",
     "workspace_law_phase": "stage6-archived",
     "stage6_owner_acceptance_record": "user_requested_continue_until_this_stage_is_complete_then_report",
     "stage6_native_archive_commit": "bcc1c905bc58ab9810e076c23891d6683a2ae607",
     "stage6_active_authority_present": false,
     "stage6_archive_authority_present": true,
+    "first_independent_implementation_audit": {
+      "candidate_commit": "1f024630e0a09bb252790c6e80ea59375906f9e4",
+      "P0": 0,
+      "P1": 2,
+      "P2": 0,
+      "verdict": "return_for_bounded_L3_repair",
+      "findings": [
+        "archived_semantic_child_current_tense_dual_authority",
+        "workspace_law_missing_semantic_archive_membership_full_parent_chain_and_projection_negative_variants"
+      ]
+    },
+    "bounded_l3_repair": {
+      "status": "complete_candidate_pending_targeted_rereview",
+      "scope": "semantic_archived_no_live_owner_plus_workspace_law_archive_chain_and_projection_negative_variants_only",
+      "targeted_rereview": "pending"
+    },
     "semantic_child_acceptance": {
       "task": "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
       "status": "accepted_archived_completed_historical_no_live_gate",
