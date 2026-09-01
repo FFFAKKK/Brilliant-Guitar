@@ -46,7 +46,7 @@
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RKP-0/RKP-1 ACCEPTED ARCHIVED / RKP-2 SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 TECHNICAL PASS AND Q4 ARCHIVED / STAGE6 CLOSEOUT TARGETED PLANNING REREVIEW PASS AT E7708BF AND L1 ACTIVATED / L2 SEMANTIC CHILD CLOSEOUT NEXT / RKP2 PAUSED BEFORE S6.2 / TYPESCRIPT DEFAULT / NO QUALIFICATION CUTOVER PUSH OR RKP3.",
+  "notes": "RKP-0/RKP-1 ACCEPTED ARCHIVED / RKP-2 SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 TECHNICAL PASS AND Q4 ARCHIVED / CLOSEOUT L2 OWNER ACCEPTED CONSUMED SEMANTIC CHILD AND AUTHORIZED EXACT 12-ARTIFACT NATIVE ARCHIVE / ARCHIVE PENDING / RKP2 PAUSED BEFORE S6.2 / TYPESCRIPT DEFAULT / NO QUALIFICATION CUTOVER PUSH OR RKP3.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
@@ -54,7 +54,7 @@
     "current_planning_child": null,
     "rkp2_stage6_semantic_canonical_authority_amendment": {
       "task": "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
-      "status": "completed_historical_E1R2_and_E2_authority_consumed_parent_Stage6_E3_owned_elsewhere",
+      "status": "owner_accepted_archive_authorized_native_archive_pending",
       "accepted_planning_head": "eb0c13ed5ac218cfec9a983a4bc4e8dfb89acbd7",
       "independent_planning_review": "passed_P0_0_P1_0_P2_0",
       "user_implementation_authorization_scope": "A0_and_E1R2_completed_then_separately_authorized_Stage6_E2_only",
@@ -81,7 +81,12 @@
       "e2_acceptance_preparation_ready": true,
       "e3_fresh_request_and_candidate_freeze_requires_explicit_user_authorization": false,
       "e2_bounded_repair": "2050f386_return_P0_1_P1_4_P2_0_then_c7aa242_return_P0_1_P1_3_P2_0_then_27b65197c3c236577e6882fac712659931cacfb6_return_P0_0_P1_3_P2_0_repaired_by_c2fa29096111337527c23d25c2099fd89fa0e005_then_911e2858583ccd8cc032d2bea241ef372e9522f9_return_P0_0_P1_3_P2_0_repaired_by_e61db6c634b7163ed8637cf6110995b366f3919e_then_4356b07c5dd5d6b865210ba26e8416330487f3bd_return_P0_0_P1_1_P2_0_repaired_by_bcd7c7f2adda3d16c53bb0e533500f7ead0c0d1b_audited_by_0e4928ca08aea4c6eb61a305fd249efda934c6a3_pass_P0_0_P1_0_P2_0_E2_acceptance_preparation_ready",
-      "next_gate": "completed_historical_no_live_gate",
+      "acceptance_authorized": true,
+      "archive_authorized": true,
+      "archive_root": ".trellis/tasks/archive/2026-09/08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
+      "archive_manifest_count": 12,
+      "owner_acceptance_record": "closeout_L2_user_requested_continue_until_this_stage_is_complete_then_report",
+      "next_gate": "native_archive_authorized_by_stage6_closeout_L2",
       "stage6_e3_started": false,
       "e3_user_authorization_consumed_by_parent_stage6_owner": true
     },
@@ -128,7 +133,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "stage6_closeout_L2_semantic_child_owner_acceptance_and_native_archive",
+    "next_gate": "stage6_closeout_L2_native_archive_semantic_child_exact_12",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
