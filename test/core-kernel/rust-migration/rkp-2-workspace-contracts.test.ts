@@ -429,6 +429,95 @@ const STAGE_6_E3_AUDIT_RECORD = {
   P1: 0,
   P2: 0,
 } as const;
+const STAGE_6_E3_LAW_CLOSEOUT_BASE =
+  "c73e2139d3a1a9e89e4ec6071678d75be1c02abb";
+const STAGE_6_E3_LAW_CLOSEOUT_PLANNING_AUTHORITY =
+  "9bf82a221f0585719f36f36906dfc292d0e2bd5c";
+const STAGE_6_E3_LAW_CLOSEOUT_ROOT =
+  ".trellis/tasks/08-31-rkp-2-e3-workspace-law-acceptance-archive-closure";
+const STAGE_6_E3_LAW_CLOSEOUT_ARCHIVE_ROOT =
+  ".trellis/tasks/archive/2026-09/08-31-rkp-2-e3-workspace-law-acceptance-archive-closure";
+const STAGE_6_E3_LAW_TARGET_ARCHIVE_ROOT =
+  ".trellis/tasks/archive/2026-09/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair";
+const STAGE_6_E3_LAW_TARGET_MANIFEST = [
+  "check.jsonl",
+  "design.md",
+  "implement.jsonl",
+  "implement.md",
+  "operator-handoff.md",
+  "prd.md",
+  "research/current-e3-law-gap-audit.md",
+  "research/file-test-and-rollback-matrix.md",
+  "research/final-state-projection-contract.md",
+  "research/planning-self-audit.md",
+  "review-candidate.md",
+  "task.json",
+] as const;
+const STAGE_6_E3_LAW_CLOSEOUT_MANIFEST = [
+  "check.jsonl",
+  "design.md",
+  "implement.jsonl",
+  "implement.md",
+  "operator-handoff.md",
+  "prd.md",
+  "research/current-state-and-archive-gap-audit.md",
+  "research/file-state-and-test-matrix.md",
+  "research/planning-self-audit.md",
+  "review-candidate.md",
+  "task.json",
+] as const;
+const STAGE_6_E3_LAW_CLOSEOUT_TECHNICAL_PATH =
+  "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts";
+const STAGE_6_E3_LAW_TARGET_CONTEXT_LIFECYCLE_PATHS = [
+  `${STAGE_6_E3_LAW_TASK_ROOT}/task.json`,
+  `${STAGE_6_E3_LAW_TASK_ROOT}/operator-handoff.md`,
+  `${STAGE_6_E3_LAW_TASK_ROOT}/review-candidate.md`,
+  `${STAGE_6_E3_LAW_TASK_ROOT}/implement.jsonl`,
+  `${STAGE_6_E3_LAW_TASK_ROOT}/check.jsonl`,
+] as const;
+const STAGE_6_E3_LAW_CLOSEOUT_Q4_STAGED_PATHS = [
+  `${STAGE_6_E3_LAW_CLOSEOUT_ROOT}/task.json`,
+  `${STAGE_6_E3_LAW_CLOSEOUT_ROOT}/operator-handoff.md`,
+  `${STAGE_6_E3_LAW_CLOSEOUT_ROOT}/review-candidate.md`,
+  ...STAGE_6_PARENT_LIFECYCLE_PATHS,
+] as const;
+const STAGE_6_E3_LAW_TARGET_SUCCESSOR_IMPLEMENT = {
+  sourceRows: 12,
+  sourceBytes: 2129,
+  sourceSha256: "7258f1d0758be729f902205406c84bf4d9836bae6966f0fc894b7777797c5f84",
+  successorRows: 9,
+  successorBytes: 1492,
+  successorSha256: "54c6912c5829a69d6d92a3f12825537e8489b30a906463bd9c41724a39174ca9",
+  removedPaths: [
+    `${STAGE_6_E3_LAW_TASK_ROOT}/research/current-e3-law-gap-audit.md`,
+    `${STAGE_6_E3_LAW_TASK_ROOT}/research/final-state-projection-contract.md`,
+    `${STAGE_6_E3_LAW_TASK_ROOT}/research/file-test-and-rollback-matrix.md`,
+  ],
+} as const;
+const STAGE_6_E3_LAW_TARGET_SUCCESSOR_CHECK = {
+  sourceRows: 9,
+  sourceBytes: 1795,
+  sourceSha256: "11371426f57123fd0058463ca9baaaa05c9e59d07d4ae7ff3faa333f48ed707c",
+  successorRows: 6,
+  successorBytes: 1117,
+  successorSha256: "83aaf6771c56066982f718cbe39b66fa7399f8ec116800eec2b9efbd1fe2aa52",
+  removedPaths: [
+    `${STAGE_6_E3_LAW_TASK_ROOT}/research/current-e3-law-gap-audit.md`,
+    `${STAGE_6_E3_LAW_TASK_ROOT}/research/final-state-projection-contract.md`,
+    `${STAGE_6_E3_LAW_TASK_ROOT}/research/planning-self-audit.md`,
+  ],
+} as const;
+const STAGE_6_E3_LAW_CLOSEOUT_Q3_AUDIT_KEYS = [
+  "schemaVersion",
+  "reviewTaskId",
+  "reviewTurnId",
+  "candidateCommit",
+  "technicalCommit",
+  "verdict",
+  "P0",
+  "P1",
+  "P2",
+] as const;
 const STAGE_6_E2_WORKER_TECHNICAL_PATHS = [
   "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts",
   "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.test.ts",
@@ -897,7 +986,7 @@ function currentAcceptanceArchiveClosureChanges(): Map<string, "A" | "M" | "D"> 
       "diff",
       "--no-renames",
       "--name-status",
-      STAGE_6_E3_ACCEPTANCE_REVIEWED_CANDIDATE,
+      `${STAGE_6_E3_ACCEPTANCE_REVIEWED_CANDIDATE}..${STAGE_6_E3_LAW_CLOSEOUT_BASE}`,
     ]),
   )) {
     const [status, path, extra] = line.split("\t");
@@ -906,9 +995,40 @@ function currentAcceptanceArchiveClosureChanges(): Map<string, "A" | "M" | "D"> 
     assert.ok(path);
     result.set(path, status);
   }
-  for (const path of lines(git(["ls-files", "--others", "--exclude-standard"]))) {
+  return result;
+}
+
+function currentWorkspaceLawCloseoutChanges(): Map<string, "A" | "M" | "D"> {
+  const result = new Map<string, "A" | "M" | "D">();
+  for (const line of lines(
+    git([
+      "diff",
+      "--no-renames",
+      "--name-status",
+      `${STAGE_6_E3_LAW_CLOSEOUT_BASE}..HEAD`,
+    ]),
+  )) {
+    const [status, path, extra] = line.split("\t");
+    assert.equal(extra, undefined, "rename-collapsed paths are forbidden");
+    assert.ok(status === "A" || status === "M" || status === "D");
+    assert.ok(path);
     assert.equal(result.has(path), false, `${path} must have one cumulative status`);
-    result.set(path, "A");
+    result.set(path, status);
+  }
+  for (const [args, fallbackStatus] of [
+    [["diff", "--name-status", "--no-renames"], undefined],
+    [["diff", "--cached", "--name-status", "--no-renames"], undefined],
+    [["ls-files", "--others", "--exclude-standard"], "A"],
+  ] as const) {
+    for (const line of lines(git(args))) {
+      const [statusOrPath, path, extra] = line.split("\t");
+      const status = fallbackStatus ?? statusOrPath;
+      const resolvedPath = fallbackStatus === undefined ? path : statusOrPath;
+      assert.equal(extra, undefined, "rename-collapsed paths are forbidden");
+      assert.ok(status === "A" || status === "M" || status === "D");
+      assert.ok(resolvedPath);
+      result.set(resolvedPath, status);
+    }
   }
   return result;
 }
@@ -1028,6 +1148,13 @@ type E3AcceptanceArchiveClosurePhase =
   | "target-archived"
   | "closure-archived";
 
+type E3WorkspaceLawCloseoutPhase =
+  | "planning"
+  | "activation"
+  | "owner-acceptance"
+  | "target-archived"
+  | "closure-archived";
+
 interface ExactTaskLocationInput {
   readonly activeFiles: readonly string[] | null;
   readonly archiveFiles: readonly string[] | null;
@@ -1089,6 +1216,69 @@ interface AcceptanceArchiveLifecycleProjection {
   readonly lawRkp3CreationAuthorized: unknown;
   readonly stage6Status: unknown;
   readonly stage6CurrentImplementationChild: unknown;
+  readonly stage6S62Started: unknown;
+  readonly stage6S63Started: unknown;
+  readonly stage6DefaultRuntime: unknown;
+  readonly stage6ArchiveAuthorized: unknown;
+  readonly stage6OfficialMeasurementAuthorized: unknown;
+  readonly stage6RuntimeSwitchAuthorized: unknown;
+  readonly stage6PushAuthorized: unknown;
+  readonly stage6Rkp3CreationAuthorized: unknown;
+}
+
+interface WorkspaceLawCloseoutLifecycleProjection {
+  readonly targetLocation: "active" | "archive";
+  readonly targetStatus: unknown;
+  readonly targetCompletedAt: unknown;
+  readonly targetImplementationCandidateReady: unknown;
+  readonly targetImplementationStage: unknown;
+  readonly targetImplementationReview: unknown;
+  readonly targetNextGate: unknown;
+  readonly targetAcceptanceAuthorized: unknown;
+  readonly targetArchiveAuthorized: unknown;
+  readonly targetAuditRecord: unknown;
+  readonly targetAuditRecordBytes: unknown;
+  readonly targetAuditRecordSha256: unknown;
+  readonly targetDefaultRuntime: unknown;
+  readonly targetS62Started: unknown;
+  readonly targetS63Started: unknown;
+  readonly targetIntegrationAuthorized: unknown;
+  readonly targetQualificationAuthorized: unknown;
+  readonly targetRuntimeSwitchAuthorized: unknown;
+  readonly targetPushAuthorized: unknown;
+  readonly targetRkp3CreationAuthorized: unknown;
+  readonly closureLocation: "active" | "archive";
+  readonly closureStatus: unknown;
+  readonly closureCompletedAt: unknown;
+  readonly closureTaskStartRun: unknown;
+  readonly closureProductionAuthorized: unknown;
+  readonly closureUserAuthorized: unknown;
+  readonly closureAcceptedPlanningAuthority: unknown;
+  readonly closureImplementationCandidateReady: unknown;
+  readonly closureImplementationReview: unknown;
+  readonly closureNextGate: unknown;
+  readonly closureTargetAcceptanceAuthorized: unknown;
+  readonly closureTargetArchiveAuthorized: unknown;
+  readonly closureAcceptanceAuthorized: unknown;
+  readonly closureArchiveAuthorized: unknown;
+  readonly closureQ3AuditRecord: unknown;
+  readonly closureDefaultRuntime: unknown;
+  readonly closureS62Started: unknown;
+  readonly closureS63Started: unknown;
+  readonly closureIntegrationAuthorized: unknown;
+  readonly closureQualificationAuthorized: unknown;
+  readonly closureRuntimeSwitchAuthorized: unknown;
+  readonly closurePushAuthorized: unknown;
+  readonly closureRkp3CreationAuthorized: unknown;
+  readonly closureE3StressRerun: unknown;
+  readonly stage6Status: unknown;
+  readonly stage6CurrentPlanningChild: unknown;
+  readonly stage6CurrentImplementationChild: unknown;
+  readonly stage6NextGate: unknown;
+  readonly stage6Q3AuditRecord: unknown;
+  readonly stage6Q3AuditOwner: unknown;
+  readonly stage6Q3AuditSha256: unknown;
+  readonly stage6S61RetainedComplete: unknown;
   readonly stage6S62Started: unknown;
   readonly stage6S63Started: unknown;
   readonly stage6DefaultRuntime: unknown;
@@ -1293,7 +1483,7 @@ function filesUnder(root: string): string[] {
   return result.sort();
 }
 
-function resolveExactTaskLocation(
+function resolveExactlyOneTaskLocation(
   activeRoot: string,
   archiveRoot: string,
   manifest: readonly string[],
@@ -1432,6 +1622,22 @@ function assertAcceptanceArchiveClosurePathSet(
   }
 }
 
+function jsonlReferenceExists(path: string): boolean {
+  if (existsSync(resolve(path))) {
+    return true;
+  }
+  if (
+    path !== STAGE_6_E3_LAW_TASK_ROOT &&
+    !path.startsWith(`${STAGE_6_E3_LAW_TASK_ROOT}/`)
+  ) {
+    return false;
+  }
+  const archivedPath =
+    `${STAGE_6_E3_LAW_TARGET_ARCHIVE_ROOT}` +
+    path.slice(STAGE_6_E3_LAW_TASK_ROOT.length);
+  return existsSync(resolve(archivedPath));
+}
+
 function assertJsonlReferencesExist(root: string): void {
   for (const name of ["implement.jsonl", "check.jsonl"] as const) {
     const seen = new Set<string>();
@@ -1441,7 +1647,7 @@ function assertJsonlReferencesExist(root: string): void {
       const path = row.file as string;
       assert.equal(seen.has(path), false, `${root}/${name} repeats ${path}`);
       seen.add(path);
-      assert.equal(existsSync(resolve(path)), true, `${root}/${name} references ${path}`);
+      assert.equal(jsonlReferenceExists(path), true, `${root}/${name} references ${path}`);
     }
   }
 }
@@ -1590,6 +1796,384 @@ function assertAcceptanceArchiveLifecycleProjection(
   assert.equal(projection.stage6RuntimeSwitchAuthorized, false);
   assert.equal(projection.stage6PushAuthorized, false);
   assert.equal(projection.stage6Rkp3CreationAuthorized, false);
+}
+
+function expectedWorkspaceLawCloseoutChanges(
+  phase: E3WorkspaceLawCloseoutPhase,
+): Map<string, "A" | "M" | "D"> {
+  const result = new Map<string, "A" | "M" | "D">();
+  const setAll = (
+    status: "A" | "M" | "D",
+    paths: readonly string[],
+  ): void => {
+    for (const path of paths) {
+      assert.equal(result.has(path), false, `${path} must have one declared owner`);
+      result.set(path, status);
+    }
+  };
+  const closureRoot =
+    phase === "closure-archived"
+      ? STAGE_6_E3_LAW_CLOSEOUT_ARCHIVE_ROOT
+      : STAGE_6_E3_LAW_CLOSEOUT_ROOT;
+  setAll(
+    "A",
+    STAGE_6_E3_LAW_CLOSEOUT_MANIFEST.map((path) => `${closureRoot}/${path}`),
+  );
+  if (phase === "planning") {
+    setAll("M", [`${STAGE_6_PRIVATE_SCALE_TASK_ROOT}/task.json`]);
+    return result;
+  }
+  setAll("M", [STAGE_6_E3_LAW_CLOSEOUT_TECHNICAL_PATH]);
+  setAll("M", STAGE_6_PARENT_LIFECYCLE_PATHS);
+  if (phase === "owner-acceptance") {
+    setAll("M", STAGE_6_E3_LAW_TARGET_CONTEXT_LIFECYCLE_PATHS);
+  }
+  if (phase === "target-archived" || phase === "closure-archived") {
+    setAll(
+      "D",
+      STAGE_6_E3_LAW_TARGET_MANIFEST.map(
+        (path) => `${STAGE_6_E3_LAW_TASK_ROOT}/${path}`,
+      ),
+    );
+    setAll(
+      "A",
+      STAGE_6_E3_LAW_TARGET_MANIFEST.map(
+        (path) => `${STAGE_6_E3_LAW_TARGET_ARCHIVE_ROOT}/${path}`,
+      ),
+    );
+  }
+  return result;
+}
+
+function assertWorkspaceLawCloseoutPathSet(
+  actual: ReadonlyMap<string, "A" | "M" | "D">,
+  phase: E3WorkspaceLawCloseoutPhase,
+): void {
+  const expected = expectedWorkspaceLawCloseoutChanges(phase);
+  const project = (value: ReadonlyMap<string, "A" | "M" | "D">): string[] =>
+    [...value].map(([path, status]) => `${status}\t${path}`).sort();
+  assert.deepEqual(project(actual), project(expected));
+  const counts = [...actual.values()].reduce(
+    (result, status) => ({ ...result, [status]: result[status] + 1 }),
+    { A: 0, M: 0, D: 0 },
+  );
+  const expectedCounts = {
+    planning: { A: 11, M: 1, D: 0 },
+    activation: { A: 11, M: 4, D: 0 },
+    "owner-acceptance": { A: 11, M: 9, D: 0 },
+    "target-archived": { A: 23, M: 4, D: 12 },
+    "closure-archived": { A: 23, M: 4, D: 12 },
+  } as const;
+  assert.deepEqual(counts, expectedCounts[phase]);
+}
+
+interface WorkspaceLawJsonlProjectionContract {
+  readonly sourceRows: number;
+  readonly sourceBytes: number;
+  readonly sourceSha256: string;
+  readonly successorRows: number;
+  readonly successorBytes: number;
+  readonly successorSha256: string;
+  readonly removedPaths: readonly string[];
+}
+
+function projectWorkspaceLawTargetJsonlSuccessor(
+  name: "implement.jsonl" | "check.jsonl",
+  contract: WorkspaceLawJsonlProjectionContract,
+): string {
+  const path = `${STAGE_6_E3_LAW_TASK_ROOT}/${name}`;
+  const source = gitTextAt(STAGE_6_E3_LAW_CLOSEOUT_BASE, path)
+    .replaceAll("\r\n", "\n")
+    .replaceAll("\r", "\n");
+  assert.equal(lines(source).length, contract.sourceRows);
+  assert.equal(Buffer.byteLength(source, "utf8"), contract.sourceBytes);
+  assert.equal(sha256(source), contract.sourceSha256);
+  const removed = new Set(contract.removedPaths);
+  assert.equal(removed.size, 3);
+  const successorRows = lines(source).filter((line) => {
+    const row = JSON.parse(line) as { readonly file?: unknown };
+    assert.equal(typeof row.file, "string");
+    return !removed.has(row.file as string);
+  });
+  assert.equal(lines(source).length - successorRows.length, 3);
+  const successor = `${successorRows.join("\n")}\n`;
+  assert.equal(successorRows.length, contract.successorRows);
+  assert.equal(Buffer.byteLength(successor, "utf8"), contract.successorBytes);
+  assert.equal(sha256(successor), contract.successorSha256);
+  const seen = new Set<string>();
+  for (const line of successorRows) {
+    const row = JSON.parse(line) as { readonly file?: unknown };
+    assert.equal(typeof row.file, "string");
+    const rowPath = row.file as string;
+    assert.equal(rowPath.startsWith(`${STAGE_6_E3_LAW_TASK_ROOT}/`), false);
+    assert.equal(seen.has(rowPath), false, `${name} repeats ${rowPath}`);
+    seen.add(rowPath);
+    assert.equal(existsSync(resolve(rowPath)), true, `${name} references ${rowPath}`);
+  }
+  return successor;
+}
+
+function canonicalizeWorkspaceLawCloseoutQ3AuditRecord(
+  record: unknown,
+  expectedCandidateCommit: string,
+  expectedTechnicalCommit: string,
+): string {
+  assert.ok(record !== null && typeof record === "object");
+  assert.equal(Array.isArray(record), false);
+  const value = record as Readonly<Record<string, unknown>>;
+  assert.deepEqual(Object.keys(value), STAGE_6_E3_LAW_CLOSEOUT_Q3_AUDIT_KEYS);
+  assert.equal(value.schemaVersion, 1);
+  assert.equal(typeof value.reviewTaskId, "string");
+  assert.equal((value.reviewTaskId as string).length > 0, true);
+  assert.equal(typeof value.reviewTurnId, "string");
+  assert.equal((value.reviewTurnId as string).length > 0, true);
+  assert.match(expectedCandidateCommit, /^[0-9a-f]{40}$/u);
+  assert.match(expectedTechnicalCommit, /^[0-9a-f]{40}$/u);
+  assert.equal(value.candidateCommit, expectedCandidateCommit);
+  assert.equal(value.technicalCommit, expectedTechnicalCommit);
+  assert.equal(
+    value.verdict,
+    "PASS_READY_FOR_OWNER_CLOSEOUT_AND_NATIVE_CLOSURE_ARCHIVE",
+  );
+  assert.equal(value.P0, 0);
+  assert.equal(value.P1, 0);
+  assert.equal(value.P2, 0);
+  return JSON.stringify({
+    schemaVersion: value.schemaVersion,
+    reviewTaskId: value.reviewTaskId,
+    reviewTurnId: value.reviewTurnId,
+    candidateCommit: value.candidateCommit,
+    technicalCommit: value.technicalCommit,
+    verdict: value.verdict,
+    P0: value.P0,
+    P1: value.P1,
+    P2: value.P2,
+  });
+}
+
+function assertSingleWorkspaceLawCloseoutQ3AuditRecordOwner(
+  records: readonly unknown[],
+  expectedCandidateCommit: string,
+  expectedTechnicalCommit: string,
+): string {
+  const owners = records.filter((record) => record !== undefined);
+  assert.equal(owners.length, 1, "Q3 audit record must have one structured owner");
+  return canonicalizeWorkspaceLawCloseoutQ3AuditRecord(
+    owners[0],
+    expectedCandidateCommit,
+    expectedTechnicalCommit,
+  );
+}
+
+function assertWorkspaceLawArchiveClockContract(input: {
+  readonly month: string;
+  readonly date: string;
+  readonly time: string;
+}): void {
+  assert.equal(input.month, "2026-09");
+  assert.equal(input.date, "2026-09-01");
+  assert.match(input.time, /^\d{2}:\d{2}:\d{2}$/u);
+  assert.ok(input.time < "23:50:00", "native archive preflight must retain rollover margin");
+}
+
+function assertWorkspaceLawCloseoutLifecycleProjection(
+  projection: WorkspaceLawCloseoutLifecycleProjection,
+  phase: E3WorkspaceLawCloseoutPhase,
+): void {
+  const ownerAccepted =
+    phase === "owner-acceptance" ||
+    phase === "target-archived" ||
+    phase === "closure-archived";
+  const targetArchived = phase === "target-archived" || phase === "closure-archived";
+  const closureArchived = phase === "closure-archived";
+  assert.equal(projection.targetLocation, targetArchived ? "archive" : "active");
+  assert.equal(projection.targetStatus, targetArchived ? "completed" : "in_progress");
+  assert.equal(projection.targetCompletedAt, targetArchived ? "2026-09-01" : null);
+  assert.equal(projection.targetImplementationCandidateReady, true);
+  assert.equal(
+    projection.targetImplementationStage,
+    targetArchived
+      ? "accepted_archived_completed_historical_no_live_gate"
+      : ownerAccepted
+        ? "owner_accepted_archive_authorized_clock_preflight_pending"
+        : "P4_closure_archived_completed_owner_decision_for_e3_law_parent_pending",
+  );
+  assert.equal(projection.targetImplementationReview, STAGE_6_E3_AUDIT_BOUND_REVIEW_PASS);
+  assert.equal(
+    projection.targetNextGate,
+    targetArchived
+      ? "completed_historical_no_live_gate"
+      : ownerAccepted
+        ? "native_e3_workspace_law_archive_clock_preflight_required"
+        : "explicit_owner_decision_for_e3_law_parent_acceptance_archive",
+  );
+  assert.equal(projection.targetAcceptanceAuthorized, ownerAccepted);
+  assert.equal(projection.targetArchiveAuthorized, ownerAccepted);
+  canonicalizeE3AuditRecord(projection.targetAuditRecord);
+  assert.equal(projection.targetAuditRecordBytes, STAGE_6_E3_AUDIT_RECORD_BYTES);
+  assert.equal(projection.targetAuditRecordSha256, STAGE_6_E3_AUDIT_RECORD_SHA256);
+  assert.equal(projection.targetDefaultRuntime, "typescript");
+  assert.equal(projection.targetS62Started, false);
+  assert.equal(projection.targetS63Started, false);
+  assert.equal(projection.targetIntegrationAuthorized, false);
+  assert.equal(projection.targetQualificationAuthorized, false);
+  assert.equal(projection.targetRuntimeSwitchAuthorized, false);
+  assert.equal(projection.targetPushAuthorized, false);
+  assert.equal(projection.targetRkp3CreationAuthorized, false);
+
+  assert.equal(projection.closureLocation, closureArchived ? "archive" : "active");
+  assert.equal(
+    projection.closureStatus,
+    phase === "planning" ? "planning" : closureArchived ? "completed" : "in_progress",
+  );
+  assert.equal(projection.closureCompletedAt, closureArchived ? "2026-09-01" : null);
+  assert.equal(projection.closureTaskStartRun, phase !== "planning");
+  assert.equal(projection.closureProductionAuthorized, false);
+  assert.equal(projection.closureUserAuthorized, phase !== "planning");
+  assert.equal(
+    projection.closureAcceptedPlanningAuthority,
+    phase === "planning" ? undefined : STAGE_6_E3_LAW_CLOSEOUT_PLANNING_AUTHORITY,
+  );
+  assert.equal(
+    projection.closureImplementationCandidateReady,
+    phase === "planning" || targetArchived,
+  );
+  assert.equal(
+    projection.closureImplementationReview,
+    phase === "planning"
+      ? "not_started"
+      : phase === "activation"
+        ? "pending_not_started"
+        : phase === "owner-acceptance"
+          ? "pending_Q3_target_archive_candidate_not_frozen"
+          : closureArchived
+            ? "passed_dedicated_independent_E3_workspace_law_acceptance_archive_closure_implementation_review"
+            : "pending_dedicated_independent_E3_workspace_law_acceptance_archive_closure_implementation_review",
+  );
+  assert.equal(
+    projection.closureNextGate,
+    phase === "planning"
+      ? "separate_user_implementation_authorization_for_bounded_Q0_through_Q3"
+      : phase === "activation"
+        ? "Q1T_archive_aware_workspace_law_technical_checkpoint"
+        : phase === "owner-acceptance"
+          ? "native_e3_workspace_law_archive_clock_preflight_required"
+          : closureArchived
+            ? "completed_historical_no_live_gate"
+            : "dedicated_independent_E3_workspace_law_acceptance_archive_closure_implementation_review_pending",
+  );
+  assert.equal(projection.closureTargetAcceptanceAuthorized, ownerAccepted);
+  assert.equal(projection.closureTargetArchiveAuthorized, ownerAccepted);
+  assert.equal(projection.closureAcceptanceAuthorized, closureArchived);
+  assert.equal(projection.closureArchiveAuthorized, closureArchived);
+  assert.equal(projection.closureDefaultRuntime, "typescript");
+  assert.equal(projection.closureS62Started, false);
+  assert.equal(projection.closureS63Started, false);
+  assert.equal(projection.closureIntegrationAuthorized, false);
+  assert.equal(projection.closureQualificationAuthorized, false);
+  assert.equal(projection.closureRuntimeSwitchAuthorized, false);
+  assert.equal(projection.closurePushAuthorized, false);
+  assert.equal(projection.closureRkp3CreationAuthorized, false);
+  assert.equal(projection.closureE3StressRerun, false);
+
+  assert.equal(projection.stage6Status, "in_progress");
+  assert.equal(
+    projection.stage6CurrentPlanningChild,
+    phase === "planning"
+      ? "08-31-rkp-2-e3-workspace-law-acceptance-archive-closure"
+      : null,
+  );
+  assert.equal(
+    projection.stage6CurrentImplementationChild,
+    phase === "planning"
+      ? "08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair"
+      : closureArchived
+        ? null
+        : "08-31-rkp-2-e3-workspace-law-acceptance-archive-closure",
+  );
+  assert.equal(
+    projection.stage6NextGate,
+    phase === "planning"
+      ? "separate_user_implementation_authorization_for_e3_workspace_law_acceptance_archive_closure"
+      : phase === "activation"
+        ? "Q1T_archive_aware_workspace_law_technical_checkpoint"
+        : phase === "owner-acceptance"
+          ? "native_e3_workspace_law_archive_clock_preflight_required"
+          : closureArchived
+            ? "explicit_owner_decision_for_stage6_parent_acceptance_archive"
+            : "dedicated_independent_E3_workspace_law_acceptance_archive_closure_implementation_review_pending",
+  );
+  assert.equal(projection.stage6Q3AuditRecord, undefined);
+  assert.equal(
+    projection.stage6Q3AuditOwner,
+    phase === "target-archived"
+      ? `${STAGE_6_E3_LAW_CLOSEOUT_ROOT}/task.json`
+      : closureArchived
+        ? `${STAGE_6_E3_LAW_CLOSEOUT_ARCHIVE_ROOT}/task.json`
+        : undefined,
+  );
+  if (phase === "target-archived") {
+    assert.equal(projection.stage6Q3AuditSha256, "pending");
+    assert.equal(projection.closureQ3AuditRecord, undefined);
+  } else if (!closureArchived) {
+    assert.equal(projection.stage6Q3AuditSha256, undefined);
+    assert.equal(projection.closureQ3AuditRecord, undefined);
+  } else {
+    assert.ok(
+      projection.closureQ3AuditRecord !== null &&
+        typeof projection.closureQ3AuditRecord === "object",
+    );
+    const record = projection.closureQ3AuditRecord as Readonly<
+      Record<string, unknown>
+    >;
+    assert.equal(typeof record.candidateCommit, "string");
+    assert.equal(typeof record.technicalCommit, "string");
+    const canonical = assertSingleWorkspaceLawCloseoutQ3AuditRecordOwner(
+      [projection.closureQ3AuditRecord, projection.stage6Q3AuditRecord],
+      record.candidateCommit as string,
+      record.technicalCommit as string,
+    );
+    assert.equal(projection.stage6Q3AuditSha256, sha256(canonical));
+  }
+  assert.equal(projection.stage6S61RetainedComplete, true);
+  assert.equal(projection.stage6S62Started, false);
+  assert.equal(projection.stage6S63Started, false);
+  assert.equal(projection.stage6DefaultRuntime, "typescript");
+  assert.equal(projection.stage6ArchiveAuthorized, false);
+  assert.equal(projection.stage6OfficialMeasurementAuthorized, false);
+  assert.equal(projection.stage6RuntimeSwitchAuthorized, false);
+  assert.equal(projection.stage6PushAuthorized, false);
+  assert.equal(projection.stage6Rkp3CreationAuthorized, false);
+}
+
+function assertQ4PrearchiveStatusEntries(
+  entries: readonly string[],
+  expectedPaths: readonly string[] = STAGE_6_E3_LAW_CLOSEOUT_Q4_STAGED_PATHS,
+): void {
+  assert.equal(entries.length, 6);
+  const actualPaths = entries.map((entry) => {
+    assert.equal(entry.startsWith("??"), false, "Q4 must reject untracked paths");
+    assert.equal(entry.slice(0, 2), "M ", "Q4 requires staged M with blank worktree");
+    assert.ok(entry.length >= 4);
+    return entry.slice(3);
+  });
+  assert.deepEqual([...actualPaths].sort(), [...expectedPaths].sort());
+}
+
+function assertQ4ArchiveCommitMembership(
+  parents: readonly string[],
+  expectedQ3Head: string,
+  rows: readonly string[],
+): void {
+  assert.deepEqual(parents, [expectedQ3Head]);
+  const expectedRows = [
+    ...STAGE_6_E3_LAW_CLOSEOUT_MANIFEST.flatMap((artifact) => [
+      `D\t${STAGE_6_E3_LAW_CLOSEOUT_ROOT}/${artifact}`,
+      `A\t${STAGE_6_E3_LAW_CLOSEOUT_ARCHIVE_ROOT}/${artifact}`,
+    ]),
+    ...STAGE_6_PARENT_LIFECYCLE_PATHS.map((path) => `M\t${path}`),
+  ].sort();
+  assert.deepEqual([...rows].sort(), expectedRows);
 }
 
 function extractE3ProtocolLine(source: string): string {
@@ -2760,12 +3344,12 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     ),
   );
 
-  const targetLocation = resolveExactTaskLocation(
+  const targetLocation = resolveExactlyOneTaskLocation(
     STAGE_6_E3_ACCEPTANCE_TASK_ROOT,
     STAGE_6_E3_ACCEPTANCE_ARCHIVE_ROOT,
     STAGE_6_E3_ACCEPTANCE_TASK_MANIFEST,
   );
-  const closureLocation = resolveExactTaskLocation(
+  const closureLocation = resolveExactlyOneTaskLocation(
     STAGE_6_E3_ACCEPTANCE_ARCHIVE_CLOSURE_ROOT,
     STAGE_6_E3_ACCEPTANCE_ARCHIVE_CLOSURE_ARCHIVE_ROOT,
     STAGE_6_E3_ACCEPTANCE_ARCHIVE_CLOSURE_MANIFEST,
@@ -2785,13 +3369,19 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     readonly meta?: Readonly<Record<string, unknown>>;
   };
   const liveLawTask = JSON.parse(
-    readText(`${STAGE_6_E3_LAW_TASK_ROOT}/task.json`),
+    gitTextAt(
+      STAGE_6_E3_LAW_CLOSEOUT_BASE,
+      `${STAGE_6_E3_LAW_TASK_ROOT}/task.json`,
+    ),
   ) as {
     readonly status?: unknown;
     readonly meta?: Readonly<Record<string, unknown>>;
   };
   const liveStage6Task = JSON.parse(
-    readText(`${STAGE_6_PRIVATE_SCALE_TASK_ROOT}/task.json`),
+    gitTextAt(
+      STAGE_6_E3_LAW_CLOSEOUT_BASE,
+      `${STAGE_6_PRIVATE_SCALE_TASK_ROOT}/task.json`,
+    ),
   ) as {
     readonly status?: unknown;
     readonly meta?: Readonly<Record<string, unknown>>;
@@ -2910,14 +3500,14 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
   );
 
   assert.deepEqual(
-    resolveExactTaskLocation("active", "archive", ["task.json"], {
+    resolveExactlyOneTaskLocation("active", "archive", ["task.json"], {
       activeFiles: ["task.json"],
       archiveFiles: null,
     }),
     { kind: "active", root: "active" },
   );
   assert.deepEqual(
-    resolveExactTaskLocation("active", "archive", ["task.json"], {
+    resolveExactlyOneTaskLocation("active", "archive", ["task.json"], {
       activeFiles: null,
       archiveFiles: ["task.json"],
     }),
@@ -2930,7 +3520,7 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     { activeFiles: ["task.json", "twelfth.md"], archiveFiles: null },
   ] as const) {
     assert.throws(() =>
-      resolveExactTaskLocation("active", "archive", ["task.json"], invalidLocation),
+      resolveExactlyOneTaskLocation("active", "archive", ["task.json"], invalidLocation),
     );
   }
 
@@ -3111,6 +3701,675 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
         archiveClosurePhase,
       ),
     );
+  }
+
+  const workspaceLawTargetLocation = resolveExactlyOneTaskLocation(
+    STAGE_6_E3_LAW_TASK_ROOT,
+    STAGE_6_E3_LAW_TARGET_ARCHIVE_ROOT,
+    STAGE_6_E3_LAW_TARGET_MANIFEST,
+  );
+  const workspaceLawCloseoutLocation = resolveExactlyOneTaskLocation(
+    STAGE_6_E3_LAW_CLOSEOUT_ROOT,
+    STAGE_6_E3_LAW_CLOSEOUT_ARCHIVE_ROOT,
+    STAGE_6_E3_LAW_CLOSEOUT_MANIFEST,
+  );
+  const liveWorkspaceLawTarget = JSON.parse(
+    readText(`${workspaceLawTargetLocation.root}/task.json`),
+  ) as {
+    readonly status?: unknown;
+    readonly completedAt?: unknown;
+    readonly meta?: Readonly<Record<string, unknown>>;
+  };
+  const liveWorkspaceLawCloseout = JSON.parse(
+    readText(`${workspaceLawCloseoutLocation.root}/task.json`),
+  ) as {
+    readonly status?: unknown;
+    readonly completedAt?: unknown;
+    readonly meta?: Readonly<Record<string, unknown>>;
+  };
+  const liveWorkspaceLawStage6 = JSON.parse(
+    readText(`${STAGE_6_PRIVATE_SCALE_TASK_ROOT}/task.json`),
+  ) as {
+    readonly status?: unknown;
+    readonly meta?: Readonly<Record<string, unknown>>;
+  };
+  const workspaceLawTargetMeta = liveWorkspaceLawTarget.meta ?? {};
+  const workspaceLawCloseoutMeta = liveWorkspaceLawCloseout.meta ?? {};
+  const workspaceLawStage6Meta = liveWorkspaceLawStage6.meta ?? {};
+  const workspaceLawCloseoutPhase: E3WorkspaceLawCloseoutPhase =
+    workspaceLawTargetLocation.kind === "active" &&
+    workspaceLawCloseoutLocation.kind === "active"
+      ? liveWorkspaceLawCloseout.status === "planning"
+        ? "planning"
+        : workspaceLawTargetMeta.acceptance_authorized === true
+          ? "owner-acceptance"
+          : "activation"
+      : workspaceLawTargetLocation.kind === "archive" &&
+          workspaceLawCloseoutLocation.kind === "active"
+        ? "target-archived"
+        : workspaceLawTargetLocation.kind === "archive" &&
+            workspaceLawCloseoutLocation.kind === "archive"
+          ? "closure-archived"
+          : assert.fail("Workspace Law closeout archive cannot precede target archive");
+
+  const workspaceLawChanges = currentWorkspaceLawCloseoutChanges();
+  assertWorkspaceLawCloseoutPathSet(
+    workspaceLawChanges,
+    workspaceLawCloseoutPhase,
+  );
+  for (const phase of [
+    "planning",
+    "activation",
+    "owner-acceptance",
+    "target-archived",
+    "closure-archived",
+  ] as const) {
+    assertWorkspaceLawCloseoutPathSet(
+      expectedWorkspaceLawCloseoutChanges(phase),
+      phase,
+    );
+  }
+  const workspaceLawPathWithoutTechnical = new Map(workspaceLawChanges);
+  workspaceLawPathWithoutTechnical.delete(STAGE_6_E3_LAW_CLOSEOUT_TECHNICAL_PATH);
+  assert.throws(() =>
+    assertWorkspaceLawCloseoutPathSet(
+      workspaceLawPathWithoutTechnical,
+      workspaceLawCloseoutPhase,
+    ),
+  );
+  const workspaceLawPathWithExtra = new Map(workspaceLawChanges);
+  workspaceLawPathWithExtra.set(`${STAGE_6_E3_LAW_CLOSEOUT_ROOT}/extra.md`, "A");
+  assert.throws(() =>
+    assertWorkspaceLawCloseoutPathSet(
+      workspaceLawPathWithExtra,
+      workspaceLawCloseoutPhase,
+    ),
+  );
+  const workspaceLawPathWithWrongStatus = new Map(workspaceLawChanges);
+  workspaceLawPathWithWrongStatus.set(
+    STAGE_6_E3_LAW_CLOSEOUT_TECHNICAL_PATH,
+    "A",
+  );
+  assert.throws(() =>
+    assertWorkspaceLawCloseoutPathSet(
+      workspaceLawPathWithWrongStatus,
+      workspaceLawCloseoutPhase,
+    ),
+  );
+
+  assert.equal(STAGE_6_E3_LAW_TARGET_MANIFEST.length, 12);
+  assert.equal(STAGE_6_E3_LAW_CLOSEOUT_MANIFEST.length, 11);
+  assert.deepEqual(
+    resolveExactlyOneTaskLocation("active", "archive", STAGE_6_E3_LAW_TARGET_MANIFEST, {
+      activeFiles: STAGE_6_E3_LAW_TARGET_MANIFEST,
+      archiveFiles: null,
+    }),
+    { kind: "active", root: "active" },
+  );
+  assert.deepEqual(
+    resolveExactlyOneTaskLocation("active", "archive", STAGE_6_E3_LAW_CLOSEOUT_MANIFEST, {
+      activeFiles: null,
+      archiveFiles: STAGE_6_E3_LAW_CLOSEOUT_MANIFEST,
+    }),
+    { kind: "archive", root: "archive" },
+  );
+  for (const input of [
+    {
+      activeFiles: STAGE_6_E3_LAW_TARGET_MANIFEST,
+      archiveFiles: STAGE_6_E3_LAW_TARGET_MANIFEST,
+    },
+    { activeFiles: null, archiveFiles: null },
+    {
+      activeFiles: STAGE_6_E3_LAW_TARGET_MANIFEST.slice(1),
+      archiveFiles: null,
+    },
+    {
+      activeFiles: [...STAGE_6_E3_LAW_TARGET_MANIFEST, "extra.md"],
+      archiveFiles: null,
+    },
+    {
+      activeFiles: [
+        ...STAGE_6_E3_LAW_TARGET_MANIFEST.slice(0, -1),
+        "substituted.json",
+      ],
+      archiveFiles: null,
+    },
+  ] as const) {
+    assert.throws(() =>
+      resolveExactlyOneTaskLocation(
+        "active",
+        "archive",
+        STAGE_6_E3_LAW_TARGET_MANIFEST,
+        input,
+      ),
+    );
+  }
+  for (const input of [
+    {
+      activeFiles: STAGE_6_E3_LAW_CLOSEOUT_MANIFEST.slice(1),
+      archiveFiles: null,
+    },
+    {
+      activeFiles: [...STAGE_6_E3_LAW_CLOSEOUT_MANIFEST, "extra.md"],
+      archiveFiles: null,
+    },
+    {
+      activeFiles: [
+        ...STAGE_6_E3_LAW_CLOSEOUT_MANIFEST.slice(0, -1),
+        "substituted.json",
+      ],
+      archiveFiles: null,
+    },
+  ] as const) {
+    assert.throws(() =>
+      resolveExactlyOneTaskLocation(
+        "active",
+        "archive",
+        STAGE_6_E3_LAW_CLOSEOUT_MANIFEST,
+        input,
+      ),
+    );
+  }
+
+  assertWorkspaceLawArchiveClockContract({
+    month: "2026-09",
+    date: "2026-09-01",
+    time: "23:49:59",
+  });
+  for (const clock of [
+    { month: "2026-08", date: "2026-09-01", time: "12:00:00" },
+    { month: "2026-09", date: "2026-08-31", time: "12:00:00" },
+    { month: "2026-09", date: "2026-09-01", time: "23:50:00" },
+    { month: "2026-09", date: "2026-09-01", time: "23:59:59" },
+  ] as const) {
+    assert.throws(() => assertWorkspaceLawArchiveClockContract(clock));
+  }
+  assert.match(STAGE_6_E3_ACCEPTANCE_ARCHIVE_ROOT, /archive\/2026-08\//u);
+  assert.match(
+    STAGE_6_E3_ACCEPTANCE_ARCHIVE_CLOSURE_ARCHIVE_ROOT,
+    /archive\/2026-08\//u,
+  );
+
+  const projectedTargetImplement = projectWorkspaceLawTargetJsonlSuccessor(
+    "implement.jsonl",
+    STAGE_6_E3_LAW_TARGET_SUCCESSOR_IMPLEMENT,
+  );
+  const projectedTargetCheck = projectWorkspaceLawTargetJsonlSuccessor(
+    "check.jsonl",
+    STAGE_6_E3_LAW_TARGET_SUCCESSOR_CHECK,
+  );
+  if (
+    workspaceLawCloseoutPhase === "planning" ||
+    workspaceLawCloseoutPhase === "activation"
+  ) {
+    assert.equal(
+      sha256(lfNormalizedText(`${workspaceLawTargetLocation.root}/implement.jsonl`)),
+      STAGE_6_E3_LAW_TARGET_SUCCESSOR_IMPLEMENT.sourceSha256,
+    );
+    assert.equal(
+      sha256(lfNormalizedText(`${workspaceLawTargetLocation.root}/check.jsonl`)),
+      STAGE_6_E3_LAW_TARGET_SUCCESSOR_CHECK.sourceSha256,
+    );
+  } else {
+    assert.equal(
+      lfNormalizedText(`${workspaceLawTargetLocation.root}/implement.jsonl`),
+      projectedTargetImplement,
+    );
+    assert.equal(
+      lfNormalizedText(`${workspaceLawTargetLocation.root}/check.jsonl`),
+      projectedTargetCheck,
+    );
+    assertJsonlReferencesExist(workspaceLawTargetLocation.root);
+  }
+  assertJsonlReferencesExist(workspaceLawCloseoutLocation.root);
+
+  canonicalizeE3AuditRecord(
+    workspaceLawTargetMeta.external_independent_implementation_audit_result,
+  );
+  assert.equal(
+    workspaceLawTargetMeta.external_independent_implementation_audit_canonical_bytes,
+    STAGE_6_E3_AUDIT_RECORD_BYTES,
+  );
+  assert.equal(
+    workspaceLawTargetMeta.external_independent_implementation_audit_sha256,
+    STAGE_6_E3_AUDIT_RECORD_SHA256,
+  );
+  assertSingleE3AuditRecordOwner([
+    workspaceLawTargetMeta.external_independent_implementation_audit_result,
+    workspaceLawCloseoutMeta.external_independent_implementation_audit_result,
+    workspaceLawStage6Meta.external_independent_implementation_audit_result,
+  ]);
+  if (
+    workspaceLawCloseoutPhase !== "planning" &&
+    workspaceLawCloseoutPhase !== "activation"
+  ) {
+    const historicalTarget = JSON.parse(
+      gitTextAt(
+        STAGE_6_E3_LAW_CLOSEOUT_BASE,
+        `${STAGE_6_E3_LAW_TASK_ROOT}/task.json`,
+      ),
+    ) as {
+      readonly meta?: {
+        readonly immutable_planning_authority?: Readonly<Record<string, unknown>>;
+      };
+    };
+    assert.deepEqual(workspaceLawTargetMeta.immutable_planning_authority, {
+      ...(historicalTarget.meta?.immutable_planning_authority ?? {}),
+      "implement.jsonl": STAGE_6_E3_LAW_TARGET_SUCCESSOR_IMPLEMENT.successorSha256,
+      "check.jsonl": STAGE_6_E3_LAW_TARGET_SUCCESSOR_CHECK.successorSha256,
+    });
+    const technicalCommit = workspaceLawCloseoutMeta.workspace_law_technical_commit;
+    assert.equal(typeof technicalCommit, "string");
+    assert.match(technicalCommit as string, /^[0-9a-f]{40}$/u);
+    assertExactPathSet(
+      new Set(
+        lines(
+          git([
+            "diff-tree",
+            "--no-commit-id",
+            "--name-only",
+            "-r",
+            technicalCommit as string,
+          ]),
+        ),
+      ),
+      [STAGE_6_E3_LAW_CLOSEOUT_TECHNICAL_PATH],
+      "Workspace Law closeout technical commit",
+    );
+    assert.deepEqual(
+      workspaceLawTargetMeta.post_implementation_context_archive_stability_repair,
+      {
+        schemaVersion: 1,
+        authorityTask: "08-31-rkp-2-e3-workspace-law-acceptance-archive-closure",
+        sourceHead: technicalCommit,
+        implementJsonl: {
+          sourceRows: 12,
+          sourceBytes: 2129,
+          sourceSha256:
+            STAGE_6_E3_LAW_TARGET_SUCCESSOR_IMPLEMENT.sourceSha256,
+          successorRows: 9,
+          successorBytes: 1492,
+          successorSha256:
+            STAGE_6_E3_LAW_TARGET_SUCCESSOR_IMPLEMENT.successorSha256,
+        },
+        checkJsonl: {
+          sourceRows: 9,
+          sourceBytes: 1795,
+          sourceSha256: STAGE_6_E3_LAW_TARGET_SUCCESSOR_CHECK.sourceSha256,
+          successorRows: 6,
+          successorBytes: 1117,
+          successorSha256: STAGE_6_E3_LAW_TARGET_SUCCESSOR_CHECK.successorSha256,
+        },
+        removedActiveSelfReferenceCount: 6,
+        otherRowMutation: false,
+        existingAuditRecordMutation: false,
+      },
+    );
+  }
+
+  const workspaceLawLifecycle: WorkspaceLawCloseoutLifecycleProjection = {
+    targetLocation: workspaceLawTargetLocation.kind,
+    targetStatus: liveWorkspaceLawTarget.status,
+    targetCompletedAt: liveWorkspaceLawTarget.completedAt,
+    targetImplementationCandidateReady:
+      workspaceLawTargetMeta.implementation_candidate_ready,
+    targetImplementationStage: workspaceLawTargetMeta.implementation_stage,
+    targetImplementationReview: workspaceLawTargetMeta.implementation_review,
+    targetNextGate: workspaceLawTargetMeta.next_gate,
+    targetAcceptanceAuthorized:
+      workspaceLawTargetMeta.acceptance_authorized ?? false,
+    targetArchiveAuthorized: workspaceLawTargetMeta.archive_authorized ?? false,
+    targetAuditRecord:
+      workspaceLawTargetMeta.external_independent_implementation_audit_result,
+    targetAuditRecordBytes:
+      workspaceLawTargetMeta.external_independent_implementation_audit_canonical_bytes,
+    targetAuditRecordSha256:
+      workspaceLawTargetMeta.external_independent_implementation_audit_sha256,
+    targetDefaultRuntime: workspaceLawTargetMeta.default_runtime,
+    targetS62Started: workspaceLawTargetMeta.rkp2_stage6_s6_2_started,
+    targetS63Started: workspaceLawTargetMeta.rkp2_stage6_s6_3_started,
+    targetIntegrationAuthorized: workspaceLawTargetMeta.integration_authorized,
+    targetQualificationAuthorized: workspaceLawTargetMeta.qualification_authorized,
+    targetRuntimeSwitchAuthorized:
+      workspaceLawTargetMeta.default_runtime_switch_authorized,
+    targetPushAuthorized: workspaceLawTargetMeta.push_authorized,
+    targetRkp3CreationAuthorized: workspaceLawTargetMeta.rkp3_creation_authorized,
+    closureLocation: workspaceLawCloseoutLocation.kind,
+    closureStatus: liveWorkspaceLawCloseout.status,
+    closureCompletedAt: liveWorkspaceLawCloseout.completedAt,
+    closureTaskStartRun: workspaceLawCloseoutMeta.task_start_run,
+    closureProductionAuthorized:
+      workspaceLawCloseoutMeta.production_implementation_authorized,
+    closureUserAuthorized:
+      workspaceLawCloseoutMeta.user_implementation_authorization,
+    closureAcceptedPlanningAuthority:
+      workspaceLawCloseoutMeta.accepted_planning_authority_head,
+    closureImplementationCandidateReady:
+      workspaceLawCloseoutMeta.implementation_candidate_ready,
+    closureImplementationReview: workspaceLawCloseoutMeta.implementation_review,
+    closureNextGate: workspaceLawCloseoutMeta.next_gate,
+    closureTargetAcceptanceAuthorized:
+      workspaceLawCloseoutMeta.target_acceptance_authorized ?? false,
+    closureTargetArchiveAuthorized:
+      workspaceLawCloseoutMeta.target_archive_authorized ?? false,
+    closureAcceptanceAuthorized:
+      workspaceLawCloseoutMeta.closure_acceptance_authorized ?? false,
+    closureArchiveAuthorized:
+      workspaceLawCloseoutMeta.closure_archive_authorized ?? false,
+    closureQ3AuditRecord:
+      workspaceLawCloseoutMeta.q3_independent_implementation_audit_result,
+    closureDefaultRuntime: workspaceLawCloseoutMeta.default_runtime,
+    closureS62Started: workspaceLawCloseoutMeta.rkp2_stage6_s6_2_started,
+    closureS63Started: workspaceLawCloseoutMeta.rkp2_stage6_s6_3_started,
+    closureIntegrationAuthorized: workspaceLawCloseoutMeta.integration_authorized,
+    closureQualificationAuthorized:
+      workspaceLawCloseoutMeta.qualification_authorized,
+    closureRuntimeSwitchAuthorized:
+      workspaceLawCloseoutMeta.default_runtime_switch_authorized,
+    closurePushAuthorized: workspaceLawCloseoutMeta.push_authorized,
+    closureRkp3CreationAuthorized:
+      workspaceLawCloseoutMeta.rkp3_creation_authorized,
+    closureE3StressRerun: workspaceLawCloseoutMeta.e3_stress_rerun,
+    stage6Status: liveWorkspaceLawStage6.status,
+    stage6CurrentPlanningChild: workspaceLawStage6Meta.current_planning_child,
+    stage6CurrentImplementationChild:
+      workspaceLawStage6Meta.current_implementation_child,
+    stage6NextGate: workspaceLawStage6Meta.next_gate,
+    stage6Q3AuditRecord:
+      workspaceLawStage6Meta.e3_workspace_law_acceptance_archive_closure_q3_audit_record,
+    stage6Q3AuditOwner:
+      workspaceLawStage6Meta.e3_workspace_law_acceptance_archive_closure_q3_audit_record_owner,
+    stage6Q3AuditSha256:
+      workspaceLawStage6Meta.e3_workspace_law_acceptance_archive_closure_q3_audit_record_sha256,
+    stage6S61RetainedComplete:
+      workspaceLawStage6Meta.rkp2_stage_6_s6_1_retained_complete,
+    stage6S62Started: workspaceLawStage6Meta.rkp2_stage_6_s6_2_started,
+    stage6S63Started: workspaceLawStage6Meta.rkp2_stage_6_s6_3_started,
+    stage6DefaultRuntime: workspaceLawStage6Meta.default_runtime,
+    stage6ArchiveAuthorized: workspaceLawStage6Meta.archive_authorized,
+    stage6OfficialMeasurementAuthorized:
+      workspaceLawStage6Meta.official_measurement_authorized,
+    stage6RuntimeSwitchAuthorized:
+      workspaceLawStage6Meta.default_runtime_switch_authorized,
+    stage6PushAuthorized: workspaceLawStage6Meta.push_authorized,
+    stage6Rkp3CreationAuthorized: workspaceLawStage6Meta.rkp3_creation_authorized,
+  };
+  assertWorkspaceLawCloseoutLifecycleProjection(
+    workspaceLawLifecycle,
+    workspaceLawCloseoutPhase,
+  );
+
+  const syntheticTechnicalCommit = "1".repeat(40);
+  const syntheticQ3Head = "2".repeat(40);
+  const syntheticQ3AuditRecord = {
+    schemaVersion: 1,
+    reviewTaskId: "synthetic-review-task",
+    reviewTurnId: "synthetic-review-turn",
+    candidateCommit: syntheticQ3Head,
+    technicalCommit: syntheticTechnicalCommit,
+    verdict: "PASS_READY_FOR_OWNER_CLOSEOUT_AND_NATIVE_CLOSURE_ARCHIVE",
+    P0: 0,
+    P1: 0,
+    P2: 0,
+  } as const;
+  const syntheticQ3Canonical = canonicalizeWorkspaceLawCloseoutQ3AuditRecord(
+    syntheticQ3AuditRecord,
+    syntheticQ3Head,
+    syntheticTechnicalCommit,
+  );
+  const syntheticActivationLifecycle: WorkspaceLawCloseoutLifecycleProjection = {
+    ...workspaceLawLifecycle,
+    targetLocation: "active",
+    targetStatus: "in_progress",
+    targetCompletedAt: null,
+    targetImplementationCandidateReady: true,
+    targetImplementationStage:
+      "P4_closure_archived_completed_owner_decision_for_e3_law_parent_pending",
+    targetNextGate:
+      "explicit_owner_decision_for_e3_law_parent_acceptance_archive",
+    targetAcceptanceAuthorized: false,
+    targetArchiveAuthorized: false,
+    closureLocation: "active",
+    closureStatus: "in_progress",
+    closureCompletedAt: null,
+    closureTaskStartRun: true,
+    closureUserAuthorized: true,
+    closureAcceptedPlanningAuthority:
+      STAGE_6_E3_LAW_CLOSEOUT_PLANNING_AUTHORITY,
+    closureImplementationCandidateReady: false,
+    closureImplementationReview: "pending_not_started",
+    closureNextGate: "Q1T_archive_aware_workspace_law_technical_checkpoint",
+    closureTargetAcceptanceAuthorized: false,
+    closureTargetArchiveAuthorized: false,
+    closureAcceptanceAuthorized: false,
+    closureArchiveAuthorized: false,
+    closureQ3AuditRecord: undefined,
+    stage6CurrentPlanningChild: null,
+    stage6CurrentImplementationChild:
+      "08-31-rkp-2-e3-workspace-law-acceptance-archive-closure",
+    stage6NextGate: "Q1T_archive_aware_workspace_law_technical_checkpoint",
+    stage6Q3AuditRecord: undefined,
+    stage6Q3AuditOwner: undefined,
+    stage6Q3AuditSha256: undefined,
+  };
+  const syntheticFixtures: Readonly<
+    Record<E3WorkspaceLawCloseoutPhase, WorkspaceLawCloseoutLifecycleProjection>
+  > = {
+    planning: {
+      ...syntheticActivationLifecycle,
+      closureStatus: "planning",
+      closureTaskStartRun: false,
+      closureUserAuthorized: false,
+      closureAcceptedPlanningAuthority: undefined,
+      closureImplementationCandidateReady: true,
+      closureImplementationReview: "not_started",
+      closureNextGate: "separate_user_implementation_authorization_for_bounded_Q0_through_Q3",
+      stage6CurrentPlanningChild:
+        "08-31-rkp-2-e3-workspace-law-acceptance-archive-closure",
+      stage6CurrentImplementationChild:
+        "08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair",
+      stage6NextGate:
+        "separate_user_implementation_authorization_for_e3_workspace_law_acceptance_archive_closure",
+    },
+    activation: syntheticActivationLifecycle,
+    "owner-acceptance": {
+      ...syntheticActivationLifecycle,
+      targetImplementationStage:
+        "owner_accepted_archive_authorized_clock_preflight_pending",
+      targetNextGate: "native_e3_workspace_law_archive_clock_preflight_required",
+      targetAcceptanceAuthorized: true,
+      targetArchiveAuthorized: true,
+      closureImplementationReview: "pending_Q3_target_archive_candidate_not_frozen",
+      closureNextGate: "native_e3_workspace_law_archive_clock_preflight_required",
+      closureTargetAcceptanceAuthorized: true,
+      closureTargetArchiveAuthorized: true,
+      stage6NextGate: "native_e3_workspace_law_archive_clock_preflight_required",
+    },
+    "target-archived": {
+      ...syntheticActivationLifecycle,
+      targetLocation: "archive",
+      targetStatus: "completed",
+      targetCompletedAt: "2026-09-01",
+      targetImplementationStage: "accepted_archived_completed_historical_no_live_gate",
+      targetNextGate: "completed_historical_no_live_gate",
+      targetAcceptanceAuthorized: true,
+      targetArchiveAuthorized: true,
+      closureImplementationCandidateReady: true,
+      closureImplementationReview:
+        "pending_dedicated_independent_E3_workspace_law_acceptance_archive_closure_implementation_review",
+      closureNextGate:
+        "dedicated_independent_E3_workspace_law_acceptance_archive_closure_implementation_review_pending",
+      closureTargetAcceptanceAuthorized: true,
+      closureTargetArchiveAuthorized: true,
+      stage6NextGate:
+        "dedicated_independent_E3_workspace_law_acceptance_archive_closure_implementation_review_pending",
+      stage6Q3AuditOwner: `${STAGE_6_E3_LAW_CLOSEOUT_ROOT}/task.json`,
+      stage6Q3AuditSha256: "pending",
+    },
+    "closure-archived": {
+      ...syntheticActivationLifecycle,
+      targetLocation: "archive",
+      targetStatus: "completed",
+      targetCompletedAt: "2026-09-01",
+      targetImplementationStage: "accepted_archived_completed_historical_no_live_gate",
+      targetNextGate: "completed_historical_no_live_gate",
+      targetAcceptanceAuthorized: true,
+      targetArchiveAuthorized: true,
+      closureLocation: "archive",
+      closureStatus: "completed",
+      closureCompletedAt: "2026-09-01",
+      closureImplementationCandidateReady: true,
+      closureImplementationReview:
+        "passed_dedicated_independent_E3_workspace_law_acceptance_archive_closure_implementation_review",
+      closureNextGate: "completed_historical_no_live_gate",
+      closureTargetAcceptanceAuthorized: true,
+      closureTargetArchiveAuthorized: true,
+      closureAcceptanceAuthorized: true,
+      closureArchiveAuthorized: true,
+      closureQ3AuditRecord: syntheticQ3AuditRecord,
+      stage6CurrentImplementationChild: null,
+      stage6NextGate: "explicit_owner_decision_for_stage6_parent_acceptance_archive",
+      stage6Q3AuditOwner: `${STAGE_6_E3_LAW_CLOSEOUT_ARCHIVE_ROOT}/task.json`,
+      stage6Q3AuditSha256: sha256(syntheticQ3Canonical),
+    },
+  };
+  for (const phase of [
+    "planning",
+    "activation",
+    "owner-acceptance",
+    "target-archived",
+    "closure-archived",
+  ] as const) {
+    assertWorkspaceLawCloseoutLifecycleProjection(syntheticFixtures[phase], phase);
+  }
+  for (const mutation of [
+    { targetAuditRecordBytes: STAGE_6_E3_AUDIT_RECORD_BYTES + 1 },
+    { targetAuditRecordSha256: "wrong" },
+    { closureProductionAuthorized: true },
+    { closureE3StressRerun: true },
+    { closureS62Started: true },
+    { closureS63Started: true },
+    { closureDefaultRuntime: "rust" },
+    { closureIntegrationAuthorized: true },
+    { closureQualificationAuthorized: true },
+    { closureRuntimeSwitchAuthorized: true },
+    { closurePushAuthorized: true },
+    { closureRkp3CreationAuthorized: true },
+    { stage6S62Started: true },
+    { stage6S63Started: true },
+    { stage6DefaultRuntime: "rust" },
+    { stage6OfficialMeasurementAuthorized: true },
+    { stage6RuntimeSwitchAuthorized: true },
+    { stage6PushAuthorized: true },
+    { stage6Rkp3CreationAuthorized: true },
+    { stage6CurrentImplementationChild: "wrong-child" },
+  ] as const) {
+    assert.throws(() =>
+      assertWorkspaceLawCloseoutLifecycleProjection(
+        { ...workspaceLawLifecycle, ...mutation },
+        workspaceLawCloseoutPhase,
+      ),
+    );
+  }
+
+  const missingQ3AuditKey = { ...syntheticQ3AuditRecord } as Record<
+    string,
+    unknown
+  >;
+  delete missingQ3AuditKey.P2;
+  for (const malformed of [
+    undefined,
+    missingQ3AuditKey,
+    { ...syntheticQ3AuditRecord, schemaVersion: 2 },
+    { ...syntheticQ3AuditRecord, candidateCommit: "wrong" },
+    { ...syntheticQ3AuditRecord, technicalCommit: "wrong" },
+    { ...syntheticQ3AuditRecord, verdict: "PASS" },
+    { ...syntheticQ3AuditRecord, P0: 1 },
+    { ...syntheticQ3AuditRecord, P1: 1 },
+    { ...syntheticQ3AuditRecord, P2: 1 },
+    { ...syntheticQ3AuditRecord, extra: true },
+  ] as const) {
+    assert.throws(() =>
+      canonicalizeWorkspaceLawCloseoutQ3AuditRecord(
+        malformed,
+        syntheticQ3Head,
+        syntheticTechnicalCommit,
+      ),
+    );
+  }
+  assert.throws(() =>
+    assertSingleWorkspaceLawCloseoutQ3AuditRecordOwner(
+      [syntheticQ3AuditRecord, syntheticQ3AuditRecord],
+      syntheticQ3Head,
+      syntheticTechnicalCommit,
+    ),
+  );
+
+  const q4StatusEntries = STAGE_6_E3_LAW_CLOSEOUT_Q4_STAGED_PATHS.map(
+    (path) => `M  ${path}`,
+  );
+  assertQ4PrearchiveStatusEntries(q4StatusEntries);
+  for (const invalidEntries of [
+    q4StatusEntries.slice(1),
+    [...q4StatusEntries, "?? unrelated.txt"],
+    ["?? untracked.txt", ...q4StatusEntries.slice(1)],
+    [` M ${STAGE_6_E3_LAW_CLOSEOUT_Q4_STAGED_PATHS[0]}`, ...q4StatusEntries.slice(1)],
+    [`M  wrong-path`, ...q4StatusEntries.slice(1)],
+  ] as const) {
+    assert.throws(() => assertQ4PrearchiveStatusEntries(invalidEntries));
+  }
+  const q4CommitRows = [
+    ...STAGE_6_E3_LAW_CLOSEOUT_MANIFEST.flatMap((artifact) => [
+      `D\t${STAGE_6_E3_LAW_CLOSEOUT_ROOT}/${artifact}`,
+      `A\t${STAGE_6_E3_LAW_CLOSEOUT_ARCHIVE_ROOT}/${artifact}`,
+    ]),
+    ...STAGE_6_PARENT_LIFECYCLE_PATHS.map((path) => `M\t${path}`),
+  ];
+  assertQ4ArchiveCommitMembership([syntheticQ3Head], syntheticQ3Head, q4CommitRows);
+  assert.throws(() =>
+    assertQ4ArchiveCommitMembership(
+      [syntheticQ3Head, "3".repeat(40)],
+      syntheticQ3Head,
+      q4CommitRows,
+    ),
+  );
+  assert.throws(() =>
+    assertQ4ArchiveCommitMembership(
+      [syntheticQ3Head],
+      syntheticQ3Head,
+      q4CommitRows.slice(1),
+    ),
+  );
+  assert.throws(() =>
+    assertQ4ArchiveCommitMembership(
+      [syntheticQ3Head],
+      syntheticQ3Head,
+      [...q4CommitRows, "A\tunrelated.txt"],
+    ),
+  );
+  if (workspaceLawCloseoutPhase === "closure-archived") {
+    const q3Head = git(["rev-parse", "HEAD^"]);
+    const q3Record = workspaceLawCloseoutMeta.q3_independent_implementation_audit_result as
+      | Readonly<Record<string, unknown>>
+      | undefined;
+    assert.ok(q3Record);
+    assert.equal(q3Record.candidateCommit, q3Head);
+    assert.equal(
+      q3Record.technicalCommit,
+      workspaceLawCloseoutMeta.workspace_law_technical_commit,
+    );
+    const parents = lines(git(["show", "-s", "--format=%P", "HEAD"]));
+    const commitRows = lines(
+      git([
+        "diff-tree",
+        "--no-commit-id",
+        "--name-status",
+        "--no-renames",
+        "-r",
+        "HEAD",
+      ]),
+    );
+    assertQ4ArchiveCommitMembership(parents, q3Head, commitRows);
   }
 
   const worker = readText(
