@@ -1,10 +1,10 @@
-# Operator Handoff — Q2 Owner Accepted, Native Archive Pending
+# Operator Handoff — Archived E3 Workspace Law Target
 
-## Current Q2 gate
+## Completed Q3 target state
 
-`OWNER ACCEPTED + ARCHIVE AUTHORIZED — 2026-09-01 CLOCK PREFLIGHT REQUIRED`
+`NATIVELY ARCHIVED — HISTORICAL NO LIVE GATE`
 
-The original implementation review remains bound to candidate `0c561d14193374436361eec09b361cab0170278a`. Workspace Law technical commit `a2a022a56c77c1daea06eefa60830a67e3df95a5` makes active/archive resolution finite, and the two JSONL files now contain no active self-reference. The task remains `in_progress` with `completedAt=null` until native archive.
+The target was owner-accepted in `fbec143a34cd82c0a39fad989313a8e6b43c674e` and moved by native archive commit `4dfd4c508225be0566c0b5eee981e9e603c221a7` to its exact 12-file `2026-09` archive root. Its original 323-byte audit record and SHA-256 `dee0b92ce8a2ff6c8a9737c5b98104e39633b85aaad70e594f61e4847fdd7589` remain unchanged. The active closure task now owns the Q3 review gate; this archived target owns no later action.
 
 ## Historical pre-Q2 gate
 

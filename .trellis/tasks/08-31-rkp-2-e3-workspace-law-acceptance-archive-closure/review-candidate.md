@@ -1,12 +1,12 @@
-# Review Candidate — Q2 Target Owner Acceptance Checkpoint
+# Review Candidate — Q3 E3 Workspace Law Acceptance/Archive Closure
 
-## Current Q2 marker
+## Verdict requested
 
 ```text
-Q2 TARGET OWNER ACCEPTED — NATIVE ARCHIVE CLOCK PREFLIGHT NEXT
+READY FOR DEDICATED INDEPENDENT E3 WORKSPACE LAW ACCEPTANCE-ARCHIVE CLOSURE IMPLEMENTATION REVIEW
 ```
 
-Technical commit `a2a022a56c77c1daea06eefa60830a67e3df95a5` restored the expected Workspace Law/full classifications. The target is still active, has the original 323-byte audit record, and is explicitly accepted/archive-authorized. This is not yet the Q3 review candidate; the closure owns no Q3 structured audit record.
+Candidate must bind the exact post-freeze HEAD, technical commit `a2a022a56c77c1daea06eefa60830a67e3df95a5`, native target archive `4dfd4c508225be0566c0b5eee981e9e603c221a7`, base `c73e2139d3a1a9e89e4ec6071678d75be1c02abb`, `A23/M4/D12=39`, dual-Node `11/8/3`, full `611/606/3/2`, unchanged 323-byte target record and protected-path zero delta. PASS does not authorize Q4.
 
 ## Historical Q1 verdict
 
