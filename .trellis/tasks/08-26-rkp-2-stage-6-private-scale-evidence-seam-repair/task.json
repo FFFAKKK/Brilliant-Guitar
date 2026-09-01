@@ -45,7 +45,7 @@
     "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "IN_PROGRESS / E3 WORKSPACE LAW CLOSEOUT Q4 COMPLETED AND NATIVELY ARCHIVED / NO CURRENT PLANNING OR IMPLEMENTATION CHILD / NEXT GATE EXPLICIT OWNER DECISION FOR STAGE 6 PARENT ACCEPTANCE ARCHIVE / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO E3 STRESS INTEGRATION PUSH CUTOVER QUALIFICATION OR RKP3.",
+  "notes": "IN_PROGRESS / E3 Q4 ACCEPTED ARCHIVED / STAGE6 CLOSEOUT PLANNING CANDIDATE CREATED AS RKP2 SIBLING / INDEPENDENT PLANNING REVIEW PENDING / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO ACCEPT ARCHIVE INTEGRATION QUALIFICATION CUTOVER PUSH OR RKP3.",
   "meta": {
     "planning_base_commit": "4a302bc9f9981940336fc97941b08e09bd0d1f67",
     "source_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -312,7 +312,7 @@
     "e3_partial_evidence": false,
     "current_planning_child": null,
     "current_implementation_child": null,
-    "next_gate": "explicit_owner_decision_for_stage6_parent_acceptance_archive",
+    "next_gate": "dedicated_independent_stage6_closeout_planning_review_pending",
     "e3_acceptance_projection_native_archive_commit": "1c76dbf9d9cd1ece12299b148f0c6de09d1391e1",
     "e3_acceptance_projection_native_archive_path": ".trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-state-projection",
     "e3_workspace_law_final_state_projection_repair": {
@@ -489,6 +489,15 @@
       "Q4_authorization_record": "user_continue_2026_09_01_after_explicit_Q3_PASS_owner_closeout_gate"
     },
     "e3_workspace_law_acceptance_archive_closure_q3_audit_record_owner": ".trellis/tasks/archive/2026-09/08-31-rkp-2-e3-workspace-law-acceptance-archive-closure/task.json",
-    "e3_workspace_law_acceptance_archive_closure_q3_audit_record_sha256": "a75970a089aca2ef97a14d25c69e8d9ff4df5227face43461fb3df9e3ab0aeb6"
+    "e3_workspace_law_acceptance_archive_closure_q3_audit_record_sha256": "a75970a089aca2ef97a14d25c69e8d9ff4df5227face43461fb3df9e3ab0aeb6",
+    "stage6_acceptance_archive_integration_closeout": {
+      "task": "09-01-rkp-2-stage-6-acceptance-archive-integration-closeout",
+      "status": "planning",
+      "planning_base": "65debd52d379004c966cefe59f54d72ac1136eb4",
+      "branch": "codex/rkp-2-stage-6-acceptance-archive-integration-closeout",
+      "worktree": ".worktrees/rkp-2-stage-6-acceptance-archive-integration-closeout",
+      "independent_planning_review": "pending",
+      "production_implementation_authorized": false
+    }
   }
 }

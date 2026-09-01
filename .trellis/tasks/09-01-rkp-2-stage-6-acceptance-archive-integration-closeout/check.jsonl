@@ -1,0 +1,5 @@
+{"file":".trellis/spec/guides/long-term-maintenance-guide.md","reason":"Verify reversible lifecycle and authority maintenance"}
+{"file":".trellis/tasks/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout/research/current-state-and-branch-topology.md","reason":"Verify ancestry and branch-owner claims"}
+{"file":".trellis/tasks/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout/research/archive-inventory-and-authority-map.md","reason":"Verify exact manifests and no dual roots"}
+{"file":".trellis/tasks/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout/research/file-test-rollback-matrix.md","reason":"Verify literal allowlist, tests and rollback"}
+{"file":".trellis/tasks/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout/research/planning-self-audit.md","reason":"Challenge local assumptions during independent review"}
