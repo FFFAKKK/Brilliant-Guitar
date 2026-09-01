@@ -431,6 +431,8 @@ const STAGE_6_E3_AUDIT_RECORD = {
 } as const;
 const STAGE_6_E3_LAW_CLOSEOUT_BASE =
   "c73e2139d3a1a9e89e4ec6071678d75be1c02abb";
+const STAGE_6_E3_LAW_CLOSEOUT_ARCHIVED_HEAD =
+  "65debd52d379004c966cefe59f54d72ac1136eb4";
 const STAGE_6_E3_LAW_CLOSEOUT_PLANNING_AUTHORITY =
   "9bf82a221f0585719f36f36906dfc292d0e2bd5c";
 const STAGE_6_E3_LAW_CLOSEOUT_ROOT =
@@ -517,6 +519,62 @@ const STAGE_6_E3_LAW_CLOSEOUT_Q3_AUDIT_KEYS = [
   "P0",
   "P1",
   "P2",
+] as const;
+const STAGE_6_CLOSEOUT_BASE = STAGE_6_E3_LAW_CLOSEOUT_ARCHIVED_HEAD;
+const STAGE_6_CLOSEOUT_PLANNING_AUTHORITY =
+  "e7708bf84ffb6ac71818f46d367ff6e8bba7beb6";
+const STAGE_6_CLOSEOUT_ROOT =
+  ".trellis/tasks/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout";
+const STAGE_6_CLOSEOUT_ARCHIVE_ROOT =
+  ".trellis/tasks/archive/2026-09/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout";
+const STAGE_6_SEMANTIC_CANONICAL_ARCHIVE_ROOT =
+  ".trellis/tasks/archive/2026-09/08-30-rkp-2-stage-6-semantic-canonical-authority-amendment";
+const STAGE_6_PRIVATE_SCALE_ARCHIVE_ROOT =
+  ".trellis/tasks/archive/2026-09/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair";
+const STAGE_6_CLOSEOUT_TECHNICAL_PATH =
+  "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts";
+const STAGE_6_SEMANTIC_CANONICAL_MANIFEST = [
+  "check.jsonl",
+  "design.md",
+  "implement.jsonl",
+  "implement.md",
+  "operator-handoff.md",
+  "prd.md",
+  "research/current-seam-and-authority-audit.md",
+  "research/e1r2-file-test-rollback-matrix.md",
+  "research/planning-self-audit.md",
+  "research/semantic-canonical-role-matrix.md",
+  "review-candidate.md",
+  "task.json",
+] as const;
+const STAGE_6_PRIVATE_SCALE_MANIFEST = [
+  "check.jsonl",
+  "design.md",
+  "implement.jsonl",
+  "implement.md",
+  "operator-handoff.md",
+  "prd.md",
+  "research/file-ownership-and-rollback.md",
+  "research/implementation-evidence.md",
+  "research/planning-self-audit.md",
+  "research/root-cause-and-counter-write-map.md",
+  "research/scale-worker-and-failure-matrix.md",
+  "review-candidate.md",
+  "task.json",
+] as const;
+const STAGE_6_CLOSEOUT_MANIFEST = [
+  "check.jsonl",
+  "design.md",
+  "implement.jsonl",
+  "implement.md",
+  "operator-handoff.md",
+  "prd.md",
+  "research/archive-inventory-and-authority-map.md",
+  "research/current-state-and-branch-topology.md",
+  "research/file-test-rollback-matrix.md",
+  "research/planning-self-audit.md",
+  "review-candidate.md",
+  "task.json",
 ] as const;
 const STAGE_6_E2_WORKER_TECHNICAL_PATHS = [
   "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts",
@@ -1005,7 +1063,7 @@ function currentWorkspaceLawCloseoutChanges(): Map<string, "A" | "M" | "D"> {
       "diff",
       "--no-renames",
       "--name-status",
-      `${STAGE_6_E3_LAW_CLOSEOUT_BASE}..HEAD`,
+      `${STAGE_6_E3_LAW_CLOSEOUT_BASE}..${STAGE_6_E3_LAW_CLOSEOUT_ARCHIVED_HEAD}`,
     ]),
   )) {
     const [status, path, extra] = line.split("\t");
@@ -1015,11 +1073,16 @@ function currentWorkspaceLawCloseoutChanges(): Map<string, "A" | "M" | "D"> {
     assert.equal(result.has(path), false, `${path} must have one cumulative status`);
     result.set(path, status);
   }
-  for (const [args, fallbackStatus] of [
-    [["diff", "--name-status", "--no-renames"], undefined],
-    [["diff", "--cached", "--name-status", "--no-renames"], undefined],
-    [["ls-files", "--others", "--exclude-standard"], "A"],
-  ] as const) {
+  return result;
+}
+
+function currentStage6CloseoutChanges(): Map<string, "A" | "M" | "D"> {
+  const result = new Map<string, "A" | "M" | "D">();
+  const collect = (
+    args: readonly string[],
+    fallbackStatus?: "A",
+    preserveExisting = false,
+  ): void => {
     for (const line of lines(git(args))) {
       const [statusOrPath, path, extra] = line.split("\t");
       const status = fallbackStatus ?? statusOrPath;
@@ -1027,9 +1090,20 @@ function currentWorkspaceLawCloseoutChanges(): Map<string, "A" | "M" | "D"> {
       assert.equal(extra, undefined, "rename-collapsed paths are forbidden");
       assert.ok(status === "A" || status === "M" || status === "D");
       assert.ok(resolvedPath);
-      result.set(resolvedPath, status);
+      if (!preserveExisting || !result.has(resolvedPath)) {
+        result.set(resolvedPath, status);
+      }
     }
-  }
+  };
+  collect([
+    "diff",
+    "--no-renames",
+    "--name-status",
+    `${STAGE_6_CLOSEOUT_BASE}..HEAD`,
+  ]);
+  collect(["diff", "--no-renames", "--name-status"], undefined, true);
+  collect(["diff", "--cached", "--no-renames", "--name-status"], undefined, true);
+  collect(["ls-files", "--others", "--exclude-standard"], "A", true);
   return result;
 }
 
@@ -1154,6 +1228,14 @@ type E3WorkspaceLawCloseoutPhase =
   | "owner-acceptance"
   | "target-archived"
   | "closure-archived";
+
+type Stage6CloseoutPhase =
+  | "planning"
+  | "activation"
+  | "semantic-child-archived"
+  | "stage6-archived"
+  | "integrated"
+  | "closeout-archived";
 
 interface ExactTaskLocationInput {
   readonly activeFiles: readonly string[] | null;
@@ -1626,16 +1708,20 @@ function jsonlReferenceExists(path: string): boolean {
   if (existsSync(resolve(path))) {
     return true;
   }
-  if (
-    path !== STAGE_6_E3_LAW_TASK_ROOT &&
-    !path.startsWith(`${STAGE_6_E3_LAW_TASK_ROOT}/`)
-  ) {
-    return false;
+  for (const [activeRoot, archiveRoot] of [
+    [STAGE_6_E3_LAW_TASK_ROOT, STAGE_6_E3_LAW_TARGET_ARCHIVE_ROOT],
+    [
+      STAGE_6_SEMANTIC_CANONICAL_TASK_ROOT,
+      STAGE_6_SEMANTIC_CANONICAL_ARCHIVE_ROOT,
+    ],
+    [STAGE_6_PRIVATE_SCALE_TASK_ROOT, STAGE_6_PRIVATE_SCALE_ARCHIVE_ROOT],
+  ] as const) {
+    if (path === activeRoot || path.startsWith(`${activeRoot}/`)) {
+      const archivedPath = archiveRoot + path.slice(activeRoot.length);
+      return existsSync(resolve(archivedPath));
+    }
   }
-  const archivedPath =
-    `${STAGE_6_E3_LAW_TARGET_ARCHIVE_ROOT}` +
-    path.slice(STAGE_6_E3_LAW_TASK_ROOT.length);
-  return existsSync(resolve(archivedPath));
+  return false;
 }
 
 function assertJsonlReferencesExist(root: string): void {
@@ -1867,6 +1953,201 @@ function assertWorkspaceLawCloseoutPathSet(
   assert.deepEqual(counts, expectedCounts[phase]);
 }
 
+function expectedStage6CloseoutChanges(
+  phase: Stage6CloseoutPhase,
+): Map<string, "A" | "M" | "D"> {
+  const result = new Map<string, "A" | "M" | "D">();
+  const setAll = (
+    status: "A" | "M" | "D",
+    paths: readonly string[],
+  ): void => {
+    for (const path of paths) {
+      assert.equal(result.has(path), false, `${path} must have one declared owner`);
+      result.set(path, status);
+    }
+  };
+  const closeoutRoot =
+    phase === "closeout-archived"
+      ? STAGE_6_CLOSEOUT_ARCHIVE_ROOT
+      : STAGE_6_CLOSEOUT_ROOT;
+  setAll(
+    "A",
+    STAGE_6_CLOSEOUT_MANIFEST.map((path) => `${closeoutRoot}/${path}`),
+  );
+  if (phase === "closeout-archived") {
+    setAll(
+      "D",
+      STAGE_6_CLOSEOUT_MANIFEST.map(
+        (path) => `${STAGE_6_CLOSEOUT_ROOT}/${path}`,
+      ),
+    );
+  }
+
+  const semanticArchived =
+    phase === "semantic-child-archived" ||
+    phase === "stage6-archived" ||
+    phase === "integrated" ||
+    phase === "closeout-archived";
+  if (semanticArchived) {
+    setAll(
+      "D",
+      STAGE_6_SEMANTIC_CANONICAL_MANIFEST.map(
+        (path) => `${STAGE_6_SEMANTIC_CANONICAL_TASK_ROOT}/${path}`,
+      ),
+    );
+    setAll(
+      "A",
+      STAGE_6_SEMANTIC_CANONICAL_MANIFEST.map(
+        (path) => `${STAGE_6_SEMANTIC_CANONICAL_ARCHIVE_ROOT}/${path}`,
+      ),
+    );
+  }
+
+  const stage6Archived =
+    phase === "stage6-archived" ||
+    phase === "integrated" ||
+    phase === "closeout-archived";
+  if (stage6Archived) {
+    setAll(
+      "D",
+      STAGE_6_PRIVATE_SCALE_MANIFEST.map(
+        (path) => `${STAGE_6_PRIVATE_SCALE_TASK_ROOT}/${path}`,
+      ),
+    );
+    setAll(
+      "A",
+      STAGE_6_PRIVATE_SCALE_MANIFEST.map(
+        (path) => `${STAGE_6_PRIVATE_SCALE_ARCHIVE_ROOT}/${path}`,
+      ),
+    );
+    setAll("M", [TASK_PATH, PARENT_PATH, STAGE_6_CLOSEOUT_TECHNICAL_PATH]);
+  } else {
+    setAll("M", [TASK_PATH, PARENT_PATH, `${STAGE_6_PRIVATE_SCALE_TASK_ROOT}/task.json`]);
+    if (phase === "semantic-child-archived") {
+      setAll("M", [
+        `${STAGE_6_PRIVATE_SCALE_TASK_ROOT}/operator-handoff.md`,
+        `${STAGE_6_PRIVATE_SCALE_TASK_ROOT}/review-candidate.md`,
+        STAGE_6_CLOSEOUT_TECHNICAL_PATH,
+      ]);
+    }
+  }
+  return result;
+}
+
+function assertStage6CloseoutPathSet(
+  actual: ReadonlyMap<string, "A" | "M" | "D">,
+  phase: Stage6CloseoutPhase,
+): void {
+  const project = (value: ReadonlyMap<string, "A" | "M" | "D">): string[] =>
+    [...value].map(([path, status]) => `${status}\t${path}`).sort();
+  assert.deepEqual(project(actual), project(expectedStage6CloseoutChanges(phase)));
+  const counts = [...actual.values()].reduce(
+    (result, status) => ({ ...result, [status]: result[status] + 1 }),
+    { A: 0, M: 0, D: 0 },
+  );
+  const expectedCounts = {
+    planning: { A: 12, M: 3, D: 0 },
+    activation: { A: 12, M: 3, D: 0 },
+    "semantic-child-archived": { A: 24, M: 6, D: 12 },
+    "stage6-archived": { A: 37, M: 3, D: 25 },
+    integrated: { A: 37, M: 3, D: 25 },
+    "closeout-archived": { A: 37, M: 3, D: 37 },
+  } as const;
+  assert.deepEqual(counts, expectedCounts[phase]);
+}
+
+interface Stage6CloseoutLifecycleProjection {
+  readonly semanticLocation: "active" | "archive";
+  readonly semanticStatus: unknown;
+  readonly stage6Location: "active" | "archive";
+  readonly stage6Status: unknown;
+  readonly closeoutLocation: "active" | "archive";
+  readonly closeoutStatus: unknown;
+  readonly closeoutProductionAuthorized: unknown;
+  readonly closeoutPlanningAuthority: unknown;
+  readonly closeoutStage6AcceptanceAuthorized: unknown;
+  readonly closeoutStage6ArchiveAuthorized: unknown;
+  readonly closeoutCandidateReady: unknown;
+  readonly closeoutArchiveCandidateReview: unknown;
+  readonly closeoutIntegrationAuthorized: unknown;
+  readonly closeoutAcceptanceAuthorized: unknown;
+  readonly closeoutArchiveAuthorized: unknown;
+  readonly rkp2CurrentImplementationChild: unknown;
+  readonly s62Started: unknown;
+  readonly s63Started: unknown;
+  readonly defaultRuntime: unknown;
+  readonly pushAuthorized: unknown;
+  readonly qualificationAuthorized: unknown;
+  readonly runtimeSwitchAuthorized: unknown;
+  readonly rkp3CreationAuthorized: unknown;
+}
+
+function assertStage6CloseoutLifecycleProjection(
+  projection: Stage6CloseoutLifecycleProjection,
+  phase: Stage6CloseoutPhase,
+): void {
+  const semanticArchived =
+    phase === "semantic-child-archived" ||
+    phase === "stage6-archived" ||
+    phase === "integrated" ||
+    phase === "closeout-archived";
+  const stage6Archived =
+    phase === "stage6-archived" ||
+    phase === "integrated" ||
+    phase === "closeout-archived";
+  const integrated = phase === "integrated" || phase === "closeout-archived";
+  const closeoutArchived = phase === "closeout-archived";
+  assert.equal(projection.semanticLocation, semanticArchived ? "archive" : "active");
+  assert.equal(projection.semanticStatus, semanticArchived ? "completed" : "in_progress");
+  assert.equal(projection.stage6Location, stage6Archived ? "archive" : "active");
+  assert.equal(projection.stage6Status, stage6Archived ? "completed" : "in_progress");
+  assert.equal(projection.closeoutLocation, closeoutArchived ? "archive" : "active");
+  assert.equal(
+    projection.closeoutStatus,
+    phase === "planning" ? "planning" : closeoutArchived ? "completed" : "in_progress",
+  );
+  assert.equal(projection.closeoutProductionAuthorized, false);
+  assert.equal(
+    projection.closeoutPlanningAuthority,
+    phase === "planning" ? undefined : STAGE_6_CLOSEOUT_PLANNING_AUTHORITY,
+  );
+  assert.equal(
+    projection.closeoutStage6AcceptanceAuthorized,
+    stage6Archived || phase === "semantic-child-archived",
+  );
+  assert.equal(
+    projection.closeoutStage6ArchiveAuthorized,
+    stage6Archived || phase === "semantic-child-archived",
+  );
+  assert.equal(projection.closeoutCandidateReady, stage6Archived);
+  assert.equal(
+    projection.closeoutArchiveCandidateReview,
+    stage6Archived
+      ? integrated
+        ? "passed_dedicated_independent_stage6_archive_candidate_review"
+        : "pending_dedicated_independent_stage6_archive_candidate_review"
+      : "pending_not_started",
+  );
+  assert.equal(projection.closeoutIntegrationAuthorized, integrated);
+  assert.equal(projection.closeoutAcceptanceAuthorized, closeoutArchived);
+  assert.equal(projection.closeoutArchiveAuthorized, closeoutArchived);
+  assert.equal(
+    projection.rkp2CurrentImplementationChild,
+    closeoutArchived
+      ? null
+      : stage6Archived
+        ? "09-01-rkp-2-stage-6-acceptance-archive-integration-closeout"
+        : "08-26-rkp-2-stage-6-private-scale-evidence-seam-repair",
+  );
+  assert.equal(projection.s62Started, false);
+  assert.equal(projection.s63Started, false);
+  assert.equal(projection.defaultRuntime, "typescript");
+  assert.equal(projection.pushAuthorized, false);
+  assert.equal(projection.qualificationAuthorized, false);
+  assert.equal(projection.runtimeSwitchAuthorized, false);
+  assert.equal(projection.rkp3CreationAuthorized, false);
+}
+
 interface WorkspaceLawJsonlProjectionContract {
   readonly sourceRows: number;
   readonly sourceBytes: number;
@@ -1908,7 +2189,7 @@ function projectWorkspaceLawTargetJsonlSuccessor(
     assert.equal(rowPath.startsWith(`${STAGE_6_E3_LAW_TASK_ROOT}/`), false);
     assert.equal(seen.has(rowPath), false, `${name} repeats ${rowPath}`);
     seen.add(rowPath);
-    assert.equal(existsSync(resolve(rowPath)), true, `${name} references ${rowPath}`);
+    assert.equal(jsonlReferenceExists(rowPath), true, `${name} references ${rowPath}`);
   }
   return successor;
 }
@@ -2950,7 +3231,10 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
   );
 
   const task = JSON.parse(
-    readText(`${STAGE_6_SEMANTIC_CANONICAL_TASK_ROOT}/task.json`),
+    gitTextAt(
+      STAGE_6_CLOSEOUT_BASE,
+      `${STAGE_6_SEMANTIC_CANONICAL_TASK_ROOT}/task.json`,
+    ),
   ) as {
     readonly status?: unknown;
     readonly meta?: {
@@ -3043,7 +3327,7 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     false,
   );
 
-  const evidenceSource = readText(STAGE_6_E3_EVIDENCE_PATH);
+  const evidenceSource = gitTextAt(STAGE_6_CLOSEOUT_BASE, STAGE_6_E3_EVIDENCE_PATH);
   const protocolLine = extractE3ProtocolLine(evidenceSource);
   assertE3EvidenceProjection(evidenceSource, protocolLine);
   assert.throws(() =>
@@ -3728,7 +4012,10 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     readonly meta?: Readonly<Record<string, unknown>>;
   };
   const liveWorkspaceLawStage6 = JSON.parse(
-    readText(`${STAGE_6_PRIVATE_SCALE_TASK_ROOT}/task.json`),
+    gitTextAt(
+      STAGE_6_E3_LAW_CLOSEOUT_ARCHIVED_HEAD,
+      `${STAGE_6_PRIVATE_SCALE_TASK_ROOT}/task.json`,
+    ),
   ) as {
     readonly status?: unknown;
     readonly meta?: Readonly<Record<string, unknown>>;
@@ -4348,7 +4635,8 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     ),
   );
   if (workspaceLawCloseoutPhase === "closure-archived") {
-    const q3Head = git(["rev-parse", "HEAD^"]);
+    const q4ArchiveHead = STAGE_6_E3_LAW_CLOSEOUT_ARCHIVED_HEAD;
+    const q3Head = git(["rev-parse", `${q4ArchiveHead}^`]);
     const q3Record = workspaceLawCloseoutMeta.q3_independent_implementation_audit_result as
       | Readonly<Record<string, unknown>>
       | undefined;
@@ -4358,7 +4646,7 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
       q3Record.technicalCommit,
       workspaceLawCloseoutMeta.workspace_law_technical_commit,
     );
-    const parents = lines(git(["show", "-s", "--format=%P", "HEAD"]));
+    const parents = lines(git(["show", "-s", "--format=%P", q4ArchiveHead]));
     const commitRows = lines(
       git([
         "diff-tree",
@@ -4366,11 +4654,124 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
         "--name-status",
         "--no-renames",
         "-r",
-        "HEAD",
+        q4ArchiveHead,
       ]),
     );
     assertQ4ArchiveCommitMembership(parents, q3Head, commitRows);
   }
+
+  const semanticLocation = resolveExactlyOneTaskLocation(
+    STAGE_6_SEMANTIC_CANONICAL_TASK_ROOT,
+    STAGE_6_SEMANTIC_CANONICAL_ARCHIVE_ROOT,
+    STAGE_6_SEMANTIC_CANONICAL_MANIFEST,
+  );
+  const stage6Location = resolveExactlyOneTaskLocation(
+    STAGE_6_PRIVATE_SCALE_TASK_ROOT,
+    STAGE_6_PRIVATE_SCALE_ARCHIVE_ROOT,
+    STAGE_6_PRIVATE_SCALE_MANIFEST,
+  );
+  const closeoutLocation = resolveExactlyOneTaskLocation(
+    STAGE_6_CLOSEOUT_ROOT,
+    STAGE_6_CLOSEOUT_ARCHIVE_ROOT,
+    STAGE_6_CLOSEOUT_MANIFEST,
+  );
+  const semanticTask = JSON.parse(
+    readText(`${semanticLocation.root}/task.json`),
+  ) as {
+    readonly status?: unknown;
+  };
+  const currentStage6Task = JSON.parse(
+    readText(`${stage6Location.root}/task.json`),
+  ) as {
+    readonly status?: unknown;
+    readonly meta?: Readonly<Record<string, unknown>>;
+  };
+  const closeoutTask = JSON.parse(
+    readText(`${closeoutLocation.root}/task.json`),
+  ) as {
+    readonly status?: unknown;
+    readonly meta?: Readonly<Record<string, unknown>>;
+  };
+  const currentRkp2Task = JSON.parse(readText(TASK_PATH)) as {
+    readonly meta?: Readonly<Record<string, unknown>>;
+  };
+  const closeoutMeta = closeoutTask.meta ?? {};
+  const currentRkp2Meta = currentRkp2Task.meta ?? {};
+  const stage6CloseoutPhase: Stage6CloseoutPhase =
+    closeoutLocation.kind === "archive"
+      ? "closeout-archived"
+      : stage6Location.kind === "archive"
+        ? closeoutMeta.integration_completed === true
+          ? "integrated"
+          : "stage6-archived"
+        : semanticLocation.kind === "archive"
+          ? "semantic-child-archived"
+          : closeoutTask.status === "planning"
+            ? "planning"
+            : "activation";
+  const stage6CloseoutChanges = currentStage6CloseoutChanges();
+  assertStage6CloseoutPathSet(stage6CloseoutChanges, stage6CloseoutPhase);
+  for (const phase of [
+    "planning",
+    "activation",
+    "semantic-child-archived",
+    "stage6-archived",
+    "integrated",
+    "closeout-archived",
+  ] as const) {
+    assertStage6CloseoutPathSet(expectedStage6CloseoutChanges(phase), phase);
+  }
+  const stage6CloseoutWithExtra = new Map(stage6CloseoutChanges);
+  stage6CloseoutWithExtra.set(`${STAGE_6_CLOSEOUT_ROOT}/undeclared.md`, "A");
+  assert.throws(() =>
+    assertStage6CloseoutPathSet(stage6CloseoutWithExtra, stage6CloseoutPhase),
+  );
+  assert.equal(STAGE_6_SEMANTIC_CANONICAL_MANIFEST.length, 12);
+  assert.equal(STAGE_6_PRIVATE_SCALE_MANIFEST.length, 13);
+  assert.equal(STAGE_6_CLOSEOUT_MANIFEST.length, 12);
+
+  const stage6AuditRecord = closeoutMeta.stage6_technical_audit as
+    | Readonly<Record<string, unknown>>
+    | undefined;
+  assert.ok(stage6AuditRecord);
+  assert.equal(stage6AuditRecord.candidate_commit, STAGE_6_E3_AUDITED_CANDIDATE);
+  assert.equal(stage6AuditRecord.P0, 0);
+  assert.equal(stage6AuditRecord.P1, 0);
+  assert.equal(stage6AuditRecord.P2, 0);
+  assert.equal(stage6AuditRecord.verdict, "passed_external_audit");
+
+  const stage6CloseoutLifecycle: Stage6CloseoutLifecycleProjection = {
+    semanticLocation: semanticLocation.kind,
+    semanticStatus: semanticTask.status,
+    stage6Location: stage6Location.kind,
+    stage6Status: currentStage6Task.status,
+    closeoutLocation: closeoutLocation.kind,
+    closeoutStatus: closeoutTask.status,
+    closeoutProductionAuthorized:
+      closeoutMeta.production_implementation_authorized,
+    closeoutPlanningAuthority: closeoutMeta.accepted_planning_authority_head,
+    closeoutStage6AcceptanceAuthorized:
+      closeoutMeta.stage6_acceptance_authorized,
+    closeoutStage6ArchiveAuthorized: closeoutMeta.stage6_archive_authorized,
+    closeoutCandidateReady: closeoutMeta.implementation_candidate_ready,
+    closeoutArchiveCandidateReview: closeoutMeta.archive_candidate_review,
+    closeoutIntegrationAuthorized: closeoutMeta.integration_authorized,
+    closeoutAcceptanceAuthorized: closeoutMeta.closeout_acceptance_authorized,
+    closeoutArchiveAuthorized: closeoutMeta.closeout_archive_authorized,
+    rkp2CurrentImplementationChild:
+      currentRkp2Meta.current_implementation_child,
+    s62Started: currentRkp2Meta.stage_6_s6_2_started,
+    s63Started: currentRkp2Meta.stage_6_s6_3_started,
+    defaultRuntime: currentRkp2Meta.default_runtime,
+    pushAuthorized: closeoutMeta.push_authorized,
+    qualificationAuthorized: closeoutMeta.qualification_authorized,
+    runtimeSwitchAuthorized: closeoutMeta.default_runtime_switch_authorized,
+    rkp3CreationAuthorized: closeoutMeta.rkp3_creation_authorized,
+  };
+  assertStage6CloseoutLifecycleProjection(
+    stage6CloseoutLifecycle,
+    stage6CloseoutPhase,
+  );
 
   const worker = readText(
     "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts",

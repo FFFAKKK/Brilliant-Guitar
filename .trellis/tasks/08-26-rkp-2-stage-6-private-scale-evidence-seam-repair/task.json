@@ -45,7 +45,7 @@
     "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "IN_PROGRESS / E3 Q4 ACCEPTED ARCHIVED / CONSUMED SEMANTIC CHILD ACCEPTED AND NATIVELY ARCHIVED EXACT 12 AT 1E3759D / NO ACTIVE DESCENDANT / CLOSEOUT L3 STAGE6 OWNER ACCEPTANCE-WORKSPACE LAW-ARCHIVE NEXT / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO QUALIFICATION CUTOVER PUSH OR RKP3.",
+  "notes": "IN_PROGRESS / E3 Q4 ACCEPTED ARCHIVED / CONSUMED SEMANTIC CHILD ACCEPTED AND NATIVELY ARCHIVED EXACT 12 AT 1E3759D / NO ACTIVE DESCENDANT / STAGE6 TECHNICAL AUDIT 0C561D1 PASS P0_0_P1_0_P2_0 / OWNER ACCEPTED AND NATIVE ARCHIVE AUTHORIZED / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO QUALIFICATION CUTOVER PUSH OR RKP3.",
   "meta": {
     "planning_base_commit": "4a302bc9f9981940336fc97941b08e09bd0d1f67",
     "source_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -95,7 +95,7 @@
     "bounded_planning_repair": "round_3_cleanup_ownership_and_post_cleanup_envelope_accepted",
     "implementation_candidate_ready": true,
     "implementation_review": "passed_external_audit_bound_0c561d14193374436361eec09b361cab0170278a_P0_0_P1_0_P2_0",
-    "implementation_blocker": "dedicated_independent_E3_workspace_law_acceptance_archive_closure_implementation_review_pending",
+    "implementation_blocker": "native_stage6_archive_clock_preflight_pending",
     "e3_workspace_law_audit_record_owner": ".trellis/tasks/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair/task.json",
     "e3_workspace_law_audit_record_sha256": "dee0b92ce8a2ff6c8a9737c5b98104e39633b85aaad70e594f61e4847fdd7589",
     "e3_acceptance_archive_closure_source_review_owner": ".trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-archive-closure/task.json",
@@ -146,7 +146,7 @@
       "e3_user_authorization_consumed_by_parent_stage6_owner": true
     },
     "c5_terminal_projection_final_audit": "passed_d14d73117e03822a52fd19c55f3024cb2b73ef45_P0_0_P1_0_P2_0",
-    "implementation_stage": "E3_workspace_law_acceptance_archive_closure_Q3_candidate_frozen_review_pending",
+    "implementation_stage": "owner_accepted_archive_authorized_clock_preflight_pending",
     "e0_activation_completed": true,
     "e1_private_rust_seam_started": true,
     "e1_private_rust_seam_completed": true,
@@ -300,7 +300,16 @@
       "terminal_projection": "completed_separate_C5_B_commit_final_C5_audit_passed_d14d73117e03822a52fd19c55f3024cb2b73ef45",
       "E2_authorized": false
     },
-    "archive_authorized": false,
+    "archive_authorized": true,
+    "acceptance_authorized": true,
+    "stage6_technical_audit": {
+      "candidate_commit": "0c561d14193374436361eec09b361cab0170278a",
+      "P0": 0,
+      "P1": 0,
+      "P2": 0,
+      "verdict": "passed_external_audit"
+    },
+    "stage6_owner_acceptance_record": "user_requested_continue_until_this_stage_is_complete_then_report",
     "push_authorized": false,
     "default_runtime_switch_authorized": false,
     "official_measurement_authorized": false,
@@ -320,7 +329,7 @@
     "e3_partial_evidence": false,
     "current_planning_child": null,
     "current_implementation_child": null,
-    "next_gate": "closeout_L3_stage6_owner_acceptance_workspace_law_and_native_archive",
+    "next_gate": "native_stage6_archive_clock_preflight_and_archive",
     "e3_acceptance_projection_native_archive_commit": "1c76dbf9d9cd1ece12299b148f0c6de09d1391e1",
     "e3_acceptance_projection_native_archive_path": ".trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-state-projection",
     "e3_workspace_law_final_state_projection_repair": {

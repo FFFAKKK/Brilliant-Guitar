@@ -1,5 +1,9 @@
 # Private Scale Evidence Seam Repair — E3 Workspace Law Q4 Terminal Projection
 
+## 2026-09-01 acceptance projection
+
+The Stage 6 technical candidate `0c561d14193374436361eec09b361cab0170278a` is externally audited P0/P1/P2=`0/0/0`, owner accepted, and authorized for the exact 13-file native archive. This is lifecycle acceptance only: S6.2/S6.3, integration, qualification, default cutover, RKP-3 and push remain unauthorized.
+
 ## Current terminal child projection
 
 Target native archive `4dfd4c508225be0566c0b5eee981e9e603c221a7` completed the first exact archive move. Dedicated review task/turn `01a05c71-bd60-72c0-a45d-3f6e80cda96c` / `01a05c71-c32c-7eb2-b210-6fde95603e31` then accepted exact Q3 `f887ce84fd0d8e70148e2210f7e24bd82d2c5715` at P0/P1/P2=`0/0/0`. After separate owner authorization, Q4 natively archived the closure. Stage 6 now has no planning or implementation child, stores only the archived audit-owner path plus SHA-256 `a75970a089aca2ef97a14d25c69e8d9ff4df5227face43461fb3df9e3ab0aeb6`, and waits at `explicit_owner_decision_for_stage6_parent_acceptance_archive`.
