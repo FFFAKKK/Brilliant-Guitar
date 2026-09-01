@@ -1,12 +1,12 @@
-# Private Scale Evidence Seam Repair — E3 Workspace Law Q3 Projection
+# Private Scale Evidence Seam Repair — E3 Workspace Law Q4 Terminal Projection
 
-## Current Q3 implementation state
+## Current terminal child projection
 
-Target native archive `4dfd4c508225be0566c0b5eee981e9e603c221a7` completed the exact archive move. The active closure `08-31-rkp-2-e3-workspace-law-acceptance-archive-closure` is the sole implementation child and is now candidate-ready for a dedicated read-only implementation audit. Stage 6 records only the active audit owner path and `pending`; it contains no structured Q3 audit record. Q4 and all later gates remain unauthorized.
+Target native archive `4dfd4c508225be0566c0b5eee981e9e603c221a7` completed the first exact archive move. Dedicated review task/turn `01a05c71-bd60-72c0-a45d-3f6e80cda96c` / `01a05c71-c32c-7eb2-b210-6fde95603e31` then accepted exact Q3 `f887ce84fd0d8e70148e2210f7e24bd82d2c5715` at P0/P1/P2=`0/0/0`. After separate owner authorization, Q4 natively archived the closure. Stage 6 now has no planning or implementation child, stores only the archived audit-owner path plus SHA-256 `a75970a089aca2ef97a14d25c69e8d9ff4df5227face43461fb3df9e3ab0aeb6`, and waits at `explicit_owner_decision_for_stage6_parent_acceptance_archive`.
 
 ## Historical implementation state before Q2
 
-The E3 Workspace Law acceptance/archive closeout planning authority `9bf82a221f0585719f36f36906dfc292d0e2bd5c` passed dedicated review at P0/P1/P2=`0/0/0`. The user separately authorized bounded Q1 through Q3 on `2026-09-01`, and native Q1 activation completed. The current implementation child is now `08-31-rkp-2-e3-workspace-law-acceptance-archive-closure`; Q1T is next. The law target remains active, unaccepted and unarchived.
+The E3 Workspace Law acceptance/archive closeout planning authority `9bf82a221f0585719f36f36906dfc292d0e2bd5c` passed dedicated review at P0/P1/P2=`0/0/0`. The user separately authorized bounded Q1 through Q3 on `2026-09-01`, and native Q1 activation completed. At that historical checkpoint the closeout became the implementation child, Q1T was next, and the law target was still active and unarchived.
 
 Acceptance-projection candidate `f27daf7b514731adaabbe8f7814d2b57e12a7df7` passed dedicated review, received bounded owner acceptance and was natively archived by `1c76dbf9d9cd1ece12299b148f0c6de09d1391e1`. Archive-closure technical checkpoint `387c61b4a04b45c35f14d01c342dca4307804d05` remained the sole technical owner. Closure repair candidate `11cb12ae063f91565009b85be9ba7d210a0372a6` passed targeted dedicated rereview at P0/P1/P2=`0/0/0`; separate owner closeout authorization and native archive completed P4. This does not start S6.2/S6.3 or any later gate.
 
@@ -76,3 +76,7 @@ The E3 audit record remains owned only by the 08-31 Workspace Law task and canon
 ## Acceptance/archive closure completed
 
 The closure's first implementation audit returned P0/P1/P2=`0/1/0`; the bounded repair and targeted rereview of exact candidate `11cb12ae063f91565009b85be9ba7d210a0372a6` returned `0/0/0`. Owner closeout was separately authorized. Both child tasks now exist only in the `2026-08` archive, while the E3 law task stays the current Stage 6 implementation child. The sole next gate is an explicit owner decision for that law parent. S6.2/S6.3, integration, qualification, cutover, push and RKP-3 remain false.
+
+## E3 Workspace Law Q4 closeout completed
+
+The newer Workspace Law closeout's Q3 candidate `f887ce84fd0d8e70148e2210f7e24bd82d2c5715` passed its separate dedicated implementation audit at P0/P1/P2=`0/0/0`. The structured 339-byte audit record is single-owned by the archived closure; Stage 6 stores only its archive path and SHA-256 `a75970a089aca2ef97a14d25c69e8d9ff4df5227face43461fb3df9e3ab0aeb6`. Separate owner authorization completed Q4, leaving Stage 6 active and childless. This terminal child projection does not accept/archive Stage 6 or start S6.2/S6.3, integration, qualification, cutover, push or RKP-3.
