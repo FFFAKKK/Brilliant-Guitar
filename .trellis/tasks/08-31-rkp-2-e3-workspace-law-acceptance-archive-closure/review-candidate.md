@@ -1,6 +1,14 @@
-# Review Candidate — Q1 Activation Checkpoint
+# Review Candidate — Q2 Target Owner Acceptance Checkpoint
 
-## Verdict requested
+## Current Q2 marker
+
+```text
+Q2 TARGET OWNER ACCEPTED — NATIVE ARCHIVE CLOCK PREFLIGHT NEXT
+```
+
+Technical commit `a2a022a56c77c1daea06eefa60830a67e3df95a5` restored the expected Workspace Law/full classifications. The target is still active, has the original 323-byte audit record, and is explicitly accepted/archive-authorized. This is not yet the Q3 review candidate; the closure owns no Q3 structured audit record.
+
+## Historical Q1 verdict
 
 ```text
 PLANNING PASS RECORDED FOR 9BF82A2 — Q1 ACTIVATED — Q1T NEXT

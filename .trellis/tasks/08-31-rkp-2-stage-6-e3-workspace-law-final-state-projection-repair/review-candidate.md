@@ -1,6 +1,12 @@
-# Review Candidate
+# Review Candidate — Q2 Accepted Target Awaiting Native Archive
 
-## Status
+## Current Q2 status
+
+`OWNER ACCEPTANCE RECORDED — ARCHIVE CLOCK PREFLIGHT PENDING`
+
+The dedicated implementation PASS and its canonical 323-byte record are unchanged. Q2 changes only lifecycle/context state; the next transition must be native archive after the exact local clock preflight.
+
+## Historical pre-Q2 status
 
 `P4 TARGET AND CLOSURE ARCHIVED — E3 LAW-PARENT OWNER DECISION PENDING`
 

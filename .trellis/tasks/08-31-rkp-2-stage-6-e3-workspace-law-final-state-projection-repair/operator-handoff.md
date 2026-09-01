@@ -1,6 +1,12 @@
-# Operator Handoff
+# Operator Handoff — Q2 Owner Accepted, Native Archive Pending
 
-## Current gate
+## Current Q2 gate
+
+`OWNER ACCEPTED + ARCHIVE AUTHORIZED — 2026-09-01 CLOCK PREFLIGHT REQUIRED`
+
+The original implementation review remains bound to candidate `0c561d14193374436361eec09b361cab0170278a`. Workspace Law technical commit `a2a022a56c77c1daea06eefa60830a67e3df95a5` makes active/archive resolution finite, and the two JSONL files now contain no active self-reference. The task remains `in_progress` with `completedAt=null` until native archive.
+
+## Historical pre-Q2 gate
 
 `P4 TARGET AND CLOSURE ARCHIVED — E3 LAW-PARENT OWNER DECISION PENDING`
 

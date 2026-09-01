@@ -1,6 +1,13 @@
-# Operator Handoff
+# Operator Handoff — E3 Workspace Law Q2 Complete
 
-## Current state
+## Current Q2 state
+
+- Current implementation child: `08-31-rkp-2-e3-workspace-law-acceptance-archive-closure`.
+- Workspace Law technical commit `a2a022a56c77c1daea06eefa60830a67e3df95a5` passed the exact dual-Node and full classifications.
+- The still-active target is owner-accepted and archive-authorized; native target archive clock preflight is next.
+- Stage 6 remains active and paused before S6.2; S6.2/S6.3 and every later lifecycle gate remain false.
+
+## Historical Stage 6 state before Q2
 
 - Acceptance-projection candidate `f27daf7b514731adaabbe8f7814d2b57e12a7df7` passed its dedicated review, was owner-accepted and was natively archived by `1c76dbf9d9cd1ece12299b148f0c6de09d1391e1`.
 - The 334-byte review record is single-owned by `.trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-archive-closure/task.json`, SHA-256 `8559f7aed98ddc45154f90dd459688530ba5e24efedeb573389e06ca7d099436`.

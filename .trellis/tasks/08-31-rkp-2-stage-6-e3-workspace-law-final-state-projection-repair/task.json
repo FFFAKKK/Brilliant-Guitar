@@ -54,7 +54,7 @@
     ".trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-archive-closure/design.md",
     ".trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-archive-closure/implement.md"
   ],
-  "notes": "IN_PROGRESS P4 / TARGET AND ACCEPTANCE-ARCHIVE CLOSURE TASKS COMPLETED AT THEIR 2026-08 ARCHIVE PATHS / CLOSURE TARGETED IMPLEMENTATION REREVIEW PASS 11CB12A P0_P1_P2 0_0_0 / NO CURRENT PLANNING OR IMPLEMENTATION CHILD / NEXT GATE EXPLICIT OWNER DECISION FOR THIS E3 LAW PARENT / TYPESCRIPT DEFAULT / S6.2 S6.3 FALSE / NO INTEGRATION QUALIFICATION CUTOVER PUSH OR RKP3.",
+  "notes": "IN_PROGRESS / Q2 OWNER ACCEPTED AND ARCHIVE AUTHORIZED / Q1T B7EB1EB EXACT 11-8-3 AND FULL 611-606-3-2 / NATIVE 2026-09-01 ARCHIVE CLOCK PREFLIGHT NEXT / EXISTING 323-BYTE AUDIT RECORD UNCHANGED / TYPESCRIPT DEFAULT / S6.2 S6.3 FALSE / NO E3 STRESS INTEGRATION QUALIFICATION CUTOVER PUSH OR RKP3.",
   "meta": {
     "planning_base_commit": "4ad23773e9c9e1081667a4eccb84cc464b85bc89",
     "planning_base_tree": "9dbcef77fbcc258e4fe96fdfb2b28839f095d610",
@@ -132,7 +132,7 @@
     "rkp2_stage6_s6_2_started": false,
     "rkp2_stage6_s6_3_started": false,
     "default_runtime": "typescript",
-    "archive_authorized": false,
+    "archive_authorized": true,
     "integration_authorized": false,
     "qualification_authorized": false,
     "default_runtime_switch_authorized": false,
@@ -144,8 +144,8 @@
       "prd.md": "eb1f1e4875dbd923b87960c94c4e947a466aa8a1d34e2a921c595324e70eb7af",
       "design.md": "80e9294d41f18376d3067641272c0f0f48c5cb277deb8522903502d705be77aa",
       "implement.md": "05640b4f0ae60beb3440183e075a276417f5e23b48e97e71c09ca2a12034ed8d",
-      "implement.jsonl": "7258f1d0758be729f902205406c84bf4d9836bae6966f0fc894b7777797c5f84",
-      "check.jsonl": "11371426f57123fd0058463ca9baaaa05c9e59d07d4ae7ff3faa333f48ed707c",
+      "implement.jsonl": "54c6912c5829a69d6d92a3f12825537e8489b30a906463bd9c41724a39174ca9",
+      "check.jsonl": "83aaf6771c56066982f718cbe39b66fa7399f8ec116800eec2b9efbd1fe2aa52",
       "research/current-e3-law-gap-audit.md": "f7f1473039d6c31eab669ce8ef7e85de5be8537901dacdeb1f21718b59a6aae0",
       "research/final-state-projection-contract.md": "1d398f6e70d7e62fa8c629c05d4818687f8b1b8c0b0148f67eb6a58880a4404a",
       "research/file-test-and-rollback-matrix.md": "417aba94811c2c29da675d83fa331e32c2157b9e1a5898d875cf4b730e29d628",
@@ -179,10 +179,10 @@
     "technical_changed_paths": [
       "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
     ],
-    "implementation_stage": "P4_closure_archived_completed_owner_decision_for_e3_law_parent_pending",
+    "implementation_stage": "owner_accepted_archive_authorized_clock_preflight_pending",
     "implementation_candidate_ready": true,
     "implementation_review": "passed_external_audit_bound_0c561d14193374436361eec09b361cab0170278a_P0_0_P1_0_P2_0",
-    "next_gate": "explicit_owner_decision_for_e3_law_parent_acceptance_archive",
+    "next_gate": "native_e3_workspace_law_archive_clock_preflight_required",
     "phase_b_validation": {
       "trellis_tasks_passed": 5,
       "task_json_parsed": 5,
@@ -323,6 +323,31 @@
       "verdict": "PASS_READY_FOR_BOUNDED_ACCEPTANCE_STATE_PROJECTION_IMPLEMENTATION"
     },
     "current_planning_child": null,
-    "current_implementation_child": null
+    "current_implementation_child": null,
+    "acceptance_authorized": true,
+    "post_implementation_context_archive_stability_repair": {
+      "schemaVersion": 1,
+      "authorityTask": "08-31-rkp-2-e3-workspace-law-acceptance-archive-closure",
+      "sourceHead": "a2a022a56c77c1daea06eefa60830a67e3df95a5",
+      "implementJsonl": {
+        "sourceRows": 12,
+        "sourceBytes": 2129,
+        "sourceSha256": "7258f1d0758be729f902205406c84bf4d9836bae6966f0fc894b7777797c5f84",
+        "successorRows": 9,
+        "successorBytes": 1492,
+        "successorSha256": "54c6912c5829a69d6d92a3f12825537e8489b30a906463bd9c41724a39174ca9"
+      },
+      "checkJsonl": {
+        "sourceRows": 9,
+        "sourceBytes": 1795,
+        "sourceSha256": "11371426f57123fd0058463ca9baaaa05c9e59d07d4ae7ff3faa333f48ed707c",
+        "successorRows": 6,
+        "successorBytes": 1117,
+        "successorSha256": "83aaf6771c56066982f718cbe39b66fa7399f8ec116800eec2b9efbd1fe2aa52"
+      },
+      "removedActiveSelfReferenceCount": 6,
+      "otherRowMutation": false,
+      "existingAuditRecordMutation": false
+    }
   }
 }

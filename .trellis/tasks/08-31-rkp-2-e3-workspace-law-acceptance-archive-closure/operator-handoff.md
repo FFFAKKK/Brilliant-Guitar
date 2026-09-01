@@ -1,6 +1,16 @@
-# Operator Handoff — Q1 Activation Complete
+# Operator Handoff — Q2 Target Owner Acceptance Complete
 
-## Current state
+## Current Q2 checkpoint
+
+- Workspace Law technical commit: `a2a022a56c77c1daea06eefa60830a67e3df95a5`; only the accepted test file changed.
+- Focused Node current/20.20.2: `11/8/3`; full compiled runner: `611/606/3/2`.
+- Target remains active `in_progress`, but owner acceptance and native-archive authorization are now explicit.
+- Target JSONL removed exactly six active self-references and matches the frozen `9/1492` and `6/1117` successor tuples.
+- Closure remains active, review-pending and neither accepted nor archive-authorized.
+- Sole next action: same-sequence `2026-09-01` before-`23:50` clock preflight plus native target archive.
+- S6.2/S6.3, E3 stress, integration, qualification, cutover, push, RKP-3 and Q4 remain false.
+
+## Historical Q1 activation state
 
 ```text
 base: c73e2139d3a1a9e89e4ec6071678d75be1c02abb

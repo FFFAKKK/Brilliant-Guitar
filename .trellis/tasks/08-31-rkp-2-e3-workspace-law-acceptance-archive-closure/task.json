@@ -30,7 +30,7 @@
     ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/operator-handoff.md",
     ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/review-candidate.md"
   ],
-  "notes": "IN_PROGRESS Q1 ACTIVATION COMPLETE / USER AUTHORIZED BOUNDED Q1-Q3 ON 2026-09-01 / ACCEPTED PLANNING AUTHORITY 9BF82A2 P0-0 P1-0 P2-0 / Q1T ARCHIVE-AWARE WORKSPACE LAW NEXT / TARGET ACTIVE UNACCEPTED UNARCHIVED / PRODUCTION PATHS FALSE / TYPESCRIPT DEFAULT / S6.2 S6.3 FALSE / NO E3 STRESS INTEGRATION QUALIFICATION CUTOVER PUSH OR RKP3.",
+  "notes": "IN_PROGRESS Q2 TARGET OWNER ACCEPTANCE COMPLETE / Q1T B7EB1EB EXACT 11-8-3 AND FULL 611-606-3-2 / TARGET ACTIVE ACCEPTED ARCHIVE-AUTHORIZED / NATIVE 2026-09-01 CLOCK PREFLIGHT NEXT / Q3 AUDIT NOT YET CREATED / CLOSURE ACCEPTANCE ARCHIVE FALSE / TYPESCRIPT DEFAULT / S6.2 S6.3 FALSE / NO Q4 OR LATER GATE.",
   "meta": {
     "planning_base_commit": "c73e2139d3a1a9e89e4ec6071678d75be1c02abb",
     "planning_branch": "codex/rkp-2-e3-law-acceptance-archive-closure",
@@ -41,15 +41,15 @@
     "production_implementation_authorized": false,
     "user_implementation_authorization": true,
     "independent_planning_review": "passed_9bf82a221f0585719f36f36906dfc292d0e2bd5c_P0_0_P1_0_P2_0",
-    "implementation_stage": "Q1_activation_checkpoint_complete_Q1T_workspace_law_next",
+    "implementation_stage": "Q2_target_owner_acceptance_complete_native_archive_preflight_pending",
     "implementation_candidate_ready": false,
-    "implementation_review": "pending_not_started",
-    "next_gate": "Q1T_archive_aware_workspace_law_technical_checkpoint",
+    "implementation_review": "pending_Q3_target_archive_candidate_not_frozen",
+    "next_gate": "native_e3_workspace_law_archive_clock_preflight_required",
     "target_task": "08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair",
     "target_current_status": "in_progress",
     "target_current_implementation_review": "passed_external_audit_bound_0c561d14193374436361eec09b361cab0170278a_P0_0_P1_0_P2_0",
-    "target_acceptance_authorized": false,
-    "target_archive_authorized": false,
+    "target_acceptance_authorized": true,
+    "target_archive_authorized": true,
     "target_active_root": ".trellis/tasks/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair",
     "target_archive_root": ".trellis/tasks/archive/2026-09/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair",
     "target_task_artifact_count": 12,
@@ -287,6 +287,18 @@
     "accepted_planning_authority_head": "9bf82a221f0585719f36f36906dfc292d0e2bd5c",
     "q1_activation_completed": true,
     "closure_acceptance_authorized": false,
-    "closure_archive_authorized": false
+    "closure_archive_authorized": false,
+    "workspace_law_technical_commit": "a2a022a56c77c1daea06eefa60830a67e3df95a5",
+    "target_owner_decision": {
+      "schemaVersion": 1,
+      "decision": "accepted_and_archive_authorized",
+      "authorizedBy": "user",
+      "authorizedOn": "2026-09-01",
+      "authorizationRecord": "user_approved_2026_09_01_after_explicit_bounded_Q1_through_Q3_gate",
+      "targetTask": "08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair",
+      "reviewBinding": "passed_external_audit_bound_0c561d14193374436361eec09b361cab0170278a_P0_0_P1_0_P2_0",
+      "workspaceLawTechnicalCommit": "a2a022a56c77c1daea06eefa60830a67e3df95a5",
+      "archiveClockPreflightRequired": true
+    }
   }
 }
