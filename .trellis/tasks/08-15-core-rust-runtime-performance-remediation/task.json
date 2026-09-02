@@ -46,7 +46,7 @@
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RKP-0/RKP-1 ACCEPTED ARCHIVED / RKP-2 REMAINS SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 TECHNICAL PASS 0C561D1 P0_0_P1_0_P2_0 AND Q4 ARCHIVED / CONSUMED SEMANTIC CHILD ACCEPTED AND NATIVELY ARCHIVED EXACT 12 AT 1E3759D / STAGE6 OWNER ACCEPTED AND NATIVELY ARCHIVED EXACT 13 AT BCC1C905 / CLOSEOUT OWNER ACCEPTED 9E74B826 AND NATIVELY ARCHIVED EXACT 12 AT 34389020 ON 2026-09-02 / L6 TERMINAL PROJECTION CANDIDATE READY FOR DEDICATED INDEPENDENT REVIEW / RKP2 PAUSED BEFORE S6.2 / NEXT GATE EXPLICIT USER AUTHORIZATION FOR S6.2 RESUME / TYPESCRIPT DEFAULT / NO QUALIFICATION CUTOVER PUSH OR RKP3.",
+  "notes": "RUST REMEDIATION PARENT PLANNING / RKP-2 REMAINS DIRECT IMPLEMENTATION CHILD BUT IS PAUSED AFTER S6.1 / CURRENT BLOCKING DESCENDANT IS 09-02 TRACKED-BYTE EOL PORTABILITY PREREQUISITE IN PLANNING / DIAGNOSTIC S6.2 C3C4D198 STOPPED E2 UNACCEPTED / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO QUALIFICATION CUTOVER RKP3 ARCHIVE OR PUSH.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
@@ -93,7 +93,7 @@
       "stage6_e3_started": false,
       "e3_user_authorization_consumed_by_parent_stage6_owner": true
     },
-    "current_dependency_repair_child": null,
+    "current_dependency_repair_child": "09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite",
     "future_children_created": true,
     "stage_sequence": [
       "RKP-0",
@@ -136,7 +136,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "explicit_user_authorization_for_rkp2_s6_2_resume",
+    "next_gate": "tracked_byte_eol_prerequisite_dedicated_independent_planning_review",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -343,8 +343,8 @@
     "rkp2_implementation_candidate_ready": false,
     "rkp2_implementation_review": "pending",
     "rkp2_default_runtime": "typescript",
-    "rkp2_current_blocking_descendant": null,
-    "rkp2_external_blocking_task": null,
+    "rkp2_current_blocking_descendant": "09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite",
+    "rkp2_external_blocking_task": "09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite",
     "rkp1a_public_json_property_cap_scale_compatibility_repair": {
       "parent": "08-15-core-rust-runtime-performance-remediation",
       "planning_base": "639e93555c15b46c54c8e9bb7ec610d4a77c7478",
@@ -734,6 +734,19 @@
       "l6_native_archive_commit": "34389020ba93879589f5a2fcb59ab06918647245",
       "terminal_projection_candidate_ready": true,
       "terminal_projection_review": "pending_dedicated_independent_terminal_projection_review"
+    },
+    "rkp2_tracked_byte_eol_portability_prerequisite": {
+      "task": "09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite",
+      "parent": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
+      "status": "planning",
+      "planning_base": "55cb575c606646e8449359b0c46d5c905b3bb3c6",
+      "branch": "codex/rkp-2-stage-6-eol-portability-prerequisite",
+      "task_start_run": false,
+      "production_implementation_authorized": false,
+      "independent_planning_review": "pending",
+      "next_gate": "dedicated_independent_planning_review",
+      "e3_execution_count": 0,
+      "successor": "new_S6_2_plan_after_accept_archive_integration"
     }
   }
 }
