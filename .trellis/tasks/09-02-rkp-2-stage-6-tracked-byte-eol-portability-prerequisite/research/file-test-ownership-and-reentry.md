@@ -9,7 +9,7 @@
 | `.gitattributes` | seven exact `text eol=lf` rules | wildcard or unrelated path policy |
 | `crates/brilliant-kernel-runtime/src/runtime.rs` | LF-normalize the one existing source-shape inspection in `#[cfg(test)]` | runtime struct or method behavior |
 | `crates/brilliant-kernel-runtime/src/store.rs` | LF-normalize the one existing source-shape inspection in `#[cfg(test)]` | store/model/index behavior |
-| `crates/brilliant-kernel-runtime/src/indices.rs` | LF-normalize three existing source-shape inspections and add small LF/CRLF parity coverage | index construction/query/metrics behavior |
+| `crates/brilliant-kernel-runtime/src/indices.rs` | LF-normalize three existing source-shape inspections, including metrics extraction in `indices_metrics_are_exact_and_linear_for_minimal_and_representative_stores`, and add small LF/CRLF parity coverage | index construction/query/metrics behavior or any edit to ignored `rkp2_stage_6_private_scale_evidence_v1` |
 
 ### Coordination/evidence files
 
@@ -55,7 +55,7 @@ An additional failure invalidates the assumed root cause.
 - the existing ignored scale test remains ignored and unexecuted;
 - full Rust workspace tests pass;
 - no Node exit/count/title/manifest change;
-- a fresh control lane reproduces I0, a rebuilt expected lane reproduces its pre-I1 record, the inherited Part Owner signature remains unchanged, and the other three signatures change only to their predeclared expected-transition values.
+- a fresh control lane reproduces I0, a rebuilt expected lane reproduces its pre-I1 record, the inherited Part Owner signature remains unchanged, and the other three signatures equal their corresponding predeclared expected-transition values without presuming that those values differ from control.
 
 ## Mechanical product-boundary proof
 

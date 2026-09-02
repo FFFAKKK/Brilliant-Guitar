@@ -2,11 +2,13 @@
 
 ## Current gate
 
-Planning only. Do not start or implement this task until:
+The first implementation attempt stopped in I0 at `fa756bb3755ab4f9dcc8bc1b5e5ada571102927f` before any technical edit. The task is historically `in_progress`/`task_start_run=true`, but its current implementation authorization is false. Do not reactivate or enter I1 until:
 
 1. `review-candidate.md` names an exact docs-only planning HEAD;
 2. a dedicated independent planning task returns P0/P1/P2=`0/0/0` for that exact HEAD;
-3. the user separately authorizes the tracked-byte/EOL prerequisite.
+3. the user separately authorizes that newly reviewed repaired object.
+
+The old A0, old authorization, partial I0 hashes/signatures and temporary E-drive lanes are diagnostic history and must not be reused.
 
 ## Work object
 
@@ -27,7 +29,7 @@ Technical changes are exactly:
 1. `.gitattributes` — seven explicit `text eol=lf` path rules;
 2. `runtime.rs` — one test-only source inspection;
 3. `store.rs` — one test-only source inspection;
-4. `indices.rs` — three test-only source inspections plus small LF/CRLF parity coverage.
+4. `indices.rs` — three test-only source inspections plus small LF/CRLF parity coverage; the metrics inspection owner is exactly `indices_metrics_are_exact_and_linear_for_minimal_and_representative_stores`, while the ignored `rkp2_stage_6_private_scale_evidence_v1` contains no permitted edit.
 
 All commands, fresh clones, Cargo targets, TEMP/TMP and transcripts stay on E:.
 
@@ -37,7 +39,7 @@ The Rust diff is accepted only when the lexical verifier locates the unique matc
 
 The Node red baseline is not matched by titles alone. The capture uses Node `v24.15.0` and its programmatic runner with `isolation: "none"`, `concurrency: 1`, consumes title-level `test:fail` events, validates the outer `ERR_TEST_FAILURE`/`testCodeFailure` wrapper and unwraps exactly one inner `AssertionError` cause. I0 freezes the resolved Node executable, focused-test bytes, capture-script bytes and exact `3 + 1` cause split.
 
-Candidate signatures are not all compared directly to I0. Before I1, the operator must freeze three lanes from clean `I0_SOURCE_HEAD`: a control checkout, an independently constructed expected-transition checkout using `I0_EXPECTED_PATCH.diff`, and the future candidate contract. Every new evidence path must first pass the two-placeholder content-insensitivity probe. At I3 the fresh control must equal I0, the rebuilt expected lane must equal its pre-I1 record, the Part Owner signature must remain unchanged, and the other three candidate signatures must equal only their predeclared expected-transition values. Deriving an expected value from the candidate is invalid.
+Candidate signatures are not inferred from the candidate. Before I1, the operator must freeze three lanes from the new clean `I0_SOURCE_HEAD`: a control checkout, an independently constructed expected-transition checkout using `I0_EXPECTED_PATCH.diff`, and the future candidate contract. Every new evidence path must first pass the two-placeholder content-insensitivity probe. At I3 the fresh control must equal I0, the rebuilt expected lane must equal its pre-I1 record, the Part Owner signature must remain unchanged, and the other three candidate signatures must equal their corresponding predeclared expected-transition values. An expected value is allowed to equal control; equality or inequality is never presumed. Deriving an expected value from the candidate is invalid.
 
 ## Hard stops
 

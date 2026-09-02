@@ -5,13 +5,14 @@
 - Planning base: `55cb575c606646e8449359b0c46d5c905b3bb3c6`.
 - Branch: `codex/rkp-2-stage-6-eol-portability-prerequisite`.
 - Worktree: `.worktrees/rkp-2-stage-6-eol-portability-prerequisite`.
-- Task status: `planning`.
+- Task status: `in_progress`, paused before I1 after the historical I0 stop.
+- Historical `task_start_run`: `true`; current user/production implementation authorization: `false`.
 - Production implementation authorization: `false`.
 - Dedicated planning review: pending.
 - S6.2 E3 run count: `0`.
 - Default runtime: TypeScript.
 
-Do not execute I0 until an exact docs-only planning commit receives a dedicated independent P0/P1/P2=`0/0/0` verdict and the user separately authorizes this prerequisite.
+Do not execute the re-entry I0 until an exact docs-only repair commit receives a dedicated independent P0/P1/P2=`0/0/0` verdict and the user separately authorizes that repaired object.
 
 ## Fixed stage sequence
 
@@ -73,14 +74,16 @@ docs(rkp-2): plan tracked-byte EOL portability prerequisite
 - RKP-2 parent has no different current planning or implementation child;
 - old S6.2 branch remains untouched.
 
+This is a re-entry gate after the historical I0 stop at `fa756bb3755ab4f9dcc8bc1b5e5ada571102927f`. The earlier authorization is consumed, its A0 source and temporary lanes are diagnostic only, and none may satisfy the new gate.
+
 ### Actions
 
-1. write planning audit task ID, verdict, exact HEAD and authorization scope into this task and both parent projections;
-2. run native `task.py start` for this task;
+1. write the new planning audit task ID, verdict, exact repaired HEAD and new authorization scope into this task and both parent projections;
+2. run native `task.py start` only to establish the operator session pointer; because the task is already historically `in_progress`, this call is idempotent and must not be represented as a new planning-to-in-progress transition;
 3. set this prerequisite as the sole implementation child of the RKP-2 parent; clear its planning pointer;
 4. keep Rust remediation's direct implementation child as the RKP-2 parent, and set its blocking descendant to this task;
 5. keep `stage_6_s6_2_started=false`, `stage_6_s6_3_started=false`, TypeScript default and every later authorization false;
-6. commit this lifecycle projection as the clean A0 activation commit, then set `I0_SOURCE_HEAD` to that exact commit; no technical edit or `implementation-evidence.md` may exist at that HEAD;
+6. commit this lifecycle projection as a new clean re-entry activation commit, then set the new `I0_SOURCE_HEAD` to that exact commit; no technical edit or `implementation-evidence.md` may exist at that HEAD. The old A0 `13a3a6a...`, stop commit `fa756bb...`, patch/verifier hashes and temporary checkouts are not reusable inputs;
 7. create a fresh detached control checkout of `I0_SOURCE_HEAD` on E: and record the exact activation Node baseline tuple with Node `v24.15.0`, `isolation: "none"`, `concurrency: 1`, one title-level event per failure, exact one-level `.cause` unwrapping, and the resolved Node executable fixed by `design.md` section 8.2:
    - focused command and exit;
    - total/pass/fail/skip;

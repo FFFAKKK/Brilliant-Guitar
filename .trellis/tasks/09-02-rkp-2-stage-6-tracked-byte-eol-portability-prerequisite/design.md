@@ -125,11 +125,11 @@ No helper is added. `runtime.rs`, `store.rs`, the `indices.rs` query site and th
 |---|---|---|
 | `runtime.rs` `runtime_owns_only_the_live_store_and_revision_zero` | `}\n\n` | Runtime declaration does not retain `ScoreDocumentV1` |
 | `store.rs` `every_typed_record_resolves_once_without_retaining_the_document_tree` | `}\n\n` | Store declaration does not retain `ScoreDocumentV1` |
-| `indices.rs` metrics source inspection | `}\n\n` | Metrics fields remain exact and no full-document lookup scan field appears |
+| `indices.rs` `indices_metrics_are_exact_and_linear_for_minimal_and_representative_stores` | `}\n\n` | Metrics fields remain exact and no full-document lookup scan field appears |
 | `indices.rs` `indices_voice_lookup_then_binary_time_queries_are_exact_and_half_open` | `contents\n            .get` | Private query path uses indices and does not introduce iterator scan/loop |
 | `indices.rs` `indices_rebuild_normalizes_without_handles_and_corruption_never_passes_parity` | `}\n\n` | Normalized projection contains no runtime handles |
 
-The large scale test containing the metrics source inspection remains ignored in this prerequisite. A small direct parity test or helper test must exercise both LF and CRLF representations of the same representative source fragment so the fifth change is verified without running the million-entity workload.
+The metrics source inspection is owned by the non-ignored `indices_metrics_are_exact_and_linear_for_minimal_and_representative_stores`; it is not inside `rkp2_stage_6_private_scale_evidence_v1`. The latter remains ignored and contains no permitted normalization edit. A small direct parity test must exercise both LF and CRLF representations of the same representative metrics fragment so the fifth change is verified without running the million-entity workload.
 
 ### 5.3 Non-test product equivalence
 
@@ -151,7 +151,7 @@ For each base and candidate blob the verifier must:
 4. locate by unique exact function name the five existing inspection functions:
    - `runtime_owns_only_the_live_store_and_revision_zero`;
    - `every_typed_record_resolves_once_without_retaining_the_document_tree`;
-   - `rkp2_stage_6_private_scale_evidence_v1`;
+   - `indices_metrics_are_exact_and_linear_for_minimal_and_representative_stores`;
    - `indices_voice_lookup_then_binary_time_queries_are_exact_and_half_open`;
    - `indices_rebuild_normalizes_without_handles_and_corruption_never_passes_parity`;
 5. require exactly one new test function named `source_shape_normalization_is_lf_crlf_invariant`, located inside the `indices.rs` test module;
@@ -162,7 +162,7 @@ For each base and candidate blob the verifier must:
 
 Step 2 rejects the audited suffix bypass: a new top-level item after the test module makes the module-closing suffix non-whitespace. Steps 6-9 also reject unrelated edits inside the test modules. A prefix-only comparison, broad regex, line-number-only hunk check, comparison of normalized working-tree text, or manual statement that product code did not change is insufficient.
 
-Before inspecting the real candidate, the same verifier must pass five synthetic self-tests: accept the exact permitted patch model; reject a top-level function appended after the module; ignore braces inside cooked/raw strings and nested comments; reject a hunk in an unrelated test function; reject deletion or mutation of one preserved negative assertion. Its complete source text and SHA-256 are copied into `implementation-evidence.md`, so the independent reviewer can rerun the identical verifier rather than trusting a prose result.
+Before inspecting the real candidate, the same verifier must pass five synthetic self-tests: accept the exact permitted patch model; reject a top-level function appended after the module; ignore braces inside cooked/raw strings and nested comments; reject a hunk in the real, unique but unpermitted `indices_cover_entity_owner_content_extension_and_core_references`; reject deletion or mutation of one preserved negative assertion. The negative hunk test must not name nonexistent `fn fixture`. The fixed lexical fixture contains its module-closing brace on line `13`; a hard-coded expectation of line `14` is invalid. Its complete source text and SHA-256 are copied into `implementation-evidence.md`, so the independent reviewer can rerun the identical verifier rather than trusting a prose result.
 
 ## 6. Fresh-checkout verification design
 
@@ -229,7 +229,7 @@ The final evidence contains exactly fourteen checkout records plus seven Git-blo
 - Rust 1.97.1 clippy with warnings denied;
 - Rust 1.88.0 workspace all-target check;
 - four formerly failing tests pass;
-- small LF/CRLF parity coverage reaches the fifth ignored-test source inspection;
+- small LF/CRLF parity coverage reaches the fifth non-ignored metrics source inspection;
 - existing large opt-in/ignored test does not execute.
 
 ### Layer C — repository regression
@@ -247,7 +247,7 @@ The final evidence contains exactly fourteen checkout records plus seven Git-blo
 
 ### Layer D — lifecycle
 
-- task stays `in_progress` only after explicit start authorization;
+- historical `task_start_run=true` and `status=in_progress` remain recorded after the stopped attempt, while current user/production authorization is false until an independently reviewed re-entry is explicitly authorized;
 - E3 count remains zero;
 - no old S6.2 evidence file is created or copied;
 - implementation candidate stops at dedicated independent review;
@@ -317,7 +317,9 @@ The programmatic capture script's complete source and SHA-256 are also stored in
 
 ### 8.3 Control replay and predeclared allowed transition
 
-Full equality between the I0 baseline signatures and the implementation candidate is not required, because the approved `.gitattributes`/Rust path additions intentionally change the first unknown-path failure for three historical governance tests. The comparison must therefore distinguish a reproduced baseline from a prediction made before the candidate exists. The operator performs this exact sequence:
+No baseline-to-candidate equality or inequality is presumed. The approved path projection can be hidden behind an earlier assertion in a historical governance test, so an expected-transition signature may equal its control signature. The comparison must distinguish a reproduced baseline from a prediction made before the candidate exists and require the candidate to equal that independent prediction. The operator performs this exact sequence:
+
+The stopped attempt's `13a3a6a923f6af6744ef4aa60291a622f3dff989` source, `fa756bb3755ab4f9dcc8bc1b5e5ada571102927f` stop record and all prior E-drive temporary lanes are diagnostic history only. After this amendment passes independent planning review and receives new user authorization, the operator creates a new clean re-entry activation commit and freezes that commit as the sole new `I0_SOURCE_HEAD`; no prior temporary artifact or signature file is reused.
 
 1. apply only the audited lifecycle projection, run `task.py start`, and create one clean A0 commit;
 2. set `I0_SOURCE_HEAD` to that exact A0 commit before any technical edit or evidence file exists;

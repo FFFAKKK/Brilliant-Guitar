@@ -46,7 +46,7 @@
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RUST REMEDIATION PARENT PLANNING / RKP-2 REMAINS DIRECT IMPLEMENTATION CHILD / BLOCKING DESCENDANT 09-02 EOL PREREQUISITE IN PROGRESS I0 THROUGH I3 ONLY / AUDITOR 01A06123 PASSED F39C72BF 0_0_0 / DIAGNOSTIC S6.2 C3C4D198 UNACCEPTED / TYPESCRIPT DEFAULT / NO ACCEPT ARCHIVE INTEGRATION QUALIFICATION CUTOVER RKP3 OR PUSH.",
+  "notes": "RUST REMEDIATION PARENT PLANNING / RKP-2 REMAINS DIRECT IMPLEMENTATION CHILD BUT IS PAUSED / BLOCKING DESCENDANT 09-02 EOL PREREQUISITE STOPPED IN I0 AT FA756BB WITH ZERO TECHNICAL DELTA / BOUNDED PLANNING REPAIR AWAITS NEW DEDICATED REVIEW AND NEW USER AUTHORIZATION / DIAGNOSTIC S6.2 C3C4D198 UNACCEPTED / TYPESCRIPT DEFAULT / NO REACTIVATION ACCEPT ARCHIVE INTEGRATION QUALIFICATION CUTOVER RKP3 OR PUSH.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
@@ -109,7 +109,7 @@
       "RKP-9"
     ],
     "task_start_run": true,
-    "production_implementation_authorized": true,
+    "production_implementation_authorized": false,
     "independent_planning_review": "passed",
     "planning_review_cycle": "final_targeted_rereview_passed",
     "planner_production_code_ownership": "none",
@@ -137,7 +137,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "tracked_byte_eol_prerequisite_I0_immutable_baseline_freeze",
+    "next_gate": "tracked_byte_eol_prerequisite_new_dedicated_planning_rereview",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -743,12 +743,13 @@
       "planning_base": "55cb575c606646e8449359b0c46d5c905b3bb3c6",
       "branch": "codex/rkp-2-stage-6-eol-portability-prerequisite",
       "task_start_run": true,
-      "production_implementation_authorized": true,
-      "user_implementation_authorization": true,
-      "user_implementation_authorization_scope": "I0_to_I3_activation_implementation_validation_and_candidate_freeze_only",
-      "independent_planning_review": "passed_f39c72bf_P0_0_P1_0_P2_0",
+      "production_implementation_authorized": false,
+      "user_implementation_authorization": false,
+      "user_implementation_authorization_scope": null,
+      "historical_consumed_user_implementation_authorization_scope": "I0_to_I3_activation_implementation_validation_and_candidate_freeze_only",
+      "independent_planning_review": "fifth_targeted_rereview_pending_after_I0_contract_repair",
       "first_review_task_id": "01a06123-b6c9-78a0-8216-9c8f1d53a061",
-      "next_gate": "bounded_planning_repair_and_new_dedicated_independent_planning_rereview",
+      "next_gate": "new_dedicated_independent_planning_rereview",
       "i0_status": "stopped_before_I1_on_audited_function_ownership_mismatch",
       "i0_blocker": "planned_indices_metrics_hunk_line_2055_is_not_inside_audited_rkp2_stage_6_private_scale_evidence_v1_lines_1924_to_1938",
       "i0_source_head": "13a3a6a923f6af6744ef4aa60291a622f3dff989",
@@ -760,7 +761,13 @@
       "third_reviewed_head": "5d08d5c1f7442b6105e95348ba2220c209c80e5b",
       "third_review_result": "P0_0_P1_1_P2_0_directory_wide_coordination_allowlist_conflicted_with_six_literal_paths",
       "fourth_reviewed_head": "f39c72bfba28664b1772bf19855d74c765005f14",
-      "fourth_review_result": "PASS_FOR_BOUNDED_EOL_PREREQUISITE_IMPLEMENTATION_P0_0_P1_0_P2_0"
+      "fourth_review_result": "PASS_FOR_BOUNDED_EOL_PREREQUISITE_IMPLEMENTATION_P0_0_P1_0_P2_0",
+      "stop_evidence_head": "fa756bb3755ab4f9dcc8bc1b5e5ada571102927f",
+      "stopped_authorization_consumed": true,
+      "correct_metrics_owner": "indices_metrics_are_exact_and_linear_for_minimal_and_representative_stores",
+      "ignored_scale_worker_edit_authorized": false,
+      "expected_signature_relation": "independently_predeclared_may_equal_or_differ_from_control",
+      "new_i0_source_head": "unset_until_new_review_pass_and_user_authorized_reentry_commit"
     }
   }
 }

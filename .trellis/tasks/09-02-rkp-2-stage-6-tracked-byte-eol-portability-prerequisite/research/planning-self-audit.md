@@ -2,7 +2,7 @@
 
 ## Status
 
-Author self-validation and clean-HEAD regression replay completed. Dedicated planning audit task `01a06123-b6c9-78a0-8216-9c8f1d53a061` reviewed three exact heads: `538abbda...` returned `0/2/0`; `ad56a030...` returned `0/2/0`; `5d08d5c1...` confirmed the Node/event/transition repairs but returned `0/1/0` because task meta still authorized the whole child directory rather than the six literal candidate coordination paths. This third bounded repair closes only that projection finding. A new exact HEAD must reproduce the mechanical/test tuple and receive a fourth targeted independent rereview.
+Author self-validation is being renewed after an implementation stop. Dedicated planning audit task `01a06123-b6c9-78a0-8216-9c8f1d53a061` ultimately passed `f39c72bf...` with `0/0/0`; the separately authorized attempt then stopped in I0 at `fa756bb...` before any technical edit because the six-function verifier named the wrong owner for the metrics hunk. This bounded docs-only amendment corrects that owner, the ignored/non-ignored description, the non-presumptive Node signature relationship and the re-entry baseline. A new exact clean HEAD must reproduce the planning gates and receive a fifth dedicated independent planning review.
 
 ## Scope checks
 
@@ -41,7 +41,17 @@ Author self-validation and clean-HEAD regression replay completed. Dedicated pla
 - [x] second-round P1-2 repaired in planning: pre-I1 control/expected/candidate lanes with independently generated expected-transition signatures and per-path two-placeholder content-insensitivity proof;
 - [x] third audit at `5d08d5c1...`: Node repairs closed; RETURN `0/1/0` only for directory-wide task-meta coordination authority;
 - [x] third-round P1 repaired in planning: six literal paths in task meta/research plus count `6` and task-meta/PRD/design/implement set-equality gates at I0/I3;
-- [ ] fourth targeted independent rereview of the repaired exact HEAD.
+- [x] fourth targeted independent rereview at `f39c72bf...`: PASS `0/0/0`;
+- [x] historical A0 `13a3a6a...` and stop record `fa756bb...` prove I1/I2/I3 were not started, E3 stayed zero and technical-file delta stayed empty;
+- [x] source ownership rechecked: metrics owner begins at `indices.rs:2024`, hunk is at line 2055, and ignored scale worker ends at line 1938;
+- [x] all four committed expected-transition signatures equalled control in the stopped attempt; this is accepted as a valid independently predicted relation rather than treated as a required change;
+- [x] pre-commit Trellis `7/7`, `25/20`, `18/19`, JSON/JSONL, nine-file fence, diff-check and protected-delta gates pass;
+- [x] corrected non-authoritative planning verifier SHA-256 `34ff103c52922a75fa30b525138c8d7e2573206c61f0c8037c935e61a28a93e2` passes all five synthetic checks against the exact four-file patch model;
+- [x] typecheck/build pass and focused classification remains `11/7/4/0`;
+- [x] dirty-worktree full replay is `611/604/5/2`, with the sole extra failure being the expected clean-tree assertion; no new product or title-class failure appeared;
+- [x] clean post-commit replay returns to focused `11/7/4/0` and full `611/605/4/2`; the four titles are the same historical governance set and no product failure is added;
+- [x] independent compiled-test manifest remains `80`, SHA-256 `1a50fd28c630bb016ce30f7ca65ae940170705b2eed581e610282b81378a1cf1`;
+- [ ] fifth targeted independent planning review of the repaired exact HEAD.
 
 The exact four clean-HEAD failures are:
 
@@ -55,8 +65,8 @@ The dedicated audit established the true cause split:
 - failures 1, 3 and 4 are new-child path/projection drift in historical governance assertions;
 - failure 2 is inherited base drift: the historical Part Owner blob assertion still represents property cap `1_048_577`, while accepted RKP-1A authority uses `1_572_865`.
 
-No product behavior test failed. The repaired I0/I3 contract validates the outer Node failure wrapper, unwraps exactly one inner assertion, freezes error code/operator/generated-message/message/actual/expected hashes, and combines them with exact patch reconstruction. It no longer treats title/count equality as sufficient or requires three path-sensitive candidate signatures to equal their pre-patch baselines. Their expected transitions are generated from `I0_SOURCE_HEAD` and frozen before I1; the candidate is only an observed lane.
+No product behavior test failed. The repaired I0/I3 contract validates the outer Node failure wrapper, unwraps exactly one inner assertion, freezes error code/operator/generated-message/message/actual/expected hashes, and combines them with exact patch reconstruction. It no longer treats title/count equality as sufficient and presumes neither equality nor inequality for the three path-sensitive signatures. Their expected records are generated from the new `I0_SOURCE_HEAD` and frozen before I1; the candidate is only an observed lane.
 
 ## Provisional severity result
 
-The third bounded-repair author pass finds P0/P1/P2=`0/0/0` against the sole finding returned for `5d08d5c1...`. This is not an independent verdict and does not authorize implementation.
+The current bounded-repair author pass provisionally finds P0/P1/P2=`0/0/0` against the executable I0 blocker. This is not an independent verdict and does not authorize reactivation or implementation.

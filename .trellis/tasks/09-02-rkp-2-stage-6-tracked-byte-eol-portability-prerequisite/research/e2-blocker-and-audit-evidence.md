@@ -40,7 +40,7 @@ The native test failure is a checkout-byte/test-portability prerequisite defect:
 - no `.gitattributes` entry governs the affected Rust or workload paths;
 - repository blobs are LF while the clean working tree is CRLF;
 - four non-ignored `include_str!` source-shape assertions use LF-only delimiters;
-- a fifth LF-only assertion is inside the ignored scale test;
+- a fifth LF-sensitive metrics extraction is inside the non-ignored `indices_metrics_are_exact_and_linear_for_minimal_and_representative_stores`; it happened to pass because the missing delimiter left an unbounded suffix, while the ignored scale test contains no permitted edit;
 - normalization in memory makes all five checks operate correctly.
 
 The auditor classified the root cause as `B` with accompanying planning gap `D`, not Rust product logic defect `C` and not S6.2 worker defect `A`.
@@ -70,4 +70,6 @@ Dedicated planning auditor `01a06123-b6c9-78a0-8216-9c8f1d53a061` returned:
 2. `ad56a0307bd2ef429a2693e6235f7a77a4c71ece`: P0/P1/P2=`0/2/0`; the Rust suffix bypass was closed, but the Node programmatic-runner event shape was incorrect and all-four-signatures-equal contradicted the planned path changes.
 3. `5d08d5c1f7442b6105e95348ba2220c209c80e5b`: P0/P1/P2=`0/1/0`; the two Node repairs were confirmed executable, but task meta still authorized the whole child directory while PRD/design/implement required six literal candidate coordination paths.
 
-The current bounded repair preserves the closed Node contract and replaces the directory prefix with the same six literal paths in every authority projection plus an I0/I3 set-equality gate. A fourth targeted independent rereview remains required.
+4. `f39c72bfba28664b1772bf19855d74c765005f14`: P0/P1/P2=`0/0/0`; implementation was authorized separately and created clean A0 `13a3a6a923f6af6744ef4aa60291a622f3dff989`.
+
+That attempt stopped in I0 at `fa756bb3755ab4f9dcc8bc1b5e5ada571102927f`, before I1 and with zero technical-file delta. The mandatory verifier proved that the planned metrics hunk at `indices.rs:2055` is owned by `indices_metrics_are_exact_and_linear_for_minimal_and_representative_stores` (starting at line 2024), not by the already closed ignored function `rkp2_stage_6_private_scale_evidence_v1` (lines 1924-1938). Replaying the corrected owner during planning repair also proved that the old verifier's lexical fixture expected line `14` although its matched module close is line `13`, and its unrelated-hunk negative named nonexistent `fn fixture`; the repaired contract uses line `13` plus the real unique unpermitted function `indices_cover_entity_owner_content_extension_and_core_references` without weakening lexical coverage. The committed V1/V2 expected lanes were content-insensitive and all four expected signatures equalled control; this is valid evidence that equality/inequality must not be presumed. The current bounded repair corrects only these executable planning facts, invalidates reuse of the old A0/temp lanes, and requires a new dedicated planning rereview plus new user authorization.

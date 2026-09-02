@@ -33,7 +33,7 @@
     "crates/brilliant-kernel-runtime/src/store.rs",
     "crates/brilliant-kernel-runtime/src/indices.rs"
   ],
-  "notes": "RKP-2 TRACKED-BYTE EOL PREREQUISITE IMPLEMENTATION AUTHORIZED FOR I0 THROUGH I3 ONLY / AUDITED PLANNING HEAD F39C72BF / PLANNING AUDITOR 01A06123 PASS 0_0_0 / USER AUTHORIZATION LIMITED TO ACTIVATION IMPLEMENTATION VALIDATION AND CANDIDATE FREEZE / S6.2 E1 C3C4D198 REMAINS DIAGNOSTIC UNACCEPTED / E3 ZERO / NO ACCEPT ARCHIVE INTEGRATION S6.2 S6.3 QUALIFICATION CUTOVER RKP3 OR PUSH.",
+  "notes": "RKP-2 TRACKED-BYTE EOL PREREQUISITE PAUSED BEFORE I1 / HISTORICAL A0 13A3A6A AND I0 STOP FA756BB / ZERO TECHNICAL DELTA / BOUNDED FUNCTION-OWNER AND SIGNATURE-RELATION PLANNING REPAIR READY FOR NEW DEDICATED REVIEW / CURRENT PRODUCTION AND USER AUTHORIZATION FALSE / S6.2 E1 C3C4D198 REMAINS DIAGNOSTIC UNACCEPTED / E3 ZERO / NO REACTIVATION ACCEPT ARCHIVE INTEGRATION S6.2 S6.3 QUALIFICATION CUTOVER RKP3 OR PUSH.",
   "meta": {
     "planning_base_commit": "55cb575c606646e8449359b0c46d5c905b3bb3c6",
     "planning_base_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -58,21 +58,21 @@
       "root_cause": "B_checkout_byte_test_portability_with_D_missing_raw_byte_EOL_contract_not_Rust_product_logic"
     },
     "task_start_run": true,
-    "production_implementation_authorized": true,
-    "user_implementation_authorization": true,
-    "user_implementation_authorization_scope": "I0_to_I3_activation_implementation_validation_and_candidate_freeze_only_no_acceptance_archive_integration_S6_2_S6_3_qualification_runtime_cutover_RKP3_or_push",
-    "independent_planning_review": "passed_for_bounded_eol_prerequisite_implementation",
-    "approved_planning_head": "f39c72bfba28664b1772bf19855d74c765005f14",
-    "planning_candidate_ready": false,
+    "production_implementation_authorized": false,
+    "user_implementation_authorization": false,
+    "user_implementation_authorization_scope": null,
+    "independent_planning_review": "fifth_targeted_rereview_pending_after_I0_contract_repair",
+    "approved_planning_head": null,
+    "planning_candidate_ready": true,
     "implementation_candidate_ready": false,
-    "current_phase": "I0_stopped_on_audited_function_ownership_mismatch",
-    "next_gate": "bounded_planning_repair_and_new_dedicated_independent_planning_rereview",
-    "i0_source_head": "13a3a6a923f6af6744ef4aa60291a622f3dff989",
-    "i0_source_tree": "1cfbecf6934702d1ba34ed03c2e6bf0f6d3e94f0",
-    "i0_expected_patch_byte_length": 4890,
-    "i0_expected_patch_sha256": "d991d45ed00f42f31f7dada849bc5e7a114d04f6fb680cd6836f26df4718d209",
-    "i0_rust_verifier_sha256": "43aa2e7870d0894bf59770d88a6d098815b2975a3f38e9f6d3a920220941a230",
-    "i0_rust_verifier_self_test": "stopped_exact_permitted_patch_hunk_at_indices_rs_2055_is_outside_audited_function_rkp2_stage_6_private_scale_evidence_v1_1924_to_1938",
+    "current_phase": "bounded_planning_repair_candidate_after_I0_stop",
+    "next_gate": "new_dedicated_independent_planning_rereview",
+    "i0_source_head": null,
+    "i0_source_tree": null,
+    "i0_expected_patch_byte_length": null,
+    "i0_expected_patch_sha256": null,
+    "i0_rust_verifier_sha256": null,
+    "i0_rust_verifier_self_test": "pending_new_reentry_I0_after_planning_pass_and_user_authorization",
     "i0_blocker": {
       "severity": "P1",
       "contract_location": "design.md_section_5_3_steps_4_6_and_research_file_test_ownership_and_reentry.md",
@@ -83,6 +83,51 @@
       "planned_patch_hunk_line_at_i0_source": 2055,
       "secondary_mismatch": "design_claims_metrics_inspection_is_in_the_ignored_large_test_but_the_actual_owner_is_a_non_ignored_unit_test",
       "disposition": "I1_not_started_return_to_planning_without_weakening_the_verifier"
+    },
+    "stopped_i0_attempt": {
+      "operator_task_id": "01a0619a-c127-76c1-b416-95b90e9adc0b",
+      "reviewed_planning_head": "f39c72bfba28664b1772bf19855d74c765005f14",
+      "authorization_scope": "I0_to_I3_activation_implementation_validation_and_candidate_freeze_only_no_acceptance_archive_integration_S6_2_S6_3_qualification_runtime_cutover_RKP3_or_push",
+      "activation_head": "13a3a6a923f6af6744ef4aa60291a622f3dff989",
+      "source_tree": "1cfbecf6934702d1ba34ed03c2e6bf0f6d3e94f0",
+      "stop_evidence_head": "fa756bb3755ab4f9dcc8bc1b5e5ada571102927f",
+      "stop_evidence_tree": "f3cc0f4f3f1155891b8fd13c7446b7828dac0a71",
+      "expected_patch_byte_length": 4890,
+      "expected_patch_sha256": "d991d45ed00f42f31f7dada849bc5e7a114d04f6fb680cd6836f26df4718d209",
+      "rust_verifier_sha256": "43aa2e7870d0894bf59770d88a6d098815b2975a3f38e9f6d3a920220941a230",
+      "rust_verifier_result": "stopped_exact_permitted_patch_hunk_at_indices_rs_2055_outside_audited_ignored_function_1924_to_1938",
+      "status": "authorization_consumed_stopped_in_I0_before_I1",
+      "technical_file_delta_count": 0,
+      "expected_transition_relation": "all_four_pre_I1_expected_signatures_equalled_control_and_V1_V2_placeholder_variants_were_signature_equal",
+      "e3_execution_count": 0
+    },
+    "bounded_planning_repair": {
+      "scope": "replace_wrong_metrics_function_owner_correct_ignored_nonignored_wording_fix_lexical_fixture_line_13_oracle_make_expected_signature_relation_non_presumptive_and_require_fresh_reentry_source",
+      "correct_metrics_owner": "indices_metrics_are_exact_and_linear_for_minimal_and_representative_stores",
+      "forbidden_edit_owner": "rkp2_stage_6_private_scale_evidence_v1",
+      "lexical_fixture_module_closing_line": 13,
+      "unrelated_hunk_negative_function": "indices_cover_entity_owner_content_extension_and_core_references",
+      "technical_patch_delta": "zero",
+      "implementation_evidence_at_repaired_planning_head": "absent_historical_record_retained_in_fa756bb_and_research",
+      "new_i0_source_head": "unset_until_new_review_pass_and_user_authorized_reentry_commit",
+      "new_user_authorization_required": true,
+      "targeted_independent_planning_rereview_required": true
+    },
+    "bounded_repair_author_validation": {
+      "trellis": "child_7_7_rkp2_25_20_rust_parent_18_19_pass",
+      "json_jsonl_fences_diff_and_protected_delta": "pass",
+      "corrected_planning_verifier_self_tests": "5_of_5_pass",
+      "corrected_planning_verifier_sha256": "34ff103c52922a75fa30b525138c8d7e2573206c61f0c8037c935e61a28a93e2",
+      "typecheck": "pass",
+      "build": "pass",
+      "focused": "11_total_7_pass_4_fail_0_skip",
+      "dirty_full": "611_total_604_pass_5_fail_2_skip_only_extra_failure_is_clean_tree_gate",
+      "validated_clean_head_before_evidence_record_update": "1e076a232a6929897a3d2fbe959786c7ba8db552",
+      "clean_final_head": "exact_clean_head_named_in_audit_dispatch",
+      "clean_focused": "11_total_7_pass_4_fail_0_skip",
+      "clean_full": "611_total_605_pass_4_fail_2_skip",
+      "full_manifest_file_count": 80,
+      "full_manifest_sha256": "1a50fd28c630bb016ce30f7ca65ae940170705b2eed581e610282b81378a1cf1"
     },
     "i1_started": false,
     "i2_started": false,
@@ -219,7 +264,7 @@
       "expected_transition_placeholder_probe": "per_new_evidence_path_V1_vs_V2_bytes_signature_invariant_before_I1_or_stop"
     },
     "node_signature_comparison": "I0_control_exact_plus_pre_I1_independent_expected_transition_plus_candidate_observation_no_self_expected_values",
-    "i0_source_head_contract": "clean_A0_lifecycle_commit_before_technical_or_evidence_paths",
+    "i0_source_head_contract": "new_clean_reentry_activation_commit_after_repaired_planning_pass_and_new_user_authorization_before_technical_or_evidence_paths_old_A0_non_reusable",
     "expected_patch_contract": "generated_only_from_I0_SOURCE_HEAD_by_unique_exact_text_substitutions_frozen_before_I1_applied_verbatim_and_replayed_at_I3",
     "future_coordination_allowlist_count": 6,
     "third_independent_planning_audit": {
@@ -240,6 +285,14 @@
       "P2": 0,
       "verdict": "PASS_FOR_BOUNDED_EOL_PREREQUISITE_IMPLEMENTATION"
     },
-    "coordination_allowlist_projection_gate": "task_meta_PRD_design_implement_and_actual_candidate_diff_exact_same_six_literal_paths_at_I0_and_I3"
+    "coordination_allowlist_projection_gate": "task_meta_PRD_design_implement_and_actual_candidate_diff_exact_same_six_literal_paths_at_I0_and_I3",
+    "fifth_planning_review": {
+      "reviewed_head": null,
+      "task_id": null,
+      "P0": null,
+      "P1": null,
+      "P2": null,
+      "verdict": "pending"
+    }
   }
 }
