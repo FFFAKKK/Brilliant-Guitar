@@ -743,13 +743,13 @@
       "planning_base": "55cb575c606646e8449359b0c46d5c905b3bb3c6",
       "branch": "codex/rkp-2-stage-6-eol-portability-prerequisite",
       "task_start_run": true,
-      "production_implementation_authorized": false,
-      "user_implementation_authorization": false,
-      "user_implementation_authorization_scope": null,
+      "production_implementation_authorized": true,
+      "user_implementation_authorization": true,
+      "user_implementation_authorization_scope": "new_reentry_I0_to_I3_activation_implementation_validation_and_candidate_freeze_only",
       "historical_consumed_user_implementation_authorization_scope": "I0_to_I3_activation_implementation_validation_and_candidate_freeze_only",
-      "independent_planning_review": "fifth_targeted_rereview_pending_after_I0_contract_repair",
+      "independent_planning_review": "passed_c0a1a950_P0_0_P1_0_P2_0_by_01a06202_d330_7212_be3e_40e9f64d8313",
       "first_review_task_id": "01a06123-b6c9-78a0-8216-9c8f1d53a061",
-      "next_gate": "new_dedicated_independent_planning_rereview",
+      "next_gate": "I0_new_immutable_baseline_freeze",
       "i0_status": "stopped_before_I1_on_audited_function_ownership_mismatch",
       "i0_blocker": "planned_indices_metrics_hunk_line_2055_is_not_inside_audited_rkp2_stage_6_private_scale_evidence_v1_lines_1924_to_1938",
       "i0_source_head": "13a3a6a923f6af6744ef4aa60291a622f3dff989",
@@ -767,7 +767,10 @@
       "correct_metrics_owner": "indices_metrics_are_exact_and_linear_for_minimal_and_representative_stores",
       "ignored_scale_worker_edit_authorized": false,
       "expected_signature_relation": "independently_predeclared_may_equal_or_differ_from_control",
-      "new_i0_source_head": "unset_until_new_review_pass_and_user_authorized_reentry_commit"
+      "new_i0_source_head": "unset_until_new_reentry_activation_commit",
+      "fifth_reviewed_head": "c0a1a950b0f73e6bd0b58c8850084b902f030b59",
+      "fifth_review_task_id": "01a06202-d330-7212-be3e-40e9f64d8313",
+      "fifth_review_result": "PASS_FOR_NEW_BOUNDED_EOL_PREREQUISITE_REENTRY_AUTHORIZATION_DECISION_P0_0_P1_0_P2_0"
     }
   }
 }

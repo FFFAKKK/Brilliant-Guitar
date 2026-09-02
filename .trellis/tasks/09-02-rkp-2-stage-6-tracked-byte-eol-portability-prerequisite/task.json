@@ -33,7 +33,7 @@
     "crates/brilliant-kernel-runtime/src/store.rs",
     "crates/brilliant-kernel-runtime/src/indices.rs"
   ],
-  "notes": "RKP-2 TRACKED-BYTE EOL PREREQUISITE PAUSED BEFORE I1 / HISTORICAL A0 13A3A6A AND I0 STOP FA756BB / ZERO TECHNICAL DELTA / BOUNDED FUNCTION-OWNER AND SIGNATURE-RELATION PLANNING REPAIR READY FOR NEW DEDICATED REVIEW / CURRENT PRODUCTION AND USER AUTHORIZATION FALSE / S6.2 E1 C3C4D198 REMAINS DIAGNOSTIC UNACCEPTED / E3 ZERO / NO REACTIVATION ACCEPT ARCHIVE INTEGRATION S6.2 S6.3 QUALIFICATION CUTOVER RKP3 OR PUSH.",
+  "notes": "RKP-2 TRACKED-BYTE EOL PREREQUISITE RE-ENTRY AUTHORIZED FOR I0 THROUGH I3 ONLY / REPAIRED PLANNING HEAD C0A1A950 / DEDICATED AUDITOR 01A06202 PASS 0_0_0 / HISTORICAL A0 13A3A6A AND STOP FA756BB REMAIN NON-REUSABLE DIAGNOSTIC HISTORY / S6.2 E1 C3C4D198 REMAINS DIAGNOSTIC UNACCEPTED / E3 ZERO / NO ACCEPT ARCHIVE INTEGRATION S6.2 S6.3 QUALIFICATION CUTOVER RKP3 OR PUSH.",
   "meta": {
     "planning_base_commit": "55cb575c606646e8449359b0c46d5c905b3bb3c6",
     "planning_base_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -58,15 +58,15 @@
       "root_cause": "B_checkout_byte_test_portability_with_D_missing_raw_byte_EOL_contract_not_Rust_product_logic"
     },
     "task_start_run": true,
-    "production_implementation_authorized": false,
-    "user_implementation_authorization": false,
-    "user_implementation_authorization_scope": null,
-    "independent_planning_review": "fifth_targeted_rereview_pending_after_I0_contract_repair",
-    "approved_planning_head": null,
-    "planning_candidate_ready": true,
+    "production_implementation_authorized": true,
+    "user_implementation_authorization": true,
+    "user_implementation_authorization_scope": "new_reentry_I0_to_I3_activation_implementation_validation_and_candidate_freeze_only_no_acceptance_archive_integration_S6_2_S6_3_E3_qualification_runtime_cutover_RKP3_or_push",
+    "independent_planning_review": "fifth_targeted_rereview_passed_for_new_bounded_reentry",
+    "approved_planning_head": "c0a1a950b0f73e6bd0b58c8850084b902f030b59",
+    "planning_candidate_ready": false,
     "implementation_candidate_ready": false,
-    "current_phase": "bounded_planning_repair_candidate_after_I0_stop",
-    "next_gate": "new_dedicated_independent_planning_rereview",
+    "current_phase": "I0_reentry_activation_and_immutable_baseline",
+    "next_gate": "I0_new_immutable_baseline_freeze",
     "i0_source_head": null,
     "i0_source_tree": null,
     "i0_expected_patch_byte_length": null,
@@ -287,12 +287,12 @@
     },
     "coordination_allowlist_projection_gate": "task_meta_PRD_design_implement_and_actual_candidate_diff_exact_same_six_literal_paths_at_I0_and_I3",
     "fifth_planning_review": {
-      "reviewed_head": null,
-      "task_id": null,
-      "P0": null,
-      "P1": null,
-      "P2": null,
-      "verdict": "pending"
+      "reviewed_head": "c0a1a950b0f73e6bd0b58c8850084b902f030b59",
+      "task_id": "01a06202-d330-7212-be3e-40e9f64d8313",
+      "P0": 0,
+      "P1": 0,
+      "P2": 0,
+      "verdict": "PASS_FOR_NEW_BOUNDED_EOL_PREREQUISITE_REENTRY_AUTHORIZATION_DECISION"
     }
   }
 }
