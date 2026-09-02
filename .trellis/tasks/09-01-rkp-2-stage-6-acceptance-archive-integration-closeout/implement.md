@@ -44,22 +44,63 @@ In original RKP-2 only, project sole authority, preserve frozen provenance, set 
 
 ## L6 — closeout archive and terminal projection
 
-The independent integration review of `3799faf635482f0301e61a56f1faf83ea3fe0f5f` returned P0/P1/P2=`0/1/0`, `RETURN FOR ONE BOUNDED L6 CLOCK/DATE CONTRACT REPAIR`. First obtain a targeted independent rereview PASS for the exact four-file repair. That PASS is evidence only and does not itself authorize L6.
+The independent integration review of `3799faf635482f0301e61a56f1faf83ea3fe0f5f` returned P0/P1/P2=`0/1/0`, `RETURN FOR ONE BOUNDED L6 CLOCK/DATE CONTRACT REPAIR`. The targeted rereview of the exact four-file date-contract repair `55ca574df1156bcda2ec26499d8fb717d9faff82` then returned P0/P1/P2=`0/1/0`, `RETURN FOR ONE BOUNDED POWERSHELL PREFLIGHT REPAIR`: on PowerShell 7.6.4, plain `ConvertFrom-Json` converts the ISO deadline into `System.DateTime`, so the fixed `DateTimeOffset.ParseExact` contract receives a culture-rendered value rather than the original JSON string. First obtain a targeted independent rereview PASS for the exact three-file PowerShell preflight repair. That PASS is evidence only and does not itself authorize L6.
 
 After targeted rereview and separate explicit L6 authorization, load the closeout task metadata and preflight only the L6-owned clock fields:
 
 ```powershell
-$closeout = Get-Content -Raw -LiteralPath '.trellis/tasks/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout/task.json' | ConvertFrom-Json
-$now = [DateTimeOffset]::Now
-$deadline = [DateTimeOffset]::ParseExact($closeout.meta.closeout_archive_deadline_local, "yyyy-MM-dd'T'HH:mm:sszzz", [Globalization.CultureInfo]::InvariantCulture)
-if ($closeout.meta.closeout_archive_date -ne '2026-09-02') { throw 'L6 closeout archive date contract drift' }
-if ($now.Offset -ne [TimeSpan]::FromHours(8)) { throw 'L6 requires +08:00 local offset' }
-if ($now.ToString('yyyy-MM-dd') -ne $closeout.meta.closeout_archive_date) { throw 'L6 local date mismatch' }
-if ($now -ge $deadline) { throw 'L6 closeout archive deadline reached' }
-if ($closeout.meta.archive_date -ne '2026-09-01' -or $closeout.meta.archive_clock_scope -ne 'historical_semantic_child_and_stage6_native_archive_window_only_not_l6') { throw 'historical archive clock drift' }
+# L6_POWERSHELL_PREFLIGHT_V1_BEGIN
+& {
+    $ErrorActionPreference = 'Stop'
+    $taskPath = '.trellis/tasks/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout/task.json'
+    $convertFromJson = Get-Command ConvertFrom-Json -CommandType Cmdlet -ErrorAction Stop
+    if (-not $convertFromJson.Parameters.ContainsKey('DateKind')) {
+        throw 'L6 requires PowerShell 7+ ConvertFrom-Json -DateKind String support'
+    }
+
+    $closeout = Get-Content -Raw -LiteralPath $taskPath | ConvertFrom-Json -DateKind String
+    $archiveDate = $closeout.meta.closeout_archive_date
+    $deadlineText = $closeout.meta.closeout_archive_deadline_local
+    if ($archiveDate -isnot [System.String] -or $deadlineText -isnot [System.String]) {
+        throw 'L6 closeout clock fields must remain System.String after JSON decode'
+    }
+
+    $format = "yyyy-MM-dd'T'HH:mm:sszzz"
+    $deadline = [DateTimeOffset]::ParseExact(
+        $deadlineText,
+        $format,
+        [Globalization.CultureInfo]::InvariantCulture,
+        [Globalization.DateTimeStyles]::None
+    )
+    $now = [DateTimeOffset]::Now
+    $expectedOffset = [TimeSpan]::FromHours(8)
+    $dateMatches = $now.ToString('yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture) -ceq '2026-09-02' -and $archiveDate -ceq '2026-09-02'
+    $offsetMatches = $now.Offset -eq $expectedOffset -and $deadline.Offset -eq $expectedOffset
+    $beforeDeadline = $now -lt $deadline
+    if (-not $dateMatches) { throw 'L6 local or metadata date mismatch' }
+    if (-not $offsetMatches) { throw 'L6 requires +08:00 local and deadline offsets' }
+    if (-not $beforeDeadline) { throw 'L6 closeout archive deadline reached' }
+    if ($deadline.ToString('yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture) -cne $archiveDate) { throw 'L6 deadline date contract drift' }
+    if ($closeout.meta.archive_month -cne '2026-09' -or $closeout.meta.closeout_archive_root -cne '.trellis/tasks/archive/2026-09/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout') { throw 'L6 archive month or root drift' }
+    if ($closeout.meta.archive_date -cne '2026-09-01' -or $closeout.meta.archive_deadline_local -cne '23:50:00+08:00' -or $closeout.meta.archive_clock_scope -cne 'historical_semantic_child_and_stage6_native_archive_window_only_not_l6') { throw 'historical archive clock drift' }
+    if ($closeout.meta.closeout_archive_clock_owner -cne 'L6_closeout_only') { throw 'L6 closeout clock owner drift' }
+
+    [pscustomobject]@{
+        schemaVersion = 1
+        pwshVersion = $PSVersionTable.PSVersion.ToString()
+        currentCulture = [Threading.Thread]::CurrentThread.CurrentCulture.Name
+        archiveDateType = $archiveDate.GetType().FullName
+        deadlineType = $deadlineText.GetType().FullName
+        parseExactSucceeded = $true
+        dateMatches = $dateMatches
+        offsetMatches = $offsetMatches
+        beforeDeadline = $beforeDeadline
+    } | ConvertTo-Json -Compress
+}
+# L6_POWERSHELL_PREFLIGHT_V1_END
 ```
 
-Any date, timezone, deadline, archive-month/root, or historical-clock failure stops before acceptance/archive mutation and before `task.py archive`. The generic `archive_date` and `archive_deadline_local` fields are L2/L3 historical evidence only and must not drive L6. On a passing preflight, preserve archive month/root, record closeout archive authorization and run:
+This is the complete copy-paste preflight. It requires PowerShell 7+ `ConvertFrom-Json -DateKind String`; unsupported `-DateKind`, automatic date conversion, non-string clock fields, fixed-format parse failure, local-date/offset/deadline mismatch, archive-month/root drift or historical-clock drift all throw before acceptance/archive mutation and before `task.py archive`. It does not depend on process culture or implicit date `ToString`. The generic `archive_date` and `archive_deadline_local` fields remain L2/L3 historical evidence only and must not drive L6. On a passing preflight, preserve archive month/root, record closeout archive authorization and run:
 
 ```powershell
 python ./.trellis/scripts/task.py archive 09-01-rkp-2-stage-6-acceptance-archive-integration-closeout

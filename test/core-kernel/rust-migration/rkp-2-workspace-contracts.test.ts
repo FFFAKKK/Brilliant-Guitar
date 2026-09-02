@@ -553,6 +553,8 @@ const STAGE_6_CLOSEOUT_TARGET_WORKTREE =
   ".worktrees/rkp-2-indexed-live-score-store-implementation";
 const STAGE_6_CLOSEOUT_L5_INTEGRATION_COMMIT =
   "3799faf635482f0301e61a56f1faf83ea3fe0f5f";
+const STAGE_6_CLOSEOUT_L6_CLOCK_DATE_REPAIR_COMMIT =
+  "55ca574df1156bcda2ec26499d8fb717d9faff82";
 const STAGE_6_CLOSEOUT_HISTORICAL_ARCHIVE_DATE = "2026-09-01";
 const STAGE_6_CLOSEOUT_HISTORICAL_ARCHIVE_DEADLINE = "23:50:00+08:00";
 const STAGE_6_CLOSEOUT_ARCHIVE_DATE = "2026-09-02";
@@ -563,6 +565,15 @@ const STAGE_6_CLOSEOUT_L6_DATE_REPAIR_PATHS = [
   ".trellis/tasks/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout/task.json",
   "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
 ] as const;
+const STAGE_6_CLOSEOUT_POWERSHELL_PREFLIGHT_REPAIR_PATHS = [
+  ".trellis/tasks/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout/implement.md",
+  ".trellis/tasks/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout/task.json",
+  "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
+] as const;
+const STAGE_6_CLOSEOUT_POWERSHELL_PREFLIGHT_BEGIN =
+  "# L6_POWERSHELL_PREFLIGHT_V1_BEGIN";
+const STAGE_6_CLOSEOUT_POWERSHELL_PREFLIGHT_END =
+  "# L6_POWERSHELL_PREFLIGHT_V1_END";
 const STAGE_6_CLOSEOUT_FROZEN_PARENT_CHAIN = [
   {
     commit: STAGE_6_CLOSEOUT_ACTIVATION_COMMIT,
@@ -1224,10 +1235,43 @@ function currentStage6CloseoutL6DateRepairChanges(): Map<string, "A" | "M" | "D"
     }
   };
   collect([
+    "diff-tree",
+    "--no-commit-id",
+    "--no-renames",
+    "--name-status",
+    "-r",
+    STAGE_6_CLOSEOUT_L6_CLOCK_DATE_REPAIR_COMMIT,
+  ]);
+  return result;
+}
+
+function currentStage6CloseoutPowerShellPreflightRepairChanges(): Map<
+  string,
+  "A" | "M" | "D"
+> {
+  const result = new Map<string, "A" | "M" | "D">();
+  const collect = (
+    args: readonly string[],
+    fallbackStatus?: "A",
+    preserveExisting = false,
+  ): void => {
+    for (const line of lines(git(args))) {
+      const [statusOrPath, path, extra] = line.split("\t");
+      const status = fallbackStatus ?? statusOrPath;
+      const resolvedPath = fallbackStatus === undefined ? path : statusOrPath;
+      assert.equal(extra, undefined, "rename-collapsed paths are forbidden");
+      assert.ok(status === "A" || status === "M" || status === "D");
+      assert.ok(resolvedPath);
+      if (!preserveExisting || !result.has(resolvedPath)) {
+        result.set(resolvedPath, status);
+      }
+    }
+  };
+  collect([
     "diff",
     "--no-renames",
     "--name-status",
-    `${STAGE_6_CLOSEOUT_L5_INTEGRATION_COMMIT}..HEAD`,
+    `${STAGE_6_CLOSEOUT_L6_CLOCK_DATE_REPAIR_COMMIT}..HEAD`,
   ]);
   collect(["diff", "--no-renames", "--name-status"], undefined, true);
   collect(["diff", "--cached", "--no-renames", "--name-status"], undefined, true);
@@ -2236,11 +2280,14 @@ interface Stage6CloseoutL6DateRepairProjection {
 }
 
 function currentStage6CloseoutL6DateRepairParents(): readonly string[] {
-  const head = git(["rev-parse", "HEAD"]).trim();
-  if (head === STAGE_6_CLOSEOUT_L5_INTEGRATION_COMMIT) {
-    return [STAGE_6_CLOSEOUT_L5_INTEGRATION_COMMIT];
-  }
-  return lines(git(["show", "-s", "--format=%P", "HEAD"])).flatMap((line) =>
+  return lines(
+    git([
+      "show",
+      "-s",
+      "--format=%P",
+      STAGE_6_CLOSEOUT_L6_CLOCK_DATE_REPAIR_COMMIT,
+    ]),
+  ).flatMap((line) =>
     line.split(" ").filter(Boolean),
   );
 }
@@ -2260,6 +2307,131 @@ function assertStage6CloseoutL6DateRepairProjection(
     STAGE_6_CLOSEOUT_L6_DATE_REPAIR_PATHS.map((path) => `M\t${path}`).sort(),
     "L6 date repair must change exactly the four declared files",
   );
+}
+
+function currentStage6CloseoutPowerShellPreflightRepairParents(): readonly string[] {
+  const head = git(["rev-parse", "HEAD"]).trim();
+  if (head === STAGE_6_CLOSEOUT_L6_CLOCK_DATE_REPAIR_COMMIT) {
+    return [STAGE_6_CLOSEOUT_L6_CLOCK_DATE_REPAIR_COMMIT];
+  }
+  return lines(git(["show", "-s", "--format=%P", "HEAD"])).flatMap((line) =>
+    line.split(" ").filter(Boolean),
+  );
+}
+
+function assertStage6CloseoutPowerShellPreflightRepairProjection(
+  projection: Stage6CloseoutL6DateRepairProjection,
+): void {
+  assert.deepEqual(
+    projection.parents,
+    [STAGE_6_CLOSEOUT_L6_CLOCK_DATE_REPAIR_COMMIT],
+    "PowerShell preflight repair must be the direct single-parent child of the clock/date repair",
+  );
+  assert.deepEqual(
+    [...projection.changes]
+      .map(([path, status]) => `${status}\t${path}`)
+      .sort(),
+    STAGE_6_CLOSEOUT_POWERSHELL_PREFLIGHT_REPAIR_PATHS.map(
+      (path) => `M\t${path}`,
+    ).sort(),
+    "PowerShell preflight repair must change exactly the three declared files",
+  );
+}
+
+interface Stage6CloseoutPowerShellPreflightEvidence {
+  readonly schemaVersion: unknown;
+  readonly pwshVersion: unknown;
+  readonly currentCulture: unknown;
+  readonly archiveDateType: unknown;
+  readonly deadlineType: unknown;
+  readonly parseExactSucceeded: unknown;
+  readonly dateMatches: unknown;
+  readonly offsetMatches: unknown;
+  readonly beforeDeadline: unknown;
+}
+
+function stage6CloseoutPowerShellPreflightScript(): string {
+  const implement = readText(`${STAGE_6_CLOSEOUT_ROOT}/implement.md`);
+  const start = implement.indexOf(STAGE_6_CLOSEOUT_POWERSHELL_PREFLIGHT_BEGIN);
+  const end = implement.indexOf(STAGE_6_CLOSEOUT_POWERSHELL_PREFLIGHT_END);
+  assert.ok(start >= 0, "PowerShell preflight begin marker must exist");
+  assert.ok(end > start, "PowerShell preflight end marker must follow begin");
+  const script = implement
+    .slice(start + STAGE_6_CLOSEOUT_POWERSHELL_PREFLIGHT_BEGIN.length, end)
+    .trim();
+  assert.equal(
+    script.includes("task.py archive"),
+    false,
+    "execution-level preflight must never archive the task",
+  );
+  return script;
+}
+
+function executeStage6CloseoutPowerShellPreflight(
+  script: string,
+  culture?: string,
+): Stage6CloseoutPowerShellPreflightEvidence {
+  const culturePrefix =
+    culture === undefined
+      ? ""
+      : [
+          `$culture = [Globalization.CultureInfo]::GetCultureInfo('${culture}')`,
+          "[Threading.Thread]::CurrentThread.CurrentCulture = $culture",
+          "[Threading.Thread]::CurrentThread.CurrentUICulture = $culture",
+        ].join("\n");
+  const output = execFileSync(
+    process.env.BRILLIANT_RKP2_PWSH ?? "pwsh",
+    [
+      "-NoLogo",
+      "-NoProfile",
+      "-NonInteractive",
+      "-Command",
+      `${culturePrefix}\n${script}`,
+    ],
+    {
+      cwd: process.cwd(),
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+      timeout: 30_000,
+      maxBuffer: 1024 * 1024,
+    },
+  ).trim();
+  const result = JSON.parse(lines(output).at(-1) ?? "") as unknown;
+  assert.ok(
+    result !== null && typeof result === "object" && !Array.isArray(result),
+  );
+  return result as Stage6CloseoutPowerShellPreflightEvidence;
+}
+
+function assertStage6CloseoutPowerShellPreflightEvidence(
+  evidence: Stage6CloseoutPowerShellPreflightEvidence,
+  expectedCulture?: string,
+): void {
+  assert.equal(evidence.schemaVersion, 1);
+  assert.equal(typeof evidence.pwshVersion, "string");
+  assert.match(evidence.pwshVersion as string, /^(?:[7-9]|[1-9]\d+)\./u);
+  if (expectedCulture !== undefined) {
+    assert.equal(evidence.currentCulture, expectedCulture);
+  }
+  assert.equal(evidence.archiveDateType, "System.String");
+  assert.equal(evidence.deadlineType, "System.String");
+  assert.equal(evidence.parseExactSucceeded, true);
+  assert.equal(evidence.dateMatches, true);
+  assert.equal(evidence.offsetMatches, true);
+  assert.equal(evidence.beforeDeadline, true);
+}
+
+function replaceStage6CloseoutPowerShellPreflightOnce(
+  script: string,
+  expected: string,
+  replacement: string,
+): string {
+  assert.equal(
+    script.split(expected).length,
+    2,
+    `PowerShell preflight mutation target must occur exactly once: ${expected}`,
+  );
+  return script.replace(expected, replacement);
 }
 
 interface Stage6CloseoutClockProjection {
@@ -2329,13 +2501,63 @@ function assertStage6CloseoutIntegrationReviewProjection(
     projection.verdict,
     "RETURN FOR ONE BOUNDED L6 CLOCK/DATE CONTRACT REPAIR",
   );
-  assert.equal(projection.reviewTaskId, "01a05f7a-de45-77c3-9287-88e354d2fd6f");
+  assert.equal(
+    projection.reviewTaskId,
+    "01a05f7a-de45-77c3-9287-88e354d2fd6f",
+  );
   assert.equal(projection.reviewThreadId, "01a05f7a-de45-77c3-9287-88e354d2fd6f");
   assert.equal(projection.reviewTurnId, "01a05f7a-e32b-7b71-8497-d41987574d0d");
   assert.equal(
     projection.reviewGeneratedAuthorization,
     false,
     "integration review must remain evidence only",
+  );
+}
+
+interface Stage6CloseoutPowerShellPreflightReviewProjection {
+  readonly candidateCommit: unknown;
+  readonly P0: unknown;
+  readonly P1: unknown;
+  readonly P2: unknown;
+  readonly verdict: unknown;
+  readonly reviewTaskId: unknown;
+  readonly reviewThreadId: unknown;
+  readonly reviewTurnId: unknown;
+  readonly finding: unknown;
+  readonly reviewGeneratedAuthorization: unknown;
+}
+
+function assertStage6CloseoutPowerShellPreflightReviewProjection(
+  projection: Stage6CloseoutPowerShellPreflightReviewProjection,
+): void {
+  assert.equal(
+    projection.candidateCommit,
+    STAGE_6_CLOSEOUT_L6_CLOCK_DATE_REPAIR_COMMIT,
+  );
+  assert.equal(projection.P0, 0);
+  assert.equal(projection.P1, 1);
+  assert.equal(projection.P2, 0);
+  assert.equal(
+    projection.verdict,
+    "RETURN FOR ONE BOUNDED POWERSHELL PREFLIGHT REPAIR",
+  );
+  assert.equal(projection.reviewTaskId, "01a05f7a-de45-77c3-9287-88e354d2fd6f");
+  assert.equal(
+    projection.reviewThreadId,
+    "01a05f7a-de45-77c3-9287-88e354d2fd6f",
+  );
+  assert.equal(
+    projection.reviewTurnId,
+    "01a05fa0-26c7-7b81-94f0-eb2291db4ec1",
+  );
+  assert.equal(
+    projection.finding,
+    "plain_ConvertFrom_Json_auto_converts_ISO_deadline_to_System_DateTime_before_DateTimeOffset_ParseExact",
+  );
+  assert.equal(
+    projection.reviewGeneratedAuthorization,
+    false,
+    "PowerShell preflight review must remain evidence only",
   );
 }
 
@@ -2414,6 +2636,7 @@ interface Stage6CloseoutLifecycleProjection {
   readonly closeoutL3AuditReviewGeneratedAuthorization: unknown;
   readonly closeoutL3AuditAuthorizationSource: unknown;
   readonly closeoutL6DateRepairCandidateReady: unknown;
+  readonly closeoutL6PowerShellPreflightRepairCandidateReady: unknown;
   readonly closeoutL6ExecutionAuthorized: unknown;
   readonly closeoutL6Started: unknown;
   readonly closeoutAcceptanceAuthorized: unknown;
@@ -2525,7 +2748,7 @@ function assertStage6CloseoutLifecycleProjection(
   if (phase === "integrated") {
     assert.equal(
       projection.closeoutImplementationStage,
-      "L6_clock_date_contract_repair_candidate_ready_for_targeted_independent_rereview",
+      "bounded_PowerShell_preflight_repair_candidate_ready_for_targeted_independent_rereview",
     );
     assert.equal(
       projection.closeoutImplementationReview,
@@ -2533,13 +2756,17 @@ function assertStage6CloseoutLifecycleProjection(
     );
     assert.equal(
       projection.closeoutIntegrationReview,
-      "returned_P0_0_P1_1_P2_0_for_one_bounded_L6_clock_date_contract_repair",
+      "targeted_L6_clock_date_contract_rereview_returned_P0_0_P1_1_P2_0_for_one_bounded_PowerShell_preflight_repair",
     );
     assert.equal(
       projection.closeoutNextGate,
-      "targeted_independent_L6_clock_date_contract_repair_rereview_pending",
+      "targeted_independent_PowerShell_preflight_repair_rereview_pending",
     );
     assert.equal(projection.closeoutL6DateRepairCandidateReady, true);
+    assert.equal(
+      projection.closeoutL6PowerShellPreflightRepairCandidateReady,
+      true,
+    );
     assert.equal(
       projection.closeoutL6ExecutionAuthorized,
       false,
@@ -3736,7 +3963,7 @@ test("Stage 6 hostile and resource evidence consumes the existing private Rust s
   assert.match(nodeBoundary, /fn request_cap_is_checked_on_borrowed_length_before_copy\(\)/u);
 });
 
-test("Stage 6 semantic canonical evidence correction and E2 worker stay inside the accepted contracts", () => {
+test("Stage 6 semantic canonical evidence correction and E2 worker stay inside the accepted contracts", (context) => {
   assert.doesNotThrow(() =>
     git(["cat-file", "-e", `${STAGE_6_SEMANTIC_CANONICAL_PLANNING_HEAD}^{commit}`]),
   );
@@ -5529,6 +5756,10 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
   const closeoutIntegrationReviewRecord = closeoutMeta.independent_integration_review as
     | Readonly<Record<string, unknown>>
     | undefined;
+  const closeoutPowerShellPreflightReviewRecord = closeoutMeta
+    .targeted_l6_clock_date_contract_rereview as
+    | Readonly<Record<string, unknown>>
+    | undefined;
   const rkp2CloseoutProjection = currentRkp2Meta
     .stage6_acceptance_archive_integration_closeout as
     | Readonly<Record<string, unknown>>
@@ -5539,6 +5770,7 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     | undefined;
   assert.ok(closeoutL3AuditRecord);
   assert.ok(closeoutIntegrationReviewRecord);
+  assert.ok(closeoutPowerShellPreflightReviewRecord);
   assert.ok(rkp2CloseoutProjection);
   assert.ok(rustCloseoutProjection);
   const integrationReviewProjection: Stage6CloseoutIntegrationReviewProjection = {
@@ -5560,6 +5792,38 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     { ...integrationReviewProjection, reviewGeneratedAuthorization: true },
   ]) {
     assert.throws(() => assertStage6CloseoutIntegrationReviewProjection(variant));
+  }
+  const powerShellPreflightReviewProjection: Stage6CloseoutPowerShellPreflightReviewProjection = {
+    candidateCommit: closeoutPowerShellPreflightReviewRecord.candidate_commit,
+    P0: closeoutPowerShellPreflightReviewRecord.P0,
+    P1: closeoutPowerShellPreflightReviewRecord.P1,
+    P2: closeoutPowerShellPreflightReviewRecord.P2,
+    verdict: closeoutPowerShellPreflightReviewRecord.verdict,
+    reviewTaskId: closeoutPowerShellPreflightReviewRecord.review_task_id,
+    reviewThreadId: closeoutPowerShellPreflightReviewRecord.review_thread_id,
+    reviewTurnId: closeoutPowerShellPreflightReviewRecord.review_turn_id,
+    finding: closeoutPowerShellPreflightReviewRecord.finding,
+    reviewGeneratedAuthorization:
+      closeoutPowerShellPreflightReviewRecord.review_generated_authorization,
+  };
+  assertStage6CloseoutPowerShellPreflightReviewProjection(
+    powerShellPreflightReviewProjection,
+  );
+  for (const variant of [
+    {
+      ...powerShellPreflightReviewProjection,
+      candidateCommit: "wrong-candidate",
+    },
+    { ...powerShellPreflightReviewProjection, P1: 0 },
+    { ...powerShellPreflightReviewProjection, verdict: "PASS" },
+    {
+      ...powerShellPreflightReviewProjection,
+      reviewGeneratedAuthorization: true,
+    },
+  ]) {
+    assert.throws(() =>
+      assertStage6CloseoutPowerShellPreflightReviewProjection(variant),
+    );
   }
 
   const closeoutClockProjection: Stage6CloseoutClockProjection = {
@@ -5626,6 +5890,98 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     assertStage6CloseoutL6DateRepairProjection({
       ...l6DateRepairProjection,
       changes: l6DateRepairWithExtraPath,
+    }),
+  );
+
+  const powerShellPreflightScript = stage6CloseoutPowerShellPreflightScript();
+  assert.match(powerShellPreflightScript, /ConvertFrom-Json -DateKind String/u);
+  assert.match(powerShellPreflightScript, /DateTimeOffset\]::ParseExact\(/u);
+  assert.match(powerShellPreflightScript, /CultureInfo\]::InvariantCulture/u);
+  const livePowerShellPreflight = executeStage6CloseoutPowerShellPreflight(
+    powerShellPreflightScript,
+  );
+  assertStage6CloseoutPowerShellPreflightEvidence(livePowerShellPreflight);
+  context.diagnostic(
+    `L6 PowerShell preflight ${JSON.stringify(livePowerShellPreflight)}`,
+  );
+  for (const culture of ["fr-FR", "zh-CN"] as const) {
+    const cultureEvidence = executeStage6CloseoutPowerShellPreflight(
+      powerShellPreflightScript,
+      culture,
+    );
+    assertStage6CloseoutPowerShellPreflightEvidence(cultureEvidence, culture);
+  }
+
+  const jsonDecode =
+    "$closeout = Get-Content -Raw -LiteralPath $taskPath | ConvertFrom-Json -DateKind String";
+  const archiveDateAssignment =
+    "$archiveDate = $closeout.meta.closeout_archive_date";
+  const deadlineAssignment =
+    "$deadlineText = $closeout.meta.closeout_archive_deadline_local";
+  const nowAssignment = "$now = [DateTimeOffset]::Now";
+  const negativePowerShellPreflights = [
+    replaceStage6CloseoutPowerShellPreflightOnce(
+      powerShellPreflightScript,
+      jsonDecode,
+      jsonDecode.replace(" -DateKind String", ""),
+    ),
+    replaceStage6CloseoutPowerShellPreflightOnce(
+      powerShellPreflightScript,
+      deadlineAssignment,
+      `${deadlineAssignment}\n    $deadlineText = [DateTime]::Parse('2026-09-02T23:50:00+08:00')`,
+    ),
+    replaceStage6CloseoutPowerShellPreflightOnce(
+      powerShellPreflightScript,
+      deadlineAssignment,
+      `${deadlineAssignment}\n    $deadlineText = '2026/09/02 23:50:00 +08:00'`,
+    ),
+    replaceStage6CloseoutPowerShellPreflightOnce(
+      powerShellPreflightScript,
+      archiveDateAssignment,
+      `${archiveDateAssignment}\n    $archiveDate = '2026-09-03'`,
+    ),
+    replaceStage6CloseoutPowerShellPreflightOnce(
+      powerShellPreflightScript,
+      nowAssignment,
+      "$now = [DateTimeOffset]::ParseExact('2026-09-02T12:00:00+09:00', $format, [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::None)",
+    ),
+    replaceStage6CloseoutPowerShellPreflightOnce(
+      powerShellPreflightScript,
+      nowAssignment,
+      "$now = [DateTimeOffset]::ParseExact('2026-09-02T23:50:00+08:00', $format, [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::None)",
+    ),
+  ];
+  for (const negativePowerShellPreflight of negativePowerShellPreflights) {
+    assert.throws(() =>
+      executeStage6CloseoutPowerShellPreflight(negativePowerShellPreflight),
+    );
+  }
+
+  const powerShellPreflightRepairProjection: Stage6CloseoutL6DateRepairProjection =
+    {
+      parents: currentStage6CloseoutPowerShellPreflightRepairParents(),
+      changes: currentStage6CloseoutPowerShellPreflightRepairChanges(),
+    };
+  assertStage6CloseoutPowerShellPreflightRepairProjection(
+    powerShellPreflightRepairProjection,
+  );
+  assert.throws(() =>
+    assertStage6CloseoutPowerShellPreflightRepairProjection({
+      ...powerShellPreflightRepairProjection,
+      parents: ["wrong-parent"],
+    }),
+  );
+  const powerShellPreflightRepairWithExtraPath = new Map(
+    powerShellPreflightRepairProjection.changes,
+  );
+  powerShellPreflightRepairWithExtraPath.set(
+    `${STAGE_6_CLOSEOUT_ROOT}/design.md`,
+    "M",
+  );
+  assert.throws(() =>
+    assertStage6CloseoutPowerShellPreflightRepairProjection({
+      ...powerShellPreflightRepairProjection,
+      changes: powerShellPreflightRepairWithExtraPath,
     }),
   );
 
@@ -5699,6 +6055,8 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     closeoutL3AuditAuthorizationSource: closeoutL3AuditRecord.authorization_source,
     closeoutL6DateRepairCandidateReady:
       closeoutMeta.l6_date_contract_repair_candidate_ready,
+    closeoutL6PowerShellPreflightRepairCandidateReady:
+      closeoutMeta.l6_powershell_preflight_repair_candidate_ready,
     closeoutL6ExecutionAuthorized: closeoutMeta.l6_execution_authorized,
     closeoutL6Started: closeoutMeta.l6_started,
     closeoutAcceptanceAuthorized: closeoutMeta.closeout_acceptance_authorized,
@@ -5847,6 +6205,7 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     { closeoutIntegrationCandidate: STAGE_6_CLOSEOUT_L3_REPAIR_COMMIT },
     { closeoutIntegrationMode: "merge-commit" },
     { closeoutL6DateRepairCandidateReady: false },
+    { closeoutL6PowerShellPreflightRepairCandidateReady: false },
     { closeoutL6ExecutionAuthorized: true },
     { closeoutL6Started: true },
     { closeoutL4FastForwardCompleted: false },

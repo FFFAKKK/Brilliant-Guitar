@@ -38,7 +38,7 @@
     ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "IN_PROGRESS / TARGETED PLANNING REREVIEW PASS P0_0_P1_0_P2_0 AT E7708BF / L1 NATIVE ACTIVATION COMPLETE / L2 CONSUMED SEMANTIC CHILD ACCEPTED-ARCHIVED ON 2026-09-01 / L3 STAGE6 OWNER ACCEPTED AND NATIVELY ARCHIVED EXACT 13 AT BCC1C905 ON 2026-09-01 / L3 INDEPENDENT ARCHIVE CANDIDATE REVIEW PASS P0_0_P1_0_P2_0 AT B3850A48 / L4 FF-ONLY INTEGRATION COMPLETE / L5 COMMIT 3799FAF INTEGRATION AUDIT RETURN P0_0_P1_1_P2_0 FOR ONE L6 CLOCK-DATE CONTRACT P1 / FOUR-FILE L6 DATE REPAIR CANDIDATE TARGETED REREVIEW PENDING / L6 NOT STARTED OR AUTHORIZED / PRODUCTION IMPLEMENTATION FALSE / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO ARCHIVE STRESS QUALIFICATION CUTOVER RKP3 PUSH OR PRODUCTION CHANGE.",
+  "notes": "IN_PROGRESS / TARGETED PLANNING REREVIEW PASS P0_0_P1_0_P2_0 AT E7708BF / L1 NATIVE ACTIVATION COMPLETE / L2 CONSUMED SEMANTIC CHILD ACCEPTED-ARCHIVED ON 2026-09-01 / L3 STAGE6 OWNER ACCEPTED AND NATIVELY ARCHIVED EXACT 13 AT BCC1C905 ON 2026-09-01 / L3 INDEPENDENT ARCHIVE CANDIDATE REVIEW PASS P0_0_P1_0_P2_0 AT B3850A48 / L4 FF-ONLY INTEGRATION COMPLETE / L5 COMMIT 3799FAF INTEGRATION AUDIT RETURN P0_0_P1_1_P2_0 FOR ONE L6 CLOCK-DATE CONTRACT P1 / FOUR-FILE DATE REPAIR 55CA574 TARGETED REREVIEW RETURN P0_0_P1_1_P2_0 FOR ONE BOUNDED POWERSHELL PREFLIGHT REPAIR / THREE-FILE POWERSHELL PREFLIGHT REPAIR CANDIDATE TARGETED REREVIEW PENDING / L6 NOT STARTED OR AUTHORIZED / PRODUCTION IMPLEMENTATION FALSE / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO ARCHIVE STRESS QUALIFICATION CUTOVER RKP3 PUSH OR PRODUCTION CHANGE.",
   "meta": {
     "planning_base_commit": "65debd52d379004c966cefe59f54d72ac1136eb4",
     "original_rkp2_preintegration_head": "4a302bc9f9981940336fc97941b08e09bd0d1f67",
@@ -58,13 +58,14 @@
     "user_lifecycle_continuation_record": "user_requested_continue_until_this_stage_is_complete_then_report",
     "independent_planning_review": "passed_targeted_rereview_e7708bf84ffb6ac71818f46d367ff6e8bba7beb6_P0_0_P1_0_P2_0",
     "accepted_planning_authority_head": "e7708bf84ffb6ac71818f46d367ff6e8bba7beb6",
-    "implementation_stage": "L6_clock_date_contract_repair_candidate_ready_for_targeted_independent_rereview",
+    "implementation_stage": "bounded_PowerShell_preflight_repair_candidate_ready_for_targeted_independent_rereview",
     "implementation_candidate_ready": true,
     "implementation_review": "passed_dedicated_independent_stage6_archive_candidate_review",
     "archive_candidate_review": "passed_dedicated_independent_stage6_archive_candidate_review",
-    "integration_review": "returned_P0_0_P1_1_P2_0_for_one_bounded_L6_clock_date_contract_repair",
+    "integration_review": "targeted_L6_clock_date_contract_rereview_returned_P0_0_P1_1_P2_0_for_one_bounded_PowerShell_preflight_repair",
     "terminal_projection_review": "pending_not_started",
     "l6_date_contract_repair_candidate_ready": true,
+    "l6_powershell_preflight_repair_candidate_ready": true,
     "l6_execution_authorized": false,
     "l6_started": false,
     "semantic_child_acceptance_authorized": true,
@@ -113,7 +114,7 @@
     "future_technical_allowlist": [
       "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
     ],
-    "next_gate": "targeted_independent_L6_clock_date_contract_repair_rereview_pending",
+    "next_gate": "targeted_independent_PowerShell_preflight_repair_rereview_pending",
     "workspace_law_phase": "integrated",
     "stage6_owner_acceptance_record": "user_requested_continue_until_this_stage_is_complete_then_report",
     "stage6_native_archive_commit": "bcc1c905bc58ab9810e076c23891d6683a2ae607",
@@ -164,10 +165,31 @@
       "review_generated_authorization": false
     },
     "bounded_l6_clock_date_contract_repair": {
-      "status": "candidate_ready_targeted_independent_rereview_pending",
+      "status": "reviewed_returned_for_one_bounded_PowerShell_preflight_P1",
       "parent_commit": "3799faf635482f0301e61a56f1faf83ea3fe0f5f",
       "allowed_paths": [
         ".trellis/tasks/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout/design.md",
+        ".trellis/tasks/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout/implement.md",
+        ".trellis/tasks/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout/task.json",
+        "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
+      ]
+    },
+    "targeted_l6_clock_date_contract_rereview": {
+      "candidate_commit": "55ca574df1156bcda2ec26499d8fb717d9faff82",
+      "P0": 0,
+      "P1": 1,
+      "P2": 0,
+      "verdict": "RETURN FOR ONE BOUNDED POWERSHELL PREFLIGHT REPAIR",
+      "review_task_id": "01a05f7a-de45-77c3-9287-88e354d2fd6f",
+      "review_thread_id": "01a05f7a-de45-77c3-9287-88e354d2fd6f",
+      "review_turn_id": "01a05fa0-26c7-7b81-94f0-eb2291db4ec1",
+      "finding": "plain_ConvertFrom_Json_auto_converts_ISO_deadline_to_System_DateTime_before_DateTimeOffset_ParseExact",
+      "review_generated_authorization": false
+    },
+    "bounded_powershell_preflight_repair": {
+      "status": "candidate_ready_targeted_independent_rereview_pending",
+      "parent_commit": "55ca574df1156bcda2ec26499d8fb717d9faff82",
+      "allowed_paths": [
         ".trellis/tasks/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout/implement.md",
         ".trellis/tasks/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout/task.json",
         "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
