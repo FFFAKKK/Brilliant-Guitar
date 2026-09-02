@@ -3,7 +3,7 @@
   "name": "rkp-2-stage-6-tracked-byte-eol-portability-prerequisite",
   "title": "RKP-2 Stage 6 Tracked-byte and EOL Portability Prerequisite",
   "description": "Plan a narrow prerequisite that makes seven tracked source/workload paths checkout-stable and five Rust source-shape assertions CRLF/LF portable before S6.2 is replanned.",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": "Path-specific Git EOL policy, test-only source-text normalization, dual-autocrlf fresh-checkout byte/hash proof, native regression and lifecycle handoff; no S6.2 evidence run or Rust product change.",
   "package": null,
@@ -33,7 +33,7 @@
     "crates/brilliant-kernel-runtime/src/store.rs",
     "crates/brilliant-kernel-runtime/src/indices.rs"
   ],
-  "notes": "PLANNING ONLY / BASE 55CB575C / S6.2 BLOCKER AUDIT 01A060D4 RETURNED 0_2_1 / PLANNING AUDITOR 01A06123 RETURNED 538ABBDA 0_2_0 AD56A030 0_2_0 AND 5D08D5C 0_1_0 / THIRD BOUNDED DOCS-ONLY PROJECTION REPAIR APPLIED / NEXT GATE FOURTH TARGETED INDEPENDENT REREVIEW OF NEW EXACT CLEAN HEAD / S6.2 E1 C3C4D198 REMAINS DIAGNOSTIC UNACCEPTED / E3 ZERO / NO TASK START IMPLEMENTATION ACCEPT ARCHIVE INTEGRATION S6.3 QUALIFICATION CUTOVER RKP3 OR PUSH.",
+  "notes": "RKP-2 TRACKED-BYTE EOL PREREQUISITE IMPLEMENTATION AUTHORIZED FOR I0 THROUGH I3 ONLY / AUDITED PLANNING HEAD F39C72BF / PLANNING AUDITOR 01A06123 PASS 0_0_0 / USER AUTHORIZATION LIMITED TO ACTIVATION IMPLEMENTATION VALIDATION AND CANDIDATE FREEZE / S6.2 E1 C3C4D198 REMAINS DIAGNOSTIC UNACCEPTED / E3 ZERO / NO ACCEPT ARCHIVE INTEGRATION S6.2 S6.3 QUALIFICATION CUTOVER RKP3 OR PUSH.",
   "meta": {
     "planning_base_commit": "55cb575c606646e8449359b0c46d5c905b3bb3c6",
     "planning_base_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -57,13 +57,16 @@
       "verdict": "return_for_independent_eol_prerequisite_and_successor_s6_2_provenance_repair",
       "root_cause": "B_checkout_byte_test_portability_with_D_missing_raw_byte_EOL_contract_not_Rust_product_logic"
     },
-    "task_start_run": false,
-    "production_implementation_authorized": false,
-    "user_implementation_authorization": false,
-    "independent_planning_review": "third_targeted_rereview_return_0_1_0_projection_repair_applied_fourth_rereview_pending",
-    "planning_candidate_ready": true,
-    "current_phase": "third_bounded_planning_projection_repair_ready_for_fourth_targeted_independent_rereview",
-    "next_gate": "fourth_targeted_independent_planning_rereview",
+    "task_start_run": true,
+    "production_implementation_authorized": true,
+    "user_implementation_authorization": true,
+    "user_implementation_authorization_scope": "I0_to_I3_activation_implementation_validation_and_candidate_freeze_only_no_acceptance_archive_integration_S6_2_S6_3_qualification_runtime_cutover_RKP3_or_push",
+    "independent_planning_review": "passed_for_bounded_eol_prerequisite_implementation",
+    "approved_planning_head": "f39c72bfba28664b1772bf19855d74c765005f14",
+    "planning_candidate_ready": false,
+    "implementation_candidate_ready": false,
+    "current_phase": "I0_activation_and_immutable_baseline",
+    "next_gate": "I0_immutable_baseline_freeze",
     "first_independent_planning_audit": {
       "task_id": "01a06123-b6c9-78a0-8216-9c8f1d53a061",
       "reviewed_head": "538abbdaee079aaf5df800f09d192fbb777174d9",
@@ -208,6 +211,14 @@
       "verdict": "return_for_bounded_planning_projection_repair",
       "finding": "task_meta_authorized_whole_child_directory_while_PRD_design_and_implement_fixed_six_literal_candidate_coordination_paths",
       "repair_status": "six_literal_paths_and_cross_authority_equality_gate_applied_fourth_rereview_pending"
+    },
+    "fourth_independent_planning_audit": {
+      "task_id": "01a06123-b6c9-78a0-8216-9c8f1d53a061",
+      "reviewed_head": "f39c72bfba28664b1772bf19855d74c765005f14",
+      "P0": 0,
+      "P1": 0,
+      "P2": 0,
+      "verdict": "PASS_FOR_BOUNDED_EOL_PREREQUISITE_IMPLEMENTATION"
     },
     "coordination_allowlist_projection_gate": "task_meta_PRD_design_implement_and_actual_candidate_diff_exact_same_six_literal_paths_at_I0_and_I3"
   }
