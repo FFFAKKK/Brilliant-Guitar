@@ -33,7 +33,9 @@ All commands, fresh clones, Cargo targets, TEMP/TMP and transcripts stay on E:.
 
 The Rust diff is accepted only when the lexical verifier locates the unique matched end of each terminal test module, finds a whitespace-only suffix, contains both old/new hunk ranges inside the five named existing functions plus `source_shape_normalization_is_lf_crlf_invariant`, and reconstructs the exact base blob after removing those six permitted edits. Prefix equality alone is invalid.
 
-The Node red baseline is not matched by titles alone. I0 freezes four programmatic primary assertion signatures and the exact `3 + 1` cause split; I3 must reproduce both in addition to exit/count/title/manifest equality.
+The Node red baseline is not matched by titles alone. The capture uses Node `v24.15.0` and its programmatic runner with `isolation: "none"`, `concurrency: 1`, consumes title-level `test:fail` events, validates the outer `ERR_TEST_FAILURE`/`testCodeFailure` wrapper and unwraps exactly one inner `AssertionError` cause. I0 freezes the resolved Node executable, focused-test bytes, capture-script bytes and exact `3 + 1` cause split.
+
+Candidate signatures are not all compared directly to I0. Before I1, the operator must freeze three lanes from clean `I0_SOURCE_HEAD`: a control checkout, an independently constructed expected-transition checkout using `I0_EXPECTED_PATCH.diff`, and the future candidate contract. Every new evidence path must first pass the two-placeholder content-insensitivity probe. At I3 the fresh control must equal I0, the rebuilt expected lane must equal its pre-I1 record, the Part Owner signature must remain unchanged, and the other three candidate signatures must equal only their predeclared expected-transition values. Deriving an expected value from the candidate is invalid.
 
 ## Hard stops
 
@@ -53,7 +55,8 @@ Stop at `READY FOR DEDICATED INDEPENDENT EOL PREREQUISITE IMPLEMENTATION REVIEW`
 - exact four-file technical diff;
 - dual-checkout byte/SHA/blob matrix;
 - Cargo and Node gate results;
-- four Node primary assertion signatures with the exact three-new-child plus one-inherited-base cause split;
+- I0/control, expected-transition and candidate Node primary assertion signatures with the exact three-new-child plus one-inherited-base cause split;
+- Node executable/version, `isolation: "none"`, outer/inner error shape, compiled-test SHA, capture-script SHA and pre-I1 expected-patch SHA;
 - matched terminal test-module/six-function exact reconstruction proof;
 - task-local evidence;
 - E3 count zero;

@@ -2,7 +2,7 @@
 
 ## Status
 
-Author self-validation and clean-HEAD regression replay completed. Dedicated planning audit task `01a06123-b6c9-78a0-8216-9c8f1d53a061` reviewed `538abbdaee079aaf5df800f09d192fbb777174d9` and returned P0/P1/P2=`0/2/0`. This bounded repair closes only those two findings; a new exact HEAD must reproduce the same mechanical/test tuple and receive a targeted independent rereview.
+Author self-validation and clean-HEAD regression replay completed. Dedicated planning audit task `01a06123-b6c9-78a0-8216-9c8f1d53a061` first reviewed `538abbdaee079aaf5df800f09d192fbb777174d9` and returned P0/P1/P2=`0/2/0`; its targeted rereview of `ad56a0307bd2ef429a2693e6235f7a77a4c71ece` closed the original Rust-suffix finding but returned P0/P1/P2=`0/2/0` for two Node evidence-contract defects. This second bounded repair closes only those two new findings. A new exact HEAD must reproduce the mechanical/test tuple and receive a third targeted independent rereview.
 
 ## Scope checks
 
@@ -36,7 +36,10 @@ Author self-validation and clean-HEAD regression replay completed. Dedicated pla
 - [x] first dedicated independent planning review completed at `538abbda...`: RETURN `0/2/0`;
 - [x] P1-1 repaired in planning: Rust-aware matched terminal-module close, whitespace-only suffix, old/new hunk containment and exact six-function reconstruction;
 - [x] P1-2 repaired in planning: true `3 + 1` Node cause split plus primary assertion signatures;
-- [ ] targeted independent rereview of the repaired exact HEAD.
+- [x] second audit at `ad56a030...`: original Rust-suffix finding closed; RETURN `0/2/0` for actual Node event capture shape and impossible all-signatures-equal rule;
+- [x] second-round P1-1 repaired in planning: Node `v24.15.0`, `isolation: "none"`, title-level event, outer wrapper, exactly one inner assertion cause and Node/test/script byte pins;
+- [x] second-round P1-2 repaired in planning: pre-I1 control/expected/candidate lanes with independently generated expected-transition signatures and per-path two-placeholder content-insensitivity proof;
+- [ ] third targeted independent rereview of the repaired exact HEAD.
 
 The exact four clean-HEAD failures are:
 
@@ -50,8 +53,8 @@ The dedicated audit established the true cause split:
 - failures 1, 3 and 4 are new-child path/projection drift in historical governance assertions;
 - failure 2 is inherited base drift: the historical Part Owner blob assertion still represents property cap `1_048_577`, while accepted RKP-1A authority uses `1_572_865`.
 
-No product behavior test failed. The repaired I0/I3 contract freezes error code, operator, generated-message flag and canonical message/actual/expected hashes for each title, then combines those signatures with the exact technical patch reconstruction. It no longer treats title/count equality as sufficient.
+No product behavior test failed. The repaired I0/I3 contract validates the outer Node failure wrapper, unwraps exactly one inner assertion, freezes error code/operator/generated-message/message/actual/expected hashes, and combines them with exact patch reconstruction. It no longer treats title/count equality as sufficient or requires three path-sensitive candidate signatures to equal their pre-patch baselines. Their expected transitions are generated from `I0_SOURCE_HEAD` and frozen before I1; the candidate is only an observed lane.
 
 ## Provisional severity result
 
-The bounded-repair author pass finds P0/P1/P2=`0/0/0` against the two returned findings. This is not an independent verdict and does not authorize implementation.
+The second bounded-repair author pass finds P0/P1/P2=`0/0/0` against the two findings returned for `ad56a030...`. This is not an independent verdict and does not authorize implementation.

@@ -33,7 +33,7 @@
     "crates/brilliant-kernel-runtime/src/store.rs",
     "crates/brilliant-kernel-runtime/src/indices.rs"
   ],
-  "notes": "PLANNING ONLY / BASE 55CB575C / S6.2 BLOCKER AUDIT 01A060D4 RETURNED 0_2_1 / FIRST PREREQUISITE PLANNING AUDIT 01A06123 REVIEWED 538ABBD AND RETURNED 0_2_0 / BOTH PLANNING P1S HAVE BOUNDED DOCS-ONLY REPAIRS / NEXT GATE TARGETED INDEPENDENT REREVIEW OF NEW EXACT CLEAN HEAD / S6.2 E1 C3C4D198 REMAINS DIAGNOSTIC UNACCEPTED / E3 ZERO / NO TASK START IMPLEMENTATION ACCEPT ARCHIVE INTEGRATION S6.3 QUALIFICATION CUTOVER RKP3 OR PUSH.",
+  "notes": "PLANNING ONLY / BASE 55CB575C / S6.2 BLOCKER AUDIT 01A060D4 RETURNED 0_2_1 / PLANNING AUDITOR 01A06123 RETURNED 538ABBDA 0_2_0 AND AD56A030 0_2_0 / SECOND BOUNDED DOCS-ONLY REPAIR APPLIED / NEXT GATE THIRD TARGETED INDEPENDENT REREVIEW OF NEW EXACT CLEAN HEAD / S6.2 E1 C3C4D198 REMAINS DIAGNOSTIC UNACCEPTED / E3 ZERO / NO TASK START IMPLEMENTATION ACCEPT ARCHIVE INTEGRATION S6.3 QUALIFICATION CUTOVER RKP3 OR PUSH.",
   "meta": {
     "planning_base_commit": "55cb575c606646e8449359b0c46d5c905b3bb3c6",
     "planning_base_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -60,10 +60,10 @@
     "task_start_run": false,
     "production_implementation_authorized": false,
     "user_implementation_authorization": false,
-    "independent_planning_review": "targeted_rereview_pending_after_return_0_2_0",
+    "independent_planning_review": "second_targeted_rereview_return_0_2_0_second_bounded_repair_applied_third_rereview_pending",
     "planning_candidate_ready": true,
-    "current_phase": "bounded_planning_repair_ready_for_targeted_independent_rereview",
-    "next_gate": "targeted_independent_planning_rereview",
+    "current_phase": "second_bounded_planning_repair_ready_for_third_targeted_independent_rereview",
+    "next_gate": "third_targeted_independent_planning_rereview",
     "first_independent_planning_audit": {
       "task_id": "01a06123-b6c9-78a0-8216-9c8f1d53a061",
       "reviewed_head": "538abbdaee079aaf5df800f09d192fbb777174d9",
@@ -117,10 +117,7 @@
     "future_coordination_allowlist": [
       ".trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/",
       ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json",
-      ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/operator-handoff.md",
-      ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/review-candidate.md",
-      ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json",
-      ".trellis/spec/core-kernel/backend/rust-runtime-transition.md"
+      ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json"
     ],
     "tracked_eol_paths": [
       "crates/brilliant-kernel-runtime/src/runtime.rs",
@@ -167,6 +164,36 @@
       "mechanical_archived_request_result_sentinel_non_reuse",
       "replay_E1_logical_patch_on_LF_base",
       "recompute_planning_and_implementation_hashes"
-    ]
+    ],
+    "second_independent_planning_audit": {
+      "task_id": "01a06123-b6c9-78a0-8216-9c8f1d53a061",
+      "reviewed_head": "ad56a0307bd2ef429a2693e6235f7a77a4c71ece",
+      "P0": 0,
+      "P1": 2,
+      "P2": 0,
+      "verdict": "return_for_second_bounded_planning_repair",
+      "finding_1": "node_programmatic_runner_default_isolation_exposed_file_level_wrapper_and_plan_did_not_pin_outer_wrapper_plus_one_inner_assertion_cause",
+      "finding_2": "all_four_candidate_signatures_equal_I0_conflicted_with_predeclared_path_additions",
+      "repair_status": "second_bounded_docs_only_repair_applied_third_targeted_rereview_pending"
+    },
+    "node_signature_capture": {
+      "runner": "node_test_programmatic",
+      "isolation": "none",
+      "concurrency": 1,
+      "event": "title_level_test_fail",
+      "outer_error_code": "ERR_TEST_FAILURE",
+      "outer_failure_type": "testCodeFailure",
+      "cause_depth": 1,
+      "inner_error_name": "AssertionError",
+      "inner_error_code": "ERR_ASSERTION",
+      "node_executable_and_version_frozen": true,
+      "compiled_test_bytes_frozen": true,
+      "capture_script_bytes_frozen": true,
+      "node_version": "v24.15.0",
+      "expected_transition_placeholder_probe": "per_new_evidence_path_V1_vs_V2_bytes_signature_invariant_before_I1_or_stop"
+    },
+    "node_signature_comparison": "I0_control_exact_plus_pre_I1_independent_expected_transition_plus_candidate_observation_no_self_expected_values",
+    "i0_source_head_contract": "clean_A0_lifecycle_commit_before_technical_or_evidence_paths",
+    "expected_patch_contract": "generated_only_from_I0_SOURCE_HEAD_by_unique_exact_text_substitutions_frozen_before_I1_applied_verbatim_and_replayed_at_I3"
   }
 }

@@ -62,8 +62,11 @@ Success means a fresh checkout of the accepted prerequisite commit produces iden
 ### Proof completeness
 
 - **EOL-R019**: Product-region zero delta must be proven with the exact Rust-aware terminal test-module boundary and six-function reconstruction contract in `design.md`; prefix equality or hunk-start checks alone are invalid.
-- **EOL-R020**: The four inherited Node failures must be frozen individually by title, true `3 + 1` cause, and deterministic primary assertion signature; equal titles/counts without equal signatures are insufficient.
+- **EOL-R020**: The four inherited Node failures must be frozen individually by title, true `3 + 1` cause, and deterministic primary assertion signature captured with Node's programmatic runner using `isolation: "none"`. Each record must validate the outer `ERR_TEST_FAILURE`/`testCodeFailure` wrapper and unwrap exactly one inner `AssertionError`/`ERR_ASSERTION` cause; equal titles/counts without this structure and signature are insufficient.
 - **EOL-R021**: An assertion hidden after a known first failure may not be assumed green. Its relevant four-file inputs are controlled by exact candidate reconstruction and the exact seven-line `.gitattributes` diff, and the dedicated implementation auditor must verify both controls with the signatures.
+- **EOL-R022**: Candidate signature changes caused by the planned path additions must be compared against an independently constructed, pre-I1 expected-transition lane. I0 freezes a fresh control lane, a deterministic expected technical/coordination projection and its signatures before the implementation branch is edited; the candidate may not generate its own expected values.
+- **EOL-R023**: `I0_SOURCE_HEAD` is the clean A0 lifecycle commit. Node must remain exactly `v24.15.0`; the same resolved executable, compiled focused-test bytes, capture-script bytes and I0-frozen expected patch bundle must be used for I0 capture and every I3 control/expected/candidate comparison.
+- **EOL-R024**: Every newly projected evidence path in the expected-transition lane must pass a pre-I1 two-variant content-insensitivity probe. If changing only its deterministic placeholder bytes changes a signature, I0 stops and returns to planning instead of predicting future evidence contents.
 
 ## Exact affected paths
 
@@ -97,20 +100,23 @@ The three Rust files may change only inside their existing `#[cfg(test)]` module
 ## Acceptance criteria
 
 - **EOL-AC01**: Dedicated planning audit returns P0/P1/P2=`0/0/0` for an exact docs-only planning HEAD.
-- **EOL-AC02**: Implementation diff is exactly the four technical allowlist files plus approved task/spec/evidence coordination files.
+- **EOL-AC02**: Implementation technical diff is exactly the four technical allowlist files. The final evidence projection is exactly child `task.json`, `implementation-evidence.md`, `review-candidate.md`, `operator-handoff.md`, RKP-2 parent `task.json` and Rust parent `task.json`; no optional spec/handoff/review path is admitted.
 - **EOL-AC03**: The Rust lexical boundary verifier proves a unique terminal test module, whitespace-only suffix, all old/new hunk ranges inside five named existing functions plus one named parity function, and exact reconstruction to the base after removing the six permitted edits.
 - **EOL-AC04**: Seven explicit `.gitattributes` rules exist exactly once; no wildcard or unrelated EOL policy is added.
 - **EOL-AC05**: Two new no-local/no-checkout verification clones on E:, checked out with `core.autocrlf=true` and `false`, both report `i/lf w/lf attr/text eol=lf`, clean status and identical bytes/SHA for all seven paths.
 - **EOL-AC06**: For the five workload inputs, both working-tree hashes equal the corresponding Git blob-byte SHA at the implementation candidate HEAD.
 - **EOL-AC07**: Rust 1.97.1 `fmt`, `check`, `test` and `clippy -D warnings` pass; Rust 1.88.0 MSRV `check` passes. The existing ignored large test remains ignored during this prerequisite.
 - **EOL-AC08**: The four previously failing tests pass, and the ignored test's fifth source-shape check is directly covered by an LF/CRLF unit-level parity assertion without executing the large workload.
-- **EOL-AC09**: Typecheck and build pass; focused/full Node exit, counts, titles, four primary assertion signatures and the 80-file manifest match the I0 baseline with no new failure, skip, cause or signature drift.
+- **EOL-AC09**: Typecheck and build pass; focused/full Node exit, counts, titles and the 80-file manifest remain frozen. A fresh I3 control lane exactly reproduces I0; a rebuilt expected-transition lane exactly reproduces its pre-I1 records; the Part Owner candidate signature remains equal to both lanes; each other candidate signature equals only its predeclared expected transition, with no new failure, skip, cause or unplanned signature drift.
 - **EOL-AC10**: Trellis validations, JSON/JSONL parsing, Markdown fences, path uniqueness, `git diff --check`, clean/staged-empty and protected-path checks pass.
 - **EOL-AC11**: E3 execution count remains zero; no S6.2 `implementation-evidence.md` or qualification artifact is created.
 - **EOL-AC12**: A separate dedicated implementation audit returns P0/P1/P2=`0/0/0` before acceptance or integration is considered.
 - **EOL-AC13**: Rollback is a revert of the prerequisite implementation/coordination commits and restores the exact accepted base without touching the blocked S6.2 branch.
 - **EOL-AC14**: The accepted integration handoff explicitly requires a new S6.2 planning task and dedicated planning audit; it never resumes E2 directly.
 - **EOL-AC15**: The implementation evidence and independent review explicitly distinguish the three new-child path/projection failures from the one inherited pre-/post-RKP-1A property-cap blob failure.
+- **EOL-AC16**: The signature evidence records Node executable/version, `isolation: "none"`, outer failure wrapper, exactly one inner assertion cause, compiled focused-test bytes/SHA and capture-script bytes/SHA; file-level-only events or different tool bytes invalidate evidence.
+- **EOL-AC17**: `I0_EXPECTED_PATCH.diff` is generated from `I0_SOURCE_HEAD` by unique exact-text substitutions, frozen before I1, applied verbatim in I1 and independently replayed at I3; its SHA and exact phase path sets remain unchanged.
+- **EOL-AC18**: Two byte-distinct placeholders are tested independently for every new expected-transition evidence path and yield identical signatures; the per-path proof is frozen before I1.
 
 ## Out of scope
 

@@ -14,9 +14,10 @@
 ### Coordination/evidence files
 
 - this task directory;
-- RKP-2 parent task/handoff/review projection only when lifecycle stage changes;
-- Rust remediation parent `task.json`;
-- `rust-runtime-transition.md` only for a durable path-specific raw-byte/EOL rule after the implementation proves it.
+- RKP-2 parent `task.json`;
+- Rust remediation parent `task.json`.
+
+The implementation candidate has no optional coordination path. RKP-2 parent handoff/review files and `rust-runtime-transition.md` remain unchanged until a later accepted-closeout projection.
 
 ## Protected paths
 
@@ -50,13 +51,14 @@ An additional failure invalidates the assumed root cause.
 - the small LF/CRLF parity coverage passes;
 - the existing ignored scale test remains ignored and unexecuted;
 - full Rust workspace tests pass;
-- no Node exit/count/title/primary-assertion-signature tuple or manifest change.
+- no Node exit/count/title/manifest change;
+- a fresh control lane reproduces I0, a rebuilt expected lane reproduces its pre-I1 record, the inherited Part Owner signature remains unchanged, and the other three signatures change only to their predeclared expected-transition values.
 
 ## Mechanical product-boundary proof
 
 For `runtime.rs`, `store.rs` and `indices.rs`, the implementation verifier must locate the matched closing brace of the unique terminal `#[cfg(test)]` module with the Rust lexical states fixed in `design.md`, require a whitespace-only suffix, and contain both sides of every hunk inside the five named existing inspection functions plus the one named parity function. Removing those six edits in memory must reconstruct the base Git blob byte-for-byte. A prefix-only or line-start-only result is invalid.
 
-The same exact reconstruction is the secondary guard for statements hidden after the first failure in the four historical Node tests. The primary guard is the four programmatic assertion signatures; neither guard may substitute for the other.
+The same exact reconstruction is the secondary guard for statements hidden after the first failure in the four historical Node tests. The primary guard is the title-level Node event capture plus independent control/expected/candidate signature comparison; neither guard may substitute for the other.
 
 ## Re-entry ownership
 

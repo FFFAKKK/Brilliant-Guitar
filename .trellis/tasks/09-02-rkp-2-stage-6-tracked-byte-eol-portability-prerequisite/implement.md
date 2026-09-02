@@ -80,7 +80,8 @@ docs(rkp-2): plan tracked-byte EOL portability prerequisite
 3. set this prerequisite as the sole implementation child of the RKP-2 parent; clear its planning pointer;
 4. keep Rust remediation's direct implementation child as the RKP-2 parent, and set its blocking descendant to this task;
 5. keep `stage_6_s6_2_started=false`, `stage_6_s6_3_started=false`, TypeScript default and every later authorization false;
-6. record the exact activation Node baseline tuple:
+6. commit this lifecycle projection as the clean A0 activation commit, then set `I0_SOURCE_HEAD` to that exact commit; no technical edit or `implementation-evidence.md` may exist at that HEAD;
+7. create a fresh detached control checkout of `I0_SOURCE_HEAD` on E: and record the exact activation Node baseline tuple with Node `v24.15.0`, `isolation: "none"`, `concurrency: 1`, one title-level event per failure, exact one-level `.cause` unwrapping, and the resolved Node executable fixed by `design.md` section 8.2:
    - focused command and exit;
    - total/pass/fail/skip;
    - sorted failure titles;
@@ -89,8 +90,10 @@ docs(rkp-2): plan tracked-byte EOL portability prerequisite
    - sorted failure titles;
    - one programmatically captured primary assertion signature per failing title, using the exact canonical record in `design.md` section 8.2;
    - 80-file count and SHA-256;
-7. record current seven-path `git ls-files --eol`, byte lengths and SHA-256 as diagnostic pre-fix values;
-8. commit lifecycle/baseline evidence only.
+8. from a second fresh detached `I0_SOURCE_HEAD` checkout, generate the deterministic `I0_EXPECTED_PATCH.diff` by the exact-text substitutions in `design.md` sections 4.1, 5.3 and 8.3; require one match per substitution, run the five synthetic verifier self-tests, add the exact final coordination-path projection, and prove placeholder content-insensitivity by changing each new evidence path independently from `EOL_EXPECTED_TRANSITION_V1\n` to `EOL_EXPECTED_TRANSITION_V2\n` without changing any signature; then freeze the expected-transition signatures before I1;
+9. record current seven-path `git ls-files --eol`, byte lengths and SHA-256 as diagnostic pre-fix values;
+10. record in task-local planning evidence: `I0_SOURCE_HEAD`, Node executable and exact `process.version=v24.15.0`, compiled focused-test path/bytes/SHA, capture-script source/SHA, I0 control signatures, expected-transition signatures, patch bytes/SHA, exact phase path sets and per-path two-variant placeholder proof;
+11. commit only the task/parent evidence projection. This evidence commit is not `I0_SOURCE_HEAD`; the already frozen A0 commit remains the source for every later control/expected replay.
 
 ### Exit gate
 
@@ -118,8 +121,8 @@ The RED transcript must contain exactly the four known non-ignored source-shape 
 ### Technical edits
 
 1. Add exactly seven path-specific `text eol=lf` rules to `.gitattributes`.
-2. Update only the five source-inspection expressions listed in `design.md` to inspect an in-memory LF-normalized string; all pre-existing tokens other than the minimum normalization binding/expression remain equal.
-3. Add exactly one test named `source_shape_normalization_is_lf_crlf_invariant` inside the `indices.rs` test module. It must normalize LF/CRLF forms of a representative `Rkp2StoreMetrics` declaration and execute the same declaration extraction without running or unignoring the large scale test.
+2. Apply the I0-frozen `I0_EXPECTED_PATCH.diff` verbatim. It updates only the five source-inspection expressions listed in `design.md` to inspect an in-memory LF-normalized string; all pre-existing tokens other than the exact normalization binding/expression remain equal.
+3. The frozen patch adds exactly one test named `source_shape_normalization_is_lf_crlf_invariant` inside the `indices.rs` test module. It normalizes LF/CRLF forms of a representative `Rkp2StoreMetrics` declaration and executes the same declaration extraction without running or unignoring the large scale test.
 4. Do not modify S6.2 worker, worker-test, wrapper, fixture or Workspace Law semantics.
 5. Run the exact Rust lexical verifier in `design.md` section 5.3: unique marker, matched closing brace, whitespace-only suffix, raw production-prefix equality, both old/new hunk ranges inside the six named functions, and exact base reconstruction after removing the six permitted edits.
 6. Record the verifier source/SHA and its five synthetic self-test results for later evidence freeze.
@@ -208,12 +211,15 @@ No commit is required if I2 only generates ignored transcripts.
 7. `git diff --check`;
 8. `npm run typecheck`;
 9. `npm run build`;
-10. rerun the exact focused and full Node commands captured in I0;
-11. reuse the exact I0 capture-script SHA, mechanically compare exit/count/title/primary-assertion-signature tuples to I0, and require the exact `3 + 1` cause classification to remain true;
-12. recompute the 80-file manifest independently and require exact equality with I0;
-13. verify the technical diff is exactly four files; run the section 5.3 lexical/reconstruction proof and the exact seven-rule `.gitattributes` diff proof so unreachable post-failure assertions cannot hide an unbounded technical edit;
-14. verify no `src/**`, Cargo manifests/lock, package manifests/lock, tsconfig, toolchain, public export, fixture content, worker semantics, wrapper semantics or old S6.2 branch change;
-15. verify E3 execution count zero and no S6.2 evidence artifact exists on this branch.
+10. rerun the exact focused and full Node commands captured in I0 with the same Node executable/version, compiled focused-test bytes/SHA and capture-script SHA;
+11. create a new detached control checkout of `I0_SOURCE_HEAD`, recapture its four signatures and require exact equality with the frozen I0 control records;
+12. create a new detached expected-transition checkout of `I0_SOURCE_HEAD`, reapply the frozen `I0_EXPECTED_PATCH.diff` plus exact coordination projection, recapture its signatures and require exact equality with `EXPECTED_I3_SIGNATURES`;
+13. capture the candidate signatures independently: the Part Owner signature must equal both I0 and expected-transition records; the other three must equal only their corresponding pre-I1 `EXPECTED_I3_SIGNATURES`; no candidate signature may be copied into its own expected record;
+14. require the exact `3 + 1` cause classification, outer `ERR_TEST_FAILURE`/`testCodeFailure` wrapper, one inner `AssertionError` cause, exit/count/title tuple and Node-version invariants to remain true in all applicable lanes;
+15. recompute the 80-file manifest independently and require exact equality with I0;
+16. verify the technical diff is exactly four files and the final coordination projection is exactly the six paths in `design.md` section 8.3; run the section 5.3 lexical/reconstruction proof and the exact seven-rule `.gitattributes` diff proof so unreachable post-failure assertions cannot hide an unbounded technical edit;
+17. verify no `src/**`, Cargo manifests/lock, package manifests/lock, tsconfig, toolchain, public export, fixture content, worker semantics, wrapper semantics or old S6.2 branch change;
+18. verify E3 execution count zero and no S6.2 evidence artifact exists on this branch.
 
 ### Evidence and lifecycle files
 
@@ -223,9 +229,10 @@ After all gates pass, update only:
 - this task's `implementation-evidence.md`;
 - this task's `review-candidate.md`;
 - this task's `operator-handoff.md`;
-- RKP-2 parent `task.json` and bounded handoff/review projections when required;
-- Rust parent `task.json`;
-- `.trellis/spec/core-kernel/backend/rust-runtime-transition.md` with the accepted candidate's checkout-byte rule, only if the Phase 3.3 spec review confirms the rule is absent.
+- RKP-2 parent `task.json`;
+- Rust parent `task.json`.
+
+This six-path coordination set is exact. RKP-2 parent handoff/review files and `rust-runtime-transition.md` remain unchanged in the implementation candidate; any durable spec or lifecycle projection outside this set is a later accepted-closeout task.
 
 The evidence commit must contain no technical file. Suggested subject:
 
@@ -254,9 +261,10 @@ Use a new dedicated read-only task. The auditor must verify:
 6. dual fresh-checkout construction and cleanup;
 7. fourteen checkout plus seven blob records and raw-byte equality;
 8. Cargo 1.97.1/MSRV gates;
-9. Node baseline exit/count/title/primary-signature tuple, exact `3 + 1` cause classification and manifest equality;
-10. E3 zero and S6.2 provenance P1 still owned by the successor plan;
-11. lifecycle authorization boundaries and clean state.
+9. Node `isolation: "none"` title-level event capture, outer wrapper/one-level inner-cause contract, exact Node executable/version and capture-script hash;
+10. independently rebuilt control and expected-transition lanes, candidate-only comparison against pre-I1 expected signatures, exact `3 + 1` cause classification and manifest equality;
+11. E3 zero and S6.2 provenance P1 still owned by the successor plan;
+12. lifecycle authorization boundaries and clean state.
 
 Only P0/P1/P2=`0/0/0` permits an owner acceptance decision. The audit does not itself authorize acceptance, archive or integration.
 
@@ -281,8 +289,8 @@ Stop immediately and return to planning if:
 - `.gitattributes` needs a wildcard or repository-wide normalization;
 - either fresh checkout is dirty or hash-inconsistent;
 - any Cargo gate other than the four known pre-fix failures appears;
-- Node baseline gains a new failure/title/count drift;
-- any primary assertion signature or recorded `3 + 1` cause drifts;
+- Node baseline gains a new failure/title/count drift or capture does not expose one title-level event with the fixed outer-wrapper/inner-cause shape;
+- the fresh control lane drifts from I0, the rebuilt expected lane drifts from its pre-I1 record, the Part Owner signature changes, or any of the other three candidate signatures differs from its predeclared expected transition;
 - the Rust lexical verifier finds a non-whitespace suffix, a hunk outside the six named functions, or reconstruction inequality;
 - the large test or S6.2 E3 runs;
 - C: receives Cargo/test output;

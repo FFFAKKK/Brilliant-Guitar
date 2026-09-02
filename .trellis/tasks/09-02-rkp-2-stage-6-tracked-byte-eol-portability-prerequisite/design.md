@@ -109,7 +109,7 @@ At each existing `include_str!` source inspection, the test creates an in-memory
 let source = include_str!("...").replace("\r\n", "\n");
 ```
 
-The only permitted edit to each existing inspection is the minimum binding/expression change needed to apply that exact `replace("\r\n", "\n")` result before the existing `split`/`contains` operations. Equivalent code is acceptable only if it satisfies all of the following:
+The only permitted edit to each existing inspection is the exact binding/expression change frozen in `I0_EXPECTED_PATCH.diff` and spelled out in section 8.3. An equivalent spelling is not accepted because it would invalidate the independently frozen expected-transition lane. Every frozen edit must also satisfy all of the following:
 
 - it is located inside the existing `#[cfg(test)]` module;
 - it maps CRLF to LF and does not mutate files;
@@ -117,7 +117,7 @@ The only permitted edit to each existing inspection is the minimum binding/expre
 - it introduces no exported item and is absent from non-test builds;
 - it does not perform a broad repository rewrite.
 
-No helper is added. `runtime.rs` and `store.rs` use the direct expression; each `indices.rs` site either uses the direct expression or a local normalized-string binding when Rust lifetime rules require it. A new helper, crate, feature or dependency is forbidden.
+No helper is added. `runtime.rs`, `store.rs`, the `indices.rs` query site and the `indices.rs` projection site use the exact direct expressions in section 8.3. The metrics site uses the exact shadowing binding shown there to keep the owned normalized string alive. A new helper, alternate binding name, crate, feature or dependency is forbidden.
 
 ### 5.2 Exact sites and preserved assertions
 
@@ -278,11 +278,29 @@ All four are non-product governance failures, but they are not interchangeable a
 
 ### 8.2 Primary assertion signature
 
-I0 and I3 must run the focused file through the Node programmatic test runner and collect the first `test:fail` error object for each exact title before reporter rendering. Exclude stack, duration, absolute line numbers and ANSI output. Canonicalize and hash this data-only record:
+I0 and I3 must use Node's programmatic test runner with these fixed options:
+
+```text
+files: [<absolute compiled rkp-2-workspace-contracts.test.js>]
+isolation: "none"
+concurrency: 1
+```
+
+The capture script consumes the stream through its terminal event and records `process.version`. Default process isolation is forbidden because it exposes only a file-level failure. For each exact title, the title-level `test:fail` event must have:
+
+```text
+data.details.error.code        == "ERR_TEST_FAILURE"
+data.details.error.failureType == "testCodeFailure"
+data.details.error.cause       == exactly one inner AssertionError
+```
+
+The script unwraps exactly one `.cause` level. The inner value must have `name === "AssertionError"`, `code === "ERR_ASSERTION"`, no further `.cause`, and own `operator`, `actual`, `expected` and `generatedMessage` fields. Missing, extra-wrapper, file-level-only or malformed events invalidate capture. Exclude stack, duration, absolute line numbers and ANSI output. Canonicalize and hash this data-only record:
 
 ```text
 {
   "title": "<exact title>",
+  "outerErrorCode": "ERR_TEST_FAILURE",
+  "outerFailureType": "testCodeFailure",
   "errorName": "AssertionError",
   "errorCode": "ERR_ASSERTION",
   "operator": "<strictEqual|deepStrictEqual|...>",
@@ -293,11 +311,94 @@ I0 and I3 must run the focused file through the Node programmatic test runner an
 }
 ```
 
-Canonical JSON permits only null, boolean, finite number, string, arrays and plain objects with lexically sorted keys; encountering another value type invalidates capture. Each title must emit exactly one signature. I0 stores all four complete records; I3 requires byte-identical canonical records.
+Canonical JSON permits only null, boolean, finite number, string, arrays and plain objects with lexically sorted keys; encountering another value type invalidates capture. Each title must emit exactly one signature. I0 freezes the four baseline records. I3 does not compare every candidate record directly to that baseline; it executes the independent control/expected/candidate comparisons in section 8.3.
 
 The programmatic capture script's complete source and SHA-256 are also stored in `implementation-evidence.md`; I0 and I3 must use the same hash. A different capture script invalidates the comparison.
 
-The implementation candidate must reproduce the exit/count/title/primary-signature tuple and manifest. Any new or removed title, duplicate failure event, count drift, signature drift, unsupported signature value, or manifest drift blocks the candidate. Because a first thrown assertion can hide later statements, the implementation review must also combine this signature equality with section 5.3's exact six-function reconstruction and the exact seven-line `.gitattributes` diff; title/signature equality alone is never a pass.
+### 8.3 Control replay and predeclared allowed transition
+
+Full equality between the I0 baseline signatures and the implementation candidate is not required, because the approved `.gitattributes`/Rust path additions intentionally change the first unknown-path failure for three historical governance tests. The comparison must therefore distinguish a reproduced baseline from a prediction made before the candidate exists. The operator performs this exact sequence:
+
+1. apply only the audited lifecycle projection, run `task.py start`, and create one clean A0 commit;
+2. set `I0_SOURCE_HEAD` to that exact A0 commit before any technical edit or evidence file exists;
+3. record the Node executable path, `process.version`, compiled focused-test path, capture-script bytes/SHA-256 and I0 baseline tuple;
+4. from `I0_SOURCE_HEAD`, construct the control and expected-transition lanes below before editing the active implementation branch;
+5. freeze their records and the expected patch bundle before I1 starts.
+
+The three lanes are:
+
+1. **Control lane** — a fresh detached checkout of `I0_SOURCE_HEAD`; its signatures must equal the I0 activation signatures byte-for-byte.
+2. **Expected-transition lane** — a second fresh detached checkout of `I0_SOURCE_HEAD`; before any candidate exists, apply the deterministic four-file technical patch bundle defined below and create the exact final coordination-path projection. New evidence paths use the fixed UTF-8 placeholder `EOL_EXPECTED_TRANSITION_V1\n`. Before freezing signatures, repeat the capture after changing each placeholder independently to `EOL_EXPECTED_TRANSITION_V2\n`; every signature must remain byte-identical, proving that content is irrelevant and only the predeclared path set drives the historical assertion. If any placeholder-content mutation changes a signature, stop in I0 and return to planning. The section 5.3 verifier and exact path-set checker must accept this synthetic tree. Capture and freeze `EXPECTED_I3_SIGNATURES` plus the synthetic patch bundle SHA-256.
+3. **Candidate lane** — the eventual I3 implementation/evidence HEAD; capture its signatures with the same Node version and same capture-script SHA.
+
+The expected technical bundle is generated only from `I0_SOURCE_HEAD`, never from the later candidate. It contains exactly the seven `.gitattributes` lines in section 4.1 and six Rust edits. The five existing sites use these exact replacement forms:
+
+```rust
+// runtime.rs
+let source = include_str!("runtime.rs").replace("\r\n", "\n");
+
+// store.rs
+let source = include_str!("store.rs").replace("\r\n", "\n");
+
+// indices.rs metrics site
+let metrics_source = include_str!("indices.rs").replace("\r\n", "\n");
+let metrics_source = metrics_source
+    .split("pub(crate) struct Rkp2StoreMetrics {")
+    // the existing chain continues unchanged
+
+// indices.rs query site
+let source = include_str!("store.rs").replace("\r\n", "\n");
+
+// indices.rs projection site
+let source = include_str!("indices.rs").replace("\r\n", "\n");
+```
+
+The sixth edit is exactly this test inserted immediately before the matched closing brace of the terminal `indices.rs` test module:
+
+```rust
+#[test]
+fn source_shape_normalization_is_lf_crlf_invariant() {
+    let lf = "pub(crate) struct Rkp2StoreMetrics {\n    entity_index_lookups: usize,\n}\n\n";
+    let crlf = lf.replace('\n', "\r\n");
+    let normalized_lf = lf.replace("\r\n", "\n");
+    let normalized_crlf = crlf.replace("\r\n", "\n");
+    assert_eq!(normalized_lf, normalized_crlf);
+
+    for source in [&normalized_lf, &normalized_crlf] {
+        let declaration = source
+            .split("pub(crate) struct Rkp2StoreMetrics {")
+            .nth(1)
+            .expect("metrics declaration")
+            .split("}\n\n")
+            .next()
+            .expect("metrics fields");
+        assert_eq!(declaration, "\n    entity_index_lookups: usize,");
+    }
+}
+```
+
+The I0 generator implements these as unique exact-text substitutions against the base blobs, requires one match per substitution, runs the five verifier self-tests, and emits `I0_EXPECTED_PATCH.diff`. The patch bytes and SHA-256 are frozen before I1. I1 applies that frozen bundle verbatim; editing first and deriving the expected bundle from the resulting candidate is forbidden. The planning environment is Node `v24.15.0`; I0 must observe that exact version and record the resolved executable path, otherwise it stops before bundle generation and returns for a versioned planning update.
+
+The phase path sets are exact:
+
+| Phase | Changed paths owned by the phase |
+|---|---|
+| I0 activation | child `task.json`, RKP-2 parent `task.json`, Rust parent `task.json` |
+| I1 technical | exactly `.gitattributes`, `runtime.rs`, `store.rs`, `indices.rs` |
+| I3 evidence | child `task.json`, `implementation-evidence.md`, `review-candidate.md`, `operator-handoff.md`, RKP-2 parent `task.json`, Rust parent `task.json` |
+
+RKP-2 parent handoff/review files and `rust-runtime-transition.md` are not part of this implementation candidate; any durable spec sync occurs only in a later accepted lifecycle projection. The expected-transition checkout must have exactly the I1 and I3 path delta above relative to `I0_SOURCE_HEAD`; no optional path exists.
+
+At I3:
+
+- rerun a new control checkout of `I0_SOURCE_HEAD` and require signatures equal the stored I0 control records;
+- rebuild the expected-transition lane from `I0_SOURCE_HEAD` plus the I0-frozen patch bundle and fixed coordination projection, then require it still equals stored `EXPECTED_I3_SIGNATURES`;
+- require the inherited Part Owner candidate signature to equal both its I0 and expected-transition signatures;
+- require each of the other three candidate signatures to equal its corresponding pre-I1 `EXPECTED_I3_SIGNATURES`, not its own newly captured value;
+- require candidate technical and coordination paths to equal the fixed phase path sets;
+- require the Node executable path, `process.version`, compiled focused-test bytes/SHA, capture-script SHA, synthetic-patch SHA, exit/count/title tuple and manifest to match their frozen values.
+
+Any new or removed title, duplicate failure event, wrapper/cause drift, count drift, unexpected signature transition, unsupported signature value, path-set drift, Node-version drift, script/bundle hash drift or manifest drift blocks the candidate. Because a first thrown assertion can hide later statements, the implementation review must also combine these lane comparisons with section 5.3's exact six-function reconstruction and the exact seven-line `.gitattributes` diff; signatures alone are never a pass.
 
 ## 9. Evidence artifact
 
@@ -315,11 +416,14 @@ The file must include:
 - fourteen checkout records and seven blob records;
 - Cargo and Node command/exit summaries;
 - four Node primary assertion signatures and their `3 + 1` cause classification;
+- I0/control, expected-transition and candidate signature sets plus their exact lane comparisons;
 - four former Rust failure titles and their green result;
 - ignored-large-test count and proof it did not run;
 - production-region equality result;
 - Rust verifier source/SHA and five synthetic self-test results;
-- Node failure-signature capture source/SHA used identically at I0 and I3;
+- Node executable path/version, focused-test bytes/SHA and failure-signature capture source/SHA used identically at I0 and I3;
+- `I0_SOURCE_HEAD`, `I0_EXPECTED_PATCH.diff` bytes/SHA, exact phase path sets and expected-transition placeholder/template records frozen before I1;
+- two-variant placeholder content-insensitivity proof for every newly projected evidence path;
 - E3 run count zero;
 - cleanup result for both temporary clones and build roots;
 - clean/staged-empty status.
