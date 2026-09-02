@@ -2,7 +2,7 @@
 
 ## Status
 
-Author self-validation completed for the uncommitted planning tree. The exact docs-only commit still requires a clean-HEAD regression replay and a separate dedicated planning review.
+Author self-validation and clean-HEAD regression replay completed at docs-only planning commit `e423e98ec585c1b0b687e6226dc0b36953acf2a5`. The validation-record commit produced from this update must reproduce the same tuple before it is dispatched to a separate dedicated planning reviewer.
 
 ## Scope checks
 
@@ -28,12 +28,21 @@ Author self-validation completed for the uncommitted planning tree. The exact do
 - [x] planning branch HEAD is `55cb575c` before the docs commit and does not contain blocked E1 `c3c4d198...`;
 - [x] protected delta across `src`, `test`, `crates`, `.gitattributes`, Cargo, package, tsconfig and toolchain paths is empty;
 - [x] TypeScript typecheck and build pass in the planning worktree;
-- [x] pre-commit native-addon-backed classifier was captured only as provisional evidence: focused `11/7/4/0`, full `611/604/5/2`, manifest `80` files with SHA-256 `1a50fd28c630bb016ce30f7ca65ae940170705b2eed581e610282b81378a1cf1`;
-- [ ] docs-only commit and clean/staged-empty state;
-- [ ] clean-HEAD replay of typecheck, build, focused/full classifier and manifest tuple;
+- [x] docs-only commit `e423e98...` and clean/staged-empty state;
+- [x] clean-HEAD TypeScript typecheck and build pass;
+- [x] clean-HEAD focused classifier: `11 total / 7 pass / 4 fail / 0 skipped`;
+- [x] clean-HEAD full classifier: `611 total / 605 pass / 4 fail / 2 skipped`;
+- [x] independent full-test manifest record: `80` files, SHA-256 `1a50fd28c630bb016ce30f7ca65ae940170705b2eed581e610282b81378a1cf1`;
 - [ ] dedicated independent planning review.
 
-The provisional Node failures are not declared accepted by this author pass. Their exact clean-HEAD tuple and titles must be supplied to the independent auditor; I0 later freezes its own immutable activation tuple rather than inheriting an assumed count.
+The exact four clean-HEAD failures are:
+
+1. `implementation changes stay inside the literal RKP-2 allowlists`;
+2. `part owner repair stays anchored to its accepted six-path wire contract`;
+3. `Stage 6 hostile and resource evidence consumes the existing private Rust seams`;
+4. `Stage 6 semantic canonical evidence correction and E2 worker stay inside the accepted contracts`.
+
+All four are historical exact-path/branch-shape governance assertions observing the new docs-only task in the cumulative RKP-2 branch. No product behavior test failed. This author pass records rather than waives them: the independent planning auditor must decide whether the I0 immutable-tuple rule is sufficient, and the future implementation candidate must reproduce the complete tuple without a new failure title, count or manifest delta.
 
 ## Provisional severity result
 

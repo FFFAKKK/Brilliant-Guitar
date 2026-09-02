@@ -17,6 +17,17 @@
 
 The candidate is eligible for audit only after the post-commit command set confirms clean/staged-empty status, planning-only diff, Trellis/JSON/JSONL/fence checks, typecheck/build results and the exact Node baseline classification. Any post-commit content repair creates a new HEAD and invalidates the prior audit object.
 
+## Author validation evidence
+
+- mechanical/Trellis/JSON/JSONL/fence/protected-delta gates: pass;
+- typecheck/build: pass/pass;
+- focused classifier: `11/7/4/0`;
+- full classifier: `611/605/4/2`;
+- full manifest: `80`, SHA-256 `1a50fd28c630bb016ce30f7ca65ae940170705b2eed581e610282b81378a1cf1`;
+- exact four failure titles: listed in `research/planning-self-audit.md`;
+- classification claimed by the author: historical exact-path governance drift caused by adding this planning child, not product-test failure;
+- audit requirement: independently accept or reject that classification; do not infer a pass from this self-record.
+
 ## Review question
 
 Does this planning candidate define the smallest sufficient prerequisite that makes S6.2's raw-byte inputs and Rust source-shape tests reproducible across `core.autocrlf=true/false`, without changing Rust product behavior or prematurely resuming S6.2?
