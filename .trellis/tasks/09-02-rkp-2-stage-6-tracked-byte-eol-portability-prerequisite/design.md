@@ -374,10 +374,12 @@ fn source_shape_normalization_is_lf_crlf_invariant() {
             .split("}\n\n")
             .next()
             .expect("metrics fields");
-        assert_eq!(declaration, "\n    entity_index_lookups: usize,");
+        assert_eq!(declaration, "\n    entity_index_lookups: usize,\n");
     }
 }
 ```
+
+The trailing `\n` before the split closing delimiter is part of the expected declaration. A structural verifier is necessary but not sufficient: before an expected patch is frozen, a clean E-drive rehearsal checkout must apply that exact patch and execute the four repaired source-shape tests plus `source_shape_normalization_is_lf_crlf_invariant`. Any focused failure invalidates the patch before I1.
 
 The I0 generator implements these as unique exact-text substitutions against the base blobs, requires one match per substitution, runs the five verifier self-tests, and emits `I0_EXPECTED_PATCH.diff`. The patch bytes and SHA-256 are frozen before I1. I1 applies that frozen bundle verbatim; editing first and deriving the expected bundle from the resulting candidate is forbidden. The planning environment is Node `v24.15.0`; I0 must observe that exact version and record the resolved executable path, otherwise it stops before bundle generation and returns for a versioned planning update.
 

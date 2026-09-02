@@ -2,7 +2,7 @@
 
 ## Status
 
-Author self-validation is being renewed after an implementation stop. Dedicated planning audit task `01a06123-b6c9-78a0-8216-9c8f1d53a061` ultimately passed `f39c72bf...` with `0/0/0`; the separately authorized attempt then stopped in I0 at `fa756bb...` before any technical edit because the six-function verifier named the wrong owner for the metrics hunk. This bounded docs-only amendment corrects that owner, the ignored/non-ignored description, the non-presumptive Node signature relationship and the re-entry baseline. A new exact clean HEAD must reproduce the planning gates and receive a fifth dedicated independent planning review.
+Author self-validation has been renewed after the later I1 stop at `6d7d85da...`. The prior dedicated review passed `c0a1a950...` with `0/0/0`; the implementation then exposed one literal defect that structural self-tests did not execute: the expected declaration omitted the newline before the split closing delimiter. The corrected literal and a mandatory pre-freeze semantic rehearsal are the complete bounded amendment.
 
 ## Scope checks
 
@@ -51,7 +51,8 @@ Author self-validation is being renewed after an implementation stop. Dedicated 
 - [x] dirty-worktree full replay is `611/604/5/2`, with the sole extra failure being the expected clean-tree assertion; no new product or title-class failure appeared;
 - [x] clean post-commit replay returns to focused `11/7/4/0` and full `611/605/4/2`; the four titles are the same historical governance set and no product failure is added;
 - [x] independent compiled-test manifest remains `80`, SHA-256 `1a50fd28c630bb016ce30f7ca65ae940170705b2eed581e610282b81378a1cf1`;
-- [ ] fifth targeted independent planning review of the repaired exact HEAD.
+- [x] fifth targeted independent planning review passed the prior repaired object at `c0a1a950...` with `0/0/0`.
+- [x] post-stop corrected patch rehearsed in a fresh E-drive checkout: patch `4892` bytes / SHA-256 `0e24fb1d092af787e7bd87940401a13d1501c8f05aba9b42584ce64be5dc070a`; corrected verifier `5/5` / SHA-256 `310c2f00443e69ba79144ec16cefac011e26562a1d406d48f580a0591286e7b1`; focused Rust `5/5`; `fmt` pass; runtime library `18 passed / 0 failed / 1 ignored`.
 
 The exact four clean-HEAD failures are:
 
@@ -69,4 +70,4 @@ No product behavior test failed. The repaired I0/I3 contract validates the outer
 
 ## Provisional severity result
 
-The current bounded-repair author pass provisionally finds P0/P1/P2=`0/0/0` against the executable I0 blocker. This is not an independent verdict and does not authorize reactivation or implementation.
+The bounded one-literal repair author pass finds P0/P1/P2=`0/0/0` against the executable blocker. The user's current `继续` instruction authorizes reactivation of this exact scope. Final acceptance and integration remain behind a separate implementation audit.

@@ -46,7 +46,7 @@
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RUST REMEDIATION PARENT PLANNING / RKP-2 REMAINS DIRECT IMPLEMENTATION CHILD BUT IS PAUSED / BLOCKING DESCENDANT 09-02 EOL PREREQUISITE STOPPED IN I0 AT FA756BB WITH ZERO TECHNICAL DELTA / BOUNDED PLANNING REPAIR AWAITS NEW DEDICATED REVIEW AND NEW USER AUTHORIZATION / DIAGNOSTIC S6.2 C3C4D198 UNACCEPTED / TYPESCRIPT DEFAULT / NO REACTIVATION ACCEPT ARCHIVE INTEGRATION QUALIFICATION CUTOVER RKP3 OR PUSH.",
+  "notes": "RUST REMEDIATION PARENT PLANNING / RKP-2 REMAINS DIRECT IMPLEMENTATION CHILD / BLOCKING 09-02 EOL PREREQUISITE SOLE TRAILING-LF ORACLE DEFECT HAS EXECUTABLE AUTHOR PROOF AND ZERO TECHNICAL DELTA / USER CONTINUE AUTHORIZES BOUNDED REACTIVATION AFTER DOCS AMENDMENT / FINAL IMPLEMENTATION AUDIT REQUIRED / DIAGNOSTIC S6.2 C3C4D198 UNACCEPTED / TYPESCRIPT DEFAULT / NO ACCEPT ARCHIVE INTEGRATION QUALIFICATION CUTOVER RKP3 OR PUSH.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
@@ -137,7 +137,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "tracked_byte_eol_prerequisite_bounded_parity_oracle_planning_repair_and_dedicated_rereview",
+    "next_gate": "tracked_byte_eol_prerequisite_docs_amendment_commit_then_bounded_activation",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,

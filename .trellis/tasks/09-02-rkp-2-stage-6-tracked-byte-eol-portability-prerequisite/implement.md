@@ -5,14 +5,14 @@
 - Planning base: `55cb575c606646e8449359b0c46d5c905b3bb3c6`.
 - Branch: `codex/rkp-2-stage-6-eol-portability-prerequisite`.
 - Worktree: `.worktrees/rkp-2-stage-6-eol-portability-prerequisite`.
-- Task status: `in_progress`, paused before I1 after the historical I0 stop.
-- Historical `task_start_run`: `true`; current user/production implementation authorization: `false`.
-- Production implementation authorization: `false`.
-- Dedicated planning review: pending.
+- Task status: `in_progress`; the latest attempt stopped in I1 before a technical commit and rolled back to zero technical delta.
+- Historical `task_start_run`: `true`; the current user's `继续` instruction authorizes a fresh activation for this exact one-literal repair.
+- Production implementation authorization remains `false` until the activation projection commit records the bounded scope.
+- The prior dedicated planning review passed; the post-stop one-literal correction is author-validated by an executable clean-checkout rehearsal. A separate implementation audit remains mandatory.
 - S6.2 E3 run count: `0`.
 - Default runtime: TypeScript.
 
-Do not execute the re-entry I0 until an exact docs-only repair commit receives a dedicated independent P0/P1/P2=`0/0/0` verdict and the user separately authorizes that repaired object.
+Do not execute the re-entry until the docs-only amendment is committed and the activation projection records its exact HEAD. The repair may change only the omitted trailing newline in the parity oracle plus the pre-freeze semantic rehearsal gate; any wider design change returns to planning.
 
 ## Fixed stage sequence
 
@@ -93,7 +93,7 @@ This is a re-entry gate after the historical I0 stop at `fa756bb3755ab4f9dcc8bc1
    - sorted failure titles;
    - one programmatically captured primary assertion signature per failing title, using the exact canonical record in `design.md` section 8.2;
    - 80-file count and SHA-256;
-8. from a second fresh detached `I0_SOURCE_HEAD` checkout, generate the deterministic `I0_EXPECTED_PATCH.diff` by the exact-text substitutions in `design.md` sections 4.1, 5.3 and 8.3; require one match per substitution, run the five synthetic verifier self-tests, add the exact final coordination-path projection, and prove placeholder content-insensitivity by changing each new evidence path independently from `EOL_EXPECTED_TRANSITION_V1\n` to `EOL_EXPECTED_TRANSITION_V2\n` without changing any signature; then freeze the expected-transition signatures before I1;
+8. from a second fresh detached `I0_SOURCE_HEAD` checkout, generate the deterministic `I0_EXPECTED_PATCH.diff` by the exact-text substitutions in `design.md` sections 4.1, 5.3 and 8.3; require one match per substitution, run the five synthetic verifier self-tests, add the exact final coordination-path projection, and prove placeholder content-insensitivity by changing each new evidence path independently from `EOL_EXPECTED_TRANSITION_V1\n` to `EOL_EXPECTED_TRANSITION_V2\n` without changing any signature; before freezing, apply the exact patch in that clean E-drive lane and require the four repaired source-shape tests plus `source_shape_normalization_is_lf_crlf_invariant` to pass; then freeze the expected-transition signatures before I1;
 9. record current seven-path `git ls-files --eol`, byte lengths and SHA-256 as diagnostic pre-fix values;
 10. record in task-local planning evidence: `I0_SOURCE_HEAD`, Node executable and exact `process.version=v24.15.0`, compiled focused-test path/bytes/SHA, capture-script source/SHA, I0 control signatures, expected-transition signatures, patch bytes/SHA, exact phase path sets and per-path two-variant placeholder proof;
 11. commit only the task/parent evidence projection. This evidence commit is not `I0_SOURCE_HEAD`; the already frozen A0 commit remains the source for every later control/expected replay.

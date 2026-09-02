@@ -2,13 +2,11 @@
 
 ## Current gate
 
-The first implementation attempt stopped in I0 at `fa756bb3755ab4f9dcc8bc1b5e5ada571102927f` before any technical edit. The task is historically `in_progress`/`task_start_run=true`, but its current implementation authorization is false. Do not reactivate or enter I1 until:
+The latest implementation attempt stopped in I1 before a technical commit at `6d7d85da83970c1674880bd61fc3e7610ebe72f0`; all four inherited failures were green, but the parity oracle omitted the newline before the split closing delimiter. The technical delta was rolled back to zero. The corrected literal is `"\n    entity_index_lookups: usize,\n"`.
 
-1. `review-candidate.md` names an exact docs-only planning HEAD;
-2. a dedicated independent planning task returns P0/P1/P2=`0/0/0` for that exact HEAD;
-3. the user separately authorizes that newly reviewed repaired object.
+Before resuming, commit the docs-only amendment, record that exact HEAD in a bounded activation projection, regenerate the patch/verifier hashes, and use a fresh E-drive checkout. The corrected patch has already passed verifier `5/5`, all five focused tests, `fmt`, and the runtime library suite `18/18` with one ignored large test. The user's current `继续` instruction supplies the new bounded implementation authorization; acceptance and integration still wait for a separate implementation audit.
 
-The old A0, old authorization, partial I0 hashes/signatures and temporary E-drive lanes are diagnostic history and must not be reused.
+The old A0, old patch/verifier hashes and earlier temporary lanes remain diagnostic history. The successful author rehearsal may be cited as planning proof, but execution evidence must be regenerated from the new activation HEAD.
 
 ## Work object
 

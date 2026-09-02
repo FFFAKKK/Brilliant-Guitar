@@ -2,7 +2,7 @@
 
 ## Status
 
-`READY FOR TARGETED INDEPENDENT PLANNING REREVIEW`
+`BOUNDED PARITY ORACLE REPAIR AUTHOR-VERIFIED / ACTIVATION COMMIT NEXT`
 
 ## Exact object
 
@@ -11,13 +11,13 @@
 - Planning base: `55cb575c606646e8449359b0c46d5c905b3bb3c6`
 - Candidate HEAD: the exact clean `git rev-parse HEAD` produced by the docs-only planning commit and named in the audit dispatch; this file intentionally avoids a self-referential hash
 - Task: `.trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite`
-- Status: `in_progress`, paused before I1 while this planning repair is reviewed
+- Status: `in_progress`, stopped before the I1 technical commit with zero technical delta; bounded repair verified
 - `task_start_run=true` records the historical stopped I0 attempt and is not current authorization
-- `production_implementation_authorized=false`
-- `user_implementation_authorization=false`
+- `production_implementation_authorized=false` until the activation projection commit
+- the user's current `继续` instruction authorizes only the repaired prerequisite implementation and candidate freeze
 - historical stop evidence: `fa756bb3755ab4f9dcc8bc1b5e5ada571102927f`; its technical-file delta is empty
 
-The candidate is eligible for audit only after the post-commit command set confirms clean/staged-empty status, docs-only repair diff, Trellis/JSON/JSONL/fence checks, typecheck/build results and the exact Node baseline classification. `implementation-evidence.md` is absent at this repaired planning HEAD; its stopped-run history remains in commit `fa756bb...` and `research/e2-blocker-and-audit-evidence.md`, so the next independently approved I0 source can again satisfy the evidence-absence gate. Any post-commit content repair creates a new HEAD and invalidates the prior audit object.
+This amendment changes one expected newline and adds a semantic pre-freeze rehearsal. In a fresh E-drive checkout of activation source `7f071acd...`, the corrected 4,892-byte patch (`SHA-256 0e24fb1d092af787e7bd87940401a13d1501c8f05aba9b42584ce64be5dc070a`) passed the corrected lexical verifier `5/5` (`SHA-256 310c2f00443e69ba79144ec16cefac011e26562a1d406d48f580a0591286e7b1`), all five focused Rust tests, `fmt`, and the runtime library suite `18 passed / 0 failed / 1 ignored`. This executable proof closes the literal-planning defect; the next independent gate is implementation review of the final clean candidate.
 
 ## Author validation evidence
 

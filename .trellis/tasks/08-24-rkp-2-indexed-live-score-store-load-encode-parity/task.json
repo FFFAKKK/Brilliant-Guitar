@@ -44,7 +44,7 @@
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "RKP-2 IN_PROGRESS BUT PAUSED / STAGE6 S6.1 COMPLETE AT 55CB575C / DIAGNOSTIC S6.2 E1 C3C4D198 STOPPED AT E2 UNACCEPTED / BLOCKING EOL PREREQUISITE STOPPED IN I0 AT FA756BB WITH ZERO TECHNICAL DELTA / BOUNDED PLANNING REPAIR AWAITS NEW DEDICATED REVIEW AND NEW USER AUTHORIZATION / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO REACTIVATION ACCEPT ARCHIVE INTEGRATION QUALIFICATION CUTOVER PUSH OR RKP3.",
+  "notes": "RKP-2 IN_PROGRESS / STAGE6 S6.1 COMPLETE AT 55CB575C / EOL PREREQUISITE I1 STOP LEFT ZERO TECHNICAL DELTA / SOLE TRAILING-LF ORACLE DEFECT HAS EXECUTABLE AUTHOR PROOF / USER CONTINUE AUTHORIZES BOUNDED REACTIVATION AFTER DOCS AMENDMENT / FINAL IMPLEMENTATION AUDIT REQUIRED / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO ACCEPT ARCHIVE INTEGRATION QUALIFICATION CUTOVER PUSH OR RKP3.",
   "meta": {
     "planning_base_commit": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "accepted_rkp1_audited_implementation_commit": "94387b339b5e4d9ce6b7f97597a1b56edd051f01",
@@ -352,7 +352,7 @@
       "post_pass_closeout_authorized": true,
       "stage_6_blocked_until_accepted_archived_integrated": false
     },
-    "next_gate": "tracked_byte_eol_prerequisite_bounded_parity_oracle_planning_repair_and_dedicated_rereview",
+    "next_gate": "tracked_byte_eol_prerequisite_docs_amendment_commit_then_bounded_activation",
     "stage_6_started": true,
     "stage_6_authorized": true,
     "stage_6_completed": false,
