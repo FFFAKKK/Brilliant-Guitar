@@ -44,13 +44,28 @@ In original RKP-2 only, project sole authority, preserve frozen provenance, set 
 
 ## L6 — closeout archive and terminal projection
 
-After integration PASS, record closeout archive authorization and run:
+The independent integration review of `3799faf635482f0301e61a56f1faf83ea3fe0f5f` returned P0/P1/P2=`0/1/0`, `RETURN FOR ONE BOUNDED L6 CLOCK/DATE CONTRACT REPAIR`. First obtain a targeted independent rereview PASS for the exact four-file repair. That PASS is evidence only and does not itself authorize L6.
+
+After targeted rereview and separate explicit L6 authorization, load the closeout task metadata and preflight only the L6-owned clock fields:
+
+```powershell
+$closeout = Get-Content -Raw -LiteralPath '.trellis/tasks/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout/task.json' | ConvertFrom-Json
+$now = [DateTimeOffset]::Now
+$deadline = [DateTimeOffset]::ParseExact($closeout.meta.closeout_archive_deadline_local, "yyyy-MM-dd'T'HH:mm:sszzz", [Globalization.CultureInfo]::InvariantCulture)
+if ($closeout.meta.closeout_archive_date -ne '2026-09-02') { throw 'L6 closeout archive date contract drift' }
+if ($now.Offset -ne [TimeSpan]::FromHours(8)) { throw 'L6 requires +08:00 local offset' }
+if ($now.ToString('yyyy-MM-dd') -ne $closeout.meta.closeout_archive_date) { throw 'L6 local date mismatch' }
+if ($now -ge $deadline) { throw 'L6 closeout archive deadline reached' }
+if ($closeout.meta.archive_date -ne '2026-09-01' -or $closeout.meta.archive_clock_scope -ne 'historical_semantic_child_and_stage6_native_archive_window_only_not_l6') { throw 'historical archive clock drift' }
+```
+
+Any date, timezone, deadline, archive-month/root, or historical-clock failure stops before acceptance/archive mutation and before `task.py archive`. The generic `archive_date` and `archive_deadline_local` fields are L2/L3 historical evidence only and must not drive L6. On a passing preflight, preserve archive month/root, record closeout archive authorization and run:
 
 ```powershell
 python ./.trellis/scripts/task.py archive 09-01-rkp-2-stage-6-acceptance-archive-integration-closeout
 ```
 
-Verify exact move; create one terminal projection updating archived self paths, RKP-2/Rust state and Workspace Law. Set exact later S6.2 gate without starting it. Obtain targeted terminal rereview P0/P1/P2=`0/0/0`.
+Verify the exact move and native `completedAt=2026-09-02`; create one terminal projection updating archived self paths, RKP-2/Rust state and Workspace Law. Semantic child and Stage 6 remain historical at `completedAt=2026-09-01`. Set the exact later S6.2 gate without starting it. Obtain targeted terminal rereview P0/P1/P2=`0/0/0`.
 
 ## Validation
 

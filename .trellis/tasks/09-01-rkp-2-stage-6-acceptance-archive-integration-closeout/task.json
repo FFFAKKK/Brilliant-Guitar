@@ -38,7 +38,7 @@
     ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "IN_PROGRESS / TARGETED PLANNING REREVIEW PASS P0_0_P1_0_P2_0 AT E7708BF / L1 NATIVE ACTIVATION COMPLETE / L2 CONSUMED SEMANTIC CHILD ACCEPTED-ARCHIVED / L3 STAGE6 OWNER ACCEPTED AND NATIVELY ARCHIVED EXACT 13 AT BCC1C905 / FIRST INDEPENDENT IMPLEMENTATION AUDIT RETURN P0_0_P1_2_P2_0 AT 1F024630 / BOUNDED L3 REPAIRS BAF2655 AND B3850A48 / L3 INDEPENDENT ARCHIVE CANDIDATE REVIEW PASS P0_0_P1_0_P2_0 AT B3850A48 / L4 FF-ONLY INTEGRATION COMPLETE INTO ORIGINAL RKP2 / L5 INTEGRATED PROJECTION CANDIDATE READY FOR INDEPENDENT INTEGRATION REVIEW / PRODUCTION IMPLEMENTATION FALSE / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO L6 ARCHIVE STRESS QUALIFICATION CUTOVER RKP3 PUSH OR PRODUCTION CHANGE.",
+  "notes": "IN_PROGRESS / TARGETED PLANNING REREVIEW PASS P0_0_P1_0_P2_0 AT E7708BF / L1 NATIVE ACTIVATION COMPLETE / L2 CONSUMED SEMANTIC CHILD ACCEPTED-ARCHIVED ON 2026-09-01 / L3 STAGE6 OWNER ACCEPTED AND NATIVELY ARCHIVED EXACT 13 AT BCC1C905 ON 2026-09-01 / L3 INDEPENDENT ARCHIVE CANDIDATE REVIEW PASS P0_0_P1_0_P2_0 AT B3850A48 / L4 FF-ONLY INTEGRATION COMPLETE / L5 COMMIT 3799FAF INTEGRATION AUDIT RETURN P0_0_P1_1_P2_0 FOR ONE L6 CLOCK-DATE CONTRACT P1 / FOUR-FILE L6 DATE REPAIR CANDIDATE TARGETED REREVIEW PENDING / L6 NOT STARTED OR AUTHORIZED / PRODUCTION IMPLEMENTATION FALSE / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO ARCHIVE STRESS QUALIFICATION CUTOVER RKP3 PUSH OR PRODUCTION CHANGE.",
   "meta": {
     "planning_base_commit": "65debd52d379004c966cefe59f54d72ac1136eb4",
     "original_rkp2_preintegration_head": "4a302bc9f9981940336fc97941b08e09bd0d1f67",
@@ -58,12 +58,15 @@
     "user_lifecycle_continuation_record": "user_requested_continue_until_this_stage_is_complete_then_report",
     "independent_planning_review": "passed_targeted_rereview_e7708bf84ffb6ac71818f46d367ff6e8bba7beb6_P0_0_P1_0_P2_0",
     "accepted_planning_authority_head": "e7708bf84ffb6ac71818f46d367ff6e8bba7beb6",
-    "implementation_stage": "L5_integrated_projection_candidate_ready_for_dedicated_independent_integration_review",
+    "implementation_stage": "L6_clock_date_contract_repair_candidate_ready_for_targeted_independent_rereview",
     "implementation_candidate_ready": true,
     "implementation_review": "passed_dedicated_independent_stage6_archive_candidate_review",
     "archive_candidate_review": "passed_dedicated_independent_stage6_archive_candidate_review",
-    "integration_review": "pending_dedicated_independent_integration_projection_review",
+    "integration_review": "returned_P0_0_P1_1_P2_0_for_one_bounded_L6_clock_date_contract_repair",
     "terminal_projection_review": "pending_not_started",
+    "l6_date_contract_repair_candidate_ready": true,
+    "l6_execution_authorized": false,
+    "l6_started": false,
     "semantic_child_acceptance_authorized": true,
     "semantic_child_archive_authorized": true,
     "stage6_acceptance_authorized": true,
@@ -95,6 +98,10 @@
     "archive_month": "2026-09",
     "archive_date": "2026-09-01",
     "archive_deadline_local": "23:50:00+08:00",
+    "archive_clock_scope": "historical_semantic_child_and_stage6_native_archive_window_only_not_l6",
+    "closeout_archive_date": "2026-09-02",
+    "closeout_archive_deadline_local": "2026-09-02T23:50:00+08:00",
+    "closeout_archive_clock_owner": "L6_closeout_only",
     "semantic_child_active_root": ".trellis/tasks/08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
     "semantic_child_archive_root": ".trellis/tasks/archive/2026-09/08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
     "semantic_child_manifest_count": 12,
@@ -106,7 +113,7 @@
     "future_technical_allowlist": [
       "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
     ],
-    "next_gate": "dedicated_independent_integration_projection_review_pending",
+    "next_gate": "targeted_independent_L6_clock_date_contract_repair_rereview_pending",
     "workspace_law_phase": "integrated",
     "stage6_owner_acceptance_record": "user_requested_continue_until_this_stage_is_complete_then_report",
     "stage6_native_archive_commit": "bcc1c905bc58ab9810e076c23891d6683a2ae607",
@@ -142,6 +149,29 @@
       "review_turn_id": "01a05da1-f9dc-7a72-8c11-75985d5a1e19",
       "review_generated_authorization": false,
       "authorization_source": "prior_scope_limited_user_lifecycle_continuation"
+    },
+    "independent_integration_review": {
+      "candidate_commit": "3799faf635482f0301e61a56f1faf83ea3fe0f5f",
+      "P0": 0,
+      "P1": 1,
+      "P2": 0,
+      "verdict": "RETURN FOR ONE BOUNDED L6 CLOCK/DATE CONTRACT REPAIR",
+      "review_task_id": "01a05f7a-de45-77c3-9287-88e354d2fd6f",
+      "review_thread_id": "01a05f7a-de45-77c3-9287-88e354d2fd6f",
+      "review_turn_id": "01a05f7a-e32b-7b71-8497-d41987574d0d",
+      "l4_l5_projection_review": "passed_except_for_future_L6_clock_date_contract",
+      "finding": "task_py_archive_writes_execution_date_2026_09_02_but_closeout_archived_law_expected_2026_09_01",
+      "review_generated_authorization": false
+    },
+    "bounded_l6_clock_date_contract_repair": {
+      "status": "candidate_ready_targeted_independent_rereview_pending",
+      "parent_commit": "3799faf635482f0301e61a56f1faf83ea3fe0f5f",
+      "allowed_paths": [
+        ".trellis/tasks/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout/design.md",
+        ".trellis/tasks/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout/implement.md",
+        ".trellis/tasks/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout/task.json",
+        "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
+      ]
     },
     "bounded_l3_repair": {
       "status": "test_only_P2_negative_matrix_repair_passed_dedicated_independent_archive_candidate_review",

@@ -551,6 +551,18 @@ const STAGE_6_CLOSEOUT_TARGET_BRANCH =
   "codex/rkp-2-indexed-live-score-store-implementation";
 const STAGE_6_CLOSEOUT_TARGET_WORKTREE =
   ".worktrees/rkp-2-indexed-live-score-store-implementation";
+const STAGE_6_CLOSEOUT_L5_INTEGRATION_COMMIT =
+  "3799faf635482f0301e61a56f1faf83ea3fe0f5f";
+const STAGE_6_CLOSEOUT_HISTORICAL_ARCHIVE_DATE = "2026-09-01";
+const STAGE_6_CLOSEOUT_HISTORICAL_ARCHIVE_DEADLINE = "23:50:00+08:00";
+const STAGE_6_CLOSEOUT_ARCHIVE_DATE = "2026-09-02";
+const STAGE_6_CLOSEOUT_ARCHIVE_DEADLINE = "2026-09-02T23:50:00+08:00";
+const STAGE_6_CLOSEOUT_L6_DATE_REPAIR_PATHS = [
+  ".trellis/tasks/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout/design.md",
+  ".trellis/tasks/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout/implement.md",
+  ".trellis/tasks/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout/task.json",
+  "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
+] as const;
 const STAGE_6_CLOSEOUT_FROZEN_PARENT_CHAIN = [
   {
     commit: STAGE_6_CLOSEOUT_ACTIVATION_COMMIT,
@@ -1185,6 +1197,37 @@ function currentStage6CloseoutChanges(): Map<string, "A" | "M" | "D"> {
     "--no-renames",
     "--name-status",
     `${STAGE_6_CLOSEOUT_BASE}..HEAD`,
+  ]);
+  collect(["diff", "--no-renames", "--name-status"], undefined, true);
+  collect(["diff", "--cached", "--no-renames", "--name-status"], undefined, true);
+  collect(["ls-files", "--others", "--exclude-standard"], "A", true);
+  return result;
+}
+
+function currentStage6CloseoutL6DateRepairChanges(): Map<string, "A" | "M" | "D"> {
+  const result = new Map<string, "A" | "M" | "D">();
+  const collect = (
+    args: readonly string[],
+    fallbackStatus?: "A",
+    preserveExisting = false,
+  ): void => {
+    for (const line of lines(git(args))) {
+      const [statusOrPath, path, extra] = line.split("\t");
+      const status = fallbackStatus ?? statusOrPath;
+      const resolvedPath = fallbackStatus === undefined ? path : statusOrPath;
+      assert.equal(extra, undefined, "rename-collapsed paths are forbidden");
+      assert.ok(status === "A" || status === "M" || status === "D");
+      assert.ok(resolvedPath);
+      if (!preserveExisting || !result.has(resolvedPath)) {
+        result.set(resolvedPath, status);
+      }
+    }
+  };
+  collect([
+    "diff",
+    "--no-renames",
+    "--name-status",
+    `${STAGE_6_CLOSEOUT_L5_INTEGRATION_COMMIT}..HEAD`,
   ]);
   collect(["diff", "--no-renames", "--name-status"], undefined, true);
   collect(["diff", "--cached", "--no-renames", "--name-status"], undefined, true);
@@ -2187,6 +2230,115 @@ interface ExactCommitParentProjection {
   readonly parents: readonly string[];
 }
 
+interface Stage6CloseoutL6DateRepairProjection {
+  readonly parents: readonly string[];
+  readonly changes: ReadonlyMap<string, "A" | "M" | "D">;
+}
+
+function currentStage6CloseoutL6DateRepairParents(): readonly string[] {
+  const head = git(["rev-parse", "HEAD"]).trim();
+  if (head === STAGE_6_CLOSEOUT_L5_INTEGRATION_COMMIT) {
+    return [STAGE_6_CLOSEOUT_L5_INTEGRATION_COMMIT];
+  }
+  return lines(git(["show", "-s", "--format=%P", "HEAD"])).flatMap((line) =>
+    line.split(" ").filter(Boolean),
+  );
+}
+
+function assertStage6CloseoutL6DateRepairProjection(
+  projection: Stage6CloseoutL6DateRepairProjection,
+): void {
+  assert.deepEqual(
+    projection.parents,
+    [STAGE_6_CLOSEOUT_L5_INTEGRATION_COMMIT],
+    "L6 date repair must be the direct single-parent child of the L5 integration commit",
+  );
+  assert.deepEqual(
+    [...projection.changes]
+      .map(([path, status]) => `${status}\t${path}`)
+      .sort(),
+    STAGE_6_CLOSEOUT_L6_DATE_REPAIR_PATHS.map((path) => `M\t${path}`).sort(),
+    "L6 date repair must change exactly the four declared files",
+  );
+}
+
+interface Stage6CloseoutClockProjection {
+  readonly archiveMonth: unknown;
+  readonly historicalArchiveDate: unknown;
+  readonly historicalArchiveDeadline: unknown;
+  readonly historicalArchiveClockScope: unknown;
+  readonly closeoutArchiveRoot: unknown;
+  readonly closeoutArchiveDate: unknown;
+  readonly closeoutArchiveDeadline: unknown;
+  readonly closeoutArchiveClockOwner: unknown;
+  readonly closeoutCompletedAt: unknown;
+}
+
+function assertStage6CloseoutClockProjection(
+  projection: Stage6CloseoutClockProjection,
+  closeoutArchived: boolean,
+): void {
+  assert.equal(projection.archiveMonth, "2026-09");
+  assert.equal(
+    projection.historicalArchiveDate,
+    STAGE_6_CLOSEOUT_HISTORICAL_ARCHIVE_DATE,
+    "semantic child and Stage 6 historical archive date must remain 2026-09-01",
+  );
+  assert.equal(
+    projection.historicalArchiveDeadline,
+    STAGE_6_CLOSEOUT_HISTORICAL_ARCHIVE_DEADLINE,
+  );
+  assert.equal(
+    projection.historicalArchiveClockScope,
+    "historical_semantic_child_and_stage6_native_archive_window_only_not_l6",
+  );
+  assert.equal(projection.closeoutArchiveRoot, STAGE_6_CLOSEOUT_ARCHIVE_ROOT);
+  assert.equal(projection.closeoutArchiveDate, STAGE_6_CLOSEOUT_ARCHIVE_DATE);
+  assert.equal(
+    projection.closeoutArchiveDeadline,
+    STAGE_6_CLOSEOUT_ARCHIVE_DEADLINE,
+  );
+  assert.equal(projection.closeoutArchiveClockOwner, "L6_closeout_only");
+  assert.equal(
+    projection.closeoutCompletedAt,
+    closeoutArchived ? STAGE_6_CLOSEOUT_ARCHIVE_DATE : null,
+    "closeout completedAt must match only the L6 execution date",
+  );
+}
+
+interface Stage6CloseoutIntegrationReviewProjection {
+  readonly candidateCommit: unknown;
+  readonly P0: unknown;
+  readonly P1: unknown;
+  readonly P2: unknown;
+  readonly verdict: unknown;
+  readonly reviewTaskId: unknown;
+  readonly reviewThreadId: unknown;
+  readonly reviewTurnId: unknown;
+  readonly reviewGeneratedAuthorization: unknown;
+}
+
+function assertStage6CloseoutIntegrationReviewProjection(
+  projection: Stage6CloseoutIntegrationReviewProjection,
+): void {
+  assert.equal(projection.candidateCommit, STAGE_6_CLOSEOUT_L5_INTEGRATION_COMMIT);
+  assert.equal(projection.P0, 0);
+  assert.equal(projection.P1, 1);
+  assert.equal(projection.P2, 0);
+  assert.equal(
+    projection.verdict,
+    "RETURN FOR ONE BOUNDED L6 CLOCK/DATE CONTRACT REPAIR",
+  );
+  assert.equal(projection.reviewTaskId, "01a05f7a-de45-77c3-9287-88e354d2fd6f");
+  assert.equal(projection.reviewThreadId, "01a05f7a-de45-77c3-9287-88e354d2fd6f");
+  assert.equal(projection.reviewTurnId, "01a05f7a-e32b-7b71-8497-d41987574d0d");
+  assert.equal(
+    projection.reviewGeneratedAuthorization,
+    false,
+    "integration review must remain evidence only",
+  );
+}
+
 function assertStage6CloseoutFrozenParentChain(
   projections: readonly ExactCommitParentProjection[],
 ): void {
@@ -2226,6 +2378,7 @@ interface Stage6CloseoutLifecycleProjection {
   readonly stage6ArchiveAuthorityPresent: unknown;
   readonly closeoutLocation: "active" | "archive";
   readonly closeoutStatus: unknown;
+  readonly closeoutCompletedAt: unknown;
   readonly closeoutImplementationStage: unknown;
   readonly closeoutImplementationReview: unknown;
   readonly closeoutIntegrationReview: unknown;
@@ -2260,6 +2413,9 @@ interface Stage6CloseoutLifecycleProjection {
   readonly closeoutL3AuditTurnId: unknown;
   readonly closeoutL3AuditReviewGeneratedAuthorization: unknown;
   readonly closeoutL3AuditAuthorizationSource: unknown;
+  readonly closeoutL6DateRepairCandidateReady: unknown;
+  readonly closeoutL6ExecutionAuthorized: unknown;
+  readonly closeoutL6Started: unknown;
   readonly closeoutAcceptanceAuthorized: unknown;
   readonly closeoutArchiveAuthorized: unknown;
   readonly rkp2Status: unknown;
@@ -2369,7 +2525,7 @@ function assertStage6CloseoutLifecycleProjection(
   if (phase === "integrated") {
     assert.equal(
       projection.closeoutImplementationStage,
-      "L5_integrated_projection_candidate_ready_for_dedicated_independent_integration_review",
+      "L6_clock_date_contract_repair_candidate_ready_for_targeted_independent_rereview",
     );
     assert.equal(
       projection.closeoutImplementationReview,
@@ -2377,11 +2533,22 @@ function assertStage6CloseoutLifecycleProjection(
     );
     assert.equal(
       projection.closeoutIntegrationReview,
-      "pending_dedicated_independent_integration_projection_review",
+      "returned_P0_0_P1_1_P2_0_for_one_bounded_L6_clock_date_contract_repair",
     );
     assert.equal(
       projection.closeoutNextGate,
-      "dedicated_independent_integration_projection_review_pending",
+      "targeted_independent_L6_clock_date_contract_repair_rereview_pending",
+    );
+    assert.equal(projection.closeoutL6DateRepairCandidateReady, true);
+    assert.equal(
+      projection.closeoutL6ExecutionAuthorized,
+      false,
+      "L6 execution must remain unauthorized during the date repair",
+    );
+    assert.equal(
+      projection.closeoutL6Started,
+      false,
+      "L6 must remain unstarted during the date repair",
     );
     assert.equal(
       projection.closeoutCurrentAuthorityOwnerBranch,
@@ -5198,6 +5365,7 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     readText(`${closeoutLocation.root}/task.json`),
   ) as {
     readonly status?: unknown;
+    readonly completedAt?: unknown;
     readonly meta?: Readonly<Record<string, unknown>>;
   };
   const currentRkp2Task = JSON.parse(readText(TASK_PATH)) as {
@@ -5358,6 +5526,9 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
   const closeoutL3AuditRecord = closeoutMeta.l3_independent_archive_candidate_review as
     | Readonly<Record<string, unknown>>
     | undefined;
+  const closeoutIntegrationReviewRecord = closeoutMeta.independent_integration_review as
+    | Readonly<Record<string, unknown>>
+    | undefined;
   const rkp2CloseoutProjection = currentRkp2Meta
     .stage6_acceptance_archive_integration_closeout as
     | Readonly<Record<string, unknown>>
@@ -5367,8 +5538,96 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     | Readonly<Record<string, unknown>>
     | undefined;
   assert.ok(closeoutL3AuditRecord);
+  assert.ok(closeoutIntegrationReviewRecord);
   assert.ok(rkp2CloseoutProjection);
   assert.ok(rustCloseoutProjection);
+  const integrationReviewProjection: Stage6CloseoutIntegrationReviewProjection = {
+    candidateCommit: closeoutIntegrationReviewRecord.candidate_commit,
+    P0: closeoutIntegrationReviewRecord.P0,
+    P1: closeoutIntegrationReviewRecord.P1,
+    P2: closeoutIntegrationReviewRecord.P2,
+    verdict: closeoutIntegrationReviewRecord.verdict,
+    reviewTaskId: closeoutIntegrationReviewRecord.review_task_id,
+    reviewThreadId: closeoutIntegrationReviewRecord.review_thread_id,
+    reviewTurnId: closeoutIntegrationReviewRecord.review_turn_id,
+    reviewGeneratedAuthorization:
+      closeoutIntegrationReviewRecord.review_generated_authorization,
+  };
+  assertStage6CloseoutIntegrationReviewProjection(integrationReviewProjection);
+  for (const variant of [
+    { ...integrationReviewProjection, P1: 0 },
+    { ...integrationReviewProjection, verdict: "PASS" },
+    { ...integrationReviewProjection, reviewGeneratedAuthorization: true },
+  ]) {
+    assert.throws(() => assertStage6CloseoutIntegrationReviewProjection(variant));
+  }
+
+  const closeoutClockProjection: Stage6CloseoutClockProjection = {
+    archiveMonth: closeoutMeta.archive_month,
+    historicalArchiveDate: closeoutMeta.archive_date,
+    historicalArchiveDeadline: closeoutMeta.archive_deadline_local,
+    historicalArchiveClockScope: closeoutMeta.archive_clock_scope,
+    closeoutArchiveRoot: closeoutMeta.closeout_archive_root,
+    closeoutArchiveDate: closeoutMeta.closeout_archive_date,
+    closeoutArchiveDeadline: closeoutMeta.closeout_archive_deadline_local,
+    closeoutArchiveClockOwner: closeoutMeta.closeout_archive_clock_owner,
+    closeoutCompletedAt: closeoutTask.completedAt,
+  };
+  assertStage6CloseoutClockProjection(
+    closeoutClockProjection,
+    stage6CloseoutPhase === "closeout-archived",
+  );
+  const closeoutArchivedClockProjection: Stage6CloseoutClockProjection = {
+    ...closeoutClockProjection,
+    closeoutCompletedAt: STAGE_6_CLOSEOUT_ARCHIVE_DATE,
+  };
+  assertStage6CloseoutClockProjection(closeoutArchivedClockProjection, true);
+  for (const variant of [
+    {
+      ...closeoutArchivedClockProjection,
+      closeoutCompletedAt: STAGE_6_CLOSEOUT_HISTORICAL_ARCHIVE_DATE,
+    },
+    {
+      ...closeoutArchivedClockProjection,
+      closeoutArchiveDate: STAGE_6_CLOSEOUT_HISTORICAL_ARCHIVE_DATE,
+    },
+    {
+      ...closeoutArchivedClockProjection,
+      closeoutArchiveDeadline: "2026-09-01T23:50:00+08:00",
+    },
+    {
+      ...closeoutArchivedClockProjection,
+      historicalArchiveDate: STAGE_6_CLOSEOUT_ARCHIVE_DATE,
+    },
+    { ...closeoutArchivedClockProjection, archiveMonth: "2026-10" },
+    {
+      ...closeoutArchivedClockProjection,
+      closeoutArchiveRoot:
+        ".trellis/tasks/archive/2026-10/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout",
+    },
+  ]) {
+    assert.throws(() => assertStage6CloseoutClockProjection(variant, true));
+  }
+
+  const l6DateRepairProjection: Stage6CloseoutL6DateRepairProjection = {
+    parents: currentStage6CloseoutL6DateRepairParents(),
+    changes: currentStage6CloseoutL6DateRepairChanges(),
+  };
+  assertStage6CloseoutL6DateRepairProjection(l6DateRepairProjection);
+  assert.throws(() =>
+    assertStage6CloseoutL6DateRepairProjection({
+      ...l6DateRepairProjection,
+      parents: ["wrong-parent"],
+    }),
+  );
+  const l6DateRepairWithExtraPath = new Map(l6DateRepairProjection.changes);
+  l6DateRepairWithExtraPath.set("src/forbidden-l6-date-repair.ts", "M");
+  assert.throws(() =>
+    assertStage6CloseoutL6DateRepairProjection({
+      ...l6DateRepairProjection,
+      changes: l6DateRepairWithExtraPath,
+    }),
+  );
 
   const stage6CloseoutLifecycle: Stage6CloseoutLifecycleProjection = {
     semanticLocation: semanticLocation.kind,
@@ -5398,6 +5657,7 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     stage6ArchiveAuthorityPresent: currentStage6Meta.archive_authority_present,
     closeoutLocation: closeoutLocation.kind,
     closeoutStatus: closeoutTask.status,
+    closeoutCompletedAt: closeoutTask.completedAt,
     closeoutImplementationStage: closeoutMeta.implementation_stage,
     closeoutImplementationReview: closeoutMeta.implementation_review,
     closeoutIntegrationReview: closeoutMeta.integration_review,
@@ -5437,6 +5697,10 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     closeoutL3AuditReviewGeneratedAuthorization:
       closeoutL3AuditRecord.review_generated_authorization,
     closeoutL3AuditAuthorizationSource: closeoutL3AuditRecord.authorization_source,
+    closeoutL6DateRepairCandidateReady:
+      closeoutMeta.l6_date_contract_repair_candidate_ready,
+    closeoutL6ExecutionAuthorized: closeoutMeta.l6_execution_authorized,
+    closeoutL6Started: closeoutMeta.l6_started,
     closeoutAcceptanceAuthorized: closeoutMeta.closeout_acceptance_authorized,
     closeoutArchiveAuthorized: closeoutMeta.closeout_archive_authorized,
     rkp2Status: currentRkp2Task.status,
@@ -5506,6 +5770,7 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     { semanticParent: "wrong-semantic-parent" },
     { semanticChildren: ["wrong-semantic-child"] },
     { semanticStatus: "in_progress" },
+    { semanticCompletedAt: "2026-09-02" },
     { stage6Parent: "wrong-stage6-parent" },
     { stage6Children: ["wrong-stage6-child"] },
     {
@@ -5513,6 +5778,7 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
         "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
     },
     { stage6Status: "in_progress" },
+    { stage6CompletedAt: "2026-09-02" },
     { rkp2Status: "completed" },
     { rkp2Parent: "wrong-rkp2-parent" },
     { rkp2Children: ["wrong-rkp2-child"] },
@@ -5580,6 +5846,9 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     { closeoutIntegrationTargetPreHead: STAGE_6_CLOSEOUT_L3_AUDITED_CANDIDATE },
     { closeoutIntegrationCandidate: STAGE_6_CLOSEOUT_L3_REPAIR_COMMIT },
     { closeoutIntegrationMode: "merge-commit" },
+    { closeoutL6DateRepairCandidateReady: false },
+    { closeoutL6ExecutionAuthorized: true },
+    { closeoutL6Started: true },
     { closeoutL4FastForwardCompleted: false },
     {
       closeoutL4NoMergeCommit: false,
