@@ -2,7 +2,7 @@
 
 ## Status
 
-Author self-validation and clean-HEAD regression replay completed at docs-only planning commit `e423e98ec585c1b0b687e6226dc0b36953acf2a5`. The validation-record commit produced from this update must reproduce the same tuple before it is dispatched to a separate dedicated planning reviewer.
+Author self-validation and clean-HEAD regression replay completed. Dedicated planning audit task `01a06123-b6c9-78a0-8216-9c8f1d53a061` reviewed `538abbdaee079aaf5df800f09d192fbb777174d9` and returned P0/P1/P2=`0/2/0`. This bounded repair closes only those two findings; a new exact HEAD must reproduce the same mechanical/test tuple and receive a targeted independent rereview.
 
 ## Scope checks
 
@@ -33,7 +33,10 @@ Author self-validation and clean-HEAD regression replay completed at docs-only p
 - [x] clean-HEAD focused classifier: `11 total / 7 pass / 4 fail / 0 skipped`;
 - [x] clean-HEAD full classifier: `611 total / 605 pass / 4 fail / 2 skipped`;
 - [x] independent full-test manifest record: `80` files, SHA-256 `1a50fd28c630bb016ce30f7ca65ae940170705b2eed581e610282b81378a1cf1`;
-- [ ] dedicated independent planning review.
+- [x] first dedicated independent planning review completed at `538abbda...`: RETURN `0/2/0`;
+- [x] P1-1 repaired in planning: Rust-aware matched terminal-module close, whitespace-only suffix, old/new hunk containment and exact six-function reconstruction;
+- [x] P1-2 repaired in planning: true `3 + 1` Node cause split plus primary assertion signatures;
+- [ ] targeted independent rereview of the repaired exact HEAD.
 
 The exact four clean-HEAD failures are:
 
@@ -42,8 +45,13 @@ The exact four clean-HEAD failures are:
 3. `Stage 6 hostile and resource evidence consumes the existing private Rust seams`;
 4. `Stage 6 semantic canonical evidence correction and E2 worker stay inside the accepted contracts`.
 
-All four are historical exact-path/branch-shape governance assertions observing the new docs-only task in the cumulative RKP-2 branch. No product behavior test failed. This author pass records rather than waives them: the independent planning auditor must decide whether the I0 immutable-tuple rule is sufficient, and the future implementation candidate must reproduce the complete tuple without a new failure title, count or manifest delta.
+The dedicated audit established the true cause split:
+
+- failures 1, 3 and 4 are new-child path/projection drift in historical governance assertions;
+- failure 2 is inherited base drift: the historical Part Owner blob assertion still represents property cap `1_048_577`, while accepted RKP-1A authority uses `1_572_865`.
+
+No product behavior test failed. The repaired I0/I3 contract freezes error code, operator, generated-message flag and canonical message/actual/expected hashes for each title, then combines those signatures with the exact technical patch reconstruction. It no longer treats title/count equality as sufficient.
 
 ## Provisional severity result
 
-P0/P1/P2=`0/0/0` in the author self-pass. This is not an independent verdict and does not authorize implementation.
+The bounded-repair author pass finds P0/P1/P2=`0/0/0` against the two returned findings. This is not an independent verdict and does not authorize implementation.

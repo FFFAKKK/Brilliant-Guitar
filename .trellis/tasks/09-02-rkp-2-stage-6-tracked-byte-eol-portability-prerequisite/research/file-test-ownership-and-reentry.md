@@ -50,7 +50,13 @@ An additional failure invalidates the assumed root cause.
 - the small LF/CRLF parity coverage passes;
 - the existing ignored scale test remains ignored and unexecuted;
 - full Rust workspace tests pass;
-- no Node baseline tuple or manifest change.
+- no Node exit/count/title/primary-assertion-signature tuple or manifest change.
+
+## Mechanical product-boundary proof
+
+For `runtime.rs`, `store.rs` and `indices.rs`, the implementation verifier must locate the matched closing brace of the unique terminal `#[cfg(test)]` module with the Rust lexical states fixed in `design.md`, require a whitespace-only suffix, and contain both sides of every hunk inside the five named existing inspection functions plus the one named parity function. Removing those six edits in memory must reconstruct the base Git blob byte-for-byte. A prefix-only or line-start-only result is invalid.
+
+The same exact reconstruction is the secondary guard for statements hidden after the first failure in the four historical Node tests. The primary guard is the four programmatic assertion signatures; neither guard may substitute for the other.
 
 ## Re-entry ownership
 

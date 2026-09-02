@@ -31,6 +31,10 @@ Technical changes are exactly:
 
 All commands, fresh clones, Cargo targets, TEMP/TMP and transcripts stay on E:.
 
+The Rust diff is accepted only when the lexical verifier locates the unique matched end of each terminal test module, finds a whitespace-only suffix, contains both old/new hunk ranges inside the five named existing functions plus `source_shape_normalization_is_lf_crlf_invariant`, and reconstructs the exact base blob after removing those six permitted edits. Prefix equality alone is invalid.
+
+The Node red baseline is not matched by titles alone. I0 freezes four programmatic primary assertion signatures and the exact `3 + 1` cause split; I3 must reproduce both in addition to exit/count/title/manifest equality.
+
 ## Hard stops
 
 - Do not modify Rust product code.
@@ -49,6 +53,8 @@ Stop at `READY FOR DEDICATED INDEPENDENT EOL PREREQUISITE IMPLEMENTATION REVIEW`
 - exact four-file technical diff;
 - dual-checkout byte/SHA/blob matrix;
 - Cargo and Node gate results;
+- four Node primary assertion signatures with the exact three-new-child plus one-inherited-base cause split;
+- matched terminal test-module/six-function exact reconstruction proof;
 - task-local evidence;
 - E3 count zero;
 - clean/staged-empty worktree.

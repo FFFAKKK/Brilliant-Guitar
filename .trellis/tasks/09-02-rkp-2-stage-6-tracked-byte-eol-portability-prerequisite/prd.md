@@ -33,7 +33,7 @@ Success means a fresh checkout of the accepted prerequisite commit produces iden
 
 - **EOL-R001**: `.gitattributes` is the sole repository checkout-policy owner for the seven affected paths listed in this PRD.
 - **EOL-R002**: Each affected path must have an explicit `text eol=lf` rule. No wildcard rule may change unrelated repository paths.
-- **EOL-R003**: For the five S6.2 workload inputs, `raw SHA-256` means SHA-256 over the checked-out file bytes after Git attributes are applied. Those bytes must equal `git show <HEAD>:<path>` bytes.
+- **EOL-R003**: For the five S6.2 workload inputs, `raw SHA-256` means SHA-256 over the checked-out file bytes after Git attributes are applied. Those bytes must equal binary-safe `git cat-file blob <HEAD>:<path>` stdout bytes.
 - **EOL-R004**: A fresh checkout with `core.autocrlf=true` and another with `core.autocrlf=false` must yield identical byte length and SHA-256 for all seven affected paths.
 - **EOL-R005**: `git ls-files --eol` must report `i/lf w/lf attr/text eol=lf` for all seven paths in both fresh checkouts.
 - **EOL-R006**: Both fresh checkouts must remain clean; the verification procedure must not rely on manual line-ending rewrites, `git add --renormalize`, or post-checkout mutation.
@@ -58,6 +58,12 @@ Success means a fresh checkout of the accepted prerequisite commit produces iden
 - **EOL-R016**: The prerequisite is the sole current planning owner for the EOL/raw-byte blocker. S6.2 remains an external unaccepted attempt and is not a concurrent implementation child.
 - **EOL-R017**: TypeScript remains the default runtime. S6.2 completion, S6.3, qualification, runtime cutover, RKP-3, acceptance, archive, integration and push are not authorized by this planning task.
 - **EOL-R018**: No build or temporary output may be written to C:. Cargo target, TEMP/TMP and fresh-checkout verification roots must be explicit E-drive paths.
+
+### Proof completeness
+
+- **EOL-R019**: Product-region zero delta must be proven with the exact Rust-aware terminal test-module boundary and six-function reconstruction contract in `design.md`; prefix equality or hunk-start checks alone are invalid.
+- **EOL-R020**: The four inherited Node failures must be frozen individually by title, true `3 + 1` cause, and deterministic primary assertion signature; equal titles/counts without equal signatures are insufficient.
+- **EOL-R021**: An assertion hidden after a known first failure may not be assumed green. Its relevant four-file inputs are controlled by exact candidate reconstruction and the exact seven-line `.gitattributes` diff, and the dedicated implementation auditor must verify both controls with the signatures.
 
 ## Exact affected paths
 
@@ -92,18 +98,19 @@ The three Rust files may change only inside their existing `#[cfg(test)]` module
 
 - **EOL-AC01**: Dedicated planning audit returns P0/P1/P2=`0/0/0` for an exact docs-only planning HEAD.
 - **EOL-AC02**: Implementation diff is exactly the four technical allowlist files plus approved task/spec/evidence coordination files.
-- **EOL-AC03**: No non-test Rust line changes outside the five identified source-shape sites.
+- **EOL-AC03**: The Rust lexical boundary verifier proves a unique terminal test module, whitespace-only suffix, all old/new hunk ranges inside five named existing functions plus one named parity function, and exact reconstruction to the base after removing the six permitted edits.
 - **EOL-AC04**: Seven explicit `.gitattributes` rules exist exactly once; no wildcard or unrelated EOL policy is added.
 - **EOL-AC05**: Two new no-local/no-checkout verification clones on E:, checked out with `core.autocrlf=true` and `false`, both report `i/lf w/lf attr/text eol=lf`, clean status and identical bytes/SHA for all seven paths.
 - **EOL-AC06**: For the five workload inputs, both working-tree hashes equal the corresponding Git blob-byte SHA at the implementation candidate HEAD.
 - **EOL-AC07**: Rust 1.97.1 `fmt`, `check`, `test` and `clippy -D warnings` pass; Rust 1.88.0 MSRV `check` passes. The existing ignored large test remains ignored during this prerequisite.
 - **EOL-AC08**: The four previously failing tests pass, and the ignored test's fifth source-shape check is directly covered by an LF/CRLF unit-level parity assertion without executing the large workload.
-- **EOL-AC09**: Typecheck, build, focused governance tests, full Node suite and the 80-file manifest classifier match the planning baseline with no new failure or skip.
+- **EOL-AC09**: Typecheck and build pass; focused/full Node exit, counts, titles, four primary assertion signatures and the 80-file manifest match the I0 baseline with no new failure, skip, cause or signature drift.
 - **EOL-AC10**: Trellis validations, JSON/JSONL parsing, Markdown fences, path uniqueness, `git diff --check`, clean/staged-empty and protected-path checks pass.
 - **EOL-AC11**: E3 execution count remains zero; no S6.2 `implementation-evidence.md` or qualification artifact is created.
 - **EOL-AC12**: A separate dedicated implementation audit returns P0/P1/P2=`0/0/0` before acceptance or integration is considered.
 - **EOL-AC13**: Rollback is a revert of the prerequisite implementation/coordination commits and restores the exact accepted base without touching the blocked S6.2 branch.
 - **EOL-AC14**: The accepted integration handoff explicitly requires a new S6.2 planning task and dedicated planning audit; it never resumes E2 directly.
+- **EOL-AC15**: The implementation evidence and independent review explicitly distinguish the three new-child path/projection failures from the one inherited pre-/post-RKP-1A property-cap blob failure.
 
 ## Out of scope
 

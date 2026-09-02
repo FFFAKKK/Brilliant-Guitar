@@ -33,7 +33,7 @@
     "crates/brilliant-kernel-runtime/src/store.rs",
     "crates/brilliant-kernel-runtime/src/indices.rs"
   ],
-  "notes": "PLANNING ONLY / BASE 55CB575C / DEDICATED S6.2 BLOCKER AUDIT 01A060D4 RETURNED P0_0_P1_2_P2_1 / THIS TASK OWNS ONLY TRACKED-BYTE EOL PORTABILITY / S6.2 E1 C3C4D198 REMAINS DIAGNOSTIC UNACCEPTED / E3 RUN COUNT ZERO / AUTHOR SELF-VALIDATION COMPLETE / NEXT GATE DEDICATED INDEPENDENT PLANNING REVIEW OF EXACT CLEAN HEAD / NO TASK START IMPLEMENTATION ACCEPT ARCHIVE INTEGRATION S6.3 QUALIFICATION CUTOVER RKP3 OR PUSH.",
+  "notes": "PLANNING ONLY / BASE 55CB575C / S6.2 BLOCKER AUDIT 01A060D4 RETURNED 0_2_1 / FIRST PREREQUISITE PLANNING AUDIT 01A06123 REVIEWED 538ABBD AND RETURNED 0_2_0 / BOTH PLANNING P1S HAVE BOUNDED DOCS-ONLY REPAIRS / NEXT GATE TARGETED INDEPENDENT REREVIEW OF NEW EXACT CLEAN HEAD / S6.2 E1 C3C4D198 REMAINS DIAGNOSTIC UNACCEPTED / E3 ZERO / NO TASK START IMPLEMENTATION ACCEPT ARCHIVE INTEGRATION S6.3 QUALIFICATION CUTOVER RKP3 OR PUSH.",
   "meta": {
     "planning_base_commit": "55cb575c606646e8449359b0c46d5c905b3bb3c6",
     "planning_base_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -60,10 +60,21 @@
     "task_start_run": false,
     "production_implementation_authorized": false,
     "user_implementation_authorization": false,
-    "independent_planning_review": "pending",
+    "independent_planning_review": "targeted_rereview_pending_after_return_0_2_0",
     "planning_candidate_ready": true,
-    "current_phase": "ready_for_dedicated_independent_planning_review",
-    "next_gate": "dedicated_independent_planning_review",
+    "current_phase": "bounded_planning_repair_ready_for_targeted_independent_rereview",
+    "next_gate": "targeted_independent_planning_rereview",
+    "first_independent_planning_audit": {
+      "task_id": "01a06123-b6c9-78a0-8216-9c8f1d53a061",
+      "reviewed_head": "538abbdaee079aaf5df800f09d192fbb777174d9",
+      "P0": 0,
+      "P1": 2,
+      "P2": 0,
+      "verdict": "return_for_bounded_planning_repair",
+      "finding_1": "prefix_only_product_region_proof_allowed_non_test_suffix_after_terminal_test_module",
+      "finding_2": "node_red_baseline_titles_did_not_freeze_primary_assertion_causes",
+      "repair_status": "bounded_docs_only_repair_applied_targeted_rereview_pending"
+    },
     "planning_validation": {
       "evidence_head": "e423e98ec585c1b0b687e6226dc0b36953acf2a5",
       "mechanical": "pass",
@@ -74,9 +85,12 @@
       "full": "611_total_605_pass_4_fail_2_skip",
       "full_manifest_file_count": 80,
       "full_manifest_sha256": "1a50fd28c630bb016ce30f7ca65ae940170705b2eed581e610282b81378a1cf1",
-      "failure_classification": "four_historical_exact_path_governance_assertions_independent_auditor_must_confirm",
+      "replayed_head": "538abbdaee079aaf5df800f09d192fbb777174d9",
+      "failure_classification": "three_new_child_path_projection_failures_plus_one_inherited_rkp1a_property_cap_blob_failure",
       "final_candidate_replay_required": true
     },
+    "production_region_verifier": "rust_lexical_terminal_module_close_whitespace_suffix_six_function_hunk_containment_exact_base_reconstruction",
+    "node_primary_assertion_signature_required": true,
     "parent_s6_1_completed": true,
     "parent_s6_2_started": false,
     "parent_s6_2_completed": false,

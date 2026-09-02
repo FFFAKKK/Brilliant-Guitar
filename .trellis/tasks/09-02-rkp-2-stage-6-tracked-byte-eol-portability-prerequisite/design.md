@@ -109,7 +109,7 @@ At each existing `include_str!` source inspection, the test creates an in-memory
 let source = include_str!("...").replace("\r\n", "\n");
 ```
 
-Equivalent code is acceptable only if it satisfies all of the following:
+The only permitted edit to each existing inspection is the minimum binding/expression change needed to apply that exact `replace("\r\n", "\n")` result before the existing `split`/`contains` operations. Equivalent code is acceptable only if it satisfies all of the following:
 
 - it is located inside the existing `#[cfg(test)]` module;
 - it maps CRLF to LF and does not mutate files;
@@ -117,7 +117,7 @@ Equivalent code is acceptable only if it satisfies all of the following:
 - it introduces no exported item and is absent from non-test builds;
 - it does not perform a broad repository rewrite.
 
-The operator may use one private test helper per existing test module only when that reduces duplication without adding a new file or crossing product-module boundaries. A new crate, feature, dependency or shared production helper is forbidden.
+No helper is added. `runtime.rs` and `store.rs` use the direct expression; each `indices.rs` site either uses the direct expression or a local normalized-string binding when Rust lifetime rules require it. A new helper, crate, feature or dependency is forbidden.
 
 ### 5.2 Exact sites and preserved assertions
 
@@ -141,15 +141,28 @@ Each governed Rust file has exactly one terminal test-module marker at the accep
 | `store.rs` | `#[cfg(test)]\npub(crate) mod tests {` | 1 |
 | `indices.rs` | `#[cfg(test)]\nmod tests {` | 1 |
 
-The task-local binary verifier must:
+The task-local verifier must use one deterministic Rust lexical scanner over the Git-blob bytes. Its states are `code`, `line-comment`, nested `block-comment`, cooked string/byte-string, raw string/byte-string with counted `#` delimiters, and char/byte-char. Braces change depth only in `code`. Unterminated state, invalid UTF-8, a second marker, or an unmatched brace invalidates the candidate.
 
-1. read base and candidate Git blobs with `git cat-file blob` as raw `Buffer` values;
-2. require the file-specific exact marker to occur once in each blob;
-3. take the byte prefix ending immediately before the marker;
-4. require base and candidate production-prefix buffers to be byte-identical;
-5. require every textual diff hunk in the three files to start at or after its marker.
+For each base and candidate blob the verifier must:
 
-No brace-counting parser, broad regex, comparison of already-normalized working-tree text, or manual statement that product code did not change is sufficient. This check permits test-module edits while mechanically proving that compiled non-test product regions did not change.
+1. require the file-specific exact marker to occur once;
+2. start at the marker's opening `{`, locate the matching module-closing `}`, and require every following byte to be ASCII whitespace;
+3. require the raw byte prefix before the marker to be byte-identical between base and candidate;
+4. locate by unique exact function name the five existing inspection functions:
+   - `runtime_owns_only_the_live_store_and_revision_zero`;
+   - `every_typed_record_resolves_once_without_retaining_the_document_tree`;
+   - `rkp2_stage_6_private_scale_evidence_v1`;
+   - `indices_voice_lookup_then_binary_time_queries_are_exact_and_half_open`;
+   - `indices_rebuild_normalizes_without_handles_and_corruption_never_passes_parity`;
+5. require exactly one new test function named `source_shape_normalization_is_lf_crlf_invariant`, located inside the `indices.rs` test module;
+6. parse `git diff --unified=0`; for each of the five existing inspections, require both old and new hunk ranges to lie fully inside its corresponding matched function; for the new parity function, require a zero-length old insertion range immediately before the terminal module's matching closing brace and the complete new range to equal that single function;
+7. require the five existing functions' only token changes to be the CRLF-to-LF normalization binding/expression; all pre-existing negative assertions and all other tokens remain equal;
+8. require the new parity function to exercise the same normalization on LF and CRLF versions of a representative `Rkp2StoreMetrics` declaration, compare the normalized values, then run the `split("pub(crate) struct Rkp2StoreMetrics {")` and `split("}\n\n")` extraction on both;
+9. remove the five permitted normalization edits and the one permitted parity function from the candidate in memory and require the reconstructed bytes to equal the base blob exactly.
+
+Step 2 rejects the audited suffix bypass: a new top-level item after the test module makes the module-closing suffix non-whitespace. Steps 6-9 also reject unrelated edits inside the test modules. A prefix-only comparison, broad regex, line-number-only hunk check, comparison of normalized working-tree text, or manual statement that product code did not change is insufficient.
+
+Before inspecting the real candidate, the same verifier must pass five synthetic self-tests: accept the exact permitted patch model; reject a top-level function appended after the module; ignore braces inside cooked/raw strings and nested comments; reject a hunk in an unrelated test function; reject deletion or mutation of one preserved negative assertion. Its complete source text and SHA-256 are copied into `implementation-evidence.md`, so the independent reviewer can rerun the identical verifier rather than trusting a prose result.
 
 ## 6. Fresh-checkout verification design
 
@@ -228,6 +241,7 @@ The final evidence contains exactly fourteen checkout records plus seven Git-blo
 - TypeScript typecheck and build;
 - focused Workspace Law classifier;
 - full Node test classifier;
+- four primary assertion signatures and exact `3 + 1` cause split;
 - independent 80-file manifest recomputation;
 - no protected product/public/package/Cargo/toolchain change.
 
@@ -246,9 +260,44 @@ This prerequisite must not guess a Node count from another branch. During activa
 - process exit code;
 - total/pass/fail/skip counts;
 - exact sorted failure titles;
+- one deterministic primary assertion signature per failing title;
 - exact 80-file manifest count and SHA-256.
 
-The implementation candidate must reproduce that complete tuple. A failure is accepted as inherited only when its title is present in the activation tuple and all counts match exactly. Any new title, removed non-target title, duplicate summary, count drift or manifest drift is a blocking regression. This rule prevents a general `exit 1 is expected` bypass.
+### 8.1 Confirmed planning causes
+
+The clean planning HEAD's four failures are recorded separately rather than as one cause:
+
+| Failure title | Primary planning cause |
+|---|---|
+| `implementation changes stay inside the literal RKP-2 allowlists` | new planning child's `check.jsonl` is outside an older exact path set |
+| `Stage 6 hostile and resource evidence consumes the existing private Rust seams` | new planning child's `check.jsonl` is outside an older Stage 6 path set |
+| `Stage 6 semantic canonical evidence correction and E2 worker stay inside the accepted contracts` | new planning child enlarges the historical closeout path projection |
+| `part owner repair stays anchored to its accepted six-path wire contract` | inherited base drift: historical blob assertion expects the pre-RKP-1A property cap `1_048_577`, while accepted RKP-1A authority is `1_572_865` |
+
+All four are non-product governance failures, but they are not interchangeable and are not waived by title equality.
+
+### 8.2 Primary assertion signature
+
+I0 and I3 must run the focused file through the Node programmatic test runner and collect the first `test:fail` error object for each exact title before reporter rendering. Exclude stack, duration, absolute line numbers and ANSI output. Canonicalize and hash this data-only record:
+
+```text
+{
+  "title": "<exact title>",
+  "errorName": "AssertionError",
+  "errorCode": "ERR_ASSERTION",
+  "operator": "<strictEqual|deepStrictEqual|...>",
+  "generatedMessage": <captured true|false>,
+  "messageSha256": "<sha256 of direct error.message UTF-8>",
+  "actualSha256": "<sha256 of canonical JSON actual>",
+  "expectedSha256": "<sha256 of canonical JSON expected>"
+}
+```
+
+Canonical JSON permits only null, boolean, finite number, string, arrays and plain objects with lexically sorted keys; encountering another value type invalidates capture. Each title must emit exactly one signature. I0 stores all four complete records; I3 requires byte-identical canonical records.
+
+The programmatic capture script's complete source and SHA-256 are also stored in `implementation-evidence.md`; I0 and I3 must use the same hash. A different capture script invalidates the comparison.
+
+The implementation candidate must reproduce the exit/count/title/primary-signature tuple and manifest. Any new or removed title, duplicate failure event, count drift, signature drift, unsupported signature value, or manifest drift blocks the candidate. Because a first thrown assertion can hide later statements, the implementation review must also combine this signature equality with section 5.3's exact six-function reconstruction and the exact seven-line `.gitattributes` diff; title/signature equality alone is never a pass.
 
 ## 9. Evidence artifact
 
@@ -265,9 +314,12 @@ The file must include:
 - exact technical diff paths;
 - fourteen checkout records and seven blob records;
 - Cargo and Node command/exit summaries;
+- four Node primary assertion signatures and their `3 + 1` cause classification;
 - four former Rust failure titles and their green result;
 - ignored-large-test count and proof it did not run;
 - production-region equality result;
+- Rust verifier source/SHA and five synthetic self-test results;
+- Node failure-signature capture source/SHA used identically at I0 and I3;
 - E3 run count zero;
 - cleanup result for both temporary clones and build roots;
 - clean/staged-empty status.

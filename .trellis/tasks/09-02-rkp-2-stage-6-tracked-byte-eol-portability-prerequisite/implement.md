@@ -87,6 +87,7 @@ docs(rkp-2): plan tracked-byte EOL portability prerequisite
    - full command and exit;
    - total/pass/fail/skip;
    - sorted failure titles;
+   - one programmatically captured primary assertion signature per failing title, using the exact canonical record in `design.md` section 8.2;
    - 80-file count and SHA-256;
 7. record current seven-path `git ls-files --eol`, byte lengths and SHA-256 as diagnostic pre-fix values;
 8. commit lifecycle/baseline evidence only.
@@ -117,10 +118,11 @@ The RED transcript must contain exactly the four known non-ignored source-shape 
 ### Technical edits
 
 1. Add exactly seven path-specific `text eol=lf` rules to `.gitattributes`.
-2. Update only the five source-inspection expressions listed in `design.md` to inspect an in-memory LF-normalized string.
-3. Add or extend a small test-only parity assertion proving identical structural results from representative LF and CRLF source text. Do not run or unignore the large scale test.
+2. Update only the five source-inspection expressions listed in `design.md` to inspect an in-memory LF-normalized string; all pre-existing tokens other than the minimum normalization binding/expression remain equal.
+3. Add exactly one test named `source_shape_normalization_is_lf_crlf_invariant` inside the `indices.rs` test module. It must normalize LF/CRLF forms of a representative `Rkp2StoreMetrics` declaration and execute the same declaration extraction without running or unignoring the large scale test.
 4. Do not modify S6.2 worker, worker-test, wrapper, fixture or Workspace Law semantics.
-5. Mechanically verify production prefixes of the three Rust files equal the activation base using the file-specific unique terminal markers and raw Git-blob algorithm fixed in `design.md` section 5.3.
+5. Run the exact Rust lexical verifier in `design.md` section 5.3: unique marker, matched closing brace, whitespace-only suffix, raw production-prefix equality, both old/new hunk ranges inside the six named functions, and exact base reconstruction after removing the six permitted edits.
+6. Record the verifier source/SHA and its five synthetic self-test results for later evidence freeze.
 
 ### Focused GREEN
 
@@ -207,9 +209,9 @@ No commit is required if I2 only generates ignored transcripts.
 8. `npm run typecheck`;
 9. `npm run build`;
 10. rerun the exact focused and full Node commands captured in I0;
-11. mechanically compare exit/count/title tuples to I0;
+11. reuse the exact I0 capture-script SHA, mechanically compare exit/count/title/primary-assertion-signature tuples to I0, and require the exact `3 + 1` cause classification to remain true;
 12. recompute the 80-file manifest independently and require exact equality with I0;
-13. verify the technical diff is exactly four files and the Rust production regions are unchanged;
+13. verify the technical diff is exactly four files; run the section 5.3 lexical/reconstruction proof and the exact seven-rule `.gitattributes` diff proof so unreachable post-failure assertions cannot hide an unbounded technical edit;
 14. verify no `src/**`, Cargo manifests/lock, package manifests/lock, tsconfig, toolchain, public export, fixture content, worker semantics, wrapper semantics or old S6.2 branch change;
 15. verify E3 execution count zero and no S6.2 evidence artifact exists on this branch.
 
@@ -248,11 +250,11 @@ Use a new dedicated read-only task. The auditor must verify:
 2. exact four-file technical allowlist;
 3. exact seven attribute rules and no wildcard;
 4. five source checks retain their original negative assertions;
-5. three Rust production regions are byte-identical to base;
+5. the three Rust blobs pass unique terminal-module boundary, whitespace-only suffix, six-function hunk containment and exact reconstruction to base;
 6. dual fresh-checkout construction and cleanup;
 7. fourteen checkout plus seven blob records and raw-byte equality;
 8. Cargo 1.97.1/MSRV gates;
-9. Node baseline tuple and manifest equality;
+9. Node baseline exit/count/title/primary-signature tuple, exact `3 + 1` cause classification and manifest equality;
 10. E3 zero and S6.2 provenance P1 still owned by the successor plan;
 11. lifecycle authorization boundaries and clean state.
 
@@ -280,6 +282,8 @@ Stop immediately and return to planning if:
 - either fresh checkout is dirty or hash-inconsistent;
 - any Cargo gate other than the four known pre-fix failures appears;
 - Node baseline gains a new failure/title/count drift;
+- any primary assertion signature or recorded `3 + 1` cause drifts;
+- the Rust lexical verifier finds a non-whitespace suffix, a hunk outside the six named functions, or reconstruction inequality;
 - the large test or S6.2 E3 runs;
 - C: receives Cargo/test output;
 - acceptance, archive, integration, S6.2, S6.3, qualification, cutover, RKP-3 or push would be required.

@@ -2,7 +2,7 @@
 
 ## Status
 
-`READY FOR DEDICATED INDEPENDENT PLANNING REVIEW`
+`READY FOR TARGETED INDEPENDENT PLANNING REREVIEW`
 
 ## Exact object
 
@@ -25,8 +25,17 @@ The candidate is eligible for audit only after the post-commit command set confi
 - full classifier: `611/605/4/2`;
 - full manifest: `80`, SHA-256 `1a50fd28c630bb016ce30f7ca65ae940170705b2eed581e610282b81378a1cf1`;
 - exact four failure titles: listed in `research/planning-self-audit.md`;
-- classification claimed by the author: historical exact-path governance drift caused by adding this planning child, not product-test failure;
+- cause classification: three new-child exact-path/projection failures plus one inherited pre-/post-RKP-1A property-cap blob failure; none is a product-test failure;
 - audit requirement: independently accept or reject that classification; do not infer a pass from this self-record.
+
+## First independent audit and bounded repair
+
+- dedicated audit task: `01a06123-b6c9-78a0-8216-9c8f1d53a061`;
+- reviewed HEAD: `538abbdaee079aaf5df800f09d192fbb777174d9`;
+- verdict: RETURN, P0/P1/P2=`0/2/0`;
+- P1-1 repair: replaced prefix-only product proof with matched terminal-module close, whitespace-only suffix, six named function ranges, both old/new hunk containment and exact in-memory reconstruction to the base blob;
+- P1-2 repair: corrected the failure causes to `3 + 1` and added deterministic primary assertion signatures to I0/I3;
+- current gate: targeted independent rereview of the new exact clean HEAD; the prior audit does not authorize implementation.
 
 ## Review question
 
@@ -46,6 +55,9 @@ Does this planning candidate define the smallest sufficient prerequisite that ma
 10. E3 remains zero; TypeScript default and all later lifecycle gates remain unchanged.
 11. Rollback and new-S6.2 re-entry sequence are deterministic.
 12. Planning diff contains no technical/production/test/Cargo/package/tsconfig changes.
+13. The two findings from the `538abbda...` review are closed without expanding the four-file future implementation allowlist.
+14. The Rust verifier rejects a top-level suffix after the terminal test module and unrelated edits inside that module.
+15. Node red-baseline matching includes primary assertion signatures and the true three-new-child plus one-inherited-base cause split.
 
 ## Expected review output
 
