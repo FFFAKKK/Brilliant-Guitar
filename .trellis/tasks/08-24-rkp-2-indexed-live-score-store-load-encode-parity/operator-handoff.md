@@ -1,6 +1,14 @@
 # Operator Handoff — RKP-2
 
-## Current status
+## Stage 6 closeout terminal projection — 2026-09-02
+
+RKP-2 remains `in_progress` and is now childless: both current planning and implementation child are null. The Stage 6 closeout was owner-accepted at `9e74b826e2c4c8e0cbe9685e33c18a798f14b5dc` and natively archived by direct child `34389020ba93879589f5a2fcb59ab06918647245`, which moved exactly 12 files and wrote `completedAt=2026-09-02`.
+
+The terminal projection candidate preserves S6.2/S6.3 false and TypeScript as default. The only later RKP-2 gate is `explicit_user_authorization_for_rkp2_s6_2_resume`; it has not been granted or consumed. A dedicated independent terminal review is pending, so do not start S6.2, qualification, cutover, RKP-3, push or any production change.
+
+All subsequent sections are historical context and do not override this terminal boundary.
+
+## Historical status before Stage 6 closeout
 
 `STAGE 6 S6.0 COMPLETE — OPERATIONALLY PAUSED FOR PART-OWNER WIRE-CONTRACT PLANNING REVIEW`.
 

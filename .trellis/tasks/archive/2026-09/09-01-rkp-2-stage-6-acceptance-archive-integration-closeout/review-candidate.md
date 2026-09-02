@@ -1,6 +1,22 @@
 # Review candidate
 
-## Status
+## Terminal candidate status
+
+`READY FOR DEDICATED INDEPENDENT L6 TERMINAL PROJECTION REVIEW — CLOSEOUT COMPLETED AND ARCHIVED — NO S6.2 START`
+
+Audit the exact chain `d0396bbb -> 9e74b826 -> 34389020 -> <terminal projection candidate>` and verify:
+
+1. `9e74b826` changes only the closeout acceptance state and directly parents the native archive;
+2. `34389020` has one parent and exactly 12 deletions plus 12 additions under the declared archive root;
+3. the archived closeout is `completed` at `2026-09-02`, has archive-aware self references and no live gate;
+4. the semantic child and Stage 6 native archives remain unchanged at `2026-09-01`;
+5. RKP-2 is still `in_progress`, childless, S6.2/S6.3 false, TypeScript default, with only `explicit_user_authorization_for_rkp2_s6_2_resume` as its later gate;
+6. the Rust parent still names RKP-2 as its sole current/active implementation child;
+7. Workspace Law rejects parent-chain, archive-manifest, authority, current-child, next-gate and later-stage drift on both Node 24 and Node 20.
+
+The earlier P0/P1/P2=`0/0/0` rereview is evidence for L6 execution, not a terminal-projection PASS. This candidate must stop here for a new independent terminal review. No qualification, cutover, RKP-3, push or production change is authorized.
+
+## Historical L5 status
 
 `L5 INTEGRATED PROJECTION CANDIDATE READY FOR DEDICATED INDEPENDENT INTEGRATION / PROJECTION REVIEW — STATUS IN_PROGRESS — L6 NOT STARTED`
 

@@ -46,7 +46,7 @@
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RKP-0/RKP-1 ACCEPTED ARCHIVED / RKP-2 SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 TECHNICAL PASS 0C561D1 P0_0_P1_0_P2_0 AND Q4 ARCHIVED / CONSUMED SEMANTIC CHILD ACCEPTED AND NATIVELY ARCHIVED EXACT 12 AT 1E3759D / STAGE6 OWNER ACCEPTED AND NATIVELY ARCHIVED EXACT 13 AT BCC1C905 / CLOSEOUT ARCHIVE CANDIDATE REVIEW PENDING / RKP2 PAUSED BEFORE S6.2 / TYPESCRIPT DEFAULT / NO INTEGRATION QUALIFICATION CUTOVER PUSH OR RKP3.",
+  "notes": "RKP-0/RKP-1 ACCEPTED ARCHIVED / RKP-2 REMAINS SOLE ACTIVE IMPLEMENTATION CHILD / STAGE6 TECHNICAL PASS 0C561D1 P0_0_P1_0_P2_0 AND Q4 ARCHIVED / CONSUMED SEMANTIC CHILD ACCEPTED AND NATIVELY ARCHIVED EXACT 12 AT 1E3759D / STAGE6 OWNER ACCEPTED AND NATIVELY ARCHIVED EXACT 13 AT BCC1C905 / CLOSEOUT OWNER ACCEPTED 9E74B826 AND NATIVELY ARCHIVED EXACT 12 AT 34389020 ON 2026-09-02 / L6 TERMINAL PROJECTION CANDIDATE READY FOR DEDICATED INDEPENDENT REVIEW / RKP2 PAUSED BEFORE S6.2 / NEXT GATE EXPLICIT USER AUTHORIZATION FOR S6.2 RESUME / TYPESCRIPT DEFAULT / NO QUALIFICATION CUTOVER PUSH OR RKP3.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
@@ -136,7 +136,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "stage6_closeout_dedicated_independent_integration_projection_review_pending",
+    "next_gate": "explicit_user_authorization_for_rkp2_s6_2_resume",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -241,7 +241,7 @@
     "rkp2_implementation_authorized": true,
     "rkp2_user_implementation_authorization": true,
     "rkp2_created": true,
-    "rkp2_status": "in_progress_stage_6_closeout_L5_integrated_projection_candidate_ready_for_dedicated_independent_integration_review",
+    "rkp2_status": "in_progress_stage_6_closeout_accepted_archived_completed_paused_before_s6_2",
     "rkp2_task": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
     "rkp2_planning_base": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "rkp2_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -343,7 +343,7 @@
     "rkp2_implementation_candidate_ready": false,
     "rkp2_implementation_review": "pending",
     "rkp2_default_runtime": "typescript",
-    "rkp2_current_blocking_descendant": "09-01-rkp-2-stage-6-acceptance-archive-integration-closeout",
+    "rkp2_current_blocking_descendant": null,
     "rkp2_external_blocking_task": null,
     "rkp1a_public_json_property_cap_scale_compatibility_repair": {
       "parent": "08-15-core-rust-runtime-performance-remediation",
@@ -397,7 +397,7 @@
     "rkp2_stage_6_private_scale_evidence_seam_repair": {
       "parent": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
       "planning_base": "4a302bc9f9981940336fc97941b08e09bd0d1f67",
-      "status": "in_progress",
+      "status": "completed",
       "task_start_run": true,
       "production_implementation_authorized": true,
       "user_implementation_authorization": true,
@@ -703,13 +703,13 @@
     "rkp2_repaired_unified_implementation_base_created": true,
     "stage6_acceptance_archive_integration_closeout": {
       "task": "09-01-rkp-2-stage-6-acceptance-archive-integration-closeout",
-      "status": "in_progress",
+      "status": "completed",
       "planning_base": "65debd52d379004c966cefe59f54d72ac1136eb4",
       "independent_planning_review": "passed_targeted_rereview_e7708bf84ffb6ac71818f46d367ff6e8bba7beb6_P0_0_P1_0_P2_0",
       "accepted_planning_authority_head": "e7708bf84ffb6ac71818f46d367ff6e8bba7beb6",
       "task_start_run": true,
-      "implementation_stage": "L5_integrated_projection_candidate_ready_for_dedicated_independent_integration_review",
-      "next_gate": "dedicated_independent_integration_projection_review_pending",
+      "implementation_stage": "accepted_archived_completed_historical_no_live_gate",
+      "next_gate": "completed_historical_no_live_gate",
       "stage6_native_archive_commit": "bcc1c905bc58ab9810e076c23891d6683a2ae607",
       "stage6_archive_root": ".trellis/tasks/archive/2026-09/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair",
       "production_implementation_authorized": false,
@@ -718,15 +718,22 @@
       "archive_candidate_review": "passed_dedicated_independent_stage6_archive_candidate_review",
       "integration_authorized": true,
       "integration_completed": true,
-      "integration_review": "pending_dedicated_independent_integration_projection_review",
+      "integration_review": "passed_targeted_independent_PowerShell_preflight_repair_rereview",
       "integration_candidate": "b3850a48b67f24b1176f573fa143b33c784348ec",
       "integration_target_branch": "codex/rkp-2-indexed-live-score-store-implementation",
       "integration_target_worktree": ".worktrees/rkp-2-indexed-live-score-store-implementation",
       "frozen_source_branch": "codex/rkp-2-stage-6-acceptance-archive-integration-closeout",
       "frozen_source_worktree": ".worktrees/rkp-2-stage-6-acceptance-archive-integration-closeout",
       "frozen_source_head": "b3850a48b67f24b1176f573fa143b33c784348ec",
-      "closeout_acceptance_authorized": false,
-      "closeout_archive_authorized": false
+      "closeout_acceptance_authorized": true,
+      "closeout_archive_authorized": true,
+      "closeout_archive_root": ".trellis/tasks/archive/2026-09/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout",
+      "closeout_completed_at": "2026-09-02",
+      "l6_completed": true,
+      "l6_owner_acceptance_commit": "9e74b826e2c4c8e0cbe9685e33c18a798f14b5dc",
+      "l6_native_archive_commit": "34389020ba93879589f5a2fcb59ab06918647245",
+      "terminal_projection_candidate_ready": true,
+      "terminal_projection_review": "pending_dedicated_independent_terminal_projection_review"
     }
   }
 }

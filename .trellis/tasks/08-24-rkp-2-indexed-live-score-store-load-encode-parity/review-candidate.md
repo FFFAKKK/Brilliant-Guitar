@@ -1,6 +1,14 @@
 # Review Candidate — RKP-2 Post-Stage-5 Manifest Authority Closure
 
-## Current lifecycle result
+## Stage 6 closeout terminal review candidate
+
+`READY FOR DEDICATED INDEPENDENT L6 TERMINAL PROJECTION REVIEW`
+
+Pin the current candidate and verify the direct chain `d0396bbb -> 9e74b826 -> 34389020 -> <candidate>`, exact closeout 12-file native move, archive-aware successor references, unchanged historical semantic/Stage 6 archives, childless `in_progress` RKP-2, false S6.2/S6.3, TypeScript default, Rust-parent ownership, and the exact next gate `explicit_user_authorization_for_rkp2_s6_2_resume`.
+
+This candidate does not claim terminal PASS and does not authorize S6.2, S6.3, qualification, cutover, RKP-3, push or production changes. All later sections are historical context.
+
+## Historical lifecycle result before Stage 6 closeout
 
 `RKP-2 STAGE 6 S6.0 COMPLETE — BLOCKED ON PART-OWNER WIRE-CONTRACT PLANNING REVIEW`.
 

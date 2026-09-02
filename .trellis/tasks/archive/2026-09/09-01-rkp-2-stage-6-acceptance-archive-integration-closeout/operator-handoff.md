@@ -1,6 +1,17 @@
 # Operator handoff
 
-## Current boundary
+## L6 terminal result — 2026-09-02
+
+- The closeout now exists only at `.trellis/tasks/archive/2026-09/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout` with `status=completed` and `completedAt=2026-09-02`.
+- The PowerShell preflight repair `d0396bbb6239be9c36e8027d09d38e0753c5f3b6` passed targeted independent rereview at P0/P1/P2=`0/0/0`; that PASS remained evidence only. The prior scope-limited user continuation separately authorized L6 only.
+- Owner acceptance is `9e74b826e2c4c8e0cbe9685e33c18a798f14b5dc`. Native archive commit `34389020ba93879589f5a2fcb59ab06918647245` is its direct child and moves exactly the 12-file manifest.
+- Semantic child `1e3759d9fef2524e68c2667a4a5363802c4ccd36` and Stage 6 `bcc1c905bc58ab9810e076c23891d6683a2ae607` remain immutable historical archives at `completedAt=2026-09-01`.
+- RKP-2 remains `in_progress`, has no current planning or implementation child, remains paused before S6.2, and its next gate is `explicit_user_authorization_for_rkp2_s6_2_resume`.
+- S6.2/S6.3 remain false, TypeScript remains default, and qualification, cutover, RKP-3, push and production changes remain unauthorized.
+
+This terminal projection is ready only for a dedicated independent terminal review. Do not start S6.2 or report terminal PASS before that review. Everything below records historical pre-L6 context and does not override this boundary.
+
+## Historical L5 boundary
 
 - Task: `.trellis/tasks/09-01-rkp-2-stage-6-acceptance-archive-integration-closeout`.
 - Status: `in_progress`; L1-L5 are complete, L6 has not started, and the task is not archived.

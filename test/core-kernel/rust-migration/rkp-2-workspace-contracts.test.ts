@@ -555,6 +555,12 @@ const STAGE_6_CLOSEOUT_L5_INTEGRATION_COMMIT =
   "3799faf635482f0301e61a56f1faf83ea3fe0f5f";
 const STAGE_6_CLOSEOUT_L6_CLOCK_DATE_REPAIR_COMMIT =
   "55ca574df1156bcda2ec26499d8fb717d9faff82";
+const STAGE_6_CLOSEOUT_POWERSHELL_PREFLIGHT_REPAIR_COMMIT =
+  "d0396bbb6239be9c36e8027d09d38e0753c5f3b6";
+const STAGE_6_CLOSEOUT_L6_OWNER_ACCEPTANCE_COMMIT =
+  "9e74b826e2c4c8e0cbe9685e33c18a798f14b5dc";
+const STAGE_6_CLOSEOUT_L6_NATIVE_ARCHIVE_COMMIT =
+  "34389020ba93879589f5a2fcb59ab06918647245";
 const STAGE_6_CLOSEOUT_HISTORICAL_ARCHIVE_DATE = "2026-09-01";
 const STAGE_6_CLOSEOUT_HISTORICAL_ARCHIVE_DEADLINE = "23:50:00+08:00";
 const STAGE_6_CLOSEOUT_ARCHIVE_DATE = "2026-09-02";
@@ -1212,6 +1218,25 @@ function currentStage6CloseoutChanges(): Map<string, "A" | "M" | "D"> {
   collect(["diff", "--no-renames", "--name-status"], undefined, true);
   collect(["diff", "--cached", "--no-renames", "--name-status"], undefined, true);
   collect(["ls-files", "--others", "--exclude-standard"], "A", true);
+  if (existsSync(resolve(STAGE_6_CLOSEOUT_ARCHIVE_ROOT))) {
+    for (const line of lines(
+      git([
+        "diff-tree",
+        "--no-commit-id",
+        "--no-renames",
+        "--name-status",
+        "-r",
+        STAGE_6_CLOSEOUT_L6_NATIVE_ARCHIVE_COMMIT,
+      ]),
+    )) {
+      const [status, path, extra] = line.split("\t");
+      assert.equal(extra, undefined, "rename-collapsed paths are forbidden");
+      assert.ok(path);
+      if (status === "D" && path.startsWith(`${STAGE_6_CLOSEOUT_ROOT}/`)) {
+        result.set(path, "D");
+      }
+    }
+  }
   return result;
 }
 
@@ -1250,32 +1275,26 @@ function currentStage6CloseoutPowerShellPreflightRepairChanges(): Map<
   "A" | "M" | "D"
 > {
   const result = new Map<string, "A" | "M" | "D">();
-  const collect = (
-    args: readonly string[],
-    fallbackStatus?: "A",
-    preserveExisting = false,
-  ): void => {
+  const collect = (args: readonly string[]): void => {
     for (const line of lines(git(args))) {
       const [statusOrPath, path, extra] = line.split("\t");
-      const status = fallbackStatus ?? statusOrPath;
-      const resolvedPath = fallbackStatus === undefined ? path : statusOrPath;
+      const status = statusOrPath;
+      const resolvedPath = path;
       assert.equal(extra, undefined, "rename-collapsed paths are forbidden");
       assert.ok(status === "A" || status === "M" || status === "D");
       assert.ok(resolvedPath);
-      if (!preserveExisting || !result.has(resolvedPath)) {
-        result.set(resolvedPath, status);
-      }
+      assert.equal(result.has(resolvedPath), false);
+      result.set(resolvedPath, status);
     }
   };
   collect([
-    "diff",
+    "diff-tree",
+    "--no-commit-id",
     "--no-renames",
     "--name-status",
-    `${STAGE_6_CLOSEOUT_L6_CLOCK_DATE_REPAIR_COMMIT}..HEAD`,
+    "-r",
+    STAGE_6_CLOSEOUT_POWERSHELL_PREFLIGHT_REPAIR_COMMIT,
   ]);
-  collect(["diff", "--no-renames", "--name-status"], undefined, true);
-  collect(["diff", "--cached", "--no-renames", "--name-status"], undefined, true);
-  collect(["ls-files", "--others", "--exclude-standard"], "A", true);
   return result;
 }
 
@@ -2193,6 +2212,12 @@ function expectedStage6CloseoutChanges(
       ),
     );
     setAll("M", [TASK_PATH, PARENT_PATH, STAGE_6_CLOSEOUT_TECHNICAL_PATH]);
+    if (phase === "closeout-archived") {
+      setAll("M", [
+        ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/operator-handoff.md",
+        ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/review-candidate.md",
+      ]);
+    }
   } else {
     setAll("M", [TASK_PATH, PARENT_PATH, `${STAGE_6_PRIVATE_SCALE_TASK_ROOT}/task.json`]);
     if (phase === "semantic-child-archived") {
@@ -2223,7 +2248,7 @@ function assertStage6CloseoutPathSet(
     "semantic-child-archived": { A: 24, M: 6, D: 12 },
     "stage6-archived": { A: 37, M: 3, D: 25 },
     integrated: { A: 37, M: 3, D: 25 },
-    "closeout-archived": { A: 37, M: 3, D: 37 },
+    "closeout-archived": { A: 37, M: 5, D: 37 },
   } as const;
   assert.deepEqual(counts, expectedCounts[phase]);
 }
@@ -2310,13 +2335,14 @@ function assertStage6CloseoutL6DateRepairProjection(
 }
 
 function currentStage6CloseoutPowerShellPreflightRepairParents(): readonly string[] {
-  const head = git(["rev-parse", "HEAD"]).trim();
-  if (head === STAGE_6_CLOSEOUT_L6_CLOCK_DATE_REPAIR_COMMIT) {
-    return [STAGE_6_CLOSEOUT_L6_CLOCK_DATE_REPAIR_COMMIT];
-  }
-  return lines(git(["show", "-s", "--format=%P", "HEAD"])).flatMap((line) =>
-    line.split(" ").filter(Boolean),
-  );
+  return lines(
+    git([
+      "show",
+      "-s",
+      "--format=%P",
+      STAGE_6_CLOSEOUT_POWERSHELL_PREFLIGHT_REPAIR_COMMIT,
+    ]),
+  ).flatMap((line) => line.split(" ").filter(Boolean));
 }
 
 function assertStage6CloseoutPowerShellPreflightRepairProjection(
@@ -2351,7 +2377,10 @@ interface Stage6CloseoutPowerShellPreflightEvidence {
 }
 
 function stage6CloseoutPowerShellPreflightScript(): string {
-  const implement = readText(`${STAGE_6_CLOSEOUT_ROOT}/implement.md`);
+  const root = existsSync(resolve(STAGE_6_CLOSEOUT_ARCHIVE_ROOT))
+    ? STAGE_6_CLOSEOUT_ARCHIVE_ROOT
+    : STAGE_6_CLOSEOUT_ROOT;
+  const implement = readText(`${root}/implement.md`);
   const start = implement.indexOf(STAGE_6_CLOSEOUT_POWERSHELL_PREFLIGHT_BEGIN);
   const end = implement.indexOf(STAGE_6_CLOSEOUT_POWERSHELL_PREFLIGHT_END);
   assert.ok(start >= 0, "PowerShell preflight begin marker must exist");
@@ -2364,6 +2393,13 @@ function stage6CloseoutPowerShellPreflightScript(): string {
     false,
     "execution-level preflight must never archive the task",
   );
+  if (root === STAGE_6_CLOSEOUT_ARCHIVE_ROOT) {
+    return replaceStage6CloseoutPowerShellPreflightOnce(
+      script,
+      `$taskPath = '${STAGE_6_CLOSEOUT_ROOT}/task.json'`,
+      `$taskPath = '${STAGE_6_CLOSEOUT_ARCHIVE_ROOT}/task.json'`,
+    );
+  }
   return script;
 }
 
@@ -2639,6 +2675,10 @@ interface Stage6CloseoutLifecycleProjection {
   readonly closeoutL6PowerShellPreflightRepairCandidateReady: unknown;
   readonly closeoutL6ExecutionAuthorized: unknown;
   readonly closeoutL6Started: unknown;
+  readonly closeoutL6Completed: unknown;
+  readonly closeoutTerminalProjectionReview: unknown;
+  readonly closeoutActiveAuthorityPresent: unknown;
+  readonly closeoutArchiveAuthorityPresent: unknown;
   readonly closeoutAcceptanceAuthorized: unknown;
   readonly closeoutArchiveAuthorized: unknown;
   readonly rkp2Status: unknown;
@@ -2653,6 +2693,8 @@ interface Stage6CloseoutLifecycleProjection {
   readonly rkp2CloseoutNextGate: unknown;
   readonly rkp2CloseoutIntegrationCompleted: unknown;
   readonly rkp2CloseoutIntegrationReview: unknown;
+  readonly rkp2CloseoutL6Completed: unknown;
+  readonly rkp2CloseoutTerminalProjectionReview: unknown;
   readonly rkp2Stage6Completed: unknown;
   readonly s62Started: unknown;
   readonly s63Started: unknown;
@@ -2670,6 +2712,8 @@ interface Stage6CloseoutLifecycleProjection {
   readonly rustCloseoutNextGate: unknown;
   readonly rustCloseoutIntegrationCompleted: unknown;
   readonly rustCloseoutIntegrationReview: unknown;
+  readonly rustCloseoutL6Completed: unknown;
+  readonly rustCloseoutTerminalProjectionReview: unknown;
   readonly rustRkp2Stage6Completed: unknown;
   readonly rustS62Started: unknown;
   readonly rustS63Started: unknown;
@@ -2777,6 +2821,8 @@ function assertStage6CloseoutLifecycleProjection(
       false,
       "L6 must remain unstarted during the date repair",
     );
+  }
+  if (integrated) {
     assert.equal(
       projection.closeoutCurrentAuthorityOwnerBranch,
       STAGE_6_CLOSEOUT_TARGET_BRANCH,
@@ -2852,6 +2898,33 @@ function assertStage6CloseoutLifecycleProjection(
       projection.closeoutL3AuditAuthorizationSource,
       "prior_scope_limited_user_lifecycle_continuation",
     );
+  }
+  if (closeoutArchived) {
+    assert.equal(projection.closeoutCompletedAt, STAGE_6_CLOSEOUT_ARCHIVE_DATE);
+    assert.equal(
+      projection.closeoutImplementationStage,
+      "accepted_archived_completed_historical_no_live_gate",
+    );
+    assert.equal(
+      projection.closeoutImplementationReview,
+      "passed_targeted_independent_PowerShell_preflight_repair_rereview",
+    );
+    assert.equal(
+      projection.closeoutIntegrationReview,
+      "passed_targeted_independent_PowerShell_preflight_repair_rereview",
+    );
+    assert.equal(projection.closeoutNextGate, "completed_historical_no_live_gate");
+    assert.equal(projection.closeoutL6DateRepairCandidateReady, true);
+    assert.equal(projection.closeoutL6PowerShellPreflightRepairCandidateReady, true);
+    assert.equal(projection.closeoutL6ExecutionAuthorized, true);
+    assert.equal(projection.closeoutL6Started, true);
+    assert.equal(projection.closeoutL6Completed, true);
+    assert.equal(
+      projection.closeoutTerminalProjectionReview,
+      "pending_dedicated_independent_terminal_projection_review",
+    );
+    assert.equal(projection.closeoutActiveAuthorityPresent, false);
+    assert.equal(projection.closeoutArchiveAuthorityPresent, true);
   }
   assert.equal(
     projection.closeoutProductionAuthorized,
@@ -2934,6 +3007,31 @@ function assertStage6CloseoutLifecycleProjection(
       projection.rkp2CloseoutIntegrationReview,
       "pending_dedicated_independent_integration_projection_review",
     );
+  } else if (closeoutArchived) {
+    assert.equal(
+      projection.rkp2ImplementationStage,
+      "stage_6_closeout_accepted_archived_completed_rkp2_paused_before_s6_2",
+    );
+    assert.equal(
+      projection.rkp2NextGate,
+      "explicit_user_authorization_for_rkp2_s6_2_resume",
+    );
+    assert.equal(projection.rkp2CloseoutStatus, "completed");
+    assert.equal(
+      projection.rkp2CloseoutImplementationStage,
+      "accepted_archived_completed_historical_no_live_gate",
+    );
+    assert.equal(projection.rkp2CloseoutNextGate, "completed_historical_no_live_gate");
+    assert.equal(projection.rkp2CloseoutIntegrationCompleted, true);
+    assert.equal(
+      projection.rkp2CloseoutIntegrationReview,
+      "passed_targeted_independent_PowerShell_preflight_repair_rereview",
+    );
+    assert.equal(projection.rkp2CloseoutL6Completed, true);
+    assert.equal(
+      projection.rkp2CloseoutTerminalProjectionReview,
+      "pending_dedicated_independent_terminal_projection_review",
+    );
   }
   assert.equal(
     projection.rkp2Stage6Completed,
@@ -2994,6 +3092,31 @@ function assertStage6CloseoutLifecycleProjection(
     assert.equal(
       projection.rustCloseoutIntegrationReview,
       "pending_dedicated_independent_integration_projection_review",
+    );
+  } else if (closeoutArchived) {
+    assert.equal(
+      projection.rustRkp2Status,
+      "in_progress_stage_6_closeout_accepted_archived_completed_paused_before_s6_2",
+    );
+    assert.equal(
+      projection.rustNextGate,
+      "explicit_user_authorization_for_rkp2_s6_2_resume",
+    );
+    assert.equal(projection.rustCloseoutStatus, "completed");
+    assert.equal(
+      projection.rustCloseoutImplementationStage,
+      "accepted_archived_completed_historical_no_live_gate",
+    );
+    assert.equal(projection.rustCloseoutNextGate, "completed_historical_no_live_gate");
+    assert.equal(projection.rustCloseoutIntegrationCompleted, true);
+    assert.equal(
+      projection.rustCloseoutIntegrationReview,
+      "passed_targeted_independent_PowerShell_preflight_repair_rereview",
+    );
+    assert.equal(projection.rustCloseoutL6Completed, true);
+    assert.equal(
+      projection.rustCloseoutTerminalProjectionReview,
+      "pending_dedicated_independent_terminal_projection_review",
     );
   }
   assert.equal(
@@ -5593,6 +5716,7 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
   ) as {
     readonly status?: unknown;
     readonly completedAt?: unknown;
+    readonly relatedFiles?: unknown;
     readonly meta?: Readonly<Record<string, unknown>>;
   };
   const currentRkp2Task = JSON.parse(readText(TASK_PATH)) as {
@@ -5710,6 +5834,25 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
       ),
     );
   }
+  const closeoutAcceptanceProjection = readCommitProjection(
+    STAGE_6_CLOSEOUT_L6_OWNER_ACCEPTANCE_COMMIT,
+  );
+  assert.deepEqual(closeoutAcceptanceProjection.parents, [
+    STAGE_6_CLOSEOUT_POWERSHELL_PREFLIGHT_REPAIR_COMMIT,
+  ]);
+  assert.deepEqual(closeoutAcceptanceProjection.rows, [
+    `M\t${STAGE_6_CLOSEOUT_ROOT}/task.json`,
+  ]);
+  const closeoutNativeArchiveProjection = readCommitProjection(
+    STAGE_6_CLOSEOUT_L6_NATIVE_ARCHIVE_COMMIT,
+  );
+  assertNativeTaskArchiveCommitProjection(
+    closeoutNativeArchiveProjection,
+    STAGE_6_CLOSEOUT_L6_OWNER_ACCEPTANCE_COMMIT,
+    STAGE_6_CLOSEOUT_ROOT,
+    STAGE_6_CLOSEOUT_ARCHIVE_ROOT,
+    STAGE_6_CLOSEOUT_MANIFEST,
+  );
   const frozenParentChain = STAGE_6_CLOSEOUT_FROZEN_PARENT_CHAIN.map(
     ({ commit }) => ({ commit, parents: readCommitProjection(commit).parents }),
   );
@@ -5740,6 +5883,36 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
       STAGE_6_NATIVE_ARCHIVE_COMMIT,
     );
   }
+  if (closeoutLocation.kind === "archive") {
+    assert.equal(closeoutTask.completedAt, STAGE_6_CLOSEOUT_ARCHIVE_DATE);
+    assert.ok(Array.isArray(closeoutTask.relatedFiles));
+    const closeoutSelfRelatedFiles = closeoutTask.relatedFiles.filter(
+      (path): path is string =>
+        typeof path === "string" &&
+        path.startsWith(`${STAGE_6_CLOSEOUT_ARCHIVE_ROOT}/`),
+    );
+    assert.equal(closeoutSelfRelatedFiles.length, 11);
+    for (const path of closeoutSelfRelatedFiles) {
+      assert.equal(existsSync(resolve(path)), true, path);
+    }
+    for (const name of ["implement.jsonl", "check.jsonl"] as const) {
+      const source = readText(`${closeoutLocation.root}/${name}`);
+      assert.equal(source.includes(`${STAGE_6_CLOSEOUT_ROOT}/`), false);
+    }
+    assertJsonlReferencesExist(closeoutLocation.root);
+    assert.equal(
+      closeoutTask.meta?.l6_powershell_preflight_repair_commit,
+      STAGE_6_CLOSEOUT_POWERSHELL_PREFLIGHT_REPAIR_COMMIT,
+    );
+    assert.equal(
+      closeoutTask.meta?.l6_owner_acceptance_commit,
+      STAGE_6_CLOSEOUT_L6_OWNER_ACCEPTANCE_COMMIT,
+    );
+    assert.equal(
+      closeoutTask.meta?.l6_native_archive_commit,
+      STAGE_6_CLOSEOUT_L6_NATIVE_ARCHIVE_COMMIT,
+    );
+  }
 
   const stage6AuditRecord = closeoutMeta.stage6_technical_audit as
     | Readonly<Record<string, unknown>>
@@ -5760,6 +5933,10 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     .targeted_l6_clock_date_contract_rereview as
     | Readonly<Record<string, unknown>>
     | undefined;
+  const closeoutFinalPowerShellPreflightReviewRecord = closeoutMeta
+    .targeted_powershell_preflight_repair_rereview as
+    | Readonly<Record<string, unknown>>
+    | undefined;
   const rkp2CloseoutProjection = currentRkp2Meta
     .stage6_acceptance_archive_integration_closeout as
     | Readonly<Record<string, unknown>>
@@ -5771,8 +5948,24 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
   assert.ok(closeoutL3AuditRecord);
   assert.ok(closeoutIntegrationReviewRecord);
   assert.ok(closeoutPowerShellPreflightReviewRecord);
+  assert.ok(closeoutFinalPowerShellPreflightReviewRecord);
   assert.ok(rkp2CloseoutProjection);
   assert.ok(rustCloseoutProjection);
+  assert.equal(
+    closeoutFinalPowerShellPreflightReviewRecord.candidate_commit,
+    STAGE_6_CLOSEOUT_POWERSHELL_PREFLIGHT_REPAIR_COMMIT,
+  );
+  assert.equal(closeoutFinalPowerShellPreflightReviewRecord.P0, 0);
+  assert.equal(closeoutFinalPowerShellPreflightReviewRecord.P1, 0);
+  assert.equal(closeoutFinalPowerShellPreflightReviewRecord.P2, 0);
+  assert.equal(
+    closeoutFinalPowerShellPreflightReviewRecord.verdict,
+    "PASS FOR OWNER-AUTHORIZED L6 CLOSEOUT ARCHIVE",
+  );
+  assert.equal(
+    closeoutFinalPowerShellPreflightReviewRecord.review_generated_authorization,
+    false,
+  );
   const integrationReviewProjection: Stage6CloseoutIntegrationReviewProjection = {
     candidateCommit: closeoutIntegrationReviewRecord.candidate_commit,
     P0: closeoutIntegrationReviewRecord.P0,
@@ -6059,6 +6252,10 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
       closeoutMeta.l6_powershell_preflight_repair_candidate_ready,
     closeoutL6ExecutionAuthorized: closeoutMeta.l6_execution_authorized,
     closeoutL6Started: closeoutMeta.l6_started,
+    closeoutL6Completed: closeoutMeta.l6_completed,
+    closeoutTerminalProjectionReview: closeoutMeta.terminal_projection_review,
+    closeoutActiveAuthorityPresent: closeoutMeta.closeout_active_authority_present,
+    closeoutArchiveAuthorityPresent: closeoutMeta.closeout_archive_authority_present,
     closeoutAcceptanceAuthorized: closeoutMeta.closeout_acceptance_authorized,
     closeoutArchiveAuthorized: closeoutMeta.closeout_archive_authorized,
     rkp2Status: currentRkp2Task.status,
@@ -6074,6 +6271,9 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     rkp2CloseoutNextGate: rkp2CloseoutProjection.next_gate,
     rkp2CloseoutIntegrationCompleted: rkp2CloseoutProjection.integration_completed,
     rkp2CloseoutIntegrationReview: rkp2CloseoutProjection.integration_review,
+    rkp2CloseoutL6Completed: rkp2CloseoutProjection.l6_completed,
+    rkp2CloseoutTerminalProjectionReview:
+      rkp2CloseoutProjection.terminal_projection_review,
     rkp2Stage6Completed: currentRkp2Meta.stage_6_completed,
     s62Started: currentRkp2Meta.stage_6_s6_2_started,
     s63Started: currentRkp2Meta.stage_6_s6_3_started,
@@ -6091,6 +6291,9 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     rustCloseoutNextGate: rustCloseoutProjection.next_gate,
     rustCloseoutIntegrationCompleted: rustCloseoutProjection.integration_completed,
     rustCloseoutIntegrationReview: rustCloseoutProjection.integration_review,
+    rustCloseoutL6Completed: rustCloseoutProjection.l6_completed,
+    rustCloseoutTerminalProjectionReview:
+      rustCloseoutProjection.terminal_projection_review,
     rustRkp2Stage6Completed: currentRustMeta.rkp2_stage_6_completed,
     rustS62Started: currentRustMeta.rkp2_stage_6_s6_2_started,
     rustS63Started: currentRustMeta.rkp2_stage_6_s6_3_started,
@@ -6150,7 +6353,7 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     },
     { rkp2ImplementationStage: "wrong-rkp2-implementation-stage" },
     { rkp2NextGate: "wrong-rkp2-gate" },
-    { rkp2CloseoutStatus: "completed" },
+    { rkp2CloseoutStatus: "in_progress" },
     { rkp2CloseoutImplementationStage: "wrong-rkp2-closeout-stage" },
     { rkp2CloseoutNextGate: "wrong-rkp2-closeout-gate" },
     { rkp2CloseoutIntegrationCompleted: false },
@@ -6171,7 +6374,7 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     { rustActiveImplementationChild: "wrong-rust-child" },
     { rustRkp2Status: "wrong-rust-rkp2-status" },
     { rustNextGate: "wrong-rust-gate" },
-    { rustCloseoutStatus: "completed" },
+    { rustCloseoutStatus: "in_progress" },
     { rustCloseoutImplementationStage: "wrong-rust-closeout-stage" },
     { rustCloseoutNextGate: "wrong-rust-closeout-gate" },
     { rustCloseoutIntegrationCompleted: false },
@@ -6206,8 +6409,16 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     { closeoutIntegrationMode: "merge-commit" },
     { closeoutL6DateRepairCandidateReady: false },
     { closeoutL6PowerShellPreflightRepairCandidateReady: false },
-    { closeoutL6ExecutionAuthorized: true },
-    { closeoutL6Started: true },
+    { closeoutL6ExecutionAuthorized: false },
+    { closeoutL6Started: false },
+    { closeoutL6Completed: false },
+    { closeoutTerminalProjectionReview: "passed_without_independent_review" },
+    { closeoutActiveAuthorityPresent: true },
+    { closeoutArchiveAuthorityPresent: false },
+    { rkp2CloseoutL6Completed: false },
+    { rkp2CloseoutTerminalProjectionReview: "passed_without_independent_review" },
+    { rustCloseoutL6Completed: false },
+    { rustCloseoutTerminalProjectionReview: "passed_without_independent_review" },
     { closeoutL4FastForwardCompleted: false },
     {
       closeoutL4NoMergeCommit: false,
