@@ -31,6 +31,8 @@ Technical changes are exactly:
 
 All commands, fresh clones, Cargo targets, TEMP/TMP and transcripts stay on E:.
 
+Candidate coordination is also literal, not directory-wide: child `task.json`, `implementation-evidence.md`, `review-candidate.md`, `operator-handoff.md`, RKP-2 parent `task.json` and Rust parent `task.json` are the only six paths. The I0/I3 parser must require this exact set in task meta, PRD, design and implementation plan; the task-directory prefix is not an allowlist entry.
+
 The Rust diff is accepted only when the lexical verifier locates the unique matched end of each terminal test module, finds a whitespace-only suffix, contains both old/new hunk ranges inside the five named existing functions plus `source_shape_normalization_is_lf_crlf_invariant`, and reconstructs the exact base blob after removing those six permitted edits. Prefix equality alone is invalid.
 
 The Node red baseline is not matched by titles alone. The capture uses Node `v24.15.0` and its programmatic runner with `isolation: "none"`, `concurrency: 1`, consumes title-level `test:fail` events, validates the outer `ERR_TEST_FAILURE`/`testCodeFailure` wrapper and unwraps exactly one inner `AssertionError` cause. I0 freezes the resolved Node executable, focused-test bytes, capture-script bytes and exact `3 + 1` cause split.

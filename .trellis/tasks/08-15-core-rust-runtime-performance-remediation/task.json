@@ -46,7 +46,7 @@
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RUST REMEDIATION PARENT PLANNING / RKP-2 REMAINS DIRECT IMPLEMENTATION CHILD BUT IS PAUSED AFTER S6.1 / CURRENT BLOCKING DESCENDANT IS 09-02 TRACKED-BYTE EOL PORTABILITY PREREQUISITE IN PLANNING / PLANNING AUDITOR 01A06123 RETURNED 538ABBDA 0_2_0 AND AD56A030 0_2_0 / SECOND BOUNDED REPAIR APPLIED / DIAGNOSTIC S6.2 C3C4D198 STOPPED E2 UNACCEPTED / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO QUALIFICATION CUTOVER RKP3 ARCHIVE OR PUSH.",
+  "notes": "RUST REMEDIATION PARENT PLANNING / RKP-2 DIRECT IMPLEMENTATION CHILD PAUSED AFTER S6.1 / BLOCKING DESCENDANT 09-02 EOL PREREQUISITE PLANNING / AUDITOR 01A06123 RETURNED 5D08D5C 0_1_0 ONLY FOR DIRECTORY-WIDE COORDINATION ALLOWLIST / SIX-LITERAL-PATH PROJECTION REPAIR APPLIED / DIAGNOSTIC S6.2 C3C4D198 UNACCEPTED / TYPESCRIPT DEFAULT / NO QUALIFICATION CUTOVER RKP3 ARCHIVE OR PUSH.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
@@ -136,7 +136,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "tracked_byte_eol_prerequisite_third_targeted_independent_planning_rereview",
+    "next_gate": "tracked_byte_eol_prerequisite_fourth_targeted_independent_planning_rereview",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -743,13 +743,15 @@
       "branch": "codex/rkp-2-stage-6-eol-portability-prerequisite",
       "task_start_run": false,
       "production_implementation_authorized": false,
-      "independent_planning_review": "538abbda_return_0_2_0_then_ad56a030_return_0_2_0_second_bounded_repair_applied_third_rereview_pending",
+      "independent_planning_review": "5d08d5c_return_0_1_0_six_literal_path_projection_repair_applied_fourth_rereview_pending",
       "first_review_task_id": "01a06123-b6c9-78a0-8216-9c8f1d53a061",
-      "next_gate": "third_targeted_independent_planning_rereview",
+      "next_gate": "fourth_targeted_independent_planning_rereview",
       "e3_execution_count": 0,
       "successor": "new_S6_2_plan_after_accept_archive_integration",
       "second_reviewed_head": "ad56a0307bd2ef429a2693e6235f7a77a4c71ece",
-      "second_review_result": "P0_0_P1_2_P2_0_node_event_shape_and_predeclared_signature_transition"
+      "second_review_result": "P0_0_P1_2_P2_0_node_event_shape_and_predeclared_signature_transition",
+      "third_reviewed_head": "5d08d5c1f7442b6105e95348ba2220c209c80e5b",
+      "third_review_result": "P0_0_P1_1_P2_0_directory_wide_coordination_allowlist_conflicted_with_six_literal_paths"
     }
   }
 }

@@ -79,6 +79,17 @@ Success means a fresh checkout of the accepted prerequisite commit produces iden
 
 The three Rust files may change only inside their existing `#[cfg(test)]` modules. The `.gitattributes` diff may add only seven exact path rules.
 
+### Future candidate coordination allowlist
+
+1. `.trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/task.json`
+2. `.trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/implementation-evidence.md`
+3. `.trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/review-candidate.md`
+4. `.trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/operator-handoff.md`
+5. `.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json`
+6. `.trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json`
+
+This is an exact six-path set. A task-directory prefix, glob, optional path or any other file is outside the candidate authority.
+
 ### Seven paths governed by `text eol=lf`
 
 1. `crates/brilliant-kernel-runtime/src/runtime.rs`
@@ -100,7 +111,7 @@ The three Rust files may change only inside their existing `#[cfg(test)]` module
 ## Acceptance criteria
 
 - **EOL-AC01**: Dedicated planning audit returns P0/P1/P2=`0/0/0` for an exact docs-only planning HEAD.
-- **EOL-AC02**: Implementation technical diff is exactly the four technical allowlist files. The final evidence projection is exactly child `task.json`, `implementation-evidence.md`, `review-candidate.md`, `operator-handoff.md`, RKP-2 parent `task.json` and Rust parent `task.json`; no optional spec/handoff/review path is admitted.
+- **EOL-AC02**: Implementation technical diff is exactly the four technical allowlist files. The final evidence projection is exactly the six literal paths in `Future candidate coordination allowlist`; no directory prefix, glob, optional spec/handoff/review path or seventh file is admitted.
 - **EOL-AC03**: The Rust lexical boundary verifier proves a unique terminal test module, whitespace-only suffix, all old/new hunk ranges inside five named existing functions plus one named parity function, and exact reconstruction to the base after removing the six permitted edits.
 - **EOL-AC04**: Seven explicit `.gitattributes` rules exist exactly once; no wildcard or unrelated EOL policy is added.
 - **EOL-AC05**: Two new no-local/no-checkout verification clones on E:, checked out with `core.autocrlf=true` and `false`, both report `i/lf w/lf attr/text eol=lf`, clean status and identical bytes/SHA for all seven paths.
@@ -117,6 +128,7 @@ The three Rust files may change only inside their existing `#[cfg(test)]` module
 - **EOL-AC16**: The signature evidence records Node executable/version, `isolation: "none"`, outer failure wrapper, exactly one inner assertion cause, compiled focused-test bytes/SHA and capture-script bytes/SHA; file-level-only events or different tool bytes invalidate evidence.
 - **EOL-AC17**: `I0_EXPECTED_PATCH.diff` is generated from `I0_SOURCE_HEAD` by unique exact-text substitutions, frozen before I1, applied verbatim in I1 and independently replayed at I3; its SHA and exact phase path sets remain unchanged.
 - **EOL-AC18**: Two byte-distinct placeholders are tested independently for every new expected-transition evidence path and yield identical signatures; the per-path proof is frozen before I1.
+- **EOL-AC19**: A mechanical parser extracts the six candidate coordination paths from task meta, this PRD, `design.md` and `implement.md`; all four sets and counts must be byte-for-byte equal before I0 and again at I3.
 
 ## Out of scope
 

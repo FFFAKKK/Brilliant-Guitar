@@ -68,5 +68,6 @@ Dedicated planning auditor `01a06123-b6c9-78a0-8216-9c8f1d53a061` returned:
 
 1. `538abbdaee079aaf5df800f09d192fbb777174d9`: P0/P1/P2=`0/2/0`; the product-region proof allowed a suffix bypass and Node failures were frozen only by title/count.
 2. `ad56a0307bd2ef429a2693e6235f7a77a4c71ece`: P0/P1/P2=`0/2/0`; the Rust suffix bypass was closed, but the Node programmatic-runner event shape was incorrect and all-four-signatures-equal contradicted the planned path changes.
+3. `5d08d5c1f7442b6105e95348ba2220c209c80e5b`: P0/P1/P2=`0/1/0`; the two Node repairs were confirmed executable, but task meta still authorized the whole child directory while PRD/design/implement required six literal candidate coordination paths.
 
-The current bounded repair pins Node `isolation: "none"`, validates the outer `ERR_TEST_FAILURE` wrapper plus exactly one inner `AssertionError`, and replaces self-referential candidate expectations with I0-frozen control and expected-transition lanes. A third targeted independent rereview remains required.
+The current bounded repair preserves the closed Node contract and replaces the directory prefix with the same six literal paths in every authority projection plus an I0/I3 set-equality gate. A fourth targeted independent rereview remains required.

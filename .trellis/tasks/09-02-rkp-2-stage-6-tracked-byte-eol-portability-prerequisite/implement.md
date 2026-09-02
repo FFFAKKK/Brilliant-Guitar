@@ -94,6 +94,7 @@ docs(rkp-2): plan tracked-byte EOL portability prerequisite
 9. record current seven-path `git ls-files --eol`, byte lengths and SHA-256 as diagnostic pre-fix values;
 10. record in task-local planning evidence: `I0_SOURCE_HEAD`, Node executable and exact `process.version=v24.15.0`, compiled focused-test path/bytes/SHA, capture-script source/SHA, I0 control signatures, expected-transition signatures, patch bytes/SHA, exact phase path sets and per-path two-variant placeholder proof;
 11. commit only the task/parent evidence projection. This evidence commit is not `I0_SOURCE_HEAD`; the already frozen A0 commit remains the source for every later control/expected replay.
+12. run the task-local coordination-set parser and require the task meta, PRD, design and this implementation plan to expose the same six literal candidate coordination paths and count `6`; freeze parser bytes/SHA before I1.
 
 ### Exit gate
 
@@ -217,7 +218,7 @@ No commit is required if I2 only generates ignored transcripts.
 13. capture the candidate signatures independently: the Part Owner signature must equal both I0 and expected-transition records; the other three must equal only their corresponding pre-I1 `EXPECTED_I3_SIGNATURES`; no candidate signature may be copied into its own expected record;
 14. require the exact `3 + 1` cause classification, outer `ERR_TEST_FAILURE`/`testCodeFailure` wrapper, one inner `AssertionError` cause, exit/count/title tuple and Node-version invariants to remain true in all applicable lanes;
 15. recompute the 80-file manifest independently and require exact equality with I0;
-16. verify the technical diff is exactly four files and the final coordination projection is exactly the six paths in `design.md` section 8.3; run the section 5.3 lexical/reconstruction proof and the exact seven-rule `.gitattributes` diff proof so unreachable post-failure assertions cannot hide an unbounded technical edit;
+16. verify the technical diff is exactly four files and run the I0-frozen coordination-set parser again; task meta, PRD, design, implement and actual final coordination diff must all equal the same six literal paths with count `6`; run the section 5.3 lexical/reconstruction proof and the exact seven-rule `.gitattributes` diff proof so unreachable post-failure assertions cannot hide an unbounded technical edit;
 17. verify no `src/**`, Cargo manifests/lock, package manifests/lock, tsconfig, toolchain, public export, fixture content, worker semantics, wrapper semantics or old S6.2 branch change;
 18. verify E3 execution count zero and no S6.2 evidence artifact exists on this branch.
 
@@ -225,12 +226,12 @@ No commit is required if I2 only generates ignored transcripts.
 
 After all gates pass, update only:
 
-- this task's `task.json`;
-- this task's `implementation-evidence.md`;
-- this task's `review-candidate.md`;
-- this task's `operator-handoff.md`;
-- RKP-2 parent `task.json`;
-- Rust parent `task.json`.
+- `.trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/task.json`;
+- `.trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/implementation-evidence.md`;
+- `.trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/review-candidate.md`;
+- `.trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/operator-handoff.md`;
+- `.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json`;
+- `.trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json`.
 
 This six-path coordination set is exact. RKP-2 parent handoff/review files and `rust-runtime-transition.md` remain unchanged in the implementation candidate; any durable spec or lifecycle projection outside this set is a later accepted-closeout task.
 
@@ -263,8 +264,9 @@ Use a new dedicated read-only task. The auditor must verify:
 8. Cargo 1.97.1/MSRV gates;
 9. Node `isolation: "none"` title-level event capture, outer wrapper/one-level inner-cause contract, exact Node executable/version and capture-script hash;
 10. independently rebuilt control and expected-transition lanes, candidate-only comparison against pre-I1 expected signatures, exact `3 + 1` cause classification and manifest equality;
-11. E3 zero and S6.2 provenance P1 still owned by the successor plan;
-12. lifecycle authorization boundaries and clean state.
+11. task meta, PRD, design, implement and actual candidate coordination sets are the same six literal paths; no task-directory prefix or glob is accepted;
+12. E3 zero and S6.2 provenance P1 still owned by the successor plan;
+13. lifecycle authorization boundaries and clean state.
 
 Only P0/P1/P2=`0/0/0` permits an owner acceptance decision. The audit does not itself authorize acceptance, archive or integration.
 

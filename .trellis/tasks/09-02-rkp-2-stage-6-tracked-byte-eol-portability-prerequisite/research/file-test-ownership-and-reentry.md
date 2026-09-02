@@ -13,11 +13,14 @@
 
 ### Coordination/evidence files
 
-- this task directory;
-- RKP-2 parent `task.json`;
-- Rust remediation parent `task.json`.
+- `.trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/task.json`;
+- `.trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/implementation-evidence.md`;
+- `.trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/review-candidate.md`;
+- `.trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/operator-handoff.md`;
+- `.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json`;
+- `.trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json`.
 
-The implementation candidate has no optional coordination path. RKP-2 parent handoff/review files and `rust-runtime-transition.md` remain unchanged until a later accepted-closeout projection.
+The implementation candidate has exactly these six literal coordination paths and no optional directory-prefix authority. RKP-2 parent handoff/review files and `rust-runtime-transition.md` remain unchanged until a later accepted-closeout projection. The task meta, PRD, design and implementation plan must expose this identical set and count.
 
 ## Protected paths
 

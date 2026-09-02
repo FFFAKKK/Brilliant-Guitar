@@ -2,7 +2,7 @@
 
 ## Status
 
-Author self-validation and clean-HEAD regression replay completed. Dedicated planning audit task `01a06123-b6c9-78a0-8216-9c8f1d53a061` first reviewed `538abbdaee079aaf5df800f09d192fbb777174d9` and returned P0/P1/P2=`0/2/0`; its targeted rereview of `ad56a0307bd2ef429a2693e6235f7a77a4c71ece` closed the original Rust-suffix finding but returned P0/P1/P2=`0/2/0` for two Node evidence-contract defects. This second bounded repair closes only those two new findings. A new exact HEAD must reproduce the mechanical/test tuple and receive a third targeted independent rereview.
+Author self-validation and clean-HEAD regression replay completed. Dedicated planning audit task `01a06123-b6c9-78a0-8216-9c8f1d53a061` reviewed three exact heads: `538abbda...` returned `0/2/0`; `ad56a030...` returned `0/2/0`; `5d08d5c1...` confirmed the Node/event/transition repairs but returned `0/1/0` because task meta still authorized the whole child directory rather than the six literal candidate coordination paths. This third bounded repair closes only that projection finding. A new exact HEAD must reproduce the mechanical/test tuple and receive a fourth targeted independent rereview.
 
 ## Scope checks
 
@@ -39,7 +39,9 @@ Author self-validation and clean-HEAD regression replay completed. Dedicated pla
 - [x] second audit at `ad56a030...`: original Rust-suffix finding closed; RETURN `0/2/0` for actual Node event capture shape and impossible all-signatures-equal rule;
 - [x] second-round P1-1 repaired in planning: Node `v24.15.0`, `isolation: "none"`, title-level event, outer wrapper, exactly one inner assertion cause and Node/test/script byte pins;
 - [x] second-round P1-2 repaired in planning: pre-I1 control/expected/candidate lanes with independently generated expected-transition signatures and per-path two-placeholder content-insensitivity proof;
-- [ ] third targeted independent rereview of the repaired exact HEAD.
+- [x] third audit at `5d08d5c1...`: Node repairs closed; RETURN `0/1/0` only for directory-wide task-meta coordination authority;
+- [x] third-round P1 repaired in planning: six literal paths in task meta/research plus count `6` and task-meta/PRD/design/implement set-equality gates at I0/I3;
+- [ ] fourth targeted independent rereview of the repaired exact HEAD.
 
 The exact four clean-HEAD failures are:
 
@@ -57,4 +59,4 @@ No product behavior test failed. The repaired I0/I3 contract validates the outer
 
 ## Provisional severity result
 
-The second bounded-repair author pass finds P0/P1/P2=`0/0/0` against the two findings returned for `ad56a030...`. This is not an independent verdict and does not authorize implementation.
+The third bounded-repair author pass finds P0/P1/P2=`0/0/0` against the sole finding returned for `5d08d5c1...`. This is not an independent verdict and does not authorize implementation.

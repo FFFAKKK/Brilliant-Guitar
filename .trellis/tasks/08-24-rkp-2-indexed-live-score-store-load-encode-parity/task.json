@@ -44,7 +44,7 @@
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "RKP-2 IN_PROGRESS / STAGE6 S6.1 COMPLETE AT 55CB575C / DIAGNOSTIC S6.2 E1 C3C4D198 STOPPED AT E2 AND REMAINS UNACCEPTED OUTSIDE THIS AUTHORITY LINE / DEDICATED BLOCKER AUDIT 01A060D4 RETURNED 0_2_1 / CURRENT PLANNING CHILD IS TRACKED-BYTE EOL PORTABILITY PREREQUISITE / PLANNING AUDITOR 01A06123 RETURNED 538ABBDA 0_2_0 AND AD56A030 0_2_0 / SECOND BOUNDED REPAIR APPLIED / NO CURRENT IMPLEMENTATION CHILD / AUTHORITY S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO QUALIFICATION CUTOVER PUSH OR RKP3.",
+  "notes": "RKP-2 IN_PROGRESS / STAGE6 S6.1 COMPLETE AT 55CB575C / DIAGNOSTIC S6.2 E1 C3C4D198 STOPPED AT E2 UNACCEPTED / CURRENT PLANNING CHILD TRACKED-BYTE EOL PREREQUISITE / AUDITOR 01A06123 RETURNED 5D08D5C 0_1_0 ONLY FOR DIRECTORY-WIDE COORDINATION ALLOWLIST / SIX-LITERAL-PATH PROJECTION REPAIR APPLIED / NO CURRENT IMPLEMENTATION CHILD / S6.2 S6.3 FALSE / TYPESCRIPT DEFAULT / NO QUALIFICATION CUTOVER PUSH OR RKP3.",
   "meta": {
     "planning_base_commit": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "accepted_rkp1_audited_implementation_commit": "94387b339b5e4d9ce6b7f97597a1b56edd051f01",
@@ -352,7 +352,7 @@
       "post_pass_closeout_authorized": true,
       "stage_6_blocked_until_accepted_archived_integrated": false
     },
-    "next_gate": "tracked_byte_eol_prerequisite_third_targeted_independent_planning_rereview",
+    "next_gate": "tracked_byte_eol_prerequisite_fourth_targeted_independent_planning_rereview",
     "stage_6_started": true,
     "stage_6_authorized": true,
     "stage_6_completed": false,
@@ -587,14 +587,16 @@
       "worktree": ".worktrees/rkp-2-stage-6-eol-portability-prerequisite",
       "task_start_run": false,
       "production_implementation_authorized": false,
-      "independent_planning_review": "538abbda_return_0_2_0_then_ad56a030_return_0_2_0_second_bounded_repair_applied_third_rereview_pending",
+      "independent_planning_review": "5d08d5c_return_0_1_0_six_literal_path_projection_repair_applied_fourth_rereview_pending",
       "first_review_task_id": "01a06123-b6c9-78a0-8216-9c8f1d53a061",
-      "next_gate": "third_targeted_independent_planning_rereview",
+      "next_gate": "fourth_targeted_independent_planning_rereview",
       "technical_allowlist_count": 4,
       "tracked_eol_path_count": 7,
       "e3_execution_count": 0,
       "second_reviewed_head": "ad56a0307bd2ef429a2693e6235f7a77a4c71ece",
-      "second_review_result": "P0_0_P1_2_P2_0_node_event_shape_and_predeclared_signature_transition"
+      "second_review_result": "P0_0_P1_2_P2_0_node_event_shape_and_predeclared_signature_transition",
+      "third_reviewed_head": "5d08d5c1f7442b6105e95348ba2220c209c80e5b",
+      "third_review_result": "P0_0_P1_1_P2_0_directory_wide_coordination_allowlist_conflicted_with_six_literal_paths"
     },
     "s6_2_diagnostic_attempt": {
       "branch": "codex/rkp-2-stage-6-s6-2-evidence-consumption",

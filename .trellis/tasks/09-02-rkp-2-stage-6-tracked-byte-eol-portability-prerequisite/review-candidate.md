@@ -46,6 +46,15 @@ The candidate is eligible for audit only after the post-commit command set confi
 - P1-2 repair: replaced impossible baseline-to-candidate equality with pre-I1 control, independently constructed expected-transition and candidate lanes; the inherited Part Owner record stays unchanged while the other three may move only to predeclared expected values;
 - current gate: third targeted rereview of the new exact clean HEAD; implementation, task start and authorization remain false.
 
+## Third independent audit and bounded repair
+
+- dedicated audit task: `01a06123-b6c9-78a0-8216-9c8f1d53a061`;
+- reviewed HEAD: `5d08d5c1f7442b6105e95348ba2220c209c80e5b`;
+- verdict: RETURN, P0/P1/P2=`0/1/0`;
+- confirmed closed: Node v24 event capture and pre-I1 control/expected/candidate contract are executable and non-self-referential;
+- sole P1 repair: replaced task-meta whole-directory authority and research shorthand with the same six repo-relative literal coordination paths used by PRD/design/implement; added count `6` and an I0/I3 four-authority set-equality gate;
+- current gate: fourth targeted rereview of the new exact clean HEAD; implementation, task start and authorization remain false.
+
 ## Review question
 
 Does this planning candidate define the smallest sufficient prerequisite that makes S6.2's raw-byte inputs and Rust source-shape tests reproducible across `core.autocrlf=true/false`, without changing Rust product behavior or prematurely resuming S6.2?
@@ -70,6 +79,8 @@ Does this planning candidate define the smallest sufficient prerequisite that ma
 16. Control and expected-transition signatures are frozen before I1; every new evidence path passes a two-placeholder content-insensitivity probe and the candidate cannot supply its own expected values.
 17. The Part Owner signature stays baseline-equal, while the other three candidate signatures may change only to independently predeclared transition values.
 18. The two findings from the `ad56a030...` review are closed without changing task/lifecycle scope.
+19. The sole finding from the `5d08d5c...` review is closed: no task-directory prefix remains in the candidate coordination allowlist.
+20. Task meta, PRD, design and implement each expose the same six literal paths and count; the I0/I3 parser mechanically compares them with the actual candidate diff.
 
 ## Expected review output
 

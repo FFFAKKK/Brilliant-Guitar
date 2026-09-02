@@ -383,11 +383,13 @@ The phase path sets are exact:
 
 | Phase | Changed paths owned by the phase |
 |---|---|
-| I0 activation | child `task.json`, RKP-2 parent `task.json`, Rust parent `task.json` |
+| I0 activation | `.trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/task.json`; `.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json`; `.trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json` |
 | I1 technical | exactly `.gitattributes`, `runtime.rs`, `store.rs`, `indices.rs` |
-| I3 evidence | child `task.json`, `implementation-evidence.md`, `review-candidate.md`, `operator-handoff.md`, RKP-2 parent `task.json`, Rust parent `task.json` |
+| I3 evidence | `.trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/task.json`; `.trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/implementation-evidence.md`; `.trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/review-candidate.md`; `.trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/operator-handoff.md`; `.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json`; `.trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json` |
 
 RKP-2 parent handoff/review files and `rust-runtime-transition.md` are not part of this implementation candidate; any durable spec sync occurs only in a later accepted lifecycle projection. The expected-transition checkout must have exactly the I1 and I3 path delta above relative to `I0_SOURCE_HEAD`; no optional path exists.
+
+Before I0 and again at I3, one task-local parser must extract the future candidate coordination set from four authorities: `task.json.meta.future_coordination_allowlist`, the PRD `Future candidate coordination allowlist`, this table's I3 row, and `implement.md` `Evidence and lifecycle files`. Each must contain exactly the same six repo-relative literal paths, with count `6`; a directory prefix, glob, shorthand expansion or optional path invalidates the plan/candidate. The parser source and SHA are frozen with the Node capture script at I0.
 
 At I3:
 
