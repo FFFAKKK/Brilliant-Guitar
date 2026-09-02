@@ -4,7 +4,7 @@
 
 - Date: `2026-09-02`
 - Scope at this checkpoint: new I0 re-entry activation and immutable baseline only.
-- Current result: `I0 PASS / I1 NOT STARTED`.
+- Current result: `I0 PASS / I1 STOPPED BEFORE TECHNICAL COMMIT`.
 - Authorization remains limited to I0 through I3 candidate freeze. This file does not authorize acceptance, archive, integration, S6.2, S6.3, E3, qualification, runtime cutover, RKP-3 or push.
 - The historical activation `13a3a6a923f6af6744ef4aa60291a622f3dff989`, stop `fa756bb3755ab4f9dcc8bc1b5e5ada571102927f`, old verifier, old expected signatures and old temporary lanes were not reused.
 
@@ -149,6 +149,25 @@ At `I0_SOURCE_HEAD`, all seven governed paths reported `i/lf w/crlf attr/` in th
 - Next gate: I1 may apply only the frozen patch and must commit only the four technical allowlist paths.
 
 ## Frozen programmatic Node signature capture source
+
+## I1 stop evidence
+
+I1 applied the exact frozen `4890`-byte patch and proved the staged full-index diff bytes matched SHA-256 `d991d45ed00f42f31f7dada849bc5e7a114d04f6fb680cd6836f26df4718d209`. Each of the four staged blob IDs also matched the independently committed V1 expected lane.
+
+The four inherited RED tests all passed individually. The fifth required focused test, newly added by the frozen patch, then failed:
+
+```text
+test indices::tests::source_shape_normalization_is_lf_crlf_invariant ... FAILED
+left:  "\n    entity_index_lookups: usize,\n"
+right: "\n    entity_index_lookups: usize,"
+exit: 101
+```
+
+The `split("}\n\n")` extraction intentionally leaves the newline immediately before the closing brace in the captured declaration. The frozen parity assertion omitted that newline from its expected literal. This is a defect in the I0-frozen expected patch, not a permitted I1 adjustment. It also exposes a planning-verifier gap: the five self-tests prove lexical boundaries and reconstruction, but they do not execute or semantically validate the new parity assertion.
+
+Per the immutable-patch and fail-closed rules, I1 stopped before any technical commit. The exact four staged technical paths were restored to `b94d9d299fcadfe74cf707b39e832c472db4ac8c`; the post-rollback technical delta is zero. No I2 or I3 action ran, the large ignored Rust test executed zero times, E3 remains zero, and S6.2/acceptance/archive/integration/qualification/cutover/RKP-3/push remain unauthorized.
+
+Required next step is a bounded planning repair that corrects the parity expected literal and strengthens pre-I1 verification, followed by a dedicated independent planning rereview and new explicit user reauthorization. The current frozen patch, signatures and temporary lanes are diagnostic only and may not be silently regenerated or reused as a new implementation authority.
 
 The following is the complete source whose hash is frozen above.
 
