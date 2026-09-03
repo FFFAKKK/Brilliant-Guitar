@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 20
-- **Last Active**: 2026-08-24
+- **Total Sessions**: 21
+- **Last Active**: 2026-09-03
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~735 | Active |
+| `journal-1.md` | ~773 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 21 | 2026-09-03 | Complete and archive RKP-2 | `ca718569553ea4efeea05e4ee37a0e77171d1169`, `e88e52ace1d41c097d1ddd8143814dfb69922dfc`, `fb4febfd7e8c9f267b4fe91a2542e2bc0884e8f3`, `33af840e11a4235c36c8f936c3a1b20da76ce5d0`, `1c04c5f0fa1efaa0cc99176697bba3c4e1edd069`, `99ceea9477b171d83618ce2ce312f29b978cf7b1` | `codex/rkp-2-indexed-live-score-store-implementation` |
 | 20 | 2026-08-24 | RKP-1 post-archive workspace-contract repair owner closeout | `716a9113f8961953ccf848191b4edabc15ab4a62`, `ce4e32d59ec72626e1ab8358632d46be35fe647e`, `c9fd2652bf0af88402f5e5953f5786f471e85fb6`, `267a63bc6ff35b49842fb713c34f4099c8829e18`, `4197b5c315524391733fb67cfbbf98f36a8b6201` | `codex/rkp-1-post-archive-contract-repair` |
 | 19 | 2026-08-24 | RKP-1 owner closeout | `94387b339b5e4d9ce6b7f97597a1b56edd051f01`, `fc298dea46973ecb643045cd4483068c56eb48fe` | `codex/rkp-1-codec-linear-bound-repair` |
 | 18 | 2026-08-11 | Accept and archive CVN-5 range and atomic batch | `f329ec10bc77c530282db3a6f47dbd6b6112859e`, `10e5242`, `b2ad0bc`, `3123a6a` | `codex/cvn-5-range-operations-explicit-atomic-batch` |

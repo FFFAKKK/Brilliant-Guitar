@@ -733,3 +733,41 @@ Audited implementation candidate 267a63bc passed independent review 0/0/0, was o
 ### Next Steps
 
 - None - task complete
+
+
+## Session 21: Complete and archive RKP-2
+
+**Date**: 2026-09-03
+**Task**: Complete and archive RKP-2
+**Branch**: `codex/rkp-2-indexed-live-score-store-implementation`
+
+### Summary
+
+Completed S6.3 archive-aware Workspace Law repair, froze and directly checked the final RKP-2 implementation candidate at P0/P1/P2 0/0/0, recorded owner acceptance, and natively archived S6.3 plus RKP-2. TypeScript remains default; qualification, cutover, RKP-3, and push remain unauthorized.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ca718569553ea4efeea05e4ee37a0e77171d1169` | (see git log) |
+| `e88e52ace1d41c097d1ddd8143814dfb69922dfc` | (see git log) |
+| `fb4febfd7e8c9f267b4fe91a2542e2bc0884e8f3` | (see git log) |
+| `33af840e11a4235c36c8f936c3a1b20da76ce5d0` | (see git log) |
+| `1c04c5f0fa1efaa0cc99176697bba3c4e1edd069` | (see git log) |
+| `99ceea9477b171d83618ce2ce312f29b978cf7b1` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
