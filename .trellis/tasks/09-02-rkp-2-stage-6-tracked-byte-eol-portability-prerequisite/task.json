@@ -12,7 +12,7 @@
   "assignee": "ATOM",
   "createdAt": "2026-09-02",
   "completedAt": null,
-  "branch": "codex/rkp-2-stage-6-eol-portability-prerequisite",
+  "branch": "codex/rkp-2-stage-6-eol-evidence-repair",
   "base_branch": "codex/rkp-2-indexed-live-score-store-implementation",
   "worktree_path": ".worktrees/rkp-2-stage-6-eol-portability-prerequisite",
   "commit": null,
@@ -33,11 +33,11 @@
     "crates/brilliant-kernel-runtime/src/store.rs",
     "crates/brilliant-kernel-runtime/src/indices.rs"
   ],
-  "notes": "RKP-2 TRACKED-BYTE EOL PREREQUISITE / I1 STOP AT 6D7D85DA LEFT ZERO TECHNICAL DELTA / SOLE PARITY ORACLE TRAILING-LF DEFECT CORRECTED / CLEAN E-DRIVE REHEARSAL PASSED VERIFIER 5 OF 5 FOCUSED 5 OF 5 FMT AND RUNTIME LIB 18 PASS 0 FAIL 1 IGNORED / USER CONTINUE AUTHORIZES BOUNDED REACTIVATION AFTER DOCS AMENDMENT COMMIT / FINAL INDEPENDENT IMPLEMENTATION AUDIT STILL REQUIRED / S6.2 AND E3 REMAIN ZERO.",
+  "notes": "RKP-2 TRACKED-BYTE EOL PREREQUISITE / 65FEF628 INDEPENDENT AUDIT RETURNED P0 P1 P2 0 2 1 / USER AUTHORIZED FRESH I0 TO I3 EVIDENCE REPAIR / OLD FAILED BRANCH PRESERVED / NEW ACTIVATION REMOVES IMPLEMENTATION EVIDENCE AND HAS ZERO TECHNICAL DELTA / S6.2 S6.3 E3 ACCEPTANCE ARCHIVE INTEGRATION QUALIFICATION CUTOVER RKP3 PUSH REMAIN FALSE.",
   "meta": {
     "planning_base_commit": "55cb575c606646e8449359b0c46d5c905b3bb3c6",
     "planning_base_branch": "codex/rkp-2-indexed-live-score-store-implementation",
-    "planning_branch": "codex/rkp-2-stage-6-eol-portability-prerequisite",
+    "planning_branch": "codex/rkp-2-stage-6-eol-evidence-repair",
     "planning_worktree": ".worktrees/rkp-2-stage-6-eol-portability-prerequisite",
     "blocked_s6_2_attempt": {
       "planning_head": "02ef4af24bc3708e8e31d052f9cd69e81b955797",
@@ -59,20 +59,20 @@
     },
     "task_start_run": true,
     "production_implementation_authorized": false,
-    "user_implementation_authorization": false,
-    "user_implementation_authorization_scope": "new_reentry_I0_to_I3_activation_implementation_validation_and_candidate_freeze_only_no_acceptance_archive_integration_S6_2_S6_3_E3_qualification_runtime_cutover_RKP3_or_push",
+    "user_implementation_authorization": true,
+    "user_implementation_authorization_scope": "fresh_I0_to_I3_evidence_replay_only_no_acceptance_archive_integration_S6_2_S6_3_E3_qualification_runtime_cutover_RKP3_or_push",
     "independent_planning_review": "fifth_targeted_rereview_passed_then_single_literal_defect_closed_by_executable_author_rehearsal",
     "approved_planning_head": "c0a1a950b0f73e6bd0b58c8850084b902f030b59",
     "planning_candidate_ready": true,
     "implementation_candidate_ready": false,
-    "current_phase": "bounded_parity_oracle_docs_amendment_author_verified",
-    "next_gate": "commit_docs_only_amendment_then_record_bounded_activation",
-    "i0_source_head": "7f071acd2c261c99cfdc0f55f1bdb0357d95ceb3",
-    "i0_source_tree": "f18e78367393e6e51564b6541ec41ca9e16f42f2",
-    "i0_expected_patch_byte_length": 4890,
-    "i0_expected_patch_sha256": "d991d45ed00f42f31f7dada849bc5e7a114d04f6fb680cd6836f26df4718d209",
-    "i0_rust_verifier_sha256": "11375eafa7b7c8ebcd46a9473a64543c990293f528cfab0c049984cd46b4a998",
-    "i0_rust_verifier_self_test": "5_of_5_pass_in_both_fresh_expected_transition_lanes",
+    "current_phase": "fresh_I0_activation_source_no_technical_or_implementation_evidence",
+    "next_gate": "commit_fresh_I0_activation_then_capture_control_expected_patch_and_pre_I1_evidence",
+    "i0_source_head": null,
+    "i0_source_tree": null,
+    "i0_expected_patch_byte_length": null,
+    "i0_expected_patch_sha256": null,
+    "i0_rust_verifier_sha256": null,
+    "i0_rust_verifier_self_test": "pending_fresh_generation",
     "i0_reentry_baseline": {
       "activation_commit": "7f071acd2c261c99cfdc0f55f1bdb0357d95ceb3",
       "activation_tree": "f18e78367393e6e51564b6541ec41ca9e16f42f2",
@@ -152,7 +152,7 @@
       "full_manifest_file_count": 80,
       "full_manifest_sha256": "1a50fd28c630bb016ce30f7ca65ae940170705b2eed581e610282b81378a1cf1"
     },
-    "i1_started": true,
+    "i1_started": false,
     "i1_completed": false,
     "i1_stopped_attempt": {
       "attempt_base_head": "b94d9d299fcadfe74cf707b39e832c472db4ac8c",
@@ -351,6 +351,44 @@
       "P1": 0,
       "P2": 0,
       "verdict": "PASS_FOR_NEW_BOUNDED_EOL_PREREQUISITE_REENTRY_AUTHORIZATION_DECISION"
+    },
+    "independent_implementation_audit_round_1": {
+      "task_id": "01a062bd-1736-7f71-bee9-c60ba0847467",
+      "reviewed_head": "65fef628850ec145efae635ad3cb4152860aab7e",
+      "verdict": "RETURN_FOR_FRESH_I0_REPLAY_AND_EVIDENCE_REPAIR",
+      "P0": 0,
+      "P1": 2,
+      "P2": 1,
+      "finding_1": "declared_I0_already_contained_implementation_evidence_and_reused_old_lane_material",
+      "finding_2": "committed_candidate_omitted_full_fourteen_checkout_plus_seven_blob_records_and_cleanup",
+      "finding_3": "review_and_handoff_retained_stale_planning_and_I1_stop_wording",
+      "old_evidence": {
+        "path": ".trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/implementation-evidence.md",
+        "byte_length": 41986,
+        "sha256": "57725bacced45cdbee190f9ff4069e761d2716a8cb91dadf664902127910fc4c",
+        "disposition": "historical_invalid_candidate_record_only_removed_from_fresh_I0_tree"
+      }
+    },
+    "fresh_evidence_repair_attempt": {
+      "branch": "codex/rkp-2-stage-6-eol-evidence-repair",
+      "base_planning_head": "59f9aeae3ee43af92289279bdf18e0f917308cd8",
+      "activation_commit": null,
+      "activation_tree": null,
+      "implementation_evidence_present_at_activation": false,
+      "technical_delta_at_activation": 0,
+      "old_failed_branch": "codex/rkp-2-stage-6-eol-portability-prerequisite",
+      "old_failed_candidate": "65fef628850ec145efae635ad3cb4152860aab7e",
+      "old_lane_material_reusable": false,
+      "current_status": "activation_commit_pending"
+    },
+    "current_implementation_candidate": {
+      "status": "fresh_I0_replay_in_progress",
+      "branch": "codex/rkp-2-stage-6-eol-evidence-repair",
+      "activation_commit": null,
+      "pre_I1_evidence_commit": null,
+      "technical_commit": null,
+      "final_evidence_commit": null,
+      "independent_implementation_review": "not_ready"
     }
   }
 }
