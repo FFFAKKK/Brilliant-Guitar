@@ -46,7 +46,7 @@
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "RKP-2 IN_PROGRESS / S6.2 CHILD C920F057 DIRECT CHECK PASS P0_0_P1_0_P2_0 AND OWNER ACCEPTED / NATIVE ARCHIVE THEN FAST-FORWARD INTEGRATION AUTHORIZED / EXACTLY ONE FRESH E3 SENTINEL 4CBCBF87 PRESERVED / S6.2 COMPLETE / S6.3 NOT STARTED / PARENT CANDIDATE READY FALSE / QUALIFICATION CUTOVER RKP3 AND PUSH FALSE / TYPESCRIPT DEFAULT.",
+  "notes": "RKP-2 FINAL IMPLEMENTATION CANDIDATE 33AF840 DIRECT CHECK PASS P0_0_P1_0_P2_0 / OWNER ACCEPTED / S6.3 AND RKP-2 NATIVE ARCHIVE AUTHORIZED / STAGE 6 COMPLETE / EXACTLY ONE S6.2 FRESH E3 SENTINEL 4CBCBF87 PRESERVED / NO S6.3 E3 RERUN / QUALIFICATION CUTOVER RKP3 AND PUSH FALSE / TYPESCRIPT DEFAULT.",
   "meta": {
     "planning_base_commit": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "accepted_rkp1_audited_implementation_commit": "94387b339b5e4d9ce6b7f97597a1b56edd051f01",
@@ -151,7 +151,7 @@
       "e3_user_authorization_consumed_by_parent_stage6_owner": true
     },
     "current_implementation_child": "09-03-rkp-2-stage-6-s6-3-final-candidate-freeze",
-    "implementation_stage": "stage_6_complete_final_RKP2_candidate_direct_check_passed_awaiting_owner_decision",
+    "implementation_stage": "final_candidate_owner_accepted_pending_S6_3_and_RKP2_native_archive",
     "stage_1_started": true,
     "stage_1_completed": true,
     "stage_1_commit_subject": "build(rkp-2): pin typed generational store dependency",
@@ -354,7 +354,7 @@
       "post_pass_closeout_authorized": true,
       "stage_6_blocked_until_accepted_archived_integrated": false
     },
-    "next_gate": "explicit_owner_decision_on_RKP2_implementation_acceptance_and_native_archive",
+    "next_gate": "native_archive_S6_3_then_RKP2",
     "stage_6_started": true,
     "stage_6_authorized": true,
     "stage_6_completed": true,
@@ -461,9 +461,9 @@
       "future_technical_allowlist_count": 6,
       "next_resume_gate": "fast_forward_only_integration_gates_then_resume_preserved_s6_1"
     },
-    "implementation_review": "passed_direct_final_RKP2_check_33af840_P0_0_P1_0_P2_0",
+    "implementation_review": "passed_direct_final_RKP2_check_33af840_P0_0_P1_0_P2_0_owner_accepted",
     "implementation_candidate_ready": true,
-    "implementation_blocker": "none_technical_awaiting_explicit_owner_acceptance_and_archive_decision",
+    "implementation_blocker": "native_archive_S6_3_then_RKP2",
     "final_direct_implementation_check": {
       "review_mode": "codex_inline_main_session_direct_2026_09_03",
       "reviewed_base": "51dbabd1e48dabb1333b011ee5446ed3f56b714f",
@@ -476,6 +476,21 @@
       "P2": 0,
       "verdict": "pass_final_RKP2_implementation_candidate",
       "full_suite_rerun_for_review": false
+    },
+    "owner_acceptance": {
+      "authorized_at": "2026-09-03",
+      "authorization_source": "user_replied_continue_after_explicit_RKP2_implementation_acceptance_and_native_archive_gate",
+      "accepted_candidate_head": "33af840e11a4235c36c8f936c3a1b20da76ce5d0",
+      "accepted_candidate_tree": "43e9fa04736529c519515232c239b5511881d217",
+      "review_record_commit": "1c04c5f0fa1efaa0cc99176697bba3c4e1edd069",
+      "acceptance_authorized": true,
+      "s6_3_archive_authorized": true,
+      "rkp2_archive_authorized": true,
+      "qualification_authorized": false,
+      "runtime_cutover_authorized": false,
+      "rkp3_creation_authorized": false,
+      "push_authorized": false,
+      "next_gate": "native_archive_S6_3_then_RKP2"
     },
     "public_json_property_cap_scale_compatibility_repair": {
       "task": "08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair",
@@ -517,7 +532,8 @@
       "closeout_C4_frozen_source_head": "782431df5e5e97e931cf869e6e9dafe10c8aff15",
       "next_gate": "explicit_user_authorization_for_E3_fresh_run_and_candidate_freeze_required"
     },
-    "archive_authorized": false,
+    "acceptance_authorized": true,
+    "archive_authorized": true,
     "push_authorized": false,
     "official_measurement_authorized": false,
     "default_runtime": "typescript",
@@ -603,7 +619,7 @@
       "activation_commit": "e88e52ace1d41c097d1ddd8143814dfb69922dfc",
       "technical_repair_head": "fb4febfd7e8c9f267b4fe91a2542e2bc0884e8f3",
       "technical_repair_tree": "0f2a0101a6db58aa708870c91844a3e1dce4856f",
-      "status": "implementation_complete_direct_check_passed_awaiting_owner_decision",
+      "status": "owner_accepted_pending_native_archive",
       "candidate_head": "33af840e11a4235c36c8f936c3a1b20da76ce5d0",
       "candidate_tree": "43e9fa04736529c519515232c239b5511881d217",
       "workspace_law": "11_total_11_pass_0_fail_0_skip",
@@ -616,10 +632,11 @@
       "qualification_authorized": false,
       "runtime_cutover_authorized": false,
       "rkp3_creation_authorized": false,
-      "archive_authorized": false,
+      "acceptance_authorized": true,
+      "archive_authorized": true,
       "push_authorized": false,
       "direct_check": "P0_0_P1_0_P2_0_pass",
-      "next_gate": "explicit_owner_decision_on_RKP2_implementation_acceptance_and_native_archive"
+      "next_gate": "native_archive_S6_3_then_RKP2"
     },
     "tracked_byte_eol_portability_prerequisite": {
       "task": "09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite",

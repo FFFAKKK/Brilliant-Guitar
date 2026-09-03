@@ -2,6 +2,13 @@
 
 ## Final RKP-2 implementation candidate — S6.3
 
+Owner decision: accept exact candidate/tree
+`33af840e11a4235c36c8f936c3a1b20da76ce5d0` /
+`43e9fa04736529c519515232c239b5511881d217` after the recorded direct PASS
+P0/P1/P2=`0/0/0`, and authorize native archive of S6.3 and RKP-2 only.
+Qualification, default runtime cutover, RKP-3, and push remain separate and
+unauthorized.
+
 Review the exact commit with subject `docs(rkp-2): freeze final S6.3
 candidate`. Its technical predecessor is `fb4febfd7e8c9f267b4fe91a2542e2bc0884e8f3`.
 The review is direct and read-only: verify the archive-aware Workspace Law,

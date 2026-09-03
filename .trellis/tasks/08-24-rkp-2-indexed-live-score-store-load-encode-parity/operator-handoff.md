@@ -2,6 +2,12 @@
 
 ## S6.3 final implementation candidate — 2026-09-03
 
+Owner acceptance is now recorded for exact candidate/tree
+`33af840e11a4235c36c8f936c3a1b20da76ce5d0` /
+`43e9fa04736529c519515232c239b5511881d217`, whose direct final check passed
+P0/P1/P2=`0/0/0`. The user authorized native archive of S6.3 and RKP-2.
+Qualification, default runtime cutover, RKP-3, and push remain unauthorized.
+
 S6.3 is implementation-complete. Planning `ca718569`, activation `e88e52ac`,
 and technical repair `fb4febfd` changed no production runtime behavior. The
 post-archive Workspace Law is now `11/11`; the final complete gate is Node

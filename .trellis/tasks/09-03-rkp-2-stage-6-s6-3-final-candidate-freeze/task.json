@@ -30,7 +30,7 @@
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
     ".trellis/spec/core-kernel/backend/rust-runtime-transition.md"
   ],
-  "notes": "S6.3 IMPLEMENTATION COMPLETE / FINAL RKP-2 CANDIDATE 33AF840 DIRECT CHECK PASS P0 0 P1 0 P2 0 / FOCUSED 11 OF 11 / FULL 611 TOTAL 609 PASS 0 FAIL 2 SKIP / RUST 79 PASS 0 FAIL 1 IGNORED / NO E3 RERUN / TYPESCRIPT DEFAULT / AWAITING EXPLICIT OWNER ACCEPTANCE AND ARCHIVE DECISION / QUALIFICATION CUTOVER RKP3 AND PUSH FALSE.",
+  "notes": "S6.3 IMPLEMENTATION COMPLETE / FINAL RKP-2 CANDIDATE 33AF840 DIRECT CHECK PASS P0 0 P1 0 P2 0 / OWNER ACCEPTED / S6.3 AND RKP-2 NATIVE ARCHIVE AUTHORIZED / FOCUSED 11 OF 11 / FULL 611 TOTAL 609 PASS 0 FAIL 2 SKIP / RUST 79 PASS 0 FAIL 1 IGNORED / NO E3 RERUN / TYPESCRIPT DEFAULT / QUALIFICATION CUTOVER RKP3 AND PUSH FALSE.",
   "meta": {
     "planning_base_commit": "51dbabd1e48dabb1333b011ee5446ed3f56b714f",
     "planning_base_tree": "e88cb454eef3486bc7f0e8155ab0d44d1c8ae21a",
@@ -56,8 +56,8 @@
     "activation_authorized": true,
     "production_implementation_authorized": true,
     "activation_authorization_source": "user_replied_can_continue_after_explicit_streamlined_s6_2_closeout_and_s6_3_progression",
-    "current_phase": "I5_direct_final_RKP2_check_passed_awaiting_owner_decision",
-    "next_gate": "explicit_owner_decision_on_RKP2_implementation_acceptance_and_native_archive",
+    "current_phase": "owner_accepted_pending_native_archive",
+    "next_gate": "native_archive_S6_3_then_RKP2",
     "accepted_s6_2": {
       "reviewed_candidate": "c920f057bd19d3636e82de6b9c80dcde358488de",
       "reviewed_tree": "b6e07c4b127fb941d4eeac5e03ec1d2526996976",
@@ -119,6 +119,21 @@
       "P2": 0,
       "verdict": "pass_final_RKP2_implementation_candidate"
     },
+    "owner_acceptance": {
+      "authorized_at": "2026-09-03",
+      "authorization_source": "user_replied_continue_after_explicit_RKP2_implementation_acceptance_and_native_archive_gate",
+      "accepted_candidate_head": "33af840e11a4235c36c8f936c3a1b20da76ce5d0",
+      "accepted_candidate_tree": "43e9fa04736529c519515232c239b5511881d217",
+      "review_record_commit": "1c04c5f0fa1efaa0cc99176697bba3c4e1edd069",
+      "acceptance_authorized": true,
+      "s6_3_archive_authorized": true,
+      "rkp2_archive_authorized": true,
+      "qualification_authorized": false,
+      "runtime_cutover_authorized": false,
+      "rkp3_creation_authorized": false,
+      "push_authorized": false,
+      "next_gate": "native_archive_S6_3_then_RKP2"
+    },
     "default_runtime": "typescript",
     "s6_3_completed": true,
     "stage_6_completed": true,
@@ -126,8 +141,8 @@
     "qualification_authorized": false,
     "runtime_cutover_authorized": false,
     "rkp3_creation_authorized": false,
-    "acceptance_authorized": false,
-    "archive_authorized": false,
+    "acceptance_authorized": true,
+    "archive_authorized": true,
     "push_authorized": false
   }
 }

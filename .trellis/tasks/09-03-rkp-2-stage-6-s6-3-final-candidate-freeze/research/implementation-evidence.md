@@ -45,3 +45,7 @@ S6.3 repaired the post-archive executable governance and completed the RKP-2 Sta
 The one direct read-only review checked exact candidate/tree `33af840e11a4235c36c8f936c3a1b20da76ce5d0` / `43e9fa04736529c519515232c239b5511881d217` and passed P0/P1/P2=`0/0/0`. The range from `51dbabd1` contains exactly 13 declared paths and zero production paths; its commit chain, S6.2 archive topology, sentinel, lifecycle projection, and later-gate exclusions are coherent. The review consumed the already recorded complete-gate evidence and did not rerun the full suite or E3.
 
 There is no remaining technical implementation blocker. The next gate is an explicit owner decision on RKP-2 implementation acceptance and native archive. Qualification, default cutover, RKP-3, and push remain separate later decisions and are not authorized by this PASS.
+
+## Owner acceptance
+
+On 2026-09-03 the user replied `继续吧` immediately after the explicit RKP-2 implementation-acceptance and native-archive gate. This accepts candidate/tree `33af840e11a4235c36c8f936c3a1b20da76ce5d0` / `43e9fa04736529c519515232c239b5511881d217` and authorizes native archive of S6.3 followed by RKP-2. It does not authorize qualification, default runtime cutover, RKP-3, or push.
