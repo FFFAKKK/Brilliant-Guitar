@@ -33,7 +33,7 @@
     ".trellis/tasks/archive/2026-09/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/",
     ".trellis/spec/core-kernel/backend/rust-runtime-transition.md"
   ],
-  "notes": "FRESH S6.2 PLANNING / INITIAL 7D7ADC03 AUDIT RETURNED 0 1 0 FOR CRLF-DERIVED HASHES / 18318BFF TARGETED REREVIEW RETURNED 0 1 0 BECAUSE FRESH NO-NATIVE AND BUILT-NATIVE FULL-TEST LANES WERE NOT SEPARATED / DUAL-LANE PLANNING REPAIR READY FOR COMMIT / OLD C3C4D198 ATTEMPT DIAGNOSTIC NON-REUSABLE / TASK START AND TECHNICAL IMPLEMENTATION NOT AUTHORIZED / S6.2 S6.3 E3 QUALIFICATION CUTOVER RKP3 ARCHIVE INTEGRATION PUSH FALSE / TYPESCRIPT DEFAULT.",
+  "notes": "FRESH S6.2 PLANNING / 7D7ADC03 RETURNED 0 1 0 FOR CRLF HASHES / 18318BFF RETURNED 0 1 0 FOR MISSING NO-NATIVE TEST LANE / 57501FB9 DUAL-LANE REREVIEW REPRODUCED BOTH LANES BUT RETURNED 0 0 1 FOR ONE BARE CARGO COMMAND / ABSOLUTE-CARGO COMMAND REPAIR READY FOR COMMIT / OLD C3C4D198 ATTEMPT DIAGNOSTIC NON-REUSABLE / TASK START AND TECHNICAL IMPLEMENTATION NOT AUTHORIZED / S6.2 S6.3 E3 QUALIFICATION CUTOVER RKP3 ARCHIVE INTEGRATION PUSH FALSE / TYPESCRIPT DEFAULT.",
   "meta": {
     "planning_base_commit": "9da9d036a6c2ef184ea68d5b33fabfb1e9a0eba5",
     "planning_base_tree": "179e08f0f3ec77f9368cc781c9e4567671791f30",
@@ -45,11 +45,11 @@
     "activation_authorized": false,
     "production_implementation_authorized": false,
     "user_implementation_authorization": false,
-    "independent_planning_review": "targeted_rereview_returned_18318bffc375d7d64de0169fab4ffff899e1244c_P0_0_P1_1_P2_0_fresh_no_native_and_built_native_full_test_lanes_not_separated",
+    "independent_planning_review": "targeted_rereview_returned_57501fb98a111677157ba3c064074334946b3081_P0_0_P1_0_P2_1_bare_cargo_command_not_executable_on_required_host",
     "planning_candidate_ready": true,
     "planning_candidate_commit": null,
-    "current_phase": "P0_ready_for_exact_dual_full_test_lane_repair_commit",
-    "next_gate": "exact_dual_full_test_lane_repair_commit_then_targeted_fresh_read_only_planning_rereview",
+    "current_phase": "P0_ready_for_exact_absolute_cargo_command_repair_commit",
+    "next_gate": "exact_absolute_cargo_command_repair_commit_then_targeted_fresh_read_only_planning_rereview",
     "parent_s6_1_completed": true,
     "parent_s6_2_started": false,
     "parent_s6_2_completed": false,
@@ -119,6 +119,16 @@
       "P2": 0,
       "finding": "fresh_clean_checkout_without_the_ignored_native_addon_is_590_582_7_1_but_the_plan_required_only_the_built_native_611_605_4_2_lane",
       "repair": "freeze_both_exact_planning_lanes_and_require_native_build_materialization_before_the_611_lane"
+    },
+    "second_targeted_planning_rereview_return": {
+      "candidate_commit": "57501fb98a111677157ba3c064074334946b3081",
+      "candidate_tree": "b1a046cb72d8af429726e6142a86b1e6d5365f67",
+      "P0": 0,
+      "P1": 0,
+      "P2": 1,
+      "validated_results": "focused_11_7_4_0_fresh_no_native_590_582_7_1_built_native_611_605_4_2_manifest_80_exact",
+      "finding": "planning_validation_example_used_bare_cargo_even_though_this_host_requires_C_Users_ATOM_dot_cargo_bin_cargo_exe",
+      "repair": "use_the_required_absolute_cargo_executable_in_the_exact_build_command"
     },
     "implementation_workload_inputs": null,
     "tracked_eol_paths": [

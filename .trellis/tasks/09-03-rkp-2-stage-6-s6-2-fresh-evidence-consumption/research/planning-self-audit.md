@@ -6,8 +6,11 @@ The initial author self-check was invalidated by the fresh-worktree review of
 7d7adc03..., which returned P0/P1/P2=0/1/0 for four CRLF-derived hashes.
 Targeted rereview of repaired 18318bff... also returned 0/1/0 because the plan
 did not separate fresh no-native and built-native full-test lanes. The bounded
-dual-lane repair now self-checks at 0/0/0, but only another targeted fresh
-read-only rereview may clear the finding. No result activates implementation.
+dual-lane candidate 57501fb9... reproduced both lanes, but returned 0/0/1
+because its planning-validation example used bare `cargo` on a host where only
+the required absolute Cargo executable resolves. The exact command repair now
+self-checks at 0/0/0, but only another targeted fresh read-only rereview may
+clear the finding. No result activates implementation.
 
 ## Checks
 
@@ -30,6 +33,8 @@ read-only rereview may clear the finding. No result activates implementation.
 - Fresh clean native-absent lane reproduces 590/582/7/1 with exactly three
   missing-addon file failures plus four governance failures; 611/605/4/2 is
   required only after a hash-verified native build/copy.
+- The native build example invokes
+  C:\Users\ATOM\.cargo\bin\cargo.exe explicitly; bare cargo is forbidden.
 - S6.2/S6.3, E3, candidate readiness, qualification, cutover, RKP-3, archive,
   integration and push remain false.
 - TypeScript remains default.

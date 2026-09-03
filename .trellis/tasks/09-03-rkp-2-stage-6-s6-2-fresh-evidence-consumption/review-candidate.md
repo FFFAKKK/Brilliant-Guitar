@@ -2,17 +2,18 @@
 
 ## Status
 
-READY FOR EXACT DUAL FULL-TEST-LANE REPAIR COMMIT, THEN TARGETED REREVIEW
+READY FOR EXACT ABSOLUTE-CARGO COMMAND REPAIR COMMIT, THEN TARGETED REREVIEW
 
 Initial candidate 7d7adc03... returned P0/P1/P2=0/1/0 for four CRLF-derived
 workload hashes. LF repair 18318bff... returned 0/1/0 because fresh no-native
-and built-native full-test lanes were not separated. No planning PASS or
-implementation authorization is claimed.
+and built-native full-test lanes were not separated. Dual-lane candidate
+57501fb9... reproduced both but returned 0/0/1 for one bare Cargo command. No
+planning PASS or implementation authorization is claimed.
 
 ## Review object
 
-Review the exact dual-lane repair commit whose parent is
-18318bffc375d7d64de0169fab4ffff899e1244c. Also recheck the complete range
+Review the exact command repair commit whose parent is
+57501fb98a111677157ba3c064074334946b3081. Also recheck the complete range
 from 9da9d036a6c2ef184ea68d5b33fabfb1e9a0eba5 remains exactly the fifteen
 literal planning paths in task.json.
 
@@ -37,9 +38,11 @@ Activation requires P0/P1/P2=0/0/0.
 12. Planning classifiers use focused 11/7/4/0, fresh no-native 590/582/7/1,
     and built-native 611/605/4/2 only after a hash-equal build/copy; E1 uses
     11/8/3/0 and built-native 611/606/3/2.
-13. EVIDENCE_INVALID prevents pass publication.
-14. Diagnostic liveness is not product qualification.
-15. S6.3 and all later lifecycle/product gates remain false.
+13. The Windows build command uses the required absolute Cargo executable and
+    is directly runnable on the reviewed host.
+14. EVIDENCE_INVALID prevents pass publication.
+15. Diagnostic liveness is not product qualification.
+16. S6.3 and all later lifecycle/product gates remain false.
 
 ## Reviewer boundary
 

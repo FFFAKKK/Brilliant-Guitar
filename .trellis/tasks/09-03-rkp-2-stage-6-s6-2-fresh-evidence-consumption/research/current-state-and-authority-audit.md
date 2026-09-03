@@ -84,6 +84,13 @@ not distinguish that fresh no-native lane from the built-native 611 lane. The
 bounded dual-lane repair freezes both exact classifications and makes native
 build/copy/hash equality a precondition for any 611-lane claim.
 
+Targeted rereview of dual-lane candidate 57501fb9... reproduced focused
+11/7/4/0, fresh no-native 590/582/7/1 and built-native 611/605/4/2. The native
+DLL and `.node` copy both had SHA-256
+c49fc2cc7008754669259adbe96b1a9f5edfd4e4fdd785a4ed09e7c8c8b46c5b.
+It returned P0/P1/P2=0/0/1 only because one planning-validation example used
+bare `cargo`; the bounded repair uses the already-required absolute executable.
+
 ## Required successor repairs
 
 1. strict source-before-evidence commit;

@@ -237,7 +237,7 @@ Run:
 In a fresh checkout, classify `npm.cmd test` as the exact no-native lane unless
 the reviewer first runs the accepted debug build:
 
-    cargo +1.97.1 build --manifest-path Cargo.toml --package brilliant-kernel-node --target x86_64-pc-windows-msvc --locked
+    & 'C:\Users\ATOM\.cargo\bin\cargo.exe' +1.97.1 build --manifest-path Cargo.toml --package brilliant-kernel-node --target x86_64-pc-windows-msvc --locked
 
 Then copy
 `target/x86_64-pc-windows-msvc/debug/brilliant_kernel_node.dll` to

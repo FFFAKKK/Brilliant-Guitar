@@ -2,15 +2,17 @@
 
 ## Current gate
 
-DUAL FULL-TEST-LANE REPAIR READY FOR COMMIT AND TARGETED REREVIEW
+ABSOLUTE-CARGO COMMAND REPAIR READY FOR COMMIT AND TARGETED REREVIEW
 
 Initial planning commit 7d7adc03... was returned 0/1/0 for four CRLF-derived
 hashes. LF-hash repair 18318bff... was returned 0/1/0 because it omitted the
 fresh no-native 590/582/7/1 lane and stated only the built-native 611/605/4/2
 lane. The bounded repair now freezes both and requires build/copy/hash equality
-before a 611 claim. The task is not active implementation. Do not run task.py
-start or edit technical paths before targeted rereview passes 0/0/0 and the
-user explicitly authorizes activation.
+before a 611 claim. Candidate 57501fb9... reproduced both exact lanes but
+returned 0/0/1 because one example used bare `cargo`; the repair substitutes
+the required C:\Users\ATOM\.cargo\bin\cargo.exe path. The task is not active
+implementation. Do not run task.py start or edit technical paths before
+targeted rereview passes 0/0/0 and the user explicitly authorizes activation.
 
 ## Exact source
 
