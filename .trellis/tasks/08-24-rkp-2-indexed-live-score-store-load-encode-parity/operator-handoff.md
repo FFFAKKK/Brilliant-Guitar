@@ -1,5 +1,15 @@
 # Operator Handoff — RKP-2
 
+## Fresh S6.2 successor planning — 2026-09-03
+
+The tracked-byte EOL portability prerequisite passed its independent rereview at `ff847a56cad45e51d17a39f45f6dddf0f2c24130`, was owner-accepted at `e4d6216defc746ddffac10897d90f2e0e426707c`, and was natively archived and fast-forward integrated at `9da9d036a6c2ef184ea68d5b33fabfb1e9a0eba5`. Its archive now supplies the mandatory provenance and non-reuse contract for a fresh S6.2 attempt.
+
+The sole current planning child is `.trellis/tasks/09-03-rkp-2-stage-6-s6-2-fresh-evidence-consumption`. It is authored against exact base `9da9d036a6c2ef184ea68d5b33fabfb1e9a0eba5`, tree `179e08f0f3ec77f9368cc781c9e4567671791f30`, planned branch `codex/rkp-2-stage-6-s6-2-fresh-evidence-consumption`, and planned worktree `.worktrees/rkp-2-stage-6-s6-2-fresh-evidence-consumption`.
+
+Author validation is complete: the docs-only candidate is exactly 15 paths, all protected technical paths are unchanged, JSON/JSONL and Trellis validation pass, the five input hashes and 80-file manifest are exact, typecheck/build pass, focused Workspace Law is `11/7/4/0`, and the dirty full classifier is `611/604/5/2` with only the expected extra clean-tree guard. Current authority stops before the exact planning commit. No independent planning PASS, `task.py start`, production implementation authorization, technical edit, E3 run, acceptance, archive, qualification, cutover, RKP-3 or push is claimed. The stopped `c3c4d198a33ec3a78d3fc3e33cdae30657d9b62b` attempt is diagnostic history only and its implementation/evidence artifacts are mechanically forbidden from reuse.
+
+All subsequent sections are historical context and do not override this current projection.
+
 ## Stage 6 closeout terminal projection — 2026-09-02
 
 RKP-2 remains `in_progress` and is now childless: both current planning and implementation child are null. The Stage 6 closeout was owner-accepted at `9e74b826e2c4c8e0cbe9685e33c18a798f14b5dc` and natively archived by direct child `34389020ba93879589f5a2fcb59ab06918647245`, which moved exactly 12 files and wrote `completedAt=2026-09-02`.

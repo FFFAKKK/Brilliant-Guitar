@@ -1,5 +1,15 @@
 # Review Candidate — RKP-2 Post-Stage-5 Manifest Authority Closure
 
+## Fresh S6.2 planning projection — 2026-09-03
+
+`READY FOR EXACT DOCS-ONLY COMMIT, THEN FRESH READ-ONLY PLANNING AUDIT`
+
+The current candidate is a docs-only, exact 15-path fresh S6.2 plan rooted at base `9da9d036a6c2ef184ea68d5b33fabfb1e9a0eba5` and tree `179e08f0f3ec77f9368cc781c9e4567671791f30`. The sole current child is `.trellis/tasks/09-03-rkp-2-stage-6-s6-2-fresh-evidence-consumption`; its planned branch/worktree are `codex/rkp-2-stage-6-s6-2-fresh-evidence-consumption` and `.worktrees/rkp-2-stage-6-s6-2-fresh-evidence-consumption`.
+
+The predecessor EOL prerequisite is accepted, natively archived, and fast-forward integrated at `9da9d036a6c2ef184ea68d5b33fabfb1e9a0eba5`. The stopped `c3c4d198a33ec3a78d3fc3e33cdae30657d9b62b` attempt remains diagnostic-only and non-reusable. Author validation reproduces the exact 15-path docs-only boundary, five input hashes, 80-file manifest, passing typecheck/build, focused `11/7/4/0`, and dirty full `611/604/5/2`. The next legal gate is one exact planning commit followed by a fresh read-only planning audit; this section does not claim a planning PASS or authorize `task.py start`, code changes, E3, acceptance, archive, qualification, cutover, RKP-3 or push.
+
+All subsequent sections are historical context and do not override this current projection.
+
 ## Stage 6 closeout terminal review candidate
 
 `READY FOR DEDICATED INDEPENDENT L6 TERMINAL PROJECTION REVIEW`
