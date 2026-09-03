@@ -2,7 +2,7 @@
 
 ## Current evidence state
 
-- Status: `R-I0 DURABLE CAPSULE AND PREDECLARED-LANE EVIDENCE CANDIDATE`.
+- Status: `R-I2 REGRESSION COMPLETE / SIX-PATH EVIDENCE-FREEZE CANDIDATE`.
 - Current R-A0 source HEAD/tree: `c3e90c6fcc3a624b8a7157bedea59d44f84c6c78` / `40d786f4717e27251ae76b2ae7f49e286337839a`.
 - Current branch: `codex/rkp-2-stage-6-eol-audit-return-planning-repair`.
 - Current worktree: `.worktrees/rkp-2-stage-6-eol-audit-return-planning-repair`.
@@ -11,7 +11,7 @@
 - Records preceding the final R-I0 section remain historical diagnostics; the final section is the current reconstructible evidence.
 - Task remains `in_progress`; `planning_candidate_ready=true`, `implementation_candidate_ready=false`, and user authorization is limited to R-A0/R-I0/R-I1/R-I2 evidence re-entry. Production implementation authorization remains false.
 - S6.2/S6.3/E3 remain false/false/zero. Acceptance, archive, integration, qualification, runtime cutover, RKP-3, and push remain unauthorized.
-- Sole next gate after the R-I0 evidence commit: `R-I1 INDEPENDENT FRESH RECONSTRUCTION AND CANDIDATE OBSERVATION`.
+- Sole next gate after the evidence-freeze commit: `DEDICATED INDEPENDENT IMPLEMENTATION RE-AUDIT`.
 
 ## Future durable reconstruction capsule requirement
 
@@ -3351,3 +3351,139 @@ c3RydWN0IExpdmVTY29yZVN0b3JlIHsiKQogICAgICAgICAgICAgLm50aCgxKQo=
 - Fresh control and byte-distinct expected V1/V2 lanes are committed and clean; their focused signatures are recorded before any candidate exists.
 - Next gate after committing this exact six-path R-I0 evidence candidate: `R-I1 INDEPENDENT FRESH RECONSTRUCTION AND CANDIDATE OBSERVATION`.
 - No acceptance, archive, integration, S6.2/S6.3/E3, qualification, runtime cutover, RKP-3, or push is authorized.
+
+## R-I1 independent reconstruction and R-I2 regression freeze
+
+### Candidate and reconstructed lane identities
+
+```json
+{
+  "kind": "rkp2-eol-reentry-r-i1-r-i2-record-v1",
+  "rI0Candidate": {
+    "head": "6933367a3e58bb6efd93057458b7f764b4450d51",
+    "tree": "520ae62063346dc8c3bc1704797f4fcf5a26f88b",
+    "parent": "c3e90c6fcc3a624b8a7157bedea59d44f84c6c78"
+  },
+  "control": {
+    "head": "c3e90c6fcc3a624b8a7157bedea59d44f84c6c78",
+    "tree": "40d786f4717e27251ae76b2ae7f49e286337839a",
+    "clean": true
+  },
+  "rebuiltExpectedV1": {
+    "disposableHead": "6d70e769b3ea80aed26ade6f150e18892ee0e291",
+    "tree": "b8c5b825e5385a4819db24207208f50e79c9735f",
+    "treeEqualsPredeclaredR_I0": true,
+    "clean": true
+  },
+  "rebuiltExpectedV2": {
+    "disposableHead": "8a18fc825b78a64dcbcc151b3c730ec98d0bb641",
+    "tree": "2b17d741fa19678f564432c446bf58ea5426dd3a",
+    "treeEqualsPredeclaredR_I0": true,
+    "clean": true
+  },
+  "capsule": {
+    "entryCount": 10,
+    "bootstrapExtraction": "10/10 verified",
+    "extractedHelperExtraction": "10/10 verified",
+    "nodeCheck": "9/9 scripts pass"
+  },
+  "coordination": {
+    "candidateResultSha256": "6eb9948ba90b1a0f5498e33259fc4ca3f746339d957708284e5a810565f5ef22",
+    "expectedV1ResultSha256": "1b0ca23e49384f6338fad172db32f09a6ab8198e1e9d72e1bf6dad24fc2ba92b",
+    "expectedV2ResultSha256": "0e850fb4710808c9a625c9e450657d6bb70350ed3bd530275de002a8ba631c31",
+    "taskPrdDesignImplementExpectedActualExactSix": true,
+    "technicalAllowlistCount": 0
+  },
+  "patchAndRustReconstruction": {
+    "rebuiltPatchBytes": 4892,
+    "rebuiltPatchSha256": "fb635082a2951b5e3d8b9352230bd462e0c08aa5b7326a93403537baf62b1b05",
+    "rebuiltPatchEqualsEmbeddedBytes": true,
+    "rustResultSha256": "11ac6ab25470ba1c93c7084cd5ec5f8803c23e56fc5ea50b292a9bf04dcbfe74",
+    "technicalTree": "022f8b25e53ca68f33be08d0a2cedef65af2aa94",
+    "pathProjectedReconstructedTree": "11e46d1e4e8327d6a2e9074ab5be492070139876",
+    "exactFourBlobEquality": true,
+    "selfTest": "5/5 pass"
+  },
+  "focusedNode": {
+    "nodeVersion": "v24.15.0",
+    "countsEach": "11 total / 7 pass / 4 fail / 0 skip",
+    "controlResultSha256": "8fc53e7c97074d273a588dbad4c403ad5aa4b824f7f330382eee07da8cf84b2d",
+    "expectedV1ResultSha256": "df1bb4f4f10fb57afe73da3fb391eb75b2d59ca424fee2db8a57a6b701adba0b",
+    "expectedV2ResultSha256": "9b3f1bea7f57b70a38a3dd49915a155c07e597336d893687429f5946dbedf5b8",
+    "candidateResultSha256": "e5c7f5208d7b2aee3b4ba420cd48ecede02d2807c530aebff969917f86567435",
+    "comparisonResultSha256": "26967a611cce6ad9cb4159f61d8e6dd8856fefdebe2b8576966c804c745f956b",
+    "expectedV1EqualsV2": true,
+    "candidateEqualsExpectedV1ForAllFourTitleLevelSignatures": true,
+    "candidateEqualsControlForAllFourTitleLevelSignatures": true
+  },
+  "fullNode": {
+    "manifestFileCount": 80,
+    "manifestSha256": "1a50fd28c630bb016ce30f7ca65ae940170705b2eed581e610282b81378a1cf1",
+    "control": "590 total / 582 pass / 7 fail / 1 skip",
+    "candidate": "590 total / 582 pass / 7 fail / 1 skip",
+    "failureClassesEqual": true,
+    "failureClassification": "three file-level missing ignored native-addon artifacts plus four frozen governance failures",
+    "controlResultSha256": "5356a832da7a641b37a7f4978e6dadad78839d4c1310b5b80b0bbadd33658113",
+    "candidateResultSha256": "f83eede54f559d2e7eaf2a045bfef11c6862301aa1427d29f51257cff9748603"
+  },
+  "candidateEolMatrix": {
+    "resultSha256": "f2a016170645b6fcd24024776058096822484cbe2d74b53d9c35047418b70356",
+    "autocrlfTrue": "7/7 clean checkout equals Git blob, LF only",
+    "autocrlfFalse": "7/7 clean checkout equals Git blob, LF only",
+    "laneRecordsEqual": true
+  }
+}
+```
+
+### R-I2 fresh regression commands and outcomes
+
+```json
+[
+  {
+    "command": "cargo +1.97.1 fmt --all -- --check",
+    "exit": 0
+  },
+  {
+    "command": "cargo +1.97.1 check --workspace --all-targets --locked",
+    "exit": 0
+  },
+  {
+    "command": "cargo +1.97.1 test --workspace --all-targets --locked",
+    "exit": 0,
+    "workspaceResult": "79 pass / 0 fail / 1 ignored",
+    "runtimeResult": "18 pass / 0 fail / 1 ignored",
+    "ignoredReason": "isolated Stage 6 evidence worker not executed"
+  },
+  {
+    "command": "cargo +1.97.1 clippy --workspace --all-targets --locked -- -D warnings",
+    "exit": 0
+  },
+  {
+    "command": "cargo +1.88.0 check --workspace --all-targets --locked",
+    "exit": 0
+  },
+  {
+    "command": "npm.cmd run typecheck",
+    "exit": 0
+  },
+  {
+    "command": "npm.cmd run build",
+    "exit": 0
+  }
+]
+```
+
+- All Cargo target and TEMP/TMP paths were under the fresh E-drive R-I1 root. The only Cargo diagnostic was the existing `panic setting is ignored for test profile` warning.
+- Child/parents Trellis validation passed at `7/7`, `25/20`, and `18/19`.
+- Three task JSON files parsed; six JSONL files / 96 rows parsed, each per-file path unique and present.
+- The three changed Markdown files have balanced fences; `git diff --check` passed.
+- The R-I0 candidate was clean; its range from R-A0 is exactly six coordination paths. Its four technical blobs equal `30d4acb0...`; four protected S6.2 paths have zero delta.
+- E3 execution count is zero, TypeScript remains default, and all ten forbidden later-lifecycle flags remain false.
+
+### R-I2 freeze boundary
+
+- The commit containing this section is the evidence-freeze candidate; resolve its exact HEAD/tree from the clean branch after commit.
+- `implementation_candidate_ready=true` only means ready for the dedicated independent implementation re-audit. It does not mean technical acceptance or lifecycle acceptance.
+- After this evidence commit, remove only the explicitly named reproducible R-I0/R-I1 temporary roots; then require the task worktree to be clean and staged-empty.
+- Sole next gate: `DEDICATED INDEPENDENT IMPLEMENTATION RE-AUDIT`.
+- Acceptance, archive, integration, S6.2/S6.3/E3, qualification, runtime cutover, RKP-3, and push remain unauthorized.

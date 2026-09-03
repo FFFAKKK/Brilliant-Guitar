@@ -1,10 +1,10 @@
-# Operator handoff — EOL prerequisite R-I0 evidence re-entry
+# Operator handoff — EOL prerequisite R-I2 evidence freeze
 
 ## Current gate
 
-READY FOR R-I1 INDEPENDENT FRESH RECONSTRUCTION AFTER THE R-I0 COMMIT
+READY FOR DEDICATED INDEPENDENT IMPLEMENTATION RE-AUDIT
 
-The next action is a fresh reconstruction from the complete embedded capsule against the exact clean R-I0 evidence commit. It is not technical implementation, acceptance, or lifecycle closeout.
+The next action is a read-only independent implementation re-audit of the exact clean evidence-freeze commit. It is not technical implementation, acceptance, or lifecycle closeout.
 
 ## Exact lineage
 
@@ -14,9 +14,10 @@ The next action is a fresh reconstruction from the complete embedded capsule aga
 - Historical patch source: 64bc508cd56bd0a250f890af186c097dc2b6880e.
 - Audited technical commit: 30d4acb0e3ce29e849c2a89b2ac1225bb5dafe49.
 - Narrow R-P0 planning audit: 957332a127c381847eb85e246e7f1e922dcbc7fd / 54273dd6cb7fc9a2615db16c3afec86bf033c55b, P0/P1/P2=0/0/0.
-- R-I0 evidence candidate: resolve the clean commit containing this handoff with git rev-parse HEAD.
+- R-I0 durable-capsule candidate: 6933367a3e58bb6efd93057458b7f764b4450d51 / 520ae62063346dc8c3bc1704797f4fcf5a26f88b.
+- R-I2 evidence-freeze candidate: resolve the clean commit containing this handoff with git rev-parse HEAD.
 
-## Delivered R-I0 evidence
+## Delivered R-I0/R-I1/R-I2 evidence
 
 - Freezes an exact six-path R-I0 coordination allowlist and an empty technical allowlist.
 - Preserves the four technical blobs and S6.2 fixture/worker/wrapper paths unchanged.
@@ -25,20 +26,23 @@ The next action is a fresh reconstruction from the complete embedded capsule aga
 - Bootstrap extraction and extracted-helper extraction both passed 10/10; all nine extracted scripts passed node --check, the verifier self-test passed 5/5, and the comparator replay passed.
 - Commits fresh control plus byte-distinct expected V1/V2 lanes before candidate observation.
 - Records focused 11/7/4/0 signatures, corrected full-control 590/582/7/1 classification, dual-autocrlf seven-path raw-byte equality, and exact historical four-blob reconstruction.
-- Leaves implementation_candidate_ready and every later-stage authorization false.
+- Rebuilt the capsule from a new candidate clone: both extractions passed 10/10, expected V1/V2 trees matched the predeclared trees, and candidate signatures matched all four predeclared title-level signatures.
+- Passed Cargo 1.97.1 fmt/check/test/clippy, Cargo 1.88.0 check, TypeScript typecheck/build, and Trellis/JSON/JSONL/fence/diff gates.
+- Candidate and control full Node classifications both remain 590/582/7/1 with exactly the same three missing-native wrapper failures and four frozen governance assertions.
+- Sets implementation_candidate_ready=true only for independent implementation re-audit; every later-stage authorization remains false.
 
-## R-I1 operator procedure
+## Independent re-audit procedure
 
-1. Clone the committed R-I0 candidate into a new E-drive root with core.longpaths=true and require a clean checkout.
+1. Clone the committed R-I2 evidence-freeze candidate into a new E-drive root with core.longpaths=true and require a clean checkout.
 2. Decode and verify all ten embedded entries, then use the extracted helper to extract them again into a second fresh root.
 3. Rebuild control c3e90c6..., expected V1/V2, and historical technical lanes only from pinned objects and the verified capsule.
 4. Require actual diff/task/PRD/design/implement to equal the same exact six paths and require zero technical delta.
 5. Reproduce focused, full-control, raw-byte matrix, and four-blob reconstruction records.
 6. Capture the clean committed candidate after expected reconstruction and compare its signatures to V1/V2 without a presumed transition.
-7. Record exact R-I1 results in the same six coordination paths for R-I2 regression/evidence freeze.
+7. Return verdict first with P0/P1/P2 and exact HEAD/tree; do not mutate the candidate.
 
 ## Reviewer boundary
 
-The R-I1 verifier is read-only with respect to technical paths and returns exact HEAD/tree, replay outputs, and the smallest evidence repair if needed.
+The independent reviewer is read-only and returns exact HEAD/tree, replay outputs, and the smallest evidence repair if needed.
 
-An R-I1 pass permits only R-I2 regression/evidence freeze under the current authorization. It does not run task.py start or authorize acceptance, archive, integration, S6.2/S6.3/E3, qualification, runtime cutover, RKP-3, or push.
+A P0/P1/P2=0/0/0 result permits only a later owner decision. It does not run task.py start or authorize acceptance, archive, integration, S6.2/S6.3/E3, qualification, runtime cutover, RKP-3, or push.

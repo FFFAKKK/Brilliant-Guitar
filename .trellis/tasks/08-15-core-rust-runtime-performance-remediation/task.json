@@ -751,10 +751,10 @@
       "historical_consumed_user_implementation_authorization_scope": "I0_to_I3_activation_implementation_validation_and_candidate_freeze_only",
       "independent_planning_review": "passed_independent_narrow_reentry_planning_audit_at_957332a127c381847eb85e246e7f1e922dcbc7fd_P0_0_P1_0_P2_0",
       "first_review_task_id": "01a06123-b6c9-78a0-8216-9c8f1d53a061",
-      "current_phase": "R_I0_durable_capsule_and_fresh_predeclared_lanes_complete_as_six_path_candidate",
+      "current_phase": "R_I2_regression_and_six_path_evidence_freeze_complete",
       "planning_candidate_ready": true,
-      "implementation_candidate_ready": false,
-      "next_gate": "R_I1_independent_fresh_reconstruction_after_R_I0_commit",
+      "implementation_candidate_ready": true,
+      "next_gate": "dedicated_independent_implementation_reaudit",
       "reentry_planning_audit": {
         "auditor": "collaboration_agent_/root/rkp2_rp0_narrow_audit",
         "reviewed_head": "957332a127c381847eb85e246e7f1e922dcbc7fd",
@@ -783,7 +783,20 @@
         "historical_technical_reconstruction": "four_of_four_blobs_equal_30d4acb0_self_test_5_of_5",
         "technical_delta_count": 0,
         "coordination_delta_count": 6,
-        "next_gate": "R_I1_independent_fresh_reconstruction_after_R_I0_commit"
+        "next_gate": "completed_by_R_I1_fresh_reconstruction"
+      },
+      "r_i1_r_i2_reentry_result": {
+        "input_candidate": "6933367a3e58bb6efd93057458b7f764b4450d51",
+        "candidate_tree": "520ae62063346dc8c3bc1704797f4fcf5a26f88b",
+        "capsule": "fresh_double_extraction_10_of_10",
+        "technical_reconstruction": "four_of_four_blobs_equal_30d4acb0",
+        "technical_delta_count": 0,
+        "protected_s6_2_delta_count": 0,
+        "cargo": "1971_fmt_check_test_clippy_and_1880_check_pass_79_0_1",
+        "typescript": "typecheck_build_pass",
+        "node": "focused_11_7_4_0_full_590_582_7_1_exactly_classified",
+        "implementation_candidate_ready": true,
+        "next_gate": "dedicated_independent_implementation_reaudit"
       },
       "returned_implementation_audit": {
         "task_id": "01a06532-e9ab-7603-bddc-f9d55b3f5bb9",
