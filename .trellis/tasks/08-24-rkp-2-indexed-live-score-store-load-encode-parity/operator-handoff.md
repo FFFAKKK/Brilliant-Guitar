@@ -247,3 +247,16 @@ The child is candidate-ready only for dedicated independent implementation revie
 - The only current gate is explicit user authorization to activate the exact
   audited S6.2 child. E3, acceptance, archive, integration, qualification,
   cutover, push and RKP-3 remain unauthorized.
+
+## Fresh S6.2 E4 evidence candidate
+
+- Source `bebe0f7c7494bc47e3ff8ad3dad74599af794787` / tree
+  `75f2fa5940fa7f6330811a9a80934fa7bdc4a30b` passed E1/E2. Exactly one fresh
+  E3 passed `19/19` and produced the independently decoded process sentinel
+  SHA-256 `4cbcbf8705d9abcb1b1f51c7fa188573ac5879bd7c6617d13c59961ea191bb0c`.
+- The child alone is candidate-ready. Both parent projections remain
+  candidate-ready false; S6.2 remains started/not completed, S6.3 remains
+  false, and TypeScript remains default.
+- The only next gate is a fresh read-only S6.2 implementation audit of the
+  clean E4 commit. Do not accept, archive, integrate, qualify, cut over, start
+  S6.3 or RKP-3, or push.

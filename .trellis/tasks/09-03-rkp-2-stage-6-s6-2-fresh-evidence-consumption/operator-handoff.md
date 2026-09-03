@@ -1,20 +1,22 @@
-# Operator handoff — fresh S6.2 planning
+# Operator handoff — fresh S6.2 evidence candidate
 
 ## Current gate
 
-A0 ACTIVATED; E1 SOURCE RECONSTRUCTION PENDING
+A0–E4 COMPLETE; FRESH READ-ONLY IMPLEMENTATION AUDIT PENDING
 
-Exact planning authority `7942de056f6b0b6806740e5567de9e493236cec2` /
-tree `d7cc4bf7250a9ee491da4747e1361866803fa9d9` passed its fresh targeted
-planning rereview at P0/P1/P2=`0/0/0`. On 2026-09-03 the user explicitly
-continued after the activation request, and `task.py start` changed this child
-to `in_progress`. The child is now the sole current implementation child.
+Exact source `bebe0f7c7494bc47e3ff8ad3dad74599af794787` / tree
+`75f2fa5940fa7f6330811a9a80934fa7bdc4a30b` passed E1/E2. The one authorized
+fresh E3 execution passed `19/19` and emitted one lossless consumption record:
+`1,527` process bytes, SHA-256
+`4cbcbf8705d9abcb1b1f51c7fa188573ac5879bd7c6617d13c59961ea191bb0c`.
+Independent decoding verified all fixed counts, parity, semantic/canonical
+round trip, ordering, extension preservation, RSS, reap and cleanup facts.
 
-That authorization covers A0, E1, E2, exactly one fresh E3 execution, and E4
-candidate freeze for this reviewed S6.2 task only. E3 has not run. S6.2 is
-started/not completed; S6.3, acceptance, archive, integration, qualification,
-runtime cutover, RKP-3 and push remain unauthorized. TypeScript remains the
-default runtime.
+E4 now freezes only the eight declared lifecycle/evidence paths. The child is
+the sole candidate-ready object and remains the current implementation child.
+S6.2 is started/not completed; parent candidate readiness stays false. S6.3,
+acceptance, archive, integration, qualification, runtime cutover, RKP-3 and
+push remain unauthorized. TypeScript remains the default runtime.
 
 ## Historical planning gate
 
@@ -56,11 +58,12 @@ Reconstruct the bounded logical change on current LF bytes after activation.
 1. preserve audited planning authority `7942de05...`;
 2. obtain explicit user activation;
 3. activate and commit lifecycle state;
-4. reconstruct E1 and commit a source with no evidence file;
-5. pass source, EOL, representative and full gates;
-6. run one fresh E3;
-7. freeze only evidence/lifecycle state;
-8. stop for implementation audit.
+4. reconstruct E1 and commit a source with no evidence file — complete at
+   `bebe0f7c...`;
+5. pass source, EOL, representative and full gates — complete;
+6. run one fresh E3 — complete exactly once;
+7. freeze only evidence/lifecycle state — complete;
+8. stop for a fresh read-only implementation audit — current gate.
 
 S6.3, qualification, cutover, RKP-3, archive, integration and push are not
 authorized.

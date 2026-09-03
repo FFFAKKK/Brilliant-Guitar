@@ -203,3 +203,19 @@ planning rereview at P0/P1/P2=`0/0/0`. The review reproduced focused
 
 This PASS permits only an explicit user activation decision. It does not run
 task.py start, begin S6.2, authorize E3, or advance S6.3 and later gates.
+
+## Fresh S6.2 E4 implementation audit target
+
+Audit the clean commit bearing subject
+`docs(rkp-2): freeze fresh S6.2 evidence candidate`, with frozen technical
+source `bebe0f7c7494bc47e3ff8ad3dad74599af794787`. Source-to-candidate must be
+exactly the child's eight lifecycle/evidence paths with zero technical delta.
+Exactly one fresh E3 execution emitted process sentinel SHA-256
+`4cbcbf8705d9abcb1b1f51c7fa188573ac5879bd7c6617d13c59961ea191bb0c`;
+the child evidence document contains the lossless record and independent
+decode.
+
+Required verdict is P0/P1/P2=`0/0/0`. Until a separate owner decision, S6.2
+is not completed, both parent candidate projections remain false, S6.3 is not
+started, and acceptance/archive/integration/qualification/cutover/RKP-3/push
+remain unauthorized. TypeScript remains the default runtime.

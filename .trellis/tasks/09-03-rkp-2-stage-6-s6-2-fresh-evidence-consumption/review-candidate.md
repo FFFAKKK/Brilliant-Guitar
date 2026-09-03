@@ -1,21 +1,25 @@
-# Review candidate — fresh S6.2 planning
+# Review candidate — fresh S6.2 implementation
 
 ## Activation status
 
-`PLANNING PASS CONSUMED / A0 ACTIVATED / E1 PENDING`
+`E4 CANDIDATE FROZEN / FRESH READ-ONLY IMPLEMENTATION AUDIT PENDING`
 
-The user explicitly authorized the reviewed S6.2 task on 2026-09-03 and
-`task.py start` set it to `in_progress`. Exact planning authority
-`7942de056f6b0b6806740e5567de9e493236cec2` remains pinned; no implementation
-candidate or implementation PASS is claimed yet.
+The exact E1 source is `bebe0f7c7494bc47e3ff8ad3dad74599af794787`
+with tree `75f2fa5940fa7f6330811a9a80934fa7bdc4a30b`. It has a direct activation
+parent, exactly three technical files plus the child hash projection, and no
+evidence file. E2 passed at that clean source. Exactly one E3 then passed and
+produced fresh sentinel SHA-256
+`4cbcbf8705d9abcb1b1f51c7fa188573ac5879bd7c6617d13c59961ea191bb0c`,
+not the archived `64e09779...` value.
 
-The bounded authorization covers A0, E1, E2, one fresh E3 execution, and E4
-candidate freeze only. S6.2 is started/not completed; S6.3 and every later
-lifecycle/product gate remain false. TypeScript remains default.
+This E4 object is ready only for a fresh read-only S6.2 implementation audit.
+It claims no implementation PASS. S6.2 is started/not completed; parent
+candidate readiness, S6.3 and every later lifecycle/product gate remain
+false. TypeScript remains default.
 
 ## Status
 
-PASS FOR EXPLICIT USER ACTIVATION DECISION ONLY
+READY FOR FRESH READ-ONLY S6.2 IMPLEMENTATION AUDIT
 
 Initial candidate 7d7adc03... returned P0/P1/P2=0/1/0 for four CRLF-derived
 workload hashes. LF repair 18318bff... returned 0/1/0 because fresh no-native
@@ -28,15 +32,17 @@ not activated or authorized.
 
 ## Review object
 
-Audited object: exact command repair commit
-`7942de056f6b0b6806740e5567de9e493236cec2`, whose parent is
-`57501fb98a111677157ba3c064074334946b3081`. The complete range from
-`9da9d036a6c2ef184ea68d5b33fabfb1e9a0eba5` is exactly the fifteen literal
-planning paths in task.json and has zero technical paths.
+Audit the clean commit bearing subject
+`docs(rkp-2): freeze fresh S6.2 evidence candidate`. Its frozen technical
+source is `bebe0f7c7494bc47e3ff8ad3dad74599af794787`; source-to-candidate must be
+exactly the eight lifecycle paths declared in `task.json`, with zero technical
+delta. The complete one-line consumption record and independent decode are in
+`research/implementation-evidence.md`.
 
 ## Required verdict
 
-Recorded verdict: P0/P1/P2=0/0/0. The next gate is explicit user activation.
+No implementation verdict is recorded yet. Required PASS is
+P0/P1/P2=`0/0/0`; even that PASS permits only a later explicit owner decision.
 
 ## Review focus
 
@@ -63,6 +69,6 @@ Recorded verdict: P0/P1/P2=0/0/0. The next gate is explicit user activation.
 
 ## Reviewer boundary
 
-The reviewer was read-only. This PASS permits only an explicit user decision
-to activate this reviewed task. It did not run task.py start or authorize
-E1–E4.
+The reviewer must remain read-only and review the exact clean E4 commit. Do
+not accept, archive, integrate, start S6.3, qualify, cut over, create RKP-3, or
+push. A technical PASS does not perform or authorize any of those actions.
