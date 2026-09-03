@@ -1,8 +1,8 @@
-# EOL prerequisite R-I2R targeted implementation rereview candidate
+# EOL prerequisite R-I2R targeted rereview result and owner acceptance
 
 ## Status
 
-READY FOR TARGETED INDEPENDENT IMPLEMENTATION REREVIEW
+PASS P0/P1/P2=0/0/0 / OWNER ACCEPTED / ARCHIVE AND INTEGRATION AUTHORIZED
 
 ## Exact object
 
@@ -11,7 +11,7 @@ READY FOR TARGETED INDEPENDENT IMPLEMENTATION REREVIEW
 - Worktree: .worktrees/rkp-2-stage-6-eol-audit-return-planning-repair.
 - R-I0 durable-capsule candidate: 6933367a3e58bb6efd93057458b7f764b4450d51 / 520ae62063346dc8c3bc1704797f4fcf5a26f88b.
 - R-I2 evidence-freeze candidate: 68c63e44d70cb552edd9d4ff169ca866e35a9150 / aa7f8371ad19ad285705d9013e2bf9930d30c36a.
-- R-I2R authority-projection repair candidate: the clean commit containing this file, resolved with git rev-parse HEAD.
+- R-I2R authority-projection repair candidate: ff847a5d1334223e05999642de388a54bf8bc64a / dd223ba424491cb5d12aff661527ef5eab22de5a.
 - Historical patch source: 64bc508cd56bd0a250f890af186c097dc2b6880e.
 - Audited technical commit/tree: 30d4acb0e3ce29e849c2a89b2ac1225bb5dafe49 / 022f8b25e53ca68f33be08d0a2cedef65af2aa94.
 - R-P0 narrow planning audit: 957332a127c381847eb85e246e7f1e922dcbc7fd / 54273dd6cb7fc9a2615db16c3afec86bf033c55b, P0/P1/P2=0/0/0.
@@ -31,7 +31,9 @@ READY FOR TARGETED INDEPENDENT IMPLEMENTATION REREVIEW
 
 ## Verdict requested
 
-Target the R-I2R projection repair and verify that the exact clean candidate preserves the reproduced R-I0/R-I1/R-I2 evidence, keeps an exact six-path coordination delta and zero technical/S6.2 delta, and exposes one current rereview gate across the child and both parents. Return verdict first with P0/P1/P2.
+Completed: fresh-clone targeted rereview returned P0/P1/P2=`0/0/0` with zero technical findings. The exact candidate preserves the reconstructed R-I0/R-I1/R-I2 evidence, keeps an exact six-path coordination delta and zero technical/S6.2 delta, and aligned the child plus both parents on one current gate.
+
+The owner accepted the candidate and authorized native archive plus fast-forward-only integration. A new successor S6.2 task may be created only after that integration; the stopped historical attempt remains diagnostic and non-reusable.
 
 ## R-I0 through R-I2 claims to verify
 

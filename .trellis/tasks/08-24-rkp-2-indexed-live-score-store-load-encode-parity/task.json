@@ -44,7 +44,7 @@
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "RKP-2 IN_PROGRESS / EOL PREREQUISITE R-I2R AUTHORITY PROJECTION REPAIR READY FOR TARGETED INDEPENDENT IMPLEMENTATION REREVIEW / 68C63E4 RETURN P0_0_P1_1_P2_0 WITH ZERO TECHNICAL FINDINGS / S6.2 S6.3 E3 FALSE / TYPESCRIPT DEFAULT.",
+  "notes": "RKP-2 IN_PROGRESS / EOL PREREQUISITE FF847A5 TARGETED REREVIEW PASS P0_0_P1_0_P2_0 AND OWNER ACCEPTED / NATIVE ARCHIVE THEN FAST-FORWARD INTEGRATION AUTHORIZED / NEW S6.2 SUCCESSOR TASK ONLY AFTER INTEGRATION / OLD ATTEMPT NON-REUSABLE / S6.2 S6.3 E3 STILL NOT STARTED / TYPESCRIPT DEFAULT.",
   "meta": {
     "planning_base_commit": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "accepted_rkp1_audited_implementation_commit": "94387b339b5e4d9ce6b7f97597a1b56edd051f01",
@@ -149,7 +149,7 @@
       "e3_user_authorization_consumed_by_parent_stage6_owner": true
     },
     "current_implementation_child": "09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite",
-    "implementation_stage": "stage_6_paused_for_tracked_byte_eol_prerequisite_R_I2R_targeted_rereview",
+    "implementation_stage": "stage_6_paused_for_tracked_byte_eol_prerequisite_owner_accepted_pending_archive_integration",
     "stage_1_started": true,
     "stage_1_completed": true,
     "stage_1_commit_subject": "build(rkp-2): pin typed generational store dependency",
@@ -352,7 +352,7 @@
       "post_pass_closeout_authorized": true,
       "stage_6_blocked_until_accepted_archived_integrated": false
     },
-    "next_gate": "targeted_independent_implementation_rereview",
+    "next_gate": "native_archive_then_fast_forward_only_integration",
     "stage_6_started": true,
     "stage_6_authorized": true,
     "stage_6_completed": false,
@@ -457,9 +457,9 @@
       "future_technical_allowlist_count": 6,
       "next_resume_gate": "fast_forward_only_integration_gates_then_resume_preserved_s6_1"
     },
-    "implementation_review": "eol_prerequisite_68c63e4_return_P0_0_P1_1_P2_0_bounded_authority_projection_repair_ready_for_targeted_rereview",
+    "implementation_review": "eol_prerequisite_ff847a5_targeted_independent_rereview_pass_P0_0_P1_0_P2_0_owner_accepted",
     "implementation_candidate_ready": false,
-    "implementation_blocker": "targeted_independent_implementation_rereview",
+    "implementation_blocker": "native_archive_then_fast_forward_only_integration",
     "public_json_property_cap_scale_compatibility_repair": {
       "task": "08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair",
       "status": "accepted_archived_integrated_C5_execution_complete_historical",
@@ -581,7 +581,7 @@
     "current_blocking_descendant": "09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite",
     "tracked_byte_eol_portability_prerequisite": {
       "task": "09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite",
-      "status": "in_progress",
+      "status": "owner_accepted_pending_native_archive_and_fast_forward_integration",
       "planning_base": "1f3f6061f093e1e169ccf4105cde444b0e49f82f",
       "branch": "codex/rkp-2-stage-6-eol-audit-return-planning-repair",
       "worktree": ".worktrees/rkp-2-stage-6-eol-audit-return-planning-repair",
@@ -593,10 +593,10 @@
       "historical_consumed_user_implementation_authorization_scope": "I0_to_I3_activation_implementation_validation_and_candidate_freeze_only",
       "independent_planning_review": "passed_independent_narrow_reentry_planning_audit_at_957332a127c381847eb85e246e7f1e922dcbc7fd_P0_0_P1_0_P2_0",
       "first_review_task_id": "01a06123-b6c9-78a0-8216-9c8f1d53a061",
-      "current_phase": "R_I2R_authority_projection_repair_complete",
+      "current_phase": "R_I3_owner_accepted_pending_native_archive",
       "planning_candidate_ready": true,
-      "implementation_candidate_ready": true,
-      "next_gate": "targeted_independent_implementation_rereview",
+      "implementation_candidate_ready": false,
+      "next_gate": "native_archive_then_fast_forward_only_integration",
       "reentry_planning_audit": {
         "auditor": "collaboration_agent_/root/rkp2_rp0_narrow_audit",
         "reviewed_head": "957332a127c381847eb85e246e7f1e922dcbc7fd",
@@ -658,6 +658,27 @@
         "implementation_candidate_ready": true,
         "later_lifecycle_authorized": false,
         "next_gate": "targeted_independent_implementation_rereview"
+      },
+      "r_i2r_targeted_implementation_rereview": {
+        "review_mode": "codex_inline_main_session_fresh_clone_read_only_targeted_rereview_2026_09_03",
+        "reviewed_head": "ff847a5d1334223e05999642de388a54bf8bc64a",
+        "reviewed_tree": "dd223ba424491cb5d12aff661527ef5eab22de5a",
+        "P0": 0,
+        "P1": 0,
+        "P2": 0,
+        "verdict": "pass_for_owner_acceptance_archive_and_fast_forward_integration",
+        "technical_finding_count": 0
+      },
+      "r_i3_owner_acceptance": {
+        "authorized_at": "2026-09-03",
+        "authorization_source": "user_replied_continue_to_explicit_accept_archive_integrate_and_create_new_s6_2_request",
+        "accepted_candidate_head": "ff847a5d1334223e05999642de388a54bf8bc64a",
+        "accepted_candidate_tree": "dd223ba424491cb5d12aff661527ef5eab22de5a",
+        "archive_authorized": true,
+        "fast_forward_integration_authorized": true,
+        "successor_s6_2_task_creation_authorized": true,
+        "old_s6_2_attempt_reusable": false,
+        "next_gate": "native_archive_then_fast_forward_only_integration"
       },
       "returned_implementation_audit": {
         "task_id": "01a06532-e9ab-7603-bddc-f9d55b3f5bb9",

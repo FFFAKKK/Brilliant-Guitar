@@ -2,16 +2,17 @@
 
 ## Current evidence state
 
-- Status: `R-I2R AUTHORITY PROJECTION REPAIR / TARGETED REREVIEW CANDIDATE`.
+- Status: `R-I3 OWNER ACCEPTED / NATIVE ARCHIVE AND FAST-FORWARD INTEGRATION AUTHORIZED`.
 - Current R-A0 source HEAD/tree: `c3e90c6fcc3a624b8a7157bedea59d44f84c6c78` / `40d786f4717e27251ae76b2ae7f49e286337839a`.
 - Current branch: `codex/rkp-2-stage-6-eol-audit-return-planning-repair`.
 - Current worktree: `.worktrees/rkp-2-stage-6-eol-audit-return-planning-repair`.
 - Narrow R-P0 planning audit passed at `957332a127c381847eb85e246e7f1e922dcbc7fd`, tree `54273dd6cb7fc9a2615db16c3afec86bf033c55b`, P0/P1/P2=`0/0/0`.
 - Historical fresh I0/technical objects remain `64bc508c...` and `30d4acb0...`; the returned evidence candidate is `1f3f6061...`.
 - Records preceding the final R-I0 section remain historical diagnostics; the final section is the current reconstructible evidence.
-- Task remains `in_progress`; `planning_candidate_ready=true`, `implementation_candidate_ready=true` only for targeted implementation rereview, and user authorization remains limited to the prerequisite evidence re-entry and its six-path authority repair. Production implementation authorization remains false.
-- S6.2/S6.3/E3 remain false/false/zero. Acceptance, archive, integration, qualification, runtime cutover, RKP-3, and push remain unauthorized.
-- Sole next gate after the bounded projection-repair commit: `TARGETED INDEPENDENT IMPLEMENTATION REREVIEW`.
+- Task remains `in_progress` only until native archive; `planning_candidate_ready=true`, the reviewed candidate is consumed with `implementation_candidate_ready=false`, and production implementation authorization remains false.
+- The exact `ff847a5...` candidate passed targeted independent rereview at P0/P1/P2=`0/0/0`; the owner then explicitly authorized acceptance, native archive, fast-forward-only integration, and creation of a new successor S6.2 task after integration.
+- S6.2/S6.3/E3 remain not-started/not-started/zero. Qualification, runtime cutover, RKP-3, and push remain unauthorized; the stopped S6.2 attempt remains diagnostic and non-reusable.
+- Sole next gate: `NATIVE ARCHIVE THEN FAST-FORWARD-ONLY INTEGRATION`.
 
 ## Future durable reconstruction capsule requirement
 
@@ -3496,3 +3497,11 @@ c3RydWN0IExpdmVTY29yZVN0b3JlIHsiKQogICAgICAgICAgICAgLm50aCgxKQo=
 - Cargo 1.97.1 fmt/check/test/clippy, Cargo 1.88.0 check, npm typecheck/build, focused Node `11/7/4/0`, full control/candidate `590/582/7/1`, Trellis `7/7`, `25/20`, `18/19`, and JSON/JSONL/fence/diff gates all reproduced.
 - R-I2R changes only the existing exact six coordination paths, makes every current child/parent projection name `TARGETED INDEPENDENT IMPLEMENTATION REREVIEW`, and keeps all technical and protected S6.2 paths unchanged.
 - The commit containing this repair is only a targeted rereview candidate. Acceptance, archive, integration, S6.2/S6.3/E3, qualification, runtime cutover, RKP-3, and push remain unauthorized.
+
+## R-I2R targeted rereview PASS and R-I3 owner acceptance
+
+- A new read-only audit root independently checked exact HEAD/tree `ff847a5d1334223e05999642de388a54bf8bc64a` / `dd223ba424491cb5d12aff661527ef5eab22de5a` and returned P0/P1/P2=`0/0/0` with zero technical findings.
+- The audit independently reproduced both 10/10 capsule extractions, 9/9 script syntax checks, exact V1/V2 trees, the 4,892-byte patch, Rust four-blob reconstruction and 5/5 verifier self-test, two 7/7 EOL lanes, four equal focused signatures, equal full Node `590/582/7/1` classifications, Cargo, TypeScript, Trellis, JSON/JSONL, fence, and diff gates.
+- The owner explicitly accepted this candidate and authorized native archive plus fast-forward-only integration into `codex/rkp-2-indexed-live-score-store-implementation`.
+- The same owner message authorizes creation of a new successor S6.2 task after integration. Trellis activation still requires that new task's artifacts to be written and reviewed; the historical S6.2 attempt cannot be reused.
+- S6.3, E3, qualification, runtime cutover, RKP-3, and push remain unauthorized.
