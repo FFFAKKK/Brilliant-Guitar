@@ -2,24 +2,28 @@
 
 ## Status
 
-READY FOR EXACT ABSOLUTE-CARGO COMMAND REPAIR COMMIT, THEN TARGETED REREVIEW
+PASS FOR EXPLICIT USER ACTIVATION DECISION ONLY
 
 Initial candidate 7d7adc03... returned P0/P1/P2=0/1/0 for four CRLF-derived
 workload hashes. LF repair 18318bff... returned 0/1/0 because fresh no-native
 and built-native full-test lanes were not separated. Dual-lane candidate
-57501fb9... reproduced both but returned 0/0/1 for one bare Cargo command. No
-planning PASS or implementation authorization is claimed.
+57501fb9... reproduced both but returned 0/0/1 for one bare Cargo command.
+Exact repaired candidate `7942de056f6b0b6806740e5567de9e493236cec2`
+with tree `d7cc4bf7250a9ee491da4747e1361866803fa9d9` passed the fresh targeted
+rereview at P0/P1/P2=0/0/0. This is a planning PASS only; implementation is
+not activated or authorized.
 
 ## Review object
 
-Review the exact command repair commit whose parent is
-57501fb98a111677157ba3c064074334946b3081. Also recheck the complete range
-from 9da9d036a6c2ef184ea68d5b33fabfb1e9a0eba5 remains exactly the fifteen
-literal planning paths in task.json.
+Audited object: exact command repair commit
+`7942de056f6b0b6806740e5567de9e493236cec2`, whose parent is
+`57501fb98a111677157ba3c064074334946b3081`. The complete range from
+`9da9d036a6c2ef184ea68d5b33fabfb1e9a0eba5` is exactly the fifteen literal
+planning paths in task.json and has zero technical paths.
 
 ## Required verdict
 
-Activation requires P0/P1/P2=0/0/0.
+Recorded verdict: P0/P1/P2=0/0/0. The next gate is explicit user activation.
 
 ## Review focus
 
@@ -46,5 +50,6 @@ Activation requires P0/P1/P2=0/0/0.
 
 ## Reviewer boundary
 
-The reviewer is read-only. A PASS permits only an explicit user decision to
-activate this reviewed task. It does not run task.py start or authorize E1–E4.
+The reviewer was read-only. This PASS permits only an explicit user decision
+to activate this reviewed task. It did not run task.py start or authorize
+E1–E4.

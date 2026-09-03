@@ -33,7 +33,7 @@
     ".trellis/tasks/archive/2026-09/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/",
     ".trellis/spec/core-kernel/backend/rust-runtime-transition.md"
   ],
-  "notes": "FRESH S6.2 PLANNING / 7D7ADC03 RETURNED 0 1 0 FOR CRLF HASHES / 18318BFF RETURNED 0 1 0 FOR MISSING NO-NATIVE TEST LANE / 57501FB9 DUAL-LANE REREVIEW REPRODUCED BOTH LANES BUT RETURNED 0 0 1 FOR ONE BARE CARGO COMMAND / ABSOLUTE-CARGO COMMAND REPAIR READY FOR COMMIT / OLD C3C4D198 ATTEMPT DIAGNOSTIC NON-REUSABLE / TASK START AND TECHNICAL IMPLEMENTATION NOT AUTHORIZED / S6.2 S6.3 E3 QUALIFICATION CUTOVER RKP3 ARCHIVE INTEGRATION PUSH FALSE / TYPESCRIPT DEFAULT.",
+  "notes": "FRESH S6.2 PLANNING PASSED AT EXACT AUDITED 7942DE05 P0 P1 P2 0 0 0 / PREVIOUS 7D7ADC03 18318BFF 57501FB9 RETURNS CLOSED / OLD C3C4D198 ATTEMPT DIAGNOSTIC NON-REUSABLE / EXPLICIT USER ACTIVATION REQUIRED BEFORE TASK START OR TECHNICAL IMPLEMENTATION / S6.2 S6.3 E3 QUALIFICATION CUTOVER RKP3 ARCHIVE INTEGRATION PUSH FALSE / TYPESCRIPT DEFAULT.",
   "meta": {
     "planning_base_commit": "9da9d036a6c2ef184ea68d5b33fabfb1e9a0eba5",
     "planning_base_tree": "179e08f0f3ec77f9368cc781c9e4567671791f30",
@@ -45,11 +45,11 @@
     "activation_authorized": false,
     "production_implementation_authorized": false,
     "user_implementation_authorization": false,
-    "independent_planning_review": "targeted_rereview_returned_57501fb98a111677157ba3c064074334946b3081_P0_0_P1_0_P2_1_bare_cargo_command_not_executable_on_required_host",
+    "independent_planning_review": "passed_targeted_fresh_rereview_7942de056f6b0b6806740e5567de9e493236cec2_P0_0_P1_0_P2_0_for_explicit_user_activation_decision_only",
     "planning_candidate_ready": true,
-    "planning_candidate_commit": null,
-    "current_phase": "P0_ready_for_exact_absolute_cargo_command_repair_commit",
-    "next_gate": "exact_absolute_cargo_command_repair_commit_then_targeted_fresh_read_only_planning_rereview",
+    "planning_candidate_commit": "7942de056f6b0b6806740e5567de9e493236cec2",
+    "current_phase": "P0_planning_pass_awaiting_explicit_activation",
+    "next_gate": "explicit_user_authorization_for_task_start_and_S6_2_implementation",
     "parent_s6_1_completed": true,
     "parent_s6_2_started": false,
     "parent_s6_2_completed": false,
@@ -129,6 +129,22 @@
       "validated_results": "focused_11_7_4_0_fresh_no_native_590_582_7_1_built_native_611_605_4_2_manifest_80_exact",
       "finding": "planning_validation_example_used_bare_cargo_even_though_this_host_requires_C_Users_ATOM_dot_cargo_bin_cargo_exe",
       "repair": "use_the_required_absolute_cargo_executable_in_the_exact_build_command"
+    },
+    "final_targeted_planning_rereview": {
+      "candidate_commit": "7942de056f6b0b6806740e5567de9e493236cec2",
+      "candidate_tree": "d7cc4bf7250a9ee491da4747e1361866803fa9d9",
+      "P0": 0,
+      "P1": 0,
+      "P2": 0,
+      "verdict": "pass_for_explicit_user_activation_decision_only",
+      "complete_planning_range": "9da9d036a6c2ef184ea68d5b33fabfb1e9a0eba5_to_7942de056f6b0b6806740e5567de9e493236cec2_exactly_15_planning_paths_zero_technical_paths",
+      "focused_node": "11_total_7_pass_4_fail_0_skip_exact_four_governance_titles",
+      "fresh_no_native_full": "590_total_582_pass_7_fail_1_skip_three_missing_addon_file_failures_plus_four_governance_titles",
+      "built_native_full": "611_total_605_pass_4_fail_2_skip_exact_four_governance_titles",
+      "full_manifest": "80_files_sha256_1a50fd28c630bb016ce30f7ca65ae940170705b2eed581e610282b81378a1cf1",
+      "native_source_and_target_sha256": "c49fc2cc7008754669259adbe96b1a9f5edfd4e4fdd785a4ed09e7c8c8b46c5b",
+      "fresh_eol_proof": "seven_tracked_paths_zero_CR_and_raw_worktree_blob_equality",
+      "absolute_cargo_build": "passed"
     },
     "implementation_workload_inputs": null,
     "tracked_eol_paths": [

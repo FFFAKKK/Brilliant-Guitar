@@ -180,7 +180,9 @@ PASS never authorizes the next lifecycle action.
   no-native checkout produces 590/582/7/1 with exactly three missing-addon
   file failures plus four governance failures; the validated built-native lane
   produces 611/605/4/2 with only the four governance failures.
-- [ ] Dedicated fresh planning audit returns P0/P1/P2=0/0/0.
+- [x] Dedicated fresh planning audit returns P0/P1/P2=0/0/0 for exact
+  candidate `7942de056f6b0b6806740e5567de9e493236cec2`; this permits only a
+  separate explicit user activation decision.
 - [ ] After explicit activation, E1 changes exactly three technical paths and
   freezes one evidence source with evidence absent.
 - [ ] E1/E2/E4 produce focused 11/8/3/0 and full 611/606/3/2 with only the

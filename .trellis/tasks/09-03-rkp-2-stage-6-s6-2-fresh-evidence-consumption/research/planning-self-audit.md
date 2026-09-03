@@ -8,15 +8,18 @@ Targeted rereview of repaired 18318bff... also returned 0/1/0 because the plan
 did not separate fresh no-native and built-native full-test lanes. The bounded
 dual-lane candidate 57501fb9... reproduced both lanes, but returned 0/0/1
 because its planning-validation example used bare `cargo` on a host where only
-the required absolute Cargo executable resolves. The exact command repair now
-self-checks at 0/0/0, but only another targeted fresh read-only rereview may
-clear the finding. No result activates implementation.
+the required absolute Cargo executable resolves. The exact command repair then
+became candidate `7942de056f6b0b6806740e5567de9e493236cec2`, tree
+`d7cc4bf7250a9ee491da4747e1361866803fa9d9`. Fresh targeted read-only
+rereview cleared the finding at P0/P1/P2=0/0/0. No review result activates
+implementation; explicit user authorization remains the sole next gate.
 
 ## Checks
 
 - One current base: 9da9d036... / 179e08f0....
 - One new task owner; stopped S6.2 is explicitly diagnostic and non-reusable.
-- One live gate: commit the docs-only candidate, then fresh planning audit.
+- One live gate: explicit user activation of exact audited planning authority
+  `7942de056f6b0b6806740e5567de9e493236cec2`.
 - Exact fifteen-path planning allowlist; no directory wildcard.
 - Exact three-path future technical allowlist.
 - Exact eight-path source-to-evidence lifecycle allowlist.
@@ -35,6 +38,6 @@ clear the finding. No result activates implementation.
   required only after a hash-verified native build/copy.
 - The native build example invokes
   C:\Users\ATOM\.cargo\bin\cargo.exe explicitly; bare cargo is forbidden.
-- S6.2/S6.3, E3, candidate readiness, qualification, cutover, RKP-3, archive,
-  integration and push remain false.
+- Task start, S6.2/S6.3, E3, implementation candidate readiness,
+  qualification, cutover, RKP-3, archive, integration and push remain false.
 - TypeScript remains default.

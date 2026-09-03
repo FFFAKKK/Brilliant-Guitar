@@ -219,3 +219,17 @@ RKP-2 preserves S6.0, remains operationally paused before S6.1, and keeps TypeSc
 The Stage 6 repair child has completed its separately authorized fresh E3 run and frozen the exact successful protocol at source HEAD `4ad23773e9c9e1081667a4eccb84cc464b85bc89`. The run covered the fixed `102400`-Event / `51200`-Note score, exact entity/owner index probes, parity rebuild, one export/canonical encode, semantic/canonical round trip, RSS/liveness and post-process cleanup. It completed without timeout or partial evidence; the exact evidence is child-local `research/implementation-evidence.md`.
 
 The child is candidate-ready only for dedicated independent implementation review. RKP-2 remains the sole active implementation child and stays operationally paused after retained S6.1; S6.2/S6.3 are false and TypeScript remains default. Acceptance, archive, integration, qualification, cutover, push and RKP-3 remain separate gates.
+
+## Fresh S6.2 planning PASS
+
+- Fresh successor planning authority `7942de056f6b0b6806740e5567de9e493236cec2`
+  / tree `d7cc4bf7250a9ee491da4747e1361866803fa9d9` passed targeted
+  read-only rereview at P0/P1/P2=`0/0/0`.
+- Its complete range from `9da9d036...` is exactly fifteen planning paths and
+  zero technical paths. Focused `11/7/4/0`, fresh no-native `590/582/7/1`,
+  and hash-verified built-native `611/605/4/2` all match their frozen lanes.
+- This is not S6.2 implementation activation. The child remains `planning`,
+  task start is false, S6.2/S6.3 are false, and TypeScript remains default.
+- The only current gate is explicit user authorization to activate the exact
+  audited S6.2 child. E3, acceptance, archive, integration, qualification,
+  cutover, push and RKP-3 remain unauthorized.
