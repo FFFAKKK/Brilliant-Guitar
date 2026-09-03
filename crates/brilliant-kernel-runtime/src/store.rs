@@ -1626,7 +1626,7 @@ pub(crate) mod tests {
     fn every_typed_record_resolves_once_without_retaining_the_document_tree() {
         let mut document = fixture();
         let store = build_live_score_store(&document).expect("store");
-        let source = include_str!("store.rs");
+        let source = include_str!("store.rs").replace("\r\n", "\n");
         let declaration = source
             .split("pub(crate) struct LiveScoreStore {")
             .nth(1)

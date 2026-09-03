@@ -2052,7 +2052,8 @@ mod tests {
         assert_eq!(representative.metrics.time_entries_built, 2);
         assert_eq!(representative.metrics.index_entries_built, 36);
 
-        let metrics_source = include_str!("indices.rs")
+        let metrics_source = include_str!("indices.rs").replace("\r\n", "\n");
+        let metrics_source = metrics_source
             .split("pub(crate) struct Rkp2StoreMetrics {")
             .nth(1)
             .expect("metrics declaration")
@@ -2100,7 +2101,7 @@ mod tests {
             Err(TimeIndexFailure::MissingVoice)
         );
 
-        let source = include_str!("store.rs");
+        let source = include_str!("store.rs").replace("\r\n", "\n");
         let query = source
             .split("impl LiveScoreStore {")
             .nth(1)
@@ -2133,7 +2134,7 @@ mod tests {
             Err(IndexBuildFailure::MissingRecord)
         );
 
-        let source = include_str!("indices.rs");
+        let source = include_str!("indices.rs").replace("\r\n", "\n");
         let projection_declaration = source
             .split("pub(crate) struct NormalizedIndexProjection {")
             .nth(1)
@@ -2153,6 +2154,25 @@ mod tests {
             "KeyData",
         ] {
             assert!(!projection_declaration.contains(forbidden), "{forbidden}");
+        }
+    }
+    #[test]
+    fn source_shape_normalization_is_lf_crlf_invariant() {
+        let lf = "pub(crate) struct Rkp2StoreMetrics {\n    entity_index_lookups: usize,\n}\n\n";
+        let crlf = lf.replace('\n', "\r\n");
+        let normalized_lf = lf.replace("\r\n", "\n");
+        let normalized_crlf = crlf.replace("\r\n", "\n");
+        assert_eq!(normalized_lf, normalized_crlf);
+
+        for source in [&normalized_lf, &normalized_crlf] {
+            let declaration = source
+                .split("pub(crate) struct Rkp2StoreMetrics {")
+                .nth(1)
+                .expect("metrics declaration")
+                .split("}\n\n")
+                .next()
+                .expect("metrics fields");
+            assert_eq!(declaration, "\n    entity_index_lookups: usize,\n");
         }
     }
 }

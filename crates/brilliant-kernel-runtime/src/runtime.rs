@@ -100,7 +100,7 @@ mod tests {
         assert_eq!(runtime.document_id().as_str(), "score-root");
         assert_eq!(runtime.document_version(), DocumentVersionV1::initial());
 
-        let source = include_str!("runtime.rs");
+        let source = include_str!("runtime.rs").replace("\r\n", "\n");
         let declaration = source
             .split("pub struct KernelRuntime {")
             .nth(1)
