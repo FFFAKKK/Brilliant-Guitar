@@ -45,7 +45,7 @@
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "RKP-2 IN_PROGRESS / EOL PREREQUISITE ACCEPTED ARCHIVED AND FAST-FORWARD INTEGRATED AT 9DA9D036 / FRESH S6.2 SUCCESSOR DOCS-ONLY PLAN AUTHOR-VALIDATED AND READY FOR EXACT COMMIT / OLD C3C4D198 ATTEMPT DIAGNOSTIC NON-REUSABLE / CURRENT GATE EXACT PLANNING COMMIT THEN FRESH READ-ONLY AUDIT / TASK START AND TECHNICAL IMPLEMENTATION NOT AUTHORIZED / S6.2 S6.3 E3 AND LATER GATES FALSE / TYPESCRIPT DEFAULT.",
+  "notes": "RKP-2 IN_PROGRESS / INITIAL FRESH S6.2 PLAN 7D7ADC03 RETURNED P0 0 P1 1 P2 0 FOR FOUR CRLF-DERIVED HASHES / LF-BLOB HASH REPAIR READY FOR EXACT COMMIT AND TARGETED REREVIEW / OLD C3C4D198 ATTEMPT DIAGNOSTIC NON-REUSABLE / TASK START AND TECHNICAL IMPLEMENTATION NOT AUTHORIZED / S6.2 S6.3 E3 AND LATER GATES FALSE / TYPESCRIPT DEFAULT.",
   "meta": {
     "planning_base_commit": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "accepted_rkp1_audited_implementation_commit": "94387b339b5e4d9ce6b7f97597a1b56edd051f01",
@@ -150,7 +150,7 @@
       "e3_user_authorization_consumed_by_parent_stage6_owner": true
     },
     "current_implementation_child": null,
-    "implementation_stage": "stage_6_s6_2_fresh_successor_ready_for_exact_planning_commit",
+    "implementation_stage": "stage_6_s6_2_fresh_successor_LF_hash_repair_ready_for_commit",
     "stage_1_started": true,
     "stage_1_completed": true,
     "stage_1_commit_subject": "build(rkp-2): pin typed generational store dependency",
@@ -353,7 +353,7 @@
       "post_pass_closeout_authorized": true,
       "stage_6_blocked_until_accepted_archived_integrated": false
     },
-    "next_gate": "exact_fresh_s6_2_planning_commit_then_read_only_audit",
+    "next_gate": "exact_fresh_s6_2_LF_hash_repair_commit_then_targeted_read_only_rereview",
     "stage_6_started": true,
     "stage_6_authorized": true,
     "stage_6_completed": false,
@@ -458,9 +458,9 @@
       "future_technical_allowlist_count": 6,
       "next_resume_gate": "fast_forward_only_integration_gates_then_resume_preserved_s6_1"
     },
-    "implementation_review": "fresh_s6_2_planning_candidate_ready_for_commit_review_pending_predecessor_pass_preserved",
+    "implementation_review": "fresh_s6_2_initial_plan_returned_0_1_0_LF_hash_repair_rereview_pending_predecessor_pass_preserved",
     "implementation_candidate_ready": false,
-    "implementation_blocker": "fresh_s6_2_exact_planning_commit_and_read_only_audit_then_explicit_user_activation",
+    "implementation_blocker": "fresh_s6_2_exact_LF_hash_repair_commit_and_targeted_rereview_then_explicit_user_activation",
     "public_json_property_cap_scale_compatibility_repair": {
       "task": "08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair",
       "status": "accepted_archived_integrated_C5_execution_complete_historical",
@@ -735,7 +735,7 @@
     },
     "s6_2_fresh_successor": {
       "task": "09-03-rkp-2-stage-6-s6-2-fresh-evidence-consumption",
-      "status": "planning_ready_for_exact_commit",
+      "status": "planning_LF_hash_repair_ready_for_exact_commit",
       "planning_base": "9da9d036a6c2ef184ea68d5b33fabfb1e9a0eba5",
       "planning_base_tree": "179e08f0f3ec77f9368cc781c9e4567671791f30",
       "branch": "codex/rkp-2-stage-6-s6-2-fresh-evidence-consumption",
@@ -744,12 +744,20 @@
       "task_start_run": false,
       "production_implementation_authorized": false,
       "planning_candidate_ready": true,
-      "independent_planning_review": "pending",
+      "independent_planning_review": "returned_7d7adc03fcf963633ae1e4cde4abc3dd95291e33_P0_0_P1_1_P2_0_four_CRLF_derived_workload_hashes",
+      "initial_planning_audit_return": {
+        "candidate_commit": "7d7adc03fcf963633ae1e4cde4abc3dd95291e33",
+        "candidate_tree": "fa45d64b5c47461442c4210391618e0dc8f2b714",
+        "P0": 0,
+        "P1": 1,
+        "P2": 0,
+        "repair_scope": "child_planning_hashes_and_current_parent_projections_only_zero_technical_delta"
+      },
       "s6_2_started": false,
       "s6_3_started": false,
       "e3_execution_count": 0,
       "implementation_candidate_ready": false,
-      "next_gate": "exact_planning_commit_then_fresh_read_only_planning_audit",
+      "next_gate": "exact_LF_hash_repair_commit_then_targeted_fresh_read_only_planning_rereview",
       "default_runtime": "typescript"
     }
   }

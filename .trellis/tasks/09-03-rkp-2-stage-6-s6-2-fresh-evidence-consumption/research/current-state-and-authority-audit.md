@@ -32,14 +32,17 @@ Fresh S6.2 planning is justified and the old attempt is not reusable.
 | Path | Raw SHA-256 |
 | --- | --- |
 | crates/brilliant-kernel-runtime/src/indices.rs | 3e7a1c7f284df006181d49923c52191427c66d68b131df1f2190450523eb90b7 |
-| test/core-kernel/fixtures/cvn-7-qualification-score.ts | 87190d565f4de96c8c3ce2be3863de1ba6304eabc3517fea3c35785931e77b3b |
-| test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts | 7399f2ca2343c164a04c2c1dd2a4c411babd745edddea50ad46e73225f87e671 |
-| test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.test.ts | 0f35dbab3771bc3876af89d944ef28501cf938f8e5b8ad7fc2c066032b3152c2 |
-| test/core-kernel/rust-migration/rkp-2-scale-evidence-process.ps1 | ac2333142829cda998a5e4bea996128e080cb5d3ca4cdc6c317b3967d6835571 |
+| test/core-kernel/fixtures/cvn-7-qualification-score.ts | 5edc34b540835b5edd888706a86df564c0afadc09189293d38d2c4a1b01c05cc |
+| test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts | ec0c59d6516b7635ff6bc595ca67aba0a588cf7a2dee328c9f825fbac8e6531f |
+| test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.test.ts | 72649e5990529b503de461a7daace037cd74199f57504a9b98e4037b928c88b2 |
+| test/core-kernel/rust-migration/rkp-2-scale-evidence-process.ps1 | d0a8486b0cd7cc4e7c1a9c3131ff6ec3c1e79d37d7c54dd54fb03a77282b751f |
 
 The indices hash is intentionally different from the stopped plan because the
-accepted EOL prerequisite changed current Runtime bytes. The other four hashes
-remain equal to their previous source versions.
+accepted EOL prerequisite changed current Runtime bytes. The four hashes above
+are also intentionally different from the initial 7d7adc03... planning commit:
+that commit measured the legacy parent worktree's CRLF view. These corrected
+values are reproduced from fresh LF worktree bytes and the accepted archive;
+all seven fresh checkout files are byte-equal to their Git blobs with zero CR.
 
 ## EOL authority
 
@@ -58,12 +61,20 @@ text/eol=lf by .gitattributes.
 - npm typecheck: pass.
 - npm build: pass.
 - Focused Workspace Law: 11/7/4/0, four known governance failures.
-- Dirty full run: manifest 80 /
+- Dirty author run: manifest 80 /
   1a50fd28c630bb016ce30f7ca65ae940170705b2eed581e610282b81378a1cf1,
   611/604/5/2.
-- The only dirty-only fifth title is the RKP0 committed-lifecycle clean-tree
-  guard. A committed planning candidate must reduce the full classification to
-  611/605/4/2.
+- Clean 7d7adc03... planning run: focused 11/7/4/0 and full 611/605/4/2
+  with the same manifest.
+- The only dirty-only fifth title was the RKP0 committed-lifecycle clean-tree
+  guard.
+
+## Initial planning-audit return
+
+Fresh-worktree audit returned 7d7adc03... at P0/P1/P2=0/1/0 because four
+immutable workload hashes were CRLF-derived. The exact repair is confined to
+planning/lifecycle documents and replaces those values with the LF blob-byte
+hashes above. Technical and protected deltas remain zero.
 
 ## Required successor repairs
 

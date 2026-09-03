@@ -2,8 +2,11 @@
 
 ## Verdict
 
-Author self-check: P0/P1/P2=0/0/0. This is not the required fresh read-only
-planning audit and cannot activate implementation.
+The initial author self-check was invalidated by the fresh-worktree review of
+7d7adc03..., which returned P0/P1/P2=0/1/0 for four CRLF-derived hashes. The
+bounded LF-hash repair now self-checks at P0/P1/P2=0/0/0, but only a targeted
+fresh read-only rereview may clear the finding. Neither result activates
+implementation.
 
 ## Checks
 
@@ -13,7 +16,8 @@ planning audit and cannot activate implementation.
 - Exact fifteen-path planning allowlist; no directory wildcard.
 - Exact three-path future technical allowlist.
 - Exact eight-path source-to-evidence lifecycle allowlist.
-- Five planning hashes recomputed from current raw bytes.
+- Five planning hashes recomputed from fresh LF raw bytes and cross-checked
+  against the accepted EOL archive, not the legacy parent's CRLF view.
 - Accepted EOL authority and seven-path dual-autocrlf requirement preserved.
 - Strict source-before-evidence order and evidence absence at source are explicit.
 - Old request/result/sentinel non-reuse is mechanical, not prose-only.

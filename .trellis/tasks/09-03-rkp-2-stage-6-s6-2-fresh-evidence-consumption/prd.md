@@ -73,10 +73,16 @@ five workload inputs must match the phase-specific map in task.json. At planning
 base they are:
 
 - indices.rs: 3e7a1c7f284df006181d49923c52191427c66d68b131df1f2190450523eb90b7
-- cvn-7-qualification-score.ts: 87190d565f4de96c8c3ce2be3863de1ba6304eabc3517fea3c35785931e77b3b
-- rkp-2-scale-evidence-worker.ts: 7399f2ca2343c164a04c2c1dd2a4c411babd745edddea50ad46e73225f87e671
-- rkp-2-scale-evidence-worker.test.ts: 0f35dbab3771bc3876af89d944ef28501cf938f8e5b8ad7fc2c066032b3152c2
-- rkp-2-scale-evidence-process.ps1: ac2333142829cda998a5e4bea996128e080cb5d3ca4cdc6c317b3967d6835571
+- cvn-7-qualification-score.ts: 5edc34b540835b5edd888706a86df564c0afadc09189293d38d2c4a1b01c05cc
+- rkp-2-scale-evidence-worker.ts: ec0c59d6516b7635ff6bc595ca67aba0a588cf7a2dee328c9f825fbac8e6531f
+- rkp-2-scale-evidence-worker.test.ts: 72649e5990529b503de461a7daace037cd74199f57504a9b98e4037b928c88b2
+- rkp-2-scale-evidence-process.ps1: d0a8486b0cd7cc4e7c1a9c3131ff6ec3c1e79d37d7c54dd54fb03a77282b751f
+
+Initial planning commit 7d7adc03... was returned with P0/P1/P2=0/1/0:
+those four values came from the legacy parent worktree's CRLF view. The values
+above are the authoritative LF raw-byte SHA-256 values reproduced in this
+fresh worktree and in the accepted EOL archive. No tracked technical byte was
+changed by the correction.
 
 E1 may change only the worker and worker-test hashes. The Runtime indices,
 fixture and PowerShell hashes remain identical. The seven tracked EOL paths
@@ -167,7 +173,7 @@ PASS never authorizes the next lifecycle action.
   planning descendant and name one planning-audit gate.
 - [x] JSON/JSONL, Trellis validation, Markdown fences, path existence,
   uniqueness, hashes and diff checks pass.
-- [ ] Clean committed planning candidate produces focused 11/7/4/0 and full
+- [x] Clean committed planning candidate produces focused 11/7/4/0 and full
   611/605/4/2 with only the four frozen governance titles.
 - [ ] Dedicated fresh planning audit returns P0/P1/P2=0/0/0.
 - [ ] After explicit activation, E1 changes exactly three technical paths and

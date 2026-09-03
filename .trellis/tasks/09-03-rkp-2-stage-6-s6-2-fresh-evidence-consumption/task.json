@@ -33,7 +33,7 @@
     ".trellis/tasks/archive/2026-09/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/",
     ".trellis/spec/core-kernel/backend/rust-runtime-transition.md"
   ],
-  "notes": "FRESH S6.2 PLANNING / BASE 9DA9D036 AFTER ACCEPTED EOL PREREQUISITE ARCHIVE AND FAST-FORWARD INTEGRATION / OLD C3C4D198 ATTEMPT DIAGNOSTIC NON-REUSABLE / AUTHOR VALIDATION COMPLETE AND EXACT DOCS-ONLY CANDIDATE READY FOR COMMIT / TASK START AND TECHNICAL IMPLEMENTATION NOT AUTHORIZED / S6.2 S6.3 E3 QUALIFICATION CUTOVER RKP3 ARCHIVE INTEGRATION PUSH FALSE / TYPESCRIPT DEFAULT.",
+  "notes": "FRESH S6.2 PLANNING / INITIAL 7D7ADC03 AUDIT RETURNED P0 0 P1 1 P2 0 FOR FOUR CRLF-DERIVED WORKLOAD HASHES / CURRENT LF-BLOB HASH REPAIR AUTHOR-VALIDATED AND READY FOR EXACT REPAIR COMMIT / OLD C3C4D198 ATTEMPT DIAGNOSTIC NON-REUSABLE / TASK START AND TECHNICAL IMPLEMENTATION NOT AUTHORIZED / S6.2 S6.3 E3 QUALIFICATION CUTOVER RKP3 ARCHIVE INTEGRATION PUSH FALSE / TYPESCRIPT DEFAULT.",
   "meta": {
     "planning_base_commit": "9da9d036a6c2ef184ea68d5b33fabfb1e9a0eba5",
     "planning_base_tree": "179e08f0f3ec77f9368cc781c9e4567671791f30",
@@ -45,11 +45,11 @@
     "activation_authorized": false,
     "production_implementation_authorized": false,
     "user_implementation_authorization": false,
-    "independent_planning_review": "pending",
+    "independent_planning_review": "returned_7d7adc03fcf963633ae1e4cde4abc3dd95291e33_P0_0_P1_1_P2_0_four_CRLF_derived_workload_hashes",
     "planning_candidate_ready": true,
     "planning_candidate_commit": null,
-    "current_phase": "P0_ready_for_exact_planning_commit",
-    "next_gate": "exact_planning_commit_then_fresh_read_only_planning_audit",
+    "current_phase": "P0_ready_for_exact_LF_hash_repair_commit",
+    "next_gate": "exact_LF_hash_repair_commit_then_targeted_fresh_read_only_planning_rereview",
     "parent_s6_1_completed": true,
     "parent_s6_2_started": false,
     "parent_s6_2_completed": false,
@@ -96,10 +96,20 @@
     ],
     "immutable_workload_inputs": {
       "crates/brilliant-kernel-runtime/src/indices.rs": "3e7a1c7f284df006181d49923c52191427c66d68b131df1f2190450523eb90b7",
-      "test/core-kernel/fixtures/cvn-7-qualification-score.ts": "87190d565f4de96c8c3ce2be3863de1ba6304eabc3517fea3c35785931e77b3b",
-      "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts": "7399f2ca2343c164a04c2c1dd2a4c411babd745edddea50ad46e73225f87e671",
-      "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.test.ts": "0f35dbab3771bc3876af89d944ef28501cf938f8e5b8ad7fc2c066032b3152c2",
-      "test/core-kernel/rust-migration/rkp-2-scale-evidence-process.ps1": "ac2333142829cda998a5e4bea996128e080cb5d3ca4cdc6c317b3967d6835571"
+      "test/core-kernel/fixtures/cvn-7-qualification-score.ts": "5edc34b540835b5edd888706a86df564c0afadc09189293d38d2c4a1b01c05cc",
+      "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts": "ec0c59d6516b7635ff6bc595ca67aba0a588cf7a2dee328c9f825fbac8e6531f",
+      "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.test.ts": "72649e5990529b503de461a7daace037cd74199f57504a9b98e4037b928c88b2",
+      "test/core-kernel/rust-migration/rkp-2-scale-evidence-process.ps1": "d0a8486b0cd7cc4e7c1a9c3131ff6ec3c1e79d37d7c54dd54fb03a77282b751f"
+    },
+    "initial_planning_audit_return": {
+      "candidate_commit": "7d7adc03fcf963633ae1e4cde4abc3dd95291e33",
+      "candidate_tree": "fa45d64b5c47461442c4210391618e0dc8f2b714",
+      "P0": 0,
+      "P1": 1,
+      "P2": 0,
+      "finding": "four_workload_SHA256_values_were_measured_from_the_legacy_parent_CRLF_checkout_instead_of_the_accepted_LF_Git_blob_bytes",
+      "fresh_checkout_proof": "all_seven_tracked_EOL_paths_have_zero_CR_and_raw_worktree_blob_equality",
+      "repair": "replace_the_four_values_with_fresh_LF_checkout_and_archived_EOL_evidence_SHA256_values_then_targeted_rereview"
     },
     "implementation_workload_inputs": null,
     "tracked_eol_paths": [

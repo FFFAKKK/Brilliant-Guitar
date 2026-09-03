@@ -2,14 +2,17 @@
 
 ## Status
 
-READY FOR EXACT DOCS-ONLY COMMIT, THEN FRESH READ-ONLY PLANNING AUDIT
+READY FOR EXACT LF-HASH REPAIR COMMIT, THEN TARGETED READ-ONLY REREVIEW
 
-No planning PASS is claimed. No implementation authorization is claimed.
+Initial candidate 7d7adc03... returned P0/P1/P2=0/1/0 for four
+CRLF-derived workload hashes. No planning PASS is claimed. No implementation
+authorization is claimed.
 
 ## Review object
 
-Review the exact future commit whose parent is
-9da9d036a6c2ef184ea68d5b33fabfb1e9a0eba5 and whose diff is the fifteen
+Review the exact repair commit whose parent is
+7d7adc03fcf963633ae1e4cde4abc3dd95291e33. Also recheck the complete range
+from 9da9d036a6c2ef184ea68d5b33fabfb1e9a0eba5 remains exactly the fifteen
 literal planning paths in task.json.
 
 ## Required verdict
@@ -21,7 +24,8 @@ Activation requires P0/P1/P2=0/0/0.
 1. Exact base and predecessor archive/integration lineage.
 2. New task is the sole live planning descendant.
 3. Stopped branch and all old requests/results/sentinels are non-reusable.
-4. Five current workload hashes and seven-path LF authority are exact.
+4. Five current workload hashes come from fresh LF/blob bytes, match the
+   accepted EOL archive, and all seven tracked files have zero CR.
 5. Planning diff is docs-only and exactly fifteen paths.
 6. Future technical and lifecycle allowlists are exactly three and eight paths.
 7. Source-before-evidence ordering is mechanical.
