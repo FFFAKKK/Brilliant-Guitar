@@ -1,10 +1,10 @@
-# Operator handoff — EOL prerequisite R-I2 evidence freeze
+# Operator handoff — EOL prerequisite R-I2R authority projection repair
 
 ## Current gate
 
-READY FOR DEDICATED INDEPENDENT IMPLEMENTATION RE-AUDIT
+READY FOR TARGETED INDEPENDENT IMPLEMENTATION REREVIEW
 
-The next action is a read-only independent implementation re-audit of the exact clean evidence-freeze commit. It is not technical implementation, acceptance, or lifecycle closeout.
+The next action is a read-only targeted independent implementation rereview of the exact clean R-I2R commit. It is not technical implementation, acceptance, or lifecycle closeout.
 
 ## Exact lineage
 
@@ -15,7 +15,14 @@ The next action is a read-only independent implementation re-audit of the exact 
 - Audited technical commit: 30d4acb0e3ce29e849c2a89b2ac1225bb5dafe49.
 - Narrow R-P0 planning audit: 957332a127c381847eb85e246e7f1e922dcbc7fd / 54273dd6cb7fc9a2615db16c3afec86bf033c55b, P0/P1/P2=0/0/0.
 - R-I0 durable-capsule candidate: 6933367a3e58bb6efd93057458b7f764b4450d51 / 520ae62063346dc8c3bc1704797f4fcf5a26f88b.
-- R-I2 evidence-freeze candidate: resolve the clean commit containing this handoff with git rev-parse HEAD.
+- R-I2 evidence-freeze candidate: 68c63e44d70cb552edd9d4ff169ca866e35a9150 / aa7f8371ad19ad285705d9013e2bf9930d30c36a.
+- R-I2R projection-repair candidate: resolve the clean commit containing this handoff with git rev-parse HEAD.
+
+## Audit return and repair
+
+- Fresh read-only replay of `68c63e4...` returned P0/P1/P2=`0/1/0`; capsule, Rust, TypeScript, Node, EOL, Trellis and manifest evidence all passed with zero technical findings.
+- The single P1 was the stale current evidence-header readiness value plus the two stale parent top-level next-gate values.
+- R-I2R repairs only those authority projections within the existing six coordination paths and leaves all technical/S6.2 protected bytes unchanged.
 
 ## Delivered R-I0/R-I1/R-I2 evidence
 
@@ -33,13 +40,13 @@ The next action is a read-only independent implementation re-audit of the exact 
 
 ## Independent re-audit procedure
 
-1. Clone the committed R-I2 evidence-freeze candidate into a new E-drive root with core.longpaths=true and require a clean checkout.
+1. Clone the committed R-I2R projection-repair candidate into a new E-drive root with core.longpaths=true and require a clean checkout.
 2. Decode and verify all ten embedded entries, then use the extracted helper to extract them again into a second fresh root.
 3. Rebuild control c3e90c6..., expected V1/V2, and historical technical lanes only from pinned objects and the verified capsule.
 4. Require actual diff/task/PRD/design/implement to equal the same exact six paths and require zero technical delta.
 5. Reproduce focused, full-control, raw-byte matrix, and four-blob reconstruction records.
 6. Capture the clean committed candidate after expected reconstruction and compare its signatures to V1/V2 without a presumed transition.
-7. Return verdict first with P0/P1/P2 and exact HEAD/tree; do not mutate the candidate.
+7. Require one current `targeted_independent_implementation_rereview` gate across the child, both nested parent projections, both parent top-level gates, evidence header, review candidate, and this handoff; then return verdict first with P0/P1/P2 and exact HEAD/tree without mutating the candidate.
 
 ## Reviewer boundary
 

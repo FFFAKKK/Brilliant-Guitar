@@ -1,8 +1,8 @@
-# EOL prerequisite R-I2 implementation re-audit candidate
+# EOL prerequisite R-I2R targeted implementation rereview candidate
 
 ## Status
 
-READY FOR DEDICATED INDEPENDENT IMPLEMENTATION RE-AUDIT
+READY FOR TARGETED INDEPENDENT IMPLEMENTATION REREVIEW
 
 ## Exact object
 
@@ -10,7 +10,8 @@ READY FOR DEDICATED INDEPENDENT IMPLEMENTATION RE-AUDIT
 - Branch: codex/rkp-2-stage-6-eol-audit-return-planning-repair.
 - Worktree: .worktrees/rkp-2-stage-6-eol-audit-return-planning-repair.
 - R-I0 durable-capsule candidate: 6933367a3e58bb6efd93057458b7f764b4450d51 / 520ae62063346dc8c3bc1704797f4fcf5a26f88b.
-- R-I2 evidence-freeze candidate: the clean commit containing this file, resolved with git rev-parse HEAD.
+- R-I2 evidence-freeze candidate: 68c63e44d70cb552edd9d4ff169ca866e35a9150 / aa7f8371ad19ad285705d9013e2bf9930d30c36a.
+- R-I2R authority-projection repair candidate: the clean commit containing this file, resolved with git rev-parse HEAD.
 - Historical patch source: 64bc508cd56bd0a250f890af186c097dc2b6880e.
 - Audited technical commit/tree: 30d4acb0e3ce29e849c2a89b2ac1225bb5dafe49 / 022f8b25e53ca68f33be08d0a2cedef65af2aa94.
 - R-P0 narrow planning audit: 957332a127c381847eb85e246e7f1e922dcbc7fd / 54273dd6cb7fc9a2615db16c3afec86bf033c55b, P0/P1/P2=0/0/0.
@@ -21,9 +22,16 @@ READY FOR DEDICATED INDEPENDENT IMPLEMENTATION RE-AUDIT
 - S6.2/S6.3/E3: false / false / zero.
 - Default runtime: TypeScript.
 
+## Audit return and bounded repair
+
+- Fresh read-only replay of `68c63e4...` returned P0/P1/P2=`0/1/0` with zero technical findings.
+- The sole P1 was a current-state projection conflict: the evidence header claimed candidate readiness false, while current task projections claimed true, and both parent top-level `next_gate` fields still named the completed planning audit.
+- The bounded R-I2R repair changes only the existing six coordination paths, aligns all current projections on `targeted_independent_implementation_rereview`, and leaves the technical and protected S6.2 paths byte-identical.
+- This candidate therefore requests only targeted rereview of the projection repair; it does not reuse the first audit as a PASS.
+
 ## Verdict requested
 
-Audit whether the R-I0 capsule and R-I1/R-I2 records are independently reproducible from the exact clean evidence-freeze candidate, with an exact six-path coordination delta, zero technical/S6.2 delta, and no lifecycle authorization drift. Return verdict first with P0/P1/P2.
+Target the R-I2R projection repair and verify that the exact clean candidate preserves the reproduced R-I0/R-I1/R-I2 evidence, keeps an exact six-path coordination delta and zero technical/S6.2 delta, and exposes one current rereview gate across the child and both parents. Return verdict first with P0/P1/P2.
 
 ## R-I0 through R-I2 claims to verify
 
@@ -73,7 +81,7 @@ Relative to c3e90c6..., the final candidate must change exactly:
 
 ## Required independent checks
 
-1. Resolve the clean evidence-freeze HEAD/tree and require its ancestry through 6933367... to c3e90c6....
+1. Resolve the clean R-I2R HEAD/tree and require its ancestry through 68c63e4..., 6933367..., and c3e90c6....
 2. Require the complete c3e90c6... range to equal the exact six-path set; require the four technical blobs to equal 30d4acb0... and S6.2 protected paths to have zero delta.
 3. Extract the capsule into new roots and verify every byte/hash before use.
 4. Independently rebuild control, byte-distinct V1/V2, historical technical, and candidate lanes; require expected tree and signature equality without reusing operator roots.

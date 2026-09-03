@@ -2,16 +2,16 @@
 
 ## Current evidence state
 
-- Status: `R-I2 REGRESSION COMPLETE / SIX-PATH EVIDENCE-FREEZE CANDIDATE`.
+- Status: `R-I2R AUTHORITY PROJECTION REPAIR / TARGETED REREVIEW CANDIDATE`.
 - Current R-A0 source HEAD/tree: `c3e90c6fcc3a624b8a7157bedea59d44f84c6c78` / `40d786f4717e27251ae76b2ae7f49e286337839a`.
 - Current branch: `codex/rkp-2-stage-6-eol-audit-return-planning-repair`.
 - Current worktree: `.worktrees/rkp-2-stage-6-eol-audit-return-planning-repair`.
 - Narrow R-P0 planning audit passed at `957332a127c381847eb85e246e7f1e922dcbc7fd`, tree `54273dd6cb7fc9a2615db16c3afec86bf033c55b`, P0/P1/P2=`0/0/0`.
 - Historical fresh I0/technical objects remain `64bc508c...` and `30d4acb0...`; the returned evidence candidate is `1f3f6061...`.
 - Records preceding the final R-I0 section remain historical diagnostics; the final section is the current reconstructible evidence.
-- Task remains `in_progress`; `planning_candidate_ready=true`, `implementation_candidate_ready=false`, and user authorization is limited to R-A0/R-I0/R-I1/R-I2 evidence re-entry. Production implementation authorization remains false.
+- Task remains `in_progress`; `planning_candidate_ready=true`, `implementation_candidate_ready=true` only for targeted implementation rereview, and user authorization remains limited to the prerequisite evidence re-entry and its six-path authority repair. Production implementation authorization remains false.
 - S6.2/S6.3/E3 remain false/false/zero. Acceptance, archive, integration, qualification, runtime cutover, RKP-3, and push remain unauthorized.
-- Sole next gate after the evidence-freeze commit: `DEDICATED INDEPENDENT IMPLEMENTATION RE-AUDIT`.
+- Sole next gate after the bounded projection-repair commit: `TARGETED INDEPENDENT IMPLEMENTATION REREVIEW`.
 
 ## Future durable reconstruction capsule requirement
 
@@ -3487,3 +3487,12 @@ c3RydWN0IExpdmVTY29yZVN0b3JlIHsiKQogICAgICAgICAgICAgLm50aCgxKQo=
 - After this evidence commit, remove only the explicitly named reproducible R-I0/R-I1 temporary roots; then require the task worktree to be clean and staged-empty.
 - Sole next gate: `DEDICATED INDEPENDENT IMPLEMENTATION RE-AUDIT`.
 - Acceptance, archive, integration, S6.2/S6.3/E3, qualification, runtime cutover, RKP-3, and push remain unauthorized.
+
+## R-I2 implementation re-audit return and R-I2R authority projection repair
+
+- Fresh read-only main-session replay reviewed exact HEAD/tree `68c63e44d70cb552edd9d4ff169ca866e35a9150` / `aa7f8371ad19ad285705d9013e2bf9930d30c36a` and returned P0/P1/P2=`0/1/0`.
+- The single P1 is coordination-only: this file's current header still said `implementation_candidate_ready=false`, while the child and nested parent projections said `true`; both parent task JSON files also retained the completed planning-audit value in their top-level `next_gate`.
+- No technical finding was found. The capsule extracted 10/10 twice, all nine scripts passed `node --check`, V1/V2 rebuilt to their predeclared trees, the four technical blobs reconstructed exactly with verifier self-test 5/5, and both `autocrlf` lanes passed 7/7 raw-byte checks.
+- Cargo 1.97.1 fmt/check/test/clippy, Cargo 1.88.0 check, npm typecheck/build, focused Node `11/7/4/0`, full control/candidate `590/582/7/1`, Trellis `7/7`, `25/20`, `18/19`, and JSON/JSONL/fence/diff gates all reproduced.
+- R-I2R changes only the existing exact six coordination paths, makes every current child/parent projection name `TARGETED INDEPENDENT IMPLEMENTATION REREVIEW`, and keeps all technical and protected S6.2 paths unchanged.
+- The commit containing this repair is only a targeted rereview candidate. Acceptance, archive, integration, S6.2/S6.3/E3, qualification, runtime cutover, RKP-3, and push remain unauthorized.

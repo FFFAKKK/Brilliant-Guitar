@@ -34,7 +34,7 @@
     "crates/brilliant-kernel-runtime/src/store.rs",
     "crates/brilliant-kernel-runtime/src/indices.rs"
   ],
-  "notes": "R-I2 REGRESSION AND SIX-PATH EVIDENCE FREEZE / R-A0 SOURCE C3E90C6 / R-I0 CANDIDATE 6933367 / TECHNICAL 30D4ACB0 PROTECTED AND UNCHANGED / COMPLETE TEN-ENTRY CAPSULE / R-I1 RECONSTRUCTION PASS / CARGO TYPESCRIPT NODE MATRIX PASS OR EXACTLY CLASSIFIED / NEXT GATE DEDICATED INDEPENDENT IMPLEMENTATION RE-AUDIT / ALL LATER AUTHORIZATIONS FALSE.",
+  "notes": "R-I2R SIX-PATH AUTHORITY PROJECTION REPAIR / 68C63E4 FRESH READ-ONLY RE-AUDIT RETURNED P0_0_P1_1_P2_0 / TECHNICAL CAPSULE RUST TYPESCRIPT NODE EOL AND MANIFEST GATES PASS / EVIDENCE HEADER AND TWO PARENT TOP-LEVEL GATES REPAIRED / NEXT GATE TARGETED INDEPENDENT IMPLEMENTATION REREVIEW / ALL LATER AUTHORIZATIONS FALSE.",
   "meta": {
     "planning_base_commit": "1f3f6061f093e1e169ccf4105cde444b0e49f82f",
     "planning_base_branch": "codex/rkp-2-stage-6-eol-evidence-repair",
@@ -68,8 +68,8 @@
     "returned_implementation_candidate": "1f3f6061f093e1e169ccf4105cde444b0e49f82f",
     "planning_candidate_ready": true,
     "implementation_candidate_ready": true,
-    "current_phase": "R_I2_regression_and_six_path_evidence_freeze_complete",
-    "next_gate": "dedicated_independent_implementation_reaudit",
+    "current_phase": "R_I2R_authority_projection_repair_complete",
+    "next_gate": "targeted_independent_implementation_rereview",
     "audit_return_reentry": {
       "audit_task_id": "01a06532-e9ab-7603-bddc-f9d55b3f5bb9",
       "reviewed_head": "1f3f6061f093e1e169ccf4105cde444b0e49f82f",
@@ -179,6 +179,32 @@
       "implementation_candidate_ready": true,
       "later_lifecycle_authorized": false,
       "next_gate": "dedicated_independent_implementation_reaudit"
+    },
+    "r_i2_implementation_reaudit_return": {
+      "review_mode": "codex_inline_main_session_fresh_clone_read_only_reaudit_2026_09_03",
+      "reviewed_head": "68c63e44d70cb552edd9d4ff169ca866e35a9150",
+      "reviewed_tree": "aa7f8371ad19ad285705d9013e2bf9930d30c36a",
+      "P0": 0,
+      "P1": 1,
+      "P2": 0,
+      "verdict": "return_for_bounded_six_path_authority_projection_repair",
+      "finding": "implementation_evidence_current_header_claimed_candidate_ready_false_while_current_task_and_nested_parent_projections_claimed_true_and_both_parent_top_level_next_gate_fields_remained_at_the_completed_planning_audit",
+      "technical_evidence": "capsule_10_of_10_twice_node_check_9_of_9_expected_trees_exact_rust_reconstruction_4_of_4_self_test_5_of_5_cargo_typescript_focused_full_eol_trellis_and_manifest_gates_pass",
+      "technical_finding_count": 0,
+      "lifecycle_authorization_drift": false
+    },
+    "r_i2r_authority_projection_repair": {
+      "scope": "exact_six_coordination_paths_only_zero_technical_and_protected_s6_2_delta",
+      "repairs": [
+        "current_evidence_header_implementation_candidate_ready_true",
+        "rkp2_parent_top_level_next_gate_targeted_independent_implementation_rereview",
+        "rust_parent_top_level_next_gate_targeted_independent_implementation_rereview",
+        "all_current_child_and_parent_projections_target_the_same_rereview_gate"
+      ],
+      "candidate_head": "resolve_to_clean_commit_containing_this_record",
+      "implementation_candidate_ready": true,
+      "later_lifecycle_authorized": false,
+      "next_gate": "targeted_independent_implementation_rereview"
     },
     "i0_source_head": "64bc508cd56bd0a250f890af186c097dc2b6880e",
     "i0_source_tree": "b767ce3b7016b8529326f94891ebd4aaa2373515",
