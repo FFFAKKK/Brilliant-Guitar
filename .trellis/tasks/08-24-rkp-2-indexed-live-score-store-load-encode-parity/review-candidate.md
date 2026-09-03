@@ -1,5 +1,21 @@
 # Review Candidate — RKP-2 Post-Stage-5 Manifest Authority Closure
 
+## Final RKP-2 implementation candidate — S6.3
+
+Review the exact commit with subject `docs(rkp-2): freeze final S6.3
+candidate`. Its technical predecessor is `fb4febfd7e8c9f267b4fe91a2542e2bc0884e8f3`.
+The review is direct and read-only: verify the archive-aware Workspace Law,
+exact S6.2 chain `c920f057 -> e3518896 -> 51dbabd1`, immutable sentinel
+`4cbcbf87...bb0c`, one-test-file technical scope, and the recorded final gates.
+
+Expected evidence is focused `11/11`, full Node `611/609/0/2`, Rust
+`79/0/1 ignored` with fmt/check/clippy/MSRV green, TypeScript typecheck green,
+and S6.3 E3 execution count zero. A PASS confirms only the RKP-2
+implementation candidate. It does not accept/archive RKP-2, qualify or switch
+the runtime, create RKP-3, or authorize push.
+
+All subsequent sections are historical context.
+
 ## Fresh S6.2 accepted result — 2026-09-03
 
 Exact child E4 HEAD/tree `c920f057bd19d3636e82de6b9c80dcde358488de`

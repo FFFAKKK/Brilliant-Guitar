@@ -1,5 +1,21 @@
 # Operator Handoff — RKP-2
 
+## S6.3 final implementation candidate — 2026-09-03
+
+S6.3 is implementation-complete. Planning `ca718569`, activation `e88e52ac`,
+and technical repair `fb4febfd` changed no production runtime behavior. The
+post-archive Workspace Law is now `11/11`; the final complete gate is Node
+`611 total / 609 pass / 0 fail / 2 skipped`, Rust `79 pass / 0 fail / 1
+ignored` with fmt/check/clippy/MSRV green, and TypeScript typecheck green.
+
+The accepted S6.2 archive and sentinel `4cbcbf87...bb0c` were consumed without
+rerunning E3. Stage 6 is complete and the RKP-2 implementation candidate is
+ready for exactly one direct read-only final check. TypeScript remains default;
+RKP-2 acceptance/archive, qualification, cutover, RKP-3, and push remain false.
+
+All subsequent sections are historical context and do not override this current
+projection.
+
 ## Fresh S6.2 acceptance — 2026-09-03
 
 Direct child `09-03-rkp-2-stage-6-s6-2-fresh-evidence-consumption` completed

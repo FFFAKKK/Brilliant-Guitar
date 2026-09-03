@@ -94,7 +94,7 @@
       "e3_user_authorization_consumed_by_parent_stage6_owner": true
     },
     "current_dependency_repair_child": null,
-    "current_blocking_descendant": "09-03-rkp-2-stage-6-s6-2-fresh-evidence-consumption",
+    "current_blocking_descendant": "09-03-rkp-2-stage-6-s6-3-final-candidate-freeze",
     "future_children_created": true,
     "stage_sequence": [
       "RKP-0",
@@ -137,7 +137,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "nested_rkp2_fresh_read_only_S6_2_implementation_audit_of_child_E4_candidate",
+    "next_gate": "nested_rkp2_one_direct_final_implementation_check",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -332,7 +332,7 @@
     },
     "rkp2_stage_6_started": true,
     "rkp2_stage_6_authorized": true,
-    "rkp2_stage_6_completed": false,
+    "rkp2_stage_6_completed": true,
     "rkp2_stage_6_user_authorization": "post_p1_runner_repair_user_requested_continue_to_later_content_as_separate_stage_6_authorization",
     "rkp2_stage_6_s6_0_commit": "ce673a2ad62348fa73458d493a45f9c005bf0288",
     "rkp2_stage_6_operationally_paused": false,
@@ -342,9 +342,10 @@
     "rkp2_stage_6_s6_2_started": true,
     "rkp2_stage_6_s6_2_completed": true,
     "rkp2_stage_6_s6_3_started": true,
-    "rkp2_implementation_candidate_ready": false,
-    "rkp2_implementation_review": "fresh_s6_2_child_c920f057_direct_check_pass_P0_0_P1_0_P2_0_owner_accepted",
-    "rkp2_implementation_blocker": "s6_3_focused_workspace_law_green",
+    "rkp2_stage_6_s6_3_completed": true,
+    "rkp2_implementation_candidate_ready": true,
+    "rkp2_implementation_review": "pending_one_direct_final_RKP2_check_after_S6_3_freeze",
+    "rkp2_implementation_blocker": "one_direct_final_RKP2_implementation_check",
     "rkp2_default_runtime": "typescript",
     "rkp2_current_planning_child": null,
     "rkp2_current_implementation_child": "09-03-rkp-2-stage-6-s6-3-final-candidate-freeze",
@@ -886,7 +887,10 @@
     "rkp2_stage6_s6_2_fresh_successor": {
       "task": "09-03-rkp-2-stage-6-s6-2-fresh-evidence-consumption",
       "parent": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
-      "status": "owner_accepted_pending_native_archive_and_fast_forward_integration",
+      "status": "accepted_archived_fast_forward_integrated_historical_no_live_gate",
+      "native_archive_commit": "51dbabd1e48dabb1333b011ee5446ed3f56b714f",
+      "archive_root": ".trellis/tasks/archive/2026-09/09-03-rkp-2-stage-6-s6-2-fresh-evidence-consumption",
+      "active_root_present": false,
       "planning_base": "9da9d036a6c2ef184ea68d5b33fabfb1e9a0eba5",
       "planning_base_tree": "179e08f0f3ec77f9368cc781c9e4567671791f30",
       "branch": "codex/rkp-2-stage-6-s6-2-fresh-evidence-consumption",
@@ -973,7 +977,7 @@
         "rkp3_creation_authorized": false,
         "push_authorized": false
       },
-      "next_gate": "native_archive_then_fast_forward_only_integration",
+      "next_gate": "completed_historical_no_live_gate",
       "default_runtime": "typescript"
     }
   }
