@@ -30,7 +30,7 @@
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
     ".trellis/spec/core-kernel/backend/rust-runtime-transition.md"
   ],
-  "notes": "S6.3 IMPLEMENTATION COMPLETE / FINAL RKP-2 CANDIDATE FREEZE PENDING ONE DIRECT CHECK / FOCUSED 11 OF 11 / FULL 611 TOTAL 609 PASS 0 FAIL 2 SKIP / RUST 79 PASS 0 FAIL 1 IGNORED / NO E3 RERUN / TYPESCRIPT DEFAULT / ACCEPTANCE ARCHIVE QUALIFICATION CUTOVER RKP3 AND PUSH FALSE.",
+  "notes": "S6.3 IMPLEMENTATION COMPLETE / FINAL RKP-2 CANDIDATE 33AF840 DIRECT CHECK PASS P0 0 P1 0 P2 0 / FOCUSED 11 OF 11 / FULL 611 TOTAL 609 PASS 0 FAIL 2 SKIP / RUST 79 PASS 0 FAIL 1 IGNORED / NO E3 RERUN / TYPESCRIPT DEFAULT / AWAITING EXPLICIT OWNER ACCEPTANCE AND ARCHIVE DECISION / QUALIFICATION CUTOVER RKP3 AND PUSH FALSE.",
   "meta": {
     "planning_base_commit": "51dbabd1e48dabb1333b011ee5446ed3f56b714f",
     "planning_base_tree": "e88cb454eef3486bc7f0e8155ab0d44d1c8ae21a",
@@ -56,8 +56,8 @@
     "activation_authorized": true,
     "production_implementation_authorized": true,
     "activation_authorization_source": "user_replied_can_continue_after_explicit_streamlined_s6_2_closeout_and_s6_3_progression",
-    "current_phase": "I4_final_RKP2_candidate_frozen_ready_for_one_direct_check",
-    "next_gate": "one_direct_final_RKP2_implementation_check",
+    "current_phase": "I5_direct_final_RKP2_check_passed_awaiting_owner_decision",
+    "next_gate": "explicit_owner_decision_on_RKP2_implementation_acceptance_and_native_archive",
     "accepted_s6_2": {
       "reviewed_candidate": "c920f057bd19d3636e82de6b9c80dcde358488de",
       "reviewed_tree": "b6e07c4b127fb941d4eeac5e03ec1d2526996976",
@@ -102,7 +102,23 @@
       "full_gate_execution_count": 1
     },
     "implementation_candidate_commit_subject": "docs(rkp-2): freeze final S6.3 candidate",
-    "implementation_review": "pending_one_direct_final_RKP2_check",
+    "implementation_candidate_head": "33af840e11a4235c36c8f936c3a1b20da76ce5d0",
+    "implementation_candidate_tree": "43e9fa04736529c519515232c239b5511881d217",
+    "implementation_review": "passed_direct_final_RKP2_check_P0_0_P1_0_P2_0",
+    "direct_final_implementation_check": {
+      "review_mode": "codex_inline_main_session_direct_2026_09_03",
+      "reviewed_base": "51dbabd1e48dabb1333b011ee5446ed3f56b714f",
+      "reviewed_head": "33af840e11a4235c36c8f936c3a1b20da76ce5d0",
+      "reviewed_tree": "43e9fa04736529c519515232c239b5511881d217",
+      "changed_path_count": 13,
+      "production_path_count": 0,
+      "focused_workspace_law": "11_total_11_pass_0_fail_0_skip",
+      "full_suite_rerun_for_review": false,
+      "P0": 0,
+      "P1": 0,
+      "P2": 0,
+      "verdict": "pass_final_RKP2_implementation_candidate"
+    },
     "default_runtime": "typescript",
     "s6_3_completed": true,
     "stage_6_completed": true,

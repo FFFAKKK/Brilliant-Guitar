@@ -137,7 +137,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "nested_rkp2_one_direct_final_implementation_check",
+    "next_gate": "nested_rkp2_explicit_owner_decision_on_implementation_acceptance_and_native_archive",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -344,8 +344,21 @@
     "rkp2_stage_6_s6_3_started": true,
     "rkp2_stage_6_s6_3_completed": true,
     "rkp2_implementation_candidate_ready": true,
-    "rkp2_implementation_review": "pending_one_direct_final_RKP2_check_after_S6_3_freeze",
-    "rkp2_implementation_blocker": "one_direct_final_RKP2_implementation_check",
+    "rkp2_implementation_review": "passed_direct_final_RKP2_check_33af840_P0_0_P1_0_P2_0",
+    "rkp2_implementation_blocker": "none_technical_awaiting_explicit_owner_acceptance_and_archive_decision",
+    "rkp2_final_direct_implementation_check": {
+      "review_mode": "codex_inline_main_session_direct_2026_09_03",
+      "reviewed_base": "51dbabd1e48dabb1333b011ee5446ed3f56b714f",
+      "reviewed_head": "33af840e11a4235c36c8f936c3a1b20da76ce5d0",
+      "reviewed_tree": "43e9fa04736529c519515232c239b5511881d217",
+      "changed_path_count": 13,
+      "production_path_count": 0,
+      "P0": 0,
+      "P1": 0,
+      "P2": 0,
+      "verdict": "pass_final_RKP2_implementation_candidate",
+      "full_suite_rerun_for_review": false
+    },
     "rkp2_default_runtime": "typescript",
     "rkp2_current_planning_child": null,
     "rkp2_current_implementation_child": "09-03-rkp-2-stage-6-s6-3-final-candidate-freeze",

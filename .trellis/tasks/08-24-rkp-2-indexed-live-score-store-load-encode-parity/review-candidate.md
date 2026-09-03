@@ -14,6 +14,13 @@ and S6.3 E3 execution count zero. A PASS confirms only the RKP-2
 implementation candidate. It does not accept/archive RKP-2, qualify or switch
 the runtime, create RKP-3, or authorize push.
 
+Direct review result: exact candidate/tree
+`33af840e11a4235c36c8f936c3a1b20da76ce5d0` /
+`43e9fa04736529c519515232c239b5511881d217` passed P0/P1/P2=`0/0/0`.
+The 13-path range contains zero production paths and matches the S6.3
+technical/authority allowlists. The next gate is the explicit owner decision
+on RKP-2 implementation acceptance and native archive, not another audit.
+
 All subsequent sections are historical context.
 
 ## Fresh S6.2 accepted result — 2026-09-03

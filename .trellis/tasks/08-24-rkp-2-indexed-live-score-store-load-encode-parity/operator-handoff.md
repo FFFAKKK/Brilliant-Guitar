@@ -13,6 +13,13 @@ rerunning E3. Stage 6 is complete and the RKP-2 implementation candidate is
 ready for exactly one direct read-only final check. TypeScript remains default;
 RKP-2 acceptance/archive, qualification, cutover, RKP-3, and push remain false.
 
+The one direct final check reviewed exact candidate/tree
+`33af840e11a4235c36c8f936c3a1b20da76ce5d0` /
+`43e9fa04736529c519515232c239b5511881d217` and passed P0/P1/P2=`0/0/0`.
+There is no remaining technical implementation blocker. The next gate is an
+explicit owner decision on RKP-2 implementation acceptance and native archive;
+qualification and runtime cutover remain separate later decisions.
+
 All subsequent sections are historical context and do not override this current
 projection.
 

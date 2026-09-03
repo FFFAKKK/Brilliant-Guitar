@@ -151,7 +151,7 @@
       "e3_user_authorization_consumed_by_parent_stage6_owner": true
     },
     "current_implementation_child": "09-03-rkp-2-stage-6-s6-3-final-candidate-freeze",
-    "implementation_stage": "stage_6_complete_final_RKP2_candidate_pending_one_direct_check",
+    "implementation_stage": "stage_6_complete_final_RKP2_candidate_direct_check_passed_awaiting_owner_decision",
     "stage_1_started": true,
     "stage_1_completed": true,
     "stage_1_commit_subject": "build(rkp-2): pin typed generational store dependency",
@@ -354,7 +354,7 @@
       "post_pass_closeout_authorized": true,
       "stage_6_blocked_until_accepted_archived_integrated": false
     },
-    "next_gate": "one_direct_final_RKP2_implementation_check",
+    "next_gate": "explicit_owner_decision_on_RKP2_implementation_acceptance_and_native_archive",
     "stage_6_started": true,
     "stage_6_authorized": true,
     "stage_6_completed": true,
@@ -461,9 +461,22 @@
       "future_technical_allowlist_count": 6,
       "next_resume_gate": "fast_forward_only_integration_gates_then_resume_preserved_s6_1"
     },
-    "implementation_review": "pending_one_direct_final_RKP2_check_after_S6_3_freeze",
+    "implementation_review": "passed_direct_final_RKP2_check_33af840_P0_0_P1_0_P2_0",
     "implementation_candidate_ready": true,
-    "implementation_blocker": "one_direct_final_RKP2_implementation_check",
+    "implementation_blocker": "none_technical_awaiting_explicit_owner_acceptance_and_archive_decision",
+    "final_direct_implementation_check": {
+      "review_mode": "codex_inline_main_session_direct_2026_09_03",
+      "reviewed_base": "51dbabd1e48dabb1333b011ee5446ed3f56b714f",
+      "reviewed_head": "33af840e11a4235c36c8f936c3a1b20da76ce5d0",
+      "reviewed_tree": "43e9fa04736529c519515232c239b5511881d217",
+      "changed_path_count": 13,
+      "production_path_count": 0,
+      "P0": 0,
+      "P1": 0,
+      "P2": 0,
+      "verdict": "pass_final_RKP2_implementation_candidate",
+      "full_suite_rerun_for_review": false
+    },
     "public_json_property_cap_scale_compatibility_repair": {
       "task": "08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair",
       "status": "accepted_archived_integrated_C5_execution_complete_historical",
@@ -590,7 +603,9 @@
       "activation_commit": "e88e52ace1d41c097d1ddd8143814dfb69922dfc",
       "technical_repair_head": "fb4febfd7e8c9f267b4fe91a2542e2bc0884e8f3",
       "technical_repair_tree": "0f2a0101a6db58aa708870c91844a3e1dce4856f",
-      "status": "implementation_complete_candidate_freeze_pending_one_direct_check",
+      "status": "implementation_complete_direct_check_passed_awaiting_owner_decision",
+      "candidate_head": "33af840e11a4235c36c8f936c3a1b20da76ce5d0",
+      "candidate_tree": "43e9fa04736529c519515232c239b5511881d217",
       "workspace_law": "11_total_11_pass_0_fail_0_skip",
       "full_node": "611_total_609_pass_0_fail_2_skip",
       "rust": "79_pass_0_fail_1_ignored_fmt_check_clippy_msrv_pass",
@@ -603,7 +618,8 @@
       "rkp3_creation_authorized": false,
       "archive_authorized": false,
       "push_authorized": false,
-      "next_gate": "one_direct_final_RKP2_implementation_check"
+      "direct_check": "P0_0_P1_0_P2_0_pass",
+      "next_gate": "explicit_owner_decision_on_RKP2_implementation_acceptance_and_native_archive"
     },
     "tracked_byte_eol_portability_prerequisite": {
       "task": "09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite",
