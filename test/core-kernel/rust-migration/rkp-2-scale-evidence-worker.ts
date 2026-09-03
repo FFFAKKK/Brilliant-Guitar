@@ -20,6 +20,8 @@ export const PRIVATE_SCALE_TEST_NAME =
 export const PRIVATE_SCALE_REQUEST_ENV = "BRILLIANT_RKP2_SCALE_REQUEST_V1" as const;
 export const PRIVATE_SCALE_RUST_PREFIX = "BRILLIANT_RKP2_SCALE_RUST_V1:" as const;
 export const PRIVATE_SCALE_PROCESS_PREFIX = "BRILLIANT_RKP2_SCALE_PROCESS_V1:" as const;
+export const PRIVATE_SCALE_CONSUMPTION_PREFIX =
+  "BRILLIANT_RKP2_SCALE_CONSUMPTION_V1:" as const;
 export const PRIVATE_SCALE_TIMEOUT_MS = 180_000 as const;
 export const PRIVATE_SCALE_POLL_INTERVAL_MS = 25 as const;
 export const PRIVATE_SCALE_STREAM_LIMIT_BYTES = 1_048_576 as const;
@@ -144,6 +146,9 @@ export type ScaleProcessEnvelope =
 
 export interface WorkerResult {
   readonly envelope: Extract<ScaleProcessEnvelope, { readonly status: "ok" }>;
+  readonly processSentinelBase64: string;
+  readonly processSentinelBytes: number;
+  readonly processSentinelSha256: string;
   readonly wallElapsedMicros: number;
 }
 
@@ -731,9 +736,16 @@ export async function runPrivateScaleEvidenceWorker(options: { readonly repoRoot
     const envelope = decodeProcessEnvelope(processResult.stdout, processResult.stderr);
     if (envelope.status !== "ok") throw envelope.failure;
     if (processResult.exitCode !== 0) throw { code: "process.nonzero-exit", details: { exitCode: processResult.exitCode ?? 1 } } satisfies ScaleFailure;
+    const processSentinel = Buffer.from(processResult.stdout);
     const elapsed = Number((process.hrtime.bigint() - started) / 1_000n);
     if (!safeInteger(elapsed, true)) throw { code: "evidence.overflow", details: { field: "workloadElapsedMicros" } } satisfies ScaleFailure;
-    return { envelope, wallElapsedMicros: elapsed };
+    return {
+      envelope,
+      processSentinelBase64: processSentinel.toString("base64"),
+      processSentinelBytes: processSentinel.length,
+      processSentinelSha256: createHash("sha256").update(processSentinel).digest("hex"),
+      wallElapsedMicros: elapsed,
+    };
   } finally {
     if (nodeOwnsLeaf && !cleanupNodeLeaf()) {
       // The original failure remains primary; no partial success is published.

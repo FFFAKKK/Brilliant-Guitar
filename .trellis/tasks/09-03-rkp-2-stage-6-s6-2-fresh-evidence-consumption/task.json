@@ -50,8 +50,8 @@
     "independent_planning_review": "passed_targeted_fresh_rereview_7942de056f6b0b6806740e5567de9e493236cec2_P0_0_P1_0_P2_0_for_explicit_user_activation_decision_only",
     "planning_candidate_ready": true,
     "planning_candidate_commit": "7942de056f6b0b6806740e5567de9e493236cec2",
-    "current_phase": "A0_activated_E1_pending",
-    "next_gate": "E1_reconstruct_and_freeze_source",
+    "current_phase": "E1_candidate_committed_source_gate_pending",
+    "next_gate": "E1_focused_full_classifier_and_source_freeze",
     "parent_s6_1_completed": true,
     "parent_s6_2_started": true,
     "parent_s6_2_completed": false,
@@ -148,7 +148,18 @@
       "fresh_eol_proof": "seven_tracked_paths_zero_CR_and_raw_worktree_blob_equality",
       "absolute_cargo_build": "passed"
     },
-    "implementation_workload_inputs": null,
+    "activation_commit": "b2648d9fd7c0f9b96fb87a954483174c521e79f0",
+    "activation_tree": "ba3bb8c71fbef441465a1c89e6ef7ae54546ae23",
+    "e1_expected_source_parent": "b2648d9fd7c0f9b96fb87a954483174c521e79f0",
+    "e1_expected_commit_subject": "test(rkp-2): rebuild S6.2 evidence source",
+    "e1_evidence_absent": true,
+    "implementation_workload_inputs": {
+      "crates/brilliant-kernel-runtime/src/indices.rs": "3e7a1c7f284df006181d49923c52191427c66d68b131df1f2190450523eb90b7",
+      "test/core-kernel/fixtures/cvn-7-qualification-score.ts": "5edc34b540835b5edd888706a86df564c0afadc09189293d38d2c4a1b01c05cc",
+      "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts": "909624a8a32807d0f4103bb4f61524dc7dc538f0c2c0a4fedd5e3eaf4533cd1c",
+      "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.test.ts": "222bf43058ee06a2411029531f8ca3ee55f5437c3f8c78b7e7869d8a57110fbe",
+      "test/core-kernel/rust-migration/rkp-2-scale-evidence-process.ps1": "d0a8486b0cd7cc4e7c1a9c3131ff6ec3c1e79d37d7c54dd54fb03a77282b751f"
+    },
     "tracked_eol_paths": [
       "crates/brilliant-kernel-runtime/src/runtime.rs",
       "crates/brilliant-kernel-runtime/src/store.rs",

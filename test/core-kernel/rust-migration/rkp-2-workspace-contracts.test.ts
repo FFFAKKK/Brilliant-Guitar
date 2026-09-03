@@ -33,6 +33,9 @@ import {
   createRkp2StoreFixtureCatalog,
 } from "./rkp-2-store-fixtures";
 import {
+  decodeProcessEnvelope,
+  PRIVATE_SCALE_CONSUMPTION_PREFIX,
+  PRIVATE_SCALE_PROCESS_PREFIX,
   PRIVATE_SCALE_PROCESS_STATE_REGISTRY,
   PRIVATE_SCALE_PROCESS_STATE_REGISTRY_SHA256,
 } from "./rkp-2-scale-evidence-worker";
@@ -561,6 +564,8 @@ const STAGE_6_CLOSEOUT_L6_OWNER_ACCEPTANCE_COMMIT =
   "9e74b826e2c4c8e0cbe9685e33c18a798f14b5dc";
 const STAGE_6_CLOSEOUT_L6_NATIVE_ARCHIVE_COMMIT =
   "34389020ba93879589f5a2fcb59ab06918647245";
+const STAGE_6_CLOSEOUT_TERMINAL_PROJECTION_COMMIT =
+  "55cb575c606646e8449359b0c46d5c905b3bb3c6";
 const STAGE_6_CLOSEOUT_HISTORICAL_ARCHIVE_DATE = "2026-09-01";
 const STAGE_6_CLOSEOUT_HISTORICAL_ARCHIVE_DEADLINE = "23:50:00+08:00";
 const STAGE_6_CLOSEOUT_ARCHIVE_DATE = "2026-09-02";
@@ -671,6 +676,104 @@ const STAGE_6_CLOSEOUT_MANIFEST = [
   "review-candidate.md",
   "task.json",
 ] as const;
+const S62F_PLANNING_BASE =
+  "9da9d036a6c2ef184ea68d5b33fabfb1e9a0eba5";
+const S62F_PLANNING_HEAD =
+  "7942de056f6b0b6806740e5567de9e493236cec2";
+const S62F_PLANNING_PASS_HEAD =
+  "a013a904b7636a59038a5be6c8a5e0bc803bcb11";
+const S62F_ACTIVATION_HEAD =
+  "b2648d9fd7c0f9b96fb87a954483174c521e79f0";
+const S62F_STOPPED_ATTEMPT_HEAD =
+  "c3c4d198a33ec3a78d3fc3e33cdae30657d9b62b";
+const S62F_TASK_NAME =
+  "09-03-rkp-2-stage-6-s6-2-fresh-evidence-consumption";
+const S62F_TASK_ROOT = `.trellis/tasks/${S62F_TASK_NAME}`;
+const S62F_EVIDENCE_PATH =
+  `${S62F_TASK_ROOT}/research/implementation-evidence.md`;
+const S62F_ARCHIVED_MECHANISM_ROOT =
+  ".trellis/tasks/archive/2026-09/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair";
+const S62F_ARCHIVED_MECHANISM_EVIDENCE =
+  `${S62F_ARCHIVED_MECHANISM_ROOT}/research/implementation-evidence.md`;
+const S62F_HISTORICAL_SENTINEL_SHA256 =
+  "64e09779ea34bd04d504d515eb7c391f7db35a0a23a3c366fb2ffb5aa71c2862";
+const S62F_PLANNING_MANIFEST = [
+  "check.jsonl",
+  "design.md",
+  "implement.jsonl",
+  "implement.md",
+  "operator-handoff.md",
+  "prd.md",
+  "research/current-state-and-authority-audit.md",
+  "research/file-test-and-rollback-matrix.md",
+  "research/planning-self-audit.md",
+  "review-candidate.md",
+  "task.json",
+] as const;
+const S62F_TECHNICAL_PATHS = [
+  "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
+  "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts",
+  "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.test.ts",
+] as const;
+const S62F_ACTIVATION_PATHS = [
+  `${S62F_TASK_ROOT}/task.json`,
+  `${S62F_TASK_ROOT}/operator-handoff.md`,
+  `${S62F_TASK_ROOT}/review-candidate.md`,
+  TASK_PATH,
+  ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/operator-handoff.md",
+  ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/review-candidate.md",
+  PARENT_PATH,
+] as const;
+const S62F_LIFECYCLE_PATHS = [
+  `${S62F_TASK_ROOT}/task.json`,
+  `${S62F_TASK_ROOT}/operator-handoff.md`,
+  `${S62F_TASK_ROOT}/review-candidate.md`,
+  S62F_EVIDENCE_PATH,
+  TASK_PATH,
+  ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/operator-handoff.md",
+  ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/review-candidate.md",
+  PARENT_PATH,
+] as const;
+const S62F_WORKLOAD_PATHS = [
+  "crates/brilliant-kernel-runtime/src/indices.rs",
+  "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
+  "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts",
+  "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.test.ts",
+  "test/core-kernel/rust-migration/rkp-2-scale-evidence-process.ps1",
+] as const;
+const S62F_TRACKED_EOL_PATHS = [
+  "crates/brilliant-kernel-runtime/src/runtime.rs",
+  "crates/brilliant-kernel-runtime/src/store.rs",
+  "crates/brilliant-kernel-runtime/src/indices.rs",
+  "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
+  "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts",
+  "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.test.ts",
+  "test/core-kernel/rust-migration/rkp-2-scale-evidence-process.ps1",
+] as const;
+const S62F_PLANNING_WORKLOAD_HASHES = {
+  "crates/brilliant-kernel-runtime/src/indices.rs":
+    "3e7a1c7f284df006181d49923c52191427c66d68b131df1f2190450523eb90b7",
+  "test/core-kernel/fixtures/cvn-7-qualification-score.ts":
+    "5edc34b540835b5edd888706a86df564c0afadc09189293d38d2c4a1b01c05cc",
+  "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts":
+    "ec0c59d6516b7635ff6bc595ca67aba0a588cf7a2dee328c9f825fbac8e6531f",
+  "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.test.ts":
+    "72649e5990529b503de461a7daace037cd74199f57504a9b98e4037b928c88b2",
+  "test/core-kernel/rust-migration/rkp-2-scale-evidence-process.ps1":
+    "d0a8486b0cd7cc4e7c1a9c3131ff6ec3c1e79d37d7c54dd54fb03a77282b751f",
+} as const;
+const S62F_IMPLEMENTATION_WORKLOAD_HASHES = {
+  "crates/brilliant-kernel-runtime/src/indices.rs":
+    "3e7a1c7f284df006181d49923c52191427c66d68b131df1f2190450523eb90b7",
+  "test/core-kernel/fixtures/cvn-7-qualification-score.ts":
+    "5edc34b540835b5edd888706a86df564c0afadc09189293d38d2c4a1b01c05cc",
+  "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts":
+    "909624a8a32807d0f4103bb4f61524dc7dc538f0c2c0a4fedd5e3eaf4533cd1c",
+  "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.test.ts":
+    "222bf43058ee06a2411029531f8ca3ee55f5437c3f8c78b7e7869d8a57110fbe",
+  "test/core-kernel/rust-migration/rkp-2-scale-evidence-process.ps1":
+    "d0a8486b0cd7cc4e7c1a9c3131ff6ec3c1e79d37d7c54dd54fb03a77282b751f",
+} as const;
 const STAGE_6_ARCHIVED_CHILDREN = [
   "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
   "08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair",
@@ -1013,6 +1116,34 @@ function sha256(value: string): string {
   return createHash("sha256").update(value, "utf8").digest("hex");
 }
 
+function rawFileSha256(path: string): string {
+  return createHash("sha256").update(readFileSync(resolve(path))).digest("hex");
+}
+
+function rawGitFileAt(commit: string, path: string): Buffer {
+  return execFileSync(
+    "git",
+    ["-c", "core.longpaths=true", "show", `${commit}:${path}`],
+    { cwd: process.cwd(), maxBuffer: 80 * 1024 * 1024 },
+  );
+}
+
+function rawGitFileSha256At(commit: string, path: string): string {
+  return createHash("sha256").update(rawGitFileAt(commit, path)).digest("hex");
+}
+
+function exactSourceSection(
+  source: string,
+  startMarker: string,
+  endMarker: string,
+): string {
+  const start = source.indexOf(startMarker);
+  const end = source.indexOf(endMarker, start + startMarker.length);
+  assert.notEqual(start, -1, `missing source marker: ${startMarker}`);
+  assert.notEqual(end, -1, `missing source marker: ${endMarker}`);
+  return source.slice(start, end);
+}
+
 function section(source: string, name: string): string {
   const header = `[${name}]`;
   const start = source.indexOf(header);
@@ -1213,11 +1344,8 @@ function currentStage6CloseoutChanges(): Map<string, "A" | "M" | "D"> {
     "diff",
     "--no-renames",
     "--name-status",
-    `${STAGE_6_CLOSEOUT_BASE}..HEAD`,
+    `${STAGE_6_CLOSEOUT_BASE}..${STAGE_6_CLOSEOUT_TERMINAL_PROJECTION_COMMIT}`,
   ]);
-  collect(["diff", "--no-renames", "--name-status"], undefined, true);
-  collect(["diff", "--cached", "--no-renames", "--name-status"], undefined, true);
-  collect(["ls-files", "--others", "--exclude-standard"], "A", true);
   if (existsSync(resolve(STAGE_6_CLOSEOUT_ARCHIVE_ROOT))) {
     for (const line of lines(
       git([
@@ -1237,7 +1365,828 @@ function currentStage6CloseoutChanges(): Map<string, "A" | "M" | "D"> {
       }
     }
   }
+  for (const path of [...result.keys()]) {
+    if (
+      path.startsWith(`${S62F_TASK_ROOT}/`) ||
+      (S62F_TECHNICAL_PATHS.includes(
+        path as (typeof S62F_TECHNICAL_PATHS)[number],
+      ) && path !== STAGE_6_CLOSEOUT_TECHNICAL_PATH)
+    ) {
+      result.delete(path);
+    }
+  }
   return result;
+}
+
+function currentS62FChanges(): Map<string, "A" | "M" | "D"> {
+  const result = new Map<string, "A" | "M" | "D">();
+  const collect = (
+    args: readonly string[],
+    fallbackStatus?: "A",
+    preserveExisting = false,
+  ): void => {
+    for (const line of lines(git(args))) {
+      const [statusOrPath, path, extra] = line.split("\t");
+      const status = fallbackStatus ?? statusOrPath;
+      const resolvedPath = fallbackStatus === undefined ? path : statusOrPath;
+      assert.equal(extra, undefined, "rename-collapsed paths are forbidden");
+      assert.ok(status === "A" || status === "M" || status === "D");
+      assert.ok(resolvedPath);
+      if (!preserveExisting || !result.has(resolvedPath)) {
+        result.set(resolvedPath, status);
+      }
+    }
+  };
+  collect([
+    "diff",
+    "--no-renames",
+    "--name-status",
+    `${S62F_PLANNING_BASE}..HEAD`,
+  ]);
+  collect(["diff", "--no-renames", "--name-status"], undefined, true);
+  collect(
+    ["diff", "--cached", "--no-renames", "--name-status"],
+    undefined,
+    true,
+  );
+  collect(["ls-files", "--others", "--exclude-standard"], "A", true);
+  return result;
+}
+
+function expectedS62FChanges(
+  evidencePresent: boolean,
+): Map<string, "A" | "M" | "D"> {
+  const result = new Map<string, "A" | "M" | "D">();
+  const insert = (status: "A" | "M", paths: readonly string[]): void => {
+    for (const path of paths) {
+      assert.equal(result.has(path), false, `${path} must have one S6.2 owner`);
+      result.set(path, status);
+    }
+  };
+  insert(
+    "A",
+    S62F_PLANNING_MANIFEST.map((path) => `${S62F_TASK_ROOT}/${path}`),
+  );
+  if (evidencePresent) {
+    result.set(S62F_EVIDENCE_PATH, "A");
+  }
+  insert("M", S62F_TECHNICAL_PATHS);
+  insert(
+    "M",
+    S62F_LIFECYCLE_PATHS.filter(
+      (path) =>
+        !path.startsWith(`${S62F_TASK_ROOT}/`) &&
+        path !== S62F_EVIDENCE_PATH,
+    ),
+  );
+  return result;
+}
+
+function assertS62FPathSet(
+  actual: ReadonlyMap<string, "A" | "M" | "D">,
+  evidencePresent: boolean,
+): void {
+  const project = (value: ReadonlyMap<string, "A" | "M" | "D">): string[] =>
+    [...value].map(([path, status]) => `${status}\t${path}`).sort();
+  assert.deepEqual(project(actual), project(expectedS62FChanges(evidencePresent)));
+  const counts = [...actual.values()].reduce(
+    (result, status) => ({ ...result, [status]: result[status] + 1 }),
+    { A: 0, M: 0, D: 0 },
+  );
+  assert.deepEqual(
+    counts,
+    evidencePresent ? { A: 12, M: 7, D: 0 } : { A: 11, M: 7, D: 0 },
+  );
+}
+
+function assertS62FWorkloadTransition(
+  planning: unknown,
+  implementation: unknown,
+): asserts implementation is Readonly<Record<string, string>> {
+  assert.ok(
+    planning !== null && typeof planning === "object" && !Array.isArray(planning),
+  );
+  assert.ok(
+    implementation !== null &&
+      typeof implementation === "object" &&
+      !Array.isArray(implementation),
+  );
+  const planningRecord = planning as Readonly<Record<string, unknown>>;
+  const implementationRecord = implementation as Readonly<
+    Record<string, unknown>
+  >;
+  assert.deepEqual(Object.keys(planningRecord), [...S62F_WORKLOAD_PATHS]);
+  assert.deepEqual(Object.keys(implementationRecord), [...S62F_WORKLOAD_PATHS]);
+  assert.deepEqual(planningRecord, S62F_PLANNING_WORKLOAD_HASHES);
+  assert.deepEqual(implementationRecord, S62F_IMPLEMENTATION_WORKLOAD_HASHES);
+  for (const path of S62F_WORKLOAD_PATHS) {
+    assert.equal(
+      rawGitFileSha256At(S62F_PLANNING_HEAD, path),
+      planningRecord[path],
+    );
+    assert.equal(rawFileSha256(path), implementationRecord[path]);
+  }
+  for (const path of [
+    "crates/brilliant-kernel-runtime/src/indices.rs",
+    "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
+    "test/core-kernel/rust-migration/rkp-2-scale-evidence-process.ps1",
+  ] as const) {
+    assert.equal(implementationRecord[path], planningRecord[path]);
+  }
+  for (const path of [
+    "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts",
+    "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.test.ts",
+  ] as const) {
+    assert.notEqual(implementationRecord[path], planningRecord[path]);
+  }
+}
+
+function assertS62FDualAutocrlfBytes(sourceHead: string): void {
+  const attributes = lines(
+    git(["check-attr", "text", "eol", "--", ...S62F_TRACKED_EOL_PATHS]),
+  );
+  for (const path of S62F_TRACKED_EOL_PATHS) {
+    assert.ok(attributes.includes(`${path}: text: set`));
+    assert.ok(attributes.includes(`${path}: eol: lf`));
+    const sourceBytes = rawGitFileAt(sourceHead, path);
+    assert.deepEqual(readFileSync(resolve(path)), sourceBytes);
+    assert.equal(sourceBytes.includes(13), false, `${path} must be LF-only`);
+  }
+
+  for (const autocrlf of ["true", "false"] as const) {
+    const checkoutRoot = mkdtempSync(
+      join(tmpdir(), `rkp2-s62f-autocrlf-${autocrlf}-`),
+    );
+    try {
+      const prefix = `${checkoutRoot.replaceAll("\\", "/")}/`;
+      execFileSync(
+        "git",
+        [
+          "-c",
+          "core.longpaths=true",
+          "-c",
+          `core.autocrlf=${autocrlf}`,
+          "checkout-index",
+          "--force",
+          `--prefix=${prefix}`,
+          "--",
+          ...S62F_TRACKED_EOL_PATHS,
+        ],
+        { cwd: process.cwd(), encoding: "utf8" },
+      );
+      for (const path of S62F_TRACKED_EOL_PATHS) {
+        const checkoutBytes = readFileSync(resolve(checkoutRoot, path));
+        assert.deepEqual(checkoutBytes, rawGitFileAt(sourceHead, path));
+        assert.equal(
+          checkoutBytes.includes(13),
+          false,
+          `${path} changed under core.autocrlf=${autocrlf}`,
+        );
+      }
+    } finally {
+      rmSync(checkoutRoot, {
+        recursive: true,
+        force: true,
+        maxRetries: 2,
+        retryDelay: 25,
+      });
+    }
+  }
+}
+
+interface S62FConsumptionProjection {
+  readonly processSentinelBase64: string;
+  readonly processSentinelBytes: number;
+  readonly processSentinelSha256: string;
+  readonly wallElapsedMicros: number;
+  readonly processEnvelope: Extract<
+    ReturnType<typeof decodeProcessEnvelope>,
+    { readonly status: "ok" }
+  >;
+}
+
+function archivedS62FProcessSentinel(): Buffer {
+  const records = lines(readText(S62F_ARCHIVED_MECHANISM_EVIDENCE)).filter(
+    (line) => line.startsWith(PRIVATE_SCALE_PROCESS_PREFIX),
+  );
+  assert.equal(records.length, 1);
+  const record = records[0];
+  assert.ok(record);
+  const sentinel = Buffer.from(record, "utf8");
+  assert.equal(
+    createHash("sha256").update(sentinel).digest("hex"),
+    S62F_HISTORICAL_SENTINEL_SHA256,
+  );
+  return sentinel;
+}
+
+function s62FConsumptionRecordForSentinel(sentinel: Buffer): string {
+  return `${PRIVATE_SCALE_CONSUMPTION_PREFIX}${JSON.stringify({
+    schemaVersion: 1,
+    processSentinelBase64: sentinel.toString("base64"),
+    processSentinelBytes: sentinel.length,
+    processSentinelSha256: createHash("sha256").update(sentinel).digest("hex"),
+    wallElapsedMicros: 1,
+  })}`;
+}
+
+function syntheticFreshS62FProcessSentinel(): Buffer {
+  const archived = archivedS62FProcessSentinel().toString("utf8");
+  const envelope = JSON.parse(
+    archived.slice(PRIVATE_SCALE_PROCESS_PREFIX.length),
+  ) as Record<string, unknown>;
+  const evidence = envelope.evidence as Record<string, unknown>;
+  const processState = envelope.process as Record<string, unknown>;
+  evidence.workloadElapsedMicros =
+    (evidence.workloadElapsedMicros as number) + 1;
+  processState.peakWorkingSetBytes =
+    (processState.peakWorkingSetBytes as number) + 1;
+  return Buffer.from(
+    `${PRIVATE_SCALE_PROCESS_PREFIX}${JSON.stringify(envelope)}\n`,
+    "utf8",
+  );
+}
+
+function assertS62FConsumptionRecordText(
+  text: string,
+): S62FConsumptionProjection {
+  const records = lines(text).filter((line) =>
+    line.startsWith(PRIVATE_SCALE_CONSUMPTION_PREFIX),
+  );
+  assert.equal(records.length, 1, "S6.2 must publish one consumption record");
+  const recordLine = records[0];
+  assert.ok(recordLine);
+  const record = JSON.parse(
+    recordLine.slice(PRIVATE_SCALE_CONSUMPTION_PREFIX.length),
+  ) as Readonly<Record<string, unknown>>;
+  assert.deepEqual(Object.keys(record), [
+    "schemaVersion",
+    "processSentinelBase64",
+    "processSentinelBytes",
+    "processSentinelSha256",
+    "wallElapsedMicros",
+  ]);
+  assert.equal(record.schemaVersion, 1);
+  assert.equal(typeof record.processSentinelBase64, "string");
+  assert.ok(Number.isSafeInteger(record.processSentinelBytes));
+  assert.ok((record.processSentinelBytes as number) > 0);
+  assert.match(record.processSentinelSha256 as string, /^[0-9a-f]{64}$/u);
+  assert.ok(Number.isSafeInteger(record.wallElapsedMicros));
+  assert.ok((record.wallElapsedMicros as number) > 0);
+
+  const processSentinel = Buffer.from(
+    record.processSentinelBase64 as string,
+    "base64",
+  );
+  assert.equal(
+    processSentinel.toString("base64"),
+    record.processSentinelBase64,
+    "process sentinel Base64 must be canonical and lossless",
+  );
+  assert.equal(processSentinel.length, record.processSentinelBytes);
+  assert.equal(
+    createHash("sha256").update(processSentinel).digest("hex"),
+    record.processSentinelSha256,
+  );
+  assert.notEqual(
+    record.processSentinelSha256,
+    S62F_HISTORICAL_SENTINEL_SHA256,
+    "archived mechanism sentinel must not be reused",
+  );
+  const sentinelText = processSentinel.toString("utf8");
+  assert.equal(
+    sentinelText.split(PRIVATE_SCALE_PROCESS_PREFIX).length - 1,
+    1,
+  );
+  assert.ok(sentinelText.startsWith(PRIVATE_SCALE_PROCESS_PREFIX));
+  assert.ok(sentinelText.endsWith("\n"));
+
+  const processEnvelope = decodeProcessEnvelope(
+    processSentinel,
+    Buffer.alloc(0),
+  );
+  assert.equal(processEnvelope.status, "ok");
+  if (processEnvelope.status !== "ok") {
+    assert.fail("fresh S6.2 consumption must decode to an ok process envelope");
+  }
+  assert.equal(processEnvelope.partialEvidence, false);
+  assert.equal(processEnvelope.process.exitCode, 0);
+  assert.equal(processEnvelope.process.timedOut, false);
+  assert.ok((processEnvelope.process.peakWorkingSetBytes ?? 0) > 0);
+  assert.equal(processEnvelope.process.terminationStatus, "not-required");
+  assert.equal(processEnvelope.process.reapStatus, "succeeded");
+  assert.equal(processEnvelope.process.cleanupStatus, "succeeded");
+  assert.equal(processEnvelope.evidence.counts.events, 102_400);
+  assert.equal(processEnvelope.evidence.counts.notes, 51_200);
+  assert.equal(processEnvelope.evidence.counts.extensions, 18);
+  assert.equal(
+    processEnvelope.evidence.metrics.indexEntriesBuilt,
+    474_517,
+  );
+  assert.equal(
+    processEnvelope.evidence.metrics.indexRebuildEntries,
+    474_517,
+  );
+  assert.equal(
+    processEnvelope.evidence.metrics.fullDocumentMaterializations,
+    1,
+  );
+  assert.deepEqual(processEnvelope.evidence.parity, {
+    normalizedProjectionEqual: true,
+    indexEntryCountEqual: true,
+  });
+  assert.deepEqual(processEnvelope.evidence.roundTrip, {
+    semanticEqual: true,
+    canonicalBytesEqual: true,
+  });
+  assert.deepEqual(processEnvelope.evidence.ordering, {
+    topologyCanonical: true,
+    extensionsPreserved: true,
+  });
+  return {
+    processSentinelBase64: record.processSentinelBase64 as string,
+    processSentinelBytes: record.processSentinelBytes as number,
+    processSentinelSha256: record.processSentinelSha256 as string,
+    wallElapsedMicros: record.wallElapsedMicros as number,
+    processEnvelope,
+  };
+}
+
+function assertS62FSourceProjection(projection: {
+  readonly parent: string;
+  readonly changedPaths: readonly string[];
+  readonly evidenceAtSource: boolean;
+  readonly technicalDeltaAfterSource: readonly string[];
+}): void {
+  assert.equal(projection.parent, S62F_ACTIVATION_HEAD);
+  assert.deepEqual([...projection.changedPaths].sort(), [
+    ...S62F_TECHNICAL_PATHS,
+    `${S62F_TASK_ROOT}/task.json`,
+  ].sort());
+  assert.equal(projection.evidenceAtSource, false);
+  assert.deepEqual(projection.technicalDeltaAfterSource, []);
+}
+
+function assertS62FLifecycleProjection(
+  projection: Readonly<Record<string, unknown>>,
+  evidencePresent: boolean,
+): void {
+  assert.equal(projection.childStatus, "in_progress");
+  assert.equal(
+    projection.childParent,
+    "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
+  );
+  assert.equal(projection.taskStartRun, true);
+  assert.equal(projection.activationAuthorized, true);
+  assert.equal(projection.productionAuthorized, true);
+  assert.equal(projection.userAuthorized, true);
+  assert.equal(projection.e3Authorized, true);
+  assert.equal(projection.e3ExecutionCount, evidencePresent ? 1 : 0);
+  assert.equal(projection.childS62Started, true);
+  assert.equal(projection.childS62Completed, false);
+  assert.equal(projection.childS63Started, false);
+  assert.equal(projection.childDefaultRuntime, "typescript");
+  assert.equal(projection.candidateReady, evidencePresent);
+  assert.equal(
+    projection.currentPhase,
+    evidencePresent
+      ? "E4_candidate_frozen_ready_for_implementation_audit"
+      : "E1_candidate_committed_source_gate_pending",
+  );
+  assert.equal(
+    projection.nextGate,
+    evidencePresent
+      ? "fresh_read_only_S6_2_implementation_audit"
+      : "E1_focused_full_classifier_and_source_freeze",
+  );
+  for (const gate of [
+    "qualificationAuthorized",
+    "runtimeCutoverAuthorized",
+    "rkp3Authorized",
+    "acceptanceAuthorized",
+    "archiveAuthorized",
+    "integrationAuthorized",
+    "pushAuthorized",
+    "parentS63Started",
+    "parentCandidateReady",
+    "rustS63Started",
+    "rustCandidateReady",
+  ] as const) {
+    assert.equal(projection[gate], false, `${gate} must remain false`);
+  }
+  assert.ok(Array.isArray(projection.parentChildren));
+  assert.equal(
+    (projection.parentChildren as readonly unknown[]).filter(
+      (child) => child === S62F_TASK_NAME,
+    ).length,
+    1,
+  );
+  assert.equal(projection.parentPlanningChild, null);
+  assert.equal(projection.parentImplementationChild, S62F_TASK_NAME);
+  assert.equal(projection.parentS62Started, true);
+  assert.equal(projection.parentDefaultRuntime, "typescript");
+  assert.equal(projection.rustPlanningChild, null);
+  assert.equal(projection.rustImplementationChild, S62F_TASK_NAME);
+  assert.equal(projection.rustS62Started, true);
+  assert.equal(projection.rustDefaultRuntime, "typescript");
+}
+
+function assertFreshS62FWorkspaceLaw(): void {
+  assert.doesNotThrow(() =>
+    git(["merge-base", "--is-ancestor", S62F_PLANNING_BASE, S62F_PLANNING_HEAD]),
+  );
+  assert.equal(git(["rev-parse", `${S62F_PLANNING_PASS_HEAD}^`]), S62F_PLANNING_HEAD);
+  assert.equal(git(["rev-parse", `${S62F_ACTIVATION_HEAD}^`]), S62F_PLANNING_PASS_HEAD);
+  assert.doesNotThrow(() =>
+    git(["merge-base", "--is-ancestor", S62F_ACTIVATION_HEAD, "HEAD"]),
+  );
+  assert.throws(() =>
+    git(["merge-base", "--is-ancestor", S62F_STOPPED_ATTEMPT_HEAD, "HEAD"]),
+  );
+
+  const planningPaths = lines(
+    git([
+      "diff",
+      "--no-renames",
+      "--name-only",
+      `${S62F_PLANNING_BASE}..${S62F_PLANNING_PASS_HEAD}`,
+    ]),
+  );
+  assert.deepEqual(planningPaths.sort(), [
+    ...S62F_PLANNING_MANIFEST.map((path) => `${S62F_TASK_ROOT}/${path}`),
+    TASK_PATH,
+    ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/operator-handoff.md",
+    ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/review-candidate.md",
+    PARENT_PATH,
+  ].sort());
+  assert.deepEqual(
+    lines(
+      git([
+        "diff-tree",
+        "--no-commit-id",
+        "--no-renames",
+        "--name-only",
+        "-r",
+        S62F_ACTIVATION_HEAD,
+      ]),
+    ).sort(),
+    [...S62F_ACTIVATION_PATHS].sort(),
+  );
+
+  const s62Task = JSON.parse(readText(`${S62F_TASK_ROOT}/task.json`)) as {
+    readonly status?: unknown;
+    readonly parent?: unknown;
+    readonly meta?: Readonly<Record<string, unknown>>;
+  };
+  const rkp2Task = JSON.parse(readText(TASK_PATH)) as {
+    readonly children?: unknown;
+    readonly meta?: Readonly<Record<string, unknown>>;
+  };
+  const rustTask = JSON.parse(readText(PARENT_PATH)) as {
+    readonly meta?: Readonly<Record<string, unknown>>;
+  };
+  const s62Meta = s62Task.meta ?? {};
+  const rkp2Meta = rkp2Task.meta ?? {};
+  const rustMeta = rustTask.meta ?? {};
+  const evidencePresent = existsSync(resolve(S62F_EVIDENCE_PATH));
+
+  const s62Changes = currentS62FChanges();
+  assertS62FPathSet(s62Changes, evidencePresent);
+  const extraPath = new Map(s62Changes);
+  extraPath.set("src/forbidden-s6-2-drift.ts", "M");
+  assert.throws(() => assertS62FPathSet(extraPath, evidencePresent));
+  const wrongTechnicalStatus = new Map(s62Changes);
+  wrongTechnicalStatus.set(S62F_TECHNICAL_PATHS[1], "A");
+  assert.throws(() =>
+    assertS62FPathSet(wrongTechnicalStatus, evidencePresent),
+  );
+
+  assertS62FWorkloadTransition(
+    s62Meta.immutable_workload_inputs,
+    s62Meta.implementation_workload_inputs,
+  );
+  const implementationHashes =
+    s62Meta.implementation_workload_inputs as Readonly<Record<string, string>>;
+  for (const drift of [
+    {
+      ...implementationHashes,
+      "crates/brilliant-kernel-runtime/src/indices.rs": "0".repeat(64),
+    },
+    {
+      ...implementationHashes,
+      "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts":
+        S62F_PLANNING_WORKLOAD_HASHES[
+          "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts"
+        ],
+    },
+    Object.fromEntries(Object.entries(implementationHashes).reverse()),
+    { ...implementationHashes, "test/undeclared.ts": "0".repeat(64) },
+  ]) {
+    assert.throws(() =>
+      assertS62FWorkloadTransition(s62Meta.immutable_workload_inputs, drift),
+    );
+  }
+
+  assert.equal(s62Meta.planning_candidate_commit, S62F_PLANNING_HEAD);
+  assert.equal(s62Meta.activation_commit, S62F_ACTIVATION_HEAD);
+  assert.equal(
+    s62Meta.historical_private_mechanism_sentinel_sha256,
+    S62F_HISTORICAL_SENTINEL_SHA256,
+  );
+  const finalPlanningReview =
+    s62Meta.final_targeted_planning_rereview as
+      | Readonly<Record<string, unknown>>
+      | undefined;
+  assert.ok(finalPlanningReview);
+  assert.equal(finalPlanningReview.candidate_commit, S62F_PLANNING_HEAD);
+  assert.equal(finalPlanningReview.P0, 0);
+  assert.equal(finalPlanningReview.P1, 0);
+  assert.equal(finalPlanningReview.P2, 0);
+  assert.equal(
+    finalPlanningReview.verdict,
+    "pass_for_explicit_user_activation_decision_only",
+  );
+
+  const planningWorker = gitTextAt(
+    S62F_PLANNING_HEAD,
+    "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts",
+  );
+  const currentWorker = readText(
+    "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts",
+  );
+  assert.equal(
+    exactSourceSection(
+      currentWorker,
+      "export type ScaleProcessEnvelope =",
+      "export interface WorkerResult",
+    ),
+    exactSourceSection(
+      planningWorker,
+      "export type ScaleProcessEnvelope =",
+      "export interface WorkerResult",
+    ),
+  );
+  assert.equal(
+    exactSourceSection(
+      currentWorker,
+      "export function decodeProcessEnvelope",
+      "export function selectPrivateScaleExecutable",
+    ),
+    exactSourceSection(
+      planningWorker,
+      "export function decodeProcessEnvelope",
+      "export function selectPrivateScaleExecutable",
+    ),
+  );
+  const currentWorkerTest = readText(
+    "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.test.ts",
+  );
+  assert.equal(
+    (currentWorker.match(/BRILLIANT_RKP2_SCALE_CONSUMPTION_V1:/gu) ?? []).length,
+    1,
+  );
+  assert.equal(
+    (currentWorkerTest.match(/process\.stdout\.write\(/gu) ?? []).length,
+    1,
+  );
+  assert.match(
+    currentWorker,
+    /const processSentinel = Buffer\.from\(processResult\.stdout\);/u,
+  );
+  assert.match(
+    currentWorkerTest,
+    /process\.stdout\.write\([\s\S]*schemaVersion: 1,[\s\S]*processSentinelBase64:[\s\S]*processSentinelBytes:[\s\S]*processSentinelSha256:[\s\S]*wallElapsedMicros:/u,
+  );
+  const optInStart = currentWorkerTest.indexOf(
+    'test("Stage 6 E2 runs the one real private scale journey only when explicitly enabled"',
+  );
+  const optInWrite = currentWorkerTest.indexOf(
+    "process.stdout.write(",
+    optInStart,
+  );
+  assert.ok(optInStart >= 0 && optInWrite > optInStart);
+  assert.ok(
+    currentWorkerTest.lastIndexOf("assert.", optInWrite) > optInStart,
+    "consumption emission must follow sentinel validation",
+  );
+
+  const sourceHead = evidencePresent
+    ? (s62Meta.implementation_source_head as string)
+    : git(["rev-parse", "HEAD"]);
+  assert.match(sourceHead, /^[0-9a-f]{40}$/u);
+  const sourceParent = git(["rev-parse", `${sourceHead}^`]);
+  const sourceChangedPaths = lines(
+    git([
+      "diff-tree",
+      "--no-commit-id",
+      "--no-renames",
+      "--name-only",
+      "-r",
+      sourceHead,
+    ]),
+  );
+  const technicalDeltaAfterSource = lines(
+    git([
+      "diff",
+      "--no-renames",
+      "--name-only",
+      `${sourceHead}..HEAD`,
+      "--",
+      ...S62F_TECHNICAL_PATHS,
+    ]),
+  );
+  const evidenceAtSource =
+    git(["ls-tree", "--name-only", sourceHead, "--", S62F_EVIDENCE_PATH]) !==
+    "";
+  const sourceProjection = {
+    parent: sourceParent,
+    changedPaths: sourceChangedPaths,
+    evidenceAtSource,
+    technicalDeltaAfterSource,
+  };
+  assertS62FSourceProjection(sourceProjection);
+  assert.equal(
+    git(["show", "-s", "--format=%s", sourceHead]),
+    "test(rkp-2): rebuild S6.2 evidence source",
+  );
+  for (const mutation of [
+    { parent: S62F_PLANNING_PASS_HEAD },
+    { changedPaths: [...sourceChangedPaths, "src/forbidden.ts"] },
+    { evidenceAtSource: true },
+    { technicalDeltaAfterSource: [S62F_TECHNICAL_PATHS[0]] },
+  ] as const) {
+    assert.throws(() =>
+      assertS62FSourceProjection({ ...sourceProjection, ...mutation }),
+    );
+  }
+  for (const path of S62F_WORKLOAD_PATHS) {
+    assert.equal(rawGitFileSha256At(sourceHead, path), implementationHashes[path]);
+  }
+  assertS62FDualAutocrlfBytes(sourceHead);
+
+  const archivedSentinel = archivedS62FProcessSentinel();
+  const syntheticConsumption = s62FConsumptionRecordForSentinel(
+    syntheticFreshS62FProcessSentinel(),
+  );
+  assertS62FConsumptionRecordText(syntheticConsumption);
+  assert.throws(() => assertS62FConsumptionRecordText(""));
+  assert.throws(() =>
+    assertS62FConsumptionRecordText(
+      `${syntheticConsumption}\n${syntheticConsumption}`,
+    ),
+  );
+  assert.throws(() =>
+    assertS62FConsumptionRecordText(
+      s62FConsumptionRecordForSentinel(archivedSentinel),
+    ),
+  );
+  const extraRecord = JSON.parse(
+    syntheticConsumption.slice(PRIVATE_SCALE_CONSUMPTION_PREFIX.length),
+  ) as Record<string, unknown>;
+  extraRecord.unexpected = true;
+  assert.throws(() =>
+    assertS62FConsumptionRecordText(
+      `${PRIVATE_SCALE_CONSUMPTION_PREFIX}${JSON.stringify(extraRecord)}`,
+    ),
+  );
+  const wrongLength = JSON.parse(
+    syntheticConsumption.slice(PRIVATE_SCALE_CONSUMPTION_PREFIX.length),
+  ) as Record<string, unknown>;
+  wrongLength.processSentinelBytes =
+    (wrongLength.processSentinelBytes as number) + 1;
+  assert.throws(() =>
+    assertS62FConsumptionRecordText(
+      `${PRIVATE_SCALE_CONSUMPTION_PREFIX}${JSON.stringify(wrongLength)}`,
+    ),
+  );
+  const partialSentinelText = syntheticFreshS62FProcessSentinel().toString("utf8");
+  const partialEnvelope = JSON.parse(
+    partialSentinelText
+      .slice(PRIVATE_SCALE_PROCESS_PREFIX.length)
+      .replace(/\n$/u, ""),
+  ) as Record<string, unknown>;
+  partialEnvelope.partialEvidence = true;
+  const partialSentinel = Buffer.from(
+    `${PRIVATE_SCALE_PROCESS_PREFIX}${JSON.stringify(partialEnvelope)}\n`,
+    "utf8",
+  );
+  assert.throws(() =>
+    assertS62FConsumptionRecordText(
+      s62FConsumptionRecordForSentinel(partialSentinel),
+    ),
+  );
+
+  const lifecycleProjection = {
+    childStatus: s62Task.status,
+    childParent: s62Task.parent,
+    taskStartRun: s62Meta.task_start_run,
+    activationAuthorized: s62Meta.activation_authorized,
+    productionAuthorized: s62Meta.production_implementation_authorized,
+    userAuthorized: s62Meta.user_implementation_authorization,
+    e3Authorized: s62Meta.e3_authorized,
+    e3ExecutionCount: s62Meta.e3_execution_count,
+    childS62Started: s62Meta.parent_s6_2_started,
+    childS62Completed: s62Meta.parent_s6_2_completed,
+    childS63Started: s62Meta.parent_s6_3_started,
+    childDefaultRuntime: s62Meta.default_runtime,
+    candidateReady: s62Meta.implementation_candidate_ready,
+    currentPhase: s62Meta.current_phase,
+    nextGate: s62Meta.next_gate,
+    qualificationAuthorized: s62Meta.qualification_authorized,
+    runtimeCutoverAuthorized: s62Meta.runtime_cutover_authorized,
+    rkp3Authorized: s62Meta.rkp3_creation_authorized,
+    acceptanceAuthorized: s62Meta.acceptance_authorized,
+    archiveAuthorized: s62Meta.archive_authorized,
+    integrationAuthorized: s62Meta.integration_authorized,
+    pushAuthorized: s62Meta.push_authorized,
+    parentChildren: rkp2Task.children,
+    parentPlanningChild: rkp2Meta.current_planning_child,
+    parentImplementationChild: rkp2Meta.current_implementation_child,
+    parentS62Started: rkp2Meta.stage_6_s6_2_started,
+    parentS63Started: rkp2Meta.stage_6_s6_3_started,
+    parentDefaultRuntime: rkp2Meta.default_runtime,
+    parentCandidateReady: rkp2Meta.implementation_candidate_ready,
+    rustPlanningChild: rustMeta.rkp2_current_planning_child,
+    rustImplementationChild: rustMeta.rkp2_current_implementation_child,
+    rustS62Started: rustMeta.rkp2_stage_6_s6_2_started,
+    rustS63Started: rustMeta.rkp2_stage_6_s6_3_started,
+    rustDefaultRuntime: rustMeta.rkp2_default_runtime,
+    rustCandidateReady: rustMeta.rkp2_implementation_candidate_ready,
+  };
+  assertS62FLifecycleProjection(lifecycleProjection, evidencePresent);
+  for (const mutation of [
+    { childS62Completed: true },
+    { childS63Started: true },
+    { candidateReady: !evidencePresent },
+    { e3ExecutionCount: evidencePresent ? 2 : 1 },
+    { parentPlanningChild: S62F_TASK_NAME },
+    { parentImplementationChild: "wrong-child" },
+    { parentS63Started: true },
+    { rustImplementationChild: "wrong-child" },
+    { qualificationAuthorized: true },
+    { acceptanceAuthorized: true },
+    { integrationAuthorized: true },
+    { pushAuthorized: true },
+  ] as const) {
+    assert.throws(() =>
+      assertS62FLifecycleProjection(
+        { ...lifecycleProjection, ...mutation },
+        evidencePresent,
+      ),
+    );
+  }
+
+  if (evidencePresent) {
+    assert.equal(s62Meta.implementation_source_head, sourceHead);
+    assert.equal(
+      s62Meta.implementation_source_tree,
+      git(["rev-parse", `${sourceHead}^{tree}`]),
+    );
+    assert.equal(s62Meta.evidence_source_head, sourceHead);
+    assert.equal(s62Meta.fresh_request_generated, true);
+    assert.equal(s62Meta.archived_result_reused, false);
+    assert.equal(s62Meta.partial_evidence, false);
+    assert.doesNotThrow(() =>
+      git(["merge-base", "--is-ancestor", sourceHead, "HEAD"]),
+    );
+    assert.deepEqual(
+      lines(
+        git([
+          "diff",
+          "--no-renames",
+          "--name-only",
+          `${sourceHead}..HEAD`,
+        ]),
+      ).sort(),
+      [...S62F_LIFECYCLE_PATHS].sort(),
+    );
+    const evidenceText = readText(S62F_EVIDENCE_PATH);
+    const consumption = assertS62FConsumptionRecordText(evidenceText);
+    assert.equal(
+      s62Meta.process_sentinel_base64,
+      consumption.processSentinelBase64,
+    );
+    assert.equal(s62Meta.process_sentinel_bytes, consumption.processSentinelBytes);
+    assert.equal(
+      s62Meta.process_sentinel_sha256,
+      consumption.processSentinelSha256,
+    );
+    assert.notEqual(
+      consumption.processSentinelBase64,
+      archivedSentinel.toString("base64"),
+    );
+    assert.match(evidenceText, /fresh_request_generated=true/u);
+    assert.match(evidenceText, /archived_result_reused=false/u);
+    assert.match(evidenceText, /partialEvidence=false/u);
+  } else {
+    assert.equal(sourceHead, git(["rev-parse", "HEAD"]));
+    assert.equal(s62Meta.implementation_source_head, undefined);
+    assert.equal(s62Meta.evidence_source_head, undefined);
+    assert.equal(s62Meta.fresh_request_generated, undefined);
+    assert.equal(s62Meta.archived_result_reused, undefined);
+    assert.equal(s62Meta.partial_evidence, undefined);
+  }
+  assert.equal(git(["status", "--porcelain", "--untracked-files=normal"]), "");
 }
 
 function currentStage6CloseoutL6DateRepairChanges(): Map<string, "A" | "M" | "D"> {
@@ -4087,6 +5036,7 @@ test("Stage 6 hostile and resource evidence consumes the existing private Rust s
 });
 
 test("Stage 6 semantic canonical evidence correction and E2 worker stay inside the accepted contracts", (context) => {
+  assertFreshS62FWorkspaceLaw();
   assert.doesNotThrow(() =>
     git(["cat-file", "-e", `${STAGE_6_SEMANTIC_CANONICAL_PLANNING_HEAD}^{commit}`]),
   );
@@ -5731,11 +6681,19 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     readonly children?: unknown;
     readonly meta?: Readonly<Record<string, unknown>>;
   };
+  const historicalRkp2Task = JSON.parse(
+    gitTextAt(STAGE_6_CLOSEOUT_TERMINAL_PROJECTION_COMMIT, TASK_PATH),
+  ) as typeof currentRkp2Task;
+  const historicalRustTask = JSON.parse(
+    gitTextAt(STAGE_6_CLOSEOUT_TERMINAL_PROJECTION_COMMIT, PARENT_PATH),
+  ) as typeof currentRustTask;
   const semanticMeta = semanticTask.meta ?? {};
   const currentStage6Meta = currentStage6Task.meta ?? {};
   const closeoutMeta = closeoutTask.meta ?? {};
   const currentRkp2Meta = currentRkp2Task.meta ?? {};
   const currentRustMeta = currentRustTask.meta ?? {};
+  const historicalRkp2Meta = historicalRkp2Task.meta ?? {};
+  const historicalRustMeta = historicalRustTask.meta ?? {};
   const stage6CloseoutPhase: Stage6CloseoutPhase =
     closeoutLocation.kind === "archive"
       ? "closeout-archived"
@@ -5937,11 +6895,11 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     .targeted_powershell_preflight_repair_rereview as
     | Readonly<Record<string, unknown>>
     | undefined;
-  const rkp2CloseoutProjection = currentRkp2Meta
+  const rkp2CloseoutProjection = historicalRkp2Meta
     .stage6_acceptance_archive_integration_closeout as
     | Readonly<Record<string, unknown>>
     | undefined;
-  const rustCloseoutProjection = currentRustMeta
+  const rustCloseoutProjection = historicalRustMeta
     .stage6_acceptance_archive_integration_closeout as
     | Readonly<Record<string, unknown>>
     | undefined;
@@ -6090,16 +7048,23 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
   assert.match(powerShellPreflightScript, /ConvertFrom-Json -DateKind String/u);
   assert.match(powerShellPreflightScript, /DateTimeOffset\]::ParseExact\(/u);
   assert.match(powerShellPreflightScript, /CultureInfo\]::InvariantCulture/u);
-  const livePowerShellPreflight = executeStage6CloseoutPowerShellPreflight(
-    powerShellPreflightScript,
+  const nowAssignment = "$now = [DateTimeOffset]::Now";
+  const historicalReplayPowerShellPreflightScript =
+    replaceStage6CloseoutPowerShellPreflightOnce(
+      powerShellPreflightScript,
+      nowAssignment,
+      "$now = [DateTimeOffset]::ParseExact('2026-09-02T12:00:00+08:00', $format, [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::None)",
+    );
+  const historicalPowerShellPreflight = executeStage6CloseoutPowerShellPreflight(
+    historicalReplayPowerShellPreflightScript,
   );
-  assertStage6CloseoutPowerShellPreflightEvidence(livePowerShellPreflight);
+  assertStage6CloseoutPowerShellPreflightEvidence(historicalPowerShellPreflight);
   context.diagnostic(
-    `L6 PowerShell preflight ${JSON.stringify(livePowerShellPreflight)}`,
+    `L6 historical PowerShell preflight replay ${JSON.stringify(historicalPowerShellPreflight)}`,
   );
   for (const culture of ["fr-FR", "zh-CN"] as const) {
     const cultureEvidence = executeStage6CloseoutPowerShellPreflight(
-      powerShellPreflightScript,
+      historicalReplayPowerShellPreflightScript,
       culture,
     );
     assertStage6CloseoutPowerShellPreflightEvidence(cultureEvidence, culture);
@@ -6111,25 +7076,24 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     "$archiveDate = $closeout.meta.closeout_archive_date";
   const deadlineAssignment =
     "$deadlineText = $closeout.meta.closeout_archive_deadline_local";
-  const nowAssignment = "$now = [DateTimeOffset]::Now";
   const negativePowerShellPreflights = [
     replaceStage6CloseoutPowerShellPreflightOnce(
-      powerShellPreflightScript,
+      historicalReplayPowerShellPreflightScript,
       jsonDecode,
       jsonDecode.replace(" -DateKind String", ""),
     ),
     replaceStage6CloseoutPowerShellPreflightOnce(
-      powerShellPreflightScript,
+      historicalReplayPowerShellPreflightScript,
       deadlineAssignment,
       `${deadlineAssignment}\n    $deadlineText = [DateTime]::Parse('2026-09-02T23:50:00+08:00')`,
     ),
     replaceStage6CloseoutPowerShellPreflightOnce(
-      powerShellPreflightScript,
+      historicalReplayPowerShellPreflightScript,
       deadlineAssignment,
       `${deadlineAssignment}\n    $deadlineText = '2026/09/02 23:50:00 +08:00'`,
     ),
     replaceStage6CloseoutPowerShellPreflightOnce(
-      powerShellPreflightScript,
+      historicalReplayPowerShellPreflightScript,
       archiveDateAssignment,
       `${archiveDateAssignment}\n    $archiveDate = '2026-09-03'`,
     ),
@@ -6258,14 +7222,14 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     closeoutArchiveAuthorityPresent: closeoutMeta.closeout_archive_authority_present,
     closeoutAcceptanceAuthorized: closeoutMeta.closeout_acceptance_authorized,
     closeoutArchiveAuthorized: closeoutMeta.closeout_archive_authorized,
-    rkp2Status: currentRkp2Task.status,
-    rkp2Parent: currentRkp2Task.parent,
-    rkp2Children: currentRkp2Task.children,
-    rkp2CurrentPlanningChild: currentRkp2Meta.current_planning_child,
+    rkp2Status: historicalRkp2Task.status,
+    rkp2Parent: historicalRkp2Task.parent,
+    rkp2Children: historicalRkp2Task.children,
+    rkp2CurrentPlanningChild: historicalRkp2Meta.current_planning_child,
     rkp2CurrentImplementationChild:
-      currentRkp2Meta.current_implementation_child,
-    rkp2ImplementationStage: currentRkp2Meta.implementation_stage,
-    rkp2NextGate: currentRkp2Meta.next_gate,
+      historicalRkp2Meta.current_implementation_child,
+    rkp2ImplementationStage: historicalRkp2Meta.implementation_stage,
+    rkp2NextGate: historicalRkp2Meta.next_gate,
     rkp2CloseoutStatus: rkp2CloseoutProjection.status,
     rkp2CloseoutImplementationStage: rkp2CloseoutProjection.implementation_stage,
     rkp2CloseoutNextGate: rkp2CloseoutProjection.next_gate,
@@ -6274,18 +7238,19 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     rkp2CloseoutL6Completed: rkp2CloseoutProjection.l6_completed,
     rkp2CloseoutTerminalProjectionReview:
       rkp2CloseoutProjection.terminal_projection_review,
-    rkp2Stage6Completed: currentRkp2Meta.stage_6_completed,
-    s62Started: currentRkp2Meta.stage_6_s6_2_started,
-    s63Started: currentRkp2Meta.stage_6_s6_3_started,
-    defaultRuntime: currentRkp2Meta.default_runtime,
-    rustStatus: currentRustTask.status,
-    rustParent: currentRustTask.parent,
-    rustChildren: currentRustTask.children,
-    rustCurrentPlanningChild: currentRustMeta.current_planning_child,
-    rustCurrentImplementationChild: currentRustMeta.current_implementation_child,
-    rustActiveImplementationChild: currentRustMeta.active_implementation_child,
-    rustRkp2Status: currentRustMeta.rkp2_status,
-    rustNextGate: currentRustMeta.next_gate,
+    rkp2Stage6Completed: historicalRkp2Meta.stage_6_completed,
+    s62Started: historicalRkp2Meta.stage_6_s6_2_started,
+    s63Started: historicalRkp2Meta.stage_6_s6_3_started,
+    defaultRuntime: historicalRkp2Meta.default_runtime,
+    rustStatus: historicalRustTask.status,
+    rustParent: historicalRustTask.parent,
+    rustChildren: historicalRustTask.children,
+    rustCurrentPlanningChild: historicalRustMeta.current_planning_child,
+    rustCurrentImplementationChild:
+      historicalRustMeta.current_implementation_child,
+    rustActiveImplementationChild: historicalRustMeta.active_implementation_child,
+    rustRkp2Status: historicalRustMeta.rkp2_status,
+    rustNextGate: historicalRustMeta.next_gate,
     rustCloseoutStatus: rustCloseoutProjection.status,
     rustCloseoutImplementationStage: rustCloseoutProjection.implementation_stage,
     rustCloseoutNextGate: rustCloseoutProjection.next_gate,
@@ -6294,11 +7259,11 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     rustCloseoutL6Completed: rustCloseoutProjection.l6_completed,
     rustCloseoutTerminalProjectionReview:
       rustCloseoutProjection.terminal_projection_review,
-    rustRkp2Stage6Completed: currentRustMeta.rkp2_stage_6_completed,
-    rustS62Started: currentRustMeta.rkp2_stage_6_s6_2_started,
-    rustS63Started: currentRustMeta.rkp2_stage_6_s6_3_started,
-    rustDefaultRuntime: currentRustMeta.rkp2_default_runtime,
-    rustRkp3ThroughRkp9Created: currentRustMeta.rkp3_through_rkp9_created,
+    rustRkp2Stage6Completed: historicalRustMeta.rkp2_stage_6_completed,
+    rustS62Started: historicalRustMeta.rkp2_stage_6_s6_2_started,
+    rustS63Started: historicalRustMeta.rkp2_stage_6_s6_3_started,
+    rustDefaultRuntime: historicalRustMeta.rkp2_default_runtime,
+    rustRkp3ThroughRkp9Created: historicalRustMeta.rkp3_through_rkp9_created,
     pushAuthorized: closeoutMeta.push_authorized,
     officialMeasurementAuthorized: closeoutMeta.official_measurement_authorized,
     qualificationAuthorized: closeoutMeta.qualification_authorized,

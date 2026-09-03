@@ -1,6 +1,6 @@
 import assert = require("node:assert/strict");
 import { spawn, spawnSync } from "node:child_process";
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { EventEmitter } from "node:events";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -9,6 +9,7 @@ import { join, resolve } from "node:path";
 import { test } from "node:test";
 
 import {
+  PRIVATE_SCALE_CONSUMPTION_PREFIX,
   PRIVATE_SCALE_PROCESS_PREFIX,
   PRIVATE_SCALE_OUTER_TIMEOUT_MS,
   PRIVATE_SCALE_REAP_TIMEOUT_MS,
@@ -285,6 +286,30 @@ test("Stage 6 E2 runs the one real private scale journey only when explicitly en
   assert.equal(result.envelope.evidence.counts.events, 102400);
   assert.equal(result.envelope.evidence.metrics.fullDocumentMaterializations, 1);
   assert.ok(result.wallElapsedMicros > 0);
+  const processSentinel = Buffer.from(result.processSentinelBase64, "base64");
+  assert.equal(processSentinel.length, result.processSentinelBytes);
+  assert.equal(processSentinel.toString("base64"), result.processSentinelBase64);
+  assert.equal(
+    createHash("sha256").update(processSentinel).digest("hex"),
+    result.processSentinelSha256,
+  );
+  assert.deepEqual(
+    decodeProcessEnvelope(processSentinel, Buffer.alloc(0)),
+    result.envelope,
+  );
+  assert.equal(
+    processSentinel.toString("utf8").split(PRIVATE_SCALE_PROCESS_PREFIX).length - 1,
+    1,
+  );
+  process.stdout.write(
+    `${PRIVATE_SCALE_CONSUMPTION_PREFIX}${JSON.stringify({
+      schemaVersion: 1,
+      processSentinelBase64: result.processSentinelBase64,
+      processSentinelBytes: result.processSentinelBytes,
+      processSentinelSha256: result.processSentinelSha256,
+      wallElapsedMicros: result.wallElapsedMicros,
+    })}\n`,
+  );
 });
 
 class FakeChild extends EventEmitter {
