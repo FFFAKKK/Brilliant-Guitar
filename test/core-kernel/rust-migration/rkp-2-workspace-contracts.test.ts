@@ -686,11 +686,23 @@ const S62F_ACTIVATION_HEAD =
   "b2648d9fd7c0f9b96fb87a954483174c521e79f0";
 const S62F_STOPPED_ATTEMPT_HEAD =
   "c3c4d198a33ec3a78d3fc3e33cdae30657d9b62b";
+const S62F_REVIEWED_CANDIDATE =
+  "c920f057bd19d3636e82de6b9c80dcde358488de";
+const S62F_ACCEPTANCE_COMMIT =
+  "e3518896d8ea184d79284d31111220bcaf7ebdae";
+const S62F_NATIVE_ARCHIVE_COMMIT =
+  "51dbabd1e48dabb1333b011ee5446ed3f56b714f";
 const S62F_TASK_NAME =
   "09-03-rkp-2-stage-6-s6-2-fresh-evidence-consumption";
 const S62F_TASK_ROOT = `.trellis/tasks/${S62F_TASK_NAME}`;
 const S62F_EVIDENCE_PATH =
   `${S62F_TASK_ROOT}/research/implementation-evidence.md`;
+const S62F_ARCHIVE_ROOT =
+  `.trellis/tasks/archive/2026-09/${S62F_TASK_NAME}`;
+const S62F_ARCHIVE_EVIDENCE_PATH =
+  `${S62F_ARCHIVE_ROOT}/research/implementation-evidence.md`;
+const S62F_ACCEPTED_SENTINEL_SHA256 =
+  "4cbcbf8705d9abcb1b1f51c7fa188573ac5879bd7c6617d13c59961ea191bb0c";
 const S62F_ARCHIVED_MECHANISM_ROOT =
   ".trellis/tasks/archive/2026-09/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair";
 const S62F_ARCHIVED_MECHANISM_EVIDENCE =
@@ -709,6 +721,43 @@ const S62F_PLANNING_MANIFEST = [
   "research/planning-self-audit.md",
   "review-candidate.md",
   "task.json",
+] as const;
+const S62F_ARCHIVE_MANIFEST = [
+  "check.jsonl",
+  "design.md",
+  "implement.jsonl",
+  "implement.md",
+  "operator-handoff.md",
+  "prd.md",
+  "research/current-state-and-authority-audit.md",
+  "research/file-test-and-rollback-matrix.md",
+  "research/implementation-evidence.md",
+  "research/planning-self-audit.md",
+  "review-candidate.md",
+  "task.json",
+] as const;
+const S63_PLANNING_HEAD =
+  "ca718569553ea4efeea05e4ee37a0e77171d1169";
+const S63_ACTIVATION_HEAD =
+  "e88e52ace1d41c097d1ddd8143814dfb69922dfc";
+const S63_TASK_NAME =
+  "09-03-rkp-2-stage-6-s6-3-final-candidate-freeze";
+const S63_TASK_ROOT = `.trellis/tasks/${S63_TASK_NAME}`;
+const S63_EVIDENCE_PATH = `${S63_TASK_ROOT}/research/implementation-evidence.md`;
+const S63_AUTHORITY_PATHS = [
+  `${S63_TASK_ROOT}/task.json`,
+  `${S63_TASK_ROOT}/prd.md`,
+  `${S63_TASK_ROOT}/design.md`,
+  `${S63_TASK_ROOT}/implement.md`,
+  `${S63_TASK_ROOT}/implement.jsonl`,
+  `${S63_TASK_ROOT}/check.jsonl`,
+  S63_EVIDENCE_PATH,
+  DESIGN_PATH,
+  TASK_PATH,
+  ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/operator-handoff.md",
+  ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/review-candidate.md",
+  ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/research/implementation-evidence.md",
+  PARENT_PATH,
 ] as const;
 const S62F_TECHNICAL_PATHS = [
   "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
@@ -852,6 +901,7 @@ const EXPECTED_GRAPH: Readonly<Record<CrateName, readonly string[]>> = {
 };
 
 const EXPECTED_IMPLEMENTATION_PATHS = [
+  ".gitattributes",
   "Cargo.toml",
   "Cargo.lock",
   "crates/brilliant-score-foundation/src/lib.rs",
@@ -1050,7 +1100,7 @@ const FROZEN_POST_STAGE_5_AUTHORITY_CONTENT = [
   },
   {
     path: DESIGN_PATH,
-    sha256: "2ff749eba520ab44b5a6dd68033d1e3a7b4cee5c8723a1183a618e031e296d34",
+    sha256: "096697c52847c2531719fade662abea2104b728306f10431d130fc119ca34e12",
   },
   {
     path: IMPLEMENT_PATH,
@@ -1228,6 +1278,23 @@ function currentStage6Changes(): Set<string> {
     ["ls-files", "--others", "--exclude-standard"],
   ];
   return new Set(commands.flatMap((args) => lines(git(args))));
+}
+
+function committedChanges(base: string, head: string): Set<string> {
+  return new Set(
+    lines(git(["diff", "--no-renames", "--name-only", `${base}..${head}`])),
+  );
+}
+
+function acceptedChangesWithS63Evidence(
+  base: string,
+): Set<string> {
+  const expected = committedChanges(base, S63_ACTIVATION_HEAD);
+  expected.add(DESIGN_PATH);
+  if (existsSync(resolve(S63_EVIDENCE_PATH))) {
+    expected.add(S63_EVIDENCE_PATH);
+  }
+  return expected;
 }
 
 function historicalSemanticCanonicalE2Changes(): Set<string> {
@@ -1484,7 +1551,10 @@ function assertS62FWorkloadTransition(
       rawGitFileSha256At(S62F_PLANNING_HEAD, path),
       planningRecord[path],
     );
-    assert.equal(rawFileSha256(path), implementationRecord[path]);
+    assert.equal(
+      rawGitFileSha256At(S62F_REVIEWED_CANDIDATE, path),
+      implementationRecord[path],
+    );
   }
   for (const path of [
     "crates/brilliant-kernel-runtime/src/indices.rs",
@@ -1509,7 +1579,7 @@ function assertS62FDualAutocrlfBytes(sourceHead: string): void {
     assert.ok(attributes.includes(`${path}: text: set`));
     assert.ok(attributes.includes(`${path}: eol: lf`));
     const sourceBytes = rawGitFileAt(sourceHead, path);
-    assert.deepEqual(readFileSync(resolve(path)), sourceBytes);
+    assert.deepEqual(rawGitFileAt(S62F_REVIEWED_CANDIDATE, path), sourceBytes);
     assert.equal(sourceBytes.includes(13), false, `${path} must be LF-only`);
   }
 
@@ -1729,9 +1799,8 @@ function assertS62FSourceProjection(projection: {
 
 function assertS62FLifecycleProjection(
   projection: Readonly<Record<string, unknown>>,
-  evidencePresent: boolean,
 ): void {
-  assert.equal(projection.childStatus, "in_progress");
+  assert.equal(projection.childStatus, "completed");
   assert.equal(
     projection.childParent,
     "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
@@ -1741,38 +1810,35 @@ function assertS62FLifecycleProjection(
   assert.equal(projection.productionAuthorized, true);
   assert.equal(projection.userAuthorized, true);
   assert.equal(projection.e3Authorized, true);
-  assert.equal(projection.e3ExecutionCount, evidencePresent ? 1 : 0);
+  assert.equal(projection.e3ExecutionCount, 1);
   assert.equal(projection.childS62Started, true);
-  assert.equal(projection.childS62Completed, false);
+  assert.equal(projection.childS62Completed, true);
   assert.equal(projection.childS63Started, false);
   assert.equal(projection.childDefaultRuntime, "typescript");
-  assert.equal(projection.candidateReady, evidencePresent);
-  assert.equal(
-    projection.currentPhase,
-    evidencePresent
-      ? "E4_candidate_frozen_ready_for_implementation_audit"
-      : "E1_candidate_committed_source_gate_pending",
-  );
+  assert.equal(projection.candidateReady, false);
+  assert.equal(projection.currentPhase, "owner_accepted_pending_native_archive");
   assert.equal(
     projection.nextGate,
-    evidencePresent
-      ? "fresh_read_only_S6_2_implementation_audit"
-      : "E1_focused_full_classifier_and_source_freeze",
+    "native_archive_then_fast_forward_only_integration",
   );
   for (const gate of [
     "qualificationAuthorized",
     "runtimeCutoverAuthorized",
     "rkp3Authorized",
+    "pushAuthorized",
+  ] as const) {
+    assert.equal(projection[gate], false, `${gate} must remain false`);
+  }
+  for (const completedGate of [
     "acceptanceAuthorized",
     "archiveAuthorized",
     "integrationAuthorized",
-    "pushAuthorized",
-    "parentS63Started",
-    "parentCandidateReady",
-    "rustS63Started",
-    "rustCandidateReady",
   ] as const) {
-    assert.equal(projection[gate], false, `${gate} must remain false`);
+    assert.equal(
+      projection[completedGate],
+      true,
+      `${completedGate} must preserve accepted S6.2 history`,
+    );
   }
   assert.ok(Array.isArray(projection.parentChildren));
   assert.equal(
@@ -1781,14 +1847,27 @@ function assertS62FLifecycleProjection(
     ).length,
     1,
   );
+  assert.equal(
+    (projection.parentChildren as readonly unknown[]).filter(
+      (child) => child === S63_TASK_NAME,
+    ).length,
+    1,
+  );
   assert.equal(projection.parentPlanningChild, null);
-  assert.equal(projection.parentImplementationChild, S62F_TASK_NAME);
+  assert.equal(projection.parentImplementationChild, S63_TASK_NAME);
   assert.equal(projection.parentS62Started, true);
+  assert.equal(projection.parentS62Completed, true);
+  assert.equal(projection.parentS63Started, true);
   assert.equal(projection.parentDefaultRuntime, "typescript");
   assert.equal(projection.rustPlanningChild, null);
-  assert.equal(projection.rustImplementationChild, S62F_TASK_NAME);
+  assert.equal(projection.rustImplementationChild, S63_TASK_NAME);
   assert.equal(projection.rustS62Started, true);
+  assert.equal(projection.rustS62Completed, true);
+  assert.equal(projection.rustS63Started, true);
   assert.equal(projection.rustDefaultRuntime, "typescript");
+  assert.equal(projection.parentCandidateReady, projection.rustCandidateReady);
+  assert.equal(projection.parentStage6Completed, projection.parentCandidateReady);
+  assert.equal(projection.rustStage6Completed, projection.rustCandidateReady);
 }
 
 function assertFreshS62FWorkspaceLaw(): void {
@@ -1799,6 +1878,47 @@ function assertFreshS62FWorkspaceLaw(): void {
   assert.equal(git(["rev-parse", `${S62F_ACTIVATION_HEAD}^`]), S62F_PLANNING_PASS_HEAD);
   assert.doesNotThrow(() =>
     git(["merge-base", "--is-ancestor", S62F_ACTIVATION_HEAD, "HEAD"]),
+  );
+  assert.equal(
+    git(["rev-parse", `${S62F_ACCEPTANCE_COMMIT}^`]),
+    S62F_REVIEWED_CANDIDATE,
+  );
+  assert.equal(
+    git(["rev-parse", `${S62F_NATIVE_ARCHIVE_COMMIT}^`]),
+    S62F_ACCEPTANCE_COMMIT,
+  );
+  assert.doesNotThrow(() =>
+    git(["merge-base", "--is-ancestor", S62F_NATIVE_ARCHIVE_COMMIT, "HEAD"]),
+  );
+  assert.deepEqual(
+    resolveExactlyOneTaskLocation(
+      S62F_TASK_ROOT,
+      S62F_ARCHIVE_ROOT,
+      S62F_ARCHIVE_MANIFEST,
+    ),
+    { kind: "archive", root: S62F_ARCHIVE_ROOT },
+  );
+  assert.throws(() =>
+    resolveExactlyOneTaskLocation(
+      S62F_TASK_ROOT,
+      S62F_ARCHIVE_ROOT,
+      S62F_ARCHIVE_MANIFEST,
+      {
+        activeFiles: [...S62F_ARCHIVE_MANIFEST],
+        archiveFiles: [...S62F_ARCHIVE_MANIFEST],
+      },
+    ),
+  );
+  assert.throws(() =>
+    resolveExactlyOneTaskLocation(
+      S62F_TASK_ROOT,
+      S62F_ARCHIVE_ROOT,
+      S62F_ARCHIVE_MANIFEST,
+      {
+        activeFiles: null,
+        archiveFiles: [...S62F_ARCHIVE_MANIFEST, "research/forbidden-drift.md"],
+      },
+    ),
   );
   assert.throws(() =>
     git(["merge-base", "--is-ancestor", S62F_STOPPED_ATTEMPT_HEAD, "HEAD"]),
@@ -1833,8 +1953,9 @@ function assertFreshS62FWorkspaceLaw(): void {
     [...S62F_ACTIVATION_PATHS].sort(),
   );
 
-  const s62Task = JSON.parse(readText(`${S62F_TASK_ROOT}/task.json`)) as {
+  const s62Task = JSON.parse(readText(`${S62F_ARCHIVE_ROOT}/task.json`)) as {
     readonly status?: unknown;
+    readonly completedAt?: unknown;
     readonly parent?: unknown;
     readonly meta?: Readonly<Record<string, unknown>>;
   };
@@ -1848,18 +1969,7 @@ function assertFreshS62FWorkspaceLaw(): void {
   const s62Meta = s62Task.meta ?? {};
   const rkp2Meta = rkp2Task.meta ?? {};
   const rustMeta = rustTask.meta ?? {};
-  const evidencePresent = existsSync(resolve(S62F_EVIDENCE_PATH));
-
-  const s62Changes = currentS62FChanges();
-  assertS62FPathSet(s62Changes, evidencePresent);
-  const extraPath = new Map(s62Changes);
-  extraPath.set("src/forbidden-s6-2-drift.ts", "M");
-  assert.throws(() => assertS62FPathSet(extraPath, evidencePresent));
-  const wrongTechnicalStatus = new Map(s62Changes);
-  wrongTechnicalStatus.set(S62F_TECHNICAL_PATHS[1], "A");
-  assert.throws(() =>
-    assertS62FPathSet(wrongTechnicalStatus, evidencePresent),
-  );
+  assert.equal(existsSync(resolve(S62F_ARCHIVE_EVIDENCE_PATH)), true);
 
   assertS62FWorkloadTransition(
     s62Meta.immutable_workload_inputs,
@@ -1970,9 +2080,7 @@ function assertFreshS62FWorkspaceLaw(): void {
     "consumption emission must follow sentinel validation",
   );
 
-  const sourceHead = evidencePresent
-    ? (s62Meta.implementation_source_head as string)
-    : git(["rev-parse", "HEAD"]);
+  const sourceHead = s62Meta.implementation_source_head as string;
   assert.match(sourceHead, /^[0-9a-f]{40}$/u);
   const sourceParent = git(["rev-parse", `${sourceHead}^`]);
   const sourceChangedPaths = lines(
@@ -1990,7 +2098,7 @@ function assertFreshS62FWorkspaceLaw(): void {
       "diff",
       "--no-renames",
       "--name-only",
-      `${sourceHead}..HEAD`,
+      `${sourceHead}..${S62F_REVIEWED_CANDIDATE}`,
       "--",
       ...S62F_TECHNICAL_PATHS,
     ]),
@@ -2103,90 +2211,100 @@ function assertFreshS62FWorkspaceLaw(): void {
     parentPlanningChild: rkp2Meta.current_planning_child,
     parentImplementationChild: rkp2Meta.current_implementation_child,
     parentS62Started: rkp2Meta.stage_6_s6_2_started,
+    parentS62Completed: rkp2Meta.stage_6_s6_2_completed,
     parentS63Started: rkp2Meta.stage_6_s6_3_started,
+    parentStage6Completed: rkp2Meta.stage_6_completed,
     parentDefaultRuntime: rkp2Meta.default_runtime,
     parentCandidateReady: rkp2Meta.implementation_candidate_ready,
     rustPlanningChild: rustMeta.rkp2_current_planning_child,
     rustImplementationChild: rustMeta.rkp2_current_implementation_child,
     rustS62Started: rustMeta.rkp2_stage_6_s6_2_started,
+    rustS62Completed: rustMeta.rkp2_stage_6_s6_2_completed,
     rustS63Started: rustMeta.rkp2_stage_6_s6_3_started,
+    rustStage6Completed: rustMeta.rkp2_stage_6_completed,
     rustDefaultRuntime: rustMeta.rkp2_default_runtime,
     rustCandidateReady: rustMeta.rkp2_implementation_candidate_ready,
   };
-  assertS62FLifecycleProjection(lifecycleProjection, evidencePresent);
+  assertS62FLifecycleProjection(lifecycleProjection);
   for (const mutation of [
-    { childS62Completed: true },
+    { childS62Completed: false },
     { childS63Started: true },
-    { candidateReady: !evidencePresent },
-    { e3ExecutionCount: evidencePresent ? 2 : 1 },
+    { candidateReady: true },
+    { e3ExecutionCount: 2 },
     { parentPlanningChild: S62F_TASK_NAME },
     { parentImplementationChild: "wrong-child" },
-    { parentS63Started: true },
+    { parentS63Started: false },
     { rustImplementationChild: "wrong-child" },
     { qualificationAuthorized: true },
-    { acceptanceAuthorized: true },
-    { integrationAuthorized: true },
+    { acceptanceAuthorized: false },
+    { integrationAuthorized: false },
+    { parentCandidateReady: !lifecycleProjection.parentCandidateReady },
     { pushAuthorized: true },
   ] as const) {
     assert.throws(() =>
-      assertS62FLifecycleProjection(
-        { ...lifecycleProjection, ...mutation },
-        evidencePresent,
-      ),
+      assertS62FLifecycleProjection({ ...lifecycleProjection, ...mutation }),
     );
   }
 
-  if (evidencePresent) {
-    assert.equal(s62Meta.implementation_source_head, sourceHead);
-    assert.equal(
-      s62Meta.implementation_source_tree,
-      git(["rev-parse", `${sourceHead}^{tree}`]),
-    );
-    assert.equal(s62Meta.evidence_source_head, sourceHead);
-    assert.equal(s62Meta.fresh_request_generated, true);
-    assert.equal(s62Meta.archived_result_reused, false);
-    assert.equal(s62Meta.partial_evidence, false);
-    assert.doesNotThrow(() =>
-      git(["merge-base", "--is-ancestor", sourceHead, "HEAD"]),
-    );
-    assert.deepEqual(
-      lines(
-        git([
-          "diff",
-          "--no-renames",
-          "--name-only",
-          `${sourceHead}..HEAD`,
-        ]),
-      ).sort(),
-      [...S62F_LIFECYCLE_PATHS].sort(),
-    );
-    const evidenceText = readText(S62F_EVIDENCE_PATH);
-    const consumption = assertS62FConsumptionRecordText(evidenceText);
-    assert.equal(
-      s62Meta.process_sentinel_base64,
-      consumption.processSentinelBase64,
-    );
-    assert.equal(s62Meta.process_sentinel_bytes, consumption.processSentinelBytes);
-    assert.equal(
-      s62Meta.process_sentinel_sha256,
-      consumption.processSentinelSha256,
-    );
-    assert.notEqual(
-      consumption.processSentinelBase64,
-      archivedSentinel.toString("base64"),
-    );
-    assert.match(evidenceText, /fresh_request_generated=true/u);
-    assert.match(evidenceText, /archived_result_reused=false/u);
-    assert.match(evidenceText, /partialEvidence=false/u);
-  } else {
-    assert.equal(sourceHead, git(["rev-parse", "HEAD"]));
-    assert.equal(s62Meta.implementation_source_head, undefined);
-    assert.equal(s62Meta.evidence_source_head, undefined);
-    assert.equal(s62Meta.fresh_request_generated, undefined);
-    assert.equal(s62Meta.archived_result_reused, undefined);
-    assert.equal(s62Meta.partial_evidence, undefined);
-  }
-  assert.equal(git(["status", "--porcelain", "--untracked-files=normal"]), "");
+  assert.equal(s62Task.completedAt, "2026-09-03");
+  assert.equal(s62Meta.implementation_source_head, sourceHead);
+  assert.equal(
+    s62Meta.implementation_source_tree,
+    git(["rev-parse", `${sourceHead}^{tree}`]),
+  );
+  assert.equal(s62Meta.evidence_source_head, sourceHead);
+  assert.equal(s62Meta.fresh_request_generated, true);
+  assert.equal(s62Meta.archived_result_reused, false);
+  assert.equal(s62Meta.partial_evidence, false);
+  assert.equal(s62Meta.process_sentinel_sha256, S62F_ACCEPTED_SENTINEL_SHA256);
+  const directCheck = s62Meta.s6_2_direct_implementation_check as
+    | Readonly<Record<string, unknown>>
+    | undefined;
+  const ownerAcceptance = s62Meta.s6_2_owner_acceptance as
+    | Readonly<Record<string, unknown>>
+    | undefined;
+  assert.ok(directCheck);
+  assert.ok(ownerAcceptance);
+  assert.equal(directCheck.reviewed_head, S62F_REVIEWED_CANDIDATE);
+  assert.equal(directCheck.P0, 0);
+  assert.equal(directCheck.P1, 0);
+  assert.equal(directCheck.P2, 0);
+  assert.equal(ownerAcceptance.accepted_candidate_head, S62F_REVIEWED_CANDIDATE);
+  assert.equal(ownerAcceptance.acceptance_authorized, true);
+  assert.equal(ownerAcceptance.archive_authorized, true);
+  assert.equal(ownerAcceptance.fast_forward_integration_authorized, true);
+  assert.doesNotThrow(() =>
+    git(["merge-base", "--is-ancestor", sourceHead, "HEAD"]),
+  );
+  assert.deepEqual(
+    lines(
+      git([
+        "diff",
+        "--no-renames",
+        "--name-only",
+        `${sourceHead}..${S62F_REVIEWED_CANDIDATE}`,
+      ]),
+    ).sort(),
+    [...S62F_LIFECYCLE_PATHS].sort(),
+  );
+  const evidenceText = readText(S62F_ARCHIVE_EVIDENCE_PATH);
+  const consumption = assertS62FConsumptionRecordText(evidenceText);
+  assert.equal(
+    s62Meta.process_sentinel_base64,
+    consumption.processSentinelBase64,
+  );
+  assert.equal(s62Meta.process_sentinel_bytes, consumption.processSentinelBytes);
+  assert.equal(
+    s62Meta.process_sentinel_sha256,
+    consumption.processSentinelSha256,
+  );
+  assert.notEqual(
+    consumption.processSentinelBase64,
+    archivedSentinel.toString("base64"),
+  );
+  assert.match(evidenceText, /fresh_request_generated=true/u);
+  assert.match(evidenceText, /archived_result_reused=false/u);
+  assert.match(evidenceText, /partialEvidence=false/u);
 }
 
 function currentStage6CloseoutL6DateRepairChanges(): Map<string, "A" | "M" | "D"> {
@@ -4816,8 +4934,17 @@ test("implementation changes stay inside the literal RKP-2 allowlists", async ()
   const [implementation, coordination] = designAllowlistBlocks();
   assert.deepEqual(implementation, [...EXPECTED_IMPLEMENTATION_PATHS]);
   assert.deepEqual(coordination, [...EXPECTED_COORDINATION_PATHS]);
-  assert.equal(new Set(implementation).size, 21);
+  assert.equal(new Set(implementation).size, 22);
   assert.equal(new Set(coordination).size, 23);
+
+  assert.equal(git(["rev-parse", `${S63_ACTIVATION_HEAD}^`]), S63_PLANNING_HEAD);
+  assert.doesNotThrow(() =>
+    git(["merge-base", "--is-ancestor", S63_ACTIVATION_HEAD, "HEAD"]),
+  );
+  const acceptedBaseline = committedChanges(
+    IMPLEMENTATION_BASE,
+    S63_ACTIVATION_HEAD,
+  );
 
   const allowed = new Set<string>([
     ...implementation,
@@ -4827,12 +4954,15 @@ test("implementation changes stay inside the literal RKP-2 allowlists", async ()
     ...PART_OWNER_REPAIR_LIFECYCLE_PATHS,
     ...RKP1A_TECHNICAL_PATHS,
     ...RKP1A_PLANNING_PATHS,
+    ...acceptedBaseline,
+    ...S63_AUTHORITY_PATHS,
   ]);
   assert.equal(CHILD_TECHNICAL_PATHS.length, 4);
   assert.equal(CHILD_ACTIVE_LIFECYCLE_PATHS.length, 11);
   for (const path of currentImplementationChanges()) {
     assert.equal(allowed.has(path), true, `unreviewed implementation path: ${path}`);
   }
+  assert.equal(allowed.has("src/forbidden-s6-3-drift.ts"), false);
   assertFullRunnerLifecycleFixtures();
   await assertCrossVersionOutcomeFixtures();
   assertPhysicalIdentityFixtures();
@@ -4893,6 +5023,9 @@ test("part owner repair stays anchored to its accepted six-path wire contract", 
     if (
       !STAGE_6_TECHNICAL_PATHS.includes(
         path as (typeof STAGE_6_TECHNICAL_PATHS)[number],
+      ) &&
+      !RKP1A_TECHNICAL_PATHS.includes(
+        path as (typeof RKP1A_TECHNICAL_PATHS)[number],
       )
     ) {
       assert.equal(readText(path), gitTextAt(PART_OWNER_REPAIR_ACCEPTED_CANDIDATE, path));
@@ -4901,24 +5034,20 @@ test("part owner repair stays anchored to its accepted six-path wire contract", 
   assert.equal(Object.keys(PART_OWNER_REPAIR_ACCEPTED_TECHNICAL_BLOBS).length, 6);
   assert.deepEqual(Object.keys(PART_OWNER_REPAIR_ACCEPTED_TECHNICAL_BLOBS), [...PART_OWNER_REPAIR_TECHNICAL_PATHS]);
   const actual = currentPartOwnerRepairChanges();
-  const expectedPartOwnerAndRkp1a = new Set<string>([
-    ...PART_OWNER_REPAIR_TECHNICAL_PATHS,
-    ...PART_OWNER_REPAIR_ACTIVE_AUTHORITY_PATHS.slice(0, 11),
-    ...PART_OWNER_REPAIR_LIFECYCLE_PATHS,
-    ...RKP1A_TECHNICAL_PATHS,
-    ...RKP1A_PLANNING_PATHS,
-  ]);
+  const expectedPartOwnerAndAcceptedDescendants = acceptedChangesWithS63Evidence(
+    PART_OWNER_REPAIR_ACCEPTED_PLANNING_HEAD,
+  );
   for (const path of actual) {
     assert.equal(
-      expectedPartOwnerAndRkp1a.has(path),
+      expectedPartOwnerAndAcceptedDescendants.has(path),
       true,
-      `unreviewed part-owner or RKP-1A path: ${path}`,
+      `unreviewed part-owner descendant path: ${path}`,
     );
   }
   assertExactPathSet(
     actual,
-    [...expectedPartOwnerAndRkp1a],
-    "accepted archived part-owner repair plus bounded RKP-1A descendant",
+    [...expectedPartOwnerAndAcceptedDescendants],
+    "accepted part-owner history plus pinned descendants and bounded S6.3",
   );
   assertExactPathSet(
     new Set(
@@ -4952,15 +5081,15 @@ test("Stage 6 hostile and resource evidence consumes the existing private Rust s
     meta?: { stage_6_completed?: unknown };
   };
   const stage6Changes = currentStage6Changes();
-  const allowed = new Set<string>([
-    ...STAGE_6_TECHNICAL_PATHS,
-    ...STAGE_6_LIFECYCLE_PATHS,
-    ...RKP1A_TECHNICAL_PATHS,
-    ...RKP1A_PLANNING_PATHS,
-  ]);
+  const allowed = acceptedChangesWithS63Evidence(STAGE_6_PREREQUISITE_HEAD);
   for (const path of stage6Changes) {
     assert.equal(allowed.has(path), true, `unreviewed Stage 6 path: ${path}`);
   }
+  assertExactPathSet(
+    stage6Changes,
+    [...allowed],
+    "accepted Stage 6 history plus bounded S6.3",
+  );
   assertExactPathSet(
     new Set(
       [...stage6Changes].filter((path) =>
@@ -4972,13 +5101,11 @@ test("Stage 6 hostile and resource evidence consumes the existing private Rust s
     STAGE_6_TECHNICAL_PATHS,
     "Stage 6 technical evidence",
   );
-  if (task.meta?.stage_6_completed === true) {
-    assertExactPathSet(
-      stage6Changes,
-      [...STAGE_6_TECHNICAL_PATHS, ...STAGE_6_LIFECYCLE_PATHS],
-      "completed Stage 6 candidate",
-    );
-  }
+  assert.equal(
+    task.meta?.stage_6_completed === true,
+    existsSync(resolve(S63_EVIDENCE_PATH)),
+    "Stage 6 completion requires the frozen S6.3 evidence record",
+  );
 
   const foundation = readText("crates/brilliant-score-foundation/src/validation.rs");
   assert.match(foundation, /fn reserve_fault_precedes_latent_semantic_failure\(\)/u);

@@ -468,6 +468,7 @@ Every production, test, Cargo, package, tsconfig and active-spec path remains id
 Only these production/config paths may change after approved activation:
 
 ```text
+.gitattributes
 Cargo.toml
 Cargo.lock
 crates/brilliant-score-foundation/src/lib.rs
