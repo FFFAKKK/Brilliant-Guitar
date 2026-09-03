@@ -2,29 +2,30 @@
 
 ## Current gate
 
-The fresh evidence replay has completed I0, I1 and I2. I3 is entering a provisional six-path coordination freeze so the final Node/signature checks run from a clean commit rather than a dirty worktree.
+`READY FOR DEDICATED INDEPENDENT EOL PREREQUISITE IMPLEMENTATION REVIEW`
+
+The bounded implementation and evidence repair are complete. The next action is a new read-only implementation-audit task against the exact clean candidate; it is not S6.2 execution.
 
 ## Exact lineage
 
 - Branch: `codex/rkp-2-stage-6-eol-evidence-repair`
 - Worktree: `E:\desktop\brilliant_ideas\brilliant_guitar\.worktrees\rkp-2-stage-6-eol-portability-prerequisite`
-- Fresh I0 source: `64bc508cd56bd0a250f890af186c097dc2b6880e`
-- I0 evidence projection: `547447cc9b4cd0124afb5dc1b22d96a773c5b4dc`
-- I1 technical commit: `30d4acb0e3ce29e849c2a89b2ac1225bb5dafe49`
-- Frozen patch: `4,892` bytes / `fb635082a2951b5e3d8b9352230bd462e0c08aa5b7326a93403537baf62b1b05`
+- Fresh I0: `64bc508cd56bd0a250f890af186c097dc2b6880e`
+- I0 evidence: `547447cc9b4cd0124afb5dc1b22d96a773c5b4dc`
+- I1 technical: `30d4acb0e3ce29e849c2a89b2ac1225bb5dafe49`
+- Provisional I3: `ef67f4a5e5ea0c96d8a7b46001458c12bc135413`
+- Final candidate: resolve the commit containing this handoff with `git rev-parse HEAD`
 
-## What is complete
+## Delivered behavior
 
-- New I0/control/expected evidence was regenerated; no old lane satisfies the gate.
-- Exact four-path technical repair is committed.
-- Five focused Rust tests, lexical reconstruction, dual-autocrlf raw-byte matrix and all Cargo gates pass.
-- The complete 14 checkout + 7 blob record is embedded in `implementation-evidence.md`.
-- TypeScript typecheck/build pass.
+- Seven exact tracked paths now checkout as LF regardless of `core.autocrlf=true/false`.
+- Five Rust source-shape checks normalize external CRLF input in test memory; production prefixes reconstruct exactly to I0.
+- The parity regression test covers the previously omitted trailing LF.
+- The complete raw-byte matrix, Node signatures, Cargo gates and cleanup record are committed in `implementation-evidence.md`.
+- Rust runtime product behavior and S6.2 worker semantics are unchanged.
 
-## Next exact action
+## Next reviewer boundary
 
-Commit this provisional six-path coordination projection, then run a clean I3 replay. Compare a new control lane to I0, a newly rebuilt expected lane to pre-I1 expected records, and the candidate only to those predeclared records. Append observed final evidence, remove all fresh temporary checkouts/build roots after recording them, rerun the final gates and freeze the clean candidate.
+The reviewer is read-only and must return verdict first with P0/P1/P2, exact HEAD, file/line evidence and the smallest repair if needed. A pass permits only an owner decision about acceptance/archive/integration. It does not itself perform those actions.
 
-## Hard boundary
-
-The endpoint is implementation review only. E3 remains zero. Do not accept, archive, integrate, resume S6.2, start S6.3, qualify, cut over runtime, create RKP-3 or push.
+After explicit closeout and integration, create a new S6.2 planning task from the exact integration HEAD. Keep TypeScript default, E3 zero and all later gates false until separately authorized.

@@ -1439,3 +1439,772 @@ All Cargo targets and TEMP/TMP directories were on `E:`. Rust 1.97.1 workspace t
 - Trellis/JSON/fence/diff gates will be rerun after the six-path projection commit.
 - `npm run typecheck` and `npm run build` passed before the provisional projection.
 - This checkpoint intentionally does not claim final Node/candidate signature or cleanup results; those require a clean committed candidate and are appended only after observation.
+
+## I3 clean candidate replay
+
+- Provisional clean coordination commit: `ef67f4a5e5ea0c96d8a7b46001458c12bc135413`; tree `585afe41620fb3146c7461a11159044c6a193ae1`.
+- Six-path parser passed against I0; exact candidate diff is four technical plus six coordination paths.
+- Fresh I3 control remained at I0. Fresh I3 expected rebuild produced commit `3307cff24719f6538ad9fffc5630df31bd0b0038` and the same pre-I1 expected tree `d6f305952731e7118926772c7b7e72a4efd72414`.
+- Control signatures equal I0; rebuilt expected signatures equal the pre-I1 V1 record; the candidate equals the predeclared expected record; Part Owner also equals I0.
+- All three records preserve Node `v24.15.0`, `11/7/4/0`, the outer/inner cause contract, and compiled test `260,445` bytes / `55351663...`.
+- Candidate full run is `611 total / 605 pass / 4 fail / 2 skip`; the 80-file manifest remains SHA-256 `1a50fd28c630bb016ce30f7ca65ae940170705b2eed581e610282b81378a1cf1`.
+
+### I3 lane identities
+
+```json
+{
+  "controlHead": "64bc508cd56bd0a250f890af186c097dc2b6880e",
+  "controlStatus": null,
+  "expectedHead": "3307cff24719f6538ad9fffc5630df31bd0b0038",
+  "expectedTree": "d6f305952731e7118926772c7b7e72a4efd72414",
+  "expectedStatus": null
+}
+```
+
+### I3 control signatures
+
+```json
+{
+  "schemaVersion": 1,
+  "nodeExecutable": "D:\\nvm4w\\nodejs\\node.exe",
+  "nodeVersion": "v24.15.0",
+  "isolation": "none",
+  "concurrency": 1,
+  "compiledTestPath": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.tmp\\rkp2-eol-evidence-repair-fresh\\run-64bc508c\\i3-control\\dist\\test\\core-kernel\\rust-migration\\rkp-2-workspace-contracts.test.js",
+  "compiledTestByteLength": 260445,
+  "compiledTestSha256": "55351663172b27598b7314d45ebe7bd7b19d61a328d8f6b47b7ac6f0ce552961",
+  "exitCode": 1,
+  "counts": {
+    "total": 11,
+    "pass": 7,
+    "fail": 4,
+    "skip": 0
+  },
+  "failureTitles": [
+    "Stage 6 hostile and resource evidence consumes the existing private Rust seams",
+    "Stage 6 semantic canonical evidence correction and E2 worker stay inside the accepted contracts",
+    "implementation changes stay inside the literal RKP-2 allowlists",
+    "part owner repair stays anchored to its accepted six-path wire contract"
+  ],
+  "signatures": [
+    {
+      "title": "implementation changes stay inside the literal RKP-2 allowlists",
+      "outerErrorCode": "ERR_TEST_FAILURE",
+      "outerFailureType": "testCodeFailure",
+      "errorName": "AssertionError",
+      "errorCode": "ERR_ASSERTION",
+      "operator": "strictEqual",
+      "generatedMessage": false,
+      "messageSha256": "6d833362bfd8a1d0f329998402ed8ebbfe939117b1ccee7691584e0dfb9551a6",
+      "actualSha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa",
+      "expectedSha256": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b",
+      "signatureSha256": "3aa8afdee5199c83ac42742a5e7220739ebbff0e753d0ed65ca46a247a4c43d4"
+    },
+    {
+      "title": "part owner repair stays anchored to its accepted six-path wire contract",
+      "outerErrorCode": "ERR_TEST_FAILURE",
+      "outerFailureType": "testCodeFailure",
+      "errorName": "AssertionError",
+      "errorCode": "ERR_ASSERTION",
+      "operator": "strictEqual",
+      "generatedMessage": true,
+      "messageSha256": "6235e4b0d84858292b8fb4dabd7035f557f52bdf7adeb8f204ab2feda3827196",
+      "actualSha256": "c0a92a8b9ef22b97baae16f73131eb3043f5add3fd73be43bf2843025f93bb13",
+      "expectedSha256": "d0143410e5f4c6c173f6a7a96a0cd6f20168880c3954223f2e1200cfe2d70ac4",
+      "signatureSha256": "fec18396aeae94e664b8d09d64df10b9605ab43cc771432e33e4af64cb4e6a88"
+    },
+    {
+      "title": "Stage 6 hostile and resource evidence consumes the existing private Rust seams",
+      "outerErrorCode": "ERR_TEST_FAILURE",
+      "outerFailureType": "testCodeFailure",
+      "errorName": "AssertionError",
+      "errorCode": "ERR_ASSERTION",
+      "operator": "strictEqual",
+      "generatedMessage": false,
+      "messageSha256": "accfa4eeeea5969d1b9da20ab4e9628c3978c20a03c1c80c520dccf499887e14",
+      "actualSha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa",
+      "expectedSha256": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b",
+      "signatureSha256": "8d70e2222134cf36c6c5541bb7612c0622b38705a90e29b56e1ff55644b1397f"
+    },
+    {
+      "title": "Stage 6 semantic canonical evidence correction and E2 worker stay inside the accepted contracts",
+      "outerErrorCode": "ERR_TEST_FAILURE",
+      "outerFailureType": "testCodeFailure",
+      "errorName": "AssertionError",
+      "errorCode": "ERR_ASSERTION",
+      "operator": "deepStrictEqual",
+      "generatedMessage": true,
+      "messageSha256": "3c6b3bcfe3b974c085b2590c3cd5bcb8c2009682bceea1ac2157e43e6cd36b33",
+      "actualSha256": "1af50bb3daf4ce99d2f547e50457ed063260ec14afa1fbabdc40caf6ba3684e7",
+      "expectedSha256": "2329fabf612884bb3f62d3284a4c0e06d7837a79a792a646937b2b642456e2cb",
+      "signatureSha256": "811643e3ea34bc37c1491ef8a365647373dd98196fb03d3d5ed1da70f08a76b7"
+    }
+  ]
+}
+```
+
+### I3 rebuilt expected signatures
+
+```json
+{
+  "schemaVersion": 1,
+  "nodeExecutable": "D:\\nvm4w\\nodejs\\node.exe",
+  "nodeVersion": "v24.15.0",
+  "isolation": "none",
+  "concurrency": 1,
+  "compiledTestPath": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.tmp\\rkp2-eol-evidence-repair-fresh\\run-64bc508c\\i3-expected\\dist\\test\\core-kernel\\rust-migration\\rkp-2-workspace-contracts.test.js",
+  "compiledTestByteLength": 260445,
+  "compiledTestSha256": "55351663172b27598b7314d45ebe7bd7b19d61a328d8f6b47b7ac6f0ce552961",
+  "exitCode": 1,
+  "counts": {
+    "total": 11,
+    "pass": 7,
+    "fail": 4,
+    "skip": 0
+  },
+  "failureTitles": [
+    "Stage 6 hostile and resource evidence consumes the existing private Rust seams",
+    "Stage 6 semantic canonical evidence correction and E2 worker stay inside the accepted contracts",
+    "implementation changes stay inside the literal RKP-2 allowlists",
+    "part owner repair stays anchored to its accepted six-path wire contract"
+  ],
+  "signatures": [
+    {
+      "title": "implementation changes stay inside the literal RKP-2 allowlists",
+      "outerErrorCode": "ERR_TEST_FAILURE",
+      "outerFailureType": "testCodeFailure",
+      "errorName": "AssertionError",
+      "errorCode": "ERR_ASSERTION",
+      "operator": "strictEqual",
+      "generatedMessage": false,
+      "messageSha256": "a7514cff7586ae4ac34a78018c8d31ae9e781f1f2bdb7330bb1acd05b2605e3f",
+      "actualSha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa",
+      "expectedSha256": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b",
+      "signatureSha256": "7282348f1e76677e166a7dca813fb61d548fd9223c03d27e98cc3fc292d9a05b"
+    },
+    {
+      "title": "part owner repair stays anchored to its accepted six-path wire contract",
+      "outerErrorCode": "ERR_TEST_FAILURE",
+      "outerFailureType": "testCodeFailure",
+      "errorName": "AssertionError",
+      "errorCode": "ERR_ASSERTION",
+      "operator": "strictEqual",
+      "generatedMessage": true,
+      "messageSha256": "6235e4b0d84858292b8fb4dabd7035f557f52bdf7adeb8f204ab2feda3827196",
+      "actualSha256": "c0a92a8b9ef22b97baae16f73131eb3043f5add3fd73be43bf2843025f93bb13",
+      "expectedSha256": "d0143410e5f4c6c173f6a7a96a0cd6f20168880c3954223f2e1200cfe2d70ac4",
+      "signatureSha256": "fec18396aeae94e664b8d09d64df10b9605ab43cc771432e33e4af64cb4e6a88"
+    },
+    {
+      "title": "Stage 6 hostile and resource evidence consumes the existing private Rust seams",
+      "outerErrorCode": "ERR_TEST_FAILURE",
+      "outerFailureType": "testCodeFailure",
+      "errorName": "AssertionError",
+      "errorCode": "ERR_ASSERTION",
+      "operator": "strictEqual",
+      "generatedMessage": false,
+      "messageSha256": "7f5c22754ff01225ca9f8f2c6ba1f181b11c017da8e85b8e8d5b2b343e8f1c04",
+      "actualSha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa",
+      "expectedSha256": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b",
+      "signatureSha256": "df02b599773427fe5dc1ee2350912347f5bb9bbb47d282560d09695cb3f3a13b"
+    },
+    {
+      "title": "Stage 6 semantic canonical evidence correction and E2 worker stay inside the accepted contracts",
+      "outerErrorCode": "ERR_TEST_FAILURE",
+      "outerFailureType": "testCodeFailure",
+      "errorName": "AssertionError",
+      "errorCode": "ERR_ASSERTION",
+      "operator": "deepStrictEqual",
+      "generatedMessage": true,
+      "messageSha256": "0a5f5e9b915a1b69ee54558b6c68447d931e6437f573bc41c76d100069bf4df6",
+      "actualSha256": "364c089df81a1d4de820c041e1c12517e7e9138c625ec4796c7483d08916c7e2",
+      "expectedSha256": "2329fabf612884bb3f62d3284a4c0e06d7837a79a792a646937b2b642456e2cb",
+      "signatureSha256": "73e2508a3826fc0d50f0971c48a01d720842e3b26cdc20ae7b69b23ad8095536"
+    }
+  ]
+}
+```
+
+### I3 candidate signatures
+
+```json
+{
+  "schemaVersion": 1,
+  "nodeExecutable": "D:\\nvm4w\\nodejs\\node.exe",
+  "nodeVersion": "v24.15.0",
+  "isolation": "none",
+  "concurrency": 1,
+  "compiledTestPath": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\rkp-2-stage-6-eol-portability-prerequisite\\dist\\test\\core-kernel\\rust-migration\\rkp-2-workspace-contracts.test.js",
+  "compiledTestByteLength": 260445,
+  "compiledTestSha256": "55351663172b27598b7314d45ebe7bd7b19d61a328d8f6b47b7ac6f0ce552961",
+  "exitCode": 1,
+  "counts": {
+    "total": 11,
+    "pass": 7,
+    "fail": 4,
+    "skip": 0
+  },
+  "failureTitles": [
+    "Stage 6 hostile and resource evidence consumes the existing private Rust seams",
+    "Stage 6 semantic canonical evidence correction and E2 worker stay inside the accepted contracts",
+    "implementation changes stay inside the literal RKP-2 allowlists",
+    "part owner repair stays anchored to its accepted six-path wire contract"
+  ],
+  "signatures": [
+    {
+      "title": "implementation changes stay inside the literal RKP-2 allowlists",
+      "outerErrorCode": "ERR_TEST_FAILURE",
+      "outerFailureType": "testCodeFailure",
+      "errorName": "AssertionError",
+      "errorCode": "ERR_ASSERTION",
+      "operator": "strictEqual",
+      "generatedMessage": false,
+      "messageSha256": "a7514cff7586ae4ac34a78018c8d31ae9e781f1f2bdb7330bb1acd05b2605e3f",
+      "actualSha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa",
+      "expectedSha256": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b",
+      "signatureSha256": "7282348f1e76677e166a7dca813fb61d548fd9223c03d27e98cc3fc292d9a05b"
+    },
+    {
+      "title": "part owner repair stays anchored to its accepted six-path wire contract",
+      "outerErrorCode": "ERR_TEST_FAILURE",
+      "outerFailureType": "testCodeFailure",
+      "errorName": "AssertionError",
+      "errorCode": "ERR_ASSERTION",
+      "operator": "strictEqual",
+      "generatedMessage": true,
+      "messageSha256": "6235e4b0d84858292b8fb4dabd7035f557f52bdf7adeb8f204ab2feda3827196",
+      "actualSha256": "c0a92a8b9ef22b97baae16f73131eb3043f5add3fd73be43bf2843025f93bb13",
+      "expectedSha256": "d0143410e5f4c6c173f6a7a96a0cd6f20168880c3954223f2e1200cfe2d70ac4",
+      "signatureSha256": "fec18396aeae94e664b8d09d64df10b9605ab43cc771432e33e4af64cb4e6a88"
+    },
+    {
+      "title": "Stage 6 hostile and resource evidence consumes the existing private Rust seams",
+      "outerErrorCode": "ERR_TEST_FAILURE",
+      "outerFailureType": "testCodeFailure",
+      "errorName": "AssertionError",
+      "errorCode": "ERR_ASSERTION",
+      "operator": "strictEqual",
+      "generatedMessage": false,
+      "messageSha256": "7f5c22754ff01225ca9f8f2c6ba1f181b11c017da8e85b8e8d5b2b343e8f1c04",
+      "actualSha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa",
+      "expectedSha256": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b",
+      "signatureSha256": "df02b599773427fe5dc1ee2350912347f5bb9bbb47d282560d09695cb3f3a13b"
+    },
+    {
+      "title": "Stage 6 semantic canonical evidence correction and E2 worker stay inside the accepted contracts",
+      "outerErrorCode": "ERR_TEST_FAILURE",
+      "outerFailureType": "testCodeFailure",
+      "errorName": "AssertionError",
+      "errorCode": "ERR_ASSERTION",
+      "operator": "deepStrictEqual",
+      "generatedMessage": true,
+      "messageSha256": "0a5f5e9b915a1b69ee54558b6c68447d931e6437f573bc41c76d100069bf4df6",
+      "actualSha256": "364c089df81a1d4de820c041e1c12517e7e9138c625ec4796c7483d08916c7e2",
+      "expectedSha256": "2329fabf612884bb3f62d3284a4c0e06d7837a79a792a646937b2b642456e2cb",
+      "signatureSha256": "73e2508a3826fc0d50f0971c48a01d720842e3b26cdc20ae7b69b23ad8095536"
+    }
+  ]
+}
+```
+
+### I3 comparison
+
+```json
+{
+  "checks": {
+    "controlEqualsI0": true,
+    "expectedEqualsPreI1": true,
+    "candidateEqualsPreI1": true,
+    "allCounts11_7_4_0": true,
+    "allCompiledBytesFrozen": true,
+    "partOwnerCandidateEqualsI0": true
+  },
+  "controlCounts": {
+    "total": 11,
+    "pass": 7,
+    "fail": 4,
+    "skip": 0
+  },
+  "expectedCounts": {
+    "total": 11,
+    "pass": 7,
+    "fail": 4,
+    "skip": 0
+  },
+  "candidateCounts": {
+    "total": 11,
+    "pass": 7,
+    "fail": 4,
+    "skip": 0
+  }
+}
+```
+
+### I3 full Node summary
+
+```json
+{
+  "schemaVersion": 1,
+  "nodeExecutable": "D:\\nvm4w\\nodejs\\node.exe",
+  "nodeVersion": "v24.15.0",
+  "runner": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\rkp-2-stage-6-eol-portability-prerequisite\\dist\\test\\test-infrastructure\\run-compiled-tests.js",
+  "exitCode": 1,
+  "signal": null,
+  "manifest": {
+    "kind": "full-test-manifest-v1",
+    "fileCount": 80,
+    "sha256": "1a50fd28c630bb016ce30f7ca65ae940170705b2eed581e610282b81378a1cf1"
+  },
+  "counts": {
+    "total": 611,
+    "pass": 605,
+    "fail": 4,
+    "skip": 2
+  },
+  "stdoutByteLength": 98954,
+  "stdoutSha256": "94365b92dad55683980d136e410feb3033ae984f7ca6da5ee5a00fb173fd7399",
+  "stderrByteLength": 19,
+  "stderrSha256": "7e9281f6bdb52397279dc8312141c9d6fb78a2bef7c3ae807f3b814544ffc9a7",
+  "stderrTrimmed": "runner.test-failed"
+}
+```
+
+### I3 coordination parser
+
+```json
+{
+  "count": 6,
+  "taskSet": [
+    ".trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/task.json",
+    ".trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/implementation-evidence.md",
+    ".trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/review-candidate.md",
+    ".trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/operator-handoff.md",
+    ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json",
+    ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json"
+  ],
+  "prdSet": [
+    ".trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/task.json",
+    ".trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/implementation-evidence.md",
+    ".trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/review-candidate.md",
+    ".trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/operator-handoff.md",
+    ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json",
+    ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json"
+  ],
+  "designSet": [
+    ".trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/task.json",
+    ".trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/implementation-evidence.md",
+    ".trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/review-candidate.md",
+    ".trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/operator-handoff.md",
+    ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json",
+    ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json"
+  ],
+  "implementSet": [
+    ".trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/task.json",
+    ".trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/implementation-evidence.md",
+    ".trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/review-candidate.md",
+    ".trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/operator-handoff.md",
+    ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json",
+    ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json"
+  ],
+  "actualSet": [
+    ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json",
+    ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json",
+    ".trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/implementation-evidence.md",
+    ".trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/operator-handoff.md",
+    ".trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/review-candidate.md",
+    ".trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/task.json"
+  ]
+}
+```
+
+## Complete matrix verifier provenance
+
+V1 is retained exactly as failed; V2 changes only presentation-column trimming. Both full sources follow.
+
+### V1 source
+
+```javascript
+// Freshly materialized after I0_SOURCE_HEAD 64bc508cd56bd0a250f890af186c097dc2b6880e; prior artifacts are diagnostic only.
+import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { readFileSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+const paths = Object.freeze([
+  "crates/brilliant-kernel-runtime/src/runtime.rs",
+  "crates/brilliant-kernel-runtime/src/store.rs",
+  "crates/brilliant-kernel-runtime/src/indices.rs",
+  "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
+  "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts",
+  "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.test.ts",
+  "test/core-kernel/rust-migration/rkp-2-scale-evidence-process.ps1",
+]);
+
+assert.equal(new Set(paths).size, 7, "the governed path list must contain seven unique paths");
+assert.equal(process.version, "v24.15.0");
+
+const trueRepo = resolve(process.argv[2] ?? "");
+const falseRepo = resolve(process.argv[3] ?? "");
+const base = process.argv[4];
+const head = process.argv[5];
+const output = resolve(process.argv[6] ?? "");
+assert.ok(base, "base revision required");
+assert.ok(head, "candidate revision required");
+
+function git(repo, args, encoding = "utf8") {
+  const result = spawnSync("git", ["-C", repo, ...args], {
+    encoding,
+    windowsHide: true,
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  assert.equal(result.status, 0, `git ${args.join(" ")} failed: ${String(result.stderr)}`);
+  return result.stdout;
+}
+
+function sha256(bytes) {
+  return createHash("sha256").update(bytes).digest("hex");
+}
+
+function requireClean(repo) {
+  const status = git(repo, ["status", "--porcelain=v1", "--untracked-files=all"]);
+  assert.equal(status, "", `verification checkout is dirty: ${repo}`);
+}
+
+function exactAttributeDiff(repo) {
+  const diff = git(repo, ["diff", "--unified=0", base, head, "--", ".gitattributes"]);
+  const additions = diff
+    .split(/\r?\n/u)
+    .filter((line) => line.startsWith("+") && !line.startsWith("+++"))
+    .map((line) => line.slice(1));
+  const removals = diff
+    .split(/\r?\n/u)
+    .filter((line) => line.startsWith("-") && !line.startsWith("---"));
+  assert.deepEqual(additions, paths.map((path) => `${path} text eol=lf`));
+  assert.deepEqual(removals, []);
+}
+
+function eolRecord(repo, path) {
+  const outputText = git(repo, ["ls-files", "--eol", "--", path]).trimEnd();
+  const match = /^i\/([^ ]+)\s+w\/([^ ]+)\s+attr\/(.+)\t(.+)$/u.exec(outputText);
+  assert.ok(match, `unexpected ls-files --eol record for ${path}: ${outputText}`);
+  assert.equal(match[1], "lf", `${path}: index EOL`);
+  assert.equal(match[2], "lf", `${path}: worktree EOL`);
+  assert.equal(match[3], "text eol=lf", `${path}: attribute`);
+  assert.equal(match[4].replaceAll("\\", "/"), path, `${path}: reported path`);
+  const attr = git(repo, ["check-attr", "text", "eol", "--", path])
+    .trimEnd()
+    .split(/\r?\n/u);
+  assert.deepEqual(attr, [`${path}: text: set`, `${path}: eol: lf`]);
+  return { indexEol: match[1], worktreeEol: match[2], attribute: match[3] };
+}
+
+function checkoutRecord(repo, checkout, path) {
+  const bytes = readFileSync(resolve(repo, path));
+  assert.equal(bytes.includes(Buffer.from([0x0d, 0x0a])), false, `${checkout}/${path}: CRLF remains`);
+  return {
+    checkout,
+    path,
+    byteLength: bytes.byteLength,
+    sha256: sha256(bytes),
+    ...eolRecord(repo, path),
+    bytes,
+  };
+}
+
+requireClean(trueRepo);
+requireClean(falseRepo);
+assert.equal(git(trueRepo, ["rev-parse", "HEAD"]).trim(), head);
+assert.equal(git(falseRepo, ["rev-parse", "HEAD"]).trim(), head);
+exactAttributeDiff(trueRepo);
+exactAttributeDiff(falseRepo);
+
+const checkoutRecords = [];
+const blobRecords = [];
+for (const path of paths) {
+  const trueRecord = checkoutRecord(trueRepo, "autocrlf-true", path);
+  const falseRecord = checkoutRecord(falseRepo, "autocrlf-false", path);
+  const blob = git(trueRepo, ["cat-file", "blob", `${head}:${path}`], null);
+  assert.ok(Buffer.isBuffer(blob), `${path}: cat-file stdout must remain a Buffer`);
+  assert.equal(trueRecord.bytes.equals(falseRecord.bytes), true, `${path}: checkout bytes differ`);
+  assert.equal(trueRecord.bytes.equals(blob), true, `${path}: checkout bytes differ from Git blob`);
+  checkoutRecords.push(
+    Object.fromEntries(Object.entries(trueRecord).filter(([key]) => key !== "bytes")),
+    Object.fromEntries(Object.entries(falseRecord).filter(([key]) => key !== "bytes")),
+  );
+  blobRecords.push({ path, byteLength: blob.byteLength, sha256: sha256(blob) });
+}
+
+assert.equal(checkoutRecords.length, 14);
+assert.equal(blobRecords.length, 7);
+requireClean(trueRepo);
+requireClean(falseRepo);
+const result = {
+  schemaVersion: 1,
+  nodeExecutable: process.execPath,
+  nodeVersion: process.version,
+  base,
+  head,
+  paths,
+  checkoutRecords,
+  blobRecords,
+  clean: { autocrlfTrue: true, autocrlfFalse: true },
+};
+writeFileSync(output, `${JSON.stringify(result, null, 2)}\n`, "utf8");
+process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+```
+
+### V2 source
+
+```javascript
+// Freshly materialized after I0_SOURCE_HEAD 64bc508cd56bd0a250f890af186c097dc2b6880e; prior artifacts are diagnostic only.
+import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { readFileSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+const paths = Object.freeze([
+  "crates/brilliant-kernel-runtime/src/runtime.rs",
+  "crates/brilliant-kernel-runtime/src/store.rs",
+  "crates/brilliant-kernel-runtime/src/indices.rs",
+  "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
+  "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts",
+  "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.test.ts",
+  "test/core-kernel/rust-migration/rkp-2-scale-evidence-process.ps1",
+]);
+
+assert.equal(new Set(paths).size, 7, "the governed path list must contain seven unique paths");
+assert.equal(process.version, "v24.15.0");
+
+const trueRepo = resolve(process.argv[2] ?? "");
+const falseRepo = resolve(process.argv[3] ?? "");
+const base = process.argv[4];
+const head = process.argv[5];
+const output = resolve(process.argv[6] ?? "");
+assert.ok(base, "base revision required");
+assert.ok(head, "candidate revision required");
+
+function git(repo, args, encoding = "utf8") {
+  const result = spawnSync("git", ["-C", repo, ...args], {
+    encoding,
+    windowsHide: true,
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  assert.equal(result.status, 0, `git ${args.join(" ")} failed: ${String(result.stderr)}`);
+  return result.stdout;
+}
+
+function sha256(bytes) {
+  return createHash("sha256").update(bytes).digest("hex");
+}
+
+function requireClean(repo) {
+  const status = git(repo, ["status", "--porcelain=v1", "--untracked-files=all"]);
+  assert.equal(status, "", `verification checkout is dirty: ${repo}`);
+}
+
+function exactAttributeDiff(repo) {
+  const diff = git(repo, ["diff", "--unified=0", base, head, "--", ".gitattributes"]);
+  const additions = diff
+    .split(/\r?\n/u)
+    .filter((line) => line.startsWith("+") && !line.startsWith("+++"))
+    .map((line) => line.slice(1));
+  const removals = diff
+    .split(/\r?\n/u)
+    .filter((line) => line.startsWith("-") && !line.startsWith("---"));
+  assert.deepEqual(additions, paths.map((path) => `${path} text eol=lf`));
+  assert.deepEqual(removals, []);
+}
+
+function eolRecord(repo, path) {
+  const outputText = git(repo, ["ls-files", "--eol", "--", path]).trimEnd();
+  const match = /^i\/([^ ]+)\s+w\/([^ ]+)\s+attr\/(.+)\t(.+)$/u.exec(outputText);
+  assert.ok(match, `unexpected ls-files --eol record for ${path}: ${outputText}`);
+  assert.equal(match[1], "lf", `${path}: index EOL`);
+  assert.equal(match[2], "lf", `${path}: worktree EOL`);
+  const attribute = match[3].trimEnd();
+  assert.equal(attribute, "text eol=lf", `${path}: attribute`);
+  assert.equal(match[4].replaceAll("\\", "/"), path, `${path}: reported path`);
+  const attr = git(repo, ["check-attr", "text", "eol", "--", path])
+    .trimEnd()
+    .split(/\r?\n/u);
+  assert.deepEqual(attr, [`${path}: text: set`, `${path}: eol: lf`]);
+  return { indexEol: match[1], worktreeEol: match[2], attribute };
+}
+
+function checkoutRecord(repo, checkout, path) {
+  const bytes = readFileSync(resolve(repo, path));
+  assert.equal(bytes.includes(Buffer.from([0x0d, 0x0a])), false, `${checkout}/${path}: CRLF remains`);
+  return {
+    checkout,
+    path,
+    byteLength: bytes.byteLength,
+    sha256: sha256(bytes),
+    ...eolRecord(repo, path),
+    bytes,
+  };
+}
+
+requireClean(trueRepo);
+requireClean(falseRepo);
+assert.equal(git(trueRepo, ["rev-parse", "HEAD"]).trim(), head);
+assert.equal(git(falseRepo, ["rev-parse", "HEAD"]).trim(), head);
+exactAttributeDiff(trueRepo);
+exactAttributeDiff(falseRepo);
+
+const checkoutRecords = [];
+const blobRecords = [];
+for (const path of paths) {
+  const trueRecord = checkoutRecord(trueRepo, "autocrlf-true", path);
+  const falseRecord = checkoutRecord(falseRepo, "autocrlf-false", path);
+  const blob = git(trueRepo, ["cat-file", "blob", `${head}:${path}`], null);
+  assert.ok(Buffer.isBuffer(blob), `${path}: cat-file stdout must remain a Buffer`);
+  assert.equal(trueRecord.bytes.equals(falseRecord.bytes), true, `${path}: checkout bytes differ`);
+  assert.equal(trueRecord.bytes.equals(blob), true, `${path}: checkout bytes differ from Git blob`);
+  checkoutRecords.push(
+    Object.fromEntries(Object.entries(trueRecord).filter(([key]) => key !== "bytes")),
+    Object.fromEntries(Object.entries(falseRecord).filter(([key]) => key !== "bytes")),
+  );
+  blobRecords.push({ path, byteLength: blob.byteLength, sha256: sha256(blob) });
+}
+
+assert.equal(checkoutRecords.length, 14);
+assert.equal(blobRecords.length, 7);
+requireClean(trueRepo);
+requireClean(falseRepo);
+const result = {
+  schemaVersion: 1,
+  nodeExecutable: process.execPath,
+  nodeVersion: process.version,
+  base,
+  head,
+  paths,
+  checkoutRecords,
+  blobRecords,
+  clean: { autocrlfTrue: true, autocrlfFalse: true },
+};
+writeFileSync(output, `${JSON.stringify(result, null, 2)}\n`, "utf8");
+process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+```
+
+## Cleanup record
+
+Before this final evidence freeze, all 19 fresh clone, Cargo target and TEMP paths were resolved under the dedicated E-drive root and verified absent after removal. Only the ignored tool/transcript directories were retained through the commit; the complete root is removed after the final post-commit replay.
+
+```json
+{
+  "cleanupRoot": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.tmp\\rkp2-eol-evidence-repair-fresh",
+  "allResolvedUnderRoot": true,
+  "cloneAndBuildTargetCount": 19,
+  "records": [
+    {
+      "path": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.tmp\\rkp2-eol-evidence-repair-fresh\\cargo-target-i1-1971",
+      "existedBefore": true,
+      "absentAfter": true
+    },
+    {
+      "path": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.tmp\\rkp2-eol-evidence-repair-fresh\\cargo-target-i2-1880",
+      "existedBefore": true,
+      "absentAfter": true
+    },
+    {
+      "path": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.tmp\\rkp2-eol-evidence-repair-fresh\\cargo-target-i2-1971",
+      "existedBefore": true,
+      "absentAfter": true
+    },
+    {
+      "path": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.tmp\\rkp2-eol-evidence-repair-fresh\\temp-i1",
+      "existedBefore": true,
+      "absentAfter": true
+    },
+    {
+      "path": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.tmp\\rkp2-eol-evidence-repair-fresh\\temp-i2",
+      "existedBefore": true,
+      "absentAfter": true
+    },
+    {
+      "path": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.tmp\\rkp2-eol-evidence-repair-fresh\\temp-i3-node",
+      "existedBefore": true,
+      "absentAfter": true
+    },
+    {
+      "path": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.tmp\\rkp2-eol-evidence-repair-fresh\\run-93383e72",
+      "existedBefore": true,
+      "absentAfter": true
+    },
+    {
+      "path": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.tmp\\rkp2-eol-evidence-repair-fresh\\run-64bc508c\\.scratch",
+      "existedBefore": true,
+      "absentAfter": true
+    },
+    {
+      "path": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.tmp\\rkp2-eol-evidence-repair-fresh\\run-64bc508c\\cargo-target-i0-red",
+      "existedBefore": true,
+      "absentAfter": true
+    },
+    {
+      "path": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.tmp\\rkp2-eol-evidence-repair-fresh\\run-64bc508c\\cargo-target-i0-rehearsal",
+      "existedBefore": true,
+      "absentAfter": true
+    },
+    {
+      "path": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.tmp\\rkp2-eol-evidence-repair-fresh\\run-64bc508c\\control-true",
+      "existedBefore": true,
+      "absentAfter": true
+    },
+    {
+      "path": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.tmp\\rkp2-eol-evidence-repair-fresh\\run-64bc508c\\expected-v1",
+      "existedBefore": true,
+      "absentAfter": true
+    },
+    {
+      "path": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.tmp\\rkp2-eol-evidence-repair-fresh\\run-64bc508c\\expected-v2",
+      "existedBefore": true,
+      "absentAfter": true
+    },
+    {
+      "path": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.tmp\\rkp2-eol-evidence-repair-fresh\\run-64bc508c\\i2-autocrlf-false",
+      "existedBefore": true,
+      "absentAfter": true
+    },
+    {
+      "path": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.tmp\\rkp2-eol-evidence-repair-fresh\\run-64bc508c\\i2-autocrlf-true",
+      "existedBefore": true,
+      "absentAfter": true
+    },
+    {
+      "path": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.tmp\\rkp2-eol-evidence-repair-fresh\\run-64bc508c\\i3-control",
+      "existedBefore": true,
+      "absentAfter": true
+    },
+    {
+      "path": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.tmp\\rkp2-eol-evidence-repair-fresh\\run-64bc508c\\i3-expected",
+      "existedBefore": true,
+      "absentAfter": true
+    },
+    {
+      "path": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.tmp\\rkp2-eol-evidence-repair-fresh\\run-64bc508c\\rehearsal",
+      "existedBefore": true,
+      "absentAfter": true
+    },
+    {
+      "path": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.tmp\\rkp2-eol-evidence-repair-fresh\\run-64bc508c\\temp",
+      "existedBefore": true,
+      "absentAfter": true
+    }
+  ],
+  "retainedUntilEvidenceCommit": [
+    "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.tmp\\rkp2-eol-evidence-repair-fresh\\run-64bc508c\\tools",
+    "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.tmp\\rkp2-eol-evidence-repair-fresh\\run-64bc508c\\transcripts"
+  ],
+  "finalAction": "remove_entire_cleanup_root_after_final_evidence_commit"
+}
+```
+
+## Final lifecycle boundary
+
+- Candidate state after this evidence commit: `READY FOR DEDICATED INDEPENDENT EOL PREREQUISITE IMPLEMENTATION REVIEW`.
+- The commit containing this file is the final candidate HEAD; it is obtained with `git rev-parse HEAD` rather than embedded self-referentially.
+- Post-commit gates rerun the candidate signatures, full Node classifier, Trellis/JSON/fence/diff checks, exact path sets and Rust reconstruction. A failure returns for repair rather than validating this claim.
+- Implementation authorization is consumed. Acceptance, archive, integration, successor S6.2, S6.3, E3, qualification, runtime cutover, RKP-3 and push remain false.
