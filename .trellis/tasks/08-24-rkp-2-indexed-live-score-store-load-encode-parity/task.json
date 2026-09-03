@@ -24,7 +24,8 @@
     "08-26-rkp-2-stage-6-private-scale-evidence-seam-repair",
     "09-01-rkp-2-stage-6-acceptance-archive-integration-closeout",
     "09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite",
-    "09-03-rkp-2-stage-6-s6-2-fresh-evidence-consumption"
+    "09-03-rkp-2-stage-6-s6-2-fresh-evidence-consumption",
+    "09-03-rkp-2-stage-6-s6-3-final-candidate-freeze"
   ],
   "parent": "08-15-core-rust-runtime-performance-remediation",
   "relatedFiles": [
@@ -107,7 +108,7 @@
       "verdict": "pass"
     },
     "approved_planning_head": "625054ec78e6410e0fb6034ab0c8f60bbf110d08",
-    "current_planning_child": null,
+    "current_planning_child": "09-03-rkp-2-stage-6-s6-3-final-candidate-freeze",
     "stage6_semantic_canonical_authority_amendment": {
       "task": "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
       "status": "accepted_archived_completed_historical_no_live_gate",
@@ -149,8 +150,8 @@
       "stage6_e3_started": false,
       "e3_user_authorization_consumed_by_parent_stage6_owner": true
     },
-    "current_implementation_child": "09-03-rkp-2-stage-6-s6-2-fresh-evidence-consumption",
-    "implementation_stage": "stage_6_s6_2_owner_accepted_pending_archive_integration",
+    "current_implementation_child": null,
+    "implementation_stage": "stage_6_s6_3_planning",
     "stage_1_started": true,
     "stage_1_completed": true,
     "stage_1_commit_subject": "build(rkp-2): pin typed generational store dependency",
@@ -353,7 +354,7 @@
       "post_pass_closeout_authorized": true,
       "stage_6_blocked_until_accepted_archived_integrated": false
     },
-    "next_gate": "native_archive_then_fast_forward_only_integration_of_s6_2_child",
+    "next_gate": "direct_s6_3_planning_check_then_activation",
     "stage_6_started": true,
     "stage_6_authorized": true,
     "stage_6_completed": false,
