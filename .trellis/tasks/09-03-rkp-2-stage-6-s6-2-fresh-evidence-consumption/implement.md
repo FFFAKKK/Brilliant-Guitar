@@ -24,8 +24,12 @@ integrate, start S6.3, qualify, cut over, create RKP-3 or push until:
 
        docs(rkp-2): plan fresh S6.2 evidence consumption
 
-9. On the clean commit, classify focused 11/7/4/0 and full 611/605/4/2, verify
-   the 80-file manifest, then perform a fresh read-only planning audit.
+9. On the clean commit, classify focused 11/7/4/0. A fresh checkout without the
+   ignored native addon must be 590/582/7/1 with exactly three missing-addon
+   file failures plus four governance failures. To claim the built lane, build
+   `brilliant-kernel-node`, copy the real DLL to the ignored `.node` target with
+   SHA-256 equality, and require 611/605/4/2. Verify the 80-file manifest, then
+   perform a fresh read-only planning audit.
 
 ## 2. Transcript classifier
 
@@ -39,6 +43,12 @@ Planning titles:
 - part owner repair stays anchored to its accepted six-path wire contract
 - Stage 6 hostile and resource evidence consumes the existing private Rust seams
 - Stage 6 semantic canonical evidence correction and E2 worker stay inside the accepted contracts
+
+The fresh no-native planning lane additionally owns exactly three file-level
+failures: rkp-1-node-bridge-smoke.test.js,
+rkp-1a-property-cap-compatibility.test.js and
+rkp-2-live-score-store-parity.test.js. It is 590/582/7/1. The built-native lane
+is 611/605/4/2 and contains only the four governance titles.
 
 Post-E1 titles are the first three only. Full-run output must include exactly
 one full-test-manifest-v1 record with fileCount 80 and SHA-256 1a50fd28....
@@ -224,9 +234,18 @@ Run:
     git diff --check
     git status --short --branch
 
-Also parse every changed JSON/JSONL file, verify manifest path uniqueness and
-existence, Markdown fence parity, exact fifteen-path planning delta, zero
-protected delta and the five raw hashes.
+In a fresh checkout, classify `npm.cmd test` as the exact no-native lane unless
+the reviewer first runs the accepted debug build:
+
+    cargo +1.97.1 build --manifest-path Cargo.toml --package brilliant-kernel-node --target x86_64-pc-windows-msvc --locked
+
+Then copy
+`target/x86_64-pc-windows-msvc/debug/brilliant_kernel_node.dll` to
+`target/rkp-1-node/brilliant_kernel_node.node` and prove the two SHA-256 values
+equal. Only then require the built-native lane. Also parse every changed
+JSON/JSONL file, verify manifest path uniqueness and existence, Markdown fence
+parity, exact fifteen-path planning delta, zero protected delta and the five
+raw hashes.
 
 ## 11. Hard stop
 

@@ -27,9 +27,12 @@ then the user must explicitly approve task start.
 - TypeScript remains the product default.
 - Current typecheck and build pass.
 - Current focused Workspace Law is exactly 11 tests / 7 pass / 4 fail / 0
-  skipped. A dirty-tree full diagnostic is 611 / 604 / 5 / 2; the fifth failure
-  is only the RKP0 clean-lifecycle guard. The committed clean planning
-  candidate must be exactly 611 / 605 / 4 / 2 with manifest 80 files and
+  skipped. A dirty built-native full diagnostic is 611 / 604 / 5 / 2; the fifth
+  failure is only the RKP0 clean-lifecycle guard. A clean fresh checkout before
+  ignored native-addon materialization is exactly 590 / 582 / 7 / 1: three
+  file-level missing-addon failures plus the four governance failures. After a
+  validated native build and hash-equal DLL-to-.node copy, the same clean
+  candidate is exactly 611 / 605 / 4 / 2. Both lanes use manifest 80 files and
   SHA-256 1a50fd28c630bb016ce30f7ca65ae940170705b2eed581e610282b81378a1cf1.
 
 ## Requirements
@@ -173,8 +176,10 @@ PASS never authorizes the next lifecycle action.
   planning descendant and name one planning-audit gate.
 - [x] JSON/JSONL, Trellis validation, Markdown fences, path existence,
   uniqueness, hashes and diff checks pass.
-- [x] Clean committed planning candidate produces focused 11/7/4/0 and full
-  611/605/4/2 with only the four frozen governance titles.
+- [x] Clean committed planning candidate produces focused 11/7/4/0; a fresh
+  no-native checkout produces 590/582/7/1 with exactly three missing-addon
+  file failures plus four governance failures; the validated built-native lane
+  produces 611/605/4/2 with only the four governance failures.
 - [ ] Dedicated fresh planning audit returns P0/P1/P2=0/0/0.
 - [ ] After explicit activation, E1 changes exactly three technical paths and
   freezes one evidence source with evidence absent.

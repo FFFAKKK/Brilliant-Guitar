@@ -132,12 +132,15 @@ No archived output file, prose value or transient path is an input.
 | Phase | Focused Workspace Law | Full suite | Meaning |
 | --- | --- | --- | --- |
 | dirty planning worktree | 11/7/4/0 | 611/604/5/2 | extra full failure is clean-tree guard |
-| committed planning candidate | 11/7/4/0 | 611/605/4/2 | four known governance REDs |
+| clean fresh planning candidate, native absent | 11/7/4/0 | 590/582/7/1 | three missing-addon file REDs plus four governance REDs |
+| clean planning candidate, validated native present | 11/7/4/0 | 611/605/4/2 | four known governance REDs |
 | E1/E2/E4 | 11/8/3/0 | 611/606/3/2 | S6.2-owned law green; three inherited REDs |
 
-All nonzero exits are accepted only when a classifier proves the exact counts,
-exact unique title set and exit 1. Any other result blocks. The full manifest
-must remain 80 files / 1a50fd28....
+All nonzero exits are accepted only when a lane-aware classifier proves the
+exact counts, exact unique title/file set and exit 1. The 611 planning lane is
+legal only after building `brilliant-kernel-node`, copying the real DLL to the
+ignored `.node` load target, and proving source/target SHA-256 equality. Any
+other result blocks. The full manifest must remain 80 files / 1a50fd28....
 
 ## 10. Validity and evidence publication
 

@@ -2,11 +2,11 @@
 
 ## Fresh S6.2 planning projection — 2026-09-03
 
-`INITIAL 7D7ADC03 RETURNED 0/1/0 — LF-HASH REPAIR READY FOR COMMIT AND REREVIEW`
+`18318BFF RETURNED 0/1/0 — DUAL TEST-LANE REPAIR READY FOR COMMIT AND REREVIEW`
 
 The current candidate is a docs-only, exact 15-path fresh S6.2 plan rooted at base `9da9d036a6c2ef184ea68d5b33fabfb1e9a0eba5` and tree `179e08f0f3ec77f9368cc781c9e4567671791f30`. The sole current child is `.trellis/tasks/09-03-rkp-2-stage-6-s6-2-fresh-evidence-consumption`; its planned branch/worktree are `codex/rkp-2-stage-6-s6-2-fresh-evidence-consumption` and `.worktrees/rkp-2-stage-6-s6-2-fresh-evidence-consumption`.
 
-The predecessor EOL prerequisite is accepted, natively archived, and fast-forward integrated at `9da9d036a6c2ef184ea68d5b33fabfb1e9a0eba5`. The stopped `c3c4d198a33ec3a78d3fc3e33cdae30657d9b62b` attempt remains diagnostic-only and non-reusable. Initial plan `7d7adc03fcf963633ae1e4cde4abc3dd95291e33` passed its clean test classifications but returned P0/P1/P2=`0/1/0` because four hashes were CRLF-derived. The exact repair uses fresh LF/blob values from the accepted archive and changes no technical byte. The next legal gate is the exact repair commit followed by targeted read-only rereview; this section does not claim a planning PASS or authorize `task.py start`, code changes, E3, acceptance, archive, qualification, cutover, RKP-3 or push.
+The predecessor EOL prerequisite is accepted, natively archived, and fast-forward integrated at `9da9d036a6c2ef184ea68d5b33fabfb1e9a0eba5`. The stopped `c3c4d198a33ec3a78d3fc3e33cdae30657d9b62b` attempt remains diagnostic-only and non-reusable. Initial plan `7d7adc03fcf963633ae1e4cde4abc3dd95291e33` returned `0/1/0` for CRLF-derived hashes; LF repair `18318bffc375d7d64de0169fab4ffff899e1244c` returned `0/1/0` for not separating the fresh no-native and built-native test lanes. The exact repair freezes `590/582/7/1` before native materialization and `611/605/4/2` only after hash-equal build/copy, with no technical change. The next legal gate is the exact repair commit followed by targeted read-only rereview; this section does not claim a planning PASS or authorize `task.py start`, code changes, E3, acceptance, archive, qualification, cutover, RKP-3 or push.
 
 All subsequent sections are historical context and do not override this current projection.
 

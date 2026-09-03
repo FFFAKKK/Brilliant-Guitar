@@ -29,7 +29,8 @@ Protected technical inputs:
 | --- | --- | --- | --- |
 | typecheck/build | exit 0 | exit 0 | stop |
 | focused Workspace Law | 11/7/4/0 | 11/8/3/0 | exact title classifier |
-| full runner | 611/605/4/2 on clean commit | 611/606/3/2 | exact titles and 80-file manifest |
+| full runner, fresh native absent | 590/582/7/1 on clean commit | not an E2 lane | three exact missing-addon files plus exact titles and manifest |
+| full runner, validated native present | 611/605/4/2 on clean commit | 611/606/3/2 | hash-equal DLL/.node plus exact titles and 80-file manifest |
 | Rust 1.97.1 | not required for docs-only candidate | fmt/check/test/clippy pass | stop |
 | Rust 1.88.0 | not required for docs-only candidate | workspace check pass | stop |
 | autocrlf matrix | predecessor record checked | true/false fresh source checkouts | any CR/blob mismatch blocks |

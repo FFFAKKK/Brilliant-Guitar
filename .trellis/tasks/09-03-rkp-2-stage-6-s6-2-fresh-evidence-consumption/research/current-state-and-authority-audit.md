@@ -64,8 +64,11 @@ text/eol=lf by .gitattributes.
 - Dirty author run: manifest 80 /
   1a50fd28c630bb016ce30f7ca65ae940170705b2eed581e610282b81378a1cf1,
   611/604/5/2.
-- Clean 7d7adc03... planning run: focused 11/7/4/0 and full 611/605/4/2
-  with the same manifest.
+- Clean 7d7adc03... planning run in the existing validated-native parent lane:
+  focused 11/7/4/0 and full 611/605/4/2 with the same manifest.
+- Clean fresh 18318bff... worktree before native-addon materialization:
+  focused 11/7/4/0 and full 590/582/7/1 with three missing-addon file failures,
+  four governance failures and the same manifest.
 - The only dirty-only fifth title was the RKP0 committed-lifecycle clean-tree
   guard.
 
@@ -75,6 +78,11 @@ Fresh-worktree audit returned 7d7adc03... at P0/P1/P2=0/1/0 because four
 immutable workload hashes were CRLF-derived. The exact repair is confined to
 planning/lifecycle documents and replaces those values with the LF blob-byte
 hashes above. Technical and protected deltas remain zero.
+
+Targeted rereview of 18318bff... returned P0/P1/P2=0/1/0 because the plan did
+not distinguish that fresh no-native lane from the built-native 611 lane. The
+bounded dual-lane repair freezes both exact classifications and makes native
+build/copy/hash equality a precondition for any 611-lane claim.
 
 ## Required successor repairs
 

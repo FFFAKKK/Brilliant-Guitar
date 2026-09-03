@@ -2,14 +2,15 @@
 
 ## Current gate
 
-LF-HASH REPAIR READY FOR EXACT COMMIT AND TARGETED READ-ONLY REREVIEW
+DUAL FULL-TEST-LANE REPAIR READY FOR COMMIT AND TARGETED REREVIEW
 
-Initial planning commit 7d7adc03... was returned P0/P1/P2=0/1/0 because four
-workload hashes were measured from the legacy parent's CRLF view. The bounded
-repair replaces only those planning values with fresh LF/blob hashes. The task
-is not active implementation. Do not run task.py start or edit the three
-technical paths before the repaired candidate passes targeted rereview at
-P0/P1/P2=0/0/0 and the user explicitly authorizes activation.
+Initial planning commit 7d7adc03... was returned 0/1/0 for four CRLF-derived
+hashes. LF-hash repair 18318bff... was returned 0/1/0 because it omitted the
+fresh no-native 590/582/7/1 lane and stated only the built-native 611/605/4/2
+lane. The bounded repair now freezes both and requires build/copy/hash equality
+before a 611 claim. The task is not active implementation. Do not run task.py
+start or edit technical paths before targeted rereview passes 0/0/0 and the
+user explicitly authorizes activation.
 
 ## Exact source
 

@@ -33,7 +33,7 @@
     ".trellis/tasks/archive/2026-09/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/",
     ".trellis/spec/core-kernel/backend/rust-runtime-transition.md"
   ],
-  "notes": "FRESH S6.2 PLANNING / INITIAL 7D7ADC03 AUDIT RETURNED P0 0 P1 1 P2 0 FOR FOUR CRLF-DERIVED WORKLOAD HASHES / CURRENT LF-BLOB HASH REPAIR AUTHOR-VALIDATED AND READY FOR EXACT REPAIR COMMIT / OLD C3C4D198 ATTEMPT DIAGNOSTIC NON-REUSABLE / TASK START AND TECHNICAL IMPLEMENTATION NOT AUTHORIZED / S6.2 S6.3 E3 QUALIFICATION CUTOVER RKP3 ARCHIVE INTEGRATION PUSH FALSE / TYPESCRIPT DEFAULT.",
+  "notes": "FRESH S6.2 PLANNING / INITIAL 7D7ADC03 AUDIT RETURNED 0 1 0 FOR CRLF-DERIVED HASHES / 18318BFF TARGETED REREVIEW RETURNED 0 1 0 BECAUSE FRESH NO-NATIVE AND BUILT-NATIVE FULL-TEST LANES WERE NOT SEPARATED / DUAL-LANE PLANNING REPAIR READY FOR COMMIT / OLD C3C4D198 ATTEMPT DIAGNOSTIC NON-REUSABLE / TASK START AND TECHNICAL IMPLEMENTATION NOT AUTHORIZED / S6.2 S6.3 E3 QUALIFICATION CUTOVER RKP3 ARCHIVE INTEGRATION PUSH FALSE / TYPESCRIPT DEFAULT.",
   "meta": {
     "planning_base_commit": "9da9d036a6c2ef184ea68d5b33fabfb1e9a0eba5",
     "planning_base_tree": "179e08f0f3ec77f9368cc781c9e4567671791f30",
@@ -45,11 +45,11 @@
     "activation_authorized": false,
     "production_implementation_authorized": false,
     "user_implementation_authorization": false,
-    "independent_planning_review": "returned_7d7adc03fcf963633ae1e4cde4abc3dd95291e33_P0_0_P1_1_P2_0_four_CRLF_derived_workload_hashes",
+    "independent_planning_review": "targeted_rereview_returned_18318bffc375d7d64de0169fab4ffff899e1244c_P0_0_P1_1_P2_0_fresh_no_native_and_built_native_full_test_lanes_not_separated",
     "planning_candidate_ready": true,
     "planning_candidate_commit": null,
-    "current_phase": "P0_ready_for_exact_LF_hash_repair_commit",
-    "next_gate": "exact_LF_hash_repair_commit_then_targeted_fresh_read_only_planning_rereview",
+    "current_phase": "P0_ready_for_exact_dual_full_test_lane_repair_commit",
+    "next_gate": "exact_dual_full_test_lane_repair_commit_then_targeted_fresh_read_only_planning_rereview",
     "parent_s6_1_completed": true,
     "parent_s6_2_started": false,
     "parent_s6_2_completed": false,
@@ -110,6 +110,15 @@
       "finding": "four_workload_SHA256_values_were_measured_from_the_legacy_parent_CRLF_checkout_instead_of_the_accepted_LF_Git_blob_bytes",
       "fresh_checkout_proof": "all_seven_tracked_EOL_paths_have_zero_CR_and_raw_worktree_blob_equality",
       "repair": "replace_the_four_values_with_fresh_LF_checkout_and_archived_EOL_evidence_SHA256_values_then_targeted_rereview"
+    },
+    "first_targeted_planning_rereview_return": {
+      "candidate_commit": "18318bffc375d7d64de0169fab4ffff899e1244c",
+      "candidate_tree": "6f39d52cb642e1666116401b50563af05bc0bd5f",
+      "P0": 0,
+      "P1": 1,
+      "P2": 0,
+      "finding": "fresh_clean_checkout_without_the_ignored_native_addon_is_590_582_7_1_but_the_plan_required_only_the_built_native_611_605_4_2_lane",
+      "repair": "freeze_both_exact_planning_lanes_and_require_native_build_materialization_before_the_611_lane"
     },
     "implementation_workload_inputs": null,
     "tracked_eol_paths": [
@@ -182,7 +191,9 @@
     "planning_node_baseline": {
       "focused": "11_total_7_pass_4_fail_0_skip",
       "dirty_full": "611_total_604_pass_5_fail_2_skip_extra_RKP0_clean_tree_guard_only",
-      "clean_candidate_expected": "611_total_605_pass_4_fail_2_skip",
+      "fresh_clean_without_native_addon": "590_total_582_pass_7_fail_1_skip_three_file_level_missing_native_addon_plus_four_governance",
+      "clean_with_valid_native_addon": "611_total_605_pass_4_fail_2_skip_four_governance",
+      "lane_rule": "classify_fresh_no_native_exactly_or_build_and_hash_copy_the_native_addon_before_requiring_the_611_lane",
       "full_manifest_file_count": 80,
       "full_manifest_sha256": "1a50fd28c630bb016ce30f7ca65ae940170705b2eed581e610282b81378a1cf1"
     },

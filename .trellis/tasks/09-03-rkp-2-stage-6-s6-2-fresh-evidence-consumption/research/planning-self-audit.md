@@ -3,10 +3,11 @@
 ## Verdict
 
 The initial author self-check was invalidated by the fresh-worktree review of
-7d7adc03..., which returned P0/P1/P2=0/1/0 for four CRLF-derived hashes. The
-bounded LF-hash repair now self-checks at P0/P1/P2=0/0/0, but only a targeted
-fresh read-only rereview may clear the finding. Neither result activates
-implementation.
+7d7adc03..., which returned P0/P1/P2=0/1/0 for four CRLF-derived hashes.
+Targeted rereview of repaired 18318bff... also returned 0/1/0 because the plan
+did not separate fresh no-native and built-native full-test lanes. The bounded
+dual-lane repair now self-checks at 0/0/0, but only another targeted fresh
+read-only rereview may clear the finding. No result activates implementation.
 
 ## Checks
 
@@ -26,6 +27,9 @@ implementation.
   and the 80-file manifest SHA-256
   1a50fd28c630bb016ce30f7ca65ae940170705b2eed581e610282b81378a1cf1;
   the fifth full failure is only the expected dirty-tree clean-lifecycle guard.
+- Fresh clean native-absent lane reproduces 590/582/7/1 with exactly three
+  missing-addon file failures plus four governance failures; 611/605/4/2 is
+  required only after a hash-verified native build/copy.
 - S6.2/S6.3, E3, candidate readiness, qualification, cutover, RKP-3, archive,
   integration and push remain false.
 - TypeScript remains default.

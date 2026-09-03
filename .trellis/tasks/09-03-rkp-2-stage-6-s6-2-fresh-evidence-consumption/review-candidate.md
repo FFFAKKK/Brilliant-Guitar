@@ -2,16 +2,17 @@
 
 ## Status
 
-READY FOR EXACT LF-HASH REPAIR COMMIT, THEN TARGETED READ-ONLY REREVIEW
+READY FOR EXACT DUAL FULL-TEST-LANE REPAIR COMMIT, THEN TARGETED REREVIEW
 
-Initial candidate 7d7adc03... returned P0/P1/P2=0/1/0 for four
-CRLF-derived workload hashes. No planning PASS is claimed. No implementation
-authorization is claimed.
+Initial candidate 7d7adc03... returned P0/P1/P2=0/1/0 for four CRLF-derived
+workload hashes. LF repair 18318bff... returned 0/1/0 because fresh no-native
+and built-native full-test lanes were not separated. No planning PASS or
+implementation authorization is claimed.
 
 ## Review object
 
-Review the exact repair commit whose parent is
-7d7adc03fcf963633ae1e4cde4abc3dd95291e33. Also recheck the complete range
+Review the exact dual-lane repair commit whose parent is
+18318bffc375d7d64de0169fab4ffff899e1244c. Also recheck the complete range
 from 9da9d036a6c2ef184ea68d5b33fabfb1e9a0eba5 remains exactly the fifteen
 literal planning paths in task.json.
 
@@ -33,8 +34,9 @@ Activation requires P0/P1/P2=0/0/0.
 9. E2 completes representative plus full gates before E3.
 10. E3 is one fresh run at the frozen source and proves sentinel non-reuse.
 11. E4 has zero technical delta from the source.
-12. Test classifiers use current 11/7/4/0 and clean 611/605/4/2 baselines,
-    then 11/8/3/0 and 611/606/3/2 after E1.
+12. Planning classifiers use focused 11/7/4/0, fresh no-native 590/582/7/1,
+    and built-native 611/605/4/2 only after a hash-equal build/copy; E1 uses
+    11/8/3/0 and built-native 611/606/3/2.
 13. EVIDENCE_INVALID prevents pass publication.
 14. Diagnostic liveness is not product qualification.
 15. S6.3 and all later lifecycle/product gates remain false.
