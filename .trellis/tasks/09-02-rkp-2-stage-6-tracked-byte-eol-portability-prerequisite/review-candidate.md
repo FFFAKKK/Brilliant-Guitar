@@ -1,49 +1,72 @@
-# EOL prerequisite implementation review candidate
+# EOL prerequisite audit-return re-entry planning review candidate
 
 ## Status
 
-`READY FOR DEDICATED INDEPENDENT EOL PREREQUISITE IMPLEMENTATION REVIEW`
+READY FOR DEDICATED INDEPENDENT EOL PREREQUISITE RE-ENTRY PLANNING AUDIT
 
 ## Exact object
 
-- Branch: `codex/rkp-2-stage-6-eol-evidence-repair`
-- Worktree: `.worktrees/rkp-2-stage-6-eol-portability-prerequisite`
-- Planning base: `55cb575c606646e8449359b0c46d5c905b3bb3c6`
-- Fresh I0 source/tree: `64bc508cd56bd0a250f890af186c097dc2b6880e` / `b767ce3b7016b8529326f94891ebd4aaa2373515`
-- I0 evidence projection: `547447cc9b4cd0124afb5dc1b22d96a773c5b4dc`
-- I1 technical commit/tree: `30d4acb0e3ce29e849c2a89b2ac1225bb5dafe49` / `022f8b25e53ca68f33be08d0a2cedef65af2aa94`
-- Provisional clean I3 commit/tree: `ef67f4a5e5ea0c96d8a7b46001458c12bc135413` / `585afe41620fb3146c7461a11159044c6a193ae1`
-- Final candidate: the clean commit containing this file, resolved by `git rev-parse HEAD`
-- Task: `in_progress`; implementation authorization consumed
-- S6.2/S6.3/E3: false / false / zero
-- Default runtime: TypeScript
+- Planning base and returned implementation candidate: 1f3f6061f093e1e169ccf4105cde444b0e49f82f.
+- Branch: codex/rkp-2-stage-6-eol-audit-return-planning-repair.
+- Worktree: .worktrees/rkp-2-stage-6-eol-audit-return-planning-repair.
+- Planning candidate: the clean commit containing this file, resolved with git rev-parse HEAD.
+- Historical fresh I0: 64bc508cd56bd0a250f890af186c097dc2b6880e.
+- Audited technical commit/tree: 30d4acb0e3ce29e849c2a89b2ac1225bb5dafe49 / 022f8b25e53ca68f33be08d0a2cedef65af2aa94.
+- Returned audit task: 01a06532-e9ab-7603-bddc-f9d55b3f5bb9.
+- Returned verdict: P0/P1/P2=0/2/0.
+- Task status remains in_progress as historical lifecycle state.
+- Planning candidate ready: true after commit.
+- Implementation candidate ready: false.
+- User/production implementation authorization: false / false.
+- S6.2/S6.3/E3: false / false / zero.
+- Default runtime: TypeScript.
 
 ## Verdict requested
 
-Audit whether this is the smallest sufficient EOL/raw-byte portability prerequisite and whether its fresh evidence closes the previous `65fef628...` return (P0/P1/P2=`0/2/1`) without changing Rust product behavior.
+Audit only whether this docs-only planning candidate closes both returned P1 findings without changing the four audited technical files, expanding the six-path future coordination contract, or advancing any lifecycle authorization.
 
-## Decisive evidence
+## P1 closure claims to verify
 
-1. `implementation-evidence.md` is absent at I0; the four technical paths have zero I0 delta.
-2. Three independent generators agree on full-index patch `4,892` bytes / `fb635082a2951b5e3d8b9352230bd462e0c08aa5b7326a93403537baf62b1b05`.
-3. I1 changes exactly `.gitattributes` plus three Rust `#[cfg(test)]` regions; lexical reconstruction equals the I0 blobs.
-4. Five focused Rust tests pass; no large ignored evidence test runs.
-5. I2 contains every one of 14 checkout and 7 blob records, with raw byte-length/SHA/blob equality under both `core.autocrlf` values.
-6. Rust 1.97.1 fmt/check/test/clippy and Rust 1.88.0 check pass with E-drive outputs.
-7. Fresh I3 control equals I0, fresh rebuilt expected equals the pre-I1 record, and candidate equals only that predeclared record; Part Owner remains I0-equal.
-8. Full Node remains the classified `611/605/4/2` and manifest `80 / 1a50fd28...`; there is no new product failure.
-9. Candidate diff is exactly four technical plus six literal coordination paths.
-10. Nineteen temporary clone/build/TEMP paths were removed; the remaining ignored evidence root is deleted after final post-commit replay.
+### P1-1 — independently reconstructible expected lane
+
+- Future implementation-evidence.md must embed complete executable bytes for project-expected.mjs, coordination-set.mjs, all capture/verifier/extraction/comparison helpers, and every non-built-in imported helper.
+- The complete I0_EXPECTED_PATCH.diff payload must be embedded losslessly with decoded byte length and SHA-256.
+- A reviewer extracts and hash-verifies the capsule before use, then rebuilds control, expected V1, expected V2, historical technical, and candidate lanes from pinned commits in fresh E-drive clones.
+- The three missing synthetic object IDs and deleted temp roots are diagnostic only and cannot satisfy a gate.
+- The capsule remains inside the already-allowed implementation-evidence.md path; no seventh coordination path is added.
+
+### P1-2 — one current branch/state/gate
+
+- Child task, PRD, design, implement, evidence header/footer, review candidate, operator handoff, RKP-2 parent, and Rust parent all identify this branch/worktree and the dedicated re-entry planning audit as the sole live gate.
+- Historical I0/I1 and operator-ready claims are labeled historical.
+- implementation_candidate_ready is false and every implementation/later-stage authorization is false.
+
+## Exact R-P0 planning diff
+
+Relative to 1f3f6061..., the candidate must change exactly:
+
+1. .trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/prd.md
+2. .trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/design.md
+3. .trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/implement.md
+4. .trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/task.json
+5. .trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/implementation-evidence.md
+6. .trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/review-candidate.md
+7. .trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/operator-handoff.md
+8. .trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json
+9. .trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json
 
 ## Required independent checks
 
-- Verify exact ancestry and clean/staged-empty state.
-- Independently compute the full-index patch length/SHA and four technical paths.
-- Re-run the Rust reconstruction verifier and inspect its complete committed source.
-- Independently sample all 14 checkout records and 7 blob records from the committed evidence.
-- Rebuild control/expected lanes rather than trusting the candidate as its own oracle.
-- Confirm matrix V1 failure and V2 bounded parser correction did not normalize compared bytes.
-- Confirm task meta, PRD, design, implement and actual coordination diff all equal the same six literal paths.
-- Confirm no acceptance/archive/integration/push or later-stage authorization was activated.
+1. Recheck branch, HEAD, clean/staged-empty status, and single-parent base.
+2. Require the actual diff to equal the exact nine-path set.
+3. Require the four technical blobs to equal 30d4acb0... and protected S6.2 paths to have zero delta.
+4. Require task meta, PRD, design, and implement to expose the same exact six future coordination paths and empty future technical allowlist.
+5. Verify the durable capsule contract includes every executable dependency and the complete patch payload.
+6. Verify fresh-lane construction has no dependency on missing synthetic objects or deleted temp roots and cannot derive expected values from the candidate.
+7. Verify one current branch/state/gate across every named authority.
+8. Re-run Trellis, JSON/JSONL, Markdown fence, diff, and typecheck/build gates; require focused governance 11/7/4/0 and rerun the full classifier from a clean suitable environment. The operator's pre-commit 590/581/8/1 run contained exactly four historical governance failures, one dirty-tree guard, and three file-level missing-native-addon failures, so it is diagnostic and not claimed as full green evidence.
+9. Verify task.py start and all forbidden lifecycle actions were not performed.
 
-A technical pass does not itself authorize lifecycle closeout.
+## Review boundary
+
+A P0/P1/P2=0/0/0 planning verdict permits only a later request for explicit implementation authorization. It does not itself authorize activation, evidence replay, acceptance, archive, integration, S6.2/S6.3/E3, qualification, runtime cutover, RKP-3, or push.

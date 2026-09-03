@@ -2,14 +2,35 @@
 
 ## Current evidence state
 
-- Status: `I0 FRESH BASELINE FROZEN / I1 NOT STARTED`.
-- Fresh `I0_SOURCE_HEAD`: `64bc508cd56bd0a250f890af186c097dc2b6880e`.
-- Fresh source tree: `b767ce3b7016b8529326f94891ebd4aaa2373515`.
-- Branch: `codex/rkp-2-stage-6-eol-evidence-repair`.
-- Worktree: `.worktrees/rkp-2-stage-6-eol-portability-prerequisite`.
-- `implementation-evidence.md` was absent and the four technical paths had zero delta at the source HEAD.
-- This document is the later I0 evidence projection and is deliberately not part of `I0_SOURCE_HEAD`.
-- Task remains `in_progress`; implementation candidate is not ready; S6.2/S6.3/E3 remain false/false/zero.
+- Status: `HISTORICAL IMPLEMENTATION CANDIDATE RETURNED / CURRENT R-P0 PLANNING ONLY`.
+- Current docs-only planning base: `1f3f6061f093e1e169ccf4105cde444b0e49f82f`.
+- Current branch: `codex/rkp-2-stage-6-eol-audit-return-planning-repair`.
+- Current worktree: `.worktrees/rkp-2-stage-6-eol-audit-return-planning-repair`.
+- Dedicated audit task `01a06532-e9ab-7603-bddc-f9d55b3f5bb9` returned P0/P1/P2=`0/2/0`.
+- Historical fresh I0/technical objects remain `64bc508c...` and `30d4acb0...`; the returned evidence candidate is `1f3f6061...`.
+- All existing capture records below are historical diagnostic evidence. They do not establish a reconstructible expected lane and do not make the returned implementation candidate ready.
+- Task remains `in_progress` as a historical Trellis lifecycle fact; `planning_candidate_ready=true` only after the R-P0 commit, `implementation_candidate_ready=false`, and current user/production implementation authorization is false.
+- S6.2/S6.3/E3 remain false/false/zero. Acceptance, archive, integration, qualification, runtime cutover, RKP-3, and push remain unauthorized.
+- Sole live gate: `DEDICATED INDEPENDENT EOL PREREQUISITE RE-ENTRY PLANNING AUDIT`.
+
+## Future durable reconstruction capsule requirement
+
+Before any future re-entry result in this file is treated as evidence, this already-authorized path must embed complete executable bytes—not excerpts or hashes only—for:
+
+- `project-expected.mjs`;
+- `coordination-set.mjs`;
+- `capture-node-signatures.mjs`;
+- `capture-node-command.mjs`;
+- `capture-eol-matrix.mjs`;
+- `rust-boundary-verifier.mjs`;
+- every extraction, canonical-JSON, path-set, or comparison helper not wholly contained in those files;
+- the complete binary-safe `I0_EXPECTED_PATCH.diff` payload in a lossless encoding.
+
+Every source block must include filename, encoding, complete body, byte length, SHA-256, import ownership, and command role. A complete extraction manifest must enumerate each block exactly once. The patch record must include its decoded byte length and SHA-256. A future operator and reviewer extract the bytes verbatim to a new E-drive root, verify every length and hash before execution, and reject missing imports, snippets, shell-history reconstruction, deleted temporary files, or undeclared generated code.
+
+Fresh control, expected V1, expected V2, historical technical, and candidate lanes must be rebuilt from pinned commits with these verified bytes. The unresolvable objects `4d0770e3...`, `b591edfa...`, and `3307cff2...` are failed historical lookup probes only and cannot satisfy any gate.
+
+## Historical implementation evidence
 
 ## Independent-audit return being repaired
 
@@ -2202,12 +2223,13 @@ Before this final evidence freeze, all 19 fresh clone, Cargo target and TEMP pat
 }
 ```
 
-## Final lifecycle boundary
+## Historical candidate boundary superseded by audit return
 
-- Candidate state after this evidence commit: `READY FOR DEDICATED INDEPENDENT EOL PREREQUISITE IMPLEMENTATION REVIEW`.
-- The commit containing this file is the final candidate HEAD; it is obtained with `git rev-parse HEAD` rather than embedded self-referentially.
-- Post-commit gates rerun the candidate signatures, full Node classifier, Trellis/JSON/fence/diff checks, exact path sets and Rust reconstruction. A failure returns for repair rather than validating this claim.
-- Implementation authorization is consumed. Acceptance, archive, integration, successor S6.2, S6.3, E3, qualification, runtime cutover, RKP-3 and push remain false.
+- At `36420de5...` and `1f3f6061...`, the operator classified the object as ready for dedicated implementation review.
+- Dedicated audit task `01a06532-e9ab-7603-bddc-f9d55b3f5bb9` superseded that operator claim with `RETURN`, P0/P1/P2=`0/2/0`.
+- `1f3f6061...` is therefore the exact returned historical candidate and the R-P0 planning base, not a current implementation-review candidate.
+- The historical post-commit checks remain diagnostic. Missing complete expected/coordination builder bytes prevent independent expected-lane reconstruction.
+- Current implementation authorization is false. Acceptance, archive, integration, successor S6.2, S6.3, E3, qualification, runtime cutover, RKP-3 and push remain false.
 
 ## Post-freeze native timing transparency addendum
 
@@ -2296,3 +2318,12 @@ Before this final evidence freeze, all 19 fresh clone, Cargo target and TEMP pat
   "stderrTrimmed": "runner.test-failed"
 }
 ```
+
+## Current re-entry planning boundary
+
+- Current branch/worktree: `codex/rkp-2-stage-6-eol-audit-return-planning-repair` / `.worktrees/rkp-2-stage-6-eol-audit-return-planning-repair`.
+- Current state: `R-P0 DOCS-ONLY PLANNING CANDIDATE`; `planning_candidate_ready=true` after commit and `implementation_candidate_ready=false`.
+- Current user and production implementation authorization: false.
+- Sole live gate: `DEDICATED INDEPENDENT EOL PREREQUISITE RE-ENTRY PLANNING AUDIT`.
+- Future evidence is valid only after the complete executable reconstruction capsule and lossless patch payload required at the top of this file are embedded, extracted, hash-verified, and replayed from fresh pinned-source lanes.
+- No task start, acceptance, archive, integration, S6.2/S6.3/E3, qualification, runtime cutover, RKP-3, or push is authorized.

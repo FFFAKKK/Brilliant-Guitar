@@ -1,464 +1,209 @@
-# RKP-2 Stage 6 Tracked-byte and EOL Portability Prerequisite — Design
+# RKP-2 Stage 6 EOL Prerequisite — Audit-return Re-entry Design
 
-## 1. Problem statement
+## 1. Design objective
 
-S6.2 E2 needs a clean native baseline before it may build the Node addon or run the single large evidence request. At E1 candidate `c3c4d198...`, the native baseline is blocked by four Rust tests whose assertions parse their own checked-out source text with LF-only tokens. The repository stores LF blobs, but Windows Git with `core.autocrlf=true` checks the same files out as CRLF because those paths lack explicit attributes.
+The returned implementation candidate 1f3f6061f093e1e169ccf4105cde444b0e49f82f contains a technically correct four-file EOL repair but does not contain enough durable executable material to reproduce its pre-I1 expected lane. It also exposes conflicting current state across the child task, both parents, the implementation plan, and the evidence file.
 
-The same missing checkout contract also makes S6.2's working-tree-byte SHA registry unstable. Two clean worktrees at the same commit can legitimately expose different bytes and therefore different hashes. Hashing those bytes without first fixing their checkout representation does not identify a reproducible evidence source.
+The re-entry design fixes the evidence and authority model without changing the audited technical tree. It treats the old results as diagnostic history, creates a new docs-only planning authority, and makes the next evidence candidate reconstructible from pinned commits plus complete source bytes embedded in an already-authorized evidence path.
 
-The repair has two complementary parts:
+## 2. Authority graph and sole live gate
 
-1. Git attributes make the seven relevant tracked files always materialize as LF.
-2. Rust `#[cfg(test)]` source-shape assertions normalize CRLF in memory before inspecting text, so the assertions remain portable even if the source is supplied outside a conforming Git checkout.
+    64bc508c historical fresh I0
+      -> 30d4acb0 audited four-file technical commit
+      -> 1f3f6061 returned evidence candidate, audit RETURN 0/2/0
+      -> R-P0 docs-only re-entry planning candidate
+      -> dedicated independent re-entry planning audit
+      -> new explicit user implementation authorization
+      -> R-A0 docs-only activation and REENTRY_I0_SOURCE_HEAD freeze
+      -> R-I0 durable capsule plus fresh control/expected lanes
+      -> R-I1 independent reconstruction
+      -> R-I2 regression and evidence candidate freeze
+      -> dedicated independent implementation re-audit
+      -> explicit owner decision
 
-Neither part changes runtime behavior.
+The current turn ends at R-P0. The sole live gate is DEDICATED INDEPENDENT EOL PREREQUISITE RE-ENTRY PLANNING AUDIT.
 
-## 2. Authority and lifecycle graph
+Historical task_start_run=true and historical I0/I1 results remain facts, not live authorization. R-A0 does not call task.py start.
 
-```text
-RKP-2 accepted authority line at 55cb575c
-    |
-    +-- this prerequisite planning -> implementation -> independent audit
-    |       -> explicit acceptance/archive/integration decision
-    |
-    +-- only after integration: create a NEW S6.2 planning candidate
-            -> replay E1 logical patch
-            -> repair evidence provenance contract
-            -> recompute hashes
-            -> dedicated planning review
-            -> new authorization
-            -> E2, then one E3 run
+## 3. Immutable object boundaries
 
-Separate unaccepted diagnostic line:
-02ef4af planning -> 5c709b8 A0 -> c3c4d19 E1 -> E2 stopped
-```
+### 3.1 Historical inputs
 
-The diagnostic line is evidence, not an authority base. It is never merged wholesale into this prerequisite.
+- Historical fresh I0: 64bc508cd56bd0a250f890af186c097dc2b6880e.
+- Audited technical commit/tree: 30d4acb0e3ce29e849c2a89b2ac1225bb5dafe49 / 022f8b25e53ca68f33be08d0a2cedef65af2aa94.
+- Returned implementation candidate: 1f3f6061f093e1e169ccf4105cde444b0e49f82f.
+- Independent audit: task 01a06532-e9ab-7603-bddc-f9d55b3f5bb9, RETURN, P0/P1/P2=0/2/0.
 
-## 3. Single-owner model
+The three old synthetic objects 4d0770e3..., b591edfa..., and 3307cff2... are diagnostic identifiers only. No gate may resolve, load, compare against, or otherwise depend on them.
 
-| Concern | Sole owner in this sequence |
-|---|---|
-| Checkout EOL policy for the seven paths | This prerequisite `.gitattributes` change |
-| Rust source-shape assertion portability | This prerequisite, test-only portions of three Rust files |
-| Runtime/store/index product semantics | Existing accepted RKP-2 implementation; unchanged |
-| S6.2 worker sentinel implementation | Successor S6.2 E1 replay |
-| Source-before-evidence and no-archive-reuse enforcement | Successor S6.2 planning/Workspace Law repair |
-| Large evidence execution | Successor S6.2 E3 only |
-| Qualification and runtime cutover | Later explicit RKP stages |
+### 3.2 Protected technical tree
 
-This prevents `.gitattributes`, Rust test repair and S6.2 evidence provenance from becoming overlapping repair owners.
+These blobs must equal 30d4acb0... throughout re-entry:
 
-## 4. Checkout byte contract
+1. .gitattributes
+2. crates/brilliant-kernel-runtime/src/runtime.rs
+3. crates/brilliant-kernel-runtime/src/store.rs
+4. crates/brilliant-kernel-runtime/src/indices.rs
 
-### 4.1 Exact `.gitattributes` additions
+The active re-entry technical allowlist is empty. The historical technical patch is reconstructed in a detached verification lane; it is never reapplied to or recommitted on the active branch.
 
-The implementation adds exactly these path-specific rules:
+### 3.3 Protected S6.2 inputs
 
-```gitattributes
-crates/brilliant-kernel-runtime/src/runtime.rs text eol=lf
-crates/brilliant-kernel-runtime/src/store.rs text eol=lf
-crates/brilliant-kernel-runtime/src/indices.rs text eol=lf
-test/core-kernel/fixtures/cvn-7-qualification-score.ts text eol=lf
-test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts text eol=lf
-test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.test.ts text eol=lf
-test/core-kernel/rust-migration/rkp-2-scale-evidence-process.ps1 text eol=lf
-```
+The qualification fixture, scale worker, worker test, and process wrapper have zero delta from 1f3f6061.... No S6.2 evidence or workload is executed.
 
-No wildcard such as `*.rs`, `*.ts`, `test/**` or `crates/**` is permitted. Existing five canonical fixture rules remain byte-for-byte unchanged.
+## 4. Literal path ownership
 
-### 4.2 Canonical byte definition
+### 4.1 R-P0 planning set
 
-For a candidate commit `H` and governed path `P`:
+R-P0 changes exactly nine existing docs/state paths:
 
-```text
-blobBytes(H, P)     = stdout bytes of git cat-file blob H:P
-checkoutBytes(H, P) = raw bytes read from P immediately after a clean checkout
-canonicalSha(H, P)  = SHA-256(blobBytes(H, P))
-```
+1. .trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/prd.md
+2. .trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/design.md
+3. .trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/implement.md
+4. .trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/task.json
+5. .trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/implementation-evidence.md
+6. .trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/review-candidate.md
+7. .trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/operator-handoff.md
+8. .trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json
+9. .trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json
 
-Acceptance requires:
+The set is exact. It is not a task-directory prefix and has no optional member.
 
-```text
-checkoutBytes(H, P, autocrlf=true)
-  == checkoutBytes(H, P, autocrlf=false)
-  == blobBytes(H, P)
-```
+### 4.2 Future re-entry coordination set
 
-The comparison includes byte length before SHA comparison. The verifier is a small task-local Node script or inline Node program that uses `spawnSync("git", ["cat-file", "blob", `${H}:${P}`], { encoding: null })`, requires `status === 0`, and reads checkout files with `fs.readFileSync()` as `Buffer`. Text decoding, PowerShell pipeline capture, newline normalization in the verifier, `Get-Content`, `git show` captured as text, or line-wise hashing is forbidden because any of them could transform or hide the exact bytes this task owns.
+The future candidate range from REENTRY_I0_SOURCE_HEAD contains exactly:
 
-### 4.3 Five future workload hashes
+1. .trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/task.json
+2. .trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/implementation-evidence.md
+3. .trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/review-candidate.md
+4. .trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/operator-handoff.md
+5. .trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json
+6. .trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json
 
-The successor S6.2 task must freeze these five paths in canonical order:
+The complete executable capsule lives inside implementation-evidence.md, which is already one of these six paths. No generator, patch, transcript, JSONL, research file, or helper becomes a seventh coordination path.
 
-1. `crates/brilliant-kernel-runtime/src/indices.rs`
-2. `test/core-kernel/fixtures/cvn-7-qualification-score.ts`
-3. `test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts`
-4. `test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.test.ts`
-5. `test/core-kernel/rust-migration/rkp-2-scale-evidence-process.ps1`
+## 5. Durable reconstruction capsule
 
-The prerequisite does not write their future hash values into the old S6.2 task. It publishes candidate-head byte length/SHA evidence only in its own task evidence. The new S6.2 planning task consumes the accepted integration head and computes a new planning registry.
+### 5.1 Required contents
 
-## 5. Rust source-shape test repair
+Before an R-I0 or later result can be evidence, implementation-evidence.md contains complete executable bytes for:
 
-### 5.1 Permitted transformation
+- project-expected.mjs;
+- coordination-set.mjs;
+- capture-node-signatures.mjs;
+- capture-node-command.mjs;
+- capture-eol-matrix.mjs;
+- rust-boundary-verifier.mjs;
+- every extraction, canonical-JSON, path-set, or comparison helper not wholly contained in those files;
+- the complete I0_EXPECTED_PATCH.diff payload in a lossless encoding.
 
-At each existing `include_str!` source inspection, the test creates an in-memory LF view before the current split/contains logic:
+Each source record contains:
 
-```rust
-let source = include_str!("...").replace("\r\n", "\n");
-```
+- logical filename and relative extraction path;
+- encoding;
+- complete body boundaries;
+- encoded byte length;
+- decoded byte length where applicable;
+- SHA-256 over the exact executable or patch bytes;
+- imports and their ownership;
+- command roles and expected arguments.
 
-The only permitted edit to each existing inspection is the exact binding/expression change frozen in `I0_EXPECTED_PATCH.diff` and spelled out in section 8.3. An equivalent spelling is not accepted because it would invalidate the independently frozen expected-transition lane. Every frozen edit must also satisfy all of the following:
+A top-level extraction manifest enumerates every record exactly once. The extractor writes only below a new E-drive root, verifies all lengths and hashes before execution, rejects undeclared imports, and rejects content reconstructed from shell history, here-strings, snippets, or deleted files.
 
-- it is located inside the existing `#[cfg(test)]` module;
-- it maps CRLF to LF and does not mutate files;
-- it does not delete or weaken any existing structural assertion;
-- it introduces no exported item and is absent from non-test builds;
-- it does not perform a broad repository rewrite.
+Standard Node built-ins and files read directly from a pinned repository checkout are the only implicit dependencies. Any other helper is part of the capsule.
 
-No helper is added. `runtime.rs`, `store.rs`, the `indices.rs` query site and the `indices.rs` projection site use the exact direct expressions in section 8.3. The metrics site uses the exact shadowing binding shown there to keep the owned normalized string alive. A new helper, alternate binding name, crate, feature or dependency is forbidden.
+### 5.2 Patch representation
 
-### 5.2 Exact sites and preserved assertions
+I0_EXPECTED_PATCH.diff is stored as a complete lossless payload, preferably base64 with an explicit UTF-8/binary decoding contract. Its decoded byte length and SHA-256 are authoritative. A prose edit list, hunk excerpt, hash-only record, or regeneration claim is insufficient.
 
-| File/site | Existing LF-sensitive token | Semantic assertion that must remain |
-|---|---|---|
-| `runtime.rs` `runtime_owns_only_the_live_store_and_revision_zero` | `}\n\n` | Runtime declaration does not retain `ScoreDocumentV1` |
-| `store.rs` `every_typed_record_resolves_once_without_retaining_the_document_tree` | `}\n\n` | Store declaration does not retain `ScoreDocumentV1` |
-| `indices.rs` `indices_metrics_are_exact_and_linear_for_minimal_and_representative_stores` | `}\n\n` | Metrics fields remain exact and no full-document lookup scan field appears |
-| `indices.rs` `indices_voice_lookup_then_binary_time_queries_are_exact_and_half_open` | `contents\n            .get` | Private query path uses indices and does not introduce iterator scan/loop |
-| `indices.rs` `indices_rebuild_normalizes_without_handles_and_corruption_never_passes_parity` | `}\n\n` | Normalized projection contains no runtime handles |
+The patch is generated from historical 64bc508c... by the committed project-expected.mjs and must reconstruct the exact four blobs at 30d4acb0.... The resulting Git object ID need not equal an old disposable synthetic commit.
 
-The metrics source inspection is owned by the non-ignored `indices_metrics_are_exact_and_linear_for_minimal_and_representative_stores`; it is not inside `rkp2_stage_6_private_scale_evidence_v1`. The latter remains ignored and contains no permitted normalization edit. A small direct parity test must exercise both LF and CRLF representations of the same representative metrics fragment so the fifth change is verified without running the million-entity workload.
+## 6. Fresh lane construction
 
-### 5.3 Non-test product equivalence
+All lanes are new E-drive git clone --no-local --no-checkout roots. Each is checked out once at its pinned source and must begin clean. Existing roots and local-object-only references are invalid.
 
-Each governed Rust file has exactly one terminal test-module marker at the accepted base:
+### 6.1 Control lane
 
-| File | Exact marker bytes | Required count in base and candidate |
-|---|---|---:|
-| `runtime.rs` | `#[cfg(test)]\nmod tests {` | 1 |
-| `store.rs` | `#[cfg(test)]\npub(crate) mod tests {` | 1 |
-| `indices.rs` | `#[cfg(test)]\nmod tests {` | 1 |
+Checkout REENTRY_I0_SOURCE_HEAD. Extract and hash-verify the committed tools, then capture the fixed Node version/executable, focused and full counts/titles, title-level failure signatures, and repository manifest.
 
-The task-local verifier must use one deterministic Rust lexical scanner over the Git-blob bytes. Its states are `code`, `line-comment`, nested `block-comment`, cooked string/byte-string, raw string/byte-string with counted `#` delimiters, and char/byte-char. Braces change depth only in `code`. Unterminated state, invalid UTF-8, a second marker, or an unmatched brace invalidates the candidate.
+### 6.2 Expected V1 and V2 lanes
 
-For each base and candidate blob the verifier must:
+Create two independent checkouts of REENTRY_I0_SOURCE_HEAD. Run the verified project-expected.mjs and coordination-set.mjs to project exactly the six future coordination paths using deterministic V1 and byte-distinct V2 placeholders.
 
-1. require the file-specific exact marker to occur once;
-2. start at the marker's opening `{`, locate the matching module-closing `}`, and require every following byte to be ASCII whitespace;
-3. require the raw byte prefix before the marker to be byte-identical between base and candidate;
-4. locate by unique exact function name the five existing inspection functions:
-   - `runtime_owns_only_the_live_store_and_revision_zero`;
-   - `every_typed_record_resolves_once_without_retaining_the_document_tree`;
-   - `indices_metrics_are_exact_and_linear_for_minimal_and_representative_stores`;
-   - `indices_voice_lookup_then_binary_time_queries_are_exact_and_half_open`;
-   - `indices_rebuild_normalizes_without_handles_and_corruption_never_passes_parity`;
-5. require exactly one new test function named `source_shape_normalization_is_lf_crlf_invariant`, located inside the `indices.rs` test module;
-6. parse `git diff --unified=0`; for each of the five existing inspections, require both old and new hunk ranges to lie fully inside its corresponding matched function; for the new parity function, require a zero-length old insertion range immediately before the terminal module's matching closing brace and the complete new range to equal that single function;
-7. require the five existing functions' only token changes to be the CRLF-to-LF normalization binding/expression; all pre-existing negative assertions and all other tokens remain equal;
-8. require the new parity function to exercise the same normalization on LF and CRLF versions of a representative `Rkp2StoreMetrics` declaration, compare the normalized values, then run the `split("pub(crate) struct Rkp2StoreMetrics {")` and `split("}\n\n")` extraction on both;
-9. remove the five permitted normalization edits and the one permitted parity function from the candidate in memory and require the reconstructed bytes to equal the base blob exactly.
+The V1/V2 path sets must be identical. Every signature relation required by the plan must be invariant to placeholder contents. Failure means the expected projection is content-sensitive and invalid.
 
-Step 2 rejects the audited suffix bypass: a new top-level item after the test module makes the module-closing suffix non-whitespace. Steps 6-9 also reject unrelated edits inside the test modules. A prefix-only comparison, broad regex, line-number-only hunk check, comparison of normalized working-tree text, or manual statement that product code did not change is insufficient.
+### 6.3 Historical technical reconstruction lane
 
-Before inspecting the real candidate, the same verifier must pass five synthetic self-tests: accept the exact permitted patch model; reject a top-level function appended after the module; ignore braces inside cooked/raw strings and nested comments; reject a hunk in the real, unique but unpermitted `indices_cover_entity_owner_content_extension_and_core_references`; reject deletion or mutation of one preserved negative assertion. The negative hunk test must not name nonexistent `fn fixture`. The fixed lexical fixture contains its module-closing brace on line `13`; a hard-coded expectation of line `14` is invalid. Its complete source text and SHA-256 are copied into `implementation-evidence.md`, so the independent reviewer can rerun the identical verifier rather than trusting a prose result.
+Checkout 64bc508c.... Decode the complete committed I0_EXPECTED_PATCH.diff, verify its byte length/SHA, apply it, run the committed rust-boundary-verifier.mjs and its five synthetic self-tests, and require all four output blobs to equal 30d4acb0... byte-for-byte.
 
-## 6. Fresh-checkout verification design
+This lane proves the existing technical object from durable inputs. It does not edit the active branch.
 
-### 6.1 Isolation roots
+### 6.4 Candidate reconstruction lane
 
-All temporary clones and build products live below:
+Checkout the eventual R-I2 candidate in a new lane. Extract the capsule from that candidate, verify all hashes, rebuild the three lane classes above, run coordination-set.mjs, and require:
 
-```text
-E:\desktop\brilliant_ideas\brilliant_guitar\.tmp\rkp2-eol-portability\
-├── checkout-autocrlf-true\
-├── checkout-autocrlf-false\
-├── cargo-target-1971\
-├── cargo-target-1880\
-└── transcripts\
-```
+- candidate technical blobs equal 30d4acb0...;
+- candidate delta from REENTRY_I0_SOURCE_HEAD is the exact six-path set;
+- control replay equals the frozen control record;
+- expected V1/V2 satisfy the predeclared relation;
+- candidate signatures equal the predeclared expected transition;
+- no expected value was copied or derived from candidate output.
 
-The operator must set `TEMP` and `TMP` to an E-drive child before Cargo, Node or clone verification. The task never uses C: for build or test output.
+## 7. State projection model
 
-### 6.2 Checkout construction
+Every current-state authority uses the same tuple:
 
-Each verification checkout is a new local clone created without a working tree, then checked out exactly once with a command-scoped `core.autocrlf` value:
+- branch: codex/rkp-2-stage-6-eol-audit-return-planning-repair;
+- worktree: .worktrees/rkp-2-stage-6-eol-audit-return-planning-repair;
+- status: in_progress as a historical Trellis lifecycle fact;
+- planning_candidate_ready: true after the R-P0 commit;
+- implementation_candidate_ready: false;
+- production_implementation_authorized: false;
+- user_implementation_authorization: false;
+- current_phase: ready_for_dedicated_independent_reentry_planning_audit;
+- next_gate: dedicated_independent_EOL_prerequisite_reentry_planning_audit.
 
-```powershell
-git clone --no-local --no-checkout <source-repo> <checkout>
-git -C <checkout> -c core.autocrlf=true checkout --detach <candidate-head>
-git -C <checkout> -c core.autocrlf=false checkout --detach <candidate-head>
-```
+The evidence file labels all pre-return records as historical diagnostic evidence. Its first and last current-state declarations use the tuple above. The review candidate and operator handoff request only the planning audit.
 
-The verifier must not copy files from the implementation worktree into either checkout. A checkout is invalid if it existed before the run, if checkout did not return exit 0, or if its status is not clean.
+R-A0 becomes legal only after the exact R-P0 HEAD passes P0/P1/P2=0/0/0 and the user separately authorizes evidence re-entry. R-A0 updates only the three task JSON projections, does not call task.py start, commits a clean docs-only activation, and freezes that commit as REENTRY_I0_SOURCE_HEAD.
 
-### 6.3 Per-path record
+## 8. Validation design
 
-For each checkout and each of the seven paths, record:
+R-P0 validation must prove:
 
-```json
-{
-  "path": "<repo-relative path>",
-  "byteLength": 0,
-  "sha256": "<64 lowercase hex>",
-  "indexEol": "lf",
-  "worktreeEol": "lf",
-  "attribute": "text eol=lf"
-}
-```
+1. exact branch, base, single-parent relation, and clean/staged-empty state;
+2. exact nine-path diff from 1f3f6061...;
+3. zero delta outside the nine paths;
+4. four technical blob equality with 30d4acb0...;
+5. zero protected S6.2 path delta;
+6. exact six-path future coordination equality across task meta, PRD, design, and implement;
+7. empty future technical allowlist;
+8. one current branch/state/gate across child and parents;
+9. complete durable-capsule and fresh-lane requirements;
+10. child and both parent Trellis validation;
+11. JSON/JSONL parse and JSONL path uniqueness;
+12. Markdown fence parity and git diff --check;
+13. TypeScript typecheck/build;
+14. focused governance classifier at the exact 11/7/4/0 historical tuple;
+15. full classifier classification: before commit, only the dirty-tree guard, the three file-level failures caused by the absent ignored native addon artifact, and the four known governance failures may appear; this is diagnostic rather than green evidence and must be rerun by the independent auditor from a clean suitable environment;
+16. E3 count zero, TypeScript default, and every later authorization false.
 
-The final evidence contains exactly fourteen checkout records plus seven Git-blob records. Paths are sorted in the exact order defined in the PRD. Duplicate, missing or extra paths invalidate the result.
+R-I2 later reruns the raw-byte matrix, Rust reconstruction, Cargo gates, Node gates, and capsule extraction/replay. Historical green records guide classification but do not replace a fresh run.
 
-## 7. Validation layers
+## 9. Failure and rollback
 
-### Layer A — path and byte policy
+Stop and return to planning if:
 
-- exact seven attribute rules;
-- no wildcard expansion;
-- two clean fresh checkouts;
-- seven-by-seven byte length/SHA equality;
-- Git blob equality;
-- `git ls-files --eol` equality.
+- any path outside the literal set is needed;
+- any protected technical or S6.2 path changes;
+- a complete tool or patch payload cannot be embedded and extracted;
+- a lane depends on an old synthetic object or deleted temp root;
+- expected output is derived from the candidate;
+- more than one current gate remains;
+- task.py start or any forbidden lifecycle action would be required.
 
-### Layer B — Rust regression
+Rollback uses a new bounded revert commit at the applicable docs/evidence boundary. It never resets history, mutates the returned implementation worktree, or rewrites the four technical files.
 
-- Rust 1.97.1 fmt;
-- Rust 1.97.1 workspace check;
-- Rust 1.97.1 workspace all-target tests;
-- Rust 1.97.1 clippy with warnings denied;
-- Rust 1.88.0 workspace all-target check;
-- four formerly failing tests pass;
-- small LF/CRLF parity coverage reaches the fifth non-ignored metrics source inspection;
-- existing large opt-in/ignored test does not execute.
+## 10. Trade-off
 
-### Layer C — repository regression
-
-- child, RKP-2 parent and Rust parent Trellis validation;
-- JSON/JSONL parsing and path uniqueness;
-- Markdown fence parity;
-- `git diff --check`;
-- TypeScript typecheck and build;
-- focused Workspace Law classifier;
-- full Node test classifier;
-- four primary assertion signatures and exact `3 + 1` cause split;
-- independent 80-file manifest recomputation;
-- no protected product/public/package/Cargo/toolchain change.
-
-### Layer D — lifecycle
-
-- historical `task_start_run=true` and `status=in_progress` remain recorded after the stopped attempt, while current user/production authorization is false until an independently reviewed re-entry is explicitly authorized;
-- E3 count remains zero;
-- no old S6.2 evidence file is created or copied;
-- implementation candidate stops at dedicated independent review;
-- acceptance/archive/integration remain separate owner decisions.
-
-## 8. Node baseline classification
-
-This prerequisite must not guess a Node count from another branch. During activation, the operator runs the focused and full commands at the accepted planning HEAD and records:
-
-- process exit code;
-- total/pass/fail/skip counts;
-- exact sorted failure titles;
-- one deterministic primary assertion signature per failing title;
-- exact 80-file manifest count and SHA-256.
-
-### 8.1 Confirmed planning causes
-
-The clean planning HEAD's four failures are recorded separately rather than as one cause:
-
-| Failure title | Primary planning cause |
-|---|---|
-| `implementation changes stay inside the literal RKP-2 allowlists` | new planning child's `check.jsonl` is outside an older exact path set |
-| `Stage 6 hostile and resource evidence consumes the existing private Rust seams` | new planning child's `check.jsonl` is outside an older Stage 6 path set |
-| `Stage 6 semantic canonical evidence correction and E2 worker stay inside the accepted contracts` | new planning child enlarges the historical closeout path projection |
-| `part owner repair stays anchored to its accepted six-path wire contract` | inherited base drift: historical blob assertion expects the pre-RKP-1A property cap `1_048_577`, while accepted RKP-1A authority is `1_572_865` |
-
-All four are non-product governance failures, but they are not interchangeable and are not waived by title equality.
-
-### 8.2 Primary assertion signature
-
-I0 and I3 must use Node's programmatic test runner with these fixed options:
-
-```text
-files: [<absolute compiled rkp-2-workspace-contracts.test.js>]
-isolation: "none"
-concurrency: 1
-```
-
-The capture script consumes the stream through its terminal event and records `process.version`. Default process isolation is forbidden because it exposes only a file-level failure. For each exact title, the title-level `test:fail` event must have:
-
-```text
-data.details.error.code        == "ERR_TEST_FAILURE"
-data.details.error.failureType == "testCodeFailure"
-data.details.error.cause       == exactly one inner AssertionError
-```
-
-The script unwraps exactly one `.cause` level. The inner value must have `name === "AssertionError"`, `code === "ERR_ASSERTION"`, no further `.cause`, and own `operator`, `actual`, `expected` and `generatedMessage` fields. Missing, extra-wrapper, file-level-only or malformed events invalidate capture. Exclude stack, duration, absolute line numbers and ANSI output. Canonicalize and hash this data-only record:
-
-```text
-{
-  "title": "<exact title>",
-  "outerErrorCode": "ERR_TEST_FAILURE",
-  "outerFailureType": "testCodeFailure",
-  "errorName": "AssertionError",
-  "errorCode": "ERR_ASSERTION",
-  "operator": "<strictEqual|deepStrictEqual|...>",
-  "generatedMessage": <captured true|false>,
-  "messageSha256": "<sha256 of direct error.message UTF-8>",
-  "actualSha256": "<sha256 of canonical JSON actual>",
-  "expectedSha256": "<sha256 of canonical JSON expected>"
-}
-```
-
-Canonical JSON permits only null, boolean, finite number, string, arrays and plain objects with lexically sorted keys; encountering another value type invalidates capture. Each title must emit exactly one signature. I0 freezes the four baseline records. I3 does not compare every candidate record directly to that baseline; it executes the independent control/expected/candidate comparisons in section 8.3.
-
-The programmatic capture script's complete source and SHA-256 are also stored in `implementation-evidence.md`; I0 and I3 must use the same hash. A different capture script invalidates the comparison.
-
-### 8.3 Control replay and predeclared allowed transition
-
-No baseline-to-candidate equality or inequality is presumed. The approved path projection can be hidden behind an earlier assertion in a historical governance test, so an expected-transition signature may equal its control signature. The comparison must distinguish a reproduced baseline from a prediction made before the candidate exists and require the candidate to equal that independent prediction. The operator performs this exact sequence:
-
-The stopped attempt's `13a3a6a923f6af6744ef4aa60291a622f3dff989` source, `fa756bb3755ab4f9dcc8bc1b5e5ada571102927f` stop record and all prior E-drive temporary lanes are diagnostic history only. After this amendment passes independent planning review and receives new user authorization, the operator creates a new clean re-entry activation commit and freezes that commit as the sole new `I0_SOURCE_HEAD`; no prior temporary artifact or signature file is reused.
-
-1. apply only the audited lifecycle projection, run `task.py start`, and create one clean A0 commit;
-2. set `I0_SOURCE_HEAD` to that exact A0 commit before any technical edit or evidence file exists;
-3. record the Node executable path, `process.version`, compiled focused-test path, capture-script bytes/SHA-256 and I0 baseline tuple;
-4. from `I0_SOURCE_HEAD`, construct the control and expected-transition lanes below before editing the active implementation branch;
-5. freeze their records and the expected patch bundle before I1 starts.
-
-The three lanes are:
-
-1. **Control lane** — a fresh detached checkout of `I0_SOURCE_HEAD`; its signatures must equal the I0 activation signatures byte-for-byte.
-2. **Expected-transition lane** — a second fresh detached checkout of `I0_SOURCE_HEAD`; before any candidate exists, apply the deterministic four-file technical patch bundle defined below and create the exact final coordination-path projection. New evidence paths use the fixed UTF-8 placeholder `EOL_EXPECTED_TRANSITION_V1\n`. Before freezing signatures, repeat the capture after changing each placeholder independently to `EOL_EXPECTED_TRANSITION_V2\n`; every signature must remain byte-identical, proving that content is irrelevant and only the predeclared path set drives the historical assertion. If any placeholder-content mutation changes a signature, stop in I0 and return to planning. The section 5.3 verifier and exact path-set checker must accept this synthetic tree. Capture and freeze `EXPECTED_I3_SIGNATURES` plus the synthetic patch bundle SHA-256.
-3. **Candidate lane** — the eventual I3 implementation/evidence HEAD; capture its signatures with the same Node version and same capture-script SHA.
-
-The expected technical bundle is generated only from `I0_SOURCE_HEAD`, never from the later candidate. It contains exactly the seven `.gitattributes` lines in section 4.1 and six Rust edits. The five existing sites use these exact replacement forms:
-
-```rust
-// runtime.rs
-let source = include_str!("runtime.rs").replace("\r\n", "\n");
-
-// store.rs
-let source = include_str!("store.rs").replace("\r\n", "\n");
-
-// indices.rs metrics site
-let metrics_source = include_str!("indices.rs").replace("\r\n", "\n");
-let metrics_source = metrics_source
-    .split("pub(crate) struct Rkp2StoreMetrics {")
-    // the existing chain continues unchanged
-
-// indices.rs query site
-let source = include_str!("store.rs").replace("\r\n", "\n");
-
-// indices.rs projection site
-let source = include_str!("indices.rs").replace("\r\n", "\n");
-```
-
-The sixth edit is exactly this test inserted immediately before the matched closing brace of the terminal `indices.rs` test module:
-
-```rust
-#[test]
-fn source_shape_normalization_is_lf_crlf_invariant() {
-    let lf = "pub(crate) struct Rkp2StoreMetrics {\n    entity_index_lookups: usize,\n}\n\n";
-    let crlf = lf.replace('\n', "\r\n");
-    let normalized_lf = lf.replace("\r\n", "\n");
-    let normalized_crlf = crlf.replace("\r\n", "\n");
-    assert_eq!(normalized_lf, normalized_crlf);
-
-    for source in [&normalized_lf, &normalized_crlf] {
-        let declaration = source
-            .split("pub(crate) struct Rkp2StoreMetrics {")
-            .nth(1)
-            .expect("metrics declaration")
-            .split("}\n\n")
-            .next()
-            .expect("metrics fields");
-        assert_eq!(declaration, "\n    entity_index_lookups: usize,\n");
-    }
-}
-```
-
-The trailing `\n` before the split closing delimiter is part of the expected declaration. A structural verifier is necessary but not sufficient: before an expected patch is frozen, a clean E-drive rehearsal checkout must apply that exact patch and execute the four repaired source-shape tests plus `source_shape_normalization_is_lf_crlf_invariant`. Any focused failure invalidates the patch before I1.
-
-The I0 generator implements these as unique exact-text substitutions against the base blobs, requires one match per substitution, runs the five verifier self-tests, and emits `I0_EXPECTED_PATCH.diff`. The patch bytes and SHA-256 are frozen before I1. I1 applies that frozen bundle verbatim; editing first and deriving the expected bundle from the resulting candidate is forbidden. The planning environment is Node `v24.15.0`; I0 must observe that exact version and record the resolved executable path, otherwise it stops before bundle generation and returns for a versioned planning update.
-
-The phase path sets are exact:
-
-| Phase | Changed paths owned by the phase |
-|---|---|
-| I0 activation | `.trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/task.json`; `.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json`; `.trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json` |
-| I1 technical | exactly `.gitattributes`, `runtime.rs`, `store.rs`, `indices.rs` |
-| I3 evidence | `.trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/task.json`; `.trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/implementation-evidence.md`; `.trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/review-candidate.md`; `.trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/operator-handoff.md`; `.trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json`; `.trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json` |
-
-RKP-2 parent handoff/review files and `rust-runtime-transition.md` are not part of this implementation candidate; any durable spec sync occurs only in a later accepted lifecycle projection. The expected-transition checkout must have exactly the I1 and I3 path delta above relative to `I0_SOURCE_HEAD`; no optional path exists.
-
-Before I0 and again at I3, one task-local parser must extract the future candidate coordination set from four authorities: `task.json.meta.future_coordination_allowlist`, the PRD `Future candidate coordination allowlist`, this table's I3 row, and `implement.md` `Evidence and lifecycle files`. Each must contain exactly the same six repo-relative literal paths, with count `6`; a directory prefix, glob, shorthand expansion or optional path invalidates the plan/candidate. The parser source and SHA are frozen with the Node capture script at I0.
-
-At I3:
-
-- rerun a new control checkout of `I0_SOURCE_HEAD` and require signatures equal the stored I0 control records;
-- rebuild the expected-transition lane from `I0_SOURCE_HEAD` plus the I0-frozen patch bundle and fixed coordination projection, then require it still equals stored `EXPECTED_I3_SIGNATURES`;
-- require the inherited Part Owner candidate signature to equal both its I0 and expected-transition signatures;
-- require each of the other three candidate signatures to equal its corresponding pre-I1 `EXPECTED_I3_SIGNATURES`, not its own newly captured value;
-- require candidate technical and coordination paths to equal the fixed phase path sets;
-- require the Node executable path, `process.version`, compiled focused-test bytes/SHA, capture-script SHA, synthetic-patch SHA, exit/count/title tuple and manifest to match their frozen values.
-
-Any new or removed title, duplicate failure event, wrapper/cause drift, count drift, unexpected signature transition, unsupported signature value, path-set drift, Node-version drift, script/bundle hash drift or manifest drift blocks the candidate. Because a first thrown assertion can hide later statements, the implementation review must also combine these lane comparisons with section 5.3's exact six-function reconstruction and the exact seven-line `.gitattributes` diff; signatures alone are never a pass.
-
-## 9. Evidence artifact
-
-Future implementation writes only:
-
-```text
-.trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/implementation-evidence.md
-```
-
-The file must include:
-
-- candidate HEAD and tree;
-- base and planning authority HEADs;
-- exact technical diff paths;
-- fourteen checkout records and seven blob records;
-- Cargo and Node command/exit summaries;
-- four Node primary assertion signatures and their `3 + 1` cause classification;
-- I0/control, expected-transition and candidate signature sets plus their exact lane comparisons;
-- four former Rust failure titles and their green result;
-- ignored-large-test count and proof it did not run;
-- production-region equality result;
-- Rust verifier source/SHA and five synthetic self-test results;
-- Node executable path/version, focused-test bytes/SHA and failure-signature capture source/SHA used identically at I0 and I3;
-- `I0_SOURCE_HEAD`, `I0_EXPECTED_PATCH.diff` bytes/SHA, exact phase path sets and expected-transition placeholder/template records frozen before I1;
-- two-variant placeholder content-insensitivity proof for every newly projected evidence path;
-- E3 run count zero;
-- cleanup result for both temporary clones and build roots;
-- clean/staged-empty status.
-
-Raw build directories and large transcripts stay ignored under `.tmp`; they are not committed.
-
-## 10. Rollback
-
-Rollback never edits the blocked S6.2 worktree. It reverts only the prerequisite implementation and coordination commits on its branch. Because the base branch stores LF blobs already, reverting `.gitattributes` and the test-only normalization restores the exact `55cb575c` behavior and byte policy.
-
-If a cross-checkout matrix fails, discard the temporary clones and return to the prerequisite implementation source commit. If any Rust product-region byte changes, reject the candidate rather than attempting a broad normalization.
-
-## 11. Successor S6.2 contract
-
-After this prerequisite is independently passed, accepted, archived and integrated:
-
-1. create a new S6.2 planning branch from the exact integration HEAD;
-2. mark the old `c3c4d198...` line as diagnostic/unaccepted;
-3. replay only the E1 logical changes, not its task/lifecycle state;
-4. recompute all five planning hashes on LF bytes;
-5. implement the audit-required provenance gates:
-   - `sourceHead != evidenceHead`;
-   - source is a strict ancestor of evidence;
-   - the source commit contains no evidence artifact;
-   - source-to-evidence diff matches the exact evidence/lifecycle allowlist;
-   - current request, result and sentinel hashes differ from every archived evidence record;
-   - booleans such as `fresh_request_generated` are supporting facts, not the sole proof;
-6. obtain a new dedicated planning audit P0/P1/P2=`0/0/0`;
-7. obtain a new explicit implementation authorization;
-8. rerun E2 from the beginning before the single E3 request.
-
-This prerequisite does not itself satisfy any of those successor gates.
+Embedding full source and patch bytes makes implementation-evidence.md larger, but it preserves the six-path contract and turns the oracle from an operator-local claim into a replayable artifact. Adding separate tool files would be easier to browse but would create the prohibited seventh coordination path, so that alternative is rejected.
