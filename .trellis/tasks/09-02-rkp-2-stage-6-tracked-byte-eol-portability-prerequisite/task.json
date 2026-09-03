@@ -33,7 +33,7 @@
     "crates/brilliant-kernel-runtime/src/store.rs",
     "crates/brilliant-kernel-runtime/src/indices.rs"
   ],
-  "notes": "RKP-2 TRACKED-BYTE EOL PREREQUISITE / 65FEF628 INDEPENDENT AUDIT RETURNED P0 P1 P2 0 2 1 / USER AUTHORIZED FRESH I0 TO I3 EVIDENCE REPAIR / OLD FAILED BRANCH PRESERVED / NEW ACTIVATION REMOVES IMPLEMENTATION EVIDENCE AND HAS ZERO TECHNICAL DELTA / S6.2 S6.3 E3 ACCEPTANCE ARCHIVE INTEGRATION QUALIFICATION CUTOVER RKP3 PUSH REMAIN FALSE.",
+  "notes": "RKP-2 TRACKED-BYTE EOL PREREQUISITE / 65FEF628 INDEPENDENT AUDIT RETURNED P0 P1 P2 0 2 1 / FIRST FRESH ACTIVATION 93383E72 STOPPED BEFORE EVIDENCE BECAUSE JSON PROPERTY CAP ADDED SIX GOVERNANCE FAILURES / USER AUTHORIZED A SECOND MINIMAL FRESH I0 REPLAY / OLD FAILED BRANCH PRESERVED / IMPLEMENTATION EVIDENCE ABSENT AND TECHNICAL DELTA ZERO / S6.2 S6.3 E3 AND LATER GATES FALSE.",
   "meta": {
     "planning_base_commit": "55cb575c606646e8449359b0c46d5c905b3bb3c6",
     "planning_base_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -58,15 +58,15 @@
       "root_cause": "B_checkout_byte_test_portability_with_D_missing_raw_byte_EOL_contract_not_Rust_product_logic"
     },
     "task_start_run": true,
-    "production_implementation_authorized": false,
+    "production_implementation_authorized": true,
     "user_implementation_authorization": true,
     "user_implementation_authorization_scope": "fresh_I0_to_I3_evidence_replay_only_no_acceptance_archive_integration_S6_2_S6_3_E3_qualification_runtime_cutover_RKP3_or_push",
     "independent_planning_review": "fifth_targeted_rereview_passed_then_single_literal_defect_closed_by_executable_author_rehearsal",
-    "approved_planning_head": "c0a1a950b0f73e6bd0b58c8850084b902f030b59",
-    "planning_candidate_ready": true,
+    "approved_planning_head": "59f9aeae3ee43af92289279bdf18e0f917308cd8",
+    "planning_candidate_ready": false,
     "implementation_candidate_ready": false,
-    "current_phase": "fresh_I0_activation_source_no_technical_or_implementation_evidence",
-    "next_gate": "commit_fresh_I0_activation_then_capture_control_expected_patch_and_pre_I1_evidence",
+    "current_phase": "fresh_I0_activation_projection_minimal_shape_pending_commit",
+    "next_gate": "commit_second_fresh_I0_then_capture_exact_four_failure_control",
     "i0_source_head": null,
     "i0_source_tree": null,
     "i0_expected_patch_byte_length": null,
@@ -74,8 +74,8 @@
     "i0_rust_verifier_sha256": null,
     "i0_rust_verifier_self_test": "pending_fresh_generation",
     "i0_reentry_baseline": {
-      "activation_commit": "7f071acd2c261c99cfdc0f55f1bdb0357d95ceb3",
-      "activation_tree": "f18e78367393e6e51564b6541ec41ca9e16f42f2",
+      "activation_commit": null,
+      "activation_tree": null,
       "node_executable": "D:/nvm4w/nodejs/node.exe",
       "node_version": "v24.15.0",
       "compiled_focused_test_byte_length": 260445,
@@ -85,15 +85,15 @@
       "full_control": "611_total_605_pass_4_fail_2_skip",
       "full_manifest_file_count": 80,
       "full_manifest_sha256": "1a50fd28c630bb016ce30f7ca65ae940170705b2eed581e610282b81378a1cf1",
-      "expected_v1_commit": "bc4719860fd2bddff0100a01b4e57ec8d9c6e252",
-      "expected_v1_tree": "0a5f72774a32bf47a90476d0431d2596613dba52",
-      "expected_v2_commit": "dfe3aba299564747edc52a6ca7e40651691932bc",
-      "expected_v2_tree": "dc5014ce75d74c8095af0af7a268994383c38ebe",
-      "expected_placeholder_probe": "only_new_implementation_evidence_path_is_byte_distinct_V1_V2_and_all_four_signatures_are_identical_between_variants",
-      "expected_signature_relation": "part_owner_equal_to_control_other_three_predeclared_signatures_differ_from_control",
-      "rust_red": "workspace_all_targets_13_pass_4_fail_1_ignored_in_runtime_crate_exact_four_known_failures_exit_101",
+      "expected_v1_commit": null,
+      "expected_v1_tree": null,
+      "expected_v2_commit": null,
+      "expected_v2_tree": null,
+      "expected_placeholder_probe": "pending_fresh_generation",
+      "expected_signature_relation": "pending_fresh_generation",
+      "rust_red": "pending_fresh_capture",
       "large_ignored_test_execution_count": 0,
-      "coordination_projection": "task_meta_PRD_design_implement_and_synthetic_actual_equal_exact_six_paths",
+      "coordination_projection": "pending_fresh_generation",
       "old_A0_and_old_temp_lanes_reused": false
     },
     "i0_blocker": {
@@ -132,7 +132,7 @@
       "unrelated_hunk_negative_function": "indices_cover_entity_owner_content_extension_and_core_references",
       "technical_patch_delta": "zero",
       "implementation_evidence_at_repaired_planning_head": "absent_historical_record_retained_in_fa756bb_and_research",
-      "new_i0_source_head": "7f071acd2c261c99cfdc0f55f1bdb0357d95ceb3",
+      "new_i0_source_head": null,
       "new_user_authorization_required": false,
       "targeted_independent_planning_rereview_required": false
     },
@@ -175,17 +175,17 @@
     "bounded_parity_oracle_repair": {
       "scope": "replace_only_the_missing_trailing_LF_in_the_new_parity_assertion_and_require_semantic_rehearsal_before_patch_freeze",
       "correct_expected_literal": "\\n    entity_index_lookups: usize,\\n",
-      "rehearsal_source_head": "7f071acd2c261c99cfdc0f55f1bdb0357d95ceb3",
-      "corrected_patch_byte_length": 4892,
-      "corrected_patch_sha256": "0e24fb1d092af787e7bd87940401a13d1501c8f05aba9b42584ce64be5dc070a",
-      "corrected_verifier_sha256": "310c2f00443e69ba79144ec16cefac011e26562a1d406d48f580a0591286e7b1",
-      "verifier_self_test": "5_of_5_pass",
-      "focused_rust": "5_of_5_pass",
+      "rehearsal_source_head": null,
+      "corrected_patch_byte_length": null,
+      "corrected_patch_sha256": null,
+      "corrected_verifier_sha256": null,
+      "verifier_self_test": "pending_fresh_generation",
+      "focused_rust": "pending_fresh_rehearsal",
       "rust_fmt": "pass",
       "runtime_lib": "18_pass_0_fail_1_ignored",
       "cargo_output_root": "E:/desktop/brilliant_ideas/brilliant_guitar/.tmp/rkp2-eol-portability/cargo-target-planning-repair-1971",
       "technical_delta_in_task_worktree": 0,
-      "user_reauthorization": "2026-09-02_continue_without_further_delay",
+      "user_reauthorization": "2026-09-03_user_authorized_fresh_evidence_repair",
       "separate_implementation_audit_required": true
     },
     "i2_started": false,
@@ -351,44 +351,6 @@
       "P1": 0,
       "P2": 0,
       "verdict": "PASS_FOR_NEW_BOUNDED_EOL_PREREQUISITE_REENTRY_AUTHORIZATION_DECISION"
-    },
-    "independent_implementation_audit_round_1": {
-      "task_id": "01a062bd-1736-7f71-bee9-c60ba0847467",
-      "reviewed_head": "65fef628850ec145efae635ad3cb4152860aab7e",
-      "verdict": "RETURN_FOR_FRESH_I0_REPLAY_AND_EVIDENCE_REPAIR",
-      "P0": 0,
-      "P1": 2,
-      "P2": 1,
-      "finding_1": "declared_I0_already_contained_implementation_evidence_and_reused_old_lane_material",
-      "finding_2": "committed_candidate_omitted_full_fourteen_checkout_plus_seven_blob_records_and_cleanup",
-      "finding_3": "review_and_handoff_retained_stale_planning_and_I1_stop_wording",
-      "old_evidence": {
-        "path": ".trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/implementation-evidence.md",
-        "byte_length": 41986,
-        "sha256": "57725bacced45cdbee190f9ff4069e761d2716a8cb91dadf664902127910fc4c",
-        "disposition": "historical_invalid_candidate_record_only_removed_from_fresh_I0_tree"
-      }
-    },
-    "fresh_evidence_repair_attempt": {
-      "branch": "codex/rkp-2-stage-6-eol-evidence-repair",
-      "base_planning_head": "59f9aeae3ee43af92289279bdf18e0f917308cd8",
-      "activation_commit": null,
-      "activation_tree": null,
-      "implementation_evidence_present_at_activation": false,
-      "technical_delta_at_activation": 0,
-      "old_failed_branch": "codex/rkp-2-stage-6-eol-portability-prerequisite",
-      "old_failed_candidate": "65fef628850ec145efae635ad3cb4152860aab7e",
-      "old_lane_material_reusable": false,
-      "current_status": "activation_commit_pending"
-    },
-    "current_implementation_candidate": {
-      "status": "fresh_I0_replay_in_progress",
-      "branch": "codex/rkp-2-stage-6-eol-evidence-repair",
-      "activation_commit": null,
-      "pre_I1_evidence_commit": null,
-      "technical_commit": null,
-      "final_evidence_commit": null,
-      "independent_implementation_review": "not_ready"
     }
   }
 }
