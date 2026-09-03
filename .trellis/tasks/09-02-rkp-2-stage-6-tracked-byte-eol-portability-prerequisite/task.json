@@ -34,7 +34,7 @@
     "crates/brilliant-kernel-runtime/src/store.rs",
     "crates/brilliant-kernel-runtime/src/indices.rs"
   ],
-  "notes": "RKP-2 TRACKED-BYTE EOL PREREQUISITE / FRESH I0 SOURCE 64BC508C WITH EVIDENCE ABSENT AND TECHNICAL DELTA ZERO / PRE-I1 PATCH 4892 BYTES FB635082 / NODE CONTROL 11 7 4 0 AND FULL 611 605 4 2 / EXPECTED V1 V2 SIGNATURES EQUAL WITH PART OWNER BASELINE-EQUAL / I1 NOT STARTED / S6.2 S6.3 E3 FALSE.",
+  "notes": "RKP-2 TRACKED-BYTE EOL PREREQUISITE / I0 64BC508C / EVIDENCE 547447CC / I1 30D4ACB0 EXACT 4892 FB635082 / I2 14 CHECKOUT PLUS 7 BLOB RAW-BYTE PASS / ALL CARGO AND TYPECHECK BUILD PASS / I3 PROVISIONAL CLEAN REPLAY NEXT / S6.2 S6.3 E3 FALSE.",
   "meta": {
     "planning_base_commit": "55cb575c606646e8449359b0c46d5c905b3bb3c6",
     "planning_base_branch": "codex/rkp-2-indexed-live-score-store-implementation",
@@ -66,8 +66,8 @@
     "approved_planning_head": "59f9aeae3ee43af92289279bdf18e0f917308cd8",
     "planning_candidate_ready": false,
     "implementation_candidate_ready": false,
-    "current_phase": "fresh_I0_evidence_frozen_pre_I1",
-    "next_gate": "apply_frozen_fb635082_patch_in_I1",
+    "current_phase": "I3_provisional_coordination_projection_pending_clean_replay",
+    "next_gate": "commit_six_path_projection_then_clean_I3_replay",
     "i0_source_head": "64bc508cd56bd0a250f890af186c097dc2b6880e",
     "i0_source_tree": "b767ce3b7016b8529326f94891ebd4aaa2373515",
     "i0_expected_patch_byte_length": 4892,
@@ -153,8 +153,8 @@
       "full_manifest_file_count": 80,
       "full_manifest_sha256": "1a50fd28c630bb016ce30f7ca65ae940170705b2eed581e610282b81378a1cf1"
     },
-    "i1_started": false,
-    "i1_completed": false,
+    "i1_started": true,
+    "i1_completed": true,
     "i1_stopped_attempt": {
       "attempt_base_head": "b94d9d299fcadfe74cf707b39e832c472db4ac8c",
       "i0_source_head": "7f071acd2c261c99cfdc0f55f1bdb0357d95ceb3",
@@ -189,8 +189,8 @@
       "user_reauthorization": "2026-09-03_user_authorized_fresh_evidence_repair",
       "separate_implementation_audit_required": true
     },
-    "i2_started": false,
-    "i3_started": false,
+    "i2_started": true,
+    "i3_started": true,
     "first_independent_planning_audit": {
       "task_id": "01a06123-b6c9-78a0-8216-9c8f1d53a061",
       "reviewed_head": "538abbdaee079aaf5df800f09d192fbb777174d9",

@@ -1094,3 +1094,348 @@ process.stdout.write(`${JSON.stringify({ schemaVersion: 1, command, repo, base, 
 - No technical file is changed in the active worktree at this evidence projection entry.
 - E3 execution count remains `0`; no S6.2 evidence was generated or reused.
 - Next gate: apply the frozen `fb635082...` patch verbatim in I1 and commit only the four technical allowlist paths.
+
+## I1 technical result
+
+- Technical commit: `30d4acb0e3ce29e849c2a89b2ac1225bb5dafe49`; tree `022f8b25e53ca68f33be08d0a2cedef65af2aa94`.
+- Exact staged full-index patch remained `4,892` bytes, SHA-256 `fb635082a2951b5e3d8b9352230bd462e0c08aa5b7326a93403537baf62b1b05`, and was byte-equal to the I0 patch.
+- Rust lexical/reconstruction verification passed for the three Rust blobs; all production prefixes and preserved negative assertions reconstruct exactly to I0.
+- Five focused tests passed; the large ignored scale test execution count stayed `0`.
+
+### I1 patch identity
+
+```json
+{
+  "byteLength": 4892,
+  "sha256": "fb635082a2951b5e3d8b9352230bd462e0c08aa5b7326a93403537baf62b1b05",
+  "equalsFrozenPatch": true
+}
+```
+
+### I1 lexical reconstruction
+
+```json
+{
+  "schemaVersion": 1,
+  "command": "verify",
+  "repo": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\rkp-2-stage-6-eol-portability-prerequisite",
+  "base": "64bc508cd56bd0a250f890af186c097dc2b6880e",
+  "revision": "WORKTREE",
+  "records": [
+    {
+      "path": "crates/brilliant-kernel-runtime/src/runtime.rs",
+      "baseByteLength": 4956,
+      "baseSha256": "117bd4f01e709d1b0aaad76ba626c4f0824113fd2cc3026627104a4cf2a55c80",
+      "candidateByteLength": 4978,
+      "candidateSha256": "87daf31f00649214b7dbdc30fb1f7044aa4f9bcdb6da4d47b46d04765957bdf3",
+      "hunkCount": 1,
+      "testModuleClosingLine": 139
+    },
+    {
+      "path": "crates/brilliant-kernel-runtime/src/store.rs",
+      "baseByteLength": 70062,
+      "baseSha256": "4c2644e9fd7dc1144b23ea0b7ce126f1ed28cea2b3748e7fdc7592a6186a269d",
+      "candidateByteLength": 70084,
+      "candidateSha256": "d2bf97b30da40caa47f7a91c1e15419bd65f5a6a9105a98c1cf47c4277eaf0e6",
+      "hunkCount": 1,
+      "testModuleClosingLine": 1719
+    },
+    {
+      "path": "crates/brilliant-kernel-runtime/src/indices.rs",
+      "baseByteLength": 78829,
+      "baseSha256": "20ef06be9016680e11184f85ca4b0cf86e331bf00fbe394378a5ed48266cc854",
+      "candidateByteLength": 79741,
+      "candidateSha256": "3e7a1c7f284df006181d49923c52191427c66d68b131df1f2190450523eb90b7",
+      "hunkCount": 4,
+      "testModuleClosingLine": 2178
+    }
+  ]
+}
+```
+
+### I1 focused Rust
+
+```json
+[
+  {
+    "test": "runtime::tests::runtime_owns_only_the_live_store_and_revision_zero",
+    "exit": 0,
+    "result": "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 18 filtered out; finished in 0.00s"
+  },
+  {
+    "test": "store::tests::every_typed_record_resolves_once_without_retaining_the_document_tree",
+    "exit": 0,
+    "result": "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 18 filtered out; finished in 0.00s"
+  },
+  {
+    "test": "indices::tests::indices_voice_lookup_then_binary_time_queries_are_exact_and_half_open",
+    "exit": 0,
+    "result": "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 18 filtered out; finished in 0.00s"
+  },
+  {
+    "test": "indices::tests::indices_rebuild_normalizes_without_handles_and_corruption_never_passes_parity",
+    "exit": 0,
+    "result": "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 18 filtered out; finished in 0.00s"
+  },
+  {
+    "test": "indices::tests::source_shape_normalization_is_lf_crlf_invariant",
+    "exit": 0,
+    "result": "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 18 filtered out; finished in 0.00s"
+  }
+]
+```
+
+## I2 dual-checkout byte matrix
+
+- Fresh checkouts: `i2-autocrlf-true` and `i2-autocrlf-false`, both detached at `30d4acb0...` and clean.
+- Result: exactly `14` checkout records plus `7` Git-blob records; every checkout byte sequence equals the other checkout and its Git blob, with no CRLF pair.
+- Every record reports `i/lf`, `w/lf`, and the exact path-specific `text eol=lf` attribute.
+- Initial matrix tool V1 (`5,053` bytes, `bbc82771...`) correctly preserved raw bytes but failed before comparison because Git pads the attribute column. V2 trims only that presentation padding; raw byte, SHA and blob logic is unchanged. V1 source, failure and both hashes are retained.
+
+### I2 matrix-tool bounded correction
+
+```json
+{
+  "oldByteLength": 5053,
+  "oldSha256": "bbc8277152431e39d875c1ab95b76b912ff82b170a98995d11a809d927d69ce6",
+  "failure": "ls-files_attribute_column_padding_was_not_trimmed",
+  "newByteLength": 5084,
+  "newSha256": "0f1f400ff8d13557522203c947aaaf99e92490a2a07a8a6e9a0503f60facaf7c",
+  "repair": "trim_only_attribute_column_padding_raw_byte_logic_unchanged"
+}
+```
+
+### Complete 14-checkout + 7-blob record
+
+```json
+{
+  "schemaVersion": 1,
+  "nodeExecutable": "D:\\nvm4w\\nodejs\\node.exe",
+  "nodeVersion": "v24.15.0",
+  "base": "64bc508cd56bd0a250f890af186c097dc2b6880e",
+  "head": "30d4acb0e3ce29e849c2a89b2ac1225bb5dafe49",
+  "paths": [
+    "crates/brilliant-kernel-runtime/src/runtime.rs",
+    "crates/brilliant-kernel-runtime/src/store.rs",
+    "crates/brilliant-kernel-runtime/src/indices.rs",
+    "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
+    "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts",
+    "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.test.ts",
+    "test/core-kernel/rust-migration/rkp-2-scale-evidence-process.ps1"
+  ],
+  "checkoutRecords": [
+    {
+      "checkout": "autocrlf-true",
+      "path": "crates/brilliant-kernel-runtime/src/runtime.rs",
+      "byteLength": 4978,
+      "sha256": "87daf31f00649214b7dbdc30fb1f7044aa4f9bcdb6da4d47b46d04765957bdf3",
+      "indexEol": "lf",
+      "worktreeEol": "lf",
+      "attribute": "text eol=lf"
+    },
+    {
+      "checkout": "autocrlf-false",
+      "path": "crates/brilliant-kernel-runtime/src/runtime.rs",
+      "byteLength": 4978,
+      "sha256": "87daf31f00649214b7dbdc30fb1f7044aa4f9bcdb6da4d47b46d04765957bdf3",
+      "indexEol": "lf",
+      "worktreeEol": "lf",
+      "attribute": "text eol=lf"
+    },
+    {
+      "checkout": "autocrlf-true",
+      "path": "crates/brilliant-kernel-runtime/src/store.rs",
+      "byteLength": 70084,
+      "sha256": "d2bf97b30da40caa47f7a91c1e15419bd65f5a6a9105a98c1cf47c4277eaf0e6",
+      "indexEol": "lf",
+      "worktreeEol": "lf",
+      "attribute": "text eol=lf"
+    },
+    {
+      "checkout": "autocrlf-false",
+      "path": "crates/brilliant-kernel-runtime/src/store.rs",
+      "byteLength": 70084,
+      "sha256": "d2bf97b30da40caa47f7a91c1e15419bd65f5a6a9105a98c1cf47c4277eaf0e6",
+      "indexEol": "lf",
+      "worktreeEol": "lf",
+      "attribute": "text eol=lf"
+    },
+    {
+      "checkout": "autocrlf-true",
+      "path": "crates/brilliant-kernel-runtime/src/indices.rs",
+      "byteLength": 79741,
+      "sha256": "3e7a1c7f284df006181d49923c52191427c66d68b131df1f2190450523eb90b7",
+      "indexEol": "lf",
+      "worktreeEol": "lf",
+      "attribute": "text eol=lf"
+    },
+    {
+      "checkout": "autocrlf-false",
+      "path": "crates/brilliant-kernel-runtime/src/indices.rs",
+      "byteLength": 79741,
+      "sha256": "3e7a1c7f284df006181d49923c52191427c66d68b131df1f2190450523eb90b7",
+      "indexEol": "lf",
+      "worktreeEol": "lf",
+      "attribute": "text eol=lf"
+    },
+    {
+      "checkout": "autocrlf-true",
+      "path": "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
+      "byteLength": 10726,
+      "sha256": "5edc34b540835b5edd888706a86df564c0afadc09189293d38d2c4a1b01c05cc",
+      "indexEol": "lf",
+      "worktreeEol": "lf",
+      "attribute": "text eol=lf"
+    },
+    {
+      "checkout": "autocrlf-false",
+      "path": "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
+      "byteLength": 10726,
+      "sha256": "5edc34b540835b5edd888706a86df564c0afadc09189293d38d2c4a1b01c05cc",
+      "indexEol": "lf",
+      "worktreeEol": "lf",
+      "attribute": "text eol=lf"
+    },
+    {
+      "checkout": "autocrlf-true",
+      "path": "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts",
+      "byteLength": 38440,
+      "sha256": "ec0c59d6516b7635ff6bc595ca67aba0a588cf7a2dee328c9f825fbac8e6531f",
+      "indexEol": "lf",
+      "worktreeEol": "lf",
+      "attribute": "text eol=lf"
+    },
+    {
+      "checkout": "autocrlf-false",
+      "path": "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts",
+      "byteLength": 38440,
+      "sha256": "ec0c59d6516b7635ff6bc595ca67aba0a588cf7a2dee328c9f825fbac8e6531f",
+      "indexEol": "lf",
+      "worktreeEol": "lf",
+      "attribute": "text eol=lf"
+    },
+    {
+      "checkout": "autocrlf-true",
+      "path": "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.test.ts",
+      "byteLength": 31924,
+      "sha256": "72649e5990529b503de461a7daace037cd74199f57504a9b98e4037b928c88b2",
+      "indexEol": "lf",
+      "worktreeEol": "lf",
+      "attribute": "text eol=lf"
+    },
+    {
+      "checkout": "autocrlf-false",
+      "path": "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.test.ts",
+      "byteLength": 31924,
+      "sha256": "72649e5990529b503de461a7daace037cd74199f57504a9b98e4037b928c88b2",
+      "indexEol": "lf",
+      "worktreeEol": "lf",
+      "attribute": "text eol=lf"
+    },
+    {
+      "checkout": "autocrlf-true",
+      "path": "test/core-kernel/rust-migration/rkp-2-scale-evidence-process.ps1",
+      "byteLength": 15344,
+      "sha256": "d0a8486b0cd7cc4e7c1a9c3131ff6ec3c1e79d37d7c54dd54fb03a77282b751f",
+      "indexEol": "lf",
+      "worktreeEol": "lf",
+      "attribute": "text eol=lf"
+    },
+    {
+      "checkout": "autocrlf-false",
+      "path": "test/core-kernel/rust-migration/rkp-2-scale-evidence-process.ps1",
+      "byteLength": 15344,
+      "sha256": "d0a8486b0cd7cc4e7c1a9c3131ff6ec3c1e79d37d7c54dd54fb03a77282b751f",
+      "indexEol": "lf",
+      "worktreeEol": "lf",
+      "attribute": "text eol=lf"
+    }
+  ],
+  "blobRecords": [
+    {
+      "path": "crates/brilliant-kernel-runtime/src/runtime.rs",
+      "byteLength": 4978,
+      "sha256": "87daf31f00649214b7dbdc30fb1f7044aa4f9bcdb6da4d47b46d04765957bdf3"
+    },
+    {
+      "path": "crates/brilliant-kernel-runtime/src/store.rs",
+      "byteLength": 70084,
+      "sha256": "d2bf97b30da40caa47f7a91c1e15419bd65f5a6a9105a98c1cf47c4277eaf0e6"
+    },
+    {
+      "path": "crates/brilliant-kernel-runtime/src/indices.rs",
+      "byteLength": 79741,
+      "sha256": "3e7a1c7f284df006181d49923c52191427c66d68b131df1f2190450523eb90b7"
+    },
+    {
+      "path": "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
+      "byteLength": 10726,
+      "sha256": "5edc34b540835b5edd888706a86df564c0afadc09189293d38d2c4a1b01c05cc"
+    },
+    {
+      "path": "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts",
+      "byteLength": 38440,
+      "sha256": "ec0c59d6516b7635ff6bc595ca67aba0a588cf7a2dee328c9f825fbac8e6531f"
+    },
+    {
+      "path": "test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.test.ts",
+      "byteLength": 31924,
+      "sha256": "72649e5990529b503de461a7daace037cd74199f57504a9b98e4037b928c88b2"
+    },
+    {
+      "path": "test/core-kernel/rust-migration/rkp-2-scale-evidence-process.ps1",
+      "byteLength": 15344,
+      "sha256": "d0a8486b0cd7cc4e7c1a9c3131ff6ec3c1e79d37d7c54dd54fb03a77282b751f"
+    }
+  ],
+  "clean": {
+    "autocrlfTrue": true,
+    "autocrlfFalse": true
+  }
+}
+```
+
+### Cargo gates
+
+```json
+[
+  {
+    "name": "fmt_1971",
+    "command": "C:\\Users\\ATOM\\.cargo\\bin\\cargo.exe +1.97.1 fmt --all -- --check",
+    "exit": 0,
+    "log": "I2_CARGO_fmt_1971.txt"
+  },
+  {
+    "name": "check_1971",
+    "command": "C:\\Users\\ATOM\\.cargo\\bin\\cargo.exe +1.97.1 check --workspace --all-targets --locked",
+    "exit": 0,
+    "log": "I2_CARGO_check_1971.txt"
+  },
+  {
+    "name": "test_1971",
+    "command": "C:\\Users\\ATOM\\.cargo\\bin\\cargo.exe +1.97.1 test --workspace --all-targets --locked",
+    "exit": 0,
+    "log": "I2_CARGO_test_1971.txt"
+  },
+  {
+    "name": "clippy_1971",
+    "command": "C:\\Users\\ATOM\\.cargo\\bin\\cargo.exe +1.97.1 clippy --workspace --all-targets --locked -- -D warnings",
+    "exit": 0,
+    "log": "I2_CARGO_clippy_1971.txt"
+  },
+  {
+    "name": "check_1880",
+    "command": "C:\\Users\\ATOM\\.cargo\\bin\\cargo.exe +1.88.0 check --workspace --all-targets --locked",
+    "exit": 0,
+    "log": "I2_CARGO_check_1880.txt"
+  }
+]
+```
+
+All Cargo targets and TEMP/TMP directories were on `E:`. Rust 1.97.1 workspace tests passed with Runtime `18 passed / 0 failed / 1 ignored`; the ignored test is the isolated scale evidence worker and was not run.
+
+## I3 provisional entry
+
+- Trellis/JSON/fence/diff gates will be rerun after the six-path projection commit.
+- `npm run typecheck` and `npm run build` passed before the provisional projection.
+- This checkpoint intentionally does not claim final Node/candidate signature or cleanup results; those require a clean committed candidate and are appended only after observation.
