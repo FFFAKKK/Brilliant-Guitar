@@ -593,10 +593,10 @@
       "historical_consumed_user_implementation_authorization_scope": "I0_to_I3_activation_implementation_validation_and_candidate_freeze_only",
       "independent_planning_review": "passed_independent_narrow_reentry_planning_audit_at_957332a127c381847eb85e246e7f1e922dcbc7fd_P0_0_P1_0_P2_0",
       "first_review_task_id": "01a06123-b6c9-78a0-8216-9c8f1d53a061",
-      "current_phase": "R_A0_docs_only_activation_complete_ready_for_R_I0",
+      "current_phase": "R_I0_durable_capsule_and_fresh_predeclared_lanes_complete_as_six_path_candidate",
       "planning_candidate_ready": true,
       "implementation_candidate_ready": false,
-      "next_gate": "R_I0_durable_capsule_and_fresh_predeclared_lanes",
+      "next_gate": "R_I1_independent_fresh_reconstruction_after_R_I0_commit",
       "reentry_planning_audit": {
         "auditor": "collaboration_agent_/root/rkp2_rp0_narrow_audit",
         "reviewed_head": "957332a127c381847eb85e246e7f1e922dcbc7fd",
@@ -613,6 +613,20 @@
         "task_start_rerun": false,
         "activation_commit_role": "this_docs_only_commit_becomes_REENTRY_I0_SOURCE_HEAD",
         "later_lifecycle_authorized": false
+      },
+      "r_i0_reentry_evidence": {
+        "source_head": "c3e90c6fcc3a624b8a7157bedea59d44f84c6c78",
+        "source_tree": "40d786f4717e27251ae76b2ae7f49e286337839a",
+        "capsule_entry_count": 10,
+        "expected_patch": "4892_bytes_fb635082a2951b5e3d8b9352230bd462e0c08aa5b7326a93403537baf62b1b05",
+        "expected_v1_head_tree": "ec26e0424301df58109445841e22b80cc24bd39b_b8c5b825e5385a4819db24207208f50e79c9735f",
+        "expected_v2_head_tree": "3da64254f1ae368fa7a531fecb5f941ba88b54ed_2b17d741fa19678f564432c446bf58ea5426dd3a",
+        "focused_node": "control_V1_V2_each_11_7_4_0",
+        "full_control": "590_582_7_1_classified",
+        "eol_matrix": "autocrlf_true_false_7_of_7_checkout_equals_blob_LF_only",
+        "technical_delta_count": 0,
+        "coordination_delta_count": 6,
+        "next_gate": "R_I1_independent_fresh_reconstruction_after_R_I0_commit"
       },
       "returned_implementation_audit": {
         "task_id": "01a06532-e9ab-7603-bddc-f9d55b3f5bb9",
