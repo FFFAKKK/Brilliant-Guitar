@@ -2208,3 +2208,91 @@ Before this final evidence freeze, all 19 fresh clone, Cargo target and TEMP pat
 - The commit containing this file is the final candidate HEAD; it is obtained with `git rev-parse HEAD` rather than embedded self-referentially.
 - Post-commit gates rerun the candidate signatures, full Node classifier, Trellis/JSON/fence/diff checks, exact path sets and Rust reconstruction. A failure returns for repair rather than validating this claim.
 - Implementation authorization is consumed. Acceptance, archive, integration, successor S6.2, S6.3, E3, qualification, runtime cutover, RKP-3 and push remain false.
+
+## Post-freeze native timing transparency addendum
+
+- At clean candidate `36420de5...`, typecheck/build passed. The immediately following first full run was `611/604/5/2` because the pre-existing native ratio test measured duplicate adjacent ratios `3.471/1.709`, with the first value narrowly above its `3.25` noise guard. The four expected governance failures were unchanged.
+- No code, threshold or contract was changed. An isolated run of that exact compiled test file passed `8/0/1`; a second isolated check also passed with unique ratios `2.111/2.059` and duplicate ratios `1.954/2.029`.
+- A no-build full retry then restored the frozen `611/605/4/2` tuple and identical 80-file manifest. This is recorded as a transient measurement outlier, not silently discarded.
+
+### First post-freeze full summary
+
+```json
+{
+  "schemaVersion": 1,
+  "nodeExecutable": "D:\\nvm4w\\nodejs\\node.exe",
+  "nodeVersion": "v24.15.0",
+  "runner": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\rkp-2-stage-6-eol-portability-prerequisite\\dist\\test\\test-infrastructure\\run-compiled-tests.js",
+  "exitCode": 1,
+  "signal": null,
+  "manifest": {
+    "kind": "full-test-manifest-v1",
+    "fileCount": 80,
+    "sha256": "1a50fd28c630bb016ce30f7ca65ae940170705b2eed581e610282b81378a1cf1"
+  },
+  "counts": {
+    "total": 611,
+    "pass": 604,
+    "fail": 5,
+    "skip": 2
+  },
+  "stdoutByteLength": 99998,
+  "stdoutSha256": "8450416c160c62212e6d8a589efa9e63cf7d8582c36fa2c48ce6e46f13baac49",
+  "stderrByteLength": 19,
+  "stderrSha256": "7e9281f6bdb52397279dc8312141c9d6fb78a2bef7c3ae807f3b814544ffc9a7",
+  "stderrTrimmed": "runner.test-failed"
+}
+```
+
+### Isolated recheck
+
+```text
+✔ raw addon exposes exactly two free functions and performs native create/read (3.0612ms)
+﹣ wrapped handle GC runs one bounded FinalizationRegistry journey (0.1806ms) # SKIP
+✔ private adapter returns detached deeply frozen data and an opaque handle (3.5513ms)
+✔ raw rejection bytes preserve cap, UTF-8, shape and precedence with no handle (17.7506ms)
+✔ real addon selects the same canonical structural winner for reversed keys (0.4888ms)
+✔ real addon large unique and duplicate objects stay below the frozen near-quadratic ratio (465.5745ms)
+ℹ unique medians_ms=11.306,23.871,49.149 adjacent_ratios=2.111,2.059 endpoint_ratio=4.347
+ℹ duplicate medians_ms=4.095,8.004,16.238 adjacent_ratios=1.954,2.029 endpoint_ratio=3.965
+✔ wrong kind and wrong tag fail stably without native detail leakage (0.232ms)
+✔ descriptor-first capture rejects getter, hostile Proxy, sparse array and cycle before native (0.4517ms)
+✔ adapter converts every residual native throw or malformed payload to bridge.internal (0.7774ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 1
+ℹ todo 0
+ℹ duration_ms 625.2572
+```
+
+### Full retry summary
+
+```json
+{
+  "schemaVersion": 1,
+  "nodeExecutable": "D:\\nvm4w\\nodejs\\node.exe",
+  "nodeVersion": "v24.15.0",
+  "runner": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\rkp-2-stage-6-eol-portability-prerequisite\\dist\\test\\test-infrastructure\\run-compiled-tests.js",
+  "exitCode": 1,
+  "signal": null,
+  "manifest": {
+    "kind": "full-test-manifest-v1",
+    "fileCount": 80,
+    "sha256": "1a50fd28c630bb016ce30f7ca65ae940170705b2eed581e610282b81378a1cf1"
+  },
+  "counts": {
+    "total": 611,
+    "pass": 605,
+    "fail": 4,
+    "skip": 2
+  },
+  "stdoutByteLength": 98976,
+  "stdoutSha256": "3d979629841204df196cba6aa64b62cd6f14262a174d3dc1068794946971d9ba",
+  "stderrByteLength": 19,
+  "stderrSha256": "7e9281f6bdb52397279dc8312141c9d6fb78a2bef7c3ae807f3b814544ffc9a7",
+  "stderrTrimmed": "runner.test-failed"
+}
+```
