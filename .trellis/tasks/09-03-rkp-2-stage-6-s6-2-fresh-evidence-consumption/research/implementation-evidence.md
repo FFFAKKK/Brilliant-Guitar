@@ -1,13 +1,13 @@
-# RKP-2 Stage 6 S6.2 Fresh Evidence Consumption — E4 Candidate Freeze
+# RKP-2 Stage 6 S6.2 Fresh Evidence Consumption — Accepted Result
 
 ## Verdict and boundary
 
-`READY FOR FRESH READ-ONLY S6.2 IMPLEMENTATION AUDIT`.
+`PASS P0/P1/P2=0/0/0 / OWNER ACCEPTED`.
 
 This is diagnostic evidence for the existing private Rust `LiveScoreStore`
-scale path. It is not S6.2 acceptance or completion, S6.3, product
-qualification, a default-runtime cutover, archive, integration, RKP-3, or
-push authority.
+scale path. Direct checking passed and the owner accepted S6.2 for native
+archive and fast-forward-only integration. It is not S6.3, product
+qualification, a default-runtime cutover, RKP-3, or push authority.
 
 - `fresh_request_generated=true`
 - `archived_result_reused=false`
@@ -135,8 +135,14 @@ historical mechanism sentinel
 - The worker-owned `rkp2-scale-e2-*` leaf set is empty after execution.
 - Source-to-candidate changes are restricted to the eight declared lifecycle
   paths, with zero technical delta after the source commit.
-- The child alone is candidate-ready. Both parents remain candidate-ready
-  false; S6.2 is started but incomplete, S6.3 is false, and TypeScript remains
-  the default runtime.
-- Next gate: fresh read-only S6.2 implementation audit of the exact committed
-  E4 candidate. No later lifecycle gate is implied.
+- Direct read-only checking of exact HEAD/tree
+  `c920f057bd19d3636e82de6b9c80dcde358488de` /
+  `b6e07c4b127fb941d4eeac5e03ec1d2526996976` returned
+  P0/P1/P2=`0/0/0`; typecheck/build, focused `11/8/3/0`, the three Trellis
+  validators, diff check and clean state were reproduced without rerunning E3.
+- The owner accepted this candidate and authorized native archive plus
+  fast-forward-only integration. Candidate readiness is consumed and both
+  parents remain candidate-ready false.
+- S6.2 is complete. S6.3, qualification, runtime cutover, RKP-3 and push remain
+  false; TypeScript remains the default runtime.
+- Next gate: native archive, then fast-forward-only integration.

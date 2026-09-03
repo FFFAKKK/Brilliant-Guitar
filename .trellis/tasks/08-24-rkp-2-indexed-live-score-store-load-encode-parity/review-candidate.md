@@ -1,17 +1,16 @@
 # Review Candidate — RKP-2 Post-Stage-5 Manifest Authority Closure
 
-## Fresh S6.2 implementation projection — 2026-09-03
+## Fresh S6.2 accepted result — 2026-09-03
 
-Exact child planning authority
-`7942de056f6b0b6806740e5567de9e493236cec2` passed its fresh targeted review at
-P0/P1/P2=`0/0/0`. A0 activation is complete and the child is the sole current
-implementation child; E1 is pending and no implementation candidate or
-implementation PASS is claimed.
+Exact child E4 HEAD/tree `c920f057bd19d3636e82de6b9c80dcde358488de`
+/ `b6e07c4b127fb941d4eeac5e03ec1d2526996976` passed direct read-only
+checking at P0/P1/P2=`0/0/0`. E1/E2 and exactly one fresh E3 remain frozen;
+the check did not rerun the large workload.
 
-S6.2 is started/not completed, S6.3 is false, and TypeScript remains default.
-The current authorization ends at one fresh E3 plus E4 candidate freeze;
-acceptance, archive, integration, qualification, cutover, RKP-3 and push remain
-separate unauthorized gates. All later sections are historical context.
+The owner accepted S6.2 and authorized native archive plus fast-forward-only
+integration. S6.2 is complete, S6.3 is false, and TypeScript remains default.
+Qualification, cutover, RKP-3 and push remain separate unauthorized gates.
+All later sections are historical context.
 
 ## Historical fresh S6.2 planning projection — 2026-09-03
 
@@ -204,7 +203,7 @@ planning rereview at P0/P1/P2=`0/0/0`. The review reproduced focused
 This PASS permits only an explicit user activation decision. It does not run
 task.py start, begin S6.2, authorize E3, or advance S6.3 and later gates.
 
-## Fresh S6.2 E4 implementation audit target
+## Fresh S6.2 E4 implementation check result
 
 Audit the clean commit bearing subject
 `docs(rkp-2): freeze fresh S6.2 evidence candidate`, with frozen technical
@@ -215,7 +214,8 @@ Exactly one fresh E3 execution emitted process sentinel SHA-256
 the child evidence document contains the lossless record and independent
 decode.
 
-Required verdict is P0/P1/P2=`0/0/0`. Until a separate owner decision, S6.2
-is not completed, both parent candidate projections remain false, S6.3 is not
-started, and acceptance/archive/integration/qualification/cutover/RKP-3/push
-remain unauthorized. TypeScript remains the default runtime.
+Completed verdict: P0/P1/P2=`0/0/0`. The owner accepted the exact candidate
+and authorized native archive plus fast-forward-only integration. S6.2 is
+complete; both parent candidate projections remain false and S6.3 has not
+started. Qualification, cutover, RKP-3 and push remain unauthorized.
+TypeScript remains the default runtime.

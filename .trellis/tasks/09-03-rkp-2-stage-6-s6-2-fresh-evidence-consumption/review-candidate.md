@@ -1,8 +1,8 @@
-# Review candidate — fresh S6.2 implementation
+# Review result — accepted fresh S6.2 implementation
 
 ## Activation status
 
-`E4 CANDIDATE FROZEN / FRESH READ-ONLY IMPLEMENTATION AUDIT PENDING`
+`PASS P0/P1/P2=0/0/0 / OWNER ACCEPTED / ARCHIVE AND INTEGRATION AUTHORIZED`
 
 The exact E1 source is `bebe0f7c7494bc47e3ff8ad3dad74599af794787`
 with tree `75f2fa5940fa7f6330811a9a80934fa7bdc4a30b`. It has a direct activation
@@ -12,23 +12,26 @@ produced fresh sentinel SHA-256
 `4cbcbf8705d9abcb1b1f51c7fa188573ac5879bd7c6617d13c59961ea191bb0c`,
 not the archived `64e09779...` value.
 
-This E4 object is ready only for a fresh read-only S6.2 implementation audit.
-It claims no implementation PASS. S6.2 is started/not completed; parent
-candidate readiness, S6.3 and every later lifecycle/product gate remain
-false. TypeScript remains default.
+Direct read-only checking of exact HEAD/tree
+`c920f057bd19d3636e82de6b9c80dcde358488de` /
+`b6e07c4b127fb941d4eeac5e03ec1d2526996976` returned P0/P1/P2=`0/0/0`
+with no technical findings. The owner accepted the candidate and authorized
+native archive plus fast-forward-only integration. S6.2 is complete; S6.3,
+qualification, cutover, RKP-3 and push remain false. TypeScript remains
+default.
 
 ## Status
 
-READY FOR FRESH READ-ONLY S6.2 IMPLEMENTATION AUDIT
+IMPLEMENTATION CHECK PASSED / OWNER ACCEPTED
 
 Initial candidate 7d7adc03... returned P0/P1/P2=0/1/0 for four CRLF-derived
 workload hashes. LF repair 18318bff... returned 0/1/0 because fresh no-native
 and built-native full-test lanes were not separated. Dual-lane candidate
 57501fb9... reproduced both but returned 0/0/1 for one bare Cargo command.
-Exact repaired candidate `7942de056f6b0b6806740e5567de9e493236cec2`
+Exact repaired planning candidate `7942de056f6b0b6806740e5567de9e493236cec2`
 with tree `d7cc4bf7250a9ee491da4747e1361866803fa9d9` passed the fresh targeted
 rereview at P0/P1/P2=0/0/0. This is a planning PASS only; implementation is
-not activated or authorized.
+not activated or authorized by that historical planning result alone.
 
 ## Review object
 
@@ -41,8 +44,9 @@ delta. The complete one-line consumption record and independent decode are in
 
 ## Required verdict
 
-No implementation verdict is recorded yet. Required PASS is
-P0/P1/P2=`0/0/0`; even that PASS permits only a later explicit owner decision.
+Completed: direct read-only checking returned P0/P1/P2=`0/0/0`; the later
+owner decision accepted the candidate and authorized archive plus
+fast-forward-only integration.
 
 ## Review focus
 
@@ -69,6 +73,7 @@ P0/P1/P2=`0/0/0`; even that PASS permits only a later explicit owner decision.
 
 ## Reviewer boundary
 
-The reviewer must remain read-only and review the exact clean E4 commit. Do
-not accept, archive, integrate, start S6.3, qualify, cut over, create RKP-3, or
-push. A technical PASS does not perform or authorize any of those actions.
+The completed check remained read-only and targeted the exact clean E4 commit.
+The subsequent owner decision authorizes only native archive and
+fast-forward-only integration. S6.3 starts only after integration;
+qualification, cutover, RKP-3 and push remain separate unauthorized gates.

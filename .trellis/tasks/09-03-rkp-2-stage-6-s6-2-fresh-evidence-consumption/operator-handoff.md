@@ -1,8 +1,8 @@
-# Operator handoff — fresh S6.2 evidence candidate
+# Operator handoff — accepted fresh S6.2 closeout
 
 ## Current gate
 
-A0–E4 COMPLETE; FRESH READ-ONLY IMPLEMENTATION AUDIT PENDING
+A0–E4 COMPLETE; DIRECT IMPLEMENTATION CHECK PASS; OWNER ACCEPTED
 
 Exact source `bebe0f7c7494bc47e3ff8ad3dad74599af794787` / tree
 `75f2fa5940fa7f6330811a9a80934fa7bdc4a30b` passed E1/E2. The one authorized
@@ -12,11 +12,17 @@ fresh E3 execution passed `19/19` and emitted one lossless consumption record:
 Independent decoding verified all fixed counts, parity, semantic/canonical
 round trip, ordering, extension preservation, RSS, reap and cleanup facts.
 
-E4 now freezes only the eight declared lifecycle/evidence paths. The child is
-the sole candidate-ready object and remains the current implementation child.
-S6.2 is started/not completed; parent candidate readiness stays false. S6.3,
-acceptance, archive, integration, qualification, runtime cutover, RKP-3 and
-push remain unauthorized. TypeScript remains the default runtime.
+E4 freezes only the eight declared lifecycle/evidence paths. Direct read-only
+checking of exact HEAD/tree `c920f057bd19d3636e82de6b9c80dcde358488de` /
+`b6e07c4b127fb941d4eeac5e03ec1d2526996976` returned P0/P1/P2=`0/0/0`.
+Typecheck/build, all three Trellis context validators and the focused Workspace
+Law classification were reproduced without rerunning E3.
+
+The owner accepted this candidate and authorized native archive followed by
+fast-forward-only integration into
+`codex/rkp-2-indexed-live-score-store-implementation`. S6.2 is complete;
+S6.3 has not started. Qualification, runtime cutover, RKP-3 and push remain
+unauthorized, and TypeScript remains the default runtime.
 
 ## Historical planning gate
 
@@ -63,7 +69,10 @@ Reconstruct the bounded logical change on current LF bytes after activation.
 5. pass source, EOL, representative and full gates — complete;
 6. run one fresh E3 — complete exactly once;
 7. freeze only evidence/lifecycle state — complete;
-8. stop for a fresh read-only implementation audit — current gate.
+8. stop for a fresh read-only implementation audit — complete at
+   `c920f057...`, P0/P1/P2=`0/0/0`;
+9. record owner acceptance — complete;
+10. native archive, then fast-forward-only integration — current gate.
 
-S6.3, qualification, cutover, RKP-3, archive, integration and push are not
-authorized.
+S6.3 may begin only after integration. Qualification, cutover, RKP-3 and push
+are not authorized.

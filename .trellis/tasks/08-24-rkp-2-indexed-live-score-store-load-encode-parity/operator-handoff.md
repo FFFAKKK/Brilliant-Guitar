@@ -1,18 +1,17 @@
 # Operator Handoff — RKP-2
 
-## Fresh S6.2 A0 activation — 2026-09-03
+## Fresh S6.2 acceptance — 2026-09-03
 
-Direct child `09-03-rkp-2-stage-6-s6-2-fresh-evidence-consumption` is now the
-sole current implementation child. Exact planning authority
-`7942de056f6b0b6806740e5567de9e493236cec2` passed fresh targeted review at
-P0/P1/P2=`0/0/0`; the user explicitly authorized this reviewed task and native
-`task.py start` completed.
+Direct child `09-03-rkp-2-stage-6-s6-2-fresh-evidence-consumption` completed
+E1/E2, exactly one fresh E3, and E4 at candidate HEAD/tree
+`c920f057bd19d3636e82de6b9c80dcde358488de` /
+`b6e07c4b127fb941d4eeac5e03ec1d2526996976`. Direct read-only checking
+returned P0/P1/P2=`0/0/0` with no technical findings, without rerunning E3.
 
-S6.1 remains complete; S6.2 is started/not completed; S6.3 remains false and
-TypeScript remains default. E1 source reconstruction is the sole next gate.
-The authorization covers A0, E1, E2, one fresh E3 run, and E4 candidate freeze
-only. Acceptance, archive, integration, qualification, cutover, RKP-3 and push
-remain unauthorized.
+The owner accepted S6.2 and authorized native archive followed by
+fast-forward-only integration. S6.1 and S6.2 are complete; S6.3 has not
+started. Qualification, runtime cutover, RKP-3 and push remain unauthorized,
+and TypeScript remains the default runtime.
 
 ## Historical fresh S6.2 successor planning — 2026-09-03
 
@@ -248,15 +247,15 @@ The child is candidate-ready only for dedicated independent implementation revie
   audited S6.2 child. E3, acceptance, archive, integration, qualification,
   cutover, push and RKP-3 remain unauthorized.
 
-## Fresh S6.2 E4 evidence candidate
+## Fresh S6.2 E4 check and owner acceptance
 
 - Source `bebe0f7c7494bc47e3ff8ad3dad74599af794787` / tree
   `75f2fa5940fa7f6330811a9a80934fa7bdc4a30b` passed E1/E2. Exactly one fresh
   E3 passed `19/19` and produced the independently decoded process sentinel
   SHA-256 `4cbcbf8705d9abcb1b1f51c7fa188573ac5879bd7c6617d13c59961ea191bb0c`.
-- The child alone is candidate-ready. Both parent projections remain
-  candidate-ready false; S6.2 remains started/not completed, S6.3 remains
-  false, and TypeScript remains default.
-- The only next gate is a fresh read-only S6.2 implementation audit of the
-  clean E4 commit. Do not accept, archive, integrate, qualify, cut over, start
-  S6.3 or RKP-3, or push.
+- Direct read-only checking of exact E4 HEAD/tree `c920f057...` /
+  `b6e07c4...` returned P0/P1/P2=`0/0/0`; candidate readiness is consumed.
+- The owner accepted S6.2 and authorized native archive plus fast-forward-only
+  integration. Both parent candidate projections remain false.
+- S6.3 starts only after integration. Qualification, cutover, RKP-3 and push
+  remain unauthorized; TypeScript remains default.
