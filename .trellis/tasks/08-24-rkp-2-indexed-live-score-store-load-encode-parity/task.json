@@ -108,7 +108,7 @@
       "verdict": "pass"
     },
     "approved_planning_head": "625054ec78e6410e0fb6034ab0c8f60bbf110d08",
-    "current_planning_child": "09-03-rkp-2-stage-6-s6-3-final-candidate-freeze",
+    "current_planning_child": null,
     "stage6_semantic_canonical_authority_amendment": {
       "task": "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
       "status": "accepted_archived_completed_historical_no_live_gate",
@@ -150,8 +150,8 @@
       "stage6_e3_started": false,
       "e3_user_authorization_consumed_by_parent_stage6_owner": true
     },
-    "current_implementation_child": null,
-    "implementation_stage": "stage_6_s6_3_planning",
+    "current_implementation_child": "09-03-rkp-2-stage-6-s6-3-final-candidate-freeze",
+    "implementation_stage": "stage_6_s6_3_archive_aware_workspace_law_repair",
     "stage_1_started": true,
     "stage_1_completed": true,
     "stage_1_commit_subject": "build(rkp-2): pin typed generational store dependency",
@@ -354,7 +354,7 @@
       "post_pass_closeout_authorized": true,
       "stage_6_blocked_until_accepted_archived_integrated": false
     },
-    "next_gate": "direct_s6_3_planning_check_then_activation",
+    "next_gate": "s6_3_focused_workspace_law_green",
     "stage_6_started": true,
     "stage_6_authorized": true,
     "stage_6_completed": false,
@@ -367,7 +367,7 @@
     "stage_6_s6_1_commit": "4a302bc9f9981940336fc97941b08e09bd0d1f67",
     "stage_6_s6_2_started": true,
     "stage_6_s6_2_completed": true,
-    "stage_6_s6_3_started": false,
+    "stage_6_s6_3_started": true,
     "stage_6_private_scale_evidence_seam_repair": {
       "child": "08-26-rkp-2-stage-6-private-scale-evidence-seam-repair",
       "planning_base": "4a302bc9f9981940336fc97941b08e09bd0d1f67",
