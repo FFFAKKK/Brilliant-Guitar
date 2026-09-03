@@ -2,7 +2,21 @@
 
 ## Current gate
 
-PLANNING PASS; WAITING FOR EXPLICIT USER ACTIVATION
+A0 ACTIVATED; E1 SOURCE RECONSTRUCTION PENDING
+
+Exact planning authority `7942de056f6b0b6806740e5567de9e493236cec2` /
+tree `d7cc4bf7250a9ee491da4747e1361866803fa9d9` passed its fresh targeted
+planning rereview at P0/P1/P2=`0/0/0`. On 2026-09-03 the user explicitly
+continued after the activation request, and `task.py start` changed this child
+to `in_progress`. The child is now the sole current implementation child.
+
+That authorization covers A0, E1, E2, exactly one fresh E3 execution, and E4
+candidate freeze for this reviewed S6.2 task only. E3 has not run. S6.2 is
+started/not completed; S6.3, acceptance, archive, integration, qualification,
+runtime cutover, RKP-3 and push remain unauthorized. TypeScript remains the
+default runtime.
+
+## Historical planning gate
 
 Initial planning commit 7d7adc03... was returned 0/1/0 for four CRLF-derived
 hashes. LF-hash repair 18318bff... was returned 0/1/0 because it omitted the
@@ -12,9 +26,8 @@ before a 611 claim. Candidate 57501fb9... reproduced both exact lanes but
 returned 0/0/1 because one example used bare `cargo`. Exact command-repair
 candidate `7942de056f6b0b6806740e5567de9e493236cec2` / tree
 `d7cc4bf7250a9ee491da4747e1361866803fa9d9` then passed its fresh targeted
-rereview at P0/P1/P2=0/0/0. The task is still planning, not active
-implementation. Do not run task.py start or edit technical paths until the
-user explicitly authorizes activation.
+rereview at P0/P1/P2=0/0/0. This was the planning-only state before the
+activation recorded above.
 
 The accepted planning verification is focused 11/7/4/0, fresh no-native full
 590/582/7/1, and hash-verified built-native full 611/605/4/2 over the exact

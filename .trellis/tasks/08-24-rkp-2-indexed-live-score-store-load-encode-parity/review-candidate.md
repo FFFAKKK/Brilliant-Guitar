@@ -1,6 +1,19 @@
 # Review Candidate — RKP-2 Post-Stage-5 Manifest Authority Closure
 
-## Fresh S6.2 planning projection — 2026-09-03
+## Fresh S6.2 implementation projection — 2026-09-03
+
+Exact child planning authority
+`7942de056f6b0b6806740e5567de9e493236cec2` passed its fresh targeted review at
+P0/P1/P2=`0/0/0`. A0 activation is complete and the child is the sole current
+implementation child; E1 is pending and no implementation candidate or
+implementation PASS is claimed.
+
+S6.2 is started/not completed, S6.3 is false, and TypeScript remains default.
+The current authorization ends at one fresh E3 plus E4 candidate freeze;
+acceptance, archive, integration, qualification, cutover, RKP-3 and push remain
+separate unauthorized gates. All later sections are historical context.
+
+## Historical fresh S6.2 planning projection — 2026-09-03
 
 `57501FB9 RETURNED 0/0/1 — ABSOLUTE-CARGO REPAIR READY FOR COMMIT AND REREVIEW`
 

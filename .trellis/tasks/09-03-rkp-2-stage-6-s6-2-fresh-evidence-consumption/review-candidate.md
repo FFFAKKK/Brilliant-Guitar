@@ -1,5 +1,18 @@
 # Review candidate — fresh S6.2 planning
 
+## Activation status
+
+`PLANNING PASS CONSUMED / A0 ACTIVATED / E1 PENDING`
+
+The user explicitly authorized the reviewed S6.2 task on 2026-09-03 and
+`task.py start` set it to `in_progress`. Exact planning authority
+`7942de056f6b0b6806740e5567de9e493236cec2` remains pinned; no implementation
+candidate or implementation PASS is claimed yet.
+
+The bounded authorization covers A0, E1, E2, one fresh E3 execution, and E4
+candidate freeze only. S6.2 is started/not completed; S6.3 and every later
+lifecycle/product gate remain false. TypeScript remains default.
+
 ## Status
 
 PASS FOR EXPLICIT USER ACTIVATION DECISION ONLY

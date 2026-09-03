@@ -45,7 +45,7 @@
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/",
     ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/"
   ],
-  "notes": "RKP-2 IN_PROGRESS / FRESH S6.2 PLANNING PASSED AT EXACT AUDITED 7942DE05 P0 P1 P2 0 0 0 / PREVIOUS 7D7ADC03 18318BFF 57501FB9 RETURNS CLOSED / OLD C3C4D198 ATTEMPT DIAGNOSTIC NON-REUSABLE / EXPLICIT USER ACTIVATION REQUIRED BEFORE CHILD TASK START OR TECHNICAL IMPLEMENTATION / S6.2 S6.3 E3 AND LATER GATES FALSE / TYPESCRIPT DEFAULT.",
+  "notes": "RKP-2 IN_PROGRESS / FRESH S6.2 EXACT PLANNING AUTHORITY 7942DE05 PASSED P0_0_P1_0_P2_0 / USER AUTHORIZED A0 E1 E2 ONE E3 AND E4 ON 2026-09-03 / CURRENT IMPLEMENTATION CHILD 09-03-RKP-2-STAGE-6-S6-2-FRESH-EVIDENCE-CONSUMPTION / E1 PENDING / OLD C3C4D198 ATTEMPT NON-REUSABLE / S6.2 STARTED NOT COMPLETED / S6.3 AND LATER GATES FALSE / TYPESCRIPT DEFAULT.",
   "meta": {
     "planning_base_commit": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "accepted_rkp1_audited_implementation_commit": "94387b339b5e4d9ce6b7f97597a1b56edd051f01",
@@ -107,7 +107,7 @@
       "verdict": "pass"
     },
     "approved_planning_head": "625054ec78e6410e0fb6034ab0c8f60bbf110d08",
-    "current_planning_child": "09-03-rkp-2-stage-6-s6-2-fresh-evidence-consumption",
+    "current_planning_child": null,
     "stage6_semantic_canonical_authority_amendment": {
       "task": "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
       "status": "accepted_archived_completed_historical_no_live_gate",
@@ -149,8 +149,8 @@
       "stage6_e3_started": false,
       "e3_user_authorization_consumed_by_parent_stage6_owner": true
     },
-    "current_implementation_child": null,
-    "implementation_stage": "stage_6_s6_2_fresh_successor_absolute_cargo_command_repair_ready_for_commit",
+    "current_implementation_child": "09-03-rkp-2-stage-6-s6-2-fresh-evidence-consumption",
+    "implementation_stage": "stage_6_s6_2_fresh_A0_activated_E1_pending",
     "stage_1_started": true,
     "stage_1_completed": true,
     "stage_1_commit_subject": "build(rkp-2): pin typed generational store dependency",
@@ -353,18 +353,18 @@
       "post_pass_closeout_authorized": true,
       "stage_6_blocked_until_accepted_archived_integrated": false
     },
-    "next_gate": "explicit_user_authorization_for_fresh_S6_2_task_start_and_implementation",
+    "next_gate": "S6_2_E1_reconstruct_and_freeze_source",
     "stage_6_started": true,
     "stage_6_authorized": true,
     "stage_6_completed": false,
     "stage_6_closeout_completed": true,
     "stage_6_user_authorization": "post_p1_runner_repair_user_requested_continue_to_later_content_as_separate_stage_6_authorization",
     "stage_6_s6_0_commit": "ce673a2ad62348fa73458d493a45f9c005bf0288",
-    "stage_6_operationally_paused": true,
+    "stage_6_operationally_paused": false,
     "stage_6_s6_1_started": true,
     "stage_6_s6_1_completed": true,
     "stage_6_s6_1_commit": "4a302bc9f9981940336fc97941b08e09bd0d1f67",
-    "stage_6_s6_2_started": false,
+    "stage_6_s6_2_started": true,
     "stage_6_s6_3_started": false,
     "stage_6_private_scale_evidence_seam_repair": {
       "child": "08-26-rkp-2-stage-6-private-scale-evidence-seam-repair",
@@ -577,7 +577,7 @@
       "terminal_projection_candidate_ready": true,
       "terminal_projection_review": "pending_dedicated_independent_terminal_projection_review"
     },
-    "rkp2_stage_6_s6_2_started": false,
+    "rkp2_stage_6_s6_2_started": true,
     "rkp2_stage_6_s6_3_started": false,
     "current_blocking_descendant": "09-03-rkp-2-stage-6-s6-2-fresh-evidence-consumption",
     "tracked_byte_eol_portability_prerequisite": {
@@ -735,14 +735,16 @@
     },
     "s6_2_fresh_successor": {
       "task": "09-03-rkp-2-stage-6-s6-2-fresh-evidence-consumption",
-      "status": "planning_pass_awaiting_explicit_user_activation",
+      "status": "in_progress_A0_activated_E1_pending",
       "planning_base": "9da9d036a6c2ef184ea68d5b33fabfb1e9a0eba5",
       "planning_base_tree": "179e08f0f3ec77f9368cc781c9e4567671791f30",
       "branch": "codex/rkp-2-stage-6-s6-2-fresh-evidence-consumption",
       "worktree": ".worktrees/rkp-2-stage-6-s6-2-fresh-evidence-consumption",
       "old_attempt_reusable": false,
-      "task_start_run": false,
-      "production_implementation_authorized": false,
+      "task_start_run": true,
+      "production_implementation_authorized": true,
+      "user_implementation_authorization": true,
+      "user_implementation_authorization_scope": "A0_E1_E2_one_fresh_E3_and_E4_candidate_freeze_only_no_S6_3_acceptance_archive_integration_qualification_cutover_RKP3_or_push",
       "planning_candidate_ready": true,
       "independent_planning_review": "passed_targeted_fresh_rereview_7942de056f6b0b6806740e5567de9e493236cec2_P0_0_P1_0_P2_0_for_explicit_user_activation_decision_only",
       "planning_candidate_commit": "7942de056f6b0b6806740e5567de9e493236cec2",
@@ -780,11 +782,12 @@
         "tests": "focused_11_7_4_0_fresh_no_native_590_582_7_1_built_native_611_605_4_2_manifest_80_exact",
         "native_source_and_target_sha256": "c49fc2cc7008754669259adbe96b1a9f5edfd4e4fdd785a4ed09e7c8c8b46c5b"
       },
-      "s6_2_started": false,
+      "s6_2_started": true,
       "s6_3_started": false,
       "e3_execution_count": 0,
+      "e3_authorized": true,
       "implementation_candidate_ready": false,
-      "next_gate": "explicit_user_authorization_for_task_start_and_S6_2_implementation",
+      "next_gate": "E1_reconstruct_and_freeze_source",
       "default_runtime": "typescript"
     }
   }

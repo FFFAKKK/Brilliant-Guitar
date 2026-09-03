@@ -1,6 +1,20 @@
 # Operator Handoff — RKP-2
 
-## Fresh S6.2 successor planning — 2026-09-03
+## Fresh S6.2 A0 activation — 2026-09-03
+
+Direct child `09-03-rkp-2-stage-6-s6-2-fresh-evidence-consumption` is now the
+sole current implementation child. Exact planning authority
+`7942de056f6b0b6806740e5567de9e493236cec2` passed fresh targeted review at
+P0/P1/P2=`0/0/0`; the user explicitly authorized this reviewed task and native
+`task.py start` completed.
+
+S6.1 remains complete; S6.2 is started/not completed; S6.3 remains false and
+TypeScript remains default. E1 source reconstruction is the sole next gate.
+The authorization covers A0, E1, E2, one fresh E3 run, and E4 candidate freeze
+only. Acceptance, archive, integration, qualification, cutover, RKP-3 and push
+remain unauthorized.
+
+## Historical fresh S6.2 successor planning — 2026-09-03
 
 The tracked-byte EOL portability prerequisite passed its independent rereview at `ff847a56cad45e51d17a39f45f6dddf0f2c24130`, was owner-accepted at `e4d6216defc746ddffac10897d90f2e0e426707c`, and was natively archived and fast-forward integrated at `9da9d036a6c2ef184ea68d5b33fabfb1e9a0eba5`. Its archive now supplies the mandatory provenance and non-reuse contract for a fresh S6.2 attempt.
 
