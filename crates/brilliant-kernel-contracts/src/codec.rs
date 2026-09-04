@@ -22,10 +22,12 @@ use crate::{
     KernelSessionCreateRequestV1, KernelSessionCreateResultV1, KernelSessionReadResultV1,
     KernelStage3CommandFailureLeafV1, KernelStage3CommandFailureV1,
     KernelStage3ResourceLimitKindV1, KernelStage3SubmitDecodeFailureV1,
-    KernelStage3SubmitRequestV1, KernelStage3SubmitResultV1, MAX_BATCH_CHILDREN_V1,
-    MeasureAnchorV1, MeasurePickupV1, PartAnchorV1, ScoreEntityTargetV1, ScoreRangeV1,
-    ScoreStructureViolationV1, SequenceAnchorV1, ShapeViolationV1, StableFailureV1, StaffAnchorV1,
-    VoiceAnchorV1,
+    KernelStage3SubmitRequestV1, KernelStage3SubmitResultV1, KernelStage4OperationDecodeFailureV1,
+    KernelStage4OperationRequestV1, KernelStage4OperationResultV1, KernelStage4OperationV1,
+    KernelStage4ReplayRequestV1, KernelStage4ReplayResultV1, MAX_BATCH_CHILDREN_V1,
+    MeasureAnchorV1, MeasurePickupV1, PartAnchorV1, PersistedCheckpointV1, ScoreEntityTargetV1,
+    ScoreRangeV1, ScoreStructureViolationV1, SelectorRequestV1, SequenceAnchorV1, ShapeViolationV1,
+    StableFailureV1, StaffAnchorV1, VoiceAnchorV1,
 };
 
 pub const REQUEST_BYTE_LIMIT: usize = 64 * 1024 * 1024;
@@ -146,6 +148,14 @@ fn canonical_field(field: &str) -> Option<&'static str> {
         "end" => "end",
         "transposition" => "transposition",
         "commands" => "commands",
+        "operation" => "operation",
+        "checkpoint" => "checkpoint",
+        "documentVersion" => "documentVersion",
+        "knownSnapshotVersion" => "knownSnapshotVersion",
+        "selector" => "selector",
+        "selectorId" => "selectorId",
+        "address" => "address",
+        "initialDocument" => "initialDocument",
         _ => return None,
     })
 }
@@ -1818,6 +1828,289 @@ pub fn decode_captured_core_command(
     decode_core_command_value(captured.as_json(), true)
 }
 
+fn stage4_shape_failure(
+    path: StablePathV1,
+    violation: ShapeViolationV1,
+) -> KernelStage4OperationDecodeFailureV1 {
+    KernelStage4OperationDecodeFailureV1::Boundary(StableFailureV1::CodecInvalidShape {
+        path,
+        violation,
+    })
+}
+
+fn validate_stage4_operation_shape(value: &StrictValue, state: &mut StrictState) {
+    let root = CanonicalPath::default();
+    let Some(entries) = exact_object(value, &root, &["apiVersion", "operation"], &[], state) else {
+        return;
+    };
+    for value in field_values(entries, "apiVersion") {
+        expect_number(value, &root.field("apiVersion"), state);
+    }
+    for value in field_values(entries, "operation") {
+        let operation_path = root.field("operation");
+        let StrictValue::Object(operation) = value else {
+            record_wrong_type(state, &operation_path);
+            continue;
+        };
+        let Some(kind) = operation.get("kind") else {
+            state.record_shape(
+                0,
+                operation_path.field("kind"),
+                ShapeViolationV1::MissingField,
+            );
+            continue;
+        };
+        expect_tag(
+            kind,
+            &operation_path.field("kind"),
+            &["submit", "undo", "redo", "mark-persisted", "read", "select"],
+            state,
+        );
+        let StrictValue::String(kind) = kind else {
+            continue;
+        };
+        let (required, optional): (&[&'static str], &[&'static str]) = match kind.as_str() {
+            "submit" => (&["kind", "command"], &[]),
+            "undo" | "redo" => (&["kind"], &[]),
+            "mark-persisted" => (&["kind", "checkpoint"], &[]),
+            "read" => (&["kind", "knownSnapshotVersion"], &[]),
+            "select" => (&["kind", "selector"], &[]),
+            _ => continue,
+        };
+        let Some(exact) = exact_object(value, &operation_path, required, optional, state) else {
+            continue;
+        };
+        if kind == "read" {
+            for known in field_values(exact, "knownSnapshotVersion") {
+                if !matches!(known, StrictValue::Null | StrictValue::Number(_)) {
+                    record_wrong_type(state, &operation_path.field("knownSnapshotVersion"));
+                }
+            }
+        }
+    }
+}
+
+pub fn decode_stage4_operation_request(
+    bytes: &[u8],
+) -> Result<KernelStage4OperationRequestV1, KernelStage4OperationDecodeFailureV1> {
+    if bytes.len() > REQUEST_BYTE_LIMIT {
+        return Err(KernelStage4OperationDecodeFailureV1::Boundary(
+            StableFailureV1::BridgeRequestTooLarge {
+                limit_bytes: REQUEST_BYTE_LIMIT as u64,
+                actual_bytes: bytes.len() as u64,
+            },
+        ));
+    }
+    let (strict_value, mut state) =
+        strict_json(bytes).map_err(KernelStage4OperationDecodeFailureV1::Boundary)?;
+    if state.can_retain()
+        && let Some(value) = &strict_value
+    {
+        validate_stage4_operation_shape(value, &mut state);
+    }
+    if let Some(failure) = state.failure() {
+        return Err(KernelStage4OperationDecodeFailureV1::Boundary(failure));
+    }
+    let value = strict_value
+        .ok_or(KernelStage4OperationDecodeFailureV1::Boundary(
+            StableFailureV1::BridgeInternal,
+        ))?
+        .into_json();
+    let root = exact_json_object(&value, &["apiVersion", "operation"])
+        .ok_or_else(|| stage4_shape_failure(StablePathV1::root(), ShapeViolationV1::WrongType))?;
+    let api_version = root["apiVersion"].as_u64().ok_or_else(|| {
+        stage4_shape_failure(
+            StablePathV1::field("apiVersion"),
+            ShapeViolationV1::WrongType,
+        )
+    })?;
+    if api_version != API_VERSION_V1 {
+        return Err(KernelStage4OperationDecodeFailureV1::Boundary(
+            StableFailureV1::ContractUnsupportedApiVersion {
+                supported_version: API_VERSION_V1,
+            },
+        ));
+    }
+    let operation = root["operation"].as_object().ok_or_else(|| {
+        stage4_shape_failure(
+            StablePathV1::field("operation"),
+            ShapeViolationV1::WrongType,
+        )
+    })?;
+    let kind = operation
+        .get("kind")
+        .and_then(Value::as_str)
+        .ok_or_else(|| {
+            stage4_shape_failure(
+                CanonicalPath::default()
+                    .field("operation")
+                    .field("kind")
+                    .stable(),
+                ShapeViolationV1::WrongType,
+            )
+        })?;
+    let operation = match kind {
+        "submit" => {
+            let command = decode_core_command_value(&operation["command"], false)
+                .map_err(KernelStage4OperationDecodeFailureV1::Command)?;
+            KernelStage4OperationV1::Submit { command }
+        }
+        "undo" => KernelStage4OperationV1::Undo,
+        "redo" => KernelStage4OperationV1::Redo,
+        "mark-persisted" => {
+            match serde_json::from_value::<PersistedCheckpointV1>(operation["checkpoint"].clone()) {
+                Ok(checkpoint) => KernelStage4OperationV1::MarkPersisted { checkpoint },
+                Err(_) => KernelStage4OperationV1::MarkPersistedInvalid,
+            }
+        }
+        "read" => {
+            let known_snapshot_version = if operation["knownSnapshotVersion"].is_null() {
+                None
+            } else {
+                Some(
+                    serde_json::from_value(operation["knownSnapshotVersion"].clone()).map_err(
+                        |_| {
+                            stage4_shape_failure(
+                                CanonicalPath::default()
+                                    .field("operation")
+                                    .field("knownSnapshotVersion")
+                                    .stable(),
+                                ShapeViolationV1::WrongType,
+                            )
+                        },
+                    )?,
+                )
+            };
+            KernelStage4OperationV1::Read {
+                known_snapshot_version,
+            }
+        }
+        "select" => {
+            let selector =
+                serde_json::from_value::<SelectorRequestV1>(operation["selector"].clone())
+                    .map_err(|_| {
+                        stage4_shape_failure(
+                            CanonicalPath::default()
+                                .field("operation")
+                                .field("selector")
+                                .stable(),
+                            ShapeViolationV1::WrongType,
+                        )
+                    })?;
+            KernelStage4OperationV1::Select { selector }
+        }
+        _ => {
+            return Err(stage4_shape_failure(
+                CanonicalPath::default()
+                    .field("operation")
+                    .field("kind")
+                    .stable(),
+                ShapeViolationV1::InvalidTag,
+            ));
+        }
+    };
+    Ok(KernelStage4OperationRequestV1 {
+        api_version: API_VERSION_V1,
+        operation,
+    })
+}
+
+fn validate_stage4_replay_shape(value: &StrictValue, state: &mut StrictState) {
+    let root = CanonicalPath::default();
+    let Some(entries) = exact_object(
+        value,
+        &root,
+        &["apiVersion", "initialDocument", "commands"],
+        &[],
+        state,
+    ) else {
+        return;
+    };
+    for value in field_values(entries, "apiVersion") {
+        expect_number(value, &root.field("apiVersion"), state);
+    }
+    for value in field_values(entries, "initialDocument") {
+        validate_document(value, &root.field("initialDocument"), state);
+    }
+    for value in field_values(entries, "commands") {
+        let _ = exact_array(value, &root.field("commands"), state);
+    }
+}
+
+pub fn decode_stage4_replay_request(
+    bytes: &[u8],
+) -> Result<KernelStage4ReplayRequestV1, StableFailureV1> {
+    if bytes.len() > REQUEST_BYTE_LIMIT {
+        return Err(StableFailureV1::BridgeRequestTooLarge {
+            limit_bytes: REQUEST_BYTE_LIMIT as u64,
+            actual_bytes: bytes.len() as u64,
+        });
+    }
+    let (strict_value, mut state) = strict_json(bytes)?;
+    if state.can_retain()
+        && let Some(value) = &strict_value
+    {
+        validate_stage4_replay_shape(value, &mut state);
+    }
+    if let Some(failure) = state.failure() {
+        return Err(failure);
+    }
+    let value = strict_value
+        .ok_or(StableFailureV1::BridgeInternal)?
+        .into_json();
+    let root = exact_json_object(&value, &["apiVersion", "initialDocument", "commands"])
+        .ok_or_else(|| StableFailureV1::CodecInvalidShape {
+            path: StablePathV1::root(),
+            violation: ShapeViolationV1::WrongType,
+        })?;
+    let api_version =
+        root["apiVersion"]
+            .as_u64()
+            .ok_or_else(|| StableFailureV1::CodecInvalidShape {
+                path: StablePathV1::field("apiVersion"),
+                violation: ShapeViolationV1::WrongType,
+            })?;
+    if api_version != API_VERSION_V1 {
+        return Err(StableFailureV1::ContractUnsupportedApiVersion {
+            supported_version: API_VERSION_V1,
+        });
+    }
+    let document_value = root["initialDocument"].clone();
+    let schema = document_value
+        .as_object()
+        .and_then(|document| document.get("schemaVersion"))
+        .and_then(Value::as_str)
+        .ok_or_else(|| StableFailureV1::CodecInvalidShape {
+            path: CanonicalPath::default()
+                .field("initialDocument")
+                .field("schemaVersion")
+                .stable(),
+            violation: ShapeViolationV1::WrongType,
+        })?;
+    if schema != ScoreSchemaVersionV1::VALUE {
+        return Err(StableFailureV1::ScoreUnsupportedSchema {
+            supported_schema: ScoreSchemaVersionV1::VALUE,
+        });
+    }
+    let initial_document =
+        decode_score_document_value(document_value).map_err(map_foundation_failure)?;
+    let commands = root["commands"]
+        .as_array()
+        .ok_or_else(|| StableFailureV1::CodecInvalidShape {
+            path: StablePathV1::field("commands"),
+            violation: ShapeViolationV1::WrongType,
+        })?
+        .iter()
+        .cloned()
+        .map(CapturedCoreCommandV1::from_json)
+        .collect();
+    Ok(KernelStage4ReplayRequestV1 {
+        api_version: API_VERSION_V1,
+        initial_document,
+        commands,
+    })
+}
+
 fn map_foundation_failure(failure: FoundationDecodeFailure) -> StableFailureV1 {
     match failure {
         FoundationDecodeFailure::InvalidShape { path } => StableFailureV1::CodecInvalidShape {
@@ -1857,6 +2150,18 @@ pub fn encode_read_result(result: &KernelSessionReadResultV1) -> Result<Vec<u8>,
 
 pub fn encode_stage3_submit_result(
     result: &KernelStage3SubmitResultV1,
+) -> Result<Vec<u8>, StableFailureV1> {
+    encode_capped(result)
+}
+
+pub fn encode_stage4_operation_result(
+    result: &KernelStage4OperationResultV1,
+) -> Result<Vec<u8>, StableFailureV1> {
+    encode_capped(result)
+}
+
+pub fn encode_stage4_replay_result(
+    result: &KernelStage4ReplayResultV1,
 ) -> Result<Vec<u8>, StableFailureV1> {
     encode_capped(result)
 }
@@ -1919,7 +2224,9 @@ mod tests {
 
     use super::*;
     use crate::{
-        CORE_COMMAND_CATALOG_V1, CORE_COMMAND_COUNT_V1, KernelSessionCreateSuccessValueV1,
+        CORE_COMMAND_CATALOG_V1, CORE_COMMAND_COUNT_V1, KernelEventCauseV1, KernelEventV1,
+        KernelSessionCreateSuccessValueV1, KernelStage4MarkPersistedResultV1,
+        KernelStage4MarkPersistedValueV1,
     };
 
     const SMOKE_REQUEST: &str = r#"{"apiVersion":1,"document":{"schemaVersion":"brilliant-score-1","id":"score-rkp1","metadata":{"title":"Smoke","authors":["Brilliant"],"tempo":{"bpm":120}},"measureDefinitions":[{"id":"measure-1","meter":{"numerator":4,"denominator":4}}],"parts":[{"id":"part-1","name":"Part","instrument":{"name":"Piano","writtenToSounding":{"diatonicSteps":0,"chromaticSemitones":0}},"staves":[{"id":"staff-1","lineCount":5,"defaultClef":{"sign":"G","line":2}}],"measureContents":[{"measureId":"measure-1","voices":[{"id":"voice-1","defaultStaffId":"staff-1","sequence":{"start":{"numerator":0,"denominator":1},"events":[{"id":"event-1","duration":{"base":1,"dots":0},"content":{"kind":"rest"}}]}}]}]}],"extensions":[]}}"#;
@@ -1932,6 +2239,80 @@ mod tests {
         assert_eq!(
             decoded.command.command_id().as_str(),
             "core.document.set-metadata"
+        );
+    }
+
+    #[test]
+    fn stage_four_operation_and_replay_roots_are_exact_and_versioned() {
+        let undo =
+            decode_stage4_operation_request(br#"{"apiVersion":1,"operation":{"kind":"undo"}}"#)
+                .expect("valid undo request");
+        assert!(matches!(undo.operation, KernelStage4OperationV1::Undo));
+
+        let extra = decode_stage4_operation_request(
+            br#"{"apiVersion":1,"operation":{"kind":"undo","extra":true}}"#,
+        );
+        assert!(matches!(
+            extra,
+            Err(KernelStage4OperationDecodeFailureV1::Boundary(
+                StableFailureV1::CodecInvalidShape {
+                    violation: ShapeViolationV1::ExtraField,
+                    ..
+                }
+            ))
+        ));
+
+        let invalid_checkpoint = decode_stage4_operation_request(
+            br#"{"apiVersion":1,"operation":{"kind":"mark-persisted","checkpoint":{"documentId":"score-rkp1"}}}"#,
+        )
+        .expect("malformed checkpoint remains an accepted operation");
+        assert!(matches!(
+            invalid_checkpoint.operation,
+            KernelStage4OperationV1::MarkPersistedInvalid
+        ));
+
+        let create: Value = serde_json::from_str(SMOKE_REQUEST).expect("create fixture");
+        let replay = serde_json::to_vec(&serde_json::json!({
+            "apiVersion": 1,
+            "initialDocument": create["document"].clone(),
+            "commands": []
+        }))
+        .expect("replay bytes");
+        let replay = decode_stage4_replay_request(&replay).expect("replay request");
+        assert_eq!(replay.api_version, 1);
+        assert_eq!(replay.initial_document.id.as_str(), "score-rkp1");
+        assert!(replay.commands.is_empty());
+    }
+
+    #[test]
+    fn stage_four_event_and_checkpoint_result_wire_shapes_are_closed() {
+        let event = KernelEventV1::DocumentCommitted {
+            event_sequence: 1,
+            document_id: StableId::new("score-rkp1").expect("id"),
+            document_version: DocumentVersionV1::initial()
+                .checked_next()
+                .expect("version"),
+            cause: KernelEventCauseV1::Submit,
+            command_id: CoreCommandIdV1::DocumentSetMetadata,
+            affected_entities: vec![ScoreEntityTargetV1::Document {
+                document_id: StableId::new("score-rkp1").expect("id"),
+            }],
+        };
+        assert_eq!(
+            serde_json::to_vec(&event).expect("event bytes"),
+            br#"{"eventVersion":1,"eventSequence":1,"eventType":"core.document.committed","documentId":"score-rkp1","documentVersion":1,"cause":"submit","commandId":"core.document.set-metadata","affectedEntities":[{"kind":"document","documentId":"score-rkp1"}]}"#
+        );
+
+        let result =
+            KernelStage4OperationResultV1::MarkPersisted(KernelStage4MarkPersistedResultV1::NoOp {
+                value: KernelStage4MarkPersistedValueV1 {
+                    document_version: DocumentVersionV1::initial(),
+                    dirty: false,
+                },
+            });
+        assert_eq!(
+            encode_stage4_operation_result(&result).expect("checkpoint bytes"),
+            br#"{"apiVersion":1,"status":"no-op","value":{"documentVersion":0,"dirty":false},"events":[]}"#
         );
     }
 
