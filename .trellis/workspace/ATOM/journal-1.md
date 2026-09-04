@@ -810,3 +810,38 @@ Repaired exact active/archive resolution for RKP-2 workspace law and Trellis JSO
 ### Next Steps
 
 - None - task complete
+
+
+## Session 23: RKP-3 owner acceptance and archive closeout
+
+**Date**: 2026-09-04
+**Task**: RKP-3 owner acceptance and archive closeout
+**Branch**: `codex/rkp-3-transaction-overlay-changeset-planning`
+
+### Summary
+
+Accepted the audited RKP-3 technical source, added archive-safe lifecycle coverage, archived the task, and synchronized the Rust remediation parent while keeping TypeScript default and all RKP-4 or later gates unauthorized.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `3ca82f1fcf68070e6c775d0848839864dbc87c71` | (see git log) |
+| `88d96574e4b6f58d92bef8f849176e72667fdb3b` | (see git log) |
+| `560fd89d32026cdc41c3cf0df65285e99e015456` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
