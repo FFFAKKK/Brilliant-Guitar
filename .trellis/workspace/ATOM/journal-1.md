@@ -855,7 +855,7 @@ Accepted the audited RKP-3 technical source, added archive-safe lifecycle covera
 
 ### Summary
 
-Completed private Stage-4 vector history, atomic undo/redo, cached immutable reads, indexed selectors, dirty identity, bounded checkpoints, isolated events, semantic replay, and C8 qualification guards; TypeScript remains default and all later gates remain false.
+Completed private Stage-4 vector history, atomic undo/redo, cached immutable reads, indexed selectors, dirty identity, bounded checkpoints, isolated events, semantic replay, and C8 qualification guards. The single bounded audit found and repaired one P1 adapter mismatch; targeted rereview finished at P0/P1/P2 0/0/0. TypeScript remains default and all later gates remain false.
 
 ### Main Changes
 
@@ -880,6 +880,9 @@ Completed private Stage-4 vector history, atomic undo/redo, cached immutable rea
 | `e98922f` | (see git log) |
 | `70f8264` | (see git log) |
 | `bc7449a` | (see git log) |
+| `aee1a79` | (see git log) |
+| `dc14f6e` | (see git log) |
+| `e53f602` | fix(rkp-4): accept delayed persisted identity updates |
 
 ### Testing
 
@@ -892,13 +895,17 @@ Completed private Stage-4 vector history, atomic undo/redo, cached immutable rea
   `5BD4EBA926F40E0A26EE0B2E24EDA4DEB570EFD1D20C62FD2951A82B6DA4B2CA`.
 - [OK] Clean committed-candidate full `npm test`: 648 passed, 0 failed,
   2 skipped in 73.207 seconds at `aee1a79065da9140c3815785af789bb97fb64417`.
+- [OK] One bounded audit: initial P0/P1/P2 0/1/0; the sole delayed
+  mark-persisted adapter finding was repaired by `e53f602`.
+- [OK] Post-repair typecheck/build, history/events 3/3, RKP-4 behavior 11/11,
+  workspace contracts 8/8, and child/parent Trellis plus JSON validation;
+  targeted rereview P0/P1/P2 0/0/0.
 
 ### Status
 
-[OK] **Implementation candidate ready; one bounded audit pending**
+[OK] **Audited implementation candidate ready; owner decision pending**
 
 ### Next Steps
 
-- Conduct exactly one bounded implementation audit over the frozen planning
-  head through the committed candidate. Acceptance/archive and all later gates
-  remain unauthorized.
+- Await explicit owner acceptance-or-return instruction. Acceptance/archive and
+  all later gates remain unauthorized.

@@ -409,6 +409,26 @@ private implementation. Full rollback continues C7 to C0 in reverse.
   membership, bridge-failure inventory, schema, public 28/51/8/34/9 inventory,
   and the TypeScript-default/later-gates-false boundary all passed.
 
+### Bounded implementation audit — 2026-09-05
+
+- Conducted exactly one bounded audit from frozen planning head
+  `91b3f057612befa09e74665e0aa70bbf9a6eca48` through evidence head
+  `dc14f6e4578725a41fdee1ed30e483070bb3c811`. The initial result was
+  P0/P1/P2 `0/1/0`.
+- The single P1 was a TypeScript adapter mismatch: Rust can legitimately update
+  the clean identity for a delayed save while the current document remains
+  dirty and emit zero events, but the adapter rejected every `updated` result
+  without exactly one event after native state had already changed.
+- Repair `e53f602f7861caa0472a218d92016d9263dd652d` accepts that exact zero-event
+  case while retaining strict validation for a present dirty-state event. A
+  regression proves delayed mark-persisted followed by undo remains coherent.
+- Targeted verification passed typecheck/build, the history/event file 3/3,
+  and all RKP-4 behavior tests 11/11. A targeted rereview of the repaired lines
+  returned P0/P1/P2 `0/0/0`; no second broad audit was performed.
+- The audited technical commit/tree is
+  `e53f602f7861caa0472a218d92016d9263dd652d` /
+  `a0b624128751eb69952dcba2bb6b05d2477d9729`.
+
 ## 10. Closeout boundary
 
 After a separate owner acceptance instruction, use native Trellis archive flow,

@@ -39,7 +39,7 @@
     ".trellis/spec/core-kernel/backend/snapshot-events.md",
     ".trellis/spec/core-kernel/backend/rust-runtime-transition.md"
   ],
-  "notes": "RKP-4 PRIVATE IMPLEMENTATION C0-C8 CANDIDATE READY / ONE BOUNDED FINAL AUDIT PENDING / ACCEPTANCE ARCHIVE RKP-5 QUALIFICATION CUTOVER PUSH FALSE / TYPESCRIPT DEFAULT.",
+  "notes": "RKP-4 PRIVATE IMPLEMENTATION C0-C8 AUDITED CANDIDATE READY AFTER ONE P1 REPAIR / FINAL P0 P1 P2 0 0 0 / OWNER ACCEPTANCE OR RETURN DECISION PENDING / ACCEPTANCE ARCHIVE RKP-5 QUALIFICATION CUTOVER PUSH FALSE / TYPESCRIPT DEFAULT.",
   "meta": {
     "planning_base_commit": "46a684c78551d118f75b4864a8ed6ec5d3de77c3",
     "predecessor_task": "09-04-rkp-3-transaction-overlay-changeset-core-commands",
@@ -70,7 +70,7 @@
       "changed_paths": 31,
       "rust_workspace": "160_passed_0_failed_1_ignored",
       "typescript_full_suite": "648_passed_0_failed_2_skipped_73.207_seconds",
-      "rkp4_focused": "18_passed_0_failed",
+      "rkp4_focused": "18_passed_0_failed_before_audit_repair",
       "native_addon_sha256": "5BD4EBA926F40E0A26EE0B2E24EDA4DEB570EFD1D20C62FD2951A82B6DA4B2CA",
       "task_validation": "child_and_parent_pass",
       "diff_check": "pass"
@@ -85,7 +85,25 @@
       "C6": "70f8264",
       "C7": "bc7449a"
     },
-    "implementation_review": "pending_one_bounded_final_audit",
+    "implementation_audit": {
+      "scope": "one_bounded_review_of_91b3f057_through_dc14f6e_then_targeted_rereview_of_the_single_repair_only",
+      "initial_reviewed_head": "dc14f6e4578725a41fdee1ed30e483070bb3c811",
+      "initial_reviewed_tree": "24f5dd84590390ef304906e0cf57c1304d51ad00",
+      "initial_P0": 0,
+      "initial_P1": 1,
+      "initial_P2": 0,
+      "finding": "typescript_adapter_rejected_valid_delayed_mark_persisted_updated_response_with_zero_events_after_native_clean_identity_mutation",
+      "repair_commit": "e53f602f7861caa0472a218d92016d9263dd652d",
+      "repair_tree": "a0b624128751eb69952dcba2bb6b05d2477d9729",
+      "targeted_verification": "typescript_typecheck_build_pass_history_events_3_of_3_rkp4_behavior_11_of_11_workspace_contracts_8_of_8_child_parent_trellis_and_json_pass",
+      "targeted_rereview_P0": 0,
+      "targeted_rereview_P1": 0,
+      "targeted_rereview_P2": 0,
+      "final_verdict": "pass"
+    },
+    "implementation_review": "passed_bounded_final_audit_P0_0_P1_0_P2_0",
+    "audited_technical_commit": "e53f602f7861caa0472a218d92016d9263dd652d",
+    "audited_technical_tree": "a0b624128751eb69952dcba2bb6b05d2477d9729",
     "acceptance_authorized": false,
     "archive_authorized": false,
     "rkp5_authorized": false,
@@ -93,7 +111,7 @@
     "runtime_cutover_authorized": false,
     "push_authorized": false,
     "default_runtime": "typescript",
-    "current_stage": "implementation_candidate_ready_pending_bounded_audit",
+    "current_stage": "implementation_candidate_audited_pending_owner_acceptance",
     "history_model": "single_Vec_HistoryEntryV1_plus_cursor_monotonic_non_reused_sequence",
     "dirty_identity_model": "entry_sequence_before_cursor_or_zero_with_append_only_identity_by_document_version",
     "checkpoint_policy": "latest_only_in_memory_after_512_new_history_entries_or_33554432_changeset_logical_bytes_post_commit_no_physical_io",
@@ -101,6 +119,6 @@
     "native_export_target": "five_total_preserve_three_add_operateKernelStage4V1_and_replayKernelStage4V1",
     "oracle_scope": "immutable_RKP0_rows_57_through_61_stage_owned_projection_only",
     "planning_production_delta": "zero",
-    "next_gate": "one_bounded_implementation_audit_only"
+    "next_gate": "owner_acceptance_or_return_decision_requires_explicit_instruction"
   }
 }

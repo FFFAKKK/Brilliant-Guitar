@@ -167,6 +167,13 @@ semantic replay. It preserves the seven-crate/dependency surface, the frozen
 oracle and Qualification V2 bytes, the public 28/51/8/34/9 inventories, and
 `brilliant-score-1`. TypeScript remains the default runtime.
 
-The only current gate is one bounded implementation audit over the RKP-4
-planning base through the candidate. Acceptance, archive, RKP-5, qualification,
-runtime cutover, cleanup, and push remain unauthorized.
+The authorized bounded implementation audit found one P1 in the TypeScript
+adapter's delayed mark-persisted response validation. Repair
+`e53f602f7861caa0472a218d92016d9263dd652d` added the exact zero-event updated
+case and its regression. Typecheck/build and all RKP-4 behavior tests 11/11
+passed; the targeted rereview returned P0/P1/P2 `0/0/0`. The audited technical
+tree is `a0b624128751eb69952dcba2bb6b05d2477d9729`.
+
+The only current gate is an explicit owner acceptance-or-return decision.
+Acceptance, archive, RKP-5, qualification, runtime cutover, cleanup, and push
+remain unauthorized.

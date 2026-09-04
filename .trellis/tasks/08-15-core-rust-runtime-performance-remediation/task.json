@@ -49,7 +49,7 @@
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RUST REMEDIATION PARENT PLANNING / RKP-2 AND RKP-3 ACCEPTED ARCHIVED / RKP-4 PRIVATE C0-C8 IMPLEMENTATION CANDIDATE READY WITH ONE BOUNDED AUDIT PENDING / TYPESCRIPT DEFAULT / RKP-4 ACCEPTANCE ARCHIVE RKP-5 QUALIFICATION CUTOVER AND PUSH FALSE.",
+  "notes": "RUST REMEDIATION PARENT PLANNING / RKP-2 AND RKP-3 ACCEPTED ARCHIVED / RKP-4 PRIVATE C0-C8 AUDITED CANDIDATE READY AFTER ONE P1 REPAIR WITH FINAL P0 P1 P2 0 0 0 / TYPESCRIPT DEFAULT / RKP-4 ACCEPTANCE ARCHIVE RKP-5 QUALIFICATION CUTOVER AND PUSH FALSE.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
@@ -142,7 +142,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "rkp4_one_bounded_implementation_audit_only",
+    "next_gate": "rkp4_owner_acceptance_or_return_decision_requires_explicit_instruction",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -273,6 +273,22 @@
     "rkp4_implementation_source_commit": "bc7449ad6f7770bac741742bb514ac69c059769b",
     "rkp4_candidate_gate_head": "aee1a79065da9140c3815785af789bb97fb64417",
     "rkp4_candidate_gate_tree": "64b6415a0714a27c52db8bf985bc38e447d8028a",
+    "rkp4_implementation_review": "passed_bounded_final_audit_P0_0_P1_0_P2_0",
+    "rkp4_audited_technical_commit": "e53f602f7861caa0472a218d92016d9263dd652d",
+    "rkp4_audited_technical_tree": "a0b624128751eb69952dcba2bb6b05d2477d9729",
+    "rkp4_implementation_audit": {
+      "initial_reviewed_head": "dc14f6e4578725a41fdee1ed30e483070bb3c811",
+      "initial_P0": 0,
+      "initial_P1": 1,
+      "initial_P2": 0,
+      "finding": "typescript_adapter_rejected_valid_delayed_mark_persisted_updated_response_with_zero_events_after_native_clean_identity_mutation",
+      "repair_commit": "e53f602f7861caa0472a218d92016d9263dd652d",
+      "targeted_verification": "typescript_typecheck_build_pass_history_events_3_of_3_rkp4_behavior_11_of_11_workspace_contracts_8_of_8_child_parent_trellis_and_json_pass",
+      "targeted_rereview_P0": 0,
+      "targeted_rereview_P1": 0,
+      "targeted_rereview_P2": 0,
+      "final_verdict": "pass"
+    },
     "rkp4_default_runtime": "typescript",
     "rkp4_acceptance_authorized": false,
     "rkp4_archive_authorized": false,
