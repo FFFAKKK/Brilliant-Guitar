@@ -34,7 +34,7 @@
     ".trellis/spec/core-kernel/backend/rust-runtime-transition.md",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "DIRECT IMPLEMENTATION CHECK PASSED P0/P1/P2=0/0/0 AT 39595906d3799ed2b506315377000e5ba1c9100b. Focused 11/11 and full Node 611 total, 609 pass, 2 expected skip, 0 fail. RKP-2 remains accepted and archived. TypeScript remains default. E3 was not run. Qualification, cutover, RKP-3 and push remain unauthorized. Ready for native task archive.",
+  "notes": "DIRECT IMPLEMENTATION CHECK PASSED P0/P1/P2=0/0/0. Core repair 39595906d3799ed2b506315377000e5ba1c9100b; final self-archive-safe candidate 765fa5321f8618e2cce9b6d9c895b070fc34ea2b. Focused 11/11 and full Node 611 total, 609 pass, 2 expected skip, 0 fail. RKP-2 remains accepted and archived. TypeScript remains default. E3 was not run. Qualification, cutover, RKP-3 and push remain unauthorized. Ready for native task archive.",
   "meta": {
     "planning_base_commit": "afdb88efedafac49e396722c85f608cd9d19b890",
     "rkp2_acceptance_commit": "99ceea9477b171d83618ce2ce312f29b978cf7b1",
@@ -60,14 +60,16 @@
     },
     "activation_commit": "c152143fe88bc872ebbf2f249b9b3dc43a181458",
     "technical_commit": "39595906d3799ed2b506315377000e5ba1c9100b",
+    "archive_closure_contract_commit": "765fa5321f8618e2cce9b6d9c895b070fc34ea2b",
+    "final_candidate": "765fa5321f8618e2cce9b6d9c895b070fc34ea2b",
     "implementation_candidate_ready": true,
     "implementation_review": {
       "P0": 0,
       "P1": 0,
       "P2": 0,
       "verdict": "pass",
-      "candidate": "39595906d3799ed2b506315377000e5ba1c9100b",
-      "scope": "three_file_archive_path_compatibility_repair"
+      "candidate": "765fa5321f8618e2cce9b6d9c895b070fc34ea2b",
+      "scope": "three_file_archive_path_compatibility_repair_plus_exact_self_archive_closure"
     },
     "focused_result": "11_total_11_pass_0_fail",
     "archived_rkp2_validation": "25_implement_and_20_check_entries_pass",

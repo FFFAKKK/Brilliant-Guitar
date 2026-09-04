@@ -5,6 +5,7 @@
 - Planning head: `3bcba71a2944f66149facf53bdf802cf57bb1cd2`.
 - Activation head: `c152143fe88bc872ebbf2f249b9b3dc43a181458`.
 - Technical candidate: `39595906d3799ed2b506315377000e5ba1c9100b`.
+- Self-archive closure candidate: `765fa5321f8618e2cce9b6d9c895b070fc34ea2b`.
 - Technical paths: `.trellis/scripts/common/task_context.py`, `.trellis/spec/core-kernel/backend/rust-runtime-transition.md`, and `test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts`.
 - Direct implementation check: `P0/P1/P2=0/0/0`.
 
@@ -45,3 +46,7 @@ The direct Python helper check proves:
 ## Verdict
 
 PASS. The post-archive compatibility defect is repaired without reopening or changing the accepted RKP-2 kernel implementation.
+
+## Native archive closure guard
+
+After the one full Node run, a final test-only follow-up pinned this repair task's own nine-file active/archive manifest. This prevents its native archive from becoming a new unreviewed-delta failure. The follow-up changes only `rkp-2-workspace-contracts.test.ts`; build and the focused suite were rerun at `765fa5321f8618e2cce9b6d9c895b070fc34ea2b` and passed `11/11`. The full Node run was intentionally not repeated because the task contract permits exactly one full run and no product code changed after it.
