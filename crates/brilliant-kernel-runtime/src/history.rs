@@ -138,6 +138,10 @@ impl HistoryStateV1 {
         }
     }
 
+    pub(crate) const fn cursor(&self) -> usize {
+        self.cursor
+    }
+
     pub(crate) fn identity_after_undo(&self) -> Result<u64, HistoryPrepareFailureV1> {
         self.check_invariants()?;
         if self.cursor == 0 {

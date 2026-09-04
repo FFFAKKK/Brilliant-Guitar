@@ -1,4 +1,7 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 use brilliant_core_types::{
     DocumentVersionV1, JS_SAFE_INTEGER_MAX, SafeInteger, StableId, StablePathV1,
@@ -29,6 +32,7 @@ use crate::{
         ScalarAddressV1, ScalarValueV1, StableAnchorV1, StableEntityAddressV1,
         StableOrderAddressV1, StableOwnerAddressV1,
     },
+    checkpoint::{CheckpointPrepareFailureV1, CheckpointStateV1},
     history::{HistoryPrepareFailureV1, HistoryStateV1},
     overlay::{OverlayFailureV1, OverlayMutationV1, TransactionOverlayV1},
     selectors::select_from_store,
@@ -129,6 +133,7 @@ pub struct KernelRuntime {
     committed_metrics: KernelStage3MetricsV1,
     history: HistoryStateV1,
     projection: SessionProjectionStateV1,
+    checkpoint: CheckpointStateV1,
 }
 
 impl KernelRuntime {
@@ -147,6 +152,7 @@ impl KernelRuntime {
             committed_metrics: KernelStage3MetricsV1::default(),
             history: HistoryStateV1::new(),
             projection,
+            checkpoint: CheckpointStateV1::new(),
         })
     }
 
@@ -160,6 +166,7 @@ impl KernelRuntime {
 
     pub fn read_state(&self) -> Result<KernelReadStateV1, KernelRuntimeReadFailure> {
         let (snapshot, _) = self.current_snapshot()?;
+        let _ = self.attempt_checkpoint_with_snapshot(&snapshot);
         let mut state = initial_snapshot(snapshot.as_document().clone());
         state.snapshot.document_version = self.document_version;
         state.history = self
@@ -179,6 +186,7 @@ impl KernelRuntime {
         known_snapshot_version: Option<DocumentVersionV1>,
     ) -> Result<KernelStage4ReadStateV1, KernelRuntimeReadFailure> {
         let (snapshot, materialized) = self.current_snapshot()?;
+        let checkpoint_metrics = self.attempt_checkpoint_with_snapshot(&snapshot);
         let identity = self
             .history
             .current_identity()
@@ -196,10 +204,13 @@ impl KernelRuntime {
                 .projected()
                 .map_err(|_| KernelRuntimeReadFailure::InternalInvariant)?,
             dirty: self.projection.dirty(identity),
-            stage4_metrics: KernelStage4MetricsV1 {
-                full_snapshot_materializations: u64::from(materialized),
-                ..KernelStage4MetricsV1::default()
-            },
+            stage4_metrics: merge_stage4_metrics(
+                KernelStage4MetricsV1 {
+                    full_snapshot_materializations: u64::from(materialized),
+                    ..KernelStage4MetricsV1::default()
+                },
+                checkpoint_metrics,
+            ),
         })
     }
 
@@ -216,6 +227,50 @@ impl KernelRuntime {
                 .install_snapshot(self.document_version, document),
             true,
         ))
+    }
+
+    fn attempt_checkpoint_with_snapshot(
+        &self,
+        snapshot: &SharedScoreDocumentV1,
+    ) -> KernelStage4MetricsV1 {
+        let identity = match self.history.current_identity() {
+            Ok(identity) => identity,
+            Err(_) => {
+                return KernelStage4MetricsV1 {
+                    checkpoint_attempts: 1,
+                    checkpoint_failures: 1,
+                    ..KernelStage4MetricsV1::default()
+                };
+            }
+        };
+        let shared = snapshot.clone().into_arc();
+        self.checkpoint.attempt(
+            self.document_version,
+            self.history.cursor(),
+            identity,
+            || Some(shared),
+        )
+    }
+
+    fn attempt_checkpoint_maintenance(&self) -> KernelStage4MetricsV1 {
+        let identity = match self.history.current_identity() {
+            Ok(identity) => identity,
+            Err(_) => {
+                return KernelStage4MetricsV1 {
+                    checkpoint_attempts: 1,
+                    checkpoint_failures: 1,
+                    ..KernelStage4MetricsV1::default()
+                };
+            }
+        };
+        let checkpoint = &self.checkpoint;
+        let store = &self.store;
+        checkpoint.attempt(
+            self.document_version,
+            self.history.cursor(),
+            identity,
+            || store.export_document().ok().map(Arc::new),
+        )
     }
 
     pub fn select_stage4(&self, selector: SelectorRequestV1) -> KernelStage4SelectValueV1 {
@@ -329,6 +384,10 @@ impl KernelRuntime {
             });
         }
 
+        let checkpoint_submit = self
+            .checkpoint
+            .prepare_submit(prepared.change_set.logical_bytes)
+            .map_err(map_checkpoint_prepare_failure)?;
         let history_append = self.history.prepare_append().map_err(map_history_failure)?;
         let identity_before = self
             .history
@@ -362,6 +421,7 @@ impl KernelRuntime {
         self.history
             .commit_append(history_append, command, committed, history_affected);
         self.projection.commit_document_transition(projection);
+        self.checkpoint.commit_submit(checkpoint_submit);
         events.push(KernelEventV1::DocumentCommitted {
             event_sequence: projection.event_sequence_start,
             document_id: self.store.header.id.clone(),
@@ -379,11 +439,14 @@ impl KernelRuntime {
                 dirty: dirty_after,
             });
         }
-        let stage4_metrics = KernelStage4MetricsV1 {
-            events_reserved: event_count,
-            events_emitted: event_count,
-            ..KernelStage4MetricsV1::default()
-        };
+        let stage4_metrics = merge_stage4_metrics(
+            KernelStage4MetricsV1 {
+                events_reserved: event_count,
+                events_emitted: event_count,
+                ..KernelStage4MetricsV1::default()
+            },
+            self.attempt_checkpoint_maintenance(),
+        );
         Ok(KernelStage4CommandResultV1::Committed {
             value: self.mutation_value(affected, self.committed_metrics, stage4_metrics)?,
             events,
@@ -554,11 +617,14 @@ impl KernelRuntime {
                     dirty: dirty_after,
                 });
             }
-            let stage4_metrics = KernelStage4MetricsV1 {
-                events_reserved: event_count,
-                events_emitted: event_count,
-                ..KernelStage4MetricsV1::default()
-            };
+            let stage4_metrics = merge_stage4_metrics(
+                KernelStage4MetricsV1 {
+                    events_reserved: event_count,
+                    events_emitted: event_count,
+                    ..KernelStage4MetricsV1::default()
+                },
+                self.attempt_checkpoint_maintenance(),
+            );
             Ok(KernelStage4CommandResultV1::Committed {
                 value: self.mutation_value(affected, self.committed_metrics, stage4_metrics)?,
                 events,
@@ -671,6 +737,45 @@ fn map_history_failure(failure: HistoryPrepareFailureV1) -> KernelStage4FailureV
         HistoryPrepareFailureV1::Capacity
         | HistoryPrepareFailureV1::SequenceOverflow
         | HistoryPrepareFailureV1::Invariant => KernelStage4FailureV1::HistoryInvariantViolation,
+    }
+}
+
+fn map_checkpoint_prepare_failure(failure: CheckpointPrepareFailureV1) -> KernelStage4FailureV1 {
+    match failure {
+        CheckpointPrepareFailureV1::CounterOverflow => {
+            KernelStage4FailureV1::HistoryInvariantViolation
+        }
+    }
+}
+
+fn merge_stage4_metrics(
+    left: KernelStage4MetricsV1,
+    right: KernelStage4MetricsV1,
+) -> KernelStage4MetricsV1 {
+    KernelStage4MetricsV1 {
+        full_snapshot_materializations: left
+            .full_snapshot_materializations
+            .saturating_add(right.full_snapshot_materializations),
+        selector_records_visited: left
+            .selector_records_visited
+            .saturating_add(right.selector_records_visited),
+        selector_records_returned: left
+            .selector_records_returned
+            .saturating_add(right.selector_records_returned),
+        checkpoint_attempts: left
+            .checkpoint_attempts
+            .saturating_add(right.checkpoint_attempts),
+        checkpoint_successes: left
+            .checkpoint_successes
+            .saturating_add(right.checkpoint_successes),
+        checkpoint_failures: left
+            .checkpoint_failures
+            .saturating_add(right.checkpoint_failures),
+        checkpoint_materialized_bytes: left
+            .checkpoint_materialized_bytes
+            .saturating_add(right.checkpoint_materialized_bytes),
+        events_reserved: left.events_reserved.saturating_add(right.events_reserved),
+        events_emitted: left.events_emitted.saturating_add(right.events_emitted),
     }
 }
 
@@ -2834,11 +2939,39 @@ fn map_store_create_failure(failure: LiveStoreBuildFailure) -> KernelRuntimeCrea
 
 #[cfg(test)]
 mod tests {
-    use brilliant_kernel_contracts::decode_create_request;
+    use brilliant_kernel_contracts::{
+        CHECKPOINT_CHANGESET_BYTES_V1, KernelStage4CommandResultV1,
+        KernelStage4MarkPersistedResultV1, decode_create_request,
+    };
     use brilliant_score_foundation::canonical_score_bytes;
 
     use super::*;
     use crate::transaction::apply_stored_operations;
+
+    fn submit_metadata_title(
+        runtime: &mut KernelRuntime,
+        title: &str,
+    ) -> KernelStage4CommandResultV1 {
+        let document_id = runtime.store.header.id.clone();
+        let mut metadata = runtime.store.header.metadata.clone();
+        metadata.title = title.to_owned();
+        let prepared = {
+            let mut transaction = runtime.begin_stage3_transaction();
+            transaction
+                .set_document_metadata(document_id.clone(), metadata.clone())
+                .expect("prepare metadata");
+            transaction.finish().expect("finish metadata")
+        };
+        runtime
+            .commit_stage4_transaction(
+                CoreCommandEnvelopeV1::DocumentSetMetadata {
+                    target: ScoreEntityTargetV1::Document { document_id },
+                    metadata,
+                },
+                prepared,
+            )
+            .expect("commit metadata")
+    }
 
     fn measure_payload(
         document: &ScoreDocumentV1,
@@ -3040,6 +3173,122 @@ mod tests {
         assert_eq!(result, Err(KernelStage4FailureV1::EventSequenceOverflow));
         assert_eq!(runtime.document_version(), DocumentVersionV1::initial());
         assert_eq!(runtime.read_state().expect("unchanged state"), baseline);
+    }
+
+    #[test]
+    fn checkpoint_failure_keeps_the_commit_and_retries_on_full_read() {
+        let document = crate::store::tests::fixture();
+        let mut runtime = KernelRuntime::create(document).expect("runtime");
+        runtime
+            .checkpoint
+            .force_due_for_test(511, CHECKPOINT_CHANGESET_BYTES_V1 - 1);
+        runtime.checkpoint.fail_next_materialization();
+
+        let committed = submit_metadata_title(&mut runtime, "checkpoint failure");
+        let (events, metrics) = match committed {
+            KernelStage4CommandResultV1::Committed { value, events } => {
+                (events, value.stage4_metrics)
+            }
+            other => panic!("expected committed result, got {other:?}"),
+        };
+        assert_eq!(events.len(), 2);
+        assert_eq!(metrics.checkpoint_attempts, 1);
+        assert_eq!(metrics.checkpoint_successes, 0);
+        assert_eq!(metrics.checkpoint_failures, 1);
+        assert_eq!(runtime.document_version().get(), 1);
+
+        let failed = runtime.checkpoint.observation();
+        assert_eq!(failed.entries, 512);
+        assert!(failed.logical_bytes >= CHECKPOINT_CHANGESET_BYTES_V1);
+        assert!(failed.due);
+        assert_eq!(failed.latest_version, None);
+
+        let read = runtime.read_stage4(None).expect("retrying full read");
+        assert_eq!(read.stage4_metrics.full_snapshot_materializations, 1);
+        assert_eq!(read.stage4_metrics.checkpoint_attempts, 1);
+        assert_eq!(read.stage4_metrics.checkpoint_successes, 1);
+        assert_eq!(read.stage4_metrics.checkpoint_failures, 0);
+
+        let completed = runtime.checkpoint.observation();
+        assert_eq!(completed.entries, 0);
+        assert_eq!(completed.logical_bytes, 0);
+        assert!(!completed.due);
+        assert_eq!(
+            completed.latest_version,
+            Some(DocumentVersionV1::initial().checked_next().unwrap())
+        );
+        assert_eq!(completed.latest_cursor, Some(1));
+        assert_eq!(completed.latest_identity, Some(1));
+        assert_eq!(
+            completed.latest_document_id.as_ref().map(StableId::as_str),
+            Some("score-root")
+        );
+
+        runtime.checkpoint.force_due_for_test(29, 31);
+        runtime.checkpoint.fail_next_materialization();
+        let second = submit_metadata_title(&mut runtime, "keep old checkpoint");
+        let second_metrics = match second {
+            KernelStage4CommandResultV1::Committed { value, events } => {
+                assert_eq!(events.len(), 1);
+                value.stage4_metrics
+            }
+            other => panic!("expected committed result, got {other:?}"),
+        };
+        assert_eq!(second_metrics.checkpoint_failures, 1);
+        let retained = runtime.checkpoint.observation();
+        assert!(retained.due);
+        assert_eq!(retained.latest_version, completed.latest_version);
+        assert_eq!(retained.latest_identity, completed.latest_identity);
+
+        let retry = runtime.read_stage4(None).expect("second retrying read");
+        assert_eq!(retry.stage4_metrics.checkpoint_successes, 1);
+        let replaced = runtime.checkpoint.observation();
+        assert_eq!(replaced.latest_version, Some(runtime.document_version()));
+        assert_eq!(replaced.latest_cursor, Some(2));
+        assert_eq!(replaced.latest_identity, Some(2));
+    }
+
+    #[test]
+    fn mark_persisted_never_touches_the_operational_checkpoint() {
+        let document = crate::store::tests::fixture();
+        let document_id = document.id.clone();
+        let mut runtime = KernelRuntime::create(document).expect("runtime");
+        let _ = submit_metadata_title(&mut runtime, "persisted identity only");
+        runtime.checkpoint.force_due_for_test(17, 23);
+        let before = runtime.checkpoint.observation();
+
+        let result = runtime.mark_persisted(PersistedCheckpointV1 {
+            document_id,
+            document_version: runtime.document_version(),
+        });
+        match result {
+            KernelStage4MarkPersistedResultV1::Updated { events, .. } => {
+                assert_eq!(events.len(), 1);
+            }
+            other => panic!("expected updated checkpoint, got {other:?}"),
+        }
+        assert_eq!(runtime.checkpoint.observation(), before);
+    }
+
+    #[test]
+    fn undo_redo_and_branch_truncation_do_not_rewrite_submit_counters() {
+        let document = crate::store::tests::fixture();
+        let mut runtime = KernelRuntime::create(document).expect("runtime");
+        let _ = submit_metadata_title(&mut runtime, "first");
+        let after_first = runtime.checkpoint.observation();
+        let _ = submit_metadata_title(&mut runtime, "second");
+        let after_second = runtime.checkpoint.observation();
+        assert_eq!(after_second.entries, after_first.entries + 1);
+
+        let _ = runtime.undo();
+        assert_eq!(runtime.checkpoint.observation(), after_second);
+        let _ = runtime.redo();
+        assert_eq!(runtime.checkpoint.observation(), after_second);
+        let _ = runtime.undo();
+        let _ = submit_metadata_title(&mut runtime, "branched");
+        let branched = runtime.checkpoint.observation();
+        assert_eq!(branched.entries, after_second.entries + 1);
+        assert!(!runtime.history.can_redo());
     }
 
     #[test]

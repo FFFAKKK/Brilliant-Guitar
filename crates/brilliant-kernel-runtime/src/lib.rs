@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 
 mod change_set;
+mod checkpoint;
 mod handles;
 mod history;
 mod indices;
