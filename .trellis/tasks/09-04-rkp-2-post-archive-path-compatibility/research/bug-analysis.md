@@ -39,4 +39,11 @@ Repository search found no template counterpart for `.trellis/spec/core-kernel/b
 
 ## Final evidence
 
-Pending implementation and GREEN verification.
+- Technical commit: `39595906d3799ed2b506315377000e5ba1c9100b`.
+- Focused workspace contract: `11/11` pass; the four kernel/runtime assertions remained green throughout.
+- Archived RKP-2 validation: `implement.jsonl 25/25`, `check.jsonl 20/20` without archive mutation.
+- Narrow resolver hostile proof: literal existing path wins; same-task suffix maps; archived cross-task reference does not map; missing same-task suffix remains absent.
+- Full Node: `611 total / 609 pass / 2 expected skip / 0 fail`, 80-file manifest SHA-256 `1a50fd28c630bb016ce30f7ca65ae940170705b2eed581e610282b81378a1cf1`.
+- Typecheck, build, Python compile and diff-check passed. Production delta is zero. E3, Rust qualification and CVN-7 qualification were not run.
+
+The observations raise H1 above 99% and falsify H2/H3 for this incident. The root correction exists at both consumer boundaries: RKP workspace law and Trellis archived-context validation.

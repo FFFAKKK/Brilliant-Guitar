@@ -34,7 +34,7 @@
     ".trellis/spec/core-kernel/backend/rust-runtime-transition.md",
     "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts"
   ],
-  "notes": "Bounded post-archive compatibility repair. RKP-2 remains accepted and archived. TypeScript remains default. E3 must not run. Qualification, cutover, RKP-3 and push remain unauthorized.",
+  "notes": "DIRECT IMPLEMENTATION CHECK PASSED P0/P1/P2=0/0/0 AT 39595906d3799ed2b506315377000e5ba1c9100b. Focused 11/11 and full Node 611 total, 609 pass, 2 expected skip, 0 fail. RKP-2 remains accepted and archived. TypeScript remains default. E3 was not run. Qualification, cutover, RKP-3 and push remain unauthorized. Ready for native task archive.",
   "meta": {
     "planning_base_commit": "afdb88efedafac49e396722c85f608cd9d19b890",
     "rkp2_acceptance_commit": "99ceea9477b171d83618ce2ce312f29b978cf7b1",
@@ -58,6 +58,30 @@
       "verdict": "pass",
       "checks": "task_validate_json_jsonl_markdown_fences_diff_check_literal_scope_and_rollback"
     },
-    "implementation_candidate_ready": false
+    "activation_commit": "c152143fe88bc872ebbf2f249b9b3dc43a181458",
+    "technical_commit": "39595906d3799ed2b506315377000e5ba1c9100b",
+    "implementation_candidate_ready": true,
+    "implementation_review": {
+      "P0": 0,
+      "P1": 0,
+      "P2": 0,
+      "verdict": "pass",
+      "candidate": "39595906d3799ed2b506315377000e5ba1c9100b",
+      "scope": "three_file_archive_path_compatibility_repair"
+    },
+    "focused_result": "11_total_11_pass_0_fail",
+    "archived_rkp2_validation": "25_implement_and_20_check_entries_pass",
+    "full_node_result": "611_total_609_pass_2_expected_skip_0_fail",
+    "full_node_manifest_file_count": 80,
+    "full_node_manifest_sha256": "1a50fd28c630bb016ce30f7ca65ae940170705b2eed581e610282b81378a1cf1",
+    "python_compile": "pass",
+    "archive_resolver_hostile_cases": "pass",
+    "typecheck": "pass",
+    "build": "pass",
+    "production_delta": "zero",
+    "e3_execution_count": 0,
+    "rust_gate_rerun": false,
+    "qualification_run": false,
+    "archive_ready": true
   }
 }
