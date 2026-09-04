@@ -771,3 +771,42 @@ Completed S6.3 archive-aware Workspace Law repair, froze and directly checked th
 ### Next Steps
 
 - None - task complete
+
+
+## Session 22: Close RKP-2 post-archive path compatibility
+
+**Date**: 2026-09-04
+**Task**: Close RKP-2 post-archive path compatibility
+**Branch**: `codex/rkp-2-indexed-live-score-store-implementation`
+
+### Summary
+
+Repaired exact active/archive resolution for RKP-2 workspace law and Trellis JSONL validation, documented the recurring root cause, passed focused 11/11 before and after native archive, passed one full Node run at 611/609/2/0, and kept TypeScript default with E3, qualification, cutover, RKP-3, and push untouched.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `3bcba71a2944f66149facf53bdf802cf57bb1cd2` | (see git log) |
+| `c152143fe88bc872ebbf2f249b9b3dc43a181458` | (see git log) |
+| `39595906d3799ed2b506315377000e5ba1c9100b` | (see git log) |
+| `af4c0d1a1191b7154bc8534a54a0a45f5030e1aa` | (see git log) |
+| `765fa5321f8618e2cce9b6d9c895b070fc34ea2b` | (see git log) |
+| `da607c892b96e1b71adac292d150c25acc74ce84` | (see git log) |
+| `2da959352898d4843954cbbdfb12cfd8e92a9910` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

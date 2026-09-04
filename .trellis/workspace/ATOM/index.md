@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 21
-- **Last Active**: 2026-09-03
+- **Total Sessions**: 22
+- **Last Active**: 2026-09-04
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~773 | Active |
+| `journal-1.md` | ~812 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 22 | 2026-09-04 | Close RKP-2 post-archive path compatibility | `3bcba71a2944f66149facf53bdf802cf57bb1cd2`, `c152143fe88bc872ebbf2f249b9b3dc43a181458`, `39595906d3799ed2b506315377000e5ba1c9100b`, `af4c0d1a1191b7154bc8534a54a0a45f5030e1aa`, `765fa5321f8618e2cce9b6d9c895b070fc34ea2b`, `da607c892b96e1b71adac292d150c25acc74ce84`, `2da959352898d4843954cbbdfb12cfd8e92a9910` | `codex/rkp-2-indexed-live-score-store-implementation` |
 | 21 | 2026-09-03 | Complete and archive RKP-2 | `ca718569553ea4efeea05e4ee37a0e77171d1169`, `e88e52ace1d41c097d1ddd8143814dfb69922dfc`, `fb4febfd7e8c9f267b4fe91a2542e2bc0884e8f3`, `33af840e11a4235c36c8f936c3a1b20da76ce5d0`, `1c04c5f0fa1efaa0cc99176697bba3c4e1edd069`, `99ceea9477b171d83618ce2ce312f29b978cf7b1` | `codex/rkp-2-indexed-live-score-store-implementation` |
 | 20 | 2026-08-24 | RKP-1 post-archive workspace-contract repair owner closeout | `716a9113f8961953ccf848191b4edabc15ab4a62`, `ce4e32d59ec72626e1ab8358632d46be35fe647e`, `c9fd2652bf0af88402f5e5953f5786f471e85fb6`, `267a63bc6ff35b49842fb713c34f4099c8829e18`, `4197b5c315524391733fb67cfbbf98f36a8b6201` | `codex/rkp-1-post-archive-contract-repair` |
 | 19 | 2026-08-24 | RKP-1 owner closeout | `94387b339b5e4d9ce6b7f97597a1b56edd051f01`, `fc298dea46973ecb643045cd4483068c56eb48fe` | `codex/rkp-1-codec-linear-bound-repair` |
