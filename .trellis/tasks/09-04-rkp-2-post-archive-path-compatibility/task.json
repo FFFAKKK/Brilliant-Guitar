@@ -3,7 +3,7 @@
   "name": "rkp-2-post-archive-path-compatibility",
   "title": "RKP-2 Post-Archive Path Compatibility",
   "description": "Repair RKP-2 post-archive path resolution in its workspace contract and in Trellis JSONL validation without changing production runtime behavior.",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": "bugfix",
   "scope": "RKP-2 workspace-contract archive awareness, same-task archived JSONL reference resolution, regression evidence, and the governing Rust-transition specification only; no production source, runtime selection, qualification, cutover, RKP-3, dependency, or push work.",
   "package": null,
@@ -49,7 +49,15 @@
     "rkp3_authorized": false,
     "push_authorized": false,
     "e3_execution_authorized": false,
-    "planning_review": "pending_direct_bounded_check",
+    "planning_review": "passed_direct_bounded_check",
+    "accepted_planning_head": "3bcba71a2944f66149facf53bdf802cf57bb1cd2",
+    "planning_review_result": {
+      "P0": 0,
+      "P1": 0,
+      "P2": 0,
+      "verdict": "pass",
+      "checks": "task_validate_json_jsonl_markdown_fences_diff_check_literal_scope_and_rollback"
+    },
     "implementation_candidate_ready": false
   }
 }
