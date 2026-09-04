@@ -41,6 +41,8 @@ import {
 } from "./rkp-2-scale-evidence-worker";
 
 const IMPLEMENTATION_BASE = "df40aef391440ae64ad3e266419579bee5887a1f";
+const RKP2_ACCEPTED_TECHNICAL_HEAD =
+  "2da959352898d4843954cbbdfb12cfd8e92a9910";
 const FULL_RUNNER_PLANNING_BASE =
   "eed4871a86191783d539b7d4097be3627e98e4a0";
 const FIRST_REVIEWED_FULL_RUNNER_PLANNING_HEAD =
@@ -1316,33 +1318,21 @@ function designAllowlistBlocks(): readonly [string[], string[]] {
 }
 
 function currentImplementationChanges(): Set<string> {
-  const commands: readonly (readonly string[])[] = [
-    ["diff", "--no-renames", "--name-only", `${IMPLEMENTATION_BASE}..HEAD`],
-    ["diff", "--name-only"],
-    ["diff", "--cached", "--name-only"],
-    ["ls-files", "--others", "--exclude-standard"],
-  ];
-  return new Set(commands.flatMap((args) => lines(git(args))));
+  return committedChanges(IMPLEMENTATION_BASE, RKP2_ACCEPTED_TECHNICAL_HEAD);
 }
 
 function currentPartOwnerRepairChanges(): Set<string> {
-  const commands: readonly (readonly string[])[] = [
-    ["diff", "--no-renames", "--name-only", `${PART_OWNER_REPAIR_ACCEPTED_PLANNING_HEAD}..HEAD`],
-    ["diff", "--name-only"],
-    ["diff", "--cached", "--name-only"],
-    ["ls-files", "--others", "--exclude-standard"],
-  ];
-  return new Set(commands.flatMap((args) => lines(git(args))));
+  return committedChanges(
+    PART_OWNER_REPAIR_ACCEPTED_PLANNING_HEAD,
+    RKP2_ACCEPTED_TECHNICAL_HEAD,
+  );
 }
 
 function currentStage6Changes(): Set<string> {
-  const commands: readonly (readonly string[])[] = [
-    ["diff", "--no-renames", "--name-only", `${STAGE_6_PREREQUISITE_HEAD}..HEAD`],
-    ["diff", "--name-only"],
-    ["diff", "--cached", "--name-only"],
-    ["ls-files", "--others", "--exclude-standard"],
-  ];
-  return new Set(commands.flatMap((args) => lines(git(args))));
+  return committedChanges(
+    STAGE_6_PREREQUISITE_HEAD,
+    RKP2_ACCEPTED_TECHNICAL_HEAD,
+  );
 }
 
 function committedChanges(base: string, head: string): Set<string> {
@@ -1352,13 +1342,7 @@ function committedChanges(base: string, head: string): Set<string> {
 }
 
 function currentChangesSince(base: string): Set<string> {
-  const commands: readonly (readonly string[])[] = [
-    ["diff", "--no-renames", "--name-only", `${base}..HEAD`],
-    ["diff", "--name-only"],
-    ["diff", "--cached", "--name-only"],
-    ["ls-files", "--others", "--exclude-standard"],
-  ];
-  return new Set(commands.flatMap((args) => lines(git(args))));
+  return committedChanges(base, RKP2_ACCEPTED_TECHNICAL_HEAD);
 }
 
 function acceptedChangesWithS63Evidence(
@@ -1681,6 +1665,16 @@ function assertS62FDualAutocrlfBytes(sourceHead: string): void {
     );
     try {
       const prefix = `${checkoutRoot.replaceAll("\\", "/")}/`;
+      const indexPath = join(checkoutRoot, "historical.index");
+      const historicalIndexEnvironment = {
+        ...process.env,
+        GIT_INDEX_FILE: indexPath,
+      };
+      execFileSync("git", ["read-tree", sourceHead], {
+        cwd: process.cwd(),
+        encoding: "utf8",
+        env: historicalIndexEnvironment,
+      });
       execFileSync(
         "git",
         [
@@ -1694,7 +1688,11 @@ function assertS62FDualAutocrlfBytes(sourceHead: string): void {
           "--",
           ...S62F_TRACKED_EOL_PATHS,
         ],
-        { cwd: process.cwd(), encoding: "utf8" },
+        {
+          cwd: process.cwd(),
+          encoding: "utf8",
+          env: historicalIndexEnvironment,
+        },
       );
       for (const path of S62F_TRACKED_EOL_PATHS) {
         const checkoutBytes = readFileSync(resolve(checkoutRoot, path));
@@ -2051,11 +2049,11 @@ function assertFreshS62FWorkspaceLaw(): void {
     readonly parent?: unknown;
     readonly meta?: Readonly<Record<string, unknown>>;
   };
-  const rkp2Task = JSON.parse(readCurrentRkp2Text(TASK_PATH)) as {
+  const rkp2Task = JSON.parse(gitTextAt(S63_ACTIVATION_HEAD, TASK_PATH)) as {
     readonly children?: unknown;
     readonly meta?: Readonly<Record<string, unknown>>;
   };
-  const rustTask = JSON.parse(readText(PARENT_PATH)) as {
+  const rustTask = JSON.parse(gitTextAt(S63_ACTIVATION_HEAD, PARENT_PATH)) as {
     readonly meta?: Readonly<Record<string, unknown>>;
   };
   const s62Meta = s62Task.meta ?? {};

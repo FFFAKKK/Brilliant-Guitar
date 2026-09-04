@@ -54,7 +54,7 @@ pub fn read_kernel_session_v1(env: Env, handle: Unknown<'_>) -> Buffer {
     boundary::read_kernel_session(&env, &handle)
 }
 
-#[napi(js_name = "submitKernelStage3V1")]
+#[napi]
 pub fn submit_kernel_stage3_v1(
     env: Env,
     handle: Unknown<'_>,

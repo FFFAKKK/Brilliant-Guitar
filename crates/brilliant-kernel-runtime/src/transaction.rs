@@ -1186,344 +1186,6 @@ impl CommitPlanV1 {
     }
 }
 
-#[cfg(test)]
-#[allow(clippy::items_after_test_module)]
-mod tests {
-    use brilliant_core_types::{SafeInteger, StableId};
-    use brilliant_score_foundation::{
-        ExtensionOwnerV1, PitchStepV1, RhythmicContentV1, RhythmicEventV1, WrittenPitchV1,
-    };
-
-    use super::*;
-    use crate::{
-        indices::{normalized_index_projection, rebuild_indices_from_store},
-        overlay::OverlayMutationV1,
-        store::{build_live_score_store, tests::fixture},
-    };
-
-    fn id(value: &str) -> StableId {
-        StableId::new(value).expect("stable id")
-    }
-
-    fn assert_index_parity(store: &LiveScoreStore) {
-        let (rebuilt, _) = rebuild_indices_from_store(store).expect("independent index rebuild");
-        assert_eq!(
-            normalized_index_projection(store, &store.indices).expect("live projection"),
-            normalized_index_projection(store, &rebuilt).expect("rebuilt projection")
-        );
-    }
-
-    fn rest_event(event_id: &str) -> RhythmicEventV1 {
-        let source = &fixture().parts[0].measure_contents[1].voices[0]
-            .sequence
-            .events[0];
-        RhythmicEventV1 {
-            id: id(event_id),
-            duration: source.duration.clone(),
-            staff_id: None,
-            content: RhythmicContentV1::Rest,
-        }
-    }
-
-    #[test]
-    fn transaction_forward_inverse_forward_preserves_documents_and_indices() {
-        let mut store = build_live_score_store(&fixture()).expect("store");
-        let baseline = store.export_document().expect("baseline");
-        let mut overlay = TransactionOverlayV1::new(&store);
-
-        assert_eq!(
-            overlay
-                .replace_scalar(
-                    ScalarAddressV1::NoteWrittenPitch {
-                        note_id: id("note-a"),
-                    },
-                    ScalarValueV1::NoteWrittenPitch(WrittenPitchV1 {
-                        step: PitchStepV1::D,
-                        alter: SafeInteger::new(0).expect("alter"),
-                        octave: SafeInteger::new(4).expect("octave"),
-                    }),
-                )
-                .expect("scalar"),
-            OverlayMutationV1::Changed
-        );
-        overlay
-            .move_ordered_child(
-                StableOrderAddressV1::Staffs {
-                    part_id: id("part-z"),
-                },
-                id("staff-z"),
-                StableAnchorV1::After {
-                    sibling_id: id("staff-a"),
-                },
-            )
-            .expect("move staff");
-        overlay
-            .replace_ordered_children(
-                StableOrderAddressV1::Measures {
-                    document_id: id("score-root"),
-                },
-                vec![id("measure-a"), id("measure-z")],
-            )
-            .expect("replace measure order");
-        overlay
-            .remove_ordered_child(
-                StableOrderAddressV1::Notes {
-                    event_id: id("event-a"),
-                },
-                id("note-a"),
-            )
-            .expect("remove order child");
-        overlay
-            .insert_ordered_child(
-                StableOrderAddressV1::Notes {
-                    event_id: id("event-a"),
-                },
-                StableAnchorV1::Start,
-                id("note-a"),
-            )
-            .expect("restore order child");
-        overlay
-            .update_reference(
-                ReferenceAddressV1::VoiceDefaultStaff {
-                    voice_id: id("voice-a"),
-                },
-                ReferenceValueV1::StableId(id("staff-z")),
-            )
-            .expect("voice reference");
-        let inserted = rest_event("event-new");
-        overlay
-            .insert_entity(
-                StableOwnerAddressV1::Voice {
-                    voice_id: id("voice-z"),
-                },
-                StableOrderAddressV1::Events {
-                    voice_id: id("voice-z"),
-                },
-                StableAnchorV1::After {
-                    sibling_id: id("event-z"),
-                },
-                StableEntityAddressV1::Event {
-                    event_id: inserted.id.clone(),
-                },
-                EntityBundleV1::Event(inserted),
-            )
-            .expect("insert event");
-
-        let mut extension = baseline.extensions[0].clone();
-        extension.namespace = "example.inserted".to_owned();
-        overlay
-            .insert_extension(
-                StableAnchorV1::After {
-                    sibling_id: extension_anchor_id_from_key(&ExtensionKeyV1::from_block(
-                        &baseline.extensions[1],
-                    )),
-                },
-                extension.clone(),
-            )
-            .expect("insert extension");
-        extension.schema_version = SafeInteger::new(9).expect("schema version");
-        overlay
-            .replace_extension(ExtensionKeyV1::from_block(&extension), extension)
-            .expect("replace inserted extension");
-
-        let change_set = overlay.finish().expect("change set");
-        let mut version = DocumentVersionV1::initial();
-        let mut metrics = KernelStage3MetricsV1::default();
-        let change_set = commit_change_set(&mut store, &mut version, &mut metrics, change_set)
-            .expect("forward commit");
-        let committed = store.export_document().expect("committed document");
-        assert_ne!(committed, baseline);
-        assert_eq!(version.get(), 1);
-        assert_eq!(metrics.full_document_scans, 0);
-        assert_eq!(metrics.full_document_clones, 0);
-        assert_eq!(metrics.full_semantic_validations, 0);
-        assert_eq!(metrics.full_snapshot_materializations, 0);
-        assert_index_parity(&store);
-
-        apply_operations_for_test(
-            &mut store,
-            &mut version,
-            &mut metrics,
-            &change_set,
-            &change_set.inverse,
-        )
-        .expect("inverse commit");
-        assert_eq!(
-            store.export_document().expect("restored document"),
-            baseline
-        );
-        assert_index_parity(&store);
-
-        apply_operations_for_test(
-            &mut store,
-            &mut version,
-            &mut metrics,
-            &change_set,
-            &change_set.forward,
-        )
-        .expect("second forward commit");
-        assert_eq!(
-            store.export_document().expect("recommitted document"),
-            committed
-        );
-        assert_index_parity(&store);
-    }
-
-    #[test]
-    fn aggregate_part_remove_and_inverse_restore_owned_extensions() {
-        let mut document = fixture();
-        let mut owned = document.extensions[0].clone();
-        owned.namespace = "example.part-owned".to_owned();
-        owned.owner = ExtensionOwnerV1::Part {
-            part_id: id("part-z"),
-        };
-        document.extensions.push(owned);
-        let mut store = build_live_score_store(&document).expect("store");
-        let baseline = store.export_document().expect("baseline");
-        let part_address = StableEntityAddressV1::Part {
-            part_id: id("part-z"),
-        };
-        let expected = store.detach_entity(&part_address).expect("part bundle");
-        let mut overlay = TransactionOverlayV1::new(&store);
-        overlay
-            .remove_entity(
-                StableOwnerAddressV1::Document {
-                    document_id: id("score-root"),
-                },
-                StableOrderAddressV1::Parts {
-                    document_id: id("score-root"),
-                },
-                part_address,
-            )
-            .expect("remove part");
-        let change_set = overlay.finish().expect("change set");
-        assert!(matches!(expected, EntityBundleV1::Part(_)));
-
-        let mut version = DocumentVersionV1::initial();
-        let mut metrics = KernelStage3MetricsV1::default();
-        let change_set = commit_change_set(&mut store, &mut version, &mut metrics, change_set)
-            .expect("remove commit");
-        let removed = store.export_document().expect("removed document");
-        assert!(removed.parts.is_empty());
-        assert_eq!(removed.extensions.len(), 2);
-        assert_index_parity(&store);
-
-        apply_operations_for_test(
-            &mut store,
-            &mut version,
-            &mut metrics,
-            &change_set,
-            &change_set.inverse,
-        )
-        .expect("restore part");
-        assert_eq!(
-            store.export_document().expect("restored document"),
-            baseline
-        );
-        assert_index_parity(&store);
-    }
-
-    #[test]
-    fn reserve_and_local_preflight_failures_are_semantic_zero_delta() {
-        let mut store = build_live_score_store(&fixture()).expect("store");
-        let baseline = store.export_document().expect("baseline");
-        let baseline_projection =
-            normalized_index_projection(&store, &store.indices).expect("baseline projection");
-        let mut version = DocumentVersionV1::initial();
-        let mut metrics = KernelStage3MetricsV1::default();
-
-        let mut overlay = TransactionOverlayV1::new(&store);
-        overlay
-            .replace_scalar(
-                ScalarAddressV1::PartName {
-                    part_id: id("part-z"),
-                },
-                ScalarValueV1::PartName("Changed".to_owned()),
-            )
-            .expect("stage scalar");
-        let change_set = overlay.finish().expect("change set");
-        assert_eq!(
-            commit_change_set_with_policy(
-                &mut store,
-                &mut version,
-                &mut metrics,
-                change_set,
-                CommitReservationPolicyV1::fail_all(),
-            ),
-            Err(TransactionPrepareFailureV1::Capacity)
-        );
-        assert_eq!(
-            store.export_document().expect("after reserve failure"),
-            baseline
-        );
-        assert_eq!(version, DocumentVersionV1::initial());
-        assert_eq!(metrics, KernelStage3MetricsV1::default());
-        assert_eq!(
-            normalized_index_projection(&store, &store.indices).expect("reserve projection"),
-            baseline_projection
-        );
-
-        let mut overlay = TransactionOverlayV1::new(&store);
-        overlay
-            .remove_ordered_child(
-                StableOrderAddressV1::MeasureContents {
-                    part_id: id("part-z"),
-                },
-                id("measure-a"),
-            )
-            .expect("stage invalid coverage");
-        let change_set = overlay.finish().expect("invalid change set");
-        assert_eq!(
-            commit_change_set(&mut store, &mut version, &mut metrics, change_set),
-            Err(TransactionPrepareFailureV1::LocalInvariant)
-        );
-        assert_eq!(
-            store.export_document().expect("after local failure"),
-            baseline
-        );
-        assert_eq!(version, DocumentVersionV1::initial());
-        assert_eq!(metrics, KernelStage3MetricsV1::default());
-        assert_eq!(
-            normalized_index_projection(&store, &store.indices).expect("local projection"),
-            baseline_projection
-        );
-    }
-
-    #[test]
-    fn remove_then_reinsert_same_id_invalidates_the_old_generation() {
-        let mut store = build_live_score_store(&fixture()).expect("store");
-        let baseline = store.export_document().expect("baseline");
-        let address = StableEntityAddressV1::Event {
-            event_id: id("event-z"),
-        };
-        let bundle = store.detach_entity(&address).expect("event bundle");
-        let old_handle = lookup_event(&store, &id("event-z")).expect("old event handle");
-        let mut overlay = TransactionOverlayV1::new(&store);
-        let owner = StableOwnerAddressV1::Voice {
-            voice_id: id("voice-z"),
-        };
-        let order = StableOrderAddressV1::Events {
-            voice_id: id("voice-z"),
-        };
-        overlay
-            .remove_entity(owner.clone(), order.clone(), address.clone())
-            .expect("remove event");
-        overlay
-            .insert_entity(owner, order, StableAnchorV1::Start, address, bundle)
-            .expect("reinsert event");
-        let change_set = overlay.finish().expect("change set");
-        let mut version = DocumentVersionV1::initial();
-        let mut metrics = KernelStage3MetricsV1::default();
-        commit_change_set(&mut store, &mut version, &mut metrics, change_set)
-            .expect("commit recreate");
-        let new_handle = lookup_event(&store, &id("event-z")).expect("new event handle");
-        assert_ne!(new_handle, old_handle);
-        assert!(store.events.get(old_handle).is_none());
-        assert_eq!(store.export_document().expect("same document"), baseline);
-        assert_index_parity(&store);
-    }
-}
-
 fn operations_touch_extensions(
     arena: &ChangeArenaV1,
     operations: &[ChangeOpV1],
@@ -3469,5 +3131,342 @@ impl CommitPlanV1 {
         for removal in self.extensions.removals.drain(..) {
             store.extensions.remove(removal.handle);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use brilliant_core_types::{SafeInteger, StableId};
+    use brilliant_score_foundation::{
+        ExtensionOwnerV1, PitchStepV1, RhythmicContentV1, RhythmicEventV1, WrittenPitchV1,
+    };
+
+    use super::*;
+    use crate::{
+        indices::{normalized_index_projection, rebuild_indices_from_store},
+        overlay::OverlayMutationV1,
+        store::{build_live_score_store, tests::fixture},
+    };
+
+    fn id(value: &str) -> StableId {
+        StableId::new(value).expect("stable id")
+    }
+
+    fn assert_index_parity(store: &LiveScoreStore) {
+        let (rebuilt, _) = rebuild_indices_from_store(store).expect("independent index rebuild");
+        assert_eq!(
+            normalized_index_projection(store, &store.indices).expect("live projection"),
+            normalized_index_projection(store, &rebuilt).expect("rebuilt projection")
+        );
+    }
+
+    fn rest_event(event_id: &str) -> RhythmicEventV1 {
+        let source = &fixture().parts[0].measure_contents[1].voices[0]
+            .sequence
+            .events[0];
+        RhythmicEventV1 {
+            id: id(event_id),
+            duration: source.duration.clone(),
+            staff_id: None,
+            content: RhythmicContentV1::Rest,
+        }
+    }
+
+    #[test]
+    fn transaction_forward_inverse_forward_preserves_documents_and_indices() {
+        let mut store = build_live_score_store(&fixture()).expect("store");
+        let baseline = store.export_document().expect("baseline");
+        let mut overlay = TransactionOverlayV1::new(&store);
+
+        assert_eq!(
+            overlay
+                .replace_scalar(
+                    ScalarAddressV1::NoteWrittenPitch {
+                        note_id: id("note-a"),
+                    },
+                    ScalarValueV1::NoteWrittenPitch(WrittenPitchV1 {
+                        step: PitchStepV1::D,
+                        alter: SafeInteger::new(0).expect("alter"),
+                        octave: SafeInteger::new(4).expect("octave"),
+                    }),
+                )
+                .expect("scalar"),
+            OverlayMutationV1::Changed
+        );
+        overlay
+            .move_ordered_child(
+                StableOrderAddressV1::Staffs {
+                    part_id: id("part-z"),
+                },
+                id("staff-z"),
+                StableAnchorV1::After {
+                    sibling_id: id("staff-a"),
+                },
+            )
+            .expect("move staff");
+        overlay
+            .replace_ordered_children(
+                StableOrderAddressV1::Measures {
+                    document_id: id("score-root"),
+                },
+                vec![id("measure-a"), id("measure-z")],
+            )
+            .expect("replace measure order");
+        overlay
+            .remove_ordered_child(
+                StableOrderAddressV1::Notes {
+                    event_id: id("event-a"),
+                },
+                id("note-a"),
+            )
+            .expect("remove order child");
+        overlay
+            .insert_ordered_child(
+                StableOrderAddressV1::Notes {
+                    event_id: id("event-a"),
+                },
+                StableAnchorV1::Start,
+                id("note-a"),
+            )
+            .expect("restore order child");
+        overlay
+            .update_reference(
+                ReferenceAddressV1::VoiceDefaultStaff {
+                    voice_id: id("voice-a"),
+                },
+                ReferenceValueV1::StableId(id("staff-z")),
+            )
+            .expect("voice reference");
+        let inserted = rest_event("event-new");
+        overlay
+            .insert_entity(
+                StableOwnerAddressV1::Voice {
+                    voice_id: id("voice-z"),
+                },
+                StableOrderAddressV1::Events {
+                    voice_id: id("voice-z"),
+                },
+                StableAnchorV1::After {
+                    sibling_id: id("event-z"),
+                },
+                StableEntityAddressV1::Event {
+                    event_id: inserted.id.clone(),
+                },
+                EntityBundleV1::Event(inserted),
+            )
+            .expect("insert event");
+
+        let mut extension = baseline.extensions[0].clone();
+        extension.namespace = "example.inserted".to_owned();
+        overlay
+            .insert_extension(
+                StableAnchorV1::After {
+                    sibling_id: extension_anchor_id_from_key(&ExtensionKeyV1::from_block(
+                        &baseline.extensions[1],
+                    )),
+                },
+                extension.clone(),
+            )
+            .expect("insert extension");
+        extension.schema_version = SafeInteger::new(9).expect("schema version");
+        overlay
+            .replace_extension(ExtensionKeyV1::from_block(&extension), extension)
+            .expect("replace inserted extension");
+
+        let change_set = overlay.finish().expect("change set");
+        let mut version = DocumentVersionV1::initial();
+        let mut metrics = KernelStage3MetricsV1::default();
+        let change_set = commit_change_set(&mut store, &mut version, &mut metrics, change_set)
+            .expect("forward commit");
+        let committed = store.export_document().expect("committed document");
+        assert_ne!(committed, baseline);
+        assert_eq!(version.get(), 1);
+        assert_eq!(metrics.full_document_scans, 0);
+        assert_eq!(metrics.full_document_clones, 0);
+        assert_eq!(metrics.full_semantic_validations, 0);
+        assert_eq!(metrics.full_snapshot_materializations, 0);
+        assert_index_parity(&store);
+
+        apply_operations_for_test(
+            &mut store,
+            &mut version,
+            &mut metrics,
+            &change_set,
+            &change_set.inverse,
+        )
+        .expect("inverse commit");
+        assert_eq!(
+            store.export_document().expect("restored document"),
+            baseline
+        );
+        assert_index_parity(&store);
+
+        apply_operations_for_test(
+            &mut store,
+            &mut version,
+            &mut metrics,
+            &change_set,
+            &change_set.forward,
+        )
+        .expect("second forward commit");
+        assert_eq!(
+            store.export_document().expect("recommitted document"),
+            committed
+        );
+        assert_index_parity(&store);
+    }
+
+    #[test]
+    fn aggregate_part_remove_and_inverse_restore_owned_extensions() {
+        let mut document = fixture();
+        let mut owned = document.extensions[0].clone();
+        owned.namespace = "example.part-owned".to_owned();
+        owned.owner = ExtensionOwnerV1::Part {
+            part_id: id("part-z"),
+        };
+        document.extensions.push(owned);
+        let mut store = build_live_score_store(&document).expect("store");
+        let baseline = store.export_document().expect("baseline");
+        let part_address = StableEntityAddressV1::Part {
+            part_id: id("part-z"),
+        };
+        let expected = store.detach_entity(&part_address).expect("part bundle");
+        let mut overlay = TransactionOverlayV1::new(&store);
+        overlay
+            .remove_entity(
+                StableOwnerAddressV1::Document {
+                    document_id: id("score-root"),
+                },
+                StableOrderAddressV1::Parts {
+                    document_id: id("score-root"),
+                },
+                part_address,
+            )
+            .expect("remove part");
+        let change_set = overlay.finish().expect("change set");
+        assert!(matches!(expected, EntityBundleV1::Part(_)));
+
+        let mut version = DocumentVersionV1::initial();
+        let mut metrics = KernelStage3MetricsV1::default();
+        let change_set = commit_change_set(&mut store, &mut version, &mut metrics, change_set)
+            .expect("remove commit");
+        let removed = store.export_document().expect("removed document");
+        assert!(removed.parts.is_empty());
+        assert_eq!(removed.extensions.len(), 2);
+        assert_index_parity(&store);
+
+        apply_operations_for_test(
+            &mut store,
+            &mut version,
+            &mut metrics,
+            &change_set,
+            &change_set.inverse,
+        )
+        .expect("restore part");
+        assert_eq!(
+            store.export_document().expect("restored document"),
+            baseline
+        );
+        assert_index_parity(&store);
+    }
+
+    #[test]
+    fn reserve_and_local_preflight_failures_are_semantic_zero_delta() {
+        let mut store = build_live_score_store(&fixture()).expect("store");
+        let baseline = store.export_document().expect("baseline");
+        let baseline_projection =
+            normalized_index_projection(&store, &store.indices).expect("baseline projection");
+        let mut version = DocumentVersionV1::initial();
+        let mut metrics = KernelStage3MetricsV1::default();
+
+        let mut overlay = TransactionOverlayV1::new(&store);
+        overlay
+            .replace_scalar(
+                ScalarAddressV1::PartName {
+                    part_id: id("part-z"),
+                },
+                ScalarValueV1::PartName("Changed".to_owned()),
+            )
+            .expect("stage scalar");
+        let change_set = overlay.finish().expect("change set");
+        assert_eq!(
+            commit_change_set_with_policy(
+                &mut store,
+                &mut version,
+                &mut metrics,
+                change_set,
+                CommitReservationPolicyV1::fail_all(),
+            ),
+            Err(TransactionPrepareFailureV1::Capacity)
+        );
+        assert_eq!(
+            store.export_document().expect("after reserve failure"),
+            baseline
+        );
+        assert_eq!(version, DocumentVersionV1::initial());
+        assert_eq!(metrics, KernelStage3MetricsV1::default());
+        assert_eq!(
+            normalized_index_projection(&store, &store.indices).expect("reserve projection"),
+            baseline_projection
+        );
+
+        let mut overlay = TransactionOverlayV1::new(&store);
+        overlay
+            .remove_ordered_child(
+                StableOrderAddressV1::MeasureContents {
+                    part_id: id("part-z"),
+                },
+                id("measure-a"),
+            )
+            .expect("stage invalid coverage");
+        let change_set = overlay.finish().expect("invalid change set");
+        assert_eq!(
+            commit_change_set(&mut store, &mut version, &mut metrics, change_set),
+            Err(TransactionPrepareFailureV1::LocalInvariant)
+        );
+        assert_eq!(
+            store.export_document().expect("after local failure"),
+            baseline
+        );
+        assert_eq!(version, DocumentVersionV1::initial());
+        assert_eq!(metrics, KernelStage3MetricsV1::default());
+        assert_eq!(
+            normalized_index_projection(&store, &store.indices).expect("local projection"),
+            baseline_projection
+        );
+    }
+
+    #[test]
+    fn remove_then_reinsert_same_id_invalidates_the_old_generation() {
+        let mut store = build_live_score_store(&fixture()).expect("store");
+        let baseline = store.export_document().expect("baseline");
+        let address = StableEntityAddressV1::Event {
+            event_id: id("event-z"),
+        };
+        let bundle = store.detach_entity(&address).expect("event bundle");
+        let old_handle = lookup_event(&store, &id("event-z")).expect("old event handle");
+        let mut overlay = TransactionOverlayV1::new(&store);
+        let owner = StableOwnerAddressV1::Voice {
+            voice_id: id("voice-z"),
+        };
+        let order = StableOrderAddressV1::Events {
+            voice_id: id("voice-z"),
+        };
+        overlay
+            .remove_entity(owner.clone(), order.clone(), address.clone())
+            .expect("remove event");
+        overlay
+            .insert_entity(owner, order, StableAnchorV1::Start, address, bundle)
+            .expect("reinsert event");
+        let change_set = overlay.finish().expect("change set");
+        let mut version = DocumentVersionV1::initial();
+        let mut metrics = KernelStage3MetricsV1::default();
+        commit_change_set(&mut store, &mut version, &mut metrics, change_set)
+            .expect("commit recreate");
+        let new_handle = lookup_event(&store, &id("event-z")).expect("new event handle");
+        assert_ne!(new_handle, old_handle);
+        assert!(store.events.get(old_handle).is_none());
+        assert_eq!(store.export_document().expect("same document"), baseline);
+        assert_index_parity(&store);
     }
 }

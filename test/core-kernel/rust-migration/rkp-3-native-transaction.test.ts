@@ -10,6 +10,7 @@ import {
   type RustKernelStage3NativeAddon,
 } from "../../../src/core-kernel/native/rust-kernel-smoke";
 import { createCoreScoreFixture } from "../fixtures/core-score";
+import { createRkp3ScaleDocument } from "./rkp-3-transaction-fixtures";
 
 interface RawNativeCreateResult {
   readonly payload: Buffer;
@@ -55,13 +56,28 @@ function stage3Bytes(command: unknown): Buffer {
   return Buffer.from(JSON.stringify({ apiVersion: 1, command }), "utf8");
 }
 
-function createRawSession(): object {
+function createRawSession(document: unknown = createCoreScoreFixture()): object {
   const created = addon.createKernelSessionV1(
-    canonicalCreateBytes(createCoreScoreFixture()),
+    canonicalCreateBytes(document),
   );
   assert.ok(created.handle);
   if (created.handle === undefined) throw new Error("missing native handle");
   return created.handle;
+}
+
+function committedMetrics(
+  document: unknown,
+  command: unknown,
+): Readonly<Record<string, number>> {
+  const handle = createRawSession(document);
+  const result = parsePayload(
+    addon.submitKernelStage3V1(handle, stage3Bytes(command)),
+  ) as {
+    readonly status: string;
+    readonly value: { readonly metrics: Readonly<Record<string, number>> };
+  };
+  assert.equal(result.status, "committed");
+  return result.value.metrics;
 }
 
 function metadataCommand(title: string): Record<string, unknown> {
@@ -554,4 +570,45 @@ test("private Stage-3 adapter captures hostile input and freezes detached result
     },
   });
   assertDeepFrozen(oversized);
+});
+
+test("local and single-event range work stays constant across unrelated measures", () => {
+  const small = createRkp3ScaleDocument(4);
+  const large = createRkp3ScaleDocument(256);
+  const noteCommand = {
+    commandVersion: 1,
+    commandId: "core.note.set-written-pitch",
+    target: { kind: "note", noteId: "scale-note-0" },
+    payload: { writtenPitch: { step: "D", alter: 0, octave: 4 } },
+  };
+  const rangeCommand = {
+    commandVersion: 1,
+    commandId: "core.range.transpose-written-pitch",
+    target: { kind: "document", documentId: "rkp3-scale" },
+    payload: {
+      range: {
+        kind: "voice-event-range",
+        start: { kind: "voice-event", voiceId: "scale-voice-0", eventId: "scale-event-0" },
+        end: { kind: "voice-event", voiceId: "scale-voice-0", eventId: "scale-event-0" },
+      },
+      transposition: { diatonicSteps: 1, chromaticSemitones: 2 },
+    },
+  };
+
+  const localSmall = committedMetrics(small, noteCommand);
+  const localLarge = committedMetrics(large, noteCommand);
+  assert.deepEqual(localLarge, localSmall);
+  const rangeSmall = committedMetrics(small, rangeCommand);
+  const rangeLarge = committedMetrics(large, rangeCommand);
+  assert.deepEqual(rangeLarge, rangeSmall);
+  for (const metrics of [localSmall, rangeSmall]) {
+    for (const key of [
+      "fullDocumentScans",
+      "fullDocumentClones",
+      "fullSemanticValidations",
+      "fullSnapshotMaterializations",
+    ])
+      assert.equal(metrics[key], 0, key);
+    assert.ok((metrics.entitiesVisited ?? Number.POSITIVE_INFINITY) <= 16);
+  }
 });

@@ -69,3 +69,47 @@ RKP workspace-contract and task-context consumers must distinguish immutable his
 - Native archive must not be repaired by recreating the active task directory or copying accepted authority back into it.
 
 Every archive-aware repair must include hostile coverage for ambiguous roots and malformed manifests, plus a post-archive validation that proves archived context remains consumable. These governance rules do not authorize runtime cutover, qualification, production Rust changes, or a later RKP stage.
+
+## RKP-3 private transaction contract
+
+### 1. Scope / trigger
+
+This contract applies only when the private Rust session receives a Stage-3 command through the test-only native seam. It owns the frozen 28-command catalog, transaction overlay, ordered reversible ChangeSet, indexed range operations, atomic batch, and command-local validation. The Pure TypeScript Core remains the product default; history, dirty state, events, semantic replay, support classification, plugin assembly, migration, qualification, and runtime cutover are not RKP-3 claims.
+
+### 2. Signatures
+
+- Rust boundary: `KernelSession::submit_stage3_bytes(&mut self, request_bytes: &[u8]) -> KernelStage3SubmitResultV1` and `submitKernelStage3V1(handle, requestBytes) -> Buffer`.
+- Runtime boundary: `KernelRuntime::begin_stage3_transaction() -> KernelStage3TransactionV1`, followed by one `commit_stage3_transaction(...) -> KernelStage3RuntimeCommitV1`.
+- TypeScript evidence adapter: `submitRustKernelSmokeCommand(addon, handle, command) -> KernelStage3SubmitWireV1`.
+- The request is `{ apiVersion: 1, command }`; results are exactly `committed`, `no-op`, `command-rejected`, or stable bridge `rejected`. A submit result never contains a document; document projection requires a separate read.
+
+### 3. Contracts
+
+The command catalog contains exactly 28 ordered version-1 IDs with their frozen target kinds. Each attempt reads through a touched-state overlay, records stable-ID ChangeSet addresses, keeps Runtime handles only in the private CommitPlan, and performs no live-store mutation before a complete preflight. A commit adopts store, topology, entity/owner/reference/time indices, and checked document version exactly once. A no-op and every rejection preserve version and byte-identical state. Batch contains 1..100 dense, non-nested children, exposes earlier child changes to later children, reports the lowest failing child, and commits once or not at all. Resource ceilings are 131,072 prepared effects, 131,072 affected addresses, 256 MiB logical ChangeSet bytes, and 64 MiB request/response bytes.
+
+### 4. Validation and error matrix
+
+| Condition | Required result |
+| --- | --- |
+| Malformed/unknown command envelope, version, ID, or target kind | Stable `command.*` rejection before adoption |
+| Missing target/anchor, wrong owner, self anchor, or reference conflict | Exact command failure, unchanged version and bytes |
+| Invalid/reversed/cross-owner range or pitch overflow | Exact range failure with first failing Note address where applicable |
+| Empty, nested, over-limit, or failing batch child | Exact batch failure; lowest `failedCommandIndex`; zero adoption |
+| Version, effect, affected-address, logical-byte, request, response, depth, or property cap | Stable overflow/resource/bridge rejection; no partial state |
+| Local post-plan invariant failure or contained panic | Private stable rejection; no raw Rust error or partial publication |
+
+### 5. Good / base / bad cases
+
+- Good: an accepted local, aggregate, range, or batch command commits one checked version and a separate read matches the canonical TypeScript projection.
+- Base: a semantic no-op returns an empty affected list, keeps the current version, and performs no adoption.
+- Bad: mutate the live store while preparing, scan or clone the full document for a local edit, expose a Runtime handle in ChangeSet, accept a nested batch, or return a document/ChangeSet through the native submit result.
+
+### 6. Required tests
+
+Tests must cover all 28 handlers, exact catalog order, 28 accepted and 28 missing-target oracle rows, atomic batch commit and child rejection, forward/inverse equality for every ChangeSet class, rejected byte equality, checked version overflow, handle/thread/busy/reentrant/poison/panic boundaries, hostile JSON and byte/property/depth caps, index parity, unknown extension preservation, exact three native exports, zero first-four global-work counters, local/range work independent of unrelated measures, frozen fixture hashes, dependency zero delta, literal changed-path allowlist, and no tracked build outputs.
+
+### 7. Wrong vs correct
+
+Wrong: treat green local tests as runtime cutover evidence, relax predecessor history to admit arbitrary later paths, or claim history/events/support parity from Stage-3 submit results.
+
+Correct: pin predecessor history to its accepted RKP-2 head, enforce all successor deltas with the RKP-3 literal allowlist, compare only stage-owned oracle projections, keep TypeScript as default, and require a separate implementation review before any acceptance decision.
