@@ -1,5 +1,8 @@
+use std::{cell::RefCell, sync::Arc};
+
 use brilliant_core_types::{DocumentVersionV1, JS_SAFE_INTEGER_MAX};
-use brilliant_kernel_contracts::KernelStage4FailureV1;
+use brilliant_kernel_contracts::{KernelStage4FailureV1, SharedScoreDocumentV1};
+use brilliant_score_foundation::ScoreDocumentV1;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum ProjectionPrepareFailureV1 {
@@ -26,7 +29,14 @@ pub(crate) struct PreparedPersistedTransitionV1 {
 pub(crate) struct SessionProjectionStateV1 {
     clean_state_identity: u64,
     state_identity_by_document_version: Vec<u64>,
+    snapshot_cache: RefCell<Option<SnapshotCacheV1>>,
     next_event_sequence: u64,
+}
+
+#[derive(Clone, Debug)]
+struct SnapshotCacheV1 {
+    document_version: DocumentVersionV1,
+    document: Arc<ScoreDocumentV1>,
 }
 
 impl SessionProjectionStateV1 {
@@ -39,6 +49,7 @@ impl SessionProjectionStateV1 {
         Ok(Self {
             clean_state_identity: 0,
             state_identity_by_document_version: identities,
+            snapshot_cache: RefCell::new(None),
             next_event_sequence: 1,
         })
     }
@@ -71,7 +82,32 @@ impl SessionProjectionStateV1 {
     pub(crate) fn commit_document_transition(&mut self, prepared: PreparedProjectionTransitionV1) {
         self.state_identity_by_document_version
             .push(prepared.content_identity);
+        *self.snapshot_cache.get_mut() = None;
         self.next_event_sequence = prepared.event_sequence_start + prepared.event_count;
+    }
+
+    pub(crate) fn cached_snapshot(
+        &self,
+        document_version: DocumentVersionV1,
+    ) -> Option<SharedScoreDocumentV1> {
+        self.snapshot_cache
+            .borrow()
+            .as_ref()
+            .filter(|cached| cached.document_version == document_version)
+            .map(|cached| SharedScoreDocumentV1::from_arc(cached.document.clone()))
+    }
+
+    pub(crate) fn install_snapshot(
+        &self,
+        document_version: DocumentVersionV1,
+        document: ScoreDocumentV1,
+    ) -> SharedScoreDocumentV1 {
+        let document = Arc::new(document);
+        *self.snapshot_cache.borrow_mut() = Some(SnapshotCacheV1 {
+            document_version,
+            document: document.clone(),
+        });
+        SharedScoreDocumentV1::from_arc(document)
     }
 
     pub(crate) fn identity_for_version(

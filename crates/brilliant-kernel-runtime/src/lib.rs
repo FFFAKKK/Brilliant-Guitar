@@ -7,6 +7,7 @@ mod indices;
 mod overlay;
 mod records;
 mod runtime;
+mod selectors;
 mod session_projection;
 mod store;
 mod time_index;

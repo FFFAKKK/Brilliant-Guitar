@@ -1,16 +1,14 @@
 use brilliant_kernel_contracts::{
-    CapturedCoreCommandV1, CoreCommandEnvelopeV1, KernelSelectorResultV1,
-    KernelSessionCreateRequestV1, KernelSessionCreateResultV1, KernelSessionCreateSuccessValueV1,
-    KernelSessionReadResultV1, KernelStage3CommandFailureLeafV1, KernelStage3CommandFailureV1,
-    KernelStage3MetricsV1, KernelStage3ResourceLimitKindV1, KernelStage3SubmitDecodeFailureV1,
+    CapturedCoreCommandV1, CoreCommandEnvelopeV1, KernelSessionCreateRequestV1,
+    KernelSessionCreateResultV1, KernelSessionCreateSuccessValueV1, KernelSessionReadResultV1,
+    KernelStage3CommandFailureLeafV1, KernelStage3CommandFailureV1, KernelStage3MetricsV1,
+    KernelStage3ResourceLimitKindV1, KernelStage3SubmitDecodeFailureV1,
     KernelStage3SubmitNoOpValueV1, KernelStage3SubmitRejectedValueV1, KernelStage3SubmitRequestV1,
     KernelStage3SubmitResultV1, KernelStage3SubmitSuccessValueV1, KernelStage4CommandResultV1,
-    KernelStage4FailureV1, KernelStage4MetricsV1, KernelStage4OperationDecodeFailureV1,
-    KernelStage4OperationRequestV1, KernelStage4OperationResultV1, KernelStage4OperationV1,
-    KernelStage4ReadResultV1, KernelStage4ReadStateV1, KernelStage4SelectResultV1,
-    KernelStage4SelectValueV1, KernelStage4SnapshotV1, MAX_BATCH_CHILDREN_V1, ScoreEntityTargetV1,
-    StableFailureV1, decode_captured_core_command, decode_stage3_submit_request,
-    decode_stage4_operation_request,
+    KernelStage4FailureV1, KernelStage4OperationDecodeFailureV1, KernelStage4OperationRequestV1,
+    KernelStage4OperationResultV1, KernelStage4OperationV1, KernelStage4ReadResultV1,
+    KernelStage4SelectResultV1, MAX_BATCH_CHILDREN_V1, ScoreEntityTargetV1, StableFailureV1,
+    decode_captured_core_command, decode_stage3_submit_request, decode_stage4_operation_request,
 };
 use brilliant_kernel_runtime::{
     KernelRuntime, KernelRuntimeCreateFailure, KernelStage3TransactionV1,
@@ -204,37 +202,18 @@ impl KernelSession {
                 )
             }
             KernelStage4OperationV1::Read {
-                known_snapshot_version: _,
-            } => match self.runtime.read_state() {
+                known_snapshot_version,
+            } => match self.runtime.read_stage4(known_snapshot_version) {
                 Ok(state) => KernelStage4OperationResultV1::Read(KernelStage4ReadResultV1::Ok(
-                    Box::new(KernelStage4ReadStateV1 {
-                        snapshot: KernelStage4SnapshotV1 {
-                            document_id: state.snapshot.document_id,
-                            schema_version: state.snapshot.schema_version,
-                            document_version: state.snapshot.document_version,
-                            document: Some(state.snapshot.document),
-                        },
-                        history: state.history,
-                        dirty: state.dirty,
-                        stage4_metrics: KernelStage4MetricsV1 {
-                            full_snapshot_materializations: 1,
-                            ..KernelStage4MetricsV1::default()
-                        },
-                    }),
+                    Box::new(state),
                 )),
                 Err(_) => KernelStage4OperationResultV1::Read(KernelStage4ReadResultV1::Rejected(
                     KernelStage4FailureV1::ReadInvariantViolation,
                 )),
             },
-            KernelStage4OperationV1::Select { selector: _ } => {
+            KernelStage4OperationV1::Select { selector } => {
                 KernelStage4OperationResultV1::Select(KernelStage4SelectResultV1 {
-                    value: KernelStage4SelectValueV1 {
-                        document_version: self.runtime.document_version(),
-                        selection: KernelSelectorResultV1::Rejected(
-                            KernelStage4FailureV1::ReadInvariantViolation,
-                        ),
-                        stage4_metrics: KernelStage4MetricsV1::default(),
-                    },
+                    value: self.runtime.select_stage4(selector),
                 })
             }
         }
@@ -341,10 +320,11 @@ fn batch_child_failure(
 #[cfg(test)]
 mod tests {
     use brilliant_kernel_contracts::{
-        KernelEventCauseV1, KernelEventV1, KernelSessionCreateRequestV1,
-        KernelStage3CommandFailureV1, KernelStage4MarkPersistedResultV1, ScoreEntityTargetV1,
-        ScoreStructureViolationV1, decode_create_request, decode_stage3_submit_request,
-        encode_create_result, encode_read_result,
+        KernelEventCauseV1, KernelEventV1, KernelSelectorResultV1, KernelSelectorValueV1,
+        KernelSessionCreateRequestV1, KernelStage3CommandFailureV1,
+        KernelStage4MarkPersistedResultV1, ScoreEntityTargetV1, ScoreRangeSelectionV1,
+        ScoreStructureViolationV1, SelectedScoreEntityV1, decode_create_request,
+        decode_stage3_submit_request, encode_create_result, encode_read_result,
     };
 
     use super::*;
@@ -816,6 +796,211 @@ mod tests {
                 ..
             }]
         ));
+    }
+
+    #[test]
+    fn stage4_read_cache_reuses_revision_and_preserves_old_snapshot() {
+        let mut session = local_session();
+        let read_cold =
+            r#"{"apiVersion":1,"operation":{"kind":"read","knownSnapshotVersion":null}}"#;
+        let read_zero = r#"{"apiVersion":1,"operation":{"kind":"read","knownSnapshotVersion":0}}"#;
+        let KernelStage4OperationResultV1::Read(KernelStage4ReadResultV1::Ok(first)) =
+            operate(&mut session, read_cold)
+        else {
+            panic!("cold read must succeed");
+        };
+        assert_eq!(first.stage4_metrics.full_snapshot_materializations, 1);
+        let old_snapshot = first.snapshot.document.expect("cold read document");
+        assert_eq!(old_snapshot.as_document().metadata.title, "Local");
+
+        let KernelStage4OperationResultV1::Read(KernelStage4ReadResultV1::Ok(hit)) =
+            operate(&mut session, read_zero)
+        else {
+            panic!("known revision read must succeed");
+        };
+        assert_eq!(hit.stage4_metrics.full_snapshot_materializations, 0);
+        assert!(hit.snapshot.document.is_none());
+
+        let submit = r#"{"apiVersion":1,"operation":{"kind":"submit","command":{"commandVersion":1,"commandId":"core.document.set-metadata","target":{"kind":"document","documentId":"score-local"},"payload":{"metadata":{"title":"Changed","authors":["Brilliant"],"tempo":{"bpm":120}}}}}}"#;
+        let _ = operate(&mut session, submit);
+        assert_eq!(old_snapshot.as_document().metadata.title, "Local");
+
+        let KernelStage4OperationResultV1::Read(KernelStage4ReadResultV1::Ok(changed)) =
+            operate(&mut session, read_zero)
+        else {
+            panic!("stale known revision read must succeed");
+        };
+        assert_eq!(changed.snapshot.document_version.get(), 1);
+        assert_eq!(changed.stage4_metrics.full_snapshot_materializations, 1);
+        assert_eq!(
+            changed
+                .snapshot
+                .document
+                .as_ref()
+                .expect("changed document")
+                .as_document()
+                .metadata
+                .title,
+            "Changed"
+        );
+
+        let read_one = r#"{"apiVersion":1,"operation":{"kind":"read","knownSnapshotVersion":1}}"#;
+        let mark = r#"{"apiVersion":1,"operation":{"kind":"mark-persisted","checkpoint":{"documentId":"score-local","documentVersion":1}}}"#;
+        let _ = operate(&mut session, mark);
+        let KernelStage4OperationResultV1::Read(KernelStage4ReadResultV1::Ok(after_mark)) =
+            operate(&mut session, read_one)
+        else {
+            panic!("read after mark must succeed");
+        };
+        assert!(after_mark.snapshot.document.is_none());
+        assert_eq!(after_mark.stage4_metrics.full_snapshot_materializations, 0);
+        assert!(!after_mark.dirty);
+    }
+
+    #[test]
+    fn all_six_stage4_selector_families_are_version_coherent_and_index_backed() {
+        let mut session = local_session();
+        let metadata = r#"{"apiVersion":1,"operation":{"kind":"select","selector":{"selectorId":"core.selector.score-metadata"}}}"#;
+        let KernelStage4OperationResultV1::Select(result) = operate(&mut session, metadata) else {
+            panic!("metadata selector result");
+        };
+        assert_eq!(result.value.document_version.get(), 0);
+        assert_eq!(
+            result.value.stage4_metrics.full_snapshot_materializations,
+            0
+        );
+        assert!(matches!(
+            result.value.selection,
+            KernelSelectorResultV1::Ok(KernelSelectorValueV1::Metadata(metadata))
+                if metadata.title == "Local"
+        ));
+
+        let entity = r#"{"apiVersion":1,"operation":{"kind":"select","selector":{"selectorId":"core.selector.score-entity","address":{"kind":"note","noteId":"note-1"}}}}"#;
+        let KernelStage4OperationResultV1::Select(result) = operate(&mut session, entity) else {
+            panic!("entity selector result");
+        };
+        assert_eq!(
+            result.value.stage4_metrics.full_snapshot_materializations,
+            0
+        );
+        assert!(matches!(
+            result.value.selection,
+            KernelSelectorResultV1::Ok(KernelSelectorValueV1::Entity(
+                SelectedScoreEntityV1::Note(note)
+            )) if note.id.as_str() == "note-1"
+        ));
+
+        let ownership = r#"{"apiVersion":1,"operation":{"kind":"select","selector":{"selectorId":"core.selector.score-entity-ownership","address":{"kind":"note","noteId":"note-1"}}}}"#;
+        let KernelStage4OperationResultV1::Select(result) = operate(&mut session, ownership) else {
+            panic!("ownership selector result");
+        };
+        assert_eq!(
+            result.value.stage4_metrics.full_snapshot_materializations,
+            0
+        );
+        assert!(matches!(
+            result.value.selection,
+            KernelSelectorResultV1::Ok(KernelSelectorValueV1::Ownership(
+                brilliant_kernel_contracts::ScoreEntityOwnershipV1::Note {
+                    document_id,
+                    part_id,
+                    measure_id,
+                    voice_id,
+                    event_id,
+                }
+            )) if document_id.as_str() == "score-local"
+                && part_id.as_str() == "part-1"
+                && measure_id.as_str() == "measure-1"
+                && voice_id.as_str() == "voice-1"
+                && event_id.as_str() == "event-1"
+        ));
+
+        let range = r#"{"apiVersion":1,"operation":{"kind":"select","selector":{"selectorId":"core.selector.score-range","range":{"kind":"voice-event-range","start":{"kind":"voice-event","voiceId":"voice-1","eventId":"event-1"},"end":{"kind":"voice-event","voiceId":"voice-1","eventId":"event-1"}}}}}"#;
+        let KernelStage4OperationResultV1::Select(result) = operate(&mut session, range) else {
+            panic!("range selector result");
+        };
+        assert_eq!(
+            result.value.stage4_metrics.full_snapshot_materializations,
+            0
+        );
+        assert!(matches!(
+            result.value.selection,
+            KernelSelectorResultV1::Ok(KernelSelectorValueV1::Range(
+                ScoreRangeSelectionV1::VoiceEventRange { events, .. }
+            )) if events.len() == 1 && events[0].id.as_str() == "event-1"
+        ));
+
+        let history = r#"{"apiVersion":1,"operation":{"kind":"select","selector":{"selectorId":"core.selector.history-state"}}}"#;
+        let KernelStage4OperationResultV1::Select(result) = operate(&mut session, history) else {
+            panic!("history selector result");
+        };
+        assert!(matches!(
+            result.value.selection,
+            KernelSelectorResultV1::Ok(KernelSelectorValueV1::History(history))
+                if history.undo_depth == 0 && history.redo_depth == 0
+        ));
+
+        let dirty = r#"{"apiVersion":1,"operation":{"kind":"select","selector":{"selectorId":"core.selector.dirty-state"}}}"#;
+        let KernelStage4OperationResultV1::Select(result) = operate(&mut session, dirty) else {
+            panic!("dirty selector result");
+        };
+        assert!(matches!(
+            result.value.selection,
+            KernelSelectorResultV1::Ok(KernelSelectorValueV1::Dirty(false))
+        ));
+
+        let missing = r#"{"apiVersion":1,"operation":{"kind":"select","selector":{"selectorId":"core.selector.score-entity","address":{"kind":"note","noteId":"missing"}}}}"#;
+        let KernelStage4OperationResultV1::Select(result) = operate(&mut session, missing) else {
+            panic!("missing selector result");
+        };
+        assert!(matches!(
+            result.value.selection,
+            KernelSelectorResultV1::Rejected(KernelStage4FailureV1::ReadEntityNotFound)
+        ));
+    }
+
+    #[test]
+    fn entity_selector_covers_all_seven_stable_address_kinds() {
+        let mut session = local_session();
+        let cases = [
+            ("document", "documentId", "score-local"),
+            ("measure", "measureId", "measure-1"),
+            ("part", "partId", "part-1"),
+            ("staff", "staffId", "staff-1"),
+            ("voice", "voiceId", "voice-1"),
+            ("event", "eventId", "event-1"),
+            ("note", "noteId", "note-1"),
+        ];
+        for (kind, id_key, id) in cases {
+            let request = format!(
+                r#"{{"apiVersion":1,"operation":{{"kind":"select","selector":{{"selectorId":"core.selector.score-entity","address":{{"kind":"{kind}","{id_key}":"{id}"}}}}}}}}"#
+            );
+            let KernelStage4OperationResultV1::Select(result) = operate(&mut session, &request)
+            else {
+                panic!("entity selector result for {kind}");
+            };
+            let KernelSelectorResultV1::Ok(KernelSelectorValueV1::Entity(entity)) =
+                result.value.selection
+            else {
+                panic!("entity selector must resolve {kind}");
+            };
+            let (actual_kind, actual_id) = match &entity {
+                SelectedScoreEntityV1::Document(value) => ("document", value.id.as_str()),
+                SelectedScoreEntityV1::Measure(value) => ("measure", value.id.as_str()),
+                SelectedScoreEntityV1::Part(value) => ("part", value.id.as_str()),
+                SelectedScoreEntityV1::Staff(value) => ("staff", value.id.as_str()),
+                SelectedScoreEntityV1::Voice(value) => ("voice", value.id.as_str()),
+                SelectedScoreEntityV1::Event(value) => ("event", value.id.as_str()),
+                SelectedScoreEntityV1::Note(value) => ("note", value.id.as_str()),
+            };
+            assert_eq!((actual_kind, actual_id), (kind, id));
+            if kind != "document" {
+                assert_eq!(
+                    result.value.stage4_metrics.full_snapshot_materializations,
+                    0
+                );
+            }
+        }
     }
 
     #[test]

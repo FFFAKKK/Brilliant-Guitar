@@ -5,13 +5,16 @@ use brilliant_core_types::{
 };
 use brilliant_kernel_contracts::{
     CoreCommandEnvelopeV1, EventStaffAssignmentV1, InsertMeasurePartContentV1, KernelEventCauseV1,
-    KernelEventV1, KernelHistoryStateV1, KernelReadStateV1, KernelStage3CommandFailureLeafV1,
-    KernelStage3MetricsV1, KernelStage3ResourceLimitKindV1, KernelStage4CommandResultV1,
-    KernelStage4FailureV1, KernelStage4MarkPersistedResultV1, KernelStage4MarkPersistedValueV1,
-    KernelStage4MetricsV1, KernelStage4MutationValueV1, KernelStage4RejectedValueV1,
-    MeasureAnchorV1, MeasurePickupV1, NoteAddressV1, PartAnchorV1, PersistedCheckpointV1,
-    PitchTranspositionErrorV1, ScoreEntityTargetV1, ScoreRangeV1, ScoreStructureViolationV1,
-    SequenceAnchorV1, StableFailureV1, StaffAnchorV1, VoiceAnchorV1, initial_snapshot,
+    KernelEventV1, KernelHistoryStateV1, KernelReadStateV1, KernelSelectorResultV1,
+    KernelSelectorValueV1, KernelStage3CommandFailureLeafV1, KernelStage3MetricsV1,
+    KernelStage3ResourceLimitKindV1, KernelStage4CommandResultV1, KernelStage4FailureV1,
+    KernelStage4MarkPersistedResultV1, KernelStage4MarkPersistedValueV1, KernelStage4MetricsV1,
+    KernelStage4MutationValueV1, KernelStage4ReadStateV1, KernelStage4RejectedValueV1,
+    KernelStage4SelectValueV1, KernelStage4SnapshotV1, MeasureAnchorV1, MeasurePickupV1,
+    NoteAddressV1, PartAnchorV1, PersistedCheckpointV1, PitchTranspositionErrorV1,
+    ScoreEntityTargetV1, ScoreRangeV1, ScoreStructureViolationV1, SelectedScoreEntityV1,
+    SelectorRequestV1, SequenceAnchorV1, SharedScoreDocumentV1, StableFailureV1, StaffAnchorV1,
+    VoiceAnchorV1, initial_snapshot,
 };
 use brilliant_score_foundation::{
     ClefV1, FractionV1, InstrumentDescriptorV1, MeasureDefinitionV1, MeterV1, NoteValueV1, PartV1,
@@ -28,6 +31,7 @@ use crate::{
     },
     history::{HistoryPrepareFailureV1, HistoryStateV1},
     overlay::{OverlayFailureV1, OverlayMutationV1, TransactionOverlayV1},
+    selectors::select_from_store,
     session_projection::{ProjectionPrepareFailureV1, SessionProjectionStateV1},
     store::{LiveScoreStore, LiveStoreBuildFailure, build_live_score_store},
     transaction::{TransactionPrepareFailureV1, apply_stored_operations, commit_change_set},
@@ -155,11 +159,8 @@ impl KernelRuntime {
     }
 
     pub fn read_state(&self) -> Result<KernelReadStateV1, KernelRuntimeReadFailure> {
-        let document = self
-            .store
-            .export_document()
-            .map_err(|_| KernelRuntimeReadFailure::InternalInvariant)?;
-        let mut state = initial_snapshot(document);
+        let (snapshot, _) = self.current_snapshot()?;
+        let mut state = initial_snapshot(snapshot.as_document().clone());
         state.snapshot.document_version = self.document_version;
         state.history = self
             .history
@@ -171,6 +172,139 @@ impl KernelRuntime {
             .map_err(|_| KernelRuntimeReadFailure::InternalInvariant)?;
         state.dirty = self.projection.dirty(identity);
         Ok(state)
+    }
+
+    pub fn read_stage4(
+        &self,
+        known_snapshot_version: Option<DocumentVersionV1>,
+    ) -> Result<KernelStage4ReadStateV1, KernelRuntimeReadFailure> {
+        let (snapshot, materialized) = self.current_snapshot()?;
+        let identity = self
+            .history
+            .current_identity()
+            .map_err(|_| KernelRuntimeReadFailure::InternalInvariant)?;
+        let omit_document = !materialized && known_snapshot_version == Some(self.document_version);
+        Ok(KernelStage4ReadStateV1 {
+            snapshot: KernelStage4SnapshotV1 {
+                document_id: self.store.header.id.clone(),
+                schema_version: "brilliant-score-1",
+                document_version: self.document_version,
+                document: (!omit_document).then_some(snapshot),
+            },
+            history: self
+                .history
+                .projected()
+                .map_err(|_| KernelRuntimeReadFailure::InternalInvariant)?,
+            dirty: self.projection.dirty(identity),
+            stage4_metrics: KernelStage4MetricsV1 {
+                full_snapshot_materializations: u64::from(materialized),
+                ..KernelStage4MetricsV1::default()
+            },
+        })
+    }
+
+    fn current_snapshot(&self) -> Result<(SharedScoreDocumentV1, bool), KernelRuntimeReadFailure> {
+        if let Some(snapshot) = self.projection.cached_snapshot(self.document_version) {
+            return Ok((snapshot, false));
+        }
+        let document = self
+            .store
+            .export_document()
+            .map_err(|_| KernelRuntimeReadFailure::InternalInvariant)?;
+        Ok((
+            self.projection
+                .install_snapshot(self.document_version, document),
+            true,
+        ))
+    }
+
+    pub fn select_stage4(&self, selector: SelectorRequestV1) -> KernelStage4SelectValueV1 {
+        match selector {
+            SelectorRequestV1::ScoreEntity {
+                address: ScoreEntityTargetV1::Document { document_id },
+            } => {
+                if document_id != self.store.header.id {
+                    return KernelStage4SelectValueV1 {
+                        document_version: self.document_version,
+                        selection: KernelSelectorResultV1::Rejected(
+                            KernelStage4FailureV1::ReadEntityNotFound,
+                        ),
+                        stage4_metrics: KernelStage4MetricsV1::default(),
+                    };
+                }
+                match self.current_snapshot() {
+                    Ok((snapshot, materialized)) => KernelStage4SelectValueV1 {
+                        document_version: self.document_version,
+                        selection: KernelSelectorResultV1::Ok(KernelSelectorValueV1::Entity(
+                            SelectedScoreEntityV1::Document(snapshot.as_document().clone()),
+                        )),
+                        stage4_metrics: KernelStage4MetricsV1 {
+                            full_snapshot_materializations: u64::from(materialized),
+                            selector_records_visited: 1,
+                            selector_records_returned: 1,
+                            ..KernelStage4MetricsV1::default()
+                        },
+                    },
+                    Err(_) => KernelStage4SelectValueV1 {
+                        document_version: self.document_version,
+                        selection: KernelSelectorResultV1::Rejected(
+                            KernelStage4FailureV1::ReadInvariantViolation,
+                        ),
+                        stage4_metrics: KernelStage4MetricsV1::default(),
+                    },
+                }
+            }
+            SelectorRequestV1::HistoryState => {
+                let selection = match self.history.projected() {
+                    Ok(history) => {
+                        KernelSelectorResultV1::Ok(KernelSelectorValueV1::History(history))
+                    }
+                    Err(_) => KernelSelectorResultV1::Rejected(
+                        KernelStage4FailureV1::ReadInvariantViolation,
+                    ),
+                };
+                KernelStage4SelectValueV1 {
+                    document_version: self.document_version,
+                    selection,
+                    stage4_metrics: KernelStage4MetricsV1 {
+                        selector_records_visited: 1,
+                        selector_records_returned: 1,
+                        ..KernelStage4MetricsV1::default()
+                    },
+                }
+            }
+            SelectorRequestV1::DirtyState => {
+                let selection = match self.history.current_identity() {
+                    Ok(identity) => KernelSelectorResultV1::Ok(KernelSelectorValueV1::Dirty(
+                        self.projection.dirty(identity),
+                    )),
+                    Err(_) => KernelSelectorResultV1::Rejected(
+                        KernelStage4FailureV1::ReadInvariantViolation,
+                    ),
+                };
+                KernelStage4SelectValueV1 {
+                    document_version: self.document_version,
+                    selection,
+                    stage4_metrics: KernelStage4MetricsV1 {
+                        selector_records_visited: 1,
+                        selector_records_returned: 1,
+                        ..KernelStage4MetricsV1::default()
+                    },
+                }
+            }
+            selector => {
+                let evaluation = select_from_store(&self.store, &selector);
+                KernelStage4SelectValueV1 {
+                    document_version: self.document_version,
+                    selection: evaluation.result,
+                    stage4_metrics: KernelStage4MetricsV1 {
+                        selector_records_visited: evaluation.records_visited,
+                        selector_records_returned: evaluation.records_returned,
+                        ..KernelStage4MetricsV1::default()
+                    },
+                }
+            }
+        }
     }
 
     pub fn begin_stage3_transaction(&self) -> KernelStage3TransactionV1<'_> {

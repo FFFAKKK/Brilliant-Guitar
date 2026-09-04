@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use brilliant_core_types::{
     API_VERSION_V1, DocumentVersionV1, ScoreSchemaVersionV1, StableId, StablePathV1,
 };
@@ -654,7 +656,37 @@ pub struct KernelStage4SnapshotV1 {
     pub document_id: StableId,
     pub schema_version: &'static str,
     pub document_version: DocumentVersionV1,
-    pub document: Option<ScoreDocumentV1>,
+    pub document: Option<SharedScoreDocumentV1>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SharedScoreDocumentV1(Arc<ScoreDocumentV1>);
+
+impl SharedScoreDocumentV1 {
+    pub fn new(document: ScoreDocumentV1) -> Self {
+        Self(Arc::new(document))
+    }
+
+    pub fn from_arc(document: Arc<ScoreDocumentV1>) -> Self {
+        Self(document)
+    }
+
+    pub fn as_document(&self) -> &ScoreDocumentV1 {
+        &self.0
+    }
+
+    pub fn into_arc(self) -> Arc<ScoreDocumentV1> {
+        self.0
+    }
+}
+
+impl Serialize for SharedScoreDocumentV1 {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        self.0.as_ref().serialize(serializer)
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
