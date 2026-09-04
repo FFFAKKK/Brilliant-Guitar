@@ -1,8 +1,8 @@
 import assert = require("node:assert/strict");
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, lstatSync, readFileSync, readdirSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { test } from "node:test";
 
 import { CORE_COMMAND_DEFINITIONS } from "../../../src/core-kernel/commands/catalog";
@@ -15,14 +15,35 @@ import {
 
 const RKP2_ACCEPTED_BASE = "6d0956c970f4414cb61e0f3d7148672a6e635032";
 const RKP3_PLANNING_HEAD = "78660bb63e249f7bbfec848b9b19e16d7dc55c25";
+const RKP3_TASK_NAME = "09-04-rkp-3-transaction-overlay-changeset-core-commands";
+const RKP3_ACTIVE_ROOT = `.trellis/tasks/${RKP3_TASK_NAME}`;
+const RKP3_ARCHIVE_ROOT = `.trellis/tasks/archive/2026-09/${RKP3_TASK_NAME}`;
+const RKP3_TASK_MANIFEST = [
+  "check.jsonl",
+  "design.md",
+  "implement.jsonl",
+  "implement.md",
+  "operator-handoff.md",
+  "prd.md",
+  "research/authority-and-runtime-gap.md",
+  "research/changeset-overlay-and-capacity-decision.md",
+  "research/file-test-and-rollback-matrix.md",
+  "research/implementation-evidence.md",
+  "research/planning-self-audit.md",
+  "review-candidate.md",
+  "task.json",
+] as const;
+const RKP3_LIFECYCLE_PATHS = [
+  ...RKP3_TASK_MANIFEST.map((path) => `${RKP3_ACTIVE_ROOT}/${path}`),
+  ...RKP3_TASK_MANIFEST.map((path) => `${RKP3_ARCHIVE_ROOT}/${path}`),
+] as const;
 const RKP3_IMPLEMENTATION_ALLOWLIST = [
+  ...RKP3_LIFECYCLE_PATHS,
   ".trellis/spec/core-kernel/backend/rust-runtime-transition.md",
   ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/implement.md",
   ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json",
-  ".trellis/tasks/09-04-rkp-3-transaction-overlay-changeset-core-commands/operator-handoff.md",
-  ".trellis/tasks/09-04-rkp-3-transaction-overlay-changeset-core-commands/research/implementation-evidence.md",
-  ".trellis/tasks/09-04-rkp-3-transaction-overlay-changeset-core-commands/review-candidate.md",
-  ".trellis/tasks/09-04-rkp-3-transaction-overlay-changeset-core-commands/task.json",
+  ".trellis/workspace/ATOM/index.md",
+  ".trellis/workspace/ATOM/journal-1.md",
   "crates/brilliant-core-types/src/scalar.rs",
   "crates/brilliant-kernel-contracts/src/codec.rs",
   "crates/brilliant-kernel-contracts/src/command.rs",
@@ -149,6 +170,80 @@ function currentRkp3Changes(): Set<string> {
     ...gitLines(["ls-files", "--others", "--exclude-standard"]),
   ]);
 }
+
+function filesUnder(root: string): string[] {
+  const absoluteRoot = resolve(root);
+  const rootStat = lstatSync(absoluteRoot);
+  assert.equal(rootStat.isSymbolicLink(), false, `${root} must not be a symlink`);
+  assert.equal(rootStat.isDirectory(), true, `${root} must be a directory`);
+  const result: string[] = [];
+  const visit = (absolute: string, prefix: string): void => {
+    for (const entry of readdirSync(absolute)) {
+      const child = join(absolute, entry);
+      const childRelative = prefix === "" ? entry : `${prefix}/${entry}`;
+      const stat = lstatSync(child);
+      assert.equal(stat.isSymbolicLink(), false, `${childRelative} must not be a symlink`);
+      if (stat.isDirectory()) visit(child, childRelative);
+      else {
+        assert.equal(stat.isFile(), true, `${childRelative} must be a regular file`);
+        result.push(childRelative.replaceAll("\\", "/"));
+      }
+    }
+  };
+  visit(absoluteRoot, "");
+  return result.sort();
+}
+
+test("RKP-3 resolves one exact active or archived lifecycle authority", () => {
+  const activeExists = existsSync(resolve(RKP3_ACTIVE_ROOT));
+  const archiveExists = existsSync(resolve(RKP3_ARCHIVE_ROOT));
+  assert.notEqual(activeExists, archiveExists, "exactly one RKP-3 task root must exist");
+
+  const root = activeExists ? RKP3_ACTIVE_ROOT : RKP3_ARCHIVE_ROOT;
+  assert.deepEqual(filesUnder(root), [...RKP3_TASK_MANIFEST].sort());
+
+  const task = JSON.parse(readText(`${root}/task.json`)) as {
+    status?: unknown;
+    completedAt?: unknown;
+    relatedFiles?: unknown;
+    meta?: Record<string, unknown>;
+  };
+  const parent = JSON.parse(
+    readText(".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json"),
+  ) as { meta?: Record<string, unknown> };
+  const taskMeta = task.meta ?? {};
+  const parentMeta = parent.meta ?? {};
+
+  if (activeExists) {
+    assert.equal(task.status, "in_progress");
+    assert.equal(parentMeta.current_implementation_child, RKP3_TASK_NAME);
+    assert.equal(parentMeta.active_implementation_child, RKP3_TASK_NAME);
+    return;
+  }
+
+  assert.equal(task.status, "completed");
+  assert.equal(typeof task.completedAt, "string");
+  assert.equal(taskMeta.current_stage, "accepted_archived_completed_historical_no_live_gate");
+  assert.equal(taskMeta.acceptance_authorized, true);
+  assert.equal(taskMeta.archive_authorized, true);
+  assert.equal(taskMeta.next_gate, "completed_historical_no_live_gate");
+  assert.equal(taskMeta.rkp4_authorized, false);
+  assert.equal(taskMeta.qualification_authorized, false);
+  assert.equal(taskMeta.runtime_cutover_authorized, false);
+  assert.equal(taskMeta.push_authorized, false);
+  assert.equal(parentMeta.rkp3_status, "accepted_archived");
+  assert.equal(parentMeta.current_blocking_descendant, null);
+  assert.equal(parentMeta.current_implementation_child, null);
+  assert.equal(parentMeta.active_implementation_child, null);
+  assert.equal(parentMeta.next_gate, "rkp4_planning_requires_separate_owner_authorization");
+  assert.equal(parentMeta.rkp4_authorized, false);
+
+  assert.ok(Array.isArray(task.relatedFiles));
+  for (const path of task.relatedFiles) {
+    if (typeof path === "string" && path.includes(RKP3_TASK_NAME))
+      assert.equal(path.startsWith(`${RKP3_ARCHIVE_ROOT}/`), true, path);
+  }
+});
 
 test("RKP-3 freezes the exact 28-command order and target kinds", () => {
   assert.deepEqual(
