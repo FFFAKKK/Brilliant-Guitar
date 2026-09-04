@@ -406,7 +406,7 @@ impl Serialize for KernelEventV1 {
                 command_id,
                 affected_entities,
             } => {
-                let mut state = serializer.serialize_struct("KernelEventV1", 7)?;
+                let mut state = serializer.serialize_struct("KernelEventV1", 8)?;
                 state.serialize_field("eventVersion", &1_u64)?;
                 state.serialize_field("eventSequence", event_sequence)?;
                 state.serialize_field("eventType", "core.document.committed")?;
@@ -424,7 +424,7 @@ impl Serialize for KernelEventV1 {
                 cause,
                 dirty,
             } => {
-                let mut state = serializer.serialize_struct("KernelEventV1", 6)?;
+                let mut state = serializer.serialize_struct("KernelEventV1", 7)?;
                 state.serialize_field("eventVersion", &1_u64)?;
                 state.serialize_field("eventSequence", event_sequence)?;
                 state.serialize_field("eventType", "core.session.dirty-state-changed")?;
@@ -709,7 +709,11 @@ pub enum SelectedScoreEntityV1 {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
-#[serde(tag = "entityKind", rename_all = "kebab-case")]
+#[serde(
+    tag = "entityKind",
+    rename_all = "kebab-case",
+    rename_all_fields = "camelCase"
+)]
 pub enum ScoreEntityOwnershipV1 {
     Document {
         document_id: StableId,
@@ -745,7 +749,11 @@ pub enum ScoreEntityOwnershipV1 {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
-#[serde(tag = "kind", rename_all = "kebab-case")]
+#[serde(
+    tag = "kind",
+    rename_all = "kebab-case",
+    rename_all_fields = "camelCase"
+)]
 pub enum ScoreRangeSelectionV1 {
     MeasureRange {
         normalized: ScoreRangeV1,

@@ -2878,6 +2878,37 @@ mod tests {
     }
 
     #[test]
+    fn event_interval_overflow_rejects_before_store_history_or_version_mutation() {
+        let document = crate::store::tests::fixture();
+        let document_id = document.id.clone();
+        let mut metadata = document.metadata.clone();
+        metadata.title = "event overflow".to_owned();
+        let mut runtime = KernelRuntime::create(document).expect("runtime");
+        let baseline = runtime.read_state().expect("baseline");
+        runtime
+            .projection
+            .set_next_event_sequence_for_test(JS_SAFE_INTEGER_MAX as u64);
+
+        let prepared = {
+            let mut transaction = runtime.begin_stage3_transaction();
+            transaction
+                .set_document_metadata(document_id.clone(), metadata.clone())
+                .expect("prepare metadata");
+            transaction.finish().expect("finish metadata")
+        };
+        let result = runtime.commit_stage4_transaction(
+            CoreCommandEnvelopeV1::DocumentSetMetadata {
+                target: ScoreEntityTargetV1::Document { document_id },
+                metadata,
+            },
+            prepared,
+        );
+        assert_eq!(result, Err(KernelStage4FailureV1::EventSequenceOverflow));
+        assert_eq!(runtime.document_version(), DocumentVersionV1::initial());
+        assert_eq!(runtime.read_state().expect("unchanged state"), baseline);
+    }
+
+    #[test]
     fn measure_transaction_reads_prior_overlay_and_restores_exact_documents() {
         let document = crate::store::tests::fixture();
         let baseline = document.clone();

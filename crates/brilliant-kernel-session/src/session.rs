@@ -341,10 +341,10 @@ fn batch_child_failure(
 #[cfg(test)]
 mod tests {
     use brilliant_kernel_contracts::{
-        KernelSessionCreateRequestV1, KernelStage3CommandFailureV1,
-        KernelStage4MarkPersistedResultV1, ScoreEntityTargetV1, ScoreStructureViolationV1,
-        decode_create_request, decode_stage3_submit_request, encode_create_result,
-        encode_read_result,
+        KernelEventCauseV1, KernelEventV1, KernelSessionCreateRequestV1,
+        KernelStage3CommandFailureV1, KernelStage4MarkPersistedResultV1, ScoreEntityTargetV1,
+        ScoreStructureViolationV1, decode_create_request, decode_stage3_submit_request,
+        encode_create_result, encode_read_result,
     };
 
     use super::*;
@@ -678,6 +678,144 @@ mod tests {
             panic!("redo tail must remain available");
         };
         assert_eq!((value.history.undo_depth, value.history.redo_depth), (2, 0));
+    }
+
+    #[test]
+    fn dirty_checkpoint_failures_and_event_sequence_are_zero_delta_and_ordered() {
+        let mut session = local_session();
+        let initial = encode_read_result(&session.read_state()).expect("initial read");
+
+        let malformed = r#"{"apiVersion":1,"operation":{"kind":"mark-persisted","checkpoint":{"documentId":"score-local"}}}"#;
+        let KernelStage4OperationResultV1::MarkPersisted(
+            KernelStage4MarkPersistedResultV1::Rejected {
+                failure: KernelStage4FailureV1::CheckpointInvalid,
+                ..
+            },
+        ) = operate(&mut session, malformed)
+        else {
+            panic!("malformed checkpoint must use checkpoint.invalid");
+        };
+
+        let wrong_document = r#"{"apiVersion":1,"operation":{"kind":"mark-persisted","checkpoint":{"documentId":"other","documentVersion":99}}}"#;
+        let KernelStage4OperationResultV1::MarkPersisted(
+            KernelStage4MarkPersistedResultV1::Rejected {
+                failure: KernelStage4FailureV1::CheckpointDocumentMismatch,
+                ..
+            },
+        ) = operate(&mut session, wrong_document)
+        else {
+            panic!("document mismatch must precede unavailable version");
+        };
+
+        let unavailable = r#"{"apiVersion":1,"operation":{"kind":"mark-persisted","checkpoint":{"documentId":"score-local","documentVersion":99}}}"#;
+        let KernelStage4OperationResultV1::MarkPersisted(
+            KernelStage4MarkPersistedResultV1::Rejected {
+                failure: KernelStage4FailureV1::CheckpointVersionUnavailable,
+                ..
+            },
+        ) = operate(&mut session, unavailable)
+        else {
+            panic!("unknown observed version must reject");
+        };
+        assert_eq!(
+            encode_read_result(&session.read_state()).expect("unchanged read"),
+            initial
+        );
+
+        let submit = r#"{"apiVersion":1,"operation":{"kind":"submit","command":{"commandVersion":1,"commandId":"core.document.set-metadata","target":{"kind":"document","documentId":"score-local"},"payload":{"metadata":{"title":"Saved","authors":["Brilliant"],"tempo":{"bpm":120}}}}}}"#;
+        let KernelStage4OperationResultV1::Command(KernelStage4CommandResultV1::Committed {
+            events,
+            ..
+        }) = operate(&mut session, submit)
+        else {
+            panic!("submit must commit");
+        };
+        assert!(matches!(
+            events.as_slice(),
+            [
+                KernelEventV1::DocumentCommitted {
+                    event_sequence: 1,
+                    cause: KernelEventCauseV1::Submit,
+                    command_id: brilliant_kernel_contracts::CoreCommandIdV1::DocumentSetMetadata,
+                    ..
+                },
+                KernelEventV1::DirtyStateChanged {
+                    event_sequence: 2,
+                    cause: KernelEventCauseV1::Submit,
+                    dirty: true,
+                    ..
+                }
+            ]
+        ));
+
+        let mark_current = r#"{"apiVersion":1,"operation":{"kind":"mark-persisted","checkpoint":{"documentId":"score-local","documentVersion":1}}}"#;
+        let KernelStage4OperationResultV1::MarkPersisted(
+            KernelStage4MarkPersistedResultV1::Updated { value, events },
+        ) = operate(&mut session, mark_current)
+        else {
+            panic!("current checkpoint must update");
+        };
+        assert!(!value.dirty);
+        assert!(matches!(
+            events.as_slice(),
+            [KernelEventV1::DirtyStateChanged {
+                event_sequence: 3,
+                cause: KernelEventCauseV1::MarkPersisted,
+                dirty: false,
+                ..
+            }]
+        ));
+
+        let KernelStage4OperationResultV1::MarkPersisted(KernelStage4MarkPersistedResultV1::NoOp {
+            ..
+        }) = operate(&mut session, mark_current)
+        else {
+            panic!("same clean identity must be a no-op");
+        };
+
+        let undo = r#"{"apiVersion":1,"operation":{"kind":"undo"}}"#;
+        let KernelStage4OperationResultV1::Command(KernelStage4CommandResultV1::Committed {
+            value,
+            events,
+        }) = operate(&mut session, undo)
+        else {
+            panic!("undo must commit");
+        };
+        assert!(value.dirty);
+        assert!(matches!(
+            events.as_slice(),
+            [
+                KernelEventV1::DocumentCommitted {
+                    event_sequence: 4,
+                    cause: KernelEventCauseV1::Undo,
+                    ..
+                },
+                KernelEventV1::DirtyStateChanged {
+                    event_sequence: 5,
+                    cause: KernelEventCauseV1::Undo,
+                    dirty: true,
+                    ..
+                }
+            ]
+        ));
+
+        let mark_initial = r#"{"apiVersion":1,"operation":{"kind":"mark-persisted","checkpoint":{"documentId":"score-local","documentVersion":0}}}"#;
+        let KernelStage4OperationResultV1::MarkPersisted(
+            KernelStage4MarkPersistedResultV1::Updated { value, events },
+        ) = operate(&mut session, mark_initial)
+        else {
+            panic!("initial observed identity must remain available");
+        };
+        assert!(!value.dirty);
+        assert!(matches!(
+            events.as_slice(),
+            [KernelEventV1::DirtyStateChanged {
+                event_sequence: 6,
+                cause: KernelEventCauseV1::MarkPersisted,
+                dirty: false,
+                ..
+            }]
+        ));
     }
 
     #[test]
