@@ -132,12 +132,15 @@ test("RKP-3 overlay uses discard-only failure and copy-on-first-write orders", (
   assert.equal(source.includes("self.base ="), false);
 });
 
-test("RKP-3 Session owns a literal closed catalog and the first six local routes", () => {
+test("RKP-3 Session owns a literal closed catalog and the first ten command routes", () => {
   const catalog = readText(
     "crates/brilliant-kernel-session/src/commands/catalog.rs",
   );
   const dispatch = readText("crates/brilliant-kernel-session/src/commands/mod.rs");
   const local = readText("crates/brilliant-kernel-session/src/commands/local.rs");
+  const measure = readText(
+    "crates/brilliant-kernel-session/src/commands/measure.rs",
+  );
   const runtime = readText("crates/brilliant-kernel-runtime/src/runtime.rs");
   const variants = [
     "DocumentSetMetadata",
@@ -197,6 +200,24 @@ test("RKP-3 Session owns a literal closed catalog and the first six local routes
   }
   for (const forbidden of ["LiveScoreStore", "ScoreDocumentV1", "export_document"])
     assert.equal(local.includes(forbidden), false, `Session handler leaked ${forbidden}`);
+
+  for (const method of [
+    "insert_measure",
+    "remove_measure",
+    "move_measure",
+    "set_measure_definition",
+  ]) {
+    assert.ok(measure.includes(method), `Measure route missing ${method}`);
+    assert.match(runtime, new RegExp(`pub fn ${method}\\(`, "u"));
+  }
+  for (const forbidden of ["LiveScoreStore", "ScoreDocumentV1", "export_document"])
+    assert.equal(
+      measure.includes(forbidden),
+      false,
+      `Measure Session handler leaked ${forbidden}`,
+    );
+  assert.match(runtime, /replace_ordered_children\(/u);
+  assert.match(runtime, /record_voice_descendants_affected\(/u);
 
   assert.match(runtime, /pub fn begin_stage3_transaction\(/u);
   assert.match(runtime, /pub fn commit_stage3_transaction\(/u);

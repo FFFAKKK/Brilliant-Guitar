@@ -1,5 +1,6 @@
 mod catalog;
 mod local;
+mod measure;
 
 use brilliant_kernel_contracts::{
     CoreCommandEnvelopeV1, CoreCommandIdV1, KernelStage3CommandFailureLeafV1,
@@ -22,8 +23,8 @@ pub(crate) fn dispatch(
         CoreCommandIdV1::MeasureInsert
         | CoreCommandIdV1::MeasureRemove
         | CoreCommandIdV1::MeasureMove
-        | CoreCommandIdV1::MeasureSetDefinition
-        | CoreCommandIdV1::PartInsert
+        | CoreCommandIdV1::MeasureSetDefinition => measure::dispatch(transaction, command),
+        CoreCommandIdV1::PartInsert
         | CoreCommandIdV1::PartRemove
         | CoreCommandIdV1::PartMove
         | CoreCommandIdV1::PartSetName

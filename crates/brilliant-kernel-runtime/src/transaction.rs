@@ -141,7 +141,7 @@ fn commit_change_set_with_policy(
 }
 
 #[cfg(test)]
-fn apply_operations_for_test(
+pub(crate) fn apply_operations_for_test(
     store: &mut LiveScoreStore,
     document_version: &mut DocumentVersionV1,
     committed_metrics: &mut KernelStage3MetricsV1,
