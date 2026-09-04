@@ -1364,7 +1364,10 @@ function currentChangesSince(base: string): Set<string> {
 function acceptedChangesWithS63Evidence(
   base: string,
 ): Set<string> {
-  const expected = committedChanges(base, POST_ARCHIVE_REPAIR_ACTIVATION_HEAD);
+  const acceptedAtActivation = committedChanges(
+    base,
+    POST_ARCHIVE_REPAIR_ACTIVATION_HEAD,
+  );
   const allowedRepairPaths = new Set<string>(POST_ARCHIVE_REPAIR_ALLOWED_PATHS);
   for (const path of currentChangesSince(POST_ARCHIVE_REPAIR_ACTIVATION_HEAD)) {
     assert.equal(
@@ -1372,9 +1375,18 @@ function acceptedChangesWithS63Evidence(
       true,
       `unreviewed post-archive repair path: ${path}`,
     );
-    expected.add(path);
   }
-  return expected;
+  const current = currentChangesSince(base);
+  for (const path of current) {
+    if (!acceptedAtActivation.has(path)) {
+      assert.equal(
+        allowedRepairPaths.has(path),
+        true,
+        `unreviewed net post-archive repair path: ${path}`,
+      );
+    }
+  }
+  return current;
 }
 
 function historicalSemanticCanonicalE2Changes(): Set<string> {
