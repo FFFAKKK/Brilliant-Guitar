@@ -81,3 +81,22 @@ The sibling RKP-1 post-archive workspace/authority repair planning candidate `f7
 RKP-2 owns only indexed `LiveScoreStore`, strict atomic load, deterministic index rebuild and exact encode parity. TypeScript remains default. RKP-3 command/transaction work stays absent until RKP-2 implementation passes independent audit and is accepted/archived.
 
 RKP-2 technical planning passed dedicated independent review at exact head `625054ec78e6410e0fb6034ab0c8f60bbf110d08` with P0/P1/P2=`0/0/0`. Planning approval does not activate implementation: the sibling post-archive repair must first be implemented, independently audited, accepted and archived; a new integrated green base must preserve both parent-child projections; user implementation authorization remains a separate final gate.
+
+## RKP-3 planning projection — 2026-09-04
+
+RKP-2 is now accepted and archived, and its clean integrated implementation
+head is `6d0956c970f4414cb61e0f3d7148672a6e635032`. The parent has exactly one current
+planning child:
+`.trellis/tasks/09-04-rkp-3-transaction-overlay-changeset-core-commands/`.
+
+RKP-3 is an implementation-level planning candidate for the private Rust
+transaction overlay, stable ordered forward/inverse ChangeSet, complete
+store/index CommitPlan, exact 28 Core handlers, atomic batch, rejection zero
+delta, and a stage-only native submit evidence seam. It adds no third-party
+dependency and leaves TypeScript as default.
+
+The child remains `status=planning`, `task_start_run=false`,
+`production_implementation_authorized=false`. Its planning self-audit passed
+P0/P1/P2=`0/0/0`, so its next gate is one explicit owner decision to start
+implementation. RKP-4, qualification, cutover, acceptance/archive, and push
+all remain false.

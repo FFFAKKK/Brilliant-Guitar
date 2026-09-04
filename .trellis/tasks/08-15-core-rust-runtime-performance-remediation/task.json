@@ -25,7 +25,8 @@
     "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
     "08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair",
     "08-28-rkp-1a-acceptance-archive-stage6-integration-closeout",
-    "09-04-rkp-2-post-archive-path-compatibility"
+    "09-04-rkp-2-post-archive-path-compatibility",
+    "09-04-rkp-3-transaction-overlay-changeset-core-commands"
   ],
   "parent": "07-29-core-vnext-product-ready-extensible-kernel-completion",
   "relatedFiles": [
@@ -47,12 +48,12 @@
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RUST REMEDIATION PARENT PLANNING / RKP-2 FINAL IMPLEMENTATION CANDIDATE 33AF840 DIRECT CHECK PASS P0_0_P1_0_P2_0 AND OWNER ACCEPTED / S6.3 AND RKP-2 NATIVE ARCHIVE AUTHORIZED / STAGE 6 COMPLETE / QUALIFICATION CUTOVER RKP3 AND PUSH FALSE / TYPESCRIPT DEFAULT.",
+  "notes": "RUST REMEDIATION PARENT PLANNING / RKP-2 ACCEPTED ARCHIVED AT 6D0956C / RKP-3 PLANNING CHILD CREATED AND LINKED / RKP-3 TASK START AND IMPLEMENTATION FALSE / QUALIFICATION CUTOVER RKP4 AND PUSH FALSE / TYPESCRIPT DEFAULT.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
     "source_cvn7_status": "in_progress_measurement_incomplete_evidence_invalid",
-    "current_planning_child": null,
+    "current_planning_child": "09-04-rkp-3-transaction-overlay-changeset-core-commands",
     "rkp2_stage6_semantic_canonical_authority_amendment": {
       "task": "08-30-rkp-2-stage-6-semantic-canonical-authority-amendment",
       "status": "accepted_archived_completed_historical_no_live_gate",
@@ -95,7 +96,7 @@
       "e3_user_authorization_consumed_by_parent_stage6_owner": true
     },
     "current_dependency_repair_child": null,
-    "current_blocking_descendant": "09-03-rkp-2-stage-6-s6-3-final-candidate-freeze",
+    "current_blocking_descendant": "09-04-rkp-3-transaction-overlay-changeset-core-commands",
     "future_children_created": true,
     "stage_sequence": [
       "RKP-0",
@@ -138,7 +139,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "nested_rkp2_native_archive_S6_3_then_RKP2",
+    "next_gate": "rkp3_planning_validation_then_explicit_user_implementation_authorization",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -207,8 +208,8 @@
     },
     "rkp1_status_sync_commit": "7174c5ac50655ae0cb8807e21c7045a0c1b6d15e",
     "rkp1_repair_branch": "codex/rkp-1-seven-crate-workspace-contracts-bridge-smoke-planning-r1",
-    "current_implementation_child": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
-    "active_implementation_child": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
+    "current_implementation_child": null,
+    "active_implementation_child": null,
     "rkp1_implementation_stage": "accepted_archived",
     "rkp1_implementation_commits": {
       "activation": "84918e1e293b26554fbff9f161c6222510f378b9",
@@ -243,8 +244,10 @@
     "rkp2_implementation_authorized": true,
     "rkp2_user_implementation_authorization": true,
     "rkp2_created": true,
-    "rkp2_status": "in_progress_stage_6_s6_2_owner_accepted_pending_archive_integration",
+    "rkp2_status": "accepted_archived",
     "rkp2_task": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
+    "rkp2_archive_root": ".trellis/tasks/archive/2026-09/08-24-rkp-2-indexed-live-score-store-load-encode-parity",
+    "rkp2_integrated_head": "6d0956c970f4414cb61e0f3d7148672a6e635032",
     "rkp2_planning_base": "063b332dd48c05796fb3450a8004f42ff2148b20",
     "rkp2_branch": "codex/rkp-2-indexed-live-score-store-implementation",
     "rkp2_planning_branch": "codex/rkp-2-indexed-live-score-store-load-encode-parity",
@@ -346,7 +349,7 @@
     "rkp2_stage_6_s6_3_completed": true,
     "rkp2_implementation_candidate_ready": true,
     "rkp2_implementation_review": "passed_direct_final_RKP2_check_33af840_P0_0_P1_0_P2_0_owner_accepted",
-    "rkp2_implementation_blocker": "native_archive_S6_3_then_RKP2",
+    "rkp2_implementation_blocker": null,
     "rkp2_final_direct_implementation_check": {
       "review_mode": "codex_inline_main_session_direct_2026_09_03",
       "reviewed_base": "51dbabd1e48dabb1333b011ee5446ed3f56b714f",
@@ -378,9 +381,29 @@
     "rkp2_archive_authorized": true,
     "rkp2_default_runtime": "typescript",
     "rkp2_current_planning_child": null,
-    "rkp2_current_implementation_child": "09-03-rkp-2-stage-6-s6-3-final-candidate-freeze",
-    "rkp2_current_blocking_descendant": "09-03-rkp-2-stage-6-s6-3-final-candidate-freeze",
+    "rkp2_current_implementation_child": null,
+    "rkp2_current_blocking_descendant": null,
     "rkp2_external_blocking_task": null,
+    "rkp3_planning": {
+      "task": "09-04-rkp-3-transaction-overlay-changeset-core-commands",
+      "parent": "08-15-core-rust-runtime-performance-remediation",
+      "status": "planning",
+      "planning_base": "6d0956c970f4414cb61e0f3d7148672a6e635032",
+      "branch": "codex/rkp-3-transaction-overlay-changeset-planning",
+      "worktree": ".worktrees/rkp-3-transaction-overlay-changeset-planning",
+      "task_start_run": false,
+      "production_implementation_authorized": false,
+      "planning_candidate_ready": true,
+      "planning_self_audit": "passed_P0_0_P1_0_P2_0",
+      "owner_review": "pending",
+      "implementation_candidate_ready": false,
+      "default_runtime": "typescript",
+      "qualification_authorized": false,
+      "runtime_cutover_authorized": false,
+      "rkp4_authorized": false,
+      "push_authorized": false,
+      "next_gate": "planning_validation_then_explicit_user_implementation_authorization"
+    },
     "rkp1a_public_json_property_cap_scale_compatibility_repair": {
       "parent": "08-15-core-rust-runtime-performance-remediation",
       "planning_base": "639e93555c15b46c54c8e9bb7ec610d4a77c7478",
