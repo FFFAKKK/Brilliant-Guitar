@@ -1,4 +1,5 @@
 mod catalog;
+mod hierarchy;
 mod local;
 mod measure;
 
@@ -38,8 +39,8 @@ pub(crate) fn dispatch(
         | CoreCommandIdV1::VoiceMove
         | CoreCommandIdV1::VoiceSetDefaultStaff
         | CoreCommandIdV1::VoiceSetSequenceStart
-        | CoreCommandIdV1::EventSetStaffAssignment
-        | CoreCommandIdV1::RangeDelete
+        | CoreCommandIdV1::EventSetStaffAssignment => hierarchy::dispatch(transaction, command),
+        CoreCommandIdV1::RangeDelete
         | CoreCommandIdV1::RangeTransposeWrittenPitch
         | CoreCommandIdV1::TransactionBatch => Err(KernelStage3CommandFailureLeafV1::InternalError),
     }

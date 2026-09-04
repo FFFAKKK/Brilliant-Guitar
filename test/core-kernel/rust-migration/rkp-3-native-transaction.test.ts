@@ -132,7 +132,7 @@ test("RKP-3 overlay uses discard-only failure and copy-on-first-write orders", (
   assert.equal(source.includes("self.base ="), false);
 });
 
-test("RKP-3 Session owns a literal closed catalog and the first ten command routes", () => {
+test("RKP-3 Session owns a literal closed catalog and the first twenty-five command routes", () => {
   const catalog = readText(
     "crates/brilliant-kernel-session/src/commands/catalog.rs",
   );
@@ -140,6 +140,9 @@ test("RKP-3 Session owns a literal closed catalog and the first ten command rout
   const local = readText("crates/brilliant-kernel-session/src/commands/local.rs");
   const measure = readText(
     "crates/brilliant-kernel-session/src/commands/measure.rs",
+  );
+  const hierarchy = readText(
+    "crates/brilliant-kernel-session/src/commands/hierarchy.rs",
   );
   const runtime = readText("crates/brilliant-kernel-runtime/src/runtime.rs");
   const variants = [
@@ -218,6 +221,35 @@ test("RKP-3 Session owns a literal closed catalog and the first ten command rout
     );
   assert.match(runtime, /replace_ordered_children\(/u);
   assert.match(runtime, /record_voice_descendants_affected\(/u);
+
+  for (const method of [
+    "insert_part",
+    "remove_part",
+    "move_part",
+    "set_part_name",
+    "set_part_instrument",
+    "insert_staff",
+    "remove_staff",
+    "move_staff",
+    "set_staff_definition",
+    "insert_voice",
+    "remove_voice",
+    "move_voice",
+    "set_voice_default_staff",
+    "set_voice_sequence_start",
+    "set_event_staff_assignment",
+  ]) {
+    assert.ok(hierarchy.includes(method), `Hierarchy route missing ${method}`);
+    assert.match(runtime, new RegExp(`pub fn ${method}\\(`, "u"));
+  }
+  for (const forbidden of ["LiveScoreStore", "ScoreDocumentV1", "export_document"])
+    assert.equal(
+      hierarchy.includes(forbidden),
+      false,
+      `Hierarchy Session handler leaked ${forbidden}`,
+    );
+  assert.match(runtime, /ReferenceAddressV1::VoiceDefaultStaff/u);
+  assert.match(runtime, /ReferenceAddressV1::EventStaffAssignment/u);
 
   assert.match(runtime, /pub fn begin_stage3_transaction\(/u);
   assert.match(runtime, /pub fn commit_stage3_transaction\(/u);

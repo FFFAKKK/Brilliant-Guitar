@@ -171,9 +171,9 @@ pub(crate) struct TransactionOverlayV1<'a> {
     orders: HashMap<StableOrderAddressV1, Vec<StableId>>,
     order_tombstones: HashSet<StableOrderAddressV1>,
     extensions: HashMap<ExtensionKeyV1, OverlayExtensionV1>,
-    references: HashMap<ReferenceAddressV1, ReferenceValueV1>,
+    references: HashMap<ReferenceAddressV1, Option<ReferenceValueV1>>,
     reference_order: Vec<ReferenceAddressV1>,
-    voice_times: HashMap<StableId, Vec<StableId>>,
+    voice_times: HashMap<StableId, Option<Vec<StableId>>>,
     builder: ChangeSetBuilderV1,
     metrics: OverlayWorkMetricsV1,
     poisoned: bool,
@@ -300,6 +300,7 @@ impl<'a> TransactionOverlayV1<'a> {
         );
         prune_hidden_descendants(&mut entity, &self.entity_states);
         apply_scalar_replacements(&mut entity, &self.scalar_replacements);
+        apply_reference_replacements(&mut entity, &self.references);
         Some(entity)
     }
 
@@ -333,21 +334,21 @@ impl<'a> TransactionOverlayV1<'a> {
     }
 
     pub(crate) fn read_reference(&self, address: &ReferenceAddressV1) -> Option<ReferenceValueV1> {
-        self.references
-            .get(address)
-            .cloned()
-            .or_else(|| self.base.read_reference(address))
+        match self.references.get(address) {
+            Some(value) => value.clone(),
+            None => self.base.read_reference(address),
+        }
     }
 
     pub(crate) fn list_references_to(&self, target_id: &StableId) -> Vec<ReferenceAddressV1> {
         let mut references = self.base.list_references_to(target_id);
         for address in &self.reference_order {
             references.retain(|candidate| candidate != address);
-            if self
-                .references
-                .get(address)
-                .is_some_and(|value| reference_points_to(address, value, target_id))
-            {
+            if self.references.get(address).is_some_and(|value| {
+                value
+                    .as_ref()
+                    .is_some_and(|value| reference_points_to(address, value, target_id))
+            }) {
                 references.push(address.clone());
             }
         }
@@ -355,10 +356,10 @@ impl<'a> TransactionOverlayV1<'a> {
     }
 
     pub(crate) fn read_voice_time(&self, voice_id: &StableId) -> Option<Vec<StableId>> {
-        self.voice_times
-            .get(voice_id)
-            .cloned()
-            .or_else(|| self.base.read_voice_time(voice_id))
+        match self.voice_times.get(voice_id) {
+            Some(value) => value.clone(),
+            None => self.base.read_voice_time(voice_id),
+        }
     }
 
     pub(crate) fn replace_scalar(
@@ -415,6 +416,9 @@ impl<'a> TransactionOverlayV1<'a> {
         let entity_records = flatten_entity_records(&entity);
         let owned_orders = entity_owned_orders(&entity);
         let entity_owners = entity_owner_entries(&entity, owner.clone());
+        let entity_references = entity_reference_entries(&entity);
+        let entity_voice_times = entity_voice_time_entries(&entity);
+        let entity_extensions = entity_extension_entries(&entity);
         let mut bundle_ids = HashSet::with_capacity(entity_records.len());
         for (address, _) in &entity_records {
             if !bundle_ids.insert(address.stable_id().clone())
@@ -471,6 +475,17 @@ impl<'a> TransactionOverlayV1<'a> {
             self.order_tombstones.remove(&owned_order);
             self.orders.insert(owned_order, child_ids);
         }
+        for (reference, value) in entity_references {
+            self.set_reference_state(reference, Some(value));
+        }
+        for (voice_id, event_ids) in entity_voice_times {
+            self.set_voice_time_state(voice_id, Some(event_ids), false);
+        }
+        for (key, value) in entity_extensions {
+            self.extensions
+                .insert(key, OverlayExtensionV1::Present(value));
+        }
+        self.sync_voice_time_from_order(&order);
         self.record_affected(expected_address)?;
         Ok(OverlayMutationV1::Changed)
     }
@@ -516,6 +531,9 @@ impl<'a> TransactionOverlayV1<'a> {
         let expected_anchor = anchor_before(current_order, index);
         let removed_records = flatten_entity_records(&expected);
         let removed_orders = entity_owned_orders(&expected);
+        let removed_references = entity_reference_entries(&expected);
+        let removed_voice_times = entity_voice_time_entries(&expected);
+        let removed_extensions = entity_extension_entries(&expected);
 
         let result = self
             .builder
@@ -542,6 +560,16 @@ impl<'a> TransactionOverlayV1<'a> {
             self.orders.remove(&removed_order);
             self.order_tombstones.insert(removed_order);
         }
+        for (reference, _) in removed_references {
+            self.set_reference_state(reference, None);
+        }
+        for (voice_id, _) in removed_voice_times {
+            self.set_voice_time_state(voice_id, None, false);
+        }
+        for (key, _) in removed_extensions {
+            self.extensions.insert(key, OverlayExtensionV1::Tombstone);
+        }
+        self.sync_voice_time_from_order(&order);
         self.record_affected(address)?;
         Ok(OverlayMutationV1::Changed)
     }
@@ -572,6 +600,7 @@ impl<'a> TransactionOverlayV1<'a> {
             .get_mut(&order)
             .expect("touched order")
             .insert(insert_at, child_id);
+        self.sync_voice_time_from_order(&order);
         Ok(OverlayMutationV1::Changed)
     }
 
@@ -595,6 +624,7 @@ impl<'a> TransactionOverlayV1<'a> {
             .get_mut(&order)
             .expect("touched order")
             .remove(index);
+        self.sync_voice_time_from_order(&order);
         Ok(OverlayMutationV1::Changed)
     }
 
@@ -635,7 +665,8 @@ impl<'a> TransactionOverlayV1<'a> {
         );
         self.map_builder_result(result)?;
         next_order.insert(insert_at, child_id);
-        self.orders.insert(order, next_order);
+        self.orders.insert(order.clone(), next_order);
+        self.sync_voice_time_from_order(&order);
         Ok(OverlayMutationV1::Changed)
     }
 
@@ -659,7 +690,8 @@ impl<'a> TransactionOverlayV1<'a> {
             .builder
             .replace_ordered_children(order.clone(), expected, value.clone());
         self.map_builder_result(result)?;
-        self.orders.insert(order, value);
+        self.orders.insert(order.clone(), value);
+        self.sync_voice_time_from_order(&order);
         Ok(OverlayMutationV1::Changed)
     }
 
@@ -755,10 +787,7 @@ impl<'a> TransactionOverlayV1<'a> {
             .builder
             .update_reference(address.clone(), expected, value.clone());
         self.map_builder_result(result)?;
-        if !self.references.contains_key(&address) {
-            self.reference_order.push(address.clone());
-        }
-        self.references.insert(address, value);
+        self.set_reference_state(address, Some(value));
         Ok(OverlayMutationV1::Changed)
     }
 
@@ -776,10 +805,7 @@ impl<'a> TransactionOverlayV1<'a> {
         if expected == event_ids {
             return Ok(OverlayMutationV1::NoOp);
         }
-        if !self.voice_times.contains_key(&voice_id) {
-            self.metrics.time_index_copies = self.metrics.time_index_copies.saturating_add(1);
-        }
-        self.voice_times.insert(voice_id, event_ids);
+        self.set_voice_time_state(voice_id, Some(event_ids), true);
         Ok(OverlayMutationV1::Changed)
     }
 
@@ -847,6 +873,37 @@ impl<'a> TransactionOverlayV1<'a> {
             Some(OverlayEntityStateV1::Tombstone) => None,
             None => self.resolve_base_entity(stable_id),
         }
+    }
+
+    fn set_reference_state(
+        &mut self,
+        address: ReferenceAddressV1,
+        value: Option<ReferenceValueV1>,
+    ) {
+        if !self.references.contains_key(&address) {
+            self.reference_order.push(address.clone());
+        }
+        self.references.insert(address, value);
+    }
+
+    fn set_voice_time_state(
+        &mut self,
+        voice_id: StableId,
+        value: Option<Vec<StableId>>,
+        count_copy: bool,
+    ) {
+        if count_copy && !self.voice_times.contains_key(&voice_id) {
+            self.metrics.time_index_copies = self.metrics.time_index_copies.saturating_add(1);
+        }
+        self.voice_times.insert(voice_id, value);
+    }
+
+    fn sync_voice_time_from_order(&mut self, order: &StableOrderAddressV1) {
+        let StableOrderAddressV1::Events { voice_id } = order else {
+            return;
+        };
+        let value = self.orders.get(order).cloned();
+        self.set_voice_time_state(voice_id.clone(), value, true);
     }
 }
 
@@ -1005,6 +1062,131 @@ fn entity_owner_entries(
     let mut owners = Vec::new();
     append_entity_owners(entity, root_owner, &mut owners);
     owners
+}
+
+fn entity_reference_entries(
+    entity: &EntityBundleV1,
+) -> Vec<(ReferenceAddressV1, ReferenceValueV1)> {
+    let mut references = Vec::new();
+    append_entity_references(entity, &mut references);
+    references
+}
+
+fn append_entity_references(
+    entity: &EntityBundleV1,
+    references: &mut Vec<(ReferenceAddressV1, ReferenceValueV1)>,
+) {
+    match entity {
+        EntityBundleV1::Measure(bundle) => {
+            for content in &bundle.contents {
+                references.push((
+                    ReferenceAddressV1::PartMeasureLink {
+                        part_id: content.part_id.clone(),
+                        measure_id: bundle.definition.id.clone(),
+                    },
+                    ReferenceValueV1::Present(true),
+                ));
+                for voice in &content.voices {
+                    append_entity_references(&EntityBundleV1::Voice(voice.clone()), references);
+                }
+            }
+        }
+        EntityBundleV1::Part(bundle) => {
+            for content in &bundle.part.measure_contents {
+                references.push((
+                    ReferenceAddressV1::PartMeasureLink {
+                        part_id: bundle.part.id.clone(),
+                        measure_id: content.measure_id.clone(),
+                    },
+                    ReferenceValueV1::Present(true),
+                ));
+                for voice in &content.voices {
+                    append_entity_references(&EntityBundleV1::Voice(voice.clone()), references);
+                }
+            }
+            for extension in &bundle.extensions {
+                references.push((
+                    ReferenceAddressV1::ExtensionOwner {
+                        namespace: extension.value.namespace.clone(),
+                        owner: StableExtensionOwnerV1::from(&extension.value.owner),
+                    },
+                    ReferenceValueV1::ExtensionOwner(extension.value.owner.clone()),
+                ));
+            }
+        }
+        EntityBundleV1::Voice(voice) => {
+            references.push((
+                ReferenceAddressV1::VoiceDefaultStaff {
+                    voice_id: voice.id.clone(),
+                },
+                ReferenceValueV1::StableId(voice.default_staff_id.clone()),
+            ));
+            for event in &voice.sequence.events {
+                append_entity_references(&EntityBundleV1::Event(event.clone()), references);
+            }
+        }
+        EntityBundleV1::Event(event) => {
+            references.push((
+                ReferenceAddressV1::EventStaffAssignment {
+                    event_id: event.id.clone(),
+                },
+                ReferenceValueV1::OptionalStableId(event.staff_id.clone()),
+            ));
+        }
+        EntityBundleV1::Staff(_) | EntityBundleV1::Note(_) => {}
+    }
+}
+
+fn entity_voice_time_entries(entity: &EntityBundleV1) -> Vec<(StableId, Vec<StableId>)> {
+    let mut voice_times = Vec::new();
+    append_entity_voice_times(entity, &mut voice_times);
+    voice_times
+}
+
+fn append_entity_voice_times(
+    entity: &EntityBundleV1,
+    voice_times: &mut Vec<(StableId, Vec<StableId>)>,
+) {
+    match entity {
+        EntityBundleV1::Measure(bundle) => {
+            for content in &bundle.contents {
+                for voice in &content.voices {
+                    append_entity_voice_times(&EntityBundleV1::Voice(voice.clone()), voice_times);
+                }
+            }
+        }
+        EntityBundleV1::Part(bundle) => {
+            for content in &bundle.part.measure_contents {
+                for voice in &content.voices {
+                    append_entity_voice_times(&EntityBundleV1::Voice(voice.clone()), voice_times);
+                }
+            }
+        }
+        EntityBundleV1::Voice(voice) => voice_times.push((
+            voice.id.clone(),
+            voice
+                .sequence
+                .events
+                .iter()
+                .map(|event| event.id.clone())
+                .collect(),
+        )),
+        EntityBundleV1::Event(_) | EntityBundleV1::Staff(_) | EntityBundleV1::Note(_) => {}
+    }
+}
+
+fn entity_extension_entries(
+    entity: &EntityBundleV1,
+) -> Vec<(ExtensionKeyV1, AnchoredExtensionBlockV1)> {
+    let EntityBundleV1::Part(bundle) = entity else {
+        return Vec::new();
+    };
+    bundle
+        .extensions
+        .iter()
+        .cloned()
+        .map(|extension| (ExtensionKeyV1::from_block(&extension.value), extension))
+        .collect()
 }
 
 fn append_entity_owners(
@@ -1353,6 +1535,58 @@ fn apply_scalar_replacements(
         EntityBundleV1::Voice(voice) => apply_voice_scalar_replacements(voice, replacements),
         EntityBundleV1::Event(event) => apply_event_scalar_replacements(event, replacements),
         EntityBundleV1::Note(note) => apply_note_scalar_replacements(note, replacements),
+    }
+}
+
+fn apply_reference_replacements(
+    entity: &mut EntityBundleV1,
+    replacements: &HashMap<ReferenceAddressV1, Option<ReferenceValueV1>>,
+) {
+    match entity {
+        EntityBundleV1::Measure(bundle) => {
+            for content in &mut bundle.contents {
+                for voice in &mut content.voices {
+                    apply_voice_reference_replacements(voice, replacements);
+                }
+            }
+        }
+        EntityBundleV1::Part(bundle) => {
+            for content in &mut bundle.part.measure_contents {
+                for voice in &mut content.voices {
+                    apply_voice_reference_replacements(voice, replacements);
+                }
+            }
+        }
+        EntityBundleV1::Voice(voice) => apply_voice_reference_replacements(voice, replacements),
+        EntityBundleV1::Event(event) => apply_event_reference_replacements(event, replacements),
+        EntityBundleV1::Staff(_) | EntityBundleV1::Note(_) => {}
+    }
+}
+
+fn apply_voice_reference_replacements(
+    voice: &mut VoiceV1,
+    replacements: &HashMap<ReferenceAddressV1, Option<ReferenceValueV1>>,
+) {
+    let address = ReferenceAddressV1::VoiceDefaultStaff {
+        voice_id: voice.id.clone(),
+    };
+    if let Some(Some(ReferenceValueV1::StableId(value))) = replacements.get(&address) {
+        voice.default_staff_id.clone_from(value);
+    }
+    for event in &mut voice.sequence.events {
+        apply_event_reference_replacements(event, replacements);
+    }
+}
+
+fn apply_event_reference_replacements(
+    event: &mut RhythmicEventV1,
+    replacements: &HashMap<ReferenceAddressV1, Option<ReferenceValueV1>>,
+) {
+    let address = ReferenceAddressV1::EventStaffAssignment {
+        event_id: event.id.clone(),
+    };
+    if let Some(Some(ReferenceValueV1::OptionalStableId(value))) = replacements.get(&address) {
+        event.staff_id.clone_from(value);
     }
 }
 
@@ -2283,6 +2517,83 @@ mod tests {
                 ..
             }) if matches!(&events[0].content, RhythmicContentV1::Notes { notes } if notes.is_empty())
         ));
+    }
+
+    #[test]
+    fn inserted_bundle_references_and_time_are_visible_projected_and_tombstoned() {
+        let root_order = StableOrderAddressV1::Voices {
+            part_id: id("part"),
+            measure_id: id("measure"),
+        };
+        let voice_address = StableEntityAddressV1::Voice {
+            voice_id: id("voice"),
+        };
+        let voice_reference = ReferenceAddressV1::VoiceDefaultStaff {
+            voice_id: id("voice"),
+        };
+        let event_reference = ReferenceAddressV1::EventStaffAssignment {
+            event_id: id("event"),
+        };
+        let mut base = FakeBaseV1::default();
+        base.orders.insert(root_order.clone(), Vec::new());
+        let mut overlay = TransactionOverlayV1::new(&base);
+
+        overlay
+            .insert_entity(
+                StableOwnerAddressV1::PartMeasure {
+                    part_id: id("part"),
+                    measure_id: id("measure"),
+                },
+                root_order.clone(),
+                StableAnchorV1::Start,
+                voice_address.clone(),
+                voice_with_one_note(),
+            )
+            .expect("insert voice bundle");
+
+        assert_eq!(
+            overlay.read_reference(&voice_reference),
+            Some(ReferenceValueV1::StableId(id("staff")))
+        );
+        assert_eq!(
+            overlay.read_reference(&event_reference),
+            Some(ReferenceValueV1::OptionalStableId(None))
+        );
+        assert_eq!(
+            overlay.read_voice_time(&id("voice")),
+            Some(vec![id("event")])
+        );
+
+        overlay
+            .update_reference(
+                voice_reference.clone(),
+                ReferenceValueV1::StableId(id("staff-2")),
+            )
+            .expect("update inserted voice reference");
+        let voice = overlay
+            .read_entity(&voice_address)
+            .expect("projected inserted voice");
+        assert!(matches!(
+            voice,
+            EntityBundleV1::Voice(VoiceV1 { default_staff_id, .. })
+                if default_staff_id == id("staff-2")
+        ));
+
+        overlay
+            .remove_entity(
+                StableOwnerAddressV1::PartMeasure {
+                    part_id: id("part"),
+                    measure_id: id("measure"),
+                },
+                root_order,
+                voice_address,
+            )
+            .expect("remove projected voice bundle");
+
+        assert_eq!(overlay.read_reference(&voice_reference), None);
+        assert_eq!(overlay.read_reference(&event_reference), None);
+        assert_eq!(overlay.read_voice_time(&id("voice")), None);
+        assert!(overlay.list_references_to(&id("staff-2")).is_empty());
     }
 
     #[test]
