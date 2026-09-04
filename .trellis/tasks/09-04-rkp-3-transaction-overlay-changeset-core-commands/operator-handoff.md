@@ -109,3 +109,25 @@ C10 is a fresh, read-only implementation review of the frozen candidate.
 Acceptance, archive, RKP-4 creation, official qualification, runtime cutover,
 and push remain unauthorized. Any P0/P1/P2 finding returns only its bounded
 repair; otherwise the owner receives a separate acceptance/archive decision.
+
+## C10 direct implementation review — 2026-09-04
+
+The direct inline review inspected only the frozen RKP-3 topics. It found one
+P2: final-invariant and commit-preflight rejections zeroed the response's
+detached attempted-work metrics even though the design requires failed
+transactions to report attempted work without changing committed metrics.
+
+Commit `3ca82f1fcf68070e6c775d0848839864dbc87c71` repairs both exits and adds the
+final-invalid-batch zero-delta regression. The post-repair technical source
+tree is `327ab84bb7c355e560c6cb4071d04a5e473e4b3a`. Rust workspace tests are now
+137 passed, 1 ignored, 0 failed; all format/check/Clippy/MSRV gates pass. The
+focused Node gates remain `9/9`, `6/6`, `19/19`, and `20/20`; the clean full
+suite is 631 discovered, 629 passed, 0 failed, 2 intentional skips. Source and
+staged native addon SHA-256 are both
+`970d8987076786d50dfea6b5c4969ad3d16a5a043741eeba3bf1daa85da72002`.
+
+Targeted rereview leaves P0/P1/P2 at `0/0/0`. This was an inline main-session
+review and is not claimed as a separate-session independent review. The next
+gate is the owner's acceptance/archive authorization decision. RKP-4,
+qualification, default-runtime cutover, and push remain unauthorized; the
+default runtime remains TypeScript.

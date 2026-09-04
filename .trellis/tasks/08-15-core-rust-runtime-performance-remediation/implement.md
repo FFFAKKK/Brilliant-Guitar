@@ -99,14 +99,16 @@ delta, and a stage-only native submit evidence seam. It adds no third-party
 dependency and leaves TypeScript as default.
 
 The child remains `status=in_progress`, `task_start_run=true`, and
-`production_implementation_authorized=true`. C1 through C9 are complete at
-technical source `0861f40b90599aa48a9859d385590175f8af2bbd`; the frozen
-candidate now awaits the dedicated, read-only C10 implementation review. The
-bounded operator stage review found no remaining P0/P1/P2 blocker but is not
-recorded as an independent review.
+`production_implementation_authorized=true`. C1 through C9 initially completed
+at technical source `0861f40b90599aa48a9859d385590175f8af2bbd`. The bounded
+direct C10 review found one P2 failed-attempt-metrics defect, repaired it at
+`3ca82f1fcf68070e6c775d0848839864dbc87c71`, and passed targeted rereview with
+remaining P0/P1/P2=`0/0/0`. The review ran inline under the active execution
+mode and is not claimed as a separate-session independent review.
 
-The clean candidate evidence includes Rust workspace tests 136 passed plus 1
+The clean candidate evidence includes Rust workspace tests 137 passed plus 1
 ignored, RKP-1/RKP-2/RKP-3 focused results `9/9`, `6/6`, `19/19`, and `20/20`,
 and the full suite 631 discovered, 629 passed, 0 failed, 2 intentional skips.
 TypeScript remains default. RKP-4, qualification, cutover,
-acceptance/archive, and push remain false and require separate gates.
+acceptance/archive, and push remain false and require separate gates. The next
+gate is the owner's explicit acceptance/archive authorization decision.
