@@ -140,8 +140,7 @@ fn commit_change_set_with_policy(
     Ok(change_set)
 }
 
-#[cfg(test)]
-pub(crate) fn apply_operations_for_test(
+pub(crate) fn apply_stored_operations(
     store: &mut LiveScoreStore,
     document_version: &mut DocumentVersionV1,
     committed_metrics: &mut KernelStage3MetricsV1,
@@ -3287,7 +3286,7 @@ mod tests {
         assert_eq!(metrics.full_snapshot_materializations, 0);
         assert_index_parity(&store);
 
-        apply_operations_for_test(
+        apply_stored_operations(
             &mut store,
             &mut version,
             &mut metrics,
@@ -3301,7 +3300,7 @@ mod tests {
         );
         assert_index_parity(&store);
 
-        apply_operations_for_test(
+        apply_stored_operations(
             &mut store,
             &mut version,
             &mut metrics,
@@ -3355,7 +3354,7 @@ mod tests {
         assert_eq!(removed.extensions.len(), 2);
         assert_index_parity(&store);
 
-        apply_operations_for_test(
+        apply_stored_operations(
             &mut store,
             &mut version,
             &mut metrics,

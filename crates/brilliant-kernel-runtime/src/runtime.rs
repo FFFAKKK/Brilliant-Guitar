@@ -4,11 +4,14 @@ use brilliant_core_types::{
     DocumentVersionV1, JS_SAFE_INTEGER_MAX, SafeInteger, StableId, StablePathV1,
 };
 use brilliant_kernel_contracts::{
-    EventStaffAssignmentV1, InsertMeasurePartContentV1, KernelReadStateV1,
-    KernelStage3CommandFailureLeafV1, KernelStage3MetricsV1, KernelStage3ResourceLimitKindV1,
-    MeasureAnchorV1, MeasurePickupV1, NoteAddressV1, PartAnchorV1, PitchTranspositionErrorV1,
-    ScoreEntityTargetV1, ScoreRangeV1, ScoreStructureViolationV1, SequenceAnchorV1,
-    StableFailureV1, StaffAnchorV1, VoiceAnchorV1, initial_snapshot,
+    CoreCommandEnvelopeV1, EventStaffAssignmentV1, InsertMeasurePartContentV1, KernelEventCauseV1,
+    KernelEventV1, KernelHistoryStateV1, KernelReadStateV1, KernelStage3CommandFailureLeafV1,
+    KernelStage3MetricsV1, KernelStage3ResourceLimitKindV1, KernelStage4CommandResultV1,
+    KernelStage4FailureV1, KernelStage4MarkPersistedResultV1, KernelStage4MarkPersistedValueV1,
+    KernelStage4MetricsV1, KernelStage4MutationValueV1, KernelStage4RejectedValueV1,
+    MeasureAnchorV1, MeasurePickupV1, NoteAddressV1, PartAnchorV1, PersistedCheckpointV1,
+    PitchTranspositionErrorV1, ScoreEntityTargetV1, ScoreRangeV1, ScoreStructureViolationV1,
+    SequenceAnchorV1, StableFailureV1, StaffAnchorV1, VoiceAnchorV1, initial_snapshot,
 };
 use brilliant_score_foundation::{
     ClefV1, FractionV1, InstrumentDescriptorV1, MeasureDefinitionV1, MeterV1, NoteValueV1, PartV1,
@@ -23,9 +26,11 @@ use crate::{
         ScalarAddressV1, ScalarValueV1, StableAnchorV1, StableEntityAddressV1,
         StableOrderAddressV1, StableOwnerAddressV1,
     },
+    history::{HistoryPrepareFailureV1, HistoryStateV1},
     overlay::{OverlayFailureV1, OverlayMutationV1, TransactionOverlayV1},
+    session_projection::{ProjectionPrepareFailureV1, SessionProjectionStateV1},
     store::{LiveScoreStore, LiveStoreBuildFailure, build_live_score_store},
-    transaction::{TransactionPrepareFailureV1, commit_change_set},
+    transaction::{TransactionPrepareFailureV1, apply_stored_operations, commit_change_set},
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -38,19 +43,6 @@ pub enum KernelRuntimeCreateFailure {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum KernelRuntimeReadFailure {
     InternalInvariant,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum KernelStage3RuntimeCommitV1 {
-    Committed {
-        document_version: DocumentVersionV1,
-        affected: Vec<ScoreEntityTargetV1>,
-        metrics: KernelStage3MetricsV1,
-    },
-    NoOp {
-        document_version: DocumentVersionV1,
-        metrics: KernelStage3MetricsV1,
-    },
 }
 
 #[derive(Clone, Debug)]
@@ -131,15 +123,26 @@ pub struct KernelRuntime {
     store: LiveScoreStore,
     document_version: DocumentVersionV1,
     committed_metrics: KernelStage3MetricsV1,
+    history: HistoryStateV1,
+    projection: SessionProjectionStateV1,
 }
 
 impl KernelRuntime {
     pub fn create(document: ScoreDocumentV1) -> Result<Self, KernelRuntimeCreateFailure> {
         let store = build_live_score_store(&document).map_err(map_store_create_failure)?;
+        let projection = SessionProjectionStateV1::new().map_err(|failure| match failure {
+            ProjectionPrepareFailureV1::Capacity => KernelRuntimeCreateFailure::InternalCapacity,
+            ProjectionPrepareFailureV1::EventSequenceOverflow
+            | ProjectionPrepareFailureV1::Invariant => {
+                KernelRuntimeCreateFailure::InternalInvariant
+            }
+        })?;
         Ok(Self {
             store,
             document_version: DocumentVersionV1::initial(),
             committed_metrics: KernelStage3MetricsV1::default(),
+            history: HistoryStateV1::new(),
+            projection,
         })
     }
 
@@ -158,6 +161,15 @@ impl KernelRuntime {
             .map_err(|_| KernelRuntimeReadFailure::InternalInvariant)?;
         let mut state = initial_snapshot(document);
         state.snapshot.document_version = self.document_version;
+        state.history = self
+            .history
+            .projected()
+            .map_err(|_| KernelRuntimeReadFailure::InternalInvariant)?;
+        let identity = self
+            .history
+            .current_identity()
+            .map_err(|_| KernelRuntimeReadFailure::InternalInvariant)?;
+        state.dirty = self.projection.dirty(identity);
         Ok(state)
     }
 
@@ -168,30 +180,315 @@ impl KernelRuntime {
         }
     }
 
-    pub fn commit_stage3_transaction(
+    pub fn commit_stage4_transaction(
         &mut self,
+        command: CoreCommandEnvelopeV1,
         prepared: KernelStage3PreparedV1,
-    ) -> Result<KernelStage3RuntimeCommitV1, KernelStage3CommandFailureLeafV1> {
+    ) -> Result<KernelStage4CommandResultV1, KernelStage4FailureV1> {
         if prepared.change_set.forward.is_empty() {
-            return Ok(KernelStage3RuntimeCommitV1::NoOp {
-                document_version: self.document_version,
-                metrics: prepared.attempt_metrics,
+            return Ok(KernelStage4CommandResultV1::NoOp {
+                value: self.mutation_value(
+                    Vec::new(),
+                    prepared.attempt_metrics,
+                    KernelStage4MetricsV1::default(),
+                )?,
             });
         }
 
+        let history_append = self.history.prepare_append().map_err(map_history_failure)?;
+        let identity_before = self
+            .history
+            .current_identity()
+            .map_err(map_history_failure)?;
+        let dirty_before = self.projection.dirty(identity_before);
+        let dirty_after = self.projection.dirty(history_append.sequence);
+        let event_count = 1 + u64::from(dirty_before != dirty_after);
+        let projection = self
+            .projection
+            .prepare_document_transition(
+                self.document_version,
+                history_append.sequence,
+                event_count,
+            )
+            .map_err(map_projection_failure)?;
+        let affected = targets_from_change_set(&prepared.change_set)?;
+        let history_affected = clone_targets(&affected)?;
+        let event_affected = clone_targets(&affected)?;
+        let mut events = Vec::new();
+        events
+            .try_reserve(event_count as usize)
+            .map_err(|_| KernelStage4FailureV1::HistoryInvariantViolation)?;
+        let command_id = command.command_id();
+
         let committed = self
             .commit_stage3_change_set(prepared.change_set)
-            .map_err(map_prepare_failure)?;
-        let affected = committed
-            .affected
-            .into_iter()
-            .map(score_target_from_stable_address)
-            .collect();
-        Ok(KernelStage3RuntimeCommitV1::Committed {
+            .map_err(|failure| {
+                KernelStage4FailureV1::Command(map_prepare_failure(failure).into())
+            })?;
+        self.history
+            .commit_append(history_append, command, committed, history_affected);
+        self.projection.commit_document_transition(projection);
+        events.push(KernelEventV1::DocumentCommitted {
+            event_sequence: projection.event_sequence_start,
+            document_id: self.store.header.id.clone(),
+            document_version: self.document_version,
+            cause: KernelEventCauseV1::Submit,
+            command_id,
+            affected_entities: event_affected,
+        });
+        if dirty_before != dirty_after {
+            events.push(KernelEventV1::DirtyStateChanged {
+                event_sequence: projection.event_sequence_start + 1,
+                document_id: self.store.header.id.clone(),
+                document_version: self.document_version,
+                cause: KernelEventCauseV1::Submit,
+                dirty: dirty_after,
+            });
+        }
+        let stage4_metrics = KernelStage4MetricsV1 {
+            events_reserved: event_count,
+            events_emitted: event_count,
+            ..KernelStage4MetricsV1::default()
+        };
+        Ok(KernelStage4CommandResultV1::Committed {
+            value: self.mutation_value(affected, self.committed_metrics, stage4_metrics)?,
+            events,
+        })
+    }
+
+    pub fn undo(&mut self) -> KernelStage4CommandResultV1 {
+        if !self.history.can_undo() {
+            return self.rejected_command(
+                KernelStage4FailureV1::HistoryEmptyUndo,
+                KernelStage3MetricsV1::default(),
+            );
+        }
+        self.apply_history_transition(false)
+    }
+
+    pub fn redo(&mut self) -> KernelStage4CommandResultV1 {
+        if !self.history.can_redo() {
+            return self.rejected_command(
+                KernelStage4FailureV1::HistoryEmptyRedo,
+                KernelStage3MetricsV1::default(),
+            );
+        }
+        self.apply_history_transition(true)
+    }
+
+    pub fn mark_persisted(
+        &mut self,
+        checkpoint: PersistedCheckpointV1,
+    ) -> KernelStage4MarkPersistedResultV1 {
+        if checkpoint.document_id != self.store.header.id {
+            return self.rejected_checkpoint(KernelStage4FailureV1::CheckpointDocumentMismatch);
+        }
+        let clean_identity = match self
+            .projection
+            .identity_for_version(self.document_version, checkpoint.document_version)
+        {
+            Ok(identity) => identity,
+            Err(failure) => return self.rejected_checkpoint(failure),
+        };
+        let current_identity = match self.history.current_identity() {
+            Ok(identity) => identity,
+            Err(_) => {
+                return self
+                    .rejected_checkpoint(KernelStage4FailureV1::CheckpointInvariantViolation);
+            }
+        };
+        let prepared = match self
+            .projection
+            .prepare_mark_persisted(current_identity, clean_identity)
+        {
+            Ok(Some(prepared)) => prepared,
+            Ok(None) => {
+                return KernelStage4MarkPersistedResultV1::NoOp {
+                    value: KernelStage4MarkPersistedValueV1 {
+                        document_version: self.document_version,
+                        dirty: self.projection.dirty(current_identity),
+                    },
+                };
+            }
+            Err(ProjectionPrepareFailureV1::EventSequenceOverflow) => {
+                return self.rejected_checkpoint(KernelStage4FailureV1::EventSequenceOverflow);
+            }
+            Err(ProjectionPrepareFailureV1::Capacity | ProjectionPrepareFailureV1::Invariant) => {
+                return self
+                    .rejected_checkpoint(KernelStage4FailureV1::CheckpointInvariantViolation);
+            }
+        };
+        let mut events = Vec::new();
+        if events.try_reserve(prepared.event_count as usize).is_err() {
+            return self.rejected_checkpoint(KernelStage4FailureV1::CheckpointInvariantViolation);
+        }
+        let dirty_after = current_identity != prepared.clean_identity;
+        self.projection.commit_mark_persisted(prepared);
+        if prepared.event_count == 1 {
+            events.push(KernelEventV1::DirtyStateChanged {
+                event_sequence: prepared.event_sequence_start,
+                document_id: self.store.header.id.clone(),
+                document_version: self.document_version,
+                cause: KernelEventCauseV1::MarkPersisted,
+                dirty: dirty_after,
+            });
+        }
+        KernelStage4MarkPersistedResultV1::Updated {
+            value: KernelStage4MarkPersistedValueV1 {
+                document_version: self.document_version,
+                dirty: dirty_after,
+            },
+            events,
+        }
+    }
+
+    pub fn invalid_persisted_checkpoint(&self) -> KernelStage4MarkPersistedResultV1 {
+        self.rejected_checkpoint(KernelStage4FailureV1::CheckpointInvalid)
+    }
+
+    fn apply_history_transition(&mut self, redo: bool) -> KernelStage4CommandResultV1 {
+        let prepared = (|| {
+            let identity_before = self
+                .history
+                .current_identity()
+                .map_err(map_history_failure)?;
+            let identity_after = if redo {
+                self.history.identity_after_redo()
+            } else {
+                self.history.identity_after_undo()
+            }
+            .map_err(map_history_failure)?;
+            let dirty_before = self.projection.dirty(identity_before);
+            let dirty_after = self.projection.dirty(identity_after);
+            let event_count = 1 + u64::from(dirty_before != dirty_after);
+            let projection = self
+                .projection
+                .prepare_document_transition(self.document_version, identity_after, event_count)
+                .map_err(map_projection_failure)?;
+            let entry = if redo {
+                self.history.redo_entry()
+            } else {
+                self.history.undo_entry()
+            }
+            .map_err(map_history_failure)?;
+            let command_id = entry.command.command_id();
+            let affected = clone_targets(&entry.affected)?;
+            let event_affected = clone_targets(&entry.affected)?;
+            let mut events = Vec::new();
+            events
+                .try_reserve(event_count as usize)
+                .map_err(|_| KernelStage4FailureV1::HistoryInvariantViolation)?;
+
+            let operations = if redo {
+                &entry.change_set.forward
+            } else {
+                &entry.change_set.inverse
+            };
+            apply_stored_operations(
+                &mut self.store,
+                &mut self.document_version,
+                &mut self.committed_metrics,
+                &entry.change_set,
+                operations,
+            )
+            .map_err(|_| KernelStage4FailureV1::HistoryInvariantViolation)?;
+            if redo {
+                self.history.commit_redo();
+            } else {
+                self.history.commit_undo();
+            }
+            self.projection.commit_document_transition(projection);
+            let cause = if redo {
+                KernelEventCauseV1::Redo
+            } else {
+                KernelEventCauseV1::Undo
+            };
+            events.push(KernelEventV1::DocumentCommitted {
+                event_sequence: projection.event_sequence_start,
+                document_id: self.store.header.id.clone(),
+                document_version: self.document_version,
+                cause,
+                command_id,
+                affected_entities: event_affected,
+            });
+            if dirty_before != dirty_after {
+                events.push(KernelEventV1::DirtyStateChanged {
+                    event_sequence: projection.event_sequence_start + 1,
+                    document_id: self.store.header.id.clone(),
+                    document_version: self.document_version,
+                    cause,
+                    dirty: dirty_after,
+                });
+            }
+            let stage4_metrics = KernelStage4MetricsV1 {
+                events_reserved: event_count,
+                events_emitted: event_count,
+                ..KernelStage4MetricsV1::default()
+            };
+            Ok(KernelStage4CommandResultV1::Committed {
+                value: self.mutation_value(affected, self.committed_metrics, stage4_metrics)?,
+                events,
+            })
+        })();
+        prepared.unwrap_or_else(|failure| {
+            self.rejected_command(failure, KernelStage3MetricsV1::default())
+        })
+    }
+
+    fn mutation_value(
+        &self,
+        affected: Vec<ScoreEntityTargetV1>,
+        metrics: KernelStage3MetricsV1,
+        stage4_metrics: KernelStage4MetricsV1,
+    ) -> Result<KernelStage4MutationValueV1, KernelStage4FailureV1> {
+        let identity = self
+            .history
+            .current_identity()
+            .map_err(map_history_failure)?;
+        Ok(KernelStage4MutationValueV1 {
             document_version: self.document_version,
             affected,
-            metrics: self.committed_metrics,
+            history: self.history.projected().map_err(map_history_failure)?,
+            dirty: self.projection.dirty(identity),
+            metrics,
+            stage4_metrics,
         })
+    }
+
+    pub fn rejected_command(
+        &self,
+        failure: KernelStage4FailureV1,
+        metrics: KernelStage3MetricsV1,
+    ) -> KernelStage4CommandResultV1 {
+        let history = self.history.projected().unwrap_or(KernelHistoryStateV1 {
+            undo_depth: 0,
+            redo_depth: 0,
+        });
+        let identity = self.history.current_identity().unwrap_or(0);
+        KernelStage4CommandResultV1::Rejected {
+            value: KernelStage4RejectedValueV1 {
+                document_version: self.document_version,
+                history,
+                dirty: self.projection.dirty(identity),
+                metrics,
+                stage4_metrics: KernelStage4MetricsV1::default(),
+            },
+            failure,
+        }
+    }
+
+    fn rejected_checkpoint(
+        &self,
+        failure: KernelStage4FailureV1,
+    ) -> KernelStage4MarkPersistedResultV1 {
+        let identity = self.history.current_identity().unwrap_or(0);
+        KernelStage4MarkPersistedResultV1::Rejected {
+            value: KernelStage4MarkPersistedValueV1 {
+                document_version: self.document_version,
+                dirty: self.projection.dirty(identity),
+            },
+            failure,
+        }
     }
 
     pub(crate) fn commit_stage3_change_set(
@@ -204,6 +501,53 @@ impl KernelRuntime {
             &mut self.committed_metrics,
             change_set,
         )
+    }
+}
+
+fn targets_from_change_set(
+    change_set: &ChangeSetV1,
+) -> Result<Vec<ScoreEntityTargetV1>, KernelStage4FailureV1> {
+    let mut values = Vec::new();
+    values
+        .try_reserve(change_set.affected.len())
+        .map_err(|_| KernelStage4FailureV1::HistoryInvariantViolation)?;
+    values.extend(
+        change_set
+            .affected
+            .iter()
+            .cloned()
+            .map(score_target_from_stable_address),
+    );
+    Ok(values)
+}
+
+fn clone_targets(
+    source: &[ScoreEntityTargetV1],
+) -> Result<Vec<ScoreEntityTargetV1>, KernelStage4FailureV1> {
+    let mut values = Vec::new();
+    values
+        .try_reserve(source.len())
+        .map_err(|_| KernelStage4FailureV1::HistoryInvariantViolation)?;
+    values.extend(source.iter().cloned());
+    Ok(values)
+}
+
+fn map_history_failure(failure: HistoryPrepareFailureV1) -> KernelStage4FailureV1 {
+    match failure {
+        HistoryPrepareFailureV1::Capacity
+        | HistoryPrepareFailureV1::SequenceOverflow
+        | HistoryPrepareFailureV1::Invariant => KernelStage4FailureV1::HistoryInvariantViolation,
+    }
+}
+
+fn map_projection_failure(failure: ProjectionPrepareFailureV1) -> KernelStage4FailureV1 {
+    match failure {
+        ProjectionPrepareFailureV1::EventSequenceOverflow => {
+            KernelStage4FailureV1::EventSequenceOverflow
+        }
+        ProjectionPrepareFailureV1::Capacity | ProjectionPrepareFailureV1::Invariant => {
+            KernelStage4FailureV1::HistoryInvariantViolation
+        }
     }
 }
 
@@ -2360,7 +2704,7 @@ mod tests {
     use brilliant_score_foundation::canonical_score_bytes;
 
     use super::*;
-    use crate::transaction::apply_operations_for_test;
+    use crate::transaction::apply_stored_operations;
 
     fn measure_payload(
         document: &ScoreDocumentV1,
@@ -2464,7 +2808,7 @@ mod tests {
             transaction.finish().expect("finish measure change")
         };
         runtime
-            .commit_stage3_transaction(prepared)
+            .commit_stage3_change_set(prepared.change_set)
             .expect("commit measure change");
     }
 
@@ -2562,12 +2906,12 @@ mod tests {
         };
         let change_set = prepared.change_set.clone();
         runtime
-            .commit_stage3_transaction(prepared)
+            .commit_stage3_change_set(prepared.change_set)
             .expect("commit measure");
         let committed = runtime.store.export_document().expect("committed document");
         assert_ne!(committed, baseline);
 
-        apply_operations_for_test(
+        apply_stored_operations(
             &mut runtime.store,
             &mut runtime.document_version,
             &mut runtime.committed_metrics,
@@ -2580,7 +2924,7 @@ mod tests {
             baseline
         );
 
-        apply_operations_for_test(
+        apply_stored_operations(
             &mut runtime.store,
             &mut runtime.document_version,
             &mut runtime.committed_metrics,
@@ -2610,7 +2954,7 @@ mod tests {
         };
         let change_set = prepared.change_set.clone();
         runtime
-            .commit_stage3_transaction(prepared)
+            .commit_stage3_change_set(prepared.change_set)
             .expect("commit part removal");
         let committed = runtime.store.export_document().expect("committed document");
         assert_eq!(
@@ -2630,7 +2974,7 @@ mod tests {
             ["example.second"]
         );
 
-        apply_operations_for_test(
+        apply_stored_operations(
             &mut runtime.store,
             &mut runtime.document_version,
             &mut runtime.committed_metrics,
@@ -2643,7 +2987,7 @@ mod tests {
             baseline
         );
 
-        apply_operations_for_test(
+        apply_stored_operations(
             &mut runtime.store,
             &mut runtime.document_version,
             &mut runtime.committed_metrics,
@@ -2737,7 +3081,7 @@ mod tests {
             transaction.finish().expect("finish shared transaction")
         };
         runtime
-            .commit_stage3_transaction(prepared)
+            .commit_stage3_change_set(prepared.change_set)
             .expect("commit shared transaction");
 
         let committed = runtime.store.export_document().expect("committed document");

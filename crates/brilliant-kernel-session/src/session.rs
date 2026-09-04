@@ -1,16 +1,19 @@
 use brilliant_kernel_contracts::{
-    CapturedCoreCommandV1, CoreCommandEnvelopeV1, KernelSessionCreateRequestV1,
-    KernelSessionCreateResultV1, KernelSessionCreateSuccessValueV1, KernelSessionReadResultV1,
-    KernelStage3CommandFailureLeafV1, KernelStage3CommandFailureV1, KernelStage3MetricsV1,
-    KernelStage3ResourceLimitKindV1, KernelStage3SubmitDecodeFailureV1,
+    CapturedCoreCommandV1, CoreCommandEnvelopeV1, KernelSelectorResultV1,
+    KernelSessionCreateRequestV1, KernelSessionCreateResultV1, KernelSessionCreateSuccessValueV1,
+    KernelSessionReadResultV1, KernelStage3CommandFailureLeafV1, KernelStage3CommandFailureV1,
+    KernelStage3MetricsV1, KernelStage3ResourceLimitKindV1, KernelStage3SubmitDecodeFailureV1,
     KernelStage3SubmitNoOpValueV1, KernelStage3SubmitRejectedValueV1, KernelStage3SubmitRequestV1,
-    KernelStage3SubmitResultV1, KernelStage3SubmitSuccessValueV1, MAX_BATCH_CHILDREN_V1,
-    ScoreEntityTargetV1, StableFailureV1, decode_captured_core_command,
-    decode_stage3_submit_request,
+    KernelStage3SubmitResultV1, KernelStage3SubmitSuccessValueV1, KernelStage4CommandResultV1,
+    KernelStage4FailureV1, KernelStage4MetricsV1, KernelStage4OperationDecodeFailureV1,
+    KernelStage4OperationRequestV1, KernelStage4OperationResultV1, KernelStage4OperationV1,
+    KernelStage4ReadResultV1, KernelStage4ReadStateV1, KernelStage4SelectResultV1,
+    KernelStage4SelectValueV1, KernelStage4SnapshotV1, MAX_BATCH_CHILDREN_V1, ScoreEntityTargetV1,
+    StableFailureV1, decode_captured_core_command, decode_stage3_submit_request,
+    decode_stage4_operation_request,
 };
 use brilliant_kernel_runtime::{
-    KernelRuntime, KernelRuntimeCreateFailure, KernelStage3RuntimeCommitV1,
-    KernelStage3TransactionV1,
+    KernelRuntime, KernelRuntimeCreateFailure, KernelStage3TransactionV1,
 };
 
 use crate::commands;
@@ -102,18 +105,24 @@ impl KernelSession {
             );
         }
 
-        let command = request.command;
+        stage4_command_result_to_stage3(self.submit_stage4_command(request.command))
+    }
+
+    pub fn submit_stage4_command(
+        &mut self,
+        command: CoreCommandEnvelopeV1,
+    ) -> KernelStage4CommandResultV1 {
         let definition = commands::catalog_definition(command.command_id());
         if command.target().kind() != definition.target_kind {
-            return command_rejected(
-                KernelStage3SubmitRejectedValueV1 {
-                    document_version: self.runtime.document_version(),
-                    metrics: KernelStage3MetricsV1::default(),
-                },
-                KernelStage3CommandFailureLeafV1::TargetMismatch,
+            return self.runtime.rejected_command(
+                KernelStage4FailureV1::Command(
+                    KernelStage3CommandFailureLeafV1::TargetMismatch.into(),
+                ),
+                KernelStage3MetricsV1::default(),
             );
         }
 
+        let history_command = command.clone();
         let mut transaction = self.runtime.begin_stage3_transaction();
         let dispatched = match command {
             CoreCommandEnvelopeV1::TransactionBatch { target, commands } => {
@@ -122,54 +131,143 @@ impl KernelSession {
             command => commands::dispatch(&mut transaction, command).map_err(Into::into),
         };
         if let Err(failure) = dispatched {
-            return command_rejected(
-                KernelStage3SubmitRejectedValueV1 {
-                    document_version: self.runtime.document_version(),
-                    metrics: transaction.attempt_metrics(),
-                },
-                failure,
+            return self.runtime.rejected_command(
+                KernelStage4FailureV1::Command(failure),
+                transaction.attempt_metrics(),
             );
         }
         let attempt_metrics = transaction.attempt_metrics();
         let prepared = match transaction.finish() {
             Ok(prepared) => prepared,
             Err(failure) => {
-                return command_rejected(
-                    KernelStage3SubmitRejectedValueV1 {
-                        document_version: self.runtime.document_version(),
-                        metrics: attempt_metrics,
-                    },
-                    failure,
+                return self.runtime.rejected_command(
+                    KernelStage4FailureV1::Command(failure.into()),
+                    attempt_metrics,
                 );
             }
         };
 
         let attempt_metrics = prepared.attempt_metrics();
-        match self.runtime.commit_stage3_transaction(prepared) {
-            Ok(KernelStage3RuntimeCommitV1::Committed {
-                document_version,
-                affected,
-                metrics,
-            }) => KernelStage3SubmitResultV1::Committed(KernelStage3SubmitSuccessValueV1 {
-                document_version,
-                affected,
-                metrics,
-            }),
-            Ok(KernelStage3RuntimeCommitV1::NoOp {
-                document_version,
-                metrics,
-            }) => KernelStage3SubmitResultV1::NoOp(KernelStage3SubmitNoOpValueV1 {
-                document_version,
-                metrics,
-            }),
-            Err(failure) => command_rejected(
-                KernelStage3SubmitRejectedValueV1 {
-                    document_version: self.runtime.document_version(),
-                    metrics: attempt_metrics,
-                },
-                failure,
-            ),
+        match self
+            .runtime
+            .commit_stage4_transaction(history_command, prepared)
+        {
+            Ok(result) => result,
+            Err(failure) => self.runtime.rejected_command(failure, attempt_metrics),
         }
+    }
+
+    pub fn operate_stage4_bytes(&mut self, request_bytes: &[u8]) -> KernelStage4OperationResultV1 {
+        match decode_stage4_operation_request(request_bytes) {
+            Ok(request) => self.operate_stage4(request),
+            Err(KernelStage4OperationDecodeFailureV1::Boundary(failure)) => {
+                KernelStage4OperationResultV1::Rejected(failure)
+            }
+            Err(KernelStage4OperationDecodeFailureV1::Command(failure)) => {
+                KernelStage4OperationResultV1::Command(self.runtime.rejected_command(
+                    KernelStage4FailureV1::Command(failure),
+                    KernelStage3MetricsV1::default(),
+                ))
+            }
+        }
+    }
+
+    pub fn operate_stage4(
+        &mut self,
+        request: KernelStage4OperationRequestV1,
+    ) -> KernelStage4OperationResultV1 {
+        if request.api_version != 1 {
+            return KernelStage4OperationResultV1::Rejected(
+                StableFailureV1::ContractUnsupportedApiVersion {
+                    supported_version: 1,
+                },
+            );
+        }
+        match request.operation {
+            KernelStage4OperationV1::Submit { command } => {
+                KernelStage4OperationResultV1::Command(self.submit_stage4_command(command))
+            }
+            KernelStage4OperationV1::Undo => {
+                KernelStage4OperationResultV1::Command(self.runtime.undo())
+            }
+            KernelStage4OperationV1::Redo => {
+                KernelStage4OperationResultV1::Command(self.runtime.redo())
+            }
+            KernelStage4OperationV1::MarkPersisted { checkpoint } => {
+                KernelStage4OperationResultV1::MarkPersisted(
+                    self.runtime.mark_persisted(checkpoint),
+                )
+            }
+            KernelStage4OperationV1::MarkPersistedInvalid => {
+                KernelStage4OperationResultV1::MarkPersisted(
+                    self.runtime.invalid_persisted_checkpoint(),
+                )
+            }
+            KernelStage4OperationV1::Read {
+                known_snapshot_version: _,
+            } => match self.runtime.read_state() {
+                Ok(state) => KernelStage4OperationResultV1::Read(KernelStage4ReadResultV1::Ok(
+                    Box::new(KernelStage4ReadStateV1 {
+                        snapshot: KernelStage4SnapshotV1 {
+                            document_id: state.snapshot.document_id,
+                            schema_version: state.snapshot.schema_version,
+                            document_version: state.snapshot.document_version,
+                            document: Some(state.snapshot.document),
+                        },
+                        history: state.history,
+                        dirty: state.dirty,
+                        stage4_metrics: KernelStage4MetricsV1 {
+                            full_snapshot_materializations: 1,
+                            ..KernelStage4MetricsV1::default()
+                        },
+                    }),
+                )),
+                Err(_) => KernelStage4OperationResultV1::Read(KernelStage4ReadResultV1::Rejected(
+                    KernelStage4FailureV1::ReadInvariantViolation,
+                )),
+            },
+            KernelStage4OperationV1::Select { selector: _ } => {
+                KernelStage4OperationResultV1::Select(KernelStage4SelectResultV1 {
+                    value: KernelStage4SelectValueV1 {
+                        document_version: self.runtime.document_version(),
+                        selection: KernelSelectorResultV1::Rejected(
+                            KernelStage4FailureV1::ReadInvariantViolation,
+                        ),
+                        stage4_metrics: KernelStage4MetricsV1::default(),
+                    },
+                })
+            }
+        }
+    }
+}
+
+fn stage4_command_result_to_stage3(
+    result: KernelStage4CommandResultV1,
+) -> KernelStage3SubmitResultV1 {
+    match result {
+        KernelStage4CommandResultV1::Committed { value, .. } => {
+            KernelStage3SubmitResultV1::Committed(KernelStage3SubmitSuccessValueV1 {
+                document_version: value.document_version,
+                affected: value.affected,
+                metrics: value.metrics,
+            })
+        }
+        KernelStage4CommandResultV1::NoOp { value } => {
+            KernelStage3SubmitResultV1::NoOp(KernelStage3SubmitNoOpValueV1 {
+                document_version: value.document_version,
+                metrics: value.metrics,
+            })
+        }
+        KernelStage4CommandResultV1::Rejected { value, failure } => command_rejected(
+            KernelStage3SubmitRejectedValueV1 {
+                document_version: value.document_version,
+                metrics: value.metrics,
+            },
+            match failure {
+                KernelStage4FailureV1::Command(failure) => failure,
+                _ => KernelStage3CommandFailureLeafV1::InternalError.into(),
+            },
+        ),
     }
 }
 
@@ -243,9 +341,10 @@ fn batch_child_failure(
 #[cfg(test)]
 mod tests {
     use brilliant_kernel_contracts::{
-        KernelSessionCreateRequestV1, KernelStage3CommandFailureV1, ScoreEntityTargetV1,
-        ScoreStructureViolationV1, decode_create_request, decode_stage3_submit_request,
-        encode_create_result, encode_read_result,
+        KernelSessionCreateRequestV1, KernelStage3CommandFailureV1,
+        KernelStage4MarkPersistedResultV1, ScoreEntityTargetV1, ScoreStructureViolationV1,
+        decode_create_request, decode_stage3_submit_request, encode_create_result,
+        encode_read_result,
     };
 
     use super::*;
@@ -263,6 +362,10 @@ mod tests {
         session.submit_stage3(
             decode_stage3_submit_request(request.as_bytes()).expect("stage-three request"),
         )
+    }
+
+    fn operate(session: &mut KernelSession, request: &str) -> KernelStage4OperationResultV1 {
+        session.operate_stage4_bytes(request.as_bytes())
     }
 
     fn assert_zero_global_work(metrics: &KernelStage3MetricsV1) {
@@ -428,6 +531,153 @@ mod tests {
             String::from_utf8(encode_read_result(&read).expect("read bytes")).expect("UTF-8 read");
         assert!(encoded.contains(r#""writtenPitch":{"step":"D","alter":0,"octave":4}"#));
         assert!(encoded.contains(r#""duration":{"base":8,"dots":0}"#));
+    }
+
+    #[test]
+    fn stage3_submit_projects_real_history_and_dirty_state() {
+        let mut session = local_session();
+        let metadata = r#"{"apiVersion":1,"command":{"commandVersion":1,"commandId":"core.document.set-metadata","target":{"kind":"document","documentId":"score-local"},"payload":{"metadata":{"title":"History","authors":["Brilliant"],"tempo":{"bpm":120}}}}}"#;
+
+        let KernelStage3SubmitResultV1::Committed(value) = submit(&mut session, metadata) else {
+            panic!("metadata must commit");
+        };
+        assert_eq!(value.document_version.get(), 1);
+
+        let KernelSessionReadResultV1::Ok(state) = session.read_state() else {
+            panic!("read must succeed");
+        };
+        assert_eq!(state.history.undo_depth, 1);
+        assert_eq!(state.history.redo_depth, 0);
+        assert!(state.dirty);
+    }
+
+    #[test]
+    fn history_undo_redo_branch_and_delayed_persisted_identity_are_exact() {
+        let mut session = local_session();
+        let submit_a = r#"{"apiVersion":1,"operation":{"kind":"submit","command":{"commandVersion":1,"commandId":"core.document.set-metadata","target":{"kind":"document","documentId":"score-local"},"payload":{"metadata":{"title":"A","authors":["Brilliant"],"tempo":{"bpm":120}}}}}}"#;
+        let submit_b = r#"{"apiVersion":1,"operation":{"kind":"submit","command":{"commandVersion":1,"commandId":"core.document.set-metadata","target":{"kind":"document","documentId":"score-local"},"payload":{"metadata":{"title":"B","authors":["Brilliant"],"tempo":{"bpm":120}}}}}}"#;
+        let submit_c = r#"{"apiVersion":1,"operation":{"kind":"submit","command":{"commandVersion":1,"commandId":"core.document.set-metadata","target":{"kind":"document","documentId":"score-local"},"payload":{"metadata":{"title":"B","authors":["Brilliant"],"tempo":{"bpm":120}}}}}}"#;
+
+        let KernelStage4OperationResultV1::Command(KernelStage4CommandResultV1::Committed {
+            value,
+            events,
+        }) = operate(&mut session, submit_a)
+        else {
+            panic!("submit A must commit");
+        };
+        assert_eq!(value.document_version.get(), 1);
+        assert_eq!((value.history.undo_depth, value.history.redo_depth), (1, 0));
+        assert!(value.dirty);
+        assert_eq!(events.len(), 2);
+
+        let KernelStage4OperationResultV1::Command(KernelStage4CommandResultV1::Committed {
+            value,
+            events,
+        }) = operate(&mut session, submit_b)
+        else {
+            panic!("submit B must commit");
+        };
+        assert_eq!(value.document_version.get(), 2);
+        assert_eq!((value.history.undo_depth, value.history.redo_depth), (2, 0));
+        assert!(value.dirty);
+        assert_eq!(events.len(), 1);
+
+        let mark_a = r#"{"apiVersion":1,"operation":{"kind":"mark-persisted","checkpoint":{"documentId":"score-local","documentVersion":1}}}"#;
+        let KernelStage4OperationResultV1::MarkPersisted(
+            KernelStage4MarkPersistedResultV1::Updated { value, events },
+        ) = operate(&mut session, mark_a)
+        else {
+            panic!("delayed mark must update clean identity");
+        };
+        assert!(value.dirty);
+        assert!(events.is_empty());
+
+        let undo = r#"{"apiVersion":1,"operation":{"kind":"undo"}}"#;
+        let KernelStage4OperationResultV1::Command(KernelStage4CommandResultV1::Committed {
+            value,
+            events,
+        }) = operate(&mut session, undo)
+        else {
+            panic!("undo B must commit");
+        };
+        assert_eq!(value.document_version.get(), 3);
+        assert_eq!((value.history.undo_depth, value.history.redo_depth), (1, 1));
+        assert!(!value.dirty);
+        assert_eq!(events.len(), 2);
+
+        let redo = r#"{"apiVersion":1,"operation":{"kind":"redo"}}"#;
+        let KernelStage4OperationResultV1::Command(KernelStage4CommandResultV1::Committed {
+            value,
+            events,
+        }) = operate(&mut session, redo)
+        else {
+            panic!("redo B must commit");
+        };
+        assert_eq!(value.document_version.get(), 4);
+        assert!(value.dirty);
+        assert_eq!(events.len(), 2);
+
+        let _ = operate(&mut session, undo);
+        let KernelStage4OperationResultV1::Command(KernelStage4CommandResultV1::Committed {
+            value,
+            events,
+        }) = operate(&mut session, submit_c)
+        else {
+            panic!("deep-equal branch must still commit with a fresh identity");
+        };
+        assert_eq!(value.document_version.get(), 6);
+        assert_eq!((value.history.undo_depth, value.history.redo_depth), (2, 0));
+        assert!(value.dirty);
+        assert_eq!(events.len(), 2);
+
+        let KernelStage4OperationResultV1::Command(KernelStage4CommandResultV1::Rejected {
+            value,
+            failure: KernelStage4FailureV1::HistoryEmptyRedo,
+        }) = operate(&mut session, redo)
+        else {
+            panic!("truncated redo must reject");
+        };
+        assert_eq!(value.document_version.get(), 6);
+        assert_eq!((value.history.undo_depth, value.history.redo_depth), (2, 0));
+    }
+
+    #[test]
+    fn no_op_and_rejection_preserve_the_redo_tail() {
+        let mut session = local_session();
+        let submit_a = r#"{"apiVersion":1,"operation":{"kind":"submit","command":{"commandVersion":1,"commandId":"core.document.set-metadata","target":{"kind":"document","documentId":"score-local"},"payload":{"metadata":{"title":"A","authors":["Brilliant"],"tempo":{"bpm":120}}}}}}"#;
+        let submit_b = r#"{"apiVersion":1,"operation":{"kind":"submit","command":{"commandVersion":1,"commandId":"core.document.set-metadata","target":{"kind":"document","documentId":"score-local"},"payload":{"metadata":{"title":"B","authors":["Brilliant"],"tempo":{"bpm":120}}}}}}"#;
+        let rejected = r#"{"apiVersion":1,"operation":{"kind":"submit","command":{"commandVersion":1,"commandId":"core.event.remove","target":{"kind":"event","eventId":"missing"},"payload":{}}}}"#;
+        let undo = r#"{"apiVersion":1,"operation":{"kind":"undo"}}"#;
+        let redo = r#"{"apiVersion":1,"operation":{"kind":"redo"}}"#;
+
+        let _ = operate(&mut session, submit_a);
+        let _ = operate(&mut session, submit_b);
+        let _ = operate(&mut session, undo);
+
+        let KernelStage4OperationResultV1::Command(KernelStage4CommandResultV1::NoOp { value }) =
+            operate(&mut session, submit_a)
+        else {
+            panic!("equal submit after undo must be a no-op");
+        };
+        assert_eq!((value.history.undo_depth, value.history.redo_depth), (1, 1));
+
+        let KernelStage4OperationResultV1::Command(KernelStage4CommandResultV1::Rejected {
+            value,
+            ..
+        }) = operate(&mut session, rejected)
+        else {
+            panic!("missing target must reject");
+        };
+        assert_eq!((value.history.undo_depth, value.history.redo_depth), (1, 1));
+
+        let KernelStage4OperationResultV1::Command(KernelStage4CommandResultV1::Committed {
+            value,
+            ..
+        }) = operate(&mut session, redo)
+        else {
+            panic!("redo tail must remain available");
+        };
+        assert_eq!((value.history.undo_depth, value.history.redo_depth), (2, 0));
     }
 
     #[test]
