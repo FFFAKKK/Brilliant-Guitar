@@ -342,7 +342,19 @@ test("unsafe ownership is confined to boundary.rs with exact production call sit
   assert.doesNotMatch(production, /wrap_and_tag|napi_add_finalizer/u);
   assert.doesNotMatch(production, /\.(?:unwrap|expect)\s*\(|panic!\s*\(/u);
 
-  assert.equal((nodeRoot.match(/#\[napi\(js_name\s*=/gu) ?? []).length, 2);
+  assert.deepEqual(
+    Array.from(
+      nodeRoot.matchAll(/#\[napi\(js_name\s*=\s*"([^"]+)"\)\]/gu),
+      (match) => match[1] ?? "",
+    ).sort(),
+    [
+      "createKernelSessionV1",
+      "operateKernelStage4V1",
+      "readKernelSessionV1",
+      "replayKernelStage4V1",
+    ],
+  );
+  assert.equal((nodeRoot.match(/#\[napi(?:\([^\]]*\))?\]/gu) ?? []).length, 5);
   assert.doesNotMatch(nodeRoot, /#\[napi\([^\]]*(?:object|class|constructor|method)/u);
   assert.match(boundary, /0x4252_494c_4c49_414e/u);
   assert.match(boundary, /0x545f_524b_5031_5f31/u);

@@ -49,7 +49,7 @@
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RUST REMEDIATION PARENT PLANNING / RKP-2 ACCEPTED ARCHIVED AT 6D0956C / RKP-3 ACCEPTED ARCHIVED AT AUDITED TECHNICAL SOURCE 3CA82F1 WITH ARCHIVE COMPATIBILITY 560FD89 / RKP-4 PLANNING TASK CREATED AND IMPLEMENTATION NOT STARTED / TYPESCRIPT DEFAULT / RKP-4 IMPLEMENTATION ACCEPTANCE ARCHIVE RKP-5 QUALIFICATION CUTOVER AND PUSH FALSE.",
+  "notes": "RUST REMEDIATION PARENT PLANNING / RKP-2 AND RKP-3 ACCEPTED ARCHIVED / RKP-4 PRIVATE C0-C8 IMPLEMENTATION CANDIDATE READY WITH ONE BOUNDED AUDIT PENDING / TYPESCRIPT DEFAULT / RKP-4 ACCEPTANCE ARCHIVE RKP-5 QUALIFICATION CUTOVER AND PUSH FALSE.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
@@ -142,7 +142,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "rkp4_C1_contracts_and_RED_state_invariants",
+    "next_gate": "rkp4_one_bounded_implementation_audit_only",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -269,6 +269,8 @@
     "rkp4_planning_candidate_ready": true,
     "rkp4_planning_content_commit": "eef310f804a60ce5aff509c35ca6950a791506c4",
     "rkp4_planning_self_audit": "passed_P0_0_P1_0_P2_0_after_one_bounded_P2_documentation_repair",
+    "rkp4_implementation_candidate_ready": true,
+    "rkp4_implementation_source_commit": "bc7449ad6f7770bac741742bb514ac69c059769b",
     "rkp4_default_runtime": "typescript",
     "rkp4_acceptance_authorized": false,
     "rkp4_archive_authorized": false,
@@ -489,7 +491,10 @@
       "planning_content_commit": "eef310f804a60ce5aff509c35ca6950a791506c4",
       "planning_self_audit": "passed_P0_0_P1_0_P2_0_after_one_bounded_P2_documentation_repair",
       "planning_validation": "task_and_parent_trellis_pass_json_parse_related_files_17_diff_check_and_planning_path_allowlist_pass",
-      "current_stage": "implementation_active_C0",
+      "current_stage": "implementation_candidate_ready_pending_bounded_audit",
+      "implementation_candidate_ready": true,
+      "implementation_source_commit": "bc7449ad6f7770bac741742bb514ac69c059769b",
+      "implementation_review": "pending_one_bounded_final_audit",
       "default_runtime": "typescript",
       "acceptance_authorized": false,
       "archive_authorized": false,
@@ -497,7 +502,7 @@
       "qualification_authorized": false,
       "runtime_cutover_authorized": false,
       "push_authorized": false,
-      "next_gate": "C1_contracts_and_RED_state_invariants"
+      "next_gate": "one_bounded_implementation_audit_only"
     },
     "rkp1a_public_json_property_cap_scale_compatibility_repair": {
       "parent": "08-15-core-rust-runtime-performance-remediation",

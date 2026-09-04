@@ -1,1 +1,3 @@
-{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file":".trellis/spec/core-kernel/backend/rust-runtime-transition.md","reason":"Review RKP-4 against the accepted cross-layer transition contract."}
+{"file":".trellis/tasks/09-04-rkp-4-history-snapshots-events-replay/research/file-test-and-rollback-matrix.md","reason":"Verify literal file ownership, decisive tests and rollback stages."}
+{"file":".trellis/tasks/09-04-rkp-4-history-snapshots-events-replay/research/planning-self-audit.md","reason":"Preserve the bounded review scope and explicit later-gate exclusions."}

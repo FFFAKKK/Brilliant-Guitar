@@ -148,3 +148,25 @@ This parent now records `rkp3_status=accepted_archived` and has no current or
 active implementation child. TypeScript remains the default runtime. RKP-4
 planning requires separate owner authorization; qualification, runtime cutover,
 and push remain unauthorized.
+
+## RKP-4 private implementation candidate — 2026-09-05
+
+The user authorized only RKP-4 C0 through C8 plus one bounded final audit.
+The private implementation stages are anchored by activation `9d17807`,
+contracts `6b1f835`, history `9ed639a`, dirty/events `a7bbbfd`, cached
+reads/selectors `d22362c`, operational checkpoint `e98922f`, live Node evidence
+seam `70f8264`, and isolated semantic replay `bc7449a`. The exact technical
+source before C8 evidence is
+`bc7449ad6f7770bac741742bb514ac69c059769b`.
+
+The candidate keeps one vector/cursor history, stored-effect undo/redo,
+identity-based dirty state, one immutable snapshot per revision, direct
+index-backed selectors, deterministic Rust event facts with TypeScript-local
+delivery, latest-only in-memory operational checkpoints, and fresh-session Core
+semantic replay. It preserves the seven-crate/dependency surface, the frozen
+oracle and Qualification V2 bytes, the public 28/51/8/34/9 inventories, and
+`brilliant-score-1`. TypeScript remains the default runtime.
+
+The only current gate is one bounded implementation audit over the RKP-4
+planning base through the candidate. Acceptance, archive, RKP-5, qualification,
+runtime cutover, cleanup, and push remain unauthorized.

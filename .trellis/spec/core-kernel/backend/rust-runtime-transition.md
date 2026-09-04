@@ -113,3 +113,100 @@ Tests must cover all 28 handlers, exact catalog order, 28 accepted and 28 missin
 Wrong: treat green local tests as runtime cutover evidence, relax predecessor history to admit arbitrary later paths, or claim history/events/support parity from Stage-3 submit results.
 
 Correct: pin predecessor history to its accepted RKP-2 head, enforce all successor deltas with the RKP-3 literal allowlist, compare only stage-owned oracle projections, keep TypeScript as default, and require a separate implementation review before any acceptance decision.
+
+## RKP-4 private history, snapshot, event and replay contract
+
+### 1. Scope / trigger
+
+This contract applies only to the private Rust Stage-4 evidence seam after an
+RKP-3 semantic command has been decoded. It owns vector/cursor history,
+stored-effect undo/redo, content-identity dirty state, cached reads, direct
+selectors, deterministic native event facts, latest-only operational
+checkpoints, JavaScript-local subscription dispatch, and isolated Core replay.
+TypeScript remains the product default; support classification, integrated
+modules, migration, qualification, cutover, RKP-5, acceptance, and archive are
+not RKP-4 implementation claims.
+
+### 2. Signatures
+
+```text
+operateKernelStage4V1(handle, requestBytes) -> Buffer
+replayKernelStage4V1(requestBytes) -> Buffer
+KernelSession::submit_stage4_command(command) -> KernelStage4CommandResultV1
+KernelSession::replay_stage4_bytes(requestBytes) -> KernelStage4ReplayResultV1
+```
+
+The live operation request is `{ apiVersion: 1, operation }`. Replay is
+`{ apiVersion: 1, initialDocument, commands }`, accepts no handle, and creates
+one fresh session per call.
+
+### 3. Contracts
+
+History is one `Vec<HistoryEntryV1>` plus a cursor; entries contain the detached
+semantic command, ordered forward/inverse effects, stable affected addresses,
+sequence identity, and logical byte count, never a document. Effective
+submit/undo/redo creates one checked document version; no-op and rejection keep
+history and redo unchanged. Dirty state compares the current content identity
+with the exact version identity recorded by `markPersisted`.
+
+Native event facts reserve a complete checked sequence interval before commit
+and are returned document-before-dirty. Rust stores no callback. The private
+TypeScript adapter snapshots subscribers per event, isolates throws/rejections,
+and rejects callback writes locally while allowing reads/selectors. Full reads
+reuse one immutable snapshot per revision; same-revision reads may omit the
+native document. Non-document selectors use live indices. Operational
+checkpoints materialize only after a successful effective submit reaches 512
+new entries or 33,554,432 logical ChangeSet bytes, retain one completed
+snapshot, emit no public event, and are independent of `markPersisted`.
+
+Replay strictly captures a dense command array, routes each command through
+the same Stage-4 submit path, records only status/version/history/failure,
+stops at the first rejection, and exports the final canonical document once.
+It accepts no ChangeSet, history, event, snapshot, function, undo, or redo
+input and cannot reach a live handle or subscriber registry.
+
+### 4. Validation and error matrix
+
+| Condition | Required result |
+| --- | --- |
+| Empty undo/redo or invalid persisted version/document | Stable Stage-4 rejection; zero history/store/event delta |
+| Version, history identity, event sequence, allocation, or adoption failure | Reject before the first live write; unexpected adoption panic poisons the live handle |
+| Same-revision read with a valid JS cache | Native document omitted, cached frozen identity reused, zero materialization |
+| Invalid selector address/range/owner | Stable `read.*` failure without snapshot materialization or mutation |
+| Checkpoint materialization failure | Interactive commit/events stay committed; prior checkpoint and due counters remain for retry |
+| Subscriber throw, rejection, duplicate, removal, or reentrant write | Later handlers continue; duplicate registrations are independent; write rejects before native invocation |
+| Invalid replay initial document or hostile capture | Stable `invalid-initial-document`; no session is published |
+| Rejected replay command | Include that stage-owned result and final state, stop at its lowest index, run no later command |
+
+### 5. Good / base / bad cases
+
+- Good: two effective submits, undo, and a branch submit produce monotonic
+  versions, truncate redo, preserve stored-effect identity, and emit ordered
+  detached event facts.
+- Base: a no-op, same-revision read, direct history/dirty selector, or repeated
+  `markPersisted` performs zero unrelated mutation and no full-document hot-path
+  work.
+- Bad: store documents in history, rerun handlers during undo/redo, dispatch
+  callbacks from Rust, install a partial cache/checkpoint, accept replay state
+  artifacts, or treat this private seam as the product runtime.
+
+### 6. Required tests
+
+Tests must cover multi-step/branch/no-op/rejected history; every stored effect
+class; dirty save/delayed-save/undo/redo identity; exact zero/one/two events and
+overflow; one materialization per revision; all seven entity kinds and range
+failures; exact checkpoint thresholds/failure retry; hostile callback and
+capture behavior; fresh deterministic replay; immutable oracle rows 57-61;
+five Node exports; frozen 28/51/8/34/9 inventories; dependency and fixture byte
+stability; literal changed-path scope; zero tracked generated output; and
+TypeScript/default plus later-gate false assertions.
+
+### 7. Wrong vs correct
+
+Wrong: regard a green private replay or checkpoint benchmark as qualification,
+or accept a live callback/handle/history snapshot inside replay.
+
+Correct: keep semantic writes in the unified Rust submit path, keep delivery in
+the private TypeScript adapter, measure stage-owned counters explicitly, freeze
+the candidate, perform one bounded implementation review, and require a later
+owner decision for acceptance/archive.

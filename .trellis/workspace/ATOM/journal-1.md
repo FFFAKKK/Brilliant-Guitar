@@ -845,3 +845,59 @@ Accepted the audited RKP-3 technical source, added archive-safe lifecycle covera
 ### Next Steps
 
 - None - task complete
+
+
+## Session 24: RKP-4 C0-C8 implementation candidate
+
+**Date**: 2026-09-05
+**Task**: RKP-4 C0-C8 implementation candidate
+**Branch**: `codex/rkp-4-history-snapshots-events-replay-planning`
+
+### Summary
+
+Completed private Stage-4 vector history, atomic undo/redo, cached immutable reads, indexed selectors, dirty identity, bounded checkpoints, isolated events, semantic replay, and C8 qualification guards; TypeScript remains default and all later gates remain false.
+
+### Main Changes
+
+- Added the private Stage-4 vector/cursor history, monotonic entry identity,
+  atomic undo/redo and persisted-state dirty identity.
+- Added revision-cached immutable reads, live indexes for all six selector
+  families, and latest-only bounded in-memory operational checkpoints.
+- Added data-only native events with adapter-local isolated subscribers and a
+  fresh-session semantic replay path over the same submit pipeline.
+- Added C8 workspace/lifecycle guards and the concise cross-layer Rust
+  transition specification. TypeScript remains the default runtime.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9d17807` | (see git log) |
+| `6b1f835` | (see git log) |
+| `9ed639a` | (see git log) |
+| `a7bbbfd` | (see git log) |
+| `d22362c` | (see git log) |
+| `e98922f` | (see git log) |
+| `70f8264` | (see git log) |
+| `bc7449a` | (see git log) |
+
+### Testing
+
+- [OK] Rust 1.97.1 fmt/check/clippy and Rust 1.88.0 compatibility check.
+- [OK] Rust workspace: 160 passed, 0 failed, 1 ignored.
+- [OK] TypeScript typecheck/build and focused RKP-1/2/3/4 native gates.
+- [OK] RKP-4 combined lane: 18 passed, 0 failed.
+- [OK] Trellis child/parent validation and `git diff --check`.
+- [OK] Native add-on SHA-256:
+  `5BD4EBA926F40E0A26EE0B2E24EDA4DEB570EFD1D20C62FD2951A82B6DA4B2CA`.
+- [PENDING] Clean committed-candidate full `npm test` rerun.
+
+### Status
+
+[OK] **Implementation candidate ready; one bounded audit pending**
+
+### Next Steps
+
+- Commit C8, rerun the clean-candidate full gate, then conduct exactly one
+  bounded implementation audit. Acceptance/archive and all later gates remain
+  unauthorized.

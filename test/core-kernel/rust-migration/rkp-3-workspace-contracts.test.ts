@@ -15,7 +15,9 @@ import {
 
 const RKP2_ACCEPTED_BASE = "6d0956c970f4414cb61e0f3d7148672a6e635032";
 const RKP3_PLANNING_HEAD = "78660bb63e249f7bbfec848b9b19e16d7dc55c25";
+const RKP3_ARCHIVE_COMPATIBILITY_HEAD = "560fd89d32026cdc41c3cf0df65285e99e015456";
 const RKP3_TASK_NAME = "09-04-rkp-3-transaction-overlay-changeset-core-commands";
+const RKP4_TASK_NAME = "09-04-rkp-4-history-snapshots-events-replay";
 const RKP3_ACTIVE_ROOT = `.trellis/tasks/${RKP3_TASK_NAME}`;
 const RKP3_ARCHIVE_ROOT = `.trellis/tasks/archive/2026-09/${RKP3_TASK_NAME}`;
 const RKP3_TASK_MANIFEST = [
@@ -163,6 +165,16 @@ function gitLines(args: readonly string[]): string[] {
 }
 
 function currentRkp3Changes(): Set<string> {
+  if (existsSync(resolve(RKP3_ARCHIVE_ROOT))) {
+    return new Set(
+      gitLines([
+        "diff",
+        "--no-renames",
+        "--name-only",
+        `${RKP3_PLANNING_HEAD}..${RKP3_ARCHIVE_COMPATIBILITY_HEAD}`,
+      ]),
+    );
+  }
   return new Set([
     ...gitLines(["diff", "--no-renames", "--name-only", `${RKP3_PLANNING_HEAD}..HEAD`]),
     ...gitLines(["diff", "--name-only"]),
@@ -232,11 +244,10 @@ test("RKP-3 resolves one exact active or archived lifecycle authority", () => {
   assert.equal(taskMeta.runtime_cutover_authorized, false);
   assert.equal(taskMeta.push_authorized, false);
   assert.equal(parentMeta.rkp3_status, "accepted_archived");
-  assert.equal(parentMeta.current_blocking_descendant, null);
-  assert.equal(parentMeta.current_implementation_child, null);
-  assert.equal(parentMeta.active_implementation_child, null);
-  assert.equal(parentMeta.next_gate, "rkp4_planning_requires_separate_owner_authorization");
-  assert.equal(parentMeta.rkp4_authorized, false);
+  assert.equal(parentMeta.current_blocking_descendant, RKP4_TASK_NAME);
+  assert.equal(parentMeta.current_implementation_child, RKP4_TASK_NAME);
+  assert.equal(parentMeta.active_implementation_child, RKP4_TASK_NAME);
+  assert.equal(parentMeta.rkp4_authorized, true);
 
   assert.ok(Array.isArray(task.relatedFiles));
   for (const path of task.relatedFiles) {
@@ -321,9 +332,12 @@ test("RKP-3 adds no bridge failure and keeps stage failures data-only", () => {
   ).sort();
   assert.deepEqual(exports, [
     "createKernelSessionV1",
+    "operateKernelStage4V1",
     "readKernelSessionV1",
+    "replayKernelStage4V1",
   ]);
   assert.match(nodeRoot, /#\[napi\]\s*pub fn submit_kernel_stage3_v1\(/u);
+  assert.equal((nodeRoot.match(/#\[napi(?:\([^\]]*\))?\]/gu) ?? []).length, 5);
 
   const session = readText("crates/brilliant-kernel-contracts/src/session.rs");
   for (const code of STABLE_BRIDGE_FAILURE_CODES) {

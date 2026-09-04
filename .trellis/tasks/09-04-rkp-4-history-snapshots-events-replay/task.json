@@ -39,7 +39,7 @@
     ".trellis/spec/core-kernel/backend/snapshot-events.md",
     ".trellis/spec/core-kernel/backend/rust-runtime-transition.md"
   ],
-  "notes": "RKP-4 PRIVATE IMPLEMENTATION ACTIVE / USER AUTHORIZED TASK.PY START AND C0-C8 ON 2026-09-04 / ACCEPTANCE ARCHIVE RKP-5 QUALIFICATION CUTOVER PUSH FALSE / TYPESCRIPT DEFAULT / BOUNDED FINAL AUDIT REQUIRED.",
+  "notes": "RKP-4 PRIVATE IMPLEMENTATION C0-C8 CANDIDATE READY / ONE BOUNDED FINAL AUDIT PENDING / ACCEPTANCE ARCHIVE RKP-5 QUALIFICATION CUTOVER PUSH FALSE / TYPESCRIPT DEFAULT.",
   "meta": {
     "planning_base_commit": "46a684c78551d118f75b4864a8ed6ec5d3de77c3",
     "predecessor_task": "09-04-rkp-3-transaction-overlay-changeset-core-commands",
@@ -62,8 +62,19 @@
     "planning_content_commit": "eef310f804a60ce5aff509c35ca6950a791506c4",
     "planning_self_audit": "passed_P0_0_P1_0_P2_0_after_one_bounded_P2_documentation_repair",
     "planning_validation": "task_and_parent_trellis_pass_json_parse_related_files_17_diff_check_and_planning_path_allowlist_pass",
-    "implementation_candidate_ready": false,
-    "implementation_review": "not_started",
+    "implementation_candidate_ready": true,
+    "implementation_source_commit": "bc7449ad6f7770bac741742bb514ac69c059769b",
+    "implementation_stage_commits": {
+      "C0": "9d17807",
+      "C1": "6b1f835",
+      "C2": "9ed639a",
+      "C3": "a7bbbfd",
+      "C4": "d22362c",
+      "C5": "e98922f",
+      "C6": "70f8264",
+      "C7": "bc7449a"
+    },
+    "implementation_review": "pending_one_bounded_final_audit",
     "acceptance_authorized": false,
     "archive_authorized": false,
     "rkp5_authorized": false,
@@ -71,7 +82,7 @@
     "runtime_cutover_authorized": false,
     "push_authorized": false,
     "default_runtime": "typescript",
-    "current_stage": "implementation_active_C0",
+    "current_stage": "implementation_candidate_ready_pending_bounded_audit",
     "history_model": "single_Vec_HistoryEntryV1_plus_cursor_monotonic_non_reused_sequence",
     "dirty_identity_model": "entry_sequence_before_cursor_or_zero_with_append_only_identity_by_document_version",
     "checkpoint_policy": "latest_only_in_memory_after_512_new_history_entries_or_33554432_changeset_logical_bytes_post_commit_no_physical_io",
@@ -79,6 +90,6 @@
     "native_export_target": "five_total_preserve_three_add_operateKernelStage4V1_and_replayKernelStage4V1",
     "oracle_scope": "immutable_RKP0_rows_57_through_61_stage_owned_projection_only",
     "planning_production_delta": "zero",
-    "next_gate": "C1_contracts_and_RED_state_invariants"
+    "next_gate": "one_bounded_implementation_audit_only"
   }
 }

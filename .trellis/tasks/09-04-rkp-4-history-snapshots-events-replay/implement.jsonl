@@ -1,1 +1,3 @@
-{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file":".trellis/spec/core-kernel/backend/rust-runtime-transition.md","reason":"RKP-4 private Stage-4 runtime transition and lifecycle constraints."}
+{"file":".trellis/tasks/09-04-rkp-4-history-snapshots-events-replay/research/history-checkpoint-and-dirty-decision.md","reason":"History identity, dirty-state and bounded checkpoint decisions."}
+{"file":".trellis/tasks/09-04-rkp-4-history-snapshots-events-replay/research/native-events-read-replay-boundary.md","reason":"Native read, event, subscription and semantic replay boundary."}

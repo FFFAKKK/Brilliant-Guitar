@@ -39,6 +39,7 @@ crates/brilliant-kernel-node/src/boundary.rs
 crates/brilliant-kernel-node/src/lib.rs
 src/core-kernel/native/rust-kernel-smoke.ts
 test/core-kernel/rust-migration/rkp-1-node-bridge-smoke.test.ts  (successor-only)
+test/core-kernel/rust-migration/rkp-1-workspace-contracts.test.ts (successor-only)
 test/core-kernel/rust-migration/rkp-2-live-score-store-parity.test.ts (successor-only)
 test/core-kernel/rust-migration/rkp-3-native-transaction.test.ts (successor-only)
 test/core-kernel/rust-migration/rkp-3-workspace-contracts.test.ts (successor-only)
