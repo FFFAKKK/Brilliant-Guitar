@@ -12,6 +12,7 @@ without a new explicit owner approval naming private RKP-4 implementation.
 worktree: .worktrees/rkp-4-history-snapshots-events-replay-planning
 branch: codex/rkp-4-history-snapshots-events-replay-planning
 planning base: 46a684c78551d118f75b4864a8ed6ec5d3de77c3
+planning content: eef310f804a60ce5aff509c35ca6950a791506c4
 predecessor technical source: 3ca82f1fcf68070e6c775d0848839864dbc87c71
 predecessor archive compatibility: 560fd89d32026cdc41c3cf0df65285e99e015456
 default runtime: TypeScript

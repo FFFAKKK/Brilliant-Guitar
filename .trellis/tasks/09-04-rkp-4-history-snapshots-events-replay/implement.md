@@ -10,8 +10,7 @@ After approval:
 
 1. verify exact HEAD is the reviewed RKP-4 planning candidate, worktree is
    clean, RKP-3 is accepted/archived, and TypeScript remains default;
-2. run `python .\.trellis\scripts\task.py start
-   09-04-rkp-4-history-snapshots-events-replay`;
+2. run `python .\.trellis\scripts\task.py start 09-04-rkp-4-history-snapshots-events-replay`;
 3. record the authorization source/scope and activation commit in this task and
    the parent; set only RKP-4 implementation active;
 4. assert no other planning/implementation child is active;

@@ -2,10 +2,14 @@
 
 ## Candidate status
 
-`DRAFT_PENDING_VALIDATION`
+`READY_FOR_OWNER_REVIEW`
 
 This review covers planning artifacts only. Production implementation,
 acceptance, archive, RKP-5, qualification, cutover and push are all false.
+
+Planning content baseline:
+`eef310f804a60ce5aff509c35ca6950a791506c4`. The final coordination freeze
+commit is recorded by the operator after the validation/status patch.
 
 ## Review scope
 

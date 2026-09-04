@@ -142,7 +142,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "rkp4_planning_candidate_validation_then_explicit_owner_implementation_authorization",
+    "next_gate": "explicit_owner_authorization_to_run_rkp4_task_py_start_and_private_implementation",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -262,7 +262,9 @@
     "rkp4_task_start_run": false,
     "rkp4_production_implementation_authorized": false,
     "rkp4_user_implementation_authorization": false,
-    "rkp4_planning_candidate_ready": false,
+    "rkp4_planning_candidate_ready": true,
+    "rkp4_planning_content_commit": "eef310f804a60ce5aff509c35ca6950a791506c4",
+    "rkp4_planning_self_audit": "passed_P0_0_P1_0_P2_0_after_one_bounded_P2_documentation_repair",
     "rkp4_default_runtime": "typescript",
     "rkp4_acceptance_authorized": false,
     "rkp4_archive_authorized": false,
@@ -475,8 +477,11 @@
       "task_start_run": false,
       "production_implementation_authorized": false,
       "user_implementation_authorization": false,
-      "planning_candidate_ready": false,
-      "current_stage": "planning_candidate_drafting",
+      "planning_candidate_ready": true,
+      "planning_content_commit": "eef310f804a60ce5aff509c35ca6950a791506c4",
+      "planning_self_audit": "passed_P0_0_P1_0_P2_0_after_one_bounded_P2_documentation_repair",
+      "planning_validation": "task_and_parent_trellis_pass_json_parse_related_files_17_diff_check_and_planning_path_allowlist_pass",
+      "current_stage": "planning_candidate_ready_for_owner_review",
       "default_runtime": "typescript",
       "acceptance_authorized": false,
       "archive_authorized": false,
@@ -484,7 +489,7 @@
       "qualification_authorized": false,
       "runtime_cutover_authorized": false,
       "push_authorized": false,
-      "next_gate": "validate_planning_candidate_then_request_explicit_task_py_start_authorization"
+      "next_gate": "explicit_owner_authorization_to_run_task_py_start_and_execute_private_RKP4_C0_through_C8"
     },
     "rkp1a_public_json_property_cap_scale_compatibility_repair": {
       "parent": "08-15-core-rust-runtime-performance-remediation",

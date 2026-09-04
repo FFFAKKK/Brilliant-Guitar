@@ -2,8 +2,11 @@
 
 ## Status
 
-`PENDING_VALIDATION` — finalize after task validation, JSON parsing, diff/allowlist
-checks and planning-content commit.
+`PASS — P0 0 / P1 0 / P2 0 remaining`
+
+One bounded P2 documentation issue was found and repaired before candidate
+freeze: the copyable `task.py start` command in `implement.md` had been split
+across two lines. No production or contract decision changed.
 
 ## Bounded review checklist
 
@@ -30,7 +33,29 @@ checks and planning-content commit.
 - [x] Planning approval is not implementation/acceptance/archive/cutover/push
   approval.
 
+## Validation evidence
+
+- planning content baseline:
+  `eef310f804a60ce5aff509c35ca6950a791506c4`;
+- RKP-4 task JSON and parent task JSON parse successfully;
+- all 17 RKP-4 `relatedFiles` resolve;
+- RKP-4 and parent `task.py validate` pass;
+- `git diff --check` passes;
+- base-to-content changed paths are exactly the new RKP-4 task tree plus parent
+  `task.json` and `implement.md`;
+- base-to-content delta under `src`, `crates`, `test`, package/Cargo manifests
+  and locks, and `.trellis/spec` is empty;
+- RKP-4 `task_start_run=false`, production implementation/acceptance/archive,
+  RKP-5, qualification, runtime cutover and push remain false;
+- TypeScript remains the default runtime.
+
 ## Findings
 
-To be recorded after validation. Scope is intentionally one planning pass; this
-is not a substitute for the later implementation review.
+| Severity | Found | Remaining | Disposition |
+|---|---:|---:|---|
+| P0 | 0 | 0 | none |
+| P1 | 0 | 0 | none |
+| P2 | 1 | 0 | copyable command wrapping repaired |
+
+This was intentionally one bounded planning pass. It is not an independent
+review and is not a substitute for the later implementation review.
