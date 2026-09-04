@@ -1,10 +1,15 @@
 use brilliant_core_types::{DocumentVersionV1, StableId, StablePathV1};
 use brilliant_kernel_contracts::{
-    KernelReadStateV1, ScoreStructureViolationV1, StableFailureV1, initial_snapshot,
+    KernelReadStateV1, KernelStage3MetricsV1, ScoreStructureViolationV1, StableFailureV1,
+    initial_snapshot,
 };
 use brilliant_score_foundation::ScoreDocumentV1;
 
-use crate::store::{LiveScoreStore, LiveStoreBuildFailure, build_live_score_store};
+use crate::{
+    change_set::ChangeSetV1,
+    store::{LiveScoreStore, LiveStoreBuildFailure, build_live_score_store},
+    transaction::{TransactionPrepareFailureV1, commit_change_set},
+};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum KernelRuntimeCreateFailure {
@@ -42,6 +47,7 @@ impl KernelRuntimeReadFailure {
 pub struct KernelRuntime {
     store: LiveScoreStore,
     document_version: DocumentVersionV1,
+    committed_metrics: KernelStage3MetricsV1,
 }
 
 impl KernelRuntime {
@@ -50,6 +56,7 @@ impl KernelRuntime {
         Ok(Self {
             store,
             document_version: DocumentVersionV1::initial(),
+            committed_metrics: KernelStage3MetricsV1::default(),
         })
     }
 
@@ -68,7 +75,38 @@ impl KernelRuntime {
             .map_err(|_| KernelRuntimeReadFailure::InternalInvariant)?;
         Ok(initial_snapshot(document))
     }
+
+    pub(crate) fn commit_stage3_change_set(
+        &mut self,
+        change_set: ChangeSetV1,
+    ) -> Result<ChangeSetV1, TransactionPrepareFailureV1> {
+        commit_change_set(
+            &mut self.store,
+            &mut self.document_version,
+            &mut self.committed_metrics,
+            change_set,
+        )
+    }
+
+    pub(crate) const fn committed_stage3_metrics(&self) -> KernelStage3MetricsV1 {
+        self.committed_metrics
+    }
 }
+
+fn stage3_private_commit_contract(
+    runtime: &mut KernelRuntime,
+    change_set: ChangeSetV1,
+) -> Result<ChangeSetV1, TransactionPrepareFailureV1> {
+    let result = runtime.commit_stage3_change_set(change_set);
+    let _ = runtime.committed_stage3_metrics();
+    result
+}
+
+#[used]
+static STAGE3_PRIVATE_COMMIT_CONTRACT: fn(
+    &mut KernelRuntime,
+    ChangeSetV1,
+) -> Result<ChangeSetV1, TransactionPrepareFailureV1> = stage3_private_commit_contract;
 
 fn map_store_create_failure(failure: LiveStoreBuildFailure) -> KernelRuntimeCreateFailure {
     match failure {

@@ -12,6 +12,12 @@ use brilliant_score_foundation::{
 use slotmap::{Key, SlotMap};
 
 use crate::{
+    change_set::{
+        AnchoredExtensionBlockV1, EntityBundleV1, MeasureBundleV1, MeasurePartContentBundleV1,
+        PartBundleV1, ReferenceAddressV1, ReferenceValueV1, ScalarAddressV1, ScalarValueV1,
+        StableAnchorV1, StableEntityAddressV1, StableExtensionOwnerV1, StableOrderAddressV1,
+        StableOwnerAddressV1,
+    },
     handles::{
         EventHandle, ExtensionHandle, MeasureHandle, NoteHandle, PartHandle, RuntimeEntityRef,
         StaffHandle, VoiceHandle,
@@ -22,6 +28,7 @@ use crate::{
         extension_part_reference_path, increment, mark_index_entry, measure_reference_path,
         voice_staff_reference_path,
     },
+    overlay::{CoreBaseReadV1, ExtensionKeyV1},
     records::{
         DocumentHeader, EventContentKind, EventRecord, ExtensionRecord, MeasureRecord, NoteRecord,
         PartMeasureContentRecord, PartMeasureKey, PartRecord, StaffRecord, VoiceRecord,
@@ -389,6 +396,445 @@ static STAGE4_PRIVATE_QUERY_CONTRACT: fn(
     ExactFraction,
     ExactFraction,
 ) = stage4_private_query_contract;
+
+impl CoreBaseReadV1 for LiveScoreStore {
+    fn resolve_entity(&self, stable_id: &StableId) -> Option<StableEntityAddressV1> {
+        let entity = self.indices.entity.by_id.get(stable_id).copied()?;
+        self.entity_is_live(entity)
+            .then(|| stable_entity_address(stable_id.clone(), entity))
+    }
+
+    fn read_owner(&self, address: &StableEntityAddressV1) -> Option<StableOwnerAddressV1> {
+        let entity = self.resolve_exact_entity(address)?;
+        match entity {
+            RuntimeEntityRef::Document => None,
+            RuntimeEntityRef::Measure(handle) => self
+                .indices
+                .ownership
+                .measures
+                .contains_key(&handle)
+                .then(|| StableOwnerAddressV1::Document {
+                    document_id: self.header.id.clone(),
+                }),
+            RuntimeEntityRef::Part(handle) => {
+                self.indices.ownership.parts.contains_key(&handle).then(|| {
+                    StableOwnerAddressV1::Document {
+                        document_id: self.header.id.clone(),
+                    }
+                })
+            }
+            RuntimeEntityRef::Staff(handle) => {
+                let owner = self.indices.ownership.staffs.get(&handle)?;
+                Some(StableOwnerAddressV1::Part {
+                    part_id: self.parts.get(*owner)?.id.clone(),
+                })
+            }
+            RuntimeEntityRef::Voice(handle) => {
+                let owner = self.indices.ownership.voices.get(&handle)?;
+                Some(StableOwnerAddressV1::PartMeasure {
+                    part_id: self.parts.get(owner.part)?.id.clone(),
+                    measure_id: self.measures.get(owner.measure)?.id.clone(),
+                })
+            }
+            RuntimeEntityRef::Event(handle) => {
+                let owner = self.indices.ownership.events.get(&handle)?;
+                Some(StableOwnerAddressV1::Voice {
+                    voice_id: self.voices.get(*owner)?.id.clone(),
+                })
+            }
+            RuntimeEntityRef::Note(handle) => {
+                let owner = self.indices.ownership.notes.get(&handle)?;
+                Some(StableOwnerAddressV1::Event {
+                    event_id: self.events.get(*owner)?.id.clone(),
+                })
+            }
+        }
+    }
+
+    fn read_scalar(&self, address: &ScalarAddressV1) -> Option<ScalarValueV1> {
+        match address {
+            ScalarAddressV1::DocumentMetadata { document_id } if document_id == &self.header.id => {
+                Some(ScalarValueV1::DocumentMetadata(
+                    self.header.metadata.clone(),
+                ))
+            }
+            ScalarAddressV1::MeasureDefinition { measure_id } => {
+                let RuntimeEntityRef::Measure(handle) = self.lookup_exact_id(measure_id)? else {
+                    return None;
+                };
+                let record = self.measures.get(handle)?;
+                Some(ScalarValueV1::MeasureDefinition {
+                    meter: record.meter.clone(),
+                    pickup_duration: record.pickup_duration.clone(),
+                })
+            }
+            ScalarAddressV1::PartName { part_id } => {
+                let RuntimeEntityRef::Part(handle) = self.lookup_exact_id(part_id)? else {
+                    return None;
+                };
+                Some(ScalarValueV1::PartName(
+                    self.parts.get(handle)?.name.clone(),
+                ))
+            }
+            ScalarAddressV1::PartInstrument { part_id } => {
+                let RuntimeEntityRef::Part(handle) = self.lookup_exact_id(part_id)? else {
+                    return None;
+                };
+                Some(ScalarValueV1::PartInstrument(
+                    self.parts.get(handle)?.instrument.clone(),
+                ))
+            }
+            ScalarAddressV1::StaffDefinition { staff_id } => {
+                let RuntimeEntityRef::Staff(handle) = self.lookup_exact_id(staff_id)? else {
+                    return None;
+                };
+                let record = self.staffs.get(handle)?;
+                Some(ScalarValueV1::StaffDefinition {
+                    line_count: record.line_count,
+                    default_clef: record.default_clef.clone(),
+                })
+            }
+            ScalarAddressV1::VoiceSequenceStart { voice_id } => {
+                let RuntimeEntityRef::Voice(handle) = self.lookup_exact_id(voice_id)? else {
+                    return None;
+                };
+                Some(ScalarValueV1::VoiceSequenceStart(
+                    self.voices.get(handle)?.sequence_start.clone(),
+                ))
+            }
+            ScalarAddressV1::EventNoteValue { event_id } => {
+                let RuntimeEntityRef::Event(handle) = self.lookup_exact_id(event_id)? else {
+                    return None;
+                };
+                Some(ScalarValueV1::EventNoteValue(
+                    self.events.get(handle)?.duration.clone(),
+                ))
+            }
+            ScalarAddressV1::NoteWrittenPitch { note_id } => {
+                let RuntimeEntityRef::Note(handle) = self.lookup_exact_id(note_id)? else {
+                    return None;
+                };
+                Some(ScalarValueV1::NoteWrittenPitch(
+                    self.notes.get(handle)?.written_pitch.clone(),
+                ))
+            }
+            ScalarAddressV1::DocumentMetadata { .. } => None,
+        }
+    }
+
+    fn detach_entity(&self, address: &StableEntityAddressV1) -> Option<EntityBundleV1> {
+        match self.resolve_exact_entity(address)? {
+            RuntimeEntityRef::Document => None,
+            RuntimeEntityRef::Measure(handle) => {
+                let record = self.measures.get(handle)?;
+                let mut contents = Vec::new();
+                for part in &self.topology.part_order {
+                    let key = PartMeasureKey {
+                        part: *part,
+                        measure: handle,
+                    };
+                    if !self.topology.contents.contains_key(&key) {
+                        continue;
+                    }
+                    let voices = self
+                        .topology
+                        .voice_order
+                        .get(&key)?
+                        .iter()
+                        .map(|voice| self.export_voice(*voice))
+                        .collect::<Result<Vec<_>, _>>()
+                        .ok()?;
+                    contents.push(MeasurePartContentBundleV1 {
+                        part_id: self.parts.get(*part)?.id.clone(),
+                        voices,
+                    });
+                }
+                Some(EntityBundleV1::Measure(MeasureBundleV1 {
+                    definition: MeasureDefinitionV1 {
+                        id: record.id.clone(),
+                        meter: record.meter.clone(),
+                        pickup_duration: record.pickup_duration.clone(),
+                    },
+                    contents,
+                }))
+            }
+            RuntimeEntityRef::Part(handle) => {
+                let part = self.export_part(handle).ok()?;
+                let mut extensions = Vec::new();
+                for (ordinal, extension) in self.topology.extension_order.iter().enumerate() {
+                    let record = self.extensions.get(*extension)?;
+                    if !matches!(&record.owner, ExtensionOwnerV1::Part { part_id } if part_id == &part.id)
+                    {
+                        continue;
+                    }
+                    extensions.push(AnchoredExtensionBlockV1 {
+                        anchor: self.extension_anchor_before(ordinal)?,
+                        value: extension_record_value(record),
+                    });
+                }
+                Some(EntityBundleV1::Part(PartBundleV1 { part, extensions }))
+            }
+            RuntimeEntityRef::Staff(handle) => {
+                let record = self.staffs.get(handle)?;
+                Some(EntityBundleV1::Staff(StaffDefinitionV1 {
+                    id: record.id.clone(),
+                    line_count: record.line_count,
+                    default_clef: record.default_clef.clone(),
+                }))
+            }
+            RuntimeEntityRef::Voice(handle) => {
+                self.export_voice(handle).ok().map(EntityBundleV1::Voice)
+            }
+            RuntimeEntityRef::Event(handle) => {
+                self.export_event(handle).ok().map(EntityBundleV1::Event)
+            }
+            RuntimeEntityRef::Note(handle) => {
+                let record = self.notes.get(handle)?;
+                Some(EntityBundleV1::Note(ScoreNoteV1 {
+                    id: record.id.clone(),
+                    written_pitch: record.written_pitch.clone(),
+                }))
+            }
+        }
+    }
+
+    fn read_order(&self, address: &StableOrderAddressV1) -> Option<Vec<StableId>> {
+        match address {
+            StableOrderAddressV1::Measures { document_id } if document_id == &self.header.id => {
+                self.topology
+                    .measure_order
+                    .iter()
+                    .map(|handle| self.measures.get(*handle).map(|record| record.id.clone()))
+                    .collect()
+            }
+            StableOrderAddressV1::Parts { document_id } if document_id == &self.header.id => self
+                .topology
+                .part_order
+                .iter()
+                .map(|handle| self.parts.get(*handle).map(|record| record.id.clone()))
+                .collect(),
+            StableOrderAddressV1::Staffs { part_id } => {
+                let RuntimeEntityRef::Part(part) = self.lookup_exact_id(part_id)? else {
+                    return None;
+                };
+                self.topology
+                    .staff_order
+                    .get(&part)?
+                    .iter()
+                    .map(|handle| self.staffs.get(*handle).map(|record| record.id.clone()))
+                    .collect()
+            }
+            StableOrderAddressV1::MeasureContents { part_id } => {
+                let RuntimeEntityRef::Part(part) = self.lookup_exact_id(part_id)? else {
+                    return None;
+                };
+                self.topology
+                    .content_order
+                    .get(&part)?
+                    .iter()
+                    .map(|handle| self.measures.get(*handle).map(|record| record.id.clone()))
+                    .collect()
+            }
+            StableOrderAddressV1::Voices {
+                part_id,
+                measure_id,
+            } => {
+                let RuntimeEntityRef::Part(part) = self.lookup_exact_id(part_id)? else {
+                    return None;
+                };
+                let RuntimeEntityRef::Measure(measure) = self.lookup_exact_id(measure_id)? else {
+                    return None;
+                };
+                self.topology
+                    .voice_order
+                    .get(&PartMeasureKey { part, measure })?
+                    .iter()
+                    .map(|handle| self.voices.get(*handle).map(|record| record.id.clone()))
+                    .collect()
+            }
+            StableOrderAddressV1::Events { voice_id } => {
+                let RuntimeEntityRef::Voice(voice) = self.lookup_exact_id(voice_id)? else {
+                    return None;
+                };
+                self.topology
+                    .event_order
+                    .get(&voice)?
+                    .iter()
+                    .map(|handle| self.events.get(*handle).map(|record| record.id.clone()))
+                    .collect()
+            }
+            StableOrderAddressV1::Notes { event_id } => {
+                let RuntimeEntityRef::Event(event) = self.lookup_exact_id(event_id)? else {
+                    return None;
+                };
+                self.topology
+                    .note_order
+                    .get(&event)?
+                    .iter()
+                    .map(|handle| self.notes.get(*handle).map(|record| record.id.clone()))
+                    .collect()
+            }
+            StableOrderAddressV1::Extensions { document_id } if document_id == &self.header.id => {
+                self.topology
+                    .extension_order
+                    .iter()
+                    .map(|handle| self.extensions.get(*handle).map(extension_anchor_id))
+                    .collect()
+            }
+            StableOrderAddressV1::Measures { .. }
+            | StableOrderAddressV1::Parts { .. }
+            | StableOrderAddressV1::Extensions { .. } => None,
+        }
+    }
+
+    fn read_extension(&self, key: &ExtensionKeyV1) -> Option<AnchoredExtensionBlockV1> {
+        let runtime_owner = match &key.owner {
+            StableExtensionOwnerV1::Score => ExtensionIndexOwner::Score,
+            StableExtensionOwnerV1::Part { part_id } => {
+                let RuntimeEntityRef::Part(part) = self.lookup_exact_id(part_id)? else {
+                    return None;
+                };
+                ExtensionIndexOwner::Part(part)
+            }
+        };
+        let handles = self.indices.extensions.by_key.get(&ExtensionIndexKey {
+            namespace: key.namespace.clone(),
+            owner: runtime_owner,
+        })?;
+        let [handle] = handles.as_slice() else {
+            return None;
+        };
+        let ordinal = self
+            .topology
+            .extension_order
+            .iter()
+            .position(|candidate| candidate == handle)?;
+        Some(AnchoredExtensionBlockV1 {
+            anchor: self.extension_anchor_before(ordinal)?,
+            value: extension_record_value(self.extensions.get(*handle)?),
+        })
+    }
+
+    fn read_reference(&self, address: &ReferenceAddressV1) -> Option<ReferenceValueV1> {
+        match address {
+            ReferenceAddressV1::VoiceDefaultStaff { voice_id } => {
+                let RuntimeEntityRef::Voice(handle) = self.lookup_exact_id(voice_id)? else {
+                    return None;
+                };
+                Some(ReferenceValueV1::StableId(
+                    self.voices.get(handle)?.default_staff_id.clone(),
+                ))
+            }
+            ReferenceAddressV1::EventStaffAssignment { event_id } => {
+                let RuntimeEntityRef::Event(handle) = self.lookup_exact_id(event_id)? else {
+                    return None;
+                };
+                Some(ReferenceValueV1::OptionalStableId(
+                    self.events.get(handle)?.staff_id.clone(),
+                ))
+            }
+            ReferenceAddressV1::PartMeasureLink {
+                part_id,
+                measure_id,
+            } => {
+                let RuntimeEntityRef::Part(part) = self.lookup_exact_id(part_id)? else {
+                    return None;
+                };
+                let RuntimeEntityRef::Measure(measure) = self.lookup_exact_id(measure_id)? else {
+                    return None;
+                };
+                Some(ReferenceValueV1::Present(
+                    self.topology
+                        .contents
+                        .contains_key(&PartMeasureKey { part, measure }),
+                ))
+            }
+            ReferenceAddressV1::ExtensionOwner { namespace, owner } => {
+                let extension = self.read_extension(&ExtensionKeyV1 {
+                    namespace: namespace.clone(),
+                    owner: owner.clone(),
+                })?;
+                Some(ReferenceValueV1::ExtensionOwner(extension.value.owner))
+            }
+        }
+    }
+
+    fn list_references_to(&self, target_id: &StableId) -> Vec<ReferenceAddressV1> {
+        self.indices
+            .references
+            .by_target
+            .get(target_id)
+            .map(|values| values.iter().map(|value| value.source.clone()).collect())
+            .unwrap_or_default()
+    }
+
+    fn read_voice_time(&self, voice_id: &StableId) -> Option<Vec<StableId>> {
+        let RuntimeEntityRef::Voice(voice) = self.lookup_exact_id(voice_id)? else {
+            return None;
+        };
+        self.topology
+            .event_order
+            .get(&voice)?
+            .iter()
+            .map(|event| self.events.get(*event).map(|record| record.id.clone()))
+            .collect()
+    }
+}
+
+impl LiveScoreStore {
+    fn lookup_exact_id(&self, id: &StableId) -> Option<RuntimeEntityRef> {
+        let entity = self.indices.entity.by_id.get(id).copied()?;
+        self.entity_is_live(entity).then_some(entity)
+    }
+
+    fn resolve_exact_entity(&self, address: &StableEntityAddressV1) -> Option<RuntimeEntityRef> {
+        let entity = self.lookup_exact_id(address.stable_id())?;
+        (stable_entity_address(address.stable_id().clone(), entity) == *address).then_some(entity)
+    }
+
+    fn extension_anchor_before(&self, ordinal: usize) -> Option<StableAnchorV1> {
+        if ordinal == 0 {
+            Some(StableAnchorV1::Start)
+        } else {
+            let previous = self
+                .extensions
+                .get(*self.topology.extension_order.get(ordinal - 1)?)?;
+            Some(StableAnchorV1::After {
+                sibling_id: extension_anchor_id(previous),
+            })
+        }
+    }
+}
+
+fn stable_entity_address(id: StableId, entity: RuntimeEntityRef) -> StableEntityAddressV1 {
+    match entity {
+        RuntimeEntityRef::Document => StableEntityAddressV1::Document { document_id: id },
+        RuntimeEntityRef::Measure(_) => StableEntityAddressV1::Measure { measure_id: id },
+        RuntimeEntityRef::Part(_) => StableEntityAddressV1::Part { part_id: id },
+        RuntimeEntityRef::Staff(_) => StableEntityAddressV1::Staff { staff_id: id },
+        RuntimeEntityRef::Voice(_) => StableEntityAddressV1::Voice { voice_id: id },
+        RuntimeEntityRef::Event(_) => StableEntityAddressV1::Event { event_id: id },
+        RuntimeEntityRef::Note(_) => StableEntityAddressV1::Note { note_id: id },
+    }
+}
+
+fn extension_record_value(record: &ExtensionRecord) -> ExtensionBlockV1 {
+    ExtensionBlockV1 {
+        namespace: record.namespace.clone(),
+        schema_version: record.schema_version,
+        owner: record.owner.clone(),
+        payload: record.payload.clone(),
+    }
+}
+
+fn extension_anchor_id(record: &ExtensionRecord) -> StableId {
+    let owner = match &record.owner {
+        ExtensionOwnerV1::Score => "score".to_owned(),
+        ExtensionOwnerV1::Part { part_id } => format!("part:{}", part_id.as_str()),
+    };
+    StableId::new(format!("extension:{owner}:{}", record.namespace))
+        .expect("non-empty extension anchor")
+}
 
 pub(crate) fn build_live_score_store(
     document: &ScoreDocumentV1,
@@ -779,7 +1225,13 @@ impl LiveScoreStoreBuilder {
             self.indices
                 .push_reference(
                     &content.measure_id,
-                    measure_reference_path(part_ordinal, content_ordinal).map_err(index_failure)?,
+                    measure_reference_path(
+                        &part.id,
+                        &content.measure_id,
+                        part_ordinal,
+                        content_ordinal,
+                    )
+                    .map_err(index_failure)?,
                     &self.reference_capacities,
                     &mut self.metrics,
                     false,
@@ -822,8 +1274,13 @@ impl LiveScoreStoreBuilder {
                 self.indices
                     .push_reference(
                         &voice.default_staff_id,
-                        voice_staff_reference_path(part_ordinal, content_ordinal, voice_ordinal)
-                            .map_err(index_failure)?,
+                        voice_staff_reference_path(
+                            &voice.id,
+                            part_ordinal,
+                            content_ordinal,
+                            voice_ordinal,
+                        )
+                        .map_err(index_failure)?,
                         &self.reference_capacities,
                         &mut self.metrics,
                         false,
@@ -855,6 +1312,7 @@ impl LiveScoreStoreBuilder {
                             .push_reference(
                                 staff_id,
                                 event_staff_reference_path(
+                                    &event.id,
                                     part_ordinal,
                                     content_ordinal,
                                     voice_ordinal,
@@ -983,8 +1441,12 @@ impl LiveScoreStoreBuilder {
                     self.indices
                         .push_reference(
                             part_id,
-                            extension_part_reference_path(extension_ordinal)
-                                .map_err(index_failure)?,
+                            extension_part_reference_path(
+                                &extension.namespace,
+                                &crate::change_set::StableExtensionOwnerV1::from(&extension.owner),
+                                extension_ordinal,
+                            )
+                            .map_err(index_failure)?,
                             &self.reference_capacities,
                             &mut self.metrics,
                             false,
@@ -1266,8 +1728,13 @@ impl LiveScoreStoreBuilder {
                 check_reference(
                     &self.indices,
                     &measure_record.id,
-                    &measure_reference_path(part_ordinal, content_ordinal)
-                        .map_err(index_failure)?,
+                    &measure_reference_path(
+                        &part_record.id,
+                        &measure_record.id,
+                        part_ordinal,
+                        content_ordinal,
+                    )
+                    .map_err(index_failure)?,
                 )?;
                 let key = PartMeasureKey {
                     part: *part,
@@ -1294,8 +1761,13 @@ impl LiveScoreStoreBuilder {
                     check_reference(
                         &self.indices,
                         &voice_record.default_staff_id,
-                        &voice_staff_reference_path(part_ordinal, content_ordinal, voice_ordinal)
-                            .map_err(index_failure)?,
+                        &voice_staff_reference_path(
+                            &voice_record.id,
+                            part_ordinal,
+                            content_ordinal,
+                            voice_ordinal,
+                        )
+                        .map_err(index_failure)?,
                     )?;
                     let events = self
                         .topology
@@ -1345,6 +1817,7 @@ impl LiveScoreStoreBuilder {
                                 &self.indices,
                                 staff_id,
                                 &event_staff_reference_path(
+                                    &event_record.id,
                                     part_ordinal,
                                     content_ordinal,
                                     voice_ordinal,
@@ -1414,7 +1887,12 @@ impl LiveScoreStoreBuilder {
                 check_reference(
                     &self.indices,
                     part_id,
-                    &extension_part_reference_path(ordinal).map_err(index_failure)?,
+                    &extension_part_reference_path(
+                        &record.namespace,
+                        &crate::change_set::StableExtensionOwnerV1::from(&record.owner),
+                        ordinal,
+                    )
+                    .map_err(index_failure)?,
                 )?;
             }
         }

@@ -9,5 +9,6 @@ mod runtime;
 mod store;
 mod time_index;
 mod topology;
+mod transaction;
 
 pub use runtime::{KernelRuntime, KernelRuntimeCreateFailure, KernelRuntimeReadFailure};

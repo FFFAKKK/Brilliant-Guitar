@@ -4,6 +4,7 @@ use brilliant_core_types::{StableId, StablePathSegmentV1, StablePathV1};
 use brilliant_score_foundation::{ExactFraction, ExtensionOwnerV1, ScoreDocumentV1};
 
 use crate::{
+    change_set::{ReferenceAddressV1, StableExtensionOwnerV1},
     handles::{
         EventHandle, ExtensionHandle, MeasureHandle, NoteHandle, PartHandle, RuntimeEntityRef,
         StaffHandle, VoiceHandle,
@@ -28,6 +29,7 @@ pub(crate) struct ExtensionIndexKey {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct StableReferenceAddress {
     pub(crate) path: StablePathV1,
+    pub(crate) source: ReferenceAddressV1,
     sort_key: String,
 }
 
@@ -487,7 +489,7 @@ impl DerivedIndices {
 
     pub(crate) fn sort_reference_buckets(&mut self) {
         for values in self.references.by_target.values_mut() {
-            values.sort_by(|left, right| left.sort_key.cmp(&right.sort_key));
+            values.sort_by(|left, right| compare_reference_sources(&left.source, &right.source));
         }
     }
 
@@ -498,9 +500,127 @@ impl DerivedIndices {
     ) -> bool {
         self.references.by_target.get(target).is_some_and(|values| {
             values
-                .binary_search_by(|candidate| candidate.sort_key.cmp(&address.sort_key))
-                .is_ok()
+                .iter()
+                .any(|candidate| candidate.source == address.source)
         })
+    }
+}
+
+fn compare_reference_sources(
+    left: &ReferenceAddressV1,
+    right: &ReferenceAddressV1,
+) -> std::cmp::Ordering {
+    reference_source_rank(left)
+        .cmp(&reference_source_rank(right))
+        .then_with(|| match (left, right) {
+            (
+                ReferenceAddressV1::VoiceDefaultStaff {
+                    voice_id: left_voice,
+                },
+                ReferenceAddressV1::VoiceDefaultStaff {
+                    voice_id: right_voice,
+                },
+            ) => left_voice.cmp(right_voice),
+            (
+                ReferenceAddressV1::EventStaffAssignment {
+                    event_id: left_event,
+                },
+                ReferenceAddressV1::EventStaffAssignment {
+                    event_id: right_event,
+                },
+            ) => left_event.cmp(right_event),
+            (
+                ReferenceAddressV1::PartMeasureLink {
+                    part_id: left_part,
+                    measure_id: left_measure,
+                },
+                ReferenceAddressV1::PartMeasureLink {
+                    part_id: right_part,
+                    measure_id: right_measure,
+                },
+            ) => left_part
+                .cmp(right_part)
+                .then_with(|| left_measure.cmp(right_measure)),
+            (
+                ReferenceAddressV1::ExtensionOwner {
+                    namespace: left_namespace,
+                    owner: left_owner,
+                },
+                ReferenceAddressV1::ExtensionOwner {
+                    namespace: right_namespace,
+                    owner: right_owner,
+                },
+            ) => left_namespace
+                .cmp(right_namespace)
+                .then_with(|| compare_extension_owners(left_owner, right_owner)),
+            _ => std::cmp::Ordering::Equal,
+        })
+}
+
+pub(crate) fn prepared_reference_address(source: ReferenceAddressV1) -> StableReferenceAddress {
+    StableReferenceAddress {
+        path: StablePathV1::root(),
+        sort_key: reference_source_sort_key(&source),
+        source,
+    }
+}
+
+pub(crate) fn sort_prepared_reference_bucket(values: &mut [StableReferenceAddress]) {
+    values.sort_by(|left, right| compare_reference_sources(&left.source, &right.source));
+}
+
+fn reference_source_sort_key(source: &ReferenceAddressV1) -> String {
+    match source {
+        ReferenceAddressV1::VoiceDefaultStaff { voice_id } => {
+            format!("voice/{}/default-staff", voice_id.as_str())
+        }
+        ReferenceAddressV1::EventStaffAssignment { event_id } => {
+            format!("event/{}/staff-assignment", event_id.as_str())
+        }
+        ReferenceAddressV1::PartMeasureLink {
+            part_id,
+            measure_id,
+        } => format!(
+            "part/{}/measure/{}/content-link",
+            part_id.as_str(),
+            measure_id.as_str()
+        ),
+        ReferenceAddressV1::ExtensionOwner { namespace, owner } => match owner {
+            StableExtensionOwnerV1::Score => format!("extension/{namespace}/score-owner"),
+            StableExtensionOwnerV1::Part { part_id } => {
+                format!("extension/{namespace}/part/{}/owner", part_id.as_str())
+            }
+        },
+    }
+}
+
+const fn reference_source_rank(value: &ReferenceAddressV1) -> u8 {
+    match value {
+        ReferenceAddressV1::PartMeasureLink { .. } => 0,
+        ReferenceAddressV1::VoiceDefaultStaff { .. } => 1,
+        ReferenceAddressV1::EventStaffAssignment { .. } => 2,
+        ReferenceAddressV1::ExtensionOwner { .. } => 3,
+    }
+}
+
+fn compare_extension_owners(
+    left: &StableExtensionOwnerV1,
+    right: &StableExtensionOwnerV1,
+) -> std::cmp::Ordering {
+    match (left, right) {
+        (StableExtensionOwnerV1::Score, StableExtensionOwnerV1::Score) => std::cmp::Ordering::Equal,
+        (StableExtensionOwnerV1::Score, StableExtensionOwnerV1::Part { .. }) => {
+            std::cmp::Ordering::Less
+        }
+        (StableExtensionOwnerV1::Part { .. }, StableExtensionOwnerV1::Score) => {
+            std::cmp::Ordering::Greater
+        }
+        (
+            StableExtensionOwnerV1::Part { part_id: left_part },
+            StableExtensionOwnerV1::Part {
+                part_id: right_part,
+            },
+        ) => left_part.cmp(right_part),
     }
 }
 
@@ -544,10 +664,16 @@ pub(crate) fn increment(value: &mut usize) -> Result<(), IndexBuildFailure> {
 }
 
 pub(crate) fn measure_reference_path(
+    part_id: &StableId,
+    measure_id: &StableId,
     part: usize,
     content: usize,
 ) -> Result<StableReferenceAddress, IndexBuildFailure> {
     reference_path(
+        ReferenceAddressV1::PartMeasureLink {
+            part_id: part_id.clone(),
+            measure_id: measure_id.clone(),
+        },
         vec![
             field("parts"),
             index(part)?,
@@ -560,11 +686,15 @@ pub(crate) fn measure_reference_path(
 }
 
 pub(crate) fn voice_staff_reference_path(
+    voice_id: &StableId,
     part: usize,
     content: usize,
     voice: usize,
 ) -> Result<StableReferenceAddress, IndexBuildFailure> {
     reference_path(
+        ReferenceAddressV1::VoiceDefaultStaff {
+            voice_id: voice_id.clone(),
+        },
         vec![
             field("parts"),
             index(part)?,
@@ -579,12 +709,16 @@ pub(crate) fn voice_staff_reference_path(
 }
 
 pub(crate) fn event_staff_reference_path(
+    event_id: &StableId,
     part: usize,
     content: usize,
     voice: usize,
     event: usize,
 ) -> Result<StableReferenceAddress, IndexBuildFailure> {
     reference_path(
+        ReferenceAddressV1::EventStaffAssignment {
+            event_id: event_id.clone(),
+        },
         vec![
             field("parts"),
             index(part)?,
@@ -604,9 +738,15 @@ pub(crate) fn event_staff_reference_path(
 }
 
 pub(crate) fn extension_part_reference_path(
+    namespace: &str,
+    owner: &StableExtensionOwnerV1,
     extension: usize,
 ) -> Result<StableReferenceAddress, IndexBuildFailure> {
     reference_path(
+        ReferenceAddressV1::ExtensionOwner {
+            namespace: namespace.to_owned(),
+            owner: owner.clone(),
+        },
         vec![
             field("extensions"),
             index(extension)?,
@@ -628,13 +768,181 @@ fn index(value: usize) -> Result<StablePathSegmentV1, IndexBuildFailure> {
 }
 
 fn reference_path(
+    source: ReferenceAddressV1,
     segments: Vec<StablePathSegmentV1>,
     sort_key: String,
 ) -> Result<StableReferenceAddress, IndexBuildFailure> {
     Ok(StableReferenceAddress {
         path: StablePathV1::new(segments).map_err(|_| IndexBuildFailure::CountOverflow)?,
+        source,
         sort_key,
     })
+}
+
+fn current_reference_address(
+    store: &LiveScoreStore,
+    source: &ReferenceAddressV1,
+) -> Result<StableReferenceAddress, IndexBuildFailure> {
+    match source {
+        ReferenceAddressV1::PartMeasureLink {
+            part_id,
+            measure_id,
+        } => {
+            let RuntimeEntityRef::Part(part) = lookup_live_entity(store, part_id)? else {
+                return Err(IndexBuildFailure::MissingRecord);
+            };
+            let RuntimeEntityRef::Measure(measure) = lookup_live_entity(store, measure_id)? else {
+                return Err(IndexBuildFailure::MissingRecord);
+            };
+            let part_ordinal = position(&store.topology.part_order, &part)?;
+            let content_ordinal = position(
+                store
+                    .topology
+                    .content_order
+                    .get(&part)
+                    .ok_or(IndexBuildFailure::MissingRecord)?,
+                &measure,
+            )?;
+            measure_reference_path(part_id, measure_id, part_ordinal, content_ordinal)
+        }
+        ReferenceAddressV1::VoiceDefaultStaff { voice_id } => {
+            let RuntimeEntityRef::Voice(voice) = lookup_live_entity(store, voice_id)? else {
+                return Err(IndexBuildFailure::MissingRecord);
+            };
+            let owner = store
+                .indices
+                .ownership
+                .voices
+                .get(&voice)
+                .copied()
+                .ok_or(IndexBuildFailure::MissingRecord)?;
+            let part_ordinal = position(&store.topology.part_order, &owner.part)?;
+            let content_ordinal = position(
+                store
+                    .topology
+                    .content_order
+                    .get(&owner.part)
+                    .ok_or(IndexBuildFailure::MissingRecord)?,
+                &owner.measure,
+            )?;
+            let voice_ordinal = position(
+                store
+                    .topology
+                    .voice_order
+                    .get(&owner)
+                    .ok_or(IndexBuildFailure::MissingRecord)?,
+                &voice,
+            )?;
+            voice_staff_reference_path(voice_id, part_ordinal, content_ordinal, voice_ordinal)
+        }
+        ReferenceAddressV1::EventStaffAssignment { event_id } => {
+            let RuntimeEntityRef::Event(event) = lookup_live_entity(store, event_id)? else {
+                return Err(IndexBuildFailure::MissingRecord);
+            };
+            let voice = store
+                .indices
+                .ownership
+                .events
+                .get(&event)
+                .copied()
+                .ok_or(IndexBuildFailure::MissingRecord)?;
+            let owner = store
+                .indices
+                .ownership
+                .voices
+                .get(&voice)
+                .copied()
+                .ok_or(IndexBuildFailure::MissingRecord)?;
+            let part_ordinal = position(&store.topology.part_order, &owner.part)?;
+            let content_ordinal = position(
+                store
+                    .topology
+                    .content_order
+                    .get(&owner.part)
+                    .ok_or(IndexBuildFailure::MissingRecord)?,
+                &owner.measure,
+            )?;
+            let voice_ordinal = position(
+                store
+                    .topology
+                    .voice_order
+                    .get(&owner)
+                    .ok_or(IndexBuildFailure::MissingRecord)?,
+                &voice,
+            )?;
+            let event_ordinal = position(
+                store
+                    .topology
+                    .event_order
+                    .get(&voice)
+                    .ok_or(IndexBuildFailure::MissingRecord)?,
+                &event,
+            )?;
+            event_staff_reference_path(
+                event_id,
+                part_ordinal,
+                content_ordinal,
+                voice_ordinal,
+                event_ordinal,
+            )
+        }
+        ReferenceAddressV1::ExtensionOwner { namespace, owner } => {
+            let runtime_owner = match owner {
+                StableExtensionOwnerV1::Score => ExtensionIndexOwner::Score,
+                StableExtensionOwnerV1::Part { part_id } => {
+                    let RuntimeEntityRef::Part(part) = lookup_live_entity(store, part_id)? else {
+                        return Err(IndexBuildFailure::MissingRecord);
+                    };
+                    ExtensionIndexOwner::Part(part)
+                }
+            };
+            let handles = store
+                .indices
+                .extensions
+                .by_key
+                .get(&ExtensionIndexKey {
+                    namespace: namespace.clone(),
+                    owner: runtime_owner,
+                })
+                .ok_or(IndexBuildFailure::MissingRecord)?;
+            let [extension] = handles.as_slice() else {
+                return Err(IndexBuildFailure::MissingRecord);
+            };
+            let extension_ordinal = position(&store.topology.extension_order, extension)?;
+            extension_part_reference_path(namespace, owner, extension_ordinal)
+        }
+    }
+}
+
+fn lookup_live_entity(
+    store: &LiveScoreStore,
+    id: &StableId,
+) -> Result<RuntimeEntityRef, IndexBuildFailure> {
+    let entity = store
+        .indices
+        .entity
+        .by_id
+        .get(id)
+        .copied()
+        .ok_or(IndexBuildFailure::MissingRecord)?;
+    let live = match entity {
+        RuntimeEntityRef::Document => id == &store.header.id,
+        RuntimeEntityRef::Measure(handle) => store.measures.get(handle).is_some(),
+        RuntimeEntityRef::Part(handle) => store.parts.get(handle).is_some(),
+        RuntimeEntityRef::Staff(handle) => store.staffs.get(handle).is_some(),
+        RuntimeEntityRef::Voice(handle) => store.voices.get(handle).is_some(),
+        RuntimeEntityRef::Event(handle) => store.events.get(handle).is_some(),
+        RuntimeEntityRef::Note(handle) => store.notes.get(handle).is_some(),
+    };
+    live.then_some(entity)
+        .ok_or(IndexBuildFailure::MissingRecord)
+}
+
+fn position<T: PartialEq>(values: &[T], target: &T) -> Result<usize, IndexBuildFailure> {
+    values
+        .iter()
+        .position(|value| value == target)
+        .ok_or(IndexBuildFailure::MissingRecord)
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -784,7 +1092,12 @@ pub(crate) fn rebuild_indices_from_store(
                 .ok_or(IndexBuildFailure::MissingRecord)?;
             indices.push_reference(
                 &measure_record.id,
-                measure_reference_path(part_ordinal, content_ordinal)?,
+                measure_reference_path(
+                    &part_record.id,
+                    &measure_record.id,
+                    part_ordinal,
+                    content_ordinal,
+                )?,
                 &reference_capacities,
                 &mut metrics,
                 true,
@@ -820,7 +1133,12 @@ pub(crate) fn rebuild_indices_from_store(
                 indices.check_staff_owner(staff, *part, &mut metrics)?;
                 indices.push_reference(
                     &voice_record.default_staff_id,
-                    voice_staff_reference_path(part_ordinal, content_ordinal, voice_ordinal)?,
+                    voice_staff_reference_path(
+                        &voice_record.id,
+                        part_ordinal,
+                        content_ordinal,
+                        voice_ordinal,
+                    )?,
                     &reference_capacities,
                     &mut metrics,
                     true,
@@ -855,6 +1173,7 @@ pub(crate) fn rebuild_indices_from_store(
                         indices.push_reference(
                             staff_id,
                             event_staff_reference_path(
+                                &record.id,
                                 part_ordinal,
                                 content_ordinal,
                                 voice_ordinal,
@@ -919,7 +1238,11 @@ pub(crate) fn rebuild_indices_from_store(
                 };
                 indices.push_reference(
                     part_id,
-                    extension_part_reference_path(extension_ordinal)?,
+                    extension_part_reference_path(
+                        &record.namespace,
+                        &StableExtensionOwnerV1::from(&record.owner),
+                        extension_ordinal,
+                    )?,
                     &reference_capacities,
                     &mut metrics,
                     true,
@@ -1216,7 +1539,10 @@ pub(crate) fn normalized_index_projection(
         .map_err(|_| IndexBuildFailure::Capacity)?;
     for (target, values) in &indices.references.by_target {
         for address in values {
-            reference_rows.push((target.clone(), address.clone()));
+            reference_rows.push((
+                target.clone(),
+                current_reference_address(store, &address.source)?,
+            ));
         }
     }
     reference_rows.sort_by(|left, right| {
