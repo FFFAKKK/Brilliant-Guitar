@@ -1,5 +1,5 @@
 use brilliant_kernel_contracts::{
-    CapturedCoreCommandV1, CoreCommandEnvelopeV1, KernelSessionCreateRequestV1,
+    CapturedCoreCommandV1, CoreCommandEnvelopeV1, KernelReadStateV1, KernelSessionCreateRequestV1,
     KernelSessionCreateResultV1, KernelSessionCreateSuccessValueV1, KernelSessionReadResultV1,
     KernelStage3CommandFailureLeafV1, KernelStage3CommandFailureV1, KernelStage3MetricsV1,
     KernelStage3ResourceLimitKindV1, KernelStage3SubmitDecodeFailureV1,
@@ -7,8 +7,10 @@ use brilliant_kernel_contracts::{
     KernelStage3SubmitResultV1, KernelStage3SubmitSuccessValueV1, KernelStage4CommandResultV1,
     KernelStage4FailureV1, KernelStage4OperationDecodeFailureV1, KernelStage4OperationRequestV1,
     KernelStage4OperationResultV1, KernelStage4OperationV1, KernelStage4ReadResultV1,
+    KernelStage4ReplayCommandResultV1, KernelStage4ReplayRequestV1, KernelStage4ReplayResultV1,
     KernelStage4SelectResultV1, MAX_BATCH_CHILDREN_V1, ScoreEntityTargetV1, StableFailureV1,
     decode_captured_core_command, decode_stage3_submit_request, decode_stage4_operation_request,
+    decode_stage4_replay_request,
 };
 use brilliant_kernel_runtime::{
     KernelRuntime, KernelRuntimeCreateFailure, KernelStage3TransactionV1,
@@ -218,6 +220,114 @@ impl KernelSession {
             }
         }
     }
+
+    pub fn replay_stage4_bytes(request_bytes: &[u8]) -> KernelStage4ReplayResultV1 {
+        match decode_stage4_replay_request(request_bytes) {
+            Ok(request) => Self::replay_stage4(request),
+            Err(failure) => KernelStage4ReplayResultV1::InvalidInitialDocument(failure),
+        }
+    }
+
+    pub fn replay_stage4(request: KernelStage4ReplayRequestV1) -> KernelStage4ReplayResultV1 {
+        let accepted = match Self::create(KernelSessionCreateRequestV1 {
+            api_version: request.api_version,
+            document: request.initial_document,
+        }) {
+            Ok(accepted) => accepted,
+            Err(failure) => {
+                return KernelStage4ReplayResultV1::InvalidInitialDocument(failure);
+            }
+        };
+        let mut session = accepted.session;
+        let mut results = Vec::new();
+        if results.try_reserve(request.commands.len()).is_err() {
+            return KernelStage4ReplayResultV1::InvalidInitialDocument(
+                StableFailureV1::BridgeInternal,
+            );
+        }
+
+        for (index, captured) in request.commands.iter().enumerate() {
+            let command_result = match decode_captured_core_command(captured) {
+                Ok(command) => session.submit_stage4_command(command),
+                Err(failure) => session.runtime.rejected_command(
+                    KernelStage4FailureV1::Command(failure),
+                    KernelStage3MetricsV1::default(),
+                ),
+            };
+            let (result, failure) = replay_command_projection(command_result);
+            results.push(result);
+            if let Some(failure) = failure {
+                let final_state = match session.replay_final_document() {
+                    Ok(final_state) => final_state,
+                    Err(failure) => {
+                        return KernelStage4ReplayResultV1::InvalidInitialDocument(failure);
+                    }
+                };
+                return KernelStage4ReplayResultV1::Rejected {
+                    document_version: final_state.snapshot.document_version,
+                    final_document: final_state.snapshot.document,
+                    results,
+                    failed_command_index: index as u64,
+                    failure,
+                };
+            }
+        }
+
+        let final_state = match session.replay_final_document() {
+            Ok(final_state) => final_state,
+            Err(failure) => {
+                return KernelStage4ReplayResultV1::InvalidInitialDocument(failure);
+            }
+        };
+        KernelStage4ReplayResultV1::Replayed {
+            document_version: final_state.snapshot.document_version,
+            final_document: final_state.snapshot.document,
+            results,
+        }
+    }
+
+    fn replay_final_document(&self) -> Result<KernelReadStateV1, StableFailureV1> {
+        self.runtime
+            .read_state()
+            .map_err(|_| StableFailureV1::BridgeInternal)
+    }
+}
+
+fn replay_command_projection(
+    result: KernelStage4CommandResultV1,
+) -> (
+    KernelStage4ReplayCommandResultV1,
+    Option<KernelStage4FailureV1>,
+) {
+    match result {
+        KernelStage4CommandResultV1::Committed { value, .. } => (
+            KernelStage4ReplayCommandResultV1 {
+                status: "committed",
+                document_version: value.document_version,
+                history: value.history,
+                failure: None,
+            },
+            None,
+        ),
+        KernelStage4CommandResultV1::NoOp { value } => (
+            KernelStage4ReplayCommandResultV1 {
+                status: "no-op",
+                document_version: value.document_version,
+                history: value.history,
+                failure: None,
+            },
+            None,
+        ),
+        KernelStage4CommandResultV1::Rejected { value, failure } => (
+            KernelStage4ReplayCommandResultV1 {
+                status: "command-rejected",
+                document_version: value.document_version,
+                history: value.history,
+                failure: Some(failure.clone()),
+            },
+            Some(failure),
+        ),
+    }
 }
 
 fn stage4_command_result_to_stage3(
@@ -346,6 +456,15 @@ mod tests {
 
     fn operate(session: &mut KernelSession, request: &str) -> KernelStage4OperationResultV1 {
         session.operate_stage4_bytes(request.as_bytes())
+    }
+
+    fn replay_bytes(commands: &str) -> Vec<u8> {
+        let document = LOCAL_REQUEST
+            .strip_prefix(r#"{"apiVersion":1,"document":"#)
+            .and_then(|value| value.strip_suffix('}'))
+            .expect("fixture document");
+        format!(r#"{{"apiVersion":1,"initialDocument":{document},"commands":{commands}}}"#)
+            .into_bytes()
     }
 
     fn assert_zero_global_work(metrics: &KernelStage3MetricsV1) {
@@ -1150,5 +1269,77 @@ mod tests {
             ["event-4", "event-1"]
         );
         assert_eq!(voices[1].sequence.events[0].id.as_str(), "event-2");
+    }
+
+    #[test]
+    fn replay_uses_the_submit_pipeline_and_stops_at_the_first_rejection() {
+        let bytes = replay_bytes(
+            r#"[{"commandVersion":1,"commandId":"core.document.set-metadata","target":{"kind":"document","documentId":"score-local"},"payload":{"metadata":{"title":"Replayed","authors":["Brilliant"],"tempo":{"bpm":120}}}},{"commandVersion":1,"commandId":"core.document.set-metadata","target":{"kind":"document","documentId":"score-local"},"payload":{"metadata":{"title":"Rejected","authors":["Brilliant"],"tempo":{"bpm":120}}},"history":{"undoDepth":99,"redoDepth":0}},{"commandVersion":1,"commandId":"core.document.set-metadata","target":{"kind":"document","documentId":"score-local"},"payload":{"metadata":{"title":"Never","authors":["Brilliant"],"tempo":{"bpm":120}}}}]"#,
+        );
+
+        let KernelStage4ReplayResultV1::Rejected {
+            final_document,
+            document_version,
+            results,
+            failed_command_index,
+            failure,
+        } = KernelSession::replay_stage4_bytes(&bytes)
+        else {
+            panic!("replay must reject at the invalid command");
+        };
+        assert_eq!(document_version.get(), 1);
+        assert_eq!(final_document.metadata.title, "Replayed");
+        assert_eq!(failed_command_index, 1);
+        assert_eq!(results.len(), 2);
+        assert_eq!(results[0].status, "committed");
+        assert_eq!(results[0].history.undo_depth, 1);
+        assert_eq!(results[1].status, "command-rejected");
+        assert_eq!(results[1].document_version.get(), 1);
+        assert!(matches!(
+            failure,
+            KernelStage4FailureV1::Command(KernelStage3CommandFailureV1::Leaf(
+                KernelStage3CommandFailureLeafV1::InvalidEnvelope
+            ))
+        ));
+    }
+
+    #[test]
+    fn replay_is_repeatable_across_fresh_sessions_and_exports_once_at_the_end() {
+        let bytes = replay_bytes(
+            r#"[{"commandVersion":1,"commandId":"core.document.set-metadata","target":{"kind":"document","documentId":"score-local"},"payload":{"metadata":{"title":"Stable replay","authors":["Brilliant"],"tempo":{"bpm":120}}}}]"#,
+        );
+
+        let first = KernelSession::replay_stage4_bytes(&bytes);
+        let second = KernelSession::replay_stage4_bytes(&bytes);
+        assert_eq!(first, second);
+        let KernelStage4ReplayResultV1::Replayed {
+            final_document,
+            document_version,
+            results,
+        } = first
+        else {
+            panic!("replay must succeed");
+        };
+        assert_eq!(document_version.get(), 1);
+        assert_eq!(final_document.metadata.title, "Stable replay");
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].status, "committed");
+        assert_eq!(results[0].history.undo_depth, 1);
+        assert_eq!(results[0].history.redo_depth, 0);
+        assert!(results[0].failure.is_none());
+    }
+
+    #[test]
+    fn replay_rejects_invalid_initial_documents_before_any_command_runs() {
+        let request = String::from_utf8(replay_bytes("[]"))
+            .expect("UTF-8 request")
+            .replacen("brilliant-score-1", "brilliant-score-2", 1);
+        let result = KernelSession::replay_stage4_bytes(request.as_bytes());
+        assert!(matches!(
+            result,
+            KernelStage4ReplayResultV1::InvalidInitialDocument(
+                StableFailureV1::ScoreUnsupportedSchema { .. }
+            )
+        ));
     }
 }

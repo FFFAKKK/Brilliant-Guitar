@@ -16,8 +16,9 @@ use std::{
 use brilliant_kernel_contracts::{
     KernelSessionCreateResultV1, KernelSessionReadResultV1, KernelStage3MetricsV1,
     KernelStage3SubmitResultV1, KernelStage4CommandResultV1, KernelStage4OperationResultV1,
-    REQUEST_BYTE_LIMIT, StableFailureV1, decode_create_request, encode_create_result,
-    encode_read_result, encode_stage3_submit_result, encode_stage4_operation_result,
+    KernelStage4ReplayResultV1, REQUEST_BYTE_LIMIT, StableFailureV1, decode_create_request,
+    encode_create_result, encode_read_result, encode_stage3_submit_result,
+    encode_stage4_operation_result, encode_stage4_replay_result,
 };
 use brilliant_kernel_session::KernelSession;
 use napi::{
@@ -34,6 +35,7 @@ const INTERNAL_CREATE_BYTES: &[u8] = br#"{"apiVersion":1,"status":"rejected","fa
 const INTERNAL_READ_BYTES: &[u8] = br#"{"apiVersion":1,"status":"rejected","failure":{"failureVersion":1,"code":"bridge.internal"}}"#;
 const INTERNAL_SUBMIT_BYTES: &[u8] = br#"{"apiVersion":1,"status":"rejected","failure":{"failureVersion":1,"code":"bridge.internal"}}"#;
 const INTERNAL_STAGE4_BYTES: &[u8] = br#"{"apiVersion":1,"status":"rejected","failure":{"failureVersion":1,"code":"bridge.internal"}}"#;
+const INTERNAL_REPLAY_BYTES: &[u8] = br#"{"apiVersion":1,"status":"invalid-initial-document","failure":{"failureVersion":1,"code":"bridge.internal"}}"#;
 // Only this decimal field's width feeds back into the encoded length. Under the 64 MiB response
 // cap, starting from zero stabilizes in at most three encodes; the fourth step is a closed guard.
 const FFI_RESPONSE_LENGTH_FIXPOINT_STEPS: usize = 4;
@@ -246,6 +248,14 @@ pub(super) fn operate_kernel_stage4(
     }
 }
 
+pub(super) fn replay_kernel_stage4(request_bytes: &Unknown<'_>) -> Buffer {
+    let result = guarded(|| replay_kernel_stage4_inner(request_bytes));
+    match result {
+        Ok(bytes) => Buffer::from(bytes),
+        Err(failure) => Buffer::from(encode_replay_failure(failure)),
+    }
+}
+
 fn create_kernel_session_inner(
     env: &Env,
     request_bytes: &Unknown<'_>,
@@ -292,6 +302,11 @@ fn operate_kernel_stage4_inner(
         Ok(session.operate_stage4_bytes(&request_bytes))
     })?;
     encode_stage4_result_with_ffi_metrics(result, request_byte_count)
+}
+
+fn replay_kernel_stage4_inner(request_bytes: &Unknown<'_>) -> Result<Vec<u8>, StableFailureV1> {
+    let request_bytes = capture_buffer(request_bytes)?;
+    encode_stage4_replay_result(&KernelSession::replay_stage4_bytes(&request_bytes))
 }
 
 fn with_session<T>(
@@ -612,6 +627,14 @@ fn encode_stage4_failure(failure: StableFailureV1) -> Vec<u8> {
     }
 }
 
+fn encode_replay_failure(failure: StableFailureV1) -> Vec<u8> {
+    match encode_stage4_replay_result(&KernelStage4ReplayResultV1::InvalidInitialDocument(failure))
+    {
+        Ok(bytes) => bytes,
+        Err(_) => INTERNAL_REPLAY_BYTES.to_vec(),
+    }
+}
+
 fn encode_submit_result_with_ffi_metrics(
     mut result: KernelStage3SubmitResultV1,
     request_bytes: usize,
@@ -901,6 +924,18 @@ mod tests {
             })
         );
         assert_eq!(copies.get(), 1);
+    }
+
+    #[test]
+    fn replay_boundary_failures_use_the_replay_owned_envelope() {
+        assert_eq!(
+            encode_replay_failure(StableFailureV1::BridgeInternal),
+            INTERNAL_REPLAY_BYTES
+        );
+        assert_eq!(
+            encode_replay_failure(StableFailureV1::BridgeCaptureInvalid),
+            br#"{"apiVersion":1,"status":"invalid-initial-document","failure":{"failureVersion":1,"code":"bridge.capture-invalid"}}"#
+        );
     }
 
     #[test]

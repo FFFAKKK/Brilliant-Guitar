@@ -278,6 +278,42 @@ export type KernelStage4OperationWireV1 =
   | KernelStage4SelectWireV1
   | KernelRejectedWireV1;
 
+export type KernelStage4ReplayCommandWireV1 =
+  | {
+      readonly status: "committed" | "no-op";
+      readonly documentVersion: number;
+      readonly history: KernelHistoryStateWireV1;
+    }
+  | {
+      readonly status: "command-rejected";
+      readonly documentVersion: number;
+      readonly history: KernelHistoryStateWireV1;
+      readonly failure: KernelStage4FailureWireV1;
+    };
+
+export type KernelStage4ReplayWireV1 =
+  | {
+      readonly apiVersion: 1;
+      readonly status: "replayed";
+      readonly finalDocument: unknown;
+      readonly documentVersion: number;
+      readonly results: readonly KernelStage4ReplayCommandWireV1[];
+    }
+  | {
+      readonly apiVersion: 1;
+      readonly status: "rejected";
+      readonly finalDocument: unknown;
+      readonly documentVersion: number;
+      readonly results: readonly KernelStage4ReplayCommandWireV1[];
+      readonly failedCommandIndex: number;
+      readonly failure: KernelStage4FailureWireV1;
+    }
+  | {
+      readonly apiVersion: 1;
+      readonly status: "invalid-initial-document";
+      readonly failure: StableFailureWireV1;
+    };
+
 export interface KernelStage3SubmitValueWireV1 {
   readonly documentVersion: number;
   readonly affected: readonly ScoreEntityTargetWireV1[];
@@ -321,6 +357,14 @@ export interface RustKernelStage4NativeAddon extends RustKernelStage3NativeAddon
     requestBytes: unknown,
   ) => unknown;
 }
+
+export interface RustKernelStage4ReplayNativeAddon {
+  readonly replayKernelStage4V1: (requestBytes: unknown) => unknown;
+}
+
+export interface RustKernelStage4CompleteNativeAddon
+  extends RustKernelStage4NativeAddon,
+    RustKernelStage4ReplayNativeAddon {}
 
 export type RustKernelSmokeCreateOutcome =
   | {
@@ -381,6 +425,37 @@ function rejectedByteLimit(
   return reflectApply(objectFreeze, Object, [
     { apiVersion: API_VERSION, status: "rejected" as const, failure },
   ]) as KernelRejectedWireV1;
+}
+
+function invalidReplay(
+  code:
+    | "bridge.capture-invalid"
+    | "bridge.request-too-large"
+    | "bridge.response-too-large"
+    | "bridge.internal",
+  actualBytes?: number,
+): KernelStage4ReplayWireV1 {
+  const failure =
+    code === "bridge.request-too-large" || code === "bridge.response-too-large"
+      ? reflectApply(objectFreeze, Object, [
+          {
+            failureVersion: 1 as const,
+            code,
+            limitBytes:
+              code === "bridge.request-too-large"
+                ? REQUEST_BYTE_LIMIT
+                : RESPONSE_BYTE_LIMIT,
+            actualBytes: actualBytes ?? 0,
+          },
+        ]) as StableFailureWireV1
+      : frozenFailure(code);
+  return reflectApply(objectFreeze, Object, [
+    {
+      apiVersion: API_VERSION,
+      status: "invalid-initial-document" as const,
+      failure,
+    },
+  ]) as KernelStage4ReplayWireV1;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -895,6 +970,79 @@ function isStage4SelectResult(value: unknown): value is KernelStage4SelectWireV1
     : selection.ok === false &&
         hasExactKeys(selection, ["ok", "failure"]) &&
         isStage4Failure(selection.failure);
+}
+
+function isStage4ReplayCommandResult(
+  value: unknown,
+): value is KernelStage4ReplayCommandWireV1 {
+  if (
+    !isRecord(value) ||
+    typeof value.status !== "string" ||
+    !isSafeNonNegativeInteger(value.documentVersion) ||
+    !isHistoryState(value.history)
+  ) {
+    return false;
+  }
+  if (value.status === "committed" || value.status === "no-op") {
+    return hasExactKeys(value, ["status", "documentVersion", "history"]);
+  }
+  return (
+    value.status === "command-rejected" &&
+    hasExactKeys(value, ["status", "documentVersion", "history", "failure"]) &&
+    isStage4Failure(value.failure)
+  );
+}
+
+function isStage4ReplayResult(value: unknown): value is KernelStage4ReplayWireV1 {
+  if (
+    !isRecord(value) ||
+    value.apiVersion !== API_VERSION ||
+    typeof value.status !== "string"
+  ) {
+    return false;
+  }
+  if (value.status === "invalid-initial-document") {
+    return (
+      hasExactKeys(value, ["apiVersion", "status", "failure"]) &&
+      isFailure(value.failure)
+    );
+  }
+  if (
+    !isRecord(value.finalDocument) ||
+    !isSafeNonNegativeInteger(value.documentVersion) ||
+    !Array.isArray(value.results) ||
+    !value.results.every(isStage4ReplayCommandResult)
+  ) {
+    return false;
+  }
+  if (value.status === "replayed") {
+    return hasExactKeys(value, [
+      "apiVersion",
+      "status",
+      "finalDocument",
+      "documentVersion",
+      "results",
+    ]);
+  }
+  if (
+    value.status !== "rejected" ||
+    !hasExactKeys(value, [
+      "apiVersion",
+      "status",
+      "finalDocument",
+      "documentVersion",
+      "results",
+      "failedCommandIndex",
+      "failure",
+    ]) ||
+    !isSafeNonNegativeInteger(value.failedCommandIndex) ||
+    value.failedCommandIndex + 1 !== value.results.length ||
+    !isStage4Failure(value.failure)
+  ) {
+    return false;
+  }
+  const failed = value.results[value.failedCommandIndex];
+  return failed !== undefined && failed.status === "command-rejected";
 }
 
 function decodePayload<T>(payload: unknown, validate: (value: unknown) => value is T): T | undefined {
@@ -1441,4 +1589,57 @@ export function createRustKernelStage4Session(
   handle: OpaqueKernelSessionHandle,
 ): RustKernelStage4Session {
   return new RustKernelStage4Session(addon, handle);
+}
+
+/**
+ * Runs a detached command list in one fresh native session. Replay has no
+ * access to live handles or JavaScript subscriber registries.
+ */
+export function replayRustKernelStage4(
+  addon: RustKernelStage4ReplayNativeAddon,
+  initialDocument: unknown,
+  commands: unknown,
+): KernelStage4ReplayWireV1 {
+  const captured = captureStrictInput(
+    { initialDocument, commands },
+    "native-wire-v1",
+  );
+  if (captured.status !== "captured" || !isRecord(captured.value)) {
+    return invalidReplay("bridge.capture-invalid");
+  }
+
+  let requestBytes: Buffer;
+  try {
+    const requestText = reflectApply(jsonStringify, JSON, [
+      {
+        apiVersion: API_VERSION,
+        initialDocument: captured.value.initialDocument,
+        commands: captured.value.commands,
+      },
+    ]) as string | undefined;
+    if (requestText === undefined) {
+      return invalidReplay("bridge.capture-invalid");
+    }
+    requestBytes = reflectApply(bufferFrom, Buffer, [requestText, "utf8"]) as Buffer;
+  } catch {
+    return invalidReplay("bridge.capture-invalid");
+  }
+  if (requestBytes.byteLength > REQUEST_BYTE_LIMIT) {
+    return invalidReplay("bridge.request-too-large", requestBytes.byteLength);
+  }
+
+  let payload: unknown;
+  try {
+    const detachedRequest = reflectApply(bufferFrom, Buffer, [requestBytes]) as Buffer;
+    payload = addon.replayKernelStage4V1(detachedRequest);
+  } catch {
+    return invalidReplay("bridge.internal");
+  }
+  if (
+    reflectApply(bufferIsBuffer, Buffer, [payload]) &&
+    (payload as Buffer).byteLength > RESPONSE_BYTE_LIMIT
+  ) {
+    return invalidReplay("bridge.response-too-large", (payload as Buffer).byteLength);
+  }
+  return decodePayload(payload, isStage4ReplayResult) ?? invalidReplay("bridge.internal");
 }
