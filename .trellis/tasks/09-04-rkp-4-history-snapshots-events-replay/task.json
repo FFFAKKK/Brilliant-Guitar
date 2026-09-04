@@ -2,8 +2,8 @@
   "id": "rkp-4-history-snapshots-events-replay",
   "name": "rkp-4-history-snapshots-events-replay",
   "title": "RKP-4 History, Snapshots, Events and Replay",
-  "description": "Plan the private Rust Stage-4 vector/cursor history, atomic undo/redo, cached immutable reads and live-index selectors, dirty identity, bounded operational checkpoints, deterministic event bridge, and Core semantic replay while TypeScript remains default.",
-  "status": "planning",
+  "description": "Implement the private Rust Stage-4 vector/cursor history, atomic undo/redo, cached immutable reads and live-index selectors, dirty identity, bounded operational checkpoints, deterministic event bridge, and Core semantic replay while TypeScript remains default.",
+  "status": "in_progress",
   "dev_type": null,
   "scope": "Private Rust Vec-plus-cursor history, undo/redo, cached immutable read projections and selectors, persisted-state identity, bounded in-memory checkpoints, deterministic events/subscription bridge, and Core semantic replay parity; TypeScript remains default and RKP-5+ is excluded.",
   "package": null,
@@ -39,7 +39,7 @@
     ".trellis/spec/core-kernel/backend/snapshot-events.md",
     ".trellis/spec/core-kernel/backend/rust-runtime-transition.md"
   ],
-  "notes": "RKP-4 PLANNING ONLY / USER AUTHORIZED TASK CREATION AND PLANNING ON 2026-09-04 / TASK.PY START NOT RUN / PRODUCTION IMPLEMENTATION ACCEPTANCE ARCHIVE RKP-5 QUALIFICATION CUTOVER PUSH FALSE / TYPESCRIPT DEFAULT.",
+  "notes": "RKP-4 PRIVATE IMPLEMENTATION ACTIVE / USER AUTHORIZED TASK.PY START AND C0-C8 ON 2026-09-04 / ACCEPTANCE ARCHIVE RKP-5 QUALIFICATION CUTOVER PUSH FALSE / TYPESCRIPT DEFAULT / BOUNDED FINAL AUDIT REQUIRED.",
   "meta": {
     "planning_base_commit": "46a684c78551d118f75b4864a8ed6ec5d3de77c3",
     "predecessor_task": "09-04-rkp-3-transaction-overlay-changeset-core-commands",
@@ -51,9 +51,13 @@
     "planning_authorization_date": "2026-09-04",
     "planning_authorization_source": "user_replied_continue_to_explicit_RKP4_task_creation_and_planning_question",
     "planning_authorization_scope": "create_RKP4_task_and_prepare_reviewable_planning_candidate_only",
-    "task_start_run": false,
-    "production_implementation_authorized": false,
-    "user_implementation_authorization": false,
+    "task_start_run": true,
+    "production_implementation_authorized": true,
+    "user_implementation_authorization": true,
+    "user_implementation_authorization_date": "2026-09-04",
+    "user_implementation_authorization_source": "user_replied_continue_then_requested_bounded_not_overdone_audit_after_completion",
+    "user_implementation_authorization_scope": "execute_private_RKP4_C0_through_C8_and_one_bounded_final_audit_only_no_acceptance_archive_RKP5_qualification_cutover_or_push",
+    "implementation_activation_planning_head": "91b3f057612befa09e74665e0aa70bbf9a6eca48",
     "planning_candidate_ready": true,
     "planning_content_commit": "eef310f804a60ce5aff509c35ca6950a791506c4",
     "planning_self_audit": "passed_P0_0_P1_0_P2_0_after_one_bounded_P2_documentation_repair",
@@ -67,7 +71,7 @@
     "runtime_cutover_authorized": false,
     "push_authorized": false,
     "default_runtime": "typescript",
-    "current_stage": "planning_candidate_ready_for_owner_review",
+    "current_stage": "implementation_active_C0",
     "history_model": "single_Vec_HistoryEntryV1_plus_cursor_monotonic_non_reused_sequence",
     "dirty_identity_model": "entry_sequence_before_cursor_or_zero_with_append_only_identity_by_document_version",
     "checkpoint_policy": "latest_only_in_memory_after_512_new_history_entries_or_33554432_changeset_logical_bytes_post_commit_no_physical_io",
@@ -75,6 +79,6 @@
     "native_export_target": "five_total_preserve_three_add_operateKernelStage4V1_and_replayKernelStage4V1",
     "oracle_scope": "immutable_RKP0_rows_57_through_61_stage_owned_projection_only",
     "planning_production_delta": "zero",
-    "next_gate": "explicit_owner_approval_to_run_task_py_start_and_execute_private_RKP4_C0_through_C8"
+    "next_gate": "C1_contracts_and_RED_state_invariants"
   }
 }

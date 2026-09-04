@@ -44,6 +44,16 @@ reviewable planning candidate only: `task.py start` has not run, no production
 implementation is authorized, TypeScript remains default, and acceptance,
 archive, RKP-5, qualification, cutover and push remain false.
 
+### RKP-4 implementation activation — 2026-09-04
+
+The owner subsequently replied `继续吧` to the explicit `task.py start` and
+RKP-4 C0-C8 implementation gate and requested one bounded, non-excessive audit
+after implementation. `task.py start` moved the child to `in_progress` from
+planning head `91b3f057612befa09e74665e0aa70bbf9a6eca48`. This authorization covers
+the private RKP-4 implementation and its bounded final check only. TypeScript
+remains default; acceptance, archive, RKP-5, qualification, cutover and push
+remain false.
+
 ## Stage 5 — Incremental validation and Extension Protocol
 
 Create only after RKP-4 archive. Implement dependency closures, full-validation parity checks, profile/compatibility and the versioned `brilliant-extension-protocol` request/descriptor/validation/WASM preparation contracts. No privileged Guitar provider is introduced.
