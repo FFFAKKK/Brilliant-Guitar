@@ -58,3 +58,54 @@ All hashes are SHA-256 over the tracked working-tree bytes at planning commit
   document revision is the next implementation step.
 - No production Rust or TypeScript source changed in C0.
 - Any cap-compatibility proof failure in C2 returns the task to planning.
+
+## C9 implementation candidate freeze — 2026-09-04
+
+RKP-3 C1 through C9 are implemented on technical source commit
+`0861f40b90599aa48a9859d385590175f8af2bbd` (tree
+`ba17b7de734885d73f6816743adc9a97bb3f7d00`). The review target is the commit
+that contains this handoff, `review-candidate.md`, and
+`research/implementation-evidence.md`; resolve that commit from the branch
+before starting C10.
+
+### Delivered private surface
+
+- An indexed transaction overlay with copy-on-first-write order handling.
+- An ordered, reversible eleven-operation `ChangeSet` using stable logical
+  addresses; physical handles remain commit-plan internals.
+- Checked-revision submit, one atomic store/index adoption, discard-only
+  rejection, exact batch visibility, and all 28 Core command routes.
+- Exactly three private native exports: create, read, and Stage-3 submit.
+  TypeScript remains the application default.
+
+### Candidate evidence
+
+- Rust 1.97.1 format/check/test/Clippy passed; workspace test result is 136
+  passed, 1 ignored, 0 failed. Rust 1.88.0 workspace check passed.
+- TypeScript typecheck and build passed.
+- RKP-1 Node bridge `9/9`, RKP-1 workspace `6/6`, RKP-2 combined `19/19`,
+  and RKP-3 combined `20/20` passed.
+- Clean full suite: 631 discovered, 629 passed, 0 failed, 2 intentional skips.
+- Source and staged native addon SHA-256 are both
+  `0e7b561a5dd6a80cbc3ebd2cb434b9226a3ca0166067e908812b022291ce5371`.
+- Frozen oracle, scenario, and qualification hashes remain byte-identical to
+  C0. Cargo manifests and the seven-crate graph remain unchanged.
+- Local-edit and single-event range counters are invariant between 4- and
+  256-measure documents; all four global-work counters and
+  `entitiesVisited` are zero.
+
+### Bounded stage review
+
+The operator reviewed only C9-critical compatibility and safety boundaries.
+The review repaired the historical RKP-2 checkout anchor, removed a forbidden
+Clippy allow by relocating tests, and preserved the prior explicit napi macro
+count while keeping the runtime Stage-3 export exact. The post-repair full
+suite is green; no remaining P0/P1/P2 blocker was found in this bounded review.
+This is not the dedicated independent C10 implementation review.
+
+### Next gate
+
+C10 is a fresh, read-only implementation review of the frozen candidate.
+Acceptance, archive, RKP-4 creation, official qualification, runtime cutover,
+and push remain unauthorized. Any P0/P1/P2 finding returns only its bounded
+repair; otherwise the owner receives a separate acceptance/archive decision.

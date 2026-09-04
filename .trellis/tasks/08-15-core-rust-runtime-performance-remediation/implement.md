@@ -98,8 +98,15 @@ store/index CommitPlan, exact 28 Core handlers, atomic batch, rejection zero
 delta, and a stage-only native submit evidence seam. It adds no third-party
 dependency and leaves TypeScript as default.
 
-The child is now `status=in_progress`, `task_start_run=true`, and
-`production_implementation_authorized=true`; C0 is complete and C1 strict
-contracts/checked revision is next. Planning self-audit remains
-P0/P1/P2=`0/0/0`. RKP-4, qualification, cutover, acceptance/archive, and push
-remain false and require separate gates.
+The child remains `status=in_progress`, `task_start_run=true`, and
+`production_implementation_authorized=true`. C1 through C9 are complete at
+technical source `0861f40b90599aa48a9859d385590175f8af2bbd`; the frozen
+candidate now awaits the dedicated, read-only C10 implementation review. The
+bounded operator stage review found no remaining P0/P1/P2 blocker but is not
+recorded as an independent review.
+
+The clean candidate evidence includes Rust workspace tests 136 passed plus 1
+ignored, RKP-1/RKP-2/RKP-3 focused results `9/9`, `6/6`, `19/19`, and `20/20`,
+and the full suite 631 discovered, 629 passed, 0 failed, 2 intentional skips.
+TypeScript remains default. RKP-4, qualification, cutover,
+acceptance/archive, and push remain false and require separate gates.
