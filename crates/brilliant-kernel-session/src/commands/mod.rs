@@ -2,6 +2,7 @@ mod catalog;
 mod hierarchy;
 mod local;
 mod measure;
+mod range;
 
 use brilliant_kernel_contracts::{
     CoreCommandEnvelopeV1, CoreCommandIdV1, KernelStage3CommandFailureLeafV1,
@@ -40,8 +41,9 @@ pub(crate) fn dispatch(
         | CoreCommandIdV1::VoiceSetDefaultStaff
         | CoreCommandIdV1::VoiceSetSequenceStart
         | CoreCommandIdV1::EventSetStaffAssignment => hierarchy::dispatch(transaction, command),
-        CoreCommandIdV1::RangeDelete
-        | CoreCommandIdV1::RangeTransposeWrittenPitch
-        | CoreCommandIdV1::TransactionBatch => Err(KernelStage3CommandFailureLeafV1::InternalError),
+        CoreCommandIdV1::RangeDelete | CoreCommandIdV1::RangeTransposeWrittenPitch => {
+            range::dispatch(transaction, command)
+        }
+        CoreCommandIdV1::TransactionBatch => Err(KernelStage3CommandFailureLeafV1::InternalError),
     }
 }

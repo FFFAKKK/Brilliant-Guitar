@@ -1441,6 +1441,15 @@ fn decode_core_command_value(
     value: &Value,
     reject_nested_batch: bool,
 ) -> Result<CoreCommandEnvelopeV1, KernelStage3CommandFailureV1> {
+    if reject_nested_batch
+        && value
+            .as_object()
+            .and_then(|record| record.get("commandId"))
+            .and_then(Value::as_str)
+            == Some(CoreCommandIdV1::TransactionBatch.as_str())
+    {
+        return Err(KernelStage3CommandFailureLeafV1::BatchNested.into());
+    }
     let envelope = exact_json_object(value, &["commandVersion", "commandId", "target", "payload"])
         .ok_or_else(invalid_command_envelope)?;
     let version = envelope["commandVersion"]
@@ -2267,6 +2276,25 @@ mod tests {
             panic!("expected batch command");
         };
         assert_eq!(commands.len(), 1);
+        assert_eq!(
+            decode_captured_core_command(&commands[0]),
+            Err(KernelStage3CommandFailureLeafV1::BatchNested.into())
+        );
+
+        let malformed_nested = serde_json::json!({
+            "commandId": "core.transaction.batch",
+            "unrelated": true
+        });
+        let malformed_outer = command_value(
+            "core.transaction.batch",
+            serde_json::json!({"kind": "document", "documentId": "score-1"}),
+            serde_json::json!({"commands": [malformed_nested]}),
+        );
+        let CoreCommandEnvelopeV1::TransactionBatch { commands, .. } =
+            decode_stage_three_value(malformed_outer).expect("outer malformed nested batch")
+        else {
+            panic!("expected batch command");
+        };
         assert_eq!(
             decode_captured_core_command(&commands[0]),
             Err(KernelStage3CommandFailureLeafV1::BatchNested.into())

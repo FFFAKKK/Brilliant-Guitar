@@ -1,16 +1,19 @@
 use std::collections::{HashMap, HashSet};
 
-use brilliant_core_types::{DocumentVersionV1, SafeInteger, StableId, StablePathV1};
+use brilliant_core_types::{
+    DocumentVersionV1, JS_SAFE_INTEGER_MAX, SafeInteger, StableId, StablePathV1,
+};
 use brilliant_kernel_contracts::{
     EventStaffAssignmentV1, InsertMeasurePartContentV1, KernelReadStateV1,
     KernelStage3CommandFailureLeafV1, KernelStage3MetricsV1, KernelStage3ResourceLimitKindV1,
-    MeasureAnchorV1, MeasurePickupV1, PartAnchorV1, ScoreEntityTargetV1, ScoreStructureViolationV1,
-    SequenceAnchorV1, StableFailureV1, StaffAnchorV1, VoiceAnchorV1, initial_snapshot,
+    MeasureAnchorV1, MeasurePickupV1, NoteAddressV1, PartAnchorV1, PitchTranspositionErrorV1,
+    ScoreEntityTargetV1, ScoreRangeV1, ScoreStructureViolationV1, SequenceAnchorV1,
+    StableFailureV1, StaffAnchorV1, VoiceAnchorV1, initial_snapshot,
 };
 use brilliant_score_foundation::{
     ClefV1, FractionV1, InstrumentDescriptorV1, MeasureDefinitionV1, MeterV1, NoteValueV1, PartV1,
-    RhythmicContentV1, RhythmicEventV1, ScoreDocumentV1, ScoreMetadataV1, StaffDefinitionV1,
-    VoiceV1, WrittenPitchV1,
+    PitchStepV1, RhythmicContentV1, RhythmicEventV1, ScoreDocumentV1, ScoreMetadataV1,
+    StaffDefinitionV1, TranspositionV1, VoiceV1, WrittenPitchV1,
 };
 
 use crate::{
@@ -59,12 +62,42 @@ pub struct KernelStage3PreparedV1 {
 /// One isolated command transaction. Dropping it publishes no live state.
 pub struct KernelStage3TransactionV1<'a> {
     overlay: TransactionOverlayV1<'a>,
+    allow_intermediate_empty_containers: bool,
 }
 
 #[derive(Clone, Copy)]
 enum InsertedEventContentV1 {
     Notes,
     Rest,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+enum ResolvedRangeV1 {
+    Measures {
+        document_id: StableId,
+        measure_ids: Vec<StableId>,
+    },
+    PartMeasures {
+        part_id: StableId,
+        measure_ids: Vec<StableId>,
+    },
+    VoiceEvents {
+        voice_id: StableId,
+        event_ids: Vec<StableId>,
+    },
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+enum RangeEndpointV1<T> {
+    Found(T),
+    Missing,
+    OwnerMismatch,
+    Invalid,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct VoiceEventEndpointV1 {
+    event_index: usize,
 }
 
 impl KernelRuntimeCreateFailure {
@@ -125,6 +158,7 @@ impl KernelRuntime {
     pub fn begin_stage3_transaction(&self) -> KernelStage3TransactionV1<'_> {
         KernelStage3TransactionV1 {
             overlay: TransactionOverlayV1::new(&self.store),
+            allow_intermediate_empty_containers: false,
         }
     }
 
@@ -172,7 +206,34 @@ impl KernelStage3TransactionV1<'_> {
         overlay_attempt_metrics(&self.overlay)
     }
 
+    pub fn begin_batch(
+        &mut self,
+        document_id: &StableId,
+    ) -> Result<(), KernelStage3CommandFailureLeafV1> {
+        self.validate_document_target(document_id)?;
+        self.allow_intermediate_empty_containers = true;
+        Ok(())
+    }
+
+    pub fn run_batch_child(
+        &mut self,
+        execute: impl FnOnce(&mut Self) -> Result<(), KernelStage3CommandFailureLeafV1>,
+    ) -> Result<(), KernelStage3CommandFailureLeafV1> {
+        let operation_count = self.overlay.operation_count();
+        let segment = self.overlay.begin_segment();
+        execute(self)?;
+        if self.overlay.operation_count() == operation_count {
+            return Ok(());
+        }
+        self.overlay
+            .end_segment(segment)
+            .map_err(map_overlay_failure)
+    }
+
     pub fn finish(self) -> Result<KernelStage3PreparedV1, KernelStage3CommandFailureLeafV1> {
+        if !self.overlay.has_valid_nonempty_containers() {
+            return Err(KernelStage3CommandFailureLeafV1::LocalInvariantRejected);
+        }
         let attempt_metrics = overlay_attempt_metrics(&self.overlay);
         let change_set = self.overlay.finish().map_err(map_overlay_failure)?;
         Ok(KernelStage3PreparedV1 {
@@ -348,6 +409,14 @@ impl KernelStage3TransactionV1<'_> {
         &mut self,
         measure_id: StableId,
     ) -> Result<(), KernelStage3CommandFailureLeafV1> {
+        self.remove_measure_inner(measure_id, false)
+    }
+
+    fn remove_measure_inner(
+        &mut self,
+        measure_id: StableId,
+        range_effect_accounting: bool,
+    ) -> Result<(), KernelStage3CommandFailureLeafV1> {
         let address = StableEntityAddressV1::Measure {
             measure_id: measure_id.clone(),
         };
@@ -367,7 +436,10 @@ impl KernelStage3TransactionV1<'_> {
             .overlay
             .read_order(&measure_order)
             .ok_or(KernelStage3CommandFailureLeafV1::LocalInvariantRejected)?;
-        if current_measures.len() <= 1 {
+        if current_measures.len() <= 1
+            && !range_effect_accounting
+            && !self.allow_intermediate_empty_containers
+        {
             return Err(KernelStage3CommandFailureLeafV1::LocalInvariantRejected);
         }
         let desired_measures = removed_order(&current_measures, &measure_id)
@@ -439,7 +511,11 @@ impl KernelStage3TransactionV1<'_> {
                     .map_err(map_overlay_failure)?;
             }
         }
-        self.add_prepared_effects(1 + u64::from(needs_normalization))
+        self.add_prepared_effects(if range_effect_accounting {
+            1
+        } else {
+            1 + u64::from(needs_normalization)
+        })
     }
 
     pub fn move_measure(
@@ -656,7 +732,7 @@ impl KernelStage3TransactionV1<'_> {
             .overlay
             .read_order(&part_order)
             .ok_or(KernelStage3CommandFailureLeafV1::LocalInvariantRejected)?;
-        if current_parts.len() <= 1 {
+        if current_parts.len() <= 1 && !self.allow_intermediate_empty_containers {
             return Err(KernelStage3CommandFailureLeafV1::LocalInvariantRejected);
         }
         let measure_ids = self
@@ -838,7 +914,7 @@ impl KernelStage3TransactionV1<'_> {
             .overlay
             .read_order(&order)
             .ok_or(KernelStage3CommandFailureLeafV1::LocalInvariantRejected)?;
-        if current.len() <= 1 {
+        if current.len() <= 1 && !self.allow_intermediate_empty_containers {
             return Err(KernelStage3CommandFailureLeafV1::LocalInvariantRejected);
         }
 
@@ -1005,7 +1081,7 @@ impl KernelStage3TransactionV1<'_> {
             .overlay
             .read_order(&order)
             .ok_or(KernelStage3CommandFailureLeafV1::LocalInvariantRejected)?;
-        if current.len() <= 1 {
+        if current.len() <= 1 && !self.allow_intermediate_empty_containers {
             return Err(KernelStage3CommandFailureLeafV1::LocalInvariantRejected);
         }
 
@@ -1195,6 +1271,66 @@ impl KernelStage3TransactionV1<'_> {
         self.add_prepared_effects(1)
     }
 
+    pub fn delete_range(
+        &mut self,
+        document_id: StableId,
+        range: ScoreRangeV1,
+    ) -> Result<(), KernelStage3CommandFailureLeafV1> {
+        self.validate_document_target(&document_id)?;
+        let selection = self.resolve_range(document_id, range)?;
+        let event_ids = self.selected_event_ids(&selection)?;
+        match selection {
+            ResolvedRangeV1::Measures { measure_ids, .. } => {
+                for measure_id in measure_ids {
+                    self.remove_measure_inner(measure_id, true)?;
+                }
+            }
+            ResolvedRangeV1::PartMeasures { .. } | ResolvedRangeV1::VoiceEvents { .. } => {
+                for event_id in event_ids {
+                    self.remove_event(event_id)?;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    pub fn transpose_range_written_pitch(
+        &mut self,
+        document_id: StableId,
+        range: ScoreRangeV1,
+        transposition: TranspositionV1,
+    ) -> Result<(), KernelStage3CommandFailureLeafV1> {
+        self.validate_document_target(&document_id)?;
+        let selection = self.resolve_range(document_id, range)?;
+        let event_ids = self.selected_event_ids(&selection)?;
+        if transposition.diatonic_steps.get() == 0 && transposition.chromatic_semitones.get() == 0 {
+            return Ok(());
+        }
+
+        for note_id in self.selected_note_ids(&event_ids)? {
+            let address = ScalarAddressV1::NoteWrittenPitch {
+                note_id: note_id.clone(),
+            };
+            let Some(ScalarValueV1::NoteWrittenPitch(current)) = self.overlay.read_scalar(&address)
+            else {
+                return Err(KernelStage3CommandFailureLeafV1::InvalidRange);
+            };
+            let transformed =
+                transpose_written_pitch_v1(&current, &transposition).map_err(|reason| {
+                    KernelStage3CommandFailureLeafV1::RangeTransformInvalid {
+                        address: NoteAddressV1::Note {
+                            note_id: note_id.clone(),
+                        },
+                        reason,
+                    }
+                })?;
+            if transformed != current {
+                self.set_note_written_pitch(note_id, transformed)?;
+            }
+        }
+        Ok(())
+    }
+
     pub fn insert_notes_event(
         &mut self,
         voice_id: StableId,
@@ -1357,6 +1493,365 @@ impl KernelStage3TransactionV1<'_> {
         }
     }
 
+    fn validate_document_target(
+        &mut self,
+        document_id: &StableId,
+    ) -> Result<(), KernelStage3CommandFailureLeafV1> {
+        let address = StableEntityAddressV1::Document {
+            document_id: document_id.clone(),
+        };
+        if self.overlay.resolve_entity_address(document_id).as_ref() == Some(&address) {
+            Ok(())
+        } else {
+            Err(KernelStage3CommandFailureLeafV1::TargetNotFound)
+        }
+    }
+
+    fn resolve_range(
+        &mut self,
+        document_id: StableId,
+        range: ScoreRangeV1,
+    ) -> Result<ResolvedRangeV1, KernelStage3CommandFailureLeafV1> {
+        match range {
+            ScoreRangeV1::MeasureRange { start, end } => {
+                let measure_order = self
+                    .overlay
+                    .read_order(&StableOrderAddressV1::Measures {
+                        document_id: document_id.clone(),
+                    })
+                    .ok_or(KernelStage3CommandFailureLeafV1::InvalidRange)?;
+                let (start_index, end_index) = resolve_range_endpoints(
+                    self.resolve_measure_endpoint(&document_id, &measure_order, &start.measure_id),
+                    self.resolve_measure_endpoint(&document_id, &measure_order, &end.measure_id),
+                )?;
+                Ok(ResolvedRangeV1::Measures {
+                    document_id,
+                    measure_ids: inclusive_ids(&measure_order, start_index, end_index)?,
+                })
+            }
+            ScoreRangeV1::PartMeasureRange { start, end } => {
+                let measure_order = self
+                    .overlay
+                    .read_order(&StableOrderAddressV1::Measures {
+                        document_id: document_id.clone(),
+                    })
+                    .ok_or(KernelStage3CommandFailureLeafV1::InvalidRange)?;
+                let (start_index, end_index) = resolve_range_endpoints(
+                    self.resolve_part_measure_endpoint(
+                        &document_id,
+                        &measure_order,
+                        &start.part_id,
+                        &start.measure_id,
+                    ),
+                    self.resolve_part_measure_endpoint(
+                        &document_id,
+                        &measure_order,
+                        &end.part_id,
+                        &end.measure_id,
+                    ),
+                )?;
+                if start.part_id != end.part_id {
+                    return Err(KernelStage3CommandFailureLeafV1::RangeOwnerMismatch);
+                }
+                Ok(ResolvedRangeV1::PartMeasures {
+                    part_id: start.part_id,
+                    measure_ids: inclusive_ids(&measure_order, start_index, end_index)?,
+                })
+            }
+            ScoreRangeV1::VoiceEventRange { start, end } => {
+                let (start_endpoint, end_endpoint) = resolve_range_endpoints(
+                    self.resolve_voice_event_endpoint(&start.voice_id, &start.event_id),
+                    self.resolve_voice_event_endpoint(&end.voice_id, &end.event_id),
+                )?;
+                if start.voice_id != end.voice_id {
+                    return Err(KernelStage3CommandFailureLeafV1::RangeOwnerMismatch);
+                }
+                let event_order = self
+                    .overlay
+                    .read_order(&StableOrderAddressV1::Events {
+                        voice_id: start.voice_id.clone(),
+                    })
+                    .ok_or(KernelStage3CommandFailureLeafV1::InvalidRange)?;
+                Ok(ResolvedRangeV1::VoiceEvents {
+                    voice_id: start.voice_id,
+                    event_ids: inclusive_ids(
+                        &event_order,
+                        start_endpoint.event_index,
+                        end_endpoint.event_index,
+                    )?,
+                })
+            }
+        }
+    }
+
+    fn resolve_measure_endpoint(
+        &mut self,
+        document_id: &StableId,
+        measure_order: &[StableId],
+        measure_id: &StableId,
+    ) -> RangeEndpointV1<usize> {
+        let address = StableEntityAddressV1::Measure {
+            measure_id: measure_id.clone(),
+        };
+        if !self.entity_matches(&address) {
+            return RangeEndpointV1::Missing;
+        }
+        if self.overlay.read_owner(&address)
+            != Some(StableOwnerAddressV1::Document {
+                document_id: document_id.clone(),
+            })
+        {
+            return RangeEndpointV1::Invalid;
+        }
+        match unique_position(measure_order, measure_id) {
+            Ok(Some(index)) => RangeEndpointV1::Found(index),
+            Ok(None) => RangeEndpointV1::Missing,
+            Err(()) => RangeEndpointV1::Invalid,
+        }
+    }
+
+    fn resolve_part_measure_endpoint(
+        &mut self,
+        document_id: &StableId,
+        measure_order: &[StableId],
+        part_id: &StableId,
+        measure_id: &StableId,
+    ) -> RangeEndpointV1<usize> {
+        let part_address = StableEntityAddressV1::Part {
+            part_id: part_id.clone(),
+        };
+        if !self.entity_matches(&part_address) {
+            return RangeEndpointV1::Missing;
+        }
+        if self.overlay.read_owner(&part_address)
+            != Some(StableOwnerAddressV1::Document {
+                document_id: document_id.clone(),
+            })
+        {
+            return RangeEndpointV1::Invalid;
+        }
+        let Some(part_order) = self.overlay.read_order(&StableOrderAddressV1::Parts {
+            document_id: document_id.clone(),
+        }) else {
+            return RangeEndpointV1::Invalid;
+        };
+        match unique_position(&part_order, part_id) {
+            Ok(Some(_)) => {}
+            Ok(None) => return RangeEndpointV1::Missing,
+            Err(()) => return RangeEndpointV1::Invalid,
+        }
+        let measure_index =
+            match self.resolve_measure_endpoint(document_id, measure_order, measure_id) {
+                RangeEndpointV1::Found(index) => index,
+                RangeEndpointV1::Missing => return RangeEndpointV1::Missing,
+                RangeEndpointV1::OwnerMismatch => return RangeEndpointV1::OwnerMismatch,
+                RangeEndpointV1::Invalid => return RangeEndpointV1::Invalid,
+            };
+        let Some(content_order) = self
+            .overlay
+            .read_order(&StableOrderAddressV1::MeasureContents {
+                part_id: part_id.clone(),
+            })
+        else {
+            return RangeEndpointV1::Missing;
+        };
+        match unique_position(&content_order, measure_id) {
+            Ok(Some(_)) => RangeEndpointV1::Found(measure_index),
+            Ok(None) => RangeEndpointV1::Missing,
+            Err(()) => RangeEndpointV1::Invalid,
+        }
+    }
+
+    fn resolve_voice_event_endpoint(
+        &mut self,
+        voice_id: &StableId,
+        event_id: &StableId,
+    ) -> RangeEndpointV1<VoiceEventEndpointV1> {
+        let voice_address = StableEntityAddressV1::Voice {
+            voice_id: voice_id.clone(),
+        };
+        let event_address = StableEntityAddressV1::Event {
+            event_id: event_id.clone(),
+        };
+        if !self.entity_matches(&voice_address) || !self.entity_matches(&event_address) {
+            return RangeEndpointV1::Missing;
+        }
+        if !matches!(
+            self.overlay.read_owner(&voice_address),
+            Some(StableOwnerAddressV1::PartMeasure { .. })
+        ) {
+            return RangeEndpointV1::Invalid;
+        }
+        match self.overlay.read_owner(&event_address) {
+            Some(StableOwnerAddressV1::Voice {
+                voice_id: owner_voice_id,
+            }) if &owner_voice_id == voice_id => {}
+            Some(StableOwnerAddressV1::Voice { .. }) => {
+                return RangeEndpointV1::OwnerMismatch;
+            }
+            _ => return RangeEndpointV1::Invalid,
+        }
+        let Some(event_order) = self.overlay.read_order(&StableOrderAddressV1::Events {
+            voice_id: voice_id.clone(),
+        }) else {
+            return RangeEndpointV1::Invalid;
+        };
+        match unique_position(&event_order, event_id) {
+            Ok(Some(event_index)) => RangeEndpointV1::Found(VoiceEventEndpointV1 { event_index }),
+            Ok(None) => RangeEndpointV1::Missing,
+            Err(()) => RangeEndpointV1::Invalid,
+        }
+    }
+
+    fn selected_event_ids(
+        &mut self,
+        selection: &ResolvedRangeV1,
+    ) -> Result<Vec<StableId>, KernelStage3CommandFailureLeafV1> {
+        match selection {
+            ResolvedRangeV1::Measures {
+                document_id,
+                measure_ids,
+            } => {
+                let part_ids = self
+                    .overlay
+                    .read_order(&StableOrderAddressV1::Parts {
+                        document_id: document_id.clone(),
+                    })
+                    .ok_or(KernelStage3CommandFailureLeafV1::InvalidRange)?;
+                let mut event_ids = Vec::new();
+                for measure_id in measure_ids {
+                    for part_id in &part_ids {
+                        self.append_part_measure_event_ids(
+                            part_id,
+                            measure_id,
+                            false,
+                            &mut event_ids,
+                        )?;
+                    }
+                }
+                Ok(event_ids)
+            }
+            ResolvedRangeV1::PartMeasures {
+                part_id,
+                measure_ids,
+            } => {
+                let mut event_ids = Vec::new();
+                for measure_id in measure_ids {
+                    self.append_part_measure_event_ids(part_id, measure_id, true, &mut event_ids)?;
+                }
+                Ok(event_ids)
+            }
+            ResolvedRangeV1::VoiceEvents {
+                voice_id,
+                event_ids,
+            } => {
+                for event_id in event_ids {
+                    let address = StableEntityAddressV1::Event {
+                        event_id: event_id.clone(),
+                    };
+                    if !self.entity_matches(&address)
+                        || self.overlay.read_owner(&address)
+                            != Some(StableOwnerAddressV1::Voice {
+                                voice_id: voice_id.clone(),
+                            })
+                    {
+                        return Err(KernelStage3CommandFailureLeafV1::InvalidRange);
+                    }
+                }
+                Ok(event_ids.clone())
+            }
+        }
+    }
+
+    fn append_part_measure_event_ids(
+        &mut self,
+        part_id: &StableId,
+        measure_id: &StableId,
+        missing_content_is_endpoint: bool,
+        event_ids: &mut Vec<StableId>,
+    ) -> Result<(), KernelStage3CommandFailureLeafV1> {
+        let Some(voice_ids) = self.overlay.read_order(&StableOrderAddressV1::Voices {
+            part_id: part_id.clone(),
+            measure_id: measure_id.clone(),
+        }) else {
+            return Err(if missing_content_is_endpoint {
+                KernelStage3CommandFailureLeafV1::RangeEndpointNotFound
+            } else {
+                KernelStage3CommandFailureLeafV1::InvalidRange
+            });
+        };
+        for voice_id in voice_ids {
+            let voice_address = StableEntityAddressV1::Voice {
+                voice_id: voice_id.clone(),
+            };
+            if !self.entity_matches(&voice_address)
+                || self.overlay.read_owner(&voice_address)
+                    != Some(StableOwnerAddressV1::PartMeasure {
+                        part_id: part_id.clone(),
+                        measure_id: measure_id.clone(),
+                    })
+            {
+                return Err(KernelStage3CommandFailureLeafV1::InvalidRange);
+            }
+            let Some(voice_events) = self.overlay.read_order(&StableOrderAddressV1::Events {
+                voice_id: voice_id.clone(),
+            }) else {
+                return Err(KernelStage3CommandFailureLeafV1::InvalidRange);
+            };
+            for event_id in voice_events {
+                let event_address = StableEntityAddressV1::Event {
+                    event_id: event_id.clone(),
+                };
+                if !self.entity_matches(&event_address)
+                    || self.overlay.read_owner(&event_address)
+                        != Some(StableOwnerAddressV1::Voice {
+                            voice_id: voice_id.clone(),
+                        })
+                {
+                    return Err(KernelStage3CommandFailureLeafV1::InvalidRange);
+                }
+                event_ids.push(event_id);
+            }
+        }
+        Ok(())
+    }
+
+    fn selected_note_ids(
+        &mut self,
+        event_ids: &[StableId],
+    ) -> Result<Vec<StableId>, KernelStage3CommandFailureLeafV1> {
+        let mut note_ids = Vec::new();
+        for event_id in event_ids {
+            let Some(event_notes) = self.overlay.read_order(&StableOrderAddressV1::Notes {
+                event_id: event_id.clone(),
+            }) else {
+                return Err(KernelStage3CommandFailureLeafV1::InvalidRange);
+            };
+            for note_id in event_notes {
+                let note_address = StableEntityAddressV1::Note {
+                    note_id: note_id.clone(),
+                };
+                if !self.entity_matches(&note_address)
+                    || self.overlay.read_owner(&note_address)
+                        != Some(StableOwnerAddressV1::Event {
+                            event_id: event_id.clone(),
+                        })
+                {
+                    return Err(KernelStage3CommandFailureLeafV1::InvalidRange);
+                }
+                note_ids.push(note_id);
+            }
+        }
+        Ok(note_ids)
+    }
+
+    fn entity_matches(&mut self, address: &StableEntityAddressV1) -> bool {
+        self.overlay
+            .resolve_entity_address(address.stable_id())
+            .as_ref()
+            == Some(address)
+    }
+
     fn staff_belongs_to_part(&mut self, staff_id: &StableId, part_id: &StableId) -> bool {
         let address = StableEntityAddressV1::Staff {
             staff_id: staff_id.clone(),
@@ -1426,6 +1921,135 @@ impl KernelStage3TransactionV1<'_> {
                 .map_err(map_overlay_failure),
         }
     }
+}
+
+fn resolve_range_endpoints<T>(
+    start: RangeEndpointV1<T>,
+    end: RangeEndpointV1<T>,
+) -> Result<(T, T), KernelStage3CommandFailureLeafV1> {
+    if matches!(&start, RangeEndpointV1::Invalid) || matches!(&end, RangeEndpointV1::Invalid) {
+        return Err(KernelStage3CommandFailureLeafV1::InvalidRange);
+    }
+    if matches!(&start, RangeEndpointV1::Missing) || matches!(&end, RangeEndpointV1::Missing) {
+        return Err(KernelStage3CommandFailureLeafV1::RangeEndpointNotFound);
+    }
+    if matches!(&start, RangeEndpointV1::OwnerMismatch)
+        || matches!(&end, RangeEndpointV1::OwnerMismatch)
+    {
+        return Err(KernelStage3CommandFailureLeafV1::RangeOwnerMismatch);
+    }
+    match (start, end) {
+        (RangeEndpointV1::Found(start), RangeEndpointV1::Found(end)) => Ok((start, end)),
+        _ => Err(KernelStage3CommandFailureLeafV1::InvalidRange),
+    }
+}
+
+fn unique_position(values: &[StableId], target: &StableId) -> Result<Option<usize>, ()> {
+    let mut found = None;
+    for (index, value) in values.iter().enumerate() {
+        if value != target {
+            continue;
+        }
+        if found.replace(index).is_some() {
+            return Err(());
+        }
+    }
+    Ok(found)
+}
+
+fn inclusive_ids(
+    values: &[StableId],
+    start: usize,
+    end: usize,
+) -> Result<Vec<StableId>, KernelStage3CommandFailureLeafV1> {
+    let lower = start.min(end);
+    let upper = start.max(end);
+    values
+        .get(lower..=upper)
+        .map(<[StableId]>::to_vec)
+        .ok_or(KernelStage3CommandFailureLeafV1::InvalidRange)
+}
+
+fn transpose_written_pitch_v1(
+    pitch: &WrittenPitchV1,
+    transposition: &TranspositionV1,
+) -> Result<WrittenPitchV1, PitchTranspositionErrorV1> {
+    let alter = pitch.alter.get();
+    let octave = pitch.octave.get();
+    if !(-2..=2).contains(&alter) || !(0..=8).contains(&octave) {
+        return Err(PitchTranspositionErrorV1::WrittenPitchInvalid);
+    }
+    let diatonic_steps = transposition.diatonic_steps.get();
+    let chromatic_semitones = transposition.chromatic_semitones.get();
+    if !(-JS_SAFE_INTEGER_MAX..=JS_SAFE_INTEGER_MAX).contains(&diatonic_steps)
+        || !(-JS_SAFE_INTEGER_MAX..=JS_SAFE_INTEGER_MAX).contains(&chromatic_semitones)
+    {
+        return Err(PitchTranspositionErrorV1::TranspositionComponentInvalid);
+    }
+
+    let (source_step_index, source_natural) = match pitch.step {
+        PitchStepV1::C => (0_i64, 0_i64),
+        PitchStepV1::D => (1, 2),
+        PitchStepV1::E => (2, 4),
+        PitchStepV1::F => (3, 5),
+        PitchStepV1::G => (4, 7),
+        PitchStepV1::A => (5, 9),
+        PitchStepV1::B => (6, 11),
+    };
+    let target_diatonic = octave
+        .checked_mul(7)
+        .and_then(|value| value.checked_add(source_step_index))
+        .and_then(|value| value.checked_add(diatonic_steps))
+        .filter(|value| (-JS_SAFE_INTEGER_MAX..=JS_SAFE_INTEGER_MAX).contains(value))
+        .ok_or(PitchTranspositionErrorV1::TranspositionComponentInvalid)?;
+    let target_octave = target_diatonic.div_euclid(7);
+    let target_step_index = target_diatonic.rem_euclid(7) as usize;
+    if !(0..=8).contains(&target_octave) {
+        return Err(PitchTranspositionErrorV1::DerivedPitchOctaveOutOfRange);
+    }
+    let target_natural = [0_i64, 2, 4, 5, 7, 9, 11]
+        .get(target_step_index)
+        .copied()
+        .ok_or(PitchTranspositionErrorV1::WrittenPitchInvalid)?;
+    let target_step = [
+        PitchStepV1::C,
+        PitchStepV1::D,
+        PitchStepV1::E,
+        PitchStepV1::F,
+        PitchStepV1::G,
+        PitchStepV1::A,
+        PitchStepV1::B,
+    ]
+    .get(target_step_index)
+    .copied()
+    .ok_or(PitchTranspositionErrorV1::WrittenPitchInvalid)?;
+    let source_chromatic = octave
+        .checked_mul(12)
+        .and_then(|value| value.checked_add(source_natural))
+        .and_then(|value| value.checked_add(alter))
+        .ok_or(PitchTranspositionErrorV1::TranspositionComponentInvalid)?;
+    let target_chromatic = source_chromatic
+        .checked_add(chromatic_semitones)
+        .filter(|value| (-JS_SAFE_INTEGER_MAX..=JS_SAFE_INTEGER_MAX).contains(value))
+        .ok_or(PitchTranspositionErrorV1::TranspositionComponentInvalid)?;
+    let target_natural_chromatic = target_octave
+        .checked_mul(12)
+        .and_then(|value| value.checked_add(target_natural))
+        .ok_or(PitchTranspositionErrorV1::TranspositionComponentInvalid)?;
+    let target_alter = target_chromatic
+        .checked_sub(target_natural_chromatic)
+        .ok_or(PitchTranspositionErrorV1::TranspositionComponentInvalid)?;
+    if !(-2..=2).contains(&target_alter) {
+        return Err(PitchTranspositionErrorV1::DerivedPitchAlterOutOfRange);
+    }
+
+    Ok(WrittenPitchV1 {
+        step: target_step,
+        alter: SafeInteger::new(target_alter)
+            .map_err(|_| PitchTranspositionErrorV1::TranspositionComponentInvalid)?,
+        octave: SafeInteger::new(target_octave)
+            .map_err(|_| PitchTranspositionErrorV1::DerivedPitchOctaveOutOfRange)?,
+    })
 }
 
 fn require_changed(
@@ -2249,5 +2873,60 @@ mod tests {
             });
         }
         assert_measure_orders(&runtime, &["measure-z", "measure-middle"]);
+    }
+
+    #[test]
+    fn written_pitch_transposition_preserves_the_four_frozen_failure_reasons() {
+        let pitch = WrittenPitchV1 {
+            step: PitchStepV1::C,
+            alter: SafeInteger::new(0).expect("alter"),
+            octave: SafeInteger::new(4).expect("octave"),
+        };
+        let valid = TranspositionV1 {
+            diatonic_steps: SafeInteger::new(1).expect("diatonic"),
+            chromatic_semitones: SafeInteger::new(2).expect("chromatic"),
+        };
+        assert_eq!(
+            transpose_written_pitch_v1(&pitch, &valid),
+            Ok(WrittenPitchV1 {
+                step: PitchStepV1::D,
+                alter: SafeInteger::new(0).expect("alter"),
+                octave: SafeInteger::new(4).expect("octave"),
+            })
+        );
+
+        let invalid_pitch = WrittenPitchV1 {
+            alter: SafeInteger::new(3).expect("representable invalid alter"),
+            ..pitch.clone()
+        };
+        assert_eq!(
+            transpose_written_pitch_v1(&invalid_pitch, &valid),
+            Err(PitchTranspositionErrorV1::WrittenPitchInvalid)
+        );
+        let invalid_component = TranspositionV1 {
+            diatonic_steps: SafeInteger::new(JS_SAFE_INTEGER_MAX).expect("safe maximum"),
+            chromatic_semitones: SafeInteger::new(0).expect("chromatic"),
+        };
+        assert_eq!(
+            transpose_written_pitch_v1(&pitch, &invalid_component),
+            Err(PitchTranspositionErrorV1::TranspositionComponentInvalid)
+        );
+        let octave_overflow = WrittenPitchV1 {
+            step: PitchStepV1::B,
+            alter: SafeInteger::new(0).expect("alter"),
+            octave: SafeInteger::new(8).expect("octave"),
+        };
+        assert_eq!(
+            transpose_written_pitch_v1(&octave_overflow, &valid),
+            Err(PitchTranspositionErrorV1::DerivedPitchOctaveOutOfRange)
+        );
+        let alter_overflow = TranspositionV1 {
+            diatonic_steps: SafeInteger::new(0).expect("diatonic"),
+            chromatic_semitones: SafeInteger::new(3).expect("chromatic"),
+        };
+        assert_eq!(
+            transpose_written_pitch_v1(&pitch, &alter_overflow),
+            Err(PitchTranspositionErrorV1::DerivedPitchAlterOutOfRange)
+        );
     }
 }

@@ -132,7 +132,7 @@ test("RKP-3 overlay uses discard-only failure and copy-on-first-write orders", (
   assert.equal(source.includes("self.base ="), false);
 });
 
-test("RKP-3 Session owns a literal closed catalog and the first twenty-five command routes", () => {
+test("RKP-3 Session owns a literal closed catalog and all twenty-eight command routes", () => {
   const catalog = readText(
     "crates/brilliant-kernel-session/src/commands/catalog.rs",
   );
@@ -144,6 +144,8 @@ test("RKP-3 Session owns a literal closed catalog and the first twenty-five comm
   const hierarchy = readText(
     "crates/brilliant-kernel-session/src/commands/hierarchy.rs",
   );
+  const range = readText("crates/brilliant-kernel-session/src/commands/range.rs");
+  const session = readText("crates/brilliant-kernel-session/src/session.rs");
   const runtime = readText("crates/brilliant-kernel-runtime/src/runtime.rs");
   const variants = [
     "DocumentSetMetadata",
@@ -250,6 +252,20 @@ test("RKP-3 Session owns a literal closed catalog and the first twenty-five comm
     );
   assert.match(runtime, /ReferenceAddressV1::VoiceDefaultStaff/u);
   assert.match(runtime, /ReferenceAddressV1::EventStaffAssignment/u);
+
+  for (const method of ["delete_range", "transpose_range_written_pitch"]) {
+    assert.ok(range.includes(method), `Range route missing ${method}`);
+    assert.match(runtime, new RegExp(`pub fn ${method}\\(`, "u"));
+  }
+  for (const forbidden of ["LiveScoreStore", "ScoreDocumentV1", "export_document"])
+    assert.equal(
+      range.includes(forbidden),
+      false,
+      `Range Session handler leaked ${forbidden}`,
+    );
+  assert.match(session, /fn dispatch_batch\(/u);
+  assert.match(session, /decode_captured_core_command\(/u);
+  assert.match(session, /transaction\.run_batch_child\(/u);
 
   assert.match(runtime, /pub fn begin_stage3_transaction\(/u);
   assert.match(runtime, /pub fn commit_stage3_transaction\(/u);

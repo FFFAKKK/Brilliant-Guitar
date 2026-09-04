@@ -2,15 +2,15 @@ use std::collections::{HashMap, HashSet};
 
 use brilliant_core_types::StableId;
 use brilliant_score_foundation::{
-    ExtensionBlockV1, ExtensionOwnerV1, RhythmicEventV1, ScoreMetadataV1, ScoreNoteV1,
-    StaffDefinitionV1, VoiceV1,
+    ExtensionBlockV1, ExtensionOwnerV1, PartMeasureContentV1, RhythmicEventV1, ScoreMetadataV1,
+    ScoreNoteV1, StaffDefinitionV1, VoiceV1,
 };
 
 use crate::change_set::{
     AnchoredExtensionBlockV1, ChangeSetBuildFailureV1, ChangeSetBuilderV1, ChangeSetV1,
-    EntityBundleV1, MeasureBundleV1, OpenBatchSegmentV1, PartBundleV1, ReferenceAddressV1,
-    ReferenceValueV1, ScalarAddressV1, ScalarValueV1, StableAnchorV1, StableEntityAddressV1,
-    StableExtensionOwnerV1, StableOrderAddressV1, StableOwnerAddressV1,
+    EntityBundleV1, MeasureBundleV1, MeasurePartContentBundleV1, OpenBatchSegmentV1, PartBundleV1,
+    ReferenceAddressV1, ReferenceValueV1, ScalarAddressV1, ScalarValueV1, StableAnchorV1,
+    StableEntityAddressV1, StableExtensionOwnerV1, StableOrderAddressV1, StableOwnerAddressV1,
 };
 
 pub(crate) const OVERLAY_LOOKUP_LAYER_COUNT_V1: usize = 4;
@@ -209,6 +209,40 @@ impl<'a> TransactionOverlayV1<'a> {
 
     pub(crate) fn logical_bytes(&self) -> u64 {
         self.builder.logical_bytes()
+    }
+
+    pub(crate) fn has_valid_nonempty_containers(&self) -> bool {
+        self.orders.iter().all(|(address, values)| match address {
+            StableOrderAddressV1::Measures { .. } | StableOrderAddressV1::Parts { .. } => {
+                !values.is_empty()
+            }
+            StableOrderAddressV1::Staffs { part_id } => {
+                self.read_owner(&StableEntityAddressV1::Part {
+                    part_id: part_id.clone(),
+                })
+                .is_none()
+                    || !values.is_empty()
+            }
+            StableOrderAddressV1::Voices {
+                part_id,
+                measure_id,
+            } => {
+                self.read_owner(&StableEntityAddressV1::Part {
+                    part_id: part_id.clone(),
+                })
+                .is_none()
+                    || self
+                        .read_owner(&StableEntityAddressV1::Measure {
+                            measure_id: measure_id.clone(),
+                        })
+                        .is_none()
+                    || !values.is_empty()
+            }
+            StableOrderAddressV1::MeasureContents { .. }
+            | StableOrderAddressV1::Events { .. }
+            | StableOrderAddressV1::Notes { .. }
+            | StableOrderAddressV1::Extensions { .. } => true,
+        })
     }
 
     pub(crate) fn begin_segment(&self) -> OpenBatchSegmentV1 {
@@ -867,7 +901,10 @@ impl<'a> TransactionOverlayV1<'a> {
         self.base.resolve_entity(stable_id)
     }
 
-    fn resolve_entity_address(&mut self, stable_id: &StableId) -> Option<StableEntityAddressV1> {
+    pub(crate) fn resolve_entity_address(
+        &mut self,
+        stable_id: &StableId,
+    ) -> Option<StableEntityAddressV1> {
         match self.entity_states.get(stable_id) {
             Some(OverlayEntityStateV1::Present(address)) => Some(address.clone()),
             Some(OverlayEntityStateV1::Tombstone) => None,
@@ -1647,6 +1684,43 @@ fn project_touched_orders(
 ) {
     match entity {
         EntityBundleV1::Measure(bundle) => {
+            if let Some(part_order) = orders.iter().find_map(|(address, value)| {
+                matches!(address, StableOrderAddressV1::Parts { .. }).then_some(value)
+            }) {
+                let measure_id = bundle.definition.id.clone();
+                let mut existing: HashMap<StableId, MeasurePartContentBundleV1> = bundle
+                    .contents
+                    .drain(..)
+                    .map(|content| (content.part_id.clone(), content))
+                    .collect();
+                bundle.contents = part_order
+                    .iter()
+                    .filter_map(|part_id| {
+                        let part_address = StableEntityAddressV1::Part {
+                            part_id: part_id.clone(),
+                        };
+                        if !entity_address_is_visible(&part_address, states) {
+                            return None;
+                        }
+                        existing.remove(part_id).or_else(|| {
+                            let OverlayRecordV1::Present(EntityBundleV1::Part(part)) =
+                                records.get(&part_address)?
+                            else {
+                                return None;
+                            };
+                            let content = part
+                                .part
+                                .measure_contents
+                                .iter()
+                                .find(|content| content.measure_id == measure_id)?;
+                            Some(MeasurePartContentBundleV1 {
+                                part_id: part_id.clone(),
+                                voices: content.voices.clone(),
+                            })
+                        })
+                    })
+                    .collect();
+            }
             for content in &mut bundle.contents {
                 project_voice_order(
                     &content.part_id,
@@ -1669,6 +1743,7 @@ fn project_touched_orders(
             if let Some(order) = orders.get(&StableOrderAddressV1::MeasureContents {
                 part_id: bundle.part.id.clone(),
             }) {
+                let part_id = bundle.part.id.clone();
                 let mut existing: HashMap<StableId, _> = bundle
                     .part
                     .measure_contents
@@ -1677,7 +1752,25 @@ fn project_touched_orders(
                     .collect();
                 bundle.part.measure_contents = order
                     .iter()
-                    .filter_map(|measure_id| existing.remove(measure_id))
+                    .filter_map(|measure_id| {
+                        let measure_address = StableEntityAddressV1::Measure {
+                            measure_id: measure_id.clone(),
+                        };
+                        if !entity_address_is_visible(&measure_address, states) {
+                            return None;
+                        }
+                        existing.remove(measure_id).or_else(|| {
+                            orders
+                                .contains_key(&StableOrderAddressV1::Voices {
+                                    part_id: part_id.clone(),
+                                    measure_id: measure_id.clone(),
+                                })
+                                .then(|| PartMeasureContentV1 {
+                                    measure_id: measure_id.clone(),
+                                    voices: Vec::new(),
+                                })
+                        })
+                    })
                     .collect();
             }
             for content in &mut bundle.part.measure_contents {

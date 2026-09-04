@@ -1,12 +1,15 @@
 use brilliant_kernel_contracts::{
-    KernelSessionCreateRequestV1, KernelSessionCreateResultV1, KernelSessionCreateSuccessValueV1,
-    KernelSessionReadResultV1, KernelStage3CommandFailureLeafV1, KernelStage3CommandFailureV1,
-    KernelStage3MetricsV1, KernelStage3SubmitNoOpValueV1, KernelStage3SubmitRejectedValueV1,
-    KernelStage3SubmitRequestV1, KernelStage3SubmitResultV1, KernelStage3SubmitSuccessValueV1,
-    StableFailureV1,
+    CapturedCoreCommandV1, CoreCommandEnvelopeV1, KernelSessionCreateRequestV1,
+    KernelSessionCreateResultV1, KernelSessionCreateSuccessValueV1, KernelSessionReadResultV1,
+    KernelStage3CommandFailureLeafV1, KernelStage3CommandFailureV1, KernelStage3MetricsV1,
+    KernelStage3ResourceLimitKindV1, KernelStage3SubmitNoOpValueV1,
+    KernelStage3SubmitRejectedValueV1, KernelStage3SubmitRequestV1, KernelStage3SubmitResultV1,
+    KernelStage3SubmitSuccessValueV1, MAX_BATCH_CHILDREN_V1, ScoreEntityTargetV1, StableFailureV1,
+    decode_captured_core_command,
 };
 use brilliant_kernel_runtime::{
     KernelRuntime, KernelRuntimeCreateFailure, KernelStage3RuntimeCommitV1,
+    KernelStage3TransactionV1,
 };
 
 use crate::commands;
@@ -82,8 +85,9 @@ impl KernelSession {
             );
         }
 
-        let definition = commands::catalog_definition(request.command.command_id());
-        if request.command.target().kind() != definition.target_kind {
+        let command = request.command;
+        let definition = commands::catalog_definition(command.command_id());
+        if command.target().kind() != definition.target_kind {
             return command_rejected(
                 KernelStage3SubmitRejectedValueV1 {
                     document_version: self.runtime.document_version(),
@@ -94,7 +98,13 @@ impl KernelSession {
         }
 
         let mut transaction = self.runtime.begin_stage3_transaction();
-        if let Err(failure) = commands::dispatch(&mut transaction, request.command) {
+        let dispatched = match command {
+            CoreCommandEnvelopeV1::TransactionBatch { target, commands } => {
+                dispatch_batch(&mut transaction, target, commands)
+            }
+            command => commands::dispatch(&mut transaction, command).map_err(Into::into),
+        };
+        if let Err(failure) = dispatched {
             return command_rejected(
                 KernelStage3SubmitRejectedValueV1 {
                     document_version: self.runtime.document_version(),
@@ -146,11 +156,68 @@ impl KernelSession {
 
 fn command_rejected(
     value: KernelStage3SubmitRejectedValueV1,
-    failure: KernelStage3CommandFailureLeafV1,
+    failure: impl Into<KernelStage3CommandFailureV1>,
 ) -> KernelStage3SubmitResultV1 {
     KernelStage3SubmitResultV1::CommandRejected {
         value,
-        failure: KernelStage3CommandFailureV1::from(failure),
+        failure: failure.into(),
+    }
+}
+
+fn dispatch_batch(
+    transaction: &mut KernelStage3TransactionV1<'_>,
+    target: ScoreEntityTargetV1,
+    children: Vec<CapturedCoreCommandV1>,
+) -> Result<(), KernelStage3CommandFailureV1> {
+    if children.is_empty() {
+        return Err(KernelStage3CommandFailureLeafV1::BatchEmpty.into());
+    }
+    if children.len() > MAX_BATCH_CHILDREN_V1 {
+        return Err(KernelStage3CommandFailureLeafV1::ResourceLimitExceeded {
+            limit_kind: KernelStage3ResourceLimitKindV1::BatchChildren,
+            limit: MAX_BATCH_CHILDREN_V1 as u64,
+            actual: children.len() as u64,
+        }
+        .into());
+    }
+    let ScoreEntityTargetV1::Document { document_id } = target else {
+        return Err(KernelStage3CommandFailureLeafV1::TargetMismatch.into());
+    };
+    transaction.begin_batch(&document_id)?;
+
+    for (index, captured) in children.iter().enumerate() {
+        let child = decode_captured_core_command(captured)
+            .map_err(|failure| batch_child_failure(index, failure))?;
+        let result = transaction.run_batch_child(|transaction| {
+            let definition = commands::catalog_definition(child.command_id());
+            if child.target().kind() != definition.target_kind {
+                return Err(KernelStage3CommandFailureLeafV1::TargetMismatch);
+            }
+            commands::dispatch(transaction, child)
+        });
+        if let Err(failure) = result {
+            return Err(KernelStage3CommandFailureV1::BatchChildRejected {
+                failed_command_index: index as u64,
+                failure,
+            });
+        }
+    }
+    Ok(())
+}
+
+fn batch_child_failure(
+    index: usize,
+    failure: KernelStage3CommandFailureV1,
+) -> KernelStage3CommandFailureV1 {
+    let failure = match failure {
+        KernelStage3CommandFailureV1::Leaf(failure) => failure,
+        KernelStage3CommandFailureV1::BatchChildRejected { .. } => {
+            KernelStage3CommandFailureLeafV1::InternalError
+        }
+    };
+    KernelStage3CommandFailureV1::BatchChildRejected {
+        failed_command_index: index as u64,
+        failure,
     }
 }
 
