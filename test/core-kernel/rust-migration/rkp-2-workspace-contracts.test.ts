@@ -69,20 +69,52 @@ const MANIFEST_PROJECTION_PARENT =
   "4f5f45a5f5a97968ef5280524cd4e6ab8dbebda8";
 const MANIFEST_PROJECTION_COMMIT =
   "bda15099f4932aced965eabc6b6e147accd9b5ce";
+const POST_ARCHIVE_REPAIR_PLANNING_HEAD =
+  "3bcba71a2944f66149facf53bdf802cf57bb1cd2";
+const POST_ARCHIVE_REPAIR_ACTIVATION_HEAD =
+  "c152143fe88bc872ebbf2f249b9b3dc43a181458";
+const RKP2_ACTIVE_ROOT =
+  ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity";
+const RKP2_ARCHIVE_ROOT =
+  ".trellis/tasks/archive/2026-09/08-24-rkp-2-indexed-live-score-store-load-encode-parity";
+const RKP2_TASK_MANIFEST = [
+  "check.jsonl",
+  "design.md",
+  "implement.jsonl",
+  "implement.md",
+  "operator-handoff.md",
+  "prd.md",
+  "research/container-and-index-decision.md",
+  "research/current-rust-and-ts-baseline-audit.md",
+  "research/file-test-and-rollback-matrix.md",
+  "research/planning-candidate-self-audit.md",
+  "research/rkp1-repair-and-rkp2-entry-gate.md",
+  "review-candidate.md",
+  "task.json",
+] as const;
 const DESIGN_PATH =
-  ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/design.md";
+  `${RKP2_ACTIVE_ROOT}/design.md`;
 const IMPLEMENT_PATH =
-  ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/implement.md";
+  `${RKP2_ACTIVE_ROOT}/implement.md`;
 const IMPLEMENT_CONTEXT_PATH =
-  ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/implement.jsonl";
+  `${RKP2_ACTIVE_ROOT}/implement.jsonl`;
 const CHECK_CONTEXT_PATH =
-  ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/check.jsonl";
+  `${RKP2_ACTIVE_ROOT}/check.jsonl`;
 const FILE_TEST_ROLLBACK_MATRIX_PATH =
-  ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/research/file-test-and-rollback-matrix.md";
+  `${RKP2_ACTIVE_ROOT}/research/file-test-and-rollback-matrix.md`;
 const TASK_PATH =
-  ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json";
+  `${RKP2_ACTIVE_ROOT}/task.json`;
 const PARENT_PATH =
   ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json";
+const POST_ARCHIVE_REPAIR_ALLOWED_PATHS = [
+  ".trellis/scripts/common/task_context.py",
+  ".trellis/spec/core-kernel/backend/rust-runtime-transition.md",
+  ".trellis/tasks/09-04-rkp-2-post-archive-path-compatibility/task.json",
+  ".trellis/tasks/09-04-rkp-2-post-archive-path-compatibility/research/bug-analysis.md",
+  ".trellis/tasks/09-04-rkp-2-post-archive-path-compatibility/research/implementation-evidence.md",
+  PARENT_PATH,
+  "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
+] as const;
 const MANIFEST_PATH =
   "test/core-kernel/rust-migration/fixtures/oracle-manifest-v1.json";
 const FULL_RUNNER_ACTIVE_ROOT =
@@ -743,6 +775,16 @@ const S63_ACTIVATION_HEAD =
 const S63_TASK_NAME =
   "09-03-rkp-2-stage-6-s6-3-final-candidate-freeze";
 const S63_TASK_ROOT = `.trellis/tasks/${S63_TASK_NAME}`;
+const S63_ARCHIVE_ROOT = `.trellis/tasks/archive/2026-09/${S63_TASK_NAME}`;
+const S63_TASK_MANIFEST = [
+  "check.jsonl",
+  "design.md",
+  "implement.jsonl",
+  "implement.md",
+  "prd.md",
+  "research/implementation-evidence.md",
+  "task.json",
+] as const;
 const S63_EVIDENCE_PATH = `${S63_TASK_ROOT}/research/implementation-evidence.md`;
 const S63_AUTHORITY_PATHS = [
   `${S63_TASK_ROOT}/task.json`,
@@ -1237,7 +1279,7 @@ function rustFiles(root: string): string[] {
 }
 
 function designAllowlistBlocks(): readonly [string[], string[]] {
-  const future = readText(DESIGN_PATH).split(
+  const future = readCurrentRkp2Text(DESIGN_PATH).split(
     "## 14. Future implementation allowlist",
   )[1];
   assert.ok(future);
@@ -1252,7 +1294,7 @@ function designAllowlistBlocks(): readonly [string[], string[]] {
 
 function currentImplementationChanges(): Set<string> {
   const commands: readonly (readonly string[])[] = [
-    ["diff", "--name-only", `${IMPLEMENTATION_BASE}..HEAD`],
+    ["diff", "--no-renames", "--name-only", `${IMPLEMENTATION_BASE}..HEAD`],
     ["diff", "--name-only"],
     ["diff", "--cached", "--name-only"],
     ["ls-files", "--others", "--exclude-standard"],
@@ -1272,7 +1314,7 @@ function currentPartOwnerRepairChanges(): Set<string> {
 
 function currentStage6Changes(): Set<string> {
   const commands: readonly (readonly string[])[] = [
-    ["diff", "--name-only", `${STAGE_6_PREREQUISITE_HEAD}..HEAD`],
+    ["diff", "--no-renames", "--name-only", `${STAGE_6_PREREQUISITE_HEAD}..HEAD`],
     ["diff", "--name-only"],
     ["diff", "--cached", "--name-only"],
     ["ls-files", "--others", "--exclude-standard"],
@@ -1286,13 +1328,28 @@ function committedChanges(base: string, head: string): Set<string> {
   );
 }
 
+function currentChangesSince(base: string): Set<string> {
+  const commands: readonly (readonly string[])[] = [
+    ["diff", "--no-renames", "--name-only", `${base}..HEAD`],
+    ["diff", "--name-only"],
+    ["diff", "--cached", "--name-only"],
+    ["ls-files", "--others", "--exclude-standard"],
+  ];
+  return new Set(commands.flatMap((args) => lines(git(args))));
+}
+
 function acceptedChangesWithS63Evidence(
   base: string,
 ): Set<string> {
-  const expected = committedChanges(base, S63_ACTIVATION_HEAD);
-  expected.add(DESIGN_PATH);
-  if (existsSync(resolve(S63_EVIDENCE_PATH))) {
-    expected.add(S63_EVIDENCE_PATH);
+  const expected = committedChanges(base, POST_ARCHIVE_REPAIR_ACTIVATION_HEAD);
+  const allowedRepairPaths = new Set<string>(POST_ARCHIVE_REPAIR_ALLOWED_PATHS);
+  for (const path of currentChangesSince(POST_ARCHIVE_REPAIR_ACTIVATION_HEAD)) {
+    assert.equal(
+      allowedRepairPaths.has(path),
+      true,
+      `unreviewed post-archive repair path: ${path}`,
+    );
+    expected.add(path);
   }
   return expected;
 }
@@ -1959,7 +2016,7 @@ function assertFreshS62FWorkspaceLaw(): void {
     readonly parent?: unknown;
     readonly meta?: Readonly<Record<string, unknown>>;
   };
-  const rkp2Task = JSON.parse(readText(TASK_PATH)) as {
+  const rkp2Task = JSON.parse(readCurrentRkp2Text(TASK_PATH)) as {
     readonly children?: unknown;
     readonly meta?: Readonly<Record<string, unknown>>;
   };
@@ -2843,6 +2900,24 @@ function resolveExactlyOneTaskLocation(
   return { kind, root: kind === "active" ? activeRoot : archiveRoot };
 }
 
+function currentRkp2Path(historicalActivePath: string): string {
+  assert.ok(
+    historicalActivePath === RKP2_ACTIVE_ROOT ||
+      historicalActivePath.startsWith(`${RKP2_ACTIVE_ROOT}/`),
+    `${historicalActivePath} must be beneath the historical RKP-2 root`,
+  );
+  const location = resolveExactlyOneTaskLocation(
+    RKP2_ACTIVE_ROOT,
+    RKP2_ARCHIVE_ROOT,
+    RKP2_TASK_MANIFEST,
+  );
+  return location.root + historicalActivePath.slice(RKP2_ACTIVE_ROOT.length);
+}
+
+function readCurrentRkp2Text(historicalActivePath: string): string {
+  return readText(currentRkp2Path(historicalActivePath));
+}
+
 function canonicalizeAcceptanceProjectionAuditRecord(record: unknown): string {
   assert.ok(record !== null && typeof record === "object");
   assert.equal(Array.isArray(record), false);
@@ -2967,6 +3042,7 @@ function jsonlReferenceExists(path: string): boolean {
     return true;
   }
   for (const [activeRoot, archiveRoot] of [
+    [RKP2_ACTIVE_ROOT, RKP2_ARCHIVE_ROOT],
     [STAGE_6_E3_LAW_TASK_ROOT, STAGE_6_E3_LAW_TARGET_ARCHIVE_ROOT],
     [
       STAGE_6_SEMANTIC_CANONICAL_TASK_ROOT,
@@ -4941,9 +5017,21 @@ test("implementation changes stay inside the literal RKP-2 allowlists", async ()
   assert.doesNotThrow(() =>
     git(["merge-base", "--is-ancestor", S63_ACTIVATION_HEAD, "HEAD"]),
   );
+  assert.equal(
+    git(["rev-parse", `${POST_ARCHIVE_REPAIR_ACTIVATION_HEAD}^`]),
+    POST_ARCHIVE_REPAIR_PLANNING_HEAD,
+  );
+  assert.doesNotThrow(() =>
+    git([
+      "merge-base",
+      "--is-ancestor",
+      POST_ARCHIVE_REPAIR_ACTIVATION_HEAD,
+      "HEAD",
+    ]),
+  );
   const acceptedBaseline = committedChanges(
     IMPLEMENTATION_BASE,
-    S63_ACTIVATION_HEAD,
+    POST_ARCHIVE_REPAIR_ACTIVATION_HEAD,
   );
 
   const allowed = new Set<string>([
@@ -4956,6 +5044,7 @@ test("implementation changes stay inside the literal RKP-2 allowlists", async ()
     ...RKP1A_PLANNING_PATHS,
     ...acceptedBaseline,
     ...S63_AUTHORITY_PATHS,
+    ...POST_ARCHIVE_REPAIR_ALLOWED_PATHS,
   ]);
   assert.equal(CHILD_TECHNICAL_PATHS.length, 4);
   assert.equal(CHILD_ACTIVE_LIFECYCLE_PATHS.length, 11);
@@ -5077,9 +5166,14 @@ test("Stage 6 hostile and resource evidence consumes the existing private Rust s
   assert.doesNotThrow(() =>
     git(["merge-base", "--is-ancestor", STAGE_6_PREREQUISITE_HEAD, "HEAD"]),
   );
-  const task = JSON.parse(readText(TASK_PATH)) as {
+  const task = JSON.parse(readCurrentRkp2Text(TASK_PATH)) as {
     meta?: { stage_6_completed?: unknown };
   };
+  const s63Location = resolveExactlyOneTaskLocation(
+    S63_TASK_ROOT,
+    S63_ARCHIVE_ROOT,
+    S63_TASK_MANIFEST,
+  );
   const stage6Changes = currentStage6Changes();
   const allowed = acceptedChangesWithS63Evidence(STAGE_6_PREREQUISITE_HEAD);
   for (const path of stage6Changes) {
@@ -5103,7 +5197,7 @@ test("Stage 6 hostile and resource evidence consumes the existing private Rust s
   );
   assert.equal(
     task.meta?.stage_6_completed === true,
-    existsSync(resolve(S63_EVIDENCE_PATH)),
+    existsSync(resolve(`${s63Location.root}/research/implementation-evidence.md`)),
     "Stage 6 completion requires the frozen S6.3 evidence record",
   );
 
@@ -5891,6 +5985,34 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     }),
     { kind: "archive", root: "archive" },
   );
+  assert.deepEqual(
+    resolveExactlyOneTaskLocation(
+      RKP2_ACTIVE_ROOT,
+      RKP2_ARCHIVE_ROOT,
+      RKP2_TASK_MANIFEST,
+    ),
+    { kind: "archive", root: RKP2_ARCHIVE_ROOT },
+  );
+  for (const invalidRkp2Location of [
+    {
+      activeFiles: [...RKP2_TASK_MANIFEST],
+      archiveFiles: [...RKP2_TASK_MANIFEST],
+    },
+    { activeFiles: null, archiveFiles: null },
+    {
+      activeFiles: null,
+      archiveFiles: [...RKP2_TASK_MANIFEST, "research/forbidden-drift.md"],
+    },
+  ] as const) {
+    assert.throws(() =>
+      resolveExactlyOneTaskLocation(
+        RKP2_ACTIVE_ROOT,
+        RKP2_ARCHIVE_ROOT,
+        RKP2_TASK_MANIFEST,
+        invalidRkp2Location,
+      ),
+    );
+  }
   for (const invalidLocation of [
     { activeFiles: ["task.json"], archiveFiles: ["task.json"] },
     { activeFiles: null, archiveFiles: null },
@@ -6796,7 +6918,7 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     readonly relatedFiles?: unknown;
     readonly meta?: Readonly<Record<string, unknown>>;
   };
-  const currentRkp2Task = JSON.parse(readText(TASK_PATH)) as {
+  const currentRkp2Task = JSON.parse(readCurrentRkp2Text(TASK_PATH)) as {
     readonly status?: unknown;
     readonly parent?: unknown;
     readonly children?: unknown;
@@ -8554,7 +8676,7 @@ test("one-time post-Stage-5 manifest successor projection is exact and content-f
     const approvedRows = lines(approvedText);
     const projectedText = gitTextAt(MANIFEST_PROJECTION_COMMIT, projection.path);
     const projectedRows = lines(projectedText);
-    const currentText = readText(projection.path);
+    const currentText = readCurrentRkp2Text(projection.path);
     const currentRows = lines(currentText);
     assert.equal(currentText, projectedText, `${projection.path} changed after projection`);
     assert.equal(approvedRows.length, projection.count);
@@ -8600,7 +8722,11 @@ test("one-time post-Stage-5 manifest successor projection is exact and content-f
   }
 
   for (const frozen of FROZEN_POST_STAGE_5_AUTHORITY_CONTENT) {
-    assert.equal(sha256(readText(frozen.path)), frozen.sha256, frozen.path);
+    assert.equal(
+      sha256(readCurrentRkp2Text(frozen.path)),
+      frozen.sha256,
+      frozen.path,
+    );
   }
 });
 
@@ -8742,7 +8868,7 @@ test("TypeScript remains default with exact public 28/51/8/34/9 inventories", ()
     assert.deepEqual(Object.keys(entry.contributions[0] ?? {}), CONTRIBUTION_ABI_FIELDS);
   }
 
-  const task = JSON.parse(readText(TASK_PATH)) as {
+  const task = JSON.parse(readCurrentRkp2Text(TASK_PATH)) as {
     readonly meta: Record<string, unknown>;
   };
   const parent = JSON.parse(readText(PARENT_PATH)) as {

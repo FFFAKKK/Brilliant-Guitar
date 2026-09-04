@@ -57,3 +57,15 @@ Correct: capture the exact declared public-call row, canonicalize and hash the w
 ## Future cutover gate
 
 Only a separately authorized later RKP stage may propose a runtime cutover. Before that proposal can change authority, it must preserve the frozen public behavior, pass independent implementation review, pass a separately authorized complete qualification run, and receive explicit acceptance. RKP-0 neither accepts a cutover nor creates a later stage.
+
+## Archive-safe transition evidence
+
+RKP workspace-contract and task-context consumers must distinguish immutable historical paths from current lifecycle paths:
+
+- Git-at-commit reads keep the path that existed at the pinned commit. Native archive must not rewrite historical evidence.
+- Current task reads resolve exactly one declared active/archive root and verify a literal file manifest. Both roots, neither root, missing files, extra files, symlinks, or heuristic archive searches are invalid.
+- A closed stage or repair history is anchored to an exact accepted or activation commit. Later deltas are admitted only through a literal task-owned allowlist; moving `HEAD` is not an authority boundary by itself.
+- When Trellis validates an archived task's JSONL, a missing former-active reference may map only to the identical suffix in the JSONL owner's exact archived task directory. Existing literal paths take precedence. Cross-task, cross-month, arbitrary recursive, or best-match archive lookup is forbidden.
+- Native archive must not be repaired by recreating the active task directory or copying accepted authority back into it.
+
+Every archive-aware repair must include hostile coverage for ambiguous roots and malformed manifests, plus a post-archive validation that proves archived context remains consumable. These governance rules do not authorize runtime cutover, qualification, production Rust changes, or a later RKP stage.

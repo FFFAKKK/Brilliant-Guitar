@@ -112,6 +112,38 @@ def cmd_validate(args: argparse.Namespace) -> int:
         return 1
 
 
+def _resolve_context_target(jsonl_file: Path, repo_root: Path, file_path: str) -> Path:
+    """Resolve a context reference without searching archive history.
+
+    Literal paths always win. When validating an archived task, a missing
+    reference beneath that same task's former active root may resolve to the
+    identical suffix beneath the JSONL owner's exact archive directory.
+    References to other tasks or archive months remain missing.
+    """
+    literal_path = repo_root / file_path
+    if literal_path.exists():
+        return literal_path
+
+    tasks_root = repo_root / ".trellis" / "tasks"
+    archive_root = tasks_root / "archive"
+    try:
+        archived_task_relative = jsonl_file.parent.relative_to(archive_root)
+    except ValueError:
+        return literal_path
+
+    if len(archived_task_relative.parts) != 2:
+        return literal_path
+
+    _, archived_task_name = archived_task_relative.parts
+    former_active_root = tasks_root / archived_task_name
+    try:
+        suffix = literal_path.relative_to(former_active_root)
+    except ValueError:
+        return literal_path
+
+    return jsonl_file.parent / suffix
+
+
 def _validate_jsonl(jsonl_file: Path, repo_root: Path) -> int:
     """Validate a single JSONL file.
 
@@ -147,7 +179,7 @@ def _validate_jsonl(jsonl_file: Path, repo_root: Path) -> int:
             continue
 
         real_entries += 1
-        full_path = repo_root / file_path
+        full_path = _resolve_context_target(jsonl_file, repo_root, file_path)
         if entry_type == "directory":
             if not full_path.is_dir():
                 print(f"  {colored(f'{file_name}:{line_num}: Directory not found: {file_path}', Colors.RED)}")
