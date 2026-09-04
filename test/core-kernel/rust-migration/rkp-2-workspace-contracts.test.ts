@@ -106,12 +106,35 @@ const TASK_PATH =
   `${RKP2_ACTIVE_ROOT}/task.json`;
 const PARENT_PATH =
   ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json";
+const POST_ARCHIVE_REPAIR_TASK_NAME =
+  "09-04-rkp-2-post-archive-path-compatibility";
+const POST_ARCHIVE_REPAIR_TASK_ROOT =
+  `.trellis/tasks/${POST_ARCHIVE_REPAIR_TASK_NAME}`;
+const POST_ARCHIVE_REPAIR_ARCHIVE_ROOT =
+  `.trellis/tasks/archive/2026-09/${POST_ARCHIVE_REPAIR_TASK_NAME}`;
+const POST_ARCHIVE_REPAIR_TASK_MANIFEST = [
+  "check.jsonl",
+  "design.md",
+  "implement.jsonl",
+  "implement.md",
+  "prd.md",
+  "research/bug-analysis.md",
+  "research/current-state.md",
+  "research/implementation-evidence.md",
+  "task.json",
+] as const;
+const POST_ARCHIVE_REPAIR_LIFECYCLE_PATHS = [
+  ...POST_ARCHIVE_REPAIR_TASK_MANIFEST.map(
+    (path) => `${POST_ARCHIVE_REPAIR_TASK_ROOT}/${path}`,
+  ),
+  ...POST_ARCHIVE_REPAIR_TASK_MANIFEST.map(
+    (path) => `${POST_ARCHIVE_REPAIR_ARCHIVE_ROOT}/${path}`,
+  ),
+] as const;
 const POST_ARCHIVE_REPAIR_ALLOWED_PATHS = [
   ".trellis/scripts/common/task_context.py",
   ".trellis/spec/core-kernel/backend/rust-runtime-transition.md",
-  ".trellis/tasks/09-04-rkp-2-post-archive-path-compatibility/task.json",
-  ".trellis/tasks/09-04-rkp-2-post-archive-path-compatibility/research/bug-analysis.md",
-  ".trellis/tasks/09-04-rkp-2-post-archive-path-compatibility/research/implementation-evidence.md",
+  ...POST_ARCHIVE_REPAIR_LIFECYCLE_PATHS,
   PARENT_PATH,
   "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
 ] as const;
@@ -5992,6 +6015,17 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
       RKP2_TASK_MANIFEST,
     ),
     { kind: "archive", root: RKP2_ARCHIVE_ROOT },
+  );
+  const postArchiveRepairLocation = resolveExactlyOneTaskLocation(
+    POST_ARCHIVE_REPAIR_TASK_ROOT,
+    POST_ARCHIVE_REPAIR_ARCHIVE_ROOT,
+    POST_ARCHIVE_REPAIR_TASK_MANIFEST,
+  );
+  assert.deepEqual(
+    postArchiveRepairLocation,
+    postArchiveRepairLocation.kind === "active"
+      ? { kind: "active", root: POST_ARCHIVE_REPAIR_TASK_ROOT }
+      : { kind: "archive", root: POST_ARCHIVE_REPAIR_ARCHIVE_ROOT },
   );
   for (const invalidRkp2Location of [
     {
