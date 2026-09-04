@@ -357,16 +357,32 @@ test("RKP-3 Session owns a literal closed catalog and all twenty-eight command r
   assert.match(session, /transaction\.run_batch_child\(/u);
 
   assert.match(runtime, /pub fn begin_stage3_transaction\(/u);
-  assert.match(runtime, /pub fn commit_stage3_transaction\(/u);
+  assert.match(runtime, /pub fn commit_stage4_transaction\(/u);
   assert.match(runtime, /state\.snapshot\.document_version = self\.document_version;/u);
 });
 
-test("RKP-3 owns the exact three-export native surface and committed submit seam", () => {
-  assert.deepEqual(Object.keys(addon).sort(), [
+test("RKP-3 exports and submit seam survive the Stage-4 successor", () => {
+  const exports = Object.keys(addon).sort();
+  for (const predecessor of [
     "createKernelSessionV1",
     "readKernelSessionV1",
     "submitKernelStage3V1",
-  ]);
+  ]) {
+    assert.ok(exports.includes(predecessor), `missing predecessor export ${predecessor}`);
+  }
+  assert.ok(exports.includes("operateKernelStage4V1"));
+  assert.equal(
+    exports.every((name) =>
+      [
+        "createKernelSessionV1",
+        "operateKernelStage4V1",
+        "readKernelSessionV1",
+        "replayKernelStage4V1",
+        "submitKernelStage3V1",
+      ].includes(name),
+    ),
+    true,
+  );
 
   const handle = createRawSession();
   const request = stage3Bytes(metadataCommand("Native Stage 3"));

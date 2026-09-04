@@ -1,4 +1,6 @@
 import { captureStrictInput } from "../codec/strict-input-capture";
+import { CORE_COMMAND_DEFINITIONS } from "../commands/catalog";
+import type { KernelEvent } from "../events/contracts";
 
 const API_VERSION = 1 as const;
 const REQUEST_BYTE_LIMIT = 64 * 1024 * 1024;
@@ -9,6 +11,10 @@ const reflectGetOwnPropertyDescriptor = Reflect.getOwnPropertyDescriptor;
 const jsonParse = JSON.parse;
 const jsonStringify = JSON.stringify;
 const objectFreeze = Object.freeze;
+const arraySplice = Array.prototype.splice;
+const promiseConstructor = Promise;
+const promiseResolve = Promise.resolve;
+const promiseThen = Promise.prototype.then;
 const bufferFrom = Buffer.from;
 const bufferIsBuffer = Buffer.isBuffer;
 
@@ -80,6 +86,41 @@ const STAGE3_METRIC_KEYS = [
   "ffiResponseBytes",
 ] as const;
 
+const STAGE4_FAILURE_KEYS = {
+  "history.empty-undo": [],
+  "history.empty-redo": [],
+  "history.invariant-violation": [],
+  "checkpoint.invalid": [],
+  "checkpoint.document-mismatch": [],
+  "checkpoint.version-unavailable": [],
+  "checkpoint.invariant-violation": [],
+  "read.invalid-address": [],
+  "read.entity-not-found": [],
+  "read.invalid-range": [],
+  "read.range-endpoint-not-found": [],
+  "read.range-owner-mismatch": [],
+  "read.invalid-snapshot": [],
+  "read.invariant-violation": [],
+  "event.reentrant-write": [],
+  "event.sequence-overflow": [],
+} as const;
+
+const STAGE4_METRIC_KEYS = [
+  "fullSnapshotMaterializations",
+  "selectorRecordsVisited",
+  "selectorRecordsReturned",
+  "checkpointAttempts",
+  "checkpointSuccesses",
+  "checkpointFailures",
+  "checkpointMaterializedBytes",
+  "eventsReserved",
+  "eventsEmitted",
+] as const;
+
+const CORE_COMMAND_IDS = new Set(
+  CORE_COMMAND_DEFINITIONS.map((definition) => definition.commandId),
+);
+
 export type StableFailureCodeV1 = keyof typeof FAILURE_KEYS;
 
 export interface StableFailureWireV1 {
@@ -113,8 +154,8 @@ export interface KernelReadSuccessWireV1 {
       readonly documentVersion: number;
       readonly document: unknown;
     };
-    readonly history: { readonly undoDepth: 0; readonly redoDepth: 0 };
-    readonly dirty: false;
+    readonly history: KernelHistoryStateWireV1;
+    readonly dirty: boolean;
   };
 }
 
@@ -137,6 +178,105 @@ export type ScoreEntityTargetWireV1 = Readonly<Record<string, unknown>> & {
 export type KernelStage3MetricsWireV1 = Readonly<
   Record<(typeof STAGE3_METRIC_KEYS)[number], number>
 >;
+
+export interface KernelHistoryStateWireV1 {
+  readonly undoDepth: number;
+  readonly redoDepth: number;
+}
+
+export type KernelStage4FailureCodeV1 = keyof typeof STAGE4_FAILURE_KEYS;
+
+export type KernelStage4FailureWireV1 =
+  | KernelStage3CommandFailureWireV1
+  | { readonly code: KernelStage4FailureCodeV1 };
+
+export type KernelStage4MetricsWireV1 = Readonly<
+  Record<(typeof STAGE4_METRIC_KEYS)[number], number>
+>;
+
+export type KernelEventWireV1 = KernelEvent;
+
+export interface KernelStage4MutationValueWireV1 {
+  readonly documentVersion: number;
+  readonly affected: readonly ScoreEntityTargetWireV1[];
+  readonly history: KernelHistoryStateWireV1;
+  readonly dirty: boolean;
+  readonly metrics: KernelStage3MetricsWireV1;
+  readonly stage4Metrics: KernelStage4MetricsWireV1;
+}
+
+export type KernelStage4CommandWireV1 =
+  | {
+      readonly apiVersion: 1;
+      readonly status: "committed" | "no-op";
+      readonly value: KernelStage4MutationValueWireV1;
+      readonly events: readonly KernelEventWireV1[];
+    }
+  | {
+      readonly apiVersion: 1;
+      readonly status: "command-rejected";
+      readonly value: Omit<KernelStage4MutationValueWireV1, "affected">;
+      readonly failure: KernelStage4FailureWireV1;
+      readonly events: readonly [];
+    };
+
+export type KernelStage4MarkPersistedWireV1 =
+  | {
+      readonly apiVersion: 1;
+      readonly status: "updated" | "no-op";
+      readonly value: { readonly documentVersion: number; readonly dirty: boolean };
+      readonly events: readonly KernelEventWireV1[];
+    }
+  | {
+      readonly apiVersion: 1;
+      readonly status: "checkpoint-rejected";
+      readonly value: { readonly documentVersion: number; readonly dirty: boolean };
+      readonly failure: KernelStage4FailureWireV1;
+      readonly events: readonly [];
+    };
+
+export interface KernelStage4ReadSuccessWireV1 {
+  readonly apiVersion: 1;
+  readonly status: "ok";
+  readonly value: {
+    readonly snapshot: {
+      readonly documentId: string;
+      readonly schemaVersion: "brilliant-score-1";
+      readonly documentVersion: number;
+      readonly document: unknown | null;
+    };
+    readonly history: KernelHistoryStateWireV1;
+    readonly dirty: boolean;
+    readonly stage4Metrics: KernelStage4MetricsWireV1;
+  };
+}
+
+export type KernelStage4ReadWireV1 =
+  | KernelStage4ReadSuccessWireV1
+  | {
+      readonly apiVersion: 1;
+      readonly status: "read-rejected";
+      readonly failure: KernelStage4FailureWireV1;
+    };
+
+export interface KernelStage4SelectWireV1 {
+  readonly apiVersion: 1;
+  readonly status: "ok";
+  readonly value: {
+    readonly documentVersion: number;
+    readonly selection:
+      | { readonly ok: true; readonly value: unknown }
+      | { readonly ok: false; readonly failure: KernelStage4FailureWireV1 };
+    readonly stage4Metrics: KernelStage4MetricsWireV1;
+  };
+}
+
+export type KernelStage4OperationWireV1 =
+  | KernelStage4CommandWireV1
+  | KernelStage4MarkPersistedWireV1
+  | KernelStage4ReadWireV1
+  | KernelStage4SelectWireV1
+  | KernelRejectedWireV1;
 
 export interface KernelStage3SubmitValueWireV1 {
   readonly documentVersion: number;
@@ -173,6 +313,13 @@ export interface RustKernelSmokeNativeAddon {
 
 export interface RustKernelStage3NativeAddon extends RustKernelSmokeNativeAddon {
   readonly submitKernelStage3V1: (handle: unknown, requestBytes: unknown) => unknown;
+}
+
+export interface RustKernelStage4NativeAddon extends RustKernelStage3NativeAddon {
+  readonly operateKernelStage4V1: (
+    handle: unknown,
+    requestBytes: unknown,
+  ) => unknown;
 }
 
 export type RustKernelSmokeCreateOutcome =
@@ -296,6 +443,23 @@ function isStage3Metrics(value: unknown): value is KernelStage3MetricsWireV1 {
   );
 }
 
+function isHistoryState(value: unknown): value is KernelHistoryStateWireV1 {
+  return (
+    isRecord(value) &&
+    hasExactKeys(value, ["undoDepth", "redoDepth"]) &&
+    isSafeNonNegativeInteger(value.undoDepth) &&
+    isSafeNonNegativeInteger(value.redoDepth)
+  );
+}
+
+function isStage4Metrics(value: unknown): value is KernelStage4MetricsWireV1 {
+  return (
+    isRecord(value) &&
+    hasExactKeys(value, STAGE4_METRIC_KEYS) &&
+    STAGE4_METRIC_KEYS.every((key) => isSafeNonNegativeInteger(value[key]))
+  );
+}
+
 function isStage3CommandFailure(
   value: unknown,
   allowBatchWrapper = true,
@@ -346,6 +510,18 @@ function isStage3CommandFailure(
     default:
       return true;
   }
+}
+
+function isStage4Failure(value: unknown): value is KernelStage4FailureWireV1 {
+  if (isStage3CommandFailure(value)) {
+    return true;
+  }
+  return (
+    isRecord(value) &&
+    typeof value.code === "string" &&
+    value.code in STAGE4_FAILURE_KEYS &&
+    hasExactKeys(value, ["code"])
+  );
 }
 
 function isFailure(value: unknown): value is StableFailureWireV1 {
@@ -435,7 +611,7 @@ function isReadResult(value: unknown): value is KernelReadWireV1 {
     value.status !== "ok" ||
     !isRecord(value.value) ||
     !hasExactKeys(value.value, ["snapshot", "history", "dirty"]) ||
-    value.value.dirty !== false
+    typeof value.value.dirty !== "boolean"
   ) {
     return false;
   }
@@ -455,8 +631,7 @@ function isReadResult(value: unknown): value is KernelReadWireV1 {
     isRecord(snapshot.document) &&
     isRecord(history) &&
     hasExactKeys(history, ["undoDepth", "redoDepth"]) &&
-    history.undoDepth === 0 &&
-    history.redoDepth === 0
+    isHistoryState(history)
   );
 }
 
@@ -495,6 +670,231 @@ function isStage3SubmitResult(value: unknown): value is KernelStage3SubmitWireV1
     isStage3Metrics(value.value.metrics) &&
     isStage3CommandFailure(value.failure)
   );
+}
+
+function isKernelEvent(value: unknown): value is KernelEventWireV1 {
+  if (
+    !isRecord(value) ||
+    value.eventVersion !== 1 ||
+    !isSafeNonNegativeInteger(value.eventSequence) ||
+    !isStableId(value.documentId) ||
+    !isSafeNonNegativeInteger(value.documentVersion)
+  ) {
+    return false;
+  }
+  if (value.eventType === "core.document.committed") {
+    return (
+      hasExactKeys(value, [
+        "eventVersion",
+        "eventSequence",
+        "eventType",
+        "documentId",
+        "documentVersion",
+        "cause",
+        "commandId",
+        "affectedEntities",
+      ]) &&
+      ["submit", "undo", "redo"].includes(String(value.cause)) &&
+      typeof value.commandId === "string" &&
+      CORE_COMMAND_IDS.has(value.commandId as never) &&
+      Array.isArray(value.affectedEntities) &&
+      value.affectedEntities.length <= 131_072 &&
+      value.affectedEntities.every(isScoreEntityTarget)
+    );
+  }
+  return (
+    value.eventType === "core.session.dirty-state-changed" &&
+    hasExactKeys(value, [
+      "eventVersion",
+      "eventSequence",
+      "eventType",
+      "documentId",
+      "documentVersion",
+      "cause",
+      "dirty",
+    ]) &&
+    ["submit", "undo", "redo", "mark-persisted"].includes(
+      String(value.cause),
+    ) &&
+    typeof value.dirty === "boolean"
+  );
+}
+
+function isEventArray(value: unknown): value is readonly KernelEventWireV1[] {
+  return (
+    Array.isArray(value) &&
+    value.length <= 2 &&
+    value.every(isKernelEvent)
+  );
+}
+
+function isStage4MutationValue(
+  value: unknown,
+): value is KernelStage4MutationValueWireV1 {
+  return (
+    isRecord(value) &&
+    hasExactKeys(value, [
+      "documentVersion",
+      "affected",
+      "history",
+      "dirty",
+      "metrics",
+      "stage4Metrics",
+    ]) &&
+    isSafeNonNegativeInteger(value.documentVersion) &&
+    Array.isArray(value.affected) &&
+    value.affected.length <= 131_072 &&
+    value.affected.every(isScoreEntityTarget) &&
+    isHistoryState(value.history) &&
+    typeof value.dirty === "boolean" &&
+    isStage3Metrics(value.metrics) &&
+    isStage4Metrics(value.stage4Metrics)
+  );
+}
+
+function isStage4RejectedValue(
+  value: unknown,
+): value is Omit<KernelStage4MutationValueWireV1, "affected"> {
+  return (
+    isRecord(value) &&
+    hasExactKeys(value, [
+      "documentVersion",
+      "history",
+      "dirty",
+      "metrics",
+      "stage4Metrics",
+    ]) &&
+    isSafeNonNegativeInteger(value.documentVersion) &&
+    isHistoryState(value.history) &&
+    typeof value.dirty === "boolean" &&
+    isStage3Metrics(value.metrics) &&
+    isStage4Metrics(value.stage4Metrics)
+  );
+}
+
+function isStage4CommandResult(value: unknown): value is KernelStage4CommandWireV1 {
+  if (
+    !isRecord(value) ||
+    value.apiVersion !== API_VERSION ||
+    typeof value.status !== "string"
+  ) {
+    return false;
+  }
+  if (value.status === "committed" || value.status === "no-op") {
+    return (
+      hasExactKeys(value, ["apiVersion", "status", "value", "events"]) &&
+      isStage4MutationValue(value.value) &&
+      isEventArray(value.events) &&
+      (value.status === "committed"
+        ? value.events.length >= 1
+        : value.events.length === 0 && value.value.affected.length === 0)
+    );
+  }
+  return (
+    value.status === "command-rejected" &&
+    hasExactKeys(value, ["apiVersion", "status", "value", "failure", "events"]) &&
+    isStage4RejectedValue(value.value) &&
+    isStage4Failure(value.failure) &&
+    Array.isArray(value.events) &&
+    value.events.length === 0
+  );
+}
+
+function isStage4MarkPersistedResult(
+  value: unknown,
+): value is KernelStage4MarkPersistedWireV1 {
+  if (
+    !isRecord(value) ||
+    value.apiVersion !== API_VERSION ||
+    typeof value.status !== "string" ||
+    !isRecord(value.value) ||
+    !hasExactKeys(value.value, ["documentVersion", "dirty"]) ||
+    !isSafeNonNegativeInteger(value.value.documentVersion) ||
+    typeof value.value.dirty !== "boolean"
+  ) {
+    return false;
+  }
+  if (value.status === "updated" || value.status === "no-op") {
+    return (
+      hasExactKeys(value, ["apiVersion", "status", "value", "events"]) &&
+      isEventArray(value.events) &&
+      (value.status === "updated" ? value.events.length === 1 : value.events.length === 0)
+    );
+  }
+  return (
+    value.status === "checkpoint-rejected" &&
+    hasExactKeys(value, ["apiVersion", "status", "value", "failure", "events"]) &&
+    isStage4Failure(value.failure) &&
+    Array.isArray(value.events) &&
+    value.events.length === 0
+  );
+}
+
+function isStage4ReadResult(value: unknown): value is KernelStage4ReadWireV1 {
+  if (
+    !isRecord(value) ||
+    value.apiVersion !== API_VERSION ||
+    typeof value.status !== "string"
+  ) {
+    return false;
+  }
+  if (value.status === "read-rejected") {
+    return (
+      hasExactKeys(value, ["apiVersion", "status", "failure"]) &&
+      isStage4Failure(value.failure)
+    );
+  }
+  if (
+    value.status !== "ok" ||
+    !hasExactKeys(value, ["apiVersion", "status", "value"]) ||
+    !isRecord(value.value) ||
+    !hasExactKeys(value.value, ["snapshot", "history", "dirty", "stage4Metrics"]) ||
+    !isHistoryState(value.value.history) ||
+    typeof value.value.dirty !== "boolean" ||
+    !isStage4Metrics(value.value.stage4Metrics) ||
+    !isRecord(value.value.snapshot)
+  ) {
+    return false;
+  }
+  const snapshot = value.value.snapshot;
+  return (
+    hasExactKeys(snapshot, [
+      "documentId",
+      "schemaVersion",
+      "documentVersion",
+      "document",
+    ]) &&
+    isStableId(snapshot.documentId) &&
+    snapshot.schemaVersion === "brilliant-score-1" &&
+    isSafeNonNegativeInteger(snapshot.documentVersion) &&
+    (snapshot.document === null || isRecord(snapshot.document))
+  );
+}
+
+function isSelectorValue(value: unknown): boolean {
+  return typeof value === "boolean" || isRecord(value);
+}
+
+function isStage4SelectResult(value: unknown): value is KernelStage4SelectWireV1 {
+  if (
+    !isRecord(value) ||
+    !hasExactKeys(value, ["apiVersion", "status", "value"]) ||
+    value.apiVersion !== API_VERSION ||
+    value.status !== "ok" ||
+    !isRecord(value.value) ||
+    !hasExactKeys(value.value, ["documentVersion", "selection", "stage4Metrics"]) ||
+    !isSafeNonNegativeInteger(value.value.documentVersion) ||
+    !isStage4Metrics(value.value.stage4Metrics) ||
+    !isRecord(value.value.selection)
+  ) {
+    return false;
+  }
+  const selection = value.value.selection;
+  return selection.ok === true
+    ? hasExactKeys(selection, ["ok", "value"]) && isSelectorValue(selection.value)
+    : selection.ok === false &&
+        hasExactKeys(selection, ["ok", "failure"]) &&
+        isStage4Failure(selection.failure);
 }
 
 function decodePayload<T>(payload: unknown, validate: (value: unknown) => value is T): T | undefined {
@@ -669,4 +1069,376 @@ export function submitRustKernelSmokeCommand(
     return rejectedByteLimit("bridge.response-too-large", (payload as Buffer).byteLength);
   }
   return decodePayload(payload, isStage3SubmitResult) ?? rejectedRead("bridge.internal");
+}
+
+type Stage4ResultValidator<T> = (value: unknown) => value is T;
+
+interface Stage4SnapshotCache {
+  readonly documentId: string;
+  readonly schemaVersion: "brilliant-score-1";
+  readonly documentVersion: number;
+  readonly document: unknown;
+}
+
+interface Stage4SubscriberRecord {
+  readonly handler: RustKernelStage4EventHandler;
+  active: boolean;
+}
+
+export type RustKernelStage4EventHandler = (
+  event: KernelEventWireV1,
+) => unknown;
+
+export type RustKernelStage4SubscriptionResult =
+  | { readonly status: "subscribed"; readonly unsubscribe: () => void }
+  | {
+      readonly status: "rejected";
+      readonly failure: { readonly code: "event.invalid-handler" };
+    };
+
+function isStage4CommandOrRejected(
+  value: unknown,
+): value is KernelStage4CommandWireV1 | KernelRejectedWireV1 {
+  return isRejected(value) || isStage4CommandResult(value);
+}
+
+function isStage4CheckpointOrRejected(
+  value: unknown,
+): value is KernelStage4MarkPersistedWireV1 | KernelRejectedWireV1 {
+  return isRejected(value) || isStage4MarkPersistedResult(value);
+}
+
+function isStage4ReadOrRejected(
+  value: unknown,
+): value is KernelStage4ReadWireV1 | KernelRejectedWireV1 {
+  return isRejected(value) || isStage4ReadResult(value);
+}
+
+function isStage4SelectOrRejected(
+  value: unknown,
+): value is KernelStage4SelectWireV1 | KernelRejectedWireV1 {
+  return isRejected(value) || isStage4SelectResult(value);
+}
+
+function freezeLocal<T extends object>(value: T): Readonly<T> {
+  return reflectApply(objectFreeze, Object, [value]) as Readonly<T>;
+}
+
+const EMPTY_STAGE4_EVENTS = freezeLocal([]) as readonly [];
+const ZERO_STAGE3_METRICS = freezeLocal(
+  Object.fromEntries(STAGE3_METRIC_KEYS.map((key) => [key, 0])),
+) as KernelStage3MetricsWireV1;
+const ZERO_STAGE4_METRICS = freezeLocal(
+  Object.fromEntries(STAGE4_METRIC_KEYS.map((key) => [key, 0])),
+) as KernelStage4MetricsWireV1;
+const REENTRANT_FAILURE = freezeLocal({
+  code: "event.reentrant-write" as const,
+});
+
+function invokeStage4Native<T>(
+  addon: RustKernelStage4NativeAddon,
+  handle: OpaqueKernelSessionHandle,
+  operation: unknown,
+  validate: Stage4ResultValidator<T>,
+): T | KernelRejectedWireV1 {
+  const captured = captureStrictInput(operation, "native-wire-v1");
+  if (captured.status !== "captured") {
+    return rejectedRead("bridge.capture-invalid");
+  }
+
+  let requestBytes: Buffer;
+  try {
+    const requestText = reflectApply(jsonStringify, JSON, [
+      { apiVersion: API_VERSION, operation: captured.value },
+    ]) as string | undefined;
+    if (requestText === undefined) {
+      return rejectedRead("bridge.capture-invalid");
+    }
+    requestBytes = reflectApply(bufferFrom, Buffer, [requestText, "utf8"]) as Buffer;
+  } catch {
+    return rejectedRead("bridge.capture-invalid");
+  }
+  if (requestBytes.byteLength > REQUEST_BYTE_LIMIT) {
+    return rejectedByteLimit("bridge.request-too-large", requestBytes.byteLength);
+  }
+
+  let payload: unknown;
+  try {
+    const detachedRequest = reflectApply(bufferFrom, Buffer, [requestBytes]) as Buffer;
+    payload = addon.operateKernelStage4V1(handle, detachedRequest);
+  } catch {
+    return rejectedRead("bridge.internal");
+  }
+  if (
+    reflectApply(bufferIsBuffer, Buffer, [payload]) &&
+    (payload as Buffer).byteLength > RESPONSE_BYTE_LIMIT
+  ) {
+    return rejectedByteLimit("bridge.response-too-large", (payload as Buffer).byteLength);
+  }
+  return decodePayload(payload, validate) ?? rejectedRead("bridge.internal");
+}
+
+/**
+ * Private Stage-4 evidence adapter. It is deliberately absent from the Core
+ * public root and does not switch the product runtime away from TypeScript.
+ */
+export class RustKernelStage4Session {
+  private snapshotCache: Stage4SnapshotCache | undefined;
+  private history: KernelHistoryStateWireV1 = freezeLocal({
+    undoDepth: 0,
+    redoDepth: 0,
+  });
+  private dirty = false;
+  private documentVersion = 0;
+  private dispatchDepth = 0;
+  private readonly subscribers: Stage4SubscriberRecord[] = [];
+
+  public constructor(
+    private readonly addon: RustKernelStage4NativeAddon,
+    private readonly handle: OpaqueKernelSessionHandle,
+  ) {}
+
+  public submit(
+    command: unknown,
+  ): KernelStage4CommandWireV1 | KernelRejectedWireV1 {
+    if (this.dispatchDepth > 0) {
+      return this.reentrantCommandResult();
+    }
+    const result = invokeStage4Native(
+      this.addon,
+      this.handle,
+      { kind: "submit", command },
+      isStage4CommandOrRejected,
+    );
+    return this.acceptCommandResult(result);
+  }
+
+  public undo(): KernelStage4CommandWireV1 | KernelRejectedWireV1 {
+    if (this.dispatchDepth > 0) {
+      return this.reentrantCommandResult();
+    }
+    const result = invokeStage4Native(
+      this.addon,
+      this.handle,
+      { kind: "undo" },
+      isStage4CommandOrRejected,
+    );
+    return this.acceptCommandResult(result);
+  }
+
+  public redo(): KernelStage4CommandWireV1 | KernelRejectedWireV1 {
+    if (this.dispatchDepth > 0) {
+      return this.reentrantCommandResult();
+    }
+    const result = invokeStage4Native(
+      this.addon,
+      this.handle,
+      { kind: "redo" },
+      isStage4CommandOrRejected,
+    );
+    return this.acceptCommandResult(result);
+  }
+
+  public markPersisted(
+    checkpoint: unknown,
+  ): KernelStage4MarkPersistedWireV1 | KernelRejectedWireV1 {
+    if (this.dispatchDepth > 0) {
+      return this.reentrantCheckpointResult();
+    }
+    const result = invokeStage4Native(
+      this.addon,
+      this.handle,
+      { kind: "mark-persisted", checkpoint },
+      isStage4CheckpointOrRejected,
+    );
+    if (result.status === "rejected") {
+      return result;
+    }
+    this.documentVersion = result.value.documentVersion;
+    this.dirty = result.value.dirty;
+    this.dispatchEvents(result.events);
+    return result;
+  }
+
+  public read(): KernelStage4ReadWireV1 | KernelRejectedWireV1 {
+    const result = invokeStage4Native(
+      this.addon,
+      this.handle,
+      {
+        kind: "read",
+        knownSnapshotVersion: this.snapshotCache?.documentVersion ?? null,
+      },
+      isStage4ReadOrRejected,
+    );
+    if (result.status !== "ok") {
+      return result;
+    }
+
+    const nativeSnapshot = result.value.snapshot;
+    let snapshot: Stage4SnapshotCache;
+    if (nativeSnapshot.document === null) {
+      const cached = this.snapshotCache;
+      if (
+        cached === undefined ||
+        cached.documentId !== nativeSnapshot.documentId ||
+        cached.schemaVersion !== nativeSnapshot.schemaVersion ||
+        cached.documentVersion !== nativeSnapshot.documentVersion
+      ) {
+        return rejectedRead("bridge.internal");
+      }
+      snapshot = cached;
+    } else {
+      snapshot = nativeSnapshot as Stage4SnapshotCache;
+      this.snapshotCache = snapshot;
+    }
+
+    const value = freezeLocal({
+      snapshot,
+      history: result.value.history,
+      dirty: result.value.dirty,
+      stage4Metrics: result.value.stage4Metrics,
+    });
+    const accepted = freezeLocal({
+      apiVersion: API_VERSION,
+      status: "ok" as const,
+      value,
+    }) as KernelStage4ReadSuccessWireV1;
+    this.documentVersion = snapshot.documentVersion;
+    this.history = result.value.history;
+    this.dirty = result.value.dirty;
+    return accepted;
+  }
+
+  public select(
+    selector: unknown,
+  ): KernelStage4SelectWireV1 | KernelRejectedWireV1 {
+    return invokeStage4Native(
+      this.addon,
+      this.handle,
+      { kind: "select", selector },
+      isStage4SelectOrRejected,
+    );
+  }
+
+  public subscribe(
+    handler: RustKernelStage4EventHandler,
+  ): RustKernelStage4SubscriptionResult;
+  public subscribe(handler: unknown): RustKernelStage4SubscriptionResult;
+  public subscribe(handler: unknown): RustKernelStage4SubscriptionResult {
+    if (typeof handler !== "function") {
+      return freezeLocal({
+        status: "rejected" as const,
+        failure: freezeLocal({ code: "event.invalid-handler" as const }),
+      });
+    }
+    const record: Stage4SubscriberRecord = {
+      handler: handler as RustKernelStage4EventHandler,
+      active: true,
+    };
+    this.subscribers[this.subscribers.length] = record;
+    const unsubscribe = (): void => {
+      if (!record.active) {
+        return;
+      }
+      record.active = false;
+      for (let index = 0; index < this.subscribers.length; index += 1) {
+        if (this.subscribers[index] === record) {
+          reflectApply(arraySplice, this.subscribers, [index, 1]);
+          break;
+        }
+      }
+    };
+    reflectApply(objectFreeze, Object, [unsubscribe]);
+    return freezeLocal({ status: "subscribed" as const, unsubscribe });
+  }
+
+  private acceptCommandResult(
+    result: KernelStage4CommandWireV1 | KernelRejectedWireV1,
+  ): KernelStage4CommandWireV1 | KernelRejectedWireV1 {
+    if (result.status === "rejected") {
+      return result;
+    }
+    this.documentVersion = result.value.documentVersion;
+    this.history = result.value.history;
+    this.dirty = result.value.dirty;
+    if (result.status === "committed") {
+      this.snapshotCache = undefined;
+    }
+    this.dispatchEvents(result.events);
+    return result;
+  }
+
+  private dispatchEvents(events: readonly KernelEventWireV1[]): void {
+    for (let eventIndex = 0; eventIndex < events.length; eventIndex += 1) {
+      const event = events[eventIndex];
+      if (event === undefined) {
+        continue;
+      }
+      const snapshot: Stage4SubscriberRecord[] = [];
+      for (let index = 0; index < this.subscribers.length; index += 1) {
+        const record = this.subscribers[index];
+        if (record !== undefined && record.active) {
+          snapshot[snapshot.length] = record;
+        }
+      }
+      this.dispatchDepth += 1;
+      try {
+        for (let index = 0; index < snapshot.length; index += 1) {
+          const record = snapshot[index];
+          if (record === undefined) {
+            continue;
+          }
+          try {
+            const returned = reflectApply(record.handler, undefined, [event]);
+            const adopted = reflectApply(promiseResolve, promiseConstructor, [
+              returned,
+            ]) as Promise<unknown>;
+            reflectApply(promiseThen, adopted, [undefined, () => undefined]);
+          } catch {
+            // Subscriber failures are intentionally isolated from native state and later handlers.
+          }
+        }
+      } finally {
+        this.dispatchDepth -= 1;
+      }
+    }
+  }
+
+  private reentrantCommandResult(): KernelStage4CommandWireV1 {
+    const value = freezeLocal({
+      documentVersion: this.documentVersion,
+      history: this.history,
+      dirty: this.dirty,
+      metrics: ZERO_STAGE3_METRICS,
+      stage4Metrics: ZERO_STAGE4_METRICS,
+    });
+    return freezeLocal({
+      apiVersion: API_VERSION,
+      status: "command-rejected" as const,
+      value,
+      failure: REENTRANT_FAILURE,
+      events: EMPTY_STAGE4_EVENTS,
+    });
+  }
+
+  private reentrantCheckpointResult(): KernelStage4MarkPersistedWireV1 {
+    const value = freezeLocal({
+      documentVersion: this.documentVersion,
+      dirty: this.dirty,
+    });
+    return freezeLocal({
+      apiVersion: API_VERSION,
+      status: "checkpoint-rejected" as const,
+      value,
+      failure: REENTRANT_FAILURE,
+      events: EMPTY_STAGE4_EVENTS,
+    });
+  }
+}
+
+export function createRustKernelStage4Session(
+  addon: RustKernelStage4NativeAddon,
+  handle: OpaqueKernelSessionHandle,
+): RustKernelStage4Session {
+  return new RustKernelStage4Session(addon, handle);
 }

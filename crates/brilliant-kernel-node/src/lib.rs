@@ -63,6 +63,15 @@ pub fn submit_kernel_stage3_v1(
     boundary::submit_kernel_stage3(&env, &handle, &request_bytes)
 }
 
+#[napi(js_name = "operateKernelStage4V1")]
+pub fn operate_kernel_stage4_v1(
+    env: Env,
+    handle: Unknown<'_>,
+    request_bytes: Unknown<'_>,
+) -> Buffer {
+    boundary::operate_kernel_stage4(&env, &handle, &request_bytes)
+}
+
 #[cfg(test)]
 mod tests {
     use super::napi::bindgen_prelude::{NativeBorrowBarrier, NativeBorrowScope};
