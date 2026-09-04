@@ -142,6 +142,17 @@ test("RKP-3 keeps the seven-crate dependency surface and Cargo bytes unchanged",
 });
 
 test("RKP-3 adds no bridge failure and keeps stage failures data-only", () => {
+  const nodeRoot = readText("crates/brilliant-kernel-node/src/lib.rs");
+  const exports = Array.from(
+    nodeRoot.matchAll(/#\[napi\(js_name\s*=\s*"([^"]+)"\)\]/gu),
+    (match) => match[1] ?? "",
+  ).sort();
+  assert.deepEqual(exports, [
+    "createKernelSessionV1",
+    "readKernelSessionV1",
+    "submitKernelStage3V1",
+  ]);
+
   const session = readText("crates/brilliant-kernel-contracts/src/session.rs");
   for (const code of STABLE_BRIDGE_FAILURE_CODES) {
     assert.equal(

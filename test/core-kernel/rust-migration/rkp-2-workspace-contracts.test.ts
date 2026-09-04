@@ -8208,12 +8208,15 @@ test("RKP-1A P4 candidate freeze is exact on accepted A3", () => {
   );
 
   const native = readText("src/core-kernel/native/rust-kernel-smoke.ts");
-  assert.equal(
-    Array.from(
-      native.matchAll(/captureStrictInput\([^;]*?, "native-wire-v1"\)/gu),
-    ).length,
-    2,
-    "create and response capture must both select native-wire-v1",
+  assert.match(
+    native,
+    /const captured = captureStrictInput\(parsed, "native-wire-v1"\);/u,
+    "predecessor response capture must select native-wire-v1",
+  );
+  assert.match(
+    native,
+    /const captured = captureStrictInput\(document, "native-wire-v1"\);/u,
+    "predecessor create capture must select native-wire-v1",
   );
 
   const p3bTest = readText(
@@ -8856,13 +8859,14 @@ test("slotmap and RuntimeHandle stay behind the Runtime boundary", () => {
   }
 });
 
-test("Node exports and the StableFailureV1 union remain closed", () => {
+test("RKP-2 Node export subset and the StableFailureV1 union remain closed", () => {
   const nodeRoot = readText("crates/brilliant-kernel-node/src/lib.rs");
   const exports = Array.from(
     nodeRoot.matchAll(/#\[napi\(js_name\s*=\s*"([^"]+)"\)\]/gu),
     (match) => match[1] ?? "",
   ).sort();
-  assert.deepEqual(exports, ["createKernelSessionV1", "readKernelSessionV1"]);
+  for (const required of ["createKernelSessionV1", "readKernelSessionV1"])
+    assert.ok(exports.includes(required), `missing predecessor Node export: ${required}`);
 
   const session = readText("crates/brilliant-kernel-contracts/src/session.rs");
   const codeStart = session.indexOf("pub fn code(&self)");

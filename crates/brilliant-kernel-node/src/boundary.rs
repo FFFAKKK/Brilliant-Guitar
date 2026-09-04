@@ -14,8 +14,9 @@ use std::{
 };
 
 use brilliant_kernel_contracts::{
-    KernelSessionCreateResultV1, KernelSessionReadResultV1, REQUEST_BYTE_LIMIT, StableFailureV1,
-    decode_create_request, encode_create_result, encode_read_result,
+    KernelSessionCreateResultV1, KernelSessionReadResultV1, KernelStage3MetricsV1,
+    KernelStage3SubmitResultV1, REQUEST_BYTE_LIMIT, StableFailureV1, decode_create_request,
+    encode_create_result, encode_read_result, encode_stage3_submit_result,
 };
 use brilliant_kernel_session::KernelSession;
 use napi::{
@@ -30,6 +31,10 @@ const HANDLE_TYPE_TAG: sys::napi_type_tag = sys::napi_type_tag {
 };
 const INTERNAL_CREATE_BYTES: &[u8] = br#"{"apiVersion":1,"status":"rejected","failure":{"failureVersion":1,"code":"bridge.internal"}}"#;
 const INTERNAL_READ_BYTES: &[u8] = br#"{"apiVersion":1,"status":"rejected","failure":{"failureVersion":1,"code":"bridge.internal"}}"#;
+const INTERNAL_SUBMIT_BYTES: &[u8] = br#"{"apiVersion":1,"status":"rejected","failure":{"failureVersion":1,"code":"bridge.internal"}}"#;
+// Only this decimal field's width feeds back into the encoded length. Under the 64 MiB response
+// cap, starting from zero stabilizes in at most three encodes; the fourth step is a closed guard.
+const FFI_RESPONSE_LENGTH_FIXPOINT_STEPS: usize = 4;
 
 static NEXT_GENERATION: AtomicU64 = AtomicU64::new(1);
 static HANDLE_TABLE: OnceLock<Mutex<HashMap<HandleKey, Arc<HandleEnvelope>>>> = OnceLock::new();
@@ -215,6 +220,18 @@ pub(super) fn read_kernel_session(env: &Env, handle: &Unknown<'_>) -> Buffer {
     }
 }
 
+pub(super) fn submit_kernel_stage3(
+    env: &Env,
+    handle: &Unknown<'_>,
+    request_bytes: &Unknown<'_>,
+) -> Buffer {
+    let result = guarded(|| submit_kernel_stage3_inner(env, handle, request_bytes));
+    match result {
+        Ok(bytes) => Buffer::from(bytes),
+        Err(failure) => Buffer::from(encode_submit_failure(failure)),
+    }
+}
+
 fn create_kernel_session_inner(
     env: &Env,
     request_bytes: &Unknown<'_>,
@@ -232,6 +249,29 @@ fn create_kernel_session_inner(
 }
 
 fn read_kernel_session_inner(env: &Env, handle: &Unknown<'_>) -> Result<Vec<u8>, StableFailureV1> {
+    with_session(env, handle, |session| {
+        encode_read_result(&session.read_state())
+    })
+}
+
+fn submit_kernel_stage3_inner(
+    env: &Env,
+    handle: &Unknown<'_>,
+    request_bytes: &Unknown<'_>,
+) -> Result<Vec<u8>, StableFailureV1> {
+    let request_bytes = capture_buffer(request_bytes)?;
+    let request_byte_count = request_bytes.len();
+    let result = with_session(env, handle, |session| {
+        Ok(session.submit_stage3_bytes(&request_bytes))
+    })?;
+    encode_submit_result_with_ffi_metrics(result, request_byte_count)
+}
+
+fn with_session<T>(
+    env: &Env,
+    handle: &Unknown<'_>,
+    operation: impl FnOnce(&mut KernelSession) -> Result<T, StableFailureV1>,
+) -> Result<T, StableFailureV1> {
     if handle
         .get_type()
         .map_err(|_| StableFailureV1::BridgeInternal)?
@@ -276,8 +316,8 @@ fn read_kernel_session_inner(env: &Env, handle: &Unknown<'_>) -> Result<Vec<u8>,
     )?;
 
     let _active = ActiveHandleGuard::enter(key)?;
-    let session = try_session(&envelope.session)?;
-    encode_read_result(&session.read_state())
+    let mut session = try_session(&envelope.session)?;
+    operation(&mut session)
 }
 
 fn capture_buffer(value: &Unknown<'_>) -> Result<Vec<u8>, StableFailureV1> {
@@ -528,6 +568,52 @@ fn encode_read_failure(failure: StableFailureV1) -> Vec<u8> {
     match encode_read_result(&KernelSessionReadResultV1::Rejected(failure)) {
         Ok(bytes) => bytes,
         Err(_) => INTERNAL_READ_BYTES.to_vec(),
+    }
+}
+
+fn encode_submit_failure(failure: StableFailureV1) -> Vec<u8> {
+    match encode_stage3_submit_result(&KernelStage3SubmitResultV1::Rejected(failure)) {
+        Ok(bytes) => bytes,
+        Err(_) => INTERNAL_SUBMIT_BYTES.to_vec(),
+    }
+}
+
+fn encode_submit_result_with_ffi_metrics(
+    mut result: KernelStage3SubmitResultV1,
+    request_bytes: usize,
+) -> Result<Vec<u8>, StableFailureV1> {
+    let request_bytes =
+        u64::try_from(request_bytes).map_err(|_| StableFailureV1::BridgeInternal)?;
+    if let Some(metrics) = submit_metrics_mut(&mut result) {
+        metrics.ffi_request_bytes = request_bytes;
+    }
+
+    let mut expected_response_bytes = 0_u64;
+    for _ in 0..FFI_RESPONSE_LENGTH_FIXPOINT_STEPS {
+        if let Some(metrics) = submit_metrics_mut(&mut result) {
+            metrics.ffi_response_bytes = expected_response_bytes;
+        }
+        let encoded = encode_stage3_submit_result(&result)?;
+        let actual_response_bytes =
+            u64::try_from(encoded.len()).map_err(|_| StableFailureV1::BridgeInternal)?;
+        if actual_response_bytes == expected_response_bytes
+            || submit_metrics_mut(&mut result).is_none()
+        {
+            return Ok(encoded);
+        }
+        expected_response_bytes = actual_response_bytes;
+    }
+    Err(StableFailureV1::BridgeInternal)
+}
+
+fn submit_metrics_mut(
+    result: &mut KernelStage3SubmitResultV1,
+) -> Option<&mut KernelStage3MetricsV1> {
+    match result {
+        KernelStage3SubmitResultV1::Committed(value) => Some(&mut value.metrics),
+        KernelStage3SubmitResultV1::NoOp(value) => Some(&mut value.metrics),
+        KernelStage3SubmitResultV1::CommandRejected { value, .. } => Some(&mut value.metrics),
+        KernelStage3SubmitResultV1::Rejected(_) => None,
     }
 }
 

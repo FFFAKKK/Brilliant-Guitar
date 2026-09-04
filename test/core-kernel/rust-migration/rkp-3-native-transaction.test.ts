@@ -3,6 +3,32 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { test } from "node:test";
 
+import {
+  createRustKernelSmokeSession,
+  readRustKernelSmokeSession,
+  submitRustKernelSmokeCommand,
+  type RustKernelStage3NativeAddon,
+} from "../../../src/core-kernel/native/rust-kernel-smoke";
+import { createCoreScoreFixture } from "../fixtures/core-score";
+
+interface RawNativeCreateResult {
+  readonly payload: Buffer;
+  readonly handle?: object;
+}
+
+interface RawNativeAddon extends RustKernelStage3NativeAddon {
+  readonly createKernelSessionV1: (requestBytes: unknown) => RawNativeCreateResult;
+  readonly readKernelSessionV1: (handle: unknown) => Buffer;
+  readonly submitKernelStage3V1: (handle: unknown, requestBytes: unknown) => Buffer;
+}
+
+const addonPath = resolve(
+  process.cwd(),
+  "target/rkp-1-node/brilliant_kernel_node.node",
+);
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const addon = require(addonPath) as RawNativeAddon;
+
 const CHANGE_OPERATION_VARIANTS = [
   "ReplaceScalar",
   "InsertEntity",
@@ -19,6 +45,53 @@ const CHANGE_OPERATION_VARIANTS = [
 
 function readText(path: string): string {
   return readFileSync(resolve(path), "utf8").replaceAll("\r\n", "\n");
+}
+
+function canonicalCreateBytes(document: unknown): Buffer {
+  return Buffer.from(JSON.stringify({ apiVersion: 1, document }), "utf8");
+}
+
+function stage3Bytes(command: unknown): Buffer {
+  return Buffer.from(JSON.stringify({ apiVersion: 1, command }), "utf8");
+}
+
+function createRawSession(): object {
+  const created = addon.createKernelSessionV1(
+    canonicalCreateBytes(createCoreScoreFixture()),
+  );
+  assert.ok(created.handle);
+  if (created.handle === undefined) throw new Error("missing native handle");
+  return created.handle;
+}
+
+function metadataCommand(title: string): Record<string, unknown> {
+  return {
+    commandVersion: 1,
+    commandId: "core.document.set-metadata",
+    target: { kind: "document", documentId: "score-1" },
+    payload: {
+      metadata: {
+        title,
+        authors: ["Brilliant Guitar"],
+        tempo: { bpm: 120 },
+      },
+    },
+  };
+}
+
+function parsePayload(payload: Buffer): Record<string, unknown> {
+  return JSON.parse(payload.toString("utf8")) as Record<string, unknown>;
+}
+
+function assertDeepFrozen(value: unknown, seen = new WeakSet<object>()): void {
+  if (value === null || typeof value !== "object" || seen.has(value)) return;
+  seen.add(value);
+  assert.equal(Object.isFrozen(value), true);
+  for (const key of Reflect.ownKeys(value)) {
+    const descriptor = Reflect.getOwnPropertyDescriptor(value, key);
+    if (descriptor !== undefined && "value" in descriptor)
+      assertDeepFrozen(descriptor.value, seen);
+  }
 }
 
 test("RKP-3 ChangeSet keeps exactly eleven typed stable-address operations", () => {
@@ -270,4 +343,215 @@ test("RKP-3 Session owns a literal closed catalog and all twenty-eight command r
   assert.match(runtime, /pub fn begin_stage3_transaction\(/u);
   assert.match(runtime, /pub fn commit_stage3_transaction\(/u);
   assert.match(runtime, /state\.snapshot\.document_version = self\.document_version;/u);
+});
+
+test("RKP-3 owns the exact three-export native surface and committed submit seam", () => {
+  assert.deepEqual(Object.keys(addon).sort(), [
+    "createKernelSessionV1",
+    "readKernelSessionV1",
+    "submitKernelStage3V1",
+  ]);
+
+  const handle = createRawSession();
+  const request = stage3Bytes(metadataCommand("Native Stage 3"));
+  const response = addon.submitKernelStage3V1(handle, request);
+  const submitted = parsePayload(response) as {
+    readonly status: string;
+    readonly value: {
+      readonly documentVersion: number;
+      readonly affected: readonly unknown[];
+      readonly metrics: Record<string, number>;
+    };
+  };
+  assert.equal(submitted.status, "committed");
+  assert.equal(submitted.value.documentVersion, 1);
+  assert.deepEqual(submitted.value.affected, [
+    { kind: "document", documentId: "score-1" },
+  ]);
+  assert.equal(submitted.value.metrics.ffiRequestBytes, request.byteLength);
+  assert.equal(submitted.value.metrics.ffiResponseBytes, response.byteLength);
+  for (const key of [
+    "fullDocumentScans",
+    "fullDocumentClones",
+    "fullSemanticValidations",
+    "fullSnapshotMaterializations",
+  ])
+    assert.equal(submitted.value.metrics[key], 0, key);
+  assert.equal("document" in submitted.value, false);
+  assert.equal("changeSet" in submitted.value, false);
+
+  const firstRead = addon.readKernelSessionV1(handle);
+  const secondRead = addon.readKernelSessionV1(handle);
+  assert.deepEqual(firstRead, secondRead);
+  const read = parsePayload(firstRead) as {
+    readonly value: {
+      readonly snapshot: {
+        readonly documentVersion: number;
+        readonly document: { readonly metadata: { readonly title: string } };
+      };
+    };
+  };
+  assert.equal(read.value.snapshot.documentVersion, 1);
+  assert.equal(read.value.snapshot.document.metadata.title, "Native Stage 3");
+
+  const noOp = parsePayload(addon.submitKernelStage3V1(handle, request)) as {
+    readonly status: string;
+    readonly value: { readonly documentVersion: number };
+  };
+  assert.equal(noOp.status, "no-op");
+  assert.equal(noOp.value.documentVersion, 1);
+});
+
+test("native submit preserves raw byte, handle, and command rejection boundaries", () => {
+  const handle = createRawSession();
+  assert.deepEqual(
+    parsePayload(addon.submitKernelStage3V1(handle, "not a buffer")),
+    {
+      apiVersion: 1,
+      status: "rejected",
+      failure: { failureVersion: 1, code: "bridge.capture-invalid" },
+    },
+  );
+  assert.deepEqual(
+    parsePayload(addon.submitKernelStage3V1({}, stage3Bytes(metadataCommand("x")))),
+    {
+      apiVersion: 1,
+      status: "rejected",
+      failure: { failureVersion: 1, code: "bridge.handle-unknown" },
+    },
+  );
+
+  const duplicate = Buffer.from(
+    `{"apiVersion":1,"apiVersion":1,"command":${JSON.stringify(metadataCommand("x"))}}`,
+    "utf8",
+  );
+  const duplicateResult = parsePayload(addon.submitKernelStage3V1(handle, duplicate));
+  assert.equal(duplicateResult.status, "command-rejected");
+  assert.equal(
+    (duplicateResult.failure as { readonly code: string }).code,
+    "command.invalid-envelope",
+  );
+
+  const missingTarget = metadataCommand("Must not commit");
+  missingTarget.target = { kind: "document", documentId: "missing" };
+  const before = addon.readKernelSessionV1(handle);
+  const rejected = parsePayload(
+    addon.submitKernelStage3V1(handle, stage3Bytes(missingTarget)),
+  ) as {
+    readonly status: string;
+    readonly value: { readonly documentVersion: number };
+    readonly failure: { readonly code: string };
+  };
+  assert.equal(rejected.status, "command-rejected");
+  assert.equal(rejected.value.documentVersion, 0);
+  assert.equal(rejected.failure.code, "command.target-not-found");
+  assert.deepEqual(addon.readKernelSessionV1(handle), before);
+});
+
+test("native submit enforces the 64 MiB request boundary before decoding", () => {
+  const handle = createRawSession();
+  const limit = 64 * 1024 * 1024;
+  const source = Buffer.alloc(limit + 1, 0x20);
+  const atLimit = parsePayload(
+    addon.submitKernelStage3V1(handle, source.subarray(0, limit)),
+  );
+  assert.equal(atLimit.status, "rejected");
+  assert.equal(
+    (atLimit.failure as { readonly code: string }).code,
+    "codec.invalid-json",
+  );
+  assert.deepEqual(parsePayload(addon.submitKernelStage3V1(handle, source)), {
+    apiVersion: 1,
+    status: "rejected",
+    failure: {
+      failureVersion: 1,
+      code: "bridge.request-too-large",
+      limitBytes: limit,
+      actualBytes: limit + 1,
+    },
+  });
+});
+
+test("private Stage-3 adapter captures hostile input and freezes detached results", () => {
+  const created = createRustKernelSmokeSession(addon, createCoreScoreFixture());
+  assert.equal(created.result.status, "created");
+  if (!("handle" in created)) throw new Error("native create rejected");
+  const committed = submitRustKernelSmokeCommand(
+    addon,
+    created.handle,
+    metadataCommand("Adapter Stage 3"),
+  );
+  assert.equal(committed.status, "committed");
+  assertDeepFrozen(committed);
+
+  const read = readRustKernelSmokeSession(addon, created.handle);
+  assert.equal(read.status, "ok");
+  if (read.status !== "ok") throw new Error("native read rejected");
+  assert.equal(read.value.snapshot.documentVersion, 1);
+  assertDeepFrozen(read);
+
+  let calls = 0;
+  const hostileAddon: RustKernelStage3NativeAddon = {
+    createKernelSessionV1: addon.createKernelSessionV1,
+    readKernelSessionV1: addon.readKernelSessionV1,
+    submitKernelStage3V1: () => {
+      calls += 1;
+      throw new Error("must not run");
+    },
+  };
+  const getterCommand = {};
+  Object.defineProperty(getterCommand, "commandVersion", {
+    enumerable: true,
+    get: () => {
+      throw new Error("getter must not run");
+    },
+  });
+  const hostileResult = submitRustKernelSmokeCommand(
+    hostileAddon,
+    created.handle,
+    getterCommand,
+  );
+  assert.equal(hostileResult.status, "rejected");
+  assert.equal(calls, 0);
+  assertDeepFrozen(hostileResult);
+
+  const malformedAddon: RustKernelStage3NativeAddon = {
+    createKernelSessionV1: addon.createKernelSessionV1,
+    readKernelSessionV1: addon.readKernelSessionV1,
+    submitKernelStage3V1: () => Buffer.from("{}"),
+  };
+  const malformed = submitRustKernelSmokeCommand(
+    malformedAddon,
+    created.handle,
+    metadataCommand("ignored"),
+  );
+  assert.deepEqual(malformed, {
+    apiVersion: 1,
+    status: "rejected",
+    failure: { failureVersion: 1, code: "bridge.internal" },
+  });
+  assertDeepFrozen(malformed);
+
+  const oversizedResponse = Buffer.alloc(64 * 1024 * 1024 + 1);
+  const oversizedAddon: RustKernelStage3NativeAddon = {
+    createKernelSessionV1: addon.createKernelSessionV1,
+    readKernelSessionV1: addon.readKernelSessionV1,
+    submitKernelStage3V1: () => oversizedResponse,
+  };
+  const oversized = submitRustKernelSmokeCommand(
+    oversizedAddon,
+    created.handle,
+    metadataCommand("ignored"),
+  );
+  assert.deepEqual(oversized, {
+    apiVersion: 1,
+    status: "rejected",
+    failure: {
+      failureVersion: 1,
+      code: "bridge.response-too-large",
+      limitBytes: 64 * 1024 * 1024,
+      actualBytes: 64 * 1024 * 1024 + 1,
+    },
+  });
+  assertDeepFrozen(oversized);
 });

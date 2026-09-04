@@ -77,11 +77,9 @@ function timedCreate(request: Buffer): number {
   return elapsed;
 }
 
-test("raw addon exposes exactly two free functions and performs native create/read", () => {
-  assert.deepEqual(Object.keys(addon).sort(), [
-    "createKernelSessionV1",
-    "readKernelSessionV1",
-  ]);
+test("raw successor addon preserves the RKP-1 create/read subset", () => {
+  assert.equal(typeof addon.createKernelSessionV1, "function");
+  assert.equal(typeof addon.readKernelSessionV1, "function");
 
   const document = createCoreScoreFixture();
   const created = addon.createKernelSessionV1(canonicalCreateBytes(document));

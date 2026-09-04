@@ -2,10 +2,11 @@ use brilliant_kernel_contracts::{
     CapturedCoreCommandV1, CoreCommandEnvelopeV1, KernelSessionCreateRequestV1,
     KernelSessionCreateResultV1, KernelSessionCreateSuccessValueV1, KernelSessionReadResultV1,
     KernelStage3CommandFailureLeafV1, KernelStage3CommandFailureV1, KernelStage3MetricsV1,
-    KernelStage3ResourceLimitKindV1, KernelStage3SubmitNoOpValueV1,
-    KernelStage3SubmitRejectedValueV1, KernelStage3SubmitRequestV1, KernelStage3SubmitResultV1,
-    KernelStage3SubmitSuccessValueV1, MAX_BATCH_CHILDREN_V1, ScoreEntityTargetV1, StableFailureV1,
-    decode_captured_core_command,
+    KernelStage3ResourceLimitKindV1, KernelStage3SubmitDecodeFailureV1,
+    KernelStage3SubmitNoOpValueV1, KernelStage3SubmitRejectedValueV1, KernelStage3SubmitRequestV1,
+    KernelStage3SubmitResultV1, KernelStage3SubmitSuccessValueV1, MAX_BATCH_CHILDREN_V1,
+    ScoreEntityTargetV1, StableFailureV1, decode_captured_core_command,
+    decode_stage3_submit_request,
 };
 use brilliant_kernel_runtime::{
     KernelRuntime, KernelRuntimeCreateFailure, KernelStage3RuntimeCommitV1,
@@ -70,6 +71,22 @@ impl KernelSession {
         match self.runtime.read_state() {
             Ok(state) => KernelSessionReadResultV1::Ok(Box::new(state)),
             Err(failure) => KernelSessionReadResultV1::Rejected(failure.into_stable_failure()),
+        }
+    }
+
+    pub fn submit_stage3_bytes(&mut self, request_bytes: &[u8]) -> KernelStage3SubmitResultV1 {
+        match decode_stage3_submit_request(request_bytes) {
+            Ok(request) => self.submit_stage3(request),
+            Err(KernelStage3SubmitDecodeFailureV1::Boundary(failure)) => {
+                KernelStage3SubmitResultV1::Rejected(failure)
+            }
+            Err(KernelStage3SubmitDecodeFailureV1::Command(failure)) => command_rejected(
+                KernelStage3SubmitRejectedValueV1 {
+                    document_version: self.runtime.document_version(),
+                    metrics: KernelStage3MetricsV1::default(),
+                },
+                failure,
+            ),
         }
     }
 

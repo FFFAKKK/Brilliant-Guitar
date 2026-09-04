@@ -59,10 +59,8 @@ function readPayload(handle: object): {
 }
 
 test("native LiveScoreStore create/read preserves every canonical Stage 5 fixture", () => {
-  assert.deepEqual(Object.keys(addon).sort(), [
-    "createKernelSessionV1",
-    "readKernelSessionV1",
-  ]);
+  assert.equal(typeof addon.createKernelSessionV1, "function");
+  assert.equal(typeof addon.readKernelSessionV1, "function");
   const fixtures = [
     ...createRkp2StoreFixtureCatalog(),
     createTopologyOptionalRkp2StoreFixture(),
