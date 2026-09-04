@@ -1,20 +1,31 @@
 use std::{collections::BTreeMap, fmt, io::Write};
 
 use brilliant_core_types::{
-    API_VERSION_V1, JS_SAFE_INTEGER_MAX, JSON_DEPTH_LIMIT, JSON_PROPERTY_LIMIT,
-    ScoreSchemaVersionV1, StablePathSegmentV1, StablePathV1,
+    API_VERSION_V1, JS_SAFE_INTEGER_MAX, JSON_DEPTH_LIMIT, JSON_PROPERTY_LIMIT, SafeInteger,
+    ScoreSchemaVersionV1, StableId, StablePathSegmentV1, StablePathV1,
 };
 use brilliant_extension_protocol::EXTENSION_PROTOCOL_VERSION_V1;
-use brilliant_score_foundation::{FoundationDecodeFailure, decode_score_document_value};
+use brilliant_score_foundation::{
+    ClefV1, FoundationDecodeFailure, FractionV1, InstrumentDescriptorV1, MeasureDefinitionV1,
+    MeterV1, NoteValueV1, PartV1, RhythmicContentV1, RhythmicEventV1, ScoreMetadataV1,
+    StaffDefinitionV1, TranspositionV1, VoiceV1, WrittenPitchV1, decode_score_document_value,
+};
 use serde::{
     Deserializer,
-    de::{self, DeserializeSeed, MapAccess, SeqAccess, Visitor},
+    de::{self, DeserializeOwned, DeserializeSeed, MapAccess, SeqAccess, Visitor},
 };
 use serde_json::{Map, Number, Value};
 
 use crate::{
+    COMMAND_VERSION_V1, CapturedCoreCommandV1, CoreCommandEnvelopeV1, CoreCommandIdV1,
+    CoreCommandTargetKindV1, EventStaffAssignmentV1, InsertMeasurePartContentV1,
     KernelSessionCreateRequestV1, KernelSessionCreateResultV1, KernelSessionReadResultV1,
-    ScoreStructureViolationV1, ShapeViolationV1, StableFailureV1,
+    KernelStage3CommandFailureLeafV1, KernelStage3CommandFailureV1,
+    KernelStage3ResourceLimitKindV1, KernelStage3SubmitDecodeFailureV1,
+    KernelStage3SubmitRequestV1, KernelStage3SubmitResultV1, MAX_BATCH_CHILDREN_V1,
+    MeasureAnchorV1, MeasurePickupV1, PartAnchorV1, ScoreEntityTargetV1, ScoreRangeV1,
+    ScoreStructureViolationV1, SequenceAnchorV1, ShapeViolationV1, StableFailureV1, StaffAnchorV1,
+    VoiceAnchorV1,
 };
 
 pub const REQUEST_BYTE_LIMIT: usize = 64 * 1024 * 1024;
@@ -64,6 +75,10 @@ impl CanonicalPath {
 fn canonical_field(field: &str) -> Option<&'static str> {
     Some(match field {
         "apiVersion" => "apiVersion",
+        "command" => "command",
+        "commandVersion" => "commandVersion",
+        "commandId" => "commandId",
+        "target" => "target",
         "document" => "document",
         "schemaVersion" => "schemaVersion",
         "id" => "id",
@@ -114,6 +129,23 @@ fn canonical_field(field: &str) -> Option<&'static str> {
         "owner" => "owner",
         "payload" => "payload",
         "partId" => "partId",
+        "documentId" => "documentId",
+        "voiceId" => "voiceId",
+        "eventId" => "eventId",
+        "noteId" => "noteId",
+        "anchor" => "anchor",
+        "event" => "event",
+        "noteValue" => "noteValue",
+        "definition" => "definition",
+        "contents" => "contents",
+        "pickup" => "pickup",
+        "staff" => "staff",
+        "voice" => "voice",
+        "assignment" => "assignment",
+        "range" => "range",
+        "end" => "end",
+        "transposition" => "transposition",
+        "commands" => "commands",
         _ => return None,
     })
 }
@@ -1175,6 +1207,608 @@ pub fn decode_create_request(
     })
 }
 
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct EmptyCommandPayloadV1 {}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct SetMetadataPayloadV1 {
+    metadata: ScoreMetadataV1,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct SetWrittenPitchPayloadV1 {
+    written_pitch: WrittenPitchV1,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct SetNoteValuePayloadV1 {
+    note_value: NoteValueV1,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct InsertEventPayloadV1 {
+    anchor: SequenceAnchorV1,
+    event: RhythmicEventV1,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct InsertMeasurePayloadV1 {
+    anchor: MeasureAnchorV1,
+    definition: MeasureDefinitionV1,
+    contents: Vec<InsertMeasurePartContentV1>,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct MoveMeasurePayloadV1 {
+    anchor: MeasureAnchorV1,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct SetMeasureDefinitionPayloadV1 {
+    meter: MeterV1,
+    pickup: MeasurePickupV1,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct InsertPartPayloadV1 {
+    anchor: PartAnchorV1,
+    part: PartV1,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct MovePartPayloadV1 {
+    anchor: PartAnchorV1,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct SetPartNamePayloadV1 {
+    name: String,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct SetPartInstrumentPayloadV1 {
+    instrument: InstrumentDescriptorV1,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct InsertStaffPayloadV1 {
+    anchor: StaffAnchorV1,
+    staff: StaffDefinitionV1,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct MoveStaffPayloadV1 {
+    anchor: StaffAnchorV1,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct SetStaffDefinitionPayloadV1 {
+    line_count: SafeInteger,
+    default_clef: ClefV1,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct InsertVoicePayloadV1 {
+    measure_id: StableId,
+    anchor: VoiceAnchorV1,
+    voice: VoiceV1,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct MoveVoicePayloadV1 {
+    anchor: VoiceAnchorV1,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct SetVoiceDefaultStaffPayloadV1 {
+    staff_id: StableId,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct SetVoiceSequenceStartPayloadV1 {
+    start: FractionV1,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct SetEventStaffAssignmentPayloadV1 {
+    assignment: EventStaffAssignmentV1,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct DeleteRangePayloadV1 {
+    range: ScoreRangeV1,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct TransposeRangePayloadV1 {
+    range: ScoreRangeV1,
+    transposition: TranspositionV1,
+}
+
+fn command_decode_failure(
+    failure: KernelStage3CommandFailureLeafV1,
+) -> KernelStage3SubmitDecodeFailureV1 {
+    KernelStage3SubmitDecodeFailureV1::Command(failure.into())
+}
+
+fn invalid_command_envelope() -> KernelStage3CommandFailureV1 {
+    KernelStage3CommandFailureLeafV1::InvalidEnvelope.into()
+}
+
+fn decode_payload<T: DeserializeOwned>(value: &Value) -> Result<T, KernelStage3CommandFailureV1> {
+    serde_json::from_value(value.clone()).map_err(|_| invalid_command_envelope())
+}
+
+fn target_kind(value: &Value) -> Option<CoreCommandTargetKindV1> {
+    match value.as_object()?.get("kind")?.as_str()? {
+        "document" => Some(CoreCommandTargetKindV1::Document),
+        "measure" => Some(CoreCommandTargetKindV1::Measure),
+        "part" => Some(CoreCommandTargetKindV1::Part),
+        "staff" => Some(CoreCommandTargetKindV1::Staff),
+        "voice" => Some(CoreCommandTargetKindV1::Voice),
+        "event" => Some(CoreCommandTargetKindV1::Event),
+        "note" => Some(CoreCommandTargetKindV1::Note),
+        _ => None,
+    }
+}
+
+fn exact_json_object<'a>(value: &'a Value, required: &[&str]) -> Option<&'a Map<String, Value>> {
+    let object = value.as_object()?;
+    (object.len() == required.len() && required.iter().all(|field| object.contains_key(*field)))
+        .then_some(object)
+}
+
+fn component_written_pitch_is_valid(value: &WrittenPitchV1) -> bool {
+    (-2..=2).contains(&value.alter.get())
+}
+
+fn direct_written_pitch_is_valid(value: &WrittenPitchV1) -> bool {
+    component_written_pitch_is_valid(value) && (0..=8).contains(&value.octave.get())
+}
+
+fn component_note_value_is_valid(value: &NoteValueV1) -> bool {
+    matches!(value.base.get(), 1 | 2 | 4 | 8 | 16 | 32 | 64) && (0..=3).contains(&value.dots.get())
+}
+
+fn direct_note_value_is_valid(value: &NoteValueV1) -> bool {
+    component_note_value_is_valid(value)
+        && value.time_modification.as_ref().is_none_or(|modification| {
+            modification.actual_notes.get() > 0 && modification.normal_notes.get() > 0
+        })
+}
+
+fn component_event_is_valid(event: &RhythmicEventV1) -> bool {
+    component_note_value_is_valid(&event.duration)
+        && match &event.content {
+            RhythmicContentV1::Rest => true,
+            RhythmicContentV1::Notes { notes } => notes
+                .iter()
+                .all(|note| component_written_pitch_is_valid(&note.written_pitch)),
+        }
+}
+
+fn direct_event_is_valid(event: &RhythmicEventV1, notes_expected: bool) -> bool {
+    direct_note_value_is_valid(&event.duration)
+        && match &event.content {
+            RhythmicContentV1::Rest => !notes_expected,
+            RhythmicContentV1::Notes { notes } => {
+                notes_expected
+                    && notes
+                        .iter()
+                        .all(|note| direct_written_pitch_is_valid(&note.written_pitch))
+            }
+        }
+}
+
+fn voice_is_valid(voice: &VoiceV1) -> bool {
+    voice.sequence.events.iter().all(component_event_is_valid)
+}
+
+fn part_is_valid(part: &PartV1) -> bool {
+    part.measure_contents
+        .iter()
+        .flat_map(|content| &content.voices)
+        .all(voice_is_valid)
+}
+
+fn meter_is_valid(meter: &MeterV1) -> bool {
+    matches!(meter.denominator.get(), 1 | 2 | 4 | 8 | 16 | 32 | 64)
+}
+
+fn decode_core_command_value(
+    value: &Value,
+    reject_nested_batch: bool,
+) -> Result<CoreCommandEnvelopeV1, KernelStage3CommandFailureV1> {
+    let envelope = exact_json_object(value, &["commandVersion", "commandId", "target", "payload"])
+        .ok_or_else(invalid_command_envelope)?;
+    let version = envelope["commandVersion"]
+        .as_u64()
+        .ok_or_else(invalid_command_envelope)?;
+    if version != COMMAND_VERSION_V1 {
+        return Err(KernelStage3CommandFailureLeafV1::UnsupportedVersion.into());
+    }
+    let command_id = envelope["commandId"]
+        .as_str()
+        .ok_or_else(invalid_command_envelope)
+        .and_then(|value| {
+            CoreCommandIdV1::from_wire(value)
+                .ok_or_else(|| KernelStage3CommandFailureLeafV1::UnknownId.into())
+        })?;
+    let actual_target_kind =
+        target_kind(&envelope["target"]).ok_or_else(invalid_command_envelope)?;
+    if actual_target_kind != command_id.target_kind() {
+        return Err(KernelStage3CommandFailureLeafV1::TargetMismatch.into());
+    }
+    let target: ScoreEntityTargetV1 = decode_payload(&envelope["target"])?;
+    if target.kind() != actual_target_kind {
+        return Err(invalid_command_envelope());
+    }
+    let payload = &envelope["payload"];
+    let command = match command_id {
+        CoreCommandIdV1::DocumentSetMetadata => {
+            let payload: SetMetadataPayloadV1 = decode_payload(payload)?;
+            CoreCommandEnvelopeV1::DocumentSetMetadata {
+                target,
+                metadata: payload.metadata,
+            }
+        }
+        CoreCommandIdV1::NoteSetWrittenPitch => {
+            let payload: SetWrittenPitchPayloadV1 = decode_payload(payload)?;
+            if !direct_written_pitch_is_valid(&payload.written_pitch) {
+                return Err(invalid_command_envelope());
+            }
+            CoreCommandEnvelopeV1::NoteSetWrittenPitch {
+                target,
+                written_pitch: payload.written_pitch,
+            }
+        }
+        CoreCommandIdV1::EventSetNoteValue => {
+            let payload: SetNoteValuePayloadV1 = decode_payload(payload)?;
+            if !direct_note_value_is_valid(&payload.note_value) {
+                return Err(invalid_command_envelope());
+            }
+            CoreCommandEnvelopeV1::EventSetNoteValue {
+                target,
+                note_value: payload.note_value,
+            }
+        }
+        CoreCommandIdV1::VoiceInsertNotesEvent => {
+            let payload: InsertEventPayloadV1 = decode_payload(payload)?;
+            if !direct_event_is_valid(&payload.event, true) {
+                return Err(invalid_command_envelope());
+            }
+            CoreCommandEnvelopeV1::VoiceInsertNotesEvent {
+                target,
+                anchor: payload.anchor,
+                event: payload.event,
+            }
+        }
+        CoreCommandIdV1::VoiceInsertRestEvent => {
+            let payload: InsertEventPayloadV1 = decode_payload(payload)?;
+            if !direct_event_is_valid(&payload.event, false) {
+                return Err(invalid_command_envelope());
+            }
+            CoreCommandEnvelopeV1::VoiceInsertRestEvent {
+                target,
+                anchor: payload.anchor,
+                event: payload.event,
+            }
+        }
+        CoreCommandIdV1::EventRemove => {
+            let _: EmptyCommandPayloadV1 = decode_payload(payload)?;
+            CoreCommandEnvelopeV1::EventRemove { target }
+        }
+        CoreCommandIdV1::MeasureInsert => {
+            let payload: InsertMeasurePayloadV1 = decode_payload(payload)?;
+            if payload.contents.is_empty()
+                || payload.contents.iter().any(|content| {
+                    content.voices.is_empty() || !content.voices.iter().all(voice_is_valid)
+                })
+                || !meter_is_valid(&payload.definition.meter)
+            {
+                return Err(invalid_command_envelope());
+            }
+            CoreCommandEnvelopeV1::MeasureInsert {
+                target,
+                anchor: payload.anchor,
+                definition: payload.definition,
+                contents: payload.contents,
+            }
+        }
+        CoreCommandIdV1::MeasureRemove => {
+            let _: EmptyCommandPayloadV1 = decode_payload(payload)?;
+            CoreCommandEnvelopeV1::MeasureRemove { target }
+        }
+        CoreCommandIdV1::MeasureMove => {
+            let payload: MoveMeasurePayloadV1 = decode_payload(payload)?;
+            CoreCommandEnvelopeV1::MeasureMove {
+                target,
+                anchor: payload.anchor,
+            }
+        }
+        CoreCommandIdV1::MeasureSetDefinition => {
+            let payload: SetMeasureDefinitionPayloadV1 = decode_payload(payload)?;
+            if !meter_is_valid(&payload.meter) {
+                return Err(invalid_command_envelope());
+            }
+            CoreCommandEnvelopeV1::MeasureSetDefinition {
+                target,
+                meter: payload.meter,
+                pickup: payload.pickup,
+            }
+        }
+        CoreCommandIdV1::PartInsert => {
+            let payload: InsertPartPayloadV1 = decode_payload(payload)?;
+            if !part_is_valid(&payload.part) {
+                return Err(invalid_command_envelope());
+            }
+            CoreCommandEnvelopeV1::PartInsert {
+                target,
+                anchor: payload.anchor,
+                part: payload.part,
+            }
+        }
+        CoreCommandIdV1::PartRemove => {
+            let _: EmptyCommandPayloadV1 = decode_payload(payload)?;
+            CoreCommandEnvelopeV1::PartRemove { target }
+        }
+        CoreCommandIdV1::PartMove => {
+            let payload: MovePartPayloadV1 = decode_payload(payload)?;
+            CoreCommandEnvelopeV1::PartMove {
+                target,
+                anchor: payload.anchor,
+            }
+        }
+        CoreCommandIdV1::PartSetName => {
+            let payload: SetPartNamePayloadV1 = decode_payload(payload)?;
+            CoreCommandEnvelopeV1::PartSetName {
+                target,
+                name: payload.name,
+            }
+        }
+        CoreCommandIdV1::PartSetInstrument => {
+            let payload: SetPartInstrumentPayloadV1 = decode_payload(payload)?;
+            CoreCommandEnvelopeV1::PartSetInstrument {
+                target,
+                instrument: payload.instrument,
+            }
+        }
+        CoreCommandIdV1::StaffInsert => {
+            let payload: InsertStaffPayloadV1 = decode_payload(payload)?;
+            CoreCommandEnvelopeV1::StaffInsert {
+                target,
+                anchor: payload.anchor,
+                staff: payload.staff,
+            }
+        }
+        CoreCommandIdV1::StaffRemove => {
+            let _: EmptyCommandPayloadV1 = decode_payload(payload)?;
+            CoreCommandEnvelopeV1::StaffRemove { target }
+        }
+        CoreCommandIdV1::StaffMove => {
+            let payload: MoveStaffPayloadV1 = decode_payload(payload)?;
+            CoreCommandEnvelopeV1::StaffMove {
+                target,
+                anchor: payload.anchor,
+            }
+        }
+        CoreCommandIdV1::StaffSetDefinition => {
+            let payload: SetStaffDefinitionPayloadV1 = decode_payload(payload)?;
+            CoreCommandEnvelopeV1::StaffSetDefinition {
+                target,
+                line_count: payload.line_count,
+                default_clef: payload.default_clef,
+            }
+        }
+        CoreCommandIdV1::VoiceInsert => {
+            let payload: InsertVoicePayloadV1 = decode_payload(payload)?;
+            if !voice_is_valid(&payload.voice) {
+                return Err(invalid_command_envelope());
+            }
+            CoreCommandEnvelopeV1::VoiceInsert {
+                target,
+                measure_id: payload.measure_id,
+                anchor: payload.anchor,
+                voice: payload.voice,
+            }
+        }
+        CoreCommandIdV1::VoiceRemove => {
+            let _: EmptyCommandPayloadV1 = decode_payload(payload)?;
+            CoreCommandEnvelopeV1::VoiceRemove { target }
+        }
+        CoreCommandIdV1::VoiceMove => {
+            let payload: MoveVoicePayloadV1 = decode_payload(payload)?;
+            CoreCommandEnvelopeV1::VoiceMove {
+                target,
+                anchor: payload.anchor,
+            }
+        }
+        CoreCommandIdV1::VoiceSetDefaultStaff => {
+            let payload: SetVoiceDefaultStaffPayloadV1 = decode_payload(payload)?;
+            CoreCommandEnvelopeV1::VoiceSetDefaultStaff {
+                target,
+                staff_id: payload.staff_id,
+            }
+        }
+        CoreCommandIdV1::VoiceSetSequenceStart => {
+            let payload: SetVoiceSequenceStartPayloadV1 = decode_payload(payload)?;
+            CoreCommandEnvelopeV1::VoiceSetSequenceStart {
+                target,
+                start: payload.start,
+            }
+        }
+        CoreCommandIdV1::EventSetStaffAssignment => {
+            let payload: SetEventStaffAssignmentPayloadV1 = decode_payload(payload)?;
+            CoreCommandEnvelopeV1::EventSetStaffAssignment {
+                target,
+                assignment: payload.assignment,
+            }
+        }
+        CoreCommandIdV1::RangeDelete => {
+            let payload: DeleteRangePayloadV1 = decode_payload(payload)?;
+            CoreCommandEnvelopeV1::RangeDelete {
+                target,
+                range: payload.range,
+            }
+        }
+        CoreCommandIdV1::RangeTransposeWrittenPitch => {
+            let payload: TransposeRangePayloadV1 = decode_payload(payload)?;
+            CoreCommandEnvelopeV1::RangeTransposeWrittenPitch {
+                target,
+                range: payload.range,
+                transposition: payload.transposition,
+            }
+        }
+        CoreCommandIdV1::TransactionBatch => {
+            let payload =
+                exact_json_object(payload, &["commands"]).ok_or_else(invalid_command_envelope)?;
+            let commands = payload["commands"]
+                .as_array()
+                .ok_or_else(invalid_command_envelope)?;
+            if commands.len() > MAX_BATCH_CHILDREN_V1 {
+                return Err(KernelStage3CommandFailureLeafV1::ResourceLimitExceeded {
+                    limit_kind: KernelStage3ResourceLimitKindV1::BatchChildren,
+                    limit: MAX_BATCH_CHILDREN_V1 as u64,
+                    actual: commands.len() as u64,
+                }
+                .into());
+            }
+            if commands.is_empty() {
+                return Err(KernelStage3CommandFailureLeafV1::BatchEmpty.into());
+            }
+            CoreCommandEnvelopeV1::TransactionBatch {
+                target,
+                commands: commands
+                    .iter()
+                    .cloned()
+                    .map(CapturedCoreCommandV1::from_json)
+                    .collect(),
+            }
+        }
+    };
+    if reject_nested_batch && matches!(command, CoreCommandEnvelopeV1::TransactionBatch { .. }) {
+        return Err(KernelStage3CommandFailureLeafV1::BatchNested.into());
+    }
+    Ok(command)
+}
+
+fn stage3_root_shape_failure(
+    path: StablePathV1,
+    violation: ShapeViolationV1,
+) -> KernelStage3SubmitDecodeFailureV1 {
+    KernelStage3SubmitDecodeFailureV1::Boundary(StableFailureV1::CodecInvalidShape {
+        path,
+        violation,
+    })
+}
+
+pub fn decode_stage3_submit_request(
+    bytes: &[u8],
+) -> Result<KernelStage3SubmitRequestV1, KernelStage3SubmitDecodeFailureV1> {
+    if bytes.len() > REQUEST_BYTE_LIMIT {
+        return Err(KernelStage3SubmitDecodeFailureV1::Boundary(
+            StableFailureV1::BridgeRequestTooLarge {
+                limit_bytes: REQUEST_BYTE_LIMIT as u64,
+                actual_bytes: bytes.len() as u64,
+            },
+        ));
+    }
+    let (strict_value, state) =
+        strict_json(bytes).map_err(KernelStage3SubmitDecodeFailureV1::Boundary)?;
+    if let Some(fault) = state.depth_fault {
+        return Err(command_decode_failure(
+            KernelStage3CommandFailureLeafV1::ResourceLimitExceeded {
+                limit_kind: KernelStage3ResourceLimitKindV1::InputDepth,
+                limit: JSON_DEPTH_LIMIT as u64,
+                actual: fault.actual,
+            },
+        ));
+    }
+    if let Some(actual) = state.property_fault {
+        return Err(command_decode_failure(
+            KernelStage3CommandFailureLeafV1::ResourceLimitExceeded {
+                limit_kind: KernelStage3ResourceLimitKindV1::InputProperties,
+                limit: JSON_PROPERTY_LIMIT as u64,
+                actual,
+            },
+        ));
+    }
+    if state.shape_fault.is_some() || state.number_fault.is_some() {
+        return Err(command_decode_failure(
+            KernelStage3CommandFailureLeafV1::InvalidEnvelope,
+        ));
+    }
+    let value = strict_value
+        .ok_or(KernelStage3SubmitDecodeFailureV1::Boundary(
+            StableFailureV1::BridgeInternal,
+        ))?
+        .into_json();
+    let root = value.as_object().ok_or_else(|| {
+        stage3_root_shape_failure(StablePathV1::root(), ShapeViolationV1::WrongType)
+    })?;
+    for required in ["apiVersion", "command"] {
+        if !root.contains_key(required) {
+            return Err(stage3_root_shape_failure(
+                StablePathV1::field(required),
+                ShapeViolationV1::MissingField,
+            ));
+        }
+    }
+    if root.len() != 2 {
+        return Err(stage3_root_shape_failure(
+            StablePathV1::root(),
+            ShapeViolationV1::ExtraField,
+        ));
+    }
+    let api_version = root["apiVersion"].as_u64().ok_or_else(|| {
+        stage3_root_shape_failure(
+            StablePathV1::field("apiVersion"),
+            ShapeViolationV1::WrongType,
+        )
+    })?;
+    if api_version != API_VERSION_V1 {
+        return Err(KernelStage3SubmitDecodeFailureV1::Boundary(
+            StableFailureV1::ContractUnsupportedApiVersion {
+                supported_version: API_VERSION_V1,
+            },
+        ));
+    }
+    let command = decode_core_command_value(&root["command"], false)
+        .map_err(KernelStage3SubmitDecodeFailureV1::Command)?;
+    Ok(KernelStage3SubmitRequestV1 {
+        api_version: API_VERSION_V1,
+        command,
+    })
+}
+
+pub fn decode_captured_core_command(
+    captured: &CapturedCoreCommandV1,
+) -> Result<CoreCommandEnvelopeV1, KernelStage3CommandFailureV1> {
+    decode_core_command_value(captured.as_json(), true)
+}
+
 fn map_foundation_failure(failure: FoundationDecodeFailure) -> StableFailureV1 {
     match failure {
         FoundationDecodeFailure::InvalidShape { path } => StableFailureV1::CodecInvalidShape {
@@ -1209,6 +1843,12 @@ pub fn encode_create_result(
 }
 
 pub fn encode_read_result(result: &KernelSessionReadResultV1) -> Result<Vec<u8>, StableFailureV1> {
+    encode_capped(result)
+}
+
+pub fn encode_stage3_submit_result(
+    result: &KernelStage3SubmitResultV1,
+) -> Result<Vec<u8>, StableFailureV1> {
     encode_capped(result)
 }
 
@@ -1269,9 +1909,369 @@ mod tests {
     use brilliant_core_types::{DocumentVersionV1, StableId};
 
     use super::*;
-    use crate::KernelSessionCreateSuccessValueV1;
+    use crate::{
+        CORE_COMMAND_CATALOG_V1, CORE_COMMAND_COUNT_V1, KernelSessionCreateSuccessValueV1,
+    };
 
     const SMOKE_REQUEST: &str = r#"{"apiVersion":1,"document":{"schemaVersion":"brilliant-score-1","id":"score-rkp1","metadata":{"title":"Smoke","authors":["Brilliant"],"tempo":{"bpm":120}},"measureDefinitions":[{"id":"measure-1","meter":{"numerator":4,"denominator":4}}],"parts":[{"id":"part-1","name":"Part","instrument":{"name":"Piano","writtenToSounding":{"diatonicSteps":0,"chromaticSemitones":0}},"staves":[{"id":"staff-1","lineCount":5,"defaultClef":{"sign":"G","line":2}}],"measureContents":[{"measureId":"measure-1","voices":[{"id":"voice-1","defaultStaffId":"staff-1","sequence":{"start":{"numerator":0,"denominator":1},"events":[{"id":"event-1","duration":{"base":1,"dots":0},"content":{"kind":"rest"}}]}}]}]}],"extensions":[]}}"#;
+
+    #[test]
+    fn stage_three_decoder_accepts_a_strict_version_one_command() {
+        let request = br#"{"apiVersion":1,"command":{"commandVersion":1,"commandId":"core.document.set-metadata","target":{"kind":"document","documentId":"score-1"},"payload":{"metadata":{"title":"Updated","authors":["Brilliant"],"tempo":{"bpm":120}}}}}"#;
+        let decoded = decode_stage3_submit_request(request).expect("valid stage three request");
+        assert_eq!(decoded.api_version, 1);
+        assert_eq!(
+            decoded.command.command_id().as_str(),
+            "core.document.set-metadata"
+        );
+    }
+
+    fn command_value(command_id: &str, target: Value, payload: Value) -> Value {
+        serde_json::json!({
+            "commandVersion": 1,
+            "commandId": command_id,
+            "target": target,
+            "payload": payload
+        })
+    }
+
+    fn decode_stage_three_value(
+        command: Value,
+    ) -> Result<CoreCommandEnvelopeV1, KernelStage3SubmitDecodeFailureV1> {
+        let request = serde_json::to_vec(&serde_json::json!({
+            "apiVersion": 1,
+            "command": command
+        }))
+        .expect("stage three request bytes");
+        decode_stage3_submit_request(&request).map(|request| request.command)
+    }
+
+    #[test]
+    fn stage_three_decoder_covers_all_twenty_eight_command_payloads() {
+        let document = serde_json::json!({"kind": "document", "documentId": "score-1"});
+        let measure = serde_json::json!({"kind": "measure", "measureId": "measure-1"});
+        let part = serde_json::json!({"kind": "part", "partId": "part-1"});
+        let staff = serde_json::json!({"kind": "staff", "staffId": "staff-1"});
+        let voice_target = serde_json::json!({"kind": "voice", "voiceId": "voice-1"});
+        let event_target = serde_json::json!({"kind": "event", "eventId": "event-1"});
+        let note = serde_json::json!({"kind": "note", "noteId": "note-1"});
+        let fraction = serde_json::json!({"numerator": 0, "denominator": 1});
+        let note_value = serde_json::json!({"base": 4, "dots": 0});
+        let rest_event = serde_json::json!({
+            "id": "event-new",
+            "duration": note_value,
+            "content": {"kind": "rest"}
+        });
+        let notes_event = serde_json::json!({
+            "id": "event-new",
+            "duration": {"base": 4, "dots": 0},
+            "content": {
+                "kind": "notes",
+                "notes": [{
+                    "id": "note-new",
+                    "writtenPitch": {"step": "C", "alter": 0, "octave": 4}
+                }]
+            }
+        });
+        let voice = serde_json::json!({
+            "id": "voice-new",
+            "defaultStaffId": "staff-1",
+            "sequence": {"start": fraction, "events": []}
+        });
+        let staff_definition = serde_json::json!({
+            "id": "staff-new",
+            "lineCount": 5,
+            "defaultClef": {"sign": "G", "line": 2}
+        });
+        let instrument = serde_json::json!({
+            "name": "Piano",
+            "writtenToSounding": {"diatonicSteps": 0, "chromaticSemitones": 0}
+        });
+        let part_value = serde_json::json!({
+            "id": "part-new",
+            "name": "Part",
+            "instrument": instrument,
+            "staves": [staff_definition],
+            "measureContents": [{"measureId": "measure-1", "voices": [voice]}]
+        });
+        let range = serde_json::json!({
+            "kind": "measure-range",
+            "start": {"kind": "measure", "measureId": "measure-1"},
+            "end": {"kind": "measure", "measureId": "measure-2"}
+        });
+        let metadata_command = command_value(
+            "core.document.set-metadata",
+            document.clone(),
+            serde_json::json!({
+                "metadata": {"title": "Updated", "authors": [], "tempo": {"bpm": 120}}
+            }),
+        );
+        let cases = vec![
+            metadata_command.clone(),
+            command_value(
+                "core.note.set-written-pitch",
+                note,
+                serde_json::json!({"writtenPitch": {"step": "D", "alter": 1, "octave": 5}}),
+            ),
+            command_value(
+                "core.event.set-note-value",
+                event_target.clone(),
+                serde_json::json!({"noteValue": {"base": 8, "dots": 1}}),
+            ),
+            command_value(
+                "core.voice.insert-notes-event",
+                voice_target.clone(),
+                serde_json::json!({"anchor": {"kind": "start"}, "event": notes_event}),
+            ),
+            command_value(
+                "core.voice.insert-rest-event",
+                voice_target.clone(),
+                serde_json::json!({"anchor": {"kind": "after-event", "eventId": "event-1"}, "event": rest_event}),
+            ),
+            command_value(
+                "core.event.remove",
+                event_target.clone(),
+                serde_json::json!({}),
+            ),
+            command_value(
+                "core.measure.insert",
+                document.clone(),
+                serde_json::json!({
+                    "anchor": {"kind": "start"},
+                    "definition": {"id": "measure-new", "meter": {"numerator": 4, "denominator": 4}},
+                    "contents": [{"partId": "part-1", "voices": [{
+                        "id": "voice-new",
+                        "defaultStaffId": "staff-1",
+                        "sequence": {"start": {"numerator": 0, "denominator": 1}, "events": []}
+                    }]}]
+                }),
+            ),
+            command_value(
+                "core.measure.remove",
+                measure.clone(),
+                serde_json::json!({}),
+            ),
+            command_value(
+                "core.measure.move",
+                measure.clone(),
+                serde_json::json!({"anchor": {"kind": "after-measure", "measureId": "measure-2"}}),
+            ),
+            command_value(
+                "core.measure.set-definition",
+                measure,
+                serde_json::json!({"meter": {"numerator": 3, "denominator": 4}, "pickup": {"kind": "none"}}),
+            ),
+            command_value(
+                "core.part.insert",
+                document.clone(),
+                serde_json::json!({"anchor": {"kind": "start"}, "part": part_value}),
+            ),
+            command_value("core.part.remove", part.clone(), serde_json::json!({})),
+            command_value(
+                "core.part.move",
+                part.clone(),
+                serde_json::json!({"anchor": {"kind": "after-part", "partId": "part-2"}}),
+            ),
+            command_value(
+                "core.part.set-name",
+                part.clone(),
+                serde_json::json!({"name": "Renamed"}),
+            ),
+            command_value(
+                "core.part.set-instrument",
+                part.clone(),
+                serde_json::json!({"instrument": instrument}),
+            ),
+            command_value(
+                "core.staff.insert",
+                part.clone(),
+                serde_json::json!({"anchor": {"kind": "start"}, "staff": staff_definition}),
+            ),
+            command_value("core.staff.remove", staff.clone(), serde_json::json!({})),
+            command_value(
+                "core.staff.move",
+                staff.clone(),
+                serde_json::json!({"anchor": {"kind": "after-staff", "staffId": "staff-2"}}),
+            ),
+            command_value(
+                "core.staff.set-definition",
+                staff,
+                serde_json::json!({"lineCount": 6, "defaultClef": {"sign": "F", "line": 4}}),
+            ),
+            command_value(
+                "core.voice.insert",
+                part,
+                serde_json::json!({"measureId": "measure-1", "anchor": {"kind": "start"}, "voice": voice}),
+            ),
+            command_value(
+                "core.voice.remove",
+                voice_target.clone(),
+                serde_json::json!({}),
+            ),
+            command_value(
+                "core.voice.move",
+                voice_target.clone(),
+                serde_json::json!({"anchor": {"kind": "after-voice", "voiceId": "voice-2"}}),
+            ),
+            command_value(
+                "core.voice.set-default-staff",
+                voice_target.clone(),
+                serde_json::json!({"staffId": "staff-2"}),
+            ),
+            command_value(
+                "core.voice.set-sequence-start",
+                voice_target,
+                serde_json::json!({"start": {"numerator": 1, "denominator": 8}}),
+            ),
+            command_value(
+                "core.event.set-staff-assignment",
+                event_target,
+                serde_json::json!({"assignment": {"kind": "inherit-default"}}),
+            ),
+            command_value(
+                "core.range.delete",
+                document.clone(),
+                serde_json::json!({"range": range}),
+            ),
+            command_value(
+                "core.range.transpose-written-pitch",
+                document.clone(),
+                serde_json::json!({
+                    "range": {
+                        "kind": "voice-event-range",
+                        "start": {"kind": "voice-event", "voiceId": "voice-1", "eventId": "event-1"},
+                        "end": {"kind": "voice-event", "voiceId": "voice-1", "eventId": "event-2"}
+                    },
+                    "transposition": {"diatonicSteps": 1, "chromaticSemitones": 2}
+                }),
+            ),
+            command_value(
+                "core.transaction.batch",
+                document,
+                serde_json::json!({"commands": [metadata_command]}),
+            ),
+        ];
+        assert_eq!(cases.len(), CORE_COMMAND_COUNT_V1);
+        for (index, command) in cases.into_iter().enumerate() {
+            let decoded = decode_stage_three_value(command)
+                .unwrap_or_else(|failure| panic!("catalog command {index} failed: {failure:?}"));
+            assert_eq!(
+                decoded.command_id(),
+                CORE_COMMAND_CATALOG_V1[index].command_id
+            );
+            assert_eq!(
+                decoded.target().kind(),
+                CORE_COMMAND_CATALOG_V1[index].target_kind
+            );
+        }
+    }
+
+    #[test]
+    fn stage_three_route_precedence_and_batch_limits_are_stable() {
+        let malformed = serde_json::json!({
+            "commandVersion": 1,
+            "commandId": "core.document.set-metadata",
+            "target": {"kind": "document", "documentId": "score-1"}
+        });
+        assert_eq!(
+            decode_stage_three_value(malformed),
+            Err(command_decode_failure(
+                KernelStage3CommandFailureLeafV1::InvalidEnvelope
+            ))
+        );
+
+        let future = command_value(
+            "core.unknown",
+            serde_json::json!({"kind": "note", "noteId": "note-1"}),
+            serde_json::json!({"extra": true}),
+        );
+        let mut future = future.as_object().expect("command object").clone();
+        future.insert("commandVersion".to_owned(), serde_json::json!(2));
+        assert_eq!(
+            decode_stage_three_value(Value::Object(future)),
+            Err(command_decode_failure(
+                KernelStage3CommandFailureLeafV1::UnsupportedVersion
+            ))
+        );
+
+        assert_eq!(
+            decode_stage_three_value(command_value(
+                "core.unknown",
+                serde_json::json!({"kind": "note", "noteId": "note-1"}),
+                serde_json::json!({})
+            )),
+            Err(command_decode_failure(
+                KernelStage3CommandFailureLeafV1::UnknownId
+            ))
+        );
+        assert_eq!(
+            decode_stage_three_value(command_value(
+                "core.document.set-metadata",
+                serde_json::json!({"kind": "note", "noteId": "note-1"}),
+                serde_json::json!({})
+            )),
+            Err(command_decode_failure(
+                KernelStage3CommandFailureLeafV1::TargetMismatch
+            ))
+        );
+
+        let empty_batch = command_value(
+            "core.transaction.batch",
+            serde_json::json!({"kind": "document", "documentId": "score-1"}),
+            serde_json::json!({"commands": []}),
+        );
+        assert_eq!(
+            decode_stage_three_value(empty_batch),
+            Err(command_decode_failure(
+                KernelStage3CommandFailureLeafV1::BatchEmpty
+            ))
+        );
+        let too_many = vec![serde_json::json!({}); MAX_BATCH_CHILDREN_V1 + 1];
+        let oversized_batch = command_value(
+            "core.transaction.batch",
+            serde_json::json!({"kind": "document", "documentId": "score-1"}),
+            serde_json::json!({"commands": too_many}),
+        );
+        assert_eq!(
+            decode_stage_three_value(oversized_batch),
+            Err(command_decode_failure(
+                KernelStage3CommandFailureLeafV1::ResourceLimitExceeded {
+                    limit_kind: KernelStage3ResourceLimitKindV1::BatchChildren,
+                    limit: 100,
+                    actual: 101,
+                }
+            ))
+        );
+    }
+
+    #[test]
+    fn captured_batch_children_decode_lazily_and_reject_nesting() {
+        let leaf = command_value(
+            "core.event.remove",
+            serde_json::json!({"kind": "event", "eventId": "event-1"}),
+            serde_json::json!({}),
+        );
+        let nested = command_value(
+            "core.transaction.batch",
+            serde_json::json!({"kind": "document", "documentId": "score-1"}),
+            serde_json::json!({"commands": [leaf]}),
+        );
+        let outer = command_value(
+            "core.transaction.batch",
+            serde_json::json!({"kind": "document", "documentId": "score-1"}),
+            serde_json::json!({"commands": [nested]}),
+        );
+        let CoreCommandEnvelopeV1::TransactionBatch { commands, .. } =
+            decode_stage_three_value(outer).expect("outer batch")
+        else {
+            panic!("expected batch command");
+        };
+        assert_eq!(commands.len(), 1);
+        assert_eq!(
+            decode_captured_core_command(&commands[0]),
+            Err(KernelStage3CommandFailureLeafV1::BatchNested.into())
+        );
+    }
 
     fn rejected_bytes(request: &[u8]) -> Vec<u8> {
         let failure = decode_create_request(request).expect_err("request must fail");

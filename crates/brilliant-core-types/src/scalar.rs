@@ -115,6 +115,13 @@ impl DocumentVersionV1 {
         Self(DOCUMENT_VERSION_INITIAL)
     }
 
+    pub const fn checked_next(self) -> Option<Self> {
+        match self.0.checked_add(1) {
+            Some(next) if next <= JS_SAFE_INTEGER_MAX as u64 => Some(Self(next)),
+            _ => None,
+        }
+    }
+
     pub const fn get(self) -> u64 {
         self.0
     }
@@ -154,6 +161,26 @@ mod tests {
         assert_eq!(
             SafeInteger::new(JS_SAFE_INTEGER_MAX + 1),
             Err(CoreTypeFailure::NumberOutOfRange)
+        );
+    }
+
+    #[test]
+    fn checked_document_version_increment_stays_inside_the_wire_safe_range() {
+        assert_eq!(
+            DocumentVersionV1::initial().checked_next(),
+            Some(DocumentVersionV1(1))
+        );
+        assert_eq!(
+            DocumentVersionV1(41).checked_next(),
+            Some(DocumentVersionV1(42))
+        );
+        assert_eq!(
+            DocumentVersionV1(JS_SAFE_INTEGER_MAX as u64 - 1).checked_next(),
+            Some(DocumentVersionV1(JS_SAFE_INTEGER_MAX as u64))
+        );
+        assert_eq!(
+            DocumentVersionV1(JS_SAFE_INTEGER_MAX as u64).checked_next(),
+            None
         );
     }
 }
