@@ -32,6 +32,18 @@ Create only after RKP-2 archive. Port ordered effects, atomic batch adoption, in
 
 Create only after RKP-3 archive. Implement vector+cursor history, undo/redo, checkpoints, cached projections, dirty state, event sequence and semantic replay parity.
 
+### RKP-4 planning activation — 2026-09-04
+
+The owner authorized creation and planning of
+`09-04-rkp-4-history-snapshots-events-replay` after RKP-3 archive. The isolated
+planning branch/worktree is
+`codex/rkp-4-history-snapshots-events-replay-planning` /
+`.worktrees/rkp-4-history-snapshots-events-replay-planning` at planning base
+`46a684c78551d118f75b4864a8ed6ec5d3de77c3`. This authorization covers a
+reviewable planning candidate only: `task.py start` has not run, no production
+implementation is authorized, TypeScript remains default, and acceptance,
+archive, RKP-5, qualification, cutover and push remain false.
+
 ## Stage 5 — Incremental validation and Extension Protocol
 
 Create only after RKP-4 archive. Implement dependency closures, full-validation parity checks, profile/compatibility and the versioned `brilliant-extension-protocol` request/descriptor/validation/WASM preparation contracts. No privileged Guitar provider is introduced.
