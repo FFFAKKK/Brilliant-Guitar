@@ -306,6 +306,34 @@ mod tests {
     }
 
     #[test]
+    fn failed_final_batch_invariant_returns_attempt_metrics_and_is_zero_delta() {
+        let mut session = session();
+        let baseline = encode_read_result(&session.read_state()).expect("baseline");
+        let delete_all = r#"{"commandVersion":1,"commandId":"core.range.delete","target":{"kind":"document","documentId":"score-range"},"payload":{"range":{"kind":"measure-range","start":{"kind":"measure","measureId":"m1"},"end":{"kind":"measure","measureId":"m3"}}}}"#.to_owned();
+
+        let KernelStage3SubmitResultV1::CommandRejected {
+            value,
+            failure: KernelStage3CommandFailureV1::Leaf(failure),
+        } = submit_command(&mut session, &batch(&[delete_all]))
+        else {
+            panic!("a batch ending with no measures must reject");
+        };
+
+        assert_eq!(
+            failure,
+            KernelStage3CommandFailureLeafV1::LocalInvariantRejected
+        );
+        assert_eq!(value.document_version.get(), 0);
+        assert_zero_global_work(&value.metrics);
+        assert!(value.metrics.change_ops > 0);
+        assert!(value.metrics.changeset_logical_bytes > 0);
+        assert_eq!(
+            encode_read_result(&session.read_state()).expect("unchanged"),
+            baseline
+        );
+    }
+
+    #[test]
     fn batch_can_repair_a_temporarily_empty_measure_set_before_single_adoption() {
         let mut session = session();
         let delete_all = r#"{"commandVersion":1,"commandId":"core.range.delete","target":{"kind":"document","documentId":"score-range"},"payload":{"range":{"kind":"measure-range","start":{"kind":"measure","measureId":"m1"},"end":{"kind":"measure","measureId":"m3"}}}}"#.to_owned();

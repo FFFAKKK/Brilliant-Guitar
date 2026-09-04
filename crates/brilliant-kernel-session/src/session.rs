@@ -130,19 +130,21 @@ impl KernelSession {
                 failure,
             );
         }
+        let attempt_metrics = transaction.attempt_metrics();
         let prepared = match transaction.finish() {
             Ok(prepared) => prepared,
             Err(failure) => {
                 return command_rejected(
                     KernelStage3SubmitRejectedValueV1 {
                         document_version: self.runtime.document_version(),
-                        metrics: KernelStage3MetricsV1::default(),
+                        metrics: attempt_metrics,
                     },
                     failure,
                 );
             }
         };
 
+        let attempt_metrics = prepared.attempt_metrics();
         match self.runtime.commit_stage3_transaction(prepared) {
             Ok(KernelStage3RuntimeCommitV1::Committed {
                 document_version,
@@ -163,7 +165,7 @@ impl KernelSession {
             Err(failure) => command_rejected(
                 KernelStage3SubmitRejectedValueV1 {
                     document_version: self.runtime.document_version(),
-                    metrics: KernelStage3MetricsV1::default(),
+                    metrics: attempt_metrics,
                 },
                 failure,
             ),

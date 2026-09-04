@@ -59,6 +59,12 @@ pub struct KernelStage3PreparedV1 {
     attempt_metrics: KernelStage3MetricsV1,
 }
 
+impl KernelStage3PreparedV1 {
+    pub fn attempt_metrics(&self) -> KernelStage3MetricsV1 {
+        self.attempt_metrics
+    }
+}
+
 /// One isolated command transaction. Dropping it publishes no live state.
 pub struct KernelStage3TransactionV1<'a> {
     overlay: TransactionOverlayV1<'a>,
