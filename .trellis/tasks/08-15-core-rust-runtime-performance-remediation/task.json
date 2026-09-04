@@ -24,7 +24,8 @@
     "08-24-rkp-1-post-archive-workspace-contract-authority-repair",
     "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
     "08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair",
-    "08-28-rkp-1a-acceptance-archive-stage6-integration-closeout"
+    "08-28-rkp-1a-acceptance-archive-stage6-integration-closeout",
+    "09-04-rkp-2-post-archive-path-compatibility"
   ],
   "parent": "07-29-core-vnext-product-ready-extensible-kernel-completion",
   "relatedFiles": [

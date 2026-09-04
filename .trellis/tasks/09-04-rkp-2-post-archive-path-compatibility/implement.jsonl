@@ -1,0 +1,4 @@
+{"file":".trellis/spec/core-kernel/backend/rust-runtime-transition.md","reason":"Governing archive-aware Rust transition and workspace-contract rules."}
+{"file":".trellis/tasks/09-04-rkp-2-post-archive-path-compatibility/research/current-state.md","reason":"Exact RED reproduction and current archive authority state."}
+{"file":".trellis/tasks/09-04-rkp-2-post-archive-path-compatibility/research/bug-analysis.md","reason":"Recurring root-cause classification and prevention contract."}
+{"file":".trellis/tasks/archive/2026-09/08-24-rkp-2-indexed-live-score-store-load-encode-parity/design.md","reason":"Accepted RKP-2 historical allowlists and invariants that must remain unchanged."}
