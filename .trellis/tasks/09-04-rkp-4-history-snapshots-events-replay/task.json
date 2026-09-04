@@ -64,6 +64,17 @@
     "planning_validation": "task_and_parent_trellis_pass_json_parse_related_files_17_diff_check_and_planning_path_allowlist_pass",
     "implementation_candidate_ready": true,
     "implementation_source_commit": "bc7449ad6f7770bac741742bb514ac69c059769b",
+    "implementation_candidate_gate": {
+      "candidate_head": "aee1a79065da9140c3815785af789bb97fb64417",
+      "candidate_tree": "64b6415a0714a27c52db8bf985bc38e447d8028a",
+      "changed_paths": 31,
+      "rust_workspace": "160_passed_0_failed_1_ignored",
+      "typescript_full_suite": "648_passed_0_failed_2_skipped_73.207_seconds",
+      "rkp4_focused": "18_passed_0_failed",
+      "native_addon_sha256": "5BD4EBA926F40E0A26EE0B2E24EDA4DEB570EFD1D20C62FD2951A82B6DA4B2CA",
+      "task_validation": "child_and_parent_pass",
+      "diff_check": "pass"
+    },
     "implementation_stage_commits": {
       "C0": "9d17807",
       "C1": "6b1f835",

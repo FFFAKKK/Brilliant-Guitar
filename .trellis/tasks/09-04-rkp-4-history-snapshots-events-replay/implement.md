@@ -387,6 +387,28 @@ Also require:
 Revert C8 to remove evidence/spec/candidate status; C0-C7 remain an unaccepted
 private implementation. Full rollback continues C7 to C0 in reverse.
 
+### C8 committed-candidate evidence — 2026-09-05
+
+- Candidate: `aee1a79065da9140c3815785af789bb97fb64417` / tree
+  `64b6415a0714a27c52db8bf985bc38e447d8028a`; 31 changed paths from the
+  frozen planning head, all inside the literal allowlist.
+- Rust gates passed: 1.97.1 fmt/check/test/clippy, 1.88.0 compatibility check;
+  workspace tests were 160 passed, 0 failed, 1 ignored.
+- TypeScript typecheck/build passed. Focused predecessor and RKP-4 lanes passed;
+  the RKP-4 lane was 18/18. The clean committed-candidate full suite was
+  648 passed, 0 failed, 2 skipped in 73.207 seconds.
+- The real native add-on exported exactly five private calls and had SHA-256
+  `5BD4EBA926F40E0A26EE0B2E24EDA4DEB570EFD1D20C62FD2951A82B6DA4B2CA`.
+- Mechanical evidence kept non-threshold submit/undo/redo global-work counters
+  at zero; same-revision reads and direct non-document selectors materialized
+  zero snapshots. First/changed reads materialized one snapshot.
+- At the 512-entry / 33,554,432-logical-byte checkpoint boundary, injected
+  materialization failure recorded attempts/successes/failures `1/0/1` without
+  reverting the committed mutation; the later read retry recorded `1/1/0`.
+- Oracle/manifest/qualification bytes, Cargo/npm dependency bytes, seven-crate
+  membership, bridge-failure inventory, schema, public 28/51/8/34/9 inventory,
+  and the TypeScript-default/later-gates-false boundary all passed.
+
 ## 10. Closeout boundary
 
 After a separate owner acceptance instruction, use native Trellis archive flow,

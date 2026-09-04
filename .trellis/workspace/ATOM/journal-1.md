@@ -890,7 +890,8 @@ Completed private Stage-4 vector history, atomic undo/redo, cached immutable rea
 - [OK] Trellis child/parent validation and `git diff --check`.
 - [OK] Native add-on SHA-256:
   `5BD4EBA926F40E0A26EE0B2E24EDA4DEB570EFD1D20C62FD2951A82B6DA4B2CA`.
-- [PENDING] Clean committed-candidate full `npm test` rerun.
+- [OK] Clean committed-candidate full `npm test`: 648 passed, 0 failed,
+  2 skipped in 73.207 seconds at `aee1a79065da9140c3815785af789bb97fb64417`.
 
 ### Status
 
@@ -898,6 +899,6 @@ Completed private Stage-4 vector history, atomic undo/redo, cached immutable rea
 
 ### Next Steps
 
-- Commit C8, rerun the clean-candidate full gate, then conduct exactly one
-  bounded implementation audit. Acceptance/archive and all later gates remain
-  unauthorized.
+- Conduct exactly one bounded implementation audit over the frozen planning
+  head through the committed candidate. Acceptance/archive and all later gates
+  remain unauthorized.
