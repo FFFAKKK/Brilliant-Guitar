@@ -11,4 +11,7 @@ mod time_index;
 mod topology;
 mod transaction;
 
-pub use runtime::{KernelRuntime, KernelRuntimeCreateFailure, KernelRuntimeReadFailure};
+pub use runtime::{
+    KernelRuntime, KernelRuntimeCreateFailure, KernelRuntimeReadFailure, KernelStage3PreparedV1,
+    KernelStage3RuntimeCommitV1, KernelStage3TransactionV1,
+};

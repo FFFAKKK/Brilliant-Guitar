@@ -1,8 +1,15 @@
 use brilliant_kernel_contracts::{
     KernelSessionCreateRequestV1, KernelSessionCreateResultV1, KernelSessionCreateSuccessValueV1,
-    KernelSessionReadResultV1, StableFailureV1,
+    KernelSessionReadResultV1, KernelStage3CommandFailureLeafV1, KernelStage3CommandFailureV1,
+    KernelStage3MetricsV1, KernelStage3SubmitNoOpValueV1, KernelStage3SubmitRejectedValueV1,
+    KernelStage3SubmitRequestV1, KernelStage3SubmitResultV1, KernelStage3SubmitSuccessValueV1,
+    StableFailureV1,
 };
-use brilliant_kernel_runtime::{KernelRuntime, KernelRuntimeCreateFailure};
+use brilliant_kernel_runtime::{
+    KernelRuntime, KernelRuntimeCreateFailure, KernelStage3RuntimeCommitV1,
+};
+
+use crate::commands;
 
 #[derive(Debug)]
 pub struct KernelSession {
@@ -62,18 +69,122 @@ impl KernelSession {
             Err(failure) => KernelSessionReadResultV1::Rejected(failure.into_stable_failure()),
         }
     }
+
+    pub fn submit_stage3(
+        &mut self,
+        request: KernelStage3SubmitRequestV1,
+    ) -> KernelStage3SubmitResultV1 {
+        if request.api_version != 1 {
+            return KernelStage3SubmitResultV1::Rejected(
+                StableFailureV1::ContractUnsupportedApiVersion {
+                    supported_version: 1,
+                },
+            );
+        }
+
+        let definition = commands::catalog_definition(request.command.command_id());
+        if request.command.target().kind() != definition.target_kind {
+            return command_rejected(
+                KernelStage3SubmitRejectedValueV1 {
+                    document_version: self.runtime.document_version(),
+                    metrics: KernelStage3MetricsV1::default(),
+                },
+                KernelStage3CommandFailureLeafV1::TargetMismatch,
+            );
+        }
+
+        let mut transaction = self.runtime.begin_stage3_transaction();
+        if let Err(failure) = commands::dispatch(&mut transaction, request.command) {
+            return command_rejected(
+                KernelStage3SubmitRejectedValueV1 {
+                    document_version: self.runtime.document_version(),
+                    metrics: transaction.attempt_metrics(),
+                },
+                failure,
+            );
+        }
+        let prepared = match transaction.finish() {
+            Ok(prepared) => prepared,
+            Err(failure) => {
+                return command_rejected(
+                    KernelStage3SubmitRejectedValueV1 {
+                        document_version: self.runtime.document_version(),
+                        metrics: KernelStage3MetricsV1::default(),
+                    },
+                    failure,
+                );
+            }
+        };
+
+        match self.runtime.commit_stage3_transaction(prepared) {
+            Ok(KernelStage3RuntimeCommitV1::Committed {
+                document_version,
+                affected,
+                metrics,
+            }) => KernelStage3SubmitResultV1::Committed(KernelStage3SubmitSuccessValueV1 {
+                document_version,
+                affected,
+                metrics,
+            }),
+            Ok(KernelStage3RuntimeCommitV1::NoOp {
+                document_version,
+                metrics,
+            }) => KernelStage3SubmitResultV1::NoOp(KernelStage3SubmitNoOpValueV1 {
+                document_version,
+                metrics,
+            }),
+            Err(failure) => command_rejected(
+                KernelStage3SubmitRejectedValueV1 {
+                    document_version: self.runtime.document_version(),
+                    metrics: KernelStage3MetricsV1::default(),
+                },
+                failure,
+            ),
+        }
+    }
+}
+
+fn command_rejected(
+    value: KernelStage3SubmitRejectedValueV1,
+    failure: KernelStage3CommandFailureLeafV1,
+) -> KernelStage3SubmitResultV1 {
+    KernelStage3SubmitResultV1::CommandRejected {
+        value,
+        failure: KernelStage3CommandFailureV1::from(failure),
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use brilliant_kernel_contracts::{
-        KernelSessionCreateRequestV1, ScoreStructureViolationV1, decode_create_request,
+        KernelSessionCreateRequestV1, KernelStage3CommandFailureV1, ScoreEntityTargetV1,
+        ScoreStructureViolationV1, decode_create_request, decode_stage3_submit_request,
         encode_create_result, encode_read_result,
     };
 
     use super::*;
 
     const SMOKE_REQUEST: &str = r#"{"apiVersion":1,"document":{"schemaVersion":"brilliant-score-1","id":"score-rkp1","metadata":{"title":"Smoke","authors":["Brilliant"],"tempo":{"bpm":120}},"measureDefinitions":[{"id":"measure-1","meter":{"numerator":4,"denominator":4}}],"parts":[{"id":"part-1","name":"Part","instrument":{"name":"Piano","writtenToSounding":{"diatonicSteps":0,"chromaticSemitones":0}},"staves":[{"id":"staff-1","lineCount":5,"defaultClef":{"sign":"G","line":2}}],"measureContents":[{"measureId":"measure-1","voices":[{"id":"voice-1","defaultStaffId":"staff-1","sequence":{"start":{"numerator":0,"denominator":1},"events":[{"id":"event-1","duration":{"base":1,"dots":0},"content":{"kind":"rest"}}]}}]}]}],"extensions":[]}}"#;
+    const LOCAL_REQUEST: &str = r#"{"apiVersion":1,"document":{"schemaVersion":"brilliant-score-1","id":"score-local","metadata":{"title":"Local","authors":["Brilliant"],"tempo":{"bpm":120}},"measureDefinitions":[{"id":"measure-1","meter":{"numerator":4,"denominator":4}}],"parts":[{"id":"part-1","name":"Part","instrument":{"name":"Piano","writtenToSounding":{"diatonicSteps":0,"chromaticSemitones":0}},"staves":[{"id":"staff-1","lineCount":5,"defaultClef":{"sign":"G","line":2}}],"measureContents":[{"measureId":"measure-1","voices":[{"id":"voice-1","defaultStaffId":"staff-1","sequence":{"start":{"numerator":0,"denominator":1},"events":[{"id":"event-1","duration":{"base":4,"dots":0},"content":{"kind":"notes","notes":[{"id":"note-1","writtenPitch":{"step":"C","alter":0,"octave":4}}]}}]}},{"id":"voice-2","defaultStaffId":"staff-1","sequence":{"start":{"numerator":0,"denominator":1},"events":[{"id":"event-2","duration":{"base":4,"dots":0},"content":{"kind":"rest"}}]}}]}]}],"extensions":[]}}"#;
+
+    fn local_session() -> KernelSession {
+        KernelSession::create(decode_create_request(LOCAL_REQUEST.as_bytes()).expect("request"))
+            .expect("session")
+            .session
+    }
+
+    fn submit(session: &mut KernelSession, request: &str) -> KernelStage3SubmitResultV1 {
+        session.submit_stage3(
+            decode_stage3_submit_request(request.as_bytes()).expect("stage-three request"),
+        )
+    }
+
+    fn assert_zero_global_work(metrics: &KernelStage3MetricsV1) {
+        assert_eq!(metrics.full_document_scans, 0);
+        assert_eq!(metrics.full_document_clones, 0);
+        assert_eq!(metrics.full_semantic_validations, 0);
+        assert_eq!(metrics.full_snapshot_materializations, 0);
+    }
 
     #[test]
     fn create_and_read_return_exact_revision_zero_state() {
@@ -170,5 +281,215 @@ mod tests {
                 }) if path == Default::default() && actual == violation
             ));
         }
+    }
+
+    #[test]
+    fn local_scalar_commands_commit_noop_and_publish_the_current_version() {
+        let mut session = local_session();
+        let metadata = r#"{"apiVersion":1,"command":{"commandVersion":1,"commandId":"core.document.set-metadata","target":{"kind":"document","documentId":"score-local"},"payload":{"metadata":{"title":"Changed","authors":["Brilliant","Codex"],"tempo":{"bpm":96}}}}}"#;
+        let committed = submit(&mut session, metadata);
+        let KernelStage3SubmitResultV1::Committed(value) = committed else {
+            panic!("metadata must commit");
+        };
+        assert_eq!(value.document_version.get(), 1);
+        assert!(matches!(
+            value.affected.as_slice(),
+            [ScoreEntityTargetV1::Document { document_id }]
+                if document_id.as_str() == "score-local"
+        ));
+        assert_zero_global_work(&value.metrics);
+
+        let no_op = submit(&mut session, metadata);
+        let KernelStage3SubmitResultV1::NoOp(value) = no_op else {
+            panic!("equal metadata must be a no-op");
+        };
+        assert_eq!(value.document_version.get(), 1);
+        assert_zero_global_work(&value.metrics);
+
+        let pitch_no_op = r#"{"apiVersion":1,"command":{"commandVersion":1,"commandId":"core.note.set-written-pitch","target":{"kind":"note","noteId":"note-1"},"payload":{"writtenPitch":{"step":"C","alter":0,"octave":4}}}}"#;
+        let KernelStage3SubmitResultV1::NoOp(value) = submit(&mut session, pitch_no_op) else {
+            panic!("equal pitch must be a no-op");
+        };
+        assert_eq!(value.document_version.get(), 1);
+
+        let pitch = r#"{"apiVersion":1,"command":{"commandVersion":1,"commandId":"core.note.set-written-pitch","target":{"kind":"note","noteId":"note-1"},"payload":{"writtenPitch":{"step":"D","alter":0,"octave":4}}}}"#;
+        let KernelStage3SubmitResultV1::Committed(value) = submit(&mut session, pitch) else {
+            panic!("pitch must commit");
+        };
+        assert_eq!(value.document_version.get(), 2);
+        assert_zero_global_work(&value.metrics);
+
+        let duration_no_op = r#"{"apiVersion":1,"command":{"commandVersion":1,"commandId":"core.event.set-note-value","target":{"kind":"event","eventId":"event-1"},"payload":{"noteValue":{"base":4,"dots":0}}}}"#;
+        let KernelStage3SubmitResultV1::NoOp(value) = submit(&mut session, duration_no_op) else {
+            panic!("equal note value must be a no-op");
+        };
+        assert_eq!(value.document_version.get(), 2);
+
+        let duration = r#"{"apiVersion":1,"command":{"commandVersion":1,"commandId":"core.event.set-note-value","target":{"kind":"event","eventId":"event-1"},"payload":{"noteValue":{"base":8,"dots":0}}}}"#;
+        let KernelStage3SubmitResultV1::Committed(value) = submit(&mut session, duration) else {
+            panic!("note value must commit");
+        };
+        assert_eq!(value.document_version.get(), 3);
+        assert_zero_global_work(&value.metrics);
+
+        let read = session.read_state();
+        let KernelSessionReadResultV1::Ok(state) = &read else {
+            panic!("read must succeed");
+        };
+        assert_eq!(state.snapshot.document_version.get(), 3);
+        assert_eq!(state.snapshot.document.metadata.title, "Changed");
+        let encoded =
+            String::from_utf8(encode_read_result(&read).expect("read bytes")).expect("UTF-8 read");
+        assert!(encoded.contains(r#""writtenPitch":{"step":"D","alter":0,"octave":4}"#));
+        assert!(encoded.contains(r#""duration":{"base":8,"dots":0}"#));
+    }
+
+    #[test]
+    fn local_event_commands_preserve_order_affected_and_failure_zero_delta() {
+        let mut session = local_session();
+        let before = encode_read_result(&session.read_state()).expect("baseline read");
+
+        let wrong_owner = r#"{"apiVersion":1,"command":{"commandVersion":1,"commandId":"core.voice.insert-rest-event","target":{"kind":"voice","voiceId":"voice-1"},"payload":{"anchor":{"kind":"after-event","eventId":"event-2"},"event":{"id":"event-x","duration":{"base":4,"dots":0},"content":{"kind":"rest"}}}}}"#;
+        let KernelStage3SubmitResultV1::CommandRejected {
+            value,
+            failure: KernelStage3CommandFailureV1::Leaf(failure),
+        } = submit(&mut session, wrong_owner)
+        else {
+            panic!("wrong-owner anchor must reject");
+        };
+        assert_eq!(failure, KernelStage3CommandFailureLeafV1::AnchorWrongOwner);
+        assert_eq!(value.document_version.get(), 0);
+        assert_zero_global_work(&value.metrics);
+        assert_eq!(
+            encode_read_result(&session.read_state()).expect("unchanged read"),
+            before
+        );
+
+        let missing_target = r#"{"apiVersion":1,"command":{"commandVersion":1,"commandId":"core.event.remove","target":{"kind":"event","eventId":"event-missing"},"payload":{}}}"#;
+        let KernelStage3SubmitResultV1::CommandRejected {
+            failure: KernelStage3CommandFailureV1::Leaf(failure),
+            ..
+        } = submit(&mut session, missing_target)
+        else {
+            panic!("missing target must reject");
+        };
+        assert_eq!(failure, KernelStage3CommandFailureLeafV1::TargetNotFound);
+
+        let missing_anchor = r#"{"apiVersion":1,"command":{"commandVersion":1,"commandId":"core.voice.insert-rest-event","target":{"kind":"voice","voiceId":"voice-1"},"payload":{"anchor":{"kind":"after-event","eventId":"missing"},"event":{"id":"event-x","duration":{"base":4,"dots":0},"content":{"kind":"rest"}}}}}"#;
+        let KernelStage3SubmitResultV1::CommandRejected {
+            failure: KernelStage3CommandFailureV1::Leaf(failure),
+            ..
+        } = submit(&mut session, missing_anchor)
+        else {
+            panic!("missing anchor must reject");
+        };
+        assert_eq!(failure, KernelStage3CommandFailureLeafV1::AnchorNotFound);
+
+        let bad_anchor_and_content = r#"{"apiVersion":1,"command":{"commandVersion":1,"commandId":"core.voice.insert-notes-event","target":{"kind":"voice","voiceId":"voice-1"},"payload":{"anchor":{"kind":"after-event","eventId":"missing"},"event":{"id":"event-x","duration":{"base":4,"dots":0},"staffId":"staff-missing","content":{"kind":"notes","notes":[]}}}}}"#;
+        let KernelStage3SubmitResultV1::CommandRejected {
+            failure: KernelStage3CommandFailureV1::Leaf(failure),
+            ..
+        } = submit(&mut session, bad_anchor_and_content)
+        else {
+            panic!("anchor failure must win over later content checks");
+        };
+        assert_eq!(failure, KernelStage3CommandFailureLeafV1::AnchorNotFound);
+
+        let missing_reference = r#"{"apiVersion":1,"command":{"commandVersion":1,"commandId":"core.voice.insert-rest-event","target":{"kind":"voice","voiceId":"voice-1"},"payload":{"anchor":{"kind":"after-event","eventId":"event-1"},"event":{"id":"event-x","duration":{"base":4,"dots":0},"staffId":"staff-missing","content":{"kind":"rest"}}}}}"#;
+        let KernelStage3SubmitResultV1::CommandRejected {
+            failure: KernelStage3CommandFailureV1::Leaf(failure),
+            ..
+        } = submit(&mut session, missing_reference)
+        else {
+            panic!("missing staff reference must reject");
+        };
+        assert_eq!(failure, KernelStage3CommandFailureLeafV1::ReferenceConflict);
+        assert_eq!(
+            encode_read_result(&session.read_state()).expect("unchanged failure read"),
+            before
+        );
+
+        let insert_notes = r#"{"apiVersion":1,"command":{"commandVersion":1,"commandId":"core.voice.insert-notes-event","target":{"kind":"voice","voiceId":"voice-1"},"payload":{"anchor":{"kind":"after-event","eventId":"event-1"},"event":{"id":"event-3","duration":{"base":4,"dots":0},"staffId":"staff-1","content":{"kind":"notes","notes":[{"id":"note-3","writtenPitch":{"step":"E","alter":0,"octave":4}}]}}}}}"#;
+        let KernelStage3SubmitResultV1::Committed(value) = submit(&mut session, insert_notes)
+        else {
+            panic!("notes event must commit");
+        };
+        assert_eq!(value.document_version.get(), 1);
+        assert!(matches!(
+            value.affected.as_slice(),
+            [
+                ScoreEntityTargetV1::Voice { voice_id },
+                ScoreEntityTargetV1::Event { event_id },
+                ScoreEntityTargetV1::Note { note_id },
+            ] if voice_id.as_str() == "voice-1"
+                && event_id.as_str() == "event-3"
+                && note_id.as_str() == "note-3"
+        ));
+        assert_zero_global_work(&value.metrics);
+        assert_eq!(value.metrics.entities_visited, 2);
+
+        let after_insert = encode_read_result(&session.read_state()).expect("inserted read");
+        let duplicate = r#"{"apiVersion":1,"command":{"commandVersion":1,"commandId":"core.voice.insert-rest-event","target":{"kind":"voice","voiceId":"voice-1"},"payload":{"anchor":{"kind":"start"},"event":{"id":"event-1","duration":{"base":4,"dots":0},"content":{"kind":"rest"}}}}}"#;
+        let KernelStage3SubmitResultV1::CommandRejected {
+            value,
+            failure: KernelStage3CommandFailureV1::Leaf(failure),
+        } = submit(&mut session, duplicate)
+        else {
+            panic!("duplicate event must reject");
+        };
+        assert_eq!(
+            failure,
+            KernelStage3CommandFailureLeafV1::LocalInvariantRejected
+        );
+        assert_eq!(value.document_version.get(), 1);
+        assert_eq!(
+            encode_read_result(&session.read_state()).expect("unchanged duplicate read"),
+            after_insert
+        );
+
+        let remove = r#"{"apiVersion":1,"command":{"commandVersion":1,"commandId":"core.event.remove","target":{"kind":"event","eventId":"event-3"},"payload":{}}}"#;
+        let KernelStage3SubmitResultV1::Committed(value) = submit(&mut session, remove) else {
+            panic!("event remove must commit");
+        };
+        assert_eq!(value.document_version.get(), 2);
+        assert!(matches!(
+            value.affected.as_slice(),
+            [
+                ScoreEntityTargetV1::Event { event_id },
+                ScoreEntityTargetV1::Voice { voice_id },
+                ScoreEntityTargetV1::Note { note_id },
+            ] if event_id.as_str() == "event-3"
+                && voice_id.as_str() == "voice-1"
+                && note_id.as_str() == "note-3"
+        ));
+
+        let insert_rest = r#"{"apiVersion":1,"command":{"commandVersion":1,"commandId":"core.voice.insert-rest-event","target":{"kind":"voice","voiceId":"voice-1"},"payload":{"anchor":{"kind":"start"},"event":{"id":"event-4","duration":{"base":4,"dots":0},"content":{"kind":"rest"}}}}}"#;
+        let KernelStage3SubmitResultV1::Committed(value) = submit(&mut session, insert_rest) else {
+            panic!("rest event must commit");
+        };
+        assert_eq!(value.document_version.get(), 3);
+        assert!(matches!(
+            value.affected.as_slice(),
+            [
+                ScoreEntityTargetV1::Voice { voice_id },
+                ScoreEntityTargetV1::Event { event_id },
+            ] if voice_id.as_str() == "voice-1" && event_id.as_str() == "event-4"
+        ));
+        assert_zero_global_work(&value.metrics);
+
+        let KernelSessionReadResultV1::Ok(state) = session.read_state() else {
+            panic!("read must succeed");
+        };
+        let voices = &state.snapshot.document.parts[0].measure_contents[0].voices;
+        assert_eq!(
+            voices[0]
+                .sequence
+                .events
+                .iter()
+                .map(|event| event.id.as_str())
+                .collect::<Vec<_>>(),
+            ["event-4", "event-1"]
+        );
+        assert_eq!(voices[1].sequence.events[0].id.as_str(), "event-2");
     }
 }

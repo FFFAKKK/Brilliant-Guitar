@@ -130,5 +130,75 @@ test("RKP-3 overlay uses discard-only failure and copy-on-first-write orders", (
   );
   assert.equal(source.includes("clone_from(&self.base"), false);
   assert.equal(source.includes("self.base ="), false);
-}
-);
+});
+
+test("RKP-3 Session owns a literal closed catalog and the first six local routes", () => {
+  const catalog = readText(
+    "crates/brilliant-kernel-session/src/commands/catalog.rs",
+  );
+  const dispatch = readText("crates/brilliant-kernel-session/src/commands/mod.rs");
+  const local = readText("crates/brilliant-kernel-session/src/commands/local.rs");
+  const runtime = readText("crates/brilliant-kernel-runtime/src/runtime.rs");
+  const variants = [
+    "DocumentSetMetadata",
+    "NoteSetWrittenPitch",
+    "EventSetNoteValue",
+    "VoiceInsertNotesEvent",
+    "VoiceInsertRestEvent",
+    "EventRemove",
+    "MeasureInsert",
+    "MeasureRemove",
+    "MeasureMove",
+    "MeasureSetDefinition",
+    "PartInsert",
+    "PartRemove",
+    "PartMove",
+    "PartSetName",
+    "PartSetInstrument",
+    "StaffInsert",
+    "StaffRemove",
+    "StaffMove",
+    "StaffSetDefinition",
+    "VoiceInsert",
+    "VoiceRemove",
+    "VoiceMove",
+    "VoiceSetDefaultStaff",
+    "VoiceSetSequenceStart",
+    "EventSetStaffAssignment",
+    "RangeDelete",
+    "RangeTransposeWrittenPitch",
+    "TransactionBatch",
+  ] as const;
+
+  let catalogCursor = -1;
+  for (const variant of variants) {
+    const next = catalog.indexOf(`CoreCommandIdV1::${variant}`, catalogCursor + 1);
+    assert.notEqual(next, -1, `missing or out-of-order Session catalog entry: ${variant}`);
+    catalogCursor = next;
+    assert.ok(
+      dispatch.includes(`CoreCommandIdV1::${variant}`),
+      `closed dispatcher omits ${variant}`,
+    );
+  }
+  assert.match(
+    catalog,
+    /SESSION_COMMAND_CATALOG_V1: \[CoreCommandDefinitionV1; CORE_COMMAND_COUNT_V1\]/u,
+  );
+
+  for (const method of [
+    "set_document_metadata",
+    "set_note_written_pitch",
+    "set_event_note_value",
+    "insert_notes_event",
+    "insert_rest_event",
+    "remove_event",
+  ]) {
+    assert.ok(local.includes(method), `local route missing ${method}`);
+  }
+  for (const forbidden of ["LiveScoreStore", "ScoreDocumentV1", "export_document"])
+    assert.equal(local.includes(forbidden), false, `Session handler leaked ${forbidden}`);
+
+  assert.match(runtime, /pub fn begin_stage3_transaction\(/u);
+  assert.match(runtime, /pub fn commit_stage3_transaction\(/u);
+  assert.match(runtime, /state\.snapshot\.document_version = self\.document_version;/u);
+});
