@@ -890,10 +890,22 @@ function isStage4MarkPersistedResult(
     return false;
   }
   if (value.status === "updated" || value.status === "no-op") {
+    if (
+      !hasExactKeys(value, ["apiVersion", "status", "value", "events"]) ||
+      !isEventArray(value.events) ||
+      value.events.length > 1
+    ) {
+      return false;
+    }
+    if (value.status === "no-op" || value.events.length === 0) {
+      return value.events.length === 0;
+    }
+    const [event] = value.events;
     return (
-      hasExactKeys(value, ["apiVersion", "status", "value", "events"]) &&
-      isEventArray(value.events) &&
-      (value.status === "updated" ? value.events.length === 1 : value.events.length === 0)
+      event?.eventType === "core.session.dirty-state-changed" &&
+      event.cause === "mark-persisted" &&
+      event.documentVersion === value.value.documentVersion &&
+      event.dirty === value.value.dirty
     );
   }
   return (

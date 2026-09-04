@@ -181,6 +181,30 @@ test("Stage-4 events are ordered, frozen, isolated, and reentrant writes stay lo
   assert.equal(persisted.events[0]?.eventSequence, 7);
 });
 
+test("delayed persisted identity updates without inventing a dirty-state event", () => {
+  const created = createRustKernelSmokeSession(addon, createCoreScoreFixture());
+  assert.equal(created.result.status, "created");
+  if (!("handle" in created)) throw new Error("native create rejected");
+  const session = createRustKernelStage4Session(addon, created.handle);
+
+  assert.equal(session.submit(createRkp4MetadataCommand("delayed A")).status, "committed");
+  assert.equal(session.submit(createRkp4MetadataCommand("delayed B")).status, "committed");
+
+  const persisted = session.markPersisted({
+    documentId: "score-1",
+    documentVersion: 1,
+  });
+  assert.equal(persisted.status, "updated");
+  assert.equal(persisted.value.documentVersion, 2);
+  assert.equal(persisted.value.dirty, true);
+  assert.deepEqual(persisted.events, []);
+
+  const undo = session.undo();
+  assert.equal(undo.status, "committed");
+  if (undo.status !== "committed") throw new Error("undo rejected");
+  assert.equal(undo.value.dirty, false);
+});
+
 test("Stage-3 and Stage-4 calls share history while raw boundary failures stay exact", () => {
   const handle = createRawSession();
   const stage3 = parseRkp4Payload(
