@@ -77,18 +77,18 @@ Rollback is removal/reversion of the RKP-3 commits, leaving accepted RKP-2 and t
 
 ## Acceptance Criteria
 
-- [ ] AC1: Exact RKP-2 base, clean worktree, branch, task, dependency, TypeScript-default, and no-RKP-4+ boundaries are mechanically asserted.
-- [ ] AC2: The exact 28-ID Rust catalog and exact request decoder cover every accepted command envelope; malformed/unknown/version/target/anchor/reference/batch failures are stable and zero-delta.
-- [ ] AC3: `TransactionOverlay` provides overlay-aware reads, deterministic typed staging, reverse-safe inverse derivation, preconditions, and discard-without-publication.
-- [ ] AC4: For every normal or expected failure outcome, store, topology, entity/ownership/time/extension/reference indices, and generational handles adopt one complete commit plan or remain entirely unchanged; an unexpected adoption panic poisons and retires the session.
-- [ ] AC5: All 28 accepted oracle submit projections match canonical final documents and version `1`; all 28 missing-target rows match `command.target-not-found`, version `0`, and byte-identical documents.
-- [ ] AC6: Batch-100, nested/empty/over-limit batch, mixed no-op/effective children, later-child visibility, lowest child failure, aggregate cap, and atomic discard/adoption tests pass.
-- [ ] AC7: Starting from pre-state, forward then inverse restores it; starting from committed state, inverse then forward restores it, for every change class and representative aggregate removal/move, including canonical document and index projections.
-- [ ] AC8: Local-command counters prove zero full-document scan/clone/semantic-validation/snapshot-materialization and bounded entity/index/overlay/ChangeSet work; explicit post-submit read remains separately counted.
-- [ ] AC9: The private Node path proves real add-on load, opaque-handle safety, request/response caps, panic containment, detached/frozen TypeScript results, no full-document submit payload, and no default-runtime change.
-- [ ] AC10: Existing RKP-2 focused/full Rust and Node tests remain green; TypeScript typecheck/build/full tests remain green with the immutable oracle and protected 28/51/8/34/9 inventories unchanged.
-- [ ] AC11: Exact production/test/spec/task allowlists, Cargo manifest/lock dependency zero-delta, no generated native artifact, and `git diff --check` pass from the pinned base.
-- [ ] AC12: A separate implementation review reports no P0/P1/P2 findings before owner acceptance/archive; that result does not authorize RKP-4, qualification, cutover, or push.
+- [x] AC1: Exact RKP-2 base, clean worktree, branch, task, dependency, TypeScript-default, and no-RKP-4+ boundaries are mechanically asserted.
+- [x] AC2: The exact 28-ID Rust catalog and exact request decoder cover every accepted command envelope; malformed/unknown/version/target/anchor/reference/batch failures are stable and zero-delta.
+- [x] AC3: `TransactionOverlay` provides overlay-aware reads, deterministic typed staging, reverse-safe inverse derivation, preconditions, and discard-without-publication.
+- [x] AC4: For every normal or expected failure outcome, store, topology, entity/ownership/time/extension/reference indices, and generational handles adopt one complete commit plan or remain entirely unchanged; an unexpected adoption panic poisons and retires the session.
+- [x] AC5: All 28 accepted oracle submit projections match canonical final documents and version `1`; all 28 missing-target rows match `command.target-not-found`, version `0`, and byte-identical documents.
+- [x] AC6: Batch-100, nested/empty/over-limit batch, mixed no-op/effective children, later-child visibility, lowest child failure, aggregate cap, and atomic discard/adoption tests pass.
+- [x] AC7: Starting from pre-state, forward then inverse restores it; starting from committed state, inverse then forward restores it, for every change class and representative aggregate removal/move, including canonical document and index projections.
+- [x] AC8: Local-command counters prove zero full-document scan/clone/semantic-validation/snapshot-materialization and bounded entity/index/overlay/ChangeSet work; explicit post-submit read remains separately counted.
+- [x] AC9: The private Node path proves real add-on load, opaque-handle safety, request/response caps, panic containment, detached/frozen TypeScript results, no full-document submit payload, and no default-runtime change.
+- [x] AC10: Existing RKP-2 focused/full Rust and Node tests remain green; TypeScript typecheck/build/full tests remain green with the immutable oracle and protected 28/51/8/34/9 inventories unchanged.
+- [x] AC11: Exact production/test/spec/task allowlists, Cargo manifest/lock dependency zero-delta, no generated native artifact, and `git diff --check` pass from the pinned base.
+- [x] AC12: A separate implementation review reports no P0/P1/P2 findings before owner acceptance/archive; that result does not authorize RKP-4, qualification, cutover, or push.
 
 ## Out of Scope
 

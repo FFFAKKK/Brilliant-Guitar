@@ -48,7 +48,7 @@
     ".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/",
     ".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/"
   ],
-  "notes": "RUST REMEDIATION PARENT PLANNING / RKP-2 ACCEPTED ARCHIVED AT 6D0956C / RKP-3 C0-C10 PRIVATE IMPLEMENTATION AND DIRECT INLINE REVIEW COMPLETE AT UPDATED TECHNICAL SOURCE 3CA82F1 / ONE P2 REPAIRED AND TARGETED REREVIEW REMAINING P0 0 P1 0 P2 0 / OWNER ACCEPTANCE ARCHIVE QUALIFICATION CUTOVER RKP4 AND PUSH FALSE / TYPESCRIPT DEFAULT.",
+  "notes": "RUST REMEDIATION PARENT PLANNING / RKP-2 ACCEPTED ARCHIVED AT 6D0956C / RKP-3 ACCEPTED ARCHIVED AT AUDITED TECHNICAL SOURCE 3CA82F1 WITH ARCHIVE COMPATIBILITY 560FD89 / TYPESCRIPT DEFAULT / RKP-4 QUALIFICATION CUTOVER AND PUSH FALSE.",
   "meta": {
     "planning_base_commit": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
     "source_cvn7_task": "08-11-cvn-7-core-vnext-final-qualification",
@@ -96,7 +96,7 @@
       "e3_user_authorization_consumed_by_parent_stage6_owner": true
     },
     "current_dependency_repair_child": null,
-    "current_blocking_descendant": "09-04-rkp-3-transaction-overlay-changeset-core-commands",
+    "current_blocking_descendant": null,
     "future_children_created": true,
     "stage_sequence": [
       "RKP-0",
@@ -127,6 +127,7 @@
     "stress_target": "102400_events_10000_submit_180s_10000_replay_180s_2gib",
     "planning_production_delta": "zero",
     "push_authorized": false,
+    "rkp4_authorized": false,
     "archive_authorized": false,
     "rkp0_status": "accepted_archived",
     "rkp0_candidate_commit": "9bc53901a0e205a99865b21c56dc80ff1112f3a7",
@@ -139,7 +140,7 @@
       "tests": "rkp0_15_of_15_cvn7_84_of_84_full_531_of_531",
       "fresh_checkout_fixture_hashes": "manifest_bytes_15168_sha256_3814ed1da21f8de7135a71ab3e4b0a1ba888a76e6163ed1868756353005dabf7_scenarios_bytes_1307605_sha256_9761691b07082f5434126f2048f91ad415f91418799ec6bf316c2ae4d2fb9cb2_qualification_bytes_2982_sha256_7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
     },
-    "next_gate": "rkp3_owner_acceptance_and_archive_authorization_decision",
+    "next_gate": "rkp4_planning_requires_separate_owner_authorization",
     "planning_self_audit": {
       "P0": 0,
       "P1": 0,
@@ -208,8 +209,8 @@
     },
     "rkp1_status_sync_commit": "7174c5ac50655ae0cb8807e21c7045a0c1b6d15e",
     "rkp1_repair_branch": "codex/rkp-1-seven-crate-workspace-contracts-bridge-smoke-planning-r1",
-    "current_implementation_child": "09-04-rkp-3-transaction-overlay-changeset-core-commands",
-    "active_implementation_child": "09-04-rkp-3-transaction-overlay-changeset-core-commands",
+    "current_implementation_child": null,
+    "active_implementation_child": null,
     "rkp1_implementation_stage": "accepted_archived",
     "rkp1_implementation_commits": {
       "activation": "84918e1e293b26554fbff9f161c6222510f378b9",
@@ -245,6 +246,10 @@
     "rkp2_user_implementation_authorization": true,
     "rkp2_created": true,
     "rkp2_status": "accepted_archived",
+    "rkp3_status": "accepted_archived",
+    "rkp3_accepted_technical_commit": "3ca82f1fcf68070e6c775d0848839864dbc87c71",
+    "rkp3_archive_compatibility_commit": "560fd89d32026cdc41c3cf0df65285e99e015456",
+    "rkp3_archive_path": ".trellis/tasks/archive/2026-09/09-04-rkp-3-transaction-overlay-changeset-core-commands",
     "rkp2_task": "08-24-rkp-2-indexed-live-score-store-load-encode-parity",
     "rkp2_archive_root": ".trellis/tasks/archive/2026-09/08-24-rkp-2-indexed-live-score-store-load-encode-parity",
     "rkp2_integrated_head": "6d0956c970f4414cb61e0f3d7148672a6e635032",
@@ -387,7 +392,7 @@
     "rkp3_planning": {
       "task": "09-04-rkp-3-transaction-overlay-changeset-core-commands",
       "parent": "08-15-core-rust-runtime-performance-remediation",
-      "status": "in_progress",
+      "status": "accepted_archived",
       "planning_base": "6d0956c970f4414cb61e0f3d7148672a6e635032",
       "branch": "codex/rkp-3-transaction-overlay-changeset-planning",
       "worktree": ".worktrees/rkp-3-transaction-overlay-changeset-planning",
@@ -398,7 +403,7 @@
       "user_implementation_authorization_source": "user_replied_continue_to_explicit_RKP3_implementation_activation_question",
       "user_implementation_authorization_scope": "C0_through_C9_private_RKP3_implementation_and_candidate_freeze_only_no_acceptance_archive_RKP4_qualification_cutover_or_push",
       "activation_planning_commit": "78660bb63e249f7bbfec848b9b19e16d7dc55c25",
-      "current_stage": "C10_direct_implementation_review_complete_owner_decision_next",
+      "current_stage": "accepted_archived_completed_historical_no_live_gate",
       "planning_candidate_ready": true,
       "planning_self_audit": "passed_P0_0_P1_0_P2_0",
       "owner_review": "approved_for_implementation",
@@ -419,12 +424,26 @@
         "P2": 0,
         "verdict": "technical_pass_for_separate_owner_acceptance_and_archive_decision"
       },
+      "archive_compatibility_commit": "560fd89d32026cdc41c3cf0df65285e99e015456",
+      "archive_compatibility_validation": "typecheck_build_rkp3_workspace_7_of_7_full_632_discovered_630_passed_0_failed_2_intentional_skips",
+      "owner_acceptance": {
+        "date": "2026-09-04",
+        "authorization_source": "user_replied_then_continue_after_explicit_RKP3_acceptance_archive_parent_sync_next_step",
+        "authorized_scope": "RKP3_owner_acceptance_native_archive_parent_projection_only_no_RKP4_qualification_cutover_or_push",
+        "accepted_technical_commit": "3ca82f1fcf68070e6c775d0848839864dbc87c71",
+        "accepted_review_record_commit": "88d96574e4b6f58d92bef8f849176e72667fdb3b"
+      },
+      "acceptance_authorized": true,
+      "archive_authorized": true,
+      "archive_path": ".trellis/tasks/archive/2026-09/09-04-rkp-3-transaction-overlay-changeset-core-commands",
+      "active_authority_present": false,
+      "archive_authority_present": true,
       "default_runtime": "typescript",
       "qualification_authorized": false,
       "runtime_cutover_authorized": false,
       "rkp4_authorized": false,
       "push_authorized": false,
-      "next_gate": "owner_acceptance_and_archive_authorization_decision"
+      "next_gate": "completed_historical_no_live_gate"
     },
     "rkp1a_public_json_property_cap_scale_compatibility_repair": {
       "parent": "08-15-core-rust-runtime-performance-remediation",

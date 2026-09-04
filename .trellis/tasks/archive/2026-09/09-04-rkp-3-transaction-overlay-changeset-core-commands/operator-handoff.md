@@ -131,3 +131,17 @@ review and is not claimed as a separate-session independent review. The next
 gate is the owner's acceptance/archive authorization decision. RKP-4,
 qualification, default-runtime cutover, and push remain unauthorized; the
 default runtime remains TypeScript.
+
+## Owner acceptance and native archive — 2026-09-04
+
+The owner replied `那继续吧` after the next step was explicitly identified as
+accepting and archiving RKP-3 and synchronizing the parent. The accepted audited
+technical source is `3ca82f1fcf68070e6c775d0848839864dbc87c71`; the C10 record is
+`88d96574e4b6f58d92bef8f849176e72667fdb3b`; and archive compatibility is
+`560fd89d32026cdc41c3cf0df65285e99e015456`.
+
+The task is archived under
+`.trellis/tasks/archive/2026-09/09-04-rkp-3-transaction-overlay-changeset-core-commands`.
+The parent has no current implementation child. TypeScript remains default,
+while RKP-4 planning, qualification, runtime cutover, and push remain separate
+unauthorized gates.

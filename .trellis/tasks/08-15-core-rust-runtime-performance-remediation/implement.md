@@ -109,6 +109,20 @@ mode and is not claimed as a separate-session independent review.
 The clean candidate evidence includes Rust workspace tests 137 passed plus 1
 ignored, RKP-1/RKP-2/RKP-3 focused results `9/9`, `6/6`, `19/19`, and `20/20`,
 and the full suite 631 discovered, 629 passed, 0 failed, 2 intentional skips.
-TypeScript remains default. RKP-4, qualification, cutover,
-acceptance/archive, and push remain false and require separate gates. The next
-gate is the owner's explicit acceptance/archive authorization decision.
+TypeScript remains default. The implementation evidence above was accepted and
+archived by the separate owner decision recorded below.
+
+## RKP-3 owner acceptance and archive closeout — 2026-09-04
+
+After the next step was explicitly stated as accepting and archiving RKP-3 and
+synchronizing this parent, the owner replied `那继续吧`. The accepted audited
+technical source is `3ca82f1fcf68070e6c775d0848839864dbc87c71`; the C10 review
+record is `88d96574e4b6f58d92bef8f849176e72667fdb3b`; and the
+archive-compatibility commit is `560fd89d32026cdc41c3cf0df65285e99e015456`.
+
+RKP-3 is archived at
+`.trellis/tasks/archive/2026-09/09-04-rkp-3-transaction-overlay-changeset-core-commands`.
+This parent now records `rkp3_status=accepted_archived` and has no current or
+active implementation child. TypeScript remains the default runtime. RKP-4
+planning requires separate owner authorization; qualification, runtime cutover,
+and push remain unauthorized.

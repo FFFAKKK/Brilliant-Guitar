@@ -151,3 +151,20 @@ independent review.
 - `implementation_review` is technically passed after the bounded C10 repair.
 - Owner acceptance, archive, RKP-4, qualification, cutover, and push remain
   pending or false.
+
+## Owner acceptance and archive closeout — 2026-09-04
+
+After the explicit next step was stated as accepting and archiving RKP-3 plus
+synchronizing the parent, the owner replied `那继续吧`. This accepts audited
+technical source `3ca82f1fcf68070e6c775d0848839864dbc87c71` and authorizes
+only the native RKP-3 archive and parent lifecycle projection.
+
+Archive-compatibility commit `560fd89d32026cdc41c3cf0df65285e99e015456`
+adds exact active/archive root resolution and a 13-file task manifest. On that
+clean commit, typecheck and build passed, the focused workspace contract passed
+`7/7`, and the full suite passed `632 discovered / 630 passed / 0 failed / 2
+intentional skips`. The archived authority root is
+`.trellis/tasks/archive/2026-09/09-04-rkp-3-transaction-overlay-changeset-core-commands`.
+
+RKP-4 planning, qualification, runtime cutover, and push remain unauthorized;
+TypeScript remains the default runtime.

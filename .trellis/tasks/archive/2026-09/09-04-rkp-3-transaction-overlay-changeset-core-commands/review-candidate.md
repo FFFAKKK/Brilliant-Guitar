@@ -72,3 +72,13 @@ The operator's bounded C9 stage review remains recorded separately. C10 did
 not inherit its verdict: it reread the scoped implementation, found and
 repaired the metrics defect above, and then reran the targeted and complete
 gates.
+
+## Owner decision — 2026-09-04
+
+The owner accepted the audited technical source
+`3ca82f1fcf68070e6c775d0848839864dbc87c71` and authorized this task's native
+archive plus parent status synchronization by replying `那继续吧` to the
+explicitly stated closeout step. Archive-compatibility commit
+`560fd89d32026cdc41c3cf0df65285e99e015456` passed the clean full suite with
+`630` passes, `0` failures, and `2` intentional skips. This decision does not
+authorize RKP-4, qualification, runtime cutover, or push.
