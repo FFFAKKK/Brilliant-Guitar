@@ -813,3 +813,37 @@ boundary check. Final full TypeScript regression: 702 passed, 2 skipped, 0 faile
 boundary tests also passed. Scoped self-review checked the private representation,
 wire/value contracts, unchanged constructor signature and clone-sharing limits;
 `git diff --check` passed. S1/commercial qualification remain open.
+
+### S1.6f — occurrence-scoped candidate field writes
+
+The private candidate prototype now supports all primary scalar fields, Part
+instrument and raw Voice/Event staff-reference replacement. It shadows prefix
+fields locally and updates added records by occurrence, keeping the complete
+typed prefix and live Store unchanged. Duplicate raw IDs and same-ID rebuilds
+cannot share field replacements. Same-value raw writes reserve nothing, while
+changed-then-restored writes remain separate changes for future command journaling.
+
+Reference lookup now removes stale prefix edges and discovers newly referenced
+IDs, including empty/unknown IDs. It excludes hidden sources/ancestors and provides
+an owner-Part query for Staff removal. GPT-6 verified that the TS early conflict
+check is scoped to the Staff's Part, even when other candidate Parts contain
+invalid references to that raw ID. It also identified the Event effective-ID
+no-op rule, which remains a command-preparation requirement rather than a raw
+storage-write rule. None/inherit and an explicit string stay distinct.
+
+Six new tests pin all field kinds, duplicate occurrences, prefix replacement
+isolation, invalid-reference repair, cross-Part/removal visibility and faults at
+every reservation in the three new replacement maps and reference-ID pool. The
+guarded 4098-Staff test also exercises local writes with zero sibling traversal
+and forbids base aggregate/order/time copying. Allocation failure terminates
+further writes without changing the field whose reservation failed.
+
+Validation: 204 Rust tests passed, 1 ignored (25 candidate tests); fmt,
+all-target clippy `-D warnings`, Rust 1.88.0 all-target workspace check and
+`git diff --check` passed. Scoped self-review checked every replacement branch,
+prefix/new-record reference union, owner occurrence filtering, same-value writes
+and reservation-before-field-mutation. This slice remains under `cfg(test)`, so
+the freshly verified native/TS baseline (702 passed, 2 skipped) was not rerun.
+Native routing and public exports are unchanged. The prototype does not yet
+supply command effects/history, cumulative budgets, final semantic validation or
+strong adoption. S1/commercial qualification remain open.

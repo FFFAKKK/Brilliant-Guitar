@@ -153,7 +153,8 @@ alongside its occurrence; anchor lookup does not first collect a sibling array.
 The first mutation copies just its visible prefix sibling order, and subsequent
 mutations reuse it. Hidden ancestor checks also cover descendants never visited
 before deletion. Staff-referrer queries combine the prefix index with new records
-and exclude hidden sources. Candidate reference replacement is still pending.
+and exclude hidden sources. The later write slice below adds replacement-aware
+reads and owner-Part reference filtering.
 
 Thirteen Rust tests exercise the prototype using the real Store and overlay:
 changed prefix pitch/order/references; complete retained ChangeSet equality
@@ -167,7 +168,7 @@ zero sibling visits for an indexed scalar read and one order copy on first write
 The module is test-only until it supports the complete required command closure.
 Its storage insert/move/hide methods are not command preparation or adoption.
 Before enabling it, implement fallible allocation and combined resource accounting,
-candidate scalar/reference writes, measure-linked deletion/coverage handling,
+command preparation over scalar/reference writes, measure-linked deletion/coverage handling,
 remaining component insertion, final ordered diagnostics and strong-ID lowering.
 Retain the original command facts and history behavior during that integration.
 Local order counters in these tests are not global-work qualification evidence.
@@ -262,6 +263,46 @@ allocates and briefly retains the source String; clone/drop incur atomic referen
 counting. This representation proof is not latency/RSS qualification, an OOM
 guarantee or a cumulative candidate budget. Those accounts and the complete
 candidate command/validation/adoption closure remain required before activation.
+
+### Occurrence-scoped scalar and staff-reference writes
+
+The test-only prototype now replaces all seven primary scalar fields and the
+separate Part instrument field. Added records update their own arena values;
+prefix occurrences use local replacement maps, leaving the frozen typed prefix
+and its complete ChangeSet untouched. Reads prefer replacements only while the
+source occurrence is visible. Hiding and rebuilding the same raw ID cannot inherit
+an old occurrence's values. Scalar variant/owner mismatches fail before reservation.
+
+Staff-reference writes preserve raw empty, unknown and cross-Part IDs until final
+semantic validation. Voice references require a string; Event references distinguish
+None/inherit from explicit strings, including empty strings. Prefix reference
+queries omit replaced old edges and add replacement sources for their new values;
+new records use their current arena reference. Sources remain distinct by occurrence
+and hidden ancestors suppress old edges. The result is an unordered source set.
+A separate owner-Part query is required for Staff removal: the TS preparation
+walks only that Part, so a different Part's invalid reference must not produce an
+early reference-conflict. Owner comparison uses occurrence identity, even for two
+Parts with the same raw ID.
+
+The GPT-6 source review pinned a further command-level rule: Event assignment
+compares effective staff IDs (explicit ID or Voice default), so a request to inherit
+can be a no-op that preserves an existing explicit field. The raw storage writer
+does not decide this command rule. Future preparation must compare effective IDs
+before invoking it. Storage return values describe individual raw-field changes;
+they neither create history/effects nor permit coalescing a changed-then-restored
+batch into a no-op. Original command facts still need a suffix journal and lowering.
+
+Three new prefix replacement maps use fallible reservation. A map/ID-pool capacity
+failure leaves the currently written field unchanged and terminates all later
+writes. Six added tests cover all scalar fields, prefix/no-op/net-zero behavior,
+duplicate added nodes, hidden replacements, raw-reference repair, old/new reference
+buckets, cross-Part filtering and every new reservation site. The guarded large
+Store test now also forbids aggregate/order/time copying during scalar/reference
+writes and verifies zero sibling traversal for those local changes.
+
+These are storage primitives, still excluded from production. Command preparation,
+suffix history/effect accounting, combined logical/resource bounds, ordered final
+diagnostics and strong-ID adoption are not implemented by these methods.
 
 ## Implementation and evidence order
 

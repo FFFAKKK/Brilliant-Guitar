@@ -207,6 +207,9 @@ struct Candidate<'a> {
     id_pool: HashSet<Arc<str>>,
     orders: HashMap<CandidateOrder, Vec<Occurrence>>,
     hidden: HashSet<Occurrence>,
+    values: HashMap<Occurrence, Value>,
+    instruments: HashMap<Occurrence, InstrumentDescriptorV1>,
+    staff_references: HashMap<Occurrence, Option<Arc<str>>>,
     work: Work,
     reservation: Reservation,
 }
@@ -221,6 +224,9 @@ impl<'a> Candidate<'a> {
             id_pool: HashSet::new(),
             orders: HashMap::new(),
             hidden: HashSet::new(),
+            values: HashMap::new(),
+            instruments: HashMap::new(),
+            staff_references: HashMap::new(),
             work: Work::default(),
             reservation: Reservation::default(),
         }
@@ -402,6 +408,9 @@ impl<'a> Candidate<'a> {
         if !self.visible(occurrence) {
             return None;
         }
+        if let Some(value) = self.values.get(occurrence) {
+            return Some(value.clone());
+        }
         let Occurrence::Prefix(entity) = occurrence else {
             return match occurrence {
                 Occurrence::Added(index) => self.nodes.get(*index)?.value.clone(),
@@ -437,6 +446,9 @@ impl<'a> Candidate<'a> {
         if !self.visible(part) {
             return None;
         }
+        if let Some(value) = self.instruments.get(part) {
+            return Some(value.clone());
+        }
         match part {
             Occurrence::Prefix(entity) => {
                 let Entity::Part { part_id } = entity.as_ref() else {
@@ -459,6 +471,9 @@ impl<'a> Candidate<'a> {
     fn read_staff_reference(&self, occurrence: &Occurrence) -> Option<Option<String>> {
         if !self.visible(occurrence) {
             return None;
+        }
+        if let Some(value) = self.staff_references.get(occurrence) {
+            return Some(value.as_ref().map(|id| id.to_string()));
         }
         match occurrence {
             Occurrence::Prefix(entity) => match entity.as_ref() {
@@ -510,8 +525,8 @@ impl<'a> Candidate<'a> {
         }
     }
 
-    /// Prefix queries use its maintained reference index. Only new candidate
-    /// records are scanned; hidden sources cannot retain a reference conflict.
+    /// Unordered source set: use the prefix index plus candidate-only records
+    /// and replacements. Hidden sources and stale prefix edges are excluded.
     fn staff_referrers(&self, raw_id: &str) -> Vec<Occurrence> {
         let mut result = Vec::new();
         if let Ok(id) = StableId::new(raw_id) {
@@ -525,7 +540,7 @@ impl<'a> Candidate<'a> {
                     }
                     _ => continue,
                 };
-                if self.visible(&source) {
+                if !self.staff_references.contains_key(&source) && self.visible(&source) {
                     result.push(source);
                 }
             }
@@ -540,7 +555,141 @@ impl<'a> Candidate<'a> {
                 }
             }
         }
+        for (source, value) in &self.staff_references {
+            if value.as_deref() == Some(raw_id) && self.visible(source) {
+                result.push(source.clone());
+            }
+        }
         result
+    }
+
+    /// Staff removal checks only the owner's Part. Cross-Part invalid references
+    /// are final semantic facts, not an earlier reference-conflict in this Part.
+    fn staff_referrers_in_part(
+        &self,
+        part: &Occurrence,
+        raw_id: &str,
+    ) -> Result<Vec<Occurrence>, Failure> {
+        if !self.visible(part) {
+            return Err(Failure::TargetNotFound);
+        }
+        if self.kind(part) != Some(Kind::Part) {
+            return Err(Failure::InternalError);
+        }
+        Ok(self
+            .staff_referrers(raw_id)
+            .into_iter()
+            .filter(|source| {
+                let voice = if self.kind(source) == Some(Kind::Event) {
+                    self.owner(source)
+                } else {
+                    Some(source.clone())
+                };
+                let content = voice.as_ref().and_then(|voice| self.owner(voice));
+                content
+                    .as_ref()
+                    .and_then(|content| self.owner(content))
+                    .as_ref()
+                    == Some(part)
+            })
+            .collect())
+    }
+
+    /// Storage writes only. The bool describes this raw-field change, not a
+    /// command effect or net batch change. Preparation retains history facts.
+    fn replace_value(&mut self, occurrence: &Occurrence, value: Value) -> Result<bool, Failure> {
+        self.reservation.ensure_active()?;
+        if !self.visible(occurrence) {
+            return Err(Failure::TargetNotFound);
+        }
+        let kind = match &value {
+            Value::DocumentMetadata(_) => Kind::Document,
+            Value::MeasureDefinition { .. } => Kind::Measure,
+            Value::PartName(_) => Kind::Part,
+            Value::StaffDefinition { .. } => Kind::Staff,
+            Value::VoiceSequenceStart(_) => Kind::Voice,
+            Value::EventNoteValue(_) => Kind::Event,
+            Value::NoteWrittenPitch(_) => Kind::Note,
+            Value::PartInstrument(_) => return Err(Failure::InternalError),
+        };
+        if self.kind(occurrence) != Some(kind) {
+            return Err(Failure::InternalError);
+        }
+        let previous = self.read_value(occurrence).ok_or(Failure::InternalError)?;
+        if previous == value {
+            return Ok(false);
+        }
+        if let Occurrence::Added(index) = occurrence {
+            self.nodes[*index].value = Some(value);
+        } else {
+            if !self.values.contains_key(occurrence) {
+                self.reservation.map(Site::Values, &mut self.values, 1)?;
+            }
+            self.values.insert(occurrence.clone(), value);
+        }
+        Ok(true)
+    }
+
+    fn replace_instrument(
+        &mut self,
+        part: &Occurrence,
+        value: InstrumentDescriptorV1,
+    ) -> Result<bool, Failure> {
+        self.reservation.ensure_active()?;
+        if !self.visible(part) {
+            return Err(Failure::TargetNotFound);
+        }
+        let previous = self.read_instrument(part).ok_or(Failure::InternalError)?;
+        if previous == value {
+            return Ok(false);
+        }
+        if let Occurrence::Added(index) = part {
+            self.nodes[*index].instrument = Some(value);
+        } else {
+            if !self.instruments.contains_key(part) {
+                self.reservation
+                    .map(Site::Instruments, &mut self.instruments, 1)?;
+            }
+            self.instruments.insert(part.clone(), value);
+        }
+        Ok(true)
+    }
+
+    /// Raw references may be empty, unknown or cross-Part until final semantic
+    /// admission. Event None means inherit; a Voice always has an explicit ID.
+    /// Event command preparation must compare effective IDs before calling this
+    /// raw writer, preserving the existing explicit/inherited form on a no-op.
+    fn replace_staff_reference(
+        &mut self,
+        source: &Occurrence,
+        value: Option<String>,
+    ) -> Result<bool, Failure> {
+        self.reservation.ensure_active()?;
+        if !self.visible(source) {
+            return Err(Failure::TargetNotFound);
+        }
+        match self.kind(source) {
+            Some(Kind::Event) => {}
+            Some(Kind::Voice) if value.is_some() => {}
+            _ => return Err(Failure::InternalError),
+        }
+        let previous = self
+            .read_staff_reference(source)
+            .ok_or(Failure::InternalError)?;
+        if previous == value {
+            return Ok(false);
+        }
+        let value = value.map(|id| self.share_id(id)).transpose()?;
+        if let Occurrence::Added(index) = source {
+            self.nodes[*index].staff_id = value;
+        } else {
+            if !self.staff_references.contains_key(source) {
+                self.reservation
+                    .map(Site::StaffReferences, &mut self.staff_references, 1)?;
+            }
+            self.staff_references.insert(source.clone(), value);
+        }
+        Ok(true)
     }
 
     fn voice_insertion_index(

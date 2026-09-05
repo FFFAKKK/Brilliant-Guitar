@@ -9,6 +9,8 @@ use brilliant_score_foundation::{
     StaffDefinitionV1, WrittenPitchV1,
 };
 
+mod writes;
+
 fn id(value: &str) -> StableId {
     StableId::new(value).expect("nonempty test ID")
 }
@@ -648,6 +650,31 @@ fn read_layer_never_detaches_base_aggregates_or_copies_base_order_arrays() {
         0,
         "indexed scalar reads must not visit sibling orders"
     );
+    let note = candidate.resolve(Kind::Note, "note-a").unwrap();
+    let Some(Value::NoteWrittenPitch(mut pitch)) = candidate.read_value(&note) else {
+        panic!("fixture pitch");
+    };
+    pitch.octave = SafeInteger::new(7).unwrap();
+    let value = Value::NoteWrittenPitch(pitch);
+    candidate.replace_value(&note, value.clone()).unwrap();
+    assert_eq!(candidate.read_value(&note), Some(value));
+    let voice = candidate.resolve(Kind::Voice, "voice-a").unwrap();
+    candidate
+        .replace_staff_reference(&voice, Some(String::new()))
+        .unwrap();
+    assert_eq!(
+        candidate.staff_referrers_in_part(&part, "").unwrap(),
+        std::slice::from_ref(&voice)
+    );
+    candidate
+        .replace_staff_reference(&voice, Some("staff-a".into()))
+        .unwrap();
+    assert_eq!(
+        guard.visited.get(),
+        0,
+        "local writes must not traverse orders"
+    );
+    assert!(candidate.orders.is_empty());
     let order = CandidateOrder::new(&part, Children::Staffs);
     candidate.visit_order(&order, &mut |_, _| false).unwrap();
     assert_eq!(guard.visited.get(), 1);
@@ -884,7 +911,7 @@ fn every_part_collection_reservation_failure_is_terminal_and_preserves_the_prefi
     );
     assert_eq!(
         baseline.reservation.sites, 0xff,
-        "the scenario must cover all eight reservation sites"
+        "the scenario must cover the eight original collection reservation sites"
     );
     assert_eq!(baseline.prefix.finish().unwrap(), expected);
 

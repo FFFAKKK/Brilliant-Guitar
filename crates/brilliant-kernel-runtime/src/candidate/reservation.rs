@@ -19,6 +19,9 @@ pub(super) enum Site {
     Orders,
     OrderEntries,
     HiddenRoots,
+    Values,
+    Instruments,
+    StaffReferences,
 }
 
 #[derive(Default)]
