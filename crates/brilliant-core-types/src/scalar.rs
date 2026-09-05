@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, sync::Arc};
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 
@@ -9,7 +9,7 @@ pub const DOCUMENT_VERSION_INITIAL: u64 = 0;
 pub const JS_SAFE_INTEGER_MAX: i64 = 9_007_199_254_740_991;
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct StableId(String);
+pub struct StableId(Arc<str>);
 
 impl StableId {
     pub fn new(value: impl Into<String>) -> Result<Self, CoreTypeFailure> {
@@ -17,7 +17,9 @@ impl StableId {
         if value.is_empty() {
             return Err(CoreTypeFailure::EmptyStableId);
         }
-        Ok(Self(value))
+        // Ownership routes and history can retain this ID many times. Share the
+        // immutable text so a long parent ID does not multiply with child count.
+        Ok(Self(value.into()))
     }
 
     pub fn as_str(&self) -> &str {
@@ -151,6 +153,59 @@ impl ScoreSchemaVersionV1 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn stable_id_clones_share_immutable_text_and_survive_the_original() {
+        let text = "线路/🎸/e\u{301}/".repeat(4096);
+        let original = StableId::new(text.clone()).unwrap();
+        let allocation = original.as_str().as_ptr();
+        let clones = vec![original.clone(); 256];
+        assert!(
+            clones
+                .iter()
+                .all(|value| value.as_str().as_ptr() == allocation),
+            "cloning a stable ID must not multiply its retained UTF-8 bytes"
+        );
+        drop(original);
+        assert!(clones.iter().all(|value| value.as_str() == text));
+        assert!(
+            clones
+                .iter()
+                .all(|value| value.as_str().as_ptr() == allocation)
+        );
+    }
+
+    #[test]
+    fn stable_id_value_traits_constructor_inputs_and_thread_safety_are_preserved() {
+        use std::{
+            borrow::Cow,
+            collections::{BTreeSet, HashMap},
+        };
+        fn assert_send_sync<T: Send + Sync>() {}
+        assert_send_sync::<StableId>();
+        let text = String::from("线路/🎸/e\u{301}/\0");
+        let first = StableId::new(text.as_str()).unwrap();
+        let second = StableId::new(text.clone()).unwrap();
+        let borrowed = StableId::new(&text).unwrap();
+        let cow = StableId::new(Cow::Borrowed(text.as_str())).unwrap();
+        assert_eq!(first, second);
+        assert_eq!(second, borrowed);
+        assert_eq!(borrowed, cow);
+        let mut values = HashMap::new();
+        values.insert(first.clone(), 7);
+        assert_eq!(values.get(&second), Some(&7));
+        let mut ordered = BTreeSet::new();
+        ordered.insert(first.clone());
+        ordered.insert(second);
+        ordered.insert(StableId::new("a").unwrap());
+        assert_eq!(ordered.len(), 2);
+        assert_eq!(ordered.first().unwrap().as_str(), "a");
+        assert_eq!(format!("{first:?}"), format!("StableId({text:?})"));
+        let moved = first.clone();
+        let thread = std::thread::spawn(move || moved.as_str().to_owned());
+        drop(first);
+        assert_eq!(thread.join().unwrap(), text);
+    }
 
     #[test]
     fn stable_ids_and_safe_integers_are_closed() {

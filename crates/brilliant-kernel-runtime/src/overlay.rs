@@ -2396,6 +2396,91 @@ mod tests {
 
     use super::*;
 
+    #[test]
+    fn typed_part_insertion_shares_long_parent_ids_across_retained_owners() {
+        let document = crate::store::tests::fixture();
+        let store = crate::store::build_live_score_store(&document).unwrap();
+        let mut part = document.parts[0].clone();
+        let part_id = id(&"p".repeat(64 * 1024));
+        part.id = part_id.clone();
+        let template = part.staves[0].clone();
+        part.staves = (0..256)
+            .map(|index| {
+                let mut staff = template.clone();
+                staff.id = id(&format!("wide-staff-{index}"));
+                staff
+            })
+            .collect();
+        for (content_index, content) in part.measure_contents.iter_mut().enumerate() {
+            for (voice_index, voice) in content.voices.iter_mut().enumerate() {
+                voice.id = id(&format!("wide-voice-{content_index}-{voice_index}"));
+                voice.default_staff_id = part.staves[0].id.clone();
+                for (event_index, event) in voice.sequence.events.iter_mut().enumerate() {
+                    event.id = id(&format!(
+                        "wide-event-{content_index}-{voice_index}-{event_index}"
+                    ));
+                    event.staff_id = event.staff_id.as_ref().map(|_| part.staves[0].id.clone());
+                    if let RhythmicContentV1::Notes { notes } = &mut event.content {
+                        for (note_index, note) in notes.iter_mut().enumerate() {
+                            note.id = id(&format!(
+                                "wide-note-{content_index}-{voice_index}-{event_index}-{note_index}"
+                            ));
+                        }
+                    }
+                }
+            }
+        }
+        let mut overlay = TransactionOverlayV1::new(&store);
+        overlay
+            .insert_entity(
+                StableOwnerAddressV1::Document {
+                    document_id: document.id.clone(),
+                },
+                StableOrderAddressV1::Parts {
+                    document_id: document.id.clone(),
+                },
+                StableAnchorV1::Start,
+                StableEntityAddressV1::Part {
+                    part_id: part_id.clone(),
+                },
+                EntityBundleV1::Part(PartBundleV1 {
+                    part,
+                    extensions: Vec::new(),
+                }),
+            )
+            .unwrap();
+        let parents = overlay
+            .owners
+            .values()
+            .filter_map(|owner| match owner {
+                OverlayOwnerV1::Present(
+                    StableOwnerAddressV1::Part { part_id }
+                    | StableOwnerAddressV1::PartMeasure { part_id, .. },
+                ) => Some(part_id),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(parents.len(), 258);
+        assert!(parents.iter().all(|parent| *parent == &part_id));
+        let allocations: HashSet<usize> = parents
+            .iter()
+            .map(|parent| parent.as_str().as_ptr() as usize)
+            .collect();
+        assert_eq!(
+            allocations.len(),
+            1,
+            "a 64 KiB parent ID must not allocate one text buffer per retained owner"
+        );
+        assert!(allocations.contains(&(part_id.as_str().as_ptr() as usize)));
+        assert!(store.resolve_entity(&part_id).is_none());
+        assert_eq!(
+            store.read_order(&StableOrderAddressV1::Parts {
+                document_id: document.id.clone(),
+            }),
+            Some(document.parts.iter().map(|part| part.id.clone()).collect())
+        );
+    }
+
     #[derive(Clone, Debug, Default, Eq, PartialEq)]
     struct FakeBaseV1 {
         entities: HashMap<StableEntityAddressV1, EntityBundleV1>,

@@ -1,5 +1,31 @@
 use super::*;
 
+#[test]
+fn stable_id_shared_storage_keeps_exact_json_shape_and_text() {
+    use brilliant_core_types::StableId;
+    for text in [
+        "score".to_owned(),
+        "线路/🎸/e\u{301}/\0/\"/\\".into(),
+        "long-id/".repeat(8192),
+    ] {
+        let bytes = serde_json::to_vec(&text).unwrap();
+        let decoded: StableId = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(decoded.as_str(), text);
+        assert_eq!(serde_json::to_vec(&decoded).unwrap(), bytes);
+        assert_eq!(serde_json::to_vec(&decoded.clone()).unwrap(), bytes);
+        assert_eq!(decoded, StableId::new(text).unwrap());
+    }
+    for input in [r#""""#, "null", "0", "true", "[]", "{}"] {
+        assert!(serde_json::from_str::<StableId>(input).is_err(), "{input}");
+    }
+    assert!(
+        serde_json::from_str::<StableId>(r#""""#)
+            .unwrap_err()
+            .to_string()
+            .starts_with("invalid stable id")
+    );
+}
+
 fn request(command: &Value) -> Vec<u8> {
     serde_json::to_vec(&serde_json::json!({ "apiVersion": 1, "command": command }))
         .expect("request bytes")

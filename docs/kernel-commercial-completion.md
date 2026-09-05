@@ -779,3 +779,37 @@ Scoped self-review traced every retained collection insertion to its reservation
 verified terminal-state restoration in the borrowed visitor and kept capacity
 failure distinct from declared-limit failure. Native routing remains unchanged
 under the prototype's `cfg(test)` gate. S1/commercial qualification remain open.
+
+### S1.6e — production StableId owner/history sharing
+
+The resource analysis reproduced ID-copy amplification in the production typed
+overlay: inserting a Part with a 64 KiB ID and 256 staves retained 258 distinct
+parent-text buffers across Staff/Voice owners. The new Rust regression failed on
+the existing String representation and passes with one buffer after StableId's
+private storage changes to Arc<str>. This is a production repair; candidate
+execution remains excluded from routing.
+
+The bounded read-only GPT-6 review found no fixed StableId layout/native ABI
+contract or raw-layout consumers. The public constructor, nonempty validation,
+error text, borrowed string access, Debug and content-based Eq/Hash/Ord are kept.
+Manual JSON serialization is unchanged, with no serde feature/dependency change.
+Tests cover independently constructed equal IDs, supported constructor inputs,
+clone lifetime/thread safety and exact Unicode/control-character wire roundtrips.
+A fresh native addon matches the TS oracle for long-ID batch insertion/rename,
+undo, rejected rename at an undo position, preserved redo history, redo and replay.
+
+Sharing applies to clone chains, not independently decoded equal strings. The
+initial conversion allocation and atomic clone/drop costs remain; this does not
+establish the full retained-memory envelope or commercial performance. Candidate
+logical accounting, command closure and final adoption remain open.
+
+Validation: 198 Rust tests passed, 1 ignored; fmt, all-target clippy `-D warnings`
+and Rust 1.88.0 all-target workspace check passed. The native addon was rebuilt
+across the workspace and its copied binary hash verified. The first full TS run
+found a new test's whole-document export token in the transaction-layer boundary
+scan; that assertion was replaced with existing directed reads, preserving the
+boundary check. Final full TypeScript regression: 702 passed, 2 skipped, 0 failed
+(146.122 seconds). The repaired Rust owner regression and all 10 transaction
+boundary tests also passed. Scoped self-review checked the private representation,
+wire/value contracts, unchanged constructor signature and clone-sharing limits;
+`git diff --check` passed. S1/commercial qualification remain open.

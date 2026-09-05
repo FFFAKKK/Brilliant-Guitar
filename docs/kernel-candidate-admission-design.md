@@ -180,7 +180,9 @@ Occurrence copies now share immutable prefix addresses through Arc, and prefix
 content occurrences share the Part address from the visited owner order. New raw
 IDs, staff references and content links share Arc strings through a local pool;
 lookup keys share the same allocation. Added occurrence indices remain distinct.
-No global StableId change or eager prefix/document string pool is introduced.
+This prototype slice did not change StableId or introduce an eager prefix/document
+string pool. The later production owner-copy regression below justified changing
+StableId's private storage as well.
 
 Three additional tests verify shared allocation identity for a 64 KiB document
 ID across 64 inserted Part owners, a 52 KiB Part ID across prefix contents, and
@@ -234,6 +236,32 @@ behavior. The cumulative logical ledger and a complete retained-memory envelope
 are still required before activation; these tests do not prove recovery from
 arbitrary process-wide OOM. Any future validation/lowering entry point must check
 the terminal candidate reservation state before using partially prepared records.
+
+### Production StableId clone sharing
+
+A real typed-overlay insertion exposed the same amplification outside the
+candidate prototype: a 64 KiB Part ID was copied into 258 separately allocated
+owner IDs for 256 staves and two content owners. The allocation-identity regression
+failed against String storage before the repair. StableId now holds private
+Arc<str> storage, so those retained owner IDs share the original text buffer.
+Its constructor still accepts impl Into<String>; nonempty validation, errors,
+as_str, Debug, content-based equality/hash/order and manual JSON serialization
+remain unchanged. No public field, layout/ABI promise or dependency was added.
+
+Tests pin clone lifetime, independently constructed equal IDs, constructor input
+types, thread transfer, exact Unicode/control-character JSON roundtrips and invalid
+JSON rejection. A freshly rebuilt native addon is compared with the TS runtime
+through long-ID batch editing, undo, rejection at an undo position, redo and replay.
+The overlay regression checks unchanged live Part lookup/order through existing
+read capabilities; it does not add a whole-document export to the transaction layer.
+
+This removes text multiplication along clone chains in ordinary ownership and
+history as well as candidate reads. It is not global interning: separately decoded
+equal IDs can retain separate allocations. Initial String-to-Arc conversion still
+allocates and briefly retains the source String; clone/drop incur atomic reference
+counting. This representation proof is not latency/RSS qualification, an OOM
+guarantee or a cumulative candidate budget. Those accounts and the complete
+candidate command/validation/adoption closure remain required before activation.
 
 ## Implementation and evidence order
 
