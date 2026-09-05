@@ -2,7 +2,7 @@ use std::{collections::BTreeMap, fmt, io::Write};
 
 use brilliant_core_types::{
     API_VERSION_V1, JS_SAFE_INTEGER_MAX, JSON_DEPTH_LIMIT, JSON_PROPERTY_LIMIT, SafeInteger,
-    ScoreSchemaVersionV1, StableId, StablePathSegmentV1, StablePathV1,
+    ScoreSchemaVersionV1, StablePathSegmentV1, StablePathV1,
 };
 use brilliant_extension_protocol::EXTENSION_PROTOCOL_VERSION_V1;
 use brilliant_score_foundation::{
@@ -15,6 +15,10 @@ use serde::{
     de::{self, DeserializeOwned, DeserializeSeed, MapAccess, SeqAccess, Visitor},
 };
 use serde_json::{Map, Number, Value};
+
+#[cfg(test)]
+#[path = "admission_tests.rs"]
+mod admission_tests;
 
 use crate::{
     COMMAND_VERSION_V1, CapturedCoreCommandV1, CoreCommandEnvelopeV1, CoreCommandIdV1,
@@ -1257,16 +1261,16 @@ struct InsertEventPayloadV1 {
 
 #[derive(serde::Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct InsertMeasurePayloadV1 {
-    anchor: MeasureAnchorV1,
-    definition: MeasureDefinitionV1,
-    contents: Vec<InsertMeasurePartContentV1>,
+struct InsertMeasurePayloadV1<Id> {
+    anchor: MeasureAnchorV1<Id>,
+    definition: MeasureDefinitionV1<Id>,
+    contents: Vec<InsertMeasurePartContentV1<Id>>,
 }
 
 #[derive(serde::Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct MoveMeasurePayloadV1 {
-    anchor: MeasureAnchorV1,
+struct MoveMeasurePayloadV1<Id> {
+    anchor: MeasureAnchorV1<Id>,
 }
 
 #[derive(serde::Deserialize)]
@@ -1278,15 +1282,15 @@ struct SetMeasureDefinitionPayloadV1 {
 
 #[derive(serde::Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct InsertPartPayloadV1 {
-    anchor: PartAnchorV1,
-    part: PartV1,
+struct InsertPartPayloadV1<Id> {
+    anchor: PartAnchorV1<Id>,
+    part: PartV1<Id>,
 }
 
 #[derive(serde::Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct MovePartPayloadV1 {
-    anchor: PartAnchorV1,
+struct MovePartPayloadV1<Id> {
+    anchor: PartAnchorV1<Id>,
 }
 
 #[derive(serde::Deserialize)]
@@ -1303,15 +1307,15 @@ struct SetPartInstrumentPayloadV1 {
 
 #[derive(serde::Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct InsertStaffPayloadV1 {
-    anchor: StaffAnchorV1,
-    staff: StaffDefinitionV1,
+struct InsertStaffPayloadV1<Id> {
+    anchor: StaffAnchorV1<Id>,
+    staff: StaffDefinitionV1<Id>,
 }
 
 #[derive(serde::Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct MoveStaffPayloadV1 {
-    anchor: StaffAnchorV1,
+struct MoveStaffPayloadV1<Id> {
+    anchor: StaffAnchorV1<Id>,
 }
 
 #[derive(serde::Deserialize)]
@@ -1323,22 +1327,22 @@ struct SetStaffDefinitionPayloadV1 {
 
 #[derive(serde::Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct InsertVoicePayloadV1 {
-    measure_id: StableId,
-    anchor: VoiceAnchorV1,
-    voice: VoiceV1,
+struct InsertVoicePayloadV1<Id> {
+    measure_id: Id,
+    anchor: VoiceAnchorV1<Id>,
+    voice: VoiceV1<Id>,
 }
 
 #[derive(serde::Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct MoveVoicePayloadV1 {
-    anchor: VoiceAnchorV1,
+struct MoveVoicePayloadV1<Id> {
+    anchor: VoiceAnchorV1<Id>,
 }
 
 #[derive(serde::Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct SetVoiceDefaultStaffPayloadV1 {
-    staff_id: StableId,
+struct SetVoiceDefaultStaffPayloadV1<Id> {
+    staff_id: Id,
 }
 
 #[derive(serde::Deserialize)]
@@ -1349,8 +1353,8 @@ struct SetVoiceSequenceStartPayloadV1 {
 
 #[derive(serde::Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct SetEventStaffAssignmentPayloadV1 {
-    assignment: EventStaffAssignmentV1,
+struct SetEventStaffAssignmentPayloadV1<Id> {
+    assignment: EventStaffAssignmentV1<Id>,
 }
 
 #[derive(serde::Deserialize)]
@@ -1418,7 +1422,7 @@ fn direct_note_value_is_valid(value: &NoteValueV1) -> bool {
         })
 }
 
-fn component_event_is_valid(event: &RhythmicEventV1) -> bool {
+fn component_event_is_valid<Id>(event: &RhythmicEventV1<Id>) -> bool {
     component_note_value_is_valid(&event.duration)
         && match &event.content {
             RhythmicContentV1::Rest => true,
@@ -1441,15 +1445,40 @@ fn direct_event_is_valid(event: &RhythmicEventV1, notes_expected: bool) -> bool 
         }
 }
 
-fn voice_is_valid(voice: &VoiceV1) -> bool {
+fn voice_is_valid<Id>(voice: &VoiceV1<Id>) -> bool {
     voice.sequence.events.iter().all(component_event_is_valid)
 }
 
-fn part_is_valid(part: &PartV1) -> bool {
-    part.measure_contents
+fn part_is_valid<Id>(part: &PartV1<Id>) -> bool {
+    part.staves
         .iter()
-        .flat_map(|content| &content.voices)
-        .all(voice_is_valid)
+        .all(|staff| clef_is_valid(&staff.default_clef))
+        && part
+            .measure_contents
+            .iter()
+            .flat_map(|content| &content.voices)
+            .all(voice_is_valid)
+}
+
+fn clef_is_valid(clef: &ClefV1) -> bool {
+    (1..=5).contains(&clef.line.get())
+}
+
+fn exact_payload_unit_variants(payload: &Value) -> bool {
+    // Tagged serde unit variants otherwise silently ignore extra fields. This
+    // bounded shape check is shared by typed and admission command decoding.
+    [
+        ("anchor", "start"),
+        ("pickup", "none"),
+        ("assignment", "inherit-default"),
+    ]
+    .iter()
+    .all(|(field, tag)| {
+        let Some(object) = payload.get(*field).and_then(Value::as_object) else {
+            return true; // The typed field decoder handles missing/wrong shape.
+        };
+        object.get("kind").and_then(Value::as_str) != Some(*tag) || object.len() == 1
+    })
 }
 
 fn meter_is_valid(meter: &MeterV1) -> bool {
@@ -1460,6 +1489,15 @@ fn decode_core_command_value(
     value: &Value,
     reject_nested_batch: bool,
 ) -> Result<CoreCommandEnvelopeV1, KernelStage3CommandFailureV1> {
+    decode_command_candidate_value(value, reject_nested_batch)
+}
+
+// One field/entrypoint codec for typed and raw-ID components. Targets, ranges
+// and direct Event insertion are deliberately not parameterized by Id.
+fn decode_command_candidate_value<Id: DeserializeOwned>(
+    value: &Value,
+    reject_nested_batch: bool,
+) -> Result<CoreCommandEnvelopeV1<Id>, KernelStage3CommandFailureV1> {
     if reject_nested_batch
         && value
             .as_object()
@@ -1494,6 +1532,9 @@ fn decode_core_command_value(
         return Err(invalid_command_envelope());
     }
     let payload = &envelope["payload"];
+    if !exact_payload_unit_variants(payload) {
+        return Err(invalid_command_envelope());
+    }
     let command = match command_id {
         CoreCommandIdV1::DocumentSetMetadata => {
             let payload: SetMetadataPayloadV1 = decode_payload(payload)?;
@@ -1549,7 +1590,7 @@ fn decode_core_command_value(
             CoreCommandEnvelopeV1::EventRemove { target }
         }
         CoreCommandIdV1::MeasureInsert => {
-            let payload: InsertMeasurePayloadV1 = decode_payload(payload)?;
+            let payload: InsertMeasurePayloadV1<Id> = decode_payload(payload)?;
             if payload.contents.is_empty()
                 || payload.contents.iter().any(|content| {
                     content.voices.is_empty() || !content.voices.iter().all(voice_is_valid)
@@ -1570,7 +1611,7 @@ fn decode_core_command_value(
             CoreCommandEnvelopeV1::MeasureRemove { target }
         }
         CoreCommandIdV1::MeasureMove => {
-            let payload: MoveMeasurePayloadV1 = decode_payload(payload)?;
+            let payload: MoveMeasurePayloadV1<Id> = decode_payload(payload)?;
             CoreCommandEnvelopeV1::MeasureMove {
                 target,
                 anchor: payload.anchor,
@@ -1588,7 +1629,7 @@ fn decode_core_command_value(
             }
         }
         CoreCommandIdV1::PartInsert => {
-            let payload: InsertPartPayloadV1 = decode_payload(payload)?;
+            let payload: InsertPartPayloadV1<Id> = decode_payload(payload)?;
             if !part_is_valid(&payload.part) {
                 return Err(invalid_command_envelope());
             }
@@ -1603,7 +1644,7 @@ fn decode_core_command_value(
             CoreCommandEnvelopeV1::PartRemove { target }
         }
         CoreCommandIdV1::PartMove => {
-            let payload: MovePartPayloadV1 = decode_payload(payload)?;
+            let payload: MovePartPayloadV1<Id> = decode_payload(payload)?;
             CoreCommandEnvelopeV1::PartMove {
                 target,
                 anchor: payload.anchor,
@@ -1624,7 +1665,10 @@ fn decode_core_command_value(
             }
         }
         CoreCommandIdV1::StaffInsert => {
-            let payload: InsertStaffPayloadV1 = decode_payload(payload)?;
+            let payload: InsertStaffPayloadV1<Id> = decode_payload(payload)?;
+            if !clef_is_valid(&payload.staff.default_clef) {
+                return Err(invalid_command_envelope());
+            }
             CoreCommandEnvelopeV1::StaffInsert {
                 target,
                 anchor: payload.anchor,
@@ -1636,7 +1680,7 @@ fn decode_core_command_value(
             CoreCommandEnvelopeV1::StaffRemove { target }
         }
         CoreCommandIdV1::StaffMove => {
-            let payload: MoveStaffPayloadV1 = decode_payload(payload)?;
+            let payload: MoveStaffPayloadV1<Id> = decode_payload(payload)?;
             CoreCommandEnvelopeV1::StaffMove {
                 target,
                 anchor: payload.anchor,
@@ -1644,6 +1688,9 @@ fn decode_core_command_value(
         }
         CoreCommandIdV1::StaffSetDefinition => {
             let payload: SetStaffDefinitionPayloadV1 = decode_payload(payload)?;
+            if !clef_is_valid(&payload.default_clef) {
+                return Err(invalid_command_envelope());
+            }
             CoreCommandEnvelopeV1::StaffSetDefinition {
                 target,
                 line_count: payload.line_count,
@@ -1651,7 +1698,7 @@ fn decode_core_command_value(
             }
         }
         CoreCommandIdV1::VoiceInsert => {
-            let payload: InsertVoicePayloadV1 = decode_payload(payload)?;
+            let payload: InsertVoicePayloadV1<Id> = decode_payload(payload)?;
             if !voice_is_valid(&payload.voice) {
                 return Err(invalid_command_envelope());
             }
@@ -1667,14 +1714,14 @@ fn decode_core_command_value(
             CoreCommandEnvelopeV1::VoiceRemove { target }
         }
         CoreCommandIdV1::VoiceMove => {
-            let payload: MoveVoicePayloadV1 = decode_payload(payload)?;
+            let payload: MoveVoicePayloadV1<Id> = decode_payload(payload)?;
             CoreCommandEnvelopeV1::VoiceMove {
                 target,
                 anchor: payload.anchor,
             }
         }
         CoreCommandIdV1::VoiceSetDefaultStaff => {
-            let payload: SetVoiceDefaultStaffPayloadV1 = decode_payload(payload)?;
+            let payload: SetVoiceDefaultStaffPayloadV1<Id> = decode_payload(payload)?;
             CoreCommandEnvelopeV1::VoiceSetDefaultStaff {
                 target,
                 staff_id: payload.staff_id,
@@ -1688,7 +1735,7 @@ fn decode_core_command_value(
             }
         }
         CoreCommandIdV1::EventSetStaffAssignment => {
-            let payload: SetEventStaffAssignmentPayloadV1 = decode_payload(payload)?;
+            let payload: SetEventStaffAssignmentPayloadV1<Id> = decode_payload(payload)?;
             CoreCommandEnvelopeV1::EventSetStaffAssignment {
                 target,
                 assignment: payload.assignment,
@@ -1755,6 +1802,20 @@ fn stage3_root_shape_failure(
 pub fn decode_stage3_submit_request(
     bytes: &[u8],
 ) -> Result<KernelStage3SubmitRequestV1, KernelStage3SubmitDecodeFailureV1> {
+    decode_submit_candidate_request(bytes)
+}
+
+/// Private candidate boundary. Decoding preserves ordered raw-ID components;
+/// it does not publish a Session or authorize adoption into normalized storage.
+pub fn decode_admission_submit_request(
+    bytes: &[u8],
+) -> Result<crate::KernelAdmissionSubmitRequestV1, KernelStage3SubmitDecodeFailureV1> {
+    decode_submit_candidate_request(bytes)
+}
+
+fn decode_submit_candidate_request<Id: DeserializeOwned>(
+    bytes: &[u8],
+) -> Result<KernelStage3SubmitRequestV1<Id>, KernelStage3SubmitDecodeFailureV1> {
     if bytes.len() > REQUEST_BYTE_LIMIT {
         return Err(KernelStage3SubmitDecodeFailureV1::Boundary(
             StableFailureV1::BridgeRequestTooLarge {
@@ -1823,7 +1884,7 @@ pub fn decode_stage3_submit_request(
             },
         ));
     }
-    let command = decode_core_command_value(&root["command"], false)
+    let command = decode_command_candidate_value(&root["command"], false)
         .map_err(KernelStage3SubmitDecodeFailureV1::Command)?;
     Ok(KernelStage3SubmitRequestV1 {
         api_version: API_VERSION_V1,
@@ -1835,6 +1896,18 @@ pub fn decode_captured_core_command(
     captured: &CapturedCoreCommandV1,
 ) -> Result<CoreCommandEnvelopeV1, KernelStage3CommandFailureV1> {
     decode_core_command_value(captured.as_json(), true)
+}
+
+pub fn decode_captured_admission_command(
+    captured: &CapturedCoreCommandV1,
+) -> Result<crate::CoreAdmissionCommandV1, KernelStage3CommandFailureV1> {
+    decode_command_candidate_value(captured.as_json(), true)
+}
+
+pub fn decode_captured_admission_replay_command(
+    captured: &CapturedCoreCommandV1,
+) -> Result<crate::CoreAdmissionCommandV1, KernelStage3CommandFailureV1> {
+    decode_command_candidate_value(captured.as_json(), false)
 }
 
 /// Replay entries occupy the same top-level position as live submissions.

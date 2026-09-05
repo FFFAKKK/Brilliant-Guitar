@@ -1,6 +1,7 @@
 # Candidate admission implementation plan
 
-Status: planned, not implemented. This is the next S1 compatibility slice in
+Status: command input representation/codec implemented; candidate execution and
+adoption still planned. This is the next S1 compatibility slice in
 [commercial kernel completion](kernel-commercial-completion.md), reviewed by
 the read-only GPT-6 planning agent and selected by the main implementer.
 Public qualification and the Rust default switch remain blocked on completion
@@ -74,12 +75,66 @@ Measure-insert contents and each entry's voices require nonempty arrays at
 decode. Part component arrays have different rules. Batch retains per-child
 decode/preparation precedence; no new global batch deduplication pass.
 
-Foundation owns shape-checked score component admission views/captured data,
-building on its existing borrowing candidate cursor without cloning a second
-complete Raw DTO tree. Kernel Contracts owns command-specific raw anchors,
+Foundation owns shared score component definitions and admission ID types.
+Kernel Contracts owns command-specific raw anchors,
 references and direct-versus-nested decode policies. Keep Foundation independent
-of command IDs/failures. Existing validated typed DTOs remain the adoption
+of command IDs/failures. Existing strong-ID DTOs remain the adoption
 boundary; conversion to them is explicit and fallible after final validation.
+
+### Implemented codec representation refinement
+
+The command input layer shares the nine component definitions through an
+`Id = StableId` parameter. Admission instances use `String`; default instances
+remain the existing nonempty-ID DTOs. References propagate the same parameter
+through Voice defaults, Event assignments and Part measure contents. This
+preserves empty/duplicate values and ordered arrays without maintaining a second
+Raw DTO tree or converting Runtime operations into JSON walkers. Owned new
+payloads may enter the candidate arena; this does not authorize cloning a base
+Part or whole document during an ordinary edit.
+
+Contracts shares one parameterized command decoder with typed and admission
+entry points. Command targets, ranges, direct Event/Note payloads and direct
+event anchors retain their nonempty types. Admission batch children remain
+captured until their execution position, with distinct top-level replay and
+nested-batch rules. Native submit still selects the typed entry point until
+candidate execution is complete.
+
+Serde alone does not prove exact shape. Present optional fields explicitly
+reject null. Rhythmic content uses a strict empty-struct rest decoder because
+serde's tagged unit variant otherwise ignores unknown fields. Contracts also
+checks exact start/none/inherit-default payload variants and clef line literals.
+The independent TS corpus covers these boundaries and is not generated from
+Rust outputs. Full public semantic assessment retains the borrowing JSON
+CandidateNode: it must still inspect noninteger musical data that strict command
+component types cannot represent.
+
+### Next occurrence read layer
+
+The GPT-6 code review found that the existing 12 CoreBaseRead capabilities are
+sufficient for an initial implementation; no new Store query is required.
+Candidate activation moves the current typed TransactionOverlay into a frozen
+prefix, before the first unrepresentable child. It keeps prefix effects,
+segments, affected entities and work accounting without finish/adopt/replay.
+Only read counters may change afterward; all later writes belong to the candidate.
+
+Prefix occurrences use stable entity addresses from that frozen overlay. New
+occurrences use private arena indices, including distinct PartMeasureContent
+nodes. Consume new payloads into the arena without retaining a duplicate tree.
+An added `(kind, raw ID)` multimap combines with at most one prefix lookup and
+filters hidden nodes. Hidden prefix parents also hide unexpanded descendants
+through the owner chain. Copy a sibling order only on its first mutation; borrow
+untouched order visits. Candidate reference changes merge with indexed prefix
+referrers and filter removed sources.
+
+A narrow mutable prefix adapter forwards overlay-aware scalar/owner/order/
+reference queries so prior inserts, deletes, replacements and moves remain
+visible. It must never resolve directly against Store when the prefix contains
+an override. Do not implement CoreBaseRead for the occurrence candidate itself:
+its StableId-only address model cannot represent ambiguous or empty IDs.
+
+Initial tests must cover a changed prefix value/order, same-ID prefix rebuild,
+hidden unexpanded descendants, duplicate Staff lookup, distinct repeated content
+nodes and order-copy scope before wiring command mutation or adoption.
 
 ## Implementation and evidence order
 

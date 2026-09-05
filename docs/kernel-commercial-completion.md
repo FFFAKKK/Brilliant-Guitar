@@ -625,3 +625,59 @@ strings before later checks. Foundation keeps score admission views; Contracts
 keeps command-specific policies. The existing StableId type and seven-crate DAG
 remain intact. This is a reviewed implementation plan, not completed parity or
 commercial qualification; prototype and differential evidence are still required.
+
+### S1.6a — shared raw-ID component and command admission
+
+Foundation's nine component definitions now share an `Id = StableId` parameter.
+The default DTOs and live Runtime/Store signatures remain nonempty-ID types;
+admission aliases use String and preserve empty IDs, duplicate children and
+ordered repeated measure contents. ScoreDocument and extension owners are not
+generalized. Direct Event/Note insertion, targets, range endpoints and direct
+event anchors retain their strict ID types. This avoids copying a second Raw
+DTO model and does not turn ordinary Runtime operations into JSON traversal.
+
+Contracts provides private raw-ID submit, captured-child and captured-replay
+entry points through the same parameterized decoder as typed commands. Batch
+children remain captured until their own execution position. Existing request
+size/depth/property/duplicate-key protections are shared. Native submit still
+uses the typed entry point: occurrence resolution, candidate execution, final
+semantic validation and lowering must be completed before activation.
+
+An independent TS corpus covers all 28 commands with 504 cases: 176 decoded
+candidates and 328 rejected shapes. It includes empty/non-string/prototype-like
+IDs, direct-versus-nested numeric rules, raw anchors and references, duplicate
+collections, null optionals, tagged variants and required arrays. Rust compares
+decode outcomes and failures, plus serialized components/references/anchors to
+prove raw values and order are retained. TypeScript tests reconstruct expected
+results independently and compare the committed corpus; tests never regenerate it.
+
+The corpus exposed additional existing shape drift. Explicit null in optional
+staff/pickup/tuplet fields was treated as absence; invalid clef lines were accepted
+by command payload decoding; serde's internally tagged unit variants silently
+discarded extra fields. The latter persisted even after adding deny_unknown_fields
+to the rest enum and required an exact empty-struct variant decoder. Contracts
+also explicitly checks start/none/inherit-default payload variants. Both typed
+and admission commands now preserve the corresponding TS envelope failures.
+
+A compiling real-native negative-corpus regression failed on the previous addon
+(`staffId: null` returned local-invariant-rejected instead of invalid-envelope).
+After repair, all 328 invalid cases return the exact reference failure and retain
+cache identity, history, dirty state and empty events. Rust tests separately pin
+deferred child decoding, nested versus top-level replay, strict typed IDs and
+shared resource failures. No frozen oracle, command count, public TS export,
+ChangeOp or crate-dependency contract was changed.
+
+Representation/codec verification is not candidate-execution parity. Next:
+build transaction-private occurrence reads/indices over the existing typed
+overlay prefix and new payloads, then close resolution, repair, adoption and
+history semantics without whole-document fallback.
+
+Validation at this slice: fresh Windows x64 native build; 175 Rust tests passed,
+1 ignored; fmt, all-target clippy `-D warnings` and Rust 1.88.0 check passed.
+Full TypeScript regression: 701 passed, 2 skipped, 0 failed (156.697 seconds).
+Scoped self-review checked every generic ID field, strict direct-entry fields,
+closed optional/tagged shapes, prefix-free decoding and unchanged native routing.
+The next read-layer review mapped all required reads onto existing capabilities;
+the concrete frozen-prefix/occurrence approach is recorded in the linked design.
+`git diff --check` passed. These results establish this input slice, not S1 or
+commercial completion.

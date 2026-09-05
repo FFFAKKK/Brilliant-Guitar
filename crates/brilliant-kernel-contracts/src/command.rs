@@ -275,41 +275,41 @@ pub enum SequenceAnchorV1 {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
-pub enum MeasureAnchorV1 {
+pub enum MeasureAnchorV1<Id = StableId> {
     Start,
     AfterMeasure {
         #[serde(rename = "measureId")]
-        measure_id: StableId,
+        measure_id: Id,
     },
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
-pub enum PartAnchorV1 {
+pub enum PartAnchorV1<Id = StableId> {
     Start,
     AfterPart {
         #[serde(rename = "partId")]
-        part_id: StableId,
+        part_id: Id,
     },
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
-pub enum StaffAnchorV1 {
+pub enum StaffAnchorV1<Id = StableId> {
     Start,
     AfterStaff {
         #[serde(rename = "staffId")]
-        staff_id: StableId,
+        staff_id: Id,
     },
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
-pub enum VoiceAnchorV1 {
+pub enum VoiceAnchorV1<Id = StableId> {
     Start,
     AfterVoice {
         #[serde(rename = "voiceId")]
-        voice_id: StableId,
+        voice_id: Id,
     },
 }
 
@@ -380,19 +380,19 @@ pub enum MeasurePickupV1 {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
-pub enum EventStaffAssignmentV1 {
+pub enum EventStaffAssignmentV1<Id = StableId> {
     InheritDefault,
     Staff {
         #[serde(rename = "staffId")]
-        staff_id: StableId,
+        staff_id: Id,
     },
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct InsertMeasurePartContentV1 {
-    pub part_id: StableId,
-    pub voices: Vec<VoiceV1>,
+pub struct InsertMeasurePartContentV1<Id = StableId> {
+    pub part_id: Id,
+    pub voices: Vec<VoiceV1<Id>>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -409,7 +409,7 @@ impl CapturedCoreCommandV1 {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum CoreCommandEnvelopeV1 {
+pub enum CoreCommandEnvelopeV1<Id = StableId> {
     DocumentSetMetadata {
         target: ScoreEntityTargetV1,
         metadata: ScoreMetadataV1,
@@ -437,16 +437,16 @@ pub enum CoreCommandEnvelopeV1 {
     },
     MeasureInsert {
         target: ScoreEntityTargetV1,
-        anchor: MeasureAnchorV1,
-        definition: MeasureDefinitionV1,
-        contents: Vec<InsertMeasurePartContentV1>,
+        anchor: MeasureAnchorV1<Id>,
+        definition: MeasureDefinitionV1<Id>,
+        contents: Vec<InsertMeasurePartContentV1<Id>>,
     },
     MeasureRemove {
         target: ScoreEntityTargetV1,
     },
     MeasureMove {
         target: ScoreEntityTargetV1,
-        anchor: MeasureAnchorV1,
+        anchor: MeasureAnchorV1<Id>,
     },
     MeasureSetDefinition {
         target: ScoreEntityTargetV1,
@@ -455,15 +455,15 @@ pub enum CoreCommandEnvelopeV1 {
     },
     PartInsert {
         target: ScoreEntityTargetV1,
-        anchor: PartAnchorV1,
-        part: PartV1,
+        anchor: PartAnchorV1<Id>,
+        part: PartV1<Id>,
     },
     PartRemove {
         target: ScoreEntityTargetV1,
     },
     PartMove {
         target: ScoreEntityTargetV1,
-        anchor: PartAnchorV1,
+        anchor: PartAnchorV1<Id>,
     },
     PartSetName {
         target: ScoreEntityTargetV1,
@@ -475,15 +475,15 @@ pub enum CoreCommandEnvelopeV1 {
     },
     StaffInsert {
         target: ScoreEntityTargetV1,
-        anchor: StaffAnchorV1,
-        staff: StaffDefinitionV1,
+        anchor: StaffAnchorV1<Id>,
+        staff: StaffDefinitionV1<Id>,
     },
     StaffRemove {
         target: ScoreEntityTargetV1,
     },
     StaffMove {
         target: ScoreEntityTargetV1,
-        anchor: StaffAnchorV1,
+        anchor: StaffAnchorV1<Id>,
     },
     StaffSetDefinition {
         target: ScoreEntityTargetV1,
@@ -492,20 +492,20 @@ pub enum CoreCommandEnvelopeV1 {
     },
     VoiceInsert {
         target: ScoreEntityTargetV1,
-        measure_id: StableId,
-        anchor: VoiceAnchorV1,
-        voice: VoiceV1,
+        measure_id: Id,
+        anchor: VoiceAnchorV1<Id>,
+        voice: VoiceV1<Id>,
     },
     VoiceRemove {
         target: ScoreEntityTargetV1,
     },
     VoiceMove {
         target: ScoreEntityTargetV1,
-        anchor: VoiceAnchorV1,
+        anchor: VoiceAnchorV1<Id>,
     },
     VoiceSetDefaultStaff {
         target: ScoreEntityTargetV1,
-        staff_id: StableId,
+        staff_id: Id,
     },
     VoiceSetSequenceStart {
         target: ScoreEntityTargetV1,
@@ -513,7 +513,7 @@ pub enum CoreCommandEnvelopeV1 {
     },
     EventSetStaffAssignment {
         target: ScoreEntityTargetV1,
-        assignment: EventStaffAssignmentV1,
+        assignment: EventStaffAssignmentV1<Id>,
     },
     RangeDelete {
         target: ScoreEntityTargetV1,
@@ -530,7 +530,7 @@ pub enum CoreCommandEnvelopeV1 {
     },
 }
 
-impl CoreCommandEnvelopeV1 {
+impl<Id> CoreCommandEnvelopeV1<Id> {
     pub const fn command_id(&self) -> CoreCommandIdV1 {
         match self {
             Self::DocumentSetMetadata { .. } => CoreCommandIdV1::DocumentSetMetadata,
@@ -599,10 +599,15 @@ impl CoreCommandEnvelopeV1 {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct KernelStage3SubmitRequestV1 {
+pub struct KernelStage3SubmitRequestV1<Id = StableId> {
     pub api_version: u64,
-    pub command: CoreCommandEnvelopeV1,
+    pub command: CoreCommandEnvelopeV1<Id>,
 }
+
+/// Private admission decoding only; targets and direct event payloads retain
+/// their nonempty StableId types. Runtime activation requires candidate closure.
+pub type CoreAdmissionCommandV1 = CoreCommandEnvelopeV1<String>;
+pub type KernelAdmissionSubmitRequestV1 = KernelStage3SubmitRequestV1<String>;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
