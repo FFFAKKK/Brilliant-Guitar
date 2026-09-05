@@ -201,7 +201,12 @@ fn admission_batch_keeps_child_decode_deferred_and_nested_replay_rules() {
         decode_captured_admission_command(&commands[1]),
         Err(KernelStage3CommandFailureLeafV1::InvalidEnvelope.into())
     );
-    let captured = CapturedCoreCommandV1::from_json(batch);
+    let captured = CapturedCoreCommandV1::from_json(
+        strict_json(&serde_json::to_vec(&batch).unwrap())
+            .unwrap()
+            .0
+            .unwrap(),
+    );
     assert_eq!(
         decode_captured_admission_command(&captured),
         Err(KernelStage3CommandFailureLeafV1::BatchNested.into())

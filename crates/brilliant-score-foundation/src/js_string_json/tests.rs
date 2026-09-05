@@ -166,3 +166,44 @@ fn writer_failure_propagates_at_every_output_byte() {
         assert_eq!(writer.retained, expected[..remaining]);
     }
 }
+#[test]
+fn ascii_token_recognition_uses_only_the_supplied_capacity_and_validates_the_tail() {
+    use crate::decode_js_string_ascii_token;
+    for token in [
+        r#""apiVersion""#,
+        r#""\u0061piVersion""#,
+        r#""""#,
+        r#""\ud800""#,
+        r#""🎸""#,
+        r#""\n""#,
+        r#""0123456789abcdefghijkl""#,
+    ] {
+        let mut buffer = [0; 16];
+        let expected = crate::decode_js_string_token(token)
+            .unwrap()
+            .to_utf8()
+            .ok()
+            .filter(|text| text.is_ascii() && text.len() <= buffer.len());
+        assert_eq!(
+            decode_js_string_ascii_token(token, &mut buffer).unwrap(),
+            expected.as_deref()
+        );
+    }
+    let mut empty = [];
+    assert_eq!(
+        decode_js_string_ascii_token(r#""""#, &mut empty).unwrap(),
+        Some("")
+    );
+    assert_eq!(
+        decode_js_string_ascii_token(r#""a""#, &mut empty).unwrap(),
+        None
+    );
+    let long = format!("\"{}\\uD800\"", "x".repeat(100_000));
+    assert_eq!(
+        decode_js_string_ascii_token(&long, &mut empty).unwrap(),
+        None
+    );
+    for invalid in [r#""a" []"#, r#""\u00""#, r#""\ud800" trailing"#] {
+        assert!(decode_js_string_ascii_token(invalid, &mut empty).is_err());
+    }
+}

@@ -36,6 +36,28 @@ pub fn decode_js_string_token(token: &str) -> Result<JsString, JsStringTokenErro
     Ok(JsString::from_utf16(units))
 }
 
+/// Recognize a bounded ASCII token without allocating discarded user text.
+/// Oversized/non-ASCII text returns None, but the complete token is validated.
+pub fn decode_js_string_ascii_token<'a>(
+    token: &str,
+    buffer: &'a mut [u8],
+) -> Result<Option<&'a str>, JsStringTokenError> {
+    let mut length = 0_usize;
+    let mut fits = true;
+    let end = visit_js_string_prefix(token, |unit| {
+        if unit <= 127 && length < buffer.len() {
+            buffer[length] = unit as u8;
+            length += 1;
+        } else {
+            fits = false;
+        }
+    })?;
+    if end != token.len() {
+        return Err(JsStringTokenError { byte_offset: end });
+    }
+    Ok(fits.then(|| std::str::from_utf8(&buffer[..length]).expect("ASCII token")))
+}
+
 // Shared by token decoding and the streaming document lexer. An ignored string
 // is still validated, but its text need not be allocated after a resource fault.
 pub(crate) fn visit_js_string_prefix(

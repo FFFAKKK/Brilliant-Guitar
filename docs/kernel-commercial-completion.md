@@ -57,9 +57,12 @@ while native JSON decoding rejects them. An explicit shared UTF-16 string value
 and lossless token codec are implemented as the migration foundation. The bounded
 JSON model, streaming syntax reader and nested-data writer now preserve those
 units in both values and keys. Explicit conversion now covers the entire Score
-DTO family, including nested IDs/references and opaque extensions. Existing live
-DTO defaults remain String/StableId. Contracts strict capture, actual storage and
-native output are the next integration work; see `kernel-js-string-compatibility.md`.
+DTO family, including nested IDs/references and opaque extensions. Live Contracts
+capture and command/selector/replay decoding now consume the lossless tree,
+preserving existing shape/failure precedence and raw protocol number spelling.
+Unknown non-scalar command IDs and command-version errors match the TS behavior.
+DTO defaults remain String/StableId; actual storage, history and native output
+are the next integration work; see `kernel-js-string-compatibility.md`.
 
 After the string-domain gap is closed, S1 continues with the complete admission
 operation journal, final candidate diagnostics, complete command closure,
@@ -70,9 +73,13 @@ S4 remain open. The current source tree is a kernel library/native workspace;
 editor UI, rendering, playback and physical project persistence are separate
 product work, not completed deliverables of this branch.
 
-Latest Rust checks: 272 tests passed, 1 ignored (66 candidate tests); strict
+Latest Rust checks: 280 tests passed, 1 ignored (66 candidate tests); strict
 clippy, fmt and Rust 1.88.0 check passed. The most recent full real-native/TS
-regression is 710 passed, 2 skipped. The separate UTF-16 native probe still has
+regression is 713 passed, 2 skipped, 0 failed. The initial capture integration
+caused P3B to exceed its unchanged 180-second worker guard. Borrowed field lookup,
+finite protocol-key sharing and moved capture paths repaired that regression;
+the final P3B run completed in 177.162 seconds, leaving a narrow performance
+margin that remains open for qualification. The separate UTF-16 native probe still has
 14 mismatches across 28 observations. These are regression evidence, not commercial
 qualification or a percentage-complete estimate.
 

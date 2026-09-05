@@ -1,10 +1,10 @@
+use brilliant_core_types::LosslessJsonValue;
 use brilliant_core_types::{API_VERSION_V1, DocumentVersionV1, StableId};
 use brilliant_score_foundation::{
     ClefV1, FractionV1, InstrumentDescriptorV1, MeasureDefinitionV1, MeterV1, NoteValueV1, PartV1,
     RhythmicEventV1, ScoreMetadataV1, StaffDefinitionV1, TranspositionV1, VoiceV1, WrittenPitchV1,
 };
 use serde::{Deserialize, Serialize, Serializer, ser::SerializeStruct};
-use serde_json::Value;
 
 use crate::{AffectedEntityIdV1, StableFailureV1};
 
@@ -398,14 +398,14 @@ pub struct InsertMeasurePartContentV1<Id = StableId> {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct CapturedCoreCommandV1(Value);
+pub struct CapturedCoreCommandV1(LosslessJsonValue);
 
 impl CapturedCoreCommandV1 {
-    pub(crate) const fn from_json(value: Value) -> Self {
+    pub(crate) const fn from_json(value: LosslessJsonValue) -> Self {
         Self(value)
     }
 
-    pub(crate) const fn as_json(&self) -> &Value {
+    pub(crate) const fn as_json(&self) -> &LosslessJsonValue {
         &self.0
     }
 }

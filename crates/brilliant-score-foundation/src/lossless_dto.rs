@@ -36,13 +36,13 @@ pub struct LosslessValueError {
 }
 
 impl LosslessValueError {
-    fn new(failure: LosslessValueFailure) -> Self {
+    pub fn new(failure: LosslessValueFailure) -> Self {
         Self {
             path: Vec::new(),
             failure,
         }
     }
-    fn at(mut self, segment: LosslessValuePath) -> Self {
+    pub fn at(mut self, segment: LosslessValuePath) -> Self {
         self.path.insert(0, segment);
         self
     }
@@ -183,6 +183,15 @@ impl LosslessDecode for SafeInteger {
             .map_err(|_| LosslessValueError::new(LosslessValueFailure::InvalidValue))
     }
 }
+impl LosslessDecode for brilliant_core_types::DocumentVersionV1 {
+    fn from_lossless_value(value: LosslessJsonValue) -> Result<Self, LosslessValueError> {
+        let value = SafeInteger::from_lossless_value(value)?.get();
+        u64::try_from(value)
+            .ok()
+            .and_then(|value| Self::try_from(value).ok())
+            .ok_or_else(|| LosslessValueError::new(LosslessValueFailure::InvalidValue))
+    }
+}
 macro_rules! scalar_encode {
     ($($ty:ty),+ $(,)?) => { $(impl LosslessEncode for $ty {
         fn write_lossless<W: Write + ?Sized>(&self, writer: &mut W) -> Result<(), LosslessJsonError> {
@@ -251,37 +260,52 @@ impl<Text: LosslessText> LosslessEncode for JsonValue<Text> {
     }
 }
 
-struct ObjectReader(BTreeMap<JsString, LosslessJsonValue>);
+/// Borrow common protocol field keys without allocating a temporary string.
+/// The fallback preserves arbitrary Unicode and long caller-supplied keys.
+pub fn with_json_field_key<R>(field: &str, read: impl FnOnce(&[u16]) -> R) -> R {
+    let mut units = [0_u16; 64];
+    if field.is_ascii() && field.len() <= units.len() {
+        for (unit, byte) in units.iter_mut().zip(field.bytes()) {
+            *unit = u16::from(byte);
+        }
+        read(&units[..field.len()])
+    } else {
+        read(JsString::from(field).code_units())
+    }
+}
+
+pub struct ObjectReader(BTreeMap<JsString, LosslessJsonValue>);
 impl ObjectReader {
-    fn new(value: LosslessJsonValue) -> Result<Self, LosslessValueError> {
+    pub fn new(value: LosslessJsonValue) -> Result<Self, LosslessValueError> {
         if let JsonValue::Object(value) = value {
             Ok(Self(value))
         } else {
             Err(LosslessValueError::new(LosslessValueFailure::WrongType))
         }
     }
-    fn take<T: LosslessDecode>(&mut self, field: &'static str) -> Result<T, LosslessValueError> {
-        let key = JsString::from(field);
-        let value = self.0.remove(&key).ok_or_else(|| {
-            LosslessValueError::new(LosslessValueFailure::MissingField)
-                .at(LosslessValuePath::Field(key.clone()))
-        })?;
+    pub fn take<T: LosslessDecode>(
+        &mut self,
+        field: &'static str,
+    ) -> Result<T, LosslessValueError> {
+        let (key, value) =
+            with_json_field_key(field, |key| self.0.remove_entry(key)).ok_or_else(|| {
+                LosslessValueError::new(LosslessValueFailure::MissingField)
+                    .at(LosslessValuePath::Field(JsString::from(field)))
+            })?;
         T::from_lossless_value(value).map_err(|error| error.at(LosslessValuePath::Field(key)))
     }
-    fn optional<T: LosslessDecode>(
+    pub fn optional<T: LosslessDecode>(
         &mut self,
         field: &'static str,
     ) -> Result<Option<T>, LosslessValueError> {
-        let key = JsString::from(field);
-        self.0
-            .remove(&key)
-            .map(|value| {
+        with_json_field_key(field, |key| self.0.remove_entry(key))
+            .map(|(key, value)| {
                 T::from_lossless_value(value)
                     .map_err(|error| error.at(LosslessValuePath::Field(key)))
             })
             .transpose()
     }
-    fn end(self) -> Result<(), LosslessValueError> {
+    pub fn end(self) -> Result<(), LosslessValueError> {
         if let Some((key, _)) = self.0.into_iter().next() {
             Err(LosslessValueError::new(LosslessValueFailure::ExtraField)
                 .at(LosslessValuePath::Field(key)))

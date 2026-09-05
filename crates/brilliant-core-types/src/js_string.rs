@@ -1,4 +1,4 @@
-use std::{string::FromUtf16Error, sync::Arc};
+use std::{borrow::Borrow, string::FromUtf16Error, sync::Arc};
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -7,6 +7,12 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 /// This primitive is not yet the storage representation of live Score DTOs.
 #[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct JsString(Arc<[u16]>);
+
+impl Borrow<[u16]> for JsString {
+    fn borrow(&self) -> &[u16] {
+        self.code_units()
+    }
+}
 
 impl JsString {
     pub fn from_utf16(units: Vec<u16>) -> Self {

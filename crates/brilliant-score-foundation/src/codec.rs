@@ -1,6 +1,7 @@
 use brilliant_core_types::{FiniteNumber, ScoreSchemaVersionV1, StablePathV1};
 use serde_json::Value;
 
+use crate::LosslessDecode;
 use crate::{ScoreDocumentV1, validation::validate_score_document};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -30,6 +31,33 @@ pub fn decode_score_document_value(
         serde_json::from_value(value).map_err(|_| FoundationDecodeFailure::InvalidShape {
             path: StablePathV1::root(),
         })?;
+    validate_score_document(&document)?;
+    Ok(document)
+}
+
+/// Production request path after Contracts' bounded structural capture.
+/// It shares semantic validation with the legacy scalar-Unicode test adapter.
+pub fn decode_lossless_score_document_value(
+    value: brilliant_core_types::LosslessJsonValue,
+) -> Result<ScoreDocumentV1, FoundationDecodeFailure> {
+    use brilliant_core_types::{JsString, JsonValue};
+    let schema = match &value {
+        JsonValue::Object(fields) => fields.get(&JsString::from("schemaVersion")),
+        _ => None,
+    };
+    let Some(JsonValue::String(schema)) = schema else {
+        return Err(FoundationDecodeFailure::InvalidShape {
+            path: StablePathV1::field("schemaVersion"),
+        });
+    };
+    if !schema.eq_ascii(ScoreSchemaVersionV1::VALUE) {
+        return Err(FoundationDecodeFailure::UnsupportedSchema);
+    }
+    let document = ScoreDocumentV1::from_lossless_value(value).map_err(|_| {
+        FoundationDecodeFailure::InvalidShape {
+            path: StablePathV1::root(),
+        }
+    })?;
     validate_score_document(&document)?;
     Ok(document)
 }

@@ -17,6 +17,41 @@ fn encode<T: LosslessEncode>(value: &T) -> Vec<u8> {
 }
 
 #[test]
+fn borrowed_field_keys_preserve_order_lookup_and_error_paths_for_all_key_shapes() {
+    let fields = [
+        "apiVersion",
+        "",
+        "\0\n",
+        "é/😀",
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    ];
+    for field in fields {
+        let key = JsString::from(field);
+        let high = JsString::from_utf16(vec![0xd800]);
+        let mut object = BTreeMap::from([
+            (key.clone(), LosslessJsonValue::String("value".into())),
+            (high.clone(), LosslessJsonValue::Bool(false)),
+        ]);
+        assert_eq!(
+            with_json_field_key(field, |units| object.get(units)),
+            Some(&LosslessJsonValue::String("value".into()))
+        );
+        assert_eq!(
+            object.get(high.code_units()),
+            Some(&LosslessJsonValue::Bool(false))
+        );
+        object.remove(high.code_units());
+        let mut reader = ObjectReader::new(LosslessJsonValue::Object(object)).unwrap();
+        assert!(reader.take::<JsString>(field).unwrap().eq_ascii("value"));
+        assert_eq!(reader.optional::<JsString>(field).unwrap(), None);
+        let error = reader.take::<JsString>(field).unwrap_err();
+        assert_eq!(error.failure, LosslessValueFailure::MissingField);
+        assert_eq!(error.path, vec![LosslessValuePath::Field(key)]);
+        reader.end().unwrap();
+    }
+}
+
+#[test]
 fn complete_lossless_score_preserves_every_text_id_reference_and_extension_key() {
     for sample in oracle()["samples"].as_array().unwrap() {
         let input = sample["input"].as_str().unwrap();

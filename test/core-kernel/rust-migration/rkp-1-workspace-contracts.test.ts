@@ -270,14 +270,15 @@ test("Cargo workspace, pins, features and direct dependency graph are exact", ()
 });
 
 test("strict codec duplicate lookup cannot regress to a per-member linear scan", () => {
-  const codec = readText("crates/brilliant-kernel-contracts/src/codec.rs");
-  const mapVisitorStart = codec.indexOf("fn visit_map");
-  const mapVisitorEnd = codec.indexOf("fn strict_json", mapVisitorStart);
-  assert.notEqual(mapVisitorStart, -1);
-  assert.notEqual(mapVisitorEnd, -1);
-  const mapVisitor = codec.slice(mapVisitorStart, mapVisitorEnd);
-  assert.doesNotMatch(mapVisitor, /\.iter\(\)\s*\.any\s*\(/u);
-  assert.match(mapVisitor, /BTreeMap|\.entry\s*\(/u);
+  const codec = readText("crates/brilliant-kernel-contracts/src/codec/capture.rs");
+  const captureStart = codec.indexOf("fn strict_json");
+  const testsStart = codec.indexOf("#[cfg(test)]\nmod tests", captureStart);
+  assert.notEqual(captureStart, -1);
+  assert.notEqual(testsStart, -1);
+  const capture = codec.slice(captureStart, testsStart);
+  assert.doesNotMatch(capture, /\.iter\(\)\s*\.any\s*\(/u);
+  assert.match(codec, /values: BTreeMap<JsString, StrictValue>/u);
+  assert.match(capture, /values\.contains_key\(key\)/u);
 });
 
 test("unsafe ownership is confined to boundary.rs with exact production call sites", () => {

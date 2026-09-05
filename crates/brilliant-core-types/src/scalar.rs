@@ -129,17 +129,24 @@ impl DocumentVersionV1 {
     }
 }
 
+impl TryFrom<u64> for DocumentVersionV1 {
+    type Error = CoreTypeFailure;
+    fn try_from(value: u64) -> Result<Self, Self::Error> {
+        if value <= JS_SAFE_INTEGER_MAX as u64 {
+            Ok(Self(value))
+        } else {
+            Err(CoreTypeFailure::NumberOutOfRange)
+        }
+    }
+}
+
 impl<'de> Deserialize<'de> for DocumentVersionV1 {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
         let value = u64::deserialize(deserializer)?;
-        if value <= JS_SAFE_INTEGER_MAX as u64 {
-            Ok(Self(value))
-        } else {
-            Err(de::Error::custom("document version outside safe range"))
-        }
+        Self::try_from(value).map_err(|_| de::Error::custom("document version outside safe range"))
     }
 }
 

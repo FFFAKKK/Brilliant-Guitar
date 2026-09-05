@@ -22,8 +22,8 @@ The probe is a diagnostic executable, separate from passing regression tests;
 its failure remains visible until the full native migration closes the gap.
 
 The strict TS string checks accept JavaScript strings without a Unicode-scalar
-restriction. Contracts strict JSON and Foundation DTOs currently use Rust String
-and serde_json::Value, which cannot retain isolated surrogate units. The behavior
+restriction. At the reproduced baseline, Contracts strict JSON and Foundation
+DTOs used Rust String and serde_json::Value, which cannot retain isolated units. The behavior
 also agrees with serde_json's documented distinction between UTF-8 string types
 and its WTF-8 byte deserialization route:
 [serde_json Deserializer](https://docs.rs/serde_json/1.0.151/serde_json/struct.Deserializer.html).
@@ -199,7 +199,7 @@ These results validate the DTO foundation and unchanged live behavior. Full
 lossless native routing, allocation/latency qualification and S1 admission closure
 remain open.
 
-### Next live boundary integration
+### Live request capture integration
 
 Read-only GPT-6 review of the actual Contracts entrypoints selected replacement
 of `StrictSeed`/`StrictVisitor` by a `LosslessJsonTokens` capture stack while keeping
@@ -210,8 +210,63 @@ discards only the duplicate subtree, whereas a resource violation stops all new
 retention. Both still scan the tail for higher-priority syntax/depth failures.
 Submit's command-level failure mapping remains distinct from create/Stage 4.
 
-This requires explicit Contracts payload/selector conversion and lossless replay
-capture, followed immediately by actual ID/text storage, history and response
+Contracts capture now follows that design. All four request entrypoints consume
+one lossless tree and use explicit payload/selector/Score DTO conversion. Replay
+commands keep that representation for lazy command admission. Create and replay
+move their owned document/command subtrees into the converters without cloning
+the complete capture or converting it back to serde_json::Value.
+
+Unknown command IDs containing isolated units now reach command.unknown-id.
+Command versions use the TS signed safe-integer domain, fixing negative-version
+and unsafe-integer error classification. Raw submit protocol API versions retain
+the historical integer/float spelling distinction through one root metadata slot;
+it records only the first retained top-level field, not nested/discarded values.
+There is no second JSON tree. Fixed-buffer ASCII recognition validates discarded
+keys without retaining arbitrary key text. Actual root/array/map insertions
+instrument post-limit attached values, with injected-write detection tests; this
+does not measure temporary allocations or retained container capacity.
+
+Validation: 280 Rust tests passed, 1 ignored (39 Contracts tests). Strict clippy,
+fmt and Rust 1.88.0 all-target check passed. The
+rebuilt Windows x64 addon has SHA-256
+`B5A5703B576E9B1E109FE7EBBAC51A8A8724C7457B28374E8C853857318CEE9B`.
+Two new live behavior tests failed on the prior addon and passed after rebuilding;
+the raw protocol regression passed on both. GPT-6 read-only review found the raw
+API classification and inert metric issues; scoped rereview confirmed the fixes.
+Logs are `target/lossless-capture-rust-final.log`,
+`target/lossless-capture-native-targeted.log` and
+`target/lossless-protocol-before-tests.log`. The separate UTF-16 probe still has
+14 mismatches on the final addon, retained in
+`target/lossless-capture-native-gap-final.json`.
+
+The first full run passed 712 tests, skipped 2 and failed the P3B native stress
+journey at its frozen 180-second worker deadline. Isolated repetition also timed
+out. Investigation identified repeated temporary UTF-16 field-key allocations.
+JsString now supports ordered borrowed code-unit lookup; the shared DTO reader
+uses a stack buffer for short ASCII fields and reuses captured keys for errors.
+The capture shares only its finite canonical field vocabulary and moves pending
+paths instead of cloning them. Unknown user keys are never cached. Tests cover
+Unicode/long/empty/control key lookup, missing/optional fields, original error
+paths, shared protocol key storage and distinct arbitrary key storage. Bounded
+GPT-6 rereview found no defect in these changes.
+
+Single-process diagnostic observations on the same 15,013,932-byte request were
+17.12 seconds for pre-capture `0e61ad0` create, 25.29 seconds for the first lossless capture,
+23.29 after borrowed field lookup and 19.85 after finite field-key sharing.
+Observed peak RSS for `0e61ad0` was 933,830,656 bytes versus 564,293,632 after field
+sharing. These are single debug measurements, not a benchmark distribution or
+qualification. The old source was exported read-only into ignored target files;
+no working checkout was rolled back. Logs are
+`target/lossless-capture-create-{baseline,before,borrowed,shared}.json`.
+No input cap, timeout, frozen stress fixture or test-runner policy was relaxed.
+
+The final full TS/native run on the hash above passed 713 tests, skipped 2 and
+failed 0 (237.390 seconds), including strict TS compilation. P3B completed with
+177.162 seconds wall time and observed peak RSS 1,824,702,464 bytes. Its margin
+under the 180-second guard is narrow and remains a performance risk; this is not
+release qualification. Evidence: `target/lossless-capture-npm-final.log`.
+
+This capture work is followed immediately by actual ID/text storage, history and response
 encoding. A full-tree conversion back to serde_json::Value is not the selected
 integration. The capped response writer must keep counting exact total bytes
 after its retention cap and preserve resource/error precedence. Capture alone
@@ -219,10 +274,9 @@ does not establish end-to-end native acceptance.
 
 ## Remaining migration sequence
 
-1. Connect the implemented lossless model, token stream and Score DTO conversion
-   to Contracts strict capture and explicit request/payload mapping. Preserve canonical shape/path and
-   failure ranking while detecting duplicate keys after escape decoding. The
-   convenience data reader does not by itself implement the request policy.
+1. Completed: connect lossless capture and explicit request/payload mapping while
+   preserving canonical shape/path and failure ranking. Live DTO defaults still
+   reject unpaired text until the following storage/output migration.
 2. Migrate StableId, raw candidate/journal IDs, Foundation text fields, references,
    opaque extensions and diagnostic/path values that echo input. Replace uses of
    as_str with explicit code-unit or validated ASCII operations. Audit namespace
@@ -240,6 +294,6 @@ does not establish end-to-end native acceptance.
    and native qualification gates before any production switch.
 
 The candidate operation journal remains part of S1 and continues after this
-string representation dependency is closed. No live DTO/native route uses the
-new primitive yet. Current primitive tests do not resolve the native gap and
+string representation dependency is closed. Live Contracts capture now uses the
+primitive, while default DTOs and storage still need migration. These tests do not resolve the native gap and
 do not qualify the kernel for commercial use.

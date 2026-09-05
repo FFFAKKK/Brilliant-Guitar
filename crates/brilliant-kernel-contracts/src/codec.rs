@@ -1,20 +1,22 @@
-use std::{collections::BTreeMap, fmt, io::Write};
+use std::{collections::BTreeMap, io::Write};
 
 use brilliant_core_types::{
-    API_VERSION_V1, JS_SAFE_INTEGER_MAX, JSON_DEPTH_LIMIT, JSON_PROPERTY_LIMIT, SafeInteger,
-    ScoreSchemaVersionV1, StablePathSegmentV1, StablePathV1,
+    API_VERSION_V1, JS_SAFE_INTEGER_MAX, JSON_DEPTH_LIMIT, JSON_PROPERTY_LIMIT, JsString,
+    LosslessJsonValue, SafeInteger, ScoreSchemaVersionV1, StablePathSegmentV1, StablePathV1,
 };
 use brilliant_extension_protocol::EXTENSION_PROTOCOL_VERSION_V1;
 use brilliant_score_foundation::{
-    ClefV1, FoundationDecodeFailure, FractionV1, InstrumentDescriptorV1, MeasureDefinitionV1,
-    MeterV1, NoteValueV1, PartV1, RhythmicContentV1, RhythmicEventV1, ScoreMetadataV1,
-    StaffDefinitionV1, TranspositionV1, VoiceV1, WrittenPitchV1, decode_score_document_value,
+    ClefV1, FoundationDecodeFailure, FractionV1, InstrumentDescriptorV1, LosslessDecode,
+    LosslessText, MeasureDefinitionV1, MeterV1, NoteValueV1, PartV1, RhythmicContentV1,
+    RhythmicEventV1, ScoreMetadataV1, StaffDefinitionV1, TranspositionV1, VoiceV1, WrittenPitchV1,
+    decode_lossless_score_document_value,
 };
-use serde::{
-    Deserializer,
-    de::{self, DeserializeOwned, DeserializeSeed, MapAccess, SeqAccess, Visitor},
-};
-use serde_json::{Map, Number, Value};
+#[cfg(test)]
+use serde_json::Value;
+
+mod capture;
+mod input;
+use capture::{CapturedObjectExt, CapturedValueExt, known_tag, strict_json};
 
 #[cfg(test)]
 #[path = "admission_tests.rs"]
@@ -51,10 +53,6 @@ impl CanonicalPath {
         let mut segments = self.0.clone();
         segments.push(CanonicalPathSegment::Field(field));
         Self(segments)
-    }
-
-    fn raw_field(&self, field: &str) -> Self {
-        canonical_field(field).map_or_else(|| self.clone(), |field| self.field(field))
     }
 
     fn index(&self, index: usize) -> Self {
@@ -164,36 +162,8 @@ fn canonical_field(field: &str) -> Option<&'static str> {
     })
 }
 
-#[derive(Clone, Debug)]
-enum StrictValue {
-    Null,
-    Bool(bool),
-    Number(Number),
-    String(String),
-    Array(Vec<Self>),
-    Object(BTreeMap<String, Self>),
-}
-
-impl StrictValue {
-    fn into_json(self) -> Value {
-        match self {
-            Self::Null => Value::Null,
-            Self::Bool(value) => Value::Bool(value),
-            Self::Number(value) => Value::Number(value),
-            Self::String(value) => Value::String(value),
-            Self::Array(values) => {
-                Value::Array(values.into_iter().map(StrictValue::into_json).collect())
-            }
-            Self::Object(entries) => {
-                let mut values = Map::new();
-                for (key, value) in entries {
-                    values.insert(key, value.into_json());
-                }
-                Value::Object(values)
-            }
-        }
-    }
-}
+type StrictValue = LosslessJsonValue;
+type CapturedValue = LosslessJsonValue;
 
 #[derive(Clone, Debug)]
 struct ShapeFault {
@@ -219,6 +189,9 @@ struct StrictMetrics {
 }
 
 struct StrictState {
+    // Raw protocol integers historically retain u64 spelling/classification.
+    // Command versions instead use the JavaScript safe-integer domain.
+    root_api_integer: Option<u64>,
     nodes_visited: u64,
     depth_fault: Option<DepthFault>,
     property_fault: Option<u64>,
@@ -232,6 +205,7 @@ struct StrictState {
 impl Default for StrictState {
     fn default() -> Self {
         Self {
+            root_api_integer: None,
             nodes_visited: 0,
             depth_fault: None,
             property_fault: None,
@@ -336,268 +310,6 @@ impl StrictState {
     }
 }
 
-struct StrictSeed<'a> {
-    state: &'a mut StrictState,
-    depth: usize,
-    path: CanonicalPath,
-    retain: bool,
-}
-
-impl<'de> DeserializeSeed<'de> for StrictSeed<'_> {
-    type Value = Option<StrictValue>;
-
-    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let state_allows_retention = self.state.observe_value(self.depth, &self.path);
-        let retain = self.retain && state_allows_retention;
-        deserializer.deserialize_any(StrictVisitor {
-            state: self.state,
-            depth: self.depth,
-            path: self.path,
-            retain,
-        })
-    }
-}
-
-struct StrictVisitor<'a> {
-    state: &'a mut StrictState,
-    depth: usize,
-    path: CanonicalPath,
-    retain: bool,
-}
-
-impl<'de> Visitor<'de> for StrictVisitor<'_> {
-    type Value = Option<StrictValue>;
-
-    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.write_str("one strict JSON value")
-    }
-
-    fn visit_unit<E>(self) -> Result<Self::Value, E> {
-        Ok(self.retain.then_some(StrictValue::Null))
-    }
-
-    fn visit_none<E>(self) -> Result<Self::Value, E> {
-        Ok(self.retain.then_some(StrictValue::Null))
-    }
-
-    fn visit_bool<E>(self, value: bool) -> Result<Self::Value, E> {
-        Ok(self.retain.then_some(StrictValue::Bool(value)))
-    }
-
-    fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        Ok(self
-            .retain
-            .then_some(StrictValue::Number(Number::from(value))))
-    }
-
-    fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        Ok(self
-            .retain
-            .then_some(StrictValue::Number(Number::from(value))))
-    }
-
-    fn visit_f64<E>(self, value: f64) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        if !value.is_finite() {
-            self.state.record_number(self.path);
-            return Ok(self.retain.then_some(StrictValue::Number(Number::from(0))));
-        }
-        // Normalize safe integer spellings for typed integer DTOs, but retain
-        // every other finite JSON value. Integer requirements belong to the
-        // actual schema field, not opaque extension payloads or tempo.
-        let number = if value.fract() == 0.0 && value.abs() <= JS_SAFE_INTEGER_MAX as f64 {
-            Number::from(value as i64)
-        } else {
-            Number::from_f64(value).expect("finite JSON number")
-        };
-        Ok(self.retain.then_some(StrictValue::Number(number)))
-    }
-
-    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E> {
-        Ok(self.retain.then(|| StrictValue::String(value.to_owned())))
-    }
-
-    fn visit_string<E>(self, value: String) -> Result<Self::Value, E> {
-        Ok(self.retain.then_some(StrictValue::String(value)))
-    }
-
-    fn visit_seq<A>(self, mut sequence: A) -> Result<Self::Value, A::Error>
-    where
-        A: SeqAccess<'de>,
-    {
-        let mut values = Vec::new();
-        let mut index = 0_usize;
-        while let Some(value) = sequence.next_element_seed(StrictSeed {
-            state: self.state,
-            depth: self.depth + 1,
-            path: self.path.index(index),
-            retain: self.retain,
-        })? {
-            #[cfg(test)]
-            {
-                self.state.metrics.members_visited =
-                    self.state.metrics.members_visited.saturating_add(1);
-            }
-            if let Some(value) = value {
-                values.push(value);
-                #[cfg(test)]
-                {
-                    self.state.metrics.unique_retained =
-                        self.state.metrics.unique_retained.saturating_add(1);
-                }
-            }
-            index = index.saturating_add(1);
-        }
-        Ok((self.retain && self.state.can_retain()).then_some(StrictValue::Array(values)))
-    }
-
-    fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
-    where
-        A: MapAccess<'de>,
-    {
-        let mut values = BTreeMap::new();
-        loop {
-            let retain_key = self.retain && self.state.can_retain();
-            let Some(key) = map.next_key_seed(StrictMapKeySeed { retain: retain_key })? else {
-                break;
-            };
-            #[cfg(test)]
-            {
-                self.state.metrics.members_visited =
-                    self.state.metrics.members_visited.saturating_add(1);
-            }
-            match key {
-                StrictMapKey::Retained(key) => {
-                    let path = self.path.raw_field(&key);
-                    let duplicate = values.contains_key(&key);
-                    if duplicate {
-                        self.state
-                            .record_shape(2, path.clone(), ShapeViolationV1::DuplicateField);
-                        #[cfg(test)]
-                        {
-                            self.state.metrics.duplicate_discarded =
-                                self.state.metrics.duplicate_discarded.saturating_add(1);
-                        }
-                    }
-                    let value = map.next_value_seed(StrictSeed {
-                        state: self.state,
-                        depth: self.depth + 1,
-                        path,
-                        retain: self.retain && !duplicate,
-                    })?;
-                    if let Some(value) = value {
-                        if self.state.can_retain() {
-                            values.insert(key, value);
-                            #[cfg(test)]
-                            {
-                                self.state.metrics.unique_retained =
-                                    self.state.metrics.unique_retained.saturating_add(1);
-                            }
-                        } else {
-                            #[cfg(test)]
-                            {
-                                self.state.metrics.post_limit_retained =
-                                    self.state.metrics.post_limit_retained.saturating_add(1);
-                            }
-                        }
-                    }
-                }
-                StrictMapKey::Scanned(canonical) => {
-                    let path =
-                        canonical.map_or_else(|| self.path.clone(), |field| self.path.field(field));
-                    let value = map.next_value_seed(StrictSeed {
-                        state: self.state,
-                        depth: self.depth + 1,
-                        path,
-                        retain: false,
-                    })?;
-                    debug_assert!(value.is_none());
-                }
-            }
-        }
-        Ok((self.retain && self.state.can_retain()).then_some(StrictValue::Object(values)))
-    }
-}
-
-enum StrictMapKey {
-    Retained(String),
-    Scanned(Option<&'static str>),
-}
-
-struct StrictMapKeySeed {
-    retain: bool,
-}
-
-impl<'de> DeserializeSeed<'de> for StrictMapKeySeed {
-    type Value = StrictMapKey;
-
-    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        deserializer.deserialize_str(StrictMapKeyVisitor {
-            retain: self.retain,
-        })
-    }
-}
-
-struct StrictMapKeyVisitor {
-    retain: bool,
-}
-
-impl<'de> Visitor<'de> for StrictMapKeyVisitor {
-    type Value = StrictMapKey;
-
-    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.write_str("one JSON object key")
-    }
-
-    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E> {
-        Ok(if self.retain {
-            StrictMapKey::Retained(value.to_owned())
-        } else {
-            StrictMapKey::Scanned(canonical_field(value))
-        })
-    }
-
-    fn visit_string<E>(self, value: String) -> Result<Self::Value, E> {
-        Ok(if self.retain {
-            StrictMapKey::Retained(value)
-        } else {
-            StrictMapKey::Scanned(canonical_field(&value))
-        })
-    }
-}
-
-fn strict_json(bytes: &[u8]) -> Result<(Option<StrictValue>, StrictState), StableFailureV1> {
-    let text = std::str::from_utf8(bytes).map_err(|_| StableFailureV1::CodecInvalidUtf8)?;
-    let mut deserializer = serde_json::Deserializer::from_str(text);
-    let mut state = StrictState::default();
-    let value = StrictSeed {
-        state: &mut state,
-        depth: 1,
-        path: CanonicalPath::default(),
-        retain: true,
-    }
-    .deserialize(&mut deserializer)
-    .map_err(|_| StableFailureV1::CodecInvalidJson)?;
-    deserializer
-        .end()
-        .map_err(|_| StableFailureV1::CodecInvalidJson)?;
-    Ok((value, state))
-}
-
 fn record_wrong_type(state: &mut StrictState, path: &CanonicalPath) {
     state.record_shape(3, path.clone(), ShapeViolationV1::WrongType);
 }
@@ -608,13 +320,13 @@ fn exact_object<'a>(
     required: &[&'static str],
     optional: &[&'static str],
     state: &mut StrictState,
-) -> Option<&'a BTreeMap<String, StrictValue>> {
+) -> Option<&'a BTreeMap<JsString, StrictValue>> {
     let StrictValue::Object(entries) = value else {
         record_wrong_type(state, path);
         return None;
     };
     for field in required {
-        if !entries.contains_key(*field) {
+        if !entries.contains_ascii(field) {
             state.record_shape(0, path.field(field), ShapeViolationV1::MissingField);
         }
     }
@@ -622,7 +334,7 @@ fn exact_object<'a>(
         !required
             .iter()
             .chain(optional)
-            .any(|allowed| key == allowed)
+            .any(|allowed| key.eq_ascii(allowed))
     }) {
         state.record_shape(1, path.clone(), ShapeViolationV1::ExtraField);
     }
@@ -630,10 +342,10 @@ fn exact_object<'a>(
 }
 
 fn field_values<'a>(
-    entries: &'a BTreeMap<String, StrictValue>,
+    entries: &'a BTreeMap<JsString, StrictValue>,
     field: &'static str,
 ) -> impl Iterator<Item = &'a StrictValue> {
-    entries.get(field).into_iter()
+    entries.get_ascii(field).into_iter()
 }
 
 fn exact_array<'a>(
@@ -657,9 +369,8 @@ fn expect_string(value: &StrictValue, path: &CanonicalPath, state: &mut StrictSt
 fn expect_number(value: &StrictValue, path: &CanonicalPath, state: &mut StrictState) {
     match value {
         StrictValue::Number(number) => {
-            let safe = number.as_f64().is_some_and(|number| {
-                number.fract() == 0.0 && number.abs() <= JS_SAFE_INTEGER_MAX as f64
-            });
+            let safe =
+                number.get().fract() == 0.0 && number.get().abs() <= JS_SAFE_INTEGER_MAX as f64;
             if !safe {
                 state.record_number(path.clone());
             }
@@ -681,7 +392,7 @@ fn expect_tag(
     state: &mut StrictState,
 ) {
     match value {
-        StrictValue::String(value) if allowed.contains(&value.as_str()) => {}
+        StrictValue::String(value) if allowed.iter().any(|literal| value.eq_ascii(literal)) => {}
         StrictValue::String(_) => {
             state.record_shape(4, path.clone(), ShapeViolationV1::InvalidTag);
         }
@@ -778,9 +489,9 @@ fn validate_content(value: &StrictValue, path: &CanonicalPath, state: &mut Stric
     for kind in kind_values {
         expect_tag(kind, &path.field("kind"), &["rest", "notes"], state);
         if let StrictValue::String(kind) = kind
-            && matches!(kind.as_str(), "rest" | "notes")
+            && matches!(known_tag(kind), "rest" | "notes")
         {
-            valid_kinds.push(kind.as_str());
+            valid_kinds.push(known_tag(kind));
         }
     }
     for kind in valid_kinds {
@@ -1032,10 +743,10 @@ fn validate_owner(value: &StrictValue, path: &CanonicalPath, state: &mut StrictS
         let StrictValue::String(kind) = kind else {
             continue;
         };
-        if !matches!(kind.as_str(), "score" | "part") {
+        if !matches!(known_tag(kind), "score" | "part") {
             continue;
         }
-        let required: &[&'static str] = if kind == "part" {
+        let required: &[&'static str] = if kind.eq_ascii("part") {
             &["kind", "partId"]
         } else {
             &["kind"]
@@ -1043,7 +754,7 @@ fn validate_owner(value: &StrictValue, path: &CanonicalPath, state: &mut StrictS
         let Some(owner) = exact_object(value, path, required, &[], state) else {
             continue;
         };
-        if kind == "part" {
+        if kind.eq_ascii("part") {
             for value in field_values(owner, "partId") {
                 expect_string(value, &path.field("partId"), state);
             }
@@ -1173,15 +884,15 @@ pub fn decode_create_request(
         return Err(failure);
     }
     let strict_value = strict_value.ok_or(StableFailureV1::BridgeInternal)?;
-    let value = strict_value.into_json();
-    let object = value
-        .as_object()
+    let value = strict_value;
+    let mut object = value
+        .into_object()
         .ok_or_else(|| StableFailureV1::CodecInvalidShape {
             path: StablePathV1::root(),
             violation: ShapeViolationV1::WrongType,
         })?;
     for required in ["apiVersion", "document"] {
-        if !object.contains_key(required) {
+        if !object.contains_ascii(required) {
             return Err(StableFailureV1::CodecInvalidShape {
                 path: StablePathV1::field(required),
                 violation: ShapeViolationV1::MissingField,
@@ -1194,23 +905,24 @@ pub fn decode_create_request(
             violation: ShapeViolationV1::ExtraField,
         });
     }
-    let api_version =
-        object["apiVersion"]
-            .as_i64()
-            .ok_or_else(|| StableFailureV1::CodecInvalidShape {
-                path: StablePathV1::field("apiVersion"),
-                violation: ShapeViolationV1::WrongType,
-            })?;
+    let api_version = object.at_ascii("apiVersion").as_i64().ok_or_else(|| {
+        StableFailureV1::CodecInvalidShape {
+            path: StablePathV1::field("apiVersion"),
+            violation: ShapeViolationV1::WrongType,
+        }
+    })?;
     if api_version != API_VERSION_V1 as i64 {
         return Err(StableFailureV1::ContractUnsupportedApiVersion {
             supported_version: API_VERSION_V1,
         });
     }
-    let document_value = object["document"].clone();
+    let document_value = object
+        .remove(&JsString::from("document"))
+        .expect("validated document");
     let schema = document_value
         .as_object()
-        .and_then(|document| document.get("schemaVersion"))
-        .and_then(Value::as_str)
+        .and_then(|document| document.get_ascii("schemaVersion"))
+        .and_then(CapturedValue::as_text)
         .ok_or_else(|| StableFailureV1::CodecInvalidShape {
             path: CanonicalPath::default()
                 .field("document")
@@ -1218,153 +930,110 @@ pub fn decode_create_request(
                 .stable(),
             violation: ShapeViolationV1::WrongType,
         })?;
-    if schema != ScoreSchemaVersionV1::VALUE {
+    if !schema.eq_ascii(ScoreSchemaVersionV1::VALUE) {
         return Err(StableFailureV1::ScoreUnsupportedSchema {
             supported_schema: ScoreSchemaVersionV1::VALUE,
         });
     }
-    let document = decode_score_document_value(document_value).map_err(map_foundation_failure)?;
+    let document =
+        decode_lossless_score_document_value(document_value).map_err(map_foundation_failure)?;
     Ok(KernelSessionCreateRequestV1 {
         api_version: API_VERSION_V1,
         document,
     })
 }
 
-#[derive(serde::Deserialize)]
-#[serde(deny_unknown_fields)]
 struct EmptyCommandPayloadV1 {}
 
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct SetMetadataPayloadV1 {
     metadata: ScoreMetadataV1,
 }
 
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct SetWrittenPitchPayloadV1 {
     written_pitch: WrittenPitchV1,
 }
 
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct SetNoteValuePayloadV1 {
     note_value: NoteValueV1,
 }
 
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct InsertEventPayloadV1 {
     anchor: SequenceAnchorV1,
     event: RhythmicEventV1,
 }
 
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct InsertMeasurePayloadV1<Id> {
     anchor: MeasureAnchorV1<Id>,
     definition: MeasureDefinitionV1<Id>,
     contents: Vec<InsertMeasurePartContentV1<Id>>,
 }
 
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct MoveMeasurePayloadV1<Id> {
     anchor: MeasureAnchorV1<Id>,
 }
 
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct SetMeasureDefinitionPayloadV1 {
     meter: MeterV1,
     pickup: MeasurePickupV1,
 }
 
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct InsertPartPayloadV1<Id> {
     anchor: PartAnchorV1<Id>,
     part: PartV1<Id>,
 }
 
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct MovePartPayloadV1<Id> {
     anchor: PartAnchorV1<Id>,
 }
 
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct SetPartNamePayloadV1 {
     name: String,
 }
 
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct SetPartInstrumentPayloadV1 {
     instrument: InstrumentDescriptorV1,
 }
 
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct InsertStaffPayloadV1<Id> {
     anchor: StaffAnchorV1<Id>,
     staff: StaffDefinitionV1<Id>,
 }
 
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct MoveStaffPayloadV1<Id> {
     anchor: StaffAnchorV1<Id>,
 }
 
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct SetStaffDefinitionPayloadV1 {
     line_count: SafeInteger,
     default_clef: ClefV1,
 }
 
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct InsertVoicePayloadV1<Id> {
     measure_id: Id,
     anchor: VoiceAnchorV1<Id>,
     voice: VoiceV1<Id>,
 }
 
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct MoveVoicePayloadV1<Id> {
     anchor: VoiceAnchorV1<Id>,
 }
 
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct SetVoiceDefaultStaffPayloadV1<Id> {
     staff_id: Id,
 }
 
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct SetVoiceSequenceStartPayloadV1 {
     start: FractionV1,
 }
 
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct SetEventStaffAssignmentPayloadV1<Id> {
     assignment: EventStaffAssignmentV1<Id>,
 }
 
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct DeleteRangePayloadV1 {
     range: ScoreRangeV1,
 }
 
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct TransposeRangePayloadV1 {
     range: ScoreRangeV1,
     transposition: TranspositionV1,
@@ -1380,12 +1049,14 @@ fn invalid_command_envelope() -> KernelStage3CommandFailureV1 {
     KernelStage3CommandFailureLeafV1::InvalidEnvelope.into()
 }
 
-fn decode_payload<T: DeserializeOwned>(value: &Value) -> Result<T, KernelStage3CommandFailureV1> {
-    serde_json::from_value(value.clone()).map_err(|_| invalid_command_envelope())
+fn decode_payload<T: LosslessDecode>(
+    value: &CapturedValue,
+) -> Result<T, KernelStage3CommandFailureV1> {
+    T::from_lossless_value(value.clone()).map_err(|_| invalid_command_envelope())
 }
 
-fn target_kind(value: &Value) -> Option<CoreCommandTargetKindV1> {
-    match value.as_object()?.get("kind")?.as_str()? {
+fn target_kind(value: &CapturedValue) -> Option<CoreCommandTargetKindV1> {
+    match known_tag(value.as_object()?.get_ascii("kind")?.as_text()?) {
         "document" => Some(CoreCommandTargetKindV1::Document),
         "measure" => Some(CoreCommandTargetKindV1::Measure),
         "part" => Some(CoreCommandTargetKindV1::Part),
@@ -1397,10 +1068,21 @@ fn target_kind(value: &Value) -> Option<CoreCommandTargetKindV1> {
     }
 }
 
-fn exact_json_object<'a>(value: &'a Value, required: &[&str]) -> Option<&'a Map<String, Value>> {
+fn exact_json_object<'a>(
+    value: &'a CapturedValue,
+    required: &[&str],
+) -> Option<&'a BTreeMap<JsString, CapturedValue>> {
     let object = value.as_object()?;
-    (object.len() == required.len() && required.iter().all(|field| object.contains_key(*field)))
+    (object.len() == required.len() && required.iter().all(|field| object.contains_ascii(field)))
         .then_some(object)
+}
+
+fn exact_owned_object(
+    value: CapturedValue,
+    required: &[&str],
+) -> Option<BTreeMap<JsString, CapturedValue>> {
+    exact_json_object(&value, required)?;
+    value.into_object()
 }
 
 fn component_written_pitch_is_valid(value: &WrittenPitchV1) -> bool {
@@ -1464,7 +1146,7 @@ fn clef_is_valid(clef: &ClefV1) -> bool {
     (1..=5).contains(&clef.line.get())
 }
 
-fn exact_payload_unit_variants(payload: &Value) -> bool {
+fn exact_payload_unit_variants(payload: &CapturedValue) -> bool {
     // Tagged serde unit variants otherwise silently ignore extra fields. This
     // bounded shape check is shared by typed and admission command decoding.
     [
@@ -1474,10 +1156,14 @@ fn exact_payload_unit_variants(payload: &Value) -> bool {
     ]
     .iter()
     .all(|(field, tag)| {
-        let Some(object) = payload.get(*field).and_then(Value::as_object) else {
+        let Some(object) = payload.get_ascii(field).and_then(CapturedValue::as_object) else {
             return true; // The typed field decoder handles missing/wrong shape.
         };
-        object.get("kind").and_then(Value::as_str) != Some(*tag) || object.len() == 1
+        object
+            .get_ascii("kind")
+            .and_then(CapturedValue::as_text)
+            .is_none_or(|text| !text.eq_ascii(tag))
+            || object.len() == 1
     })
 }
 
@@ -1486,7 +1172,7 @@ fn meter_is_valid(meter: &MeterV1) -> bool {
 }
 
 fn decode_core_command_value(
-    value: &Value,
+    value: &CapturedValue,
     reject_nested_batch: bool,
 ) -> Result<CoreCommandEnvelopeV1, KernelStage3CommandFailureV1> {
     decode_command_candidate_value(value, reject_nested_batch)
@@ -1494,44 +1180,49 @@ fn decode_core_command_value(
 
 // One field/entrypoint codec for typed and raw-ID components. Targets, ranges
 // and direct Event insertion are deliberately not parameterized by Id.
-fn decode_command_candidate_value<Id: DeserializeOwned>(
-    value: &Value,
+fn decode_command_candidate_value<Id: LosslessText>(
+    value: &CapturedValue,
     reject_nested_batch: bool,
 ) -> Result<CoreCommandEnvelopeV1<Id>, KernelStage3CommandFailureV1> {
     if reject_nested_batch
         && value
             .as_object()
-            .and_then(|record| record.get("commandId"))
-            .and_then(Value::as_str)
-            == Some(CoreCommandIdV1::TransactionBatch.as_str())
+            .and_then(|record| record.get_ascii("commandId"))
+            .and_then(CapturedValue::as_text)
+            .is_some_and(|text| text.eq_ascii(CoreCommandIdV1::TransactionBatch.as_str()))
     {
         return Err(KernelStage3CommandFailureLeafV1::BatchNested.into());
     }
     let envelope = exact_json_object(value, &["commandVersion", "commandId", "target", "payload"])
         .ok_or_else(invalid_command_envelope)?;
-    let version = envelope["commandVersion"]
-        .as_u64()
+    let version = envelope
+        .at_ascii("commandVersion")
+        .as_i64()
         .ok_or_else(invalid_command_envelope)?;
-    if version != COMMAND_VERSION_V1 {
+    if version != COMMAND_VERSION_V1 as i64 {
         return Err(KernelStage3CommandFailureLeafV1::UnsupportedVersion.into());
     }
-    let command_id = envelope["commandId"]
-        .as_str()
+    let command_id = envelope
+        .at_ascii("commandId")
+        .as_text()
         .ok_or_else(invalid_command_envelope)
         .and_then(|value| {
-            CoreCommandIdV1::from_wire(value)
+            crate::CORE_COMMAND_CATALOG_V1
+                .iter()
+                .find(|definition| value.eq_ascii(definition.command_id.as_str()))
+                .map(|definition| definition.command_id)
                 .ok_or_else(|| KernelStage3CommandFailureLeafV1::UnknownId.into())
         })?;
     let actual_target_kind =
-        target_kind(&envelope["target"]).ok_or_else(invalid_command_envelope)?;
+        target_kind(envelope.at_ascii("target")).ok_or_else(invalid_command_envelope)?;
     if actual_target_kind != command_id.target_kind() {
         return Err(KernelStage3CommandFailureLeafV1::TargetMismatch.into());
     }
-    let target: ScoreEntityTargetV1 = decode_payload(&envelope["target"])?;
+    let target: ScoreEntityTargetV1 = decode_payload(envelope.at_ascii("target"))?;
     if target.kind() != actual_target_kind {
         return Err(invalid_command_envelope());
     }
-    let payload = &envelope["payload"];
+    let payload = &envelope.at_ascii("payload");
     if !exact_payload_unit_variants(payload) {
         return Err(invalid_command_envelope());
     }
@@ -1759,7 +1450,8 @@ fn decode_command_candidate_value<Id: DeserializeOwned>(
         CoreCommandIdV1::TransactionBatch => {
             let payload =
                 exact_json_object(payload, &["commands"]).ok_or_else(invalid_command_envelope)?;
-            let commands = payload["commands"]
+            let commands = payload
+                .at_ascii("commands")
                 .as_array()
                 .ok_or_else(invalid_command_envelope)?;
             if commands.len() > MAX_BATCH_CHILDREN_V1 {
@@ -1813,7 +1505,7 @@ pub fn decode_admission_submit_request(
     decode_submit_candidate_request(bytes)
 }
 
-fn decode_submit_candidate_request<Id: DeserializeOwned>(
+fn decode_submit_candidate_request<Id: LosslessText>(
     bytes: &[u8],
 ) -> Result<KernelStage3SubmitRequestV1<Id>, KernelStage3SubmitDecodeFailureV1> {
     if bytes.len() > REQUEST_BYTE_LIMIT {
@@ -1849,16 +1541,14 @@ fn decode_submit_candidate_request<Id: DeserializeOwned>(
             KernelStage3CommandFailureLeafV1::InvalidEnvelope,
         ));
     }
-    let value = strict_value
-        .ok_or(KernelStage3SubmitDecodeFailureV1::Boundary(
-            StableFailureV1::BridgeInternal,
-        ))?
-        .into_json();
+    let value = strict_value.ok_or(KernelStage3SubmitDecodeFailureV1::Boundary(
+        StableFailureV1::BridgeInternal,
+    ))?;
     let root = value.as_object().ok_or_else(|| {
         stage3_root_shape_failure(StablePathV1::root(), ShapeViolationV1::WrongType)
     })?;
     for required in ["apiVersion", "command"] {
-        if !root.contains_key(required) {
+        if !root.contains_ascii(required) {
             return Err(stage3_root_shape_failure(
                 StablePathV1::field(required),
                 ShapeViolationV1::MissingField,
@@ -1871,7 +1561,7 @@ fn decode_submit_candidate_request<Id: DeserializeOwned>(
             ShapeViolationV1::ExtraField,
         ));
     }
-    let api_version = root["apiVersion"].as_u64().ok_or_else(|| {
+    let api_version = state.root_api_integer.ok_or_else(|| {
         stage3_root_shape_failure(
             StablePathV1::field("apiVersion"),
             ShapeViolationV1::WrongType,
@@ -1884,7 +1574,7 @@ fn decode_submit_candidate_request<Id: DeserializeOwned>(
             },
         ));
     }
-    let command = decode_command_candidate_value(&root["command"], false)
+    let command = decode_command_candidate_value(root.at_ascii("command"), false)
         .map_err(KernelStage3SubmitDecodeFailureV1::Command)?;
     Ok(KernelStage3SubmitRequestV1 {
         api_version: API_VERSION_V1,
@@ -1942,7 +1632,7 @@ fn validate_stage4_operation_shape(value: &StrictValue, state: &mut StrictState)
             record_wrong_type(state, &operation_path);
             continue;
         };
-        let Some(kind) = operation.get("kind") else {
+        let Some(kind) = operation.get_ascii("kind") else {
             state.record_shape(
                 0,
                 operation_path.field("kind"),
@@ -1959,7 +1649,7 @@ fn validate_stage4_operation_shape(value: &StrictValue, state: &mut StrictState)
         let StrictValue::String(kind) = kind else {
             continue;
         };
-        let (required, optional): (&[&'static str], &[&'static str]) = match kind.as_str() {
+        let (required, optional): (&[&'static str], &[&'static str]) = match known_tag(kind) {
             "submit" => (&["kind", "command"], &[]),
             "undo" | "redo" => (&["kind"], &[]),
             "mark-persisted" => (&["kind", "checkpoint"], &[]),
@@ -1970,7 +1660,7 @@ fn validate_stage4_operation_shape(value: &StrictValue, state: &mut StrictState)
         let Some(exact) = exact_object(value, &operation_path, required, optional, state) else {
             continue;
         };
-        if kind == "read" {
+        if kind.eq_ascii("read") {
             for known in field_values(exact, "knownSnapshotVersion") {
                 if !matches!(known, StrictValue::Null | StrictValue::Number(_)) {
                     record_wrong_type(state, &operation_path.field("knownSnapshotVersion"));
@@ -2001,14 +1691,12 @@ pub fn decode_stage4_operation_request(
     if let Some(failure) = state.failure() {
         return Err(KernelStage4OperationDecodeFailureV1::Boundary(failure));
     }
-    let value = strict_value
-        .ok_or(KernelStage4OperationDecodeFailureV1::Boundary(
-            StableFailureV1::BridgeInternal,
-        ))?
-        .into_json();
+    let value = strict_value.ok_or(KernelStage4OperationDecodeFailureV1::Boundary(
+        StableFailureV1::BridgeInternal,
+    ))?;
     let root = exact_json_object(&value, &["apiVersion", "operation"])
         .ok_or_else(|| stage4_shape_failure(StablePathV1::root(), ShapeViolationV1::WrongType))?;
-    let api_version = root["apiVersion"].as_u64().ok_or_else(|| {
+    let api_version = root.at_ascii("apiVersion").as_u64().ok_or_else(|| {
         stage4_shape_failure(
             StablePathV1::field("apiVersion"),
             ShapeViolationV1::WrongType,
@@ -2021,15 +1709,15 @@ pub fn decode_stage4_operation_request(
             },
         ));
     }
-    let operation = root["operation"].as_object().ok_or_else(|| {
+    let operation = root.at_ascii("operation").as_object().ok_or_else(|| {
         stage4_shape_failure(
             StablePathV1::field("operation"),
             ShapeViolationV1::WrongType,
         )
     })?;
     let kind = operation
-        .get("kind")
-        .and_then(Value::as_str)
+        .get_ascii("kind")
+        .and_then(CapturedValue::as_text)
         .ok_or_else(|| {
             stage4_shape_failure(
                 CanonicalPath::default()
@@ -2039,36 +1727,39 @@ pub fn decode_stage4_operation_request(
                 ShapeViolationV1::WrongType,
             )
         })?;
-    let operation = match kind {
+    let operation = match known_tag(kind) {
         "submit" => {
-            let command = decode_core_command_value(&operation["command"], false)
+            let command = decode_core_command_value(operation.at_ascii("command"), false)
                 .map_err(KernelStage4OperationDecodeFailureV1::Command)?;
             KernelStage4OperationV1::Submit { command }
         }
         "undo" => KernelStage4OperationV1::Undo,
         "redo" => KernelStage4OperationV1::Redo,
         "mark-persisted" => {
-            match serde_json::from_value::<PersistedCheckpointV1>(operation["checkpoint"].clone()) {
+            match PersistedCheckpointV1::from_lossless_value(
+                operation.at_ascii("checkpoint").clone(),
+            ) {
                 Ok(checkpoint) => KernelStage4OperationV1::MarkPersisted { checkpoint },
                 Err(_) => KernelStage4OperationV1::MarkPersistedInvalid,
             }
         }
         "read" => {
-            let known_snapshot_version = if operation["knownSnapshotVersion"].is_null() {
+            let known_snapshot_version = if operation.at_ascii("knownSnapshotVersion").is_null() {
                 None
             } else {
                 Some(
-                    serde_json::from_value(operation["knownSnapshotVersion"].clone()).map_err(
-                        |_| {
-                            stage4_shape_failure(
-                                CanonicalPath::default()
-                                    .field("operation")
-                                    .field("knownSnapshotVersion")
-                                    .stable(),
-                                ShapeViolationV1::WrongType,
-                            )
-                        },
-                    )?,
+                    brilliant_core_types::DocumentVersionV1::from_lossless_value(
+                        operation.at_ascii("knownSnapshotVersion").clone(),
+                    )
+                    .map_err(|_| {
+                        stage4_shape_failure(
+                            CanonicalPath::default()
+                                .field("operation")
+                                .field("knownSnapshotVersion")
+                                .stable(),
+                            ShapeViolationV1::WrongType,
+                        )
+                    })?,
                 )
             };
             KernelStage4OperationV1::Read {
@@ -2077,7 +1768,7 @@ pub fn decode_stage4_operation_request(
         }
         "select" => {
             let selector =
-                serde_json::from_value::<SelectorRequestV1>(operation["selector"].clone())
+                SelectorRequestV1::from_lossless_value(operation.at_ascii("selector").clone())
                     .map_err(|_| {
                         stage4_shape_failure(
                             CanonicalPath::default()
@@ -2145,16 +1836,14 @@ pub fn decode_stage4_replay_request(
     if let Some(failure) = state.failure() {
         return Err(failure);
     }
-    let value = strict_value
-        .ok_or(StableFailureV1::BridgeInternal)?
-        .into_json();
-    let root = exact_json_object(&value, &["apiVersion", "initialDocument", "commands"])
+    let value = strict_value.ok_or(StableFailureV1::BridgeInternal)?;
+    let mut root = exact_owned_object(value, &["apiVersion", "initialDocument", "commands"])
         .ok_or_else(|| StableFailureV1::CodecInvalidShape {
             path: StablePathV1::root(),
             violation: ShapeViolationV1::WrongType,
         })?;
     let api_version =
-        root["apiVersion"]
+        root.at_ascii("apiVersion")
             .as_u64()
             .ok_or_else(|| StableFailureV1::CodecInvalidShape {
                 path: StablePathV1::field("apiVersion"),
@@ -2165,11 +1854,13 @@ pub fn decode_stage4_replay_request(
             supported_version: API_VERSION_V1,
         });
     }
-    let document_value = root["initialDocument"].clone();
+    let document_value = root
+        .remove(&JsString::from("initialDocument"))
+        .expect("validated initial document");
     let schema = document_value
         .as_object()
-        .and_then(|document| document.get("schemaVersion"))
-        .and_then(Value::as_str)
+        .and_then(|document| document.get_ascii("schemaVersion"))
+        .and_then(CapturedValue::as_text)
         .ok_or_else(|| StableFailureV1::CodecInvalidShape {
             path: CanonicalPath::default()
                 .field("initialDocument")
@@ -2177,21 +1868,21 @@ pub fn decode_stage4_replay_request(
                 .stable(),
             violation: ShapeViolationV1::WrongType,
         })?;
-    if schema != ScoreSchemaVersionV1::VALUE {
+    if !schema.eq_ascii(ScoreSchemaVersionV1::VALUE) {
         return Err(StableFailureV1::ScoreUnsupportedSchema {
             supported_schema: ScoreSchemaVersionV1::VALUE,
         });
     }
     let initial_document =
-        decode_score_document_value(document_value).map_err(map_foundation_failure)?;
-    let commands = root["commands"]
-        .as_array()
+        decode_lossless_score_document_value(document_value).map_err(map_foundation_failure)?;
+    let commands = root
+        .remove(&JsString::from("commands"))
+        .and_then(CapturedValue::into_array)
         .ok_or_else(|| StableFailureV1::CodecInvalidShape {
             path: StablePathV1::field("commands"),
             violation: ShapeViolationV1::WrongType,
         })?
-        .iter()
-        .cloned()
+        .into_iter()
         .map(CapturedCoreCommandV1::from_json)
         .collect();
     Ok(KernelStage4ReplayRequestV1 {

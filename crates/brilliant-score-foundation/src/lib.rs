@@ -15,8 +15,8 @@ mod validation;
 
 pub use assessment::assess_score_semantics;
 pub use codec::{
-    FoundationDecodeFailure, canonical_score_bytes, decode_score_document_value,
-    finite_number_json_len,
+    FoundationDecodeFailure, canonical_score_bytes, decode_lossless_score_document_value,
+    decode_score_document_value, finite_number_json_len,
 };
 pub use diagnostics::{
     AssessmentFailureV1, CORE_ASSESSMENT_DIAGNOSTIC_LIMIT_V1, CoreDiagnosticCodeV1,
@@ -29,11 +29,12 @@ pub use feature_profile::{
 };
 pub use fraction::{ExactFraction, ExactFractionError};
 pub use js_string_json::{
-    JsStringTokenError, decode_js_string_token, js_string_json_len, write_js_string_json,
+    JsStringTokenError, decode_js_string_ascii_token, decode_js_string_token, js_string_json_len,
+    write_js_string_json,
 };
 pub use lossless_dto::{
     LosslessDecode, LosslessEncode, LosslessText, LosslessValueError, LosslessValueFailure,
-    LosslessValuePath,
+    LosslessValuePath, ObjectReader as LosslessObjectReader, with_json_field_key,
 };
 pub use lossless_json::{
     JsonSyntaxError, JsonToken, JsonTokenKind, LosslessJsonError, LosslessJsonTokens,
