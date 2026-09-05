@@ -151,6 +151,7 @@ test("RKP-3 transaction APIs stay restricted and contain no physical identity", 
       "read_scalar",
       "read_transposition",
       "detach_entity",
+      "read_event_content_kind",
       "read_order",
       "visit_order",
       "read_extension",
@@ -159,10 +160,11 @@ test("RKP-3 transaction APIs stay restricted and contain no physical identity", 
       "read_voice_time",
     ],
   );
-  // Commercial completion adds two narrow reads while retaining the exact
+  // Commercial completion adds narrow reads while retaining the exact
   // private method set and forbidding mutable storage/physical identities.
   assert.doesNotMatch(baseReadBody, /&mut\s+self/u);
   assert.match(baseReadBody, /fn read_transposition\(&self, part_id: &StableId\) -> Option<TranspositionV1>/u);
+  assert.match(baseReadBody, /fn read_event_content_kind\(&self, event_id: &StableId\) -> Option<EventContentKind>/u);
   assert.match(baseReadBody, /fn visit_order\(\s*&self,\s*address: &StableOrderAddressV1,\s*visitor: &mut dyn FnMut\(&StableId\) -> bool,\s*\) -> Option<\(\)>/u);
   assert.match(overlay, /OVERLAY_LOOKUP_LAYER_COUNT_V1: usize = 4;/u);
   for (const token of [

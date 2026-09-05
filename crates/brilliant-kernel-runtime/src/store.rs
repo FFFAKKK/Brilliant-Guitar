@@ -608,6 +608,13 @@ impl CoreBaseReadV1 for LiveScoreStore {
         }
     }
 
+    fn read_event_content_kind(&self, event_id: &StableId) -> Option<EventContentKind> {
+        let RuntimeEntityRef::Event(event) = self.lookup_exact_id(event_id)? else {
+            return None;
+        };
+        Some(self.events.get(event)?.content_kind)
+    }
+
     fn visit_order(
         &self,
         address: &StableOrderAddressV1,

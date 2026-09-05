@@ -1,16 +1,15 @@
 use std::collections::HashMap;
 
+use crate::{
+    change_set::StableOrderAddressV1 as Order, incremental_validation::IncrementalValidationWorkV1,
+    overlay::TransactionOverlayV1,
+};
 use brilliant_core_types::{StableId, StablePathSegmentV1 as Segment, StablePathV1};
 use brilliant_kernel_contracts::{
     KernelStage3CommandFailureLeafV1 as Failure, KernelStage3ResourceLimitKindV1 as LimitKind,
 };
 use brilliant_score_foundation::{
     CORE_ASSESSMENT_DIAGNOSTIC_LIMIT_V1, CoreDiagnosticCodeV1 as Code, CoreDiagnosticV1,
-};
-
-use crate::{
-    change_set::StableOrderAddressV1 as Order, incremental_validation::IncrementalValidationWorkV1,
-    overlay::TransactionOverlayV1,
 };
 
 #[derive(Clone)]
@@ -26,19 +25,38 @@ pub(crate) enum MeasureField {
     Denominator,
     Pickup,
 }
-
 #[derive(Clone, Copy)]
 pub(crate) enum EventField {
     Duration,
     Root,
+    Staff,
+    Notes,
+}
+#[derive(Clone, Copy)]
+pub(crate) enum RootCollection {
+    Measures,
+    Parts,
 }
 
 pub(crate) enum Location {
     Tempo,
+    Root(RootCollection),
     Measure {
         id: StableId,
         field: MeasureField,
     },
+    Staffs {
+        part: StableId,
+    },
+    StaffLines {
+        part: StableId,
+        staff: StableId,
+    },
+    Voices {
+        part: StableId,
+        measure: StableId,
+    },
+    VoiceStaff(VoiceRoute),
     Start(VoiceRoute),
     Event {
         route: VoiceRoute,
@@ -55,7 +73,7 @@ pub(crate) enum Location {
 impl Location {
     fn orders(&self, document: &StableId) -> Vec<(Order, &StableId)> {
         let (route, event, note) = match self {
-            Self::Tempo => return Vec::new(),
+            Self::Tempo | Self::Root(_) => return Vec::new(),
             Self::Measure { id, .. } => {
                 return vec![(
                     Order::Measures {
@@ -64,7 +82,47 @@ impl Location {
                     id,
                 )];
             }
-            Self::Start(route) => (route, None, None),
+            Self::Staffs { part } => {
+                return vec![(
+                    Order::Parts {
+                        document_id: document.clone(),
+                    },
+                    part,
+                )];
+            }
+            Self::StaffLines { part, staff } => {
+                return vec![
+                    (
+                        Order::Parts {
+                            document_id: document.clone(),
+                        },
+                        part,
+                    ),
+                    (
+                        Order::Staffs {
+                            part_id: part.clone(),
+                        },
+                        staff,
+                    ),
+                ];
+            }
+            Self::Voices { part, measure } => {
+                return vec![
+                    (
+                        Order::Parts {
+                            document_id: document.clone(),
+                        },
+                        part,
+                    ),
+                    (
+                        Order::MeasureContents {
+                            part_id: part.clone(),
+                        },
+                        measure,
+                    ),
+                ];
+            }
+            Self::Start(route) | Self::VoiceStaff(route) => (route, None, None),
             Self::Event { route, event, .. } => (route, Some(event), None),
             Self::Pitch { route, event, note } => (route, Some(event), Some(note)),
         };
@@ -108,12 +166,20 @@ impl Location {
         orders
     }
 
-    // Rank follows reference evaluation, which is not lexicographic path order:
-    // event pitch precedes duration and an event-root overrun comes last.
-    fn path_and_rank(&self, indices: [usize; 5]) -> (Vec<Segment>, [usize; 8]) {
+    // The rank is the reference walk's evaluation order, not textual path order.
+    // Part staff checks precede contents; voice references precede start/time;
+    // each event checks its reference and notes before pitch and duration.
+    fn path_and_rank(&self, indices: [usize; 5]) -> (Vec<Segment>, [usize; 10]) {
         let [part, content, voice, event, note] = indices;
         match self {
-            Self::Tempo => (["metadata", "tempo", "bpm"].map(field).to_vec(), [0; 8]),
+            Self::Tempo => (["metadata", "tempo", "bpm"].map(field).to_vec(), [0; 10]),
+            Self::Root(RootCollection::Measures) => (
+                vec![field("measureDefinitions")],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            ),
+            Self::Root(RootCollection::Parts) => {
+                (vec![field("parts")], [3, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+            }
             Self::Measure {
                 field: measure_field,
                 ..
@@ -133,8 +199,22 @@ impl Location {
                         2
                     }
                 };
-                (path, [1, part, phase, 0, 0, 0, 0, 0])
+                (path, [2, part, phase, 0, 0, 0, 0, 0, 0, 0])
             }
+            Self::Staffs { .. } => (
+                vec![field("parts"), index(part), field("staves")],
+                [4, part, 0, 0, 0, 0, 0, 0, 0, 0],
+            ),
+            Self::StaffLines { .. } => (
+                vec![
+                    field("parts"),
+                    index(part),
+                    field("staves"),
+                    index(content),
+                    field("lineCount"),
+                ],
+                [4, part, 1, content, 0, 0, 0, 0, 0, 0],
+            ),
             _ => {
                 let mut path = vec![
                     field("parts"),
@@ -142,39 +222,54 @@ impl Location {
                     field("measureContents"),
                     index(content),
                     field("voices"),
-                    index(voice),
-                    field("sequence"),
                 ];
+                if matches!(self, Self::Voices { .. }) {
+                    return (path, [4, part, 2, content, 0, 0, 0, 0, 0, 0]);
+                }
+                path.push(index(voice));
+                if matches!(self, Self::VoiceStaff(_)) {
+                    path.push(field("defaultStaffId"));
+                    return (path, [4, part, 2, content, 1, voice, 0, 0, 0, 0]);
+                }
+                path.push(field("sequence"));
                 if matches!(self, Self::Start(_)) {
                     path.push(field("start"));
-                    return (path, [2, part, content, voice, 0, 0, 0, 0]);
+                    return (path, [4, part, 2, content, 1, voice, 1, 0, 0, 0]);
                 }
                 path.extend([field("events"), index(event)]);
-                if matches!(self, Self::Pitch { .. }) {
-                    path.extend([
-                        field("content"),
-                        field("notes"),
-                        index(note),
-                        field("writtenPitch"),
-                    ]);
-                    (path, [2, part, content, voice, 1, event, 0, note])
-                } else {
-                    if matches!(
-                        self,
-                        Self::Event {
-                            field: EventField::Duration,
-                            ..
-                        }
-                    ) {
-                        path.push(field("duration"));
+                let mut rank = [4, part, 2, content, 1, voice, 2, event, 0, 0];
+                match self {
+                    Self::Pitch { .. } => {
+                        path.extend([
+                            field("content"),
+                            field("notes"),
+                            index(note),
+                            field("writtenPitch"),
+                        ]);
+                        rank[8] = 2;
+                        rank[9] = note;
                     }
-                    (path, [2, part, content, voice, 1, event, 1, 0])
+                    Self::Event {
+                        field: event_field, ..
+                    } => match event_field {
+                        EventField::Staff => path.push(field("staffId")),
+                        EventField::Notes => {
+                            path.extend([field("content"), field("notes")]);
+                            rank[8] = 1;
+                        }
+                        EventField::Duration => {
+                            path.push(field("duration"));
+                            rank[8] = 3;
+                        }
+                        EventField::Root => rank[8] = 3,
+                    },
+                    _ => unreachable!(),
                 }
+                (path, rank)
             }
         }
     }
 }
-
 struct Pending {
     location: Location,
     code: Code,

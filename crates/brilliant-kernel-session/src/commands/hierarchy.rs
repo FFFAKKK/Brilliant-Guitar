@@ -157,7 +157,10 @@ mod tests {
         ));
     }
 
-    fn assert_leaf(result: KernelStage3SubmitResultV1, expected: KernelStage3CommandFailureLeafV1) {
+    fn assert_leaf(
+        result: KernelStage3SubmitResultV1,
+        expected: impl Into<crate::commands::TestFailureExpectation>,
+    ) {
         let KernelStage3SubmitResultV1::CommandRejected {
             failure: KernelStage3CommandFailureV1::Leaf(actual),
             ..
@@ -165,7 +168,7 @@ mod tests {
         else {
             panic!("hierarchy command must reject with a leaf failure");
         };
-        assert_eq!(actual, expected);
+        assert_eq!(actual, expected.into());
     }
 
     #[test]
@@ -286,27 +289,27 @@ mod tests {
         let cases = [
             (
                 r#"{"apiVersion":1,"command":{"commandVersion":1,"commandId":"core.staff.insert","target":{"kind":"part","partId":"pa"},"payload":{"anchor":{"kind":"after-staff","staffId":"sb"},"staff":{"id":"sa2","lineCount":5,"defaultClef":{"sign":"G","line":2}}}}}"#,
-                KernelStage3CommandFailureLeafV1::AnchorWrongOwner,
+                KernelStage3CommandFailureLeafV1::AnchorWrongOwner.into(),
             ),
             (
                 r#"{"apiVersion":1,"command":{"commandVersion":1,"commandId":"core.staff.move","target":{"kind":"staff","staffId":"sa"},"payload":{"anchor":{"kind":"after-staff","staffId":"sa"}}}}"#,
-                KernelStage3CommandFailureLeafV1::AnchorSelfReference,
+                KernelStage3CommandFailureLeafV1::AnchorSelfReference.into(),
             ),
             (
                 r#"{"apiVersion":1,"command":{"commandVersion":1,"commandId":"core.voice.insert","target":{"kind":"part","partId":"pa"},"payload":{"measureId":"m1","anchor":{"kind":"after-voice","voiceId":"vb1"},"voice":{"id":"va-new","defaultStaffId":"sa","sequence":{"start":{"numerator":0,"denominator":1},"events":[]}}}}}"#,
-                KernelStage3CommandFailureLeafV1::AnchorWrongOwner,
+                KernelStage3CommandFailureLeafV1::AnchorWrongOwner.into(),
             ),
             (
                 r#"{"apiVersion":1,"command":{"commandVersion":1,"commandId":"core.voice.set-default-staff","target":{"kind":"voice","voiceId":"va1"},"payload":{"staffId":"sb"}}}"#,
-                KernelStage3CommandFailureLeafV1::ReferenceConflict,
+                crate::commands::semantic_test_failure("semantic.staff-reference-missing"),
             ),
             (
                 r#"{"apiVersion":1,"command":{"commandVersion":1,"commandId":"core.staff.remove","target":{"kind":"staff","staffId":"sa"},"payload":{}}}"#,
-                KernelStage3CommandFailureLeafV1::ReferenceConflict,
+                KernelStage3CommandFailureLeafV1::ReferenceConflict.into(),
             ),
             (
                 r#"{"apiVersion":1,"command":{"commandVersion":1,"commandId":"core.voice.remove","target":{"kind":"voice","voiceId":"va1"},"payload":{}}}"#,
-                KernelStage3CommandFailureLeafV1::LocalInvariantRejected,
+                crate::commands::semantic_test_failure("semantic.voice-required"),
             ),
         ];
         for (command, failure) in cases {
@@ -338,7 +341,7 @@ mod tests {
         let remove_final = r#"{"apiVersion":1,"command":{"commandVersion":1,"commandId":"core.part.remove","target":{"kind":"part","partId":"pa"},"payload":{}}}"#;
         assert_leaf(
             submit(&mut session, remove_final),
-            KernelStage3CommandFailureLeafV1::LocalInvariantRejected,
+            crate::commands::semantic_test_failure("semantic.part-required"),
         );
         assert_eq!(
             encode_read_result(&session.read_state()).expect("final part retained"),

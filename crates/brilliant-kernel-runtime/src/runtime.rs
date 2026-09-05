@@ -1,7 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-};
+use std::{collections::HashMap, sync::Arc};
 
 use brilliant_core_types::{
     DocumentVersionV1, JS_SAFE_INTEGER_MAX, SafeInteger, StableId, StablePathV1,
@@ -68,7 +65,6 @@ impl KernelStage3PreparedV1 {
 /// One isolated command transaction. Dropping it publishes no live state.
 pub struct KernelStage3TransactionV1<'a> {
     overlay: TransactionOverlayV1<'a>,
-    allow_intermediate_empty_containers: bool,
 }
 
 #[derive(Clone, Copy)]
@@ -365,7 +361,6 @@ impl KernelRuntime {
     pub fn begin_stage3_transaction(&self) -> KernelStage3TransactionV1<'_> {
         KernelStage3TransactionV1 {
             overlay: TransactionOverlayV1::new(&self.store),
-            allow_intermediate_empty_containers: false,
         }
     }
 
@@ -812,7 +807,6 @@ impl KernelStage3TransactionV1<'_> {
         document_id: &StableId,
     ) -> Result<(), KernelStage3CommandFailureLeafV1> {
         self.validate_document_target(document_id)?;
-        self.allow_intermediate_empty_containers = true;
         Ok(())
     }
 
@@ -832,9 +826,6 @@ impl KernelStage3TransactionV1<'_> {
     }
 
     pub fn finish(self) -> Result<KernelStage3PreparedV1, KernelStage3CommandFailureLeafV1> {
-        if !self.overlay.has_valid_nonempty_containers() {
-            return Err(KernelStage3CommandFailureLeafV1::LocalInvariantRejected);
-        }
         let attempt_metrics = overlay_attempt_metrics(&self.overlay);
         let change_set = self.overlay.finish().map_err(map_overlay_failure)?;
         Ok(KernelStage3PreparedV1 {
@@ -935,9 +926,6 @@ impl KernelStage3TransactionV1<'_> {
             let entry = by_part
                 .remove(part_id)
                 .ok_or(KernelStage3CommandFailureLeafV1::LocalInvariantRejected)?;
-            if entry.voices.is_empty() {
-                return Err(KernelStage3CommandFailureLeafV1::LocalInvariantRejected);
-            }
             bundle_contents.push(MeasurePartContentBundleV1 {
                 part_id: part_id.clone(),
                 voices: entry.voices,
@@ -1037,12 +1025,6 @@ impl KernelStage3TransactionV1<'_> {
             .overlay
             .read_order(&measure_order)
             .ok_or(KernelStage3CommandFailureLeafV1::LocalInvariantRejected)?;
-        if current_measures.len() <= 1
-            && !range_effect_accounting
-            && !self.allow_intermediate_empty_containers
-        {
-            return Err(KernelStage3CommandFailureLeafV1::LocalInvariantRejected);
-        }
         let desired_measures = removed_order(&current_measures, &measure_id)
             .ok_or(KernelStage3CommandFailureLeafV1::LocalInvariantRejected)?;
 
@@ -1264,20 +1246,10 @@ impl KernelStage3TransactionV1<'_> {
                     .ok_or(KernelStage3CommandFailureLeafV1::LocalInvariantRejected)?,
             );
         }
-        if !contents_by_measure.is_empty() || part.staves.is_empty() {
+        if !contents_by_measure.is_empty() {
             return Err(KernelStage3CommandFailureLeafV1::LocalInvariantRejected);
         }
         part.measure_contents = ordered_contents;
-
-        let staff_ids: HashSet<_> = part.staves.iter().map(|staff| staff.id.clone()).collect();
-        for content in &part.measure_contents {
-            if content.voices.is_empty() {
-                return Err(KernelStage3CommandFailureLeafV1::LocalInvariantRejected);
-            }
-            for voice in &content.voices {
-                validate_inserted_voice_references(voice, &staff_ids)?;
-            }
-        }
 
         self.record_affected(StableEntityAddressV1::Document {
             document_id: document_id.clone(),
@@ -1329,13 +1301,6 @@ impl KernelStage3TransactionV1<'_> {
         let part_order = StableOrderAddressV1::Parts {
             document_id: document_id.clone(),
         };
-        let current_parts = self
-            .overlay
-            .read_order(&part_order)
-            .ok_or(KernelStage3CommandFailureLeafV1::LocalInvariantRejected)?;
-        if current_parts.len() <= 1 && !self.allow_intermediate_empty_containers {
-            return Err(KernelStage3CommandFailureLeafV1::LocalInvariantRejected);
-        }
         let measure_ids = self
             .overlay
             .read_order(&StableOrderAddressV1::Measures {
@@ -1511,14 +1476,6 @@ impl KernelStage3TransactionV1<'_> {
         let order = StableOrderAddressV1::Staffs {
             part_id: part_id.clone(),
         };
-        let current = self
-            .overlay
-            .read_order(&order)
-            .ok_or(KernelStage3CommandFailureLeafV1::LocalInvariantRejected)?;
-        if current.len() <= 1 && !self.allow_intermediate_empty_containers {
-            return Err(KernelStage3CommandFailureLeafV1::LocalInvariantRejected);
-        }
-
         self.record_affected(address.clone())?;
         self.record_affected(StableEntityAddressV1::Part {
             part_id: part_id.clone(),
@@ -1622,20 +1579,6 @@ impl KernelStage3TransactionV1<'_> {
             .read_order(&order)
             .ok_or(KernelStage3CommandFailureLeafV1::LocalInvariantRejected)?;
         let stable_anchor = resolve_voice_anchor(&mut self.overlay, &current, anchor)?;
-        if !self.staff_belongs_to_part(&voice.default_staff_id, &part_id) {
-            return Err(KernelStage3CommandFailureLeafV1::ReferenceConflict);
-        }
-        for event in &voice.sequence.events {
-            if matches!(&event.content, RhythmicContentV1::Notes { notes } if notes.is_empty()) {
-                return Err(KernelStage3CommandFailureLeafV1::LocalInvariantRejected);
-            }
-            if let Some(staff_id) = &event.staff_id
-                && !self.staff_belongs_to_part(staff_id, &part_id)
-            {
-                return Err(KernelStage3CommandFailureLeafV1::ReferenceConflict);
-            }
-        }
-
         self.record_affected(part_address)?;
         let voice_id = voice.id.clone();
         let mutation = self.overlay.insert_entity(
@@ -1678,14 +1621,6 @@ impl KernelStage3TransactionV1<'_> {
             part_id: part_id.clone(),
             measure_id: measure_id.clone(),
         };
-        let current = self
-            .overlay
-            .read_order(&order)
-            .ok_or(KernelStage3CommandFailureLeafV1::LocalInvariantRejected)?;
-        if current.len() <= 1 && !self.allow_intermediate_empty_containers {
-            return Err(KernelStage3CommandFailureLeafV1::LocalInvariantRejected);
-        }
-
         self.record_affected(address.clone())?;
         self.record_affected(StableEntityAddressV1::Part {
             part_id: part_id.clone(),
@@ -1775,13 +1710,6 @@ impl KernelStage3TransactionV1<'_> {
         ) {
             return Err(KernelStage3CommandFailureLeafV1::TargetNotFound);
         }
-        let part_id = match self.overlay.read_owner(&voice_address) {
-            Some(StableOwnerAddressV1::PartMeasure { part_id, .. }) => part_id,
-            _ => return Err(KernelStage3CommandFailureLeafV1::LocalInvariantRejected),
-        };
-        if !self.staff_belongs_to_part(&staff_id, &part_id) {
-            return Err(KernelStage3CommandFailureLeafV1::ReferenceConflict);
-        }
         let mutation = self.overlay.update_reference(
             ReferenceAddressV1::VoiceDefaultStaff { voice_id },
             ReferenceValueV1::StableId(staff_id),
@@ -1825,20 +1753,9 @@ impl KernelStage3TransactionV1<'_> {
             Some(StableOwnerAddressV1::Voice { voice_id }) => voice_id,
             _ => return Err(KernelStage3CommandFailureLeafV1::LocalInvariantRejected),
         };
-        let part_id = match self.overlay.read_owner(&StableEntityAddressV1::Voice {
-            voice_id: voice_id.clone(),
-        }) {
-            Some(StableOwnerAddressV1::PartMeasure { part_id, .. }) => part_id,
-            _ => return Err(KernelStage3CommandFailureLeafV1::LocalInvariantRejected),
-        };
         let requested = match assignment {
             EventStaffAssignmentV1::InheritDefault => None,
-            EventStaffAssignmentV1::Staff { staff_id } => {
-                if !self.staff_belongs_to_part(&staff_id, &part_id) {
-                    return Err(KernelStage3CommandFailureLeafV1::ReferenceConflict);
-                }
-                Some(staff_id)
-            }
+            EventStaffAssignmentV1::Staff { staff_id } => Some(staff_id),
         };
         let current = match self
             .overlay
@@ -2005,10 +1922,6 @@ impl KernelStage3TransactionV1<'_> {
         ) {
             return Err(KernelStage3CommandFailureLeafV1::TargetNotFound);
         }
-        let voice_part_id = match self.overlay.read_owner(&voice_address) {
-            Some(StableOwnerAddressV1::PartMeasure { part_id, .. }) => part_id,
-            _ => return Err(KernelStage3CommandFailureLeafV1::LocalInvariantRejected),
-        };
         let order = StableOrderAddressV1::Events {
             voice_id: voice_id.clone(),
         };
@@ -2038,30 +1951,12 @@ impl KernelStage3TransactionV1<'_> {
         };
         let content_matches = match expected_content {
             InsertedEventContentV1::Notes => {
-                matches!(&event.content, RhythmicContentV1::Notes { notes } if !notes.is_empty())
+                matches!(&event.content, RhythmicContentV1::Notes { .. })
             }
             InsertedEventContentV1::Rest => matches!(&event.content, RhythmicContentV1::Rest),
         };
         if !content_matches {
             return Err(KernelStage3CommandFailureLeafV1::LocalInvariantRejected);
-        }
-        if let Some(staff_id) = &event.staff_id {
-            let staff_address = StableEntityAddressV1::Staff {
-                staff_id: staff_id.clone(),
-            };
-            let same_part = matches!(
-                (
-                    self.overlay.read_entity(&staff_address),
-                    self.overlay.read_owner(&staff_address),
-                ),
-                (
-                    Some(EntityBundleV1::Staff(_)),
-                    Some(StableOwnerAddressV1::Part { part_id })
-                ) if part_id == voice_part_id
-            );
-            if !same_part {
-                return Err(KernelStage3CommandFailureLeafV1::ReferenceConflict);
-            }
         }
         let event_address = StableEntityAddressV1::Event {
             event_id: event.id.clone(),
@@ -2453,24 +2348,6 @@ impl KernelStage3TransactionV1<'_> {
             == Some(address)
     }
 
-    fn staff_belongs_to_part(&mut self, staff_id: &StableId, part_id: &StableId) -> bool {
-        let address = StableEntityAddressV1::Staff {
-            staff_id: staff_id.clone(),
-        };
-        matches!(
-            (
-                self.overlay.read_entity(&address),
-                self.overlay.read_owner(&address),
-            ),
-            (
-                Some(EntityBundleV1::Staff(_)),
-                Some(StableOwnerAddressV1::Part {
-                    part_id: staff_part_id,
-                }),
-            ) if &staff_part_id == part_id
-        )
-    }
-
     fn record_affected(
         &mut self,
         address: StableEntityAddressV1,
@@ -2747,26 +2624,6 @@ fn resolve_voice_anchor(
             }
         }
     }
-}
-
-fn validate_inserted_voice_references(
-    voice: &VoiceV1,
-    staff_ids: &HashSet<StableId>,
-) -> Result<(), KernelStage3CommandFailureLeafV1> {
-    if !staff_ids.contains(&voice.default_staff_id) {
-        return Err(KernelStage3CommandFailureLeafV1::ReferenceConflict);
-    }
-    for event in &voice.sequence.events {
-        if matches!(&event.content, RhythmicContentV1::Notes { notes } if notes.is_empty()) {
-            return Err(KernelStage3CommandFailureLeafV1::LocalInvariantRejected);
-        }
-        if let Some(staff_id) = &event.staff_id
-            && !staff_ids.contains(staff_id)
-        {
-            return Err(KernelStage3CommandFailureLeafV1::ReferenceConflict);
-        }
-    }
-    Ok(())
 }
 
 fn inserted_order(

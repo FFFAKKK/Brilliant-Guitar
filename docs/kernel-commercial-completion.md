@@ -516,3 +516,73 @@ The ignored `target/probe-hierarchy-admission.cjs` and captured
 The next slice must distinguish safe final-candidate musical diagnostics from
 mechanism invariants, aggregate them with the completed metadata/pitch/time
 families and preserve temporary-invalid/final-valid batch behavior.
+
+### S1.5d — final hierarchy, cardinality and staff membership
+
+The confirmed staff-line and required-collection defects above are repaired.
+CommitPlan now checks final semantic state before structural adoption checks.
+Changed Staff records validate line count. Touched surviving measure, Part,
+staff, voice and notes orders validate their required cardinality. Empty event
+sequences and rest content remain valid. Removed owners have no surviving
+obligation; temporary empty containers can be repaired within a batch.
+
+Voice defaults and explicit event staff assignments use final Part membership.
+Changed reference addresses are combined with indexed base referrers for staff
+identity changes, covering unchanged referring records and same-ID replacement.
+Future staff targets can be inserted by later batch children. Removing a staff
+with a current live reference still fails immediately with reference-conflict;
+target and anchor resolution retain their earlier command precedence.
+
+GPT-6's read-only review identified the distinction between deferred assignment
+membership and immediate referenced-staff removal. A subsequent live codec
+probe refined its broad cardinality recommendation: nested Part components may
+contain empty voice arrays, but measure-insert envelopes require nonempty
+contents and voices. Tests pin those different failure categories explicitly.
+The private CommitPlan gate also rejects empty notes and untouched dangling
+references when command preparation is bypassed, including stored operations.
+
+The shared bounded diagnostic collector now orders hierarchy, metadata, pitch
+and time reports in the independent reference walker's numeric traversal order.
+The combined 4,096/4,097 cap remains atomic. One borrowed, typed event-content
+discriminant query extends the private CoreBaseRead contract to 12 methods;
+production uses an indexed slot and does not detach an event/chord to test
+notes cardinality. Public exports, command schema and 11 ChangeOps are unchanged.
+A valid local staff-line edit evaluates one rule with zero semantic dependency
+reads for both one and 64 Parts. This is scoped work evidence, not qualification.
+
+Nine new real-native tests cover exact reports, batch repair, inserted nested
+shapes, membership, identity replacement, undo/redo/replay, cache/history/event
+atomicity, aggregate limits and local work. Older private tests now expect the
+correct semantic codes instead of mechanism failures. The aggregate-Part
+extension inverse test retains a valid second Part so it tests ownership without
+depending on an invalid empty final document; frozen fixtures are unchanged.
+
+Validation at this slice:
+
+- Rust workspace: 171 passed, 1 ignored; fmt, all-target clippy `-D warnings`
+  and Rust 1.88.0 workspace check passed. Fresh Windows x64 native build.
+- Full TypeScript regression: 695 passed, 2 skipped, 0 failed (165.638 seconds).
+  Strict build and the nine hierarchy tests also pass after strengthening the
+  explicit semantic/envelope/reference-conflict assertions.
+- Scoped self-review checked final surviving owners, base and overlay reference
+  union, shared history rejection, codec precedence, deterministic diagnostic
+  ordering and the exact private read surface. No public surface changes.
+
+### Confirmed next gaps: candidate IDs and measure coverage
+
+The ignored `target/probe-candidate-admission.cjs` and captured
+`target/candidate-admission-probe.json` preserve exact inputs and reports:
+
+- Duplicate existing measure insertion: TS returns one early `semantic.id-duplicate`
+  at the requested insertion index; native returns local-invariant-rejected.
+- Duplicate staff insertion: TS returns the final walker's `semantic.id-duplicate`
+  at the later duplicate; native returns local-invariant-rejected.
+- Empty inserted staff ID: TS reports `semantic.id-empty`; native rejects its envelope.
+- Missing, unknown and duplicate Part measure contents: TS reports ordered
+  coverage/reference diagnostics; native returns local-invariant-rejected.
+
+The next design must preserve ordered candidate occurrences and batch behavior
+without weakening unique live-store identities. Early HashMap deduplication
+cannot recover those reports. The special early duplicate-measure command rule
+must be kept distinct from general final-state duplicate-ID validation. Create
+admission and public composition also remain open; S1 is not complete.

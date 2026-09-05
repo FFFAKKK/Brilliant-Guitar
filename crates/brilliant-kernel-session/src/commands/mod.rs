@@ -11,6 +11,42 @@ use brilliant_kernel_runtime::KernelStage3TransactionV1;
 
 pub(crate) use catalog::catalog_definition;
 
+#[cfg(test)]
+#[derive(Debug)]
+pub(crate) enum TestFailureExpectation {
+    Leaf(KernelStage3CommandFailureLeafV1),
+    Semantic(&'static str),
+}
+
+#[cfg(test)]
+impl From<KernelStage3CommandFailureLeafV1> for TestFailureExpectation {
+    fn from(value: KernelStage3CommandFailureLeafV1) -> Self {
+        Self::Leaf(value)
+    }
+}
+
+#[cfg(test)]
+impl PartialEq<TestFailureExpectation> for KernelStage3CommandFailureLeafV1 {
+    fn eq(&self, expected: &TestFailureExpectation) -> bool {
+        match expected {
+            TestFailureExpectation::Leaf(failure) => self == failure,
+            TestFailureExpectation::Semantic(code) => match self {
+                Self::SemanticInvalid { diagnostics } => {
+                    diagnostics.len() == 1
+                        && diagnostics[0].code.as_str() == *code
+                        && diagnostics[0].message_key == format!("core.{code}")
+                        && diagnostics[0].details.is_none()
+                }
+                _ => false,
+            },
+        }
+    }
+}
+
+#[cfg(test)]
+pub(crate) fn semantic_test_failure(code: &'static str) -> TestFailureExpectation {
+    TestFailureExpectation::Semantic(code)
+}
 pub(crate) fn dispatch(
     transaction: &mut KernelStage3TransactionV1<'_>,
     command: CoreCommandEnvelopeV1,

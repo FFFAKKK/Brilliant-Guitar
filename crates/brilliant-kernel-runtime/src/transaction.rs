@@ -1113,10 +1113,6 @@ impl CommitPlanV1 {
         let (mut overlay, mut collector) = replay_and_collect(store, arena, operations)?;
 
         add_extension_reference_states(&extension_simulation, &mut collector);
-        validate_coverage(store, &overlay, &collector)?;
-        validate_reference_states(&overlay, &collector.reference_states)?;
-        validate_removed_reference_targets(store, &collector)?;
-
         let (header_metadata, final_records) = prepare_final_records(store, &collector)?;
         let validation_work = crate::incremental_validation::validate_final_semantics(
             store,
@@ -1128,9 +1124,16 @@ impl CommitPlanV1 {
                 records: &final_records,
                 touched_voices: &collector.touched_voice_ids,
                 references: &collector.reference_states,
+                entities: &collector.entity_states,
+                orders: &collector.order_addresses,
             },
         )
         .map_err(TransactionPrepareFailureV1::Validation)?;
+        // Musical invalidity has a complete ordered report. The structural
+        // checks remain a separate defence before physical reservation/adoption.
+        validate_coverage(store, &overlay, &collector)?;
+        validate_reference_states(&overlay, &collector.reference_states)?;
+        validate_removed_reference_targets(store, &collector)?;
         let records = prepare_record_actions(store, &collector, final_records, &overlay)?;
         let orders = prepare_orders(store, &overlay, &collector, &records.inserted_ids)?;
         let extensions = prepare_extensions(store, &overlay, extension_simulation)?;
@@ -3350,6 +3353,19 @@ mod tests {
     #[test]
     fn aggregate_part_remove_and_inverse_restore_owned_extensions() {
         let mut document = fixture();
+        // Keep a valid surviving Part while testing the removed Part's owned
+        // extension cascade and its exact inverse.
+        let mut retained = document.parts[0].clone();
+        retained.id = id("retained-part");
+        retained.staves.truncate(1);
+        retained.staves[0].id = id("retained-staff");
+        for (index, content) in retained.measure_contents.iter_mut().enumerate() {
+            content.voices.truncate(1);
+            content.voices[0].id = id(&format!("retained-voice-{index}"));
+            content.voices[0].default_staff_id = id("retained-staff");
+            content.voices[0].sequence.events.clear();
+        }
+        document.parts.push(retained);
         let mut owned = document.extensions[0].clone();
         owned.namespace = "example.part-owned".to_owned();
         owned.owner = ExtensionOwnerV1::Part {
@@ -3382,7 +3398,8 @@ mod tests {
         let change_set = commit_change_set(&mut store, &mut version, &mut metrics, change_set)
             .expect("remove commit");
         let removed = store.export_document().expect("removed document");
-        assert!(removed.parts.is_empty());
+        assert_eq!(removed.parts.len(), 1);
+        assert_eq!(removed.parts[0].id.as_str(), "retained-part");
         assert_eq!(removed.extensions.len(), 2);
         assert_index_parity(&store);
 
@@ -3399,6 +3416,86 @@ mod tests {
             baseline
         );
         assert_index_parity(&store);
+    }
+
+    #[test]
+    fn final_hierarchy_checks_cover_unmodified_referrers_and_stored_operations() {
+        use brilliant_score_foundation::CoreDiagnosticCodeV1 as Code;
+        for remove_staff in [false, true] {
+            let mut store = build_live_score_store(&fixture()).expect("store");
+            let baseline = store.export_document().expect("baseline");
+            let mut overlay = TransactionOverlayV1::new(&store);
+            let (owner, order, entity, expected) = if remove_staff {
+                (
+                    StableOwnerAddressV1::Part {
+                        part_id: id("part-z"),
+                    },
+                    StableOrderAddressV1::Staffs {
+                        part_id: id("part-z"),
+                    },
+                    StableEntityAddressV1::Staff {
+                        staff_id: id("staff-a"),
+                    },
+                    vec![Code::StaffReferenceMissing, Code::StaffReferenceMissing],
+                )
+            } else {
+                (
+                    StableOwnerAddressV1::Event {
+                        event_id: id("event-a"),
+                    },
+                    StableOrderAddressV1::Notes {
+                        event_id: id("event-a"),
+                    },
+                    StableEntityAddressV1::Note {
+                        note_id: id("note-a"),
+                    },
+                    vec![Code::NotesRequired],
+                )
+            };
+            overlay
+                .remove_entity(owner, order, entity)
+                .expect("prepare invalid final candidate");
+            let change_set = overlay.finish().expect("effects");
+            let mut version = DocumentVersionV1::initial();
+            let mut metrics = KernelStage3MetricsV1::default();
+            for stored in [false, true] {
+                let failure = if stored {
+                    apply_stored_operations(
+                        &mut store,
+                        &mut version,
+                        &mut metrics,
+                        &change_set,
+                        &change_set.forward,
+                    )
+                    .expect_err("stored effects rejected")
+                } else {
+                    commit_change_set(&mut store, &mut version, &mut metrics, change_set.clone())
+                        .expect_err("forward rejected")
+                };
+                let TransactionPrepareFailureV1::Validation(validation) = failure else {
+                    panic!("semantic validation required");
+                };
+                let brilliant_kernel_contracts::KernelStage3CommandFailureLeafV1::SemanticInvalid {
+                    diagnostics,
+                } = validation.failure
+                else {
+                    panic!("complete semantic report required");
+                };
+                assert_eq!(
+                    diagnostics
+                        .iter()
+                        .map(|entry| entry.code)
+                        .collect::<Vec<_>>(),
+                    expected
+                );
+                assert_eq!(
+                    store.export_document().expect("unchanged document"),
+                    baseline
+                );
+                assert_eq!(version.get(), 0);
+                assert_index_parity(&store);
+            }
+        }
     }
 
     #[test]

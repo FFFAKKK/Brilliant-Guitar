@@ -1181,7 +1181,10 @@ mod tests {
         else {
             panic!("missing staff reference must reject");
         };
-        assert_eq!(failure, KernelStage3CommandFailureLeafV1::ReferenceConflict);
+        assert_eq!(
+            failure,
+            crate::commands::semantic_test_failure("semantic.staff-reference-missing")
+        );
         assert_eq!(
             encode_read_result(&session.read_state()).expect("unchanged failure read"),
             before

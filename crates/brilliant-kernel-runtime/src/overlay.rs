@@ -12,6 +12,7 @@ use crate::change_set::{
     ReferenceAddressV1, ReferenceValueV1, ScalarAddressV1, ScalarValueV1, StableAnchorV1,
     StableEntityAddressV1, StableExtensionOwnerV1, StableOrderAddressV1, StableOwnerAddressV1,
 };
+use crate::records::EventContentKind;
 
 pub(crate) const OVERLAY_LOOKUP_LAYER_COUNT_V1: usize = 4;
 
@@ -33,6 +34,18 @@ pub(crate) trait CoreBaseReadV1 {
         }
     }
     fn detach_entity(&self, address: &StableEntityAddressV1) -> Option<EntityBundleV1>;
+    fn read_event_content_kind(&self, event_id: &StableId) -> Option<EventContentKind> {
+        let EntityBundleV1::Event(event) = self.detach_entity(&StableEntityAddressV1::Event {
+            event_id: event_id.clone(),
+        })?
+        else {
+            return None;
+        };
+        Some(match event.content {
+            brilliant_score_foundation::RhythmicContentV1::Rest => EventContentKind::Rest,
+            brilliant_score_foundation::RhythmicContentV1::Notes { .. } => EventContentKind::Notes,
+        })
+    }
     fn read_order(&self, address: &StableOrderAddressV1) -> Option<Vec<StableId>>;
     /// Visit in document order, stopping when the callback returns false.
     /// The production store overrides this to borrow IDs without copying a list.
@@ -233,40 +246,6 @@ impl<'a> TransactionOverlayV1<'a> {
         self.builder.logical_bytes()
     }
 
-    pub(crate) fn has_valid_nonempty_containers(&self) -> bool {
-        self.orders.iter().all(|(address, values)| match address {
-            StableOrderAddressV1::Measures { .. } | StableOrderAddressV1::Parts { .. } => {
-                !values.is_empty()
-            }
-            StableOrderAddressV1::Staffs { part_id } => {
-                self.read_owner(&StableEntityAddressV1::Part {
-                    part_id: part_id.clone(),
-                })
-                .is_none()
-                    || !values.is_empty()
-            }
-            StableOrderAddressV1::Voices {
-                part_id,
-                measure_id,
-            } => {
-                self.read_owner(&StableEntityAddressV1::Part {
-                    part_id: part_id.clone(),
-                })
-                .is_none()
-                    || self
-                        .read_owner(&StableEntityAddressV1::Measure {
-                            measure_id: measure_id.clone(),
-                        })
-                        .is_none()
-                    || !values.is_empty()
-            }
-            StableOrderAddressV1::MeasureContents { .. }
-            | StableOrderAddressV1::Events { .. }
-            | StableOrderAddressV1::Notes { .. }
-            | StableOrderAddressV1::Extensions { .. } => true,
-        })
-    }
-
     pub(crate) fn begin_segment(&self) -> OpenBatchSegmentV1 {
         self.builder.begin_segment()
     }
@@ -359,6 +338,38 @@ impl<'a> TransactionOverlayV1<'a> {
         }
         self.metrics.base_slot_reads += 1;
         self.base.read_transposition(part_id)
+    }
+
+    /// Read the discriminant without cloning a chord or event aggregate.
+    pub(crate) fn read_event_content_kind(
+        &mut self,
+        event_id: &StableId,
+    ) -> Option<EventContentKind> {
+        let address = StableEntityAddressV1::Event {
+            event_id: event_id.clone(),
+        };
+        match self.entity_states.get(event_id) {
+            Some(OverlayEntityStateV1::Present(actual)) if actual == &address => {
+                let OverlayRecordV1::Present(EntityBundleV1::Event(event)) =
+                    self.records.get(&address)?
+                else {
+                    return None;
+                };
+                return Some(match event.content {
+                    brilliant_score_foundation::RhythmicContentV1::Rest => EventContentKind::Rest,
+                    brilliant_score_foundation::RhythmicContentV1::Notes { .. } => {
+                        EventContentKind::Notes
+                    }
+                });
+            }
+            Some(_) => return None,
+            None => {}
+        }
+        if self.resolve_base_entity(event_id)? != address {
+            return None;
+        }
+        self.metrics.base_slot_reads += 1;
+        self.base.read_event_content_kind(event_id)
     }
 
     pub(crate) fn read_entity(

@@ -18,6 +18,8 @@ use crate::{
     validation_diagnostics::{DiagnosticCollector, Location, VoiceRoute},
 };
 
+#[path = "hierarchy_validation.rs"]
+mod hierarchy;
 #[path = "time_validation.rs"]
 mod time;
 
@@ -40,6 +42,8 @@ pub(crate) struct FinalValidationDeltaV1<'a> {
     pub(crate) records: &'a HashMap<Entity, StableRecordV1>,
     pub(crate) touched_voices: &'a HashSet<StableId>,
     pub(crate) references: &'a HashMap<ReferenceAddressV1, Option<ReferenceValueV1>>,
+    pub(crate) entities: &'a HashMap<Entity, Option<StableRecordV1>>,
+    pub(crate) orders: &'a [Order],
 }
 
 struct Assessment<'view, 'base> {
@@ -137,7 +141,8 @@ impl Assessment<'_, '_> {
         for note in sorted_ids(notes)? {
             self.check_note(note)?;
         }
-        self.check_time(base, delta)
+        self.check_time(base, delta)?;
+        self.check_hierarchy(base, delta)
     }
 
     fn order(&mut self, address: &Order) -> Result<Vec<StableId>, Failure> {

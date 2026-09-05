@@ -307,7 +307,7 @@ mod tests {
     }
 
     #[test]
-    fn final_measure_removal_uses_private_local_invariant_and_is_zero_delta() {
+    fn final_measure_removal_returns_semantic_diagnostics_and_is_zero_delta() {
         let mut session = session();
         let remove_second = r#"{"apiVersion":1,"command":{"commandVersion":1,"commandId":"core.measure.remove","target":{"kind":"measure","measureId":"m2"},"payload":{}}}"#;
         assert!(matches!(
@@ -326,7 +326,7 @@ mod tests {
         };
         assert_eq!(
             failure,
-            KernelStage3CommandFailureLeafV1::LocalInvariantRejected
+            crate::commands::semantic_test_failure("semantic.measure-required")
         );
         assert_eq!(value.document_version.get(), 1);
         assert_zero_global_work(&KernelStage3SubmitResultV1::CommandRejected {

@@ -195,8 +195,8 @@ test("same-ID deletion and reinsertion evaluates the final pitch and new Part ow
       } else {
         assert.equal(expected.status, "committed");
         if (result.status !== "committed") throw new Error(`same-ID commit required: ${JSON.stringify(result)}`);
-        // Two pitch rules plus full time rules for the final affected voices.
-        assert.equal(result.value.metrics.semanticRulesEvaluated, destination === "voice-0-0" ? 17 : 28);
+        // Two pitch rules, one final chord cardinality rule, plus time rules.
+        assert.equal(result.value.metrics.semanticRulesEvaluated, destination === "voice-0-0" ? 18 : 29);
         const final = read().snapshot.document;
         assert.equal(session.undo().status, "committed");
         assert.deepEqual(plain(read().snapshot.document), plain(document));

@@ -189,15 +189,17 @@ mod tests {
         let mut all_session = session();
         let before = encode_read_result(&all_session.read_state()).expect("before all delete");
         let delete_all = r#"{"apiVersion":1,"command":{"commandVersion":1,"commandId":"core.range.delete","target":{"kind":"document","documentId":"score-range"},"payload":{"range":{"kind":"measure-range","start":{"kind":"measure","measureId":"m1"},"end":{"kind":"measure","measureId":"m3"}}}}}"#;
-        assert!(matches!(
-            submit(&mut all_session, delete_all),
-            KernelStage3SubmitResultV1::CommandRejected {
-                failure: KernelStage3CommandFailureV1::Leaf(
-                    KernelStage3CommandFailureLeafV1::LocalInvariantRejected
-                ),
-                ..
-            }
-        ));
+        let KernelStage3SubmitResultV1::CommandRejected {
+            failure: KernelStage3CommandFailureV1::Leaf(failure),
+            ..
+        } = submit(&mut all_session, delete_all)
+        else {
+            panic!("empty document must reject");
+        };
+        assert_eq!(
+            failure,
+            crate::commands::semantic_test_failure("semantic.measure-required")
+        );
         assert_eq!(
             encode_read_result(&all_session.read_state()).expect("after all delete"),
             before
@@ -321,7 +323,7 @@ mod tests {
 
         assert_eq!(
             failure,
-            KernelStage3CommandFailureLeafV1::LocalInvariantRejected
+            crate::commands::semantic_test_failure("semantic.measure-required")
         );
         assert_eq!(value.document_version.get(), 0);
         assert_zero_global_work(&value.metrics);
