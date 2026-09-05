@@ -7,6 +7,10 @@ use std::{
     sync::Arc,
 };
 
+mod reservation;
+
+use reservation::{Reservation, Site};
+
 use brilliant_core_types::StableId;
 use brilliant_kernel_contracts::KernelStage3CommandFailureLeafV1 as Failure;
 use brilliant_score_foundation::{
@@ -204,6 +208,7 @@ struct Candidate<'a> {
     orders: HashMap<CandidateOrder, Vec<Occurrence>>,
     hidden: HashSet<Occurrence>,
     work: Work,
+    reservation: Reservation,
 }
 
 impl<'a> Candidate<'a> {
@@ -217,6 +222,7 @@ impl<'a> Candidate<'a> {
             orders: HashMap::new(),
             hidden: HashSet::new(),
             work: Work::default(),
+            reservation: Reservation::default(),
         }
     }
 
@@ -364,15 +370,28 @@ impl<'a> Candidate<'a> {
     }
 
     fn copy_order_for_write(&mut self, order: &CandidateOrder) -> Result<(), Failure> {
+        self.reservation.ensure_active()?;
         if self.orders.contains_key(order) {
             return Ok(());
         }
         let mut children = Vec::new();
-        self.visit_order(order, &mut |child, _| {
+        // Keep the fallible writer disjoint from the borrowed prefix visitor.
+        // Restore its terminal state before interpreting any visitor outcome.
+        let mut reservation = std::mem::take(&mut self.reservation);
+        let visited = self.visit_order(order, &mut |child, _| {
+            if reservation
+                .vec(Site::OrderEntries, &mut children, 1)
+                .is_err()
+            {
+                return false;
+            }
             children.push(child.clone());
             true
-        })
-        .ok_or(Failure::InternalError)?;
+        });
+        self.reservation = reservation;
+        self.reservation.ensure_active()?;
+        visited.ok_or(Failure::InternalError)?;
+        self.reservation.map(Site::Orders, &mut self.orders, 1)?;
         self.work.prefix_order_copies += 1;
         self.work.copied_entries += children.len() as u64;
         self.orders.insert(order.clone(), children);
@@ -592,6 +611,7 @@ impl<'a> Candidate<'a> {
         target_id: &str,
         after: Option<&str>,
     ) -> Result<(), Failure> {
+        self.reservation.ensure_active()?;
         let target = self.resolve(order.children.child_kind(), target_id)?;
         if self.owner(&target).as_ref() != Some(&order.owner) {
             return Err(Failure::TargetNotFound);
@@ -602,40 +622,44 @@ impl<'a> Candidate<'a> {
         let index = self.insertion_index(order, after, Some(&target))?;
         self.copy_order_for_write(order)?;
         let children = self.orders.get_mut(order).expect("touched order");
-        children.retain(|child| child != &target);
         // Hidden children do not contribute to the visible insertion index.
         let visible_at = children
             .iter()
-            .filter(|child| !self.hidden.contains(*child))
+            .filter(|child| *child != &target && !self.hidden.contains(*child))
             .count();
         if index > visible_at {
             return Err(Failure::InternalError);
         }
-        children.retain(|child| !self.hidden.contains(child));
+        children.retain(|child| child != &target && !self.hidden.contains(child));
         children.insert(index, target);
         Ok(())
     }
 
     fn hide(&mut self, occurrence: &Occurrence) -> Result<(), Failure> {
+        self.reservation.ensure_active()?;
         if !self.visible(occurrence) {
             return Err(Failure::TargetNotFound);
         }
         if occurrence == &self.document {
             return Err(Failure::InternalError);
         }
+        self.reservation
+            .set(Site::HiddenRoots, &mut self.hidden, 1)?;
         self.hidden.insert(occurrence.clone());
         Ok(())
     }
 
     /// Share raw IDs and references across new records, lookup keys and content
     /// links. Occurrence identity remains independent of string identity.
-    fn share_id(&mut self, value: String) -> Arc<str> {
+    fn share_id(&mut self, value: String) -> Result<Arc<str>, Failure> {
+        self.reservation.ensure_active()?;
         if let Some(shared) = self.id_pool.get(value.as_str()) {
-            return shared.clone();
+            return Ok(shared.clone());
         }
+        self.reservation.set(Site::IdPool, &mut self.id_pool, 1)?;
         let shared: Arc<str> = value.into();
         self.id_pool.insert(shared.clone());
-        shared
+        Ok(shared)
     }
 
     fn add_node(
@@ -644,16 +668,23 @@ impl<'a> Candidate<'a> {
         kind: Kind,
         raw_id: String,
         value: Option<Value>,
-    ) -> Occurrence {
+    ) -> Result<Occurrence, Failure> {
+        self.reservation.ensure_active()?;
         let index = self.nodes.len();
-        let raw_id = self.share_id(raw_id);
+        let raw_id = self.share_id(raw_id)?;
+        self.reservation.vec(Site::Nodes, &mut self.nodes, 1)?;
         if kind != Kind::Content {
-            self.added
-                .entry(kind)
-                .or_default()
-                .entry(raw_id.clone())
-                .or_default()
-                .push(index);
+            if !self.added.contains_key(&kind) {
+                self.reservation
+                    .map(Site::LookupKinds, &mut self.added, 1)?;
+            }
+            let by_id = self.added.entry(kind).or_default();
+            if !by_id.contains_key(raw_id.as_ref()) {
+                self.reservation.map(Site::LookupIds, by_id, 1)?;
+            }
+            let bucket = by_id.entry(raw_id.clone()).or_default();
+            self.reservation.vec(Site::LookupBucket, bucket, 1)?;
+            bucket.push(index);
         }
         self.nodes.push(Node {
             raw_id,
@@ -664,57 +695,75 @@ impl<'a> Candidate<'a> {
             staff_id: None,
             content_kind: None,
         });
-        Occurrence::Added(index)
+        Ok(Occurrence::Added(index))
     }
 
-    fn set_new_order(&mut self, owner: &Occurrence, children: Children, values: Vec<Occurrence>) {
-        self.orders
-            .insert(CandidateOrder::new(owner, children), values);
+    fn set_new_order(
+        &mut self,
+        owner: &Occurrence,
+        children: Children,
+        values: Vec<Occurrence>,
+    ) -> Result<(), Failure> {
+        self.reservation.ensure_active()?;
+        let order = CandidateOrder::new(owner, children);
+        if !self.orders.contains_key(&order) {
+            self.reservation.map(Site::Orders, &mut self.orders, 1)?;
+        }
+        self.orders.insert(order, values);
+        Ok(())
     }
 
-    fn add_voice(&mut self, content: &Occurrence, voice: AdmissionVoiceV1) -> Occurrence {
+    fn add_voice(
+        &mut self,
+        content: &Occurrence,
+        voice: AdmissionVoiceV1,
+    ) -> Result<Occurrence, Failure> {
         let occurrence = self.add_node(
             content,
             Kind::Voice,
             voice.id,
             Some(Value::VoiceSequenceStart(voice.sequence.start)),
-        );
+        )?;
         let Occurrence::Added(index) = occurrence else {
             unreachable!()
         };
-        self.nodes[index].staff_id = Some(self.share_id(voice.default_staff_id));
-        let mut events = Vec::with_capacity(voice.sequence.events.len());
+        self.nodes[index].staff_id = Some(self.share_id(voice.default_staff_id)?);
+        let mut events = Vec::new();
+        self.reservation
+            .vec(Site::OrderEntries, &mut events, voice.sequence.events.len())?;
         for event in voice.sequence.events {
             let event_occurrence = self.add_node(
                 &occurrence,
                 Kind::Event,
                 event.id,
                 Some(Value::EventNoteValue(event.duration)),
-            );
+            )?;
             let Occurrence::Added(index) = event_occurrence else {
                 unreachable!()
             };
-            self.nodes[index].staff_id = event.staff_id.map(|id| self.share_id(id));
+            self.nodes[index].staff_id = event.staff_id.map(|id| self.share_id(id)).transpose()?;
             let mut notes = Vec::new();
             self.nodes[index].content_kind = Some(match event.content {
                 RhythmicContentV1::Rest => EventContentKind::Rest,
                 RhythmicContentV1::Notes { notes: values } => {
+                    self.reservation
+                        .vec(Site::OrderEntries, &mut notes, values.len())?;
                     for note in values {
                         notes.push(self.add_node(
                             &event_occurrence,
                             Kind::Note,
                             note.id,
                             Some(Value::NoteWrittenPitch(note.written_pitch)),
-                        ));
+                        )?);
                     }
                     EventContentKind::Notes
                 }
             });
-            self.set_new_order(&event_occurrence, Children::Notes, notes);
+            self.set_new_order(&event_occurrence, Children::Notes, notes)?;
             events.push(event_occurrence);
         }
-        self.set_new_order(&occurrence, Children::Events, events);
-        occurrence
+        self.set_new_order(&occurrence, Children::Events, events)?;
+        Ok(occurrence)
     }
 
     /// Storage operation only, not command preparation: no semantic admission or
@@ -724,20 +773,28 @@ impl<'a> Candidate<'a> {
         part: AdmissionPartV1,
         after: Option<&str>,
     ) -> Result<Occurrence, Failure> {
+        self.reservation.ensure_active()?;
         let order = CandidateOrder::new(&self.document, Children::Parts);
         let index = self.insertion_index(&order, after, None)?;
         self.copy_order_for_write(&order)?;
+        self.reservation.vec(
+            Site::OrderEntries,
+            self.orders.get_mut(&order).expect("touched Part order"),
+            1,
+        )?;
         let occurrence = self.add_node(
             &self.document.clone(),
             Kind::Part,
             part.id,
             Some(Value::PartName(part.name)),
-        );
+        )?;
         let Occurrence::Added(node_index) = occurrence else {
             unreachable!()
         };
         self.nodes[node_index].instrument = Some(part.instrument);
-        let mut staffs = Vec::with_capacity(part.staves.len());
+        let mut staffs = Vec::new();
+        self.reservation
+            .vec(Site::OrderEntries, &mut staffs, part.staves.len())?;
         for staff in part.staves {
             staffs.push(self.add_node(
                 &occurrence,
@@ -747,22 +804,28 @@ impl<'a> Candidate<'a> {
                     line_count: staff.line_count,
                     default_clef: staff.default_clef,
                 }),
-            ));
+            )?);
         }
-        self.set_new_order(&occurrence, Children::Staffs, staffs);
-        let mut contents = Vec::with_capacity(part.measure_contents.len());
+        self.set_new_order(&occurrence, Children::Staffs, staffs)?;
+        let mut contents = Vec::new();
+        self.reservation.vec(
+            Site::OrderEntries,
+            &mut contents,
+            part.measure_contents.len(),
+        )?;
         for content in part.measure_contents {
             let content_occurrence =
-                self.add_node(&occurrence, Kind::Content, content.measure_id, None);
-            let voices = content
-                .voices
-                .into_iter()
-                .map(|voice| self.add_voice(&content_occurrence, voice))
-                .collect();
-            self.set_new_order(&content_occurrence, Children::Voices, voices);
+                self.add_node(&occurrence, Kind::Content, content.measure_id, None)?;
+            let mut voices = Vec::new();
+            self.reservation
+                .vec(Site::OrderEntries, &mut voices, content.voices.len())?;
+            for voice in content.voices {
+                voices.push(self.add_voice(&content_occurrence, voice)?);
+            }
+            self.set_new_order(&content_occurrence, Children::Voices, voices)?;
             contents.push(content_occurrence);
         }
-        self.set_new_order(&occurrence, Children::Contents, contents);
+        self.set_new_order(&occurrence, Children::Contents, contents)?;
         // The target order may still retain explicitly hidden siblings.
         let children = self.orders.get_mut(&order).expect("touched Part order");
         children.retain(|child| !self.hidden.contains(child));

@@ -845,3 +845,181 @@ fn prefix_content_occurrences_share_their_long_part_owner() {
     );
     assert!(candidate.nodes.is_empty());
 }
+
+#[test]
+fn every_part_collection_reservation_failure_is_terminal_and_preserves_the_prefix() {
+    let document = fixture();
+    let store = build_live_score_store(&document).unwrap();
+    let prepare_prefix = || {
+        let mut prefix = TransactionOverlayV1::new(&store);
+        let segment = prefix.begin_segment();
+        prefix
+            .replace_scalar(
+                Scalar::PartName {
+                    part_id: id("part-z"),
+                },
+                Value::PartName("prefix edit".into()),
+            )
+            .unwrap();
+        prefix.add_prepared_effects(1).unwrap();
+        prefix.end_segment(segment).unwrap();
+        prefix
+    };
+    let expected = prepare_prefix().finish().unwrap();
+    let mutate = |candidate: &mut Candidate<'_>| -> Result<(), Failure> {
+        let mut payload = raw_part("new-part");
+        payload
+            .measure_contents
+            .push(payload.measure_contents[0].clone());
+        payload.staves[1].id.clear();
+        let inserted = candidate.insert_part(payload, Some("part-z"))?;
+        candidate.hide(&inserted)
+    };
+    let mut baseline = Candidate::new(prepare_prefix(), document.id.clone());
+    mutate(&mut baseline).unwrap();
+    let attempts = baseline.reservation.attempts;
+    assert!(
+        attempts > 20,
+        "exercise nested collection growth, not just the outer Part order"
+    );
+    assert_eq!(
+        baseline.reservation.sites, 0xff,
+        "the scenario must cover all eight reservation sites"
+    );
+    assert_eq!(baseline.prefix.finish().unwrap(), expected);
+
+    for fail_at in 1..=attempts {
+        let mut candidate = Candidate::new(prepare_prefix(), document.id.clone());
+        candidate.reservation = Reservation::fail_at(fail_at);
+        let part = candidate.resolve(Kind::Part, "part-z").unwrap();
+        assert_eq!(
+            mutate(&mut candidate),
+            Err(Failure::InternalError),
+            "reservation {fail_at}"
+        );
+        assert_eq!(candidate.reservation.attempts, fail_at);
+        assert_eq!(
+            candidate.reservation.ensure_active(),
+            Err(Failure::InternalError)
+        );
+        let retained = (
+            candidate.nodes.len(),
+            candidate.orders.len(),
+            candidate.hidden.len(),
+            candidate.id_pool.len(),
+        );
+        assert_eq!(
+            candidate.insert_part(raw_part("cannot-continue"), None),
+            Err(Failure::InternalError)
+        );
+        assert_eq!(
+            candidate.move_child(
+                &CandidateOrder::new(&part, Children::Staffs),
+                "staff-a",
+                None
+            ),
+            Err(Failure::InternalError)
+        );
+        assert_eq!(candidate.hide(&part), Err(Failure::InternalError));
+        assert_eq!(
+            candidate.reservation.attempts, fail_at,
+            "a terminal candidate must not attempt another reservation"
+        );
+        assert_eq!(
+            (
+                candidate.nodes.len(),
+                candidate.orders.len(),
+                candidate.hidden.len(),
+                candidate.id_pool.len()
+            ),
+            retained
+        );
+        assert_eq!(
+            candidate.read_value(&part),
+            Some(Value::PartName("prefix edit".into()))
+        );
+        assert_eq!(
+            candidate.prefix.finish().unwrap(),
+            expected,
+            "prefix at reservation {fail_at}"
+        );
+        assert_eq!(
+            store.export_document().unwrap(),
+            document,
+            "live Store at reservation {fail_at}"
+        );
+    }
+}
+
+#[test]
+fn partial_order_copy_capacity_failures_cannot_publish_a_move_or_reactivate() {
+    let document = fixture();
+    let store = build_live_score_store(&document).unwrap();
+    let mut baseline = Candidate::new(TransactionOverlayV1::new(&store), document.id.clone());
+    let part = baseline.resolve(Kind::Part, "part-z").unwrap();
+    let order = CandidateOrder::new(&part, Children::Staffs);
+    baseline
+        .move_child(&order, "staff-z", Some("staff-a"))
+        .unwrap();
+    assert_eq!(order_ids(&mut baseline, &order), ["staff-a", "staff-z"]);
+    let attempts = baseline.reservation.attempts;
+    assert_eq!(attempts, 3);
+    for fail_at in 1..=attempts {
+        let mut candidate = Candidate::new(TransactionOverlayV1::new(&store), document.id.clone());
+        candidate.reservation = Reservation::fail_at(fail_at);
+        assert_eq!(
+            candidate.move_child(&order, "staff-z", Some("staff-a")),
+            Err(Failure::InternalError)
+        );
+        assert!(candidate.orders.is_empty());
+        assert_eq!(candidate.work.prefix_order_copies, 0);
+        assert_eq!(order_ids(&mut candidate, &order), ["staff-z", "staff-a"]);
+        assert_eq!(
+            candidate.copy_order_for_write(&order),
+            Err(Failure::InternalError)
+        );
+        assert!(candidate.orders.is_empty());
+        assert_eq!(candidate.prefix.operation_count(), 0);
+    }
+    assert_eq!(store.export_document().unwrap(), document);
+}
+
+#[test]
+fn real_capacity_and_attempt_overflow_fail_without_allocating_or_wrapping() {
+    let mut values = vec![1_u8];
+    let mut reservation = Reservation::default();
+    assert_eq!(
+        reservation.vec(Site::Nodes, &mut values, usize::MAX),
+        Err(Failure::InternalError)
+    );
+    assert_eq!(values, [1]);
+    assert_eq!(
+        reservation.vec(Site::Nodes, &mut values, 1),
+        Err(Failure::InternalError)
+    );
+    assert_eq!(reservation.attempts, 1);
+
+    let mut values = HashMap::<u8, u8>::new();
+    let mut reservation = Reservation::default();
+    assert_eq!(
+        reservation.map(Site::Orders, &mut values, usize::MAX),
+        Err(Failure::InternalError)
+    );
+    assert!(values.is_empty());
+    let mut values = HashSet::<u8>::new();
+    let mut reservation = Reservation::default();
+    assert_eq!(
+        reservation.set(Site::IdPool, &mut values, usize::MAX),
+        Err(Failure::InternalError)
+    );
+    assert!(values.is_empty());
+
+    let mut reservation = Reservation::default();
+    reservation.attempts = usize::MAX;
+    assert_eq!(
+        reservation.set(Site::IdPool, &mut values, 0),
+        Err(Failure::InternalError)
+    );
+    assert_eq!(reservation.attempts, usize::MAX);
+    assert_eq!(reservation.ensure_active(), Err(Failure::InternalError));
+}

@@ -207,6 +207,34 @@ ChangeSet logical limits; do not introduce an arbitrary lower candidate limit to
 mask representation costs. Candidate activation remains gated on this work and
 the command/validation/adoption closure described above.
 
+### Fallible candidate collection growth
+
+The prototype's retained write collections now use checked, fallible capacity
+reservation: node arena, shared-ID pool, lookup kind/ID maps and duplicate buckets,
+owned orders, order-entry vectors and hidden roots. Capacity failure terminates
+the reservation state; later insert/move/hide writes fail before touching it.
+An incomplete local order copy is discarded and cannot replace the current order.
+The implementation restores the reservation state after a borrowed visitor even
+when the visitor stops at a failed allocation. Move bounds are checked before
+removing a child from the candidate order.
+
+Fault injection runs the same insertion/parent-removal scenario with a failure
+at each reservation request, covering all eight sites. It verifies the exact
+frozen ChangeSet and live Store, plus terminal write behavior. Separate tests
+exercise every partial order-copy reservation and real Vec/HashMap/HashSet
+capacity-overflow errors without huge allocations. Reservation-attempt overflow
+also fails without wrapping. Together with the earlier tests this is 19 candidate
+tests, all still excluded from production routing.
+
+Allocator/capacity failure remains internal-error, matching the existing commit
+preparer; it is not reported as a fabricated logical-byte resource limit.
+This protects candidate collection growth only. Arc/string construction, temporary
+read results and base-query allocations retain their current Rust allocation
+behavior. The cumulative logical ledger and a complete retained-memory envelope
+are still required before activation; these tests do not prove recovery from
+arbitrary process-wide OOM. Any future validation/lowering entry point must check
+the terminal candidate reservation state before using partially prepared records.
+
 ## Implementation and evidence order
 
 1. Pin the field/entrypoint matrix against the independent TS decoder/runtime,

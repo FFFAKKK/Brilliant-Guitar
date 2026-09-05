@@ -749,3 +749,33 @@ all-target clippy `-D warnings`, Rust 1.88.0 all-target workspace check and
 identity, distinct duplicate arena occurrences, shared retained owner/ID copies
 and unchanged frozen-prefix reads. Production remains excluded by `cfg(test)`;
 candidate resource enforcement and commercial qualification are still open.
+
+### S1.6d — candidate collection reservation and terminal failure
+
+Candidate writes now reserve Vec/HashMap/HashSet capacity fallibly across all
+eight retained collection sites. A failed reservation is terminal for the
+candidate; later writes cannot resume partially prepared records. The borrowed
+order-copy path restores that terminal state and discards partial copies. Move
+bounds are checked before child removal. The typed prefix remains owned and
+unmodified, with no live Store adoption on any failure path.
+
+Three additional Rust tests inject failure at every reservation in a nested
+Part insertion and parent removal, cover each partial order-copy failure, and
+exercise genuine capacity and attempt-counter overflow. They compare complete
+prefix ChangeSets and Store exports, assert no later mutation/reservation after
+failure, and cover all eight reservation site categories. The existing 16 tests
+continue to pin candidate representation, resolution and read scope.
+
+Capacity failure maps to internal-error consistently with the current commit
+preparer. No declared input/logical limit changes. These guards cover retained
+write collections; they are not a process-wide OOM guarantee or a complete
+resource bound. Arc/string construction and temporary/base reads remain part of
+the pending memory analysis. Cumulative logical-budget merging and final
+validation/lowering must still be completed before production activation.
+
+Validation: 194 Rust tests passed, 1 ignored (19 candidate tests); fmt,
+all-target clippy `-D warnings` and Rust 1.88.0 all-target workspace check passed.
+Scoped self-review traced every retained collection insertion to its reservation,
+verified terminal-state restoration in the borrowed visitor and kept capacity
+failure distinct from declared-limit failure. Native routing remains unchanged
+under the prototype's `cfg(test)` gate. S1/commercial qualification remain open.
