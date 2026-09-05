@@ -22,6 +22,10 @@ pub(super) enum Site {
     Values,
     Instruments,
     StaffReferences,
+    JournalIdentities,
+    JournalSources,
+    JournalBoundaries,
+    ReplayBindings,
 }
 
 #[derive(Default)]

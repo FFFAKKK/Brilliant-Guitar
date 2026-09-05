@@ -7,6 +7,7 @@ use std::{
     sync::Arc,
 };
 
+mod identity;
 mod reservation;
 
 use reservation::{Reservation, Site};

@@ -9,6 +9,7 @@ use brilliant_score_foundation::{
     StaffDefinitionV1, WrittenPitchV1,
 };
 
+mod identities;
 mod insertions;
 mod writes;
 

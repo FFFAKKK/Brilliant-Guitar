@@ -41,7 +41,9 @@ metadata, pitch, sequence/measure time and hierarchy/reference dependency gates
 are implemented on the typed transaction path. Candidate input codecs and a
 private occurrence prototype now cover reads, resolution, field/reference writes,
 Part/Staff/Voice/Event insertion, moves/hiding and fallible retained collection
-growth. Candidate execution is still test-only, not the native default route.
+growth. Journal identity manifests now distinguish node lifetimes and support
+atomic boundary/remapped insertion bindings, including transient invalid IDs.
+Candidate execution is still test-only, not the native default route.
 
 The next integration work is the admission operation journal, final candidate
 diagnostics, complete command closure, cumulative resource accounting and strong
@@ -51,7 +53,7 @@ S4 remain open. The current source tree is a kernel library/native workspace;
 editor UI, rendering, playback and physical project persistence are separate
 product work, not completed deliverables of this branch.
 
-Latest checks: 210 Rust tests passed, 1 ignored (29 candidate tests); strict
+Latest checks: 218 Rust tests passed, 1 ignored (37 candidate tests); strict
 clippy, fmt and Rust 1.88.0 check passed. The most recent full real-native/TS
 regression is 705 passed, 2 skipped. These are regression evidence, not commercial
 qualification or a percentage-complete estimate.

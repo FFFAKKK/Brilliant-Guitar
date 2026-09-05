@@ -392,6 +392,43 @@ This fixes the result boundary needed by the pending journal. It does not enable
 the native repaired batch or implement operation journaling, history token
 remapping, final candidate validation or Store adoption.
 
+### Journal identity and replay-binding foundation
+
+The private candidate now records a journal identity per node lifetime, with an
+owner identity, a shared raw ID and optional strong locators at the suffix start
+and end. The sealed manifest drops the recording candidate's arena positions.
+Deleting and rebuilding the same raw ID creates distinct identities. Inactive
+identities never resolve through a same-ID fallback. Temporary empty/duplicate
+entities and repeated Part measure contents have no strong boundary locator;
+insert replay must supply their complete deterministic node-to-identity mapping.
+
+Suffix start means after the isolated strong prefix has executed, not the start
+of the history entry. Forward replay must apply that prefix before binding the
+suffix start. Inverse replay binds the suffix end, reverses the suffix, then
+reverses the strong prefix. Binding cannot adopt/publish that prefix. These
+ordering constraints were reviewed by the read-only GPT-6 design agent and are
+captured by a prefix-inserted entity test.
+
+Boundary binding checks global entity uniqueness, measure existence, content
+uniqueness and exact owner relations before returning a binding set. Explicit
+insert bindings reject duplicate identities, aliased occurrences, wrong kinds,
+raw IDs and owners before publication. Removal invalidates all registered
+descendants. Collection growth is fallible and failure makes the candidate
+terminal. Raw IDs and parent boundary addresses share their allocations. A
+temporary content index scans each changed content order once per boundary;
+unchanged prefix links use the existing index without scanning sibling orders.
+
+Eight identity tests cover same-ID forward/inverse lifetime reconstruction,
+temporary invalid subtrees replayed at different arena positions, isolated typed
+prefixes, malformed bindings, invalid strong boundaries and all added reservation
+sites. A 512-measure case with a long Part ID pins one changed content-order scan
+per boundary and zero scans for unchanged prefix links. Full Rust regression is
+218 passed, 1 ignored; fmt, strict clippy and Rust 1.88.0 all-target checks pass.
+This step is test-only. It implements identity remapping primitives, not stored
+operation replay, complete journal payload/accounting, final validation or Store
+adoption. Insert operation records must still prove the subtree correspondence,
+and operation replay must check expected values and positions before mutation.
+
 ## Implementation and evidence order
 
 1. Pin the field/entrypoint matrix against the independent TS decoder/runtime,
