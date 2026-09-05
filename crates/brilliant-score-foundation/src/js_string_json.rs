@@ -28,21 +28,30 @@ impl std::error::Error for JsStringTokenError {}
 /// Decode exactly one quoted token, without surrounding whitespace. The `str`
 /// input requires valid UTF-8 wire bytes; escaped UTF-16 units need not be paired.
 pub fn decode_js_string_token(token: &str) -> Result<JsString, JsStringTokenError> {
+    let mut units = Vec::new();
+    let end = visit_js_string_prefix(token, |unit| units.push(unit))?;
+    if end != token.len() {
+        return Err(JsStringTokenError { byte_offset: end });
+    }
+    Ok(JsString::from_utf16(units))
+}
+
+// Shared by token decoding and the streaming document lexer. An ignored string
+// is still validated, but its text need not be allocated after a resource fault.
+pub(crate) fn visit_js_string_prefix(
+    token: &str,
+    mut emit: impl FnMut(u16),
+) -> Result<usize, JsStringTokenError> {
     let bytes = token.as_bytes();
     let invalid = |byte_offset| JsStringTokenError { byte_offset };
     if bytes.first() != Some(&b'"') {
         return Err(invalid(0));
     }
-    let mut units = Vec::new();
     let mut index = 1;
     while index < bytes.len() {
         match bytes[index] {
             b'"' => {
-                return if index + 1 == bytes.len() {
-                    Ok(JsString::from_utf16(units))
-                } else {
-                    Err(invalid(index + 1))
-                };
+                return Ok(index + 1);
             }
             b'\\' => {
                 index += 1;
@@ -71,12 +80,12 @@ pub fn decode_js_string_token(token: &str) -> Result<JsString, JsStringTokenErro
                     }
                     _ => return Err(invalid(index)),
                 };
-                units.push(unit);
+                emit(unit);
                 index += 1;
             }
             0..=31 => return Err(invalid(index)),
             32..=127 => {
-                units.push(u16::from(bytes[index]));
+                emit(u16::from(bytes[index]));
                 index += 1;
             }
             _ => {
@@ -85,7 +94,9 @@ pub fn decode_js_string_token(token: &str) -> Result<JsString, JsStringTokenErro
                     .next()
                     .expect("UTF-8 character boundary");
                 let mut buffer = [0; 2];
-                units.extend_from_slice(character.encode_utf16(&mut buffer));
+                for unit in character.encode_utf16(&mut buffer) {
+                    emit(*unit);
+                }
                 index += character.len_utf8();
             }
         }

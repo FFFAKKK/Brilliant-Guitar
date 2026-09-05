@@ -54,7 +54,9 @@ Candidate execution is still test-only, not the native default route.
 A separate live comparison found a Rust string-domain compatibility gap: TS
 preserves isolated UTF-16 units in text, IDs and opaque extension keys/values,
 while native JSON decoding rejects them. An explicit shared UTF-16 string value
-and lossless token codec are implemented as the migration foundation. The live
+and lossless token codec are implemented as the migration foundation. The bounded
+JSON model, streaming syntax reader and nested-data writer now preserve those
+units in both values and keys. Explicit DTO conversion is the next step. The live
 DTO/native migration remains open; see `kernel-js-string-compatibility.md`.
 
 The next integration work is the complete admission operation journal, final candidate
@@ -65,9 +67,9 @@ S4 remain open. The current source tree is a kernel library/native workspace;
 editor UI, rendering, playback and physical project persistence are separate
 product work, not completed deliverables of this branch.
 
-Latest Rust checks: 257 tests passed, 1 ignored (66 candidate tests); strict
+Latest Rust checks: 265 tests passed, 1 ignored (66 candidate tests); strict
 clippy, fmt and Rust 1.88.0 check passed. The most recent full real-native/TS
-regression is 708 passed, 2 skipped. The separate UTF-16 native probe still has
+regression is 709 passed, 2 skipped. The separate UTF-16 native probe still has
 14 mismatches across 28 observations. These are regression evidence, not commercial
 qualification or a percentage-complete estimate.
 

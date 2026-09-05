@@ -90,13 +90,76 @@ parsing, UTF-8 character boundaries, code-unit semantics, shared storage,
 writer-error propagation and the unchanged production routing. These checks
 establish the primitive's behavior, not the pending DTO/native integration.
 
+## Lossless JSON model and syntax stream
+
+The bounded tree now has a single generic `JsonValue<Text>` implementation.
+`BoundedJsonValue` retains its existing String-based instantiation and Serde
+behavior; `LosslessJsonValue` uses JsString for both values and object keys.
+Both share the same value/depth/property rules. Fixed aliases avoid making old
+Null/empty-container construction depend on unconstrained generic inference.
+
+Foundation supplies `LosslessJsonTokens`, an iterative syntax reader whose
+quoted-string tokens borrow input text. It shares the string escape scanner with
+the token codec and does not allocate skipped strings. It validates separators,
+containers, literals, strings and numbers, and becomes terminal after an error.
+It retains the previous serde_json syntax ceiling of 127 open containers; the
+separate semantic limit still counts root as depth 1 and permits depth 64.
+Numeric token parsing uses the existing serde_json number behavior, including
+finite-range rejection. UTF-8 and request-byte validation remain entrypoint work.
+
+The explicit `decode_lossless_json` convenience reader constructs bounded data
+with exact decoded-key duplicate detection and UTF-16 lexical object ordering.
+After the first resource/duplicate fault it releases accumulated data and stops
+retaining subsequent keys/values, while the syntax reader finishes checking the
+input. Its failure precedence is syntax, depth, properties, duplicate. It is not
+a replacement for Contracts' richer canonical shape/path ranking: Contracts must
+consume the token stream with its existing policy, avoiding a second whole tree.
+
+The explicit writer checks shared data limits before emitting any output, then
+streams exact strings, keys, finite numbers and nested containers. Partial writer
+errors are propagated and require discarding output. There is no ordinary Serde
+implementation for the lossless instantiation. In particular, a serializer cannot
+silently turn a surrogate into an array or an encoded marker through this API.
+Allocation of retained Vec/Arc/BTreeMap data remains ordinary allocation; the
+streaming retention policy is not a claim of process-wide allocation containment.
+
+Eight Rust tests cover 87 independent JS nested-data cases plus alternate escape
+and numeric forms, duplicate keys, borrowed tokens, terminal errors, all output
+failure offsets, the inclusive real 1,572,864-value limit, depth/syntax ceilings,
+fault precedence and a long discarded string. More than 3,000 syntax mutations
+match the existing parser for scalar-Unicode JSON. One new TS test regenerates
+the corpus and checks its expected values/bytes. Negative zero follows the prior
+finite-number JSON normalization; no new numeric acceptance is claimed.
+
+Validation for this JSON slice: 265 Rust tests passed, 1 ignored; fmt, strict
+all-target clippy and Rust 1.88.0 all-target check passed. A rebuilt native addon
+has SHA-256 `FDA987F07F07C4EA4FE3FFCDF6C8C8219BA9FA3943490F64667936688D3DDB32`.
+Full TS/native regression on that artifact passed 709 tests, with 2 skipped and
+0 failed (89.323 seconds). Logs are `target/lossless-json-rust-tests.log` and
+`target/lossless-json-npm-tests.log`. The separately rerun native string probe
+still exits 1 with 14 mismatches, saved as `target/lossless-json-native-gap.json`.
+Scoped review checked grammar state transitions, shared escape validation,
+terminal errors, exact-key identity, retention stop, semantic/syntax limit
+separation, pre-write validation and unchanged legacy Serde behavior. No DTO or
+native routing conversion is included in this slice.
+
+## Explicit DTO conversion decision
+
+Read-only GPT-6 interface research confirmed that Serde's newtype names and
+`is_human_readable` do not negotiate a private UTF-16 capability. An unaware
+serializer may successfully serialize a newtype's inner units as a numeric array.
+Accordingly, DTO migration will use explicit lossless conversions, with shared
+field mapping helpers/macros where useful. User strings and keys go directly into
+the lossless model; constants/enums retain exact ASCII matching. Absent optional
+fields remain distinct from explicit null. No generic fallback to
+serde_json::Value, a TLS flag or a global string marker is selected.
+
 ## Remaining migration sequence
 
-1. Extend the bounded JSON value model to lossless string values and object keys.
-   Preserve duplicate-key detection after escape decoding, exact number behavior,
-   depth/property limits, canonical order and bounded retention after overflow.
-   A temporary parsing escape adapter, if needed, must be bijective and disappear
-   immediately into JsString; encoded markers must never enter domain objects.
+1. Connect the implemented lossless model and token stream to explicit DTO
+   conversion and Contracts strict capture. Preserve canonical shape/path and
+   failure ranking while detecting duplicate keys after escape decoding. The
+   convenience data reader does not by itself implement the request policy.
 2. Migrate StableId, raw candidate/journal IDs, Foundation text fields, references,
    opaque extensions and diagnostic/path values that echo input. Replace uses of
    as_str with explicit code-unit or validated ASCII operations. Audit namespace

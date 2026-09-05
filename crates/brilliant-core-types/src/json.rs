@@ -6,22 +6,28 @@ use serde::{
     ser::{SerializeMap, SerializeSeq},
 };
 
-use crate::{CoreTypeFailure, FiniteNumber, JS_SAFE_INTEGER_MAX};
+use crate::{CoreTypeFailure, FiniteNumber, JS_SAFE_INTEGER_MAX, JsString};
 
 pub const JSON_DEPTH_LIMIT: usize = 64;
 pub const JSON_PROPERTY_LIMIT: usize = 1_572_864;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum BoundedJsonValue {
+pub enum JsonValue<Text> {
     Null,
     Bool(bool),
     Number(FiniteNumber),
-    String(String),
+    String(Text),
     Array(Vec<Self>),
-    Object(BTreeMap<String, Self>),
+    Object(BTreeMap<Text, Self>),
 }
 
-impl BoundedJsonValue {
+/// Legacy UTF-8 instantiation, retaining its ordinary Serde conversions.
+pub type BoundedJsonValue = JsonValue<String>;
+/// The same bounded tree with lossless JavaScript string values and keys.
+/// Encoding requires an explicit lossless codec, not ordinary Serde conversion.
+pub type LosslessJsonValue = JsonValue<JsString>;
+
+impl<Text> JsonValue<Text> {
     pub fn validate_limits(&self) -> Result<(), CoreTypeFailure> {
         let mut stack = vec![(self, 1_usize)];
         let mut count = 0_usize;
