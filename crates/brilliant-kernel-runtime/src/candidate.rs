@@ -783,6 +783,18 @@ impl<'a> Candidate<'a> {
             return Err(Failure::AnchorSelfReference);
         }
         let index = self.insertion_index(order, after, Some(&target))?;
+        self.move_occurrence(order, target, index)
+    }
+
+    // Target, owner and insertion position have already been resolved. Replay
+    // uses occurrence identity here rather than re-resolving a possibly raw ID.
+    fn move_occurrence(
+        &mut self,
+        order: &CandidateOrder,
+        target: Occurrence,
+        index: usize,
+    ) -> Result<(), Failure> {
+        self.reservation.ensure_active()?;
         self.copy_order_for_write(order)?;
         let children = self.orders.get_mut(order).expect("touched order");
         // Hidden children do not contribute to the visible insertion index.

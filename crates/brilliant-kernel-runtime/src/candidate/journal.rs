@@ -10,11 +10,19 @@ use super::*;
 
 mod bundle;
 mod fields;
+mod orders;
 use bundle::PartBundle;
 use fields::FieldChanges;
+use orders::JournalOrder;
 
 #[derive(Clone)]
 enum Operation {
+    MoveOrderedChild {
+        order: JournalOrder,
+        target: JournalId,
+        expected_anchor: Option<JournalId>,
+        anchor: Option<JournalId>,
+    },
     ReplaceScalar {
         target: JournalId,
         expected: Arc<Value>,
@@ -53,6 +61,7 @@ struct Recorder<'a> {
     active: HashMap<Occurrence, ActivePart>,
     steps: Vec<Step>,
     changes: HashMap<Occurrence, FieldChanges>,
+    order_changes: HashMap<CandidateOrder, Arc<Vec<JournalId>>>,
 }
 
 enum Direction {
@@ -123,6 +132,7 @@ impl<'a> Recorder<'a> {
             active: HashMap::new(),
             steps: Vec::new(),
             changes: HashMap::new(),
+            order_changes: HashMap::new(),
         }
     }
 
@@ -199,7 +209,12 @@ impl<'a> Recorder<'a> {
         let document = self.candidate.document.clone();
         let bundle = active
             .bundle
-            .patched(&mut self.candidate, &active.sources, &self.changes)?
+            .patched(
+                &mut self.candidate,
+                &active.sources,
+                &self.changes,
+                &self.order_changes,
+            )?
             .map_or_else(|| active.bundle.clone(), Arc::new);
         bundle.verify(&mut self.candidate, &document, &active.sources)?;
         let previous = predecessor(&mut self.candidate, &root)?;
@@ -225,8 +240,12 @@ impl<'a> Recorder<'a> {
             },
         });
         if let Some(active) = self.active.remove(&root) {
-            for source in active.sources {
+            for (node, source) in active.bundle.nodes.iter().zip(active.sources) {
                 self.changes.remove(&source);
+                for children in orders::child_orders_for(node.image.kind) {
+                    self.order_changes
+                        .remove(&CandidateOrder::new(&source, *children));
+                }
             }
         }
         Ok(())
@@ -290,6 +309,19 @@ impl Operation {
         bindings: &mut ReplayBindings<'_>,
     ) -> Result<(), Failure> {
         match self {
+            Self::MoveOrderedChild {
+                order,
+                target,
+                expected_anchor,
+                anchor,
+            } => orders::apply_move(
+                candidate,
+                bindings,
+                order,
+                *target,
+                *expected_anchor,
+                *anchor,
+            ),
             Self::ReplaceScalar {
                 target,
                 expected,

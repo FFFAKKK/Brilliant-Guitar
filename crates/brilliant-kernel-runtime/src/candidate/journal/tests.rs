@@ -6,6 +6,7 @@ use crate::{
 use brilliant_core_types::SafeInteger;
 
 mod fields;
+mod orders;
 
 fn invalid_part() -> AdmissionPartV1 {
     let mut part = raw_part("temporary");
@@ -411,12 +412,12 @@ fn malformed_bundles_and_manifest_mismatches_fail_before_inserting_nodes() {
         match change {
             "duplicate-id" => broken.nodes[2].id = broken.nodes[1].id,
             "missing-child" => {
-                Arc::make_mut(&mut broken.nodes[0].orders)[0].1.pop();
+                Arc::make_mut(&mut Arc::make_mut(&mut broken.nodes[0].orders)[0].1).pop();
             }
             "double-owner" => broken.nodes[2].parent = Some(1),
-            "external-child" => Arc::make_mut(&mut broken.nodes[0].orders)[0]
-                .1
-                .push(usize::MAX),
+            "external-child" => {
+                Arc::make_mut(&mut Arc::make_mut(&mut broken.nodes[0].orders)[0].1).push(usize::MAX)
+            }
             "wrong-field" => {
                 Arc::make_mut(&mut broken.nodes[1].image).value =
                     Some(Value::PartName("bad".into()))

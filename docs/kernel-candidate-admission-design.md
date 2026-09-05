@@ -509,10 +509,43 @@ execution is unchanged by these test-only journal additions.
 
 Event command preparation must still decide effective-staff no-ops before calling
 this raw journal, preserving explicit/inherited representation on a command no-op.
-Order changes, remaining entity kinds, original effects/segments/affected ordering,
+Remaining entity kinds and order operations, original effects/segments/affected ordering,
 resource accounting, final candidate diagnostics and strong adoption remain open
 before this path can connect to native submit/history/replay. This is not full
 command closure or commercial qualification.
+
+### Stored moves composed with subtree removal
+
+MoveOrderedChild records owner, target, old predecessor and new predecessor as
+journal identities. Recording preserves typed-global target and owner-local
+anchor failure precedence; unchanged positions return before any reservation or
+identity registration. Replay validates the expected predecessor and exact owner
+before changing a list. It never resolves the predecessor again by raw ID, so an
+empty or duplicated predecessor remains a distinct occurrence during undo.
+
+Moves inside a Part inserted by this recorder track only the touched sibling
+lists. Removal combines those recorded orders and field patches with the original
+immutable insert payload and verifies the complete expected subtree. Untouched
+sibling arrays remain shared even within a changed owner. Prefix moves store
+only operation identities; they do not retain a second complete sibling list in
+the removal bookkeeping. The candidate still copies a changed prefix order once
+for its actual write. Temporary bundle indexing occurs on subtree removal only.
+
+Eleven tests cover Part/Measure/Staff/Voice/Event/Note moves, move/edit/remove
+composition and both replay directions, duplicate empty predecessors, repeated
+content measure IDs with exact Voice ownership, hidden siblings, no-ops, malformed
+expected state/order patches, and every controlled recording/replay reservation
+failure. A Part with 1,024 unrelated Events bounds the small Staff move to its
+Staff list and preserves the original insert payload. Full Rust regression is
+247 passed, 1 ignored; fmt, strict clippy, Rust 1.88.0 all-target check and scoped
+diff review pass. The last native/TS regression remains 705 passed, 2 skipped;
+all candidate execution is still test-only.
+
+This implements five operation forms, not the complete eleven-operation journal.
+General entity insertion/removal, remaining order and extension operations,
+effects/segments/affected ordering, combined resource accounting, final candidate
+diagnostics and strong Store adoption remain open. No commercial qualification
+or production cutover is claimed.
 
 ## Implementation and evidence order
 

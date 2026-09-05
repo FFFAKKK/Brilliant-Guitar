@@ -62,7 +62,7 @@ pub(super) struct BundleNode {
     pub(super) id: JournalId,
     pub(super) parent: Option<usize>,
     pub(super) image: Arc<Image>,
-    pub(super) orders: Arc<Vec<(Children, Vec<usize>)>>,
+    pub(super) orders: Arc<Vec<(Children, Arc<Vec<usize>>)>>,
 }
 
 #[derive(Clone)]
@@ -70,15 +70,7 @@ pub(super) struct PartBundle {
     pub(super) nodes: Vec<BundleNode>,
 }
 
-fn child_orders(kind: Kind) -> &'static [Children] {
-    match kind {
-        Kind::Part => &[Children::Staffs, Children::Contents],
-        Kind::Content => &[Children::Voices],
-        Kind::Voice => &[Children::Events],
-        Kind::Event => &[Children::Notes],
-        _ => &[],
-    }
-}
+use super::orders::child_orders_for as child_orders;
 
 fn collect(
     candidate: &mut Candidate<'_>,
@@ -207,7 +199,7 @@ impl PartBundle {
                     sources,
                 )?);
             }
-            orders.push((*kind, indices));
+            orders.push((*kind, Arc::new(indices)));
         }
         self.nodes[index].orders = Arc::new(orders);
         Ok(index)
@@ -248,7 +240,7 @@ impl PartBundle {
                 {
                     return Err(Failure::InternalError);
                 }
-                for child in children {
+                for child in children.iter() {
                     let Some(child_node) = self.nodes.get(*child) else {
                         return Err(Failure::InternalError);
                     };
@@ -362,12 +354,28 @@ impl PartBundle {
         candidate: &mut Candidate<'_>,
         sources: &[Occurrence],
         changes: &HashMap<Occurrence, FieldChanges>,
+        order_changes: &HashMap<CandidateOrder, Arc<Vec<JournalId>>>,
     ) -> Result<Option<Self>, Failure> {
+        candidate.reservation.ensure_active()?;
         if sources.len() != self.nodes.len() {
             return Err(Failure::InternalError);
         }
-        if !sources.iter().any(|source| changes.contains_key(source)) {
+        let has_orders = self.nodes.iter().zip(sources).any(|(node, source)| {
+            node.orders
+                .iter()
+                .any(|(kind, _)| order_changes.contains_key(&CandidateOrder::new(source, *kind)))
+        });
+        if !has_orders && !sources.iter().any(|source| changes.contains_key(source)) {
             return Ok(None);
+        }
+        let mut positions = HashMap::new();
+        if has_orders {
+            candidate
+                .reservation
+                .map(Site::JournalOperations, &mut positions, self.nodes.len())?;
+            for (index, node) in self.nodes.iter().enumerate() {
+                positions.insert(node.id, index);
+            }
         }
         let mut nodes = Vec::new();
         candidate
@@ -380,8 +388,42 @@ impl PartBundle {
                 change.apply_to(&mut image)?;
                 node.image = Arc::new(image);
             }
+            if has_orders
+                && node.orders.iter().any(|(kind, _)| {
+                    order_changes.contains_key(&CandidateOrder::new(source, *kind))
+                })
+            {
+                let mut orders = Vec::new();
+                candidate.reservation.vec(
+                    Site::JournalOperations,
+                    &mut orders,
+                    node.orders.len(),
+                )?;
+                for (kind, original) in node.orders.iter() {
+                    let value = if let Some(replacement) =
+                        order_changes.get(&CandidateOrder::new(source, *kind))
+                    {
+                        let mut indices = Vec::new();
+                        candidate.reservation.vec(
+                            Site::JournalOperations,
+                            &mut indices,
+                            replacement.len(),
+                        )?;
+                        for id in replacement.iter() {
+                            indices.push(*positions.get(id).ok_or(Failure::InternalError)?);
+                        }
+                        Arc::new(indices)
+                    } else {
+                        original.clone()
+                    };
+                    orders.push((*kind, value));
+                }
+                node.orders = Arc::new(orders);
+            }
             nodes.push(node);
         }
-        Ok(Some(Self { nodes }))
+        let patched = Self { nodes };
+        patched.validate(candidate)?;
+        Ok(Some(patched))
     }
 }

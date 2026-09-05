@@ -47,6 +47,8 @@ Stored Part insert/remove operations now replay both directions using immutable
 subtree payloads, with expected-value/order checks and terminal failure handling.
 Stored scalar and raw-reference changes compose with those operations; removal
 retains the updated subtree while preserving the original insert payload.
+Stored list moves now compose with edited subtree removal and replay using exact
+occurrence predecessors, including repeated empty IDs and repeated contents.
 Candidate execution is still test-only, not the native default route.
 
 The next integration work is the complete admission operation journal, final candidate
@@ -57,7 +59,7 @@ S4 remain open. The current source tree is a kernel library/native workspace;
 editor UI, rendering, playback and physical project persistence are separate
 product work, not completed deliverables of this branch.
 
-Latest checks: 236 Rust tests passed, 1 ignored (55 candidate tests); strict
+Latest checks: 247 Rust tests passed, 1 ignored (66 candidate tests); strict
 clippy, fmt and Rust 1.88.0 check passed. The most recent full real-native/TS
 regression is 705 passed, 2 skipped. These are regression evidence, not commercial
 qualification or a percentage-complete estimate.
