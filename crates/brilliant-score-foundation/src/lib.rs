@@ -7,6 +7,7 @@ mod diagnostics;
 mod dto;
 mod feature_profile;
 mod fraction;
+mod js_string_json;
 mod music_rules;
 mod validation;
 
@@ -25,6 +26,9 @@ pub use feature_profile::{
     assess_score_profile,
 };
 pub use fraction::{ExactFraction, ExactFractionError};
+pub use js_string_json::{
+    JsStringTokenError, decode_js_string_token, js_string_json_len, write_js_string_json,
+};
 pub use music_rules::{
     assess_measure_duration, assess_note_duration, assess_sounding_pitch,
     meter_denominator_is_valid, tempo_is_valid, written_pitch_is_valid,

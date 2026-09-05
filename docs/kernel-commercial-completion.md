@@ -51,6 +51,12 @@ Stored list moves now compose with edited subtree removal and replay using exact
 occurrence predecessors, including repeated empty IDs and repeated contents.
 Candidate execution is still test-only, not the native default route.
 
+A separate live comparison found a Rust string-domain compatibility gap: TS
+preserves isolated UTF-16 units in text, IDs and opaque extension keys/values,
+while native JSON decoding rejects them. An explicit shared UTF-16 string value
+and lossless token codec are implemented as the migration foundation. The live
+DTO/native migration remains open; see `kernel-js-string-compatibility.md`.
+
 The next integration work is the complete admission operation journal, final candidate
 diagnostics, complete command closure, cumulative resource accounting and strong
 Store adoption/history. The versioned extension execution/composition work in S2,
@@ -59,9 +65,10 @@ S4 remain open. The current source tree is a kernel library/native workspace;
 editor UI, rendering, playback and physical project persistence are separate
 product work, not completed deliverables of this branch.
 
-Latest checks: 247 Rust tests passed, 1 ignored (66 candidate tests); strict
+Latest Rust checks: 257 tests passed, 1 ignored (66 candidate tests); strict
 clippy, fmt and Rust 1.88.0 check passed. The most recent full real-native/TS
-regression is 705 passed, 2 skipped. These are regression evidence, not commercial
+regression is 708 passed, 2 skipped. The separate UTF-16 native probe still has
+14 mismatches across 28 observations. These are regression evidence, not commercial
 qualification or a percentage-complete estimate.
 
 ## Completion criteria

@@ -2,11 +2,13 @@
 
 mod failure;
 mod finite_number;
+mod js_string;
 mod json;
 mod scalar;
 
 pub use failure::CoreTypeFailure;
 pub use finite_number::FiniteNumber;
+pub use js_string::JsString;
 pub use json::{
     BoundedJsonValue, JSON_DEPTH_LIMIT, JSON_PROPERTY_LIMIT, StablePathSegmentV1, StablePathV1,
 };
