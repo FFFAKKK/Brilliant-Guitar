@@ -429,6 +429,19 @@ operation replay, complete journal payload/accounting, final validation or Store
 adoption. Insert operation records must still prove the subtree correspondence,
 and operation replay must check expected values and positions before mutation.
 
+The next vertical slice is stored Part-subtree insert/remove, initially restricted
+to an active Part created by that same journal. An Added occurrence alone does not
+prove journal ownership. A private immutable flat subtree bundle is an
+InsertEntity/RemoveEntity payload, not a twelfth snapshot operation: it must retain
+one Part root, unique journal IDs, exact owner/child-order membership and all
+scalar/instrument/reference/content fields. Raw staff references remain data even
+when temporarily invalid. Prepare owner/anchor, expected state, binding conflicts,
+bundle structure and capacities before publishing. If any remaining failure can
+follow a candidate write, permanently terminate that candidate and reject sealing
+or adoption. Prefix Part removal and its Extension handling remain outside this
+first slice. A second read-only GPT-6 design review confirmed these constraints;
+this paragraph records planned work, not an implemented journal executor.
+
 ## Implementation and evidence order
 
 1. Pin the field/entrypoint matrix against the independent TS decoder/runtime,
