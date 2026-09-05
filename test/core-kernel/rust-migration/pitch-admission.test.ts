@@ -156,12 +156,14 @@ const insertEvent = (voiceId: string, eventId: string, noteId: string, octave: n
 });
 
 test("final instrument restoration and removal of offending notes cancel obsolete pitch obligations", () => {
-  for (const command of [batch([instrument(100, 0), instrument(0, 0)]), batch([instrument(100, 0), removeEvent("event-1")])]) {
+  for (const [command, expectedRules] of [[batch([instrument(100, 0), instrument(0, 0)]), 0], [batch([instrument(100, 0), removeEvent("event-1")]), 12]] as const) {
     const { session, ts, document, read } = fixture();
     assert.equal(ts.submit(command).status, "committed");
     const result = session.submit(command);
     if (result.status !== "committed") throw new Error("final-state commit required");
-    assert.equal(result.value.metrics.semanticRulesEvaluated, 0);
+    // Removing the event cancels pitch work but now checks the three remaining
+    // durations and their final measure bounds (12 time rules).
+    assert.equal(result.value.metrics.semanticRulesEvaluated, expectedRules);
     const final = read().snapshot.document;
     assert.equal(session.undo().status, "committed");
     assert.deepEqual(plain(read().snapshot.document), plain(document));
@@ -193,7 +195,8 @@ test("same-ID deletion and reinsertion evaluates the final pitch and new Part ow
       } else {
         assert.equal(expected.status, "committed");
         if (result.status !== "committed") throw new Error(`same-ID commit required: ${JSON.stringify(result)}`);
-        assert.equal(result.value.metrics.semanticRulesEvaluated, 2);
+        // Two pitch rules plus full time rules for the final affected voices.
+        assert.equal(result.value.metrics.semanticRulesEvaluated, destination === "voice-0-0" ? 17 : 28);
         const final = read().snapshot.document;
         assert.equal(session.undo().status, "committed");
         assert.deepEqual(plain(read().snapshot.document), plain(document));

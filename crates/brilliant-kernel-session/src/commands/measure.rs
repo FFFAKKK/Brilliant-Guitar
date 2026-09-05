@@ -170,7 +170,7 @@ mod tests {
         ));
         assert_zero_global_work(&no_op);
 
-        let definition = r#"{"apiVersion":1,"command":{"commandVersion":1,"commandId":"core.measure.set-definition","target":{"kind":"measure","measureId":"mx"},"payload":{"meter":{"numerator":6,"denominator":8},"pickup":{"kind":"duration","duration":{"numerator":1,"denominator":8}}}}}"#;
+        let definition = r#"{"apiVersion":1,"command":{"commandVersion":1,"commandId":"core.measure.set-definition","target":{"kind":"measure","measureId":"mx"},"payload":{"meter":{"numerator":6,"denominator":8},"pickup":{"kind":"duration","duration":{"numerator":1,"denominator":4}}}}}"#;
         let replaced = submit(&mut session, definition);
         assert!(matches!(
             replaced,

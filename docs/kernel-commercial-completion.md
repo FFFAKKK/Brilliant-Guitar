@@ -427,3 +427,92 @@ every affected voice for a changed measure definition, using final overlay
 state. Full arithmetic overflow and duration failure precedence, start/pickup
 bounds, final paths, and shared metadata/pitch/time diagnostic ordering must
 match the independent full walker before adoption.
+
+### S1.5c — final sequence time and measure-bound dependencies
+
+The three confirmed time defects above are now rejected before adoption.
+`FinalValidationDeltaV1` borrows the prepared final records, touched voice IDs
+and reference delta. Event duration/order and voice-start changes seed their
+final voices. Changed/new measure definitions resolve base referrers through
+the existing target index and combine them with one scan of the changed
+reference delta. Final overlay references determine which Part/measure links
+survive. New voices are included, removed owners are omitted, and same-ID
+replacement uses the final owner and time values. No additional native read
+method, whole-document DTO or full semantic walker is introduced.
+
+Time checks share Foundation's pure measure and note-duration rules. Canonical
+fraction failure precedes sign failure. Invalid effective measure duration is
+reported once per affected voice. A bad individual duration leaves the prior
+position available for later events, whereas an addition or comparison overflow
+stops subsequent cumulative time checks. Out-of-bounds positions continue to
+report later overruns. Own-duration overflow retains its `reason`; cumulative
+arithmetic overflow does not. Batch repair, undo, redo and replay use the same
+final-state gate.
+
+The former pitch-only report collector is now a shared bounded collector for
+metadata, measure, voice-start, pitch and event-time locations. Final numeric
+positions are still grouped by sibling list, borrowed once per list and stopped
+after the last requested ID. Stable evaluation ranks merge rule families in
+reference order, including pitch before duration/overrun within each event.
+The 4,096 limit applies to the combined report; diagnostic 4,097 returns the
+existing private `diagnostics` mechanism failure without a partial report or
+state adoption.
+
+Work is deliberately the complete affected final voice, including an unchanged
+prefix. Every dependency lookup, visited order/referrer entry and arithmetic
+rule is counted. A four-event local duration change performs 15 rules and 13
+dependency reads with either one or 64 Parts. A last-event edit in a 1,024-event
+voice performs 3,075 rules and 2,053 reads. Changed-measure work scales with its
+final referring voices; unrelated Parts do not enlarge a local event edit.
+These are scope measurements, not an affected-suffix optimisation or release
+performance qualification. The older global-work counters still require their
+separate instrumentation audit.
+
+GPT-6's read-only dependency review identified the missing measure trigger and
+the exact overflow/continuation distinctions. Ten real-native time tests cover
+these rules, pickup/start bounds, final dependency insertion/removal, same-ID
+event/measure replacement, stored history and replay, numeric event ordering,
+4,096/4,097 aggregate limits, and 160 seeded comparisons with the independent
+TS command runtime. Accepted seeded candidates also compare final documents;
+rejections preserve cache identity, history and emitted events.
+
+The new gate exposed three old private Rust tests whose successful transaction
+inputs were musically invalid: two whole notes in 4/4, a whole note beginning
+at 1/4, and a quarter note in a 1/8 pickup. Only those local test inputs were
+adjusted to retain their original index/transaction purposes. Frozen fixtures
+were not changed. Earlier pitch tests now include the time-rule counts for
+removal/reinsertion while retaining exact constant local-pitch work assertions.
+
+Validation at this slice:
+
+- Rust workspace: 170 passed, 1 ignored; fmt, all-target clippy `-D warnings`
+  and Rust 1.88.0 workspace check passed. Fresh Windows x64 native build.
+- Full TypeScript regression: 686 passed, 2 skipped, 0 failed (142.313 seconds).
+  After strengthening the pickup and accepted-document assertions, strict build
+  and the 19 time/pitch tests passed again. This wall time is ordinary test-run
+  evidence, not the frozen release qualification timing.
+- Scoped self-review checked final reference resolution, arithmetic stop state,
+  grouped diagnostic ranks, resource-failure atomicity and unchanged public
+  interfaces. `git diff --check` passed.
+
+S1 remains incomplete: hierarchy/reference diagnostics and admission at create
+and public composition still need closure, followed by the planned protocol,
+performance, default switch and final-artifact qualification work.
+
+### Confirmed next gaps: hierarchy fields and required collections
+
+The ignored `target/probe-hierarchy-admission.cjs` and captured
+`target/hierarchy-admission-probe.json` reproduce these remaining differences:
+
+- Set the existing staff's `lineCount` to zero: TS reports
+  `semantic.staff-line-count-invalid`; private native commits at version one.
+- Remove the final Part, measure or voice: TS reports the corresponding
+  `semantic.part-required`, `semantic.measure-required` or
+  `semantic.voice-required`; native returns `stage3.local-invariant-rejected`.
+- Removing the referenced final staff already returns
+  `command.reference-conflict` on both paths; preserve that earlier command
+  failure precedence while closing final structural semantics.
+
+The next slice must distinguish safe final-candidate musical diagnostics from
+mechanism invariants, aggregate them with the completed metadata/pitch/time
+families and preserve temporary-invalid/final-valid batch behavior.

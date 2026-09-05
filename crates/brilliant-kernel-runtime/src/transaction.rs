@@ -164,7 +164,7 @@ pub(crate) fn apply_stored_operations(
 }
 
 #[derive(Clone, Debug)]
-enum StableRecordV1 {
+pub(crate) enum StableRecordV1 {
     Measure(MeasureRecord),
     Part(PartRecord),
     Staff(StaffRecord),
@@ -1122,18 +1122,13 @@ impl CommitPlanV1 {
             store,
             &store.header.id,
             &store.header.metadata,
-            header_metadata.as_ref(),
             &mut overlay,
-            final_records.values().filter_map(|record| match record {
-                StableRecordV1::Note(note) => Some(&note.id),
-                _ => None,
-            }),
-            final_records.values().filter_map(|record| match record {
-                StableRecordV1::Part(part) => {
-                    Some((&part.id, &part.instrument.written_to_sounding))
-                }
-                _ => None,
-            }),
+            crate::incremental_validation::FinalValidationDeltaV1 {
+                metadata: header_metadata.as_ref(),
+                records: &final_records,
+                touched_voices: &collector.touched_voice_ids,
+                references: &collector.reference_states,
+            },
         )
         .map_err(TransactionPrepareFailureV1::Validation)?;
         let records = prepare_record_actions(store, &collector, final_records, &overlay)?;
@@ -3258,6 +3253,22 @@ mod tests {
             )
             .expect("voice reference");
         let inserted = rest_event("event-new");
+        // This test inserts a second whole note. Expand only the test's final
+        // measure so forward/inverse index checks use semantically valid time.
+        overlay
+            .replace_scalar(
+                ScalarAddressV1::MeasureDefinition {
+                    measure_id: id("measure-z"),
+                },
+                ScalarValueV1::MeasureDefinition {
+                    meter: brilliant_score_foundation::MeterV1 {
+                        numerator: SafeInteger::new(8).expect("numerator"),
+                        denominator: SafeInteger::new(4).expect("denominator"),
+                    },
+                    pickup_duration: None,
+                },
+            )
+            .expect("make room for inserted event");
         overlay
             .insert_entity(
                 StableOwnerAddressV1::Voice {

@@ -15,6 +15,7 @@ mod store;
 mod time_index;
 mod topology;
 mod transaction;
+mod validation_diagnostics;
 
 pub use runtime::{
     KernelRuntime, KernelRuntimeCreateFailure, KernelRuntimeReadFailure, KernelStage3PreparedV1,

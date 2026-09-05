@@ -3448,6 +3448,8 @@ mod tests {
         voice.id = StableId::new("voice-new").expect("voice id");
         voice.default_staff_id = staff.id.clone();
         voice.sequence.events[0].id = StableId::new("event-new").expect("event id");
+        // The inserted voice starts at 1/4 below; a quarter note fits in 4/4.
+        voice.sequence.events[0].duration.base = SafeInteger::new(4).expect("base");
         let event_id = voice.sequence.events[0].id.clone();
 
         let mut runtime = KernelRuntime::create(document).expect("runtime");

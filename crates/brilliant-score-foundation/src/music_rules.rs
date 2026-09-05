@@ -1,12 +1,45 @@
 use brilliant_core_types::{JS_SAFE_INTEGER_MAX, SafeInteger};
 
 use crate::{
-    ExactFraction, FractionV1, NoteValueV1, PitchStepV1, TimeModificationV1, TranspositionV1,
-    WrittenPitchV1,
+    ExactFraction, FractionV1, MeterV1, NoteValueV1, PitchStepV1, TimeModificationV1,
+    TranspositionV1, WrittenPitchV1,
 };
 
 pub fn tempo_is_valid(bpm: f64) -> bool {
     bpm.is_finite() && bpm > 0.0
+}
+
+pub fn meter_denominator_is_valid(denominator: SafeInteger) -> bool {
+    note_base(denominator.get() as f64)
+}
+
+pub fn assess_measure_duration(
+    meter: &MeterV1,
+    pickup: Option<&FractionV1>,
+) -> Result<ExactFraction, &'static str> {
+    measure_duration(
+        meter.numerator.get() as f64,
+        meter.denominator.get() as f64,
+        pickup.map(|fraction| {
+            (
+                fraction.numerator.get() as f64,
+                fraction.denominator.get() as f64,
+            )
+        }),
+    )
+}
+
+pub fn assess_note_duration(value: &NoteValueV1) -> Result<ExactFraction, &'static str> {
+    note_duration(
+        value.base.get() as f64,
+        value.dots.get() as f64,
+        value.time_modification.as_ref().map(|modification| {
+            (
+                modification.actual_notes.get() as f64,
+                modification.normal_notes.get() as f64,
+            )
+        }),
+    )
 }
 
 fn pitch_step(step: PitchStepV1) -> &'static str {
