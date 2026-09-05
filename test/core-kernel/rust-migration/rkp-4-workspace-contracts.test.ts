@@ -18,6 +18,7 @@ import {
 } from "./ts-oracle-fixtures";
 
 const RKP4_PLANNING_HEAD = "91b3f057612befa09e74665e0aa70bbf9a6eca48";
+const RKP4_AUDITED_HEAD = "902eacd50422994898eca2a0eaaab924595b8ab7";
 const RKP4_TASK_NAME = "09-04-rkp-4-history-snapshots-events-replay";
 const RKP4_TASK_ROOT = `.trellis/tasks/${RKP4_TASK_NAME}`;
 const PARENT_PATH =
@@ -127,12 +128,12 @@ function gitLines(args: readonly string[]): string[] {
 }
 
 function currentRkp4Changes(): Set<string> {
-  return new Set([
-    ...gitLines(["diff", "--no-renames", "--name-only", `${RKP4_PLANNING_HEAD}..HEAD`]),
-    ...gitLines(["diff", "--name-only"]),
-    ...gitLines(["diff", "--cached", "--name-only"]),
-    ...gitLines(["ls-files", "--others", "--exclude-standard"]),
-  ]);
+  // The RKP-4 allowlist governs its immutable reviewed candidate. Later
+  // authorized work has its own scope and must not rewrite that history.
+  return new Set(gitLines([
+    "diff", "--no-renames", "--name-only",
+    `${RKP4_PLANNING_HEAD}..${RKP4_AUDITED_HEAD}`,
+  ]));
 }
 
 function filesUnder(root: string): string[] {
@@ -202,9 +203,9 @@ test("RKP-4 keeps one active lifecycle authority and exactly one implementation 
   assert.equal(task.meta.default_runtime, "typescript");
 });
 
-test("RKP-4 changes stay inside the reviewed literal implementation allowlist", () => {
+test("RKP-4 audited changes stay inside the historical literal implementation allowlist", () => {
   assert.doesNotThrow(() =>
-    execFileSync("git", ["merge-base", "--is-ancestor", RKP4_PLANNING_HEAD, "HEAD"], {
+    execFileSync("git", ["merge-base", "--is-ancestor", RKP4_AUDITED_HEAD, "HEAD"], {
       cwd: process.cwd(),
       stdio: "pipe",
     }),

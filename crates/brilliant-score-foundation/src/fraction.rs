@@ -11,10 +11,26 @@ pub enum ExactFractionError {
     Overflow,
 }
 
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct ExactFraction {
     numerator: i64,
     denominator: i64,
+}
+
+impl Ord for ExactFraction {
+    fn cmp(&self, other: &Self) -> Ordering {
+        // Private indexing needs a total numeric order, independent of the
+        // public arithmetic overflow contract. Safe i64 components fit in i128
+        // products. Comparing additional index keys must not reject legal data.
+        (i128::from(self.numerator) * i128::from(other.denominator))
+            .cmp(&(i128::from(other.numerator) * i128::from(self.denominator)))
+    }
+}
+
+impl PartialOrd for ExactFraction {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 impl ExactFraction {
@@ -43,12 +59,8 @@ impl ExactFraction {
     }
 
     pub fn checked_compare(self, other: Self) -> Result<Ordering, ExactFractionError> {
-        let left = i128::from(self.numerator)
-            .checked_mul(i128::from(other.denominator))
-            .ok_or(ExactFractionError::Overflow)?;
-        let right = i128::from(other.numerator)
-            .checked_mul(i128::from(self.denominator))
-            .ok_or(ExactFractionError::Overflow)?;
+        let left = safe_intermediate(i128::from(self.numerator) * i128::from(other.denominator))?;
+        let right = safe_intermediate(i128::from(other.numerator) * i128::from(self.denominator))?;
         Ok(left.cmp(&right))
     }
 
@@ -56,18 +68,10 @@ impl ExactFraction {
         let denominator_gcd = gcd_i128(i128::from(self.denominator), i128::from(other.denominator));
         let left_scale = i128::from(other.denominator) / denominator_gcd;
         let right_scale = i128::from(self.denominator) / denominator_gcd;
-        let left = i128::from(self.numerator)
-            .checked_mul(left_scale)
-            .ok_or(ExactFractionError::Overflow)?;
-        let right = i128::from(other.numerator)
-            .checked_mul(right_scale)
-            .ok_or(ExactFractionError::Overflow)?;
-        let numerator = left
-            .checked_add(right)
-            .ok_or(ExactFractionError::Overflow)?;
-        let denominator = i128::from(self.denominator)
-            .checked_mul(left_scale)
-            .ok_or(ExactFractionError::Overflow)?;
+        let left = safe_intermediate(i128::from(self.numerator) * left_scale)?;
+        let right = safe_intermediate(i128::from(other.numerator) * right_scale)?;
+        let numerator = safe_intermediate(left + right)?;
+        let denominator = safe_intermediate(i128::from(self.denominator) * left_scale)?;
         reduce(numerator, denominator)
     }
 
@@ -121,6 +125,18 @@ impl ExactFraction {
             numerator: SafeInteger::new(self.numerator).expect("validated exact numerator"),
             denominator: SafeInteger::new(self.denominator).expect("validated exact denominator"),
         }
+    }
+}
+
+// TypeScript rejects an unsafe intermediate even when cancellation or reduction
+// would produce a safe result. The operands above are safe integers, so i128
+// can compute their products exactly, but must not widen the accepted contract.
+fn safe_intermediate(value: i128) -> Result<i128, ExactFractionError> {
+    let limit = i128::from(JS_SAFE_INTEGER_MAX);
+    if (-limit..=limit).contains(&value) {
+        Ok(value)
+    } else {
+        Err(ExactFractionError::Overflow)
     }
 }
 
@@ -234,6 +250,46 @@ mod tests {
         assert_eq!(
             one_sixth.checked_add(one_third),
             ExactFraction::from_parts(1, 2)
+        );
+    }
+
+    #[test]
+    fn comparison_rejects_unsafe_cross_products_even_for_equal_fractions() {
+        for numerator in [JS_SAFE_INTEGER_MAX, -JS_SAFE_INTEGER_MAX] {
+            let value = ExactFraction::from_parts(numerator, 2).expect("canonical safe parts");
+            assert_eq!(
+                value.checked_compare(value),
+                Err(ExactFractionError::Overflow)
+            );
+            assert_eq!(value.cmp(&value), Ordering::Equal);
+        }
+        let maximum = ExactFraction::from_parts(JS_SAFE_INTEGER_MAX, 1).expect("maximum");
+        assert_eq!(maximum.checked_compare(maximum), Ok(Ordering::Equal));
+        assert!(
+            ExactFraction::from_parts(1, 3).expect("third")
+                < ExactFraction::from_parts(1, 2).expect("half")
+        );
+    }
+
+    #[test]
+    fn addition_rejects_unsafe_intermediates_before_reduction_or_cancellation() {
+        for sign in [1, -1] {
+            let value = ExactFraction::from_parts(sign * JS_SAFE_INTEGER_MAX, 2)
+                .expect("canonical safe parts");
+            let half = ExactFraction::from_parts(sign, 2).expect("half");
+            assert_eq!(value.checked_add(half), Err(ExactFractionError::Overflow));
+            let cancelling = ExactFraction::from_parts(-sign * JS_SAFE_INTEGER_MAX, 3)
+                .expect("canonical safe parts");
+            assert_eq!(
+                value.checked_add(cancelling),
+                Err(ExactFractionError::Overflow)
+            );
+        }
+        assert_eq!(
+            ExactFraction::from_parts(JS_SAFE_INTEGER_MAX - 1, 1)
+                .expect("safe boundary")
+                .checked_add(ExactFraction::from_parts(1, 1).expect("one")),
+            ExactFraction::from_parts(JS_SAFE_INTEGER_MAX, 1)
         );
     }
 

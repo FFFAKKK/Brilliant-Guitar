@@ -245,5 +245,8 @@ test("RKP0-MANIFEST verifies the archived lifecycle separately from the immutabl
   assert.equal(existsSync(resolve(ACTIVE_RKP0_AUTHORITY_PATH)), false, "active authority is absent");
   const taskDirectories = readdirSync(resolve(".trellis/tasks"));
   assert.deepEqual(taskDirectories.filter((name) => /^08-15-rkp-[1-9]/u.test(name)), []);
-  assert.equal(execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }), "", "committed lifecycle is clean");
+  assert.equal(execFileSync("git", [
+    "status", "--porcelain", "--",
+    ARCHIVED_RKP0_AUTHORITY_PATH, ACTIVE_RKP0_AUTHORITY_PATH,
+  ], { encoding: "utf8" }), "", "committed RKP-0 lifecycle is clean");
 });

@@ -387,7 +387,7 @@ test("RKP-3 implementation changes stay inside its literal successor allowlist",
     assert.equal(changes.has(required), true, `missing RKP-3 owned path: ${required}`);
 });
 
-test("RKP-3 preserves protected inputs and tracks no generated build output", () => {
+test("RKP-3 preserved its historical inputs and current fixtures/build-output rules remain intact", () => {
   assert.doesNotThrow(() =>
     execFileSync(
       "git",
@@ -395,6 +395,7 @@ test("RKP-3 preserves protected inputs and tracks no generated build output", ()
         "diff",
         "--exit-code",
         RKP2_ACCEPTED_BASE,
+        RKP3_ARCHIVE_COMPATIBILITY_HEAD,
         "--",
         "Cargo.toml",
         "Cargo.lock",

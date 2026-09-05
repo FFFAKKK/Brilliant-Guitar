@@ -43,24 +43,11 @@ impl VoiceTimeIndex {
         semantic_ordinal: u32,
         event: EventHandle,
     ) -> Result<(), TimeIndexFailure> {
-        if start
-            .checked_compare(end)
-            .map_err(|_| TimeIndexFailure::InvalidExactTime)?
-            != Ordering::Less
-        {
+        if start >= end {
             return Err(TimeIndexFailure::InvalidExactTime);
         }
         if let Some(previous) = self.entries.last()
-            && (previous
-                .end
-                .checked_compare(start)
-                .map_err(|_| TimeIndexFailure::InvalidExactTime)?
-                == Ordering::Greater
-                || previous
-                    .start
-                    .checked_compare(start)
-                    .map_err(|_| TimeIndexFailure::InvalidExactTime)?
-                    == Ordering::Greater)
+            && (previous.end > start || previous.start > start)
         {
             return Err(TimeIndexFailure::OverlapOrOrder);
         }
@@ -154,8 +141,7 @@ fn compare(
     *comparisons = comparisons
         .checked_add(1)
         .ok_or(TimeIndexFailure::CounterOverflow)?;
-    left.checked_compare(right)
-        .map_err(|_| TimeIndexFailure::InvalidExactTime)
+    Ok(left.cmp(&right))
 }
 
 #[cfg(test)]
