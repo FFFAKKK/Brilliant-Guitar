@@ -1146,7 +1146,9 @@ fn bounded_json_len(value: &BoundedJsonValue) -> u64 {
         BoundedJsonValue::Null => 4,
         BoundedJsonValue::Bool(true) => 4,
         BoundedJsonValue::Bool(false) => 5,
-        BoundedJsonValue::Number(value) => value.get().to_string().len() as u64,
+        BoundedJsonValue::Number(value) => {
+            brilliant_score_foundation::finite_number_json_len(value)
+        }
         BoundedJsonValue::String(value) => json_string_len(value),
         BoundedJsonValue::Array(values) => 2_u64.saturating_add(values.iter().enumerate().fold(
             0_u64,
@@ -1419,7 +1421,7 @@ mod tests {
             title: title.to_owned(),
             authors: vec!["Brilliant Guitar".to_owned()],
             tempo: TempoV1 {
-                bpm: SafeInteger::new(120).expect("safe bpm"),
+                bpm: SafeInteger::new(120).expect("safe bpm").into(),
             },
         })
     }

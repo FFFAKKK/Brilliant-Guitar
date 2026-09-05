@@ -6,7 +6,7 @@ use serde::{
     ser::{SerializeMap, SerializeSeq},
 };
 
-use crate::{CoreTypeFailure, JS_SAFE_INTEGER_MAX, SafeInteger};
+use crate::{CoreTypeFailure, FiniteNumber, JS_SAFE_INTEGER_MAX};
 
 pub const JSON_DEPTH_LIMIT: usize = 64;
 pub const JSON_PROPERTY_LIMIT: usize = 1_572_864;
@@ -15,7 +15,7 @@ pub const JSON_PROPERTY_LIMIT: usize = 1_572_864;
 pub enum BoundedJsonValue {
     Null,
     Bool(bool),
-    Number(SafeInteger),
+    Number(FiniteNumber),
     String(String),
     Array(Vec<Self>),
     Object(BTreeMap<String, Self>),
@@ -100,33 +100,23 @@ impl<'de> Visitor<'de> for BoundedJsonVisitor {
     where
         E: de::Error,
     {
-        SafeInteger::new(value)
-            .map(BoundedJsonValue::Number)
-            .map_err(|_| E::custom("integer outside safe range"))
+        self.visit_f64(value as f64)
     }
 
     fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
     where
         E: de::Error,
     {
-        i64::try_from(value)
-            .ok()
-            .and_then(|value| SafeInteger::new(value).ok())
-            .map(BoundedJsonValue::Number)
-            .ok_or_else(|| E::custom("integer outside safe range"))
+        self.visit_f64(value as f64)
     }
 
     fn visit_f64<E>(self, value: f64) -> Result<Self::Value, E>
     where
         E: de::Error,
     {
-        if value.fract() != 0.0
-            || value < -JS_SAFE_INTEGER_MAX as f64
-            || value > JS_SAFE_INTEGER_MAX as f64
-        {
-            return Err(E::custom("number outside safe integer range"));
-        }
-        self.visit_i64(value as i64)
+        FiniteNumber::new(value)
+            .map(BoundedJsonValue::Number)
+            .map_err(|_| E::custom("non-finite JSON number"))
     }
 
     fn visit_str<E>(self, value: &str) -> Result<Self::Value, E> {

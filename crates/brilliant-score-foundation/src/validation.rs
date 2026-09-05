@@ -207,7 +207,7 @@ struct Validator<'a> {
 impl<'a> Validator<'a> {
     fn validate(mut self, document: &'a ScoreDocumentV1) -> Result<(), FoundationDecodeFailure> {
         self.insert_id(&document.id, path(&[PathPart::Field("id")]))?;
-        if document.metadata.tempo.bpm.get() <= 0 {
+        if document.metadata.tempo.bpm.get() <= 0.0 {
             return Err(invalid_value(&[
                 PathPart::Field("metadata"),
                 PathPart::Field("tempo"),
@@ -921,7 +921,7 @@ mod tests {
     #[test]
     fn numeric_music_and_time_failures_keep_exact_first_paths() {
         let mut tempo = fixture();
-        tempo.metadata.tempo.bpm = safe(0);
+        tempo.metadata.tempo.bpm = safe(0).into();
         assert_eq!(
             validate_score_document(&tempo),
             expected_value(&[
@@ -1032,7 +1032,7 @@ mod tests {
     #[test]
     fn fixed_traversal_precedence_ignores_hash_and_source_identity_order() {
         let mut document = fixture();
-        document.metadata.tempo.bpm = safe(0);
+        document.metadata.tempo.bpm = safe(0).into();
         document.measure_definitions[0].id = document.id.clone();
         document.parts.clear();
         assert_eq!(
@@ -1096,7 +1096,7 @@ mod tests {
     #[test]
     fn reserve_fault_precedes_latent_semantic_failure() {
         let mut document = fixture();
-        document.metadata.tempo.bpm = safe(0);
+        document.metadata.tempo.bpm = safe(0).into();
         assert_eq!(
             validate_score_document_with_reserve_fault(&document),
             Err(FoundationDecodeFailure::InternalCapacity)

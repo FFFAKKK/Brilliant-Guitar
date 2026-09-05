@@ -207,7 +207,7 @@ test("Cargo workspace, pins, features and direct dependency graph are exact", ()
   assert.match(root, /edition\s*=\s*"2024"/u);
   assert.match(root, /rust-version\s*=\s*"1\.88\.0"/u);
   assert.match(root, /serde\s*=\s*\{ version = "=1\.0\.229", features = \["derive"\] \}/u);
-  assert.match(root, /serde_json\s*=\s*"=1\.0\.151"/u);
+  assert.match(root, /serde_json\s*=\s*\{ version = "=1\.0\.151", features = \["float_roundtrip"\] \}/u);
   assert.match(root, /napi\s*=\s*\{ version = "=3\.12\.0", default-features = false \}/u);
   assert.match(root, /napi-derive\s*=\s*\{ version = "=3\.6\.2", default-features = false, features = \["strict"\] \}/u);
   assert.match(root, /napi-build\s*=\s*"=2\.4\.0"/u);

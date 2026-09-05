@@ -5150,7 +5150,11 @@ test("part owner repair stays anchored to its accepted six-path wire contract", 
         path as (typeof RKP1A_TECHNICAL_PATHS)[number],
       )
     ) {
-      assert.equal(readText(path), gitTextAt(PART_OWNER_REPAIR_ACCEPTED_CANDIDATE, path));
+      assert.equal(
+        gitTextAt(RKP2_ACCEPTED_TECHNICAL_HEAD, path),
+        gitTextAt(PART_OWNER_REPAIR_ACCEPTED_CANDIDATE, path),
+        `accepted RKP-2 preserves the reviewed part-owner bytes: ${path}`,
+      );
     }
   }
   assert.equal(Object.keys(PART_OWNER_REPAIR_ACCEPTED_TECHNICAL_BLOBS).length, 6);

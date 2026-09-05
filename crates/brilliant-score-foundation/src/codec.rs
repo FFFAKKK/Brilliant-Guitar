@@ -1,4 +1,4 @@
-use brilliant_core_types::{ScoreSchemaVersionV1, StablePathV1};
+use brilliant_core_types::{FiniteNumber, ScoreSchemaVersionV1, StablePathV1};
 use serde_json::Value;
 
 use crate::{ScoreDocumentV1, validation::validate_score_document};
@@ -42,6 +42,14 @@ pub fn canonical_score_bytes(
     })
 }
 
+/// Exact scalar wire length for the Runtime's checked logical-byte budget.
+/// JSON formatting stays in Foundation instead of adding a codec to Runtime.
+pub fn finite_number_json_len(value: &FiniteNumber) -> u64 {
+    serde_json::to_string(value)
+        .expect("FiniteNumber always serializes")
+        .len() as u64
+}
+
 #[cfg(test)]
 pub(crate) const SMOKE_DOCUMENT: &str = r#"{"schemaVersion":"brilliant-score-1","id":"score-rkp1","metadata":{"title":"Smoke","authors":["Brilliant"],"tempo":{"bpm":120}},"measureDefinitions":[{"id":"measure-1","meter":{"numerator":4,"denominator":4}}],"parts":[{"id":"part-1","name":"Part","instrument":{"name":"Piano","writtenToSounding":{"diatonicSteps":0,"chromaticSemitones":0}},"staves":[{"id":"staff-1","lineCount":5,"defaultClef":{"sign":"G","line":2}}],"measureContents":[{"measureId":"measure-1","voices":[{"id":"voice-1","defaultStaffId":"staff-1","sequence":{"start":{"numerator":0,"denominator":1},"events":[{"id":"event-1","duration":{"base":1,"dots":0},"content":{"kind":"rest"}}]}}]}]}],"extensions":[{"namespace":"example.rkp1","schemaVersion":1,"owner":{"kind":"score"},"payload":{"z":[1,true,null],"a":{"future":"kept"}}}]}"#;
 
@@ -51,6 +59,24 @@ mod tests {
 
     use super::*;
     use crate::ExtensionOwnerV1;
+
+    #[test]
+    fn finite_json_preserves_extremes_and_uses_wire_lengths_for_resource_budgets() {
+        for (wire, expected) in [
+            ("0", 0.0),
+            ("0.125", 0.125),
+            ("-0.125", -0.125),
+            ("1e+100", 1e100),
+            ("5e-324", f64::from_bits(1)),
+            ("1.7976931348623157e+308", f64::MAX),
+            ("-9.084938291167941e+48", -9.084938291167941e48),
+        ] {
+            let decoded: FiniteNumber = serde_json::from_str(wire).expect("finite JSON");
+            assert_eq!(decoded.get().to_bits(), expected.to_bits(), "{wire}");
+            assert_eq!(serde_json::to_string(&decoded).expect("encode"), wire);
+            assert_eq!(finite_number_json_len(&decoded), wire.len() as u64);
+        }
+    }
 
     #[test]
     fn extension_owner_exact_score_and_public_part_wire_round_trip() {

@@ -291,7 +291,7 @@ test("RKP-3 request and batch fixtures preserve exact public boundary keys", () 
   assert.equal(createRkp3OverLimitBatchPayload().commands.length, 101);
 });
 
-test("RKP-3 keeps the seven-crate dependency surface and Cargo bytes unchanged", () => {
+test("seven-crate surface stays exact and historical RKP-3 Cargo bytes are unchanged", () => {
   const cargo = readText("Cargo.toml");
   const membersSection = cargo.match(/members = \[(?<members>[\s\S]*?)\]/u)?.groups?.members;
   if (membersSection === undefined) throw new Error("workspace members section missing");
@@ -314,6 +314,7 @@ test("RKP-3 keeps the seven-crate dependency surface and Cargo bytes unchanged",
         "diff",
         "--exit-code",
         RKP2_ACCEPTED_BASE,
+        RKP3_ARCHIVE_COMPATIBILITY_HEAD,
         "--",
         "Cargo.toml",
         "Cargo.lock",

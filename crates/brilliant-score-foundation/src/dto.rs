@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use brilliant_core_types::{BoundedJsonValue, SafeInteger, StableId};
+use brilliant_core_types::{BoundedJsonValue, FiniteNumber, SafeInteger, StableId};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -25,7 +25,7 @@ pub struct ScoreMetadataV1 {
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct TempoV1 {
-    pub bpm: SafeInteger,
+    pub bpm: FiniteNumber,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]

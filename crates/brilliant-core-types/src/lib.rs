@@ -1,10 +1,12 @@
 #![forbid(unsafe_code)]
 
 mod failure;
+mod finite_number;
 mod json;
 mod scalar;
 
 pub use failure::CoreTypeFailure;
+pub use finite_number::FiniteNumber;
 pub use json::{
     BoundedJsonValue, JSON_DEPTH_LIMIT, JSON_PROPERTY_LIMIT, StablePathSegmentV1, StablePathV1,
 };

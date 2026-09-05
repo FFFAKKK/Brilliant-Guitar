@@ -2385,7 +2385,9 @@ mod tests {
         ScalarValueV1::DocumentMetadata(ScoreMetadataV1 {
             title: title.to_owned(),
             authors: vec!["Brilliant Guitar".to_owned()],
-            tempo: TempoV1 { bpm: safe(120) },
+            tempo: TempoV1 {
+                bpm: safe(120).into(),
+            },
         })
     }
 

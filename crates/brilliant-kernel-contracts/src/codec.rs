@@ -387,10 +387,6 @@ impl<'de> Visitor<'de> for StrictVisitor<'_> {
     where
         E: de::Error,
     {
-        if !(-JS_SAFE_INTEGER_MAX..=JS_SAFE_INTEGER_MAX).contains(&value) {
-            self.state.record_number(self.path);
-            return Ok(self.retain.then_some(StrictValue::Number(Number::from(0))));
-        }
         Ok(self
             .retain
             .then_some(StrictValue::Number(Number::from(value))))
@@ -400,10 +396,6 @@ impl<'de> Visitor<'de> for StrictVisitor<'_> {
     where
         E: de::Error,
     {
-        if value > JS_SAFE_INTEGER_MAX as u64 {
-            self.state.record_number(self.path);
-            return Ok(self.retain.then_some(StrictValue::Number(Number::from(0))));
-        }
         Ok(self
             .retain
             .then_some(StrictValue::Number(Number::from(value))))
@@ -413,16 +405,19 @@ impl<'de> Visitor<'de> for StrictVisitor<'_> {
     where
         E: de::Error,
     {
-        if value.fract() != 0.0
-            || value < -JS_SAFE_INTEGER_MAX as f64
-            || value > JS_SAFE_INTEGER_MAX as f64
-        {
+        if !value.is_finite() {
             self.state.record_number(self.path);
             return Ok(self.retain.then_some(StrictValue::Number(Number::from(0))));
         }
-        Ok(self
-            .retain
-            .then_some(StrictValue::Number(Number::from(value as i64))))
+        // Normalize safe integer spellings for typed integer DTOs, but retain
+        // every other finite JSON value. Integer requirements belong to the
+        // actual schema field, not opaque extension payloads or tempo.
+        let number = if value.fract() == 0.0 && value.abs() <= JS_SAFE_INTEGER_MAX as f64 {
+            Number::from(value as i64)
+        } else {
+            Number::from_f64(value).expect("finite JSON number")
+        };
+        Ok(self.retain.then_some(StrictValue::Number(number)))
     }
 
     fn visit_str<E>(self, value: &str) -> Result<Self::Value, E> {
@@ -656,6 +651,20 @@ fn expect_string(value: &StrictValue, path: &CanonicalPath, state: &mut StrictSt
 }
 
 fn expect_number(value: &StrictValue, path: &CanonicalPath, state: &mut StrictState) {
+    match value {
+        StrictValue::Number(number) => {
+            let safe = number.as_f64().is_some_and(|number| {
+                number.fract() == 0.0 && number.abs() <= JS_SAFE_INTEGER_MAX as f64
+            });
+            if !safe {
+                state.record_number(path.clone());
+            }
+        }
+        _ => record_wrong_type(state, path),
+    }
+}
+
+fn expect_finite_number(value: &StrictValue, path: &CanonicalPath, state: &mut StrictState) {
     if !matches!(value, StrictValue::Number(_)) {
         record_wrong_type(state, path);
     }
@@ -999,7 +1008,7 @@ fn validate_metadata(value: &StrictValue, path: &CanonicalPath, state: &mut Stri
             continue;
         };
         for value in field_values(tempo, "bpm") {
-            expect_number(value, &tempo_path.field("bpm"), state);
+            expect_finite_number(value, &tempo_path.field("bpm"), state);
         }
     }
 }
@@ -3003,10 +3012,11 @@ mod tests {
                 actual: JSON_DEPTH_LIMIT as u64 + 1,
             })
         );
-        let unsafe_number = SMOKE_REQUEST.replacen("120", "9007199254740992", 1);
+        let unsafe_number =
+            SMOKE_REQUEST.replacen(r#""numerator":4"#, r#""numerator":9007199254740992"#, 1);
         assert_eq!(
             rejected_bytes(unsafe_number.as_bytes()),
-            br#"{"apiVersion":1,"status":"rejected","failure":{"failureVersion":1,"code":"codec.number-out-of-range","path":["document","metadata","tempo","bpm"]}}"#
+            br#"{"apiVersion":1,"status":"rejected","failure":{"failureVersion":1,"code":"codec.number-out-of-range","path":["document","measureDefinitions",0,"meter","numerator"]}}"#
         );
 
         let mut too_many = String::with_capacity(JSON_PROPERTY_LIMIT * 2 + 2);

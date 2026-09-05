@@ -78,16 +78,19 @@ relax thresholds or exclude native-boundary cost to obtain a passing result.
 
 - [x] Establish fresh Rust, TypeScript and real-native baseline evidence.
 - [ ] S1: close exact arithmetic and full diagnostic/profile parity gaps;
-  implement tested dependency closures and pre-adoption incremental validation.
+  implement tested Core dependency closures and pre-adoption incremental validation.
 - [ ] S2: implement versioned Extension Protocol, deterministic preparation,
-  validation completeness and equal-consumer session composition/migration.
+  validation completeness and equal-consumer session composition/migration;
+  extend dependency closures to declared extension reads and references.
 - [ ] S3: complete public behavioral differential coverage, seeded long
   sequences, hostile boundaries, resource limits and release performance.
 - [ ] S4: switch the production facade in one reversible commit only after
   parity/performance gates pass; run the public regression on Rust default.
 - [ ] S5: run fresh full qualification, self-review the resulting implementation,
   remove the obsolete executable transaction engine separately while retaining
-  compatibility APIs/golden fixtures, and record the exact final evidence.
+  compatibility APIs/golden fixtures, and verify the final cleaned commit and
+  packaged artifact. Repeat affected qualification if cleanup changes runtime
+  dependencies, packaging or execution. Record the exact final evidence.
 
 Each slice starts with a compiling behavioral regression, then implementation,
 targeted/full checks and a local scoped commit. Revert slices in reverse order;
@@ -129,14 +132,67 @@ Verified on the repaired working tree:
 These are compatibility and regression results, not final qualification. Local
 build/test logs live under ignored `target/` and are not release artifacts.
 
-### Confirmed next compatibility gaps
+### S1.2 — finite JSON values and exact floating-point round trips
 
-Public probes on the repaired native build show that TypeScript creates a
+Public probes on the arithmetic-repaired native build showed TypeScript creates a
 Session for each of `tempo.bpm=120.5`, an unknown extension payload containing
-`0.125`, and an unknown extension payload containing `1e100`; Rust rejects all
-three with `codec.number-out-of-range`. The Rust JSON visitor, `BoundedJsonValue`
-and `TempoV1` currently conflate all finite JSON numbers with safe integers.
-S1 must separate finite data values from fields requiring safe integers before
-the full semantic/profile validator can be equivalent. Preserve frozen integer
-fixture bytes, structured-field bounds, exact time arithmetic, non-finite
-rejection, and atomic import/command/history behavior while closing this gap.
+`0.125`, and an unknown extension payload containing `1e100`; Rust rejected all
+three with `codec.number-out-of-range`. Compiling native regressions reproduced
+these failures. `FiniteNumber` now represents finite data values in tempo and
+opaque JSON; exact integer fields retain `SafeInteger`. Opaque payload keys such
+as `numerator` and `schemaVersion` are never interpreted as score schema fields.
+
+A seeded 2,048-bit-pattern sample then exposed a second defect: the inherited
+JSON parser changed `-9.084938291167941e+48` to `-9.08493829116794e+48`. Enabling
+the existing pinned serde_json `float_roundtrip` feature resolves this observed
+loss without changing package versions or the lockfile. Every finite sampled
+value now survives a real-native round trip exactly. Safe integer serialization
+is unchanged; negative zero is normalized as in JSON. Runtime extension logical
+budgets use Foundation's actual numeric JSON wire length, including exponents.
+
+The RKP-1 manifest test now asserts the precision feature. Historical RKP-2
+part-owner byte preservation and RKP-3/RKP-4 dependency freezes compare their
+fixed accepted/audited endpoints. Current seven-crate, dependency-pin, owner
+shape, public-surface and immutable oracle checks remain enforced.
+
+Verified on this slice:
+
+- Four real-native regressions pass: finite import/round trip, metadata
+  commit/undo/redo/replay, seeded exact values, and unchanged integer/non-finite
+  rejection. MIN_VALUE and MAX_VALUE are covered as tempo and payload data.
+- Rust workspace plus final Foundation regression: 164 passed, 1 ignored.
+- Rust fmt, all-target clippy `-D warnings`, and Rust 1.88.0 workspace check pass.
+- Fresh Windows x64 native build; `npm test`: 656 passed, 2 skipped, 0 failed
+  (77.857 seconds), including strict TypeScript compilation.
+
+### Planning review and next bounded slices
+
+The owner requested an independent GPT-6 planning review on 2026-09-05. Its
+useful corrections are incorporated below; this is planning evidence, not a
+code-audit or qualification PASS.
+
+1. **S1.3 input/diagnostic contract.** Build an entry-point/input-class matrix
+   for public decode, direct semantic/profile validation, command capture and
+   private Rust admission. Preserve their different error layers. Capture
+   empty IDs, invalid numeric components, simultaneous faults and exact order.
+   Borrow bounded captured candidate data before converting to strong store
+   types; avoid a second mutable document model or weakening store invariants.
+2. **S1.4 full semantic/profile.** Differentially cover all 31 semantic and 11
+   unsupported codes, details, paths and ordering, including custom profiles.
+   Invalid semantics suppress support classification. Use small pure rules;
+   full traversal and incremental scheduling remain independently testable.
+3. **S1.5 Core incremental admission.** Derive dependencies from actual change
+   operations and validate the final overlay before submit/batch/undo/redo
+   adoption. Count actual scans/materialization/validation at their entry
+   points; existing zero-valued plan metrics cannot prove new work is local.
+   Demonstrate work scaling and closed-over references/path relocation.
+4. **S2.1-2.4.** Separate versioned protocol/catalog/inventory preparation,
+   declarative rules and generic gateway, WASM capture/hash/ABI/execution,
+   migration and a second structurally different consumer. Extend the Core
+   dependency scheduler with declared extension reads/references and rerun full
+   equivalence. Prove engine limits before relying on fuel/memory/stack caps.
+5. **Continuous adversarial evidence.** Add long sequences, resource boundaries
+   and rejection atomicity with each slice; S3 consolidates their full matrix.
+   Final evidence names the exact cleaned commit, release artifact and supported
+   execution environment. Kernel qualification does not qualify the excluded
+   editor, physical persistence or other operating systems.

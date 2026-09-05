@@ -225,7 +225,7 @@ test("RKP-4 audited changes stay inside the historical literal implementation al
     assert.equal(changes.has(required), true, `missing RKP-4 owned path: ${required}`);
 });
 
-test("RKP-4 keeps seven crates and all Cargo/npm dependency bytes unchanged", () => {
+test("seven-crate surface stays exact and historical RKP-4 dependencies are unchanged", () => {
   const cargo = readText("Cargo.toml");
   const membersSection = cargo.match(/members = \[(?<members>[\s\S]*?)\]/u)?.groups?.members;
   if (membersSection === undefined) throw new Error("workspace members section missing");
@@ -248,6 +248,7 @@ test("RKP-4 keeps seven crates and all Cargo/npm dependency bytes unchanged", ()
         "diff",
         "--exit-code",
         RKP4_PLANNING_HEAD,
+        RKP4_AUDITED_HEAD,
         "--",
         "Cargo.toml",
         "Cargo.lock",
