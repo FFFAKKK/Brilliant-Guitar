@@ -472,11 +472,47 @@ regression is 228 passed, 1 ignored; fmt, strict clippy and Rust 1.88.0 all-targ
 checks pass. No production path changed; the latest full real-native/TS result
 remains 705 passed, 2 skipped from the result-boundary change.
 
-Next, journal field/reference/order changes must preserve their expected/inverse
-values and let removal capture the correctly updated subtree. Complete remaining
-entity kinds, original effects/segments/affected ordering, resource accounting,
-final candidate diagnostics and strong adoption before connecting this path to
-native submit/history/replay. The current first slice is not full command closure.
+### Field operations composed with subtree removal
+
+The journal now records ReplaceScalar for all eight scalar slots, including Part
+instrument data, and UpdateReference for raw Voice/Event staff assignments. Each
+step retains expected and replacement values plus its stored inverse. Scalar
+values are shared between the forward/inverse record and the recorder's latest
+field patch. References share candidate/journal ID allocations. Raw no-ops return
+before identity/log/map reservations and produce no step; a changed-then-restored
+field retains both operations even if the final value equals the start.
+
+The recorder tracks only touched fields by occurrence. Part removal combines
+those recorded changes with the original subtree payload, verifies that combined
+expected state against the candidate, and stores it as the RemoveEntity payload.
+Unrecorded field or order drift still fails. Original insert data remains immutable.
+Unchanged node images and child-order arrays are shared across the two payloads;
+building the remove payload occurs only when removing the affected subtree, not
+on each local edit. Removed-node patch bookkeeping is released without refunding
+or erasing stored operation history.
+
+Inverse replay inserts the updated deleted subtree, reverses each reference and
+scalar operation against its expected raw value, then removes the original insert
+state. Both added and strong-prefix fields use the same journal replay rules. A
+prefix-field modification followed by the edited transient Part lifecycle keeps
+that prefix modification in forward replay and reverses it last during inverse
+replay from a fresh strong end Store.
+
+Eight new tests cover all scalar slots, raw None/empty/explicit reference forms,
+no-ops, changed-and-restored fields, malformed/stale operations, typed field errors,
+updated removal payloads and sharing, and recording/replay reservation failures
+for added and prefix fields. A 4,098-Staff Part test verifies one field edit does
+not traverse the subtree or rebuild its insertion payload. Full Rust regression
+is 236 passed, 1 ignored; fmt, strict clippy and Rust 1.88.0 all-target checks pass.
+The last real-native/TS regression remains 705 passed, 2 skipped; production native
+execution is unchanged by these test-only journal additions.
+
+Event command preparation must still decide effective-staff no-ops before calling
+this raw journal, preserving explicit/inherited representation on a command no-op.
+Order changes, remaining entity kinds, original effects/segments/affected ordering,
+resource accounting, final candidate diagnostics and strong adoption remain open
+before this path can connect to native submit/history/replay. This is not full
+command closure or commercial qualification.
 
 ## Implementation and evidence order
 

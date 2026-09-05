@@ -61,8 +61,8 @@ impl Image {
 pub(super) struct BundleNode {
     pub(super) id: JournalId,
     pub(super) parent: Option<usize>,
-    pub(super) image: Image,
-    pub(super) orders: Vec<(Children, Vec<usize>)>,
+    pub(super) image: Arc<Image>,
+    pub(super) orders: Arc<Vec<(Children, Vec<usize>)>>,
 }
 
 #[derive(Clone)]
@@ -178,8 +178,8 @@ impl PartBundle {
         self.nodes.push(BundleNode {
             id,
             parent,
-            image,
-            orders: Vec::new(),
+            image: Arc::new(image),
+            orders: Arc::new(Vec::new()),
         });
         sources.push(source.clone());
         let kinds = child_orders(self.nodes[index].image.kind);
@@ -209,7 +209,7 @@ impl PartBundle {
             }
             orders.push((*kind, indices));
         }
-        self.nodes[index].orders = orders;
+        self.nodes[index].orders = Arc::new(orders);
         Ok(index)
     }
 
@@ -287,7 +287,7 @@ impl PartBundle {
             {
                 return Err(Failure::InternalError);
             }
-            for (kind, expected) in &node.orders {
+            for (kind, expected) in node.orders.iter() {
                 let mut position = 0;
                 let mut matched = true;
                 candidate
@@ -344,7 +344,7 @@ impl PartBundle {
             sources.push(source);
         }
         for (index, node) in self.nodes.iter().enumerate() {
-            for (kind, children) in &node.orders {
+            for (kind, children) in node.orders.iter() {
                 let mut order = Vec::new();
                 candidate
                     .reservation
@@ -355,5 +355,33 @@ impl PartBundle {
         }
         candidate.place_child(&order, position, sources[0].clone())?;
         Ok(sources)
+    }
+
+    pub(super) fn patched(
+        &self,
+        candidate: &mut Candidate<'_>,
+        sources: &[Occurrence],
+        changes: &HashMap<Occurrence, FieldChanges>,
+    ) -> Result<Option<Self>, Failure> {
+        if sources.len() != self.nodes.len() {
+            return Err(Failure::InternalError);
+        }
+        if !sources.iter().any(|source| changes.contains_key(source)) {
+            return Ok(None);
+        }
+        let mut nodes = Vec::new();
+        candidate
+            .reservation
+            .vec(Site::JournalOperations, &mut nodes, self.nodes.len())?;
+        for (node, source) in self.nodes.iter().zip(sources) {
+            let mut node = node.clone();
+            if let Some(change) = changes.get(source) {
+                let mut image = node.image.as_ref().clone();
+                change.apply_to(&mut image)?;
+                node.image = Arc::new(image);
+            }
+            nodes.push(node);
+        }
+        Ok(Some(Self { nodes }))
     }
 }

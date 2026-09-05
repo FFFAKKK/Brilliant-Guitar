@@ -1,5 +1,5 @@
-//! First stored-operation slice: Part subtrees inserted by this journal and
-//! subsequently removed. This remains inside the test-only admission candidate.
+//! Stored admission operations: scalar/raw-reference changes and Part subtrees
+//! owned by this journal. This remains inside the test-only admission candidate.
 //! Command preparation, final semantics, effects/segments, accounting and Store
 //! adoption are integration gates, not behavior supplied by this module.
 
@@ -9,10 +9,22 @@ use super::identity::{
 use super::*;
 
 mod bundle;
+mod fields;
 use bundle::PartBundle;
+use fields::FieldChanges;
 
 #[derive(Clone)]
 enum Operation {
+    ReplaceScalar {
+        target: JournalId,
+        expected: Arc<Value>,
+        value: Arc<Value>,
+    },
+    UpdateReference {
+        target: JournalId,
+        expected: Option<Arc<str>>,
+        value: Option<Arc<str>>,
+    },
     InsertEntity {
         owner: JournalId,
         anchor: Option<JournalId>,
@@ -40,6 +52,7 @@ struct Recorder<'a> {
     identities: IdentityRecorder,
     active: HashMap<Occurrence, ActivePart>,
     steps: Vec<Step>,
+    changes: HashMap<Occurrence, FieldChanges>,
 }
 
 enum Direction {
@@ -109,6 +122,7 @@ impl<'a> Recorder<'a> {
             identities: IdentityRecorder::default(),
             active: HashMap::new(),
             steps: Vec::new(),
+            changes: HashMap::new(),
         }
     }
 
@@ -183,10 +197,11 @@ impl<'a> Recorder<'a> {
         // Added is not enough: this exact root must belong to this recorder.
         let active = self.active.get(&root).ok_or(Failure::InternalError)?;
         let document = self.candidate.document.clone();
-        active
+        let bundle = active
             .bundle
-            .verify(&mut self.candidate, &document, &active.sources)?;
-        let bundle = active.bundle.clone();
+            .patched(&mut self.candidate, &active.sources, &self.changes)?
+            .map_or_else(|| active.bundle.clone(), Arc::new);
+        bundle.verify(&mut self.candidate, &document, &active.sources)?;
         let previous = predecessor(&mut self.candidate, &root)?;
         let anchor = previous
             .as_ref()
@@ -209,7 +224,11 @@ impl<'a> Recorder<'a> {
                 bundle,
             },
         });
-        self.active.remove(&root);
+        if let Some(active) = self.active.remove(&root) {
+            for source in active.sources {
+                self.changes.remove(&source);
+            }
+        }
         Ok(())
     }
 
@@ -270,21 +289,47 @@ impl Operation {
         candidate: &mut Candidate<'_>,
         bindings: &mut ReplayBindings<'_>,
     ) -> Result<(), Failure> {
-        let (owner, anchor, bundle) = match self {
+        match self {
+            Self::ReplaceScalar {
+                target,
+                expected,
+                value,
+            } => fields::apply_scalar(candidate, bindings, *target, expected, value),
+            Self::UpdateReference {
+                target,
+                expected,
+                value,
+            } => fields::apply_reference(candidate, bindings, *target, expected, value),
             Self::InsertEntity {
                 owner,
                 anchor,
                 bundle,
-            } => (owner, anchor, bundle),
+            } => Self::apply_part(candidate, bindings, *owner, *anchor, bundle, true),
             Self::RemoveEntity {
                 owner,
                 expected_anchor,
                 expected,
-            } => (owner, expected_anchor, expected),
-        };
+            } => Self::apply_part(
+                candidate,
+                bindings,
+                *owner,
+                *expected_anchor,
+                expected,
+                false,
+            ),
+        }
+    }
+
+    fn apply_part(
+        candidate: &mut Candidate<'_>,
+        bindings: &mut ReplayBindings<'_>,
+        owner_id: JournalId,
+        anchor: Option<JournalId>,
+        bundle: &PartBundle,
+        inserting: bool,
+    ) -> Result<(), Failure> {
         candidate.reservation.ensure_active()?;
         bundle.validate(candidate)?;
-        let owner_id = *owner;
         let owner = bindings.resolve(owner_id, candidate)?;
         if owner != candidate.document {
             return Err(Failure::InternalError);
@@ -292,54 +337,49 @@ impl Operation {
         let anchor = anchor
             .map(|id| bindings.resolve(id, candidate))
             .transpose()?;
-        match self {
-            Self::InsertEntity { .. } => {
-                PartBundle::require_no_extensions(candidate, &bundle.nodes[0].image.raw_id)?;
-                for node in &bundle.nodes {
-                    let parent = node
-                        .parent
-                        .map_or(owner_id, |parent| bundle.nodes[parent].id);
-                    bindings.require_insert_identity(
-                        node.id,
-                        node.image.kind,
-                        &node.image.raw_id,
-                        parent,
-                    )?;
-                }
-                let position = insertion_position(candidate, anchor.as_ref())?;
-                let mut assignments = Vec::new();
-                candidate.reservation.vec(
-                    Site::JournalOperations,
-                    &mut assignments,
-                    bundle.nodes.len(),
+        if inserting {
+            PartBundle::require_no_extensions(candidate, &bundle.nodes[0].image.raw_id)?;
+            for node in &bundle.nodes {
+                let parent = node
+                    .parent
+                    .map_or(owner_id, |parent| bundle.nodes[parent].id);
+                bindings.require_insert_identity(
+                    node.id,
+                    node.image.kind,
+                    &node.image.raw_id,
+                    parent,
                 )?;
-                let sources = bundle.materialize(candidate, &owner, position)?;
-                assignments.extend(
-                    bundle
-                        .nodes
-                        .iter()
-                        .zip(sources)
-                        .map(|(node, source)| (node.id, source)),
-                );
-                bindings.bind_inserted(candidate, &assignments)?;
             }
-            Self::RemoveEntity { .. } => {
-                let mut sources = Vec::new();
-                candidate.reservation.vec(
-                    Site::JournalOperations,
-                    &mut sources,
-                    bundle.nodes.len(),
-                )?;
-                for node in &bundle.nodes {
-                    sources.push(bindings.resolve(node.id, candidate)?);
-                }
-                if predecessor(candidate, &sources[0])? != anchor {
-                    return Err(Failure::InternalError);
-                }
-                bundle.verify(candidate, &owner, &sources)?;
-                candidate.hide(&sources[0])?;
-                bindings.unbind_removed(candidate, bundle.nodes[0].id)?;
+            let position = insertion_position(candidate, anchor.as_ref())?;
+            let mut assignments = Vec::new();
+            candidate.reservation.vec(
+                Site::JournalOperations,
+                &mut assignments,
+                bundle.nodes.len(),
+            )?;
+            let sources = bundle.materialize(candidate, &owner, position)?;
+            assignments.extend(
+                bundle
+                    .nodes
+                    .iter()
+                    .zip(sources)
+                    .map(|(node, source)| (node.id, source)),
+            );
+            bindings.bind_inserted(candidate, &assignments)?;
+        } else {
+            let mut sources = Vec::new();
+            candidate
+                .reservation
+                .vec(Site::JournalOperations, &mut sources, bundle.nodes.len())?;
+            for node in &bundle.nodes {
+                sources.push(bindings.resolve(node.id, candidate)?);
             }
+            if predecessor(candidate, &sources[0])? != anchor {
+                return Err(Failure::InternalError);
+            }
+            bundle.verify(candidate, &owner, &sources)?;
+            candidate.hide(&sources[0])?;
+            bindings.unbind_removed(candidate, bundle.nodes[0].id)?;
         }
         Ok(())
     }

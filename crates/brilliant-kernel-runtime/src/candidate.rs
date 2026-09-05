@@ -683,6 +683,17 @@ impl<'a> Candidate<'a> {
             return Ok(false);
         }
         let value = value.map(|id| self.share_id(id)).transpose()?;
+        self.assign_shared_staff_reference(source, value)?;
+        Ok(true)
+    }
+
+    // The raw field kind/value were checked and IDs were retained in the pool.
+    fn assign_shared_staff_reference(
+        &mut self,
+        source: &Occurrence,
+        value: Option<Arc<str>>,
+    ) -> Result<(), Failure> {
+        self.reservation.ensure_active()?;
         if let Occurrence::Added(index) = source {
             self.nodes[*index].staff_id = value;
         } else {
@@ -692,7 +703,7 @@ impl<'a> Candidate<'a> {
             }
             self.staff_references.insert(source.clone(), value);
         }
-        Ok(true)
+        Ok(())
     }
 
     fn voice_insertion_index(
