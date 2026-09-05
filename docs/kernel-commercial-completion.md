@@ -51,9 +51,9 @@ S4 remain open. The current source tree is a kernel library/native workspace;
 editor UI, rendering, playback and physical project persistence are separate
 product work, not completed deliverables of this branch.
 
-Latest checks: 208 Rust tests passed, 1 ignored (29 candidate tests); strict
+Latest checks: 210 Rust tests passed, 1 ignored (29 candidate tests); strict
 clippy, fmt and Rust 1.88.0 check passed. The most recent full real-native/TS
-regression is 702 passed, 2 skipped. These are regression evidence, not commercial
+regression is 705 passed, 2 skipped. These are regression evidence, not commercial
 qualification or a percentage-complete estimate.
 
 ## Completion criteria
@@ -899,3 +899,36 @@ self-review traced shared nested/direct Event construction, anchor-before-write
 ordering, hidden-sibling positions and terminal reservation failure. Production
 remains excluded by `cfg(test)`; the prior native/TS baseline is unchanged and
 was not rerun. Command/journal/validation/adoption integration remains open.
+
+### S1.6h — result-only affected IDs and net-zero reference behavior
+
+The live TS oracle confirms that an insert-invalid-Part/remove-Part batch is
+committed even though its final document is unchanged. Submit/undo/redo advance
+versions 1/2/3, retain empty/deleted affected addresses and emit commit plus dirty
+events. Dirty is true/false/true because existing identity follows the history
+sequence, not document byte equality. The new regression pins exact affected
+order, deduplication, events and detached replay for the pending admission journal.
+
+A compiling transport regression failed because the native adapter used nonempty
+target validation for the affected list. Contracts now separates result IDs from
+input IDs while sharing the tagged address shape. Result, history and event
+affected lists accept raw strings, including empty; command and selector targets
+still use StableId. Conversion from a stable ID or pooled candidate Arc reuses
+its text allocation, and result clones retain sharing. Raw/stable representations
+compare by content. No dependency, operation kind, wire field or application
+runtime export was added.
+
+Two Rust tests cover all seven result/input address kinds, exact JSON shape,
+malformed values, cross-representation equality and long-ID clone sharing.
+Three TS tests pin the reference net-zero behavior, repaired response capture
+and real-native nonempty input targets. The response test substitutes affected
+lists into a valid native transport response; native candidate submit is still
+pending and is not claimed as passing.
+
+Validation: 210 Rust tests passed, 1 ignored; fmt, all-target clippy `-D warnings`
+and Rust 1.88.0 all-target workspace check passed. The Windows x64 native addon
+was rebuilt and its copied binary hash verified; the three focused TS tests
+passed on that addon. Full TS regression: 705 passed, 2 skipped, 0 failed (80.015
+seconds). `git diff --check` passed. Scoped self-review preserved
+strict target/live identity types, closed affected shape/capture limits and shared
+text conversion. Candidate journal/validation/adoption and qualification remain open.

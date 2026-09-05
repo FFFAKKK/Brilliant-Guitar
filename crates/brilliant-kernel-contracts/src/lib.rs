@@ -1,9 +1,11 @@
 #![forbid(unsafe_code)]
 
+mod affected;
 mod codec;
 mod command;
 mod session;
 
+pub use affected::AffectedEntityIdV1;
 pub use codec::{
     REQUEST_BYTE_LIMIT, RESPONSE_BYTE_LIMIT, decode_admission_submit_request,
     decode_captured_admission_command, decode_captured_admission_replay_command,

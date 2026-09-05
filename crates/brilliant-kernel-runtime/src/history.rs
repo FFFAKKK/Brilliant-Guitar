@@ -1,6 +1,6 @@
 use brilliant_core_types::JS_SAFE_INTEGER_MAX;
 use brilliant_kernel_contracts::{
-    CoreCommandEnvelopeV1, KernelHistoryStateV1, ScoreEntityTargetV1,
+    AffectedEntityAddressV1, CoreCommandEnvelopeV1, KernelHistoryStateV1,
 };
 
 use crate::change_set::ChangeSetV1;
@@ -22,7 +22,7 @@ pub(crate) struct HistoryEntryV1 {
     pub(crate) sequence: u64,
     pub(crate) command: CoreCommandEnvelopeV1,
     pub(crate) change_set: ChangeSetV1,
-    pub(crate) affected: Vec<ScoreEntityTargetV1>,
+    pub(crate) affected: Vec<AffectedEntityAddressV1>,
 }
 
 #[derive(Debug)]
@@ -78,7 +78,7 @@ impl HistoryStateV1 {
         prepared: PreparedHistoryAppendV1,
         command: CoreCommandEnvelopeV1,
         change_set: ChangeSetV1,
-        affected: Vec<ScoreEntityTargetV1>,
+        affected: Vec<AffectedEntityAddressV1>,
     ) {
         debug_assert!(self.check_invariants().is_ok());
         debug_assert_eq!(prepared.sequence, self.next_sequence);

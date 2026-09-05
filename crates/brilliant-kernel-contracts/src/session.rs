@@ -10,8 +10,8 @@ use brilliant_score_foundation::{
 use serde::{Deserialize, Serialize, Serializer, ser::SerializeStruct};
 
 use crate::{
-    CapturedCoreCommandV1, CoreCommandEnvelopeV1, CoreCommandIdV1, KernelStage3CommandFailureV1,
-    KernelStage3MetricsV1, ScoreEntityTargetV1, ScoreRangeV1,
+    AffectedEntityAddressV1, CapturedCoreCommandV1, CoreCommandEnvelopeV1, CoreCommandIdV1,
+    KernelStage3CommandFailureV1, KernelStage3MetricsV1, ScoreEntityTargetV1, ScoreRangeV1,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -383,7 +383,7 @@ pub enum KernelEventV1 {
         document_version: DocumentVersionV1,
         cause: KernelEventCauseV1,
         command_id: CoreCommandIdV1,
-        affected_entities: Vec<ScoreEntityTargetV1>,
+        affected_entities: Vec<AffectedEntityAddressV1>,
     },
     DirtyStateChanged {
         event_sequence: u64,
@@ -523,7 +523,7 @@ pub struct KernelStage4MetricsV1 {
 #[serde(rename_all = "camelCase")]
 pub struct KernelStage4MutationValueV1 {
     pub document_version: DocumentVersionV1,
-    pub affected: Vec<ScoreEntityTargetV1>,
+    pub affected: Vec<AffectedEntityAddressV1>,
     pub history: KernelHistoryStateV1,
     pub dirty: bool,
     pub metrics: KernelStage3MetricsV1,

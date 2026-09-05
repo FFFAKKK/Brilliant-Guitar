@@ -2385,7 +2385,7 @@ mod tests {
             cause: KernelEventCauseV1::Submit,
             command_id: CoreCommandIdV1::DocumentSetMetadata,
             affected_entities: vec![ScoreEntityTargetV1::Document {
-                document_id: StableId::new("score-rkp1").expect("id"),
+                document_id: StableId::new("score-rkp1").expect("id").into(),
             }],
         };
         assert_eq!(

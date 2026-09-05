@@ -6,7 +6,7 @@ use brilliant_score_foundation::{
 use serde::{Deserialize, Serialize, Serializer, ser::SerializeStruct};
 use serde_json::Value;
 
-use crate::StableFailureV1;
+use crate::{AffectedEntityIdV1, StableFailureV1};
 
 pub const COMMAND_VERSION_V1: u64 = 1;
 pub const CORE_COMMAND_COUNT_V1: usize = 28;
@@ -209,36 +209,38 @@ pub const CORE_COMMAND_CATALOG_V1: [CoreCommandDefinitionV1; CORE_COMMAND_COUNT_
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
-pub enum ScoreEntityTargetV1 {
+pub enum ScoreEntityTargetV1<Id = StableId> {
     Document {
         #[serde(rename = "documentId")]
-        document_id: StableId,
+        document_id: Id,
     },
     Measure {
         #[serde(rename = "measureId")]
-        measure_id: StableId,
+        measure_id: Id,
     },
     Part {
         #[serde(rename = "partId")]
-        part_id: StableId,
+        part_id: Id,
     },
     Staff {
         #[serde(rename = "staffId")]
-        staff_id: StableId,
+        staff_id: Id,
     },
     Voice {
         #[serde(rename = "voiceId")]
-        voice_id: StableId,
+        voice_id: Id,
     },
     Event {
         #[serde(rename = "eventId")]
-        event_id: StableId,
+        event_id: Id,
     },
     Note {
         #[serde(rename = "noteId")]
-        note_id: StableId,
+        note_id: Id,
     },
 }
+
+pub type AffectedEntityAddressV1 = ScoreEntityTargetV1<AffectedEntityIdV1>;
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
@@ -249,7 +251,7 @@ pub enum NoteAddressV1 {
     },
 }
 
-impl ScoreEntityTargetV1 {
+impl<Id> ScoreEntityTargetV1<Id> {
     pub const fn kind(&self) -> CoreCommandTargetKindV1 {
         match self {
             Self::Document { .. } => CoreCommandTargetKindV1::Document,
@@ -791,7 +793,7 @@ impl Serialize for KernelStage3CommandFailureV1 {
 #[serde(rename_all = "camelCase")]
 pub struct KernelStage3SubmitSuccessValueV1 {
     pub document_version: DocumentVersionV1,
-    pub affected: Vec<ScoreEntityTargetV1>,
+    pub affected: Vec<AffectedEntityAddressV1>,
     pub metrics: KernelStage3MetricsV1,
 }
 

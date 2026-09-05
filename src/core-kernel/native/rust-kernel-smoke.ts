@@ -494,7 +494,9 @@ function isStableId(value: unknown): value is string {
   return typeof value === "string" && value.length > 0;
 }
 
-function isScoreEntityTarget(value: unknown): value is ScoreEntityTargetWireV1 {
+// Result addresses may name transient candidate entities removed before commit.
+// Command targets and live entity identities retain their separate strict checks.
+function isAffectedEntityAddress(value: unknown): value is ScoreEntityTargetWireV1 {
   if (!isRecord(value) || typeof value.kind !== "string") {
     return false;
   }
@@ -510,7 +512,7 @@ function isScoreEntityTarget(value: unknown): value is ScoreEntityTargetWireV1 {
   return (
     idKey !== undefined &&
     hasExactKeys(value, ["kind", idKey]) &&
-    isStableId(value[idKey])
+    typeof value[idKey] === "string"
   );
 }
 
@@ -750,7 +752,7 @@ function isStage3SubmitResult(value: unknown): value is KernelStage3SubmitWireV1
       !isSafeNonNegativeInteger(value.value.documentVersion) ||
       !Array.isArray(value.value.affected) ||
       value.value.affected.length > 131_072 ||
-      !value.value.affected.every(isScoreEntityTarget) ||
+      !value.value.affected.every(isAffectedEntityAddress) ||
       !isStage3Metrics(value.value.metrics)
     ) {
       return false;
@@ -795,7 +797,7 @@ function isKernelEvent(value: unknown): value is KernelEventWireV1 {
       CORE_COMMAND_IDS.has(value.commandId as never) &&
       Array.isArray(value.affectedEntities) &&
       value.affectedEntities.length <= 131_072 &&
-      value.affectedEntities.every(isScoreEntityTarget)
+      value.affectedEntities.every(isAffectedEntityAddress)
     );
   }
   return (
@@ -840,7 +842,7 @@ function isStage4MutationValue(
     isSafeNonNegativeInteger(value.documentVersion) &&
     Array.isArray(value.affected) &&
     value.affected.length <= 131_072 &&
-    value.affected.every(isScoreEntityTarget) &&
+    value.affected.every(isAffectedEntityAddress) &&
     isHistoryState(value.history) &&
     typeof value.dirty === "boolean" &&
     isStage3Metrics(value.metrics) &&

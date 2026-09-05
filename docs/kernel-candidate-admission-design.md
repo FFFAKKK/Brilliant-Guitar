@@ -358,6 +358,40 @@ neither journal compilation nor history can fall back to whole-document export.
 This is a concrete implementation decision, not a claim that journal execution,
 final validation, combined resource accounting or adoption is already complete.
 
+### Result address boundary and verified net-zero history facts
+
+A live TS probe inserts a uniquely identified Part containing repeated empty
+Staff/Voice/Event/Note IDs, then removes that Part in the same batch. Submit,
+undo and redo all commit with document versions 1, 2 and 3, while the document
+equals its original value after every operation. The six affected addresses
+retain document, temporary Part, empty Staff, empty Voice, empty Event and empty
+Note in that order. Duplicate empty addresses are deduplicated by kind and raw ID.
+Each operation emits a commit event and a dirty-state event, sequences 1 through
+6. Dirty values are true, false and true: existing content identity is the current
+history sequence, not a hash/equality comparison of document bytes. Detached TS
+replay also commits this net-zero batch. A checked-in test pins these facts.
+
+This probe exposed an independent response-boundary defect: the native adapter
+rejected those legitimate affected addresses as bridge.internal because it reused
+a nonempty-ID target validator. Rust result/history/event addresses also used
+StableId. Contracts now shares the tagged address schema with an Id parameter
+defaulting to StableId for all input targets. AffectedEntityAddressV1 uses a
+result-only ID type that accepts raw strings, including empty. Stable IDs and
+candidate Arc strings retain their existing allocation through conversion and
+cloning; raw and stable representations compare by string content.
+
+Only mutation affected lists, stored affected lists and committed-event affected
+lists use this result type. The TS adapter validates their exact tagged/string
+shape separately. Seven input target kinds still reject empty IDs; live Store,
+command targets, selector requests and event document identity remain strong.
+Existing capture/array limits, readonly result capture and event delivery remain
+in place. Transport tests substitute this TS-proven affected list into a valid
+native response and cover malformed fields, not candidate native execution.
+
+This fixes the result boundary needed by the pending journal. It does not enable
+the native repaired batch or implement operation journaling, history token
+remapping, final candidate validation or Store adoption.
+
 ## Implementation and evidence order
 
 1. Pin the field/entrypoint matrix against the independent TS decoder/runtime,

@@ -78,7 +78,9 @@ mod tests {
         state
     }
 
-    fn target_key(target: &ScoreEntityTargetV1) -> (&'static str, &str) {
+    fn target_key(
+        target: &brilliant_kernel_contracts::AffectedEntityAddressV1,
+    ) -> (&'static str, &str) {
         match target {
             ScoreEntityTargetV1::Document { document_id } => ("document", document_id.as_str()),
             ScoreEntityTargetV1::Measure { measure_id } => ("measure", measure_id.as_str()),

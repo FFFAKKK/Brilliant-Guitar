@@ -5,17 +5,17 @@ use brilliant_core_types::{
     StablePathV1,
 };
 use brilliant_kernel_contracts::{
-    CoreCommandEnvelopeV1, EventStaffAssignmentV1, InsertMeasurePartContentV1, KernelEventCauseV1,
-    KernelEventV1, KernelHistoryStateV1, KernelReadStateV1, KernelSelectorResultV1,
-    KernelSelectorValueV1, KernelStage3CommandFailureLeafV1, KernelStage3MetricsV1,
-    KernelStage3ResourceLimitKindV1, KernelStage4CommandResultV1, KernelStage4FailureV1,
-    KernelStage4MarkPersistedResultV1, KernelStage4MarkPersistedValueV1, KernelStage4MetricsV1,
-    KernelStage4MutationValueV1, KernelStage4ReadStateV1, KernelStage4RejectedValueV1,
-    KernelStage4SelectValueV1, KernelStage4SnapshotV1, MeasureAnchorV1, MeasurePickupV1,
-    NoteAddressV1, PartAnchorV1, PersistedCheckpointV1, PitchTranspositionErrorV1,
-    ScoreEntityTargetV1, ScoreRangeV1, ScoreStructureViolationV1, SelectedScoreEntityV1,
-    SelectorRequestV1, SequenceAnchorV1, SharedScoreDocumentV1, StableFailureV1, StaffAnchorV1,
-    VoiceAnchorV1, initial_snapshot,
+    AffectedEntityAddressV1, CoreCommandEnvelopeV1, EventStaffAssignmentV1,
+    InsertMeasurePartContentV1, KernelEventCauseV1, KernelEventV1, KernelHistoryStateV1,
+    KernelReadStateV1, KernelSelectorResultV1, KernelSelectorValueV1,
+    KernelStage3CommandFailureLeafV1, KernelStage3MetricsV1, KernelStage3ResourceLimitKindV1,
+    KernelStage4CommandResultV1, KernelStage4FailureV1, KernelStage4MarkPersistedResultV1,
+    KernelStage4MarkPersistedValueV1, KernelStage4MetricsV1, KernelStage4MutationValueV1,
+    KernelStage4ReadStateV1, KernelStage4RejectedValueV1, KernelStage4SelectValueV1,
+    KernelStage4SnapshotV1, MeasureAnchorV1, MeasurePickupV1, NoteAddressV1, PartAnchorV1,
+    PersistedCheckpointV1, PitchTranspositionErrorV1, ScoreEntityTargetV1, ScoreRangeV1,
+    ScoreStructureViolationV1, SelectedScoreEntityV1, SelectorRequestV1, SequenceAnchorV1,
+    SharedScoreDocumentV1, StableFailureV1, StaffAnchorV1, VoiceAnchorV1, initial_snapshot,
 };
 use brilliant_score_foundation::{
     ClefV1, CoreDiagnosticCodeV1, CoreDiagnosticV1, FractionV1, InstrumentDescriptorV1,
@@ -646,7 +646,7 @@ impl KernelRuntime {
 
     fn mutation_value(
         &self,
-        affected: Vec<ScoreEntityTargetV1>,
+        affected: Vec<AffectedEntityAddressV1>,
         metrics: KernelStage3MetricsV1,
         stage4_metrics: KernelStage4MetricsV1,
     ) -> Result<KernelStage4MutationValueV1, KernelStage4FailureV1> {
@@ -715,7 +715,7 @@ impl KernelRuntime {
 
 fn targets_from_change_set(
     change_set: &ChangeSetV1,
-) -> Result<Vec<ScoreEntityTargetV1>, KernelStage4FailureV1> {
+) -> Result<Vec<AffectedEntityAddressV1>, KernelStage4FailureV1> {
     let mut values = Vec::new();
     values
         .try_reserve(change_set.affected.len())
@@ -731,8 +731,8 @@ fn targets_from_change_set(
 }
 
 fn clone_targets(
-    source: &[ScoreEntityTargetV1],
-) -> Result<Vec<ScoreEntityTargetV1>, KernelStage4FailureV1> {
+    source: &[AffectedEntityAddressV1],
+) -> Result<Vec<AffectedEntityAddressV1>, KernelStage4FailureV1> {
     let mut values = Vec::new();
     values
         .try_reserve(source.len())
@@ -2803,19 +2803,29 @@ fn map_prepare_failure(failure: TransactionPrepareFailureV1) -> KernelStage3Comm
     }
 }
 
-fn score_target_from_stable_address(address: StableEntityAddressV1) -> ScoreEntityTargetV1 {
+fn score_target_from_stable_address(address: StableEntityAddressV1) -> AffectedEntityAddressV1 {
     match address {
-        StableEntityAddressV1::Document { document_id } => {
-            ScoreEntityTargetV1::Document { document_id }
-        }
-        StableEntityAddressV1::Measure { measure_id } => {
-            ScoreEntityTargetV1::Measure { measure_id }
-        }
-        StableEntityAddressV1::Part { part_id } => ScoreEntityTargetV1::Part { part_id },
-        StableEntityAddressV1::Staff { staff_id } => ScoreEntityTargetV1::Staff { staff_id },
-        StableEntityAddressV1::Voice { voice_id } => ScoreEntityTargetV1::Voice { voice_id },
-        StableEntityAddressV1::Event { event_id } => ScoreEntityTargetV1::Event { event_id },
-        StableEntityAddressV1::Note { note_id } => ScoreEntityTargetV1::Note { note_id },
+        StableEntityAddressV1::Document { document_id } => AffectedEntityAddressV1::Document {
+            document_id: document_id.into(),
+        },
+        StableEntityAddressV1::Measure { measure_id } => AffectedEntityAddressV1::Measure {
+            measure_id: measure_id.into(),
+        },
+        StableEntityAddressV1::Part { part_id } => AffectedEntityAddressV1::Part {
+            part_id: part_id.into(),
+        },
+        StableEntityAddressV1::Staff { staff_id } => AffectedEntityAddressV1::Staff {
+            staff_id: staff_id.into(),
+        },
+        StableEntityAddressV1::Voice { voice_id } => AffectedEntityAddressV1::Voice {
+            voice_id: voice_id.into(),
+        },
+        StableEntityAddressV1::Event { event_id } => AffectedEntityAddressV1::Event {
+            event_id: event_id.into(),
+        },
+        StableEntityAddressV1::Note { note_id } => AffectedEntityAddressV1::Note {
+            note_id: note_id.into(),
+        },
     }
 }
 
