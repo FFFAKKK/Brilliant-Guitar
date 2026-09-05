@@ -196,3 +196,28 @@ code-audit or qualification PASS.
    Final evidence names the exact cleaned commit, release artifact and supported
    execution environment. Kernel qualification does not qualify the excluded
    editor, physical persistence or other operating systems.
+
+### S1.3a — independent entry-point and diagnostic oracle
+
+The new `assessment-oracle.ts` corpus captures public document decode, strict
+component decode, direct semantic validation, custom/default profile validation
+and CommandBus creation separately. Its stored JSON expected results are
+generated exclusively from the TypeScript implementation, with a shared base
+document and explicit patches for each case. Tests never regenerate the file.
+The corpus reaches all 31 semantic and all 11 unsupported diagnostic codes;
+this establishes coverage, not Rust parity or exhaustive combinations.
+
+Key pinned distinctions include fractional meter/staff/transposition/schema
+components passing public decode but failing strict component decode, empty ID
+reaching semantic validation, invalid semantics suppressing profile diagnostics,
+ordered simultaneous errors, first duplicate measure reference authority,
+input-order coverage diagnostics, later errors after invalid event duration,
+extreme arithmetic and custom profile acceptance. Both planners confirmed the
+default `ScoreComponentDecodeContext` allows finite numeric components; only its
+explicit strict mode requires safe integers. The method name `integer` alone
+does not establish an entry point's behavior.
+
+Strict TypeScript compilation and all three corpus checks pass. Production code
+is unchanged by this corpus slice. Rust must consume these independent expected
+results while implementing the candidate view and complete validator next;
+the existing private create rejection is not yet the public diagnostic result.

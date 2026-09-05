@@ -1,0 +1,6614 @@
+{
+  "oracleVersion": 1,
+  "source": "TypeScript public decode, semantic/profile validation and CommandBus.create; strict component decode recorded separately",
+  "baseDocument": {
+    "schemaVersion": "brilliant-score-1",
+    "id": "score-1",
+    "metadata": {
+      "title": "Core fixture",
+      "authors": [
+        "Brilliant Guitar"
+      ],
+      "tempo": {
+        "bpm": 120
+      }
+    },
+    "measureDefinitions": [
+      {
+        "id": "measure-1",
+        "meter": {
+          "numerator": 4,
+          "denominator": 4
+        }
+      }
+    ],
+    "parts": [
+      {
+        "id": "part-1",
+        "name": "Concert instrument",
+        "instrument": {
+          "name": "Piano",
+          "writtenToSounding": {
+            "diatonicSteps": 0,
+            "chromaticSemitones": 0
+          }
+        },
+        "staves": [
+          {
+            "id": "staff-1",
+            "lineCount": 5,
+            "defaultClef": {
+              "sign": "G",
+              "line": 2
+            }
+          }
+        ],
+        "measureContents": [
+          {
+            "measureId": "measure-1",
+            "voices": [
+              {
+                "id": "voice-1",
+                "defaultStaffId": "staff-1",
+                "sequence": {
+                  "start": {
+                    "numerator": 0,
+                    "denominator": 1
+                  },
+                  "events": [
+                    {
+                      "id": "event-1",
+                      "duration": {
+                        "base": 4,
+                        "dots": 0
+                      },
+                      "content": {
+                        "kind": "notes",
+                        "notes": [
+                          {
+                            "id": "note-1",
+                            "writtenPitch": {
+                              "step": "C",
+                              "alter": 0,
+                              "octave": 4
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "id": "event-2",
+                      "duration": {
+                        "base": 4,
+                        "dots": 0
+                      },
+                      "content": {
+                        "kind": "rest"
+                      }
+                    },
+                    {
+                      "id": "event-3",
+                      "duration": {
+                        "base": 4,
+                        "dots": 0
+                      },
+                      "content": {
+                        "kind": "rest"
+                      }
+                    },
+                    {
+                      "id": "event-4",
+                      "duration": {
+                        "base": 4,
+                        "dots": 0
+                      },
+                      "content": {
+                        "kind": "rest"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "extensions": []
+  },
+  "cases": [
+    {
+      "id": "supported",
+      "patches": [],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "support": {
+          "status": "supported",
+          "diagnostics": []
+        },
+        "create": {
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "finite-tempo",
+      "patches": [
+        {
+          "path": [
+            "metadata",
+            "tempo",
+            "bpm"
+          ],
+          "value": 120.5
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "support": {
+          "status": "supported",
+          "diagnostics": []
+        },
+        "create": {
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "finite-opaque-values",
+      "patches": [
+        {
+          "path": [
+            "extensions"
+          ],
+          "value": [
+            {
+              "namespace": "example.opaque",
+              "schemaVersion": 1,
+              "owner": {
+                "kind": "score"
+              },
+              "payload": {
+                "values": [
+                  0.125,
+                  1e+100,
+                  5e-324,
+                  1.7976931348623157e+308
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "support": {
+          "status": "supported",
+          "diagnostics": []
+        },
+        "create": {
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "empty-score-id",
+      "patches": [
+        {
+          "path": [
+            "id"
+          ],
+          "value": ""
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.id-empty",
+              "messageKey": "core.semantic.id-empty",
+              "path": [
+                "id"
+              ]
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.id-empty",
+              "messageKey": "core.semantic.id-empty",
+              "path": [
+                "id"
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.id-empty",
+                "messageKey": "core.semantic.id-empty",
+                "path": [
+                  "id"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "duplicate-note-id",
+      "patches": [
+        {
+          "path": [
+            "parts",
+            0,
+            "measureContents",
+            0,
+            "voices",
+            0,
+            "sequence",
+            "events",
+            0,
+            "content",
+            "notes",
+            0,
+            "id"
+          ],
+          "value": "score-1"
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.id-duplicate",
+              "messageKey": "core.semantic.id-duplicate",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "content",
+                "notes",
+                0,
+                "id"
+              ],
+              "details": {
+                "id": "score-1"
+              }
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.id-duplicate",
+              "messageKey": "core.semantic.id-duplicate",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "content",
+                "notes",
+                0,
+                "id"
+              ],
+              "details": {
+                "id": "score-1"
+              }
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.id-duplicate",
+                "messageKey": "core.semantic.id-duplicate",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "events",
+                  0,
+                  "content",
+                  "notes",
+                  0,
+                  "id"
+                ],
+                "details": {
+                  "id": "score-1"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "tempo-zero",
+      "patches": [
+        {
+          "path": [
+            "metadata",
+            "tempo",
+            "bpm"
+          ],
+          "value": 0
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.tempo-invalid",
+              "messageKey": "core.semantic.tempo-invalid",
+              "path": [
+                "metadata",
+                "tempo",
+                "bpm"
+              ]
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.tempo-invalid",
+              "messageKey": "core.semantic.tempo-invalid",
+              "path": [
+                "metadata",
+                "tempo",
+                "bpm"
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.tempo-invalid",
+                "messageKey": "core.semantic.tempo-invalid",
+                "path": [
+                  "metadata",
+                  "tempo",
+                  "bpm"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "measures-required",
+      "patches": [
+        {
+          "path": [
+            "measureDefinitions"
+          ],
+          "value": []
+        },
+        {
+          "path": [
+            "parts",
+            0,
+            "measureContents"
+          ],
+          "value": []
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.measure-required",
+              "messageKey": "core.semantic.measure-required",
+              "path": [
+                "measureDefinitions"
+              ]
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.measure-required",
+              "messageKey": "core.semantic.measure-required",
+              "path": [
+                "measureDefinitions"
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.measure-required",
+                "messageKey": "core.semantic.measure-required",
+                "path": [
+                  "measureDefinitions"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "parts-required",
+      "patches": [
+        {
+          "path": [
+            "parts"
+          ],
+          "value": []
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.part-required",
+              "messageKey": "core.semantic.part-required",
+              "path": [
+                "parts"
+              ]
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.part-required",
+              "messageKey": "core.semantic.part-required",
+              "path": [
+                "parts"
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.part-required",
+                "messageKey": "core.semantic.part-required",
+                "path": [
+                  "parts"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "staff-required",
+      "patches": [
+        {
+          "path": [
+            "parts",
+            0,
+            "staves"
+          ],
+          "value": []
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.staff-required",
+              "messageKey": "core.semantic.staff-required",
+              "path": [
+                "parts",
+                0,
+                "staves"
+              ]
+            },
+            {
+              "code": "semantic.staff-reference-missing",
+              "messageKey": "core.semantic.staff-reference-missing",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "defaultStaffId"
+              ]
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.staff-required",
+              "messageKey": "core.semantic.staff-required",
+              "path": [
+                "parts",
+                0,
+                "staves"
+              ]
+            },
+            {
+              "code": "semantic.staff-reference-missing",
+              "messageKey": "core.semantic.staff-reference-missing",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "defaultStaffId"
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.staff-required",
+                "messageKey": "core.semantic.staff-required",
+                "path": [
+                  "parts",
+                  0,
+                  "staves"
+                ]
+              },
+              {
+                "code": "semantic.staff-reference-missing",
+                "messageKey": "core.semantic.staff-reference-missing",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "defaultStaffId"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "voice-required",
+      "patches": [
+        {
+          "path": [
+            "parts",
+            0,
+            "measureContents",
+            0,
+            "voices"
+          ],
+          "value": []
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.voice-required",
+              "messageKey": "core.semantic.voice-required",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices"
+              ]
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.voice-required",
+              "messageKey": "core.semantic.voice-required",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices"
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.voice-required",
+                "messageKey": "core.semantic.voice-required",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "notes-required",
+      "patches": [
+        {
+          "path": [
+            "parts",
+            0,
+            "measureContents",
+            0,
+            "voices",
+            0,
+            "sequence",
+            "events",
+            0,
+            "content",
+            "notes"
+          ],
+          "value": []
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.notes-required",
+              "messageKey": "core.semantic.notes-required",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "content",
+                "notes"
+              ]
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.notes-required",
+              "messageKey": "core.semantic.notes-required",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "content",
+                "notes"
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.notes-required",
+                "messageKey": "core.semantic.notes-required",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "events",
+                  0,
+                  "content",
+                  "notes"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "meter-numerator-zero",
+      "patches": [
+        {
+          "path": [
+            "measureDefinitions",
+            0,
+            "meter",
+            "numerator"
+          ],
+          "value": 0
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.meter-numerator-invalid",
+              "messageKey": "core.semantic.meter-numerator-invalid",
+              "path": [
+                "measureDefinitions",
+                0,
+                "meter",
+                "numerator"
+              ]
+            },
+            {
+              "code": "semantic.measure-duration-invalid",
+              "messageKey": "core.semantic.measure-duration-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "start"
+              ],
+              "details": {
+                "reason": "meter-numerator-invalid"
+              }
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.meter-numerator-invalid",
+              "messageKey": "core.semantic.meter-numerator-invalid",
+              "path": [
+                "measureDefinitions",
+                0,
+                "meter",
+                "numerator"
+              ]
+            },
+            {
+              "code": "semantic.measure-duration-invalid",
+              "messageKey": "core.semantic.measure-duration-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "start"
+              ],
+              "details": {
+                "reason": "meter-numerator-invalid"
+              }
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.meter-numerator-invalid",
+                "messageKey": "core.semantic.meter-numerator-invalid",
+                "path": [
+                  "measureDefinitions",
+                  0,
+                  "meter",
+                  "numerator"
+                ]
+              },
+              {
+                "code": "semantic.measure-duration-invalid",
+                "messageKey": "core.semantic.measure-duration-invalid",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "start"
+                ],
+                "details": {
+                  "reason": "meter-numerator-invalid"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "meter-numerator-fractional",
+      "patches": [
+        {
+          "path": [
+            "measureDefinitions",
+            0,
+            "meter",
+            "numerator"
+          ],
+          "value": 4.5
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "decode.type",
+              "messageKey": "core.decode.type",
+              "path": [
+                "measureDefinitions",
+                0,
+                "meter",
+                "numerator"
+              ],
+              "details": {
+                "expected": "safe-integer"
+              }
+            }
+          ]
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.meter-numerator-invalid",
+              "messageKey": "core.semantic.meter-numerator-invalid",
+              "path": [
+                "measureDefinitions",
+                0,
+                "meter",
+                "numerator"
+              ]
+            },
+            {
+              "code": "semantic.measure-duration-invalid",
+              "messageKey": "core.semantic.measure-duration-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "start"
+              ],
+              "details": {
+                "reason": "meter-numerator-invalid"
+              }
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.meter-numerator-invalid",
+              "messageKey": "core.semantic.meter-numerator-invalid",
+              "path": [
+                "measureDefinitions",
+                0,
+                "meter",
+                "numerator"
+              ]
+            },
+            {
+              "code": "semantic.measure-duration-invalid",
+              "messageKey": "core.semantic.measure-duration-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "start"
+              ],
+              "details": {
+                "reason": "meter-numerator-invalid"
+              }
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.meter-numerator-invalid",
+                "messageKey": "core.semantic.meter-numerator-invalid",
+                "path": [
+                  "measureDefinitions",
+                  0,
+                  "meter",
+                  "numerator"
+                ]
+              },
+              {
+                "code": "semantic.measure-duration-invalid",
+                "messageKey": "core.semantic.measure-duration-invalid",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "start"
+                ],
+                "details": {
+                  "reason": "meter-numerator-invalid"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "meter-numerator-unsafe",
+      "patches": [
+        {
+          "path": [
+            "measureDefinitions",
+            0,
+            "meter",
+            "numerator"
+          ],
+          "value": 9007199254740992
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "decode.type",
+              "messageKey": "core.decode.type",
+              "path": [
+                "measureDefinitions",
+                0,
+                "meter",
+                "numerator"
+              ],
+              "details": {
+                "expected": "safe-integer"
+              }
+            }
+          ]
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.meter-numerator-invalid",
+              "messageKey": "core.semantic.meter-numerator-invalid",
+              "path": [
+                "measureDefinitions",
+                0,
+                "meter",
+                "numerator"
+              ]
+            },
+            {
+              "code": "semantic.measure-duration-invalid",
+              "messageKey": "core.semantic.measure-duration-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "start"
+              ],
+              "details": {
+                "reason": "meter-numerator-invalid"
+              }
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.meter-numerator-invalid",
+              "messageKey": "core.semantic.meter-numerator-invalid",
+              "path": [
+                "measureDefinitions",
+                0,
+                "meter",
+                "numerator"
+              ]
+            },
+            {
+              "code": "semantic.measure-duration-invalid",
+              "messageKey": "core.semantic.measure-duration-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "start"
+              ],
+              "details": {
+                "reason": "meter-numerator-invalid"
+              }
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.meter-numerator-invalid",
+                "messageKey": "core.semantic.meter-numerator-invalid",
+                "path": [
+                  "measureDefinitions",
+                  0,
+                  "meter",
+                  "numerator"
+                ]
+              },
+              {
+                "code": "semantic.measure-duration-invalid",
+                "messageKey": "core.semantic.measure-duration-invalid",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "start"
+                ],
+                "details": {
+                  "reason": "meter-numerator-invalid"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "meter-denominator-invalid",
+      "patches": [
+        {
+          "path": [
+            "measureDefinitions",
+            0,
+            "meter",
+            "denominator"
+          ],
+          "value": 3
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "decode.union",
+              "messageKey": "core.decode.union",
+              "path": [
+                "measureDefinitions",
+                0,
+                "meter",
+                "denominator"
+              ]
+            }
+          ]
+        },
+        "strictDecode": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "decode.union",
+              "messageKey": "core.decode.union",
+              "path": [
+                "measureDefinitions",
+                0,
+                "meter",
+                "denominator"
+              ]
+            }
+          ]
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.meter-denominator-invalid",
+              "messageKey": "core.semantic.meter-denominator-invalid",
+              "path": [
+                "measureDefinitions",
+                0,
+                "meter",
+                "denominator"
+              ]
+            },
+            {
+              "code": "semantic.measure-duration-invalid",
+              "messageKey": "core.semantic.measure-duration-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "start"
+              ],
+              "details": {
+                "reason": "meter-denominator-invalid"
+              }
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.meter-denominator-invalid",
+              "messageKey": "core.semantic.meter-denominator-invalid",
+              "path": [
+                "measureDefinitions",
+                0,
+                "meter",
+                "denominator"
+              ]
+            },
+            {
+              "code": "semantic.measure-duration-invalid",
+              "messageKey": "core.semantic.measure-duration-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "start"
+              ],
+              "details": {
+                "reason": "meter-denominator-invalid"
+              }
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.meter-denominator-invalid",
+                "messageKey": "core.semantic.meter-denominator-invalid",
+                "path": [
+                  "measureDefinitions",
+                  0,
+                  "meter",
+                  "denominator"
+                ]
+              },
+              {
+                "code": "semantic.measure-duration-invalid",
+                "messageKey": "core.semantic.measure-duration-invalid",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "start"
+                ],
+                "details": {
+                  "reason": "meter-denominator-invalid"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "staff-line-count-fractional",
+      "patches": [
+        {
+          "path": [
+            "parts",
+            0,
+            "staves",
+            0,
+            "lineCount"
+          ],
+          "value": 0.5
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "decode.type",
+              "messageKey": "core.decode.type",
+              "path": [
+                "parts",
+                0,
+                "staves",
+                0,
+                "lineCount"
+              ],
+              "details": {
+                "expected": "safe-integer"
+              }
+            }
+          ]
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.staff-line-count-invalid",
+              "messageKey": "core.semantic.staff-line-count-invalid",
+              "path": [
+                "parts",
+                0,
+                "staves",
+                0,
+                "lineCount"
+              ]
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.staff-line-count-invalid",
+              "messageKey": "core.semantic.staff-line-count-invalid",
+              "path": [
+                "parts",
+                0,
+                "staves",
+                0,
+                "lineCount"
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.staff-line-count-invalid",
+                "messageKey": "core.semantic.staff-line-count-invalid",
+                "path": [
+                  "parts",
+                  0,
+                  "staves",
+                  0,
+                  "lineCount"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "transposition-fractional",
+      "patches": [
+        {
+          "path": [
+            "parts",
+            0,
+            "instrument",
+            "writtenToSounding",
+            "diatonicSteps"
+          ],
+          "value": 0.5
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "decode.type",
+              "messageKey": "core.decode.type",
+              "path": [
+                "parts",
+                0,
+                "instrument",
+                "writtenToSounding",
+                "diatonicSteps"
+              ],
+              "details": {
+                "expected": "safe-integer"
+              }
+            }
+          ]
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.transposition-invalid",
+              "messageKey": "core.semantic.transposition-invalid",
+              "path": [
+                "parts",
+                0,
+                "instrument",
+                "writtenToSounding"
+              ]
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.transposition-invalid",
+              "messageKey": "core.semantic.transposition-invalid",
+              "path": [
+                "parts",
+                0,
+                "instrument",
+                "writtenToSounding"
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.transposition-invalid",
+                "messageKey": "core.semantic.transposition-invalid",
+                "path": [
+                  "parts",
+                  0,
+                  "instrument",
+                  "writtenToSounding"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "transposition-unsafe",
+      "patches": [
+        {
+          "path": [
+            "parts",
+            0,
+            "instrument",
+            "writtenToSounding",
+            "chromaticSemitones"
+          ],
+          "value": 9007199254740992
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "decode.type",
+              "messageKey": "core.decode.type",
+              "path": [
+                "parts",
+                0,
+                "instrument",
+                "writtenToSounding",
+                "chromaticSemitones"
+              ],
+              "details": {
+                "expected": "safe-integer"
+              }
+            }
+          ]
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.transposition-invalid",
+              "messageKey": "core.semantic.transposition-invalid",
+              "path": [
+                "parts",
+                0,
+                "instrument",
+                "writtenToSounding"
+              ]
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.transposition-invalid",
+              "messageKey": "core.semantic.transposition-invalid",
+              "path": [
+                "parts",
+                0,
+                "instrument",
+                "writtenToSounding"
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.transposition-invalid",
+                "messageKey": "core.semantic.transposition-invalid",
+                "path": [
+                  "parts",
+                  0,
+                  "instrument",
+                  "writtenToSounding"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "written-pitch-alter-invalid",
+      "patches": [
+        {
+          "path": [
+            "parts",
+            0,
+            "measureContents",
+            0,
+            "voices",
+            0,
+            "sequence",
+            "events",
+            0,
+            "content",
+            "notes",
+            0,
+            "writtenPitch",
+            "alter"
+          ],
+          "value": 3
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "decode.union",
+              "messageKey": "core.decode.union",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "content",
+                "notes",
+                0,
+                "writtenPitch",
+                "alter"
+              ]
+            }
+          ]
+        },
+        "strictDecode": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "decode.union",
+              "messageKey": "core.decode.union",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "content",
+                "notes",
+                0,
+                "writtenPitch",
+                "alter"
+              ]
+            }
+          ]
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.written-pitch-invalid",
+              "messageKey": "core.semantic.written-pitch-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "content",
+                "notes",
+                0,
+                "writtenPitch"
+              ]
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.written-pitch-invalid",
+              "messageKey": "core.semantic.written-pitch-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "content",
+                "notes",
+                0,
+                "writtenPitch"
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.written-pitch-invalid",
+                "messageKey": "core.semantic.written-pitch-invalid",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "events",
+                  0,
+                  "content",
+                  "notes",
+                  0,
+                  "writtenPitch"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "written-pitch-octave-invalid",
+      "patches": [
+        {
+          "path": [
+            "parts",
+            0,
+            "measureContents",
+            0,
+            "voices",
+            0,
+            "sequence",
+            "events",
+            0,
+            "content",
+            "notes",
+            0,
+            "writtenPitch",
+            "octave"
+          ],
+          "value": 9
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.written-pitch-invalid",
+              "messageKey": "core.semantic.written-pitch-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "content",
+                "notes",
+                0,
+                "writtenPitch"
+              ]
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.written-pitch-invalid",
+              "messageKey": "core.semantic.written-pitch-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "content",
+                "notes",
+                0,
+                "writtenPitch"
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.written-pitch-invalid",
+                "messageKey": "core.semantic.written-pitch-invalid",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "events",
+                  0,
+                  "content",
+                  "notes",
+                  0,
+                  "writtenPitch"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "sounding-octave-invalid",
+      "patches": [
+        {
+          "path": [
+            "parts",
+            0,
+            "instrument",
+            "writtenToSounding",
+            "diatonicSteps"
+          ],
+          "value": 100
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.sounding-pitch-invalid",
+              "messageKey": "core.semantic.sounding-pitch-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "content",
+                "notes",
+                0,
+                "writtenPitch"
+              ],
+              "details": {
+                "reason": "derived-pitch-octave-out-of-range"
+              }
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.sounding-pitch-invalid",
+              "messageKey": "core.semantic.sounding-pitch-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "content",
+                "notes",
+                0,
+                "writtenPitch"
+              ],
+              "details": {
+                "reason": "derived-pitch-octave-out-of-range"
+              }
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.sounding-pitch-invalid",
+                "messageKey": "core.semantic.sounding-pitch-invalid",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "events",
+                  0,
+                  "content",
+                  "notes",
+                  0,
+                  "writtenPitch"
+                ],
+                "details": {
+                  "reason": "derived-pitch-octave-out-of-range"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "sounding-alter-invalid",
+      "patches": [
+        {
+          "path": [
+            "parts",
+            0,
+            "instrument",
+            "writtenToSounding",
+            "chromaticSemitones"
+          ],
+          "value": 100
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.sounding-pitch-invalid",
+              "messageKey": "core.semantic.sounding-pitch-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "content",
+                "notes",
+                0,
+                "writtenPitch"
+              ],
+              "details": {
+                "reason": "derived-pitch-alter-out-of-range"
+              }
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.sounding-pitch-invalid",
+              "messageKey": "core.semantic.sounding-pitch-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "content",
+                "notes",
+                0,
+                "writtenPitch"
+              ],
+              "details": {
+                "reason": "derived-pitch-alter-out-of-range"
+              }
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.sounding-pitch-invalid",
+                "messageKey": "core.semantic.sounding-pitch-invalid",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "events",
+                  0,
+                  "content",
+                  "notes",
+                  0,
+                  "writtenPitch"
+                ],
+                "details": {
+                  "reason": "derived-pitch-alter-out-of-range"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "sounding-diatonic-overflow",
+      "patches": [
+        {
+          "path": [
+            "parts",
+            0,
+            "instrument",
+            "writtenToSounding",
+            "diatonicSteps"
+          ],
+          "value": 9007199254740991
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.sounding-pitch-invalid",
+              "messageKey": "core.semantic.sounding-pitch-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "content",
+                "notes",
+                0,
+                "writtenPitch"
+              ],
+              "details": {
+                "reason": "transposition-component-invalid"
+              }
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.sounding-pitch-invalid",
+              "messageKey": "core.semantic.sounding-pitch-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "content",
+                "notes",
+                0,
+                "writtenPitch"
+              ],
+              "details": {
+                "reason": "transposition-component-invalid"
+              }
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.sounding-pitch-invalid",
+                "messageKey": "core.semantic.sounding-pitch-invalid",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "events",
+                  0,
+                  "content",
+                  "notes",
+                  0,
+                  "writtenPitch"
+                ],
+                "details": {
+                  "reason": "transposition-component-invalid"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "sounding-chromatic-overflow",
+      "patches": [
+        {
+          "path": [
+            "parts",
+            0,
+            "instrument",
+            "writtenToSounding",
+            "chromaticSemitones"
+          ],
+          "value": 9007199254740991
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.sounding-pitch-invalid",
+              "messageKey": "core.semantic.sounding-pitch-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "content",
+                "notes",
+                0,
+                "writtenPitch"
+              ],
+              "details": {
+                "reason": "transposition-component-invalid"
+              }
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.sounding-pitch-invalid",
+              "messageKey": "core.semantic.sounding-pitch-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "content",
+                "notes",
+                0,
+                "writtenPitch"
+              ],
+              "details": {
+                "reason": "transposition-component-invalid"
+              }
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.sounding-pitch-invalid",
+                "messageKey": "core.semantic.sounding-pitch-invalid",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "events",
+                  0,
+                  "content",
+                  "notes",
+                  0,
+                  "writtenPitch"
+                ],
+                "details": {
+                  "reason": "transposition-component-invalid"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "start-noncanonical",
+      "patches": [
+        {
+          "path": [
+            "parts",
+            0,
+            "measureContents",
+            0,
+            "voices",
+            0,
+            "sequence",
+            "start"
+          ],
+          "value": {
+            "numerator": 2,
+            "denominator": 4
+          }
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.fraction-non-canonical",
+              "messageKey": "core.semantic.fraction-non-canonical",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "start"
+              ]
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.fraction-non-canonical",
+              "messageKey": "core.semantic.fraction-non-canonical",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "start"
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.fraction-non-canonical",
+                "messageKey": "core.semantic.fraction-non-canonical",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "start"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "start-negative",
+      "patches": [
+        {
+          "path": [
+            "parts",
+            0,
+            "measureContents",
+            0,
+            "voices",
+            0,
+            "sequence",
+            "start"
+          ],
+          "value": {
+            "numerator": -1,
+            "denominator": 4
+          }
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.fraction-sign-invalid",
+              "messageKey": "core.semantic.fraction-sign-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "start"
+              ]
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.fraction-sign-invalid",
+              "messageKey": "core.semantic.fraction-sign-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "start"
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.fraction-sign-invalid",
+                "messageKey": "core.semantic.fraction-sign-invalid",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "start"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "start-out-of-bounds",
+      "patches": [
+        {
+          "path": [
+            "parts",
+            0,
+            "measureContents",
+            0,
+            "voices",
+            0,
+            "sequence",
+            "start"
+          ],
+          "value": {
+            "numerator": 2,
+            "denominator": 1
+          }
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.sequence-start-out-of-bounds",
+              "messageKey": "core.semantic.sequence-start-out-of-bounds",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "start"
+              ]
+            },
+            {
+              "code": "semantic.sequence-exceeds-measure",
+              "messageKey": "core.semantic.sequence-exceeds-measure",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0
+              ]
+            },
+            {
+              "code": "semantic.sequence-exceeds-measure",
+              "messageKey": "core.semantic.sequence-exceeds-measure",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                1
+              ]
+            },
+            {
+              "code": "semantic.sequence-exceeds-measure",
+              "messageKey": "core.semantic.sequence-exceeds-measure",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                2
+              ]
+            },
+            {
+              "code": "semantic.sequence-exceeds-measure",
+              "messageKey": "core.semantic.sequence-exceeds-measure",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                3
+              ]
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.sequence-start-out-of-bounds",
+              "messageKey": "core.semantic.sequence-start-out-of-bounds",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "start"
+              ]
+            },
+            {
+              "code": "semantic.sequence-exceeds-measure",
+              "messageKey": "core.semantic.sequence-exceeds-measure",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0
+              ]
+            },
+            {
+              "code": "semantic.sequence-exceeds-measure",
+              "messageKey": "core.semantic.sequence-exceeds-measure",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                1
+              ]
+            },
+            {
+              "code": "semantic.sequence-exceeds-measure",
+              "messageKey": "core.semantic.sequence-exceeds-measure",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                2
+              ]
+            },
+            {
+              "code": "semantic.sequence-exceeds-measure",
+              "messageKey": "core.semantic.sequence-exceeds-measure",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                3
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.sequence-start-out-of-bounds",
+                "messageKey": "core.semantic.sequence-start-out-of-bounds",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "start"
+                ]
+              },
+              {
+                "code": "semantic.sequence-exceeds-measure",
+                "messageKey": "core.semantic.sequence-exceeds-measure",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "events",
+                  0
+                ]
+              },
+              {
+                "code": "semantic.sequence-exceeds-measure",
+                "messageKey": "core.semantic.sequence-exceeds-measure",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "events",
+                  1
+                ]
+              },
+              {
+                "code": "semantic.sequence-exceeds-measure",
+                "messageKey": "core.semantic.sequence-exceeds-measure",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "events",
+                  2
+                ]
+              },
+              {
+                "code": "semantic.sequence-exceeds-measure",
+                "messageKey": "core.semantic.sequence-exceeds-measure",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "events",
+                  3
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "pickup-zero",
+      "patches": [
+        {
+          "path": [
+            "measureDefinitions",
+            0,
+            "pickupDuration"
+          ],
+          "value": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.fraction-sign-invalid",
+              "messageKey": "core.semantic.fraction-sign-invalid",
+              "path": [
+                "measureDefinitions",
+                0,
+                "pickupDuration"
+              ]
+            },
+            {
+              "code": "semantic.measure-duration-invalid",
+              "messageKey": "core.semantic.measure-duration-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "start"
+              ],
+              "details": {
+                "reason": "pickup-duration-invalid"
+              }
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.fraction-sign-invalid",
+              "messageKey": "core.semantic.fraction-sign-invalid",
+              "path": [
+                "measureDefinitions",
+                0,
+                "pickupDuration"
+              ]
+            },
+            {
+              "code": "semantic.measure-duration-invalid",
+              "messageKey": "core.semantic.measure-duration-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "start"
+              ],
+              "details": {
+                "reason": "pickup-duration-invalid"
+              }
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.fraction-sign-invalid",
+                "messageKey": "core.semantic.fraction-sign-invalid",
+                "path": [
+                  "measureDefinitions",
+                  0,
+                  "pickupDuration"
+                ]
+              },
+              {
+                "code": "semantic.measure-duration-invalid",
+                "messageKey": "core.semantic.measure-duration-invalid",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "start"
+                ],
+                "details": {
+                  "reason": "pickup-duration-invalid"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "pickup-noncanonical",
+      "patches": [
+        {
+          "path": [
+            "measureDefinitions",
+            0,
+            "pickupDuration"
+          ],
+          "value": {
+            "numerator": 2,
+            "denominator": 4
+          }
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.fraction-non-canonical",
+              "messageKey": "core.semantic.fraction-non-canonical",
+              "path": [
+                "measureDefinitions",
+                0,
+                "pickupDuration"
+              ]
+            },
+            {
+              "code": "semantic.measure-duration-invalid",
+              "messageKey": "core.semantic.measure-duration-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "start"
+              ],
+              "details": {
+                "reason": "pickup-duration-invalid"
+              }
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.fraction-non-canonical",
+              "messageKey": "core.semantic.fraction-non-canonical",
+              "path": [
+                "measureDefinitions",
+                0,
+                "pickupDuration"
+              ]
+            },
+            {
+              "code": "semantic.measure-duration-invalid",
+              "messageKey": "core.semantic.measure-duration-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "start"
+              ],
+              "details": {
+                "reason": "pickup-duration-invalid"
+              }
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.fraction-non-canonical",
+                "messageKey": "core.semantic.fraction-non-canonical",
+                "path": [
+                  "measureDefinitions",
+                  0,
+                  "pickupDuration"
+                ]
+              },
+              {
+                "code": "semantic.measure-duration-invalid",
+                "messageKey": "core.semantic.measure-duration-invalid",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "start"
+                ],
+                "details": {
+                  "reason": "pickup-duration-invalid"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "pickup-exceeds-measure",
+      "patches": [
+        {
+          "path": [
+            "measureDefinitions",
+            0,
+            "pickupDuration"
+          ],
+          "value": {
+            "numerator": 5,
+            "denominator": 4
+          }
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.pickup-exceeds-measure",
+              "messageKey": "core.semantic.pickup-exceeds-measure",
+              "path": [
+                "measureDefinitions",
+                0,
+                "pickupDuration"
+              ]
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.pickup-exceeds-measure",
+              "messageKey": "core.semantic.pickup-exceeds-measure",
+              "path": [
+                "measureDefinitions",
+                0,
+                "pickupDuration"
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.pickup-exceeds-measure",
+                "messageKey": "core.semantic.pickup-exceeds-measure",
+                "path": [
+                  "measureDefinitions",
+                  0,
+                  "pickupDuration"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "pickup-comparison-overflow",
+      "patches": [
+        {
+          "path": [
+            "measureDefinitions",
+            0,
+            "meter"
+          ],
+          "value": {
+            "numerator": 9007199254740991,
+            "denominator": 2
+          }
+        },
+        {
+          "path": [
+            "measureDefinitions",
+            0,
+            "pickupDuration"
+          ],
+          "value": {
+            "numerator": 9007199254740991,
+            "denominator": 2
+          }
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.time-arithmetic-overflow",
+              "messageKey": "core.semantic.time-arithmetic-overflow",
+              "path": [
+                "measureDefinitions",
+                0,
+                "pickupDuration"
+              ]
+            },
+            {
+              "code": "semantic.time-arithmetic-overflow",
+              "messageKey": "core.semantic.time-arithmetic-overflow",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "duration"
+              ]
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.time-arithmetic-overflow",
+              "messageKey": "core.semantic.time-arithmetic-overflow",
+              "path": [
+                "measureDefinitions",
+                0,
+                "pickupDuration"
+              ]
+            },
+            {
+              "code": "semantic.time-arithmetic-overflow",
+              "messageKey": "core.semantic.time-arithmetic-overflow",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "duration"
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.time-arithmetic-overflow",
+                "messageKey": "core.semantic.time-arithmetic-overflow",
+                "path": [
+                  "measureDefinitions",
+                  0,
+                  "pickupDuration"
+                ]
+              },
+              {
+                "code": "semantic.time-arithmetic-overflow",
+                "messageKey": "core.semantic.time-arithmetic-overflow",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "events",
+                  0,
+                  "duration"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "event-base-invalid",
+      "patches": [
+        {
+          "path": [
+            "parts",
+            0,
+            "measureContents",
+            0,
+            "voices",
+            0,
+            "sequence",
+            "events",
+            0,
+            "duration",
+            "base"
+          ],
+          "value": 3
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "decode.union",
+              "messageKey": "core.decode.union",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "duration",
+                "base"
+              ]
+            }
+          ]
+        },
+        "strictDecode": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "decode.union",
+              "messageKey": "core.decode.union",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "duration",
+                "base"
+              ]
+            }
+          ]
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.note-value-invalid",
+              "messageKey": "core.semantic.note-value-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "duration"
+              ],
+              "details": {
+                "reason": "note-value-base-invalid"
+              }
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.note-value-invalid",
+              "messageKey": "core.semantic.note-value-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "duration"
+              ],
+              "details": {
+                "reason": "note-value-base-invalid"
+              }
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.note-value-invalid",
+                "messageKey": "core.semantic.note-value-invalid",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "events",
+                  0,
+                  "duration"
+                ],
+                "details": {
+                  "reason": "note-value-base-invalid"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "event-dots-invalid",
+      "patches": [
+        {
+          "path": [
+            "parts",
+            0,
+            "measureContents",
+            0,
+            "voices",
+            0,
+            "sequence",
+            "events",
+            0,
+            "duration",
+            "dots"
+          ],
+          "value": 4
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "decode.union",
+              "messageKey": "core.decode.union",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "duration",
+                "dots"
+              ]
+            }
+          ]
+        },
+        "strictDecode": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "decode.union",
+              "messageKey": "core.decode.union",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "duration",
+                "dots"
+              ]
+            }
+          ]
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.note-value-invalid",
+              "messageKey": "core.semantic.note-value-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "duration"
+              ],
+              "details": {
+                "reason": "note-value-dots-invalid"
+              }
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.note-value-invalid",
+              "messageKey": "core.semantic.note-value-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "duration"
+              ],
+              "details": {
+                "reason": "note-value-dots-invalid"
+              }
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.note-value-invalid",
+                "messageKey": "core.semantic.note-value-invalid",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "events",
+                  0,
+                  "duration"
+                ],
+                "details": {
+                  "reason": "note-value-dots-invalid"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "event-tuplet-invalid",
+      "patches": [
+        {
+          "path": [
+            "parts",
+            0,
+            "measureContents",
+            0,
+            "voices",
+            0,
+            "sequence",
+            "events",
+            0,
+            "duration",
+            "timeModification"
+          ],
+          "value": {
+            "actualNotes": 0,
+            "normalNotes": 2
+          }
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.note-value-invalid",
+              "messageKey": "core.semantic.note-value-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "duration"
+              ],
+              "details": {
+                "reason": "note-value-time-modification-invalid"
+              }
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.note-value-invalid",
+              "messageKey": "core.semantic.note-value-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "duration"
+              ],
+              "details": {
+                "reason": "note-value-time-modification-invalid"
+              }
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.note-value-invalid",
+                "messageKey": "core.semantic.note-value-invalid",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "events",
+                  0,
+                  "duration"
+                ],
+                "details": {
+                  "reason": "note-value-time-modification-invalid"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "event-tuplet-overflow",
+      "patches": [
+        {
+          "path": [
+            "parts",
+            0,
+            "measureContents",
+            0,
+            "voices",
+            0,
+            "sequence",
+            "events",
+            0,
+            "duration"
+          ],
+          "value": {
+            "base": 64,
+            "dots": 3,
+            "timeModification": {
+              "actualNotes": 9007199254740991,
+              "normalNotes": 1
+            }
+          }
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.time-arithmetic-overflow",
+              "messageKey": "core.semantic.time-arithmetic-overflow",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "duration"
+              ],
+              "details": {
+                "reason": "fraction-overflow"
+              }
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.time-arithmetic-overflow",
+              "messageKey": "core.semantic.time-arithmetic-overflow",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "duration"
+              ],
+              "details": {
+                "reason": "fraction-overflow"
+              }
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.time-arithmetic-overflow",
+                "messageKey": "core.semantic.time-arithmetic-overflow",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "events",
+                  0,
+                  "duration"
+                ],
+                "details": {
+                  "reason": "fraction-overflow"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "sequence-exceeds-measure",
+      "patches": [
+        {
+          "path": [
+            "parts",
+            0,
+            "measureContents",
+            0,
+            "voices",
+            0,
+            "sequence",
+            "events",
+            0,
+            "duration",
+            "base"
+          ],
+          "value": 1
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.sequence-exceeds-measure",
+              "messageKey": "core.semantic.sequence-exceeds-measure",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                1
+              ]
+            },
+            {
+              "code": "semantic.sequence-exceeds-measure",
+              "messageKey": "core.semantic.sequence-exceeds-measure",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                2
+              ]
+            },
+            {
+              "code": "semantic.sequence-exceeds-measure",
+              "messageKey": "core.semantic.sequence-exceeds-measure",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                3
+              ]
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.sequence-exceeds-measure",
+              "messageKey": "core.semantic.sequence-exceeds-measure",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                1
+              ]
+            },
+            {
+              "code": "semantic.sequence-exceeds-measure",
+              "messageKey": "core.semantic.sequence-exceeds-measure",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                2
+              ]
+            },
+            {
+              "code": "semantic.sequence-exceeds-measure",
+              "messageKey": "core.semantic.sequence-exceeds-measure",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                3
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.sequence-exceeds-measure",
+                "messageKey": "core.semantic.sequence-exceeds-measure",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "events",
+                  1
+                ]
+              },
+              {
+                "code": "semantic.sequence-exceeds-measure",
+                "messageKey": "core.semantic.sequence-exceeds-measure",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "events",
+                  2
+                ]
+              },
+              {
+                "code": "semantic.sequence-exceeds-measure",
+                "messageKey": "core.semantic.sequence-exceeds-measure",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "events",
+                  3
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "measure-reference-missing",
+      "patches": [
+        {
+          "path": [
+            "parts",
+            0,
+            "measureContents",
+            0,
+            "measureId"
+          ],
+          "value": "missing-measure"
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.measure-reference-missing",
+              "messageKey": "core.semantic.measure-reference-missing",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "measureId"
+              ]
+            },
+            {
+              "code": "semantic.measure-coverage-missing",
+              "messageKey": "core.semantic.measure-coverage-missing",
+              "path": [
+                "parts",
+                0,
+                "measureContents"
+              ],
+              "details": {
+                "measureId": "measure-1"
+              }
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.measure-reference-missing",
+              "messageKey": "core.semantic.measure-reference-missing",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "measureId"
+              ]
+            },
+            {
+              "code": "semantic.measure-coverage-missing",
+              "messageKey": "core.semantic.measure-coverage-missing",
+              "path": [
+                "parts",
+                0,
+                "measureContents"
+              ],
+              "details": {
+                "measureId": "measure-1"
+              }
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.measure-reference-missing",
+                "messageKey": "core.semantic.measure-reference-missing",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "measureId"
+                ]
+              },
+              {
+                "code": "semantic.measure-coverage-missing",
+                "messageKey": "core.semantic.measure-coverage-missing",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents"
+                ],
+                "details": {
+                  "measureId": "measure-1"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "measure-coverage-missing",
+      "patches": [
+        {
+          "path": [
+            "parts",
+            0,
+            "measureContents"
+          ],
+          "value": []
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.measure-coverage-missing",
+              "messageKey": "core.semantic.measure-coverage-missing",
+              "path": [
+                "parts",
+                0,
+                "measureContents"
+              ],
+              "details": {
+                "measureId": "measure-1"
+              }
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.measure-coverage-missing",
+              "messageKey": "core.semantic.measure-coverage-missing",
+              "path": [
+                "parts",
+                0,
+                "measureContents"
+              ],
+              "details": {
+                "measureId": "measure-1"
+              }
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.measure-coverage-missing",
+                "messageKey": "core.semantic.measure-coverage-missing",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents"
+                ],
+                "details": {
+                  "measureId": "measure-1"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "measure-coverage-duplicate",
+      "patches": [
+        {
+          "path": [
+            "parts",
+            0,
+            "measureContents"
+          ],
+          "value": [
+            {
+              "measureId": "measure-1",
+              "voices": [
+                {
+                  "id": "voice-other",
+                  "defaultStaffId": "staff-1",
+                  "sequence": {
+                    "start": {
+                      "numerator": 0,
+                      "denominator": 1
+                    },
+                    "events": []
+                  }
+                }
+              ]
+            },
+            {
+              "measureId": "measure-1",
+              "voices": []
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.measure-coverage-duplicate",
+              "messageKey": "core.semantic.measure-coverage-duplicate",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                1,
+                "measureId"
+              ]
+            },
+            {
+              "code": "semantic.voice-required",
+              "messageKey": "core.semantic.voice-required",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                1,
+                "voices"
+              ]
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.measure-coverage-duplicate",
+              "messageKey": "core.semantic.measure-coverage-duplicate",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                1,
+                "measureId"
+              ]
+            },
+            {
+              "code": "semantic.voice-required",
+              "messageKey": "core.semantic.voice-required",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                1,
+                "voices"
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.measure-coverage-duplicate",
+                "messageKey": "core.semantic.measure-coverage-duplicate",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  1,
+                  "measureId"
+                ]
+              },
+              {
+                "code": "semantic.voice-required",
+                "messageKey": "core.semantic.voice-required",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  1,
+                  "voices"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "default-staff-missing",
+      "patches": [
+        {
+          "path": [
+            "parts",
+            0,
+            "measureContents",
+            0,
+            "voices",
+            0,
+            "defaultStaffId"
+          ],
+          "value": "missing-staff"
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.staff-reference-missing",
+              "messageKey": "core.semantic.staff-reference-missing",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "defaultStaffId"
+              ]
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.staff-reference-missing",
+              "messageKey": "core.semantic.staff-reference-missing",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "defaultStaffId"
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.staff-reference-missing",
+                "messageKey": "core.semantic.staff-reference-missing",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "defaultStaffId"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "event-staff-missing",
+      "patches": [
+        {
+          "path": [
+            "parts",
+            0,
+            "measureContents",
+            0,
+            "voices",
+            0,
+            "sequence",
+            "events",
+            0,
+            "staffId"
+          ],
+          "value": "missing-staff"
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.staff-reference-missing",
+              "messageKey": "core.semantic.staff-reference-missing",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "staffId"
+              ]
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.staff-reference-missing",
+              "messageKey": "core.semantic.staff-reference-missing",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "staffId"
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.staff-reference-missing",
+                "messageKey": "core.semantic.staff-reference-missing",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "events",
+                  0,
+                  "staffId"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "extension-namespace-invalid",
+      "patches": [
+        {
+          "path": [
+            "extensions"
+          ],
+          "value": [
+            {
+              "namespace": "invalid",
+              "schemaVersion": 1,
+              "owner": {
+                "kind": "score"
+              },
+              "payload": {}
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.extension-namespace-invalid",
+              "messageKey": "core.semantic.extension-namespace-invalid",
+              "path": [
+                "extensions",
+                0,
+                "namespace"
+              ]
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.extension-namespace-invalid",
+              "messageKey": "core.semantic.extension-namespace-invalid",
+              "path": [
+                "extensions",
+                0,
+                "namespace"
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.extension-namespace-invalid",
+                "messageKey": "core.semantic.extension-namespace-invalid",
+                "path": [
+                  "extensions",
+                  0,
+                  "namespace"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "extension-schema-version-invalid",
+      "patches": [
+        {
+          "path": [
+            "extensions"
+          ],
+          "value": [
+            {
+              "namespace": "example.opaque",
+              "schemaVersion": 0.5,
+              "owner": {
+                "kind": "score"
+              },
+              "payload": {}
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "decode.type",
+              "messageKey": "core.decode.type",
+              "path": [
+                "extensions",
+                0,
+                "schemaVersion"
+              ],
+              "details": {
+                "expected": "safe-integer"
+              }
+            }
+          ]
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.extension-schema-version-invalid",
+              "messageKey": "core.semantic.extension-schema-version-invalid",
+              "path": [
+                "extensions",
+                0,
+                "schemaVersion"
+              ]
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.extension-schema-version-invalid",
+              "messageKey": "core.semantic.extension-schema-version-invalid",
+              "path": [
+                "extensions",
+                0,
+                "schemaVersion"
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.extension-schema-version-invalid",
+                "messageKey": "core.semantic.extension-schema-version-invalid",
+                "path": [
+                  "extensions",
+                  0,
+                  "schemaVersion"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "extension-owner-missing",
+      "patches": [
+        {
+          "path": [
+            "extensions"
+          ],
+          "value": [
+            {
+              "namespace": "example.opaque",
+              "schemaVersion": 1,
+              "owner": {
+                "kind": "part",
+                "partId": "missing-part"
+              },
+              "payload": {}
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.extension-owner-missing",
+              "messageKey": "core.semantic.extension-owner-missing",
+              "path": [
+                "extensions",
+                0,
+                "owner",
+                "partId"
+              ]
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.extension-owner-missing",
+              "messageKey": "core.semantic.extension-owner-missing",
+              "path": [
+                "extensions",
+                0,
+                "owner",
+                "partId"
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.extension-owner-missing",
+                "messageKey": "core.semantic.extension-owner-missing",
+                "path": [
+                  "extensions",
+                  0,
+                  "owner",
+                  "partId"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "extension-duplicate",
+      "patches": [
+        {
+          "path": [
+            "extensions"
+          ],
+          "value": [
+            {
+              "namespace": "example.opaque",
+              "schemaVersion": 1,
+              "owner": {
+                "kind": "score"
+              },
+              "payload": {}
+            },
+            {
+              "namespace": "example.opaque",
+              "schemaVersion": 1,
+              "owner": {
+                "kind": "score"
+              },
+              "payload": {}
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.extension-duplicate",
+              "messageKey": "core.semantic.extension-duplicate",
+              "path": [
+                "extensions",
+                1
+              ]
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.extension-duplicate",
+              "messageKey": "core.semantic.extension-duplicate",
+              "path": [
+                "extensions",
+                1
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.extension-duplicate",
+                "messageKey": "core.semantic.extension-duplicate",
+                "path": [
+                  "extensions",
+                  1
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "extension-payload-invalid",
+      "patches": [
+        {
+          "path": [
+            "extensions"
+          ],
+          "value": [
+            {
+              "namespace": "example.opaque",
+              "schemaVersion": 1,
+              "owner": {
+                "kind": "score"
+              },
+              "payload": []
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "decode.type",
+              "messageKey": "core.decode.type",
+              "path": [
+                "extensions",
+                0,
+                "payload"
+              ],
+              "details": {
+                "expected": "object"
+              }
+            }
+          ]
+        },
+        "strictDecode": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "decode.type",
+              "messageKey": "core.decode.type",
+              "path": [
+                "extensions",
+                0,
+                "payload"
+              ],
+              "details": {
+                "expected": "object"
+              }
+            }
+          ]
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.extension-payload-invalid",
+              "messageKey": "core.semantic.extension-payload-invalid",
+              "path": [
+                "extensions",
+                0,
+                "payload"
+              ]
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.extension-payload-invalid",
+              "messageKey": "core.semantic.extension-payload-invalid",
+              "path": [
+                "extensions",
+                0,
+                "payload"
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.extension-payload-invalid",
+                "messageKey": "core.semantic.extension-payload-invalid",
+                "path": [
+                  "extensions",
+                  0,
+                  "payload"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "ordered-independent-faults",
+      "patches": [
+        {
+          "path": [
+            "id"
+          ],
+          "value": ""
+        },
+        {
+          "path": [
+            "metadata",
+            "tempo",
+            "bpm"
+          ],
+          "value": 0
+        },
+        {
+          "path": [
+            "measureDefinitions",
+            0,
+            "meter",
+            "numerator"
+          ],
+          "value": 0
+        },
+        {
+          "path": [
+            "parts",
+            0,
+            "staves",
+            0,
+            "id"
+          ],
+          "value": "part-1"
+        },
+        {
+          "path": [
+            "parts",
+            0,
+            "measureContents",
+            0,
+            "voices",
+            0,
+            "sequence",
+            "events",
+            0,
+            "content",
+            "notes",
+            0,
+            "writtenPitch",
+            "alter"
+          ],
+          "value": 3
+        },
+        {
+          "path": [
+            "parts",
+            0,
+            "measureContents",
+            0,
+            "voices",
+            0,
+            "sequence",
+            "events",
+            0,
+            "duration",
+            "dots"
+          ],
+          "value": 4
+        },
+        {
+          "path": [
+            "extensions"
+          ],
+          "value": [
+            {
+              "namespace": "invalid",
+              "schemaVersion": 0,
+              "owner": {
+                "kind": "score"
+              },
+              "payload": {}
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "decode.union",
+              "messageKey": "core.decode.union",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "duration",
+                "dots"
+              ]
+            },
+            {
+              "code": "decode.union",
+              "messageKey": "core.decode.union",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "content",
+                "notes",
+                0,
+                "writtenPitch",
+                "alter"
+              ]
+            }
+          ]
+        },
+        "strictDecode": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "decode.union",
+              "messageKey": "core.decode.union",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "duration",
+                "dots"
+              ]
+            },
+            {
+              "code": "decode.union",
+              "messageKey": "core.decode.union",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "content",
+                "notes",
+                0,
+                "writtenPitch",
+                "alter"
+              ]
+            }
+          ]
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.id-empty",
+              "messageKey": "core.semantic.id-empty",
+              "path": [
+                "id"
+              ]
+            },
+            {
+              "code": "semantic.tempo-invalid",
+              "messageKey": "core.semantic.tempo-invalid",
+              "path": [
+                "metadata",
+                "tempo",
+                "bpm"
+              ]
+            },
+            {
+              "code": "semantic.meter-numerator-invalid",
+              "messageKey": "core.semantic.meter-numerator-invalid",
+              "path": [
+                "measureDefinitions",
+                0,
+                "meter",
+                "numerator"
+              ]
+            },
+            {
+              "code": "semantic.id-duplicate",
+              "messageKey": "core.semantic.id-duplicate",
+              "path": [
+                "parts",
+                0,
+                "staves",
+                0,
+                "id"
+              ],
+              "details": {
+                "id": "part-1"
+              }
+            },
+            {
+              "code": "semantic.staff-reference-missing",
+              "messageKey": "core.semantic.staff-reference-missing",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "defaultStaffId"
+              ]
+            },
+            {
+              "code": "semantic.measure-duration-invalid",
+              "messageKey": "core.semantic.measure-duration-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "start"
+              ],
+              "details": {
+                "reason": "meter-numerator-invalid"
+              }
+            },
+            {
+              "code": "semantic.written-pitch-invalid",
+              "messageKey": "core.semantic.written-pitch-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "content",
+                "notes",
+                0,
+                "writtenPitch"
+              ]
+            },
+            {
+              "code": "semantic.note-value-invalid",
+              "messageKey": "core.semantic.note-value-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "duration"
+              ],
+              "details": {
+                "reason": "note-value-dots-invalid"
+              }
+            },
+            {
+              "code": "semantic.extension-namespace-invalid",
+              "messageKey": "core.semantic.extension-namespace-invalid",
+              "path": [
+                "extensions",
+                0,
+                "namespace"
+              ]
+            },
+            {
+              "code": "semantic.extension-schema-version-invalid",
+              "messageKey": "core.semantic.extension-schema-version-invalid",
+              "path": [
+                "extensions",
+                0,
+                "schemaVersion"
+              ]
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.id-empty",
+              "messageKey": "core.semantic.id-empty",
+              "path": [
+                "id"
+              ]
+            },
+            {
+              "code": "semantic.tempo-invalid",
+              "messageKey": "core.semantic.tempo-invalid",
+              "path": [
+                "metadata",
+                "tempo",
+                "bpm"
+              ]
+            },
+            {
+              "code": "semantic.meter-numerator-invalid",
+              "messageKey": "core.semantic.meter-numerator-invalid",
+              "path": [
+                "measureDefinitions",
+                0,
+                "meter",
+                "numerator"
+              ]
+            },
+            {
+              "code": "semantic.id-duplicate",
+              "messageKey": "core.semantic.id-duplicate",
+              "path": [
+                "parts",
+                0,
+                "staves",
+                0,
+                "id"
+              ],
+              "details": {
+                "id": "part-1"
+              }
+            },
+            {
+              "code": "semantic.staff-reference-missing",
+              "messageKey": "core.semantic.staff-reference-missing",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "defaultStaffId"
+              ]
+            },
+            {
+              "code": "semantic.measure-duration-invalid",
+              "messageKey": "core.semantic.measure-duration-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "start"
+              ],
+              "details": {
+                "reason": "meter-numerator-invalid"
+              }
+            },
+            {
+              "code": "semantic.written-pitch-invalid",
+              "messageKey": "core.semantic.written-pitch-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "content",
+                "notes",
+                0,
+                "writtenPitch"
+              ]
+            },
+            {
+              "code": "semantic.note-value-invalid",
+              "messageKey": "core.semantic.note-value-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "duration"
+              ],
+              "details": {
+                "reason": "note-value-dots-invalid"
+              }
+            },
+            {
+              "code": "semantic.extension-namespace-invalid",
+              "messageKey": "core.semantic.extension-namespace-invalid",
+              "path": [
+                "extensions",
+                0,
+                "namespace"
+              ]
+            },
+            {
+              "code": "semantic.extension-schema-version-invalid",
+              "messageKey": "core.semantic.extension-schema-version-invalid",
+              "path": [
+                "extensions",
+                0,
+                "schemaVersion"
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.id-empty",
+                "messageKey": "core.semantic.id-empty",
+                "path": [
+                  "id"
+                ]
+              },
+              {
+                "code": "semantic.tempo-invalid",
+                "messageKey": "core.semantic.tempo-invalid",
+                "path": [
+                  "metadata",
+                  "tempo",
+                  "bpm"
+                ]
+              },
+              {
+                "code": "semantic.meter-numerator-invalid",
+                "messageKey": "core.semantic.meter-numerator-invalid",
+                "path": [
+                  "measureDefinitions",
+                  0,
+                  "meter",
+                  "numerator"
+                ]
+              },
+              {
+                "code": "semantic.id-duplicate",
+                "messageKey": "core.semantic.id-duplicate",
+                "path": [
+                  "parts",
+                  0,
+                  "staves",
+                  0,
+                  "id"
+                ],
+                "details": {
+                  "id": "part-1"
+                }
+              },
+              {
+                "code": "semantic.staff-reference-missing",
+                "messageKey": "core.semantic.staff-reference-missing",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "defaultStaffId"
+                ]
+              },
+              {
+                "code": "semantic.measure-duration-invalid",
+                "messageKey": "core.semantic.measure-duration-invalid",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "start"
+                ],
+                "details": {
+                  "reason": "meter-numerator-invalid"
+                }
+              },
+              {
+                "code": "semantic.written-pitch-invalid",
+                "messageKey": "core.semantic.written-pitch-invalid",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "events",
+                  0,
+                  "content",
+                  "notes",
+                  0,
+                  "writtenPitch"
+                ]
+              },
+              {
+                "code": "semantic.note-value-invalid",
+                "messageKey": "core.semantic.note-value-invalid",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "events",
+                  0,
+                  "duration"
+                ],
+                "details": {
+                  "reason": "note-value-dots-invalid"
+                }
+              },
+              {
+                "code": "semantic.extension-namespace-invalid",
+                "messageKey": "core.semantic.extension-namespace-invalid",
+                "path": [
+                  "extensions",
+                  0,
+                  "namespace"
+                ]
+              },
+              {
+                "code": "semantic.extension-schema-version-invalid",
+                "messageKey": "core.semantic.extension-schema-version-invalid",
+                "path": [
+                  "extensions",
+                  0,
+                  "schemaVersion"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "first-duplicate-measure-is-reference-authority",
+      "patches": [
+        {
+          "path": [
+            "measureDefinitions"
+          ],
+          "value": [
+            {
+              "id": "measure-1",
+              "meter": {
+                "numerator": 4,
+                "denominator": 4
+              }
+            },
+            {
+              "id": "measure-1",
+              "meter": {
+                "numerator": 0,
+                "denominator": 4
+              }
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.id-duplicate",
+              "messageKey": "core.semantic.id-duplicate",
+              "path": [
+                "measureDefinitions",
+                1,
+                "id"
+              ],
+              "details": {
+                "id": "measure-1"
+              }
+            },
+            {
+              "code": "semantic.meter-numerator-invalid",
+              "messageKey": "core.semantic.meter-numerator-invalid",
+              "path": [
+                "measureDefinitions",
+                1,
+                "meter",
+                "numerator"
+              ]
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.id-duplicate",
+              "messageKey": "core.semantic.id-duplicate",
+              "path": [
+                "measureDefinitions",
+                1,
+                "id"
+              ],
+              "details": {
+                "id": "measure-1"
+              }
+            },
+            {
+              "code": "semantic.meter-numerator-invalid",
+              "messageKey": "core.semantic.meter-numerator-invalid",
+              "path": [
+                "measureDefinitions",
+                1,
+                "meter",
+                "numerator"
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.id-duplicate",
+                "messageKey": "core.semantic.id-duplicate",
+                "path": [
+                  "measureDefinitions",
+                  1,
+                  "id"
+                ],
+                "details": {
+                  "id": "measure-1"
+                }
+              },
+              {
+                "code": "semantic.meter-numerator-invalid",
+                "messageKey": "core.semantic.meter-numerator-invalid",
+                "path": [
+                  "measureDefinitions",
+                  1,
+                  "meter",
+                  "numerator"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "coverage-order-is-input-order",
+      "patches": [
+        {
+          "path": [
+            "measureDefinitions"
+          ],
+          "value": [
+            {
+              "id": "measure-z",
+              "meter": {
+                "numerator": 4,
+                "denominator": 4
+              }
+            },
+            {
+              "id": "measure-a",
+              "meter": {
+                "numerator": 4,
+                "denominator": 4
+              }
+            }
+          ]
+        },
+        {
+          "path": [
+            "parts",
+            0,
+            "measureContents"
+          ],
+          "value": []
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.measure-coverage-missing",
+              "messageKey": "core.semantic.measure-coverage-missing",
+              "path": [
+                "parts",
+                0,
+                "measureContents"
+              ],
+              "details": {
+                "measureId": "measure-z"
+              }
+            },
+            {
+              "code": "semantic.measure-coverage-missing",
+              "messageKey": "core.semantic.measure-coverage-missing",
+              "path": [
+                "parts",
+                0,
+                "measureContents"
+              ],
+              "details": {
+                "measureId": "measure-a"
+              }
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.measure-coverage-missing",
+              "messageKey": "core.semantic.measure-coverage-missing",
+              "path": [
+                "parts",
+                0,
+                "measureContents"
+              ],
+              "details": {
+                "measureId": "measure-z"
+              }
+            },
+            {
+              "code": "semantic.measure-coverage-missing",
+              "messageKey": "core.semantic.measure-coverage-missing",
+              "path": [
+                "parts",
+                0,
+                "measureContents"
+              ],
+              "details": {
+                "measureId": "measure-a"
+              }
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.measure-coverage-missing",
+                "messageKey": "core.semantic.measure-coverage-missing",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents"
+                ],
+                "details": {
+                  "measureId": "measure-z"
+                }
+              },
+              {
+                "code": "semantic.measure-coverage-missing",
+                "messageKey": "core.semantic.measure-coverage-missing",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents"
+                ],
+                "details": {
+                  "measureId": "measure-a"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "invalid-duration-does-not-suppress-later-note",
+      "patches": [
+        {
+          "path": [
+            "parts",
+            0,
+            "measureContents",
+            0,
+            "voices",
+            0,
+            "sequence",
+            "events",
+            0,
+            "duration",
+            "base"
+          ],
+          "value": 3
+        },
+        {
+          "path": [
+            "parts",
+            0,
+            "measureContents",
+            0,
+            "voices",
+            0,
+            "sequence",
+            "events",
+            1,
+            "content"
+          ],
+          "value": {
+            "kind": "notes",
+            "notes": [
+              {
+                "id": "note-1",
+                "writtenPitch": {
+                  "step": "C",
+                  "alter": 3,
+                  "octave": 4
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "decode.union",
+              "messageKey": "core.decode.union",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "duration",
+                "base"
+              ]
+            },
+            {
+              "code": "decode.union",
+              "messageKey": "core.decode.union",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                1,
+                "content",
+                "notes",
+                0,
+                "writtenPitch",
+                "alter"
+              ]
+            }
+          ]
+        },
+        "strictDecode": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "decode.union",
+              "messageKey": "core.decode.union",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "duration",
+                "base"
+              ]
+            },
+            {
+              "code": "decode.union",
+              "messageKey": "core.decode.union",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                1,
+                "content",
+                "notes",
+                0,
+                "writtenPitch",
+                "alter"
+              ]
+            }
+          ]
+        },
+        "semantics": {
+          "ok": false,
+          "diagnostics": [
+            {
+              "code": "semantic.note-value-invalid",
+              "messageKey": "core.semantic.note-value-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "duration"
+              ],
+              "details": {
+                "reason": "note-value-base-invalid"
+              }
+            },
+            {
+              "code": "semantic.id-duplicate",
+              "messageKey": "core.semantic.id-duplicate",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                1,
+                "content",
+                "notes",
+                0,
+                "id"
+              ],
+              "details": {
+                "id": "note-1"
+              }
+            },
+            {
+              "code": "semantic.written-pitch-invalid",
+              "messageKey": "core.semantic.written-pitch-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                1,
+                "content",
+                "notes",
+                0,
+                "writtenPitch"
+              ]
+            }
+          ]
+        },
+        "support": {
+          "status": "invalid",
+          "diagnostics": [
+            {
+              "code": "semantic.note-value-invalid",
+              "messageKey": "core.semantic.note-value-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "duration"
+              ],
+              "details": {
+                "reason": "note-value-base-invalid"
+              }
+            },
+            {
+              "code": "semantic.id-duplicate",
+              "messageKey": "core.semantic.id-duplicate",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                1,
+                "content",
+                "notes",
+                0,
+                "id"
+              ],
+              "details": {
+                "id": "note-1"
+              }
+            },
+            {
+              "code": "semantic.written-pitch-invalid",
+              "messageKey": "core.semantic.written-pitch-invalid",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                1,
+                "content",
+                "notes",
+                0,
+                "writtenPitch"
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": false,
+          "failure": {
+            "code": "command.invalid-initial-document",
+            "diagnostics": [
+              {
+                "code": "semantic.note-value-invalid",
+                "messageKey": "core.semantic.note-value-invalid",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "events",
+                  0,
+                  "duration"
+                ],
+                "details": {
+                  "reason": "note-value-base-invalid"
+                }
+              },
+              {
+                "code": "semantic.id-duplicate",
+                "messageKey": "core.semantic.id-duplicate",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "events",
+                  1,
+                  "content",
+                  "notes",
+                  0,
+                  "id"
+                ],
+                "details": {
+                  "id": "note-1"
+                }
+              },
+              {
+                "code": "semantic.written-pitch-invalid",
+                "messageKey": "core.semantic.written-pitch-invalid",
+                "path": [
+                  "parts",
+                  0,
+                  "measureContents",
+                  0,
+                  "voices",
+                  0,
+                  "sequence",
+                  "events",
+                  1,
+                  "content",
+                  "notes",
+                  0,
+                  "writtenPitch"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "unsupported-incomplete-sequence",
+      "patches": [
+        {
+          "path": [
+            "parts",
+            0,
+            "measureContents",
+            0,
+            "voices",
+            0,
+            "sequence",
+            "events"
+          ],
+          "value": []
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "support": {
+          "status": "unsupported",
+          "diagnostics": [
+            {
+              "code": "unsupported.sequence-duration",
+              "messageKey": "core.unsupported.sequence-duration",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence"
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "unsupported-start",
+      "patches": [
+        {
+          "path": [
+            "parts",
+            0,
+            "measureContents",
+            0,
+            "voices",
+            0,
+            "sequence",
+            "start"
+          ],
+          "value": {
+            "numerator": 1,
+            "denominator": 4
+          }
+        },
+        {
+          "path": [
+            "parts",
+            0,
+            "measureContents",
+            0,
+            "voices",
+            0,
+            "sequence",
+            "events"
+          ],
+          "value": []
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "support": {
+          "status": "unsupported",
+          "diagnostics": [
+            {
+              "code": "unsupported.sequence-start",
+              "messageKey": "core.unsupported.sequence-start",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "start"
+              ]
+            },
+            {
+              "code": "unsupported.sequence-duration",
+              "messageKey": "core.unsupported.sequence-duration",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence"
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "unsupported-pickup",
+      "patches": [
+        {
+          "path": [
+            "measureDefinitions",
+            0,
+            "pickupDuration"
+          ],
+          "value": {
+            "numerator": 1,
+            "denominator": 2
+          }
+        },
+        {
+          "path": [
+            "parts",
+            0,
+            "measureContents",
+            0,
+            "voices",
+            0,
+            "sequence",
+            "events"
+          ],
+          "value": []
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "support": {
+          "status": "unsupported",
+          "diagnostics": [
+            {
+              "code": "unsupported.pickup",
+              "messageKey": "core.unsupported.pickup",
+              "path": [
+                "measureDefinitions",
+                0,
+                "pickupDuration"
+              ]
+            },
+            {
+              "code": "unsupported.sequence-duration",
+              "messageKey": "core.unsupported.sequence-duration",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence"
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "unsupported-tuplet",
+      "patches": [
+        {
+          "path": [
+            "parts",
+            0,
+            "measureContents",
+            0,
+            "voices",
+            0,
+            "sequence",
+            "events",
+            0,
+            "duration",
+            "timeModification"
+          ],
+          "value": {
+            "actualNotes": 3,
+            "normalNotes": 2
+          }
+        }
+      ],
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "support": {
+          "status": "unsupported",
+          "diagnostics": [
+            {
+              "code": "unsupported.time-modification",
+              "messageKey": "core.unsupported.time-modification",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "duration",
+                "timeModification"
+              ]
+            },
+            {
+              "code": "unsupported.sequence-duration",
+              "messageKey": "core.unsupported.sequence-duration",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence"
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "custom-profile-ordered-constraints",
+      "patches": [],
+      "profile": {
+        "id": "example.restrictive",
+        "partCount": {
+          "minimum": 0,
+          "maximum": 0
+        },
+        "staffCountPerPart": {
+          "minimum": 0,
+          "maximum": 0
+        },
+        "voiceCountPerMeasure": {
+          "minimum": 0,
+          "maximum": 0
+        },
+        "meters": [
+          {
+            "numerator": 3,
+            "denominator": 4
+          }
+        ],
+        "allowPickup": false,
+        "requireSequenceStartAtZero": true,
+        "requireCompleteMeasure": true,
+        "noteValueBases": [
+          1
+        ],
+        "noteValueDots": [
+          1
+        ],
+        "allowTimeModification": false,
+        "maximumNotesPerEvent": 0
+      },
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "support": {
+          "status": "unsupported",
+          "diagnostics": [
+            {
+              "code": "unsupported.part-count",
+              "messageKey": "core.unsupported.part-count",
+              "path": [
+                "parts"
+              ]
+            },
+            {
+              "code": "unsupported.meter",
+              "messageKey": "core.unsupported.meter",
+              "path": [
+                "measureDefinitions",
+                0,
+                "meter"
+              ]
+            },
+            {
+              "code": "unsupported.staff-count",
+              "messageKey": "core.unsupported.staff-count",
+              "path": [
+                "parts",
+                0,
+                "staves"
+              ]
+            },
+            {
+              "code": "unsupported.voice-count",
+              "messageKey": "core.unsupported.voice-count",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices"
+              ]
+            },
+            {
+              "code": "unsupported.note-value-base",
+              "messageKey": "core.unsupported.note-value-base",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "duration",
+                "base"
+              ]
+            },
+            {
+              "code": "unsupported.dots",
+              "messageKey": "core.unsupported.dots",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "duration",
+                "dots"
+              ]
+            },
+            {
+              "code": "unsupported.chord",
+              "messageKey": "core.unsupported.chord",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                0,
+                "content",
+                "notes"
+              ]
+            },
+            {
+              "code": "unsupported.note-value-base",
+              "messageKey": "core.unsupported.note-value-base",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                1,
+                "duration",
+                "base"
+              ]
+            },
+            {
+              "code": "unsupported.dots",
+              "messageKey": "core.unsupported.dots",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                1,
+                "duration",
+                "dots"
+              ]
+            },
+            {
+              "code": "unsupported.note-value-base",
+              "messageKey": "core.unsupported.note-value-base",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                2,
+                "duration",
+                "base"
+              ]
+            },
+            {
+              "code": "unsupported.dots",
+              "messageKey": "core.unsupported.dots",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                2,
+                "duration",
+                "dots"
+              ]
+            },
+            {
+              "code": "unsupported.note-value-base",
+              "messageKey": "core.unsupported.note-value-base",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                3,
+                "duration",
+                "base"
+              ]
+            },
+            {
+              "code": "unsupported.dots",
+              "messageKey": "core.unsupported.dots",
+              "path": [
+                "parts",
+                0,
+                "measureContents",
+                0,
+                "voices",
+                0,
+                "sequence",
+                "events",
+                3,
+                "duration",
+                "dots"
+              ]
+            }
+          ]
+        },
+        "create": {
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "custom-profile-permits-tuplets",
+      "patches": [
+        {
+          "path": [
+            "parts",
+            0,
+            "measureContents",
+            0,
+            "voices",
+            0,
+            "sequence",
+            "events",
+            0,
+            "duration",
+            "timeModification"
+          ],
+          "value": {
+            "actualNotes": 3,
+            "normalNotes": 2
+          }
+        }
+      ],
+      "profile": {
+        "id": "example.tuplets",
+        "partCount": {
+          "minimum": 1,
+          "maximum": 1
+        },
+        "staffCountPerPart": {
+          "minimum": 1,
+          "maximum": 1
+        },
+        "voiceCountPerMeasure": {
+          "minimum": 1,
+          "maximum": 1
+        },
+        "meters": [
+          {
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "allowPickup": false,
+        "requireSequenceStartAtZero": true,
+        "requireCompleteMeasure": false,
+        "noteValueBases": [
+          4,
+          8,
+          16
+        ],
+        "noteValueDots": [
+          0
+        ],
+        "allowTimeModification": true,
+        "maximumNotesPerEvent": 1
+      },
+      "expected": {
+        "decode": {
+          "ok": true
+        },
+        "strictDecode": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "semantics": {
+          "ok": true,
+          "diagnostics": []
+        },
+        "support": {
+          "status": "supported",
+          "diagnostics": []
+        },
+        "create": {
+          "ok": true
+        }
+      }
+    }
+  ]
+}
