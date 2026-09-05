@@ -14,7 +14,8 @@ use reservation::{Reservation, Site};
 use brilliant_core_types::StableId;
 use brilliant_kernel_contracts::KernelStage3CommandFailureLeafV1 as Failure;
 use brilliant_score_foundation::{
-    AdmissionPartV1, AdmissionVoiceV1, InstrumentDescriptorV1, RhythmicContentV1,
+    AdmissionPartV1, AdmissionStaffDefinitionV1, AdmissionVoiceV1, InstrumentDescriptorV1,
+    RhythmicContentV1, RhythmicEventV1,
 };
 
 use crate::{
@@ -881,38 +882,128 @@ impl<'a> Candidate<'a> {
         self.reservation
             .vec(Site::OrderEntries, &mut events, voice.sequence.events.len())?;
         for event in voice.sequence.events {
-            let event_occurrence = self.add_node(
-                &occurrence,
-                Kind::Event,
-                event.id,
-                Some(Value::EventNoteValue(event.duration)),
-            )?;
-            let Occurrence::Added(index) = event_occurrence else {
-                unreachable!()
-            };
-            self.nodes[index].staff_id = event.staff_id.map(|id| self.share_id(id)).transpose()?;
-            let mut notes = Vec::new();
-            self.nodes[index].content_kind = Some(match event.content {
-                RhythmicContentV1::Rest => EventContentKind::Rest,
-                RhythmicContentV1::Notes { notes: values } => {
-                    self.reservation
-                        .vec(Site::OrderEntries, &mut notes, values.len())?;
-                    for note in values {
-                        notes.push(self.add_node(
-                            &event_occurrence,
-                            Kind::Note,
-                            note.id,
-                            Some(Value::NoteWrittenPitch(note.written_pitch)),
-                        )?);
-                    }
-                    EventContentKind::Notes
-                }
-            });
-            self.set_new_order(&event_occurrence, Children::Notes, notes)?;
-            events.push(event_occurrence);
+            events.push(self.add_event(&occurrence, event)?);
         }
         self.set_new_order(&occurrence, Children::Events, events)?;
         Ok(occurrence)
+    }
+
+    fn add_event(
+        &mut self,
+        voice: &Occurrence,
+        event: RhythmicEventV1<String>,
+    ) -> Result<Occurrence, Failure> {
+        let occurrence = self.add_node(
+            voice,
+            Kind::Event,
+            event.id,
+            Some(Value::EventNoteValue(event.duration)),
+        )?;
+        let Occurrence::Added(index) = occurrence else {
+            unreachable!()
+        };
+        self.nodes[index].staff_id = event.staff_id.map(|id| self.share_id(id)).transpose()?;
+        let mut notes = Vec::new();
+        self.nodes[index].content_kind = Some(match event.content {
+            RhythmicContentV1::Rest => EventContentKind::Rest,
+            RhythmicContentV1::Notes { notes: values } => {
+                self.reservation
+                    .vec(Site::OrderEntries, &mut notes, values.len())?;
+                for note in values {
+                    notes.push(self.add_node(
+                        &occurrence,
+                        Kind::Note,
+                        note.id,
+                        Some(Value::NoteWrittenPitch(note.written_pitch)),
+                    )?);
+                }
+                EventContentKind::Notes
+            }
+        });
+        self.set_new_order(&occurrence, Children::Notes, notes)?;
+        Ok(occurrence)
+    }
+
+    fn reserve_insertion(&mut self, order: &CandidateOrder) -> Result<(), Failure> {
+        self.copy_order_for_write(order)?;
+        self.reservation.vec(
+            Site::OrderEntries,
+            self.orders.get_mut(order).expect("touched insertion order"),
+            1,
+        )
+    }
+
+    fn place_child(
+        &mut self,
+        order: &CandidateOrder,
+        index: usize,
+        child: Occurrence,
+    ) -> Result<Occurrence, Failure> {
+        self.reservation.ensure_active()?;
+        let children = self.orders.get_mut(order).ok_or(Failure::InternalError)?;
+        // Insertion indices count visible siblings; retained hidden siblings
+        // must not displace the insertion. Capacity was reserved before building.
+        let visible_len = children
+            .iter()
+            .filter(|child| !self.hidden.contains(*child))
+            .count();
+        if index > visible_len {
+            return Err(Failure::InternalError);
+        }
+        children.retain(|child| !self.hidden.contains(child));
+        children.insert(index, child.clone());
+        Ok(child)
+    }
+
+    fn insert_staff(
+        &mut self,
+        part: &Occurrence,
+        staff: AdmissionStaffDefinitionV1,
+        after: Option<&str>,
+    ) -> Result<Occurrence, Failure> {
+        self.reservation.ensure_active()?;
+        let order = CandidateOrder::new(part, Children::Staffs);
+        let index = self.insertion_index(&order, after, None)?;
+        self.reserve_insertion(&order)?;
+        let child = self.add_node(
+            part,
+            Kind::Staff,
+            staff.id,
+            Some(Value::StaffDefinition {
+                line_count: staff.line_count,
+                default_clef: staff.default_clef,
+            }),
+        )?;
+        self.place_child(&order, index, child)
+    }
+
+    fn insert_voice(
+        &mut self,
+        part: &Occurrence,
+        content: &Occurrence,
+        voice: AdmissionVoiceV1,
+        after: Option<&str>,
+    ) -> Result<Occurrence, Failure> {
+        self.reservation.ensure_active()?;
+        let order = CandidateOrder::new(content, Children::Voices);
+        let index = self.voice_insertion_index(part, content, after)?;
+        self.reserve_insertion(&order)?;
+        let child = self.add_voice(content, voice)?;
+        self.place_child(&order, index, child)
+    }
+
+    fn insert_event(
+        &mut self,
+        voice: &Occurrence,
+        event: RhythmicEventV1<String>,
+        after: Option<&str>,
+    ) -> Result<Occurrence, Failure> {
+        self.reservation.ensure_active()?;
+        let order = CandidateOrder::new(voice, Children::Events);
+        let index = self.insertion_index(&order, after, None)?;
+        self.reserve_insertion(&order)?;
+        let child = self.add_event(voice, event)?;
+        self.place_child(&order, index, child)
     }
 
     /// Storage operation only, not command preparation: no semantic admission or
@@ -925,12 +1016,7 @@ impl<'a> Candidate<'a> {
         self.reservation.ensure_active()?;
         let order = CandidateOrder::new(&self.document, Children::Parts);
         let index = self.insertion_index(&order, after, None)?;
-        self.copy_order_for_write(&order)?;
-        self.reservation.vec(
-            Site::OrderEntries,
-            self.orders.get_mut(&order).expect("touched Part order"),
-            1,
-        )?;
+        self.reserve_insertion(&order)?;
         let occurrence = self.add_node(
             &self.document.clone(),
             Kind::Part,
@@ -975,11 +1061,7 @@ impl<'a> Candidate<'a> {
             contents.push(content_occurrence);
         }
         self.set_new_order(&occurrence, Children::Contents, contents)?;
-        // The target order may still retain explicitly hidden siblings.
-        let children = self.orders.get_mut(&order).expect("touched Part order");
-        children.retain(|child| !self.hidden.contains(child));
-        children.insert(index, occurrence.clone());
-        Ok(occurrence)
+        self.place_child(&order, index, occurrence)
     }
 }
 

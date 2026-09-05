@@ -16,7 +16,7 @@ technical contracts, frozen fixtures and public compatibility remain binding.
 An old planning document's claim about absent implementation is not a current
 code inventory. No commercial-completion claim exists at this baseline.
 
-## Current product and kernel assessment
+## Initial product and kernel assessment at the branch baseline
 
 - The opened `codex/learning` checkout is an older TypeScript baseline. It is
   divergent from the latest kernel line (34 versus 416 exclusive commits).
@@ -32,6 +32,29 @@ code inventory. No commercial-completion claim exists at this baseline.
 - Physical project persistence/recovery, editor UI, rendering, playback and
   instrument products are separate modules. Kernel completion covers their
   stable data/command/session seams, not a claim that those products exist.
+
+## Current verified position
+
+The branch remains in S1, Core compatibility and final-state admission. The Rust
+reference semantic/profile assessment is implemented and differentially checked;
+metadata, pitch, sequence/measure time and hierarchy/reference dependency gates
+are implemented on the typed transaction path. Candidate input codecs and a
+private occurrence prototype now cover reads, resolution, field/reference writes,
+Part/Staff/Voice/Event insertion, moves/hiding and fallible retained collection
+growth. Candidate execution is still test-only, not the native default route.
+
+The next integration work is the admission operation journal, final candidate
+diagnostics, complete command closure, cumulative resource accounting and strong
+Store adoption/history. The versioned extension execution/composition work in S2,
+consolidated release qualification in S3/S5 and reversible Rust default switch in
+S4 remain open. The current source tree is a kernel library/native workspace;
+editor UI, rendering, playback and physical project persistence are separate
+product work, not completed deliverables of this branch.
+
+Latest checks: 208 Rust tests passed, 1 ignored (29 candidate tests); strict
+clippy, fmt and Rust 1.88.0 check passed. The most recent full real-native/TS
+regression is 702 passed, 2 skipped. These are regression evidence, not commercial
+qualification or a percentage-complete estimate.
 
 ## Completion criteria
 
@@ -847,3 +870,32 @@ the freshly verified native/TS baseline (702 passed, 2 skipped) was not rerun.
 Native routing and public exports are unchanged. The prototype does not yet
 supply command effects/history, cumulative budgets, final semantic validation or
 strong adoption. S1/commercial qualification remain open.
+
+### S1.6g — candidate Staff/Voice/Event insertion
+
+The candidate now inserts Staff, Voice and Event records beneath either prefix
+or added owners, reusing borrowed anchor resolution and fallible local order
+growth. Event subtree construction is shared with Part/Voice insertion. The
+implementation retains empty/duplicate nested IDs, notes/rest distinctions,
+raw staff references and repeated content occurrences without collapsing them.
+Voice owner checks precede reservation even for same-ID Parts/start anchors.
+Placement counts visible siblings and validates bounds before order mutation.
+
+Four additional tests cover child ownership/order, same-ID/empty anchors, hidden
+siblings, untouched repeated contents and faults at every reservation in a
+three-component insertion sequence. The complete frozen prefix and live Store
+remain unchanged on failure/drop. The prototype now has 29 tests.
+
+The GPT-6 history review identified the next structural requirement: separate
+the admission operation journal from the final strong Store adoption delta.
+A repaired net-zero batch still has real operations/history/events; its strong
+data delta can be empty. The selected private journal/remapping approach and
+required integration evidence are recorded in the candidate design document.
+No history representation or public result decoding changed in this slice.
+
+Validation: 208 Rust tests passed, 1 ignored; fmt, all-target clippy `-D warnings`,
+Rust 1.88.0 all-target workspace check and `git diff --check` passed. Scoped
+self-review traced shared nested/direct Event construction, anchor-before-write
+ordering, hidden-sibling positions and terminal reservation failure. Production
+remains excluded by `cfg(test)`; the prior native/TS baseline is unchanged and
+was not rerun. Command/journal/validation/adoption integration remains open.

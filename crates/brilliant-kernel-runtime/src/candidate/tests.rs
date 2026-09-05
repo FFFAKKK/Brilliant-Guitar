@@ -9,6 +9,7 @@ use brilliant_score_foundation::{
     StaffDefinitionV1, WrittenPitchV1,
 };
 
+mod insertions;
 mod writes;
 
 fn id(value: &str) -> StableId {

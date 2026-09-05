@@ -1,7 +1,7 @@
 # Candidate admission implementation plan
 
-Status: command input representation/codec implemented; occurrence storage and
-read/resolution prototype verified against the real Store/overlay under
+Status: command input representation/codec implemented; occurrence storage,
+reads, scalar/reference writes and Part/Staff/Voice/Event insertion verified under
 `cfg(test)`. Candidate command execution and adoption are not activated. This is
 the next S1 compatibility slice in
 [commercial kernel completion](kernel-commercial-completion.md), reviewed by
@@ -303,6 +303,60 @@ writes and verifies zero sibling traversal for those local changes.
 These are storage primitives, still excluded from production. Command preparation,
 suffix history/effect accounting, combined logical/resource bounds, ordered final
 diagnostics and strong-ID adoption are not implemented by these methods.
+
+### Child insertion closure
+
+Staff, Voice and Event insertion now use the same borrowed anchor resolver,
+copy-on-first-write local orders and fallible reservation as Part insertion.
+Voice insertion validates its content owner's occurrence even for start anchors;
+repeated content IDs and duplicate Part IDs cannot redirect the write. Nested and
+direct candidate Event insertion share one record/order builder. Raw empty and
+duplicate Event/Note IDs remain independent occurrences; the command codec still
+owns direct-entry restrictions when this storage is wired to preparation.
+
+Four tests cover prefix and newly added owners, repeated contents, inherited/raw
+staff references, notes/rest records, empty/duplicate IDs, same-ID anchors, hidden
+sibling positions and failure before payload writes. Every reservation in a
+Staff/Voice/Event insertion sequence is faulted separately; the candidate becomes
+terminal and the complete typed prefix and live Store stay unchanged. Prefix
+orders are copied only for the touched Staff/Voice/Event sibling list; inserts
+into already-owned added orders reuse that storage. The shared placement helper
+checks bounds before removing retained hidden siblings.
+
+### Selected history/adoption boundary (implementation pending)
+
+The GPT-6 review confirmed that the existing strong ChangeSet cannot represent
+every candidate operation: empty component IDs cannot enter its arena/addresses,
+and duplicate occurrences are not identifiable by StableId alone. Runtime and
+transaction currently derive no-op from an empty strong forward list, while
+stored undo/redo reapply that list through a strong overlay. Merely compiling a
+final net delta would lose the real operations in an insert-invalid-Part then
+remove-Part batch, including version/history/events and redo truncation.
+
+The selected continuation is a private admission journal plus a separate strong
+Store adoption delta. Keep the eleven operation kinds and preserve the typed
+prefix, candidate suffix, original child segments, effects, affected ordering,
+command identity and forward/inverse expected values. Admission journal records
+may contain raw IDs and journal-local occurrence identities; valid boundary
+entities retain strong IDs. Output affected addresses require a result-only raw-ID
+representation without weakening command target decoding or changing wire shape.
+
+Only the final validated changed occurrences/orders/references compile into the
+strong delta; transient bad subtrees never enter the Store. Commit/no-op is decided
+by effective journal operations, so a nonempty journal with an empty adoption delta
+still follows version/history/event reservation and atomic commit. Dirty identity
+continues to follow the existing content identity rules. Undo/redo apply stored
+inverse/forward journal data in a fresh isolated candidate, not command handlers,
+then validate and adopt once. Journal-local tokens must be remapped for that
+candidate rather than reusing an earlier arena index as a live identity.
+
+Required integration evidence includes repaired net-zero submit/undo/redo, a
+changed typed prefix plus net-zero suffix, empty/deleted affected IDs, exact
+segments/effects, redo truncation at an undo position, and zero adoption on
+version/reservation failure. Ordinary typed local edits retain the strong path;
+neither journal compilation nor history can fall back to whole-document export.
+This is a concrete implementation decision, not a claim that journal execution,
+final validation, combined resource accounting or adoption is already complete.
 
 ## Implementation and evidence order
 
