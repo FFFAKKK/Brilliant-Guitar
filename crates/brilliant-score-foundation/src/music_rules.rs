@@ -1,9 +1,47 @@
 use brilliant_core_types::{JS_SAFE_INTEGER_MAX, SafeInteger};
 
-use crate::{ExactFraction, FractionV1, NoteValueV1, TimeModificationV1};
+use crate::{
+    ExactFraction, FractionV1, NoteValueV1, PitchStepV1, TimeModificationV1, TranspositionV1,
+    WrittenPitchV1,
+};
 
 pub fn tempo_is_valid(bpm: f64) -> bool {
     bpm.is_finite() && bpm > 0.0
+}
+
+fn pitch_step(step: PitchStepV1) -> &'static str {
+    match step {
+        PitchStepV1::C => "C",
+        PitchStepV1::D => "D",
+        PitchStepV1::E => "E",
+        PitchStepV1::F => "F",
+        PitchStepV1::G => "G",
+        PitchStepV1::A => "A",
+        PitchStepV1::B => "B",
+    }
+}
+
+pub fn written_pitch_is_valid(pitch: &WrittenPitchV1) -> bool {
+    written_pitch(
+        pitch_step(pitch.step),
+        pitch.alter.get() as f64,
+        pitch.octave.get() as f64,
+    )
+}
+
+/// The caller first checks `written_pitch_is_valid`. The typed transposition
+/// already guarantees safe-integer components, just as the full walker guards.
+pub fn assess_sounding_pitch(
+    pitch: &WrittenPitchV1,
+    transposition: &TranspositionV1,
+) -> Result<(), &'static str> {
+    sounding_pitch(
+        pitch_step(pitch.step),
+        pitch.alter.get() as f64,
+        pitch.octave.get() as f64,
+        transposition.diatonic_steps.get() as f64,
+        transposition.chromatic_semitones.get() as f64,
+    )
 }
 
 pub(crate) fn safe_integer(value: f64) -> bool {

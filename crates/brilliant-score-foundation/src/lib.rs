@@ -25,4 +25,4 @@ pub use feature_profile::{
     assess_score_profile,
 };
 pub use fraction::{ExactFraction, ExactFractionError};
-pub use music_rules::tempo_is_valid;
+pub use music_rules::{assess_sounding_pitch, tempo_is_valid, written_pitch_is_valid};

@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 use brilliant_core_types::StableId;
 use brilliant_score_foundation::{
     ExtensionBlockV1, ExtensionOwnerV1, PartMeasureContentV1, RhythmicEventV1, ScoreMetadataV1,
-    ScoreNoteV1, StaffDefinitionV1, VoiceV1,
+    ScoreNoteV1, StaffDefinitionV1, TranspositionV1, VoiceV1,
 };
 
 use crate::change_set::{
@@ -24,8 +24,30 @@ pub(crate) trait CoreBaseReadV1 {
     fn resolve_entity(&self, stable_id: &StableId) -> Option<StableEntityAddressV1>;
     fn read_owner(&self, address: &StableEntityAddressV1) -> Option<StableOwnerAddressV1>;
     fn read_scalar(&self, address: &ScalarAddressV1) -> Option<ScalarValueV1>;
+    fn read_transposition(&self, part_id: &StableId) -> Option<TranspositionV1> {
+        match self.read_scalar(&ScalarAddressV1::PartInstrument {
+            part_id: part_id.clone(),
+        })? {
+            ScalarValueV1::PartInstrument(instrument) => Some(instrument.written_to_sounding),
+            _ => None,
+        }
+    }
     fn detach_entity(&self, address: &StableEntityAddressV1) -> Option<EntityBundleV1>;
     fn read_order(&self, address: &StableOrderAddressV1) -> Option<Vec<StableId>>;
+    /// Visit in document order, stopping when the callback returns false.
+    /// The production store overrides this to borrow IDs without copying a list.
+    fn visit_order(
+        &self,
+        address: &StableOrderAddressV1,
+        visitor: &mut dyn FnMut(&StableId) -> bool,
+    ) -> Option<()> {
+        for id in self.read_order(address)? {
+            if !visitor(&id) {
+                break;
+            }
+        }
+        Some(())
+    }
     fn read_extension(&self, key: &ExtensionKeyV1) -> Option<AnchoredExtensionBlockV1>;
     fn read_reference(&self, address: &ReferenceAddressV1) -> Option<ReferenceValueV1>;
     fn list_references_to(&self, target_id: &StableId) -> Vec<ReferenceAddressV1>;
@@ -303,6 +325,42 @@ impl<'a> TransactionOverlayV1<'a> {
         self.base.read_scalar(address)
     }
 
+    /// The pitch dependency is only two integers; do not clone an instrument's
+    /// potentially large display name or its owning part aggregate to read it.
+    pub(crate) fn read_transposition(&mut self, part_id: &StableId) -> Option<TranspositionV1> {
+        let scalar = ScalarAddressV1::PartInstrument {
+            part_id: part_id.clone(),
+        };
+        if let Some(value) = self.scalar_replacements.get(&scalar) {
+            return match value {
+                ScalarValueV1::PartInstrument(instrument) => {
+                    Some(instrument.written_to_sounding.clone())
+                }
+                _ => None,
+            };
+        }
+        let address = StableEntityAddressV1::Part {
+            part_id: part_id.clone(),
+        };
+        match self.entity_states.get(part_id) {
+            Some(OverlayEntityStateV1::Present(actual)) if actual == &address => {
+                return match self.records.get(&address)? {
+                    OverlayRecordV1::Present(EntityBundleV1::Part(bundle)) => {
+                        Some(bundle.part.instrument.written_to_sounding.clone())
+                    }
+                    _ => None,
+                };
+            }
+            Some(_) => return None,
+            None => {}
+        }
+        if self.resolve_base_entity(part_id)? != address {
+            return None;
+        }
+        self.metrics.base_slot_reads += 1;
+        self.base.read_transposition(part_id)
+    }
+
     pub(crate) fn read_entity(
         &mut self,
         address: &StableEntityAddressV1,
@@ -357,6 +415,26 @@ impl<'a> TransactionOverlayV1<'a> {
             .get(address)
             .cloned()
             .or_else(|| self.base.read_order(address))
+    }
+
+    pub(crate) fn visit_order(
+        &self,
+        address: &StableOrderAddressV1,
+        visitor: &mut dyn FnMut(&StableId) -> bool,
+    ) -> Option<()> {
+        if self.order_tombstones.contains(address) {
+            return None;
+        }
+        if let Some(order) = self.orders.get(address) {
+            for id in order {
+                if !visitor(id) {
+                    break;
+                }
+            }
+            Some(())
+        } else {
+            self.base.visit_order(address, visitor)
+        }
     }
 
     pub(crate) fn read_extension(&self, key: &ExtensionKeyV1) -> Option<AnchoredExtensionBlockV1> {

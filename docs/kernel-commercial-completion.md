@@ -328,7 +328,7 @@ Seven real-native/adapter regressions cover this slice. Final validation:
 This is the metadata dependency family only; full incremental semantic/profile
 admission remains incomplete.
 
-### Confirmed next dependency family: derived pitch
+### Confirmed derived-pitch defect at `712455f`
 
 A real-native probe changes `part-1`'s instrument transposition to
 `{ diatonicSteps: 100, chromaticSemitones: 0 }`. TypeScript rejects the resulting
@@ -341,3 +341,89 @@ The next slice must close pitch dependencies for both changed notes and changed
 part instruments, evaluate final batch state, preserve full-validator diagnostic
 order/paths after hierarchy moves, and bound work to affected parts/notes. It
 must not treat the successful metadata gate as complete semantic admission.
+
+### S1.5b — final pitch dependencies and shared diagnostic budget
+
+The commit plan now supplies final surviving Note records and Part instrument
+records to incremental assessment. Changed/new notes use their final
+note/event/voice/Part ownership chain. A new or changed Part transposition
+expands only its own final measure contents, voices, events and notes; unchanged
+transposition does not expand the Part. Aggregate inserts already register all
+descendant notes. Same-ID deletion/reinsertion uses final records and ownership,
+not the collector's historical removed-ID set. Plain owner-local reordering and
+staff-reference changes introduce no additional pitch dependencies.
+
+Written and sounding pitch rules reuse Foundation's independently tested pure
+rules, with written failure suppressing sounding evaluation. A note reached by
+both a Part dependency and an explicit note edit is assessed once. Metadata and
+pitch errors aggregate before rejection. IDs are sorted for deterministic
+evaluation; public diagnostics use final numeric Part/content/voice/event/note
+positions, never lexical ID/path order or HashMap iteration. Required positions
+are grouped by sibling list and resolved with a borrowed visitor once per list,
+stopping after the final wanted ID. No full DTO or full validator is used.
+
+The added private `semanticDependencyReads` metric increments at scalar/owner
+dependency reads, order lookups and each visited order entry, on both accepted
+and rejected operations. A valid one-note edit performs two musical rules and
+five dependency reads across the tested document sizes (including a 1,024-note
+chord and 64 unrelated Parts). Part-wide checks scale with that Part's notes.
+Large diagnostics have a linear grouped path lookup rather than one sibling
+scan per error. Dedicated transposition reads detach only its two integers;
+ordinary note edits do not copy the Part's instrument display name.
+
+V2 fixes the 4,096 aggregate diagnostic cap but does not name a Core overflow
+code. This slice defines the private native Core mapping as
+`command.resource-limit-exceeded`, `limitKind: diagnostics`, `limit: 4096`,
+`actual: 4097`. It is a mechanism failure with no partial diagnostic report and
+zero adoption. It does not borrow the old TS module-only `module-issues` name.
+The native decoder accepts exactly those numeric bounds for this new kind.
+The original public TS Core API is unchanged; final facade integration must
+carry this explicit mechanism contract forward.
+
+GPT-6's read-only closure review confirmed the current trigger set, final
+surviving-record selection, owner-local move behavior and shared undo/redo
+adoption point. Its key corrections—same-ID reinsertion, grouped path positions
+and a separate overflow mechanism—are covered by the new regressions. Nine
+native test cases include 128 seeded TS runtime comparisons, changed-note and
+changed-instrument failures, final batch repair/removal, Part/Voice moves with
+288 ordered diagnostics, same-ID relocation between differently transposing
+Parts, stored undo/redo/replay, work scaling and both pure-pitch and mixed
+metadata/pitch 4,096/4,097 boundaries.
+
+The existing private read-boundary contract test now names the two additional
+read operations exactly and checks their immutable receiver / stable-value
+signatures. Its prohibitions on physical handles, mutable store, whole-document
+types and nondeterministic sources remain in force. No frozen fixture bytes,
+ChangeOp variants or public application exports are changed.
+
+Validation at this slice:
+
+- Rust workspace: 170 passed, 1 ignored. fmt, all-target clippy `-D warnings`
+  and Rust 1.88.0 workspace check passed; fresh Windows x64 native build.
+- TypeScript strict build and full regression: 676 passed, 2 skipped, 0 failed
+  (78.007 seconds). The earlier single failure was the private read-method
+  allowlist; its explicit signature-preserving update passed targeted and full
+  reruns. `git diff --check` passed.
+
+Meter/duration/hierarchy and reference diagnostic parity, complete profile
+admission, protocol composition and final qualification still remain; this is
+not complete S1 or qualification.
+
+### Confirmed next dependency family: sequence time and measure bounds
+
+On a four-quarter-note 4/4 fixture, each of these independently produces a
+TypeScript `command.semantic-invalid` report while the current private native
+runtime commits at document version one:
+
+- Change the first event's duration to a whole note: three later events receive
+  `semantic.sequence-exceeds-measure` diagnostics.
+- Change the voice sequence start to 1/4: the last event exceeds the measure.
+- Change the measure definition to 3/4: the last event exceeds the new bound.
+
+The ignored reproducer `target/probe-time-admission.cjs` and captured
+`target/time-admission-probe.json` preserve exact commands and ordered expected
+diagnostics. The next closure must include changed events/orders/starts and
+every affected voice for a changed measure definition, using final overlay
+state. Full arithmetic overflow and duration failure precedence, start/pickup
+bounds, final paths, and shared metadata/pitch/time diagnostic ordering must
+match the independent full walker before adoption.

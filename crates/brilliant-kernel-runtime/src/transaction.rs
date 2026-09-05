@@ -40,7 +40,7 @@ pub(crate) enum TransactionPrepareFailureV1 {
     InvalidChangeSet,
     PreconditionMismatch,
     LocalInvariant,
-    Semantic(crate::incremental_validation::SemanticValidationFailureV1),
+    Validation(crate::incremental_validation::IncrementalValidationFailureV1),
     Overlay(OverlayFailureV1),
 }
 
@@ -1118,11 +1118,24 @@ impl CommitPlanV1 {
         validate_removed_reference_targets(store, &collector)?;
 
         let (header_metadata, final_records) = prepare_final_records(store, &collector)?;
-        let semantic_rules_evaluated = crate::incremental_validation::validate_final_metadata(
+        let validation_work = crate::incremental_validation::validate_final_semantics(
+            store,
+            &store.header.id,
             &store.header.metadata,
             header_metadata.as_ref(),
+            &mut overlay,
+            final_records.values().filter_map(|record| match record {
+                StableRecordV1::Note(note) => Some(&note.id),
+                _ => None,
+            }),
+            final_records.values().filter_map(|record| match record {
+                StableRecordV1::Part(part) => {
+                    Some((&part.id, &part.instrument.written_to_sounding))
+                }
+                _ => None,
+            }),
         )
-        .map_err(TransactionPrepareFailureV1::Semantic)?;
+        .map_err(TransactionPrepareFailureV1::Validation)?;
         let records = prepare_record_actions(store, &collector, final_records, &overlay)?;
         let orders = prepare_orders(store, &overlay, &collector, &records.inserted_ids)?;
         let extensions = prepare_extensions(store, &overlay, extension_simulation)?;
@@ -1154,7 +1167,8 @@ impl CommitPlanV1 {
             )
             .saturating_add(reference_inserted_count(&collector.reference_states));
         let metrics = KernelStage3MetricsV1 {
-            semantic_rules_evaluated,
+            semantic_rules_evaluated: validation_work.rules_evaluated,
+            semantic_dependency_reads: validation_work.dependency_reads,
             full_document_scans: 0,
             full_document_clones: 0,
             full_semantic_validations: 0,

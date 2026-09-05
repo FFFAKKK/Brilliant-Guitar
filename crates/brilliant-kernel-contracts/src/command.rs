@@ -608,6 +608,7 @@ pub struct KernelStage3SubmitRequestV1 {
 #[serde(rename_all = "camelCase")]
 pub struct KernelStage3MetricsV1 {
     pub semantic_rules_evaluated: u64,
+    pub semantic_dependency_reads: u64,
     pub full_document_scans: u64,
     pub full_document_clones: u64,
     pub full_semantic_validations: u64,
@@ -639,6 +640,7 @@ pub enum PitchTranspositionErrorV1 {
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum KernelStage3ResourceLimitKindV1 {
+    Diagnostics,
     InputDepth,
     InputProperties,
     BatchChildren,

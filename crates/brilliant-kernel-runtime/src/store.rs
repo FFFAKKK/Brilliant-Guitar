@@ -451,6 +451,16 @@ impl CoreBaseReadV1 for LiveScoreStore {
         }
     }
 
+    fn read_transposition(
+        &self,
+        part_id: &StableId,
+    ) -> Option<brilliant_score_foundation::TranspositionV1> {
+        let RuntimeEntityRef::Part(part) = self.lookup_exact_id(part_id)? else {
+            return None;
+        };
+        Some(self.parts.get(part)?.instrument.written_to_sounding.clone())
+    }
+
     fn read_scalar(&self, address: &ScalarAddressV1) -> Option<ScalarValueV1> {
         match address {
             ScalarAddressV1::DocumentMetadata { document_id } if document_id == &self.header.id => {
@@ -595,6 +605,81 @@ impl CoreBaseReadV1 for LiveScoreStore {
                     written_pitch: record.written_pitch.clone(),
                 }))
             }
+        }
+    }
+
+    fn visit_order(
+        &self,
+        address: &StableOrderAddressV1,
+        visitor: &mut dyn FnMut(&StableId) -> bool,
+    ) -> Option<()> {
+        macro_rules! visit {
+            ($order:expr, $records:expr) => {{
+                for handle in $order {
+                    if !visitor(&$records.get(*handle)?.id) {
+                        break;
+                    }
+                }
+                Some(())
+            }};
+        }
+        match address {
+            StableOrderAddressV1::Measures { document_id } if document_id == &self.header.id => {
+                visit!(&self.topology.measure_order, self.measures)
+            }
+            StableOrderAddressV1::Parts { document_id } if document_id == &self.header.id => {
+                visit!(&self.topology.part_order, self.parts)
+            }
+            StableOrderAddressV1::Staffs { part_id } => {
+                let RuntimeEntityRef::Part(part) = self.lookup_exact_id(part_id)? else {
+                    return None;
+                };
+                visit!(self.topology.staff_order.get(&part)?, self.staffs)
+            }
+            StableOrderAddressV1::MeasureContents { part_id } => {
+                let RuntimeEntityRef::Part(part) = self.lookup_exact_id(part_id)? else {
+                    return None;
+                };
+                visit!(self.topology.content_order.get(&part)?, self.measures)
+            }
+            StableOrderAddressV1::Voices {
+                part_id,
+                measure_id,
+            } => {
+                let RuntimeEntityRef::Part(part) = self.lookup_exact_id(part_id)? else {
+                    return None;
+                };
+                let RuntimeEntityRef::Measure(measure) = self.lookup_exact_id(measure_id)? else {
+                    return None;
+                };
+                visit!(
+                    self.topology
+                        .voice_order
+                        .get(&PartMeasureKey { part, measure })?,
+                    self.voices
+                )
+            }
+            StableOrderAddressV1::Events { voice_id } => {
+                let RuntimeEntityRef::Voice(voice) = self.lookup_exact_id(voice_id)? else {
+                    return None;
+                };
+                visit!(self.topology.event_order.get(&voice)?, self.events)
+            }
+            StableOrderAddressV1::Notes { event_id } => {
+                let RuntimeEntityRef::Event(event) = self.lookup_exact_id(event_id)? else {
+                    return None;
+                };
+                visit!(self.topology.note_order.get(&event)?, self.notes)
+            }
+            StableOrderAddressV1::Extensions { document_id } if document_id == &self.header.id => {
+                for handle in &self.topology.extension_order {
+                    if !visitor(&extension_anchor_id(self.extensions.get(*handle)?)) {
+                        break;
+                    }
+                }
+                Some(())
+            }
+            _ => None,
         }
     }
 

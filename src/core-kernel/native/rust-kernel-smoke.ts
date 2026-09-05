@@ -70,6 +70,7 @@ const COMMAND_FAILURE_KEYS = {
 
 const STAGE3_METRIC_KEYS = [
   "semanticRulesEvaluated",
+  "semanticDependencyReads",
   "fullDocumentScans",
   "fullDocumentClones",
   "fullSemanticValidations",
@@ -581,6 +582,9 @@ function isStage3CommandFailure(
         ].includes(String(value.reason))
       );
     case "command.resource-limit-exceeded":
+      if (value.limitKind === "diagnostics") {
+        return value.limit === 4096 && value.actual === 4097;
+      }
       return (
         [
           "input-depth",
