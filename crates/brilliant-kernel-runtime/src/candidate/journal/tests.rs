@@ -7,6 +7,7 @@ use brilliant_core_types::SafeInteger;
 
 mod fields;
 mod orders;
+mod staff;
 
 #[test]
 fn unpaired_ids_survive_insert_reference_changes_and_journal_undo_redo() {
@@ -162,7 +163,11 @@ fn net_zero(candidate: Candidate<'_>) -> (Candidate<'_>, Journal) {
 }
 
 fn inserted_bundle(journal: &Journal) -> &Arc<PartBundle> {
-    let Operation::InsertEntity { bundle, .. } = &journal.steps[0].forward else {
+    let Operation::InsertEntity {
+        bundle: StoredEntityBundle::Part(bundle),
+        ..
+    } = &journal.steps[0].forward
+    else {
         panic!("insert operation");
     };
     bundle
@@ -499,7 +504,7 @@ fn malformed_bundles_and_manifest_mismatches_fail_before_inserting_nodes() {
     let Operation::InsertEntity {
         owner,
         anchor,
-        bundle,
+        bundle: StoredEntityBundle::Part(bundle),
     } = &journal.steps[0].forward
     else {
         panic!("insert");
@@ -547,7 +552,7 @@ fn malformed_bundles_and_manifest_mismatches_fail_before_inserting_nodes() {
         let operation = Operation::InsertEntity {
             owner: *owner,
             anchor: *anchor,
-            bundle: Arc::new(broken),
+            bundle: StoredEntityBundle::Part(Arc::new(broken)),
         };
         let mut candidate = Candidate::new(TransactionOverlayV1::new(&store), document.id.clone());
         let mut bindings = ReplayBindings::at(

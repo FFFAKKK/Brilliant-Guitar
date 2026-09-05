@@ -16,7 +16,7 @@ pub(super) struct Image {
 }
 
 impl Image {
-    fn shape_valid(&self) -> bool {
+    pub(super) fn shape_valid(&self) -> bool {
         let value_matches = matches!(
             (self.kind, &self.value),
             (Kind::Part, Some(Value::PartName(_)))
@@ -36,7 +36,11 @@ impl Image {
             }
     }
 
-    fn matches(&self, candidate: &mut Candidate<'_>, source: &Occurrence) -> Result<bool, Failure> {
+    pub(super) fn matches(
+        &self,
+        candidate: &mut Candidate<'_>,
+        source: &Occurrence,
+    ) -> Result<bool, Failure> {
         if !candidate.visible(source)
             || candidate.kind(source) != Some(self.kind)
             || candidate.raw_id(source) != Some(self.raw_id.as_js_string())
@@ -98,6 +102,119 @@ fn collect(
 }
 
 impl PartBundle {
+    /// Compose an expected subtree solely from the immutable insertion image
+    /// and recorded deltas. Current candidate members/fields are verified later;
+    /// they must never become the expected journal payload by recapture.
+    pub(super) fn patched_staff_structure(
+        &self,
+        candidate: &mut Candidate<'_>,
+        original_sources: &[Occurrence],
+        staff_changes: &HashMap<Occurrence, Option<Arc<StaffBundle>>>,
+        changes: &HashMap<Occurrence, FieldChanges>,
+        order_changes: &HashMap<CandidateOrder, Arc<Vec<JournalId>>>,
+    ) -> Result<(Self, Vec<Occurrence>), Failure> {
+        candidate.reservation.ensure_active()?;
+        if original_sources.len() != self.nodes.len() || self.nodes.is_empty() {
+            return Err(Failure::InternalError);
+        }
+        let capacity = self
+            .nodes
+            .len()
+            .checked_add(staff_changes.len())
+            .ok_or(Failure::InternalError)?;
+        let mut nodes = Vec::new();
+        let mut sources = Vec::new();
+        let mut positions = HashMap::new();
+        candidate
+            .reservation
+            .vec(Site::JournalOperations, &mut nodes, capacity)?;
+        candidate
+            .reservation
+            .vec(Site::JournalOperations, &mut sources, capacity)?;
+        candidate
+            .reservation
+            .map(Site::JournalOperations, &mut positions, capacity)?;
+        for (node, source) in self.nodes.iter().zip(original_sources) {
+            if let Some(delta) = staff_changes.get(source) {
+                if node.image.kind != Kind::Staff || delta.is_some() {
+                    return Err(Failure::InternalError);
+                }
+                continue;
+            }
+            positions.insert(node.id, nodes.len());
+            nodes.push(node.clone());
+            sources.push(source.clone());
+        }
+        // Original parents precede appended Staff leaves. Order is expressed by
+        // JournalId vectors, independently of this private node-table layout.
+        let original_count = nodes.len();
+        for (source, staff) in staff_changes {
+            let Some(staff) = staff else {
+                continue;
+            };
+            staff.validate()?;
+            if positions.insert(staff.id, nodes.len()).is_some() {
+                return Err(Failure::InternalError);
+            }
+            nodes.push(BundleNode {
+                id: staff.id,
+                parent: Some(0),
+                image: staff.image.clone(),
+                orders: Arc::new(Vec::new()),
+            });
+            sources.push(source.clone());
+        }
+        for (index, (node, source)) in nodes.iter_mut().zip(&sources).enumerate() {
+            if index < original_count {
+                node.parent = node
+                    .parent
+                    .map(|parent| {
+                        positions
+                            .get(&self.nodes[parent].id)
+                            .copied()
+                            .ok_or(Failure::InternalError)
+                    })
+                    .transpose()?;
+            }
+            if let Some(change) = changes.get(source) {
+                let mut image = node.image.as_ref().clone();
+                change.apply_to(&mut image)?;
+                node.image = Arc::new(image);
+            }
+            let mut orders = Vec::new();
+            candidate
+                .reservation
+                .vec(Site::JournalOperations, &mut orders, node.orders.len())?;
+            for (kind, original) in node.orders.iter() {
+                let replacement = order_changes.get(&CandidateOrder::new(source, *kind));
+                let mut children = Vec::new();
+                candidate.reservation.vec(
+                    Site::JournalOperations,
+                    &mut children,
+                    replacement.map_or(original.len(), |ids| ids.len()),
+                )?;
+                if let Some(ids) = replacement {
+                    for id in ids.iter() {
+                        children.push(*positions.get(id).ok_or(Failure::InternalError)?);
+                    }
+                } else {
+                    for child in original.iter() {
+                        children.push(
+                            *positions
+                                .get(&self.nodes[*child].id)
+                                .ok_or(Failure::InternalError)?,
+                        );
+                    }
+                }
+                orders.push((*kind, Arc::new(children)));
+            }
+            node.orders = Arc::new(orders);
+        }
+        let expected = Self { nodes };
+        expected.validate(candidate)?;
+        Ok((expected, sources))
+    }
+
     // These operations introduce no extension blocks. Prefix inverse removal
     // must verify that expectation too; otherwise it could orphan unrecorded
     // opaque data. The existing reference index avoids cloning extension payloads.
@@ -333,7 +450,9 @@ impl PartBundle {
                 .map(|id| candidate.share_existing_id(id.clone()))
                 .transpose()?;
             candidate.nodes[*index].instrument = node.image.instrument.clone();
-            candidate.nodes[*index].staff_id = staff_id;
+            if matches!(node.image.kind, Kind::Voice | Kind::Event) {
+                candidate.assign_shared_staff_reference(&source, staff_id)?;
+            }
             candidate.nodes[*index].content_kind = node.image.content_kind;
             sources.push(source);
         }

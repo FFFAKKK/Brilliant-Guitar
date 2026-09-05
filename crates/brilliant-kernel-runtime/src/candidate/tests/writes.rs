@@ -429,7 +429,10 @@ fn replacement_reservation_failure_is_terminal_with_unchanged_current_field_and_
         "all three replacement maps are covered"
     );
     let attempts = baseline.reservation.attempts;
-    assert_eq!(attempts, 4, "three maps and one new shared reference ID");
+    assert_eq!(
+        attempts, 7,
+        "three replacement maps, shared ID, and three reverse-index allocations"
+    );
     for fail_at in 1..=attempts {
         let mut candidate = Candidate::new(prepare(), document.id.clone());
         candidate.reservation = Reservation::fail_at(fail_at);

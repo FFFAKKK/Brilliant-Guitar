@@ -50,6 +50,8 @@ Stored scalar and raw-reference changes compose with those operations; removal
 retains the updated subtree while preserving the original insert payload.
 Stored list moves now compose with edited subtree removal and replay using exact
 occurrence predecessors, including repeated empty IDs and repeated contents.
+Staff insertion/removal now composes with field changes, moves and whole-Part
+removal, using immutable expected images and independent strong-boundary replay.
 Candidate execution is still test-only, not the native default route.
 
 A separate live comparison found a Rust string-domain compatibility gap: TS
@@ -79,12 +81,16 @@ S4 remain open. The current source tree is a kernel library/native workspace;
 editor UI, rendering, playback and physical project persistence are separate
 product work, not completed deliverables of this branch.
 
-Latest Rust checks: 299 tests passed, 1 ignored (67 candidate tests); strict
-clippy, fmt and Rust 1.88.0 check passed. Seven targeted TS/native regressions
-passed on the initial rebuilt addon. The full debug run passed 719 tests, skipped
+Latest Rust checks: 316 tests passed, 1 ignored (84 candidate tests); strict
+clippy, fmt and Rust 1.88.0 check passed. Full TS/native regression passed 722
+tests, skipped two and failed zero (170.783 seconds), using the unchanged release
+addon from `2e858f9`; P3B finished in 68.765 seconds.
+
+Previous string-migration evidence remains relevant: seven targeted TS/native
+regressions passed on the initial rebuilt addon. The full debug run passed 719 tests, skipped
 two and failed the P3B 180-second guard; an isolated P3B repeat also timed out.
 The output writer now batches fragments in fixed stack buffers, with independent
-byte/failure checks. Full regression using one addon from the existing release
+byte/failure checks. That migration's full regression using one addon from the existing release
 profile passed 720 tests, skipped two and failed zero (127.797 seconds overall).
 P3B completed in 70.022 seconds with peak RSS 1,833,156,608 bytes. Its original
 threshold, workload and runner stayed fixed; it has no debug-only build
@@ -967,3 +973,62 @@ passed on that addon. Full TS regression: 705 passed, 2 skipped, 0 failed (80.01
 seconds). `git diff --check` passed. Scoped self-review preserved
 strict target/live identity types, closed affected shape/capture limits and shared
 text conversion. Candidate journal/validation/adoption and qualification remain open.
+
+### S1.7 — Staff structural journal and indexed candidate references
+
+Stored Staff insertion/removal now covers both original prefix Staff and new
+Staff, including delete/recreate with the same raw ID. Staff definitions, moves,
+references and whole-Part deletion compose with exact occurrence identities and
+immutable insertion images. Part removal synthesizes an expected subtree from
+recorded Staff births/deaths, fields and orders before checking the candidate.
+It never adopts unrecorded candidate changes as history. Prefix and Added Staff
+field preparation check the frozen/birth image plus recorded changes, including
+before a no-op; genuine no-ops still consume no reservation and create no step.
+
+Thirteen journal tests include Contracts-decoded Staff commands, exact unpaired
+UTF-16, empty/duplicate temporary IDs, prefix deletion/rebirth, original/new Staff
+inside deleted Parts, scoped/hidden reference conflicts, malformed stored
+operations, the field-drift/no-op cases and every controlled recording/replay
+reservation failure. A ten-case fixture generated solely by the TypeScript
+CommandBus freezes submit/undo/redo observations. Rust compares visible entity
+trees and replays from independently built strong boundary Stores.
+
+That fixture exposed a legacy TS history defect: a duplicate Staff inserted into
+a new Part then removed with its parent commits, but undo rejects with
+`history.invariant-violation`. The fixture explicitly retains that observation;
+the new Rust journal successfully reverses and reapplies the sequence by stored
+identity. The production TS history defect remains open until replacement or a
+separate repair. Document equality in this net-zero case is insufficient proof
+of history correctness.
+
+GPT-6 review found and the implementation repaired two issues: later recorded
+Staff field changes could conceal unrecorded drift, and Staff removal scanned
+the entire retained candidate arena for references. The first repair was checked
+again for no-op reservation behavior. Candidate references now use raw-ID and
+Part-occurrence buckets maintained by all insertion, replacement and bundle
+replay paths. Four additional tests prove stale-edge removal, unique current
+edges, raw-string/hidden restoration, reservation failure behavior and query
+cost independence from 4,096 unrelated Events or 2,048 unrelated candidate
+reference overrides.
+
+The measured counter counts candidate edges actually inspected. Frozen prefix
+lookup still has its existing overlay reference-order scan; `prefix_addresses`
+counts returned addresses, not internal prefix work. Hidden sources within the
+same queried bucket are still inspected and filtered. These prototype counters
+are not commercial resource qualification or a claim of universal allocation
+failure recovery. Candidate execution remains `cfg(test)`; final diagnostics,
+effects/segments, cumulative accounting, full command coverage and strong Store
+adoption/history remain required before native integration.
+
+Validation: full Rust regression passed 316 tests with one existing ignored test;
+all 84 candidate tests passed again after lint-only repairs. Rustfmt, all-target
+clippy with `-D warnings`, Rust 1.88.0 all-target workspace check and scoped diff
+checks passed. The complete TS/native suite passed 722 tests, skipped two and
+failed zero in 170.783 seconds. The release addon SHA-256 remains
+`65C88B68D6C930E392669A0C8E5BE866BF5305F701D759938FE96F117E402A4E`;
+no native rebuild was needed for this test-only candidate slice. Logs are
+`target/staff-journal-rust-final.log`, `staff-journal-candidate-final.log`,
+`staff-journal-clippy.log`, `staff-journal-msrv.log` and `staff-journal-npm.log`.
+GPT-6 scoped rereviews passed after the two reported findings and no-op regression
+were repaired. This is regression evidence, not qualification or a Rust-default
+cutover.

@@ -1,5 +1,6 @@
-//! Stored admission operations: scalar/raw-reference changes and Part subtrees
-//! owned by this journal. This remains inside the test-only admission candidate.
+//! Stored admission operations: scalar/raw-reference changes, Part subtrees
+//! owned by this journal and Staff leaves. This remains inside the test-only
+//! admission candidate.
 //! Command preparation, final semantics, effects/segments, accounting and Store
 //! adoption are integration gates, not behavior supplied by this module.
 
@@ -13,9 +14,17 @@ use super::*;
 mod bundle;
 mod fields;
 mod orders;
+mod staff;
 use bundle::PartBundle;
 use fields::FieldChanges;
 use orders::JournalOrder;
+use staff::StaffBundle;
+
+#[derive(Clone)]
+enum StoredEntityBundle {
+    Part(Arc<PartBundle>),
+    Staff(Arc<StaffBundle>),
+}
 
 #[derive(Clone)]
 enum Operation {
@@ -38,12 +47,12 @@ enum Operation {
     InsertEntity {
         owner: JournalId,
         anchor: Option<JournalId>,
-        bundle: Arc<PartBundle>,
+        bundle: StoredEntityBundle,
     },
     RemoveEntity {
         owner: JournalId,
         expected_anchor: Option<JournalId>,
-        expected: Arc<PartBundle>,
+        expected: StoredEntityBundle,
     },
 }
 
@@ -55,12 +64,14 @@ struct Step {
 struct ActivePart {
     bundle: Arc<PartBundle>,
     sources: Vec<Occurrence>,
+    staff_changes: HashMap<Occurrence, Option<Arc<StaffBundle>>>,
 }
 
 struct Recorder<'a> {
     candidate: Candidate<'a>,
     identities: IdentityRecorder,
     active: HashMap<Occurrence, ActivePart>,
+    staff_images: HashMap<Occurrence, Arc<bundle::Image>>,
     steps: Vec<Step>,
     changes: HashMap<Occurrence, FieldChanges>,
     order_changes: HashMap<CandidateOrder, Arc<Vec<JournalId>>>,
@@ -132,6 +143,7 @@ impl<'a> Recorder<'a> {
             candidate,
             identities: IdentityRecorder::default(),
             active: HashMap::new(),
+            staff_images: HashMap::new(),
             steps: Vec::new(),
             changes: HashMap::new(),
             order_changes: HashMap::new(),
@@ -178,20 +190,36 @@ impl<'a> Recorder<'a> {
         let (bundle, sources) =
             PartBundle::capture(&mut self.candidate, &mut self.identities, &root)?;
         let bundle = Arc::new(bundle);
+        for (node, source) in bundle.nodes.iter().zip(&sources) {
+            if node.image.kind == Kind::Staff {
+                self.candidate.reservation.map(
+                    Site::JournalOperations,
+                    &mut self.staff_images,
+                    1,
+                )?;
+                self.staff_images.insert(source.clone(), node.image.clone());
+            }
+        }
         self.steps.push(Step {
             forward: Operation::InsertEntity {
                 owner,
                 anchor,
-                bundle: bundle.clone(),
+                bundle: StoredEntityBundle::Part(bundle.clone()),
             },
             inverse: Operation::RemoveEntity {
                 owner,
                 expected_anchor: anchor,
-                expected: bundle.clone(),
+                expected: StoredEntityBundle::Part(bundle.clone()),
             },
         });
-        self.active
-            .insert(root.clone(), ActivePart { bundle, sources });
+        self.active.insert(
+            root.clone(),
+            ActivePart {
+                bundle,
+                sources,
+                staff_changes: HashMap::new(),
+            },
+        );
         Ok(root)
     }
 
@@ -209,16 +237,37 @@ impl<'a> Recorder<'a> {
         // Added is not enough: this exact root must belong to this recorder.
         let active = self.active.get(&root).ok_or(Failure::InternalError)?;
         let document = self.candidate.document.clone();
-        let bundle = active
-            .bundle
-            .patched(
+        let (bundle, sources) = if active.staff_changes.is_empty() {
+            let mut sources = Vec::new();
+            self.candidate.reservation.vec(
+                Site::JournalOperations,
+                &mut sources,
+                active.sources.len(),
+            )?;
+            sources.extend(active.sources.iter().cloned());
+            (
+                active
+                    .bundle
+                    .patched(
+                        &mut self.candidate,
+                        &active.sources,
+                        &self.changes,
+                        &self.order_changes,
+                    )?
+                    .map_or_else(|| active.bundle.clone(), Arc::new),
+                sources,
+            )
+        } else {
+            let (bundle, sources) = active.bundle.patched_staff_structure(
                 &mut self.candidate,
                 &active.sources,
+                &active.staff_changes,
                 &self.changes,
                 &self.order_changes,
-            )?
-            .map_or_else(|| active.bundle.clone(), Arc::new);
-        bundle.verify(&mut self.candidate, &document, &active.sources)?;
+            )?;
+            (Arc::new(bundle), sources)
+        };
+        bundle.verify(&mut self.candidate, &document, &sources)?;
         let previous = predecessor(&mut self.candidate, &root)?;
         let anchor = previous
             .as_ref()
@@ -233,16 +282,19 @@ impl<'a> Recorder<'a> {
             forward: Operation::RemoveEntity {
                 owner,
                 expected_anchor: anchor,
-                expected: bundle.clone(),
+                expected: StoredEntityBundle::Part(bundle.clone()),
             },
             inverse: Operation::InsertEntity {
                 owner,
                 anchor,
-                bundle,
+                bundle: StoredEntityBundle::Part(bundle.clone()),
             },
         });
         if let Some(active) = self.active.remove(&root) {
-            for (node, source) in active.bundle.nodes.iter().zip(active.sources) {
+            for source in active.staff_changes.keys() {
+                self.changes.remove(source);
+            }
+            for (node, source) in bundle.nodes.iter().zip(sources) {
                 self.changes.remove(&source);
                 for children in orders::child_orders_for(node.image.kind) {
                     self.order_changes
@@ -310,6 +362,18 @@ impl Operation {
         candidate: &mut Candidate<'_>,
         bindings: &mut ReplayBindings<'_>,
     ) -> Result<(), Failure> {
+        let result = self.apply_inner(candidate, bindings);
+        if result.is_err() {
+            candidate.reservation.abort();
+        }
+        result
+    }
+
+    fn apply_inner(
+        &self,
+        candidate: &mut Candidate<'_>,
+        bindings: &mut ReplayBindings<'_>,
+    ) -> Result<(), Failure> {
         match self {
             Self::MoveOrderedChild {
                 order,
@@ -338,12 +402,12 @@ impl Operation {
                 owner,
                 anchor,
                 bundle,
-            } => Self::apply_part(candidate, bindings, *owner, *anchor, bundle, true),
+            } => Self::apply_entity(candidate, bindings, *owner, *anchor, bundle, true),
             Self::RemoveEntity {
                 owner,
                 expected_anchor,
                 expected,
-            } => Self::apply_part(
+            } => Self::apply_entity(
                 candidate,
                 bindings,
                 *owner,
@@ -351,6 +415,24 @@ impl Operation {
                 expected,
                 false,
             ),
+        }
+    }
+
+    fn apply_entity(
+        candidate: &mut Candidate<'_>,
+        bindings: &mut ReplayBindings<'_>,
+        owner: JournalId,
+        anchor: Option<JournalId>,
+        bundle: &StoredEntityBundle,
+        inserting: bool,
+    ) -> Result<(), Failure> {
+        match bundle {
+            StoredEntityBundle::Part(bundle) => {
+                Self::apply_part(candidate, bindings, owner, anchor, bundle, inserting)
+            }
+            StoredEntityBundle::Staff(bundle) => {
+                staff::apply_staff(candidate, bindings, owner, anchor, bundle, inserting)
+            }
         }
     }
 

@@ -5,6 +5,7 @@
 use brilliant_core_types::JsString;
 
 use std::{
+    cell::Cell,
     collections::{HashMap, HashSet},
     sync::Arc,
 };
@@ -202,6 +203,13 @@ struct Work {
     copied_entries: u64,
 }
 
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+struct StaffReferenceVisits {
+    candidate_edges: u64,
+    // Counts returned prefix addresses, not work inside the frozen overlay.
+    prefix_addresses: u64,
+}
+
 struct Candidate<'a> {
     prefix: TransactionOverlayV1<'a>,
     document: Occurrence,
@@ -215,6 +223,10 @@ struct Candidate<'a> {
     values: HashMap<Occurrence, Value>,
     instruments: HashMap<Occurrence, InstrumentDescriptorV1>,
     staff_references: HashMap<Occurrence, Option<JsString>>,
+    // Raw IDs deliberately include empty and unpaired UTF-16. Part occurrence
+    // identity keeps unrelated owners out of local Staff deletion queries.
+    staff_referrers_by_id: HashMap<JsString, HashMap<Occurrence, Vec<Occurrence>>>,
+    staff_reference_visits: Cell<StaffReferenceVisits>,
     work: Work,
     reservation: Reservation,
 }
@@ -232,6 +244,8 @@ impl<'a> Candidate<'a> {
             values: HashMap::new(),
             instruments: HashMap::new(),
             staff_references: HashMap::new(),
+            staff_referrers_by_id: HashMap::new(),
+            staff_reference_visits: Cell::new(StaffReferenceVisits::default()),
             work: Work::default(),
             reservation: Reservation::default(),
         }
@@ -477,6 +491,11 @@ impl<'a> Candidate<'a> {
         if !self.visible(occurrence) {
             return None;
         }
+        self.retained_staff_reference(occurrence)
+    }
+
+    // Replay can assign retained sources before their ancestor is restored.
+    fn retained_staff_reference(&self, occurrence: &Occurrence) -> Option<Option<JsString>> {
         if let Some(value) = self.staff_references.get(occurrence) {
             return Some(value.clone());
         }
@@ -529,12 +548,31 @@ impl<'a> Candidate<'a> {
         }
     }
 
-    /// Unordered source set: use the prefix index plus candidate-only records
-    /// and replacements. Hidden sources and stale prefix edges are excluded.
+    /// Unordered source set. Hidden sources and stale prefix edges are excluded.
     fn staff_referrers(&self, raw_id: &JsString) -> Vec<Occurrence> {
+        self.collect_staff_referrers(raw_id, None)
+    }
+
+    fn staff_reference_part(&self, source: &Occurrence) -> Option<Occurrence> {
+        let voice = match self.kind(source)? {
+            Kind::Event => self.owner(source)?,
+            Kind::Voice => source.clone(),
+            _ => return None,
+        };
+        let content = self.owner(&voice)?;
+        self.owner(&content)
+    }
+
+    fn collect_staff_referrers(
+        &self,
+        raw_id: &JsString,
+        part: Option<&Occurrence>,
+    ) -> Vec<Occurrence> {
         let mut result = Vec::new();
+        let mut visits = self.staff_reference_visits.get();
         if let Ok(id) = StableId::new(raw_id) {
             for reference in self.prefix.list_references_to(&id) {
+                visits.prefix_addresses += 1;
                 let source = match reference {
                     Reference::VoiceDefaultStaff { voice_id } => {
                         Occurrence::prefix(Entity::Voice { voice_id })
@@ -544,26 +582,36 @@ impl<'a> Candidate<'a> {
                     }
                     _ => continue,
                 };
-                if !self.staff_references.contains_key(&source) && self.visible(&source) {
+                if !self.staff_references.contains_key(&source)
+                    && part.is_none_or(|part| {
+                        self.staff_reference_part(&source).as_ref() == Some(part)
+                    })
+                    && self.visible(&source)
+                {
                     result.push(source);
                 }
             }
         }
-        for (index, node) in self.nodes.iter().enumerate() {
-            if matches!(node.kind, Kind::Voice | Kind::Event)
-                && node.staff_id.as_ref() == Some(raw_id)
-            {
-                let source = Occurrence::Added(index);
-                if self.visible(&source) {
-                    result.push(source);
+        if let Some(owners) = self.staff_referrers_by_id.get(raw_id) {
+            let mut collect = |sources: &Vec<Occurrence>| {
+                for source in sources {
+                    visits.candidate_edges += 1;
+                    if self.visible(source) {
+                        result.push(source.clone());
+                    }
+                }
+            };
+            if let Some(part) = part {
+                if let Some(sources) = owners.get(part) {
+                    collect(sources);
+                }
+            } else {
+                for sources in owners.values() {
+                    collect(sources);
                 }
             }
         }
-        for (source, value) in &self.staff_references {
-            if value.as_ref() == Some(raw_id) && self.visible(source) {
-                result.push(source.clone());
-            }
-        }
+        self.staff_reference_visits.set(visits);
         result
     }
 
@@ -580,23 +628,7 @@ impl<'a> Candidate<'a> {
         if self.kind(part) != Some(Kind::Part) {
             return Err(Failure::InternalError);
         }
-        Ok(self
-            .staff_referrers(raw_id)
-            .into_iter()
-            .filter(|source| {
-                let voice = if self.kind(source) == Some(Kind::Event) {
-                    self.owner(source)
-                } else {
-                    Some(source.clone())
-                };
-                let content = voice.as_ref().and_then(|voice| self.owner(voice));
-                content
-                    .as_ref()
-                    .and_then(|content| self.owner(content))
-                    .as_ref()
-                    == Some(part)
-            })
-            .collect())
+        Ok(self.collect_staff_referrers(raw_id, Some(part)))
     }
 
     /// Storage writes only. The bool describes this raw-field change, not a
@@ -695,14 +727,78 @@ impl<'a> Candidate<'a> {
         value: Option<JsString>,
     ) -> Result<(), Failure> {
         self.reservation.ensure_active()?;
+        let previous = self
+            .retained_staff_reference(source)
+            .ok_or(Failure::InternalError)?;
+        if previous == value {
+            return Ok(());
+        }
+        let part = self
+            .staff_reference_part(source)
+            .ok_or(Failure::InternalError)?;
+        if !matches!(source, Occurrence::Added(_)) && !self.staff_references.contains_key(source) {
+            self.reservation
+                .map(Site::StaffReferences, &mut self.staff_references, 1)?;
+        }
+        if let Some(raw_id) = &value {
+            self.reserve_staff_reference_edge(raw_id, &part)?;
+        }
+        // Every allocation is complete before removing the current edge or
+        // publishing the field. One raw field creates at most one indexed edge.
+        if let Some(raw_id) = &previous
+            && let Some(owners) = self.staff_referrers_by_id.get_mut(raw_id)
+        {
+            if let Some(sources) = owners.get_mut(&part) {
+                sources.retain(|candidate| candidate != source);
+                if sources.is_empty() {
+                    owners.remove(&part);
+                }
+            }
+            if owners.is_empty() {
+                self.staff_referrers_by_id.remove(raw_id);
+            }
+        }
+        if let Some(raw_id) = &value {
+            self.staff_referrers_by_id
+                .get_mut(raw_id)
+                .expect("reserved ID bucket")
+                .get_mut(&part)
+                .expect("reserved owner bucket")
+                .push(source.clone());
+        }
         if let Occurrence::Added(index) = source {
             self.nodes[*index].staff_id = value;
         } else {
-            if !self.staff_references.contains_key(source) {
-                self.reservation
-                    .map(Site::StaffReferences, &mut self.staff_references, 1)?;
-            }
             self.staff_references.insert(source.clone(), value);
+        }
+        Ok(())
+    }
+
+    fn reserve_staff_reference_edge(
+        &mut self,
+        raw_id: &JsString,
+        part: &Occurrence,
+    ) -> Result<(), Failure> {
+        if let Some(owners) = self.staff_referrers_by_id.get_mut(raw_id) {
+            if let Some(sources) = owners.get_mut(part) {
+                return self.reservation.vec(Site::StaffReferences, sources, 1);
+            }
+            let mut sources = Vec::new();
+            self.reservation
+                .vec(Site::StaffReferences, &mut sources, 1)?;
+            self.reservation.map(Site::StaffReferences, owners, 1)?;
+            owners.insert(part.clone(), sources);
+        } else {
+            let mut sources = Vec::new();
+            self.reservation
+                .vec(Site::StaffReferences, &mut sources, 1)?;
+            let mut owners = HashMap::new();
+            self.reservation
+                .map(Site::StaffReferences, &mut owners, 1)?;
+            self.reservation
+                .map(Site::StaffReferences, &mut self.staff_referrers_by_id, 1)?;
+            owners.insert(part.clone(), sources);
+            self.staff_referrers_by_id.insert(raw_id.clone(), owners);
         }
         Ok(())
     }
@@ -920,10 +1016,8 @@ impl<'a> Candidate<'a> {
             voice.id,
             Some(Value::VoiceSequenceStart(voice.sequence.start)),
         )?;
-        let Occurrence::Added(index) = occurrence else {
-            unreachable!()
-        };
-        self.nodes[index].staff_id = Some(self.share_id(voice.default_staff_id)?);
+        let staff_id = self.share_id(voice.default_staff_id)?;
+        self.assign_shared_staff_reference(&occurrence, Some(staff_id))?;
         let mut events = Vec::new();
         self.reservation
             .vec(Site::OrderEntries, &mut events, voice.sequence.events.len())?;
@@ -948,7 +1042,8 @@ impl<'a> Candidate<'a> {
         let Occurrence::Added(index) = occurrence else {
             unreachable!()
         };
-        self.nodes[index].staff_id = event.staff_id.map(|id| self.share_id(id)).transpose()?;
+        let staff_id = event.staff_id.map(|id| self.share_id(id)).transpose()?;
+        self.assign_shared_staff_reference(&occurrence, staff_id)?;
         let mut notes = Vec::new();
         self.nodes[index].content_kind = Some(match event.content {
             RhythmicContentV1::Rest => EventContentKind::Rest,

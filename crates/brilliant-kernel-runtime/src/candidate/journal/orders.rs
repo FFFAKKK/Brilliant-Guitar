@@ -20,7 +20,7 @@ pub(super) fn child_orders_for(kind: Kind) -> &'static [Children] {
     }
 }
 
-fn previous(
+pub(super) fn previous(
     candidate: &mut Candidate<'_>,
     order: &CandidateOrder,
     target: &Occurrence,
@@ -129,7 +129,10 @@ impl Recorder<'_> {
         false
     }
 
-    fn collect_ids(&mut self, order: &CandidateOrder) -> Result<Vec<JournalId>, Failure> {
+    pub(super) fn collect_ids(
+        &mut self,
+        order: &CandidateOrder,
+    ) -> Result<Vec<JournalId>, Failure> {
         let mut sources = Vec::new();
         let mut reservation = std::mem::take(&mut self.candidate.reservation);
         let visited = self.candidate.visit_order(order, &mut |source, _| {
@@ -200,7 +203,13 @@ impl Recorder<'_> {
                     1,
                 )?;
             }
-            let mut ids = self.collect_ids(order)?;
+            let mut ids =
+                if order.children == Children::Staffs && self.active.contains_key(&order.owner) {
+                    self.expected_staff_order(order)?
+                        .ok_or(Failure::InternalError)?
+                } else {
+                    self.collect_ids(order)?
+                };
             let from = ids
                 .iter()
                 .position(|id| *id == target_id)

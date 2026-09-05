@@ -561,8 +561,9 @@ commands. It must cover raw empty/duplicate IDs, exact Part ownership and local
 anchor resolution, reference-conflict scope, field/move/remove composition,
 insertion inside a newly inserted Part and both stored replay directions.
 Every new reservation failure must remain terminal and preserve the prefix/Store.
-Initial deletion may be limited to a Staff inserted by that recorder, with this
-limit explicit in tests. This is a concrete command-to-journal path; it does not
+The implemented Staff slice covers both frozen-prefix and newly inserted Staff
+deletion because Staff leaves own no extension subtrees. This is a concrete
+command-to-journal path; it does not
 activate a partial public candidate dispatcher. Final assessment, cumulative
 budgets and strong adoption must follow before selecting the route natively.
 
@@ -599,3 +600,37 @@ Source anchors for this decision: `overlay.rs`'s `TransactionOverlayV1`,
 `target-resolver.ts`'s `uniqueMatch` and `resolveOwnerLocalAnchor`,
 `score-component-codec.ts`, the hierarchy/measure/core command adapters,
 Foundation `candidate.rs`, and Contracts `codec.rs` payload definitions.
+
+### Staff structural journal and independent submission oracle
+
+Staff insert/remove now share the stored InsertEntity/RemoveEntity operation
+forms with Part subtrees. Each leaf retains its exact UTF-16 image and journal
+identity. Preparation resolves raw targets and owner-local anchors, and checks
+references within the owner's Part. Replay checks the stored identity, owner,
+definition and predecessor. It does not rerun reference admission: reversing a
+transaction can legitimately restore a temporarily unresolved reference before
+its Staff is restored.
+
+An active inserted Part records Staff births/deaths and touched Staff order by
+occurrence identity. Whole-Part removal synthesizes expected membership from the
+immutable original subtree plus recorded changes, then verifies current state.
+It cannot recapture arbitrary current candidate state as the expected history.
+Staff definition recording also checks its expected prior image, including a
+requested no-op, so an unrecorded change cannot be hidden by a later valid edit.
+
+The independent TypeScript fixture contains ten real batch submissions and their
+undo/redo results, with inner JSON strings preserving isolated UTF-16 units. The
+Rust test driver decodes those commands through Contracts and compares visible
+entity order, values and references with the TS final document. Replay starts
+from separately built strong initial/final Stores, proving it does not depend on
+old candidate arena indices. This is not yet comparison of public Rust command
+effects, versions, diagnostic reports or Store adoption.
+
+One legacy TS history defect is frozen explicitly: inserting a duplicate Staff
+under a new Part and then removing that Part commits, but undo rejects with
+`history.invariant-violation`; redo then rejects with `history.empty-redo`.
+The inverse stores only raw Staff ID and cannot select one duplicate after the
+Part is restored. Initial/final/undo/redo documents are identical in this net-zero
+case, so document equality alone concealed the failure. Rust's identity-based
+journal must successfully replay it in both directions. The TS production defect
+remains open until the replacement path is integrated or separately repaired.

@@ -11,6 +11,7 @@ use brilliant_score_foundation::{
 
 mod identities;
 mod insertions;
+mod references;
 mod writes;
 
 pub(super) fn id(value: impl Into<JsString>) -> StableId {
@@ -1022,8 +1023,9 @@ fn every_part_collection_reservation_failure_is_terminal_and_preserves_the_prefi
         "exercise nested collection growth, not just the outer Part order"
     );
     assert_eq!(
-        baseline.reservation.sites, 0xff,
-        "the scenario must cover the eight original collection reservation sites"
+        baseline.reservation.sites,
+        0xff | (1 << Site::StaffReferences as u16),
+        "the scenario must cover the eight original collection sites and the reverse reference index"
     );
     assert_eq!(baseline.prefix.finish().unwrap(), expected);
 

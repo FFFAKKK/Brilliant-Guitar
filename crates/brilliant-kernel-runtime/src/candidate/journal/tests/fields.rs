@@ -220,7 +220,11 @@ fn modified_transient_part_removal_retains_original_insert_and_updated_remove_pa
         Some(Value::PartName("Raw part".into()))
     );
     recorder.remove_part(&JsString::from("temporary")).unwrap();
-    let Operation::RemoveEntity { expected, .. } = &recorder.steps.last().unwrap().forward else {
+    let Operation::RemoveEntity {
+        expected: StoredEntityBundle::Part(expected),
+        ..
+    } = &recorder.steps.last().unwrap().forward
+    else {
         panic!("remove");
     };
     assert_eq!(

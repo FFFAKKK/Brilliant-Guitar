@@ -131,7 +131,11 @@ fn descendant_and_part_moves_compose_with_field_changes_removal_and_inverse_repl
         .unwrap();
     recorder.remove_part(&JsString::from("temporary")).unwrap();
     assert!(recorder.order_changes.is_empty());
-    let Operation::RemoveEntity { expected, .. } = &recorder.steps.last().unwrap().forward else {
+    let Operation::RemoveEntity {
+        expected: StoredEntityBundle::Part(expected),
+        ..
+    } = &recorder.steps.last().unwrap().forward
+    else {
         panic!("remove");
     };
     assert_eq!(

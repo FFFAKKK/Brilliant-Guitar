@@ -100,6 +100,10 @@ impl Recorder<'_> {
     fn replace_scalar_inner(&mut self, source: &Occurrence, value: Value) -> Result<bool, Failure> {
         self.candidate.reservation.ensure_active()?;
         let previous = read_scalar(&mut self.candidate, source, &value)?;
+        if self.candidate.kind(source) == Some(Kind::Staff) {
+            let part = self.candidate.owner(source).ok_or(Failure::InternalError)?;
+            self.verify_owned_staff(&part, source)?;
+        }
         if previous == value {
             return Ok(false);
         }
