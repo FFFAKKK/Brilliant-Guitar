@@ -1,15 +1,17 @@
 //! Immutable payload of a subtree InsertEntity/RemoveEntity operation. It is
 //! neither a whole-document snapshot nor an independently applicable operation.
 
+use brilliant_core_types::JsString;
+
 use super::*;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) struct Image {
-    pub(super) raw_id: Arc<str>,
+    pub(super) raw_id: JsString,
     pub(super) kind: Kind,
     pub(super) value: Option<Value>,
     pub(super) instrument: Option<InstrumentDescriptorV1>,
-    pub(super) staff_id: Option<Arc<str>>,
+    pub(super) staff_id: Option<JsString>,
     pub(super) content_kind: Option<EventContentKind>,
 }
 
@@ -37,7 +39,7 @@ impl Image {
     fn matches(&self, candidate: &mut Candidate<'_>, source: &Occurrence) -> Result<bool, Failure> {
         if !candidate.visible(source)
             || candidate.kind(source) != Some(self.kind)
-            || candidate.raw_id(source) != Some(self.raw_id.as_ref())
+            || candidate.raw_id(source) != Some(self.raw_id.as_js_string())
             || candidate.read_value(source) != self.value
         {
             return Ok(false);
@@ -49,7 +51,7 @@ impl Image {
             let reference = candidate
                 .read_staff_reference(source)
                 .ok_or(Failure::InternalError)?;
-            if reference.as_deref() != self.staff_id.as_deref() {
+            if reference.as_ref() != self.staff_id.as_ref() {
                 return Ok(false);
             }
         }
@@ -101,7 +103,7 @@ impl PartBundle {
     // opaque data. The existing reference index avoids cloning extension payloads.
     pub(super) fn require_no_extensions(
         candidate: &Candidate<'_>,
-        raw_id: &str,
+        raw_id: &JsString,
     ) -> Result<(), Failure> {
         if let Ok(id) = StableId::new(raw_id)
             && candidate

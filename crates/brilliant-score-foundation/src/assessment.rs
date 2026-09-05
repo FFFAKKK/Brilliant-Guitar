@@ -1,4 +1,4 @@
-use serde_json::Value;
+use brilliant_core_types::{JsString, LosslessJsonValue as Value};
 use std::{
     cmp::Ordering,
     collections::{HashMap, HashSet},
@@ -21,10 +21,10 @@ pub fn assess_score_semantics(candidate: &Value) -> Outcome<SemanticReportV1> {
 #[derive(Default)]
 struct Validator<'a> {
     diagnostics: Vec<CoreDiagnosticV1>,
-    ids: HashSet<&'a str>,
-    measures: HashMap<&'a str, Node<'a>>,
-    measure_order: Vec<&'a str>,
-    part_ids: HashSet<&'a str>,
+    ids: HashSet<&'a JsString>,
+    measures: HashMap<&'a JsString, Node<'a>>,
+    measure_order: Vec<&'a JsString>,
+    part_ids: HashSet<&'a JsString>,
 }
 
 pub(crate) fn fraction(node: &Node<'_>) -> Outcome<(f64, f64)> {
@@ -64,14 +64,19 @@ pub(crate) fn event_duration(node: &Node<'_>) -> Outcome<Result<ExactFraction, &
     ))
 }
 
-fn insert<'a>(set: &mut HashSet<&'a str>, value: &'a str) -> Outcome<bool> {
+fn insert<'a>(set: &mut HashSet<&'a JsString>, value: &'a JsString) -> Outcome<bool> {
     set.try_reserve(1)
         .map_err(|_| AssessmentFailureV1::InternalCapacity)?;
     Ok(set.insert(value))
 }
 
 impl<'a> Validator<'a> {
-    fn add(&mut self, code: Code, node: &Node<'_>, detail: Option<(&str, &str)>) -> Outcome<()> {
+    fn add(
+        &mut self,
+        code: Code,
+        node: &Node<'_>,
+        detail: Option<(&str, &JsString)>,
+    ) -> Outcome<()> {
         crate::diagnostics::append_diagnostic(&mut self.diagnostics, code, node.path(), detail)
     }
 
@@ -239,7 +244,7 @@ impl<'a> Validator<'a> {
         &mut self,
         voice: Node<'a>,
         measure: Option<&Node<'a>>,
-        staff_ids: &HashSet<&str>,
+        staff_ids: &HashSet<&JsString>,
         transposition: Option<(f64, f64)>,
     ) -> Outcome<()> {
         self.register_id(&voice.field("id"))?;
@@ -255,7 +260,7 @@ impl<'a> Validator<'a> {
             self.add(
                 Code::MeasureDurationInvalid,
                 &start,
-                Some(("reason", reason)),
+                Some(("reason", &JsString::from(reason))),
             )?;
         }
         if let (Some(position), Some(Ok(end))) = (current, duration) {
@@ -305,7 +310,7 @@ impl<'a> Validator<'a> {
     fn check_event(
         &mut self,
         event: &Node<'a>,
-        staff_ids: &HashSet<&str>,
+        staff_ids: &HashSet<&JsString>,
         transposition: Option<(f64, f64)>,
     ) -> Outcome<Option<ExactFraction>> {
         self.register_id(&event.field("id"))?;
@@ -315,7 +320,7 @@ impl<'a> Validator<'a> {
             self.add(Code::StaffReferenceMissing, &staff, None)?;
         }
         let content = event.field("content");
-        if content.field("kind").string()? == "notes" {
+        if content.field("kind").string()?.eq_ascii("notes") {
             let notes = content.field("notes");
             if notes.len()? == 0 {
                 self.add(Code::NotesRequired, &notes, None)?;
@@ -327,14 +332,23 @@ impl<'a> Validator<'a> {
                 let alter = pitch.field("alter").number()?;
                 let octave = pitch.field("octave").number()?;
                 if !pitch.exact_fields(&["step", "alter", "octave"])
-                    || !music_rules::written_pitch(step, alter, octave)
+                    || !music_rules::written_pitch(step.code_units(), alter, octave)
                 {
                     self.add(Code::WrittenPitchInvalid, &pitch, None)?;
                 } else if let Some((diatonic, chromatic)) = transposition
-                    && let Err(reason) =
-                        music_rules::sounding_pitch(step, alter, octave, diatonic, chromatic)
+                    && let Err(reason) = music_rules::sounding_pitch(
+                        step.code_units(),
+                        alter,
+                        octave,
+                        diatonic,
+                        chromatic,
+                    )
                 {
-                    self.add(Code::SoundingPitchInvalid, &pitch, Some(("reason", reason)))?;
+                    self.add(
+                        Code::SoundingPitchInvalid,
+                        &pitch,
+                        Some(("reason", &JsString::from(reason))),
+                    )?;
                 }
             }
         }
@@ -349,7 +363,7 @@ impl<'a> Validator<'a> {
                         Code::NoteValueInvalid
                     },
                     &duration,
-                    Some(("reason", reason)),
+                    Some(("reason", &JsString::from(reason))),
                 )?;
                 Ok(None)
             }
@@ -368,25 +382,25 @@ impl<'a> Validator<'a> {
                 self.add(Code::ExtensionSchemaVersionInvalid, &version, None)?;
             }
             let owner = extension.field("owner");
-            let owner_key = if owner.field("kind").string()? == "score" {
-                "score".to_owned()
+            let owner_key = if owner.field("kind").string()?.eq_ascii("score") {
+                None
             } else {
                 let part = owner.field("partId");
                 if !self.part_ids.contains(part.string()?) {
                     self.add(Code::ExtensionOwnerMissing, &part, None)?;
                 }
-                format!("part:{}", part.string()?)
+                Some(part.string()?)
             };
             keys.try_reserve(1)
                 .map_err(|_| AssessmentFailureV1::InternalCapacity)?;
-            if !keys.insert(format!("{owner_key}|{}", namespace.string()?)) {
+            if !keys.insert((owner_key, namespace.string()?)) {
                 self.add(Code::ExtensionDuplicate, &extension, None)?;
             }
             let payload = extension.field("payload");
-            // Captured serde_json values are already finite JSON data. The
+            // Captured lossless JSON values are already finite JSON data. The
             // public direct semantic validator additionally rejects arrays;
             // object-only payload shape belongs to the document decoder.
-            if payload.value.is_array() {
+            if matches!(payload.value, Value::Array(_)) {
                 self.add(Code::ExtensionPayloadInvalid, &payload, None)?;
             }
         }
@@ -397,6 +411,134 @@ impl<'a> Validator<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::Value;
+
+    fn captured(value: &Value) -> brilliant_core_types::LosslessJsonValue {
+        crate::decode_lossless_json(&value.to_string()).expect("lossless fixture")
+    }
+
+    fn report_value(report: impl crate::LosslessEncode) -> Result<Value, serde_json::Error> {
+        let mut output = Vec::new();
+        report
+            .write_lossless(&mut output)
+            .expect("explicit report codec");
+        serde_json::from_slice(&output)
+    }
+
+    #[test]
+    fn unpaired_ids_remain_distinct_and_duplicate_details_round_trip() {
+        use crate::LosslessEncode;
+
+        let input = crate::codec::SMOKE_DOCUMENT
+            .replace("score-rkp1", r"\ud800")
+            .replace("measure-1", r"\udc00")
+            .replace("part-1", r"\ufffd")
+            .replace("staff-1", r"\ud800\udc00");
+        let candidate = crate::decode_lossless_json(&input).expect("lossless input");
+        assert!(assess_score_semantics(&candidate).expect("assessment").ok);
+        assert!(!matches!(
+            crate::assess_score_profile(&candidate, &crate::ScoreFeatureProfileV1::k1())
+                .expect("profile"),
+            crate::ScoreSupportV1::Invalid { .. }
+        ));
+
+        let duplicate = crate::decode_lossless_json(&input.replace(r"\udc00", r"\ud800"))
+            .expect("duplicate input");
+        let report = assess_score_semantics(&duplicate).expect("duplicate assessment");
+        assert_eq!(report.diagnostics.len(), 1);
+        assert_eq!(report.diagnostics[0].code, Code::IdDuplicate);
+        assert_eq!(
+            report.diagnostics[0].details.as_ref().unwrap()["id"],
+            brilliant_core_types::LosslessJsonValue::String(JsString::from_utf16(vec![0xd800]))
+        );
+        let mut bytes = Vec::new();
+        report.write_lossless(&mut bytes).expect("lossless report");
+        let text = std::str::from_utf8(&bytes).expect("JSON bytes");
+        let encoded = crate::decode_lossless_json(text).expect("encoded report");
+        let diagnostic = Node::root(&encoded)
+            .field("diagnostics")
+            .items()
+            .unwrap()
+            .next()
+            .unwrap();
+        assert_eq!(
+            diagnostic
+                .field("details")
+                .field("id")
+                .string()
+                .unwrap()
+                .code_units(),
+            &[0xd800]
+        );
+    }
+
+    #[test]
+    fn missing_measure_coverage_echoes_exact_unpaired_reference() {
+        let mut fixture: Value = serde_json::from_str(crate::codec::SMOKE_DOCUMENT).unwrap();
+        fixture["parts"][0]["measureContents"] = serde_json::json!([]);
+        let candidate =
+            crate::decode_lossless_json(&fixture.to_string().replace("measure-1", r"\udfff"))
+                .expect("candidate");
+        let report = assess_score_semantics(&candidate).expect("assessment");
+        assert_eq!(report.diagnostics.len(), 1);
+        assert_eq!(report.diagnostics[0].code, Code::MeasureCoverageMissing);
+        assert_eq!(
+            report.diagnostics[0].details.as_ref().unwrap()["measureId"],
+            brilliant_core_types::LosslessJsonValue::String(JsString::from_utf16(vec![0xdfff]))
+        );
+    }
+
+    #[test]
+    fn namespace_rejection_uses_original_code_units_and_keeps_diagnostic_order() {
+        for namespace in [r"a.\ud800", r"a.\udc00", r"a.\ufffd", "a.é", "a..b", "a.1b"] {
+            let input = crate::codec::SMOKE_DOCUMENT.replace("example.rkp1", namespace);
+            let candidate = crate::decode_lossless_json(&input).unwrap();
+            let report = assess_score_semantics(&candidate).expect("assessment");
+            assert_eq!(report.diagnostics.len(), 1, "{namespace}");
+            assert_eq!(report.diagnostics[0].code, Code::ExtensionNamespaceInvalid);
+            assert_eq!(
+                report.diagnostics[0].path,
+                Node::root(&candidate)
+                    .field("extensions")
+                    .items()
+                    .unwrap()
+                    .next()
+                    .unwrap()
+                    .field("namespace")
+                    .path()
+            );
+        }
+        for namespace in ["a.b", "a0.b-c.d9"] {
+            let input = crate::codec::SMOKE_DOCUMENT.replace("example.rkp1", namespace);
+            assert!(
+                assess_score_semantics(&crate::decode_lossless_json(&input).unwrap())
+                    .unwrap()
+                    .ok
+            );
+        }
+    }
+
+    #[test]
+    fn extension_identity_does_not_concatenate_owner_and_namespace() {
+        let mut fixture: Value = serde_json::from_str(crate::codec::SMOKE_DOCUMENT).unwrap();
+        fixture["extensions"] = serde_json::json!([
+            {"namespace":"c.d", "schemaVersion":1, "owner":{"kind":"part", "partId":"x|a.b"}, "payload":{}},
+            {"namespace":"a.b|c.d", "schemaVersion":1, "owner":{"kind":"part", "partId":"x"}, "payload":{}}
+        ]);
+        let report = assess_score_semantics(&captured(&fixture)).expect("assessment");
+        assert_eq!(
+            report
+                .diagnostics
+                .iter()
+                .map(|item| item.code)
+                .collect::<Vec<_>>(),
+            vec![
+                Code::ExtensionOwnerMissing,
+                Code::ExtensionNamespaceInvalid,
+                Code::ExtensionOwnerMissing,
+            ]
+        );
+    }
 
     fn corpus() -> Value {
         serde_json::from_str(include_str!(
@@ -434,9 +576,10 @@ mod tests {
         assert_eq!(cases.len(), 56);
         for case in cases {
             let document = patched_document(&oracle, case);
-            let report = assess_score_semantics(&document).expect("structural candidate");
+            let report =
+                assess_score_semantics(&captured(&document)).expect("structural candidate");
             assert_eq!(
-                serde_json::to_value(report).expect("report"),
+                report_value(report).expect("report"),
                 case["expected"]["semantics"],
                 "case {}",
                 case["id"]
@@ -453,9 +596,10 @@ mod tests {
                 .get("profile")
                 .map(|value| serde_json::from_value(value.clone()).expect("profile"))
                 .unwrap_or_else(crate::ScoreFeatureProfileV1::k1);
-            let report = crate::assess_score_profile(&document, &profile).expect("assessment");
+            let report =
+                crate::assess_score_profile(&captured(&document), &profile).expect("assessment");
             assert_eq!(
-                serde_json::to_value(report).expect("report"),
+                report_value(report).expect("report"),
                 case["expected"]["support"],
                 "case {}",
                 case["id"]
@@ -475,8 +619,8 @@ mod tests {
         for case in cases {
             let document = patched_document(&oracle, case);
             assert_eq!(
-                serde_json::to_value(
-                    assess_score_semantics(&document).expect("semantic assessment")
+                report_value(
+                    assess_score_semantics(&captured(&document)).expect("semantic assessment")
                 )
                 .expect("report"),
                 case["expected"]["semantics"],
@@ -484,8 +628,9 @@ mod tests {
                 case["id"]
             );
             assert_eq!(
-                serde_json::to_value(
-                    crate::assess_score_profile(&document, &profile).expect("profile assessment")
+                report_value(
+                    crate::assess_score_profile(&captured(&document), &profile)
+                        .expect("profile assessment")
                 )
                 .expect("report"),
                 case["expected"]["support"],
@@ -511,21 +656,22 @@ mod tests {
         document["parts"][0]["measureContents"][0]["voices"][0]["sequence"]["events"][0]["content"] =
             serde_json::json!({ "kind": "notes", "notes": notes });
         let before = document.clone();
-        let report = assess_score_semantics(&document).expect("inclusive diagnostic cap");
+        let report =
+            assess_score_semantics(&captured(&document)).expect("inclusive diagnostic cap");
         assert!(!report.ok);
         assert_eq!(report.diagnostics.len(), limit);
         assert_eq!(document, before);
         document["parts"][0]["measureContents"][0]["voices"][0]["sequence"]["events"][0]["content"]["notes"].as_array_mut().expect("notes").push(serde_json::json!({ "id": "last-note", "writtenPitch": { "step": "C", "alter": 3, "octave": 4 } }));
         let before = document.clone();
         assert_eq!(
-            assess_score_semantics(&document),
+            assess_score_semantics(&captured(&document)),
             Err(AssessmentFailureV1::DiagnosticLimit {
                 limit,
                 actual: limit + 1
             })
         );
         assert_eq!(
-            crate::assess_score_profile(&document, &crate::ScoreFeatureProfileV1::k1()),
+            crate::assess_score_profile(&captured(&document), &crate::ScoreFeatureProfileV1::k1()),
             Err(AssessmentFailureV1::DiagnosticLimit {
                 limit,
                 actual: limit + 1
@@ -540,13 +686,13 @@ mod tests {
             serde_json::from_str(crate::codec::SMOKE_DOCUMENT).expect("score");
         document["id"] = serde_json::json!(1);
         assert_eq!(
-            assess_score_semantics(&document),
+            assess_score_semantics(&captured(&document)),
             Err(AssessmentFailureV1::InvalidCandidateShape {
                 path: brilliant_core_types::StablePathV1::field("id")
             })
         );
         assert_eq!(
-            assess_score_semantics(&Value::Null),
+            assess_score_semantics(&brilliant_core_types::LosslessJsonValue::Null),
             Err(AssessmentFailureV1::InvalidCandidateShape {
                 path: brilliant_core_types::StablePathV1::field("id")
             })
@@ -562,13 +708,17 @@ mod tests {
             document["measureDefinitions"][0]["meter"] =
                 serde_json::json!({ "numerator": count, "denominator": 64 });
             document["parts"][0]["measureContents"][0]["voices"][0]["sequence"]["events"] = Value::Array((0..count).map(|index| serde_json::json!({ "id": format!("event-{index}"), "duration": { "base": 64, "dots": 0 }, "content": { "kind": "rest" } })).collect());
-            assert!(assess_score_semantics(&document).expect("valid score").ok);
+            assert!(
+                assess_score_semantics(&captured(&document))
+                    .expect("valid score")
+                    .ok
+            );
             let mut profile = crate::ScoreFeatureProfileV1::k1();
             profile.meters = serde_json::from_value(
                 serde_json::json!([{ "numerator": count, "denominator": 64 }]),
             )
             .expect("custom meter");
-            let result = crate::assess_score_profile(&document, &profile);
+            let result = crate::assess_score_profile(&captured(&document), &profile);
             if count == limit {
                 let crate::ScoreSupportV1::Unsupported { diagnostics } =
                     result.expect("inclusive cap")

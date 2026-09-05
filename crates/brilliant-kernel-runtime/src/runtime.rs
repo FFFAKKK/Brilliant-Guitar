@@ -1,3 +1,4 @@
+use brilliant_core_types::JsString;
 use std::{collections::HashMap, sync::Arc};
 
 use brilliant_core_types::{
@@ -918,16 +919,16 @@ impl KernelStage3TransactionV1<'_> {
                     .ok_or(KernelStage3CommandFailureLeafV1::InternalError)?,
             };
             let path = StablePathV1::new(vec![
-                StablePathSegmentV1::Field("measureDefinitions".to_owned()),
+                StablePathSegmentV1::Field("measureDefinitions".into()),
                 StablePathSegmentV1::Index(index as u64),
-                StablePathSegmentV1::Field("id".to_owned()),
+                StablePathSegmentV1::Field("id".into()),
             ])
             .map_err(|_| KernelStage3CommandFailureLeafV1::InternalError)?;
             return Err(KernelStage3CommandFailureLeafV1::SemanticInvalid {
                 diagnostics: vec![CoreDiagnosticV1::new(
                     CoreDiagnosticCodeV1::IdDuplicate,
                     path,
-                    Some(("id", definition.id.as_str())),
+                    Some(("id", definition.id.as_js_string())),
                 )],
             });
         }
@@ -1420,7 +1421,7 @@ impl KernelStage3TransactionV1<'_> {
     pub fn set_part_name(
         &mut self,
         part_id: StableId,
-        name: String,
+        name: JsString,
     ) -> Result<(), KernelStage3CommandFailureLeafV1> {
         let mutation = self.overlay.replace_scalar(
             ScalarAddressV1::PartName { part_id },
@@ -2862,7 +2863,7 @@ mod tests {
     ) -> KernelStage4CommandResultV1 {
         let document_id = runtime.store.header.id.clone();
         let mut metadata = runtime.store.header.metadata.clone();
-        metadata.title = title.to_owned();
+        metadata.title = title.into();
         let prepared = {
             let mut transaction = runtime.begin_stage3_transaction();
             transaction
@@ -2883,10 +2884,11 @@ mod tests {
 
     fn measure_payload(
         document: &ScoreDocumentV1,
-        id: &str,
+        id: impl Into<JsString>,
     ) -> (MeasureDefinitionV1, Vec<InsertMeasurePartContentV1>) {
+        let id = id.into();
         let mut definition = document.measure_definitions[0].clone();
-        definition.id = StableId::new(id).expect("measure id");
+        definition.id = StableId::new(&id).expect("measure id");
         let contents = document
             .parts
             .iter()
@@ -2894,18 +2896,22 @@ mod tests {
             .map(|(part_index, part)| {
                 let mut voices = part.measure_contents[0].voices.clone();
                 for (voice_index, voice) in voices.iter_mut().enumerate() {
-                    voice.id = StableId::new(format!("{id}-voice-{part_index}-{voice_index}"))
-                        .expect("voice id");
+                    voice.id = StableId::new(JsString::concat(&[
+                        &id,
+                        &format!("-voice-{part_index}-{voice_index}").into(),
+                    ]))
+                    .expect("voice id");
                     for (event_index, event) in voice.sequence.events.iter_mut().enumerate() {
-                        event.id = StableId::new(format!(
-                            "{id}-event-{part_index}-{voice_index}-{event_index}"
-                        ))
+                        event.id = StableId::new(JsString::concat(&[
+                            &id,
+                            &format!("-event-{part_index}-{voice_index}-{event_index}").into(),
+                        ]))
                         .expect("event id");
                         if let RhythmicContentV1::Notes { notes } = &mut event.content {
                             for (note_index, note) in notes.iter_mut().enumerate() {
-                                note.id = StableId::new(format!(
-                                    "{id}-note-{part_index}-{voice_index}-{event_index}-{note_index}"
-                                ))
+                                note.id = StableId::new(JsString::concat(&[&id, &format!(
+                                    "-note-{part_index}-{voice_index}-{event_index}-{note_index}"
+                                ).into()]))
                                 .expect("note id");
                             }
                         }
@@ -2924,7 +2930,7 @@ mod tests {
         let mut document = crate::store::tests::fixture();
         let mut second_part = document.parts[0].clone();
         second_part.id = StableId::new("part-y").expect("part id");
-        second_part.name = "Second Part".to_owned();
+        second_part.name = "Second Part".into();
 
         let mut staff_ids = HashMap::new();
         for (index, staff) in second_part.staves.iter_mut().enumerate() {
@@ -2963,7 +2969,7 @@ mod tests {
             part_id: StableId::new("part-z").expect("owned extension part"),
         };
         let mut trailing_owned = document.extensions[1].clone();
-        trailing_owned.namespace = "example.part.trailing".to_owned();
+        trailing_owned.namespace = "example.part.trailing".into();
         trailing_owned.owner = brilliant_score_foundation::ExtensionOwnerV1::Part {
             part_id: StableId::new("part-z").expect("owned extension part"),
         };
@@ -2993,7 +2999,7 @@ mod tests {
             document
                 .measure_definitions
                 .iter()
-                .map(|measure| measure.id.as_str())
+                .map(|measure| measure.id.as_js_string())
                 .collect::<Vec<_>>(),
             expected
         );
@@ -3001,7 +3007,7 @@ mod tests {
             assert_eq!(
                 part.measure_contents
                     .iter()
-                    .map(|content| content.measure_id.as_str())
+                    .map(|content| content.measure_id.as_js_string())
                     .collect::<Vec<_>>(),
                 expected
             );
@@ -3012,7 +3018,7 @@ mod tests {
     fn runtime_owns_only_the_live_store_and_revision_zero() {
         let document = crate::store::tests::fixture();
         let runtime = KernelRuntime::create(document).expect("runtime");
-        assert_eq!(runtime.document_id().as_str(), "score-root");
+        assert_eq!(runtime.document_id().as_js_string(), "score-root");
         assert_eq!(runtime.document_version(), DocumentVersionV1::initial());
 
         let source = include_str!("runtime.rs").replace("\r\n", "\n");
@@ -3057,7 +3063,7 @@ mod tests {
         let document = crate::store::tests::fixture();
         let document_id = document.id.clone();
         let mut metadata = document.metadata.clone();
-        metadata.title = "event overflow".to_owned();
+        metadata.title = "event overflow".into();
         let mut runtime = KernelRuntime::create(document).expect("runtime");
         let baseline = runtime.read_state().expect("baseline");
         runtime
@@ -3128,8 +3134,11 @@ mod tests {
         assert_eq!(completed.latest_cursor, Some(1));
         assert_eq!(completed.latest_identity, Some(1));
         assert_eq!(
-            completed.latest_document_id.as_ref().map(StableId::as_str),
-            Some("score-root")
+            completed
+                .latest_document_id
+                .as_ref()
+                .map(StableId::as_js_string),
+            Some(&JsString::from("score-root"))
         );
 
         runtime.checkpoint.force_due_for_test(29, 31);
@@ -3206,7 +3215,7 @@ mod tests {
         let document_id = document.id.clone();
         let anchor_id = document.measure_definitions[0].id.clone();
         let inserted_id = StableId::new("inverse-measure").expect("measure id");
-        let (definition, contents) = measure_payload(&document, inserted_id.as_str());
+        let (definition, contents) = measure_payload(&document, inserted_id.as_js_string());
 
         let mut runtime = KernelRuntime::create(document).expect("runtime");
         let prepared = {
@@ -3283,7 +3292,7 @@ mod tests {
             committed
                 .parts
                 .iter()
-                .map(|part| part.id.as_str())
+                .map(|part| part.id.as_js_string())
                 .collect::<Vec<_>>(),
             ["part-y"]
         );
@@ -3291,7 +3300,7 @@ mod tests {
             committed
                 .extensions
                 .iter()
-                .map(|extension| extension.namespace.as_str())
+                .map(|extension| extension.namespace.as_js_string())
                 .collect::<Vec<_>>(),
             ["example.second"]
         );
@@ -3334,7 +3343,7 @@ mod tests {
         let mut voice = document.parts[0]
             .measure_contents
             .iter()
-            .find(|content| content.measure_id.as_str() == "measure-z")
+            .find(|content| content.measure_id.as_js_string() == "measure-z")
             .expect("measure content")
             .voices[0]
             .clone();
@@ -3412,42 +3421,42 @@ mod tests {
         let part = committed
             .parts
             .iter()
-            .find(|part| part.id.as_str() == "part-z")
+            .find(|part| part.id.as_js_string() == "part-z")
             .expect("part");
         assert_eq!(
             part.staves
                 .iter()
-                .map(|staff| staff.id.as_str())
+                .map(|staff| staff.id.as_js_string())
                 .collect::<Vec<_>>(),
             ["staff-z", "staff-a", "staff-new"]
         );
         let content = part
             .measure_contents
             .iter()
-            .find(|content| content.measure_id.as_str() == "measure-z")
+            .find(|content| content.measure_id.as_js_string() == "measure-z")
             .expect("measure content");
         assert_eq!(
             content
                 .voices
                 .iter()
-                .map(|voice| voice.id.as_str())
+                .map(|voice| voice.id.as_js_string())
                 .collect::<Vec<_>>(),
             ["voice-z", "voice-new"]
         );
         let inserted = content
             .voices
             .iter()
-            .find(|voice| voice.id.as_str() == "voice-new")
+            .find(|voice| voice.id.as_js_string() == "voice-new")
             .expect("inserted voice");
-        assert_eq!(inserted.default_staff_id.as_str(), "staff-a");
+        assert_eq!(inserted.default_staff_id.as_js_string(), "staff-a");
         assert_eq!(inserted.sequence.start.numerator.get(), 1);
         assert_eq!(inserted.sequence.start.denominator.get(), 4);
         assert_eq!(
             inserted.sequence.events[0]
                 .staff_id
                 .as_ref()
-                .map(StableId::as_str),
-            Some("staff-new")
+                .map(StableId::as_js_string),
+            Some(&JsString::from("staff-new"))
         );
     }
 

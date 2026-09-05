@@ -1,8 +1,7 @@
 use std::{cmp::Ordering, collections::HashMap};
 
-use brilliant_core_types::FiniteNumber;
+use brilliant_core_types::{FiniteNumber, LosslessJsonValue as Value};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 use crate::{
     AssessmentFailureV1, CoreDiagnosticCodeV1 as Code, CoreDiagnosticV1, assess_score_semantics,
@@ -78,6 +77,23 @@ pub enum ScoreSupportV1 {
     Supported { diagnostics: [CoreDiagnosticV1; 0] },
     Unsupported { diagnostics: Vec<CoreDiagnosticV1> },
     Invalid { diagnostics: Vec<CoreDiagnosticV1> },
+}
+
+impl crate::LosslessEncode for ScoreSupportV1 {
+    fn write_lossless<W: std::io::Write + ?Sized>(
+        &self,
+        writer: &mut W,
+    ) -> Result<(), crate::LosslessJsonError> {
+        let mut object = crate::LosslessObjectWriter::new(writer)?;
+        let (status, diagnostics): (&str, &[CoreDiagnosticV1]) = match self {
+            Self::Supported { diagnostics } => ("supported", diagnostics),
+            Self::Unsupported { diagnostics } => ("unsupported", diagnostics),
+            Self::Invalid { diagnostics } => ("invalid", diagnostics),
+        };
+        object.field("status", status)?;
+        object.field("diagnostics", diagnostics)?;
+        object.end()
+    }
 }
 
 fn within(value: usize, constraint: &CardinalityConstraintV1) -> bool {
@@ -189,7 +205,7 @@ fn classify_valid_score(
                         )?;
                     }
                     let content = event.field("content");
-                    if content.field("kind").string()? == "notes" {
+                    if content.field("kind").string()?.eq_ascii("notes") {
                         let notes = content.field("notes");
                         if notes.len()? as f64 > profile.maximum_notes_per_event.get() {
                             append(&mut diagnostics, Code::UnsupportedChord, &notes)?;

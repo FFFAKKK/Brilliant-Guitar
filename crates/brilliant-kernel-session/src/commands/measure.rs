@@ -74,15 +74,29 @@ mod tests {
 
     fn target_key(
         target: &brilliant_kernel_contracts::AffectedEntityAddressV1,
-    ) -> (&'static str, &str) {
+    ) -> (&'static str, Vec<u16>) {
         match target {
-            ScoreEntityTargetV1::Document { document_id } => ("document", document_id.as_str()),
-            ScoreEntityTargetV1::Measure { measure_id } => ("measure", measure_id.as_str()),
-            ScoreEntityTargetV1::Part { part_id } => ("part", part_id.as_str()),
-            ScoreEntityTargetV1::Staff { staff_id } => ("staff", staff_id.as_str()),
-            ScoreEntityTargetV1::Voice { voice_id } => ("voice", voice_id.as_str()),
-            ScoreEntityTargetV1::Event { event_id } => ("event", event_id.as_str()),
-            ScoreEntityTargetV1::Note { note_id } => ("note", note_id.as_str()),
+            ScoreEntityTargetV1::Document { document_id } => {
+                ("document", document_id.as_js_string().code_units().to_vec())
+            }
+            ScoreEntityTargetV1::Measure { measure_id } => {
+                ("measure", measure_id.as_js_string().code_units().to_vec())
+            }
+            ScoreEntityTargetV1::Part { part_id } => {
+                ("part", part_id.as_js_string().code_units().to_vec())
+            }
+            ScoreEntityTargetV1::Staff { staff_id } => {
+                ("staff", staff_id.as_js_string().code_units().to_vec())
+            }
+            ScoreEntityTargetV1::Voice { voice_id } => {
+                ("voice", voice_id.as_js_string().code_units().to_vec())
+            }
+            ScoreEntityTargetV1::Event { event_id } => {
+                ("event", event_id.as_js_string().code_units().to_vec())
+            }
+            ScoreEntityTargetV1::Note { note_id } => {
+                ("note", note_id.as_js_string().code_units().to_vec())
+            }
         }
     }
 
@@ -112,14 +126,17 @@ mod tests {
         assert_eq!(
             value.affected.iter().map(target_key).collect::<Vec<_>>(),
             [
-                ("document", "score-measure"),
-                ("measure", "mx"),
-                ("part", "pa"),
-                ("voice", "vax"),
-                ("event", "eax"),
-                ("part", "pb"),
-                ("voice", "vbx"),
-                ("event", "ebx"),
+                (
+                    "document",
+                    "score-measure".encode_utf16().collect::<Vec<_>>()
+                ),
+                ("measure", "mx".encode_utf16().collect::<Vec<_>>()),
+                ("part", "pa".encode_utf16().collect::<Vec<_>>()),
+                ("voice", "vax".encode_utf16().collect::<Vec<_>>()),
+                ("event", "eax".encode_utf16().collect::<Vec<_>>()),
+                ("part", "pb".encode_utf16().collect::<Vec<_>>()),
+                ("voice", "vbx".encode_utf16().collect::<Vec<_>>()),
+                ("event", "ebx".encode_utf16().collect::<Vec<_>>()),
             ]
         );
         let state = read(&session);
@@ -129,7 +146,7 @@ mod tests {
                 .document
                 .measure_definitions
                 .iter()
-                .map(|measure| measure.id.as_str())
+                .map(|measure| measure.id.as_js_string())
                 .collect::<Vec<_>>(),
             ["m1", "mx", "m2"]
         );
@@ -137,7 +154,7 @@ mod tests {
             assert_eq!(
                 part.measure_contents
                     .iter()
-                    .map(|content| content.measure_id.as_str())
+                    .map(|content| content.measure_id.as_js_string())
                     .collect::<Vec<_>>(),
                 ["m1", "mx", "m2"]
             );
@@ -152,14 +169,18 @@ mod tests {
         assert_eq!(value.document_version.get(), 2);
         assert_eq!(
             value.affected.iter().map(target_key).collect::<Vec<_>>(),
-            [("measure", "m2"), ("part", "pa"), ("part", "pb")]
+            [
+                ("measure", "m2".encode_utf16().collect::<Vec<_>>()),
+                ("part", "pa".encode_utf16().collect::<Vec<_>>()),
+                ("part", "pb".encode_utf16().collect::<Vec<_>>())
+            ]
         );
         let state = read(&session);
         for part in &state.snapshot.document.parts {
             assert_eq!(
                 part.measure_contents
                     .iter()
-                    .map(|content| content.measure_id.as_str())
+                    .map(|content| content.measure_id.as_js_string())
                     .collect::<Vec<_>>(),
                 ["m2", "m1", "mx"]
             );
@@ -179,7 +200,7 @@ mod tests {
             KernelStage3SubmitResultV1::Committed(value)
                 if value.document_version.get() == 3
                     && value.affected.iter().map(target_key).collect::<Vec<_>>()
-                        == [("measure", "mx")]
+                        == [("measure", "mx".encode_utf16().collect::<Vec<_>>())]
         ));
         let definition_no_op = submit(&mut session, definition);
         assert!(matches!(
@@ -197,13 +218,13 @@ mod tests {
         assert_eq!(
             value.affected.iter().map(target_key).collect::<Vec<_>>(),
             [
-                ("measure", "mx"),
-                ("part", "pa"),
-                ("voice", "vax"),
-                ("event", "eax"),
-                ("part", "pb"),
-                ("voice", "vbx"),
-                ("event", "ebx"),
+                ("measure", "mx".encode_utf16().collect::<Vec<_>>()),
+                ("part", "pa".encode_utf16().collect::<Vec<_>>()),
+                ("voice", "vax".encode_utf16().collect::<Vec<_>>()),
+                ("event", "eax".encode_utf16().collect::<Vec<_>>()),
+                ("part", "pb".encode_utf16().collect::<Vec<_>>()),
+                ("voice", "vbx".encode_utf16().collect::<Vec<_>>()),
+                ("event", "ebx".encode_utf16().collect::<Vec<_>>()),
             ]
         );
         let state = read(&session);
@@ -214,7 +235,7 @@ mod tests {
                 .document
                 .measure_definitions
                 .iter()
-                .map(|measure| measure.id.as_str())
+                .map(|measure| measure.id.as_js_string())
                 .collect::<Vec<_>>(),
             ["m2", "m1"]
         );
@@ -222,7 +243,7 @@ mod tests {
             assert_eq!(
                 part.measure_contents
                     .iter()
-                    .map(|content| content.measure_id.as_str())
+                    .map(|content| content.measure_id.as_js_string())
                     .collect::<Vec<_>>(),
                 ["m2", "m1"]
             );

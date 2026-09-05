@@ -1,5 +1,5 @@
-use brilliant_core_types::LosslessJsonValue;
 use brilliant_core_types::{API_VERSION_V1, DocumentVersionV1, StableId};
+use brilliant_core_types::{JsString, LosslessJsonValue};
 use brilliant_score_foundation::{
     ClefV1, FractionV1, InstrumentDescriptorV1, MeasureDefinitionV1, MeterV1, NoteValueV1, PartV1,
     RhythmicEventV1, ScoreMetadataV1, StaffDefinitionV1, TranspositionV1, VoiceV1, WrittenPitchV1,
@@ -469,7 +469,7 @@ pub enum CoreCommandEnvelopeV1<Id = StableId> {
     },
     PartSetName {
         target: ScoreEntityTargetV1,
-        name: String,
+        name: JsString,
     },
     PartSetInstrument {
         target: ScoreEntityTargetV1,
@@ -608,8 +608,8 @@ pub struct KernelStage3SubmitRequestV1<Id = StableId> {
 
 /// Private admission decoding only; targets and direct event payloads retain
 /// their nonempty StableId types. Runtime activation requires candidate closure.
-pub type CoreAdmissionCommandV1 = CoreCommandEnvelopeV1<String>;
-pub type KernelAdmissionSubmitRequestV1 = KernelStage3SubmitRequestV1<String>;
+pub type CoreAdmissionCommandV1 = CoreCommandEnvelopeV1<JsString>;
+pub type KernelAdmissionSubmitRequestV1 = KernelStage3SubmitRequestV1<JsString>;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]

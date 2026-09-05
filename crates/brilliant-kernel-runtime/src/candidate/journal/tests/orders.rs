@@ -5,22 +5,23 @@ fn moving_part() -> AdmissionPartV1 {
     part.staves[0].id = "move-staff-a".into();
     part.staves[1].id = "move-staff-b".into();
     let mut empty = part.staves[0].clone();
-    empty.id.clear();
+    empty.id = JsString::from("");
     part.staves.insert(1, empty);
     let extra_voice = part.measure_contents[0].voices[0].clone();
     part.measure_contents[0].voices.push(extra_voice);
     for (content_index, content) in part.measure_contents.iter_mut().enumerate() {
         for (voice_index, voice) in content.voices.iter_mut().enumerate() {
-            voice.id = format!("move-voice-{content_index}-{voice_index}");
+            voice.id = format!("move-voice-{content_index}-{voice_index}").into();
             voice.sequence.events.push(voice.sequence.events[0].clone());
             for (event_index, event) in voice.sequence.events.iter_mut().enumerate() {
-                event.id = format!("move-event-{content_index}-{voice_index}-{event_index}");
+                event.id = format!("move-event-{content_index}-{voice_index}-{event_index}").into();
                 if let RhythmicContentV1::Notes { notes } = &mut event.content {
                     notes.push(notes[0].clone());
                     for (note_index, note) in notes.iter_mut().enumerate() {
                         note.id = format!(
                             "move-note-{content_index}-{voice_index}-{event_index}-{note_index}"
-                        );
+                        )
+                        .into();
                     }
                 }
             }
@@ -40,7 +41,7 @@ fn sources(candidate: &mut Candidate<'_>, order: &CandidateOrder) -> Vec<Occurre
     values
 }
 
-fn ids(candidate: &mut Candidate<'_>, order: &CandidateOrder) -> Vec<String> {
+fn ids(candidate: &mut Candidate<'_>, order: &CandidateOrder) -> Vec<JsString> {
     let mut values = Vec::new();
     candidate
         .visit_order(order, &mut |_, raw| {
@@ -52,17 +53,21 @@ fn ids(candidate: &mut Candidate<'_>, order: &CandidateOrder) -> Vec<String> {
 }
 
 fn move_staff_and_voice(recorder: &mut Recorder<'_>) -> Result<(), Failure> {
-    let root = recorder.candidate.resolve(Kind::Part, "temporary")?;
+    let root = recorder
+        .candidate
+        .resolve(Kind::Part, &JsString::from("temporary"))?;
     recorder.move_child(
         &CandidateOrder::new(&root, Children::Staffs),
-        "move-staff-b",
-        Some("move-staff-a"),
+        &JsString::from("move-staff-b"),
+        Some(&JsString::from("move-staff-a")),
     )?;
-    let voice = recorder.candidate.resolve(Kind::Voice, "move-voice-0-1")?;
+    let voice = recorder
+        .candidate
+        .resolve(Kind::Voice, &JsString::from("move-voice-0-1"))?;
     let content = recorder.candidate.owner(&voice).unwrap();
     recorder.move_child(
         &CandidateOrder::new(&content, Children::Voices),
-        "move-voice-0-1",
+        &JsString::from("move-voice-0-1"),
         None,
     )?;
     Ok(())
@@ -81,7 +86,11 @@ fn descendant_and_part_moves_compose_with_field_changes_removal_and_inverse_repl
     move_staff_and_voice(&mut recorder).unwrap();
     let staff_order = CandidateOrder::new(&root, Children::Staffs);
     recorder
-        .move_child(&staff_order, "move-staff-a", Some(""))
+        .move_child(
+            &staff_order,
+            &JsString::from("move-staff-a"),
+            Some(&JsString::from("")),
+        )
         .unwrap();
     assert_eq!(
         ids(&mut recorder.candidate, &staff_order),
@@ -89,34 +98,38 @@ fn descendant_and_part_moves_compose_with_field_changes_removal_and_inverse_repl
     );
     let voice = recorder
         .candidate
-        .resolve(Kind::Voice, "move-voice-0-0")
+        .resolve(Kind::Voice, &JsString::from("move-voice-0-0"))
         .unwrap();
     recorder
         .move_child(
             &CandidateOrder::new(&voice, Children::Events),
-            "move-event-0-0-1",
+            &JsString::from("move-event-0-0-1"),
             None,
         )
         .unwrap();
     let event = recorder
         .candidate
-        .resolve(Kind::Event, "move-event-0-0-0")
+        .resolve(Kind::Event, &JsString::from("move-event-0-0-0"))
         .unwrap();
     recorder
         .move_child(
             &CandidateOrder::new(&event, Children::Notes),
-            "move-note-0-0-0-1",
+            &JsString::from("move-note-0-0-0-1"),
             None,
         )
         .unwrap();
     let part_order = CandidateOrder::new(&recorder.candidate.document.clone(), Children::Parts);
     recorder
-        .move_child(&part_order, "temporary", Some("part-z"))
+        .move_child(
+            &part_order,
+            &JsString::from("temporary"),
+            Some(&JsString::from("part-z")),
+        )
         .unwrap();
     recorder
         .replace_scalar(&root, Value::PartName("moved Part".into()))
         .unwrap();
-    recorder.remove_part("temporary").unwrap();
+    recorder.remove_part(&JsString::from("temporary")).unwrap();
     assert!(recorder.order_changes.is_empty());
     let Operation::RemoveEntity { expected, .. } = &recorder.steps.last().unwrap().forward else {
         panic!("remove");
@@ -166,11 +179,11 @@ fn repeated_empty_predecessors_keep_occurrence_identity_through_move_and_inverse
     recorder
         .move_child(
             &CandidateOrder::new(&root, Children::Staffs),
-            "move-staff-b",
-            Some("move-staff-a"),
+            &JsString::from("move-staff-b"),
+            Some(&JsString::from("move-staff-a")),
         )
         .unwrap();
-    recorder.remove_part("temporary").unwrap();
+    recorder.remove_part(&JsString::from("temporary")).unwrap();
     let (_, journal) = recorder.finish().unwrap();
     let mut candidate = Candidate::new(TransactionOverlayV1::new(&store), document.id);
     let mut bindings = ReplayBindings::at(
@@ -188,8 +201,8 @@ fn repeated_empty_predecessors_keep_occurrence_identity_through_move_and_inverse
         .unwrap();
     let order = CandidateOrder::new(&root, Children::Staffs);
     let before = sources(&mut candidate, &order);
-    assert_eq!(candidate.raw_id(&before[1]), Some(""));
-    assert_eq!(candidate.raw_id(&before[2]), Some(""));
+    assert_eq!(candidate.raw_id(&before[1]), Some(&JsString::from("")));
+    assert_eq!(candidate.raw_id(&before[2]), Some(&JsString::from("")));
     assert_ne!(before[1], before[2]);
     journal.steps[1]
         .forward
@@ -239,12 +252,17 @@ fn prefix_measure_and_staff_moves_keep_frozen_prefix_and_replay_from_a_strong_en
     let expected = prepare().finish().unwrap();
     let mut recorder = Recorder::new(Candidate::new(prepare(), document.id.clone()));
     let measures = CandidateOrder::new(&recorder.candidate.document.clone(), Children::Measures);
-    let part = recorder.candidate.resolve(Kind::Part, "part-z").unwrap();
-    recorder.move_child(&measures, "measure-a", None).unwrap();
+    let part = recorder
+        .candidate
+        .resolve(Kind::Part, &JsString::from("part-z"))
+        .unwrap();
+    recorder
+        .move_child(&measures, &JsString::from("measure-a"), None)
+        .unwrap();
     recorder
         .move_child(
             &CandidateOrder::new(&part, Children::Staffs),
-            "staff-a",
+            &JsString::from("staff-a"),
             None,
         )
         .unwrap();
@@ -294,24 +312,47 @@ fn unchanged_positions_do_not_record_or_reserve_and_move_failures_preserve_prece
     let order = CandidateOrder::new(&root, Children::Staffs);
     let steps = recorder.steps.len();
     recorder.candidate.reservation = Reservation::fail_at(1);
-    assert_eq!(recorder.move_child(&order, "move-staff-a", None), Ok(false));
     assert_eq!(
-        recorder.move_child(&order, "move-staff-b", Some("")),
+        recorder.move_child(&order, &JsString::from("move-staff-a"), None),
+        Ok(false)
+    );
+    assert_eq!(
+        recorder.move_child(
+            &order,
+            &JsString::from("move-staff-b"),
+            Some(&JsString::from(""))
+        ),
         Ok(false)
     );
     assert_eq!(recorder.candidate.reservation.attempts, 0);
     assert_eq!(recorder.steps.len(), steps);
     assert!(recorder.order_changes.is_empty());
     for (target, anchor, failure) in [
-        ("missing", Some("missing"), Failure::TargetNotFound),
-        ("staff-z", Some("staff-z"), Failure::TargetNotFound),
+        (
+            "missing",
+            Some(&JsString::from("missing")),
+            Failure::TargetNotFound,
+        ),
+        (
+            "staff-z",
+            Some(&JsString::from("staff-z")),
+            Failure::TargetNotFound,
+        ),
         (
             "move-staff-b",
-            Some("move-staff-b"),
+            Some(&JsString::from("move-staff-b")),
             Failure::AnchorSelfReference,
         ),
-        ("move-staff-b", Some("absent"), Failure::AnchorNotFound),
-        ("move-staff-b", Some("staff-a"), Failure::AnchorWrongOwner),
+        (
+            "move-staff-b",
+            Some(&JsString::from("absent")),
+            Failure::AnchorNotFound,
+        ),
+        (
+            "move-staff-b",
+            Some(&JsString::from("staff-a")),
+            Failure::AnchorWrongOwner,
+        ),
     ] {
         let mut recorder = Recorder::new(Candidate::new(
             TransactionOverlayV1::new(&store),
@@ -321,7 +362,10 @@ fn unchanged_positions_do_not_record_or_reserve_and_move_failures_preserve_prece
         let order = CandidateOrder::new(&root, Children::Staffs);
         let before = sources(&mut recorder.candidate, &order);
         recorder.candidate.reservation = Reservation::fail_at(1);
-        assert_eq!(recorder.move_child(&order, target, anchor), Err(failure));
+        assert_eq!(
+            recorder.move_child(&order, &JsString::from(target), anchor),
+            Err(failure)
+        );
         assert_eq!(recorder.candidate.reservation.attempts, 0);
         assert_eq!(sources(&mut recorder.candidate, &order), before);
         assert!(recorder.finish().is_err());
@@ -333,25 +377,37 @@ fn hidden_siblings_do_not_shift_recorded_moves_and_hidden_targets_remain_missing
     let document = fixture();
     let store = build_live_score_store(&document).unwrap();
     let mut candidate = Candidate::new(TransactionOverlayV1::new(&store), document.id.clone());
-    let part = candidate.resolve(Kind::Part, "part-z").unwrap();
+    let part = candidate
+        .resolve(Kind::Part, &JsString::from("part-z"))
+        .unwrap();
     let mut extra = raw_part("template").staves.remove(0);
     extra.id = "padding-staff".into();
     let padding = candidate.insert_staff(&part, extra, None).unwrap();
     candidate.hide(&padding).unwrap();
     let mut recorder = Recorder::new(candidate);
     let order = CandidateOrder::new(&part, Children::Staffs);
-    assert_eq!(recorder.move_child(&order, "staff-a", None), Ok(true));
+    assert_eq!(
+        recorder.move_child(&order, &JsString::from("staff-a"), None),
+        Ok(true)
+    );
     assert_eq!(ids(&mut recorder.candidate, &order), ["staff-a", "staff-z"]);
     let (_, journal) = recorder.finish().unwrap();
     let mut replay = Candidate::new(TransactionOverlayV1::new(&store), document.id.clone());
     journal.replay(&mut replay, Direction::Forward).unwrap();
     assert_eq!(ids(&mut replay, &order), ["staff-a", "staff-z"]);
     let mut missing = Recorder::new(replay);
-    let target = missing.candidate.resolve(Kind::Staff, "staff-a").unwrap();
+    let target = missing
+        .candidate
+        .resolve(Kind::Staff, &JsString::from("staff-a"))
+        .unwrap();
     missing.candidate.hide(&target).unwrap();
     let attempts = missing.candidate.reservation.attempts;
     assert_eq!(
-        missing.move_child(&order, "staff-a", Some("staff-a")),
+        missing.move_child(
+            &order,
+            &JsString::from("staff-a"),
+            Some(&JsString::from("staff-a"))
+        ),
         Err(Failure::TargetNotFound)
     );
     assert_eq!(missing.candidate.reservation.attempts, attempts);
@@ -365,12 +421,15 @@ fn malformed_stored_move_owner_kind_predecessor_and_noop_fail_before_order_write
         TransactionOverlayV1::new(&store),
         document.id.clone(),
     ));
-    let part = recorder.candidate.resolve(Kind::Part, "part-z").unwrap();
+    let part = recorder
+        .candidate
+        .resolve(Kind::Part, &JsString::from("part-z"))
+        .unwrap();
     recorder
         .move_child(
             &CandidateOrder::new(&part, Children::Staffs),
-            "staff-z",
-            Some("staff-a"),
+            &JsString::from("staff-z"),
+            Some(&JsString::from("staff-a")),
         )
         .unwrap();
     let (_, journal) = recorder.finish().unwrap();
@@ -418,7 +477,7 @@ fn moving_a_small_staff_list_does_not_visit_unrelated_events_or_rebuild_the_bund
     let voice = &mut part.measure_contents[0].voices[0];
     for index in 0..1024 {
         let mut event = voice.sequence.events[0].clone();
-        event.id = format!("bulk-event-{index}");
+        event.id = format!("bulk-event-{index}").into();
         event.content = RhythmicContentV1::Rest;
         voice.sequence.events.push(event);
     }
@@ -432,8 +491,8 @@ fn moving_a_small_staff_list_does_not_visit_unrelated_events_or_rebuild_the_bund
     recorder
         .move_child(
             &CandidateOrder::new(&root, Children::Staffs),
-            "move-staff-b",
-            Some("move-staff-a"),
+            &JsString::from("move-staff-b"),
+            Some(&JsString::from("move-staff-a")),
         )
         .unwrap();
     assert!(recorder.candidate.work.visited_entries - visits <= 12);
@@ -453,7 +512,11 @@ fn malformed_recorded_order_membership_is_rejected_before_part_removal() {
         let root = recorder.insert_part(moving_part(), None).unwrap();
         let order = CandidateOrder::new(&root, Children::Staffs);
         recorder
-            .move_child(&order, "move-staff-b", Some("move-staff-a"))
+            .move_child(
+                &order,
+                &JsString::from("move-staff-b"),
+                Some(&JsString::from("move-staff-a")),
+            )
             .unwrap();
         let mut bad = recorder.order_changes[&order].as_ref().clone();
         bad[1] = if foreign {
@@ -463,7 +526,7 @@ fn malformed_recorded_order_membership_is_rejected_before_part_removal() {
         };
         recorder.order_changes.insert(order, Arc::new(bad));
         assert_eq!(
-            recorder.remove_part("temporary"),
+            recorder.remove_part(&JsString::from("temporary")),
             Err(Failure::InternalError)
         );
         assert!(recorder.candidate.visible(&root));
@@ -490,16 +553,18 @@ fn all_recorded_move_and_patched_removal_reservation_failures_are_terminal() {
         };
         let run = |recorder: &mut Recorder<'_>| -> Result<(), Failure> {
             if prefix {
-                let part = recorder.candidate.resolve(Kind::Part, "part-z")?;
+                let part = recorder
+                    .candidate
+                    .resolve(Kind::Part, &JsString::from("part-z"))?;
                 recorder.move_child(
                     &CandidateOrder::new(&part, Children::Staffs),
-                    "staff-z",
-                    Some("staff-a"),
+                    &JsString::from("staff-z"),
+                    Some(&JsString::from("staff-a")),
                 )?;
                 Ok(())
             } else {
                 move_staff_and_voice(recorder)?;
-                recorder.remove_part("temporary")
+                recorder.remove_part(&JsString::from("temporary"))
             }
         };
         let mut baseline = prepare();
@@ -531,7 +596,7 @@ fn all_moved_subtree_replay_reservation_failures_remain_discard_only() {
     ));
     recorder.insert_part(moving_part(), None).unwrap();
     move_staff_and_voice(&mut recorder).unwrap();
-    recorder.remove_part("temporary").unwrap();
+    recorder.remove_part(&JsString::from("temporary")).unwrap();
     let (_, journal) = recorder.finish().unwrap();
     for inverse in [false, true] {
         let direction = || {
@@ -579,7 +644,7 @@ fn repeated_content_measure_ids_do_not_merge_voice_owners_or_weaken_target_ambig
         recorder.insert_part(part, None).unwrap();
         let voice = recorder
             .candidate
-            .resolve(Kind::Voice, "move-voice-0-0")
+            .resolve(Kind::Voice, &JsString::from("move-voice-0-0"))
             .unwrap();
         let content = recorder.candidate.owner(&voice).unwrap();
         let order = CandidateOrder::new(&content, Children::Voices);
@@ -590,14 +655,14 @@ fn repeated_content_measure_ids_do_not_merge_voice_owners_or_weaken_target_ambig
         } else {
             "move-voice-0-1"
         };
-        let result = recorder.move_child(&order, target, None);
+        let result = recorder.move_child(&order, &JsString::from(target), None);
         if case == "valid" {
             assert_eq!(result, Ok(true));
             assert_eq!(
                 sources(&mut recorder.candidate, &order),
                 [before[1].clone(), before[0].clone()]
             );
-            recorder.remove_part("temporary").unwrap();
+            recorder.remove_part(&JsString::from("temporary")).unwrap();
             let (_, journal) = recorder.finish().unwrap();
             for direction in [Direction::Forward, Direction::Inverse] {
                 let mut candidate =

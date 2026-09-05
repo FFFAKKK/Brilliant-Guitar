@@ -1,13 +1,15 @@
 //! Raw field operations. Command-level effective-reference no-op decisions and
 //! semantic preparation precede this journal; replay checks the stored raw form.
 
+use brilliant_core_types::JsString;
+
 use super::*;
 
 #[derive(Default)]
 pub(super) struct FieldChanges {
     primary: Option<Arc<Value>>,
     instrument: Option<Arc<Value>>,
-    staff_id: Option<Option<Arc<str>>>,
+    staff_id: Option<Option<JsString>>,
 }
 
 impl FieldChanges {
@@ -70,7 +72,7 @@ fn write_scalar(
 fn check_reference(
     candidate: &Candidate<'_>,
     source: &Occurrence,
-    value: Option<&str>,
+    value: Option<&JsString>,
 ) -> Result<(), Failure> {
     if !candidate.visible(source) {
         return Err(Failure::TargetNotFound);
@@ -137,7 +139,7 @@ impl Recorder<'_> {
     pub(super) fn replace_reference(
         &mut self,
         source: &Occurrence,
-        value: Option<String>,
+        value: Option<JsString>,
     ) -> Result<bool, Failure> {
         let result = self.replace_reference_inner(source, value);
         if result.is_err() {
@@ -149,10 +151,10 @@ impl Recorder<'_> {
     fn replace_reference_inner(
         &mut self,
         source: &Occurrence,
-        value: Option<String>,
+        value: Option<JsString>,
     ) -> Result<bool, Failure> {
         self.candidate.reservation.ensure_active()?;
-        check_reference(&self.candidate, source, value.as_deref())?;
+        check_reference(&self.candidate, source, value.as_ref())?;
         let previous = self
             .candidate
             .read_staff_reference(source)
@@ -212,18 +214,18 @@ pub(super) fn apply_reference(
     candidate: &mut Candidate<'_>,
     bindings: &ReplayBindings<'_>,
     target: JournalId,
-    expected: &Option<Arc<str>>,
-    value: &Option<Arc<str>>,
+    expected: &Option<JsString>,
+    value: &Option<JsString>,
 ) -> Result<(), Failure> {
     candidate.reservation.ensure_active()?;
     let source = bindings.resolve(target, candidate)?;
-    check_reference(candidate, &source, value.as_deref())?;
+    check_reference(candidate, &source, value.as_ref())?;
     if expected == value
         || candidate
             .read_staff_reference(&source)
             .ok_or(Failure::InternalError)?
-            .as_deref()
-            != expected.as_deref()
+            .as_ref()
+            != expected.as_ref()
     {
         return Err(Failure::InternalError);
     }

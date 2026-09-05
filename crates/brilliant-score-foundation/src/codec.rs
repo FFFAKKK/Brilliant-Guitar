@@ -1,7 +1,7 @@
 use brilliant_core_types::{FiniteNumber, ScoreSchemaVersionV1, StablePathV1};
 use serde_json::Value;
 
-use crate::LosslessDecode;
+use crate::{LosslessDecode, LosslessEncode};
 use crate::{ScoreDocumentV1, validation::validate_score_document};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -65,9 +65,13 @@ pub fn decode_lossless_score_document_value(
 pub fn canonical_score_bytes(
     document: &ScoreDocumentV1,
 ) -> Result<Vec<u8>, FoundationDecodeFailure> {
-    serde_json::to_vec(document).map_err(|_| FoundationDecodeFailure::InvalidValue {
-        path: StablePathV1::root(),
-    })
+    let mut output = Vec::new();
+    document
+        .write_lossless(&mut output)
+        .map_err(|_| FoundationDecodeFailure::InvalidValue {
+            path: StablePathV1::root(),
+        })?;
+    Ok(output)
 }
 
 /// Exact scalar wire length for the Runtime's checked logical-byte budget.

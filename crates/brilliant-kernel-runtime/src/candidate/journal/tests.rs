@@ -8,27 +8,129 @@ use brilliant_core_types::SafeInteger;
 mod fields;
 mod orders;
 
+#[test]
+fn unpaired_ids_survive_insert_reference_changes_and_journal_undo_redo() {
+    fn raw(kind: u16, index: u16) -> JsString {
+        JsString::from_utf16(vec![0xd800, kind, index, 0xdc00])
+    }
+
+    let mut document = fixture();
+    let mut measures = HashMap::new();
+    for (index, measure) in document.measure_definitions.iter_mut().enumerate() {
+        let replacement = StableId::new(raw(b'm' as u16, index as u16)).unwrap();
+        measures.insert(measure.id.clone(), replacement.clone());
+        measure.id = replacement;
+    }
+    for part in &mut document.parts {
+        for content in &mut part.measure_contents {
+            content.measure_id = measures[&content.measure_id].clone();
+        }
+    }
+    let store = build_live_score_store(&document).unwrap();
+    let part_id = raw(b'p' as u16, 0);
+    let first_staff = raw(b's' as u16, 0);
+    let second_staff = raw(b's' as u16, 1);
+    let mut payload = raw_part(&part_id);
+    payload.staves[0].id = first_staff.clone();
+    payload.staves[1].id = second_staff.clone();
+    let mut counter = 0;
+    let mut first_voice = None;
+    for content in &mut payload.measure_contents {
+        content.measure_id = measures[&StableId::new(&content.measure_id).unwrap()]
+            .as_js_string()
+            .clone();
+        for voice in &mut content.voices {
+            voice.id = raw(b'v' as u16, counter);
+            first_voice.get_or_insert_with(|| voice.id.clone());
+            counter += 1;
+            voice.default_staff_id = first_staff.clone();
+            for event in &mut voice.sequence.events {
+                event.id = raw(b'e' as u16, counter);
+                counter += 1;
+                event.staff_id = Some(first_staff.clone());
+                if let RhythmicContentV1::Notes { notes } = &mut event.content {
+                    for note in notes {
+                        note.id = raw(b'n' as u16, counter);
+                        counter += 1;
+                    }
+                }
+            }
+        }
+    }
+    let voice_id = first_voice.unwrap();
+    let mut recorder = Recorder::new(Candidate::new(
+        TransactionOverlayV1::new(&store),
+        document.id.clone(),
+    ));
+    recorder.insert_part(payload, None).unwrap();
+    let voice = recorder.candidate.resolve(Kind::Voice, &voice_id).unwrap();
+    assert!(
+        recorder
+            .candidate
+            .staff_referrers(&first_staff)
+            .contains(&voice)
+    );
+    recorder
+        .replace_reference(&voice, Some(second_staff.clone()))
+        .unwrap();
+    let (mut candidate, journal) = recorder.finish().unwrap();
+    assert_eq!(journal.steps.len(), 2);
+    assert_eq!(
+        candidate.read_staff_reference(&voice),
+        Some(Some(second_staff.clone()))
+    );
+    journal.replay(&mut candidate, Direction::Inverse).unwrap();
+    assert_eq!(
+        candidate.resolve(Kind::Part, &part_id),
+        Err(Failure::TargetNotFound)
+    );
+    assert!(candidate.staff_referrers(&second_staff).is_empty());
+    journal.replay(&mut candidate, Direction::Forward).unwrap();
+    let restored_part = candidate.resolve(Kind::Part, &part_id).unwrap();
+    let restored_voice = candidate.resolve(Kind::Voice, &voice_id).unwrap();
+    assert_eq!(candidate.raw_id(&restored_part), Some(&part_id));
+    assert_eq!(
+        candidate.read_staff_reference(&restored_voice),
+        Some(Some(second_staff.clone()))
+    );
+    assert!(
+        candidate
+            .staff_referrers(&second_staff)
+            .contains(&restored_voice)
+    );
+    let pooled = candidate.id_pool.get(&second_staff).unwrap();
+    let reference = candidate
+        .read_staff_reference(&restored_voice)
+        .unwrap()
+        .unwrap();
+    assert!(std::ptr::eq(
+        pooled.code_units().as_ptr(),
+        reference.code_units().as_ptr()
+    ));
+    assert_eq!(store.export_document().unwrap(), document);
+}
+
 fn invalid_part() -> AdmissionPartV1 {
     let mut part = raw_part("temporary");
     part.name = "Raw part".into();
     part.instrument.name = "Raw instrument".into();
     for staff in &mut part.staves {
-        staff.id.clear();
+        staff.id = JsString::from("");
     }
     part.staves[0].line_count = SafeInteger::new(4).unwrap();
     part.staves[1].line_count = SafeInteger::new(6).unwrap();
     for content in &mut part.measure_contents {
         for voice in &mut content.voices {
-            voice.id.clear();
-            voice.default_staff_id.clear();
+            voice.id = JsString::from("");
+            voice.default_staff_id = JsString::from("");
             for event in &mut voice.sequence.events {
-                event.id.clear();
+                event.id = JsString::from("");
                 if let Some(staff) = &mut event.staff_id {
-                    staff.clear();
+                    *staff = JsString::from("");
                 }
                 if let RhythmicContentV1::Notes { notes } = &mut event.content {
                     for note in notes {
-                        note.id.clear();
+                        note.id = JsString::from("");
                     }
                 }
             }
@@ -38,7 +140,7 @@ fn invalid_part() -> AdmissionPartV1 {
     part
 }
 
-fn part_ids(candidate: &mut Candidate<'_>) -> Vec<String> {
+fn part_ids(candidate: &mut Candidate<'_>) -> Vec<JsString> {
     let mut result = Vec::new();
     candidate
         .visit_order(
@@ -55,7 +157,7 @@ fn part_ids(candidate: &mut Candidate<'_>) -> Vec<String> {
 fn net_zero(candidate: Candidate<'_>) -> (Candidate<'_>, Journal) {
     let mut recorder = Recorder::new(candidate);
     recorder.insert_part(invalid_part(), None).unwrap();
-    recorder.remove_part("temporary").unwrap();
+    recorder.remove_part(&JsString::from("temporary")).unwrap();
     recorder.finish().unwrap()
 }
 
@@ -134,17 +236,21 @@ fn net_zero_part_journal_keeps_nonempty_forward_inverse_and_replays_from_stored_
         assert_eq!(candidate.nodes.len() - old_len, bundle.nodes.len());
         for (node, image) in candidate.nodes[old_len..].iter().zip(&bundle.nodes) {
             let expected_id = old_pool
-                .get(image.image.raw_id.as_ref())
+                .get(image.image.raw_id.as_js_string())
                 .unwrap_or(&image.image.raw_id);
             assert!(
-                Arc::ptr_eq(&node.raw_id, expected_id),
+                std::ptr::eq(
+                    node.raw_id.code_units().as_ptr(),
+                    expected_id.code_units().as_ptr()
+                ),
                 "replay must retain either the preexisting pool allocation or the journal allocation"
             );
             if let Some(reference) = &image.image.staff_id {
-                let expected_reference = old_pool.get(reference.as_ref()).unwrap_or(reference);
-                assert!(Arc::ptr_eq(
-                    node.staff_id.as_ref().unwrap(),
-                    expected_reference
+                let expected_reference =
+                    old_pool.get(reference.as_js_string()).unwrap_or(reference);
+                assert!(std::ptr::eq(
+                    node.staff_id.as_ref().unwrap().code_units().as_ptr(),
+                    expected_reference.code_units().as_ptr()
                 ));
             }
             assert_eq!(node.value, image.image.value);
@@ -423,7 +529,7 @@ fn malformed_bundles_and_manifest_mismatches_fail_before_inserting_nodes() {
                     Some(Value::PartName("bad".into()))
             }
             "wrong-raw-id" => {
-                Arc::make_mut(&mut broken.nodes[1].image).raw_id = Arc::from("unexpected")
+                Arc::make_mut(&mut broken.nodes[1].image).raw_id = JsString::from("unexpected")
             }
             "wrong-root" => broken.nodes[0].parent = Some(0),
             "wrong-journal-owner" => {
@@ -483,7 +589,10 @@ fn recorder_rejects_prefix_or_foreign_added_parts_and_unrecorded_subtree_changes
                 .unwrap();
         }
         let before = part_ids(&mut recorder.candidate);
-        assert_eq!(recorder.remove_part(raw), Err(Failure::InternalError));
+        assert_eq!(
+            recorder.remove_part(&JsString::from(raw)),
+            Err(Failure::InternalError)
+        );
         assert_eq!(part_ids(&mut recorder.candidate), before);
         assert!(recorder.finish().is_err());
     }
@@ -509,7 +618,7 @@ fn every_recording_reservation_failure_is_terminal_and_preserves_the_strong_pref
     let expected = prepare().finish().unwrap();
     let run = |recorder: &mut Recorder<'_>| -> Result<(), Failure> {
         recorder.insert_part(invalid_part(), None)?;
-        recorder.remove_part("temporary")
+        recorder.remove_part(&JsString::from("temporary"))
     };
     let mut baseline = Recorder::new(Candidate::new(prepare(), document.id.clone()));
     run(&mut baseline).unwrap();
@@ -597,17 +706,17 @@ fn multiple_part_lifetimes_replay_exact_predecessors_in_both_directions() {
         part
     };
     recorder
-        .insert_part(payload("alpha"), Some("part-z"))
+        .insert_part(payload("alpha"), Some(&JsString::from("part-z")))
         .unwrap();
     recorder
-        .insert_part(payload("beta"), Some("alpha"))
+        .insert_part(payload("beta"), Some(&JsString::from("alpha")))
         .unwrap();
-    recorder.remove_part("alpha").unwrap();
+    recorder.remove_part(&JsString::from("alpha")).unwrap();
     recorder
-        .insert_part(payload("alpha"), Some("beta"))
+        .insert_part(payload("alpha"), Some(&JsString::from("beta")))
         .unwrap();
-    recorder.remove_part("beta").unwrap();
-    recorder.remove_part("alpha").unwrap();
+    recorder.remove_part(&JsString::from("beta")).unwrap();
+    recorder.remove_part(&JsString::from("alpha")).unwrap();
     let (_, journal) = recorder.finish().unwrap();
     assert_eq!(journal.steps.len(), 6);
     let forward_orders: &[&[&str]] = &[
@@ -665,7 +774,7 @@ fn invalid_anchors_are_reported_before_any_journal_capacity_attempt() {
         ));
         recorder.candidate.reservation = Reservation::fail_at(1);
         assert_eq!(
-            recorder.insert_part(invalid_part(), Some(anchor)),
+            recorder.insert_part(invalid_part(), Some(&JsString::from(anchor))),
             Err(Failure::AnchorNotFound)
         );
         assert_eq!(recorder.candidate.reservation.attempts, 0);

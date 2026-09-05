@@ -105,8 +105,8 @@ impl Recorder<'_> {
     pub(super) fn move_child(
         &mut self,
         order: &CandidateOrder,
-        target_id: &str,
-        after: Option<&str>,
+        target_id: &JsString,
+        after: Option<&JsString>,
     ) -> Result<bool, Failure> {
         let result = self.move_child_inner(order, target_id, after);
         if result.is_err() {
@@ -158,8 +158,8 @@ impl Recorder<'_> {
     fn move_child_inner(
         &mut self,
         order: &CandidateOrder,
-        target_id: &str,
-        after: Option<&str>,
+        target_id: &JsString,
+        after: Option<&JsString>,
     ) -> Result<bool, Failure> {
         self.candidate.reservation.ensure_active()?;
         let target = self

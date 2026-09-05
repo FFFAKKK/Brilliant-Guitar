@@ -10,7 +10,10 @@ fn stable_id_shared_storage_keeps_exact_json_shape_and_text() {
     ] {
         let bytes = serde_json::to_vec(&text).unwrap();
         let decoded: StableId = serde_json::from_slice(&bytes).unwrap();
-        assert_eq!(decoded.as_str(), text);
+        assert_eq!(
+            decoded.as_js_string(),
+            &brilliant_core_types::JsString::from(text.clone())
+        );
         assert_eq!(serde_json::to_vec(&decoded).unwrap(), bytes);
         assert_eq!(serde_json::to_vec(&decoded.clone()).unwrap(), bytes);
         assert_eq!(decoded, StableId::new(text).unwrap());
@@ -89,7 +92,12 @@ fn admission_codec_matches_independent_ts_entrypoint_matrix() {
                             serde_json::to_value(voice).expect("voice"),
                             payload["voice"]
                         );
-                        assert_eq!(measure_id, payload["measureId"]);
+                        assert_eq!(
+                            measure_id,
+                            payload["measureId"]
+                                .as_str()
+                                .expect("measureId fixture string")
+                        );
                     }
                     CoreCommandEnvelopeV1::MeasureInsert {
                         definition,
@@ -111,7 +119,10 @@ fn admission_codec_matches_independent_ts_entrypoint_matrix() {
                         );
                     }
                     CoreCommandEnvelopeV1::VoiceSetDefaultStaff { staff_id, .. } => {
-                        assert_eq!(staff_id, payload["staffId"])
+                        assert_eq!(
+                            staff_id,
+                            payload["staffId"].as_str().expect("staffId fixture string")
+                        )
                     }
                     CoreCommandEnvelopeV1::EventSetStaffAssignment { assignment, .. } => {
                         assert_eq!(

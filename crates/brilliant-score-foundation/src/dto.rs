@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 #[serde(bound(deserialize = "Id: Deserialize<'de>, Text: Deserialize<'de> + From<String> + Ord"))]
-pub struct ScoreDocumentV1<Id = StableId, Text = String> {
+pub struct ScoreDocumentV1<Id = StableId, Text = JsString> {
     pub schema_version: Text,
     pub id: Id,
     pub metadata: ScoreMetadataV1<Text>,
@@ -17,7 +17,7 @@ pub struct ScoreDocumentV1<Id = StableId, Text = String> {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct ScoreMetadataV1<Text = String> {
+pub struct ScoreMetadataV1<Text = JsString> {
     pub title: Text,
     pub authors: Vec<Text>,
     pub tempo: TempoV1,
@@ -58,7 +58,7 @@ pub struct FractionV1 {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct PartV1<Id = StableId, Text = String> {
+pub struct PartV1<Id = StableId, Text = JsString> {
     pub id: Id,
     pub name: Text,
     pub instrument: InstrumentDescriptorV1<Text>,
@@ -68,7 +68,7 @@ pub struct PartV1<Id = StableId, Text = String> {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct InstrumentDescriptorV1<Text = String> {
+pub struct InstrumentDescriptorV1<Text = JsString> {
     pub name: Text,
     pub written_to_sounding: TranspositionV1,
 }
@@ -194,7 +194,7 @@ pub enum PitchStepV1 {
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 #[serde(bound(deserialize = "Id: Deserialize<'de>, Text: Deserialize<'de> + From<String> + Ord"))]
-pub struct ExtensionBlockV1<Id = StableId, Text = String> {
+pub struct ExtensionBlockV1<Id = StableId, Text = JsString> {
     pub namespace: Text,
     pub schema_version: SafeInteger,
     pub owner: ExtensionOwnerV1<Id>,
@@ -243,10 +243,10 @@ fn present<'de, T: Deserialize<'de>, D: serde::Deserializer<'de>>(
 /// Raw-ID components for command admission. The command codec applies numeric
 /// and variant policies; these aliases do not establish semantic validity or
 /// unique ownership, and cannot be passed to typed live-store APIs.
-pub type AdmissionMeasureDefinitionV1 = MeasureDefinitionV1<String>;
-pub type AdmissionPartV1 = PartV1<String>;
-pub type AdmissionStaffDefinitionV1 = StaffDefinitionV1<String>;
-pub type AdmissionVoiceV1 = VoiceV1<String>;
+pub type AdmissionMeasureDefinitionV1 = MeasureDefinitionV1<JsString>;
+pub type AdmissionPartV1 = PartV1<JsString>;
+pub type AdmissionStaffDefinitionV1 = StaffDefinitionV1<JsString>;
+pub type AdmissionVoiceV1 = VoiceV1<JsString>;
 
 /// Structurally decoded score data in the full JS string domain. This is not
 /// semantic admission or a type accepted by the strong live Store.

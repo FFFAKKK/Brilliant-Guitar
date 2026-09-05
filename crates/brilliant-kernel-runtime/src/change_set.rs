@@ -1,6 +1,7 @@
+use brilliant_core_types::JsString;
 use std::collections::HashSet;
 
-use brilliant_core_types::{BoundedJsonValue, JSON_PROPERTY_LIMIT, StableId};
+use brilliant_core_types::{JSON_PROPERTY_LIMIT, LosslessJsonValue as BoundedJsonValue, StableId};
 use brilliant_kernel_contracts::REQUEST_BYTE_LIMIT;
 use brilliant_score_foundation::{
     ClefV1, ExtensionBlockV1, ExtensionOwnerV1, FractionV1, InstrumentDescriptorV1,
@@ -149,7 +150,7 @@ pub(crate) enum ScalarValueV1 {
         meter: MeterV1,
         pickup_duration: Option<FractionV1>,
     },
-    PartName(String),
+    PartName(JsString),
     PartInstrument(InstrumentDescriptorV1),
     StaffDefinition {
         line_count: brilliant_core_types::SafeInteger,
@@ -190,7 +191,7 @@ pub(crate) enum ReferenceAddressV1 {
         measure_id: StableId,
     },
     ExtensionOwner {
-        namespace: String,
+        namespace: JsString,
         owner: StableExtensionOwnerV1,
     },
 }
@@ -378,7 +379,7 @@ pub(crate) enum ChangeOpV1 {
         value: ExtensionValueRefV1,
     },
     ReplaceExtensionBlock {
-        namespace: String,
+        namespace: JsString,
         owner: StableExtensionOwnerV1,
         expected: ExtensionValueRefV1,
         value: ExtensionValueRefV1,
@@ -441,7 +442,7 @@ pub(crate) enum ChangeSetBuildFailureV1 {
 struct LogicalBudgetV1 {
     limit: u64,
     logical_bytes: u64,
-    interned_strings: HashSet<String>,
+    interned_strings: HashSet<JsString>,
 }
 
 impl Default for LogicalBudgetV1 {
@@ -476,11 +477,11 @@ impl LogicalBudgetV1 {
         Ok(())
     }
 
-    fn intern(&mut self, value: &str) -> Result<(), ChangeSetBuildFailureV1> {
+    fn intern(&mut self, value: &JsString) -> Result<(), ChangeSetBuildFailureV1> {
         if self.interned_strings.contains(value) {
             return Ok(());
         }
-        self.charge(value.len() as u64)?;
+        self.charge(value.utf8_byte_len() as u64)?;
         self.interned_strings.insert(value.to_owned());
         Ok(())
     }
@@ -568,7 +569,7 @@ impl ChangeSetBuilderV1 {
             });
         }
         self.budget.charge(AFFECTED_ADDRESS_WEIGHT)?;
-        self.budget.intern(address.stable_id().as_str())?;
+        self.budget.intern(address.stable_id().as_js_string())?;
         self.affected_seen.insert(address.clone());
         self.affected_order.push(address);
         Ok(())
@@ -660,7 +661,7 @@ impl ChangeSetBuilderV1 {
         self.budget.charge(ORDERED_CHILD_WEIGHT * 2)?;
         visit_order_address_strings(&order, |value| self.budget.intern(value))?;
         visit_anchor_strings(&anchor, |value| self.budget.intern(value))?;
-        self.budget.intern(child_id.as_str())?;
+        self.budget.intern(child_id.as_js_string())?;
         self.forward.push(ChangeOpV1::InsertOrderedChild {
             order: order.clone(),
             anchor: anchor.clone(),
@@ -685,7 +686,7 @@ impl ChangeSetBuilderV1 {
         self.budget.charge(ORDERED_CHILD_WEIGHT * 2)?;
         visit_order_address_strings(&order, |value| self.budget.intern(value))?;
         visit_anchor_strings(&expected_anchor, |value| self.budget.intern(value))?;
-        self.budget.intern(child_id.as_str())?;
+        self.budget.intern(child_id.as_js_string())?;
         self.forward.push(ChangeOpV1::RemoveOrderedChild {
             order: order.clone(),
             expected_anchor: expected_anchor.clone(),
@@ -712,7 +713,7 @@ impl ChangeSetBuilderV1 {
         visit_order_address_strings(&order, |value| self.budget.intern(value))?;
         visit_anchor_strings(&expected_anchor, |value| self.budget.intern(value))?;
         visit_anchor_strings(&anchor, |value| self.budget.intern(value))?;
-        self.budget.intern(child_id.as_str())?;
+        self.budget.intern(child_id.as_js_string())?;
         self.forward.push(ChangeOpV1::MoveOrderedChild {
             order: order.clone(),
             child_id: child_id.clone(),
@@ -775,7 +776,7 @@ impl ChangeSetBuilderV1 {
 
     pub(crate) fn replace_extension_block(
         &mut self,
-        namespace: String,
+        namespace: JsString,
         owner: StableExtensionOwnerV1,
         expected: ExtensionBlockV1,
         value: ExtensionBlockV1,
@@ -924,7 +925,7 @@ impl ChangeSetBuilderV1 {
                 .saturating_add(ORDERED_CHILD_WEIGHT.saturating_mul(value.len() as u64)),
         )?;
         for id in &value {
-            self.budget.intern(id.as_str())?;
+            self.budget.intern(id.as_js_string())?;
         }
         self.arena
             .push(ArenaValueV1::Order(value))
@@ -1125,7 +1126,7 @@ fn saturating_sum(values: impl Iterator<Item = u64>) -> u64 {
     values.fold(0_u64, u64::saturating_add)
 }
 
-fn bounded_json_object_len(values: &std::collections::BTreeMap<String, BoundedJsonValue>) -> u64 {
+fn bounded_json_object_len(values: &std::collections::BTreeMap<JsString, BoundedJsonValue>) -> u64 {
     2_u64.saturating_add(
         values
             .iter()
@@ -1160,19 +1161,15 @@ fn bounded_json_len(value: &BoundedJsonValue) -> u64 {
     }
 }
 
-fn json_string_len(value: &str) -> u64 {
-    value.chars().fold(2_u64, |total, character| {
-        total.saturating_add(match character {
-            '"' | '\\' | '\u{0008}' | '\u{000c}' | '\n' | '\r' | '\t' => 2,
-            '\u{0000}'..='\u{001f}' => 6,
-            _ => character.len_utf8() as u64,
-        })
-    })
+fn json_string_len(value: &JsString) -> u64 {
+    brilliant_score_foundation::js_string_json_len(value)
+        .and_then(|length| u64::try_from(length).ok())
+        .unwrap_or(u64::MAX)
 }
 
 fn visit_scalar_address_strings(
     address: &ScalarAddressV1,
-    mut visit: impl FnMut(&str) -> Result<(), ChangeSetBuildFailureV1>,
+    mut visit: impl FnMut(&JsString) -> Result<(), ChangeSetBuildFailureV1>,
 ) -> Result<(), ChangeSetBuildFailureV1> {
     let id = match address {
         ScalarAddressV1::DocumentMetadata { document_id } => document_id,
@@ -1185,83 +1182,83 @@ fn visit_scalar_address_strings(
         ScalarAddressV1::EventNoteValue { event_id } => event_id,
         ScalarAddressV1::NoteWrittenPitch { note_id } => note_id,
     };
-    visit(id.as_str())
+    visit(id.as_js_string())
 }
 
 fn visit_owner_address_strings(
     address: &StableOwnerAddressV1,
-    mut visit: impl FnMut(&str) -> Result<(), ChangeSetBuildFailureV1>,
+    mut visit: impl FnMut(&JsString) -> Result<(), ChangeSetBuildFailureV1>,
 ) -> Result<(), ChangeSetBuildFailureV1> {
     match address {
-        StableOwnerAddressV1::Document { document_id } => visit(document_id.as_str()),
-        StableOwnerAddressV1::Part { part_id } => visit(part_id.as_str()),
+        StableOwnerAddressV1::Document { document_id } => visit(document_id.as_js_string()),
+        StableOwnerAddressV1::Part { part_id } => visit(part_id.as_js_string()),
         StableOwnerAddressV1::PartMeasure {
             part_id,
             measure_id,
         } => {
-            visit(part_id.as_str())?;
-            visit(measure_id.as_str())
+            visit(part_id.as_js_string())?;
+            visit(measure_id.as_js_string())
         }
-        StableOwnerAddressV1::Voice { voice_id } => visit(voice_id.as_str()),
-        StableOwnerAddressV1::Event { event_id } => visit(event_id.as_str()),
+        StableOwnerAddressV1::Voice { voice_id } => visit(voice_id.as_js_string()),
+        StableOwnerAddressV1::Event { event_id } => visit(event_id.as_js_string()),
     }
 }
 
 fn visit_order_address_strings(
     address: &StableOrderAddressV1,
-    mut visit: impl FnMut(&str) -> Result<(), ChangeSetBuildFailureV1>,
+    mut visit: impl FnMut(&JsString) -> Result<(), ChangeSetBuildFailureV1>,
 ) -> Result<(), ChangeSetBuildFailureV1> {
     match address {
         StableOrderAddressV1::Measures { document_id }
         | StableOrderAddressV1::Parts { document_id }
-        | StableOrderAddressV1::Extensions { document_id } => visit(document_id.as_str()),
+        | StableOrderAddressV1::Extensions { document_id } => visit(document_id.as_js_string()),
         StableOrderAddressV1::Staffs { part_id }
-        | StableOrderAddressV1::MeasureContents { part_id } => visit(part_id.as_str()),
+        | StableOrderAddressV1::MeasureContents { part_id } => visit(part_id.as_js_string()),
         StableOrderAddressV1::Voices {
             part_id,
             measure_id,
         } => {
-            visit(part_id.as_str())?;
-            visit(measure_id.as_str())
+            visit(part_id.as_js_string())?;
+            visit(measure_id.as_js_string())
         }
-        StableOrderAddressV1::Events { voice_id } => visit(voice_id.as_str()),
-        StableOrderAddressV1::Notes { event_id } => visit(event_id.as_str()),
+        StableOrderAddressV1::Events { voice_id } => visit(voice_id.as_js_string()),
+        StableOrderAddressV1::Notes { event_id } => visit(event_id.as_js_string()),
     }
 }
 
 fn visit_anchor_strings(
     anchor: &StableAnchorV1,
-    mut visit: impl FnMut(&str) -> Result<(), ChangeSetBuildFailureV1>,
+    mut visit: impl FnMut(&JsString) -> Result<(), ChangeSetBuildFailureV1>,
 ) -> Result<(), ChangeSetBuildFailureV1> {
     match anchor {
         StableAnchorV1::Start => Ok(()),
-        StableAnchorV1::After { sibling_id } => visit(sibling_id.as_str()),
+        StableAnchorV1::After { sibling_id } => visit(sibling_id.as_js_string()),
     }
 }
 
 fn visit_stable_extension_owner_strings(
     owner: &StableExtensionOwnerV1,
-    mut visit: impl FnMut(&str) -> Result<(), ChangeSetBuildFailureV1>,
+    mut visit: impl FnMut(&JsString) -> Result<(), ChangeSetBuildFailureV1>,
 ) -> Result<(), ChangeSetBuildFailureV1> {
     match owner {
         StableExtensionOwnerV1::Score => Ok(()),
-        StableExtensionOwnerV1::Part { part_id } => visit(part_id.as_str()),
+        StableExtensionOwnerV1::Part { part_id } => visit(part_id.as_js_string()),
     }
 }
 
 fn visit_reference_address_strings(
     address: &ReferenceAddressV1,
-    mut visit: impl FnMut(&str) -> Result<(), ChangeSetBuildFailureV1>,
+    mut visit: impl FnMut(&JsString) -> Result<(), ChangeSetBuildFailureV1>,
 ) -> Result<(), ChangeSetBuildFailureV1> {
     match address {
-        ReferenceAddressV1::VoiceDefaultStaff { voice_id } => visit(voice_id.as_str()),
-        ReferenceAddressV1::EventStaffAssignment { event_id } => visit(event_id.as_str()),
+        ReferenceAddressV1::VoiceDefaultStaff { voice_id } => visit(voice_id.as_js_string()),
+        ReferenceAddressV1::EventStaffAssignment { event_id } => visit(event_id.as_js_string()),
         ReferenceAddressV1::PartMeasureLink {
             part_id,
             measure_id,
         } => {
-            visit(part_id.as_str())?;
-            visit(measure_id.as_str())
+            visit(part_id.as_js_string())?;
+            visit(measure_id.as_js_string())
         }
         ReferenceAddressV1::ExtensionOwner { namespace, owner } => {
             visit(namespace)?;
@@ -1272,7 +1269,7 @@ fn visit_reference_address_strings(
 
 fn visit_scalar_strings(
     value: &ScalarValueV1,
-    mut visit: impl FnMut(&str) -> Result<(), ChangeSetBuildFailureV1>,
+    mut visit: impl FnMut(&JsString) -> Result<(), ChangeSetBuildFailureV1>,
 ) -> Result<(), ChangeSetBuildFailureV1> {
     match value {
         ScalarValueV1::DocumentMetadata(metadata) => {
@@ -1294,18 +1291,18 @@ fn visit_scalar_strings(
 
 fn visit_note_strings(
     note: &ScoreNoteV1,
-    visit: &mut impl FnMut(&str) -> Result<(), ChangeSetBuildFailureV1>,
+    visit: &mut impl FnMut(&JsString) -> Result<(), ChangeSetBuildFailureV1>,
 ) -> Result<(), ChangeSetBuildFailureV1> {
-    visit(note.id.as_str())
+    visit(note.id.as_js_string())
 }
 
 fn visit_event_strings(
     event: &RhythmicEventV1,
-    visit: &mut impl FnMut(&str) -> Result<(), ChangeSetBuildFailureV1>,
+    visit: &mut impl FnMut(&JsString) -> Result<(), ChangeSetBuildFailureV1>,
 ) -> Result<(), ChangeSetBuildFailureV1> {
-    visit(event.id.as_str())?;
+    visit(event.id.as_js_string())?;
     if let Some(staff_id) = &event.staff_id {
-        visit(staff_id.as_str())?;
+        visit(staff_id.as_js_string())?;
     }
     if let RhythmicContentV1::Notes { notes } = &event.content {
         for note in notes {
@@ -1317,10 +1314,10 @@ fn visit_event_strings(
 
 fn visit_voice_strings(
     voice: &VoiceV1,
-    visit: &mut impl FnMut(&str) -> Result<(), ChangeSetBuildFailureV1>,
+    visit: &mut impl FnMut(&JsString) -> Result<(), ChangeSetBuildFailureV1>,
 ) -> Result<(), ChangeSetBuildFailureV1> {
-    visit(voice.id.as_str())?;
-    visit(voice.default_staff_id.as_str())?;
+    visit(voice.id.as_js_string())?;
+    visit(voice.default_staff_id.as_js_string())?;
     for event in &voice.sequence.events {
         visit_event_strings(event, visit)?;
     }
@@ -1329,16 +1326,16 @@ fn visit_voice_strings(
 
 fn visit_part_strings(
     part: &PartV1,
-    visit: &mut impl FnMut(&str) -> Result<(), ChangeSetBuildFailureV1>,
+    visit: &mut impl FnMut(&JsString) -> Result<(), ChangeSetBuildFailureV1>,
 ) -> Result<(), ChangeSetBuildFailureV1> {
-    visit(part.id.as_str())?;
+    visit(part.id.as_js_string())?;
     visit(&part.name)?;
     visit(&part.instrument.name)?;
     for staff in &part.staves {
-        visit(staff.id.as_str())?;
+        visit(staff.id.as_js_string())?;
     }
     for content in &part.measure_contents {
-        visit(content.measure_id.as_str())?;
+        visit(content.measure_id.as_js_string())?;
         for voice in &content.voices {
             visit_voice_strings(voice, visit)?;
         }
@@ -1348,24 +1345,24 @@ fn visit_part_strings(
 
 fn visit_extension_strings(
     extension: &ExtensionBlockV1,
-    mut visit: impl FnMut(&str) -> Result<(), ChangeSetBuildFailureV1>,
+    mut visit: impl FnMut(&JsString) -> Result<(), ChangeSetBuildFailureV1>,
 ) -> Result<(), ChangeSetBuildFailureV1> {
     visit(&extension.namespace)?;
     if let ExtensionOwnerV1::Part { part_id } = &extension.owner {
-        visit(part_id.as_str())?;
+        visit(part_id.as_js_string())?;
     }
     Ok(())
 }
 
 fn visit_entity_strings(
     value: &EntityBundleV1,
-    mut visit: impl FnMut(&str) -> Result<(), ChangeSetBuildFailureV1>,
+    mut visit: impl FnMut(&JsString) -> Result<(), ChangeSetBuildFailureV1>,
 ) -> Result<(), ChangeSetBuildFailureV1> {
     match value {
         EntityBundleV1::Measure(bundle) => {
-            visit(bundle.definition.id.as_str())?;
+            visit(bundle.definition.id.as_js_string())?;
             for content in &bundle.contents {
-                visit(content.part_id.as_str())?;
+                visit(content.part_id.as_js_string())?;
                 for voice in &content.voices {
                     visit_voice_strings(voice, &mut visit)?;
                 }
@@ -1378,7 +1375,7 @@ fn visit_entity_strings(
                 visit_extension_strings(&extension.value, &mut visit)?;
             }
         }
-        EntityBundleV1::Staff(staff) => visit(staff.id.as_str())?,
+        EntityBundleV1::Staff(staff) => visit(staff.id.as_js_string())?,
         EntityBundleV1::Voice(voice) => visit_voice_strings(voice, &mut visit)?,
         EntityBundleV1::Event(event) => visit_event_strings(event, &mut visit)?,
         EntityBundleV1::Note(note) => visit_note_strings(note, &mut visit)?,
@@ -1388,14 +1385,14 @@ fn visit_entity_strings(
 
 fn visit_reference_strings(
     value: &ReferenceValueV1,
-    mut visit: impl FnMut(&str) -> Result<(), ChangeSetBuildFailureV1>,
+    mut visit: impl FnMut(&JsString) -> Result<(), ChangeSetBuildFailureV1>,
 ) -> Result<(), ChangeSetBuildFailureV1> {
     match value {
         ReferenceValueV1::StableId(id) | ReferenceValueV1::OptionalStableId(Some(id)) => {
-            visit(id.as_str())
+            visit(id.as_js_string())
         }
         ReferenceValueV1::ExtensionOwner(ExtensionOwnerV1::Part { part_id }) => {
-            visit(part_id.as_str())
+            visit(part_id.as_js_string())
         }
         ReferenceValueV1::OptionalStableId(None)
         | ReferenceValueV1::Present(_)
@@ -1418,8 +1415,8 @@ mod tests {
 
     fn metadata(title: &str) -> ScalarValueV1 {
         ScalarValueV1::DocumentMetadata(ScoreMetadataV1 {
-            title: title.to_owned(),
-            authors: vec!["Brilliant Guitar".to_owned()],
+            title: title.into(),
+            authors: vec!["Brilliant Guitar".into()],
             tempo: TempoV1 {
                 bpm: SafeInteger::new(120).expect("safe bpm").into(),
             },
@@ -1581,6 +1578,43 @@ mod tests {
     }
 
     #[test]
+    fn logical_interning_preserves_distinct_units_and_json_escape_costs() {
+        let high = JsString::from_utf16(vec![0xd800]);
+        let low = JsString::from_utf16(vec![0xdc00]);
+        let replacement = JsString::from("\u{fffd}");
+        let pair = JsString::from_utf16(vec![0xd800, 0xdc00]);
+        let mut budget = LogicalBudgetV1 {
+            limit: 13,
+            ..LogicalBudgetV1::default()
+        };
+        for value in [&high, &low, &replacement, &pair] {
+            budget.intern(value).unwrap();
+            budget
+                .intern(&JsString::from_utf16(value.code_units().to_vec()))
+                .unwrap();
+        }
+        assert_eq!(budget.logical_bytes, 13);
+        assert_eq!(budget.interned_strings.len(), 4);
+        assert_eq!(
+            budget.intern(&JsString::from("a")),
+            Err(ChangeSetBuildFailureV1::LogicalBytesExceeded {
+                limit: 13,
+                actual: 14
+            })
+        );
+        assert_eq!(budget.logical_bytes, 13);
+        assert_eq!(budget.interned_strings.len(), 4);
+
+        let object = BTreeMap::from([
+            (high.clone(), BoundedJsonValue::String(low)),
+            (replacement, BoundedJsonValue::String(pair)),
+        ]);
+        // JSON.stringify({[D800]: DC00, [FFFD]: D800+DC00}): 32 bytes.
+        assert_eq!(bounded_json_object_len(&object), 32);
+        assert_eq!(high.code_units(), [0xd800]);
+    }
+
+    #[test]
     fn accepted_wire_and_property_worst_shape_fits_the_frozen_logical_cap() {
         assert_eq!(REQUEST_BYTE_LIMIT, 67_108_864);
         assert_eq!(JSON_PROPERTY_LIMIT, 1_572_864);
@@ -1605,13 +1639,13 @@ mod tests {
         assert_eq!(scalar.logical_bytes(), 256);
 
         let mut payload = BTreeMap::new();
-        payload.insert("x".to_owned(), BoundedJsonValue::String("\n".to_owned()));
+        payload.insert("x".into(), BoundedJsonValue::String("\n".into()));
         let mut extension = ChangeSetBuilderV1::new();
         extension
             .insert_extension_block(
                 StableAnchorV1::Start,
                 ExtensionBlockV1 {
-                    namespace: "n".to_owned(),
+                    namespace: "n".into(),
                     schema_version: SafeInteger::new(1).expect("schema version"),
                     owner: ExtensionOwnerV1::Score,
                     payload,
@@ -1680,8 +1714,8 @@ mod tests {
         builder.record_affected(event).expect("event");
         let change_set = builder.finish();
         assert_eq!(change_set.affected.len(), 2);
-        assert_eq!(change_set.affected[0].stable_id().as_str(), "note-1");
-        assert_eq!(change_set.affected[1].stable_id().as_str(), "event-1");
+        assert_eq!(change_set.affected[0].stable_id().as_js_string(), "note-1");
+        assert_eq!(change_set.affected[1].stable_id().as_js_string(), "event-1");
     }
 
     #[test]

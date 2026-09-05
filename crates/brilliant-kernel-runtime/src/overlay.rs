@@ -1,3 +1,4 @@
+use brilliant_core_types::JsString;
 use std::collections::{HashMap, HashSet};
 
 use brilliant_core_types::StableId;
@@ -69,7 +70,7 @@ pub(crate) trait CoreBaseReadV1 {
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub(crate) struct ExtensionKeyV1 {
-    pub(crate) namespace: String,
+    pub(crate) namespace: JsString,
     pub(crate) owner: StableExtensionOwnerV1,
 }
 
@@ -2387,7 +2388,7 @@ static STAGE3_OVERLAY_SHAPE_V1: Stage3OverlayShapeFnV1 = stage3_overlay_shape_v1
 mod tests {
     use std::collections::BTreeMap;
 
-    use brilliant_core_types::{BoundedJsonValue, SafeInteger};
+    use brilliant_core_types::{LosslessJsonValue as BoundedJsonValue, SafeInteger};
     use brilliant_score_foundation::{
         ClefSignV1, ClefV1, ExtensionOwnerV1, FractionV1, MusicSequenceV1, NoteValueV1,
         PitchStepV1, RhythmicContentV1, RhythmicEventV1, ScoreMetadataV1, ScoreNoteV1,
@@ -2464,14 +2465,14 @@ mod tests {
         assert!(parents.iter().all(|parent| *parent == &part_id));
         let allocations: HashSet<usize> = parents
             .iter()
-            .map(|parent| parent.as_str().as_ptr() as usize)
+            .map(|parent| parent.as_js_string().code_units().as_ptr() as usize)
             .collect();
         assert_eq!(
             allocations.len(),
             1,
             "a 64 KiB parent ID must not allocate one text buffer per retained owner"
         );
-        assert!(allocations.contains(&(part_id.as_str().as_ptr() as usize)));
+        assert!(allocations.contains(&(part_id.as_js_string().code_units().as_ptr() as usize)));
         assert!(store.resolve_entity(&part_id).is_none());
         assert_eq!(
             store.read_order(&StableOrderAddressV1::Parts {
@@ -2557,8 +2558,8 @@ mod tests {
 
     fn metadata(title: &str) -> ScalarValueV1 {
         ScalarValueV1::DocumentMetadata(ScoreMetadataV1 {
-            title: title.to_owned(),
-            authors: vec!["Brilliant Guitar".to_owned()],
+            title: title.into(),
+            authors: vec!["Brilliant Guitar".into()],
             tempo: TempoV1 {
                 bpm: safe(120).into(),
             },
@@ -2932,7 +2933,7 @@ mod tests {
             EntityBundleV1::Event(RhythmicEventV1 {
                 content: RhythmicContentV1::Notes { notes },
                 ..
-            }) if notes.iter().map(|note| note.id.as_str()).collect::<Vec<_>>() == ["note-a", "note-b"]
+            }) if notes.iter().map(|note| note.id.as_js_string()).collect::<Vec<_>>() == ["note-a", "note-b"]
         ));
 
         overlay
@@ -3020,7 +3021,7 @@ mod tests {
             voice_id: id("voice"),
         };
         let extension = ExtensionBlockV1 {
-            namespace: "tab".to_owned(),
+            namespace: "tab".into(),
             schema_version: safe(1),
             owner: ExtensionOwnerV1::Score,
             payload: BTreeMap::new(),
@@ -3063,7 +3064,7 @@ mod tests {
         replacement.schema_version = safe(2);
         replacement
             .payload
-            .insert("enabled".to_owned(), BoundedJsonValue::Bool(true));
+            .insert("enabled".into(), BoundedJsonValue::Bool(true));
         overlay
             .replace_extension(key.clone(), replacement.clone())
             .expect("replace extension");
@@ -3126,7 +3127,7 @@ mod tests {
     #[test]
     fn extension_reference_time_and_segments_are_overlay_visible() {
         let extension = ExtensionBlockV1 {
-            namespace: "tab".to_owned(),
+            namespace: "tab".into(),
             schema_version: safe(1),
             owner: ExtensionOwnerV1::Score,
             payload: BTreeMap::new(),

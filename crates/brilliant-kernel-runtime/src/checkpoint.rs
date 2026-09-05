@@ -129,7 +129,7 @@ impl CheckpointStateV1 {
         debug_assert_eq!(retained.document_version, document_version);
         debug_assert_eq!(retained.history_cursor, history_cursor);
         debug_assert_eq!(retained.content_identity, content_identity);
-        debug_assert!(!retained.document.id.as_str().is_empty());
+        debug_assert!(!retained.document.id.as_js_string().is_empty());
         schedule.committed_entries_since_checkpoint = 0;
         schedule.changeset_bytes_since_checkpoint = 0;
         schedule.due = false;

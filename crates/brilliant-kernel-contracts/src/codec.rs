@@ -16,6 +16,7 @@ use serde_json::Value;
 
 mod capture;
 mod input;
+mod output;
 use capture::{CapturedObjectExt, CapturedValueExt, known_tag, strict_json};
 
 #[cfg(test)]
@@ -987,7 +988,7 @@ struct MovePartPayloadV1<Id> {
 }
 
 struct SetPartNamePayloadV1 {
-    name: String,
+    name: JsString,
 }
 
 struct SetPartInstrumentPayloadV1 {
@@ -1947,7 +1948,9 @@ pub fn encode_stage4_replay_result(
     encode_capped(result)
 }
 
-fn encode_capped<T: serde::Serialize>(value: &T) -> Result<Vec<u8>, StableFailureV1> {
+fn encode_capped<T: brilliant_score_foundation::LosslessEncode>(
+    value: &T,
+) -> Result<Vec<u8>, StableFailureV1> {
     encode_capped_with_limit(value, RESPONSE_BYTE_LIMIT)
 }
 
@@ -1981,12 +1984,12 @@ impl Write for CappedWriter {
     }
 }
 
-fn encode_capped_with_limit<T: serde::Serialize>(
+fn encode_capped_with_limit<T: brilliant_score_foundation::LosslessEncode>(
     value: &T,
     limit: usize,
 ) -> Result<Vec<u8>, StableFailureV1> {
     let mut writer = CappedWriter::new(limit);
-    let encoded = serde_json::to_writer(&mut writer, value);
+    let encoded = value.write_lossless(&mut writer);
     if writer.actual_bytes > limit as u64 {
         return Err(StableFailureV1::BridgeResponseTooLarge {
             limit_bytes: limit as u64,
@@ -2009,6 +2012,30 @@ mod tests {
         KernelSessionCreateSuccessValueV1, KernelStage4MarkPersistedResultV1,
         KernelStage4MarkPersistedValueV1,
     };
+
+    #[test]
+    fn response_cap_counts_escaped_units_and_the_complete_unretained_tail() {
+        let text = brilliant_core_types::JsString::from_utf16(vec![0xd800, 0xdc00, 0xdc00, 0]);
+        // Quotes + a four-byte scalar + two six-byte escapes = 18 wire bytes.
+        let bytes = encode_capped_with_limit(&text, 18).expect("inclusive wire cap");
+        assert_eq!(bytes.len(), 18);
+        assert_eq!(
+            brilliant_score_foundation::decode_js_string_token(
+                std::str::from_utf8(&bytes).unwrap()
+            )
+            .unwrap(),
+            text
+        );
+        for limit in [0, 1, 4, 8, 17] {
+            assert_eq!(
+                encode_capped_with_limit(&text, limit),
+                Err(StableFailureV1::BridgeResponseTooLarge {
+                    limit_bytes: limit as u64,
+                    actual_bytes: 18
+                })
+            );
+        }
+    }
 
     const SMOKE_REQUEST: &str = r#"{"apiVersion":1,"document":{"schemaVersion":"brilliant-score-1","id":"score-rkp1","metadata":{"title":"Smoke","authors":["Brilliant"],"tempo":{"bpm":120}},"measureDefinitions":[{"id":"measure-1","meter":{"numerator":4,"denominator":4}}],"parts":[{"id":"part-1","name":"Part","instrument":{"name":"Piano","writtenToSounding":{"diatonicSteps":0,"chromaticSemitones":0}},"staves":[{"id":"staff-1","lineCount":5,"defaultClef":{"sign":"G","line":2}}],"measureContents":[{"measureId":"measure-1","voices":[{"id":"voice-1","defaultStaffId":"staff-1","sequence":{"start":{"numerator":0,"denominator":1},"events":[{"id":"event-1","duration":{"base":1,"dots":0},"content":{"kind":"rest"}}]}}]}]}],"extensions":[]}}"#;
 
@@ -2061,7 +2088,10 @@ mod tests {
         .expect("replay bytes");
         let replay = decode_stage4_replay_request(&replay).expect("replay request");
         assert_eq!(replay.api_version, 1);
-        assert_eq!(replay.initial_document.id.as_str(), "score-rkp1");
+        assert_eq!(
+            replay.initial_document.id.as_js_string(),
+            &JsString::from("score-rkp1")
+        );
         assert!(replay.commands.is_empty());
     }
 
@@ -2641,32 +2671,42 @@ mod tests {
 
     #[test]
     fn response_cap_precedes_encode_failure_without_changing_internal_fallback() {
-        use serde::ser::{Error as _, SerializeSeq};
+        use brilliant_score_foundation::LosslessEncode;
 
         struct FailsImmediately;
-        impl serde::Serialize for FailsImmediately {
-            fn serialize<S>(&self, _serializer: S) -> Result<S::Ok, S::Error>
-            where
-                S: serde::Serializer,
-            {
-                Err(S::Error::custom("test-only encode failure"))
+        impl LosslessEncode for FailsImmediately {
+            fn write_lossless<W: std::io::Write + ?Sized>(
+                &self,
+                _writer: &mut W,
+            ) -> Result<(), brilliant_score_foundation::LosslessJsonError> {
+                Err(brilliant_score_foundation::LosslessJsonError::Write(
+                    std::io::Error::other("test-only encode failure"),
+                ))
             }
         }
 
         struct WritesThenFails;
-        impl serde::Serialize for WritesThenFails {
-            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-            where
-                S: serde::Serializer,
-            {
-                let mut sequence = serializer.serialize_seq(None)?;
-                sequence.serialize_element("0123456789")?;
-                Err(S::Error::custom("test-only encode failure"))
+        impl LosslessEncode for WritesThenFails {
+            fn write_lossless<W: std::io::Write + ?Sized>(
+                &self,
+                writer: &mut W,
+            ) -> Result<(), brilliant_score_foundation::LosslessJsonError> {
+                writer
+                    .write_all(b"[")
+                    .map_err(brilliant_score_foundation::LosslessJsonError::Write)?;
+                "0123456789".write_lossless(writer)?;
+                Err(brilliant_score_foundation::LosslessJsonError::Write(
+                    std::io::Error::other("test-only encode failure"),
+                ))
             }
         }
 
         assert_eq!(
             encode_capped_with_limit(&FailsImmediately, 8),
+            Err(StableFailureV1::BridgeInternal)
+        );
+        assert_eq!(
+            encode_capped_with_limit(&WritesThenFails, 13),
             Err(StableFailureV1::BridgeInternal)
         );
         assert_eq!(
@@ -2682,7 +2722,10 @@ mod tests {
     fn strict_request_decode_accepts_only_the_smoke_contract() {
         let decoded = decode_create_request(SMOKE_REQUEST.as_bytes()).expect("smoke request");
         assert_eq!(decoded.api_version, 1);
-        assert_eq!(decoded.document.id.as_str(), "score-rkp1");
+        assert_eq!(
+            decoded.document.id.as_js_string(),
+            &JsString::from("score-rkp1")
+        );
 
         assert_eq!(
             decode_create_request(&[0xff]),

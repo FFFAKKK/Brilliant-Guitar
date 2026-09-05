@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use brilliant_core_types::{BoundedJsonValue, StablePathV1};
+use brilliant_core_types::{JsString, LosslessJsonValue, StablePathV1};
 use serde::Serialize;
 
 // Architecture Reset V2's aggregate transaction diagnostic budget. Exhaustion
@@ -73,21 +73,21 @@ pub struct CoreDiagnosticV1 {
     pub message_key: String,
     pub path: StablePathV1,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub details: Option<BTreeMap<String, BoundedJsonValue>>,
+    pub details: Option<BTreeMap<String, LosslessJsonValue>>,
 }
 
 impl CoreDiagnosticV1 {
     pub fn new(
         code: CoreDiagnosticCodeV1,
         path: StablePathV1,
-        detail: Option<(&str, &str)>,
+        detail: Option<(&str, &JsString)>,
     ) -> Self {
         Self {
             code,
             message_key: format!("core.{}", code.as_str()),
             path,
             details: detail.map(|(key, value)| {
-                BTreeMap::from([(key.to_owned(), BoundedJsonValue::String(value.to_owned()))])
+                BTreeMap::from([(key.to_owned(), LosslessJsonValue::String(value.clone()))])
             }),
         }
     }
@@ -97,6 +97,58 @@ impl CoreDiagnosticV1 {
 pub struct SemanticReportV1 {
     pub ok: bool,
     pub diagnostics: Vec<CoreDiagnosticV1>,
+}
+
+impl crate::LosslessEncode for CoreDiagnosticCodeV1 {
+    fn write_lossless<W: std::io::Write + ?Sized>(
+        &self,
+        writer: &mut W,
+    ) -> Result<(), crate::LosslessJsonError> {
+        self.as_str().write_lossless(writer)
+    }
+}
+
+impl crate::LosslessEncode for CoreDiagnosticV1 {
+    fn write_lossless<W: std::io::Write + ?Sized>(
+        &self,
+        writer: &mut W,
+    ) -> Result<(), crate::LosslessJsonError> {
+        let mut object = crate::LosslessObjectWriter::new(writer)?;
+        object.field("code", &self.code)?;
+        object.field("messageKey", &self.message_key)?;
+        object.field("path", &self.path)?;
+        if let Some(details) = &self.details {
+            object.field("details", &DiagnosticDetails(details))?;
+        }
+        object.end()
+    }
+}
+
+struct DiagnosticDetails<'a>(&'a BTreeMap<String, LosslessJsonValue>);
+
+impl crate::LosslessEncode for DiagnosticDetails<'_> {
+    fn write_lossless<W: std::io::Write + ?Sized>(
+        &self,
+        writer: &mut W,
+    ) -> Result<(), crate::LosslessJsonError> {
+        let mut object = crate::LosslessObjectWriter::new(writer)?;
+        for (key, value) in self.0 {
+            object.field(key, value)?;
+        }
+        object.end()
+    }
+}
+
+impl crate::LosslessEncode for SemanticReportV1 {
+    fn write_lossless<W: std::io::Write + ?Sized>(
+        &self,
+        writer: &mut W,
+    ) -> Result<(), crate::LosslessJsonError> {
+        let mut object = crate::LosslessObjectWriter::new(writer)?;
+        object.field("ok", &self.ok)?;
+        object.field("diagnostics", &self.diagnostics)?;
+        object.end()
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -117,7 +169,7 @@ pub(crate) fn append_diagnostic(
     diagnostics: &mut Vec<CoreDiagnosticV1>,
     code: CoreDiagnosticCodeV1,
     path: StablePathV1,
-    detail: Option<(&str, &str)>,
+    detail: Option<(&str, &JsString)>,
 ) -> Result<(), AssessmentFailureV1> {
     if diagnostics.len() == CORE_ASSESSMENT_DIAGNOSTIC_LIMIT_V1 {
         return Err(AssessmentFailureV1::DiagnosticLimit {

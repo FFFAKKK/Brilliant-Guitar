@@ -1,4 +1,4 @@
-use brilliant_core_types::{JS_SAFE_INTEGER_MAX, SafeInteger};
+use brilliant_core_types::{JS_SAFE_INTEGER_MAX, JsString, SafeInteger};
 
 use crate::{
     ExactFraction, FractionV1, MeterV1, NoteValueV1, PitchStepV1, TimeModificationV1,
@@ -42,15 +42,15 @@ pub fn assess_note_duration(value: &NoteValueV1) -> Result<ExactFraction, &'stat
     )
 }
 
-fn pitch_step(step: PitchStepV1) -> &'static str {
+fn pitch_step(step: PitchStepV1) -> &'static [u16] {
     match step {
-        PitchStepV1::C => "C",
-        PitchStepV1::D => "D",
-        PitchStepV1::E => "E",
-        PitchStepV1::F => "F",
-        PitchStepV1::G => "G",
-        PitchStepV1::A => "A",
-        PitchStepV1::B => "B",
+        PitchStepV1::C => &[67],
+        PitchStepV1::D => &[68],
+        PitchStepV1::E => &[69],
+        PitchStepV1::F => &[70],
+        PitchStepV1::G => &[71],
+        PitchStepV1::A => &[65],
+        PitchStepV1::B => &[66],
     }
 }
 
@@ -145,8 +145,8 @@ pub(crate) fn note_duration(
     .map_err(|_| "fraction-overflow")
 }
 
-pub(crate) fn written_pitch(step: &str, alter: f64, octave: f64) -> bool {
-    ["C", "D", "E", "F", "G", "A", "B"].contains(&step)
+pub(crate) fn written_pitch(step: &[u16], alter: f64, octave: f64) -> bool {
+    matches!(step, [65..=71])
         && alter.fract() == 0.0
         && (-2.0..=2.0).contains(&alter)
         && octave.fract() == 0.0
@@ -155,15 +155,15 @@ pub(crate) fn written_pitch(step: &str, alter: f64, octave: f64) -> bool {
 
 /// Inputs have passed the written-pitch and transposition component guards.
 pub(crate) fn sounding_pitch(
-    step: &str,
+    step: &[u16],
     alter: f64,
     octave: f64,
     diatonic: f64,
     chromatic: f64,
 ) -> Result<(), &'static str> {
-    let source_step = ["C", "D", "E", "F", "G", "A", "B"]
+    let source_step = [67, 68, 69, 70, 71, 65, 66]
         .iter()
-        .position(|candidate| *candidate == step)
+        .position(|candidate| step == [*candidate])
         .ok_or("written-pitch-invalid")? as i64;
     let target_diatonic = octave as i64 * 7 + source_step + diatonic as i64;
     if !(-JS_SAFE_INTEGER_MAX..=JS_SAFE_INTEGER_MAX).contains(&target_diatonic) {
@@ -187,13 +187,13 @@ pub(crate) fn sounding_pitch(
     Ok(())
 }
 
-pub(crate) fn extension_namespace(value: &str) -> bool {
+pub(crate) fn extension_namespace(value: &JsString) -> bool {
     let mut count = 0;
-    for segment in value.split('.') {
+    for segment in value.code_units().split(|unit| *unit == u16::from(b'.')) {
         count += 1;
-        let mut bytes = segment.bytes();
-        if !bytes.next().is_some_and(|byte| byte.is_ascii_lowercase())
-            || !bytes.all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-')
+        let mut units = segment.iter().copied();
+        if !matches!(units.next(), Some(0x61..=0x7a))
+            || !units.all(|unit| matches!(unit, 0x61..=0x7a | 0x30..=0x39 | 0x2d))
         {
             return false;
         }

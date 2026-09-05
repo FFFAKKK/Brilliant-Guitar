@@ -2,10 +2,14 @@ use super::*;
 
 fn changed(mut value: Value) -> Value {
     match &mut value {
-        Value::DocumentMetadata(value) => value.title.push_str(" changed"),
+        Value::DocumentMetadata(value) => {
+            value.title = JsString::concat(&[&value.title, &JsString::from(" changed")])
+        }
         Value::MeasureDefinition { meter, .. } => meter.numerator = SafeInteger::new(8).unwrap(),
-        Value::PartName(value) => value.push_str(" changed"),
-        Value::PartInstrument(value) => value.name.push_str(" changed"),
+        Value::PartName(value) => *value = JsString::concat(&[value, &JsString::from(" changed")]),
+        Value::PartInstrument(value) => {
+            value.name = JsString::concat(&[&value.name, &JsString::from(" changed")])
+        }
         Value::StaffDefinition { line_count, .. } => *line_count = SafeInteger::new(7).unwrap(),
         Value::VoiceSequenceStart(value) => value.numerator = SafeInteger::new(1).unwrap(),
         Value::EventNoteValue(value) => value.dots = SafeInteger::new(1).unwrap(),
@@ -29,10 +33,18 @@ fn editable_part() -> AdmissionPartV1 {
 }
 
 fn edit_fields(recorder: &mut Recorder<'_>) -> Result<(), Failure> {
-    let root = recorder.candidate.resolve(Kind::Part, "temporary")?;
-    let note = recorder.candidate.resolve(Kind::Note, "edit-note")?;
-    let voice = recorder.candidate.resolve(Kind::Voice, "edit-voice")?;
-    let event = recorder.candidate.resolve(Kind::Event, "edit-event")?;
+    let root = recorder
+        .candidate
+        .resolve(Kind::Part, &JsString::from("temporary"))?;
+    let note = recorder
+        .candidate
+        .resolve(Kind::Note, &JsString::from("edit-note"))?;
+    let voice = recorder
+        .candidate
+        .resolve(Kind::Voice, &JsString::from("edit-voice"))?;
+    let event = recorder
+        .candidate
+        .resolve(Kind::Event, &JsString::from("edit-event"))?;
     recorder.replace_scalar(&root, Value::PartName("edited".into()))?;
     let mut instrument = recorder.candidate.read_instrument(&root).unwrap();
     instrument.name = "Transposed".into();
@@ -63,13 +75,19 @@ fn all_scalar_slots_and_raw_reference_forms_record_exact_nonempty_inverse_steps(
         (Kind::Event, "event-a"),
         (Kind::Note, "note-a"),
     ] {
-        let source = recorder.candidate.resolve(kind, raw_id).unwrap();
+        let source = recorder
+            .candidate
+            .resolve(kind, &JsString::from(raw_id))
+            .unwrap();
         values.push((
             source.clone(),
             recorder.candidate.read_value(&source).unwrap(),
         ));
     }
-    let part = recorder.candidate.resolve(Kind::Part, "part-z").unwrap();
+    let part = recorder
+        .candidate
+        .resolve(Kind::Part, &JsString::from("part-z"))
+        .unwrap();
     values.push((
         part.clone(),
         Value::PartInstrument(recorder.candidate.read_instrument(&part).unwrap()),
@@ -86,10 +104,13 @@ fn all_scalar_slots_and_raw_reference_forms_record_exact_nonempty_inverse_steps(
         assert_eq!(recorder.replace_scalar(source, original.clone()), Ok(true));
     }
     for (kind, raw_id) in [(Kind::Voice, "voice-a"), (Kind::Event, "event-a")] {
-        let source = recorder.candidate.resolve(kind, raw_id).unwrap();
+        let source = recorder
+            .candidate
+            .resolve(kind, &JsString::from(raw_id))
+            .unwrap();
         let original = recorder.candidate.read_staff_reference(&source).unwrap();
         let middle = if kind == Kind::Voice {
-            Some(String::new())
+            Some(JsString::from(""))
         } else {
             None
         };
@@ -143,8 +164,8 @@ fn all_scalar_slots_and_raw_reference_forms_record_exact_nonempty_inverse_steps(
                 Operation::UpdateReference { target, value, .. } => {
                     let source = bindings.resolve(*target, &candidate).unwrap();
                     assert_eq!(
-                        candidate.read_staff_reference(&source).unwrap().as_deref(),
-                        value.as_deref()
+                        candidate.read_staff_reference(&source).unwrap().as_ref(),
+                        value.as_ref()
                     );
                 }
                 _ => panic!("field operation"),
@@ -158,7 +179,9 @@ fn all_scalar_slots_and_raw_reference_forms_record_exact_nonempty_inverse_steps(
             };
             assert_eq!(actual, *original);
         }
-        let event = candidate.resolve(Kind::Event, "event-a").unwrap();
+        let event = candidate
+            .resolve(Kind::Event, &JsString::from("event-a"))
+            .unwrap();
         assert_eq!(
             candidate.read_staff_reference(&event),
             Some(Some("staff-a".into()))
@@ -176,7 +199,10 @@ fn modified_transient_part_removal_retains_original_insert_and_updated_remove_pa
         TransactionOverlayV1::new(&store),
         document.id.clone(),
     ));
-    let old_part = recorder.candidate.resolve(Kind::Part, "part-z").unwrap();
+    let old_part = recorder
+        .candidate
+        .resolve(Kind::Part, &JsString::from("part-z"))
+        .unwrap();
     recorder
         .replace_scalar(&old_part, Value::PartName("journal prefix".into()))
         .unwrap();
@@ -193,7 +219,7 @@ fn modified_transient_part_removal_retains_original_insert_and_updated_remove_pa
         original.nodes[0].image.value,
         Some(Value::PartName("Raw part".into()))
     );
-    recorder.remove_part("temporary").unwrap();
+    recorder.remove_part(&JsString::from("temporary")).unwrap();
     let Operation::RemoveEntity { expected, .. } = &recorder.steps.last().unwrap().forward else {
         panic!("remove");
     };
@@ -208,10 +234,9 @@ fn modified_transient_part_removal_retains_original_insert_and_updated_remove_pa
     for (index, (before, after)) in original.nodes.iter().zip(&expected.nodes).enumerate() {
         assert!(Arc::ptr_eq(&before.orders, &after.orders));
         let changed = index == 0
-            || matches!(
-                before.image.raw_id.as_ref(),
-                "edit-note" | "edit-voice" | "edit-event"
-            );
+            || ["edit-note", "edit-voice", "edit-event"]
+                .iter()
+                .any(|id| before.image.raw_id == *id);
         assert_eq!(!Arc::ptr_eq(&before.image, &after.image), changed);
         assert!(
             !recorder.changes.contains_key(&sources[index]),
@@ -247,8 +272,12 @@ fn wrong_field_shapes_required_reference_absence_and_hidden_targets_fail_before_
     let store = build_live_score_store(&document).unwrap();
     for case in ["wrong-scalar", "wrong-reference", "voice-none", "hidden"] {
         let mut candidate = Candidate::new(TransactionOverlayV1::new(&store), document.id.clone());
-        let part = candidate.resolve(Kind::Part, "part-z").unwrap();
-        let voice = candidate.resolve(Kind::Voice, "voice-a").unwrap();
+        let part = candidate
+            .resolve(Kind::Part, &JsString::from("part-z"))
+            .unwrap();
+        let voice = candidate
+            .resolve(Kind::Voice, &JsString::from("voice-a"))
+            .unwrap();
         if case == "hidden" {
             candidate.hide(&part).unwrap();
         }
@@ -283,8 +312,14 @@ fn stale_or_noop_stored_field_operations_fail_before_writing() {
         TransactionOverlayV1::new(&store),
         document.id.clone(),
     ));
-    let part = recorder.candidate.resolve(Kind::Part, "part-z").unwrap();
-    let voice = recorder.candidate.resolve(Kind::Voice, "voice-a").unwrap();
+    let part = recorder
+        .candidate
+        .resolve(Kind::Part, &JsString::from("part-z"))
+        .unwrap();
+    let voice = recorder
+        .candidate
+        .resolve(Kind::Voice, &JsString::from("voice-a"))
+        .unwrap();
     recorder
         .replace_scalar(&part, Value::PartName("next".into()))
         .unwrap();
@@ -336,7 +371,7 @@ fn a_local_field_journal_does_not_rebuild_or_scan_a_large_active_part() {
     let mut part = editable_part();
     for index in 0..4096 {
         let mut staff = part.staves[0].clone();
-        staff.id = format!("staff-{index}");
+        staff.id = format!("staff-{index}").into();
         part.staves.push(staff);
     }
     let mut recorder = Recorder::new(Candidate::new(
@@ -347,7 +382,7 @@ fn a_local_field_journal_does_not_rebuild_or_scan_a_large_active_part() {
     let original_bundle = recorder.active[&root].bundle.clone();
     let staff = recorder
         .candidate
-        .resolve(Kind::Staff, "staff-4095")
+        .resolve(Kind::Staff, &JsString::from("staff-4095"))
         .unwrap();
     let before = recorder.candidate.work;
     let value = changed(recorder.candidate.read_value(&staff).unwrap());
@@ -377,7 +412,7 @@ fn field_recording_and_patched_remove_reservations_fail_terminally_without_touch
     };
     let run = |recorder: &mut Recorder<'_>| -> Result<(), Failure> {
         edit_fields(recorder)?;
-        recorder.remove_part("temporary")
+        recorder.remove_part(&JsString::from("temporary"))
     };
     let mut baseline = prepare();
     run(&mut baseline).unwrap();
@@ -407,7 +442,7 @@ fn every_edited_subtree_replay_reservation_failure_is_terminal_in_both_direction
     ));
     recorder.insert_part(editable_part(), None).unwrap();
     edit_fields(&mut recorder).unwrap();
-    recorder.remove_part("temporary").unwrap();
+    recorder.remove_part(&JsString::from("temporary")).unwrap();
     let (_, journal) = recorder.finish().unwrap();
     for inverse in [false, true] {
         let direction = || {
@@ -444,8 +479,12 @@ fn prefix_field_reservation_failures_never_publish_partial_journal_steps_or_modi
     let document = fixture();
     let store = build_live_score_store(&document).unwrap();
     let mutate = |recorder: &mut Recorder<'_>| -> Result<(), Failure> {
-        let part = recorder.candidate.resolve(Kind::Part, "part-z")?;
-        let voice = recorder.candidate.resolve(Kind::Voice, "voice-a")?;
+        let part = recorder
+            .candidate
+            .resolve(Kind::Part, &JsString::from("part-z"))?;
+        let voice = recorder
+            .candidate
+            .resolve(Kind::Voice, &JsString::from("voice-a"))?;
         recorder.replace_scalar(&part, Value::PartName("changed".into()))?;
         let mut instrument = recorder.candidate.read_instrument(&part).unwrap();
         instrument.name = "changed".into();

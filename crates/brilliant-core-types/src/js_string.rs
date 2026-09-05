@@ -4,7 +4,6 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// Immutable JavaScript text. Every UTF-16 code unit, including an unpaired
 /// surrogate, is data. There is deliberately no lossy `Display` or `as_str`.
-/// This primitive is not yet the storage representation of live Score DTOs.
 #[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct JsString(Arc<[u16]>);
 
@@ -21,6 +20,26 @@ impl JsString {
 
     pub fn code_units(&self) -> &[u16] {
         &self.0
+    }
+
+    pub fn as_js_string(&self) -> &Self {
+        self
+    }
+
+    pub fn concat(parts: &[&Self]) -> Self {
+        let mut units = Vec::new();
+        for part in parts {
+            units.extend_from_slice(part.code_units());
+        }
+        Self::from_utf16(units)
+    }
+
+    /// Byte length used by JavaScript UTF-8 encoders. Unpaired units count as
+    /// three bytes; this is accounting only and never changes the stored text.
+    pub fn utf8_byte_len(&self) -> usize {
+        char::decode_utf16(self.0.iter().copied())
+            .map(|value| value.map_or(3, char::len_utf8))
+            .sum()
     }
 
     pub fn len(&self) -> usize {
@@ -51,6 +70,57 @@ impl From<&str> for JsString {
 impl From<String> for JsString {
     fn from(value: String) -> Self {
         Self::from(value.as_str())
+    }
+}
+
+impl From<&String> for JsString {
+    fn from(value: &String) -> Self {
+        Self::from(value.as_str())
+    }
+}
+impl From<&JsString> for JsString {
+    fn from(value: &JsString) -> Self {
+        value.clone()
+    }
+}
+impl From<std::borrow::Cow<'_, str>> for JsString {
+    fn from(value: std::borrow::Cow<'_, str>) -> Self {
+        Self::from(value.as_ref())
+    }
+}
+impl AsRef<JsString> for JsString {
+    fn as_ref(&self) -> &JsString {
+        self
+    }
+}
+impl PartialEq<str> for JsString {
+    fn eq(&self, other: &str) -> bool {
+        self.code_units().iter().copied().eq(other.encode_utf16())
+    }
+}
+impl PartialEq<&str> for JsString {
+    fn eq(&self, other: &&str) -> bool {
+        self == *other
+    }
+}
+impl PartialEq<String> for JsString {
+    fn eq(&self, other: &String) -> bool {
+        self == other.as_str()
+    }
+}
+impl PartialEq<JsString> for str {
+    fn eq(&self, other: &JsString) -> bool {
+        other == self
+    }
+}
+impl PartialEq<JsString> for &str {
+    fn eq(&self, other: &JsString) -> bool {
+        other == *self
+    }
+}
+impl PartialEq<JsString> for String {
+    fn eq(&self, other: &JsString) -> bool {
+        other == self.as_str()
     }
 }
 

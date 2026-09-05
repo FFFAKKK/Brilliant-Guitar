@@ -1,3 +1,4 @@
+use brilliant_core_types::JsString;
 use std::{
     collections::{HashMap, HashSet},
     hash::Hash,
@@ -136,7 +137,7 @@ impl crate::store::LiveScoreStore {
         }
 
         Ok(ScoreDocumentV1 {
-            schema_version: "brilliant-score-1".to_owned(),
+            schema_version: "brilliant-score-1".into(),
             id: self.header.id.clone(),
             metadata: self.header.metadata.clone(),
             measure_definitions,
@@ -921,11 +922,18 @@ fn extension_record_value(record: &ExtensionRecord) -> ExtensionBlockV1 {
 
 fn extension_anchor_id(record: &ExtensionRecord) -> StableId {
     let owner = match &record.owner {
-        ExtensionOwnerV1::Score => "score".to_owned(),
-        ExtensionOwnerV1::Part { part_id } => format!("part:{}", part_id.as_str()),
+        ExtensionOwnerV1::Score => JsString::from("score"),
+        ExtensionOwnerV1::Part { part_id } => {
+            JsString::concat(&[&"part:".into(), part_id.as_js_string()])
+        }
     };
-    StableId::new(format!("extension:{owner}:{}", record.namespace))
-        .expect("non-empty extension anchor")
+    StableId::new(JsString::concat(&[
+        &"extension:".into(),
+        &owner,
+        &":".into(),
+        &record.namespace,
+    ]))
+    .expect("non-empty extension anchor")
 }
 
 pub(crate) fn build_live_score_store(
@@ -2099,12 +2107,12 @@ pub(crate) mod tests {
         order: &[K],
         records: &SlotMap<K, V>,
         id: impl Fn(&V) -> &StableId,
-    ) -> Vec<String> {
+    ) -> Vec<JsString> {
         order
             .iter()
             .map(|handle| {
                 id(records.get(*handle).expect("live typed handle"))
-                    .as_str()
+                    .as_js_string()
                     .to_owned()
             })
             .collect()
@@ -2131,7 +2139,7 @@ pub(crate) mod tests {
         );
         assert_eq!(builder.indices.entity.by_id.len(), counts.entity_ids);
         let store = builder.finish().expect("publishable store");
-        assert_eq!(store.header.id.as_str(), "score-root");
+        assert_eq!(store.header.id.as_js_string(), "score-root");
         assert_eq!(store.measures.len(), 2);
         assert_eq!(store.parts.len(), 1);
         assert_eq!(store.staffs.len(), 2);
@@ -2210,7 +2218,7 @@ pub(crate) mod tests {
         document.measure_definitions.clear();
         document.parts.clear();
         document.extensions.clear();
-        assert_eq!(store.header.id.as_str(), "score-root");
+        assert_eq!(store.header.id.as_js_string(), "score-root");
         assert_eq!(store.topology.measure_order.len(), 2);
         assert_eq!(store.topology.part_order.len(), 1);
         assert_eq!(store.topology.extension_order.len(), 2);
@@ -2279,9 +2287,14 @@ pub(crate) mod tests {
         let store = build_live_score_store(&document).expect("store");
         let exported = store.export_document().expect("canonical export");
         assert_eq!(exported, document);
-        assert_eq!(exported.measure_definitions[0].id.as_str(), "measure-z");
         assert_eq!(
-            exported.parts[0].measure_contents[0].measure_id.as_str(),
+            exported.measure_definitions[0].id.as_js_string(),
+            "measure-z"
+        );
+        assert_eq!(
+            exported.parts[0].measure_contents[0]
+                .measure_id
+                .as_js_string(),
             "measure-a"
         );
         assert_eq!(exported.extensions[0].namespace, "example.score");

@@ -4,7 +4,7 @@ use std::{
     hash::Hash,
 };
 
-use brilliant_core_types::{StableId, StablePathSegmentV1, StablePathV1};
+use brilliant_core_types::{JsString, StableId, StablePathSegmentV1, StablePathV1};
 
 use crate::{
     ExactFraction, ExtensionOwnerV1, FoundationDecodeFailure, MeasureDefinitionV1, PartV1,
@@ -40,13 +40,13 @@ fn nested_path(prefix: &[PathPart], suffix: &[PathPart]) -> StablePathV1 {
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 enum ExtensionOwnerKey<'a> {
     Score,
-    Part(&'a str),
+    Part(&'a JsString),
 }
 
 #[derive(Default)]
 struct PartScratch<'a> {
-    staff_ids: HashSet<&'a str>,
-    covered_measure_ids: HashSet<&'a str>,
+    staff_ids: HashSet<&'a JsString>,
+    covered_measure_ids: HashSet<&'a JsString>,
 }
 
 #[derive(Clone, Copy, Default)]
@@ -97,12 +97,12 @@ impl ReservationPolicy {
 }
 
 struct ValidationScratch<'a> {
-    ids: HashSet<&'a str>,
-    measures: HashMap<&'a str, &'a MeasureDefinitionV1>,
-    measure_durations: HashMap<&'a str, ExactFraction>,
-    part_ids: HashSet<&'a str>,
+    ids: HashSet<&'a JsString>,
+    measures: HashMap<&'a JsString, &'a MeasureDefinitionV1>,
+    measure_durations: HashMap<&'a JsString, ExactFraction>,
+    part_ids: HashSet<&'a JsString>,
     part_scratch: Vec<PartScratch<'a>>,
-    extension_keys: HashSet<(ExtensionOwnerKey<'a>, &'a str)>,
+    extension_keys: HashSet<(ExtensionOwnerKey<'a>, &'a JsString)>,
 }
 
 pub(crate) fn validate_score_document(
@@ -280,10 +280,12 @@ impl<'a> Validator<'a> {
             } else {
                 regular
             };
-            self.scratch.measures.insert(measure.id.as_str(), measure);
+            self.scratch
+                .measures
+                .insert(measure.id.as_js_string(), measure);
             self.scratch
                 .measure_durations
-                .insert(measure.id.as_str(), effective);
+                .insert(measure.id.as_js_string(), effective);
         }
         Ok(())
     }
@@ -296,7 +298,7 @@ impl<'a> Validator<'a> {
     ) -> Result<(), FoundationDecodeFailure> {
         let prefix = [PathPart::Field("parts"), PathPart::Index(part_index)];
         self.insert_id(&part.id, nested_path(&prefix, &[PathPart::Field("id")]))?;
-        self.scratch.part_ids.insert(part.id.as_str());
+        self.scratch.part_ids.insert(part.id.as_js_string());
         if part.staves.is_empty() {
             return Err(FoundationDecodeFailure::InvalidReference {
                 path: nested_path(&prefix, &[PathPart::Field("staves")]),
@@ -315,7 +317,7 @@ impl<'a> Validator<'a> {
                 &staff.id,
                 nested_path(&staff_prefix, &[PathPart::Field("id")]),
             )?;
-            part_scratch.staff_ids.insert(staff.id.as_str());
+            part_scratch.staff_ids.insert(staff.id.as_js_string());
             if staff.line_count.get() <= 0 {
                 return Err(FoundationDecodeFailure::InvalidValue {
                     path: nested_path(&staff_prefix, &[PathPart::Field("lineCount")]),
@@ -338,14 +340,15 @@ impl<'a> Validator<'a> {
                 PathPart::Field("measureContents"),
                 PathPart::Index(content_index),
             ];
-            let Some(&measure) = self.scratch.measures.get(content.measure_id.as_str()) else {
+            let Some(&measure) = self.scratch.measures.get(content.measure_id.as_js_string())
+            else {
                 return Err(FoundationDecodeFailure::InvalidReference {
                     path: nested_path(&content_prefix, &[PathPart::Field("measureId")]),
                 });
             };
             if !part_scratch
                 .covered_measure_ids
-                .insert(content.measure_id.as_str())
+                .insert(content.measure_id.as_js_string())
             {
                 return Err(FoundationDecodeFailure::InvalidReference {
                     path: nested_path(&content_prefix, &[PathPart::Field("measureId")]),
@@ -359,7 +362,7 @@ impl<'a> Validator<'a> {
             let measure_duration = *self
                 .scratch
                 .measure_durations
-                .get(measure.id.as_str())
+                .get(measure.id.as_js_string())
                 .ok_or(FoundationDecodeFailure::InternalCapacity)?;
             for (voice_index, voice) in content.voices.iter().enumerate() {
                 let voice_prefix = [
@@ -376,7 +379,7 @@ impl<'a> Validator<'a> {
                 )?;
                 if !part_scratch
                     .staff_ids
-                    .contains(voice.default_staff_id.as_str())
+                    .contains(voice.default_staff_id.as_js_string())
                 {
                     return Err(FoundationDecodeFailure::InvalidReference {
                         path: nested_path(&voice_prefix, &[PathPart::Field("defaultStaffId")]),
@@ -395,7 +398,7 @@ impl<'a> Validator<'a> {
         for measure in document_measures {
             if !part_scratch
                 .covered_measure_ids
-                .contains(measure.id.as_str())
+                .contains(measure.id.as_js_string())
             {
                 return Err(FoundationDecodeFailure::InvalidReference {
                     path: nested_path(&prefix, &[PathPart::Field("measureContents")]),
@@ -408,7 +411,7 @@ impl<'a> Validator<'a> {
     fn validate_voice(
         &mut self,
         part: &PartV1,
-        staff_ids: &HashSet<&str>,
+        staff_ids: &HashSet<&JsString>,
         voice: &'a crate::VoiceV1,
         voice_prefix: &[PathPart],
         measure_duration: ExactFraction,
@@ -444,7 +447,7 @@ impl<'a> Validator<'a> {
                 nested_path(&event_prefix, &[PathPart::Field("id")]),
             )?;
             if let Some(staff_id) = &event.staff_id
-                && !staff_ids.contains(staff_id.as_str())
+                && !staff_ids.contains(staff_id.as_js_string())
             {
                 return Err(FoundationDecodeFailure::InvalidReference {
                     path: nested_path(&event_prefix, &[PathPart::Field("staffId")]),
@@ -533,7 +536,7 @@ impl<'a> Validator<'a> {
             let owner = match &extension.owner {
                 ExtensionOwnerV1::Score => ExtensionOwnerKey::Score,
                 ExtensionOwnerV1::Part { part_id } => {
-                    if !self.scratch.part_ids.contains(part_id.as_str()) {
+                    if !self.scratch.part_ids.contains(part_id.as_js_string()) {
                         return Err(FoundationDecodeFailure::InvalidReference {
                             path: nested_path(
                                 &prefix,
@@ -541,13 +544,13 @@ impl<'a> Validator<'a> {
                             ),
                         });
                     }
-                    ExtensionOwnerKey::Part(part_id.as_str())
+                    ExtensionOwnerKey::Part(part_id.as_js_string())
                 }
             };
             if !self
                 .scratch
                 .extension_keys
-                .insert((owner, extension.namespace.as_str()))
+                .insert((owner, &extension.namespace))
             {
                 return Err(FoundationDecodeFailure::InvalidValue {
                     path: path(&prefix),
@@ -562,7 +565,7 @@ impl<'a> Validator<'a> {
         id: &'a StableId,
         id_path: StablePathV1,
     ) -> Result<(), FoundationDecodeFailure> {
-        if self.scratch.ids.insert(id.as_str()) {
+        if self.scratch.ids.insert(id.as_js_string()) {
             Ok(())
         } else {
             Err(FoundationDecodeFailure::DuplicateId { path: id_path })
@@ -578,18 +581,8 @@ fn is_note_value_base(value: i64) -> bool {
     matches!(value, 1 | 2 | 4 | 8 | 16 | 32 | 64)
 }
 
-fn valid_extension_namespace(namespace: &str) -> bool {
-    let mut count = 0_usize;
-    for segment in namespace.split('.') {
-        count += 1;
-        let mut bytes = segment.bytes();
-        if !matches!(bytes.next(), Some(b'a'..=b'z'))
-            || !bytes.all(|byte| matches!(byte, b'a'..=b'z' | b'0'..=b'9' | b'-'))
-        {
-            return false;
-        }
-    }
-    count >= 2
+fn valid_extension_namespace(namespace: &JsString) -> bool {
+    crate::music_rules::extension_namespace(namespace)
 }
 
 fn written_pitch_is_valid(pitch: &WrittenPitchV1) -> bool {
@@ -662,6 +655,61 @@ mod tests {
 
     fn fixture() -> ScoreDocumentV1 {
         serde_json::from_str(SMOKE_DOCUMENT).expect("fixture shape")
+    }
+
+    #[test]
+    fn hard_validation_preserves_unpaired_id_identity_and_references() {
+        use crate::LosslessDecode;
+
+        let input = SMOKE_DOCUMENT
+            .replace("score-rkp1", r"\ud800")
+            .replace("measure-1", r"\udc00")
+            .replace("part-1", r"\ufffd")
+            .replace("staff-1", r"\ud800\udc00");
+        let mut document =
+            ScoreDocumentV1::from_lossless_value(crate::decode_lossless_json(&input).unwrap())
+                .unwrap();
+        assert_eq!(validate_score_document(&document), Ok(()));
+        document.parts[0].measure_contents[0].measure_id = document.id.clone();
+        assert_eq!(
+            validate_score_document(&document),
+            Err(FoundationDecodeFailure::InvalidReference {
+                path: path(&[
+                    PathPart::Field("parts"),
+                    PathPart::Index(0),
+                    PathPart::Field("measureContents"),
+                    PathPart::Index(0),
+                    PathPart::Field("measureId")
+                ]),
+            })
+        );
+        document.measure_definitions[0].id = document.id.clone();
+        assert_duplicate_at(
+            &document,
+            &[
+                PathPart::Field("measureDefinitions"),
+                PathPart::Index(0),
+                PathPart::Field("id"),
+            ],
+        );
+    }
+
+    #[test]
+    fn hard_namespace_validation_rejects_non_ascii_and_surrogate_units() {
+        for units in [vec![0xd800], vec![0xdc00], vec![0xfffd], vec![0x00e9]] {
+            let mut document = fixture();
+            let mut namespace = vec![u16::from(b'a'), u16::from(b'.')];
+            namespace.extend(units);
+            document.extensions[0].namespace = JsString::from_utf16(namespace);
+            assert_eq!(
+                validate_score_document(&document),
+                expected_value(&[
+                    PathPart::Field("extensions"),
+                    PathPart::Index(0),
+                    PathPart::Field("namespace"),
+                ])
+            );
+        }
     }
 
     fn expected_value(parts: &[PathPart]) -> Result<(), FoundationDecodeFailure> {
@@ -1065,7 +1113,7 @@ mod tests {
     #[test]
     fn extension_envelope_and_owner_failures_are_closed() {
         let mut namespace = fixture();
-        namespace.extensions[0].namespace = "Invalid".to_owned();
+        namespace.extensions[0].namespace = "Invalid".into();
         assert!(matches!(
             validate_score_document(&namespace),
             Err(FoundationDecodeFailure::InvalidValue { .. })

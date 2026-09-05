@@ -127,15 +127,29 @@ mod tests {
 
     fn target_key(
         target: &brilliant_kernel_contracts::AffectedEntityAddressV1,
-    ) -> (&'static str, &str) {
+    ) -> (&'static str, Vec<u16>) {
         match target {
-            ScoreEntityTargetV1::Document { document_id } => ("document", document_id.as_str()),
-            ScoreEntityTargetV1::Measure { measure_id } => ("measure", measure_id.as_str()),
-            ScoreEntityTargetV1::Part { part_id } => ("part", part_id.as_str()),
-            ScoreEntityTargetV1::Staff { staff_id } => ("staff", staff_id.as_str()),
-            ScoreEntityTargetV1::Voice { voice_id } => ("voice", voice_id.as_str()),
-            ScoreEntityTargetV1::Event { event_id } => ("event", event_id.as_str()),
-            ScoreEntityTargetV1::Note { note_id } => ("note", note_id.as_str()),
+            ScoreEntityTargetV1::Document { document_id } => {
+                ("document", document_id.as_js_string().code_units().to_vec())
+            }
+            ScoreEntityTargetV1::Measure { measure_id } => {
+                ("measure", measure_id.as_js_string().code_units().to_vec())
+            }
+            ScoreEntityTargetV1::Part { part_id } => {
+                ("part", part_id.as_js_string().code_units().to_vec())
+            }
+            ScoreEntityTargetV1::Staff { staff_id } => {
+                ("staff", staff_id.as_js_string().code_units().to_vec())
+            }
+            ScoreEntityTargetV1::Voice { voice_id } => {
+                ("voice", voice_id.as_js_string().code_units().to_vec())
+            }
+            ScoreEntityTargetV1::Event { event_id } => {
+                ("event", event_id.as_js_string().code_units().to_vec())
+            }
+            ScoreEntityTargetV1::Note { note_id } => {
+                ("note", note_id.as_js_string().code_units().to_vec())
+            }
         }
     }
 
@@ -185,13 +199,16 @@ mod tests {
         assert_eq!(
             value.affected.iter().map(target_key).collect::<Vec<_>>(),
             [
-                ("document", "score-hierarchy"),
-                ("part", "pc"),
-                ("staff", "sc"),
-                ("voice", "vc1"),
-                ("event", "ec1"),
-                ("voice", "vc2"),
-                ("event", "ec2"),
+                (
+                    "document",
+                    "score-hierarchy".encode_utf16().collect::<Vec<_>>()
+                ),
+                ("part", "pc".encode_utf16().collect::<Vec<_>>()),
+                ("staff", "sc".encode_utf16().collect::<Vec<_>>()),
+                ("voice", "vc1".encode_utf16().collect::<Vec<_>>()),
+                ("event", "ec1".encode_utf16().collect::<Vec<_>>()),
+                ("voice", "vc2".encode_utf16().collect::<Vec<_>>()),
+                ("event", "ec2".encode_utf16().collect::<Vec<_>>()),
             ]
         );
         let state = read(&session);
@@ -200,13 +217,13 @@ mod tests {
             .document
             .parts
             .iter()
-            .find(|part| part.id.as_str() == "pc")
+            .find(|part| part.id.as_js_string() == "pc")
             .expect("inserted part");
         assert_eq!(
             inserted_part
                 .measure_contents
                 .iter()
-                .map(|content| content.measure_id.as_str())
+                .map(|content| content.measure_id.as_js_string())
                 .collect::<Vec<_>>(),
             ["m1", "m2"]
         );
@@ -229,13 +246,16 @@ mod tests {
         assert_eq!(
             value.affected.iter().map(target_key).collect::<Vec<_>>(),
             [
-                ("part", "pc"),
-                ("document", "score-hierarchy"),
-                ("staff", "sc"),
-                ("voice", "vc1"),
-                ("event", "ec1"),
-                ("voice", "vc2"),
-                ("event", "ec2"),
+                ("part", "pc".encode_utf16().collect::<Vec<_>>()),
+                (
+                    "document",
+                    "score-hierarchy".encode_utf16().collect::<Vec<_>>()
+                ),
+                ("staff", "sc".encode_utf16().collect::<Vec<_>>()),
+                ("voice", "vc1".encode_utf16().collect::<Vec<_>>()),
+                ("event", "ec1".encode_utf16().collect::<Vec<_>>()),
+                ("voice", "vc2".encode_utf16().collect::<Vec<_>>()),
+                ("event", "ec2".encode_utf16().collect::<Vec<_>>()),
             ]
         );
     }
@@ -260,7 +280,11 @@ mod tests {
         assert_eq!(value.document_version.get(), 4);
         assert_eq!(
             value.affected.iter().map(target_key).collect::<Vec<_>>(),
-            [("part", "pa"), ("voice", "va-new"), ("event", "ea-new"),]
+            [
+                ("part", "pa".encode_utf16().collect::<Vec<_>>()),
+                ("voice", "va-new".encode_utf16().collect::<Vec<_>>()),
+                ("event", "ea-new".encode_utf16().collect::<Vec<_>>()),
+            ]
         );
 
         let set_start = r#"{"apiVersion":1,"command":{"commandVersion":1,"commandId":"core.voice.set-sequence-start","target":{"kind":"voice","voiceId":"va-new"},"payload":{"start":{"numerator":1,"denominator":4}}}}"#;
@@ -335,7 +359,7 @@ mod tests {
                 .document
                 .extensions
                 .iter()
-                .map(|extension| extension.namespace.as_str())
+                .map(|extension| extension.namespace.as_js_string())
                 .collect::<Vec<_>>(),
             ["example.score", "example.pa"]
         );

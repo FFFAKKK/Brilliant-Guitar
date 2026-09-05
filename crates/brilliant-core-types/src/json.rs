@@ -204,6 +204,9 @@ impl Serialize for StablePathSegmentV1 {
 pub struct StablePathV1(Vec<StablePathSegmentV1>);
 
 impl StablePathV1 {
+    pub fn segments(&self) -> &[StablePathSegmentV1] {
+        &self.0
+    }
     pub fn new(segments: Vec<StablePathSegmentV1>) -> Result<Self, CoreTypeFailure> {
         if segments.len() > JSON_DEPTH_LIMIT
             || segments.iter().any(|segment| match segment {

@@ -9,7 +9,7 @@ use std::{
     sync::Arc,
 };
 
-use brilliant_core_types::StableId;
+use brilliant_core_types::{JsString, StableId};
 use brilliant_kernel_contracts::AffectedEntityIdV1;
 
 use super::{Candidate, CandidateOrder, Children, Entity, Failure, Kind, Occurrence, Site};
@@ -143,7 +143,7 @@ impl IdentityRecorder {
                     candidate,
                     &recorded.source,
                     identity.kind,
-                    identity.raw_id.as_str(),
+                    identity.raw_id.as_js_string(),
                     identity
                         .owner
                         .and_then(|owner| entries.get(owner.0))
@@ -160,7 +160,7 @@ impl IdentityRecorder {
 fn unique_entity(
     candidate: &mut Candidate<'_>,
     kind: Kind,
-    raw_id: &str,
+    raw_id: &JsString,
 ) -> Result<Occurrence, Failure> {
     let mut result = None;
     for entity_kind in [
@@ -187,13 +187,13 @@ struct ContentKey(AffectedEntityIdV1);
 
 impl Hash for ContentKey {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.0.as_str().hash(state);
+        self.0.as_js_string().hash(state);
     }
 }
 
-impl Borrow<str> for ContentKey {
-    fn borrow(&self) -> &str {
-        self.0.as_str()
+impl Borrow<JsString> for ContentKey {
+    fn borrow(&self) -> &JsString {
+        self.0.as_js_string()
     }
 }
 
@@ -210,7 +210,7 @@ impl ContentLocators {
         &mut self,
         candidate: &mut Candidate<'_>,
         part: &Occurrence,
-        raw_id: &str,
+        raw_id: &JsString,
     ) -> Result<Occurrence, Failure> {
         let order = CandidateOrder::new(part, Children::Contents);
         let Some(children) = candidate.orders.get(&order) else {
@@ -262,7 +262,7 @@ fn boundary_for(
     candidate: &mut Candidate<'_>,
     source: &Occurrence,
     kind: Kind,
-    raw_id: &str,
+    raw_id: &JsString,
     owner_boundary: Option<&Boundary>,
     contents: &mut ContentLocators,
 ) -> Result<Boundary, Failure> {
@@ -311,13 +311,15 @@ fn locate(
     contents: &mut ContentLocators,
 ) -> Result<Occurrence, Failure> {
     match boundary {
-        Boundary::Entity(entity) => {
-            unique_entity(candidate, Kind::of(entity), entity.stable_id().as_str())
-        }
+        Boundary::Entity(entity) => unique_entity(
+            candidate,
+            Kind::of(entity),
+            entity.stable_id().as_js_string(),
+        ),
         Boundary::Content { part, measure_id } => {
-            let part = unique_entity(candidate, Kind::Part, part.stable_id().as_str())?;
-            unique_entity(candidate, Kind::Measure, measure_id.as_str())?;
-            contents.unique(candidate, &part, measure_id.as_str())
+            let part = unique_entity(candidate, Kind::Part, part.stable_id().as_js_string())?;
+            unique_entity(candidate, Kind::Measure, measure_id.as_js_string())?;
+            contents.unique(candidate, &part, measure_id.as_js_string())
         }
     }
 }
@@ -341,13 +343,13 @@ impl<'journal> ReplayBindings<'journal> {
         &self,
         id: JournalId,
         kind: Kind,
-        raw_id: &str,
+        raw_id: &JsString,
         owner: JournalId,
     ) -> Result<(), Failure> {
         self.require_unbound(id)?;
         let identity = &self.manifest.entries[id.0];
         if identity.kind != kind
-            || identity.raw_id.as_str() != raw_id
+            || identity.raw_id.as_js_string() != raw_id
             || identity.owner != Some(owner)
         {
             return Err(Failure::InternalError);
@@ -443,7 +445,7 @@ impl<'journal> ReplayBindings<'journal> {
             if self.entries[id.0].is_some()
                 || !candidate.visible(source)
                 || candidate.kind(source) != Some(identity.kind)
-                || candidate.raw_id(source) != Some(identity.raw_id.as_str())
+                || candidate.raw_id(source) != Some(identity.raw_id.as_js_string())
                 || self.reverse.contains_key(source)
                 || incoming.insert(*id, source.clone()).is_some()
                 || incoming_reverse.insert(source.clone(), *id).is_some()

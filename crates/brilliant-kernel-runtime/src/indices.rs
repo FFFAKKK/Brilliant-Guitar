@@ -1,3 +1,4 @@
+use brilliant_core_types::JsString;
 use std::collections::HashMap;
 
 use brilliant_core_types::{StableId, StablePathSegmentV1, StablePathV1};
@@ -22,7 +23,7 @@ pub(crate) enum ExtensionIndexOwner {
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub(crate) struct ExtensionIndexKey {
-    pub(crate) namespace: String,
+    pub(crate) namespace: JsString,
     pub(crate) owner: ExtensionIndexOwner,
 }
 
@@ -30,7 +31,7 @@ pub(crate) struct ExtensionIndexKey {
 pub(crate) struct StableReferenceAddress {
     pub(crate) path: StablePathV1,
     pub(crate) source: ReferenceAddressV1,
-    sort_key: String,
+    sort_key: JsString,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -569,27 +570,39 @@ pub(crate) fn sort_prepared_reference_bucket(values: &mut [StableReferenceAddres
     values.sort_by(|left, right| compare_reference_sources(&left.source, &right.source));
 }
 
-fn reference_source_sort_key(source: &ReferenceAddressV1) -> String {
+fn reference_source_sort_key(source: &ReferenceAddressV1) -> JsString {
     match source {
-        ReferenceAddressV1::VoiceDefaultStaff { voice_id } => {
-            format!("voice/{}/default-staff", voice_id.as_str())
-        }
-        ReferenceAddressV1::EventStaffAssignment { event_id } => {
-            format!("event/{}/staff-assignment", event_id.as_str())
-        }
+        ReferenceAddressV1::VoiceDefaultStaff { voice_id } => JsString::concat(&[
+            &"voice/".into(),
+            voice_id.as_js_string(),
+            &"/default-staff".into(),
+        ]),
+        ReferenceAddressV1::EventStaffAssignment { event_id } => JsString::concat(&[
+            &"event/".into(),
+            event_id.as_js_string(),
+            &"/staff-assignment".into(),
+        ]),
         ReferenceAddressV1::PartMeasureLink {
             part_id,
             measure_id,
-        } => format!(
-            "part/{}/measure/{}/content-link",
-            part_id.as_str(),
-            measure_id.as_str()
-        ),
+        } => JsString::concat(&[
+            &"part/".into(),
+            part_id.as_js_string(),
+            &"/measure/".into(),
+            measure_id.as_js_string(),
+            &"/content-link".into(),
+        ]),
         ReferenceAddressV1::ExtensionOwner { namespace, owner } => match owner {
-            StableExtensionOwnerV1::Score => format!("extension/{namespace}/score-owner"),
-            StableExtensionOwnerV1::Part { part_id } => {
-                format!("extension/{namespace}/part/{}/owner", part_id.as_str())
+            StableExtensionOwnerV1::Score => {
+                JsString::concat(&[&"extension/".into(), namespace, &"/score-owner".into()])
             }
+            StableExtensionOwnerV1::Part { part_id } => JsString::concat(&[
+                &"extension/".into(),
+                namespace,
+                &"/part/".into(),
+                part_id.as_js_string(),
+                &"/owner".into(),
+            ]),
         },
     }
 }
@@ -738,7 +751,7 @@ pub(crate) fn event_staff_reference_path(
 }
 
 pub(crate) fn extension_part_reference_path(
-    namespace: &str,
+    namespace: &JsString,
     owner: &StableExtensionOwnerV1,
     extension: usize,
 ) -> Result<StableReferenceAddress, IndexBuildFailure> {
@@ -775,7 +788,7 @@ fn reference_path(
     Ok(StableReferenceAddress {
         path: StablePathV1::new(segments).map_err(|_| IndexBuildFailure::CountOverflow)?,
         source,
-        sort_key,
+        sort_key: sort_key.into(),
     })
 }
 
@@ -972,7 +985,7 @@ pub(crate) enum NormalizedOwner {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) enum NormalizedOwnedNode {
     Entity(StableId),
-    Extension { ordinal: u64, namespace: String },
+    Extension { ordinal: u64, namespace: JsString },
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -999,7 +1012,7 @@ pub(crate) struct NormalizedVoiceTimeEntry {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct NormalizedExtensionEntry {
     pub(crate) ordinal: u64,
-    pub(crate) namespace: String,
+    pub(crate) namespace: JsString,
     pub(crate) owner: NormalizedOwner,
 }
 
@@ -2340,7 +2353,7 @@ mod tests {
             projection
                 .part_measure_contents
                 .iter()
-                .map(|entry| entry.measure.as_str())
+                .map(|entry| entry.measure.as_js_string())
                 .collect::<Vec<_>>(),
             ["measure-a", "measure-z"]
         );

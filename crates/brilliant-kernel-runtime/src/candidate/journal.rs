@@ -3,6 +3,8 @@
 //! Command preparation, final semantics, effects/segments, accounting and Store
 //! adoption are integration gates, not behavior supplied by this module.
 
+use brilliant_core_types::JsString;
+
 use super::identity::{
     BoundarySide, IdentityManifest, IdentityRecorder, JournalId, ReplayBindings,
 };
@@ -30,8 +32,8 @@ enum Operation {
     },
     UpdateReference {
         target: JournalId,
-        expected: Option<Arc<str>>,
-        value: Option<Arc<str>>,
+        expected: Option<JsString>,
+        value: Option<JsString>,
     },
     InsertEntity {
         owner: JournalId,
@@ -139,7 +141,7 @@ impl<'a> Recorder<'a> {
     fn insert_part(
         &mut self,
         part: AdmissionPartV1,
-        after: Option<&str>,
+        after: Option<&JsString>,
     ) -> Result<Occurrence, Failure> {
         let result = self.insert_part_inner(part, after);
         if result.is_err() {
@@ -151,7 +153,7 @@ impl<'a> Recorder<'a> {
     fn insert_part_inner(
         &mut self,
         part: AdmissionPartV1,
-        after: Option<&str>,
+        after: Option<&JsString>,
     ) -> Result<Occurrence, Failure> {
         self.candidate.reservation.ensure_active()?;
         self.candidate.insertion_index(
@@ -193,7 +195,7 @@ impl<'a> Recorder<'a> {
         Ok(root)
     }
 
-    fn remove_part(&mut self, raw_id: &str) -> Result<(), Failure> {
+    fn remove_part(&mut self, raw_id: &JsString) -> Result<(), Failure> {
         let result = self.remove_part_inner(raw_id);
         if result.is_err() {
             self.candidate.reservation.abort();
@@ -201,7 +203,7 @@ impl<'a> Recorder<'a> {
         result
     }
 
-    fn remove_part_inner(&mut self, raw_id: &str) -> Result<(), Failure> {
+    fn remove_part_inner(&mut self, raw_id: &JsString) -> Result<(), Failure> {
         self.candidate.reservation.ensure_active()?;
         let root = self.candidate.resolve(Kind::Part, raw_id)?;
         // Added is not enough: this exact root must belong to this recorder.

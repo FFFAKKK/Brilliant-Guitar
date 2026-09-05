@@ -112,13 +112,13 @@ impl LosslessText for String {
 
 impl LosslessDecode for StableId {
     fn from_lossless_value(value: LosslessJsonValue) -> Result<Self, LosslessValueError> {
-        Self::new(String::from_lossless_value(value)?)
+        Self::new(JsString::from_lossless_value(value)?)
             .map_err(|_| LosslessValueError::new(LosslessValueFailure::InvalidValue))
     }
 }
 impl LosslessEncode for StableId {
     fn write_lossless<W: Write + ?Sized>(&self, writer: &mut W) -> Result<(), LosslessJsonError> {
-        self.as_str().write_lossless(writer)
+        self.as_js_string().write_lossless(writer)
     }
 }
 impl LosslessText for StableId {
@@ -199,7 +199,47 @@ macro_rules! scalar_encode {
         }
     })+ };
 }
-scalar_encode!(SafeInteger, FiniteNumber, bool);
+scalar_encode!(
+    SafeInteger,
+    FiniteNumber,
+    bool,
+    u64,
+    usize,
+    i64,
+    brilliant_core_types::DocumentVersionV1
+);
+
+impl<T: LosslessEncode + ?Sized> LosslessEncode for &T {
+    fn write_lossless<W: Write + ?Sized>(&self, writer: &mut W) -> Result<(), LosslessJsonError> {
+        (*self).write_lossless(writer)
+    }
+}
+impl<T: LosslessEncode + ?Sized> LosslessEncode for Box<T> {
+    fn write_lossless<W: Write + ?Sized>(&self, writer: &mut W) -> Result<(), LosslessJsonError> {
+        (**self).write_lossless(writer)
+    }
+}
+impl<T: LosslessEncode> LosslessEncode for Option<T> {
+    fn write_lossless<W: Write + ?Sized>(&self, writer: &mut W) -> Result<(), LosslessJsonError> {
+        match self {
+            Some(value) => value.write_lossless(writer),
+            None => writer.write_all(b"null").map_err(LosslessJsonError::Write),
+        }
+    }
+}
+impl LosslessEncode for brilliant_core_types::StablePathV1 {
+    fn write_lossless<W: Write + ?Sized>(&self, writer: &mut W) -> Result<(), LosslessJsonError> {
+        self.segments().write_lossless(writer)
+    }
+}
+impl LosslessEncode for brilliant_core_types::StablePathSegmentV1 {
+    fn write_lossless<W: Write + ?Sized>(&self, writer: &mut W) -> Result<(), LosslessJsonError> {
+        match self {
+            Self::Field(value) => value.write_lossless(writer),
+            Self::Index(value) => value.write_lossless(writer),
+        }
+    }
+}
 
 impl<T: LosslessDecode> LosslessDecode for Vec<T> {
     fn from_lossless_value(value: LosslessJsonValue) -> Result<Self, LosslessValueError> {
@@ -217,6 +257,11 @@ impl<T: LosslessDecode> LosslessDecode for Vec<T> {
     }
 }
 impl<T: LosslessEncode> LosslessEncode for Vec<T> {
+    fn write_lossless<W: Write + ?Sized>(&self, writer: &mut W) -> Result<(), LosslessJsonError> {
+        self.as_slice().write_lossless(writer)
+    }
+}
+impl<T: LosslessEncode> LosslessEncode for [T] {
     fn write_lossless<W: Write + ?Sized>(&self, writer: &mut W) -> Result<(), LosslessJsonError> {
         writer.write_all(b"[").map_err(LosslessJsonError::Write)?;
         for (index, value) in self.iter().enumerate() {
@@ -314,19 +359,19 @@ impl ObjectReader {
         }
     }
 }
-struct ObjectWriter<'a, W: Write + ?Sized> {
+pub struct ObjectWriter<'a, W: Write + ?Sized> {
     writer: &'a mut W,
     first: bool,
 }
 impl<'a, W: Write + ?Sized> ObjectWriter<'a, W> {
-    fn new(writer: &'a mut W) -> Result<Self, LosslessJsonError> {
+    pub fn new(writer: &'a mut W) -> Result<Self, LosslessJsonError> {
         writer.write_all(b"{").map_err(LosslessJsonError::Write)?;
         Ok(Self {
             writer,
             first: true,
         })
     }
-    fn field<K: LosslessEncode + ?Sized, V: LosslessEncode + ?Sized>(
+    pub fn field<K: LosslessEncode + ?Sized, V: LosslessEncode + ?Sized>(
         &mut self,
         key: &K,
         value: &V,
@@ -343,7 +388,7 @@ impl<'a, W: Write + ?Sized> ObjectWriter<'a, W> {
             .map_err(LosslessJsonError::Write)?;
         value.write_lossless(self.writer)
     }
-    fn end(self) -> Result<(), LosslessJsonError> {
+    pub fn end(self) -> Result<(), LosslessJsonError> {
         self.writer
             .write_all(b"}")
             .map_err(LosslessJsonError::Write)

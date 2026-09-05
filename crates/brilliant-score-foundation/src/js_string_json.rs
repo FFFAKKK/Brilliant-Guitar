@@ -176,7 +176,38 @@ pub fn js_string_json_len(value: &JsString) -> Option<usize> {
 /// Stream a JSON string with JavaScript's well-formed JSON.stringify escaping.
 /// Writer errors propagate; the caller must discard any partial output.
 pub fn write_js_string_json<W: Write + ?Sized>(value: &JsString, writer: &mut W) -> io::Result<()> {
-    visit_json(value, |bytes| writer.write_all(bytes))
+    // Most score IDs and labels are short. They need only the small stack
+    // buffer; long text is streamed in fixed blocks without a full JSON copy.
+    if value.len() <= 32 {
+        write_buffered_json::<64, W>(value, writer)
+    } else {
+        write_buffered_json::<1024, W>(value, writer)
+    }
+}
+
+fn write_buffered_json<const CAPACITY: usize, W: Write + ?Sized>(
+    value: &JsString,
+    writer: &mut W,
+) -> io::Result<()> {
+    let mut buffer = [0_u8; CAPACITY];
+    let mut length = 0;
+    visit_json(value, |mut bytes| -> io::Result<()> {
+        while !bytes.is_empty() {
+            let copied = bytes.len().min(CAPACITY - length);
+            buffer[length..length + copied].copy_from_slice(&bytes[..copied]);
+            length += copied;
+            bytes = &bytes[copied..];
+            if length == CAPACITY {
+                writer.write_all(&buffer)?;
+                length = 0;
+            }
+        }
+        Ok(())
+    })?;
+    if length != 0 {
+        writer.write_all(&buffer[..length])?;
+    }
+    Ok(())
 }
 
 #[cfg(test)]

@@ -13,11 +13,11 @@ mod identities;
 mod insertions;
 mod writes;
 
-pub(super) fn id(value: &str) -> StableId {
+pub(super) fn id(value: impl Into<JsString>) -> StableId {
     StableId::new(value).expect("nonempty test ID")
 }
 
-pub(super) fn raw_part(part_id: &str) -> AdmissionPartV1 {
+pub(super) fn raw_part(part_id: impl Into<JsString>) -> AdmissionPartV1 {
     let part = fixture().parts.remove(0);
     AdmissionPartV1 {
         id: part_id.into(),
@@ -27,7 +27,7 @@ pub(super) fn raw_part(part_id: &str) -> AdmissionPartV1 {
             .staves
             .into_iter()
             .map(|staff| StaffDefinitionV1 {
-                id: staff.id.as_str().to_owned(),
+                id: staff.id.as_js_string().to_owned(),
                 line_count: staff.line_count,
                 default_clef: staff.default_clef,
             })
@@ -36,13 +36,13 @@ pub(super) fn raw_part(part_id: &str) -> AdmissionPartV1 {
             .measure_contents
             .into_iter()
             .map(|content| PartMeasureContentV1 {
-                measure_id: content.measure_id.as_str().to_owned(),
+                measure_id: content.measure_id.as_js_string().to_owned(),
                 voices: content
                     .voices
                     .into_iter()
                     .map(|voice| AdmissionVoiceV1 {
-                        id: voice.id.as_str().to_owned(),
-                        default_staff_id: voice.default_staff_id.as_str().to_owned(),
+                        id: voice.id.as_js_string().to_owned(),
+                        default_staff_id: voice.default_staff_id.as_js_string().to_owned(),
                         sequence: MusicSequenceV1 {
                             start: voice.sequence.start,
                             events: voice
@@ -50,9 +50,9 @@ pub(super) fn raw_part(part_id: &str) -> AdmissionPartV1 {
                                 .events
                                 .into_iter()
                                 .map(|event| RhythmicEventV1 {
-                                    id: event.id.as_str().to_owned(),
+                                    id: event.id.as_js_string().to_owned(),
                                     duration: event.duration,
-                                    staff_id: event.staff_id.map(|id| id.as_str().to_owned()),
+                                    staff_id: event.staff_id.map(|id| id.as_js_string().to_owned()),
                                     content: match event.content {
                                         RhythmicContentV1::Rest => RhythmicContentV1::Rest,
                                         RhythmicContentV1::Notes { notes } => {
@@ -60,7 +60,7 @@ pub(super) fn raw_part(part_id: &str) -> AdmissionPartV1 {
                                                 notes: notes
                                                     .into_iter()
                                                     .map(|note| ScoreNoteV1 {
-                                                        id: note.id.as_str().to_owned(),
+                                                        id: note.id.as_js_string().to_owned(),
                                                         written_pitch: note.written_pitch,
                                                     })
                                                     .collect(),
@@ -92,7 +92,7 @@ fn ordered(
     result
 }
 
-fn order_ids(candidate: &mut Candidate<'_>, order: &CandidateOrder) -> Vec<String> {
+fn order_ids(candidate: &mut Candidate<'_>, order: &CandidateOrder) -> Vec<JsString> {
     let mut result = Vec::new();
     candidate
         .visit_order(order, &mut |_, raw_id| {
@@ -152,9 +152,13 @@ fn reads_frozen_overlay_prefix_values_order_references_and_accounting() {
     let operation_count = prefix.operation_count();
     let logical_bytes = prefix.logical_bytes();
     let mut candidate = Candidate::new(prefix, document.id);
-    let note = candidate.resolve(Kind::Note, "note-a").unwrap();
+    let note = candidate
+        .resolve(Kind::Note, &JsString::from("note-a"))
+        .unwrap();
     assert_eq!(candidate.read_value(&note), Some(pitch.clone()));
-    let part = candidate.resolve(Kind::Part, "part-z").unwrap();
+    let part = candidate
+        .resolve(Kind::Part, &JsString::from("part-z"))
+        .unwrap();
     assert_eq!(
         order_ids(
             &mut candidate,
@@ -162,12 +166,16 @@ fn reads_frozen_overlay_prefix_values_order_references_and_accounting() {
         ),
         ["staff-a", "staff-z"]
     );
-    let voice = candidate.resolve(Kind::Voice, "voice-a").unwrap();
+    let voice = candidate
+        .resolve(Kind::Voice, &JsString::from("voice-a"))
+        .unwrap();
     assert_eq!(
         candidate.read_staff_reference(&voice),
         Some(Some("staff-z".into()))
     );
-    let event = candidate.resolve(Kind::Event, "event-z").unwrap();
+    let event = candidate
+        .resolve(Kind::Event, &JsString::from("event-z"))
+        .unwrap();
     assert_eq!(candidate.read_staff_reference(&event), Some(None));
     assert_eq!(
         candidate.read_content_kind(&event),
@@ -220,7 +228,9 @@ fn same_id_prefix_rebuild_reads_new_records_and_descendant_owners() {
         )
         .unwrap();
     let mut candidate = Candidate::new(prefix, document.id);
-    let part = candidate.resolve(Kind::Part, "part-z").unwrap();
+    let part = candidate
+        .resolve(Kind::Part, &JsString::from("part-z"))
+        .unwrap();
     assert_eq!(
         candidate.read_value(&part),
         Some(Value::PartName("rebuilt".into()))
@@ -232,9 +242,13 @@ fn same_id_prefix_rebuild_reads_new_records_and_descendant_owners() {
         ),
         ["staff-a", "staff-z"]
     );
-    let note = candidate.resolve(Kind::Note, "note-a").unwrap();
+    let note = candidate
+        .resolve(Kind::Note, &JsString::from("note-a"))
+        .unwrap();
     assert!(candidate.visible(&note));
-    let voice = candidate.resolve(Kind::Voice, "voice-a").unwrap();
+    let voice = candidate
+        .resolve(Kind::Voice, &JsString::from("voice-a"))
+        .unwrap();
     assert_eq!(
         candidate.read_staff_reference(&voice),
         Some(Some("staff-z".into()))
@@ -246,7 +260,9 @@ fn hiding_unexpanded_parent_blocks_descendant_lookup_and_stale_tokens() {
     let document = fixture();
     let store = build_live_score_store(&document).unwrap();
     let mut candidate = Candidate::new(TransactionOverlayV1::new(&store), document.id);
-    let part = candidate.resolve(Kind::Part, "part-z").unwrap();
+    let part = candidate
+        .resolve(Kind::Part, &JsString::from("part-z"))
+        .unwrap();
     let event = Occurrence::prefix(Entity::Event {
         event_id: id("event-a"),
     });
@@ -258,7 +274,7 @@ fn hiding_unexpanded_parent_blocks_descendant_lookup_and_stale_tokens() {
         (Kind::Note, "note-a"),
     ] {
         assert_eq!(
-            candidate.resolve(kind, raw_id),
+            candidate.resolve(kind, &JsString::from(raw_id)),
             Err(Failure::TargetNotFound)
         );
     }
@@ -276,13 +292,20 @@ fn hiding_unexpanded_parent_blocks_descendant_lookup_and_stale_tokens() {
     assert!(candidate.nodes.is_empty());
     assert!(candidate.orders.is_empty());
     assert_eq!(candidate.work, Work::default());
-    assert!(candidate.resolve(Kind::Measure, "measure-a").is_ok());
+    assert!(
+        candidate
+            .resolve(Kind::Measure, &JsString::from("measure-a"))
+            .is_ok()
+    );
     // Reuse after removal must not resurrect the hidden prefix occurrence.
     let replacement = candidate.insert_part(raw_part("part-z"), None).unwrap();
     assert_ne!(part, replacement);
-    assert_eq!(candidate.resolve(Kind::Part, "part-z"), Ok(replacement));
+    assert_eq!(
+        candidate.resolve(Kind::Part, &JsString::from("part-z")),
+        Ok(replacement)
+    );
     assert!(matches!(
-        candidate.resolve(Kind::Note, "note-a"),
+        candidate.resolve(Kind::Note, &JsString::from("note-a")),
         Ok(Occurrence::Added(_))
     ));
 }
@@ -293,14 +316,12 @@ fn duplicates_empty_ids_and_repeated_contents_keep_distinct_occurrences() {
     let store = build_live_score_store(&document).unwrap();
     let mut candidate = Candidate::new(TransactionOverlayV1::new(&store), document.id);
     let mut payload = raw_part("new-part");
-    payload.staves[1].id.clear();
+    payload.staves[1].id = JsString::from("");
     payload
         .measure_contents
         .push(payload.measure_contents[0].clone());
     payload.measure_contents[2].voices[0].id = "distinct-voice".into();
-    payload.measure_contents[2].voices[0]
-        .default_staff_id
-        .clear();
+    payload.measure_contents[2].voices[0].default_staff_id = JsString::from("");
     for measure_id in ["unknown-measure", ""] {
         payload.measure_contents.push(PartMeasureContentV1 {
             measure_id: measure_id.into(),
@@ -309,11 +330,11 @@ fn duplicates_empty_ids_and_repeated_contents_keep_distinct_occurrences() {
     }
     let part = candidate.insert_part(payload, None).unwrap();
     assert_eq!(
-        candidate.resolve(Kind::Staff, "staff-z"),
+        candidate.resolve(Kind::Staff, &JsString::from("staff-z")),
         Err(Failure::InternalError)
     );
-    let empty = candidate.resolve(Kind::Staff, "").unwrap();
-    assert_eq!(candidate.raw_id(&empty), Some(""));
+    let empty = candidate.resolve(Kind::Staff, &JsString::from("")).unwrap();
+    assert_eq!(candidate.raw_id(&empty), Some(&JsString::from("")));
     let contents = ordered(&mut candidate, &part, Children::Contents);
     assert_eq!(contents.len(), 5);
     assert_eq!(
@@ -337,15 +358,19 @@ fn duplicates_empty_ids_and_repeated_contents_keep_distinct_occurrences() {
         candidate.read_staff_reference(&voices2[0]),
         Some(Some("".into()))
     );
-    assert!(candidate.matches(Kind::Content, "measure-a").is_empty());
+    assert!(
+        candidate
+            .matches(Kind::Content, &JsString::from("measure-a"))
+            .is_empty()
+    );
     // Deleting an ambiguous child by ID fails, but its unique parent repairs it.
     candidate.hide(&part).unwrap();
     assert!(matches!(
-        candidate.resolve(Kind::Staff, "staff-z"),
+        candidate.resolve(Kind::Staff, &JsString::from("staff-z")),
         Ok(Occurrence::Prefix(_))
     ));
     assert_eq!(
-        candidate.resolve(Kind::Staff, ""),
+        candidate.resolve(Kind::Staff, &JsString::from("")),
         Err(Failure::TargetNotFound)
     );
     assert!(!candidate.visible(&contents[2]));
@@ -362,10 +387,18 @@ fn typed_target_resolution_does_not_conflate_cross_kind_ids() {
     payload.staves.truncate(1);
     payload.measure_contents.clear();
     candidate.insert_part(payload, None).unwrap();
-    assert!(candidate.resolve(Kind::Staff, "note-a").is_ok());
-    assert!(candidate.resolve(Kind::Note, "note-a").is_ok());
+    assert!(
+        candidate
+            .resolve(Kind::Staff, &JsString::from("note-a"))
+            .is_ok()
+    );
+    assert!(
+        candidate
+            .resolve(Kind::Note, &JsString::from("note-a"))
+            .is_ok()
+    );
     assert_eq!(
-        candidate.resolve(Kind::Voice, "note-a"),
+        candidate.resolve(Kind::Voice, &JsString::from("note-a")),
         Err(Failure::TargetNotFound)
     );
 }
@@ -375,10 +408,12 @@ fn borrowed_reads_and_anchor_resolution_copy_only_a_written_sibling_order_once()
     let document = fixture();
     let store = build_live_score_store(&document).unwrap();
     let mut candidate = Candidate::new(TransactionOverlayV1::new(&store), document.id);
-    let part = candidate.resolve(Kind::Part, "part-z").unwrap();
+    let part = candidate
+        .resolve(Kind::Part, &JsString::from("part-z"))
+        .unwrap();
     let order = CandidateOrder::new(&part, Children::Staffs);
     assert_eq!(
-        candidate.insertion_index(&order, Some("staff-z"), None),
+        candidate.insertion_index(&order, Some(&JsString::from("staff-z")), None),
         Ok(1)
     );
     assert_eq!(candidate.work.prefix_order_copies, 0);
@@ -387,10 +422,16 @@ fn borrowed_reads_and_anchor_resolution_copy_only_a_written_sibling_order_once()
     candidate.visit_order(&order, &mut |_, _| false).unwrap();
     assert_eq!(candidate.work.visited_entries - before, 1);
     candidate
-        .move_child(&order, "staff-z", Some("staff-a"))
+        .move_child(
+            &order,
+            &JsString::from("staff-z"),
+            Some(&JsString::from("staff-a")),
+        )
         .unwrap();
     assert_eq!(order_ids(&mut candidate, &order), ["staff-a", "staff-z"]);
-    candidate.move_child(&order, "staff-z", None).unwrap();
+    candidate
+        .move_child(&order, &JsString::from("staff-z"), None)
+        .unwrap();
     assert_eq!(order_ids(&mut candidate, &order), ["staff-z", "staff-a"]);
     assert_eq!(candidate.work.prefix_order_copies, 1);
     assert_eq!(candidate.work.copied_entries, 2);
@@ -413,11 +454,13 @@ fn owner_local_anchors_win_and_event_global_ambiguity_is_wrong_owner() {
     let document = fixture();
     let store = build_live_score_store(&document).unwrap();
     let mut candidate = Candidate::new(TransactionOverlayV1::new(&store), document.id);
-    let part = candidate.resolve(Kind::Part, "part-z").unwrap();
+    let part = candidate
+        .resolve(Kind::Part, &JsString::from("part-z"))
+        .unwrap();
     let staff_order = CandidateOrder::new(&part, Children::Staffs);
     let new_part = candidate.insert_part(raw_part("new-part"), None).unwrap();
     assert_eq!(
-        candidate.insertion_index(&staff_order, Some("staff-z"), None),
+        candidate.insertion_index(&staff_order, Some(&JsString::from("staff-z")), None),
         Ok(1)
     );
     let mut elsewhere = raw_part("elsewhere");
@@ -427,47 +470,59 @@ fn owner_local_anchors_win_and_event_global_ambiguity_is_wrong_owner() {
     elsewhere.measure_contents[1].voices[0].sequence.events[0].id = "remote-event".into();
     let elsewhere = candidate.insert_part(elsewhere, None).unwrap();
     assert_eq!(
-        candidate.insertion_index(&staff_order, Some("remote"), None),
+        candidate.insertion_index(&staff_order, Some(&JsString::from("remote")), None),
         Err(Failure::InternalError)
     );
     assert_eq!(
         candidate.insertion_index(
             &CandidateOrder::new(&elsewhere, Children::Staffs),
-            Some("remote"),
+            Some(&JsString::from("remote")),
             None
         ),
         Err(Failure::InternalError)
     );
     assert_eq!(
-        candidate.insertion_index(&staff_order, Some("note-a"), None),
+        candidate.insertion_index(&staff_order, Some(&JsString::from("note-a")), None),
         Err(Failure::AnchorNotFound)
     );
     let contents = ordered(&mut candidate, &new_part, Children::Contents);
     let voices = ordered(&mut candidate, &contents[0], Children::Voices);
     let events = CandidateOrder::new(&voices[0], Children::Events);
     assert_eq!(
-        candidate.insertion_index(&events, Some("remote-event"), None),
+        candidate.insertion_index(&events, Some(&JsString::from("remote-event")), None),
         Err(Failure::AnchorWrongOwner)
     );
     assert_eq!(
-        candidate.insertion_index(&events, Some("event-a"), None),
+        candidate.insertion_index(&events, Some(&JsString::from("event-a")), None),
         Ok(1)
     );
     assert_eq!(
-        candidate.insertion_index(&events, Some("missing"), None),
+        candidate.insertion_index(&events, Some(&JsString::from("missing")), None),
         Err(Failure::AnchorNotFound)
     );
     assert_eq!(
-        candidate.move_child(&staff_order, "staff-z", Some("staff-z")),
+        candidate.move_child(
+            &staff_order,
+            &JsString::from("staff-z"),
+            Some(&JsString::from("staff-z"))
+        ),
         Err(Failure::InternalError)
     );
     candidate.hide(&new_part).unwrap();
     assert_eq!(
-        candidate.move_child(&staff_order, "staff-z", Some("staff-z")),
+        candidate.move_child(
+            &staff_order,
+            &JsString::from("staff-z"),
+            Some(&JsString::from("staff-z"))
+        ),
         Err(Failure::AnchorSelfReference)
     );
     assert_eq!(
-        candidate.move_child(&staff_order, "missing", Some("missing")),
+        candidate.move_child(
+            &staff_order,
+            &JsString::from("missing"),
+            Some(&JsString::from("missing"))
+        ),
         Err(Failure::TargetNotFound)
     );
 }
@@ -477,16 +532,20 @@ fn hidden_children_do_not_shift_insert_or_move_positions() {
     let document = fixture();
     let store = build_live_score_store(&document).unwrap();
     let mut candidate = Candidate::new(TransactionOverlayV1::new(&store), document.id);
-    let original = candidate.resolve(Kind::Part, "part-z").unwrap();
+    let original = candidate
+        .resolve(Kind::Part, &JsString::from("part-z"))
+        .unwrap();
     let first = candidate.insert_part(raw_part("first"), None).unwrap();
     candidate.hide(&first).unwrap();
     let second = candidate
-        .insert_part(raw_part("second"), Some("part-z"))
+        .insert_part(raw_part("second"), Some(&JsString::from("part-z")))
         .unwrap();
     let order = CandidateOrder::new(&candidate.document, Children::Parts);
     assert_eq!(order_ids(&mut candidate, &order), ["part-z", "second"]);
     candidate.hide(&original).unwrap();
-    candidate.move_child(&order, "second", None).unwrap();
+    candidate
+        .move_child(&order, &JsString::from("second"), None)
+        .unwrap();
     assert_eq!(
         ordered(&mut candidate, &order.owner, Children::Parts),
         [second]
@@ -499,7 +558,9 @@ fn voice_anchor_checks_content_identity_and_owner_even_for_start() {
     let document = fixture();
     let store = build_live_score_store(&document).unwrap();
     let mut candidate = Candidate::new(TransactionOverlayV1::new(&store), document.id);
-    let original = candidate.resolve(Kind::Part, "part-z").unwrap();
+    let original = candidate
+        .resolve(Kind::Part, &JsString::from("part-z"))
+        .unwrap();
     // Even the Part raw ID is repeated: identity is an occurrence, not a string.
     let added = candidate.insert_part(raw_part("part-z"), None).unwrap();
     let old_contents = ordered(&mut candidate, &original, Children::Contents);
@@ -508,7 +569,7 @@ fn voice_anchor_checks_content_identity_and_owner_even_for_start() {
         candidate.raw_id(&old_contents[0]),
         candidate.raw_id(&new_contents[0])
     );
-    for after in [None, Some("voice-a")] {
+    for after in [None, Some(&JsString::from("voice-a"))] {
         assert_eq!(
             candidate.voice_insertion_index(&original, &new_contents[0], after),
             Err(Failure::InternalError)
@@ -543,28 +604,38 @@ fn indexed_prefix_references_and_added_raw_references_filter_hidden_sources() {
         )
         .unwrap();
     let mut candidate = Candidate::new(prefix, document.id);
-    let original_event = candidate.resolve(Kind::Event, "event-a").unwrap();
+    let original_event = candidate
+        .resolve(Kind::Event, &JsString::from("event-a"))
+        .unwrap();
     assert_eq!(
-        candidate.staff_referrers("staff-a"),
+        candidate.staff_referrers(&JsString::from("staff-a")),
         std::slice::from_ref(&original_event)
     );
-    let prefix_z = candidate.staff_referrers("staff-z");
+    let prefix_z = candidate.staff_referrers(&JsString::from("staff-z"));
     assert_eq!(prefix_z.len(), 2);
     let mut payload = raw_part("new-part");
-    payload.measure_contents[0].voices[0]
-        .default_staff_id
-        .clear();
+    payload.measure_contents[0].voices[0].default_staff_id = JsString::from("");
     payload.measure_contents[0].voices[0].sequence.events[0].staff_id = Some("".into());
     let added = candidate.insert_part(payload, None).unwrap();
-    let empty_refs = candidate.staff_referrers("");
+    let empty_refs = candidate.staff_referrers(&JsString::from(""));
     assert_eq!(empty_refs.len(), 2);
     assert_ne!(empty_refs[0], empty_refs[1]);
-    assert_eq!(candidate.staff_referrers("staff-z").len(), 3);
+    assert_eq!(
+        candidate.staff_referrers(&JsString::from("staff-z")).len(),
+        3
+    );
     candidate.hide(&original_event).unwrap();
-    assert!(candidate.staff_referrers("staff-a").is_empty());
+    assert!(
+        candidate
+            .staff_referrers(&JsString::from("staff-a"))
+            .is_empty()
+    );
     candidate.hide(&added).unwrap();
-    assert!(candidate.staff_referrers("").is_empty());
-    assert_eq!(candidate.staff_referrers("staff-z"), prefix_z);
+    assert!(candidate.staff_referrers(&JsString::from("")).is_empty());
+    assert_eq!(
+        candidate.staff_referrers(&JsString::from("staff-z")),
+        prefix_z
+    );
 }
 
 #[test]
@@ -634,7 +705,7 @@ fn read_layer_never_detaches_base_aggregates_or_copies_base_order_arrays() {
     let source = document.parts[0].staves[0].clone();
     for index in 0..4096 {
         let mut staff = source.clone();
-        staff.id = id(&format!("large-staff-{index}"));
+        staff.id = id(format!("large-staff-{index}"));
         document.parts[0].staves.push(staff);
     }
     let store = build_live_score_store(&document).unwrap();
@@ -644,15 +715,21 @@ fn read_layer_never_detaches_base_aggregates_or_copies_base_order_arrays() {
         refs: Cell::new(0),
     };
     let mut candidate = Candidate::new(TransactionOverlayV1::new(&guard), document.id.clone());
-    let part = candidate.resolve(Kind::Part, "part-z").unwrap();
-    let staff = candidate.resolve(Kind::Staff, "large-staff-4095").unwrap();
+    let part = candidate
+        .resolve(Kind::Part, &JsString::from("part-z"))
+        .unwrap();
+    let staff = candidate
+        .resolve(Kind::Staff, &JsString::from("large-staff-4095"))
+        .unwrap();
     assert!(candidate.read_value(&staff).is_some());
     assert_eq!(
         guard.visited.get(),
         0,
         "indexed scalar reads must not visit sibling orders"
     );
-    let note = candidate.resolve(Kind::Note, "note-a").unwrap();
+    let note = candidate
+        .resolve(Kind::Note, &JsString::from("note-a"))
+        .unwrap();
     let Some(Value::NoteWrittenPitch(mut pitch)) = candidate.read_value(&note) else {
         panic!("fixture pitch");
     };
@@ -660,12 +737,16 @@ fn read_layer_never_detaches_base_aggregates_or_copies_base_order_arrays() {
     let value = Value::NoteWrittenPitch(pitch);
     candidate.replace_value(&note, value.clone()).unwrap();
     assert_eq!(candidate.read_value(&note), Some(value));
-    let voice = candidate.resolve(Kind::Voice, "voice-a").unwrap();
+    let voice = candidate
+        .resolve(Kind::Voice, &JsString::from("voice-a"))
+        .unwrap();
     candidate
-        .replace_staff_reference(&voice, Some(String::new()))
+        .replace_staff_reference(&voice, Some(JsString::from("")))
         .unwrap();
     assert_eq!(
-        candidate.staff_referrers_in_part(&part, "").unwrap(),
+        candidate
+            .staff_referrers_in_part(&part, &JsString::from(""))
+            .unwrap(),
         std::slice::from_ref(&voice)
     );
     candidate
@@ -681,30 +762,37 @@ fn read_layer_never_detaches_base_aggregates_or_copies_base_order_arrays() {
     candidate.visit_order(&order, &mut |_, _| false).unwrap();
     assert_eq!(guard.visited.get(), 1);
     assert_eq!(
-        candidate.insertion_index(&order, Some("large-staff-4095"), None),
+        candidate.insertion_index(&order, Some(&JsString::from("large-staff-4095")), None),
         Ok(4098)
     );
     assert_eq!(candidate.work.prefix_order_copies, 0);
     assert!(candidate.orders.is_empty());
     candidate
-        .move_child(&order, "large-staff-4095", None)
+        .move_child(&order, &JsString::from("large-staff-4095"), None)
         .unwrap();
     assert_eq!(candidate.work.prefix_order_copies, 1);
     assert_eq!(candidate.work.copied_entries, 4098);
     let before = guard.visited.get();
     candidate
-        .move_child(&order, "large-staff-4095", Some("staff-a"))
+        .move_child(
+            &order,
+            &JsString::from("large-staff-4095"),
+            Some(&JsString::from("staff-a")),
+        )
         .unwrap();
     assert_eq!(
         guard.visited.get(),
         before,
         "later writes must reuse the candidate order"
     );
-    assert_eq!(candidate.staff_referrers("staff-a").len(), 2);
+    assert_eq!(
+        candidate.staff_referrers(&JsString::from("staff-a")).len(),
+        2
+    );
     assert_eq!(guard.refs.get(), 1);
     candidate.hide(&part).unwrap();
     assert_eq!(
-        candidate.resolve(Kind::Note, "note-a"),
+        candidate.resolve(Kind::Note, &JsString::from("note-a")),
         Err(Failure::TargetNotFound)
     );
     drop(candidate);
@@ -720,9 +808,11 @@ fn insertion_with_the_same_id_as_its_anchor_retains_both_occurrences() {
     let document = fixture();
     let store = build_live_score_store(&document).unwrap();
     let mut candidate = Candidate::new(TransactionOverlayV1::new(&store), document.id);
-    let original = candidate.resolve(Kind::Part, "part-z").unwrap();
+    let original = candidate
+        .resolve(Kind::Part, &JsString::from("part-z"))
+        .unwrap();
     let added = candidate
-        .insert_part(raw_part("part-z"), Some("part-z"))
+        .insert_part(raw_part("part-z"), Some(&JsString::from("part-z")))
         .unwrap();
     let order = CandidateOrder::new(&candidate.document, Children::Parts);
     assert_eq!(
@@ -730,7 +820,7 @@ fn insertion_with_the_same_id_as_its_anchor_retains_both_occurrences() {
         [original, added]
     );
     assert_eq!(
-        candidate.resolve(Kind::Part, "part-z"),
+        candidate.resolve(Kind::Part, &JsString::from("part-z")),
         Err(Failure::InternalError)
     );
 }
@@ -741,16 +831,22 @@ fn failed_anchor_preparation_has_no_candidate_or_prefix_delta() {
     let store = build_live_score_store(&document).unwrap();
     let mut candidate = Candidate::new(TransactionOverlayV1::new(&store), document.id);
     assert_eq!(
-        candidate.insert_part(raw_part("new-part"), Some("missing")),
+        candidate.insert_part(raw_part("new-part"), Some(&JsString::from("missing"))),
         Err(Failure::AnchorNotFound)
     );
     assert!(candidate.nodes.is_empty());
     assert!(candidate.orders.is_empty());
     assert!(candidate.added.is_empty());
-    let part = candidate.resolve(Kind::Part, "part-z").unwrap();
+    let part = candidate
+        .resolve(Kind::Part, &JsString::from("part-z"))
+        .unwrap();
     let order = CandidateOrder::new(&part, Children::Staffs);
     assert_eq!(
-        candidate.move_child(&order, "staff-a", Some("missing")),
+        candidate.move_child(
+            &order,
+            &JsString::from("staff-a"),
+            Some(&JsString::from("missing"))
+        ),
         Err(Failure::AnchorNotFound)
     );
     assert_eq!(order_ids(&mut candidate, &order), ["staff-z", "staff-a"]);
@@ -761,7 +857,7 @@ fn failed_anchor_preparation_has_no_candidate_or_prefix_delta() {
 #[test]
 fn long_document_owner_is_shared_by_every_added_root_and_order_key() {
     let mut document = fixture();
-    document.id = id(&"long-document-id/".repeat(4096));
+    document.id = id("long-document-id/".repeat(4096));
     let store = build_live_score_store(&document).unwrap();
     let mut candidate = Candidate::new(TransactionOverlayV1::new(&store), document.id);
     let Occurrence::Prefix(root) = candidate.document.clone() else {
@@ -786,7 +882,12 @@ fn long_document_owner_is_shared_by_every_added_root_and_order_key() {
         unreachable!()
     };
     assert!(Arc::ptr_eq(&root, owner));
-    assert_eq!(candidate.matches(Kind::Part, "same-part").len(), 2);
+    assert_eq!(
+        candidate
+            .matches(Kind::Part, &JsString::from("same-part"))
+            .len(),
+        2
+    );
     assert_eq!(
         ordered(&mut candidate, &Occurrence::Prefix(root), Children::Parts).len(),
         65
@@ -798,7 +899,7 @@ fn duplicate_raw_ids_share_strings_without_merging_nodes_or_refunding_hidden_dat
     let document = fixture();
     let store = build_live_score_store(&document).unwrap();
     let mut candidate = Candidate::new(TransactionOverlayV1::new(&store), document.id);
-    let long_id = "long-raw-id/".repeat(8192);
+    let long_id: JsString = "long-raw-id/".repeat(8192).into();
     let mut payload = raw_part(&long_id);
     payload.staves[0].id = long_id.clone();
     payload.measure_contents[0].voices[0].default_staff_id = long_id.clone();
@@ -812,21 +913,30 @@ fn duplicate_raw_ids_share_strings_without_merging_nodes_or_refunding_hidden_dat
         candidate.id_pool.iter().map(|id| id.len()).sum::<usize>(),
         unique_bytes
     );
-    let shared = candidate.id_pool.get(long_id.as_str()).unwrap();
+    let shared = candidate.id_pool.get(long_id.as_js_string()).unwrap();
     assert!(unique_bytes >= long_id.len());
     for node in &candidate.nodes {
-        if node.raw_id.as_ref() == long_id {
-            assert!(Arc::ptr_eq(&node.raw_id, shared));
+        if node.raw_id.as_js_string() == &long_id {
+            assert!(std::ptr::eq(
+                node.raw_id.code_units().as_ptr(),
+                shared.code_units().as_ptr()
+            ));
         }
         if let Some(reference) = &node.staff_id
-            && reference.as_ref() == long_id
+            && reference == &long_id
         {
-            assert!(Arc::ptr_eq(reference, shared));
+            assert!(std::ptr::eq(
+                reference.code_units().as_ptr(),
+                shared.code_units().as_ptr()
+            ));
         }
     }
     for by_id in candidate.added.values() {
-        if let Some((key, _)) = by_id.get_key_value(long_id.as_str()) {
-            assert!(Arc::ptr_eq(key, shared));
+        if let Some((key, _)) = by_id.get_key_value(long_id.as_js_string()) {
+            assert!(std::ptr::eq(
+                key.code_units().as_ptr(),
+                shared.code_units().as_ptr()
+            ));
         }
     }
     assert_eq!(
@@ -849,7 +959,7 @@ fn duplicate_raw_ids_share_strings_without_merging_nodes_or_refunding_hidden_dat
 #[test]
 fn prefix_content_occurrences_share_their_long_part_owner() {
     let mut document = fixture();
-    let long_part_id = "long-part-id/".repeat(4096);
+    let long_part_id: JsString = "long-part-id/".repeat(4096).into();
     document.parts[0].id = id(&long_part_id);
     let store = build_live_score_store(&document).unwrap();
     let mut candidate = Candidate::new(TransactionOverlayV1::new(&store), document.id);
@@ -900,8 +1010,8 @@ fn every_part_collection_reservation_failure_is_terminal_and_preserves_the_prefi
         payload
             .measure_contents
             .push(payload.measure_contents[0].clone());
-        payload.staves[1].id.clear();
-        let inserted = candidate.insert_part(payload, Some("part-z"))?;
+        payload.staves[1].id = JsString::from("");
+        let inserted = candidate.insert_part(payload, Some(&JsString::from("part-z")))?;
         candidate.hide(&inserted)
     };
     let mut baseline = Candidate::new(prepare_prefix(), document.id.clone());
@@ -920,7 +1030,9 @@ fn every_part_collection_reservation_failure_is_terminal_and_preserves_the_prefi
     for fail_at in 1..=attempts {
         let mut candidate = Candidate::new(prepare_prefix(), document.id.clone());
         candidate.reservation = Reservation::fail_at(fail_at);
-        let part = candidate.resolve(Kind::Part, "part-z").unwrap();
+        let part = candidate
+            .resolve(Kind::Part, &JsString::from("part-z"))
+            .unwrap();
         assert_eq!(
             mutate(&mut candidate),
             Err(Failure::InternalError),
@@ -944,7 +1056,7 @@ fn every_part_collection_reservation_failure_is_terminal_and_preserves_the_prefi
         assert_eq!(
             candidate.move_child(
                 &CandidateOrder::new(&part, Children::Staffs),
-                "staff-a",
+                &JsString::from("staff-a"),
                 None
             ),
             Err(Failure::InternalError)
@@ -985,10 +1097,16 @@ fn partial_order_copy_capacity_failures_cannot_publish_a_move_or_reactivate() {
     let document = fixture();
     let store = build_live_score_store(&document).unwrap();
     let mut baseline = Candidate::new(TransactionOverlayV1::new(&store), document.id.clone());
-    let part = baseline.resolve(Kind::Part, "part-z").unwrap();
+    let part = baseline
+        .resolve(Kind::Part, &JsString::from("part-z"))
+        .unwrap();
     let order = CandidateOrder::new(&part, Children::Staffs);
     baseline
-        .move_child(&order, "staff-z", Some("staff-a"))
+        .move_child(
+            &order,
+            &JsString::from("staff-z"),
+            Some(&JsString::from("staff-a")),
+        )
         .unwrap();
     assert_eq!(order_ids(&mut baseline, &order), ["staff-a", "staff-z"]);
     let attempts = baseline.reservation.attempts;
@@ -997,7 +1115,11 @@ fn partial_order_copy_capacity_failures_cannot_publish_a_move_or_reactivate() {
         let mut candidate = Candidate::new(TransactionOverlayV1::new(&store), document.id.clone());
         candidate.reservation = Reservation::fail_at(fail_at);
         assert_eq!(
-            candidate.move_child(&order, "staff-z", Some("staff-a")),
+            candidate.move_child(
+                &order,
+                &JsString::from("staff-z"),
+                Some(&JsString::from("staff-a"))
+            ),
             Err(Failure::InternalError)
         );
         assert!(candidate.orders.is_empty());

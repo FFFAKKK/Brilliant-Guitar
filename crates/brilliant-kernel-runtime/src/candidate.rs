@@ -2,6 +2,8 @@
 //! until preparation, resource accounting, final validation and adoption close.
 //! A frozen prefix owns earlier operations; it is never finished or replayed here.
 
+use brilliant_core_types::JsString;
+
 use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
@@ -183,12 +185,12 @@ impl CandidateOrder {
 /// Scalars contain no IDs. References retain raw strings until final admission.
 /// Incoming aggregates are consumed into these records and child orders once.
 struct Node {
-    raw_id: Arc<str>,
+    raw_id: JsString,
     kind: Kind,
     owner: Occurrence,
     value: Option<Value>,
     instrument: Option<InstrumentDescriptorV1>,
-    staff_id: Option<Arc<str>>,
+    staff_id: Option<JsString>,
     content_kind: Option<EventContentKind>,
 }
 
@@ -206,13 +208,13 @@ struct Candidate<'a> {
     nodes: Vec<Node>,
     // Content links are deliberately absent: measure IDs do not identify a
     // unique content occurrence. Resolve contents only in their owner's order.
-    added: HashMap<Kind, HashMap<Arc<str>, Vec<usize>>>,
-    id_pool: HashSet<Arc<str>>,
+    added: HashMap<Kind, HashMap<JsString, Vec<usize>>>,
+    id_pool: HashSet<JsString>,
     orders: HashMap<CandidateOrder, Vec<Occurrence>>,
     hidden: HashSet<Occurrence>,
     values: HashMap<Occurrence, Value>,
     instruments: HashMap<Occurrence, InstrumentDescriptorV1>,
-    staff_references: HashMap<Occurrence, Option<Arc<str>>>,
+    staff_references: HashMap<Occurrence, Option<JsString>>,
     work: Work,
     reservation: Reservation,
 }
@@ -235,11 +237,11 @@ impl<'a> Candidate<'a> {
         }
     }
 
-    fn raw_id<'b>(&'b self, occurrence: &'b Occurrence) -> Option<&'b str> {
+    fn raw_id<'b>(&'b self, occurrence: &'b Occurrence) -> Option<&'b JsString> {
         match occurrence {
-            Occurrence::Prefix(entity) => Some(entity.stable_id().as_str()),
-            Occurrence::PrefixContent { measure_id, .. } => Some(measure_id.as_str()),
-            Occurrence::Added(index) => Some(self.nodes.get(*index)?.raw_id.as_ref()),
+            Occurrence::Prefix(entity) => Some(entity.stable_id().as_js_string()),
+            Occurrence::PrefixContent { measure_id, .. } => Some(measure_id.as_js_string()),
+            Occurrence::Added(index) => Some(self.nodes.get(*index)?.raw_id.as_js_string()),
         }
     }
 
@@ -305,7 +307,7 @@ impl<'a> Candidate<'a> {
     }
 
     /// Bounded result: cardinality above one is enough to decide ambiguity.
-    fn matches(&mut self, kind: Kind, raw_id: &str) -> Vec<Occurrence> {
+    fn matches(&mut self, kind: Kind, raw_id: &JsString) -> Vec<Occurrence> {
         if kind == Kind::Content {
             return Vec::new();
         }
@@ -333,7 +335,7 @@ impl<'a> Candidate<'a> {
         matches
     }
 
-    fn resolve(&mut self, kind: Kind, raw_id: &str) -> Result<Occurrence, Failure> {
+    fn resolve(&mut self, kind: Kind, raw_id: &JsString) -> Result<Occurrence, Failure> {
         let mut matches = self.matches(kind, raw_id);
         match matches.len() {
             0 => Err(Failure::TargetNotFound),
@@ -346,7 +348,7 @@ impl<'a> Candidate<'a> {
     fn visit_order(
         &mut self,
         order: &CandidateOrder,
-        visitor: &mut dyn FnMut(&Occurrence, &str) -> bool,
+        visitor: &mut dyn FnMut(&Occurrence, &JsString) -> bool,
     ) -> Option<()> {
         if self.kind(&order.owner)? != order.children.owner_kind() || !self.visible(&order.owner) {
             return None;
@@ -370,7 +372,7 @@ impl<'a> Candidate<'a> {
                     return true;
                 }
                 visited += 1;
-                visitor(&child, id.as_str())
+                visitor(&child, id.as_js_string())
             })
         };
         self.work.order_visits += 1;
@@ -471,12 +473,12 @@ impl<'a> Candidate<'a> {
         }
     }
 
-    fn read_staff_reference(&self, occurrence: &Occurrence) -> Option<Option<String>> {
+    fn read_staff_reference(&self, occurrence: &Occurrence) -> Option<Option<JsString>> {
         if !self.visible(occurrence) {
             return None;
         }
         if let Some(value) = self.staff_references.get(occurrence) {
-            return Some(value.as_ref().map(|id| id.to_string()));
+            return Some(value.clone());
         }
         match occurrence {
             Occurrence::Prefix(entity) => match entity.as_ref() {
@@ -488,7 +490,7 @@ impl<'a> Candidate<'a> {
                     else {
                         return None;
                     };
-                    Some(Some(id.as_str().to_owned()))
+                    Some(Some(id.as_js_string().to_owned()))
                 }
                 Entity::Event { event_id } => {
                     let ReferenceValueV1::OptionalStableId(id) =
@@ -499,14 +501,13 @@ impl<'a> Candidate<'a> {
                     else {
                         return None;
                     };
-                    Some(id.map(|id| id.as_str().to_owned()))
+                    Some(id.map(|id| id.as_js_string().to_owned()))
                 }
                 _ => None,
             },
             Occurrence::Added(index) => {
                 let node = self.nodes.get(*index)?;
-                matches!(node.kind, Kind::Voice | Kind::Event)
-                    .then(|| node.staff_id.as_ref().map(|id| id.to_string()))
+                matches!(node.kind, Kind::Voice | Kind::Event).then(|| node.staff_id.clone())
             }
             _ => None,
         }
@@ -530,7 +531,7 @@ impl<'a> Candidate<'a> {
 
     /// Unordered source set: use the prefix index plus candidate-only records
     /// and replacements. Hidden sources and stale prefix edges are excluded.
-    fn staff_referrers(&self, raw_id: &str) -> Vec<Occurrence> {
+    fn staff_referrers(&self, raw_id: &JsString) -> Vec<Occurrence> {
         let mut result = Vec::new();
         if let Ok(id) = StableId::new(raw_id) {
             for reference in self.prefix.list_references_to(&id) {
@@ -550,7 +551,7 @@ impl<'a> Candidate<'a> {
         }
         for (index, node) in self.nodes.iter().enumerate() {
             if matches!(node.kind, Kind::Voice | Kind::Event)
-                && node.staff_id.as_deref() == Some(raw_id)
+                && node.staff_id.as_ref() == Some(raw_id)
             {
                 let source = Occurrence::Added(index);
                 if self.visible(&source) {
@@ -559,7 +560,7 @@ impl<'a> Candidate<'a> {
             }
         }
         for (source, value) in &self.staff_references {
-            if value.as_deref() == Some(raw_id) && self.visible(source) {
+            if value.as_ref() == Some(raw_id) && self.visible(source) {
                 result.push(source.clone());
             }
         }
@@ -571,7 +572,7 @@ impl<'a> Candidate<'a> {
     fn staff_referrers_in_part(
         &self,
         part: &Occurrence,
-        raw_id: &str,
+        raw_id: &JsString,
     ) -> Result<Vec<Occurrence>, Failure> {
         if !self.visible(part) {
             return Err(Failure::TargetNotFound);
@@ -665,7 +666,7 @@ impl<'a> Candidate<'a> {
     fn replace_staff_reference(
         &mut self,
         source: &Occurrence,
-        value: Option<String>,
+        value: Option<JsString>,
     ) -> Result<bool, Failure> {
         self.reservation.ensure_active()?;
         if !self.visible(source) {
@@ -691,7 +692,7 @@ impl<'a> Candidate<'a> {
     fn assign_shared_staff_reference(
         &mut self,
         source: &Occurrence,
-        value: Option<Arc<str>>,
+        value: Option<JsString>,
     ) -> Result<(), Failure> {
         self.reservation.ensure_active()?;
         if let Occurrence::Added(index) = source {
@@ -710,7 +711,7 @@ impl<'a> Candidate<'a> {
         &mut self,
         part: &Occurrence,
         content: &Occurrence,
-        after: Option<&str>,
+        after: Option<&JsString>,
     ) -> Result<usize, Failure> {
         // The reference compares the content object itself, not just measureId.
         // Check this even for start anchors and same-ID Parts/contents.
@@ -725,7 +726,7 @@ impl<'a> Candidate<'a> {
     fn insertion_index(
         &mut self,
         order: &CandidateOrder,
-        after: Option<&str>,
+        after: Option<&JsString>,
         skip: Option<&Occurrence>,
     ) -> Result<usize, Failure> {
         if !self.visible(&order.owner)
@@ -771,8 +772,8 @@ impl<'a> Candidate<'a> {
     fn move_child(
         &mut self,
         order: &CandidateOrder,
-        target_id: &str,
-        after: Option<&str>,
+        target_id: &JsString,
+        after: Option<&JsString>,
     ) -> Result<(), Failure> {
         self.reservation.ensure_active()?;
         let target = self.resolve(order.children.child_kind(), target_id)?;
@@ -826,31 +827,30 @@ impl<'a> Candidate<'a> {
 
     /// Share raw IDs and references across new records, lookup keys and content
     /// links. Occurrence identity remains independent of string identity.
-    fn share_id(&mut self, value: String) -> Result<Arc<str>, Failure> {
+    fn share_id(&mut self, value: JsString) -> Result<JsString, Failure> {
         self.reservation.ensure_active()?;
-        if let Some(shared) = self.id_pool.get(value.as_str()) {
+        if let Some(shared) = self.id_pool.get(value.as_js_string()) {
             return Ok(shared.clone());
         }
         self.reservation.set(Site::IdPool, &mut self.id_pool, 1)?;
-        let shared: Arc<str> = value.into();
-        self.id_pool.insert(shared.clone());
-        Ok(shared)
+        self.id_pool.insert(value.clone());
+        Ok(value)
     }
 
     fn add_node(
         &mut self,
         owner: &Occurrence,
         kind: Kind,
-        raw_id: String,
+        raw_id: JsString,
         value: Option<Value>,
     ) -> Result<Occurrence, Failure> {
         let raw_id = self.share_id(raw_id)?;
         self.add_shared_node(owner, kind, raw_id, value)
     }
 
-    fn share_existing_id(&mut self, value: Arc<str>) -> Result<Arc<str>, Failure> {
+    fn share_existing_id(&mut self, value: JsString) -> Result<JsString, Failure> {
         self.reservation.ensure_active()?;
-        if let Some(shared) = self.id_pool.get(value.as_ref()) {
+        if let Some(shared) = self.id_pool.get(value.as_js_string()) {
             return Ok(shared.clone());
         }
         self.reservation.set(Site::IdPool, &mut self.id_pool, 1)?;
@@ -863,7 +863,7 @@ impl<'a> Candidate<'a> {
         &mut self,
         owner: &Occurrence,
         kind: Kind,
-        raw_id: Arc<str>,
+        raw_id: JsString,
         value: Option<Value>,
     ) -> Result<Occurrence, Failure> {
         self.reservation.ensure_active()?;
@@ -875,7 +875,7 @@ impl<'a> Candidate<'a> {
                     .map(Site::LookupKinds, &mut self.added, 1)?;
             }
             let by_id = self.added.entry(kind).or_default();
-            if !by_id.contains_key(raw_id.as_ref()) {
+            if !by_id.contains_key(raw_id.as_js_string()) {
                 self.reservation.map(Site::LookupIds, by_id, 1)?;
             }
             let bucket = by_id.entry(raw_id.clone()).or_default();
@@ -937,7 +937,7 @@ impl<'a> Candidate<'a> {
     fn add_event(
         &mut self,
         voice: &Occurrence,
-        event: RhythmicEventV1<String>,
+        event: RhythmicEventV1<JsString>,
     ) -> Result<Occurrence, Failure> {
         let occurrence = self.add_node(
             voice,
@@ -1005,7 +1005,7 @@ impl<'a> Candidate<'a> {
         &mut self,
         part: &Occurrence,
         staff: AdmissionStaffDefinitionV1,
-        after: Option<&str>,
+        after: Option<&JsString>,
     ) -> Result<Occurrence, Failure> {
         self.reservation.ensure_active()?;
         let order = CandidateOrder::new(part, Children::Staffs);
@@ -1028,7 +1028,7 @@ impl<'a> Candidate<'a> {
         part: &Occurrence,
         content: &Occurrence,
         voice: AdmissionVoiceV1,
-        after: Option<&str>,
+        after: Option<&JsString>,
     ) -> Result<Occurrence, Failure> {
         self.reservation.ensure_active()?;
         let order = CandidateOrder::new(content, Children::Voices);
@@ -1041,8 +1041,8 @@ impl<'a> Candidate<'a> {
     fn insert_event(
         &mut self,
         voice: &Occurrence,
-        event: RhythmicEventV1<String>,
-        after: Option<&str>,
+        event: RhythmicEventV1<JsString>,
+        after: Option<&JsString>,
     ) -> Result<Occurrence, Failure> {
         self.reservation.ensure_active()?;
         let order = CandidateOrder::new(voice, Children::Events);
@@ -1057,7 +1057,7 @@ impl<'a> Candidate<'a> {
     fn insert_part(
         &mut self,
         part: AdmissionPartV1,
-        after: Option<&str>,
+        after: Option<&JsString>,
     ) -> Result<Occurrence, Failure> {
         self.reservation.ensure_active()?;
         let order = CandidateOrder::new(&self.document, Children::Parts);

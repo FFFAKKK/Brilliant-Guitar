@@ -114,7 +114,7 @@ impl Assessment<'_, '_> {
                 _ => {}
             }
         }
-        parts.sort_unstable_by(|left, right| left.id.as_str().cmp(right.id.as_str()));
+        parts.sort_unstable_by(|left, right| left.id.as_js_string().cmp(right.id.as_js_string()));
         for part in parts {
             self.work.dependency_reads += 1;
             if base.read_transposition(&part.id).as_ref()
@@ -257,6 +257,6 @@ fn sorted_ids(ids: HashSet<StableId>) -> Result<Vec<StableId>, Failure> {
         .try_reserve(ids.len())
         .map_err(|_| Failure::InternalError)?;
     sorted.extend(ids);
-    sorted.sort_unstable_by(|left, right| left.as_str().cmp(right.as_str()));
+    sorted.sort_unstable_by(|left, right| left.as_js_string().cmp(right.as_js_string()));
     Ok(sorted)
 }

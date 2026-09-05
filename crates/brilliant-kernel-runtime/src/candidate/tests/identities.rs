@@ -35,17 +35,17 @@ fn record_subtree(
 fn transient_part() -> AdmissionPartV1 {
     let mut part = raw_part("temporary");
     for staff in &mut part.staves {
-        staff.id.clear();
+        staff.id = JsString::from("");
     }
     for content in &mut part.measure_contents {
         for voice in &mut content.voices {
-            voice.id.clear();
-            voice.default_staff_id.clear();
+            voice.id = JsString::from("");
+            voice.default_staff_id = JsString::from("");
             for event in &mut voice.sequence.events {
-                event.id.clear();
+                event.id = JsString::from("");
                 if let RhythmicContentV1::Notes { notes } = &mut event.content {
                     for note in notes {
-                        note.id.clear();
+                        note.id = JsString::from("");
                     }
                 }
             }
@@ -61,7 +61,9 @@ fn same_raw_id_rebuild_has_distinct_lifetimes_at_both_boundaries() {
     let store = build_live_score_store(&document).unwrap();
     let mut recording = Candidate::new(TransactionOverlayV1::new(&store), document.id.clone());
     let mut recorder = IdentityRecorder::default();
-    let old = recording.resolve(Kind::Part, "part-z").unwrap();
+    let old = recording
+        .resolve(Kind::Part, &JsString::from("part-z"))
+        .unwrap();
     let old_ids = record_subtree(&mut recorder, &mut recording, &old);
     recording.hide(&old).unwrap();
     let new = recording.insert_part(raw_part("part-z"), None).unwrap();
@@ -207,7 +209,9 @@ fn suffix_start_is_after_the_isolated_typed_prefix() {
     };
     let expected = prepare().finish().unwrap();
     let mut candidate = Candidate::new(prepare(), document.id.clone());
-    let root = candidate.resolve(Kind::Part, "prefix-part").unwrap();
+    let root = candidate
+        .resolve(Kind::Part, &JsString::from("prefix-part"))
+        .unwrap();
     let mut recorder = IdentityRecorder::default();
     let journal_id = recorder.record(&mut candidate, &root).unwrap();
     candidate.hide(&root).unwrap();
@@ -299,10 +303,12 @@ fn strong_boundaries_reject_empty_duplicate_wrong_owner_and_missing_measure_loca
         let mut candidate = Candidate::new(TransactionOverlayV1::new(&store), document.id.clone());
         let mut recorder = IdentityRecorder::default();
         let mut payload = raw_part("part-z");
-        let old = candidate.resolve(Kind::Part, "part-z").unwrap();
+        let old = candidate
+            .resolve(Kind::Part, &JsString::from("part-z"))
+            .unwrap();
         candidate.hide(&old).unwrap();
         match invalid {
-            "empty" => payload.id.clear(),
+            "empty" => payload.id = JsString::from(""),
             "duplicate" => payload.staves[1].id = payload.staves[0].id.clone(),
             "cross-kind" => payload.staves[0].id = payload.id.clone(),
             "content" => payload
@@ -322,7 +328,9 @@ fn strong_boundaries_reject_empty_duplicate_wrong_owner_and_missing_measure_loca
 
     let mut candidate = Candidate::new(TransactionOverlayV1::new(&store), document.id.clone());
     let mut recorder = IdentityRecorder::default();
-    let voice = candidate.resolve(Kind::Voice, "voice-a").unwrap();
+    let voice = candidate
+        .resolve(Kind::Voice, &JsString::from("voice-a"))
+        .unwrap();
     recorder.record(&mut candidate, &voice).unwrap();
     let manifest = recorder.finish(&mut candidate).unwrap();
     let mut wrong_owner = document.clone();
@@ -334,7 +342,9 @@ fn strong_boundaries_reject_empty_duplicate_wrong_owner_and_missing_measure_loca
         ReplayBindings::at(&manifest, BoundarySide::SuffixStart, &mut wrong),
         Err(Failure::InternalError)
     ));
-    let measure = candidate.resolve(Kind::Measure, "measure-a").unwrap();
+    let measure = candidate
+        .resolve(Kind::Measure, &JsString::from("measure-a"))
+        .unwrap();
     candidate.hide(&measure).unwrap();
     assert!(matches!(
         ReplayBindings::at(&manifest, BoundarySide::SuffixStart, &mut candidate),
@@ -360,7 +370,7 @@ fn identity_reservation_failures_are_terminal_and_never_publish_partial_bindings
     };
     let expected = prepare().finish().unwrap();
     let run = |candidate: &mut Candidate<'_>| -> Result<(), Failure> {
-        let note = candidate.resolve(Kind::Note, "note-a")?;
+        let note = candidate.resolve(Kind::Note, &JsString::from("note-a"))?;
         let mut recorder = IdentityRecorder::default();
         let note_id = recorder.record(candidate, &note)?;
         let manifest = recorder.finish(candidate)?;
@@ -428,7 +438,7 @@ fn identity_reservation_failures_are_terminal_and_never_publish_partial_bindings
 #[test]
 fn boundary_content_lookup_indexes_each_changed_part_once_and_borrows_prefix_links() {
     let mut document = fixture();
-    let part_id = "long-part-owner/".repeat(4096);
+    let part_id: JsString = "long-part-owner/".repeat(4096).into();
     document.parts[0].id = id(&part_id);
     let mut payload = raw_part(&part_id);
     let raw_content = payload.measure_contents[0].clone();
@@ -439,26 +449,26 @@ fn boundary_content_lookup_indexes_each_changed_part_once_and_borrows_prefix_lin
     document.parts[0].measure_contents.clear();
     for index in 0..512 {
         let mut measure = measure.clone();
-        measure.id = id(&format!("measure-{index}"));
+        measure.id = id(format!("measure-{index}"));
         let mut content = content.clone();
         content.measure_id = measure.id.clone();
-        content.voices[0].id = id(&format!("voice-{index}"));
-        content.voices[0].sequence.events[0].id = id(&format!("event-{index}"));
+        content.voices[0].id = id(format!("voice-{index}"));
+        content.voices[0].sequence.events[0].id = id(format!("event-{index}"));
         let RhythmicContentV1::Notes { notes } = &mut content.voices[0].sequence.events[0].content
         else {
             panic!("notes");
         };
-        notes[0].id = id(&format!("note-{index}"));
+        notes[0].id = id(format!("note-{index}"));
         let mut raw_content = raw_content.clone();
-        raw_content.measure_id = measure.id.as_str().into();
-        raw_content.voices[0].id = format!("voice-{index}");
-        raw_content.voices[0].sequence.events[0].id = format!("event-{index}");
+        raw_content.measure_id = measure.id.as_js_string().into();
+        raw_content.voices[0].id = format!("voice-{index}").into();
+        raw_content.voices[0].sequence.events[0].id = format!("event-{index}").into();
         let RhythmicContentV1::Notes { notes } =
             &mut raw_content.voices[0].sequence.events[0].content
         else {
             panic!("notes");
         };
-        notes[0].id = format!("note-{index}");
+        notes[0].id = format!("note-{index}").into();
         payload.measure_contents.push(raw_content);
         document.measure_definitions.push(measure);
         document.parts[0].measure_contents.push(content);
@@ -497,7 +507,9 @@ fn content_locator_reservation_failures_discard_the_incomplete_boundary() {
     let store = build_live_score_store(&document).unwrap();
     let prepare = || {
         let mut candidate = Candidate::new(TransactionOverlayV1::new(&store), document.id.clone());
-        let old = candidate.resolve(Kind::Part, "part-z").unwrap();
+        let old = candidate
+            .resolve(Kind::Part, &JsString::from("part-z"))
+            .unwrap();
         candidate.hide(&old).unwrap();
         let root = candidate.insert_part(raw_part("part-z"), None).unwrap();
         let mut recorder = IdentityRecorder::default();

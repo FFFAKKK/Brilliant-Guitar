@@ -135,12 +135,29 @@ fn ordinary_serde_fails_closed_for_non_scalar_text_in_values_keys_and_full_dtos(
                 .unwrap();
         assert!(serde_json::to_vec(&dto).is_err());
         assert!(serde_json::to_value(&dto).is_err());
-        let error = ScoreDocumentV1::<StableId, String>::from_lossless_value(
+        let strong: ScoreDocumentV1 =
+            ScoreDocumentV1::from_lossless_value(decode_lossless_json(sample).unwrap()).unwrap();
+        assert_eq!(strong.id.as_js_string(), &dto.id);
+        assert_eq!(encode(&strong), encode(&dto));
+        assert!(serde_json::to_vec(&strong).is_err());
+        let error = ScoreDocumentV1::<String, String>::from_lossless_value(
             decode_lossless_json(sample).unwrap(),
         )
         .unwrap_err();
         assert_eq!(error.failure, LosslessValueFailure::NonScalarText);
         assert_eq!(error.path, [LosslessValuePath::Field("id".into())]);
+        let error = ScoreDocumentV1::<StableId, String>::from_lossless_value(
+            decode_lossless_json(sample).unwrap(),
+        )
+        .unwrap_err();
+        assert_eq!(error.failure, LosslessValueFailure::NonScalarText);
+        assert_eq!(
+            error.path,
+            [
+                LosslessValuePath::Field("metadata".into()),
+                LosslessValuePath::Field("title".into())
+            ]
+        );
     }
 }
 

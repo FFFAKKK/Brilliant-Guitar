@@ -1,0 +1,415 @@
+{
+  "oracleVersion": 1,
+  "samples": [
+    {
+      "label": "empty",
+      "utf8Bytes": 0,
+      "jsonBytes": 2
+    },
+    {
+      "label": "ascii",
+      "utf8Bytes": 15,
+      "jsonBytes": 17
+    },
+    {
+      "label": "escapes",
+      "utf8Bytes": 8,
+      "jsonBytes": 17
+    },
+    {
+      "label": "all-controls",
+      "utf8Bytes": 32,
+      "jsonBytes": 174
+    },
+    {
+      "label": "high-first",
+      "utf8Bytes": 3,
+      "jsonBytes": 8
+    },
+    {
+      "label": "high-last",
+      "utf8Bytes": 3,
+      "jsonBytes": 8
+    },
+    {
+      "label": "low-first",
+      "utf8Bytes": 3,
+      "jsonBytes": 8
+    },
+    {
+      "label": "low-last",
+      "utf8Bytes": 3,
+      "jsonBytes": 8
+    },
+    {
+      "label": "pair-first",
+      "utf8Bytes": 4,
+      "jsonBytes": 6
+    },
+    {
+      "label": "pair-last",
+      "utf8Bytes": 4,
+      "jsonBytes": 6
+    },
+    {
+      "label": "pair-guitar",
+      "utf8Bytes": 4,
+      "jsonBytes": 6
+    },
+    {
+      "label": "replacement",
+      "utf8Bytes": 3,
+      "jsonBytes": 5
+    },
+    {
+      "label": "private-marker",
+      "utf8Bytes": 3,
+      "jsonBytes": 5
+    },
+    {
+      "label": "literal-escape",
+      "utf8Bytes": 6,
+      "jsonBytes": 9
+    },
+    {
+      "label": "mixed",
+      "utf8Bytes": 20,
+      "jsonBytes": 34
+    },
+    {
+      "label": "reversed-pair",
+      "utf8Bytes": 6,
+      "jsonBytes": 14
+    },
+    {
+      "label": "unicode",
+      "utf8Bytes": 30,
+      "jsonBytes": 32
+    },
+    {
+      "label": "all-surrogates-isolated",
+      "utf8Bytes": 8191,
+      "jsonBytes": 14337
+    },
+    {
+      "label": "seeded-0",
+      "utf8Bytes": 3,
+      "jsonBytes": 8
+    },
+    {
+      "label": "seeded-1",
+      "utf8Bytes": 6,
+      "jsonBytes": 11
+    },
+    {
+      "label": "seeded-2",
+      "utf8Bytes": 9,
+      "jsonBytes": 14
+    },
+    {
+      "label": "seeded-3",
+      "utf8Bytes": 12,
+      "jsonBytes": 20
+    },
+    {
+      "label": "seeded-4",
+      "utf8Bytes": 15,
+      "jsonBytes": 23
+    },
+    {
+      "label": "seeded-5",
+      "utf8Bytes": 18,
+      "jsonBytes": 26
+    },
+    {
+      "label": "seeded-6",
+      "utf8Bytes": 21,
+      "jsonBytes": 32
+    },
+    {
+      "label": "seeded-7",
+      "utf8Bytes": 24,
+      "jsonBytes": 35
+    },
+    {
+      "label": "seeded-8",
+      "utf8Bytes": 27,
+      "jsonBytes": 38
+    },
+    {
+      "label": "seeded-9",
+      "utf8Bytes": 29,
+      "jsonBytes": 43
+    },
+    {
+      "label": "seeded-10",
+      "utf8Bytes": 33,
+      "jsonBytes": 47
+    },
+    {
+      "label": "seeded-11",
+      "utf8Bytes": 36,
+      "jsonBytes": 50
+    },
+    {
+      "label": "seeded-12",
+      "utf8Bytes": 38,
+      "jsonBytes": 55
+    },
+    {
+      "label": "seeded-13",
+      "utf8Bytes": 41,
+      "jsonBytes": 58
+    },
+    {
+      "label": "seeded-14",
+      "utf8Bytes": 45,
+      "jsonBytes": 62
+    },
+    {
+      "label": "seeded-15",
+      "utf8Bytes": 48,
+      "jsonBytes": 68
+    },
+    {
+      "label": "seeded-16",
+      "utf8Bytes": 51,
+      "jsonBytes": 71
+    },
+    {
+      "label": "seeded-17",
+      "utf8Bytes": 52,
+      "jsonBytes": 80
+    },
+    {
+      "label": "seeded-18",
+      "utf8Bytes": 57,
+      "jsonBytes": 80
+    },
+    {
+      "label": "seeded-19",
+      "utf8Bytes": 58,
+      "jsonBytes": 84
+    },
+    {
+      "label": "seeded-20",
+      "utf8Bytes": 62,
+      "jsonBytes": 91
+    },
+    {
+      "label": "seeded-21",
+      "utf8Bytes": 65,
+      "jsonBytes": 94
+    },
+    {
+      "label": "seeded-22",
+      "utf8Bytes": 69,
+      "jsonBytes": 95
+    },
+    {
+      "label": "seeded-23",
+      "utf8Bytes": 72,
+      "jsonBytes": 101
+    },
+    {
+      "label": "seeded-24",
+      "utf8Bytes": 73,
+      "jsonBytes": 102
+    },
+    {
+      "label": "seeded-25",
+      "utf8Bytes": 78,
+      "jsonBytes": 107
+    },
+    {
+      "label": "seeded-26",
+      "utf8Bytes": 79,
+      "jsonBytes": 105
+    },
+    {
+      "label": "seeded-27",
+      "utf8Bytes": 84,
+      "jsonBytes": 116
+    },
+    {
+      "label": "seeded-28",
+      "utf8Bytes": 87,
+      "jsonBytes": 119
+    },
+    {
+      "label": "seeded-29",
+      "utf8Bytes": 90,
+      "jsonBytes": 122
+    },
+    {
+      "label": "seeded-30",
+      "utf8Bytes": 91,
+      "jsonBytes": 132
+    },
+    {
+      "label": "seeded-31",
+      "utf8Bytes": 93,
+      "jsonBytes": 134
+    },
+    {
+      "label": "seeded-32",
+      "utf8Bytes": 99,
+      "jsonBytes": 134
+    },
+    {
+      "label": "seeded-33",
+      "utf8Bytes": 102,
+      "jsonBytes": 140
+    },
+    {
+      "label": "seeded-34",
+      "utf8Bytes": 102,
+      "jsonBytes": 145
+    },
+    {
+      "label": "seeded-35",
+      "utf8Bytes": 107,
+      "jsonBytes": 145
+    },
+    {
+      "label": "seeded-36",
+      "utf8Bytes": 111,
+      "jsonBytes": 152
+    },
+    {
+      "label": "seeded-37",
+      "utf8Bytes": 111,
+      "jsonBytes": 152
+    },
+    {
+      "label": "seeded-38",
+      "utf8Bytes": 116,
+      "jsonBytes": 163
+    },
+    {
+      "label": "seeded-39",
+      "utf8Bytes": 120,
+      "jsonBytes": 164
+    },
+    {
+      "label": "seeded-40",
+      "utf8Bytes": 123,
+      "jsonBytes": 167
+    },
+    {
+      "label": "seeded-41",
+      "utf8Bytes": 125,
+      "jsonBytes": 172
+    },
+    {
+      "label": "seeded-42",
+      "utf8Bytes": 126,
+      "jsonBytes": 170
+    },
+    {
+      "label": "seeded-43",
+      "utf8Bytes": 130,
+      "jsonBytes": 180
+    },
+    {
+      "label": "seeded-44",
+      "utf8Bytes": 135,
+      "jsonBytes": 185
+    },
+    {
+      "label": "seeded-45",
+      "utf8Bytes": 138,
+      "jsonBytes": 191
+    },
+    {
+      "label": "seeded-46",
+      "utf8Bytes": 139,
+      "jsonBytes": 186
+    },
+    {
+      "label": "seeded-47",
+      "utf8Bytes": 143,
+      "jsonBytes": 199
+    },
+    {
+      "label": "seeded-48",
+      "utf8Bytes": 3,
+      "jsonBytes": 8
+    },
+    {
+      "label": "seeded-49",
+      "utf8Bytes": 6,
+      "jsonBytes": 11
+    },
+    {
+      "label": "seeded-50",
+      "utf8Bytes": 9,
+      "jsonBytes": 14
+    },
+    {
+      "label": "seeded-51",
+      "utf8Bytes": 12,
+      "jsonBytes": 20
+    },
+    {
+      "label": "seeded-52",
+      "utf8Bytes": 15,
+      "jsonBytes": 23
+    },
+    {
+      "label": "seeded-53",
+      "utf8Bytes": 18,
+      "jsonBytes": 26
+    },
+    {
+      "label": "seeded-54",
+      "utf8Bytes": 21,
+      "jsonBytes": 32
+    },
+    {
+      "label": "seeded-55",
+      "utf8Bytes": 24,
+      "jsonBytes": 35
+    },
+    {
+      "label": "seeded-56",
+      "utf8Bytes": 27,
+      "jsonBytes": 38
+    },
+    {
+      "label": "seeded-57",
+      "utf8Bytes": 30,
+      "jsonBytes": 44
+    },
+    {
+      "label": "seeded-58",
+      "utf8Bytes": 33,
+      "jsonBytes": 47
+    },
+    {
+      "label": "seeded-59",
+      "utf8Bytes": 36,
+      "jsonBytes": 50
+    },
+    {
+      "label": "seeded-60",
+      "utf8Bytes": 39,
+      "jsonBytes": 56
+    },
+    {
+      "label": "seeded-61",
+      "utf8Bytes": 42,
+      "jsonBytes": 59
+    },
+    {
+      "label": "seeded-62",
+      "utf8Bytes": 45,
+      "jsonBytes": 62
+    },
+    {
+      "label": "seeded-63",
+      "utf8Bytes": 47,
+      "jsonBytes": 67
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+use brilliant_core_types::JsString;
 use std::collections::HashSet;
 
 use super::{Assessment, Code, Entity, Failure, FinalValidationDeltaV1, Order, Owner};
@@ -22,7 +23,7 @@ impl Assessment<'_, '_> {
                 staffs.push(staff);
             }
         }
-        staffs.sort_unstable_by(|left, right| left.id.as_str().cmp(right.id.as_str()));
+        staffs.sort_unstable_by(|left, right| left.id.as_js_string().cmp(right.id.as_js_string()));
         for staff in staffs {
             self.work.rules_evaluated += 1;
             if staff.line_count.get() <= 0 {
@@ -62,7 +63,7 @@ impl Assessment<'_, '_> {
                 targets.push(staff_id);
             }
         }
-        targets.sort_unstable_by(|left, right| left.as_str().cmp(right.as_str()));
+        targets.sort_unstable_by(|left, right| left.as_js_string().cmp(right.as_js_string()));
         for staff in targets {
             self.work.dependency_reads += 1;
             for address in base.list_references_to(staff) {
@@ -236,10 +237,10 @@ fn insert_reference(set: &mut HashSet<Reference>, address: &Reference) -> Result
     Ok(())
 }
 
-fn reference_key(address: &Reference) -> (u8, &str) {
+fn reference_key(address: &Reference) -> (u8, &JsString) {
     match address {
-        Reference::VoiceDefaultStaff { voice_id } => (0, voice_id.as_str()),
-        Reference::EventStaffAssignment { event_id } => (1, event_id.as_str()),
+        Reference::VoiceDefaultStaff { voice_id } => (0, voice_id.as_js_string()),
+        Reference::EventStaffAssignment { event_id } => (1, event_id.as_js_string()),
         _ => unreachable!(),
     }
 }

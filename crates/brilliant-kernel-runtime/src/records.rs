@@ -1,6 +1,7 @@
+use brilliant_core_types::JsString;
 use std::collections::BTreeMap;
 
-use brilliant_core_types::{BoundedJsonValue, SafeInteger, StableId};
+use brilliant_core_types::{LosslessJsonValue as BoundedJsonValue, SafeInteger, StableId};
 use brilliant_score_foundation::{
     ClefV1, ExtensionOwnerV1, FractionV1, InstrumentDescriptorV1, MeterV1, NoteValueV1,
     ScoreMetadataV1, WrittenPitchV1,
@@ -24,7 +25,7 @@ pub(crate) struct MeasureRecord {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct PartRecord {
     pub(crate) id: StableId,
-    pub(crate) name: String,
+    pub(crate) name: JsString,
     pub(crate) instrument: InstrumentDescriptorV1,
 }
 
@@ -64,10 +65,10 @@ pub(crate) struct NoteRecord {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct ExtensionRecord {
-    pub(crate) namespace: String,
+    pub(crate) namespace: JsString,
     pub(crate) schema_version: SafeInteger,
     pub(crate) owner: ExtensionOwnerV1,
-    pub(crate) payload: BTreeMap<String, BoundedJsonValue>,
+    pub(crate) payload: BTreeMap<JsString, BoundedJsonValue>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]

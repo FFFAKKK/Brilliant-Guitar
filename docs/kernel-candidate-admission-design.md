@@ -91,7 +91,7 @@ boundary; conversion to them is explicit and fallible after final validation.
 ### Implemented codec representation refinement
 
 The command input layer shares the nine component definitions through an
-`Id = StableId` parameter. Admission instances use `String`; default instances
+`Id = StableId` parameter. Admission instances use `JsString`; default instances
 remain the existing nonempty-ID DTOs. References propagate the same parameter
 through Voice defaults, Event assignments and Part measure contents. This
 preserves empty/duplicate values and ordered arrays without maintaining a second
@@ -239,6 +239,12 @@ arbitrary process-wide OOM. Any future validation/lowering entry point must chec
 the terminal candidate reservation state before using partially prepared records.
 
 ### Production StableId clone sharing
+
+The following records the original Arc<str> sharing repair. The subsequent
+live UTF-16 migration replaces that storage by JsString/Arc<[u16]>, preserving
+clone sharing while admitting all JavaScript code units. Constructors now accept
+impl Into<JsString>, and borrowed access is as_js_string. See
+`kernel-js-string-compatibility.md` for the current representation and checks.
 
 A real typed-overlay insertion exposed the same amplification outside the
 candidate prototype: a 64 KiB Part ID was copied into 258 separately allocated
@@ -548,6 +554,17 @@ diagnostics and strong Store adoption remain open. No commercial qualification
 or production cutover is claimed.
 
 ## Implementation and evidence order
+
+After the live UTF-16 migration, bounded GPT-6 planning review selected the next
+functional slice: journal Staff insertion/removal driven by admission-decoded
+commands. It must cover raw empty/duplicate IDs, exact Part ownership and local
+anchor resolution, reference-conflict scope, field/move/remove composition,
+insertion inside a newly inserted Part and both stored replay directions.
+Every new reservation failure must remain terminal and preserve the prefix/Store.
+Initial deletion may be limited to a Staff inserted by that recorder, with this
+limit explicit in tests. This is a concrete command-to-journal path; it does not
+activate a partial public candidate dispatcher. Final assessment, cumulative
+budgets and strong adoption must follow before selecting the route natively.
 
 1. Pin the field/entrypoint matrix against the independent TS decoder/runtime,
    including direct-versus-nested empty Event/Note IDs and empty target-versus-anchor.

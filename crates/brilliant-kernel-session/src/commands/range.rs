@@ -80,15 +80,29 @@ mod tests {
 
     fn target_key(
         target: &brilliant_kernel_contracts::AffectedEntityAddressV1,
-    ) -> (&'static str, &str) {
+    ) -> (&'static str, Vec<u16>) {
         match target {
-            ScoreEntityTargetV1::Document { document_id } => ("document", document_id.as_str()),
-            ScoreEntityTargetV1::Measure { measure_id } => ("measure", measure_id.as_str()),
-            ScoreEntityTargetV1::Part { part_id } => ("part", part_id.as_str()),
-            ScoreEntityTargetV1::Staff { staff_id } => ("staff", staff_id.as_str()),
-            ScoreEntityTargetV1::Voice { voice_id } => ("voice", voice_id.as_str()),
-            ScoreEntityTargetV1::Event { event_id } => ("event", event_id.as_str()),
-            ScoreEntityTargetV1::Note { note_id } => ("note", note_id.as_str()),
+            ScoreEntityTargetV1::Document { document_id } => {
+                ("document", document_id.as_js_string().code_units().to_vec())
+            }
+            ScoreEntityTargetV1::Measure { measure_id } => {
+                ("measure", measure_id.as_js_string().code_units().to_vec())
+            }
+            ScoreEntityTargetV1::Part { part_id } => {
+                ("part", part_id.as_js_string().code_units().to_vec())
+            }
+            ScoreEntityTargetV1::Staff { staff_id } => {
+                ("staff", staff_id.as_js_string().code_units().to_vec())
+            }
+            ScoreEntityTargetV1::Voice { voice_id } => {
+                ("voice", voice_id.as_js_string().code_units().to_vec())
+            }
+            ScoreEntityTargetV1::Event { event_id } => {
+                ("event", event_id.as_js_string().code_units().to_vec())
+            }
+            ScoreEntityTargetV1::Note { note_id } => {
+                ("note", note_id.as_js_string().code_units().to_vec())
+            }
         }
     }
 
@@ -116,7 +130,10 @@ mod tests {
         assert_zero_global_work(&value.metrics);
         assert_eq!(
             value.affected.iter().map(target_key).collect::<Vec<_>>(),
-            [("note", "n1"), ("note", "n2")]
+            [
+                ("note", "n1".encode_utf16().collect::<Vec<_>>()),
+                ("note", "n2".encode_utf16().collect::<Vec<_>>())
+            ]
         );
         let encoded = String::from_utf8(
             encode_read_result(&session.read_state()).expect("transposed range read"),
@@ -140,7 +157,7 @@ mod tests {
         assert!(matches!(
             address,
             brilliant_kernel_contracts::NoteAddressV1::Note { note_id }
-                if note_id.as_str() == "nb3"
+                if note_id.as_js_string() == "nb3"
         ));
         assert_eq!(
             reason,
@@ -163,21 +180,21 @@ mod tests {
         };
         assert!(matches!(
             value.affected.first(),
-            Some(ScoreEntityTargetV1::Measure { measure_id }) if measure_id.as_str() == "m2"
+            Some(ScoreEntityTargetV1::Measure { measure_id }) if measure_id.as_js_string() == "m2"
         ));
         let after = read(&measure_session).snapshot.document.clone();
         assert_eq!(
             after
                 .measure_definitions
                 .iter()
-                .map(|measure| measure.id.as_str())
+                .map(|measure| measure.id.as_js_string())
                 .collect::<Vec<_>>(),
             ["m1"]
         );
         assert!(after.parts.iter().all(|part| {
             part.measure_contents
                 .iter()
-                .map(|content| content.measure_id.as_str())
+                .map(|content| content.measure_id.as_js_string())
                 .eq(["m1"])
         }));
 
@@ -262,7 +279,10 @@ mod tests {
         assert_eq!(read(&batch_session).snapshot.document, before_document);
         assert_eq!(
             value.affected.iter().map(target_key).collect::<Vec<_>>(),
-            [("voice", "va1"), ("event", "batch-event")]
+            [
+                ("voice", "va1".encode_utf16().collect::<Vec<_>>()),
+                ("event", "batch-event".encode_utf16().collect::<Vec<_>>())
+            ]
         );
 
         let mut no_op_session = session();
@@ -353,14 +373,14 @@ mod tests {
             document
                 .measure_definitions
                 .iter()
-                .map(|measure| measure.id.as_str())
+                .map(|measure| measure.id.as_js_string())
                 .collect::<Vec<_>>(),
             ["mx"]
         );
         assert!(document.parts.iter().all(|part| {
             part.measure_contents
                 .iter()
-                .map(|content| content.measure_id.as_str())
+                .map(|content| content.measure_id.as_js_string())
                 .eq(["mx"])
         }));
     }
@@ -381,19 +401,19 @@ mod tests {
             document
                 .measure_definitions
                 .iter()
-                .map(|measure| measure.id.as_str())
+                .map(|measure| measure.id.as_js_string())
                 .collect::<Vec<_>>(),
             ["m1", "m3"]
         );
         let part = document
             .parts
             .iter()
-            .find(|part| part.id.as_str() == "pc")
+            .find(|part| part.id.as_js_string() == "pc")
             .expect("inserted part");
         assert_eq!(
             part.measure_contents
                 .iter()
-                .map(|content| content.measure_id.as_str())
+                .map(|content| content.measure_id.as_js_string())
                 .collect::<Vec<_>>(),
             ["m1", "m3"]
         );

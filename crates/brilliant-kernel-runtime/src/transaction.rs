@@ -1,3 +1,4 @@
+use brilliant_core_types::JsString;
 use std::{
     collections::{HashMap, HashSet},
     hash::Hash,
@@ -885,11 +886,18 @@ fn extension_record(value: ExtensionBlockV1) -> ExtensionRecord {
 
 fn extension_anchor_id_from_key(key: &ExtensionKeyV1) -> StableId {
     let owner = match &key.owner {
-        StableExtensionOwnerV1::Score => "score".to_owned(),
-        StableExtensionOwnerV1::Part { part_id } => format!("part:{}", part_id.as_str()),
+        StableExtensionOwnerV1::Score => JsString::from("score"),
+        StableExtensionOwnerV1::Part { part_id } => {
+            JsString::concat(&[&"part:".into(), part_id.as_js_string()])
+        }
     };
-    StableId::new(format!("extension:{owner}:{}", key.namespace))
-        .expect("extension anchor is non-empty")
+    StableId::new(JsString::concat(&[
+        &"extension:".into(),
+        &owner,
+        &":".into(),
+        &key.namespace,
+    ]))
+    .expect("extension anchor is non-empty")
 }
 
 struct InsertRecordV1<R> {
@@ -3291,7 +3299,7 @@ mod tests {
             .expect("insert event");
 
         let mut extension = baseline.extensions[0].clone();
-        extension.namespace = "example.inserted".to_owned();
+        extension.namespace = "example.inserted".into();
         overlay
             .insert_extension(
                 StableAnchorV1::After {
@@ -3367,7 +3375,7 @@ mod tests {
         }
         document.parts.push(retained);
         let mut owned = document.extensions[0].clone();
-        owned.namespace = "example.part-owned".to_owned();
+        owned.namespace = "example.part-owned".into();
         owned.owner = ExtensionOwnerV1::Part {
             part_id: id("part-z"),
         };
@@ -3399,7 +3407,7 @@ mod tests {
             .expect("remove commit");
         let removed = store.export_document().expect("removed document");
         assert_eq!(removed.parts.len(), 1);
-        assert_eq!(removed.parts[0].id.as_str(), "retained-part");
+        assert_eq!(removed.parts[0].id.as_js_string(), "retained-part");
         assert_eq!(removed.extensions.len(), 2);
         assert_index_parity(&store);
 
@@ -3513,7 +3521,7 @@ mod tests {
                 ScalarAddressV1::PartName {
                     part_id: id("part-z"),
                 },
-                ScalarValueV1::PartName("Changed".to_owned()),
+                ScalarValueV1::PartName("Changed".into()),
             )
             .expect("stage scalar");
         let change_set = overlay.finish().expect("change set");

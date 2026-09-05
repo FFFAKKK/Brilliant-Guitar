@@ -17,6 +17,39 @@ fn units(sample: &serde_json::Value) -> Vec<u16> {
 }
 
 #[test]
+fn raw_text_and_json_budgets_match_independent_javascript_encoders() {
+    let lengths: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../test/core-kernel/rust-migration/fixtures/js-string-byte-length-oracle-v1.json"
+    ))
+    .unwrap();
+    let oracle = oracle();
+    let samples = oracle["samples"].as_array().unwrap();
+    let lengths = lengths["samples"].as_array().unwrap();
+    assert_eq!(samples.len(), lengths.len());
+    for (sample, length) in samples.iter().zip(lengths) {
+        assert_eq!(sample["label"], length["label"]);
+        let value = JsString::from_utf16(units(sample));
+        assert_eq!(
+            value.utf8_byte_len() as u64,
+            length["utf8Bytes"].as_u64().unwrap(),
+            "{}",
+            sample["label"]
+        );
+        assert_eq!(
+            js_string_json_len(&value).unwrap() as u64,
+            length["jsonBytes"].as_u64().unwrap(),
+            "{}",
+            sample["label"]
+        );
+        assert_eq!(
+            value.code_units(),
+            units(sample),
+            "accounting must not normalize text"
+        );
+    }
+}
+
+#[test]
 fn all_reference_strings_decode_write_and_count_exact_javascript_bytes() {
     for sample in oracle()["samples"].as_array().unwrap() {
         let expected = JsString::from_utf16(units(sample));
@@ -206,4 +239,123 @@ fn ascii_token_recognition_uses_only_the_supplied_capacity_and_validates_the_tai
     for invalid in [r#""a" []"#, r#""\u00""#, r#""\ud800" trailing"#] {
         assert!(decode_js_string_ascii_token(invalid, &mut empty).is_err());
     }
+}
+
+#[test]
+fn buffered_writer_preserves_escapes_pairs_and_unpaired_units_across_block_edges() {
+    let suffix_units = [
+        0x22, 0x5c, 0, 0xd800, 0x7a, 0xd83d, 0xde00, 0xdc00, 10, 0xe9,
+    ];
+    let suffix_json = r#"\"\\\u0000\ud800z😀\udc00\né"#;
+    for prefix_length in 1016..1032 {
+        let mut units = vec![u16::from(b'a'); prefix_length];
+        units.extend(suffix_units);
+        units.extend(vec![u16::from(b'b'); 1100]);
+        let value = JsString::from_utf16(units);
+        let expected = format!(
+            "\"{}{suffix_json}{}\"",
+            "a".repeat(prefix_length),
+            "b".repeat(1100)
+        );
+        let mut bytes = Vec::new();
+        write_js_string_json(&value, &mut bytes).unwrap();
+        assert_eq!(bytes, expected.as_bytes(), "prefix {prefix_length}");
+        assert_eq!(js_string_json_len(&value), Some(expected.len()));
+        assert_eq!(decode_js_string_token(&expected).unwrap(), value);
+    }
+
+    // A short input can expand beyond the short stack buffer through escaping.
+    let value = JsString::from_utf16(vec![0; 32]);
+    let expected = format!("\"{}\"", r"\u0000".repeat(32));
+    let mut bytes = Vec::new();
+    write_js_string_json(&value, &mut bytes).unwrap();
+    assert_eq!(bytes, expected.as_bytes());
+}
+
+#[test]
+fn buffered_writer_honors_partial_writes_and_faults_at_every_byte_across_blocks() {
+    struct PartialWriter {
+        bytes: Vec<u8>,
+        fail_after: usize,
+    }
+    impl Write for PartialWriter {
+        fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+            if self.bytes.len() == self.fail_after {
+                return Err(io::Error::new(
+                    io::ErrorKind::PermissionDenied,
+                    "blocked output byte",
+                ));
+            }
+            let length = bytes.len().min(7).min(self.fail_after - self.bytes.len());
+            self.bytes.extend_from_slice(&bytes[..length]);
+            Ok(length)
+        }
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+
+    let mut units = vec![u16::from(b'a'); 1022];
+    units.extend([0x22, 0x5c, 0, 0xd800, 0x7a, 0xd83d, 0xde00, 0xdc00]);
+    units.extend(vec![u16::from(b'b'); 1024]);
+    let value = JsString::from_utf16(units);
+    let expected = format!(
+        "\"{}{}{}\"",
+        "a".repeat(1022),
+        r#"\"\\\u0000\ud800z😀\udc00"#,
+        "b".repeat(1024)
+    )
+    .into_bytes();
+    for fail_after in 0..expected.len() {
+        let mut writer = PartialWriter {
+            bytes: Vec::new(),
+            fail_after,
+        };
+        let failure = write_js_string_json(&value, &mut writer).unwrap_err();
+        assert_eq!(failure.kind(), io::ErrorKind::PermissionDenied);
+        assert_eq!(failure.to_string(), "blocked output byte");
+        assert_eq!(
+            writer.bytes,
+            expected[..fail_after],
+            "failure byte {fail_after}"
+        );
+    }
+    let mut writer = PartialWriter {
+        bytes: Vec::new(),
+        fail_after: expected.len(),
+    };
+    write_js_string_json(&value, &mut writer).unwrap();
+    assert_eq!(writer.bytes, expected);
+}
+
+#[test]
+fn buffered_writer_batches_long_ascii_and_emits_short_ids_in_one_write() {
+    #[derive(Default)]
+    struct CountingWriter {
+        calls: usize,
+        bytes: usize,
+        largest: usize,
+    }
+    impl Write for CountingWriter {
+        fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+            self.calls += 1;
+            self.bytes += bytes.len();
+            self.largest = self.largest.max(bytes.len());
+            Ok(bytes.len())
+        }
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+    let mut short = CountingWriter::default();
+    write_js_string_json(&JsString::from("event-102400"), &mut short).unwrap();
+    assert_eq!(short.calls, 1);
+    assert_eq!(short.bytes, b"\"event-102400\"".len());
+
+    let value = JsString::from("a".repeat(8192));
+    let mut long = CountingWriter::default();
+    write_js_string_json(&value, &mut long).unwrap();
+    assert_eq!(long.bytes, 8194);
+    assert_eq!(long.calls, 8194_usize.div_ceil(1024));
+    assert_eq!(long.largest, 1024);
 }

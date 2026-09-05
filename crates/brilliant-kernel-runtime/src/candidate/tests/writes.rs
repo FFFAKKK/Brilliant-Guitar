@@ -2,9 +2,11 @@ use super::*;
 
 fn changed_value(mut value: Value) -> Value {
     match &mut value {
-        Value::DocumentMetadata(metadata) => metadata.title.push_str(" candidate"),
+        Value::DocumentMetadata(metadata) => {
+            metadata.title = JsString::concat(&[&metadata.title, &JsString::from(" candidate")])
+        }
         Value::MeasureDefinition { meter, .. } => meter.numerator = SafeInteger::new(3).unwrap(),
-        Value::PartName(name) => name.push_str(" candidate"),
+        Value::PartName(name) => *name = JsString::concat(&[name, &JsString::from(" candidate")]),
         Value::StaffDefinition { line_count, .. } => *line_count = SafeInteger::new(4).unwrap(),
         Value::VoiceSequenceStart(start) => start.numerator = SafeInteger::new(1).unwrap(),
         Value::EventNoteValue(duration) => duration.dots = SafeInteger::new(2).unwrap(),
@@ -37,15 +39,15 @@ fn scalar_writes_cover_all_fields_without_mutating_or_charging_the_frozen_prefix
     let mut candidate = Candidate::new(prepare(), document.id.clone());
     let mut changes = 0;
     for (kind, raw_id) in [
-        (Kind::Document, document.id.as_str()),
-        (Kind::Measure, "measure-a"),
-        (Kind::Part, "part-z"),
-        (Kind::Staff, "staff-a"),
-        (Kind::Voice, "voice-a"),
-        (Kind::Event, "event-a"),
-        (Kind::Note, "note-a"),
+        (Kind::Document, document.id.as_js_string()),
+        (Kind::Measure, &JsString::from("measure-a")),
+        (Kind::Part, &JsString::from("part-z")),
+        (Kind::Staff, &JsString::from("staff-a")),
+        (Kind::Voice, &JsString::from("voice-a")),
+        (Kind::Event, &JsString::from("event-a")),
+        (Kind::Note, &JsString::from("note-a")),
     ] {
-        let occurrence = candidate.resolve(kind, raw_id).unwrap();
+        let occurrence = candidate.resolve(kind, &JsString::from(raw_id)).unwrap();
         let original = candidate.read_value(&occurrence).unwrap();
         let value = changed_value(original.clone());
         let before = candidate.reservation.attempts;
@@ -72,7 +74,9 @@ fn scalar_writes_cover_all_fields_without_mutating_or_charging_the_frozen_prefix
             "replacement must reuse its map entry"
         );
     }
-    let part = candidate.resolve(Kind::Part, "part-z").unwrap();
+    let part = candidate
+        .resolve(Kind::Part, &JsString::from("part-z"))
+        .unwrap();
     let original = candidate.read_instrument(&part).unwrap();
     let mut instrument = original.clone();
     instrument.written_to_sounding.chromatic_semitones = SafeInteger::new(-12).unwrap();
@@ -102,8 +106,12 @@ fn added_scalar_changes_are_occurrence_local_and_hidden_prefix_replacements_do_n
     let document = fixture();
     let store = build_live_score_store(&document).unwrap();
     let mut candidate = Candidate::new(TransactionOverlayV1::new(&store), document.id);
-    let old_part = candidate.resolve(Kind::Part, "part-z").unwrap();
-    let old_note = candidate.resolve(Kind::Note, "note-a").unwrap();
+    let old_part = candidate
+        .resolve(Kind::Part, &JsString::from("part-z"))
+        .unwrap();
+    let old_note = candidate
+        .resolve(Kind::Note, &JsString::from("note-a"))
+        .unwrap();
     let changed = changed_value(candidate.read_value(&old_note).unwrap());
     candidate.replace_value(&old_note, changed.clone()).unwrap();
     candidate.hide(&old_part).unwrap();
@@ -114,12 +122,12 @@ fn added_scalar_changes_are_occurrence_local_and_hidden_prefix_replacements_do_n
     assert_eq!(candidate.raw_id(&staffs[0]), candidate.raw_id(&staffs[2]));
     let duplicate_original = candidate.read_value(&staffs[2]).unwrap();
     for (kind, raw_id) in [
-        (Kind::Part, "part-z"),
-        (Kind::Voice, "voice-a"),
-        (Kind::Event, "event-a"),
-        (Kind::Note, "note-a"),
+        (Kind::Part, &JsString::from("part-z")),
+        (Kind::Voice, &JsString::from("voice-a")),
+        (Kind::Event, &JsString::from("event-a")),
+        (Kind::Note, &JsString::from("note-a")),
     ] {
-        let node = candidate.resolve(kind, raw_id).unwrap();
+        let node = candidate.resolve(kind, &JsString::from(raw_id)).unwrap();
         let value = changed_value(candidate.read_value(&node).unwrap());
         assert_eq!(candidate.replace_value(&node, value.clone()), Ok(true));
         assert_eq!(candidate.read_value(&node), Some(value));
@@ -132,7 +140,7 @@ fn added_scalar_changes_are_occurrence_local_and_hidden_prefix_replacements_do_n
     assert_eq!(candidate.read_value(&staffs[0]), Some(staff_value));
     assert_eq!(candidate.read_value(&staffs[2]), Some(duplicate_original));
     let mut instrument = candidate.read_instrument(&added).unwrap();
-    instrument.name.push_str(" new");
+    instrument.name = JsString::concat(&[&instrument.name, &JsString::from(" new")]);
     assert_eq!(
         candidate.replace_instrument(&added, instrument.clone()),
         Ok(true)
@@ -156,11 +164,25 @@ fn reference_replacements_remove_stale_edges_and_find_new_empty_or_unknown_edges
     let document = fixture();
     let store = build_live_score_store(&document).unwrap();
     let mut candidate = Candidate::new(TransactionOverlayV1::new(&store), document.id);
-    let voice = candidate.resolve(Kind::Voice, "voice-a").unwrap();
-    let event = candidate.resolve(Kind::Event, "event-a").unwrap();
-    let part = candidate.resolve(Kind::Part, "part-z").unwrap();
-    assert!(candidate.staff_referrers("staff-a").contains(&voice));
-    assert!(candidate.staff_referrers("staff-a").contains(&event));
+    let voice = candidate
+        .resolve(Kind::Voice, &JsString::from("voice-a"))
+        .unwrap();
+    let event = candidate
+        .resolve(Kind::Event, &JsString::from("event-a"))
+        .unwrap();
+    let part = candidate
+        .resolve(Kind::Part, &JsString::from("part-z"))
+        .unwrap();
+    assert!(
+        candidate
+            .staff_referrers(&JsString::from("staff-a"))
+            .contains(&voice)
+    );
+    assert!(
+        candidate
+            .staff_referrers(&JsString::from("staff-a"))
+            .contains(&event)
+    );
     for value in ["", "future-staff", "foreign-staff", "staff-a"] {
         assert_eq!(
             candidate.replace_staff_reference(&voice, Some(value.into())),
@@ -172,27 +194,38 @@ fn reference_replacements_remove_stale_edges_and_find_new_empty_or_unknown_edges
         );
         assert_eq!(
             candidate
-                .staff_referrers(value)
+                .staff_referrers(&JsString::from(value))
                 .iter()
                 .filter(|source| *source == &voice)
                 .count(),
             1
         );
         if value != "staff-a" {
-            assert!(!candidate.staff_referrers("staff-a").contains(&voice));
+            assert!(
+                !candidate
+                    .staff_referrers(&JsString::from("staff-a"))
+                    .contains(&voice)
+            );
         }
     }
     for stale in ["", "future-staff", "foreign-staff"] {
-        assert!(candidate.staff_referrers(stale).is_empty());
+        assert!(candidate.staff_referrers(&JsString::from(stale)).is_empty());
     }
     assert_eq!(candidate.replace_staff_reference(&event, None), Ok(true));
     assert_eq!(candidate.read_staff_reference(&event), Some(None));
-    assert!(!candidate.staff_referrers("staff-a").contains(&event));
+    assert!(
+        !candidate
+            .staff_referrers(&JsString::from("staff-a"))
+            .contains(&event)
+    );
     assert_eq!(
         candidate.replace_staff_reference(&event, Some("".into())),
         Ok(true)
     );
-    assert_eq!(candidate.staff_referrers(""), std::slice::from_ref(&event));
+    assert_eq!(
+        candidate.staff_referrers(&JsString::from("")),
+        std::slice::from_ref(&event)
+    );
     let attempts = candidate.reservation.attempts;
     assert_eq!(
         candidate.replace_staff_reference(&event, Some("".into())),
@@ -200,14 +233,18 @@ fn reference_replacements_remove_stale_edges_and_find_new_empty_or_unknown_edges
     );
     assert_eq!(candidate.reservation.attempts, attempts);
     candidate.hide(&event).unwrap();
-    assert!(candidate.staff_referrers("").is_empty());
+    assert!(candidate.staff_referrers(&JsString::from("")).is_empty());
     assert_eq!(candidate.read_staff_reference(&event), None);
     assert_eq!(
         candidate.replace_staff_reference(&event, None),
         Err(Failure::TargetNotFound)
     );
     candidate.hide(&part).unwrap();
-    assert!(candidate.staff_referrers("staff-a").is_empty());
+    assert!(
+        candidate
+            .staff_referrers(&JsString::from("staff-a"))
+            .is_empty()
+    );
 }
 
 #[test]
@@ -215,8 +252,12 @@ fn scoped_referrers_distinguish_part_occurrences_and_same_id_rebuilds() {
     let document = fixture();
     let store = build_live_score_store(&document).unwrap();
     let mut candidate = Candidate::new(TransactionOverlayV1::new(&store), document.id);
-    let part = candidate.resolve(Kind::Part, "part-z").unwrap();
-    let old_voice = candidate.resolve(Kind::Voice, "voice-a").unwrap();
+    let part = candidate
+        .resolve(Kind::Part, &JsString::from("part-z"))
+        .unwrap();
+    let old_voice = candidate
+        .resolve(Kind::Voice, &JsString::from("voice-a"))
+        .unwrap();
     candidate
         .replace_staff_reference(&old_voice, Some("future-staff".into()))
         .unwrap();
@@ -232,13 +273,13 @@ fn scoped_referrers_distinguish_part_occurrences_and_same_id_rebuilds() {
         .unwrap();
     assert_eq!(
         candidate
-            .staff_referrers_in_part(&part, "future-staff")
+            .staff_referrers_in_part(&part, &JsString::from("future-staff"))
             .unwrap(),
         std::slice::from_ref(&old_voice)
     );
     assert_eq!(
         candidate
-            .staff_referrers_in_part(&foreign, "future-staff")
+            .staff_referrers_in_part(&foreign, &JsString::from("future-staff"))
             .unwrap(),
         [voice.clone(), event.clone()]
     );
@@ -247,14 +288,17 @@ fn scoped_referrers_distinguish_part_occurrences_and_same_id_rebuilds() {
         .unwrap();
     assert!(
         candidate
-            .staff_referrers_in_part(&part, "future-staff")
+            .staff_referrers_in_part(&part, &JsString::from("future-staff"))
             .unwrap()
             .is_empty(),
         "foreign references do not block removal in this Part"
     );
     candidate.hide(&part).unwrap();
     assert_eq!(candidate.read_staff_reference(&old_voice), None);
-    assert_eq!(candidate.resolve(Kind::Voice, "voice-a"), Ok(voice.clone()));
+    assert_eq!(
+        candidate.resolve(Kind::Voice, &JsString::from("voice-a")),
+        Ok(voice.clone())
+    );
     assert_eq!(
         candidate.read_staff_reference(&voice),
         Some(Some("future-staff".into()))
@@ -262,25 +306,27 @@ fn scoped_referrers_distinguish_part_occurrences_and_same_id_rebuilds() {
     candidate.replace_staff_reference(&event, None).unwrap();
     assert_eq!(
         candidate
-            .staff_referrers_in_part(&foreign, "future-staff")
+            .staff_referrers_in_part(&foreign, &JsString::from("future-staff"))
             .unwrap(),
         [voice]
     );
     candidate.hide(&foreign).unwrap();
     let rebuilt = candidate.insert_part(raw_part("part-z"), None).unwrap();
-    let rebuilt_voice = candidate.resolve(Kind::Voice, "voice-a").unwrap();
+    let rebuilt_voice = candidate
+        .resolve(Kind::Voice, &JsString::from("voice-a"))
+        .unwrap();
     assert_eq!(
         candidate.read_staff_reference(&rebuilt_voice),
         Some(Some("staff-a".into()))
     );
     assert!(
         candidate
-            .staff_referrers_in_part(&rebuilt, "future-staff")
+            .staff_referrers_in_part(&rebuilt, &JsString::from("future-staff"))
             .unwrap()
             .is_empty()
     );
     assert_eq!(
-        candidate.staff_referrers_in_part(&foreign, "staff-a"),
+        candidate.staff_referrers_in_part(&foreign, &JsString::from("staff-a")),
         Err(Failure::TargetNotFound)
     );
 }
@@ -290,9 +336,15 @@ fn invalid_field_kind_and_required_reference_fail_before_reservation_or_mutation
     let document = fixture();
     let store = build_live_score_store(&document).unwrap();
     let mut candidate = Candidate::new(TransactionOverlayV1::new(&store), document.id);
-    let part = candidate.resolve(Kind::Part, "part-z").unwrap();
-    let voice = candidate.resolve(Kind::Voice, "voice-a").unwrap();
-    let note = candidate.resolve(Kind::Note, "note-a").unwrap();
+    let part = candidate
+        .resolve(Kind::Part, &JsString::from("part-z"))
+        .unwrap();
+    let voice = candidate
+        .resolve(Kind::Voice, &JsString::from("voice-a"))
+        .unwrap();
+    let note = candidate
+        .resolve(Kind::Note, &JsString::from("note-a"))
+        .unwrap();
     let instrument = candidate.read_instrument(&part).unwrap();
     let original = candidate.read_value(&note);
     assert_eq!(
@@ -316,7 +368,7 @@ fn invalid_field_kind_and_required_reference_fail_before_reservation_or_mutation
         Err(Failure::InternalError)
     );
     assert_eq!(
-        candidate.staff_referrers_in_part(&voice, "staff-a"),
+        candidate.staff_referrers_in_part(&voice, &JsString::from("staff-a")),
         Err(Failure::InternalError)
     );
     assert_eq!(candidate.reservation.attempts, 0);
@@ -347,17 +399,23 @@ fn replacement_reservation_failure_is_terminal_with_unchanged_current_field_and_
     let expected = prepare().finish().unwrap();
     let run = |candidate: &mut Candidate<'_>, step| match step {
         0 => {
-            let part = candidate.resolve(Kind::Part, "part-z").unwrap();
+            let part = candidate
+                .resolve(Kind::Part, &JsString::from("part-z"))
+                .unwrap();
             candidate.replace_value(&part, Value::PartName("candidate".into()))
         }
         1 => {
-            let part = candidate.resolve(Kind::Part, "part-z").unwrap();
+            let part = candidate
+                .resolve(Kind::Part, &JsString::from("part-z"))
+                .unwrap();
             let mut instrument = candidate.read_instrument(&part).unwrap();
-            instrument.name.push_str(" candidate");
+            instrument.name = JsString::concat(&[&instrument.name, &JsString::from(" candidate")]);
             candidate.replace_instrument(&part, instrument)
         }
         _ => {
-            let voice = candidate.resolve(Kind::Voice, "voice-a").unwrap();
+            let voice = candidate
+                .resolve(Kind::Voice, &JsString::from("voice-a"))
+                .unwrap();
             candidate.replace_staff_reference(&voice, Some("future-staff".into()))
         }
     };
@@ -377,8 +435,12 @@ fn replacement_reservation_failure_is_terminal_with_unchanged_current_field_and_
         candidate.reservation = Reservation::fail_at(fail_at);
         let mut failed = false;
         for step in 0..3 {
-            let part = candidate.resolve(Kind::Part, "part-z").unwrap();
-            let voice = candidate.resolve(Kind::Voice, "voice-a").unwrap();
+            let part = candidate
+                .resolve(Kind::Part, &JsString::from("part-z"))
+                .unwrap();
+            let voice = candidate
+                .resolve(Kind::Voice, &JsString::from("voice-a"))
+                .unwrap();
             let before = (
                 candidate.read_value(&part),
                 candidate.read_instrument(&part),

@@ -531,7 +531,7 @@ mod tests {
                 let mut document = decode_create_request(SMOKE_REQUEST.as_bytes())
                     .expect("request")
                     .document;
-                document.schema_version = "brilliant-score-2".to_owned();
+                document.schema_version = "brilliant-score-2".into();
                 document
             },
         };
@@ -583,7 +583,7 @@ mod tests {
         assert!(matches!(
             value.affected.as_slice(),
             [ScoreEntityTargetV1::Document { document_id }]
-                if document_id.as_str() == "score-local"
+                if document_id.as_js_string() == "score-local"
         ));
         assert_zero_global_work(&value.metrics);
 
@@ -1006,7 +1006,7 @@ mod tests {
             result.value.selection,
             KernelSelectorResultV1::Ok(KernelSelectorValueV1::Entity(
                 SelectedScoreEntityV1::Note(note)
-            )) if note.id.as_str() == "note-1"
+            )) if note.id.as_js_string() == "note-1"
         ));
 
         let ownership = r#"{"apiVersion":1,"operation":{"kind":"select","selector":{"selectorId":"core.selector.score-entity-ownership","address":{"kind":"note","noteId":"note-1"}}}}"#;
@@ -1027,11 +1027,11 @@ mod tests {
                     voice_id,
                     event_id,
                 }
-            )) if document_id.as_str() == "score-local"
-                && part_id.as_str() == "part-1"
-                && measure_id.as_str() == "measure-1"
-                && voice_id.as_str() == "voice-1"
-                && event_id.as_str() == "event-1"
+            )) if document_id.as_js_string() == "score-local"
+                && part_id.as_js_string() == "part-1"
+                && measure_id.as_js_string() == "measure-1"
+                && voice_id.as_js_string() == "voice-1"
+                && event_id.as_js_string() == "event-1"
         ));
 
         let range = r#"{"apiVersion":1,"operation":{"kind":"select","selector":{"selectorId":"core.selector.score-range","range":{"kind":"voice-event-range","start":{"kind":"voice-event","voiceId":"voice-1","eventId":"event-1"},"end":{"kind":"voice-event","voiceId":"voice-1","eventId":"event-1"}}}}}"#;
@@ -1046,7 +1046,7 @@ mod tests {
             result.value.selection,
             KernelSelectorResultV1::Ok(KernelSelectorValueV1::Range(
                 ScoreRangeSelectionV1::VoiceEventRange { events, .. }
-            )) if events.len() == 1 && events[0].id.as_str() == "event-1"
+            )) if events.len() == 1 && events[0].id.as_js_string() == "event-1"
         ));
 
         let history = r#"{"apiVersion":1,"operation":{"kind":"select","selector":{"selectorId":"core.selector.history-state"}}}"#;
@@ -1104,15 +1104,19 @@ mod tests {
                 panic!("entity selector must resolve {kind}");
             };
             let (actual_kind, actual_id) = match &entity {
-                SelectedScoreEntityV1::Document(value) => ("document", value.id.as_str()),
-                SelectedScoreEntityV1::Measure(value) => ("measure", value.id.as_str()),
-                SelectedScoreEntityV1::Part(value) => ("part", value.id.as_str()),
-                SelectedScoreEntityV1::Staff(value) => ("staff", value.id.as_str()),
-                SelectedScoreEntityV1::Voice(value) => ("voice", value.id.as_str()),
-                SelectedScoreEntityV1::Event(value) => ("event", value.id.as_str()),
-                SelectedScoreEntityV1::Note(value) => ("note", value.id.as_str()),
+                SelectedScoreEntityV1::Document(value) => ("document", value.id.as_js_string()),
+                SelectedScoreEntityV1::Measure(value) => ("measure", value.id.as_js_string()),
+                SelectedScoreEntityV1::Part(value) => ("part", value.id.as_js_string()),
+                SelectedScoreEntityV1::Staff(value) => ("staff", value.id.as_js_string()),
+                SelectedScoreEntityV1::Voice(value) => ("voice", value.id.as_js_string()),
+                SelectedScoreEntityV1::Event(value) => ("event", value.id.as_js_string()),
+                SelectedScoreEntityV1::Note(value) => ("note", value.id.as_js_string()),
             };
-            assert_eq!((actual_kind, actual_id), (kind, id));
+            assert_eq!(actual_kind, kind);
+            assert!(
+                actual_id.eq_ascii(id),
+                "entity selector must preserve the requested ID"
+            );
             if kind != "document" {
                 assert_eq!(
                     result.value.stage4_metrics.full_snapshot_materializations,
@@ -1202,9 +1206,9 @@ mod tests {
                 ScoreEntityTargetV1::Voice { voice_id },
                 ScoreEntityTargetV1::Event { event_id },
                 ScoreEntityTargetV1::Note { note_id },
-            ] if voice_id.as_str() == "voice-1"
-                && event_id.as_str() == "event-3"
-                && note_id.as_str() == "note-3"
+            ] if voice_id.as_js_string() == "voice-1"
+                && event_id.as_js_string() == "event-3"
+                && note_id.as_js_string() == "note-3"
         ));
         assert_zero_global_work(&value.metrics);
         assert_eq!(value.metrics.entities_visited, 2);
@@ -1239,9 +1243,9 @@ mod tests {
                 ScoreEntityTargetV1::Event { event_id },
                 ScoreEntityTargetV1::Voice { voice_id },
                 ScoreEntityTargetV1::Note { note_id },
-            ] if event_id.as_str() == "event-3"
-                && voice_id.as_str() == "voice-1"
-                && note_id.as_str() == "note-3"
+            ] if event_id.as_js_string() == "event-3"
+                && voice_id.as_js_string() == "voice-1"
+                && note_id.as_js_string() == "note-3"
         ));
 
         let insert_rest = r#"{"apiVersion":1,"command":{"commandVersion":1,"commandId":"core.voice.insert-rest-event","target":{"kind":"voice","voiceId":"voice-1"},"payload":{"anchor":{"kind":"start"},"event":{"id":"event-4","duration":{"base":4,"dots":0},"content":{"kind":"rest"}}}}}"#;
@@ -1254,7 +1258,7 @@ mod tests {
             [
                 ScoreEntityTargetV1::Voice { voice_id },
                 ScoreEntityTargetV1::Event { event_id },
-            ] if voice_id.as_str() == "voice-1" && event_id.as_str() == "event-4"
+            ] if voice_id.as_js_string() == "voice-1" && event_id.as_js_string() == "event-4"
         ));
         assert_zero_global_work(&value.metrics);
 
@@ -1267,11 +1271,11 @@ mod tests {
                 .sequence
                 .events
                 .iter()
-                .map(|event| event.id.as_str())
+                .map(|event| event.id.as_js_string())
                 .collect::<Vec<_>>(),
             ["event-4", "event-1"]
         );
-        assert_eq!(voices[1].sequence.events[0].id.as_str(), "event-2");
+        assert_eq!(voices[1].sequence.events[0].id.as_js_string(), "event-2");
     }
 
     #[test]

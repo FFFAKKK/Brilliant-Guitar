@@ -16,10 +16,11 @@ Reproduce after the usual native build and `npm run build`:
 node dist/test/core-kernel/rust-migration/js-string-native-probe.js
 ```
 
-The tracked probe compares 28 observations and exits 1 on any gap. The current
-report has 14 mismatches; its raw result is `target/js-string-native-gap.json`.
-The probe is a diagnostic executable, separate from passing regression tests;
-its failure remains visible until the full native migration closes the gap.
+The tracked probe compares 28 observations and exits 1 on any gap. The original
+report has 14 mismatches at `target/js-string-native-gap.json`. After the live
+storage/output migration, it reports zero mismatches. The regression suite now
+requires that result instead of treating the gap as an expected diagnostic.
+The original report remains historical failure evidence.
 
 The strict TS string checks accept JavaScript strings without a Unicode-scalar
 restriction. At the reproduced baseline, Contracts strict JSON and Foundation
@@ -37,7 +38,7 @@ those units. Unicode normalization, U+FFFD replacement and opaque marker text ar
 not permitted. Empty strings remain valid text; StableId will separately retain
 its nonempty constraint. A valid UTF-8 conversion is explicit and fallible.
 
-The first representation is Arc<[u16]> and is not yet live Score storage. It
+The representation is Arc<[u16]> and now supplies live Score storage. It
 keeps cloning constant in retained text size, but uses two bytes per ASCII unit.
 This does not inherit the existing Arc<str> memory measurements. A future compact
 representation must retain the same value/hash/order semantics and independently
@@ -272,28 +273,113 @@ integration. The capped response writer must keep counting exact total bytes
 after its retention cap and preserve resource/error precedence. Capture alone
 does not establish end-to-end native acceptance.
 
-## Remaining migration sequence
+### Live storage, history and output integration
 
-1. Completed: connect lossless capture and explicit request/payload mapping while
-   preserving canonical shape/path and failure ranking. Live DTO defaults still
-   reject unpaired text until the following storage/output migration.
-2. Migrate StableId, raw candidate/journal IDs, Foundation text fields, references,
-   opaque extensions and diagnostic/path values that echo input. Replace uses of
-   as_str with explicit code-unit or validated ASCII operations. Audit namespace
-   validation against original units, not an encoded surrogate placeholder.
-3. Connect Contracts strict capture, command decoding, assessment, Store/history,
-   selectors, replay and every native output to the lossless model together.
-   Avoid a second whole-document fallback and retain the typed local-edit path.
-   Verify accepted/rejected behavior and exact errors for bad namespaces,
-   duplicate IDs, controls, malformed UTF-8, malformed JSON and resource edges.
-4. Preserve distinct accounting for original request bytes, serialized response
-   bytes, logical history data and retained storage. Requalify memory and latency;
-   do not silently change the limits to pay for a new string representation.
-5. Require the tracked native probe to return zero mismatches; extend it to all
-   input/output surfaces and long histories. Then run the full public differential
-   and native qualification gates before any production switch.
+StableId now stores JsString and enforces nonempty code units. Default Score text,
+admission IDs, raw candidate/journal IDs, references, opaque payload keys/values,
+affected IDs and diagnostics all use the same immutable representation. Clones
+share the UTF-16 buffer; independently constructed equal strings remain value
+equal without requiring global interning. Fixed schema/path fields remain normal
+UTF-8 protocol literals. Namespace checks inspect original ASCII code units and
+retain the prior rejection order. Extension diagnostic identity is a structured
+owner/namespace key, not a concatenated string.
 
-The candidate operation journal remains part of S1 and continues after this
-string representation dependency is closed. Live Contracts capture now uses the
-primitive, while default DTOs and storage still need migration. These tests do not resolve the native gap and
-do not qualify the kernel for commercial use.
+Assessment reads the captured lossless tree. The live Store, typed ChangeSet,
+candidate prototype and occurrence journal retain lossless values throughout
+edits and inverse/forward replay. The five Contracts output families use explicit
+LosslessEncode for each nested type, including failure details and selectors.
+Checkpoint canonical bytes use the same explicit Score DTO writer. Scalar
+Unicode keeps the previous protocol field order, null/omission behavior and byte
+fixtures. Ordinary Serde remains an explicitly scalar-only adapter: unpaired
+text fails there, while native operations no longer take that route.
+
+Logical history text is charged once per distinct code-unit string by its JS
+UTF-8 encoder byte length: a valid pair costs four bytes, an isolated unit three.
+This count does not replace or normalize stored text. Opaque JSON and response
+caps count actual escaped wire bytes, where an isolated unit costs six before
+quotes. A separate Node-generated 82-sample byte oracle checks Buffer.byteLength
+against TextEncoder and Rust counting, without changing the original string
+oracle. Tests also distinguish D800, DC00, U+FFFD and a valid pair in interning;
+response-cap tests finish counting the unretained escaped tail. Logical weights
+remain distinct from physical heap use, and ordinary allocations remain fallible
+at the process level without a universal recovery guarantee.
+
+The six new native tests include the original 28 observations, complete ID and
+reference families, all six selector families and three ranges, Stage-3 and
+Stage-4 submit/read, events/affected order, batch edits and rejection rollback,
+undo/redo, markPersisted, successful/rejected replay, nested opaque data, surrogate
+failure addresses and duplicate-ID details. A real 512-submit history triggers
+checkpoint materialization and checks its success, actual JSON byte length and
+subsequent undo/redo. A candidate regression covers surrogate IDs in insertion,
+reference changes, manifest sealing, inverse removal and forward replay.
+
+Validation: 296 Rust tests passed, 1 ignored; fmt, strict all-target clippy and
+Rust 1.88.0 all-target check passed. Seven targeted TS/native tests passed on
+the rebuilt Windows x64 addon with SHA-256
+`FD9B12F048FAEB2246E9534A81CEF80F3263D110F77F163E63FBD8DD8667BCAD`.
+Logs: `target/lossless-storage-rust-final.log`,
+`target/lossless-storage-{clippy,msrv,native-targeted}.log`.
+Bounded independent GPT-6 review found no confirmed live UTF-8 fallback or
+identity loss; its requested byte, checkpoint and rejection regressions were
+added. The first full TS/native run passed 719 tests, skipped two and failed the
+P3B real-native worker at its unchanged 180-second deadline (245.621 seconds
+overall). That failed run is retained in `target/lossless-storage-npm-before.log`;
+it is not a passing gate. A single diagnostic on the same 15,013,932-byte raw
+create request measured create 13.939 s, first read 2.552 s and peak RSS
+562,573,312 bytes, compared with preceding capture observations of 19.853 s,
+2.297 s and 564,293,632 bytes. These isolated debug observations do not establish
+the cause of the full worker timeout or constitute release qualification.
+An isolated full P3B file also failed the same worker guard (six tests passed,
+one failed), retained in `target/lossless-storage-p3b-isolated.log`.
+
+The UTF-16 writer previously called Write once per escaped fragment, including
+every ordinary ASCII character. It now coalesces those fragments into fixed
+64-byte/1024-byte stack buffers, with no whole-string heap copy. The shared
+escaping and length visitor remain unchanged. Three additional tests cover
+buffer edges, partial writes and an injected failure at each output byte; an
+8,192-character ASCII value emits nine writes instead of 8,194. Final Rust
+checks after this change pass 299 tests, with one ignored, plus fmt, strict clippy
+and MSRV. The buffered debug addon hash is
+`16339B6CE1A06FADF2A0A9DBEA38D21DD1662A2C283E54CF90765B671FCBBF90`.
+A further raw diagnostic measured create 22.164 s/read 3.350 s/RSS 564,203,520
+bytes; creation timing also changed substantially, so these unpaired samples do
+not establish a latency improvement. The verified improvement is bounded write
+coalescing, not a claim that debug P3B now passes.
+
+Independent review confirmed P3B fixes the complete spawn-to-settlement deadline
+and artifact path, but does not require Cargo debug mode. The commercial plan
+requires release-build qualification. The next full regression therefore uses
+one addon built with the existing unmodified Cargo release profile for every
+native test. This does not erase the debug failures, change any threshold or
+establish Qualification V2 from a single P3B run.
+
+Final build command:
+
+```powershell
+cargo +1.97.1 build --release --package brilliant-kernel-node --target x86_64-pc-windows-msvc --locked --offline
+Copy-Item -LiteralPath target/x86_64-pc-windows-msvc/release/brilliant_kernel_node.dll -Destination target/rkp-1-node/brilliant_kernel_node.node
+npm test
+```
+
+The final Windows x64 release addon SHA-256 is
+`65C88B68D6C930E392669A0C8E5BE866BF5305F701D759938FE96F117E402A4E`.
+The complete strict-build/dynamic-runner/native regression passed 720 tests,
+skipped two and failed zero in 127.797 seconds. P3B wall time was 70.022 seconds,
+workload time 69.441 seconds and observed peak RSS 1,833,156,608 bytes, with its
+existing `qualification=false` classification. The 28 original string probes
+and real 512-entry checkpoint both passed in this full run. The addon hash was
+rechecked afterwards; no native artifact was changed while tests were running.
+Evidence is `target/lossless-storage-release-build.log` and
+`target/lossless-storage-npm-release-final.log`. Rust tests/fmt/clippy/MSRV use
+the same source. This closes the reproduced lossless-data defect with full
+release regression evidence; the failed debug stress runs remain separate.
+
+## Remaining work
+
+The reproduced native string defect is closed on the exercised public routes.
+This is not all-command hostile-input coverage or memory/latency qualification.
+The complete candidate command/journal/final-validation/adoption closure remains
+S1 work, followed by extension/session composition and fresh public release
+qualification. No limits, timeout, frozen oracle bytes or engine default were
+changed to accommodate the representation. Physical UTF-16 memory cost must be
+measured on the final artifact before any production switch.

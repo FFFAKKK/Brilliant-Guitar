@@ -1,5 +1,6 @@
-use brilliant_core_types::{StablePathSegmentV1, StablePathV1};
-use serde_json::Value;
+use brilliant_core_types::{
+    JsString, LosslessJsonValue as Value, StablePathSegmentV1, StablePathV1,
+};
 
 use crate::AssessmentFailureV1;
 
@@ -24,17 +25,19 @@ impl<'a> CandidateNode<'a> {
         let mut path = self.path.clone();
         path.push(StablePathSegmentV1::Field(name.to_owned()));
         Self {
-            value: self.value.get(name).unwrap_or(&Value::Null),
+            value: self.field_value(name).unwrap_or(&Value::Null),
             path,
         }
     }
 
     pub(crate) fn optional(&self, name: &'static str) -> Option<Self> {
-        self.value.get(name).map(|_| self.field(name))
+        self.field_value(name).map(|_| self.field(name))
     }
 
     pub(crate) fn items(self) -> Result<impl Iterator<Item = Self> + 'a, AssessmentFailureV1> {
-        let values = self.value.as_array().ok_or_else(|| self.shape_failure())?;
+        let Value::Array(values) = self.value else {
+            return Err(self.shape_failure());
+        };
         Ok(values.iter().enumerate().map(move |(index, value)| {
             let mut path = self.path.clone();
             path.push(StablePathSegmentV1::Index(index as u64));
@@ -43,24 +46,36 @@ impl<'a> CandidateNode<'a> {
     }
 
     pub(crate) fn len(&self) -> Result<usize, AssessmentFailureV1> {
-        self.value
-            .as_array()
-            .map(Vec::len)
-            .ok_or_else(|| self.shape_failure())
+        match self.value {
+            Value::Array(values) => Ok(values.len()),
+            _ => Err(self.shape_failure()),
+        }
     }
 
-    pub(crate) fn string(&self) -> Result<&'a str, AssessmentFailureV1> {
-        self.value.as_str().ok_or_else(|| self.shape_failure())
+    pub(crate) fn string(&self) -> Result<&'a JsString, AssessmentFailureV1> {
+        match self.value {
+            Value::String(value) => Ok(value),
+            _ => Err(self.shape_failure()),
+        }
     }
 
     pub(crate) fn number(&self) -> Result<f64, AssessmentFailureV1> {
-        self.value.as_f64().ok_or_else(|| self.shape_failure())
+        match self.value {
+            Value::Number(value) => Ok(value.get()),
+            _ => Err(self.shape_failure()),
+        }
     }
 
     pub(crate) fn exact_fields(&self, fields: &[&str]) -> bool {
-        self.value.as_object().is_some_and(|object| {
-            object.len() == fields.len() && fields.iter().all(|key| object.contains_key(*key))
-        })
+        matches!(self.value, Value::Object(object) if object.len() == fields.len()
+            && fields.iter().all(|key| self.field_value(key).is_some()))
+    }
+
+    fn field_value(&self, name: &str) -> Option<&'a Value> {
+        let Value::Object(object) = self.value else {
+            return None;
+        };
+        crate::with_json_field_key(name, |units| object.get(units))
     }
 
     pub(crate) fn path(&self) -> StablePathV1 {

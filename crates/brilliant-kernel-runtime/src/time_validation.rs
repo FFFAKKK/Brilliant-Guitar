@@ -84,7 +84,8 @@ impl Assessment<'_, '_> {
             sorted_links.push((part_id, measure_id));
         }
         sorted_links.sort_unstable_by(|left, right| {
-            (left.0.as_str(), left.1.as_str()).cmp(&(right.0.as_str(), right.1.as_str()))
+            (left.0.as_js_string(), left.1.as_js_string())
+                .cmp(&(right.0.as_js_string(), right.1.as_js_string()))
         });
         for (part_id, measure_id) in sorted_links {
             self.work.dependency_reads += 1;

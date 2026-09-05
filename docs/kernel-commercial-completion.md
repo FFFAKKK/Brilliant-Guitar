@@ -6,7 +6,8 @@ On 2026-09-05 the owner requested autonomous project assessment, planning,
 implementation, self-review and local Git commits until the kernel meets a
 commercial standard. The owner also permits skipping Trellis. This branch uses
 this document and reproducible commits instead of creating new Trellis tasks.
-The main session implements and checks; research agents are read-only.
+The main session owns integration, checks and commits. GPT-6 workers may implement
+bounded file-owned slices; independent review agents remain read-only.
 
 Baseline: `902eacd` (RKP-4 audited candidate), isolated branch
 `codex/kernel-commercial-completion`. The original `codex/learning` checkout
@@ -61,8 +62,13 @@ DTO family, including nested IDs/references and opaque extensions. Live Contract
 capture and command/selector/replay decoding now consume the lossless tree,
 preserving existing shape/failure precedence and raw protocol number spelling.
 Unknown non-scalar command IDs and command-version errors match the TS behavior.
-DTO defaults remain String/StableId; actual storage, history and native output
-are the next integration work; see `kernel-js-string-compatibility.md`.
+DTO text defaults, raw candidate/journal IDs and strong StableId storage now use
+shared UTF-16 values. Store/history, assessment, selectors, checkpoints and all
+five native response families use explicit lossless encoding. The original 28
+native observations now have zero mismatches, and new real-native regressions
+cover complete IDs/references, commands, events, selectors, batch failure,
+undo/redo, persistence, replay and a real 512-entry checkpoint. See
+`kernel-js-string-compatibility.md` for the exact scope and evidence.
 
 After the string-domain gap is closed, S1 continues with the complete admission
 operation journal, final candidate diagnostics, complete command closure,
@@ -73,15 +79,17 @@ S4 remain open. The current source tree is a kernel library/native workspace;
 editor UI, rendering, playback and physical project persistence are separate
 product work, not completed deliverables of this branch.
 
-Latest Rust checks: 280 tests passed, 1 ignored (66 candidate tests); strict
-clippy, fmt and Rust 1.88.0 check passed. The most recent full real-native/TS
-regression is 713 passed, 2 skipped, 0 failed. The initial capture integration
-caused P3B to exceed its unchanged 180-second worker guard. Borrowed field lookup,
-finite protocol-key sharing and moved capture paths repaired that regression;
-the final P3B run completed in 177.162 seconds, leaving a narrow performance
-margin that remains open for qualification. The separate UTF-16 native probe still has
-14 mismatches across 28 observations. These are regression evidence, not commercial
-qualification or a percentage-complete estimate.
+Latest Rust checks: 299 tests passed, 1 ignored (67 candidate tests); strict
+clippy, fmt and Rust 1.88.0 check passed. Seven targeted TS/native regressions
+passed on the initial rebuilt addon. The full debug run passed 719 tests, skipped
+two and failed the P3B 180-second guard; an isolated P3B repeat also timed out.
+The output writer now batches fragments in fixed stack buffers, with independent
+byte/failure checks. Full regression using one addon from the existing release
+profile passed 720 tests, skipped two and failed zero (127.797 seconds overall).
+P3B completed in 70.022 seconds with peak RSS 1,833,156,608 bytes. Its original
+threshold, workload and runner stayed fixed; it has no debug-only build
+requirement. Debug performance remains open. These checks are
+regression evidence, not commercial qualification or a percentage-complete estimate.
 
 ## Completion criteria
 

@@ -34,7 +34,8 @@ pub use js_string_json::{
 };
 pub use lossless_dto::{
     LosslessDecode, LosslessEncode, LosslessText, LosslessValueError, LosslessValueFailure,
-    LosslessValuePath, ObjectReader as LosslessObjectReader, with_json_field_key,
+    LosslessValuePath, ObjectReader as LosslessObjectReader, ObjectWriter as LosslessObjectWriter,
+    with_json_field_key,
 };
 pub use lossless_json::{
     JsonSyntaxError, JsonToken, JsonTokenKind, LosslessJsonError, LosslessJsonTokens,

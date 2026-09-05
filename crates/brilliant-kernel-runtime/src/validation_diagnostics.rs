@@ -359,12 +359,13 @@ impl DiagnosticCollector {
                     .ok_or(Failure::InternalError)?;
             }
             let (path, rank) = pending.location.path_and_rank(indices);
+            let reason = pending.reason.map(brilliant_core_types::JsString::from);
             ordered.push((
                 rank,
                 CoreDiagnosticV1::new(
                     pending.code,
                     StablePathV1::new(path).map_err(|_| Failure::InternalError)?,
-                    pending.reason.map(|reason| ("reason", reason)),
+                    reason.as_ref().map(|reason| ("reason", reason)),
                 ),
             ));
         }
