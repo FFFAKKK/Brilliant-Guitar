@@ -43,9 +43,11 @@ private occurrence prototype now cover reads, resolution, field/reference writes
 Part/Staff/Voice/Event insertion, moves/hiding and fallible retained collection
 growth. Journal identity manifests now distinguish node lifetimes and support
 atomic boundary/remapped insertion bindings, including transient invalid IDs.
+Stored Part insert/remove operations now replay both directions using immutable
+subtree payloads, with expected-value/order checks and terminal failure handling.
 Candidate execution is still test-only, not the native default route.
 
-The next integration work is the admission operation journal, final candidate
+The next integration work is the complete admission operation journal, final candidate
 diagnostics, complete command closure, cumulative resource accounting and strong
 Store adoption/history. The versioned extension execution/composition work in S2,
 consolidated release qualification in S3/S5 and reversible Rust default switch in
@@ -53,7 +55,7 @@ S4 remain open. The current source tree is a kernel library/native workspace;
 editor UI, rendering, playback and physical project persistence are separate
 product work, not completed deliverables of this branch.
 
-Latest checks: 218 Rust tests passed, 1 ignored (37 candidate tests); strict
+Latest checks: 228 Rust tests passed, 1 ignored (47 candidate tests); strict
 clippy, fmt and Rust 1.88.0 check passed. The most recent full real-native/TS
 regression is 705 passed, 2 skipped. These are regression evidence, not commercial
 qualification or a percentage-complete estimate.

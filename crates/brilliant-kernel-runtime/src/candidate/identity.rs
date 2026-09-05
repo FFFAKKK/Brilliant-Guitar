@@ -329,6 +329,32 @@ pub(super) struct ReplayBindings<'journal> {
 }
 
 impl<'journal> ReplayBindings<'journal> {
+    pub(super) fn require_unbound(&self, id: JournalId) -> Result<(), Failure> {
+        if self.manifest.entries.get(id.0).is_some() && self.entries.get(id.0) == Some(&None) {
+            Ok(())
+        } else {
+            Err(Failure::InternalError)
+        }
+    }
+
+    pub(super) fn require_insert_identity(
+        &self,
+        id: JournalId,
+        kind: Kind,
+        raw_id: &str,
+        owner: JournalId,
+    ) -> Result<(), Failure> {
+        self.require_unbound(id)?;
+        let identity = &self.manifest.entries[id.0];
+        if identity.kind != kind
+            || identity.raw_id.as_str() != raw_id
+            || identity.owner != Some(owner)
+        {
+            return Err(Failure::InternalError);
+        }
+        Ok(())
+    }
+
     /// Resolves the whole boundary before returning any usable binding state.
     pub(super) fn at(
         manifest: &'journal IdentityManifest,

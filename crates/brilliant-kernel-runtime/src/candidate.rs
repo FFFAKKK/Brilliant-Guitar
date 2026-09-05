@@ -8,6 +8,7 @@ use std::{
 };
 
 mod identity;
+mod journal;
 mod reservation;
 
 use reservation::{Reservation, Site};
@@ -820,9 +821,30 @@ impl<'a> Candidate<'a> {
         raw_id: String,
         value: Option<Value>,
     ) -> Result<Occurrence, Failure> {
+        let raw_id = self.share_id(raw_id)?;
+        self.add_shared_node(owner, kind, raw_id, value)
+    }
+
+    fn share_existing_id(&mut self, value: Arc<str>) -> Result<Arc<str>, Failure> {
+        self.reservation.ensure_active()?;
+        if let Some(shared) = self.id_pool.get(value.as_ref()) {
+            return Ok(shared.clone());
+        }
+        self.reservation.set(Site::IdPool, &mut self.id_pool, 1)?;
+        self.id_pool.insert(value.clone());
+        Ok(value)
+    }
+
+    // The caller has already retained this ID in the candidate pool.
+    fn add_shared_node(
+        &mut self,
+        owner: &Occurrence,
+        kind: Kind,
+        raw_id: Arc<str>,
+        value: Option<Value>,
+    ) -> Result<Occurrence, Failure> {
         self.reservation.ensure_active()?;
         let index = self.nodes.len();
-        let raw_id = self.share_id(raw_id)?;
         self.reservation.vec(Site::Nodes, &mut self.nodes, 1)?;
         if kind != Kind::Content {
             if !self.added.contains_key(&kind) {

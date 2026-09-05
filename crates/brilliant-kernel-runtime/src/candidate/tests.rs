@@ -13,11 +13,11 @@ mod identities;
 mod insertions;
 mod writes;
 
-fn id(value: &str) -> StableId {
+pub(super) fn id(value: &str) -> StableId {
     StableId::new(value).expect("nonempty test ID")
 }
 
-fn raw_part(part_id: &str) -> AdmissionPartV1 {
+pub(super) fn raw_part(part_id: &str) -> AdmissionPartV1 {
     let part = fixture().parts.remove(0);
     AdmissionPartV1 {
         id: part_id.into(),

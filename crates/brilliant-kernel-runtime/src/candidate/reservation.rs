@@ -26,6 +26,7 @@ pub(super) enum Site {
     JournalSources,
     JournalBoundaries,
     ReplayBindings,
+    JournalOperations,
 }
 
 #[derive(Default)]
@@ -38,6 +39,12 @@ pub(super) struct Reservation {
 }
 
 impl Reservation {
+    /// A journal may encounter an invariant failure after private staging has
+    /// begun. Such a candidate must never resume, seal, or become an adoption.
+    pub(super) fn abort(&mut self) {
+        self.failed = true;
+    }
+
     #[cfg(test)]
     pub(super) fn fail_at(attempt: usize) -> Self {
         Self {

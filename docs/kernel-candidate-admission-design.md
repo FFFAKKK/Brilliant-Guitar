@@ -429,18 +429,54 @@ operation replay, complete journal payload/accounting, final validation or Store
 adoption. Insert operation records must still prove the subtree correspondence,
 and operation replay must check expected values and positions before mutation.
 
-The next vertical slice is stored Part-subtree insert/remove, initially restricted
-to an active Part created by that same journal. An Added occurrence alone does not
-prove journal ownership. A private immutable flat subtree bundle is an
-InsertEntity/RemoveEntity payload, not a twelfth snapshot operation: it must retain
-one Part root, unique journal IDs, exact owner/child-order membership and all
-scalar/instrument/reference/content fields. Raw staff references remain data even
-when temporarily invalid. Prepare owner/anchor, expected state, binding conflicts,
-bundle structure and capacities before publishing. If any remaining failure can
-follow a candidate write, permanently terminate that candidate and reject sealing
-or adoption. Prefix Part removal and its Extension handling remain outside this
-first slice. A second read-only GPT-6 design review confirmed these constraints;
-this paragraph records planned work, not an implemented journal executor.
+### Stored Part subtree insert/remove
+
+The first operation path now records and replays Part insert/remove using saved
+forward and inverse operations. A recorder owns its candidate and permits removal
+only of an active Part inserted by that same recorder; an arbitrary Added root is
+insufficient. Insert/remove of a temporary invalid subtree retains two effective
+steps even when the final visible document equals the suffix start. This is the
+operation-level basis for the TS-proven net-zero history behavior above; session
+version, dirty identity, events and history integration are still pending.
+
+Each operation uses an immutable flat Part-subtree payload. It retains one root,
+unique journal IDs, exact owner/child-order membership and scalar, instrument,
+staff-reference and event-content fields. It is a payload of the existing
+InsertEntity/RemoveEntity kinds, not a twelfth snapshot operation. Empty, repeated
+or dangling raw references remain data during preparation. Shared raw IDs and
+references retain their allocations across capture and replay. The bundle does
+not export or replace the whole document and replay does not invoke handlers.
+
+Replay validates bundle structure, manifest identity facts, owner and predecessor
+before insertion. Removal checks every expected field, visible child order and
+predecessor before hiding or unbinding. Inserted subtrees have no Extension
+blocks: the existing reference index also verifies that inverse removal from a
+strong end Store cannot silently drop/orphan unexpected Part-owned opaque data.
+General Prefix Part removal and recording extension mutations remain unfinished.
+
+Log slots are reserved before recording a candidate mutation; candidate placement,
+bundle capture and replay binding still contain fallible staging steps. Every
+recorder/replay error permanently terminates that candidate, including invariant
+errors after staging; writes and manifest sealing cannot resume. Tests inspect
+discarded state only to prove the live Store and strong prefix remain untouched.
+Anchor failures precede journal reservation attempts. These guarantees cover the
+controlled collection reservation sites, not every process allocation. Exact
+combined logical accounting and retained-memory/peak bounds remain open.
+
+Ten operation tests cover transient invalid subtrees, explicit intermediate
+fields/orders, different arena locations, six-step same-ID lifetime/anchor
+sequences, inverse removal from a strong end Store, unexpected Extension data,
+malformed bundles, changed expected values/orders/anchors, foreign recorder
+ownership and all recording/forward/inverse reservation failures. Full Rust
+regression is 228 passed, 1 ignored; fmt, strict clippy and Rust 1.88.0 all-target
+checks pass. No production path changed; the latest full real-native/TS result
+remains 705 passed, 2 skipped from the result-boundary change.
+
+Next, journal field/reference/order changes must preserve their expected/inverse
+values and let removal capture the correctly updated subtree. Complete remaining
+entity kinds, original effects/segments/affected ordering, resource accounting,
+final candidate diagnostics and strong adoption before connecting this path to
+native submit/history/replay. The current first slice is not full command closure.
 
 ## Implementation and evidence order
 
