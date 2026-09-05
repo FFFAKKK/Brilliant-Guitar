@@ -681,3 +681,41 @@ The next read-layer review mapped all required reads onto existing capabilities;
 the concrete frozen-prefix/occurrence approach is recorded in the linked design.
 `git diff --check` passed. These results establish this input slice, not S1 or
 commercial completion.
+
+### S1.6b — occurrence storage and resolution prototype
+
+The Runtime now has a private `cfg(test)` occurrence module over its real typed
+overlay. It preserves the entire earlier transaction prefix, consumes new Part
+subtrees into independent arena occurrences, retains duplicate/empty IDs and
+repeated/unknown/empty measure links, and resolves typed targets without global
+ID deduplication. Hidden roots suppress unexpanded descendants and allow ID reuse
+without resurrecting a hidden prefix node. Staff references use the prefix's
+index plus new records, filtered by visible source occurrences.
+
+The read-only GPT-6 source review identified a necessary anchor distinction:
+Staff/Voice remote ambiguity is internal-error, whereas Event remote ambiguity
+is anchor-wrong-owner. The prototype also preserves owner-local precedence,
+move target failure before self-reference, insertion with a same-ID anchor,
+and Voice content-occurrence ownership checks even at a start anchor.
+
+Thirteen new tests use the real Store/overlay, including exact prefix ChangeSet
+equality, deleted/rebuilt identity, parent repair, hidden-order positions,
+duplicate content owners, failed preparation and drop isolation. A guarded
+4098-Staff test forbids base aggregate detach and cloned order/time reads, proves
+indexed scalar lookup has no sibling traversal, checks visitor short-circuiting,
+and confirms one local order copy on first mutation with later reuse.
+
+This is verified implementation groundwork, not production candidate parity.
+Native submit still selects typed commands. The test-only gate will remain until
+fallible allocation/resource accounting, candidate writes, final diagnostics,
+valid lowering and complete command/history integration are implemented. There
+are no experimental public exports or unused-code lint exemptions. The design
+document records the remaining work and the limits of the local work counters.
+
+Validation: 188 Rust tests passed, 1 ignored; fmt, all-target clippy `-D warnings`
+and Rust 1.88.0 all-target workspace check passed. The new module is excluded from
+production builds, so the previous native/TypeScript baseline (701 passed,
+2 skipped) is unchanged and was not rerun for this prototype. Scoped self-review
+checked prefix-only reads, no borrowed-order materialization in anchor lookup,
+kind versus occurrence identity, hidden-source reference filtering, and retained
+transaction ownership. S1 and commercial qualification remain open.

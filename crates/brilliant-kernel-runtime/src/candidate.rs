@@ -1,0 +1,747 @@
+//! Transaction-private occurrence storage. This module is deliberately test-only
+//! until preparation, resource accounting, final validation and adoption close.
+//! A frozen prefix owns earlier operations; it is never finished or replayed here.
+
+use std::collections::{HashMap, HashSet};
+
+use brilliant_core_types::StableId;
+use brilliant_kernel_contracts::KernelStage3CommandFailureLeafV1 as Failure;
+use brilliant_score_foundation::{
+    AdmissionPartV1, AdmissionVoiceV1, InstrumentDescriptorV1, RhythmicContentV1,
+};
+
+use crate::{
+    change_set::{
+        ReferenceAddressV1 as Reference, ReferenceValueV1, ScalarAddressV1 as Scalar,
+        ScalarValueV1 as Value, StableEntityAddressV1 as Entity, StableOrderAddressV1 as Order,
+        StableOwnerAddressV1 as Owner,
+    },
+    overlay::TransactionOverlayV1,
+    records::EventContentKind,
+};
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+enum Kind {
+    Document,
+    Measure,
+    Part,
+    Staff,
+    Content,
+    Voice,
+    Event,
+    Note,
+}
+
+impl Kind {
+    fn of(entity: &Entity) -> Self {
+        match entity {
+            Entity::Document { .. } => Self::Document,
+            Entity::Measure { .. } => Self::Measure,
+            Entity::Part { .. } => Self::Part,
+            Entity::Staff { .. } => Self::Staff,
+            Entity::Voice { .. } => Self::Voice,
+            Entity::Event { .. } => Self::Event,
+            Entity::Note { .. } => Self::Note,
+        }
+    }
+}
+
+/// Stable within one candidate even when orders move or raw IDs are repeated.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+enum Occurrence {
+    Prefix(Entity),
+    PrefixContent {
+        part_id: StableId,
+        measure_id: StableId,
+    },
+    Added(usize),
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+enum Children {
+    Measures,
+    Parts,
+    Staffs,
+    Contents,
+    Voices,
+    Events,
+    Notes,
+}
+
+impl Children {
+    fn child_kind(self) -> Kind {
+        match self {
+            Self::Measures => Kind::Measure,
+            Self::Parts => Kind::Part,
+            Self::Staffs => Kind::Staff,
+            Self::Contents => Kind::Content,
+            Self::Voices => Kind::Voice,
+            Self::Events => Kind::Event,
+            Self::Notes => Kind::Note,
+        }
+    }
+
+    fn owner_kind(self) -> Kind {
+        match self {
+            Self::Measures | Self::Parts => Kind::Document,
+            Self::Staffs | Self::Contents => Kind::Part,
+            Self::Voices => Kind::Content,
+            Self::Events => Kind::Voice,
+            Self::Notes => Kind::Event,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+struct CandidateOrder {
+    owner: Occurrence,
+    children: Children,
+}
+
+impl CandidateOrder {
+    fn new(owner: &Occurrence, children: Children) -> Self {
+        Self {
+            owner: owner.clone(),
+            children,
+        }
+    }
+
+    fn prefix_order(&self) -> Option<Order> {
+        Some(match (&self.owner, self.children) {
+            (Occurrence::Prefix(Entity::Document { document_id }), Children::Measures) => {
+                Order::Measures {
+                    document_id: document_id.clone(),
+                }
+            }
+            (Occurrence::Prefix(Entity::Document { document_id }), Children::Parts) => {
+                Order::Parts {
+                    document_id: document_id.clone(),
+                }
+            }
+            (Occurrence::Prefix(Entity::Part { part_id }), Children::Staffs) => Order::Staffs {
+                part_id: part_id.clone(),
+            },
+            (Occurrence::Prefix(Entity::Part { part_id }), Children::Contents) => {
+                Order::MeasureContents {
+                    part_id: part_id.clone(),
+                }
+            }
+            (
+                Occurrence::PrefixContent {
+                    part_id,
+                    measure_id,
+                },
+                Children::Voices,
+            ) => Order::Voices {
+                part_id: part_id.clone(),
+                measure_id: measure_id.clone(),
+            },
+            (Occurrence::Prefix(Entity::Voice { voice_id }), Children::Events) => Order::Events {
+                voice_id: voice_id.clone(),
+            },
+            (Occurrence::Prefix(Entity::Event { event_id }), Children::Notes) => Order::Notes {
+                event_id: event_id.clone(),
+            },
+            _ => return None,
+        })
+    }
+
+    fn prefix_child(&self, id: &StableId) -> Occurrence {
+        let id = id.clone();
+        match self.children {
+            Children::Measures => Occurrence::Prefix(Entity::Measure { measure_id: id }),
+            Children::Parts => Occurrence::Prefix(Entity::Part { part_id: id }),
+            Children::Staffs => Occurrence::Prefix(Entity::Staff { staff_id: id }),
+            Children::Contents => {
+                let Occurrence::Prefix(Entity::Part { part_id }) = &self.owner else {
+                    unreachable!("only a prefix Part order yields prefix contents")
+                };
+                Occurrence::PrefixContent {
+                    part_id: part_id.clone(),
+                    measure_id: id,
+                }
+            }
+            Children::Voices => Occurrence::Prefix(Entity::Voice { voice_id: id }),
+            Children::Events => Occurrence::Prefix(Entity::Event { event_id: id }),
+            Children::Notes => Occurrence::Prefix(Entity::Note { note_id: id }),
+        }
+    }
+}
+
+/// Scalars contain no IDs. References retain raw strings until final admission.
+/// Incoming aggregates are consumed into these records and child orders once.
+struct Node {
+    raw_id: String,
+    kind: Kind,
+    owner: Occurrence,
+    value: Option<Value>,
+    instrument: Option<InstrumentDescriptorV1>,
+    staff_id: Option<String>,
+    content_kind: Option<EventContentKind>,
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+struct Work {
+    order_visits: u64,
+    visited_entries: u64,
+    prefix_order_copies: u64,
+    copied_entries: u64,
+}
+
+struct Candidate<'a> {
+    prefix: TransactionOverlayV1<'a>,
+    document: Occurrence,
+    nodes: Vec<Node>,
+    // Content links are deliberately absent: measure IDs do not identify a
+    // unique content occurrence. Resolve contents only in their owner's order.
+    added: HashMap<Kind, HashMap<String, Vec<usize>>>,
+    orders: HashMap<CandidateOrder, Vec<Occurrence>>,
+    hidden: HashSet<Occurrence>,
+    work: Work,
+}
+
+impl<'a> Candidate<'a> {
+    fn new(prefix: TransactionOverlayV1<'a>, document_id: StableId) -> Self {
+        Self {
+            prefix,
+            document: Occurrence::Prefix(Entity::Document { document_id }),
+            nodes: Vec::new(),
+            added: HashMap::new(),
+            orders: HashMap::new(),
+            hidden: HashSet::new(),
+            work: Work::default(),
+        }
+    }
+
+    fn raw_id<'b>(&'b self, occurrence: &'b Occurrence) -> Option<&'b str> {
+        match occurrence {
+            Occurrence::Prefix(entity) => Some(entity.stable_id().as_str()),
+            Occurrence::PrefixContent { measure_id, .. } => Some(measure_id.as_str()),
+            Occurrence::Added(index) => Some(self.nodes.get(*index)?.raw_id.as_str()),
+        }
+    }
+
+    fn kind(&self, occurrence: &Occurrence) -> Option<Kind> {
+        Some(match occurrence {
+            Occurrence::Prefix(entity) => Kind::of(entity),
+            Occurrence::PrefixContent { .. } => Kind::Content,
+            Occurrence::Added(index) => self.nodes.get(*index)?.kind,
+        })
+    }
+
+    fn owner(&self, occurrence: &Occurrence) -> Option<Occurrence> {
+        match occurrence {
+            Occurrence::Added(index) => Some(self.nodes.get(*index)?.owner.clone()),
+            Occurrence::PrefixContent { part_id, .. } => Some(Occurrence::Prefix(Entity::Part {
+                part_id: part_id.clone(),
+            })),
+            Occurrence::Prefix(entity) => Some(match self.prefix.read_owner(entity)? {
+                Owner::Document { document_id } => {
+                    Occurrence::Prefix(Entity::Document { document_id })
+                }
+                Owner::Part { part_id } => Occurrence::Prefix(Entity::Part { part_id }),
+                Owner::PartMeasure {
+                    part_id,
+                    measure_id,
+                } => Occurrence::PrefixContent {
+                    part_id,
+                    measure_id,
+                },
+                Owner::Voice { voice_id } => Occurrence::Prefix(Entity::Voice { voice_id }),
+                Owner::Event { event_id } => Occurrence::Prefix(Entity::Event { event_id }),
+            }),
+        }
+    }
+
+    fn visible(&self, occurrence: &Occurrence) -> bool {
+        let mut current = occurrence.clone();
+        // Document -> Part -> Content -> Voice -> Event -> Note is the deepest
+        // route. A bounded owner walk also fails closed on malformed cycles.
+        for _ in 0..7 {
+            if self.hidden.contains(&current) {
+                return false;
+            }
+            if current == self.document {
+                return true;
+            }
+            if let Occurrence::PrefixContent {
+                part_id,
+                measure_id,
+            } = &current
+                && self.prefix.read_reference(&Reference::PartMeasureLink {
+                    part_id: part_id.clone(),
+                    measure_id: measure_id.clone(),
+                }) != Some(ReferenceValueV1::Present(true))
+            {
+                return false;
+            }
+            let Some(owner) = self.owner(&current) else {
+                return false;
+            };
+            current = owner;
+        }
+        false
+    }
+
+    /// Bounded result: cardinality above one is enough to decide ambiguity.
+    fn matches(&mut self, kind: Kind, raw_id: &str) -> Vec<Occurrence> {
+        if kind == Kind::Content {
+            return Vec::new();
+        }
+        let mut matches = Vec::new();
+        if let Ok(id) = StableId::new(raw_id)
+            && let Some(entity) = self.prefix.resolve_entity_address(&id)
+            && Kind::of(&entity) == kind
+        {
+            let occurrence = Occurrence::Prefix(entity);
+            if self.visible(&occurrence) {
+                matches.push(occurrence);
+            }
+        }
+        if let Some(indices) = self.added.get(&kind).and_then(|by_id| by_id.get(raw_id)) {
+            for index in indices {
+                let occurrence = Occurrence::Added(*index);
+                if self.visible(&occurrence) {
+                    matches.push(occurrence);
+                }
+                if matches.len() == 2 {
+                    break;
+                }
+            }
+        }
+        matches
+    }
+
+    fn resolve(&mut self, kind: Kind, raw_id: &str) -> Result<Occurrence, Failure> {
+        let mut matches = self.matches(kind, raw_id);
+        match matches.len() {
+            0 => Err(Failure::TargetNotFound),
+            1 => Ok(matches.pop().expect("one match")),
+            _ => Err(Failure::InternalError),
+        }
+    }
+
+    /// Visits unchanged prefix orders by borrowing; no whole order is cloned.
+    fn visit_order(
+        &mut self,
+        order: &CandidateOrder,
+        visitor: &mut dyn FnMut(&Occurrence, &str) -> bool,
+    ) -> Option<()> {
+        if self.kind(&order.owner)? != order.children.owner_kind() || !self.visible(&order.owner) {
+            return None;
+        }
+        let mut visited = 0;
+        let result = if let Some(children) = self.orders.get(order) {
+            for child in children {
+                if self.visible(child) {
+                    visited += 1;
+                    if !visitor(child, self.raw_id(child)?) {
+                        break;
+                    }
+                }
+            }
+            Some(())
+        } else {
+            let prefix_order = order.prefix_order()?;
+            self.prefix.visit_order(&prefix_order, &mut |id| {
+                let child = order.prefix_child(id);
+                if !self.visible(&child) {
+                    return true;
+                }
+                visited += 1;
+                visitor(&child, id.as_str())
+            })
+        };
+        self.work.order_visits += 1;
+        self.work.visited_entries += visited;
+        result
+    }
+
+    fn copy_order_for_write(&mut self, order: &CandidateOrder) -> Result<(), Failure> {
+        if self.orders.contains_key(order) {
+            return Ok(());
+        }
+        let mut children = Vec::new();
+        self.visit_order(order, &mut |child, _| {
+            children.push(child.clone());
+            true
+        })
+        .ok_or(Failure::InternalError)?;
+        self.work.prefix_order_copies += 1;
+        self.work.copied_entries += children.len() as u64;
+        self.orders.insert(order.clone(), children);
+        Ok(())
+    }
+
+    fn read_value(&mut self, occurrence: &Occurrence) -> Option<Value> {
+        if !self.visible(occurrence) {
+            return None;
+        }
+        let Occurrence::Prefix(entity) = occurrence else {
+            return match occurrence {
+                Occurrence::Added(index) => self.nodes.get(*index)?.value.clone(),
+                _ => None,
+            };
+        };
+        self.prefix.read_scalar(&match entity {
+            Entity::Document { document_id } => Scalar::DocumentMetadata {
+                document_id: document_id.clone(),
+            },
+            Entity::Measure { measure_id } => Scalar::MeasureDefinition {
+                measure_id: measure_id.clone(),
+            },
+            Entity::Part { part_id } => Scalar::PartName {
+                part_id: part_id.clone(),
+            },
+            Entity::Staff { staff_id } => Scalar::StaffDefinition {
+                staff_id: staff_id.clone(),
+            },
+            Entity::Voice { voice_id } => Scalar::VoiceSequenceStart {
+                voice_id: voice_id.clone(),
+            },
+            Entity::Event { event_id } => Scalar::EventNoteValue {
+                event_id: event_id.clone(),
+            },
+            Entity::Note { note_id } => Scalar::NoteWrittenPitch {
+                note_id: note_id.clone(),
+            },
+        })
+    }
+
+    fn read_instrument(&mut self, part: &Occurrence) -> Option<InstrumentDescriptorV1> {
+        if !self.visible(part) {
+            return None;
+        }
+        match part {
+            Occurrence::Prefix(Entity::Part { part_id }) => {
+                let Value::PartInstrument(value) =
+                    self.prefix.read_scalar(&Scalar::PartInstrument {
+                        part_id: part_id.clone(),
+                    })?
+                else {
+                    return None;
+                };
+                Some(value)
+            }
+            Occurrence::Added(index) => self.nodes.get(*index)?.instrument.clone(),
+            _ => None,
+        }
+    }
+
+    fn read_staff_reference(&self, occurrence: &Occurrence) -> Option<Option<String>> {
+        if !self.visible(occurrence) {
+            return None;
+        }
+        match occurrence {
+            Occurrence::Prefix(Entity::Voice { voice_id }) => {
+                let ReferenceValueV1::StableId(id) =
+                    self.prefix.read_reference(&Reference::VoiceDefaultStaff {
+                        voice_id: voice_id.clone(),
+                    })?
+                else {
+                    return None;
+                };
+                Some(Some(id.as_str().to_owned()))
+            }
+            Occurrence::Prefix(Entity::Event { event_id }) => {
+                let ReferenceValueV1::OptionalStableId(id) =
+                    self.prefix
+                        .read_reference(&Reference::EventStaffAssignment {
+                            event_id: event_id.clone(),
+                        })?
+                else {
+                    return None;
+                };
+                Some(id.map(|id| id.as_str().to_owned()))
+            }
+            Occurrence::Added(index) => {
+                let node = self.nodes.get(*index)?;
+                matches!(node.kind, Kind::Voice | Kind::Event).then(|| node.staff_id.clone())
+            }
+            _ => None,
+        }
+    }
+
+    fn read_content_kind(&mut self, event: &Occurrence) -> Option<EventContentKind> {
+        if !self.visible(event) {
+            return None;
+        }
+        match event {
+            Occurrence::Prefix(Entity::Event { event_id }) => {
+                self.prefix.read_event_content_kind(event_id)
+            }
+            Occurrence::Added(index) => self.nodes.get(*index)?.content_kind,
+            _ => None,
+        }
+    }
+
+    /// Prefix queries use its maintained reference index. Only new candidate
+    /// records are scanned; hidden sources cannot retain a reference conflict.
+    fn staff_referrers(&self, raw_id: &str) -> Vec<Occurrence> {
+        let mut result = Vec::new();
+        if let Ok(id) = StableId::new(raw_id) {
+            for reference in self.prefix.list_references_to(&id) {
+                let source = match reference {
+                    Reference::VoiceDefaultStaff { voice_id } => {
+                        Occurrence::Prefix(Entity::Voice { voice_id })
+                    }
+                    Reference::EventStaffAssignment { event_id } => {
+                        Occurrence::Prefix(Entity::Event { event_id })
+                    }
+                    _ => continue,
+                };
+                if self.visible(&source) {
+                    result.push(source);
+                }
+            }
+        }
+        for (index, node) in self.nodes.iter().enumerate() {
+            if matches!(node.kind, Kind::Voice | Kind::Event)
+                && node.staff_id.as_deref() == Some(raw_id)
+            {
+                let source = Occurrence::Added(index);
+                if self.visible(&source) {
+                    result.push(source);
+                }
+            }
+        }
+        result
+    }
+
+    fn voice_insertion_index(
+        &mut self,
+        part: &Occurrence,
+        content: &Occurrence,
+        after: Option<&str>,
+    ) -> Result<usize, Failure> {
+        // The reference compares the content object itself, not just measureId.
+        // Check this even for start anchors and same-ID Parts/contents.
+        if self.owner(content).as_ref() != Some(part) || self.kind(part) != Some(Kind::Part) {
+            return Err(Failure::InternalError);
+        }
+        self.insertion_index(&CandidateOrder::new(content, Children::Voices), after, None)
+    }
+
+    /// Resolve after-ID in the visible order. Event's global fallback is an
+    /// existence test; hierarchy anchors instead require a unique global match.
+    fn insertion_index(
+        &mut self,
+        order: &CandidateOrder,
+        after: Option<&str>,
+        skip: Option<&Occurrence>,
+    ) -> Result<usize, Failure> {
+        if !self.visible(&order.owner)
+            || self.kind(&order.owner) != Some(order.children.owner_kind())
+        {
+            return Err(Failure::InternalError);
+        }
+        let Some(after) = after else {
+            return Ok(0);
+        };
+        let mut index = 0;
+        let mut found = None;
+        let mut duplicate = false;
+        self.visit_order(order, &mut |child, raw_id| {
+            if Some(child) == skip {
+                return true;
+            }
+            if raw_id == after {
+                if found.is_some() {
+                    duplicate = true;
+                    return false;
+                }
+                found = Some(index + 1);
+            }
+            index += 1;
+            true
+        })
+        .ok_or(Failure::InternalError)?;
+        if duplicate {
+            return Err(Failure::InternalError);
+        }
+        if let Some(index) = found {
+            return Ok(index);
+        }
+        match self.matches(order.children.child_kind(), after).len() {
+            0 => Err(Failure::AnchorNotFound),
+            1 => Err(Failure::AnchorWrongOwner),
+            _ if order.children == Children::Events => Err(Failure::AnchorWrongOwner),
+            _ => Err(Failure::InternalError),
+        }
+    }
+
+    fn move_child(
+        &mut self,
+        order: &CandidateOrder,
+        target_id: &str,
+        after: Option<&str>,
+    ) -> Result<(), Failure> {
+        let target = self.resolve(order.children.child_kind(), target_id)?;
+        if self.owner(&target).as_ref() != Some(&order.owner) {
+            return Err(Failure::TargetNotFound);
+        }
+        if after == Some(target_id) {
+            return Err(Failure::AnchorSelfReference);
+        }
+        let index = self.insertion_index(order, after, Some(&target))?;
+        self.copy_order_for_write(order)?;
+        let children = self.orders.get_mut(order).expect("touched order");
+        children.retain(|child| child != &target);
+        // Hidden children do not contribute to the visible insertion index.
+        let visible_at = children
+            .iter()
+            .filter(|child| !self.hidden.contains(*child))
+            .count();
+        if index > visible_at {
+            return Err(Failure::InternalError);
+        }
+        children.retain(|child| !self.hidden.contains(child));
+        children.insert(index, target);
+        Ok(())
+    }
+
+    fn hide(&mut self, occurrence: &Occurrence) -> Result<(), Failure> {
+        if !self.visible(occurrence) {
+            return Err(Failure::TargetNotFound);
+        }
+        if occurrence == &self.document {
+            return Err(Failure::InternalError);
+        }
+        self.hidden.insert(occurrence.clone());
+        Ok(())
+    }
+
+    fn add_node(
+        &mut self,
+        owner: &Occurrence,
+        kind: Kind,
+        raw_id: String,
+        value: Option<Value>,
+    ) -> Occurrence {
+        let index = self.nodes.len();
+        if kind != Kind::Content {
+            self.added
+                .entry(kind)
+                .or_default()
+                .entry(raw_id.clone())
+                .or_default()
+                .push(index);
+        }
+        self.nodes.push(Node {
+            raw_id,
+            kind,
+            owner: owner.clone(),
+            value,
+            instrument: None,
+            staff_id: None,
+            content_kind: None,
+        });
+        Occurrence::Added(index)
+    }
+
+    fn set_new_order(&mut self, owner: &Occurrence, children: Children, values: Vec<Occurrence>) {
+        self.orders
+            .insert(CandidateOrder::new(owner, children), values);
+    }
+
+    fn add_voice(&mut self, content: &Occurrence, voice: AdmissionVoiceV1) -> Occurrence {
+        let occurrence = self.add_node(
+            content,
+            Kind::Voice,
+            voice.id,
+            Some(Value::VoiceSequenceStart(voice.sequence.start)),
+        );
+        let Occurrence::Added(index) = occurrence else {
+            unreachable!()
+        };
+        self.nodes[index].staff_id = Some(voice.default_staff_id);
+        let mut events = Vec::with_capacity(voice.sequence.events.len());
+        for event in voice.sequence.events {
+            let event_occurrence = self.add_node(
+                &occurrence,
+                Kind::Event,
+                event.id,
+                Some(Value::EventNoteValue(event.duration)),
+            );
+            let Occurrence::Added(index) = event_occurrence else {
+                unreachable!()
+            };
+            self.nodes[index].staff_id = event.staff_id;
+            let mut notes = Vec::new();
+            self.nodes[index].content_kind = Some(match event.content {
+                RhythmicContentV1::Rest => EventContentKind::Rest,
+                RhythmicContentV1::Notes { notes: values } => {
+                    for note in values {
+                        notes.push(self.add_node(
+                            &event_occurrence,
+                            Kind::Note,
+                            note.id,
+                            Some(Value::NoteWrittenPitch(note.written_pitch)),
+                        ));
+                    }
+                    EventContentKind::Notes
+                }
+            });
+            self.set_new_order(&event_occurrence, Children::Notes, notes);
+            events.push(event_occurrence);
+        }
+        self.set_new_order(&occurrence, Children::Events, events);
+        occurrence
+    }
+
+    /// Storage operation only, not command preparation: no semantic admission or
+    /// history effects are implied. All caller-visible resolution precedes writes.
+    fn insert_part(
+        &mut self,
+        part: AdmissionPartV1,
+        after: Option<&str>,
+    ) -> Result<Occurrence, Failure> {
+        let order = CandidateOrder::new(&self.document, Children::Parts);
+        let index = self.insertion_index(&order, after, None)?;
+        self.copy_order_for_write(&order)?;
+        let occurrence = self.add_node(
+            &self.document.clone(),
+            Kind::Part,
+            part.id,
+            Some(Value::PartName(part.name)),
+        );
+        let Occurrence::Added(node_index) = occurrence else {
+            unreachable!()
+        };
+        self.nodes[node_index].instrument = Some(part.instrument);
+        let mut staffs = Vec::with_capacity(part.staves.len());
+        for staff in part.staves {
+            staffs.push(self.add_node(
+                &occurrence,
+                Kind::Staff,
+                staff.id,
+                Some(Value::StaffDefinition {
+                    line_count: staff.line_count,
+                    default_clef: staff.default_clef,
+                }),
+            ));
+        }
+        self.set_new_order(&occurrence, Children::Staffs, staffs);
+        let mut contents = Vec::with_capacity(part.measure_contents.len());
+        for content in part.measure_contents {
+            let content_occurrence =
+                self.add_node(&occurrence, Kind::Content, content.measure_id, None);
+            let voices = content
+                .voices
+                .into_iter()
+                .map(|voice| self.add_voice(&content_occurrence, voice))
+                .collect();
+            self.set_new_order(&content_occurrence, Children::Voices, voices);
+            contents.push(content_occurrence);
+        }
+        self.set_new_order(&occurrence, Children::Contents, contents);
+        // The target order may still retain explicitly hidden siblings.
+        let children = self.orders.get_mut(&order).expect("touched Part order");
+        children.retain(|child| !self.hidden.contains(child));
+        children.insert(index, occurrence.clone());
+        Ok(occurrence)
+    }
+}
+
+#[cfg(test)]
+mod tests;

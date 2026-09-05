@@ -1,5 +1,9 @@
 #![forbid(unsafe_code)]
 
+// Exercise occurrence storage against the real overlay before enabling candidate
+// execution. Remove this gate only with complete command/adoption integration.
+#[cfg(test)]
+mod candidate;
 mod change_set;
 mod checkpoint;
 mod handles;

@@ -1,7 +1,9 @@
 # Candidate admission implementation plan
 
-Status: command input representation/codec implemented; candidate execution and
-adoption still planned. This is the next S1 compatibility slice in
+Status: command input representation/codec implemented; occurrence storage and
+read/resolution prototype verified against the real Store/overlay under
+`cfg(test)`. Candidate command execution and adoption are not activated. This is
+the next S1 compatibility slice in
 [commercial kernel completion](kernel-commercial-completion.md), reviewed by
 the read-only GPT-6 planning agent and selected by the main implementer.
 Public qualification and the Rust default switch remain blocked on completion
@@ -44,6 +46,11 @@ one resolves, and multiple means internal-error. Semantic ID uniqueness remains
 global across kinds. Thus cross-kind duplicates may have unambiguous typed
 targets. Owner-local anchor resolution precedes global fallback; distinguish
 missing, wrong owner and ambiguous occurrences exactly as the reference resolver.
+Staff/Voice global fallback requires a unique match; Event sequence fallback
+only asks whether an Event exists elsewhere, so multiple remote matches still
+mean wrong-owner. Move target failure precedes self-reference, and self-reference
+must not be applied to insertion. Voice ownership compares content occurrences,
+including when the requested anchor is start.
 
 The implementation must share command preparation semantics. Do not create a
 second complete JSON command engine or return internal-error merely because a
@@ -135,6 +142,35 @@ its StableId-only address model cannot represent ambiguous or empty IDs.
 Initial tests must cover a changed prefix value/order, same-ID prefix rebuild,
 hidden unexpanded descendants, duplicate Staff lookup, distinct repeated content
 nodes and order-copy scope before wiring command mutation or adoption.
+
+### Verified occurrence prototype
+
+`crates/brilliant-kernel-runtime/src/candidate.rs` now owns a frozen typed prefix,
+an arena for new Part subtrees, a kind-specific raw-ID multimap, independent
+content occurrences, local child orders and hidden roots. New aggregate payloads
+are consumed into records once. Borrowed order visits pass the current raw ID
+alongside its occurrence; anchor lookup does not first collect a sibling array.
+The first mutation copies just its visible prefix sibling order, and subsequent
+mutations reuse it. Hidden ancestor checks also cover descendants never visited
+before deletion. Staff-referrer queries combine the prefix index with new records
+and exclude hidden sources. Candidate reference replacement is still pending.
+
+Thirteen Rust tests exercise the prototype using the real Store and overlay:
+changed prefix pitch/order/references; complete retained ChangeSet equality
+(including inverse/effects/segments/budget); same-ID prefix rebuild; ambiguous and
+cross-kind targets; empty IDs/references; repeated/unknown/empty measure links;
+content identity and ownership; anchor precedence; parent deletion repair; and
+failure/drop isolation. A guarded 4098-Staff store rejects aggregate detach,
+cloning base order/time arrays and verifies bounded visitor short-circuiting,
+zero sibling visits for an indexed scalar read and one order copy on first write.
+
+The module is test-only until it supports the complete required command closure.
+Its storage insert/move/hide methods are not command preparation or adoption.
+Before enabling it, implement fallible allocation and combined resource accounting,
+candidate scalar/reference writes, measure-linked deletion/coverage handling,
+remaining component insertion, final ordered diagnostics and strong-ID lowering.
+Retain the original command facts and history behavior during that integration.
+Local order counters in these tests are not global-work qualification evidence.
 
 ## Implementation and evidence order
 
