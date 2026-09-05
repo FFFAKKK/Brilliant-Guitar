@@ -413,11 +413,27 @@ impl KernelRuntime {
             .map_err(|_| KernelStage4FailureV1::HistoryInvariantViolation)?;
         let command_id = command.command_id();
 
-        let committed = self
-            .commit_stage3_change_set(prepared.change_set)
-            .map_err(|failure| {
-                KernelStage4FailureV1::Command(map_prepare_failure(failure).into())
-            })?;
+        let committed = match self.commit_stage3_change_set(prepared.change_set) {
+            Ok(committed) => committed,
+            Err(TransactionPrepareFailureV1::Semantic(failure)) => {
+                let mut metrics = prepared.attempt_metrics;
+                metrics.semantic_rules_evaluated = failure.rules_evaluated;
+                return Ok(self.rejected_command(
+                    KernelStage4FailureV1::Command(
+                        KernelStage3CommandFailureLeafV1::SemanticInvalid {
+                            diagnostics: failure.diagnostics,
+                        }
+                        .into(),
+                    ),
+                    metrics,
+                ));
+            }
+            Err(failure) => {
+                return Err(KernelStage4FailureV1::Command(
+                    map_prepare_failure(failure).into(),
+                ));
+            }
+        };
         self.history
             .commit_append(history_append, command, committed, history_affected);
         self.projection.commit_document_transition(projection);
@@ -2804,6 +2820,7 @@ fn moved_order(
 fn overlay_attempt_metrics(overlay: &TransactionOverlayV1<'_>) -> KernelStage3MetricsV1 {
     let work = overlay.metrics();
     KernelStage3MetricsV1 {
+        semantic_rules_evaluated: 0,
         full_document_scans: 0,
         full_document_clones: 0,
         full_semantic_validations: 0,
@@ -2890,6 +2907,11 @@ fn map_change_set_build_failure(
 
 fn map_prepare_failure(failure: TransactionPrepareFailureV1) -> KernelStage3CommandFailureLeafV1 {
     match failure {
+        TransactionPrepareFailureV1::Semantic(failure) => {
+            KernelStage3CommandFailureLeafV1::SemanticInvalid {
+                diagnostics: failure.diagnostics,
+            }
+        }
         TransactionPrepareFailureV1::VersionOverflow => {
             KernelStage3CommandFailureLeafV1::VersionOverflow
         }

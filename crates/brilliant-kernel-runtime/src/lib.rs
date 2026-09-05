@@ -4,6 +4,7 @@ mod change_set;
 mod checkpoint;
 mod handles;
 mod history;
+mod incremental_validation;
 mod indices;
 mod overlay;
 mod records;

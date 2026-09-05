@@ -9,8 +9,8 @@ use brilliant_kernel_contracts::{
     KernelStage4OperationResultV1, KernelStage4OperationV1, KernelStage4ReadResultV1,
     KernelStage4ReplayCommandResultV1, KernelStage4ReplayRequestV1, KernelStage4ReplayResultV1,
     KernelStage4SelectResultV1, MAX_BATCH_CHILDREN_V1, ScoreEntityTargetV1, StableFailureV1,
-    decode_captured_core_command, decode_stage3_submit_request, decode_stage4_operation_request,
-    decode_stage4_replay_request,
+    decode_captured_core_command, decode_captured_replay_command, decode_stage3_submit_request,
+    decode_stage4_operation_request, decode_stage4_replay_request,
 };
 use brilliant_kernel_runtime::{
     KernelRuntime, KernelRuntimeCreateFailure, KernelStage3TransactionV1,
@@ -247,7 +247,7 @@ impl KernelSession {
         }
 
         for (index, captured) in request.commands.iter().enumerate() {
-            let command_result = match decode_captured_core_command(captured) {
+            let command_result = match decode_captured_replay_command(captured) {
                 Ok(command) => session.submit_stage4_command(command),
                 Err(failure) => session.runtime.rejected_command(
                     KernelStage4FailureV1::Command(failure),

@@ -2,6 +2,10 @@ use brilliant_core_types::{JS_SAFE_INTEGER_MAX, SafeInteger};
 
 use crate::{ExactFraction, FractionV1, NoteValueV1, TimeModificationV1};
 
+pub fn tempo_is_valid(bpm: f64) -> bool {
+    bpm.is_finite() && bpm > 0.0
+}
+
 pub(crate) fn safe_integer(value: f64) -> bool {
     value.is_finite() && value.fract() == 0.0 && value.abs() <= JS_SAFE_INTEGER_MAX as f64
 }

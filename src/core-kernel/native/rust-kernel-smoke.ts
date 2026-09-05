@@ -1,6 +1,7 @@
 import { captureStrictInput } from "../codec/strict-input-capture";
 import { CORE_COMMAND_DEFINITIONS } from "../commands/catalog";
 import type { KernelEvent } from "../events/contracts";
+import { decodeCommandFailure } from "../reports/strict-codec";
 
 const API_VERSION = 1 as const;
 const REQUEST_BYTE_LIMIT = 64 * 1024 * 1024;
@@ -44,6 +45,7 @@ const FAILURE_KEYS = {
 } as const;
 
 const COMMAND_FAILURE_KEYS = {
+  "command.semantic-invalid": ["diagnostics"],
   "command.invalid-envelope": [],
   "command.unsupported-version": [],
   "command.unknown-id": [],
@@ -67,6 +69,7 @@ const COMMAND_FAILURE_KEYS = {
 } as const;
 
 const STAGE3_METRIC_KEYS = [
+  "semanticRulesEvaluated",
   "fullDocumentScans",
   "fullDocumentClones",
   "fullSemanticValidations",
@@ -550,6 +553,20 @@ function isStage3CommandFailure(
     return false;
   }
   switch (code) {
+    case "command.semantic-invalid": {
+      if (
+        !Array.isArray(value.diagnostics) ||
+        value.diagnostics.length === 0 ||
+        value.diagnostics.length > 4096
+      ) {
+        return false;
+      }
+      const decoded = decodeCommandFailure(value);
+      return (
+        decoded?.code === "command.semantic-invalid" &&
+        decoded.diagnostics.every((diagnostic) => isStablePath(diagnostic.path))
+      );
+    }
     case "command.range-transform-invalid":
       return (
         isRecord(value.address) &&

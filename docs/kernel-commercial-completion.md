@@ -264,7 +264,7 @@ This completes the reference assessment implementation, not transaction/session
 integration, incremental validation or commercial qualification. No new native
 endpoint or default runtime switch is introduced by this slice.
 
-### Confirmed next transaction-admission defect
+### Confirmed transaction-admission defect at `773df2b`
 
 A real-native probe using `core.document.set-metadata` with `tempo.bpm=0`
 reproduces a missing pre-adoption semantic gate: TypeScript returns
@@ -280,3 +280,64 @@ duration/measure bounds and hierarchy/reference dependencies with actual work
 counters, then stored-operation undo/redo and batch final-state behavior. The
 new full reference remains independent of the incremental scheduler and serves
 as its differential oracle; local edits must not call the full JSON walker.
+
+### S1.5a — final metadata admission and batch replay repair
+
+The transaction commit plan now checks the final metadata tempo before live
+adoption. It uses the same pure tempo rule as both Foundation validators and
+does not materialize a document or invoke the full reference walker. Metadata
+with zero/negative tempo returns the TypeScript-compatible
+`command.semantic-invalid` diagnostic. Stored undo/redo effects pass through
+the same commit plan. Batch intermediate values are permitted: zero followed
+by 121.5 succeeds, whereas 130 followed by zero rejects the whole transaction.
+
+The new private `semanticRulesEvaluated` metric counts actual tempo rule
+evaluations, including failed attempts. Title/author-only changes and unchanged
+tempo schedule zero evaluations; a changed tempo schedules one. Native tests
+exercise 1, 64 and 512 parts with constant rule work and no order copies. These
+tests do not establish latency qualification or repair the older global-work
+metric instrumentation; scan/materialization counters still need the complete
+entry-point accounting specified in the plan above.
+
+The regressions also preserve an already-persisted undo position, an existing
+redo branch, dirty identity, snapshot cache identity and the next event sequence
+after rejection. Stage 3, Stage 4 and detached replay use the admission gate.
+Replay rejection retains its successful prefix and reports the failing top-level
+index. Diagnostic responses preserve exact code/message/path/details, remain
+frozen, and use the closed semantic decoder plus Rust stable-path constraints.
+Exactly 4,096 diagnostics are accepted at the native response boundary; empty,
+4,097, unknown-code, unsupported-code, invalid-message, negative/overlong-path
+and extra-field reports are rejected as `bridge.internal`.
+
+The valid-batch replay regression exposed a separate existing defect: replay
+used the captured **batch-child** decoder for its top-level entries. A dedicated
+top-level captured decoder now permits a batch there; the existing child decoder
+continues to reject nested batches. Both live submit and replay retain identical
+nested-child failures and leave rejected batch effects unapplied.
+
+Seven real-native/adapter regressions cover this slice. Final validation:
+
+- Rust workspace: 170 passed, 1 ignored; fmt, all-target clippy `-D warnings`
+  and Rust 1.88.0 workspace check passed. Windows x64 native module rebuilt.
+- TypeScript strict build and full regression: 667 passed, 2 skipped, 0 failed
+  (78.818 seconds). `git diff --check` passed.
+- Self-review traced preparation/reservation through adoption and checked the
+  failed-operation metrics and diagnostic adapter. It found and repaired the
+  generic decoder's negative-path-index allowance at the native boundary.
+
+This is the metadata dependency family only; full incremental semantic/profile
+admission remains incomplete.
+
+### Confirmed next dependency family: derived pitch
+
+A real-native probe changes `part-1`'s instrument transposition to
+`{ diatonicSteps: 100, chromaticSemitones: 0 }`. TypeScript rejects the resulting
+note with `semantic.sounding-pitch-invalid` and detail
+`derived-pitch-octave-out-of-range`; the private Rust runtime currently commits
+it at document version one. Reproducer: `target/probe-pitch-admission.cjs`;
+captured results: `target/pitch-admission-probe.json` (both ignored artifacts).
+
+The next slice must close pitch dependencies for both changed notes and changed
+part instruments, evaluate final batch state, preserve full-validator diagnostic
+order/paths after hierarchy moves, and bound work to affected parts/notes. It
+must not treat the successful metadata gate as complete semantic admission.

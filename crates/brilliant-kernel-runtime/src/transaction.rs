@@ -40,6 +40,7 @@ pub(crate) enum TransactionPrepareFailureV1 {
     InvalidChangeSet,
     PreconditionMismatch,
     LocalInvariant,
+    Semantic(crate::incremental_validation::SemanticValidationFailureV1),
     Overlay(OverlayFailureV1),
 }
 
@@ -1117,6 +1118,11 @@ impl CommitPlanV1 {
         validate_removed_reference_targets(store, &collector)?;
 
         let (header_metadata, final_records) = prepare_final_records(store, &collector)?;
+        let semantic_rules_evaluated = crate::incremental_validation::validate_final_metadata(
+            &store.header.metadata,
+            header_metadata.as_ref(),
+        )
+        .map_err(TransactionPrepareFailureV1::Semantic)?;
         let records = prepare_record_actions(store, &collector, final_records, &overlay)?;
         let orders = prepare_orders(store, &overlay, &collector, &records.inserted_ids)?;
         let extensions = prepare_extensions(store, &overlay, extension_simulation)?;
@@ -1148,6 +1154,7 @@ impl CommitPlanV1 {
             )
             .saturating_add(reference_inserted_count(&collector.reference_states));
         let metrics = KernelStage3MetricsV1 {
+            semantic_rules_evaluated,
             full_document_scans: 0,
             full_document_clones: 0,
             full_semantic_validations: 0,

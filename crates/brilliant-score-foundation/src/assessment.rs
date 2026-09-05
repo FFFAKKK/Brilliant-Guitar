@@ -109,7 +109,7 @@ impl<'a> Validator<'a> {
     fn run(mut self, document: Node<'a>) -> Outcome<SemanticReportV1> {
         self.register_id(&document.field("id"))?;
         let tempo = document.field("metadata").field("tempo").field("bpm");
-        if tempo.number()? <= 0.0 {
+        if !music_rules::tempo_is_valid(tempo.number()?) {
             self.add(Code::TempoInvalid, &tempo, None)?;
         }
         self.check_measures(document.field("measureDefinitions"))?;

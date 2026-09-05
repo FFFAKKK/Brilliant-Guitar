@@ -607,6 +607,7 @@ pub struct KernelStage3SubmitRequestV1 {
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct KernelStage3MetricsV1 {
+    pub semantic_rules_evaluated: u64,
     pub full_document_scans: u64,
     pub full_document_clones: u64,
     pub full_semantic_validations: u64,
@@ -648,6 +649,9 @@ pub enum KernelStage3ResourceLimitKindV1 {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum KernelStage3CommandFailureLeafV1 {
+    SemanticInvalid {
+        diagnostics: Vec<brilliant_score_foundation::CoreDiagnosticV1>,
+    },
     InvalidEnvelope,
     UnsupportedVersion,
     UnknownId,
@@ -679,6 +683,7 @@ pub enum KernelStage3CommandFailureLeafV1 {
 impl KernelStage3CommandFailureLeafV1 {
     pub const fn code(&self) -> &'static str {
         match self {
+            Self::SemanticInvalid { .. } => "command.semantic-invalid",
             Self::InvalidEnvelope => "command.invalid-envelope",
             Self::UnsupportedVersion => "command.unsupported-version",
             Self::UnknownId => "command.unknown-id",
@@ -708,6 +713,7 @@ impl Serialize for KernelStage3CommandFailureLeafV1 {
         S: Serializer,
     {
         let field_count = match self {
+            Self::SemanticInvalid { .. } => 2,
             Self::RangeTransformInvalid { .. } => 3,
             Self::ResourceLimitExceeded { .. } => 4,
             _ => 1,
@@ -716,6 +722,9 @@ impl Serialize for KernelStage3CommandFailureLeafV1 {
             serializer.serialize_struct("KernelStage3CommandFailureLeafV1", field_count)?;
         state.serialize_field("code", self.code())?;
         match self {
+            Self::SemanticInvalid { diagnostics } => {
+                state.serialize_field("diagnostics", diagnostics)?;
+            }
             Self::RangeTransformInvalid { address, reason } => {
                 state.serialize_field("address", address)?;
                 state.serialize_field("reason", reason)?;

@@ -77,7 +77,7 @@ pub struct CoreDiagnosticV1 {
 }
 
 impl CoreDiagnosticV1 {
-    pub(crate) fn new(
+    pub fn new(
         code: CoreDiagnosticCodeV1,
         path: StablePathV1,
         detail: Option<(&str, &str)>,

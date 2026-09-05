@@ -207,7 +207,7 @@ struct Validator<'a> {
 impl<'a> Validator<'a> {
     fn validate(mut self, document: &'a ScoreDocumentV1) -> Result<(), FoundationDecodeFailure> {
         self.insert_id(&document.id, path(&[PathPart::Field("id")]))?;
-        if document.metadata.tempo.bpm.get() <= 0.0 {
+        if !crate::tempo_is_valid(document.metadata.tempo.bpm.get()) {
             return Err(invalid_value(&[
                 PathPart::Field("metadata"),
                 PathPart::Field("tempo"),

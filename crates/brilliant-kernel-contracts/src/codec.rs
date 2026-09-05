@@ -1837,6 +1837,14 @@ pub fn decode_captured_core_command(
     decode_core_command_value(captured.as_json(), true)
 }
 
+/// Replay entries occupy the same top-level position as live submissions.
+/// Their batch children still use `decode_captured_core_command` to reject nesting.
+pub fn decode_captured_replay_command(
+    captured: &CapturedCoreCommandV1,
+) -> Result<CoreCommandEnvelopeV1, KernelStage3CommandFailureV1> {
+    decode_core_command_value(captured.as_json(), false)
+}
+
 fn stage4_shape_failure(
     path: StablePathV1,
     violation: ShapeViolationV1,
