@@ -3,10 +3,16 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { test } from "node:test";
 
-import { ASSESSMENT_ORACLE_PATH, buildAssessmentOracle } from "./assessment-oracle";
+import { ASSESSMENT_ORACLE_PATH, GENERATED_ASSESSMENT_ORACLE_PATH, buildAssessmentOracle, buildGeneratedAssessmentOracle } from "./assessment-oracle";
 
 type Oracle = ReturnType<typeof buildAssessmentOracle>;
 const oracle = JSON.parse(readFileSync(resolve(ASSESSMENT_ORACLE_PATH), "utf8")) as Oracle;
+
+test("seeded interacting faults and pitch boundary corpus stays tied to TypeScript", () => {
+  const actual = buildGeneratedAssessmentOracle();
+  assert.equal(actual.cases.length, 576);
+  assert.deepEqual(JSON.parse(JSON.stringify(actual)), JSON.parse(readFileSync(resolve(GENERATED_ASSESSMENT_ORACLE_PATH), "utf8")));
+});
 
 test("assessment oracle preserves separate public decode, strict decode, semantic, profile and create results", () => {
   assert.deepEqual(JSON.parse(JSON.stringify(buildAssessmentOracle())), oracle);

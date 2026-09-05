@@ -221,3 +221,62 @@ Strict TypeScript compilation and all three corpus checks pass. Production code
 is unchanged by this corpus slice. Rust must consume these independent expected
 results while implementing the candidate view and complete validator next;
 the existing private create rejection is not yet the public diagnostic result.
+
+### S1.3b/S1.4 — full Rust semantic and feature reference assessment
+
+Foundation now provides `assess_score_semantics` and `assess_score_profile`,
+closed diagnostic DTOs, a finite-data feature profile including K1 defaults,
+and small pure musical rules. The semantic walker borrows captured JSON through
+local cursors; it does not copy a second document tree or weaken store types.
+Its caller still owns the appropriate decode/shape contract and capture caps.
+Required structural reads return `InvalidCandidateShape` if that precondition
+is broken. A semantic success is not, by itself, a persisted-shape decoder.
+
+The implementation matches all 56 fixed TypeScript cases and a further 576
+TypeScript-generated cases: 256 interacting fault combinations, 315 pitch and
+transposition combinations, and five direct-validator boundary cases. Full
+semantic and profile outputs match code, message key, paths, details and order.
+Default and custom profiles are covered. The original 56-case file is unchanged.
+The generated corpus has a fixed seed and is checked against the live TypeScript
+reference; Rust tests read its independently produced expected values.
+
+The reference report uses V2's 4,096 aggregate transaction diagnostic budget.
+Exactly 4,096 diagnostics remain complete; diagnostic 4,097 returns an explicit
+`DiagnosticLimit` mechanism failure and publishes no partial report. Both
+semantic-invalid and valid-but-unsupported cases have inclusive/successor tests.
+The future session composition must also account for diagnostics from all
+levels against the aggregate budget, rather than granting every level a fresh
+budget. Input preservation is asserted across success and failure.
+
+The RKP-4 fixture check now freezes every fixture present at its planning commit
+by its original path, permitting later stages to add new independent corpora.
+Its original byte hashes, manifests and qualification inputs remain unchanged.
+
+Validation at this slice:
+
+- Rust workspace: 170 passed, 1 ignored.
+- fmt, workspace/all-target clippy `-D warnings`, Rust 1.88.0 workspace check:
+  passed; fresh Windows x64 native module rebuilt.
+- TypeScript strict compilation and full regression: 660 passed, 2 skipped,
+  0 failed (77.263 seconds). `git diff --check` passes.
+
+This completes the reference assessment implementation, not transaction/session
+integration, incremental validation or commercial qualification. No new native
+endpoint or default runtime switch is introduced by this slice.
+
+### Confirmed next transaction-admission defect
+
+A real-native probe using `core.document.set-metadata` with `tempo.bpm=0`
+reproduces a missing pre-adoption semantic gate: TypeScript returns
+`command.semantic-invalid`; the current private Rust Stage 4 path commits it,
+stores zero tempo and increments the document version to one. The ignored
+reproducer and captured response are under
+`target/probe-stage4-semantic-admission.cjs` and
+`target/stage4-semantic-admission-probe.json`.
+
+S1.5 must turn this into a behavioral regression and introduce validation over
+the final overlay before any live adoption. Cover metadata, pitch/transposition,
+duration/measure bounds and hierarchy/reference dependencies with actual work
+counters, then stored-operation undo/redo and batch final-state behavior. The
+new full reference remains independent of the incremental scheduler and serves
+as its differential oracle; local edits must not call the full JSON walker.

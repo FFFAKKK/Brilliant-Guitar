@@ -148,8 +148,66 @@ export function buildAssessmentOracle() {
 }
 
 export const ASSESSMENT_ORACLE_PATH = "test/core-kernel/rust-migration/fixtures/semantic-assessment-oracle-v1.json";
+export const GENERATED_ASSESSMENT_ORACLE_PATH = "test/core-kernel/rust-migration/fixtures/generated-assessment-oracle-v1.json";
+
+export function buildGeneratedAssessmentOracle() {
+  const baseDocument = createCoreScoreFixture();
+  const safeCombinationIds = new Set([
+    "supported", "finite-tempo", "empty-score-id", "duplicate-note-id", "tempo-zero",
+    "meter-numerator-zero", "meter-numerator-fractional", "meter-numerator-unsafe", "meter-denominator-invalid",
+    "staff-line-count-fractional", "transposition-fractional", "transposition-unsafe",
+    "written-pitch-alter-invalid", "written-pitch-octave-invalid", "sounding-octave-invalid",
+    "sounding-alter-invalid", "sounding-diatonic-overflow", "sounding-chromatic-overflow",
+    "start-noncanonical", "start-negative", "start-out-of-bounds", "pickup-zero", "pickup-noncanonical",
+    "pickup-exceeds-measure", "pickup-comparison-overflow", "event-base-invalid", "event-dots-invalid",
+    "event-tuplet-invalid", "event-tuplet-overflow", "sequence-exceeds-measure", "measure-reference-missing",
+    "default-staff-missing", "event-staff-missing",
+  ]);
+  const pool = ASSESSMENT_CASES.filter((entry) => safeCombinationIds.has(entry.id));
+  let seed = 0x6a09e667;
+  function next(): number {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+    return seed;
+  }
+  const inputs: AssessmentCase[] = [];
+  for (let index = 0; index < 256; index += 1) {
+    const patches: AssessmentPatch[] = [];
+    const count = 1 + next() % 8;
+    for (let mutation = 0; mutation < count; mutation += 1) {
+      const selected = pool[next() % pool.length];
+      assert.ok(selected);
+      patches.push(...selected.patches);
+    }
+    inputs.push(sample(`combination-${index}`, ...patches));
+  }
+  for (const step of ["C", "D", "E", "F", "G", "A", "B"]) {
+    for (const alter of [-2, 0, 2]) {
+      for (const octave of [0, 4, 8]) {
+        for (const [diatonicSteps, chromaticSemitones] of [[0, 0], [1, 2], [-1, -2], [7, 12], [-7, -12]]) {
+          inputs.push(sample(`pitch-${step}-${alter}-${octave}-${diatonicSteps}`,
+            patch(pitch, { step, alter, octave }), patch(transpose, { diatonicSteps, chromaticSemitones })));
+        }
+      }
+    }
+  }
+  inputs.push(
+    sample("start-extra-field", patch([...sequence, "start"], { numerator: 0, denominator: 1, extra: true })),
+    sample("pickup-extra-field", patch([...measure, "pickupDuration"], { numerator: 1, denominator: 1, extra: true })),
+    sample("namespace-final-line-feed", patch(["extensions"], [{ ...extension, namespace: "example.opaque\n" }])),
+    sample("namespace-final-crlf", patch(["extensions"], [{ ...extension, namespace: "example.opaque\r\n" }])),
+    sample("direct-null-payload", patch(["extensions"], [{ ...extension, payload: null }])),
+  );
+  return {
+    oracleVersion: 1, seed: "6a09e667", baseDocument,
+    cases: inputs.map((entry) => {
+      const document = applyAssessmentPatches(baseDocument, entry.patches);
+      return { ...entry, expected: { semantics: validateScoreDocumentSemantics(document), support: validateScoreFeatureProfile(document) } };
+    }),
+  };
+}
 
 // Explicit fixture creation only; tests never regenerate expected results.
 if (require.main === module && process.argv[2] === "--write") {
   writeFileSync(resolve(ASSESSMENT_ORACLE_PATH), `${JSON.stringify(buildAssessmentOracle(), null, 2)}\n`, "utf8");
+  writeFileSync(resolve(GENERATED_ASSESSMENT_ORACLE_PATH), `${JSON.stringify(buildGeneratedAssessmentOracle())}\n`, "utf8");
 }

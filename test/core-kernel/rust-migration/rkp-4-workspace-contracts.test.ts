@@ -307,10 +307,15 @@ test("RKP-4 preserves immutable oracle, manifest and qualification bytes", () =>
     assert.equal(bytes.length, fixture.bytes, fixture.path);
     assert.equal(createHash("sha256").update(bytes).digest("hex"), fixture.sha256, fixture.path);
   }
+  const historicalFixtures = gitLines([
+    "ls-tree", "-r", "--name-only", RKP4_PLANNING_HEAD, "--",
+    "test/core-kernel/rust-migration/fixtures",
+  ]);
+  assert.ok(historicalFixtures.length > 0);
   assert.doesNotThrow(() =>
     execFileSync(
       "git",
-      ["diff", "--exit-code", RKP4_PLANNING_HEAD, "--", "test/core-kernel/rust-migration/fixtures"],
+      ["diff", "--exit-code", RKP4_PLANNING_HEAD, "--", ...historicalFixtures],
       { cwd: process.cwd(), stdio: "pipe" },
     ),
   );
