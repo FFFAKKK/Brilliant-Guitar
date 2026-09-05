@@ -1,7 +1,8 @@
 use std::{collections::HashMap, sync::Arc};
 
 use brilliant_core_types::{
-    DocumentVersionV1, JS_SAFE_INTEGER_MAX, SafeInteger, StableId, StablePathV1,
+    DocumentVersionV1, JS_SAFE_INTEGER_MAX, SafeInteger, StableId, StablePathSegmentV1,
+    StablePathV1,
 };
 use brilliant_kernel_contracts::{
     CoreCommandEnvelopeV1, EventStaffAssignmentV1, InsertMeasurePartContentV1, KernelEventCauseV1,
@@ -17,9 +18,10 @@ use brilliant_kernel_contracts::{
     VoiceAnchorV1, initial_snapshot,
 };
 use brilliant_score_foundation::{
-    ClefV1, FractionV1, InstrumentDescriptorV1, MeasureDefinitionV1, MeterV1, NoteValueV1, PartV1,
-    PitchStepV1, RhythmicContentV1, RhythmicEventV1, ScoreDocumentV1, ScoreMetadataV1,
-    StaffDefinitionV1, TranspositionV1, VoiceV1, WrittenPitchV1,
+    ClefV1, CoreDiagnosticCodeV1, CoreDiagnosticV1, FractionV1, InstrumentDescriptorV1,
+    MeasureDefinitionV1, MeterV1, NoteValueV1, PartV1, PitchStepV1, RhythmicContentV1,
+    RhythmicEventV1, ScoreDocumentV1, ScoreMetadataV1, StaffDefinitionV1, TranspositionV1, VoiceV1,
+    WrittenPitchV1,
 };
 
 use crate::{
@@ -903,7 +905,31 @@ impl KernelStage3TransactionV1<'_> {
             }
         }
         if current_measures.contains(&definition.id) {
-            return Err(KernelStage3CommandFailureLeafV1::LocalInvariantRejected);
+            // This command has an early duplicate-definition rule, after all
+            // targets/anchors resolve but before coverage or final semantics.
+            // Its path is the requested insertion position in the current
+            // batch overlay, not the existing definition's position.
+            let index = match &stable_anchor {
+                StableAnchorV1::Start => 0,
+                StableAnchorV1::After { sibling_id } => current_measures
+                    .iter()
+                    .position(|id| id == sibling_id)
+                    .and_then(|position| position.checked_add(1))
+                    .ok_or(KernelStage3CommandFailureLeafV1::InternalError)?,
+            };
+            let path = StablePathV1::new(vec![
+                StablePathSegmentV1::Field("measureDefinitions".to_owned()),
+                StablePathSegmentV1::Index(index as u64),
+                StablePathSegmentV1::Field("id".to_owned()),
+            ])
+            .map_err(|_| KernelStage3CommandFailureLeafV1::InternalError)?;
+            return Err(KernelStage3CommandFailureLeafV1::SemanticInvalid {
+                diagnostics: vec![CoreDiagnosticV1::new(
+                    CoreDiagnosticCodeV1::IdDuplicate,
+                    path,
+                    Some(("id", definition.id.as_str())),
+                )],
+            });
         }
 
         let mut by_part = HashMap::with_capacity(contents.len());

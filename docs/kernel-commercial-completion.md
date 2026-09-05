@@ -586,3 +586,42 @@ without weakening unique live-store identities. Early HashMap deduplication
 cannot recover those reports. The special early duplicate-measure command rule
 must be kept distinct from general final-state duplicate-ID validation. Create
 admission and public composition also remain open; S1 is not complete.
+
+### S1.5e — early duplicate-measure preparation parity
+
+The duplicate-existing-measure probe above is now repaired independently.
+After document, anchor and supplied Part targets resolve, measure insertion
+returns exactly one `semantic.id-duplicate` at the requested insertion position
+in the current batch overlay. This precedes coverage and final musical checks;
+a later batch child cannot repair this preparation failure. No duplicate is
+inserted into the overlay or live store. General component/cross-kind duplicates
+remain separate open candidate-admission work.
+
+Four new native regressions compiled and failed before repair, then passed:
+numeric insertion paths at 0/1/10/13; envelope/target/anchor/coverage precedence;
+batch prefix ordering, child failure identity and isolated replay; rejection at
+an undo position followed by redo and successful remove/reinsert identity reuse.
+They compare complete reports against TS and pin events/cache/history/dirty
+atomicity. The production change is confined to the existing early branch.
+
+Validation: fresh native build; 171 Rust tests passed, 1 ignored; fmt, all-target
+clippy `-D warnings`, Rust 1.88.0 check and strict TS build passed. Full npm
+regression: 699 passed, 2 skipped, 0 failed (122.505 seconds). Self-review checked
+that no early/general duplicate rules were conflated and no public surface or
+live-store uniqueness rule changed. `git diff --check` passed.
+
+### S1.6 — selected next candidate-admission design
+
+GPT-6 reviewed both the representation and exact per-entrypoint codec rules.
+The selected [implementation plan](kernel-candidate-admission-design.md) uses
+transaction-private ordered occurrences, preserves the typed local-edit path,
+and lowers only valid final candidates into the single runtime adoption owner.
+It explicitly covers ambiguous targets, owner-local anchors, parent deletion
+repair, net-zero batch history and a valid prefix before candidate mode.
+
+The codec matrix distinguishes nonempty targets/direct Event/Note insertion
+from nested component IDs and hierarchy references/anchors that accept empty
+strings before later checks. Foundation keeps score admission views; Contracts
+keeps command-specific policies. The existing StableId type and seven-crate DAG
+remain intact. This is a reviewed implementation plan, not completed parity or
+commercial qualification; prototype and differential evidence are still required.
