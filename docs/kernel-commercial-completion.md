@@ -719,3 +719,33 @@ production builds, so the previous native/TypeScript baseline (701 passed,
 checked prefix-only reads, no borrowed-order materialization in anchor lookup,
 kind versus occurrence identity, hidden-source reference filtering, and retained
 transaction ownership. S1 and commercial qualification remain open.
+
+### S1.6c — shared candidate identity storage
+
+The bounded GPT-6 resource review found that owned prefix ID copies would grow
+with owner/order references, especially for long document or Part IDs. The
+prototype now shares immutable prefix addresses across occurrence clones and
+shares a prefix Part address with its content occurrences. New raw ID strings,
+staff references and content links are pooled and shared with lookup keys; each
+duplicate still has its own arena occurrence. The strong public StableId and live
+Store representation are unchanged, and prefix reads do not eagerly pool a score.
+
+Three additional tests check allocation sharing for long IDs (64 KiB document,
+52 KiB Part, 88 KiB repeated raw ID), multiple roots and cross-kind/reference
+reuse. They also prove hidden nodes/strings remain retained and ambiguous targets
+become unique only through occurrence visibility, never string deduplication.
+All previous occurrence/anchor/prefix-isolation tests still pass.
+
+This removes the identified retained-copy amplification; it does not establish
+the entire candidate memory bound. Temporary typed reads and independently read
+prefix addresses still allocate. The design records separate compatibility
+logical and retained-memory accounts, prefix/suffix string merging, retained
+hidden nodes and the need for a derived envelope before resource enforcement.
+No new limit or production routing change is introduced.
+
+Validation: 191 Rust tests passed, 1 ignored (16 occurrence tests); fmt,
+all-target clippy `-D warnings`, Rust 1.88.0 all-target workspace check and
+`git diff --check` passed. Scoped self-review confirmed value-based prefix
+identity, distinct duplicate arena occurrences, shared retained owner/ID copies
+and unchanged frozen-prefix reads. Production remains excluded by `cfg(test)`;
+candidate resource enforcement and commercial qualification are still open.

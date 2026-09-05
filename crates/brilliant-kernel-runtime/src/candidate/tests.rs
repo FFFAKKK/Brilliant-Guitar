@@ -243,7 +243,7 @@ fn hiding_unexpanded_parent_blocks_descendant_lookup_and_stale_tokens() {
     let store = build_live_score_store(&document).unwrap();
     let mut candidate = Candidate::new(TransactionOverlayV1::new(&store), document.id);
     let part = candidate.resolve(Kind::Part, "part-z").unwrap();
-    let event = Occurrence::Prefix(Entity::Event {
+    let event = Occurrence::prefix(Entity::Event {
         event_id: id("event-a"),
     });
     candidate.hide(&part).unwrap();
@@ -727,4 +727,121 @@ fn failed_anchor_preparation_has_no_candidate_or_prefix_delta() {
     assert_eq!(order_ids(&mut candidate, &order), ["staff-z", "staff-a"]);
     assert_eq!(candidate.work.prefix_order_copies, 0);
     assert_eq!(candidate.prefix.operation_count(), 0);
+}
+
+#[test]
+fn long_document_owner_is_shared_by_every_added_root_and_order_key() {
+    let mut document = fixture();
+    document.id = id(&"long-document-id/".repeat(4096));
+    let store = build_live_score_store(&document).unwrap();
+    let mut candidate = Candidate::new(TransactionOverlayV1::new(&store), document.id);
+    let Occurrence::Prefix(root) = candidate.document.clone() else {
+        unreachable!()
+    };
+    for _ in 0..64 {
+        let added = candidate.insert_part(raw_part("same-part"), None).unwrap();
+        let Occurrence::Prefix(owner) = candidate.owner(&added).unwrap() else {
+            unreachable!()
+        };
+        assert!(
+            Arc::ptr_eq(&root, &owner),
+            "owner clones must not copy the long document ID"
+        );
+    }
+    let root_order = candidate
+        .orders
+        .keys()
+        .find(|order| order.children == Children::Parts)
+        .unwrap();
+    let Occurrence::Prefix(owner) = &root_order.owner else {
+        unreachable!()
+    };
+    assert!(Arc::ptr_eq(&root, owner));
+    assert_eq!(candidate.matches(Kind::Part, "same-part").len(), 2);
+    assert_eq!(
+        ordered(&mut candidate, &Occurrence::Prefix(root), Children::Parts).len(),
+        65
+    );
+}
+
+#[test]
+fn duplicate_raw_ids_share_strings_without_merging_nodes_or_refunding_hidden_data() {
+    let document = fixture();
+    let store = build_live_score_store(&document).unwrap();
+    let mut candidate = Candidate::new(TransactionOverlayV1::new(&store), document.id);
+    let long_id = "long-raw-id/".repeat(8192);
+    let mut payload = raw_part(&long_id);
+    payload.staves[0].id = long_id.clone();
+    payload.measure_contents[0].voices[0].default_staff_id = long_id.clone();
+    let first = candidate.insert_part(payload.clone(), None).unwrap();
+    let unique_bytes = candidate.id_pool.iter().map(|id| id.len()).sum::<usize>();
+    let node_count = candidate.nodes.len();
+    let second = candidate.insert_part(payload, None).unwrap();
+    assert_ne!(first, second);
+    assert_eq!(candidate.nodes.len(), node_count * 2);
+    assert_eq!(
+        candidate.id_pool.iter().map(|id| id.len()).sum::<usize>(),
+        unique_bytes
+    );
+    let shared = candidate.id_pool.get(long_id.as_str()).unwrap();
+    assert!(unique_bytes >= long_id.len());
+    for node in &candidate.nodes {
+        if node.raw_id.as_ref() == long_id {
+            assert!(Arc::ptr_eq(&node.raw_id, shared));
+        }
+        if let Some(reference) = &node.staff_id
+            && reference.as_ref() == long_id
+        {
+            assert!(Arc::ptr_eq(reference, shared));
+        }
+    }
+    for by_id in candidate.added.values() {
+        if let Some((key, _)) = by_id.get_key_value(long_id.as_str()) {
+            assert!(Arc::ptr_eq(key, shared));
+        }
+    }
+    assert_eq!(
+        candidate.resolve(Kind::Part, &long_id),
+        Err(Failure::InternalError)
+    );
+    candidate.hide(&first).unwrap();
+    assert_eq!(candidate.resolve(Kind::Part, &long_id), Ok(second));
+    assert_eq!(
+        candidate.nodes.len(),
+        node_count * 2,
+        "hidden occurrences stay retained until transaction disposal"
+    );
+    assert_eq!(
+        candidate.id_pool.iter().map(|id| id.len()).sum::<usize>(),
+        unique_bytes
+    );
+}
+
+#[test]
+fn prefix_content_occurrences_share_their_long_part_owner() {
+    let mut document = fixture();
+    let long_part_id = "long-part-id/".repeat(4096);
+    document.parts[0].id = id(&long_part_id);
+    let store = build_live_score_store(&document).unwrap();
+    let mut candidate = Candidate::new(TransactionOverlayV1::new(&store), document.id);
+    let part = candidate.resolve(Kind::Part, &long_part_id).unwrap();
+    let Occurrence::Prefix(shared_part) = &part else {
+        unreachable!()
+    };
+    let contents = ordered(&mut candidate, &part, Children::Contents);
+    for content in contents {
+        let Occurrence::PrefixContent { part, .. } = &content else {
+            unreachable!()
+        };
+        assert!(Arc::ptr_eq(part, shared_part));
+        let Occurrence::Prefix(owner) = candidate.owner(&content).unwrap() else {
+            unreachable!()
+        };
+        assert!(Arc::ptr_eq(&owner, shared_part));
+    }
+    assert!(
+        candidate.id_pool.is_empty(),
+        "borrowed prefix reads do not build a whole-document string pool"
+    );
+    assert!(candidate.nodes.is_empty());
 }

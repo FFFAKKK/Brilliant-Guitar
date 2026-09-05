@@ -2,7 +2,10 @@
 //! until preparation, resource accounting, final validation and adoption close.
 //! A frozen prefix owns earlier operations; it is never finished or replayed here.
 
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 use brilliant_core_types::StableId;
 use brilliant_kernel_contracts::KernelStage3CommandFailureLeafV1 as Failure;
@@ -49,12 +52,18 @@ impl Kind {
 /// Stable within one candidate even when orders move or raw IDs are repeated.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 enum Occurrence {
-    Prefix(Entity),
+    Prefix(Arc<Entity>),
     PrefixContent {
-        part_id: StableId,
-        measure_id: StableId,
+        part: Arc<Entity>,
+        measure_id: Arc<StableId>,
     },
     Added(usize),
+}
+
+impl Occurrence {
+    fn prefix(entity: Entity) -> Self {
+        Self::Prefix(Arc::new(entity))
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -107,39 +116,35 @@ impl CandidateOrder {
     }
 
     fn prefix_order(&self) -> Option<Order> {
-        Some(match (&self.owner, self.children) {
-            (Occurrence::Prefix(Entity::Document { document_id }), Children::Measures) => {
-                Order::Measures {
-                    document_id: document_id.clone(),
-                }
-            }
-            (Occurrence::Prefix(Entity::Document { document_id }), Children::Parts) => {
-                Order::Parts {
-                    document_id: document_id.clone(),
-                }
-            }
-            (Occurrence::Prefix(Entity::Part { part_id }), Children::Staffs) => Order::Staffs {
+        if let Occurrence::PrefixContent { part, measure_id } = &self.owner {
+            let Entity::Part { part_id } = part.as_ref() else {
+                return None;
+            };
+            return (self.children == Children::Voices).then(|| Order::Voices {
+                part_id: part_id.clone(),
+                measure_id: measure_id.as_ref().clone(),
+            });
+        }
+        let Occurrence::Prefix(entity) = &self.owner else {
+            return None;
+        };
+        Some(match (entity.as_ref(), self.children) {
+            (Entity::Document { document_id }, Children::Measures) => Order::Measures {
+                document_id: document_id.clone(),
+            },
+            (Entity::Document { document_id }, Children::Parts) => Order::Parts {
+                document_id: document_id.clone(),
+            },
+            (Entity::Part { part_id }, Children::Staffs) => Order::Staffs {
                 part_id: part_id.clone(),
             },
-            (Occurrence::Prefix(Entity::Part { part_id }), Children::Contents) => {
-                Order::MeasureContents {
-                    part_id: part_id.clone(),
-                }
-            }
-            (
-                Occurrence::PrefixContent {
-                    part_id,
-                    measure_id,
-                },
-                Children::Voices,
-            ) => Order::Voices {
+            (Entity::Part { part_id }, Children::Contents) => Order::MeasureContents {
                 part_id: part_id.clone(),
-                measure_id: measure_id.clone(),
             },
-            (Occurrence::Prefix(Entity::Voice { voice_id }), Children::Events) => Order::Events {
+            (Entity::Voice { voice_id }, Children::Events) => Order::Events {
                 voice_id: voice_id.clone(),
             },
-            (Occurrence::Prefix(Entity::Event { event_id }), Children::Notes) => Order::Notes {
+            (Entity::Event { event_id }, Children::Notes) => Order::Notes {
                 event_id: event_id.clone(),
             },
             _ => return None,
@@ -149,21 +154,21 @@ impl CandidateOrder {
     fn prefix_child(&self, id: &StableId) -> Occurrence {
         let id = id.clone();
         match self.children {
-            Children::Measures => Occurrence::Prefix(Entity::Measure { measure_id: id }),
-            Children::Parts => Occurrence::Prefix(Entity::Part { part_id: id }),
-            Children::Staffs => Occurrence::Prefix(Entity::Staff { staff_id: id }),
+            Children::Measures => Occurrence::prefix(Entity::Measure { measure_id: id }),
+            Children::Parts => Occurrence::prefix(Entity::Part { part_id: id }),
+            Children::Staffs => Occurrence::prefix(Entity::Staff { staff_id: id }),
             Children::Contents => {
-                let Occurrence::Prefix(Entity::Part { part_id }) = &self.owner else {
+                let Occurrence::Prefix(part) = &self.owner else {
                     unreachable!("only a prefix Part order yields prefix contents")
                 };
                 Occurrence::PrefixContent {
-                    part_id: part_id.clone(),
-                    measure_id: id,
+                    part: part.clone(),
+                    measure_id: Arc::new(id),
                 }
             }
-            Children::Voices => Occurrence::Prefix(Entity::Voice { voice_id: id }),
-            Children::Events => Occurrence::Prefix(Entity::Event { event_id: id }),
-            Children::Notes => Occurrence::Prefix(Entity::Note { note_id: id }),
+            Children::Voices => Occurrence::prefix(Entity::Voice { voice_id: id }),
+            Children::Events => Occurrence::prefix(Entity::Event { event_id: id }),
+            Children::Notes => Occurrence::prefix(Entity::Note { note_id: id }),
         }
     }
 }
@@ -171,12 +176,12 @@ impl CandidateOrder {
 /// Scalars contain no IDs. References retain raw strings until final admission.
 /// Incoming aggregates are consumed into these records and child orders once.
 struct Node {
-    raw_id: String,
+    raw_id: Arc<str>,
     kind: Kind,
     owner: Occurrence,
     value: Option<Value>,
     instrument: Option<InstrumentDescriptorV1>,
-    staff_id: Option<String>,
+    staff_id: Option<Arc<str>>,
     content_kind: Option<EventContentKind>,
 }
 
@@ -194,7 +199,8 @@ struct Candidate<'a> {
     nodes: Vec<Node>,
     // Content links are deliberately absent: measure IDs do not identify a
     // unique content occurrence. Resolve contents only in their owner's order.
-    added: HashMap<Kind, HashMap<String, Vec<usize>>>,
+    added: HashMap<Kind, HashMap<Arc<str>, Vec<usize>>>,
+    id_pool: HashSet<Arc<str>>,
     orders: HashMap<CandidateOrder, Vec<Occurrence>>,
     hidden: HashSet<Occurrence>,
     work: Work,
@@ -204,9 +210,10 @@ impl<'a> Candidate<'a> {
     fn new(prefix: TransactionOverlayV1<'a>, document_id: StableId) -> Self {
         Self {
             prefix,
-            document: Occurrence::Prefix(Entity::Document { document_id }),
+            document: Occurrence::prefix(Entity::Document { document_id }),
             nodes: Vec::new(),
             added: HashMap::new(),
+            id_pool: HashSet::new(),
             orders: HashMap::new(),
             hidden: HashSet::new(),
             work: Work::default(),
@@ -217,7 +224,7 @@ impl<'a> Candidate<'a> {
         match occurrence {
             Occurrence::Prefix(entity) => Some(entity.stable_id().as_str()),
             Occurrence::PrefixContent { measure_id, .. } => Some(measure_id.as_str()),
-            Occurrence::Added(index) => Some(self.nodes.get(*index)?.raw_id.as_str()),
+            Occurrence::Added(index) => Some(self.nodes.get(*index)?.raw_id.as_ref()),
         }
     }
 
@@ -232,23 +239,21 @@ impl<'a> Candidate<'a> {
     fn owner(&self, occurrence: &Occurrence) -> Option<Occurrence> {
         match occurrence {
             Occurrence::Added(index) => Some(self.nodes.get(*index)?.owner.clone()),
-            Occurrence::PrefixContent { part_id, .. } => Some(Occurrence::Prefix(Entity::Part {
-                part_id: part_id.clone(),
-            })),
+            Occurrence::PrefixContent { part, .. } => Some(Occurrence::Prefix(part.clone())),
             Occurrence::Prefix(entity) => Some(match self.prefix.read_owner(entity)? {
                 Owner::Document { document_id } => {
-                    Occurrence::Prefix(Entity::Document { document_id })
+                    Occurrence::prefix(Entity::Document { document_id })
                 }
-                Owner::Part { part_id } => Occurrence::Prefix(Entity::Part { part_id }),
+                Owner::Part { part_id } => Occurrence::prefix(Entity::Part { part_id }),
                 Owner::PartMeasure {
                     part_id,
                     measure_id,
                 } => Occurrence::PrefixContent {
-                    part_id,
-                    measure_id,
+                    part: Arc::new(Entity::Part { part_id }),
+                    measure_id: Arc::new(measure_id),
                 },
-                Owner::Voice { voice_id } => Occurrence::Prefix(Entity::Voice { voice_id }),
-                Owner::Event { event_id } => Occurrence::Prefix(Entity::Event { event_id }),
+                Owner::Voice { voice_id } => Occurrence::prefix(Entity::Voice { voice_id }),
+                Owner::Event { event_id } => Occurrence::prefix(Entity::Event { event_id }),
             }),
         }
     }
@@ -264,16 +269,17 @@ impl<'a> Candidate<'a> {
             if current == self.document {
                 return true;
             }
-            if let Occurrence::PrefixContent {
-                part_id,
-                measure_id,
-            } = &current
-                && self.prefix.read_reference(&Reference::PartMeasureLink {
+            if let Occurrence::PrefixContent { part, measure_id } = &current {
+                let Entity::Part { part_id } = part.as_ref() else {
+                    return false;
+                };
+                if self.prefix.read_reference(&Reference::PartMeasureLink {
                     part_id: part_id.clone(),
-                    measure_id: measure_id.clone(),
+                    measure_id: measure_id.as_ref().clone(),
                 }) != Some(ReferenceValueV1::Present(true))
-            {
-                return false;
+                {
+                    return false;
+                }
             }
             let Some(owner) = self.owner(&current) else {
                 return false;
@@ -293,7 +299,7 @@ impl<'a> Candidate<'a> {
             && let Some(entity) = self.prefix.resolve_entity_address(&id)
             && Kind::of(&entity) == kind
         {
-            let occurrence = Occurrence::Prefix(entity);
+            let occurrence = Occurrence::prefix(entity);
             if self.visible(&occurrence) {
                 matches.push(occurrence);
             }
@@ -383,7 +389,7 @@ impl<'a> Candidate<'a> {
                 _ => None,
             };
         };
-        self.prefix.read_scalar(&match entity {
+        self.prefix.read_scalar(&match entity.as_ref() {
             Entity::Document { document_id } => Scalar::DocumentMetadata {
                 document_id: document_id.clone(),
             },
@@ -413,7 +419,10 @@ impl<'a> Candidate<'a> {
             return None;
         }
         match part {
-            Occurrence::Prefix(Entity::Part { part_id }) => {
+            Occurrence::Prefix(entity) => {
+                let Entity::Part { part_id } = entity.as_ref() else {
+                    return None;
+                };
                 let Value::PartInstrument(value) =
                     self.prefix.read_scalar(&Scalar::PartInstrument {
                         part_id: part_id.clone(),
@@ -433,30 +442,34 @@ impl<'a> Candidate<'a> {
             return None;
         }
         match occurrence {
-            Occurrence::Prefix(Entity::Voice { voice_id }) => {
-                let ReferenceValueV1::StableId(id) =
-                    self.prefix.read_reference(&Reference::VoiceDefaultStaff {
-                        voice_id: voice_id.clone(),
-                    })?
-                else {
-                    return None;
-                };
-                Some(Some(id.as_str().to_owned()))
-            }
-            Occurrence::Prefix(Entity::Event { event_id }) => {
-                let ReferenceValueV1::OptionalStableId(id) =
-                    self.prefix
-                        .read_reference(&Reference::EventStaffAssignment {
-                            event_id: event_id.clone(),
+            Occurrence::Prefix(entity) => match entity.as_ref() {
+                Entity::Voice { voice_id } => {
+                    let ReferenceValueV1::StableId(id) =
+                        self.prefix.read_reference(&Reference::VoiceDefaultStaff {
+                            voice_id: voice_id.clone(),
                         })?
-                else {
-                    return None;
-                };
-                Some(id.map(|id| id.as_str().to_owned()))
-            }
+                    else {
+                        return None;
+                    };
+                    Some(Some(id.as_str().to_owned()))
+                }
+                Entity::Event { event_id } => {
+                    let ReferenceValueV1::OptionalStableId(id) =
+                        self.prefix
+                            .read_reference(&Reference::EventStaffAssignment {
+                                event_id: event_id.clone(),
+                            })?
+                    else {
+                        return None;
+                    };
+                    Some(id.map(|id| id.as_str().to_owned()))
+                }
+                _ => None,
+            },
             Occurrence::Added(index) => {
                 let node = self.nodes.get(*index)?;
-                matches!(node.kind, Kind::Voice | Kind::Event).then(|| node.staff_id.clone())
+                matches!(node.kind, Kind::Voice | Kind::Event)
+                    .then(|| node.staff_id.as_ref().map(|id| id.to_string()))
             }
             _ => None,
         }
@@ -467,7 +480,10 @@ impl<'a> Candidate<'a> {
             return None;
         }
         match event {
-            Occurrence::Prefix(Entity::Event { event_id }) => {
+            Occurrence::Prefix(entity) => {
+                let Entity::Event { event_id } = entity.as_ref() else {
+                    return None;
+                };
                 self.prefix.read_event_content_kind(event_id)
             }
             Occurrence::Added(index) => self.nodes.get(*index)?.content_kind,
@@ -483,10 +499,10 @@ impl<'a> Candidate<'a> {
             for reference in self.prefix.list_references_to(&id) {
                 let source = match reference {
                     Reference::VoiceDefaultStaff { voice_id } => {
-                        Occurrence::Prefix(Entity::Voice { voice_id })
+                        Occurrence::prefix(Entity::Voice { voice_id })
                     }
                     Reference::EventStaffAssignment { event_id } => {
-                        Occurrence::Prefix(Entity::Event { event_id })
+                        Occurrence::prefix(Entity::Event { event_id })
                     }
                     _ => continue,
                 };
@@ -611,6 +627,17 @@ impl<'a> Candidate<'a> {
         Ok(())
     }
 
+    /// Share raw IDs and references across new records, lookup keys and content
+    /// links. Occurrence identity remains independent of string identity.
+    fn share_id(&mut self, value: String) -> Arc<str> {
+        if let Some(shared) = self.id_pool.get(value.as_str()) {
+            return shared.clone();
+        }
+        let shared: Arc<str> = value.into();
+        self.id_pool.insert(shared.clone());
+        shared
+    }
+
     fn add_node(
         &mut self,
         owner: &Occurrence,
@@ -619,6 +646,7 @@ impl<'a> Candidate<'a> {
         value: Option<Value>,
     ) -> Occurrence {
         let index = self.nodes.len();
+        let raw_id = self.share_id(raw_id);
         if kind != Kind::Content {
             self.added
                 .entry(kind)
@@ -654,7 +682,7 @@ impl<'a> Candidate<'a> {
         let Occurrence::Added(index) = occurrence else {
             unreachable!()
         };
-        self.nodes[index].staff_id = Some(voice.default_staff_id);
+        self.nodes[index].staff_id = Some(self.share_id(voice.default_staff_id));
         let mut events = Vec::with_capacity(voice.sequence.events.len());
         for event in voice.sequence.events {
             let event_occurrence = self.add_node(
@@ -666,7 +694,7 @@ impl<'a> Candidate<'a> {
             let Occurrence::Added(index) = event_occurrence else {
                 unreachable!()
             };
-            self.nodes[index].staff_id = event.staff_id;
+            self.nodes[index].staff_id = event.staff_id.map(|id| self.share_id(id));
             let mut notes = Vec::new();
             self.nodes[index].content_kind = Some(match event.content {
                 RhythmicContentV1::Rest => EventContentKind::Rest,

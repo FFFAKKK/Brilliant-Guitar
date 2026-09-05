@@ -172,6 +172,41 @@ remaining component insertion, final ordered diagnostics and strong-ID lowering.
 Retain the original command facts and history behavior during that integration.
 Local order counters in these tests are not global-work qualification evidence.
 
+### Shared identity storage before resource enforcement
+
+The next GPT-6 resource review identified representation amplification: cloning
+an owned prefix address into every owner/order key also cloned its long ID.
+Occurrence copies now share immutable prefix addresses through Arc, and prefix
+content occurrences share the Part address from the visited owner order. New raw
+IDs, staff references and content links share Arc strings through a local pool;
+lookup keys share the same allocation. Added occurrence indices remain distinct.
+No global StableId change or eager prefix/document string pool is introduced.
+
+Three additional tests verify shared allocation identity for a 64 KiB document
+ID across 64 inserted Part owners, a 52 KiB Part ID across prefix contents, and
+an 88 KiB repeated raw ID across records/index keys/references. Duplicate nodes
+remain independent; hiding a parent does not remove retained nodes or ID strings.
+Borrowed prefix reads leave the new-ID pool empty. This is a local representation
+proof, not a complete memory bound: independently read prefix addresses and
+temporary typed query conversions can still own string allocations.
+
+Resource enforcement must preserve two distinct accounts:
+
+- Compatibility logical bytes retain the existing ChangeSet fixed weights and
+  UTF-8 string deduplication. Merge the prefix/suffix string accounting rather
+  than adding independent intern budgets; do not charge prefix effects, affected
+  addresses or segments again merely because candidate mode starts.
+- Retained memory must include the simultaneously owned prefix, candidate records,
+  shared ID storage, local orders/index entries, capacity growth and hidden nodes
+  kept until transaction disposal. Shared strings do not eliminate node costs.
+
+The existing accepted-wire logical upper bound does not establish the second
+account. Derive the retained-memory envelope and use checked arithmetic/fallible
+reservation before adding enforcement. Preserve the 64 MiB request and 256 MiB
+ChangeSet logical limits; do not introduce an arbitrary lower candidate limit to
+mask representation costs. Candidate activation remains gated on this work and
+the command/validation/adoption closure described above.
+
 ## Implementation and evidence order
 
 1. Pin the field/entrypoint matrix against the independent TS decoder/runtime,
