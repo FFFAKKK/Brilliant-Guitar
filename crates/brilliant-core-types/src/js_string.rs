@@ -1,5 +1,7 @@
 use std::{string::FromUtf16Error, sync::Arc};
 
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
 /// Immutable JavaScript text. Every UTF-16 code unit, including an unpaired
 /// surrogate, is data. There is deliberately no lossy `Display` or `as_str`.
 /// This primitive is not yet the storage representation of live Score DTOs.
@@ -43,6 +45,23 @@ impl From<&str> for JsString {
 impl From<String> for JsString {
     fn from(value: String) -> Self {
         Self::from(value.as_str())
+    }
+}
+
+// Ordinary Serde has only a UTF-8 string event. Unsupported code units must
+// fail explicitly; the dedicated lossless codec handles the full string domain.
+impl Serialize for JsString {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let text = self.to_utf8().map_err(|_| {
+            serde::ser::Error::custom("unpaired UTF-16 requires the lossless codec")
+        })?;
+        serializer.serialize_str(&text)
+    }
+}
+
+impl<'de> Deserialize<'de> for JsString {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        String::deserialize(deserializer).map(Self::from)
     }
 }
 

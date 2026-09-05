@@ -10,7 +10,7 @@ pub use failure::CoreTypeFailure;
 pub use finite_number::FiniteNumber;
 pub use js_string::JsString;
 pub use json::{
-    BoundedJsonValue, JSON_DEPTH_LIMIT, JSON_PROPERTY_LIMIT, LosslessJsonValue,
+    BoundedJsonValue, JSON_DEPTH_LIMIT, JSON_PROPERTY_LIMIT, JsonValue, LosslessJsonValue,
     StablePathSegmentV1, StablePathV1,
 };
 pub use scalar::{

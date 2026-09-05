@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, fmt};
+use std::{collections::BTreeMap, fmt, marker::PhantomData};
 
 use serde::{
     Deserialize, Deserializer, Serialize, Serializer,
@@ -24,13 +24,23 @@ pub enum JsonValue<Text> {
 /// Legacy UTF-8 instantiation, retaining its ordinary Serde conversions.
 pub type BoundedJsonValue = JsonValue<String>;
 /// The same bounded tree with lossless JavaScript string values and keys.
-/// Encoding requires an explicit lossless codec, not ordinary Serde conversion.
+/// Non-scalar text requires the explicit lossless codec; ordinary Serde fails
+/// closed rather than changing its JSON type or replacing any code units.
 pub type LosslessJsonValue = JsonValue<JsString>;
 
 impl<Text> JsonValue<Text> {
     pub fn validate_limits(&self) -> Result<(), CoreTypeFailure> {
-        let mut stack = vec![(self, 1_usize)];
-        let mut count = 0_usize;
+        Self::validate_stack(vec![(self, 1_usize)], 0)
+    }
+
+    pub fn validate_object_limits(values: &BTreeMap<Text, Self>) -> Result<(), CoreTypeFailure> {
+        Self::validate_stack(values.values().rev().map(|value| (value, 2)).collect(), 1)
+    }
+
+    fn validate_stack(
+        mut stack: Vec<(&Self, usize)>,
+        mut count: usize,
+    ) -> Result<(), CoreTypeFailure> {
         while let Some((value, depth)) = stack.pop() {
             if depth > JSON_DEPTH_LIMIT {
                 return Err(CoreTypeFailure::JsonDepthLimit { actual: depth });
@@ -53,7 +63,7 @@ impl<Text> JsonValue<Text> {
     }
 }
 
-impl Serialize for BoundedJsonValue {
+impl<Text: Serialize> Serialize for JsonValue<Text> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -62,7 +72,7 @@ impl Serialize for BoundedJsonValue {
             Self::Null => serializer.serialize_unit(),
             Self::Bool(value) => serializer.serialize_bool(*value),
             Self::Number(value) => value.serialize(serializer),
-            Self::String(value) => serializer.serialize_str(value),
+            Self::String(value) => value.serialize(serializer),
             Self::Array(values) => {
                 let mut sequence = serializer.serialize_seq(Some(values.len()))?;
                 for value in values {
@@ -81,25 +91,25 @@ impl Serialize for BoundedJsonValue {
     }
 }
 
-struct BoundedJsonVisitor;
+struct BoundedJsonVisitor<Text>(PhantomData<Text>);
 
-impl<'de> Visitor<'de> for BoundedJsonVisitor {
-    type Value = BoundedJsonValue;
+impl<'de, Text: Deserialize<'de> + From<String> + Ord> Visitor<'de> for BoundedJsonVisitor<Text> {
+    type Value = JsonValue<Text>;
 
     fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str("bounded data-only JSON")
     }
 
     fn visit_unit<E>(self) -> Result<Self::Value, E> {
-        Ok(BoundedJsonValue::Null)
+        Ok(JsonValue::Null)
     }
 
     fn visit_none<E>(self) -> Result<Self::Value, E> {
-        Ok(BoundedJsonValue::Null)
+        Ok(JsonValue::Null)
     }
 
     fn visit_bool<E>(self, value: bool) -> Result<Self::Value, E> {
-        Ok(BoundedJsonValue::Bool(value))
+        Ok(JsonValue::Bool(value))
     }
 
     fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
@@ -121,16 +131,16 @@ impl<'de> Visitor<'de> for BoundedJsonVisitor {
         E: de::Error,
     {
         FiniteNumber::new(value)
-            .map(BoundedJsonValue::Number)
+            .map(JsonValue::Number)
             .map_err(|_| E::custom("non-finite JSON number"))
     }
 
     fn visit_str<E>(self, value: &str) -> Result<Self::Value, E> {
-        Ok(BoundedJsonValue::String(value.to_owned()))
+        Ok(JsonValue::String(Text::from(value.to_owned())))
     }
 
     fn visit_string<E>(self, value: String) -> Result<Self::Value, E> {
-        Ok(BoundedJsonValue::String(value))
+        Ok(JsonValue::String(Text::from(value)))
     }
 
     fn visit_seq<A>(self, mut sequence: A) -> Result<Self::Value, A::Error>
@@ -141,7 +151,7 @@ impl<'de> Visitor<'de> for BoundedJsonVisitor {
         while let Some(value) = sequence.next_element()? {
             values.push(value);
         }
-        Ok(BoundedJsonValue::Array(values))
+        Ok(JsonValue::Array(values))
     }
 
     fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
@@ -154,16 +164,16 @@ impl<'de> Visitor<'de> for BoundedJsonVisitor {
                 return Err(de::Error::custom("duplicate JSON key"));
             }
         }
-        Ok(BoundedJsonValue::Object(values))
+        Ok(JsonValue::Object(values))
     }
 }
 
-impl<'de> Deserialize<'de> for BoundedJsonValue {
+impl<'de, Text: Deserialize<'de> + From<String> + Ord> Deserialize<'de> for JsonValue<Text> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
-        let value = deserializer.deserialize_any(BoundedJsonVisitor)?;
+        let value = deserializer.deserialize_any(BoundedJsonVisitor::<Text>(PhantomData))?;
         value
             .validate_limits()
             .map_err(|_| de::Error::custom("bounded JSON resource limit"))?;

@@ -1,24 +1,25 @@
 use std::collections::BTreeMap;
 
-use brilliant_core_types::{BoundedJsonValue, FiniteNumber, SafeInteger, StableId};
+use brilliant_core_types::{FiniteNumber, JsString, JsonValue, SafeInteger, StableId};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct ScoreDocumentV1 {
-    pub schema_version: String,
-    pub id: StableId,
-    pub metadata: ScoreMetadataV1,
-    pub measure_definitions: Vec<MeasureDefinitionV1>,
-    pub parts: Vec<PartV1>,
-    pub extensions: Vec<ExtensionBlockV1>,
+#[serde(bound(deserialize = "Id: Deserialize<'de>, Text: Deserialize<'de> + From<String> + Ord"))]
+pub struct ScoreDocumentV1<Id = StableId, Text = String> {
+    pub schema_version: Text,
+    pub id: Id,
+    pub metadata: ScoreMetadataV1<Text>,
+    pub measure_definitions: Vec<MeasureDefinitionV1<Id>>,
+    pub parts: Vec<PartV1<Id, Text>>,
+    pub extensions: Vec<ExtensionBlockV1<Id, Text>>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct ScoreMetadataV1 {
-    pub title: String,
-    pub authors: Vec<String>,
+pub struct ScoreMetadataV1<Text = String> {
+    pub title: Text,
+    pub authors: Vec<Text>,
     pub tempo: TempoV1,
 }
 
@@ -57,18 +58,18 @@ pub struct FractionV1 {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct PartV1<Id = StableId> {
+pub struct PartV1<Id = StableId, Text = String> {
     pub id: Id,
-    pub name: String,
-    pub instrument: InstrumentDescriptorV1,
+    pub name: Text,
+    pub instrument: InstrumentDescriptorV1<Text>,
     pub staves: Vec<StaffDefinitionV1<Id>>,
     pub measure_contents: Vec<PartMeasureContentV1<Id>>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct InstrumentDescriptorV1 {
-    pub name: String,
+pub struct InstrumentDescriptorV1<Text = String> {
+    pub name: Text,
     pub written_to_sounding: TranspositionV1,
 }
 
@@ -192,20 +193,21 @@ pub enum PitchStepV1 {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct ExtensionBlockV1 {
-    pub namespace: String,
+#[serde(bound(deserialize = "Id: Deserialize<'de>, Text: Deserialize<'de> + From<String> + Ord"))]
+pub struct ExtensionBlockV1<Id = StableId, Text = String> {
+    pub namespace: Text,
     pub schema_version: SafeInteger,
-    pub owner: ExtensionOwnerV1,
-    pub payload: BTreeMap<String, BoundedJsonValue>,
+    pub owner: ExtensionOwnerV1<Id>,
+    pub payload: BTreeMap<Text, JsonValue<Text>>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
-pub enum ExtensionOwnerV1 {
+pub enum ExtensionOwnerV1<Id = StableId> {
     Score,
     Part {
         #[serde(rename = "partId")]
-        part_id: StableId,
+        part_id: Id,
     },
 }
 
@@ -245,3 +247,7 @@ pub type AdmissionMeasureDefinitionV1 = MeasureDefinitionV1<String>;
 pub type AdmissionPartV1 = PartV1<String>;
 pub type AdmissionStaffDefinitionV1 = StaffDefinitionV1<String>;
 pub type AdmissionVoiceV1 = VoiceV1<String>;
+
+/// Structurally decoded score data in the full JS string domain. This is not
+/// semantic admission or a type accepted by the strong live Store.
+pub type LosslessScoreDocumentV1 = ScoreDocumentV1<JsString, JsString>;

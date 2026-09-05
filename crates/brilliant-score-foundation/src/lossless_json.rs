@@ -5,7 +5,7 @@
 use std::{collections::BTreeMap, fmt, io::Write};
 
 use brilliant_core_types::{
-    CoreTypeFailure, FiniteNumber, JSON_DEPTH_LIMIT, JSON_PROPERTY_LIMIT, JsString,
+    CoreTypeFailure, FiniteNumber, JSON_DEPTH_LIMIT, JSON_PROPERTY_LIMIT, JsString, JsonValue,
     LosslessJsonValue,
 };
 use serde_json::Number;
@@ -278,7 +278,7 @@ pub enum LosslessJsonError {
     Limit(CoreTypeFailure),
     DuplicateKey { byte_offset: usize },
     Write(std::io::Error),
-    Number(serde_json::Error),
+    Serialization(serde_json::Error),
 }
 
 enum Building {
@@ -404,47 +404,62 @@ pub fn write_lossless_json<W: Write + ?Sized>(
     writer: &mut W,
 ) -> Result<(), LosslessJsonError> {
     value.validate_limits().map_err(LosslessJsonError::Limit)?;
-    write_value(value, writer)
+    write_json_value_with(value, writer, &mut |text, writer| {
+        write_js_string_json(text, writer).map_err(LosslessJsonError::Write)
+    })
 }
 
-fn write_value<W: Write + ?Sized>(
-    value: &LosslessJsonValue,
+pub(crate) fn write_json_value_with<
+    Text,
+    W: Write + ?Sized,
+    F: FnMut(&Text, &mut W) -> Result<(), LosslessJsonError>,
+>(
+    value: &JsonValue<Text>,
     writer: &mut W,
+    write_text: &mut F,
 ) -> Result<(), LosslessJsonError> {
     match value {
-        LosslessJsonValue::Null => writer.write_all(b"null").map_err(LosslessJsonError::Write),
-        LosslessJsonValue::Bool(value) => writer
+        JsonValue::Null => writer.write_all(b"null").map_err(LosslessJsonError::Write),
+        JsonValue::Bool(value) => writer
             .write_all(if *value { b"true" } else { b"false" })
             .map_err(LosslessJsonError::Write),
-        LosslessJsonValue::Number(value) => {
-            serde_json::to_writer(writer, value).map_err(LosslessJsonError::Number)
+        JsonValue::Number(value) => {
+            serde_json::to_writer(writer, value).map_err(LosslessJsonError::Serialization)
         }
-        LosslessJsonValue::String(value) => {
-            write_js_string_json(value, writer).map_err(LosslessJsonError::Write)
-        }
-        LosslessJsonValue::Array(values) => {
+        JsonValue::String(value) => write_text(value, writer),
+        JsonValue::Array(values) => {
             writer.write_all(b"[").map_err(LosslessJsonError::Write)?;
             for (index, value) in values.iter().enumerate() {
                 if index != 0 {
                     writer.write_all(b",").map_err(LosslessJsonError::Write)?;
                 }
-                write_value(value, writer)?;
+                write_json_value_with(value, writer, write_text)?;
             }
             writer.write_all(b"]").map_err(LosslessJsonError::Write)
         }
-        LosslessJsonValue::Object(values) => {
-            writer.write_all(b"{").map_err(LosslessJsonError::Write)?;
-            for (index, (key, value)) in values.iter().enumerate() {
-                if index != 0 {
-                    writer.write_all(b",").map_err(LosslessJsonError::Write)?;
-                }
-                write_js_string_json(key, writer).map_err(LosslessJsonError::Write)?;
-                writer.write_all(b":").map_err(LosslessJsonError::Write)?;
-                write_value(value, writer)?;
-            }
-            writer.write_all(b"}").map_err(LosslessJsonError::Write)
-        }
+        JsonValue::Object(values) => write_json_object_with(values, writer, write_text),
     }
+}
+
+pub(crate) fn write_json_object_with<
+    Text,
+    W: Write + ?Sized,
+    F: FnMut(&Text, &mut W) -> Result<(), LosslessJsonError>,
+>(
+    values: &BTreeMap<Text, JsonValue<Text>>,
+    writer: &mut W,
+    write_text: &mut F,
+) -> Result<(), LosslessJsonError> {
+    writer.write_all(b"{").map_err(LosslessJsonError::Write)?;
+    for (index, (key, value)) in values.iter().enumerate() {
+        if index != 0 {
+            writer.write_all(b",").map_err(LosslessJsonError::Write)?;
+        }
+        write_text(key, writer)?;
+        writer.write_all(b":").map_err(LosslessJsonError::Write)?;
+        write_json_value_with(value, writer, write_text)?;
+    }
+    writer.write_all(b"}").map_err(LosslessJsonError::Write)
 }
 
 #[cfg(test)]

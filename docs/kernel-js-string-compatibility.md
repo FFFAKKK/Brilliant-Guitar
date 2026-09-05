@@ -46,8 +46,9 @@ prove its allocation and memory behavior before qualification.
 The seven-crate structure and public JSON protocol stay unchanged. Core Types
 owns the string value. Foundation owns token parsing, exact JSON output and
 wire-length calculation. Core Types does not acquire a JSON parser dependency.
-No Serde implementation currently claims that arbitrary JsString can pass through
-serde_json::Value or an ordinary UTF-8 String without loss.
+Ordinary Serde conversion supports scalar Unicode only and returns an error for
+unpaired units. Arbitrary JsString requires the explicit lossless codec; it cannot
+pass through serde_json::Value or an ordinary UTF-8 String without loss.
 
 ## Implemented foundation
 
@@ -117,9 +118,9 @@ consume the token stream with its existing policy, avoiding a second whole tree.
 
 The explicit writer checks shared data limits before emitting any output, then
 streams exact strings, keys, finite numbers and nested containers. Partial writer
-errors are propagated and require discarding output. There is no ordinary Serde
-implementation for the lossless instantiation. In particular, a serializer cannot
-silently turn a surrogate into an array or an encoded marker through this API.
+errors are propagated and require discarding output. Ordinary Serde conversion
+of the lossless instantiation fails on unpaired units. In particular, a serializer
+cannot silently turn a surrogate into an array or an encoded marker through this API.
 Allocation of retained Vec/Arc/BTreeMap data remains ordinary allocation; the
 streaming retention policy is not a claim of process-wide allocation containment.
 
@@ -148,16 +149,78 @@ native routing conversion is included in this slice.
 Read-only GPT-6 interface research confirmed that Serde's newtype names and
 `is_human_readable` do not negotiate a private UTF-16 capability. An unaware
 serializer may successfully serialize a newtype's inner units as a numeric array.
-Accordingly, DTO migration will use explicit lossless conversions, with shared
+Accordingly, DTO migration uses explicit lossless conversions, with shared
 field mapping helpers/macros where useful. User strings and keys go directly into
 the lossless model; constants/enums retain exact ASCII matching. Absent optional
 fields remain distinct from explicit null. No generic fallback to
 serde_json::Value, a TLS flag or a global string marker is selected.
 
+The complete Score DTO family now has explicit `LosslessDecode` / `LosslessEncode`
+implementations. The existing DTO definitions take defaulted text/ID parameters,
+so live users retain String/StableId while the structural lossless instantiation
+retains JsString throughout IDs, references, metadata, instrument text and opaque
+extension keys/values. The conversion does not admit invalid IDs to the strong
+Store. StableId still rejects empty and non-scalar strings until its migration.
+
+Field helpers preserve declared DTO wire order, mixed optional/required fields,
+exact tagged variants and omission versus explicit null. Opaque maps use code-unit
+key ordering and reuse the owned lossless tree, including shared text and nested
+array allocations. Output uses the same JSON writer as the data codec; payload
+maps enforce aggregate root/depth/property bounds before their first byte. Any
+writer error requires discarding the complete response buffer. Structural decode
+requires an already bounded capture and does not replace strict shape ranking or
+semantic validation.
+
+Seven Rust tests cover eight independent complete JS documents, exact bytes and
+all nested text/ID/reference paths; strict component fields and error paths; public
+tag/optional/integer contracts; ordinary Serde failures; opaque ownership sharing;
+writer failures and combined payload bounds. One TS regression regenerates the
+fixture and proves reference decode, Session creation and exact document readback.
+
+Validation for the DTO slice: 272 Rust tests passed, 1 ignored; fmt, strict
+all-target clippy and Rust 1.88.0 all-target workspace check passed. The rebuilt
+Windows x64 addon has SHA-256
+`DFB4E60E4DCCDE3673EEC98AB95B2598D1B4D8B31FB7AD7CE60DEC4F3C376987`.
+The first full TS/native run had one stale source assertion requiring a concrete
+`part_id: StableId` declaration. It now checks both the generic's StableId default
+and the exact `partId` rename, while preserving historical blob checks and the
+ban on a `part_id` alias. Its focused regression passed. Existing and new native
+wire behavior did not fail in that run. The separate native probe still exits 1
+with 14 mismatches; its retained report is `target/lossless-dto-native-gap.json`.
+Rust and initial TS logs are `target/lossless-dto-rust-tests.log` and
+`target/lossless-dto-npm-tests.log`. Scoped review checked every DTO field mapping,
+mixed optional wire order, failure paths, tagged variants, strong default types,
+shared opaque ownership, aggregate limits and the fail-closed Serde boundary.
+
+The final full TS/native regression on that same addon passed 710 tests, with
+2 skipped and 0 failed (212.625 seconds), including strict TS compilation and the
+repaired live-source assertion. Its log is `target/lossless-dto-npm-tests-final.log`.
+These results validate the DTO foundation and unchanged live behavior. Full
+lossless native routing, allocation/latency qualification and S1 admission closure
+remain open.
+
+### Next live boundary integration
+
+Read-only GPT-6 review of the actual Contracts entrypoints selected replacement
+of `StrictSeed`/`StrictVisitor` by a `LosslessJsonTokens` capture stack while keeping
+`StrictState`, `CanonicalPath` and all existing shape validators authoritative.
+Canonical paths retain the field whitelist; escaped key matching in discarded
+subtrees must not allocate arbitrary keys. A duplicate keeps the first field and
+discards only the duplicate subtree, whereas a resource violation stops all new
+retention. Both still scan the tail for higher-priority syntax/depth failures.
+Submit's command-level failure mapping remains distinct from create/Stage 4.
+
+This requires explicit Contracts payload/selector conversion and lossless replay
+capture, followed immediately by actual ID/text storage, history and response
+encoding. A full-tree conversion back to serde_json::Value is not the selected
+integration. The capped response writer must keep counting exact total bytes
+after its retention cap and preserve resource/error precedence. Capture alone
+does not establish end-to-end native acceptance.
+
 ## Remaining migration sequence
 
-1. Connect the implemented lossless model and token stream to explicit DTO
-   conversion and Contracts strict capture. Preserve canonical shape/path and
+1. Connect the implemented lossless model, token stream and Score DTO conversion
+   to Contracts strict capture and explicit request/payload mapping. Preserve canonical shape/path and
    failure ranking while detecting duplicate keys after escape decoding. The
    convenience data reader does not by itself implement the request policy.
 2. Migrate StableId, raw candidate/journal IDs, Foundation text fields, references,

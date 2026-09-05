@@ -5192,7 +5192,9 @@ test("part owner repair stays anchored to its accepted six-path wire contract", 
     dto,
     /#\[serde\(tag = "kind", rename_all = "kebab-case", deny_unknown_fields\)\]\s*pub enum ExtensionOwnerV1/gu,
   );
-  assert.match(dto, /#\[serde\(rename = "partId"\)\]\s*part_id: StableId/gu);
+  // ID parametrization supports lossless DTOs; the live default remains strong.
+  assert.match(dto, /pub enum ExtensionOwnerV1<Id = StableId>/gu);
+  assert.match(dto, /#\[serde\(rename = "partId"\)\]\s*part_id: Id/gu);
   assert.doesNotMatch(dto, /serde\([^\]]*alias\s*=\s*"part_id"/gu);
 });
 
