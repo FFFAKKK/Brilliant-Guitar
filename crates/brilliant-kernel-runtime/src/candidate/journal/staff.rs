@@ -222,6 +222,7 @@ impl Recorder<'_> {
         }
         let order = CandidateOrder::new(&part, Children::Staffs);
         self.verify_owned_staff(&part, &root)?;
+        self.check_effect_budget(1)?;
         let expected_order = self.expected_staff_order(&order)?;
         self.reserve_staff_ledger(&part, &order)?;
         let previous = orders::previous(&mut self.candidate, &order, &root)?;

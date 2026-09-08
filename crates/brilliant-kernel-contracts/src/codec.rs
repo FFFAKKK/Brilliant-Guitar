@@ -1674,6 +1674,18 @@ fn validate_stage4_operation_shape(value: &StrictValue, state: &mut StrictState)
 pub fn decode_stage4_operation_request(
     bytes: &[u8],
 ) -> Result<KernelStage4OperationRequestV1, KernelStage4OperationDecodeFailureV1> {
+    decode_stage4_candidate_operation_request(bytes)
+}
+
+pub fn decode_admission_stage4_operation_request(
+    bytes: &[u8],
+) -> Result<KernelStage4OperationRequestV1<JsString>, KernelStage4OperationDecodeFailureV1> {
+    decode_stage4_candidate_operation_request(bytes)
+}
+
+fn decode_stage4_candidate_operation_request<Id: LosslessText>(
+    bytes: &[u8],
+) -> Result<KernelStage4OperationRequestV1<Id>, KernelStage4OperationDecodeFailureV1> {
     if bytes.len() > REQUEST_BYTE_LIMIT {
         return Err(KernelStage4OperationDecodeFailureV1::Boundary(
             StableFailureV1::BridgeRequestTooLarge {
@@ -1730,7 +1742,7 @@ pub fn decode_stage4_operation_request(
         })?;
     let operation = match known_tag(kind) {
         "submit" => {
-            let command = decode_core_command_value(operation.at_ascii("command"), false)
+            let command = decode_command_candidate_value(operation.at_ascii("command"), false)
                 .map_err(KernelStage4OperationDecodeFailureV1::Command)?;
             KernelStage4OperationV1::Submit { command }
         }

@@ -1,9 +1,7 @@
-//! Stored admission operations: scalar/raw-reference changes, Part subtrees
-//! from frozen-prefix or journal births, Staff leaves and Voice/Event subtrees. This remains
-//! inside the test-only admission candidate.
-//! Private finalization and combined typed-prefix history are wired here.
-//! Complete command preparation, effects/segments and resource accounting remain
-//! integration gates before native activation.
+//! Stored admission operations retain immutable subtree images and occurrence
+//! lifetimes across edits, moves and deletion. Command preparation and accounting
+//! feed one final Store adoption and combined typed-prefix/candidate history.
+//! These internals are shared by native session submission and stored replay.
 
 use brilliant_core_types::JsString;
 
@@ -12,8 +10,12 @@ use super::identity::{
 };
 use super::*;
 
+mod accounting;
 mod bundle;
 mod combined;
+mod dispatch;
+mod effect_budget;
+mod execution;
 mod expected;
 mod expected_extensions;
 mod fields;
@@ -29,6 +31,8 @@ use bundle::PartBundle;
 use fields::FieldChanges;
 use orders::JournalOrder;
 use staff::StaffBundle;
+
+pub(crate) use execution::{CandidateExecution, CandidateHistory, PreparedCandidate};
 
 #[derive(Clone)]
 enum StoredEntityBundle {
@@ -83,12 +87,15 @@ struct Step {
 }
 
 struct ActivePart {
+    #[cfg(test)]
     bundle: Arc<PartBundle>,
+    #[cfg(test)]
     sources: Vec<Occurrence>,
     staff_changes: HashMap<Occurrence, Option<Arc<StaffBundle>>>,
 }
 
 struct Recorder<'a> {
+    effect_budget: Option<u64>,
     candidate: Candidate<'a>,
     identities: IdentityRecorder,
     active: HashMap<Occurrence, ActivePart>,
@@ -137,6 +144,7 @@ impl<'a> Recorder<'a> {
     /// bind actual operations to this journal, then produce an owned Store plan.
     /// Public command dispatch and resource accounting remain separate
     /// integration work before native activation.
+    #[cfg(test)]
     fn prepare_final_commit(
         self,
         store: &crate::store::LiveScoreStore,
@@ -149,21 +157,50 @@ impl<'a> Recorder<'a> {
         ),
         super::adoption::FinalizationFailure,
     > {
-        let mut final_view = self.candidate.validate_final()?;
+        self.prepare_final_commit_with_metrics(store, version)
+            .map_err(|(failure, _)| failure)
+    }
+
+    #[expect(
+        clippy::result_large_err,
+        reason = "failure metrics returned without allocation, including capacity failures"
+    )]
+    fn prepare_final_commit_with_metrics(
+        self,
+        store: &crate::store::LiveScoreStore,
+        version: brilliant_core_types::DocumentVersionV1,
+    ) -> Result<
+        (
+            Option<crate::transaction::PreparedFinalStateCommitV1>,
+            crate::change_set::ChangeSetV1,
+            Journal,
+        ),
+        (
+            super::adoption::FinalizationFailure,
+            brilliant_kernel_contracts::KernelStage3MetricsV1,
+        ),
+    > {
+        let mut final_view = self.candidate.validate_final_with_metrics()?;
         let identities = final_view
             .seal_identities(self.identities)
-            .map_err(super::adoption::FinalizationFailure::Command)?;
+            .map_err(|failure| {
+                (
+                    super::adoption::FinalizationFailure::Command(failure),
+                    final_view.replay_work(),
+                )
+            })?;
         let journal = Journal {
             identities,
             steps: self.steps,
         };
         let (plan, prefix) =
-            final_view.prepare_commit(store, version, journal.steps.len() as u64)?;
+            final_view.prepare_commit_with_metrics(store, version, journal.steps.len() as u64)?;
         Ok((plan, prefix, journal))
     }
 
     fn new(candidate: Candidate<'a>) -> Self {
         Self {
+            effect_budget: None,
             candidate,
             identities: IdentityRecorder::default(),
             active: HashMap::new(),
@@ -249,7 +286,9 @@ impl<'a> Recorder<'a> {
         self.active.insert(
             root.clone(),
             ActivePart {
+                #[cfg(test)]
                 bundle,
+                #[cfg(test)]
                 sources,
                 staff_changes: HashMap::new(),
             },
@@ -257,6 +296,7 @@ impl<'a> Recorder<'a> {
         Ok(root)
     }
 
+    #[cfg(test)]
     fn remove_part(&mut self, raw_id: &JsString) -> Result<(), Failure> {
         let result = self.remove_part_inner(raw_id);
         if result.is_err() {
@@ -326,6 +366,7 @@ impl<'a> Recorder<'a> {
     }
 
     // Strong locator sealing is not the missing final semantic validator.
+    #[cfg(test)]
     fn finish(mut self) -> Result<(Candidate<'a>, Journal), Failure> {
         let identities = self.identities.finish(&mut self.candidate)?;
         Ok((

@@ -1,25 +1,22 @@
 # Candidate admission implementation plan
 
-Status: command input representation/codec implemented; occurrence storage,
-reads, scalar/reference writes and Part/Staff/Voice/Event/Measure insertion verified under
-`cfg(test)`. Voice/Event subtree recording/removal now composes with nested edits
-and rebirth using shared immutable expected state. General prefix-Part deletion
-now retains owned extension data and explicit dangling-owner lifetimes.
-Measure composite history preserves its definition and independently owned Part
-Content trees; private command preparation and stored complete order replacement
-cover insert/remove/move and normalization.
-Range deletion and written-pitch transformation now use occurrence selections
-for all three range forms, with retained history and actual Store replay. Final
-assessment, stable Store adoption and combined typed-prefix/candidate-suffix
-replay have an internal vertical path, including extension delta composition.
-Candidate command execution and adoption are
-not activated in the public runtime. Historical implementation entries below
-retain the evidence and limitations at their original checkpoints. This is
-the next S1 compatibility slice in
+Status: S1.14 connects all 27 leaf commands and Batch to admission execution in
+the existing native session. Representable commands keep the typed overlay;
+the first unrepresentable command preserves that prefix and enters occurrence
+storage once. Complete command preparation, effects, affected order and the
+shared retained-resource ledger now feed final assessment and atomic Store
+adoption. Candidate history supports Undo/Redo, checkpoints and command replay
+through the same session boundary. The module is no longer test-only. The new
+28-scenario native/TS corpus exercises every leaf plus a typed-prefix transition,
+including full document, history, dirty identity, affected entities and events.
+The product's default engine remains TypeScript. Extension execution/composition
+and release qualification remain incomplete. Historical implementation entries
+below retain their original evidence and limitations. This is part of S1 in
 [commercial kernel completion](kernel-commercial-completion.md), reviewed by
 the read-only GPT-6 planning agent and selected by the main implementer.
-Public qualification and the Rust default switch remain blocked on completion
-of the implementation and its behavioral evidence, not on additional approval.
+See that ledger for current full-suite results and unresolved performance gates.
+The Rust default switch requires complete implementation and qualification
+evidence, not an additional approval.
 
 ## Problem and constraints
 

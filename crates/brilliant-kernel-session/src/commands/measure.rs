@@ -296,15 +296,24 @@ mod tests {
         else {
             panic!("incomplete coverage must reject");
         };
+        let encoded = brilliant_kernel_contracts::encode_stage3_submit_result(
+            &KernelStage3SubmitResultV1::CommandRejected {
+                value,
+                failure: failure.into(),
+            },
+        )
+        .expect("semantic rejection wire");
+        let encoded = String::from_utf8(encoded).unwrap();
         assert_eq!(
-            failure,
-            KernelStage3CommandFailureLeafV1::LocalInvariantRejected
+            encoded.split_once(",\"failure\":").unwrap().1,
+            r#"{"code":"command.semantic-invalid","diagnostics":[{"code":"semantic.measure-coverage-missing","messageKey":"core.semantic.measure-coverage-missing","path":["parts",1,"measureContents"],"details":{"measureId":"mx"}}]}}"#
         );
         assert_eq!(value.document_version.get(), 0);
-        assert_zero_global_work(&KernelStage3SubmitResultV1::CommandRejected {
-            value,
-            failure: failure.into(),
-        });
+        // Deferred coverage runs exactly one final semantic assessment.
+        assert_eq!(value.metrics.full_document_scans, 1);
+        assert_eq!(value.metrics.full_semantic_validations, 1);
+        assert_eq!(value.metrics.full_document_clones, 0);
+        assert_eq!(value.metrics.full_snapshot_materializations, 0);
         assert_eq!(
             encode_read_result(&session.read_state()).expect("unchanged"),
             baseline
@@ -318,9 +327,17 @@ mod tests {
         else {
             panic!("cross-kind duplicate id must reject");
         };
+        let encoded = brilliant_kernel_contracts::encode_stage3_submit_result(
+            &KernelStage3SubmitResultV1::CommandRejected {
+                value,
+                failure: failure.into(),
+            },
+        )
+        .expect("cross-kind semantic rejection wire");
+        let encoded = String::from_utf8(encoded).unwrap();
         assert_eq!(
-            failure,
-            KernelStage3CommandFailureLeafV1::LocalInvariantRejected
+            encoded.split_once(",\"failure\":").unwrap().1,
+            r#"{"code":"command.semantic-invalid","diagnostics":[{"code":"semantic.id-duplicate","messageKey":"core.semantic.id-duplicate","path":["parts",0,"id"],"details":{"id":"pa"}}]}}"#
         );
         assert_eq!(value.document_version.get(), 0);
         assert_eq!(

@@ -60,9 +60,15 @@ string_enum!(MeasurePointKindV1 { Measure => "measure" });
 string_enum!(PartMeasurePointKindV1 { PartMeasure => "part-measure" });
 string_enum!(VoiceEventPointKindV1 { VoiceEvent => "voice-event" });
 
-tagged_enum!(NoteAddressV1, "kind" {
-    Note => "note" { note_id => "noteId" },
-});
+impl<Id: LosslessEncode> LosslessEncode for NoteAddressV1<Id> {
+    fn write_lossless<W: Write + ?Sized>(&self, writer: &mut W) -> Result<(), LosslessJsonError> {
+        let mut state = LosslessObjectWriter::new(writer)?;
+        let Self::Note { note_id } = self;
+        state.field("kind", "note")?;
+        state.field("noteId", note_id)?;
+        state.end()
+    }
+}
 tagged_enum!(ScoreRangeV1, "kind" {
     MeasureRange => "measure-range" { start => "start", end => "end" },
     PartMeasureRange => "part-measure-range" { start => "start", end => "end" },

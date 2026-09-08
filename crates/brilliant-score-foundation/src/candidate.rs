@@ -4,6 +4,99 @@ use brilliant_core_types::{
 
 use crate::AssessmentFailureV1;
 
+/// Actual full-assessment work, independent of incremental scheduler counters.
+/// Dependencies count cursor read/advance attempts (including failures), not
+/// diagnostic path construction; rules count reached semantic check sites.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct AssessmentWorkV1 {
+    pub rules_evaluated: u64,
+    pub dependency_reads: u64,
+}
+
+#[derive(Clone)]
+pub(crate) struct ObservedNode<'a, N> {
+    pub(crate) node: N,
+    pub(crate) work: &'a std::cell::Cell<AssessmentWorkV1>,
+}
+
+impl<N> ObservedNode<'_, N> {
+    fn read(&self) {
+        let mut work = self.work.get();
+        work.dependency_reads = work.dependency_reads.saturating_add(1);
+        self.work.set(work);
+    }
+}
+
+pub(crate) struct ObservedItems<'a, N: AssessmentNodeV1> {
+    items: N::Items,
+    work: &'a std::cell::Cell<AssessmentWorkV1>,
+}
+
+impl<'a, N: AssessmentNodeV1> Iterator for ObservedItems<'a, N> {
+    type Item = Result<ObservedNode<'a, N>, AssessmentFailureV1>;
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut work = self.work.get();
+        work.dependency_reads = work.dependency_reads.saturating_add(1);
+        self.work.set(work);
+        self.items.next().map(|result| {
+            result.map(|node| ObservedNode {
+                node,
+                work: self.work,
+            })
+        })
+    }
+}
+
+impl<'a, N: AssessmentNodeV1> AssessmentNodeV1 for ObservedNode<'a, N> {
+    type Items = ObservedItems<'a, N>;
+    fn field(&self, name: &'static str) -> Self {
+        self.read();
+        Self {
+            node: self.node.field(name),
+            work: self.work,
+        }
+    }
+    fn optional(&self, name: &'static str) -> Result<Option<Self>, AssessmentFailureV1> {
+        self.read();
+        self.node.optional(name).map(|node| {
+            node.map(|node| Self {
+                node,
+                work: self.work,
+            })
+        })
+    }
+    fn items(self) -> Result<Self::Items, AssessmentFailureV1> {
+        self.read();
+        Ok(ObservedItems {
+            items: self.node.items()?,
+            work: self.work,
+        })
+    }
+    fn len(&self) -> Result<usize, AssessmentFailureV1> {
+        self.read();
+        self.node.len()
+    }
+    fn string(&self) -> Result<JsString, AssessmentFailureV1> {
+        self.read();
+        self.node.string()
+    }
+    fn number(&self) -> Result<f64, AssessmentFailureV1> {
+        self.read();
+        self.node.number()
+    }
+    fn exact_fields(&self, fields: &[&str]) -> Result<bool, AssessmentFailureV1> {
+        self.read();
+        self.node.exact_fields(fields)
+    }
+    fn is_array(&self) -> Result<bool, AssessmentFailureV1> {
+        self.read();
+        self.node.is_array()
+    }
+    fn path(&self) -> StablePathV1 {
+        self.node.path()
+    }
+}
+
 /// Internal cross-crate assessment cursor over an immutable candidate view.
 /// Handles may borrow captured JSON or virtual score storage; scalar strings
 /// retain their exact UTF-16 code units and numbers retain JavaScript semantics.

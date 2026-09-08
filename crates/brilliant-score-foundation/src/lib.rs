@@ -13,8 +13,11 @@ mod lossless_json;
 mod music_rules;
 mod validation;
 
-pub use assessment::{assess_score_semantics, assess_score_semantics_node};
+pub use assessment::{
+    assess_score_semantics, assess_score_semantics_node, assess_score_semantics_node_observed,
+};
 pub use candidate::AssessmentNodeV1;
+pub use candidate::AssessmentWorkV1;
 pub use codec::{
     FoundationDecodeFailure, canonical_score_bytes, decode_lossless_score_document_value,
     decode_score_document_value, finite_number_json_len,

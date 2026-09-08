@@ -7,20 +7,20 @@ use super::*;
 mod tests;
 
 #[derive(Clone)]
-struct Tree {
-    owner: JournalId,
-    anchor: Option<JournalId>,
+pub(super) struct Tree {
+    pub(super) owner: JournalId,
+    pub(super) anchor: Option<JournalId>,
     absent_order: Arc<Vec<JournalId>>,
     present_order: Arc<Vec<JournalId>>,
-    image: Arc<PartBundle>,
+    pub(super) image: Arc<PartBundle>,
 }
 
 #[derive(Clone)]
 pub(super) struct MeasureBundle {
-    document: JournalId,
-    parts: Arc<Vec<JournalId>>,
-    definition: Tree,
-    contents: Vec<Tree>,
+    pub(super) document: JournalId,
+    pub(super) parts: Arc<Vec<JournalId>>,
+    pub(super) definition: Tree,
+    pub(super) contents: Vec<Tree>,
     // Independent command membership facts prevent a damaged table from
     // silently dropping a whole Part tree. Repeated owners remain representable
     // for the insert command's deferred coverage diagnostics.

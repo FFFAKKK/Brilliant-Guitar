@@ -41,6 +41,7 @@ impl Recorder<'_> {
     ) -> Result<bool, RangePreparationFailure> {
         let selection = self.resolve_range_selection(document_id, range)?;
         if let Some(measures) = selection.measures {
+            self.check_effect_budget(measures.len() as u64)?;
             let changed = !measures.is_empty();
             for source in measures {
                 let raw = self
@@ -53,6 +54,7 @@ impl Recorder<'_> {
             }
             Ok(changed)
         } else {
+            self.check_effect_budget(selection.events.len() as u64)?;
             let changed = !selection.events.is_empty();
             for source in selection.events {
                 let raw = self
@@ -120,6 +122,7 @@ impl Recorder<'_> {
                 }
             }
         }
+        self.check_effect_budget(prepared.len() as u64)?;
         // TS derives effects only after all pitches have transformed. Its
         // effect interpreter then requires unique raw Note targets. Do not
         // let an early duplicate mask a later transformation failure.

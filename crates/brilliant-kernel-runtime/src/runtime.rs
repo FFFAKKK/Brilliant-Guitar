@@ -1,4 +1,5 @@
 use brilliant_core_types::JsString;
+mod admission;
 use std::{collections::HashMap, sync::Arc};
 
 use brilliant_core_types::{
@@ -6,7 +7,7 @@ use brilliant_core_types::{
     StablePathV1,
 };
 use brilliant_kernel_contracts::{
-    AffectedEntityAddressV1, CoreCommandEnvelopeV1, EventStaffAssignmentV1,
+    AffectedEntityAddressV1, CoreCommandEnvelopeV1, CoreCommandIdV1, EventStaffAssignmentV1,
     InsertMeasurePartContentV1, KernelEventCauseV1, KernelEventV1, KernelHistoryStateV1,
     KernelReadStateV1, KernelSelectorResultV1, KernelSelectorValueV1,
     KernelStage3CommandFailureLeafV1, KernelStage3MetricsV1, KernelStage3ResourceLimitKindV1,
@@ -33,7 +34,7 @@ use crate::{
         StableOrderAddressV1, StableOwnerAddressV1,
     },
     checkpoint::{CheckpointPrepareFailureV1, CheckpointStateV1},
-    history::{HistoryPrepareFailureV1, HistoryStateV1},
+    history::{HistoryPayloadV1, HistoryPrepareFailureV1, HistoryStateV1},
     overlay::{OverlayFailureV1, OverlayMutationV1, TransactionOverlayV1},
     selectors::select_from_store,
     session_projection::{ProjectionPrepareFailureV1, SessionProjectionStateV1},
@@ -57,6 +58,15 @@ pub enum KernelRuntimeReadFailure {
 pub struct KernelStage3PreparedV1 {
     change_set: ChangeSetV1,
     attempt_metrics: KernelStage3MetricsV1,
+}
+
+#[expect(
+    clippy::large_enum_variant,
+    reason = "One bounded inline prepared value avoids an extra allocation at the publication boundary"
+)]
+enum PreparedMutationV1 {
+    Typed(KernelStage3PreparedV1),
+    Candidate(crate::candidate::PreparedCandidate),
 }
 
 impl KernelStage3PreparedV1 {
@@ -372,11 +382,29 @@ impl KernelRuntime {
         command: CoreCommandEnvelopeV1,
         prepared: KernelStage3PreparedV1,
     ) -> Result<KernelStage4CommandResultV1, KernelStage4FailureV1> {
-        if prepared.change_set.forward.is_empty() {
+        self.commit_prepared_mutation(command.command_id(), PreparedMutationV1::Typed(prepared))
+    }
+
+    fn commit_prepared_mutation(
+        &mut self,
+        command_id: CoreCommandIdV1,
+        mut prepared: PreparedMutationV1,
+    ) -> Result<KernelStage4CommandResultV1, KernelStage4FailureV1> {
+        let (changed, logical_bytes, attempt_metrics) = match &prepared {
+            PreparedMutationV1::Typed(value) => (
+                !value.change_set.forward.is_empty(),
+                value.change_set.logical_bytes,
+                value.attempt_metrics,
+            ),
+            PreparedMutationV1::Candidate(value) => {
+                (value.changed, value.logical_bytes, value.attempt_metrics)
+            }
+        };
+        if !changed {
             return Ok(KernelStage4CommandResultV1::NoOp {
                 value: self.mutation_value(
                     Vec::new(),
-                    prepared.attempt_metrics,
+                    attempt_metrics,
                     KernelStage4MetricsV1::default(),
                 )?,
             });
@@ -384,7 +412,7 @@ impl KernelRuntime {
 
         let checkpoint_submit = self
             .checkpoint
-            .prepare_submit(prepared.change_set.logical_bytes)
+            .prepare_submit(logical_bytes)
             .map_err(map_checkpoint_prepare_failure)?;
         let history_append = self.history.prepare_append().map_err(map_history_failure)?;
         let identity_before = self
@@ -402,19 +430,38 @@ impl KernelRuntime {
                 event_count,
             )
             .map_err(map_projection_failure)?;
-        let affected = targets_from_change_set(&prepared.change_set)?;
+        let affected = match &mut prepared {
+            PreparedMutationV1::Typed(value) => targets_from_change_set(&value.change_set)?,
+            PreparedMutationV1::Candidate(value) => std::mem::take(&mut value.affected),
+        };
         let history_affected = clone_targets(&affected)?;
         let event_affected = clone_targets(&affected)?;
         let mut events = Vec::new();
         events
             .try_reserve(event_count as usize)
             .map_err(|_| KernelStage4FailureV1::HistoryInvariantViolation)?;
-        let command_id = command.command_id();
 
-        let committed = match self.commit_stage3_change_set(prepared.change_set) {
+        let committed = match prepared {
+            PreparedMutationV1::Typed(value) => self
+                .commit_stage3_change_set(value.change_set)
+                .map(HistoryPayloadV1::Typed),
+            PreparedMutationV1::Candidate(value) => match value.plan {
+                Some(plan) => {
+                    let history = Arc::new(value.history);
+                    plan.commit(
+                        &mut self.store,
+                        &mut self.document_version,
+                        &mut self.committed_metrics,
+                    )
+                    .map(|()| HistoryPayloadV1::Candidate(history))
+                }
+                None => Err(TransactionPrepareFailureV1::InvalidChangeSet),
+            },
+        };
+        let committed = match committed {
             Ok(committed) => committed,
             Err(TransactionPrepareFailureV1::Validation(failure)) => {
-                let mut metrics = prepared.attempt_metrics;
+                let mut metrics = attempt_metrics;
                 metrics.semantic_rules_evaluated = failure.work.rules_evaluated;
                 metrics.semantic_dependency_reads = failure.work.dependency_reads;
                 return Ok(self.rejected_command(
@@ -429,7 +476,7 @@ impl KernelRuntime {
             }
         };
         self.history
-            .commit_append(history_append, command, committed, history_affected);
+            .commit_append(history_append, command_id, committed, history_affected);
         self.projection.commit_document_transition(projection);
         self.checkpoint.commit_submit(checkpoint_submit);
         events.push(KernelEventV1::DocumentCommitted {
@@ -578,7 +625,7 @@ impl KernelRuntime {
                 self.history.undo_entry()
             }
             .map_err(map_history_failure)?;
-            let command_id = entry.command.command_id();
+            let command_id = entry.command_id;
             let affected = clone_targets(&entry.affected)?;
             let event_affected = clone_targets(&entry.affected)?;
             let mut events = Vec::new();
@@ -586,19 +633,35 @@ impl KernelRuntime {
                 .try_reserve(event_count as usize)
                 .map_err(|_| KernelStage4FailureV1::HistoryInvariantViolation)?;
 
-            let operations = if redo {
-                &entry.change_set.forward
-            } else {
-                &entry.change_set.inverse
-            };
-            apply_stored_operations(
-                &mut self.store,
-                &mut self.document_version,
-                &mut self.committed_metrics,
-                &entry.change_set,
-                operations,
-            )
-            .map_err(|_| KernelStage4FailureV1::HistoryInvariantViolation)?;
+            match &entry.payload {
+                HistoryPayloadV1::Typed(change_set) => {
+                    let operations = if redo {
+                        &change_set.forward
+                    } else {
+                        &change_set.inverse
+                    };
+                    apply_stored_operations(
+                        &mut self.store,
+                        &mut self.document_version,
+                        &mut self.committed_metrics,
+                        change_set,
+                        operations,
+                    )
+                    .map_err(|_| KernelStage4FailureV1::HistoryInvariantViolation)?;
+                }
+                HistoryPayloadV1::Candidate(history) => {
+                    let plan = history
+                        .prepare_replay(&self.store, self.document_version, redo)
+                        .map_err(|_| KernelStage4FailureV1::HistoryInvariantViolation)?
+                        .ok_or(KernelStage4FailureV1::HistoryInvariantViolation)?;
+                    plan.commit(
+                        &mut self.store,
+                        &mut self.document_version,
+                        &mut self.committed_metrics,
+                    )
+                    .map_err(|_| KernelStage4FailureV1::HistoryInvariantViolation)?;
+                }
+            }
             if redo {
                 self.history.commit_redo();
             } else {
@@ -1864,7 +1927,7 @@ impl KernelStage3TransactionV1<'_> {
                 transpose_written_pitch_v1(&current, &transposition).map_err(|reason| {
                     KernelStage3CommandFailureLeafV1::RangeTransformInvalid {
                         address: NoteAddressV1::Note {
-                            note_id: note_id.clone(),
+                            note_id: note_id.clone().into(),
                         },
                         reason,
                     }
@@ -2697,7 +2760,7 @@ fn moved_order(
     Some(value)
 }
 
-fn overlay_attempt_metrics(overlay: &TransactionOverlayV1<'_>) -> KernelStage3MetricsV1 {
+pub(crate) fn overlay_attempt_metrics(overlay: &TransactionOverlayV1<'_>) -> KernelStage3MetricsV1 {
     let work = overlay.metrics();
     KernelStage3MetricsV1 {
         semantic_rules_evaluated: 0,
@@ -2755,7 +2818,7 @@ fn map_overlay_failure(failure: OverlayFailureV1) -> KernelStage3CommandFailureL
     }
 }
 
-fn map_change_set_build_failure(
+pub(crate) fn map_change_set_build_failure(
     failure: ChangeSetBuildFailureV1,
 ) -> KernelStage3CommandFailureLeafV1 {
     match failure {
@@ -2786,7 +2849,9 @@ fn map_change_set_build_failure(
     }
 }
 
-fn map_prepare_failure(failure: TransactionPrepareFailureV1) -> KernelStage3CommandFailureLeafV1 {
+pub(crate) fn map_prepare_failure(
+    failure: TransactionPrepareFailureV1,
+) -> KernelStage3CommandFailureLeafV1 {
     match failure {
         TransactionPrepareFailureV1::Validation(failure) => failure.failure,
         TransactionPrepareFailureV1::VersionOverflow => {
@@ -2804,7 +2869,9 @@ fn map_prepare_failure(failure: TransactionPrepareFailureV1) -> KernelStage3Comm
     }
 }
 
-fn score_target_from_stable_address(address: StableEntityAddressV1) -> AffectedEntityAddressV1 {
+pub(crate) fn score_target_from_stable_address(
+    address: StableEntityAddressV1,
+) -> AffectedEntityAddressV1 {
     match address {
         StableEntityAddressV1::Document { document_id } => AffectedEntityAddressV1::Document {
             document_id: document_id.into(),

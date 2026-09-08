@@ -1,0 +1,318 @@
+//! Owned results cross the runtime publication boundary; the occurrence recorder
+//! and borrowed prefix remain private to command preparation.
+use super::*;
+use crate::change_set::accounting::{ChangeSetAccountingV1, RawAffectedKindV1, RawAffectedV1};
+use crate::{
+    candidate::adoption::FinalizationFailure, store::LiveScoreStore,
+    transaction::PreparedFinalStateCommitV1,
+};
+use brilliant_core_types::DocumentVersionV1;
+use brilliant_kernel_contracts::ScoreEntityTargetV1 as Target;
+use brilliant_kernel_contracts::{AffectedEntityAddressV1, KernelStage3MetricsV1};
+
+pub(crate) struct CandidateExecution<'a> {
+    recorder: Recorder<'a>,
+    accounting: ChangeSetAccountingV1,
+    affected: Vec<AffectedEntityAddressV1>,
+    changed: bool,
+    operation_count: u64,
+    segments: Vec<CommandSegment>,
+}
+
+struct CommandSegment {
+    child_index: usize,
+    command_id: brilliant_kernel_contracts::CoreCommandIdV1,
+    step_start: usize,
+    step_end: usize,
+    affected_start: usize,
+    affected_end: usize,
+    effect_count: u64,
+}
+
+impl<'a> CandidateExecution<'a> {
+    pub(crate) fn new(
+        mut prefix: TransactionOverlayV1<'a>,
+        document_id: StableId,
+    ) -> Result<Self, Failure> {
+        let mut affected = Vec::new();
+        affected
+            .try_reserve(prefix.affected_order().len())
+            .map_err(|_| Failure::InternalError)?;
+        affected.extend(
+            prefix
+                .affected_order()
+                .iter()
+                .cloned()
+                .map(crate::runtime::score_target_from_stable_address),
+        );
+        let operation_count = prefix.operation_count() as u64;
+        let accounting = prefix
+            .take_accounting()
+            .map_err(|_| Failure::InternalError)?;
+        Ok(Self {
+            recorder: Recorder::new(Candidate::new(prefix, document_id)),
+            accounting,
+            affected,
+            changed: operation_count != 0,
+            operation_count,
+            segments: Vec::new(),
+        })
+    }
+
+    pub(crate) fn attempt_metrics(&self) -> KernelStage3MetricsV1 {
+        let mut metrics = self.recorder.candidate.attempt_metrics();
+        metrics.change_ops = self.operation_count;
+        metrics.changeset_logical_bytes = self.accounting.logical_bytes();
+        metrics.affected_addresses = self.accounting.affected_count() as u64;
+        metrics
+    }
+
+    pub(crate) fn dispatch(
+        &mut self,
+        command: brilliant_kernel_contracts::CoreCommandEnvelopeV1<JsString>,
+        batch_child: Option<usize>,
+    ) -> Result<(), Failure> {
+        let result = self.dispatch_inner(command, batch_child);
+        if result.is_err() {
+            self.recorder.candidate.reservation.abort();
+        }
+        result
+    }
+
+    fn dispatch_inner(
+        &mut self,
+        command: brilliant_kernel_contracts::CoreCommandEnvelopeV1<JsString>,
+        batch_child: Option<usize>,
+    ) -> Result<(), Failure> {
+        let first = self.recorder.steps.len();
+        let affected_start = self.affected.len();
+        let context = accounting::ChargeContext::for_command(&command);
+        self.recorder
+            .set_effect_budget(self.accounting.prepared_effect_count());
+        let facts = self
+            .recorder
+            .dispatch_leaf(command)
+            .map_err(command_failure)?;
+        if !facts.changed {
+            return Ok(());
+        }
+        let map = crate::runtime::map_change_set_build_failure;
+        self.accounting
+            .add_prepared_effects(facts.effect_count)
+            .map_err(map)?;
+        let mut raw = Vec::new();
+        self.recorder.candidate.reservation.vec(
+            Site::JournalOperations,
+            &mut raw,
+            facts.affected.len(),
+        )?;
+        raw.extend(facts.affected.iter().map(raw_affected));
+        self.accounting.check_affected_segment(&raw).map_err(map)?;
+        let operations = self
+            .recorder
+            .charge_segment_with_affected(
+                first,
+                &context,
+                &facts,
+                &mut self.accounting,
+                &mut self.affected,
+            )
+            .map_err(map)?;
+        self.operation_count = self
+            .operation_count
+            .checked_add(operations)
+            .ok_or(Failure::InternalError)?;
+        if let Some(child_index) = batch_child {
+            self.recorder.candidate.reservation.vec(
+                Site::JournalOperations,
+                &mut self.segments,
+                1,
+            )?;
+            self.accounting.charge_segment().map_err(map)?;
+            self.segments.push(CommandSegment {
+                child_index,
+                command_id: facts.command_id,
+                step_start: first,
+                step_end: self.recorder.steps.len(),
+                affected_start,
+                affected_end: self.affected.len(),
+                effect_count: facts.effect_count,
+            });
+        }
+        self.changed = true;
+        Ok(())
+    }
+
+    #[expect(
+        clippy::result_large_err,
+        reason = "Capacity failures retain their fixed-size metrics snapshot without another allocation"
+    )]
+    pub(crate) fn finish(
+        self,
+        store: &LiveScoreStore,
+        version: DocumentVersionV1,
+    ) -> Result<PreparedCandidate, (Failure, KernelStage3MetricsV1)> {
+        let metrics = self.attempt_metrics();
+        let (mut plan, combined) = self
+            .recorder
+            .prepare_combined_commit_with_metrics(store, version)
+            .map_err(|(failure, mut work)| {
+                work.change_ops = metrics.change_ops;
+                work.changeset_logical_bytes = metrics.changeset_logical_bytes;
+                work.affected_addresses = metrics.affected_addresses;
+                (finalization_failure(failure), work)
+            })?;
+        if let Some(plan) = &mut plan {
+            plan.set_retained_metrics(metrics);
+        }
+        // Publication can still fail after final assessment and preparation.
+        // Preserve that completed work independently of the history's ledger.
+        let attempt_metrics = plan
+            .as_ref()
+            .map_or(metrics, PreparedFinalStateCommitV1::metrics);
+        Ok(PreparedCandidate {
+            plan,
+            history: CandidateHistory {
+                combined,
+                retained_metrics: metrics,
+                segments: self.segments,
+            },
+            changed: self.changed,
+            affected: self.affected,
+            logical_bytes: self.accounting.logical_bytes(),
+            attempt_metrics,
+        })
+    }
+}
+
+fn raw_affected(value: &AffectedEntityAddressV1) -> RawAffectedV1<'_> {
+    let (kind, id) = match value {
+        Target::Document { document_id } => (RawAffectedKindV1::Document, document_id),
+        Target::Measure { measure_id } => (RawAffectedKindV1::Measure, measure_id),
+        Target::Part { part_id } => (RawAffectedKindV1::Part, part_id),
+        Target::Staff { staff_id } => (RawAffectedKindV1::Staff, staff_id),
+        Target::Voice { voice_id } => (RawAffectedKindV1::Voice, voice_id),
+        Target::Event { event_id } => (RawAffectedKindV1::Event, event_id),
+        Target::Note { note_id } => (RawAffectedKindV1::Note, note_id),
+    };
+    RawAffectedV1 {
+        kind,
+        id: id.as_js_string(),
+    }
+}
+
+fn command_failure(value: dispatch::AdmissionCommandFailure) -> Failure {
+    match value {
+        dispatch::AdmissionCommandFailure::Leaf(value) => value,
+        dispatch::AdmissionCommandFailure::MeasureDuplicate {
+            insertion_index,
+            id,
+        } => {
+            use brilliant_core_types::{StablePathSegmentV1 as Segment, StablePathV1};
+            let Ok(path) = StablePathV1::new(vec![
+                Segment::Field("measureDefinitions".into()),
+                Segment::Index(insertion_index as u64),
+                Segment::Field("id".into()),
+            ]) else {
+                return Failure::InternalError;
+            };
+            Failure::SemanticInvalid {
+                diagnostics: vec![brilliant_score_foundation::CoreDiagnosticV1::new(
+                    brilliant_score_foundation::CoreDiagnosticCodeV1::IdDuplicate,
+                    path,
+                    Some(("id", &id)),
+                )],
+            }
+        }
+        dispatch::AdmissionCommandFailure::RangeTransform { note_id, reason } => {
+            Failure::RangeTransformInvalid {
+                address: brilliant_kernel_contracts::NoteAddressV1::Note {
+                    note_id: note_id.into(),
+                },
+                reason,
+            }
+        }
+    }
+}
+
+fn finalization_failure(value: FinalizationFailure) -> Failure {
+    match value {
+        FinalizationFailure::Command(value) => value,
+        FinalizationFailure::Assessment(
+            brilliant_score_foundation::AssessmentFailureV1::DiagnosticLimit { limit, actual },
+        ) => Failure::ResourceLimitExceeded {
+            limit_kind: brilliant_kernel_contracts::KernelStage3ResourceLimitKindV1::Diagnostics,
+            limit: limit as u64,
+            actual: actual as u64,
+        },
+        FinalizationFailure::Preparation(value) => crate::runtime::map_prepare_failure(value),
+        FinalizationFailure::Assessment(_) => Failure::InternalError,
+    }
+}
+
+pub(crate) struct PreparedCandidate {
+    pub(crate) plan: Option<PreparedFinalStateCommitV1>,
+    pub(crate) history: CandidateHistory,
+    pub(crate) changed: bool,
+    pub(crate) affected: Vec<AffectedEntityAddressV1>,
+    pub(crate) logical_bytes: u64,
+    pub(crate) attempt_metrics: KernelStage3MetricsV1,
+}
+
+pub(crate) struct CandidateHistory {
+    pub(super) combined: combined::CombinedHistory,
+    pub(super) retained_metrics: KernelStage3MetricsV1,
+    segments: Vec<CommandSegment>,
+}
+
+impl std::fmt::Debug for CandidateHistory {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CandidateHistory")
+            .field("retained_metrics", &self.retained_metrics)
+            .field("segments", &self.segments.len())
+            .finish_non_exhaustive()
+    }
+}
+
+impl CandidateHistory {
+    pub(crate) fn prepare_replay(
+        &self,
+        store: &LiveScoreStore,
+        version: DocumentVersionV1,
+        redo: bool,
+    ) -> Result<Option<PreparedFinalStateCommitV1>, FinalizationFailure> {
+        let mut previous_index = None;
+        let mut previous_step = 0;
+        let mut previous_affected = None;
+        for segment in &self.segments {
+            if previous_index.is_some_and(|index| index >= segment.child_index)
+                || segment.command_id
+                    == brilliant_kernel_contracts::CoreCommandIdV1::TransactionBatch
+                || segment.step_start != previous_step
+                || segment.step_end <= segment.step_start
+                || segment.effect_count == 0
+                || segment.affected_end < segment.affected_start
+                || segment.affected_end as u64 > self.retained_metrics.affected_addresses
+                || previous_affected.is_some_and(|end| end != segment.affected_start)
+            {
+                return Err(FinalizationFailure::Command(Failure::InternalError));
+            }
+            previous_index = Some(segment.child_index);
+            previous_step = segment.step_end;
+            previous_affected = Some(segment.affected_end);
+        }
+        let mut plan = self.combined.prepare_replay(
+            store,
+            version,
+            if redo {
+                Direction::Forward
+            } else {
+                Direction::Inverse
+            },
+        )?;
+        if let Some(plan) = &mut plan {
+            plan.set_retained_metrics(self.retained_metrics);
+        }
+        Ok(plan)
+    }
+}

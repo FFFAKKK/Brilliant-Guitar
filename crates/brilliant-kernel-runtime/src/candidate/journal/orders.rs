@@ -259,6 +259,7 @@ impl Recorder<'_> {
         if expected == anchor {
             return Ok(false);
         }
+        self.check_effect_budget(1)?;
         let owner = self.identities.record(&mut self.candidate, &order.owner)?;
         let target_id = self.identities.record(&mut self.candidate, &target)?;
         let expected_anchor = expected
@@ -334,6 +335,7 @@ fn publish_replacement(
         candidate.work.copied_entries += desired.len() as u64;
     }
     candidate.orders.insert(order.clone(), values);
+    candidate.mutation_work.record_writes = candidate.mutation_work.record_writes.saturating_add(1);
     Ok(())
 }
 

@@ -36,123 +36,73 @@ code inventory. No commercial-completion claim exists at this baseline.
 
 ## Current verified position
 
-The branch remains in S1, Core compatibility and final-state admission. The Rust
-reference semantic/profile assessment is implemented and differentially checked;
-metadata, pitch, sequence/measure time and hierarchy/reference dependency gates
-are implemented on the typed transaction path. Candidate input codecs and a
-private occurrence prototype now cover reads, resolution, field/reference writes,
-Part/Staff/Voice/Event/Measure insertion, moves/hiding and fallible retained collection
-growth. Journal identity manifests now distinguish node lifetimes and support
-atomic boundary/remapped insertion bindings, including transient invalid IDs.
-Stored Part insert/remove operations now replay both directions using immutable
-subtree payloads, with expected-value/order checks and terminal failure handling.
-Stored scalar and raw-reference changes compose with those operations; removal
-retains the updated subtree while preserving the original insert payload.
-Stored list moves now compose with edited subtree removal and replay using exact
-occurrence predecessors, including repeated empty IDs and repeated contents.
-Staff insertion/removal now composes with field changes, moves and whole-Part
-removal, using immutable expected images and independent strong-boundary replay.
-Voice/Event subtree recording now covers prefix and added owners, nested edits,
-deletion and same-ID rebirth. Shared expected-state reconstruction checks the
-frozen prefix or immutable birth image plus recorded changes before removal.
-General prefix-Part deletion now retains its owned extension payloads and global
-positions. A private command-preparation helper checks TS measure coverage;
-the stored interpreter can still replay transient trees independently of that
-command check. Explicit extension deltas compose through combined history.
-Measure history now retains its global definition and separate per-Part Content
-subtrees, with each original predecessor/order. Private insert/remove/move
-preparation preserves duplicate-definition precedence, deferred coverage and
-cross-Part normalization. Complete list replacements retain occurrence identities
-and compose with later subtree deletion. This is still private command preparation;
-public effects, diagnostics packaging and batch accounting remain integration work.
-Range selection now resolves Measure, Part/Measure and Voice/Event endpoints in
-the occurrence graph, preserving lookup-failure precedence and canonical order.
-Private range deletion and written-pitch transposition compose with retained
-history and actual Store adoption. A production typed-range deletion ordering
-defect is also repaired; ordinary Measure removal keeps its normalization behavior.
-Final assessment now reads the occurrence view through the same Foundation
-rules as JSON assessment. A successful final view can prepare and adopt real
-Store records, topology and indices. The retained journal supplies actual
-operation counts, including net-zero changes. Suffix replay can also prepare
-and adopt from new strong Store boundaries. Combined typed-prefix/candidate-suffix
-history now replays privately in both directions, validates the final state once
-and prepares one Store adoption. This covers the currently implemented Recorder
-forms; it does not provide the remaining candidate command/journal forms.
-Candidate execution is still test-only, not the native default route.
+S1.14 implements Core final-state admission in the existing Rust native session.
+All 27 leaf commands and Batch now execute after entering occurrence storage;
+ordinary representable commands retain the typed overlay. The first temporary
+state that cannot obey live Store identity/coverage rules preserves all earlier
+operations and their shared accounting before changing representation once.
+Later children can repair that state. Final diagnostics belong to the complete
+transaction, and a rejection publishes no document/history/version/event change.
 
-A separate live comparison found a Rust string-domain compatibility gap: TS
-preserves isolated UTF-16 units in text, IDs and opaque extension keys/values,
-while native JSON decoding rejects them. An explicit shared UTF-16 string value
-and lossless token codec are implemented as the migration foundation. The bounded
-JSON model, streaming syntax reader and nested-data writer now preserve those
-units in both values and keys. Explicit conversion now covers the entire Score
-DTO family, including nested IDs/references and opaque extensions. Live Contracts
-capture and command/selector/replay decoding now consume the lossless tree,
-preserving existing shape/failure precedence and raw protocol number spelling.
-Unknown non-scalar command IDs and command-version errors match the TS behavior.
-DTO text defaults, raw candidate/journal IDs and strong StableId storage now use
-shared UTF-16 values. Store/history, assessment, selectors, checkpoints and all
-five native response families use explicit lossless encoding. The original 28
-native observations now have zero mismatches, and new real-native regressions
-cover complete IDs/references, commands, events, selectors, batch failure,
-undo/redo, persistence, replay and a real 512-entry checkpoint. See
-`kernel-js-string-compatibility.md` for the exact scope and evidence.
+The native path includes command preparation and error precedence, ordered
+public effects/affected entities, cumulative Batch limits, shared string/history
+accounting, final semantic assessment and real Store adoption. Combined retained
+history supports Undo/Redo without re-running command preparation. Checkpoint
+byte scheduling and semantic command replay use the same admission seam.
+Effective net-zero commits retain their operation facts and advance history;
+true no-op and rejected commands preserve redo. Final preparation and later
+publication failures retain the actual measured work.
 
-S1 continues with complete admission command/journal coverage, cumulative
-resource accounting and effects/segments/affected ordering. The versioned
-extension execution/composition work in S2,
-consolidated release qualification in S3/S5 and reversible Rust default switch in
-S4 remain open. The current source tree is a kernel library/native workspace;
-editor UI, rendering, playback and physical project persistence are separate
-product work, not completed deliverables of this branch.
+Lossless UTF-16 text/IDs, exact arithmetic, all semantic/profile diagnostic
+families, cached reads/selectors and typed incremental dependency validation
+remain implemented. Occurrence final assessment intentionally uses the shared
+complete Foundation rules; this functional integration does not claim that
+candidate assessment has become incremental or commercially qualified.
 
-Latest Rust verification: 452 tests passed, 1 ignored, including 191 runtime
-candidate tests and four Foundation candidate tests. Strict clippy, fmt and
-Rust 1.88.0 check passed. S1.13 adds a real TS range submission/history corpus
-and checks actual Rust Store adoption against it. The typed range-delete repair
-is verified with a freshly rebuilt release addon; full TS/native regression
-results are recorded below. This is regression evidence, not release qualification.
+The kernel is **not functionally complete**. S2 still needs versioned extension
+catalog/inventory, preparation and execution, module validation, migration and
+composed sessions with independent consumers. Opaque extension preservation and
+Part-owned extension Undo/Redo are implemented, but do not execute contributions.
+See [the S2 plan](kernel-extension-completion-plan.md). The product default remains
+TypeScript; this is the existing private native implementation route, not the
+S4 product cutover. Editor, rendering, playback and physical project persistence
+remain separate product modules.
 
-The latest full TS/native suite is **not a PASS**: 730 tests passed, one frozen
-JSON duplicate-key timing-ratio guard failed and two tests were skipped. The same
-guard passed an isolated run, but failed both full runs on the unchanged addon.
-Its cause is not established. It remains an open performance gate; S1.13's range
-functional/native comparisons pass. Preserve the failing evidence during further
-functional integration and resolve it before qualification or candidate activation.
+Latest Rust verification: 490 tests passed, one ignored. Strict clippy passed;
+Rust 1.88.0 all-target check and TypeScript build passed. The new 28-scenario real
+native/TS corpus passes every leaf and a retained typed-prefix transition through
+submit, Undo and Redo, comparing full documents, history/dirty identity, affected
+entities, returned events and subscribed delivery. These are regression results,
+not release qualification. The S1.14 ledger below records final artifact evidence.
 
-Previous string-migration evidence remains relevant: seven targeted TS/native
-regressions passed on the initial rebuilt addon. The full debug run passed 719 tests, skipped
-two and failed the P3B 180-second guard; an isolated P3B repeat also timed out.
-The output writer now batches fragments in fixed stack buffers, with independent
-byte/failure checks. That migration's full regression using one addon from the existing release
-profile passed 720 tests, skipped two and failed zero (127.797 seconds overall).
-P3B completed in 70.022 seconds with peak RSS 1,833,156,608 bytes. Its original
-threshold, workload and runner stayed fixed; it has no debug-only build
-requirement. Debug performance remains open. These checks are
-regression evidence, not commercial qualification or a percentage-complete estimate.
+The final full S1.14 TS/native run passed 759 tests, failed zero and skipped two
+(49.679 seconds). The preceding run exposed one historical source-location guard;
+it now checks the actual unified admission path instead of the predecessor's
+Session-local Batch helper. The frozen JSON timing guard passed both S1.14 full
+runs, but its earlier two full-run failures remain unexplained and open for
+commercial qualification. No threshold, workload or native behavioral fixture
+was relaxed. P3B's latest run has qualification=false.
 
 ## Functional completion before commercial optimization
 
-The owner's current priority is to complete the kernel before further commercial
+The owner's current priority is complete kernel behavior before commercial
 optimization. Correctness, atomic rejection and compatibility remain necessary
-while filling missing functions. A test-only implementation is not a completed
-product route, and passing regression tests is not release qualification.
+while filling functions; private test primitives alone do not close a route.
 
-| Kernel responsibility | Current position | Remaining functional closure |
+| Kernel responsibility | Current position | Remaining closure |
 | --- | --- | --- |
-| Score model, exact arithmetic, UTF-16 storage/codecs | Implemented with production/native regression evidence | Preserve these contracts through the remaining integration |
-| 28 typed commands | Existing typed path implemented | Every command must also work after entering occurrence candidate mode |
-| Final semantic diagnostics | Shared Foundation rules read raw occurrences; independent TS oracle | Integrate into complete public command preparation and failure accounting |
-| Store adoption and indices | Internal final-view path now writes real Store state | Complete all command deltas, preparation effects and failure boundaries |
-| History and replay | Typed history and private combined prefix/suffix replay/adoption implemented | Extend stored candidate forms to every command, then wire the complete public history/effect path |
-| Extensions | Opaque preservation, header assessment and ordering implemented | Versioned catalog/inventory, capabilities, preparation, migration/degradation and composed consumers |
-| Session and application surface | Existing Rust library/native path remains private | Integrate candidate behavior, complete session composition and reversible Rust default |
-| Commercial acceptance | Not complete | Differential long sequences, hostile inputs, honest resource accounting, release qualification and old-engine cleanup |
+| Score model, exact arithmetic, UTF-16 storage/codecs | Implemented and exercised through native boundaries | Preserve compatibility through composition |
+| 27 leaf commands and Batch | Typed and occurrence admission both integrated into native sessions | Broader adversarial and long-sequence consolidation in S3 |
+| Final diagnostics and Store adoption | Shared rules assess candidates before atomic adoption | Extension rules and declared dependency closures in S2 |
+| History, dirty identity, events, checkpoint and replay | Complete Core admission wiring, including typed-prefix/candidate-suffix history | Integrated contribution effects and availability in S2 |
+| Extensions | Opaque preservation, header assessment and owned deletion history | Catalog/inventory, capabilities, execution, validation and migration |
+| Session/application surface | Core native session works; TypeScript remains product default | Composed consumers, then qualified reversible Rust cutover |
+| Commercial acceptance | Incomplete | Hostile/resource and long-sequence evidence, performance, final qualification and obsolete-engine cleanup |
 
-The next implementation priority is the remaining candidate command/journal
-forms, followed by complete effects and
-resource accounting. S2 extension/session work follows functional S1 closure.
-Performance tuning and final qualification follow the complete function matrix.
+Complete S2 functions next. S3 consolidates behavioral/resource/performance
+qualification; S4 changes the default only after those gates, and S5 verifies the
+final cleaned release artifact. No percentage-complete estimate substitutes for
+these explicit missing capabilities.
 
 ## Completion criteria
 
@@ -1515,3 +1465,81 @@ work/allocation accounting and error classification remain activation gates.
 Raw transformation error packaging must be integrated without forcing empty IDs
 through StableId. S2 versioned extensions/session composition, public candidate
 activation, the Rust default switch and commercial qualification remain open.
+
+### S1.14 — native admission, complete dispatch and combined session history
+
+The existing native Stage 3, Stage 4 and captured command replay now use one
+admission seam. Conversion consumes the decoded command without a JSON roundtrip;
+raw empty/duplicate component identities stay representable until final semantic
+assessment. Eligibility preserves the normal typed path and promotes once when
+live-store identity or measure-coverage constraints cannot represent the input.
+The frozen typed prefix retains its operations, interned strings, affected order
+and cumulative budget. All 27 leaf commands execute after promotion.
+
+Command preparation preserves target/owner/anchor and transform error precedence,
+effective Staff no-op, Measure duplicate-definition diagnostics, deferred coverage
+and Range affected order. Batch captures decode one child at a time, attributes
+the first child failure precisely, and publishes only after whole-transaction
+preparation. A shared ledger retains the existing effect/affected/byte limits,
+ID/text interning, both history directions, opaque payloads and segment weights.
+Candidate charging follows the typed primitive/affected order, including failures
+at an intermediate byte boundary. Prepared effect limits precede effect errors
+without overriding earlier no-op/reference/anchor/transform results.
+
+Prepared Typed/Candidate values converge at one runtime publication boundary.
+Stored combined history replays typed prefixes and candidate suffixes against
+strong Store boundaries; it does not re-run command preparation. Explicit changed
+facts preserve net-zero commits. Checkpoint bytes, retry, event reservation,
+version/dirty projection, redo truncation and partial command replay retain their
+existing semantics. Final assessment counts actual checks and traversal; physical
+allocation failures remain distinct from declared logical resource limits.
+
+Independent GPT-6 reviews covered codecs/session routing, runtime/history
+publication, effect-limit precedence and shared accounting. Repairs included
+retaining completed final-assessment work when later history preparation fails,
+checking growth against expected coverage before allocation, preserving effect
+versus budget precedence, and interleaving affected/primitive byte charges.
+The publication regression injects history sequence exhaustion after successful
+candidate preparation and checks exact unchanged document/history/dirty/version,
+checkpoint and committed metrics, with redo still usable.
+
+The predecessor RKP-3 source-location guard assigned Batch coordination to a
+Session-local helper. S1.14 moves that private responsibility into runtime so
+typed and occurrence transactions share one owner. The guard is an editable
+successor implementation check, not one of the frozen oracle manifest/scenario/
+qualification files. It is updated to check the actual unified admission path,
+ordered child decoding and single final preparation/publication; the 28-command
+catalog, handler isolation and native behavioral expectations remain unchanged.
+No compatibility shim, dead helper or comment exists merely to satisfy its regex.
+
+Verification: 490 Rust tests passed, one ignored; TypeScript build, strict clippy
+and Rust 1.88.0 all-target check passed. The new native corpus covers 27 distinct
+leaf commands and one retained-prefix/Part-deletion scenario, each comparing TS
+submit/Undo/Redo, complete read DTO, history/dirty, affected entities and all events.
+The legal CVN-4 fixture is outside the minimal feature profile; its support result
+is checked against the actual TS profile assessor rather than assumed supported.
+
+The first full run on the rebuilt release addon passed 758, failed the historical
+source guard described above and skipped two. JSON timing ratios passed in that
+run (unique 2.206/1.940; duplicate 2.019/1.983). P3B completed in 23.956 seconds,
+peak RSS 1,712,447,488 bytes, qualification=false. Earlier S1.13 timing failures
+remain unresolved; this pass does not diagnose them or establish qualification.
+The functional native route is enabled on this private branch to complete S1;
+performance gates continue to block product cutover and commercial qualification.
+Evidence: `target/admission-rust.log`, `admission-clippy.log`,
+`admission-msrv.log`, `admission-native-dispatch.log`, `admission-npm-full.log`.
+
+After the source guard repair, the final full run passed 759 tests, failed zero
+and skipped two in 49.679 seconds. All 112 compiled test files were covered;
+manifest SHA-256:
+`5e29ec3d6c604f2311c95101861277d614b2b4a08a6627f35451bbb403c22688`.
+The same release addon was used for both full runs, SHA-256:
+`77aa3144a332327ec381087e212935221744ca2d3562d3590f0b33da8396d82d`.
+Final JSON adjacent ratios: unique 1.964/2.122, duplicate 2.064/2.072.
+P3B wall time was 23.748 seconds, workload 23.415 seconds and peak RSS
+1,758,158,848 bytes, qualification=false. Evidence: `target/admission-npm-final.log`
+and `admission-release.log`. Fmt and `git diff --check` also passed.
+
+S2 implementation follows [the extension/session plan](kernel-extension-completion-plan.md).
+Extension execution/composition, full-kernel functional completion, Rust product
+default and commercial qualification remain open.

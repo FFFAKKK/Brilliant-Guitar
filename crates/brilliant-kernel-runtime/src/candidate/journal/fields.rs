@@ -104,6 +104,7 @@ impl Recorder<'_> {
         if previous == value {
             return Ok(false);
         }
+        self.check_effect_budget(1)?;
         let target = self.identities.record(&mut self.candidate, source)?;
         self.candidate
             .reservation
@@ -164,6 +165,7 @@ impl Recorder<'_> {
         if previous == value {
             return Ok(false);
         }
+        self.check_effect_budget(1)?;
         let target = self.identities.record(&mut self.candidate, source)?;
         self.candidate
             .reservation

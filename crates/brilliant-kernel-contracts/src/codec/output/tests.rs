@@ -120,7 +120,7 @@ fn boundary_and_command_failure_wire_order_matches_serde() {
         RangeOwnerMismatch,
         RangeTransformInvalid {
             address: NoteAddressV1::Note {
-                note_id: StableId::new("note").unwrap(),
+                note_id: StableId::new("note").unwrap().into(),
             },
             reason: PitchTranspositionErrorV1::DerivedPitchAlterOutOfRange,
         },

@@ -25,6 +25,9 @@ const MAX_BATCH_CHILDREN_V1: u64 = 100;
 const MAX_NET_FIXED_OVERHEAD_PER_WIRE_NODE_V1: u64 = 30;
 const MAX_STRUCTURAL_BYTES_PER_PREPARED_EFFECT_V1: u64 = 256;
 
+pub(crate) mod accounting;
+use accounting::{ChangeSetAccountingV1, RawEntityNodeV1, node_fixed_bytes};
+
 /// Conservative compatibility envelope for two accepted 64 MiB wire values.
 ///
 /// Exact string/JSON payload bytes are bounded by the create plus command byte
@@ -481,6 +484,9 @@ impl LogicalBudgetV1 {
         if self.interned_strings.contains(value) {
             return Ok(());
         }
+        self.interned_strings
+            .try_reserve(1)
+            .map_err(|_| ChangeSetBuildFailureV1::ArenaIndexOverflow)?;
         self.charge(value.utf8_byte_len() as u64)?;
         self.interned_strings.insert(value.to_owned());
         Ok(())
@@ -493,14 +499,41 @@ pub(crate) struct ChangeSetBuilderV1 {
     forward: Vec<ChangeOpV1>,
     inverse_in_forward_order: Vec<ChangeOpV1>,
     affected_order: Vec<StableEntityAddressV1>,
-    affected_seen: HashSet<StableEntityAddressV1>,
     segments: Vec<BatchSegmentV1>,
-    prepared_effect_count: u64,
-    budget: LogicalBudgetV1,
+    accounting: ChangeSetAccountingV1,
+    frozen_accounting: Option<(u64, u64)>,
 }
 
 impl ChangeSetBuilderV1 {
-    #[cfg(test)]
+    fn ensure_accounting_active(&self) -> Result<(), ChangeSetBuildFailureV1> {
+        if self.frozen_accounting.is_some() {
+            return Err(ChangeSetBuildFailureV1::ArenaIndexOverflow);
+        }
+        Ok(())
+    }
+
+    pub(crate) fn begin_deferred_segment(&mut self) -> Result<(), ChangeSetBuildFailureV1> {
+        self.ensure_accounting_active()?;
+        self.accounting.begin_deferred_segment()
+    }
+
+    pub(crate) fn end_deferred_segment(&mut self) -> Result<(), ChangeSetBuildFailureV1> {
+        self.ensure_accounting_active()?;
+        self.accounting.end_deferred_segment()
+    }
+
+    /// Promotion freezes all typed writes, while the overlay can still serve
+    /// borrowed reads and finish the retained prefix with its original summary.
+    pub(crate) fn take_accounting(
+        &mut self,
+    ) -> Result<ChangeSetAccountingV1, ChangeSetBuildFailureV1> {
+        self.ensure_accounting_active()?;
+        self.frozen_accounting = Some((
+            self.accounting.logical_bytes(),
+            self.accounting.prepared_effect_count(),
+        ));
+        Ok(std::mem::take(&mut self.accounting))
+    }
     pub(crate) fn borrowed_operations(&self) -> (&ChangeArenaV1, &[ChangeOpV1]) {
         (&self.arena, &self.forward)
     }
@@ -512,9 +545,12 @@ impl ChangeSetBuilderV1 {
     #[cfg(test)]
     fn with_logical_limit(limit: u64) -> Self {
         Self {
-            budget: LogicalBudgetV1 {
-                limit,
-                ..LogicalBudgetV1::default()
+            accounting: ChangeSetAccountingV1 {
+                budget: LogicalBudgetV1 {
+                    limit,
+                    ..LogicalBudgetV1::default()
+                },
+                ..ChangeSetAccountingV1::default()
             },
             ..Self::default()
         }
@@ -532,7 +568,8 @@ impl ChangeSetBuilderV1 {
         &mut self,
         open: OpenBatchSegmentV1,
     ) -> Result<(), ChangeSetBuildFailureV1> {
-        self.budget.charge(BATCH_SEGMENT_WEIGHT)?;
+        self.ensure_accounting_active()?;
+        self.accounting.charge_segment()?;
         self.segments.push(BatchSegmentV1 {
             forward_start: open.forward_start,
             forward_end: self.forward.len(),
@@ -548,35 +585,18 @@ impl ChangeSetBuilderV1 {
         &mut self,
         count: u64,
     ) -> Result<(), ChangeSetBuildFailureV1> {
-        let actual = self.prepared_effect_count.saturating_add(count);
-        if actual > MAX_PREPARED_EFFECTS_V1 {
-            return Err(ChangeSetBuildFailureV1::PreparedEffectsExceeded {
-                limit: MAX_PREPARED_EFFECTS_V1,
-                actual,
-            });
-        }
-        self.prepared_effect_count = actual;
-        Ok(())
+        self.ensure_accounting_active()?;
+        self.accounting.add_prepared_effects(count)
     }
 
     pub(crate) fn record_affected(
         &mut self,
         address: StableEntityAddressV1,
     ) -> Result<(), ChangeSetBuildFailureV1> {
-        if self.affected_seen.contains(&address) {
-            return Ok(());
+        self.ensure_accounting_active()?;
+        if self.accounting.record_affected((&address).into())? {
+            self.affected_order.push(address);
         }
-        let actual = (self.affected_order.len() as u64).saturating_add(1);
-        if actual > MAX_AFFECTED_ADDRESSES_V1 {
-            return Err(ChangeSetBuildFailureV1::AffectedAddressesExceeded {
-                limit: MAX_AFFECTED_ADDRESSES_V1,
-                actual,
-            });
-        }
-        self.budget.charge(AFFECTED_ADDRESS_WEIGHT)?;
-        self.budget.intern(address.stable_id().as_js_string())?;
-        self.affected_seen.insert(address.clone());
-        self.affected_order.push(address);
         Ok(())
     }
 
@@ -587,7 +607,7 @@ impl ChangeSetBuilderV1 {
         value: ScalarValueV1,
     ) -> Result<(), ChangeSetBuildFailureV1> {
         self.charge_operation_pair()?;
-        visit_scalar_address_strings(&address, |value| self.budget.intern(value))?;
+        visit_scalar_address_strings(&address, |value| self.accounting.budget.intern(value))?;
         let expected = self.push_scalar(expected)?;
         let value = self.push_scalar(value)?;
         self.forward.push(ChangeOpV1::ReplaceScalar {
@@ -663,10 +683,10 @@ impl ChangeSetBuilderV1 {
         child_id: StableId,
     ) -> Result<(), ChangeSetBuildFailureV1> {
         self.charge_operation_pair()?;
-        self.budget.charge(ORDERED_CHILD_WEIGHT * 2)?;
-        visit_order_address_strings(&order, |value| self.budget.intern(value))?;
-        visit_anchor_strings(&anchor, |value| self.budget.intern(value))?;
-        self.budget.intern(child_id.as_js_string())?;
+        self.accounting.budget.charge(ORDERED_CHILD_WEIGHT * 2)?;
+        visit_order_address_strings(&order, |value| self.accounting.budget.intern(value))?;
+        visit_anchor_strings(&anchor, |value| self.accounting.budget.intern(value))?;
+        self.accounting.budget.intern(child_id.as_js_string())?;
         self.forward.push(ChangeOpV1::InsertOrderedChild {
             order: order.clone(),
             anchor: anchor.clone(),
@@ -688,10 +708,12 @@ impl ChangeSetBuilderV1 {
         child_id: StableId,
     ) -> Result<(), ChangeSetBuildFailureV1> {
         self.charge_operation_pair()?;
-        self.budget.charge(ORDERED_CHILD_WEIGHT * 2)?;
-        visit_order_address_strings(&order, |value| self.budget.intern(value))?;
-        visit_anchor_strings(&expected_anchor, |value| self.budget.intern(value))?;
-        self.budget.intern(child_id.as_js_string())?;
+        self.accounting.budget.charge(ORDERED_CHILD_WEIGHT * 2)?;
+        visit_order_address_strings(&order, |value| self.accounting.budget.intern(value))?;
+        visit_anchor_strings(&expected_anchor, |value| {
+            self.accounting.budget.intern(value)
+        })?;
+        self.accounting.budget.intern(child_id.as_js_string())?;
         self.forward.push(ChangeOpV1::RemoveOrderedChild {
             order: order.clone(),
             expected_anchor: expected_anchor.clone(),
@@ -714,11 +736,13 @@ impl ChangeSetBuilderV1 {
         anchor: StableAnchorV1,
     ) -> Result<(), ChangeSetBuildFailureV1> {
         self.charge_operation_pair()?;
-        self.budget.charge(ORDERED_CHILD_WEIGHT * 2)?;
-        visit_order_address_strings(&order, |value| self.budget.intern(value))?;
-        visit_anchor_strings(&expected_anchor, |value| self.budget.intern(value))?;
-        visit_anchor_strings(&anchor, |value| self.budget.intern(value))?;
-        self.budget.intern(child_id.as_js_string())?;
+        self.accounting.budget.charge(ORDERED_CHILD_WEIGHT * 2)?;
+        visit_order_address_strings(&order, |value| self.accounting.budget.intern(value))?;
+        visit_anchor_strings(&expected_anchor, |value| {
+            self.accounting.budget.intern(value)
+        })?;
+        visit_anchor_strings(&anchor, |value| self.accounting.budget.intern(value))?;
+        self.accounting.budget.intern(child_id.as_js_string())?;
         self.forward.push(ChangeOpV1::MoveOrderedChild {
             order: order.clone(),
             child_id: child_id.clone(),
@@ -742,7 +766,7 @@ impl ChangeSetBuilderV1 {
         value: Vec<StableId>,
     ) -> Result<(), ChangeSetBuildFailureV1> {
         self.charge_operation_pair()?;
-        visit_order_address_strings(&order, |value| self.budget.intern(value))?;
+        visit_order_address_strings(&order, |value| self.accounting.budget.intern(value))?;
         let expected = self.push_order(expected)?;
         let value = self.push_order(value)?;
         self.forward.push(ChangeOpV1::ReplaceOrderedChildren {
@@ -765,7 +789,7 @@ impl ChangeSetBuilderV1 {
         value: ExtensionBlockV1,
     ) -> Result<(), ChangeSetBuildFailureV1> {
         self.charge_operation_pair()?;
-        visit_anchor_strings(&anchor, |value| self.budget.intern(value))?;
+        visit_anchor_strings(&anchor, |value| self.accounting.budget.intern(value))?;
         let value = self.push_extension(value)?;
         self.forward.push(ChangeOpV1::InsertExtensionBlock {
             anchor: anchor.clone(),
@@ -787,8 +811,8 @@ impl ChangeSetBuilderV1 {
         value: ExtensionBlockV1,
     ) -> Result<(), ChangeSetBuildFailureV1> {
         self.charge_operation_pair()?;
-        self.budget.intern(&namespace)?;
-        visit_stable_extension_owner_strings(&owner, |value| self.budget.intern(value))?;
+        self.accounting.budget.intern(&namespace)?;
+        visit_stable_extension_owner_strings(&owner, |value| self.accounting.budget.intern(value))?;
         let expected = self.push_extension(expected)?;
         let value = self.push_extension(value)?;
         self.forward.push(ChangeOpV1::ReplaceExtensionBlock {
@@ -813,7 +837,9 @@ impl ChangeSetBuilderV1 {
         expected: ExtensionBlockV1,
     ) -> Result<(), ChangeSetBuildFailureV1> {
         self.charge_operation_pair()?;
-        visit_anchor_strings(&expected_anchor, |value| self.budget.intern(value))?;
+        visit_anchor_strings(&expected_anchor, |value| {
+            self.accounting.budget.intern(value)
+        })?;
         let expected = self.push_extension(expected)?;
         self.forward.push(ChangeOpV1::RemoveExtensionBlock {
             expected_anchor: expected_anchor.clone(),
@@ -834,8 +860,8 @@ impl ChangeSetBuilderV1 {
         value: ReferenceValueV1,
     ) -> Result<(), ChangeSetBuildFailureV1> {
         self.charge_operation_pair()?;
-        self.budget.charge(REFERENCE_DELTA_WEIGHT * 2)?;
-        visit_reference_address_strings(&address, |value| self.budget.intern(value))?;
+        self.accounting.budget.charge(REFERENCE_DELTA_WEIGHT * 2)?;
+        visit_reference_address_strings(&address, |value| self.accounting.budget.intern(value))?;
         let expected = self.push_reference(expected)?;
         let value = self.push_reference(value)?;
         self.forward.push(ChangeOpV1::UpdateReference {
@@ -856,8 +882,13 @@ impl ChangeSetBuilderV1 {
         self.forward.len()
     }
 
+    pub(crate) fn affected_order(&self) -> &[StableEntityAddressV1] {
+        &self.affected_order
+    }
+
     pub(crate) fn logical_bytes(&self) -> u64 {
-        self.budget.logical_bytes
+        self.frozen_accounting
+            .map_or_else(|| self.accounting.logical_bytes(), |summary| summary.0)
     }
 
     pub(crate) fn finish(mut self) -> ChangeSetV1 {
@@ -869,21 +900,27 @@ impl ChangeSetBuilderV1 {
             segment.inverse_start = inverse_count - old_end;
             segment.inverse_end = inverse_count - old_start;
         }
+        let logical_bytes = self.logical_bytes();
+        let prepared_effect_count = self.frozen_accounting.map_or_else(
+            || self.accounting.prepared_effect_count(),
+            |summary| summary.1,
+        );
         let change_set = ChangeSetV1 {
             arena: self.arena,
             forward: self.forward,
             inverse: self.inverse_in_forward_order,
             affected: self.affected_order,
             segments: self.segments,
-            prepared_effect_count: self.prepared_effect_count,
-            logical_bytes: self.budget.logical_bytes,
+            prepared_effect_count,
+            logical_bytes,
         };
         debug_assert!(change_set.arena_references_are_well_typed());
         change_set
     }
 
     fn charge_operation_pair(&mut self) -> Result<(), ChangeSetBuildFailureV1> {
-        self.budget.charge(CHANGE_OPERATION_WEIGHT * 2)
+        self.ensure_accounting_active()?;
+        self.accounting.operation_pair()
     }
 
     fn intern_owner_order_anchor(
@@ -892,18 +929,16 @@ impl ChangeSetBuilderV1 {
         order: &StableOrderAddressV1,
         anchor: &StableAnchorV1,
     ) -> Result<(), ChangeSetBuildFailureV1> {
-        visit_owner_address_strings(owner, |value| self.budget.intern(value))?;
-        visit_order_address_strings(order, |value| self.budget.intern(value))?;
-        visit_anchor_strings(anchor, |value| self.budget.intern(value))
+        visit_owner_address_strings(owner, |value| self.accounting.budget.intern(value))?;
+        visit_order_address_strings(order, |value| self.accounting.budget.intern(value))?;
+        visit_anchor_strings(anchor, |value| self.accounting.budget.intern(value))
     }
 
     fn push_scalar(
         &mut self,
         value: ScalarValueV1,
     ) -> Result<ScalarValueRefV1, ChangeSetBuildFailureV1> {
-        self.budget
-            .charge(ARENA_ENTRY_WEIGHT + scalar_fixed_bytes(&value))?;
-        visit_scalar_strings(&value, |value| self.budget.intern(value))?;
+        self.accounting.scalar_value(&value)?;
         self.arena
             .push(ArenaValueV1::Scalar(value))
             .map(ScalarValueRefV1)
@@ -913,9 +948,10 @@ impl ChangeSetBuilderV1 {
         &mut self,
         value: EntityBundleV1,
     ) -> Result<EntityBundleRefV1, ChangeSetBuildFailureV1> {
-        self.budget
+        self.accounting
+            .budget
             .charge(ARENA_ENTRY_WEIGHT + entity_fixed_bytes(&value))?;
-        visit_entity_strings(&value, |value| self.budget.intern(value))?;
+        visit_entity_strings(&value, |value| self.accounting.budget.intern(value))?;
         self.arena
             .push(ArenaValueV1::Entity(value))
             .map(EntityBundleRefV1)
@@ -925,13 +961,8 @@ impl ChangeSetBuilderV1 {
         &mut self,
         value: Vec<StableId>,
     ) -> Result<OrderValueRefV1, ChangeSetBuildFailureV1> {
-        self.budget.charge(
-            ARENA_ENTRY_WEIGHT
-                .saturating_add(ORDERED_CHILD_WEIGHT.saturating_mul(value.len() as u64)),
-        )?;
-        for id in &value {
-            self.budget.intern(id.as_js_string())?;
-        }
+        self.accounting
+            .order_value(value.len(), value.iter().map(StableId::as_js_string))?;
         self.arena
             .push(ArenaValueV1::Order(value))
             .map(OrderValueRefV1)
@@ -941,9 +972,7 @@ impl ChangeSetBuilderV1 {
         &mut self,
         value: ExtensionBlockV1,
     ) -> Result<ExtensionValueRefV1, ChangeSetBuildFailureV1> {
-        self.budget
-            .charge(ARENA_ENTRY_WEIGHT + extension_fixed_bytes(&value))?;
-        visit_extension_strings(&value, |value| self.budget.intern(value))?;
+        self.accounting.extension_value(&value)?;
         self.arena
             .push(ArenaValueV1::Extension(value))
             .map(ExtensionValueRefV1)
@@ -953,9 +982,10 @@ impl ChangeSetBuilderV1 {
         &mut self,
         value: ReferenceValueV1,
     ) -> Result<ReferenceValueRefV1, ChangeSetBuildFailureV1> {
-        self.budget
+        self.accounting
+            .budget
             .charge(ARENA_ENTRY_WEIGHT + reference_fixed_bytes(&value))?;
-        visit_reference_strings(&value, |value| self.budget.intern(value))?;
+        visit_reference_strings(&value, |value| self.accounting.budget.intern(value))?;
         self.arena
             .push(ArenaValueV1::Reference(value))
             .map(ReferenceValueRefV1)
@@ -963,7 +993,7 @@ impl ChangeSetBuilderV1 {
 
     #[cfg(test)]
     fn charge_test_only(&mut self, amount: u64) -> Result<(), ChangeSetBuildFailureV1> {
-        self.budget.charge(amount)
+        self.accounting.budget.charge(amount)
     }
 }
 
@@ -1042,38 +1072,29 @@ fn note_value_fixed_bytes(value: &NoteValueV1) -> u64 {
 fn event_fixed_bytes(event: &RhythmicEventV1) -> u64 {
     let note_bytes = match &event.content {
         RhythmicContentV1::Rest => 0,
-        RhythmicContentV1::Notes { notes } => (notes.len() as u64)
-            .saturating_mul(SCALAR_VALUE_WEIGHT)
-            .saturating_mul(4),
+        RhythmicContentV1::Notes { notes } => {
+            (notes.len() as u64).saturating_mul(node_fixed_bytes(RawEntityNodeV1::Note))
+        }
     };
-    ORDERED_CHILD_WEIGHT
-        .saturating_add(note_value_fixed_bytes(&event.duration))
-        .saturating_add(SCALAR_VALUE_WEIGHT)
-        .saturating_add(REFERENCE_DELTA_WEIGHT)
-        .saturating_add(note_bytes)
+    node_fixed_bytes(RawEntityNodeV1::Event(&event.duration)).saturating_add(note_bytes)
 }
 
 fn voice_fixed_bytes(voice: &VoiceV1) -> u64 {
-    ORDERED_CHILD_WEIGHT
-        .saturating_add(SCALAR_VALUE_WEIGHT.saturating_mul(2))
-        .saturating_add(REFERENCE_DELTA_WEIGHT)
-        .saturating_add(saturating_sum(
-            voice.sequence.events.iter().map(event_fixed_bytes),
-        ))
+    node_fixed_bytes(RawEntityNodeV1::Voice).saturating_add(saturating_sum(
+        voice.sequence.events.iter().map(event_fixed_bytes),
+    ))
 }
 
 fn staff_fixed_bytes(_: &StaffDefinitionV1) -> u64 {
-    ORDERED_CHILD_WEIGHT.saturating_add(SCALAR_VALUE_WEIGHT.saturating_mul(3))
+    node_fixed_bytes(RawEntityNodeV1::Staff)
 }
 
 fn part_fixed_bytes(part: &PartV1) -> u64 {
-    ORDERED_CHILD_WEIGHT
-        .saturating_add(SCALAR_VALUE_WEIGHT.saturating_mul(2))
+    node_fixed_bytes(RawEntityNodeV1::Part)
         .saturating_add(saturating_sum(part.staves.iter().map(staff_fixed_bytes)))
         .saturating_add(saturating_sum(part.measure_contents.iter().map(
             |content| {
-                ORDERED_CHILD_WEIGHT
-                    .saturating_add(REFERENCE_DELTA_WEIGHT)
+                node_fixed_bytes(RawEntityNodeV1::Content)
                     .saturating_add(saturating_sum(content.voices.iter().map(voice_fixed_bytes)))
             },
         )))
@@ -1092,29 +1113,22 @@ fn extension_fixed_bytes(extension: &ExtensionBlockV1) -> u64 {
 
 fn entity_fixed_bytes(value: &EntityBundleV1) -> u64 {
     match value {
-        EntityBundleV1::Measure(bundle) => ORDERED_CHILD_WEIGHT
-            .saturating_add(SCALAR_VALUE_WEIGHT.saturating_mul(3))
-            .saturating_add(
-                u64::from(bundle.definition.pickup_duration.is_some())
-                    .saturating_mul(SCALAR_VALUE_WEIGHT)
-                    .saturating_mul(2),
-            )
-            .saturating_add(saturating_sum(bundle.contents.iter().map(|content| {
-                ORDERED_CHILD_WEIGHT
-                    .saturating_add(REFERENCE_DELTA_WEIGHT)
-                    .saturating_add(saturating_sum(content.voices.iter().map(voice_fixed_bytes)))
-            }))),
+        EntityBundleV1::Measure(bundle) => node_fixed_bytes(RawEntityNodeV1::Measure {
+            pickup: bundle.definition.pickup_duration.is_some(),
+        })
+        .saturating_add(saturating_sum(bundle.contents.iter().map(|content| {
+            node_fixed_bytes(RawEntityNodeV1::Content)
+                .saturating_add(saturating_sum(content.voices.iter().map(voice_fixed_bytes)))
+        }))),
         EntityBundleV1::Part(bundle) => part_fixed_bytes(&bundle.part).saturating_add(
             saturating_sum(bundle.extensions.iter().map(|extension| {
-                ORDERED_CHILD_WEIGHT.saturating_add(extension_fixed_bytes(&extension.value))
+                node_fixed_bytes(RawEntityNodeV1::OwnedExtension(&extension.value))
             })),
         ),
         EntityBundleV1::Staff(staff) => staff_fixed_bytes(staff),
         EntityBundleV1::Voice(voice) => voice_fixed_bytes(voice),
         EntityBundleV1::Event(event) => event_fixed_bytes(event),
-        EntityBundleV1::Note(_) => {
-            ORDERED_CHILD_WEIGHT.saturating_add(SCALAR_VALUE_WEIGHT.saturating_mul(3))
-        }
+        EntityBundleV1::Note(_) => node_fixed_bytes(RawEntityNodeV1::Note),
     }
 }
 

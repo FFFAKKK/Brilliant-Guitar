@@ -53,15 +53,35 @@ impl Candidate<'_> {
             });
         }
         let document = self.document.clone();
+        self.mutation_work.semantic_assessments =
+            self.mutation_work.semantic_assessments.saturating_add(1);
         let source = Source {
             candidate: RefCell::new(self),
             extensions,
         };
-        let report = score::assess_score_semantics_node(Cursor {
-            source: &source,
-            value: ReadValue::Entity(document),
-            path: Vec::new(),
-        });
+        let work = std::cell::Cell::default();
+        let report = score::assess_score_semantics_node_observed(
+            Cursor {
+                source: &source,
+                value: ReadValue::Entity(document),
+                path: Vec::new(),
+            },
+            &work,
+        );
+        {
+            let mut candidate = source.candidate.borrow_mut();
+            let observed: score::AssessmentWorkV1 = work.get();
+            candidate.mutation_work.semantic.rules_evaluated = candidate
+                .mutation_work
+                .semantic
+                .rules_evaluated
+                .saturating_add(observed.rules_evaluated);
+            candidate.mutation_work.semantic.dependency_reads = candidate
+                .mutation_work
+                .semantic
+                .dependency_reads
+                .saturating_add(observed.dependency_reads);
+        }
         if report.is_err() {
             source.candidate.borrow_mut().reservation.abort();
         }

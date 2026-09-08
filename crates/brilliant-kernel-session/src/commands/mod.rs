@@ -51,6 +51,9 @@ pub(crate) fn dispatch(
     transaction: &mut KernelStage3TransactionV1<'_>,
     command: CoreCommandEnvelopeV1,
 ) -> Result<(), KernelStage3CommandFailureLeafV1> {
+    if command.target().kind() != catalog_definition(command.command_id()).target_kind {
+        return Err(KernelStage3CommandFailureLeafV1::TargetMismatch);
+    }
     match command.command_id() {
         CoreCommandIdV1::DocumentSetMetadata
         | CoreCommandIdV1::NoteSetWrittenPitch

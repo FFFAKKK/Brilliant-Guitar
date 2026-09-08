@@ -240,6 +240,7 @@ impl Recorder<'_> {
         self.candidate.reservation.ensure_active()?;
         let root = self.candidate.resolve(kind, raw_id)?;
         let owner_source = self.candidate.owner(&root).ok_or(Failure::InternalError)?;
+        self.check_effect_budget(1)?;
         let children = match kind {
             Kind::Voice => {
                 let part = self

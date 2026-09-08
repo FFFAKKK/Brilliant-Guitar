@@ -291,6 +291,7 @@ impl Candidate<'_> {
         self.reservation.ensure_active()?;
         result.map_err(|_| Failure::InternalError)?;
         self.extension_state.order = Some(order);
+        self.mutation_work.record_writes = self.mutation_work.record_writes.saturating_add(1);
         Ok(())
     }
 
@@ -343,6 +344,7 @@ impl Candidate<'_> {
                 .retain(|header| crate::candidate::extensions::key(header) != key);
             self.extension_state.states.insert(key.clone(), None);
             self.extension_state.removed.insert(key);
+            self.mutation_work.record_writes = self.mutation_work.record_writes.saturating_add(1);
         }
         Ok(())
     }
@@ -423,6 +425,7 @@ impl Candidate<'_> {
                 .states
                 .insert(key.clone(), Some(Arc::new(block.value.clone())));
             self.extension_state.owners.insert(key, root.clone());
+            self.mutation_work.record_writes = self.mutation_work.record_writes.saturating_add(1);
         }
         Ok(())
     }

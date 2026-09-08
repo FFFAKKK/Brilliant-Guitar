@@ -15,6 +15,25 @@ pub(super) struct CombinedHistory {
 }
 
 impl Recorder<'_> {
+    #[expect(
+        clippy::result_large_err,
+        reason = "failure metrics returned without allocation, including capacity failures"
+    )]
+    pub(super) fn prepare_combined_commit_with_metrics(
+        self,
+        store: &LiveScoreStore,
+        version: DocumentVersionV1,
+    ) -> Result<
+        (Option<PreparedFinalStateCommitV1>, CombinedHistory),
+        (
+            FinalizationFailure,
+            brilliant_kernel_contracts::KernelStage3MetricsV1,
+        ),
+    > {
+        let (plan, prefix, suffix) = self.prepare_final_commit_with_metrics(store, version)?;
+        Ok((plan, CombinedHistory { prefix, suffix }))
+    }
+    #[cfg(test)]
     pub(super) fn prepare_combined_commit(
         self,
         store: &LiveScoreStore,

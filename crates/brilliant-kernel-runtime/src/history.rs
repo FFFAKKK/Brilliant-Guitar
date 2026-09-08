@@ -1,7 +1,5 @@
 use brilliant_core_types::JS_SAFE_INTEGER_MAX;
-use brilliant_kernel_contracts::{
-    AffectedEntityAddressV1, CoreCommandEnvelopeV1, KernelHistoryStateV1,
-};
+use brilliant_kernel_contracts::{AffectedEntityAddressV1, CoreCommandIdV1, KernelHistoryStateV1};
 
 use crate::change_set::ChangeSetV1;
 
@@ -20,9 +18,15 @@ pub(crate) struct PreparedHistoryAppendV1 {
 #[derive(Clone, Debug)]
 pub(crate) struct HistoryEntryV1 {
     pub(crate) sequence: u64,
-    pub(crate) command: CoreCommandEnvelopeV1,
-    pub(crate) change_set: ChangeSetV1,
+    pub(crate) command_id: CoreCommandIdV1,
+    pub(crate) payload: HistoryPayloadV1,
     pub(crate) affected: Vec<AffectedEntityAddressV1>,
+}
+
+#[derive(Clone, Debug)]
+pub(crate) enum HistoryPayloadV1 {
+    Typed(ChangeSetV1),
+    Candidate(std::sync::Arc<crate::candidate::CandidateHistory>),
 }
 
 #[derive(Debug)]
@@ -76,8 +80,8 @@ impl HistoryStateV1 {
     pub(crate) fn commit_append(
         &mut self,
         prepared: PreparedHistoryAppendV1,
-        command: CoreCommandEnvelopeV1,
-        change_set: ChangeSetV1,
+        command_id: CoreCommandIdV1,
+        payload: HistoryPayloadV1,
         affected: Vec<AffectedEntityAddressV1>,
     ) {
         debug_assert!(self.check_invariants().is_ok());
@@ -85,8 +89,8 @@ impl HistoryStateV1 {
         self.entries.truncate(self.cursor);
         self.entries.push(HistoryEntryV1 {
             sequence: prepared.sequence,
-            command,
-            change_set,
+            command_id,
+            payload,
             affected,
         });
         self.cursor += 1;

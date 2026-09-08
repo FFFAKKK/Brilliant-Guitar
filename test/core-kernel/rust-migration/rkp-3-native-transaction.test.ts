@@ -365,9 +365,44 @@ test("RKP-3 Session owns a literal closed catalog and all twenty-eight command r
       false,
       `Range Session handler leaked ${forbidden}`,
     );
-  assert.match(session, /fn dispatch_batch\(/u);
-  assert.match(session, /decode_captured_core_command\(/u);
-  assert.match(session, /transaction\.run_batch_child\(/u);
+  const admission = readText("crates/brilliant-kernel-runtime/src/runtime/admission.rs");
+  // Inspect executable function sections, excluding comments and string literals.
+  const functionSection = (source: string, name: string): string => {
+    const code = source.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*|"(?:\\.|[^"\\])*"/gu, "");
+    const functions = [...code.matchAll(/\bfn\s+([a-zA-Z_][a-zA-Z_0-9]*)\s*(?:<[^{}]*?>)?\s*\(/gu)];
+    const index = functions.findIndex((match) => match[1] === name);
+    assert.notEqual(index, -1, `missing executable function ${name}`);
+    const start = functions[index];
+    assert.ok(start);
+    return code.slice(start.index, functions[index + 1]?.index);
+  };
+  const rawSubmit = functionSection(session, "submit_admission_command");
+  assert.match(rawSubmit, /\.submit_stage4_admission\(\s*command,\s*commands::dispatch\s*\)/u);
+  assert.match(functionSection(session, "submit_stage3_bytes"),
+    /decode_admission_submit_request\([\s\S]*self\.submit_admission_command\(request\.command\)/u);
+  assert.match(functionSection(session, "submit_stage4_command"),
+    /self\.submit_admission_command\(command\.into_admission\(\)\)/u);
+  assert.match(functionSection(session, "operate_stage4_bytes"),
+    /decode_admission_stage4_operation_request\([\s\S]*Self::submit_admission_command/u);
+  assert.match(functionSection(session, "replay_stage4_bytes"),
+    /decode_stage4_replay_request\([\s\S]*Self::replay_stage4\(request\)/u);
+  assert.match(functionSection(session, "replay_stage4"),
+    /decode_captured_admission_replay_command\(captured\)[\s\S]*session\.submit_admission_command\(command\)/u);
+  assert.doesNotMatch(session, /\bfn\s+dispatch_batch\s*\(/u);
+
+  const batchDispatch = functionSection(admission, "dispatch");
+  assert.match(batchDispatch, /CoreCommandEnvelopeV1::TransactionBatch/u);
+  assert.match(batchDispatch,
+    /for\s*\(index,\s*captured\)\s+in\s+commands\.iter\(\)\.enumerate\(\)\s*\{\s*let result = decode_captured_admission_command\(captured\)\.and_then\(\|child\|\s*\{\s*self\.dispatch_leaf\(child,\s*Some\(index\),\s*dispatch_typed\)/u);
+  assert.match(batchDispatch,
+    /if let Err\(failure\) = result\s*\{[\s\S]*return Err\(CommandFailure::BatchChildRejected\s*\{\s*failed_command_index:\s*index as u64/u);
+  assert.doesNotMatch(batchDispatch, /\b(?:commit_prepared_mutation|submit_stage4_admission)\s*\(/u);
+  const admissionSubmit = functionSection(admission, "submit_stage4_admission");
+  assert.match(admissionSubmit,
+    /transaction\.dispatch\(command,\s*&dispatch_typed\)\s*\{\s*Ok\(\(\)\)\s*=>\s*transaction\.finish\(\)/u);
+  assert.equal([...admissionSubmit.matchAll(/\.commit_prepared_mutation\s*\(/gu)].length, 1);
+  assert.ok(admissionSubmit.indexOf("transaction.finish()") <
+    admissionSubmit.indexOf(".commit_prepared_mutation("));
 
   assert.match(runtime, /pub fn begin_stage3_transaction\(/u);
   assert.match(runtime, /pub fn commit_stage4_transaction\(/u);

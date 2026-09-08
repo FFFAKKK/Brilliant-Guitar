@@ -244,10 +244,10 @@ pub type AffectedEntityAddressV1 = ScoreEntityTargetV1<AffectedEntityIdV1>;
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
-pub enum NoteAddressV1 {
+pub enum NoteAddressV1<Id = StableId> {
     Note {
         #[serde(rename = "noteId")]
-        note_id: StableId,
+        note_id: Id,
     },
 }
 
@@ -674,7 +674,7 @@ pub enum KernelStage3CommandFailureLeafV1 {
     RangeEndpointNotFound,
     RangeOwnerMismatch,
     RangeTransformInvalid {
-        address: NoteAddressV1,
+        address: NoteAddressV1<AffectedEntityIdV1>,
         reason: PitchTranspositionErrorV1,
     },
     BatchEmpty,
@@ -1013,5 +1013,382 @@ mod tests {
                 "end": {"kind": "measure", "measureId": "measure-2"}
             })
         );
+    }
+}
+
+// Command IDs are transformed in place by ownership. Targets, ranges and the
+// direct sequence-event commands intentionally keep their strong types.
+fn map_voice_ids<I, O>(voice: VoiceV1<I>, map: &mut impl FnMut(I) -> O) -> VoiceV1<O> {
+    use brilliant_score_foundation::{MusicSequenceV1, RhythmicContentV1, ScoreNoteV1};
+    VoiceV1 {
+        id: map(voice.id),
+        default_staff_id: map(voice.default_staff_id),
+        sequence: MusicSequenceV1 {
+            start: voice.sequence.start,
+            events: voice
+                .sequence
+                .events
+                .into_iter()
+                .map(|event| RhythmicEventV1 {
+                    id: map(event.id),
+                    duration: event.duration,
+                    staff_id: event.staff_id.map(&mut *map),
+                    content: match event.content {
+                        RhythmicContentV1::Rest => RhythmicContentV1::Rest,
+                        RhythmicContentV1::Notes { notes } => RhythmicContentV1::Notes {
+                            notes: notes
+                                .into_iter()
+                                .map(|note| ScoreNoteV1 {
+                                    id: map(note.id),
+                                    written_pitch: note.written_pitch,
+                                })
+                                .collect(),
+                        },
+                    },
+                })
+                .collect(),
+        },
+    }
+}
+fn map_staff_ids<I, O>(
+    staff: StaffDefinitionV1<I>,
+    map: &mut impl FnMut(I) -> O,
+) -> StaffDefinitionV1<O> {
+    StaffDefinitionV1 {
+        id: map(staff.id),
+        line_count: staff.line_count,
+        default_clef: staff.default_clef,
+    }
+}
+macro_rules! map_anchor_ids {
+    ($name:ident, $ty:ident, $variant:ident, $field:ident) => {
+        fn $name<I, O>(anchor: $ty<I>, map: &mut impl FnMut(I) -> O) -> $ty<O> {
+            match anchor {
+                $ty::Start => $ty::Start,
+                $ty::$variant { $field } => $ty::$variant {
+                    $field: map($field),
+                },
+            }
+        }
+    };
+}
+map_anchor_ids!(
+    map_measure_anchor,
+    MeasureAnchorV1,
+    AfterMeasure,
+    measure_id
+);
+map_anchor_ids!(map_part_anchor, PartAnchorV1, AfterPart, part_id);
+map_anchor_ids!(map_staff_anchor, StaffAnchorV1, AfterStaff, staff_id);
+map_anchor_ids!(map_voice_anchor, VoiceAnchorV1, AfterVoice, voice_id);
+
+impl<I> CoreCommandEnvelopeV1<I> {
+    fn map_ids<O>(self, mut map: impl FnMut(I) -> O) -> CoreCommandEnvelopeV1<O> {
+        use brilliant_score_foundation::PartMeasureContentV1;
+        match self {
+            Self::DocumentSetMetadata { target, metadata } => {
+                CoreCommandEnvelopeV1::DocumentSetMetadata { target, metadata }
+            }
+            Self::NoteSetWrittenPitch {
+                target,
+                written_pitch,
+            } => CoreCommandEnvelopeV1::NoteSetWrittenPitch {
+                target,
+                written_pitch,
+            },
+            Self::EventSetNoteValue { target, note_value } => {
+                CoreCommandEnvelopeV1::EventSetNoteValue { target, note_value }
+            }
+            Self::VoiceInsertNotesEvent {
+                target,
+                anchor,
+                event,
+            } => CoreCommandEnvelopeV1::VoiceInsertNotesEvent {
+                target,
+                anchor,
+                event,
+            },
+            Self::VoiceInsertRestEvent {
+                target,
+                anchor,
+                event,
+            } => CoreCommandEnvelopeV1::VoiceInsertRestEvent {
+                target,
+                anchor,
+                event,
+            },
+            Self::EventRemove { target } => CoreCommandEnvelopeV1::EventRemove { target },
+            Self::MeasureInsert {
+                target,
+                anchor,
+                definition,
+                contents,
+            } => CoreCommandEnvelopeV1::MeasureInsert {
+                target,
+                anchor: map_measure_anchor(anchor, &mut map),
+                definition: MeasureDefinitionV1 {
+                    id: map(definition.id),
+                    meter: definition.meter,
+                    pickup_duration: definition.pickup_duration,
+                },
+                contents: contents
+                    .into_iter()
+                    .map(|entry| InsertMeasurePartContentV1 {
+                        part_id: map(entry.part_id),
+                        voices: entry
+                            .voices
+                            .into_iter()
+                            .map(|voice| map_voice_ids(voice, &mut map))
+                            .collect(),
+                    })
+                    .collect(),
+            },
+            Self::MeasureRemove { target } => CoreCommandEnvelopeV1::MeasureRemove { target },
+            Self::MeasureMove { target, anchor } => CoreCommandEnvelopeV1::MeasureMove {
+                target,
+                anchor: map_measure_anchor(anchor, &mut map),
+            },
+            Self::MeasureSetDefinition {
+                target,
+                meter,
+                pickup,
+            } => CoreCommandEnvelopeV1::MeasureSetDefinition {
+                target,
+                meter,
+                pickup,
+            },
+            Self::PartInsert {
+                target,
+                anchor,
+                part,
+            } => CoreCommandEnvelopeV1::PartInsert {
+                target,
+                anchor: map_part_anchor(anchor, &mut map),
+                part: PartV1 {
+                    id: map(part.id),
+                    name: part.name,
+                    instrument: part.instrument,
+                    staves: part
+                        .staves
+                        .into_iter()
+                        .map(|staff| map_staff_ids(staff, &mut map))
+                        .collect(),
+                    measure_contents: part
+                        .measure_contents
+                        .into_iter()
+                        .map(|content| PartMeasureContentV1 {
+                            measure_id: map(content.measure_id),
+                            voices: content
+                                .voices
+                                .into_iter()
+                                .map(|voice| map_voice_ids(voice, &mut map))
+                                .collect(),
+                        })
+                        .collect(),
+                },
+            },
+            Self::PartRemove { target } => CoreCommandEnvelopeV1::PartRemove { target },
+            Self::PartMove { target, anchor } => CoreCommandEnvelopeV1::PartMove {
+                target,
+                anchor: map_part_anchor(anchor, &mut map),
+            },
+            Self::PartSetName { target, name } => {
+                CoreCommandEnvelopeV1::PartSetName { target, name }
+            }
+            Self::PartSetInstrument { target, instrument } => {
+                CoreCommandEnvelopeV1::PartSetInstrument { target, instrument }
+            }
+            Self::StaffInsert {
+                target,
+                anchor,
+                staff,
+            } => CoreCommandEnvelopeV1::StaffInsert {
+                target,
+                anchor: map_staff_anchor(anchor, &mut map),
+                staff: map_staff_ids(staff, &mut map),
+            },
+            Self::StaffRemove { target } => CoreCommandEnvelopeV1::StaffRemove { target },
+            Self::StaffMove { target, anchor } => CoreCommandEnvelopeV1::StaffMove {
+                target,
+                anchor: map_staff_anchor(anchor, &mut map),
+            },
+            Self::StaffSetDefinition {
+                target,
+                line_count,
+                default_clef,
+            } => CoreCommandEnvelopeV1::StaffSetDefinition {
+                target,
+                line_count,
+                default_clef,
+            },
+            Self::VoiceInsert {
+                target,
+                measure_id,
+                anchor,
+                voice,
+            } => CoreCommandEnvelopeV1::VoiceInsert {
+                target,
+                measure_id: map(measure_id),
+                anchor: map_voice_anchor(anchor, &mut map),
+                voice: map_voice_ids(voice, &mut map),
+            },
+            Self::VoiceRemove { target } => CoreCommandEnvelopeV1::VoiceRemove { target },
+            Self::VoiceMove { target, anchor } => CoreCommandEnvelopeV1::VoiceMove {
+                target,
+                anchor: map_voice_anchor(anchor, &mut map),
+            },
+            Self::VoiceSetDefaultStaff { target, staff_id } => {
+                CoreCommandEnvelopeV1::VoiceSetDefaultStaff {
+                    target,
+                    staff_id: map(staff_id),
+                }
+            }
+            Self::VoiceSetSequenceStart { target, start } => {
+                CoreCommandEnvelopeV1::VoiceSetSequenceStart { target, start }
+            }
+            Self::EventSetStaffAssignment { target, assignment } => {
+                CoreCommandEnvelopeV1::EventSetStaffAssignment {
+                    target,
+                    assignment: match assignment {
+                        EventStaffAssignmentV1::InheritDefault => {
+                            EventStaffAssignmentV1::InheritDefault
+                        }
+                        EventStaffAssignmentV1::Staff { staff_id } => {
+                            EventStaffAssignmentV1::Staff {
+                                staff_id: map(staff_id),
+                            }
+                        }
+                    },
+                }
+            }
+            Self::RangeDelete { target, range } => {
+                CoreCommandEnvelopeV1::RangeDelete { target, range }
+            }
+            Self::RangeTransposeWrittenPitch {
+                target,
+                range,
+                transposition,
+            } => CoreCommandEnvelopeV1::RangeTransposeWrittenPitch {
+                target,
+                range,
+                transposition,
+            },
+            Self::TransactionBatch { target, commands } => {
+                CoreCommandEnvelopeV1::TransactionBatch { target, commands }
+            }
+        }
+    }
+}
+
+fn voice_ids_nonempty(voice: &VoiceV1<JsString>) -> bool {
+    use brilliant_score_foundation::RhythmicContentV1;
+    !voice.id.is_empty()
+        && !voice.default_staff_id.is_empty()
+        && voice.sequence.events.iter().all(|event| {
+            !event.id.is_empty()
+                && event.staff_id.as_ref().is_none_or(|id| !id.is_empty())
+                && match &event.content {
+                    RhythmicContentV1::Rest => true,
+                    RhythmicContentV1::Notes { notes } => {
+                        notes.iter().all(|note| !note.id.is_empty())
+                    }
+                }
+        })
+}
+impl CoreCommandEnvelopeV1<StableId> {
+    /// Consumes the payload tree; immutable ID text remains shared.
+    pub fn into_admission(self) -> CoreCommandEnvelopeV1<JsString> {
+        self.map_ids(|id| id.as_js_string().clone())
+    }
+}
+impl CoreCommandEnvelopeV1<JsString> {
+    fn ids_nonempty(&self) -> bool {
+        let measure_anchor = |anchor: &MeasureAnchorV1<JsString>| match anchor {
+            MeasureAnchorV1::Start => true,
+            MeasureAnchorV1::AfterMeasure { measure_id } => !measure_id.is_empty(),
+        };
+        let part_anchor = |anchor: &PartAnchorV1<JsString>| match anchor {
+            PartAnchorV1::Start => true,
+            PartAnchorV1::AfterPart { part_id } => !part_id.is_empty(),
+        };
+        let staff_anchor = |anchor: &StaffAnchorV1<JsString>| match anchor {
+            StaffAnchorV1::Start => true,
+            StaffAnchorV1::AfterStaff { staff_id } => !staff_id.is_empty(),
+        };
+        let voice_anchor = |anchor: &VoiceAnchorV1<JsString>| match anchor {
+            VoiceAnchorV1::Start => true,
+            VoiceAnchorV1::AfterVoice { voice_id } => !voice_id.is_empty(),
+        };
+        match self {
+            Self::MeasureInsert {
+                anchor,
+                definition,
+                contents,
+                ..
+            } => {
+                measure_anchor(anchor)
+                    && !definition.id.is_empty()
+                    && contents.iter().all(|entry| {
+                        !entry.part_id.is_empty() && entry.voices.iter().all(voice_ids_nonempty)
+                    })
+            }
+            Self::MeasureMove { anchor, .. } => measure_anchor(anchor),
+            Self::PartInsert { anchor, part, .. } => {
+                part_anchor(anchor)
+                    && !part.id.is_empty()
+                    && part.staves.iter().all(|staff| !staff.id.is_empty())
+                    && part.measure_contents.iter().all(|content| {
+                        !content.measure_id.is_empty()
+                            && content.voices.iter().all(voice_ids_nonempty)
+                    })
+            }
+            Self::PartMove { anchor, .. } => part_anchor(anchor),
+            Self::StaffInsert { anchor, staff, .. } => staff_anchor(anchor) && !staff.id.is_empty(),
+            Self::StaffMove { anchor, .. } => staff_anchor(anchor),
+            Self::VoiceInsert {
+                measure_id,
+                anchor,
+                voice,
+                ..
+            } => !measure_id.is_empty() && voice_anchor(anchor) && voice_ids_nonempty(voice),
+            Self::VoiceMove { anchor, .. } => voice_anchor(anchor),
+            Self::VoiceSetDefaultStaff { staff_id, .. } => !staff_id.is_empty(),
+            Self::EventSetStaffAssignment { assignment, .. } => match assignment {
+                EventStaffAssignmentV1::InheritDefault => true,
+                EventStaffAssignmentV1::Staff { staff_id } => !staff_id.is_empty(),
+            },
+            // Captured children are decoded individually at their original
+            // batch positions; this conversion never eagerly decodes them.
+            Self::DocumentSetMetadata { .. }
+            | Self::NoteSetWrittenPitch { .. }
+            | Self::EventSetNoteValue { .. }
+            | Self::VoiceInsertNotesEvent { .. }
+            | Self::VoiceInsertRestEvent { .. }
+            | Self::EventRemove { .. }
+            | Self::MeasureRemove { .. }
+            | Self::MeasureSetDefinition { .. }
+            | Self::PartRemove { .. }
+            | Self::PartSetName { .. }
+            | Self::PartSetInstrument { .. }
+            | Self::StaffRemove { .. }
+            | Self::StaffSetDefinition { .. }
+            | Self::VoiceRemove { .. }
+            | Self::VoiceSetSequenceStart { .. }
+            | Self::RangeDelete { .. }
+            | Self::RangeTransposeWrittenPitch { .. }
+            | Self::TransactionBatch { .. } => true,
+        }
+    }
+    /// Only representability is checked; semantic admission remains a separate
+    /// step. On failure return the original command without cloning its tree.
+    #[expect(
+        clippy::result_large_err,
+        reason = "Representation selection returns the owned admission command without allocating or cloning its payload"
+    )]
+    pub fn try_into_stable(self) -> Result<CoreCommandEnvelopeV1, Self> {
+        if !self.ids_nonempty() {
+            return Err(self);
+        }
+        Ok(self.map_ids(|id| StableId::new(id).expect("borrowed nonempty check")))
     }
 }

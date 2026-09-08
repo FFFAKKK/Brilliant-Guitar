@@ -14,6 +14,46 @@ impl From<Failure> for MeasurePreparationFailure {
     }
 }
 
+#[derive(Clone, Copy)]
+enum Prediction {
+    Insert,
+    Remove,
+    Move,
+}
+
+fn predict_ids(
+    ids: &mut Vec<JsString>,
+    mode: Prediction,
+    target: &JsString,
+    after: Option<&JsString>,
+    reservation: &mut Reservation,
+) -> Result<bool, Failure> {
+    if !matches!(mode, Prediction::Insert) {
+        let Some(index) = ids.iter().position(|id| id == target) else {
+            return Ok(false);
+        };
+        ids.remove(index);
+    }
+    if !matches!(mode, Prediction::Remove) {
+        let position = match after {
+            None => 0,
+            Some(after) => {
+                let mut matches = ids.iter().enumerate().filter(|(_, id)| *id == after);
+                let Some((position, _)) = matches.next() else {
+                    return Ok(false);
+                };
+                if matches.next().is_some() {
+                    return Ok(false);
+                }
+                position + 1
+            }
+        };
+        reservation.vec(Site::JournalOperations, ids, 1)?;
+        ids.insert(position, target.clone());
+    }
+    Ok(true)
+}
+
 fn raw(candidate: &Candidate<'_>, source: &Occurrence) -> Result<JsString, Failure> {
     candidate
         .raw_id(source)
@@ -79,6 +119,59 @@ fn local_anchor(
 }
 
 impl Recorder<'_> {
+    fn measure_prediction_ids(&mut self, order: &CandidateOrder) -> Result<Vec<JsString>, Failure> {
+        let sources = measure::collect_sources(&mut self.candidate, order)?;
+        let mut ids = Vec::new();
+        self.candidate
+            .reservation
+            .vec(Site::JournalOperations, &mut ids, sources.len())?;
+        for source in sources {
+            ids.push(raw(&self.candidate, &source)?);
+        }
+        Ok(ids)
+    }
+
+    // TS preparation predicts failure as a required second reorder effect;
+    // actual local-anchor and coverage failures belong after the effect cap.
+    fn check_measure_effect_budget(
+        &mut self,
+        parts: &[Occurrence],
+        mode: Prediction,
+        target: &JsString,
+        after: Option<&JsString>,
+    ) -> Result<(), Failure> {
+        if self.effect_budget.is_none() {
+            return Ok(());
+        }
+        let document = self.candidate.document.clone();
+        let mut desired =
+            self.measure_prediction_ids(&CandidateOrder::new(&document, Children::Measures))?;
+        if !predict_ids(
+            &mut desired,
+            mode,
+            target,
+            after,
+            &mut self.candidate.reservation,
+        )? {
+            return Err(Failure::InternalError);
+        }
+        let mut reorder = false;
+        for part in parts {
+            let mut ids =
+                self.measure_prediction_ids(&CandidateOrder::new(part, Children::Contents))?;
+            if !predict_ids(
+                &mut ids,
+                mode,
+                target,
+                after,
+                &mut self.candidate.reservation,
+            )? || ids != desired
+            {
+                reorder = true;
+            }
+        }
+        self.check_effect_budget(1 + u64::from(reorder))
+    }
     pub(super) fn insert_measure_command(
         &mut self,
         document_id: &JsString,
@@ -153,6 +246,11 @@ impl Recorder<'_> {
                 ordered.push(entry.ok_or(Failure::InternalError)?);
             }
         }
+        if exact {
+            self.check_measure_effect_budget(&parts, Prediction::Insert, &definition.id, after)?;
+        } else {
+            self.check_effect_budget(1)?;
+        }
         let root = self.insert_measure_bundle(definition, ordered, after)?;
         // Inexact coverage intentionally reaches final semantic validation.
         if exact {
@@ -172,6 +270,10 @@ impl Recorder<'_> {
             )?;
             for part in &parts {
                 super::measure::unique_content(&mut self.candidate, part, id)?;
+            }
+            self.check_measure_effect_budget(&parts, Prediction::Remove, id, None)?;
+            for part in &parts {
+                self.verify_effect_part(part)?;
             }
             self.remove_measure_bundle(id)?;
             self.normalize_measure_contents()
@@ -237,6 +339,13 @@ impl Recorder<'_> {
             return Ok(false);
         }
         let parts = super::measure::collect_sources(&mut self.candidate, &part_order)?;
+        for part in &parts {
+            super::measure::unique_content(&mut self.candidate, part, id)?;
+        }
+        self.check_measure_effect_budget(&parts, Prediction::Move, id, after)?;
+        for part in &parts {
+            self.verify_effect_part(part)?;
+        }
         // Every target and local anchor is checked before the first mutation.
         let mut plans = Vec::new();
         self.candidate

@@ -312,9 +312,9 @@ pub struct PersistedCheckpointV1 {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct KernelStage4OperationRequestV1 {
+pub struct KernelStage4OperationRequestV1<Id = StableId> {
     pub api_version: u64,
-    pub operation: KernelStage4OperationV1,
+    pub operation: KernelStage4OperationV1<Id>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -324,9 +324,9 @@ pub enum KernelStage4OperationDecodeFailureV1 {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum KernelStage4OperationV1 {
+pub enum KernelStage4OperationV1<Id = StableId> {
     Submit {
-        command: CoreCommandEnvelopeV1,
+        command: CoreCommandEnvelopeV1<Id>,
     },
     Undo,
     Redo,

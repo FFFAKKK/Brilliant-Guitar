@@ -1,20 +1,18 @@
 use brilliant_kernel_contracts::{
-    CapturedCoreCommandV1, CoreCommandEnvelopeV1, KernelReadStateV1, KernelSessionCreateRequestV1,
+    CoreCommandEnvelopeV1, KernelReadStateV1, KernelSessionCreateRequestV1,
     KernelSessionCreateResultV1, KernelSessionCreateSuccessValueV1, KernelSessionReadResultV1,
     KernelStage3CommandFailureLeafV1, KernelStage3CommandFailureV1, KernelStage3MetricsV1,
-    KernelStage3ResourceLimitKindV1, KernelStage3SubmitDecodeFailureV1,
-    KernelStage3SubmitNoOpValueV1, KernelStage3SubmitRejectedValueV1, KernelStage3SubmitRequestV1,
-    KernelStage3SubmitResultV1, KernelStage3SubmitSuccessValueV1, KernelStage4CommandResultV1,
-    KernelStage4FailureV1, KernelStage4OperationDecodeFailureV1, KernelStage4OperationRequestV1,
+    KernelStage3SubmitDecodeFailureV1, KernelStage3SubmitNoOpValueV1,
+    KernelStage3SubmitRejectedValueV1, KernelStage3SubmitRequestV1, KernelStage3SubmitResultV1,
+    KernelStage3SubmitSuccessValueV1, KernelStage4CommandResultV1, KernelStage4FailureV1,
+    KernelStage4OperationDecodeFailureV1, KernelStage4OperationRequestV1,
     KernelStage4OperationResultV1, KernelStage4OperationV1, KernelStage4ReadResultV1,
     KernelStage4ReplayCommandResultV1, KernelStage4ReplayRequestV1, KernelStage4ReplayResultV1,
-    KernelStage4SelectResultV1, MAX_BATCH_CHILDREN_V1, ScoreEntityTargetV1, StableFailureV1,
-    decode_captured_core_command, decode_captured_replay_command, decode_stage3_submit_request,
-    decode_stage4_operation_request, decode_stage4_replay_request,
+    KernelStage4SelectResultV1, StableFailureV1, decode_admission_stage4_operation_request,
+    decode_admission_submit_request, decode_captured_admission_replay_command,
+    decode_stage4_replay_request,
 };
-use brilliant_kernel_runtime::{
-    KernelRuntime, KernelRuntimeCreateFailure, KernelStage3TransactionV1,
-};
+use brilliant_kernel_runtime::{KernelRuntime, KernelRuntimeCreateFailure};
 
 use crate::commands;
 
@@ -78,8 +76,10 @@ impl KernelSession {
     }
 
     pub fn submit_stage3_bytes(&mut self, request_bytes: &[u8]) -> KernelStage3SubmitResultV1 {
-        match decode_stage3_submit_request(request_bytes) {
-            Ok(request) => self.submit_stage3(request),
+        match decode_admission_submit_request(request_bytes) {
+            Ok(request) => {
+                stage4_command_result_to_stage3(self.submit_admission_command(request.command))
+            }
             Err(KernelStage3SubmitDecodeFailureV1::Boundary(failure)) => {
                 KernelStage3SubmitResultV1::Rejected(failure)
             }
@@ -112,54 +112,19 @@ impl KernelSession {
         &mut self,
         command: CoreCommandEnvelopeV1,
     ) -> KernelStage4CommandResultV1 {
-        let definition = commands::catalog_definition(command.command_id());
-        if command.target().kind() != definition.target_kind {
-            return self.runtime.rejected_command(
-                KernelStage4FailureV1::Command(
-                    KernelStage3CommandFailureLeafV1::TargetMismatch.into(),
-                ),
-                KernelStage3MetricsV1::default(),
-            );
-        }
-
-        let history_command = command.clone();
-        let mut transaction = self.runtime.begin_stage3_transaction();
-        let dispatched = match command {
-            CoreCommandEnvelopeV1::TransactionBatch { target, commands } => {
-                dispatch_batch(&mut transaction, target, commands)
-            }
-            command => commands::dispatch(&mut transaction, command).map_err(Into::into),
-        };
-        if let Err(failure) = dispatched {
-            return self.runtime.rejected_command(
-                KernelStage4FailureV1::Command(failure),
-                transaction.attempt_metrics(),
-            );
-        }
-        let attempt_metrics = transaction.attempt_metrics();
-        let prepared = match transaction.finish() {
-            Ok(prepared) => prepared,
-            Err(failure) => {
-                return self.runtime.rejected_command(
-                    KernelStage4FailureV1::Command(failure.into()),
-                    attempt_metrics,
-                );
-            }
-        };
-
-        let attempt_metrics = prepared.attempt_metrics();
-        match self
-            .runtime
-            .commit_stage4_transaction(history_command, prepared)
-        {
-            Ok(result) => result,
-            Err(failure) => self.runtime.rejected_command(failure, attempt_metrics),
-        }
+        self.submit_admission_command(command.into_admission())
     }
 
+    fn submit_admission_command(
+        &mut self,
+        command: brilliant_kernel_contracts::CoreAdmissionCommandV1,
+    ) -> KernelStage4CommandResultV1 {
+        self.runtime
+            .submit_stage4_admission(command, commands::dispatch)
+    }
     pub fn operate_stage4_bytes(&mut self, request_bytes: &[u8]) -> KernelStage4OperationResultV1 {
-        match decode_stage4_operation_request(request_bytes) {
-            Ok(request) => self.operate_stage4(request),
+        match decode_admission_stage4_operation_request(request_bytes) {
+            Ok(request) => self.operate_stage4_inner(request, Self::submit_admission_command),
             Err(KernelStage4OperationDecodeFailureV1::Boundary(failure)) => {
                 KernelStage4OperationResultV1::Rejected(failure)
             }
@@ -176,6 +141,14 @@ impl KernelSession {
         &mut self,
         request: KernelStage4OperationRequestV1,
     ) -> KernelStage4OperationResultV1 {
+        self.operate_stage4_inner(request, Self::submit_stage4_command)
+    }
+
+    fn operate_stage4_inner<Id>(
+        &mut self,
+        request: KernelStage4OperationRequestV1<Id>,
+        submit: fn(&mut Self, CoreCommandEnvelopeV1<Id>) -> KernelStage4CommandResultV1,
+    ) -> KernelStage4OperationResultV1 {
         if request.api_version != 1 {
             return KernelStage4OperationResultV1::Rejected(
                 StableFailureV1::ContractUnsupportedApiVersion {
@@ -185,7 +158,7 @@ impl KernelSession {
         }
         match request.operation {
             KernelStage4OperationV1::Submit { command } => {
-                KernelStage4OperationResultV1::Command(self.submit_stage4_command(command))
+                KernelStage4OperationResultV1::Command(submit(self, command))
             }
             KernelStage4OperationV1::Undo => {
                 KernelStage4OperationResultV1::Command(self.runtime.undo())
@@ -247,8 +220,8 @@ impl KernelSession {
         }
 
         for (index, captured) in request.commands.iter().enumerate() {
-            let command_result = match decode_captured_replay_command(captured) {
-                Ok(command) => session.submit_stage4_command(command),
+            let command_result = match decode_captured_admission_replay_command(captured) {
+                Ok(command) => session.submit_admission_command(command),
                 Err(failure) => session.runtime.rejected_command(
                     KernelStage4FailureV1::Command(failure),
                     KernelStage3MetricsV1::default(),
@@ -370,62 +343,8 @@ fn command_rejected(
     }
 }
 
-fn dispatch_batch(
-    transaction: &mut KernelStage3TransactionV1<'_>,
-    target: ScoreEntityTargetV1,
-    children: Vec<CapturedCoreCommandV1>,
-) -> Result<(), KernelStage3CommandFailureV1> {
-    if children.is_empty() {
-        return Err(KernelStage3CommandFailureLeafV1::BatchEmpty.into());
-    }
-    if children.len() > MAX_BATCH_CHILDREN_V1 {
-        return Err(KernelStage3CommandFailureLeafV1::ResourceLimitExceeded {
-            limit_kind: KernelStage3ResourceLimitKindV1::BatchChildren,
-            limit: MAX_BATCH_CHILDREN_V1 as u64,
-            actual: children.len() as u64,
-        }
-        .into());
-    }
-    let ScoreEntityTargetV1::Document { document_id } = target else {
-        return Err(KernelStage3CommandFailureLeafV1::TargetMismatch.into());
-    };
-    transaction.begin_batch(&document_id)?;
-
-    for (index, captured) in children.iter().enumerate() {
-        let child = decode_captured_core_command(captured)
-            .map_err(|failure| batch_child_failure(index, failure))?;
-        let result = transaction.run_batch_child(|transaction| {
-            let definition = commands::catalog_definition(child.command_id());
-            if child.target().kind() != definition.target_kind {
-                return Err(KernelStage3CommandFailureLeafV1::TargetMismatch);
-            }
-            commands::dispatch(transaction, child)
-        });
-        if let Err(failure) = result {
-            return Err(KernelStage3CommandFailureV1::BatchChildRejected {
-                failed_command_index: index as u64,
-                failure,
-            });
-        }
-    }
-    Ok(())
-}
-
-fn batch_child_failure(
-    index: usize,
-    failure: KernelStage3CommandFailureV1,
-) -> KernelStage3CommandFailureV1 {
-    let failure = match failure {
-        KernelStage3CommandFailureV1::Leaf(failure) => failure,
-        KernelStage3CommandFailureV1::BatchChildRejected { .. } => {
-            KernelStage3CommandFailureLeafV1::InternalError
-        }
-    };
-    KernelStage3CommandFailureV1::BatchChildRejected {
-        failed_command_index: index as u64,
-        failure,
-    }
-}
+#[cfg(test)]
+mod admission_tests;
 
 #[cfg(test)]
 mod tests {
@@ -1222,9 +1141,17 @@ mod tests {
         else {
             panic!("duplicate event must reject");
         };
+        let encoded = brilliant_kernel_contracts::encode_stage3_submit_result(
+            &KernelStage3SubmitResultV1::CommandRejected {
+                value,
+                failure: failure.into(),
+            },
+        )
+        .expect("semantic rejection wire");
+        let encoded = String::from_utf8(encoded).unwrap();
         assert_eq!(
-            failure,
-            KernelStage3CommandFailureLeafV1::LocalInvariantRejected
+            encoded.split_once(",\"failure\":").unwrap().1,
+            r#"{"code":"command.semantic-invalid","diagnostics":[{"code":"semantic.id-duplicate","messageKey":"core.semantic.id-duplicate","path":["parts",0,"measureContents",0,"voices",0,"sequence","events",1,"id"],"details":{"id":"event-1"}}]}}"#
         );
         assert_eq!(value.document_version.get(), 1);
         assert_eq!(

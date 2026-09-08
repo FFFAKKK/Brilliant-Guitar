@@ -358,7 +358,6 @@ pub(crate) struct TransactionOverlayV1<'a> {
 }
 
 impl<'a> TransactionOverlayV1<'a> {
-    #[cfg(test)]
     pub(crate) fn borrowed_operations(
         &self,
     ) -> Result<
@@ -402,6 +401,30 @@ impl<'a> TransactionOverlayV1<'a> {
 
     pub(crate) fn logical_bytes(&self) -> u64 {
         self.builder.logical_bytes()
+    }
+
+    pub(crate) fn take_accounting(
+        &mut self,
+    ) -> Result<crate::change_set::accounting::ChangeSetAccountingV1, OverlayFailureV1> {
+        self.ensure_active()?;
+        let result = self.builder.take_accounting();
+        self.map_builder_result(result)
+    }
+
+    pub(crate) fn affected_order(&self) -> &[StableEntityAddressV1] {
+        self.builder.affected_order()
+    }
+
+    pub(crate) fn begin_deferred_segment(&mut self) -> Result<(), OverlayFailureV1> {
+        self.ensure_active()?;
+        let result = self.builder.begin_deferred_segment();
+        self.map_builder_result(result)
+    }
+
+    pub(crate) fn end_deferred_segment(&mut self) -> Result<(), OverlayFailureV1> {
+        self.ensure_active()?;
+        let result = self.builder.end_deferred_segment();
+        self.map_builder_result(result)
     }
 
     pub(crate) fn begin_segment(&self) -> OpenBatchSegmentV1 {
@@ -462,7 +485,6 @@ impl<'a> TransactionOverlayV1<'a> {
         self.base.read_scalar(address)
     }
 
-    #[cfg(test)]
     pub(crate) fn frozen_read_scalar(&self, address: &ScalarAddressV1) -> Option<ScalarValueV1> {
         if let Some(value) = self.scalar_replacements.get(address) {
             return Some(value.clone());
@@ -560,7 +582,6 @@ impl<'a> TransactionOverlayV1<'a> {
         self.base.read_event_content_kind(event_id)
     }
 
-    #[cfg(test)]
     pub(crate) fn frozen_read_event_content_kind(
         &self,
         event_id: &StableId,
@@ -1571,7 +1592,6 @@ impl<'a> TransactionOverlayV1<'a> {
         }
     }
 
-    #[cfg(test)]
     pub(crate) fn frozen_resolve_entity_address(
         &self,
         stable_id: &StableId,

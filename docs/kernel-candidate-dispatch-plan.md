@@ -1,9 +1,18 @@
 # Complete candidate command and production integration
 
-This is the next functional closure after S1.13. The owner prioritizes complete
+This records the functional closure planned after S1.13. The owner prioritizes complete
 kernel behavior before commercial optimization and has authorized implementation,
 independent GPT-6 review and local commits. No new authorization gate is needed.
 This plan does not declare the kernel complete or qualified.
+
+Current status: the command, accounting, runtime/history and session paths below
+are implemented as S1.14 in the existing native kernel. All 27 leaf commands and
+Batch now share admission submission, stored Undo/Redo and replay. The new real
+native corpus compares 28 scenarios with TS, including complete mutation/read
+projections and subscribed events. Publication failure retains completed final
+assessment metrics. Current full-suite evidence and remaining gates are recorded
+in `kernel-commercial-completion.md`; the plan below preserves its original
+implementation requirements. The application's default remains TypeScript.
 
 The 27 leaf commands now have the main occurrence storage/history primitives.
 The remaining work must connect command preparation, command accounting and the

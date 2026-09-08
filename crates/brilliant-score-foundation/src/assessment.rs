@@ -20,17 +20,30 @@ pub fn assess_score_semantics(candidate: &Value) -> Outcome<SemanticReportV1> {
 
 /// Apply the same ordered musical checks to a borrowed or virtual candidate.
 pub fn assess_score_semantics_node<N: AssessmentNodeV1>(candidate: N) -> Outcome<SemanticReportV1> {
+    assess_score_semantics_node_observed(candidate, &std::cell::Cell::default())
+}
+
+/// Accumulates reached work into the caller's cell even when assessment fails.
+pub fn assess_score_semantics_node_observed<N: AssessmentNodeV1>(
+    candidate: N,
+    work: &std::cell::Cell<crate::candidate::AssessmentWorkV1>,
+) -> Outcome<SemanticReportV1> {
     Validator {
+        work,
         diagnostics: Vec::new(),
         ids: HashSet::new(),
         measures: HashMap::new(),
         measure_order: Vec::new(),
         part_ids: HashSet::new(),
     }
-    .run(candidate)
+    .run(crate::candidate::ObservedNode {
+        node: candidate,
+        work,
+    })
 }
 
-struct Validator<N> {
+struct Validator<'a, N> {
+    work: &'a std::cell::Cell<crate::candidate::AssessmentWorkV1>,
     diagnostics: Vec<CoreDiagnosticV1>,
     ids: HashSet<JsString>,
     measures: HashMap<JsString, N>,
@@ -85,12 +98,18 @@ fn insert(set: &mut HashSet<JsString>, value: JsString) -> Outcome<bool> {
     Ok(set.insert(value))
 }
 
-impl<N: AssessmentNodeV1> Validator<N> {
+impl<N: AssessmentNodeV1> Validator<'_, N> {
+    fn rule(&self) {
+        let mut work = self.work.get();
+        work.rules_evaluated = work.rules_evaluated.saturating_add(1);
+        self.work.set(work);
+    }
     fn add(&mut self, code: Code, node: &N, detail: Option<(&str, &JsString)>) -> Outcome<()> {
         crate::diagnostics::append_diagnostic(&mut self.diagnostics, code, node.path(), detail)
     }
 
     fn register_id(&mut self, node: &N) -> Outcome<()> {
+        self.rule();
         let id = node.string()?;
         if id.is_empty() {
             self.add(Code::IdEmpty, node, None)?;
@@ -101,11 +120,13 @@ impl<N: AssessmentNodeV1> Validator<N> {
     }
 
     fn check_fraction(&mut self, node: &N, positive: bool) -> Outcome<Option<ExactFraction>> {
+        self.rule();
         let (numerator, denominator) = fraction(node)?;
         let Some(value) = music_rules::canonical_fraction(numerator, denominator) else {
             self.add(Code::FractionNonCanonical, node, None)?;
             return Ok(None);
         };
+        self.rule();
         if if positive {
             numerator <= 0.0
         } else {
@@ -120,11 +141,13 @@ impl<N: AssessmentNodeV1> Validator<N> {
     fn run(mut self, document: N) -> Outcome<SemanticReportV1> {
         self.register_id(&document.field("id"))?;
         let tempo = document.field("metadata").field("tempo").field("bpm");
+        self.rule();
         if !music_rules::tempo_is_valid(tempo.number()?) {
             self.add(Code::TempoInvalid, &tempo, None)?;
         }
         self.check_measures(document.field("measureDefinitions"))?;
         let parts = document.field("parts");
+        self.rule();
         if parts.len()? == 0 {
             self.add(Code::PartRequired, &parts, None)?;
         }
@@ -140,6 +163,7 @@ impl<N: AssessmentNodeV1> Validator<N> {
     }
 
     fn check_measures(&mut self, measures: N) -> Outcome<()> {
+        self.rule();
         if measures.len()? == 0 {
             self.add(Code::MeasureRequired, &measures, None)?;
         }
@@ -161,9 +185,11 @@ impl<N: AssessmentNodeV1> Validator<N> {
             let meter = measure.field("meter");
             let numerator = meter.field("numerator");
             let denominator = meter.field("denominator");
+            self.rule();
             if !music_rules::safe_integer(numerator.number()?) || numerator.number()? <= 0.0 {
                 self.add(Code::MeterNumeratorInvalid, &numerator, None)?;
             }
+            self.rule();
             if !music_rules::note_base(denominator.number()?) {
                 self.add(Code::MeterDenominatorInvalid, &denominator, None)?;
             }
@@ -172,6 +198,7 @@ impl<N: AssessmentNodeV1> Validator<N> {
                 let regular =
                     music_rules::measure_duration(numerator.number()?, denominator.number()?, None);
                 if let (Some(pickup_duration), Ok(regular_duration)) = (checked, regular) {
+                    self.rule();
                     match pickup_duration.checked_compare(regular_duration) {
                         Err(_) => self.add(Code::TimeArithmeticOverflow, &pickup, None)?,
                         Ok(Ordering::Greater) => {
@@ -191,6 +218,7 @@ impl<N: AssessmentNodeV1> Validator<N> {
         let transposition = part.field("instrument").field("writtenToSounding");
         let diatonic = transposition.field("diatonicSteps").number()?;
         let chromatic = transposition.field("chromaticSemitones").number()?;
+        self.rule();
         let transpose_valid = transposition
             .exact_fields(&["diatonicSteps", "chromaticSemitones"])?
             && music_rules::safe_integer(diatonic)
@@ -199,6 +227,7 @@ impl<N: AssessmentNodeV1> Validator<N> {
             self.add(Code::TranspositionInvalid, &transposition, None)?;
         }
         let staves = part.field("staves");
+        self.rule();
         if staves.len()? == 0 {
             self.add(Code::StaffRequired, &staves, None)?;
         }
@@ -208,6 +237,7 @@ impl<N: AssessmentNodeV1> Validator<N> {
             self.register_id(&staff.field("id"))?;
             insert(&mut staff_ids, staff.field("id").string()?)?;
             let lines = staff.field("lineCount");
+            self.rule();
             if !music_rules::safe_integer(lines.number()?) || lines.number()? <= 0.0 {
                 self.add(Code::StaffLineCountInvalid, &lines, None)?;
             }
@@ -219,13 +249,16 @@ impl<N: AssessmentNodeV1> Validator<N> {
             let reference = content.field("measureId");
             let id = reference.string()?;
             let measure = self.measures.get(&id).cloned();
+            self.rule();
             if measure.is_none() {
                 self.add(Code::MeasureReferenceMissing, &reference, None)?;
             }
+            self.rule();
             if !insert(&mut covered, id)? {
                 self.add(Code::MeasureCoverageDuplicate, &reference, None)?;
             }
             let voices = content.field("voices");
+            self.rule();
             if voices.len()? == 0 {
                 self.add(Code::VoiceRequired, &voices, None)?;
             }
@@ -241,6 +274,7 @@ impl<N: AssessmentNodeV1> Validator<N> {
         }
         for index in 0..self.measure_order.len() {
             let id = self.measure_order[index].clone();
+            self.rule();
             if !covered.contains(&id) {
                 self.add(
                     Code::MeasureCoverageMissing,
@@ -261,12 +295,16 @@ impl<N: AssessmentNodeV1> Validator<N> {
     ) -> Outcome<()> {
         self.register_id(&voice.field("id"))?;
         let staff = voice.field("defaultStaffId");
+        self.rule();
         if !staff_ids.contains(&staff.string()?) {
             self.add(Code::StaffReferenceMissing, &staff, None)?;
         }
         let sequence = voice.field("sequence");
         let start = sequence.field("start");
         let mut current = self.check_fraction(&start, false)?;
+        if measure.is_some() {
+            self.rule();
+        }
         let duration = measure.map(effective_measure).transpose()?;
         if let Some(Err(reason)) = duration {
             self.add(
@@ -276,6 +314,7 @@ impl<N: AssessmentNodeV1> Validator<N> {
             )?;
         }
         if let (Some(position), Some(Ok(end))) = (current, duration) {
+            self.rule();
             match position.checked_compare(end) {
                 Err(_) => {
                     self.add(Code::TimeArithmeticOverflow, &start, None)?;
@@ -291,6 +330,7 @@ impl<N: AssessmentNodeV1> Validator<N> {
             let (Some(position), Some(event_duration)) = (current, event_duration) else {
                 continue;
             };
+            self.rule();
             match position.checked_add(event_duration) {
                 Err(_) => {
                     self.add(Code::TimeArithmeticOverflow, &event.field("duration"), None)?;
@@ -299,6 +339,7 @@ impl<N: AssessmentNodeV1> Validator<N> {
                 Ok(next) => {
                     current = Some(next);
                     if let Some(Ok(end)) = duration {
+                        self.rule();
                         match next.checked_compare(end) {
                             Err(_) => {
                                 self.add(
@@ -327,6 +368,7 @@ impl<N: AssessmentNodeV1> Validator<N> {
         transposition: Option<(f64, f64)>,
     ) -> Outcome<Option<ExactFraction>> {
         self.register_id(&event.field("id"))?;
+        self.rule();
         if let Some(staff) = event.optional("staffId")?
             && !staff_ids.contains(&staff.string()?)
         {
@@ -335,6 +377,7 @@ impl<N: AssessmentNodeV1> Validator<N> {
         let content = event.field("content");
         if content.field("kind").string()?.eq_ascii("notes") {
             let notes = content.field("notes");
+            self.rule();
             if notes.len()? == 0 {
                 self.add(Code::NotesRequired, &notes, None)?;
             }
@@ -345,28 +388,31 @@ impl<N: AssessmentNodeV1> Validator<N> {
                 let step = pitch.field("step").string()?;
                 let alter = pitch.field("alter").number()?;
                 let octave = pitch.field("octave").number()?;
+                self.rule();
                 if !pitch.exact_fields(&["step", "alter", "octave"])?
                     || !music_rules::written_pitch(step.code_units(), alter, octave)
                 {
                     self.add(Code::WrittenPitchInvalid, &pitch, None)?;
-                } else if let Some((diatonic, chromatic)) = transposition
-                    && let Err(reason) = music_rules::sounding_pitch(
+                } else if let Some((diatonic, chromatic)) = transposition {
+                    self.rule();
+                    if let Err(reason) = music_rules::sounding_pitch(
                         step.code_units(),
                         alter,
                         octave,
                         diatonic,
                         chromatic,
-                    )
-                {
-                    self.add(
-                        Code::SoundingPitchInvalid,
-                        &pitch,
-                        Some(("reason", &JsString::from(reason))),
-                    )?;
+                    ) {
+                        self.add(
+                            Code::SoundingPitchInvalid,
+                            &pitch,
+                            Some(("reason", &JsString::from(reason))),
+                        )?;
+                    }
                 }
             }
         }
         let duration = event.field("duration");
+        self.rule();
         match event_duration(&duration)? {
             Ok(value) => Ok(Some(value)),
             Err(reason) => {
@@ -389,10 +435,12 @@ impl<N: AssessmentNodeV1> Validator<N> {
         for extension in extensions.items()? {
             let extension = extension?;
             let namespace = extension.field("namespace");
+            self.rule();
             if !music_rules::extension_namespace(&namespace.string()?) {
                 self.add(Code::ExtensionNamespaceInvalid, &namespace, None)?;
             }
             let version = extension.field("schemaVersion");
+            self.rule();
             if !music_rules::safe_integer(version.number()?) || version.number()? <= 0.0 {
                 self.add(Code::ExtensionSchemaVersionInvalid, &version, None)?;
             }
@@ -401,6 +449,7 @@ impl<N: AssessmentNodeV1> Validator<N> {
                 None
             } else {
                 let part = owner.field("partId");
+                self.rule();
                 if !self.part_ids.contains(&part.string()?) {
                     self.add(Code::ExtensionOwnerMissing, &part, None)?;
                 }
@@ -408,6 +457,7 @@ impl<N: AssessmentNodeV1> Validator<N> {
             };
             keys.try_reserve(1)
                 .map_err(|_| AssessmentFailureV1::InternalCapacity)?;
+            self.rule();
             if !keys.insert((owner_key, namespace.string()?)) {
                 self.add(Code::ExtensionDuplicate, &extension, None)?;
             }
@@ -415,6 +465,7 @@ impl<N: AssessmentNodeV1> Validator<N> {
             // Captured lossless JSON values are already finite JSON data. The
             // public direct semantic validator additionally rejects arrays;
             // object-only payload shape belongs to the document decoder.
+            self.rule();
             if payload.is_array()? {
                 self.add(Code::ExtensionPayloadInvalid, &payload, None)?;
             }
@@ -427,6 +478,25 @@ impl<N: AssessmentNodeV1> Validator<N> {
 mod tests {
     use super::*;
     use serde_json::Value;
+
+    #[test]
+    fn observed_work_preserves_reports_and_survives_shape_failure() {
+        let document = crate::decode_lossless_json(crate::codec::SMOKE_DOCUMENT).unwrap();
+        let work = std::cell::Cell::default();
+        let observed = assess_score_semantics_node_observed(Node::root(&document), &work).unwrap();
+        assert_eq!(
+            report_value(observed).unwrap(),
+            report_value(assess_score_semantics(&document).unwrap()).unwrap()
+        );
+        assert!(work.get().rules_evaluated > 0);
+        assert!(work.get().dependency_reads > work.get().rules_evaluated);
+        let malformed = captured(&serde_json::json!({ "id": "score" }));
+        let failed = std::cell::Cell::default();
+        assert!(assess_score_semantics_node_observed(Node::root(&malformed), &failed).is_err());
+        // ID registration and tempo validation are reached; later checks are not.
+        assert_eq!(failed.get().rules_evaluated, 2);
+        assert!(failed.get().dependency_reads > 0);
+    }
 
     fn captured(value: &Value) -> brilliant_core_types::LosslessJsonValue {
         crate::decode_lossless_json(&value.to_string()).expect("lossless fixture")

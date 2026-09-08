@@ -1,5 +1,5 @@
-//! Transaction-private occurrence storage. This module is deliberately test-only
-//! until complete command preparation, resource accounting and native integration close.
+//! Transaction-private occurrence storage for admission commands whose temporary
+//! state cannot use the live Store's unique, non-empty identity representation.
 //! A frozen prefix owns earlier operations; it is never finished or replayed here.
 
 use brilliant_core_types::JsString;
@@ -17,6 +17,8 @@ mod identity;
 mod journal;
 mod measure;
 mod reservation;
+
+pub(crate) use journal::{CandidateExecution, CandidateHistory, PreparedCandidate};
 
 use reservation::{Reservation, Site};
 
@@ -207,6 +209,66 @@ struct Work {
     copied_entries: u64,
 }
 
+// Keep traversal observations separate: a field write performs no order work.
+#[derive(Clone, Copy, Debug, Default)]
+struct MutationWork {
+    record_writes: u64,
+    semantic: brilliant_score_foundation::AssessmentWorkV1,
+    semantic_assessments: u64,
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+struct ReadWork {
+    entity_index_lookups: u64,
+    owner_index_lookups: u64,
+    entity_reads: u64,
+}
+
+#[cfg(test)]
+mod observed_metrics_tests {
+    use super::*;
+
+    #[test]
+    fn no_op_writes_and_failed_assessment_retain_actual_work() {
+        let document = crate::store::tests::fixture();
+        let store = crate::store::build_live_score_store(&document).unwrap();
+        let mut candidate = Candidate::new(TransactionOverlayV1::new(&store), document.id.clone());
+        let root = candidate.document.clone();
+        let before = candidate.attempt_metrics();
+        assert!(
+            !candidate
+                .replace_value(&root, Value::DocumentMetadata(document.metadata.clone()))
+                .unwrap()
+        );
+        let no_op = candidate.attempt_metrics();
+        assert_eq!(no_op.overlay_records, before.overlay_records);
+        assert!(no_op.entities_visited > before.entities_visited);
+        let mut metadata = document.metadata.clone();
+        metadata.tempo.bpm = brilliant_core_types::FiniteNumber::new(0.0).unwrap();
+        let traversal = candidate.work;
+        assert!(
+            candidate
+                .replace_value(&root, Value::DocumentMetadata(metadata))
+                .unwrap()
+        );
+        assert_eq!(candidate.work, traversal);
+        assert_eq!(
+            candidate.attempt_metrics().overlay_records,
+            no_op.overlay_records + 1
+        );
+        let (_, failed) = match candidate.validate_final_with_metrics() {
+            Ok(_) => panic!("invalid tempo must fail"),
+            Err(failure) => failure,
+        };
+        assert_eq!(failed.full_semantic_validations, 1);
+        assert!(failed.semantic_rules_evaluated > 0);
+        assert!(failed.semantic_dependency_reads > 0);
+        assert!(failed.owner_index_lookups > 0);
+        assert!(failed.overlay_records > no_op.overlay_records);
+        assert_eq!(store.export_document().unwrap(), document);
+    }
+}
+
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 struct StaffReferenceVisits {
     candidate_edges: u64,
@@ -233,10 +295,48 @@ struct Candidate<'a> {
     staff_referrers_by_id: HashMap<JsString, HashMap<Occurrence, Vec<Occurrence>>>,
     staff_reference_visits: Cell<StaffReferenceVisits>,
     work: Work,
+    mutation_work: MutationWork,
+    read_work: Cell<ReadWork>,
     reservation: Reservation,
 }
 
 impl<'a> Candidate<'a> {
+    /// Cursor/field read attempts and successful record writes are counted at
+    /// their actual sites; reservation requests are deliberately excluded.
+    fn record_read(&self) {
+        let mut work = self.read_work.get();
+        work.entity_reads = work.entity_reads.saturating_add(1);
+        self.read_work.set(work);
+    }
+
+    pub(crate) fn attempt_metrics(&self) -> brilliant_kernel_contracts::KernelStage3MetricsV1 {
+        let prefix = self.prefix.metrics();
+        let reads = self.read_work.get();
+        brilliant_kernel_contracts::KernelStage3MetricsV1 {
+            semantic_rules_evaluated: self.mutation_work.semantic.rules_evaluated,
+            semantic_dependency_reads: self.mutation_work.semantic.dependency_reads,
+            full_document_scans: self.mutation_work.semantic_assessments,
+            full_semantic_validations: self.mutation_work.semantic_assessments,
+            entities_visited: prefix
+                .base_slot_reads
+                .saturating_add(self.work.visited_entries)
+                .saturating_add(reads.entity_reads),
+            entity_index_lookups: prefix
+                .base_entity_lookups
+                .saturating_add(reads.entity_index_lookups),
+            owner_index_lookups: reads.owner_index_lookups,
+            overlay_records: prefix
+                .overlay_record_writes
+                .saturating_add(self.mutation_work.record_writes),
+            order_collections_copied: prefix
+                .order_copies
+                .saturating_add(self.work.prefix_order_copies),
+            change_ops: self.prefix.operation_count() as u64,
+            changeset_logical_bytes: self.prefix.logical_bytes(),
+            ..brilliant_kernel_contracts::KernelStage3MetricsV1::default()
+        }
+    }
+
     fn new(prefix: TransactionOverlayV1<'a>, document_id: StableId) -> Self {
         Self {
             prefix,
@@ -253,6 +353,8 @@ impl<'a> Candidate<'a> {
             staff_referrers_by_id: HashMap::new(),
             staff_reference_visits: Cell::new(StaffReferenceVisits::default()),
             work: Work::default(),
+            mutation_work: MutationWork::default(),
+            read_work: Cell::default(),
             reservation: Reservation::default(),
         }
     }
@@ -274,6 +376,9 @@ impl<'a> Candidate<'a> {
     }
 
     fn owner(&self, occurrence: &Occurrence) -> Option<Occurrence> {
+        let mut work = self.read_work.get();
+        work.owner_index_lookups = work.owner_index_lookups.saturating_add(1);
+        self.read_work.set(work);
         match occurrence {
             Occurrence::Added(index) => Some(self.nodes.get(*index)?.owner.clone()),
             Occurrence::PrefixContent { part, .. } => Some(Occurrence::Prefix(part.clone())),
@@ -332,6 +437,9 @@ impl<'a> Candidate<'a> {
             return Vec::new();
         }
         let mut matches = Vec::new();
+        let mut work = self.read_work.get();
+        work.entity_index_lookups = work.entity_index_lookups.saturating_add(1);
+        self.read_work.set(work);
         if let Ok(id) = StableId::new(raw_id)
             && let Some(entity) = self.prefix.resolve_entity_address(&id)
             && Kind::of(&entity) == kind
@@ -426,10 +534,12 @@ impl<'a> Candidate<'a> {
         self.work.prefix_order_copies += 1;
         self.work.copied_entries += children.len() as u64;
         self.orders.insert(order.clone(), children);
+        self.mutation_work.record_writes = self.mutation_work.record_writes.saturating_add(1);
         Ok(())
     }
 
     fn read_value(&mut self, occurrence: &Occurrence) -> Option<Value> {
+        self.record_read();
         if !self.visible(occurrence) {
             return None;
         }
@@ -468,6 +578,7 @@ impl<'a> Candidate<'a> {
     }
 
     fn read_instrument(&mut self, part: &Occurrence) -> Option<InstrumentDescriptorV1> {
+        self.record_read();
         if !self.visible(part) {
             return None;
         }
@@ -502,6 +613,7 @@ impl<'a> Candidate<'a> {
 
     // Replay can assign retained sources before their ancestor is restored.
     fn retained_staff_reference(&self, occurrence: &Occurrence) -> Option<Option<JsString>> {
+        self.record_read();
         if let Some(value) = self.staff_references.get(occurrence) {
             return Some(value.clone());
         }
@@ -539,6 +651,7 @@ impl<'a> Candidate<'a> {
     }
 
     fn read_content_kind(&mut self, event: &Occurrence) -> Option<EventContentKind> {
+        self.record_read();
         if !self.visible(event) {
             return None;
         }
@@ -669,6 +782,7 @@ impl<'a> Candidate<'a> {
             }
             self.values.insert(occurrence.clone(), value);
         }
+        self.mutation_work.record_writes = self.mutation_work.record_writes.saturating_add(1);
         Ok(true)
     }
 
@@ -694,6 +808,7 @@ impl<'a> Candidate<'a> {
             }
             self.instruments.insert(part.clone(), value);
         }
+        self.mutation_work.record_writes = self.mutation_work.record_writes.saturating_add(1);
         Ok(true)
     }
 
@@ -701,6 +816,7 @@ impl<'a> Candidate<'a> {
     /// admission. Event None means inherit; a Voice always has an explicit ID.
     /// Event command preparation must compare effective IDs before calling this
     /// raw writer, preserving the existing explicit/inherited form on a no-op.
+    #[cfg(test)]
     fn replace_staff_reference(
         &mut self,
         source: &Occurrence,
@@ -777,6 +893,7 @@ impl<'a> Candidate<'a> {
         } else {
             self.staff_references.insert(source.clone(), value);
         }
+        self.mutation_work.record_writes = self.mutation_work.record_writes.saturating_add(1);
         Ok(())
     }
 
@@ -871,6 +988,7 @@ impl<'a> Candidate<'a> {
         }
     }
 
+    #[cfg(test)]
     fn move_child(
         &mut self,
         order: &CandidateOrder,
@@ -910,6 +1028,7 @@ impl<'a> Candidate<'a> {
         }
         children.retain(|child| child != &target && !self.hidden.contains(child));
         children.insert(index, target);
+        self.mutation_work.record_writes = self.mutation_work.record_writes.saturating_add(1);
         Ok(())
     }
 
@@ -924,6 +1043,7 @@ impl<'a> Candidate<'a> {
         self.reservation
             .set(Site::HiddenRoots, &mut self.hidden, 1)?;
         self.hidden.insert(occurrence.clone());
+        self.mutation_work.record_writes = self.mutation_work.record_writes.saturating_add(1);
         Ok(())
     }
 
@@ -993,6 +1113,7 @@ impl<'a> Candidate<'a> {
             staff_id: None,
             content_kind: None,
         });
+        self.mutation_work.record_writes = self.mutation_work.record_writes.saturating_add(1);
         Ok(Occurrence::Added(index))
     }
 
@@ -1008,6 +1129,7 @@ impl<'a> Candidate<'a> {
             self.reservation.map(Site::Orders, &mut self.orders, 1)?;
         }
         self.orders.insert(order, values);
+        self.mutation_work.record_writes = self.mutation_work.record_writes.saturating_add(1);
         Ok(())
     }
 
@@ -1099,6 +1221,7 @@ impl<'a> Candidate<'a> {
         }
         children.retain(|child| !self.hidden.contains(child));
         children.insert(index, child.clone());
+        self.mutation_work.record_writes = self.mutation_work.record_writes.saturating_add(1);
         Ok(child)
     }
 
