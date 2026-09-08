@@ -41,7 +41,7 @@ reference semantic/profile assessment is implemented and differentially checked;
 metadata, pitch, sequence/measure time and hierarchy/reference dependency gates
 are implemented on the typed transaction path. Candidate input codecs and a
 private occurrence prototype now cover reads, resolution, field/reference writes,
-Part/Staff/Voice/Event insertion, moves/hiding and fallible retained collection
+Part/Staff/Voice/Event/Measure insertion, moves/hiding and fallible retained collection
 growth. Journal identity manifests now distinguish node lifetimes and support
 atomic boundary/remapped insertion bindings, including transient invalid IDs.
 Stored Part insert/remove operations now replay both directions using immutable
@@ -59,6 +59,12 @@ General prefix-Part deletion now retains its owned extension payloads and global
 positions. A private command-preparation helper checks TS measure coverage;
 the stored interpreter can still replay transient trees independently of that
 command check. Explicit extension deltas compose through combined history.
+Measure history now retains its global definition and separate per-Part Content
+subtrees, with each original predecessor/order. Private insert/remove/move
+preparation preserves duplicate-definition precedence, deferred coverage and
+cross-Part normalization. Complete list replacements retain occurrence identities
+and compose with later subtree deletion. This is still private command preparation;
+public effects, diagnostics packaging and batch accounting remain integration work.
 Final assessment now reads the occurrence view through the same Foundation
 rules as JSON assessment. A successful final view can prepare and adopt real
 Store records, topology and indices. The retained journal supplies actual
@@ -95,11 +101,12 @@ S4 remain open. The current source tree is a kernel library/native workspace;
 editor UI, rendering, playback and physical project persistence are separate
 product work, not completed deliverables of this branch.
 
-Latest Rust verification: 406 tests passed, 1 ignored, including 146 runtime
+Latest Rust verification: 434 tests passed, 1 ignored, including 174 runtime
 candidate tests and four Foundation candidate tests. Strict clippy, fmt and
-Rust 1.88.0 check passed. S1.11 also repairs the shared typed extension-order
-read path; its freshly rebuilt addon and full TS/native result are recorded
-below. This is regression evidence, not release qualification.
+Rust 1.88.0 check passed. S1.12 adds a real TS Measure submission/history corpus
+and checks actual Rust Store adoption against it. S1.11's release addon remains
+unchanged because the new Rust code is test-only. Full TS/native regression
+results are recorded below. This is regression evidence, not release qualification.
 
 Previous string-migration evidence remains relevant: seven targeted TS/native
 regressions passed on the initial rebuilt addon. The full debug run passed 719 tests, skipped
@@ -1333,3 +1340,78 @@ implements Part deletion/restoration; it is not the complete versioned extension
 protocol. Repeated header scans and some allocations are not yet fully charged;
 Option-based read failures can still lose precise capacity classification.
 Commercial optimization and qualification follow complete functionality.
+
+### S1.12 — Measure composite history and cross-Part command preparation
+
+Measure insertion/removal now retains a leaf definition and separately owned
+Content trees under each Part. A Content remains owned by its Part, rather than
+becoming a child of the global Measure. Each root stores its own predecessor,
+complete absent/present order and immutable image. The composite checks the full
+Part order and independent content membership facts before replay; malformed
+owner/root/anchor tables cannot silently omit a Part or substitute another lifetime.
+
+Removal reconstructs expected images from the frozen typed prefix or immutable
+journal births plus recorded field/order changes. It checks those images before
+hiding all affected Content descendants and the Measure. Undo restores each
+original Part order; final Store adoption and rebuilt indices distinguish a
+same-ID birth from the deleted Measure/Voice/Event/Note lifetimes. Combined history
+also restores typed-prefix changes to descendant fields and Content order.
+
+Private command preparation follows the TS sequence: document, global anchor,
+payload Part targets, then the special same-kind duplicate Measure definition
+check with the requested insertion index. Exact coverage canonicalizes the
+payload to Part order and normalizes Content order; inexact coverage preserves
+payload order for final semantic diagnostics. Missing local anchors fail before
+normalization. Removing the final Measure has no early count guard, so a later
+batch child can repair it before the final semantic check.
+
+Measure moves also inspect Part orders: a globally unchanged position still
+records a change when local order needs repair. A fully unchanged move adds no
+Reservation or history operation. Full order replacements store expected and
+next JournalIds, validate the same unique occurrence set, and update the trusted
+order history used by subsequent subtree removals. Internal replacement steps
+can combine the final effect of a local move and reorder; they are not yet the
+public effect-count/segment representation.
+
+Regression coverage includes real preparation/adoption/undo/redo, differing Part
+orders and nonempty trees, last-Measure final rejection and same-batch repair,
+same-ID handle invalidation, empty transient IDs, repeated payload owners and
+same-position splice order, later parent repair, malformed composites, unrecorded
+field/order edits, repeated replay in one Candidate and every injected retained
+collection Reservation failure in recording and both replay directions. Failed
+attempts poison the candidate and leave Store and document version unchanged.
+
+Independent GPT-6 reviews checked the composite against identity/order invariants
+and command preparation against the TS adapters and effect preflights. Their
+suggested repeated-owner replay regression is included. The only initial test
+failure was a foreign-owner fixture reusing Staff IDs; the fixture now uses
+distinct Staff IDs and matching references while retaining the rejection assertion.
+The independent six-case TS CommandBus corpus matches actual Rust Store commits
+and history: multi-Part insert/remove/move, globally unchanged local-order repair,
+true no-op and last-Measure same-ID rebirth. The TS test regenerates the exact
+fixture from real batch submission and history; the Rust test consumes commands
+through the admission decoder and checks complete document and rebuilt-index parity.
+
+Validation: 434 Rust tests passed, one existing ignored test. The 28 new runtime
+tests bring candidate coverage to 174 runtime plus four Foundation tests. Strict
+all-target clippy, fmt, Rust 1.88.0 all-target check and diff check passed. Logs:
+`target/measure-rust-final.log`, `measure-clippy.log`, `measure-msrv.log`,
+`measure-oracle-rust.log`, `measure-oracle-ts.log` and `measure-guards.log`.
+
+Full TS/native regression passed 726 tests, skipped two and failed zero in 49.436
+seconds on Node 24.15.0; the unchanged P3B journey completed in 23.948 seconds.
+Log: `target/measure-npm.log`. The addon was not rebuilt for this test-only Rust
+change; its verified SHA-256 remains
+`FA2DC2416E4D03EC8774CCB5F99479B43B02C9D7EEE711F7BA6DBFF47CB15AA3`.
+The new TS oracle regeneration test is part of that full run. These are current
+regression results, not a candidate public activation or commercial qualification.
+
+Next functional work: range resolution and the remaining shared 28-command/Batch
+dispatch, then complete effects/segments/affected and resource/error accounting.
+The special duplicate-definition preparation result still needs public diagnostic
+packaging at that shared dispatch boundary. Temporary borrowed-order no-op
+comparison and membership checks use repeated scans, including quadratic cases;
+detailed allocation/traversal charging and precise capacity classification are
+still activation gates. S2 versioned extension/session execution, public native
+candidate activation, Rust default and commercial qualification remain open.
+No production route is activated by this test-only slice.

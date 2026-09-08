@@ -11,6 +11,7 @@ use brilliant_score_foundation::{
 
 mod identities;
 mod insertions;
+mod measure_insertions;
 mod references;
 mod writes;
 

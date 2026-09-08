@@ -361,7 +361,7 @@ impl Recorder<'_> {
         self.candidate.reservation.ensure_active()?;
         if !matches!(
             self.candidate.kind(root),
-            Some(Kind::Part | Kind::Voice | Kind::Event)
+            Some(Kind::Measure | Kind::Part | Kind::Content | Kind::Voice | Kind::Event)
         ) {
             return Err(Failure::InternalError);
         }

@@ -17,6 +17,8 @@ mod combined;
 mod expected;
 mod expected_extensions;
 mod fields;
+mod measure;
+mod measure_commands;
 mod orders;
 mod part;
 mod rhythm;
@@ -36,6 +38,15 @@ enum StoredEntityBundle {
 
 #[derive(Clone)]
 enum Operation {
+    Measure {
+        bundle: Arc<measure::MeasureBundle>,
+        inserting: bool,
+    },
+    ReplaceOrderedChildren {
+        order: JournalOrder,
+        expected: Arc<Vec<JournalId>>,
+        next: Arc<Vec<JournalId>>,
+    },
     MoveOrderedChild {
         order: JournalOrder,
         target: JournalId,
@@ -382,6 +393,14 @@ impl Operation {
         bindings: &mut ReplayBindings<'_>,
     ) -> Result<(), Failure> {
         match self {
+            Self::Measure { bundle, inserting } => {
+                measure::apply_measure(candidate, bindings, bundle, *inserting)
+            }
+            Self::ReplaceOrderedChildren {
+                order,
+                expected,
+                next,
+            } => orders::apply_replace(candidate, bindings, order, expected, next),
             Self::MoveOrderedChild {
                 order,
                 target,

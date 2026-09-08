@@ -15,6 +15,7 @@ mod assessment;
 mod extensions;
 mod identity;
 mod journal;
+mod measure;
 mod reservation;
 
 use reservation::{Reservation, Site};
@@ -22,8 +23,8 @@ use reservation::{Reservation, Site};
 use brilliant_core_types::StableId;
 use brilliant_kernel_contracts::KernelStage3CommandFailureLeafV1 as Failure;
 use brilliant_score_foundation::{
-    AdmissionPartV1, AdmissionStaffDefinitionV1, AdmissionVoiceV1, InstrumentDescriptorV1,
-    RhythmicContentV1, RhythmicEventV1,
+    AdmissionMeasureDefinitionV1, AdmissionPartV1, AdmissionStaffDefinitionV1, AdmissionVoiceV1,
+    InstrumentDescriptorV1, RhythmicContentV1, RhythmicEventV1,
 };
 
 use crate::{
@@ -1195,16 +1196,7 @@ impl<'a> Candidate<'a> {
             part.measure_contents.len(),
         )?;
         for content in part.measure_contents {
-            let content_occurrence =
-                self.add_node(&occurrence, Kind::Content, content.measure_id, None)?;
-            let mut voices = Vec::new();
-            self.reservation
-                .vec(Site::OrderEntries, &mut voices, content.voices.len())?;
-            for voice in content.voices {
-                voices.push(self.add_voice(&content_occurrence, voice)?);
-            }
-            self.set_new_order(&content_occurrence, Children::Voices, voices)?;
-            contents.push(content_occurrence);
+            contents.push(self.add_content(&occurrence, content.measure_id, content.voices)?);
         }
         self.set_new_order(&occurrence, Children::Contents, contents)?;
         self.place_child(&order, index, occurrence)

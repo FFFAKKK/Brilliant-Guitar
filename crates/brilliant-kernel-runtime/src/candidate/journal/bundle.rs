@@ -21,6 +21,7 @@ impl Image {
         let value_matches = matches!(
             (self.kind, &self.value),
             (Kind::Part, Some(Value::PartName(_)))
+                | (Kind::Measure, Some(Value::MeasureDefinition { .. }))
                 | (Kind::Staff, Some(Value::StaffDefinition { .. }))
                 | (Kind::Content, None)
                 | (Kind::Voice, Some(Value::VoiceSequenceStart(_)))
@@ -74,7 +75,8 @@ pub(super) struct BundleNode {
 
 #[derive(Clone)]
 // Kept under the existing name to preserve the Part recorder's interface. The
-// node table also represents Voice and Event roots; Measure is not a subtree.
+// node table also represents Measure, Content, Voice and Event roots. A Measure
+// composite keeps each Part-owned Content as a separate subtree.
 pub(super) struct PartBundle {
     pub(super) nodes: Vec<BundleNode>,
     pub(super) extensions: Arc<Vec<AnchoredExtensionBlockV1>>,
@@ -112,7 +114,10 @@ impl PartBundle {
     pub(super) fn root_kind(&self) -> Result<Kind, Failure> {
         let root = self.nodes.first().ok_or(Failure::InternalError)?;
         if root.parent.is_some()
-            || !matches!(root.image.kind, Kind::Part | Kind::Voice | Kind::Event)
+            || !matches!(
+                root.image.kind,
+                Kind::Measure | Kind::Part | Kind::Content | Kind::Voice | Kind::Event
+            )
         {
             return Err(Failure::InternalError);
         }
@@ -121,7 +126,9 @@ impl PartBundle {
 
     pub(super) fn parent_children(&self) -> Result<Children, Failure> {
         Ok(match self.root_kind()? {
+            Kind::Measure => Children::Measures,
             Kind::Part => Children::Parts,
+            Kind::Content => Children::Contents,
             Kind::Voice => Children::Voices,
             Kind::Event => Children::Events,
             _ => return Err(Failure::InternalError),
@@ -181,7 +188,11 @@ impl PartBundle {
             content_kind: node.content_kind,
         };
         if !image.shape_valid()
-            || (parent.is_none() && !matches!(image.kind, Kind::Part | Kind::Voice | Kind::Event))
+            || (parent.is_none()
+                && !matches!(
+                    image.kind,
+                    Kind::Measure | Kind::Part | Kind::Content | Kind::Voice | Kind::Event
+                ))
         {
             return Err(Failure::InternalError);
         }

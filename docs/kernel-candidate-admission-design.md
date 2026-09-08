@@ -1,10 +1,13 @@
 # Candidate admission implementation plan
 
 Status: command input representation/codec implemented; occurrence storage,
-reads, scalar/reference writes and Part/Staff/Voice/Event insertion verified under
+reads, scalar/reference writes and Part/Staff/Voice/Event/Measure insertion verified under
 `cfg(test)`. Voice/Event subtree recording/removal now composes with nested edits
 and rebirth using shared immutable expected state. General prefix-Part deletion
-now retains owned extension data and explicit dangling-owner lifetimes. Final
+now retains owned extension data and explicit dangling-owner lifetimes.
+Measure composite history preserves its definition and independently owned Part
+Content trees; private command preparation and stored complete order replacement
+cover insert/remove/move and normalization. Final
 assessment, stable Store adoption and combined typed-prefix/candidate-suffix
 replay have an internal vertical path, including extension delta composition.
 Candidate command execution and adoption are
@@ -844,3 +847,41 @@ functional work begins with Measure's multi-Part composite, range and command/
 Batch dispatch; full effects, resource accounting, versioned extension/session
 execution and native activation are still open. This layer does not add generic
 candidate extension commands or claim commercial qualification.
+
+### Measure composite and complete order replacement
+
+The private journal now represents a Measure as a global definition root plus
+independent Content roots owned by Parts. It stores the complete Part membership,
+each Content slot, immutable subtree images and each root's own absent/present
+order. Replays validate these structures and occurrence bindings; they do not
+resolve public raw IDs again. Removal verifies frozen-prefix or immutable-birth
+expectations before hiding all affected roots. Reverse replay restores each
+original local order, including a Part whose Content order differed from the
+global Measure order.
+
+Command preparation remains above the stored interpreter. Insert resolves
+document, global anchor and payload Part targets before its special duplicate
+definition check. Only exact coverage canonicalizes payload Part order and
+normalizes Content order; repeated/missing coverage remains available to final
+semantics. The duplicate result retains the requested insertion index for future
+shared-dispatch diagnostic packaging. Removal permits a temporary empty global
+Measure list. Move is unchanged only when global and every Part order already
+match; missing local anchors cannot be repaired by normalization.
+
+Generic complete order replacement retains expected/next JournalIds and rejects
+missing, duplicate or foreign occurrences. Recorded replacements update the
+trusted order state used by later subtree deletion. Exact no-ops add no retained
+operation or Reservation. Some borrowed comparisons and uniqueness checks are
+currently quadratic; their costs and complete resource charging remain explicit
+activation work. Internal normalized replacement steps are not public effects
+or command segment accounting.
+
+Tests cover combined Store adoption/history, old-handle invalidation, repeated
+same-Candidate replay, transient empty IDs, repeated payload owners followed by
+parent repair, corrupted history and every injected Reservation failure. A
+six-case corpus is generated solely by real TS CommandBus submissions and
+undo/redo, then consumed through the actual Rust admission decoder and Store
+adoption/history paths. It checks exact documents and rebuilt indices, not the
+unfinished public effects/affected metadata. S1.12 in the completion ledger
+records the current validation evidence. Next work is range resolution, complete
+28-command/Batch candidate dispatch and public accounting, before activation.
