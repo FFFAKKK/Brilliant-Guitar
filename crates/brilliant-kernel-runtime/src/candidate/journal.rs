@@ -21,6 +21,8 @@ mod measure;
 mod measure_commands;
 mod orders;
 mod part;
+mod range;
+mod range_selection;
 mod rhythm;
 mod staff;
 use bundle::PartBundle;

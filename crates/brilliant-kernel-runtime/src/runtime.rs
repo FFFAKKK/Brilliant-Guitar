@@ -1031,7 +1031,7 @@ impl KernelStage3TransactionV1<'_> {
     fn remove_measure_inner(
         &mut self,
         measure_id: StableId,
-        range_effect_accounting: bool,
+        preserve_part_content_order: bool,
     ) -> Result<(), KernelStage3CommandFailureLeafV1> {
         let address = StableEntityAddressV1::Measure {
             measure_id: measure_id.clone(),
@@ -1114,14 +1114,14 @@ impl KernelStage3TransactionV1<'_> {
             measure_order,
             address,
         ))?;
-        if needs_normalization {
+        if needs_normalization && !preserve_part_content_order {
             for (order, _) in part_orders {
                 self.overlay
                     .replace_ordered_children(order, desired_measures.clone())
                     .map_err(map_overlay_failure)?;
             }
         }
-        self.add_prepared_effects(if range_effect_accounting {
+        self.add_prepared_effects(if preserve_part_content_order {
             1
         } else {
             1 + u64::from(needs_normalization)
@@ -2475,7 +2475,7 @@ fn inclusive_ids(
         .ok_or(KernelStage3CommandFailureLeafV1::InvalidRange)
 }
 
-fn transpose_written_pitch_v1(
+pub(crate) fn transpose_written_pitch_v1(
     pitch: &WrittenPitchV1,
     transposition: &TranspositionV1,
 ) -> Result<WrittenPitchV1, PitchTranspositionErrorV1> {
@@ -2848,6 +2848,7 @@ fn map_store_create_failure(failure: LiveStoreBuildFailure) -> KernelRuntimeCrea
 
 #[cfg(test)]
 mod tests {
+    mod range_order;
     use brilliant_kernel_contracts::{
         CHECKPOINT_CHANGESET_BYTES_V1, KernelStage4CommandResultV1,
         KernelStage4MarkPersistedResultV1, decode_create_request,

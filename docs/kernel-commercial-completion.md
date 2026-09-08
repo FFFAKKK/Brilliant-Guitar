@@ -65,6 +65,11 @@ preparation preserves duplicate-definition precedence, deferred coverage and
 cross-Part normalization. Complete list replacements retain occurrence identities
 and compose with later subtree deletion. This is still private command preparation;
 public effects, diagnostics packaging and batch accounting remain integration work.
+Range selection now resolves Measure, Part/Measure and Voice/Event endpoints in
+the occurrence graph, preserving lookup-failure precedence and canonical order.
+Private range deletion and written-pitch transposition compose with retained
+history and actual Store adoption. A production typed-range deletion ordering
+defect is also repaired; ordinary Measure removal keeps its normalization behavior.
 Final assessment now reads the occurrence view through the same Foundation
 rules as JSON assessment. A successful final view can prepare and adopt real
 Store records, topology and indices. The retained journal supplies actual
@@ -101,12 +106,19 @@ S4 remain open. The current source tree is a kernel library/native workspace;
 editor UI, rendering, playback and physical project persistence are separate
 product work, not completed deliverables of this branch.
 
-Latest Rust verification: 434 tests passed, 1 ignored, including 174 runtime
+Latest Rust verification: 452 tests passed, 1 ignored, including 191 runtime
 candidate tests and four Foundation candidate tests. Strict clippy, fmt and
-Rust 1.88.0 check passed. S1.12 adds a real TS Measure submission/history corpus
-and checks actual Rust Store adoption against it. S1.11's release addon remains
-unchanged because the new Rust code is test-only. Full TS/native regression
+Rust 1.88.0 check passed. S1.13 adds a real TS range submission/history corpus
+and checks actual Rust Store adoption against it. The typed range-delete repair
+is verified with a freshly rebuilt release addon; full TS/native regression
 results are recorded below. This is regression evidence, not release qualification.
+
+The latest full TS/native suite is **not a PASS**: 730 tests passed, one frozen
+JSON duplicate-key timing-ratio guard failed and two tests were skipped. The same
+guard passed an isolated run, but failed both full runs on the unchanged addon.
+Its cause is not established. It remains an open performance gate; S1.13's range
+functional/native comparisons pass. Preserve the failing evidence during further
+functional integration and resolve it before qualification or candidate activation.
 
 Previous string-migration evidence remains relevant: seven targeted TS/native
 regressions passed on the initial rebuilt addon. The full debug run passed 719 tests, skipped
@@ -1415,3 +1427,91 @@ detailed allocation/traversal charging and precise capacity classification are
 still activation gates. S2 versioned extension/session execution, public native
 candidate activation, Rust default and commercial qualification remain open.
 No production route is activated by this test-only slice.
+
+### S1.13 — range selection, deletion and written-pitch transformation
+
+The candidate Recorder now implements the two range commands over all three
+selection forms. It resolves both endpoints before classifying duplicate,
+missing and owner mismatch failures. Measure and Part/Measure ranges use global
+Measure order even when local Content order differs; Voice/Event ranges use the
+current Voice order. Reversed endpoints normalize the selected interval. Missing
+or duplicated interior Content retains the TS distinction: InvalidRange for a
+Measure range and RangeEndpointNotFound for a Part/Measure range.
+
+Selection retains occurrences, verifies the related frozen-prefix/recorded
+images and orders, and enumerates Measure -> Part -> Voice -> Event. Global
+Voice/Event endpoint lookup follows actual owner routes, so repeated raw IDs
+and hidden old lifetimes do not collapse through a strong Store index. Interior
+Event/Note raw IDs remain unfiltered until command effect preparation requires
+their uniqueness. Zero transpose and rest-only no-ops still resolve the range
+and verify the selected state.
+
+Range deletion fixes the selection before mutation. A Measure range records
+the existing composite deletions without normalizing surviving Part contents;
+the other ranges remove Events while retaining Voice/Content/Part structure.
+Written-pitch transformation reuses the existing pure Rust arithmetic helper.
+It computes every changed pitch before raw-target preflight and field recording,
+so a later invalid pitch wins over an earlier ambiguous effect target and no
+partial pitch history is emitted. Its private error retains a raw JsString Note
+ID, including a transient empty ID. Inverse replay restores recorded old pitches.
+
+An actual production discrepancy was reproduced before the fix. For global
+Measures [A,B,C] and Part Contents [C,B,A], range deletion of B returned [A,C]
+in native Rust while TS returned [C,A]. A reversed multi-Measure range had the
+same defect. The typed helper's range flag previously changed effect counting
+without suppressing normalization. It now explicitly preserves Part Content
+order for range deletion; ordinary Measure removal still normalizes and counts
+the reorder effect. Independent per-Part inverse anchors were already retained.
+The original Rust and real-addon failures are recorded in
+`target/range-rust-repro.log` and `range-native-repro.log`.
+
+Four fresh-addon differential regressions now check both deletion forms,
+reversed multi-delete and already ordered data through submission/undo/redo,
+including exact document, history, dirty state, emitted events and affected
+entities. Separately, eight scenarios generated solely by the real TS CommandBus
+cover three range deletes, three transposes, reversed endpoints with local order
+preservation, and rest/zero no-ops. Their Rust consumer decodes actual commands,
+commits Store plans, and compares exact documents/history and rebuilt indices.
+
+Further regressions cover endpoint error priorities, internally missing/repeated
+contents, prefix order changes, Added/reborn identities, unrecorded state, raw
+empty Note errors, transform-before-effect failure precedence, retained empty
+Voices, transpose followed by deletion, repeated replay and every injected
+Reservation failure. Real combined history also covers deleting all Measures
+then rebuilding them within one batch, with old descendant handles invalidated,
+and typed-prefix pitch/order changes followed by a range transpose.
+
+Independent GPT-6 reviews cross-checked the range resolver against TS and the
+command preparation/history wiring separately. No unresolved defect was found
+within those reviewed paths. All 452 Rust tests passed with one existing ignored
+test, including 191 runtime candidate tests and four Foundation candidate tests.
+There are 18 new Rust regressions in this checkpoint. Strict all-target clippy,
+fmt and Rust 1.88.0 all-target check passed. Logs: `target/range-rust-final.log`,
+`range-clippy.log`, `range-msrv.log`, `range-focused.log` and `range-history.log`.
+
+The freshly rebuilt addon SHA-256 is
+`D31C1E3DB0D1E6C02DB2F45F6F74754E661A4168A93AED65D321428E94422645`.
+The focused TS oracle/native checks passed all five tests (`range-native-focused.log`).
+Full TS/native runs on Node 24.15.0 each passed 730 tests, failed one and skipped
+two. The only failure was the existing duplicate-key JSON timing guard: adjacent
+ratios 3.555/1.567 in the first run and 3.935/1.810 in the repeat. Between them,
+one isolated run passed with 2.078/1.910. The workload, runner, addon and thresholds
+were unchanged. No further repeat was used to seek a passing full result.
+
+This is an unresolved full-suite performance failure, not a verified harmless
+fluctuation or commercial PASS. The second full run took 50.141 seconds; P3B
+completed in 24.376 seconds with qualification=false. Evidence:
+`target/range-native-build.log`, `range-npm-first.log`, `range-timing-isolated.log`
+and `range-npm-final.log`. Keep this gate open while filling remaining functions;
+investigate and repair it before activation/qualification, without weakening the
+frozen guard. The parser implementation was not modified in this checkpoint.
+
+The next functional integration is specified in
+[the complete dispatcher and production integration plan](kernel-candidate-dispatch-plan.md):
+the complete 28-command candidate dispatcher,
+batch ownership and public failure/effect/affected/resource accounting. Range
+selection still materializes traversal lists and has repeated scans; complete
+work/allocation accounting and error classification remain activation gates.
+Raw transformation error packaging must be integrated without forcing empty IDs
+through StableId. S2 versioned extensions/session composition, public candidate
+activation, the Rust default switch and commercial qualification remain open.

@@ -7,7 +7,9 @@ and rebirth using shared immutable expected state. General prefix-Part deletion
 now retains owned extension data and explicit dangling-owner lifetimes.
 Measure composite history preserves its definition and independently owned Part
 Content trees; private command preparation and stored complete order replacement
-cover insert/remove/move and normalization. Final
+cover insert/remove/move and normalization.
+Range deletion and written-pitch transformation now use occurrence selections
+for all three range forms, with retained history and actual Store replay. Final
 assessment, stable Store adoption and combined typed-prefix/candidate-suffix
 replay have an internal vertical path, including extension delta composition.
 Candidate command execution and adoption are
@@ -885,3 +887,27 @@ adoption/history paths. It checks exact documents and rebuilt indices, not the
 unfinished public effects/affected metadata. S1.12 in the completion ledger
 records the current validation evidence. Next work is range resolution, complete
 28-command/Batch candidate dispatch and public accounting, before activation.
+
+### Range selection and command preparation
+
+All three range forms now resolve endpoints and ordered selections against the
+current occurrence graph. Both endpoint results participate in duplicate,
+missing and owner-mismatch precedence. Global Measure order governs Measure and
+Part/Measure ranges; actual Voice order governs Event ranges. Hidden old owners
+and same-ID births remain distinct, and selected images/orders are checked against
+recorded expectations before no-op or mutation.
+
+Measure range deletion uses the low-level composite without normalizing surviving
+Content order. Part/Measure and Voice/Event deletion remove Events, retaining
+containers. Transposition finishes all pure pitch calculations before any changed
+Note raw-target checks and before field history. A raw error address can contain
+an empty ID; final semantic promotion and public failure packaging remain separate.
+Stored inverse fields are used for replay, not a newly calculated inverse transform.
+
+S1.13 records independent resolver/preparation review, full-range same-batch
+reconstruction, typed-prefix plus suffix history, Reservation failures, eight real
+TS corpus cases and the repaired production range-delete ordering discrepancy.
+The next stage is [complete command and production integration](kernel-candidate-dispatch-plan.md),
+including effects, affected entities, Batch/resource accounting and actual
+session/history/adoption wiring. Candidate execution remains test-only until that
+whole path is complete.
