@@ -59,7 +59,9 @@ remain implemented. Occurrence final assessment intentionally uses the shared
 complete Foundation rules; this functional integration does not claim that
 candidate assessment has become incremental or commercially qualified.
 
-The kernel is **not functionally complete**. S2 still needs versioned extension
+The kernel is **not functionally complete**. S2.1a now supplies strict extension
+requirement validation and an explicit TS wire decoder, checked against 144 real
+TS observations. S2 still needs versioned extension
 catalog/inventory, preparation and execution, module validation, migration and
 composed sessions with independent consumers. Opaque extension preservation and
 Part-owned extension Undo/Redo are implemented, but do not execute contributions.
@@ -68,7 +70,7 @@ TypeScript; this is the existing private native implementation route, not the
 S4 product cutover. Editor, rendering, playback and physical project persistence
 remain separate product modules.
 
-Latest Rust verification: 490 tests passed, one ignored. Strict clippy passed;
+Latest Rust verification: 493 tests passed, one ignored. Strict clippy passed;
 Rust 1.88.0 all-target check and TypeScript build passed. The new 28-scenario real
 native/TS corpus passes every leaf and a retained typed-prefix transition through
 submit, Undo and Redo, comparing full documents, history/dirty identity, affected
@@ -1543,3 +1545,42 @@ and `admission-release.log`. Fmt and `git diff --check` also passed.
 S2 implementation follows [the extension/session plan](kernel-extension-completion-plan.md).
 Extension execution/composition, full-kernel functional completion, Rust product
 default and commercial qualification remain open.
+
+### S2.1a — strict requirement data and TS wire compatibility
+
+The internal extension descriptor/requirement validator now applies the actual
+registry ID grammar to namespace, module and contribution: 1–128 ASCII units,
+lowercase letters/digits with single internal dot/hyphen separators. It accepts
+legal hyphenated IDs and rejects leading/trailing/adjacent separators. Schema
+lists are nonempty, limited to 256, strictly increasing and positive JS safe
+integers. Internal unsupported-protocol-version precedence is retained.
+
+`decode_extension_runtime_requirement_v1` accepts captured lossless data with
+exactly the six existing TS fields and `requiredForWrite: true`. It explicitly
+maps external `requirementVersion` to the existing internal `protocolVersion`
+field; old serde layout and public JS exports remain unchanged. Numbers reuse
+the shared JS Number/SafeInteger conversion, including exponent spellings and
+rounding. This decoder grants no catalog identity, callback binding or capability.
+
+An explicit generator called the existing TS requirement decoder for 144 cases
+(24 accepted, 120 rejected). Both TS and Rust compare the fixed complete results;
+tests do not rewrite the fixture. Cases cover all three ID fields, exact shape,
+wrong protocol field, strict boolean, UTF-16/surrogate rejection, version array
+limits/order and raw number spellings including overflow, underflow and rounding.
+Fixture SHA-256:
+`8a77ee7859c85248a552b2a62eab16437d5ca0736d9b35c0790a9f0f725735b3`.
+
+Verification: full Rust workspace 493 passed, one ignored; strict clippy,
+Rust 1.88.0 all-target check, TypeScript build and the new TS oracle test passed.
+Independent bounded GPT-6 review found no remaining defect in these data paths.
+Evidence: `target/extension-requirement-workspace.log`,
+`extension-requirement-clippy.log`, `extension-requirement-msrv.log`,
+`extension-requirement-ts-build.log`, `extension-requirement-ts.log`.
+The last full native regression remains S1.14's 759/0/2 on its recorded release
+artifact; this new decoder is not yet connected to an integrated native session.
+
+Catalog compilation, Inventory/availability and session assembly are the next
+S2.1 work. The reviewed private bridge direction is documented in the S2 plan:
+real SDK bindings and a WASM implementation share one executor interface and
+one Rust transaction/history owner. Neither that bridge nor S2 execution is
+implemented by this prerequisite slice. Full functionality remains incomplete.

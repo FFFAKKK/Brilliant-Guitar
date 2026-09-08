@@ -6,7 +6,7 @@
 
 - TS 的实际合同集中在 `src/core-kernel/module-sdk/{contracts,definitions}.ts`、`registry/{integrated-contracts,domain-catalog,domain-catalog-codec,domain-availability,gateway}.ts`、`commands/integrated-runtime.ts` 和 `migration/{contracts,migrate-kernel-extension}.ts`。
 - `DomainContributionReadViewV1` 包含 document/version、Core 文档和 compatible extensions；准备回调返回 no-op、rejected 或非空 effect requests。现有请求仅包含 Core written-pitch replacement 和 module-owned extension effect。transform 返回 remove、replace 或 rejected。不能凭计划扩充成任意模块直接写 Core 的接口。
-- TS SDK 已有捕获、编译品牌、回调绑定、能力检查、模块 issue 校验和资源上限。Rust 的 `brilliant-extension-protocol/src/contracts.rs` 目前只有 contribution descriptor、runtime requirement 和基础校验；不是这些 TS 合同的完整实现。
+- TS SDK 已有捕获、编译品牌、回调绑定、能力检查、模块 issue 校验和资源上限。Rust 的 `brilliant-extension-protocol/src/contracts.rs` 目前只有 contribution descriptor、runtime requirement 与严格 ID/schema 校验，Contracts 已补 requirement wire 映射；这仍不是完整 Catalog 或执行机制。
 - 特别注意 Rust 的 `protocolVersion` 与 TS 的 `requirementVersion` 不同，Rust 的 `required_for_write: bool` 也不是 TS 类型层面的字面量 `true`。内部结构不得直接序列化冒充既有公开 wire；应显式映射并做真实输入/输出差分。
 - Core runtime 的 `transaction.rs`、`overlay.rs`、`candidate/extensions.rs`、`candidate/journal/combined.rs`、`runtime/admission.rs` 和 `history.rs` 已提供最终准备、一次 adoption、扩展值/顺序恢复、Core 与候选混合历史的基础。仍需加入通用 module effects、模块校验和 assembly/session 行为，不能再建立一个拥有可变文档的扩展执行器。
 
@@ -40,6 +40,14 @@
 | S2.4 显式迁移与第二种消费者 | 对齐 `migrateKernelExtension`；沿用 assembly、effect transformer 和最终校验服务；已有 session facade 保持原调用合同 | v1 → v2 返回 migrated，再次请求返回 not-required；错误 source/target/owner/assembly 和最终模块语义失败精确拒绝；未知 blocks/不相关 Core 值不变；至少一个 Score-owned 消费者与一个 Part-owned、读取 Core 引用的消费者共用所有机制；安装缺失/恢复、Core 删除 owner、混合历史均有完整回归 |
 
 S2.1 可独立落地。S2.2 使用私有、可控执行适配器先证明事务合同；这不等于完成 WASM。S2.3 替换执行来源而不替换事务边界。S2.4 可以在前两片具备准备服务后并行补测试与迁移实现，最终以同一公共入口的机器差分收口。
+
+### S2.1 的实际实施顺序
+
+先补 `ExtensionRuntimeRequirementV1` 的数据合同与 TS wire 映射，再编译 Catalog，最后接 Inventory / availability 和固定 assembly。现有 Rust `protocolVersion` 结构保留为内部合同；新 decoder 显式读取 TS `requirementVersion`，不能通过重命名旧字段改变既有接口。注册 ID 限制为 1–128 个 ASCII 字符、合法单分隔符；schema 列表限制为 1–256 个严格递增的正 JS safe integers。数值按 JS Number 解析后的值判断，包括指数、浮点拼写与舍入；raw UTF-16 输入不可先有损转码。
+
+Catalog 编译必须保留全局阶段顺序：manifest 与 entries 捕获 → 全部待选 contribution 捕获和绑定关联 → 模块 origin/runtime/trust/API/capability 政策 → 全局重复与聚合上限 → command descriptor、真实 binding、source/namespace → requirements 与 namespace 覆盖 → effect descriptor/binding/version parity → validate/classify slot 检查。不能逐 contribution 提前完成后续阶段而改变首个错误。
+
+纯数据结构不能证明 SDK 品牌。后续内部 Catalog 构造必须消费宿主从真实编译结果取得的绑定；JSON 中的自称认证标志无效。固定 assembly 的身份也不是 inventory 内容哈希：同一 Catalog 实例与 canonical inventory 才复用 identity，不同 Catalog 即使数据相同也保持隔离。完成需求 decoder 只关闭本片的前置合同，不能算 Catalog、assembly 或公开 SDK 执行已完成。
 
 ## 必须照搬而不能重新解释的语义
 
@@ -79,6 +87,14 @@ schemaVersion 是数据格式版本，requirement/inventory/descriptor version �
 4. **迁移进入编辑历史的产品含义。** 当前纯迁移入口能完成数据迁移和重新打开。是否需要用户在同一 session 中撤销迁移、迁移后如何关联已保存身份，是额外产品语义，不能擅自新增公开操作；本计划先完整复现现有纯入口。
 
 第二消费者应在现有 Score/Part owner 与已有 effect request 范围内选取结构不同的合成用例，避免引入新乐器产品：例如 Score-owned 配置与 Part-owned、读取 Note pitch 的数据。它们验证“同一协议、同一能力约束、同一写边界”，不以两个改名的 payload fixture 代替。
+
+### 已选定的 SDK / Native 执行接线
+
+独立 GPT-6 审查确认：旧五个 Native 入口仅接收 bytes，不能传递 JS 回调；RKP-4 还精确检查 addon 只有这五个导出。SDK 绑定保存在 WeakMap 中，复制 descriptor 或 Symbol 也不能还原回调。因此采用同一 Node crate 内的**版本化私有 integrated 桥与独立构建产物**，保留旧 V1 产物和五个入口不变。新桥的协议、构建方式和验证清单作为 successor 明确记录；不偷偷扩充旧 bytes 对象、借可选参数隐藏回调或伪造认证字段。公开 51/8/34/9 集合保持不变，七 crate 架构保持不变。
+
+SDK 内部从真实 compiled catalog 的绑定查询创建可信执行适配器。`decode → prepare` 和 `decode → transform` 分别在 JS 适配器内部完成，任意 decoded JS 值不必跨 JSON 往返。Rust 内部 `ContributionExecutor` 按 prepare、validate、classify、transform 分操作；Node 实现调用上述绑定，WASM 实现调用已验证产物。两种来源只返回只读结果，由 Rust 重新校验 owner、namespace、能力、形状和资源，并经现有事务写入、最终校验和单一提交。Undo/Redo 使用已存效果，不重跑原命令 prepare/transform。
+
+公开 `createIntegratedCommandBus` 工厂在选定 Native 后端时绑定真实品牌状态，不再创建 TS 可变文档或另一套历史；默认切换仍属于 S4。新桥必须验证回调异常、同 Session 重入拒绝、环境线程和引用释放。当前 JS 回调可读取完整 Core 文档，兼容视图必须真实提供并计入物化成本；不能冒称它已有精确读取声明或能由 Rust fuel 强制终止。WASM 的执行限额另以实际引擎测试证明，这不改变 JS SDK 的既有合同。此决定解决接线方向，不表示桥或执行器已经实现。
 
 ## 收口证据
 

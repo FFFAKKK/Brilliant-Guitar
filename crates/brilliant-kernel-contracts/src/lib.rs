@@ -5,6 +5,9 @@ mod admission_conversion_tests;
 mod affected;
 mod codec;
 mod command;
+mod integrated_requirement;
+#[cfg(test)]
+mod integrated_requirement_tests;
 mod session;
 
 pub use affected::AffectedEntityIdV1;
@@ -18,4 +21,5 @@ pub use codec::{
     encode_stage4_replay_result, validate_protocol_version,
 };
 pub use command::*;
+pub use integrated_requirement::decode_extension_runtime_requirement_v1;
 pub use session::*;
