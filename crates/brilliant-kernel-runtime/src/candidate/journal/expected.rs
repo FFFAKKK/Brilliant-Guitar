@@ -369,7 +369,16 @@ impl Recorder<'_> {
         let mut sources = Vec::new();
         let mut seen = HashSet::new();
         self.append_expected(root, None, &mut nodes, &mut sources, &mut seen, 0)?;
-        let bundle = PartBundle { nodes };
+        let extensions = if self.candidate.kind(root) == Some(Kind::Part) {
+            self.expected_part_extensions(root)?
+        } else {
+            Vec::new()
+        };
+        let bundle = PartBundle {
+            nodes,
+            extensions: Arc::new(extensions),
+            preserved_extension_keys: Arc::new(Vec::new()),
+        };
         bundle.validate(&mut self.candidate)?;
         let owner = self.candidate.owner(root).ok_or(Failure::InternalError)?;
         bundle.verify(&mut self.candidate, &owner, &sources)?;

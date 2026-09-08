@@ -214,15 +214,18 @@ test("RKP-3 logical budget and inverse segment laws are mechanically pinned", ()
   assert.match(source, /debug_assert!\(change_set\.arena_references_are_well_typed\(\)\);/u);
 });
 
-test("RKP-3 overlay uses discard-only failure and copy-on-first-write orders", () => {
+test("RKP-3 overlay uses discard-only failure and copies entity orders on first write", () => {
   const source = readText("crates/brilliant-kernel-runtime/src/overlay.rs");
 
   assert.match(source, /poisoned: bool/u);
   assert.match(source, /self\.poisoned = true;\n        Err\(failure\)/u);
   assert.match(
     source,
-    /if self\.orders\.contains_key\(address\) \{\n            return Ok\(\(\)\);\n        \}/u,
+    /let extensions = matches!\(address, StableOrderAddressV1::Extensions \{ \.\. \}\);\n        if !extensions && self\.orders\.contains_key\(address\) \{\n            return Ok\(\(\)\);\n        \}/u,
   );
+  // Standalone extension edits also change membership. Their generic-order
+  // snapshot must refresh from headers; score-entity orders retain this guard.
+  // Rust's extension-order regression checks actual interleaved read/write behavior.
   assert.match(
     source,
     /self\.metrics\.order_copies = self\.metrics\.order_copies\.saturating_add\(1\);/u,

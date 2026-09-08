@@ -649,6 +649,19 @@ impl<'a> TransactionOverlayV1<'a> {
         if self.order_tombstones.contains(address) {
             return None;
         }
+        if matches!(address, StableOrderAddressV1::Extensions { .. }) {
+            let mut order = Vec::new();
+            let mut failed = false;
+            self.visit_order(address, &mut |id| {
+                if reserve_headers(&mut order, 1).is_err() {
+                    failed = true;
+                    return false;
+                }
+                order.push(id.clone());
+                true
+            })?;
+            return (!failed).then_some(order);
+        }
         self.orders
             .get(address)
             .cloned()
@@ -662,6 +675,22 @@ impl<'a> TransactionOverlayV1<'a> {
     ) -> Option<()> {
         if self.order_tombstones.contains(address) {
             return None;
+        }
+        if matches!(address, StableOrderAddressV1::Extensions { .. }) {
+            // Probe this document's order without copying it. Header edits are
+            // the current membership/order authority, including standalone and
+            // Part-owned extension changes since the last generic order write.
+            self.base.visit_order(address, &mut |_| false)?;
+            let mut failed = false;
+            self.visit_extension_headers(&mut |header| match header.anchor_id() {
+                Ok(id) => visitor(&id),
+                Err(_) => {
+                    failed = true;
+                    false
+                }
+            })
+            .ok()?;
+            return (!failed).then_some(());
         }
         if let Some(order) = self.orders.get(address) {
             for id in order {
@@ -1502,7 +1531,8 @@ impl<'a> TransactionOverlayV1<'a> {
         &mut self,
         address: &StableOrderAddressV1,
     ) -> Result<(), OverlayFailureV1> {
-        if self.orders.contains_key(address) {
+        let extensions = matches!(address, StableOrderAddressV1::Extensions { .. });
+        if !extensions && self.orders.contains_key(address) {
             return Ok(());
         }
         if self.order_tombstones.contains(address) {
@@ -1510,7 +1540,12 @@ impl<'a> TransactionOverlayV1<'a> {
                 order: address.clone(),
             });
         }
-        let Some(value) = self.base.read_order(address) else {
+        let value = if extensions {
+            self.read_order(address)
+        } else {
+            self.base.read_order(address)
+        };
+        let Some(value) = value else {
             return self.reject(OverlayFailureV1::OrderNotFound {
                 order: address.clone(),
             });

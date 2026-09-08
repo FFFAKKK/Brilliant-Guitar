@@ -1,5 +1,5 @@
 //! Stored admission operations: scalar/raw-reference changes, Part subtrees
-//! owned by this journal, Staff leaves and Voice/Event subtrees. This remains
+//! from frozen-prefix or journal births, Staff leaves and Voice/Event subtrees. This remains
 //! inside the test-only admission candidate.
 //! Private finalization and combined typed-prefix history are wired here.
 //! Complete command preparation, effects/segments and resource accounting remain
@@ -15,8 +15,10 @@ use super::*;
 mod bundle;
 mod combined;
 mod expected;
+mod expected_extensions;
 mod fields;
 mod orders;
+mod part;
 mod rhythm;
 mod staff;
 use bundle::PartBundle;
@@ -79,6 +81,7 @@ struct Recorder<'a> {
     active: HashMap<Occurrence, ActivePart>,
     staff_images: HashMap<Occurrence, Arc<bundle::Image>>,
     birth_nodes: HashMap<Occurrence, expected::NodeOrigin>,
+    recorded_extension_deaths: HashSet<crate::overlay::ExtensionKeyV1>,
     steps: Vec<Step>,
     changes: HashMap<Occurrence, FieldChanges>,
     order_changes: HashMap<CandidateOrder, Arc<Vec<JournalId>>>,
@@ -153,6 +156,7 @@ impl<'a> Recorder<'a> {
             active: HashMap::new(),
             staff_images: HashMap::new(),
             birth_nodes: HashMap::new(),
+            recorded_extension_deaths: HashSet::new(),
             steps: Vec::new(),
             changes: HashMap::new(),
             order_changes: HashMap::new(),
@@ -251,9 +255,8 @@ impl<'a> Recorder<'a> {
     fn remove_part_inner(&mut self, raw_id: &JsString) -> Result<(), Failure> {
         self.candidate.reservation.ensure_active()?;
         let root = self.candidate.resolve(Kind::Part, raw_id)?;
-        // Added is not enough: this exact root must belong to this recorder.
-        self.active.get(&root).ok_or(Failure::InternalError)?;
         let document = self.candidate.document.clone();
+        self.verify_recorded_node(&document)?;
         let order = CandidateOrder::new(&document, Children::Parts);
         let mut expected_order = self.recorded_order_ids(&order)?;
         let (bundle, sources) = self.expected_subtree(&root)?;
@@ -267,8 +270,15 @@ impl<'a> Recorder<'a> {
         let owner = self.identities.record(&mut self.candidate, &document)?;
         self.candidate
             .reservation
+            .map(Site::JournalOperations, &mut self.order_changes, 1)?;
+        self.candidate
+            .reservation
             .vec(Site::JournalOperations, &mut self.steps, 1)?;
+        self.reserve_recorded_extension_deaths(&bundle.extensions)?;
+        self.candidate
+            .remove_part_extensions(&root, &bundle.extensions)?;
         self.candidate.hide(&root)?;
+        self.record_extension_deaths(&bundle.extensions);
         let position = expected_order
             .iter()
             .position(|id| *id == bundle.nodes[0].id)
@@ -291,12 +301,12 @@ impl<'a> Recorder<'a> {
             for source in active.staff_changes.keys() {
                 self.changes.remove(source);
             }
-            for (node, source) in bundle.nodes.iter().zip(sources) {
-                self.changes.remove(&source);
-                for children in orders::child_orders_for(node.image.kind) {
-                    self.order_changes
-                        .remove(&CandidateOrder::new(&source, *children));
-                }
+        }
+        for (node, source) in bundle.nodes.iter().zip(sources) {
+            self.changes.remove(&source);
+            for children in orders::child_orders_for(node.image.kind) {
+                self.order_changes
+                    .remove(&CandidateOrder::new(&source, *children));
             }
         }
         Ok(())
@@ -459,9 +469,6 @@ impl Operation {
             .map(|id| bindings.resolve(id, candidate))
             .transpose()?;
         if inserting {
-            if bundle.root_kind()? == Kind::Part {
-                PartBundle::require_no_extensions(candidate, &bundle.nodes[0].image.raw_id)?;
-            }
             for node in &bundle.nodes {
                 let parent = node
                     .parent
@@ -485,6 +492,10 @@ impl Operation {
                 bundle.nodes.len(),
             )?;
             let sources = bundle.materialize(candidate, &owner, position)?;
+            if bundle.root_kind()? == Kind::Part {
+                candidate.insert_part_extensions(&sources[0], &bundle.extensions)?;
+            }
+            bundle.verify(candidate, &owner, &sources)?;
             assignments.extend(
                 bundle
                     .nodes
@@ -510,6 +521,13 @@ impl Operation {
                 return Err(Failure::InternalError);
             }
             bundle.verify(candidate, &owner, &sources)?;
+            if bundle.root_kind()? == Kind::Part {
+                candidate.remove_part_extensions_preserving(
+                    &sources[0],
+                    &bundle.extensions,
+                    &bundle.preserved_extension_keys,
+                )?;
+            }
             candidate.hide(&sources[0])?;
             bindings.unbind_removed(candidate, bundle.nodes[0].id)?;
         }

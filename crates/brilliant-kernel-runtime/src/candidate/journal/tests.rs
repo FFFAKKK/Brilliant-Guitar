@@ -1,4 +1,5 @@
 use super::*;
+mod part_extensions;
 mod rhythm;
 mod rhythm_guards;
 use crate::{
@@ -575,16 +576,12 @@ fn malformed_bundles_and_manifest_mismatches_fail_before_inserting_nodes() {
 }
 
 #[test]
-fn recorder_rejects_prefix_or_foreign_added_parts_and_unrecorded_subtree_changes() {
+fn recorder_rejects_foreign_added_parts_and_unrecorded_subtree_changes() {
     let document = fixture();
     let store = build_live_score_store(&document).unwrap();
-    for kind in ["prefix", "foreign", "modified"] {
+    for kind in ["foreign", "modified"] {
         let mut candidate = Candidate::new(TransactionOverlayV1::new(&store), document.id.clone());
-        let raw = if kind == "prefix" {
-            "part-z"
-        } else {
-            "temporary"
-        };
+        let raw = "temporary";
         if kind == "foreign" {
             candidate.insert_part(invalid_part(), None).unwrap();
         }

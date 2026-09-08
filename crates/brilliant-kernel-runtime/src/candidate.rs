@@ -12,6 +12,7 @@ use std::{
 
 mod adoption;
 mod assessment;
+mod extensions;
 mod identity;
 mod journal;
 mod reservation;
@@ -214,6 +215,7 @@ struct StaffReferenceVisits {
 
 struct Candidate<'a> {
     prefix: TransactionOverlayV1<'a>,
+    extension_state: extensions::ExtensionState,
     document: Occurrence,
     nodes: Vec<Node>,
     // Content links are deliberately absent: measure IDs do not identify a
@@ -237,6 +239,7 @@ impl<'a> Candidate<'a> {
     fn new(prefix: TransactionOverlayV1<'a>, document_id: StableId) -> Self {
         Self {
             prefix,
+            extension_state: extensions::ExtensionState::default(),
             document: Occurrence::prefix(Entity::Document { document_id }),
             nodes: Vec::new(),
             added: HashMap::new(),

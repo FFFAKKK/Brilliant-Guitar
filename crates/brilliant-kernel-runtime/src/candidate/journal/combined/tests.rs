@@ -9,6 +9,7 @@ use crate::{
 use brilliant_core_types::FiniteNumber;
 use brilliant_kernel_contracts::KernelStage3MetricsV1;
 
+mod dangling_part_extensions;
 mod typed_prefix;
 
 #[test]

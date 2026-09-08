@@ -4,6 +4,7 @@
 use brilliant_core_types::JsString;
 
 use super::*;
+use crate::change_set::AnchoredExtensionBlockV1;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) struct Image {
@@ -76,6 +77,10 @@ pub(super) struct BundleNode {
 // node table also represents Voice and Event roots; Measure is not a subtree.
 pub(super) struct PartBundle {
     pub(super) nodes: Vec<BundleNode>,
+    pub(super) extensions: Arc<Vec<AnchoredExtensionBlockV1>>,
+    // A Part birth can repair a dangling prefix owner without creating its
+    // extension. Its inverse must preserve those pre-existing extension keys.
+    pub(super) preserved_extension_keys: Arc<Vec<crate::overlay::ExtensionKeyV1>>,
 }
 
 use super::orders::child_orders_for as child_orders;
@@ -123,25 +128,6 @@ impl PartBundle {
         })
     }
 
-    // These operations introduce no extension blocks. Prefix inverse removal
-    // must verify that expectation too; otherwise it could orphan unrecorded
-    // opaque data. The existing reference index avoids cloning extension payloads.
-    pub(super) fn require_no_extensions(
-        candidate: &Candidate<'_>,
-        raw_id: &JsString,
-    ) -> Result<(), Failure> {
-        if let Ok(id) = StableId::new(raw_id)
-            && candidate
-                .prefix
-                .list_references_to(&id)
-                .iter()
-                .any(|reference| matches!(reference, Reference::ExtensionOwner { .. }))
-        {
-            return Err(Failure::InternalError);
-        }
-        Ok(())
-    }
-
     pub(super) fn capture(
         candidate: &mut Candidate<'_>,
         identities: &mut IdentityRecorder,
@@ -153,13 +139,17 @@ impl PartBundle {
         if !matches!(root, Occurrence::Added(_)) {
             return Err(Failure::InternalError);
         }
-        if candidate.kind(root) == Some(Kind::Part) {
-            Self::require_no_extensions(
-                candidate,
-                candidate.raw_id(root).ok_or(Failure::InternalError)?,
-            )?;
-        }
-        let mut bundle = Self { nodes: Vec::new() };
+        // A normal insertion carries no extensions. A same-ID frozen Part's
+        // extensions still belong to that older occurrence, not this birth.
+        let mut bundle = Self {
+            nodes: Vec::new(),
+            extensions: Arc::new(Vec::new()),
+            preserved_extension_keys: Arc::new(if candidate.kind(root) == Some(Kind::Part) {
+                candidate.part_extension_keys(root)?
+            } else {
+                Vec::new()
+            }),
+        };
         let mut sources = Vec::new();
         bundle.capture_node(candidate, identities, root, None, &mut sources)?;
         bundle.validate(candidate)?;
@@ -243,7 +233,42 @@ impl PartBundle {
 
     pub(super) fn validate(&self, candidate: &mut Candidate<'_>) -> Result<(), Failure> {
         candidate.reservation.ensure_active()?;
-        self.root_kind()?;
+        let root_kind = self.root_kind()?;
+        if root_kind != Kind::Part
+            && (!self.extensions.is_empty() || !self.preserved_extension_keys.is_empty())
+        {
+            return Err(Failure::InternalError);
+        }
+        let mut extension_keys = HashSet::new();
+        candidate.reservation.set(
+            Site::JournalOperations,
+            &mut extension_keys,
+            self.extensions
+                .len()
+                .checked_add(self.preserved_extension_keys.len())
+                .ok_or(Failure::InternalError)?,
+        )?;
+        for extension in self.extensions.iter() {
+            if !matches!(
+                &extension.value.owner,
+                brilliant_score_foundation::ExtensionOwnerV1::Part { part_id }
+                    if part_id.as_js_string() == &self.nodes[0].image.raw_id
+            ) || !extension_keys
+                .insert(crate::overlay::ExtensionKeyV1::from_block(&extension.value))
+            {
+                return Err(Failure::InternalError);
+            }
+        }
+        for key in self.preserved_extension_keys.iter() {
+            if !matches!(
+                &key.owner,
+                crate::change_set::StableExtensionOwnerV1::Part { part_id }
+                    if part_id.as_js_string() == &self.nodes[0].image.raw_id
+            ) || !extension_keys.insert(key.clone())
+            {
+                return Err(Failure::InternalError);
+            }
+        }
         let mut seen = Vec::new();
         let mut ids = HashSet::new();
         candidate
@@ -308,7 +333,11 @@ impl PartBundle {
             return Err(Failure::InternalError);
         }
         if self.root_kind()? == Kind::Part {
-            Self::require_no_extensions(candidate, &self.nodes[0].image.raw_id)?;
+            candidate.verify_part_extensions_preserving(
+                &sources[0],
+                &self.extensions,
+                &self.preserved_extension_keys,
+            )?;
         }
         for (index, node) in self.nodes.iter().enumerate() {
             let source = &sources[index];

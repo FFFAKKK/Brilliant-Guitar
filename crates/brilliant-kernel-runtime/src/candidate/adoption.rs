@@ -7,8 +7,8 @@ use crate::{
     overlay::CoreBaseReadV1,
     store::LiveScoreStore,
     transaction::{
-        FinalStateDeltaV1, PreparedFinalStateCommitV1, TransactionPrepareFailureV1,
-        collect_frozen_prefix_delta, prepare_validated_final_state,
+        FinalExtensionDeltaV1, FinalStateDeltaV1, PreparedFinalStateCommitV1,
+        TransactionPrepareFailureV1, collect_frozen_prefix_delta, prepare_validated_final_state,
     },
 };
 use brilliant_core_types::DocumentVersionV1;
@@ -71,6 +71,11 @@ impl<'a> Candidate<'a> {
 }
 
 impl StableCandidateView<'_> {
+    pub(super) fn replay_extension_delta(
+        &self,
+    ) -> Result<FinalExtensionDeltaV1, FinalizationFailure> {
+        Ok(self.candidate.borrow().extension_delta()?)
+    }
     pub(super) fn replay_delta(&self) -> Result<FinalStateDeltaV1, FinalizationFailure> {
         Ok(self.collect_suffix_delta()?)
     }
@@ -109,6 +114,7 @@ impl ValidatedCandidate<'_> {
             version,
             suffix_operations,
             FinalStateDeltaV1::default(),
+            FinalExtensionDeltaV1::Unchanged,
             KernelStage3MetricsV1::default(),
         )
     }
@@ -121,6 +127,7 @@ impl ValidatedCandidate<'_> {
         version: DocumentVersionV1,
         suffix_operations: u64,
         mut prior_delta: FinalStateDeltaV1,
+        mut prior_extensions: FinalExtensionDeltaV1,
         mut prior_work: KernelStage3MetricsV1,
     ) -> Result<(Option<PreparedFinalStateCommitV1>, ChangeSetV1), FinalizationFailure> {
         let (delta, extensions) =
@@ -135,6 +142,8 @@ impl ValidatedCandidate<'_> {
             .len() as u64;
         prior_delta.merge_suffix(delta)?;
         prior_delta.merge_suffix(self.collect_suffix_delta()?)?;
+        prior_extensions.merge_suffix(extensions)?;
+        prior_extensions.merge_suffix(self.candidate.borrow().extension_delta()?)?;
         let change_ops = prefix_operations
             .checked_add(suffix_operations)
             .ok_or(TransactionPrepareFailureV1::Capacity)?;
@@ -152,7 +161,7 @@ impl ValidatedCandidate<'_> {
             version,
             &self.view,
             prior_delta,
-            extensions,
+            prior_extensions,
             change_ops != 0,
             prior_work,
         )?;

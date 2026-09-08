@@ -131,12 +131,10 @@ impl StableCandidateView<'_> {
                 })
             },
         )?;
-        let extensions = self
-            .candidate
-            .borrow()
-            .prefix
-            .read_part_extensions(part_id)
-            .ok()?;
+        let source = self.occurrence(&Entity::Part {
+            part_id: part_id.clone(),
+        })?;
+        let extensions = self.candidate.borrow().read_part_extensions(&source).ok()?;
         Some(PartBundleV1 {
             part: PartV1 {
                 id: part_id.clone(),

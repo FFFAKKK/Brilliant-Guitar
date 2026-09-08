@@ -282,7 +282,7 @@ impl CoreBaseReadV1 for StableCandidateView<'_> {
             self.occurrence(&Entity::Document {
                 document_id: document_id.clone(),
             })?;
-            return self.candidate.borrow().prefix.visit_order(address, visitor);
+            return self.candidate.borrow().visit_extension_order(visitor);
         }
         let order = self.candidate_order(address)?;
         let candidate = self.candidate.borrow();
@@ -307,17 +307,14 @@ impl CoreBaseReadV1 for StableCandidateView<'_> {
     }
 
     fn read_extension(&self, key: &ExtensionKeyV1) -> Option<AnchoredExtensionBlockV1> {
-        self.candidate.borrow().prefix.read_extension(key)
+        self.candidate.borrow().read_extension(key)
     }
 
     fn visit_extension_headers(
         &self,
         visitor: &mut dyn FnMut(&ExtensionHeaderV1) -> bool,
     ) -> Result<(), ExtensionHeaderReadFailureV1> {
-        self.candidate
-            .borrow()
-            .prefix
-            .visit_extension_headers(visitor)
+        self.candidate.borrow().visit_extension_headers(visitor)
     }
 
     fn read_reference(&self, address: &Reference) -> Option<ReferenceValueV1> {
@@ -355,9 +352,10 @@ impl CoreBaseReadV1 for StableCandidateView<'_> {
                         .is_some(),
                 ))
             }
-            Reference::ExtensionOwner { .. } => {
-                self.candidate.borrow().prefix.read_reference(address)
-            }
+            Reference::ExtensionOwner { namespace, owner } => self
+                .candidate
+                .borrow()
+                .read_extension_reference(namespace, owner),
         }
     }
 
@@ -373,7 +371,7 @@ impl CoreBaseReadV1 for StableCandidateView<'_> {
                 }
                 Some(ReferenceValueV1::ExtensionOwner(
                     brilliant_score_foundation::ExtensionOwnerV1::Part { part_id },
-                )) => &part_id == target_id && self.occurrence(&Entity::Part { part_id }).is_some(),
+                )) => &part_id == target_id,
                 _ => false,
             };
             if matches && !result.contains(&reference) {
@@ -381,6 +379,11 @@ impl CoreBaseReadV1 for StableCandidateView<'_> {
             }
         }
         let candidate = self.candidate.borrow();
+        for reference in candidate.changed_extension_references_to(target_id) {
+            if !result.contains(&reference) {
+                result.push(reference);
+            }
+        }
         for source in candidate.staff_referrers(target_id.as_js_string()) {
             let reference = match candidate.strong_address(&source) {
                 Some(Entity::Voice { voice_id }) => Reference::VoiceDefaultStaff { voice_id },

@@ -601,3 +601,108 @@ fn standalone_extension_anchor_tracks_global_edits_and_detached_payload_survives
     );
     assert_eq!(store.export_document().unwrap(), document);
 }
+
+#[test]
+fn extension_order_reads_and_generic_writes_follow_current_standalone_membership() {
+    let document = fixture();
+    let store = build_live_score_store(&document).unwrap();
+    let order = StableOrderAddressV1::Extensions {
+        document_id: document.id.clone(),
+    };
+    let original = store.read_order(&order).unwrap();
+    let mut overlay = TransactionOverlayV1::new(&store);
+    let mut first = document.extensions[0].clone();
+    first.namespace = "example.inserted-first".into();
+    let first_header = ExtensionHeaderV1::from_block(&first);
+    let first_id = first_header.anchor_id().unwrap();
+    let mut second = first.clone();
+    second.namespace = "example.inserted-second".into();
+    let second_id = ExtensionHeaderV1::from_block(&second).anchor_id().unwrap();
+    let assert_order = |overlay: &TransactionOverlayV1<'_>, expected: &[StableId]| {
+        assert_eq!(overlay.read_order(&order).as_deref(), Some(expected));
+        let mut visited = Vec::new();
+        overlay
+            .visit_order(&order, &mut |id| {
+                visited.push(id.clone());
+                true
+            })
+            .unwrap();
+        assert_eq!(visited, expected);
+        let from_headers: Vec<_> = headers(overlay)
+            .iter()
+            .map(|header| header.anchor_id().unwrap())
+            .collect();
+        assert_eq!(from_headers, expected);
+    };
+    overlay
+        .insert_extension(StableAnchorV1::Start, first.clone())
+        .unwrap();
+    assert_order(
+        &overlay,
+        &[first_id.clone(), original[0].clone(), original[1].clone()],
+    );
+    let mut visits = 0;
+    overlay
+        .visit_order(&order, &mut |_| {
+            visits += 1;
+            false
+        })
+        .unwrap();
+    assert_eq!(visits, 1);
+    assert!(
+        overlay
+            .read_order(&StableOrderAddressV1::Extensions {
+                document_id: id("another-document")
+            })
+            .is_none()
+    );
+    overlay
+        .remove_extension(ExtensionKeyV1::from_block(&document.extensions[0]))
+        .unwrap();
+    overlay
+        .replace_ordered_children(order.clone(), vec![original[1].clone(), first_id.clone()])
+        .unwrap();
+    assert_order(&overlay, &[original[1].clone(), first_id.clone()]);
+    overlay
+        .insert_extension(
+            StableAnchorV1::After {
+                sibling_id: original[1].clone(),
+            },
+            second.clone(),
+        )
+        .unwrap();
+    assert_order(
+        &overlay,
+        &[original[1].clone(), second_id, first_id.clone()],
+    );
+    // A generic write must refresh its previously materialized order after
+    // standalone insertion. Detached payloads remain available for reinsertion.
+    overlay
+        .remove_ordered_child(order.clone(), first_id.clone())
+        .unwrap();
+    overlay
+        .remove_extension(ExtensionKeyV1::from_block(&second))
+        .unwrap();
+    overlay
+        .insert_ordered_child(order.clone(), StableAnchorV1::Start, first_id.clone())
+        .unwrap();
+    assert_order(&overlay, &[first_id.clone(), original[1].clone()]);
+    overlay
+        .move_ordered_child(
+            order.clone(),
+            first_id.clone(),
+            StableAnchorV1::After {
+                sibling_id: original[1].clone(),
+            },
+        )
+        .unwrap();
+    assert_order(&overlay, &[original[1].clone(), first_id]);
+    assert_eq!(
+        overlay
+            .read_extension(&ExtensionKeyV1::from_block(&first))
+            .unwrap()
+            .value,
+        first
+    );
+    assert_eq!(store.export_document().unwrap(), document);
+}

@@ -76,6 +76,7 @@ impl CombinedHistory {
                 .map_err(FinalizationFailure::Command)?;
                 let boundary = candidate.seal_structural_boundary()?;
                 let prior_delta = boundary.replay_delta()?;
+                let prior_extensions = boundary.replay_extension_delta()?;
                 let prior_work = boundary.replay_work();
                 let inverse =
                     replay_overlay_on_base(&boundary, &self.prefix.arena, &self.prefix.inverse)?;
@@ -87,6 +88,7 @@ impl CombinedHistory {
                         version,
                         suffix_operations,
                         prior_delta,
+                        prior_extensions,
                         prior_work,
                     )?;
                 Ok(plan)

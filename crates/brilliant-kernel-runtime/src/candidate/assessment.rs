@@ -26,7 +26,7 @@ impl Candidate<'_> {
             .map_err(|_| AssessmentFailure::InternalCapacity)?;
         let mut extensions = Vec::new();
         let mut reservation = std::mem::take(&mut self.reservation);
-        let visited = self.prefix.visit_extension_headers(&mut |header| {
+        let visited = self.visit_extension_headers(&mut |header| {
             if reservation
                 .vec(Site::JournalOperations, &mut extensions, 1)
                 .is_err()

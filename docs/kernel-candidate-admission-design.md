@@ -3,8 +3,11 @@
 Status: command input representation/codec implemented; occurrence storage,
 reads, scalar/reference writes and Part/Staff/Voice/Event insertion verified under
 `cfg(test)`. Voice/Event subtree recording/removal now composes with nested edits
-and rebirth using shared immutable expected state. Final assessment, stable Store adoption and combined typed-prefix/
-candidate-suffix replay/adoption now have an internal vertical path. Candidate command execution and adoption are
+and rebirth using shared immutable expected state. General prefix-Part deletion
+now retains owned extension data and explicit dangling-owner lifetimes. Final
+assessment, stable Store adoption and combined typed-prefix/candidate-suffix
+replay have an internal vertical path, including extension delta composition.
+Candidate command execution and adoption are
 not activated in the public runtime. Historical implementation entries below
 retain the evidence and limitations at their original checkpoints. This is
 the next S1 compatibility slice in
@@ -804,3 +807,40 @@ state must be explicitly represented and merged before Part-owned extension
 removal is enabled. Detailed traversal/allocation costs, effects and error
 classification remain incomplete. No candidate route is activated publicly by
 this private implementation.
+
+### General Part deletion and extension lifetime composition
+
+Prefix Part removal now uses the same trusted subtree reconstruction as an
+inserted Part. Opaque extension expectations are derived from immutable prefix
+values minus recorded deletion keys, with global predecessors projected from
+that trusted membership. The current candidate is only the state to verify.
+Stored Part payloads retain the affected extensions; Voice/Event bundles cannot
+carry them. Owner mismatches, duplicate keys and unknown members reject replay.
+
+Part command preparation is a distinct private helper. It resolves the raw
+target before checking TS global Measure/content coverage. The underlying
+journal interpreter retains its ability to replay transient repeated contents;
+complete public command dispatch will call the preparation helper. Minimum
+Part count remains a final semantic condition, allowing delete/reinsert batches.
+
+Existing extension owners are tied to their prefix occurrence. Reusing a raw
+Part ID does not transfer the old lifetime's data. A prefix extension whose owner
+was already missing is different: a new Part can repair that raw reference.
+Birth history records those pre-existing keys without copying their payloads or
+claiming it inserted them. Its inverse preserves them for the typed-prefix
+inverse; an explicit Part deletion captures/removes them and its inverse restores
+them. Preserving a key resets its temporary owner binding, so same-Candidate
+inverse/forward cycles can repair it with another occurrence.
+
+Headers, extension order/value reads, owner references and reverse references,
+Part detach and assessment all share the current extension state. Final deltas
+merge prior -> prefix -> suffix: later order/state wins and deletion keys stay
+unioned through restoration. Combined replay still prepares one final adoption.
+The shared typed overlay's extension-order reads now also follow its header edits,
+fixing stale generic-order preconditions after standalone extension edits.
+
+S1.11 of the completion ledger records tests and independent reviews. Remaining
+functional work begins with Measure's multi-Part composite, range and command/
+Batch dispatch; full effects, resource accounting, versioned extension/session
+execution and native activation are still open. This layer does not add generic
+candidate extension commands or claim commercial qualification.

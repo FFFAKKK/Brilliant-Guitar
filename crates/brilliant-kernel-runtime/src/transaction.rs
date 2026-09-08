@@ -298,6 +298,188 @@ mod final_state {
         },
     }
 
+    mod extension_delta_merge_tests {
+        use super::*;
+
+        fn delta(
+            order: &[ExtensionKeyV1],
+            values: &[(ExtensionKeyV1, Option<ExtensionBlockV1>)],
+            deaths: &[ExtensionKeyV1],
+        ) -> FinalExtensionDeltaV1 {
+            let mut final_order = Vec::new();
+            final_order.try_reserve(order.len()).unwrap();
+            final_order.extend(order.iter().cloned());
+            let mut states = HashMap::new();
+            states.try_reserve(values.len()).unwrap();
+            states.extend(values.iter().cloned());
+            let mut removed = HashSet::new();
+            removed.try_reserve(deaths.len()).unwrap();
+            removed.extend(deaths.iter().cloned());
+            FinalExtensionDeltaV1::Changed {
+                final_order,
+                states,
+                removed,
+            }
+        }
+
+        #[test]
+        fn unchanged_suffix_preserves_both_unchanged_and_changed_prefixes() {
+            let mut untouched = FinalExtensionDeltaV1::Unchanged;
+            untouched
+                .merge_suffix(FinalExtensionDeltaV1::Unchanged)
+                .unwrap();
+            assert!(matches!(untouched, FinalExtensionDeltaV1::Unchanged));
+            let value = crate::store::tests::fixture().extensions.remove(0);
+            let key = ExtensionKeyV1::from_block(&value);
+            let mut prefix = delta(
+                std::slice::from_ref(&key),
+                &[(key.clone(), Some(value.clone()))],
+                std::slice::from_ref(&key),
+            );
+            prefix
+                .merge_suffix(FinalExtensionDeltaV1::Unchanged)
+                .unwrap();
+            let FinalExtensionDeltaV1::Changed {
+                final_order,
+                states,
+                removed,
+            } = prefix
+            else {
+                panic!("changed prefix");
+            };
+            assert_eq!(final_order.as_slice(), std::slice::from_ref(&key));
+            assert_eq!(states.get(&key), Some(&Some(value)));
+            assert!(removed.contains(&key));
+        }
+
+        #[test]
+        fn changed_suffix_is_adopted_by_unchanged_prefix_including_order_only_delta() {
+            let value = crate::store::tests::fixture().extensions.remove(0);
+            let key = ExtensionKeyV1::from_block(&value);
+            for order_only in [false, true] {
+                let mut prefix = FinalExtensionDeltaV1::Unchanged;
+                let suffix = if order_only {
+                    delta(std::slice::from_ref(&key), &[], &[])
+                } else {
+                    delta(
+                        std::slice::from_ref(&key),
+                        &[(key.clone(), Some(value.clone()))],
+                        &[],
+                    )
+                };
+                prefix.merge_suffix(suffix).unwrap();
+                let FinalExtensionDeltaV1::Changed {
+                    final_order,
+                    states,
+                    removed,
+                } = prefix
+                else {
+                    panic!("changed suffix");
+                };
+                assert_eq!(final_order.as_slice(), std::slice::from_ref(&key));
+                assert_eq!(states.is_empty(), order_only);
+                if !order_only {
+                    assert_eq!(states.get(&key), Some(&Some(value.clone())));
+                }
+                assert!(removed.is_empty());
+            }
+        }
+
+        #[test]
+        fn suffix_payloads_override_states_and_union_deaths_through_same_key_rebirth() {
+            let document = crate::store::tests::fixture();
+            let first = document.extensions[0].clone();
+            let second = document.extensions[1].clone();
+            let first_key = ExtensionKeyV1::from_block(&first);
+            let second_key = ExtensionKeyV1::from_block(&second);
+            let mut replacement = first.clone();
+            replacement.schema_version = brilliant_core_types::SafeInteger::new(29).unwrap();
+            replacement.payload = second.payload.clone();
+            let mut prefix = delta(
+                std::slice::from_ref(&second_key),
+                &[
+                    (first_key.clone(), None),
+                    (second_key.clone(), Some(second.clone())),
+                ],
+                std::slice::from_ref(&first_key),
+            );
+            prefix
+                .merge_suffix(delta(
+                    &[first_key.clone(), second_key.clone()],
+                    &[(first_key.clone(), Some(replacement.clone()))],
+                    &[],
+                ))
+                .unwrap();
+            let FinalExtensionDeltaV1::Changed {
+                states, removed, ..
+            } = &prefix
+            else {
+                panic!("rebirth");
+            };
+            assert_eq!(states.get(&first_key), Some(&Some(replacement.clone())));
+            assert_eq!(states.get(&second_key), Some(&Some(second)));
+            assert!(removed.contains(&first_key));
+            // A later change to the same surviving key replaces its payload,
+            // while a suffix deletion contributes another retained lifetime.
+            let mut newest = replacement;
+            newest.schema_version = brilliant_core_types::SafeInteger::new(31).unwrap();
+            prefix
+                .merge_suffix(delta(
+                    std::slice::from_ref(&first_key),
+                    &[
+                        (first_key.clone(), Some(newest.clone())),
+                        (second_key.clone(), None),
+                    ],
+                    std::slice::from_ref(&second_key),
+                ))
+                .unwrap();
+            let FinalExtensionDeltaV1::Changed {
+                final_order,
+                states,
+                removed,
+            } = prefix
+            else {
+                panic!("merged change");
+            };
+            assert_eq!(final_order.as_slice(), std::slice::from_ref(&first_key));
+            assert_eq!(states.get(&first_key), Some(&Some(newest)));
+            assert_eq!(states.get(&second_key), Some(&None));
+            assert_eq!(states.len(), 2);
+            assert_eq!(removed.len(), 2);
+            assert!(removed.contains(&first_key) && removed.contains(&second_key));
+        }
+
+        #[test]
+        fn empty_changed_order_replaces_prior_order_without_erasing_earlier_states() {
+            let value = crate::store::tests::fixture().extensions.remove(0);
+            let key = ExtensionKeyV1::from_block(&value);
+            let mut prefix = delta(
+                std::slice::from_ref(&key),
+                &[(key.clone(), Some(value))],
+                &[],
+            );
+            prefix
+                .merge_suffix(delta(
+                    &[],
+                    &[(key.clone(), None)],
+                    std::slice::from_ref(&key),
+                ))
+                .unwrap();
+            prefix.merge_suffix(delta(&[], &[], &[])).unwrap();
+            let FinalExtensionDeltaV1::Changed {
+                final_order,
+                states,
+                removed,
+            } = prefix
+            else {
+                panic!("empty changed order");
+            };
+            assert!(final_order.is_empty());
+            assert_eq!(states.get(&key), Some(&None));
+            assert!(removed.contains(&key));
+        }
+    }
+
     pub(crate) struct PreparedFinalStateCommitV1 {
         base_version: DocumentVersionV1,
         document_id: StableId,
@@ -539,6 +721,50 @@ mod final_state {
     }
 
     impl FinalExtensionDeltaV1 {
+        /// Compose chronological deltas without cloning opaque values. A changed
+        /// suffix owns the complete final order, even when that order is empty;
+        /// deletion history survives a later same-key rebirth.
+        pub(crate) fn merge_suffix(
+            &mut self,
+            suffix: Self,
+        ) -> Result<(), TransactionPrepareFailureV1> {
+            let Self::Changed {
+                final_order: suffix_order,
+                states: suffix_states,
+                removed: suffix_removed,
+            } = suffix
+            else {
+                return Ok(());
+            };
+            match self {
+                Self::Unchanged => {
+                    *self = Self::Changed {
+                        final_order: suffix_order,
+                        states: suffix_states,
+                        removed: suffix_removed,
+                    };
+                }
+                Self::Changed {
+                    final_order,
+                    states,
+                    removed,
+                } => {
+                    // Reserve both growing containers before changing values.
+                    // The already-owned suffix Vec replaces the order directly.
+                    states
+                        .try_reserve(suffix_states.len())
+                        .map_err(|_| TransactionPrepareFailureV1::Capacity)?;
+                    removed
+                        .try_reserve(suffix_removed.len())
+                        .map_err(|_| TransactionPrepareFailureV1::Capacity)?;
+                    states.extend(suffix_states);
+                    removed.extend(suffix_removed);
+                    *final_order = suffix_order;
+                }
+            }
+            Ok(())
+        }
+
         fn into_simulation(
             self,
             store: &LiveScoreStore,

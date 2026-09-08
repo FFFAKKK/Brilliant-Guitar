@@ -55,6 +55,10 @@ removal, using immutable expected images and independent strong-boundary replay.
 Voice/Event subtree recording now covers prefix and added owners, nested edits,
 deletion and same-ID rebirth. Shared expected-state reconstruction checks the
 frozen prefix or immutable birth image plus recorded changes before removal.
+General prefix-Part deletion now retains its owned extension payloads and global
+positions. A private command-preparation helper checks TS measure coverage;
+the stored interpreter can still replay transient trees independently of that
+command check. Explicit extension deltas compose through combined history.
 Final assessment now reads the occurrence view through the same Foundation
 rules as JSON assessment. A successful final view can prepare and adopt real
 Store records, topology and indices. The retained journal supplies actual
@@ -91,12 +95,11 @@ S4 remain open. The current source tree is a kernel library/native workspace;
 editor UI, rendering, playback and physical project persistence are separate
 product work, not completed deliverables of this branch.
 
-Latest Rust verification: 387 tests passed, 1 ignored (136 runtime candidate
-tests); strict clippy, fmt and Rust 1.88.0 check passed. The latest full TS/native
-regression is from the production-changing S1.9 slice below; S1.10 changes only
-the test-only candidate and documentation, so it did not rebuild the addon or
-repeat that native run. This is regression
-evidence; the workload, runner and thresholds were not changed.
+Latest Rust verification: 406 tests passed, 1 ignored, including 146 runtime
+candidate tests and four Foundation candidate tests. Strict clippy, fmt and
+Rust 1.88.0 check passed. S1.11 also repairs the shared typed extension-order
+read path; its freshly rebuilt addon and full TS/native result are recorded
+below. This is regression evidence, not release qualification.
 
 Previous string-migration evidence remains relevant: seven targeted TS/native
 regressions passed on the initial rebuilt addon. The full debug run passed 719 tests, skipped
@@ -1120,7 +1123,7 @@ candidate regressions verify old handle invalidation, new binding preservation
 and index parity. A real-native TS comparison verifies submit/undo/redo state,
 versions, history, dirty state and events for the Event/Staff rebirth sequence.
 
-Validation: 349 Rust tests passed, one existing ignored test; all 99 runtime
+Validation: 349 Rust tests passed, one existing ignored test; all 99
 candidate tests passed. Rustfmt, all-target clippy `-D warnings`, Rust 1.88.0
 all-target check and diff checks passed. Full TS/native regression: 725 passed,
 two skipped, zero failed in 45.997 seconds; P3B completed in 22.363 seconds.
@@ -1237,8 +1240,8 @@ or children at affected boundaries, and replacement occurrences disguised with
 identical raw IDs and values. Independent GPT-6 reviews found and verified the
 root-tag and owner-field guards; the final scoped rereview passed.
 
-Validation: 387 Rust tests passed, one existing ignored test, including 136
-runtime candidate tests. Rustfmt, all-target clippy `-D warnings`, Rust 1.88.0
+Validation: 387 Rust tests passed, one existing ignored test, including 132
+runtime candidate tests and four Foundation candidate tests. Rustfmt, all-target clippy `-D warnings`, Rust 1.88.0
 all-target check and diff checks passed. Logs: `target/rhythm-journal-rust-final.log`,
 `rhythm-journal-clippy.log`, `rhythm-journal-msrv.log` and the focused
 `rhythm-journal-focused.log`. All code changes are under the test-only candidate;
@@ -1253,3 +1256,80 @@ gates. Repeated parent-order checks also need cost accounting. S2 versioned
 extension/session composition, Rust default activation and commercial
 qualification remain open. This checkpoint completes a private structural slice,
 not the kernel as a whole.
+
+### S1.11 — prefix-Part deletion and owned extension history
+
+The private Recorder can now remove frozen-prefix Parts as well as its own
+births. Its subtree payload includes affected opaque extension values and their
+current global predecessors. Expected extension data comes independently from
+the frozen prefix minus recorded deletion keys; arbitrary candidate extension
+writes cannot become accepted history. Removing one Part updates the trusted
+predecessors used when later removing another Part.
+
+Part command preparation has a separate helper: resolve the target first, then
+require the same global Measure/content coverage as TS. The minimum Part count
+remains final semantics so later batch children can repair a deletion. Low-level
+stored operations still represent transient repeated contents; they are not the
+complete public command preparation surface.
+
+The extension state layer ties existing owners to occurrence lifetimes. A same-ID
+Part birth cannot inherit a deleted Part's extension data. Originally dangling
+owners can be repaired by a new Part; a birth records only the pre-existing keys
+it must preserve during inverse replay. Explicit Part removal still captures and
+deletes those extensions. Undo restores payloads before undoing the birth, leaves
+the preserved data available to the typed-prefix inverse, and resets its owner
+binding for subsequent private replay cycles. Header, value, order, reference,
+Part detach and final semantic reads use the same current extension state.
+
+Extension deltas now merge in chronological order across prior suffix inverse,
+typed prefix and current suffix. Later states and final order replace earlier
+ones while every deletion key remains recorded through same-key restoration.
+Only final preparation lowers this private state to Store adoption.
+
+New tests exposed a shared production defect: standalone extension changes
+updated headers but left generic order reads using a stale cached/base order.
+Typed inverse replay could then reject a valid ReplaceOrderedChildren operation.
+Extension order reads and generic write snapshots now use the current headers.
+A direct regression covers interleaved standalone edits and generic order
+replacement, detachment, reinsertion and moves, including wrong-document reads
+and visitor short-circuiting. Other order kinds keep their existing path.
+
+Nineteen new Rust tests cover those reads, delta composition, real combined
+adoption, edited prefix extensions, interleaved owners, same-ID rebirth, final
+semantic rejection, malformed stored payload/owner/anchor, unrecorded mutation,
+all injected Part-record/replay reservation failures and repeated dangling-owner
+replay. Index rebuild parity, versions and unchanged Store on failure are checked.
+Independent GPT-6 reviews verified the journal, trusted extension expectations,
+state layer and production order-read repair. Their owner-lifetime and dangling
+reverse-reference findings were repaired and covered by regressions.
+
+Validation: 406 Rust tests passed, one existing ignored test; 146 runtime and
+four Foundation candidate tests passed. Rustfmt, strict all-target clippy,
+Rust 1.88.0 all-target check and diff checks passed. The candidate-number split
+is now explicit: earlier combined counts included the four Foundation tests.
+Logs: `target/part-extensions-rust-final.log`, `part-extensions-clippy.log`,
+`part-extensions-msrv.log`, `part-extensions-native-build.log` and
+`part-extensions-npm.log`.
+
+The rebuilt release addon SHA-256 is
+`FA2DC2416E4D03EC8774CCB5F99479B43B02C9D7EEE711F7BA6DBFF47CB15AA3`.
+Full TS/native regression on Node 24.15.0 passed 725 tests, skipped two and
+failed zero in 49.693 seconds; P3B completed in 24.209 seconds. The initial full
+run had two failures: the historical source assertion still required all orders
+to reuse their first snapshot, and a duplicate-object timing ratio reached 3.271.
+The assertion now pins the unchanged entity-order guard and the explicit
+Extensions exception; the behavioral Rust regression covers the latter.
+The frozen timing guard passed both an isolated repeat and the subsequent full
+run on the same addon. No workload, runner or performance threshold changed.
+The first result is retained in `target/part-extensions-npm-first.log`, and the
+isolated result in `target/part-extensions-targeted-native.log`. This observation
+remains part of future performance qualification, not a claim of timing stability.
+
+Remaining functional sequence: Measure cross-Part composite and content
+membership, range resolution, shared 28-command/Batch dispatch, then full
+effects/segments/affected and resource/error accounting. S2 extension/session
+execution and Rust activation remain open. The new suffix extension layer only
+implements Part deletion/restoration; it is not the complete versioned extension
+protocol. Repeated header scans and some allocations are not yet fully charged;
+Option-based read failures can still lose precise capacity classification.
+Commercial optimization and qualification follow complete functionality.

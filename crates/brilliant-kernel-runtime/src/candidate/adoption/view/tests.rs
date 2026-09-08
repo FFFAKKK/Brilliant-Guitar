@@ -237,3 +237,58 @@ fn absent_content_link_preserves_store_present_false_contract() {
         store.read_reference(&missing_endpoint)
     );
 }
+
+#[test]
+fn dangling_extension_reverse_references_are_independent_of_restore_history() {
+    let document = fixture();
+    let store = build_live_score_store(&document).unwrap();
+    let part_id = id("dangling-part");
+    let mut extension = document.extensions[0].clone();
+    extension.namespace = "dangling.owner".into();
+    extension.owner = ExtensionOwnerV1::Part {
+        part_id: part_id.clone(),
+    };
+    let reference = Reference::ExtensionOwner {
+        namespace: extension.namespace.clone(),
+        owner: StableExtensionOwnerV1::Part {
+            part_id: part_id.clone(),
+        },
+    };
+    for restored in [false, true] {
+        let mut prefix = TransactionOverlayV1::new(&store);
+        prefix
+            .insert_extension(StableAnchorV1::Start, extension.clone())
+            .unwrap();
+        let mut candidate = Candidate::new(prefix, document.id.clone());
+        if restored {
+            let root = candidate
+                .insert_part(crate::candidate::tests::raw_part("dangling-part"), None)
+                .unwrap();
+            let blocks = candidate.read_part_extensions(&root).unwrap();
+            assert_eq!(blocks.len(), 1);
+            candidate.remove_part_extensions(&root, &blocks).unwrap();
+            candidate.insert_part_extensions(&root, &blocks).unwrap();
+            let keys = candidate.part_extension_keys(&root).unwrap();
+            candidate
+                .remove_part_extensions_preserving(&root, &[], &keys)
+                .unwrap();
+            candidate.hide(&root).unwrap();
+        }
+        let view = candidate.seal_structural_boundary().unwrap();
+        assert!(
+            view.occurrence(&Entity::Part {
+                part_id: part_id.clone()
+            })
+            .is_none()
+        );
+        assert_eq!(
+            view.read_reference(&reference),
+            Some(ReferenceValueV1::ExtensionOwner(extension.owner.clone()))
+        );
+        assert_eq!(
+            view.list_references_to(&part_id),
+            vec![reference.clone()],
+            "restored={restored}"
+        );
+    }
+}
