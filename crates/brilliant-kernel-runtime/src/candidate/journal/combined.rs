@@ -9,13 +9,13 @@ use crate::{
 };
 use brilliant_core_types::DocumentVersionV1;
 
-struct CombinedHistory {
+pub(super) struct CombinedHistory {
     prefix: ChangeSetV1,
     suffix: Journal,
 }
 
 impl Recorder<'_> {
-    fn prepare_combined_commit(
+    pub(super) fn prepare_combined_commit(
         self,
         store: &LiveScoreStore,
         version: DocumentVersionV1,
@@ -26,7 +26,7 @@ impl Recorder<'_> {
 }
 
 impl CombinedHistory {
-    fn prepare_replay(
+    pub(super) fn prepare_replay(
         &self,
         store: &LiveScoreStore,
         version: DocumentVersionV1,

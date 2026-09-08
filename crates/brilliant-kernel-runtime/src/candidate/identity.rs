@@ -86,6 +86,10 @@ fn raw_identity(
 }
 
 impl IdentityRecorder {
+    pub(super) fn source_of(&self, id: JournalId) -> Option<&Occurrence> {
+        self.entries.get(id.0).map(|entry| &entry.source)
+    }
+
     pub(super) fn record(
         &mut self,
         candidate: &mut Candidate<'_>,

@@ -1,6 +1,6 @@
 //! Stored admission operations: scalar/raw-reference changes, Part subtrees
-//! owned by this journal and Staff leaves. This remains inside the test-only
-//! admission candidate.
+//! owned by this journal, Staff leaves and Voice/Event subtrees. This remains
+//! inside the test-only admission candidate.
 //! Private finalization and combined typed-prefix history are wired here.
 //! Complete command preparation, effects/segments and resource accounting remain
 //! integration gates before native activation.
@@ -14,8 +14,10 @@ use super::*;
 
 mod bundle;
 mod combined;
+mod expected;
 mod fields;
 mod orders;
+mod rhythm;
 mod staff;
 use bundle::PartBundle;
 use fields::FieldChanges;
@@ -26,6 +28,8 @@ use staff::StaffBundle;
 enum StoredEntityBundle {
     Part(Arc<PartBundle>),
     Staff(Arc<StaffBundle>),
+    Voice(Arc<PartBundle>),
+    Event(Arc<PartBundle>),
 }
 
 #[derive(Clone)]
@@ -74,6 +78,7 @@ struct Recorder<'a> {
     identities: IdentityRecorder,
     active: HashMap<Occurrence, ActivePart>,
     staff_images: HashMap<Occurrence, Arc<bundle::Image>>,
+    birth_nodes: HashMap<Occurrence, expected::NodeOrigin>,
     steps: Vec<Step>,
     changes: HashMap<Occurrence, FieldChanges>,
     order_changes: HashMap<CandidateOrder, Arc<Vec<JournalId>>>,
@@ -109,34 +114,6 @@ fn predecessor(
         )
         .ok_or(Failure::InternalError)?;
     result.ok_or(Failure::InternalError)
-}
-
-fn insertion_position(
-    candidate: &mut Candidate<'_>,
-    anchor: Option<&Occurrence>,
-) -> Result<usize, Failure> {
-    let Some(anchor) = anchor else {
-        return Ok(0);
-    };
-    if !candidate.visible(anchor) || candidate.owner(anchor).as_ref() != Some(&candidate.document) {
-        return Err(Failure::InternalError);
-    }
-    let mut index = 0;
-    let mut found = false;
-    candidate
-        .visit_order(
-            &CandidateOrder::new(&candidate.document.clone(), Children::Parts),
-            &mut |child, _| {
-                index += 1;
-                if child == anchor {
-                    found = true;
-                    return false;
-                }
-                true
-            },
-        )
-        .ok_or(Failure::InternalError)?;
-    found.then_some(index).ok_or(Failure::InternalError)
 }
 
 impl<'a> Recorder<'a> {
@@ -175,6 +152,7 @@ impl<'a> Recorder<'a> {
             identities: IdentityRecorder::default(),
             active: HashMap::new(),
             staff_images: HashMap::new(),
+            birth_nodes: HashMap::new(),
             steps: Vec::new(),
             changes: HashMap::new(),
             order_changes: HashMap::new(),
@@ -199,11 +177,16 @@ impl<'a> Recorder<'a> {
         after: Option<&JsString>,
     ) -> Result<Occurrence, Failure> {
         self.candidate.reservation.ensure_active()?;
-        self.candidate.insertion_index(
-            &CandidateOrder::new(&self.candidate.document.clone(), Children::Parts),
-            after,
-            None,
-        )?;
+        let order = CandidateOrder::new(&self.candidate.document.clone(), Children::Parts);
+        let position = self.candidate.insertion_index(&order, after, None)?;
+        self.verify_recorded_node(&order.owner)?;
+        let mut expected_order = self.recorded_order_ids(&order)?;
+        self.candidate
+            .reservation
+            .vec(Site::JournalOperations, &mut expected_order, 1)?;
+        self.candidate
+            .reservation
+            .map(Site::JournalOperations, &mut self.order_changes, 1)?;
         self.candidate
             .reservation
             .vec(Site::JournalOperations, &mut self.steps, 1)?;
@@ -231,6 +214,9 @@ impl<'a> Recorder<'a> {
                 self.staff_images.insert(source.clone(), node.image.clone());
             }
         }
+        self.register_birth(bundle.clone(), &sources)?;
+        expected_order.insert(position, bundle.nodes[0].id);
+        self.order_changes.insert(order, Arc::new(expected_order));
         self.steps.push(Step {
             forward: Operation::InsertEntity {
                 owner,
@@ -266,38 +252,12 @@ impl<'a> Recorder<'a> {
         self.candidate.reservation.ensure_active()?;
         let root = self.candidate.resolve(Kind::Part, raw_id)?;
         // Added is not enough: this exact root must belong to this recorder.
-        let active = self.active.get(&root).ok_or(Failure::InternalError)?;
+        self.active.get(&root).ok_or(Failure::InternalError)?;
         let document = self.candidate.document.clone();
-        let (bundle, sources) = if active.staff_changes.is_empty() {
-            let mut sources = Vec::new();
-            self.candidate.reservation.vec(
-                Site::JournalOperations,
-                &mut sources,
-                active.sources.len(),
-            )?;
-            sources.extend(active.sources.iter().cloned());
-            (
-                active
-                    .bundle
-                    .patched(
-                        &mut self.candidate,
-                        &active.sources,
-                        &self.changes,
-                        &self.order_changes,
-                    )?
-                    .map_or_else(|| active.bundle.clone(), Arc::new),
-                sources,
-            )
-        } else {
-            let (bundle, sources) = active.bundle.patched_staff_structure(
-                &mut self.candidate,
-                &active.sources,
-                &active.staff_changes,
-                &self.changes,
-                &self.order_changes,
-            )?;
-            (Arc::new(bundle), sources)
-        };
+        let order = CandidateOrder::new(&document, Children::Parts);
+        let mut expected_order = self.recorded_order_ids(&order)?;
+        let (bundle, sources) = self.expected_subtree(&root)?;
+        let bundle = Arc::new(bundle);
         bundle.verify(&mut self.candidate, &document, &sources)?;
         let previous = predecessor(&mut self.candidate, &root)?;
         let anchor = previous
@@ -309,6 +269,12 @@ impl<'a> Recorder<'a> {
             .reservation
             .vec(Site::JournalOperations, &mut self.steps, 1)?;
         self.candidate.hide(&root)?;
+        let position = expected_order
+            .iter()
+            .position(|id| *id == bundle.nodes[0].id)
+            .ok_or(Failure::InternalError)?;
+        expected_order.remove(position);
+        self.order_changes.insert(order, Arc::new(expected_order));
         self.steps.push(Step {
             forward: Operation::RemoveEntity {
                 owner,
@@ -458,16 +424,23 @@ impl Operation {
         inserting: bool,
     ) -> Result<(), Failure> {
         match bundle {
-            StoredEntityBundle::Part(bundle) => {
-                Self::apply_part(candidate, bindings, owner, anchor, bundle, inserting)
+            StoredEntityBundle::Part(bundle) if bundle.root_kind()? == Kind::Part => {
+                Self::apply_subtree(candidate, bindings, owner, anchor, bundle, inserting)
             }
             StoredEntityBundle::Staff(bundle) => {
                 staff::apply_staff(candidate, bindings, owner, anchor, bundle, inserting)
             }
+            StoredEntityBundle::Voice(bundle) if bundle.root_kind()? == Kind::Voice => {
+                Self::apply_subtree(candidate, bindings, owner, anchor, bundle, inserting)
+            }
+            StoredEntityBundle::Event(bundle) if bundle.root_kind()? == Kind::Event => {
+                Self::apply_subtree(candidate, bindings, owner, anchor, bundle, inserting)
+            }
+            _ => Err(Failure::InternalError),
         }
     }
 
-    fn apply_part(
+    fn apply_subtree(
         candidate: &mut Candidate<'_>,
         bindings: &mut ReplayBindings<'_>,
         owner_id: JournalId,
@@ -478,14 +451,17 @@ impl Operation {
         candidate.reservation.ensure_active()?;
         bundle.validate(candidate)?;
         let owner = bindings.resolve(owner_id, candidate)?;
-        if owner != candidate.document {
+        let children = bundle.parent_children()?;
+        if candidate.kind(&owner) != Some(children.owner_kind()) {
             return Err(Failure::InternalError);
         }
         let anchor = anchor
             .map(|id| bindings.resolve(id, candidate))
             .transpose()?;
         if inserting {
-            PartBundle::require_no_extensions(candidate, &bundle.nodes[0].image.raw_id)?;
+            if bundle.root_kind()? == Kind::Part {
+                PartBundle::require_no_extensions(candidate, &bundle.nodes[0].image.raw_id)?;
+            }
             for node in &bundle.nodes {
                 let parent = node
                     .parent
@@ -497,7 +473,11 @@ impl Operation {
                     parent,
                 )?;
             }
-            let position = insertion_position(candidate, anchor.as_ref())?;
+            let position = rhythm::insertion_position(
+                candidate,
+                &CandidateOrder::new(&owner, children),
+                anchor.as_ref(),
+            )?;
             let mut assignments = Vec::new();
             candidate.reservation.vec(
                 Site::JournalOperations,
@@ -521,7 +501,12 @@ impl Operation {
             for node in &bundle.nodes {
                 sources.push(bindings.resolve(node.id, candidate)?);
             }
-            if predecessor(candidate, &sources[0])? != anchor {
+            if orders::previous(
+                candidate,
+                &CandidateOrder::new(&owner, children),
+                &sources[0],
+            )? != anchor
+            {
                 return Err(Failure::InternalError);
             }
             bundle.verify(candidate, &owner, &sources)?;

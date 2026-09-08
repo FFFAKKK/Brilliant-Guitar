@@ -72,6 +72,8 @@ pub(super) struct BundleNode {
 }
 
 #[derive(Clone)]
+// Kept under the existing name to preserve the Part recorder's interface. The
+// node table also represents Voice and Event roots; Measure is not a subtree.
 pub(super) struct PartBundle {
     pub(super) nodes: Vec<BundleNode>,
 }
@@ -102,117 +104,23 @@ fn collect(
 }
 
 impl PartBundle {
-    /// Compose an expected subtree solely from the immutable insertion image
-    /// and recorded deltas. Current candidate members/fields are verified later;
-    /// they must never become the expected journal payload by recapture.
-    pub(super) fn patched_staff_structure(
-        &self,
-        candidate: &mut Candidate<'_>,
-        original_sources: &[Occurrence],
-        staff_changes: &HashMap<Occurrence, Option<Arc<StaffBundle>>>,
-        changes: &HashMap<Occurrence, FieldChanges>,
-        order_changes: &HashMap<CandidateOrder, Arc<Vec<JournalId>>>,
-    ) -> Result<(Self, Vec<Occurrence>), Failure> {
-        candidate.reservation.ensure_active()?;
-        if original_sources.len() != self.nodes.len() || self.nodes.is_empty() {
+    pub(super) fn root_kind(&self) -> Result<Kind, Failure> {
+        let root = self.nodes.first().ok_or(Failure::InternalError)?;
+        if root.parent.is_some()
+            || !matches!(root.image.kind, Kind::Part | Kind::Voice | Kind::Event)
+        {
             return Err(Failure::InternalError);
         }
-        let capacity = self
-            .nodes
-            .len()
-            .checked_add(staff_changes.len())
-            .ok_or(Failure::InternalError)?;
-        let mut nodes = Vec::new();
-        let mut sources = Vec::new();
-        let mut positions = HashMap::new();
-        candidate
-            .reservation
-            .vec(Site::JournalOperations, &mut nodes, capacity)?;
-        candidate
-            .reservation
-            .vec(Site::JournalOperations, &mut sources, capacity)?;
-        candidate
-            .reservation
-            .map(Site::JournalOperations, &mut positions, capacity)?;
-        for (node, source) in self.nodes.iter().zip(original_sources) {
-            if let Some(delta) = staff_changes.get(source) {
-                if node.image.kind != Kind::Staff || delta.is_some() {
-                    return Err(Failure::InternalError);
-                }
-                continue;
-            }
-            positions.insert(node.id, nodes.len());
-            nodes.push(node.clone());
-            sources.push(source.clone());
-        }
-        // Original parents precede appended Staff leaves. Order is expressed by
-        // JournalId vectors, independently of this private node-table layout.
-        let original_count = nodes.len();
-        for (source, staff) in staff_changes {
-            let Some(staff) = staff else {
-                continue;
-            };
-            staff.validate()?;
-            if positions.insert(staff.id, nodes.len()).is_some() {
-                return Err(Failure::InternalError);
-            }
-            nodes.push(BundleNode {
-                id: staff.id,
-                parent: Some(0),
-                image: staff.image.clone(),
-                orders: Arc::new(Vec::new()),
-            });
-            sources.push(source.clone());
-        }
-        for (index, (node, source)) in nodes.iter_mut().zip(&sources).enumerate() {
-            if index < original_count {
-                node.parent = node
-                    .parent
-                    .map(|parent| {
-                        positions
-                            .get(&self.nodes[parent].id)
-                            .copied()
-                            .ok_or(Failure::InternalError)
-                    })
-                    .transpose()?;
-            }
-            if let Some(change) = changes.get(source) {
-                let mut image = node.image.as_ref().clone();
-                change.apply_to(&mut image)?;
-                node.image = Arc::new(image);
-            }
-            let mut orders = Vec::new();
-            candidate
-                .reservation
-                .vec(Site::JournalOperations, &mut orders, node.orders.len())?;
-            for (kind, original) in node.orders.iter() {
-                let replacement = order_changes.get(&CandidateOrder::new(source, *kind));
-                let mut children = Vec::new();
-                candidate.reservation.vec(
-                    Site::JournalOperations,
-                    &mut children,
-                    replacement.map_or(original.len(), |ids| ids.len()),
-                )?;
-                if let Some(ids) = replacement {
-                    for id in ids.iter() {
-                        children.push(*positions.get(id).ok_or(Failure::InternalError)?);
-                    }
-                } else {
-                    for child in original.iter() {
-                        children.push(
-                            *positions
-                                .get(&self.nodes[*child].id)
-                                .ok_or(Failure::InternalError)?,
-                        );
-                    }
-                }
-                orders.push((*kind, Arc::new(children)));
-            }
-            node.orders = Arc::new(orders);
-        }
-        let expected = Self { nodes };
-        expected.validate(candidate)?;
-        Ok((expected, sources))
+        Ok(root.image.kind)
+    }
+
+    pub(super) fn parent_children(&self) -> Result<Children, Failure> {
+        Ok(match self.root_kind()? {
+            Kind::Part => Children::Parts,
+            Kind::Voice => Children::Voices,
+            Kind::Event => Children::Events,
+            _ => return Err(Failure::InternalError),
+        })
     }
 
     // These operations introduce no extension blocks. Prefix inverse removal
@@ -240,10 +148,17 @@ impl PartBundle {
         root: &Occurrence,
     ) -> Result<(Self, Vec<Occurrence>), Failure> {
         candidate.reservation.ensure_active()?;
-        Self::require_no_extensions(
-            candidate,
-            candidate.raw_id(root).ok_or(Failure::InternalError)?,
-        )?;
+        // Capture is for a newly inserted arena tree, never a snapshot of a
+        // prefix subtree or a substitute for recorded expected-state patches.
+        if !matches!(root, Occurrence::Added(_)) {
+            return Err(Failure::InternalError);
+        }
+        if candidate.kind(root) == Some(Kind::Part) {
+            Self::require_no_extensions(
+                candidate,
+                candidate.raw_id(root).ok_or(Failure::InternalError)?,
+            )?;
+        }
         let mut bundle = Self { nodes: Vec::new() };
         let mut sources = Vec::new();
         bundle.capture_node(candidate, identities, root, None, &mut sources)?;
@@ -259,7 +174,7 @@ impl PartBundle {
         parent: Option<usize>,
         sources: &mut Vec<Occurrence>,
     ) -> Result<usize, Failure> {
-        // Prefix subtree removal needs separate Extension ownership handling.
+        // All captured descendants must belong to the just-inserted arena tree.
         let Occurrence::Added(index) = source else {
             return Err(Failure::InternalError);
         };
@@ -275,7 +190,9 @@ impl PartBundle {
             staff_id: node.staff_id.clone(),
             content_kind: node.content_kind,
         };
-        if !image.shape_valid() || (parent.is_none() && image.kind != Kind::Part) {
+        if !image.shape_valid()
+            || (parent.is_none() && !matches!(image.kind, Kind::Part | Kind::Voice | Kind::Event))
+        {
             return Err(Failure::InternalError);
         }
         let id = identities.record(candidate, source)?;
@@ -326,12 +243,7 @@ impl PartBundle {
 
     pub(super) fn validate(&self, candidate: &mut Candidate<'_>) -> Result<(), Failure> {
         candidate.reservation.ensure_active()?;
-        let Some(root) = self.nodes.first() else {
-            return Err(Failure::InternalError);
-        };
-        if root.image.kind != Kind::Part || root.parent.is_some() {
-            return Err(Failure::InternalError);
-        }
+        self.root_kind()?;
         let mut seen = Vec::new();
         let mut ids = HashSet::new();
         candidate
@@ -389,7 +301,15 @@ impl PartBundle {
         if sources.len() != self.nodes.len() {
             return Err(Failure::InternalError);
         }
-        Self::require_no_extensions(candidate, &self.nodes[0].image.raw_id)?;
+        let children = self.parent_children()?;
+        if candidate.kind(root_owner) != Some(children.owner_kind())
+            || !candidate.visible(root_owner)
+        {
+            return Err(Failure::InternalError);
+        }
+        if self.root_kind()? == Kind::Part {
+            Self::require_no_extensions(candidate, &self.nodes[0].image.raw_id)?;
+        }
         for (index, node) in self.nodes.iter().enumerate() {
             let source = &sources[index];
             let owner = node.parent.map_or(root_owner, |parent| &sources[parent]);
@@ -425,7 +345,11 @@ impl PartBundle {
         owner: &Occurrence,
         position: usize,
     ) -> Result<Vec<Occurrence>, Failure> {
-        let order = CandidateOrder::new(owner, Children::Parts);
+        let children = self.parent_children()?;
+        if candidate.kind(owner) != Some(children.owner_kind()) || !candidate.visible(owner) {
+            return Err(Failure::InternalError);
+        }
+        let order = CandidateOrder::new(owner, children);
         candidate.reserve_insertion(&order)?;
         let mut sources = Vec::new();
         candidate
@@ -468,83 +392,5 @@ impl PartBundle {
         }
         candidate.place_child(&order, position, sources[0].clone())?;
         Ok(sources)
-    }
-
-    pub(super) fn patched(
-        &self,
-        candidate: &mut Candidate<'_>,
-        sources: &[Occurrence],
-        changes: &HashMap<Occurrence, FieldChanges>,
-        order_changes: &HashMap<CandidateOrder, Arc<Vec<JournalId>>>,
-    ) -> Result<Option<Self>, Failure> {
-        candidate.reservation.ensure_active()?;
-        if sources.len() != self.nodes.len() {
-            return Err(Failure::InternalError);
-        }
-        let has_orders = self.nodes.iter().zip(sources).any(|(node, source)| {
-            node.orders
-                .iter()
-                .any(|(kind, _)| order_changes.contains_key(&CandidateOrder::new(source, *kind)))
-        });
-        if !has_orders && !sources.iter().any(|source| changes.contains_key(source)) {
-            return Ok(None);
-        }
-        let mut positions = HashMap::new();
-        if has_orders {
-            candidate
-                .reservation
-                .map(Site::JournalOperations, &mut positions, self.nodes.len())?;
-            for (index, node) in self.nodes.iter().enumerate() {
-                positions.insert(node.id, index);
-            }
-        }
-        let mut nodes = Vec::new();
-        candidate
-            .reservation
-            .vec(Site::JournalOperations, &mut nodes, self.nodes.len())?;
-        for (node, source) in self.nodes.iter().zip(sources) {
-            let mut node = node.clone();
-            if let Some(change) = changes.get(source) {
-                let mut image = node.image.as_ref().clone();
-                change.apply_to(&mut image)?;
-                node.image = Arc::new(image);
-            }
-            if has_orders
-                && node.orders.iter().any(|(kind, _)| {
-                    order_changes.contains_key(&CandidateOrder::new(source, *kind))
-                })
-            {
-                let mut orders = Vec::new();
-                candidate.reservation.vec(
-                    Site::JournalOperations,
-                    &mut orders,
-                    node.orders.len(),
-                )?;
-                for (kind, original) in node.orders.iter() {
-                    let value = if let Some(replacement) =
-                        order_changes.get(&CandidateOrder::new(source, *kind))
-                    {
-                        let mut indices = Vec::new();
-                        candidate.reservation.vec(
-                            Site::JournalOperations,
-                            &mut indices,
-                            replacement.len(),
-                        )?;
-                        for id in replacement.iter() {
-                            indices.push(*positions.get(id).ok_or(Failure::InternalError)?);
-                        }
-                        Arc::new(indices)
-                    } else {
-                        original.clone()
-                    };
-                    orders.push((*kind, value));
-                }
-                node.orders = Arc::new(orders);
-            }
-            nodes.push(node);
-        }
-        let patched = Self { nodes };
-        patched.validate(candidate)?;
-        Ok(Some(patched))
     }
 }

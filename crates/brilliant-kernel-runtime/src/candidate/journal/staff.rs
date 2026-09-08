@@ -55,28 +55,7 @@ impl Recorder<'_> {
         &mut self,
         order: &CandidateOrder,
     ) -> Result<Option<Vec<JournalId>>, Failure> {
-        if !self.active.contains_key(&order.owner) {
-            return Ok(None);
-        }
-        let current = self.collect_ids(order)?;
-        let active = &self.active[&order.owner];
-        let matches = if let Some(expected) = self.order_changes.get(order) {
-            current.as_slice() == expected.as_slice()
-        } else {
-            let (_, original) = active.bundle.nodes[0]
-                .orders
-                .iter()
-                .find(|(kind, _)| *kind == Children::Staffs)
-                .ok_or(Failure::InternalError)?;
-            current
-                .iter()
-                .copied()
-                .eq(original.iter().map(|index| active.bundle.nodes[*index].id))
-        };
-        if !matches {
-            return Err(Failure::InternalError);
-        }
-        Ok(Some(current))
+        Ok(Some(self.recorded_order_ids(order)?))
     }
 
     fn reserve_staff_ledger(
@@ -90,13 +69,11 @@ impl Recorder<'_> {
                 &mut active.staff_changes,
                 1,
             )?;
-            if !self.order_changes.contains_key(order) {
-                self.candidate.reservation.map(
-                    Site::JournalOperations,
-                    &mut self.order_changes,
-                    1,
-                )?;
-            }
+        }
+        if !self.order_changes.contains_key(order) {
+            self.candidate
+                .reservation
+                .map(Site::JournalOperations, &mut self.order_changes, 1)?;
         }
         Ok(())
     }
@@ -170,6 +147,7 @@ impl Recorder<'_> {
         let order = CandidateOrder::new(part, Children::Staffs);
         // Resolve the raw anchor before any journal reservation or mutation.
         let position = self.candidate.insertion_index(&order, after, None)?;
+        self.verify_recorded_node(part)?;
         let mut expected_order = self.expected_staff_order(&order)?;
         if let Some(ids) = &mut expected_order {
             self.candidate
@@ -202,11 +180,11 @@ impl Recorder<'_> {
             }
             ids.insert(position, bundle.id);
             self.order_changes.insert(order, Arc::new(ids));
-            self.active
-                .get_mut(part)
-                .ok_or(Failure::InternalError)?
-                .staff_changes
-                .insert(root.clone(), Some(bundle.clone()));
+            if let Some(active) = self.active.get_mut(part) {
+                active
+                    .staff_changes
+                    .insert(root.clone(), Some(bundle.clone()));
+            }
         }
         self.steps.push(Step {
             forward: Operation::InsertEntity {
@@ -268,11 +246,9 @@ impl Recorder<'_> {
                 .ok_or(Failure::InternalError)?;
             ids.remove(position);
             self.order_changes.insert(order, Arc::new(ids));
-            self.active
-                .get_mut(&part)
-                .ok_or(Failure::InternalError)?
-                .staff_changes
-                .insert(root.clone(), None);
+            if let Some(active) = self.active.get_mut(&part) {
+                active.staff_changes.insert(root.clone(), None);
+            }
         }
         self.changes.remove(&root);
         self.steps.push(Step {

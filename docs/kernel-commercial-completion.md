@@ -52,6 +52,9 @@ Stored list moves now compose with edited subtree removal and replay using exact
 occurrence predecessors, including repeated empty IDs and repeated contents.
 Staff insertion/removal now composes with field changes, moves and whole-Part
 removal, using immutable expected images and independent strong-boundary replay.
+Voice/Event subtree recording now covers prefix and added owners, nested edits,
+deletion and same-ID rebirth. Shared expected-state reconstruction checks the
+frozen prefix or immutable birth image plus recorded changes before removal.
 Final assessment now reads the occurrence view through the same Foundation
 rules as JSON assessment. A successful final view can prepare and adopt real
 Store records, topology and indices. The retained journal supplies actual
@@ -88,9 +91,11 @@ S4 remain open. The current source tree is a kernel library/native workspace;
 editor UI, rendering, playback and physical project persistence are separate
 product work, not completed deliverables of this branch.
 
-Latest Rust verification: 371 tests passed, 1 ignored (120 runtime candidate
-tests); strict clippy, fmt and Rust 1.88.0 check passed. The full TS/native
-regression result for this slice is recorded in S1.9 below. This is regression
+Latest Rust verification: 387 tests passed, 1 ignored (136 runtime candidate
+tests); strict clippy, fmt and Rust 1.88.0 check passed. The latest full TS/native
+regression is from the production-changing S1.9 slice below; S1.10 changes only
+the test-only candidate and documentation, so it did not rebuild the addon or
+repeat that native run. This is regression
 evidence; the workload, runner and thresholds were not changed.
 
 Previous string-migration evidence remains relevant: seven targeted TS/native
@@ -1199,3 +1204,52 @@ prefix-Part removal, Measure's cross-Part composite, range resolution and the
 complete 28-command/Batch dispatch. Notes stay nested Event data; no extra Note
 insertion/removal public API is needed. The detailed order and risks are recorded
 in the candidate design document. Commercial optimization follows function closure.
+
+### S1.10 — Voice/Event subtree history and shared expected state
+
+Private Voice/Event insertion and removal now compose with scalar/reference
+edits, list moves, nested deaths and same-ID rebirth over prefix and added owners.
+Part, Voice and Event history share an immutable node table; operation tags must
+match the bundle root kind. Notes remain nested Event data. No extra public Note
+insertion/removal API was introduced, and public command routing is unchanged.
+
+Expected subtree state comes from immutable birth images and owner routes, or
+the frozen typed prefix, overlaid only with recorded field and order changes.
+It is not recaptured from arbitrary current candidate data. The shared builder
+replaces the old Staff-specific Part patching logic. Unchanged images and child
+index arrays retain their Arc sharing. Changed preorder tables are checked by
+logical JournalId order rather than requiring a different numeric index array.
+Affected owner/node/order checks precede recording, including apparent no-ops;
+valid field/reference/move no-ops still reserve nothing and record no step.
+
+Voice removal follows the unique Part/content owner route without re-resolving
+the global Measure. Event removal uses the actual owning Voice occurrence.
+Removing the last Voice is allowed as an intermediate operation and must be
+repaired before final assessment; an empty Event list can be a valid final state.
+Descendant identities are retained before hiding and rebound from stored data
+during replay. Combined adoption still validates final semantics once.
+
+Sixteen new tests include real submit/inverse/forward Store adoption with a
+nonempty typed prefix, index rebuild parity, nested edited deletion, rebirth,
+stale descendant rejection and complete injected reservation-failure loops for
+three nested lifecycles. Guards reject mismatched root tags, unrecorded fields
+or children at affected boundaries, and replacement occurrences disguised with
+identical raw IDs and values. Independent GPT-6 reviews found and verified the
+root-tag and owner-field guards; the final scoped rereview passed.
+
+Validation: 387 Rust tests passed, one existing ignored test, including 136
+runtime candidate tests. Rustfmt, all-target clippy `-D warnings`, Rust 1.88.0
+all-target check and diff checks passed. Logs: `target/rhythm-journal-rust-final.log`,
+`rhythm-journal-clippy.log`, `rhythm-journal-msrv.log` and the focused
+`rhythm-journal-focused.log`. All code changes are under the test-only candidate;
+the S1.9 release addon and its 725-pass native result remain the latest native
+evidence, not a new run for this checkpoint.
+
+Next functional work: general prefix-Part removal including owned extensions,
+Measure's cross-Part composite, range resolution and complete 28-command/Batch
+dispatch. Effects/segments/affected ordering, cumulative retained resources,
+precise capacity errors and complete traversal accounting remain activation
+gates. Repeated parent-order checks also need cost accounting. S2 versioned
+extension/session composition, Rust default activation and commercial
+qualification remain open. This checkpoint completes a private structural slice,
+not the kernel as a whole.

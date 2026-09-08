@@ -1,4 +1,6 @@
 use super::*;
+mod rhythm;
+mod rhythm_guards;
 use crate::{
     candidate::tests::{id, raw_part},
     store::{build_live_score_store, tests::fixture},

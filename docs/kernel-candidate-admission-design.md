@@ -2,7 +2,8 @@
 
 Status: command input representation/codec implemented; occurrence storage,
 reads, scalar/reference writes and Part/Staff/Voice/Event insertion verified under
-`cfg(test)`. Final assessment, stable Store adoption and combined typed-prefix/
+`cfg(test)`. Voice/Event subtree recording/removal now composes with nested edits
+and rebirth using shared immutable expected state. Final assessment, stable Store adoption and combined typed-prefix/
 candidate-suffix replay/adoption now have an internal vertical path. Candidate command execution and adoption are
 not activated in the public runtime. Historical implementation entries below
 retain the evidence and limitations at their original checkpoints. This is
@@ -763,3 +764,43 @@ Do not recapture arbitrary current candidate values as expected history or
 create a second command engine. Each recorded subtree must be checked against
 its original image plus recorded changes before removal. Complete effects and
 resource/error accounting before activating the native route.
+
+### Voice/Event subtree recording and immutable expectations
+
+The preceding Event/Voice structural slice is implemented privately. Part,
+Voice and Event bundles share the existing node/image/order table. Each stored
+operation verifies its tag against the root kind and derives the parent child
+order from that root. Added roots retain immutable birth images, child indices
+and owner occurrences. Prefix roots read their originals from the frozen typed
+overlay. Only recorded field/reference and JournalId order changes modify the
+expected state used for verification and later removal.
+
+Recording verifies the affected owner, node and sibling order before writing
+or accepting an apparent no-op. Removal recursively reconstructs and verifies
+the expected subtree before hiding any node. This replaces the Staff-specific
+Part subtree patcher and composes nested Voice/Event edits and deletion with
+whole-Part deletion. Unchanged images and index arrays remain shared; a changed
+preorder may reuse the same numeric indices while referring to different node
+identities. Logical child JournalIds are the order invariant.
+
+Voice preparation preserves unique Part/content resolution; removal does not
+re-resolve a global Measure. Event removal retains the actual owning Voice
+occurrence. Empty intermediate Voice lists are checked only at final semantics;
+empty Event lists remain admissible. Notes are captured and replayed as Event
+descendants. Birth/death identities do not merge when raw IDs or payloads match.
+
+The 16 new tests cover real combined Store adoption and inverse/forward cycles,
+index parity, prefix/added owners, nested mutation and deletion, same-ID rebirth,
+zero-reservation no-ops, stale descendants and every injected reservation failure
+in three nested lifecycles. Adversarial guards reject unrecorded changes at the
+affected recording boundary; this is not an exhaustive scan for unrelated
+private-state corruption. Independent GPT-6 implementation review and scoped
+rereviews passed. Current evidence and counts are recorded in S1.10 of the
+completion ledger.
+
+General prefix-Part removal with owned extensions, Measure cross-Part history,
+range resolution and all-command/Batch dispatch remain next. Suffix extension
+state must be explicitly represented and merged before Part-owned extension
+removal is enabled. Detailed traversal/allocation costs, effects and error
+classification remain incomplete. No candidate route is activated publicly by
+this private implementation.

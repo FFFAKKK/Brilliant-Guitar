@@ -130,7 +130,9 @@ fn descendant_and_part_moves_compose_with_field_changes_removal_and_inverse_repl
         .replace_scalar(&root, Value::PartName("moved Part".into()))
         .unwrap();
     recorder.remove_part(&JsString::from("temporary")).unwrap();
-    assert!(recorder.order_changes.is_empty());
+    assert_eq!(recorder.order_changes.len(), 1);
+    assert!(recorder.order_changes.contains_key(&part_order));
+    recorder.verify_recorded_order(&part_order).unwrap();
     let Operation::RemoveEntity {
         expected: StoredEntityBundle::Part(expected),
         ..
@@ -142,14 +144,24 @@ fn descendant_and_part_moves_compose_with_field_changes_removal_and_inverse_repl
         expected.nodes[0].image.value,
         Some(Value::PartName("moved Part".into()))
     );
-    assert!(!Arc::ptr_eq(
-        &expected.nodes[0].orders,
-        &original.nodes[0].orders
-    ));
-    assert!(!Arc::ptr_eq(
-        &expected.nodes[0].orders[0].1,
-        &original.nodes[0].orders[0].1
-    ));
+    // Rebuilding a subtree in its final traversal order can share numerically
+    // identical index arrays. The child identities must still express the move.
+    let root_children = |bundle: &PartBundle| {
+        bundle.nodes[0]
+            .orders
+            .iter()
+            .flat_map(|(_, indices)| indices.iter().map(|index| bundle.nodes[*index].id))
+            .collect::<Vec<_>>()
+    };
+    assert_ne!(root_children(expected), root_children(&original));
+    let staff_ids = |bundle: &PartBundle| {
+        bundle.nodes[0].orders[0]
+            .1
+            .iter()
+            .map(|index| bundle.nodes[*index].id)
+            .collect::<Vec<_>>()
+    };
+    assert_ne!(staff_ids(expected), staff_ids(&original));
     assert!(
         Arc::ptr_eq(
             &expected.nodes[0].orders[1].1,
@@ -270,10 +282,15 @@ fn prefix_measure_and_staff_moves_keep_frozen_prefix_and_replay_from_a_strong_en
             None,
         )
         .unwrap();
-    assert!(
-        recorder.order_changes.is_empty(),
-        "prefix moves need no retained Part removal payload"
+    assert_eq!(
+        recorder.order_changes.len(),
+        2,
+        "prefix changes retain expected identity order for later subtree removal"
     );
+    recorder.verify_recorded_order(&measures).unwrap();
+    recorder
+        .verify_recorded_order(&CandidateOrder::new(&part, Children::Staffs))
+        .unwrap();
     let (recorded, journal) = recorder.finish().unwrap();
     assert_eq!(recorded.prefix.finish().unwrap(), expected);
     let mut forward = Candidate::new(prepare(), document.id.clone());
@@ -315,6 +332,7 @@ fn unchanged_positions_do_not_record_or_reserve_and_move_failures_preserve_prece
     let root = recorder.insert_part(moving_part(), None).unwrap();
     let order = CandidateOrder::new(&root, Children::Staffs);
     let steps = recorder.steps.len();
+    let order_changes = recorder.order_changes.clone();
     recorder.candidate.reservation = Reservation::fail_at(1);
     assert_eq!(
         recorder.move_child(&order, &JsString::from("move-staff-a"), None),
@@ -330,7 +348,10 @@ fn unchanged_positions_do_not_record_or_reserve_and_move_failures_preserve_prece
     );
     assert_eq!(recorder.candidate.reservation.attempts, 0);
     assert_eq!(recorder.steps.len(), steps);
-    assert!(recorder.order_changes.is_empty());
+    assert_eq!(
+        recorder.order_changes, order_changes,
+        "a no-op retains no additional order metadata"
+    );
     for (target, anchor, failure) in [
         (
             "missing",
@@ -491,6 +512,7 @@ fn moving_a_small_staff_list_does_not_visit_unrelated_events_or_rebuild_the_bund
     ));
     let root = recorder.insert_part(part, None).unwrap();
     let original = recorder.active[&root].bundle.clone();
+    let order_count = recorder.order_changes.len();
     let visits = recorder.candidate.work.visited_entries;
     recorder
         .move_child(
@@ -501,7 +523,7 @@ fn moving_a_small_staff_list_does_not_visit_unrelated_events_or_rebuild_the_bund
         .unwrap();
     assert!(recorder.candidate.work.visited_entries - visits <= 12);
     assert!(Arc::ptr_eq(&recorder.active[&root].bundle, &original));
-    assert_eq!(recorder.order_changes.len(), 1);
+    assert_eq!(recorder.order_changes.len(), order_count + 1);
 }
 
 #[test]

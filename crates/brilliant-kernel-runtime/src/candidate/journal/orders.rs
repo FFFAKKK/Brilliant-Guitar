@@ -115,20 +115,6 @@ impl Recorder<'_> {
         result
     }
 
-    fn owns_order(&self, order: &CandidateOrder) -> bool {
-        let mut current = Some(order.owner.clone());
-        for _ in 0..7 {
-            let Some(source) = current else {
-                return false;
-            };
-            if self.active.contains_key(&source) {
-                return true;
-            }
-            current = self.candidate.owner(&source);
-        }
-        false
-    }
-
     pub(super) fn collect_ids(
         &mut self,
         order: &CandidateOrder,
@@ -179,6 +165,9 @@ impl Recorder<'_> {
             .insertion_index(order, after, Some(&target))?;
         let expected = previous(&mut self.candidate, order, &target)?;
         let anchor = anchor_at(&mut self.candidate, order, &target, position)?;
+        self.verify_recorded_node(&order.owner)?;
+        self.verify_recorded_node(&target)?;
+        self.verify_recorded_order(order)?;
         if expected == anchor {
             return Ok(false);
         }
@@ -195,7 +184,7 @@ impl Recorder<'_> {
         self.candidate
             .reservation
             .vec(Site::JournalOperations, &mut self.steps, 1)?;
-        let replacement = if self.owns_order(order) {
+        let replacement = {
             if !self.order_changes.contains_key(order) {
                 self.candidate.reservation.map(
                     Site::JournalOperations,
@@ -203,13 +192,7 @@ impl Recorder<'_> {
                     1,
                 )?;
             }
-            let mut ids =
-                if order.children == Children::Staffs && self.active.contains_key(&order.owner) {
-                    self.expected_staff_order(order)?
-                        .ok_or(Failure::InternalError)?
-                } else {
-                    self.collect_ids(order)?
-                };
+            let mut ids = self.recorded_order_ids(order)?;
             let from = ids
                 .iter()
                 .position(|id| *id == target_id)
@@ -219,14 +202,10 @@ impl Recorder<'_> {
             }
             ids.remove(from);
             ids.insert(position, target_id);
-            Some(Arc::new(ids))
-        } else {
-            None
+            Arc::new(ids)
         };
         self.candidate.move_occurrence(order, target, position)?;
-        if let Some(replacement) = replacement {
-            self.order_changes.insert(order.clone(), replacement);
-        }
+        self.order_changes.insert(order.clone(), replacement);
         let order = JournalOrder {
             owner,
             children: order.children,
