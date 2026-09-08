@@ -1,8 +1,9 @@
 //! Stored admission operations: scalar/raw-reference changes, Part subtrees
 //! owned by this journal and Staff leaves. This remains inside the test-only
 //! admission candidate.
-//! Command preparation, final semantics, effects/segments, accounting and Store
-//! adoption are integration gates, not behavior supplied by this module.
+//! Private finalization and combined typed-prefix history are wired here.
+//! Complete command preparation, effects/segments and resource accounting remain
+//! integration gates before native activation.
 
 use brilliant_core_types::JsString;
 
@@ -12,6 +13,7 @@ use super::identity::{
 use super::*;
 
 mod bundle;
+mod combined;
 mod fields;
 mod orders;
 mod staff;
@@ -140,8 +142,8 @@ fn insertion_position(
 impl<'a> Recorder<'a> {
     /// Internal finalization vertical slice: assess before sealing identities,
     /// bind actual operations to this journal, then produce an owned Store plan.
-    /// Public command dispatch, combined-prefix history and resource accounting
-    /// remain separate integration work before native activation.
+    /// Public command dispatch and resource accounting remain separate
+    /// integration work before native activation.
     fn prepare_final_commit(
         self,
         store: &crate::store::LiveScoreStore,

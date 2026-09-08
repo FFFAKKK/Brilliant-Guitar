@@ -56,8 +56,10 @@ Final assessment now reads the occurrence view through the same Foundation
 rules as JSON assessment. A successful final view can prepare and adopt real
 Store records, topology and indices. The retained journal supplies actual
 operation counts, including net-zero changes. Suffix replay can also prepare
-and adopt from new strong Store boundaries; combined prefix/suffix history is
-still unfinished.
+and adopt from new strong Store boundaries. Combined typed-prefix/candidate-suffix
+history now replays privately in both directions, validates the final state once
+and prepares one Store adoption. This covers the currently implemented Recorder
+forms; it does not provide the remaining candidate command/journal forms.
 Candidate execution is still test-only, not the native default route.
 
 A separate live comparison found a Rust string-domain compatibility gap: TS
@@ -79,18 +81,17 @@ undo/redo, persistence, replay and a real 512-entry checkpoint. See
 `kernel-js-string-compatibility.md` for the exact scope and evidence.
 
 S1 continues with complete admission command/journal coverage, cumulative
-resource accounting, effects/segments/affected ordering and combined
-prefix/suffix history. The versioned extension execution/composition work in S2,
+resource accounting and effects/segments/affected ordering. The versioned
+extension execution/composition work in S2,
 consolidated release qualification in S3/S5 and reversible Rust default switch in
 S4 remain open. The current source tree is a kernel library/native workspace;
 editor UI, rendering, playback and physical project persistence are separate
 product work, not completed deliverables of this branch.
 
-Latest verified worktree: 349 Rust tests passed, 1 ignored (99 runtime candidate
-tests); strict clippy, fmt and Rust 1.88.0 check passed. Full TS/native regression
-passed 725 tests, skipped two and failed zero (45.997 seconds), using a freshly
-rebuilt release addon. P3B finished in 22.363 seconds. This is regression evidence;
-the workload, runner and thresholds were not changed.
+Latest Rust verification: 371 tests passed, 1 ignored (120 runtime candidate
+tests); strict clippy, fmt and Rust 1.88.0 check passed. The full TS/native
+regression result for this slice is recorded in S1.9 below. This is regression
+evidence; the workload, runner and thresholds were not changed.
 
 Previous string-migration evidence remains relevant: seven targeted TS/native
 regressions passed on the initial rebuilt addon. The full debug run passed 719 tests, skipped
@@ -116,13 +117,13 @@ product route, and passing regression tests is not release qualification.
 | 28 typed commands | Existing typed path implemented | Every command must also work after entering occurrence candidate mode |
 | Final semantic diagnostics | Shared Foundation rules read raw occurrences; independent TS oracle | Integrate into complete public command preparation and failure accounting |
 | Store adoption and indices | Internal final-view path now writes real Store state | Complete all command deltas, preparation effects and failure boundaries |
-| History and replay | Typed history exists; stored candidate suffix can replay/adopt | One atomic transaction for suffix inverse then prefix inverse, and the reverse for redo |
+| History and replay | Typed history and private combined prefix/suffix replay/adoption implemented | Extend stored candidate forms to every command, then wire the complete public history/effect path |
 | Extensions | Opaque preservation, header assessment and ordering implemented | Versioned catalog/inventory, capabilities, preparation, migration/degradation and composed consumers |
 | Session and application surface | Existing Rust library/native path remains private | Integrate candidate behavior, complete session composition and reversible Rust default |
 | Commercial acceptance | Not complete | Differential long sequences, hostile inputs, honest resource accounting, release qualification and old-engine cleanup |
 
-The next implementation priority is combined prefix/suffix history and the
-remaining candidate command/journal forms, followed by complete effects and
+The next implementation priority is the remaining candidate command/journal
+forms, followed by complete effects and
 resource accounting. S2 extension/session work follows functional S1 closure.
 Performance tuning and final qualification follow the complete function matrix.
 
@@ -1131,3 +1132,70 @@ versioned extension/session execution. Final-view preparation reads and some
 prefix work are not yet included in candidate traversal counters. The internal
 vertical path is not public native completion; Rust default, debug performance,
 release qualification and commercial acceptance remain open.
+
+### S1.9 — combined stored history and current extension state
+
+The typed ChangeSet and occurrence Journal now form one private history entry.
+Redo replays prefix then suffix; undo replays suffix inverse, verifies its
+retained start identities, seals a structurally readable intermediate and replays
+the typed inverse. The existing 11-operation interpreter accepts a CoreBaseRead
+boundary. Both paths assess final semantics once and produce one owned adoption
+plan. No intermediate state is written to Store.
+
+The structural seal checks nonempty/unique strong identities and readable owner
+routes without rejecting repairable music semantics. Six local bundle readers
+reconstruct actual state for typed removal preconditions, including Measure
+content across Parts and owned extension positions. Suffix-inverse and
+prefix-inverse deltas merge in execution order, preserving dead generations and
+later fields/references/orders. A nonempty suffix inverse has two full document
+scans (one structural, one semantic); prefix-only inverse has one. The semantic
+validation count is one in both cases.
+
+Nine combined tests now cover every typed operation kind, invalid intermediate
+tempo and staff references, transient duplicate subtrees, real net-zero history,
+empty/prefix-only entries, repeated cycles, Part/Measure subtrees and same-ID Part
+rebirth with every generation compared against the previous one. Rejection after
+a late inverse precondition or final semantic failure leaves Store, indices,
+version and metrics unchanged. Four structural tests cover malformed IDs,
+owner-local contents and all injected reservation failures; four adapter tests
+compare actual bundles/fields/orders/extensions and absent-link reference behavior.
+
+Integration and independent GPT-6 review found extension state defects in the
+shared typed overlay. Standalone insert/replace/remove now update owner references
+and their reverse lookup. Part detachment now projects current extension members,
+payloads and global predecessors. Standalone removal also records the current
+predecessor after earlier edits/reorders. The regression covers inserting a score
+extension before a Part-owned extension and removing/replaying them in reverse,
+as well as insertion before an original extension followed by its removal.
+Retained payload reads avoid repeating header scans inside Part projection.
+Generic order detachment continues to retain the underlying payload/reference
+for subsequent replacement and reinsertion. Independent scoped rereview passed.
+
+This is functional infrastructure completion within the current private Recorder
+scope. It is not all-command candidate completion: arbitrary prefix-Part removal,
+Voice/Event (including nested Notes)/Measure journal forms and remaining order/extension suffix forms
+still need integration. Effects/segments/affected ordering, cumulative retained
+resources, exact capacity error propagation, S2 extension/session composition,
+Rust default activation and commercial qualification remain open. The current
+Option-based bundle/extension read contracts can collapse an allocation failure
+to an unavailable/precondition error; they still fail before Store adoption.
+Traversal counters still omit some final-view and frozen-prefix work.
+
+Validation: 371 Rust tests passed, one existing ignored test, including 120
+candidate tests. Rustfmt, all-target clippy `-D warnings`, Rust 1.88.0 all-target
+check and diff checks passed. Release addon SHA-256:
+`4FF7616E097A44957884E05916AA542CF5CBE5165E0BF1F7FF6A576B4C5E97A4`.
+Logs: `target/combined-history-rust-final.log`, `combined-history-clippy.log`,
+`combined-history-msrv.log`, `combined-history-native-build.log` and
+`combined-history-npm.log`. Full TS/native regression on that freshly rebuilt
+release addon passed 725 tests, skipped two and failed zero in 46.548 seconds.
+P3B completed in 22.914 seconds. The frozen workload, runner and thresholds
+remained unchanged. This is regression evidence, not commercial qualification.
+
+Next functional slice, reviewed by GPT-6: finish Event/Voice subtree recording,
+replay and real combined adoption for the five existing structural commands.
+Share the existing image/field/order/identity machinery, then extend verified
+prefix-Part removal, Measure's cross-Part composite, range resolution and the
+complete 28-command/Batch dispatch. Notes stay nested Event data; no extra Note
+insertion/removal public API is needed. The detailed order and risks are recorded
+in the candidate design document. Commercial optimization follows function closure.

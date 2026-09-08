@@ -173,6 +173,7 @@ fn edited_header_view_keeps_exact_insert_replace_remove_and_reinsert_order() {
         .insert_extension(after(&last), document.extensions[0].clone())
         .unwrap();
     guard.allow_owned_reads.set(false);
+    guard.header_visits.set(0);
     let operation_count = overlay.operation_count();
     assert_eq!(
         headers(&overlay),
@@ -232,7 +233,10 @@ fn part_bundle_removal_and_restoration_keep_extension_position() {
 
 #[test]
 fn unavailable_or_unresolvable_header_views_never_report_an_empty_document() {
-    let base = FakeBaseV1::default();
+    let base = FakeBaseV1 {
+        headers_unavailable: true,
+        ..FakeBaseV1::default()
+    };
     let mut overlay = TransactionOverlayV1::new(&base);
     assert_eq!(
         overlay.visit_extension_headers(&mut |_| panic!("unavailable base")),
@@ -408,5 +412,192 @@ fn edited_header_fold_capacity_failure_never_calls_the_consumer() {
         assert_eq!(overlay.operation_count(), count);
         assert_eq!(headers(&overlay), expected);
     }
+    assert_eq!(store.export_document().unwrap(), document);
+}
+
+#[test]
+fn part_extensions_project_current_members_payloads_and_global_predecessors() {
+    let mut document = fixture();
+    let part_id = document.parts[0].id.clone();
+    for extension in &mut document.extensions {
+        extension.owner = ExtensionOwnerV1::Part {
+            part_id: part_id.clone(),
+        };
+    }
+    let store = build_live_score_store(&document).unwrap();
+    let mut overlay = TransactionOverlayV1::new(&store);
+    let mut score_extension = document.extensions[0].clone();
+    score_extension.namespace = "example.score-predecessor".into();
+    score_extension.owner = ExtensionOwnerV1::Score;
+    overlay
+        .insert_extension(StableAnchorV1::Start, score_extension.clone())
+        .unwrap();
+    let mut replacement = document.extensions[0].clone();
+    replacement.schema_version = safe(23);
+    replacement
+        .payload
+        .insert("updated".into(), BoundedJsonValue::Bool(true));
+    overlay
+        .replace_extension(
+            ExtensionKeyV1::from_block(&replacement),
+            replacement.clone(),
+        )
+        .unwrap();
+    overlay
+        .remove_extension(ExtensionKeyV1::from_block(&document.extensions[1]))
+        .unwrap();
+    let expected = vec![AnchoredExtensionBlockV1 {
+        anchor: after(&ExtensionHeaderV1::from_block(&score_extension)),
+        value: replacement.clone(),
+    }];
+    assert_eq!(overlay.read_part_extensions(&part_id).unwrap(), expected);
+    let EntityBundleV1::Part(bundle) = overlay
+        .read_entity(&StableEntityAddressV1::Part {
+            part_id: part_id.clone(),
+        })
+        .unwrap()
+    else {
+        panic!("Part bundle");
+    };
+    assert_eq!(bundle.extensions, expected);
+    overlay
+        .remove_extension(ExtensionKeyV1::from_block(&score_extension))
+        .unwrap();
+    let EntityBundleV1::Part(bundle) = overlay
+        .read_entity(&StableEntityAddressV1::Part { part_id })
+        .unwrap()
+    else {
+        panic!("Part bundle");
+    };
+    assert_eq!(
+        bundle.extensions,
+        vec![AnchoredExtensionBlockV1 {
+            anchor: StableAnchorV1::Start,
+            value: replacement
+        }]
+    );
+    assert_eq!(store.export_document().unwrap(), document);
+}
+
+#[test]
+fn part_extension_projection_capacity_failure_returns_no_partial_bundle() {
+    let mut document = fixture();
+    let part_id = document.parts[0].id.clone();
+    for extension in &mut document.extensions {
+        extension.owner = ExtensionOwnerV1::Part {
+            part_id: part_id.clone(),
+        };
+    }
+    let store = build_live_score_store(&document).unwrap();
+    let overlay = TransactionOverlayV1::new(&store);
+    // Two owned entries plus the second entry's synthetic predecessor ID.
+    for at in 1..=3 {
+        fail_header_reservation_at(Some(at));
+        let result = overlay.read_part_extensions(&part_id);
+        fail_header_reservation_at(None);
+        assert_eq!(result, Err(ExtensionHeaderReadFailureV1::Capacity));
+    }
+    assert_eq!(overlay.read_part_extensions(&part_id).unwrap().len(), 2);
+    assert_eq!(store.export_document().unwrap(), document);
+}
+
+#[test]
+fn standalone_extension_owner_references_follow_insert_replace_and_remove() {
+    let document = fixture();
+    let store = build_live_score_store(&document).unwrap();
+    let mut overlay = TransactionOverlayV1::new(&store);
+    let part_id = document.parts[0].id.clone();
+    let mut extension = document.extensions[0].clone();
+    extension.namespace = "example.owner-reference".into();
+    extension.owner = ExtensionOwnerV1::Part {
+        part_id: part_id.clone(),
+    };
+    let key = ExtensionKeyV1::from_block(&extension);
+    let reference = ReferenceAddressV1::ExtensionOwner {
+        namespace: key.namespace.clone(),
+        owner: key.owner.clone(),
+    };
+    overlay
+        .insert_extension(StableAnchorV1::Start, extension.clone())
+        .unwrap();
+    assert_eq!(
+        overlay.read_reference(&reference),
+        Some(ReferenceValueV1::ExtensionOwner(extension.owner.clone()))
+    );
+    assert!(overlay.list_references_to(&part_id).contains(&reference));
+    extension.schema_version = safe(17);
+    overlay
+        .replace_extension(key.clone(), extension.clone())
+        .unwrap();
+    assert_eq!(
+        overlay
+            .list_references_to(&part_id)
+            .iter()
+            .filter(|item| *item == &reference)
+            .count(),
+        1
+    );
+    overlay.remove_extension(key).unwrap();
+    assert_eq!(overlay.read_reference(&reference), None);
+    assert!(!overlay.list_references_to(&part_id).contains(&reference));
+    assert_eq!(store.export_document().unwrap(), document);
+}
+
+#[test]
+fn standalone_extension_anchor_tracks_global_edits_and_detached_payload_survives() {
+    let document = fixture();
+    let store = build_live_score_store(&document).unwrap();
+    let mut overlay = TransactionOverlayV1::new(&store);
+    let original = document.extensions[0].clone();
+    let key = ExtensionKeyV1::from_block(&original);
+    let mut predecessor = original.clone();
+    predecessor.namespace = "example.new-predecessor".into();
+    overlay
+        .insert_extension(StableAnchorV1::Start, predecessor.clone())
+        .unwrap();
+    let expected_anchor = after(&ExtensionHeaderV1::from_block(&predecessor));
+    assert_eq!(
+        overlay.read_extension(&key).unwrap().anchor,
+        expected_anchor
+    );
+    overlay.remove_extension(key.clone()).unwrap();
+    let changes = overlay.finish().unwrap();
+    let crate::change_set::ChangeOpV1::RemoveExtensionBlock {
+        expected_anchor: actual,
+        ..
+    } = &changes.forward[1]
+    else {
+        panic!("remove extension operation");
+    };
+    assert_eq!(actual, &expected_anchor);
+
+    let mut overlay = TransactionOverlayV1::new(&store);
+    let order = StableOrderAddressV1::Extensions {
+        document_id: document.id.clone(),
+    };
+    let ids = store.read_order(&order).unwrap();
+    overlay
+        .remove_ordered_child(order.clone(), ids[0].clone())
+        .unwrap();
+    assert_eq!(overlay.read_extension(&key).unwrap().value, original);
+    let mut replacement = original;
+    replacement.schema_version = safe(29);
+    overlay
+        .replace_extension(key.clone(), replacement.clone())
+        .unwrap();
+    overlay
+        .insert_ordered_child(
+            order,
+            after(&ExtensionHeaderV1::from_block(&document.extensions[1])),
+            ids[0].clone(),
+        )
+        .unwrap();
+    assert_eq!(
+        overlay.read_extension(&key).unwrap(),
+        AnchoredExtensionBlockV1 {
+            anchor: after(&ExtensionHeaderV1::from_block(&document.extensions[1])),
+            value: replacement,
+        }
+    );
     assert_eq!(store.export_document().unwrap(), document);
 }

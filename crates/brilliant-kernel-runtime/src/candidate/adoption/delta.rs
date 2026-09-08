@@ -48,7 +48,7 @@ fn parent_children(kind: Kind) -> Option<Children> {
     })
 }
 
-impl ValidatedCandidate<'_> {
+impl StableCandidateView<'_> {
     pub(super) fn collect_suffix_delta(&self) -> Result<FinalStateDeltaV1> {
         let mut delta = FinalStateDeltaV1::default();
         let mut removed = HashSet::new();

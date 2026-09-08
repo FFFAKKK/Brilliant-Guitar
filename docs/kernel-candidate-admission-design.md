@@ -2,8 +2,8 @@
 
 Status: command input representation/codec implemented; occurrence storage,
 reads, scalar/reference writes and Part/Staff/Voice/Event insertion verified under
-`cfg(test)`. Final assessment, stable Store adoption and stored suffix replay/adoption
-now have an internal vertical path. Candidate command execution and adoption are
+`cfg(test)`. Final assessment, stable Store adoption and combined typed-prefix/
+candidate-suffix replay/adoption now have an internal vertical path. Candidate command execution and adoption are
 not activated in the public runtime. Historical implementation entries below
 retain the evidence and limitations at their original checkpoints. This is
 the next S1 compatibility slice in
@@ -682,11 +682,84 @@ Old ownership and slots are still removed by their old handles. Both typed and
 candidate replay regressions cover the repair; native comparison is tracked in
 the completion ledger.
 
-This closes an internal functional path, not complete kernel activation.
-Combined history must still replay suffix inverse then prefix inverse privately
-and validate/adopt once; redo must compose both in forward order. General
+This checkpoint closes an internal functional path, not complete kernel activation.
+Combined history was still open here and is implemented in the next entry. General
 command/journal forms, effects/segments/affected ordering and full resource
 accounting remain open. Current traversal counters exclude work inside final-view
 preparation reads and some frozen-prefix helpers; no complete cost claim or
 universal allocation-failure recovery is implied. Ordinary typed edits retain
 their incremental path and do not enter this full candidate assessment.
+
+### Combined typed-prefix and candidate-suffix history
+
+`CombinedHistory` retains the original typed ChangeSet arena and the immutable
+occurrence Journal. Forward replay interprets the typed prefix over Store, then
+replays the suffix in a candidate. Inverse replay first restores the suffix's
+start identity boundary, then interprets the typed inverse over that frozen
+candidate. Both paths perform one final semantic assessment, produce an owned
+plan and adopt once. The interpreter is the existing 11-operation implementation
+parameterized by CoreBaseRead, not a second typed replay engine.
+
+The inverse intermediate may have invalid tempo, unresolved nonempty staff IDs
+or incomplete measure coverage. A structural seal checks readable owners,
+nonempty globally unique entity IDs, owner-local content IDs and representable
+references. It does not grant semantic validity or access to Store preparation.
+Only the separate final semantic wrapper does that. The read adapter reconstructs
+actual local bundles for all six entity root kinds, including Part extensions;
+it never consults the expected history bundle or builds a whole Score/JSON tree.
+
+Delta merging follows execution order: suffix inverse first, typed inverse
+second, final candidate changes last. Later births/deaths supersede prior fields
+and source references; removed lifetimes remain recorded. Current final orders
+and records drive adoption. Prefix-only inverse skips the extra boundary scan;
+nonempty suffix inverse reports two full document scans (structural plus semantic)
+and one full semantic validation. Detailed allocation/traversal accounting is
+still unfinished. Option-based local bundle reads currently collapse capacity
+failure into an unavailable read/precondition failure; failure remains before
+adoption, but this is an explicit error-classification gate before activation.
+
+Nine combined tests cover all 11 typed operation kinds, invalid intermediate
+metadata/reference repair, duplicate temporary subtrees, empty and actual-net-zero
+history, Part/Measure subtree replay, whole-Part same-ID rebirth with every
+generation checked, extension history and repeated cycles. Corrupted late
+preconditions and a corrupted final inverse demonstrate unchanged Store,
+indices, version and metrics on rejection. Four adapter tests compare local
+bundles/fields/orders and reference semantics with independently built typed
+state; four structural tests include every new reservation failure.
+
+Integration exposed shared extension projection defects: standalone extension
+edits did not publish owner-reference changes, and stored anchors could remain
+stale after an earlier extension insertion/removal/reorder. The overlay now
+tracks standalone owner references, projects current Part extension membership,
+payload and global predecessors, and reads the current standalone predecessor.
+These changes also apply to ordinary typed operations. The regression suite
+retains combined replay cases for these interactions.
+
+This remains test-only and limited to existing Recorder operations. For example,
+Recorder Part removal currently accepts only Parts inserted by that Recorder;
+arbitrary prefix-Part removal, Voice/Event (including nested Notes)/Measure journal forms, all order
+and extension suffix operations, effects/segments/affected ordering and full
+resource accounting remain functional work. Future suffix extension writes must
+explicitly merge both extension deltas; today's suffix has none. General command
+coverage and native activation must not be inferred from the 11 typed-prefix
+operation enumeration.
+
+### Next functional slice after combined history
+
+GPT-6 planning review selected Event/Voice subtree recording and replay next.
+Complete voice.insert-notes-event, voice.insert-rest-event, event.remove,
+voice.insert and voice.remove using a limited shared BundleNode/Image traversal,
+existing FieldChanges/JournalOrder checks and identity insertion/removal bindings.
+Exercise real combined adoption/undo/redo, edits before removal, dead descendant
+identities, same-ID rebirth and invalid intermediate time/reference state.
+Notes are nested in Events; the 28-command API has no independent Note insert or
+remove command, so no extra public API is planned.
+
+Then generalize verified removal of frozen-prefix subtrees (especially Part),
+implement Measure as an explicit cross-Part composite with retained content
+occurrences/anchors, and complete candidate range resolution plus the shared
+command/Batch dispatcher. Reuse the existing final assessment/adoption path.
+Do not recapture arbitrary current candidate values as expected history or
+create a second command engine. Each recorded subtree must be checked against
+its original image plus recorded changes before removal. Complete effects and
+resource/error accounting before activating the native route.

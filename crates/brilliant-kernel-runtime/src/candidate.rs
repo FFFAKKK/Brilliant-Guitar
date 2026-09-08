@@ -1,5 +1,5 @@
 //! Transaction-private occurrence storage. This module is deliberately test-only
-//! until preparation, resource accounting, final validation and adoption close.
+//! until complete command preparation, resource accounting and native integration close.
 //! A frozen prefix owns earlier operations; it is never finished or replayed here.
 
 use brilliant_core_types::JsString;

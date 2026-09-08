@@ -34,8 +34,8 @@ pub(crate) fn fail_header_reservation_at(attempt: Option<usize>) {
     HEADER_RESERVATION_FAILURE.with(|value| value.set(attempt));
 }
 
-fn reserve_headers(
-    headers: &mut Vec<ExtensionHeaderV1>,
+fn reserve_headers<T>(
+    headers: &mut Vec<T>,
     additional: usize,
 ) -> Result<(), ExtensionHeaderReadFailureV1> {
     #[cfg(test)]
@@ -140,6 +140,29 @@ pub(crate) struct ExtensionHeaderV1 {
 }
 
 impl ExtensionHeaderV1 {
+    fn anchor_id(&self) -> Result<StableId, ExtensionHeaderReadFailureV1> {
+        let (prefix, owner) = match &self.owner {
+            ExtensionOwnerV1::Score => ("extension:score:", None),
+            ExtensionOwnerV1::Part { part_id } => ("extension:part:", Some(part_id.as_js_string())),
+        };
+        let owner_len = owner.map_or(0, |id| id.code_units().len().saturating_add(1));
+        let size = prefix
+            .len()
+            .checked_add(owner_len)
+            .and_then(|size| size.checked_add(self.namespace.code_units().len()))
+            .ok_or(ExtensionHeaderReadFailureV1::Capacity)?;
+        let mut units = Vec::new();
+        reserve_headers(&mut units, size)?;
+        units.extend(prefix.encode_utf16());
+        if let Some(owner) = owner {
+            units.extend_from_slice(owner.code_units());
+            units.push(u16::from(b':'));
+        }
+        units.extend_from_slice(self.namespace.code_units());
+        StableId::new(JsString::from_utf16(units))
+            .map_err(|_| ExtensionHeaderReadFailureV1::Invariant)
+    }
+
     fn from_block(value: &ExtensionBlockV1) -> Self {
         Self {
             namespace: value.namespace.clone(),
@@ -600,6 +623,14 @@ impl<'a> TransactionOverlayV1<'a> {
         prune_hidden_descendants(&mut entity, &self.entity_states);
         apply_scalar_replacements(&mut entity, &self.scalar_replacements);
         apply_reference_replacements(&mut entity, &self.references);
+        // Ordinary untouched reads keep their existing local detach path.
+        // Once extension edits exist, retained bundle anchors and payloads no
+        // longer describe this overlay's current global extension order.
+        if !self.extension_header_edits.is_empty()
+            && let EntityBundleV1::Part(bundle) = &mut entity
+        {
+            bundle.extensions = self.read_part_extensions(&bundle.part.id).ok()?;
+        }
         Some(entity)
     }
 
@@ -645,10 +676,76 @@ impl<'a> TransactionOverlayV1<'a> {
     }
 
     pub(crate) fn read_extension(&self, key: &ExtensionKeyV1) -> Option<AnchoredExtensionBlockV1> {
+        let mut value = self.read_retained_extension(key)?;
+        if self.extension_header_edits.is_empty() {
+            return Some(value);
+        }
+        let mut previous: Option<ExtensionHeaderV1> = None;
+        let mut anchor = None;
+        self.visit_extension_headers(&mut |header| {
+            if header.has_key(key) {
+                anchor = Some(match &previous {
+                    None => Ok(StableAnchorV1::Start),
+                    Some(previous) => previous
+                        .anchor_id()
+                        .map(|sibling_id| StableAnchorV1::After { sibling_id }),
+                });
+                return false;
+            }
+            previous = Some(header.clone());
+            true
+        })
+        .ok()?;
+        if let Some(anchor) = anchor {
+            value.anchor = anchor.ok()?;
+        }
+        // A generic order removal detaches the header but retains the payload
+        // for subsequent replacement/reinsertion. Only visible entries acquire
+        // a current global predecessor; detached entries retain their anchor.
+        Some(value)
+    }
+
+    fn read_retained_extension(&self, key: &ExtensionKeyV1) -> Option<AnchoredExtensionBlockV1> {
         match self.extensions.get(key) {
             Some(OverlayExtensionV1::Present(value)) => Some(value.clone()),
             Some(OverlayExtensionV1::Tombstone) => None,
             None => self.base.read_extension(key),
+        }
+    }
+
+    /// Detach only this Part's opaque values. All headers participate in anchor
+    /// selection, including extensions owned by the Score or another Part.
+    pub(crate) fn read_part_extensions(
+        &self,
+        part_id: &StableId,
+    ) -> Result<Vec<AnchoredExtensionBlockV1>, ExtensionHeaderReadFailureV1> {
+        let mut extensions = Vec::new();
+        let mut previous: Option<ExtensionHeaderV1> = None;
+        let mut failure = None;
+        self.visit_extension_headers(&mut |header| {
+            if matches!(&header.owner, ExtensionOwnerV1::Part { part_id: owner } if owner == part_id) {
+                let entry = (|| {
+                    reserve_headers(&mut extensions, 1)?;
+                    let anchor = match &previous {
+                        None => StableAnchorV1::Start,
+                        Some(previous) => StableAnchorV1::After { sibling_id: previous.anchor_id()? },
+                    };
+                    let key = ExtensionKeyV1 { namespace: header.namespace.clone(), owner: (&header.owner).into() };
+                    let mut value = self.read_retained_extension(&key).ok_or(ExtensionHeaderReadFailureV1::Invariant)?;
+                    value.anchor = anchor;
+                    Ok(value)
+                })();
+                match entry {
+                    Ok(value) => extensions.push(value),
+                    Err(error) => { failure = Some(error); return false; }
+                }
+            }
+            previous = Some(header.clone());
+            true
+        })?;
+        match failure {
+            Some(error) => Err(error),
+            None => Ok(extensions),
         }
     }
 
@@ -1205,10 +1302,11 @@ impl<'a> TransactionOverlayV1<'a> {
     ) -> Result<OverlayMutationV1, OverlayFailureV1> {
         self.ensure_active()?;
         let key = ExtensionKeyV1::from_block(&value);
-        if self.read_extension(&key).is_some() {
+        if self.read_retained_extension(&key).is_some() {
             return self.reject(OverlayFailureV1::DuplicateExtension { key });
         }
         self.reserve_extension_header_edits(1)?;
+        self.reserve_extension_reference(&key)?;
         let result = self
             .builder
             .insert_extension_block(anchor.clone(), value.clone());
@@ -1218,11 +1316,38 @@ impl<'a> TransactionOverlayV1<'a> {
                 anchor: anchor.clone(),
                 value: ExtensionHeaderV1::from_block(&value),
             });
+        self.set_reference_state(
+            ReferenceAddressV1::ExtensionOwner {
+                namespace: key.namespace.clone(),
+                owner: key.owner.clone(),
+            },
+            Some(ReferenceValueV1::ExtensionOwner(value.owner.clone())),
+        );
         self.extensions.insert(
             key,
             OverlayExtensionV1::Present(AnchoredExtensionBlockV1 { anchor, value }),
         );
         Ok(OverlayMutationV1::Changed)
+    }
+
+    // Standalone extension edits publish owner references exactly like Part
+    // bundle edits. Generic order detachment retains the underlying extension
+    // and its reference so it can be reinserted later in the transaction.
+    fn reserve_extension_reference(
+        &mut self,
+        key: &ExtensionKeyV1,
+    ) -> Result<(), OverlayFailureV1> {
+        let address = ReferenceAddressV1::ExtensionOwner {
+            namespace: key.namespace.clone(),
+            owner: key.owner.clone(),
+        };
+        if !self.references.contains_key(&address)
+            && (self.references.try_reserve(1).is_err()
+                || self.reference_order.try_reserve(1).is_err())
+        {
+            return self.reject(OverlayFailureV1::TransactionPoisoned);
+        }
+        Ok(())
     }
 
     pub(crate) fn replace_extension(
@@ -1238,13 +1363,14 @@ impl<'a> TransactionOverlayV1<'a> {
                 actual: actual_key,
             });
         }
-        let Some(expected) = self.read_extension(&key) else {
+        let Some(expected) = self.read_retained_extension(&key) else {
             return self.reject(OverlayFailureV1::ExtensionNotFound { key });
         };
         if expected.value == value {
             return Ok(OverlayMutationV1::NoOp);
         }
         self.reserve_extension_header_edits(1)?;
+        self.reserve_extension_reference(&key)?;
         let result = self.builder.replace_extension_block(
             key.namespace.clone(),
             key.owner.clone(),
@@ -1256,6 +1382,13 @@ impl<'a> TransactionOverlayV1<'a> {
             .push(ExtensionHeaderEditV1::Replace(
                 ExtensionHeaderV1::from_block(&value),
             ));
+        self.set_reference_state(
+            ReferenceAddressV1::ExtensionOwner {
+                namespace: key.namespace.clone(),
+                owner: key.owner.clone(),
+            },
+            Some(ReferenceValueV1::ExtensionOwner(value.owner.clone())),
+        );
         self.extensions.insert(
             key,
             OverlayExtensionV1::Present(AnchoredExtensionBlockV1 {
@@ -1275,12 +1408,20 @@ impl<'a> TransactionOverlayV1<'a> {
             return self.reject(OverlayFailureV1::ExtensionNotFound { key });
         };
         self.reserve_extension_header_edits(1)?;
+        self.reserve_extension_reference(&key)?;
         let result = self
             .builder
             .remove_extension_block(expected.anchor, expected.value);
         self.map_builder_result(result)?;
         self.extension_header_edits
             .push(ExtensionHeaderEditV1::Remove(key.clone()));
+        self.set_reference_state(
+            ReferenceAddressV1::ExtensionOwner {
+                namespace: key.namespace.clone(),
+                owner: key.owner.clone(),
+            },
+            None,
+        );
         self.extensions.insert(key, OverlayExtensionV1::Tombstone);
         Ok(OverlayMutationV1::Changed)
     }
@@ -2891,6 +3032,7 @@ mod tests {
 
     #[derive(Clone, Debug, Default, Eq, PartialEq)]
     struct FakeBaseV1 {
+        headers_unavailable: bool,
         entities: HashMap<StableEntityAddressV1, EntityBundleV1>,
         owners: HashMap<StableEntityAddressV1, StableOwnerAddressV1>,
         scalars: HashMap<ScalarAddressV1, ScalarValueV1>,
@@ -2936,6 +3078,36 @@ mod tests {
 
         fn read_extension(&self, key: &ExtensionKeyV1) -> Option<AnchoredExtensionBlockV1> {
             self.extensions.get(key).cloned()
+        }
+
+        fn visit_extension_headers(
+            &self,
+            visitor: &mut dyn FnMut(&ExtensionHeaderV1) -> bool,
+        ) -> Result<(), ExtensionHeaderReadFailureV1> {
+            if self.headers_unavailable {
+                return Err(ExtensionHeaderReadFailureV1::Unavailable);
+            }
+            let mut anchor = StableAnchorV1::Start;
+            for _ in 0..self.extensions.len() {
+                let mut matching = self
+                    .extensions
+                    .values()
+                    .filter(|value| value.anchor == anchor);
+                let value = matching
+                    .next()
+                    .ok_or(ExtensionHeaderReadFailureV1::Invariant)?;
+                if matching.next().is_some() {
+                    return Err(ExtensionHeaderReadFailureV1::Invariant);
+                }
+                let header = ExtensionHeaderV1::from_block(&value.value);
+                if !visitor(&header) {
+                    break;
+                }
+                anchor = StableAnchorV1::After {
+                    sibling_id: header.anchor_id()?,
+                };
+            }
+            Ok(())
         }
 
         fn read_reference(&self, address: &ReferenceAddressV1) -> Option<ReferenceValueV1> {

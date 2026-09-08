@@ -18,6 +18,80 @@ fn prior_work(count: u64) -> KernelStage3MetricsV1 {
 }
 
 #[test]
+fn checked_replay_reads_through_an_overlay_boundary_and_keeps_it_borrowable() {
+    // A deliberately narrow CoreBaseRead surface catches replay reaching for
+    // semantic/document machinery instead of the scalar and order boundary.
+    struct GuardBase<'a, 'b>(&'a TransactionOverlayV1<'b>);
+    impl CoreBaseReadV1 for GuardBase<'_, '_> {
+        fn resolve_entity(&self, id: &StableId) -> Option<StableEntityAddressV1> {
+            self.0.frozen_resolve_entity_address(id)
+        }
+        fn read_owner(&self, address: &StableEntityAddressV1) -> Option<StableOwnerAddressV1> {
+            self.0.read_owner(address)
+        }
+        fn read_scalar(&self, address: &ScalarAddressV1) -> Option<ScalarValueV1> {
+            self.0.frozen_read_scalar(address)
+        }
+        fn read_order(&self, address: &StableOrderAddressV1) -> Option<Vec<StableId>> {
+            self.0.read_order(address)
+        }
+        fn detach_entity(&self, _: &StableEntityAddressV1) -> Option<EntityBundleV1> {
+            panic!("scalar replay must not detach bundles")
+        }
+        fn read_extension(
+            &self,
+            _: &ExtensionKeyV1,
+        ) -> Option<crate::change_set::AnchoredExtensionBlockV1> {
+            panic!("scalar replay must not read extensions")
+        }
+        fn read_reference(&self, _: &ReferenceAddressV1) -> Option<ReferenceValueV1> {
+            panic!("scalar replay must not read references")
+        }
+        fn list_references_to(&self, _: &StableId) -> Vec<ReferenceAddressV1> {
+            panic!("scalar replay must not scan references")
+        }
+        fn read_voice_time(&self, _: &StableId) -> Option<Vec<StableId>> {
+            panic!("scalar replay must not read voice time")
+        }
+    }
+    let store = build_live_score_store(&fixture()).unwrap();
+    let address = ScalarAddressV1::PartName {
+        part_id: id("part-z"),
+    };
+    let first = ScalarValueV1::PartName("Boundary value".into());
+    let second = ScalarValueV1::PartName("Replayed value".into());
+    let mut boundary = TransactionOverlayV1::new(&store);
+    boundary
+        .replace_scalar(address.clone(), first.clone())
+        .unwrap();
+    let guarded_boundary = GuardBase(&boundary);
+    let mut suffix = TransactionOverlayV1::new(&guarded_boundary);
+    suffix
+        .replace_scalar(address.clone(), second.clone())
+        .unwrap();
+    let history = suffix.finish().unwrap();
+
+    // The expected scalar exists only in the boundary, not the underlying Store.
+    assert!(matches!(
+        replay_overlay_on_base(&store, &history.arena, &history.forward),
+        Err(TransactionPrepareFailureV1::PreconditionMismatch)
+    ));
+    let replayed =
+        replay_overlay_on_base(&guarded_boundary, &history.arena, &history.forward).unwrap();
+    assert_eq!(replayed.frozen_read_scalar(&address), Some(second));
+    let order = StableOrderAddressV1::Events {
+        voice_id: id("voice-a"),
+    };
+    assert_eq!(replayed.read_order(&order), store.read_order(&order));
+    let guarded_replayed = GuardBase(&replayed);
+    let undone =
+        replay_overlay_on_base(&guarded_replayed, &history.arena, &history.inverse).unwrap();
+    assert_eq!(undone.frozen_read_scalar(&address), Some(first.clone()));
+    assert_eq!(boundary.frozen_read_scalar(&address), Some(first));
+    assert_eq!(boundary.borrowed_operations().unwrap().1.len(), 1);
+}
+
+#[test]
 fn typed_cross_kind_rebirth_preserves_the_new_binding_through_forward_and_inverse() {
     let document = fixture();
     let mut store = build_live_score_store(&document).unwrap();

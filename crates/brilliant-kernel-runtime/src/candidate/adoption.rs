@@ -1,6 +1,6 @@
-//! A semantic pass is the only entrance to the stable final read view. The
-//! candidate is then owned here, so writes cannot invalidate that proof.
-//! Preparation produces an owned plan before its frozen Store borrow ends.
+//! Structural sealing permits private typed replay through an invalid musical
+//! intermediate. Only final semantic success grants access to Store preparation.
+//! Each wrapper owns the candidate, so writes cannot invalidate its proof.
 use super::*;
 use crate::{
     change_set::ChangeSetV1,
@@ -14,13 +14,28 @@ use crate::{
 use brilliant_core_types::DocumentVersionV1;
 use brilliant_kernel_contracts::KernelStage3MetricsV1;
 use brilliant_score_foundation::AssessmentFailureV1;
-use std::cell::RefCell;
+use std::{cell::RefCell, ops::Deref};
 
+mod boundary;
 mod delta;
 mod view;
 
-pub(super) struct ValidatedCandidate<'a> {
+/// Readable strong identities do not prove musical validity. This view has no
+/// commit operation; only the semantic wrapper below may prepare adoption.
+pub(super) struct StableCandidateView<'a> {
     candidate: RefCell<Candidate<'a>>,
+    pub(super) structural_scans: u64,
+}
+
+pub(super) struct ValidatedCandidate<'a> {
+    view: StableCandidateView<'a>,
+}
+
+impl<'a> Deref for ValidatedCandidate<'a> {
+    type Target = StableCandidateView<'a>;
+    fn deref(&self) -> &Self::Target {
+        &self.view
+    }
 }
 
 #[derive(Debug)]
@@ -47,8 +62,27 @@ impl<'a> Candidate<'a> {
             }));
         }
         Ok(ValidatedCandidate {
-            candidate: RefCell::new(self),
+            view: StableCandidateView {
+                candidate: RefCell::new(self),
+                structural_scans: 0,
+            },
         })
+    }
+}
+
+impl StableCandidateView<'_> {
+    pub(super) fn replay_delta(&self) -> Result<FinalStateDeltaV1, FinalizationFailure> {
+        Ok(self.collect_suffix_delta()?)
+    }
+
+    pub(super) fn replay_work(&self) -> KernelStage3MetricsV1 {
+        let work = self.candidate.borrow().work;
+        KernelStage3MetricsV1 {
+            full_document_scans: self.structural_scans,
+            entities_visited: work.visited_entries,
+            order_collections_copied: work.prefix_order_copies,
+            ..KernelStage3MetricsV1::default()
+        }
     }
 }
 
@@ -70,7 +104,26 @@ impl ValidatedCandidate<'_> {
         version: DocumentVersionV1,
         suffix_operations: u64,
     ) -> Result<(Option<PreparedFinalStateCommitV1>, ChangeSetV1), FinalizationFailure> {
-        let (mut delta, extensions) =
+        self.prepare_commit_with_prior(
+            store,
+            version,
+            suffix_operations,
+            FinalStateDeltaV1::default(),
+            KernelStage3MetricsV1::default(),
+        )
+    }
+
+    /// Prior state precedes this view's frozen overlay, as in suffix-inverse
+    /// followed by prefix-inverse. Merge in execution order, preserving deaths.
+    pub(super) fn prepare_commit_with_prior(
+        self,
+        store: &LiveScoreStore,
+        version: DocumentVersionV1,
+        suffix_operations: u64,
+        mut prior_delta: FinalStateDeltaV1,
+        mut prior_work: KernelStage3MetricsV1,
+    ) -> Result<(Option<PreparedFinalStateCommitV1>, ChangeSetV1), FinalizationFailure> {
+        let (delta, extensions) =
             collect_frozen_prefix_delta(store, &self.candidate.borrow().prefix)?;
         let prefix_operations = self
             .candidate
@@ -80,7 +133,8 @@ impl ValidatedCandidate<'_> {
             .map_err(|_| FinalizationFailure::Command(Failure::InternalError))?
             .1
             .len() as u64;
-        delta.merge_suffix(self.collect_suffix_delta()?)?;
+        prior_delta.merge_suffix(delta)?;
+        prior_delta.merge_suffix(self.collect_suffix_delta()?)?;
         let change_ops = prefix_operations
             .checked_add(suffix_operations)
             .ok_or(TransactionPrepareFailureV1::Capacity)?;
@@ -88,24 +142,22 @@ impl ValidatedCandidate<'_> {
         // not used by ordinary typed edits. Detailed per-rule accounting remains
         // a gate before activation; these traversal counters report actual work.
         let work = self.candidate.borrow().work;
-        let metrics = KernelStage3MetricsV1 {
-            change_ops,
-            full_document_scans: 1,
-            full_semantic_validations: 1,
-            entities_visited: work.visited_entries,
-            order_collections_copied: work.prefix_order_copies,
-            ..KernelStage3MetricsV1::default()
-        };
+        prior_work.change_ops = change_ops;
+        prior_work.full_document_scans += 1 + self.structural_scans;
+        prior_work.full_semantic_validations += 1;
+        prior_work.entities_visited += work.visited_entries;
+        prior_work.order_collections_copied += work.prefix_order_copies;
         let plan = prepare_validated_final_state(
             store,
             version,
-            &self,
-            delta,
+            &self.view,
+            prior_delta,
             extensions,
             change_ops != 0,
-            metrics,
+            prior_work,
         )?;
         let prefix = self
+            .view
             .candidate
             .into_inner()
             .prefix

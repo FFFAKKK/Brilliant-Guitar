@@ -957,11 +957,11 @@ impl DeltaCollectorV1 {
 }
 
 fn replay_and_collect<'a>(
-    store: &'a LiveScoreStore,
+    base: &'a dyn CoreBaseReadV1,
     arena: &ChangeArenaV1,
     operations: &[ChangeOpV1],
 ) -> Result<(TransactionOverlayV1<'a>, DeltaCollectorV1), TransactionPrepareFailureV1> {
-    let mut overlay = TransactionOverlayV1::new(store);
+    let mut overlay = TransactionOverlayV1::new(base);
     let mut collector = DeltaCollectorV1::with_operation_capacity(operations.len())?;
 
     for operation in operations {
@@ -988,7 +988,7 @@ fn replay_and_collect<'a>(
                         collector.touched_voice_ids.insert(voice_id.clone());
                     }
                     ScalarAddressV1::EventNoteValue { event_id } => {
-                        collect_event_owner_voice(store, &overlay, event_id, &mut collector);
+                        collect_event_owner_voice(base, &overlay, event_id, &mut collector);
                     }
                     _ => {}
                 }
@@ -1184,6 +1184,17 @@ fn replay_and_collect<'a>(
     Ok((overlay, collector))
 }
 
+/// Replay checked typed operations over a structural boundary without validating
+/// semantics, adopting a Store plan, or consuming the borrowed base overlay.
+#[cfg(test)]
+pub(crate) fn replay_overlay_on_base<'a>(
+    base: &'a dyn CoreBaseReadV1,
+    arena: &ChangeArenaV1,
+    operations: &[ChangeOpV1],
+) -> Result<TransactionOverlayV1<'a>, TransactionPrepareFailureV1> {
+    replay_and_collect(base, arena, operations).map(|(overlay, _)| overlay)
+}
+
 fn current_anchor(values: &[StableId], child: &StableId) -> Option<StableAnchorV1> {
     let index = values.iter().position(|candidate| candidate == child)?;
     if index == 0 {
@@ -1202,7 +1213,7 @@ fn collect_root_owner_voice(owner: &StableOwnerAddressV1, collector: &mut DeltaC
 }
 
 fn collect_event_owner_voice(
-    store: &LiveScoreStore,
+    base: &dyn CoreBaseReadV1,
     overlay: &TransactionOverlayV1<'_>,
     event_id: &StableId,
     collector: &mut DeltaCollectorV1,
@@ -1212,7 +1223,7 @@ fn collect_event_owner_voice(
     };
     if let Some(StableOwnerAddressV1::Voice { voice_id }) = overlay
         .read_owner(&address)
-        .or_else(|| store.read_owner(&address))
+        .or_else(|| base.read_owner(&address))
     {
         collector.touched_voice_ids.insert(voice_id);
     }

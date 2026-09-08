@@ -1,7 +1,10 @@
-//! Stable, read-only projection of the semantically validated occurrence arena.
+//! Stable, read-only projection shared by sealed structural and final views.
 use super::*;
 use crate::change_set::{AnchoredExtensionBlockV1, EntityBundleV1};
 use crate::overlay::{ExtensionHeaderReadFailureV1, ExtensionHeaderV1, ExtensionKeyV1};
+mod bundles;
+#[cfg(test)]
+mod tests;
 
 impl Candidate<'_> {
     /// Retained identity is also needed for hidden prefix deletion deltas.
@@ -68,7 +71,7 @@ impl Candidate<'_> {
     }
 }
 
-impl ValidatedCandidate<'_> {
+impl StableCandidateView<'_> {
     pub(super) fn occurrence(&self, address: &Entity) -> Option<Occurrence> {
         self.candidate.borrow().final_occurrence(address)
     }
@@ -142,7 +145,7 @@ impl ValidatedCandidate<'_> {
     }
 }
 
-impl CoreBaseReadV1 for ValidatedCandidate<'_> {
+impl CoreBaseReadV1 for StableCandidateView<'_> {
     fn resolve_entity(&self, id: &StableId) -> Option<Entity> {
         let candidate = self.candidate.borrow();
         for kind in [
@@ -243,10 +246,10 @@ impl CoreBaseReadV1 for ValidatedCandidate<'_> {
         candidate.prefix.frozen_read_scalar(address)
     }
 
-    fn detach_entity(&self, _address: &Entity) -> Option<EntityBundleV1> {
-        // The commit seam consumes scalar records and borrowed orders, never
-        // an aggregate reconstruction of the candidate or a Score/JSON tree.
-        None
+    fn detach_entity(&self, address: &Entity) -> Option<EntityBundleV1> {
+        // Typed history replay needs actual local bundles for preconditions.
+        // Final commit preparation continues to consume scalar records/orders.
+        self.detach_bundle(address)
     }
 
     fn read_event_content_kind(&self, event_id: &StableId) -> Option<EventContentKind> {
@@ -339,8 +342,18 @@ impl CoreBaseReadV1 for ValidatedCandidate<'_> {
                 part_id,
                 measure_id,
             } => {
-                self.candidate.borrow().final_content(part_id, measure_id)?;
-                Some(ReferenceValueV1::Present(true))
+                self.occurrence(&Entity::Part {
+                    part_id: part_id.clone(),
+                })?;
+                self.occurrence(&Entity::Measure {
+                    measure_id: measure_id.clone(),
+                })?;
+                Some(ReferenceValueV1::Present(
+                    self.candidate
+                        .borrow()
+                        .final_content(part_id, measure_id)
+                        .is_some(),
+                ))
             }
             Reference::ExtensionOwner { .. } => {
                 self.candidate.borrow().prefix.read_reference(address)
