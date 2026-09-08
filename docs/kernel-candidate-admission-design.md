@@ -2,7 +2,10 @@
 
 Status: command input representation/codec implemented; occurrence storage,
 reads, scalar/reference writes and Part/Staff/Voice/Event insertion verified under
-`cfg(test)`. Candidate command execution and adoption are not activated. This is
+`cfg(test)`. Final assessment, stable Store adoption and stored suffix replay/adoption
+now have an internal vertical path. Candidate command execution and adoption are
+not activated in the public runtime. Historical implementation entries below
+retain the evidence and limitations at their original checkpoints. This is
 the next S1 compatibility slice in
 [commercial kernel completion](kernel-commercial-completion.md), reviewed by
 the read-only GPT-6 planning agent and selected by the main implementer.
@@ -634,3 +637,56 @@ Part is restored. Initial/final/undo/redo documents are identical in this net-ze
 case, so document equality alone concealed the failure. Rust's identity-based
 journal must successfully replay it in both directions. The TS production defect
 remains open until the replacement path is integrated or separately repaired.
+
+### Final assessment and real Store adoption
+
+Foundation now shares one fallible node-read interface between JSON assessment
+and candidate occurrence assessment. The candidate projection preserves ordered
+raw IDs, fields and owner-scoped arrays, including duplicate/empty IDs. It does
+not construct a Score DTO or JSON tree. Extension assessment consumes the new
+13th internal CoreBaseRead capability, a namespace/schema/owner header visitor;
+the former 12-method count is historical, not a public ABI. Opaque payloads stay
+in their existing storage. Header reads distinguish unavailable, invariant and
+capacity failures; capacity failure yields InternalCapacity and terminates the
+candidate instead of inventing a shape diagnostic.
+
+Only a semantically valid candidate becomes an owned, read-only stable final
+view. Sparse delta collection expands hidden prefix subtrees along their frozen
+owner routes and visits changed/new state. Deletion identities remain distinct
+from final ID values, including same-ID rebirth across entity kinds. Hidden
+temporary raw IDs never become physical StableIds. A retained typed prefix is
+collected by borrowing its arena/operations, not by replaying invalid transient
+operations into live storage. Extension-only order changes are retained too.
+
+Final preparation checks that changed records, references and metadata agree
+with the validated view, then reuses Store preflight, capacity reservation and
+adoption. The owned plan is produced before the frozen Store borrow ends and
+checks document ID/version before commit. The Recorder wrapper assesses before
+identity sealing and derives actual operation count from its journal plus the
+prefix. Net-zero real operations still advance the version. The low-level seam
+remains private and its direct tests supply their operation count explicitly.
+
+The 12-case independent TS oracle compares full diagnostics and child-failure
+precedence. All eight final semantic rejection cases also exercise the Recorder
+finalization wrapper. Three successful cases compare real Store adoption and
+suffix inverse/forward adoption from fresh strong boundaries, including versions
+1/2/3 and full index rebuild parity. Additional cases cover metadata repair over
+an invalid prefix, retained extension history, every scalar/reference family,
+order/time changes, whole-Part rebirth and cross-kind Event/Staff rebirth.
+
+One new cross-kind test exposed a shared production adoption defect: cleanup of
+an old Event ID erased a newly inserted Staff binding with the same ID, causing
+an internal assertion after writes had begun. All six entity cleanup branches
+now remove a global binding only if it still names the exact old kind/handle.
+Old ownership and slots are still removed by their old handles. Both typed and
+candidate replay regressions cover the repair; native comparison is tracked in
+the completion ledger.
+
+This closes an internal functional path, not complete kernel activation.
+Combined history must still replay suffix inverse then prefix inverse privately
+and validate/adopt once; redo must compose both in forward order. General
+command/journal forms, effects/segments/affected ordering and full resource
+accounting remain open. Current traversal counters exclude work inside final-view
+preparation reads and some frozen-prefix helpers; no complete cost claim or
+universal allocation-failure recovery is implied. Ordinary typed edits retain
+their incremental path and do not enter this full candidate assessment.

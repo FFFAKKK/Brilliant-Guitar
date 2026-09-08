@@ -500,6 +500,11 @@ pub(crate) struct ChangeSetBuilderV1 {
 }
 
 impl ChangeSetBuilderV1 {
+    #[cfg(test)]
+    pub(crate) fn borrowed_operations(&self) -> (&ChangeArenaV1, &[ChangeOpV1]) {
+        (&self.arena, &self.forward)
+    }
+
     pub(crate) fn new() -> Self {
         Self::default()
     }

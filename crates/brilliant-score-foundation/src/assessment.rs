@@ -5,8 +5,8 @@ use std::{
 };
 
 use crate::{
-    AssessmentFailureV1, CoreDiagnosticCodeV1 as Code, CoreDiagnosticV1, ExactFraction,
-    SemanticReportV1, candidate::CandidateNode as Node, music_rules,
+    AssessmentFailureV1, AssessmentNodeV1, CoreDiagnosticCodeV1 as Code, CoreDiagnosticV1,
+    ExactFraction, SemanticReportV1, candidate::CandidateNode as Node, music_rules,
 };
 
 type Outcome<T> = Result<T, AssessmentFailureV1>;
@@ -15,29 +15,42 @@ type Outcome<T> = Result<T, AssessmentFailureV1>;
 /// IDs or integers. The caller owns decode/shape diagnostics and capture caps;
 /// this API accumulates musical diagnostics on the structurally decoded input.
 pub fn assess_score_semantics(candidate: &Value) -> Outcome<SemanticReportV1> {
-    Validator::default().run(Node::root(candidate))
+    assess_score_semantics_node(Node::root(candidate))
 }
 
-#[derive(Default)]
-struct Validator<'a> {
+/// Apply the same ordered musical checks to a borrowed or virtual candidate.
+pub fn assess_score_semantics_node<N: AssessmentNodeV1>(candidate: N) -> Outcome<SemanticReportV1> {
+    Validator {
+        diagnostics: Vec::new(),
+        ids: HashSet::new(),
+        measures: HashMap::new(),
+        measure_order: Vec::new(),
+        part_ids: HashSet::new(),
+    }
+    .run(candidate)
+}
+
+struct Validator<N> {
     diagnostics: Vec<CoreDiagnosticV1>,
-    ids: HashSet<&'a JsString>,
-    measures: HashMap<&'a JsString, Node<'a>>,
-    measure_order: Vec<&'a JsString>,
-    part_ids: HashSet<&'a JsString>,
+    ids: HashSet<JsString>,
+    measures: HashMap<JsString, N>,
+    measure_order: Vec<JsString>,
+    part_ids: HashSet<JsString>,
 }
 
-pub(crate) fn fraction(node: &Node<'_>) -> Outcome<(f64, f64)> {
+pub(crate) fn fraction<N: AssessmentNodeV1>(node: &N) -> Outcome<(f64, f64)> {
     Ok((
         node.field("numerator").number()?,
         node.field("denominator").number()?,
     ))
 }
 
-pub(crate) fn effective_measure(node: &Node<'_>) -> Outcome<Result<ExactFraction, &'static str>> {
+pub(crate) fn effective_measure<N: AssessmentNodeV1>(
+    node: &N,
+) -> Outcome<Result<ExactFraction, &'static str>> {
     let meter = node.field("meter");
     let pickup = node
-        .optional("pickupDuration")
+        .optional("pickupDuration")?
         .map(|node| fraction(&node))
         .transpose()?;
     Ok(music_rules::measure_duration(
@@ -47,9 +60,11 @@ pub(crate) fn effective_measure(node: &Node<'_>) -> Outcome<Result<ExactFraction
     ))
 }
 
-pub(crate) fn event_duration(node: &Node<'_>) -> Outcome<Result<ExactFraction, &'static str>> {
+pub(crate) fn event_duration<N: AssessmentNodeV1>(
+    node: &N,
+) -> Outcome<Result<ExactFraction, &'static str>> {
     let modification = node
-        .optional("timeModification")
+        .optional("timeModification")?
         .map(|value| {
             Ok((
                 value.field("actualNotes").number()?,
@@ -64,37 +79,28 @@ pub(crate) fn event_duration(node: &Node<'_>) -> Outcome<Result<ExactFraction, &
     ))
 }
 
-fn insert<'a>(set: &mut HashSet<&'a JsString>, value: &'a JsString) -> Outcome<bool> {
+fn insert(set: &mut HashSet<JsString>, value: JsString) -> Outcome<bool> {
     set.try_reserve(1)
         .map_err(|_| AssessmentFailureV1::InternalCapacity)?;
     Ok(set.insert(value))
 }
 
-impl<'a> Validator<'a> {
-    fn add(
-        &mut self,
-        code: Code,
-        node: &Node<'_>,
-        detail: Option<(&str, &JsString)>,
-    ) -> Outcome<()> {
+impl<N: AssessmentNodeV1> Validator<N> {
+    fn add(&mut self, code: Code, node: &N, detail: Option<(&str, &JsString)>) -> Outcome<()> {
         crate::diagnostics::append_diagnostic(&mut self.diagnostics, code, node.path(), detail)
     }
 
-    fn register_id(&mut self, node: &Node<'a>) -> Outcome<()> {
+    fn register_id(&mut self, node: &N) -> Outcome<()> {
         let id = node.string()?;
         if id.is_empty() {
             self.add(Code::IdEmpty, node, None)?;
-        } else if !insert(&mut self.ids, id)? {
-            self.add(Code::IdDuplicate, node, Some(("id", id)))?;
+        } else if !insert(&mut self.ids, id.clone())? {
+            self.add(Code::IdDuplicate, node, Some(("id", &id)))?;
         }
         Ok(())
     }
 
-    fn check_fraction(
-        &mut self,
-        node: &Node<'_>,
-        positive: bool,
-    ) -> Outcome<Option<ExactFraction>> {
+    fn check_fraction(&mut self, node: &N, positive: bool) -> Outcome<Option<ExactFraction>> {
         let (numerator, denominator) = fraction(node)?;
         let Some(value) = music_rules::canonical_fraction(numerator, denominator) else {
             self.add(Code::FractionNonCanonical, node, None)?;
@@ -111,7 +117,7 @@ impl<'a> Validator<'a> {
         Ok(Some(value))
     }
 
-    fn run(mut self, document: Node<'a>) -> Outcome<SemanticReportV1> {
+    fn run(mut self, document: N) -> Outcome<SemanticReportV1> {
         self.register_id(&document.field("id"))?;
         let tempo = document.field("metadata").field("tempo").field("bpm");
         if !music_rules::tempo_is_valid(tempo.number()?) {
@@ -123,6 +129,7 @@ impl<'a> Validator<'a> {
             self.add(Code::PartRequired, &parts, None)?;
         }
         for part in parts.items()? {
+            let part = part?;
             self.check_part(part)?;
         }
         self.check_extensions(document.field("extensions"))?;
@@ -132,22 +139,23 @@ impl<'a> Validator<'a> {
         })
     }
 
-    fn check_measures(&mut self, measures: Node<'a>) -> Outcome<()> {
+    fn check_measures(&mut self, measures: N) -> Outcome<()> {
         if measures.len()? == 0 {
             self.add(Code::MeasureRequired, &measures, None)?;
         }
         for measure in measures.items()? {
+            let measure = measure?;
             let id = measure.field("id");
             self.register_id(&id)?;
             let id = id.string()?;
-            if !self.measures.contains_key(id) {
+            if !self.measures.contains_key(&id) {
                 self.measures
                     .try_reserve(1)
                     .map_err(|_| AssessmentFailureV1::InternalCapacity)?;
                 self.measure_order
                     .try_reserve(1)
                     .map_err(|_| AssessmentFailureV1::InternalCapacity)?;
-                self.measures.insert(id, measure.clone());
+                self.measures.insert(id.clone(), measure.clone());
                 self.measure_order.push(id);
             }
             let meter = measure.field("meter");
@@ -159,7 +167,7 @@ impl<'a> Validator<'a> {
             if !music_rules::note_base(denominator.number()?) {
                 self.add(Code::MeterDenominatorInvalid, &denominator, None)?;
             }
-            if let Some(pickup) = measure.optional("pickupDuration") {
+            if let Some(pickup) = measure.optional("pickupDuration")? {
                 let checked = self.check_fraction(&pickup, true)?;
                 let regular =
                     music_rules::measure_duration(numerator.number()?, denominator.number()?, None);
@@ -177,13 +185,14 @@ impl<'a> Validator<'a> {
         Ok(())
     }
 
-    fn check_part(&mut self, part: Node<'a>) -> Outcome<()> {
+    fn check_part(&mut self, part: N) -> Outcome<()> {
         self.register_id(&part.field("id"))?;
         insert(&mut self.part_ids, part.field("id").string()?)?;
         let transposition = part.field("instrument").field("writtenToSounding");
         let diatonic = transposition.field("diatonicSteps").number()?;
         let chromatic = transposition.field("chromaticSemitones").number()?;
-        let transpose_valid = transposition.exact_fields(&["diatonicSteps", "chromaticSemitones"])
+        let transpose_valid = transposition
+            .exact_fields(&["diatonicSteps", "chromaticSemitones"])?
             && music_rules::safe_integer(diatonic)
             && music_rules::safe_integer(chromatic);
         if !transpose_valid {
@@ -195,6 +204,7 @@ impl<'a> Validator<'a> {
         }
         let mut staff_ids = HashSet::new();
         for staff in staves.items()? {
+            let staff = staff?;
             self.register_id(&staff.field("id"))?;
             insert(&mut staff_ids, staff.field("id").string()?)?;
             let lines = staff.field("lineCount");
@@ -205,9 +215,10 @@ impl<'a> Validator<'a> {
         let contents = part.field("measureContents");
         let mut covered = HashSet::new();
         for content in contents.clone().items()? {
+            let content = content?;
             let reference = content.field("measureId");
             let id = reference.string()?;
-            let measure = self.measures.get(id).cloned();
+            let measure = self.measures.get(&id).cloned();
             if measure.is_none() {
                 self.add(Code::MeasureReferenceMissing, &reference, None)?;
             }
@@ -219,6 +230,7 @@ impl<'a> Validator<'a> {
                 self.add(Code::VoiceRequired, &voices, None)?;
             }
             for voice in voices.items()? {
+                let voice = voice?;
                 self.check_voice(
                     voice,
                     measure.as_ref(),
@@ -228,12 +240,12 @@ impl<'a> Validator<'a> {
             }
         }
         for index in 0..self.measure_order.len() {
-            let id = self.measure_order[index];
-            if !covered.contains(id) {
+            let id = self.measure_order[index].clone();
+            if !covered.contains(&id) {
                 self.add(
                     Code::MeasureCoverageMissing,
                     &contents,
-                    Some(("measureId", id)),
+                    Some(("measureId", &id)),
                 )?;
             }
         }
@@ -242,14 +254,14 @@ impl<'a> Validator<'a> {
 
     fn check_voice(
         &mut self,
-        voice: Node<'a>,
-        measure: Option<&Node<'a>>,
-        staff_ids: &HashSet<&JsString>,
+        voice: N,
+        measure: Option<&N>,
+        staff_ids: &HashSet<JsString>,
         transposition: Option<(f64, f64)>,
     ) -> Outcome<()> {
         self.register_id(&voice.field("id"))?;
         let staff = voice.field("defaultStaffId");
-        if !staff_ids.contains(staff.string()?) {
+        if !staff_ids.contains(&staff.string()?) {
             self.add(Code::StaffReferenceMissing, &staff, None)?;
         }
         let sequence = voice.field("sequence");
@@ -274,6 +286,7 @@ impl<'a> Validator<'a> {
             }
         }
         for event in sequence.field("events").items()? {
+            let event = event?;
             let event_duration = self.check_event(&event, staff_ids, transposition)?;
             let (Some(position), Some(event_duration)) = (current, event_duration) else {
                 continue;
@@ -309,13 +322,13 @@ impl<'a> Validator<'a> {
 
     fn check_event(
         &mut self,
-        event: &Node<'a>,
-        staff_ids: &HashSet<&JsString>,
+        event: &N,
+        staff_ids: &HashSet<JsString>,
         transposition: Option<(f64, f64)>,
     ) -> Outcome<Option<ExactFraction>> {
         self.register_id(&event.field("id"))?;
-        if let Some(staff) = event.optional("staffId")
-            && !staff_ids.contains(staff.string()?)
+        if let Some(staff) = event.optional("staffId")?
+            && !staff_ids.contains(&staff.string()?)
         {
             self.add(Code::StaffReferenceMissing, &staff, None)?;
         }
@@ -326,12 +339,13 @@ impl<'a> Validator<'a> {
                 self.add(Code::NotesRequired, &notes, None)?;
             }
             for note in notes.items()? {
+                let note = note?;
                 self.register_id(&note.field("id"))?;
                 let pitch = note.field("writtenPitch");
                 let step = pitch.field("step").string()?;
                 let alter = pitch.field("alter").number()?;
                 let octave = pitch.field("octave").number()?;
-                if !pitch.exact_fields(&["step", "alter", "octave"])
+                if !pitch.exact_fields(&["step", "alter", "octave"])?
                     || !music_rules::written_pitch(step.code_units(), alter, octave)
                 {
                     self.add(Code::WrittenPitchInvalid, &pitch, None)?;
@@ -370,11 +384,12 @@ impl<'a> Validator<'a> {
         }
     }
 
-    fn check_extensions(&mut self, extensions: Node<'a>) -> Outcome<()> {
+    fn check_extensions(&mut self, extensions: N) -> Outcome<()> {
         let mut keys = HashSet::new();
         for extension in extensions.items()? {
+            let extension = extension?;
             let namespace = extension.field("namespace");
-            if !music_rules::extension_namespace(namespace.string()?) {
+            if !music_rules::extension_namespace(&namespace.string()?) {
                 self.add(Code::ExtensionNamespaceInvalid, &namespace, None)?;
             }
             let version = extension.field("schemaVersion");
@@ -386,7 +401,7 @@ impl<'a> Validator<'a> {
                 None
             } else {
                 let part = owner.field("partId");
-                if !self.part_ids.contains(part.string()?) {
+                if !self.part_ids.contains(&part.string()?) {
                     self.add(Code::ExtensionOwnerMissing, &part, None)?;
                 }
                 Some(part.string()?)
@@ -400,7 +415,7 @@ impl<'a> Validator<'a> {
             // Captured lossless JSON values are already finite JSON data. The
             // public direct semantic validator additionally rejects arrays;
             // object-only payload shape belongs to the document decoder.
-            if matches!(payload.value, Value::Array(_)) {
+            if payload.is_array()? {
                 self.add(Code::ExtensionPayloadInvalid, &payload, None)?;
             }
         }
@@ -460,6 +475,7 @@ mod tests {
             .items()
             .unwrap()
             .next()
+            .unwrap()
             .unwrap();
         assert_eq!(
             diagnostic
@@ -503,6 +519,7 @@ mod tests {
                     .items()
                     .unwrap()
                     .next()
+                    .unwrap()
                     .unwrap()
                     .field("namespace")
                     .path()

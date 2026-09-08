@@ -6,6 +6,7 @@ use crate::{
 use brilliant_core_types::SafeInteger;
 
 mod fields;
+mod final_assessment;
 mod orders;
 mod staff;
 

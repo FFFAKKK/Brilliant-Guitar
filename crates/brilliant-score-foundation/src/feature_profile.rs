@@ -4,7 +4,8 @@ use brilliant_core_types::{FiniteNumber, LosslessJsonValue as Value};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    AssessmentFailureV1, CoreDiagnosticCodeV1 as Code, CoreDiagnosticV1, assess_score_semantics,
+    AssessmentFailureV1, AssessmentNodeV1, CoreDiagnosticCodeV1 as Code, CoreDiagnosticV1,
+    assess_score_semantics_node,
     assessment::{effective_measure, event_duration, fraction},
     candidate::CandidateNode as Node,
     music_rules,
@@ -100,10 +101,10 @@ fn within(value: usize, constraint: &CardinalityConstraintV1) -> bool {
     value as f64 >= constraint.minimum.get() && value as f64 <= constraint.maximum.get()
 }
 
-fn append(
+fn append<N: AssessmentNodeV1>(
     diagnostics: &mut Vec<CoreDiagnosticV1>,
     code: Code,
-    node: &Node<'_>,
+    node: &N,
 ) -> Result<(), AssessmentFailureV1> {
     crate::diagnostics::append_diagnostic(diagnostics, code, node.path(), None)
 }
@@ -114,7 +115,15 @@ pub fn assess_score_profile(
     candidate: &Value,
     profile: &ScoreFeatureProfileV1,
 ) -> Result<ScoreSupportV1, AssessmentFailureV1> {
-    let report = assess_score_semantics(candidate)?;
+    assess_score_profile_node(Node::root(candidate), profile)
+}
+
+/// Assess a borrowed or virtual candidate with the shared semantic/profile rules.
+pub fn assess_score_profile_node<N: AssessmentNodeV1>(
+    candidate: N,
+    profile: &ScoreFeatureProfileV1,
+) -> Result<ScoreSupportV1, AssessmentFailureV1> {
+    let report = assess_score_semantics_node(candidate.clone())?;
     if !report.ok {
         return Ok(ScoreSupportV1::Invalid {
             diagnostics: report.diagnostics,
@@ -123,11 +132,10 @@ pub fn assess_score_profile(
     classify_valid_score(candidate, profile)
 }
 
-fn classify_valid_score(
-    candidate: &Value,
+fn classify_valid_score<N: AssessmentNodeV1>(
+    root: N,
     profile: &ScoreFeatureProfileV1,
 ) -> Result<ScoreSupportV1, AssessmentFailureV1> {
-    let root = Node::root(candidate);
     let mut diagnostics = Vec::new();
     let parts = root.field("parts");
     if !within(parts.len()?, &profile.part_count) {
@@ -139,6 +147,7 @@ fn classify_valid_score(
         .try_reserve(definitions.len()?)
         .map_err(|_| AssessmentFailureV1::InternalCapacity)?;
     for measure in definitions.items()? {
+        let measure = measure?;
         measures.insert(measure.field("id").string()?, measure.clone());
         let meter = measure.field("meter");
         let numerator = meter.field("numerator").number()?;
@@ -149,23 +158,26 @@ fn classify_valid_score(
             append(&mut diagnostics, Code::UnsupportedMeter, &meter)?;
         }
         if !profile.allow_pickup
-            && let Some(pickup) = measure.optional("pickupDuration")
+            && let Some(pickup) = measure.optional("pickupDuration")?
         {
             append(&mut diagnostics, Code::UnsupportedPickup, &pickup)?;
         }
     }
     for part in parts.items()? {
+        let part = part?;
         let staves = part.field("staves");
         if !within(staves.len()?, &profile.staff_count_per_part) {
             append(&mut diagnostics, Code::UnsupportedStaffCount, &staves)?;
         }
         for content in part.field("measureContents").items()? {
+            let content = content?;
             let voices = content.field("voices");
             if !within(voices.len()?, &profile.voice_count_per_measure) {
                 append(&mut diagnostics, Code::UnsupportedVoiceCount, &voices)?;
             }
-            let measure = measures.get(content.field("measureId").string()?);
+            let measure = measures.get(&content.field("measureId").string()?);
             for voice in voices.items()? {
+                let voice = voice?;
                 let sequence = voice.field("sequence");
                 let start = sequence.field("start");
                 let (numerator, denominator) = fraction(&start)?;
@@ -176,6 +188,7 @@ fn classify_valid_score(
                 }
                 let mut end = music_rules::canonical_fraction(numerator, denominator);
                 for event in sequence.field("events").items()? {
+                    let event = event?;
                     let duration = event.field("duration");
                     let base = duration.field("base");
                     let dots = duration.field("dots");
@@ -196,7 +209,7 @@ fn classify_valid_score(
                         append(&mut diagnostics, Code::UnsupportedDots, &dots)?;
                     }
                     if !profile.allow_time_modification
-                        && let Some(modification) = duration.optional("timeModification")
+                        && let Some(modification) = duration.optional("timeModification")?
                     {
                         append(
                             &mut diagnostics,

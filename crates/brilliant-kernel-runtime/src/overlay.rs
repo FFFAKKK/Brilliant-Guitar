@@ -1,7 +1,7 @@
 use brilliant_core_types::JsString;
 use std::collections::{HashMap, HashSet};
 
-use brilliant_core_types::StableId;
+use brilliant_core_types::{SafeInteger, StableId};
 use brilliant_score_foundation::{
     ExtensionBlockV1, ExtensionOwnerV1, PartMeasureContentV1, RhythmicEventV1, ScoreMetadataV1,
     ScoreNoteV1, StaffDefinitionV1, TranspositionV1, VoiceV1,
@@ -16,6 +16,46 @@ use crate::change_set::{
 use crate::records::EventContentKind;
 
 pub(crate) const OVERLAY_LOOKUP_LAYER_COUNT_V1: usize = 4;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum ExtensionHeaderReadFailureV1 {
+    Unavailable,
+    Invariant,
+    Capacity,
+}
+
+#[cfg(test)]
+thread_local! {
+    static HEADER_RESERVATION_FAILURE: std::cell::Cell<Option<usize>> = const { std::cell::Cell::new(None) };
+}
+
+#[cfg(test)]
+pub(crate) fn fail_header_reservation_at(attempt: Option<usize>) {
+    HEADER_RESERVATION_FAILURE.with(|value| value.set(attempt));
+}
+
+fn reserve_headers(
+    headers: &mut Vec<ExtensionHeaderV1>,
+    additional: usize,
+) -> Result<(), ExtensionHeaderReadFailureV1> {
+    #[cfg(test)]
+    if HEADER_RESERVATION_FAILURE.with(|value| match value.get() {
+        Some(1) => {
+            value.set(None);
+            true
+        }
+        Some(remaining) => {
+            value.set(Some(remaining - 1));
+            false
+        }
+        None => false,
+    }) {
+        return Err(ExtensionHeaderReadFailureV1::Capacity);
+    }
+    headers
+        .try_reserve(additional)
+        .map_err(|_| ExtensionHeaderReadFailureV1::Capacity)
+}
 
 /// The only base-state surface visible to transaction preparation.
 ///
@@ -63,6 +103,13 @@ pub(crate) trait CoreBaseReadV1 {
         Some(())
     }
     fn read_extension(&self, key: &ExtensionKeyV1) -> Option<AnchoredExtensionBlockV1>;
+    /// Distinguishes missing mechanisms, invalid state, and temporary capacity failure.
+    fn visit_extension_headers(
+        &self,
+        _visitor: &mut dyn FnMut(&ExtensionHeaderV1) -> bool,
+    ) -> Result<(), ExtensionHeaderReadFailureV1> {
+        Err(ExtensionHeaderReadFailureV1::Unavailable)
+    }
     fn read_reference(&self, address: &ReferenceAddressV1) -> Option<ReferenceValueV1>;
     fn list_references_to(&self, target_id: &StableId) -> Vec<ReferenceAddressV1>;
     fn read_voice_time(&self, voice_id: &StableId) -> Option<Vec<StableId>>;
@@ -80,6 +127,77 @@ impl ExtensionKeyV1 {
             namespace: value.namespace.clone(),
             owner: StableExtensionOwnerV1::from(&value.owner),
         }
+    }
+}
+
+/// Typed extension payloads are objects. No opaque tree crosses this projection.
+/// Cloned JsString and StableId text shares its original UTF-16 storage.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) struct ExtensionHeaderV1 {
+    pub(crate) namespace: JsString,
+    pub(crate) schema_version: SafeInteger,
+    pub(crate) owner: ExtensionOwnerV1,
+}
+
+impl ExtensionHeaderV1 {
+    fn from_block(value: &ExtensionBlockV1) -> Self {
+        Self {
+            namespace: value.namespace.clone(),
+            schema_version: value.schema_version,
+            owner: value.owner.clone(),
+        }
+    }
+
+    fn has_key(&self, key: &ExtensionKeyV1) -> bool {
+        self.namespace == key.namespace && StableExtensionOwnerV1::from(&self.owner) == key.owner
+    }
+
+    // Compare existing synthetic anchor encoding without allocating it or
+    // splitting arbitrary user-supplied owner/namespace text.
+    fn matches_anchor(&self, anchor: &StableId) -> bool {
+        let actual = anchor.as_js_string().code_units().iter().copied();
+        match &self.owner {
+            ExtensionOwnerV1::Score => "extension:score:"
+                .encode_utf16()
+                .chain(self.namespace.code_units().iter().copied())
+                .eq(actual),
+            ExtensionOwnerV1::Part { part_id } => "extension:part:"
+                .encode_utf16()
+                .chain(part_id.as_js_string().code_units().iter().copied())
+                .chain(std::iter::once(u16::from(b':')))
+                .chain(self.namespace.code_units().iter().copied())
+                .eq(actual),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+enum ExtensionHeaderEditV1 {
+    Insert {
+        anchor: StableAnchorV1,
+        value: ExtensionHeaderV1,
+    },
+    Replace(ExtensionHeaderV1),
+    Remove(ExtensionKeyV1),
+    OrderInsert {
+        anchor: StableAnchorV1,
+        child_id: StableId,
+    },
+    OrderRemove(StableId),
+    OrderMove {
+        anchor: StableAnchorV1,
+        child_id: StableId,
+    },
+    OrderReplace(Vec<StableId>),
+}
+
+fn header_insertion_index(headers: &[ExtensionHeaderV1], anchor: &StableAnchorV1) -> Option<usize> {
+    match anchor {
+        StableAnchorV1::Start => Some(0),
+        StableAnchorV1::After { sibling_id } => headers
+            .iter()
+            .position(|header| header.matches_anchor(sibling_id))
+            .map(|index| index + 1),
     }
 }
 
@@ -207,6 +325,7 @@ pub(crate) struct TransactionOverlayV1<'a> {
     orders: HashMap<StableOrderAddressV1, Vec<StableId>>,
     order_tombstones: HashSet<StableOrderAddressV1>,
     extensions: HashMap<ExtensionKeyV1, OverlayExtensionV1>,
+    extension_header_edits: Vec<ExtensionHeaderEditV1>,
     references: HashMap<ReferenceAddressV1, Option<ReferenceValueV1>>,
     reference_order: Vec<ReferenceAddressV1>,
     voice_times: HashMap<StableId, Option<Vec<StableId>>>,
@@ -216,6 +335,20 @@ pub(crate) struct TransactionOverlayV1<'a> {
 }
 
 impl<'a> TransactionOverlayV1<'a> {
+    #[cfg(test)]
+    pub(crate) fn borrowed_operations(
+        &self,
+    ) -> Result<
+        (
+            &crate::change_set::ChangeArenaV1,
+            &[crate::change_set::ChangeOpV1],
+        ),
+        OverlayFailureV1,
+    > {
+        self.ensure_active()?;
+        Ok(self.builder.borrowed_operations())
+    }
+
     pub(crate) fn new(base: &'a dyn CoreBaseReadV1) -> Self {
         Self {
             base,
@@ -226,6 +359,7 @@ impl<'a> TransactionOverlayV1<'a> {
             orders: HashMap::new(),
             order_tombstones: HashSet::new(),
             extensions: HashMap::new(),
+            extension_header_edits: Vec::new(),
             references: HashMap::new(),
             reference_order: Vec::new(),
             voice_times: HashMap::new(),
@@ -305,6 +439,36 @@ impl<'a> TransactionOverlayV1<'a> {
         self.base.read_scalar(address)
     }
 
+    #[cfg(test)]
+    pub(crate) fn frozen_read_scalar(&self, address: &ScalarAddressV1) -> Option<ScalarValueV1> {
+        if let Some(value) = self.scalar_replacements.get(address) {
+            return Some(value.clone());
+        }
+
+        let entity_address = scalar_entity_address(address);
+        match self.entity_states.get(entity_address.stable_id()) {
+            Some(OverlayEntityStateV1::Present(actual)) if actual == &entity_address => {
+                return self
+                    .records
+                    .get(&entity_address)
+                    .and_then(|record| match record {
+                        OverlayRecordV1::Present(entity) => scalar_from_entity(entity, address),
+                        OverlayRecordV1::Tombstone => None,
+                    });
+            }
+            Some(OverlayEntityStateV1::Present(_)) | Some(OverlayEntityStateV1::Tombstone) => {
+                return None;
+            }
+            None => {}
+        }
+
+        let actual = self.base.resolve_entity(entity_address.stable_id())?;
+        if actual != entity_address {
+            return None;
+        }
+        self.base.read_scalar(address)
+    }
+
     /// The pitch dependency is only two integers; do not clone an instrument's
     /// potentially large display name or its owning part aggregate to read it.
     pub(crate) fn read_transposition(&mut self, part_id: &StableId) -> Option<TranspositionV1> {
@@ -370,6 +534,37 @@ impl<'a> TransactionOverlayV1<'a> {
             return None;
         }
         self.metrics.base_slot_reads += 1;
+        self.base.read_event_content_kind(event_id)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn frozen_read_event_content_kind(
+        &self,
+        event_id: &StableId,
+    ) -> Option<EventContentKind> {
+        let address = StableEntityAddressV1::Event {
+            event_id: event_id.clone(),
+        };
+        match self.entity_states.get(event_id) {
+            Some(OverlayEntityStateV1::Present(actual)) if actual == &address => {
+                let OverlayRecordV1::Present(EntityBundleV1::Event(event)) =
+                    self.records.get(&address)?
+                else {
+                    return None;
+                };
+                return Some(match event.content {
+                    brilliant_score_foundation::RhythmicContentV1::Rest => EventContentKind::Rest,
+                    brilliant_score_foundation::RhythmicContentV1::Notes { .. } => {
+                        EventContentKind::Notes
+                    }
+                });
+            }
+            Some(_) => return None,
+            None => {}
+        }
+        if self.base.resolve_entity(event_id)? != address {
+            return None;
+        }
         self.base.read_event_content_kind(event_id)
     }
 
@@ -455,6 +650,133 @@ impl<'a> TransactionOverlayV1<'a> {
             Some(OverlayExtensionV1::Tombstone) => None,
             None => self.base.read_extension(key),
         }
+    }
+
+    /// Metadata only. E base headers and D edits require O(E+D) temporary
+    /// metadata; retained logs additionally own L IDs across order replacements.
+    /// Worst-case work is O(E+(D+L)*(E+D)) from linear searches/Vec shifts.
+    /// Text comparisons also depend on ID length. Collect once per assessment;
+    /// payload trees are never cloned here.
+    pub(crate) fn visit_extension_headers(
+        &self,
+        visitor: &mut dyn FnMut(&ExtensionHeaderV1) -> bool,
+    ) -> Result<(), ExtensionHeaderReadFailureV1> {
+        if self.poisoned {
+            return Err(ExtensionHeaderReadFailureV1::Invariant);
+        }
+        if self.extension_header_edits.is_empty() {
+            return self.base.visit_extension_headers(visitor);
+        }
+        let mut headers = Vec::new();
+        let mut allocation_failed = false;
+        self.base.visit_extension_headers(&mut |header| {
+            if reserve_headers(&mut headers, 1).is_err() {
+                allocation_failed = true;
+                return false;
+            }
+            headers.push(header.clone());
+            true
+        })?;
+        if allocation_failed {
+            return Err(ExtensionHeaderReadFailureV1::Capacity);
+        }
+        let mut detached = Vec::<ExtensionHeaderV1>::new();
+        for edit in &self.extension_header_edits {
+            match edit {
+                ExtensionHeaderEditV1::Insert { anchor, value } => {
+                    let index = header_insertion_index(&headers, anchor)
+                        .ok_or(ExtensionHeaderReadFailureV1::Invariant)?;
+                    reserve_headers(&mut headers, 1)?;
+                    headers.insert(index, value.clone());
+                }
+                ExtensionHeaderEditV1::Replace(value) => {
+                    let key = ExtensionKeyV1 {
+                        namespace: value.namespace.clone(),
+                        owner: StableExtensionOwnerV1::from(&value.owner),
+                    };
+                    let current = headers
+                        .iter_mut()
+                        .chain(detached.iter_mut())
+                        .find(|header| header.has_key(&key))
+                        .ok_or(ExtensionHeaderReadFailureV1::Invariant)?;
+                    *current = value.clone();
+                }
+                ExtensionHeaderEditV1::Remove(key) => {
+                    if let Some(index) = headers.iter().position(|header| header.has_key(key)) {
+                        headers.remove(index);
+                    } else {
+                        let index = detached
+                            .iter()
+                            .position(|header| header.has_key(key))
+                            .ok_or(ExtensionHeaderReadFailureV1::Invariant)?;
+                        detached.remove(index);
+                    }
+                }
+                ExtensionHeaderEditV1::OrderInsert { anchor, child_id } => {
+                    let index = header_insertion_index(&headers, anchor)
+                        .ok_or(ExtensionHeaderReadFailureV1::Invariant)?;
+                    let source = detached
+                        .iter()
+                        .position(|header| header.matches_anchor(child_id))
+                        .ok_or(ExtensionHeaderReadFailureV1::Invariant)?;
+                    reserve_headers(&mut headers, 1)?;
+                    headers.insert(index, detached.remove(source));
+                }
+                ExtensionHeaderEditV1::OrderRemove(child_id) => {
+                    let index = headers
+                        .iter()
+                        .position(|header| header.matches_anchor(child_id))
+                        .ok_or(ExtensionHeaderReadFailureV1::Invariant)?;
+                    reserve_headers(&mut detached, 1)?;
+                    detached.push(headers.remove(index));
+                }
+                ExtensionHeaderEditV1::OrderMove { anchor, child_id } => {
+                    let source = headers
+                        .iter()
+                        .position(|header| header.matches_anchor(child_id))
+                        .ok_or(ExtensionHeaderReadFailureV1::Invariant)?;
+                    let value = headers.remove(source);
+                    let index = header_insertion_index(&headers, anchor)
+                        .ok_or(ExtensionHeaderReadFailureV1::Invariant)?;
+                    headers.insert(index, value);
+                }
+                ExtensionHeaderEditV1::OrderReplace(order) => {
+                    if order.len() != headers.len() {
+                        return Err(ExtensionHeaderReadFailureV1::Invariant);
+                    }
+                    let mut reordered = Vec::new();
+                    reserve_headers(&mut reordered, order.len())?;
+                    for id in order {
+                        let mut matching =
+                            headers.iter().filter(|header| header.matches_anchor(id));
+                        let value = matching
+                            .next()
+                            .ok_or(ExtensionHeaderReadFailureV1::Invariant)?;
+                        if matching.next().is_some() {
+                            return Err(ExtensionHeaderReadFailureV1::Invariant);
+                        }
+                        reordered.push(value.clone());
+                    }
+                    headers = reordered;
+                }
+            }
+        }
+        for header in &headers {
+            if !visitor(header) {
+                break;
+            }
+        }
+        Ok(())
+    }
+
+    fn reserve_extension_header_edits(
+        &mut self,
+        additional: usize,
+    ) -> Result<(), OverlayFailureV1> {
+        if self.extension_header_edits.try_reserve(additional).is_err() {
+            return self.reject(OverlayFailureV1::TransactionPoisoned);
+        }
+        Ok(())
     }
 
     pub(crate) fn read_reference(&self, address: &ReferenceAddressV1) -> Option<ReferenceValueV1> {
@@ -572,6 +894,7 @@ impl<'a> TransactionOverlayV1<'a> {
             });
         }
 
+        self.reserve_extension_header_edits(entity_extensions.len())?;
         let result = self
             .builder
             .insert_entity(owner, order.clone(), anchor, entity.clone());
@@ -606,6 +929,11 @@ impl<'a> TransactionOverlayV1<'a> {
             self.set_voice_time_state(voice_id, Some(event_ids), false);
         }
         for (key, value) in entity_extensions {
+            self.extension_header_edits
+                .push(ExtensionHeaderEditV1::Insert {
+                    anchor: value.anchor.clone(),
+                    value: ExtensionHeaderV1::from_block(&value.value),
+                });
             self.extensions
                 .insert(key, OverlayExtensionV1::Present(value));
         }
@@ -659,6 +987,8 @@ impl<'a> TransactionOverlayV1<'a> {
         let removed_voice_times = entity_voice_time_entries(&expected);
         let removed_extensions = entity_extension_entries(&expected);
 
+        self.reserve_extension_header_edits(removed_extensions.len())?;
+
         let result = self
             .builder
             .remove_entity(owner, order.clone(), expected_anchor, expected);
@@ -691,6 +1021,8 @@ impl<'a> TransactionOverlayV1<'a> {
             self.set_voice_time_state(voice_id, None, false);
         }
         for (key, _) in removed_extensions {
+            self.extension_header_edits
+                .push(ExtensionHeaderEditV1::Remove(key.clone()));
             self.extensions.insert(key, OverlayExtensionV1::Tombstone);
         }
         self.sync_voice_time_from_order(&order);
@@ -716,10 +1048,22 @@ impl<'a> TransactionOverlayV1<'a> {
                 return self.reject(OverlayFailureV1::AnchorNotFound { order, sibling_id });
             }
         };
+        let header_edit = if matches!(order, StableOrderAddressV1::Extensions { .. }) {
+            self.reserve_extension_header_edits(1)?;
+            Some(ExtensionHeaderEditV1::OrderInsert {
+                anchor: anchor.clone(),
+                child_id: child_id.clone(),
+            })
+        } else {
+            None
+        };
         let result = self
             .builder
             .insert_ordered_child(order.clone(), anchor, child_id.clone());
         self.map_builder_result(result)?;
+        if let Some(edit) = header_edit {
+            self.extension_header_edits.push(edit);
+        }
         self.orders
             .get_mut(&order)
             .expect("touched order")
@@ -740,10 +1084,19 @@ impl<'a> TransactionOverlayV1<'a> {
             return self.reject(OverlayFailureV1::OrderedChildNotFound { order, child_id });
         };
         let expected_anchor = anchor_before(current_order, index);
+        let header_edit = if matches!(order, StableOrderAddressV1::Extensions { .. }) {
+            self.reserve_extension_header_edits(1)?;
+            Some(ExtensionHeaderEditV1::OrderRemove(child_id.clone()))
+        } else {
+            None
+        };
         let result =
             self.builder
                 .remove_ordered_child(order.clone(), expected_anchor, child_id.clone());
         self.map_builder_result(result)?;
+        if let Some(edit) = header_edit {
+            self.extension_header_edits.push(edit);
+        }
         self.orders
             .get_mut(&order)
             .expect("touched order")
@@ -781,6 +1134,15 @@ impl<'a> TransactionOverlayV1<'a> {
             }
         };
         self.ensure_order_for_write(&order)?;
+        let header_edit = if matches!(order, StableOrderAddressV1::Extensions { .. }) {
+            self.reserve_extension_header_edits(1)?;
+            Some(ExtensionHeaderEditV1::OrderMove {
+                anchor: anchor.clone(),
+                child_id: child_id.clone(),
+            })
+        } else {
+            None
+        };
         let result = self.builder.move_ordered_child(
             order.clone(),
             child_id.clone(),
@@ -788,6 +1150,9 @@ impl<'a> TransactionOverlayV1<'a> {
             anchor,
         );
         self.map_builder_result(result)?;
+        if let Some(edit) = header_edit {
+            self.extension_header_edits.push(edit);
+        }
         next_order.insert(insert_at, child_id);
         self.orders.insert(order.clone(), next_order);
         self.sync_voice_time_from_order(&order);
@@ -810,10 +1175,24 @@ impl<'a> TransactionOverlayV1<'a> {
             return self.reject(OverlayFailureV1::OrderMembershipMismatch { order });
         }
         self.ensure_order_for_write(&order)?;
+        let header_edit = if matches!(order, StableOrderAddressV1::Extensions { .. }) {
+            self.reserve_extension_header_edits(1)?;
+            let mut header_order = Vec::new();
+            if header_order.try_reserve(value.len()).is_err() {
+                return self.reject(OverlayFailureV1::TransactionPoisoned);
+            }
+            header_order.extend(value.iter().cloned());
+            Some(ExtensionHeaderEditV1::OrderReplace(header_order))
+        } else {
+            None
+        };
         let result = self
             .builder
             .replace_ordered_children(order.clone(), expected, value.clone());
         self.map_builder_result(result)?;
+        if let Some(edit) = header_edit {
+            self.extension_header_edits.push(edit);
+        }
         self.orders.insert(order.clone(), value);
         self.sync_voice_time_from_order(&order);
         Ok(OverlayMutationV1::Changed)
@@ -829,10 +1208,16 @@ impl<'a> TransactionOverlayV1<'a> {
         if self.read_extension(&key).is_some() {
             return self.reject(OverlayFailureV1::DuplicateExtension { key });
         }
+        self.reserve_extension_header_edits(1)?;
         let result = self
             .builder
             .insert_extension_block(anchor.clone(), value.clone());
         self.map_builder_result(result)?;
+        self.extension_header_edits
+            .push(ExtensionHeaderEditV1::Insert {
+                anchor: anchor.clone(),
+                value: ExtensionHeaderV1::from_block(&value),
+            });
         self.extensions.insert(
             key,
             OverlayExtensionV1::Present(AnchoredExtensionBlockV1 { anchor, value }),
@@ -859,6 +1244,7 @@ impl<'a> TransactionOverlayV1<'a> {
         if expected.value == value {
             return Ok(OverlayMutationV1::NoOp);
         }
+        self.reserve_extension_header_edits(1)?;
         let result = self.builder.replace_extension_block(
             key.namespace.clone(),
             key.owner.clone(),
@@ -866,6 +1252,10 @@ impl<'a> TransactionOverlayV1<'a> {
             value.clone(),
         );
         self.map_builder_result(result)?;
+        self.extension_header_edits
+            .push(ExtensionHeaderEditV1::Replace(
+                ExtensionHeaderV1::from_block(&value),
+            ));
         self.extensions.insert(
             key,
             OverlayExtensionV1::Present(AnchoredExtensionBlockV1 {
@@ -884,10 +1274,13 @@ impl<'a> TransactionOverlayV1<'a> {
         let Some(expected) = self.read_extension(&key) else {
             return self.reject(OverlayFailureV1::ExtensionNotFound { key });
         };
+        self.reserve_extension_header_edits(1)?;
         let result = self
             .builder
             .remove_extension_block(expected.anchor, expected.value);
         self.map_builder_result(result)?;
+        self.extension_header_edits
+            .push(ExtensionHeaderEditV1::Remove(key.clone()));
         self.extensions.insert(key, OverlayExtensionV1::Tombstone);
         Ok(OverlayMutationV1::Changed)
     }
@@ -999,6 +1392,18 @@ impl<'a> TransactionOverlayV1<'a> {
             Some(OverlayEntityStateV1::Present(address)) => Some(address.clone()),
             Some(OverlayEntityStateV1::Tombstone) => None,
             None => self.resolve_base_entity(stable_id),
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn frozen_resolve_entity_address(
+        &self,
+        stable_id: &StableId,
+    ) -> Option<StableEntityAddressV1> {
+        match self.entity_states.get(stable_id) {
+            Some(OverlayEntityStateV1::Present(address)) => Some(address.clone()),
+            Some(OverlayEntityStateV1::Tombstone) => None,
+            None => self.base.resolve_entity(stable_id),
         }
     }
 
@@ -2338,6 +2743,7 @@ fn stage3_overlay_shape_v1(base: &dyn CoreBaseReadV1, values: Stage3OverlayShape
     let _ = overlay.read_owner(&entities[0].root_address());
     let _ = overlay.read_order(&orders[0]);
     let _ = overlay.read_extension(&extension_key);
+    let _ = overlay.visit_extension_headers(&mut |_| true);
     let _ = overlay.read_voice_time(&voice_id);
     let _ = overlay.list_references_to(&part_id);
     for (address, value) in scalars {
@@ -2386,6 +2792,7 @@ static STAGE3_OVERLAY_SHAPE_V1: Stage3OverlayShapeFnV1 = stage3_overlay_shape_v1
 
 #[cfg(test)]
 mod tests {
+    mod extension_headers;
     use std::collections::BTreeMap;
 
     use brilliant_core_types::{LosslessJsonValue as BoundedJsonValue, SafeInteger};

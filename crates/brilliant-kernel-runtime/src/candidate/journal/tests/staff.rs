@@ -50,12 +50,25 @@ fn definition(lines: i64) -> Value {
 }
 
 // This is a test driver for real admission DTOs, not a production dispatcher.
-fn execute_staff_wire(recorder: &mut Recorder<'_>, command: &str) -> Result<(), Failure> {
+pub(super) fn execute_staff_wire(
+    recorder: &mut Recorder<'_>,
+    command: &str,
+) -> Result<(), Failure> {
     let request = format!("{{\"apiVersion\":1,\"command\":{command}}}");
     let command = decode_admission_submit_request(request.as_bytes())
         .expect("valid admission shape")
         .command;
     match command {
+        CoreCommandEnvelopeV1::DocumentSetMetadata {
+            target: ScoreEntityTargetV1::Document { document_id },
+            metadata,
+        } => {
+            let target = recorder
+                .candidate
+                .resolve(Kind::Document, document_id.as_js_string())?;
+            recorder.replace_scalar(&target, Value::DocumentMetadata(metadata))?;
+            Ok(())
+        }
         CoreCommandEnvelopeV1::StaffInsert {
             target: ScoreEntityTargetV1::Part { part_id },
             anchor,

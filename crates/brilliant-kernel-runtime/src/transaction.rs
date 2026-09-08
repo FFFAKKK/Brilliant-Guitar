@@ -164,6 +164,696 @@ pub(crate) fn apply_stored_operations(
     Ok(())
 }
 
+#[cfg(test)]
+pub(crate) use final_state::{
+    FinalExtensionDeltaV1, FinalStateDeltaV1, PreparedFinalStateCommitV1,
+    collect_frozen_prefix_delta, prepare_validated_final_state,
+};
+
+/// Admission integration remains test-only until its full native route closes.
+#[cfg(test)]
+mod final_state {
+    use super::*;
+
+    #[derive(Default)]
+    pub(crate) struct FinalStateDeltaV1 {
+        pub(crate) entity_states: HashMap<StableEntityAddressV1, Option<StableRecordV1>>,
+        /// Every identity removed during this transaction, including rebirths.
+        pub(crate) removed_entities: HashSet<StableEntityAddressV1>,
+        pub(crate) scalar_values: HashMap<ScalarAddressV1, ScalarValueV1>,
+        pub(crate) reference_states: HashMap<ReferenceAddressV1, Option<ReferenceValueV1>>,
+        pub(crate) order_addresses: Vec<StableOrderAddressV1>,
+        pub(crate) touched_voice_ids: HashSet<StableId>,
+    }
+
+    impl FinalStateDeltaV1 {
+        fn is_empty(&self) -> bool {
+            self.entity_states.is_empty()
+                && self.removed_entities.is_empty()
+                && self.scalar_values.is_empty()
+                && self.reference_states.is_empty()
+                && self.order_addresses.is_empty()
+                && self.touched_voice_ids.is_empty()
+        }
+
+        /// Merge a suffix relative to this frozen prefix. Birth/death state
+        /// supersedes earlier scalars and source references for that occurrence.
+        pub(crate) fn merge_suffix(
+            &mut self,
+            suffix: Self,
+        ) -> Result<(), TransactionPrepareFailureV1> {
+            self.entity_states
+                .try_reserve(suffix.entity_states.len())
+                .map_err(|_| TransactionPrepareFailureV1::Capacity)?;
+            self.removed_entities
+                .try_reserve(suffix.removed_entities.len())
+                .map_err(|_| TransactionPrepareFailureV1::Capacity)?;
+            self.scalar_values
+                .try_reserve(suffix.scalar_values.len())
+                .map_err(|_| TransactionPrepareFailureV1::Capacity)?;
+            self.reference_states
+                .try_reserve(suffix.reference_states.len())
+                .map_err(|_| TransactionPrepareFailureV1::Capacity)?;
+            self.order_addresses
+                .try_reserve(suffix.order_addresses.len())
+                .map_err(|_| TransactionPrepareFailureV1::Capacity)?;
+            self.touched_voice_ids
+                .try_reserve(suffix.touched_voice_ids.len())
+                .map_err(|_| TransactionPrepareFailureV1::Capacity)?;
+            for address in suffix.entity_states.keys() {
+                clear_collected_scalars(&mut self.scalar_values, address);
+                match address {
+                    StableEntityAddressV1::Voice { voice_id } => {
+                        self.reference_states
+                            .remove(&ReferenceAddressV1::VoiceDefaultStaff {
+                                voice_id: voice_id.clone(),
+                            });
+                    }
+                    StableEntityAddressV1::Event { event_id } => {
+                        self.reference_states
+                            .remove(&ReferenceAddressV1::EventStaffAssignment {
+                                event_id: event_id.clone(),
+                            });
+                    }
+                    _ => {}
+                }
+            }
+            self.entity_states.extend(suffix.entity_states);
+            self.removed_entities.extend(suffix.removed_entities);
+            self.scalar_values.extend(suffix.scalar_values);
+            self.reference_states.extend(suffix.reference_states);
+            self.order_addresses.extend(suffix.order_addresses);
+            self.touched_voice_ids.extend(suffix.touched_voice_ids);
+            Ok(())
+        }
+
+        fn into_collector(self) -> Result<DeltaCollectorV1, TransactionPrepareFailureV1> {
+            let mut collector = DeltaCollectorV1 {
+                entity_states: self.entity_states,
+                removed_entities: self.removed_entities,
+                scalar_values: self.scalar_values,
+                reference_states: self.reference_states,
+                touched_voice_ids: self.touched_voice_ids,
+                ..DeltaCollectorV1::default()
+            };
+            collector
+                .order_addresses
+                .try_reserve(self.order_addresses.len())
+                .map_err(|_| TransactionPrepareFailureV1::Capacity)?;
+            collector
+                .order_seen
+                .try_reserve(self.order_addresses.len())
+                .map_err(|_| TransactionPrepareFailureV1::Capacity)?;
+            collector
+                .touched_voice_ids
+                .try_reserve(self.order_addresses.len())
+                .map_err(|_| TransactionPrepareFailureV1::Capacity)?;
+            for address in self.order_addresses {
+                collector.touch_order(address);
+            }
+            Ok(collector)
+        }
+    }
+
+    impl From<DeltaCollectorV1> for FinalStateDeltaV1 {
+        fn from(value: DeltaCollectorV1) -> Self {
+            Self {
+                entity_states: value.entity_states,
+                removed_entities: value.removed_entities,
+                scalar_values: value.scalar_values,
+                reference_states: value.reference_states,
+                order_addresses: value.order_addresses,
+                touched_voice_ids: value.touched_voice_ids,
+            }
+        }
+    }
+
+    /// Explicitly supplied; no default can silently discard extension changes.
+    pub(crate) enum FinalExtensionDeltaV1 {
+        Unchanged,
+        Changed {
+            final_order: Vec<ExtensionKeyV1>,
+            states: HashMap<ExtensionKeyV1, Option<ExtensionBlockV1>>,
+            removed: HashSet<ExtensionKeyV1>,
+        },
+    }
+
+    pub(crate) struct PreparedFinalStateCommitV1 {
+        base_version: DocumentVersionV1,
+        document_id: StableId,
+        plan: CommitPlanV1,
+    }
+
+    impl PreparedFinalStateCommitV1 {
+        pub(crate) fn commit(
+            self,
+            store: &mut LiveScoreStore,
+            version: &mut DocumentVersionV1,
+            metrics: &mut KernelStage3MetricsV1,
+        ) -> Result<(), TransactionPrepareFailureV1> {
+            self.commit_with_policy(
+                store,
+                version,
+                metrics,
+                CommitReservationPolicyV1::production(),
+            )
+        }
+
+        pub(super) fn commit_with_policy(
+            mut self,
+            store: &mut LiveScoreStore,
+            version: &mut DocumentVersionV1,
+            metrics: &mut KernelStage3MetricsV1,
+            policy: CommitReservationPolicyV1,
+        ) -> Result<(), TransactionPrepareFailureV1> {
+            if *version != self.base_version || store.header.id != self.document_id {
+                return Err(TransactionPrepareFailureV1::PreconditionMismatch);
+            }
+            self.plan.reserve(store, policy)?;
+            self.plan.adopt(store, version, metrics);
+            Ok(())
+        }
+    }
+
+    /// The caller has assessed this strong final view. Only changed projections
+    /// are detached; no transient raw operation is converted to a stable op.
+    /// `prior_work` describes work already performed, before plan preparation.
+    pub(crate) fn prepare_validated_final_state(
+        store: &LiveScoreStore,
+        base_version: DocumentVersionV1,
+        final_view: &dyn CoreBaseReadV1,
+        delta: FinalStateDeltaV1,
+        extensions: FinalExtensionDeltaV1,
+        has_actual_operations: bool,
+        prior_work: KernelStage3MetricsV1,
+    ) -> Result<Option<PreparedFinalStateCommitV1>, TransactionPrepareFailureV1> {
+        if !has_actual_operations {
+            return if delta.is_empty()
+                && matches!(extensions, FinalExtensionDeltaV1::Unchanged)
+                && prior_work.change_ops == 0
+            {
+                Ok(None)
+            } else {
+                Err(TransactionPrepareFailureV1::InvalidChangeSet)
+            };
+        }
+        if prior_work.change_ops == 0 {
+            return Err(TransactionPrepareFailureV1::InvalidChangeSet);
+        }
+        let next_version = base_version
+            .checked_next()
+            .ok_or(TransactionPrepareFailureV1::VersionOverflow)?;
+        if final_view.resolve_entity(&store.header.id)
+            != Some(StableEntityAddressV1::Document {
+                document_id: store.header.id.clone(),
+            })
+        {
+            return Err(TransactionPrepareFailureV1::LocalInvariant);
+        }
+        let extension_simulation = extensions.into_simulation(store, final_view)?;
+        let mut collector = delta.into_collector()?;
+        collector
+            .reference_states
+            .try_reserve(extension_simulation.touched.len())
+            .map_err(|_| TransactionPrepareFailureV1::Capacity)?;
+        add_extension_reference_states(&extension_simulation, &mut collector);
+        let (header_metadata, final_records) = prepare_final_records(store, &collector)?;
+        validate_projection(
+            final_view,
+            &store.header.id,
+            &collector,
+            header_metadata.as_ref(),
+            &final_records,
+        )?;
+        let mut overlay = TransactionOverlayV1::new(final_view);
+        let plan = CommitPlanV1::prepare_collected(
+            store,
+            next_version,
+            &mut overlay,
+            CollectedCommitInputV1 {
+                collector,
+                extension_simulation,
+                header_metadata,
+                final_records,
+                metrics: prior_work,
+            },
+        )?;
+        Ok(Some(PreparedFinalStateCommitV1 {
+            base_version,
+            document_id: store.header.id.clone(),
+            plan,
+        }))
+    }
+
+    fn validate_projection(
+        view: &dyn CoreBaseReadV1,
+        document_id: &StableId,
+        collector: &DeltaCollectorV1,
+        metadata: Option<&brilliant_score_foundation::ScoreMetadataV1>,
+        records: &HashMap<StableEntityAddressV1, StableRecordV1>,
+    ) -> Result<(), TransactionPrepareFailureV1> {
+        let scalar = |address, expected| {
+            if view.read_scalar(&address) == Some(expected) {
+                Ok(())
+            } else {
+                Err(TransactionPrepareFailureV1::LocalInvariant)
+            }
+        };
+        if let Some(value) = metadata {
+            scalar(
+                ScalarAddressV1::DocumentMetadata {
+                    document_id: document_id.clone(),
+                },
+                ScalarValueV1::DocumentMetadata(value.clone()),
+            )?;
+        }
+        for (address, state) in &collector.entity_states {
+            let present = view.resolve_entity(address.stable_id()).as_ref() == Some(address);
+            if present != state.is_some() {
+                return Err(TransactionPrepareFailureV1::LocalInvariant);
+            }
+            if let Some(record) = state
+                && record.address() != *address
+            {
+                return Err(TransactionPrepareFailureV1::LocalInvariant);
+            }
+        }
+        for address in &collector.removed_entities {
+            if !collector.entity_states.contains_key(address) {
+                return Err(TransactionPrepareFailureV1::LocalInvariant);
+            }
+        }
+        for (address, record) in records {
+            if record.address() != *address
+                || view.resolve_entity(address.stable_id()).as_ref() != Some(address)
+            {
+                return Err(TransactionPrepareFailureV1::LocalInvariant);
+            }
+            match record {
+                StableRecordV1::Measure(v) => scalar(
+                    ScalarAddressV1::MeasureDefinition {
+                        measure_id: v.id.clone(),
+                    },
+                    ScalarValueV1::MeasureDefinition {
+                        meter: v.meter.clone(),
+                        pickup_duration: v.pickup_duration.clone(),
+                    },
+                )?,
+                StableRecordV1::Part(v) => {
+                    scalar(
+                        ScalarAddressV1::PartName {
+                            part_id: v.id.clone(),
+                        },
+                        ScalarValueV1::PartName(v.name.clone()),
+                    )?;
+                    scalar(
+                        ScalarAddressV1::PartInstrument {
+                            part_id: v.id.clone(),
+                        },
+                        ScalarValueV1::PartInstrument(v.instrument.clone()),
+                    )?;
+                }
+                StableRecordV1::Staff(v) => scalar(
+                    ScalarAddressV1::StaffDefinition {
+                        staff_id: v.id.clone(),
+                    },
+                    ScalarValueV1::StaffDefinition {
+                        line_count: v.line_count,
+                        default_clef: v.default_clef.clone(),
+                    },
+                )?,
+                StableRecordV1::Voice(v) => {
+                    scalar(
+                        ScalarAddressV1::VoiceSequenceStart {
+                            voice_id: v.id.clone(),
+                        },
+                        ScalarValueV1::VoiceSequenceStart(v.sequence_start.clone()),
+                    )?;
+                    if view.read_reference(&ReferenceAddressV1::VoiceDefaultStaff {
+                        voice_id: v.id.clone(),
+                    }) != Some(ReferenceValueV1::StableId(v.default_staff_id.clone()))
+                    {
+                        return Err(TransactionPrepareFailureV1::LocalInvariant);
+                    }
+                }
+                StableRecordV1::Event(v) => {
+                    scalar(
+                        ScalarAddressV1::EventNoteValue {
+                            event_id: v.id.clone(),
+                        },
+                        ScalarValueV1::EventNoteValue(v.duration.clone()),
+                    )?;
+                    if view.read_reference(&ReferenceAddressV1::EventStaffAssignment {
+                        event_id: v.id.clone(),
+                    }) != Some(ReferenceValueV1::OptionalStableId(v.staff_id.clone()))
+                        || view.read_event_content_kind(&v.id) != Some(v.content_kind)
+                    {
+                        return Err(TransactionPrepareFailureV1::LocalInvariant);
+                    }
+                }
+                StableRecordV1::Note(v) => scalar(
+                    ScalarAddressV1::NoteWrittenPitch {
+                        note_id: v.id.clone(),
+                    },
+                    ScalarValueV1::NoteWrittenPitch(v.written_pitch.clone()),
+                )?,
+            }
+        }
+        for (address, value) in &collector.reference_states {
+            if view.read_reference(address) != *value {
+                return Err(TransactionPrepareFailureV1::LocalInvariant);
+            }
+        }
+        Ok(())
+    }
+
+    fn extension_header_failure(
+        error: crate::overlay::ExtensionHeaderReadFailureV1,
+    ) -> TransactionPrepareFailureV1 {
+        match error {
+            crate::overlay::ExtensionHeaderReadFailureV1::Capacity => {
+                TransactionPrepareFailureV1::Capacity
+            }
+            _ => TransactionPrepareFailureV1::LocalInvariant,
+        }
+    }
+
+    impl FinalExtensionDeltaV1 {
+        fn into_simulation(
+            self,
+            store: &LiveScoreStore,
+            view: &dyn CoreBaseReadV1,
+        ) -> Result<ExtensionSimulationV1, TransactionPrepareFailureV1> {
+            let Self::Changed {
+                final_order,
+                states,
+                removed,
+            } = self
+            else {
+                return Ok(ExtensionSimulationV1::default());
+            };
+            if removed.iter().any(|key| !states.contains_key(key)) {
+                return Err(TransactionPrepareFailureV1::LocalInvariant);
+            }
+            let mut simulation = ExtensionSimulationV1 {
+                active: true,
+                order: final_order,
+                removed,
+                ..ExtensionSimulationV1::default()
+            };
+            simulation
+                .base_handles
+                .try_reserve(store.topology.extension_order.len())
+                .map_err(|_| TransactionPrepareFailureV1::Capacity)?;
+            for handle in &store.topology.extension_order {
+                let record = store
+                    .extensions
+                    .get(*handle)
+                    .ok_or(TransactionPrepareFailureV1::LocalInvariant)?;
+                let key = ExtensionKeyV1 {
+                    namespace: record.namespace.clone(),
+                    owner: StableExtensionOwnerV1::from(&record.owner),
+                };
+                if simulation.base_handles.insert(key, *handle).is_some() {
+                    return Err(TransactionPrepareFailureV1::LocalInvariant);
+                }
+            }
+            let mut seen = HashSet::new();
+            seen.try_reserve(simulation.order.len())
+                .map_err(|_| TransactionPrepareFailureV1::Capacity)?;
+            for key in &simulation.order {
+                if !seen.insert(key.clone())
+                    || (!states.contains_key(key) && !simulation.base_handles.contains_key(key))
+                {
+                    return Err(TransactionPrepareFailureV1::LocalInvariant);
+                }
+            }
+            for key in simulation.base_handles.keys() {
+                if !seen.contains(key) && !matches!(states.get(key), Some(None)) {
+                    return Err(TransactionPrepareFailureV1::LocalInvariant);
+                }
+            }
+            let mut position = 0;
+            let mut matches = true;
+            let available = view.visit_extension_headers(&mut |header| {
+                let key = ExtensionKeyV1 {
+                    namespace: header.namespace.clone(),
+                    owner: StableExtensionOwnerV1::from(&header.owner),
+                };
+                if simulation.order.get(position) != Some(&key) {
+                    matches = false;
+                    return false;
+                }
+                position += 1;
+                true
+            });
+            available.map_err(extension_header_failure)?;
+            if !matches || position != simulation.order.len() {
+                return Err(TransactionPrepareFailureV1::LocalInvariant);
+            }
+            simulation
+                .touched
+                .try_reserve(states.len())
+                .map_err(|_| TransactionPrepareFailureV1::Capacity)?;
+            simulation
+                .values
+                .try_reserve(states.len())
+                .map_err(|_| TransactionPrepareFailureV1::Capacity)?;
+            for (key, state) in states {
+                if seen.contains(&key) != state.is_some() {
+                    return Err(TransactionPrepareFailureV1::LocalInvariant);
+                }
+                if let Some(value) = state {
+                    if ExtensionKeyV1::from_block(&value) != key
+                        || view.read_extension(&key).map(|v| v.value).as_ref() != Some(&value)
+                    {
+                        return Err(TransactionPrepareFailureV1::LocalInvariant);
+                    }
+                    simulation.values.insert(key.clone(), value);
+                }
+                simulation.touched.insert(key);
+            }
+            Ok(simulation)
+        }
+    }
+
+    /// Read the frozen builder once. No operation is replayed and no ChangeSet
+    /// or original entity bundle is cloned or consumed.
+    pub(crate) fn collect_frozen_prefix_delta(
+        store: &LiveScoreStore,
+        prefix: &TransactionOverlayV1<'_>,
+    ) -> Result<(FinalStateDeltaV1, FinalExtensionDeltaV1), TransactionPrepareFailureV1> {
+        let (arena, operations) = prefix.borrowed_operations()?;
+        let mut capacity = operations.len();
+        for operation in operations {
+            let entity = match operation {
+                ChangeOpV1::InsertEntity { entity, .. } => Some(*entity),
+                ChangeOpV1::RemoveEntity { expected, .. } => Some(*expected),
+                _ => None,
+            };
+            if let Some(entity) = entity {
+                let bundle = arena
+                    .entity(entity)
+                    .ok_or(TransactionPrepareFailureV1::InvalidChangeSet)?;
+                capacity = capacity
+                    .checked_add(bundle_capacity(bundle)?)
+                    .ok_or(TransactionPrepareFailureV1::Capacity)?;
+            }
+        }
+        let mut collector = DeltaCollectorV1::with_operation_capacity(capacity)?;
+        let mut extension_keys = HashSet::new();
+        let mut removed_extensions = HashSet::new();
+        extension_keys
+            .try_reserve(capacity)
+            .map_err(|_| TransactionPrepareFailureV1::Capacity)?;
+        removed_extensions
+            .try_reserve(capacity)
+            .map_err(|_| TransactionPrepareFailureV1::Capacity)?;
+        for operation in operations {
+            match operation {
+                ChangeOpV1::ReplaceScalar { address, value, .. } => {
+                    let value = arena
+                        .scalar(*value)
+                        .ok_or(TransactionPrepareFailureV1::InvalidChangeSet)?
+                        .clone();
+                    collector.scalar_values.insert(address.clone(), value);
+                    match address {
+                        ScalarAddressV1::VoiceSequenceStart { voice_id } => {
+                            collector.touched_voice_ids.insert(voice_id.clone());
+                        }
+                        ScalarAddressV1::EventNoteValue { event_id } => {
+                            collect_event_owner_voice(store, prefix, event_id, &mut collector)
+                        }
+                        _ => {}
+                    }
+                }
+                ChangeOpV1::InsertEntity {
+                    owner,
+                    order,
+                    entity,
+                    ..
+                }
+                | ChangeOpV1::RemoveEntity {
+                    owner,
+                    order,
+                    expected: entity,
+                    ..
+                } => {
+                    let bundle = arena
+                        .entity(*entity)
+                        .ok_or(TransactionPrepareFailureV1::InvalidChangeSet)?;
+                    let present = matches!(operation, ChangeOpV1::InsertEntity { .. });
+                    collector.touch_order(order.clone());
+                    append_bundle_delta(&mut collector, bundle, present);
+                    collect_root_owner_voice(owner, &mut collector);
+                    if let EntityBundleV1::Part(bundle) = bundle {
+                        for extension in &bundle.extensions {
+                            let key = ExtensionKeyV1::from_block(&extension.value);
+                            extension_keys.insert(key.clone());
+                            if !present {
+                                removed_extensions.insert(key);
+                            }
+                        }
+                    }
+                }
+                ChangeOpV1::InsertOrderedChild { order, .. }
+                | ChangeOpV1::RemoveOrderedChild { order, .. }
+                | ChangeOpV1::MoveOrderedChild { order, .. }
+                | ChangeOpV1::ReplaceOrderedChildren { order, .. } => {
+                    collector.touch_order(order.clone())
+                }
+                ChangeOpV1::UpdateReference { address, value, .. } => {
+                    let value = arena
+                        .reference(*value)
+                        .ok_or(TransactionPrepareFailureV1::InvalidChangeSet)?
+                        .clone();
+                    collector
+                        .reference_states
+                        .insert(address.clone(), Some(value));
+                }
+                ChangeOpV1::InsertExtensionBlock { value, .. }
+                | ChangeOpV1::ReplaceExtensionBlock { value, .. }
+                | ChangeOpV1::RemoveExtensionBlock {
+                    expected: value, ..
+                } => {
+                    let value = arena
+                        .extension(*value)
+                        .ok_or(TransactionPrepareFailureV1::InvalidChangeSet)?;
+                    let key = ExtensionKeyV1::from_block(value);
+                    extension_keys.insert(key.clone());
+                    if matches!(operation, ChangeOpV1::RemoveExtensionBlock { .. }) {
+                        removed_extensions.insert(key);
+                    }
+                }
+            }
+        }
+        let extensions = if extension_keys.is_empty()
+            && !collector
+                .order_addresses
+                .iter()
+                .any(|order| matches!(order, StableOrderAddressV1::Extensions { .. }))
+        {
+            FinalExtensionDeltaV1::Unchanged
+        } else {
+            let mut final_order = Vec::new();
+            let mut failed = false;
+            let available = prefix.visit_extension_headers(&mut |header| {
+                if final_order.try_reserve(1).is_err() {
+                    failed = true;
+                    return false;
+                }
+                final_order.push(ExtensionKeyV1 {
+                    namespace: header.namespace.clone(),
+                    owner: StableExtensionOwnerV1::from(&header.owner),
+                });
+                true
+            });
+            if failed {
+                return Err(TransactionPrepareFailureV1::Capacity);
+            }
+            available.map_err(extension_header_failure)?;
+            let mut states = HashMap::new();
+            states
+                .try_reserve(extension_keys.len())
+                .map_err(|_| TransactionPrepareFailureV1::Capacity)?;
+            for key in extension_keys {
+                states.insert(
+                    key.clone(),
+                    prefix.read_extension(&key).map(|value| value.value),
+                );
+            }
+            FinalExtensionDeltaV1::Changed {
+                final_order,
+                states,
+                removed: removed_extensions,
+            }
+        };
+        Ok((collector.into(), extensions))
+    }
+
+    fn bundle_capacity(bundle: &EntityBundleV1) -> Result<usize, TransactionPrepareFailureV1> {
+        fn voice_count(voice: &brilliant_score_foundation::VoiceV1) -> usize {
+            1usize.saturating_add(
+                voice
+                    .sequence
+                    .events
+                    .iter()
+                    .map(|event| {
+                        1usize.saturating_add(match &event.content {
+                            RhythmicContentV1::Rest => 0,
+                            RhythmicContentV1::Notes { notes } => notes.len(),
+                        })
+                    })
+                    .fold(0usize, usize::saturating_add),
+            )
+        }
+        let nodes = match bundle {
+            EntityBundleV1::Part(part) => 1usize
+                .saturating_add(part.part.staves.len())
+                .saturating_add(part.extensions.len())
+                .saturating_add(
+                    part.part
+                        .measure_contents
+                        .iter()
+                        .map(|content| {
+                            1usize.saturating_add(
+                                content
+                                    .voices
+                                    .iter()
+                                    .map(voice_count)
+                                    .fold(0usize, usize::saturating_add),
+                            )
+                        })
+                        .fold(0usize, usize::saturating_add),
+                ),
+            EntityBundleV1::Measure(measure) => 1usize.saturating_add(
+                measure
+                    .contents
+                    .iter()
+                    .map(|content| {
+                        1usize.saturating_add(
+                            content
+                                .voices
+                                .iter()
+                                .map(voice_count)
+                                .fold(0usize, usize::saturating_add),
+                        )
+                    })
+                    .fold(0usize, usize::saturating_add),
+            ),
+            EntityBundleV1::Voice(voice) => voice_count(voice),
+            EntityBundleV1::Event(event) => 1usize.saturating_add(match &event.content {
+                RhythmicContentV1::Rest => 0,
+                RhythmicContentV1::Notes { notes } => notes.len(),
+            }),
+            _ => 1,
+        };
+        nodes
+            .checked_mul(3)
+            .ok_or(TransactionPrepareFailureV1::Capacity)
+    }
+}
+
 #[derive(Clone, Debug)]
 pub(crate) enum StableRecordV1 {
     Measure(MeasureRecord),
@@ -529,16 +1219,7 @@ fn collect_event_owner_voice(
 }
 
 fn append_bundle_delta(collector: &mut DeltaCollectorV1, bundle: &EntityBundleV1, present: bool) {
-    let record = root_record(bundle);
-    let address = record.address();
-    clear_collected_scalars(&mut collector.scalar_values, &address);
-    if present {
-        collector.entity_states.insert(address, Some(record));
-    } else {
-        collector.removed_entities.insert(address.clone());
-        collector.entity_states.insert(address, None);
-    }
-
+    append_record_delta(collector, root_record(bundle), present);
     match bundle {
         EntityBundleV1::Measure(bundle) => {
             for content in &bundle.contents {
@@ -554,7 +1235,7 @@ fn append_bundle_delta(collector: &mut DeltaCollectorV1, bundle: &EntityBundleV1
                     present.then_some(ReferenceValueV1::Present(true)),
                 );
                 for voice in &content.voices {
-                    append_bundle_delta(collector, &EntityBundleV1::Voice(voice.clone()), present);
+                    append_voice_delta(collector, voice, present);
                 }
             }
         }
@@ -582,42 +1263,103 @@ fn append_bundle_delta(collector: &mut DeltaCollectorV1, bundle: &EntityBundleV1
                     present.then_some(ReferenceValueV1::Present(true)),
                 );
                 for voice in &content.voices {
-                    append_bundle_delta(collector, &EntityBundleV1::Voice(voice.clone()), present);
+                    append_voice_delta(collector, voice, present);
                 }
             }
         }
-        EntityBundleV1::Voice(voice) => {
-            collector.touched_voice_ids.insert(voice.id.clone());
-            collector.touch_order(StableOrderAddressV1::Events {
-                voice_id: voice.id.clone(),
-            });
-            collector.reference_states.insert(
-                ReferenceAddressV1::VoiceDefaultStaff {
-                    voice_id: voice.id.clone(),
-                },
-                present.then(|| ReferenceValueV1::StableId(voice.default_staff_id.clone())),
-            );
-            for event in &voice.sequence.events {
-                append_bundle_delta(collector, &EntityBundleV1::Event(event.clone()), present);
-            }
-        }
-        EntityBundleV1::Event(event) => {
-            collector.touch_order(StableOrderAddressV1::Notes {
-                event_id: event.id.clone(),
-            });
-            collector.reference_states.insert(
-                ReferenceAddressV1::EventStaffAssignment {
-                    event_id: event.id.clone(),
-                },
-                present.then(|| ReferenceValueV1::OptionalStableId(event.staff_id.clone())),
-            );
-            if let RhythmicContentV1::Notes { notes } = &event.content {
-                for note in notes {
-                    append_bundle_delta(collector, &EntityBundleV1::Note(note.clone()), present);
-                }
-            }
-        }
+        EntityBundleV1::Voice(voice) => append_voice_children(collector, voice, present),
+        EntityBundleV1::Event(event) => append_event_children(collector, event, present),
         EntityBundleV1::Staff(_) | EntityBundleV1::Note(_) => {}
+    }
+}
+
+fn append_record_delta(collector: &mut DeltaCollectorV1, record: StableRecordV1, present: bool) {
+    let address = record.address();
+    clear_collected_scalars(&mut collector.scalar_values, &address);
+    if present {
+        collector.entity_states.insert(address, Some(record));
+    } else {
+        collector.removed_entities.insert(address.clone());
+        collector.entity_states.insert(address, None);
+    }
+}
+
+fn append_voice_delta(
+    collector: &mut DeltaCollectorV1,
+    voice: &brilliant_score_foundation::VoiceV1,
+    present: bool,
+) {
+    append_record_delta(
+        collector,
+        StableRecordV1::Voice(VoiceRecord {
+            id: voice.id.clone(),
+            default_staff_id: voice.default_staff_id.clone(),
+            sequence_start: voice.sequence.start.clone(),
+        }),
+        present,
+    );
+    append_voice_children(collector, voice, present);
+}
+
+fn append_voice_children(
+    collector: &mut DeltaCollectorV1,
+    voice: &brilliant_score_foundation::VoiceV1,
+    present: bool,
+) {
+    collector.touched_voice_ids.insert(voice.id.clone());
+    collector.touch_order(StableOrderAddressV1::Events {
+        voice_id: voice.id.clone(),
+    });
+    collector.reference_states.insert(
+        ReferenceAddressV1::VoiceDefaultStaff {
+            voice_id: voice.id.clone(),
+        },
+        present.then(|| ReferenceValueV1::StableId(voice.default_staff_id.clone())),
+    );
+    for event in &voice.sequence.events {
+        append_event_delta(collector, event, present);
+    }
+}
+
+fn append_event_delta(
+    collector: &mut DeltaCollectorV1,
+    event: &brilliant_score_foundation::RhythmicEventV1,
+    present: bool,
+) {
+    append_record_delta(
+        collector,
+        StableRecordV1::Event(EventRecord {
+            id: event.id.clone(),
+            duration: event.duration.clone(),
+            staff_id: event.staff_id.clone(),
+            content_kind: match &event.content {
+                RhythmicContentV1::Rest => EventContentKind::Rest,
+                RhythmicContentV1::Notes { .. } => EventContentKind::Notes,
+            },
+        }),
+        present,
+    );
+    append_event_children(collector, event, present);
+}
+
+fn append_event_children(
+    collector: &mut DeltaCollectorV1,
+    event: &brilliant_score_foundation::RhythmicEventV1,
+    present: bool,
+) {
+    collector.touch_order(StableOrderAddressV1::Notes {
+        event_id: event.id.clone(),
+    });
+    collector.reference_states.insert(
+        ReferenceAddressV1::EventStaffAssignment {
+            event_id: event.id.clone(),
+        },
+        present.then(|| ReferenceValueV1::OptionalStableId(event.staff_id.clone())),
+    );
+    if let RhythmicContentV1::Notes { notes } = &event.content {
+        for note in notes {
+            append_bundle_delta(collector, &EntityBundleV1::Note(note.clone()), present);
+        }
     }
 }
 
@@ -668,6 +1410,7 @@ fn root_record(bundle: &EntityBundleV1) -> StableRecordV1 {
 
 #[derive(Default)]
 struct ExtensionSimulationV1 {
+    active: bool,
     order: Vec<ExtensionKeyV1>,
     values: HashMap<ExtensionKeyV1, ExtensionBlockV1>,
     base_handles: HashMap<ExtensionKeyV1, ExtensionHandle>,
@@ -678,7 +1421,10 @@ struct ExtensionSimulationV1 {
 impl ExtensionSimulationV1 {
     fn from_store(store: &LiveScoreStore) -> Result<Self, TransactionPrepareFailureV1> {
         let capacity = store.topology.extension_order.len();
-        let mut value = Self::default();
+        let mut value = Self {
+            active: true,
+            ..Self::default()
+        };
         value
             .order
             .try_reserve_exact(capacity)
@@ -704,11 +1450,11 @@ impl ExtensionSimulationV1 {
                 .extensions
                 .get(*handle)
                 .ok_or(TransactionPrepareFailureV1::LocalInvariant)?;
-            let block = extension_block(record);
-            let key = ExtensionKeyV1::from_block(&block);
-            if value.values.insert(key.clone(), block).is_some()
-                || value.base_handles.insert(key.clone(), *handle).is_some()
-            {
+            let key = ExtensionKeyV1 {
+                namespace: record.namespace.clone(),
+                owner: StableExtensionOwnerV1::from(&record.owner),
+            };
+            if value.base_handles.insert(key.clone(), *handle).is_some() {
                 return Err(TransactionPrepareFailureV1::LocalInvariant);
             }
             value.order.push(key);
@@ -718,6 +1464,7 @@ impl ExtensionSimulationV1 {
 
     fn apply_operations(
         &mut self,
+        store: &LiveScoreStore,
         arena: &ChangeArenaV1,
         operations: &[ChangeOpV1],
     ) -> Result<(), TransactionPrepareFailureV1> {
@@ -739,7 +1486,7 @@ impl ExtensionSimulationV1 {
                         .ok_or(TransactionPrepareFailureV1::InvalidChangeSet)?;
                     if let EntityBundleV1::Part(bundle) = expected {
                         for extension in &bundle.extensions {
-                            self.remove_aggregate(&extension.value)?;
+                            self.remove_aggregate(store, &extension.value)?;
                         }
                     }
                 }
@@ -763,7 +1510,7 @@ impl ExtensionSimulationV1 {
                     let expected = arena
                         .extension(*expected)
                         .ok_or(TransactionPrepareFailureV1::InvalidChangeSet)?;
-                    if self.values.get(&key) != Some(expected) {
+                    if !self.matches_value(store, &key, expected) {
                         return Err(TransactionPrepareFailureV1::PreconditionMismatch);
                     }
                     let value = arena
@@ -784,17 +1531,143 @@ impl ExtensionSimulationV1 {
                         .extension(*expected)
                         .ok_or(TransactionPrepareFailureV1::InvalidChangeSet)?;
                     let key = ExtensionKeyV1::from_block(expected);
-                    if self.values.get(&key) != Some(expected)
+                    if !self.matches_value(store, &key, expected)
                         || self.anchor_of(&key).as_ref() != Some(expected_anchor)
                     {
                         return Err(TransactionPrepareFailureV1::PreconditionMismatch);
                     }
                     self.remove_key(&key)?;
                 }
+                ChangeOpV1::InsertOrderedChild {
+                    order: StableOrderAddressV1::Extensions { .. },
+                    anchor,
+                    child_id,
+                } => {
+                    let key = self.key_for_id(child_id)?;
+                    if self.order.contains(&key) {
+                        return Err(TransactionPrepareFailureV1::PreconditionMismatch);
+                    }
+                    let index = self.insertion_index(anchor)?;
+                    reserve_vec(&mut self.order, 1)?;
+                    self.order.insert(index, key);
+                }
+                ChangeOpV1::RemoveOrderedChild {
+                    order: StableOrderAddressV1::Extensions { .. },
+                    expected_anchor,
+                    child_id,
+                }
+                | ChangeOpV1::MoveOrderedChild {
+                    order: StableOrderAddressV1::Extensions { .. },
+                    expected_anchor,
+                    child_id,
+                    ..
+                } => {
+                    let key = self.key_for_id(child_id)?;
+                    if self.anchor_of(&key).as_ref() != Some(expected_anchor) {
+                        return Err(TransactionPrepareFailureV1::PreconditionMismatch);
+                    }
+                    let index = self
+                        .order
+                        .iter()
+                        .position(|candidate| candidate == &key)
+                        .ok_or(TransactionPrepareFailureV1::PreconditionMismatch)?;
+                    self.order.remove(index);
+                    if let ChangeOpV1::MoveOrderedChild { anchor, .. } = operation {
+                        let index = self.insertion_index(anchor)?;
+                        self.order.insert(index, key);
+                    }
+                }
+                ChangeOpV1::ReplaceOrderedChildren {
+                    order: StableOrderAddressV1::Extensions { .. },
+                    expected,
+                    value,
+                } => {
+                    let expected = arena
+                        .order(*expected)
+                        .ok_or(TransactionPrepareFailureV1::InvalidChangeSet)?;
+                    if expected.len() != self.order.len()
+                        || !expected
+                            .iter()
+                            .zip(&self.order)
+                            .all(|(id, key)| *id == extension_anchor_id_from_key(key))
+                    {
+                        return Err(TransactionPrepareFailureV1::PreconditionMismatch);
+                    }
+                    let values = arena
+                        .order(*value)
+                        .ok_or(TransactionPrepareFailureV1::InvalidChangeSet)?;
+                    let mut next = Vec::new();
+                    reserve_vec(&mut next, values.len())?;
+                    for id in values {
+                        let key = self.key_for_id(id)?;
+                        if next.contains(&key) || !self.order.contains(&key) {
+                            return Err(TransactionPrepareFailureV1::LocalInvariant);
+                        }
+                        next.push(key);
+                    }
+                    if next.len() != self.order.len() {
+                        return Err(TransactionPrepareFailureV1::LocalInvariant);
+                    }
+                    self.order = next;
+                }
                 _ => {}
             }
         }
+        if self.active {
+            let mut seen = HashSet::new();
+            seen.try_reserve(self.order.len())
+                .map_err(|_| TransactionPrepareFailureV1::Capacity)?;
+            for key in &self.order {
+                if !self.has_value(key) || !seen.insert(key) {
+                    return Err(TransactionPrepareFailureV1::LocalInvariant);
+                }
+            }
+            if self
+                .base_handles
+                .keys()
+                .chain(self.values.keys())
+                .any(|key| self.has_value(key) && !seen.contains(key))
+            {
+                return Err(TransactionPrepareFailureV1::LocalInvariant);
+            }
+        }
         Ok(())
+    }
+
+    fn has_value(&self, key: &ExtensionKeyV1) -> bool {
+        self.values.contains_key(key)
+            || (!self.touched.contains(key) && self.base_handles.contains_key(key))
+    }
+
+    fn matches_value(
+        &self,
+        store: &LiveScoreStore,
+        key: &ExtensionKeyV1,
+        expected: &ExtensionBlockV1,
+    ) -> bool {
+        if let Some(value) = self.values.get(key) {
+            return value == expected;
+        }
+        !self.touched.contains(key)
+            && self
+                .base_handles
+                .get(key)
+                .and_then(|handle| store.extensions.get(*handle))
+                .is_some_and(|record| {
+                    record.namespace == expected.namespace
+                        && record.owner == expected.owner
+                        && record.schema_version == expected.schema_version
+                        && record.payload == expected.payload
+                })
+    }
+
+    fn key_for_id(&self, id: &StableId) -> Result<ExtensionKeyV1, TransactionPrepareFailureV1> {
+        self.base_handles
+            .keys()
+            .chain(self.values.keys())
+            .find(|key| extension_anchor_id_from_key(key) == *id && self.has_value(key))
+            .cloned()
+            .ok_or(TransactionPrepareFailureV1::LocalInvariant)
     }
 
     fn insert(
@@ -803,7 +1676,7 @@ impl ExtensionSimulationV1 {
         value: ExtensionBlockV1,
     ) -> Result<(), TransactionPrepareFailureV1> {
         let key = ExtensionKeyV1::from_block(&value);
-        if self.values.contains_key(&key) {
+        if self.has_value(&key) {
             return Err(TransactionPrepareFailureV1::PreconditionMismatch);
         }
         let index = self.insertion_index(&anchor)?;
@@ -815,10 +1688,11 @@ impl ExtensionSimulationV1 {
 
     fn remove_aggregate(
         &mut self,
+        store: &LiveScoreStore,
         expected: &ExtensionBlockV1,
     ) -> Result<(), TransactionPrepareFailureV1> {
         let key = ExtensionKeyV1::from_block(expected);
-        if self.values.get(&key) != Some(expected) {
+        if !self.matches_value(store, &key, expected) {
             return Err(TransactionPrepareFailureV1::PreconditionMismatch);
         }
         self.remove_key(&key)
@@ -831,9 +1705,10 @@ impl ExtensionSimulationV1 {
             .position(|candidate| candidate == key)
             .ok_or(TransactionPrepareFailureV1::PreconditionMismatch)?;
         self.order.remove(index);
-        self.values
-            .remove(key)
-            .ok_or(TransactionPrepareFailureV1::PreconditionMismatch)?;
+        if !self.has_value(key) {
+            return Err(TransactionPrepareFailureV1::PreconditionMismatch);
+        }
+        self.values.remove(key);
         self.touched.insert(key.clone());
         self.removed.insert(key.clone());
         Ok(())
@@ -914,7 +1789,6 @@ struct ReplaceRecordV1<H, R> {
 struct RemoveRecordV1<H> {
     id: StableId,
     handle: H,
-    retain_identity: bool,
 }
 
 struct EntityRecordPlanV1 {
@@ -1093,6 +1967,14 @@ struct PreparedReferenceBucketV1 {
     value: Option<Vec<StableReferenceAddress>>,
 }
 
+struct CollectedCommitInputV1 {
+    collector: DeltaCollectorV1,
+    extension_simulation: ExtensionSimulationV1,
+    header_metadata: Option<brilliant_score_foundation::ScoreMetadataV1>,
+    final_records: HashMap<StableEntityAddressV1, StableRecordV1>,
+    metrics: KernelStage3MetricsV1,
+}
+
 struct CommitPlanV1 {
     next_version: DocumentVersionV1,
     metrics: KernelStage3MetricsV1,
@@ -1117,7 +1999,7 @@ impl CommitPlanV1 {
         } else {
             ExtensionSimulationV1::default()
         };
-        extension_simulation.apply_operations(arena, operations)?;
+        extension_simulation.apply_operations(store, arena, operations)?;
         let (mut overlay, mut collector) = replay_and_collect(store, arena, operations)?;
 
         add_extension_reference_states(&extension_simulation, &mut collector);
@@ -1137,16 +2019,52 @@ impl CommitPlanV1 {
             },
         )
         .map_err(TransactionPrepareFailureV1::Validation)?;
+        let metrics = KernelStage3MetricsV1 {
+            semantic_rules_evaluated: validation_work.rules_evaluated,
+            semantic_dependency_reads: validation_work.dependency_reads,
+            change_ops: u64::try_from(operations.len())
+                .map_err(|_| TransactionPrepareFailureV1::LocalInvariant)?,
+            changeset_logical_bytes: change_set.logical_bytes,
+            affected_addresses: u64::try_from(change_set.affected.len())
+                .map_err(|_| TransactionPrepareFailureV1::LocalInvariant)?,
+            ..KernelStage3MetricsV1::default()
+        };
+        Self::prepare_collected(
+            store,
+            next_version,
+            &mut overlay,
+            CollectedCommitInputV1 {
+                collector,
+                extension_simulation,
+                header_metadata,
+                final_records,
+                metrics,
+            },
+        )
+    }
+
+    fn prepare_collected(
+        store: &LiveScoreStore,
+        next_version: DocumentVersionV1,
+        overlay: &mut TransactionOverlayV1<'_>,
+        input: CollectedCommitInputV1,
+    ) -> Result<Self, TransactionPrepareFailureV1> {
+        let CollectedCommitInputV1 {
+            collector,
+            extension_simulation,
+            header_metadata,
+            final_records,
+            mut metrics,
+        } = input;
         // Musical invalidity has a complete ordered report. The structural
         // checks remain a separate defence before physical reservation/adoption.
-        validate_coverage(store, &overlay, &collector)?;
-        validate_reference_states(&overlay, &collector.reference_states)?;
+        validate_coverage(store, overlay, &collector)?;
+        validate_reference_states(overlay, &collector.reference_states)?;
         validate_removed_reference_targets(store, &collector)?;
-        let records = prepare_record_actions(store, &collector, final_records, &overlay)?;
-        let orders = prepare_orders(store, &overlay, &collector, &records.inserted_ids)?;
-        let extensions = prepare_extensions(store, &overlay, extension_simulation)?;
-        let voice_times =
-            prepare_voice_times(store, &mut overlay, &collector, &records.inserted_ids)?;
+        let records = prepare_record_actions(store, &collector, final_records, overlay)?;
+        let orders = prepare_orders(store, overlay, &collector, &records.inserted_ids)?;
+        let extensions = prepare_extensions(store, overlay, extension_simulation)?;
+        let voice_times = prepare_voice_times(store, overlay, &collector, &records.inserted_ids)?;
         let reference_buckets = prepare_reference_buckets(store, &collector.reference_states)?;
 
         let overlay_metrics = overlay.metrics().clone();
@@ -1172,32 +2090,27 @@ impl CommitPlanV1 {
                     .count(),
             )
             .saturating_add(reference_inserted_count(&collector.reference_states));
-        let metrics = KernelStage3MetricsV1 {
-            semantic_rules_evaluated: validation_work.rules_evaluated,
-            semantic_dependency_reads: validation_work.dependency_reads,
-            full_document_scans: 0,
-            full_document_clones: 0,
-            full_semantic_validations: 0,
-            full_snapshot_materializations: 0,
-            entities_visited: u64::try_from(collector.entity_states.len())
+        metrics.entities_visited = metrics.entities_visited.saturating_add(
+            u64::try_from(collector.entity_states.len())
                 .map_err(|_| TransactionPrepareFailureV1::LocalInvariant)?,
-            entity_index_lookups: overlay_metrics.base_entity_lookups,
-            owner_index_lookups: 0,
-            time_index_comparisons: 0,
-            overlay_records: overlay_metrics.overlay_record_writes,
-            order_collections_copied: overlay_metrics.order_copies,
-            change_ops: u64::try_from(operations.len())
+        );
+        metrics.entity_index_lookups = metrics
+            .entity_index_lookups
+            .saturating_add(overlay_metrics.base_entity_lookups);
+        metrics.overlay_records = metrics
+            .overlay_records
+            .saturating_add(overlay_metrics.overlay_record_writes);
+        metrics.order_collections_copied = metrics
+            .order_collections_copied
+            .saturating_add(overlay_metrics.order_copies);
+        metrics.index_entries_removed = metrics.index_entries_removed.saturating_add(
+            u64::try_from(index_entries_removed)
                 .map_err(|_| TransactionPrepareFailureV1::LocalInvariant)?,
-            changeset_logical_bytes: change_set.logical_bytes,
-            affected_addresses: u64::try_from(change_set.affected.len())
+        );
+        metrics.index_entries_inserted = metrics.index_entries_inserted.saturating_add(
+            u64::try_from(index_entries_inserted)
                 .map_err(|_| TransactionPrepareFailureV1::LocalInvariant)?,
-            index_entries_removed: u64::try_from(index_entries_removed)
-                .map_err(|_| TransactionPrepareFailureV1::LocalInvariant)?,
-            index_entries_inserted: u64::try_from(index_entries_inserted)
-                .map_err(|_| TransactionPrepareFailureV1::LocalInvariant)?,
-            ffi_request_bytes: 0,
-            ffi_response_bytes: 0,
-        };
+        );
 
         Ok(Self {
             next_version,
@@ -1221,6 +2134,22 @@ fn operations_touch_extensions(
             ChangeOpV1::InsertExtensionBlock { .. }
             | ChangeOpV1::ReplaceExtensionBlock { .. }
             | ChangeOpV1::RemoveExtensionBlock { .. } => return Ok(true),
+            ChangeOpV1::InsertOrderedChild {
+                order: StableOrderAddressV1::Extensions { .. },
+                ..
+            }
+            | ChangeOpV1::RemoveOrderedChild {
+                order: StableOrderAddressV1::Extensions { .. },
+                ..
+            }
+            | ChangeOpV1::MoveOrderedChild {
+                order: StableOrderAddressV1::Extensions { .. },
+                ..
+            }
+            | ChangeOpV1::ReplaceOrderedChildren {
+                order: StableOrderAddressV1::Extensions { .. },
+                ..
+            } => return Ok(true),
             ChangeOpV1::InsertEntity { entity, .. } => {
                 let entity = arena
                     .entity(*entity)
@@ -1649,7 +2578,6 @@ fn prepare_record_actions(
                         &mut plan,
                         address.stable_id().clone(),
                         base.ok_or(TransactionPrepareFailureV1::LocalInvariant)?,
-                        true,
                     )?;
                 } else if let Some(base) = base {
                     push_replace_record(&mut plan, base, record)?;
@@ -1659,7 +2587,7 @@ fn prepare_record_actions(
             }
             None => {
                 if let Some(base) = base {
-                    push_remove_record(&mut plan, address.stable_id().clone(), base, false)?;
+                    push_remove_record(&mut plan, address.stable_id().clone(), base)?;
                 }
             }
         }
@@ -1756,39 +2684,16 @@ fn push_remove_record(
     plan: &mut EntityRecordPlanV1,
     id: StableId,
     base: RuntimeEntityRef,
-    retain_identity: bool,
 ) -> Result<(), TransactionPrepareFailureV1> {
     match base {
-        RuntimeEntityRef::Measure(handle) => plan.remove_measures.push(RemoveRecordV1 {
-            id,
-            handle,
-            retain_identity,
-        }),
-        RuntimeEntityRef::Part(handle) => plan.remove_parts.push(RemoveRecordV1 {
-            id,
-            handle,
-            retain_identity,
-        }),
-        RuntimeEntityRef::Staff(handle) => plan.remove_staffs.push(RemoveRecordV1 {
-            id,
-            handle,
-            retain_identity,
-        }),
-        RuntimeEntityRef::Voice(handle) => plan.remove_voices.push(RemoveRecordV1 {
-            id,
-            handle,
-            retain_identity,
-        }),
-        RuntimeEntityRef::Event(handle) => plan.remove_events.push(RemoveRecordV1 {
-            id,
-            handle,
-            retain_identity,
-        }),
-        RuntimeEntityRef::Note(handle) => plan.remove_notes.push(RemoveRecordV1 {
-            id,
-            handle,
-            retain_identity,
-        }),
+        RuntimeEntityRef::Measure(handle) => {
+            plan.remove_measures.push(RemoveRecordV1 { id, handle })
+        }
+        RuntimeEntityRef::Part(handle) => plan.remove_parts.push(RemoveRecordV1 { id, handle }),
+        RuntimeEntityRef::Staff(handle) => plan.remove_staffs.push(RemoveRecordV1 { id, handle }),
+        RuntimeEntityRef::Voice(handle) => plan.remove_voices.push(RemoveRecordV1 { id, handle }),
+        RuntimeEntityRef::Event(handle) => plan.remove_events.push(RemoveRecordV1 { id, handle }),
+        RuntimeEntityRef::Note(handle) => plan.remove_notes.push(RemoveRecordV1 { id, handle }),
         RuntimeEntityRef::Document => return Err(TransactionPrepareFailureV1::LocalInvariant),
     }
     Ok(())
@@ -2066,7 +2971,7 @@ fn prepare_extensions(
     overlay: &TransactionOverlayV1<'_>,
     simulation: ExtensionSimulationV1,
 ) -> Result<ExtensionPlanV1, TransactionPrepareFailureV1> {
-    if simulation.touched.is_empty() {
+    if !simulation.active {
         return Ok(ExtensionPlanV1::default());
     }
     let mut plan = ExtensionPlanV1::default();
@@ -2975,39 +3880,53 @@ impl CommitPlanV1 {
     }
 
     fn adopt_entity_indices(&mut self, store: &mut LiveScoreStore) {
+        // Insertions have already published their bindings. Remove only the old
+        // lifetime's binding: a stable ID may be reborn with any entity kind.
         for removal in &self.records.remove_measures {
             store.indices.ownership.measures.remove(&removal.handle);
-            if !removal.retain_identity {
+            if store.indices.entity.by_id.get(&removal.id)
+                == Some(&RuntimeEntityRef::Measure(removal.handle))
+            {
                 store.indices.entity.by_id.remove(&removal.id);
             }
         }
         for removal in &self.records.remove_parts {
             store.indices.ownership.parts.remove(&removal.handle);
-            if !removal.retain_identity {
+            if store.indices.entity.by_id.get(&removal.id)
+                == Some(&RuntimeEntityRef::Part(removal.handle))
+            {
                 store.indices.entity.by_id.remove(&removal.id);
             }
         }
         for removal in &self.records.remove_staffs {
             store.indices.ownership.staffs.remove(&removal.handle);
-            if !removal.retain_identity {
+            if store.indices.entity.by_id.get(&removal.id)
+                == Some(&RuntimeEntityRef::Staff(removal.handle))
+            {
                 store.indices.entity.by_id.remove(&removal.id);
             }
         }
         for removal in &self.records.remove_voices {
             store.indices.ownership.voices.remove(&removal.handle);
-            if !removal.retain_identity {
+            if store.indices.entity.by_id.get(&removal.id)
+                == Some(&RuntimeEntityRef::Voice(removal.handle))
+            {
                 store.indices.entity.by_id.remove(&removal.id);
             }
         }
         for removal in &self.records.remove_events {
             store.indices.ownership.events.remove(&removal.handle);
-            if !removal.retain_identity {
+            if store.indices.entity.by_id.get(&removal.id)
+                == Some(&RuntimeEntityRef::Event(removal.handle))
+            {
                 store.indices.entity.by_id.remove(&removal.id);
             }
         }
         for removal in &self.records.remove_notes {
             store.indices.ownership.notes.remove(&removal.handle);
-            if !removal.retain_identity {
+            if store.indices.entity.by_id.get(&removal.id)
+                == Some(&RuntimeEntityRef::Note(removal.handle))
+            {
                 store.indices.entity.by_id.remove(&removal.id);
             }
         }
@@ -3159,6 +4078,10 @@ impl CommitPlanV1 {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "transaction/final_state_tests.rs"]
+mod final_state_tests;
 
 #[cfg(test)]
 mod tests {

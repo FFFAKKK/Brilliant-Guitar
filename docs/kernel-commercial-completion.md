@@ -52,6 +52,12 @@ Stored list moves now compose with edited subtree removal and replay using exact
 occurrence predecessors, including repeated empty IDs and repeated contents.
 Staff insertion/removal now composes with field changes, moves and whole-Part
 removal, using immutable expected images and independent strong-boundary replay.
+Final assessment now reads the occurrence view through the same Foundation
+rules as JSON assessment. A successful final view can prepare and adopt real
+Store records, topology and indices. The retained journal supplies actual
+operation counts, including net-zero changes. Suffix replay can also prepare
+and adopt from new strong Store boundaries; combined prefix/suffix history is
+still unfinished.
 Candidate execution is still test-only, not the native default route.
 
 A separate live comparison found a Rust string-domain compatibility gap: TS
@@ -72,19 +78,19 @@ cover complete IDs/references, commands, events, selectors, batch failure,
 undo/redo, persistence, replay and a real 512-entry checkpoint. See
 `kernel-js-string-compatibility.md` for the exact scope and evidence.
 
-After the string-domain gap is closed, S1 continues with the complete admission
-operation journal, final candidate diagnostics, complete command closure,
-cumulative resource accounting and strong
-Store adoption/history. The versioned extension execution/composition work in S2,
+S1 continues with complete admission command/journal coverage, cumulative
+resource accounting, effects/segments/affected ordering and combined
+prefix/suffix history. The versioned extension execution/composition work in S2,
 consolidated release qualification in S3/S5 and reversible Rust default switch in
 S4 remain open. The current source tree is a kernel library/native workspace;
 editor UI, rendering, playback and physical project persistence are separate
 product work, not completed deliverables of this branch.
 
-Latest Rust checks: 316 tests passed, 1 ignored (84 candidate tests); strict
-clippy, fmt and Rust 1.88.0 check passed. Full TS/native regression passed 722
-tests, skipped two and failed zero (170.783 seconds), using the unchanged release
-addon from `2e858f9`; P3B finished in 68.765 seconds.
+Latest verified worktree: 349 Rust tests passed, 1 ignored (99 runtime candidate
+tests); strict clippy, fmt and Rust 1.88.0 check passed. Full TS/native regression
+passed 725 tests, skipped two and failed zero (45.997 seconds), using a freshly
+rebuilt release addon. P3B finished in 22.363 seconds. This is regression evidence;
+the workload, runner and thresholds were not changed.
 
 Previous string-migration evidence remains relevant: seven targeted TS/native
 regressions passed on the initial rebuilt addon. The full debug run passed 719 tests, skipped
@@ -96,6 +102,29 @@ P3B completed in 70.022 seconds with peak RSS 1,833,156,608 bytes. Its original
 threshold, workload and runner stayed fixed; it has no debug-only build
 requirement. Debug performance remains open. These checks are
 regression evidence, not commercial qualification or a percentage-complete estimate.
+
+## Functional completion before commercial optimization
+
+The owner's current priority is to complete the kernel before further commercial
+optimization. Correctness, atomic rejection and compatibility remain necessary
+while filling missing functions. A test-only implementation is not a completed
+product route, and passing regression tests is not release qualification.
+
+| Kernel responsibility | Current position | Remaining functional closure |
+| --- | --- | --- |
+| Score model, exact arithmetic, UTF-16 storage/codecs | Implemented with production/native regression evidence | Preserve these contracts through the remaining integration |
+| 28 typed commands | Existing typed path implemented | Every command must also work after entering occurrence candidate mode |
+| Final semantic diagnostics | Shared Foundation rules read raw occurrences; independent TS oracle | Integrate into complete public command preparation and failure accounting |
+| Store adoption and indices | Internal final-view path now writes real Store state | Complete all command deltas, preparation effects and failure boundaries |
+| History and replay | Typed history exists; stored candidate suffix can replay/adopt | One atomic transaction for suffix inverse then prefix inverse, and the reverse for redo |
+| Extensions | Opaque preservation, header assessment and ordering implemented | Versioned catalog/inventory, capabilities, preparation, migration/degradation and composed consumers |
+| Session and application surface | Existing Rust library/native path remains private | Integrate candidate behavior, complete session composition and reversible Rust default |
+| Commercial acceptance | Not complete | Differential long sequences, hostile inputs, honest resource accounting, release qualification and old-engine cleanup |
+
+The next implementation priority is combined prefix/suffix history and the
+remaining candidate command/journal forms, followed by complete effects and
+resource accounting. S2 extension/session work follows functional S1 closure.
+Performance tuning and final qualification follow the complete function matrix.
 
 ## Completion criteria
 
@@ -1032,3 +1061,73 @@ no native rebuild was needed for this test-only candidate slice. Logs are
 GPT-6 scoped rereviews passed after the two reported findings and no-op regression
 were repaired. This is regression evidence, not qualification or a Rust-default
 cutover.
+
+### S1.8 — final assessment, stable adoption and real suffix replay
+
+The owner clarified that functional completion comes before commercial
+optimization. This slice connects the existing occurrence/journal work to full
+semantic diagnostics and actual Store adoption while keeping incomplete public
+candidate routing disabled.
+
+Foundation now runs the same semantic/profile rules over fallible node reads.
+The occurrence view preserves diagnostic content/order without constructing a
+whole Score DTO or JSON tree. Four new Foundation tests exercise virtual values,
+UTF-16, missing/null/type checks and fallible iteration. Candidate tests compare
+the virtual and JSON reports and prohibit aggregate/opaque payload detachment.
+The 12-case TS-only submission oracle supplies independent exact diagnostics,
+early child failure and repaired/net-zero outcomes.
+
+The internal CoreBaseRead interface gains its 13th capability: a typed extension
+header visitor. Store and frozen overlays preserve real order across independent
+extension edits, Part bundles and generic extension order operations. Opaque
+payloads are not copied for assessment. An independent review identified a
+capacity/shape error conflation, now repaired with explicit unavailable,
+invariant and capacity errors and allocation-fault tests. Temporary header
+metadata is O(E+D); order replacement logs add L IDs and worst-case folding work
+is O(E+(D+L)(E+D)), before string-comparison costs. This is not a zero-allocation
+or final performance claim.
+
+A semantic pass creates an owned stable final view. The sparse delta preserves
+removed lifetimes separately from final values; hidden temporary raw IDs never
+enter Store slots. Frozen prefix deltas borrow the existing arena and retain
+extension changes. Shared preparation verifies the final projection, reserves
+capacity and adopts records, topology, references and time indices. Actual
+Recorder steps, plus prefix operations, determine version advancement even when
+the document is unchanged. Three independent TS oracle successes now exercise
+real adoption and fresh-boundary suffix inverse/forward adoption with versions
+1/2/3 and normalized index rebuild parity. Eight oracle semantic failures also
+exercise the finalization wrapper before identity sealing.
+
+Additional adoption cases cover invalid-prefix repair, retained prefix extension
+history, every scalar/reference family with event reordering, all-descendant
+Part rebirth, cross-kind ID rebirth and empty/no-op distinction. Preflight tests
+cover mismatched final projections, reservation failures, stale version/document
+and extension-only order changes. The latter now work on typed and final-view
+paths; extension simulation retains base handles rather than copying all opaque
+payloads merely to track order.
+
+A new cross-kind test found a production commit defect: old Event cleanup
+deleted a new Staff binding with the same ID and caused an assertion after
+adoption began. All six entity kinds now clear a global ID only when it still
+points to that exact old kind/handle. Independent rereview passed. Typed and
+candidate regressions verify old handle invalidation, new binding preservation
+and index parity. A real-native TS comparison verifies submit/undo/redo state,
+versions, history, dirty state and events for the Event/Staff rebirth sequence.
+
+Validation: 349 Rust tests passed, one existing ignored test; all 99 runtime
+candidate tests passed. Rustfmt, all-target clippy `-D warnings`, Rust 1.88.0
+all-target check and diff checks passed. Full TS/native regression: 725 passed,
+two skipped, zero failed in 45.997 seconds; P3B completed in 22.363 seconds.
+The rebuilt/copied release addon SHA-256 is
+`F5AE6D6C6C4E0F8879373F37DF095AAE4D26328100DDBD9E9BA85128B76F488D`.
+Logs: `target/candidate-adoption-rust-final.log`, `candidate-adoption-clippy.log`,
+`candidate-adoption-msrv.log`, `candidate-adoption-native-build.log` and
+`candidate-adoption-npm.log`.
+
+Remaining functional work is substantial: complete all candidate command/journal
+forms, compose prefix and suffix into one private undo/redo transaction, preserve
+effects/segments/affected ordering, complete resource accounting and implement S2
+versioned extension/session execution. Final-view preparation reads and some
+prefix work are not yet included in candidate traversal counters. The internal
+vertical path is not public native completion; Rust default, debug performance,
+release qualification and commercial acceptance remain open.

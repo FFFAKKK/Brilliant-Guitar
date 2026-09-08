@@ -10,6 +10,8 @@ use std::{
     sync::Arc,
 };
 
+mod adoption;
+mod assessment;
 mod identity;
 mod journal;
 mod reservation;

@@ -13,7 +13,8 @@ mod lossless_json;
 mod music_rules;
 mod validation;
 
-pub use assessment::assess_score_semantics;
+pub use assessment::{assess_score_semantics, assess_score_semantics_node};
+pub use candidate::AssessmentNodeV1;
 pub use codec::{
     FoundationDecodeFailure, canonical_score_bytes, decode_lossless_score_document_value,
     decode_score_document_value, finite_number_json_len,
@@ -25,7 +26,7 @@ pub use diagnostics::{
 pub use dto::*;
 pub use feature_profile::{
     CardinalityConstraintV1, ProfileMeterV1, ScoreFeatureProfileV1, ScoreSupportV1,
-    assess_score_profile,
+    assess_score_profile, assess_score_profile_node,
 };
 pub use fraction::{ExactFraction, ExactFractionError};
 pub use js_string_json::{

@@ -29,7 +29,7 @@ use crate::{
         extension_part_reference_path, increment, mark_index_entry, measure_reference_path,
         voice_staff_reference_path,
     },
-    overlay::{CoreBaseReadV1, ExtensionKeyV1},
+    overlay::{CoreBaseReadV1, ExtensionHeaderReadFailureV1, ExtensionHeaderV1, ExtensionKeyV1},
     records::{
         DocumentHeader, EventContentKind, EventRecord, ExtensionRecord, MeasureRecord, NoteRecord,
         PartMeasureContentRecord, PartMeasureKey, PartRecord, StaffRecord, VoiceRecord,
@@ -778,6 +778,27 @@ impl CoreBaseReadV1 for LiveScoreStore {
             | StableOrderAddressV1::Parts { .. }
             | StableOrderAddressV1::Extensions { .. } => None,
         }
+    }
+
+    fn visit_extension_headers(
+        &self,
+        visitor: &mut dyn FnMut(&ExtensionHeaderV1) -> bool,
+    ) -> Result<(), ExtensionHeaderReadFailureV1> {
+        for handle in &self.topology.extension_order {
+            let record = self
+                .extensions
+                .get(*handle)
+                .ok_or(ExtensionHeaderReadFailureV1::Invariant)?;
+            let header = ExtensionHeaderV1 {
+                namespace: record.namespace.clone(),
+                schema_version: record.schema_version,
+                owner: record.owner.clone(),
+            };
+            if !visitor(&header) {
+                break;
+            }
+        }
+        Ok(())
     }
 
     fn read_extension(&self, key: &ExtensionKeyV1) -> Option<AnchoredExtensionBlockV1> {

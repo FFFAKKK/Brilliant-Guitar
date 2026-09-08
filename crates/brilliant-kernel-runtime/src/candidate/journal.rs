@@ -138,6 +138,35 @@ fn insertion_position(
 }
 
 impl<'a> Recorder<'a> {
+    /// Internal finalization vertical slice: assess before sealing identities,
+    /// bind actual operations to this journal, then produce an owned Store plan.
+    /// Public command dispatch, combined-prefix history and resource accounting
+    /// remain separate integration work before native activation.
+    fn prepare_final_commit(
+        self,
+        store: &crate::store::LiveScoreStore,
+        version: brilliant_core_types::DocumentVersionV1,
+    ) -> Result<
+        (
+            Option<crate::transaction::PreparedFinalStateCommitV1>,
+            crate::change_set::ChangeSetV1,
+            Journal,
+        ),
+        super::adoption::FinalizationFailure,
+    > {
+        let mut final_view = self.candidate.validate_final()?;
+        let identities = final_view
+            .seal_identities(self.identities)
+            .map_err(super::adoption::FinalizationFailure::Command)?;
+        let journal = Journal {
+            identities,
+            steps: self.steps,
+        };
+        let (plan, prefix) =
+            final_view.prepare_commit(store, version, journal.steps.len() as u64)?;
+        Ok((plan, prefix, journal))
+    }
+
     fn new(candidate: Candidate<'a>) -> Self {
         Self {
             candidate,
