@@ -1811,3 +1811,27 @@ the V1 five-export and public 51/8/34/9 sets stay frozen. Evidence:
 `docs/evidence/kernel-native-extension-migration-2026-09-12.json`.
 S2 still needs concrete layered consumers, WASM, declared-read/incremental
 equivalence and complete resource/platform/performance qualification.
+
+### S2.4b — concrete layered relationships and scoped Batch authorization
+
+`a7493f8` supplies an authentic SDK consumer with Part-owned note indices and a
+Score-owned summary that reads those indices. An independent validator checks
+Core references and pitches field by field. Five TS/Native tests prove ordered
+repair, atomic rejection of stale layers, removal and owner death/rebirth,
+history without re-preparation, checkpoint/branch/replay, clear/rebuild and
+known-missing read-only reopening. Both namespaces belong to one contribution;
+this does not implement cross-plugin reads or automatic dependency scheduling.
+
+A live reproduction also found a scoped-gateway bypass: a foreign module
+command was denied alone but committed inside Core Batch. `09fb674` applies
+the existing module identity/capability check to every executable module child
+before preparation and dispatches the detached authorized Batch. Four tests
+cover zero-callback rejection, authorized mixed composition, trusted-host
+cross-module composition, Proxy input stability and malformed/nested batches.
+
+Fresh final TS/Native: 808 passed, 2 skipped, zero failed; focused tests 22 passed,
+typecheck/build and diff check passed. Rust source is unchanged; native artifacts
+and 528 passed/1 ignored Rust evidence are inherited from `61f28cc`, not rerun.
+Evidence: `docs/evidence/kernel-native-layered-relationships-2026-09-12.json`.
+Remaining: cross-plugin read/dependency contracts, WASM execution, declared-read
+equivalence and resource/platform/performance qualification before default cutover.

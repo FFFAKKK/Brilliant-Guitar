@@ -1,0 +1,82 @@
+{
+  "kind": "bounded-regression-not-commercial-qualification",
+  "date": "2026-09-12",
+  "testedCodeCommit": "09fb6745e26f5cbf118f4b82f0452ffd156d05a1",
+  "consumerCommit": "a7493f888226840b6b28e0f1f6b9409b95cd88f5",
+  "nativeCodeCommit": "61f28ccb88fb42e435a27e8c0fd0f4efecbb74a7",
+  "scope": "Same-contribution two-layer relationship consumer and scoped gateway Batch authorization",
+  "fullTsNative": {
+    "total": 810,
+    "passed": 808,
+    "skipped": 2,
+    "failed": 0,
+    "durationMilliseconds": 61608.7929
+  },
+  "focused": {
+    "total": 22,
+    "failed": 0,
+    "passed": 22
+  },
+  "checks": {
+    "build": "passed",
+    "diff": "passed",
+    "rust": "not rerun; source unchanged",
+    "typecheck": "passed",
+    "release": "not rebuilt; exact prior artifacts reused"
+  },
+  "inheritedRust": {
+    "ignored": 1,
+    "source": "kernel-native-extension-migration-2026-09-12.json",
+    "passed": 528
+  },
+  "limitations": [
+    "Two namespaces belong to one contribution; cross-plugin reads and dependency declarations remain incomplete",
+    "Caller chooses repair order; no automatic scheduler or incremental equivalence claim",
+    "WASM and full resource/platform/performance qualification remain incomplete",
+    "Product default unchanged"
+  ],
+  "firstAttempt": "SDK correctly rejected the fixture command outside its owned namespace; fixture renamed, SDK unchanged",
+  "securityFinding": "Foreign module command denied directly but committed inside Core Batch before 09fb674; fixed by child authorization before callbacks and detached Batch dispatch",
+  "artifacts": [
+    {
+      "path": "target/rkp-1-node/brilliant_kernel_node.node",
+      "bytes": 3617792,
+      "sha256": "59de247fa53b9b221fdd17d08a299ed755dc00ababab7e19dc4a6ad7af42e879"
+    },
+    {
+      "path": "target/integrated-v2/brilliant_kernel_node.node",
+      "bytes": 4362752,
+      "sha256": "19b304278238e33857e603b4a6ebf96481503f01d52ac3454ee6c239b398227b"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/layered-relationship-native-first.log",
+      "bytes": 1717,
+      "sha256": "c804e15fa9f69ad52c3598145064fe1786fc5549457fd306c574e3472affb262"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/layered-relationship-native-second.log",
+      "bytes": 714,
+      "sha256": "3d6a13fb2b0a646eea13f3305de74c3aa153d384b8087bf181c1329132f97d8d"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/layered-relationship-full.log",
+      "bytes": 72560,
+      "sha256": "4583a001c71e969bbb6015fe40838540003096b81df5d00e1a958e6df8f5da87"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/gateway-batch-before.json",
+      "bytes": 679,
+      "sha256": "0e89cc026fda6241d56457d124d74725adf5ef715f2d8dd749fbcceabc798cdd"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/gateway-batch-focused.log",
+      "bytes": 2280,
+      "sha256": "b097070c009ab48abb3c29a5a0768bbe0e7922da1217a50e807c3af82d511e99"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/gateway-batch-full.log",
+      "bytes": 73000,
+      "sha256": "722691400967fdfe4803abb72681afce6e51a4d33e900a0b33b3a7509095156e"
+    }
+  ]
+}
