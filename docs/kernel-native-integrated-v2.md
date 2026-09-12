@@ -1,13 +1,13 @@
-# SDK 插件命令的 Native 闭环（S2.2a）
+# SDK 插件命令与混合 Batch 的 Native 闭环（S2.2）
 
-本片实现真实官方 SDK 插件命令同时修改 Core 音高和扩展数据，经 Rust 的一个事务、一个 Store 和一条历史提交。它是功能完成计划中的一个已实施切片，不代表整个 S2 完成或达到商业级发布标准。默认引擎未切换。
+当前实现真实官方 SDK 插件命令、独立 Core 编辑及 Core/插件混合 Batch，经 Rust 的一个事务、一个 Store 和一条历史提交。本文后面的分片记录保留各时点的证据，当前状态以本段和最新分片为准；不代表整个 S2 完成或达到商业级发布标准。默认引擎未切换。
 
 ## 实际执行路径
 
 1. 私有宿主选择 `installNativeIntegratedBackendV2(addon)` 后，现有 `CommandBus.createIntegrated` 工厂使用真实 compiled catalog 与 inventory resolver。SDK WeakMap 品牌认证和 gateway 能力、assembly 身份检查继续有效；返回的 restore 函数恢复之前的工厂选择，已创建的 session 保持原装配。
 2. 真实 SDK decoder/preparer/transformer 绑定留在宿主适配器。任意 decoded JS 中间值不跨 JSON。回调只收到冻结的 Core 文档和兼容扩展视图，不持有可写 Store。
 3. `createIntegratedKernelSessionV2` 返回一个绑定 session 与固定执行器的 Node 函数。函数的 N-API 生命周期管理 Rust session 和 callback reference；`RefCell` 在进入回调前取得独占借用，重入不能取得第二个可变引用。它没有可替换 executor 的后续参数，也不能把 V1 handle 混入这条入口。
-4. Rust 独立检查描述符来源、安装状态、命名空间、owner、版本、请求形状、引用存在性和效果数量。请求依次写入现有 typed overlay，后续 transformer 的完整视图反映前面已准备的音高与扩展修改。JS adapter 校验模块 issues 与 classifier 结果，Rust Foundation 及现有 adoption 路径仍校验 Core。
+4. Rust 独立检查描述符来源、安装状态、命名空间、owner、版本、请求形状、引用存在性和效果数量。独立模块命令使用 typed overlay，混合 Batch 使用 occurrence candidate；两者共用 SDK 准备与效果解码逻辑。后续回调的完整视图反映此前的 Core/扩展修改。JS adapter 校验模块 issues 与 classifier 结果，Rust Foundation 及现有 adoption 路径仍校验 Core。
 5. 所有准备与模块 assessment 成功后才调用现有统一提交。模块声明的 affected addresses 在 Rust 校验、去重、排序后进入同一历史和事件。撤销重做先预览已存 inverse/forward 并重新 assessment，成功后才移动原历史游标；不重跑原 prepare/transform。
 
 Core 命令 ID 的原有编码不变。内部历史与事件增加模块 ID 表示，V2 facade 按已固定的 catalog 补上现有公开事件合同要求的 module source。没有建立 TS 命令状态或第二套历史。
@@ -36,7 +36,7 @@ Core 命令 ID 的原有编码不变。内部历史与事件增加模块 ID 表�
 
 ## 剩余工作与实用限制
 
-- 这条实验 V2 session 已接通独立 Core 命令、纯 Core Batch、domain commands 及其已存在的两种 effect request。Core 与模块命令共用同一 Store 和历史；含模块子命令的跨域 Batch 尚未接通，这是下一片的主要缺口。
+- 这条实验 V2 session 已接通独立 Core 命令、纯 Core Batch、domain commands 和跨域 Batch，支持现有两种 effect request。Core 与模块命令共用同一 Store、资源账户与历史；此处的接通仍不等于完整资源/平台资格验证。
 - JS SDK 允许宽视图读取，当前会完整物化回调输入，并执行完整语义检查。私有 `callbackProjections` 记录这一兼容路径的视图工作；不要把 Core typed metrics 当成整个 V2 调用的成本，也不能把这些回归测试当性能资格证据。
 - 私有响应在 adoption 前进行保守空间预检；实际内存压力、资源边界的完整矩阵和异常终止恢复仍需 S3 验证。
 - 回调绑定和模块 issue 解析依赖真实 JS SDK 宿主，尚未实现可移植 WASM 产物、燃料/内存限制或执行超时。同步 JS 回调不能由此强制终止。
@@ -75,3 +75,15 @@ Core 命令 ID 的原有编码不变。内部历史与事件增加模块 ID 表�
 十项专项回归覆盖全序及净零效果、真实 Store 提交和重复撤销重做、交错 Part 扩展位置、同 ID 重生、预算拒绝、每个受控预留点失败，以及未记录载荷/错误 owner 无法进入可信历史。另将两项已有悬空 owner 回归分别在新账本启用与未启用时执行，保持原断言。候选重复 Part 的歧义删除仍拒绝，已通过真实 TS Batch 确认该行为，未改行为基线。
 
 本片新跑全 feature Rust workspace：525 通过、1 忽略、0 失败；最终 lint 标记和新增悬空断言后重跑定向测试、严格 Clippy、fmt、Rust 1.88 检查均通过。未重复 Native/TS；当前 V2 二进制仍来自 `d8b39c5`。详情见 [本片证据](evidence/kernel-candidate-extension-history-2026-09-12.json)。这关闭了历史记录前置缺口；生产混合 Batch dispatcher、真实 SDK 顺序效果与共享计量尚需接线，S2 仍未完成。此前段落中“预期只来自 typed prefix”的描述是本片前的历史状态。
+
+## S2.2c：真实 SDK 的 Core/模块混合 Batch
+
+实现 `3559713` 接通包含已安装模块命令的 Batch：从第一项起使用同一个 occurrence candidate，Core 子项仍调用原有处理器，模块子项与独立模块命令共用真实 SDK prepare/transform 合同。模块只产出请求；扩展写入和音高效果由 Rust 的同一 recorder 保存。中间读取使用原始 occurrence 投影，允许后项修复临时空 ID、重复 ID或音乐值；最终 Core 校验与模块 assessment 通过后才调用统一提交，整批一条历史、一次版本变化和原有 Core Batch 事件来源。
+
+模块 segment 保留 command/module/contribution 身份及效果范围，单独计量，不伪装成 Core 命令。模块受影响地址按既有合同归一化，再与此前 Core 地址按首次出现去重；实际效果、受影响地址和逻辑字节共用事务账户，已存来源字符串也计入预算。SDK 完成一个子项的准备后才检查外层累计效果上限；无实际效果的子项不消耗 segment/历史，存在非空效果序列但最终净零的 Batch 仍提交并可撤销重做。
+
+真实 Native 对照目前 23 项：原有 504 个独立 Core 输入仍通过，另将同一 504 个输入置于真实插件子项之后，比较 submit、完整 read、事件及重复 undo/redo。新增具体用例覆盖 Core/Score-owned/Part-owned 交错、扩展写入后 Part 删除及同 ID 重生、真实回调读取临时无效 Core 前缀、净零模块序列、全批 no-op、扩展删除位置恢复，以及各回调家族失败和最终模块拒绝的整批零变化。删除最后一个 Part 的例子按真实 TS oracle 返回最终 `semantic.part-required`，没有把它改成成功案例。三个 Rust 执行层测试补证双向共享效果上限、上限处 no-op 及来源/affected 计量；它们不替代 S3 的全资源压力矩阵。
+
+本片最新源码重建了 V1 和 V2 两个产物。Rust 全 feature 工作区 528 通过、1 忽略；完整 TS/Native 791 通过、2 跳过、0 失败；严格 Clippy、fmt、Rust 1.88 和 TypeScript typecheck 通过。首次全量有一个旧 V1 JSON 对象解析耗时比例失败（4.008）；同一二进制单独复测通过，随后未修改的完整套件通过。首跑与复跑日志均保存，未调整冻结阈值。[本片证据](evidence/kernel-native-mixed-batch-2026-09-12.json) 记录产物哈希和全部检查。
+
+本片关闭“生产混合 Batch 尚未接通”的功能缺口。SDK 仍读取完整投影，Core 最终准备和兼容 assessment 有额外校验/物化工作，尚无增量等价或完整性能计量承诺；不能把一个最终模块 assessment 回调解释为内部仅执行一次所有语义规则。WASM、显式迁移、层级关系消费者及平台/资源/性能资格仍待完成，S2 和商业级发布没有因此整体完成。

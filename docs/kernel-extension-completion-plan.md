@@ -8,9 +8,9 @@
 
 - TS 的实际合同集中在 `src/core-kernel/module-sdk/{contracts,definitions}.ts`、`registry/{integrated-contracts,domain-catalog,domain-catalog-codec,domain-availability,gateway}.ts`、`commands/integrated-runtime.ts` 和 `migration/{contracts,migrate-kernel-extension}.ts`。
 - `DomainContributionReadViewV1` 包含 document/version、Core 文档和 compatible extensions；准备回调返回 no-op、rejected 或非空 effect requests。现有请求仅包含 Core written-pitch replacement 和 module-owned extension effect。transform 返回 remove、replace 或 rejected。不能凭计划扩充成任意模块直接写 Core 的接口。
-- TS SDK 已有捕获、编译品牌、回调绑定、能力检查、模块 issue 校验和资源上限。Rust 已有严格 requirement、Host Catalog 元数据、Inventory/cache、availability 与实际 Store header 读取；SDK 新增内部真实品牌捕获。当前投影不携带命令/effect 回调，不是完整 executable Catalog，也尚未接成 Native integrated session。
+- TS SDK 已有捕获、编译品牌、回调绑定、能力检查、模块 issue 校验和资源上限。Rust 已有严格 requirement、Host Catalog、Inventory/cache、availability 与实际 Store header 读取。元数据投影本身不携带回调；独立 V2 Native 桥已绑定真实 SDK 执行器并接通固定 assembly 的 integrated session、独立 Core/模块命令及混合 Batch。可移植 WASM 执行产物仍未实现。
 - 特别注意 Rust 的 `protocolVersion` 与 TS 的 `requirementVersion` 不同，Rust 的 `required_for_write: bool` 也不是 TS 类型层面的字面量 `true`。内部结构不得直接序列化冒充既有公开 wire；应显式映射并做真实输入/输出差分。
-- Core runtime 的 `transaction.rs`、`overlay.rs`、`candidate/extensions.rs`、`candidate/journal/combined.rs`、`runtime/admission.rs` 和 `history.rs` 已提供最终准备、一次 adoption、扩展值/顺序恢复、Core 与候选混合历史的基础。仍需加入通用 module effects、模块校验和 assembly/session 行为，不能再建立一个拥有可变文档的扩展执行器。
+- Core runtime 的 `transaction.rs`、`overlay.rs`、`candidate/extensions.rs`、`candidate/journal/combined.rs`、`runtime/admission.rs` 和 `history.rs` 已提供最终准备、一次 adoption、扩展值/顺序恢复，以及 Core/模块候选混合历史。现有 module effects、完整模块校验及固定 assembly/session 已接通；声明读取的依赖优化、迁移与层级关系消费者继续按剩余切片推进，不能建立第二个拥有可变文档的扩展执行器。
 
 冻结条件继续适用：`brilliant-score-1`、28 个 Core commands、应用 51 个 runtime exports、CVN-2 SDK 的 8 个 runtime / 34 个 type exports 及其九个 ABI fields。新私有 Rust 实现通过现有 facade/SDK 行为接线；新增版本号、WASM 内部 ABI 或内部结构不能悄悄修改这些公开集合。Native 内部接线与公开导出合同分开验证。
 
@@ -111,3 +111,5 @@ SDK 内部从真实 compiled catalog 的绑定查询创建可信执行适配器�
 最终 S2 完成要求四片功能矩阵全部落地，公开导出/SDK 字段冻结检查通过，Core 与模块完整校验的独立等价证据成立，并证明只有一个可变文档与历史所有者。未知数据无损、所有拒绝零变化和真实第二消费者必须走公开 session/gateway 路径。引擎默认切换、性能资格和后续清理仍按主计划 S3–S5 处理；本文件没有将这些事项标为已完成。
 
 扩展日志前置已由 `457d90e` 实现：不可变 before/after、实际 owner 生命期、扩展全序、Core Part 删除与净零历史均有真实 Store 提交/撤销重做测试。全 feature Rust workspace 525 通过、1 忽略；严格 Clippy、fmt、Rust 1.88 与新增悬空 owner 断言通过。生产混合 Batch 子项及共享计量尚未接通；详情和 fresh/inherited 验证边界见 `kernel-native-integrated-v2.md` 与对应 evidence JSON。
+
+混合 Batch 生产接线已由 `3559713` 完成：真实 SDK 子项与 Core 共用 occurrence candidate、资源账户、最终提交和已存历史；中间无效视图、净零有效序列、Part owner 死亡/重生、no-op、精确失败索引均有真实 Native/TS 对照。新增 504 个插件前缀包裹的 Core 输入，最新完整回归为 Rust 528 通过、1 忽略及 TS/Native 791 通过、2 跳过。旧 V1 耗时检查首跑失败及未修改复跑通过一并记录于 `evidence/kernel-native-mixed-batch-2026-09-12.json`。前面“尚未接通混合 Batch”的分片段落属于历史；当前剩余重点为 WASM、显式迁移、层级关系消费者，以及声明读取/资源/平台资格。

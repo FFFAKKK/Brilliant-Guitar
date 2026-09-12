@@ -1,0 +1,109 @@
+{
+  "kind": "bounded-regression-not-commercial-qualification",
+  "testedCodeCommit": "3559713755ddda7dbd37900d7703ff78c8758948",
+  "date": "2026-09-12",
+  "scope": "Real SDK mixed Core/module Batch through the opt-in Native V2 integrated factory, one candidate transaction and stored history",
+  "rust": {
+    "runtimePassed": 333,
+    "failed": 0,
+    "passed": 528,
+    "ignored": 1,
+    "newExecutionBudgetTests": 3
+  },
+  "fullTsNative": {
+    "total": 793,
+    "failed": 0,
+    "passed": 791,
+    "skipped": 2,
+    "durationMilliseconds": 51665.3534
+  },
+  "nativeIntegrated": {
+    "validation": "Included in the final complete TS/Native run on rebuilt V1 and V2 artifacts",
+    "mixedBatchWrappedInputs": 504,
+    "testCases": 23,
+    "originalCoreAdmissionInputs": 504
+  },
+  "checks": {
+    "typecheck": "passed",
+    "fmt": "passed",
+    "clippyAllTargetsAllFeatures": "passed",
+    "releaseV2": "passed",
+    "releaseV1": "passed",
+    "msrv188AllTargetsAllFeatures": "passed"
+  },
+  "firstRun": {
+    "failure": "Existing V1 near-quadratic duplicate-object timing ratio measured 4.008374806014843",
+    "failed": 1,
+    "passed": 790,
+    "followUp": "Same binary isolated check passed (duplicate adjacent ratios 1.834 and 2.038), then the unmodified full suite passed. Initial log retained. No threshold, behavior fixture, or timing implementation changed.",
+    "skipped": 2
+  },
+  "remaining": [
+    "WASM capture/hash/ABI and bounded execution",
+    "Explicit extension migration and real layered relationship consumers",
+    "Read-declaration/incremental equivalence and full resource/platform/performance qualification",
+    "Default product cutover after qualification"
+  ],
+  "artifacts": [
+    {
+      "path": "target/rkp-1-node/brilliant_kernel_node.node",
+      "bytes": 3617792,
+      "sha256": "d5994c01785afa16982e6a1b7f8c86c08c0cd668395c2442ec1e07e9880774f0"
+    },
+    {
+      "path": "target/integrated-v2/brilliant_kernel_node.node",
+      "bytes": 4332544,
+      "sha256": "8d0803077339747086d69bbd07e05874e1c245e86db74071b71544f7777fce4f"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/mixed-batch-rust.log",
+      "bytes": 60253,
+      "sha256": "616c3e88a89a591fb3db2a0938dcef1aeae1d79d60d6912ccc2f1a01a1e70a53"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/mixed-batch-clippy.log",
+      "bytes": 711,
+      "sha256": "1586b539d9bc476c851cdb617b075d119d90c1e55883d760ded081de06e68853"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/mixed-batch-msrv.log",
+      "bytes": 879,
+      "sha256": "fc2fc608032e07fac228052301ff92ac47d9ed52a2cd34d8e812808c0ca72291"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/mixed-batch-typecheck.log",
+      "bytes": 73,
+      "sha256": "8ae458fecf1326f81a7b8dcb2413b8f24bbe52d498be29bb18f8d27f79ac5565"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/mixed-batch-fmt.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/mixed-batch-release-v1.log",
+      "bytes": 702,
+      "sha256": "435f2cf2ed09545a116dc718bc24f82fbf2afea2cc816faa7210cc3778be2f6c"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/mixed-batch-release-v2.log",
+      "bytes": 374,
+      "sha256": "ef2e3169e401fe66cb85b5c3cf32eaae74184e88bcc74ade9d7fd53f8a025ee7"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/mixed-batch-full-ts-native.log",
+      "bytes": 72105,
+      "sha256": "4ece98ed9b9e457df4379f2636b56825529ae7c4a3db1a0851070569385704bf"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/mixed-batch-ratio-recheck.log",
+      "bytes": 412,
+      "sha256": "f4339a6440dbe10b76f1fd6f6a88e605a7021ceeb0a56586200f17618c500c74"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/mixed-batch-full-ts-native-rerun.log",
+      "bytes": 71014,
+      "sha256": "a827aaacf0c30df2e0e8bdb04c5c4b09261217b96f1c597ef01be6e1bef3a0ba"
+    }
+  ]
+}

@@ -83,9 +83,12 @@ extension effects, module assessment, availability guards, shared stored history
 events and public replay. Both Score-owned and Part-owned consumers are tested
 against the existing TS implementation. The opted-in factory creates no TS
 command runtime or history. See [the V2 implementation boundary](kernel-native-integrated-v2.md).
-S2 remains incomplete: standalone Core commands and cross-domain Batch in that
-integrated session, candidate history assessment, WASM execution, migration and
-concrete layered-plugin dependency/relationship maintenance still need work.
+Standalone Core commands, cross-domain Batch and candidate history assessment
+are now wired in that integrated session. S2 remains incomplete: WASM execution,
+migration, concrete layered-plugin dependency/relationship maintenance and full
+resource/portability qualification still need work. Module callback views and
+assessment currently use complete projections; precise read declarations and
+incremental equivalence are not claimed.
 See [the S2 plan](kernel-extension-completion-plan.md). The product default remains
 TypeScript; this is the existing private native implementation route, not the
 S4 product cutover. Editor, rendering, playback and physical project persistence
@@ -1756,3 +1759,29 @@ and annotation changes. No new Native/TS run; the V2 artifact is still d8b39c5.
 Evidence: `docs/evidence/kernel-candidate-extension-history-2026-09-12.json`.
 Module child dispatch, shared accounting and public mixed Batch remain to be wired;
 this prerequisite does not close S2 or commercial qualification.
+
+### S2.2c — real SDK mixed Core/module Batch
+
+Implementation `3559713` wires module children into one occurrence candidate from
+the start of a mixed Batch. Core handlers are reused; standalone and Batch module
+commands share SDK preparation/transform decoding. The recorder owns the actual
+pitch/extension effects, immutable inverse/forward and owner lifetimes. Module
+segments retain source identity and share effect, affected and logical-byte
+accounts with Core. No-op children create no segment; a nonempty effective
+sequence with net-zero document change still commits one Batch history entry.
+
+Real Native coverage is 23 tests, including 504 original Core admission inputs
+and the same 504 inputs after a genuine module child. Additional journeys verify
+invalid intermediate SDK reads repaired by later Core, both owner kinds, Part
+death/rebirth, extension removal order, no-op, net-zero history and exact atomic
+failures. Three Rust execution tests cover shared caps and source/affected charges.
+Fresh checks: 528 Rust tests passed, 1 ignored; 791 TS/Native passed, 2 skipped,
+zero failed; strict Clippy, fmt, Rust 1.88, typecheck and both native release builds
+passed. An initial full run failed only the existing V1 JSON timing-ratio check
+(4.008); the same binary passed isolation and an unmodified complete rerun. Both
+attempts are retained in `docs/evidence/kernel-native-mixed-batch-2026-09-12.json`.
+
+Mixed Batch wiring is complete; S2 is not. WASM execution, explicit migration,
+layered relationship consumers, declared-read/incremental equivalence and full
+platform/resource/performance qualification remain. Complete projections and
+repeated compatibility validation are known costs, not qualified incremental work.
