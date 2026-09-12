@@ -247,8 +247,23 @@ export class KernelModuleGateway {
       if (methodDenied !== undefined) {
         return gatewayRejected(methodDenied);
       }
-      const decoded = decodeCoreCommand(input);
-      let authorizedInput = input;
+      let decoded = decodeCoreCommand(input);
+      let authorizedInput: unknown;
+      if (decoded.ok) {
+        // Core decoders already detach their entire accepted envelope.
+        authorizedInput = decoded.value;
+      } else {
+        const captured = captureStrictInput(input);
+        if (captured.status !== "captured") {
+          // Retrying the original object can turn an unreadable or over-budget
+          // input into a different command after authorization has finished.
+          return gatewayRejected({ code: "registry.invalid-invocation" });
+        }
+        authorizedInput = captured.value;
+        // Reflection may have changed the input since the first Core decode.
+        // Authorize the captured identity, including all Batch children.
+        decoded = decodeCoreCommand(authorizedInput);
+      }
       if (decoded.ok) {
         const contribution = findCommandContribution(
           state.registry.contributions,
@@ -275,17 +290,10 @@ export class KernelModuleGateway {
             const denied = authorizeModuleCommand(state, commands[index]);
             if (denied !== undefined) return gatewayRejected(denied);
           }
-          // Use the detached input we authorized; never reflect the caller's
-          // mutable/Proxy batch again after checking its child identities.
-          authorizedInput = decoded.value;
         }
       } else if (state.runtimeAssembly !== undefined) {
-        const captured = captureStrictInput(input);
-        if (captured.status === "captured") {
-          const denied = authorizeModuleCommand(state, captured.value);
-          if (denied !== undefined) return gatewayRejected(denied);
-          authorizedInput = captured.value;
-        }
+        const denied = authorizeModuleCommand(state, authorizedInput);
+        if (denied !== undefined) return gatewayRejected(denied);
       }
       return { status: "authorized", value: state.commandBus.submit(authorizedInput) };
     } catch {

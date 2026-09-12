@@ -160,3 +160,13 @@ after an otherwise authorized prefix. Submit the detached Batch that was checked
 not the caller's original object. Nested batches remain command-level rejections.
 Trusted host calls directly to the integrated bus retain cross-module composition;
 the Core Batch descriptor does not grant that authority to a scoped gateway.
+
+Gateway submit must never dispatch the original caller object after checking a
+detached command. Use the accepted Core decoder output for every Core command.
+When Core decoding fails, capture once, decode/authorize that captured identity
+(including Batch children), then dispatch only the captured data. Uncapturable
+inputs (accessors, cycles, reflection failure or capture-budget exhaustion)
+return `registry.invalid-invocation` at the gateway boundary and are never
+retried through the bus. Stable capturable malformed commands still delegate
+their command-level errors; trusted-host direct APIs retain their own admission
+and resource-error contracts. Method capability denial remains before reflection.

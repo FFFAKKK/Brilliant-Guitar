@@ -1,11 +1,12 @@
 import { test } from "node:test";
 import assert = require("node:assert/strict");
 import { resolve } from "node:path";
-import { CommandBus, createKernelRegistry } from "../../../src/core-kernel/index";
+import { CommandBus, createKernelRegistry, CORE_KERNEL_STARTUP_MANIFEST } from "../../../src/core-kernel/index";
 import { compileOfficialModuleCatalogV1 } from "../../../src/core-kernel/module-sdk/index";
 import { installNativeIntegratedBackendV2, type IntegratedNativeAddonV2 } from "../../../src/core-kernel/native/integrated-command-bus";
 import { createCoreScoreFixture } from "../fixtures/core-score";
 import { CVN6_MANIFEST, CVN6_REGISTRATION_ENTRIES, cvn6CallbackCounts, resetCvn6Callbacks } from "../fixtures/cvn-6-synthetic-official-modules";
+import { buildCommandAdmissionOracle } from "./command-admission-oracle";
 
 const addon = require(resolve("target/integrated-v2/brilliant_kernel_node.node")) as IntegratedNativeAddonV2;
 function setup(native: boolean) {
@@ -104,4 +105,121 @@ test("Malformed and nested batches retain command rejection without executing mo
     assert.deepEqual(cvn6CallbackCounts, zero);
     assert.deepEqual(bus.read(), before);
   }
+});
+
+type CaptureMode = "core-to-foreign" | "failed-capture-to-foreign" | "invalid-to-batch";
+function changingInput(mode: CaptureMode) {
+  let round = 0;
+  let gets = 0;
+  let active: object = {};
+  const input = new Proxy({}, {
+    get() { gets++; throw new Error("ordinary get must not execute"); },
+    ownKeys() {
+      round++;
+      if (mode === "failed-capture-to-foreign" && round === 2) throw new Error("capture failed");
+      active = mode === "core-to-foreign" && round === 1 ? core
+        : mode === "invalid-to-batch" ? (round === 1 ? { commandVersion: 1 } : batch([command("part")]))
+        : command("part");
+      return Reflect.ownKeys(active);
+    },
+    getOwnPropertyDescriptor(_target, key) { return Object.getOwnPropertyDescriptor(active, key); },
+  });
+  return { input, rounds: () => round, gets: () => gets };
+}
+
+test("Every accepted Core envelope is detached before dispatch and cannot turn into a module command", () => {
+  for (const native of [false, true]) {
+    const { bus, gateway } = setup(native);
+    const direct = setup(native).bus;
+    const changing = changingInput("core-to-foreign");
+    resetCvn6Callbacks();
+    const expected = direct.submit(core);
+    assert.deepEqual(gateway.submit(changing.input), { status: "authorized", value: expected });
+    assert.deepEqual(bus.read(), direct.read());
+    assert.equal(changing.rounds(), 1);
+    assert.equal(changing.gets(), 0);
+    assert.equal(cvn6CallbackCounts.commandPrepare, 0);
+    assert.equal(cvn6CallbackCounts.effectTransform, 0);
+  }
+});
+
+test("A failed input capture is terminal and cannot become an executable foreign command on retry", () => {
+  for (const native of [false, true]) {
+    const { bus, gateway } = setup(native);
+    const before = bus.read();
+    const events: unknown[] = [];
+    bus.subscribe((event: unknown) => events.push(event));
+    resetCvn6Callbacks();
+    const zero = { ...cvn6CallbackCounts };
+    const changing = changingInput("failed-capture-to-foreign");
+    assert.deepEqual(gateway.submit(changing.input), { status: "rejected", failure: { code: "registry.invalid-invocation" } });
+    assert.equal(changing.rounds(), 2);
+    assert.equal(changing.gets(), 0);
+    assert.deepEqual(cvn6CallbackCounts, zero);
+    assert.deepEqual(events, []);
+    assert.deepEqual(bus.read(), before);
+  }
+});
+
+test("A captured Batch receives full child authorization even when the initial decode saw invalid input", () => {
+  for (const native of [false, true]) {
+    const { bus, gateway } = setup(native);
+    const before = bus.read();
+    resetCvn6Callbacks();
+    const zero = { ...cvn6CallbackCounts };
+    const changing = changingInput("invalid-to-batch");
+    assert.deepEqual(gateway.submit(changing.input), {
+      status: "rejected", failure: { code: "registry.contribution-not-found", contributionId: "fixture.part.apply" },
+    });
+    assert.equal(changing.rounds(), 2);
+    assert.equal(changing.gets(), 0);
+    assert.deepEqual(cvn6CallbackCounts, zero);
+    assert.deepEqual(bus.read(), before);
+  }
+});
+
+function setupCore() {
+  const created = CommandBus.create(createCoreScoreFixture());
+  assert.ok(created.ok);
+  const registry = createKernelRegistry({ ...CORE_KERNEL_STARTUP_MANIFEST, modules: [
+    ...CORE_KERNEL_STARTUP_MANIFEST.modules,
+    { moduleId: "fixture.consumer", origin: "official", runtime: "internal-module", trustLevel: "system-trusted",
+      apiVersion: 1, capabilities: ["command:execute"], registrationEntryIds: [] },
+  ] });
+  assert.ok(registry.ok);
+  const scoped = registry.registry.createGateway("fixture.consumer", created.value);
+  assert.ok(scoped.ok);
+  return { bus: created.value, gateway: scoped.gateway };
+}
+
+test("Stable Core admission preserves direct result and state for all 504 shapes on Core, TS integrated and Native gateways", () => {
+  const corpus = buildCommandAdmissionOracle();
+  assert.equal(corpus.cases.length, 504);
+  for (const mode of ["core", "integrated", "native"] as const) for (const entry of corpus.cases) {
+    const create = () => mode === "core" ? setupCore() : setup(mode === "native");
+    const direct = create().bus;
+    const { bus, gateway } = create();
+    assert.deepEqual(gateway.submit(entry.input), { status: "authorized", value: direct.submit(entry.input) }, `${mode}: ${entry.id}`);
+    assert.deepEqual(bus.read(), direct.read(), `${mode}: ${entry.id}`);
+  }
+});
+
+test("Uncapturable inputs fail closed for both Core and integrated gateways without reading accessors", () => {
+  let accessors = 0;
+  const getter = { ...command("score"), get payload() { accessors++; throw new Error("never invoke"); } };
+  const cycle: Record<string, unknown> = { ...command("score") };
+  cycle.payload = cycle;
+  let depth: unknown = {};
+  for (let i = 0; i < 65; i++) depth = { next: depth };
+  const deep = { ...command("score"), payload: depth };
+  for (const mode of ["core", "integrated", "native"] as const) for (const input of [getter, cycle, deep]) {
+    const { bus, gateway } = mode === "core" ? setupCore() : setup(mode === "native");
+    const before = bus.read();
+    resetCvn6Callbacks();
+    const zero = { ...cvn6CallbackCounts };
+    assert.deepEqual(gateway.submit(input), { status: "rejected", failure: { code: "registry.invalid-invocation" } });
+    assert.deepEqual(bus.read(), before);
+    assert.deepEqual(cvn6CallbackCounts, zero);
+  }
+  assert.equal(accessors, 0);
 });
