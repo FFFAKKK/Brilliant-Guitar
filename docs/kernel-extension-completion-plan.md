@@ -8,7 +8,7 @@
 
 - TS 的实际合同集中在 `src/core-kernel/module-sdk/{contracts,definitions}.ts`、`registry/{integrated-contracts,domain-catalog,domain-catalog-codec,domain-availability,gateway}.ts`、`commands/integrated-runtime.ts` 和 `migration/{contracts,migrate-kernel-extension}.ts`。
 - `DomainContributionReadViewV1` 包含 document/version、Core 文档和 compatible extensions；准备回调返回 no-op、rejected 或非空 effect requests。现有请求仅包含 Core written-pitch replacement 和 module-owned extension effect。transform 返回 remove、replace 或 rejected。不能凭计划扩充成任意模块直接写 Core 的接口。
-- TS SDK 已有捕获、编译品牌、回调绑定、能力检查、模块 issue 校验和资源上限。Rust 已有严格 requirement、Host Catalog、Inventory/cache、availability 与实际 Store header 读取。元数据投影本身不携带回调；独立 V2 Native 桥已绑定真实 SDK 执行器并接通固定 assembly 的 integrated session、独立 Core/模块命令及混合 Batch。WASM 已有私有受限执行服务和真实 Rust session 协议测试，公开 SDK 的产物绑定与多模块分发尚未接入，见 `kernel-wasm-executor-v1.md`。
+- TS SDK 已有捕获、编译品牌、回调绑定、能力检查、模块 issue 校验和资源上限。Rust 已有严格 requirement、Host Catalog、Inventory/cache、availability 与实际 Store header 读取。元数据投影本身不携带回调；独立 V2 Native 桥已绑定真实 SDK 执行器并接通固定 assembly 的 integrated session、独立 Core/模块命令及混合 Batch。WASM 已有受限执行服务、真实 catalog 贡献者绑定及多模块分发，实际编译的 guest 已接通编辑/迁移/历史。该绑定属于私有宿主组合入口，公开 SDK 集合不变，也不等于公开插件包加载器，见 `kernel-wasm-executor-v1.md`。
 - 特别注意 Rust 的 `protocolVersion` 与 TS 的 `requirementVersion` 不同，Rust 的 `required_for_write: bool` 也不是 TS 类型层面的字面量 `true`。内部结构不得直接序列化冒充既有公开 wire；应显式映射并做真实输入/输出差分。
 - Core runtime 的 `transaction.rs`、`overlay.rs`、`candidate/extensions.rs`、`candidate/journal/combined.rs`、`runtime/admission.rs` 和 `history.rs` 已提供最终准备、一次 adoption、扩展值/顺序恢复，以及 Core/模块候选混合历史。现有 module effects、完整模块校验、固定 assembly/session、显式迁移与同贡献者层级关系已接通验证；声明读取和跨插件依赖继续按剩余切片推进，不能建立第二个拥有可变文档的扩展执行器。
 
@@ -81,10 +81,10 @@ schemaVersion 是数据格式版本，requirement/inventory/descriptor version �
 
 ## WASM 边界与真正未决问题
 
-现有 S2 文字明确要求 WASM capture/hash/ABI/execution，但所核对的 TS SDK 合同仍是 JS callback 绑定，workspace 当前也没有 WASM executor 依赖。不能把现有九个公开 ABI fields 当成已定义的 WASM 内存/调用 ABI。以下问题需要在相应切片形成具体设计记录；它们不阻止先实施既有合同，也不是新审批门槛。
+S2.3 已实现 Wasmi 受限执行服务和单独的三导出 guest ABI，并通过私有宿主 sidecar 把产物绑定到真实贡献者。既有九个公开 ABI fields 继续描述 SDK 合同；没有被替换成 WASM 内存 ABI。以下兼容与产品边界仍需保留，不是新审批门槛。
 
 1. **既有 JS SDK 的兼容方式。** JS callback 如何映射到声明式规则或捕获产物，哪些功能可完整表达？纯私有 Rust fixture runner 不能算公开 SDK 已接通；强制现有消费者改写 WASM 也不符合导出冻结的自动含义。
-2. **可移植执行范围。** WASM 的入口、输入/输出编码、UTF-16/JSON 数值约定、允许 imports、内存/栈/执行预算和产物 hash 算法尚需具体选定并复现。应采用无隐式时钟/随机/网络/文件依赖的确定性准备边界；这项建议需实现证据，不能由引擎宣传的 fuel 特性代替验证。
+2. **可移植执行范围。** WASM 的入口、严格 UTF-8 JSON 字节传输、UTF-16 转义与数值约定、禁止 imports、内存/栈/fuel 上限和 SHA-256 已具体实现，见 `kernel-wasm-executor-v1.md`。guest 需要自行支持其消费的值域；编译、宿主复制和整笔事务的累计资源并未全部纳入 fuel，多平台与整进程资源资格仍待完成。
 3. **assembly 生命周期。** 当前 assembly 身份绑定 catalog + inventory；运行中热换模块是否保留现有历史和 checkpoint，没有从当前合同获得一个通用热升级承诺。先实现固定 assembly 的 session 与重新创建行为，不新增热安装产品功能。
 4. **迁移进入编辑历史的产品含义。** 当前纯迁移入口能完成数据迁移和重新打开。是否需要用户在同一 session 中撤销迁移、迁移后如何关联已保存身份，是额外产品语义，不能擅自新增公开操作；本计划先完整复现现有纯入口。
 

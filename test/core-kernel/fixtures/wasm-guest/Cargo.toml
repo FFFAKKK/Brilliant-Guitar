@@ -1,0 +1,21 @@
+[package]
+name = "kernel-scoped-wasm-fixture"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# A guest test program, deliberately outside the seven-crate host workspace.
+[workspace]
+
+[lib]
+crate-type = ["cdylib"]
+path = "guest.rs"
+
+[dependencies]
+serde_json = { version = "=1.0.151", features = ["float_roundtrip"] }
+
+[profile.release]
+opt-level = "s"
+panic = "abort"
+lto = true
+codegen-units = 1

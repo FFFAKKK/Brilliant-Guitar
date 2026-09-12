@@ -14,6 +14,7 @@ crate-type = ["cdylib"]
 default = ["node-api-v8"]
 node-api-v8 = ["napi/napi8"]
 integrated-bridge-v2 = []
+wasm-bridge-v1 = ["integrated-bridge-v2", "brilliant-kernel-session/wasm-executor-v1"]
 
 [dependencies]
 brilliant-kernel-contracts = { path = "../brilliant-kernel-contracts" }

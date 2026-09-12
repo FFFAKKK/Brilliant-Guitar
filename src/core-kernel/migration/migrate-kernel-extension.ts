@@ -1,5 +1,6 @@
 import { captureStrictInput } from "../codec/strict-input-capture";
 import { nativeExtensionMigrationFactoryV2 } from "../native/integrated-backend-selection";
+import { invokeScopedCallbackV1, type ScopedCallbackInvokerV1 } from "../module-sdk/scoped-invocation";
 import { decodeScoreDocument } from "../codec/decode-score-document";
 import {
   createIntegratedContributionView,
@@ -325,6 +326,7 @@ function contributionFailure(
 export function validateExtensionMigrationModulesV1(
   document: ScoreDocument,
   state: KernelIntegratedCatalogState,
+  invokeScoped: ScopedCallbackInvokerV1 = invokeScopedCallbackV1,
 ):
   | { readonly ok: true }
   | {
@@ -349,7 +351,7 @@ export function validateExtensionMigrationModulesV1(
     }
     let raw: unknown;
     try {
-      raw = reflectApply(contribution.validate, undefined, [view]);
+      raw = invokeScoped(contribution, "validate", null, [view], () => reflectApply(contribution.validate, undefined, [view]));
     } catch {
       return { ok: false, kind: "internal", contribution };
     }
@@ -524,7 +526,8 @@ export function migrateKernelExtension(
 /** Private callback service shared with the Rust migration bridge. It prepares
  * only an extension payload; it never replaces a document or owns a history. */
 export function prepareExtensionMigrationEffectV1(document: ScoreDocument, request: KernelExtensionMigrationRequestV1,
-  contribution: CompiledDomainCommandContributionV1, effect: CompiledModuleEffectDefinitionV1):
+  contribution: CompiledDomainCommandContributionV1, effect: CompiledModuleEffectDefinitionV1,
+  invokeScoped: ScopedCallbackInvokerV1 = invokeScopedCallbackV1):
   { readonly ok: true; readonly schemaVersion: number; readonly payload: JsonObject } | { readonly ok: false; readonly failure: KernelExtensionMigrationFailure } {
     const target = targetBlock(document, request.namespace, request.owner);
     if (target === undefined) return { ok: false, failure: { code: "migration.target-not-found" } };
@@ -534,7 +537,8 @@ export function prepareExtensionMigrationEffectV1(document: ScoreDocument, reque
     }
     let decodedPayloadRaw: unknown;
     try {
-      decodedPayloadRaw = reflectApply(binding.decode, undefined, [request.payload]);
+      decodedPayloadRaw = invokeScoped(contribution, "effectDecode", effect.descriptor.effectKind, [request.payload],
+        () => reflectApply(binding.decode, undefined, [request.payload]));
     } catch {
       return { ok: false, failure: { code: "migration.contribution-internal-error", moduleId: contribution.moduleId, contributionId: contribution.contributionId } };
     }
@@ -550,12 +554,14 @@ export function prepareExtensionMigrationEffectV1(document: ScoreDocument, reque
     }
     let transformedRaw: unknown;
     try {
-      transformedRaw = reflectApply(binding.transform, undefined, [freeze({
+      const args = [freeze({
         view: createIntegratedContributionView(document, 0, contribution),
         owner: clone(request.owner),
         currentBlock: clone(target.block),
         payload: decodedPayload.payload,
-      })]);
+      })];
+      transformedRaw = invokeScoped(contribution, "effectTransform", effect.descriptor.effectKind, args,
+        () => reflectApply(binding.transform, undefined, args));
     } catch {
       return { ok: false, failure: { code: "migration.contribution-internal-error", moduleId: contribution.moduleId, contributionId: contribution.contributionId } };
     }

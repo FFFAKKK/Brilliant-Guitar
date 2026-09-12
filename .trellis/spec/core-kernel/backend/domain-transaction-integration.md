@@ -550,3 +550,27 @@ Any requirement for a Core-to-Guitar import, second transaction/history/event ow
 ## CVN-5 Accepted Integrated Batch Consumer Contract
 
 CVN-5 consumes, but does not redesign, the accepted/archived CVN-6 integrated assembly. A mixed batch routes each raw child through that one assembly, applies accepted Core or contribution-owned effects to one candidate, and invokes applicable module validators/classifiers once for the final candidate in frozen catalog order. Child index orders route/preparation/effects/affected facts/failure attribution; it does not create per-child assessments. Undo/redo use stored owned effects, replay reroutes semantic child envelopes through the current compatible assembly, and the aggregate event source remains Core. CVN-2's nine-field ABI, SDK `8/34`, catalog compiler and installed-only catalog state remain exact.
+
+## Commercial-completion private Wasm binding (2026-09-12)
+
+The authorized microkernel completion work adds an opt-in host sidecar, described
+in `docs/kernel-wasm-executor-v1.md`, without changing the frozen public SDK.
+Bind artifact bytes/hash/ABI to an authentic catalog contribution before session
+creation. Capture the complete roster before compilation; reject unknown or
+duplicate identities, shared memory, invalid digests and oversized artifacts.
+Keep that identity fixed for existing sessions and detached migration.
+
+Dispatch only the six individual contribution callbacks to the bound guest.
+The host must retain Core validation, availability and aggregate ordering;
+guest results cannot impersonate another contribution or supply a complete
+assembly assessment. Bound failures never fall back to JS. Unbound callbacks
+remain compatible. Use fresh bounded instances with no imports, strict UTF-8
+JSON results and existing source/effect/status validation. Guest bytecode never
+receives a session handle or mutable document.
+
+Required regression evidence includes actual compiled dynamic guest edits,
+two contribution identities, mixed JS/Wasm validation, foreign output rejection,
+effective Batch prefix rollback, migration, history/replay, reentry and artifact
+lifetime. Keep five/seven/eight-export native builds separate. This private seam
+does not imply a public package loader, arbitrary JS-to-Wasm equivalence,
+cross-plugin read authority or commercial resource/platform qualification.

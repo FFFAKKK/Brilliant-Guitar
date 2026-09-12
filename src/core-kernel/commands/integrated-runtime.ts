@@ -1,4 +1,5 @@
 import { captureStrictInput } from "../codec/strict-input-capture";
+import { invokeScopedCallbackV1, type ScopedCallbackInvokerV1 } from "../module-sdk/scoped-invocation";
 import { nativeIntegratedFactoryV2, nativeIntegratedAssemblyV2 } from "../native/integrated-backend-selection";
 import { decodeScoreDocument } from "../codec/decode-score-document";
 import type { ScoreAddress } from "../domain/address";
@@ -690,6 +691,7 @@ export function runModulePipeline(
   document: ScoreDocument,
   documentVersion: number,
   assembly: KernelIntegratedRuntimeAssemblyState,
+  invokeScoped: ScopedCallbackInvokerV1 = invokeScopedCallbackV1,
 ): ModulePipelineResult {
   const semantic = validateScoreDocumentSemantics(document);
   if (!semantic.ok) {
@@ -731,7 +733,7 @@ export function runModulePipeline(
     views[views.length] = { contribution, view };
     let raw: unknown;
     try {
-      raw = invoke(contribution.validate, [view]);
+      raw = invokeScoped(contribution, "validate", null, [view], () => invoke(contribution.validate, [view]));
     } catch {
       return { ok: false, failure: internalFailure(contribution) };
     }
@@ -777,7 +779,7 @@ export function runModulePipeline(
     }
     let raw: unknown;
     try {
-      raw = invoke(entry.contribution.classify, [entry.view]);
+      raw = invokeScoped(entry.contribution, "classify", null, [entry.view], () => invoke(entry.contribution.classify, [entry.view]));
     } catch {
       return { ok: false, failure: internalFailure(entry.contribution) };
     }

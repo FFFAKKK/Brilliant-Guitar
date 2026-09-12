@@ -1,5 +1,6 @@
 // Private SDK adapter. No command runtime, mutable document or history lives here.
 import { captureStrictInput } from "../codec/strict-input-capture";
+import { invokeScopedCallbackV1, type ScopedCallbackInvokerV1 } from "../module-sdk/scoped-invocation";
 import { readExactDataRecord, readDenseArray } from "../registry/strict-codec";
 import {
   captureEnvelope, createIntegratedContributionView, decodeIntegratedAffectedAddresses,
@@ -37,7 +38,8 @@ function capture(value: unknown): unknown {
 
 /** The assembly was authenticated by the real SDK resolver. Decoded callback
  * values remain in JS; only captured requests/results cross the private bridge. */
-export function createNativeContributionExecutorV2(assembly: KernelIntegratedRuntimeAssemblyState): (bytes: Buffer) => Buffer {
+export function createNativeContributionExecutorV2(assembly: KernelIntegratedRuntimeAssemblyState,
+  invokeScoped: ScopedCallbackInvokerV1 = invokeScopedCallbackV1): (bytes: Buffer) => Buffer {
   return (bytes) => {
     const request = parse(apply(bufferToString, bytes, ["utf8"]) as string) as {
       operation: "prepare" | "transform" | "assess";
@@ -57,7 +59,7 @@ export function createNativeContributionExecutorV2(assembly: KernelIntegratedRun
   }): unknown {
     if (!hasIntactExecutionPrimordials()) return rejected("command.invalid-envelope");
     if (request.operation === "assess") {
-      return runModulePipeline(request.document, request.documentVersion, assembly);
+      return runModulePipeline(request.document, request.documentVersion, assembly, invokeScoped);
     }
     let contribution: CompiledDomainCommandContributionV1 | undefined;
     if (request.operation === "prepare") {
@@ -80,14 +82,18 @@ export function createNativeContributionExecutorV2(assembly: KernelIntegratedRun
       const binding = getDomainCommandDefinitionBinding(definition);
       if (binding === undefined) return contract();
       try {
-        const decoded = capture(invokeIntegratedCallback(binding.decode, [freeze({ target, payload: envelope.value.payload })]));
+        const decodeArgs = [freeze({ target, payload: envelope.value.payload })];
+        const decoded = capture(invokeScoped(source, "commandDecode", definition.descriptor.commandId, decodeArgs,
+          () => invokeIntegratedCallback(binding.decode, decodeArgs)));
         if (readExactDataRecord(decoded, ["status"])?.status === "invalid") return rejected("command.invalid-envelope");
         const record = readExactDataRecord(decoded, ["status", "command"]);
         if (record?.status !== "decoded") return contract();
         if (!targetExists(request.document, target)) return rejected("command.target-not-found");
-        const prepared = capture(invokeIntegratedCallback(binding.prepare, [
+        const prepareArgs = [
           createIntegratedContributionView(request.document, request.documentVersion, source), record.command,
-        ]));
+        ];
+        const prepared = capture(invokeScoped(source, "commandPrepare", definition.descriptor.commandId, prepareArgs,
+          () => invokeIntegratedCallback(binding.prepare, prepareArgs)));
         if (readExactDataRecord(prepared, ["status"])?.status === "no-op") return { ok: true, prepared };
         const rejectedValue = readExactDataRecord(prepared, ["status", "issues"]);
         if (rejectedValue?.status === "rejected") return semantic(source, rejectedValue.issues);
@@ -110,15 +116,18 @@ export function createNativeContributionExecutorV2(assembly: KernelIntegratedRun
     const binding = getModuleEffectDefinitionBinding(owned.definition);
     if (binding === undefined) return contract();
     try {
-      const decoded = readExactDataRecord(capture(invokeIntegratedCallback(binding.decode, [owned.payload])), ["status", "payload"]);
+      const decoded = readExactDataRecord(capture(invokeScoped(source, "effectDecode", owned.definition.descriptor.effectKind, [owned.payload],
+        () => invokeIntegratedCallback(binding.decode, [owned.payload]))), ["status", "payload"]);
       if (decoded?.status !== "decoded") return contract();
       const currentBlock = request.document.extensions.find((block) => block.namespace === owned.definition.descriptor.namespace &&
         block.owner.kind === owned.owner.kind && (block.owner.kind === "score" ||
           (owned.owner.kind === "part" && block.owner.partId === owned.owner.partId)));
-      const transformed = capture(invokeIntegratedCallback(binding.transform, [freeze({
+      const transformArgs = [freeze({
         view: createIntegratedContributionView(request.document, request.documentVersion, source),
         owner: owned.owner, currentBlock, payload: decoded.payload,
-      })]));
+      })];
+      const transformed = capture(invokeScoped(source, "effectTransform", owned.definition.descriptor.effectKind, transformArgs,
+        () => invokeIntegratedCallback(binding.transform, transformArgs)));
       const rejectedValue = readExactDataRecord(transformed, ["status", "issues"]);
       if (rejectedValue?.status === "rejected") return semantic(source, rejectedValue.issues);
       return { ok: true, transformed };

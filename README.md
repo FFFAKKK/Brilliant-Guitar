@@ -5,6 +5,7 @@
 ## 当前入口
 
 - `src/`：TypeScript 内核、SDK 和原生适配。
+- `src/native-host/`：宿主专用的 WASM 产物安装；Node 依赖不进入纯内核。
 - `crates/`：七个 Rust crate，依次承担基础类型、乐谱规则、扩展协议、边界合同、运行时、会话与 Node 桥。
 - `test/`：行为回归、TS/Rust 差分、原生入口和历史资格检查。
 - `docs/kernel-commercial-completion.md`：功能进度及验证记录。
@@ -26,12 +27,15 @@ Copy-Item target/release/brilliant_kernel_node.dll target/rkp-1-node/brilliant_k
 cargo build -p brilliant-kernel-node --release --features integrated-bridge-v2 --locked --offline
 New-Item -ItemType Directory -Force target/integrated-v2 | Out-Null
 Copy-Item target/release/brilliant_kernel_node.dll target/integrated-v2/brilliant_kernel_node.node
+cargo build -p brilliant-kernel-node --release --features wasm-bridge-v1 --locked --offline
+New-Item -ItemType Directory -Force target/wasm-v1 | Out-Null
+Copy-Item target/release/brilliant_kernel_node.dll target/wasm-v1/brilliant_kernel_node.node
 npm test
 ```
 
 以上原生产物复制命令针对 Windows；首次安装 Rust 依赖时需要联网运行 Cargo，之后才可使用 `--offline`。`npm test` 包含原生测试，必须先构建匹配当前源码的 addon。不要在测试运行时覆盖 addon 或清理构建目录。
 
-两个 addon 分别保留：`rkp-1-node` 是冻结的五入口 Core V1 产物，`integrated-v2` 是增加私有组合会话和独立扩展迁移入口的七入口实验产物。不要把带 `integrated-bridge-v2` 的 DLL 复制到 V1 目录。V2 已接通真实 SDK 插件命令、独立 Core 编辑、跨域 Batch 和显式扩展迁移；WASM 与完整商业资格尚未完成，不能用它替换产品默认引擎。见 [当前插件 Native 闭环](docs/kernel-native-integrated-v2.md)。
+三个 addon 分别保留：`rkp-1-node` 是冻结的五入口 Core V1 产物，`integrated-v2` 是增加私有组合会话和独立扩展迁移入口的七入口实验产物，`wasm-v1` 再增加受限 WASM 编译执行入口。按上面的顺序分别构建、复制，不能互相覆盖。V2 已接通真实 SDK 插件命令、独立 Core 编辑、跨域 Batch 和显式扩展迁移；WASM 支持宿主显式绑定到真实贡献者，仍未完成商业资格或产品默认切换。见 [当前插件 Native 闭环](docs/kernel-native-integrated-v2.md) 和 [WASM 执行与绑定](docs/kernel-wasm-executor-v1.md)。
 
 `npm run build` 会先清理本工作区的 `dist`，防止已删除源码留下旧 JS；不要与同工作区的测试并行执行。普通静态检查使用 `npm run typecheck`，无需重建输出。
 

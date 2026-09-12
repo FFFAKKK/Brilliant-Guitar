@@ -236,7 +236,7 @@ test("Cargo workspace, pins, features and direct dependency graph are exact", ()
         section(manifest, "features").trim(),
         // S2.2a adds only the separately built private successor. Defaults and
         // dependency edges remain frozen; unknown features still fail exactly.
-        'default = ["node-api-v8"]\nnode-api-v8 = ["napi/napi8"]\nintegrated-bridge-v2 = []',
+        'default = ["node-api-v8"]\nnode-api-v8 = ["napi/napi8"]\nintegrated-bridge-v2 = []\nwasm-bridge-v1 = ["integrated-bridge-v2", "brilliant-kernel-session/wasm-executor-v1"]',
       );
     } else if (crate === "brilliant-kernel-session") {
       // S2.3 private executor is opt-in; it does not activate in either Node

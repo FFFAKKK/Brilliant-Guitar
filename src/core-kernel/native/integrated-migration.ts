@@ -7,16 +7,18 @@ import { encodeIntegratedValueV2 } from "./integrated-wire";
 import type { NativeExtensionMigrationFactoryV2, NativeExtensionMigrationResultV2 } from "./integrated-backend-selection";
 import type { KernelExtensionMigrationRequestV1 } from "../migration/contracts";
 import type { ScoreDocument } from "../domain/score-document";
+import type { ScopedExecutionPolicyV1 } from "../module-sdk/scoped-invocation";
 
 export type NativeExtensionMigrationFunctionV2 = (bytes: Buffer, executor: (bytes: Buffer) => Buffer) => Buffer;
 const parse = JSON.parse;
 const apply = Reflect.apply;
 const bufferToString = Buffer.prototype.toString;
 
-export function createNativeExtensionMigrationV2(migrate: NativeExtensionMigrationFunctionV2): NativeExtensionMigrationFactoryV2 {
+export function createNativeExtensionMigrationV2(migrate: NativeExtensionMigrationFunctionV2, policy?: ScopedExecutionPolicyV1): NativeExtensionMigrationFactoryV2 {
   return (document, request, catalog) => {
-    const state = getKernelIntegratedCatalogState(catalog);
-    const projection = captureHostInstalledContributionsV1(catalog);
+    const mismatch = policy !== undefined && policy.catalog !== catalog;
+    const state = mismatch ? undefined : getKernelIntegratedCatalogState(catalog);
+    const projection = mismatch ? undefined : captureHostInstalledContributionsV1(catalog);
     // An invalid catalog travels as null: Rust must check initial semantics
     // before returning assembly-mismatch, even for an idempotent request.
     const bytes = migrate(encodeIntegratedValueV2({ apiVersion: 2, document, request,
@@ -29,7 +31,7 @@ export function createNativeExtensionMigrationV2(migrate: NativeExtensionMigrati
       };
       if (state === undefined) return encodeIntegratedValueV2({ ok: false, failure: { code: "migration.assembly-mismatch" } });
       if (input.operation === "migrationValidate") {
-        const result = validateExtensionMigrationModulesV1(input.document, state);
+        const result = validateExtensionMigrationModulesV1(input.document, state, policy?.invoke);
         if (result.ok) return encodeIntegratedValueV2({ ok: true });
         return encodeIntegratedValueV2({ ok: false, failure: result.kind === "semantic"
           ? { code: "migration.contribution-semantic-invalid", issues: result.issues }
@@ -43,7 +45,7 @@ export function createNativeExtensionMigrationV2(migrate: NativeExtensionMigrati
       if (input.operation !== "migrationPrepare" || request === undefined || contribution === undefined || effect === undefined) {
         return encodeIntegratedValueV2({ ok: false, failure: { code: "migration.assembly-mismatch" } });
       }
-      return encodeIntegratedValueV2(prepareExtensionMigrationEffectV1(input.document, request, contribution, effect));
+      return encodeIntegratedValueV2(prepareExtensionMigrationEffectV1(input.document, request, contribution, effect, policy?.invoke));
     });
     return parse(apply(bufferToString, bytes, ["utf8"]) as string) as NativeExtensionMigrationResultV2;
   };

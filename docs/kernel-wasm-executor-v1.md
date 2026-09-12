@@ -1,10 +1,12 @@
 # Private WASM executor V1
 
-This implements the execution-service part of S2.3 inside the existing session
-crate. Enable `brilliant-kernel-session/wasm-executor-v1` explicitly. No eighth
-crate, Core business field, public TypeScript export, Node export or default
-engine change is introduced. The existing V1 and integrated V2 Node builds do
-not activate this feature.
+This implements the S2.3 execution service inside the existing session crate
+and a private contribution-scoped Node binding. Enable
+`brilliant-kernel-session/wasm-executor-v1` for the service, or build the separate
+`wasm-bridge-v1` Node artifact for the host binding. No eighth host crate, Core
+business field, public TypeScript export or default engine change is introduced.
+The existing V1 and integrated V2 Node builds do not activate this feature or
+gain exports.
 
 `WasmExecutorV1` implements the existing `ContributionExecutorV2` byte interface.
 It has no document, Store, history or mutation API. Runtime remains responsible
@@ -98,16 +100,68 @@ dispatches by operation/document extension presence. It is an execution-seam
 fixture, **not** a JS-to-WASM compiler, full business validator, SDK binding or
 proof of general multi-module guest support.
 
-## Remaining S2.3 work
+## S2.3b: authentic contribution-scoped host binding
 
-The production embedding still binds the JS executor. Connecting this service
-requires an authenticated, module-scoped artifact binding and host dispatch that
-keeps capability checks and aggregate assessment outside guest control. The
-current byte trait represents the existing aggregate callback service; giving a
-single untrusted guest authority to assess every installed module would violate
-that boundary. Multi-module ownership, malformed module-scoped results, SDK
-compatibility and Node lifetime/reentry need end-to-end tests at that binding.
+The private Node host can now opt in through
+`installNativeWasmIntegratedBackendV1(addon, catalog, bindings)`. This sidecar is
+in `src/native-host/wasm-bindings.ts`, outside the pure Core and public SDK
+export/ABI sets. Node crypto/type utilities stay in this host layer; Core has no
+outward dependency on it. The authentic compiled catalog remains
+the identity and capability authority. Each binding has exactly `moduleId`,
+`contributionId`, `abiVersion: 1`, lowercase SHA-256 `sha256`, and `bytes`.
+The host validates a dense roster of 1–1024 unique installed contributions,
+copies actual Uint8Array intrinsic storage, excludes shared memory and verifies
+all hashes before compiling any artifact. Limits are 4 MiB per artifact and
+64 MiB across the roster. Hash equality proves artifact integrity, not authority.
+
+Compiled code belongs to the exact catalog/source object. It survives caller
+byte mutation and selector restoration; later sessions with another catalog
+cannot reuse the selected binding. All six callbacks of a bound contribution
+use its guest, with no JS fallback on failure. Unbound contributions still use
+their authentic SDK callbacks. A complete session and migration addon is
+required, so detached migration cannot silently fall back to JS.
+
+Guest request bytes are strict UTF-8 JSON:
+
+```json
+{"callbackVersion":1,"moduleId":"example.module","contributionId":"example.contribution.v1","operation":"commandDecode","definitionId":"example.apply","arguments":[{"target":{},"payload":{}}]}
+```
+
+`operation` is `commandDecode`, `commandPrepare`, `effectDecode`,
+`effectTransform`, `validate` or `classify`. `definitionId` identifies the
+command/effect, or is null for validate/classify. Arguments and result shapes
+follow that individual SDK callback. Views contain Core data and only that
+contribution's compatible extension blocks. Optional absent values are omitted
+from JSON objects; transport preserves negative zero and escaped UTF-16 code
+units. The guest must implement the relevant codec if it supports those values.
+Output must be valid UTF-8 JSON and passes existing host result validation.
+
+The host owns Core semantics, target checks, all contribution availability,
+validator/classifier order, issue-source checks and aggregate assessment.
+A guest cannot return aggregate `assess` results or grant itself another
+contribution's effects or issue identity. Rust retains transaction/history
+ownership and rolls back an effective Batch prefix on guest failure. Guest
+instances are fresh for each callback and hold no session handles/host imports.
+
+Build `wasm-bridge-v1` into its own `target/wasm-v1` artifact (eight Node
+exports); old V1/V2 remain separate five/seven-export builds. Normal builds do
+not enable Wasmi. The nine binding tests use an actual Rust-compiled guest that
+computes dynamic pitch/extension edits, not the earlier canned protocol replies.
+They cover two bound owners, JS/Wasm coexistence, malicious results, invalid
+UTF-8, fuel failure, migration both directions, history/branch/checkpoint/replay,
+subscriber/bridge reentry and captured artifact lifetime. Fixture source, lock,
+Wasm bytes and reproduction script are under
+`test/core-kernel/fixtures/wasm-guest/`.
+
+The fixture uses serde_json, which rejects lone UTF-16 surrogates in values it
+parses. Opaque unrelated extensions never enter its view and remain preserved.
+This is not a general JS-to-Wasm compiler or a declaration that arbitrary JS
+callback implementations have an equivalent Wasm implementation.
+
+## Remaining S2.3 work
 
 Cross-plugin read/dependency declarations, complete resource accounting, platform
 and performance qualification, and default product cutover remain unfinished.
-This implementation does not close all of S2.3 or commercial qualification.
+The installer is a private trusted composition-root seam, not a public plugin
+package loader, authoring SDK or runtime installation UI. No commercial
+qualification or default product cutover is claimed.

@@ -11,6 +11,7 @@ import { encodeIntegratedValueV2 as encode } from "./integrated-wire";
 import { bindNativeIntegratedAssemblyV2, selectNativeIntegratedFactoryV2 } from "./integrated-backend-selection";
 import { selectNativeExtensionMigrationFactoryV2 } from "./integrated-backend-selection";
 import { createNativeExtensionMigrationV2, type NativeExtensionMigrationFunctionV2 } from "./integrated-migration";
+import type { ScopedExecutionPolicyV1 } from "../module-sdk/scoped-invocation";
 
 export interface IntegratedNativeAddonV2 {
   createIntegratedKernelSessionV2(bytes: Buffer, executor: (bytes: Buffer) => Buffer): (bytes: Buffer) => Buffer;
@@ -46,19 +47,20 @@ function freeze<T>(value: T): T {
 }
 
 /** Opt-in embedding only. No public SDK exports or default backend are changed. */
-export function installNativeIntegratedBackendV2(addon: IntegratedNativeAddonV2): () => void {
+export function installNativeIntegratedBackendV2(addon: IntegratedNativeAddonV2, policy?: ScopedExecutionPolicyV1): () => void {
   const restoreSession = selectNativeIntegratedFactoryV2((document, catalog, inventory, explicit) =>
-    createNativeIntegratedCommandBusV2(addon, document, catalog, inventory, explicit));
+    createNativeIntegratedCommandBusV2(addon, document, catalog, inventory, explicit, policy));
   const restoreMigration = selectNativeExtensionMigrationFactoryV2(addon.migrateKernelExtensionV2 === undefined
-    ? undefined : createNativeExtensionMigrationV2(addon.migrateKernelExtensionV2));
+    ? undefined : createNativeExtensionMigrationV2(addon.migrateKernelExtensionV2, policy));
   return () => { restoreMigration(); restoreSession(); };
 }
 
 export function createNativeIntegratedCommandBusV2(addon: IntegratedNativeAddonV2, document: ScoreDocument,
-  catalog: KernelIntegratedCatalog, inventory: unknown = undefined, explicit = false): IntegratedCommandBusCreationResult {
+  catalog: KernelIntegratedCatalog, inventory: unknown = undefined, explicit = false, policy?: ScopedExecutionPolicyV1): IntegratedCommandBusCreationResult {
   const captured = captureStrictInput(document);
   const decoded = captured.status === "captured" ? decodeScoreDocument(captured.value) : undefined;
   if (decoded === undefined || !decoded.ok) return freeze({ ok: false, failure: { code: "command.invalid-initial-document" } });
+  if (policy !== undefined && policy.catalog !== catalog) return freeze({ ok: false, failure: { code: "command.assembly-mismatch" } });
   const assembly = explicit ? resolveKernelIntegratedRuntimeAssembly(catalog, inventory) : resolveKernelIntegratedRuntimeAssembly(catalog);
   if (!assembly.ok) return freeze({ ok: false, failure: { code: assembly.reason === "inventory" ? "command.invalid-requirement-inventory" : "command.assembly-mismatch" } });
   const installed = assembly.state;
@@ -71,7 +73,7 @@ export function createNativeIntegratedCommandBusV2(addon: IntegratedNativeAddonV
       commands: assembly.state.catalogState.contributions.flatMap((entry) => entry.commands.map((command) => command.descriptor)),
       effects: assembly.state.catalogState.contributions.flatMap((entry) => entry.effects.map((effect) => effect.descriptor)),
       inventory: explicit ? inventory : null,
-    }), createNativeContributionExecutorV2(assembly.state));
+    }), createNativeContributionExecutorV2(assembly.state, policy?.invoke));
   } catch (error) {
     try { return freeze({ ok: false, failure: parse((error as Error).message) as Extract<IntegratedCommandBusCreationResult, { ok: false }>["failure"] }); }
     catch { return freeze({ ok: false, failure: { code: "command.assembly-mismatch" } }); }
