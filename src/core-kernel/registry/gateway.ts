@@ -248,6 +248,7 @@ export class KernelModuleGateway {
         return gatewayRejected(methodDenied);
       }
       const decoded = decodeCoreCommand(input);
+      let authorizedInput = input;
       if (decoded.ok) {
         const contribution = findCommandContribution(
           state.registry.contributions,
@@ -266,37 +267,27 @@ export class KernelModuleGateway {
         if (contributionDenied !== undefined) {
           return gatewayRejected(contributionDenied);
         }
+        if (decoded.value.commandId === "core.transaction.batch") {
+          // Authorize every executable child before preparing any of them. A
+          // Core wrapper does not grant access to another module's commands.
+          const commands = decoded.value.payload.commands;
+          for (let index = 0; index < commands.length; index += 1) {
+            const denied = authorizeModuleCommand(state, commands[index]);
+            if (denied !== undefined) return gatewayRejected(denied);
+          }
+          // Use the detached input we authorized; never reflect the caller's
+          // mutable/Proxy batch again after checking its child identities.
+          authorizedInput = decoded.value;
+        }
       } else if (state.runtimeAssembly !== undefined) {
         const captured = captureStrictInput(input);
-        const envelope = captured.status === "captured"
-          ? readExactDataRecord(captured.value, [
-              "commandVersion",
-              "commandId",
-              "target",
-              "payload",
-            ])
-          : undefined;
-        const moduleCommand = envelope?.commandVersion === 1 &&
-          typeof envelope.commandId === "string"
-          ? state.runtimeAssembly.catalogState.commandIndex[envelope.commandId]
-          : undefined;
-        if (moduleCommand !== undefined) {
-          if (moduleCommand.descriptor.source.moduleId !== state.module.moduleId) {
-            return gatewayRejected({
-              code: "registry.contribution-not-found",
-              contributionId: envelope?.commandId as string,
-            });
-          }
-          const contributionDenied = requireCapabilities(
-            state.module,
-            moduleCommand.descriptor.requiredCapabilities,
-          );
-          if (contributionDenied !== undefined) {
-            return gatewayRejected(contributionDenied);
-          }
+        if (captured.status === "captured") {
+          const denied = authorizeModuleCommand(state, captured.value);
+          if (denied !== undefined) return gatewayRejected(denied);
+          authorizedInput = captured.value;
         }
       }
-      return { status: "authorized", value: state.commandBus.submit(input) };
+      return { status: "authorized", value: state.commandBus.submit(authorizedInput) };
     } catch {
       return gatewayRejected({ code: "registry.internal-error" });
     }
@@ -495,6 +486,27 @@ function findSelectorContribution(
     }
   }
   return undefined;
+}
+
+function authorizeModuleCommand(
+  state: KernelModuleGatewayState,
+  input: unknown,
+): KernelRegistryAccessFailure | undefined {
+  if (state.runtimeAssembly === undefined) return undefined;
+  const envelope = readExactDataRecord(input, [
+    "commandVersion", "commandId", "target", "payload",
+  ]);
+  const command = envelope?.commandVersion === 1 && typeof envelope.commandId === "string"
+    ? state.runtimeAssembly.catalogState.commandIndex[envelope.commandId]
+    : undefined;
+  if (command === undefined) return undefined;
+  if (command.descriptor.source.moduleId !== state.module.moduleId) {
+    return {
+      code: "registry.contribution-not-found",
+      contributionId: envelope!.commandId as string,
+    };
+  }
+  return requireCapabilities(state.module, command.descriptor.requiredCapabilities);
 }
 
 function gatewayRejected<T>(

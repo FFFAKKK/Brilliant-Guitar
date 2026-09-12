@@ -151,3 +151,12 @@ reload behavior.
 ## CVN-5 Accepted Descriptor and Gateway Contract
 
 CVN-5 adds exactly three additional document-target Core descriptors, bringing the completed Core catalog and Registry descriptor count from 25 to 28. All use the existing `command:execute` capability and gateway path; no `submitBatch`, capability kind, registration mutation or dynamic lifecycle API is added. Core-only batch routes Core children only; an accepted CVN-6 integrated assembly may route Core/module/mixed children while preserving one private assembly identity.
+
+An integrated module gateway must authorize every recognized module child in a
+decoded Batch using the same source-module and descriptor-capability checks as
+a standalone command. Complete authorization precedes all preparation callbacks
+and mutations; a foreign child returns `registry.contribution-not-found` even
+after an otherwise authorized prefix. Submit the detached Batch that was checked,
+not the caller's original object. Nested batches remain command-level rejections.
+Trusted host calls directly to the integrated bus retain cross-module composition;
+the Core Batch descriptor does not grant that authority to a scoped gateway.
