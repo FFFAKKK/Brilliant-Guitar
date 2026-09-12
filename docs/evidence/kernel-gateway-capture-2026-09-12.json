@@ -1,0 +1,79 @@
+{
+  "kind": "bounded-regression-not-commercial-qualification",
+  "date": "2026-09-12",
+  "testedCodeCommit": "0c397fc38f422b2138fc601b0c010290ea820199",
+  "nativeCodeCommit": "61f28ccb88fb42e435a27e8c0fd0f4efecbb74a7",
+  "scope": "Three reproduced dynamic-input gateway authorization bypasses and stable captured dispatch",
+  "fullTsNative": {
+    "total": 815,
+    "passed": 813,
+    "skipped": 2,
+    "failed": 0,
+    "durationMilliseconds": 58940.3941
+  },
+  "focused": {
+    "passed": 22,
+    "total": 22,
+    "failed": 0
+  },
+  "staticCompatibility": {
+    "gatewayConfigurations": [
+      "Core-only",
+      "TS integrated",
+      "Native integrated"
+    ],
+    "coreInputs": 504,
+    "resultAndStateComparisons": 1512
+  },
+  "checks": {
+    "diff": "passed",
+    "rust": "not rerun; source unchanged",
+    "release": "not rebuilt; exact prior artifacts reused",
+    "buildIncludingTsc": "passed"
+  },
+  "inheritedRust": {
+    "passed": 528,
+    "ignored": 1,
+    "source": "kernel-native-extension-migration-2026-09-12.json"
+  },
+  "reproducedBefore": [
+    "Accepted Core leaf becomes foreign module command on second reflection",
+    "Failed capture followed by successful foreign dispatch on third reflection",
+    "Initial invalid envelope becomes captured Batch without child authorization"
+  ],
+  "intentionalBoundaryChange": "Uncapturable gateway input returns registry.invalid-invocation; never retries original object through the bus",
+  "remaining": [
+    "Cross-plugin read/dependency contracts",
+    "WASM execution",
+    "Read-declaration/incremental equivalence",
+    "Complete resource/platform/performance qualification",
+    "Default cutover after qualification"
+  ],
+  "artifacts": [
+    {
+      "path": "target/rkp-1-node/brilliant_kernel_node.node",
+      "bytes": 3617792,
+      "sha256": "59de247fa53b9b221fdd17d08a299ed755dc00ababab7e19dc4a6ad7af42e879"
+    },
+    {
+      "path": "target/integrated-v2/brilliant_kernel_node.node",
+      "bytes": 4362752,
+      "sha256": "19b304278238e33857e603b4a6ebf96481503f01d52ac3454ee6c239b398227b"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/gateway-capture-before.json",
+      "bytes": 1856,
+      "sha256": "bf73f75c5f444235675aebc544c4eaa756ec71861ccec698af594d4cece6c1c6"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/gateway-capture-focused.log",
+      "bytes": 2272,
+      "sha256": "c2738e9cdfab2dd9970d0996749c7c900aeb6eca14c15c62f9c61572d0187e38"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/gateway-capture-full.log",
+      "bytes": 73556,
+      "sha256": "2821335d6a77b50e04430c6b2539e8301d22d1a1f496ba7e8cc01f2d435e1205"
+    }
+  ]
+}

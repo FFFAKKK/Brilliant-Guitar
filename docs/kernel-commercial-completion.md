@@ -1835,3 +1835,17 @@ and 528 passed/1 ignored Rust evidence are inherited from `61f28cc`, not rerun.
 Evidence: `docs/evidence/kernel-native-layered-relationships-2026-09-12.json`.
 Remaining: cross-plugin read/dependency contracts, WASM execution, declared-read
 equivalence and resource/platform/performance qualification before default cutover.
+
+### Gateway capture follow-up — stable authorization and execution identity
+
+`0c397fc` closes three reproduced dynamic-input authorization bypasses after the
+static Batch repair: Core-to-foreign replacement, retry after failed capture and
+invalid-to-Batch replacement. All successful dispatches now use authorized,
+detached input; failed strict capture ends at `registry.invalid-invocation`.
+The 504 Core admission shapes match direct results/state through all three gateway
+configurations (1,512 comparisons). Final TS/Native: 813 passed, 2 skipped, zero
+failed; focused 22 passed and build/diff checks passed. No Rust source or artifact
+changes and no repeat Cargo run. Full details and the explicit tightened gateway
+failure boundary are recorded in `kernel-native-integrated-v2.md` and
+`evidence/kernel-gateway-capture-2026-09-12.json`. Remaining S2/S3 requirements
+above are unchanged; this is a prerequisite isolation repair, not qualification.
