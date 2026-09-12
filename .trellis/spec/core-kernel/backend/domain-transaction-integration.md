@@ -574,3 +574,27 @@ effective Batch prefix rollback, migration, history/replay, reentry and artifact
 lifetime. Keep five/seven/eight-export native builds separate. This private seam
 does not imply a public package loader, arbitrary JS-to-Wasm equivalence,
 cross-plugin read authority or commercial resource/platform qualification.
+
+## Explicit contribution reads (2026-09-12)
+
+The demonstrated independent index/summary consumer needs a foreign read view.
+The opt-in `module-sdk/extension-reads.ts` subpath compiles a complete startup
+roster against authentic installed catalog identities, returning a new catalog
+without mutating old sessions or the frozen V1 SDK index. Exact version parity,
+namespace ownership and owner-kind filters are required; there is no implicit
+read grant, grant inheritance or new write authority.
+
+Only declared readers receive frozen `dependencyReads` beside the unchanged
+own-only `compatibleExtensions`. Views use the current candidate in TS, Native,
+Wasm and migration. Incompatible provider data must not be silently represented
+as an empty dependency: preserve read-only availability and skip that consumer;
+dependent migration rejects before callbacks. Full validation and original
+command order remain authoritative. Cyclic reads do not recurse or reorder
+callbacks. Missing-provider automatic degraded assembly and incremental
+equivalence are not implemented by this mechanism.
+
+Contract and tests: `docs/kernel-contribution-reads-v1.md`,
+`cross-plugin-reads.test.ts` and the actual Wasm guest read test. Required evidence
+includes different plugin owners, current candidate data, forbidden effects and
+gateway commands, atomic stale-result rejection, schema gating, migration,
+stored history/replay and immutable catalog identity.

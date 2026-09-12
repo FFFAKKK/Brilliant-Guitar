@@ -1,4 +1,5 @@
 import { captureStrictInput } from "../codec/strict-input-capture";
+import { contributionReads, hasIncompatibleContributionReads, type ContributionDependencyViewV1 } from "../registry/contribution-reads";
 import { invokeScopedCallbackV1, type ScopedCallbackInvokerV1 } from "../module-sdk/scoped-invocation";
 import { nativeIntegratedFactoryV2, nativeIntegratedAssemblyV2 } from "../native/integrated-backend-selection";
 import { decodeScoreDocument } from "../codec/decode-score-document";
@@ -668,6 +669,22 @@ function callbackView(
     measureDefinitions: document.measureDefinitions,
     parts: document.parts,
   });
+  const declarations = contributionReads(contribution);
+  const dependencyReads: ContributionDependencyViewV1[] = [];
+  if (declarations !== undefined) {
+    for (let index = 0; index < declarations.length; index++) {
+      const declaration = declarations[index]!;
+      const blocks: ExtensionBlock[] = [];
+      for (let blockIndex = 0; blockIndex < document.extensions.length; blockIndex++) {
+        const block = document.extensions[blockIndex]!;
+        if (block.namespace === declaration.namespace && includesVersion(declaration.supportedSchemaVersions, block.schemaVersion)
+          && (block.owner.kind === declaration.ownerKinds[0] || block.owner.kind === declaration.ownerKinds[1])) blocks[blocks.length] = clone(block);
+      }
+      reflectApply(arraySort, blocks, [compareBlocks]);
+      dependencyReads[dependencyReads.length] = { readVersion: 1, provider: clone(declaration.provider), namespace: declaration.namespace,
+        supportedSchemaVersions: clone(declaration.supportedSchemaVersions), ownerKinds: clone(declaration.ownerKinds), blocks };
+    }
+  }
   return freeze({
     viewVersion: 1 as const,
     documentId: document.id,
@@ -675,6 +692,7 @@ function callbackView(
     documentVersion,
     coreDocument,
     compatibleExtensions,
+    ...(declarations === undefined ? {} : { dependencyReads }),
   });
 }
 
@@ -727,7 +745,7 @@ export function runModulePipeline(
       continue;
     }
     const view = callbackView(document, documentVersion, contribution);
-    if (view.compatibleExtensions.length === 0) {
+    if (view.compatibleExtensions.length === 0 || hasIncompatibleContributionReads(document, contribution)) {
       continue;
     }
     views[views.length] = { contribution, view };

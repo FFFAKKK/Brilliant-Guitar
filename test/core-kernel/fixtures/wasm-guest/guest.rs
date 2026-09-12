@@ -61,6 +61,21 @@ fn execute(request: &Value) -> Value {
         }
         "commandPrepare" => {
             let payload = &args[1];
+            let marker = if payload["marker"] == "read-dependency" {
+                let read = &args[0]["dependencyReads"][0];
+                assert_eq!(read["namespace"], "fixture.part");
+                assert_eq!(read["provider"]["moduleId"], "fixture.part.module");
+                let blocks = read["blocks"]
+                    .as_array()
+                    .expect("declared dependency blocks");
+                assert!(blocks
+                    .iter()
+                    .all(|block| block["namespace"] == "fixture.part"
+                        && block["owner"]["kind"] == "part"));
+                &blocks.first().expect("dependency present")["payload"]["marker"]
+            } else {
+                &payload["marker"]
+            };
             let effect_namespace = if payload["marker"] == "foreign-write" {
                 "fixture.part"
             } else {
@@ -74,7 +89,7 @@ fn execute(request: &Value) -> Value {
             json!({"status":"changed","effectRequests":[
                 {"requestVersion":1,"requestKind":"core.note.replace-written-pitch","target":{"kind":"note","noteId":payload["noteId"]},"writtenPitch":payload["pitch"]},
                 {"requestVersion":1,"requestKind":"module.extension","effectKind":format!("{effect_namespace}.replace"),
-                    "namespace":effect_namespace,"owner":owner,"payload":{"schemaVersion":payload["schemaVersion"],"marker":payload["marker"]}}],
+                    "namespace":effect_namespace,"owner":owner,"payload":{"schemaVersion":payload["schemaVersion"],"marker":marker}}],
                 "affected":[{"kind":"note","noteId":payload["noteId"]},address]})
         }
         "effectDecode" => {

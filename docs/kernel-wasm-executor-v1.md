@@ -160,8 +160,11 @@ callback implementations have an equivalent Wasm implementation.
 
 ## Remaining S2.3 work
 
-Cross-plugin read/dependency declarations, complete resource accounting, platform
-and performance qualification, and default product cutover remain unfinished.
+Explicit cross-plugin reads now use the opt-in derived catalog and the same
+scoped callback view in Wasm; see `kernel-contribution-reads-v1.md`. They grant no
+foreign write or aggregate assessment authority. Dependency-aware degraded
+assembly, complete resource accounting, platform and performance qualification,
+and default product cutover remain unfinished.
 The installer is a private trusted composition-root seam, not a public plugin
 package loader, authoring SDK or runtime installation UI. No commercial
 qualification or default product cutover is claimed.

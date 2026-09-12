@@ -1,4 +1,5 @@
 import { CORE_COMPILED_REGISTRATION_ENTRIES } from "./builtins";
+import { bindContributionReads, captureContributionReads } from "./contribution-reads";
 import {
   buildRegistryCandidate,
   createRegistryAssemblyState,
@@ -1179,4 +1180,29 @@ export function getKernelIntegratedCatalogState(
   } catch {
     return undefined;
   }
+}
+
+/** Additive startup composition: never mutate a catalog or a live assembly. */
+export function compileContributionReadCatalogV1(base: KernelIntegratedCatalog, input: unknown): OfficialModuleCatalogCompilationResultV1 {
+  try {
+    const state = getKernelIntegratedCatalogState(base);
+    if (state === undefined) return invalidStartup();
+    const reads = captureContributionReads(state, input);
+    if (reads === undefined) return invalidStartup();
+    const contributions = state.contributions.map(source => {
+      const copy = freezeCatalogData({ ...source });
+      const selected = reads.filter(read => read.reader.moduleId === copy.moduleId && read.reader.contributionId === copy.contributionId);
+      if (selected.length > 0) bindContributionReads(copy, selected);
+      return copy;
+    });
+    const namespaceIndex = objectCreate(null) as Record<string, CompiledDomainCommandContributionV1>;
+    for (const source of contributions) for (const namespace of source.extensionNamespaces) namespaceIndex[namespace] = source;
+    const derived = freezeCatalogData({ ...state, contributions, namespaceIndex, assemblyIdentity: objectFreeze({}) });
+    const catalog = {} as KernelIntegratedCatalog;
+    reflectApply(objectDefineProperty, Object, [catalog, kernelIntegratedCatalogBrand,
+      { configurable: false, enumerable: false, value: true, writable: false }]);
+    reflectApply(objectFreeze, Object, [catalog]);
+    reflectApply(weakMapSet, catalogStates, [catalog, derived]);
+    return objectFreeze({ ok: true, catalog });
+  } catch { return invalidStartup(); }
 }

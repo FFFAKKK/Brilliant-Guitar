@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 import { resolve } from "node:path";
 import { CommandBus, migrateKernelExtension, replayKernelCommands, type ScoreDocument } from "../../../src/core-kernel/index";
 import { compileOfficialModuleCatalogV1 } from "../../../src/core-kernel/module-sdk/index";
+import { compileContributionReadCatalogV1 } from "../../../src/core-kernel/module-sdk/extension-reads";
 import { createWasmExecutionPolicyV1, installNativeWasmIntegratedBackendV1, type WasmNativeAddonV1 } from "../../../src/native-host/wasm-bindings";
 import { CVN6_MANIFEST, CVN6_REGISTRATION_ENTRIES, cvn6CallbackBehavior, cvn6CallbackTrace, resetCvn6Callbacks } from "../fixtures/cvn-6-synthetic-official-modules";
 import { createCoreScoreFixture } from "../fixtures/core-score";
@@ -47,6 +48,34 @@ function metadata() {
   return { commandVersion: 1, commandId: "core.document.set-metadata", target: { kind: "document", documentId: "score-1" },
     payload: { metadata: { ...createCoreScoreFixture().metadata, title: "prefix must roll back" } } };
 }
+
+test("Actual Wasm guest consumes only declared foreign dependency data from the current candidate", () => {
+  resetCvn6Callbacks();
+  const declaration = { readVersion: 1, reader: { moduleId: "fixture.score.module", contributionId: "fixture.score.contribution.v1" },
+    provider: { moduleId: "fixture.part.module", contributionId: "fixture.part.contribution.v1" },
+    namespace: "fixture.part", supportedSchemaVersions: [1, 2], ownerKinds: ["part"] };
+  const base = catalog(), compiled = compileContributionReadCatalogV1(base, [declaration]);
+  assert.ok(compiled.ok);
+  const native = create(true, document(), ["score"], compiled.catalog), oracle = create(false);
+  for (const marker of ["candidate-one", "candidate-two"]) {
+    const expected = oracle.submit(batch([command("part", marker), command("score", marker)]));
+    assert.equal(expected.status, "committed");
+    resetCvn6Callbacks();
+    assert.deepEqual(native.submit(batch([command("part", marker), command("score", "read-dependency")])), expected);
+    assert.deepEqual(native.read(), oracle.read());
+    assert.ok(!cvn6CallbackTrace.some(entry => entry.endsWith(":score")));
+  }
+  assert.deepEqual(native.undo(), oracle.undo());
+  assert.deepEqual(native.read(), oracle.read());
+  const undeclared = create(true, document(), ["score"], base), before = undeclared.read();
+  assert.equal(undeclared.submit(command("score", "read-dependency")).status, "rejected");
+  assert.deepEqual(undeclared.read(), before);
+  const filtered = compileContributionReadCatalogV1(base, [{ ...declaration, ownerKinds: ["score"] }]);
+  assert.ok(filtered.ok);
+  const denied = create(true, document(), ["score"], filtered.catalog);
+  assert.equal(denied.submit(command("score", "read-dependency")).status, "rejected");
+  resetCvn6Callbacks();
+});
 
 test("Wasm bridge is an isolated eight-export artifact and validates its binary boundary", () => {
   const legacy = require(resolve("target/rkp-1-node/brilliant_kernel_node.node"));
