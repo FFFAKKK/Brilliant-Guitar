@@ -8,9 +8,9 @@
 
 - TS 的实际合同集中在 `src/core-kernel/module-sdk/{contracts,definitions}.ts`、`registry/{integrated-contracts,domain-catalog,domain-catalog-codec,domain-availability,gateway}.ts`、`commands/integrated-runtime.ts` 和 `migration/{contracts,migrate-kernel-extension}.ts`。
 - `DomainContributionReadViewV1` 包含 document/version、Core 文档和 compatible extensions；准备回调返回 no-op、rejected 或非空 effect requests。现有请求仅包含 Core written-pitch replacement 和 module-owned extension effect。transform 返回 remove、replace 或 rejected。不能凭计划扩充成任意模块直接写 Core 的接口。
-- TS SDK 已有捕获、编译品牌、回调绑定、能力检查、模块 issue 校验和资源上限。Rust 已有严格 requirement、Host Catalog、Inventory/cache、availability 与实际 Store header 读取。元数据投影本身不携带回调；独立 V2 Native 桥已绑定真实 SDK 执行器并接通固定 assembly 的 integrated session、独立 Core/模块命令及混合 Batch。可移植 WASM 执行产物仍未实现。
+- TS SDK 已有捕获、编译品牌、回调绑定、能力检查、模块 issue 校验和资源上限。Rust 已有严格 requirement、Host Catalog、Inventory/cache、availability 与实际 Store header 读取。元数据投影本身不携带回调；独立 V2 Native 桥已绑定真实 SDK 执行器并接通固定 assembly 的 integrated session、独立 Core/模块命令及混合 Batch。WASM 已有私有受限执行服务和真实 Rust session 协议测试，公开 SDK 的产物绑定与多模块分发尚未接入，见 `kernel-wasm-executor-v1.md`。
 - 特别注意 Rust 的 `protocolVersion` 与 TS 的 `requirementVersion` 不同，Rust 的 `required_for_write: bool` 也不是 TS 类型层面的字面量 `true`。内部结构不得直接序列化冒充既有公开 wire；应显式映射并做真实输入/输出差分。
-- Core runtime 的 `transaction.rs`、`overlay.rs`、`candidate/extensions.rs`、`candidate/journal/combined.rs`、`runtime/admission.rs` 和 `history.rs` 已提供最终准备、一次 adoption、扩展值/顺序恢复，以及 Core/模块候选混合历史。现有 module effects、完整模块校验及固定 assembly/session 已接通；声明读取的依赖优化、迁移与层级关系消费者继续按剩余切片推进，不能建立第二个拥有可变文档的扩展执行器。
+- Core runtime 的 `transaction.rs`、`overlay.rs`、`candidate/extensions.rs`、`candidate/journal/combined.rs`、`runtime/admission.rs` 和 `history.rs` 已提供最终准备、一次 adoption、扩展值/顺序恢复，以及 Core/模块候选混合历史。现有 module effects、完整模块校验、固定 assembly/session、显式迁移与同贡献者层级关系已接通验证；声明读取和跨插件依赖继续按剩余切片推进，不能建立第二个拥有可变文档的扩展执行器。
 
 冻结条件继续适用：`brilliant-score-1`、28 个 Core commands、应用 51 个 runtime exports、CVN-2 SDK 的 8 个 runtime / 34 个 type exports 及其九个 ABI fields。新私有 Rust 实现通过现有 facade/SDK 行为接线；新增版本号、WASM 内部 ABI 或内部结构不能悄悄修改这些公开集合。Native 内部接线与公开导出合同分开验证。
 

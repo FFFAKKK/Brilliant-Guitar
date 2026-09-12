@@ -1,0 +1,121 @@
+{
+  "kind": "bounded-regression-not-commercial-qualification",
+  "date": "2026-09-12",
+  "testedCodeCommit": "04374ddc341b37070c88dbbf4aaf17df108ef7dc",
+  "scope": "Optional session-layer Wasm service and real integrated transaction seam, not public SDK artifact binding",
+  "rust": {
+    "failed": 0,
+    "ignored": 1,
+    "passed": 538
+  },
+  "wasmTests": 10,
+  "sessionMsrvTests": 45,
+  "fullTsNative": {
+    "total": 815,
+    "passed": 813,
+    "skipped": 2,
+    "failed": 0,
+    "durationMilliseconds": 96707.1891
+  },
+  "checks": {
+    "releaseV1": "passed",
+    "fixtureReproduction": "byte-identical from rebuilt V2",
+    "releaseV2": "passed",
+    "defaultNodeGraph": "excludes wasmi, sha2, wat and wast",
+    "fmt": "passed",
+    "msrv188AllTargetsAllFeatures": "passed",
+    "clippyAllTargetsAllFeatures": "passed",
+    "tsBuildIncludingTsc": "passed"
+  },
+  "pins": {
+    "watTestOnly": "1.228.0",
+    "wasmi": "2.0.0",
+    "sha2": "0.10.9"
+  },
+  "boundaries": [
+    "No imports; start, allocation and execution share fuel and resource limits",
+    "Fresh instance every invocation; immutable compiled artifact and expected SHA-256",
+    "Only byte results cross the existing executor trait; no mutable document or history in guest",
+    "Protocol guest uses SDK-captured replies for one journey; not a compiler or full validator",
+    "Digest integrity does not grant module authority",
+    "Compilation and host copying are not fuel-metered; no whole-process or hard wall-clock guarantee"
+  ],
+  "remaining": [
+    "Authentic module-scoped artifact binding and host dispatch",
+    "Public SDK and Node Wasm wiring with ownership, lifetime and reentry validation",
+    "Cross-plugin read/dependency declarations",
+    "Full resource/platform/performance qualification before default cutover"
+  ],
+  "artifacts": [
+    {
+      "path": "target/rkp-1-node/brilliant_kernel_node.node",
+      "bytes": 3617792,
+      "sha256": "14ca05823afe1b6d8bae20c0167a5998a263d687087444f4d52cbdc243f6a222"
+    },
+    {
+      "path": "target/integrated-v2/brilliant_kernel_node.node",
+      "bytes": 4362752,
+      "sha256": "374585b9ab757aacf511eea1c03f4fc67723fabf72792400523e257bfa5321bc"
+    },
+    {
+      "path": "Cargo.lock",
+      "bytes": 16464,
+      "sha256": "3f6c76fa584c9bfb5c8cfd71690a556e51ed1ec0cab8f624c79b42a89debb12a"
+    },
+    {
+      "path": "crates/brilliant-kernel-session/src/wasm/fixtures/session.json",
+      "bytes": 17550,
+      "sha256": "9ce5294233144b0d3eb914af97214dbc9fdba24d0b3c3c779a4e4cda0c8112c6"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/wasm-service-tests.log",
+      "bytes": 5052,
+      "sha256": "c59006c764d020cae5292d20854ac7e5f9d7279f5a8168e6c3e5c8d11aa3e0bf"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/wasm-rust-workspace.log",
+      "bytes": 61546,
+      "sha256": "767aa5093f0038c15f434e5170a6009f7d15cbeedfd147a078d8e432c5058cac"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/wasm-clippy.log",
+      "bytes": 547,
+      "sha256": "09d6762dd9285da32ee8a580f55bbe9216e687b87ca863ae50ef140f31eb4cfc"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/wasm-msrv.log",
+      "bytes": 734,
+      "sha256": "7fc664888405ea19b9053e019df994449a6f1823b84a10b2d3de0142b155f4a0"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/wasm-fmt.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/wasm-release-v1.log",
+      "bytes": 538,
+      "sha256": "0399edfbb0d57f1baadd5596b02970943316c4eba817466b2379361e82ec438a"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/wasm-release-v2.log",
+      "bytes": 374,
+      "sha256": "7e100a359ce54e184752b7ae3c0ce8c677d23ab13b73873f321fb045daf5be5d"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/wasm-default-dependencies.log",
+      "bytes": 5577,
+      "sha256": "c5405fc63572eb9c1471077c8cbce6f0d57529df504bcc40cab69882a923a7ca"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/wasm-fixture-reproduction.log",
+      "bytes": 64,
+      "sha256": "690a2c013b8b6d73e2ab9cd57169f5879ca60b042da39dcd68630bbb734f17e6"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/wasm-ts-native-full.log",
+      "bytes": 73569,
+      "sha256": "dcdae377e3ebb3fb3b8065b5236b6020564a1e8660bc29ee2f2d27b03238c1ed"
+    }
+  ]
+}

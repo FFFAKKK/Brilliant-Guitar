@@ -123,3 +123,11 @@ JS facade 继续负责任意输入的严格捕获、既有 shape/request decoder
 网关现在仅提交完整授权的数据：Core 成功解码后使用其脱离输入的结果；否则严格捕获一次，对捕获结果重新解码并授权，包括 Batch 的全部可执行子项。无法捕获的对象（访问器、循环、反射异常或捕获预算耗尽）在网关返回 `registry.invalid-invocation`，不会重试原对象。这是有意收紧网关入口；可捕获的无效输入和直接 Host bus 的原有错误合同保持原路径。能力拒绝仍发生在读取调用者输入之前。
 
 新增五项测试，包括三个绕过回归、504 种静态 Core 输入分别通过 Core/TS integrated/Native 网关的 **1,512 组结果及状态对照**，以及三种网关对不可捕获输入的零回调、零状态变化检查。最终定向 22 项通过；完整 TS/Native **813 通过、2 跳过、0 失败（815 项）**，build（包含 tsc）与 diff 检查通过。Rust 和两个原生产物未改动，未重复 Cargo 检查。可复核日志及哈希见 [捕获修复证据](evidence/kernel-gateway-capture-2026-09-12.json)。这不是完整安全审计或商业资格完成声明；WASM 和跨插件依赖仍是待实现能力。
+
+## S2.3a：可选 WASM 受限执行服务
+
+`04374dd` 在现有 session crate 内实现 `wasm-executor-v1`：固定 SHA-256 与 ABI、无宿主导入、每次回调独立实例、燃料/内存/表/栈和缓冲区限制，复用 `ContributionExecutorV2` 而不新增写入路径。默认 Node 依赖图不包含 Wasmi；公开 SDK 和两份 Node 产物的导出集合不变。[ABI 与限制说明](kernel-wasm-executor-v1.md) 明确了资源保证及不受 fuel 计量的编译/宿主复制成本。
+
+十项实际 WASM 测试包含真实 Rust session 的提交/撤销/重做对照和已执行批量前缀的失败回滚。SDK 协议夹具由真实 SDK 与新构建 V2 产物生成，复跑逐字节相同；夹具客体仅实现这条协议行程，不是完整业务验证器或 JS-to-WASM 编译器。最终新跑 Rust 全工作区 538 通过、1 忽略；TS/Native 813 通过、2 跳过、0 失败；严格 Clippy、fmt、Rust 1.88 全 targets/features 检查与两份 release 构建通过。[证据](evidence/kernel-wasm-service-2026-09-12.json) 保存日志和哈希。
+
+本片只完成执行服务与既有事务接口，**没有把 WASM 接入公开 SDK 的模块产物绑定**。仍需由可信宿主按模块身份分发准备/效果/校验，不能将现有 aggregate assessment 服务整体委托给单个不可信客体。多模块装配与能力校验、SDK 兼容、Node 生命周期/重入和实际发布资格继续实施；S2.3 与商业级目标均未整体完成。

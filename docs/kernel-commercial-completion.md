@@ -1849,3 +1849,23 @@ changes and no repeat Cargo run. Full details and the explicit tightened gateway
 failure boundary are recorded in `kernel-native-integrated-v2.md` and
 `evidence/kernel-gateway-capture-2026-09-12.json`. Remaining S2/S3 requirements
 above are unchanged; this is a prerequisite isolation repair, not qualification.
+
+### S2.3a — bounded Wasm service using the existing execution seam
+
+`04374dd` adds an opt-in session-layer Wasm executor with SHA-256 capture,
+versioned exact ABI, import exclusion, fresh per-call instances and fuel,
+memory/table/stack/buffer bounds. Seven-crate direction and default Node exports
+remain unchanged; the normal Node dependency graph excludes the new executor.
+Ten actual Wasm tests include an SDK-derived real session commit/history journey
+and zero-adoption failure after an effective Batch prefix. The guest is explicitly
+a protocol fixture, not a full business validator or SDK-to-Wasm compiler.
+
+Fresh checks: Rust 538 passed/1 ignored; TS/Native 813 passed/2 skipped, zero failed;
+strict Clippy, fmt, Rust 1.88 all targets/features and both release artifacts pass.
+ABI/policy: `docs/kernel-wasm-executor-v1.md`. Evidence:
+`docs/evidence/kernel-wasm-service-2026-09-12.json`.
+
+Next implement authentic module-scoped artifact binding and host dispatch. The
+existing aggregate callback seam must not let one untrusted guest assess other
+modules. Public SDK/Node binding, ownership/lifetime/reentry tests, cross-plugin
+read dependencies and full platform/resource/performance qualification remain.
