@@ -28,7 +28,7 @@ Core 命令 ID 的原有编码不变。内部历史与事件增加模块 ID 表�
 
 ## 构建与可恢复性
 
-沿用七个 crate。Node crate 的 `integrated-bridge-v2` feature 构建独立文件 `target/integrated-v2/brilliant_kernel_node.node`；默认构建的五入口产物仍放在 `target/rkp-1-node/brilliant_kernel_node.node`。README 给出按顺序构建、复制两份文件的命令。新版本产物包含原有五入口和一个 V2 创建入口，旧产物的导出集合未扩充。
+沿用七个 crate。Node crate 的 `integrated-bridge-v2` feature 构建独立文件 `target/integrated-v2/brilliant_kernel_node.node`；默认构建的五入口产物仍放在 `target/rkp-1-node/brilliant_kernel_node.node`。README 给出按顺序构建、复制两份文件的命令。当前 V2 产物包含原有五入口、`createIntegratedKernelSessionV2` 和纯函数 `migrateKernelExtensionV2`，共七入口；新增迁移入口是本片明确的私有协议增量。原六入口 V2 的历史记录仍保留，V1 的五入口集合未扩充。
 
 撤回本片不会改变默认 TS 引擎。停止选择私有 V2 工厂即可停止新建 V2 session；已有 session 的 assembly 固定，不支持热替换。工作仅在内核分支，主线、UI 和仓库归档不参与此变更。
 
@@ -40,7 +40,7 @@ Core 命令 ID 的原有编码不变。内部历史与事件增加模块 ID 表�
 - JS SDK 允许宽视图读取，当前会完整物化回调输入，并执行完整语义检查。私有 `callbackProjections` 记录这一兼容路径的视图工作；不要把 Core typed metrics 当成整个 V2 调用的成本，也不能把这些回归测试当性能资格证据。
 - 私有响应在 adoption 前进行保守空间预检；实际内存压力、资源边界的完整矩阵和异常终止恢复仍需 S3 验证。
 - 回调绑定和模块 issue 解析依赖真实 JS SDK 宿主，尚未实现可移植 WASM 产物、燃料/内存限制或执行超时。同步 JS 回调不能由此强制终止。
-- 显式 extension migration、结构不同的插件关系维护、多级依赖消费者及商业性能资格仍未完成。应用/SDK 的 51/8/34/9 公开导出与 ABI 冻结继续适用。
+- 显式 extension migration 已接通；结构不同的插件关系维护、多级依赖消费者及商业性能资格仍未完成。应用/SDK 的 51/8/34/9 公开导出与 ABI 冻结继续适用。
 
 ## S2.2b：Core 入口和 candidate 历史
 
@@ -87,3 +87,19 @@ Core 命令 ID 的原有编码不变。内部历史与事件增加模块 ID 表�
 本片最新源码重建了 V1 和 V2 两个产物。Rust 全 feature 工作区 528 通过、1 忽略；完整 TS/Native 791 通过、2 跳过、0 失败；严格 Clippy、fmt、Rust 1.88 和 TypeScript typecheck 通过。首次全量有一个旧 V1 JSON 对象解析耗时比例失败（4.008）；同一二进制单独复测通过，随后未修改的完整套件通过。首跑与复跑日志均保存，未调整冻结阈值。[本片证据](evidence/kernel-native-mixed-batch-2026-09-12.json) 记录产物哈希和全部检查。
 
 本片关闭“生产混合 Batch 尚未接通”的功能缺口。SDK 仍读取完整投影，Core 最终准备和兼容 assessment 有额外校验/物化工作，尚无增量等价或完整性能计量承诺；不能把一个最终模块 assessment 回调解释为内部仅执行一次所有语义规则。WASM、显式迁移、层级关系消费者及平台/资源/性能资格仍待完成，S2 和商业级发布没有因此整体完成。
+
+## S2.4a：独立扩展迁移 Native 接线
+
+现有公开 `migrateKernelExtension(input, request, catalog)` 在显式选择支持迁移的 Native V2 后端时调用独立 `migrateKernelExtensionV2(bytes, executor)`。新增的是实验产物的私有纯函数，不是编辑 session 的 operation，也没有改变公开函数签名或 51/8/34/9 导出。旧 V1 五入口保持原状；只包装 session 入口的旧私有宿主仍可选择原有迁移实现，S4 默认切换时须选择完整产物。
+
+JS facade 继续负责任意输入的严格捕获、既有 shape/request decoder 和报告构建；Rust 重新检查请求、初始 Core 语义、真实捕获的 catalog/effect 描述符、owner、目标 block 与来源/目标版本，并通过共用 typed transaction 准备扩展替换。SDK callback helper 仅准备 payload，Rust 复核其返回目标版本；SDK validator helper 仅执行兼容模块的既有 issue 检查，不拥有文档替换或历史。两项 helper 由原 TS 迁移实现抽出并共用，未复制一套 JS 迁移引擎作为 Native 的可变状态。
+
+迁移保留原有顺序：shape/request → 初始语义 → assembly/owner → target → source version → target version → not-required 或 decoder/transformer → 最终 Core/模块语义。not-required 不调用插件；migrated 要求 replace 为请求版本。已安装其他兼容模块也参与最终校验；不执行 classifier，不套用编辑 session 的 availability 写锁。允许声明支持的显式降版，不隐含自动降级。
+
+迁移返回脱离输入的结果文档，既有 session 的 Store、版本、dirty、history、checkpoint 和 events 不参与这条调用。当前实现为纯迁移创建临时 Store/typed transaction，完成资源和存储准备检查但不 adoption；这有完整物化成本，尚无性能资格承诺。现有 TS 迁移 JSON 往返会把所有负零归一化为零，该例外已在本迁移路径中复现；not-required 与正常编辑继续保留负零，UTF-16 未配对代理字符和其他 opaque 值仍保留。
+
+新增真实 SDK Native 差分覆盖 Score/Part owner 升降版、幂等且零回调、完整报告和错误优先级、初始无效语义先于 catalog 错误、目标已是新版但来源不支持、六个 decoder/transform/validate 异常或畸形组合、最终其他插件拒绝、替换 JSON 全局函数、伪造返回 schema、私有文档形状错误、输入/既有 session 零变化及旧 backend restore 隔离。旧迁移行为测试和 23 项混合事务 Native 检查仍保留。
+
+这关闭显式迁移接线缺口；S2.4 的真实层级关系消费者、S2.3 WASM、声明读取/增量等价，以及完整资源/平台/性能资格仍待完成。
+
+实现 `61f28cc`：最新源码的 V1/V2 产物均已构建；Rust workspace 全 feature 528 通过、1 忽略；完整 TS/Native 799 通过、2 跳过、0 失败，包括八项新迁移 Native 测试、原四项 TS 迁移测试及 23 项组合事务 Native 测试。严格 Clippy、fmt、Rust 1.88 和 TS typecheck 通过。V2 导出集合检查明确更新为七入口，V1 五入口与公开冻结集合不变。[本片证据](evidence/kernel-native-extension-migration-2026-09-12.json) 保存最终日志和产物哈希。

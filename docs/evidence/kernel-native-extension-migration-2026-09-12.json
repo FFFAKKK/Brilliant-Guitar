@@ -1,0 +1,93 @@
+{
+  "kind": "bounded-regression-not-commercial-qualification",
+  "testedCodeCommit": "61f28ccb88fb42e435a27e8c0fd0f4efecbb74a7",
+  "date": "2026-09-12",
+  "scope": "Detached explicit extension migration through the public function and authentic SDK bindings, opt-in private Native V2 function; no session history mutation",
+  "rust": {
+    "passed": 528,
+    "ignored": 1,
+    "failed": 0
+  },
+  "fullTsNative": {
+    "total": 801,
+    "passed": 799,
+    "durationMilliseconds": 54358.6539,
+    "skipped": 2,
+    "failed": 0
+  },
+  "migrationNativeTestCases": 8,
+  "integratedNativeTestCases": 23,
+  "checks": {
+    "clippyAllTargetsAllFeatures": "passed",
+    "fmt": "passed",
+    "releaseV1": "passed",
+    "releaseV2": "passed",
+    "msrv188AllTargetsAllFeatures": "passed",
+    "typecheck": "passed"
+  },
+  "boundary": [
+    "Arbitrary-input capture, public shape/request decoding and report presentation remain facade services",
+    "Rust rechecks request, initial semantics, assembly, owner, target and versions, prepares replacement and checks final Core state",
+    "Authentic SDK helpers execute only effect preparation and compatible-module validation; classifier is not invoked",
+    "Existing migration JSON roundtrip normalizes negative zero on migrated output; not-required preserves it",
+    "Private V2 artifact now has seven exports; frozen V1 still has five; public 51/8/34/9 unchanged"
+  ],
+  "remaining": [
+    "WASM capture/hash/ABI and bounded execution",
+    "Concrete layered plugin relationship consumers",
+    "Read-declaration/incremental equivalence and full resource/platform/performance qualification",
+    "Default product cutover after qualification"
+  ],
+  "artifacts": [
+    {
+      "path": "target/rkp-1-node/brilliant_kernel_node.node",
+      "bytes": 3617792,
+      "sha256": "59de247fa53b9b221fdd17d08a299ed755dc00ababab7e19dc4a6ad7af42e879"
+    },
+    {
+      "path": "target/integrated-v2/brilliant_kernel_node.node",
+      "bytes": 4362752,
+      "sha256": "19b304278238e33857e603b4a6ebf96481503f01d52ac3454ee6c239b398227b"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/extension-migration-rust.log",
+      "bytes": 60253,
+      "sha256": "8521bdd9637d5c57fea9d6c0f9cd663562c9e65381d596ab124c2f06df53d67b"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/extension-migration-clippy.log",
+      "bytes": 711,
+      "sha256": "a0641edfe5e03177b0a334bd716e4ac43d784b2b40b0b6189923d1bb26cc3c41"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/extension-migration-msrv.log",
+      "bytes": 711,
+      "sha256": "3f03079aeb504ff0035709c199338385fd043d4724ff3e8c0bbf5872b081c93e"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/extension-migration-fmt.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/extension-migration-typecheck.log",
+      "bytes": 73,
+      "sha256": "8ae458fecf1326f81a7b8dcb2413b8f24bbe52d498be29bb18f8d27f79ac5565"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/extension-migration-release-v1.log",
+      "bytes": 374,
+      "sha256": "f552e7dcbb1770d87d6d80ad5b216db615f8301bda0d5208a1bbfb4f12af70a8"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/extension-migration-release-v2.log",
+      "bytes": 702,
+      "sha256": "f86581c95ae850511c8c22fdc002113394b6406f74dacfaed1ec223a5732fed5"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/extension-migration-full-ts-native.log",
+      "bytes": 71932,
+      "sha256": "b0db9c3de79854f67154d6eab30b2478222e1543794df6165778ff67d0ee934f"
+    }
+  ]
+}

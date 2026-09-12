@@ -113,3 +113,5 @@ SDK 内部从真实 compiled catalog 的绑定查询创建可信执行适配器�
 扩展日志前置已由 `457d90e` 实现：不可变 before/after、实际 owner 生命期、扩展全序、Core Part 删除与净零历史均有真实 Store 提交/撤销重做测试。全 feature Rust workspace 525 通过、1 忽略；严格 Clippy、fmt、Rust 1.88 与新增悬空 owner 断言通过。生产混合 Batch 子项及共享计量尚未接通；详情和 fresh/inherited 验证边界见 `kernel-native-integrated-v2.md` 与对应 evidence JSON。
 
 混合 Batch 生产接线已由 `3559713` 完成：真实 SDK 子项与 Core 共用 occurrence candidate、资源账户、最终提交和已存历史；中间无效视图、净零有效序列、Part owner 死亡/重生、no-op、精确失败索引均有真实 Native/TS 对照。新增 504 个插件前缀包裹的 Core 输入，最新完整回归为 Rust 528 通过、1 忽略及 TS/Native 791 通过、2 跳过。旧 V1 耗时检查首跑失败及未修改复跑通过一并记录于 `evidence/kernel-native-mixed-batch-2026-09-12.json`。前面“尚未接通混合 Batch”的分片段落属于历史；当前剩余重点为 WASM、显式迁移、层级关系消费者，以及声明读取/资源/平台资格。
+
+显式迁移已由 `61f28cc` 接通现有公开函数与独立 Native V2 服务：Rust 负责版本/装配/目标检查和事务替换准备，SDK 复用真实 effect/validate callback helper，facade 保留捕获/形状解码与报告呈现。迁移不进入 session 历史；升降版、幂等、其他兼容模块验证、失败优先级和未知 UTF-16 数据均有机器对照，JSON 负零往返沿用既有迁移例外。完整回归 Rust 528 通过、1 忽略，TS/Native 799 通过、2 跳过；见 `evidence/kernel-native-extension-migration-2026-09-12.json`。S2.4 尚有真实层级关系消费者，S2.3 WASM 与完整资源/平台资格仍未完成。

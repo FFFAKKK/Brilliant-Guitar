@@ -84,8 +84,9 @@ events and public replay. Both Score-owned and Part-owned consumers are tested
 against the existing TS implementation. The opted-in factory creates no TS
 command runtime or history. See [the V2 implementation boundary](kernel-native-integrated-v2.md).
 Standalone Core commands, cross-domain Batch and candidate history assessment
-are now wired in that integrated session. S2 remains incomplete: WASM execution,
-migration, concrete layered-plugin dependency/relationship maintenance and full
+are now wired in that integrated session. Detached extension migration is also
+wired through a separate V2 function. S2 remains incomplete: WASM execution,
+concrete layered-plugin dependency/relationship maintenance and full
 resource/portability qualification still need work. Module callback views and
 assessment currently use complete projections; precise read declarations and
 incremental equivalence are not claimed.
@@ -1785,3 +1786,28 @@ Mixed Batch wiring is complete; S2 is not. WASM execution, explicit migration,
 layered relationship consumers, declared-read/incremental equivalence and full
 platform/resource/performance qualification remain. Complete projections and
 repeated compatibility validation are known costs, not qualified incremental work.
+
+### S2.4a — detached explicit extension migration
+
+Implementation `61f28cc` connects the existing public migration function to a
+separate private Native V2 function. Rust rechecks initial semantics, catalog,
+effect ownership, source/target versions and final Core state; the shared typed
+transaction prepares the replacement without adopting into any existing session.
+The authentic SDK helpers prepare payloads and validate compatible contributions;
+the facade retains arbitrary-input capture/shape decoding and report presentation.
+No command preparation, classifier, history entry or event is introduced.
+
+Eight real Native tests cover both owner kinds, explicit upgrade/downgrade,
+idempotence without callbacks, failure precedence and reports, other compatible
+plugins, JSON primordial replacement, forged returned schema, malformed private
+document failure shape, backend selection isolation and untouched existing state.
+Migration reproduces the existing JSON-roundtrip normalization of negative zero;
+not-required and normal editing continue to preserve it.
+
+Fresh full checks: 528 Rust passed, 1 ignored; 799 TS/Native passed, 2 skipped,
+zero failed. Both release artifacts, strict Clippy, fmt, Rust 1.88 and typecheck
+passed. The private V2 export set explicitly grows from six to seven functions;
+the V1 five-export and public 51/8/34/9 sets stay frozen. Evidence:
+`docs/evidence/kernel-native-extension-migration-2026-09-12.json`.
+S2 still needs concrete layered consumers, WASM, declared-read/incremental
+equivalence and complete resource/platform/performance qualification.
