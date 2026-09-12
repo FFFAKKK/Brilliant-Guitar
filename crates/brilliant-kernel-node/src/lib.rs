@@ -40,6 +40,10 @@ use napi_derive::napi;
 
 #[allow(unsafe_code)]
 mod boundary;
+#[cfg(feature = "integrated-bridge-v2")]
+mod integrated;
+#[cfg(feature = "integrated-bridge-v2")]
+pub use integrated::create_integrated_kernel_session_v2;
 
 #[napi(js_name = "createKernelSessionV1")]
 pub fn create_kernel_session_v1(

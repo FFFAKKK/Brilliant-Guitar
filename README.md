@@ -23,10 +23,15 @@ cargo test --workspace --locked --offline
 cargo build -p brilliant-kernel-node --release --locked --offline
 New-Item -ItemType Directory -Force target/rkp-1-node | Out-Null
 Copy-Item target/release/brilliant_kernel_node.dll target/rkp-1-node/brilliant_kernel_node.node
+cargo build -p brilliant-kernel-node --release --features integrated-bridge-v2 --locked --offline
+New-Item -ItemType Directory -Force target/integrated-v2 | Out-Null
+Copy-Item target/release/brilliant_kernel_node.dll target/integrated-v2/brilliant_kernel_node.node
 npm test
 ```
 
 以上原生产物复制命令针对 Windows；首次安装 Rust 依赖时需要联网运行 Cargo，之后才可使用 `--offline`。`npm test` 包含原生测试，必须先构建匹配当前源码的 addon。不要在测试运行时覆盖 addon 或清理构建目录。
+
+两个 addon 分别保留：`rkp-1-node` 是冻结的五入口 Core V1 产物，`integrated-v2` 是增加私有插件执行入口的实验产物。不要把带 `integrated-bridge-v2` 的 DLL 复制到 V1 目录。V2 已接通真实 SDK 插件命令的音高与扩展联合事务；其组合会话内的独立 Core 命令、跨域 Batch 等仍待接线，不能用它替换产品默认引擎。见 [当前插件 Native 闭环](docs/kernel-native-integrated-v2.md)。
 
 `npm run build` 会先清理本工作区的 `dist`，防止已删除源码留下旧 JS；不要与同工作区的测试并行执行。普通静态检查使用 `npm run typecheck`，无需重建输出。
 

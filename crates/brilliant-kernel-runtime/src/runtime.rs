@@ -1,7 +1,9 @@
 use brilliant_core_types::JsString;
 mod admission;
 mod domain_availability;
+mod integrated;
 pub use domain_availability::DomainAvailabilityAssessmentV1;
+pub use integrated::IntegratedKernelRuntimeV2;
 use std::{collections::HashMap, sync::Arc};
 
 use brilliant_core_types::{
@@ -9,9 +11,9 @@ use brilliant_core_types::{
     StablePathV1,
 };
 use brilliant_kernel_contracts::{
-    AffectedEntityAddressV1, CoreCommandEnvelopeV1, CoreCommandIdV1, EventStaffAssignmentV1,
-    InsertMeasurePartContentV1, KernelEventCauseV1, KernelEventV1, KernelHistoryStateV1,
-    KernelReadStateV1, KernelSelectorResultV1, KernelSelectorValueV1,
+    AffectedEntityAddressV1, CoreCommandEnvelopeV1, EventStaffAssignmentV1,
+    InsertMeasurePartContentV1, KernelCommandIdentityV1, KernelEventCauseV1, KernelEventV1,
+    KernelHistoryStateV1, KernelReadStateV1, KernelSelectorResultV1, KernelSelectorValueV1,
     KernelStage3CommandFailureLeafV1, KernelStage3MetricsV1, KernelStage3ResourceLimitKindV1,
     KernelStage4CommandResultV1, KernelStage4FailureV1, KernelStage4MarkPersistedResultV1,
     KernelStage4MarkPersistedValueV1, KernelStage4MetricsV1, KernelStage4MutationValueV1,
@@ -60,6 +62,7 @@ pub enum KernelRuntimeReadFailure {
 pub struct KernelStage3PreparedV1 {
     change_set: ChangeSetV1,
     attempt_metrics: KernelStage3MetricsV1,
+    integrated_affected: Option<Vec<AffectedEntityAddressV1>>,
 }
 
 #[expect(
@@ -389,9 +392,10 @@ impl KernelRuntime {
 
     fn commit_prepared_mutation(
         &mut self,
-        command_id: CoreCommandIdV1,
+        command_id: impl Into<KernelCommandIdentityV1>,
         mut prepared: PreparedMutationV1,
     ) -> Result<KernelStage4CommandResultV1, KernelStage4FailureV1> {
+        let command_id = command_id.into();
         let (changed, logical_bytes, attempt_metrics) = match &prepared {
             PreparedMutationV1::Typed(value) => (
                 !value.change_set.forward.is_empty(),
@@ -433,7 +437,10 @@ impl KernelRuntime {
             )
             .map_err(map_projection_failure)?;
         let affected = match &mut prepared {
-            PreparedMutationV1::Typed(value) => targets_from_change_set(&value.change_set)?,
+            PreparedMutationV1::Typed(value) => match value.integrated_affected.take() {
+                Some(affected) => affected,
+                None => targets_from_change_set(&value.change_set)?,
+            },
             PreparedMutationV1::Candidate(value) => std::mem::take(&mut value.affected),
         };
         let history_affected = clone_targets(&affected)?;
@@ -477,8 +484,12 @@ impl KernelRuntime {
                 ));
             }
         };
-        self.history
-            .commit_append(history_append, command_id, committed, history_affected);
+        self.history.commit_append(
+            history_append,
+            command_id.clone(),
+            committed,
+            history_affected,
+        );
         self.projection.commit_document_transition(projection);
         self.checkpoint.commit_submit(checkpoint_submit);
         events.push(KernelEventV1::DocumentCommitted {
@@ -627,7 +638,7 @@ impl KernelRuntime {
                 self.history.undo_entry()
             }
             .map_err(map_history_failure)?;
-            let command_id = entry.command_id;
+            let command_id = entry.command_id.clone();
             let affected = clone_targets(&entry.affected)?;
             let event_affected = clone_targets(&entry.affected)?;
             let mut events = Vec::new();
@@ -899,6 +910,7 @@ impl KernelStage3TransactionV1<'_> {
         Ok(KernelStage3PreparedV1 {
             change_set,
             attempt_metrics,
+            integrated_affected: None,
         })
     }
 

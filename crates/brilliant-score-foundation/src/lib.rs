@@ -43,7 +43,7 @@ pub use lossless_dto::{
 };
 pub use lossless_json::{
     JsonSyntaxError, JsonToken, JsonTokenKind, LosslessJsonError, LosslessJsonTokens,
-    decode_lossless_json, write_lossless_json,
+    decode_js_value_json, decode_lossless_json, write_lossless_json,
 };
 pub use music_rules::{
     assess_measure_duration, assess_note_duration, assess_sounding_pitch,

@@ -77,11 +77,15 @@ TS observations. S2.1b adds authenticated SDK metadata capture, a Rust host
 catalog projection, canonical inventory/cache and availability reads from actual
 Store headers. These former 18 work-in-progress files are committed at 960bda9;
 527534c also integrates master's clean build and repository-local test scratch
-fixes. They are metadata groundwork, not a native integrated execution bridge.
-S2 still needs executable bindings, preparation and execution, module validation,
-write/history guards, migration and composed sessions with independent consumers.
-Opaque extension preservation and Part-owned extension Undo/Redo are implemented,
-but do not execute contributions.
+fixes. They were metadata groundwork. S2.2a now adds a separate private Native V2
+artifact and the actual SDK-to-Rust module command journey: mixed pitch and
+extension effects, module assessment, availability guards, shared stored history,
+events and public replay. Both Score-owned and Part-owned consumers are tested
+against the existing TS implementation. The opted-in factory creates no TS
+command runtime or history. See [the V2 implementation boundary](kernel-native-integrated-v2.md).
+S2 remains incomplete: standalone Core commands and cross-domain Batch in that
+integrated session, candidate history assessment, WASM execution, migration and
+concrete layered-plugin dependency/relationship maintenance still need work.
 See [the S2 plan](kernel-extension-completion-plan.md). The product default remains
 TypeScript; this is the existing private native implementation route, not the
 S4 product cutover. Editor, rendering, playback and physical project persistence
@@ -1652,7 +1656,7 @@ commit, counts, artifact hashes and log hashes are recorded in
 `docs/evidence/kernel-assembly-2026-09-12.json`. This regression pass does not
 resolve the historical timing-failure cause or establish commercial qualification.
 
-The next slice is a real SDK-to-Native integrated command journey: one module
+At the S2.1b checkpoint, the next slice was a real SDK-to-Native integrated command journey: one module
 command prepares Core pitch plus extension changes; Rust validates and adopts
 once; no-op/rejection, ownership failure, Undo/Redo and events are compared with
 TS. A separate private bridge preserves existing public exports and the old

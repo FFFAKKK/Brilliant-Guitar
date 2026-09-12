@@ -825,7 +825,9 @@ mod tests {
                 KernelEventV1::DocumentCommitted {
                     event_sequence: 1,
                     cause: KernelEventCauseV1::Submit,
-                    command_id: brilliant_kernel_contracts::CoreCommandIdV1::DocumentSetMetadata,
+                    command_id: brilliant_kernel_contracts::KernelCommandIdentityV1::Core(
+                        brilliant_kernel_contracts::CoreCommandIdV1::DocumentSetMetadata
+                    ),
                     ..
                 },
                 KernelEventV1::DirtyStateChanged {

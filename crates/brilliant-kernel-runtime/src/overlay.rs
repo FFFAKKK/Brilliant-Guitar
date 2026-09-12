@@ -140,7 +140,7 @@ pub(crate) struct ExtensionHeaderV1 {
 }
 
 impl ExtensionHeaderV1 {
-    fn anchor_id(&self) -> Result<StableId, ExtensionHeaderReadFailureV1> {
+    pub(crate) fn anchor_id(&self) -> Result<StableId, ExtensionHeaderReadFailureV1> {
         let (prefix, owner) = match &self.owner {
             ExtensionOwnerV1::Score => ("extension:score:", None),
             ExtensionOwnerV1::Part { part_id } => ("extension:part:", Some(part_id.as_js_string())),

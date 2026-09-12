@@ -100,6 +100,8 @@ SDK 内部从真实 compiled catalog 的绑定查询创建可信执行适配器�
 
 ## 收口证据
 
+2026-09-12：S2.2a 的真实 SDK 插件 Native 联合事务已实施，具体路径、对照测试、构建和未完成边界记录在 [kernel-native-integrated-v2.md](kernel-native-integrated-v2.md)。这关闭了“只捕获 metadata、尚无 callback 执行”的前置缺口，但 S2.2 的独立 Core/Batch 组合入口和完整 candidate 历史仍待接通；S2.3/S2.4 未因此完成。
+
 每片保存真实 TS 生成的输入、完整结果和状态序列，由 Rust/实际 Native 入口消费；legacy 差异保留原结果并解释，不改 oracle 以迁就新实现。覆盖注册排列、合法/非法/缺失版本、callback 异常/畸形输出、资源耗尽、跨域 batch、no-op、undo/redo、分支历史、逐项 replay 和迁移幂等。
 
 最终 S2 完成要求四片功能矩阵全部落地，公开导出/SDK 字段冻结检查通过，Core 与模块完整校验的独立等价证据成立，并证明只有一个可变文档与历史所有者。未知数据无损、所有拒绝零变化和真实第二消费者必须走公开 session/gateway 路径。引擎默认切换、性能资格和后续清理仍按主计划 S3–S5 处理；本文件没有将这些事项标为已完成。

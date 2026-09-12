@@ -480,6 +480,15 @@ impl LosslessEncode for CoreCommandTargetKindV1 {
     }
 }
 
+impl LosslessEncode for KernelCommandIdentityV1 {
+    fn write_lossless<W: Write + ?Sized>(&self, writer: &mut W) -> Result<(), LosslessJsonError> {
+        match self {
+            Self::Core(value) => value.write_lossless(writer),
+            Self::Module(value) => value.write_lossless(writer),
+        }
+    }
+}
+
 impl LosslessEncode for CoreCommandIdV1 {
     fn write_lossless<W: Write + ?Sized>(&self, writer: &mut W) -> Result<(), LosslessJsonError> {
         self.as_str().write_lossless(writer)

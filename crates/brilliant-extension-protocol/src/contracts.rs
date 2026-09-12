@@ -95,7 +95,7 @@ fn validate_common(
 
 // TS registry/strict-codec.ts is deliberately stricter than a Score StableId:
 // 1..128 ASCII units, with single internal dot/hyphen separators only.
-pub(crate) fn valid_registry_id(units: impl ExactSizeIterator<Item = u16>) -> bool {
+pub fn valid_registry_id(units: impl ExactSizeIterator<Item = u16>) -> bool {
     if !(1..=128).contains(&units.len()) {
         return false;
     }

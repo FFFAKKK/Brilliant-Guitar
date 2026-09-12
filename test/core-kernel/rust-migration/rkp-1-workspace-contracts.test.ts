@@ -234,7 +234,9 @@ test("Cargo workspace, pins, features and direct dependency graph are exact", ()
       assert.equal(section(manifest, "lib").trim(), 'crate-type = ["cdylib"]');
       assert.equal(
         section(manifest, "features").trim(),
-        'default = ["node-api-v8"]\nnode-api-v8 = ["napi/napi8"]',
+        // S2.2a adds only the separately built private successor. Defaults and
+        // dependency edges remain frozen; unknown features still fail exactly.
+        'default = ["node-api-v8"]\nnode-api-v8 = ["napi/napi8"]\nintegrated-bridge-v2 = []',
       );
     } else {
       assert.equal(section(manifest, "features").trim(), "default = []");

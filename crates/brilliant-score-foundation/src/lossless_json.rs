@@ -314,6 +314,21 @@ fn decode_with_limits(
     depth_limit: usize,
     property_limit: usize,
 ) -> Result<LosslessJsonValue, LosslessJsonError> {
+    decode_with_number_policy(text, depth_limit, property_limit, false)
+}
+
+/// Private successor transports preserve JS Object.is semantics for opaque
+/// signed zero. Legacy decoders retain their frozen zero normalization.
+pub fn decode_js_value_json(text: &str) -> Result<LosslessJsonValue, LosslessJsonError> {
+    decode_with_number_policy(text, JSON_DEPTH_LIMIT, JSON_PROPERTY_LIMIT, true)
+}
+
+fn decode_with_number_policy(
+    text: &str,
+    depth_limit: usize,
+    property_limit: usize,
+    preserve_zero_sign: bool,
+) -> Result<LosslessJsonValue, LosslessJsonError> {
     let mut frames = Vec::new();
     let mut root = None;
     let mut count = 0_usize;
@@ -375,8 +390,12 @@ fn decode_with_limits(
             JsonTokenKind::Null => LosslessJsonValue::Null,
             JsonTokenKind::Bool(value) => LosslessJsonValue::Bool(value),
             JsonTokenKind::Number(value) => LosslessJsonValue::Number(
-                FiniteNumber::new(value.as_f64().expect("finite JSON number"))
-                    .expect("finite JSON number"),
+                (if preserve_zero_sign {
+                    FiniteNumber::from_js_number
+                } else {
+                    FiniteNumber::new
+                })(value.as_f64().expect("finite JSON number"))
+                .expect("finite JSON number"),
             ),
         };
         attach(value, &mut frames, &mut root);

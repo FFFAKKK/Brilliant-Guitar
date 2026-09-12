@@ -13,6 +13,7 @@ crate-type = ["cdylib"]
 [features]
 default = ["node-api-v8"]
 node-api-v8 = ["napi/napi8"]
+integrated-bridge-v2 = []
 
 [dependencies]
 brilliant-kernel-contracts = { path = "../brilliant-kernel-contracts" }

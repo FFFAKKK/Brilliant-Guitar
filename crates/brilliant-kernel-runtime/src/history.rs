@@ -1,5 +1,7 @@
 use brilliant_core_types::JS_SAFE_INTEGER_MAX;
-use brilliant_kernel_contracts::{AffectedEntityAddressV1, CoreCommandIdV1, KernelHistoryStateV1};
+use brilliant_kernel_contracts::{
+    AffectedEntityAddressV1, KernelCommandIdentityV1, KernelHistoryStateV1,
+};
 
 use crate::change_set::ChangeSetV1;
 
@@ -18,7 +20,7 @@ pub(crate) struct PreparedHistoryAppendV1 {
 #[derive(Clone, Debug)]
 pub(crate) struct HistoryEntryV1 {
     pub(crate) sequence: u64,
-    pub(crate) command_id: CoreCommandIdV1,
+    pub(crate) command_id: KernelCommandIdentityV1,
     pub(crate) payload: HistoryPayloadV1,
     pub(crate) affected: Vec<AffectedEntityAddressV1>,
 }
@@ -80,7 +82,7 @@ impl HistoryStateV1 {
     pub(crate) fn commit_append(
         &mut self,
         prepared: PreparedHistoryAppendV1,
-        command_id: CoreCommandIdV1,
+        command_id: impl Into<KernelCommandIdentityV1>,
         payload: HistoryPayloadV1,
         affected: Vec<AffectedEntityAddressV1>,
     ) {
@@ -89,7 +91,7 @@ impl HistoryStateV1 {
         self.entries.truncate(self.cursor);
         self.entries.push(HistoryEntryV1 {
             sequence: prepared.sequence,
-            command_id,
+            command_id: command_id.into(),
             payload,
             affected,
         });

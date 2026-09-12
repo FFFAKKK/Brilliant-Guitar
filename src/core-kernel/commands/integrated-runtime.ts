@@ -1,4 +1,5 @@
 import { captureStrictInput } from "../codec/strict-input-capture";
+import { nativeIntegratedFactoryV2, nativeIntegratedAssemblyV2 } from "../native/integrated-backend-selection";
 import { decodeScoreDocument } from "../codec/decode-score-document";
 import type { ScoreAddress } from "../domain/address";
 import {
@@ -358,6 +359,7 @@ function invoke<Return>(callback: Function, arguments_: readonly unknown[]): Ret
   }
   return returned;
 }
+export { invoke as invokeIntegratedCallback, hasIntactExecutionPrimordials };
 
 function isArray(value: unknown): value is readonly unknown[] {
   return reflectApply(arrayIsArray, arrayConstructor, [value]) === true;
@@ -684,7 +686,7 @@ export function createIntegratedContributionView(
   return callbackView(document, documentVersion, contribution);
 }
 
-function runModulePipeline(
+export function runModulePipeline(
   document: ScoreDocument,
   documentVersion: number,
   assembly: KernelIntegratedRuntimeAssemblyState,
@@ -839,7 +841,7 @@ function availabilityFailure(
       });
 }
 
-function captureEnvelope(input: unknown):
+export function captureEnvelope(input: unknown):
   | { readonly ok: true; readonly value: CapturedEnvelope }
   | { readonly ok: false; readonly failure: KernelCommandFailure } {
   const captured = captureStrictInput(input);
@@ -903,7 +905,7 @@ function targetKind(value: unknown): ScoreEntityTarget["kind"] | undefined {
     : undefined;
 }
 
-function decodeTarget(
+export function decodeTarget(
   value: unknown,
   expectedKind: ScoreEntityTarget["kind"],
 ): ScoreEntityTarget | undefined {
@@ -921,7 +923,7 @@ function decodeScoreAddress(value: unknown): ScoreAddress | undefined {
   return kind === undefined ? undefined : decodeTarget(value, kind);
 }
 
-function targetExists(document: ScoreDocument, target: ScoreEntityTarget): boolean {
+export function targetExists(document: ScoreDocument, target: ScoreEntityTarget): boolean {
   if (target.kind === "document") {
     return document.id === target.documentId;
   }
@@ -1142,7 +1144,7 @@ function addressKey(address: ScoreAddress): string {
   }
 }
 
-function moduleEffectForRequest(
+export function moduleEffectForRequest(
   request: unknown,
   contribution: CompiledDomainCommandContributionV1,
 ): {
@@ -2362,6 +2364,8 @@ export function createIntegratedCommandBus(
   explicitInventory: unknown,
   hasExplicitInventory: boolean,
 ): IntegratedCommandBusCreationResult {
+  const native = nativeIntegratedFactoryV2();
+  if (native !== undefined) return native(initialDocument, catalog, explicitInventory, hasExplicitInventory);
   const capturedDocument = captureStrictInput(initialDocument);
   if (!hasIntactExecutionPrimordials()) {
     return freeze({
@@ -2435,7 +2439,7 @@ export function getIntegratedCommandBusAssemblyIdentity(
   const state = reflectApply(weakMapGet, integratedBusStates, [bus]) as
     | IntegratedCommandBusPrivateState
     | undefined;
-  return state?.assembly.assemblyIdentity;
+  return state?.assembly.assemblyIdentity ?? nativeIntegratedAssemblyV2(bus)?.assemblyIdentity;
 }
 
 export function isIntegratedCommandBus(
@@ -2453,5 +2457,5 @@ export function getIntegratedCommandBusRuntimeAssembly(
   const state = reflectApply(weakMapGet, integratedBusStates, [bus]) as
     | IntegratedCommandBusPrivateState
     | undefined;
-  return state?.assembly;
+  return state?.assembly ?? nativeIntegratedAssemblyV2(bus);
 }

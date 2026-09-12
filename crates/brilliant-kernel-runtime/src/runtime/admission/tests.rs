@@ -1,5 +1,5 @@
 use super::*;
-use brilliant_kernel_contracts::decode_admission_submit_request;
+use brilliant_kernel_contracts::{CoreCommandIdV1, decode_admission_submit_request};
 
 const INSERT: &str = r#"{"commandVersion":1,"commandId":"core.part.insert","target":{"kind":"document","documentId":"score-root"},"payload":{"anchor":{"kind":"start"},"part":{"id":"temporary","name":"Temporary","instrument":{"name":"Piano","writtenToSounding":{"diatonicSteps":0,"chromaticSemitones":0}},"staves":[{"id":"","lineCount":5,"defaultClef":{"sign":"G","line":2}}],"measureContents":[{"measureId":"measure-z","voices":[{"id":"temporary-z","defaultStaffId":"","sequence":{"start":{"numerator":0,"denominator":1},"events":[]}}]},{"measureId":"measure-a","voices":[{"id":"temporary-a","defaultStaffId":"","sequence":{"start":{"numerator":0,"denominator":1},"events":[]}}]}]}}}"#;
 const REMOVE: &str = r#"{"commandVersion":1,"commandId":"core.part.remove","target":{"kind":"part","partId":"temporary"},"payload":{}}"#;
@@ -59,7 +59,7 @@ fn typed_prefix_and_raw_suffix_publish_one_history_entry_and_replay_it() {
     assert!(matches!(
         &events[0],
         KernelEventV1::DocumentCommitted {
-            command_id: CoreCommandIdV1::TransactionBatch,
+            command_id: KernelCommandIdentityV1::Core(CoreCommandIdV1::TransactionBatch),
             ..
         }
     ));

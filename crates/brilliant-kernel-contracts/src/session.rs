@@ -375,6 +375,27 @@ pub enum KernelEventCauseV1 {
     MarkPersisted,
 }
 
+/// Origin retained by the one shared history journal. Module identities are
+/// supplied only after the integrated catalog has resolved the command.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(untagged)]
+pub enum KernelCommandIdentityV1 {
+    Core(CoreCommandIdV1),
+    Module(StableId),
+}
+
+impl From<CoreCommandIdV1> for KernelCommandIdentityV1 {
+    fn from(value: CoreCommandIdV1) -> Self {
+        Self::Core(value)
+    }
+}
+
+impl PartialEq<CoreCommandIdV1> for KernelCommandIdentityV1 {
+    fn eq(&self, other: &CoreCommandIdV1) -> bool {
+        matches!(self, Self::Core(value) if value == other)
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum KernelEventV1 {
     DocumentCommitted {
@@ -382,7 +403,7 @@ pub enum KernelEventV1 {
         document_id: StableId,
         document_version: DocumentVersionV1,
         cause: KernelEventCauseV1,
-        command_id: CoreCommandIdV1,
+        command_id: KernelCommandIdentityV1,
         affected_entities: Vec<AffectedEntityAddressV1>,
     },
     DirtyStateChanged {

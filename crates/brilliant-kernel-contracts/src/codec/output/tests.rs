@@ -181,7 +181,7 @@ fn response_statuses_events_snapshot_null_and_replay_omission_match_serde() {
             document_id: document().id,
             document_version: value.document_version,
             cause: KernelEventCauseV1::Submit,
-            command_id: CoreCommandIdV1::PartSetName,
+            command_id: CoreCommandIdV1::PartSetName.into(),
             affected_entities: value.affected.clone(),
         },
         KernelEventV1::DirtyStateChanged {

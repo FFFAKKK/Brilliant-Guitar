@@ -62,6 +62,12 @@ pub struct ResolvedHostAssemblyV1 {
 }
 
 impl ResolvedHostAssemblyV1 {
+    pub fn has_installed_owner(&self, module_id: &StableId, contribution_id: &StableId) -> bool {
+        self.host
+            .owners
+            .iter()
+            .any(|(module, contribution)| module == module_id && contribution == contribution_id)
+    }
     pub fn requirements(&self) -> &[ExtensionRuntimeRequirementV1] {
         &self.requirements
     }
