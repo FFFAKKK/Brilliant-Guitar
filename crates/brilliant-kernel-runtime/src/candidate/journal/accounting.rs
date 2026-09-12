@@ -461,6 +461,36 @@ impl Recorder<'_> {
                 self.charge_removed_step(&step.forward, accounting, reservation, &mut affected)?;
             }
             match &step.forward {
+                Operation::Extension(edit) => {
+                    let owner = match &edit.key.owner {
+                        crate::change_set::StableExtensionOwnerV1::Score => None,
+                        crate::change_set::StableExtensionOwnerV1::Part { part_id } => {
+                            Some(part_id.as_js_string())
+                        }
+                    };
+                    let expected = edit.expected.as_ref().map(|block| &block.value);
+                    let value = edit.value.as_ref().map(|block| &block.value);
+                    let anchor = (edit.expected.is_none() || edit.value.is_none())
+                        .then_some(())
+                        .and_then(|_| edit.expected.as_ref().or(edit.value.as_ref()))
+                        .and_then(|block| match &block.anchor {
+                            StableAnchorV1::Start => None,
+                            StableAnchorV1::After { sibling_id } => Some(sibling_id.as_js_string()),
+                        });
+                    let strings = std::iter::once(&edit.key.namespace)
+                        .chain(owner)
+                        .chain(anchor);
+                    match (expected, value) {
+                        (Some(expected), Some(value)) => {
+                            accounting.charge_extension_pair(strings, &[expected, value])?
+                        }
+                        (Some(value), None) | (None, Some(value)) => {
+                            accounting.charge_extension_pair(strings, &[value])?
+                        }
+                        (None, None) => return Err(invariant()),
+                    }
+                    count += 1;
+                }
                 Operation::ReplaceScalar {
                     target,
                     expected,

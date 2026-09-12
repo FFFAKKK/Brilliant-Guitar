@@ -18,6 +18,7 @@ mod effect_budget;
 mod execution;
 mod expected;
 mod expected_extensions;
+mod extension_edits;
 mod fields;
 mod measure;
 mod measure_commands;
@@ -44,6 +45,14 @@ enum StoredEntityBundle {
 
 #[derive(Clone)]
 enum Operation {
+    #[cfg_attr(
+        not(test),
+        allow(
+            dead_code,
+            reason = "Prepared by the module recorder; mixed-Batch dispatch is the next integration seam"
+        )
+    )]
+    Extension(Arc<extension_edits::StoredExtensionEdit>),
     Measure {
         bundle: Arc<measure::MeasureBundle>,
         inserting: bool,
@@ -95,6 +104,7 @@ struct ActivePart {
 }
 
 struct Recorder<'a> {
+    extension_ledger: Option<extension_edits::ExtensionLedger>,
     effect_budget: Option<u64>,
     candidate: Candidate<'a>,
     identities: IdentityRecorder,
@@ -200,6 +210,7 @@ impl<'a> Recorder<'a> {
 
     fn new(candidate: Candidate<'a>) -> Self {
         Self {
+            extension_ledger: None,
             effect_budget: None,
             candidate,
             identities: IdentityRecorder::default(),
@@ -436,6 +447,7 @@ impl Operation {
         bindings: &mut ReplayBindings<'_>,
     ) -> Result<(), Failure> {
         match self {
+            Self::Extension(edit) => edit.apply(candidate, bindings),
             Self::Measure { bundle, inserting } => {
                 measure::apply_measure(candidate, bindings, bundle, *inserting)
             }

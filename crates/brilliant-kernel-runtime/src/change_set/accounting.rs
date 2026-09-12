@@ -305,7 +305,6 @@ impl ChangeSetAccountingV1 {
 
     /// One value for insertion/removal, two for replacement, sharing the arena
     /// values across inverse/forward exactly as the typed builder does.
-    #[cfg(test)]
     pub(crate) fn charge_extension_pair<'a>(
         &mut self,
         address_anchor_strings: impl IntoIterator<Item = &'a JsString>,

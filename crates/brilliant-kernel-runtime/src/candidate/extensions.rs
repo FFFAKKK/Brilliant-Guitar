@@ -8,6 +8,7 @@ use crate::overlay::{
 };
 use crate::transaction::{FinalExtensionDeltaV1, TransactionPrepareFailureV1};
 use brilliant_score_foundation::{ExtensionBlockV1, ExtensionOwnerV1};
+mod edits;
 
 #[derive(Default)]
 pub(super) struct ExtensionState {

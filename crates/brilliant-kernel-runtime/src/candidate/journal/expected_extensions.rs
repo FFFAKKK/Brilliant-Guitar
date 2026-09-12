@@ -1,6 +1,5 @@
-//! The recorder can delete Part-owned extensions but cannot introduce opaque
-//! values. Expected data therefore comes only from the immutable typed prefix,
-//! minus deaths that already have a corresponding journal operation.
+//! Expected payloads come only from immutable prefix data or recorded module
+//! writes, never by copying arbitrary current candidate extension state.
 use super::*;
 use crate::{
     change_set::{AnchoredExtensionBlockV1, StableAnchorV1},
@@ -44,7 +43,11 @@ fn predecessor_id(
 }
 
 impl Recorder<'_> {
-    fn prefix_extension_belongs_to(&self, header: &ExtensionHeaderV1, root: &Occurrence) -> bool {
+    pub(super) fn prefix_extension_belongs_to(
+        &self,
+        header: &ExtensionHeaderV1,
+        root: &Occurrence,
+    ) -> bool {
         let ExtensionOwnerV1::Part { part_id } = &header.owner else {
             return false;
         };
@@ -86,6 +89,9 @@ impl Recorder<'_> {
         self.candidate.reservation.ensure_active()?;
         if self.candidate.kind(root) != Some(Kind::Part) || !self.candidate.visible(root) {
             return Err(Failure::InternalError);
+        }
+        if self.extension_ledger.is_some() {
+            return self.ledger_part_extensions(root);
         }
         let mut expected = Vec::new();
         let mut previous: Option<ExtensionHeaderV1> = None;
@@ -151,6 +157,9 @@ impl Recorder<'_> {
     }
 
     pub(super) fn record_extension_deaths(&mut self, blocks: &[AnchoredExtensionBlockV1]) {
+        if let Some(ledger) = &mut self.extension_ledger {
+            ledger.remove(blocks);
+        }
         for block in blocks {
             self.recorded_extension_deaths
                 .insert(ExtensionKeyV1::from_block(&block.value));

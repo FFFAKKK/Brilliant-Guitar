@@ -2,7 +2,7 @@ use super::*;
 use crate::change_set::StableAnchorV1;
 use brilliant_score_foundation::ExtensionOwnerV1;
 
-fn roundtrip(delete_after_birth: bool) {
+fn roundtrip(delete_after_birth: bool, module_ledger: bool) {
     let original = fixture();
     let mut expected = original.clone();
     let mut store = build_live_score_store(&original).unwrap();
@@ -42,6 +42,17 @@ fn roundtrip(delete_after_birth: bool) {
         expected_content.voices[0].sequence.events.clear();
     }
     let mut recorder = Recorder::new(Candidate::new(prefix, original.id.clone()));
+    if module_ledger {
+        // A real module preparation may record a no-op before Core repairs a
+        // prefix's dangling owner. The lazy ledger must preserve that lifetime.
+        let owner = recorder.candidate.document.clone();
+        let block = original.extensions[0].clone();
+        assert!(
+            !recorder
+                .edit_extension(block.namespace.clone(), &owner, Some(block))
+                .unwrap()
+        );
+    }
     recorder.insert_part(raw, None).unwrap();
     if delete_after_birth {
         // An explicit Part.remove consumes the current raw owner's extension;
@@ -88,12 +99,14 @@ fn roundtrip(delete_after_birth: bool) {
 
 #[test]
 fn prefix_dangling_extension_repaired_by_part_birth_survives_birth_inverse_until_prefix_inverse() {
-    roundtrip(false);
+    roundtrip(false, false);
+    roundtrip(false, true);
 }
 
 #[test]
 fn repaired_dangling_extension_explicit_part_delete_and_both_inverses_roundtrip() {
-    roundtrip(true);
+    roundtrip(true, false);
+    roundtrip(true, true);
 }
 
 #[test]

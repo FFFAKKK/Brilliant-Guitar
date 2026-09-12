@@ -785,6 +785,7 @@ impl Recorder<'_> {
         }
         for step in &self.steps[first..] {
             match &step.forward {
+                Operation::Extension(_) => return Err(Failure::InternalError),
                 Operation::ReplaceScalar { target, .. }
                 | Operation::UpdateReference { target, .. } => {
                     effects += 1;
