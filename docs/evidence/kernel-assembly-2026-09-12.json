@@ -1,0 +1,64 @@
+{
+  "kind": "regression-not-commercial-qualification",
+  "testedCodeCommit": "527534c41849a2dce4e41a7ef0c31e0c6ff821d7",
+  "date": "2026-09-12",
+  "rust": {
+    "passed": 506,
+    "failed": 0,
+    "ignored": 1
+  },
+  "typescriptNative": {
+    "passed": 768,
+    "failed": 0,
+    "skipped": 2
+  },
+  "checks": {
+    "fmt": "passed",
+    "clippy": "passed",
+    "msrv1.88.0": "passed",
+    "releaseBuild": "passed"
+  },
+  "fullRunMilliseconds": 62727.5608,
+  "artifacts": [
+    {
+      "path": "test/core-kernel/rust-migration/fixtures/extension-assembly-oracle-v1.json",
+      "bytes": 757717,
+      "sha256": "4ca74f83ee8ad01b5aa474f888c9c2a151cfce7a4b23217452e3c9942fb5e13d"
+    },
+    {
+      "path": "target/rkp-1-node/brilliant_kernel_node.node",
+      "bytes": 3609600,
+      "sha256": "2b3a5b176ab75f9cf9023c0c8b8cd54826c5e5944a64a5a384d1d23d4e41a7dd"
+    },
+    {
+      "path": ".local-evidence/kernel-assembly-2026-09-12/clippy.log",
+      "bytes": 225,
+      "sha256": "0e68f811131476d3f546c4df686b6699a6ce4e1bf150be7e91bc1e4fbdc8855b"
+    },
+    {
+      "path": ".local-evidence/kernel-assembly-2026-09-12/fmt.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local-evidence/kernel-assembly-2026-09-12/msrv.log",
+      "bytes": 225,
+      "sha256": "2b8553c75e9f82c5ade61f710392ac57b45a99c3d9c3c2deec536c95c2106dc8"
+    },
+    {
+      "path": ".local-evidence/kernel-assembly-2026-09-12/npm.log",
+      "bytes": 68522,
+      "sha256": "595673baab3678b06624ca701b3538de098ab479ac5d0b7472f31ae6d49cf469"
+    },
+    {
+      "path": ".local-evidence/kernel-assembly-2026-09-12/release.log",
+      "bytes": 870,
+      "sha256": "0e05559f375e77a732ccf9e838fca23982f689230d3db6562b0c350677e9373b"
+    },
+    {
+      "path": ".local-evidence/kernel-assembly-2026-09-12/rust.log",
+      "bytes": 56996,
+      "sha256": "2ceb4b39df6d5e0fd0302404c22779330c1383b10557f9de1ca9f9d462d6eb90"
+    }
+  ]
+}

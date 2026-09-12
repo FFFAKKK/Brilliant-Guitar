@@ -4,6 +4,7 @@ dist/
 target/
 /.cargo-target/
 /.repo-archive/
+/.local-evidence/
 /.tmp/
 /tmp/
 __pycache__/

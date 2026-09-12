@@ -2,11 +2,13 @@
 
 本文件把 `kernel-commercial-completion.md` 的 S2.1–2.4 转成可实施、可验收的功能切片。它是实施计划，不是完成声明，不增加审批阶段，也不以 Native 默认切换或性能优化代替功能闭环。现有 S1 的 Core admission、存储历史和 opaque extension 保留是复用基础，不能据此宣称版本化扩展执行已经实现。
 
+2026-09-12 边界确认：本轮目标是微内核基础编辑和安全插件组合，不向 Core 扩充技巧、反复、弦品等具体业务语义。领域插件负责其语义与关系维护，内核提供统一事务、校验参与、身份、权限和历史机制。已有公开合同保持兼容；只有实际消费者证明现有接口不足时才设计增量合同，不以“多级插件”为由预建复杂平台。采用单主代理、有明确停止点的功能切片，普通检查先依靠本地工具。
+
 ## 当前事实与兼容基线
 
 - TS 的实际合同集中在 `src/core-kernel/module-sdk/{contracts,definitions}.ts`、`registry/{integrated-contracts,domain-catalog,domain-catalog-codec,domain-availability,gateway}.ts`、`commands/integrated-runtime.ts` 和 `migration/{contracts,migrate-kernel-extension}.ts`。
 - `DomainContributionReadViewV1` 包含 document/version、Core 文档和 compatible extensions；准备回调返回 no-op、rejected 或非空 effect requests。现有请求仅包含 Core written-pitch replacement 和 module-owned extension effect。transform 返回 remove、replace 或 rejected。不能凭计划扩充成任意模块直接写 Core 的接口。
-- TS SDK 已有捕获、编译品牌、回调绑定、能力检查、模块 issue 校验和资源上限。Rust 的 `brilliant-extension-protocol/src/contracts.rs` 目前只有 contribution descriptor、runtime requirement 与严格 ID/schema 校验，Contracts 已补 requirement wire 映射；这仍不是完整 Catalog 或执行机制。
+- TS SDK 已有捕获、编译品牌、回调绑定、能力检查、模块 issue 校验和资源上限。Rust 已有严格 requirement、Host Catalog 元数据、Inventory/cache、availability 与实际 Store header 读取；SDK 新增内部真实品牌捕获。当前投影不携带命令/effect 回调，不是完整 executable Catalog，也尚未接成 Native integrated session。
 - 特别注意 Rust 的 `protocolVersion` 与 TS 的 `requirementVersion` 不同，Rust 的 `required_for_write: bool` 也不是 TS 类型层面的字面量 `true`。内部结构不得直接序列化冒充既有公开 wire；应显式映射并做真实输入/输出差分。
 - Core runtime 的 `transaction.rs`、`overlay.rs`、`candidate/extensions.rs`、`candidate/journal/combined.rs`、`runtime/admission.rs` 和 `history.rs` 已提供最终准备、一次 adoption、扩展值/顺序恢复、Core 与候选混合历史的基础。仍需加入通用 module effects、模块校验和 assembly/session 行为，不能再建立一个拥有可变文档的扩展执行器。
 

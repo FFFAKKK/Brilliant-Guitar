@@ -6,8 +6,20 @@ On 2026-09-05 the owner requested autonomous project assessment, planning,
 implementation, self-review and local Git commits until the kernel meets a
 commercial standard. The owner also permits skipping Trellis. This branch uses
 this document and reproducible commits instead of creating new Trellis tasks.
-The main session owns integration, checks and commits. GPT-6 workers may implement
-bounded file-owned slices; independent review agents remain read-only.
+Following the owner's stop, cost review and 2026-09-12 restart, work proceeds in
+bounded slices with the main session implementing, checking and committing
+directly. No GPT-6 audit agents or unbounded automatic continuation are used.
+Existing plans and Git checkpoints replace unnecessary Trellis task creation.
+The original completion objective remains an unfinished roadmap, not a claim
+that every bounded session must keep running until commercial qualification.
+
+The owner clarified that this is a microkernel: foundational score editing,
+transactions, identity, integrity and safe extension composition define its
+functional boundary. Guitar techniques, repeat structures and other domain
+features may belong to layered plugins. Their absence from Core fields is not
+by itself a kernel defect. Plugin-owned semantics must still participate in the
+same write, validation and history boundary. Two-layer dependency compatibility
+must be demonstrated with a concrete consumer before adding new framework APIs.
 
 Baseline: `902eacd` (RKP-4 audited candidate), isolated branch
 `codex/kernel-commercial-completion`. The original `codex/learning` checkout
@@ -59,18 +71,23 @@ remain implemented. Occurrence final assessment intentionally uses the shared
 complete Foundation rules; this functional integration does not claim that
 candidate assessment has become incremental or commercially qualified.
 
-The kernel is **not functionally complete**. S2.1a now supplies strict extension
+The kernel is **not functionally complete**. S2.1a supplies strict extension
 requirement validation and an explicit TS wire decoder, checked against 144 real
-TS observations. S2 still needs versioned extension
-catalog/inventory, preparation and execution, module validation, migration and
-composed sessions with independent consumers. Opaque extension preservation and
-Part-owned extension Undo/Redo are implemented, but do not execute contributions.
+TS observations. S2.1b adds authenticated SDK metadata capture, a Rust host
+catalog projection, canonical inventory/cache and availability reads from actual
+Store headers. These former 18 work-in-progress files are committed at 960bda9;
+527534c also integrates master's clean build and repository-local test scratch
+fixes. They are metadata groundwork, not a native integrated execution bridge.
+S2 still needs executable bindings, preparation and execution, module validation,
+write/history guards, migration and composed sessions with independent consumers.
+Opaque extension preservation and Part-owned extension Undo/Redo are implemented,
+but do not execute contributions.
 See [the S2 plan](kernel-extension-completion-plan.md). The product default remains
 TypeScript; this is the existing private native implementation route, not the
 S4 product cutover. Editor, rendering, playback and physical project persistence
 remain separate product modules.
 
-Latest Rust verification: 493 tests passed, one ignored. Strict clippy passed;
+The preceding S2.1a verification had 493 Rust tests passed, one ignored. Strict clippy passed;
 Rust 1.88.0 all-target check and TypeScript build passed. The new 28-scenario real
 native/TS corpus passes every leaf and a retained typed-prefix transition through
 submit, Undo and Redo, comparing full documents, history/dirty identity, affected
@@ -97,7 +114,7 @@ while filling functions; private test primitives alone do not close a route.
 | 27 leaf commands and Batch | Typed and occurrence admission both integrated into native sessions | Broader adversarial and long-sequence consolidation in S3 |
 | Final diagnostics and Store adoption | Shared rules assess candidates before atomic adoption | Extension rules and declared dependency closures in S2 |
 | History, dirty identity, events, checkpoint and replay | Complete Core admission wiring, including typed-prefix/candidate-suffix history | Integrated contribution effects and availability in S2 |
-| Extensions | Opaque preservation, header assessment and owned deletion history | Catalog/inventory, capabilities, execution, validation and migration |
+| Extensions | Opaque preservation, authenticated metadata, inventory/cache, header availability and owned deletion history | Native executable catalog bindings, capabilities, execution, validation and migration |
 | Session/application surface | Core native session works; TypeScript remains product default | Composed consumers, then qualified reversible Rust cutover |
 | Commercial acceptance | Incomplete | Hostile/resource and long-sequence evidence, performance, final qualification and obsolete-engine cleanup |
 
@@ -1584,3 +1601,61 @@ S2.1 work. The reviewed private bridge direction is documented in the S2 plan:
 real SDK bindings and a WASM implementation share one executor interface and
 one Rust transaction/history owner. Neither that bridge nor S2 execution is
 implemented by this prerequisite slice. Full functionality remains incomplete.
+
+### S2.1b — authenticated host metadata, inventory and availability groundwork
+
+Checkpoint 960bda9 preserves the former 18-file working set. Merge 527534c brings
+master's clean TS build and repository-local P3B scratch directory into this
+branch. Master itself remains at the repository-consolidation commit eceec9f.
+
+The internal SDK capture authenticates through the actual compiled catalog's
+WeakMap, caches by genuine catalog identity and returns detached frozen metadata.
+Copied branding, JSON identity claims, proxies and hostile patched primordials
+do not grant authority. This projection contains owner/requirement data only;
+it does not carry executable command/effect bindings.
+
+Rust strictly decodes that projection, checks owner/namespace parity and preserves
+omitted versus explicit-invalid inventory. Canonical inventory resolution reuses
+identity only within the same HostCatalog instance. The actual SDK boundary of
+64 modules includes two reserved Core modules: at most 62 Domain module owners
+are accepted, and an individual Domain contribution cannot have zero requirements.
+An empty Core-only catalog remains legal. Requirements remain bounded by 1024.
+
+Availability reads real Store extension headers without reading payloads or
+materializing the full document. Unknown namespaces do not manufacture missing
+plugin facts; known incompatible schema wins before known missing contribution.
+Facts retain TS sorting, UTF-16 identity and the 131072 fact cap. A broken Store
+header read fails explicitly, preserving measured traversal and committed state.
+The session read helper does not yet bind an integrated assembly or enforce a
+write/history guard. Those are the next executable integration work.
+
+Physical allocation failures propagate as Capacity rather than invalid input;
+the existing public Option requirement decoder remains compatible. Local fault
+injection covers both requirement reservations through host and inventory paths,
+including cached inventory and recovery after failure. Availability result output
+uses the existing bounded writer and preserves distinct logical-limit versus
+internal-capacity failure behavior.
+
+The fixed assembly corpus has 32 cases generated through the real TS SDK,
+catalog, inventory and availability implementations. TS authenticates/captures
+the catalog; Rust consumes the actual captured projection and compares complete
+inventory/availability results and cache identity. This does not claim full
+Catalog compilation failure-union or callback execution parity. Fixture SHA-256:
+`4ca74f83ee8ad01b5aa474f888c9c2a151cfce7a4b23217452e3c9942fb5e13d`.
+
+Fresh verification on code commit 527534c: Rust workspace 506 passed, zero
+failed, one ignored; fmt, strict clippy and Rust 1.88.0 all-target check passed.
+The rebuilt release addon passed the full TS/native suite: 768 passed, zero
+failed, two skipped in 62.728 seconds. No frozen workload or threshold changed.
+Logs are kept outside build caches in `.local-evidence/kernel-assembly-2026-09-12/`;
+commit, counts, artifact hashes and log hashes are recorded in
+`docs/evidence/kernel-assembly-2026-09-12.json`. This regression pass does not
+resolve the historical timing-failure cause or establish commercial qualification.
+
+The next slice is a real SDK-to-Native integrated command journey: one module
+command prepares Core pitch plus extension changes; Rust validates and adopts
+once; no-op/rejection, ownership failure, Undo/Redo and events are compared with
+TS. A separate private bridge preserves existing public exports and the old
+five-entry addon. It must not create a second mutable document or history owner.
+Module relation maintenance and two-layer plugin dependency behavior remain
+explicit acceptance work, not capabilities inferred from metadata support.

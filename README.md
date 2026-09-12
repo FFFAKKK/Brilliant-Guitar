@@ -37,3 +37,5 @@ npm test
 `target/`、`dist/`、`node_modules/` 是本地生成目录。历史上 `target/` 混有验证日志，清理前必须先保存必要证据。`tmp/` 包含本地参考资料，不应当成可重建缓存自动清空。`.repo-archive/` 保存本次整理的恢复包，不提交 Git，也不要作为缓存删除。
 
 整理记录与恢复方法见 [仓库维护记录](docs/repository-maintenance.md)。
+
+开发分支的 `.local-evidence/` 保存后续检查日志，与编译缓存分开；它不提交 Git，也不应随缓存清理。需要长期保存的证据应再打包备份，并在进度文档记录对应提交和产物标识。
