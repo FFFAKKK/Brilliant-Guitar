@@ -54,15 +54,19 @@ impl CombinedHistory {
         direction: Direction,
     ) -> Result<brilliant_score_foundation::ScoreDocumentV1, FinalizationFailure> {
         fn project(
-            candidate: Candidate<'_>,
+            mut candidate: Candidate<'_>,
             document_id: &StableId,
         ) -> Result<brilliant_score_foundation::ScoreDocumentV1, FinalizationFailure> {
-            let validated = candidate.validate_final()?;
-            crate::runtime::KernelStage3TransactionV1::integrated_projection_from(
-                &*validated,
-                document_id,
-            )
-            .map_err(FinalizationFailure::Command)
+            let document = candidate
+                .integrated_document(&|id| {
+                    StableId::new(id.clone()).map_err(|_| Failure::InternalError)
+                })
+                .map_err(FinalizationFailure::Command)?;
+            candidate.validate_final()?;
+            if document.id != *document_id {
+                return Err(FinalizationFailure::Command(Failure::InternalError));
+            }
+            Ok(document)
         }
         let document_id = store.header.id.clone();
         match direction {

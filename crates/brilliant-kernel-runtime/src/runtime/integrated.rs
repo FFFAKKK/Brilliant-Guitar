@@ -57,16 +57,6 @@ impl KernelRuntime {
 }
 
 impl KernelStage3TransactionV1<'_> {
-    pub(crate) fn integrated_projection_from(
-        base: &dyn crate::overlay::CoreBaseReadV1,
-        document_id: &StableId,
-    ) -> Result<ScoreDocumentV1, KernelStage3CommandFailureLeafV1> {
-        KernelStage3TransactionV1 {
-            overlay: TransactionOverlayV1::new(base),
-        }
-        .integrated_projection(document_id)
-    }
-
     /// Materialize the complete current overlay because the existing SDK permits
     /// broad Core reads. Callers must count this as a full projection.
     pub fn integrated_projection(

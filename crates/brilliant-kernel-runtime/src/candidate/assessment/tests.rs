@@ -52,6 +52,10 @@ fn virtual_final_report_matches_all_changed_fields_and_occurrence_order() {
     let reference = score::assess_score_semantics(&captured(&expected)).unwrap();
     assert!(!reference.ok);
     assert!(reference.diagnostics.len() > 10);
+    assert_eq!(
+        candidate.integrated_document(&|id| Ok(id.clone())).unwrap(),
+        expected
+    );
     assert_eq!(candidate.assess_final_semantics().unwrap(), reference);
     assert_eq!(store.export_document().unwrap(), document);
     assert_eq!(

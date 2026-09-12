@@ -14,6 +14,7 @@ mod adoption;
 mod assessment;
 mod extensions;
 mod identity;
+mod integrated_view;
 mod journal;
 mod measure;
 mod reservation;
