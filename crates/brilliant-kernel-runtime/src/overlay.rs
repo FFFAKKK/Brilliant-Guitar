@@ -2526,6 +2526,9 @@ fn project_voice_order(
         part_id: part_id.clone(),
         measure_id: measure_id.clone(),
     }) else {
+        for voice in voices {
+            project_event_order(voice, orders, states, records);
+        }
         return;
     };
     let mut existing: HashMap<StableId, VoiceV1> = voices
@@ -2560,6 +2563,9 @@ fn project_event_order(
     let Some(order) = orders.get(&StableOrderAddressV1::Events {
         voice_id: voice.id.clone(),
     }) else {
+        for event in &mut voice.sequence.events {
+            project_note_order(event, orders, states, records);
+        }
         return;
     };
     let mut existing: HashMap<StableId, RhythmicEventV1> = voice

@@ -39,25 +39,7 @@ impl KernelRuntime {
         ) -> Result<(), LeafFailure>,
     ) -> KernelStage4CommandResultV1 {
         let command_id = command.command_id();
-        if command.target().kind() != command_id.target_kind() {
-            return self.rejected_command(
-                KernelStage4FailureV1::Command(LeafFailure::TargetMismatch.into()),
-                KernelStage3MetricsV1::default(),
-            );
-        }
-        let prepared = {
-            let mut transaction = AdmissionTransaction {
-                branch: Some(Branch::Typed(self.begin_stage3_transaction())),
-                store: &self.store,
-                version: self.document_version,
-                failed_metrics: KernelStage3MetricsV1::default(),
-            };
-            match transaction.dispatch(command, &dispatch_typed) {
-                Ok(()) => transaction.finish(),
-                Err(failure) => Err((failure, transaction.attempt_metrics())),
-            }
-        };
-        let prepared = match prepared {
+        let prepared = match self.prepare_admission(command, dispatch_typed) {
             Ok(prepared) => prepared,
             Err((failure, metrics)) => {
                 return self.rejected_command(KernelStage4FailureV1::Command(failure), metrics);
@@ -69,6 +51,39 @@ impl KernelRuntime {
         };
         self.commit_prepared_mutation(command_id, prepared)
             .unwrap_or_else(|failure| self.rejected_command(failure, metrics))
+    }
+
+    #[expect(
+        clippy::result_large_err,
+        reason = "Preserve fixed-size failure metrics without allocating"
+    )]
+    pub(super) fn prepare_admission(
+        &self,
+        command: CoreCommandEnvelopeV1<JsString>,
+        dispatch_typed: impl Fn(
+            &mut KernelStage3TransactionV1<'_>,
+            CoreCommandEnvelopeV1,
+        ) -> Result<(), LeafFailure>,
+    ) -> Result<PreparedMutationV1, (CommandFailure, KernelStage3MetricsV1)> {
+        let command_id = command.command_id();
+        if command.target().kind() != command_id.target_kind() {
+            return Err((
+                LeafFailure::TargetMismatch.into(),
+                KernelStage3MetricsV1::default(),
+            ));
+        }
+        {
+            let mut transaction = AdmissionTransaction {
+                branch: Some(Branch::Typed(self.begin_stage3_transaction())),
+                store: &self.store,
+                version: self.document_version,
+                failed_metrics: KernelStage3MetricsV1::default(),
+            };
+            match transaction.dispatch(command, &dispatch_typed) {
+                Ok(()) => transaction.finish(),
+                Err(failure) => Err((failure, transaction.attempt_metrics())),
+            }
+        }
     }
 }
 

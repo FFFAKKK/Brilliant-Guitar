@@ -1601,6 +1601,14 @@ pub fn decode_captured_admission_replay_command(
     decode_command_candidate_value(captured.as_json(), false)
 }
 
+/// Decode a captured data-only top-level command on a private embedding seam.
+/// Batch children still pass through the nested-command admission decoder.
+pub fn decode_admission_command_value(
+    value: &LosslessJsonValue,
+) -> Result<crate::CoreAdmissionCommandV1, KernelStage3CommandFailureV1> {
+    decode_command_candidate_value(value, false)
+}
+
 /// Replay entries occupy the same top-level position as live submissions.
 /// Their batch children still use `decode_captured_core_command` to reject nesting.
 pub fn decode_captured_replay_command(

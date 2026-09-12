@@ -275,6 +275,23 @@ impl std::fmt::Debug for CandidateHistory {
 }
 
 impl CandidateHistory {
+    pub(crate) fn integrated_projection(
+        &self,
+        store: &LiveScoreStore,
+        redo: bool,
+    ) -> Result<brilliant_score_foundation::ScoreDocumentV1, Failure> {
+        self.combined
+            .project_replay(
+                store,
+                if redo {
+                    Direction::Forward
+                } else {
+                    Direction::Inverse
+                },
+            )
+            .map_err(finalization_failure)
+    }
+
     pub(crate) fn prepare_replay(
         &self,
         store: &LiveScoreStore,

@@ -398,10 +398,13 @@ test("RKP-3 Session owns a literal closed catalog and all twenty-eight command r
     /if let Err\(failure\) = result\s*\{[\s\S]*return Err\(CommandFailure::BatchChildRejected\s*\{\s*failed_command_index:\s*index as u64/u);
   assert.doesNotMatch(batchDispatch, /\b(?:commit_prepared_mutation|submit_stage4_admission)\s*\(/u);
   const admissionSubmit = functionSection(admission, "submit_stage4_admission");
-  assert.match(admissionSubmit,
+  const admissionPrepare = functionSection(admission, "prepare_admission");
+  assert.match(admissionPrepare,
     /transaction\.dispatch\(command,\s*&dispatch_typed\)\s*\{\s*Ok\(\(\)\)\s*=>\s*transaction\.finish\(\)/u);
+  assert.doesNotMatch(admissionPrepare, /\b(?:commit_prepared_mutation|submit_stage4_admission)\s*\(/u);
+  assert.match(admissionSubmit, /match self\.prepare_admission\(command,\s*dispatch_typed\)/u);
   assert.equal([...admissionSubmit.matchAll(/\.commit_prepared_mutation\s*\(/gu)].length, 1);
-  assert.ok(admissionSubmit.indexOf("transaction.finish()") <
+  assert.ok(admissionSubmit.indexOf(".prepare_admission(") <
     admissionSubmit.indexOf(".commit_prepared_mutation("));
 
   assert.match(runtime, /pub fn begin_stage3_transaction\(/u);

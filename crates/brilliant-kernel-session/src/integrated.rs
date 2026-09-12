@@ -13,6 +13,7 @@ impl IntegratedKernelSessionV2 {
         IntegratedKernelRuntimeV2::create(bytes, executor).map(|runtime| Self { runtime })
     }
     pub fn operate(&mut self, bytes: &[u8], executor: &mut dyn ContributionExecutorV2) -> Vec<u8> {
-        self.runtime.operate(bytes, executor)
+        self.runtime
+            .operate(bytes, executor, crate::commands::dispatch)
     }
 }

@@ -45,6 +45,61 @@ impl Recorder<'_> {
 }
 
 impl CombinedHistory {
+    /// Detached SDK view of stored replay. No Store adoption or cursor movement.
+    /// Inverse replay must preserve the structurally valid suffix boundary until
+    /// the typed prefix has repaired the complete final state.
+    pub(super) fn project_replay(
+        &self,
+        store: &LiveScoreStore,
+        direction: Direction,
+    ) -> Result<brilliant_score_foundation::ScoreDocumentV1, FinalizationFailure> {
+        fn project(
+            candidate: Candidate<'_>,
+            document_id: &StableId,
+        ) -> Result<brilliant_score_foundation::ScoreDocumentV1, FinalizationFailure> {
+            let validated = candidate.validate_final()?;
+            crate::runtime::KernelStage3TransactionV1::integrated_projection_from(
+                &*validated,
+                document_id,
+            )
+            .map_err(FinalizationFailure::Command)
+        }
+        let document_id = store.header.id.clone();
+        match direction {
+            Direction::Forward => {
+                let prefix =
+                    replay_overlay_on_base(store, &self.prefix.arena, &self.prefix.forward)?;
+                let mut candidate = Candidate::new(prefix, document_id.clone());
+                self.suffix
+                    .replay(&mut candidate, Direction::Forward)
+                    .map_err(FinalizationFailure::Command)?;
+                project(candidate, &document_id)
+            }
+            Direction::Inverse if self.suffix.steps.is_empty() => {
+                let prefix =
+                    replay_overlay_on_base(store, &self.prefix.arena, &self.prefix.inverse)?;
+                project(Candidate::new(prefix, document_id.clone()), &document_id)
+            }
+            Direction::Inverse => {
+                let mut candidate =
+                    Candidate::new(TransactionOverlayV1::new(store), document_id.clone());
+                self.suffix
+                    .replay(&mut candidate, Direction::Inverse)
+                    .map_err(FinalizationFailure::Command)?;
+                ReplayBindings::at(
+                    &self.suffix.identities,
+                    BoundarySide::SuffixStart,
+                    &mut candidate,
+                )
+                .map_err(FinalizationFailure::Command)?;
+                let boundary = candidate.seal_structural_boundary()?;
+                let inverse =
+                    replay_overlay_on_base(&boundary, &self.prefix.arena, &self.prefix.inverse)?;
+                project(Candidate::new(inverse, document_id.clone()), &document_id)
+            }
+        }
+    }
+
     pub(super) fn prepare_replay(
         &self,
         store: &LiveScoreStore,

@@ -9,6 +9,12 @@ use brilliant_kernel_contracts::{
     encode_domain_availability_result_v1,
 };
 use brilliant_score_foundation::{LosslessDecode, assess_score_semantics};
+mod core;
+
+type CoreDispatch = fn(
+    &mut KernelStage3TransactionV1<'_>,
+    CoreCommandEnvelopeV1,
+) -> std::result::Result<(), KernelStage3CommandFailureLeafV1>;
 
 /// Fixed assembly and one ordinary Rust runtime. The host executor is borrowed
 /// for a call; the Node owner retains its authentic callback for this lifetime.
@@ -95,26 +101,33 @@ impl IntegratedKernelRuntimeV2 {
         Ok(state)
     }
 
-    pub fn operate(&mut self, bytes: &[u8], executor: &mut dyn ContributionExecutorV2) -> Vec<u8> {
-        let result = self.operate_inner(bytes, executor).unwrap_or_else(|error| {
-            object([
-                ("ok", JsonValue::Bool(false)),
-                ("failure", error),
-                (
-                    "documentVersion",
-                    number(self.runtime.document_version.get()),
-                ),
-                (
-                    "history",
-                    self.runtime
-                        .history
-                        .projected()
-                        .ok()
-                        .and_then(|history| value(&history).ok())
-                        .unwrap_or(JsonValue::Null),
-                ),
-            ])
-        });
+    pub fn operate(
+        &mut self,
+        bytes: &[u8],
+        executor: &mut dyn ContributionExecutorV2,
+        dispatch_core: CoreDispatch,
+    ) -> Vec<u8> {
+        let result = self
+            .operate_inner(bytes, executor, dispatch_core)
+            .unwrap_or_else(|error| {
+                object([
+                    ("ok", JsonValue::Bool(false)),
+                    ("failure", error),
+                    (
+                        "documentVersion",
+                        number(self.runtime.document_version.get()),
+                    ),
+                    (
+                        "history",
+                        self.runtime
+                            .history
+                            .projected()
+                            .ok()
+                            .and_then(|history| value(&history).ok())
+                            .unwrap_or(JsonValue::Null),
+                    ),
+                ])
+            });
         encode(&result).unwrap_or_else(|_| {
             b"{\"ok\":false,\"failure\":{\"code\":\"bridge.response-too-large\"}}".to_vec()
         })
@@ -124,6 +137,7 @@ impl IntegratedKernelRuntimeV2 {
         &mut self,
         bytes: &[u8],
         executor: &mut dyn ContributionExecutorV2,
+        dispatch_core: CoreDispatch,
     ) -> Result<Value> {
         let request = decode(bytes)?;
         if tag(&request, "operation", "read") && exact(&request, &["operation"]) {
@@ -167,7 +181,15 @@ impl IntegratedKernelRuntimeV2 {
         }
         self.require_writable()?;
         if tag(&request, "operation", "submit") && exact(&request, &["operation", "command"]) {
-            return self.submit(field(&request, "command")?, executor);
+            let command = field(&request, "command")?;
+            if field(command, "commandId")
+                .ok()
+                .and_then(|id| string(id).ok())
+                .is_some_and(|id| id.code_units().starts_with(&[99, 111, 114, 101, 46]))
+            {
+                return self.submit_core(command, executor, dispatch_core);
+            }
+            return self.submit(command, executor);
         }
         let redo = tag(&request, "operation", "redo");
         if (redo || tag(&request, "operation", "undo")) && exact(&request, &["operation"]) {

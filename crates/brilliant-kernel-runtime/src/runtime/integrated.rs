@@ -34,8 +34,13 @@ impl KernelRuntime {
             self.history.undo_entry()
         }
         .map_err(map_history_failure)?;
-        let HistoryPayloadV1::Typed(changes) = &entry.payload else {
-            return Err(KernelStage4FailureV1::HistoryInvariantViolation);
+        let changes = match &entry.payload {
+            HistoryPayloadV1::Typed(changes) => changes,
+            HistoryPayloadV1::Candidate(history) => {
+                return history
+                    .integrated_projection(&self.store, redo)
+                    .map_err(|failure| KernelStage4FailureV1::Command(failure.into()));
+            }
         };
         let operations = if redo {
             &changes.forward
@@ -52,6 +57,16 @@ impl KernelRuntime {
 }
 
 impl KernelStage3TransactionV1<'_> {
+    pub(crate) fn integrated_projection_from(
+        base: &dyn crate::overlay::CoreBaseReadV1,
+        document_id: &StableId,
+    ) -> Result<ScoreDocumentV1, KernelStage3CommandFailureLeafV1> {
+        KernelStage3TransactionV1 {
+            overlay: TransactionOverlayV1::new(base),
+        }
+        .integrated_projection(document_id)
+    }
+
     /// Materialize the complete current overlay because the existing SDK permits
     /// broad Core reads. Callers must count this as a full projection.
     pub fn integrated_projection(
@@ -183,6 +198,101 @@ impl KernelStage3TransactionV1<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn sdk_projection_descends_through_untouched_orders_for_new_notes_and_events() {
+        let initial = crate::store::tests::fixture();
+        let runtime = KernelRuntime::create(initial.clone()).unwrap();
+        let mut transaction = runtime.begin_stage3_transaction();
+        let part = &initial.parts[0];
+        let content = part
+            .measure_contents
+            .iter()
+            .find(|content| content.measure_id.as_js_string().eq_ascii("measure-a"))
+            .unwrap();
+        let voice = &content.voices[0];
+        let event = &voice.sequence.events[0];
+        let brilliant_score_foundation::RhythmicContentV1::Notes { notes } = &event.content else {
+            panic!("notes fixture")
+        };
+        let mut added_note = notes[0].clone();
+        added_note.id = StableId::new("added-note").unwrap();
+        transaction
+            .overlay
+            .insert_entity(
+                StableOwnerAddressV1::Event {
+                    event_id: event.id.clone(),
+                },
+                StableOrderAddressV1::Notes {
+                    event_id: event.id.clone(),
+                },
+                StableAnchorV1::Start,
+                StableEntityAddressV1::Note {
+                    note_id: added_note.id.clone(),
+                },
+                EntityBundleV1::Note(added_note.clone()),
+            )
+            .unwrap();
+        let mut expected = initial.clone();
+        let expected_content = expected.parts[0]
+            .measure_contents
+            .iter_mut()
+            .find(|content| content.measure_id == content_id(&initial))
+            .unwrap();
+        let brilliant_score_foundation::RhythmicContentV1::Notes { notes } =
+            &mut expected_content.voices[0].sequence.events[0].content
+        else {
+            unreachable!()
+        };
+        notes.insert(0, added_note);
+        assert_eq!(
+            transaction.integrated_projection(&initial.id).unwrap(),
+            expected
+        );
+        let mut added_event = event.clone();
+        added_event.id = StableId::new("added-event").unwrap();
+        added_event.content = brilliant_score_foundation::RhythmicContentV1::Rest;
+        transaction
+            .overlay
+            .insert_entity(
+                StableOwnerAddressV1::Voice {
+                    voice_id: voice.id.clone(),
+                },
+                StableOrderAddressV1::Events {
+                    voice_id: voice.id.clone(),
+                },
+                StableAnchorV1::Start,
+                StableEntityAddressV1::Event {
+                    event_id: added_event.id.clone(),
+                },
+                EntityBundleV1::Event(added_event.clone()),
+            )
+            .unwrap();
+        expected.parts[0]
+            .measure_contents
+            .iter_mut()
+            .find(|content| content.measure_id == content_id(&initial))
+            .unwrap()
+            .voices[0]
+            .sequence
+            .events
+            .insert(0, added_event);
+        assert_eq!(
+            transaction.integrated_projection(&initial.id).unwrap(),
+            expected
+        );
+        assert_eq!(runtime.store.export_document().unwrap(), initial);
+
+        fn content_id(document: &ScoreDocumentV1) -> StableId {
+            document.parts[0]
+                .measure_contents
+                .iter()
+                .find(|content| content.measure_id.as_js_string().eq_ascii("measure-a"))
+                .unwrap()
+                .measure_id
+                .clone()
+        }
+    }
 
     #[test]
     fn mixed_module_effects_share_the_rust_projection_history_and_origin() {

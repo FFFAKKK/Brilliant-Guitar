@@ -8,6 +8,7 @@ import { createCoreScoreFixture } from "../fixtures/core-score";
 import { captureHostInstalledContributionsV1 } from "../../../src/core-kernel/native/integrated-catalog-capture";
 import type { IntegratedCommandBusCreationResult } from "../../../src/core-kernel/registry/integrated-contracts";
 import { CVN6_MANIFEST, CVN6_REGISTRATION_ENTRIES, cvn6CallbackBehavior, cvn6CallbackCounts, resetCvn6Callbacks } from "../fixtures/cvn-6-synthetic-official-modules";
+import { buildCommandAdmissionOracle } from "./command-admission-oracle";
 
 const addon = require(resolve("target/integrated-v2/brilliant_kernel_node.node")) as IntegratedNativeAddonV2;
 test("The private successor adds exactly one export and the old addon keeps five", () => {
@@ -34,6 +35,111 @@ function create(native: boolean, transport = addon, initial = createCoreScoreFix
     return result.value;
   } finally { restore(); }
 }
+
+function coreBatch(commands: readonly unknown[]) {
+  return { commandVersion: 1, commandId: "core.transaction.batch",
+    target: { kind: "document", documentId: "score-1" }, payload: { commands } };
+}
+
+test("integrated Native Core admission matches the complete independent command-shape corpus", () => {
+  for (const entry of buildCommandAdmissionOracle().cases) {
+    resetCvn6Callbacks();
+    const oracle = create(false);
+    const native = create(true);
+    const events: unknown[][] = [[], []];
+    oracle.subscribe((event: unknown) => events[0]!.push(event));
+    native.subscribe((event: unknown) => events[1]!.push(event));
+    const expected = oracle.submit(entry.input);
+    assert.deepEqual(native.submit(entry.input), expected, entry.id);
+    assert.deepEqual(native.read(), oracle.read(), `${entry.id}/read`);
+    if (expected.status === "committed") {
+      assert.deepEqual(native.undo(), oracle.undo(), `${entry.id}/undo`);
+      assert.deepEqual(native.read(), oracle.read(), `${entry.id}/undo/read`);
+      assert.deepEqual(native.redo(), oracle.redo(), `${entry.id}/redo`);
+      assert.deepEqual(native.read(), oracle.read(), `${entry.id}/redo/read`);
+    }
+    assert.deepEqual(events[1], events[0], `${entry.id}/events`);
+  }
+});
+
+test("integrated Native Core Batch preserves temporary raw identities, net-zero commits and candidate history", () => {
+  const document = createCoreScoreFixture();
+  const part = { ...document.parts[0]!, id: "temporary-part",
+    staves: document.parts[0]!.staves.map(staff => ({ ...staff, id: "" })),
+    measureContents: document.parts[0]!.measureContents.map(content => ({ ...content,
+      voices: content.voices.map(voice => ({ ...voice, id: "", defaultStaffId: "",
+        sequence: { ...voice.sequence, events: voice.sequence.events.map(event => ({ ...event, id: "",
+          content: event.content.kind === "rest" ? event.content : { ...event.content,
+            notes: event.content.notes.map(note => ({ ...note, id: "" })) } })) } })) })) };
+  const batch = coreBatch([
+    { commandVersion: 1, commandId: "core.document.set-metadata", target: { kind: "document", documentId: document.id },
+      payload: { metadata: { ...document.metadata, title: "typed prefix" } } },
+    { commandVersion: 1, commandId: "core.part.insert", target: { kind: "document", documentId: document.id }, payload: { anchor: { kind: "start" }, part } },
+    { commandVersion: 1, commandId: "core.part.remove", target: { kind: "part", partId: part.id }, payload: {} },
+    { commandVersion: 1, commandId: "core.document.set-metadata", target: { kind: "document", documentId: document.id }, payload: { metadata: document.metadata } },
+  ]);
+  resetCvn6Callbacks();
+  const oracle = create(false);
+  const native = create(true);
+  for (const bus of [oracle, native]) assert.equal(bus.submit(command()).status, "committed");
+  const events: unknown[][] = [[], []];
+  oracle.subscribe((event: unknown) => events[0]!.push(event));
+  native.subscribe((event: unknown) => events[1]!.push(event));
+  for (const operation of ["submit", "undo", "redo", "undo", "submit"] as const) {
+    const expected = operation === "submit" ? oracle.submit(batch) : oracle[operation]();
+    const actual = operation === "submit" ? native.submit(batch) : native[operation]();
+    assert.equal(expected.status, "committed");
+    assert.deepEqual(actual, expected, operation);
+    assert.deepEqual(native.read(), oracle.read(), operation);
+  }
+  assert.deepEqual(events[1], events[0]);
+  const before = native.read();
+  const beforeEvents = events[1]!.length;
+  resetCvn6Callbacks();
+  cvn6CallbackBehavior.validatorIssueModule = "score";
+  const expected = oracle.undo();
+  assert.equal(expected.status, "rejected");
+  assert.deepEqual(native.undo(), expected);
+  assert.deepEqual(native.read(), before);
+  assert.equal(events[1]!.length, beforeEvents);
+  assert.equal(cvn6CallbackCounts.commandPrepare, 0);
+  assert.equal(cvn6CallbackCounts.effectTransform, 0);
+  resetCvn6Callbacks();
+  assert.deepEqual(native.undo(), oracle.undo());
+  const undone = native.read();
+  cvn6CallbackBehavior.validatorIssueModule = "score";
+  assert.deepEqual(native.redo(), oracle.redo());
+  assert.deepEqual(native.read(), undone);
+  resetCvn6Callbacks();
+  assert.deepEqual(native.redo(), oracle.redo());
+  assert.deepEqual(native.read(), oracle.read());
+});
+
+test("integrated Native Core and module commands share history and reject final validator failures atomically", () => {
+  resetCvn6Callbacks();
+  const oracle = create(false);
+  const native = create(true);
+  const metadata = { commandVersion: 1, commandId: "core.document.set-metadata",
+    target: { kind: "document", documentId: "score-1" }, payload: { metadata: { ...createCoreScoreFixture().metadata, title: "shared" } } };
+  for (const input of [metadata, command(), coreBatch([metadata])]) {
+    assert.deepEqual(native.submit(input), oracle.submit(input));
+    assert.deepEqual(native.read(), oracle.read());
+  }
+  for (const operation of ["undo", "undo", "redo", "redo"] as const) {
+    assert.deepEqual(native[operation](), oracle[operation]());
+    assert.deepEqual(native.read(), oracle.read());
+  }
+  const before = native.read();
+  cvn6CallbackBehavior.validatorIssueModule = "score";
+  const changed = { ...metadata, payload: { metadata: { ...metadata.payload.metadata, title: "must not publish" } } };
+  for (const input of [changed, coreBatch([changed])]) {
+    const expected = oracle.submit(input);
+    assert.equal(expected.status, "rejected");
+    assert.deepEqual(native.submit(input), expected);
+    assert.deepEqual(native.read(), before);
+  }
+  resetCvn6Callbacks();
+});
 
 test("real SDK Native factory matches TS mixed pitch/extension commit, events, no-op and stored undo/redo", () => {
   for (const module of ["score", "part"]) {
