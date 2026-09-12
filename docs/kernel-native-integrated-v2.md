@@ -32,7 +32,7 @@ Core 命令 ID 的原有编码不变。内部历史与事件增加模块 ID 表�
 
 撤回本片不会改变默认 TS 引擎。停止选择私有 V2 工厂即可停止新建 V2 session；已有 session 的 assembly 固定，不支持热替换。工作仅在内核分支，主线、UI 和仓库归档不参与此变更。
 
-本片的检查日志放在 `.local-evidence/kernel-integrated-native-2026-09-12/`，与编译缓存分开。回归计数与两个 addon 的标识在检查完成后记录到对应 evidence JSON；不是 Qualification V2。
+实现提交为 `5d5b6eb`。本片的检查日志放在 `.local-evidence/kernel-integrated-native-2026-09-12/`，与编译缓存分开。Rust 508 项、TS/Native 782 项测试通过；定向 Native 集成用例为 14 项，fmt、严格 Clippy、Rust 1.88 检查及两个 release 产物构建通过。回归计数与两个 addon 的标识见 [evidence JSON](evidence/kernel-integrated-native-2026-09-12.json)；不是 Qualification V2。
 
 ## 剩余工作与实用限制
 

@@ -1,0 +1,102 @@
+{
+  "kind": "regression-not-commercial-qualification",
+  "testedCodeCommit": "5d5b6eb686418db49e729a2def58ca481559da46",
+  "date": "2026-09-12",
+  "nodeVersion": "v24.15.0",
+  "rust": {
+    "passed": 508,
+    "failed": 0,
+    "ignored": 1,
+    "allFeatures": true
+  },
+  "typescriptNative": {
+    "passed": 782,
+    "failed": 0,
+    "skipped": 2
+  },
+  "integratedNativeJourney": {
+    "passed": 14,
+    "failed": 0
+  },
+  "checks": {
+    "fmt": "passed",
+    "clippyAllTargetsAllFeatures": "passed",
+    "msrv188AllTargetsAllFeatures": "passed",
+    "releaseV1": "passed",
+    "releaseV2": "passed",
+    "publicExportCompatibility": "passed",
+    "sevenCrateDependencyGraph": "passed"
+  },
+  "fullRunMilliseconds": 50033.023,
+  "priorFullRun": {
+    "passed": 779,
+    "failed": 1,
+    "skipped": 2,
+    "cause": "RKP-1 source feature allowlist lacked the intentional private integrated-bridge-v2 feature. Exact default, pins and dependencies remain checked; no behavioral fixture or timing threshold changed."
+  },
+  "scope": "Real SDK domain commands with pitch plus extension effects through the opt-in Native V2 factory, gateway and replay; one Rust Store/transaction/history. This is S2.2a, not complete S2 or default cutover.",
+  "remaining": [
+    "Standalone Core and cross-domain Batch in the integrated session",
+    "Candidate history module assessment",
+    "WASM execution and limits",
+    "Explicit migration and layered plugin relationship consumers",
+    "Full resource/platform matrix and commercial qualification"
+  ],
+  "artifacts": [
+    {
+      "path": "target/rkp-1-node/brilliant_kernel_node.node",
+      "bytes": 3599872,
+      "sha256": "0d37b60653ba838271e69c366c625bd287b70d2a107ef3eee585c41afda7dad6"
+    },
+    {
+      "path": "target/integrated-v2/brilliant_kernel_node.node",
+      "bytes": 4133888,
+      "sha256": "f81a993d076f1c8fab4e6f6dd635685ccbacd043e217138ec71747d9429efcf8"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/rust.log",
+      "bytes": 58368,
+      "sha256": "f56577be2850a84d465f12ef1d2a6d20d9e26f7c60785bd9b25bc61ada40d727"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/clippy.log",
+      "bytes": 1376,
+      "sha256": "e9663cc9246fb2a4af8bbef27159a378e0e3e632cd6b175d7863b6925a9787ea"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/msrv.log",
+      "bytes": 1375,
+      "sha256": "48279b50c6185c7982e1268c48d01e1797650abdc6bdd8f1bf5322fb1eda89bf"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/fmt.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/release-v1.log",
+      "bytes": 374,
+      "sha256": "abe2238c1449a0728c0017ac3c4bf573d13a12e15a0aef77f5db113ddccfcb68"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/release-v2.log",
+      "bytes": 1366,
+      "sha256": "416d8d5af9d0672695657e5dabb0968d13faa220bb8d5c864165b3df960e64bd"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/native-journey.log",
+      "bytes": 1627,
+      "sha256": "0a3f931fe05ee67018d90f383807d0280f6110f56f729c39b5890b7423b01fe7"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/npm.log",
+      "bytes": 70028,
+      "sha256": "4b8367ad93cf71b67fe7f4421f7da66a5725afae07aae23f20cdf0920ab73b90"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/npm-feature-guard-failed.log",
+      "bytes": 71190,
+      "sha256": "04d56ba8d893327e7578bf125aaebd83c4f8582e1a97f63f41f733e681eb75a8"
+    }
+  ]
+}

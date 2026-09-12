@@ -1663,3 +1663,30 @@ TS. A separate private bridge preserves existing public exports and the old
 five-entry addon. It must not create a second mutable document or history owner.
 Module relation maintenance and two-layer plugin dependency behavior remain
 explicit acceptance work, not capabilities inferred from metadata support.
+
+### S2.2a — real SDK module commands through a private Native Rust session
+
+Implementation commit `5d5b6eb` connects the existing public integrated factory,
+real SDK bindings, gateway and replay to an opt-in V2 addon. Both Score-owned and
+Part-owned commands prepare pitch and extension effects in the existing Rust
+overlay and retain one stored history entry, affected set and event origin.
+Callback errors, final validation failures, authority failures and history
+reassessment rejection preserve document/history/version/events. See
+[the implementation boundary](kernel-native-integrated-v2.md) for remaining scope.
+
+Fresh validation: 508 Rust tests passed, zero failed, one ignored; all-feature
+strict clippy, fmt and Rust 1.88.0 all-target/all-feature check passed. Both native
+release artifacts were rebuilt. Full TS/native regression passed 782 tests,
+zero failed, two skipped in 50.033 seconds; the focused real-SDK Native suite
+passed 14 tests. The first full run's single source-contract failure was the
+intentional new Cargo feature missing from the exact allowlist. That check now
+allows exactly the private V2 feature while retaining defaults, pins and dependency
+edges. Real addon tests verify V1 still has five exports and V2 adds exactly one.
+No frozen behavior oracle or timing threshold was relaxed.
+
+Evidence and hashes: `docs/evidence/kernel-integrated-native-2026-09-12.json`;
+logs: `.local-evidence/kernel-integrated-native-2026-09-12/`, including the first
+failed run. These results close the module-command journey, not S2, S3 or
+commercial qualification. Standalone Core/Batch composition and candidate history
+assessment in the new session remain next, followed by WASM, migration and real
+layered-plugin relationship consumers. Master remains `eceec9f` and unchanged.
