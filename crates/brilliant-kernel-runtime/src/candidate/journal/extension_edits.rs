@@ -104,13 +104,6 @@ impl ExtensionLedger {
 }
 
 impl Recorder<'_> {
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "Called by the next mixed-Batch dispatcher; exercised here through stored history tests"
-        )
-    )]
     pub(super) fn edit_extension(
         &mut self,
         namespace: JsString,

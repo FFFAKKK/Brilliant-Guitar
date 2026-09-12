@@ -9,6 +9,8 @@ use crate::{
 use brilliant_core_types::DocumentVersionV1;
 use brilliant_kernel_contracts::ScoreEntityTargetV1 as Target;
 use brilliant_kernel_contracts::{AffectedEntityAddressV1, KernelStage3MetricsV1};
+mod module;
+pub(crate) use module::ModuleSegmentSource;
 
 pub(crate) struct CandidateExecution<'a> {
     recorder: Recorder<'a>,
@@ -21,7 +23,8 @@ pub(crate) struct CandidateExecution<'a> {
 
 struct CommandSegment {
     child_index: usize,
-    command_id: brilliant_kernel_contracts::CoreCommandIdV1,
+    command_id: brilliant_kernel_contracts::KernelCommandIdentityV1,
+    module_source: Option<ModuleSegmentSource>,
     step_start: usize,
     step_end: usize,
     affected_start: usize,
@@ -131,7 +134,8 @@ impl<'a> CandidateExecution<'a> {
             self.accounting.charge_segment().map_err(map)?;
             self.segments.push(CommandSegment {
                 child_index,
-                command_id: facts.command_id,
+                command_id: facts.command_id.into(),
+                module_source: None,
                 step_start: first,
                 step_end: self.recorder.steps.len(),
                 affected_start,
@@ -305,6 +309,14 @@ impl CandidateHistory {
             if previous_index.is_some_and(|index| index >= segment.child_index)
                 || segment.command_id
                     == brilliant_kernel_contracts::CoreCommandIdV1::TransactionBatch
+                || !match (&segment.command_id, &segment.module_source) {
+                    (brilliant_kernel_contracts::KernelCommandIdentityV1::Core(_), None) => true,
+                    (
+                        brilliant_kernel_contracts::KernelCommandIdentityV1::Module(command_id),
+                        Some(source),
+                    ) => command_id == &source.command_id,
+                    _ => false,
+                }
                 || segment.step_start != previous_step
                 || segment.step_end <= segment.step_start
                 || segment.effect_count == 0

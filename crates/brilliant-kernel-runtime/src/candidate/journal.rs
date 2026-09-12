@@ -33,7 +33,9 @@ use fields::FieldChanges;
 use orders::JournalOrder;
 use staff::StaffBundle;
 
-pub(crate) use execution::{CandidateExecution, CandidateHistory, PreparedCandidate};
+pub(crate) use execution::{
+    CandidateExecution, CandidateHistory, ModuleSegmentSource, PreparedCandidate,
+};
 
 #[derive(Clone)]
 enum StoredEntityBundle {
@@ -45,13 +47,6 @@ enum StoredEntityBundle {
 
 #[derive(Clone)]
 enum Operation {
-    #[cfg_attr(
-        not(test),
-        allow(
-            dead_code,
-            reason = "Prepared by the module recorder; mixed-Batch dispatch is the next integration seam"
-        )
-    )]
     Extension(Arc<extension_edits::StoredExtensionEdit>),
     Measure {
         bundle: Arc<measure::MeasureBundle>,

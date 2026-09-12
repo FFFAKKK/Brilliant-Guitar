@@ -9,7 +9,9 @@ use brilliant_kernel_contracts::{
     encode_domain_availability_result_v1,
 };
 use brilliant_score_foundation::{LosslessDecode, assess_score_semantics};
+mod batch;
 mod core;
+mod module;
 
 type CoreDispatch = fn(
     &mut KernelStage3TransactionV1<'_>,
@@ -236,221 +238,23 @@ impl IntegratedKernelRuntimeV2 {
         envelope: &Value,
         executor: &mut dyn ContributionExecutorV2,
     ) -> Result<Value> {
-        if !exact(
-            envelope,
-            &["commandVersion", "commandId", "target", "payload"],
-        ) {
-            return Err(failure("command.invalid-envelope"));
-        }
-        if integer(field(envelope, "commandVersion")?) != Some(1) {
-            return Err(failure("command.unsupported-version"));
-        }
-        let command_id = string(field(envelope, "commandId")?)?;
-        let descriptor = self
-            .commands
-            .iter()
-            .find(|definition| {
-                field(definition, "commandId").ok() == field(envelope, "commandId").ok()
-            })
-            .cloned()
-            .ok_or_else(|| failure("command.unknown-id"))?;
-        let source = field(&descriptor, "source")?;
-        let contract = || owned_failure(source, "command.contribution-contract-violation");
-        let (_, target, target_entity) = decode_address(field(envelope, "target")?)
-            .map_err(|_| failure("command.invalid-envelope"))?;
-        if !string(field(&descriptor, "targetKind")?)?.eq_ascii(target.kind().as_str()) {
-            return Err(failure("command.target-mismatch"));
-        }
+        let id = self.runtime.document_id().clone();
         let initial = self
             .runtime
             .store
             .export_document()
             .map_err(|_| internal())?;
-        let prepared_reply = self.call(
-            "prepare",
-            &initial,
-            self.runtime.document_version.get(),
-            [("command", envelope.clone())],
-            executor,
-        )?;
-        if !exact(&prepared_reply, &["ok", "prepared"]) {
-            return Err(contract());
-        }
-        let prepared = field(&prepared_reply, "prepared").map_err(|_| contract())?;
-        let id = self.runtime.document_id().clone();
         let mut transaction = self.runtime.begin_stage3_transaction();
-        if let StableEntityAddressV1::Document { document_id } = &target_entity {
-            if document_id != &id {
-                return Err(failure("command.target-not-found"));
-            }
-        } else if transaction.overlay.read_entity(&target_entity).is_none() {
-            return Err(failure("command.target-not-found"));
-        }
         let mut projection_count = 0;
-        let mut affected = Vec::new();
-        if tag(prepared, "status", "changed")
-            && exact(prepared, &["status", "effectRequests", "affected"])
-        {
-            let requests = array(field(prepared, "effectRequests")?)?;
-            if requests.is_empty() {
-                return Err(contract());
-            }
-            if requests.len() > 131_072 {
-                return Err(resource("effects", 131_072));
-            }
-            for request in requests {
-                if tag(request, "requestKind", "core.note.replace-written-pitch") {
-                    if !exact(
-                        request,
-                        &["requestVersion", "requestKind", "target", "writtenPitch"],
-                    ) || integer(field(request, "requestVersion")?) != Some(1)
-                    {
-                        return Err(contract());
-                    }
-                    let target = field(request, "target")?;
-                    if !exact(target, &["kind", "noteId"]) || !tag(target, "kind", "note") {
-                        return Err(contract());
-                    }
-                    let note_id =
-                        StableId::new(string(field(target, "noteId")?)?).map_err(|_| contract())?;
-                    let pitch = WrittenPitchV1::from_lossless_value(
-                        field(request, "writtenPitch")?.clone(),
-                    )
-                    .map_err(|_| contract())?;
-                    if !brilliant_score_foundation::written_pitch_is_valid(&pitch) {
-                        return Err(contract());
-                    }
-                    transaction
-                        .set_note_written_pitch(note_id, pitch)
-                        .map_err(|_| contract())?;
-                    continue;
-                }
-                if !exact(
-                    request,
-                    &[
-                        "requestVersion",
-                        "requestKind",
-                        "effectKind",
-                        "namespace",
-                        "owner",
-                        "payload",
-                    ],
-                ) || !tag(request, "requestKind", "module.extension")
-                    || integer(field(request, "requestVersion")?) != Some(1)
-                    || !matches!(field(request, "payload")?, JsonValue::Object(_))
-                {
-                    return Err(contract());
-                }
-                let effect = self
-                    .effects
-                    .iter()
-                    .find(|effect| {
-                        field(effect, "source").ok() == Some(source)
-                            && field(effect, "effectKind").ok() == field(request, "effectKind").ok()
-                            && field(effect, "namespace").ok() == field(request, "namespace").ok()
-                    })
-                    .ok_or_else(contract)?;
-                let owner: ExtensionOwnerV1 =
-                    ExtensionOwnerV1::from_lossless_value(field(request, "owner")?.clone())
-                        .map_err(|_| contract())?;
-                let owner_kind = match &owner {
-                    ExtensionOwnerV1::Score => "score",
-                    ExtensionOwnerV1::Part { part_id } => {
-                        if transaction
-                            .overlay
-                            .read_entity(&StableEntityAddressV1::Part {
-                                part_id: part_id.clone(),
-                            })
-                            .is_none()
-                        {
-                            return Err(contract());
-                        }
-                        "part"
-                    }
-                };
-                if !array(field(effect, "ownerKinds")?)?
-                    .iter()
-                    .any(|item| string(item).is_ok_and(|value| value.eq_ascii(owner_kind)))
-                {
-                    return Err(contract());
-                }
-                let document = transaction
-                    .integrated_projection(&id)
-                    .map_err(|_| internal())?;
-                projection_count += 1;
-                let transformed_reply = call(
-                    executor,
-                    object([
-                        ("operation", text("transform")),
-                        ("document", value(&document)?),
-                        (
-                            "documentVersion",
-                            number(self.runtime.document_version.get()),
-                        ),
-                        ("contributionId", field(source, "contributionId")?.clone()),
-                        ("effect", request.clone()),
-                    ]),
-                    source,
-                )?;
-                if !exact(&transformed_reply, &["ok", "transformed"]) {
-                    return Err(contract());
-                }
-                let transformed =
-                    field(&transformed_reply, "transformed").map_err(|_| contract())?;
-                let namespace = string(field(request, "namespace")?)?.clone();
-                let block =
-                    if tag(transformed, "status", "remove") && exact(transformed, &["status"]) {
-                        None
-                    } else if tag(transformed, "status", "replace")
-                        && exact(transformed, &["status", "schemaVersion", "payload"])
-                    {
-                        let version =
-                            integer(field(transformed, "schemaVersion")?).ok_or_else(contract)?;
-                        if !array(field(effect, "supportedSchemaVersions")?)?
-                            .iter()
-                            .any(|value| integer(value) == Some(version))
-                        {
-                            return Err(contract());
-                        }
-                        Some(
-                            ExtensionBlockV1::from_lossless_value(object([
-                                ("namespace", JsonValue::String(namespace.clone())),
-                                ("owner", value(&owner)?),
-                                (
-                                    "schemaVersion",
-                                    field(transformed, "schemaVersion")?.clone(),
-                                ),
-                                ("payload", field(transformed, "payload")?.clone()),
-                            ]))
-                            .map_err(|_| contract())?,
-                        )
-                    } else {
-                        return Err(contract());
-                    };
-                transaction
-                    .set_integrated_extension(namespace, owner, block)
-                    .map_err(|_| contract())?;
-            }
-            let addresses = array(field(prepared, "affected")?)?;
-            let mut normalized = std::collections::BTreeMap::new();
-            for address in addresses {
-                let (key, target, entity) = decode_address(address).map_err(|_| contract())?;
-                if let StableEntityAddressV1::Document { document_id } = &entity {
-                    if document_id != &id {
-                        return Err(contract());
-                    }
-                } else if transaction.overlay.read_entity(&entity).is_none() {
-                    return Err(contract());
-                }
-                normalized.insert(key, target);
-                if normalized.len() > 131_072 {
-                    return Err(resource("affected-addresses", 131_072));
-                }
-            }
-            affected.extend(normalized.into_values());
-        } else if !tag(prepared, "status", "no-op") || !exact(prepared, &["status"]) {
-            return Err(contract());
+        let module = module::ModuleEnvironment {
+            commands: &self.commands,
+            effects: &self.effects,
+            id: &id,
+            version: self.runtime.document_version.get(),
         }
+        .prepare(envelope, &mut transaction, &mut projection_count, executor)?;
+        let affected = module.affected;
+        let command_id = module.source.command_id;
         let document = transaction
             .integrated_projection(&id)
             .map_err(|_| internal())?;
@@ -471,7 +275,7 @@ impl IntegratedKernelRuntimeV2 {
         self.reserve_reply(
             &pipeline,
             prepared.integrated_affected.as_deref().unwrap_or(&[]),
-            &KernelCommandIdentityV1::Module(StableId::new(command_id).map_err(|_| contract())?),
+            &KernelCommandIdentityV1::Module(command_id.clone()),
         )?;
         let prepared = if changed {
             prepared
@@ -481,10 +285,9 @@ impl IntegratedKernelRuntimeV2 {
                 .finish()
                 .map_err(|_| internal())?
         };
-        let result = self.runtime.commit_integrated_transaction(
-            StableId::new(command_id).map_err(|_| contract())?,
-            prepared,
-        );
+        let result = self
+            .runtime
+            .commit_integrated_transaction(command_id.clone(), prepared);
         self.completed(result, pipeline)
     }
 

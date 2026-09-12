@@ -14,6 +14,15 @@ impl IntegratedKernelRuntimeV2 {
         // ordinary child decoder internally, retaining nested-Batch rejection.
         let command = decode_admission_command_value(envelope)
             .map_err(|failure| value(&failure).unwrap_or_else(|_| internal()))?;
+        if let CoreCommandEnvelopeV1::TransactionBatch { target, commands } = &command
+            && commands.iter().any(|child| {
+                self.commands.iter().any(|definition| {
+                    field(definition, "commandId").ok() == field(child.as_json(), "commandId").ok()
+                })
+            })
+        {
+            return self.submit_batch(target.clone(), commands, executor);
+        }
         let command_id = command.command_id();
         let prepared = self
             .runtime

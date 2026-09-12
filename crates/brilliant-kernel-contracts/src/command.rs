@@ -405,7 +405,9 @@ impl CapturedCoreCommandV1 {
         Self(value)
     }
 
-    pub(crate) const fn as_json(&self) -> &LosslessJsonValue {
+    /// Borrow immutable captured child data for the versioned integrated router.
+    /// Reading it does not decode or authorize a Core or module command.
+    pub const fn as_json(&self) -> &LosslessJsonValue {
         &self.0
     }
 }

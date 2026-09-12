@@ -434,3 +434,184 @@ test("Native methods reject foreign receivers and reuse an immutable snapshot fo
   assert.notStrictEqual(changed.value.snapshot, first.value.snapshot);
   assert.equal(first.value.snapshot.documentVersion, 0);
 });
+
+test("Native mixed Batch uses genuine SDK commands with every independent Core admission shape", () => {
+  for (const entry of buildCommandAdmissionOracle().cases) {
+    resetCvn6Callbacks();
+    const oracle = create(false);
+    const native = create(true);
+    const events: unknown[][] = [[], []];
+    oracle.subscribe((event: unknown) => events[0]!.push(event));
+    native.subscribe((event: unknown) => events[1]!.push(event));
+    const input = coreBatch([command("score", "before-core"), entry.input]);
+    const expected = oracle.submit(input);
+    assert.deepEqual(native.submit(input), expected, entry.id);
+    assert.deepEqual(native.read(), oracle.read(), `${entry.id}/read`);
+    if (expected.status === "committed") {
+      for (const operation of ["undo", "redo", "undo", "redo"] as const) {
+        assert.deepEqual(native[operation](), oracle[operation](), `${entry.id}/${operation}`);
+        assert.deepEqual(native.read(), oracle.read(), `${entry.id}/${operation}/read`);
+      }
+    }
+    assert.deepEqual(events[1], events[0], `${entry.id}/events`);
+  }
+});
+
+test("Native mixed Batch alternates module owners and Core removal, preserving one history and exact failures", () => {
+  const document = createCoreScoreFixture();
+  const metadata = { commandVersion: 1, commandId: "core.document.set-metadata", target: { kind: "document", documentId: document.id }, payload: { metadata: { ...document.metadata, title: "core prefix" } } };
+  const remove = { commandVersion: 1, commandId: "core.part.remove", target: { kind: "part", partId: "part-1" }, payload: {} };
+  const invalid = { ...command("part"), payload: { ...command("part").payload, schemaVersion: 99 } };
+  const inputs = [
+    coreBatch([metadata, command(), command("part")]),
+    coreBatch([command("part"), remove]),
+    coreBatch([command("part"), remove, { commandVersion: 1, commandId: "core.part.insert", target: metadata.target, payload: { anchor: { kind: "start" }, part: document.parts[0] } }]),
+    coreBatch([metadata, command(), invalid]),
+    coreBatch([command(), { commandId: "core.transaction.batch", commandVersion: 99 }]),
+    coreBatch([command(), { commandVersion: 1, commandId: "core.part.set-name", target: { kind: "part", partId: "missing" }, payload: { name: "missing" } }]),
+  ];
+  for (const [index, input] of inputs.entries()) {
+    resetCvn6Callbacks();
+    const oracle = create(false);
+    const native = create(true);
+    const events: unknown[][] = [[], []];
+    oracle.subscribe((event: unknown) => events[0]!.push(event));
+    native.subscribe((event: unknown) => events[1]!.push(event));
+    const before = native.read();
+    const expected = oracle.submit(input);
+    assert.equal(expected.status, index === 0 || index === 2 ? "committed" : "rejected", `case ${index}: ${JSON.stringify(expected)}`);
+    assert.deepEqual(native.submit(input), expected, `case ${index}`);
+    assert.deepEqual(native.read(), oracle.read());
+    if (expected.status === "committed") {
+      resetCvn6Callbacks();
+      for (const operation of ["undo", "redo", "undo", "redo"] as const) {
+        assert.deepEqual(native[operation](), oracle[operation]());
+        assert.deepEqual(native.read(), oracle.read());
+      }
+      assert.equal(cvn6CallbackCounts.commandPrepare, 0);
+      assert.equal(cvn6CallbackCounts.effectTransform, 0);
+    } else assert.deepEqual(native.read(), before);
+    assert.deepEqual(events[1], events[0]);
+  }
+});
+
+test("Native module preparation observes the actual invalid Core prefix and later repair commits once", () => {
+  const document = createCoreScoreFixture();
+  const temporary = { ...document.parts[0]!, id: "temporary-part", staves: document.parts[0]!.staves.map(staff => ({ ...staff, id: "" })),
+    measureContents: document.parts[0]!.measureContents.map(content => ({ ...content, voices: content.voices.map(voice => ({ ...voice,
+      id: "", defaultStaffId: "", sequence: { ...voice.sequence, events: [] } })) })) };
+  const input = coreBatch([
+    { commandVersion: 1, commandId: "core.document.set-metadata", target: { kind: "document", documentId: document.id }, payload: { metadata: { ...document.metadata, title: "visible prefix" } } },
+    { commandVersion: 1, commandId: "core.part.insert", target: { kind: "document", documentId: document.id }, payload: { anchor: { kind: "start" }, part: temporary } },
+    command(),
+    { commandVersion: 1, commandId: "core.part.remove", target: { kind: "part", partId: temporary.id }, payload: {} },
+  ]);
+  resetCvn6Callbacks();
+  const oracle = create(false);
+  const native = create(true);
+  let observations = 0;
+  cvn6CallbackBehavior.prepareOverride = (view, result) => {
+    assert.equal(view.coreDocument.metadata.title, "visible prefix");
+    assert.equal(view.coreDocument.parts[0]!.id, temporary.id);
+    assert.equal(view.coreDocument.parts[0]!.staves[0]!.id, "");
+    observations++;
+    return result;
+  };
+  const expected = oracle.submit(input);
+  assert.equal(expected.status, "committed");
+  assert.deepEqual(native.submit(input), expected);
+  assert.equal(observations, 2);
+  assert.deepEqual(native.read(), oracle.read());
+  for (const operation of ["undo", "redo"] as const) {
+    assert.deepEqual(native[operation](), oracle[operation]());
+    assert.deepEqual(native.read(), oracle.read());
+  }
+  assert.equal(observations, 2, "history does not rerun preparation");
+  resetCvn6Callbacks();
+});
+
+test("Native mixed Batch retains a nonempty module sequence with zero net document change", () => {
+  resetCvn6Callbacks();
+  const initial = createCoreScoreFixture();
+  const document = { ...initial, extensions: [...initial.extensions, { namespace: "fixture.score", schemaVersion: 1,
+    owner: { kind: "score" as const }, payload: { marker: "original" } }] };
+  const oracle = create(false, addon, document);
+  const native = create(true, addon, document);
+  cvn6CallbackBehavior.prepareOverride = (view, result) => {
+    assert.equal(result.status, "changed");
+    if (result.status !== "changed") throw new Error("fixture");
+    const event = view.coreDocument.parts[0]!.measureContents[0]!.voices[0]!.sequence.events[0]!;
+    assert.equal(event.content.kind, "notes");
+    if (event.content.kind !== "notes") throw new Error("fixture");
+    return { ...result, effectRequests: [...result.effectRequests,
+      { requestVersion: 1, requestKind: "core.note.replace-written-pitch", target: { kind: "note", noteId: "note-1" }, writtenPitch: event.content.notes[0]!.writtenPitch },
+      { requestVersion: 1, requestKind: "module.extension", effectKind: "fixture.score.replace", namespace: "fixture.score", owner: { kind: "score" }, payload: { schemaVersion: 1, marker: "original" } },
+    ] };
+  };
+  const input = coreBatch([command()]);
+  const events: unknown[][] = [[], []];
+  oracle.subscribe((event: unknown) => events[0]!.push(event));
+  native.subscribe((event: unknown) => events[1]!.push(event));
+  for (const operation of ["submit", "submit", "undo", "redo"] as const) {
+    const expected = operation === "submit" ? oracle.submit(input) : oracle[operation]();
+    assert.equal(expected.status, "committed");
+    assert.deepEqual(operation === "submit" ? native.submit(input) : native[operation](), expected);
+    assert.deepEqual(native.read(), oracle.read());
+    const read = native.read();
+    assert.ok(read.ok);
+    assert.deepEqual(read.value.snapshot.document, document);
+  }
+  assert.deepEqual(events[1], events[0]);
+  resetCvn6Callbacks();
+});
+
+test("Native mixed Batch callback failures identify the child and final module failures preserve the entire state", () => {
+  for (const mode of ["throwFamily", "malformedFamily"] as const) {
+    for (const family of ["commandDecode", "commandPrepare", "effectDecode", "effectTransform", "validate", "classify"] as const) {
+      resetCvn6Callbacks();
+      const oracle = create(false);
+      const native = create(true);
+      const before = native.read();
+      const events: unknown[] = [];
+      native.subscribe((event: unknown) => events.push(event));
+      const document = createCoreScoreFixture();
+      const prefix = { commandVersion: 1, commandId: "core.document.set-metadata", target: { kind: "document", documentId: document.id }, payload: { metadata: { ...document.metadata, title: "discard" } } };
+      cvn6CallbackBehavior[mode] = family;
+      const input = coreBatch([prefix, command()]);
+      const expected = oracle.submit(input);
+      assert.equal(expected.status, "rejected");
+      assert.deepEqual(native.submit(input), expected, `${mode}/${family}`);
+      assert.deepEqual(native.read(), before);
+      assert.deepEqual(events, []);
+    }
+  }
+  resetCvn6Callbacks();
+});
+
+test("Native mixed Batch skips real no-op children and restores removed extension ordering", () => {
+  resetCvn6Callbacks();
+  const oracle = create(false);
+  const native = create(true);
+  for (const bus of [oracle, native]) assert.equal(bus.submit(command()).status, "committed");
+  const events: unknown[][] = [[], []];
+  oracle.subscribe((event: unknown) => events[0]!.push(event));
+  native.subscribe((event: unknown) => events[1]!.push(event));
+  const input = coreBatch([command(), command()]);
+  const before = native.read();
+  const noop = oracle.submit(input);
+  assert.equal(noop.status, "no-op");
+  assert.deepEqual(native.submit(input), noop);
+  assert.deepEqual(native.read(), before);
+  assert.deepEqual(events, [[], []]);
+  cvn6CallbackBehavior.transformOverride = () => ({ status: "remove" });
+  const removed = oracle.submit(input);
+  assert.equal(removed.status, "committed");
+  assert.deepEqual(native.submit(input), removed);
+  assert.deepEqual(native.read(), oracle.read());
+  for (const operation of ["undo", "redo"] as const) {
+    assert.deepEqual(native[operation](), oracle[operation]());
+    assert.deepEqual(native.read(), oracle.read());
+  }
+  assert.deepEqual(events[1], events[0]);
+  resetCvn6Callbacks();
+});

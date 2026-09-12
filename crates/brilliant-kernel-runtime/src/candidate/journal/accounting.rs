@@ -462,33 +462,7 @@ impl Recorder<'_> {
             }
             match &step.forward {
                 Operation::Extension(edit) => {
-                    let owner = match &edit.key.owner {
-                        crate::change_set::StableExtensionOwnerV1::Score => None,
-                        crate::change_set::StableExtensionOwnerV1::Part { part_id } => {
-                            Some(part_id.as_js_string())
-                        }
-                    };
-                    let expected = edit.expected.as_ref().map(|block| &block.value);
-                    let value = edit.value.as_ref().map(|block| &block.value);
-                    let anchor = (edit.expected.is_none() || edit.value.is_none())
-                        .then_some(())
-                        .and_then(|_| edit.expected.as_ref().or(edit.value.as_ref()))
-                        .and_then(|block| match &block.anchor {
-                            StableAnchorV1::Start => None,
-                            StableAnchorV1::After { sibling_id } => Some(sibling_id.as_js_string()),
-                        });
-                    let strings = std::iter::once(&edit.key.namespace)
-                        .chain(owner)
-                        .chain(anchor);
-                    match (expected, value) {
-                        (Some(expected), Some(value)) => {
-                            accounting.charge_extension_pair(strings, &[expected, value])?
-                        }
-                        (Some(value), None) | (None, Some(value)) => {
-                            accounting.charge_extension_pair(strings, &[value])?
-                        }
-                        (None, None) => return Err(invariant()),
-                    }
+                    charge_extension(edit, accounting)?;
                     count += 1;
                 }
                 Operation::ReplaceScalar {
@@ -735,5 +709,80 @@ impl Recorder<'_> {
                 .charge_ordered_child_pair(address.iter().flatten().chain(anchor).chain([raw]))?;
         }
         Ok(bundle.contents.len() as u64)
+    }
+}
+
+fn charge_extension(
+    edit: &extension_edits::StoredExtensionEdit,
+    accounting: &mut ChangeSetAccountingV1,
+) -> Outcome {
+    let owner = match &edit.key.owner {
+        crate::change_set::StableExtensionOwnerV1::Score => None,
+        crate::change_set::StableExtensionOwnerV1::Part { part_id } => Some(part_id.as_js_string()),
+    };
+    let expected = edit.expected.as_ref().map(|block| &block.value);
+    let value = edit.value.as_ref().map(|block| &block.value);
+    let anchor = (edit.expected.is_none() || edit.value.is_none())
+        .then_some(())
+        .and_then(|_| edit.expected.as_ref().or(edit.value.as_ref()))
+        .and_then(|block| match &block.anchor {
+            StableAnchorV1::Start => None,
+            StableAnchorV1::After { sibling_id } => Some(sibling_id.as_js_string()),
+        });
+    let strings = std::iter::once(&edit.key.namespace)
+        .chain(owner)
+        .chain(anchor);
+    match (expected, value) {
+        (Some(expected), Some(value)) => {
+            accounting.charge_extension_pair(strings, &[expected, value])?
+        }
+        (Some(value), None) | (None, Some(value)) => {
+            accounting.charge_extension_pair(strings, &[value])?
+        }
+        (None, None) => return Err(invariant()),
+    }
+    Ok(())
+}
+
+impl Recorder<'_> {
+    /// Module segments have their own source and affected facts. Never label
+    /// their primitive effects as a Core leaf merely to reuse charging.
+    pub(super) fn charge_module_segment(
+        &mut self,
+        start: usize,
+        accounting: &mut ChangeSetAccountingV1,
+        addresses: &[AffectedEntityAddressV1],
+        output: &mut Vec<AffectedEntityAddressV1>,
+    ) -> Outcome<u64> {
+        let result = (|| {
+            for step in self.steps.get(start..).ok_or_else(invariant)? {
+                match &step.forward {
+                    Operation::Extension(edit) => charge_extension(edit, accounting)?,
+                    Operation::ReplaceScalar {
+                        target,
+                        expected,
+                        value,
+                    } if matches!(value.as_ref(), Value::NoteWrittenPitch(_)) => {
+                        accounting.charge_scalar_pair(
+                            self.accounting_raw(*target)?,
+                            expected,
+                            value,
+                        )?;
+                    }
+                    _ => return Err(invariant()),
+                }
+            }
+            charge_affected(
+                addresses,
+                accounting,
+                &mut self.candidate.reservation,
+                &mut Some(output),
+            )?;
+            Ok((self.steps.len() - start) as u64)
+        })();
+        if result.is_err() {
+            self.candidate.reservation.abort();
+        }
+        result
     }
 }

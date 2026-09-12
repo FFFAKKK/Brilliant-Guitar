@@ -53,6 +53,8 @@ export const cvn6CallbackBehavior: {
   affectedAddressCount?: number;
   validatorIssueCount?: number;
   replaceJsonStringify?: boolean;
+  prepareOverride?: (view: DomainContributionReadViewV1, result: DomainCommandPreparationResultV1) => DomainCommandPreparationResultV1;
+  transformOverride?: (input: ModuleEffectApplyInputV1<FixtureEffectPayload>) => ModuleEffectApplyResultV1;
 } = {};
 
 export function resetCvn6Callbacks(): void {
@@ -69,6 +71,8 @@ export function resetCvn6Callbacks(): void {
   delete cvn6CallbackBehavior.affectedAddressCount;
   delete cvn6CallbackBehavior.validatorIssueCount;
   delete cvn6CallbackBehavior.replaceJsonStringify;
+  delete cvn6CallbackBehavior.prepareOverride;
+  delete cvn6CallbackBehavior.transformOverride;
 }
 
 function record(family: keyof typeof cvn6CallbackCounts, module: FixtureModule): void {
@@ -185,11 +189,12 @@ function prepareCommand(
     { length: cvn6CallbackBehavior.affectedAddressCount ?? addresses.length },
     (_, index) => addresses[index % addresses.length]!,
   );
-  return {
+  const result: DomainCommandPreparationResultV1 = {
     status: "changed",
     effectRequests,
     affected,
   };
+  return cvn6CallbackBehavior.prepareOverride?.(_view, result) ?? result;
 }
 
 function decodeEffect(
@@ -225,6 +230,9 @@ function transformEffect(
   }
   if (cvn6CallbackBehavior.replaceJsonStringify === true) {
     JSON.stringify = (() => "{}") as typeof JSON.stringify;
+  }
+  if (cvn6CallbackBehavior.transformOverride !== undefined) {
+    return cvn6CallbackBehavior.transformOverride(input);
   }
   return {
     status: "replace",

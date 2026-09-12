@@ -19,7 +19,9 @@ mod journal;
 mod measure;
 mod reservation;
 
-pub(crate) use journal::{CandidateExecution, CandidateHistory, PreparedCandidate};
+pub(crate) use journal::{
+    CandidateExecution, CandidateHistory, ModuleSegmentSource, PreparedCandidate,
+};
 
 use reservation::{Reservation, Site};
 
