@@ -8,6 +8,13 @@ stop and report. Do not start the next development slice until the owner resumes
 work. The broad commercial objective remains incomplete; this pause is not
 commercial acceptance or a technical blocker.
 
+The owner's subsequent repository-management request authorizes integrating the
+validated `f9ec44b` kernel baseline into master and freezing the legacy TS engine.
+It does not resume unbounded feature work or turn the integration into a default
+backend cutover. TS SDK/native adapters and shared validation services remain
+active dependencies; old TS transaction development is frozen. See
+`docs/archive/typescript-kernel.md` and `docs/repository-maintenance.md`.
+
 On 2026-09-05 the owner requested autonomous project assessment, planning,
 implementation, self-review and local Git commits until the kernel meets a
 commercial standard. The owner also permits skipping Trellis. This branch uses

@@ -2,17 +2,19 @@
 
 本次采用原地归档：旧目录和分支保留，不代表仍需继续执行其中的历史任务。完整恢复包位于 `.repo-archive/2026-09-12/`。
 
+2026-09-12 主线再次整合：`master` 已包含内核 `f9ec44b`；保留三处活跃入口，清理了两条已不存在的临时目录登记，现在共有 53 条 worktree 登记。所有实际目录和分支保留，下面的历史表仍用于追溯，不代表当前登记数量。
+
 ## 活跃工作区
 
 | 用途 | 分支 | 目录 |
 | --- | --- | --- |
 | 集成主线 | `master` | 项目根目录 |
-| 内核未完成工作 | `codex/kernel-commercial-completion` | `.worktrees/kernel-commercial-completion` |
+| 内核后续开发入口（截至 f9ec44b 已合入主线） | `codex/kernel-commercial-completion` | `.worktrees/kernel-commercial-completion` |
 | UI 设计 | `codex/ui-design` | `.worktrees/ui-design` |
 
 ## 保留的历史工作区
 
-两条原本指向不存在目录的登记也暂时保留；没有运行 worktree prune。下表状态是本次整理时的归档状态。
+下表是第一次整理时的归档状态。其两条 `%TEMP%` 失效登记已在后续主线整合时用 `worktree prune` 清理；执行前确认目录不存在、预览仅包含这两项，且对应提交仍是 master 的祖先。清理日志在 `.repo-archive/2026-09-12/kernel-integration/worktree-prune.log`。历史来源行继续保留。
 
 | 原工作区 | 提交 | 原分支/状态 |
 | --- | --- | --- |

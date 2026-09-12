@@ -1,6 +1,8 @@
 # Brilliant Guitar
 
-吉他制谱项目的内核仓库。当前产品运行路径仍是 TypeScript；Rust 是已有命令、事务、存储和历史能力的私有原生实现，扩展执行与组合会话尚未完整，不能视为商业级发布。
+吉他制谱项目的内核仓库。`master` 已整合通过回归的 Rust 内核：基础编辑、统一事务/历史、插件执行/迁移、受限 WASM 和跨插件显式读取，可用于开发集成。商业资源、平台和性能资格尚未完成。
+
+**后续内核开发以 Rust 为主。旧 TS 事务引擎已冻结归档，不再作为独立功能开发线。** TS SDK、数据合同、共享校验服务和 Node 适配仍是现有 Rust 集成链路的一部分。旧默认入口仍会运行 TS；新集成请显式选择下面的 Rust 入口。此次 Git 整合未完成默认切换。详见 [TS 归档边界](docs/archive/typescript-kernel.md)。
 
 ## 当前入口
 
@@ -11,6 +13,12 @@
 - `docs/kernel-commercial-completion.md`：功能进度及验证记录。
 - `docs/kernel-extension-completion-plan.md`：尚未完成的扩展与组合会话计划。
 - `.trellis/spec/`：工程约定；任务和日志目录保留历史，不代表当前全部待办。
+
+## 使用当前 Rust 内核
+
+构建下述原生产物后，宿主使用 `src/core-kernel/native/integrated-command-bus.ts` 的 `installNativeIntegratedBackendV2(addon)`，在选择期间调用 `CommandBus.createIntegrated(document, catalog)`。选择函数返回 restore；恢复选择不会改变已创建的 Rust session。该路径的文档、事务和历史由 Rust 持有。
+
+需要 WASM 时，使用 `src/native-host/wasm-bindings.ts` 的 `installNativeWasmIntegratedBackendV1(addon, catalog, bindings)`，绑定真实 catalog 和经过哈希校验的产物。需要跨插件读取时，使用 [显式读取合同](docs/kernel-contribution-reads-v1.md) 的派生 catalog。普通 `CommandBus.create()` 仍是旧 TS 兼容入口，不能据此判断 Rust 已启用。
 
 ## 构建与验证
 
@@ -41,7 +49,7 @@ npm test
 
 ## 工作区与本地文件
 
-根目录使用 `master`；`.worktrees/kernel-commercial-completion` 保留未完成的内核工作，UI 设计保存在独立工作区。历史版本通过 `archive/2026-09-12/*` 标签恢复。主线更新不改变 TS 默认后端，也不代表扩展内核已完成。
+根目录 `master` 已包含内核分支截至 `f9ec44b` 的全部 26 项新提交；内核工作区保留为后续开发入口，UI 工作区独立保留。历史版本通过 `archive/2026-09-12/*` 标签恢复。本次只整合已提交成果、冻结 TS 开发线并清理两条失效 worktree 登记，没有删除实际开发目录。主线更新不改变默认后端，也不代表商业资格通过。
 
 `target/`、`dist/`、`node_modules/` 是本地生成目录。历史上 `target/` 混有验证日志，清理前必须先保存必要证据。`tmp/` 包含本地参考资料，不应当成可重建缓存自动清空。`.repo-archive/` 保存本次整理的恢复包，不提交 Git，也不要作为缓存删除。
 

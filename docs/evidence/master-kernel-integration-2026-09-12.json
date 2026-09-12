@@ -1,0 +1,104 @@
+{
+  "kind": "repository-integration-not-commercial-qualification",
+  "date": "2026-09-12",
+  "sourceCommit": "f9ec44b409ccb31f8bf898d4bd88be9188cdc93a",
+  "previousMaster": "eceec9f0dab91f962a9bb50f85bca9378b3926be",
+  "method": "fast-forward, 26 source commits; documentation-only closeout",
+  "freshRootChecks": {
+    "failed": 0,
+    "tests": 832,
+    "releaseIntegratedV2": "passed",
+    "passed": 830,
+    "durationMilliseconds": 49749.9546,
+    "releaseV1": "passed",
+    "skipped": 2,
+    "releaseWasmV1": "passed",
+    "typescriptBuildIncludingTsc": "passed"
+  },
+  "inheritedRust": {
+    "ignored": 1,
+    "evidence": "docs/evidence/kernel-wasm-binding-2026-09-12.json",
+    "note": "Host Rust code unchanged; no repeated full Rust tests for repository integration",
+    "passed": 538,
+    "source": "6feef80bdb2d2e1ed6395e6cc8732ad8a4693b4b"
+  },
+  "archive": {
+    "tags": [
+      "archive/2026-09-12/master-before-kernel-integration",
+      "archive/2026-09-12/typescript-kernel-frozen",
+      "integration/2026-09-12/kernel-usable-baseline"
+    ],
+    "sourceZip": "296 entries, CRC passed",
+    "scope": "Legacy TS transaction engine frozen; shared SDK, validation and native adapters retained; no default cutover or physical source removal",
+    "bundle": "complete history, git bundle verify passed",
+    "evidenceZip": "91 entries, CRC passed"
+  },
+  "worktrees": {
+    "count": 53,
+    "uiCommit": "f22d141ab332a7036e3c18e296aed6dc7cb7477a",
+    "branchesDeleted": 0,
+    "checks": "Exact two-target dry-run, nonexistent directories, both commits ancestors of master",
+    "removedRegistrations": [
+      "brilliant-guitar-k1-p1-repair",
+      "rkp0-audit-9bc5390-autocrlf"
+    ],
+    "actualDirectoriesDeleted": 0
+  },
+  "artifacts": [
+    {
+      "path": "target/rkp-1-node/brilliant_kernel_node.node",
+      "bytes": 3617792,
+      "sha256": "d7e69aba85862c2430cbe98389ea6c8ceafd3f866d00caa8a2a8bc3de8675fb1"
+    },
+    {
+      "path": "target/integrated-v2/brilliant_kernel_node.node",
+      "bytes": 4362752,
+      "sha256": "575ad086229ef04fd7e421197e6857ee43504a62c1849810e6b94153a0f0eb2f"
+    },
+    {
+      "path": "target/wasm-v1/brilliant_kernel_node.node",
+      "bytes": 5594112,
+      "sha256": "e1cede318021e4c2292a244c23beacd7e31bb3a5dae09fd45f2249c82946c8d2"
+    },
+    {
+      "path": ".local-evidence/master-integration-2026-09-12/release-v1.log",
+      "bytes": 1046,
+      "sha256": "24bf16a868f5fe33299ccccff215fa6956e57982a8254d5bb16e91fdf772466e"
+    },
+    {
+      "path": ".local-evidence/master-integration-2026-09-12/release-v2.log",
+      "bytes": 294,
+      "sha256": "a54d92ad9e0aab1e219d7140d17bfedca95abbace436c46ba0582942cb795872"
+    },
+    {
+      "path": ".local-evidence/master-integration-2026-09-12/release-wasm.log",
+      "bytes": 887,
+      "sha256": "04021cbfc31cca3ff03d643aa66da95b8f1514e0093743d70a21480df049f525"
+    },
+    {
+      "path": ".local-evidence/master-integration-2026-09-12/ts-native-full.log",
+      "bytes": 75503,
+      "sha256": "8ca7cbbf994fa3136481f3880f9a1ec7aafc1a325332f2673b750c77462d23b8"
+    },
+    {
+      "path": ".repo-archive/2026-09-12/kernel-integration/kernel-integration.bundle",
+      "bytes": 5695341,
+      "sha256": "f3f384ccd1c2aba051055120759a9e23c1d439a1d00d219cbc77efddba1940e2"
+    },
+    {
+      "path": ".repo-archive/2026-09-12/kernel-integration/typescript-kernel-frozen.zip",
+      "bytes": 943103,
+      "sha256": "f8fe1884ee8fed205b342d2dda88df826dae0800766eab1046e564798a46a93b"
+    },
+    {
+      "path": ".repo-archive/2026-09-12/kernel-integration/kernel-local-evidence.zip",
+      "bytes": 481147,
+      "sha256": "7abee0c689c52b7976094d3998a7c6b8472f70036c3f9739741163c24c52be52"
+    },
+    {
+      "path": ".repo-archive/2026-09-12/kernel-integration/manifest.json",
+      "bytes": 1386,
+      "sha256": "948549aa900c97286f4194610d45841fdabf6b5c1f34e52e8ee256b8e90b8109"
+    }
+  ]
+}

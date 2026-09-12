@@ -1,5 +1,19 @@
 # 仓库维护记录
 
+## 2026-09-12 内核成果整合与 TS 冻结归档
+
+`master` 从 `eceec9f` 快进到 `f9ec44b`，接收内核开发分支的全部 26 个已提交成果，没有分叉冲突或重写历史。随后只追加仓库管理、归档和验证记录；内核开发工作区同步主线管理提交，UI 设计分支保留 `f22d141`，不将未验收设计混作内核运行成果。
+
+建立三个注释标签：`archive/2026-09-12/master-before-kernel-integration`（`eceec9f`）、`archive/2026-09-12/typescript-kernel-frozen`（`f9ec44b`）和 `integration/2026-09-12/kernel-usable-baseline`（`f9ec44b`）。`.repo-archive/2026-09-12/kernel-integration/` 保存完整 Git bundle、TS/SDK/适配源码 ZIP、91 项内核验证日志的 ZIP、整合前 refs/worktree 登记及 SHA-256 清单。Bundle 验证和两个 ZIP 的逐文件 CRC 检查均通过。
+
+仅清理两条已经不存在的临时目录 worktree 登记：`brilliant-guitar-k1-p1-repair`、`rkp0-audit-9bc5390-autocrlf`。先核对 dry-run 恰好包含这两项、目录确实不存在、提交仍是 master 的祖先，再执行 prune。现在有 53 条 worktree 登记；所有实际开发目录、分支、源码、UI、证据和原恢复包均保留。
+
+旧 TS **事务引擎**停止独立功能开发，按 [归档边界](archive/typescript-kernel.md) 保留恢复快照和行为对照。Rust 所需的 TS SDK、共享服务、类型和 Node 适配继续保留。普通默认入口仍运行 TS；此处没有借仓库整理实施未经验证的默认切换，也没有将整份 TS 代码物理删除。
+
+在主线根目录重新构建 V1/V2/WASM 三种 release addon 后，新跑完整回归 **830 passed、2 skipped、0 failed（832 项，49.750 秒）**，构建包含 TypeScript 类型检查。Rust 源码与此前验证版本一致，没有重复全套 Rust 测试；538 passed/1 ignored 与 Clippy/MSRV 结果继承 `6feef80` 的证据，不能当作本次新跑。主线产物、日志与恢复文件标识见 `docs/evidence/master-kernel-integration-2026-09-12.json`。
+
+当前策略：master 作为已整合开发基线，后续功能在内核工作区推进并按验证结果整合；不再扩展旧 TS 引擎。缺失依赖的降级装配、累计资源/长期运行与平台性能资格、Rust 默认切换及旧执行路径清理仍待专门推进。本次仓库任务不自动恢复持续内核功能开发。
+
 ## 2026-09-12 整理基线
 
 整理前本地有 57 个分支、54 个 worktree 登记（含两个不存在的目录）。根目录及其子目录共约 26.59 GiB，Rust target 目录合计约 22.45 GiB；不含 C 盘外部 worktree。master 为 d440bc5，内核已提交线为 ca33ade，后者领先 523 个提交且包含原 master。
