@@ -36,8 +36,22 @@ Core 命令 ID 的原有编码不变。内部历史与事件增加模块 ID 表�
 
 ## 剩余工作与实用限制
 
-- 这条实验 V2 session 当前执行 domain commands 及其已存在的两种 effect request。独立 Core 命令和跨域 Batch 还未并入它；旧 V1 的完整 Core 实现继续存在。下一片首先接通这两个入口及 candidate 历史的模块 assessment，再扩大公开功能差分。
+- 这条实验 V2 session 已接通独立 Core 命令、纯 Core Batch、domain commands 及其已存在的两种 effect request。Core 与模块命令共用同一 Store 和历史；含模块子命令的跨域 Batch 尚未接通，这是下一片的主要缺口。
 - JS SDK 允许宽视图读取，当前会完整物化回调输入，并执行完整语义检查。私有 `callbackProjections` 记录这一兼容路径的视图工作；不要把 Core typed metrics 当成整个 V2 调用的成本，也不能把这些回归测试当性能资格证据。
 - 私有响应在 adoption 前进行保守空间预检；实际内存压力、资源边界的完整矩阵和异常终止恢复仍需 S3 验证。
 - 回调绑定和模块 issue 解析依赖真实 JS SDK 宿主，尚未实现可移植 WASM 产物、燃料/内存限制或执行超时。同步 JS 回调不能由此强制终止。
 - 显式 extension migration、结构不同的插件关系维护、多级依赖消费者及商业性能资格仍未完成。应用/SDK 的 51/8/34/9 公开导出与 ABI 冻结继续适用。
+
+## S2.2b：Core 入口和 candidate 历史
+
+2026-09-12 的后续实现将原有 admission 的“准备”与“提交”拆开，V1 仍调用两步，V2 在两步之间加入现有 SDK 的模块 assessment 与响应空间预检。Session 注入原来的 27 个叶命令处理器；纯 Core Batch 保留原来的子项失败索引、延迟最终校验和 typed → candidate 提升。没有复制一套命令实现，也没有创建临时可变 Store。
+
+预览 candidate 历史时，按原来的 suffix/prefix 次序解释已存操作，撤销方向保留结构封口边界，最后投影只读文档。失败不移动游标。Core Batch 即便最终文档净变化为零，只要实际执行过编辑，仍保留提交和历史；没有套用独立模块命令的净变化判断。
+
+差分检查发现并修复了共用 overlay 投影遗漏：父级 Voices/Events 顺序未修改时，原来的提前返回会漏掉更深层的新事件或新音符。现在继续下探已存在的父节点，Rust 定向回归以及 Native 删除事件后撤销的完整 assessment 对照均覆盖此问题。
+
+新增 Native 检查消费全部独立 command admission 语料，比较 submit、成功后的 undo/redo、完整 read 和事件；另覆盖 typed 前缀与临时空 ID 后缀组成的净零 Batch，以及该 candidate 历史在模块校验拒绝后重试。Core 编辑与模块编辑交错共用历史，Core/纯 Core Batch 的最终模块拒绝保持零变化。
+
+这条兼容路径为 SDK 回调重新解释已准备或已存操作并完整投影文档，随后才采用原计划。它有额外 CPU/分配成本；私有回调计数及原有 Core metrics 都不代表该路径的完整工作量。此处验证功能正确性，性能计量与投影复用优化属于 S3。
+
+实现提交 `febe3c6`：Rust 509 项通过、1 项忽略；TS/Native 全量 785 项通过、2 项跳过、0 失败。定向 Native 17 项包含 504 个输入、28 类 Core 命令形状语料。fmt、严格 Clippy、Rust 1.88 检查通过。首次全量的唯一失败是源码检查仍要求准备代码内联；更新后仍验证 prepare 内无提交，以及 prepare 后恰好一次 commit。实际事件撤销差分曾暴露的投影问题已由上述修复解决，行为基线未改。日志和产物标识见 [本片回归记录](evidence/kernel-integrated-core-2026-09-12.json)。

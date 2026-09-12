@@ -1690,3 +1690,31 @@ failed run. These results close the module-command journey, not S2, S3 or
 commercial qualification. Standalone Core/Batch composition and candidate history
 assessment in the new session remain next, followed by WASM, migration and real
 layered-plugin relationship consumers. Master remains `eceec9f` and unchanged.
+
+### S2.2b — Core admission and candidate history in the integrated Native session
+
+The V2 session now uses the original 27 Core leaf handlers and pure-Core Batch
+admission, with module assessment and response preflight before the original
+commit. Core and module submissions share the Rust Store and history. Candidate
+undo/redo previews stored operations through the structural boundary before
+module assessment; rejection leaves the cursor unchanged. Core Batch retains
+operation-fact commits even for a net-zero final document.
+
+The independent command admission corpus is compared through the real SDK/native
+factory, including successful history, complete reads and events. A temporary
+raw-ID candidate with a typed prefix covers net-zero history and module rejection
+followed by retry. This exposed and fixed nested overlay projection skipping new
+events/notes when ancestor orders were untouched.
+
+Cross-domain Batch containing module children remains next. WASM, migration,
+layered-plugin relationship consumers and commercial qualification remain open.
+Compatibility assessment currently replays and fully projects stored operations;
+no incremental-cost or performance qualification claim is made for this path.
+
+Implementation `febe3c6`: 509 Rust tests passed, 1 ignored; 785 TS/native tests
+passed, 2 skipped, zero failed. The 17 focused Native tests include 504 admission
+inputs across 28 Core command families. Strict all-feature Clippy, fmt and Rust
+1.88 checks passed. The source route guard was updated for the extracted prepare
+method while retaining the no-commit-during-prepare and one-commit-after-prepare
+checks. No behavioral fixture or timing threshold changed. Evidence:
+`docs/evidence/kernel-integrated-core-2026-09-12.json`.

@@ -1,0 +1,97 @@
+{
+  "kind": "regression-not-commercial-qualification",
+  "testedCodeCommit": "febe3c6fcfa067e9ed4ca79349eb854c61d92b12",
+  "date": "2026-09-12",
+  "nodeVersion": "v24.15.0",
+  "rust": {
+    "ignored": 1,
+    "passed": 509,
+    "failed": 0,
+    "allFeatures": true
+  },
+  "typescriptNative": {
+    "passed": 785,
+    "total": 787,
+    "failed": 0,
+    "skipped": 2
+  },
+  "integratedNativeJourney": {
+    "coreCommandFamilies": 28,
+    "commandAdmissionInputs": 504,
+    "passed": 17,
+    "failed": 0
+  },
+  "fullRunMilliseconds": 50148.6944,
+  "checks": {
+    "clippyAllTargetsAllFeatures": "passed",
+    "releaseV2": "passed",
+    "fmt": "passed",
+    "releaseV1": "passed",
+    "msrv188AllTargetsAllFeatures": "passed"
+  },
+  "priorFullRun": {
+    "cause": "The source route guard required preparation to remain inline. Updated to verify the extracted preparation function, no commits within preparation, and exactly one commit after preparation. No behavior oracle or timing threshold changed.",
+    "passed": 784,
+    "failed": 1,
+    "skipped": 2
+  },
+  "scope": "Standalone Core and pure-Core Batch reuse original admission in V2; shared module/Core history; candidate history module assessment before adoption; deep overlay projection fix.",
+  "remaining": [
+    "Cross-domain Batch containing module children",
+    "WASM execution and limits",
+    "Explicit migration and layered plugin relationship consumers",
+    "Full resource/platform matrix and commercial qualification"
+  ],
+  "artifacts": [
+    {
+      "path": "target/rkp-1-node/brilliant_kernel_node.node",
+      "bytes": 3598336,
+      "sha256": "849a8487e6271065409730ddd0e7c74426f8ed06416b388084e0d5eb3ab6fbe0"
+    },
+    {
+      "path": "target/integrated-v2/brilliant_kernel_node.node",
+      "bytes": 4171264,
+      "sha256": "c71271686c5f04d457fb09b1da41a4189e548a4b80890f196a0e518dec123491"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/core-rust.log",
+      "bytes": 57986,
+      "sha256": "08e220404cffd9ddd8c7f567f7f6dca7b772e27c8589e7d6c8daa15c3ff3d2f4"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/core-clippy.log",
+      "bytes": 879,
+      "sha256": "2e5fd46456f8811032b608963aa11e65b36dee4fba950ccdff75a0c5999f6734"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/core-msrv.log",
+      "bytes": 879,
+      "sha256": "31cd71792ca37540bbb70f3feb658d212d5d164a15e75c33e6ebdc4a65f7ddea"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/core-fmt.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/core-release-v1.log",
+      "bytes": 870,
+      "sha256": "e2508842dfa39e903166ee865fa21eaac1a0839ece8a5a4eef6d3155f4a4146e"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/core-native.log",
+      "bytes": 1976,
+      "sha256": "d55167a467e23cbf2eef496e017123e652c1f21936f229dbbf847f74ce9000e0"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/core-npm.log",
+      "bytes": 70361,
+      "sha256": "7aacefff94e6adb42fc4e20da53dbb4d1f66f5f0670cbaef7768eb0144a3d8b6"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/core-npm-source-guard-failed.log",
+      "bytes": 74072,
+      "sha256": "4d2d5772fbedd782b121c8a4b809a56b114eaa6d1a5e2d59a3883a02d6d17235"
+    }
+  ]
+}
