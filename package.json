@@ -2,9 +2,9 @@
   "name": "brilliant-guitar",
   "version": "0.1.0",
   "private": true,
-  "description": "Pure TypeScript core kernel for Brilliant Guitar.",
+  "description": "Brilliant Guitar TypeScript kernel and private Rust native runtime.",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "node scripts/build.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "npm run build && node dist/test/test-infrastructure/run-compiled-tests.js",
     "test:cvn7": "npm run build && node --test \"dist/test/core-kernel/cvn-7-*.test.js\"",

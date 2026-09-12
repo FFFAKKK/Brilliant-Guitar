@@ -1210,8 +1210,7 @@ async function reapRealP3bChild(
 async function prepareRealP3bRun(): Promise<P3bPreparedRun> {
   const scratchRoot = path.resolve(
     process.cwd(),
-    "..",
-    ".scratch/rkp1a-property-cap/p3b",
+    ".tmp/rkp1a-property-cap/p3b",
   );
   assert.equal(path.parse(scratchRoot).root.toUpperCase(), "E:\\");
   const leaf = path.join(
