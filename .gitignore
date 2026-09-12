@@ -2,3 +2,9 @@ node_modules/
 dist/
 .worktrees/
 target/
+/.cargo-target/
+/.repo-archive/
+/.tmp/
+/tmp/
+__pycache__/
+*.pyc
