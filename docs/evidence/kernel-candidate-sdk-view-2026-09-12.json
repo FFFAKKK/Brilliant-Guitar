@@ -1,0 +1,68 @@
+{
+  "kind": "bounded-regression-not-commercial-qualification",
+  "testedCodeCommit": "d8b39c5c4af4c8972bbe4ceb7026d9667fdf9d7d",
+  "date": "2026-09-12",
+  "scope": "Read-only SDK projection of actual occurrence candidates, including invalid intermediate identities. V2 candidate history uses the same projector but still requires final validation before returning.",
+  "runtimeTests": {
+    "failed": 0,
+    "ignored": 1,
+    "newProjectionTests": 6,
+    "passed": 320
+  },
+  "nativeTests": {
+    "failed": 0,
+    "durationMilliseconds": 2258.0465,
+    "passed": 17,
+    "commandAdmissionInputs": 504
+  },
+  "checks": {
+    "fmt": "passed",
+    "clippyAllTargetsAllFeatures": "passed",
+    "msrv188AllTargetsAllFeatures": "passed",
+    "releaseV2": "passed"
+  },
+  "validationScope": "Runtime crate tests and real integrated Native journey; the previous full workspace/TS run belongs to febe3c6 and was not repeated for this private read-path change.",
+  "remaining": [
+    "Record immutable module extension effects and expected payloads in candidate history",
+    "Preserve owner lifetimes across module writes and Core deletions",
+    "Wire mixed Batch dispatch, shared effects/affected budgets, and final assessment",
+    "Complete WASM, migration, layered consumers, platform and commercial qualification"
+  ],
+  "artifacts": [
+    {
+      "path": "target/integrated-v2/brilliant_kernel_node.node",
+      "bytes": 4208640,
+      "sha256": "8f1eacc18c851668dfa9ddd09cff6b19e6b9c22aaaed52fbcf9170ede392105b"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/candidate-view-rust.log",
+      "bytes": 37556,
+      "sha256": "e10c972ec1dcae4fb57e78c186fdd52da6ac023e71d3ab060c8476a8c2c2e9a2"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/candidate-view-native.log",
+      "bytes": 1976,
+      "sha256": "2b7d3a9b07d92bf05dae50fc38f385bfe24d20ac521b5d644be94e026cbcd5a1"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/candidate-view-clippy.log",
+      "bytes": 711,
+      "sha256": "e42d79e6bb1613c76532de9581d8160e6965af6aaf2501de67b61e90dba13c49"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/candidate-view-msrv.log",
+      "bytes": 711,
+      "sha256": "3132cf8e7fcd0bef3c91e7b46d4371ceb77a1caa5d9ba8aab6f9f2e20a56459a"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/candidate-view-fmt.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/candidate-view-release-v2.log",
+      "bytes": 702,
+      "sha256": "4f7785fa8c7030cbcb87f57112109f28178321019ace0297c021d09dcdde66e1"
+    }
+  ]
+}

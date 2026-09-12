@@ -1718,3 +1718,25 @@ inputs across 28 Core command families. Strict all-feature Clippy, fmt and Rust
 method while retaining the no-commit-during-prepare and one-commit-after-prepare
 checks. No behavioral fixture or timing threshold changed. Evidence:
 `docs/evidence/kernel-integrated-core-2026-09-12.json`.
+
+### Mixed Batch prerequisite — actual occurrence SDK views
+
+Implementation `d8b39c5` adds a detached document projector over actual occurrence
+locators. It preserves duplicate/empty raw IDs, temporarily invalid musical
+fields, typed-prefix edits and candidate suffix changes. Reading does not prove
+semantic validity. V2 candidate history now uses this projector and still checks
+the final candidate before returning the preview.
+
+Six new tests cover distinct duplicate nodes, detached-view mutation, opaque
+UTF-16/negative-zero values, deleted Part extension lifetimes, failed reservations
+and inconsistent fields. The existing multi-error assessment test compares the
+complete raw projection too. Fresh validation is 320 runtime tests passed,
+1 ignored; 17 real integrated Native tests passed; strict Clippy, fmt, Rust 1.88
+and the V2 release build passed. The previous full workspace/TS counts are not
+claimed as freshly rerun here. Evidence:
+`docs/evidence/kernel-candidate-sdk-view-2026-09-12.json`.
+
+Mixed Batch remains incomplete: candidate history must first retain immutable
+module extension effects and their owner lifetimes, then module children must be
+wired into ordered dispatch with shared budgets and final assessment. No S2 or
+commercial qualification milestone is closed by this prerequisite.
