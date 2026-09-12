@@ -2,6 +2,12 @@
 
 ## Scope and working authority
 
+**Execution paused at the owner's request (2026-09-12):** finish the current
+cross-plugin explicit-read task, record its evidence and local commits, then
+stop and report. Do not start the next development slice until the owner resumes
+work. The broad commercial objective remains incomplete; this pause is not
+commercial acceptance or a technical blocker.
+
 On 2026-09-05 the owner requested autonomous project assessment, planning,
 implementation, self-review and local Git commits until the kernel meets a
 commercial standard. The owner also permits skipping Trellis. This branch uses
@@ -85,11 +91,13 @@ against the existing TS implementation. The opted-in factory creates no TS
 command runtime or history. See [the V2 implementation boundary](kernel-native-integrated-v2.md).
 Standalone Core commands, cross-domain Batch and candidate history assessment
 are now wired in that integrated session. Detached extension migration is also
-wired through a separate V2 function. S2 remains incomplete: WASM execution,
-concrete layered-plugin dependency/relationship maintenance and full
-resource/portability qualification still need work. Module callback views and
-assessment currently use complete projections; precise read declarations and
-incremental equivalence are not claimed.
+wired through a separate V2 function. Bounded Wasm execution and authentic
+contribution binding are now connected. Explicit cross-plugin block reads also
+work through TS, Native and Wasm, with an independent two-plugin index/summary
+consumer. S2 remains incomplete: dependency-aware degraded assembly and precise
+dependency closures need work. Module callback views and assessment currently
+use complete projections; incremental equivalence and full resource/portability
+qualification are not claimed.
 See [the S2 plan](kernel-extension-completion-plan.md). The product default remains
 TypeScript; this is the existing private native implementation route, not the
 S4 product cutover. Editor, rendering, playback and physical project persistence
@@ -120,9 +128,9 @@ while filling functions; private test primitives alone do not close a route.
 | --- | --- | --- |
 | Score model, exact arithmetic, UTF-16 storage/codecs | Implemented and exercised through native boundaries | Preserve compatibility through composition |
 | 27 leaf commands and Batch | Typed and occurrence admission both integrated into native sessions | Broader adversarial and long-sequence consolidation in S3 |
-| Final diagnostics and Store adoption | Shared rules assess candidates before atomic adoption | Extension rules and declared dependency closures in S2 |
-| History, dirty identity, events, checkpoint and replay | Complete Core admission wiring, including typed-prefix/candidate-suffix history | Integrated contribution effects and availability in S2 |
-| Extensions | Opaque preservation, authenticated metadata, inventory/cache, header availability and owned deletion history | Native executable catalog bindings, capabilities, execution, validation and migration |
+| Final diagnostics and Store adoption | Core and applicable plugin rules assess candidates before atomic adoption | Precise declared dependency closures and incremental equivalence |
+| History, dirty identity, events, checkpoint and replay | Core, module and mixed Batch effects share stored history and events | Long-sequence/resource qualification |
+| Extensions | Catalog/inventory, capability checks, execution, migration, Wasm binding and explicit cross-plugin reads are wired | Dependency-aware degraded assembly and complete resource/platform qualification |
 | Session/application surface | Core native session works; TypeScript remains product default | Composed consumers, then qualified reversible Rust cutover |
 | Commercial acceptance | Incomplete | Hostile/resource and long-sequence evidence, performance, final qualification and obsolete-engine cleanup |
 
@@ -1896,3 +1904,33 @@ The private binding function is complete. Cross-plugin read/dependency
 contracts, complete resource accounting and platform/performance qualification
 remain required before commercial readiness/default product cutover. Public
 plugin packaging/authoring tools are not silently added to the microkernel.
+
+### Explicit cross-plugin reads — current task closed, execution paused
+
+`ee4ff7f` adds startup read declarations against authentic reader/provider
+identities. A derived catalog has independent immutable grants; the existing
+catalog/session is unchanged. Granted blocks are copied from the current
+candidate into a separate frozen dependency view. Own extension views and all
+write/gateway permissions retain their boundaries. Incompatible provider data
+keeps editing read-only and blocks dependent migration before callbacks.
+
+The two actual SDK plugins own Part indices and a Score summary separately.
+Tests prove current-candidate reads, independent final validation, wrong-order
+and partial-repair rollback, foreign write rejection, gateway isolation, owner
+death/rebirth, stored history/replay, actual migration, version gating and
+reciprocal reads without recursive execution. A compiled Wasm guest reads an
+authorized Part block after an earlier Batch child changes it and fails without
+the grant. Contract: `docs/kernel-contribution-reads-v1.md`.
+
+Fresh final TS/Native: **830 passed, 2 skipped, zero failed (832 total)**; build
+including strict tsc and diff check pass. Guest source builds on Rust 1.88 and
+reproduces byte-identically. Host Rust code is unchanged: **538 passed/1 ignored**,
+Clippy/MSRV and all three native artifact results are inherited from `6feef80`,
+not rerun this slice. Evidence: `docs/evidence/kernel-contribution-reads-2026-09-12.json`.
+
+Remaining work: automatically constructing a safe degraded assembly when a
+provider is missing (currently startup read binding rejects), precise dependency
+closure/equivalence, whole-transaction resource accounting, platform/performance
+qualification, reversible Rust default cutover and final obsolete-engine
+cleanup. Techniques/repeats remain plugin responsibilities. No next slice starts
+after this closeout without the owner's renewed instruction.

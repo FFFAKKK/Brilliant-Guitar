@@ -1,0 +1,87 @@
+{
+  "kind": "bounded-regression-not-commercial-qualification",
+  "date": "2026-09-12",
+  "testedCodeCommit": "ee4ff7f01660253d56607a5d76f759bd0120aa0b",
+  "scope": "Explicit authenticated cross-plugin reads through TS, Native and actual compiled Wasm guest",
+  "finalTsNative": {
+    "failed": 0,
+    "passed": 830,
+    "durationMilliseconds": 50066.7202,
+    "skipped": 2,
+    "total": 832
+  },
+  "checks": {
+    "nativeArtifacts": "all three inherited, no host rebuild",
+    "buildIncludingStrictTsc": "passed",
+    "inheritedRustCodeCommit": "6feef80bdb2d2e1ed6395e6cc8732ad8a4693b4b",
+    "frozenPublicIndices": "51/8/34/9 unchanged; explicit opt-in extension-reads subpath added",
+    "rootMaster": "eceec9f clean unchanged",
+    "hostRust": "unchanged",
+    "inheritedRustPassed": 538,
+    "inheritedRustEvidence": "docs/evidence/kernel-wasm-binding-2026-09-12.json",
+    "guestReproduction": "byte-identical",
+    "actualGuestBuild": "Rust 1.88 wasm32-unknown-unknown, locked offline",
+    "inheritedRustIgnored": 1,
+    "diffCheck": "passed"
+  },
+  "verifiedBehaviors": [
+    "Authentic immutable derived catalog, exact provider versions and owner scope",
+    "Own-only extension views plus separately frozen declared dependency blocks",
+    "TS/Native independently owned Part index and Score summary",
+    "Actual Wasm guest reads earlier Batch child candidate data, fails without grant",
+    "Wrong-order and partial reconciliation reject atomically",
+    "Read authority does not grant gateway commands or foreign effects",
+    "Owner death/rebirth, clear, stored undo/redo and replay",
+    "Actual detached migration and future provider schema fail-closed gating",
+    "Reciprocal reads use one candidate without recursive plugin invocation"
+  ],
+  "remaining": [
+    "Automatic degraded assembly for missing providers; binding currently rejects startup",
+    "Precise dependency closure and incremental equivalence",
+    "Whole-transaction resource accounting and platform/performance qualification",
+    "Rust default cutover and obsolete executable-engine cleanup"
+  ],
+  "execution": "Owner requested this task closeout and stop; no next slice authorized until resumed",
+  "artifacts": [
+    {
+      "path": "target/rkp-1-node/brilliant_kernel_node.node",
+      "bytes": 3617792,
+      "sha256": "7c55f2b4782f5196493c93200fb2b11488f83595966e8b21d29423eacd6da496"
+    },
+    {
+      "path": "target/integrated-v2/brilliant_kernel_node.node",
+      "bytes": 4362752,
+      "sha256": "4744c337f6033d473edade21e15337397ec891459f637e4cddcd3ee58f1046e3"
+    },
+    {
+      "path": "target/wasm-v1/brilliant_kernel_node.node",
+      "bytes": 5594112,
+      "sha256": "df6a2a309c6b378ace929bc521fe2f3eb57eb5fe457e61cfcc453b7cd7d20ff7"
+    },
+    {
+      "path": "test/core-kernel/fixtures/wasm-guest/guest.wasm",
+      "bytes": 123612,
+      "sha256": "922b0ca4c33db0c11a8526433a0b197ebbf7ff0188416bd9ef22cece116df703"
+    },
+    {
+      "path": "test/core-kernel/fixtures/wasm-guest/guest.rs",
+      "bytes": 6429,
+      "sha256": "47f236a0f56e3c3e4ff9600b7beedd8c7aa72cf2b13eeae3eb27753d3941aee9"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/cross-plugin-guest-build.log",
+      "bytes": 234,
+      "sha256": "ea008078928d0d570e093db2779feb683e7976ddfa2e4420489256894cb0ae62"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/cross-plugin-guest-reproduction.log",
+      "bytes": 88,
+      "sha256": "5168b1a3edae07b9c751cf4bfbcc7a5edf4c286d3e5fee752ab0cbf98bc1619d"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/cross-plugin-ts-native-full.log",
+      "bytes": 75479,
+      "sha256": "37e242ef8e9e1b68ad85be5a776e4217667f05dd3c4ad04bba73a2f187f6aefe"
+    }
+  ]
+}
