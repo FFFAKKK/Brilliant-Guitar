@@ -6,6 +6,7 @@
 
 ## 当前入口
 
+- [2026-09-13 项目状态与产品设计交接](docs/handoff-kernel-to-product-2026-09-13.md)：最新业务验证、UI／吉他插件设计入口及尚未完成事项。
 - `src/`：TypeScript 内核、SDK 和原生适配。
 - `src/native-host/`：宿主专用的 WASM 产物安装；Node 依赖不进入纯内核。
 - `crates/`：七个 Rust crate，依次承担基础类型、乐谱规则、扩展协议、边界合同、运行时、会话与 Node 桥。
