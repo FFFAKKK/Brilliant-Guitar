@@ -67,3 +67,11 @@ Core 命令 ID 的原有编码不变。内部历史与事件增加模块 ID 表�
 验收仍要求同一个 Batch 中 Core 与模块交错、模块读取临时无效状态后由后项修复、非空效果序列净零时保留历史、失败返回准确子项索引且整批零变化、最终 Core/模块校验一次通过后单次提交，以及已存操作撤销重做不重跑插件 prepare/transform。上述候选读取能力是必要前置，不代表跨域 Batch 已完成。
 
 实现 `d8b39c5`：本片新跑 runtime crate 320 项通过、1 项忽略，真实 integrated Native 17 项通过，严格 Clippy、fmt、Rust 1.88 检查与 V2 release 构建通过。上一片全量 workspace/TS 证据仍归属 `febe3c6`；本片针对私有读取路径进行了上述范围的回归，没有把旧全量计数当作新跑结果。[本片证据](evidence/kernel-candidate-sdk-view-2026-09-12.json) 保存日志和 V2 产物哈希。
+
+## 跨域 Batch 的扩展历史前置能力
+
+实现 `457d90e` 为 candidate 增加扩展插入、替换、删除的已存正向/逆向操作。日志保留不可变 before/after 与实际 owner 生命周期；预期载荷账本从冻结前缀和已记录效果推导，不信任任意当前候选数据。Part 删除消费对应生命期的扩展，随后相同 raw ID 重生不继承旧数据。日志大对象经 Arc 引用，避免扩大普通 Core 操作的内联尺寸。
+
+十项专项回归覆盖全序及净零效果、真实 Store 提交和重复撤销重做、交错 Part 扩展位置、同 ID 重生、预算拒绝、每个受控预留点失败，以及未记录载荷/错误 owner 无法进入可信历史。另将两项已有悬空 owner 回归分别在新账本启用与未启用时执行，保持原断言。候选重复 Part 的歧义删除仍拒绝，已通过真实 TS Batch 确认该行为，未改行为基线。
+
+本片新跑全 feature Rust workspace：525 通过、1 忽略、0 失败；最终 lint 标记和新增悬空断言后重跑定向测试、严格 Clippy、fmt、Rust 1.88 检查均通过。未重复 Native/TS；当前 V2 二进制仍来自 `d8b39c5`。详情见 [本片证据](evidence/kernel-candidate-extension-history-2026-09-12.json)。这关闭了历史记录前置缺口；生产混合 Batch dispatcher、真实 SDK 顺序效果与共享计量尚需接线，S2 仍未完成。此前段落中“预期只来自 typed prefix”的描述是本片前的历史状态。

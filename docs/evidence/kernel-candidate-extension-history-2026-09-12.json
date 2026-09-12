@@ -1,0 +1,51 @@
+{
+  "kind": "bounded-regression-not-commercial-qualification",
+  "testedCodeCommit": "457d90e5a9cbfbf54b9bf6be3346758c846f5517",
+  "date": "2026-09-12",
+  "scope": "Candidate extension operation journal, immutable expected ledger, owner lifetimes and replay; public mixed Batch dispatcher not yet connected",
+  "workspaceTests": {
+    "ignored": 1,
+    "passed": 525,
+    "failed": 0
+  },
+  "focusedExtensionTests": 10,
+  "additionalDanglingChecks": "Existing 3 tests passed; two now exercise both lazy-ledger and prefix-only paths",
+  "checks": {
+    "clippyAllTargetsAllFeatures": "passed",
+    "msrv188AllTargetsAllFeatures": "passed",
+    "fmt": "passed"
+  },
+  "validationScope": "Workspace all-feature tests before final lint annotation and expanded dangling assertions; focused dangling tests, Clippy, fmt and MSRV rerun after those changes. No new Native/TS run; V2 artifact remains d8b39c5.",
+  "remaining": [
+    "Wire module children into CandidateExecution with exact affected/effect accounting",
+    "Connect real SDK mixed Batch with child failures and one final assessment/adoption",
+    "WASM, migration, layered consumers and commercial qualification"
+  ],
+  "artifacts": [
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/candidate-extension-workspace.log",
+      "bytes": 59863,
+      "sha256": "dd474bed3df73950d3de4858dd5234fe84050706ad4129c72bee0dca7157e8cd"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/candidate-extension-clippy.log",
+      "bytes": 711,
+      "sha256": "07d52f8a19da6837da6a71e7729cf547520938519df630aff5b54a913740d411"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/candidate-extension-msrv.log",
+      "bytes": 711,
+      "sha256": "3ed8979a0ba827f7b8ec0814de62cd4da4e4f59d6ea307a3aaf1603ccb4c3a66"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/candidate-extension-fmt.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/candidate-extension-dangling.log",
+      "bytes": 918,
+      "sha256": "816120d98b57e226d25b3ffbb833c679dd8e70d927989834e09d80c02e9bb7d4"
+    }
+  ]
+}

@@ -1740,3 +1740,19 @@ Mixed Batch remains incomplete: candidate history must first retain immutable
 module extension effects and their owner lifetimes, then module children must be
 wired into ordered dispatch with shared budgets and final assessment. No S2 or
 commercial qualification milestone is closed by this prerequisite.
+
+### Mixed Batch prerequisite — immutable extension history
+
+Implementation `457d90e` records candidate extension insert/replace/remove with
+immutable before/after images and occurrence owner lifetimes. A lazy ledger uses
+recorded data, never arbitrary candidate payloads as expected history. Real Store
+adoption and repeated replay tests cover net-zero edits, interleaved owned blocks,
+Part death/rebirth, effect caps, reservation failures and payload/owner corruption.
+Two existing dangling-owner roundtrips now also exercise the new ledger.
+
+Fresh all-feature workspace validation: 525 passed, 1 ignored, zero failed. Focused
+dangling tests, strict Clippy, fmt and Rust 1.88 checks passed after the final test
+and annotation changes. No new Native/TS run; the V2 artifact is still d8b39c5.
+Evidence: `docs/evidence/kernel-candidate-extension-history-2026-09-12.json`.
+Module child dispatch, shared accounting and public mixed Batch remain to be wired;
+this prerequisite does not close S2 or commercial qualification.
