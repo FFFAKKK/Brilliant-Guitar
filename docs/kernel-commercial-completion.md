@@ -1869,3 +1869,30 @@ Next implement authentic module-scoped artifact binding and host dispatch. The
 existing aggregate callback seam must not let one untrusted guest assess other
 modules. Public SDK/Node binding, ownership/lifetime/reentry tests, cross-plugin
 read dependencies and full platform/resource/performance qualification remain.
+
+### S2.3b — authentic contribution-scoped Wasm binding
+
+`6feef80` completes the private host binding: a fully captured artifact roster
+maps immutable compiled guests to authentic catalog contribution identities.
+The six individual callbacks dispatch through that fixed binding in editing and
+detached migration; unbound SDK callbacks remain compatible. Core semantics,
+permissions, availability and aggregate assessment remain host-owned. The
+Node-dependent installer lives outside pure Core in `src/native-host`.
+
+An actual Rust-compiled dynamic guest proves two module identities, mixed
+JS/Wasm validation, edits, atomic Batch rollback, migration, stored history,
+replay/checkpoints, reentry, malformed/foreign output rejection and lifetime
+after caller byte mutation or selector restoration. The earlier canned guest
+remains explicitly limited to its protocol-seam tests. UTF-8 output decoding is
+strict; guest codec support is not equated to arbitrary JS value compatibility.
+
+Fresh final results: Rust 538 passed/1 ignored, TS/Native 822 passed/2 skipped,
+zero failed; focused 12 passed, strict Clippy/fmt/MSRV and all three release
+builds passed. The first full run caught host Node dependencies inside Core;
+moving the installer outside Core fixed it without relaxing the boundary test.
+Evidence: `docs/evidence/kernel-wasm-binding-2026-09-12.json`.
+
+The private binding function is complete. Cross-plugin read/dependency
+contracts, complete resource accounting and platform/performance qualification
+remain required before commercial readiness/default product cutover. Public
+plugin packaging/authoring tools are not silently added to the microkernel.

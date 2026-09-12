@@ -1,0 +1,155 @@
+{
+  "kind": "bounded-regression-not-commercial-qualification",
+  "date": "2026-09-12",
+  "testedCodeCommit": "6feef80bdb2d2e1ed6395e6cc8732ad8a4693b4b",
+  "scope": "Authentic contribution-scoped Wasm host binding, actual compiled dynamic guest and separate Node artifact",
+  "rust": {
+    "passed": 538,
+    "ignored": 1,
+    "failed": 0
+  },
+  "fullTsNative": {
+    "passed": 822,
+    "failed": 0,
+    "skipped": 2,
+    "total": 824,
+    "durationMilliseconds": 48725.2749
+  },
+  "focused": {
+    "dependencyBoundary": 3,
+    "wasmBinding": 9,
+    "total": 12,
+    "failed": 0
+  },
+  "checks": {
+    "guestReproduction": "byte-identical on pinned Rust 1.88 host",
+    "tsBuildIncludingTsc": "passed",
+    "nativeExports": "V1=5, integratedV2=7, WasmV1=8",
+    "clippyAllTargetsAllFeatures": "passed",
+    "releaseV1V2Wasm": "passed",
+    "defaultNodeGraph": "excludes wasmi, sha2, wat and wast",
+    "fmt": "passed",
+    "rootMaster": "eceec9f, clean, unchanged",
+    "msrv188AllTargetsAllFeatures": "passed",
+    "publicExports": "51/8/34/9 unchanged"
+  },
+  "repairedFinding": "First full run rejected node:crypto/node:util imports inside Core. Installer moved to src/native-host; unchanged boundary test and final full regression pass.",
+  "boundaries": [
+    "Roster captured and hashes checked before compilation; authentic catalog identity grants authority",
+    "Bound callbacks never fall back to JS, including detached migration",
+    "Host retains Core, permissions, validation order and aggregate assessment",
+    "Actual guest computes dynamic results; not the earlier canned protocol fixture",
+    "Fresh bounded Wasm instances have no host imports or mutable score/session",
+    "Core Batch prefix rolls back on fuel, UTF-8, owner and result-contract failure",
+    "Unknown opaque extension UTF-16 data remains outside guest view and preserved",
+    "Guest serde_json rejects lone surrogates in values it parses; no arbitrary JS-to-Wasm equivalence"
+  ],
+  "remaining": [
+    "Cross-plugin read and dependency contracts",
+    "Compilation/host copying/whole-transaction cumulative resource accounting",
+    "Platform and performance qualification before default cutover",
+    "Public package loader and authoring tools are separate product scope"
+  ],
+  "artifacts": [
+    {
+      "path": "target/rkp-1-node/brilliant_kernel_node.node",
+      "bytes": 3617792,
+      "sha256": "7c55f2b4782f5196493c93200fb2b11488f83595966e8b21d29423eacd6da496"
+    },
+    {
+      "path": "target/integrated-v2/brilliant_kernel_node.node",
+      "bytes": 4362752,
+      "sha256": "4744c337f6033d473edade21e15337397ec891459f637e4cddcd3ee58f1046e3"
+    },
+    {
+      "path": "target/wasm-v1/brilliant_kernel_node.node",
+      "bytes": 5594112,
+      "sha256": "df6a2a309c6b378ace929bc521fe2f3eb57eb5fe457e61cfcc453b7cd7d20ff7"
+    },
+    {
+      "path": "Cargo.lock",
+      "bytes": 16464,
+      "sha256": "3f6c76fa584c9bfb5c8cfd71690a556e51ed1ec0cab8f624c79b42a89debb12a"
+    },
+    {
+      "path": "test/core-kernel/fixtures/wasm-guest/guest.wasm",
+      "bytes": 117374,
+      "sha256": "8323667ee1a07ce8f83d7fb05d8944140f59b20e786a89117df6ff3ab71520c3"
+    },
+    {
+      "path": "test/core-kernel/fixtures/wasm-guest/guest.rs",
+      "bytes": 5688,
+      "sha256": "4e8db50f03d24e7fd9d13b3bb9496695f0134f2633c1872953514d2b3588d2cb"
+    },
+    {
+      "path": "test/core-kernel/fixtures/wasm-guest/Cargo.lock",
+      "bytes": 2656,
+      "sha256": "f6fffdd93892186bb58a5a74052da689ad654162f5a601bc9e6a0685d56348c3"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/wasm-binding-rust-full.log",
+      "bytes": 60889,
+      "sha256": "6d3c15b5d502136aa8df10c49da4afdc3dc7ad0b1c020b54ea0304e8e590eddd"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/wasm-binding-clippy.log",
+      "bytes": 383,
+      "sha256": "5d4f5d5fa6272e52a9e25a5bd2d41fd47e8824971fa138ae4d56bcbcb997a7e5"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/wasm-binding-msrv.log",
+      "bytes": 547,
+      "sha256": "7fa84ae6d76b05d6a967cf25806f0ea3c676e90a04016f6e208f1625d67f7ce6"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/wasm-binding-fmt.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/wasm-binding-release-v1.log",
+      "bytes": 374,
+      "sha256": "6dd32483febf832bc7f6dc0b82d53aa4f74ef4cb128ec10e6a7c98a7cf655cf7"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/wasm-binding-release-v2.log",
+      "bytes": 374,
+      "sha256": "347ecbfa3be1684c97bd2e8e1920ef725f98e3dc26ea3371a87e56e96b377c38"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/wasm-binding-release-v3.log",
+      "bytes": 374,
+      "sha256": "5007ab7a4d40edb5e751713f217f73b6fe49a437da0aefa1e5070120cac8b748"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/wasm-binding-default-dependencies.log",
+      "bytes": 5660,
+      "sha256": "eedb8802958bf4138e8fb0550baa438932c0898402ca8f1a05341d4cde444bd3"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/wasm-binding-focused.log",
+      "bytes": 1387,
+      "sha256": "4f54235db12959cfc2414f07f809c56a4ccabb91aef46ccae46c115e0f51fa7a"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/wasm-binding-guest-build.log",
+      "bytes": 234,
+      "sha256": "6d99feed3c7636f0ecf8c2f334504f0f662092be9e6134f644bd01c6dc7dc2bd"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/wasm-binding-guest-reproduction.log",
+      "bytes": 88,
+      "sha256": "343cc365ca26a075d7b81e0945a91ef7e41743ac4a418fa8b5fc986048a5ed48"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/wasm-binding-ts-native-before-host-move.log",
+      "bytes": 76487,
+      "sha256": "0a04c258d20646f192431e71975fc77c83d55dec4b8297b9f1721c9a45583b20"
+    },
+    {
+      "path": ".local-evidence/kernel-integrated-native-2026-09-12/wasm-binding-ts-native-full.log",
+      "bytes": 74382,
+      "sha256": "03cb9cef1a557fe02df99ded5f2c49041e434a366b277cca5e491b5b4e8f3b2c"
+    }
+  ]
+}
