@@ -9,9 +9,12 @@ import { captureHostInstalledContributionsV1 } from "./integrated-catalog-captur
 import { createNativeContributionExecutorV2 } from "./integrated-executor";
 import { encodeIntegratedValueV2 as encode } from "./integrated-wire";
 import { bindNativeIntegratedAssemblyV2, selectNativeIntegratedFactoryV2 } from "./integrated-backend-selection";
+import { selectNativeExtensionMigrationFactoryV2 } from "./integrated-backend-selection";
+import { createNativeExtensionMigrationV2, type NativeExtensionMigrationFunctionV2 } from "./integrated-migration";
 
 export interface IntegratedNativeAddonV2 {
   createIntegratedKernelSessionV2(bytes: Buffer, executor: (bytes: Buffer) => Buffer): (bytes: Buffer) => Buffer;
+  migrateKernelExtensionV2?: NativeExtensionMigrationFunctionV2;
 }
 type Failure = Extract<KernelCommandResult, { status: "rejected" }>["failure"];
 interface WireResult {
@@ -44,8 +47,11 @@ function freeze<T>(value: T): T {
 
 /** Opt-in embedding only. No public SDK exports or default backend are changed. */
 export function installNativeIntegratedBackendV2(addon: IntegratedNativeAddonV2): () => void {
-  return selectNativeIntegratedFactoryV2((document, catalog, inventory, explicit) =>
+  const restoreSession = selectNativeIntegratedFactoryV2((document, catalog, inventory, explicit) =>
     createNativeIntegratedCommandBusV2(addon, document, catalog, inventory, explicit));
+  const restoreMigration = selectNativeExtensionMigrationFactoryV2(addon.migrateKernelExtensionV2 === undefined
+    ? undefined : createNativeExtensionMigrationV2(addon.migrateKernelExtensionV2));
+  return () => { restoreMigration(); restoreSession(); };
 }
 
 export function createNativeIntegratedCommandBusV2(addon: IntegratedNativeAddonV2, document: ScoreDocument,

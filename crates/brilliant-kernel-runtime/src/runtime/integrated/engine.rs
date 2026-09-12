@@ -11,6 +11,7 @@ use brilliant_kernel_contracts::{
 use brilliant_score_foundation::{LosslessDecode, assess_score_semantics};
 mod batch;
 mod core;
+mod migration;
 mod module;
 
 type CoreDispatch = fn(

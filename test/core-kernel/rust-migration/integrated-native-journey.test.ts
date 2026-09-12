@@ -11,11 +11,11 @@ import { CVN6_MANIFEST, CVN6_REGISTRATION_ENTRIES, cvn6CallbackBehavior, cvn6Cal
 import { buildCommandAdmissionOracle } from "./command-admission-oracle";
 
 const addon = require(resolve("target/integrated-v2/brilliant_kernel_node.node")) as IntegratedNativeAddonV2;
-test("The private successor adds exactly one export and the old addon keeps five", () => {
+test("The private successor exposes session and detached migration while the old addon keeps five", () => {
   const legacy = require(resolve("target/rkp-1-node/brilliant_kernel_node.node"));
   const names = ["createKernelSessionV1", "readKernelSessionV1", "submitKernelStage3V1", "operateKernelStage4V1", "replayKernelStage4V1"].sort();
   assert.deepEqual(Object.keys(legacy).sort(), names);
-  assert.deepEqual(Object.keys(addon).sort(), [...names, "createIntegratedKernelSessionV2"].sort());
+  assert.deepEqual(Object.keys(addon).sort(), [...names, "createIntegratedKernelSessionV2", "migrateKernelExtensionV2"].sort());
 });
 function catalog() {
   const result = compileOfficialModuleCatalogV1(CVN6_MANIFEST, CVN6_REGISTRATION_ENTRIES);

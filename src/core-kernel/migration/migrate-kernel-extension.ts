@@ -1,4 +1,5 @@
 import { captureStrictInput } from "../codec/strict-input-capture";
+import { nativeExtensionMigrationFactoryV2 } from "../native/integrated-backend-selection";
 import { decodeScoreDocument } from "../codec/decode-score-document";
 import {
   createIntegratedContributionView,
@@ -12,7 +13,7 @@ import {
 } from "../domain/extensions";
 import type { ScoreDocument } from "../domain/score-document";
 import { getModuleEffectDefinitionBinding } from "../module-sdk/definitions";
-import type { CompiledDomainCommandContributionV1 } from "../module-sdk/contracts";
+import type { CompiledDomainCommandContributionV1, CompiledModuleEffectDefinitionV1 } from "../module-sdk/contracts";
 import {
   getKernelIntegratedCatalogState,
   type KernelIntegratedCatalogState,
@@ -321,7 +322,7 @@ function contributionFailure(
   });
 }
 
-function validateModuleSemantics(
+export function validateExtensionMigrationModulesV1(
   document: ScoreDocument,
   state: KernelIntegratedCatalogState,
 ):
@@ -417,6 +418,14 @@ export function migrateKernelExtension(
     if (request === undefined) {
       return rejected({ code: "migration.invalid-request" });
     }
+    const native = nativeExtensionMigrationFactoryV2();
+    if (native !== undefined) {
+      const result = native(decoded.value, request, catalog);
+      if (result.status !== "rejected") return freeze({ ...result, report: report() });
+      if (result.failure.code === "migration.semantic-invalid") return semanticInvalid(result.failure.diagnostics);
+      if (result.failure.code === "migration.invalid-input") return invalidInput(result.failure.diagnostics);
+      return rejected(result.failure);
+    }
     const initialSemantic = validateScoreDocumentSemantics(decoded.value);
     if (!initialSemantic.ok) {
       return semanticInvalid(initialSemantic.diagnostics);
@@ -465,64 +474,14 @@ export function migrateKernelExtension(
         report: report(),
       });
     }
-    const binding = getModuleEffectDefinitionBinding(effect);
-    if (binding === undefined) {
-      return rejected({ code: "migration.assembly-mismatch" });
-    }
-    let decodedPayloadRaw: unknown;
-    try {
-      decodedPayloadRaw = reflectApply(binding.decode, undefined, [request.payload]);
-    } catch {
-      return contributionFailure("migration.contribution-internal-error", contribution);
-    }
-    if (!hasJsonPrimordials()) {
-      return contributionFailure("migration.contribution-contract-violation", contribution);
-    }
-    const decodedPayloadCapture = captureStrictInput(decodedPayloadRaw);
-    const decodedPayload = decodedPayloadCapture.status === "captured"
-      ? readExactDataRecord(decodedPayloadCapture.value, ["status", "payload"])
-      : undefined;
-    if (decodedPayload?.status !== "decoded") {
-      return contributionFailure("migration.contribution-contract-violation", contribution);
-    }
-    let transformedRaw: unknown;
-    try {
-      transformedRaw = reflectApply(binding.transform, undefined, [freeze({
-        view: createIntegratedContributionView(decoded.value, 0, contribution),
-        owner: clone(request.owner),
-        currentBlock: clone(target.block),
-        payload: decodedPayload.payload,
-      })]);
-    } catch {
-      return contributionFailure("migration.contribution-internal-error", contribution);
-    }
-    if (!hasJsonPrimordials()) {
-      return contributionFailure("migration.contribution-contract-violation", contribution);
-    }
-    const transformedCapture = captureStrictInput(transformedRaw);
-    const transformed = transformedCapture.status === "captured"
-      ? readExactDataRecord(transformedCapture.value, [
-          "status",
-          "schemaVersion",
-          "payload",
-        ])
-      : undefined;
-    if (
-      transformed?.status !== "replace" ||
-      transformed.schemaVersion !== request.targetSchemaVersion ||
-      typeof transformed.payload !== "object" ||
-      transformed.payload === null ||
-      isArray(transformed.payload) ||
-      !isJsonValue(transformed.payload)
-    ) {
-      return contributionFailure("migration.contribution-contract-violation", contribution);
-    }
+    const prepared = prepareExtensionMigrationEffectV1(decoded.value, request, contribution, effect);
+    if (!prepared.ok) return rejected(prepared.failure);
     const candidate = clone(decoded.value);
     const replacement: ExtensionBlock = {
       namespace: request.namespace,
       schemaVersion: request.targetSchemaVersion,
       owner: clone(request.owner),
-      payload: clone(transformed.payload as JsonObject),
+      payload: clone(prepared.payload),
     };
     reflectApply(arraySplice, candidate.extensions, [
       target.index,
@@ -537,7 +496,7 @@ export function migrateKernelExtension(
     if (!semantic.ok) {
       return semanticInvalid(semantic.diagnostics);
     }
-    const moduleSemantic = validateModuleSemantics(roundTripped, catalogState);
+    const moduleSemantic = validateExtensionMigrationModulesV1(roundTripped, catalogState);
     if (!moduleSemantic.ok) {
       if (moduleSemantic.kind === "semantic") {
         return rejected({
@@ -560,4 +519,66 @@ export function migrateKernelExtension(
   } catch {
     return rejected({ code: "migration.internal-error" });
   }
+}
+
+/** Private callback service shared with the Rust migration bridge. It prepares
+ * only an extension payload; it never replaces a document or owns a history. */
+export function prepareExtensionMigrationEffectV1(document: ScoreDocument, request: KernelExtensionMigrationRequestV1,
+  contribution: CompiledDomainCommandContributionV1, effect: CompiledModuleEffectDefinitionV1):
+  { readonly ok: true; readonly schemaVersion: number; readonly payload: JsonObject } | { readonly ok: false; readonly failure: KernelExtensionMigrationFailure } {
+    const target = targetBlock(document, request.namespace, request.owner);
+    if (target === undefined) return { ok: false, failure: { code: "migration.target-not-found" } };
+    const binding = getModuleEffectDefinitionBinding(effect);
+    if (binding === undefined) {
+      return { ok: false, failure: { code: "migration.assembly-mismatch" } };
+    }
+    let decodedPayloadRaw: unknown;
+    try {
+      decodedPayloadRaw = reflectApply(binding.decode, undefined, [request.payload]);
+    } catch {
+      return { ok: false, failure: { code: "migration.contribution-internal-error", moduleId: contribution.moduleId, contributionId: contribution.contributionId } };
+    }
+    if (!hasJsonPrimordials()) {
+      return { ok: false, failure: { code: "migration.contribution-contract-violation", moduleId: contribution.moduleId, contributionId: contribution.contributionId } };
+    }
+    const decodedPayloadCapture = captureStrictInput(decodedPayloadRaw);
+    const decodedPayload = decodedPayloadCapture.status === "captured"
+      ? readExactDataRecord(decodedPayloadCapture.value, ["status", "payload"])
+      : undefined;
+    if (decodedPayload?.status !== "decoded") {
+      return { ok: false, failure: { code: "migration.contribution-contract-violation", moduleId: contribution.moduleId, contributionId: contribution.contributionId } };
+    }
+    let transformedRaw: unknown;
+    try {
+      transformedRaw = reflectApply(binding.transform, undefined, [freeze({
+        view: createIntegratedContributionView(document, 0, contribution),
+        owner: clone(request.owner),
+        currentBlock: clone(target.block),
+        payload: decodedPayload.payload,
+      })]);
+    } catch {
+      return { ok: false, failure: { code: "migration.contribution-internal-error", moduleId: contribution.moduleId, contributionId: contribution.contributionId } };
+    }
+    if (!hasJsonPrimordials()) {
+      return { ok: false, failure: { code: "migration.contribution-contract-violation", moduleId: contribution.moduleId, contributionId: contribution.contributionId } };
+    }
+    const transformedCapture = captureStrictInput(transformedRaw);
+    const transformed = transformedCapture.status === "captured"
+      ? readExactDataRecord(transformedCapture.value, [
+          "status",
+          "schemaVersion",
+          "payload",
+        ])
+      : undefined;
+    if (
+      transformed?.status !== "replace" ||
+      transformed.schemaVersion !== request.targetSchemaVersion ||
+      typeof transformed.payload !== "object" ||
+      transformed.payload === null ||
+      isArray(transformed.payload) ||
+      !isJsonValue(transformed.payload)
+    ) {
+      return { ok: false, failure: { code: "migration.contribution-contract-violation", moduleId: contribution.moduleId, contributionId: contribution.contributionId } };
+    }
+    return { ok: true, schemaVersion: transformed.schemaVersion, payload: clone(transformed.payload as JsonObject) };
 }

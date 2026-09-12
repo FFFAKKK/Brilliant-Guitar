@@ -16,6 +16,20 @@ use std::{
 struct NodeExecutor<'a> {
     callback: Function<'a, Buffer, Buffer>,
 }
+
+#[napi(js_name = "migrateKernelExtensionV2")]
+pub fn migrate_kernel_extension_v2(
+    request: Buffer,
+    callback: Function<'_, Buffer, Buffer>,
+) -> Buffer {
+    catch_unwind(AssertUnwindSafe(|| {
+        IntegratedKernelSessionV2::migrate_extension(&request, &mut NodeExecutor { callback })
+    }))
+    .unwrap_or_else(|_| {
+        b"{\"status\":\"rejected\",\"failure\":{\"code\":\"migration.internal-error\"}}".to_vec()
+    })
+    .into()
+}
 impl ContributionExecutorV2 for NodeExecutor<'_> {
     fn execute(&mut self, request: &[u8]) -> Result<Vec<u8>, ContributionExecutionFailureV2> {
         let result = self
