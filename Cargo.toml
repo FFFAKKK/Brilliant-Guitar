@@ -33,6 +33,9 @@ napi = { version = "=3.12.0", default-features = false }
 napi-derive = { version = "=3.6.2", default-features = false, features = ["strict"] }
 napi-build = "=2.4.0"
 slotmap = "=1.1.1"
+wasmi = { version = "=2.0.0", default-features = false, features = ["stable", "std", "validate", "deterministic", "portable-dispatch"] }
+sha2 = "=0.10.9"
+wat = "=1.228.0"
 
 [profile.dev]
 panic = "unwind"

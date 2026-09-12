@@ -238,6 +238,13 @@ test("Cargo workspace, pins, features and direct dependency graph are exact", ()
         // dependency edges remain frozen; unknown features still fail exactly.
         'default = ["node-api-v8"]\nnode-api-v8 = ["napi/napi8"]\nintegrated-bridge-v2 = []',
       );
+    } else if (crate === "brilliant-kernel-session") {
+      // S2.3 private executor is opt-in; it does not activate in either Node
+      // artifact or alter the seven-crate dependency direction.
+      assert.equal(section(manifest, "features").trim(),
+        'default = []\nwasm-executor-v1 = ["dep:wasmi", "dep:sha2"]');
+      assert.match(manifest, /^wasmi = \{ workspace = true, optional = true \}$/mu);
+      assert.match(manifest, /^sha2 = \{ workspace = true, optional = true \}$/mu);
     } else {
       assert.equal(section(manifest, "features").trim(), "default = []");
     }

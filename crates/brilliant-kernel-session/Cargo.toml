@@ -8,8 +8,15 @@ publish.workspace = true
 
 [features]
 default = []
+wasm-executor-v1 = ["dep:wasmi", "dep:sha2"]
 
 [dependencies]
 brilliant-extension-protocol = { path = "../brilliant-extension-protocol" }
 brilliant-kernel-contracts = { path = "../brilliant-kernel-contracts" }
 brilliant-kernel-runtime = { path = "../brilliant-kernel-runtime" }
+wasmi = { workspace = true, optional = true }
+sha2 = { workspace = true, optional = true }
+
+[dev-dependencies]
+wat.workspace = true
+serde_json.workspace = true
