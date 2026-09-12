@@ -1960,7 +1960,7 @@ pub fn encode_stage4_replay_result(
     encode_capped(result)
 }
 
-fn encode_capped<T: brilliant_score_foundation::LosslessEncode>(
+pub(crate) fn encode_capped<T: brilliant_score_foundation::LosslessEncode>(
     value: &T,
 ) -> Result<Vec<u8>, StableFailureV1> {
     encode_capped_with_limit(value, RESPONSE_BYTE_LIMIT)

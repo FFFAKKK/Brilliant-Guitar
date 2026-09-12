@@ -1,5 +1,7 @@
 use brilliant_core_types::JsString;
 mod admission;
+mod domain_availability;
+pub use domain_availability::DomainAvailabilityAssessmentV1;
 use std::{collections::HashMap, sync::Arc};
 
 use brilliant_core_types::{

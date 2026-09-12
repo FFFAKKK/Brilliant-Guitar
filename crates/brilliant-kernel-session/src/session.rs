@@ -75,6 +75,15 @@ impl KernelSession {
         }
     }
 
+    /// Availability for a fixed host assembly. Integrated write enforcement and
+    /// module assessment remain the responsibility of the integrated gateway.
+    pub fn assess_domain_availability(
+        &self,
+        assembly: &brilliant_extension_protocol::ResolvedHostAssemblyV1,
+    ) -> brilliant_kernel_runtime::DomainAvailabilityAssessmentV1 {
+        self.runtime.assess_domain_availability(assembly)
+    }
+
     pub fn submit_stage3_bytes(&mut self, request_bytes: &[u8]) -> KernelStage3SubmitResultV1 {
         match decode_admission_submit_request(request_bytes) {
             Ok(request) => {
@@ -365,6 +374,68 @@ mod tests {
         KernelSession::create(decode_create_request(LOCAL_REQUEST.as_bytes()).expect("request"))
             .expect("session")
             .session
+    }
+
+    #[test]
+    fn assembly_availability_reads_real_headers_without_changing_opaque_data_or_session() {
+        use brilliant_extension_protocol::*;
+        let request = SMOKE_REQUEST.replace(r#""extensions":[]"#, r#""extensions":[{"namespace":"known.domain","schemaVersion":1,"owner":{"kind":"score"},"payload":{"raw":"\ud800"}},{"namespace":"unknown.domain","schemaVersion":99,"owner":{"kind":"score"},"payload":{"raw":[0.125,null]}},{"namespace":"known.domain","schemaVersion":2,"owner":{"kind":"part","partId":"part-1"},"payload":{"raw":"\udc00"}}]"#);
+        let request = decode_create_request(request.as_bytes()).unwrap();
+        let requirement = ExtensionRuntimeRequirementV1 {
+            protocol_version: 1,
+            namespace: "known.domain".into(),
+            module_id: request.document.id.clone(),
+            contribution_id: request.document.parts[0].id.clone(),
+            supported_schema_versions: vec![1, 2],
+            required_for_write: true,
+        };
+        let session = KernelSession::create(request).unwrap().session;
+        let baseline = encode_read_result(&session.read_state()).unwrap();
+        let catalog = HostCatalogV1::new(HostInstalledContributionsV1 {
+            contributions: vec![],
+        })
+        .unwrap();
+        let unknown = catalog
+            .resolve_inventory(InventorySelectionV1::Omitted)
+            .unwrap();
+        let read = session.assess_domain_availability(&unknown);
+        assert_eq!(read.extension_headers_visited, 3);
+        assert!(read.result.unwrap().is_complete());
+        let known = catalog
+            .resolve_inventory(InventorySelectionV1::Explicit(vec![requirement.clone()]))
+            .unwrap();
+        let read = session.assess_domain_availability(&known);
+        assert_eq!(read.extension_headers_visited, 3);
+        let facts = read.result.unwrap().facts;
+        assert_eq!(facts.len(), 2);
+        assert!(
+            facts
+                .iter()
+                .all(|fact| fact.reason
+                    == DomainAvailabilityReasonV1::RequiredContributionUnavailable)
+        );
+        assert_eq!(facts[0].owner, DomainAvailabilityOwnerV1::Score);
+        assert!(matches!(facts[1].owner, DomainAvailabilityOwnerV1::Part(_)));
+        let installed = HostCatalogV1::new(HostInstalledContributionsV1 {
+            contributions: vec![HostInstalledContributionV1 {
+                module_id: requirement.module_id.clone(),
+                contribution_id: requirement.contribution_id.clone(),
+                requirements: vec![requirement],
+            }],
+        })
+        .unwrap();
+        let ready = installed
+            .resolve_inventory(InventorySelectionV1::Omitted)
+            .unwrap();
+        drop(installed);
+        assert!(
+            session
+                .assess_domain_availability(&ready)
+                .result
+                .unwrap()
+                .is_complete()
+        );
+        assert_eq!(encode_read_result(&session.read_state()).unwrap(), baseline);
     }
 
     fn submit(session: &mut KernelSession, request: &str) -> KernelStage3SubmitResultV1 {
