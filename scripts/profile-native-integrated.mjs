@@ -13,22 +13,26 @@ const { createNativeWorkloadScore: score } = require("../dist/test/core-kernel/f
 const { compileOfficialModuleCatalogV1 } = require("../dist/src/core-kernel/module-sdk/index.js");
 const { CVN6_MANIFEST, CVN6_REGISTRATION_ENTRIES } = require("../dist/test/core-kernel/fixtures/cvn-6-synthetic-official-modules.js");
 const { installNativeWasmOnlyIntegratedBackendV1 } = require("../dist/src/native-host/wasm-bindings.js");
+const { installNativeWasmCoreReadsBackendV2 } = require("../dist/src/native-host/wasm-core-reads.js");
 const addon = require("../target/wasm-v1/brilliant_kernel_node.node");
-if (process.argv.length !== 2 && !(process.argv.length === 4 && process.argv[2] === "--guest")) {
-  throw new Error("usage: node --expose-gc scripts/profile-native-integrated.mjs [--guest path]");
+const selective = process.argv[2] === "--core-reads-v2";
+if (!(process.argv.length === 2 || (process.argv.length === 3 && selective) ||
+  (process.argv.length === 4 && process.argv[2] === "--guest"))) {
+  throw new Error("usage: node --expose-gc scripts/profile-native-integrated.mjs [--guest path | --core-reads-v2]");
 }
-const guestPath = resolve(process.argv[3] ?? "test/core-kernel/fixtures/wasm-guest/guest.wasm");
+const guestPath = resolve(selective ? "test/core-kernel/fixtures/wasm-guest/guest-v2.wasm"
+  : process.argv[3] ?? "test/core-kernel/fixtures/wasm-guest/guest.wasm");
 const guest = readFileSync(guestPath), guestSha256 = createHash("sha256").update(guest).digest("hex");
 const stats = {};
 let failedGuest;
-function clear() { for (const key of ["nativeCalls", "nativeResponseBytes", "hostCalls", "hostMs", "hostRequestBytes", "guestCalls", "guestMs", "guestBytes"]) stats[key] = 0; }
+function clear() { for (const key of ["nativeCalls", "nativeResponseBytes", "hostCalls", "hostMs", "hostRequestBytes", "guestCalls", "guestMs", "guestBytes", "maxGuestInputBytes"]) stats[key] = 0; }
 const observed = { ...addon,
-  createIntegratedKernelSessionV2(input, callback) {
+  createIntegratedKernelSessionV2(input, callback, readProtocol) {
     const operate = addon.createIntegratedKernelSessionV2(input, request => {
       stats.hostCalls++; stats.hostRequestBytes += request.length;
       const start = performance.now();
       try { return callback(request); } finally { stats.hostMs += performance.now() - start; }
-    });
+    }, readProtocol);
     return request => {
       stats.nativeCalls++;
       const output = operate(request);
@@ -40,6 +44,7 @@ const observed = { ...addon,
     const execute = addon.createWasmModuleExecutorV1(...args);
     return input => {
       const start = performance.now(); stats.guestCalls++; stats.guestBytes += input.length;
+      stats.maxGuestInputBytes = Math.max(stats.maxGuestInputBytes, input.length);
       try { const output = execute(input); stats.guestBytes += output.length; return output; }
       catch (error) { failedGuest = { execute, input, message: String(error) }; throw error; }
       finally { stats.guestMs += performance.now() - start; }
@@ -60,7 +65,7 @@ function measure(name, samples, action) {
 }
 const compiled = compileOfficialModuleCatalogV1(CVN6_MANIFEST, CVN6_REGISTRATION_ENTRIES);
 assert.ok(compiled.ok);
-const restore = installNativeWasmOnlyIntegratedBackendV1(observed, compiled.catalog, ["score", "part"].map(module => ({
+const restore = (selective ? installNativeWasmCoreReadsBackendV2 : installNativeWasmOnlyIntegratedBackendV1)(observed, compiled.catalog, ["score", "part"].map(module => ({
   moduleId: `fixture.${module}.module`, contributionId: `fixture.${module}.contribution.v1`, abiVersion: 1,
   sha256: guestSha256, bytes: guest,
 })));
@@ -105,7 +110,8 @@ try {
     bus = undefined;
   }
 } finally { restore(); }
-process.stdout.write(JSON.stringify({ profileVersion: 2, guestArtifact: { path: relative(process.cwd(), guestPath), sha256: guestSha256 },
+process.stdout.write(JSON.stringify({ profileVersion: selective ? 3 : 2, mode: selective ? "selective-core-reads-v2" : "full-view-v1",
+  guestArtifact: { path: relative(process.cwd(), guestPath), sha256: guestSha256 },
   node: process.version, platform: platform(), arch: arch(),
   cpu: cpus()[0]?.model, gcExposed: typeof global.gc === "function", rows,
   limitations: ["Synthetic one-part four-note-per-bar fixture with two installed test plugins; not product qualification",

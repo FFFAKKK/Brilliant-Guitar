@@ -11,6 +11,11 @@ publish = false
 crate-type = ["cdylib"]
 path = "guest.rs"
 
+[[example]]
+name = "scoped_reads_v2"
+path = "guest-v2.rs"
+crate-type = ["cdylib"]
+
 [dependencies]
 brilliant-extension-protocol = { path = "../../../../crates/brilliant-extension-protocol", features = ["scoped-guest-v1"] }
 serde = { version = "=1.0.229", features = ["derive"] }

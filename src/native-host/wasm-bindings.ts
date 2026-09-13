@@ -7,6 +7,7 @@ import { readDenseArray, readExactDataRecord } from "../core-kernel/registry/str
 import { captureStrictInput } from "../core-kernel/codec/strict-input-capture";
 import type { KernelIntegratedCatalog } from "../core-kernel/registry/integrated-contracts";
 import type { ScopedExecutionPolicyV1 } from "../core-kernel/module-sdk/scoped-invocation";
+import type { CompiledDomainCommandContributionV1 } from "../core-kernel/module-sdk/contracts";
 import { installNativeIntegratedBackendV2, type IntegratedNativeAddonV2 } from "../core-kernel/native/integrated-command-bus";
 import { encodeIntegratedValueV2 } from "../core-kernel/native/integrated-wire";
 
@@ -35,6 +36,28 @@ export function createWasmExecutionPolicyV1(addon: WasmNativeAddonV1, catalog: K
 
 function captureWasmExecutionPolicy(addon: WasmNativeAddonV1, catalog: KernelIntegratedCatalog, input: unknown,
   requireAll: boolean): ScopedExecutionPolicyV1 {
+  const executors = captureWasmExecutorsV1(addon, catalog, input, requireAll);
+  const state = getKernelIntegratedCatalogState(catalog)!;
+  const policy: ScopedExecutionPolicyV1 = { catalog, invoke(source, operation, definitionId, args, fallback) {
+    if (!state.contributions.includes(source)) throw new TypeError("wasm.assembly-mismatch");
+    const execute = executors.get(source);
+    if (execute === undefined) {
+      if (requireAll) throw new TypeError("wasm.incomplete-binding");
+      return fallback();
+    }
+    const output = execute(encodeIntegratedValueV2({ callbackVersion: 1, moduleId: source.moduleId,
+      contributionId: source.contributionId, operation, definitionId, arguments: args }));
+    const value = parse(apply(decodeUtf8, decoder, [output]) as string);
+    const result = captureStrictInput(value);
+    if (result.status !== "captured") throw new TypeError("wasm.invalid-result");
+    return result.value;
+  } };
+  return freeze(policy);
+}
+
+/** Shared trusted-host binding capture; this is not a public SDK export. */
+export function captureWasmExecutorsV1(addon: WasmNativeAddonV1, catalog: KernelIntegratedCatalog, input: unknown,
+  requireAll: boolean): ReadonlyMap<CompiledDomainCommandContributionV1, (input: Buffer) => Buffer> {
   if (typeof addon.createWasmModuleExecutorV1 !== "function" || typeof addon.createIntegratedKernelSessionV2 !== "function"
     || typeof addon.migrateKernelExtensionV2 !== "function") throw new TypeError("wasm.invalid-addon");
   const state = getKernelIntegratedCatalogState(catalog);
@@ -71,22 +94,7 @@ function captureWasmExecutionPolicy(addon: WasmNativeAddonV1, catalog: KernelInt
     if (typeof execute !== "function") throw new TypeError("wasm.invalid-addon");
     executors.set(source, execute);
   }
-  const policy: ScopedExecutionPolicyV1 = { catalog, invoke(source, operation, definitionId, args, fallback) {
-    if (!state.contributions.includes(source)) throw new TypeError("wasm.assembly-mismatch");
-    const execute = executors.get(source);
-    if (execute === undefined) {
-      if (requireAll) throw new TypeError("wasm.incomplete-binding");
-      return fallback();
-    }
-    const output = execute(encodeIntegratedValueV2({ callbackVersion: 1, moduleId: source.moduleId,
-      contributionId: source.contributionId, operation, definitionId, arguments: args }));
-    const value = parse(apply(decodeUtf8, decoder, [output]) as string);
-    const result = captureStrictInput(value);
-    if (result.status !== "captured") throw new TypeError("wasm.invalid-result");
-    // Existing SDK host checks still validate issues, statuses and effect data.
-    return result.value;
-  } };
-  return freeze(policy);
+  return executors;
 }
 
 export function installNativeWasmIntegratedBackendV1(addon: WasmNativeAddonV1, catalog: KernelIntegratedCatalog, bindings: unknown): () => void {

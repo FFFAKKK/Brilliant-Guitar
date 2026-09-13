@@ -11,10 +11,18 @@ Rebuild from the repository root (Rust 1.88 and the target must be installed):
 ```powershell
 rustup target add wasm32-unknown-unknown --toolchain 1.88.0
 node test/core-kernel/fixtures/wasm-guest/build.mjs
+node test/core-kernel/fixtures/wasm-guest/build.mjs --core-reads-v2
 ```
 
 The script builds locked/offline, removes only Rust's two linker-layout global
-exports, validates the three-export/no-import ABI, and writes `guest.wasm`.
+exports, and validates the three-export/no-import ABI. The new opt-in example
+writes `guest-v2.wasm` without touching the archived `guest.wasm`.
+The original V1 fixture is pinned to its checked-in binary. After adding the
+successor guest codec to the shared Rust protocol crate, the current-source V1
+rebuild has different bytes. If they differ, the script leaves `guest.wasm`
+untouched, writes the candidate under `target/wasm-guest/`, and exits with an
+explicit error. Reproduce the archived V1 bytes from its original source commit
+`42dec13` instead of substituting a later rebuild into historical evidence.
 Keep source, lock, script and binary together. The checked-in binary lets normal
 tests run without installing a guest compiler target. It is a test artifact,
 not a shipped plugin. Reproduction uses the pinned toolchain on the same host;
@@ -28,6 +36,14 @@ Parsed strings intentionally supply no lone-surrogate compatibility layer;
 unparsed borrowed Core text remains intact. Malformed or unsupported decoded
 input traps and is rejected atomically.
 The unsafe memory operations use pointers into guest linear memory only.
+
+`guest-v2.rs` is a separate, explicitly versioned example. It receives no
+complete Core document, requests exact candidate-bound entities over the
+Native read exchange, and receives only data replies. A capability probe
+rejects V1 artifacts before installation. It retains the same no-import,
+three-export Wasm ABI, per-callback fuel, and operation-level limits. The host
+still constructs complete candidate projections, so only the guest input is
+selective. See `docs/kernel-scoped-core-reads-v2.md` for its boundaries.
 
 The current full-view workload supports 64 bars under unchanged fuel limits;
 256-bar editing still exhausts fuel. This is reference-guest evidence, not a

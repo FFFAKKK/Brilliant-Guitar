@@ -1,0 +1,73 @@
+{
+  "date": "2026-09-13",
+  "baseCommit": "9eb4dd0",
+  "scope": "Opt-in authenticated all-Wasm V2 candidate-read guest protocol with existing V1 path preserved",
+  "logDirectory": ".local-evidence/wasm-core-reads-2026-09-13",
+  "fresh": {
+    "typescriptBuildAndTypecheck": { "status": "passed", "log": "ts-build.log" },
+    "newGuestFocused": { "passed": 6, "failed": 0, "log": "focused.log" },
+    "finalOldAndNewWasmFocused": { "passed": 25, "failed": 0, "log": "final-wasm-suites.log" },
+    "nodeFull": { "tests": 865, "passed": 863, "skipped": 2, "failed": 0, "log": "node-tests.log" },
+    "rustWorkspaceAllFeatures": { "passed": 567, "ignored": 1, "failed": 0, "log": "rust-tests.log" },
+    "clippyAllTargetsAllFeaturesDenyWarnings": { "status": "passed", "log": "clippy.log" },
+    "msrv188AllTargetsAllFeatures": { "status": "passed", "log": "msrv.log" },
+    "rustfmtWorkspace": "passed",
+    "v2GuestBuild188Wasm32LockedOffline": { "status": "passed; second build byte-identical", "logs": ["guest-build.log", "guest-v2-final.log"] },
+    "v1PreservationGuard": { "status": "expected mismatch, archived bytes unchanged", "log": "guest-v1-guard.log" },
+    "nativeArtifact": "Inherited unchanged from 9eb4dd0; no addon replacement or rebuild this slice"
+  },
+  "artifacts": {
+    "newGuest": { "path": "test/core-kernel/fixtures/wasm-guest/guest-v2.wasm", "sha256": "f2d64a888f7c6f4b32e15e77fd527fe3c3cd0a9a66d93003828f65a9741709e9", "bytes": 137218 },
+    "archivedV1Guest": { "path": "test/core-kernel/fixtures/wasm-guest/guest.wasm", "sha256": "fa1cc218af4825e79d49c00d5c0ee59c78a154f07a7e4293aebcde2d8a29650e", "changedThisSlice": false },
+    "currentSourceV1Candidate": { "path": "target/wasm-guest/rebuilt-v1-candidate.wasm", "sha256": "86e7dedc3b734933ce5c64ec690c000c68599f4708adc6ee943f75fdc9757b78", "archivedV1Replaced": false },
+    "inheritedWasmNative": { "path": "target/wasm-v1/brilliant_kernel_node.node", "sha256": "a17a1cf9881ded43c3ac3dc17f0b16a50b97bed1b4e38aeda7dc4ca4f26575d5" }
+  },
+  "proof": [
+    "Every captured contribution, dormant or live, responds to a V2 capability probe before backend selection; V1 guest or stale Native read adapter rejects",
+    "V2 guest view excludes full coreDocument, uses data-only candidate read replies and the existing bounded no-import three-export ABI",
+    "All six authentic guest callback families run with zero JS plugin fallback; SDK behavior matches at 256 bars through Score/Part edits, Batch, history, events and snapshots",
+    "Earlier Batch Core edits are seen in Wasm prepare and stale Core/plugin relationships fail independent final validation; joint repair succeeds",
+    "Declared cross-contribution Part reads consume the current candidate; undeclared reads reject",
+    "Invalid, repeated and exhausting Core read requests, fuel exhaustion, foreign writes and forged output reject without state/history/event adoption; later independent work recovers",
+    "Detached migration and exact old V1 path remain supported",
+    "The V1 build guard diagnoses a distinct current-source candidate without overwriting the archived fixture"
+  ],
+  "profile": {
+    "script": "scripts/profile-native-integrated.mjs --core-reads-v2",
+    "profileVersion": 3,
+    "log": "profile-v2.json",
+    "environment": "Windows x64, Node 24.15.0, i9-13900HX, release Native, --expose-gc",
+    "samplesPerSize": 6,
+    "results": [
+      { "measures": 16, "notes": 64, "committed": 6, "rejected": 0, "medianMs": 21.29855, "maxGuestInputBytes": 830, "hostRequestBytesTotal": 251542 },
+      { "measures": 64, "notes": 256, "committed": 6, "rejected": 0, "medianMs": 53.47615, "maxGuestInputBytes": 830, "hostRequestBytesTotal": 961354 },
+      { "measures": 256, "notes": 1024, "committed": 6, "rejected": 0, "medianMs": 196.6941, "maxGuestInputBytes": 830, "hostRequestBytesTotal": 3815020, "guestBytesTotal": 27454, "afterGcRssBytes": 242237440 }
+    ],
+    "qualification": false,
+    "budgetsChanged": false
+  },
+  "sameHostV1Replay": {
+    "script": "scripts/profile-native-integrated.mjs",
+    "profileVersion": 2,
+    "log": "profile-v1.json",
+    "samplesPerSize": 6,
+    "results": [
+      { "measures": 16, "committed": 6, "rejected": 0 },
+      { "measures": 64, "committed": 6, "rejected": 0 },
+      { "measures": 256, "committed": 0, "rejected": 6, "independentFailure": "wasm.execution-failed:FuelExhausted" }
+    ],
+    "comparison": "Same artifact and diagnostic harness, distinct explicitly selected guest protocol. Old 256-bar rejects have no successful duration to compare."
+  },
+  "remaining": [
+    "Eliminate complete Rust-to-TS candidate projection and repeated host view construction; bound remaining host CPU/copies and replay",
+    "Complete Rust-controlled plugin scheduling/aggregation and dependency/incremental equivalence",
+    "Validate first-party real guitar plugin and UI integration at representative sizes and degraded/migration states",
+    "Platform P95/P99 and peak/long-running memory, soak, packaging, release/recovery and reversible default cutover"
+  ],
+  "notClaimed": [
+    "Generic third-party guest performance, business semantic correctness or a fully pure-Rust transaction path",
+    "Eliminating Node-side complete candidate projection or measuring peak RSS/leaks",
+    "Historical V1 byte-identical rebuild from current code, commercial benchmark pass, default cutover or remote push"
+  ],
+  "progressEstimate": { "foundationalFunctionalityPercentRange": [85, 90], "commercialPreparationPercent": 65, "meaning": "Unchanged rough engineering judgment, not schedule completion" }
+}

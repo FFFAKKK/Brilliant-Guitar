@@ -1,10 +1,13 @@
 // Run from the repository root. Keep the guest outside the seven host crates.
 import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 
+const readsV2 = process.argv[2] === "--core-reads-v2";
+if (process.argv.length !== (readsV2 ? 3 : 2)) throw new Error("usage: build.mjs [--core-reads-v2]");
 execFileSync("cargo", ["+1.88.0", "build", "--manifest-path", "test/core-kernel/fixtures/wasm-guest/Cargo.toml",
+  ...(readsV2 ? ["--example", "scoped_reads_v2"] : []),
   "--target", "wasm32-unknown-unknown", "--target-dir", "target/wasm-guest", "--release", "--locked", "--offline"], { stdio: "inherit" });
-const bytes = readFileSync("target/wasm-guest/wasm32-unknown-unknown/release/kernel_scoped_wasm_fixture.wasm");
+const bytes = readFileSync(`target/wasm-guest/wasm32-unknown-unknown/release/${readsV2 ? "examples/scoped_reads_v2" : "kernel_scoped_wasm_fixture"}.wasm`);
 let offset = 8;
 function readU32() {
   let value = 0, shift = 0, byte;
@@ -38,4 +41,9 @@ while (offset < bytes.length) {
 const guest = Buffer.concat(sections), module = new WebAssembly.Module(guest);
 if (WebAssembly.Module.imports(module).length || WebAssembly.Module.exports(module).map(e => e.name).sort().join() !==
   "brilliant_alloc_v1,brilliant_execute_v1,memory") throw new Error("unexpected guest ABI");
-writeFileSync("test/core-kernel/fixtures/wasm-guest/guest.wasm", guest);
+const destination = `test/core-kernel/fixtures/wasm-guest/${readsV2 ? "guest-v2" : "guest"}.wasm`;
+if (!readsV2 && existsSync(destination) && !readFileSync(destination).equals(guest)) {
+  writeFileSync("target/wasm-guest/rebuilt-v1-candidate.wasm", guest);
+  throw new Error("Archived V1 guest bytes differ from the current-source rebuild; kept guest.wasm unchanged. Inspect target/wasm-guest/rebuilt-v1-candidate.wasm.");
+}
+writeFileSync(destination, guest);

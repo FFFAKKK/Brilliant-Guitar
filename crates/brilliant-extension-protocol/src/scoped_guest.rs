@@ -16,6 +16,12 @@ use serde_json::{Value, value::RawValue};
 mod json;
 use json::PlainValue;
 
+/// Ordinary scalar JSON for private guest protocols. Unlike Value's raw_value
+/// deserializer, user keys matching serde_json's internal marker remain data.
+pub fn decode_guest_json(bytes: &[u8]) -> serde_json::Result<Value> {
+    serde_json::from_slice::<PlainValue>(bytes).map(|value| value.0)
+}
+
 /// The host still sends the complete Core document. A plugin can deserialize
 /// only the fields its operation needs, or deserialize the entire Core value.
 /// The borrowed JSON preserves numeric spelling and escaped UTF-16 verbatim.

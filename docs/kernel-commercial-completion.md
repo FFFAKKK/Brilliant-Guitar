@@ -122,6 +122,20 @@ success is not guest qualification. Full projection, TS orchestration and all
 remaining commercial gates are unchanged; readiness stays approximately 65%.
 Evidence: `docs/evidence/kernel-core-read-host-2026-09-13.json`.
 
+**Selective Wasm guest at 256 bars (2026-09-13):** the explicitly installed,
+all-bound V2 guest now requests exact candidate Core data as bounded read frames
+instead of receiving full Core data in each guest view. The existing V1 guest
+and its historical binary stay available. Six of six real guest edits complete
+at 256 bars/1024 notes with unchanged fuel limits; a deliberately invalid
+Core/plugin relation is independently rejected and repaired atomically.
+The bounded diagnostic median is 196.69 ms; max guest input is 830 bytes, but
+six edits still transfer 3.8 MB of host requests containing full candidates.
+Full regression: Rust 567 passed/1 ignored; Node/Native 863 passed/2 skipped.
+This closes the measured reference guest fuel-exhaustion case only. Full host
+projection, TS scheduling, sustained performance, first-party business plugin
+and platform/release qualification remain; approximate commercial readiness
+stays 65%. Evidence: `docs/kernel-wasm-selective-guest-2026-09-13.md`.
+
 **Historical pause at the owner's request (2026-09-12):** finish the current
 cross-plugin explicit-read task, record its evidence and local commits, then
 stop and report. That pause was followed by the explicit restart above.

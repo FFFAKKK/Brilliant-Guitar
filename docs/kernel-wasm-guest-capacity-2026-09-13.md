@@ -73,6 +73,10 @@ guest 重建要求 PATH 中有 Cargo、安装了 Rust 1.88.0 与 wasm32-unknown-
 
 ## 当前结论与下一步
 
+后续独立版本 V2 已接通真实 Wasm 按需读取参考路径，256 小节编辑 6/6 成功，
+见[新容量报告](kernel-wasm-selective-guest-2026-09-13.md)。本报告的 V1 完整
+视图失败记录仍然成立，不应覆盖成旧协议自然支持 256 小节。
+
 后续切片已完成 Rust 候选按需读取基础 R1，见
 [读取合同与阶段边界](kernel-scoped-core-reads-v2.md)。它尚未接到 Node/Wasm；
 新宿主产物上的 256 小节准备仍耗尽燃料，因此本报告的容量缺口保持未解决。
