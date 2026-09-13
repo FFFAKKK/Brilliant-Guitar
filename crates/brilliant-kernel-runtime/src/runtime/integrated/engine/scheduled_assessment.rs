@@ -3,15 +3,13 @@
 use super::*;
 
 impl IntegratedKernelRuntimeV2 {
-    pub(super) fn scheduled_assess(
+    pub(super) fn scheduled_assess_modules(
         &mut self,
         document: Value,
         version: u64,
         sources: Vec<Value>,
-        core: Value,
-        availability: Value,
         executor: &mut dyn ContributionExecutorV2,
-    ) -> Result<Value> {
+    ) -> Result<Vec<Value>> {
         // Keep the Core read source in Rust, separate from serialized requests.
         self.callback_projections = self.callback_projections.saturating_add(1);
         let candidate = object([("document", document), ("documentVersion", number(version))]);
@@ -81,14 +79,7 @@ impl IntegratedKernelRuntimeV2 {
                 ("issues", JsonValue::Array(issues.to_vec())),
             ]));
         }
-        Ok(object([
-            ("ok", JsonValue::Bool(true)),
-            ("availability", availability),
-            (
-                "assessment",
-                object([("core", core), ("modules", JsonValue::Array(modules))]),
-            ),
-        ]))
+        Ok(modules)
     }
 
     fn assessment_callback(

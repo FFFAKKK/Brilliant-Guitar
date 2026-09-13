@@ -112,21 +112,23 @@ impl IntegratedKernelRuntimeV2 {
             .store
             .export_document()
             .map_err(|_| internal())?;
-        state.assess(&document, 0, executor).map_err(|error| {
-            if tag(&error, "code", "command.semantic-invalid") {
-                object([
-                    ("code", text("command.invalid-initial-document")),
-                    (
-                        "diagnostics",
-                        field(&error, "diagnostics")
-                            .cloned()
-                            .unwrap_or(JsonValue::Array(vec![])),
-                    ),
-                ])
-            } else {
-                error
-            }
-        })?;
+        state
+            .assess_admission(&document, executor)
+            .map_err(|error| {
+                if tag(&error, "code", "command.semantic-invalid") {
+                    object([
+                        ("code", text("command.invalid-initial-document")),
+                        (
+                            "diagnostics",
+                            field(&error, "diagnostics")
+                                .cloned()
+                                .unwrap_or(JsonValue::Array(vec![])),
+                        ),
+                    ])
+                } else {
+                    error
+                }
+            })?;
         Ok(state)
     }
 
@@ -414,6 +416,31 @@ impl IntegratedKernelRuntimeV2 {
         }
         call(executor, request, &JsonValue::Null)
     }
+    fn assess_admission(
+        &mut self,
+        document: &ScoreDocumentV1,
+        executor: &mut dyn ContributionExecutorV2,
+    ) -> Result<()> {
+        if !executor.uses_scoped_assessment() {
+            // Legacy hosts receive Core assessment in their callback contract.
+            return self.assess(document, 0, executor).map(|_| ());
+        }
+        let candidate = value(document)?;
+        let semantics = assess_score_semantics(&candidate).map_err(assessment_failure)?;
+        if !semantics.ok {
+            return Err(object([
+                ("code", text("command.semantic-invalid")),
+                ("diagnostics", value(&semantics.diagnostics)?),
+            ]));
+        }
+        let sources = self.assessment_sources(document)?;
+        self.candidate_availability(document)?;
+        // Admission returns no feature report. Keep all semantic, availability
+        // and module checks without constructing unused K1 unsupported details.
+        self.scheduled_assess_modules(candidate, 0, sources, executor)?;
+        Ok(())
+    }
+
     fn assess(
         &mut self,
         document: &ScoreDocumentV1,
@@ -424,7 +451,7 @@ impl IntegratedKernelRuntimeV2 {
         // Neither stage mutates this value; do not serialize and parse it twice.
         let candidate = value(document)?;
         let core = assess_score_profile(&candidate, &ScoreFeatureProfileV1::k1())
-            .map_err(|_| internal())?;
+            .map_err(assessment_failure)?;
         if let ScoreSupportV1::Invalid { diagnostics } = &core {
             return Err(object([
                 ("code", text("command.semantic-invalid")),
@@ -435,14 +462,15 @@ impl IntegratedKernelRuntimeV2 {
         let sources = self.assessment_sources(document)?;
         let availability = self.candidate_availability(document)?;
         if executor.uses_scoped_assessment() {
-            return self.scheduled_assess(
-                candidate,
-                version,
-                sources,
-                core,
-                availability,
-                executor,
-            );
+            let modules = self.scheduled_assess_modules(candidate, version, sources, executor)?;
+            return Ok(object([
+                ("ok", JsonValue::Bool(true)),
+                ("availability", availability),
+                (
+                    "assessment",
+                    object([("core", core), ("modules", JsonValue::Array(modules))]),
+                ),
+            ]));
         }
         let mut reply = self
             .call(
@@ -577,6 +605,20 @@ fn owned_failure(source: &Value, code: &str) -> Value {
         _ => internal(),
     }
 }
+fn assessment_failure(error: brilliant_score_foundation::AssessmentFailureV1) -> Value {
+    match error {
+        brilliant_score_foundation::AssessmentFailureV1::DiagnosticLimit { limit, actual } => {
+            object([
+                ("code", text("command.resource-limit-exceeded")),
+                ("limitKind", text("diagnostics")),
+                ("limit", number(limit as u64)),
+                ("actual", number(actual as u64)),
+            ])
+        }
+        _ => internal(),
+    }
+}
+
 fn resource(kind: &str, limit: u64) -> Value {
     object([
         ("code", text("command.resource-limit-exceeded")),

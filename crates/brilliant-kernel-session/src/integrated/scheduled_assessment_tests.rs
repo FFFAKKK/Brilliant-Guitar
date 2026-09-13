@@ -136,6 +136,95 @@ fn read(session: &mut IntegratedKernelSessionV2, host: &mut Host) -> Value {
     )
 }
 
+fn unsupported_admission_input(measures: usize) -> Value {
+    let fixture = fixture();
+    let mut input: Value = serde_json::from_str(fixture["initial"].as_str().unwrap()).unwrap();
+    let template = input["document"]["parts"][0]["measureContents"][0].clone();
+    input["document"]["measureDefinitions"] = json!(
+        (0..measures)
+            .map(|i| {
+                json!({"id":format!("measure-{i}"),"meter":{"numerator":8,"denominator":8}})
+            })
+            .collect::<Vec<_>>()
+    );
+    input["document"]["parts"][0]["measureContents"] = json!(
+        (0..measures)
+            .map(|i| {
+                let mut content = template.clone();
+                content["measureId"] = json!(format!("measure-{i}"));
+                content["voices"][0]["id"] = json!(format!("voice-{i}"));
+                for (j, event) in content["voices"][0]["sequence"]["events"]
+                    .as_array_mut()
+                    .unwrap()
+                    .iter_mut()
+                    .enumerate()
+                {
+                    event["id"] = json!(format!("event-{i}-{j}"));
+                    if let Some(notes) = event["content"]
+                        .get_mut("notes")
+                        .and_then(Value::as_array_mut)
+                    {
+                        notes[0]["id"] = json!(format!("note-{i}-{j}"));
+                    }
+                }
+                content
+            })
+            .collect::<Vec<_>>()
+    );
+    input
+}
+
+#[test]
+fn scoped_admission_does_not_materialize_an_unused_feature_report_but_edit_reports_stay_bounded() {
+    let fixture = fixture();
+    for measures in [4096, 4097] {
+        let input = unsupported_admission_input(measures);
+        let mut host = host(&fixture);
+        host.editing = true;
+        let mut session =
+            IntegratedKernelSessionV2::create(&serde_json::to_vec(&input).unwrap(), &mut host)
+                .unwrap_or_else(|error| {
+                    panic!(
+                        "valid unsupported admission: {}",
+                        String::from_utf8_lossy(&error)
+                    )
+                });
+        let before = read(&mut session, &mut host);
+        assert_eq!(before["state"]["snapshot"]["document"], input["document"]);
+        let mut metadata = input["document"]["metadata"].clone();
+        metadata["title"] = json!("changed");
+        let command = json!({"operation":"submit","command":{"commandVersion":1,
+            "commandId":"core.document.set-metadata","target":{"kind":"document","documentId":"score-1"},
+            "payload":{"metadata":metadata}}});
+        let output: Value = serde_json::from_slice(
+            &session.operate(&serde_json::to_vec(&command).unwrap(), &mut host),
+        )
+        .unwrap();
+        if measures == 4096 {
+            assert_eq!(output["ok"], true);
+            assert_eq!(
+                output["pipeline"]["assessment"]["core"]["status"],
+                "unsupported"
+            );
+            assert_eq!(
+                output["pipeline"]["assessment"]["core"]["diagnostics"]
+                    .as_array()
+                    .unwrap()
+                    .len(),
+                4096
+            );
+        } else {
+            assert_eq!(output["ok"], false);
+            assert_eq!(
+                output["failure"],
+                json!({"code":"command.resource-limit-exceeded",
+                "limitKind":"diagnostics","limit":4096,"actual":4097})
+            );
+            assert_eq!(read(&mut session, &mut host), before);
+        }
+    }
+}
+
 #[test]
 fn runtime_scheduled_assessment_preserves_the_recorded_edit_and_history_journey() {
     let fixture = fixture();

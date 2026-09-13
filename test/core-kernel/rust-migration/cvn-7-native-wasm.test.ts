@@ -3,6 +3,7 @@ import { test } from "node:test";
 import { CommandBus, migrateKernelExtension, type ScoreDocument } from "../../../src/core-kernel/index";
 import { createNativeWorkloadScore } from "../fixtures/native-workload";
 import { createCvn7NativeWasmFixture } from "../fixtures/cvn-7-native-wasm";
+import { createStressCvn7Score } from "../fixtures/cvn-7-qualification-score";
 
 function score(): ScoreDocument {
   return { ...createNativeWorkloadScore(4), extensions: [
@@ -74,6 +75,37 @@ test("CVN-7 Wasm command rejection and detached migration agree with the frozen 
     const native = CommandBus.createIntegrated(initial, fixture.catalog, fixture.modules.knownRequirementInventory); assert.ok(native.ok);
     assert.deepEqual(inputs.map(input => native.value.submit(input)), expected);
     assert.deepEqual(requests.map(input => migrateKernelExtension(initial, input, fixture.catalog)), migrations);
+    assert.deepEqual(fixture.modules.readTrace(), []);
+  } finally { restore(); }
+});
+
+test("V4 admits the frozen stress document and preserves it when an edit report exceeds the diagnostic cap", { timeout: 60_000 }, () => {
+  const fixture = createCvn7NativeWasmFixture(), initial = createStressCvn7Score().document;
+  const restore = fixture.install();
+  try {
+    fixture.modules.resetTrace();
+    const created = CommandBus.createIntegrated(initial, fixture.catalog, fixture.modules.knownRequirementInventory);
+    assert.ok(created.ok, JSON.stringify(created));
+    const before = created.value.read(); assert.ok(before.ok);
+    assert.deepEqual(before.value.snapshot.document, initial);
+    const events: unknown[] = [];
+    created.value.subscribe((event: unknown) => events.push(event));
+    const result = created.value.submit({
+      commandVersion: 1, commandId: "core.document.set-metadata",
+      target: { kind: "document", documentId: initial.id },
+      payload: { metadata: { ...initial.metadata, title: "must remain unchanged" } },
+    });
+    assert.equal(result.status, "rejected");
+    if (result.status !== "rejected") assert.fail("diagnostic report must remain bounded");
+    assert.deepEqual(result.failure, {
+      code: "command.resource-limit-exceeded", limitKind: "diagnostics", limit: 4096, actual: 4097,
+    });
+    assert.equal(result.documentVersion, 0);
+    assert.equal(result.undoDepth, 0);
+    assert.equal(result.redoDepth, 0);
+    const after = created.value.read(); assert.ok(after.ok);
+    assert.deepEqual(after.value, before.value);
+    assert.deepEqual(events, []);
     assert.deepEqual(fixture.modules.readTrace(), []);
   } finally { restore(); }
 });

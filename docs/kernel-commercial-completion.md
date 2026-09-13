@@ -1,5 +1,18 @@
 # Commercial kernel completion
 
+**Scoped admission separates validity from unused K1 feature reports
+(2026-09-13):** V3/V4 construction now performs Core semantics and the same
+module validation/classification without constructing a discarded Core feature
+report. The unchanged 102,400-event fixture now opens and reads successfully.
+Editing still preserves the full bounded K1 report contract; diagnostic overflow
+now returns `command.resource-limit-exceeded` / `diagnostics` / 4096 / 4097
+instead of `command.internal-error`, without adoption or events. Tests prove
+4,096 complete reports and 4,097 rollback. Rust: 580 passed/1 ignored; Node:
+890 passed/2 skipped; fmt, strict Clippy, MSRV and TS checks passed. Stress edits
+still fail this report limit and representative edits remain about 500 ms.
+Neither qualification nor default cutover is complete. See
+`docs/kernel-scoped-admission-2026-09-13.md`.
+
 **Frozen-fixture V4 preflight (2026-09-13):** the unchanged CVN-7 score and
 synthetic module fixtures now run through a separate actual Wasm guest on V4.
 Node/Native: 889 passed/2 skipped. This is an evidence/tooling increment, not
