@@ -49,6 +49,16 @@ artifacts are unchanged in this slice. See
 `docs/evidence/kernel-wasm-only-2026-09-13.json` and
 `docs/kernel-wasm-executor-v1.md` for verification and remaining boundaries.
 
+**Native operation budget (2026-09-13):** the Wasm artifact's integrated
+creation/operation/migration boundaries now establish a Rust-owned shared fuel
+and call account (100 million fuel, 4096 calls). Nested synchronous calls inherit
+it; guest failures are sticky and checked after the host returns, so swallowing
+exhaustion cannot authorize a commit. Independent operations recover a fresh
+account. This supersedes the preceding per-callback-only limitation for the
+same-artifact Native path; TS scheduling, host-copy/compilation cost, aggregate
+memory/byte accounting, other embeddings and performance qualification remain
+unfinished. Evidence: `docs/evidence/kernel-wasm-operation-budget-2026-09-13.json`.
+
 **Historical pause at the owner's request (2026-09-12):** finish the current
 cross-plugin explicit-read task, record its evidence and local commits, then
 stop and report. That pause was followed by the explicit restart above.

@@ -37,6 +37,87 @@ fn echo_preserves_lossless_bytes_and_deterministic_fuel() {
 }
 
 #[test]
+fn shared_operation_fuel_is_consumed_across_guests_and_never_refreshed_per_call() {
+    let first = capture(&echo(), WasmLimitsV1::default());
+    let second = capture(&echo(), WasmLimitsV1::default());
+    let cost = first.execute_bounded(b"payload").unwrap().fuel_consumed;
+    let mut budget = WasmOperationBudgetV1 {
+        fuel: cost * 2,
+        calls: 3,
+        failed: false,
+    };
+    assert_eq!(
+        budget.execute(&first, b"payload").unwrap().bytes,
+        b"payload"
+    );
+    assert_eq!(budget.fuel, cost);
+    assert_eq!(
+        budget.execute(&second, b"payload").unwrap().bytes,
+        b"payload"
+    );
+    assert_eq!(budget.fuel, 0);
+    assert!(!budget.failed()); // Exactly consuming a budget may finish successfully.
+    assert_eq!(
+        budget.execute(&first, b"payload").err(),
+        Some(WasmExecutionErrorV1::FuelExhausted)
+    );
+    assert!(budget.failed());
+    assert_eq!(
+        budget.execute(&second, b"").err(),
+        Some(WasmExecutionErrorV1::FuelExhausted)
+    );
+
+    let mut short = WasmOperationBudgetV1 {
+        fuel: cost - 1,
+        calls: 5,
+        failed: false,
+    };
+    assert_eq!(
+        short.execute(&first, b"payload").err(),
+        Some(WasmExecutionErrorV1::FuelExhausted)
+    );
+    assert!(short.failed());
+    assert!(
+        WasmOperationBudgetV1::default()
+            .execute(&first, b"payload")
+            .is_ok()
+    );
+}
+
+#[test]
+fn operation_call_cap_and_guest_traps_remain_sticky_without_weakening_per_call_limits() {
+    let normal = capture(&echo(), WasmLimitsV1::default());
+    let mut budget = WasmOperationBudgetV1 {
+        fuel: 100_000,
+        calls: 1,
+        failed: false,
+    };
+    assert!(budget.execute(&normal, b"ok").is_ok());
+    assert_eq!(
+        budget.execute(&normal, b"ok").err(),
+        Some(WasmExecutionErrorV1::CallLimitExceeded)
+    );
+    assert!(budget.failed());
+    let low = capture(
+        &echo(),
+        WasmLimitsV1 {
+            fuel: 1,
+            ..Default::default()
+        },
+    );
+    let trap = capture(
+        &bytes("unreachable", "i64.const 0", ""),
+        WasmLimitsV1::default(),
+    );
+    for guest in [&low, &trap] {
+        let mut budget = WasmOperationBudgetV1::default();
+        assert!(budget.execute(guest, b"bad").is_err());
+        assert!(budget.failed());
+        assert!(budget.execute(&normal, b"must not run").is_err());
+    }
+}
+
+#[test]
 fn capture_checks_policy_integrity_module_and_version() {
     let module = echo();
     let hash = Sha256::digest(&module).into();

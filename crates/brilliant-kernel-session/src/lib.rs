@@ -11,4 +11,7 @@ pub use integrated::{
 };
 pub use session::{KernelSession, KernelSessionCreateAccepted};
 #[cfg(feature = "wasm-executor-v1")]
-pub use wasm::{WasmExecutionErrorV1, WasmExecutionOutputV1, WasmExecutorV1, WasmLimitsV1};
+pub use wasm::{
+    WasmExecutionErrorV1, WasmExecutionOutputV1, WasmExecutorV1, WasmLimitsV1,
+    WasmOperationBudgetV1,
+};

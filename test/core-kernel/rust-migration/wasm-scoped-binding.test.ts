@@ -49,6 +49,59 @@ function metadata() {
     payload: { metadata: { ...createCoreScoreFixture().metadata, title: "prefix must roll back" } } };
 }
 
+test("Rust shares a sticky Wasm budget across one operation even when the host swallows guest failures", () => {
+  const compiled = catalog();
+  let exhaust = false, attempts = 0;
+  const observed: WasmNativeAddonV1 = { ...addon, createWasmModuleExecutorV1(...args) {
+    const execute = addon.createWasmModuleExecutorV1(...args);
+    return input => {
+      const output = execute(input);
+      if (exhaust) {
+        exhaust = false;
+        // A nested native session must inherit the outer account, not reset it.
+        assert.equal(CommandBus.createIntegrated(document(), compiled).ok, true);
+        // Each reply is valid and each call fits the old per-callback limit.
+        // Repeated native calls must still share the enclosing Rust budget.
+        for (let i = 0; i < 4097; i++) {
+          attempts++;
+          try { execute(input); } catch { break; }
+        }
+      }
+      return output; // A valid-looking host reply cannot erase exhaustion.
+    };
+  } };
+  const restore = installNativeWasmOnlyIntegratedBackendV1(observed, compiled, [binding(), binding("part")]);
+  try {
+    for (const operation of ["submit", "undo", "redo"] as const) {
+      const created = CommandBus.createIntegrated(document(), compiled);
+      assert.ok(created.ok);
+      const bus = created.value;
+      assert.equal(bus.submit(command()).status, "committed");
+      assert.equal(bus.submit(command("part", "history-base")).status, "committed");
+      if (operation === "redo") assert.equal(bus.undo().status, "committed");
+      const before = bus.read(), events: unknown[] = [];
+      bus.subscribe((event: unknown) => events.push(event));
+      exhaust = true; attempts = 0;
+      const result = operation === "submit" ? bus.submit(batch([metadata(), command()])) : bus[operation]();
+      assert.equal(result.status, "rejected", operation);
+      assert.ok(attempts > 1 && attempts <= 4097);
+      assert.deepEqual(bus.read(), before);
+      assert.deepEqual(events, []);
+      assert.equal(bus.submit(command("score", "next-operation", "G")).status, "committed");
+    }
+    exhaust = true;
+    assert.equal(CommandBus.createIntegrated(document(), compiled).ok, false);
+    assert.equal(CommandBus.createIntegrated(document(), compiled).ok, true);
+    const migration = { migrationVersion: 1, moduleId: "fixture.part.module", contributionId: "fixture.part.contribution.v1",
+      namespace: "fixture.part", effectKind: "fixture.part.replace", owner: { kind: "part", partId: "part-1" },
+      sourceSchemaVersion: 1, targetSchemaVersion: 2, payload: { schemaVersion: 2, marker: "migrated" } };
+    exhaust = true;
+    assert.equal(migrateKernelExtension(document(), migration, compiled).status, "rejected");
+    assert.equal(migrateKernelExtension(document(), migration, compiled).status, "migrated");
+    assert.deepEqual(cvn6CallbackTrace, []);
+  } finally { restore(); resetCvn6Callbacks(); }
+});
+
 test("Wasm-only admission rejects incomplete or failed compilation without replacing the active backend", () => {
   const previous = catalog(), next = catalog();
   const restore = installNativeWasmIntegratedBackendV1(addon, previous, [binding()]);

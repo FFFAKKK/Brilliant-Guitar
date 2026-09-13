@@ -193,11 +193,52 @@ source and artifacts are unchanged; their verification is inherited from
 
 This closes the missing-host-policy gap for an all-Wasm plugin deployment. It
 does **not** move callback scheduling or view construction into Rust: trusted TS
-host orchestration, capture and codecs remain active. Fuel remains per callback,
-not a shared budget across a whole user transaction. Whole-document transport,
-compilation costs, aggregate resource limits and performance qualification remain
-open. The new entry does not change public SDK/ABI or Native export counts and
-does not select the application's default backend.
+host orchestration, capture and codecs remain active. At that checkpoint fuel
+was per callback; the following slice adds a shared Native operation account.
+Whole-document transport, compilation costs, aggregate memory/byte limits and
+performance qualification remain open. The new entry does not change public
+SDK/ABI or Native export counts and does not select the default backend.
+
+### 2026-09-13: Rust-owned Native operation budgets
+
+The Wasm Node artifact now shares **100,000,000 fuel and 4096 guest calls**
+across one integrated session creation, operation (including submit/undo/redo),
+or detached migration. Each guest still receives at most its original
+10,000,000-fuel cap, reduced to the operation's remaining fuel. Successful calls
+debit actual start/allocation/execution fuel; exactly consuming the budget may
+finish successfully, but another call is refused. These are initial engineering
+ceilings, not measured commercial capacity or a wall-clock deadline.
+
+Any guest error or unwind poisons the account. The Native executor checks it
+before and after calling the host; swallowing a guest error and returning a
+valid-looking success cannot authorize adoption. Existing failure families are
+used rather than widening public command/migration unions. A later independent
+operation starts with a fresh account; no account is stored in document/history.
+Rust RAII clears the outer scope on normal return and unwind. Nested native
+operations inherit the account; worker threads have separate accounts.
+
+This applies to synchronous calls inside the **same Wasm Native artifact**,
+including its mixed and Wasm-only installers. The trusted host must use that
+artifact for both the session and guest executors. Standalone guest calls outside
+an integrated operation retain the existing per-call behavior. Other Rust hosts
+can explicitly share `WasmOperationBudgetV1`, but this is not automatic
+cross-process, cross-library or worker-wide accounting. The budget does not
+isolate arbitrary JS or measure host parsing/copying, compilation or memory held
+by the host. Per-operation Wasm CPU work is now bounded; full performance and
+resource qualification remain unfinished.
+
+Rust tests cover exact/insufficient shared fuel across two guest instances,
+call caps, sticky errors, retained per-call caps, nested scopes, thread isolation
+and unwind cleanup. The real Native regression first committed against the old
+artifact, then rejects excessive successful guest invocations even when the host
+swallows failure and opens a nested session. Submit after an effective Batch
+prefix, undo, redo, creation and migration all reject without publishing changes,
+and subsequent healthy operations succeed. Evidence:
+[operation budget verification](evidence/kernel-wasm-operation-budget-2026-09-13.json).
+Fresh full verification: Rust 544 passed/1 ignored; Node 843 passed/2 skipped,
+zero failures. Strict Clippy, fmt, Rust 1.88, non-Wasm compilation and TypeScript
+build passed. The Wasm artifact was rebuilt; frozen V1 and non-Wasm V2 binaries
+retain their prior builds.
 
 Explicit cross-plugin reads now use the opt-in derived catalog and the same
 scoped callback view in Wasm; see `kernel-contribution-reads-v1.md`. They grant no

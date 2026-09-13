@@ -8,6 +8,9 @@ use brilliant_kernel_session::{WasmExecutorV1, WasmLimitsV1};
 use napi_derive::napi;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
+mod budget;
+pub(crate) use budget::{OperationScope, operation_failed};
+
 #[napi(js_name = "createWasmModuleExecutorV1")]
 pub fn create_wasm_module_executor_v1<'env>(
     env: &'env Env,
@@ -26,7 +29,7 @@ pub fn create_wasm_module_executor_v1<'env>(
     .map_err(|_| napi::Error::from_reason("wasm.capture-failed"))?;
     env.create_function_from_closure("executeWasmModuleV1", move |context| {
         let input: Buffer = context.first_arg()?;
-        catch_unwind(AssertUnwindSafe(|| executor.execute_bounded(&input)))
+        catch_unwind(AssertUnwindSafe(|| budget::execute(&executor, &input)))
             .map_err(|_| napi::Error::from_reason("wasm.execution-failed"))?
             .map(|output| Buffer::from(output.bytes))
             .map_err(|_| napi::Error::from_reason("wasm.execution-failed"))

@@ -39,6 +39,7 @@ pub enum WasmExecutionErrorV1 {
     ImportsForbidden,
     InputTooLarge,
     FuelExhausted,
+    CallLimitExceeded,
     StackExhausted,
     Trap,
     InvalidInputRegion,
@@ -51,6 +52,52 @@ pub struct WasmExecutionOutputV1 {
     pub bytes: Vec<u8>,
     /// Includes guest start, allocation and execution, not host compilation/copy.
     pub fuel_consumed: u64,
+}
+
+/// Shared by every guest in one host operation. Failures are sticky; a caller
+/// cannot catch an exhausted guest and resume admission using another guest.
+pub struct WasmOperationBudgetV1 {
+    fuel: u64,
+    calls: u32,
+    failed: bool,
+}
+
+impl Default for WasmOperationBudgetV1 {
+    fn default() -> Self {
+        Self {
+            fuel: 100_000_000,
+            calls: 4096,
+            failed: false,
+        }
+    }
+}
+
+impl WasmOperationBudgetV1 {
+    pub fn failed(&self) -> bool {
+        self.failed
+    }
+
+    pub fn execute(
+        &mut self,
+        executor: &WasmExecutorV1,
+        input: &[u8],
+    ) -> Result<WasmExecutionOutputV1, WasmExecutionErrorV1> {
+        if self.failed || self.fuel == 0 {
+            self.failed = true;
+            return Err(WasmExecutionErrorV1::FuelExhausted);
+        }
+        if self.calls == 0 {
+            self.failed = true;
+            return Err(WasmExecutionErrorV1::CallLimitExceeded);
+        }
+        self.calls -= 1;
+        // Remains failed on any error or unwind, including allocation/start traps.
+        self.failed = true;
+        let output = executor.execute_with_fuel(input, self.fuel.min(executor.limits.fuel))?;
+        self.fuel -= output.fuel_consumed;
+        self.failed = false;
+        Ok(output)
+    }
 }
 
 /// Captured compiled bytes and their hash are immutable after construction.
@@ -158,6 +205,14 @@ impl WasmExecutorV1 {
         &self,
         input: &[u8],
     ) -> Result<WasmExecutionOutputV1, WasmExecutionErrorV1> {
+        self.execute_with_fuel(input, self.limits.fuel)
+    }
+
+    fn execute_with_fuel(
+        &self,
+        input: &[u8],
+        fuel: u64,
+    ) -> Result<WasmExecutionOutputV1, WasmExecutionErrorV1> {
         if input.len() > self.limits.input_bytes {
             return Err(WasmExecutionErrorV1::InputTooLarge);
         }
@@ -171,7 +226,7 @@ impl WasmExecutorV1 {
             .build();
         let mut store = Store::new(&self.engine, limits);
         store.limiter(|limits| limits);
-        store.set_fuel(self.limits.fuel).map_err(map_error)?;
+        store.set_fuel(fuel).map_err(map_error)?;
         // There are no imports, including WASI, clocks, random, files or network.
         let instance = Linker::new(&self.engine)
             .instantiate_and_start(&mut store, &self.module)
@@ -207,7 +262,7 @@ impl WasmExecutorV1 {
             .get(output_offset..end)
             .ok_or(WasmExecutionErrorV1::InvalidOutputRegion)?
             .to_vec();
-        let fuel_consumed = self.limits.fuel - store.get_fuel().map_err(map_error)?;
+        let fuel_consumed = fuel - store.get_fuel().map_err(map_error)?;
         Ok(WasmExecutionOutputV1 {
             bytes,
             fuel_consumed,

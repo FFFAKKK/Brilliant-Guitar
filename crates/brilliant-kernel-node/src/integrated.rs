@@ -23,6 +23,8 @@ pub fn migrate_kernel_extension_v2(
     callback: Function<'_, Buffer, Buffer>,
 ) -> Buffer {
     catch_unwind(AssertUnwindSafe(|| {
+        #[cfg(feature = "wasm-bridge-v1")]
+        let _budget = crate::wasm::OperationScope::enter();
         IntegratedKernelSessionV2::migrate_extension(&request, &mut NodeExecutor { callback })
     }))
     .unwrap_or_else(|_| {
@@ -32,10 +34,18 @@ pub fn migrate_kernel_extension_v2(
 }
 impl ContributionExecutorV2 for NodeExecutor<'_> {
     fn execute(&mut self, request: &[u8]) -> Result<Vec<u8>, ContributionExecutionFailureV2> {
+        #[cfg(feature = "wasm-bridge-v1")]
+        if crate::wasm::operation_failed() {
+            return Err(ContributionExecutionFailureV2::Callback);
+        }
         let result = self
             .callback
             .call(Buffer::from(request.to_vec()))
             .map_err(|_| ContributionExecutionFailureV2::Callback)?;
+        #[cfg(feature = "wasm-bridge-v1")]
+        if crate::wasm::operation_failed() {
+            return Err(ContributionExecutionFailureV2::Callback);
+        }
         if result.len() > brilliant_kernel_contracts::RESPONSE_BYTE_LIMIT {
             return Err(ContributionExecutionFailureV2::Callback);
         }
@@ -51,6 +61,8 @@ pub fn create_integrated_kernel_session_v2<'env>(
 ) -> napi::Result<Function<'env, Buffer, Buffer>> {
     let retained = callback.create_ref()?;
     let session = catch_unwind(AssertUnwindSafe(|| {
+        #[cfg(feature = "wasm-bridge-v1")]
+        let _budget = crate::wasm::OperationScope::enter();
         IntegratedKernelSessionV2::create(&request, &mut NodeExecutor { callback })
     }))
     .map_err(|_| napi::Error::from_reason("{\"code\":\"bridge.panic-contained\"}"))?
@@ -67,6 +79,8 @@ pub fn create_integrated_kernel_session_v2<'env>(
         };
         let callback = retained.borrow_back(context.env)?;
         let result = catch_unwind(AssertUnwindSafe(|| {
+            #[cfg(feature = "wasm-bridge-v1")]
+            let _budget = crate::wasm::OperationScope::enter();
             session.operate(&bytes, &mut NodeExecutor { callback })
         }))
         .unwrap_or_else(|_| {

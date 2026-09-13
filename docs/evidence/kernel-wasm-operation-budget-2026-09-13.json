@@ -1,0 +1,43 @@
+{
+  "date": "2026-09-13",
+  "baseCommit": "a3246b7",
+  "scope": "Rust-owned shared Wasm fuel and guest-call accounting for same-artifact synchronous Native integrated operations",
+  "limits": { "operationFuel": 100000000, "operationCalls": 4096, "perCallbackFuelCeiling": 10000000 },
+  "fresh": {
+    "typescriptBuildAndTypecheck": { "status": "passed", "log": "ts-build.log" },
+    "behavioralRed": { "tests": 1, "failedAsExpected": 1, "log": "red.log", "observation": "Previous Wasm artifact committed a Batch after thousands of guest calls; expected rejection" },
+    "focusedBeforeNestedSessionAddition": { "tests": 15, "passed": 15, "failed": 0, "durationMs": 3034.7833, "log": "focused.log" },
+    "nodeFull": { "tests": 845, "passed": 843, "skipped": 2, "failed": 0, "durationMs": 54058.1797, "log": "full-node.log" },
+    "rustWorkspaceAllFeatures": { "passed": 544, "ignored": 1, "failed": 0, "log": "rust-tests.log" },
+    "clippyAllTargetsAllFeaturesDenyWarnings": { "status": "passed", "log": "clippy.log" },
+    "msrv188AllTargetsAllFeatures": { "status": "passed", "log": "msrv.log" },
+    "integratedWithoutWasmCheck": { "status": "passed", "log": "non-wasm-check.log" },
+    "rustfmtCheck": "passed",
+    "gitDiffCheck": "passed"
+  },
+  "logDirectory": ".local-evidence/wasm-operation-budget-2026-09-13",
+  "rebuiltArtifacts": [
+    { "path": "target/wasm-v1/brilliant_kernel_node.node", "sha256": "b6e64085e13b7f933e123ec1ff960bc5701a2e36abc1b09828f90bf0843f959b", "log": "build-wasm.log" }
+  ],
+  "inheritedArtifacts": [
+    "target/rkp-1-node/brilliant_kernel_node.node: frozen Core V1 execution unchanged",
+    "target/integrated-v2/brilliant_kernel_node.node: new operation scope is gated off without wasm-bridge-v1; inherited e960e6b artifact, non-Wasm compilation checked"
+  ],
+  "proof": [
+    "Actual fuel across two guest instances accepts exact total consumption and rejects insufficient remaining fuel; per-callback limits remain effective",
+    "Call caps and all guest execution errors poison the account; subsequent guest calls cannot reuse it",
+    "Native RAII scopes inherit an account when nested, isolate threads and clear on outer unwind/return",
+    "Native transport deliberately catches repeated guest failures and returns valid output; Rust still rejects submit, undo, redo, creation and migration",
+    "The final Native regression also opens a nested session within the callback; budget accounting survives it",
+    "A Batch with an effective Core prefix publishes no document/history/event changes after exhaustion; healthy independent operations recover",
+    "Full regression preserves Wasm-only and mixed bindings, cross-plugin reads, frozen Native export counts and public SDK contracts"
+  ],
+  "workspaceNote": "Other-session apps/, frontend documents and package.json UI scripts were present during verification; they are excluded from this kernel commit. Kernel source/test scope and existing test commands were unchanged by those script additions.",
+  "notClaimed": [
+    "A wall-clock deadline or measured commercial capacity; fuel ceilings are initial engineering policy",
+    "Accounting across separate Native libraries, processes or worker threads; session and guest calls must use the same Wasm artifact",
+    "Automatic budget wrapping for other Rust embeddings or standalone guest invocations outside an integrated operation",
+    "Arbitrary JS isolation, Rust callback scheduling, host parsing/copying/compilation cost or aggregate memory/byte accounting",
+    "Product default cutover, full resource/platform/performance qualification or commercial readiness"
+  ]
+}
