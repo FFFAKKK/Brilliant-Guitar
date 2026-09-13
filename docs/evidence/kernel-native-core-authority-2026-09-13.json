@@ -1,0 +1,42 @@
+{
+  "date": "2026-09-13",
+  "baseCommit": "2227763",
+  "scope": "Integrated Native Core semantic and support assessment authority; module execution and detached migration remain unfinished architecture work",
+  "fresh": {
+    "typescriptBuild": "passed",
+    "red": { "tests": 2, "failedAsExpected": 2, "log": "red.log" },
+    "focusedBeforeStaleProtocolTest": { "tests": 26, "passed": 26, "log": "focused.log" },
+    "nodeFull": { "tests": 836, "passed": 834, "skipped": 2, "failed": 0, "durationMs": 60658.7845, "log": "full-node.log" },
+    "rustWorkspaceAllFeatures": { "passed": 538, "ignored": 1, "failed": 0, "log": "rust-tests.log" },
+    "clippyAllTargetsAllFeaturesDenyWarnings": { "status": "passed", "log": "clippy.log" },
+    "msrv188AllTargetsAllFeatures": { "status": "passed", "log": "msrv.log" },
+    "rustfmtCheck": "passed",
+    "gitDiffCheck": "passed"
+  },
+  "logDirectory": ".local-evidence/native-core-authority-2026-09-13",
+  "rebuiltArtifacts": [
+    {
+      "path": "target/integrated-v2/brilliant_kernel_node.node",
+      "sha256": "3b124fbdedc23221167d10922c2fbec29d3c021cdf6c6f68a9bf7da74a38b10b",
+      "buildLog": "build-v2.log"
+    },
+    {
+      "path": "target/wasm-v1/brilliant_kernel_node.node",
+      "sha256": "4847d2f928277f2fb090f01c1b2eacfe65c50260c3336c35c11994bdddf7f707",
+      "buildLog": "build-wasm.log"
+    }
+  ],
+  "inheritedArtifact": "target/rkp-1-node/brilliant_kernel_node.node; Core V1 execution path unchanged, binary not rebuilt in this slice",
+  "proof": [
+    "Actual Native creation, committed/no-op/rejected commands, module effects, undo/redo and public replay match the oracle with both TS Core validator exports replaced by throwing functions; zero calls",
+    "Host executor forges supported/unsupported Core results; Native public results retain Rust assessment including diagnostics across submit/history",
+    "Missing private coreAssessment field rejects assembly rather than falling back to TS Core validators",
+    "Full suite includes real guitar business journey, Native mixed Batch, Wasm scoped bindings, migration and frozen API contracts"
+  ],
+  "notClaimed": [
+    "Independent plugin aggregate assessment authority or arbitrary JS callback isolation",
+    "Detached migration independence from TS Core validation",
+    "Incremental end-to-end validation, reduced whole-document transport, or measured performance improvement",
+    "Product default cutover, public plugin loader, UI completion or commercial qualification"
+  ]
+}

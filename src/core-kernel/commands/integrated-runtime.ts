@@ -721,6 +721,30 @@ export function runModulePipeline(
       }),
     };
   }
+  return runPipelineAfterCoreValidation(document, documentVersion, assembly,
+    () => freeze(clone(validateScoreFeatureProfile(document))), invokeScoped);
+}
+
+/** Private Native bridge seam. Rust has already validated this candidate and
+ * owns the supplied Core assessment. No TS Core semantic/profile pass runs. */
+export function runNativeModulePipeline(
+  document: ScoreDocument,
+  documentVersion: number,
+  assembly: KernelIntegratedRuntimeAssemblyState,
+  core: ScoreSupportResult,
+  invokeScoped: ScopedCallbackInvokerV1 = invokeScopedCallbackV1,
+): ModulePipelineResult {
+  return runPipelineAfterCoreValidation(document, documentVersion, assembly,
+    () => freeze(core), invokeScoped);
+}
+
+function runPipelineAfterCoreValidation(
+  document: ScoreDocument,
+  documentVersion: number,
+  assembly: KernelIntegratedRuntimeAssemblyState,
+  coreAssessment: () => ScoreSupportResult,
+  invokeScoped: ScopedCallbackInvokerV1,
+): ModulePipelineResult {
   const availability = computeKernelDomainAvailability(document, assembly);
   if (!availability.ok) {
     return {
@@ -787,7 +811,7 @@ export function runModulePipeline(
     };
   }
 
-  const core = freeze(clone(validateScoreFeatureProfile(document)));
+  const core = coreAssessment();
   const modules: ModuleCommandAssessment[] = [];
   let classifierIssueCount = 0;
   for (let index = 0; index < views.length; index += 1) {

@@ -4,6 +4,22 @@
 
 ## 实际执行路径
 
+**2026-09-13 Core 判定收口：** 组合会话的创建、编辑、no-op、历史和重放先由
+Rust Foundation 计算 Core 语义／支持结果，再将 `coreAssessment` 送往宿主。
+TS 执行器使用 `runNativeModulePipeline`，不再调用 TS Core semantic/profile 校验；
+Rust 最终保留自己计算的 Core 结果，宿主返回值不能覆盖它。
+这保留现有公开结果形状和 SDK 合同。Native V2/Wasm addon 与 TS 适配器须一起更新；
+缺少新内部字段的旧产物会拒绝创建，不能静默回退到 TS Core 校验。
+插件准备、变换、验证、支持分类及汇总仍使用宿主执行器；独立迁移路径本次未改。
+完整投影和全量 Core 判定仍存在，不宣称整体增量化或商业性能通过。
+
+验证：新增三项真实 Native 测试覆盖 TS Core 校验不可用、宿主伪造核心判定、旧内部协议拒绝。
+两项原问题先复现失败，修复后全量 Node **834 通过、2 跳过、0 失败（836 项）**；
+Rust 全工作区／全 feature **538 通过、1 忽略、0 失败**。严格 Clippy、fmt、
+Rust 1.88 全 targets/features、TS 构建通过，V2 与 Wasm release 产物已重建。
+V1 产物沿用既有构建，未改其执行路径。证据与限制见
+[本片记录](evidence/kernel-native-core-authority-2026-09-13.json)。这些耗时不是性能资格或前后性能对比。
+
 1. 私有宿主选择 `installNativeIntegratedBackendV2(addon)` 后，现有 `CommandBus.createIntegrated` 工厂使用真实 compiled catalog 与 inventory resolver。SDK WeakMap 品牌认证和 gateway 能力、assembly 身份检查继续有效；返回的 restore 函数恢复之前的工厂选择，已创建的 session 保持原装配。
 2. 真实 SDK decoder/preparer/transformer 绑定留在宿主适配器。任意 decoded JS 中间值不跨 JSON。回调只收到冻结的 Core 文档和兼容扩展视图，不持有可写 Store。
 3. `createIntegratedKernelSessionV2` 返回一个绑定 session 与固定执行器的 Node 函数。函数的 N-API 生命周期管理 Rust session 和 callback reference；`RefCell` 在进入回调前取得独占借用，重入不能取得第二个可变引用。它没有可替换 executor 的后续参数，也不能把 V1 handle 混入这条入口。

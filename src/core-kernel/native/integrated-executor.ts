@@ -4,7 +4,7 @@ import { invokeScopedCallbackV1, type ScopedCallbackInvokerV1 } from "../module-
 import { readExactDataRecord, readDenseArray } from "../registry/strict-codec";
 import {
   captureEnvelope, createIntegratedContributionView, decodeIntegratedAffectedAddresses,
-  decodeIntegratedModuleIssues, decodeTarget, moduleEffectForRequest, runModulePipeline,
+  decodeIntegratedModuleIssues, decodeTarget, moduleEffectForRequest, runNativeModulePipeline,
   targetExists,
   invokeIntegratedCallback, hasIntactExecutionPrimordials,
 } from "../commands/integrated-runtime";
@@ -13,6 +13,7 @@ import type { CompiledDomainCommandContributionV1 } from "../module-sdk/contract
 import type { KernelIntegratedRuntimeAssemblyState } from "../registry/domain-availability";
 import type { ScoreDocument } from "../domain/score-document";
 import { encodeIntegratedValueV2 } from "./integrated-wire";
+import type { ScoreSupportResult } from "../profiles/score-feature-profile";
 
 const parse = JSON.parse;
 const apply = Reflect.apply;
@@ -45,6 +46,7 @@ export function createNativeContributionExecutorV2(assembly: KernelIntegratedRun
       operation: "prepare" | "transform" | "assess";
       document: ScoreDocument;
       documentVersion: number;
+      coreAssessment?: ScoreSupportResult;
       command?: unknown;
       contributionId?: string;
       effect?: unknown;
@@ -55,11 +57,15 @@ export function createNativeContributionExecutorV2(assembly: KernelIntegratedRun
 
   function execute(request: {
     operation: string; document: ScoreDocument; documentVersion: number;
+    coreAssessment?: ScoreSupportResult;
     command?: unknown; contributionId?: string; effect?: unknown;
   }): unknown {
     if (!hasIntactExecutionPrimordials()) return rejected("command.invalid-envelope");
     if (request.operation === "assess") {
-      return runModulePipeline(request.document, request.documentVersion, assembly, invokeScoped);
+      // The private Native artifact must supply its own Core assessment. Do not
+      // silently fall back to legacy TS validation when paired with a stale addon.
+      if (request.coreAssessment === undefined) return rejected("command.assembly-mismatch");
+      return runNativeModulePipeline(request.document, request.documentVersion, assembly, request.coreAssessment, invokeScoped);
     }
     let contribution: CompiledDomainCommandContributionV1 | undefined;
     if (request.operation === "prepare") {

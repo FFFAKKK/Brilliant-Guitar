@@ -8,7 +8,10 @@ use brilliant_kernel_contracts::{
     decode_host_catalog_projection_v1, decode_known_requirement_inventory_v1,
     encode_domain_availability_result_v1,
 };
-use brilliant_score_foundation::{LosslessDecode, assess_score_semantics};
+use brilliant_score_foundation::{
+    LosslessDecode, ScoreFeatureProfileV1, ScoreSupportV1, assess_score_profile,
+    assess_score_semantics,
+};
 mod batch;
 mod core;
 mod migration;
@@ -347,17 +350,41 @@ impl IntegratedKernelRuntimeV2 {
         version: u64,
         executor: &mut dyn ContributionExecutorV2,
     ) -> Result<Value> {
-        let semantic = assess_score_semantics(&value(document)?).map_err(|_| internal())?;
-        if !semantic.diagnostics.is_empty() {
+        let core = assess_score_profile(&value(document)?, &ScoreFeatureProfileV1::k1())
+            .map_err(|_| internal())?;
+        if let ScoreSupportV1::Invalid { diagnostics } = &core {
             return Err(object([
                 ("code", text("command.semantic-invalid")),
-                ("diagnostics", value(&semantic.diagnostics)?),
+                ("diagnostics", value(diagnostics)?),
             ]));
         }
-        let reply = self.call("assess", document, version, [], executor)?;
+        let core = value(&core)?;
+        let mut reply = self.call(
+            "assess",
+            document,
+            version,
+            [("coreAssessment", core.clone())],
+            executor,
+        )?;
         if !exact(&reply, &["ok", "assessment", "availability"]) {
             return Err(internal());
         }
+        let assessment = field(&reply, "assessment")?;
+        if !exact(assessment, &["core", "modules"]) || array(field(assessment, "modules")?).is_err()
+        {
+            return Err(internal());
+        }
+        // Host callbacks can report module results, never replace Core authority.
+        // Preserve our result even if an executor echoes a forged Core assessment.
+        let JsonValue::Object(fields) = &mut reply else {
+            unreachable!()
+        };
+        let Some(JsonValue::Object(assessment)) =
+            fields.get_mut(&brilliant_core_types::JsString::from("assessment"))
+        else {
+            unreachable!()
+        };
+        assessment.insert("core".into(), core);
         Ok(reply)
     }
     fn availability(&self) -> Result<Value> {

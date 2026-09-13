@@ -2,10 +2,34 @@
 
 ## Scope and working authority
 
-**Execution paused at the owner's request (2026-09-12):** finish the current
+**2026-09-13 architecture clarification, before the first repair:** the usable Native V2 integration was
+a Rust-owned Store/transaction/history with a TS host executor, not a completed
+TS-independent transaction/validation path. `createNativeContributionExecutorV2`
+dispatched assessment to TS `runModulePipeline`, which also ran TS Core semantic
+and profile checks. Ordinary module preparation, transformation and validation
+remain synchronous JS callbacks; optional Wasm bindings do not remove the host
+plugin-assessment dependency. The accepted Architecture Reset V2 sections 8.3, 11.3 and
+12.4 instead require transaction-time declarative/bounded-Wasm validation under
+Kernel Session ownership and data-only preparation. This is an outstanding
+architectural boundary, not merely a performance-tuning item. Product design and
+bounded first-party integration can proceed, but functional tests do not prove
+commercial performance or untrusted-plugin execution control. See the current
+assessment and product capability map in
+`docs/handoff-kernel-to-product-2026-09-13.md`. This clarification records the
+owner's follow-up discussion; it does not silently approve a permanent departure
+from that target or resume unrestricted implementation.
+
+**Execution resumed by the owner (2026-09-13):** continue kernel completion,
+starting with the verified Native transaction/assessment boundary. Work remains
+main-session only, with existing contracts and bounded verification; unrelated
+frontend planning files are not part of this implementation. The first change
+moves integrated Core assessment authority into Rust while retaining the
+remaining plugin-executor migration explicitly as unfinished work.
+
+**Historical pause at the owner's request (2026-09-12):** finish the current
 cross-plugin explicit-read task, record its evidence and local commits, then
-stop and report. Do not start the next development slice until the owner resumes
-work. The broad commercial objective remains incomplete; this pause is not
+stop and report. That pause was followed by the explicit restart above.
+The broad commercial objective remains incomplete; the pause was not
 commercial acceptance or a technical blocker.
 
 The owner's subsequent repository-management request authorizes integrating the
