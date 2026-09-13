@@ -2,6 +2,8 @@
 use super::*;
 use brilliant_core_types::FiniteNumber;
 
+mod scheduled;
+
 impl IntegratedKernelRuntimeV2 {
     pub fn migrate_extension(bytes: &[u8], executor: &mut dyn ContributionExecutorV2) -> Vec<u8> {
         let _reads = super::core_reads::OperationScope::enter();
@@ -76,18 +78,19 @@ fn validate_request(request: &Value) -> Result<ExtensionOwnerV1> {
 
 fn migrate(bytes: &[u8], executor: &mut dyn ContributionExecutorV2) -> Result<Value> {
     let input = decode(bytes)?;
-    if !exact(
-        &input,
-        &[
-            "apiVersion",
-            "document",
-            "request",
-            "catalog",
-            "commands",
-            "effects",
-        ],
-    ) || integer(field(&input, "apiVersion")?) != Some(2)
-    {
+    let scoped = executor.uses_scoped_preparation();
+    let mut fields = vec![
+        "apiVersion",
+        "document",
+        "request",
+        "catalog",
+        "commands",
+        "effects",
+    ];
+    if scoped {
+        fields.push("assessmentReads");
+    }
+    if !exact(&input, &fields) || integer(field(&input, "apiVersion")?) != Some(2) {
         return Err(failure("migration.invalid-request"));
     }
     let raw_document = field(&input, "document")?;
@@ -111,6 +114,12 @@ fn migrate(bytes: &[u8], executor: &mut dyn ContributionExecutorV2) -> Result<Va
     let effects = array(field(&input, "effects")?)?;
     validate_descriptors(commands, effects, &assembly)
         .map_err(|_| failure("migration.assembly-mismatch"))?;
+    let reads = if scoped {
+        assessment::decode_reads(field(&input, "assessmentReads")?, &assembly)
+            .map_err(|_| failure("migration.assembly-mismatch"))?
+    } else {
+        Vec::new()
+    };
     let source = object([
         ("moduleId", field(request, "moduleId")?.clone()),
         ("contributionId", field(request, "contributionId")?.clone()),
@@ -151,6 +160,9 @@ fn migrate(bytes: &[u8], executor: &mut dyn ContributionExecutorV2) -> Result<Va
     if !versions.iter().any(|v| integer(v) == Some(target_version)) {
         return Err(failure("migration.unsupported-target-version"));
     }
+    if scoped {
+        scheduled::start(raw_document, executor)?;
+    }
     if block_version == target_version {
         return Ok(object([
             ("status", text("not-required")),
@@ -158,15 +170,19 @@ fn migrate(bytes: &[u8], executor: &mut dyn ContributionExecutorV2) -> Result<Va
         ]));
     }
 
-    let prepared = callback(
-        executor,
-        object([
-            ("operation", text("migrationPrepare")),
-            ("document", raw_document.clone()),
-            ("request", request.clone()),
-        ]),
-        &source,
-    )?;
+    let prepared = if scoped {
+        scheduled::prepare(raw_document, request, &source, &assembly, &reads, executor)?
+    } else {
+        callback(
+            executor,
+            object([
+                ("operation", text("migrationPrepare")),
+                ("document", raw_document.clone()),
+                ("request", request.clone()),
+            ]),
+            &source,
+        )?
+    };
     if !exact(&prepared, &["ok", "schemaVersion", "payload"])
         || integer(field(&prepared, "schemaVersion")?) != Some(target_version)
         || !matches!(field(&prepared, "payload")?, JsonValue::Object(_))
@@ -198,16 +214,20 @@ fn migrate(bytes: &[u8], executor: &mut dyn ContributionExecutorV2) -> Result<Va
     let mut migrated = value(&candidate)?;
     normalize_json_zero(&mut migrated);
     semantic(&migrated)?;
-    let validated = callback(
-        executor,
-        object([
-            ("operation", text("migrationValidate")),
-            ("document", migrated.clone()),
-        ]),
-        &JsonValue::Null,
-    )?;
-    if !exact(&validated, &["ok"]) {
-        return Err(failure("migration.internal-error"));
+    if scoped {
+        scheduled::validate(&migrated, &assembly, &reads, executor)?;
+    } else {
+        let validated = callback(
+            executor,
+            object([
+                ("operation", text("migrationValidate")),
+                ("document", migrated.clone()),
+            ]),
+            &JsonValue::Null,
+        )?;
+        if !exact(&validated, &["ok"]) {
+            return Err(failure("migration.internal-error"));
+        }
     }
     // Finish the shared transaction preparation to enforce its storage/resource
     // invariants. The detached API deliberately performs no Store adoption.

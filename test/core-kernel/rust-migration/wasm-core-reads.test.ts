@@ -198,6 +198,120 @@ test("Selective guest consumes only declared dependency blocks from the current 
   resetCvn6Callbacks();
 });
 
+if (protocol === 4) test("Rust migration replaces TS preparation and validation while keeping live history detached", () => {
+  const compiled = catalog();
+  const initial: ScoreDocument = { ...createNativeWorkloadScore(256), extensions: [
+    { namespace: "fixture.score", schemaVersion: 1, owner: { kind: "score" }, payload: { marker: "old-score" } },
+    { namespace: "fixture.part", schemaVersion: 1, owner: { kind: "part", partId: "part-1" }, payload: { marker: "old-part" } },
+  ] };
+  const request = { migrationVersion: 1, moduleId: "fixture.score.module", contributionId: "fixture.score.contribution.v1",
+    namespace: "fixture.score", effectKind: "fixture.score.replace", owner: { kind: "score" as const },
+    sourceSchemaVersion: 1, targetSchemaVersion: 2, payload: { schemaVersion: 2, marker: "migrated" } };
+  const original = structuredClone(initial);
+  const expected = migrateKernelExtension(initial, request, compiled);
+  assert.equal(expected.status, "migrated");
+  const live = create(initial, compiled);
+  const before = live.read();
+  const events: unknown[] = [];
+  live.subscribe((event: unknown) => events.push(event));
+  const phases: string[] = [];
+  let hostBytes = 0;
+  const transport = { ...addon, migrateKernelExtensionV2(input: Buffer, callback: (bytes: Buffer) => Buffer, version?: number) {
+    assert.equal(version, 4);
+    return addon.migrateKernelExtensionV2(input, bytes => {
+      if (bytes[0] === 123) {
+        hostBytes += bytes.length;
+        const request = JSON.parse(bytes.toString("utf8"));
+        assert.equal(request.document, undefined);
+        assert.equal(request.documentVersion, null);
+        assert.ok(bytes.length < 2048);
+        phases.push(request.callbackOperation === undefined ? request.operation : `${request.callbackOperation}:${request.moduleId}`);
+      }
+      return callback(bytes);
+    }, version);
+  } };
+  const migration = require("../../../src/core-kernel/migration/migrate-kernel-extension") as typeof import("../../../src/core-kernel/migration/migrate-kernel-extension");
+  const prepare = migration.prepareExtensionMigrationEffectV1, validate = migration.validateExtensionMigrationModulesV1;
+  const restore = install(transport, compiled, bindings());
+  migration.prepareExtensionMigrationEffectV1 = () => { throw new Error("TS migration preparation disabled"); };
+  migration.validateExtensionMigrationModulesV1 = () => { throw new Error("TS migration validation disabled"); };
+  try {
+    resetCvn6Callbacks();
+    const actual = migrateKernelExtension(initial, request, compiled);
+    assert.deepEqual(actual, expected);
+    assert.deepEqual(phases, ["migrationStart", "effectDecode:fixture.score.module", "effectTransform:fixture.score.module",
+      "validate:fixture.part.module", "validate:fixture.score.module"]);
+    assert.ok(hostBytes < 8192);
+    if (actual.status !== "migrated") assert.fail("migration failed");
+    phases.length = 0;
+    const again = migrateKernelExtension(actual.document, request, compiled);
+    assert.equal(again.status, "not-required");
+    assert.deepEqual(phases, ["migrationStart"]);
+    assert.deepEqual(cvn6CallbackTrace, []);
+    assert.deepEqual(initial, original);
+    assert.deepEqual(live.read(), before);
+    assert.deepEqual(events, []);
+  } finally {
+    restore(); resetCvn6Callbacks();
+    migration.prepareExtensionMigrationEffectV1 = prepare;
+    migration.validateExtensionMigrationModulesV1 = validate;
+  }
+});
+
+if (protocol === 4) test("Rust migration retains rejection, dependency and stale-host boundaries", () => {
+  const base = catalog();
+  const derived = compileContributionReadCatalogV1(base, [{
+    readVersion: 1, reader: { moduleId: "fixture.score.module", contributionId: "fixture.score.contribution.v1" },
+    provider: { moduleId: "fixture.part.module", contributionId: "fixture.part.contribution.v1" },
+    namespace: "fixture.part", supportedSchemaVersions: [1, 2], ownerKinds: ["part"],
+  }]); assert.ok(derived.ok);
+  const initial: ScoreDocument = { ...createNativeWorkloadScore(16), extensions: [
+    { namespace: "fixture.score", schemaVersion: 1, owner: { kind: "score" }, payload: { marker: "old" } },
+    { namespace: "fixture.part", schemaVersion: 1, owner: { kind: "part", partId: "part-1" }, payload: { marker: "provider" } },
+  ] };
+  const request = { migrationVersion: 1, moduleId: "fixture.score.module", contributionId: "fixture.score.contribution.v1",
+    namespace: "fixture.score", effectKind: "fixture.score.replace", owner: { kind: "score" as const },
+    sourceSchemaVersion: 1, targetSchemaVersion: 2, payload: { schemaVersion: 2, marker: "ok" } };
+  const cases: [ScoreDocument, unknown][] = [
+    [initial, request],
+    ...["reject", "aggregate", "forged-issue", "verify:note-1:C", "verify:note-1:D"].map(marker =>
+      [initial, { ...request, payload: { schemaVersion: 2, marker } }] as [ScoreDocument, unknown]),
+    [initial, { ...request, payload: { schemaVersion: 1, marker: "wrong-version" } }],
+    [initial, { ...request, payload: { schemaVersion: 2, marker: 1 } }],
+    [{ ...initial, extensions: initial.extensions.map(block => block.namespace === "fixture.part" ? { ...block, schemaVersion: 99 } : block) }, request],
+  ];
+  const baselineRestore = installNativeWasmCoreReadsBackendV2(addon, derived.catalog, bindings());
+  let expected: ReturnType<typeof migrateKernelExtension>[];
+  try { expected = cases.map(([document, input]) => migrateKernelExtension(document, input, derived.catalog)); }
+  finally { baselineRestore(); }
+  const before = structuredClone(cases);
+  const restore = install(addon, derived.catalog, bindings());
+  try {
+    for (let i = 0; i < cases.length; i++) {
+      const [document, input] = cases[i]!;
+      assert.deepEqual(migrateKernelExtension(document, input, derived.catalog), expected[i], `case ${i}`);
+    }
+    assert.equal(expected[0]!.status, "migrated");
+    assert.equal(expected[8]!.status, "rejected");
+    assert.deepEqual(cases, before);
+    assert.equal(migrateKernelExtension(initial, request, derived.catalog).status, "migrated");
+  } finally { restore(); }
+  for (const stale of [
+    { ...addon, migrateKernelExtensionV2(input: Buffer, callback: (bytes: Buffer) => Buffer) {
+      const legacy = JSON.parse(input.toString("utf8"));
+      delete legacy.assessmentReads;
+      return addon.migrateKernelExtensionV2(Buffer.from(JSON.stringify(legacy)), callback, 2);
+    } },
+    { ...addon, migrateKernelExtensionV2() {
+      return Buffer.from(JSON.stringify({ status: "not-required", document: initial }));
+    } },
+  ]) {
+    const restore = install(stale, base, bindings());
+    try { assert.equal(migrateKernelExtension(initial, request, base).status, "rejected"); }
+    finally { restore(); }
+  }
+});
+
 test("Preparation retains provisional Batch identities and decoder-before-target error order", () => {
   const initial = createNativeWorkloadScore(1), compiled = catalog();
   const oracle = CommandBus.createIntegrated(initial, compiled); assert.ok(oracle.ok);

@@ -27,6 +27,8 @@ pub trait ContributionExecutorV2 {
         false
     }
 
+    /// V4 schedules individual editing preparation and detached migration
+    /// callbacks. Migration has its own handshake and diagnostic contract.
     fn uses_scoped_preparation(&self) -> bool {
         false
     }

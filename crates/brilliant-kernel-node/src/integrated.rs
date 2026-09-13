@@ -47,12 +47,12 @@ pub fn migrate_kernel_extension_v2(
     core_read_protocol: Option<f64>,
 ) -> napi::Result<Buffer> {
     let protocol = read_protocol(core_read_protocol)?;
-    if protocol >= 3 {
+    if protocol == 3 {
         return Err(napi::Error::from_reason(
             "bridge.unsupported-migration-protocol",
         ));
     }
-    let core_reads = protocol == 2;
+    let core_reads = protocol >= 2;
     Ok(catch_unwind(AssertUnwindSafe(|| {
         let _host_budget = host_budget::OperationScope::enter(core_reads);
         #[cfg(feature = "wasm-bridge-v1")]
@@ -63,7 +63,7 @@ pub fn migrate_kernel_extension_v2(
                 callback,
                 core_reads,
                 scoped_assessment: false,
-                scoped_preparation: false,
+                scoped_preparation: protocol == 4,
             },
         )
     }))

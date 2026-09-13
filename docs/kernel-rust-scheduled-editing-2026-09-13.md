@@ -1,5 +1,9 @@
 # Rust 调度插件编辑 · 2026-09-13
 
+后续状态：V4 独立迁移也已由 Rust 调度，见
+[迁移报告](kernel-rust-scheduled-migration-2026-09-13.md)。
+本文“迁移仍走 V2”等表述保留为编辑阶段完成时的记录。
+
 新增私有显式入口 `installNativeWasmScheduledEditingV4`，Native 会话参数为 `4`。
 Rust Runtime 在既有最终插件校验调度之上，接管命令解码、命令准备、效果解码、
 效果变换的逐次调用。编辑路径不再借助 TS 贡献者执行器安排这些步骤，也不再把

@@ -46,9 +46,16 @@ pub(super) struct CoreReads<'a> {
 
 impl<'a> CoreReads<'a> {
     pub(super) fn new(request: &'a Value) -> Self {
+        Self::from_document(
+            field(request, "document").ok(),
+            field(request, "documentVersion").ok(),
+        )
+    }
+
+    pub(super) fn from_document(document: Option<&'a Value>, version: Option<&'a Value>) -> Self {
         Self {
-            document: field(request, "document").ok(),
-            version: field(request, "documentVersion").ok(),
+            document,
+            version,
             index: None,
             calls: 0,
             remaining_bytes: MAX_TOTAL_REPLY_BYTES,

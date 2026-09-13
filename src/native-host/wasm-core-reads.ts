@@ -118,7 +118,7 @@ function install(addon: ReadAddon, catalog: KernelIntegratedCatalog, bindings: u
       ? { ...view, dependencyReads: [] } : view;
   }
 
-  function exchange(callback: Callback) {
+  function exchange(callback: Callback, migration = false) {
     let state: State | undefined;
     let negotiated = false;
     const close = () => { state = undefined; };
@@ -126,9 +126,12 @@ function install(addon: ReadAddon, catalog: KernelIntegratedCatalog, bindings: u
       if (!startsWith(bytes, REPLY)) {
         const input = decode(bytes) as Record<string, unknown>;
         const isScheduled = input.operation === "assessmentStart" || input.operation === "assessmentCallback"
-          || input.operation === "contributionCallback";
+          || input.operation === "contributionCallback" || input.operation === "migrationStart"
+          || input.operation === "migrationCallback";
         if ((isScheduled && !scheduled) || (scheduled && input.operation === "assess")
-          || (mode === 4 && (input.operation === "prepare" || input.operation === "transform"))) return invalid();
+          || (mode === 4 && (input.operation === "prepare" || input.operation === "transform"
+            || input.operation === "migrationPrepare" || input.operation === "migrationValidate"))
+          || (isScheduled && migration !== (input.operation === "migrationStart" || input.operation === "migrationCallback"))) return invalid();
         const id = isScheduled ? input.documentId : (input.document as { id: string }).id;
         if (typeof id !== "string") return invalid();
         state = { input: Buffer.from(bytes), id, version: (input.documentVersion as number | undefined) ?? null,
@@ -151,12 +154,12 @@ function install(addon: ReadAddon, catalog: KernelIntegratedCatalog, bindings: u
         try {
           const request = state.scheduled;
           if (request === undefined) output = callback(state.input);
-          else if (request.operation === "assessmentStart") {
+          else if (request.operation === "assessmentStart" || request.operation === "migrationStart") {
             if (readExactDataRecord(request, ["operation", "scheduleVersion", "documentId", "documentVersion"]) === undefined
-              || request.scheduleVersion !== mode) return invalid();
+              || request.scheduleVersion !== mode || (migration && (mode !== 4 || request.documentVersion !== null))) return invalid();
             negotiated = true;
             output = encode({ ok: true, scheduleVersion: mode });
-          } else if (request.operation === "contributionCallback") {
+          } else if (request.operation === "contributionCallback" || request.operation === "migrationCallback") {
             if (mode !== 4 || !negotiated || request.scheduleVersion !== 4
               || readExactDataRecord(request, ["operation", "scheduleVersion", "documentId", "documentVersion",
                 "moduleId", "contributionId", "callbackOperation", "definitionId", "arguments"]) === undefined) return invalid();
@@ -164,20 +167,23 @@ function install(addon: ReadAddon, catalog: KernelIntegratedCatalog, bindings: u
               && entry.contributionId === request.contributionId);
             const operation = request.callbackOperation;
             const args = readDenseArray(request.arguments);
-            if (source === undefined || typeof request.definitionId !== "string" || args === undefined
-              || !["commandDecode", "commandPrepare", "effectDecode", "effectTransform"].includes(operation as string)
+            const validation = migration && operation === "validate";
+            if (source === undefined || (validation ? request.definitionId !== null : typeof request.definitionId !== "string")
+              || args === undefined
+              || !(migration ? ["effectDecode", "effectTransform", "validate"]
+                : ["commandDecode", "commandPrepare", "effectDecode", "effectTransform"]).includes(operation as string)
               || args.length !== (operation === "commandPrepare" ? 2 : 1)) return invalid();
             const command = operation === "commandDecode" || operation === "commandPrepare";
-            if (command ? !source.commands.some(entry => entry.descriptor.commandId === request.definitionId)
-              : !source.effects.some(entry => entry.descriptor.effectKind === request.definitionId)) return invalid();
+            if (!validation && (command ? !source.commands.some(entry => entry.descriptor.commandId === request.definitionId)
+              : !source.effects.some(entry => entry.descriptor.effectKind === request.definitionId))) return invalid();
             const guestArgs = [...args];
-            if (operation === "commandPrepare") guestArgs[0] = guestView(source, args[0], state);
+            if (operation === "commandPrepare" || validation) guestArgs[0] = guestView(source, args[0], state);
             if (operation === "effectTransform") {
               const input = args[0] as Record<string, unknown>;
               guestArgs[0] = { ...input, view: guestView(source, input.view, state) };
             }
             output = encode({ ok: true, value: invokeGuest(source, operation as ScopedCallbackOperationV1,
-              request.definitionId, guestArgs, true) });
+              request.definitionId as string | null, guestArgs, true) });
           } else {
             if (!negotiated || readExactDataRecord(request, ["operation", "scheduleVersion", "documentId",
               "documentVersion", "moduleId", "contributionId", "callbackOperation", "view"]) === undefined
@@ -217,8 +223,15 @@ function install(addon: ReadAddon, catalog: KernelIntegratedCatalog, bindings: u
       };
     },
     migrateKernelExtensionV2(input, callback) {
-      const bridge = exchange(callback);
-      try { return addon.migrateKernelExtensionV2(input, bridge.invoke, 2); }
+      const scoped = mode === 4;
+      const bridge = exchange(callback, scoped);
+      try {
+        const request = scoped ? encode({ ...(decode(input) as Record<string, unknown>),
+          assessmentReads: [...executors.keys()].flatMap(entry => contributionReads(entry) ?? []) }) : input;
+        const result = addon.migrateKernelExtensionV2(request, bridge.invoke, scoped ? 4 : 2);
+        if (scoped && !bridge.negotiated() && (decode(result) as Record<string, unknown>).status !== "rejected") return invalid();
+        return result;
+      }
       finally { bridge.close(); }
     },
   };

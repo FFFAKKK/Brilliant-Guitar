@@ -13,6 +13,8 @@ pub struct IntegratedKernelSessionV2 {
 mod read_tests;
 #[cfg(test)]
 mod scheduled_assessment_tests;
+#[cfg(test)]
+mod scheduled_migration_tests;
 impl IntegratedKernelSessionV2 {
     /// Detached migration service; does not create or mutate an editing session.
     pub fn migrate_extension(bytes: &[u8], executor: &mut dyn ContributionExecutorV2) -> Vec<u8> {

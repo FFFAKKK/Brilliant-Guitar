@@ -1,5 +1,15 @@
 # Commercial kernel completion
 
+**Rust-scheduled detached migration (2026-09-13):** explicit V4 now also
+schedules migration effect decode/transform and final plugin validation in
+Runtime. Real migration succeeds with TS preparation and validation services
+disabled, preserves the live session and original input, and rejects stale
+hosts and invalid results. Six 256-bar reference migrations reduce callback
+requests from 2,543,748 to 17,652 bytes on the same artifact. Initial input and
+final output remain full documents. Rust: 577 passed/1 ignored; Node/Native:
+886 passed/2 skipped. Default cutover, Rust projection costs and commercial
+qualification remain open. See `docs/kernel-rust-scheduled-migration-2026-09-13.md`.
+
 **Rust-scheduled plugin editing (2026-09-13):** explicit host mode V4 now
 delegates command decode/prepare and effect decode/transform to Runtime as well
 as final assessment. Real Wasm editing/history passes with the TS contribution
