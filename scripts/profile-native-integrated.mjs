@@ -6,14 +6,19 @@ import { performance } from "node:perf_hooks";
 import { cpus, platform, arch } from "node:os";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
+import { resolve, relative } from "node:path";
 const require = createRequire(import.meta.url);
 const { CommandBus } = require("../dist/src/core-kernel/index.js");
-const { createCoreScoreFixture } = require("../dist/test/core-kernel/fixtures/core-score.js");
+const { createNativeWorkloadScore: score } = require("../dist/test/core-kernel/fixtures/native-workload.js");
 const { compileOfficialModuleCatalogV1 } = require("../dist/src/core-kernel/module-sdk/index.js");
 const { CVN6_MANIFEST, CVN6_REGISTRATION_ENTRIES } = require("../dist/test/core-kernel/fixtures/cvn-6-synthetic-official-modules.js");
 const { installNativeWasmOnlyIntegratedBackendV1 } = require("../dist/src/native-host/wasm-bindings.js");
 const addon = require("../target/wasm-v1/brilliant_kernel_node.node");
-const guest = readFileSync(new URL("../test/core-kernel/fixtures/wasm-guest/guest.wasm", import.meta.url));
+if (process.argv.length !== 2 && !(process.argv.length === 4 && process.argv[2] === "--guest")) {
+  throw new Error("usage: node --expose-gc scripts/profile-native-integrated.mjs [--guest path]");
+}
+const guestPath = resolve(process.argv[3] ?? "test/core-kernel/fixtures/wasm-guest/guest.wasm");
+const guest = readFileSync(guestPath), guestSha256 = createHash("sha256").update(guest).digest("hex");
 const stats = {};
 let failedGuest;
 function clear() { for (const key of ["nativeCalls", "nativeResponseBytes", "hostCalls", "hostMs", "hostRequestBytes", "guestCalls", "guestMs", "guestBytes"]) stats[key] = 0; }
@@ -41,20 +46,6 @@ const observed = { ...addon,
     };
   },
 };
-function score(measures) {
-  const value = createCoreScoreFixture();
-  value.measureDefinitions = [];
-  value.parts[0].measureContents = [];
-  for (let m = 1; m <= measures; m++) {
-    value.measureDefinitions.push({ id: `measure-${m}`, meter: { numerator: 4, denominator: 4 } });
-    value.parts[0].measureContents.push({ measureId: `measure-${m}`, voices: [{ id: `voice-${m}`, defaultStaffId: "staff-1",
-      sequence: { start: { numerator: 0, denominator: 1 }, events: Array.from({ length: 4 }, (_, e) => ({
-        id: `event-${(m - 1) * 4 + e + 1}`, duration: { base: 4, dots: 0 },
-        content: { kind: "notes", notes: [{ id: `note-${(m - 1) * 4 + e + 1}`, writtenPitch: { step: "C", alter: 0, octave: 4 } }] },
-      })) } }] });
-  }
-  return value;
-}
 function command(marker) {
   return { commandVersion: 1, commandId: "fixture.score.apply", target: { kind: "document", documentId: "score-1" },
     payload: { noteId: "note-1", pitch: { step: "E", alter: 0, octave: 4 }, schemaVersion: 1, marker } };
@@ -71,7 +62,7 @@ const compiled = compileOfficialModuleCatalogV1(CVN6_MANIFEST, CVN6_REGISTRATION
 assert.ok(compiled.ok);
 const restore = installNativeWasmOnlyIntegratedBackendV1(observed, compiled.catalog, ["score", "part"].map(module => ({
   moduleId: `fixture.${module}.module`, contributionId: `fixture.${module}.contribution.v1`, abiVersion: 1,
-  sha256: createHash("sha256").update(guest).digest("hex"), bytes: guest,
+  sha256: guestSha256, bytes: guest,
 })));
 const rows = [];
 try {
@@ -114,7 +105,8 @@ try {
     bus = undefined;
   }
 } finally { restore(); }
-process.stdout.write(JSON.stringify({ profileVersion: 1, node: process.version, platform: platform(), arch: arch(),
+process.stdout.write(JSON.stringify({ profileVersion: 2, guestArtifact: { path: relative(process.cwd(), guestPath), sha256: guestSha256 },
+  node: process.version, platform: platform(), arch: arch(),
   cpu: cpus()[0]?.model, gcExposed: typeof global.gc === "function", rows,
   limitations: ["Synthetic one-part four-note-per-bar fixture with two installed test plugins; not product qualification",
     "Sequential samples with instrumentation overhead; hostMs includes guestMs, do not add them",

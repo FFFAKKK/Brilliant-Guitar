@@ -1,7 +1,48 @@
 //! Actual scoped guest counterpart of the CVN6 fixture's normal callbacks.
 //! Special markers exercise malicious output and resource failure. This guest
 //! has no host imports; unsafe pointers address only its own Wasm linear memory.
+use brilliant_extension_protocol::scoped_guest::{
+    ScopedCallbackArgumentsV1 as Args, ScopedCallbackRequestV1,
+};
+use serde::Deserialize;
 use serde_json::{json, Value};
+
+#[derive(Deserialize)]
+struct Core<'a> {
+    #[serde(borrow)]
+    parts: Vec<Part<'a>>,
+}
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct Part<'a> {
+    #[serde(borrow)]
+    measure_contents: Vec<&'a serde_json::value::RawValue>,
+}
+
+// Read actual Core data without expanding every note into Value. The complete
+// request still arrives; this plugin chooses a typed Core shape during parsing.
+fn last_note_marker(core: &Core<'_>) -> Value {
+    let measure: Value = serde_json::from_str(
+        core.parts
+            .last()
+            .unwrap()
+            .measure_contents
+            .last()
+            .unwrap()
+            .get(),
+    )
+    .unwrap();
+    let note = &measure["voices"][0]["sequence"]["events"]
+        .as_array()
+        .unwrap()
+        .last()
+        .unwrap()["content"]["notes"][0];
+    json!(format!(
+        "observed:{}:{}",
+        note["id"].as_str().unwrap(),
+        note["writtenPitch"]["step"].as_str().unwrap()
+    ))
+}
 
 #[no_mangle]
 pub extern "C" fn brilliant_alloc_v1(length: u32) -> u32 {
@@ -14,9 +55,11 @@ pub extern "C" fn brilliant_alloc_v1(length: u32) -> u32 {
 #[no_mangle]
 pub unsafe extern "C" fn brilliant_execute_v1(pointer: u32, length: u32) -> u64 {
     let input = std::slice::from_raw_parts(pointer as *const u8, length as usize);
-    let request: Value = serde_json::from_slice(input).expect("guest JSON input");
+    let request: ScopedCallbackRequestV1<'_, Core<'_>> =
+        serde_json::from_slice(input).expect("guest JSON input");
     let result = execute(&request);
-    let mut output = if request["arguments"][0]["payload"]["marker"] == "invalid-utf8" {
+    let mut output = if matches!(&request.arguments, Args::CommandDecode(input) if input["payload"]["marker"] == "invalid-utf8")
+    {
         b"{\"status\":\"decoded\",\"command\":\"\xff\"}".to_vec()
     } else {
         serde_json::to_vec(&result).unwrap()
@@ -26,10 +69,9 @@ pub unsafe extern "C" fn brilliant_execute_v1(pointer: u32, length: u32) -> u64 
     packed
 }
 
-fn execute(request: &Value) -> Value {
-    let args = &request["arguments"];
-    let source = request["moduleId"].as_str().unwrap();
-    let contribution = request["contributionId"].as_str().unwrap();
+fn execute(request: &ScopedCallbackRequestV1<'_, Core<'_>>) -> Value {
+    let source = request.module_id.as_str();
+    let contribution = request.contribution_id.as_str();
     let is_score = source == "fixture.score.module";
     let namespace = if is_score {
         "fixture.score"
@@ -41,9 +83,9 @@ fn execute(request: &Value) -> Value {
     } else {
         json!({"kind":"part","partId":"part-1"})
     };
-    match request["operation"].as_str().unwrap() {
-        "commandDecode" => {
-            let payload = &args[0]["payload"];
+    match &request.arguments {
+        Args::CommandDecode(input) => {
+            let payload = &input["payload"];
             if payload["marker"] == "fuel" {
                 loop {
                     std::hint::spin_loop();
@@ -59,10 +101,10 @@ fn execute(request: &Value) -> Value {
             json!({"status":"decoded","command":{"noteId":payload["noteId"],"pitch":payload["pitch"],
                 "schemaVersion":payload["schemaVersion"],"marker":payload["marker"]}})
         }
-        "commandPrepare" => {
-            let payload = &args[1];
+        Args::CommandPrepare(view, payload) => {
+            let observed;
             let marker = if payload["marker"] == "read-dependency" {
-                let read = &args[0]["dependencyReads"][0];
+                let read = &view.dependency_reads[0];
                 assert_eq!(read["namespace"], "fixture.part");
                 assert_eq!(read["provider"]["moduleId"], "fixture.part.module");
                 let blocks = read["blocks"]
@@ -73,6 +115,9 @@ fn execute(request: &Value) -> Value {
                     .all(|block| block["namespace"] == "fixture.part"
                         && block["owner"]["kind"] == "part"));
                 &blocks.first().expect("dependency present")["payload"]["marker"]
+            } else if payload["marker"] == "read-last-note" {
+                observed = last_note_marker(&view.core_document);
+                &observed
             } else {
                 &payload["marker"]
             };
@@ -82,7 +127,7 @@ fn execute(request: &Value) -> Value {
                 namespace
             };
             let address = if is_score {
-                json!({"kind":"document","documentId":args[0]["documentId"]})
+                json!({"kind":"document","documentId":view.document_id})
             } else {
                 json!({"kind":"part","partId":"part-1"})
             };
@@ -92,25 +137,24 @@ fn execute(request: &Value) -> Value {
                     "namespace":effect_namespace,"owner":owner,"payload":{"schemaVersion":payload["schemaVersion"],"marker":marker}}],
                 "affected":[{"kind":"note","noteId":payload["noteId"]},address]})
         }
-        "effectDecode" => {
-            let payload = &args[0];
+        Args::EffectDecode(payload) => {
             if !payload["schemaVersion"].is_number() || !payload["marker"].is_string() {
                 return json!({"status":"invalid"});
             }
             json!({"status":"decoded","payload":{"schemaVersion":payload["schemaVersion"],"marker":payload["marker"]}})
         }
-        "effectTransform" => {
-            let payload = &args[0]["payload"];
+        Args::EffectTransform(input) => {
+            let payload = &input.payload;
             // Assert the host view excludes every other contribution's data.
-            assert!(args[0]["view"]["compatibleExtensions"]
-                .as_array()
-                .unwrap()
+            assert!(input
+                .view
+                .compatible_extensions
                 .iter()
                 .all(|block| block["namespace"] == namespace));
             json!({"status":"replace","schemaVersion":payload["schemaVersion"],"payload":{"marker":payload["marker"]}})
         }
-        "validate" => {
-            let blocks = args[0]["compatibleExtensions"].as_array().unwrap();
+        Args::Validate(view) => {
+            let blocks = &view.compatible_extensions;
             assert!(blocks.iter().all(|block| block["namespace"] == namespace));
             if blocks
                 .iter()
@@ -136,7 +180,6 @@ fn execute(request: &Value) -> Value {
             }
             json!([])
         }
-        "classify" => json!({"status":"supported","issues":[]}),
-        _ => panic!("unknown callback operation"),
+        Args::Classify(_) => json!({"status":"supported","issues":[]}),
     }
 }

@@ -1,0 +1,57 @@
+{
+  "date": "2026-09-13",
+  "baseCommit": "828ba76",
+  "scope": "Optional private Rust guest codecs and partial reference-guest capacity repair under unchanged V1 inputs and budgets",
+  "logDirectory": ".local-evidence/wasm-guest-capacity-2026-09-13",
+  "fresh": {
+    "typescriptBuildAndTypecheck": { "status": "passed", "log": "ts-build.log" },
+    "behavioralRed": { "tests": 1, "failedAsExpected": 1, "failure": "64-bar plugin edit rejected", "log": "red.log" },
+    "focused": { "tests": 25, "passed": 25, "failed": 0, "durationMs": 5605.1141, "log": "focused.log" },
+    "nodeFull": { "tests": 852, "passed": 850, "skipped": 2, "failed": 0, "durationMs": 79355.8685, "log": "full-node.log" },
+    "rustWorkspaceAllFeatures": { "passed": 553, "ignored": 1, "failed": 0, "log": "rust-tests.log" },
+    "protocolFocused": { "passed": 19, "failed": 0, "log": "protocol-tests.log" },
+    "clippyAllTargetsAllFeaturesDenyWarnings": { "status": "passed", "log": "clippy.log" },
+    "msrv188AllTargetsAllFeatures": { "status": "passed", "log": "msrv.log" },
+    "rustfmtWorkspaceAndGuest": "passed",
+    "guestBuild188Wasm32LockedOffline": { "status": "passed", "log": "guest-build.log" },
+    "sameHostGuestReproduction": { "status": "byte-identical", "log": "guest-reproducibility.log" },
+    "gitDiffCheck": "passed"
+  },
+  "artifacts": {
+    "beforeGuest": { "source": "828ba76:test/core-kernel/fixtures/wasm-guest/guest.wasm", "sha256": "922b0ca4c33db0c11a8526433a0b197ebbf7ff0188416bd9ef22cece116df703", "bytes": 123612 },
+    "afterGuest": { "path": "test/core-kernel/fixtures/wasm-guest/guest.wasm", "sha256": "fa1cc218af4825e79d49c00d5c0ee59c78a154f07a7e4293aebcde2d8a29650e", "bytes": 225629 },
+    "inheritedNative": { "path": "target/wasm-v1/brilliant_kernel_node.node", "sha256": "05b4e0d030feda3d6d1d17da2a5b2a016b6bae4d8b2d70573d997c75d2678796", "rebuiltThisSlice": false },
+    "otherNativeArtifacts": "Inherited unchanged; no active V2 file replacement attempted"
+  },
+  "profile": {
+    "script": "scripts/profile-native-integrated.mjs",
+    "profileVersion": 2,
+    "environment": "Windows x64, Node 24.15.0, i9-13900HX, release Native, --expose-gc",
+    "before": "before.json",
+    "after": "after.json",
+    "samplesPerSize": 6,
+    "results": [
+      { "measures": 16, "notes": 64, "beforeCommitted": 6, "afterCommitted": 6, "beforeMedianMs": 32.1778, "afterMedianMs": 20.183, "beforeGuestMsTotal": 126.3214, "afterGuestMsTotal": 54.6637, "beforeGuestBytes": 341313, "afterGuestBytes": 341313 },
+      { "measures": 64, "notes": 256, "beforeCommitted": 0, "afterCommitted": 6, "afterMedianMs": 53.48335, "beforeGuestBytes": 322416, "afterGuestBytes": 1287729 },
+      { "measures": 256, "notes": 1024, "beforeCommitted": 0, "afterCommitted": 0, "afterRejected": 6 }
+    ],
+    "openFinding": { "operation": "commandPrepare", "measures": 256, "inputBytes": 211794, "failure": "wasm.execution-failed:FuelExhausted", "standaloneReplayOutsideOperationBudget": "rejected", "resolved": false },
+    "limitsChanged": false
+  },
+  "proof": [
+    "64-bar full-input score/part edits, mixed Batch, undo/redo, events and Core reads match the existing oracle",
+    "The guest reads note-256 as C and observes G after an actual edit",
+    "Failed larger work and fuel-exhausted Batch prefixes publish no document/history/event delta; later Core work recovers",
+    "All six callback families, migration, explicit dependency reads and no-JS-fallback checks pass with the new guest",
+    "Borrowed Core retains complete raw text; typed decoding, reordered request fields, exact shapes, marker-like keys and negative zero have direct Rust coverage",
+    "Only the optional data codec feature is added to the exact workspace feature contract; seven-crate project edges, defaults and TS/Node public exports remain checked"
+  ],
+  "notClaimed": [
+    "Successful 256-bar guest editing or a measured maximum capacity for other plugins",
+    "Reduced full-document transport, Rust-owned complete plugin scheduling or a versioned ScoreSlice implementation",
+    "A general UTF-16 Rust guest codec, commercial P95/P99, peak-memory or long-running qualification",
+    "A speed comparison between old rejected 64-bar operations and new successful operations",
+    "Default backend cutover, host Node artifact replacement, remote push or commercial completion"
+  ],
+  "progressEstimate": { "foundationalFunctionalityPercentRange": [85, 90], "commercialPreparationPercent": 65, "meaning": "Rough engineering assessment, unchanged; not elapsed/remaining work or schedule" }
+}

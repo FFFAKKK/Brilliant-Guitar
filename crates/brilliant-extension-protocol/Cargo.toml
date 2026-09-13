@@ -8,7 +8,9 @@ publish.workspace = true
 
 [features]
 default = []
+scoped-guest-v1 = ["dep:serde_json"]
 
 [dependencies]
 brilliant-core-types = { path = "../brilliant-core-types" }
 serde.workspace = true
+serde_json = { workspace = true, optional = true, features = ["raw_value"] }

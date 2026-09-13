@@ -79,6 +79,19 @@ No budget was raised and no capacity PASS is claimed. See
 `docs/kernel-native-workload-2026-09-13.md` for reproduction, memory evidence limits
 and the staged V2 binary location while the old artifact remains in use.
 
+**Guest decoding capacity, partial repair (2026-09-13):** an opt-in, data-only
+Rust scoped-callback codec now permits borrowed or typed Core input and decodes
+normal callback requests in one pass. The reference guest uses it without
+reducing the complete V1 view or changing any execution budget. In the identical
+workload, 64-bar plugin edits now commit six of six times and can read actual
+Core notes; 256-bar preparation still exhausts fuel. This supersedes only the
+64-bar part of the preceding finding. The seven-crate graph and default/ABI
+surfaces are unchanged; the exact workspace feature check now includes this
+optional protocol codec. Commercial readiness remains approximately 65%.
+The next capacity requirement is an explicit versioned selective-read/ScoreSlice
+contract with compatibility, candidate visibility and resource-accounting proof.
+See `docs/kernel-wasm-guest-capacity-2026-09-13.md`.
+
 **Historical pause at the owner's request (2026-09-12):** finish the current
 cross-plugin explicit-read task, record its evidence and local commits, then
 stop and report. That pause was followed by the explicit restart above.

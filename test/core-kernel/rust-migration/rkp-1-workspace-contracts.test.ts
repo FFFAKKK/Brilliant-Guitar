@@ -245,6 +245,12 @@ test("Cargo workspace, pins, features and direct dependency graph are exact", ()
         'default = []\nwasm-executor-v1 = ["dep:wasmi", "dep:sha2"]');
       assert.match(manifest, /^wasmi = \{ workspace = true, optional = true \}$/mu);
       assert.match(manifest, /^sha2 = \{ workspace = true, optional = true \}$/mu);
+    } else if (crate === "brilliant-extension-protocol") {
+      // Private scoped guest codecs are opt-in data contracts. The default
+      // feature set, seven-crate graph and all bridge export sets stay exact.
+      assert.equal(section(manifest, "features").trim(),
+        'default = []\nscoped-guest-v1 = ["dep:serde_json"]');
+      assert.match(manifest, /^serde_json = \{ workspace = true, optional = true, features = \["raw_value"\] \}$/mu);
     } else {
       assert.equal(section(manifest, "features").trim(), "default = []");
     }
