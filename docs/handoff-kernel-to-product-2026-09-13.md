@@ -64,6 +64,14 @@ Rust 保留自己计算的核心结果，不接受宿主回调覆盖。独立迁
 Node 输入、TS 对象、其他宿主传输和历史占用需要另外核算。
 详见 `docs/evidence/kernel-wasm-transfer-budget-2026-09-13.json`。
 
+工作负载诊断已接通集成 Native 的按版本快照复用：每次读取仍查询 Rust 的实时
+history／dirty／availability，文档版本未变时不重复传输或遍历冻结文档。
+256 小节样本十二次读取回复由约 2.54 MB 降到 4.1 KB。但同一测试 Wasm guest
+在 64／256 小节的准备阶段会耗尽单次燃料；这是明确未解决的容量限制，不能以
+读取加速代替编辑能力结论。详见 `docs/kernel-native-workload-2026-09-13.md`。
+常规 V2 文件正被其他进程使用，本轮新 V2 另存于 `target/integrated-v2-next/`；
+已有产物可通过完整读取兼容路径继续运行，新 Wasm 产物已更新。
+
 原 Architecture Reset V2 允许 TS UI 与事务外插件语义处理，但第 8.3、11.3、12.4 节
 要求事务内由 Kernel Session 控制声明式规则／受限 Wasm 验证，任意 TS 插件代码留在事务外。
 当前集成路径与这个最终边界有差距，不能将其改写为已接受的永久混合架构。

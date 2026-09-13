@@ -165,6 +165,50 @@ impl IntegratedKernelRuntimeV2 {
         dispatch_core: CoreDispatch,
     ) -> Result<Value> {
         let request = decode(bytes)?;
+        if tag(&request, "operation", "read")
+            && exact(&request, &["operation", "knownSnapshotVersion"])
+        {
+            let known = field(&request, "knownSnapshotVersion")?;
+            let known = if known == &JsonValue::Null {
+                None
+            } else {
+                Some(
+                    DocumentVersionV1::try_from(integer(known).ok_or_else(internal)?)
+                        .map_err(|_| internal())?,
+                )
+            };
+            // Preserve checkpoint scheduling and history/dirty observations via
+            // the existing Stage 4 read seam; only repeated document bytes omit.
+            let state = self.runtime.read_stage4(known).map_err(|_| internal())?;
+            let snapshot = object([
+                ("documentId", value(&state.snapshot.document_id)?),
+                ("schemaVersion", text(state.snapshot.schema_version)),
+                (
+                    "documentVersion",
+                    number(state.snapshot.document_version.get()),
+                ),
+                (
+                    "document",
+                    match &state.snapshot.document {
+                        Some(document) => value(document.as_document())?,
+                        None => JsonValue::Null,
+                    },
+                ),
+            ]);
+            return Ok(object([
+                ("ok", JsonValue::Bool(true)),
+                (
+                    "state",
+                    object([
+                        ("snapshot", snapshot),
+                        ("history", value(&state.history)?),
+                        ("dirty", JsonValue::Bool(state.dirty)),
+                    ]),
+                ),
+                ("availability", self.availability()?),
+                ("callbackProjections", number(self.callback_projections)),
+            ]));
+        }
         if tag(&request, "operation", "read") && exact(&request, &["operation"]) {
             let state = self.runtime.read_state().map_err(|_| internal())?;
             return Ok(object([

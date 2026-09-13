@@ -32,6 +32,6 @@ pub fn create_wasm_module_executor_v1<'env>(
         catch_unwind(AssertUnwindSafe(|| budget::execute(&executor, &input)))
             .map_err(|_| napi::Error::from_reason("wasm.execution-failed"))?
             .map(|output| Buffer::from(output.bytes))
-            .map_err(|_| napi::Error::from_reason("wasm.execution-failed"))
+            .map_err(|error| napi::Error::from_reason(format!("wasm.execution-failed:{error:?}")))
     })
 }

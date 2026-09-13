@@ -19,12 +19,15 @@ export interface IntegratedNativeAddonV2 {
   migrateKernelExtensionV2?: NativeExtensionMigrationFunctionV2;
 }
 type Failure = Extract<KernelCommandResult, { status: "rejected" }>["failure"];
+type NativeReadState = Omit<KernelReadState, "snapshot"> & {
+  snapshot: Omit<DocumentSnapshot, "document"> & { document: ScoreDocument | null };
+};
 interface WireResult {
   ok: boolean;
   failure?: Failure;
   documentVersion?: number;
   history?: KernelReadState["history"];
-  state?: KernelReadState;
+  state?: NativeReadState;
   availability?: { ok: true; value: Pick<IntegratedKernelReadState, "writeAvailability" | "validationAvailability"> };
   pipeline?: { assessment: Extract<KernelCommandResult, { status: "committed" | "no-op" }>["assessment"] };
   result?: { status: "committed" | "no-op" | "command-rejected"; failure?: Failure;
@@ -95,6 +98,7 @@ export function createNativeIntegratedCommandBusV2(addon: IntegratedNativeAddonV
   let observedHistory = { undoDepth: 0, redoDepth: 0 };
   let observedDirty = false;
   let cachedSnapshot: DocumentSnapshot | undefined;
+  let snapshotReuse: boolean | undefined;
   function requireReceiver(receiver: unknown): void {
     if (receiver !== bus) throw new TypeError("Invalid integrated command bus receiver");
   }
@@ -149,15 +153,32 @@ export function createNativeIntegratedCommandBusV2(addon: IntegratedNativeAddonV
     redo() { requireReceiver(this); return command({ operation: "redo" }); },
     read() {
       requireReceiver(this);
-      const result = raw({ operation: "read" });
-      if (result.ok && result.state !== undefined && cachedSnapshot?.documentVersion !== result.state.snapshot.documentVersion) {
-        cachedSnapshot = freeze(result.state.snapshot);
+      let result = raw(snapshotReuse === false ? { operation: "read" }
+        : { operation: "read", knownSnapshotVersion: cachedSnapshot?.documentVersion ?? null });
+      // Older private artifacts reject the additive request before entering the
+      // read handler. Retry only that recognized unsupported-request path, using
+      // the same Rust session; never hide actual read/reentry failures.
+      if (snapshotReuse === undefined && !result.ok && result.failure !== undefined
+        && ["command.invalid-envelope", "command.required-contribution-incompatible", "command.required-contribution-unavailable"].includes(result.failure.code)) {
+        result = raw({ operation: "read" });
+        if (result.ok) snapshotReuse = false;
+      } else if (result.ok && snapshotReuse === undefined) snapshotReuse = true;
+      const failed = () => freeze({ ok: false as const, failure: { code: "read.invariant-violation" as const } });
+      if (!result.ok || result.state === undefined || result.availability === undefined) return failed();
+      const snapshot = result.state.snapshot;
+      if (snapshot.document === null) {
+        if (cachedSnapshot === undefined || cachedSnapshot.documentVersion !== snapshot.documentVersion
+          || cachedSnapshot.documentId !== snapshot.documentId || cachedSnapshot.schemaVersion !== snapshot.schemaVersion) return failed();
+      } else if (cachedSnapshot?.documentVersion !== snapshot.documentVersion) {
+        cachedSnapshot = freeze({ ...snapshot, document: snapshot.document });
       }
-      return result.ok && result.state !== undefined && result.availability !== undefined
-        ? freeze({ ok: true as const, value: { ...result.state, snapshot: cachedSnapshot!,
-          writeAvailability: result.availability.value.writeAvailability,
-          validationAvailability: result.availability.value.validationAvailability } })
-        : freeze({ ok: false as const, failure: { code: "read.invariant-violation" as const } });
+      if (cachedSnapshot === undefined) return failed();
+      // The cached snapshot was deeply frozen on admission. Freeze only the new
+      // scalar/availability projection, without traversing the document again.
+      return freezeObject({ ok: true as const, value: freezeObject({ snapshot: cachedSnapshot,
+        history: freeze(result.state.history), dirty: result.state.dirty,
+        writeAvailability: freeze(result.availability.value.writeAvailability),
+        validationAvailability: freeze(result.availability.value.validationAvailability) }) });
     },
     markPersisted(input: unknown) {
       requireReceiver(this);

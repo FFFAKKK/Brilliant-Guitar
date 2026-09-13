@@ -49,6 +49,15 @@ function metadata() {
     payload: { metadata: { ...createCoreScoreFixture().metadata, title: "prefix must roll back" } } };
 }
 
+test("Private Wasm errors identify fuel versus guest traps without exposing request content", () => {
+  const execute = addon.createWasmModuleExecutorV1(guest, createHash("sha256").update(guest).digest(), 1);
+  const fuel = Buffer.from(JSON.stringify({ callbackVersion: 1, moduleId: "fixture.score.module",
+    contributionId: "fixture.score.contribution.v1", operation: "commandDecode", definitionId: "fixture.score.apply",
+    arguments: [{ payload: { marker: "fuel" } }] }));
+  assert.throws(() => execute(fuel), error => error instanceof Error && error.message === "wasm.execution-failed:FuelExhausted");
+  assert.throws(() => execute(Buffer.from("private-invalid-request")), error => error instanceof Error && error.message === "wasm.execution-failed:Trap");
+});
+
 test("Rust rejects cumulative guest transfers before a valid host reply can commit an effective Batch", () => {
   // Tiny real guest: 256 memory pages, allocator returns zero, execute returns
   // an 8 MiB zero-filled region. It burns negligible fuel and fits per-call caps.

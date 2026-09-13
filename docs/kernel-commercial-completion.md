@@ -68,6 +68,17 @@ copies or the separate aggregate host assessment transport. Peak memory, host
 cost, real-workload capacity and release qualification remain open. See
 `docs/evidence/kernel-wasm-transfer-budget-2026-09-13.json`.
 
+**Measured workload and snapshot reuse (2026-09-13):** the integrated Native read
+path now reuses Stage 4 known-version snapshots without retransmitting unchanged
+documents or freezing the cached graph again. Reads still consult Rust for live
+history/dirty/availability; older artifacts retain a one-time negotiated full-read
+path. At 256 bars, twelve replies fell from 2,540,700 to 4,116 bytes in the bounded
+diagnostic workload. The same measurement exposed an unresolved capacity issue:
+the test Wasm guest exhausts per-callback fuel during preparation at 64/256 bars.
+No budget was raised and no capacity PASS is claimed. See
+`docs/kernel-native-workload-2026-09-13.md` for reproduction, memory evidence limits
+and the staged V2 binary location while the old artifact remains in use.
+
 **Historical pause at the owner's request (2026-09-12):** finish the current
 cross-plugin explicit-read task, record its evidence and local commits, then
 stop and report. That pause was followed by the explicit restart above.

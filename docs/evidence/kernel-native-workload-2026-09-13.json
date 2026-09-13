@@ -1,0 +1,51 @@
+{
+  "date": "2026-09-13",
+  "baseCommit": "e09305c",
+  "scope": "Bounded Native workload diagnostics, integrated known-version read reuse, and private Wasm failure classification",
+  "fresh": {
+    "typescriptBuildAndTypecheck": { "status": "passed", "log": "ts-build.log" },
+    "behavioralRed": { "tests": 2, "failedAsExpected": 2, "log": "red.log" },
+    "focused": { "tests": 20, "passed": 20, "failed": 0, "durationMs": 4329.3993, "log": "focused.log" },
+    "nodeFull": { "tests": 850, "passed": 848, "skipped": 2, "failed": 0, "durationMs": 66102.2461, "log": "full-node.log" },
+    "rustWorkspaceAllFeatures": { "passed": 546, "ignored": 1, "failed": 0, "log": "rust-tests.log" },
+    "clippyAllTargetsAllFeaturesDenyWarnings": { "status": "passed", "log": "clippy.log" },
+    "msrv188AllTargetsAllFeatures": { "status": "passed", "log": "msrv.log" },
+    "rustfmtCheck": "passed",
+    "gitDiffCheck": "passed"
+  },
+  "logDirectory": ".local-evidence/native-workload-2026-09-13",
+  "profile": {
+    "script": "scripts/profile-native-integrated.mjs",
+    "before": "before.json", "after": "after.json",
+    "environment": "Windows x64, Node 24.15.0, i9-13900HX, release Native, --expose-gc",
+    "stableReadSamplesPerSize": 12,
+    "results": [
+      { "measures": 16, "notes": 64, "beforeMedianMs": 0.7286, "afterMedianMs": 0.0335, "beforeResponseBytes": 165048, "afterResponseBytes": 4116, "pluginCommits": 6 },
+      { "measures": 64, "notes": 256, "beforeMedianMs": 2.4623, "afterMedianMs": 0.01985, "beforeResponseBytes": 638256, "afterResponseBytes": 4116, "pluginCommits": 0, "pluginRejections": 6 },
+      { "measures": 256, "notes": 1024, "beforeMedianMs": 12.0433, "afterMedianMs": 0.0217, "beforeResponseBytes": 2540700, "afterResponseBytes": 4116, "pluginCommits": 0, "pluginRejections": 6 }
+    ],
+    "openFinding": "Test guest commandPrepare exhausts per-callback fuel at 64/256 bars (53257/211794 input bytes), including when replayed outside the aggregate operation budget. No fuel limits changed.",
+    "memory": "256-bar post-GC snapshots: RSS 154996736 -> 150638592 bytes; heapUsed 9177032 -> 9182056 bytes. These are neither peaks nor leak qualification."
+  },
+  "rebuiltArtifacts": [
+    { "path": "target/wasm-v1/brilliant_kernel_node.node", "sha256": "05b4e0d030feda3d6d1d17da2a5b2a016b6bae4d8b2d70573d997c75d2678796", "log": "build-wasm.log", "runtimeTested": true },
+    { "path": "target/integrated-v2-next/brilliant_kernel_node.node", "sha256": "c6b2d165449ed1d35efb32c049b88f282a6e75819a2f21fa46eca0ddd0d0d389", "log": "build-v2.log", "status": "Built and staged; regular destination is locked by another process. New read runtime tests use the fresh Wasm artifact." }
+  ],
+  "inheritedArtifacts": [
+    "target/integrated-v2/brilliant_kernel_node.node remains 610cf8db45ead38fc841d8e3d3d1ea88fb21da5ded1b43a112b80cbb7562425f; exercised via same-Rust full-read compatibility",
+    "target/rkp-1-node/brilliant_kernel_node.node; frozen Core V1 unchanged"
+  ],
+  "proof": [
+    "Repeated Native replies omit document only at matching snapshot identity/version; full public read state and immutable snapshot identity remain consistent",
+    "Dirty/checkpoint, history, subscriber visibility, undo/redo and rejection match the existing oracle",
+    "Cached snapshots do not hide reentrant reads or mismatched omitted-document responses",
+    "Old writable/readonly unsupported-request paths probe once; actual read failures are not retried",
+    "Private Wasm error kinds distinguish fuel exhaustion from traps without echoing request content"
+  ],
+  "notClaimed": [
+    "Successful large-document Wasm plugin editing, commercial capacity or CVN-7 qualification",
+    "Whole-transaction speedup equal to the stable-read improvement",
+    "Peak-memory reduction, leak freedom or long-running stability",
+    "Rust-owned plugin scheduling, default cutover or replacement of the currently locked V2 artifact"
+  ]
+}
