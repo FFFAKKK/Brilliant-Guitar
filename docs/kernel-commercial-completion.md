@@ -1,5 +1,15 @@
 # Commercial kernel completion
 
+**Native host transport account (2026-09-13):** explicit Core-read protocol V2
+now limits cumulative Rust/Node callback request and response bytes to 128 MiB.
+Nested synchronous sessions share a sticky account, including nested legacy
+calls; independent old two-argument entries retain their previous behavior.
+Real Native regressions fail on the prior artifact and pass after the repair,
+proving effective Batch rollback, swallowed nested failure rejection and recovery.
+Final Node/Native: 865 passed, 2 skipped; workspace Rust, Clippy, fmt, MSRV and
+TS build passed. Full candidate construction, TS scheduling, CPU/peak memory and
+release qualification remain open. See `docs/kernel-host-transfer-budget-2026-09-13.md`.
+
 ## Scope and working authority
 
 **2026-09-13 architecture clarification, before the first repair:** the usable Native V2 integration was

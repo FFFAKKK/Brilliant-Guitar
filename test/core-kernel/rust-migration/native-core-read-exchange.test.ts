@@ -64,6 +64,56 @@ function state(operate: Callback) {
   return value;
 }
 
+test("Host transport budget rejects cumulative valid replies before adopting a Batch and resets afterwards", () => {
+  let inflate = false, calls = 0, sawPrefix = false;
+  const replies = new Map<string, Buffer>();
+  const callback: Callback = bytes => {
+    const input = decode(bytes), reply = capturedReply(input);
+    if (!inflate) return reply;
+    calls++;
+    sawPrefix ||= input.operation === "prepare"
+      && input.document.parts[0].measureContents[0].voices[0].sequence.events[0].content.notes[0].writtenPitch.step === "E";
+    const key = reply.toString("utf8");
+    if (!replies.has(key)) replies.set(key, Buffer.concat([reply, Buffer.alloc(16 * 1024 * 1024, 32)]));
+    return replies.get(key)!;
+  };
+  const operate = addon.createIntegratedKernelSessionV2(Buffer.from(fixture.initial), callback, 2);
+  const before = state(operate);
+  inflate = true;
+  const result = decode(operate(encode(batch([prefix(), ...Array.from({ length: 10 }, moduleCommand)]))));
+  assert.equal(result.ok, false);
+  assert.equal(result.result?.events, undefined);
+  assert.ok(sawPrefix);
+  assert.equal(calls, 8, "eight padded replies exceed the shared 128 MiB transport account");
+  assert.deepEqual(state(operate), before);
+  inflate = false;
+  assert.equal(decode(operate(Buffer.from(fixture.journey[1].request))).ok, true);
+});
+
+test("A swallowed nested legacy-host transport failure still rejects its enclosing V2 operation", () => {
+  let nested = false, refused = 0;
+  const padded = Buffer.concat([Buffer.from(fixture.callbacks.assessEmpty), Buffer.alloc(32 * 1024 * 1024, 32)]);
+  const operate = addon.createIntegratedKernelSessionV2(Buffer.from(fixture.initial), bytes => {
+    const input = decode(bytes);
+    if (nested && input.operation === "prepare") {
+      for (let i = 0; i < 4; i++) {
+        try {
+          // Omitting version 2 cannot escape an already active outer account.
+          addon.createIntegratedKernelSessionV2(Buffer.from(fixture.initial), () => padded);
+        } catch { refused++; }
+      }
+    }
+    return capturedReply(input);
+  }, 2);
+  const before = state(operate);
+  nested = true;
+  assert.equal(decode(operate(encode(batch([prefix(), moduleCommand()])))).ok, false);
+  assert.equal(refused, 1);
+  assert.deepEqual(state(operate), before);
+  nested = false;
+  assert.equal(decode(operate(Buffer.from(fixture.journey[1].request))).ok, true);
+});
+
 test("Core read exchange explicitly opts in and preserves legacy callbacks and captured journey", () => {
   const observations: unknown[] = [];
   const callback = exchange(function* (input) {
