@@ -5,7 +5,7 @@ use super::*;
 impl IntegratedKernelRuntimeV2 {
     pub(super) fn scheduled_assess(
         &mut self,
-        document: &ScoreDocumentV1,
+        document: Value,
         version: u64,
         sources: Vec<Value>,
         core: Value,
@@ -14,10 +14,7 @@ impl IntegratedKernelRuntimeV2 {
     ) -> Result<Value> {
         // Keep the Core read source in Rust, separate from serialized requests.
         self.callback_projections = self.callback_projections.saturating_add(1);
-        let candidate = object([
-            ("document", value(document)?),
-            ("documentVersion", number(version)),
-        ]);
+        let candidate = object([("document", document), ("documentVersion", number(version))]);
         let schedule_version = if executor.uses_scoped_preparation() {
             4
         } else {
@@ -26,7 +23,10 @@ impl IntegratedKernelRuntimeV2 {
         let start = object([
             ("operation", text("assessmentStart")),
             ("scheduleVersion", number(schedule_version)),
-            ("documentId", value(&document.id)?),
+            (
+                "documentId",
+                field(field(&candidate, "document")?, "id")?.clone(),
+            ),
             ("documentVersion", number(version)),
         ]);
         let ack = invoke(executor, &start, &candidate, &JsonValue::Null)?;

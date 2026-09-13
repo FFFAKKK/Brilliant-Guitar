@@ -395,7 +395,7 @@ impl IntegratedKernelRuntimeV2 {
     fn call<const N: usize>(
         &mut self,
         operation: &str,
-        document: &ScoreDocumentV1,
+        document: Value,
         version: u64,
         extra: [(&str, Value); N],
         executor: &mut dyn ContributionExecutorV2,
@@ -403,7 +403,7 @@ impl IntegratedKernelRuntimeV2 {
         self.callback_projections = self.callback_projections.saturating_add(1);
         let mut request = object([
             ("operation", text(operation)),
-            ("document", value(document)?),
+            ("document", document),
             ("documentVersion", number(version)),
         ]);
         let JsonValue::Object(fields) = &mut request else {
@@ -420,7 +420,10 @@ impl IntegratedKernelRuntimeV2 {
         version: u64,
         executor: &mut dyn ContributionExecutorV2,
     ) -> Result<Value> {
-        let core = assess_score_profile(&value(document)?, &ScoreFeatureProfileV1::k1())
+        // Capture once for Core assessment and the subsequent plugin read source.
+        // Neither stage mutates this value; do not serialize and parse it twice.
+        let candidate = value(document)?;
+        let core = assess_score_profile(&candidate, &ScoreFeatureProfileV1::k1())
             .map_err(|_| internal())?;
         if let ScoreSupportV1::Invalid { diagnostics } = &core {
             return Err(object([
@@ -432,12 +435,19 @@ impl IntegratedKernelRuntimeV2 {
         let sources = self.assessment_sources(document)?;
         let availability = self.candidate_availability(document)?;
         if executor.uses_scoped_assessment() {
-            return self.scheduled_assess(document, version, sources, core, availability, executor);
+            return self.scheduled_assess(
+                candidate,
+                version,
+                sources,
+                core,
+                availability,
+                executor,
+            );
         }
         let mut reply = self
             .call(
                 "assess",
-                document,
+                candidate,
                 version,
                 [("coreAssessment", core.clone())],
                 executor,

@@ -1,5 +1,16 @@
 # Commercial kernel completion
 
+**Final assessment projection reuse (2026-09-13):** Core assessment and plugin
+callbacks now share one lossless candidate capture instead of serializing and
+parsing the same document twice. Integrated field lookups reuse borrowed UTF-16
+keys. All validation and budget boundaries remain. Three old/new V4 profile
+runs show 256-bar metadata edits at 29.55–30.24 → 22.77–24.39 ms, plugin edits
+at 60.34–64.88 → 54.57–59.46 ms and undo/redo pairs at
+60.72–62.31 → 49.35–52.01 ms; transport bytes are unchanged.
+Rust: 577 passed/1 ignored; Node/Native: 886 passed/2 skipped. These are
+reference diagnostics, not qualification. See
+`docs/kernel-assessment-projection-reuse-2026-09-13.md`.
+
 **Rust-scheduled detached migration (2026-09-13):** explicit V4 now also
 schedules migration effect decode/transform and final plugin validation in
 Runtime. Real migration succeeds with TS preparation and validation services
