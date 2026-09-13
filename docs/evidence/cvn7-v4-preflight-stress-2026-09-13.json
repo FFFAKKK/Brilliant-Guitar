@@ -1,0 +1,83 @@
+{
+  "evidenceVersion": 1,
+  "qualification": false,
+  "fixtureKind": "stress",
+  "commit": "65c1b4e2f19ae3e1cff063bdd33fb51bc8e19313",
+  "node": "v24.15.0",
+  "platform": "win32",
+  "arch": "x64",
+  "cpu": "13th Gen Intel(R) Core(TM) i9-13900HX",
+  "hashes": {
+    "test/core-kernel/rust-migration/fixtures/qualification-v2-contract.json": "7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05",
+    "test/core-kernel/fixtures/cvn-7-qualification-score.ts": "5edc34b540835b5edd888706a86df564c0afadc09189293d38d2c4a1b01c05cc",
+    "test/core-kernel/fixtures/cvn-7-qualification-modules.ts": "47fc076a2bb85855aedfcacef23a103a5cdc0dc255c2b5858c353515a17fc227",
+    "dist/test/core-kernel/fixtures/cvn-7-qualification-score.js": "e786747baf5dca9b627f3cc3cea07ec084dc34d66a00263bf948391b5c2bdd9a",
+    "dist/test/core-kernel/fixtures/cvn-7-qualification-modules.js": "69135c9ee7ac0a5644c27ab2741af3283af47aff52ddde79a6d46f0614988570",
+    "test/core-kernel/fixtures/wasm-guest/guest-cvn7.wasm": "e0a8cf1c2ca35156a836ee4cc64bf7dc35e62590931647e2f93cb1deee6ff69c",
+    "target/wasm-v1/brilliant_kernel_node.node": "948101f2c264616f5d69dd2b0fcbcbf6b682c6ef142f54e32d4393ca3586e1d6",
+    "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\scripts\\probe-native-qualification-v4.mjs": "7cbae3c9beda6b65bca1f44cf1f71faaecc4edca01d334984ec63f64fd47bf22"
+  },
+  "workerExitCode": 1,
+  "workerSignal": null,
+  "preflightPassed": false,
+  "operations": [
+    {
+      "operation": "construct-integrated",
+      "durationMs": 4908.6981,
+      "status": "rejected",
+      "failure": {
+        "code": "command.internal-error"
+      }
+    }
+  ],
+  "memory": [
+    {
+      "stage": "construct-integrated-before",
+      "rss": 332742656,
+      "heapTotal": 268820480,
+      "heapUsed": 188224032,
+      "external": 2940032,
+      "arrayBuffers": 528546
+    },
+    {
+      "stage": "construct-integrated-after",
+      "rss": 564076544,
+      "heapTotal": 478150656,
+      "heapUsed": 348918880,
+      "external": 17623122,
+      "arrayBuffers": 15211678
+    }
+  ],
+  "fixtureCounts": {
+    "measures": 400,
+    "parts": 16,
+    "staves": 16,
+    "measureContents": 6400,
+    "voices": 12800,
+    "events": 102400,
+    "notes": 51200,
+    "knownExtensionBlocks": 17,
+    "unknownExtensionBlocks": 1
+  },
+  "initialDocumentSha256": "5a8a318e58bc08a82a822c166ed11239ed4ed7b9ea45d50bb7dcb81d7c57f91e",
+  "oracleCoreProfile": {
+    "status": "unsupported",
+    "diagnosticCount": 6401,
+    "codes": {
+      "unsupported.part-count": 1,
+      "unsupported.voice-count": 6400
+    }
+  },
+  "failure": {
+    "stage": "construct-integrated",
+    "error": "AssertionError [ERR_ASSERTION]: construct-integrated rejected: {\"code\":\"command.internal-error\"}"
+  },
+  "maxRssBytes": 1294495744,
+  "limitations": [
+    "One fresh process and one sample per operation; no qualification verdict or percentiles",
+    "Synthetic frozen CVN-7 plugins, not real product plugins",
+    "Peak RSS includes fixture generation and untimed correctness checks",
+    "60-second diagnostic timeout is not the calibrated qualification liveness gate",
+    "Full qualification still requires frozen sampling, Batch/replay/stress and complexity evidence"
+  ]
+}

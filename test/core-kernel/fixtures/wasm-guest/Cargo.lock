@@ -19,6 +19,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "brilliant-score-foundation"
+version = "0.1.0"
+dependencies = [
+ "brilliant-core-types",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -28,7 +37,9 @@ checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
 name = "kernel-scoped-wasm-fixture"
 version = "0.1.0"
 dependencies = [
+ "brilliant-core-types",
  "brilliant-extension-protocol",
+ "brilliant-score-foundation",
  "serde",
  "serde_json",
 ]

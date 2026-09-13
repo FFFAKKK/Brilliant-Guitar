@@ -1,5 +1,18 @@
 # Commercial kernel completion
 
+**Frozen-fixture V4 preflight (2026-09-13):** the unchanged CVN-7 score and
+synthetic module fixtures now run through a separate actual Wasm guest on V4.
+Node/Native: 889 passed/2 skipped. This is an evidence/tooling increment, not
+a production performance repair or qualification pass. The 25,600-event sample
+commits edit/undo/redo at 482.63/462.47/472.15 ms; cached read is 0.21 ms.
+Data restoration passes, but the original encoded fixture hash differs because
+opaque object key order changes on admission. The 102,400-event sample rejects
+construction: its 6,401 K1 unsupported diagnostics conflict with the 4,096
+Rust diagnostic cap. Both bounded preflights exit 1 and explicitly retain
+`qualification: false`. Commercial latency, capacity, compatibility evidence,
+incremental work and default cutover remain open. See
+`docs/kernel-cvn7-v4-preflight-2026-09-13.md`.
+
 **Lazy Core projection during V4 preparation (2026-09-13):** command preparation
 and effect transformation now build a metadata/extension context first and load
 the full actual candidate only for Core object reads. The original global index,

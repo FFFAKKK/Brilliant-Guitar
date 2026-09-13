@@ -16,7 +16,14 @@ name = "scoped_reads_v2"
 path = "guest-v2.rs"
 crate-type = ["cdylib"]
 
+[[example]]
+name = "cvn7_v2"
+path = "guest-cvn7.rs"
+crate-type = ["cdylib"]
+
 [dependencies]
+brilliant-core-types = { path = "../../../../crates/brilliant-core-types" }
+brilliant-score-foundation = { path = "../../../../crates/brilliant-score-foundation" }
 brilliant-extension-protocol = { path = "../../../../crates/brilliant-extension-protocol", features = ["scoped-guest-v1"] }
 serde = { version = "=1.0.229", features = ["derive"] }
 serde_json = { version = "=1.0.151", features = ["float_roundtrip"] }
