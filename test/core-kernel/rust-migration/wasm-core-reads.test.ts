@@ -1,4 +1,4 @@
-import { test } from "node:test";
+import { test as nodeTest } from "node:test";
 import assert = require("node:assert/strict");
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -6,13 +6,16 @@ import { resolve } from "node:path";
 import { CommandBus, migrateKernelExtension, type ScoreDocument } from "../../../src/core-kernel/index";
 import { compileOfficialModuleCatalogV1 } from "../../../src/core-kernel/module-sdk/index";
 import { compileContributionReadCatalogV1 } from "../../../src/core-kernel/module-sdk/extension-reads";
-import { installNativeWasmCoreReadsBackendV2 } from "../../../src/native-host/wasm-core-reads";
+import { installNativeWasmCoreReadsBackendV2, installNativeWasmScheduledAssessmentV3 } from "../../../src/native-host/wasm-core-reads";
 import { installNativeWasmOnlyIntegratedBackendV1, type WasmNativeAddonV1 } from "../../../src/native-host/wasm-bindings";
 import { CVN6_MANIFEST, CVN6_REGISTRATION_ENTRIES, resetCvn6Callbacks, cvn6CallbackTrace } from "../fixtures/cvn-6-synthetic-official-modules";
 import { createNativeWorkloadScore } from "../fixtures/native-workload";
 
 const addon = require(resolve("target/wasm-v1/brilliant_kernel_node.node")) as Parameters<typeof installNativeWasmCoreReadsBackendV2>[0];
 const guest = readFileSync("test/core-kernel/fixtures/wasm-guest/guest-v2.wasm");
+for (const protocol of [2, 3]) {
+const install = protocol === 3 ? installNativeWasmScheduledAssessmentV3 : installNativeWasmCoreReadsBackendV2;
+const test = (name: string, action: () => void) => nodeTest(`Host V${protocol}: ${name}`, action);
 function bindings(bytes = guest) {
   return ["score", "part"].map(module => ({
     moduleId: `fixture.${module}.module`, contributionId: `fixture.${module}.contribution.v1`, abiVersion: 1,
@@ -37,7 +40,7 @@ function batch(commands: unknown[]) {
   return { commandVersion: 1, commandId: "core.transaction.batch", target: { kind: "document", documentId: "score-1" }, payload: { commands } };
 }
 function create(initial: ScoreDocument, compiled = catalog(), transport = addon) {
-  const restore = installNativeWasmCoreReadsBackendV2(transport, compiled, bindings());
+  const restore = install(transport, compiled, bindings());
   try {
     const result = CommandBus.createIntegrated(initial, compiled);
     assert.ok(result.ok, JSON.stringify(result));
@@ -135,12 +138,12 @@ test("Selective guest invalid reads, repeated reads, fuel and hostile outputs re
 test("Selective installer rejects old guest protocols and stale Native exchange without selecting a working session", () => {
   const compiled = catalog();
   const oldGuest = readFileSync("test/core-kernel/fixtures/wasm-guest/guest.wasm");
-  assert.throws(() => installNativeWasmCoreReadsBackendV2(addon, compiled, bindings(oldGuest)));
-  assert.throws(() => installNativeWasmCoreReadsBackendV2(addon, compiled, bindings().slice(0, 1)));
+  assert.throws(() => install(addon, compiled, bindings(oldGuest)));
+  assert.throws(() => install(addon, compiled, bindings().slice(0, 1)));
   const stale = { ...addon, createIntegratedKernelSessionV2(input: Buffer, callback: (bytes: Buffer) => Buffer) {
     return addon.createIntegratedKernelSessionV2(input, callback);
   } };
-  const restore = installNativeWasmCoreReadsBackendV2(stale, compiled, bindings());
+  const restore = install(stale, compiled, bindings());
   try { assert.equal(CommandBus.createIntegrated(createNativeWorkloadScore(1), compiled).ok, false); }
   finally { restore(); }
   // The old, explicitly chosen full-input path still accepts its original guest.
@@ -160,7 +163,7 @@ test("Selective guest migration stays detached and preserves the SDK result", ()
     sourceSchemaVersion: 1, targetSchemaVersion: 2, payload: { schemaVersion: 2, marker: "after" } };
   const expected = migrateKernelExtension(initial, request, compiled);
   assert.equal(expected.status, "migrated");
-  const restore = installNativeWasmCoreReadsBackendV2(addon, compiled, bindings());
+  const restore = install(addon, compiled, bindings());
   try {
     resetCvn6Callbacks();
     assert.deepEqual(migrateKernelExtension(initial, request, compiled), expected);
@@ -193,3 +196,83 @@ test("Selective guest consumes only declared dependency blocks from the current 
   assert.deepEqual(undeclared.read(), before);
   resetCvn6Callbacks();
 });
+
+if (protocol === 3) test("Rust schedules assessment with no TS pipeline or full Core host assessment input", () => {
+  const compiled = catalog(), initial = createNativeWorkloadScore(256);
+  const oracle = CommandBus.createIntegrated(initial, compiled); assert.ok(oracle.ok);
+  const input = batch([command("score"), command("part", "note-1", "E", "part")]);
+  const expected = oracle.value.submit(input);
+  const expectedUndo = oracle.value.undo(), expectedRedo = oracle.value.redo(), expectedRead = oracle.value.read();
+  const pipeline = require("../../../src/core-kernel/commands/integrated-runtime") as Record<string, unknown>;
+  const saved = pipeline.runNativeModulePipeline;
+  const phases: string[] = [];
+  let fullAssessments = 0, maxInput = 0;
+  const transport = { ...addon, createIntegratedKernelSessionV2(bytes: Buffer, callback: (input: Buffer) => Buffer, version?: number) {
+    assert.equal(version, 3);
+    return addon.createIntegratedKernelSessionV2(bytes, request => {
+      if (request[0] === 123) {
+        const parsed = JSON.parse(request.toString("utf8"));
+        if (parsed.operation === "assess") fullAssessments++;
+        if (parsed.operation === "assessmentCallback") {
+          assert.equal(parsed.document, undefined);
+          assert.equal(parsed.view.coreDocument, undefined);
+          maxInput = Math.max(maxInput, request.length);
+          phases.push(`${parsed.callbackOperation}:${parsed.moduleId}`);
+        }
+      }
+      return callback(request);
+    }, version);
+  } };
+  pipeline.runNativeModulePipeline = () => { throw new Error("TS assessment scheduler is unavailable"); };
+  try {
+    const native = create(initial, compiled, transport);
+    assert.deepEqual(native.submit(input), expected);
+    assert.deepEqual(native.undo(), expectedUndo);
+    assert.deepEqual(native.redo(), expectedRedo);
+    assert.deepEqual(native.read(), expectedRead);
+  } finally { pipeline.runNativeModulePipeline = saved; }
+  assert.equal(fullAssessments, 0);
+  assert.ok(maxInput > 0 && maxInput < 2048);
+  assert.deepEqual(phases, [
+    "validate:fixture.part.module", "validate:fixture.score.module",
+    "classify:fixture.part.module", "classify:fixture.score.module",
+    "validate:fixture.part.module", "validate:fixture.score.module",
+    "classify:fixture.part.module", "classify:fixture.score.module",
+  ]);
+});
+
+if (protocol === 3) test("Rust keeps incompatible dependency readers inactive and rejects stale scheduling adapters", () => {
+  const base = catalog();
+  const compiled = compileContributionReadCatalogV1(base, [{
+    readVersion: 1, reader: { moduleId: "fixture.score.module", contributionId: "fixture.score.contribution.v1" },
+    provider: { moduleId: "fixture.part.module", contributionId: "fixture.part.contribution.v1" },
+    namespace: "fixture.part", supportedSchemaVersions: [1, 2], ownerKinds: ["part"],
+  }]); assert.ok(compiled.ok);
+  const initial: ScoreDocument = { ...createNativeWorkloadScore(16), extensions: [
+    { namespace: "fixture.score", schemaVersion: 1, owner: { kind: "score" }, payload: { marker: "dependent" } },
+    { namespace: "fixture.part", schemaVersion: 99, owner: { kind: "part", partId: "part-1" }, payload: { marker: "future" } },
+  ] };
+  const oracle = CommandBus.createIntegrated(initial, compiled.catalog); assert.ok(oracle.ok);
+  let assessments = 0;
+  const transport = { ...addon, createWasmModuleExecutorV1(...args: Parameters<WasmNativeAddonV1["createWasmModuleExecutorV1"]>) {
+    const execute = addon.createWasmModuleExecutorV1(...args);
+    return (input: Buffer) => {
+      const request = JSON.parse(input.toString("utf8"));
+      if (request.operation === "validate" || request.operation === "classify") assessments++;
+      return execute(input);
+    };
+  } };
+  const native = create(initial, compiled.catalog, transport);
+  assert.equal(assessments, 0);
+  assert.deepEqual(native.read(), oracle.value.read());
+  assert.deepEqual(native.submit(command("blocked", "note-1")), oracle.value.submit(command("blocked", "note-1")));
+  const stale = { ...addon, createIntegratedKernelSessionV2(input: Buffer, callback: (input: Buffer) => Buffer) {
+    // A host that downgrades 3 to the supported older read exchange must fail
+    // even when the candidate has no live plugin callbacks.
+    return addon.createIntegratedKernelSessionV2(input, callback, 2);
+  } };
+  const restore = install(stale, base, bindings());
+  try { assert.equal(CommandBus.createIntegrated(createNativeWorkloadScore(1), base).ok, false); }
+  finally { restore(); }
+});
+}

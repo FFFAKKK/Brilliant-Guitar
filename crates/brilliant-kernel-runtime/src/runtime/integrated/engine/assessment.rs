@@ -288,7 +288,7 @@ pub(super) fn validate_failure(error: Value, sources: &[Value]) -> Value {
     if checked.is_ok() { error } else { internal() }
 }
 
-fn validate_issue(issue: &Value, source: &Value) -> Result<()> {
+pub(super) fn validate_issue(issue: &Value, source: &Value) -> Result<()> {
     let JsonValue::Object(fields) = issue else {
         return Err(internal());
     };

@@ -1,5 +1,9 @@
 # 候选 Core 按需读取 V2 · Rust 基础层
 
+新增 V3 调度入口：Runtime 已直接调度和汇总最终插件校验；这一阶段的完整
+Core 文档不再传给 TS。Core 读取数据协议仍是 V2；准备、变换和迁移仍沿用既有
+宿主流程。详见[Rust 调度报告](kernel-rust-scheduled-assessment-2026-09-13.md)。
+
 当前后续状态：R2b 参考 Wasm guest 已接通；显式 V2 Node 路径又增加了
 128 MiB 的整次宿主双向传输账户。它计入完整候选请求和读取帧，但不限制所有
 候选构造及进程内存。见[宿主传输额度](kernel-host-transfer-budget-2026-09-13.md)。

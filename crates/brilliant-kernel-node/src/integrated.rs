@@ -19,6 +19,7 @@ mod host_budget;
 struct NodeExecutor<'a> {
     callback: Function<'a, Buffer, Buffer>,
     core_reads: bool,
+    scoped_assessment: bool,
 }
 
 // Explicit opt-in only. Ordinary callback inputs/replies remain JSON; these
@@ -26,10 +27,11 @@ struct NodeExecutor<'a> {
 const READ_QUERY: &[u8] = b"BGCR2Q\0";
 const READ_REPLY: &[u8] = b"BGCR2R\0";
 
-fn read_protocol(version: Option<f64>) -> napi::Result<bool> {
+fn read_protocol(version: Option<f64>) -> napi::Result<u8> {
     match version {
-        None => Ok(false),
-        Some(2.0) => Ok(true),
+        None => Ok(0),
+        Some(2.0) => Ok(2),
+        Some(3.0) => Ok(3),
         _ => Err(napi::Error::from_reason(
             "bridge.unsupported-core-read-protocol",
         )),
@@ -42,7 +44,13 @@ pub fn migrate_kernel_extension_v2(
     callback: Function<'_, Buffer, Buffer>,
     core_read_protocol: Option<f64>,
 ) -> napi::Result<Buffer> {
-    let core_reads = read_protocol(core_read_protocol)?;
+    let protocol = read_protocol(core_read_protocol)?;
+    if protocol == 3 {
+        return Err(napi::Error::from_reason(
+            "bridge.unsupported-migration-protocol",
+        ));
+    }
+    let core_reads = protocol == 2;
     Ok(catch_unwind(AssertUnwindSafe(|| {
         let _host_budget = host_budget::OperationScope::enter(core_reads);
         #[cfg(feature = "wasm-bridge-v1")]
@@ -52,6 +60,7 @@ pub fn migrate_kernel_extension_v2(
             &mut NodeExecutor {
                 callback,
                 core_reads,
+                scoped_assessment: false,
             },
         )
     }))
@@ -85,6 +94,10 @@ impl NodeExecutor<'_> {
 }
 
 impl ContributionExecutorV2 for NodeExecutor<'_> {
+    fn uses_scoped_assessment(&self) -> bool {
+        self.scoped_assessment
+    }
+
     fn execute(&mut self, request: &[u8]) -> Result<Vec<u8>, ContributionExecutionFailureV2> {
         let result = self.call(request)?;
         capture_reply(result)
@@ -125,7 +138,8 @@ pub fn create_integrated_kernel_session_v2<'env>(
     callback: Function<'env, Buffer, Buffer>,
     core_read_protocol: Option<f64>,
 ) -> napi::Result<Function<'env, Buffer, Buffer>> {
-    let core_reads = read_protocol(core_read_protocol)?;
+    let protocol = read_protocol(core_read_protocol)?;
+    let core_reads = protocol >= 2;
     let retained = callback.create_ref()?;
     let session = catch_unwind(AssertUnwindSafe(|| {
         let _host_budget = host_budget::OperationScope::enter(core_reads);
@@ -136,6 +150,7 @@ pub fn create_integrated_kernel_session_v2<'env>(
             &mut NodeExecutor {
                 callback,
                 core_reads,
+                scoped_assessment: protocol == 3,
             },
         )
     }))
@@ -161,6 +176,7 @@ pub fn create_integrated_kernel_session_v2<'env>(
                 &mut NodeExecutor {
                     callback,
                     core_reads,
+                    scoped_assessment: protocol == 3,
                 },
             )
         }))

@@ -135,7 +135,7 @@ test("Core read exchange explicitly opts in and preserves legacy callbacks and c
     Buffer.from(fixture.initial), () => Buffer.concat([queryPrefix, metadata]),
   ));
   let calls = 0;
-  for (const version of [0, 1, 3, 2.5, NaN, Infinity]) {
+  for (const version of [0, 1, 4, 2.5, NaN, Infinity]) {
     assert.throws(() => addon.createIntegratedKernelSessionV2(Buffer.from(fixture.initial), () => {
       calls++; return Buffer.alloc(0);
     }, version), /unsupported-core-read-protocol/);

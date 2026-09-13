@@ -21,6 +21,12 @@ pub trait ContributionCoreReadV2 {
 pub trait ContributionExecutorV2 {
     fn execute(&mut self, request: &[u8]) -> Result<Vec<u8>, ContributionExecutionFailureV2>;
 
+    /// Opt-in private host protocol: Runtime schedules individual assessment
+    /// callbacks and retains aggregation authority. Existing adapters stay V2.
+    fn uses_scoped_assessment(&self) -> bool {
+        false
+    }
+
     /// Existing executors retain their full-input path. A successor adapter may
     /// expose this capability only within the synchronous callback lifetime.
     fn execute_with_core_reads(

@@ -18,6 +18,7 @@ mod core;
 mod core_reads;
 mod migration;
 mod module;
+mod scheduled_assessment;
 
 type CoreDispatch = fn(
     &mut KernelStage3TransactionV1<'_>,
@@ -427,6 +428,9 @@ impl IntegratedKernelRuntimeV2 {
         let core = value(&core)?;
         let sources = self.assessment_sources(document)?;
         let availability = self.candidate_availability(document)?;
+        if executor.uses_scoped_assessment() {
+            return self.scheduled_assess(document, version, sources, core, availability, executor);
+        }
         let mut reply = self
             .call(
                 "assess",

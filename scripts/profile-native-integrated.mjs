@@ -13,12 +13,13 @@ const { createNativeWorkloadScore: score } = require("../dist/test/core-kernel/f
 const { compileOfficialModuleCatalogV1 } = require("../dist/src/core-kernel/module-sdk/index.js");
 const { CVN6_MANIFEST, CVN6_REGISTRATION_ENTRIES } = require("../dist/test/core-kernel/fixtures/cvn-6-synthetic-official-modules.js");
 const { installNativeWasmOnlyIntegratedBackendV1 } = require("../dist/src/native-host/wasm-bindings.js");
-const { installNativeWasmCoreReadsBackendV2 } = require("../dist/src/native-host/wasm-core-reads.js");
+const { installNativeWasmCoreReadsBackendV2, installNativeWasmScheduledAssessmentV3 } = require("../dist/src/native-host/wasm-core-reads.js");
 const addon = require("../target/wasm-v1/brilliant_kernel_node.node");
-const selective = process.argv[2] === "--core-reads-v2";
+const scheduled = process.argv[2] === "--scheduled-assessment-v3";
+const selective = process.argv[2] === "--core-reads-v2" || scheduled;
 if (!(process.argv.length === 2 || (process.argv.length === 3 && selective) ||
   (process.argv.length === 4 && process.argv[2] === "--guest"))) {
-  throw new Error("usage: node --expose-gc scripts/profile-native-integrated.mjs [--guest path | --core-reads-v2]");
+  throw new Error("usage: node --expose-gc scripts/profile-native-integrated.mjs [--guest path | --core-reads-v2 | --scheduled-assessment-v3]");
 }
 const guestPath = resolve(selective ? "test/core-kernel/fixtures/wasm-guest/guest-v2.wasm"
   : process.argv[3] ?? "test/core-kernel/fixtures/wasm-guest/guest.wasm");
@@ -65,7 +66,9 @@ function measure(name, samples, action) {
 }
 const compiled = compileOfficialModuleCatalogV1(CVN6_MANIFEST, CVN6_REGISTRATION_ENTRIES);
 assert.ok(compiled.ok);
-const restore = (selective ? installNativeWasmCoreReadsBackendV2 : installNativeWasmOnlyIntegratedBackendV1)(observed, compiled.catalog, ["score", "part"].map(module => ({
+const installer = scheduled ? installNativeWasmScheduledAssessmentV3
+  : selective ? installNativeWasmCoreReadsBackendV2 : installNativeWasmOnlyIntegratedBackendV1;
+const restore = installer(observed, compiled.catalog, ["score", "part"].map(module => ({
   moduleId: `fixture.${module}.module`, contributionId: `fixture.${module}.contribution.v1`, abiVersion: 1,
   sha256: guestSha256, bytes: guest,
 })));
@@ -110,7 +113,8 @@ try {
     bus = undefined;
   }
 } finally { restore(); }
-process.stdout.write(JSON.stringify({ profileVersion: selective ? 3 : 2, mode: selective ? "selective-core-reads-v2" : "full-view-v1",
+process.stdout.write(JSON.stringify({ profileVersion: scheduled ? 4 : selective ? 3 : 2,
+  mode: scheduled ? "rust-scheduled-assessment-v3" : selective ? "selective-core-reads-v2" : "full-view-v1",
   guestArtifact: { path: relative(process.cwd(), guestPath), sha256: guestSha256 },
   node: process.version, platform: platform(), arch: arch(),
   cpu: cpus()[0]?.model, gcExposed: typeof global.gc === "function", rows,

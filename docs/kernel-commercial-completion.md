@@ -1,5 +1,16 @@
 # Commercial kernel completion
 
+**Rust-scheduled final plugin assessment (2026-09-13):** a new explicit V3
+trusted-host installer delegates the assessment roster, phase ordering, scoped
+views, issue checking and aggregation to Runtime. Real Wasm edit/history tests
+pass while the TS module-pipeline function throws; assessment callbacks contain
+no complete Core document. At 256 bars, six reference plugin edits reduce host
+requests from 3,815,020 to 2,553,370 bytes on the same artifact; all commit.
+Preparation, transformation and detached migration retain V2 host execution,
+and this is not default cutover or performance qualification. Final Rust:
+573 passed/1 ignored; Node/Native: 873 passed/2 skipped. See
+`docs/kernel-rust-scheduled-assessment-2026-09-13.md`.
+
 **Native host transport account (2026-09-13):** explicit Core-read protocol V2
 now limits cumulative Rust/Node callback request and response bytes to 128 MiB.
 Nested synchronous sessions share a sticky account, including nested legacy

@@ -7,6 +7,8 @@ import { captureStrictInput } from "../core-kernel/codec/strict-input-capture";
 import { readExactDataRecord } from "../core-kernel/registry/strict-codec";
 import type { KernelIntegratedCatalog } from "../core-kernel/registry/integrated-contracts";
 import type { ScopedExecutionPolicyV1, ScopedCallbackOperationV1 } from "../core-kernel/module-sdk/scoped-invocation";
+import type { CompiledDomainCommandContributionV1 } from "../core-kernel/module-sdk/contracts";
+import { contributionReads } from "../core-kernel/registry/contribution-reads";
 
 type Callback = (input: Buffer) => Buffer;
 interface ReadAddon extends WasmNativeAddonV1 {
@@ -19,6 +21,7 @@ type State = {
   input: Buffer; id: string; version: number | null; calls: Call[]; cursor: number;
   pending?: { call?: Call; query: unknown };
   failed: boolean;
+  scheduled?: Record<string, unknown>;
 };
 const QUERY = Buffer.from("BGCR2Q\0"), REPLY = Buffer.from("BGCR2R\0");
 const PROBE = { readVersion: 2, selectorId: "core.selector.score-metadata" };
@@ -47,6 +50,15 @@ function reducedArgs(operation: ScopedCallbackOperationV1, args: readonly unknow
 }
 
 export function installNativeWasmCoreReadsBackendV2(addon: ReadAddon, catalog: KernelIntegratedCatalog, bindings: unknown): () => void {
+  return install(addon, catalog, bindings, false);
+}
+
+/** Runtime owns assessment scheduling; prepare/transform and migration retain V2. */
+export function installNativeWasmScheduledAssessmentV3(addon: ReadAddon, catalog: KernelIntegratedCatalog, bindings: unknown): () => void {
+  return install(addon, catalog, bindings, true);
+}
+
+function install(addon: ReadAddon, catalog: KernelIntegratedCatalog, bindings: unknown, scheduled: boolean): () => void {
   const executors = captureWasmExecutorsV1(addon, catalog, bindings, true);
   // Probe every captured artifact, including dormant contributions, before
   // selecting a backend. Byte integrity alone does not prove protocol support.
@@ -57,12 +69,13 @@ export function installNativeWasmCoreReadsBackendV2(addon: ReadAddon, catalog: K
     if (response?.callbackVersion !== 2 || response.coreReadVersion !== 2) return invalid();
   }
   let active: State | undefined;
-  const policy = freeze<ScopedExecutionPolicyV1>({ catalog, invoke(source, operation, definitionId, args) {
+  function invokeGuest(source: CompiledDomainCommandContributionV1, operation: ScopedCallbackOperationV1,
+    definitionId: string | null, args: readonly unknown[], alreadyReduced = false): unknown {
     const state = active, execute = executors.get(source);
     if (state === undefined || execute === undefined || state.failed || state.pending !== undefined) return invalid();
     try {
       const request = { callbackVersion: 2, moduleId: source.moduleId, contributionId: source.contributionId,
-        operation, definitionId, arguments: reducedArgs(operation, args, state.version) };
+        operation, definitionId, arguments: alreadyReduced ? args : reducedArgs(operation, args, state.version) };
       const key = encode(request), index = state.cursor++;
       let call = state.calls[index];
       if (call === undefined) {
@@ -87,16 +100,24 @@ export function installNativeWasmCoreReadsBackendV2(addon: ReadAddon, catalog: K
       if (state.pending === undefined) state.failed = true;
       throw error;
     }
-  } });
+  }
+  const policy = freeze<ScopedExecutionPolicyV1>({ catalog,
+    invoke: (source, operation, definitionId, args) => invokeGuest(source, operation, definitionId, args) });
 
   function exchange(callback: Callback) {
     let state: State | undefined;
+    let negotiated = false;
     const close = () => { state = undefined; };
     const invoke: Callback = bytes => {
       if (!startsWith(bytes, REPLY)) {
-        const input = decode(bytes) as { document: { id: string }; documentVersion?: number };
-        state = { input: Buffer.from(bytes), id: input.document.id, version: input.documentVersion ?? null,
-          calls: [], cursor: 0, pending: { query: PROBE }, failed: false };
+        const input = decode(bytes) as Record<string, unknown>;
+        const isScheduled = input.operation === "assessmentStart" || input.operation === "assessmentCallback";
+        if ((isScheduled && !scheduled) || (scheduled && input.operation === "assess")) return invalid();
+        const id = isScheduled ? input.documentId : (input.document as { id: string }).id;
+        if (typeof id !== "string") return invalid();
+        state = { input: Buffer.from(bytes), id, version: (input.documentVersion as number | undefined) ?? null,
+          calls: [], cursor: 0, pending: { query: PROBE }, failed: false,
+          ...(isScheduled ? { scheduled: input } : {}) };
         // Require a real exchange even when no compatible plugin is active.
         return Buffer.concat([QUERY, encode(PROBE)]);
       }
@@ -110,7 +131,36 @@ export function installNativeWasmCoreReadsBackendV2(addon: ReadAddon, catalog: K
       const previous = active;
       active = state;
       try {
-        const output = callback(state.input);
+        let output: Buffer;
+        try {
+          const request = state.scheduled;
+          if (request === undefined) output = callback(state.input);
+          else if (request.operation === "assessmentStart") {
+            if (readExactDataRecord(request, ["operation", "scheduleVersion", "documentId", "documentVersion"]) === undefined
+              || request.scheduleVersion !== 3) return invalid();
+            negotiated = true;
+            output = encode({ ok: true, scheduleVersion: 3 });
+          } else {
+            if (!negotiated || readExactDataRecord(request, ["operation", "scheduleVersion", "documentId",
+              "documentVersion", "moduleId", "contributionId", "callbackOperation", "view"]) === undefined
+              || request.scheduleVersion !== 3
+              || (request.callbackOperation !== "validate" && request.callbackOperation !== "classify")) return invalid();
+            const source = [...executors.keys()].find(entry => entry.moduleId === request.moduleId
+              && entry.contributionId === request.contributionId);
+            const view = request.view as Record<string, unknown>;
+            if (source === undefined || view.viewVersion !== 2 || view.coreDocument !== undefined
+              || view.documentId !== state.id || view.documentVersion !== state.version) return invalid();
+            // Derived catalogs preserve an explicit empty dependency list for
+            // sources without grants. It grants no data and is not in Rust's roster.
+            const declarations = contributionReads(source);
+            const guestView = declarations?.length === 0 && view.dependencyReads === undefined
+              ? { ...view, dependencyReads: [] } : view;
+            output = encode({ ok: true, value: invokeGuest(source, request.callbackOperation, null, [guestView], true) });
+          }
+        } catch (error) {
+          if (state.pending === undefined) throw error;
+          output = Buffer.alloc(0);
+        }
         if (state.failed) return invalid();
         const nextRead = (state as State).pending;
         if (nextRead !== undefined) return Buffer.concat([QUERY, encode(nextRead.query)]);
@@ -119,13 +169,16 @@ export function installNativeWasmCoreReadsBackendV2(addon: ReadAddon, catalog: K
         return output;
       } finally { active = previous; }
     };
-    return { invoke, close };
+    return { invoke, close, negotiated: () => negotiated };
   }
   const transport: IntegratedNativeAddonV2 = {
     createIntegratedKernelSessionV2(input, callback) {
       const bridge = exchange(callback);
       let operate: Callback;
-      try { operate = addon.createIntegratedKernelSessionV2(input, bridge.invoke, 2); }
+      try {
+        operate = addon.createIntegratedKernelSessionV2(input, bridge.invoke, scheduled ? 3 : 2);
+        if (scheduled && !bridge.negotiated()) return invalid();
+      }
       finally { bridge.close(); }
       return request => {
         try { return operate(request); }
