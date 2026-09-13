@@ -1,0 +1,41 @@
+{
+  "date": "2026-09-13",
+  "baseCommit": "e960e6b",
+  "scope": "Explicit trusted-host Wasm-only composition, complete installed-contribution coverage and rejection of non-callable native executors",
+  "fresh": {
+    "typescriptBuildAndTypecheck": { "status": "passed", "log": "ts-build.log" },
+    "behavioralRed": {
+      "tests": 2, "failedAsExpected": 2, "log": "red.log",
+      "setup": "New installer temporarily wired to existing permissive composition; native executor callable guard absent. Compiling tests failed on missing expected rejection, not missing imports."
+    },
+    "focused": { "tests": 14, "passed": 14, "failed": 0, "durationMs": 1472.8998, "log": "focused.log" },
+    "nodeFull": { "tests": 844, "passed": 842, "skipped": 2, "failed": 0, "durationMs": 50105.1551, "log": "full-node.log" },
+    "gitDiffCheck": "passed"
+  },
+  "logDirectory": ".local-evidence/wasm-only-2026-09-13",
+  "inherited": {
+    "sourceCommit": "e960e6b",
+    "rustWorkspaceAllFeatures": { "passed": 540, "ignored": 1, "failed": 0, "rerun": false },
+    "reason": "Only the TypeScript host installer, tests and documentation changed; Rust source, dependencies and native ABI did not change",
+    "artifacts": [
+      { "path": "target/integrated-v2/brilliant_kernel_node.node", "sha256": "610cf8db45ead38fc841d8e3d3d1ea88fb21da5ded1b43a112b80cbb7562425f" },
+      { "path": "target/wasm-v1/brilliant_kernel_node.node", "sha256": "e319bc9de2642d0baecf987f9f4cf5045de0c6ac5e9cd2fafba79ba9b31fa579" }
+    ],
+    "artifactHashesRechecked": true
+  },
+  "proof": [
+    "Incomplete coverage rejects before compilation; duplicate and foreign identities cannot satisfy coverage; second-guest compilation failure retains the previous session selector",
+    "A native executor returning a non-function rejects installation in both mixed and Wasm-only modes instead of invoking a plugin JS fallback",
+    "Six scenarios configure each SDK JS callback family to throw; both real Wasm contributions execute all six families and retain edit/read/history/checkpoint/replay/migration results with zero JS callback trace",
+    "Session policy survives input-byte mutation and installer restoration; another catalog cannot reuse session or migration selection",
+    "Fuel exhaustion and five malformed/forged guest behaviors reject after an effective Core Batch prefix with no document/history/event changes; a later healthy guest invocation succeeds"
+  ],
+  "testRepair": "Initial focused run mixed oracle undo/redo callbacks into the observed trace. Oracle results are now captured before observing Native execution; the passing test does not clear or hide Native callback observations.",
+  "notClaimed": [
+    "Rust-owned callback scheduling or removal of trusted TS host orchestration, capture and codecs",
+    "Shared fuel or a total execution-time budget across one transaction; existing fuel is per guest callback",
+    "Wasm implementation correctness or semantic equivalence for arbitrary future plugin binaries",
+    "Complete resource, platform or performance qualification",
+    "Default backend cutover, public plugin loader or commercial qualification"
+  ]
+}

@@ -43,6 +43,14 @@ Rust 保留自己计算的核心结果，不接受宿主回调覆盖。独立迁
 这仍不等于 Rust 已直接调度全部插件验证，也不能证明任意插件的业务结论正确。
 实现与验证见 `docs/evidence/kernel-native-module-assessment-2026-09-13.json`。
 
+现在另有明确的全 Wasm 宿主入口 `installNativeWasmOnlyIntegratedBackendV1`：
+必须为 catalog 中每个贡献者提供有效 Wasm 绑定，缺项或编译失败均拒绝安装，
+所有六类插件回调及迁移回调禁止退回 SDK JS。已有会话保留固定绑定。
+原混合入口继续用于兼容开发；新增入口需显式选择，不是默认切换。
+该路径仍使用可信 TS 宿主调度、视图构建和协议处理，并且燃料按单次回调计量；
+不能称为整个事务已纯 Rust 化或已具备事务总执行预算。证据见
+`docs/evidence/kernel-wasm-only-2026-09-13.json`。
+
 原 Architecture Reset V2 允许 TS UI 与事务外插件语义处理，但第 8.3、11.3、12.4 节
 要求事务内由 Kernel Session 控制声明式规则／受限 Wasm 验证，任意 TS 插件代码留在事务外。
 当前集成路径与这个最终边界有差距，不能将其改写为已接受的永久混合架构。

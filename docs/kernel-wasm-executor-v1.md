@@ -136,8 +136,9 @@ from JSON objects; transport preserves negative zero and escaped UTF-16 code
 units. The guest must implement the relevant codec if it supports those values.
 Output must be valid UTF-8 JSON and passes existing host result validation.
 
-The host owns Core semantics, target checks, all contribution availability,
-validator/classifier order, issue-source checks and aggregate assessment.
+Rust owns Core assessment, target checks and candidate availability, and
+independently checks aggregate plugin result coverage and diagnostic contracts.
+The TS host still schedules validators/classifiers and assembles their results.
 A guest cannot return aggregate `assess` results or grant itself another
 contribution's effects or issue identity. Rust retains transaction/history
 ownership and rolls back an effective Batch prefix on guest failure. Guest
@@ -159,6 +160,44 @@ This is not a general JS-to-Wasm compiler or a declaration that arbitrary JS
 callback implementations have an equivalent Wasm implementation.
 
 ## Remaining S2.3 work
+
+### 2026-09-13: explicit Wasm-only composition
+
+Trusted hosts can select
+`installNativeWasmOnlyIntegratedBackendV1(addon, catalog, bindings)` from
+`src/native-host/wasm-bindings.ts`. It requires exactly one valid binding for
+every contribution in the nonempty compiled catalog, including contributions
+with no current extension block. Missing coverage rejects before compilation;
+duplicate/foreign bindings still fail the existing identity checks. All six SDK
+callback families must execute through the captured bounded guests. A missing
+executor cannot trigger the JS fallback. A non-callable native executor now
+rejects installation in both the mixed and Wasm-only modes.
+
+All roster validation and compilation finish before selecting the session and
+migration backends. Failure leaves the prior selection intact. Existing
+sessions retain their captured policy after selector restoration and input-byte
+mutation; another catalog requires its own complete installation. This is a
+startup composition rule, not live plugin installation. The existing mixed
+installer retains its explicit JS/Wasm coexistence behavior.
+
+Four new tests cover incomplete/invalid coverage, compilation failure and
+non-callable executors, real guest execution of both contributions across all
+six callback families with each JS family configured to throw, complete
+editing/history/replay/migration comparisons, and rollback after fuel exhaustion
+or malformed/forged results. See
+[verification evidence](evidence/kernel-wasm-only-2026-09-13.json).
+Fresh checks: 14 focused tests and the full Node suite (842 passed, 2 skipped,
+zero failed) passed. TypeScript build/typecheck and diff checks passed. Rust
+source and artifacts are unchanged; their verification is inherited from
+`e960e6b`, not a new Rust test run.
+
+This closes the missing-host-policy gap for an all-Wasm plugin deployment. It
+does **not** move callback scheduling or view construction into Rust: trusted TS
+host orchestration, capture and codecs remain active. Fuel remains per callback,
+not a shared budget across a whole user transaction. Whole-document transport,
+compilation costs, aggregate resource limits and performance qualification remain
+open. The new entry does not change public SDK/ABI or Native export counts and
+does not select the application's default backend.
 
 Explicit cross-plugin reads now use the opt-in derived catalog and the same
 scoped callback view in Wasm; see `kernel-contribution-reads-v1.md`. They grant no

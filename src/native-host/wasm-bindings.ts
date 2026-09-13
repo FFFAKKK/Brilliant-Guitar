@@ -30,11 +30,18 @@ const MAX_TOTAL_BYTES = 64 * 1024 * 1024;
 
 /** Fully validate and capture the roster before compiling any module. */
 export function createWasmExecutionPolicyV1(addon: WasmNativeAddonV1, catalog: KernelIntegratedCatalog, input: unknown): ScopedExecutionPolicyV1 {
+  return captureWasmExecutionPolicy(addon, catalog, input, false);
+}
+
+function captureWasmExecutionPolicy(addon: WasmNativeAddonV1, catalog: KernelIntegratedCatalog, input: unknown,
+  requireAll: boolean): ScopedExecutionPolicyV1 {
   if (typeof addon.createWasmModuleExecutorV1 !== "function" || typeof addon.createIntegratedKernelSessionV2 !== "function"
     || typeof addon.migrateKernelExtensionV2 !== "function") throw new TypeError("wasm.invalid-addon");
   const state = getKernelIntegratedCatalogState(catalog);
   const rows = readDenseArray(input);
   if (state === undefined || rows === undefined || rows.length === 0 || rows.length > 1024) throw new TypeError("wasm.invalid-binding");
+  // Cover dormant contributions too: later commands can create their blocks.
+  if (requireAll && rows.length !== state.contributions.length) throw new TypeError("wasm.incomplete-binding");
   const captured: { source: typeof state.contributions[number]; bytes: Buffer; digest: Buffer }[] = [];
   const owners = new Set<object>();
   let total = 0;
@@ -58,12 +65,19 @@ export function createWasmExecutionPolicyV1(addon: WasmNativeAddonV1, catalog: K
     owners.add(source);
     captured.push({ source, bytes, digest });
   }
-  const executors = new Map(captured.map(({ source, bytes, digest }) =>
-    [source, addon.createWasmModuleExecutorV1(bytes, digest, 1)] as const));
+  const executors = new Map<typeof state.contributions[number], (input: Buffer) => Buffer>();
+  for (const { source, bytes, digest } of captured) {
+    const execute = addon.createWasmModuleExecutorV1(bytes, digest, 1);
+    if (typeof execute !== "function") throw new TypeError("wasm.invalid-addon");
+    executors.set(source, execute);
+  }
   const policy: ScopedExecutionPolicyV1 = { catalog, invoke(source, operation, definitionId, args, fallback) {
     if (!state.contributions.includes(source)) throw new TypeError("wasm.assembly-mismatch");
     const execute = executors.get(source);
-    if (execute === undefined) return fallback();
+    if (execute === undefined) {
+      if (requireAll) throw new TypeError("wasm.incomplete-binding");
+      return fallback();
+    }
     const output = execute(encodeIntegratedValueV2({ callbackVersion: 1, moduleId: source.moduleId,
       contributionId: source.contributionId, operation, definitionId, arguments: args }));
     const value = parse(apply(decodeUtf8, decoder, [output]) as string);
@@ -77,5 +91,12 @@ export function createWasmExecutionPolicyV1(addon: WasmNativeAddonV1, catalog: K
 
 export function installNativeWasmIntegratedBackendV1(addon: WasmNativeAddonV1, catalog: KernelIntegratedCatalog, bindings: unknown): () => void {
   const policy = createWasmExecutionPolicyV1(addon, catalog, bindings);
+  return installNativeIntegratedBackendV2(addon, policy);
+}
+
+/** Trusted-host opt-in: every installed contribution must use a bounded guest.
+ * Host orchestration and codecs remain TS; this forbids SDK plugin JS fallback. */
+export function installNativeWasmOnlyIntegratedBackendV1(addon: WasmNativeAddonV1, catalog: KernelIntegratedCatalog, bindings: unknown): () => void {
+  const policy = captureWasmExecutionPolicy(addon, catalog, bindings, true);
   return installNativeIntegratedBackendV2(addon, policy);
 }

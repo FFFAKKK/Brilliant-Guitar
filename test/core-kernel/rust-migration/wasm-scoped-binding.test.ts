@@ -6,7 +6,7 @@ import { resolve } from "node:path";
 import { CommandBus, migrateKernelExtension, replayKernelCommands, type ScoreDocument } from "../../../src/core-kernel/index";
 import { compileOfficialModuleCatalogV1 } from "../../../src/core-kernel/module-sdk/index";
 import { compileContributionReadCatalogV1 } from "../../../src/core-kernel/module-sdk/extension-reads";
-import { createWasmExecutionPolicyV1, installNativeWasmIntegratedBackendV1, type WasmNativeAddonV1 } from "../../../src/native-host/wasm-bindings";
+import { createWasmExecutionPolicyV1, installNativeWasmIntegratedBackendV1, installNativeWasmOnlyIntegratedBackendV1, type WasmNativeAddonV1 } from "../../../src/native-host/wasm-bindings";
 import { CVN6_MANIFEST, CVN6_REGISTRATION_ENTRIES, cvn6CallbackBehavior, cvn6CallbackTrace, resetCvn6Callbacks } from "../fixtures/cvn-6-synthetic-official-modules";
 import { createCoreScoreFixture } from "../fixtures/core-score";
 
@@ -48,6 +48,120 @@ function metadata() {
   return { commandVersion: 1, commandId: "core.document.set-metadata", target: { kind: "document", documentId: "score-1" },
     payload: { metadata: { ...createCoreScoreFixture().metadata, title: "prefix must roll back" } } };
 }
+
+test("Wasm-only admission rejects incomplete or failed compilation without replacing the active backend", () => {
+  const previous = catalog(), next = catalog();
+  const restore = installNativeWasmIntegratedBackendV1(addon, previous, [binding()]);
+  let compilations = 0;
+  const counted: WasmNativeAddonV1 = { ...addon, createWasmModuleExecutorV1(...args) {
+    compilations++; return addon.createWasmModuleExecutorV1(...args);
+  } };
+  try {
+    for (const rows of [[binding()], [binding("part")]]) {
+      assert.throws(() => installNativeWasmOnlyIntegratedBackendV1(counted, next, rows), /wasm.incomplete-binding/);
+    }
+    assert.equal(compilations, 0);
+    // Equal row count is insufficient: duplicates and invalid identities still fail.
+    for (const rows of [[binding(), binding()], [binding(), { ...binding("part"), moduleId: "foreign" }]]) {
+      assert.throws(() => installNativeWasmOnlyIntegratedBackendV1(counted, next, rows), /wasm.invalid-binding/);
+    }
+    assert.equal(compilations, 0);
+    const failing: WasmNativeAddonV1 = { ...addon, createWasmModuleExecutorV1(...args) {
+      if (++compilations === 2) throw new Error("compile rejected");
+      return addon.createWasmModuleExecutorV1(...args);
+    } };
+    assert.throws(() => installNativeWasmOnlyIntegratedBackendV1(failing, next, [binding(), binding("part")]), /compile rejected/);
+    assert.equal(CommandBus.createIntegrated(document(), previous).ok, true);
+    assert.equal(CommandBus.createIntegrated(document(), next).ok, false);
+  } finally { restore(); resetCvn6Callbacks(); }
+});
+
+test("A non-callable native executor is rejected at installation instead of falling back to plugin JS", () => {
+  const invalid = { ...addon, createWasmModuleExecutorV1: () => undefined } as unknown as WasmNativeAddonV1;
+  for (const install of [installNativeWasmIntegratedBackendV1, installNativeWasmOnlyIntegratedBackendV1]) {
+    let restore: (() => void) | undefined;
+    try {
+      assert.throws(() => { restore = install(invalid, catalog(), [binding(), binding("part")]); }, /wasm.invalid-addon/);
+    } finally { restore?.(); }
+  }
+});
+
+test("Wasm-only sessions execute all six callback families without JS across editing, history, replay and migration", () => {
+  for (const family of ["commandDecode", "commandPrepare", "effectDecode", "effectTransform", "validate", "classify"] as const) {
+    resetCvn6Callbacks();
+    const compiled = catalog(), initial = document(), inputs = [command(), command("part", "part-wasm", "D")];
+    const oracle = create(false, initial, [], compiled);
+    const expected = inputs.map(input => oracle.submit(input));
+    const expectedRead = oracle.read(), expectedUndo = oracle.undo(), expectedRedo = oracle.redo();
+    const expectedPersisted = oracle.markPersisted({ documentId: "score-1", documentVersion: 4 });
+    const expectedFinal = oracle.read();
+    const expectedReplay = replayKernelCommands(initial, inputs, compiled);
+    const migration = { migrationVersion: 1, moduleId: "fixture.part.module", contributionId: "fixture.part.contribution.v1",
+      namespace: "fixture.part", effectKind: "fixture.part.replace", owner: { kind: "part", partId: "part-1" },
+      sourceSchemaVersion: 1, targetSchemaVersion: 2, payload: { schemaVersion: 2, marker: "migrated" } };
+    const expectedMigration = migrateKernelExtension(initial, migration, compiled);
+    assert.equal(expectedMigration.status, "migrated");
+    const calls = new Set<string>();
+    const observed: WasmNativeAddonV1 = { ...addon, createWasmModuleExecutorV1(...args) {
+      const execute = addon.createWasmModuleExecutorV1(...args);
+      return input => {
+        const request = JSON.parse(input.toString("utf8"));
+        calls.add(`${request.moduleId}:${request.operation}`);
+        return execute(input);
+      };
+    } };
+    resetCvn6Callbacks();
+    cvn6CallbackBehavior.throwFamily = family;
+    const rows = [binding(), binding("part")];
+    const restore = installNativeWasmOnlyIntegratedBackendV1(observed, compiled, rows);
+    let retained: ReturnType<typeof create> | undefined;
+    try {
+      for (const row of rows) row.bytes.fill(0);
+      const created = CommandBus.createIntegrated(initial, compiled);
+      assert.ok(created.ok);
+      retained = created.value;
+      for (let i = 0; i < inputs.length; i++) assert.deepEqual(retained.submit(inputs[i]), expected[i]);
+      assert.deepEqual(retained.read(), expectedRead);
+      assert.deepEqual(retained.undo(), expectedUndo);
+      assert.deepEqual(retained.redo(), expectedRedo);
+      assert.deepEqual(retained.markPersisted({ documentId: "score-1", documentVersion: 4 }),
+        expectedPersisted);
+      assert.deepEqual(retained.read(), expectedFinal);
+      assert.deepEqual(replayKernelCommands(initial, inputs, compiled), expectedReplay);
+      const migrated = migrateKernelExtension(initial, migration, compiled);
+      assert.deepEqual(migrated, expectedMigration);
+      assert.equal(migrateKernelExtension(initial, migration, catalog()).status, "rejected");
+      assert.equal(CommandBus.createIntegrated(initial, catalog()).ok, false);
+      for (const module of ["score", "part"]) for (const operation of ["commandDecode", "commandPrepare", "effectDecode", "effectTransform", "validate", "classify"]) {
+        assert.ok(calls.has(`fixture.${module}.module:${operation}`));
+      }
+      assert.deepEqual(cvn6CallbackTrace, []);
+    } finally { restore(); }
+    try {
+      assert.equal(retained!.submit(command("score", "after-restore", "G")).status, "committed");
+      assert.deepEqual(cvn6CallbackTrace, []);
+    } finally { resetCvn6Callbacks(); }
+  }
+});
+
+test("Wasm-only guest failures roll back effective Batch prefixes with no JS recovery path", () => {
+  resetCvn6Callbacks();
+  const compiled = catalog(), restore = installNativeWasmOnlyIntegratedBackendV1(addon, compiled, [binding(), binding("part")]);
+  try {
+    const created = CommandBus.createIntegrated(document(), compiled);
+    assert.ok(created.ok);
+    const bus = created.value, before = bus.read(), events: unknown[] = [];
+    bus.subscribe((event: unknown) => events.push(event));
+    for (const marker of ["fuel", "foreign-write", "aggregate", "forged-issue", "reject", "invalid-utf8"]) {
+      assert.equal(bus.submit(batch([metadata(), command("score", marker)])).status, "rejected", marker);
+      assert.deepEqual(bus.read(), before);
+      assert.deepEqual(events, []);
+      assert.deepEqual(cvn6CallbackTrace, []);
+    }
+    assert.equal(bus.submit(command("part", "healthy-after-failure")).status, "committed");
+    assert.deepEqual(cvn6CallbackTrace, []);
+  } finally { restore(); resetCvn6Callbacks(); }
+});
 
 test("Actual Wasm guest consumes only declared foreign dependency data from the current candidate", () => {
   resetCvn6Callbacks();

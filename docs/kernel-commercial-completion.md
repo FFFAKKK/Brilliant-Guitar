@@ -37,6 +37,18 @@ declarative/Wasm scheduling, detached migration or incremental validation.
 Current verification and limits are recorded in
 `docs/evidence/kernel-native-module-assessment-2026-09-13.json`.
 
+**Bounded execution composition (2026-09-13):** a separate trusted-host
+Wasm-only installer requires bindings for every installed contribution before
+selecting the backend, including currently dormant contributions. It forbids
+plugin JS fallback across editing and detached migration. Invalid native
+executor handles also reject in the existing mixed installer. Six-family real
+guest tests retain the transaction/history/replay/migration contracts with no
+SDK JS callbacks. TS host scheduling and projection still remain; per-callback
+fuel does not constitute a transaction-wide execution budget. Rust source and
+artifacts are unchanged in this slice. See
+`docs/evidence/kernel-wasm-only-2026-09-13.json` and
+`docs/kernel-wasm-executor-v1.md` for verification and remaining boundaries.
+
 **Historical pause at the owner's request (2026-09-12):** finish the current
 cross-plugin explicit-read task, record its evidence and local commits, then
 stop and report. That pause was followed by the explicit restart above.
