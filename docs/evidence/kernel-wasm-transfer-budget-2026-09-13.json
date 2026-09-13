@@ -1,0 +1,41 @@
+{
+  "date": "2026-09-13",
+  "baseCommit": "efccc38",
+  "scope": "Cumulative guest input/output admission within the existing Rust-owned Native operation budget",
+  "limits": { "operationTransferBytes": 134217728, "perCallbackInputBytes": 16777216, "perCallbackOutputBytes": 16777216 },
+  "fresh": {
+    "typescriptBuildAndTypecheck": { "status": "passed", "log": "ts-build.log" },
+    "behavioralRed": { "tests": 1, "failedAsExpected": 1, "log": "red.log", "observation": "Previous artifact committed after 17 valid 8 MiB guest responses inside an effective Batch" },
+    "focused": { "tests": 16, "passed": 16, "failed": 0, "durationMs": 3159.088, "log": "focused.log" },
+    "nodeFull": { "tests": 846, "passed": 844, "skipped": 2, "failed": 0, "durationMs": 57922.444, "log": "full-node.log" },
+    "rustWorkspaceAllFeatures": { "passed": 546, "ignored": 1, "failed": 0, "log": "rust-tests.log" },
+    "clippyAllTargetsAllFeaturesDenyWarnings": { "status": "passed", "log": "clippy.log" },
+    "msrv188AllTargetsAllFeatures": { "status": "passed", "log": "msrv.log" },
+    "rustfmtCheck": "passed",
+    "gitDiffCheck": "passed"
+  },
+  "logDirectory": ".local-evidence/wasm-transfer-budget-2026-09-13",
+  "rebuiltArtifacts": [
+    { "path": "target/wasm-v1/brilliant_kernel_node.node", "sha256": "bf91227bb81241a898fab46f889d5c4844707296a31162edc0b9efc65c5dee75", "log": "build-wasm.log" }
+  ],
+  "inheritedArtifacts": [
+    "target/rkp-1-node/brilliant_kernel_node.node: frozen Core V1 path unchanged",
+    "target/integrated-v2/brilliant_kernel_node.node: changed Rust code is under wasm-executor-v1; non-Wasm path unchanged"
+  ],
+  "proof": [
+    "Two Rust tests enforce exact input plus output consumption across distinct guests, zero-byte behavior, sticky failure and fresh-account recovery",
+    "Oversized aggregate input rejects before a trapping guest starts; oversized aggregate output rejects before an invalid output region is read or copied",
+    "Original per-callback input/output caps remain effective",
+    "A tiny real guest produces valid raw 8 MiB buffers at negligible fuel cost; the enclosing Native operation rejects on call 16, including preceding callback traffic",
+    "With 16 MiB input plus 8 MiB output per call, Native rejects on call 6, proving both directions consume the same allowance",
+    "Host swallowing the guest exception and returning a valid plugin result cannot authorize the effective Batch; document/history/events remain unchanged and the next operation succeeds"
+  ],
+  "workspaceNote": "Other-session UI apps, frontend documents and package.json script additions remain excluded from this kernel commit.",
+  "notClaimed": [
+    "A process resident-memory cap or accounting for all intermediate copies",
+    "Prevention of already-created Node input buffers or preceding TS encoding allocations",
+    "Accounting for aggregate Native assessment transport, compiled code, retained history or arbitrary JS execution",
+    "A new public resource diagnostic, default backend cutover, cross-library/process budget, or complete platform/performance qualification",
+    "Commercial readiness or a measured capacity claim for the initial 128 MiB policy"
+  ]
+}

@@ -59,6 +59,15 @@ same-artifact Native path; TS scheduling, host-copy/compilation cost, aggregate
 memory/byte accounting, other embeddings and performance qualification remain
 unfinished. Evidence: `docs/evidence/kernel-wasm-operation-budget-2026-09-13.json`.
 
+**Cumulative guest transfer admission (2026-09-13):** the same operation account
+now caps guest input plus output at 128 MiB. It checks input before guest start
+and output before host materialization, preserving per-call byte limits and
+sticky refusal/recovery. This closes repeated low-fuel/high-output guest traffic
+within that Native scope. It does not bound process RSS, count all intermediate
+copies or the separate aggregate host assessment transport. Peak memory, host
+cost, real-workload capacity and release qualification remain open. See
+`docs/evidence/kernel-wasm-transfer-budget-2026-09-13.json`.
+
 **Historical pause at the owner's request (2026-09-12):** finish the current
 cross-plugin explicit-read task, record its evidence and local commits, then
 stop and report. That pause was followed by the explicit restart above.

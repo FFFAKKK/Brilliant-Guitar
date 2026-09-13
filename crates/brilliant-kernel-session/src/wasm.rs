@@ -40,6 +40,7 @@ pub enum WasmExecutionErrorV1 {
     InputTooLarge,
     FuelExhausted,
     CallLimitExceeded,
+    TransferLimitExceeded,
     StackExhausted,
     Trap,
     InvalidInputRegion,
@@ -59,6 +60,7 @@ pub struct WasmExecutionOutputV1 {
 pub struct WasmOperationBudgetV1 {
     fuel: u64,
     calls: u32,
+    transfer_bytes: usize,
     failed: bool,
 }
 
@@ -67,6 +69,7 @@ impl Default for WasmOperationBudgetV1 {
         Self {
             fuel: 100_000_000,
             calls: 4096,
+            transfer_bytes: 128 * 1024 * 1024,
             failed: false,
         }
     }
@@ -90,11 +93,21 @@ impl WasmOperationBudgetV1 {
             self.failed = true;
             return Err(WasmExecutionErrorV1::CallLimitExceeded);
         }
+        if input.len() > self.transfer_bytes {
+            self.failed = true;
+            return Err(WasmExecutionErrorV1::TransferLimitExceeded);
+        }
+        self.transfer_bytes -= input.len();
         self.calls -= 1;
         // Remains failed on any error or unwind, including allocation/start traps.
         self.failed = true;
-        let output = executor.execute_with_fuel(input, self.fuel.min(executor.limits.fuel))?;
+        let output = executor.execute_with_fuel(
+            input,
+            self.fuel.min(executor.limits.fuel),
+            self.transfer_bytes,
+        )?;
         self.fuel -= output.fuel_consumed;
+        self.transfer_bytes -= output.bytes.len();
         self.failed = false;
         Ok(output)
     }
@@ -205,13 +218,14 @@ impl WasmExecutorV1 {
         &self,
         input: &[u8],
     ) -> Result<WasmExecutionOutputV1, WasmExecutionErrorV1> {
-        self.execute_with_fuel(input, self.limits.fuel)
+        self.execute_with_fuel(input, self.limits.fuel, usize::MAX)
     }
 
     fn execute_with_fuel(
         &self,
         input: &[u8],
         fuel: u64,
+        output_budget: usize,
     ) -> Result<WasmExecutionOutputV1, WasmExecutionErrorV1> {
         if input.len() > self.limits.input_bytes {
             return Err(WasmExecutionErrorV1::InputTooLarge);
@@ -253,6 +267,10 @@ impl WasmExecutorV1 {
         let output_len = (packed as u32) as usize;
         if output_len > self.limits.output_bytes {
             return Err(WasmExecutionErrorV1::OutputTooLarge);
+        }
+        // Preflight before materializing guest bytes in a host Vec/Node Buffer.
+        if output_len > output_budget {
+            return Err(WasmExecutionErrorV1::TransferLimitExceeded);
         }
         let end = output_offset
             .checked_add(output_len)

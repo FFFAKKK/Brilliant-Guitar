@@ -37,6 +37,110 @@ fn echo_preserves_lossless_bytes_and_deterministic_fuel() {
 }
 
 #[test]
+fn operation_transfers_share_exact_input_and_output_accounting_across_guests() {
+    let first = capture(&echo(), WasmLimitsV1::default());
+    let second = capture(&echo(), WasmLimitsV1::default());
+    let mut budget = WasmOperationBudgetV1 {
+        transfer_bytes: 12,
+        ..Default::default()
+    };
+    for (guest, remaining) in [(&first, 6), (&second, 0)] {
+        assert_eq!(budget.execute(guest, b"abc").unwrap().bytes, b"abc");
+        assert_eq!(budget.transfer_bytes, remaining);
+        assert!(!budget.failed());
+    }
+    // Empty payloads use calls/fuel but no transfer bytes, even at exact capacity.
+    assert_eq!(budget.execute(&first, b"").unwrap().bytes, b"");
+    assert_eq!(
+        budget.execute(&second, b"x").err(),
+        Some(WasmExecutionErrorV1::TransferLimitExceeded)
+    );
+    assert!(budget.failed());
+    assert!(budget.execute(&first, b"").is_err());
+    assert!(
+        WasmOperationBudgetV1::default()
+            .execute(&first, b"abc")
+            .is_ok()
+    );
+}
+
+#[test]
+fn transfer_admission_precedes_guest_start_and_output_materialization() {
+    let trap = capture(
+        &bytes("unreachable", "i64.const 0", ""),
+        WasmLimitsV1::default(),
+    );
+    let mut input_budget = WasmOperationBudgetV1 {
+        transfer_bytes: 2,
+        ..Default::default()
+    };
+    assert_eq!(
+        input_budget.execute(&trap, b"abc").err(),
+        Some(WasmExecutionErrorV1::TransferLimitExceeded)
+    );
+    assert_eq!(input_budget.calls, 4096); // No guest entered.
+    assert!(input_budget.failed());
+
+    let five = capture(
+        &bytes("i32.const 1024", "i64.const 5", ""),
+        WasmLimitsV1::default(),
+    );
+    let mut exact = WasmOperationBudgetV1 {
+        transfer_bytes: 7,
+        ..Default::default()
+    };
+    assert_eq!(exact.execute(&five, b"ab").unwrap().bytes, vec![0; 5]);
+    assert_eq!(exact.transfer_bytes, 0);
+    let mut short = WasmOperationBudgetV1 {
+        transfer_bytes: 6,
+        ..Default::default()
+    };
+    assert_eq!(
+        short.execute(&five, b"ab").err(),
+        Some(WasmExecutionErrorV1::TransferLimitExceeded)
+    );
+    assert!(short.failed());
+
+    // Guest output points beyond memory: transfer admission happens before the
+    // region is read/copied, and an over-budget return cannot allocate host data.
+    let outside = capture(
+        &bytes("i32.const 1024", "i64.const 281474976710661", ""),
+        WasmLimitsV1::default(),
+    );
+    assert_eq!(
+        outside.execute_bounded(b"ab").err(),
+        Some(WasmExecutionErrorV1::InvalidOutputRegion)
+    );
+    let mut limited = WasmOperationBudgetV1 {
+        transfer_bytes: 6,
+        ..Default::default()
+    };
+    assert_eq!(
+        limited.execute(&outside, b"ab").err(),
+        Some(WasmExecutionErrorV1::TransferLimitExceeded)
+    );
+    assert!(limited.failed());
+    // The shared budget must not weaken either original per-callback byte cap.
+    for limits in [
+        WasmLimitsV1 {
+            input_bytes: 1,
+            ..Default::default()
+        },
+        WasmLimitsV1 {
+            output_bytes: 1,
+            ..Default::default()
+        },
+    ] {
+        let guest = capture(&echo(), limits);
+        assert!(
+            WasmOperationBudgetV1::default()
+                .execute(&guest, b"ab")
+                .is_err()
+        );
+    }
+}
+
+#[test]
 fn shared_operation_fuel_is_consumed_across_guests_and_never_refreshed_per_call() {
     let first = capture(&echo(), WasmLimitsV1::default());
     let second = capture(&echo(), WasmLimitsV1::default());
@@ -44,7 +148,7 @@ fn shared_operation_fuel_is_consumed_across_guests_and_never_refreshed_per_call(
     let mut budget = WasmOperationBudgetV1 {
         fuel: cost * 2,
         calls: 3,
-        failed: false,
+        ..Default::default()
     };
     assert_eq!(
         budget.execute(&first, b"payload").unwrap().bytes,
@@ -70,7 +174,7 @@ fn shared_operation_fuel_is_consumed_across_guests_and_never_refreshed_per_call(
     let mut short = WasmOperationBudgetV1 {
         fuel: cost - 1,
         calls: 5,
-        failed: false,
+        ..Default::default()
     };
     assert_eq!(
         short.execute(&first, b"payload").err(),
@@ -90,7 +194,7 @@ fn operation_call_cap_and_guest_traps_remain_sticky_without_weakening_per_call_l
     let mut budget = WasmOperationBudgetV1 {
         fuel: 100_000,
         calls: 1,
-        failed: false,
+        ..Default::default()
     };
     assert!(budget.execute(&normal, b"ok").is_ok());
     assert_eq!(

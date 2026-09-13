@@ -240,6 +240,39 @@ zero failures. Strict Clippy, fmt, Rust 1.88, non-Wasm compilation and TypeScrip
 build passed. The Wasm artifact was rebuilt; frozen V1 and non-Wasm V2 binaries
 retain their prior builds.
 
+### 2026-09-13: cumulative guest transfer admission
+
+The shared operation account now also permits **128 MiB total guest input plus
+output**, counted once per actual guest invocation across all bound executors.
+The original 16 MiB per-input/per-output limits remain. Input admission occurs
+before guest instantiation/start and input copying into guest memory. Output
+length is checked against both the per-call cap and remaining operation bytes
+before reading/materializing the output region into a host Vec/Node Buffer.
+Exactly using the allowance succeeds; zero-byte input/output calls can continue
+if fuel and call budgets permit. Any over-limit attempt poisons the same account.
+
+This is a logical guest-payload allowance, not a process resident-memory cap.
+The input Node Buffer and preceding TS encoding may already exist when Native
+admission runs. It does not count each intermediate copy, the aggregate Native
+assessment transport, host object graphs, compiled guest code or retained
+document/history data. Their accounting and measured peak memory remain open.
+All scope restrictions from the preceding budget section still apply. Existing
+public failure families remain unchanged; no new SDK transfer-limit diagnostic
+or Native export is introduced.
+
+Two Rust regressions cover exact input/output totals across two guests,
+zero-byte boundaries, sticky failure/recovery, rejection before a trapping guest
+starts, rejection before an invalid output region is read, and retained per-call
+caps. A tiny real guest returns 8 MiB at negligible fuel cost. The old artifact
+committed after 17 such returns; the new artifact rejects on call 16 after prior
+transaction traffic. With 16 MiB inputs plus 8 MiB outputs it rejects on call 6.
+Both failures preserve document/history/events after an effective Core Batch
+prefix, even if the host catches the guest failure; healthy operations recover.
+Evidence: [transfer budget verification](evidence/kernel-wasm-transfer-budget-2026-09-13.json).
+Fresh checks: Rust 546 passed/1 ignored, Node 844 passed/2 skipped, zero failures;
+16 focused Wasm tests, strict Clippy, fmt, Rust 1.88 and TypeScript build passed.
+The Wasm artifact was rebuilt. Frozen V1/non-Wasm V2 artifacts are inherited.
+
 Explicit cross-plugin reads now use the opt-in derived catalog and the same
 scoped callback view in Wasm; see `kernel-contribution-reads-v1.md`. They grant no
 foreign write or aggregate assessment authority. Dependency-aware degraded

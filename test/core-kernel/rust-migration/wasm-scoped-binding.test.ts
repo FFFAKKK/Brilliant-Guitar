@@ -49,6 +49,54 @@ function metadata() {
     payload: { metadata: { ...createCoreScoreFixture().metadata, title: "prefix must roll back" } } };
 }
 
+test("Rust rejects cumulative guest transfers before a valid host reply can commit an effective Batch", () => {
+  // Tiny real guest: 256 memory pages, allocator returns zero, execute returns
+  // an 8 MiB zero-filled region. It burns negligible fuel and fits per-call caps.
+  const section = (id: number, body: number[]) => [id, body.length, ...body];
+  const exported = (name: string, kind: number, index: number) => [name.length, ...Buffer.from(name), kind, index];
+  const transferGuest = Buffer.from([0, 97, 115, 109, 1, 0, 0, 0,
+    ...section(1, [2, 96, 1, 127, 1, 127, 96, 2, 127, 127, 1, 126]),
+    ...section(3, [2, 0, 1]), ...section(5, [1, 0, 128, 2]),
+    ...section(7, [3, ...exported("memory", 2, 0), ...exported("brilliant_alloc_v1", 0, 0), ...exported("brilliant_execute_v1", 0, 1)]),
+    ...section(10, [2, 4, 0, 65, 0, 11, 7, 0, 66, 128, 128, 128, 4, 11]),
+  ]);
+  const transfer = addon.createWasmModuleExecutorV1(transferGuest, createHash("sha256").update(transferGuest).digest(), 1);
+  assert.equal(transfer(Buffer.alloc(0)).length, 8 * 1024 * 1024);
+  const compiled = catalog();
+  let burst: Buffer | undefined, attempts = 0;
+  const observed: WasmNativeAddonV1 = { ...addon, createWasmModuleExecutorV1(...args) {
+    const execute = addon.createWasmModuleExecutorV1(...args);
+    return input => {
+      const output = execute(input), pending = burst;
+      burst = undefined;
+      if (pending !== undefined) {
+        for (let i = 0; i < 17; i++) {
+          attempts++;
+          try { transfer(pending); } catch { break; }
+        }
+      }
+      return output;
+    };
+  } };
+  const restore = installNativeWasmOnlyIntegratedBackendV1(observed, compiled, [binding(), binding("part")]);
+  try {
+    const created = CommandBus.createIntegrated(document(), compiled);
+    assert.ok(created.ok);
+    const bus = created.value;
+    for (const length of [0, 16 * 1024 * 1024]) {
+      const before = bus.read(), events: unknown[] = [];
+      const subscription = bus.subscribe((event: unknown) => events.push(event));
+      burst = Buffer.alloc(length); attempts = 0;
+      assert.equal(bus.submit(batch([metadata(), command()])).status, "rejected");
+      assert.equal(attempts, length === 0 ? 16 : 6);
+      assert.deepEqual(bus.read(), before);
+      assert.deepEqual(events, []);
+      if (subscription.status === "subscribed") subscription.unsubscribe();
+      assert.equal(bus.submit(command("score", `recovered-${length}`, "G")).status, "committed");
+    }
+  } finally { restore(); resetCvn6Callbacks(); }
+});
+
 test("Rust shares a sticky Wasm budget across one operation even when the host swallows guest failures", () => {
   const compiled = catalog();
   let exhaust = false, attempts = 0;
