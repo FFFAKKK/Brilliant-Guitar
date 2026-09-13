@@ -313,11 +313,6 @@ impl IntegratedKernelRuntimeV2 {
         executor: &mut dyn ContributionExecutorV2,
     ) -> Result<Value> {
         let id = self.runtime.document_id().clone();
-        let initial = self
-            .runtime
-            .store
-            .export_document()
-            .map_err(|_| internal())?;
         let mut transaction = self.runtime.begin_stage3_transaction();
         let mut projection_count = 0;
         let module = module::ModuleEnvironment {
@@ -335,7 +330,10 @@ impl IntegratedKernelRuntimeV2 {
             .integrated_projection(&id)
             .map_err(|_| internal())?;
         projection_count += 1;
-        let changed = document != initial;
+        let changed = transaction
+            .overlay
+            .module_net_changed()
+            .map_err(|_| internal())?;
         let mut prepared = transaction.finish().map_err(|_| internal())?;
         prepared.integrated_affected = Some(affected);
         let next = if changed {

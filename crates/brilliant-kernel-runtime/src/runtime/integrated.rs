@@ -213,6 +213,98 @@ mod tests {
     use super::*;
 
     #[test]
+    fn module_net_comparison_matches_full_documents_after_each_reversible_effect() {
+        let initial = crate::store::tests::fixture();
+        let second = initial.extensions[1].clone();
+        let runtime = KernelRuntime::create(initial.clone()).unwrap();
+        let mut transaction = runtime.begin_stage3_transaction();
+        let note_id = StableId::new("note-a").unwrap();
+        let ScalarValueV1::NoteWrittenPitch(original_pitch) = transaction
+            .overlay
+            .read_scalar(&ScalarAddressV1::NoteWrittenPitch {
+                note_id: note_id.clone(),
+            })
+            .unwrap()
+        else {
+            panic!("pitch");
+        };
+        let first = initial.extensions[0].clone();
+        // Remove/restore the first block moves it behind the second block:
+        // equal payloads alone must not classify this as a no-op.
+        for (index, action) in [0, 1, 2, 3, 4, 5, 6, 7, 8].into_iter().enumerate() {
+            match action {
+                0 | 1 => {
+                    let mut pitch = original_pitch.clone();
+                    if action == 0 {
+                        pitch.octave = SafeInteger::new(6).unwrap();
+                    }
+                    transaction
+                        .set_note_written_pitch(note_id.clone(), pitch)
+                        .unwrap();
+                }
+                2 | 3 => {
+                    let mut block = first.clone();
+                    if action == 2 {
+                        block.schema_version = SafeInteger::new(2).unwrap();
+                    }
+                    transaction
+                        .set_integrated_extension(
+                            block.namespace.clone(),
+                            block.owner.clone(),
+                            Some(block),
+                        )
+                        .unwrap();
+                }
+                4 => transaction
+                    .set_integrated_extension(first.namespace.clone(), first.owner.clone(), None)
+                    .unwrap(),
+                5 => transaction
+                    .set_integrated_extension(
+                        first.namespace.clone(),
+                        first.owner.clone(),
+                        Some(first.clone()),
+                    )
+                    .unwrap(),
+                6 => transaction
+                    .set_integrated_extension(second.namespace.clone(), second.owner.clone(), None)
+                    .unwrap(),
+                7 => transaction
+                    .set_integrated_extension(
+                        second.namespace.clone(),
+                        second.owner.clone(),
+                        Some(second.clone()),
+                    )
+                    .unwrap(),
+                8 => {
+                    let mut transient = first.clone();
+                    transient.namespace = "example.transient".into();
+                    transaction
+                        .set_integrated_extension(
+                            transient.namespace.clone(),
+                            transient.owner.clone(),
+                            Some(transient.clone()),
+                        )
+                        .unwrap();
+                    transaction
+                        .set_integrated_extension(transient.namespace, transient.owner, None)
+                        .unwrap();
+                }
+                _ => unreachable!(),
+            }
+            let changed = transaction.overlay.module_net_changed().unwrap();
+            let projected = transaction.integrated_projection(&initial.id).unwrap();
+            assert_eq!(changed, projected != initial, "effect {index}");
+            if matches!(action, 1 | 3 | 7 | 8) {
+                assert!(!changed);
+            }
+            if action == 5 {
+                assert!(changed);
+            }
+        }
+        assert_eq!(runtime.store.export_document().unwrap(), initial);
+    }
+
+    #[test]
     fn sdk_projection_descends_through_untouched_orders_for_new_notes_and_events() {
         let initial = crate::store::tests::fixture();
         let runtime = KernelRuntime::create(initial.clone()).unwrap();

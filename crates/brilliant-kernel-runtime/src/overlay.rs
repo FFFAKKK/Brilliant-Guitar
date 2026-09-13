@@ -358,6 +358,78 @@ pub(crate) struct TransactionOverlayV1<'a> {
 }
 
 impl<'a> TransactionOverlayV1<'a> {
+    /// Standalone module writes currently cover pitch and extension data only.
+    /// Compare touched values and, for membership edits, extension header order;
+    /// never detach unrelated Core records or opaque extension payloads.
+    pub(crate) fn module_net_changed(&self) -> Result<bool, ExtensionHeaderReadFailureV1> {
+        use ExtensionHeaderReadFailureV1::Invariant;
+        if self.poisoned
+            || !self.records.is_empty()
+            || !self.entity_states.is_empty()
+            || !self.owners.is_empty()
+            || !self.orders.is_empty()
+            || !self.order_tombstones.is_empty()
+            || !self.voice_times.is_empty()
+            || self
+                .scalar_replacements
+                .keys()
+                .any(|key| !matches!(key, ScalarAddressV1::NoteWrittenPitch { .. }))
+            || self
+                .references
+                .keys()
+                .any(|key| !matches!(key, ReferenceAddressV1::ExtensionOwner { .. }))
+        {
+            return Err(Invariant);
+        }
+        for (key, value) in &self.scalar_replacements {
+            let original = self.base.read_scalar(key).ok_or(Invariant)?;
+            if &original != value {
+                return Ok(true);
+            }
+        }
+        for (key, value) in &self.extensions {
+            let original = self.base.read_extension(key);
+            match (value, original) {
+                (OverlayExtensionV1::Tombstone, None) => {}
+                (OverlayExtensionV1::Present(current), Some(original))
+                    if current.value == original.value => {}
+                _ => return Ok(true),
+            }
+        }
+        if !self.extension_header_edits.iter().any(|edit| {
+            matches!(
+                edit,
+                ExtensionHeaderEditV1::Insert { .. } | ExtensionHeaderEditV1::Remove(_)
+            )
+        }) {
+            return Ok(false);
+        }
+        let mut final_headers = Vec::new();
+        let mut capacity_failed = false;
+        self.visit_extension_headers(&mut |header| {
+            if reserve_headers(&mut final_headers, 1).is_err() {
+                capacity_failed = true;
+                return false;
+            }
+            final_headers.push(header.clone());
+            true
+        })?;
+        if capacity_failed {
+            return Err(ExtensionHeaderReadFailureV1::Capacity);
+        }
+        let mut index = 0;
+        let mut changed = false;
+        self.base.visit_extension_headers(&mut |header| {
+            if final_headers.get(index) != Some(header) {
+                changed = true;
+                return false;
+            }
+            index += 1;
+            true
+        })?;
+        Ok(changed || index != final_headers.len())
+    }
+
     pub(crate) fn borrowed_operations(
         &self,
     ) -> Result<
@@ -3228,6 +3300,31 @@ mod tests {
                 octave: safe(octave),
             }),
         )
+    }
+
+    #[test]
+    fn module_net_pitch_comparison_never_requires_unrelated_core_or_extension_headers() {
+        // No entity bundles, orders or extension headers are available at all.
+        let mut base = FakeBaseV1 {
+            headers_unavailable: true,
+            ..FakeBaseV1::default()
+        };
+        let (key, original) = note_pitch("note", 4);
+        base.scalars.insert(key.clone(), original.clone());
+        let mut overlay = TransactionOverlayV1::new(&base);
+        assert_eq!(overlay.module_net_changed(), Ok(false));
+        overlay
+            .replace_scalar(key.clone(), note_pitch("note", 5).1)
+            .unwrap();
+        assert_eq!(overlay.module_net_changed(), Ok(true));
+        overlay.replace_scalar(key, original).unwrap();
+        assert_eq!(overlay.module_net_changed(), Ok(false));
+        assert_eq!(overlay.metrics().order_copies, 0);
+        overlay.poisoned = true;
+        assert_eq!(
+            overlay.module_net_changed(),
+            Err(ExtensionHeaderReadFailureV1::Invariant)
+        );
     }
 
     fn voice_with_one_note() -> EntityBundleV1 {

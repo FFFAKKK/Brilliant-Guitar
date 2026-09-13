@@ -1,5 +1,15 @@
 # Commercial kernel completion
 
+**Touched-data comparison for standalone module edits (2026-09-13):** removed
+the unconditional initial Store document export used solely for final equality.
+The overlay compares touched pitches/extensions and checks extension order when
+membership changes; no-op and reorder semantics remain. Full final projection
+and assessment still run. Rust: 582 passed/1 ignored; Node: 890 passed/2 skipped;
+strict checks passed. Three diagnostic old/new representative edit medians were
+542.84/509.04, 498.95/499.66 and 505.06/490.36 ms: no consistent speed or
+memory improvement is established. Commercial gates remain unmet. See
+`docs/kernel-module-net-comparison-2026-09-13.md`.
+
 **Scoped admission separates validity from unused K1 feature reports
 (2026-09-13):** V3/V4 construction now performs Core semantics and the same
 module validation/classification without constructing a discarded Core feature

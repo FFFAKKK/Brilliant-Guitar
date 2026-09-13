@@ -24,9 +24,11 @@ test("CVN-7 actual Wasm fixtures preserve mixed editing, lossless text, history 
     ] } },
   ];
   const expectedEvents: unknown[] = [];
+  // Repeating the exact pitch + extension write must not add history/events.
+  inputs.splice(1, 0, inputs[0]!);
   oracle.value.subscribe((event: unknown) => expectedEvents.push(event));
   const expected = inputs.map(input => oracle.value.submit(input));
-  assert.ok(expected.every(result => result.status === "committed"));
+  assert.deepEqual(expected.map(result => result.status), ["committed", "no-op", "committed", "committed"]);
   const expectedUndo = oracle.value.undo(), expectedRedo = oracle.value.redo(), expectedRead = oracle.value.read();
   const restore = fixture.install();
   try {
