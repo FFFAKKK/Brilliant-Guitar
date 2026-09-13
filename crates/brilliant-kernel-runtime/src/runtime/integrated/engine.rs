@@ -12,6 +12,7 @@ use brilliant_score_foundation::{
     LosslessDecode, ScoreFeatureProfileV1, ScoreSupportV1, assess_score_profile,
     assess_score_semantics,
 };
+mod assessment;
 mod batch;
 mod core;
 mod migration;
@@ -30,6 +31,7 @@ pub struct IntegratedKernelRuntimeV2 {
     commands: Vec<Value>,
     effects: Vec<Value>,
     callback_projections: u64,
+    assessment_reads: Vec<Value>,
 }
 
 impl IntegratedKernelRuntimeV2 {
@@ -44,7 +46,7 @@ impl IntegratedKernelRuntimeV2 {
 
     fn create_inner(bytes: &[u8], executor: &mut dyn ContributionExecutorV2) -> Result<Self> {
         let request = decode(bytes)?;
-        if !exact(
+        if !(exact(
             &request,
             &[
                 "apiVersion",
@@ -54,7 +56,18 @@ impl IntegratedKernelRuntimeV2 {
                 "effects",
                 "inventory",
             ],
-        ) || integer(field(&request, "apiVersion")?) != Some(2)
+        ) || exact(
+            &request,
+            &[
+                "apiVersion",
+                "document",
+                "catalog",
+                "commands",
+                "effects",
+                "inventory",
+                "assessmentReads",
+            ],
+        )) || integer(field(&request, "apiVersion")?) != Some(2)
         {
             return Err(failure("command.assembly-mismatch"));
         }
@@ -75,6 +88,11 @@ impl IntegratedKernelRuntimeV2 {
         let commands = array(field(&request, "commands")?)?.to_vec();
         let effects = array(field(&request, "effects")?)?.to_vec();
         validate_descriptors(&commands, &effects, &assembly)?;
+        let assessment_reads = assessment::decode_reads(
+            field(&request, "assessmentReads").unwrap_or(&JsonValue::Array(vec![])),
+            &assembly,
+        )
+        .map_err(|_| failure("command.assembly-mismatch"))?;
         let runtime = KernelRuntime::create(document)
             .map_err(|_| failure("command.invalid-initial-document"))?;
         let mut state = Self {
@@ -83,6 +101,7 @@ impl IntegratedKernelRuntimeV2 {
             commands,
             effects,
             callback_projections: 0,
+            assessment_reads,
         };
         let document = state
             .runtime
@@ -359,21 +378,18 @@ impl IntegratedKernelRuntimeV2 {
             ]));
         }
         let core = value(&core)?;
-        let mut reply = self.call(
-            "assess",
-            document,
-            version,
-            [("coreAssessment", core.clone())],
-            executor,
-        )?;
-        if !exact(&reply, &["ok", "assessment", "availability"]) {
-            return Err(internal());
-        }
-        let assessment = field(&reply, "assessment")?;
-        if !exact(assessment, &["core", "modules"]) || array(field(assessment, "modules")?).is_err()
-        {
-            return Err(internal());
-        }
+        let sources = self.assessment_sources(document)?;
+        let availability = self.candidate_availability(document)?;
+        let mut reply = self
+            .call(
+                "assess",
+                document,
+                version,
+                [("coreAssessment", core.clone())],
+                executor,
+            )
+            .map_err(|error| assessment::validate_failure(error, &sources))?;
+        assessment::validate_success(&reply, &sources, &availability)?;
         // Host callbacks can report module results, never replace Core authority.
         // Preserve our result even if an executor echoes a forged Core assessment.
         let JsonValue::Object(fields) = &mut reply else {

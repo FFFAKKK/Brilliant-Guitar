@@ -4,6 +4,25 @@
 
 ## 实际执行路径
 
+**2026-09-13 插件结果边界收口：** Rust 根据当前候选文档、已安装贡献者和捕获的
+跨插件读取声明计算应参与评估的名单，再核对宿主返回的顺序、完整性、唯一性和身份。
+未来版本的依赖数据仍按既有约定跳过对应消费者，不把正常只读打开误判为漏校验。
+支持分类仅接受约定状态；诊断核对来源、代码、messageKey、位置、details 形状和
+单回调 1024／总量 4096 的上限。可用性结果必须等于 Rust 独立计算的候选可用性。
+失败报告也经过检查；异常结果在提交或历史移动之前拒绝。
+
+私有创建请求可附带 `assessmentReads`，来源于 SDK 已捕获的读取声明；Rust 再检查
+读者、提供者、命名空间、版本和 owner 类型。没有读取声明时仍接受原请求形状。
+这不是新的公开 SDK 接口，也没有增加 Node 导出。宿主仍负责执行和汇总插件回调；
+本片证明结果协议与参与名单的检查，不能证明任意插件返回的业务判断真实，
+也不提供任意同步 JS 的执行预算或增量性能保证。独立迁移不在本片范围。
+
+最新全量回归：Node **838 通过、2 跳过、0 失败（840 项）**；Rust 全工作区／全 feature
+**540 通过、1 忽略、0 失败**。TS 构建、严格 Clippy、fmt、Rust 1.88 检查均通过，
+V2／Wasm 产物已重建。测试在 TS 执行器返回后篡改汇总数据，证明 Rust 独立拒绝；
+另覆盖三种编辑／历史操作、诊断总量上限及合法数据保留。
+验证与产物记录见 [插件结果边界证据](evidence/kernel-native-module-assessment-2026-09-13.json)。
+
 **2026-09-13 Core 判定收口：** 组合会话的创建、编辑、no-op、历史和重放先由
 Rust Foundation 计算 Core 语义／支持结果，再将 `coreAssessment` 送往宿主。
 TS 执行器使用 `runNativeModulePipeline`，不再调用 TS Core semantic/profile 校验；
@@ -23,7 +42,7 @@ V1 产物沿用既有构建，未改其执行路径。证据与限制见
 1. 私有宿主选择 `installNativeIntegratedBackendV2(addon)` 后，现有 `CommandBus.createIntegrated` 工厂使用真实 compiled catalog 与 inventory resolver。SDK WeakMap 品牌认证和 gateway 能力、assembly 身份检查继续有效；返回的 restore 函数恢复之前的工厂选择，已创建的 session 保持原装配。
 2. 真实 SDK decoder/preparer/transformer 绑定留在宿主适配器。任意 decoded JS 中间值不跨 JSON。回调只收到冻结的 Core 文档和兼容扩展视图，不持有可写 Store。
 3. `createIntegratedKernelSessionV2` 返回一个绑定 session 与固定执行器的 Node 函数。函数的 N-API 生命周期管理 Rust session 和 callback reference；`RefCell` 在进入回调前取得独占借用，重入不能取得第二个可变引用。它没有可替换 executor 的后续参数，也不能把 V1 handle 混入这条入口。
-4. Rust 独立检查描述符来源、安装状态、命名空间、owner、版本、请求形状、引用存在性和效果数量。独立模块命令使用 typed overlay，混合 Batch 使用 occurrence candidate；两者共用 SDK 准备与效果解码逻辑。后续回调的完整视图反映此前的 Core/扩展修改。JS adapter 校验模块 issues 与 classifier 结果，Rust Foundation 及现有 adoption 路径仍校验 Core。
+4. Rust 独立检查描述符来源、安装状态、命名空间、owner、版本、请求形状、引用存在性和效果数量。独立模块命令使用 typed overlay，混合 Batch 使用 occurrence candidate；两者共用 SDK 准备与效果解码逻辑。后续回调的完整视图反映此前的 Core/扩展修改。JS adapter 检查单个回调，Rust 另行检查汇总结果的名单、身份、诊断合同和候选可用性；Rust Foundation 及现有 adoption 路径校验 Core。
 5. 所有准备与模块 assessment 成功后才调用现有统一提交。模块声明的 affected addresses 在 Rust 校验、去重、排序后进入同一历史和事件。撤销重做先预览已存 inverse/forward 并重新 assessment，成功后才移动原历史游标；不重跑原 prepare/transform。
 
 Core 命令 ID 的原有编码不变。内部历史与事件增加模块 ID 表示，V2 facade 按已固定的 catalog 补上现有公开事件合同要求的 module source。没有建立 TS 命令状态或第二套历史。

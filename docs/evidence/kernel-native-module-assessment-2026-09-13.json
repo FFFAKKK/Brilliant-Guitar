@@ -1,0 +1,45 @@
+{
+  "date": "2026-09-13",
+  "baseCommit": "c31c3d1",
+  "scope": "Rust validation of integrated host plugin assessment coverage, identity, diagnostics and candidate availability; callback execution remains host-controlled",
+  "fresh": {
+    "typescriptBuild": { "status": "passed", "log": "ts-build.log" },
+    "redBeforeImplementation": { "tests": 2, "failedAsExpected": 2, "log": "red.log" },
+    "focusedBeforeRedoAndAggregateCapExpansion": { "tests": 37, "passed": 37, "log": "focused.log" },
+    "nodeFull": { "tests": 840, "passed": 838, "skipped": 2, "failed": 0, "durationMs": 58682.425, "log": "full-node.log" },
+    "rustWorkspaceAllFeatures": { "passed": 540, "ignored": 1, "failed": 0, "log": "rust-tests.log" },
+    "clippyAllTargetsAllFeaturesDenyWarnings": { "status": "passed", "log": "clippy.log" },
+    "msrv188AllTargetsAllFeatures": { "status": "passed", "log": "msrv.log" },
+    "rustfmtCheck": "passed",
+    "gitDiffCheck": "passed"
+  },
+  "logDirectory": ".local-evidence/native-module-assessment-2026-09-13",
+  "rebuiltArtifacts": [
+    {
+      "path": "target/integrated-v2/brilliant_kernel_node.node",
+      "sha256": "610cf8db45ead38fc841d8e3d3d1ea88fb21da5ded1b43a112b80cbb7562425f",
+      "buildLog": "build-v2.log"
+    },
+    {
+      "path": "target/wasm-v1/brilliant_kernel_node.node",
+      "sha256": "e319bc9de2642d0baecf987f9f4cf5045de0c6ac5e9cd2fafba79ba9b31fa579",
+      "buildLog": "build-wasm.log"
+    }
+  ],
+  "inheritedArtifact": "target/rkp-1-node/brilliant_kernel_node.node; frozen Core V1 execution path unchanged, binary not rebuilt in this slice",
+  "proof": [
+    "Actual Native transport tampering after the TS executor returns: 11 malformed success results rejected during submit, undo and redo, with identical public reads and no events",
+    "Aggregate semantic failures with empty, foreign or malformed diagnostics become command.internal-error without adoption",
+    "Valid signed diagnostic paths, all three range kinds, note addresses and nested UTF-16 details are retained",
+    "Invalid captured reader/provider/version/owner-kind or duplicate read declarations fail session construction with no callback",
+    "Rust unit tests accept 4096 valid diagnostics, reject 4097 aggregate and 1025 per callback, and enforce canonical source ordering for semantic failures",
+    "Full suite retains cross-plugin future-version readonly behavior, real guitar business flow, mixed Batch, Wasm bindings, migration and frozen public contracts"
+  ],
+  "notClaimed": [
+    "Authenticity or semantic truth of arbitrary host or plugin decisions; valid-shaped fabricated supported results are outside this protocol check",
+    "Rust-owned per-contribution callback scheduling, arbitrary synchronous JS isolation or complete transaction-time declarative/Wasm execution",
+    "Independent detached migration assessment authority",
+    "Incremental validation or performance improvement; candidate and dependency scans plus full document transport remain",
+    "Product default cutover, public plugin loader, UI completion or commercial qualification"
+  ]
+}

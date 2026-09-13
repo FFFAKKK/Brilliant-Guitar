@@ -12,6 +12,7 @@ import { bindNativeIntegratedAssemblyV2, selectNativeIntegratedFactoryV2 } from 
 import { selectNativeExtensionMigrationFactoryV2 } from "./integrated-backend-selection";
 import { createNativeExtensionMigrationV2, type NativeExtensionMigrationFunctionV2 } from "./integrated-migration";
 import type { ScopedExecutionPolicyV1 } from "../module-sdk/scoped-invocation";
+import { contributionReads } from "../registry/contribution-reads";
 
 export interface IntegratedNativeAddonV2 {
   createIntegratedKernelSessionV2(bytes: Buffer, executor: (bytes: Buffer) => Buffer): (bytes: Buffer) => Buffer;
@@ -66,6 +67,7 @@ export function createNativeIntegratedCommandBusV2(addon: IntegratedNativeAddonV
   const installed = assembly.state;
   const projection = captureHostInstalledContributionsV1(catalog);
   if (projection === undefined) return freeze({ ok: false, failure: { code: "command.assembly-mismatch" } });
+  const assessmentReads = assembly.state.catalogState.contributions.flatMap(entry => contributionReads(entry) ?? []);
   let operate: (bytes: Buffer) => Buffer;
   try {
     operate = addon.createIntegratedKernelSessionV2(encode({ apiVersion: 2, document: decoded.value,
@@ -73,6 +75,7 @@ export function createNativeIntegratedCommandBusV2(addon: IntegratedNativeAddonV
       commands: assembly.state.catalogState.contributions.flatMap((entry) => entry.commands.map((command) => command.descriptor)),
       effects: assembly.state.catalogState.contributions.flatMap((entry) => entry.effects.map((effect) => effect.descriptor)),
       inventory: explicit ? inventory : null,
+      ...(assessmentReads.length === 0 ? {} : { assessmentReads }),
     }), createNativeContributionExecutorV2(assembly.state, policy?.invoke));
   } catch (error) {
     try { return freeze({ ok: false, failure: parse((error as Error).message) as Extract<IntegratedCommandBusCreationResult, { ok: false }>["failure"] }); }

@@ -26,6 +26,17 @@ frontend planning files are not part of this implementation. The first change
 moves integrated Core assessment authority into Rust while retaining the
 remaining plugin-executor migration explicitly as unfinished work.
 
+**Next bounded repair (2026-09-13):** Rust now derives the expected compatible
+plugin-assessment roster from the candidate, installed assembly and captured
+cross-plugin reads. It rejects missing, duplicate, reordered or foreign rows,
+malformed diagnostics and issue-cap violations, and independently checks
+candidate availability before adoption or history movement. The host still
+executes and aggregates callbacks; protocol coverage does not authenticate the
+truth of a plugin's semantic result. This does not finish transaction-time
+declarative/Wasm scheduling, detached migration or incremental validation.
+Current verification and limits are recorded in
+`docs/evidence/kernel-native-module-assessment-2026-09-13.json`.
+
 **Historical pause at the owner's request (2026-09-12):** finish the current
 cross-plugin explicit-read task, record its evidence and local commits, then
 stop and report. That pause was followed by the explicit restart above.
