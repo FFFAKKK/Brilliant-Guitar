@@ -18,22 +18,33 @@ impl IntegratedKernelRuntimeV2 {
             ("document", value(document)?),
             ("documentVersion", number(version)),
         ]);
+        let schedule_version = if executor.uses_scoped_preparation() {
+            4
+        } else {
+            3
+        };
         let start = object([
             ("operation", text("assessmentStart")),
-            ("scheduleVersion", number(3)),
+            ("scheduleVersion", number(schedule_version)),
             ("documentId", value(&document.id)?),
             ("documentVersion", number(version)),
         ]);
         let ack = invoke(executor, &start, &candidate, &JsonValue::Null)?;
         if !exact(&ack, &["ok", "scheduleVersion"])
-            || integer(field(&ack, "scheduleVersion")?) != Some(3)
+            || integer(field(&ack, "scheduleVersion")?) != Some(schedule_version)
         {
             return Err(internal());
         }
         let mut views = Vec::new();
         let mut semantic = Vec::new();
         for source in &sources {
-            let view = self.assessment_view(document, version, source)?;
+            let view = contribution_view(
+                field(&candidate, "document")?,
+                version,
+                source,
+                &self.assembly,
+                &self.assessment_reads,
+            )?;
             let raw = self.assessment_callback("validate", source, &view, &candidate, executor)?;
             let issues = checked_issues(&raw, source)?;
             if semantic.len() + issues.len() > 4096 {
@@ -90,7 +101,14 @@ impl IntegratedKernelRuntimeV2 {
     ) -> Result<Value> {
         let request = object([
             ("operation", text("assessmentCallback")),
-            ("scheduleVersion", number(3)),
+            (
+                "scheduleVersion",
+                number(if executor.uses_scoped_preparation() {
+                    4
+                } else {
+                    3
+                }),
+            ),
             ("documentId", field(view, "documentId")?.clone()),
             ("documentVersion", field(view, "documentVersion")?.clone()),
             ("moduleId", field(source, "moduleId")?.clone()),
@@ -107,99 +125,101 @@ impl IntegratedKernelRuntimeV2 {
         }
         Ok(field(&reply, "value")?.clone())
     }
-
-    fn assessment_view(
-        &self,
-        document: &ScoreDocumentV1,
-        version: u64,
-        source: &Value,
-    ) -> Result<Value> {
-        let module = string(field(source, "moduleId")?)?;
-        let contribution = string(field(source, "contributionId")?)?;
-        let mut own = Vec::new();
-        for block in &document.extensions {
-            if self.assembly.requirements().iter().any(|requirement| {
-                requirement.module_id.as_js_string() == module
-                    && requirement.contribution_id.as_js_string() == contribution
-                    && block.namespace.eq_ascii(&requirement.namespace)
-                    && requirement
-                        .supported_schema_versions
-                        .contains(&(block.schema_version.get() as u64))
-            }) {
-                own.push(block);
-            }
-        }
-        let mut dependencies = Vec::new();
-        for row in self
-            .assessment_reads
-            .iter()
-            .filter(|row| field(row, "reader").ok() == Some(source))
-        {
-            let mut blocks = Vec::new();
-            for block in &document.extensions {
-                let kind = match block.owner {
-                    ExtensionOwnerV1::Score => "score",
-                    ExtensionOwnerV1::Part { .. } => "part",
-                };
-                if string(field(row, "namespace")?)? == &block.namespace
-                    && array(field(row, "ownerKinds")?)?
-                        .iter()
-                        .any(|item| string(item).is_ok_and(|value| value.eq_ascii(kind)))
-                    && array(field(row, "supportedSchemaVersions")?)?
-                        .iter()
-                        .any(|item| integer(item) == Some(block.schema_version.get() as u64))
-                {
-                    blocks.push(block);
-                }
-            }
-            dependencies.push(object([
-                ("readVersion", number(1)),
-                ("provider", field(row, "provider")?.clone()),
-                ("namespace", field(row, "namespace")?.clone()),
-                (
-                    "supportedSchemaVersions",
-                    field(row, "supportedSchemaVersions")?.clone(),
-                ),
-                ("ownerKinds", field(row, "ownerKinds")?.clone()),
-                ("blocks", sorted_blocks(blocks)?),
-            ]));
-        }
-        let mut view = object([
-            ("viewVersion", number(2)),
-            ("documentId", value(&document.id)?),
-            ("schemaVersion", value(&document.schema_version)?),
-            ("documentVersion", number(version)),
-            ("compatibleExtensions", sorted_blocks(own)?),
-        ]);
-        if !dependencies.is_empty() {
-            let JsonValue::Object(fields) = &mut view else {
-                unreachable!()
-            };
-            fields.insert("dependencyReads".into(), JsonValue::Array(dependencies));
-        }
-        Ok(view)
-    }
 }
 
-fn sorted_blocks(mut blocks: Vec<&ExtensionBlockV1>) -> Result<Value> {
-    blocks.sort_by(|left, right| {
-        left.namespace
-            .cmp(&right.namespace)
-            .then_with(|| match (&left.owner, &right.owner) {
-                (ExtensionOwnerV1::Score, ExtensionOwnerV1::Score) => std::cmp::Ordering::Equal,
-                (ExtensionOwnerV1::Score, _) => std::cmp::Ordering::Less,
-                (_, ExtensionOwnerV1::Score) => std::cmp::Ordering::Greater,
-                (ExtensionOwnerV1::Part { part_id: a }, ExtensionOwnerV1::Part { part_id: b }) => {
-                    a.cmp(b)
-                }
-            })
-    });
+pub(super) fn contribution_view(
+    document: &Value,
+    version: u64,
+    source: &Value,
+    assembly: &ResolvedHostAssemblyV1,
+    assessment_reads: &[Value],
+) -> Result<Value> {
+    let module = string(field(source, "moduleId")?)?;
+    let contribution = string(field(source, "contributionId")?)?;
+    let mut own = Vec::new();
+    for block in array(field(document, "extensions")?)? {
+        let namespace = string(field(block, "namespace")?)?;
+        let block_version = integer(field(block, "schemaVersion")?);
+        if assembly.requirements().iter().any(|requirement| {
+            requirement.module_id.as_js_string() == module
+                && requirement.contribution_id.as_js_string() == contribution
+                && namespace.eq_ascii(&requirement.namespace)
+                && requirement
+                    .supported_schema_versions
+                    .iter()
+                    .any(|version| Some(*version) == block_version)
+        }) {
+            own.push(block);
+        }
+    }
+    let mut dependencies = Vec::new();
+    for row in assessment_reads
+        .iter()
+        .filter(|row| field(row, "reader").ok() == Some(source))
+    {
+        let mut blocks = Vec::new();
+        for block in array(field(document, "extensions")?)? {
+            let kind = field(field(block, "owner")?, "kind")?;
+            if field(row, "namespace")? == field(block, "namespace")?
+                && array(field(row, "ownerKinds")?)?
+                    .iter()
+                    .any(|item| item == kind)
+                && array(field(row, "supportedSchemaVersions")?)?
+                    .iter()
+                    .any(|item| {
+                        integer(item) == field(block, "schemaVersion").ok().and_then(integer)
+                    })
+            {
+                blocks.push(block);
+            }
+        }
+        dependencies.push(object([
+            ("readVersion", number(1)),
+            ("provider", field(row, "provider")?.clone()),
+            ("namespace", field(row, "namespace")?.clone()),
+            (
+                "supportedSchemaVersions",
+                field(row, "supportedSchemaVersions")?.clone(),
+            ),
+            ("ownerKinds", field(row, "ownerKinds")?.clone()),
+            ("blocks", sorted_blocks(blocks)?),
+        ]));
+    }
+    let mut view = object([
+        ("viewVersion", number(2)),
+        ("documentId", field(document, "id")?.clone()),
+        ("schemaVersion", field(document, "schemaVersion")?.clone()),
+        ("documentVersion", number(version)),
+        ("compatibleExtensions", sorted_blocks(own)?),
+    ]);
+    if !dependencies.is_empty() {
+        let JsonValue::Object(fields) = &mut view else {
+            unreachable!()
+        };
+        fields.insert("dependencyReads".into(), JsonValue::Array(dependencies));
+    }
+    Ok(view)
+}
+
+fn sorted_blocks(blocks: Vec<&Value>) -> Result<Value> {
+    let mut keyed = Vec::new();
+    for block in blocks {
+        let namespace = string(field(block, "namespace")?)?.clone();
+        let owner = field(block, "owner")?;
+        let owner_key = if tag(owner, "kind", "score") {
+            None
+        } else {
+            Some(string(field(owner, "partId")?)?.clone())
+        };
+        keyed.push(((namespace, owner_key), block));
+    }
+    keyed.sort_by(|left, right| left.0.cmp(&right.0));
     Ok(JsonValue::Array(
-        blocks.into_iter().map(value).collect::<Result<_>>()?,
+        keyed.into_iter().map(|(_, block)| block.clone()).collect(),
     ))
 }
 
-fn checked_issues<'a>(input: &'a Value, source: &Value) -> Result<&'a [Value]> {
+pub(super) fn checked_issues<'a>(input: &'a Value, source: &Value) -> Result<&'a [Value]> {
     let contract = || owned_failure(source, "command.contribution-contract-violation");
     let issues = array(input).map_err(|_| contract())?;
     if issues.len() > 1024 {
@@ -211,7 +231,7 @@ fn checked_issues<'a>(input: &'a Value, source: &Value) -> Result<&'a [Value]> {
     Ok(issues)
 }
 
-fn invoke(
+pub(super) fn invoke(
     executor: &mut dyn ContributionExecutorV2,
     request: &Value,
     candidate: &Value,

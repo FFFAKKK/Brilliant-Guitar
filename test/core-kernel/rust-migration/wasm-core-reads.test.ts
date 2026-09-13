@@ -6,15 +6,16 @@ import { resolve } from "node:path";
 import { CommandBus, migrateKernelExtension, type ScoreDocument } from "../../../src/core-kernel/index";
 import { compileOfficialModuleCatalogV1 } from "../../../src/core-kernel/module-sdk/index";
 import { compileContributionReadCatalogV1 } from "../../../src/core-kernel/module-sdk/extension-reads";
-import { installNativeWasmCoreReadsBackendV2, installNativeWasmScheduledAssessmentV3 } from "../../../src/native-host/wasm-core-reads";
+import { installNativeWasmCoreReadsBackendV2, installNativeWasmScheduledAssessmentV3, installNativeWasmScheduledEditingV4 } from "../../../src/native-host/wasm-core-reads";
 import { installNativeWasmOnlyIntegratedBackendV1, type WasmNativeAddonV1 } from "../../../src/native-host/wasm-bindings";
 import { CVN6_MANIFEST, CVN6_REGISTRATION_ENTRIES, resetCvn6Callbacks, cvn6CallbackTrace } from "../fixtures/cvn-6-synthetic-official-modules";
 import { createNativeWorkloadScore } from "../fixtures/native-workload";
 
 const addon = require(resolve("target/wasm-v1/brilliant_kernel_node.node")) as Parameters<typeof installNativeWasmCoreReadsBackendV2>[0];
 const guest = readFileSync("test/core-kernel/fixtures/wasm-guest/guest-v2.wasm");
-for (const protocol of [2, 3]) {
-const install = protocol === 3 ? installNativeWasmScheduledAssessmentV3 : installNativeWasmCoreReadsBackendV2;
+for (const protocol of [2, 3, 4]) {
+const install = protocol === 4 ? installNativeWasmScheduledEditingV4
+  : protocol === 3 ? installNativeWasmScheduledAssessmentV3 : installNativeWasmCoreReadsBackendV2;
 const test = (name: string, action: () => void) => nodeTest(`Host V${protocol}: ${name}`, action);
 function bindings(bytes = guest) {
   return ["score", "part"].map(module => ({
@@ -197,22 +198,70 @@ test("Selective guest consumes only declared dependency blocks from the current 
   resetCvn6Callbacks();
 });
 
-if (protocol === 3) test("Rust schedules assessment with no TS pipeline or full Core host assessment input", () => {
+test("Preparation retains provisional Batch identities and decoder-before-target error order", () => {
+  const initial = createNativeWorkloadScore(1), compiled = catalog();
+  const oracle = CommandBus.createIntegrated(initial, compiled); assert.ok(oracle.ok);
+  const native = create(initial, compiled);
+  const original = initial.parts[0]!;
+  const temporary = { ...original, id: "temporary-part",
+    staves: original.staves.map(staff => ({ ...staff, id: "" })),
+    measureContents: original.measureContents.map(content => ({ ...content,
+      voices: content.voices.map(voice => ({ ...voice, id: "temporary-voice", defaultStaffId: "",
+        sequence: { ...voice.sequence, events: [] } })) })) };
+  const input = batch([
+    { commandVersion: 1, commandId: "core.part.insert", target: { kind: "document", documentId: initial.id },
+      payload: { anchor: { kind: "start" }, part: temporary } },
+    command("temporary", "note-1"),
+    { commandVersion: 1, commandId: "core.part.remove", target: { kind: "part", partId: temporary.id }, payload: {} },
+  ]);
+  const expected = oracle.value.submit(input);
+  assert.equal(expected.status, "committed");
+  assert.deepEqual(native.submit(input), expected);
+  assert.deepEqual(native.read(), oracle.value.read());
+  assert.deepEqual(native.undo(), oracle.value.undo());
+  assert.deepEqual(native.redo(), oracle.value.redo());
+  for (const marker of [12, "valid"]) {
+    const valid = command("valid", "note-1", "E", "part");
+    const bad = { ...valid, target: { kind: "part", partId: "missing" }, payload: { ...valid.payload, marker } };
+    const expected = oracle.value.submit(bad);
+    assert.equal(expected.status, "rejected");
+    if (expected.status === "rejected") assert.equal(expected.failure.code,
+      marker === 12 ? "command.invalid-envelope" : "command.target-not-found");
+    assert.deepEqual(native.submit(bad), expected);
+    assert.deepEqual(native.read(), oracle.value.read());
+  }
+  resetCvn6Callbacks();
+});
+
+if (protocol >= 3) test("Rust schedules assessment with no TS pipeline or full Core host assessment input", () => {
   const compiled = catalog(), initial = createNativeWorkloadScore(256);
   const oracle = CommandBus.createIntegrated(initial, compiled); assert.ok(oracle.ok);
   const input = batch([command("score"), command("part", "note-1", "E", "part")]);
   const expected = oracle.value.submit(input);
   const expectedUndo = oracle.value.undo(), expectedRedo = oracle.value.redo(), expectedRead = oracle.value.read();
   const pipeline = require("../../../src/core-kernel/commands/integrated-runtime") as Record<string, unknown>;
+  const executorFactory = require("../../../src/core-kernel/native/integrated-executor") as Record<string, unknown>;
+  const savedExecutorFactory = executorFactory.createNativeContributionExecutorV2;
   const saved = pipeline.runNativeModulePipeline;
   const phases: string[] = [];
   let fullAssessments = 0, maxInput = 0;
+  let fullPreparations = 0, executorCalls = 0;
+  const preparationPhases = new Set<string>();
   const transport = { ...addon, createIntegratedKernelSessionV2(bytes: Buffer, callback: (input: Buffer) => Buffer, version?: number) {
-    assert.equal(version, 3);
+    assert.equal(version, protocol);
     return addon.createIntegratedKernelSessionV2(bytes, request => {
       if (request[0] === 123) {
         const parsed = JSON.parse(request.toString("utf8"));
         if (parsed.operation === "assess") fullAssessments++;
+        if (parsed.operation === "prepare" || parsed.operation === "transform") fullPreparations++;
+        if (parsed.operation === "contributionCallback") {
+          assert.equal(parsed.document, undefined);
+          const view = parsed.callbackOperation === "commandPrepare" ? parsed.arguments[0]
+            : parsed.callbackOperation === "effectTransform" ? parsed.arguments[0].view : undefined;
+          if (view !== undefined) assert.equal(view.coreDocument, undefined);
+          assert.ok(request.length < 2048);
+          preparationPhases.add(parsed.callbackOperation);
+        }
         if (parsed.operation === "assessmentCallback") {
           assert.equal(parsed.document, undefined);
           assert.equal(parsed.view.coreDocument, undefined);
@@ -224,15 +273,27 @@ if (protocol === 3) test("Rust schedules assessment with no TS pipeline or full 
     }, version);
   } };
   pipeline.runNativeModulePipeline = () => { throw new Error("TS assessment scheduler is unavailable"); };
+  if (protocol === 4) executorFactory.createNativeContributionExecutorV2 = () => () => {
+    executorCalls++;
+    throw new Error("TS contribution executor is unavailable");
+  };
   try {
     const native = create(initial, compiled, transport);
     assert.deepEqual(native.submit(input), expected);
     assert.deepEqual(native.undo(), expectedUndo);
     assert.deepEqual(native.redo(), expectedRedo);
     assert.deepEqual(native.read(), expectedRead);
-  } finally { pipeline.runNativeModulePipeline = saved; }
+  } finally {
+    pipeline.runNativeModulePipeline = saved;
+    executorFactory.createNativeContributionExecutorV2 = savedExecutorFactory;
+  }
   assert.equal(fullAssessments, 0);
   assert.ok(maxInput > 0 && maxInput < 2048);
+  if (protocol === 4) {
+    assert.equal(fullPreparations, 0);
+    assert.equal(executorCalls, 0);
+    assert.deepEqual([...preparationPhases].sort(), ["commandDecode", "commandPrepare", "effectDecode", "effectTransform"]);
+  }
   assert.deepEqual(phases, [
     "validate:fixture.part.module", "validate:fixture.score.module",
     "classify:fixture.part.module", "classify:fixture.score.module",
@@ -241,7 +302,7 @@ if (protocol === 3) test("Rust schedules assessment with no TS pipeline or full 
   ]);
 });
 
-if (protocol === 3) test("Rust keeps incompatible dependency readers inactive and rejects stale scheduling adapters", () => {
+if (protocol >= 3) test("Rust keeps incompatible dependency readers inactive and rejects stale scheduling adapters", () => {
   const base = catalog();
   const compiled = compileContributionReadCatalogV1(base, [{
     readVersion: 1, reader: { moduleId: "fixture.score.module", contributionId: "fixture.score.contribution.v1" },

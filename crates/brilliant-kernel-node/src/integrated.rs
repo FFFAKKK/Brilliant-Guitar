@@ -20,6 +20,7 @@ struct NodeExecutor<'a> {
     callback: Function<'a, Buffer, Buffer>,
     core_reads: bool,
     scoped_assessment: bool,
+    scoped_preparation: bool,
 }
 
 // Explicit opt-in only. Ordinary callback inputs/replies remain JSON; these
@@ -32,6 +33,7 @@ fn read_protocol(version: Option<f64>) -> napi::Result<u8> {
         None => Ok(0),
         Some(2.0) => Ok(2),
         Some(3.0) => Ok(3),
+        Some(4.0) => Ok(4),
         _ => Err(napi::Error::from_reason(
             "bridge.unsupported-core-read-protocol",
         )),
@@ -45,7 +47,7 @@ pub fn migrate_kernel_extension_v2(
     core_read_protocol: Option<f64>,
 ) -> napi::Result<Buffer> {
     let protocol = read_protocol(core_read_protocol)?;
-    if protocol == 3 {
+    if protocol >= 3 {
         return Err(napi::Error::from_reason(
             "bridge.unsupported-migration-protocol",
         ));
@@ -61,6 +63,7 @@ pub fn migrate_kernel_extension_v2(
                 callback,
                 core_reads,
                 scoped_assessment: false,
+                scoped_preparation: false,
             },
         )
     }))
@@ -96,6 +99,9 @@ impl NodeExecutor<'_> {
 impl ContributionExecutorV2 for NodeExecutor<'_> {
     fn uses_scoped_assessment(&self) -> bool {
         self.scoped_assessment
+    }
+    fn uses_scoped_preparation(&self) -> bool {
+        self.scoped_preparation
     }
 
     fn execute(&mut self, request: &[u8]) -> Result<Vec<u8>, ContributionExecutionFailureV2> {
@@ -150,7 +156,8 @@ pub fn create_integrated_kernel_session_v2<'env>(
             &mut NodeExecutor {
                 callback,
                 core_reads,
-                scoped_assessment: protocol == 3,
+                scoped_assessment: protocol >= 3,
+                scoped_preparation: protocol == 4,
             },
         )
     }))
@@ -176,7 +183,8 @@ pub fn create_integrated_kernel_session_v2<'env>(
                 &mut NodeExecutor {
                     callback,
                     core_reads,
-                    scoped_assessment: protocol == 3,
+                    scoped_assessment: protocol >= 3,
+                    scoped_preparation: protocol == 4,
                 },
             )
         }))

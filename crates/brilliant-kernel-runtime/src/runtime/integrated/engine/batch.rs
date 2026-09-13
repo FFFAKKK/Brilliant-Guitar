@@ -33,6 +33,8 @@ impl IntegratedKernelRuntimeV2 {
         )
         .map_err(|_| internal())?;
         let environment = module::ModuleEnvironment {
+            assembly: &self.assembly,
+            assessment_reads: &self.assessment_reads,
             commands: &self.commands,
             effects: &self.effects,
             id: &document_id,

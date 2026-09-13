@@ -27,6 +27,10 @@ pub trait ContributionExecutorV2 {
         false
     }
 
+    fn uses_scoped_preparation(&self) -> bool {
+        false
+    }
+
     /// Existing executors retain their full-input path. A successor adapter may
     /// expose this capability only within the synchronous callback lifetime.
     fn execute_with_core_reads(

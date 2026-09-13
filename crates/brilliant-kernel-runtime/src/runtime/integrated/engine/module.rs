@@ -74,6 +74,8 @@ pub(super) struct ModulePreparation {
 }
 
 pub(super) struct ModuleEnvironment<'a> {
+    pub(super) assembly: &'a ResolvedHostAssemblyV1,
+    pub(super) assessment_reads: &'a [Value],
     pub(super) commands: &'a [Value],
     pub(super) effects: &'a [Value],
     pub(super) id: &'a StableId,
@@ -92,6 +94,7 @@ impl ModuleEnvironment<'_> {
             effects,
             id,
             version,
+            ..
         } = *self;
         if !exact(
             envelope,
@@ -119,16 +122,27 @@ impl ModuleEnvironment<'_> {
         }
         let initial = transaction.projection(id)?;
         *projection_count += 1;
-        let prepared_reply = call(
-            executor,
-            object([
-                ("operation", text("prepare")),
-                ("document", initial),
-                ("documentVersion", number(version)),
-                ("command", envelope.clone()),
-            ]),
-            &JsonValue::Null,
-        )?;
+        let prepared_reply = if executor.uses_scoped_preparation() {
+            self.scoped_prepare(
+                envelope,
+                &descriptor,
+                initial,
+                transaction,
+                &target_entity,
+                executor,
+            )?
+        } else {
+            call(
+                executor,
+                object([
+                    ("operation", text("prepare")),
+                    ("document", initial),
+                    ("documentVersion", number(version)),
+                    ("command", envelope.clone()),
+                ]),
+                &JsonValue::Null,
+            )?
+        };
         if !exact(&prepared_reply, &["ok", "prepared"]) {
             return Err(contract());
         }
@@ -221,17 +235,21 @@ impl ModuleEnvironment<'_> {
                 }
                 let document = transaction.projection(id).map_err(|_| internal())?;
                 *projection_count += 1;
-                let transformed_reply = call(
-                    executor,
-                    object([
-                        ("operation", text("transform")),
-                        ("document", document),
-                        ("documentVersion", number(version)),
-                        ("contributionId", field(source, "contributionId")?.clone()),
-                        ("effect", request.clone()),
-                    ]),
-                    source,
-                )?;
+                let transformed_reply = if executor.uses_scoped_preparation() {
+                    self.scoped_transform(request, source, document, executor)?
+                } else {
+                    call(
+                        executor,
+                        object([
+                            ("operation", text("transform")),
+                            ("document", document),
+                            ("documentVersion", number(version)),
+                            ("contributionId", field(source, "contributionId")?.clone()),
+                            ("effect", request.clone()),
+                        ]),
+                        source,
+                    )?
+                };
                 if !exact(&transformed_reply, &["ok", "transformed"]) {
                     return Err(contract());
                 }

@@ -5,10 +5,14 @@ struct Host {
     replies: Value,
     calls: Vec<String>,
     bad: Option<&'static str>,
+    editing: bool,
 }
 impl ContributionExecutorV2 for Host {
     fn uses_scoped_assessment(&self) -> bool {
         true
+    }
+    fn uses_scoped_preparation(&self) -> bool {
+        self.editing
     }
     fn execute(&mut self, _: &[u8]) -> Result<Vec<u8>, ContributionExecutionFailureV2> {
         panic!("scheduled host requires candidate reads")
@@ -22,7 +26,52 @@ impl ContributionExecutorV2 for Host {
         let operation = request["operation"].as_str().unwrap();
         if operation == "assessmentStart" {
             assert!(request.get("document").is_none());
-            return Ok(serde_json::to_vec(&json!({"ok":true,"scheduleVersion":3})).unwrap());
+            return Ok(serde_json::to_vec(
+                &json!({"ok":true,"scheduleVersion":if self.editing { 4 } else { 3 }}),
+            )
+            .unwrap());
+        }
+        if operation == "contributionCallback" {
+            assert!(self.editing);
+            assert!(request.get("document").is_none());
+            assert_eq!(request["scheduleVersion"], 4);
+            let phase = request["callbackOperation"].as_str().unwrap();
+            self.calls.push(phase.into());
+            let reply: Value = serde_json::from_slice(&reads.read_core(br#"{"readVersion":2,"selectorId":"core.selector.score-entity","address":{"kind":"note","noteId":"note-1"}}"#).unwrap()).unwrap();
+            assert_eq!(reply["documentVersion"], 0);
+            assert_eq!(
+                reply["result"]["value"]["value"]["writtenPitch"]["step"],
+                if phase.starts_with("command") {
+                    "C"
+                } else {
+                    "D"
+                }
+            );
+            let output = match phase {
+                "commandDecode" => {
+                    json!({"status":"decoded","command":request["arguments"][0]["payload"]})
+                }
+                "commandPrepare" => {
+                    assert!(request["arguments"][0].get("coreDocument").is_none());
+                    serde_json::from_str::<Value>(self.replies["prepare"].as_str().unwrap())
+                        .unwrap()["prepared"]
+                        .clone()
+                }
+                "effectDecode" => json!({"status":"decoded","payload":request["arguments"][0]}),
+                "effectTransform" => {
+                    assert!(
+                        request["arguments"][0]["view"]
+                            .get("coreDocument")
+                            .is_none()
+                    );
+                    assert!(request["arguments"][0].get("currentBlock").is_none());
+                    serde_json::from_str::<Value>(self.replies["transform"].as_str().unwrap())
+                        .unwrap()["transformed"]
+                        .clone()
+                }
+                _ => panic!("unexpected preparation phase"),
+            };
+            return Ok(serde_json::to_vec(&json!({"ok":true,"value":output})).unwrap());
         }
         if operation == "assessmentCallback" {
             assert!(request.get("document").is_none());
@@ -74,6 +123,7 @@ fn host(fixture: &Value) -> Host {
         replies: fixture["callbacks"].clone(),
         calls: vec![],
         bad: None,
+        editing: false,
     }
 }
 fn without_metrics(mut value: Value) -> Value {
@@ -104,6 +154,39 @@ fn runtime_scheduled_assessment_preserves_the_recorded_edit_and_history_journey(
         assert_eq!(without_metrics(actual), without_metrics(expected));
     }
     assert_eq!(host.calls, ["validate", "classify", "validate", "classify"]);
+}
+
+#[test]
+fn runtime_schedules_decode_prepare_decode_transform_against_each_exact_candidate() {
+    let fixture = fixture();
+    let mut host = host(&fixture);
+    host.editing = true;
+    let mut session = IntegratedKernelSessionV2::create(
+        fixture["initial"].as_str().unwrap().as_bytes(),
+        &mut host,
+    )
+    .unwrap();
+    for step in fixture["journey"].as_array().unwrap() {
+        let actual = serde_json::from_slice(
+            &session.operate(step["request"].as_str().unwrap().as_bytes(), &mut host),
+        )
+        .unwrap();
+        let expected = serde_json::from_str(step["response"].as_str().unwrap()).unwrap();
+        assert_eq!(without_metrics(actual), without_metrics(expected));
+    }
+    assert_eq!(
+        host.calls,
+        [
+            "commandDecode",
+            "commandPrepare",
+            "effectDecode",
+            "effectTransform",
+            "validate",
+            "classify",
+            "validate",
+            "classify"
+        ]
+    );
 }
 
 #[test]

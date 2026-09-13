@@ -4,7 +4,7 @@ import { captureWasmExecutorsV1, type WasmNativeAddonV1 } from "./wasm-bindings"
 import { installNativeIntegratedBackendV2, type IntegratedNativeAddonV2 } from "../core-kernel/native/integrated-command-bus";
 import { encodeIntegratedValueV2 as encode } from "../core-kernel/native/integrated-wire";
 import { captureStrictInput } from "../core-kernel/codec/strict-input-capture";
-import { readExactDataRecord } from "../core-kernel/registry/strict-codec";
+import { readExactDataRecord, readDenseArray } from "../core-kernel/registry/strict-codec";
 import type { KernelIntegratedCatalog } from "../core-kernel/registry/integrated-contracts";
 import type { ScopedExecutionPolicyV1, ScopedCallbackOperationV1 } from "../core-kernel/module-sdk/scoped-invocation";
 import type { CompiledDomainCommandContributionV1 } from "../core-kernel/module-sdk/contracts";
@@ -50,15 +50,20 @@ function reducedArgs(operation: ScopedCallbackOperationV1, args: readonly unknow
 }
 
 export function installNativeWasmCoreReadsBackendV2(addon: ReadAddon, catalog: KernelIntegratedCatalog, bindings: unknown): () => void {
-  return install(addon, catalog, bindings, false);
+  return install(addon, catalog, bindings, 2);
 }
 
 /** Runtime owns assessment scheduling; prepare/transform and migration retain V2. */
 export function installNativeWasmScheduledAssessmentV3(addon: ReadAddon, catalog: KernelIntegratedCatalog, bindings: unknown): () => void {
-  return install(addon, catalog, bindings, true);
+  return install(addon, catalog, bindings, 3);
 }
 
-function install(addon: ReadAddon, catalog: KernelIntegratedCatalog, bindings: unknown, scheduled: boolean): () => void {
+export function installNativeWasmScheduledEditingV4(addon: ReadAddon, catalog: KernelIntegratedCatalog, bindings: unknown): () => void {
+  return install(addon, catalog, bindings, 4);
+}
+
+function install(addon: ReadAddon, catalog: KernelIntegratedCatalog, bindings: unknown, mode: 2 | 3 | 4): () => void {
+  const scheduled = mode >= 3;
   const executors = captureWasmExecutorsV1(addon, catalog, bindings, true);
   // Probe every captured artifact, including dormant contributions, before
   // selecting a backend. Byte integrity alone does not prove protocol support.
@@ -104,6 +109,15 @@ function install(addon: ReadAddon, catalog: KernelIntegratedCatalog, bindings: u
   const policy = freeze<ScopedExecutionPolicyV1>({ catalog,
     invoke: (source, operation, definitionId, args) => invokeGuest(source, operation, definitionId, args) });
 
+  function guestView(source: CompiledDomainCommandContributionV1, raw: unknown, state: State) {
+    const view = raw as Record<string, unknown>;
+    if (view === null || typeof view !== "object" || view.viewVersion !== 2 || view.coreDocument !== undefined
+      || view.documentId !== state.id || view.documentVersion !== state.version) return invalid();
+    const declarations = contributionReads(source);
+    return declarations?.length === 0 && view.dependencyReads === undefined
+      ? { ...view, dependencyReads: [] } : view;
+  }
+
   function exchange(callback: Callback) {
     let state: State | undefined;
     let negotiated = false;
@@ -111,8 +125,10 @@ function install(addon: ReadAddon, catalog: KernelIntegratedCatalog, bindings: u
     const invoke: Callback = bytes => {
       if (!startsWith(bytes, REPLY)) {
         const input = decode(bytes) as Record<string, unknown>;
-        const isScheduled = input.operation === "assessmentStart" || input.operation === "assessmentCallback";
-        if ((isScheduled && !scheduled) || (scheduled && input.operation === "assess")) return invalid();
+        const isScheduled = input.operation === "assessmentStart" || input.operation === "assessmentCallback"
+          || input.operation === "contributionCallback";
+        if ((isScheduled && !scheduled) || (scheduled && input.operation === "assess")
+          || (mode === 4 && (input.operation === "prepare" || input.operation === "transform"))) return invalid();
         const id = isScheduled ? input.documentId : (input.document as { id: string }).id;
         if (typeof id !== "string") return invalid();
         state = { input: Buffer.from(bytes), id, version: (input.documentVersion as number | undefined) ?? null,
@@ -137,25 +153,40 @@ function install(addon: ReadAddon, catalog: KernelIntegratedCatalog, bindings: u
           if (request === undefined) output = callback(state.input);
           else if (request.operation === "assessmentStart") {
             if (readExactDataRecord(request, ["operation", "scheduleVersion", "documentId", "documentVersion"]) === undefined
-              || request.scheduleVersion !== 3) return invalid();
+              || request.scheduleVersion !== mode) return invalid();
             negotiated = true;
-            output = encode({ ok: true, scheduleVersion: 3 });
+            output = encode({ ok: true, scheduleVersion: mode });
+          } else if (request.operation === "contributionCallback") {
+            if (mode !== 4 || !negotiated || request.scheduleVersion !== 4
+              || readExactDataRecord(request, ["operation", "scheduleVersion", "documentId", "documentVersion",
+                "moduleId", "contributionId", "callbackOperation", "definitionId", "arguments"]) === undefined) return invalid();
+            const source = [...executors.keys()].find(entry => entry.moduleId === request.moduleId
+              && entry.contributionId === request.contributionId);
+            const operation = request.callbackOperation;
+            const args = readDenseArray(request.arguments);
+            if (source === undefined || typeof request.definitionId !== "string" || args === undefined
+              || !["commandDecode", "commandPrepare", "effectDecode", "effectTransform"].includes(operation as string)
+              || args.length !== (operation === "commandPrepare" ? 2 : 1)) return invalid();
+            const command = operation === "commandDecode" || operation === "commandPrepare";
+            if (command ? !source.commands.some(entry => entry.descriptor.commandId === request.definitionId)
+              : !source.effects.some(entry => entry.descriptor.effectKind === request.definitionId)) return invalid();
+            const guestArgs = [...args];
+            if (operation === "commandPrepare") guestArgs[0] = guestView(source, args[0], state);
+            if (operation === "effectTransform") {
+              const input = args[0] as Record<string, unknown>;
+              guestArgs[0] = { ...input, view: guestView(source, input.view, state) };
+            }
+            output = encode({ ok: true, value: invokeGuest(source, operation as ScopedCallbackOperationV1,
+              request.definitionId, guestArgs, true) });
           } else {
             if (!negotiated || readExactDataRecord(request, ["operation", "scheduleVersion", "documentId",
               "documentVersion", "moduleId", "contributionId", "callbackOperation", "view"]) === undefined
-              || request.scheduleVersion !== 3
+              || request.scheduleVersion !== mode
               || (request.callbackOperation !== "validate" && request.callbackOperation !== "classify")) return invalid();
             const source = [...executors.keys()].find(entry => entry.moduleId === request.moduleId
               && entry.contributionId === request.contributionId);
-            const view = request.view as Record<string, unknown>;
-            if (source === undefined || view.viewVersion !== 2 || view.coreDocument !== undefined
-              || view.documentId !== state.id || view.documentVersion !== state.version) return invalid();
-            // Derived catalogs preserve an explicit empty dependency list for
-            // sources without grants. It grants no data and is not in Rust's roster.
-            const declarations = contributionReads(source);
-            const guestView = declarations?.length === 0 && view.dependencyReads === undefined
-              ? { ...view, dependencyReads: [] } : view;
-            output = encode({ ok: true, value: invokeGuest(source, request.callbackOperation, null, [guestView], true) });
+            if (source === undefined) return invalid();
+            output = encode({ ok: true, value: invokeGuest(source, request.callbackOperation, null, [guestView(source, request.view, state)], true) });
           }
         } catch (error) {
           if (state.pending === undefined) throw error;
@@ -176,7 +207,7 @@ function install(addon: ReadAddon, catalog: KernelIntegratedCatalog, bindings: u
       const bridge = exchange(callback);
       let operate: Callback;
       try {
-        operate = addon.createIntegratedKernelSessionV2(input, bridge.invoke, scheduled ? 3 : 2);
+        operate = addon.createIntegratedKernelSessionV2(input, bridge.invoke, mode);
         if (scheduled && !bridge.negotiated()) return invalid();
       }
       finally { bridge.close(); }

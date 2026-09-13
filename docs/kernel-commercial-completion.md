@@ -1,5 +1,16 @@
 # Commercial kernel completion
 
+**Rust-scheduled plugin editing (2026-09-13):** explicit host mode V4 now
+delegates command decode/prepare and effect decode/transform to Runtime as well
+as final assessment. Real Wasm editing/history passes with the TS contribution
+executor replaced by a throwing function. No complete Core candidate crosses
+these editing callback boundaries. Six 256-bar reference plugin edits reduce
+host requests from 2,553,370 to 26,145 bytes versus V3 on the same artifact.
+Final Rust: 574 passed/1 ignored; Node/Native: 884 passed/2 skipped.
+Detached migration remains V2; Rust candidate construction, real product
+qualification and default cutover remain open. See
+`docs/kernel-rust-scheduled-editing-2026-09-13.md`.
+
 **Rust-scheduled final plugin assessment (2026-09-13):** a new explicit V3
 trusted-host installer delegates the assessment roster, phase ordering, scoped
 views, issue checking and aggregation to Runtime. Real Wasm edit/history tests

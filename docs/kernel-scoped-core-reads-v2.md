@@ -1,5 +1,11 @@
 # 候选 Core 按需读取 V2 · Rust 基础层
 
+最新 V4 调度入口：Rust 又接管命令准备和效果变换的逐次调用；编辑路径不再把
+完整 Core 候选传给 TS，独立迁移仍沿用 V2。参考 256 小节六次插件编辑的宿主
+请求为 26,145 B；仍需优化 Rust 内部构造及完成商业验收。
+见[Rust 编辑调度报告](kernel-rust-scheduled-editing-2026-09-13.md)。
+以下 V3 与 R1/R2 段落保留各阶段的状态记录。
+
 新增 V3 调度入口：Runtime 已直接调度和汇总最终插件校验；这一阶段的完整
 Core 文档不再传给 TS。Core 读取数据协议仍是 V2；准备、变换和迁移仍沿用既有
 宿主流程。详见[Rust 调度报告](kernel-rust-scheduled-assessment-2026-09-13.md)。

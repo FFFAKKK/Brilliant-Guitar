@@ -19,6 +19,7 @@ mod core_reads;
 mod migration;
 mod module;
 mod scheduled_assessment;
+mod scheduled_preparation;
 
 type CoreDispatch = fn(
     &mut KernelStage3TransactionV1<'_>,
@@ -318,6 +319,8 @@ impl IntegratedKernelRuntimeV2 {
         let mut transaction = self.runtime.begin_stage3_transaction();
         let mut projection_count = 0;
         let module = module::ModuleEnvironment {
+            assembly: &self.assembly,
+            assessment_reads: &self.assessment_reads,
             commands: &self.commands,
             effects: &self.effects,
             id: &id,
