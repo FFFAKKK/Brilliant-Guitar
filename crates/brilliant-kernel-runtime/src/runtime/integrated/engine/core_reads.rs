@@ -1,6 +1,7 @@
 //! Candidate-bound Core data reads. No committed-session lookup or semantic
 //! validation is run here: the source is the exact enclosing callback input.
 use std::{
+    cell::OnceCell,
     collections::HashMap,
     io::{self, Write},
 };
@@ -42,6 +43,12 @@ pub(super) struct CoreReads<'a> {
     remaining_bytes: usize,
     failed: bool,
     budget: budget::Account,
+    lazy: Option<LazySource<'a>>,
+}
+
+struct LazySource<'a> {
+    cache: &'a OnceCell<Value>,
+    load: &'a mut dyn FnMut() -> Result<Value>,
 }
 
 impl<'a> CoreReads<'a> {
@@ -61,7 +68,32 @@ impl<'a> CoreReads<'a> {
             remaining_bytes: MAX_TOTAL_REPLY_BYTES,
             failed: false,
             budget: budget::current(),
+            lazy: None,
         }
+    }
+
+    /// Metadata uses the small scoped context. Every object read loads the
+    /// actual complete candidate and retains the existing global index checks.
+    pub(super) fn lazy(
+        context: &'a Value,
+        cache: &'a OnceCell<Value>,
+        load: &'a mut dyn FnMut() -> Result<Value>,
+    ) -> Self {
+        let mut result = Self::new(context);
+        result.lazy = Some(LazySource { cache, load });
+        result
+    }
+
+    fn full_document(&mut self) -> Result<&'a Value> {
+        let Some(lazy) = &mut self.lazy else {
+            return self.document.ok_or(Failure::Unavailable);
+        };
+        if lazy.cache.get().is_none() {
+            lazy.cache
+                .set((lazy.load)()?)
+                .map_err(|_| Failure::InvalidSource)?;
+        }
+        lazy.cache.get().ok_or(Failure::Unavailable)
     }
 
     pub(super) fn failed(&self) -> bool {
@@ -104,7 +136,8 @@ impl<'a> CoreReads<'a> {
                 .and_then(string)
                 .map_err(|_| Failure::InvalidRequest)?;
             if self.index.is_none() {
-                self.index = Some(Index::build(document, self.budget.clone())?);
+                let full = self.full_document()?;
+                self.index = Some(Index::build(full, self.budget.clone())?);
             }
             let entry = self
                 .index

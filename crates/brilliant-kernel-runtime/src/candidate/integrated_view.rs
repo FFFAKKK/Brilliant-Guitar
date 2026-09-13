@@ -10,7 +10,19 @@ impl Candidate<'_> {
         id: &impl Fn(&JsString) -> Result<Id, Failure>,
     ) -> Result<score::ScoreDocumentV1<Id>, Failure> {
         self.reservation.ensure_active()?;
-        let result = self.integrated_document_inner(id);
+        let result = self.integrated_document_inner(id, true);
+        if result.is_err() {
+            self.reservation.abort();
+        }
+        result
+    }
+
+    /// Only metadata/extensions for a scoped plugin view, never a Core snapshot.
+    pub(super) fn integrated_contribution_context(
+        &mut self,
+    ) -> Result<score::ScoreDocumentV1<JsString>, Failure> {
+        self.reservation.ensure_active()?;
+        let result = self.integrated_document_inner(&|id| Ok(id.clone()), false);
         if result.is_err() {
             self.reservation.abort();
         }
@@ -20,12 +32,13 @@ impl Candidate<'_> {
     fn integrated_document_inner<Id>(
         &mut self,
         id: &impl Fn(&JsString) -> Result<Id, Failure>,
+        include_core: bool,
     ) -> Result<score::ScoreDocumentV1<Id>, Failure> {
         let root = self.document.clone();
         let Some(Value::DocumentMetadata(metadata)) = self.read_value(&root) else {
             return Err(Failure::InternalError);
         };
-        let measure_definitions =
+        let measure_definitions = if include_core {
             self.integrated_children(&root, Children::Measures, |candidate, source| {
                 let Some(Value::MeasureDefinition {
                     meter,
@@ -39,10 +52,17 @@ impl Candidate<'_> {
                     meter,
                     pickup_duration,
                 })
-            })?;
-        let parts = self.integrated_children(&root, Children::Parts, |candidate, source| {
-            candidate.integrated_part(source, id)
-        })?;
+            })?
+        } else {
+            Vec::new()
+        };
+        let parts = if include_core {
+            self.integrated_children(&root, Children::Parts, |candidate, source| {
+                candidate.integrated_part(source, id)
+            })?
+        } else {
+            Vec::new()
+        };
         let mut extensions = Vec::new();
         let mut failed = false;
         let mut reservation = std::mem::take(&mut self.reservation);

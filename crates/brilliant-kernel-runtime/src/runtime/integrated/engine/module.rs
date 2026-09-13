@@ -4,6 +4,7 @@ use crate::candidate::{CandidateExecution, ModuleSegmentSource};
 
 pub(super) trait ModuleTransaction {
     fn projection(&mut self, id: &StableId) -> Result<Value>;
+    fn contribution_context(&mut self, id: &StableId) -> Result<Value>;
     fn contains(&mut self, entity: &StableEntityAddressV1, id: &StableId) -> bool;
     fn pitch(
         &mut self,
@@ -18,6 +19,13 @@ pub(super) trait ModuleTransaction {
     ) -> std::result::Result<(), KernelStage3CommandFailureLeafV1>;
 }
 impl ModuleTransaction for KernelStage3TransactionV1<'_> {
+    fn contribution_context(&mut self, id: &StableId) -> Result<Value> {
+        value(
+            &self
+                .integrated_contribution_context(id)
+                .map_err(|_| internal())?,
+        )
+    }
     fn projection(&mut self, id: &StableId) -> Result<Value> {
         value(&self.integrated_projection(id).map_err(|_| internal())?)
     }
@@ -45,6 +53,13 @@ impl ModuleTransaction for KernelStage3TransactionV1<'_> {
     }
 }
 impl ModuleTransaction for CandidateExecution<'_> {
+    fn contribution_context(&mut self, _: &StableId) -> Result<Value> {
+        value(
+            &self
+                .integrated_contribution_context()
+                .map_err(|_| internal())?,
+        )
+    }
     fn projection(&mut self, _: &StableId) -> Result<Value> {
         value(&self.integrated_document().map_err(|_| internal())?)
     }
@@ -120,18 +135,18 @@ impl ModuleEnvironment<'_> {
         if !string(field(&descriptor, "targetKind")?)?.eq_ascii(target.kind().as_str()) {
             return Err(failure("command.target-mismatch"));
         }
-        let initial = transaction.projection(id)?;
-        *projection_count += 1;
         let prepared_reply = if executor.uses_scoped_preparation() {
             self.scoped_prepare(
                 envelope,
                 &descriptor,
-                initial,
+                projection_count,
                 transaction,
                 &target_entity,
                 executor,
             )?
         } else {
+            let initial = transaction.projection(id)?;
+            *projection_count += 1;
             call(
                 executor,
                 object([
@@ -233,11 +248,11 @@ impl ModuleEnvironment<'_> {
                 {
                     return Err(contract());
                 }
-                let document = transaction.projection(id).map_err(|_| internal())?;
-                *projection_count += 1;
                 let transformed_reply = if executor.uses_scoped_preparation() {
-                    self.scoped_transform(request, source, document, executor)?
+                    self.scoped_transform(request, source, transaction, projection_count, executor)?
                 } else {
+                    let document = transaction.projection(id).map_err(|_| internal())?;
+                    *projection_count += 1;
                     call(
                         executor,
                         object([

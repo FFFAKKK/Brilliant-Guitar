@@ -258,6 +258,54 @@ if (protocol === 4) test("Rust migration replaces TS preparation and validation 
   }
 });
 
+if (protocol === 4) test("Scoped preparation projects Core only on demand and observes current effects when it does", () => {
+  const compiled = catalog(), initial = createNativeWorkloadScore(256);
+  const query = { readVersion: 2, selectorId: "core.selector.score-entity", address: { kind: "note", noteId: "note-1" } };
+  let projections = 0, forceTransformRead = false, observedPitch: unknown;
+  const transport = { ...addon,
+    createIntegratedKernelSessionV2(input: Buffer, callback: (bytes: Buffer) => Buffer, version?: number) {
+      const operate = addon.createIntegratedKernelSessionV2(input, callback, version);
+      projections = JSON.parse(operate(Buffer.from('{"operation":"read"}')).toString("utf8")).callbackProjections;
+      return (input: Buffer) => {
+        const output = operate(input), parsed = JSON.parse(output.toString("utf8"));
+        if (typeof parsed.callbackProjections === "number") projections = parsed.callbackProjections;
+        return output;
+      };
+    },
+    createWasmModuleExecutorV1(...args: Parameters<WasmNativeAddonV1["createWasmModuleExecutorV1"]>) {
+      const execute = addon.createWasmModuleExecutorV1(...args);
+      return (input: Buffer) => {
+        const request = JSON.parse(input.toString("utf8"));
+        if (forceTransformRead && request.operation === "effectDecode") {
+          const row = request.coreReads.find((row: { query: { selectorId?: string; address?: { noteId?: string } } }) =>
+            row.query.selectorId === query.selectorId && row.query.address?.noteId === "note-1");
+          if (row === undefined) return Buffer.from(JSON.stringify({ callbackVersion: 2, status: "read", query }));
+          observedPitch = row.reply.result.value.value.writtenPitch.step;
+        }
+        return execute(input);
+      };
+    },
+  };
+  const bus = create(initial, compiled, transport);
+  const oracle = CommandBus.createIntegrated(initial, compiled); assert.ok(oracle.ok);
+  bus.read();
+  let before = projections;
+  const first = command("lazy", "note-1", "D");
+  assert.deepEqual(bus.submit(first), oracle.value.submit(first));
+  // One preparation read source, final transaction projection and assessment;
+  // transform uses metadata/extensions only. Decoder/preparer share a source.
+  assert.equal(projections - before, 3);
+  before = projections;
+  forceTransformRead = true;
+  const second = command("full-read", "note-1", "E");
+  assert.deepEqual(bus.submit(second), oracle.value.submit(second));
+  assert.equal(projections - before, 4);
+  assert.equal(observedPitch, "E");
+  assert.deepEqual(bus.undo(), oracle.value.undo());
+  assert.deepEqual(bus.redo(), oracle.value.redo());
+  assert.deepEqual(bus.read(), oracle.value.read());
+});
+
 if (protocol === 4) test("Rust migration retains rejection, dependency and stale-host boundaries", () => {
   const base = catalog();
   const derived = compileContributionReadCatalogV1(base, [{

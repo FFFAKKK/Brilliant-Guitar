@@ -13,6 +13,12 @@ pub(crate) struct ModuleSegmentSource {
 }
 
 impl CandidateExecution<'_> {
+    pub(crate) fn integrated_contribution_context(
+        &mut self,
+    ) -> Result<ScoreDocumentV1<JsString>, Failure> {
+        self.recorder.candidate.integrated_contribution_context()
+    }
+
     pub(crate) fn integrated_document(&mut self) -> Result<ScoreDocumentV1<JsString>, Failure> {
         self.recorder
             .candidate

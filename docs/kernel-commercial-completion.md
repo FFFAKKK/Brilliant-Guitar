@@ -1,5 +1,16 @@
 # Commercial kernel completion
 
+**Lazy Core projection during V4 preparation (2026-09-13):** command preparation
+and effect transformation now build a metadata/extension context first and load
+the full actual candidate only for Core object reads. The original global index,
+identity rejection and operation budgets remain on that read path. Real Wasm
+tests show one fewer full projection for reference edits; forced effect reads
+see the earlier pitch write. Three paired 256-bar profiles show plugin-edit
+medians at 54.86–61.44 → 45.02–50.41 ms; small-score improvement is unproven.
+Rust: 579 passed/1 ignored; Node/Native: 887 passed/2 skipped. Full object-read
+projection costs and commercial qualification remain. See
+`docs/kernel-lazy-core-projection-2026-09-13.md`.
+
 **Final assessment projection reuse (2026-09-13):** Core assessment and plugin
 callbacks now share one lossless candidate capture instead of serializing and
 parsing the same document twice. Integrated field lookups reuse borrowed UTF-16

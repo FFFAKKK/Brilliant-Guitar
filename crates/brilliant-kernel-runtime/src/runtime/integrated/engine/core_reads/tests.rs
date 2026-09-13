@@ -35,6 +35,69 @@ fn edit_field(object: &mut Value, key: &str, new_value: Value) {
 }
 
 #[test]
+fn lazy_core_source_skips_metadata_projection_but_never_returns_a_partial_document() {
+    let original = source();
+    let document = field(&original, "document").unwrap();
+    let mut context = original.clone();
+    let JsonValue::Object(fields) = &mut context else {
+        unreachable!()
+    };
+    let partial = fields.get_mut(&JsString::from("document")).unwrap();
+    edit_field(partial, "parts", JsonValue::Array(vec![]));
+    edit_field(partial, "measureDefinitions", JsonValue::Array(vec![]));
+    let loads = std::cell::Cell::new(0);
+    let cache = OnceCell::new();
+    let mut load = || {
+        loads.set(loads.get() + 1);
+        Ok(document.clone())
+    };
+    let entity = select("document", field(document, "id").unwrap(), false);
+    let expected = CoreReads::new(&original).read_core(&entity).unwrap();
+    for _ in 0..2 {
+        let mut reads = CoreReads::lazy(&context, &cache, &mut load);
+        assert_eq!(
+            reads.read_core(METADATA).unwrap(),
+            CoreReads::new(&original).read_core(METADATA).unwrap()
+        );
+        if cache.get().is_none() {
+            assert_eq!(loads.get(), 0);
+        }
+        assert_eq!(reads.read_core(&entity).unwrap(), expected);
+        assert_eq!(
+            reads
+                .read_core(&select("note", &text("note-a"), true))
+                .unwrap(),
+            CoreReads::new(&original)
+                .read_core(&select("note", &text("note-a"), true))
+                .unwrap()
+        );
+    }
+    assert_eq!(loads.get(), 1);
+}
+
+#[test]
+fn lazy_projection_failure_poison_cannot_be_swallowed_or_retried_in_the_operation() {
+    let source = source();
+    let scope = OperationScope::enter();
+    let cache = OnceCell::new();
+    let mut load = || Err(Failure::InvalidSource);
+    let mut reads = CoreReads::lazy(&source, &cache, &mut load);
+    assert!(reads.read_core(METADATA).is_ok());
+    assert_eq!(
+        reads.read_core(&select("note", &text("note-a"), false)),
+        Err(Failure::InvalidSource)
+    );
+    assert!(cache.get().is_none());
+    assert!(reads.failed());
+    assert_eq!(
+        CoreReads::new(&source).read_core(METADATA),
+        Err(Failure::ResourceLimit)
+    );
+    drop(scope);
+    assert!(CoreReads::new(&source).read_core(METADATA).is_ok());
+}
+
+#[test]
 fn metadata_is_lazy_lossless_and_migration_does_not_invent_a_revision() {
     let mut request = source();
     let JsonValue::Object(fields) = &mut request else {
@@ -284,13 +347,21 @@ fn duplicate_entity_identity_fails_closed_and_keeps_index_unpublished() {
     let mut parts = source_array(document, "parts").unwrap().to_vec();
     parts.push(parts[0].clone());
     edit_field(document, "parts", JsonValue::Array(parts));
-    let mut reads = CoreReads::new(&request);
-    assert_eq!(
-        reads.read_core(&select("part", &text("missing"), false)),
-        Err(Failure::InvalidSource)
-    );
-    assert!(reads.index.is_none());
-    assert!(reads.failed());
+    for lazy in [false, true] {
+        let cache = OnceCell::new();
+        let mut load = || Ok(field(&request, "document").unwrap().clone());
+        let mut reads = if lazy {
+            CoreReads::lazy(&request, &cache, &mut load)
+        } else {
+            CoreReads::new(&request)
+        };
+        assert_eq!(
+            reads.read_core(&select("part", &text("missing"), false)),
+            Err(Failure::InvalidSource)
+        );
+        assert!(reads.index.is_none());
+        assert!(reads.failed());
+    }
 }
 
 #[test]

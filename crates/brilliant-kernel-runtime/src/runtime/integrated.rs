@@ -63,6 +63,23 @@ impl KernelStage3TransactionV1<'_> {
         &mut self,
         document_id: &StableId,
     ) -> Result<ScoreDocumentV1, KernelStage3CommandFailureLeafV1> {
+        self.integrated_context(document_id, true)
+    }
+
+    /// Metadata and extension context only; its empty Core arrays are never
+    /// exposed as a document. Scoped Core reads must load a full projection.
+    pub(crate) fn integrated_contribution_context(
+        &mut self,
+        document_id: &StableId,
+    ) -> Result<ScoreDocumentV1, KernelStage3CommandFailureLeafV1> {
+        self.integrated_context(document_id, false)
+    }
+
+    fn integrated_context(
+        &mut self,
+        document_id: &StableId,
+        include_core: bool,
+    ) -> Result<ScoreDocumentV1, KernelStage3CommandFailureLeafV1> {
         let invalid = || KernelStage3CommandFailureLeafV1::LocalInvariantRejected;
         let Some(ScalarValueV1::DocumentMetadata(metadata)) =
             self.overlay
@@ -72,12 +89,15 @@ impl KernelStage3TransactionV1<'_> {
         else {
             return Err(invalid());
         };
-        let measure_ids = self
-            .overlay
-            .read_order(&StableOrderAddressV1::Measures {
-                document_id: document_id.clone(),
-            })
-            .ok_or_else(invalid)?;
+        let measure_ids = if include_core {
+            self.overlay
+                .read_order(&StableOrderAddressV1::Measures {
+                    document_id: document_id.clone(),
+                })
+                .ok_or_else(invalid)?
+        } else {
+            Vec::new()
+        };
         let mut measure_definitions = Vec::new();
         measure_definitions
             .try_reserve(measure_ids.len())
@@ -91,12 +111,15 @@ impl KernelStage3TransactionV1<'_> {
             };
             measure_definitions.push(bundle.definition);
         }
-        let part_ids = self
-            .overlay
-            .read_order(&StableOrderAddressV1::Parts {
-                document_id: document_id.clone(),
-            })
-            .ok_or_else(invalid)?;
+        let part_ids = if include_core {
+            self.overlay
+                .read_order(&StableOrderAddressV1::Parts {
+                    document_id: document_id.clone(),
+                })
+                .ok_or_else(invalid)?
+        } else {
+            Vec::new()
+        };
         let mut parts = Vec::new();
         parts.try_reserve(part_ids.len()).map_err(|_| invalid())?;
         for part_id in part_ids {
