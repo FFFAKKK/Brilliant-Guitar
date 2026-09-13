@@ -1,0 +1,112 @@
+{
+  "date": "2026-09-13",
+  "baseCommit": "42dec13",
+  "scope": "R1: private Rust candidate-bound Core read capability; Node/Wasm selective-read activation remains pending",
+  "logDirectory": ".local-evidence/scoped-core-reads-2026-09-13",
+  "fresh": {
+    "rustWorkspaceAllFeatures": { "passed": 564, "ignored": 1, "failed": 0, "log": "rust-tests.log" },
+    "newRuntimeAndSessionCoverage": { "passed": 11, "failed": 0, "log": "rust-tests.log" },
+    "clippyAllTargetsAllFeaturesDenyWarnings": { "status": "passed", "log": "clippy.log" },
+    "msrv188AllTargetsAllFeatures": { "status": "passed", "log": "msrv.log" },
+    "rustfmtWorkspace": "passed",
+    "typescriptBuildAndTypecheck": { "status": "passed", "log": "ts-build.log" },
+    "nodeFull": { "tests": 852, "passed": 850, "skipped": 2, "failed": 0, "durationMs": 66923.7727, "log": "node-tests.log" },
+    "releaseV2": { "status": "passed", "log": "build-v2.log" },
+    "releaseWasm": { "status": "passed", "log": "build-wasm.log" },
+    "stagedV2Smoke": {
+      "status": "passed",
+      "journeySteps": 7,
+      "migrationPhases": ["migrationPrepare", "migrationValidate"],
+      "unchangedExports": 7,
+      "script": "native-smoke.cjs",
+      "log": "native-smoke.json"
+    }
+  },
+  "artifacts": {
+    "stagedFreshV2": {
+      "path": "target/scoped-core-reads-v2/brilliant_kernel_node.node",
+      "sha256": "d69724b487c44efef1214abba2b80c833fc80b0e108e7910a3f7e1ace27dac75",
+      "bytes": 4508672,
+      "verification": "Separate fresh-artifact journey, migration and export smoke; normal V2 was not replaced"
+    },
+    "freshWasm": {
+      "path": "target/wasm-v1/brilliant_kernel_node.node",
+      "sha256": "52b1d5063bc6f068baf47d15c58fc97f86ab9f45280387bf28c9a1fd2e995154",
+      "bytes": 5742592,
+      "verification": "Full Node suite and bounded capacity reproduction"
+    },
+    "inheritedNormalV2": {
+      "path": "target/integrated-v2/brilliant_kernel_node.node",
+      "sha256": "610cf8db45ead38fc841d8e3d3d1ea88fb21da5ded1b43a112b80cbb7562425f"
+    },
+    "inheritedCoreV1": {
+      "path": "target/rkp-1-node/brilliant_kernel_node.node",
+      "sha256": "d7e69aba85862c2430cbe98389ea6c8ceafd3f866d00caa8a2a8bc3de8675fb1"
+    },
+    "inheritedGuest": {
+      "path": "test/core-kernel/fixtures/wasm-guest/guest.wasm",
+      "sha256": "fa1cc218af4825e79d49c00d5c0ee59c78a154f07a7e4293aebcde2d8a29650e",
+      "rebuiltThisSlice": false
+    }
+  },
+  "readPolicy": {
+    "scope": "One aggregate Rust executor callback, not a whole Native operation",
+    "maxQueryBytes": 4096,
+    "maxQueries": 128,
+    "maxReplyBytesIncludingEnvelope": 1048576,
+    "maxTotalSuccessfulReplyBytes": 8388608,
+    "maxIndexEntities": 131072,
+    "maxIndexVisits": 262144,
+    "failureIsSticky": true,
+    "missingEntityIsNormalData": true,
+    "wasmBudgetsChanged": false
+  },
+  "proof": [
+    "Queries read the exact Rust callback candidate; no committed-state lookup or document-version cache",
+    "Seven entity kinds and ownership, Core-only root, lazy metadata and reused within-callback index",
+    "Independent ownership assertions cover differently ordered measure definitions and measure contents",
+    "Lossless UTF-16, negative zero and marker-like ordinary keys survive replies",
+    "A valid 256-measure Rust fixture returns its last actual note in fewer than 512 bytes; not the 1024-note Wasm workload",
+    "Same-version prepare reads C, transform reads D, and the captured history journey retains exact outputs",
+    "A swallowed query limit after an effective Batch prefix rejects without document/history/dirty/event adoption; the next operation recovers",
+    "Detached migration reads have null version; swallowed failures at either callback phase reject without returning a migrated document"
+  ],
+  "freshCapacityReproduction": {
+    "script": "scripts/profile-native-integrated.mjs",
+    "log": "profile.json",
+    "profileVersion": 2,
+    "environment": "Windows x64, Node 24.15.0, release Wasm Native, --expose-gc",
+    "samplesPerSize": 6,
+    "results": [
+      { "measures": 16, "notes": 64, "committed": 6, "rejected": 0 },
+      { "measures": 64, "notes": 256, "committed": 6, "rejected": 0 },
+      { "measures": 256, "notes": 1024, "committed": 0, "rejected": 6 }
+    ],
+    "openFinding": {
+      "operation": "commandPrepare",
+      "inputBytes": 211794,
+      "failure": "wasm.execution-failed:FuelExhausted",
+      "standaloneReplayOutsideOperationBudget": "rejected",
+      "resolved": false
+    },
+    "qualification": false
+  },
+  "remaining": [
+    "Explicit versioned Node/Wasm binding and V1 full-input compatibility",
+    "Safe adapter lifetime, stale capability/reentry rejection, authentic contribution binding",
+    "Operation-wide aggregate query and response accounting, including repeated callback scopes",
+    "Reduced full-document projection/transport and actual 256-bar Wasm selective-read editing and validation",
+    "Complete Rust-owned plugin scheduling, incremental/dependency equivalence, long-running resource and platform/performance/release qualification"
+  ],
+  "notClaimed": [
+    "A released SDK V2, new Node exports or default backend cutover",
+    "Successful 256-bar Wasm editing, process memory/CPU limits or commercial performance",
+    "Elimination of the current whole-document Rust-to-host projection",
+    "Rebuilding frozen Core V1 or the reference guest, remote push or commercial completion"
+  ],
+  "progressEstimate": {
+    "foundationalFunctionalityPercentRange": [85, 90],
+    "commercialPreparationPercent": 65,
+    "meaning": "Unchanged rough engineering assessment; not work or schedule completion"
+  }
+}

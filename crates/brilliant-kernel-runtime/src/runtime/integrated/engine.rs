@@ -15,6 +15,7 @@ use brilliant_score_foundation::{
 mod assessment;
 mod batch;
 mod core;
+mod core_reads;
 mod migration;
 mod module;
 
@@ -524,9 +525,13 @@ fn call(
     request: Value,
     source: &Value,
 ) -> Result<Value> {
+    let mut reads = core_reads::CoreReads::new(&request);
     let reply = executor
-        .execute(&encode(&request)?)
+        .execute_with_core_reads(&encode(&request)?, &mut reads)
         .map_err(|_| owned_failure(source, "command.contribution-internal-error"))?;
+    if reads.failed() {
+        return Err(owned_failure(source, "command.contribution-internal-error"));
+    }
     let reply = decode(&reply)
         .map_err(|_| owned_failure(source, "command.contribution-contract-violation"))?;
     match field(&reply, "ok")? {

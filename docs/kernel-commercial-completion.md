@@ -92,6 +92,21 @@ The next capacity requirement is an explicit versioned selective-read/ScoreSlice
 contract with compatibility, candidate visibility and resource-accounting proof.
 See `docs/kernel-wasm-guest-capacity-2026-09-13.md`.
 
+**Candidate-bound reads, Rust foundation (2026-09-13):** the private Rust
+executor seam now supports a borrowed read capability bound to the exact
+callback candidate. Metadata, seven entity kinds and ownership use lossless,
+bounded replies; invalid requests and quota failures remain sticky even when
+the executor returns success. Same-version candidate visibility, atomic rollback,
+migration refusal and a valid 256-measure Rust note read have direct coverage.
+Final Rust: 564 passed/1 ignored; Node/Native: 850 passed/2 skipped; fresh V2 and
+Wasm builds, staged V2 compatibility smoke, Clippy/fmt/MSRV pass.
+This completes only R1. Node/Wasm activation, safe adapter lifetime and
+operation-wide query accounting are R2; real selective-read plugin qualification
+is R3. The existing guest still receives complete V1 input, and fresh 256-bar
+reproduction still fails with fuel exhaustion. Readiness remains approximately
+65%. Contract and next-step gates: `docs/kernel-scoped-core-reads-v2.md`;
+evidence: `docs/evidence/kernel-scoped-core-reads-2026-09-13.json`.
+
 **Historical pause at the owner's request (2026-09-12):** finish the current
 cross-plugin explicit-read task, record its evidence and local commits, then
 stop and report. That pause was followed by the explicit restart above.

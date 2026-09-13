@@ -1,10 +1,16 @@
-pub use brilliant_extension_protocol::{ContributionExecutionFailureV2, ContributionExecutorV2};
+pub use brilliant_extension_protocol::{
+    ContributionCoreReadV2, ContributionExecutionFailureV2, ContributionExecutorV2,
+    ContributionReadFailureV2,
+};
 use brilliant_kernel_runtime::IntegratedKernelRuntimeV2;
 
 /// Fixed host assembly; all state and editing history remain in the Rust runtime.
 pub struct IntegratedKernelSessionV2 {
     runtime: IntegratedKernelRuntimeV2,
 }
+
+#[cfg(test)]
+mod read_tests;
 impl IntegratedKernelSessionV2 {
     /// Detached migration service; does not create or mutate an editing session.
     pub fn migrate_extension(bytes: &[u8], executor: &mut dyn ContributionExecutorV2) -> Vec<u8> {

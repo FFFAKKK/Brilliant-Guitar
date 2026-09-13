@@ -7,7 +7,8 @@ mod session;
 mod wasm;
 
 pub use integrated::{
-    ContributionExecutionFailureV2, ContributionExecutorV2, IntegratedKernelSessionV2,
+    ContributionCoreReadV2, ContributionExecutionFailureV2, ContributionExecutorV2,
+    ContributionReadFailureV2, IntegratedKernelSessionV2,
 };
 pub use session::{KernelSession, KernelSessionCreateAccepted};
 #[cfg(feature = "wasm-executor-v1")]

@@ -237,9 +237,13 @@ fn callback(
 ) -> Result<Value> {
     let internal = || owned_failure(source, "migration.contribution-internal-error");
     let contract = || owned_failure(source, "migration.contribution-contract-violation");
+    let mut reads = super::core_reads::CoreReads::new(&request);
     let bytes = executor
-        .execute(&encode(&request)?)
+        .execute_with_core_reads(&encode(&request)?, &mut reads)
         .map_err(|_| internal())?;
+    if reads.failed() {
+        return Err(internal());
+    }
     let reply = decode(&bytes).map_err(|_| contract())?;
     match field(&reply, "ok")? {
         JsonValue::Bool(true) => Ok(reply),
