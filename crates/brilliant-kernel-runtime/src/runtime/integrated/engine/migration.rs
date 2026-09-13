@@ -4,6 +4,7 @@ use brilliant_core_types::FiniteNumber;
 
 impl IntegratedKernelRuntimeV2 {
     pub fn migrate_extension(bytes: &[u8], executor: &mut dyn ContributionExecutorV2) -> Vec<u8> {
+        let _reads = super::core_reads::OperationScope::enter();
         let result = migrate(bytes, executor).unwrap_or_else(|error| {
             let error =
                 if string(field(&error, "code").unwrap_or(&JsonValue::Null)).is_ok_and(|id| {
@@ -238,6 +239,9 @@ fn callback(
     let internal = || owned_failure(source, "migration.contribution-internal-error");
     let contract = || owned_failure(source, "migration.contribution-contract-violation");
     let mut reads = super::core_reads::CoreReads::new(&request);
+    if reads.failed() {
+        return Err(internal());
+    }
     let bytes = executor
         .execute_with_core_reads(&encode(&request)?, &mut reads)
         .map_err(|_| internal())?;

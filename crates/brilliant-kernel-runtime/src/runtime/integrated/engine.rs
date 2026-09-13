@@ -40,6 +40,7 @@ impl IntegratedKernelRuntimeV2 {
         bytes: &[u8],
         executor: &mut dyn ContributionExecutorV2,
     ) -> std::result::Result<Self, Vec<u8>> {
+        let _reads = core_reads::OperationScope::enter();
         Self::create_inner(bytes, executor).map_err(|failure| {
             encode(&failure).unwrap_or_else(|_| b"{\"code\":\"command.internal-error\"}".to_vec())
         })
@@ -133,6 +134,7 @@ impl IntegratedKernelRuntimeV2 {
         executor: &mut dyn ContributionExecutorV2,
         dispatch_core: CoreDispatch,
     ) -> Vec<u8> {
+        let _reads = core_reads::OperationScope::enter();
         let result = self
             .operate_inner(bytes, executor, dispatch_core)
             .unwrap_or_else(|error| {
@@ -526,6 +528,9 @@ fn call(
     source: &Value,
 ) -> Result<Value> {
     let mut reads = core_reads::CoreReads::new(&request);
+    if reads.failed() {
+        return Err(owned_failure(source, "command.contribution-internal-error"));
+    }
     let reply = executor
         .execute_with_core_reads(&encode(&request)?, &mut reads)
         .map_err(|_| owned_failure(source, "command.contribution-internal-error"))?;

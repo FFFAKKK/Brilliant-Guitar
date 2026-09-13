@@ -393,3 +393,91 @@ fn entity_index_admission_stops_at_its_bound() {
     assert!(reads.index.is_none());
     assert!(reads.failed());
 }
+
+#[test]
+fn fresh_callbacks_cannot_reset_operation_query_or_reply_limits() {
+    let request = source();
+    {
+        let _operation = OperationScope::enter();
+        for _ in 0..32 {
+            let mut reads = CoreReads::new(&request);
+            for _ in 0..128 {
+                assert!(reads.read_core(METADATA).is_ok());
+            }
+        }
+        // This is a fresh callback, with a fresh per-callback quota.
+        let mut reads = CoreReads::new(&request);
+        assert_eq!(reads.read_core(METADATA), Err(Failure::ResourceLimit));
+        assert!(reads.failed());
+        assert!(CoreReads::new(&request).failed());
+    }
+    let mut large = source();
+    let JsonValue::Object(fields) = &mut large else {
+        unreachable!()
+    };
+    edit_field(
+        fields.get_mut(&JsString::from("document")).unwrap(),
+        "metadata",
+        text(&"x".repeat(512 * 1024)),
+    );
+    {
+        let _operation = OperationScope::enter();
+        // One query per callback, far below each callback's 8 MiB ceiling.
+        for _ in 0..63 {
+            assert!(CoreReads::new(&large).read_core(METADATA).is_ok());
+        }
+        assert_eq!(
+            CoreReads::new(&large).read_core(METADATA),
+            Err(Failure::ResourceLimit)
+        );
+    }
+    assert!(CoreReads::new(&request).read_core(METADATA).is_ok());
+}
+
+#[test]
+fn rebuilding_candidate_indexes_charges_operation_visits_and_unwind_poison_is_sticky() {
+    let mut request = source();
+    let JsonValue::Object(fields) = &mut request else {
+        unreachable!()
+    };
+    let document = fields.get_mut(&JsString::from("document")).unwrap();
+    let JsonValue::Array(parts) = (match document {
+        JsonValue::Object(fields) => fields.get_mut(&JsString::from("parts")).unwrap(),
+        _ => unreachable!(),
+    }) else {
+        unreachable!()
+    };
+    // Intermediate candidates may contain duplicate empty coverage containers.
+    // They are visits rather than indexed entities and must still be accounted.
+    edit_field(
+        &mut parts[0],
+        "measureContents",
+        JsonValue::Array(vec![
+            object([
+                ("measureId", text("measure-a")),
+                ("voices", JsonValue::Array(vec![]))
+            ]);
+            131_072
+        ]),
+    );
+    {
+        let _operation = OperationScope::enter();
+        let query = select("note", &text("missing"), false);
+        for _ in 0..7 {
+            assert!(CoreReads::new(&request).read_core(&query).is_ok());
+        }
+        let mut reads = CoreReads::new(&request);
+        assert_eq!(reads.read_core(&query), Err(Failure::ResourceLimit));
+        assert!(reads.index.is_none());
+    }
+    {
+        let _operation = OperationScope::enter();
+        let result = std::panic::catch_unwind(|| {
+            let _attempt = ReadAttempt(budget::current(), true);
+            panic!("simulated allocation or encoding unwind");
+        });
+        assert!(result.is_err());
+        assert!(CoreReads::new(&request).failed());
+    }
+    assert!(!CoreReads::new(&request).failed());
+}

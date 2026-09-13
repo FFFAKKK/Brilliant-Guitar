@@ -12,6 +12,9 @@ use brilliant_score_foundation::LosslessEncode;
 use super::super::wire::{Value, array, decode, exact, field, integer, object, string, tag, text};
 use super::StableEntityAddressV1;
 
+mod budget;
+pub(super) use budget::OperationScope;
+
 const MAX_QUERY_BYTES: usize = 4 * 1024;
 const MAX_QUERIES: usize = 128;
 const MAX_REPLY_BYTES: usize = 1024 * 1024;
@@ -28,6 +31,7 @@ struct Entry<'a> {
 struct Index<'a> {
     entries: HashMap<(JsString, JsString), Entry<'a>>,
     visits: usize,
+    budget: budget::Account,
 }
 
 pub(super) struct CoreReads<'a> {
@@ -37,6 +41,7 @@ pub(super) struct CoreReads<'a> {
     calls: usize,
     remaining_bytes: usize,
     failed: bool,
+    budget: budget::Account,
 }
 
 impl<'a> CoreReads<'a> {
@@ -48,11 +53,12 @@ impl<'a> CoreReads<'a> {
             calls: 0,
             remaining_bytes: MAX_TOTAL_REPLY_BYTES,
             failed: false,
+            budget: budget::current(),
         }
     }
 
     pub(super) fn failed(&self) -> bool {
-        self.failed
+        self.failed || self.budget.borrow().failed()
     }
 
     fn read(&mut self, input: &[u8]) -> Result<Vec<u8>> {
@@ -60,6 +66,7 @@ impl<'a> CoreReads<'a> {
             return Err(Failure::ResourceLimit);
         }
         self.calls += 1;
+        self.budget.borrow_mut().query()?;
         let query = decode(input).map_err(|_| Failure::InvalidRequest)?;
         if field(&query, "readVersion").ok().and_then(integer) != Some(2) {
             return Err(Failure::InvalidRequest);
@@ -90,7 +97,7 @@ impl<'a> CoreReads<'a> {
                 .and_then(string)
                 .map_err(|_| Failure::InvalidRequest)?;
             if self.index.is_none() {
-                self.index = Some(Index::build(document)?);
+                self.index = Some(Index::build(document, self.budget.clone())?);
             }
             let entry = self
                 .index
@@ -116,7 +123,10 @@ impl<'a> CoreReads<'a> {
         };
         let mut output = LimitedOutput {
             bytes: Vec::new(),
-            limit: self.remaining_bytes.min(MAX_REPLY_BYTES),
+            limit: self
+                .remaining_bytes
+                .min(MAX_REPLY_BYTES)
+                .min(self.budget.borrow().remaining_reply_bytes()),
         };
         let encode = || -> io::Result<()> {
             output.write_all(br#"{"readVersion":2,"documentId":"#)?;
@@ -130,21 +140,33 @@ impl<'a> CoreReads<'a> {
         let mut encode = encode;
         encode().map_err(|_| Failure::ResourceLimit)?;
         self.remaining_bytes -= output.bytes.len();
+        self.budget.borrow_mut().charge_reply(output.bytes.len())?;
         Ok(output.bytes)
     }
 }
 
 impl ContributionCoreReadV2 for CoreReads<'_> {
     fn read_core(&mut self, request: &[u8]) -> Result<Vec<u8>> {
-        if self.failed {
+        if self.failed() {
             return Err(Failure::ResourceLimit);
         }
         // Keep the failure sticky across an error or unwind. The runtime checks
         // this independently even if an executor catches it and returns success.
         self.failed = true;
+        let mut attempt = ReadAttempt(self.budget.clone(), true);
         let result = self.read(request)?;
         self.failed = false;
+        attempt.1 = false;
         Ok(result)
+    }
+}
+
+struct ReadAttempt(budget::Account, bool);
+impl Drop for ReadAttempt {
+    fn drop(&mut self) {
+        if self.1 {
+            self.0.borrow_mut().poison();
+        }
     }
 }
 
@@ -241,6 +263,7 @@ fn source_array<'a>(value: &'a Value, key: &str) -> Result<&'a [Value]> {
 
 impl<'a> Index<'a> {
     fn visit(&mut self) -> Result<()> {
+        self.budget.borrow_mut().visit()?;
         self.visits += 1;
         if self.visits > MAX_INDEX_VISITS {
             Err(Failure::ResourceLimit)
@@ -271,10 +294,11 @@ impl<'a> Index<'a> {
         }
         Ok(())
     }
-    fn build(document: &'a Value) -> Result<Self> {
+    fn build(document: &'a Value, budget: budget::Account) -> Result<Self> {
         let mut index = Self {
             entries: HashMap::new(),
             visits: 0,
+            budget,
         };
         let id = source_field(document, "id")?;
         let owner = |kind: &str, fields: &[(&str, &Value)]| {

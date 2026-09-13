@@ -5,7 +5,8 @@ use crate::napi::{
     bindgen_prelude::{Buffer, Function},
 };
 use brilliant_kernel_session::{
-    ContributionExecutionFailureV2, ContributionExecutorV2, IntegratedKernelSessionV2,
+    ContributionCoreReadV2, ContributionExecutionFailureV2, ContributionExecutorV2,
+    IntegratedKernelSessionV2,
 };
 use napi_derive::napi;
 use std::{
@@ -15,25 +16,49 @@ use std::{
 
 struct NodeExecutor<'a> {
     callback: Function<'a, Buffer, Buffer>,
+    core_reads: bool,
+}
+
+// Explicit opt-in only. Ordinary callback inputs/replies remain JSON; these
+// disjoint frames carry a single query/reply during the current Rust callback.
+const READ_QUERY: &[u8] = b"BGCR2Q\0";
+const READ_REPLY: &[u8] = b"BGCR2R\0";
+
+fn read_protocol(version: Option<f64>) -> napi::Result<bool> {
+    match version {
+        None => Ok(false),
+        Some(2.0) => Ok(true),
+        _ => Err(napi::Error::from_reason(
+            "bridge.unsupported-core-read-protocol",
+        )),
+    }
 }
 
 #[napi(js_name = "migrateKernelExtensionV2")]
 pub fn migrate_kernel_extension_v2(
     request: Buffer,
     callback: Function<'_, Buffer, Buffer>,
-) -> Buffer {
-    catch_unwind(AssertUnwindSafe(|| {
+    core_read_protocol: Option<f64>,
+) -> napi::Result<Buffer> {
+    let core_reads = read_protocol(core_read_protocol)?;
+    Ok(catch_unwind(AssertUnwindSafe(|| {
         #[cfg(feature = "wasm-bridge-v1")]
         let _budget = crate::wasm::OperationScope::enter();
-        IntegratedKernelSessionV2::migrate_extension(&request, &mut NodeExecutor { callback })
+        IntegratedKernelSessionV2::migrate_extension(
+            &request,
+            &mut NodeExecutor {
+                callback,
+                core_reads,
+            },
+        )
     }))
     .unwrap_or_else(|_| {
         b"{\"status\":\"rejected\",\"failure\":{\"code\":\"migration.internal-error\"}}".to_vec()
     })
-    .into()
+    .into())
 }
-impl ContributionExecutorV2 for NodeExecutor<'_> {
-    fn execute(&mut self, request: &[u8]) -> Result<Vec<u8>, ContributionExecutionFailureV2> {
+impl NodeExecutor<'_> {
+    fn call(&mut self, request: &[u8]) -> Result<Buffer, ContributionExecutionFailureV2> {
         #[cfg(feature = "wasm-bridge-v1")]
         if crate::wasm::operation_failed() {
             return Err(ContributionExecutionFailureV2::Callback);
@@ -46,11 +71,42 @@ impl ContributionExecutorV2 for NodeExecutor<'_> {
         if crate::wasm::operation_failed() {
             return Err(ContributionExecutionFailureV2::Callback);
         }
-        if result.len() > brilliant_kernel_contracts::RESPONSE_BYTE_LIMIT {
-            return Err(ContributionExecutionFailureV2::Callback);
-        }
-        Ok(result.to_vec())
+        Ok(result)
     }
+}
+
+impl ContributionExecutorV2 for NodeExecutor<'_> {
+    fn execute(&mut self, request: &[u8]) -> Result<Vec<u8>, ContributionExecutionFailureV2> {
+        let result = self.call(request)?;
+        capture_reply(result)
+    }
+    fn execute_with_core_reads(
+        &mut self,
+        request: &[u8],
+        reads: &mut dyn ContributionCoreReadV2,
+    ) -> Result<Vec<u8>, ContributionExecutionFailureV2> {
+        let mut result = self.call(request)?;
+        if !self.core_reads {
+            return capture_reply(result);
+        }
+        while let Some(query) = result.strip_prefix(READ_QUERY) {
+            let reply = reads
+                .read_core(query)
+                .map_err(|_| ContributionExecutionFailureV2::Callback)?;
+            let mut frame = Vec::with_capacity(READ_REPLY.len() + reply.len());
+            frame.extend_from_slice(READ_REPLY);
+            frame.extend_from_slice(&reply);
+            result = self.call(&frame)?;
+        }
+        capture_reply(result)
+    }
+}
+
+fn capture_reply(result: Buffer) -> Result<Vec<u8>, ContributionExecutionFailureV2> {
+    if result.len() > brilliant_kernel_contracts::RESPONSE_BYTE_LIMIT {
+        return Err(ContributionExecutionFailureV2::Callback);
+    }
+    Ok(result.to_vec())
 }
 
 #[napi(js_name = "createIntegratedKernelSessionV2")]
@@ -58,12 +114,20 @@ pub fn create_integrated_kernel_session_v2<'env>(
     env: &'env Env,
     request: Buffer,
     callback: Function<'env, Buffer, Buffer>,
+    core_read_protocol: Option<f64>,
 ) -> napi::Result<Function<'env, Buffer, Buffer>> {
+    let core_reads = read_protocol(core_read_protocol)?;
     let retained = callback.create_ref()?;
     let session = catch_unwind(AssertUnwindSafe(|| {
         #[cfg(feature = "wasm-bridge-v1")]
         let _budget = crate::wasm::OperationScope::enter();
-        IntegratedKernelSessionV2::create(&request, &mut NodeExecutor { callback })
+        IntegratedKernelSessionV2::create(
+            &request,
+            &mut NodeExecutor {
+                callback,
+                core_reads,
+            },
+        )
     }))
     .map_err(|_| napi::Error::from_reason("{\"code\":\"bridge.panic-contained\"}"))?
     .map_err(|failure| napi::Error::from_reason(String::from_utf8_lossy(&failure).into_owned()))?;
@@ -81,7 +145,13 @@ pub fn create_integrated_kernel_session_v2<'env>(
         let result = catch_unwind(AssertUnwindSafe(|| {
             #[cfg(feature = "wasm-bridge-v1")]
             let _budget = crate::wasm::OperationScope::enter();
-            session.operate(&bytes, &mut NodeExecutor { callback })
+            session.operate(
+                &bytes,
+                &mut NodeExecutor {
+                    callback,
+                    core_reads,
+                },
+            )
         }))
         .unwrap_or_else(|_| {
             b"{\"ok\":false,\"failure\":{\"code\":\"bridge.panic-contained\"}}".to_vec()

@@ -1,0 +1,106 @@
+{
+  "date": "2026-09-13",
+  "baseCommit": "b619f9f",
+  "scope": "R2a: explicit Native host Core read exchange and Rust operation-wide query/reply/index accounting",
+  "logDirectory": ".local-evidence/core-read-host-2026-09-13",
+  "fresh": {
+    "rustWorkspaceAllFeatures": { "passed": 567, "ignored": 1, "failed": 0, "log": "rust-tests.log" },
+    "runtimeCoreReadsFocused": { "passed": 11, "failed": 0, "log": "rust-focused.log" },
+    "nodeFocused": { "passed": 7, "failed": 0, "durationMs": 625.6191, "log": "node-focused.log" },
+    "nodeFull": { "tests": 859, "passed": 857, "skipped": 2, "failed": 0, "durationMs": 87102.4002, "log": "node-tests.log" },
+    "clippyAllTargetsAllFeaturesDenyWarnings": { "status": "passed", "log": "clippy.log" },
+    "msrv188AllTargetsAllFeatures": { "status": "passed", "log": "msrv.log" },
+    "typescriptBuildAndTypecheck": { "status": "passed", "log": "ts-build.log" },
+    "rustfmtWorkspace": "passed",
+    "releaseV2": { "status": "passed", "log": "build-v2.log" },
+    "releaseWasm": { "status": "passed", "log": "build-wasm.log" },
+    "stagedV2": { "status": "passed", "journeySteps": 7, "coreReadReplies": 6, "exports": 7, "log": "staged-v2.json", "script": "staged-v2.cjs" }
+  },
+  "artifacts": {
+    "freshStagedV2": {
+      "path": "target/core-read-host-v2/brilliant_kernel_node.node",
+      "sha256": "c9ec096fe6332580f82d560c92de32f672689d03ef8cd4cf3aca5f57ec7e2991",
+      "bytes": 4518912
+    },
+    "freshWasm": {
+      "path": "target/wasm-v1/brilliant_kernel_node.node",
+      "sha256": "a17a1cf9881ded43c3ac3dc17f0b16a50b97bed1b4e38aeda7dc4ca4f26575d5",
+      "bytes": 5752832
+    },
+    "inheritedNormalV2": {
+      "path": "target/integrated-v2/brilliant_kernel_node.node",
+      "sha256": "610cf8db45ead38fc841d8e3d3d1ea88fb21da5ded1b43a112b80cbb7562425f"
+    },
+    "inheritedCoreV1": {
+      "path": "target/rkp-1-node/brilliant_kernel_node.node",
+      "sha256": "d7e69aba85862c2430cbe98389ea6c8ceafd3f866d00caa8a2a8bc3de8675fb1"
+    },
+    "inheritedGuest": {
+      "path": "test/core-kernel/fixtures/wasm-guest/guest.wasm",
+      "sha256": "fa1cc218af4825e79d49c00d5c0ee59c78a154f07a7e4293aebcde2d8a29650e"
+    }
+  },
+  "protocol": {
+    "optIn": "Optional third argument 2 to createIntegratedKernelSessionV2 and migrateKernelExtensionV2",
+    "queryPrefixHex": "42474352325100",
+    "replyPrefixHex": "42474352325200",
+    "exchange": "One query per frame; callback returns another query or its existing final JSON reply",
+    "borrowedScopeEscapes": false,
+    "legacyTwoArgumentPathChanged": false,
+    "nativeExportNamesChanged": false,
+    "oldBinaryNegotiation": "Old binaries may ignore the extra argument; a successor adapter must require an actual successful exchange"
+  },
+  "operationLimits": {
+    "scope": "One synchronous Runtime create/operate/migrate call, shared by nested integrated operations in the same artifact and thread",
+    "queries": 4096,
+    "replyBytesIncludingJsonEnvelope": 33554432,
+    "indexVisits": 1048576,
+    "callbackLimitsUnchanged": true,
+    "wasmBudgetsUnchanged": true,
+    "failureStickyUntilOutermostExit": true,
+    "crossSessionAtomicTransaction": false
+  },
+  "proof": [
+    "Same-version prepare C and transform D are read from their actual distinct candidates; captured seven-step outputs remain exact",
+    "Actual 256-bar/1024-note Native host reads note-1024 in fewer than 512 bytes, edits it and restores document/history through undo-redo",
+    "Invalid shape, foreign selector and oversized input queries reject without partial Batch adoption; later operations recover",
+    "Repeated callback-local valid queries reach exactly 4096 successful replies before atomic rejection",
+    "Nested fresh-session reads inherit the account; catching inner exhaustion and returning a valid outer reply still rejects",
+    "Reentry is denied, and saved reply frames cannot be executed as session operations or accepted as final host results",
+    "Detached migration reads use null revision and both phases reject invalid queries",
+    "Rust tests enforce aggregate 32 MiB output before complete serialization, index rebuild visits, thread isolation and unwind cleanup"
+  ],
+  "freshGuestCapacityReproduction": {
+    "script": "scripts/profile-native-integrated.mjs",
+    "profileVersion": 2,
+    "log": "profile.json",
+    "samplesPerSize": 6,
+    "results": [
+      { "measures": 16, "notes": 64, "committed": 6, "rejected": 0 },
+      { "measures": 64, "notes": 256, "committed": 6, "rejected": 0 },
+      { "measures": 256, "notes": 1024, "committed": 0, "rejected": 6 }
+    ],
+    "openFailure": "wasm.execution-failed:FuelExhausted",
+    "operation": "commandPrepare",
+    "inputBytes": 211794,
+    "independentReplayOutsideOperationBudget": "rejected",
+    "resolved": false,
+    "qualification": false
+  },
+  "remaining": [
+    "R2b authentic Wasm binding and versioned guest continuation/read-request contract; retain full V1 compatibility",
+    "R3 actual selective-read guest editing, validation, explicit cross-plugin candidate reads and history at 256 bars",
+    "Reduce full Rust-to-host projection and TS view construction; the current exchange only bounds returned selections",
+    "Complete Rust-controlled plugin scheduling, dependency/incremental equivalence, sustained resource and platform/performance/release qualification"
+  ],
+  "progressEstimate": {
+    "foundationalFunctionalityPercentRange": [85, 90],
+    "commercialPreparationPercent": 65,
+    "meaning": "Unchanged rough engineering estimate, not elapsed or remaining work"
+  },
+  "notClaimed": [
+    "Actual Wasm guest use of Core read exchange or successful 256-bar guest editing",
+    "Control over trusted host JS execution time, process memory, all transport or cross-session rollback",
+    "Default Rust cutover, remote push or commercial qualification"
+  ]
+}

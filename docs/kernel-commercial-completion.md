@@ -107,6 +107,21 @@ reproduction still fails with fuel exhaustion. Readiness remains approximately
 65%. Contract and next-step gates: `docs/kernel-scoped-core-reads-v2.md`;
 evidence: `docs/evidence/kernel-scoped-core-reads-2026-09-13.json`.
 
+**Node read exchange and operation accounting (2026-09-13):** R2a adds an
+explicit optional read-protocol version to the existing private Native create
+and migration functions. Data-only query/reply frames remain inside one borrowed
+Rust callback; no JS-callable candidate handle escapes. Runtime operations now
+share limits of 4096 queries, 32 MiB replies and 1,048,576 index visits, including
+nested integrated sessions; swallowed read exhaustion cannot clear the account.
+Seven real Node tests prove candidate visibility, a 256-bar/1024-note host
+edit/history journey, rejection/recovery, nested exhaustion and migration.
+Final Rust: 567 passed/1 ignored; Node/Native: 857 passed/2 skipped.
+R2b guest binding/continuation and R3 real Wasm capacity remain open. The unchanged
+guest still fails six of six 256-bar edits in fresh reproduction; the Node-host
+success is not guest qualification. Full projection, TS orchestration and all
+remaining commercial gates are unchanged; readiness stays approximately 65%.
+Evidence: `docs/evidence/kernel-core-read-host-2026-09-13.json`.
+
 **Historical pause at the owner's request (2026-09-12):** finish the current
 cross-plugin explicit-read task, record its evidence and local commits, then
 stop and report. That pause was followed by the explicit restart above.
