@@ -1,0 +1,57 @@
+{
+  "evidenceVersion": 1,
+  "date": "2026-09-14",
+  "qualification": false,
+  "sourceBaseCommit": "4e518de",
+  "sourceState": "Base plus profile report pages patch in the commit containing this evidence",
+  "artifacts": [
+    {
+      "path": "target/rkp-1-node/brilliant_kernel_node.node",
+      "bytes": 3592192,
+      "sha256": "833117de5910b066458ab7eeb4bf3729817609a89b9a337412e66a5b163c0bd3"
+    },
+    {
+      "path": "target/integrated-v2/brilliant_kernel_node.node",
+      "bytes": 4896256,
+      "sha256": "93123aacf2b08548400533742f298c5e0287826138453b29e4c8f313f2b2333a"
+    },
+    {
+      "path": "target/wasm-v1/brilliant_kernel_node.node",
+      "bytes": 6129152,
+      "sha256": "651c491a730dfda094c966fcd65fa3a2479d9e2a5b2939f0fd1982c512a06a0e"
+    }
+  ],
+  "rust": {
+    "command": "cargo +1.97.1 test --workspace --all-features --locked --offline",
+    "passed": 597,
+    "ignored": 1,
+    "failed": 0
+  },
+  "nativeFocused": {
+    "test": "Native report V2 pages reproduce all 6401 frozen stress diagnostics from the TS oracle",
+    "passed": 1,
+    "oldArtifactResult": "command.invalid-envelope",
+    "newArtifactResult": "all diagnostics and repeat pages equal TS oracle; session unchanged",
+    "frozenEvents": 102400,
+    "diagnostics": 6401,
+    "pageSize": 4096
+  },
+  "checks": {
+    "strictClippy": "passed",
+    "rust188AllTargetsAllFeatures": "passed",
+    "typescriptNoEmit": "passed"
+  },
+  "nodeFull": {
+    "command": "node dist/test/test-infrastructure/run-compiled-tests.js",
+    "passed": 893,
+    "skipped": 2,
+    "failed": 0
+  },
+  "limitations": [
+    "Report read only; transaction still rejects reports over 4096 diagnostics",
+    "Each page reprojects the document and performs full semantic/profile walks",
+    "No latency or memory qualification claim",
+    "No public TS export or default route cutover",
+    "Synthetic frozen document; not real product integration"
+  ]
+}

@@ -137,9 +137,26 @@ fn classify_valid_score<N: AssessmentNodeV1>(
     profile: &ScoreFeatureProfileV1,
 ) -> Result<ScoreSupportV1, AssessmentFailureV1> {
     let mut diagnostics = Vec::new();
+    visit_valid_score_profile(root, profile, |code, node| {
+        append(&mut diagnostics, code, node)
+    })?;
+    Ok(if diagnostics.is_empty() {
+        ScoreSupportV1::Supported { diagnostics: [] }
+    } else {
+        ScoreSupportV1::Unsupported { diagnostics }
+    })
+}
+
+/// Shared deterministic rule walk. The caller must first establish semantic
+/// validity. Collection policy does not change feature rules or their order.
+pub(crate) fn visit_valid_score_profile<N: AssessmentNodeV1>(
+    root: N,
+    profile: &ScoreFeatureProfileV1,
+    mut emit: impl FnMut(Code, &N) -> Result<(), AssessmentFailureV1>,
+) -> Result<(), AssessmentFailureV1> {
     let parts = root.field("parts");
     if !within(parts.len()?, &profile.part_count) {
-        append(&mut diagnostics, Code::UnsupportedPartCount, &parts)?;
+        emit(Code::UnsupportedPartCount, &parts)?;
     }
     let definitions = root.field("measureDefinitions");
     let mut measures = HashMap::new();
@@ -155,25 +172,25 @@ fn classify_valid_score<N: AssessmentNodeV1>(
         if !profile.meters.iter().any(|allowed| {
             allowed.numerator.get() == numerator && allowed.denominator.get() == denominator
         }) {
-            append(&mut diagnostics, Code::UnsupportedMeter, &meter)?;
+            emit(Code::UnsupportedMeter, &meter)?;
         }
         if !profile.allow_pickup
             && let Some(pickup) = measure.optional("pickupDuration")?
         {
-            append(&mut diagnostics, Code::UnsupportedPickup, &pickup)?;
+            emit(Code::UnsupportedPickup, &pickup)?;
         }
     }
     for part in parts.items()? {
         let part = part?;
         let staves = part.field("staves");
         if !within(staves.len()?, &profile.staff_count_per_part) {
-            append(&mut diagnostics, Code::UnsupportedStaffCount, &staves)?;
+            emit(Code::UnsupportedStaffCount, &staves)?;
         }
         for content in part.field("measureContents").items()? {
             let content = content?;
             let voices = content.field("voices");
             if !within(voices.len()?, &profile.voice_count_per_measure) {
-                append(&mut diagnostics, Code::UnsupportedVoiceCount, &voices)?;
+                emit(Code::UnsupportedVoiceCount, &voices)?;
             }
             let measure = measures.get(&content.field("measureId").string()?);
             for voice in voices.items()? {
@@ -184,7 +201,7 @@ fn classify_valid_score<N: AssessmentNodeV1>(
                 if profile.require_sequence_start_at_zero
                     && (numerator != 0.0 || denominator != 1.0)
                 {
-                    append(&mut diagnostics, Code::UnsupportedSequenceStart, &start)?;
+                    emit(Code::UnsupportedSequenceStart, &start)?;
                 }
                 let mut end = music_rules::canonical_fraction(numerator, denominator);
                 for event in sequence.field("events").items()? {
@@ -199,29 +216,25 @@ fn classify_valid_score<N: AssessmentNodeV1>(
                         .iter()
                         .any(|allowed| allowed.get() == base_number)
                     {
-                        append(&mut diagnostics, Code::UnsupportedNoteValueBase, &base)?;
+                        emit(Code::UnsupportedNoteValueBase, &base)?;
                     }
                     if !profile
                         .note_value_dots
                         .iter()
                         .any(|allowed| allowed.get() == dots_number)
                     {
-                        append(&mut diagnostics, Code::UnsupportedDots, &dots)?;
+                        emit(Code::UnsupportedDots, &dots)?;
                     }
                     if !profile.allow_time_modification
                         && let Some(modification) = duration.optional("timeModification")?
                     {
-                        append(
-                            &mut diagnostics,
-                            Code::UnsupportedTimeModification,
-                            &modification,
-                        )?;
+                        emit(Code::UnsupportedTimeModification, &modification)?;
                     }
                     let content = event.field("content");
                     if content.field("kind").string()?.eq_ascii("notes") {
                         let notes = content.field("notes");
                         if notes.len()? as f64 > profile.maximum_notes_per_event.get() {
-                            append(&mut diagnostics, Code::UnsupportedChord, &notes)?;
+                            emit(Code::UnsupportedChord, &notes)?;
                         }
                     }
                     end = match (end, event_duration(&duration)?) {
@@ -237,19 +250,11 @@ fn classify_valid_score<N: AssessmentNodeV1>(
                         _ => None,
                     };
                     if comparison != Some(Ordering::Equal) {
-                        append(
-                            &mut diagnostics,
-                            Code::UnsupportedSequenceDuration,
-                            &sequence,
-                        )?;
+                        emit(Code::UnsupportedSequenceDuration, &sequence)?;
                     }
                 }
             }
         }
     }
-    Ok(if diagnostics.is_empty() {
-        ScoreSupportV1::Supported { diagnostics: [] }
-    } else {
-        ScoreSupportV1::Unsupported { diagnostics }
-    })
+    Ok(())
 }

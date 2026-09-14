@@ -12,6 +12,7 @@ mod js_string_json;
 mod lossless_dto;
 mod lossless_json;
 mod music_rules;
+mod profile_pages;
 mod validation;
 
 pub use assessment::{
@@ -52,4 +53,8 @@ pub use lossless_json::{
 pub use music_rules::{
     assess_measure_duration, assess_note_duration, assess_sounding_pitch,
     meter_denominator_is_valid, tempo_is_valid, written_pitch_is_valid,
+};
+pub use profile_pages::{
+    CORE_PROFILE_PAGE_LIMIT_V2, ProfilePageFailureV2, ScoreSupportPageV2, ScoreSupportStatusV2,
+    assess_score_profile_page_v2,
 };

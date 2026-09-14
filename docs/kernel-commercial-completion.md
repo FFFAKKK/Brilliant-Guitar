@@ -1,5 +1,18 @@
 # Commercial kernel completion
 
+**Version-bound Core report pages V2 (2026-09-14):** Foundation and the private
+integrated session now deliver complete feature reports in bounded pages through
+`readCoreReportPage`. Requests bind document ID/version and K1 profile; stale
+versions reject even after undo, and reads do not invoke plugins or mutate
+history. An actual Native test retrieves all 6,401 diagnostics from the unchanged
+102,400-event fixture and compares every row against TS. Rust: 597 passed/
+1 ignored; Node: 893 passed/2 skipped; strict checks passed. This completes the
+read primitive, not the transaction capacity repair: editing still returns V1
+complete reports and rejects over 4,096 diagnostics. Explicit successor
+transaction delivery/host integration, repeated full page scans, commercial
+qualification and default cutover remain open. See
+`docs/kernel-profile-report-pages-2026-09-14.md`.
+
 **Opaque property order and integrated encoding compatibility (2026-09-14):**
 Rust now preserves insertion order through extension storage, no-op comparison,
 history and both integrated read forms. Ordinary protocol map equality remains

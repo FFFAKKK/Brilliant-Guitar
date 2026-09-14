@@ -20,6 +20,7 @@ mod core;
 mod core_reads;
 mod migration;
 mod module;
+mod report_pages;
 mod scheduled_assessment;
 mod scheduled_preparation;
 
@@ -182,6 +183,9 @@ impl IntegratedKernelRuntimeV2 {
         dispatch_core: CoreDispatch,
     ) -> Result<Value> {
         let request = decode(bytes)?;
+        if tag(&request, "operation", "readCoreReportPage") {
+            return self.read_core_report_page(&request);
+        }
         if tag(&request, "operation", "read")
             && exact(&request, &["operation", "knownSnapshotVersion"])
         {

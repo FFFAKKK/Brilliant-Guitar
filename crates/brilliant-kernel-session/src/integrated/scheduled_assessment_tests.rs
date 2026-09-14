@@ -174,6 +174,142 @@ fn unsupported_admission_input(measures: usize) -> Value {
     input
 }
 
+fn report_request(version: u64, offset: usize, limit: usize) -> Value {
+    json!({"operation":"readCoreReportPage","reportVersion":2,
+        "documentId":"score-1","documentVersion":version,
+        "profileId":"brilliant-guitar.k1","offset":offset,"limit":limit})
+}
+
+#[test]
+fn report_pages_read_every_warning_without_callbacks_or_session_mutation() {
+    let fixture = fixture();
+    let input = unsupported_admission_input(4097);
+    let mut host = host(&fixture);
+    host.editing = true;
+    let mut session =
+        IntegratedKernelSessionV2::create(&serde_json::to_vec(&input).unwrap(), &mut host).unwrap();
+    let before = read(&mut session, &mut host);
+    let calls = host.calls.clone();
+    let mut diagnostics = Vec::new();
+    for (offset, count, next) in [(0, 4096, json!(4096)), (4096, 1, Value::Null)] {
+        let output: Value = serde_json::from_slice(&session.operate(
+            &serde_json::to_vec(&report_request(0, offset, 4096)).unwrap(),
+            &mut host,
+        ))
+        .unwrap();
+        assert_eq!(output["ok"], true, "{output}");
+        let report = &output["report"];
+        assert_eq!(report["reportVersion"], 2);
+        assert_eq!(report["documentId"], "score-1");
+        assert_eq!(report["documentVersion"], 0);
+        assert_eq!(report["profileId"], "brilliant-guitar.k1");
+        assert_eq!(report["status"], "unsupported");
+        assert_eq!(report["offset"], offset);
+        assert_eq!(report["total"], 4097);
+        assert_eq!(report["nextOffset"], next);
+        let rows = report["diagnostics"].as_array().unwrap();
+        assert_eq!(rows.len(), count);
+        diagnostics.extend_from_slice(rows);
+    }
+    for (index, diagnostic) in diagnostics.iter().enumerate() {
+        assert_eq!(
+            diagnostic,
+            &json!({
+                "code":"unsupported.meter","messageKey":"core.unsupported.meter",
+                "path":["measureDefinitions",index,"meter"]
+            })
+        );
+    }
+    assert_eq!(read(&mut session, &mut host), before);
+    assert_eq!(host.calls, calls);
+}
+
+#[test]
+fn report_page_identity_and_bounds_fail_closed_and_stay_stale_after_undo() {
+    let fixture = fixture();
+    let input = unsupported_admission_input(2);
+    let mut host = host(&fixture);
+    host.editing = true;
+    let mut session =
+        IntegratedKernelSessionV2::create(&serde_json::to_vec(&input).unwrap(), &mut host).unwrap();
+    let before = read(&mut session, &mut host);
+    let calls = host.calls.clone();
+    let request = report_request(0, 0, 1);
+    let mut rejected = Vec::new();
+    for (key, value, code) in [
+        ("reportVersion", json!(1), "report.invalid-request"),
+        ("documentVersion", json!(-1), "report.invalid-request"),
+        ("documentVersion", json!(1), "report.stale-version"),
+        ("documentId", json!("other"), "report.document-mismatch"),
+        ("documentId", json!(false), "report.invalid-request"),
+        ("profileId", json!("other"), "report.invalid-request"),
+        ("limit", json!(0), "report.invalid-request"),
+        ("limit", json!(4097), "report.invalid-request"),
+        ("offset", json!(-1), "report.invalid-request"),
+        ("offset", json!(0.5), "report.invalid-request"),
+        (
+            "offset",
+            json!(9007199254740992_u64),
+            "report.invalid-request",
+        ),
+        ("offset", json!(3), "report.offset-out-of-bounds"),
+    ] {
+        let mut candidate = request.clone();
+        candidate[key] = value;
+        rejected.push((candidate, code));
+    }
+    let mut extra = request.clone();
+    extra["extra"] = json!(true);
+    rejected.push((extra, "report.invalid-request"));
+    for key in request
+        .as_object()
+        .unwrap()
+        .keys()
+        .filter(|key| *key != "operation")
+    {
+        let mut missing = request.clone();
+        missing.as_object_mut().unwrap().remove(key);
+        rejected.push((missing, "report.invalid-request"));
+    }
+    for (request, code) in rejected {
+        let result: Value = serde_json::from_slice(
+            &session.operate(&serde_json::to_vec(&request).unwrap(), &mut host),
+        )
+        .unwrap();
+        assert_eq!(result["ok"], false, "{request}");
+        assert_eq!(result["failure"]["code"], code, "{request}");
+    }
+    assert_eq!(read(&mut session, &mut host), before);
+    assert_eq!(host.calls, calls);
+    let mut metadata = input["document"]["metadata"].clone();
+    metadata["title"] = json!("changed");
+    let edit = json!({"operation":"submit","command":{"commandVersion":1,
+        "commandId":"core.document.set-metadata","target":{"kind":"document","documentId":"score-1"},
+        "payload":{"metadata":metadata}}});
+    for (operation, version) in [(edit, 1), (json!({"operation":"undo"}), 2)] {
+        let changed: Value = serde_json::from_slice(
+            &session.operate(&serde_json::to_vec(&operation).unwrap(), &mut host),
+        )
+        .unwrap();
+        assert_eq!(changed["ok"], true, "{changed}");
+        let stale: Value = serde_json::from_slice(
+            &session.operate(&serde_json::to_vec(&request).unwrap(), &mut host),
+        )
+        .unwrap();
+        assert_eq!(stale["failure"]["code"], "report.stale-version");
+        assert_eq!(stale["documentVersion"], version);
+        let fresh: Value = serde_json::from_slice(&session.operate(
+            &serde_json::to_vec(&report_request(version, 1, 1)).unwrap(),
+            &mut host,
+        ))
+        .unwrap();
+        assert_eq!(fresh["ok"], true, "{fresh}");
+        assert_eq!(fresh["report"]["documentVersion"], version);
+        assert_eq!(fresh["report"]["offset"], 1);
+        assert_eq!(fresh["report"]["nextOffset"], Value::Null);
+    }
+}
+
 #[test]
 fn scoped_admission_does_not_materialize_an_unused_feature_report_but_edit_reports_stay_bounded() {
     let fixture = fixture();
