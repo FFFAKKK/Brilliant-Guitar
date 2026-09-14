@@ -1,5 +1,21 @@
 # Commercial kernel completion
 
+**Reuse prepared journal history across integrated assessment (2026-09-14):**
+journal-only Candidate history now yields the callback document and owned commit
+plan from one replay. Plugin assessment and reply reservation precede adoption;
+preparation failures remain deferred, and commit rechecks version, history
+identity, direction and the actual retained entry. Persisted markers/events use
+current commit-time state. Typed/mixed-prefix histories retain their prior path.
+Rust all-features: 607 passed/1 ignored; Node: 894 passed/2 skipped; strict checks
+and three native rebuilds passed. Same-input fresh-process diagnostic undo
+samples changed from 1,027.58 to 716.58 ms (representative) and 4,863.41 to
+2,980.37 ms (stress); redo changed from 1,038.88 to 723.18 ms and 4,312.32 to
+3,003.91 ms. All four probes completed, but these are single samples with known
+run variability, not qualification or percentile evidence. Full projections,
+Core/plugin assessment, other history paths, formal qualification, product
+integration and default cutover remain open. See
+`docs/kernel-history-reuse-2026-09-14.md`.
+
 **Avoid intermediate readers for empty-prefix inverse history (2026-09-14):**
 when both typed prefix operation lists are empty, stored inverse preview and
 commit preparation retain suffix-start identity checks and final semantics but

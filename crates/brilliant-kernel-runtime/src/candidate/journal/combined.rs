@@ -45,6 +45,51 @@ impl Recorder<'_> {
 }
 
 impl CombinedHistory {
+    /// The common journal-only path can yield both an owned callback document
+    /// and an owned adoption plan from one replay. Mixed typed prefixes retain
+    /// the existing two-boundary implementation.
+    pub(super) fn prepare_integrated_replay(
+        &self,
+        store: &LiveScoreStore,
+        version: DocumentVersionV1,
+        direction: Direction,
+    ) -> Result<Option<PreparedHistoryPreview>, FinalizationFailure> {
+        if !self.prefix.forward.is_empty()
+            || !self.prefix.inverse.is_empty()
+            || self.suffix.steps.is_empty()
+        {
+            return Ok(None);
+        }
+        let mut candidate =
+            Candidate::new(TransactionOverlayV1::new(store), store.header.id.clone());
+        let inverse = matches!(direction, Direction::Inverse);
+        self.suffix
+            .replay(&mut candidate, direction)
+            .map_err(FinalizationFailure::Command)?;
+        if inverse {
+            ReplayBindings::at(
+                &self.suffix.identities,
+                BoundarySide::SuffixStart,
+                &mut candidate,
+            )
+            .map_err(FinalizationFailure::Command)?;
+        }
+        let document = candidate
+            .integrated_document(&|id| {
+                StableId::new(id.clone()).map_err(|_| Failure::InternalError)
+            })
+            .map_err(FinalizationFailure::Command)?;
+        let validated = candidate.validate_final()?;
+        if document.id != store.header.id {
+            return Err(FinalizationFailure::Command(Failure::InternalError));
+        }
+        let plan = validated
+            .prepare_commit(store, version, self.suffix.steps.len() as u64)
+            .map(|(plan, _)| plan)
+            .map_err(execution::finalization_failure);
+        Ok(Some(PreparedHistoryPreview { document, plan }))
+    }
+
     /// Detached SDK view of stored replay. No Store adoption or cursor movement.
     /// Inverse replay must preserve the structurally valid suffix boundary until
     /// the typed prefix has repaired the complete final state.

@@ -239,7 +239,7 @@ fn command_failure(value: dispatch::AdmissionCommandFailure) -> Failure {
     }
 }
 
-fn finalization_failure(value: FinalizationFailure) -> Failure {
+pub(super) fn finalization_failure(value: FinalizationFailure) -> Failure {
     match value {
         FinalizationFailure::Command(value) => value,
         FinalizationFailure::Assessment(
@@ -279,6 +279,39 @@ impl std::fmt::Debug for CandidateHistory {
 }
 
 impl CandidateHistory {
+    /// Keep allocation/index preparation failures deferred until after the host
+    /// assesses the preview, matching the ordinary preview-then-commit ordering.
+    pub(crate) fn prepare_integrated_replay(
+        &self,
+        store: &LiveScoreStore,
+        version: DocumentVersionV1,
+        redo: bool,
+    ) -> Result<Option<PreparedHistoryPreview>, Failure> {
+        let Some(mut preview) = self
+            .combined
+            .prepare_integrated_replay(
+                store,
+                version,
+                if redo {
+                    Direction::Forward
+                } else {
+                    Direction::Inverse
+                },
+            )
+            .map_err(finalization_failure)?
+        else {
+            return Ok(None);
+        };
+        preview.plan = self
+            .validate_segments()
+            .map_err(finalization_failure)
+            .and(preview.plan);
+        if let Ok(Some(plan)) = &mut preview.plan {
+            plan.set_retained_metrics(self.retained_metrics);
+        }
+        Ok(Some(preview))
+    }
+
     pub(crate) fn integrated_projection(
         &self,
         store: &LiveScoreStore,
@@ -302,6 +335,23 @@ impl CandidateHistory {
         version: DocumentVersionV1,
         redo: bool,
     ) -> Result<Option<PreparedFinalStateCommitV1>, FinalizationFailure> {
+        self.validate_segments()?;
+        let mut plan = self.combined.prepare_replay(
+            store,
+            version,
+            if redo {
+                Direction::Forward
+            } else {
+                Direction::Inverse
+            },
+        )?;
+        if let Some(plan) = &mut plan {
+            plan.set_retained_metrics(self.retained_metrics);
+        }
+        Ok(plan)
+    }
+
+    fn validate_segments(&self) -> Result<(), FinalizationFailure> {
         let mut previous_index = None;
         let mut previous_step = 0;
         let mut previous_affected = None;
@@ -330,18 +380,11 @@ impl CandidateHistory {
             previous_step = segment.step_end;
             previous_affected = Some(segment.affected_end);
         }
-        let mut plan = self.combined.prepare_replay(
-            store,
-            version,
-            if redo {
-                Direction::Forward
-            } else {
-                Direction::Inverse
-            },
-        )?;
-        if let Some(plan) = &mut plan {
-            plan.set_retained_metrics(self.retained_metrics);
-        }
-        Ok(plan)
+        Ok(())
     }
+}
+
+pub(crate) struct PreparedHistoryPreview {
+    pub(crate) document: brilliant_score_foundation::ScoreDocumentV1,
+    pub(crate) plan: Result<Option<PreparedFinalStateCommitV1>, Failure>,
 }

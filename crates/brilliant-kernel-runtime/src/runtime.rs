@@ -614,11 +614,26 @@ impl KernelRuntime {
     }
 
     fn apply_history_transition(&mut self, redo: bool) -> KernelStage4CommandResultV1 {
+        self.apply_history_transition_prepared(redo, None)
+    }
+
+    fn apply_history_transition_prepared(
+        &mut self,
+        redo: bool,
+        replay: Option<integrated::PreparedHistoryTransition>,
+    ) -> KernelStage4CommandResultV1 {
         let prepared = (|| {
             let identity_before = self
                 .history
                 .current_identity()
                 .map_err(map_history_failure)?;
+            if replay.as_ref().is_some_and(|prepared| {
+                prepared.version != self.document_version
+                    || prepared.identity != identity_before
+                    || prepared.redo != redo
+            }) {
+                return Err(KernelStage4FailureV1::HistoryInvariantViolation);
+            }
             let identity_after = if redo {
                 self.history.identity_after_redo()
             } else {
@@ -638,6 +653,13 @@ impl KernelRuntime {
                 self.history.undo_entry()
             }
             .map_err(map_history_failure)?;
+            if let Some(prepared) = &replay
+                && (prepared.sequence != entry.sequence
+                    || !matches!(&entry.payload, HistoryPayloadV1::Candidate(history)
+                        if Arc::ptr_eq(history, &prepared.history)))
+            {
+                return Err(KernelStage4FailureV1::HistoryInvariantViolation);
+            }
             let command_id = entry.command_id.clone();
             let affected = clone_targets(&entry.affected)?;
             let event_affected = clone_targets(&entry.affected)?;
@@ -663,10 +685,15 @@ impl KernelRuntime {
                     .map_err(|_| KernelStage4FailureV1::HistoryInvariantViolation)?;
                 }
                 HistoryPayloadV1::Candidate(history) => {
-                    let plan = history
-                        .prepare_replay(&self.store, self.document_version, redo)
-                        .map_err(|_| KernelStage4FailureV1::HistoryInvariantViolation)?
-                        .ok_or(KernelStage4FailureV1::HistoryInvariantViolation)?;
+                    let plan = match replay {
+                        Some(prepared) => prepared
+                            .plan
+                            .map_err(|_| KernelStage4FailureV1::HistoryInvariantViolation)?,
+                        None => history
+                            .prepare_replay(&self.store, self.document_version, redo)
+                            .map_err(|_| KernelStage4FailureV1::HistoryInvariantViolation)?,
+                    }
+                    .ok_or(KernelStage4FailureV1::HistoryInvariantViolation)?;
                     plan.commit(
                         &mut self.store,
                         &mut self.document_version,

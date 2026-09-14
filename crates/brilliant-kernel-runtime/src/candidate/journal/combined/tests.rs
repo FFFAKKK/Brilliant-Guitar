@@ -345,6 +345,12 @@ fn suffix_only_inverse_preserves_final_validation_without_an_intermediate_reader
         ))
     ));
     assert!(matches!(
+        history.prepare_integrated_replay(&store, version, Direction::Inverse),
+        Err(FinalizationFailure::Command(
+            Failure::SemanticInvalid { .. }
+        ))
+    ));
+    assert!(matches!(
         history.prepare_replay(&store, version, Direction::Inverse),
         Err(FinalizationFailure::Command(
             Failure::SemanticInvalid { .. }

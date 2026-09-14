@@ -5,10 +5,60 @@ use crate::change_set::StableExtensionOwnerV1;
 use crate::overlay::ExtensionKeyV1;
 use brilliant_score_foundation::{ExtensionBlockV1, ExtensionOwnerV1};
 mod engine;
+#[cfg(test)]
+mod history_reuse_tests;
 mod wire;
 pub use engine::IntegratedKernelRuntimeV2;
 
+/// Private, single-use preparation. Version and the actual retained entry bind
+/// it to the runtime state assessed by the host; it cannot be supplied over wire.
+pub(super) struct PreparedHistoryTransition {
+    pub(super) version: DocumentVersionV1,
+    pub(super) identity: u64,
+    pub(super) sequence: u64,
+    pub(super) redo: bool,
+    pub(super) history: Arc<crate::candidate::CandidateHistory>,
+    pub(super) plan: Result<
+        Option<crate::transaction::PreparedFinalStateCommitV1>,
+        KernelStage3CommandFailureLeafV1,
+    >,
+}
+
 impl KernelRuntime {
+    fn prepare_integrated_history(
+        &self,
+        redo: bool,
+    ) -> Result<(ScoreDocumentV1, Option<PreparedHistoryTransition>), KernelStage4FailureV1> {
+        let entry = if redo {
+            self.history.redo_entry()
+        } else {
+            self.history.undo_entry()
+        }
+        .map_err(map_history_failure)?;
+        if let HistoryPayloadV1::Candidate(history) = &entry.payload
+            && let Some(preview) = history
+                .prepare_integrated_replay(&self.store, self.document_version, redo)
+                .map_err(|failure| KernelStage4FailureV1::Command(failure.into()))?
+        {
+            return Ok((
+                preview.document,
+                Some(PreparedHistoryTransition {
+                    version: self.document_version,
+                    identity: self
+                        .history
+                        .current_identity()
+                        .map_err(map_history_failure)?,
+                    sequence: entry.sequence,
+                    redo,
+                    history: Arc::clone(history),
+                    plan: preview.plan,
+                }),
+            ));
+        }
+        self.preview_integrated_history(redo)
+            .map(|document| (document, None))
+    }
+
     pub fn commit_integrated_transaction(
         &mut self,
         command_id: StableId,

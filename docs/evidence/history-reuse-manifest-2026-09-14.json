@@ -1,0 +1,150 @@
+{
+  "evidenceVersion": 1,
+  "date": "2026-09-14",
+  "qualification": false,
+  "sourceBaseCommit": "199f06cf8ddb452179926831384eb683c48e8a17",
+  "sourceState": "Base plus private journal-only history preview/commit preparation reuse in the commit containing this evidence",
+  "artifacts": [
+    {
+      "path": "target/rkp-1-node/brilliant_kernel_node.node",
+      "bytes": 3595776,
+      "sha256": "dcd38bc969acce932faa532e400d92acb17a59502836d6f7e313d67999dc9c4b"
+    },
+    {
+      "path": "target/integrated-v2/brilliant_kernel_node.node",
+      "bytes": 4969984,
+      "sha256": "d42cb35f13bb0a3060d3ecc6774a7fc33c6370c4008c5621ae7b8af9d39fcd49"
+    },
+    {
+      "path": "target/wasm-v1/brilliant_kernel_node.node",
+      "bytes": 6202880,
+      "sha256": "90156b3bdf9ed3cb1a391aaa699a228512ce26bb51e3a45e45a7c4f8e25ec91b"
+    },
+    {
+      "path": "target/history-reuse/prior-wasm-v1.node",
+      "bytes": 6160384,
+      "sha256": "14a8d7a2559e27a1fb0cf12d29ba3bbaa007dfc598fa1e7511eced6d93c662d0"
+    },
+    {
+      "path": "test/core-kernel/fixtures/wasm-guest/guest-cvn7.wasm",
+      "bytes": 169444,
+      "sha256": "3d43b6dfa2cd4d013f01b8e69a7d7c10440a39cad27bf58d12e23908a410a774"
+    },
+    {
+      "path": "scripts/profile-native-paged-batch.mjs",
+      "bytes": 6215,
+      "sha256": "49597b0a73a8f138be0d9ee23ab914928931fbe27c28fad2ce571e4a84d8a9ee"
+    },
+    {
+      "path": "test/core-kernel/rust-migration/fixtures/qualification-v2-contract.json",
+      "bytes": 2982,
+      "sha256": "7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
+    },
+    {
+      "path": "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
+      "bytes": 10726,
+      "sha256": "5edc34b540835b5edd888706a86df564c0afadc09189293d38d2c4a1b01c05cc"
+    }
+  ],
+  "validation": {
+    "rustDefaultPassed": 581,
+    "rustAllFeaturesPassed": 607,
+    "rustIgnored": 1,
+    "rustFailed": 0,
+    "nodePassed": 894,
+    "nodeSkipped": 2,
+    "nodeFailed": 0,
+    "strictClippy": "passed",
+    "msrv188AllFeatures": "passed",
+    "fmt": "passed",
+    "typecheck": "passed",
+    "tsBuild": "passed",
+    "nativeVariantsRebuilt": 3
+  },
+  "logs": [
+    {
+      "path": "target/history-reuse/runtime-tests.log",
+      "bytes": 42598,
+      "sha256": "8c03faf0d11684df7a324af983af40d9e9a49fd52d29f060dad73dd54f0c32e2"
+    },
+    {
+      "path": "target/history-reuse/rust-full.log",
+      "bytes": 67048,
+      "sha256": "96f603d1861ca1ca46d33a17f46c512c5912e9b4d8de5061db0e31c2760a3676"
+    },
+    {
+      "path": "target/history-reuse/rust-all-features.log",
+      "bytes": 69062,
+      "sha256": "d9bd091266935a8f9311bc3ebd88cdd000354dfcac119aecba4c6484ec7a6164"
+    },
+    {
+      "path": "target/history-reuse/clippy.log",
+      "bytes": 551,
+      "sha256": "29256930803393c41635ac41ef8de2f3cbd44bdcffbcca6c1f3ad29095e59d44"
+    },
+    {
+      "path": "target/history-reuse/msrv.log",
+      "bytes": 551,
+      "sha256": "85d21d8b1ae0fa136262dd13ad996e0a14f2a3859ec230380c4e4f9a47792c1b"
+    },
+    {
+      "path": "target/history-reuse/build-default.log",
+      "bytes": 542,
+      "sha256": "2d4d4df3f8dbfdc29fe0fa73cfb255ab9d7b3fae179a782c2fc7ee40253c3bcf"
+    },
+    {
+      "path": "target/history-reuse/build-integrated-v2.log",
+      "bytes": 294,
+      "sha256": "fd546f3584feac09222b38c19d6d79cb3753ef5e3b819d9b4d47ad616433be75"
+    },
+    {
+      "path": "target/history-reuse/build-wasm-v1.log",
+      "bytes": 418,
+      "sha256": "421627c3e75e96fe26f685c840933b330bf2b7575ff2eeb285eb1672f6c22c8a"
+    },
+    {
+      "path": "target/history-reuse/node-full.log",
+      "bytes": 82892,
+      "sha256": "c159c3ab09eb976f2f50ab1490e925a5fbe6b42fdddf413f49fd3f305bf41e97"
+    }
+  ],
+  "diagnosticResults": [
+    {
+      "path": "docs/evidence/history-reuse-representative-before-2026-09-14.json",
+      "bytes": 5896,
+      "sha256": "5486fcdc85878c1d1afe592e7fee5834982d2a1cbaf2a617825412990d40cbc4"
+    },
+    {
+      "path": "docs/evidence/history-reuse-representative-after-2026-09-14.json",
+      "bytes": 5883,
+      "sha256": "b4666c14d03f0cda3d9d03d1d44babf7b7452b852269d66f8eda197448cc5061"
+    },
+    {
+      "path": "docs/evidence/history-reuse-stress-before-2026-09-14.json",
+      "bytes": 5882,
+      "sha256": "a82964047098b6d213b8991a30f8eaf205dc566356064deff5c9b0e5d73de052"
+    },
+    {
+      "path": "docs/evidence/history-reuse-stress-after-2026-09-14.json",
+      "bytes": 5901,
+      "sha256": "50e7cc3e48b312e845adc3dc9ca0cb7ea6e705f19aa45c6165d601905326ee03"
+    }
+  ],
+  "method": {
+    "timeoutMs": 60000,
+    "samplesPerOperationPerArtifact": 1,
+    "freshProcess": true,
+    "probesSequential": true,
+    "concurrentBuildsOrTestsDuringProbes": false,
+    "unchangedInputGuestAndScriptHashesVerified": true,
+    "undoRedoEncodingAndVersionAssertions": "passed",
+    "jsPluginCallbacks": 0
+  },
+  "limitations": [
+    "Single samples, no p95/p99 or qualification result",
+    "Same baseline shows run-to-run variability; historical slow samples are not the comparison baseline",
+    "RSS includes fixture generation and correctness checks",
+    "Full document projections and Core/plugin assessments remain; typed-prefix histories retain their original path",
+    "Private entry remains opt-in; product integration and default cutover are incomplete"
+  ]
+}

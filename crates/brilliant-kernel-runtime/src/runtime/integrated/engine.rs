@@ -316,9 +316,9 @@ impl IntegratedKernelRuntimeV2 {
                     "history.empty-undo"
                 }));
             }
-            let document = self
+            let (document, prepared) = self
                 .runtime
-                .preview_integrated_history(redo)
+                .prepare_integrated_history(redo)
                 .map_err(|error| value(&error).unwrap_or_else(|_| internal()))?;
             let next = self
                 .runtime
@@ -333,11 +333,9 @@ impl IntegratedKernelRuntimeV2 {
             }
             .map_err(|_| internal())?;
             self.reserve_reply(&pipeline, &entry.affected, &entry.command_id)?;
-            let result = if redo {
-                self.runtime.redo()
-            } else {
-                self.runtime.undo()
-            };
+            let result = self
+                .runtime
+                .apply_history_transition_prepared(redo, prepared);
             return self.completed(result, pipeline);
         }
         Err(failure("command.invalid-envelope"))

@@ -11,3 +11,5 @@ test/core-kernel/fixtures/cvn-7-qualification-score.ts text eol=lf
 test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.ts text eol=lf
 test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.test.ts text eol=lf
 test/core-kernel/rust-migration/rkp-2-scale-evidence-process.ps1 text eol=lf
+# Preserve the raw JSON hashes recorded by the history-reuse diagnostic manifest.
+docs/evidence/history-reuse-*-2026-09-14.json text eol=lf

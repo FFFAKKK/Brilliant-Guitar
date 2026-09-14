@@ -56,6 +56,109 @@ impl ContributionExecutorV2 for Host {
 }
 
 #[test]
+fn prepared_batch_history_plugin_rejection_keeps_state_and_allows_retry() {
+    let fixture = decode(include_bytes!(
+        "../../../../../brilliant-kernel-session/src/wasm/fixtures/session.json"
+    ))
+    .unwrap();
+    let mut host = Host {
+        callbacks: at(&fixture, &["callbacks"]).clone(),
+        reject: false,
+        validations: 0,
+    };
+    let mut state =
+        IntegratedKernelRuntimeV2::create(utf8(at(&fixture, &["initial"])).as_bytes(), &mut host)
+            .unwrap();
+    let module_request = array(at(&fixture, &["journey"]))
+        .unwrap()
+        .iter()
+        .map(|step| decode(utf8(at(step, &["request"])).as_bytes()).unwrap())
+        .find(|request| tag(request, "operation", "submit"))
+        .unwrap();
+    let dispatch: CoreDispatch = |_, _| panic!("Batch must use candidate dispatch");
+    let first =
+        decode(&state.operate(&encode(&module_request).unwrap(), &mut host, dispatch)).unwrap();
+    assert!(tag(at(&first, &["result"]), "status", "committed"));
+    // Keep an installed extension on both sides so both undo and redo invoke
+    // its validator. Undoing its initial creation correctly skips that callback.
+    let mut metadata = state.runtime.store.export_document().unwrap().metadata;
+    metadata.title = "history reuse".into();
+    let metadata_command = object([
+        ("commandVersion", number(1)),
+        ("commandId", text("core.document.set-metadata")),
+        (
+            "target",
+            object([
+                ("kind", text("document")),
+                ("documentId", value(state.runtime.document_id()).unwrap()),
+            ]),
+        ),
+        ("payload", object([("metadata", value(&metadata).unwrap())])),
+    ]);
+    let batch = object([
+        ("operation", text("submit")),
+        (
+            "command",
+            object([
+                ("commandVersion", number(1)),
+                ("commandId", text("core.transaction.batch")),
+                (
+                    "target",
+                    object([
+                        ("kind", text("document")),
+                        ("documentId", value(state.runtime.document_id()).unwrap()),
+                    ]),
+                ),
+                (
+                    "payload",
+                    object([(
+                        "commands",
+                        JsonValue::Array(vec![
+                            field(&module_request, "command").unwrap().clone(),
+                            metadata_command,
+                        ]),
+                    )]),
+                ),
+            ]),
+        ),
+    ]);
+    let result = decode(&state.operate(&encode(&batch).unwrap(), &mut host, dispatch)).unwrap();
+    assert!(tag(at(&result, &["result"]), "status", "committed"));
+    for redo in [false, true] {
+        let (_, prepared) = state.runtime.prepare_integrated_history(redo).unwrap();
+        assert!(prepared.is_some(), "exercise the actual reuse path");
+        drop(prepared);
+        let before = state.runtime.store.export_document().unwrap();
+        let version = state.runtime.document_version;
+        let history = state.runtime.history.projected().unwrap();
+        let cached = state.core_classification.clone();
+        let calls = host.validations;
+        let request = if redo {
+            br#"{"operation":"redo"}"#
+        } else {
+            br#"{"operation":"undo"}"#
+        };
+        host.reject = true;
+        let result = decode(&state.operate(request, &mut host, dispatch)).unwrap();
+        assert_eq!(at(&result, &["ok"]), &JsonValue::Bool(false));
+        assert!(field(&result, "pipeline").is_err());
+        assert!(field(&result, "coreReport").is_err());
+        assert!(host.validations > calls);
+        assert_eq!(state.runtime.store.export_document().unwrap(), before);
+        assert_eq!(state.runtime.document_version, version);
+        assert_eq!(state.runtime.history.projected().unwrap(), history);
+        assert_eq!(state.core_classification, cached);
+        host.reject = false;
+        let result = decode(&state.operate(request, &mut host, dispatch)).unwrap();
+        assert!(tag(at(&result, &["result"]), "status", "committed"));
+        assert_eq!(
+            state.runtime.document_version,
+            version.checked_next().unwrap()
+        );
+    }
+}
+
+#[test]
 fn module_classification_reuse_keeps_validation_and_failed_candidates_out_of_the_cache() {
     let fixture = decode(include_bytes!(
         "../../../../../brilliant-kernel-session/src/wasm/fixtures/session.json"

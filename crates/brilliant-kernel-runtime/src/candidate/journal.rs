@@ -35,6 +35,7 @@ use staff::StaffBundle;
 
 pub(crate) use execution::{
     CandidateExecution, CandidateHistory, ModuleSegmentSource, PreparedCandidate,
+    PreparedHistoryPreview,
 };
 
 #[derive(Clone)]
