@@ -1,0 +1,57 @@
+{
+  "qualification": false,
+  "node": "v24.15.0",
+  "platform": "win32",
+  "arch": "x64",
+  "fixtureKind": "stress",
+  "addonPath": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\target\\batch-undo\\prior-wasm-v1.node",
+  "addonSha256": "860a278898a0e76ccd7f2ae6a3da40e875af2cc72367479e755d3b12acdec7b4",
+  "scriptSha256": "49597b0a73a8f138be0d9ee23ab914928931fbe27c28fad2ce571e4a84d8a9ee",
+  "workerExitCode": null,
+  "workerSignal": "SIGTERM",
+  "passed": false,
+  "error": "Error: spawnSync D:\\nvm4w\\nodejs\\node.exe ETIMEDOUT",
+  "progress": [
+    {
+      "stage": "construct",
+      "event": "start",
+      "atMs": 685.0055
+    },
+    {
+      "stage": "construct",
+      "event": "end",
+      "atMs": 5976.7219
+    },
+    {
+      "stage": "submit-batch",
+      "event": "start",
+      "atMs": 5977.153
+    },
+    {
+      "stage": "submit-batch",
+      "event": "end",
+      "atMs": 14828.3004
+    },
+    {
+      "stage": "undo-batch",
+      "event": "start",
+      "atMs": 17410.6982
+    },
+    {
+      "stage": "undo-batch",
+      "event": "end",
+      "atMs": 53028.5154
+    },
+    {
+      "stage": "redo-batch",
+      "event": "start",
+      "atMs": 55514.5873
+    }
+  ],
+  "limitations": [
+    "One fresh process, one sample per operation; no percentiles",
+    "Synthetic frozen plugins, no product qualification",
+    "Peak RSS includes fixture generation and correctness checks",
+    "60-second diagnostic timeout is not a formal liveness gate"
+  ]
+}

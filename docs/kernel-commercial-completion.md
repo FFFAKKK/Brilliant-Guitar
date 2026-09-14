@@ -1,5 +1,20 @@
 # Commercial kernel completion
 
+**Avoid intermediate readers for empty-prefix inverse history (2026-09-14):**
+when both typed prefix operation lists are empty, stored inverse preview and
+commit preparation retain suffix-start identity checks and final semantics but
+avoid structural sealing and a second candidate reader. Nonempty typed prefixes
+retain their two-phase repair behavior. Rust: 602 passed/1 ignored; Node:
+894 passed/2 skipped; strict checks passed. Sequential fresh-process diagnostic
+undo samples changed from 3,656.53 to 1,015.48 ms (representative) and from
+35,617.82 to 14,227.89 ms (stress); the old stress probe timed out during redo,
+while the new one completed within the unchanged 60-second diagnostic deadline.
+Earlier slow/timeout attempts are retained; no percentile or general improvement
+claim is made. One full semantic scan remains, and 14-second stress undo is far
+from commercial interaction latency. Replay/assessment duplication, formal
+qualification, product integration and default cutover remain open. See
+`docs/kernel-batch-undo-2026-09-14.md`.
+
 **Opt-in paged report delivery for editing (2026-09-14):** explicit
 `reportDeliveryVersion: 2` sessions now assess all Core feature rules and return
 complete status/count summaries plus committed-version report references.

@@ -270,6 +270,93 @@ fn late_prefix_inverse_precondition_failure_leaves_store_version_and_metrics_unc
 }
 
 #[test]
+fn suffix_only_inverse_preserves_final_validation_without_an_intermediate_reader() {
+    let original = fixture();
+    let mut expected = original.clone();
+    expected.metadata.title = "suffix title".into();
+    let mut store = build_live_score_store(&original).unwrap();
+    let mut recorder = Recorder::new(Candidate::new(
+        TransactionOverlayV1::new(&store),
+        original.id.clone(),
+    ));
+    let root = recorder
+        .candidate
+        .resolve(Kind::Document, original.id.as_js_string())
+        .unwrap();
+    recorder
+        .replace_scalar(&root, Value::DocumentMetadata(expected.metadata.clone()))
+        .unwrap();
+    let (plan, mut history) = recorder
+        .prepare_combined_commit(&store, DocumentVersionV1::initial())
+        .unwrap();
+    assert!(history.prefix.forward.is_empty());
+    assert!(history.prefix.inverse.is_empty());
+    assert!(!history.suffix.steps.is_empty());
+    let mut version = DocumentVersionV1::initial();
+    let mut metrics = KernelStage3MetricsV1::default();
+    plan.unwrap()
+        .commit(&mut store, &mut version, &mut metrics)
+        .unwrap();
+    for (direction, expected_document) in [
+        (Direction::Inverse, &original),
+        (Direction::Forward, &expected),
+    ] {
+        let before = store.export_document().unwrap();
+        let preview = history.project_replay(&store, direction).unwrap();
+        assert_eq!(&preview, expected_document);
+        assert_eq!(
+            store.export_document().unwrap(),
+            before,
+            "preview is detached"
+        );
+        let direction = if version.get() == 1 {
+            Direction::Inverse
+        } else {
+            Direction::Forward
+        };
+        history
+            .prepare_replay(&store, version, direction)
+            .unwrap()
+            .unwrap()
+            .commit(&mut store, &mut version, &mut metrics)
+            .unwrap();
+        assert_eq!(&store.export_document().unwrap(), expected_document);
+        assert_eq!(metrics.full_semantic_validations, 1);
+        assert_eq!(
+            metrics.full_document_scans, 1,
+            "only the required final semantic walk"
+        );
+        indices_are_complete(&store);
+    }
+    let before = store.export_document().unwrap();
+    let before_metrics = metrics;
+    let mut invalid = original.metadata.clone();
+    invalid.tempo.bpm = FiniteNumber::new(0.0).unwrap();
+    match &mut history.suffix.steps[0].inverse {
+        Operation::ReplaceScalar { value, .. } => {
+            *value = Arc::new(Value::DocumentMetadata(invalid))
+        }
+        _ => panic!("metadata inverse"),
+    }
+    assert!(matches!(
+        history.project_replay(&store, Direction::Inverse),
+        Err(FinalizationFailure::Command(
+            Failure::SemanticInvalid { .. }
+        ))
+    ));
+    assert!(matches!(
+        history.prepare_replay(&store, version, Direction::Inverse),
+        Err(FinalizationFailure::Command(
+            Failure::SemanticInvalid { .. }
+        ))
+    ));
+    assert_eq!(store.export_document().unwrap(), before);
+    assert_eq!(metrics, before_metrics);
+    assert_eq!(version.get(), 3);
+    indices_are_complete(&store);
+}
+
+#[test]
 fn empty_and_prefix_only_histories_preserve_noop_and_fast_inverse_behavior() {
     let original = fixture();
     let mut store = build_live_score_store(&original).unwrap();

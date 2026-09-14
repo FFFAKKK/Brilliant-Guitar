@@ -1,0 +1,77 @@
+{
+  "evidenceVersion": 1,
+  "date": "2026-09-14",
+  "qualification": false,
+  "sourceBaseCommit": "dafd8c8",
+  "sourceState": "Base plus empty typed-prefix inverse optimization in the commit containing this evidence",
+  "artifacts": [
+    {
+      "path": "target/rkp-1-node/brilliant_kernel_node.node",
+      "bytes": 3594752,
+      "sha256": "b901b58b894314664d324ae8d112f83602610b97c8505906e5a72edb73ec07cf"
+    },
+    {
+      "path": "target/integrated-v2/brilliant_kernel_node.node",
+      "bytes": 4926976,
+      "sha256": "fbe5e275c10e9ef7ef1986d1fe5d735bc1a87481eba388a8b290de774b766a51"
+    },
+    {
+      "path": "target/wasm-v1/brilliant_kernel_node.node",
+      "bytes": 6160384,
+      "sha256": "14a8d7a2559e27a1fb0cf12d29ba3bbaa007dfc598fa1e7511eced6d93c662d0"
+    },
+    {
+      "path": "target/batch-undo/prior-wasm-v1.node",
+      "bytes": 6157824,
+      "sha256": "860a278898a0e76ccd7f2ae6a3da40e875af2cc72367479e755d3b12acdec7b4"
+    },
+    {
+      "path": "test/core-kernel/fixtures/wasm-guest/guest-cvn7.wasm",
+      "bytes": 169444,
+      "sha256": "3d43b6dfa2cd4d013f01b8e69a7d7c10440a39cad27bf58d12e23908a410a774"
+    },
+    {
+      "path": "scripts/profile-native-paged-batch.mjs",
+      "bytes": 6215,
+      "sha256": "49597b0a73a8f138be0d9ee23ab914928931fbe27c28fad2ce571e4a84d8a9ee"
+    },
+    {
+      "path": "test/core-kernel/rust-migration/fixtures/qualification-v2-contract.json",
+      "bytes": 2982,
+      "sha256": "7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
+    },
+    {
+      "path": "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
+      "bytes": 10726,
+      "sha256": "5edc34b540835b5edd888706a86df564c0afadc09189293d38d2c4a1b01c05cc"
+    }
+  ],
+  "validation": {
+    "combinedHistoryPassed": 13,
+    "rustPassed": 602,
+    "rustIgnored": 1,
+    "rustFailed": 0,
+    "nodePassed": 894,
+    "nodeSkipped": 2,
+    "nodeFailed": 0,
+    "strictClippy": "passed",
+    "msrv188": "passed",
+    "fmt": "passed"
+  },
+  "diagnosticEvidence": [
+    "batch-undo-representative-after-2026-09-14.json",
+    "batch-undo-representative-before-2026-09-14.json",
+    "batch-undo-representative-initial-2026-09-14.json",
+    "batch-undo-stress-after-2026-09-14.json",
+    "batch-undo-stress-before-2026-09-14.json",
+    "batch-undo-stress-initial-timeout-2026-09-14.json"
+  ],
+  "limitations": [
+    "Single fresh-process diagnostics, not calibrated qualification samples",
+    "Old stress worker timed out during redo; undo duration is derived from completed stage markers",
+    "An earlier old stress timeout without stage markers and an earlier representative run are retained",
+    "Full final semantic validation remains; only empty typed-prefix history avoids intermediate structural scanning",
+    "Performance varies substantially across runs; no p95/p99 or general percentage improvement claim",
+    "Real product integration and default cutover remain open"
+  ]
+}

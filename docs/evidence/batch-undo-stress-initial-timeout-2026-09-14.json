@@ -1,0 +1,20 @@
+{
+  "qualification": false,
+  "node": "v24.15.0",
+  "platform": "win32",
+  "arch": "x64",
+  "fixtureKind": "stress",
+  "addonPath": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\target\\batch-undo\\prior-wasm-v1.node",
+  "addonSha256": "860a278898a0e76ccd7f2ae6a3da40e875af2cc72367479e755d3b12acdec7b4",
+  "scriptSha256": "0eb86c895be2bd694b8a25dd98244b433ff1b58b5b78cf5b116972f519d2c7a9",
+  "workerExitCode": null,
+  "workerSignal": "SIGTERM",
+  "passed": false,
+  "error": "Error: spawnSync D:\\nvm4w\\nodejs\\node.exe ETIMEDOUT",
+  "limitations": [
+    "One fresh process, one sample per operation; no percentiles",
+    "Synthetic frozen plugins, no product qualification",
+    "Peak RSS includes fixture generation and correctness checks",
+    "60-second diagnostic timeout is not a formal liveness gate"
+  ]
+}

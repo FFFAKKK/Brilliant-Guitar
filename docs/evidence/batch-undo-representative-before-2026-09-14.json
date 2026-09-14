@@ -1,0 +1,202 @@
+{
+  "qualification": false,
+  "node": "v24.15.0",
+  "platform": "win32",
+  "arch": "x64",
+  "fixtureKind": "representative",
+  "addonPath": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\target\\batch-undo\\prior-wasm-v1.node",
+  "addonSha256": "860a278898a0e76ccd7f2ae6a3da40e875af2cc72367479e755d3b12acdec7b4",
+  "scriptSha256": "49597b0a73a8f138be0d9ee23ab914928931fbe27c28fad2ce571e4a84d8a9ee",
+  "workerExitCode": 0,
+  "workerSignal": null,
+  "passed": true,
+  "operations": [
+    {
+      "operation": "construct",
+      "durationMs": 849.4492,
+      "beforeRss": 171606016,
+      "afterRss": 328024064
+    },
+    {
+      "operation": "submit-batch",
+      "durationMs": 971.4754999999998,
+      "beforeRss": 328024064,
+      "afterRss": 330252288,
+      "status": "committed",
+      "metrics": {
+        "semanticRulesEvaluated": 205492,
+        "semanticDependencyReads": 602577,
+        "fullDocumentScans": 1,
+        "fullDocumentClones": 0,
+        "fullSemanticValidations": 1,
+        "fullSnapshotMaterializations": 0,
+        "entitiesVisited": 443558,
+        "entityIndexLookups": 141632,
+        "ownerIndexLookups": 1454434,
+        "timeIndexComparisons": 0,
+        "overlayRecords": 6,
+        "orderCollectionsCopied": 0,
+        "changeOps": 5,
+        "changesetLogicalBytes": 2033,
+        "affectedAddresses": 4,
+        "indexEntriesRemoved": 1,
+        "indexEntriesInserted": 1,
+        "ffiRequestBytes": 0,
+        "ffiResponseBytes": 0
+      },
+      "stage4Metrics": {
+        "fullSnapshotMaterializations": 0,
+        "selectorRecordsVisited": 0,
+        "selectorRecordsReturned": 0,
+        "checkpointAttempts": 0,
+        "checkpointSuccesses": 0,
+        "checkpointFailures": 0,
+        "checkpointMaterializedBytes": 0,
+        "eventsReserved": 2,
+        "eventsEmitted": 2
+      }
+    },
+    {
+      "operation": "undo-batch",
+      "durationMs": 3656.5271000000002,
+      "beforeRss": 342671360,
+      "afterRss": 337960960,
+      "status": "committed",
+      "metrics": {
+        "semanticRulesEvaluated": 205492,
+        "semanticDependencyReads": 602577,
+        "fullDocumentScans": 2,
+        "fullDocumentClones": 0,
+        "fullSemanticValidations": 1,
+        "fullSnapshotMaterializations": 0,
+        "entitiesVisited": 359895,
+        "entityIndexLookups": 99987,
+        "ownerIndexLookups": 1449753,
+        "timeIndexComparisons": 0,
+        "overlayRecords": 6,
+        "orderCollectionsCopied": 0,
+        "changeOps": 5,
+        "changesetLogicalBytes": 2033,
+        "affectedAddresses": 4,
+        "indexEntriesRemoved": 1,
+        "indexEntriesInserted": 1,
+        "ffiRequestBytes": 0,
+        "ffiResponseBytes": 0
+      },
+      "stage4Metrics": {
+        "fullSnapshotMaterializations": 0,
+        "selectorRecordsVisited": 0,
+        "selectorRecordsReturned": 0,
+        "checkpointAttempts": 0,
+        "checkpointSuccesses": 0,
+        "checkpointFailures": 0,
+        "checkpointMaterializedBytes": 0,
+        "eventsReserved": 2,
+        "eventsEmitted": 2
+      }
+    },
+    {
+      "operation": "redo-batch",
+      "durationMs": 1132.8166,
+      "beforeRss": 316133376,
+      "afterRss": 312127488,
+      "status": "committed",
+      "metrics": {
+        "semanticRulesEvaluated": 205492,
+        "semanticDependencyReads": 602577,
+        "fullDocumentScans": 1,
+        "fullDocumentClones": 0,
+        "fullSemanticValidations": 1,
+        "fullSnapshotMaterializations": 0,
+        "entitiesVisited": 236475,
+        "entityIndexLookups": 74202,
+        "ownerIndexLookups": 769028,
+        "timeIndexComparisons": 0,
+        "overlayRecords": 6,
+        "orderCollectionsCopied": 0,
+        "changeOps": 5,
+        "changesetLogicalBytes": 2033,
+        "affectedAddresses": 4,
+        "indexEntriesRemoved": 1,
+        "indexEntriesInserted": 1,
+        "ffiRequestBytes": 0,
+        "ffiResponseBytes": 0
+      },
+      "stage4Metrics": {
+        "fullSnapshotMaterializations": 0,
+        "selectorRecordsVisited": 0,
+        "selectorRecordsReturned": 0,
+        "checkpointAttempts": 0,
+        "checkpointSuccesses": 0,
+        "checkpointFailures": 0,
+        "checkpointMaterializedBytes": 0,
+        "eventsReserved": 2,
+        "eventsEmitted": 2
+      }
+    }
+  ],
+  "fixtureCounts": {
+    "measures": 200,
+    "parts": 8,
+    "staves": 8,
+    "measureContents": 1600,
+    "voices": 3200,
+    "events": 25600,
+    "notes": 12800,
+    "knownExtensionBlocks": 9,
+    "unknownExtensionBlocks": 1
+  },
+  "guestSha256": "3d43b6dfa2cd4d013f01b8e69a7d7c10440a39cad27bf58d12e23908a410a774",
+  "originalHash": "93a2bdcd5f9661705fa4364f02b44297ffeb7f4d504c231535d5fcd5d0295b78",
+  "changedHash": "f14f147f4b9e16aae60a547bd423a4e0a4acce8991d839321a5929a3d93afa35",
+  "undoHash": "93a2bdcd5f9661705fa4364f02b44297ffeb7f4d504c231535d5fcd5d0295b78",
+  "maxRssBytes": 438468608,
+  "progress": [
+    {
+      "stage": "construct",
+      "event": "start",
+      "atMs": 231.9433
+    },
+    {
+      "stage": "construct",
+      "event": "end",
+      "atMs": 1081.7177
+    },
+    {
+      "stage": "submit-batch",
+      "event": "start",
+      "atMs": 1081.9507
+    },
+    {
+      "stage": "submit-batch",
+      "event": "end",
+      "atMs": 2053.3987
+    },
+    {
+      "stage": "undo-batch",
+      "event": "start",
+      "atMs": 2329.7148
+    },
+    {
+      "stage": "undo-batch",
+      "event": "end",
+      "atMs": 5986.2524
+    },
+    {
+      "stage": "redo-batch",
+      "event": "start",
+      "atMs": 6277.4904
+    },
+    {
+      "stage": "redo-batch",
+      "event": "end",
+      "atMs": 7410.3327
+    }
+  ],
+  "limitations": [
+    "One fresh process, one sample per operation; no percentiles",
+    "Synthetic frozen plugins, no product qualification",
+    "Peak RSS includes fixture generation and correctness checks",
+    "60-second diagnostic timeout is not a formal liveness gate"
+  ]
+}

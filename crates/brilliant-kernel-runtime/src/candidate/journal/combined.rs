@@ -96,6 +96,13 @@ impl CombinedHistory {
                     &mut candidate,
                 )
                 .map_err(FinalizationFailure::Command)?;
+                if self.prefix.forward.is_empty() && self.prefix.inverse.is_empty() {
+                    // No typed operations need an intermediate strong reader.
+                    // Keep locator verification above and the final semantic
+                    // proof in project; avoid wrapping this same candidate in
+                    // another full hierarchy reader.
+                    return project(candidate, &document_id);
+                }
                 let boundary = candidate.seal_structural_boundary()?;
                 let inverse =
                     replay_overlay_on_base(&boundary, &self.prefix.arena, &self.prefix.inverse)?;
@@ -152,6 +159,14 @@ impl CombinedHistory {
                     &mut candidate,
                 )
                 .map_err(FinalizationFailure::Command)?;
+                if self.prefix.forward.is_empty() && self.prefix.inverse.is_empty() {
+                    let (plan, _) = candidate.validate_final()?.prepare_commit(
+                        store,
+                        version,
+                        suffix_operations,
+                    )?;
+                    return Ok(plan);
+                }
                 let boundary = candidate.seal_structural_boundary()?;
                 let prior_delta = boundary.replay_delta()?;
                 let prior_extensions = boundary.replay_extension_delta()?;
