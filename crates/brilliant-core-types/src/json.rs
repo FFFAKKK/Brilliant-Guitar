@@ -1,4 +1,5 @@
-use std::{collections::BTreeMap, fmt, marker::PhantomData};
+use crate::JsonObject;
+use std::{fmt, marker::PhantomData};
 
 use serde::{
     Deserialize, Deserializer, Serialize, Serializer,
@@ -18,7 +19,7 @@ pub enum JsonValue<Text> {
     Number(FiniteNumber),
     String(Text),
     Array(Vec<Self>),
-    Object(BTreeMap<Text, Self>),
+    Object(JsonObject<Text, Self>),
 }
 
 /// Legacy UTF-8 instantiation, retaining its ordinary Serde conversions.
@@ -28,12 +29,38 @@ pub type BoundedJsonValue = JsonValue<String>;
 /// closed rather than changing its JSON type or replacing any code units.
 pub type LosslessJsonValue = JsonValue<JsString>;
 
+impl<Text: PartialEq> JsonObject<Text, JsonValue<Text>> {
+    /// Extension data follows the SDK's observable property-order comparison.
+    pub fn ordered_eq(&self, other: &Self) -> bool {
+        self.len() == other.len()
+            && self
+                .iter()
+                .zip(other.iter())
+                .all(|((lk, lv), (rk, rv))| lk == rk && lv.ordered_eq(rv))
+    }
+}
+impl<Text: PartialEq> JsonValue<Text> {
+    pub fn ordered_eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Object(left), Self::Object(right)) => left.ordered_eq(right),
+            (Self::Array(left), Self::Array(right)) => {
+                left.len() == right.len()
+                    && left
+                        .iter()
+                        .zip(right)
+                        .all(|(left, right)| left.ordered_eq(right))
+            }
+            _ => self == other,
+        }
+    }
+}
+
 impl<Text> JsonValue<Text> {
     pub fn validate_limits(&self) -> Result<(), CoreTypeFailure> {
         Self::validate_stack(vec![(self, 1_usize)], 0)
     }
 
-    pub fn validate_object_limits(values: &BTreeMap<Text, Self>) -> Result<(), CoreTypeFailure> {
+    pub fn validate_object_limits(values: &JsonObject<Text, Self>) -> Result<(), CoreTypeFailure> {
         Self::validate_stack(values.values().rev().map(|value| (value, 2)).collect(), 1)
     }
 
@@ -93,7 +120,9 @@ impl<Text: Serialize> Serialize for JsonValue<Text> {
 
 struct BoundedJsonVisitor<Text>(PhantomData<Text>);
 
-impl<'de, Text: Deserialize<'de> + From<String> + Ord> Visitor<'de> for BoundedJsonVisitor<Text> {
+impl<'de, Text: Deserialize<'de> + From<String> + Ord + Clone> Visitor<'de>
+    for BoundedJsonVisitor<Text>
+{
     type Value = JsonValue<Text>;
 
     fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -158,7 +187,7 @@ impl<'de, Text: Deserialize<'de> + From<String> + Ord> Visitor<'de> for BoundedJ
     where
         A: MapAccess<'de>,
     {
-        let mut values = BTreeMap::new();
+        let mut values = JsonObject::new();
         while let Some((key, value)) = map.next_entry()? {
             if values.insert(key, value).is_some() {
                 return Err(de::Error::custom("duplicate JSON key"));
@@ -168,7 +197,9 @@ impl<'de, Text: Deserialize<'de> + From<String> + Ord> Visitor<'de> for BoundedJ
     }
 }
 
-impl<'de, Text: Deserialize<'de> + From<String> + Ord> Deserialize<'de> for JsonValue<Text> {
+impl<'de, Text: Deserialize<'de> + From<String> + Ord + Clone> Deserialize<'de>
+    for JsonValue<Text>
+{
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -240,15 +271,22 @@ mod tests {
     }
 
     #[test]
-    fn object_keys_are_lexical() {
-        let value = BoundedJsonValue::Object(std::collections::BTreeMap::from([
+    fn object_keys_preserve_insertion_and_offer_explicit_lexical_iteration() {
+        let value = BoundedJsonValue::Object(crate::JsonObject::from([
             ("z".to_owned(), BoundedJsonValue::Null),
             ("a".to_owned(), BoundedJsonValue::Bool(true)),
         ]));
         let BoundedJsonValue::Object(object) = value else {
             panic!("expected object");
         };
-        assert_eq!(object.keys().cloned().collect::<Vec<_>>(), ["a", "z"]);
+        assert_eq!(object.keys().cloned().collect::<Vec<_>>(), ["z", "a"]);
+        assert_eq!(
+            object
+                .iter_sorted()
+                .map(|(key, _)| key.as_str())
+                .collect::<Vec<_>>(),
+            ["a", "z"]
+        );
     }
 
     #[test]

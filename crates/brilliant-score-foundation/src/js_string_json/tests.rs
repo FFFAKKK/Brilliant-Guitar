@@ -141,8 +141,8 @@ fn every_single_utf16_unit_has_an_exact_token_roundtrip() {
 
 #[test]
 fn quoted_keys_keep_distinct_code_units_and_normalize_only_json_escapes() {
-    use std::collections::BTreeMap;
-    let mut map = BTreeMap::new();
+    use brilliant_core_types::JsonObject;
+    let mut map = JsonObject::new();
     for token in [
         r#""\ud800""#,
         r#""\udc00""#,

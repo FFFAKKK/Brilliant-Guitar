@@ -1,11 +1,13 @@
-use std::collections::BTreeMap;
+use brilliant_core_types::JsonObject;
 
 use brilliant_core_types::{FiniteNumber, JsString, JsonValue, SafeInteger, StableId};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-#[serde(bound(deserialize = "Id: Deserialize<'de>, Text: Deserialize<'de> + From<String> + Ord"))]
+#[serde(bound(
+    deserialize = "Id: Deserialize<'de>, Text: Deserialize<'de> + From<String> + Ord + Clone"
+))]
 pub struct ScoreDocumentV1<Id = StableId, Text = JsString> {
     pub schema_version: Text,
     pub id: Id,
@@ -191,15 +193,26 @@ pub enum PitchStepV1 {
     B,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-#[serde(bound(deserialize = "Id: Deserialize<'de>, Text: Deserialize<'de> + From<String> + Ord"))]
+#[serde(bound(
+    deserialize = "Id: Deserialize<'de>, Text: Deserialize<'de> + From<String> + Ord + Clone"
+))]
 pub struct ExtensionBlockV1<Id = StableId, Text = JsString> {
     pub namespace: Text,
     pub schema_version: SafeInteger,
     pub owner: ExtensionOwnerV1<Id>,
-    pub payload: BTreeMap<Text, JsonValue<Text>>,
+    pub payload: JsonObject<Text, JsonValue<Text>>,
 }
+impl<Id: PartialEq, Text: PartialEq> PartialEq for ExtensionBlockV1<Id, Text> {
+    fn eq(&self, other: &Self) -> bool {
+        self.namespace == other.namespace
+            && self.schema_version == other.schema_version
+            && self.owner == other.owner
+            && self.payload.ordered_eq(&other.payload)
+    }
+}
+impl<Id: Eq, Text: Eq> Eq for ExtensionBlockV1<Id, Text> {}
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]

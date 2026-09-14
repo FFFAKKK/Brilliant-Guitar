@@ -21,7 +21,7 @@ pub use candidate::AssessmentNodeV1;
 pub use candidate::AssessmentWorkV1;
 pub use codec::{
     FoundationDecodeFailure, canonical_score_bytes, decode_lossless_score_document_value,
-    decode_score_document_value, finite_number_json_len,
+    decode_score_document_value, finite_number_json_len, write_canonical_score_document,
 };
 pub use diagnostics::{
     AssessmentFailureV1, CORE_ASSESSMENT_DIAGNOSTIC_LIMIT_V1, CoreDiagnosticCodeV1,

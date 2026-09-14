@@ -1,5 +1,6 @@
 use super::*;
 use crate::store::{LiveScoreStore, build_live_score_store, tests::fixture};
+use brilliant_core_types::JsonObject;
 use std::cell::Cell;
 
 fn headers(overlay: &TransactionOverlayV1<'_>) -> Vec<ExtensionHeaderV1> {
@@ -93,7 +94,7 @@ fn store_and_untouched_overlay_visit_headers_without_owned_payload_reads() {
     document.extensions[0].payload.insert(
         "opaque".into(),
         BoundedJsonValue::Array(vec![
-            BoundedJsonValue::Object(BTreeMap::from([(
+            BoundedJsonValue::Object(JsonObject::from([(
                 "nested".into(),
                 BoundedJsonValue::Array(vec![BoundedJsonValue::Null; 512])
             )]));

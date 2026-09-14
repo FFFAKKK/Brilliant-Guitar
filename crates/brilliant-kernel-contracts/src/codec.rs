@@ -1,4 +1,5 @@
-use std::{collections::BTreeMap, io::Write};
+use brilliant_core_types::JsonObject;
+use std::io::Write;
 
 use brilliant_core_types::{
     API_VERSION_V1, JS_SAFE_INTEGER_MAX, JSON_DEPTH_LIMIT, JSON_PROPERTY_LIMIT, JsString,
@@ -321,7 +322,7 @@ fn exact_object<'a>(
     required: &[&'static str],
     optional: &[&'static str],
     state: &mut StrictState,
-) -> Option<&'a BTreeMap<JsString, StrictValue>> {
+) -> Option<&'a JsonObject<JsString, StrictValue>> {
     let StrictValue::Object(entries) = value else {
         record_wrong_type(state, path);
         return None;
@@ -343,7 +344,7 @@ fn exact_object<'a>(
 }
 
 fn field_values<'a>(
-    entries: &'a BTreeMap<JsString, StrictValue>,
+    entries: &'a JsonObject<JsString, StrictValue>,
     field: &'static str,
 ) -> impl Iterator<Item = &'a StrictValue> {
     entries.get_ascii(field).into_iter()
@@ -1072,7 +1073,7 @@ fn target_kind(value: &CapturedValue) -> Option<CoreCommandTargetKindV1> {
 fn exact_json_object<'a>(
     value: &'a CapturedValue,
     required: &[&str],
-) -> Option<&'a BTreeMap<JsString, CapturedValue>> {
+) -> Option<&'a JsonObject<JsString, CapturedValue>> {
     let object = value.as_object()?;
     (object.len() == required.len() && required.iter().all(|field| object.contains_ascii(field)))
         .then_some(object)
@@ -1081,7 +1082,7 @@ fn exact_json_object<'a>(
 fn exact_owned_object(
     value: CapturedValue,
     required: &[&str],
-) -> Option<BTreeMap<JsString, CapturedValue>> {
+) -> Option<JsonObject<JsString, CapturedValue>> {
     exact_json_object(&value, required)?;
     value.into_object()
 }

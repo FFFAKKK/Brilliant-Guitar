@@ -1,5 +1,19 @@
 # Commercial kernel completion
 
+**Opaque property order and integrated encoding compatibility (2026-09-14):**
+Rust now preserves insertion order through extension storage, no-op comparison,
+history and both integrated read forms. Ordinary protocol map equality remains
+unordered; explicit canonical encoding and frozen Core V1 snapshots retain their
+original lexical output. Rust: 590 full-suite passes/1 ignored plus one new
+focused read-forms pass; Node: 892 passed/2 skipped; strict checks passed.
+The unchanged 25,600-event V4 preflight now passes input encoding, edit/undo/redo
+and exact undo encoding; its single edit sample is 304.11 ms. The unchanged
+102,400-event fixture preserves input encoding but editing still rejects the
+4,096-diagnostic cap (6,401 complete K1 warnings). Neither result is commercial
+qualification: full scans/projections, report delivery capacity, formal sampling,
+real product integration and default cutover remain open. See
+`docs/kernel-opaque-key-order-2026-09-14.md`.
+
 **Committed classification reuse for standalone module edits (2026-09-14):**
 V3/V4 reuse the current committed version's complete K1 feature report when the
 overlay proves that only pitch/extension data was written. Core semantics,

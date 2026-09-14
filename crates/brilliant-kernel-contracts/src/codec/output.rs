@@ -337,7 +337,14 @@ impl LosslessEncode for KernelStage4MarkPersistedResultV1 {
 
 impl LosslessEncode for SharedScoreDocumentV1 {
     fn write_lossless<W: Write + ?Sized>(&self, writer: &mut W) -> Result<(), LosslessJsonError> {
-        self.as_document().write_lossless(writer)
+        brilliant_score_foundation::write_canonical_score_document(self.as_document(), writer)
+    }
+}
+
+struct CanonicalScore<'a>(&'a brilliant_score_foundation::ScoreDocumentV1);
+impl LosslessEncode for CanonicalScore<'_> {
+    fn write_lossless<W: Write + ?Sized>(&self, writer: &mut W) -> Result<(), LosslessJsonError> {
+        brilliant_score_foundation::write_canonical_score_document(self.0, writer)
     }
 }
 
@@ -601,7 +608,7 @@ impl LosslessEncode for KernelSnapshotV1 {
         state.field("documentId", &self.document_id)?;
         state.field("schemaVersion", &self.schema_version)?;
         state.field("documentVersion", &self.document_version)?;
-        state.field("document", &self.document)?;
+        state.field("document", &CanonicalScore(&self.document))?;
         state.end()
     }
 }

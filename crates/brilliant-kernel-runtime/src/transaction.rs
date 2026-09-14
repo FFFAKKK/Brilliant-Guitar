@@ -1925,7 +1925,7 @@ impl ExtensionSimulationV1 {
                     record.namespace == expected.namespace
                         && record.owner == expected.owner
                         && record.schema_version == expected.schema_version
-                        && record.payload == expected.payload
+                        && record.payload.ordered_eq(&expected.payload)
                 })
     }
 

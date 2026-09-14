@@ -2147,8 +2147,29 @@ mod tests {
             decode_create_request(&create_request_bytes(&primary_canonical))
                 .expect("decode primary canonical scale document")
                 .document;
-        assert_eq!(verification_document, document);
-        assert_eq!(verification_document, exported);
+        // This probe's canonical path intentionally sorts opaque object keys.
+        // Preserve its data-equality check independently from ordered wire
+        // equality, which is now enforced for ordinary editing snapshots.
+        let same_data = |left: &ScoreDocumentV1, right: &ScoreDocumentV1| {
+            left.schema_version == right.schema_version
+                && left.id == right.id
+                && left.metadata == right.metadata
+                && left.measure_definitions == right.measure_definitions
+                && left.parts == right.parts
+                && left.extensions.len() == right.extensions.len()
+                && left
+                    .extensions
+                    .iter()
+                    .zip(&right.extensions)
+                    .all(|(left, right)| {
+                        left.namespace == right.namespace
+                            && left.schema_version == right.schema_version
+                            && left.owner == right.owner
+                            && left.payload == right.payload
+                    })
+        };
+        assert!(same_data(&verification_document, &document));
+        assert!(same_data(&verification_document, &exported));
         let verification_canonical = canonical_score_bytes(&verification_document)
             .expect("verification canonical scale encode");
         assert_eq!(primary_canonical, verification_canonical);

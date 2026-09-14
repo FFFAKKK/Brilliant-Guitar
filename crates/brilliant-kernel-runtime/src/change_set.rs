@@ -1145,7 +1145,9 @@ fn saturating_sum(values: impl Iterator<Item = u64>) -> u64 {
     values.fold(0_u64, u64::saturating_add)
 }
 
-fn bounded_json_object_len(values: &std::collections::BTreeMap<JsString, BoundedJsonValue>) -> u64 {
+fn bounded_json_object_len(
+    values: &brilliant_core_types::JsonObject<JsString, BoundedJsonValue>,
+) -> u64 {
     2_u64.saturating_add(
         values
             .iter()
@@ -1421,7 +1423,7 @@ fn visit_reference_strings(
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeMap;
+    use brilliant_core_types::JsonObject;
 
     use brilliant_core_types::SafeInteger;
     use brilliant_score_foundation::{ExtensionOwnerV1, TempoV1};
@@ -1624,7 +1626,7 @@ mod tests {
         assert_eq!(budget.logical_bytes, 13);
         assert_eq!(budget.interned_strings.len(), 4);
 
-        let object = BTreeMap::from([
+        let object = JsonObject::from([
             (high.clone(), BoundedJsonValue::String(low)),
             (replacement, BoundedJsonValue::String(pair)),
         ]);
@@ -1657,7 +1659,7 @@ mod tests {
             .expect("metadata replacement");
         assert_eq!(scalar.logical_bytes(), 256);
 
-        let mut payload = BTreeMap::new();
+        let mut payload = JsonObject::new();
         payload.insert("x".into(), BoundedJsonValue::String("\n".into()));
         let mut extension = ChangeSetBuilderV1::new();
         extension

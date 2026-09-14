@@ -1,5 +1,6 @@
 //! One request capture over Foundation syntax, with Contracts' existing policy.
 use super::*;
+use brilliant_core_types::JsonObject;
 use brilliant_core_types::{FiniteNumber, JsString, LosslessJsonValue};
 use brilliant_score_foundation::{
     JsonTokenKind, LosslessJsonTokens, decode_js_string_ascii_token, decode_js_string_token,
@@ -7,13 +8,13 @@ use brilliant_score_foundation::{
 };
 
 pub(super) trait CapturedValueExt {
-    fn into_object(self) -> Option<BTreeMap<JsString, Self>>
+    fn into_object(self) -> Option<JsonObject<JsString, Self>>
     where
         Self: Sized;
     fn into_array(self) -> Option<Vec<Self>>
     where
         Self: Sized;
-    fn as_object(&self) -> Option<&BTreeMap<JsString, Self>>
+    fn as_object(&self) -> Option<&JsonObject<JsString, Self>>
     where
         Self: Sized;
     fn as_array(&self) -> Option<&[Self]>
@@ -26,7 +27,7 @@ pub(super) trait CapturedValueExt {
     fn get_ascii(&self, field: &str) -> Option<&Self>;
 }
 impl CapturedValueExt for LosslessJsonValue {
-    fn into_object(self) -> Option<BTreeMap<JsString, Self>> {
+    fn into_object(self) -> Option<JsonObject<JsString, Self>> {
         if let Self::Object(values) = self {
             Some(values)
         } else {
@@ -40,7 +41,7 @@ impl CapturedValueExt for LosslessJsonValue {
             None
         }
     }
-    fn as_object(&self) -> Option<&BTreeMap<JsString, Self>> {
+    fn as_object(&self) -> Option<&JsonObject<JsString, Self>> {
         if let Self::Object(values) = self {
             Some(values)
         } else {
@@ -86,7 +87,7 @@ pub(super) trait CapturedObjectExt<V> {
     fn contains_ascii(&self, field: &str) -> bool;
     fn at_ascii(&self, field: &str) -> &V;
 }
-impl<V> CapturedObjectExt<V> for BTreeMap<JsString, V> {
+impl<V> CapturedObjectExt<V> for JsonObject<JsString, V> {
     fn get_ascii(&self, field: &str) -> Option<&V> {
         with_json_field_key(field, |key| self.get(key))
     }
@@ -150,7 +151,7 @@ enum Container {
         next_index: usize,
     },
     Object {
-        values: BTreeMap<JsString, StrictValue>,
+        values: JsonObject<JsString, StrictValue>,
         pending: Option<Pending>,
     },
 }
@@ -209,7 +210,8 @@ pub(super) fn strict_json(
     let mut frames: Vec<Frame> = Vec::new();
     // Only the closed protocol field vocabulary is shared. Arbitrary user
     // keys are never interned or kept alive by this request-local cache.
-    let mut field_keys: BTreeMap<&'static str, JsString> = BTreeMap::new();
+    let mut field_keys: std::collections::BTreeMap<&'static str, JsString> =
+        std::collections::BTreeMap::new();
     let mut root = None;
     for token in LosslessJsonTokens::new(text) {
         let token = token.map_err(|_| StableFailureV1::CodecInvalidJson)?;
@@ -334,7 +336,7 @@ pub(super) fn strict_json(
                     path,
                     retain,
                     container: Container::Object {
-                        values: BTreeMap::new(),
+                        values: JsonObject::new(),
                         pending: None,
                     },
                 });
@@ -433,7 +435,7 @@ mod tests {
         attach(&mut [], &mut root, Some(StrictValue::Null), &mut state);
         assert_eq!(state.metrics.post_limit_retained, 2);
         frames[0].container = Container::Object {
-            values: BTreeMap::new(),
+            values: JsonObject::new(),
             pending: Some(Pending {
                 key: Some(JsString::from("injected")),
                 path: CanonicalPath::default(),

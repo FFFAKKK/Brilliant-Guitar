@@ -1,0 +1,47 @@
+{
+  "evidenceVersion": 1,
+  "date": "2026-09-14",
+  "qualification": false,
+  "sourceBaseCommit": "1218a6746e3f5ecb73472339505f83f4d076cc69",
+  "sourceState": "Base commit plus opaque-key-order patch in the commit containing this evidence; probe commit fields identify the pre-commit base.",
+  "artifacts": [
+    {
+      "path": "target/rkp-1-node/brilliant_kernel_node.node",
+      "bytes": 3592192,
+      "sha256": "a29b16a8f1be016d09ff489b390e8b11e3b0d214c2bdca8a7a6afa7279a76ccc"
+    },
+    {
+      "path": "target/integrated-v2/brilliant_kernel_node.node",
+      "bytes": 4768768,
+      "sha256": "6622f48b4a524891a832cd05a99481ae2ecd496438b745a806496c6987c919ef"
+    },
+    {
+      "path": "target/wasm-v1/brilliant_kernel_node.node",
+      "bytes": 6002176,
+      "sha256": "e562a8d33fa84bbb1d09455e561095b83ac7fa7fe22c6d8c3155b87d5c099bc7"
+    },
+    {
+      "path": "test/core-kernel/fixtures/wasm-guest/guest-cvn7.wasm",
+      "bytes": 169444,
+      "sha256": "3d43b6dfa2cd4d013f01b8e69a7d7c10440a39cad27bf58d12e23908a410a774"
+    }
+  ],
+  "validation": {
+    "rustFullPassed": 590,
+    "rustFullIgnored": 1,
+    "additionalReadFormsTestPassed": 1,
+    "nodePassed": 892,
+    "nodeSkipped": 2,
+    "nodeFailed": 0,
+    "strictClippy": "passed",
+    "msrv188": "passed",
+    "typecheck": "passed",
+    "representativePreflight": "passed",
+    "stressPreflight": "rejected at unchanged diagnostics limit"
+  },
+  "limitations": [
+    "Diagnostic preflights only, no formal qualification verdict or percentiles",
+    "Existing process retaining archived Integrated addon was not restarted",
+    "No default route cutover, dependency changes or frozen fixture threshold changes"
+  ]
+}

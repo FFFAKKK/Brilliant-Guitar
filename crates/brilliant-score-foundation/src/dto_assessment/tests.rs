@@ -1,5 +1,6 @@
 use super::*;
 use crate::{LosslessDecode, ScoreFeatureProfileV1};
+use brilliant_core_types::JsonObject;
 
 fn document() -> ScoreDocumentV1 {
     ScoreDocumentV1::from_lossless_value(
@@ -86,7 +87,7 @@ fn borrowed_capture_limits_include_document_overhead_for_depth_and_properties() 
         for _ in 0..depth {
             payload = JsonValue::Array(vec![payload]);
         }
-        document.extensions[0].payload = BTreeMap::from([("deep".into(), payload)]);
+        document.extensions[0].payload = JsonObject::from([("deep".into(), payload)]);
         let mut bytes = Vec::new();
         document.write_lossless(&mut bytes).unwrap();
         let previous = crate::decode_js_value_json(std::str::from_utf8(&bytes).unwrap());
@@ -106,10 +107,10 @@ fn borrowed_capture_limits_include_document_overhead_for_depth_and_properties() 
     }
     // A null placeholder contributes one node; filling the same field with an
     // array adds one node plus its elements in place of that placeholder.
-    document.extensions[0].payload = BTreeMap::from([("wide".into(), JsonValue::Null)]);
+    document.extensions[0].payload = JsonObject::from([("wide".into(), JsonValue::Null)]);
     count(&document, &mut value_count);
     for additional in [0, 1] {
-        document.extensions[0].payload = BTreeMap::from([(
+        document.extensions[0].payload = JsonObject::from([(
             "wide".into(),
             JsonValue::Array(vec![
                 JsonValue::Null;

@@ -1,0 +1,119 @@
+{
+  "evidenceVersion": 1,
+  "qualification": false,
+  "fixtureKind": "stress",
+  "commit": "1218a6746e3f5ecb73472339505f83f4d076cc69",
+  "node": "v24.15.0",
+  "platform": "win32",
+  "arch": "x64",
+  "cpu": "13th Gen Intel(R) Core(TM) i9-13900HX",
+  "hashes": {
+    "test/core-kernel/rust-migration/fixtures/qualification-v2-contract.json": "7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05",
+    "test/core-kernel/fixtures/cvn-7-qualification-score.ts": "5edc34b540835b5edd888706a86df564c0afadc09189293d38d2c4a1b01c05cc",
+    "test/core-kernel/fixtures/cvn-7-qualification-modules.ts": "47fc076a2bb85855aedfcacef23a103a5cdc0dc255c2b5858c353515a17fc227",
+    "dist/test/core-kernel/fixtures/cvn-7-qualification-score.js": "e786747baf5dca9b627f3cc3cea07ec084dc34d66a00263bf948391b5c2bdd9a",
+    "dist/test/core-kernel/fixtures/cvn-7-qualification-modules.js": "69135c9ee7ac0a5644c27ab2741af3283af47aff52ddde79a6d46f0614988570",
+    "test/core-kernel/fixtures/wasm-guest/guest-cvn7.wasm": "3d43b6dfa2cd4d013f01b8e69a7d7c10440a39cad27bf58d12e23908a410a774",
+    "target/wasm-v1/brilliant_kernel_node.node": "e562a8d33fa84bbb1d09455e561095b83ac7fa7fe22c6d8c3155b87d5c099bc7",
+    "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\scripts\\probe-native-qualification-v4.mjs": "7cbae3c9beda6b65bca1f44cf1f71faaecc4edca01d334984ec63f64fd47bf22"
+  },
+  "workerExitCode": 1,
+  "workerSignal": null,
+  "preflightPassed": false,
+  "operations": [
+    {
+      "operation": "construct-integrated",
+      "durationMs": 3822.0443000000005,
+      "status": "ok"
+    },
+    {
+      "operation": "submit-single",
+      "durationMs": 1017.8778000000002,
+      "status": "rejected",
+      "failure": {
+        "code": "command.resource-limit-exceeded",
+        "limitKind": "diagnostics",
+        "limit": 4096,
+        "actual": 4097
+      }
+    }
+  ],
+  "memory": [
+    {
+      "stage": "construct-integrated-before",
+      "rss": 330661888,
+      "heapTotal": 268410880,
+      "heapUsed": 185730496,
+      "external": 2948729,
+      "arrayBuffers": 537243
+    },
+    {
+      "stage": "construct-integrated-after",
+      "rss": 645107712,
+      "heapTotal": 468189184,
+      "heapUsed": 337940696,
+      "external": 17659015,
+      "arrayBuffers": 15239153
+    },
+    {
+      "stage": "submit-single-before",
+      "rss": 578170880,
+      "heapTotal": 289374208,
+      "heapUsed": 172158312,
+      "external": 17631895,
+      "arrayBuffers": 15220451
+    },
+    {
+      "stage": "submit-single-after",
+      "rss": 580603904,
+      "heapTotal": 289374208,
+      "heapUsed": 172790040,
+      "external": 17644674,
+      "arrayBuffers": 15228643
+    }
+  ],
+  "fixtureCounts": {
+    "measures": 400,
+    "parts": 16,
+    "staves": 16,
+    "measureContents": 6400,
+    "voices": 12800,
+    "events": 102400,
+    "notes": 51200,
+    "knownExtensionBlocks": 17,
+    "unknownExtensionBlocks": 1
+  },
+  "initialDocumentSha256": "5a8a318e58bc08a82a822c166ed11239ed4ed7b9ea45d50bb7dcb81d7c57f91e",
+  "oracleCoreProfile": {
+    "status": "unsupported",
+    "diagnosticCount": 6401,
+    "codes": {
+      "unsupported.part-count": 1,
+      "unsupported.voice-count": 6400
+    }
+  },
+  "initialNativeSnapshotSha256": "5a8a318e58bc08a82a822c166ed11239ed4ed7b9ea45d50bb7dcb81d7c57f91e",
+  "inputEncodingPreserved": true,
+  "firstExtensionPayloadKeyOrder": {
+    "fixture": [
+      "marker",
+      "generatorVersion"
+    ],
+    "native": [
+      "marker",
+      "generatorVersion"
+    ]
+  },
+  "failure": {
+    "stage": "submit-single",
+    "error": "AssertionError [ERR_ASSERTION]: submit-single rejected: {\"code\":\"command.resource-limit-exceeded\",\"limitKind\":\"diagnostics\",\"limit\":4096,\"actual\":4097}"
+  },
+  "maxRssBytes": 1094438912,
+  "limitations": [
+    "One fresh process and one sample per operation; no qualification verdict or percentiles",
+    "Synthetic frozen CVN-7 plugins, not real product plugins",
+    "Peak RSS includes fixture generation and untimed correctness checks",
+    "60-second diagnostic timeout is not the calibrated qualification liveness gate",
+    "Full qualification still requires frozen sampling, Batch/replay/stress and complexity evidence"
+  ]
+}

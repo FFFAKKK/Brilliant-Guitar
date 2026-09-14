@@ -1,4 +1,5 @@
 use super::*;
+use brilliant_core_types::JsString;
 use brilliant_extension_protocol::{ContributionCoreReadV2, ContributionExecutionFailureV2};
 
 fn at<'a>(value: &'a Value, path: &[&str]) -> &'a Value {
@@ -133,4 +134,52 @@ fn module_classification_reuse_keeps_validation_and_failed_candidates_out_of_the
     assert!(tag(at(&repeated, &["result"]), "status", "no-op"));
     assert_eq!(state.classification_scans, 3);
     assert_eq!(state.core_classification, published);
+}
+
+#[test]
+fn both_integrated_read_forms_preserve_opaque_order_outside_the_legacy_snapshot_codec() {
+    let fixture = decode(include_bytes!(
+        "../../../../../brilliant-kernel-session/src/wasm/fixtures/session.json"
+    ))
+    .unwrap();
+    let mut input = decode(utf8(at(&fixture, &["initial"])).as_bytes()).unwrap();
+    let JsonValue::Object(root) = &mut input else {
+        unreachable!()
+    };
+    let JsonValue::Object(document) = root.get_mut(&JsString::from("document")).unwrap() else {
+        unreachable!()
+    };
+    let JsonValue::Array(extensions) = document.get_mut(&JsString::from("extensions")).unwrap()
+    else {
+        unreachable!()
+    };
+    extensions.push(object([
+        ("namespace", text("fixture.unknown")),
+        ("schemaVersion", number(1)),
+        ("owner", object([("kind", text("score"))])),
+        ("payload", object([("z", number(1)), ("a", number(2))])),
+    ]));
+    let mut host = Host {
+        callbacks: at(&fixture, &["callbacks"]).clone(),
+        reject: false,
+        validations: 0,
+    };
+    let mut state = IntegratedKernelRuntimeV2::create(&encode(&input).unwrap(), &mut host).unwrap();
+    for request in [
+        br#"{"operation":"read"}"#.as_slice(),
+        br#"{"operation":"read","knownSnapshotVersion":null}"#.as_slice(),
+    ] {
+        let read = decode(&state.operate(request, &mut host, |_, _| unreachable!())).unwrap();
+        let blocks = array(at(&read, &["state", "snapshot", "document", "extensions"])).unwrap();
+        let JsonValue::Object(payload) = at(&blocks[0], &["payload"]) else {
+            unreachable!()
+        };
+        assert_eq!(
+            payload
+                .keys()
+                .map(|key| key.to_utf8().unwrap())
+                .collect::<Vec<_>>(),
+            ["z", "a"]
+        );
+    }
 }

@@ -292,8 +292,12 @@ test("strict codec duplicate lookup cannot regress to a per-member linear scan",
   assert.notEqual(testsStart, -1);
   const capture = codec.slice(captureStart, testsStart);
   assert.doesNotMatch(capture, /\.iter\(\)\s*\.any\s*\(/u);
-  assert.match(codec, /values: BTreeMap<JsString, StrictValue>/u);
+  assert.match(codec, /values: JsonObject<JsString, StrictValue>/u);
   assert.match(capture, /values\.contains_key\(key\)/u);
+  // Ordered output must not turn duplicate detection into a linear field scan.
+  const object = readText("crates/brilliant-core-types/src/json_object.rs");
+  assert.match(object, /positions: BTreeMap<K, usize>/u);
+  assert.match(object, /self\.positions\.contains_key\(key\)/u);
 });
 
 test("unsafe ownership is confined to boundary.rs with exact production call sites", () => {

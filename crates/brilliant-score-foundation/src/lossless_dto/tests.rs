@@ -2,6 +2,7 @@ use super::*;
 use crate::{
     canonical_score_bytes, codec::SMOKE_DOCUMENT, decode_lossless_json, decode_score_document_value,
 };
+use brilliant_core_types::JsonObject;
 
 fn oracle() -> serde_json::Value {
     serde_json::from_str(include_str!(
@@ -17,6 +18,39 @@ fn encode<T: LosslessEncode>(value: &T) -> Vec<u8> {
 }
 
 #[test]
+fn ordered_opaque_objects_round_trip_and_distinguish_nested_reorders() {
+    let source = r#"{"z":{"b":1,"a":2},"a":[{"y":true,"x":null}],"\ud800":"kept"}"#;
+    let value = crate::decode_js_value_json(source).unwrap();
+    assert_eq!(encode(&value), source.as_bytes());
+    let mut canonical = Vec::new();
+    crate::write_lossless_json(&value, &mut canonical).unwrap();
+    assert_eq!(
+        canonical,
+        r#"{"a":[{"x":null,"y":true}],"z":{"a":2,"b":1},"\ud800":"kept"}"#.as_bytes()
+    );
+    let changed =
+        crate::decode_js_value_json(&source.replace(r#""b":1,"a":2"#, r#""a":2,"b":1"#)).unwrap();
+    assert_eq!(
+        value, changed,
+        "ordinary protocol map comparison ignores field order"
+    );
+    assert!(
+        !value.ordered_eq(&changed),
+        "opaque data comparison retains nested order"
+    );
+    let wrap = |payload| ExtensionBlockV1::<StableId> {
+        namespace: "fixture.order".into(),
+        schema_version: SafeInteger::new(1).unwrap(),
+        owner: ExtensionOwnerV1::Score,
+        payload,
+    };
+    let (JsonValue::Object(left), JsonValue::Object(right)) = (value, changed) else {
+        unreachable!()
+    };
+    assert_ne!(wrap(left), wrap(right));
+}
+
+#[test]
 fn borrowed_field_keys_preserve_order_lookup_and_error_paths_for_all_key_shapes() {
     let fields = [
         "apiVersion",
@@ -28,7 +62,7 @@ fn borrowed_field_keys_preserve_order_lookup_and_error_paths_for_all_key_shapes(
     for field in fields {
         let key = JsString::from(field);
         let high = JsString::from_utf16(vec![0xd800]);
-        let mut object = BTreeMap::from([
+        let mut object = JsonObject::from([
             (key.clone(), LosslessJsonValue::String("value".into())),
             (high.clone(), LosslessJsonValue::Bool(false)),
         ]);
@@ -88,16 +122,23 @@ fn complete_lossless_score_preserves_every_text_id_reference_and_extension_key()
 }
 
 #[test]
-fn existing_strong_dto_and_declared_wire_order_remain_identical() {
+fn typed_wire_preserves_opaque_order_while_explicit_canonical_encoding_stays_stable() {
     let value = decode_lossless_json(SMOKE_DOCUMENT).unwrap();
     let strong = ScoreDocumentV1::from_lossless_value(value.clone()).unwrap();
     let legacy =
         decode_score_document_value(serde_json::from_str(SMOKE_DOCUMENT).unwrap()).unwrap();
-    assert_eq!(strong, legacy);
-    assert_eq!(encode(&strong), canonical_score_bytes(&legacy).unwrap());
+    assert_ne!(
+        strong, legacy,
+        "the legacy serde_json adapter sorts object fields"
+    );
+    assert_eq!(
+        canonical_score_bytes(&strong).unwrap(),
+        canonical_score_bytes(&legacy).unwrap()
+    );
+    assert_eq!(encode(&strong), SMOKE_DOCUMENT.as_bytes());
     assert_eq!(
         encode(&LosslessScoreDocumentV1::from_lossless_value(value).unwrap()),
-        canonical_score_bytes(&legacy).unwrap()
+        SMOKE_DOCUMENT.as_bytes()
     );
     let event: RhythmicEventV1 = RhythmicEventV1::from_lossless_value(decode_lossless_json(r#"{"id":"e","duration":{"base":4,"dots":0,"timeModification":{"actualNotes":3,"normalNotes":2}},"staffId":"s","content":{"kind":"rest"}}"#).unwrap()).unwrap();
     assert_eq!(encode(&event), serde_json::to_vec(&event).unwrap());
@@ -111,7 +152,7 @@ fn ordinary_serde_fails_closed_for_non_scalar_text_in_values_keys_and_full_dtos(
         let text = JsString::from_utf16(units);
         assert!(serde_json::to_vec(&text).is_err());
         assert!(serde_json::to_value(&text).is_err());
-        let key = BTreeMap::from([(text.clone(), JsonValue::<JsString>::Null)]);
+        let key = JsonObject::from([(text.clone(), JsonValue::<JsString>::Null)]);
         assert!(serde_json::to_vec(&key).is_err());
         assert!(serde_json::to_value(&key).is_err());
         assert!(serde_json::to_vec(&JsonValue::String(text)).is_err());
@@ -383,20 +424,20 @@ fn opaque_payload_conversion_reuses_the_owned_tree_and_shared_text() {
     let JsonValue::Object(payload) = &root[&JsString::from("payload")] else {
         panic!("payload")
     };
-    let (key, JsonValue::Object(inner)) = payload.first_key_value().unwrap() else {
+    let (key, JsonValue::Object(inner)) = payload.iter().next().unwrap() else {
         panic!("nested")
     };
     let key_ptr = key.code_units().as_ptr();
-    let (inner_key, JsonValue::Array(items)) = inner.first_key_value().unwrap() else {
+    let (inner_key, JsonValue::Array(items)) = inner.iter().next().unwrap() else {
         panic!("array")
     };
     let inner_key_ptr = inner_key.code_units().as_ptr();
     let items_ptr = items.as_ptr();
     let dto = ExtensionBlockV1::<JsString, JsString>::from_lossless_value(value).unwrap();
-    let (key, JsonValue::Object(inner)) = dto.payload.first_key_value().unwrap() else {
+    let (key, JsonValue::Object(inner)) = dto.payload.iter().next().unwrap() else {
         panic!("decoded")
     };
-    let (inner_key, JsonValue::Array(items)) = inner.first_key_value().unwrap() else {
+    let (inner_key, JsonValue::Array(items)) = inner.iter().next().unwrap() else {
         panic!("decoded array")
     };
     assert_eq!(key.code_units().as_ptr(), key_ptr);
@@ -439,7 +480,7 @@ fn dto_writer_failures_and_payload_root_limits_do_not_publish_partial_values() {
         assert_eq!(writer.bytes, expected[..remaining]);
     }
     let half = brilliant_core_types::JSON_PROPERTY_LIMIT / 2;
-    let payload = BTreeMap::from([
+    let payload = JsonObject::from([
         (
             JsString::from("a"),
             JsonValue::Array(vec![JsonValue::Null; half]),

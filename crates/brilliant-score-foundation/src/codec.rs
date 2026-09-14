@@ -66,12 +66,78 @@ pub fn canonical_score_bytes(
     document: &ScoreDocumentV1,
 ) -> Result<Vec<u8>, FoundationDecodeFailure> {
     let mut output = Vec::new();
-    document
-        .write_lossless(&mut output)
-        .map_err(|_| FoundationDecodeFailure::InvalidValue {
+    write_canonical_score_document(document, &mut output).map_err(|_| {
+        FoundationDecodeFailure::InvalidValue {
             path: StablePathV1::root(),
-        })?;
+        }
+    })?;
     Ok(output)
+}
+
+/// Preserve the frozen V1 canonical snapshot contract without buffering a
+/// second whole document. Successor integrated views use ordinary DTO output.
+pub fn write_canonical_score_document<W: std::io::Write + ?Sized>(
+    document: &ScoreDocumentV1,
+    writer: &mut W,
+) -> Result<(), crate::LosslessJsonError> {
+    // Canonical hashing is explicitly lexical within opaque objects. Ordinary
+    // DTO/wire encoding preserves their insertion order instead.
+    struct CanonicalPayload<'a>(
+        &'a brilliant_core_types::JsonObject<
+            brilliant_core_types::JsString,
+            brilliant_core_types::LosslessJsonValue,
+        >,
+    );
+    impl LosslessEncode for CanonicalPayload<'_> {
+        fn write_lossless<W: std::io::Write + ?Sized>(
+            &self,
+            writer: &mut W,
+        ) -> Result<(), crate::LosslessJsonError> {
+            brilliant_core_types::JsonValue::validate_object_limits(self.0)
+                .map_err(crate::LosslessJsonError::Limit)?;
+            crate::lossless_json::write_json_object_ordered(
+                self.0,
+                writer,
+                &mut |text, writer| text.write_lossless(writer),
+                true,
+            )
+        }
+    }
+    struct CanonicalExtensions<'a>(&'a [crate::ExtensionBlockV1]);
+    impl LosslessEncode for CanonicalExtensions<'_> {
+        fn write_lossless<W: std::io::Write + ?Sized>(
+            &self,
+            writer: &mut W,
+        ) -> Result<(), crate::LosslessJsonError> {
+            writer
+                .write_all(b"[")
+                .map_err(crate::LosslessJsonError::Write)?;
+            for (index, block) in self.0.iter().enumerate() {
+                if index != 0 {
+                    writer
+                        .write_all(b",")
+                        .map_err(crate::LosslessJsonError::Write)?;
+                }
+                let mut object = crate::LosslessObjectWriter::new(writer)?;
+                object.field("namespace", &block.namespace)?;
+                object.field("schemaVersion", &block.schema_version)?;
+                object.field("owner", &block.owner)?;
+                object.field("payload", &CanonicalPayload(&block.payload))?;
+                object.end()?;
+            }
+            writer
+                .write_all(b"]")
+                .map_err(crate::LosslessJsonError::Write)
+        }
+    }
+    let mut object = crate::LosslessObjectWriter::new(writer)?;
+    object.field("schemaVersion", &document.schema_version)?;
+    object.field("id", &document.id)?;
+    object.field("metadata", &document.metadata)?;
+    object.field("measureDefinitions", &document.measure_definitions)?;
+    object.field("parts", &document.parts)?;
+    object.field("extensions", &CanonicalExtensions(&document.extensions))?;
+    object.end()
 }
 
 /// Exact scalar wire length for the Runtime's checked logical-byte budget.

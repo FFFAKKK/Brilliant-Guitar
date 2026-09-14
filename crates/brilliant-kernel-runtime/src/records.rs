@@ -1,5 +1,5 @@
 use brilliant_core_types::JsString;
-use std::collections::BTreeMap;
+use brilliant_core_types::JsonObject;
 
 use brilliant_core_types::{LosslessJsonValue as BoundedJsonValue, SafeInteger, StableId};
 use brilliant_score_foundation::{
@@ -63,13 +63,22 @@ pub(crate) struct NoteRecord {
     pub(crate) written_pitch: WrittenPitchV1,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug)]
 pub(crate) struct ExtensionRecord {
     pub(crate) namespace: JsString,
     pub(crate) schema_version: SafeInteger,
     pub(crate) owner: ExtensionOwnerV1,
-    pub(crate) payload: BTreeMap<JsString, BoundedJsonValue>,
+    pub(crate) payload: JsonObject<JsString, BoundedJsonValue>,
 }
+impl PartialEq for ExtensionRecord {
+    fn eq(&self, other: &Self) -> bool {
+        self.namespace == other.namespace
+            && self.schema_version == other.schema_version
+            && self.owner == other.owner
+            && self.payload.ordered_eq(&other.payload)
+    }
+}
+impl Eq for ExtensionRecord {}
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub(crate) struct PartMeasureKey {

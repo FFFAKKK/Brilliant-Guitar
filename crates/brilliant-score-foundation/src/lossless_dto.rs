@@ -1,7 +1,8 @@
 //! Explicit DTO conversion. No Serde marker, type-name test or process-global
 //! mode can accidentally turn an unsupported string into another JSON type.
+use brilliant_core_types::JsonObject;
 
-use std::{collections::BTreeMap, io::Write};
+use std::io::Write;
 
 use brilliant_core_types::{
     FiniteNumber, JsString, JsonValue, LosslessJsonValue, SafeInteger, StableId,
@@ -62,7 +63,7 @@ pub trait LosslessEncode {
 }
 
 /// String-valued DTO parameters, never a numeric/array-to-key coercion.
-pub trait LosslessText: LosslessDecode + LosslessEncode + Ord {
+pub trait LosslessText: LosslessDecode + LosslessEncode + Ord + Clone {
     fn json_from_lossless(value: LosslessJsonValue) -> Result<JsonValue<Self>, LosslessValueError>;
 }
 
@@ -148,7 +149,7 @@ fn convert_json_text<Text: LosslessText>(
                 .collect::<Result<_, _>>()?,
         ),
         JsonValue::Object(values) => {
-            let mut result = BTreeMap::new();
+            let mut result = JsonObject::new();
             for (key, value) in values {
                 let field = LosslessValuePath::Field(key.clone());
                 let decoded_key = Text::from_lossless_value(JsonValue::String(key))
@@ -279,7 +280,7 @@ impl<Text: LosslessText> LosslessDecode for JsonValue<Text> {
         Text::json_from_lossless(value)
     }
 }
-impl<Text: LosslessText> LosslessDecode for BTreeMap<Text, JsonValue<Text>> {
+impl<Text: LosslessText> LosslessDecode for JsonObject<Text, JsonValue<Text>> {
     fn from_lossless_value(value: LosslessJsonValue) -> Result<Self, LosslessValueError> {
         let JsonValue::Object(values) = Text::json_from_lossless(value)? else {
             return Err(LosslessValueError::new(LosslessValueFailure::WrongType));
@@ -287,7 +288,7 @@ impl<Text: LosslessText> LosslessDecode for BTreeMap<Text, JsonValue<Text>> {
         Ok(values)
     }
 }
-impl<Text: LosslessText> LosslessEncode for BTreeMap<Text, JsonValue<Text>> {
+impl<Text: LosslessText> LosslessEncode for JsonObject<Text, JsonValue<Text>> {
     fn write_lossless<W: Write + ?Sized>(&self, writer: &mut W) -> Result<(), LosslessJsonError> {
         JsonValue::validate_object_limits(self).map_err(LosslessJsonError::Limit)?;
         write_json_object_with(self, writer, &mut |text, writer| {
@@ -319,7 +320,7 @@ pub fn with_json_field_key<R>(field: &str, read: impl FnOnce(&[u16]) -> R) -> R 
     }
 }
 
-pub struct ObjectReader(BTreeMap<JsString, LosslessJsonValue>);
+pub struct ObjectReader(JsonObject<JsString, LosslessJsonValue>);
 impl ObjectReader {
     pub fn new(value: LosslessJsonValue) -> Result<Self, LosslessValueError> {
         if let JsonValue::Object(value) = value {
@@ -351,9 +352,9 @@ impl ObjectReader {
             .transpose()
     }
     pub fn end(self) -> Result<(), LosslessValueError> {
-        if let Some((key, _)) = self.0.into_iter().next() {
+        if let Some((key, _)) = self.0.iter_sorted().next() {
             Err(LosslessValueError::new(LosslessValueFailure::ExtraField)
-                .at(LosslessValuePath::Field(key)))
+                .at(LosslessValuePath::Field(key.clone())))
         } else {
             Ok(())
         }

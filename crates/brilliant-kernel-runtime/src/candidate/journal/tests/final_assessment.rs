@@ -85,7 +85,7 @@ fn ts_final_assessment_oracle_matches_complete_reports_and_child_precedence() {
                 report.diagnostics.write_lossless(&mut bytes).unwrap();
                 let diagnostics =
                     decode_lossless_json(std::str::from_utf8(&bytes).unwrap()).unwrap();
-                let actual = JsonValue::Object(std::collections::BTreeMap::from([
+                let actual = JsonValue::Object(brilliant_core_types::JsonObject::from([
                     (
                         JsString::from("code"),
                         JsonValue::String(JsString::from("command.semantic-invalid")),

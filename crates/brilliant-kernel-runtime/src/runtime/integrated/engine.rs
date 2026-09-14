@@ -228,9 +228,27 @@ impl IntegratedKernelRuntimeV2 {
         }
         if tag(&request, "operation", "read") && exact(&request, &["operation"]) {
             let state = self.runtime.read_state().map_err(|_| internal())?;
+            // Integrated views preserve opaque order; the frozen V1 snapshot
+            // codec intentionally remains canonical for its old consumers.
+            let snapshot = object([
+                ("documentId", value(&state.snapshot.document_id)?),
+                ("schemaVersion", text(state.snapshot.schema_version)),
+                (
+                    "documentVersion",
+                    number(state.snapshot.document_version.get()),
+                ),
+                ("document", value(&state.snapshot.document)?),
+            ]);
             return Ok(object([
                 ("ok", JsonValue::Bool(true)),
-                ("state", value(&state)?),
+                (
+                    "state",
+                    object([
+                        ("snapshot", snapshot),
+                        ("history", value(&state.history)?),
+                        ("dirty", JsonValue::Bool(state.dirty)),
+                    ]),
+                ),
                 ("availability", self.availability()?),
                 ("callbackProjections", number(self.callback_projections)),
             ]));

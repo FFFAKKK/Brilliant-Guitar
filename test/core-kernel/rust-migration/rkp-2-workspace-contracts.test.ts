@@ -7872,7 +7872,7 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
   assert.doesNotMatch(collect, /input_score_bytes|assert_eq!\(encoded,/u);
   assert.match(
     collect,
-    /assert_eq!\(verification_document, document\);[\s\S]*assert_eq!\(verification_document, exported\);[\s\S]*assert_eq!\(primary_canonical, verification_canonical\);/u,
+    /assert!\(same_data\(&verification_document, &document\)\);[\s\S]*assert!\(same_data\(&verification_document, &exported\)\);[\s\S]*assert_eq!\(primary_canonical, verification_canonical\);/u,
   );
   assert.match(
     collect,

@@ -1,9 +1,7 @@
 //! Borrow typed score data for the shared assessment rules. This is a view,
 //! not a second document owner or an alternative semantic validator.
-use std::{
-    collections::BTreeMap,
-    io::{self, Write},
-};
+use brilliant_core_types::JsonObject;
+use std::io::{self, Write};
 
 use crate::{AssessmentFailureV1, AssessmentNodeV1, LosslessEncode, ScoreDocumentV1};
 use brilliant_core_types::{
@@ -78,7 +76,7 @@ impl<T: View> View for Vec<T> {
         self.iter().all(|v| visit(v))
     }
 }
-impl<T: View + Ord> View for BTreeMap<T, JsonValue<T>> {
+impl<T: View + Ord> View for JsonObject<T, JsonValue<T>> {
     fn field(&self, name: &str) -> Option<&dyn View> {
         let name = JsString::from(name);
         self.iter().find_map(|(key, value)| {
@@ -86,7 +84,7 @@ impl<T: View + Ord> View for BTreeMap<T, JsonValue<T>> {
         })
     }
     fn fields(&self) -> Option<usize> {
-        Some(BTreeMap::len(self))
+        Some(JsonObject::len(self))
     }
     fn children(&self, visit: &mut dyn FnMut(&dyn View) -> bool) -> bool {
         self.values().all(|v| visit(v))

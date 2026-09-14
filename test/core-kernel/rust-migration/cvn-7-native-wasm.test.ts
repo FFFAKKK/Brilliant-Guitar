@@ -1,6 +1,6 @@
 import assert = require("node:assert/strict");
 import { test } from "node:test";
-import { CommandBus, migrateKernelExtension, type ScoreDocument } from "../../../src/core-kernel/index";
+import { CommandBus, encodeScoreDocumentJson, migrateKernelExtension, type ScoreDocument } from "../../../src/core-kernel/index";
 import { createNativeWorkloadScore } from "../fixtures/native-workload";
 import { createCvn7NativeWasmFixture } from "../fixtures/cvn-7-native-wasm";
 import { createStressCvn7Score } from "../fixtures/cvn-7-qualification-score";
@@ -12,6 +12,46 @@ function score(): ScoreDocument {
     { namespace: "fixture.cvn7.unknown", schemaVersion: 7, owner: { kind: "score" }, payload: { marker: "\ud800", number: -0 } },
   ] };
 }
+
+test("V4 preserves extension property order in encoded snapshots and order-only editing history", () => {
+  for (const reversed of [false, true]) {
+    const fixture = createCvn7NativeWasmFixture(), base = score();
+    const initial: ScoreDocument = { ...base, extensions: base.extensions.map((block, index) => ({
+      ...block,
+      payload: index === 0 ? (reversed ? { generatorVersion: 1, marker: "score" } : { marker: "score", generatorVersion: 1 })
+        : index === 2 ? { z: [{ b: 1, a: 2 }], a: { "10": "ten", "2": "two", "00": "zero", ["__proto__"]: "data", "\ud800": -0 }, tail: "last" }
+        : block.payload,
+    })) };
+    const encode = (document: ScoreDocument) => {
+      const encoded = encodeScoreDocumentJson(document); assert.ok(encoded.ok); return encoded.value;
+    };
+    const original = encode(initial);
+    const run = () => {
+      const created = CommandBus.createIntegrated(initial, fixture.catalog, fixture.modules.knownRequirementInventory); assert.ok(created.ok);
+      const bus = created.value, events: unknown[] = [], snapshots: string[] = [], results: unknown[] = [];
+      bus.subscribe((event: unknown) => events.push(event));
+      const record = () => { const read = bus.read(); assert.ok(read.ok); snapshots.push(encode(read.value.snapshot.document)); };
+      record();
+      assert.equal(snapshots[0], original);
+      const same = fixture.modules.createScoreCommand(initial.id, "note-1", { step: "C", alter: 0, octave: 4 }, "score");
+      const first = bus.submit(same);
+      assert.equal(first.status, reversed ? "committed" : "no-op", "key reorder is the only effective change");
+      results.push(first); record();
+      const repeat = bus.submit(same); assert.equal(repeat.status, "no-op"); results.push(repeat); record();
+      results.push(bus.submit(fixture.modules.createScoreCommand(initial.id, "note-1", { step: "D", alter: 0, octave: 4 }, "changed"))); record();
+      results.push(bus.undo()); record();
+      results.push(bus.redo()); record();
+      assert.equal(encode(initial), original);
+      return { results, events, snapshots };
+    };
+    const expected = run(), restore = fixture.install();
+    try {
+      fixture.modules.resetTrace();
+      assert.deepEqual(run(), expected);
+      assert.deepEqual(fixture.modules.readTrace(), []);
+    } finally { restore(); }
+  }
+});
 test("CVN-7 actual Wasm fixtures preserve mixed editing, lossless text, history and events without JS callbacks", () => {
   const fixture = createCvn7NativeWasmFixture(), initial = score();
   const oracle = CommandBus.createIntegrated(initial, fixture.catalog, fixture.modules.knownRequirementInventory); assert.ok(oracle.ok);

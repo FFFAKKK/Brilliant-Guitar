@@ -1,8 +1,9 @@
 //! Lossless JSON syntax and bounded data-tree encoding. Contracts can consume the
 //! token stream with its own shape/path/failure ranking instead of materializing
 //! a second tree or adopting this convenience decoder's error policy.
+use brilliant_core_types::JsonObject;
 
-use std::{collections::BTreeMap, fmt, io::Write};
+use std::{fmt, io::Write};
 
 use brilliant_core_types::{
     CoreTypeFailure, FiniteNumber, JSON_DEPTH_LIMIT, JSON_PROPERTY_LIMIT, JsString, JsonValue,
@@ -284,7 +285,7 @@ pub enum LosslessJsonError {
 enum Building {
     Array(Vec<LosslessJsonValue>),
     Object {
-        values: BTreeMap<JsString, LosslessJsonValue>,
+        values: JsonObject<JsString, LosslessJsonValue>,
         key: Option<JsString>,
     },
 }
@@ -359,7 +360,7 @@ fn decode_with_number_policy(
             }
             JsonTokenKind::BeginObject => {
                 frames.push(Building::Object {
-                    values: BTreeMap::new(),
+                    values: JsonObject::new(),
                     key: None,
                 });
                 continue;
@@ -423,9 +424,12 @@ pub fn write_lossless_json<W: Write + ?Sized>(
     writer: &mut W,
 ) -> Result<(), LosslessJsonError> {
     value.validate_limits().map_err(LosslessJsonError::Limit)?;
-    write_json_value_with(value, writer, &mut |text, writer| {
-        write_js_string_json(text, writer).map_err(LosslessJsonError::Write)
-    })
+    write_json_value_ordered(
+        value,
+        writer,
+        &mut |text, writer| write_js_string_json(text, writer).map_err(LosslessJsonError::Write),
+        true,
+    )
 }
 
 pub(crate) fn write_json_value_with<
@@ -436,6 +440,18 @@ pub(crate) fn write_json_value_with<
     value: &JsonValue<Text>,
     writer: &mut W,
     write_text: &mut F,
+) -> Result<(), LosslessJsonError> {
+    write_json_value_ordered(value, writer, write_text, false)
+}
+fn write_json_value_ordered<
+    Text,
+    W: Write + ?Sized,
+    F: FnMut(&Text, &mut W) -> Result<(), LosslessJsonError>,
+>(
+    value: &JsonValue<Text>,
+    writer: &mut W,
+    write_text: &mut F,
+    canonical: bool,
 ) -> Result<(), LosslessJsonError> {
     match value {
         JsonValue::Null => writer.write_all(b"null").map_err(LosslessJsonError::Write),
@@ -452,11 +468,13 @@ pub(crate) fn write_json_value_with<
                 if index != 0 {
                     writer.write_all(b",").map_err(LosslessJsonError::Write)?;
                 }
-                write_json_value_with(value, writer, write_text)?;
+                write_json_value_ordered(value, writer, write_text, canonical)?;
             }
             writer.write_all(b"]").map_err(LosslessJsonError::Write)
         }
-        JsonValue::Object(values) => write_json_object_with(values, writer, write_text),
+        JsonValue::Object(values) => {
+            write_json_object_ordered(values, writer, write_text, canonical)
+        }
     }
 }
 
@@ -465,18 +483,39 @@ pub(crate) fn write_json_object_with<
     W: Write + ?Sized,
     F: FnMut(&Text, &mut W) -> Result<(), LosslessJsonError>,
 >(
-    values: &BTreeMap<Text, JsonValue<Text>>,
+    values: &JsonObject<Text, JsonValue<Text>>,
     writer: &mut W,
     write_text: &mut F,
 ) -> Result<(), LosslessJsonError> {
+    write_json_object_ordered(values, writer, write_text, false)
+}
+pub(crate) fn write_json_object_ordered<
+    Text,
+    W: Write + ?Sized,
+    F: FnMut(&Text, &mut W) -> Result<(), LosslessJsonError>,
+>(
+    values: &JsonObject<Text, JsonValue<Text>>,
+    writer: &mut W,
+    write_text: &mut F,
+    canonical: bool,
+) -> Result<(), LosslessJsonError> {
     writer.write_all(b"{").map_err(LosslessJsonError::Write)?;
-    for (index, (key, value)) in values.iter().enumerate() {
+    let mut insertion = values.iter();
+    let mut sorted = values.iter_sorted();
+    let fields = std::iter::from_fn(|| {
+        if canonical {
+            sorted.next()
+        } else {
+            insertion.next()
+        }
+    });
+    for (index, (key, value)) in fields.enumerate() {
         if index != 0 {
             writer.write_all(b",").map_err(LosslessJsonError::Write)?;
         }
         write_text(key, writer)?;
         writer.write_all(b":").map_err(LosslessJsonError::Write)?;
-        write_json_value_with(value, writer, write_text)?;
+        write_json_value_ordered(value, writer, write_text, canonical)?;
     }
     writer.write_all(b"}").map_err(LosslessJsonError::Write)
 }

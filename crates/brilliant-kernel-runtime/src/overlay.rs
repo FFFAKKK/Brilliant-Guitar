@@ -3067,7 +3067,7 @@ static STAGE3_OVERLAY_SHAPE_V1: Stage3OverlayShapeFnV1 = stage3_overlay_shape_v1
 #[cfg(test)]
 mod tests {
     mod extension_headers;
-    use std::collections::BTreeMap;
+    use brilliant_core_types::JsonObject;
 
     use brilliant_core_types::{LosslessJsonValue as BoundedJsonValue, SafeInteger};
     use brilliant_score_foundation::{
@@ -3761,7 +3761,7 @@ mod tests {
             namespace: "tab".into(),
             schema_version: safe(1),
             owner: ExtensionOwnerV1::Score,
-            payload: BTreeMap::new(),
+            payload: JsonObject::new(),
         };
         let key = ExtensionKeyV1::from_block(&extension);
         let mut base = FakeBaseV1::default();
@@ -3867,7 +3867,7 @@ mod tests {
             namespace: "tab".into(),
             schema_version: safe(1),
             owner: ExtensionOwnerV1::Score,
-            payload: BTreeMap::new(),
+            payload: JsonObject::new(),
         };
         let key = ExtensionKeyV1::from_block(&extension);
         let reference = ReferenceAddressV1::EventStaffAssignment {
