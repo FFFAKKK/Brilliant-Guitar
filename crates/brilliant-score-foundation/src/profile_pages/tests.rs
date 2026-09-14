@@ -32,6 +32,12 @@ fn all_6401_diagnostics_are_delivered_in_bounded_deterministic_pages() {
     let (document, profile) = fixture(6401);
     let before = document.clone();
     assert_eq!(
+        assess_score_profile_summary_v2(&document, &profile).unwrap(),
+        ScoreSupportSummaryV2::Unsupported {
+            diagnostic_count: 6401
+        }
+    );
+    assert_eq!(
         assess_score_profile_node(DocumentAssessmentNodeV1::new(&document), &profile),
         Err(AssessmentFailureV1::DiagnosticLimit {
             limit: 4096,
@@ -149,6 +155,12 @@ fn invalid_semantics_suppress_profile_warnings_and_keep_the_old_failure_limit() 
     let (mut document, profile) = fixture(4097);
     document.metadata.tempo.bpm = FiniteNumber::new(-1.0).unwrap();
     let invalid = assess_score_profile_page_v2(&document, &profile, 0, 1).unwrap();
+    assert_eq!(
+        assess_score_profile_summary_v2(&document, &profile).unwrap(),
+        ScoreSupportSummaryV2::Invalid {
+            diagnostics: invalid.diagnostics.clone()
+        }
+    );
     assert_eq!(invalid.status, ScoreSupportStatusV2::Invalid);
     assert_eq!(invalid.total, 1);
     assert_eq!(invalid.diagnostics[0].code, Code::TempoInvalid);

@@ -9,6 +9,8 @@ import type { KernelIntegratedCatalog } from "../core-kernel/registry/integrated
 import type { ScopedExecutionPolicyV1, ScopedCallbackOperationV1 } from "../core-kernel/module-sdk/scoped-invocation";
 import type { CompiledDomainCommandContributionV1 } from "../core-kernel/module-sdk/contracts";
 import { contributionReads } from "../core-kernel/registry/contribution-reads";
+import { resolveKernelIntegratedRuntimeAssembly } from "../core-kernel/registry/domain-availability";
+import { captureHostInstalledContributionsV1 } from "../core-kernel/native/integrated-catalog-capture";
 
 type Callback = (input: Buffer) => Buffer;
 interface ReadAddon extends WasmNativeAddonV1 {
@@ -63,6 +65,40 @@ export function installNativeWasmScheduledEditingV4(addon: ReadAddon, catalog: K
 }
 
 function install(addon: ReadAddon, catalog: KernelIntegratedCatalog, bindings: unknown, mode: 2 | 3 | 4): () => void {
+  const { transport, policy } = createTransport(addon, catalog, bindings, mode);
+  return installNativeIntegratedBackendV2(transport, policy);
+}
+
+/**
+ * Private successor session: report V2 summaries/references remain explicit.
+ * Returns the bounded raw session transport, not the V1 CommandBus result type.
+ * No global backend selection and no JS plugin fallback.
+ */
+export function createNativeWasmPagedSessionV2(addon: ReadAddon, catalog: KernelIntegratedCatalog,
+  bindings: unknown, document: unknown, inventory?: unknown): Callback {
+  const captured = captureStrictInput(document);
+  if (captured.status !== "captured") throw new TypeError("command.invalid-initial-document");
+  const assembly = inventory === undefined ? resolveKernelIntegratedRuntimeAssembly(catalog)
+    : resolveKernelIntegratedRuntimeAssembly(catalog, inventory);
+  if (!assembly.ok) throw new TypeError(assembly.reason === "inventory"
+    ? "command.invalid-requirement-inventory" : "command.assembly-mismatch");
+  const projection = captureHostInstalledContributionsV1(catalog);
+  if (projection === undefined) throw new TypeError("command.assembly-mismatch");
+  const contributions = assembly.state.catalogState.contributions;
+  const input = encode({
+    apiVersion: 2, reportDeliveryVersion: 2, document: captured.value,
+    catalog: projection.projection,
+    commands: contributions.flatMap(entry => entry.commands.map(command => command.descriptor)),
+    effects: contributions.flatMap(entry => entry.effects.map(effect => effect.descriptor)),
+    inventory: inventory === undefined ? null : assembly.state.inventory,
+    assessmentReads: contributions.flatMap(entry => contributionReads(entry) ?? []),
+  });
+  const { transport } = createTransport(addon, catalog, bindings, 4);
+  return transport.createIntegratedKernelSessionV2(input, invalid);
+}
+
+function createTransport(addon: ReadAddon, catalog: KernelIntegratedCatalog, bindings: unknown,
+  mode: 2 | 3 | 4): { transport: IntegratedNativeAddonV2; policy: ScopedExecutionPolicyV1 } {
   const scheduled = mode >= 3;
   const executors = captureWasmExecutorsV1(addon, catalog, bindings, true);
   // Probe every captured artifact, including dormant contributions, before
@@ -235,5 +271,5 @@ function install(addon: ReadAddon, catalog: KernelIntegratedCatalog, bindings: u
       finally { bridge.close(); }
     },
   };
-  return installNativeIntegratedBackendV2(transport, policy);
+  return { transport, policy };
 }

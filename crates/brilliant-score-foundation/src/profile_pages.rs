@@ -17,6 +17,40 @@ pub enum ScoreSupportStatusV2 {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub enum ScoreSupportSummaryV2 {
+    Supported,
+    Unsupported { diagnostic_count: usize },
+    Invalid { diagnostics: Vec<CoreDiagnosticV1> },
+}
+
+/// Assess before publication without materializing unsupported diagnostics.
+/// Semantic failures remain complete within the unchanged V1 failure budget.
+pub fn assess_score_profile_summary_v2(
+    document: &ScoreDocumentV1,
+    profile: &ScoreFeatureProfileV1,
+) -> Result<ScoreSupportSummaryV2, AssessmentFailureV1> {
+    let node = DocumentAssessmentNodeV1::new(document);
+    let semantic = assess_score_semantics_node(node.clone())?;
+    if !semantic.ok {
+        return Ok(ScoreSupportSummaryV2::Invalid {
+            diagnostics: semantic.diagnostics,
+        });
+    }
+    let mut diagnostic_count = 0_usize;
+    visit_valid_score_profile(node, profile, |_, _| {
+        diagnostic_count = diagnostic_count
+            .checked_add(1)
+            .ok_or(AssessmentFailureV1::InternalCapacity)?;
+        Ok(())
+    })?;
+    Ok(if diagnostic_count == 0 {
+        ScoreSupportSummaryV2::Supported
+    } else {
+        ScoreSupportSummaryV2::Unsupported { diagnostic_count }
+    })
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ScoreSupportPageV2 {
     pub status: ScoreSupportStatusV2,
     pub offset: usize,

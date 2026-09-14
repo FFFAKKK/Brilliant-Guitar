@@ -38,6 +38,7 @@ pub struct IntegratedKernelRuntimeV2 {
     effects: Vec<Value>,
     callback_projections: u64,
     assessment_reads: Vec<Value>,
+    paged_core_reports: bool,
     // Only published results for the current committed document are reusable.
     // Standalone module effects cannot change any K1 classification dependency.
     core_classification: Option<(DocumentVersionV1, Value)>,
@@ -58,31 +59,33 @@ impl IntegratedKernelRuntimeV2 {
 
     fn create_inner(bytes: &[u8], executor: &mut dyn ContributionExecutorV2) -> Result<Self> {
         let request = decode(bytes)?;
-        if !(exact(
-            &request,
-            &[
-                "apiVersion",
-                "document",
-                "catalog",
-                "commands",
-                "effects",
-                "inventory",
-            ],
-        ) || exact(
-            &request,
-            &[
-                "apiVersion",
-                "document",
-                "catalog",
-                "commands",
-                "effects",
-                "inventory",
-                "assessmentReads",
-            ],
-        )) || integer(field(&request, "apiVersion")?) != Some(2)
-        {
+        let mut fields = vec![
+            "apiVersion",
+            "document",
+            "catalog",
+            "commands",
+            "effects",
+            "inventory",
+        ];
+        for optional in ["assessmentReads", "reportDeliveryVersion"] {
+            if field(&request, optional).is_ok() {
+                fields.push(optional);
+            }
+        }
+        if !exact(&request, &fields) || integer(field(&request, "apiVersion")?) != Some(2) {
             return Err(failure("command.assembly-mismatch"));
         }
+        let paged_core_reports = match field(&request, "reportDeliveryVersion") {
+            Ok(version)
+                if integer(version) == Some(2)
+                    && executor.uses_scoped_assessment()
+                    && executor.uses_scoped_preparation() =>
+            {
+                true
+            }
+            Ok(_) => return Err(failure("command.assembly-mismatch")),
+            Err(_) => false,
+        };
         let document = ScoreDocumentV1::from_lossless_value(field(&request, "document")?.clone())
             .map_err(|_| failure("command.invalid-initial-document"))?;
         let catalog: HostCatalogV1 = decode_host_catalog_projection_v1(field(&request, "catalog")?)
@@ -114,6 +117,7 @@ impl IntegratedKernelRuntimeV2 {
             effects,
             callback_projections: 0,
             assessment_reads,
+            paged_core_reports,
             core_classification: None,
             #[cfg(test)]
             classification_scans: 0,
@@ -406,6 +410,16 @@ impl IntegratedKernelRuntimeV2 {
     }
 
     fn completed(&mut self, result: KernelStage4CommandResultV1, pipeline: Value) -> Result<Value> {
+        if self.paged_core_reports && matches!(result, KernelStage4CommandResultV1::Rejected { .. })
+        {
+            // A failed publication cannot expose its candidate's summary or a
+            // report reference. The current committed report stays readable.
+            return Ok(object([
+                ("ok", JsonValue::Bool(true)),
+                ("result", value(&result)?),
+                ("callbackProjections", number(self.callback_projections)),
+            ]));
+        }
         if !matches!(result, KernelStage4CommandResultV1::Rejected { .. }) {
             // No fallible work after adoption. A missing report simply prevents
             // reuse; rejected candidates never replace the committed report.
@@ -415,15 +429,36 @@ impl IntegratedKernelRuntimeV2 {
                 .cloned()
                 .map(|core| (self.runtime.document_version, core));
         }
-        Ok(object([
+        let mut output = object([
             ("ok", JsonValue::Bool(true)),
             ("result", value(&result)?),
             ("pipeline", pipeline),
             ("callbackProjections", number(self.callback_projections)),
-        ]))
+        ]);
+        if self.paged_core_reports {
+            let JsonValue::Object(fields) = &mut output else {
+                unreachable!()
+            };
+            fields.insert(
+                "coreReport".into(),
+                object([
+                    ("reportVersion", number(2)),
+                    (
+                        "documentId",
+                        JsonValue::String(self.runtime.document_id().as_js_string().clone()),
+                    ),
+                    (
+                        "documentVersion",
+                        number(self.runtime.document_version.get()),
+                    ),
+                    ("profileId", text("brilliant-guitar.k1")),
+                ]),
+            );
+        }
+        Ok(output)
     }
     /// Conservatively reserve the private response before any adoption. Both
-    /// copies of affected addresses and both possible event document IDs count;
+    /// copies of affected addresses, event IDs and the optional report ID count;
     /// fixed overhead covers all scalar fields at their maximal decimal widths.
     fn reserve_reply(
         &self,
@@ -433,7 +468,8 @@ impl IntegratedKernelRuntimeV2 {
     ) -> Result<()> {
         let required = encode(pipeline)?.len() as u64
             + 2 * encode(&affected.to_vec())?.len() as u64
-            + 2 * encode(self.runtime.document_id())?.len() as u64
+            + (2 + u64::from(self.paged_core_reports))
+                * encode(self.runtime.document_id())?.len() as u64
             + encode(command)?.len() as u64
             + 16_384;
         if required > brilliant_kernel_contracts::RESPONSE_BYTE_LIMIT as u64 {
@@ -507,6 +543,11 @@ impl IntegratedKernelRuntimeV2 {
         executor: &mut dyn ContributionExecutorV2,
         cached: Option<Value>,
     ) -> Result<Value> {
+        if self.paged_core_reports
+            && !(executor.uses_scoped_assessment() && executor.uses_scoped_preparation())
+        {
+            return Err(failure("command.assembly-mismatch"));
+        }
         if executor.uses_scoped_assessment() {
             check_typed_capture(document)?;
             let core = if let Some(core) = cached {
@@ -521,6 +562,12 @@ impl IntegratedKernelRuntimeV2 {
                     ]));
                 }
                 core
+            } else if self.paged_core_reports {
+                #[cfg(test)]
+                {
+                    self.classification_scans += 1;
+                }
+                self.core_report_summary(document)?
             } else {
                 #[cfg(test)]
                 {

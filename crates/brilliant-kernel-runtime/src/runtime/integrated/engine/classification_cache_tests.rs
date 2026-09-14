@@ -137,6 +137,41 @@ fn module_classification_reuse_keeps_validation_and_failed_candidates_out_of_the
 }
 
 #[test]
+fn paged_rejected_completion_exposes_no_candidate_report_and_keeps_committed_cache() {
+    let fixture = decode(include_bytes!(
+        "../../../../../brilliant-kernel-session/src/wasm/fixtures/session.json"
+    ))
+    .unwrap();
+    let mut host = Host {
+        callbacks: at(&fixture, &["callbacks"]).clone(),
+        reject: false,
+        validations: 0,
+    };
+    let mut state =
+        IntegratedKernelRuntimeV2::create(utf8(at(&fixture, &["initial"])).as_bytes(), &mut host)
+            .unwrap();
+    // Exercise the common completion boundary for a Stage4 rejection. Full
+    // transaction rollback itself is covered by the admission/history tests.
+    state.paged_core_reports = true;
+    let committed = state
+        .core_report_summary(&state.runtime.store.export_document().unwrap())
+        .unwrap();
+    state.core_classification = Some((state.runtime.document_version, committed));
+    let cached = state.core_classification.clone();
+    let rejected = state.runtime.undo();
+    assert!(matches!(
+        rejected,
+        KernelStage4CommandResultV1::Rejected { .. }
+    ));
+    let candidate = object([("assessment", object([("core", text("uncommitted"))]))]);
+    let result = state.completed(rejected, candidate).unwrap();
+    assert!(field(&result, "coreReport").is_err());
+    assert!(field(&result, "pipeline").is_err());
+    assert_eq!(state.core_classification, cached);
+    assert_eq!(state.runtime.document_version.get(), 0);
+}
+
+#[test]
 fn both_integrated_read_forms_preserve_opaque_order_outside_the_legacy_snapshot_codec() {
     let fixture = decode(include_bytes!(
         "../../../../../brilliant-kernel-session/src/wasm/fixtures/session.json"

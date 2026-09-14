@@ -1,5 +1,20 @@
 # Commercial kernel completion
 
+**Opt-in paged report delivery for editing (2026-09-14):** explicit
+`reportDeliveryVersion: 2` sessions now assess all Core feature rules and return
+complete status/count summaries plus committed-version report references.
+The independent private Wasm entry `createNativeWasmPagedSessionV2` uses V4
+execution without selecting a global backend or falling back to JS plugins.
+The unchanged 102,400-event fixture passes actual Wasm edit/no-op, mixed
+Core/module Batch, undo/redo, full encoding and all 6,401 report rows against TS.
+Rust: 600 full passes/1 ignored plus one added failure test; Node: 894 passed/
+2 skipped; strict checks passed. Legacy complete-report mode retains its cap.
+Capacity is now usable through the explicit successor, but commercial performance
+is not: one non-isolated regression trace records single edit 1,435 ms and mixed
+Batch undo 14,440 ms. Prioritize replay projection/preparation profiling;
+qualification, product integration and default cutover remain open. See
+`docs/kernel-paged-editing-2026-09-14.md`.
+
 **Version-bound Core report pages V2 (2026-09-14):** Foundation and the private
 integrated session now deliver complete feature reports in bounded pages through
 `readCoreReportPage`. Requests bind document ID/version and K1 profile; stale

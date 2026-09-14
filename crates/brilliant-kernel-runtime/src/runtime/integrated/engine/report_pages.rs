@@ -7,6 +7,31 @@ use brilliant_score_foundation::{
 };
 
 impl IntegratedKernelRuntimeV2 {
+    pub(super) fn core_report_summary(&self, document: &ScoreDocumentV1) -> Result<Value> {
+        use brilliant_score_foundation::{ScoreSupportSummaryV2, assess_score_profile_summary_v2};
+        let (status, count) =
+            match assess_score_profile_summary_v2(document, &ScoreFeatureProfileV1::k1())
+                .map_err(assessment_failure)?
+            {
+                ScoreSupportSummaryV2::Supported => ("supported", 0),
+                ScoreSupportSummaryV2::Unsupported { diagnostic_count } => {
+                    ("unsupported", diagnostic_count)
+                }
+                ScoreSupportSummaryV2::Invalid { diagnostics } => {
+                    return Err(object([
+                        ("code", text("command.semantic-invalid")),
+                        ("diagnostics", value(&diagnostics)?),
+                    ]));
+                }
+            };
+        Ok(object([
+            ("reportVersion", number(2)),
+            ("profileId", text("brilliant-guitar.k1")),
+            ("status", text(status)),
+            ("diagnosticCount", number(count as u64)),
+        ]))
+    }
+
     pub(super) fn read_core_report_page(&self, request: &Value) -> Result<Value> {
         let invalid = || failure("report.invalid-request");
         if !exact(

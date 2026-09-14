@@ -1,0 +1,225 @@
+{
+  "evidenceVersion": 1,
+  "date": "2026-09-14",
+  "qualification": false,
+  "sourceBaseCommit": "a36e54a",
+  "sourceState": "Base plus paged editing patch in the commit containing this evidence",
+  "artifacts": [
+    {
+      "path": "target/rkp-1-node/brilliant_kernel_node.node",
+      "bytes": 3592192,
+      "sha256": "1231018430cc44bc6d68075aab3080dabdd4cc01c42443f006f45e50e5bf2f09"
+    },
+    {
+      "path": "target/integrated-v2/brilliant_kernel_node.node",
+      "bytes": 4924928,
+      "sha256": "d6d43e07fdd8f15619a57396bd90d0bc2da10bbad2447153bba8dedeeb3cacc0"
+    },
+    {
+      "path": "target/wasm-v1/brilliant_kernel_node.node",
+      "bytes": 6157824,
+      "sha256": "860a278898a0e76ccd7f2ae6a3da40e875af2cc72367479e755d3b12acdec7b4"
+    },
+    {
+      "path": "test/core-kernel/fixtures/wasm-guest/guest-cvn7.wasm",
+      "bytes": 169444,
+      "sha256": "3d43b6dfa2cd4d013f01b8e69a7d7c10440a39cad27bf58d12e23908a410a774"
+    },
+    {
+      "path": "test/core-kernel/rust-migration/fixtures/qualification-v2-contract.json",
+      "bytes": 2982,
+      "sha256": "7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05"
+    },
+    {
+      "path": "test/core-kernel/fixtures/cvn-7-qualification-score.ts",
+      "bytes": 10726,
+      "sha256": "5edc34b540835b5edd888706a86df564c0afadc09189293d38d2c4a1b01c05cc"
+    },
+    {
+      "path": "test/core-kernel/fixtures/cvn-7-qualification-modules.ts",
+      "bytes": 15420,
+      "sha256": "47fc076a2bb85855aedfcacef23a103a5cdc0dc255c2b5858c353515a17fc227"
+    }
+  ],
+  "rust": {
+    "fullPassed": 600,
+    "fullIgnored": 1,
+    "fullFailed": 0,
+    "additionalModuleFailureTestPassed": 1
+  },
+  "nativeFocused": {
+    "passed": 1,
+    "failed": 0,
+    "durationMs": 219671.9467,
+    "measurementKind": "Whole differential correctness test including TS oracle and snapshot comparisons; not operation latency",
+    "frozenEvents": 102400,
+    "diagnosticCount": 6401,
+    "oldArtifactResult": "command.assembly-mismatch",
+    "newArtifactResult": "Wasm single edit, no-op, mixed Core/module Batch, undo/redo, complete report pages, rollback and encoding parity passed"
+  },
+  "checks": {
+    "strictClippy": "passed",
+    "rust188AllTargetsAllFeatures": "passed",
+    "typescriptBuildAndNoEmit": "passed"
+  },
+  "limitations": [
+    "Opt-in private reportDeliveryVersion 2 only; legacy full reports still capped at 4096",
+    "No commercial latency, memory or long-sequence qualification",
+    "Full candidate projections and semantic/profile scans remain",
+    "Real product plugins/UI and default cutover remain open",
+    "Existing process using occupied Integrated artifact was preserved; new artifact installed for fresh processes"
+  ],
+  "nodeFull": {
+    "passed": 894,
+    "skipped": 2,
+    "failed": 0,
+    "durationMs": 105079.1156
+  },
+  "diagnosticTrace": {
+    "qualification": false,
+    "environment": "Full Node regression, not isolated/calibrated sampling",
+    "clock": "Date.now wall clock milliseconds",
+    "nativeOperationDurations": [
+      {
+        "step": 0,
+        "operation": "submit-single",
+        "durationMs": 1435
+      },
+      {
+        "step": 1,
+        "operation": "submit-no-op",
+        "durationMs": 702
+      },
+      {
+        "step": 2,
+        "operation": "undo-single",
+        "durationMs": 1159
+      },
+      {
+        "step": 3,
+        "operation": "redo-single",
+        "durationMs": 1137
+      },
+      {
+        "step": 4,
+        "operation": "submit-mixed-batch",
+        "durationMs": 3637
+      },
+      {
+        "step": 5,
+        "operation": "undo-mixed-batch",
+        "durationMs": 14440
+      }
+    ],
+    "stages": [
+      {
+        "stage": "fixture-created",
+        "timestampMs": 1789366974209
+      },
+      {
+        "stage": "oracle-created",
+        "timestampMs": 1789366985991
+      },
+      {
+        "stage": "native-created",
+        "timestampMs": 1789366991323
+      },
+      {
+        "stage": "oracle-0-start",
+        "timestampMs": 1789366992917
+      },
+      {
+        "stage": "oracle-0-done",
+        "timestampMs": 1789366999473
+      },
+      {
+        "stage": "native-0-done",
+        "timestampMs": 1789367000908
+      },
+      {
+        "stage": "checks-0-done",
+        "timestampMs": 1789367008040
+      },
+      {
+        "stage": "oracle-1-start",
+        "timestampMs": 1789367008040
+      },
+      {
+        "stage": "oracle-1-done",
+        "timestampMs": 1789367012843
+      },
+      {
+        "stage": "native-1-done",
+        "timestampMs": 1789367013545
+      },
+      {
+        "stage": "checks-1-done",
+        "timestampMs": 1789367015985
+      },
+      {
+        "stage": "oracle-2-start",
+        "timestampMs": 1789367015985
+      },
+      {
+        "stage": "oracle-2-done",
+        "timestampMs": 1789367018809
+      },
+      {
+        "stage": "native-2-done",
+        "timestampMs": 1789367019968
+      },
+      {
+        "stage": "checks-2-done",
+        "timestampMs": 1789367023956
+      },
+      {
+        "stage": "oracle-3-start",
+        "timestampMs": 1789367023956
+      },
+      {
+        "stage": "oracle-3-done",
+        "timestampMs": 1789367026802
+      },
+      {
+        "stage": "native-3-done",
+        "timestampMs": 1789367027939
+      },
+      {
+        "stage": "checks-3-done",
+        "timestampMs": 1789367031630
+      },
+      {
+        "stage": "oracle-4-start",
+        "timestampMs": 1789367031631
+      },
+      {
+        "stage": "oracle-4-done",
+        "timestampMs": 1789367038404
+      },
+      {
+        "stage": "native-4-done",
+        "timestampMs": 1789367042041
+      },
+      {
+        "stage": "checks-4-done",
+        "timestampMs": 1789367045588
+      },
+      {
+        "stage": "oracle-5-start",
+        "timestampMs": 1789367045588
+      },
+      {
+        "stage": "oracle-5-done",
+        "timestampMs": 1789367048349
+      },
+      {
+        "stage": "native-5-done",
+        "timestampMs": 1789367062789
+      },
+      {
+        "stage": "checks-5-done",
+        "timestampMs": 1789367066363
+      }
+    ]
+  }
+}

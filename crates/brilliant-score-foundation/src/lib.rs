@@ -56,5 +56,5 @@ pub use music_rules::{
 };
 pub use profile_pages::{
     CORE_PROFILE_PAGE_LIMIT_V2, ProfilePageFailureV2, ScoreSupportPageV2, ScoreSupportStatusV2,
-    assess_score_profile_page_v2,
+    ScoreSupportSummaryV2, assess_score_profile_page_v2, assess_score_profile_summary_v2,
 };

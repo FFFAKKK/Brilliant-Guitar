@@ -181,6 +181,160 @@ fn report_request(version: u64, offset: usize, limit: usize) -> Value {
 }
 
 #[test]
+fn paged_report_delivery_allows_large_core_edits_noops_batch_and_history_without_truncation() {
+    let fixture = fixture();
+    let mut input = unsupported_admission_input(4097);
+    input["reportDeliveryVersion"] = json!(2);
+    let mut host = host(&fixture);
+    host.editing = true;
+    let mut session =
+        IntegratedKernelSessionV2::create(&serde_json::to_vec(&input).unwrap(), &mut host).unwrap();
+    let metadata = input["document"]["metadata"].clone();
+    let command = |metadata: Value| {
+        json!({"commandVersion":1,
+        "commandId":"core.document.set-metadata","target":{"kind":"document","documentId":"score-1"},
+        "payload":{"metadata":metadata}})
+    };
+    let mut changed = metadata.clone();
+    changed["title"] = json!("paged editing");
+    let batch = json!({"commandVersion":1,"commandId":"core.transaction.batch",
+        "target":{"kind":"document","documentId":"score-1"},
+        "payload":{"commands":[command(metadata.clone()),command(changed.clone())]}});
+    for (operation, version, status) in [
+        (
+            json!({"operation":"submit","command":command(metadata.clone())}),
+            0,
+            "no-op",
+        ),
+        (
+            json!({"operation":"submit","command":command(changed)}),
+            1,
+            "committed",
+        ),
+        (
+            json!({"operation":"submit","command":batch}),
+            2,
+            "committed",
+        ),
+        (json!({"operation":"undo"}), 3, "committed"),
+        (json!({"operation":"redo"}), 4, "committed"),
+    ] {
+        let output: Value = serde_json::from_slice(
+            &session.operate(&serde_json::to_vec(&operation).unwrap(), &mut host),
+        )
+        .unwrap();
+        assert_eq!(output["ok"], true, "{output}");
+        assert_eq!(output["result"]["status"], status, "{output}");
+        assert_eq!(output["result"]["value"]["documentVersion"], version);
+        assert_eq!(
+            output["pipeline"]["assessment"]["core"],
+            json!({
+                "reportVersion":2,"profileId":"brilliant-guitar.k1",
+                "status":"unsupported","diagnosticCount":4097
+            })
+        );
+        assert_eq!(
+            output["coreReport"],
+            json!({
+                "reportVersion":2,"profileId":"brilliant-guitar.k1",
+                "documentId":"score-1","documentVersion":version
+            })
+        );
+        let page: Value = serde_json::from_slice(&session.operate(
+            &serde_json::to_vec(&report_request(version, 4096, 4096)).unwrap(),
+            &mut host,
+        ))
+        .unwrap();
+        assert_eq!(page["report"]["total"], 4097);
+        assert_eq!(page["report"]["diagnostics"].as_array().unwrap().len(), 1);
+    }
+    let before = read(&mut session, &mut host);
+    let mut invalid = metadata;
+    invalid["tempo"]["bpm"] = json!(-1);
+    let rejected: Value = serde_json::from_slice(&session.operate(
+        &serde_json::to_vec(&json!({"operation":"submit","command":command(invalid)})).unwrap(),
+        &mut host,
+    ))
+    .unwrap();
+    assert_eq!(rejected["ok"], false);
+    assert!(rejected.get("coreReport").is_none());
+    assert!(rejected.get("pipeline").is_none());
+    assert_eq!(read(&mut session, &mut host), before);
+    let future: Value = serde_json::from_slice(&session.operate(
+        &serde_json::to_vec(&report_request(5, 0, 1)).unwrap(),
+        &mut host,
+    ))
+    .unwrap();
+    assert_eq!(future["failure"]["code"], "report.stale-version");
+}
+
+#[test]
+fn report_delivery_negotiation_is_explicit_and_rejects_legacy_hosts() {
+    let fixture = fixture();
+    for (version, editing) in [
+        (json!(2), false),
+        (json!(1), true),
+        (json!(null), true),
+        (json!("2"), true),
+    ] {
+        let mut input: Value = serde_json::from_str(fixture["initial"].as_str().unwrap()).unwrap();
+        input["reportDeliveryVersion"] = version;
+        let mut host = host(&fixture);
+        host.editing = editing;
+        let failure =
+            IntegratedKernelSessionV2::create(&serde_json::to_vec(&input).unwrap(), &mut host)
+                .err()
+                .expect("unsupported negotiation");
+        assert_eq!(
+            serde_json::from_slice::<Value>(&failure).unwrap(),
+            json!({"code":"command.assembly-mismatch"})
+        );
+        assert!(host.calls.is_empty());
+    }
+}
+
+#[test]
+fn paged_module_validation_failure_does_not_publish_a_report_or_consume_history() {
+    let fixture = fixture();
+    let mut input: Value = serde_json::from_str(fixture["initial"].as_str().unwrap()).unwrap();
+    input["reportDeliveryVersion"] = json!(2);
+    let mut host = host(&fixture);
+    host.editing = true;
+    let mut session =
+        IntegratedKernelSessionV2::create(&serde_json::to_vec(&input).unwrap(), &mut host).unwrap();
+    let before = read(&mut session, &mut host);
+    let request = fixture["journey"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|step| step["request"].as_str().unwrap())
+        .find(|request| request.contains("\"operation\":\"submit\""))
+        .unwrap();
+    host.bad = Some("semantic");
+    let rejected: Value =
+        serde_json::from_slice(&session.operate(request.as_bytes(), &mut host)).unwrap();
+    assert_eq!(
+        rejected["failure"]["code"],
+        "command.contribution-semantic-invalid"
+    );
+    assert!(rejected.get("coreReport").is_none());
+    assert!(rejected.get("pipeline").is_none());
+    assert_eq!(read(&mut session, &mut host), before);
+    let current: Value = serde_json::from_slice(&session.operate(
+        &serde_json::to_vec(&report_request(0, 0, 1)).unwrap(),
+        &mut host,
+    ))
+    .unwrap();
+    assert_eq!(current["report"]["status"], "supported");
+    assert_eq!(current["report"]["total"], 0);
+    host.bad = None;
+    let committed: Value =
+        serde_json::from_slice(&session.operate(request.as_bytes(), &mut host)).unwrap();
+    assert_eq!(committed["result"]["status"], "committed");
+    assert_eq!(committed["coreReport"]["documentVersion"], 1);
+}
+
+#[test]
 fn report_pages_read_every_warning_without_callbacks_or_session_mutation() {
     let fixture = fixture();
     let input = unsupported_admission_input(4097);

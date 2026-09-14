@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import * as sdk from "../../../src/core-kernel/module-sdk/index";
-import { installNativeWasmScheduledEditingV4 } from "../../../src/native-host/wasm-core-reads";
+import { createNativeWasmPagedSessionV2, installNativeWasmScheduledEditingV4 } from "../../../src/native-host/wasm-core-reads";
 import { createCvn7QualificationModules } from "./cvn-7-qualification-modules";
 
 export function createCvn7NativeWasmFixture(
@@ -20,5 +20,7 @@ export function createCvn7NativeWasmFixture(
     abiVersion: 1, sha256, bytes,
   }));
   return { modules, catalog: compiled.catalog, guestSha256: sha256,
+    createPaged: (document: unknown) => createNativeWasmPagedSessionV2(
+      addon, compiled.catalog, bindings, document, modules.knownRequirementInventory),
     install: () => installNativeWasmScheduledEditingV4(addon, compiled.catalog, bindings) };
 }
