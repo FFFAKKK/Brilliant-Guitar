@@ -1,0 +1,260 @@
+[
+  {
+    "run": 1,
+    "variant": "old",
+    "report": {
+      "qualification": false,
+      "node": "v24.15.0",
+      "platform": "win32",
+      "arch": "x64",
+      "fixture": {
+        "measures": 200,
+        "parts": 8,
+        "staves": 8,
+        "measureContents": 1600,
+        "voices": 3200,
+        "events": 25600,
+        "notes": 12800,
+        "knownExtensionBlocks": 9,
+        "unknownExtensionBlocks": 1
+      },
+      "addonPath": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\target\\classification-cache\\prior-wasm-v1.node",
+      "addonSha256": "6dd588ab5b691007170a1edc7b8ed88fa04eaec47255f30122e4f2117995d161",
+      "guestSha256": "e0a8cf1c2ca35156a836ee4cc64bf7dc35e62590931647e2f93cb1deee6ff69c",
+      "fixtureSha256": "5edc34b540835b5edd888706a86df564c0afadc09189293d38d2c4a1b01c05cc",
+      "profileSha256": "43f6ae430bca1dbadb59c59a64de314f72bcc688653585658f1b2a7da1bab967",
+      "excludedInitialEdits": 1,
+      "measuredEdits": 6,
+      "durationsMs": [
+        345.08709999999996,
+        345.0185999999999,
+        346.52710000000025,
+        351.4153000000001,
+        341.08290000000034,
+        342.25390000000016
+      ],
+      "medianMs": 345.0528499999999,
+      "maxRssBytes": 517562368,
+      "limitations": [
+        "One session, no qualification percentiles",
+        "Includes final assessment and public host result conversion",
+        "Synthetic plugins"
+      ]
+    }
+  },
+  {
+    "run": 1,
+    "variant": "new",
+    "report": {
+      "qualification": false,
+      "node": "v24.15.0",
+      "platform": "win32",
+      "arch": "x64",
+      "fixture": {
+        "measures": 200,
+        "parts": 8,
+        "staves": 8,
+        "measureContents": 1600,
+        "voices": 3200,
+        "events": 25600,
+        "notes": 12800,
+        "knownExtensionBlocks": 9,
+        "unknownExtensionBlocks": 1
+      },
+      "addonPath": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\target\\wasm-v1\\brilliant_kernel_node.node",
+      "addonSha256": "61f117e81e4f63131ae2a60f56fa099c4ddd6ebd3adfbdca56bb1cd322676913",
+      "guestSha256": "e0a8cf1c2ca35156a836ee4cc64bf7dc35e62590931647e2f93cb1deee6ff69c",
+      "fixtureSha256": "5edc34b540835b5edd888706a86df564c0afadc09189293d38d2c4a1b01c05cc",
+      "profileSha256": "43f6ae430bca1dbadb59c59a64de314f72bcc688653585658f1b2a7da1bab967",
+      "excludedInitialEdits": 1,
+      "measuredEdits": 6,
+      "durationsMs": [
+        218.43459999999982,
+        263.6371000000004,
+        234.6201000000001,
+        243.26530000000002,
+        245.26279999999997,
+        255.64010000000007
+      ],
+      "medianMs": 244.26405,
+      "maxRssBytes": 517099520,
+      "limitations": [
+        "One session, no qualification percentiles",
+        "Includes final assessment and public host result conversion",
+        "Synthetic plugins"
+      ]
+    }
+  },
+  {
+    "run": 2,
+    "variant": "old",
+    "report": {
+      "qualification": false,
+      "node": "v24.15.0",
+      "platform": "win32",
+      "arch": "x64",
+      "fixture": {
+        "measures": 200,
+        "parts": 8,
+        "staves": 8,
+        "measureContents": 1600,
+        "voices": 3200,
+        "events": 25600,
+        "notes": 12800,
+        "knownExtensionBlocks": 9,
+        "unknownExtensionBlocks": 1
+      },
+      "addonPath": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\target\\classification-cache\\prior-wasm-v1.node",
+      "addonSha256": "6dd588ab5b691007170a1edc7b8ed88fa04eaec47255f30122e4f2117995d161",
+      "guestSha256": "e0a8cf1c2ca35156a836ee4cc64bf7dc35e62590931647e2f93cb1deee6ff69c",
+      "fixtureSha256": "5edc34b540835b5edd888706a86df564c0afadc09189293d38d2c4a1b01c05cc",
+      "profileSha256": "43f6ae430bca1dbadb59c59a64de314f72bcc688653585658f1b2a7da1bab967",
+      "excludedInitialEdits": 1,
+      "measuredEdits": 6,
+      "durationsMs": [
+        361.7212999999999,
+        369.94849999999997,
+        367.5072,
+        408.7440999999999,
+        397.2332999999999,
+        366.06590000000006
+      ],
+      "medianMs": 368.72785,
+      "maxRssBytes": 444637184,
+      "limitations": [
+        "One session, no qualification percentiles",
+        "Includes final assessment and public host result conversion",
+        "Synthetic plugins"
+      ]
+    }
+  },
+  {
+    "run": 2,
+    "variant": "new",
+    "report": {
+      "qualification": false,
+      "node": "v24.15.0",
+      "platform": "win32",
+      "arch": "x64",
+      "fixture": {
+        "measures": 200,
+        "parts": 8,
+        "staves": 8,
+        "measureContents": 1600,
+        "voices": 3200,
+        "events": 25600,
+        "notes": 12800,
+        "knownExtensionBlocks": 9,
+        "unknownExtensionBlocks": 1
+      },
+      "addonPath": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\target\\wasm-v1\\brilliant_kernel_node.node",
+      "addonSha256": "61f117e81e4f63131ae2a60f56fa099c4ddd6ebd3adfbdca56bb1cd322676913",
+      "guestSha256": "e0a8cf1c2ca35156a836ee4cc64bf7dc35e62590931647e2f93cb1deee6ff69c",
+      "fixtureSha256": "5edc34b540835b5edd888706a86df564c0afadc09189293d38d2c4a1b01c05cc",
+      "profileSha256": "43f6ae430bca1dbadb59c59a64de314f72bcc688653585658f1b2a7da1bab967",
+      "excludedInitialEdits": 1,
+      "measuredEdits": 6,
+      "durationsMs": [
+        238.30420000000004,
+        269.10900000000015,
+        227.78940000000011,
+        237.57910000000038,
+        238.45599999999968,
+        246.62249999999995
+      ],
+      "medianMs": 238.38009999999986,
+      "maxRssBytes": 444968960,
+      "limitations": [
+        "One session, no qualification percentiles",
+        "Includes final assessment and public host result conversion",
+        "Synthetic plugins"
+      ]
+    }
+  },
+  {
+    "run": 3,
+    "variant": "old",
+    "report": {
+      "qualification": false,
+      "node": "v24.15.0",
+      "platform": "win32",
+      "arch": "x64",
+      "fixture": {
+        "measures": 200,
+        "parts": 8,
+        "staves": 8,
+        "measureContents": 1600,
+        "voices": 3200,
+        "events": 25600,
+        "notes": 12800,
+        "knownExtensionBlocks": 9,
+        "unknownExtensionBlocks": 1
+      },
+      "addonPath": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\target\\classification-cache\\prior-wasm-v1.node",
+      "addonSha256": "6dd588ab5b691007170a1edc7b8ed88fa04eaec47255f30122e4f2117995d161",
+      "guestSha256": "e0a8cf1c2ca35156a836ee4cc64bf7dc35e62590931647e2f93cb1deee6ff69c",
+      "fixtureSha256": "5edc34b540835b5edd888706a86df564c0afadc09189293d38d2c4a1b01c05cc",
+      "profileSha256": "43f6ae430bca1dbadb59c59a64de314f72bcc688653585658f1b2a7da1bab967",
+      "excludedInitialEdits": 1,
+      "measuredEdits": 6,
+      "durationsMs": [
+        300.73680000000013,
+        299.9472000000003,
+        309.3524000000002,
+        296.1077,
+        324.9757999999997,
+        321.44990000000007
+      ],
+      "medianMs": 305.0446000000002,
+      "maxRssBytes": 517099520,
+      "limitations": [
+        "One session, no qualification percentiles",
+        "Includes final assessment and public host result conversion",
+        "Synthetic plugins"
+      ]
+    }
+  },
+  {
+    "run": 3,
+    "variant": "new",
+    "report": {
+      "qualification": false,
+      "node": "v24.15.0",
+      "platform": "win32",
+      "arch": "x64",
+      "fixture": {
+        "measures": 200,
+        "parts": 8,
+        "staves": 8,
+        "measureContents": 1600,
+        "voices": 3200,
+        "events": 25600,
+        "notes": 12800,
+        "knownExtensionBlocks": 9,
+        "unknownExtensionBlocks": 1
+      },
+      "addonPath": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\target\\wasm-v1\\brilliant_kernel_node.node",
+      "addonSha256": "61f117e81e4f63131ae2a60f56fa099c4ddd6ebd3adfbdca56bb1cd322676913",
+      "guestSha256": "e0a8cf1c2ca35156a836ee4cc64bf7dc35e62590931647e2f93cb1deee6ff69c",
+      "fixtureSha256": "5edc34b540835b5edd888706a86df564c0afadc09189293d38d2c4a1b01c05cc",
+      "profileSha256": "43f6ae430bca1dbadb59c59a64de314f72bcc688653585658f1b2a7da1bab967",
+      "excludedInitialEdits": 1,
+      "measuredEdits": 6,
+      "durationsMs": [
+        191.4167,
+        190.0003999999999,
+        192.35530000000017,
+        190.1968999999999,
+        191.2605999999996,
+        194.60000000000036
+      ],
+      "medianMs": 191.3386499999998,
+      "maxRssBytes": 445636608,
+      "limitations": [
+        "One session, no qualification percentiles",
+        "Includes final assessment and public host result conversion",
+        "Synthetic plugins"
+      ]
+    }
+  }
+]

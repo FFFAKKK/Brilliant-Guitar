@@ -1,0 +1,181 @@
+{
+  "evidenceVersion": 1,
+  "qualification": false,
+  "fixtureKind": "representative",
+  "commit": "31196a4c1f417cb34ab8f1496c0ccd973220de1c",
+  "node": "v24.15.0",
+  "platform": "win32",
+  "arch": "x64",
+  "cpu": "13th Gen Intel(R) Core(TM) i9-13900HX",
+  "hashes": {
+    "test/core-kernel/rust-migration/fixtures/qualification-v2-contract.json": "7059cb088d064d4d4450bd23830ac6bce0259070d6e08ce54b5b3d4c4e0cde05",
+    "test/core-kernel/fixtures/cvn-7-qualification-score.ts": "5edc34b540835b5edd888706a86df564c0afadc09189293d38d2c4a1b01c05cc",
+    "test/core-kernel/fixtures/cvn-7-qualification-modules.ts": "47fc076a2bb85855aedfcacef23a103a5cdc0dc255c2b5858c353515a17fc227",
+    "dist/test/core-kernel/fixtures/cvn-7-qualification-score.js": "e786747baf5dca9b627f3cc3cea07ec084dc34d66a00263bf948391b5c2bdd9a",
+    "dist/test/core-kernel/fixtures/cvn-7-qualification-modules.js": "69135c9ee7ac0a5644c27ab2741af3283af47aff52ddde79a6d46f0614988570",
+    "test/core-kernel/fixtures/wasm-guest/guest-cvn7.wasm": "e0a8cf1c2ca35156a836ee4cc64bf7dc35e62590931647e2f93cb1deee6ff69c",
+    "target/wasm-v1/brilliant_kernel_node.node": "61f117e81e4f63131ae2a60f56fa099c4ddd6ebd3adfbdca56bb1cd322676913",
+    "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\scripts\\probe-native-qualification-v4.mjs": "7cbae3c9beda6b65bca1f44cf1f71faaecc4edca01d334984ec63f64fd47bf22"
+  },
+  "workerExitCode": 1,
+  "workerSignal": null,
+  "preflightPassed": false,
+  "operations": [
+    {
+      "operation": "construct-integrated",
+      "durationMs": 913.1334,
+      "status": "ok"
+    },
+    {
+      "operation": "submit-single",
+      "durationMs": 301.97529999999983,
+      "status": "committed"
+    },
+    {
+      "operation": "undo-single",
+      "durationMs": 319.70640000000003,
+      "status": "committed"
+    },
+    {
+      "operation": "redo-single",
+      "durationMs": 296.29230000000007,
+      "status": "committed"
+    },
+    {
+      "operation": "read-cached",
+      "durationMs": 0.18259999999963838,
+      "status": "ok"
+    }
+  ],
+  "memory": [
+    {
+      "stage": "construct-integrated-before",
+      "rss": 135364608,
+      "heapTotal": 109559808,
+      "heapUsed": 41149824,
+      "external": 2940032,
+      "arrayBuffers": 528546
+    },
+    {
+      "stage": "construct-integrated-after",
+      "rss": 337944576,
+      "heapTotal": 247033856,
+      "heapUsed": 152890496,
+      "external": 6393428,
+      "arrayBuffers": 3975878
+    },
+    {
+      "stage": "submit-single-before",
+      "rss": 352165888,
+      "heapTotal": 246145024,
+      "heapUsed": 136563456,
+      "external": 10138890,
+      "arrayBuffers": 3965368
+    },
+    {
+      "stage": "submit-single-after",
+      "rss": 348930048,
+      "heapTotal": 246616064,
+      "heapUsed": 138770536,
+      "external": 10381727,
+      "arrayBuffers": 3989944
+    },
+    {
+      "stage": "undo-single-before",
+      "rss": 338038784,
+      "heapTotal": 205824000,
+      "heapUsed": 58717264,
+      "external": 6376810,
+      "arrayBuffers": 3965366
+    },
+    {
+      "stage": "undo-single-after",
+      "rss": 336494592,
+      "heapTotal": 206032896,
+      "heapUsed": 60357848,
+      "external": 6606880,
+      "arrayBuffers": 3981750
+    },
+    {
+      "stage": "redo-single-before",
+      "rss": 348086272,
+      "heapTotal": 205824000,
+      "heapUsed": 116817928,
+      "external": 10147082,
+      "arrayBuffers": 3973560
+    },
+    {
+      "stage": "redo-single-after",
+      "rss": 343785472,
+      "heapTotal": 206032896,
+      "heapUsed": 118384168,
+      "external": 10377146,
+      "arrayBuffers": 3989944
+    },
+    {
+      "stage": "read-cached-before",
+      "rss": 356073472,
+      "heapTotal": 217882624,
+      "heapUsed": 139020704,
+      "external": 13917347,
+      "arrayBuffers": 3981750
+    },
+    {
+      "stage": "read-cached-after",
+      "rss": 356073472,
+      "heapTotal": 217882624,
+      "heapUsed": 139032552,
+      "external": 13917708,
+      "arrayBuffers": 3981750
+    }
+  ],
+  "fixtureCounts": {
+    "measures": 200,
+    "parts": 8,
+    "staves": 8,
+    "measureContents": 1600,
+    "voices": 3200,
+    "events": 25600,
+    "notes": 12800,
+    "knownExtensionBlocks": 9,
+    "unknownExtensionBlocks": 1
+  },
+  "initialDocumentSha256": "93a2bdcd5f9661705fa4364f02b44297ffeb7f4d504c231535d5fcd5d0295b78",
+  "oracleCoreProfile": {
+    "status": "unsupported",
+    "diagnosticCount": 1601,
+    "codes": {
+      "unsupported.part-count": 1,
+      "unsupported.voice-count": 1600
+    }
+  },
+  "initialNativeSnapshotSha256": "e8f4b3b69c4dff4b0837083ec0e21a5f5f7a45ba2e7f7c5b1c6d882ab9e4fb11",
+  "inputEncodingPreserved": false,
+  "firstExtensionPayloadKeyOrder": {
+    "fixture": [
+      "marker",
+      "generatorVersion"
+    ],
+    "native": [
+      "generatorVersion",
+      "marker"
+    ]
+  },
+  "undoDataEqual": true,
+  "undoDocumentSha256": "e8f4b3b69c4dff4b0837083ec0e21a5f5f7a45ba2e7f7c5b1c6d882ab9e4fb11",
+  "jsCallbackCount": 0,
+  "finalDocumentSha256": "9ea0f0a037462f32a43b1e3d3dc6687c2199cce98787b352ca0cb4888a5042be",
+  "operationChecksPassed": true,
+  "failure": {
+    "stage": "input-encoding-parity",
+    "error": "Native input and undo are data-equal to the frozen fixture, but encodeScoreDocumentJson bytes differ; original fixture hash gate remains unmet"
+  },
+  "maxRssBytes": 460136448,
+  "limitations": [
+    "One fresh process and one sample per operation; no qualification verdict or percentiles",
+    "Synthetic frozen CVN-7 plugins, not real product plugins",
+    "Peak RSS includes fixture generation and untimed correctness checks",
+    "60-second diagnostic timeout is not the calibrated qualification liveness gate",
+    "Full qualification still requires frozen sampling, Batch/replay/stress and complexity evidence"
+  ]
+}

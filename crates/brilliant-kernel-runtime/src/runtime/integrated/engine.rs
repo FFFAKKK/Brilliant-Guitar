@@ -14,6 +14,8 @@ use brilliant_score_foundation::{
 };
 mod assessment;
 mod batch;
+#[cfg(test)]
+mod classification_cache_tests;
 mod core;
 mod core_reads;
 mod migration;
@@ -35,6 +37,11 @@ pub struct IntegratedKernelRuntimeV2 {
     effects: Vec<Value>,
     callback_projections: u64,
     assessment_reads: Vec<Value>,
+    // Only published results for the current committed document are reusable.
+    // Standalone module effects cannot change any K1 classification dependency.
+    core_classification: Option<(DocumentVersionV1, Value)>,
+    #[cfg(test)]
+    classification_scans: u64,
 }
 
 impl IntegratedKernelRuntimeV2 {
@@ -106,6 +113,9 @@ impl IntegratedKernelRuntimeV2 {
             effects,
             callback_projections: 0,
             assessment_reads,
+            core_classification: None,
+            #[cfg(test)]
+            classification_scans: 0,
         };
         let document = state
             .runtime
@@ -345,7 +355,15 @@ impl IntegratedKernelRuntimeV2 {
             self.runtime.document_version
         };
         self.callback_projections = self.callback_projections.saturating_add(projection_count);
-        let pipeline = self.assess(&document, next.get(), executor)?;
+        // module_net_changed above also rejects writes outside pitch/extensions.
+        // Those writes still need semantic and plugin validation, but cannot
+        // change the K1 feature policy result.
+        let cached = self
+            .core_classification
+            .as_ref()
+            .filter(|(version, _)| *version == self.runtime.document_version)
+            .map(|(_, core)| core.clone());
+        let pipeline = self.assess_with_classification(&document, next.get(), executor, cached)?;
         self.reserve_reply(
             &pipeline,
             prepared.integrated_affected.as_deref().unwrap_or(&[]),
@@ -365,7 +383,16 @@ impl IntegratedKernelRuntimeV2 {
         self.completed(result, pipeline)
     }
 
-    fn completed(&self, result: KernelStage4CommandResultV1, pipeline: Value) -> Result<Value> {
+    fn completed(&mut self, result: KernelStage4CommandResultV1, pipeline: Value) -> Result<Value> {
+        if !matches!(result, KernelStage4CommandResultV1::Rejected { .. }) {
+            // No fallible work after adoption. A missing report simply prevents
+            // reuse; rejected candidates never replace the committed report.
+            self.core_classification = field(&pipeline, "assessment")
+                .and_then(|assessment| field(assessment, "core"))
+                .ok()
+                .cloned()
+                .map(|core| (self.runtime.document_version, core));
+        }
         Ok(object([
             ("ok", JsonValue::Bool(true)),
             ("result", value(&result)?),
@@ -448,20 +475,48 @@ impl IntegratedKernelRuntimeV2 {
         version: u64,
         executor: &mut dyn ContributionExecutorV2,
     ) -> Result<Value> {
+        self.assess_with_classification(document, version, executor, None)
+    }
+
+    fn assess_with_classification(
+        &mut self,
+        document: &ScoreDocumentV1,
+        version: u64,
+        executor: &mut dyn ContributionExecutorV2,
+        cached: Option<Value>,
+    ) -> Result<Value> {
         if executor.uses_scoped_assessment() {
             check_typed_capture(document)?;
-            let core = brilliant_score_foundation::assess_score_profile_node(
-                brilliant_score_foundation::DocumentAssessmentNodeV1::new(document),
-                &ScoreFeatureProfileV1::k1(),
-            )
-            .map_err(assessment_failure)?;
-            if let ScoreSupportV1::Invalid { diagnostics } = &core {
-                return Err(object([
-                    ("code", text("command.semantic-invalid")),
-                    ("diagnostics", value(diagnostics)?),
-                ]));
-            }
-            let core = value(&core)?;
+            let core = if let Some(core) = cached {
+                let semantic = brilliant_score_foundation::assess_score_semantics_node(
+                    brilliant_score_foundation::DocumentAssessmentNodeV1::new(document),
+                )
+                .map_err(assessment_failure)?;
+                if !semantic.ok {
+                    return Err(object([
+                        ("code", text("command.semantic-invalid")),
+                        ("diagnostics", value(&semantic.diagnostics)?),
+                    ]));
+                }
+                core
+            } else {
+                #[cfg(test)]
+                {
+                    self.classification_scans += 1;
+                }
+                let core = brilliant_score_foundation::assess_score_profile_node(
+                    brilliant_score_foundation::DocumentAssessmentNodeV1::new(document),
+                    &ScoreFeatureProfileV1::k1(),
+                )
+                .map_err(assessment_failure)?;
+                if let ScoreSupportV1::Invalid { diagnostics } = &core {
+                    return Err(object([
+                        ("code", text("command.semantic-invalid")),
+                        ("diagnostics", value(diagnostics)?),
+                    ]));
+                }
+                value(&core)?
+            };
             let sources = self.assessment_sources(document)?;
             let availability = self.candidate_availability(document)?;
             let modules = self.scheduled_assess_modules(document, version, sources, executor)?;

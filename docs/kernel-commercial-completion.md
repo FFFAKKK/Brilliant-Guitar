@@ -1,5 +1,18 @@
 # Commercial kernel completion
 
+**Committed classification reuse for standalone module edits (2026-09-14):**
+V3/V4 reuse the current committed version's complete K1 feature report when the
+overlay proves that only pitch/extension data was written. Core semantics,
+candidate limits and module validation/classification still execute; Core/Batch
+and history paths recompute classification. Failed candidates never publish a
+report. Rust: 586 passed/1 ignored; Node: 891 passed/2 skipped; strict checks
+passed. Three paired continuous-edit diagnostic medians fell from
+345.05/368.73/305.04 to 244.26/238.38/191.34 ms (29%–37%); first-edit
+latency is not improved by cache reuse. A fresh representative first edit was
+301.98 ms and the encoding preflight still failed. Stress report capacity,
+full scans/projections and commercial qualification remain open. See
+`docs/kernel-classification-cache-2026-09-14.md`.
+
 **Borrowed typed assessment and lazy final Core reads (2026-09-14):** V3/V4
 Core assessment now borrows the typed document through the existing rule engine.
 Candidate byte/depth/property limits are still checked without allocating a full
