@@ -430,6 +430,30 @@ macro_rules! score_codec {
                 object.end()
             }
         }
+        impl<$($generic: LosslessText + crate::dto_assessment::View),*> crate::dto_assessment::View for $ty {
+            fn field(&self, name: &str) -> Option<&dyn crate::dto_assessment::View> {
+                match name { $($wire => view_field!(self, $mode, $field),)* _ => None }
+            }
+            fn fields(&self) -> Option<usize> {
+                Some(0 $(+ usize::from(self.field($wire).is_some()))*)
+            }
+            fn children(&self, visit: &mut dyn FnMut(&dyn crate::dto_assessment::View) -> bool) -> bool {
+                $(if let Some(child) = self.field($wire) { if !visit(child) { return false; } })*
+                true
+            }
+        }
+    };
+}
+
+macro_rules! view_field {
+    ($this:ident, required, $field:ident) => {
+        Some(&$this.$field as &dyn crate::dto_assessment::View)
+    };
+    ($this:ident, optional, $field:ident) => {
+        $this
+            .$field
+            .as_ref()
+            .map(|value| value as &dyn crate::dto_assessment::View)
     };
 }
 
@@ -468,6 +492,11 @@ macro_rules! string_enum {
                 match self { $(Self::$variant => $wire.write_lossless(writer)),+ }
             }
         }
+        impl crate::dto_assessment::View for $ty {
+            fn string(&self) -> Option<JsString> {
+                Some(match self { $(Self::$variant => $wire.into()),+ })
+            }
+        }
     };
 }
 string_enum!(ClefSignV1 { G => "G", F => "F", C => "C" });
@@ -504,6 +533,30 @@ impl<Id: LosslessText> LosslessEncode for RhythmicContentV1<Id> {
         object.end()
     }
 }
+impl<Id: LosslessText + crate::dto_assessment::View> crate::dto_assessment::View
+    for RhythmicContentV1<Id>
+{
+    fn field(&self, name: &str) -> Option<&dyn crate::dto_assessment::View> {
+        static REST: &str = "rest";
+        static NOTES: &str = "notes";
+        match (self, name) {
+            (Self::Rest, "kind") => Some(&REST),
+            (Self::Notes { .. }, "kind") => Some(&NOTES),
+            (Self::Notes { notes }, "notes") => Some(notes),
+            _ => None,
+        }
+    }
+    fn fields(&self) -> Option<usize> {
+        Some(if matches!(self, Self::Rest) { 1 } else { 2 })
+    }
+    fn children(&self, visit: &mut dyn FnMut(&dyn crate::dto_assessment::View) -> bool) -> bool {
+        visit(self.field("kind").unwrap())
+            && match self {
+                Self::Rest => true,
+                Self::Notes { notes } => visit(notes),
+            }
+    }
+}
 impl<Id: LosslessText> LosslessDecode for ExtensionOwnerV1<Id> {
     fn from_lossless_value(value: LosslessJsonValue) -> Result<Self, LosslessValueError> {
         let mut reader = ObjectReader::new(value)?;
@@ -533,6 +586,30 @@ impl<Id: LosslessText> LosslessEncode for ExtensionOwnerV1<Id> {
             }
         }
         object.end()
+    }
+}
+impl<Id: LosslessText + crate::dto_assessment::View> crate::dto_assessment::View
+    for ExtensionOwnerV1<Id>
+{
+    fn field(&self, name: &str) -> Option<&dyn crate::dto_assessment::View> {
+        static SCORE: &str = "score";
+        static PART: &str = "part";
+        match (self, name) {
+            (Self::Score, "kind") => Some(&SCORE),
+            (Self::Part { .. }, "kind") => Some(&PART),
+            (Self::Part { part_id }, "partId") => Some(part_id),
+            _ => None,
+        }
+    }
+    fn fields(&self) -> Option<usize> {
+        Some(if matches!(self, Self::Score) { 1 } else { 2 })
+    }
+    fn children(&self, visit: &mut dyn FnMut(&dyn crate::dto_assessment::View) -> bool) -> bool {
+        visit(self.field("kind").unwrap())
+            && match self {
+                Self::Score => true,
+                Self::Part { part_id } => visit(part_id),
+            }
     }
 }
 

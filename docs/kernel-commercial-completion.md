@@ -1,5 +1,17 @@
 # Commercial kernel completion
 
+**Borrowed typed assessment and lazy final Core reads (2026-09-14):** V3/V4
+Core assessment now borrows the typed document through the existing rule engine.
+Candidate byte/depth/property limits are still checked without allocating a full
+JSON byte buffer/tree. Final callbacks materialize a shared Core tree only if
+they request Core objects; metadata/extension-only assessment avoids it. Rust:
+585 passed/1 ignored; Node: 890 passed/2 skipped; strict checks passed. Three
+paired representative edit medians decreased from 477.28/441.59/442.18 to
+291.38/293.57/314.75 ms (diagnostics, not qualification). Full typed projections,
+limit/semantic/profile scans, stress report limits, encoding compatibility and
+commercial qualification remain. See
+`docs/kernel-borrowed-assessment-2026-09-14.md`.
+
 **Touched-data comparison for standalone module edits (2026-09-13):** removed
 the unconditional initial Store document export used solely for final equality.
 The overlay compares touched pitches/extensions and checks extension order when

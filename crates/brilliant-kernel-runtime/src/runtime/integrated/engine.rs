@@ -423,8 +423,11 @@ impl IntegratedKernelRuntimeV2 {
             // Legacy hosts receive Core assessment in their callback contract.
             return self.assess(document, 0, executor).map(|_| ());
         }
-        let candidate = value(document)?;
-        let semantics = assess_score_semantics(&candidate).map_err(assessment_failure)?;
+        check_typed_capture(document)?;
+        let semantics = brilliant_score_foundation::assess_score_semantics_node(
+            brilliant_score_foundation::DocumentAssessmentNodeV1::new(document),
+        )
+        .map_err(assessment_failure)?;
         if !semantics.ok {
             return Err(object([
                 ("code", text("command.semantic-invalid")),
@@ -435,7 +438,7 @@ impl IntegratedKernelRuntimeV2 {
         self.candidate_availability(document)?;
         // Admission returns no feature report. Keep all semantic, availability
         // and module checks without constructing unused K1 unsupported details.
-        self.scheduled_assess_modules(candidate, 0, sources, executor)?;
+        self.scheduled_assess_modules(document, 0, sources, executor)?;
         Ok(())
     }
 
@@ -445,6 +448,32 @@ impl IntegratedKernelRuntimeV2 {
         version: u64,
         executor: &mut dyn ContributionExecutorV2,
     ) -> Result<Value> {
+        if executor.uses_scoped_assessment() {
+            check_typed_capture(document)?;
+            let core = brilliant_score_foundation::assess_score_profile_node(
+                brilliant_score_foundation::DocumentAssessmentNodeV1::new(document),
+                &ScoreFeatureProfileV1::k1(),
+            )
+            .map_err(assessment_failure)?;
+            if let ScoreSupportV1::Invalid { diagnostics } = &core {
+                return Err(object([
+                    ("code", text("command.semantic-invalid")),
+                    ("diagnostics", value(diagnostics)?),
+                ]));
+            }
+            let core = value(&core)?;
+            let sources = self.assessment_sources(document)?;
+            let availability = self.candidate_availability(document)?;
+            let modules = self.scheduled_assess_modules(document, version, sources, executor)?;
+            return Ok(object([
+                ("ok", JsonValue::Bool(true)),
+                ("availability", availability),
+                (
+                    "assessment",
+                    object([("core", core), ("modules", JsonValue::Array(modules))]),
+                ),
+            ]));
+        }
         // Capture once for Core assessment and the subsequent plugin read source.
         // Neither stage mutates this value; do not serialize and parse it twice.
         let candidate = value(document)?;
@@ -459,17 +488,6 @@ impl IntegratedKernelRuntimeV2 {
         let core = value(&core)?;
         let sources = self.assessment_sources(document)?;
         let availability = self.candidate_availability(document)?;
-        if executor.uses_scoped_assessment() {
-            let modules = self.scheduled_assess_modules(candidate, version, sources, executor)?;
-            return Ok(object([
-                ("ok", JsonValue::Bool(true)),
-                ("availability", availability),
-                (
-                    "assessment",
-                    object([("core", core), ("modules", JsonValue::Array(modules))]),
-                ),
-            ]));
-        }
         let mut reply = self
             .call(
                 "assess",
@@ -603,6 +621,19 @@ fn owned_failure(source: &Value, code: &str) -> Value {
         _ => internal(),
     }
 }
+fn check_typed_capture(document: &ScoreDocumentV1) -> Result<()> {
+    brilliant_score_foundation::check_document_capture_limits(
+        document,
+        brilliant_kernel_contracts::REQUEST_BYTE_LIMIT,
+    )
+    .map_err(|error| match error {
+        brilliant_score_foundation::DocumentCaptureFailureV1::Bytes => {
+            failure("bridge.response-too-large")
+        }
+        brilliant_score_foundation::DocumentCaptureFailureV1::Invalid => internal(),
+    })
+}
+
 fn assessment_failure(error: brilliant_score_foundation::AssessmentFailureV1) -> Value {
     match error {
         brilliant_score_foundation::AssessmentFailureV1::DiagnosticLimit { limit, actual } => {

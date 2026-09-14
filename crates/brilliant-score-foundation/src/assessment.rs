@@ -657,6 +657,48 @@ mod tests {
     }
 
     #[test]
+    fn borrowed_typed_assessment_matches_representable_frozen_and_generated_oracles() {
+        use crate::{DocumentAssessmentNodeV1, LosslessDecode, ScoreDocumentV1};
+        let generated: Value = serde_json::from_str(include_str!(
+            "../../../test/core-kernel/rust-migration/fixtures/generated-assessment-oracle-v1.json"
+        ))
+        .unwrap();
+        let mut checked = 0;
+        for oracle in [corpus(), generated] {
+            for case in oracle["cases"].as_array().unwrap() {
+                let candidate = captured(&patched_document(&oracle, case));
+                // Admission rejects raw shapes/IDs not representable by typed DTOs.
+                let Ok(document) = ScoreDocumentV1::from_lossless_value(candidate.clone()) else {
+                    continue;
+                };
+                let profile = case
+                    .get("profile")
+                    .map(|value| serde_json::from_value(value.clone()).unwrap())
+                    .unwrap_or_else(crate::ScoreFeatureProfileV1::k1);
+                let borrowed = DocumentAssessmentNodeV1::new(&document);
+                assert_eq!(
+                    report_value(assess_score_semantics_node(borrowed.clone()).unwrap()).unwrap(),
+                    case["expected"]["semantics"],
+                    "{}",
+                    case["id"]
+                );
+                assert_eq!(
+                    report_value(crate::assess_score_profile_node(borrowed, &profile).unwrap())
+                        .unwrap(),
+                    case["expected"]["support"],
+                    "{}",
+                    case["id"]
+                );
+                checked += 1;
+            }
+        }
+        assert_eq!(
+            checked, 443,
+            "typed subset of the unchanged 632-case corpus"
+        );
+    }
+
+    #[test]
     fn full_semantics_match_every_independent_typescript_case_in_order() {
         let oracle = corpus();
         let cases = oracle["cases"].as_array().expect("cases");

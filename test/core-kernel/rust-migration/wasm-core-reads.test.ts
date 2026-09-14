@@ -261,7 +261,8 @@ if (protocol === 4) test("Rust migration replaces TS preparation and validation 
 if (protocol === 4) test("Scoped preparation projects Core only on demand and observes current effects when it does", () => {
   const compiled = catalog(), initial = createNativeWorkloadScore(256);
   const query = { readVersion: 2, selectorId: "core.selector.score-entity", address: { kind: "note", noteId: "note-1" } };
-  let projections = 0, forceTransformRead = false, observedPitch: unknown;
+  let projections = 0, forceTransformRead = false, forceAssessmentRead = false, observedPitch: unknown;
+  const assessedPitches: unknown[] = [];
   const transport = { ...addon,
     createIntegratedKernelSessionV2(input: Buffer, callback: (bytes: Buffer) => Buffer, version?: number) {
       const operate = addon.createIntegratedKernelSessionV2(input, callback, version);
@@ -282,6 +283,12 @@ if (protocol === 4) test("Scoped preparation projects Core only on demand and ob
           if (row === undefined) return Buffer.from(JSON.stringify({ callbackVersion: 2, status: "read", query }));
           observedPitch = row.reply.result.value.value.writtenPitch.step;
         }
+        if (forceAssessmentRead && (request.operation === "validate" || request.operation === "classify")) {
+          const row = request.coreReads.find((row: { query: { selectorId?: string; address?: { noteId?: string } } }) =>
+            row.query.selectorId === query.selectorId && row.query.address?.noteId === "note-1");
+          if (row === undefined) return Buffer.from(JSON.stringify({ callbackVersion: 2, status: "read", query }));
+          assessedPitches.push(row.reply.result.value.value.writtenPitch.step);
+        }
         return execute(input);
       };
     },
@@ -292,15 +299,22 @@ if (protocol === 4) test("Scoped preparation projects Core only on demand and ob
   let before = projections;
   const first = command("lazy", "note-1", "D");
   assert.deepEqual(bus.submit(first), oracle.value.submit(first));
-  // One preparation read source, final transaction projection and assessment;
-  // transform uses metadata/extensions only. Decoder/preparer share a source.
-  assert.equal(projections - before, 3);
+  // Preparation read source and final typed transaction projection only;
+  // final assessment borrows the DTO unless a callback requests Core objects.
+  assert.equal(projections - before, 2);
   before = projections;
   forceTransformRead = true;
   const second = command("full-read", "note-1", "E");
   assert.deepEqual(bus.submit(second), oracle.value.submit(second));
-  assert.equal(projections - before, 4);
+  assert.equal(projections - before, 3);
   assert.equal(observedPitch, "E");
+  before = projections;
+  forceTransformRead = false;
+  forceAssessmentRead = true;
+  const third = command("assessment-read", "note-1", "F");
+  assert.deepEqual(bus.submit(third), oracle.value.submit(third));
+  assert.equal(projections - before, 3);
+  assert.deepEqual(assessedPitches, ["F", "F"]);
   assert.deepEqual(bus.undo(), oracle.value.undo());
   assert.deepEqual(bus.redo(), oracle.value.redo());
   assert.deepEqual(bus.read(), oracle.value.read());

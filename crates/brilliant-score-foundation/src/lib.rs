@@ -5,6 +5,7 @@ mod candidate;
 mod codec;
 mod diagnostics;
 mod dto;
+mod dto_assessment;
 mod feature_profile;
 mod fraction;
 mod js_string_json;
@@ -27,6 +28,9 @@ pub use diagnostics::{
     CoreDiagnosticV1, SemanticReportV1,
 };
 pub use dto::*;
+pub use dto_assessment::{
+    DocumentAssessmentNodeV1, DocumentCaptureFailureV1, check_document_capture_limits,
+};
 pub use feature_profile::{
     CardinalityConstraintV1, ProfileMeterV1, ScoreFeatureProfileV1, ScoreSupportV1,
     assess_score_profile, assess_score_profile_node,

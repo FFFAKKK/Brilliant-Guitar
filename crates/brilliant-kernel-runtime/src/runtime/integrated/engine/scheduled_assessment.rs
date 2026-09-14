@@ -1,18 +1,33 @@
 //! Runtime owns the roster, phase ordering, views and diagnostic aggregation.
 //! Only individual bounded guest invocations cross the trusted host boundary.
 use super::*;
+use std::cell::OnceCell;
 
 impl IntegratedKernelRuntimeV2 {
     pub(super) fn scheduled_assess_modules(
         &mut self,
-        document: Value,
+        document: &ScoreDocumentV1,
         version: u64,
         sources: Vec<Value>,
         executor: &mut dyn ContributionExecutorV2,
     ) -> Result<Vec<Value>> {
-        // Keep the Core read source in Rust, separate from serialized requests.
-        self.callback_projections = self.callback_projections.saturating_add(1);
-        let candidate = object([("document", document), ("documentVersion", number(version))]);
+        let mut candidate = AssessmentReadSource {
+            context: object([
+                (
+                    "document",
+                    object([
+                        ("id", value(&document.id)?),
+                        ("schemaVersion", value(&document.schema_version)?),
+                        ("metadata", value(&document.metadata)?),
+                        ("extensions", value(&document.extensions)?),
+                    ]),
+                ),
+                ("documentVersion", number(version)),
+            ]),
+            document,
+            full: OnceCell::new(),
+            projections: &mut self.callback_projections,
+        };
         let schedule_version = if executor.uses_scoped_preparation() {
             4
         } else {
@@ -21,13 +36,10 @@ impl IntegratedKernelRuntimeV2 {
         let start = object([
             ("operation", text("assessmentStart")),
             ("scheduleVersion", number(schedule_version)),
-            (
-                "documentId",
-                field(field(&candidate, "document")?, "id")?.clone(),
-            ),
+            ("documentId", value(&document.id)?),
             ("documentVersion", number(version)),
         ]);
-        let ack = invoke(executor, &start, &candidate, &JsonValue::Null)?;
+        let ack = candidate.invoke(executor, &start, &JsonValue::Null)?;
         if !exact(&ack, &["ok", "scheduleVersion"])
             || integer(field(&ack, "scheduleVersion")?) != Some(schedule_version)
         {
@@ -37,13 +49,14 @@ impl IntegratedKernelRuntimeV2 {
         let mut semantic = Vec::new();
         for source in &sources {
             let view = contribution_view(
-                field(&candidate, "document")?,
+                field(&candidate.context, "document")?,
                 version,
                 source,
                 &self.assembly,
                 &self.assessment_reads,
             )?;
-            let raw = self.assessment_callback("validate", source, &view, &candidate, executor)?;
+            let raw =
+                Self::assessment_callback("validate", source, &view, &mut candidate, executor)?;
             let issues = checked_issues(&raw, source)?;
             if semantic.len() + issues.len() > 4096 {
                 return Err(resource("module-issues", 4096));
@@ -60,7 +73,8 @@ impl IntegratedKernelRuntimeV2 {
         let mut modules = Vec::new();
         let mut issue_count = 0;
         for (source, view) in sources.iter().zip(&views) {
-            let raw = self.assessment_callback("classify", source, view, &candidate, executor)?;
+            let raw =
+                Self::assessment_callback("classify", source, view, &mut candidate, executor)?;
             let contract = || owned_failure(source, "command.contribution-contract-violation");
             if !exact(&raw, &["status", "issues"])
                 || !(tag(&raw, "status", "supported") || tag(&raw, "status", "unsupported"))
@@ -83,11 +97,10 @@ impl IntegratedKernelRuntimeV2 {
     }
 
     fn assessment_callback(
-        &mut self,
         operation: &str,
         source: &Value,
         view: &Value,
-        candidate: &Value,
+        candidate: &mut AssessmentReadSource<'_>,
         executor: &mut dyn ContributionExecutorV2,
     ) -> Result<Value> {
         let request = object([
@@ -107,7 +120,7 @@ impl IntegratedKernelRuntimeV2 {
             ("callbackOperation", text(operation)),
             ("view", view.clone()),
         ]);
-        let reply = invoke(executor, &request, candidate, source)?;
+        let reply = candidate.invoke(executor, &request, source)?;
         if !exact(&reply, &["ok", "value"]) {
             return Err(owned_failure(
                 source,
@@ -115,6 +128,49 @@ impl IntegratedKernelRuntimeV2 {
             ));
         }
         Ok(field(&reply, "value")?.clone())
+    }
+}
+
+struct AssessmentReadSource<'a> {
+    document: &'a ScoreDocumentV1,
+    context: Value,
+    full: OnceCell<Value>,
+    projections: &'a mut u64,
+}
+impl AssessmentReadSource<'_> {
+    fn invoke(
+        &mut self,
+        executor: &mut dyn ContributionExecutorV2,
+        request: &Value,
+        source: &Value,
+    ) -> Result<Value> {
+        let mut load = || {
+            let captured = value(self.document).map_err(|_| {
+                brilliant_extension_protocol::ContributionReadFailureV2::InvalidSource
+            })?;
+            *self.projections = self.projections.saturating_add(1);
+            Ok(captured)
+        };
+        let mut reads = core_reads::CoreReads::lazy(&self.context, &self.full, &mut load);
+        let internal = || owned_failure(source, "command.contribution-internal-error");
+        if reads.failed() {
+            return Err(internal());
+        }
+        let bytes = executor
+            .execute_with_core_reads(&encode(request)?, &mut reads)
+            .map_err(|_| internal())?;
+        if reads.failed() {
+            return Err(internal());
+        }
+        let reply = decode(&bytes)
+            .map_err(|_| owned_failure(source, "command.contribution-contract-violation"))?;
+        if field(&reply, "ok")? != &JsonValue::Bool(true) {
+            return Err(owned_failure(
+                source,
+                "command.contribution-contract-violation",
+            ));
+        }
+        Ok(reply)
     }
 }
 
@@ -220,32 +276,4 @@ pub(super) fn checked_issues<'a>(input: &'a Value, source: &Value) -> Result<&'a
         assessment::validate_issue(issue, source).map_err(|_| contract())?;
     }
     Ok(issues)
-}
-
-pub(super) fn invoke(
-    executor: &mut dyn ContributionExecutorV2,
-    request: &Value,
-    candidate: &Value,
-    source: &Value,
-) -> Result<Value> {
-    let internal = || owned_failure(source, "command.contribution-internal-error");
-    let mut reads = core_reads::CoreReads::new(candidate);
-    if reads.failed() {
-        return Err(internal());
-    }
-    let bytes = executor
-        .execute_with_core_reads(&encode(request)?, &mut reads)
-        .map_err(|_| internal())?;
-    if reads.failed() {
-        return Err(internal());
-    }
-    let reply = decode(&bytes)
-        .map_err(|_| owned_failure(source, "command.contribution-contract-violation"))?;
-    if field(&reply, "ok")? != &JsonValue::Bool(true) {
-        return Err(owned_failure(
-            source,
-            "command.contribution-contract-violation",
-        ));
-    }
-    Ok(reply)
 }
