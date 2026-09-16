@@ -2307,3 +2307,20 @@ closure/equivalence, whole-transaction resource accounting, platform/performance
 qualification, reversible Rust default cutover and final obsolete-engine
 cleanup. Techniques/repeats remain plugin responsibilities. No next slice starts
 after this closeout without the owner's renewed instruction.
+
+### Candidate 可见节点读取复用
+
+`2026-09-16` 的 Candidate 路径继续保留完整 Core 语义验证，但删除了遍历中
+重复的祖先可见性证明。最终文档投影和 Foundation assessment 只对已经由可见
+父 order 返回的节点执行直接字段读取；order owner 异常时仍回退完整检查。
+代表性 25,600 事件混合 Batch 的 owner 查询从 1,454,434 降至 336,954，三轮
+全新进程 submit 中位数从 768.46 ms 降至 597.49 ms（22.25%）。
+
+完整结果：Rust 608 通过/1 忽略，Node/Native/Wasm 894 通过/2 项环境门控跳过，
+严格 Clippy、fmt 和 Rust 1.88 MSRV 通过。证据和限制见
+`docs/kernel-candidate-visible-read-2026-09-16.md` 与
+`docs/evidence/candidate-visible-read-comparison-2026-09-16.json`。
+
+这轮提升了大文档 Candidate 路径的可用性，但没有完成商业性能资格。下一阶段
+仍需真实业务插件/UI 端到端延迟预算、正式 p95/p99、多平台发布验证，以及在
+保持完整诊断等价的前提下评估 Candidate 语义依赖闭包增量化。

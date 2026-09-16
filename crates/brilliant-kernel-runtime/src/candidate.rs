@@ -434,6 +434,29 @@ impl<'a> Candidate<'a> {
         false
     }
 
+    /// `visit_order` has already proved the owner visible. On the normal
+    /// hierarchy path a child therefore only needs its direct tombstone/link
+    /// check. Fall back to the complete owner walk for a malformed order so
+    /// assessment and error behaviour stay unchanged.
+    fn visible_child_of(&self, occurrence: &Occurrence, owner: &Occurrence) -> bool {
+        if self.hidden.contains(occurrence) {
+            return false;
+        }
+        if self.owner(occurrence).as_ref() != Some(owner) {
+            return self.visible(occurrence);
+        }
+        if let Occurrence::PrefixContent { part, measure_id } = occurrence {
+            let Entity::Part { part_id } = part.as_ref() else {
+                return false;
+            };
+            return self.prefix.read_reference(&Reference::PartMeasureLink {
+                part_id: part_id.clone(),
+                measure_id: measure_id.as_ref().clone(),
+            }) == Some(ReferenceValueV1::Present(true));
+        }
+        true
+    }
+
     /// Bounded result: cardinality above one is enough to decide ambiguity.
     fn matches(&mut self, kind: Kind, raw_id: &JsString) -> Vec<Occurrence> {
         if kind == Kind::Content {
@@ -487,7 +510,7 @@ impl<'a> Candidate<'a> {
         let mut visited = 0;
         let result = if let Some(children) = self.orders.get(order) {
             for child in children {
-                if self.visible(child) {
+                if self.visible_child_of(child, &order.owner) {
                     visited += 1;
                     if !visitor(child, self.raw_id(child)?) {
                         break;
@@ -499,7 +522,7 @@ impl<'a> Candidate<'a> {
             let prefix_order = order.prefix_order()?;
             self.prefix.visit_order(&prefix_order, &mut |id| {
                 let child = order.prefix_child(id);
-                if !self.visible(&child) {
+                if !self.visible_child_of(&child, &order.owner) {
                     return true;
                 }
                 visited += 1;
@@ -546,6 +569,18 @@ impl<'a> Candidate<'a> {
         if !self.visible(occurrence) {
             return None;
         }
+        self.read_value_record(occurrence)
+    }
+
+    /// The caller obtained this occurrence from a visible candidate order (or
+    /// it is the document root), so repeating the full ancestor walk adds no
+    /// information. This remains private to detached/assessment traversals.
+    fn read_visible_value(&mut self, occurrence: &Occurrence) -> Option<Value> {
+        self.record_read();
+        self.read_value_record(occurrence)
+    }
+
+    fn read_value_record(&mut self, occurrence: &Occurrence) -> Option<Value> {
         if let Some(value) = self.values.get(occurrence) {
             return Some(value.clone());
         }
@@ -585,6 +620,15 @@ impl<'a> Candidate<'a> {
         if !self.visible(part) {
             return None;
         }
+        self.read_instrument_record(part)
+    }
+
+    fn read_visible_instrument(&mut self, part: &Occurrence) -> Option<InstrumentDescriptorV1> {
+        self.record_read();
+        self.read_instrument_record(part)
+    }
+
+    fn read_instrument_record(&mut self, part: &Occurrence) -> Option<InstrumentDescriptorV1> {
         if let Some(value) = self.instruments.get(part) {
             return Some(value.clone());
         }
@@ -611,6 +655,10 @@ impl<'a> Candidate<'a> {
         if !self.visible(occurrence) {
             return None;
         }
+        self.retained_staff_reference(occurrence)
+    }
+
+    fn read_visible_staff_reference(&self, occurrence: &Occurrence) -> Option<Option<JsString>> {
         self.retained_staff_reference(occurrence)
     }
 
@@ -658,6 +706,15 @@ impl<'a> Candidate<'a> {
         if !self.visible(event) {
             return None;
         }
+        self.read_content_kind_record(event)
+    }
+
+    fn read_visible_content_kind(&mut self, event: &Occurrence) -> Option<EventContentKind> {
+        self.record_read();
+        self.read_content_kind_record(event)
+    }
+
+    fn read_content_kind_record(&mut self, event: &Occurrence) -> Option<EventContentKind> {
         match event {
             Occurrence::Prefix(entity) => {
                 let Entity::Event { event_id } = entity.as_ref() else {

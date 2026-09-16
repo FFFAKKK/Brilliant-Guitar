@@ -35,7 +35,7 @@ impl Candidate<'_> {
         include_core: bool,
     ) -> Result<score::ScoreDocumentV1<Id>, Failure> {
         let root = self.document.clone();
-        let Some(Value::DocumentMetadata(metadata)) = self.read_value(&root) else {
+        let Some(Value::DocumentMetadata(metadata)) = self.read_visible_value(&root) else {
             return Err(Failure::InternalError);
         };
         let measure_definitions = if include_core {
@@ -43,7 +43,7 @@ impl Candidate<'_> {
                 let Some(Value::MeasureDefinition {
                     meter,
                     pickup_duration,
-                }) = candidate.read_value(source)
+                }) = candidate.read_visible_value(source)
                 else {
                     return Err(Failure::InternalError);
                 };
@@ -161,15 +161,17 @@ impl Candidate<'_> {
         source: &Occurrence,
         id: &impl Fn(&JsString) -> Result<Id, Failure>,
     ) -> Result<score::PartV1<Id>, Failure> {
-        let Some(Value::PartName(name)) = self.read_value(source) else {
+        let Some(Value::PartName(name)) = self.read_visible_value(source) else {
             return Err(Failure::InternalError);
         };
-        let instrument = self.read_instrument(source).ok_or(Failure::InternalError)?;
+        let instrument = self
+            .read_visible_instrument(source)
+            .ok_or(Failure::InternalError)?;
         let staves = self.integrated_children(source, Children::Staffs, |candidate, source| {
             let Some(Value::StaffDefinition {
                 line_count,
                 default_clef,
-            }) = candidate.read_value(source)
+            }) = candidate.read_visible_value(source)
             else {
                 return Err(Failure::InternalError);
             };
@@ -205,11 +207,11 @@ impl Candidate<'_> {
         source: &Occurrence,
         id: &impl Fn(&JsString) -> Result<Id, Failure>,
     ) -> Result<score::VoiceV1<Id>, Failure> {
-        let Some(Value::VoiceSequenceStart(start)) = self.read_value(source) else {
+        let Some(Value::VoiceSequenceStart(start)) = self.read_visible_value(source) else {
             return Err(Failure::InternalError);
         };
         let default_staff_id = self
-            .read_staff_reference(source)
+            .read_visible_staff_reference(source)
             .flatten()
             .ok_or(Failure::InternalError)?;
         let events = self.integrated_children(source, Children::Events, |candidate, event| {
@@ -227,16 +229,17 @@ impl Candidate<'_> {
         source: &Occurrence,
         id: &impl Fn(&JsString) -> Result<Id, Failure>,
     ) -> Result<score::RhythmicEventV1<Id>, Failure> {
-        let Some(Value::EventNoteValue(duration)) = self.read_value(source) else {
+        let Some(Value::EventNoteValue(duration)) = self.read_visible_value(source) else {
             return Err(Failure::InternalError);
         };
         let staff_id = self
-            .read_staff_reference(source)
+            .read_visible_staff_reference(source)
             .ok_or(Failure::InternalError)?
             .map(|value| id(&value))
             .transpose()?;
         let notes = self.integrated_children(source, Children::Notes, |candidate, note| {
-            let Some(Value::NoteWrittenPitch(written_pitch)) = candidate.read_value(note) else {
+            let Some(Value::NoteWrittenPitch(written_pitch)) = candidate.read_visible_value(note)
+            else {
                 return Err(Failure::InternalError);
             };
             Ok(score::ScoreNoteV1 {
@@ -245,7 +248,7 @@ impl Candidate<'_> {
             })
         })?;
         let content = match self
-            .read_content_kind(source)
+            .read_visible_content_kind(source)
             .ok_or(Failure::InternalError)?
         {
             EventContentKind::Notes => score::RhythmicContentV1::Notes { notes },

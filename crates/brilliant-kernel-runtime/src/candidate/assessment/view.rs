@@ -50,7 +50,7 @@ impl Cursor<'_, '_, '_> {
         self.source
             .candidate
             .borrow_mut()
-            .read_value(source)
+            .read_visible_value(source)
             .ok_or_else(|| self.failure())
     }
 
@@ -58,7 +58,7 @@ impl Cursor<'_, '_, '_> {
         self.source
             .candidate
             .borrow()
-            .read_staff_reference(source)
+            .read_visible_staff_reference(source)
             .ok_or_else(|| self.failure())
     }
 
@@ -96,7 +96,7 @@ impl Cursor<'_, '_, '_> {
                 self.source
                     .candidate
                     .borrow_mut()
-                    .read_instrument(source)
+                    .read_visible_instrument(source)
                     .ok_or_else(|| self.failure())?,
             ),
             (R::Entity(source), "meter") => {
@@ -150,7 +150,7 @@ impl Cursor<'_, '_, '_> {
                 self.source
                     .candidate
                     .borrow_mut()
-                    .read_content_kind(source)
+                    .read_visible_content_kind(source)
                     .ok_or_else(|| self.failure())?,
             ),
             (R::EventContent(_, kind), "kind") => R::String(
