@@ -3,6 +3,7 @@
 import { captureWasmExecutorsV1, type WasmNativeAddonV1 } from "./wasm-bindings";
 import { installNativeIntegratedBackendV2, type IntegratedNativeAddonV2 } from "../core-kernel/native/integrated-command-bus";
 import { encodeIntegratedValueV2 as encode } from "../core-kernel/native/integrated-wire";
+import { recordKernelPluginDiagnostic } from "../core-kernel/errors/plugin-diagnostics";
 import { captureStrictInput } from "../core-kernel/codec/strict-input-capture";
 import { readExactDataRecord, readDenseArray } from "../core-kernel/registry/strict-codec";
 import type { KernelIntegratedCatalog } from "../core-kernel/registry/integrated-contracts";
@@ -31,7 +32,10 @@ const parse = JSON.parse, apply = Reflect.apply, freeze = Object.freeze;
 const utf8 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
 const decodeUtf8 = TextDecoder.prototype.decode;
 const startsWith = (bytes: Buffer, prefix: Buffer) => bytes.subarray(0, prefix.length).equals(prefix);
-const invalid = (): never => { throw new TypeError("wasm.core-read-contract"); };
+const invalid = (): never => {
+  recordKernelPluginDiagnostic("wasm.core-read-contract", { stage: "core-read", operation: "read" });
+  throw new TypeError("wasm.core-read-contract");
+};
 function decode(bytes: Buffer): unknown {
   const result = captureStrictInput(parse(apply(decodeUtf8, utf8, [bytes]) as string));
   return result.status === "captured" ? result.value : invalid();

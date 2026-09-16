@@ -2,6 +2,7 @@ use tauri::{AppHandle, State};
 use tauri_plugin_dialog::DialogExt;
 
 use crate::{
+    diagnostics::{PluginDiagnosticInput, PluginDiagnosticRecord},
     document_io::{
         atomic_write, normalize_save_path, prepare_recovery_path, quarantine_recovery,
         read_document, read_recovery,
@@ -10,6 +11,50 @@ use crate::{
     error::HostError,
     state::AppState,
 };
+
+#[tauri::command]
+pub fn workbench_plugin_diagnostic_v1(
+    state: State<'_, AppState>,
+    diagnostic: PluginDiagnosticInput,
+) -> Result<PluginDiagnosticRecord, HostError> {
+    state.diagnostics.append(diagnostic).map_err(|error| {
+        if error.kind() == std::io::ErrorKind::InvalidInput {
+            return HostError::issue(
+                "host.diagnostics-invalid",
+                "插件诊断记录格式无效",
+                422,
+                crate::dto::WorkbenchIssueSource::Host,
+                crate::dto::WorkbenchIssueTarget::Workbench,
+                Some(false),
+            );
+        }
+        HostError::issue(
+            "host.diagnostics-write-failed",
+            "无法保存插件诊断记录",
+            503,
+            crate::dto::WorkbenchIssueSource::Host,
+            crate::dto::WorkbenchIssueTarget::Workbench,
+            Some(true),
+        )
+    })
+}
+
+#[tauri::command]
+pub fn workbench_read_plugin_diagnostics_v1(
+    state: State<'_, AppState>,
+    limit: Option<usize>,
+) -> Result<Vec<PluginDiagnosticRecord>, HostError> {
+    state.diagnostics.list(limit.unwrap_or(128)).map_err(|_| {
+        HostError::issue(
+            "host.diagnostics-read-failed",
+            "无法读取插件诊断记录",
+            503,
+            crate::dto::WorkbenchIssueSource::Host,
+            crate::dto::WorkbenchIssueTarget::Workbench,
+            Some(true),
+        )
+    })
+}
 
 fn locked(
     state: &AppState,
@@ -230,10 +275,8 @@ mod tests {
 
     #[test]
     fn a_fresh_app_state_recovers_the_previous_process_document() {
-        let recovery_root = std::env::temp_dir().join(format!(
-            "brilliant-recovery-restart-{}",
-            Uuid::new_v4()
-        ));
+        let recovery_root =
+            std::env::temp_dir().join(format!("brilliant-recovery-restart-{}", Uuid::new_v4()));
         let workspace_id = Uuid::new_v4().to_string();
         let original = AppState::new(recovery_root.clone());
         let created = locked(&original)

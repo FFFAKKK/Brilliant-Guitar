@@ -1,5 +1,6 @@
 mod application;
 mod commands;
+mod diagnostics;
 mod document_io;
 mod dto;
 mod error;
@@ -25,6 +26,8 @@ pub fn run() {
             commands::workbench_close_v1,
             commands::workbench_open_file_v1,
             commands::workbench_save_file_v1,
+            commands::workbench_plugin_diagnostic_v1,
+            commands::workbench_read_plugin_diagnostics_v1,
         ])
         .run(tauri::generate_context!())
         .expect("failed to run desktop workbench");

@@ -14,6 +14,7 @@ import type { KernelIntegratedRuntimeAssemblyState } from "../registry/domain-av
 import type { ScoreDocument } from "../domain/score-document";
 import { encodeIntegratedValueV2 } from "./integrated-wire";
 import type { ScoreSupportResult } from "../profiles/score-feature-profile";
+import { recordKernelPluginDiagnostic } from "../errors/plugin-diagnostics";
 
 const parse = JSON.parse;
 const apply = Reflect.apply;
@@ -64,7 +65,7 @@ export function createNativeContributionExecutorV2(assembly: KernelIntegratedRun
     if (request.operation === "assess") {
       // The private Native artifact must supply its own Core assessment. Do not
       // silently fall back to legacy TS validation when paired with a stale addon.
-      if (request.coreAssessment === undefined) return rejected("command.assembly-mismatch");
+      if (request.coreAssessment === undefined) return rejected("command.assembly-mismatch", "assess");
       return runNativeModulePipeline(request.document, request.documentVersion, assembly, request.coreAssessment, invokeScoped);
     }
     let contribution: CompiledDomainCommandContributionV1 | undefined;
@@ -76,7 +77,7 @@ export function createNativeContributionExecutorV2(assembly: KernelIntegratedRun
       contribution = assembly.catalogState.contributions.find((entry) =>
         entry.moduleId === definition.descriptor.source.moduleId &&
         entry.contributionId === definition.descriptor.source.contributionId);
-      if (contribution === undefined) return rejected("command.assembly-mismatch");
+      if (contribution === undefined) return rejected("command.assembly-mismatch", "prepare");
       const source = contribution;
       const contract = () => failure(source, "command.contribution-contract-violation");
       const target = decodeTarget(envelope.value.target, definition.descriptor.targetKind);
@@ -114,9 +115,9 @@ export function createNativeContributionExecutorV2(assembly: KernelIntegratedRun
       } catch { return failure(source, "command.contribution-internal-error"); }
     }
     contribution = assembly.catalogState.contributions.find((entry) => entry.contributionId === request.contributionId);
-    if (contribution === undefined) return rejected("command.assembly-mismatch");
+    if (contribution === undefined) return rejected("command.assembly-mismatch", "transform");
     const source = contribution;
-    const contract = () => failure(source, "command.contribution-contract-violation");
+    const contract = () => failure(source, "command.contribution-contract-violation", "transform");
     const owned = moduleEffectForRequest(request.effect, source);
     if (owned === undefined) return contract();
     const binding = getModuleEffectDefinitionBinding(owned.definition);
@@ -135,18 +136,33 @@ export function createNativeContributionExecutorV2(assembly: KernelIntegratedRun
       const transformed = capture(invokeScoped(source, "effectTransform", owned.definition.descriptor.effectKind, transformArgs,
         () => invokeIntegratedCallback(binding.transform, transformArgs)));
       const rejectedValue = readExactDataRecord(transformed, ["status", "issues"]);
-      if (rejectedValue?.status === "rejected") return semantic(source, rejectedValue.issues);
+      if (rejectedValue?.status === "rejected") return semantic(source, rejectedValue.issues, "transform");
       return { ok: true, transformed };
-    } catch { return failure(source, "command.contribution-internal-error"); }
+    } catch { return failure(source, "command.contribution-internal-error", "transform"); }
   }
 }
 
-function rejected(code: string): unknown { return { ok: false, failure: { code } }; }
-function failure(source: CompiledDomainCommandContributionV1, code: string): unknown {
+function rejected(code: string, operation: "prepare" | "transform" | "assess" = "prepare"): unknown {
+  if (code === "command.assembly-mismatch") {
+    recordKernelPluginDiagnostic(code, { stage: "assembly", operation });
+  }
+  return { ok: false, failure: { code } };
+}
+function failure(source: CompiledDomainCommandContributionV1, code: string,
+  operation: "prepare" | "transform" = "prepare"): unknown {
+  if (code === "command.contribution-contract-violation" || code === "command.contribution-internal-error") {
+    recordKernelPluginDiagnostic(code, {
+      stage: "callback",
+      operation,
+      moduleId: source.moduleId,
+      contributionId: source.contributionId,
+    });
+  }
   return { ok: false, failure: { code, moduleId: source.moduleId, contributionId: source.contributionId } };
 }
-function semantic(source: CompiledDomainCommandContributionV1, raw: unknown): unknown {
+function semantic(source: CompiledDomainCommandContributionV1, raw: unknown,
+  operation: "prepare" | "transform" = "prepare"): unknown {
   const issues = decodeIntegratedModuleIssues(raw, source);
-  return issues === undefined ? failure(source, "command.contribution-contract-violation")
+  return issues === undefined ? failure(source, "command.contribution-contract-violation", operation)
     : { ok: false, failure: { code: "command.contribution-semantic-invalid", issues } };
 }

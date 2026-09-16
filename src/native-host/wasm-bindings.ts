@@ -10,6 +10,7 @@ import type { ScopedExecutionPolicyV1 } from "../core-kernel/module-sdk/scoped-i
 import type { CompiledDomainCommandContributionV1 } from "../core-kernel/module-sdk/contracts";
 import { installNativeIntegratedBackendV2, type IntegratedNativeAddonV2 } from "../core-kernel/native/integrated-command-bus";
 import { encodeIntegratedValueV2 } from "../core-kernel/native/integrated-wire";
+import { recordKernelPluginDiagnostic } from "../core-kernel/errors/plugin-diagnostics";
 
 export interface WasmNativeAddonV1 extends IntegratedNativeAddonV2 {
   createWasmModuleExecutorV1(bytes: Buffer, expectedSha256: Buffer, abiVersion: number): (input: Buffer) => Buffer;
@@ -29,6 +30,18 @@ const arrayBuffer = Object.getOwnPropertyDescriptor(typedArrayPrototype, "buffer
 const isSharedArrayBuffer = types.isSharedArrayBuffer;
 const MAX_TOTAL_BYTES = 64 * 1024 * 1024;
 
+function wasmFailure(code: string, operation: "create" | "prepare" | "transform" | "assess" = "create"): never {
+  const diagnostic = recordKernelPluginDiagnostic(code, { stage: "binding", operation });
+  const error = new TypeError(code) as TypeError & { readonly diagnosticId?: string };
+  Object.defineProperty(error, "diagnosticId", { value: diagnostic.reportId, enumerable: false });
+  throw error;
+}
+
+function wasmExecutionFailure(error: unknown): never {
+  recordKernelPluginDiagnostic("wasm.execution-failed", { stage: "callback", operation: "prepare" });
+  throw error;
+}
+
 /** Fully validate and capture the roster before compiling any module. */
 export function createWasmExecutionPolicyV1(addon: WasmNativeAddonV1, catalog: KernelIntegratedCatalog, input: unknown): ScopedExecutionPolicyV1 {
   return captureWasmExecutionPolicy(addon, catalog, input, false);
@@ -39,17 +52,18 @@ function captureWasmExecutionPolicy(addon: WasmNativeAddonV1, catalog: KernelInt
   const executors = captureWasmExecutorsV1(addon, catalog, input, requireAll);
   const state = getKernelIntegratedCatalogState(catalog)!;
   const policy: ScopedExecutionPolicyV1 = { catalog, invoke(source, operation, definitionId, args, fallback) {
-    if (!state.contributions.includes(source)) throw new TypeError("wasm.assembly-mismatch");
+    if (!state.contributions.includes(source)) wasmFailure("wasm.assembly-mismatch");
     const execute = executors.get(source);
     if (execute === undefined) {
-      if (requireAll) throw new TypeError("wasm.incomplete-binding");
+      if (requireAll) wasmFailure("wasm.incomplete-binding");
       return fallback();
     }
     const output = execute(encodeIntegratedValueV2({ callbackVersion: 1, moduleId: source.moduleId,
       contributionId: source.contributionId, operation, definitionId, arguments: args }));
     const value = parse(apply(decodeUtf8, decoder, [output]) as string);
     const result = captureStrictInput(value);
-    if (result.status !== "captured") throw new TypeError("wasm.invalid-result");
+    if (result.status !== "captured") wasmFailure("wasm.invalid-result",
+      operation === "effectTransform" ? "transform" : operation === "validate" || operation === "classify" ? "assess" : "prepare");
     return result.value;
   } };
   return freeze(policy);
@@ -59,39 +73,41 @@ function captureWasmExecutionPolicy(addon: WasmNativeAddonV1, catalog: KernelInt
 export function captureWasmExecutorsV1(addon: WasmNativeAddonV1, catalog: KernelIntegratedCatalog, input: unknown,
   requireAll: boolean): ReadonlyMap<CompiledDomainCommandContributionV1, (input: Buffer) => Buffer> {
   if (typeof addon.createWasmModuleExecutorV1 !== "function" || typeof addon.createIntegratedKernelSessionV2 !== "function"
-    || typeof addon.migrateKernelExtensionV2 !== "function") throw new TypeError("wasm.invalid-addon");
+    || typeof addon.migrateKernelExtensionV2 !== "function") wasmFailure("wasm.invalid-addon");
   const state = getKernelIntegratedCatalogState(catalog);
   const rows = readDenseArray(input);
-  if (state === undefined || rows === undefined || rows.length === 0 || rows.length > 1024) throw new TypeError("wasm.invalid-binding");
+  if (state === undefined || rows === undefined || rows.length === 0 || rows.length > 1024) wasmFailure("wasm.invalid-binding");
   // Cover dormant contributions too: later commands can create their blocks.
-  if (requireAll && rows.length !== state.contributions.length) throw new TypeError("wasm.incomplete-binding");
+  if (requireAll && rows.length !== state.contributions.length) wasmFailure("wasm.incomplete-binding");
   const captured: { source: typeof state.contributions[number]; bytes: Buffer; digest: Buffer }[] = [];
   const owners = new Set<object>();
   let total = 0;
   for (const row of rows) {
     const record = readExactDataRecord(row, ["moduleId", "contributionId", "abiVersion", "sha256", "bytes"]);
     if (record === undefined || record.abiVersion !== 1 || typeof record.sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(record.sha256)
-      || !isUint8Array(record.bytes)) throw new TypeError("wasm.invalid-binding");
+      || !isUint8Array(record.bytes)) wasmFailure("wasm.invalid-binding");
     const source = state.contributions.find(entry => entry.moduleId === record.moduleId && entry.contributionId === record.contributionId);
-    if (source === undefined || owners.has(source)) throw new TypeError("wasm.invalid-binding");
+    if (source === undefined || owners.has(source)) wasmFailure("wasm.invalid-binding");
     // Read intrinsic slots without caller-defined length/valueOf/iterator hooks,
     // and enforce the allocation budget before detaching any bytes.
     const length = apply(byteLength, record.bytes, []) as number;
     total += length;
-    if (length > 4 * 1024 * 1024 || total > MAX_TOTAL_BYTES) throw new TypeError("wasm.invalid-binding");
+    if (length > 4 * 1024 * 1024 || total > MAX_TOTAL_BYTES) wasmFailure("wasm.invalid-binding");
     const storage = apply(arrayBuffer, record.bytes, []) as ArrayBuffer;
-    if (isSharedArrayBuffer(storage)) throw new TypeError("wasm.invalid-binding");
+    if (isSharedArrayBuffer(storage)) wasmFailure("wasm.invalid-binding");
     const view = apply(from, Buffer, [storage, apply(byteOffset, record.bytes, []), length]) as Buffer;
     const bytes = apply(from, Buffer, [view]) as Buffer;
-    if (createHash("sha256").update(bytes).digest("hex") !== record.sha256) throw new TypeError("wasm.invalid-binding");
+    if (createHash("sha256").update(bytes).digest("hex") !== record.sha256) wasmFailure("wasm.invalid-binding");
     const digest = apply(from, Buffer, [record.sha256, "hex"]) as Buffer;
     owners.add(source);
     captured.push({ source, bytes, digest });
   }
   const executors = new Map<typeof state.contributions[number], (input: Buffer) => Buffer>();
   for (const { source, bytes, digest } of captured) {
-    const execute = addon.createWasmModuleExecutorV1(bytes, digest, 1);
-    if (typeof execute !== "function") throw new TypeError("wasm.invalid-addon");
+    let execute: ((input: Buffer) => Buffer) | undefined;
+    try { execute = addon.createWasmModuleExecutorV1(bytes, digest, 1); }
+    catch (error) { wasmExecutionFailure(error); }
+    if (typeof execute !== "function") wasmFailure("wasm.invalid-addon");
     executors.set(source, execute);
   }
   return executors;

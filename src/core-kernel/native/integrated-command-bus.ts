@@ -13,6 +13,7 @@ import { selectNativeExtensionMigrationFactoryV2 } from "./integrated-backend-se
 import { createNativeExtensionMigrationV2, type NativeExtensionMigrationFunctionV2 } from "./integrated-migration";
 import type { ScopedExecutionPolicyV1 } from "../module-sdk/scoped-invocation";
 import { contributionReads } from "../registry/contribution-reads";
+import { recordKernelPluginDiagnostic } from "../errors/plugin-diagnostics";
 
 export interface IntegratedNativeAddonV2 {
   createIntegratedKernelSessionV2(bytes: Buffer, executor: (bytes: Buffer) => Buffer): (bytes: Buffer) => Buffer;
@@ -42,6 +43,36 @@ const objectKeys = Object.keys;
 const bufferToString = Buffer.prototype.toString;
 const promiseResolve = Promise.resolve;
 const promiseCatch = Promise.prototype.catch;
+
+function pluginFailureRecord(value: unknown): { code: string; moduleId?: string; contributionId?: string } | undefined {
+  if (value === null || typeof value !== "object") return undefined;
+  const record = value as Record<string, unknown>;
+  if (typeof record.code !== "string") return undefined;
+  return {
+    code: record.code,
+    ...(typeof record.moduleId === "string" ? { moduleId: record.moduleId } : {}),
+    ...(typeof record.contributionId === "string" ? { contributionId: record.contributionId } : {}),
+  };
+}
+
+function recordPluginFailure(value: unknown, operation: "create" | "prepare" | "transform" | "assess" | "read"): void {
+  const failure = pluginFailureRecord(value);
+  if (failure === undefined || !(
+    failure.code === "command.assembly-mismatch"
+    || failure.code === "command.invalid-requirement-inventory"
+    || failure.code === "command.required-contribution-unavailable"
+    || failure.code === "command.required-contribution-incompatible"
+    || failure.code === "command.contribution-semantic-invalid"
+    || failure.code === "command.contribution-contract-violation"
+    || failure.code === "command.contribution-internal-error"
+  )) return;
+  recordKernelPluginDiagnostic(failure.code, {
+    stage: failure.code.startsWith("command.contribution-") ? "callback" : "assembly",
+    operation,
+    ...(failure.moduleId === undefined ? {} : { moduleId: failure.moduleId }),
+    ...(failure.contributionId === undefined ? {} : { contributionId: failure.contributionId }),
+  });
+}
 function freeze<T>(value: T): T {
   if (value !== null && typeof value === "object") {
     for (const key of objectKeys(value)) freeze((value as Record<string, unknown>)[key]);
@@ -64,12 +95,24 @@ export function createNativeIntegratedCommandBusV2(addon: IntegratedNativeAddonV
   const captured = captureStrictInput(document);
   const decoded = captured.status === "captured" ? decodeScoreDocument(captured.value) : undefined;
   if (decoded === undefined || !decoded.ok) return freeze({ ok: false, failure: { code: "command.invalid-initial-document" } });
-  if (policy !== undefined && policy.catalog !== catalog) return freeze({ ok: false, failure: { code: "command.assembly-mismatch" } });
+  if (policy !== undefined && policy.catalog !== catalog) {
+    const failure = { code: "command.assembly-mismatch" } as const;
+    recordPluginFailure(failure, "create");
+    return freeze({ ok: false, failure });
+  }
   const assembly = explicit ? resolveKernelIntegratedRuntimeAssembly(catalog, inventory) : resolveKernelIntegratedRuntimeAssembly(catalog);
-  if (!assembly.ok) return freeze({ ok: false, failure: { code: assembly.reason === "inventory" ? "command.invalid-requirement-inventory" : "command.assembly-mismatch" } });
+  if (!assembly.ok) {
+    const failure = { code: assembly.reason === "inventory" ? "command.invalid-requirement-inventory" as const : "command.assembly-mismatch" as const };
+    recordPluginFailure(failure, "create");
+    return freeze({ ok: false, failure });
+  }
   const installed = assembly.state;
   const projection = captureHostInstalledContributionsV1(catalog);
-  if (projection === undefined) return freeze({ ok: false, failure: { code: "command.assembly-mismatch" } });
+  if (projection === undefined) {
+    const failure = { code: "command.assembly-mismatch" } as const;
+    recordPluginFailure(failure, "create");
+    return freeze({ ok: false, failure });
+  }
   const assessmentReads = assembly.state.catalogState.contributions.flatMap(entry => contributionReads(entry) ?? []);
   let operate: (bytes: Buffer) => Buffer;
   try {
@@ -81,8 +124,15 @@ export function createNativeIntegratedCommandBusV2(addon: IntegratedNativeAddonV
       ...(assessmentReads.length === 0 ? {} : { assessmentReads }),
     }), createNativeContributionExecutorV2(assembly.state, policy?.invoke));
   } catch (error) {
-    try { return freeze({ ok: false, failure: parse((error as Error).message) as Extract<IntegratedCommandBusCreationResult, { ok: false }>["failure"] }); }
-    catch { return freeze({ ok: false, failure: { code: "command.assembly-mismatch" } }); }
+    try {
+      const failure = parse((error as Error).message) as Extract<IntegratedCommandBusCreationResult, { ok: false }>["failure"];
+      recordPluginFailure(failure, "create");
+      return freeze({ ok: false, failure });
+    } catch {
+      const failure = { code: "command.assembly-mismatch" } as const;
+      recordPluginFailure(failure, "create");
+      return freeze({ ok: false, failure });
+    }
   }
   let busy = false;
   let dispatching = false;
@@ -132,15 +182,21 @@ export function createNativeIntegratedCommandBusV2(addon: IntegratedNativeAddonV
       const capturedRequest = captureStrictInput(request);
       if (capturedRequest.status !== "captured") return rejected("command.invalid-envelope");
       const output = raw(capturedRequest.value);
-      if (!output.ok) return freeze({ status: "rejected", documentVersion: output.documentVersion ?? observedVersion,
-        ...(output.history ?? observedHistory), failure: output.failure ?? { code: "command.internal-error" } });
+      if (!output.ok) {
+        recordPluginFailure(output.failure, "prepare");
+        return freeze({ status: "rejected", documentVersion: output.documentVersion ?? observedVersion,
+          ...(output.history ?? observedHistory), failure: output.failure ?? { code: "command.internal-error" } });
+      }
       const result = output.result;
       if (result === undefined) return rejected("command.internal-error");
       observedVersion = result.value.documentVersion;
       observedHistory = result.value.history;
       observedDirty = result.value.dirty;
-      if (result.status === "command-rejected") return freeze({ status: "rejected", documentVersion: observedVersion,
-        ...observedHistory, failure: result.failure ?? { code: "command.internal-error" } });
+      if (result.status === "command-rejected") {
+        recordPluginFailure(result.failure, "prepare");
+        return freeze({ status: "rejected", documentVersion: observedVersion,
+          ...observedHistory, failure: result.failure ?? { code: "command.internal-error" } });
+      }
       if (output.pipeline === undefined) return rejected("command.internal-error");
       const answer = freeze({ status: result.status, documentVersion: observedVersion, ...observedHistory, assessment: output.pipeline.assessment });
       dispatch(result.events);
