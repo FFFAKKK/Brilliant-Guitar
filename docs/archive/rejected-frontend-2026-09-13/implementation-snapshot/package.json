@@ -1,0 +1,25 @@
+{
+  "name": "brilliant-guitar",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Brilliant Guitar TypeScript kernel and private Rust native runtime.",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "ui:typecheck": "tsc -p tsconfig.ui.json",
+    "ui:build": "npm run ui:typecheck && node scripts/build-ui.mjs",
+    "ui:start": "node dist-ui/server.cjs",
+    "ui:test": "npm run ui:build && node --test dist-ui/tests/*.test.cjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node dist/test/test-infrastructure/run-compiled-tests.js",
+    "test:cvn7": "npm run build && node --test \"dist/test/core-kernel/cvn-7-*.test.js\"",
+    "qualify:cvn7": "node --expose-gc dist/test/core-kernel/qualification/cvn-7-runner.js"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "esbuild": "0.25.12",
+    "typescript": "^5.8.0"
+  },
+  "dependencies": {
+    "vexflow": "5.0.0"
+  }
+}

@@ -1,0 +1,246 @@
+{
+  "status": "REJECTED",
+  "date": "2026-09-13",
+  "files": [
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\docs\\design\\workbench-component-foundation.md",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\design-documents\\workbench-component-foundation.md",
+      "operation": "move",
+      "sha256": "38874A1A720DF85A8BFEAE01DA73DC9B1C3EED5C412D16A797CB1B087F4AA35B"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\docs\\design\\navigation\\plan.md",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\design-documents\\navigation\\plan.md",
+      "operation": "move",
+      "sha256": "DBE074FDC27CD7CA70AD7BEDED750687AC6AC63EF6CC555C5AE350BAA496B228"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\docs\\design\\navigation\\references\\penpot-workspace.webp",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\design-documents\\navigation\\references\\penpot-workspace.webp",
+      "operation": "move",
+      "sha256": "1FB4E14841390325A5519BEA1D1218100B57C4BC10BB68240EBAFBA1FED37790"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\docs\\design\\notation-redesign\\01-current-workbench.jpg",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\design-documents\\notation-redesign\\01-current-workbench.jpg",
+      "operation": "move",
+      "sha256": "F3386CF04A0DF5753D7B43008E94B8A9A5F056D2CB0700A07B0CF7A509CD1FDC"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\docs\\design\\notation-redesign\\brief.md",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\design-documents\\notation-redesign\\brief.md",
+      "operation": "move",
+      "sha256": "2BB717A9997F757718CB350B7AB0B6364446897BB68B497067DDB70D899E13B4"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\docs\\design\\notation-redesign\\mature-reference-study.md",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\design-documents\\notation-redesign\\mature-reference-study.md",
+      "operation": "move",
+      "sha256": "51235F6A868EC4AA816F3C59806474AE1B5466453FE36A4111AA8BE8874D45A9"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\docs\\design\\notation-redesign\\visual-1.png",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\design-documents\\notation-redesign\\visual-1.png",
+      "operation": "move",
+      "sha256": "0A2FEE8A12DDD1F5E32FC261E889F0722102F14E3ED73DC90C8BC0BCA0307182"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\docs\\design\\notation-redesign\\visual-2.png",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\design-documents\\notation-redesign\\visual-2.png",
+      "operation": "move",
+      "sha256": "1B163C53EE5A3F30534DF2285E0D6B316995D3E2554675CB2164DEF4E588A8BE"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\docs\\design\\notation-redesign\\visual-3.png",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\design-documents\\notation-redesign\\visual-3.png",
+      "operation": "move",
+      "sha256": "458A886130562B694AA438E6DD2031547DDEBEB7F1BE845CD2FAB6B62488FE18"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\docs\\design\\notation-redesign\\visual-order.md",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\design-documents\\notation-redesign\\visual-order.md",
+      "operation": "move",
+      "sha256": "3069967A3CA0FE67F44A28BEA3614156384047F94CEAEAC7E819208A5B516B47"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\docs\\design\\notation-redesign\\compact\\visual-1.png",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\design-documents\\notation-redesign\\compact\\visual-1.png",
+      "operation": "move",
+      "sha256": "616519A5E7AF606E7AF85F51BC8D2DBD88EFFF671C6858DB8F0598B0338CF11C"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\docs\\design\\notation-redesign\\compact\\visual-2.png",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\design-documents\\notation-redesign\\compact\\visual-2.png",
+      "operation": "move",
+      "sha256": "D48F00CFF326A5D1F5C1434CF2B87F52902189813060B15A99D3457B72657DDF"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\docs\\design\\notation-redesign\\compact\\visual-3.png",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\design-documents\\notation-redesign\\compact\\visual-3.png",
+      "operation": "move",
+      "sha256": "D10878D9CC4C65B27395262DEB29C585AE5EC93F3640DA3718F8D5CE9755AA78"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\docs\\design\\notation-redesign\\compact\\visual-order.md",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\design-documents\\notation-redesign\\compact\\visual-order.md",
+      "operation": "move",
+      "sha256": "5988DC88F285553A00046CBA1292C2E8BBEC0EBEE19EA7A1ABC8562022B14220"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\docs\\design\\notation-redesign\\references\\flat-editor.png",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\design-documents\\notation-redesign\\references\\flat-editor.png",
+      "operation": "move",
+      "sha256": "60E0F35D87476483AF5BF119A96C53673BAEC53B4B97685DA01D0F81971CDE50"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\docs\\design\\notation-redesign\\references\\musescore-editor.png",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\design-documents\\notation-redesign\\references\\musescore-editor.png",
+      "operation": "move",
+      "sha256": "27F8B05B7E431355E9832BD30F00E13786631B0B012B9E306A7C8EE3754E38E8"
+    },
+    {
+      "source": "C:\\Users\\ATOM\\.codex\\visualizations\\2026\\09\\05\\01a06fb9-cfeb-7492-814a-053a7427a19b\\navigation-structure-study.html",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\conversation-previews\\navigation-structure-study.html",
+      "operation": "move",
+      "sha256": "7B2AA9E22EC0545D87F600116DA182B8FC0AF8888404B34FD5913B7A7383FD11"
+    },
+    {
+      "source": "C:\\Users\\ATOM\\.codex\\visualizations\\2026\\09\\05\\01a06fb9-cfeb-7492-814a-053a7427a19b\\navigation-unified-actions.html",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\conversation-previews\\navigation-unified-actions.html",
+      "operation": "move",
+      "sha256": "50C05A8C1B69A7D51EBCA0DB535A98B04CD262DBB887BF82BFCDC3411A4C61A4"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\minimal-ui-input-rendering-plan.md",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\earlier-planning\\minimal-ui-input-rendering-plan.md",
+      "operation": "move",
+      "sha256": "F0D0E316179105C20AAFDB1558555C57EBA906E4B5D23A2384A86222644DFEBD"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\frontend-modularity-principles.md",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\earlier-planning\\frontend-modularity-principles.md",
+      "operation": "move",
+      "sha256": "9C18968D8DA2B5D51D75AAE8007F85EB3EE43570E0F6C1487EC189AD1018A5FE"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\apps\\notation-ui\\contracts.ts",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\implementation-snapshot\\apps\\notation-ui\\contracts.ts",
+      "operation": "copy",
+      "sha256": "E39F56D1C4B139B30FFD77A1E590654D79B2B5D260A57D87AE0A2E46B114EED4"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\apps\\notation-ui\\README.md",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\implementation-snapshot\\apps\\notation-ui\\README.md",
+      "operation": "copy",
+      "sha256": "F1A9A8CFA372D45F75A58F1103F9943C9AF67D47EA6ABF81D5A2AD2B8D0F59F1"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\apps\\notation-ui\\browser\\kernel-client.ts",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\implementation-snapshot\\apps\\notation-ui\\browser\\kernel-client.ts",
+      "operation": "copy",
+      "sha256": "AB553C62D97ACFEA9848B667710371F5445DD58FE07F7CDA700F37B982B1BE14"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\apps\\notation-ui\\browser\\main.ts",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\implementation-snapshot\\apps\\notation-ui\\browser\\main.ts",
+      "operation": "copy",
+      "sha256": "7724D0BEE0C7AB401E969183BF68A240C90EAF6D9DFFC7FBC368C295D841DCC2"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\apps\\notation-ui\\browser\\score-views.ts",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\implementation-snapshot\\apps\\notation-ui\\browser\\score-views.ts",
+      "operation": "copy",
+      "sha256": "C58A09EDD47353A2234F8B97DC52CCA94A86AFE22BA6B241FBA772B61ECFFFAD"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\apps\\notation-ui\\host\\editor-service.ts",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\implementation-snapshot\\apps\\notation-ui\\host\\editor-service.ts",
+      "operation": "copy",
+      "sha256": "D5B1AADC15A41562B162B62FEACB15E41C545487A7B01CC11EF6D9BFC14882EF"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\apps\\notation-ui\\host\\file-store.ts",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\implementation-snapshot\\apps\\notation-ui\\host\\file-store.ts",
+      "operation": "copy",
+      "sha256": "689243A8E508576469DCE1700778CE1E370DF3BE162B2120BCE075407CFCF40D"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\apps\\notation-ui\\host\\main.ts",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\implementation-snapshot\\apps\\notation-ui\\host\\main.ts",
+      "operation": "copy",
+      "sha256": "0AA8911076467F0771B9B77D17DF9787A2A1631CAE53FF46E3BA4425EC3AEA2B"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\apps\\notation-ui\\host\\native-backend.ts",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\implementation-snapshot\\apps\\notation-ui\\host\\native-backend.ts",
+      "operation": "copy",
+      "sha256": "A506B723E3B2D19C8B62845CE85928B7443DB6F4D088C640884C0A54BB4FB1F8"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\apps\\notation-ui\\host\\server.ts",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\implementation-snapshot\\apps\\notation-ui\\host\\server.ts",
+      "operation": "copy",
+      "sha256": "E0A5A65226C4D328741D140AE0B45966601B367DB773A551F45621E20DAB560A"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\apps\\notation-ui\\plugins\\standard-notation\\index.ts",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\implementation-snapshot\\apps\\notation-ui\\plugins\\standard-notation\\index.ts",
+      "operation": "copy",
+      "sha256": "3BCA8A9E580B9DED5D76658CFAB75141A03056ABCDC07E9FB300FA0814FB11DA"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\apps\\notation-ui\\plugins\\standard-notation\\input.ts",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\implementation-snapshot\\apps\\notation-ui\\plugins\\standard-notation\\input.ts",
+      "operation": "copy",
+      "sha256": "E85AEDECC052071A32A00388AB164D3B49B80AF68E263EB31311DA44E10E66F7"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\apps\\notation-ui\\public\\index.html",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\implementation-snapshot\\apps\\notation-ui\\public\\index.html",
+      "operation": "copy",
+      "sha256": "8BB8898745091F72592CCAFBE914B154C5CE154F79BAC716F83C34C3D2B2C45F"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\apps\\notation-ui\\public\\style.css",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\implementation-snapshot\\apps\\notation-ui\\public\\style.css",
+      "operation": "copy",
+      "sha256": "5F28C436EDFB12682D979B20F34A2306ADB37B3F43D2A69BB68BF6F5B6592B47"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\test\\notation-ui\\integration.test.ts",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\implementation-snapshot\\test\\notation-ui\\integration.test.ts",
+      "operation": "copy",
+      "sha256": "692EC7C7CACC7F660583D40261ACD2B65EBB7CE072BB6A58EE18D4836AAE65FE"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\scripts\\build-ui.mjs",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\implementation-snapshot\\scripts\\build-ui.mjs",
+      "operation": "copy",
+      "sha256": "81B3A11D05D2D630735A6CE9D19EC6FA1A3399B24A2B591F24AA404F083387D8"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\tsconfig.ui.json",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\implementation-snapshot\\tsconfig.ui.json",
+      "operation": "copy",
+      "sha256": "8D05A0A1550839BA51DE36D0A949F7E9195049D76F8671C08052A1D360396543"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\package.json",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\implementation-snapshot\\package.json",
+      "operation": "copy",
+      "sha256": "2FFACF4A42347FFAA4C54C88DE4891A8D26ABC9951332383A3DB134EE2544486"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\package-lock.json",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\implementation-snapshot\\package-lock.json",
+      "operation": "copy",
+      "sha256": "99476CDFB2664A640C8F8D007E7CAFD58F47523B2DE36EA21AD4FFD71B8AA0F4"
+    },
+    {
+      "source": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.worktrees\\ui-standard-notation-v1\\.gitignore",
+      "archived": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\docs\\archive\\rejected-frontend-2026-09-13\\implementation-snapshot\\.gitignore",
+      "operation": "copy",
+      "sha256": "DB14D89B86191FDD13845FC703776C12511990AE28A765E656529B86D2DEB599"
+    }
+  ]
+}

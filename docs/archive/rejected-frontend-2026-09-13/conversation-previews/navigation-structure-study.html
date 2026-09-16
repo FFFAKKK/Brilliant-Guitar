@@ -1,0 +1,108 @@
+<div id="bg-navigation-study" aria-label="导航栏结构预览">
+  <style>
+    #bg-navigation-study { --bg-paper:#fff; --bg-surface:#f4f5f6; --bg-inset:#eceef0; --bg-ink:#25292e; --bg-muted:#626971; --bg-line:#dfe2e5; --bg-blue:#2463c9; --bg-radius:6px; --bg-control:34px; color:var(--bg-ink); font:14px/1.4 "Segoe UI","Microsoft YaHei",sans-serif; color-scheme:light dark; }
+    #bg-navigation-study * { box-sizing:border-box; }
+    #bg-navigation-study .bg-specimen { margin:0 0 28px; }
+    #bg-navigation-study .bg-specimen:last-of-type { margin-bottom:0; }
+    #bg-navigation-study .bg-caption { display:flex; align-items:baseline; gap:10px; margin:0 0 10px; color:light-dark(#40464e,#d6d8db); font-size:13px; font-weight:500; }
+    #bg-navigation-study .bg-caption small { font-size:11px; font-weight:400; color:light-dark(#686e76,#abb0b8); margin-left:auto; }
+    #bg-navigation-study .bg-nav { color-scheme:light; display:block; background:var(--bg-paper); border:1px solid var(--bg-line); border-radius:8px; position:relative; min-width:0; box-shadow:0 2px 4px #20263006; }
+    #bg-navigation-study .bg-row { display:flex; align-items:center; gap:12px; min-width:0; padding:12px; }
+    #bg-navigation-study button { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:var(--bg-control); padding:0 10px; border:1px solid transparent; border-radius:var(--bg-radius); background:transparent; color:var(--bg-ink); font:inherit; font-weight:500; white-space:nowrap; cursor:pointer; flex-shrink:0; }
+    #bg-navigation-study button:hover { background:var(--bg-inset); }
+    #bg-navigation-study button:active { background:#dfe3e7; }
+    #bg-navigation-study button:disabled { color:#969da5; cursor:default; background:transparent; }
+    #bg-navigation-study button:focus-visible { outline:2px solid var(--bg-blue); outline-offset:2px; }
+    #bg-navigation-study .bg-save { color:#fff; background:var(--bg-blue); padding:0 13px; }
+    #bg-navigation-study .bg-save:hover { background:#174eaa; }
+    #bg-navigation-study .bg-save:disabled { background:#eaf0fa; color:#3b5c8b; }
+    #bg-navigation-study .bg-menu-group, #bg-navigation-study .bg-actions, #bg-navigation-study .bg-history { display:flex; align-items:center; gap:2px; flex-shrink:0; }
+    #bg-navigation-study .bg-actions { gap:6px; }
+    #bg-navigation-study .bg-history { gap:0; }
+    #bg-navigation-study .bg-history button { padding:0; width:34px; }
+    #bg-navigation-study svg { width:17px; height:17px; stroke-width:1.7; flex-shrink:0; }
+    #bg-navigation-study .bg-document { min-width:60px; flex:1; display:flex; flex-direction:column; gap:2px; }
+    #bg-navigation-study .bg-document-name { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    #bg-navigation-study .bg-document-state { color:var(--bg-muted); font-size:11px; white-space:nowrap; }
+    #bg-navigation-study .bg-sep { width:1px; height:20px; background:var(--bg-line); flex-shrink:0; margin:0 4px; }
+    #bg-navigation-study .bg-variant-a .bg-document { text-align:center; padding:0 4px; }
+    #bg-navigation-study .bg-variant-a .bg-history { background:var(--bg-surface); border-radius:var(--bg-radius); }
+    #bg-navigation-study .bg-variant-b .bg-doc-row { padding:9px 14px 6px; gap:12px; }
+    #bg-navigation-study .bg-variant-b .bg-document { flex-direction:row; align-items:baseline; gap:10px; }
+    #bg-navigation-study .bg-variant-b .bg-command-row { padding:4px 8px 6px; border-top:1px solid #eceef0; background:#fafbfc; border-radius:0 0 8px 8px; }
+    #bg-navigation-study .bg-variant-b .bg-actions { margin-left:auto; }
+    #bg-navigation-study .bg-variant-b .bg-doc-row .bg-save { min-height:30px; }
+    #bg-navigation-study .bg-variant-c .bg-row { padding:0; gap:0; min-height:66px; }
+    #bg-navigation-study .bg-variant-c .bg-document { align-self:stretch; justify-content:center; background:var(--bg-surface); padding:12px 16px; border-right:1px solid var(--bg-line); border-radius:8px 0 0 8px; flex:1; }
+    #bg-navigation-study .bg-variant-c .bg-menu-group { padding:0 10px; }
+    #bg-navigation-study .bg-variant-c .bg-actions { padding:0 12px 0 4px; gap:5px; }
+    #bg-navigation-study .bg-variant-c .bg-history { border:1px solid var(--bg-line); border-radius:var(--bg-radius); }
+    #bg-navigation-study .bg-popover { position:fixed; inset:auto; margin:0; padding:5px; width:208px; border:1px solid var(--bg-line); border-radius:8px; background:var(--bg-paper); color:var(--bg-ink); box-shadow:0 8px 24px #1e293b20; font:13px/1.4 "Segoe UI","Microsoft YaHei",sans-serif; }
+    #bg-navigation-study .bg-popover::backdrop { background:transparent; }
+    #bg-navigation-study .bg-popover button { width:100%; justify-content:space-between; min-height:34px; font-size:13px; font-weight:400; }
+    #bg-navigation-study .bg-popover kbd { color:var(--bg-muted); font:11px "Segoe UI",sans-serif; }
+    #bg-navigation-study .bg-popover hr { border:0; border-top:1px solid var(--bg-line); margin:4px; }
+    #bg-navigation-study .bg-compact-edit { display:none; }
+    @media(max-width:620px) { #bg-navigation-study .bg-row { gap:5px; padding:9px; } #bg-navigation-study button { padding:0 7px; } #bg-navigation-study .bg-layout-label { display:none; } #bg-navigation-study .bg-variant-c .bg-document { padding:10px; } #bg-navigation-study .bg-variant-c .bg-menu-group { padding:0 4px; } #bg-navigation-study .bg-variant-c .bg-actions { padding:0 8px 0 0; gap:3px; } }
+    @media(max-width:470px) { #bg-navigation-study .bg-menu-edit,#bg-navigation-study .bg-menu-view { display:none; } #bg-navigation-study .bg-compact-edit { display:inline-flex; } #bg-navigation-study .bg-history { display:none; } #bg-navigation-study .bg-variant-a .bg-document { text-align:left; } #bg-navigation-study .bg-variant-b .bg-document { flex-direction:column; gap:1px; } #bg-navigation-study .bg-caption small { display:none; } }
+  </style>
+  <section class="bg-specimen" aria-label="A 连续单行">
+    <div class="bg-caption">A　连续单行 <small>文档居中 · 轻分组</small></div>
+    <div class="bg-nav bg-variant-a"><div class="bg-row" data-row="a"></div></div>
+  </section>
+  <section class="bg-specimen" aria-label="B 上下分层">
+    <div class="bg-caption">B　上下分层 <small>文档与菜单分开 · 操作更从容</small></div>
+    <div class="bg-nav bg-variant-b"><div class="bg-row bg-doc-row" data-row="b-title"></div><div class="bg-row bg-command-row" data-row="b"></div></div>
+  </section>
+  <section class="bg-specimen" aria-label="C 分区嵌合">
+    <div class="bg-caption">C　分区嵌合 <small>文档靠左 · 区域边界明确</small></div>
+    <div class="bg-nav bg-variant-c"><div class="bg-row" data-row="c"></div></div>
+  </section>
+  <div class="bg-popover" id="bg-nav-menu" popover="auto" aria-label="导航菜单示意"></div>
+  <script>
+  (() => {
+    const root = document.getElementById('bg-navigation-study');
+    const menu = root.querySelector('#bg-nav-menu');
+    const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
+    const trigger = (label, key, cls='') => `<button type="button" class="${cls}" data-menu="${key}" popovertarget="bg-nav-menu" aria-label="${label}">${label}</button>`;
+    const menus = () => `<div class="bg-menu-group" aria-label="主菜单">${trigger('文件','file')}${trigger('编辑','edit','bg-menu-edit')}${trigger('视图','view','bg-menu-view')}${trigger('更多','more','bg-compact-edit')}</div>`;
+    const documentInfo = () => `<div class="bg-document"><span class="bg-document-name">未命名乐谱</span><span class="bg-document-state">尚未保存</span></div>`;
+    const history = () => `<div class="bg-history" aria-label="编辑历史"><button type="button" data-action="undo" aria-label="撤销" data-tooltip="撤销 Ctrl+Z">${icon('undo-2')}</button><button type="button" data-action="redo" aria-label="重做" data-tooltip="重做 Ctrl+Y" disabled>${icon('redo-2')}</button></div>`;
+    const layout = () => `<button type="button" data-menu="layout" popovertarget="bg-nav-menu" aria-label="布局">${icon('panels-top-left')}<span class="bg-layout-label">布局</span></button>`;
+    const save = () => `<button type="button" class="bg-save" data-action="save">保存</button>`;
+    root.querySelector('[data-row="a"]').innerHTML = menus()+documentInfo()+`<div class="bg-actions">${history()}<span class="bg-sep"></span>${layout()}${save()}</div>`;
+    root.querySelector('[data-row="b-title"]').innerHTML = documentInfo()+save();
+    root.querySelector('[data-row="b"]').innerHTML = menus()+`<div class="bg-actions">${history()}<span class="bg-sep"></span>${layout()}</div>`;
+    root.querySelector('[data-row="c"]').innerHTML = documentInfo()+menus()+`<div class="bg-actions">${history()}${layout()}${save()}</div>`;
+    const item = (text,key='',disabled=true) => `<button type="button" ${disabled?'disabled':''}>${text}<kbd>${key}</kbd></button>`;
+    const lists = {
+      file:item('新建乐谱','Ctrl+N')+item('打开…','Ctrl+O')+'<hr>'+item('保存','Ctrl+S')+item('另存为…','Ctrl+Shift+S'),
+      edit:item('撤销','Ctrl+Z')+item('重做','Ctrl+Y')+'<hr>'+item('全选','Ctrl+A'),
+      view:item('放大','Ctrl +')+item('缩小','Ctrl −')+'<hr>'+item('重置视图'),
+      more:item('编辑')+item('视图'),
+      layout:'<button type="button" data-layout="默认布局">默认布局 <span>✓</span></button><button type="button" data-layout="专注布局">专注布局 <span></span></button>'
+    };
+    let origin = null;
+    root.addEventListener('click', event => {
+      const button = event.target.closest('button'); if(!button) return;
+      if(button.dataset.menu) {
+        origin = button; menu.innerHTML = lists[button.dataset.menu];
+        const rect = button.getBoundingClientRect();
+        menu.style.left = Math.max(6,Math.min(rect.left,document.documentElement.clientWidth-220))+'px';
+        menu.style.top = rect.bottom+6+'px';
+      }
+      if(button.dataset.layout) {
+        const label = origin.querySelector('.bg-layout-label'); if(label) label.textContent = button.dataset.layout==='默认布局'?'布局':'专注布局';
+        origin.setAttribute('aria-label',button.dataset.layout); menu.hidePopover(); origin.focus();
+      }
+      if(button.dataset.action==='save') { const nav=button.closest('.bg-nav'); nav.querySelector('.bg-document-state').textContent='已保存'; button.textContent='已保存'; button.disabled=true; }
+      if(button.dataset.action==='undo' || button.dataset.action==='redo') { const nav=button.closest('.bg-nav'); const undo=button.dataset.action==='undo'; nav.querySelector('[data-action="undo"]').disabled=undo; nav.querySelector('[data-action="redo"]').disabled=!undo; const saveButton=nav.querySelector('.bg-save'); saveButton.disabled=false; saveButton.textContent='保存'; nav.querySelector('.bg-document-state').textContent='有未保存的修改'; }
+    });
+    const state={radius:6,control:34,longTitle:false};
+    function render(){root.style.setProperty('--bg-radius',state.radius+'px');root.style.setProperty('--bg-control',state.control+'px');root.querySelectorAll('.bg-document-name').forEach(el=>{el.textContent=state.longTitle?'夏日晚风 — 第一乐章修订稿':'未命名乐谱';el.setAttribute('data-tooltip',el.textContent);});}
+    render();
+    if(globalThis.lucide) lucide.createIcons({attrs:{width:17,height:17}});
+    if(globalThis.Tweak){const tweak=new Tweak({container:root,onChange:render});tweak.addSlider(state,'radius',{label:'控件圆角',min:0,max:10,unit:'px'});tweak.addSlider(state,'control',{label:'控件高度',min:30,max:40,unit:'px'});tweak.addToggle(state,'longTitle',{label:'较长文档名'});}
+  })();
+  </script>
+</div>

@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Brilliant Guitar</title><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script></head>
+<body>
+  <header class="app-header"><div class="brand"><span class="brand-mark">B</span><span>Brilliant Guitar</span></div><span class="edition">写下你的下一段旋律</span></header>
+  <main class="app">
+    <nav class="toolbar" aria-label="常用操作">
+      <div class="tool-group"><button id="new" data-startup disabled>新建</button><button id="open" data-startup disabled>打开</button><button id="save" class="primary" data-startup disabled>保存 <kbd>Ctrl S</kbd></button><button id="save-as" data-startup disabled>另存为</button></div>
+      <div class="tool-group"><button id="undo" disabled>撤销</button><button id="redo" disabled>重做</button><button id="delete" data-startup disabled>删除</button></div>
+      <label class="view-picker">谱面 <select id="view-select" aria-label="谱面类型"></select></label>
+    </nav>
+    <section class="document-heading"><div><div class="eyebrow">我的乐谱</div><h1 id="score-title">未命名乐谱</h1></div><span id="save-status" class="save-status unsaved">未保存</span></section>
+    <section id="workspace" class="workspace" tabindex="0" aria-label="谱面编辑区，按 A 到 G 直接输入音符">
+      <div class="paper-top"><span>01 <span class="muted">/ 第一小节</span></span><span class="paper-tag">基础五线谱</span></div>
+      <p id="loading">正在加载谱面…</p><div id="view-container"></div>
+    </section>
+    <div id="message" class="message" role="status" aria-live="polite"></div>
+    <footer><span>点击谱面，开始写作。</span><span>单小节 · 自然音 C3–B6 · 本机文件</span></footer>
+  </main>
+  <dialog id="save-dialog" aria-labelledby="save-title"><form id="save-form"><h2 id="save-title">保存乐谱</h2><p>保存到本机乐谱目录，下次可从“打开”继续。</p><label for="filename">文件名称</label><div class="filename-field"><input id="filename" required maxlength="70" autocomplete="off"><span>.score.json</span></div><p id="save-error" class="dialog-error" role="alert"></p><div class="dialog-actions"><button type="button" data-close>取消</button><button class="primary" type="submit">保存</button></div></form></dialog>
+  <dialog id="open-dialog" aria-labelledby="open-title"><h2 id="open-title">继续一份乐谱</h2><p>本机乐谱目录中的文件</p><div id="file-list" class="file-list"></div><p id="open-error" class="dialog-error" role="alert"></p><div class="dialog-actions"><button type="button" data-close>返回编辑</button></div></dialog>
+</body></html>

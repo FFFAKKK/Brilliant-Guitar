@@ -1,0 +1,90 @@
+<div id="score-navigation-concept" aria-label="导航栏全新方案">
+<style>
+#score-navigation-concept { --sn-surface:#ffffff; --sn-text:#25282c; --sn-muted:#687079; --sn-border:#dce0e4; --sn-group:#f0f2f4; --sn-hover:#e7eaee; --sn-accent:#2866c7; --sn-radius:7px; font:14px/1.4 "Segoe UI","Microsoft YaHei",sans-serif; color:var(--sn-text); }
+#score-navigation-concept * { box-sizing:border-box; }
+#score-navigation-concept .sn-header { display:grid; grid-template-columns:minmax(210px,1fr) auto; grid-template-rows:auto auto; align-items:center; column-gap:24px; row-gap:3px; padding:14px 18px 10px; background:var(--sn-surface); border:1px solid var(--sn-border); border-radius:9px; color-scheme:light; }
+#score-navigation-concept .sn-identity { display:flex; align-items:center; min-width:0; gap:12px; grid-column:1; grid-row:1; }
+#score-navigation-concept .sn-title { min-width:0; width:150px; max-width:100%; padding:2px 4px; margin-left:-4px; border:1px solid transparent; border-radius:4px; outline-offset:2px; background:transparent; color:var(--sn-text); font:600 15px/1.4 "Segoe UI","Microsoft YaHei",sans-serif; text-overflow:ellipsis; }
+#score-navigation-concept .sn-title:hover { border-color:var(--sn-border); }
+#score-navigation-concept .sn-status { flex-shrink:0; color:var(--sn-muted); font-size:11px; }
+#score-navigation-concept .sn-editor { display:flex; align-items:center; gap:0; grid-column:1; grid-row:2; margin-left:-8px; }
+#score-navigation-concept button { border:0; margin:0; background:transparent; color:var(--sn-text); font:inherit; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:7px; white-space:nowrap; }
+#score-navigation-concept button:focus-visible,#score-navigation-concept .sn-title:focus-visible { outline:2px solid var(--sn-accent); outline-offset:2px; }
+#score-navigation-concept .sn-menu-trigger { min-height:30px; padding:0 8px; border-radius:4px; font-size:13px; color:#535b65; }
+#score-navigation-concept .sn-menu-trigger:hover,#score-navigation-concept .sn-history:hover { background:var(--sn-hover); color:var(--sn-text); }
+#score-navigation-concept .sn-history { width:30px; min-height:30px; border-radius:4px; }
+#score-navigation-concept button:disabled { color:#a0a6ae; cursor:default; }
+#score-navigation-concept .sn-divider { height:14px; width:1px; background:var(--sn-border); margin:0 8px; }
+#score-navigation-concept svg { width:17px; height:17px; stroke-width:1.7; flex-shrink:0; }
+#score-navigation-concept .sn-global { display:flex; align-items:center; grid-column:2; grid-row:1 / 3; gap:0; padding:4px; background:var(--sn-group); border:1px solid var(--sn-border); border-radius:calc(var(--sn-radius) + 4px); }
+#score-navigation-concept .sn-global button { height:38px; min-width:77px; padding:0 11px; border-radius:var(--sn-radius); font-weight:500; }
+#score-navigation-concept .sn-global button:hover,#score-navigation-concept .sn-global button[aria-expanded="true"] { background:var(--sn-surface); }
+#score-navigation-concept .sn-global button:active { background:#dce3eb; }
+#score-navigation-concept .sn-global .sn-rule { height:18px; width:1px; background:#d3d8de; margin:0 2px; }
+#score-navigation-concept .sn-popover { position:fixed; inset:auto; margin:0; padding:6px; width:224px; background:var(--sn-surface); color:var(--sn-text); border:1px solid var(--sn-border); border-radius:8px; box-shadow:0 8px 24px #20293620; font:13px/1.4 "Segoe UI","Microsoft YaHei",sans-serif; color-scheme:light; }
+#score-navigation-concept .sn-popover::backdrop { background:transparent; }
+#score-navigation-concept .sn-popover button { width:100%; padding:8px; justify-content:space-between; min-height:34px; border-radius:4px; }
+#score-navigation-concept .sn-popover button:hover { background:var(--sn-group); }
+#score-navigation-concept .sn-popover kbd { font:11px "Segoe UI",sans-serif; color:var(--sn-muted); }
+#score-navigation-concept .sn-popover hr { border:0; border-top:1px solid var(--sn-border); margin:5px; }
+@media(max-width:600px) { #score-navigation-concept .sn-header { column-gap:12px; padding:12px 12px 9px; grid-template-columns:minmax(180px,1fr) auto; } #score-navigation-concept .sn-identity { gap:6px; } #score-navigation-concept .sn-title { width:126px; } #score-navigation-concept .sn-global button { min-width:62px; padding:0 8px; gap:5px; } }
+@media(max-width:460px) { #score-navigation-concept .sn-header { grid-template-columns:1fr; row-gap:6px; } #score-navigation-concept .sn-global { grid-column:1; grid-row:3; } #score-navigation-concept .sn-global button { flex:1; } #score-navigation-concept .sn-title { width:170px; } }
+</style>
+<header class="sn-header" aria-label="乐谱导航">
+  <div class="sn-identity"><input class="sn-title" aria-label="乐谱名称" value="未命名乐谱" spellcheck="false"><span class="sn-status" role="status">未保存</span></div>
+  <div class="sn-editor" aria-label="编辑菜单与历史">
+    <button type="button" class="sn-menu-trigger" data-menu="file" popovertarget="sn-menu-panel">文件</button>
+    <button type="button" class="sn-menu-trigger" data-menu="edit" popovertarget="sn-menu-panel">编辑</button>
+    <button type="button" class="sn-menu-trigger" data-menu="view" popovertarget="sn-menu-panel">视图</button>
+    <span class="sn-divider" aria-hidden="true"></span>
+    <button type="button" class="sn-history" data-history="undo" aria-label="撤销" data-tooltip="撤销 Ctrl+Z" disabled><i data-lucide="undo-2" aria-hidden="true"></i></button>
+    <button type="button" class="sn-history" data-history="redo" aria-label="重做" data-tooltip="重做 Ctrl+Y" disabled><i data-lucide="redo-2" aria-hidden="true"></i></button>
+  </div>
+  <div class="sn-global" role="group" aria-label="全局操作：保存、布局、后台">
+    <button type="button" data-save aria-label="保存"><i data-lucide="save" aria-hidden="true"></i><span>保存</span></button>
+    <span class="sn-rule" aria-hidden="true"></span>
+    <button type="button" data-menu="layout" popovertarget="sn-menu-panel" aria-expanded="false"><i data-lucide="panels-top-left" aria-hidden="true"></i><span>布局</span></button>
+    <span class="sn-rule" aria-hidden="true"></span>
+    <button type="button" data-menu="admin" popovertarget="sn-menu-panel" aria-expanded="false"><i data-lucide="sliders-horizontal" aria-hidden="true"></i><span>后台</span></button>
+  </div>
+</header>
+<div id="sn-menu-panel" class="sn-popover" popover="auto" aria-label="导航菜单预览"></div>
+<script>
+(() => {
+ const root=document.getElementById('score-navigation-concept');
+ const panel=root.querySelector('#sn-menu-panel');
+ const title=root.querySelector('.sn-title');
+ const status=root.querySelector('.sn-status');
+ const undo=root.querySelector('[data-history="undo"]');
+ const redo=root.querySelector('[data-history="redo"]');
+ root.querySelectorAll('[data-menu]').forEach(button=>{button.removeAttribute('popovertarget');button.setAttribute('aria-controls','sn-menu-panel');button.setAttribute('aria-expanded','false');});
+ let origin=null, previousName='未命名乐谱', savedName=null, redoName=null;
+ const line=(text,key='',disabled=false)=>`<button type="button" ${disabled?'disabled':''}>${text}<kbd>${key}</kbd></button>`;
+ const entries={
+  file:line('新建乐谱','Ctrl+N',true)+line('打开…','Ctrl+O',true)+'<hr><button type="button" data-save>保存<kbd>Ctrl+S</kbd></button>'+line('另存为…','',true),
+  edit:line('撤销','Ctrl+Z',true)+line('重做','Ctrl+Y',true),
+  view:line('放大','',true)+line('缩小','',true),
+  layout:'<button type="button" data-layout="默认布局">默认布局 <span>✓</span></button><button type="button" data-layout="专注布局">专注布局 <span></span></button>',
+  admin:line('后台入口预留','',true)
+ };
+ function updateStatus(){status.textContent=title.value===savedName?'已保存':'未保存';}
+ title.addEventListener('focus',()=>{previousName=title.value;});
+ title.addEventListener('input',()=>{undo.disabled=title.value===previousName;redo.disabled=true;updateStatus();});
+ title.addEventListener('blur',()=>{if(!title.value.trim()){title.value=previousName||'未命名乐谱';updateStatus();}});
+ title.addEventListener('keydown',e=>{if(e.key==='Enter')title.blur();});
+ root.addEventListener('click',e=>{
+  const button=e.target.closest('button');if(!button)return;
+  if(button.dataset.menu){if(origin===button&&panel.matches(':popover-open')){panel.hidePopover();return;}origin=button;panel.innerHTML=entries[button.dataset.menu];root.querySelectorAll('[aria-expanded]').forEach(el=>el.setAttribute('aria-expanded','false'));button.setAttribute('aria-expanded','true');const r=button.getBoundingClientRect();panel.style.left=Math.max(6,Math.min(r.left,document.documentElement.clientWidth-236))+'px';panel.style.top=r.bottom+7+'px';if(!panel.matches(':popover-open'))panel.showPopover();}
+  if(button.hasAttribute('data-save')){savedName=title.value;updateStatus();if(panel.matches(':popover-open'))panel.hidePopover();}
+  if(button.dataset.layout){const selected=button.dataset.layout;entries.layout=['默认布局','专注布局'].map(name=>`<button type="button" data-layout="${name}">${name}<span>${name===selected?'✓':''}</span></button>`).join('');panel.hidePopover();origin.focus();}
+  if(button.dataset.history==='undo'){redoName=title.value;title.value=previousName;undo.disabled=true;redo.disabled=false;updateStatus();}
+  if(button.dataset.history==='redo'){title.value=redoName;undo.disabled=false;redo.disabled=true;updateStatus();}
+ });
+ panel.addEventListener('toggle',e=>{if(e.newState==='closed'&&origin)origin.setAttribute('aria-expanded','false');});
+ const settings={radius:7};
+ function render(){root.style.setProperty('--sn-radius',settings.radius+'px');}
+ render();
+ if(globalThis.Tweak){const tweak=new Tweak({container:root,onChange:render});tweak.addSlider(settings,'radius',{label:'全局操作组圆角',min:2,max:10,unit:'px'});}
+})();
+</script>
+</div>
