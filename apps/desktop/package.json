@@ -1,0 +1,19 @@
+{
+  "name": "@brilliant-guitar/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/run-tauri.mjs dev",
+    "build": "node scripts/run-tauri.mjs build --no-bundle",
+    "build:no-bundle": "npm run build",
+    "package": "node scripts/run-tauri.mjs build",
+    "check": "cargo check --manifest-path src-tauri/Cargo.toml --locked --offline",
+    "test": "cargo test --manifest-path src-tauri/Cargo.toml --locked --offline",
+    "info": "node scripts/run-tauri.mjs info",
+    "icon:dev": "node scripts/run-tauri.mjs icon dev-icon.svg"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.11.4"
+  }
+}

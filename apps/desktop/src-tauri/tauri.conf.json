@@ -1,0 +1,54 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Brilliant Guitar",
+  "version": "0.1.0",
+  "identifier": "com.brilliantguitar.workbench",
+  "build": {
+    "beforeDevCommand": {
+      "script": "node scripts/ensure-workbench-dev.mjs",
+      "cwd": "..",
+      "wait": false
+    },
+    "devUrl": "http://127.0.0.1:5173",
+    "beforeBuildCommand": {
+      "script": "node scripts/build-workbench.mjs",
+      "cwd": "..",
+      "wait": true
+    },
+    "frontendDist": "../../workbench/dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Brilliant Guitar",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 960,
+        "minHeight": 640,
+        "center": true,
+        "resizable": true,
+        "decorations": true,
+        "backgroundColor": "#151617"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src ipc: http://ipc.localhost; object-src 'none'; base-uri 'none'; frame-src 'none'; form-action 'self'",
+      "devCsp": "default-src 'self' http://127.0.0.1:5173; script-src 'self' 'unsafe-eval' http://127.0.0.1:5173; style-src 'self' 'unsafe-inline' http://127.0.0.1:5173; img-src 'self' data: blob: http://127.0.0.1:5173; font-src 'self' data: http://127.0.0.1:5173; connect-src ipc: http://ipc.localhost http://127.0.0.1:5173 ws://127.0.0.1:5173; object-src 'none'; base-uri 'none'; frame-src 'none'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "category": "Music",
+    "copyright": "Copyright © 2026 Brilliant Guitar",
+    "shortDescription": "A local-first guitar score workbench",
+    "longDescription": "Brilliant Guitar is a local-first desktop workbench for creating and editing guitar scores.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}
