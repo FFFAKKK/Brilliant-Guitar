@@ -42,6 +42,9 @@ pub struct IntegratedKernelRuntimeV2 {
     // Only published results for the current committed document are reusable.
     // Standalone module effects cannot change any K1 classification dependency.
     core_classification: Option<(DocumentVersionV1, Value)>,
+    // Keep exactly one adjacent committed state for undo/redo. History identity
+    // is stable while document versions continue increasing across transitions.
+    adjacent_core_classification: Option<(u64, Value)>,
     #[cfg(test)]
     classification_scans: u64,
 }
@@ -119,6 +122,7 @@ impl IntegratedKernelRuntimeV2 {
             assessment_reads,
             paged_core_reports,
             core_classification: None,
+            adjacent_core_classification: None,
             #[cfg(test)]
             classification_scans: 0,
         };
@@ -316,6 +320,18 @@ impl IntegratedKernelRuntimeV2 {
                     "history.empty-undo"
                 }));
             }
+            let identity_before = self
+                .runtime
+                .history
+                .current_identity()
+                .map_err(|_| internal())?;
+            let identity_after = if redo {
+                self.runtime.history.identity_after_redo()
+            } else {
+                self.runtime.history.identity_after_undo()
+            }
+            .map_err(|_| internal())?;
+            let version_before = self.runtime.document_version;
             let (document, prepared) = self
                 .runtime
                 .prepare_integrated_history(redo)
@@ -325,7 +341,13 @@ impl IntegratedKernelRuntimeV2 {
                 .document_version
                 .checked_next()
                 .ok_or_else(|| failure("command.version-overflow"))?;
-            let pipeline = self.assess(&document, next.get(), executor)?;
+            let cached = self
+                .adjacent_core_classification
+                .as_ref()
+                .filter(|(identity, _)| *identity == identity_after)
+                .map(|(_, core)| core.clone());
+            let pipeline =
+                self.assess_with_classification(&document, next.get(), executor, cached)?;
             let entry = if redo {
                 self.runtime.history.redo_entry()
             } else {
@@ -336,7 +358,7 @@ impl IntegratedKernelRuntimeV2 {
             let result = self
                 .runtime
                 .apply_history_transition_prepared(redo, prepared);
-            return self.completed(result, pipeline);
+            return self.completed(result, pipeline, Some((identity_before, version_before)));
         }
         Err(failure("command.invalid-envelope"))
     }
@@ -347,6 +369,12 @@ impl IntegratedKernelRuntimeV2 {
         executor: &mut dyn ContributionExecutorV2,
     ) -> Result<Value> {
         let id = self.runtime.document_id().clone();
+        let identity_before = self
+            .runtime
+            .history
+            .current_identity()
+            .map_err(|_| internal())?;
+        let version_before = self.runtime.document_version;
         let mut transaction = self.runtime.begin_stage3_transaction();
         let mut projection_count = 0;
         let module = module::ModuleEnvironment {
@@ -404,10 +432,19 @@ impl IntegratedKernelRuntimeV2 {
         let result = self
             .runtime
             .commit_integrated_transaction(command_id.clone(), prepared);
-        self.completed(result, pipeline)
+        self.completed(
+            result,
+            pipeline,
+            changed.then_some((identity_before, version_before)),
+        )
     }
 
-    fn completed(&mut self, result: KernelStage4CommandResultV1, pipeline: Value) -> Result<Value> {
+    fn completed(
+        &mut self,
+        result: KernelStage4CommandResultV1,
+        pipeline: Value,
+        previous_state: Option<(u64, DocumentVersionV1)>,
+    ) -> Result<Value> {
         if self.paged_core_reports && matches!(result, KernelStage4CommandResultV1::Rejected { .. })
         {
             // A failed publication cannot expose its candidate's summary or a
@@ -419,6 +456,12 @@ impl IntegratedKernelRuntimeV2 {
             ]));
         }
         if !matches!(result, KernelStage4CommandResultV1::Rejected { .. }) {
+            if let Some((identity, version)) = previous_state
+                && let Some((cached_version, core)) = self.core_classification.take()
+                && cached_version == version
+            {
+                self.adjacent_core_classification = Some((identity, core));
+            }
             // No fallible work after adoption. A missing report simply prevents
             // reuse; rejected candidates never replace the committed report.
             self.core_classification = field(&pipeline, "assessment")

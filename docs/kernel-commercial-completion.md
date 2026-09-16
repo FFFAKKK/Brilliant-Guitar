@@ -1,5 +1,22 @@
 # Commercial kernel completion
 
+**Bounded adjacent-history Core classification reuse (2026-09-16):** integrated
+undo/redo now retains exactly one neighboring committed Core classification,
+keyed by the stable journal history identity. Returning to that state reuses the
+published classification while still running full Core semantic validation and
+all plugin validation/classification. Failed candidates, stale identities and
+no-cache paths retain the original behavior; the cache cannot grow with history.
+Focused Rust instrumentation proves successful and rejected undo/redo do not
+repeat the Core classification scan. Rust workspace all-features: 607 passed/1 ignored;
+strict Clippy and Rust 1.88 all-target checks passed. Focused Node/Native/Wasm:
+81 passed/0 skipped, including the normally gated GC lifecycle test; the full
+suite passed 894 with 2 environment-gated skips and 0 failures. A saved
+25,600-event fresh-process diagnostic completed at 905.90/734.35/649.98 ms for
+submit/undo/redo, but it is one sample and does not establish a latency gain.
+Full semantic validation remains the dominant cost, so percentile qualification,
+incremental semantic work, stress latency and default product cutover remain
+open. See `docs/kernel-adjacent-history-classification-2026-09-16.md`.
+
 **Reuse prepared journal history across integrated assessment (2026-09-14):**
 journal-only Candidate history now yields the callback document and owned commit
 plan from one replay. Plugin assessment and reply reservation precede adoption;

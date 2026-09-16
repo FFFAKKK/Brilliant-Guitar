@@ -124,6 +124,7 @@ fn prepared_batch_history_plugin_rejection_keeps_state_and_allows_retry() {
     ]);
     let result = decode(&state.operate(&encode(&batch).unwrap(), &mut host, dispatch)).unwrap();
     assert!(tag(at(&result, &["result"]), "status", "committed"));
+    assert_eq!(state.classification_scans, 2);
     for redo in [false, true] {
         let (_, prepared) = state.runtime.prepare_integrated_history(redo).unwrap();
         assert!(prepared.is_some(), "exercise the actual reuse path");
@@ -132,6 +133,8 @@ fn prepared_batch_history_plugin_rejection_keeps_state_and_allows_retry() {
         let version = state.runtime.document_version;
         let history = state.runtime.history.projected().unwrap();
         let cached = state.core_classification.clone();
+        let adjacent = state.adjacent_core_classification.clone();
+        let scans = state.classification_scans;
         let calls = host.validations;
         let request = if redo {
             br#"{"operation":"redo"}"#
@@ -148,6 +151,8 @@ fn prepared_batch_history_plugin_rejection_keeps_state_and_allows_retry() {
         assert_eq!(state.runtime.document_version, version);
         assert_eq!(state.runtime.history.projected().unwrap(), history);
         assert_eq!(state.core_classification, cached);
+        assert_eq!(state.adjacent_core_classification, adjacent);
+        assert_eq!(state.classification_scans, scans);
         host.reject = false;
         let result = decode(&state.operate(request, &mut host, dispatch)).unwrap();
         assert!(tag(at(&result, &["result"]), "status", "committed"));
@@ -155,6 +160,7 @@ fn prepared_batch_history_plugin_rejection_keeps_state_and_allows_retry() {
             state.runtime.document_version,
             version.checked_next().unwrap()
         );
+        assert_eq!(state.classification_scans, scans);
     }
 }
 
@@ -267,7 +273,7 @@ fn paged_rejected_completion_exposes_no_candidate_report_and_keeps_committed_cac
         KernelStage4CommandResultV1::Rejected { .. }
     ));
     let candidate = object([("assessment", object([("core", text("uncommitted"))]))]);
-    let result = state.completed(rejected, candidate).unwrap();
+    let result = state.completed(rejected, candidate, None).unwrap();
     assert!(field(&result, "coreReport").is_err());
     assert!(field(&result, "pipeline").is_err());
     assert_eq!(state.core_classification, cached);

@@ -20,6 +20,12 @@ impl IntegratedKernelRuntimeV2 {
         commands: &[CapturedCoreCommandV1],
         executor: &mut dyn ContributionExecutorV2,
     ) -> Result<Value> {
+        let identity_before = self
+            .runtime
+            .history
+            .current_identity()
+            .map_err(|_| internal())?;
+        let version_before = self.runtime.document_version;
         let brilliant_kernel_contracts::ScoreEntityTargetV1::Document { document_id } = target
         else {
             return Err(failure("command.target-mismatch"));
@@ -78,10 +84,11 @@ impl IntegratedKernelRuntimeV2 {
         let prepared = transaction
             .finish(&self.runtime.store, self.runtime.document_version)
             .map_err(|(error, _)| value(&error).unwrap_or_else(|_| internal()))?;
+        let changed = prepared.changed;
         let document =
             ScoreDocumentV1::from_lossless_value(value(&document)?).map_err(|_| internal())?;
         self.callback_projections = self.callback_projections.saturating_add(projections);
-        let version = if prepared.changed {
+        let version = if changed {
             self.runtime
                 .document_version
                 .checked_next()
@@ -102,6 +109,10 @@ impl IntegratedKernelRuntimeV2 {
                 PreparedMutationV1::Candidate(prepared),
             )
             .map_err(|error| value(&error).unwrap_or_else(|_| internal()))?;
-        self.completed(result, pipeline)
+        self.completed(
+            result,
+            pipeline,
+            changed.then_some((identity_before, version_before)),
+        )
     }
 }

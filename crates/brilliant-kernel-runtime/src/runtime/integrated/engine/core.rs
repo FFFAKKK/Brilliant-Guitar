@@ -10,6 +10,12 @@ impl IntegratedKernelRuntimeV2 {
         executor: &mut dyn ContributionExecutorV2,
         dispatch: CoreDispatch,
     ) -> Result<Value> {
+        let identity_before = self
+            .runtime
+            .history
+            .current_identity()
+            .map_err(|_| internal())?;
+        let version_before = self.runtime.document_version;
         // The decoder accepts the top-level Batch position; it uses the
         // ordinary child decoder internally, retaining nested-Batch rejection.
         let command = decode_admission_command_value(envelope)
@@ -72,6 +78,10 @@ impl IntegratedKernelRuntimeV2 {
             .runtime
             .commit_prepared_mutation(command_id, prepared)
             .map_err(|failure| value(&failure).unwrap_or_else(|_| internal()))?;
-        self.completed(result, pipeline)
+        self.completed(
+            result,
+            pipeline,
+            changed.then_some((identity_before, version_before)),
+        )
     }
 }
