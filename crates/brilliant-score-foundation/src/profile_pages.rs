@@ -36,6 +36,17 @@ pub fn assess_score_profile_summary_v2(
             diagnostics: semantic.diagnostics,
         });
     }
+    classify_valid_score_profile_summary_v2(document, profile)
+}
+
+/// Count profile diagnostics for a document whose complete Core semantics have
+/// already been validated by the caller. No unsupported rows are retained.
+#[doc(hidden)]
+pub fn classify_valid_score_profile_summary_v2(
+    document: &ScoreDocumentV1,
+    profile: &ScoreFeatureProfileV1,
+) -> Result<ScoreSupportSummaryV2, AssessmentFailureV1> {
+    let node = DocumentAssessmentNodeV1::new(document);
     let mut diagnostic_count = 0_usize;
     visit_valid_score_profile(node, profile, |_, _| {
         diagnostic_count = diagnostic_count

@@ -79,6 +79,7 @@ fn prepared_batch_history_plugin_rejection_keeps_state_and_allows_retry() {
     let first =
         decode(&state.operate(&encode(&module_request).unwrap(), &mut host, dispatch)).unwrap();
     assert!(tag(at(&first, &["result"]), "status", "committed"));
+    assert_eq!(state.semantic_scans, 1);
     // Keep an installed extension on both sides so both undo and redo invoke
     // its validator. Undoing its initial creation correctly skips that callback.
     let mut metadata = state.runtime.store.export_document().unwrap().metadata;
@@ -125,6 +126,10 @@ fn prepared_batch_history_plugin_rejection_keeps_state_and_allows_retry() {
     let result = decode(&state.operate(&encode(&batch).unwrap(), &mut host, dispatch)).unwrap();
     assert!(tag(at(&result, &["result"]), "status", "committed"));
     assert_eq!(state.classification_scans, 2);
+    assert_eq!(
+        state.semantic_scans, 1,
+        "candidate finalization already proved Core semantics"
+    );
     for redo in [false, true] {
         let (_, prepared) = state.runtime.prepare_integrated_history(redo).unwrap();
         assert!(prepared.is_some(), "exercise the actual reuse path");

@@ -1,5 +1,22 @@
 # Commercial kernel completion
 
+**Reuse Candidate semantic authority during integrated classification
+(2026-09-16):** structural Core and mixed Core/module Candidate finalization
+already performs complete Core semantic validation before it yields an immutable
+commit plan. Integrated assessment now consumes that proof and runs only the K1
+classification walk instead of repeating the same whole-document semantic walk.
+Typed edits, history transitions, admission, migration, cached-classification
+fallbacks and report-page reads retain their original semantic checks. A test
+counter pins the route boundary, and Foundation equality tests pin full versus
+prevalidated classification output including the 6,401-row paged summary.
+Rust workspace all-features: 608 passed/1 ignored; strict Clippy and Rust 1.88
+all-target checks passed. Node/Native/Wasm: 894 passed/2 environment-gated skips.
+On the unchanged 25,600-event representative mixed Batch, three paired
+fresh-process submit medians changed from 1,055.49 ms to 864.83 ms (18.1%);
+undo/redo were outside this change and stayed within ordinary run variance.
+This remains diagnostic evidence rather than percentile qualification. See
+`docs/kernel-prevalidated-candidate-assessment-2026-09-16.md`.
+
 **Bounded adjacent-history Core classification reuse (2026-09-16):** integrated
 undo/redo now retains exactly one neighboring committed Core classification,
 keyed by the stable journal history identity. Returning to that state reuses the

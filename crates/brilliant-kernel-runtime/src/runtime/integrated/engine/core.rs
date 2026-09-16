@@ -35,7 +35,7 @@ impl IntegratedKernelRuntimeV2 {
             .prepare_admission(command, dispatch)
             .map_err(|(failure, _)| value(&failure).unwrap_or_else(|_| internal()))?;
         let id = self.runtime.document_id().clone();
-        let (document, changed, affected) = match &prepared {
+        let (document, changed, affected, semantics_prevalidated) = match &prepared {
             PreparedMutationV1::Typed(prepared) => {
                 let changes = &prepared.change_set;
                 let overlay = crate::transaction::replay_overlay_on_base(
@@ -51,6 +51,7 @@ impl IntegratedKernelRuntimeV2 {
                     document,
                     !changes.forward.is_empty(),
                     targets_from_change_set(changes).map_err(|_| internal())?,
+                    false,
                 )
             }
             PreparedMutationV1::Candidate(prepared) => (
@@ -60,6 +61,7 @@ impl IntegratedKernelRuntimeV2 {
                     .map_err(|failure| value(&failure).unwrap_or_else(|_| internal()))?,
                 prepared.changed,
                 prepared.affected.clone(),
+                true,
             ),
         };
         // Core Batch retains operation-fact semantics even when its final
@@ -72,7 +74,11 @@ impl IntegratedKernelRuntimeV2 {
         } else {
             self.runtime.document_version
         };
-        let pipeline = self.assess(&document, version.get(), executor)?;
+        let pipeline = if semantics_prevalidated {
+            self.assess_prevalidated(&document, version.get(), executor)?
+        } else {
+            self.assess(&document, version.get(), executor)?
+        };
         self.reserve_reply(&pipeline, &affected, &command_id.into())?;
         let result = self
             .runtime

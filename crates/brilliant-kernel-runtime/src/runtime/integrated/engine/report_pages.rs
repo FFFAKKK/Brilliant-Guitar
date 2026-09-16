@@ -2,34 +2,49 @@
 //! document. No plugin callbacks, history adoption or retained report cursors.
 use super::*;
 use brilliant_score_foundation::{
-    CORE_PROFILE_PAGE_LIMIT_V2, ProfilePageFailureV2, ScoreSupportStatusV2,
+    CORE_PROFILE_PAGE_LIMIT_V2, ProfilePageFailureV2, ScoreSupportStatusV2, ScoreSupportSummaryV2,
     assess_score_profile_page_v2,
 };
 
+fn core_report_summary_value(summary: ScoreSupportSummaryV2) -> Result<Value> {
+    let (status, count) = match summary {
+        ScoreSupportSummaryV2::Supported => ("supported", 0),
+        ScoreSupportSummaryV2::Unsupported { diagnostic_count } => {
+            ("unsupported", diagnostic_count)
+        }
+        ScoreSupportSummaryV2::Invalid { diagnostics } => {
+            return Err(object([
+                ("code", text("command.semantic-invalid")),
+                ("diagnostics", value(&diagnostics)?),
+            ]));
+        }
+    };
+    Ok(object([
+        ("reportVersion", number(2)),
+        ("profileId", text("brilliant-guitar.k1")),
+        ("status", text(status)),
+        ("diagnosticCount", number(count as u64)),
+    ]))
+}
+
 impl IntegratedKernelRuntimeV2 {
     pub(super) fn core_report_summary(&self, document: &ScoreDocumentV1) -> Result<Value> {
-        use brilliant_score_foundation::{ScoreSupportSummaryV2, assess_score_profile_summary_v2};
-        let (status, count) =
-            match assess_score_profile_summary_v2(document, &ScoreFeatureProfileV1::k1())
-                .map_err(assessment_failure)?
-            {
-                ScoreSupportSummaryV2::Supported => ("supported", 0),
-                ScoreSupportSummaryV2::Unsupported { diagnostic_count } => {
-                    ("unsupported", diagnostic_count)
-                }
-                ScoreSupportSummaryV2::Invalid { diagnostics } => {
-                    return Err(object([
-                        ("code", text("command.semantic-invalid")),
-                        ("diagnostics", value(&diagnostics)?),
-                    ]));
-                }
-            };
-        Ok(object([
-            ("reportVersion", number(2)),
-            ("profileId", text("brilliant-guitar.k1")),
-            ("status", text(status)),
-            ("diagnosticCount", number(count as u64)),
-        ]))
+        use brilliant_score_foundation::assess_score_profile_summary_v2;
+        let summary = assess_score_profile_summary_v2(document, &ScoreFeatureProfileV1::k1())
+            .map_err(assessment_failure)?;
+        core_report_summary_value(summary)
+    }
+
+    pub(super) fn core_report_summary_prevalidated(
+        &self,
+        document: &ScoreDocumentV1,
+    ) -> Result<Value> {
+        let summary = brilliant_score_foundation::classify_valid_score_profile_summary_v2(
+            document,
+            &ScoreFeatureProfileV1::k1(),
+        )
+        .map_err(assessment_failure)?;
+        core_report_summary_value(summary)
     }
 
     pub(super) fn read_core_report_page(&self, request: &Value) -> Result<Value> {

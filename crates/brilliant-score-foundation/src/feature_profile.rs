@@ -129,10 +129,14 @@ pub fn assess_score_profile_node<N: AssessmentNodeV1>(
             diagnostics: report.diagnostics,
         });
     }
-    classify_valid_score(candidate, profile)
+    classify_valid_score_profile_node(candidate, profile)
 }
 
-fn classify_valid_score<N: AssessmentNodeV1>(
+/// Classify a candidate whose complete Core semantics have already been
+/// validated by the caller. This preserves the ordinary profile rule order and
+/// diagnostic budget, but deliberately does not repeat semantic validation.
+#[doc(hidden)]
+pub fn classify_valid_score_profile_node<N: AssessmentNodeV1>(
     root: N,
     profile: &ScoreFeatureProfileV1,
 ) -> Result<ScoreSupportV1, AssessmentFailureV1> {
@@ -257,4 +261,23 @@ pub(crate) fn visit_valid_score_profile<N: AssessmentNodeV1>(
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{DocumentAssessmentNodeV1, LosslessDecode, ScoreDocumentV1};
+
+    #[test]
+    fn validated_classifier_matches_the_full_assessment_for_valid_scores() {
+        let document = ScoreDocumentV1::from_lossless_value(
+            crate::decode_js_value_json(crate::codec::SMOKE_DOCUMENT).unwrap(),
+        )
+        .unwrap();
+        let profile = ScoreFeatureProfileV1::k1();
+        assert_eq!(
+            classify_valid_score_profile_node(DocumentAssessmentNodeV1::new(&document), &profile),
+            assess_score_profile_node(DocumentAssessmentNodeV1::new(&document), &profile),
+        );
+    }
 }

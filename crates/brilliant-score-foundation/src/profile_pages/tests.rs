@@ -1,6 +1,7 @@
 use super::*;
 use crate::{
     CoreDiagnosticCodeV1 as Code, LosslessDecode, ScoreSupportV1, assess_score_profile_node,
+    classify_valid_score_profile_summary_v2,
 };
 use brilliant_core_types::{FiniteNumber, StablePathSegmentV1 as Segment, StablePathV1};
 use serde_json::json;
@@ -33,6 +34,12 @@ fn all_6401_diagnostics_are_delivered_in_bounded_deterministic_pages() {
     let before = document.clone();
     assert_eq!(
         assess_score_profile_summary_v2(&document, &profile).unwrap(),
+        ScoreSupportSummaryV2::Unsupported {
+            diagnostic_count: 6401
+        }
+    );
+    assert_eq!(
+        classify_valid_score_profile_summary_v2(&document, &profile).unwrap(),
         ScoreSupportSummaryV2::Unsupported {
             diagnostic_count: 6401
         }

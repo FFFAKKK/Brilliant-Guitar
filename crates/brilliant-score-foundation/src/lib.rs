@@ -34,7 +34,7 @@ pub use dto_assessment::{
 };
 pub use feature_profile::{
     CardinalityConstraintV1, ProfileMeterV1, ScoreFeatureProfileV1, ScoreSupportV1,
-    assess_score_profile, assess_score_profile_node,
+    assess_score_profile, assess_score_profile_node, classify_valid_score_profile_node,
 };
 pub use fraction::{ExactFraction, ExactFractionError};
 pub use js_string_json::{
@@ -57,4 +57,5 @@ pub use music_rules::{
 pub use profile_pages::{
     CORE_PROFILE_PAGE_LIMIT_V2, ProfilePageFailureV2, ScoreSupportPageV2, ScoreSupportStatusV2,
     ScoreSupportSummaryV2, assess_score_profile_page_v2, assess_score_profile_summary_v2,
+    classify_valid_score_profile_summary_v2,
 };

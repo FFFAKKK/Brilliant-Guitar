@@ -10,7 +10,7 @@ use brilliant_kernel_contracts::{
 };
 use brilliant_score_foundation::{
     LosslessDecode, ScoreFeatureProfileV1, ScoreSupportV1, assess_score_profile,
-    assess_score_semantics,
+    assess_score_semantics, classify_valid_score_profile_node,
 };
 mod assessment;
 mod batch;
@@ -47,6 +47,8 @@ pub struct IntegratedKernelRuntimeV2 {
     adjacent_core_classification: Option<(u64, Value)>,
     #[cfg(test)]
     classification_scans: u64,
+    #[cfg(test)]
+    semantic_scans: u64,
 }
 
 impl IntegratedKernelRuntimeV2 {
@@ -125,6 +127,8 @@ impl IntegratedKernelRuntimeV2 {
             adjacent_core_classification: None,
             #[cfg(test)]
             classification_scans: 0,
+            #[cfg(test)]
+            semantic_scans: 0,
         };
         let document = state
             .runtime
@@ -574,7 +578,16 @@ impl IntegratedKernelRuntimeV2 {
         version: u64,
         executor: &mut dyn ContributionExecutorV2,
     ) -> Result<Value> {
-        self.assess_with_classification(document, version, executor, None)
+        self.assess_internal(document, version, executor, None, false)
+    }
+
+    fn assess_prevalidated(
+        &mut self,
+        document: &ScoreDocumentV1,
+        version: u64,
+        executor: &mut dyn ContributionExecutorV2,
+    ) -> Result<Value> {
+        self.assess_internal(document, version, executor, None, true)
     }
 
     fn assess_with_classification(
@@ -584,6 +597,17 @@ impl IntegratedKernelRuntimeV2 {
         executor: &mut dyn ContributionExecutorV2,
         cached: Option<Value>,
     ) -> Result<Value> {
+        self.assess_internal(document, version, executor, cached, false)
+    }
+
+    fn assess_internal(
+        &mut self,
+        document: &ScoreDocumentV1,
+        version: u64,
+        executor: &mut dyn ContributionExecutorV2,
+        cached: Option<Value>,
+        semantics_prevalidated: bool,
+    ) -> Result<Value> {
         if self.paged_core_reports
             && !(executor.uses_scoped_assessment() && executor.uses_scoped_preparation())
         {
@@ -592,15 +616,21 @@ impl IntegratedKernelRuntimeV2 {
         if executor.uses_scoped_assessment() {
             check_typed_capture(document)?;
             let core = if let Some(core) = cached {
-                let semantic = brilliant_score_foundation::assess_score_semantics_node(
-                    brilliant_score_foundation::DocumentAssessmentNodeV1::new(document),
-                )
-                .map_err(assessment_failure)?;
-                if !semantic.ok {
-                    return Err(object([
-                        ("code", text("command.semantic-invalid")),
-                        ("diagnostics", value(&semantic.diagnostics)?),
-                    ]));
+                if !semantics_prevalidated {
+                    #[cfg(test)]
+                    {
+                        self.semantic_scans += 1;
+                    }
+                    let semantic = brilliant_score_foundation::assess_score_semantics_node(
+                        brilliant_score_foundation::DocumentAssessmentNodeV1::new(document),
+                    )
+                    .map_err(assessment_failure)?;
+                    if !semantic.ok {
+                        return Err(object([
+                            ("code", text("command.semantic-invalid")),
+                            ("diagnostics", value(&semantic.diagnostics)?),
+                        ]));
+                    }
                 }
                 core
             } else if self.paged_core_reports {
@@ -608,16 +638,33 @@ impl IntegratedKernelRuntimeV2 {
                 {
                     self.classification_scans += 1;
                 }
-                self.core_report_summary(document)?
+                if semantics_prevalidated {
+                    self.core_report_summary_prevalidated(document)?
+                } else {
+                    #[cfg(test)]
+                    {
+                        self.semantic_scans += 1;
+                    }
+                    self.core_report_summary(document)?
+                }
             } else {
                 #[cfg(test)]
                 {
                     self.classification_scans += 1;
                 }
-                let core = brilliant_score_foundation::assess_score_profile_node(
-                    brilliant_score_foundation::DocumentAssessmentNodeV1::new(document),
-                    &ScoreFeatureProfileV1::k1(),
-                )
+                let node = brilliant_score_foundation::DocumentAssessmentNodeV1::new(document);
+                let core = if semantics_prevalidated {
+                    classify_valid_score_profile_node(node, &ScoreFeatureProfileV1::k1())
+                } else {
+                    #[cfg(test)]
+                    {
+                        self.semantic_scans += 1;
+                    }
+                    brilliant_score_foundation::assess_score_profile_node(
+                        node,
+                        &ScoreFeatureProfileV1::k1(),
+                    )
+                }
                 .map_err(assessment_failure)?;
                 if let ScoreSupportV1::Invalid { diagnostics } = &core {
                     return Err(object([
@@ -642,8 +689,19 @@ impl IntegratedKernelRuntimeV2 {
         // Capture once for Core assessment and the subsequent plugin read source.
         // Neither stage mutates this value; do not serialize and parse it twice.
         let candidate = value(document)?;
-        let core = assess_score_profile(&candidate, &ScoreFeatureProfileV1::k1())
-            .map_err(assessment_failure)?;
+        let core = if semantics_prevalidated {
+            classify_valid_score_profile_node(
+                brilliant_score_foundation::DocumentAssessmentNodeV1::new(document),
+                &ScoreFeatureProfileV1::k1(),
+            )
+        } else {
+            #[cfg(test)]
+            {
+                self.semantic_scans += 1;
+            }
+            assess_score_profile(&candidate, &ScoreFeatureProfileV1::k1())
+        }
+        .map_err(assessment_failure)?;
         if let ScoreSupportV1::Invalid { diagnostics } = &core {
             return Err(object([
                 ("code", text("command.semantic-invalid")),

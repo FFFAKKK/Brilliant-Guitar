@@ -96,7 +96,10 @@ impl IntegratedKernelRuntimeV2 {
         } else {
             self.runtime.document_version
         };
-        let pipeline = self.assess(&document, version.get(), executor)?;
+        // Candidate finalization already established complete Core semantics
+        // before producing the immutable commit plan. Run only K1
+        // classification here; typed and history paths keep their own checks.
+        let pipeline = self.assess_prevalidated(&document, version.get(), executor)?;
         self.reserve_reply(
             &pipeline,
             &prepared.affected,
