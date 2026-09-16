@@ -10,6 +10,73 @@ fn utf8(value: &Value) -> String {
     string(value).unwrap().to_utf8().unwrap()
 }
 
+#[test]
+fn overfull_admission_exposes_version_bound_rule_warning_page() {
+    let fixture = decode(include_bytes!(
+        "../../../../../brilliant-kernel-session/src/wasm/fixtures/session.json"
+    ))
+    .unwrap();
+    let mut input = decode(utf8(at(&fixture, &["initial"])).as_bytes()).unwrap();
+    let JsonValue::Array(events) = at_mut(
+        &mut input,
+        &[
+            "document",
+            "parts",
+            "0",
+            "measureContents",
+            "0",
+            "voices",
+            "0",
+            "sequence",
+            "events",
+        ],
+    ) else {
+        unreachable!()
+    };
+    events.push(object([
+        ("id", text("event-5")),
+        (
+            "duration",
+            object([("base", number(4)), ("dots", number(0))]),
+        ),
+        ("content", object([("kind", text("rest"))])),
+    ]));
+    let mut host = Host {
+        callbacks: at(&fixture, &["callbacks"]).clone(),
+        reject: false,
+        validations: 0,
+    };
+    let mut state = IntegratedKernelRuntimeV2::create(&encode(&input).unwrap(), &mut host).unwrap();
+    let request = br#"{"operation":"readRuleWarningPage","reportVersion":1,"documentId":"score-1","documentVersion":0,"offset":0,"limit":16}"#;
+    let report = decode(&state.operate(request, &mut host, |_, _| unreachable!())).unwrap();
+    assert_eq!(integer(at(&report, &["report", "total"])), Some(1));
+    let warnings = array(at(&report, &["report", "warnings"])).unwrap();
+    let warning = &warnings[0];
+    assert!(tag(warning, "code", "rule.sequence-exceeds-measure"));
+    assert_eq!(integer(at(warning, &["overflow", "numerator"])), Some(1));
+    assert_eq!(integer(at(warning, &["overflow", "denominator"])), Some(4));
+
+    let stale = br#"{"operation":"readRuleWarningPage","reportVersion":1,"documentId":"score-1","documentVersion":1,"offset":0,"limit":16}"#;
+    let stale = decode(&state.operate(stale, &mut host, |_, _| unreachable!())).unwrap();
+    assert!(tag(
+        at(&stale, &["failure"]),
+        "code",
+        "report.stale-version"
+    ));
+}
+
+fn at_mut<'a>(value: &'a mut Value, path: &[&str]) -> &'a mut Value {
+    let mut current = value;
+    for key in path {
+        current = match current {
+            JsonValue::Object(fields) => fields.get_mut(&JsString::from(*key)).unwrap(),
+            JsonValue::Array(items) => &mut items[key.parse::<usize>().unwrap()],
+            _ => unreachable!(),
+        };
+    }
+    current
+}
+
 struct Host {
     callbacks: Value,
     reject: bool,

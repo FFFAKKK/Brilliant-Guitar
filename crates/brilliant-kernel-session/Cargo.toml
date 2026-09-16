@@ -11,6 +11,7 @@ default = []
 wasm-executor-v1 = ["dep:wasmi", "dep:sha2"]
 
 [dependencies]
+brilliant-core-types = { path = "../brilliant-core-types" }
 brilliant-extension-protocol = { path = "../brilliant-extension-protocol" }
 brilliant-kernel-contracts = { path = "../brilliant-kernel-contracts" }
 brilliant-kernel-runtime = { path = "../brilliant-kernel-runtime" }

@@ -4,8 +4,8 @@ use brilliant_core_types::{
     API_VERSION_V1, DocumentVersionV1, ScoreSchemaVersionV1, StableId, StablePathV1,
 };
 use brilliant_score_foundation::{
-    MeasureDefinitionV1, PartMeasureContentV1, PartV1, RhythmicEventV1, ScoreDocumentV1,
-    ScoreMetadataV1, ScoreNoteV1, StaffDefinitionV1, VoiceV1,
+    CoreDiagnosticV1, CoreRuleWarningV1, MeasureDefinitionV1, PartMeasureContentV1, PartV1,
+    RhythmicEventV1, ScoreDocumentV1, ScoreMetadataV1, ScoreNoteV1, StaffDefinitionV1, VoiceV1,
 };
 use serde::{Deserialize, Serialize, Serializer, ser::SerializeStruct};
 
@@ -298,6 +298,28 @@ pub struct KernelReadStateV1 {
 pub enum KernelSessionReadResultV1 {
     Ok(Box<KernelReadStateV1>),
     Rejected(StableFailureV1),
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct KernelRuleWarningPageV1 {
+    pub report_version: u64,
+    pub document_id: StableId,
+    pub document_version: DocumentVersionV1,
+    pub offset: usize,
+    pub total: usize,
+    pub warnings: Vec<CoreRuleWarningV1>,
+    pub next_offset: Option<usize>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum KernelRuleWarningReadFailureV1 {
+    DocumentMismatch,
+    StaleVersion,
+    InvalidPageSize { maximum: usize },
+    OffsetOutOfBounds { total: usize },
+    SemanticInvalid { diagnostics: Vec<CoreDiagnosticV1> },
+    Internal,
 }
 
 pub const CHECKPOINT_ENTRY_INTERVAL_V1: u64 = 512;

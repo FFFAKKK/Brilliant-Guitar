@@ -2,8 +2,9 @@
 //! document. No plugin callbacks, history adoption or retained report cursors.
 use super::*;
 use brilliant_score_foundation::{
-    CORE_PROFILE_PAGE_LIMIT_V2, ProfilePageFailureV2, ScoreSupportStatusV2, ScoreSupportSummaryV2,
-    assess_score_profile_page_v2,
+    CORE_PROFILE_PAGE_LIMIT_V2, CORE_RULE_WARNING_PAGE_LIMIT_V1, ProfilePageFailureV2,
+    RuleWarningPageFailureV1, ScoreSupportStatusV2, ScoreSupportSummaryV2,
+    assess_score_profile_page_v2, assess_score_rule_warning_page_v1,
 };
 
 fn core_report_summary_value(summary: ScoreSupportSummaryV2) -> Result<Value> {
@@ -28,6 +29,81 @@ fn core_report_summary_value(summary: ScoreSupportSummaryV2) -> Result<Value> {
 }
 
 impl IntegratedKernelRuntimeV2 {
+    pub(super) fn read_rule_warning_page(&self, request: &Value) -> Result<Value> {
+        let invalid = || failure("report.invalid-request");
+        if !exact(
+            request,
+            &[
+                "operation",
+                "reportVersion",
+                "documentId",
+                "documentVersion",
+                "offset",
+                "limit",
+            ],
+        ) || integer(field(request, "reportVersion")?) != Some(1)
+        {
+            return Err(invalid());
+        }
+        let document_id = string(field(request, "documentId")?).map_err(|_| invalid())?;
+        let version = integer(field(request, "documentVersion")?).ok_or_else(invalid)?;
+        let offset = integer(field(request, "offset")?)
+            .and_then(|n| usize::try_from(n).ok())
+            .ok_or_else(invalid)?;
+        let limit = integer(field(request, "limit")?)
+            .and_then(|n| usize::try_from(n).ok())
+            .filter(|n| (1..=CORE_RULE_WARNING_PAGE_LIMIT_V1).contains(n))
+            .ok_or_else(invalid)?;
+        DocumentVersionV1::try_from(version).map_err(|_| invalid())?;
+        if document_id != self.runtime.document_id().as_js_string() {
+            return Err(failure("report.document-mismatch"));
+        }
+        if version != self.runtime.document_version.get() {
+            return Err(failure("report.stale-version"));
+        }
+        let document = self
+            .runtime
+            .store
+            .export_document()
+            .map_err(|_| internal())?;
+        let page = assess_score_rule_warning_page_v1(&document, offset, limit).map_err(
+            |error| match error {
+                RuleWarningPageFailureV1::InvalidPageSize { .. } => invalid(),
+                RuleWarningPageFailureV1::OffsetOutOfBounds { total } => object([
+                    ("code", text("report.offset-out-of-bounds")),
+                    ("total", number(total as u64)),
+                ]),
+                RuleWarningPageFailureV1::SemanticInvalid { diagnostics } => object([
+                    ("code", text("command.semantic-invalid")),
+                    (
+                        "diagnostics",
+                        value(&diagnostics).unwrap_or(JsonValue::Array(vec![])),
+                    ),
+                ]),
+                RuleWarningPageFailureV1::Assessment(error) => assessment_failure(error),
+            },
+        )?;
+        Ok(object([
+            ("ok", JsonValue::Bool(true)),
+            (
+                "report",
+                object([
+                    ("reportVersion", number(1)),
+                    ("documentId", value(self.runtime.document_id())?),
+                    ("documentVersion", number(version)),
+                    ("offset", number(page.offset as u64)),
+                    ("total", number(page.total as u64)),
+                    ("warnings", value(&page.warnings)?),
+                    (
+                        "nextOffset",
+                        page.next_offset
+                            .map_or(JsonValue::Null, |offset| number(offset as u64)),
+                    ),
+                ]),
+            ),
+        ]))
+    }
+
     pub(super) fn core_report_summary(&self, document: &ScoreDocumentV1) -> Result<Value> {
         use brilliant_score_foundation::assess_score_profile_summary_v2;
         let summary = assess_score_profile_summary_v2(document, &ScoreFeatureProfileV1::k1())

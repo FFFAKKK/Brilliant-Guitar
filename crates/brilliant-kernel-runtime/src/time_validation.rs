@@ -317,29 +317,17 @@ impl Assessment<'_, '_> {
             current = Some(next);
             if let Ok(end) = bound {
                 self.work.rules_evaluated += 1;
-                match next.checked_compare(end) {
-                    Err(_) => {
-                        self.diagnostics.add(
-                            Location::Event {
-                                route: route.clone(),
-                                event,
-                                field: EventField::Duration,
-                            },
-                            Code::TimeArithmeticOverflow,
-                            None,
-                        )?;
-                        current = None;
-                    }
-                    Ok(Ordering::Greater) => self.diagnostics.add(
+                if next.checked_compare(end).is_err() {
+                    self.diagnostics.add(
                         Location::Event {
                             route: route.clone(),
                             event,
-                            field: EventField::Root,
+                            field: EventField::Duration,
                         },
-                        Code::SequenceExceedsMeasure,
+                        Code::TimeArithmeticOverflow,
                         None,
-                    )?,
-                    _ => {}
+                    )?;
+                    current = None;
                 }
             }
         }

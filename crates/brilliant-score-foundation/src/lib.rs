@@ -13,6 +13,7 @@ mod lossless_dto;
 mod lossless_json;
 mod music_rules;
 mod profile_pages;
+mod rule_warnings;
 mod validation;
 
 pub use assessment::{
@@ -58,4 +59,8 @@ pub use profile_pages::{
     CORE_PROFILE_PAGE_LIMIT_V2, ProfilePageFailureV2, ScoreSupportPageV2, ScoreSupportStatusV2,
     ScoreSupportSummaryV2, assess_score_profile_page_v2, assess_score_profile_summary_v2,
     classify_valid_score_profile_summary_v2,
+};
+pub use rule_warnings::{
+    CORE_RULE_WARNING_PAGE_LIMIT_V1, CoreRuleWarningCodeV1, CoreRuleWarningV1,
+    RuleWarningPageFailureV1, ScoreRuleWarningPageV1, assess_score_rule_warning_page_v1,
 };

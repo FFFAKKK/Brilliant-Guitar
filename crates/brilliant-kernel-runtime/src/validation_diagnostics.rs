@@ -28,7 +28,6 @@ pub(crate) enum MeasureField {
 #[derive(Clone, Copy)]
 pub(crate) enum EventField {
     Duration,
-    Root,
     Staff,
     Notes,
 }
@@ -261,7 +260,6 @@ impl Location {
                             path.push(field("duration"));
                             rank[8] = 3;
                         }
-                        EventField::Root => rank[8] = 3,
                     },
                     _ => unreachable!(),
                 }

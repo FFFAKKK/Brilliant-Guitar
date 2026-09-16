@@ -70,6 +70,7 @@ dependencies = [
 name = "brilliant-kernel-session"
 version = "0.1.0"
 dependencies = [
+ "brilliant-core-types",
  "brilliant-extension-protocol",
  "brilliant-kernel-contracts",
  "brilliant-kernel-runtime",

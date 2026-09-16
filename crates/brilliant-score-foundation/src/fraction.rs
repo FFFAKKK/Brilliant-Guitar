@@ -75,6 +75,17 @@ impl ExactFraction {
         reduce(numerator, denominator)
     }
 
+    pub fn checked_sub(self, other: Self) -> Result<Self, ExactFractionError> {
+        let denominator_gcd = gcd_i128(i128::from(self.denominator), i128::from(other.denominator));
+        let left_scale = i128::from(other.denominator) / denominator_gcd;
+        let right_scale = i128::from(self.denominator) / denominator_gcd;
+        let left = safe_intermediate(i128::from(self.numerator) * left_scale)?;
+        let right = safe_intermediate(i128::from(other.numerator) * right_scale)?;
+        let numerator = safe_intermediate(left - right)?;
+        let denominator = safe_intermediate(i128::from(self.denominator) * left_scale)?;
+        reduce(numerator, denominator)
+    }
+
     pub fn note_value_duration(value: &NoteValueV1) -> Result<Self, ExactFractionError> {
         let base = value.base.get();
         let dots = value.dots.get();

@@ -195,6 +195,9 @@ impl IntegratedKernelRuntimeV2 {
         dispatch_core: CoreDispatch,
     ) -> Result<Value> {
         let request = decode(bytes)?;
+        if tag(&request, "operation", "readRuleWarningPage") {
+            return self.read_rule_warning_page(&request);
+        }
         if tag(&request, "operation", "readCoreReportPage") {
             return self.read_core_report_page(&request);
         }

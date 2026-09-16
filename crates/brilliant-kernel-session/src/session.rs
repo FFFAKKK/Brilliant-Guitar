@@ -1,11 +1,12 @@
+use brilliant_core_types::{DocumentVersionV1, StableId};
 use brilliant_kernel_contracts::{
-    CoreCommandEnvelopeV1, KernelReadStateV1, KernelSessionCreateRequestV1,
-    KernelSessionCreateResultV1, KernelSessionCreateSuccessValueV1, KernelSessionReadResultV1,
-    KernelStage3CommandFailureLeafV1, KernelStage3CommandFailureV1, KernelStage3MetricsV1,
-    KernelStage3SubmitDecodeFailureV1, KernelStage3SubmitNoOpValueV1,
-    KernelStage3SubmitRejectedValueV1, KernelStage3SubmitRequestV1, KernelStage3SubmitResultV1,
-    KernelStage3SubmitSuccessValueV1, KernelStage4CommandResultV1, KernelStage4FailureV1,
-    KernelStage4OperationDecodeFailureV1, KernelStage4OperationRequestV1,
+    CoreCommandEnvelopeV1, KernelReadStateV1, KernelRuleWarningPageV1,
+    KernelRuleWarningReadFailureV1, KernelSessionCreateRequestV1, KernelSessionCreateResultV1,
+    KernelSessionCreateSuccessValueV1, KernelSessionReadResultV1, KernelStage3CommandFailureLeafV1,
+    KernelStage3CommandFailureV1, KernelStage3MetricsV1, KernelStage3SubmitDecodeFailureV1,
+    KernelStage3SubmitNoOpValueV1, KernelStage3SubmitRejectedValueV1, KernelStage3SubmitRequestV1,
+    KernelStage3SubmitResultV1, KernelStage3SubmitSuccessValueV1, KernelStage4CommandResultV1,
+    KernelStage4FailureV1, KernelStage4OperationDecodeFailureV1, KernelStage4OperationRequestV1,
     KernelStage4OperationResultV1, KernelStage4OperationV1, KernelStage4ReadResultV1,
     KernelStage4ReplayCommandResultV1, KernelStage4ReplayRequestV1, KernelStage4ReplayResultV1,
     KernelStage4SelectResultV1, StableFailureV1, decode_admission_stage4_operation_request,
@@ -73,6 +74,17 @@ impl KernelSession {
             Ok(state) => KernelSessionReadResultV1::Ok(Box::new(state)),
             Err(failure) => KernelSessionReadResultV1::Rejected(failure.into_stable_failure()),
         }
+    }
+
+    pub fn read_rule_warning_page(
+        &self,
+        document_id: &StableId,
+        document_version: DocumentVersionV1,
+        offset: usize,
+        limit: usize,
+    ) -> Result<KernelRuleWarningPageV1, KernelRuleWarningReadFailureV1> {
+        self.runtime
+            .read_rule_warning_page(document_id, document_version, offset, limit)
     }
 
     /// Availability for a fixed host assembly. Integrated write enforcement and
@@ -485,6 +497,96 @@ mod tests {
         assert!(
             text.starts_with(r#"{"apiVersion":1,"status":"ok","value":{"snapshot":{"documentId":"score-rkp1","schemaVersion":"brilliant-score-1","documentVersion":0,"document":{"#),
             "unexpected read prefix: {text}"
+        );
+    }
+
+    #[test]
+    fn overfull_commit_warning_reopen_and_history_are_version_coherent() {
+        let request = decode_create_request(SMOKE_REQUEST.as_bytes()).expect("request");
+        let mut session = KernelSession::create(request).expect("session").session;
+        let document_id = StableId::new("score-rkp1").unwrap();
+        let initial = session
+            .read_rule_warning_page(&document_id, DocumentVersionV1::initial(), 0, 16)
+            .expect("initial warning report");
+        assert_eq!(initial.total, 0);
+
+        let insert = r#"{"apiVersion":1,"command":{"commandVersion":1,"commandId":"core.voice.insert-rest-event","target":{"kind":"voice","voiceId":"voice-1"},"payload":{"anchor":{"kind":"after-event","eventId":"event-1"},"event":{"id":"event-2","duration":{"base":4,"dots":0},"content":{"kind":"rest"}}}}}"#;
+        let KernelStage3SubmitResultV1::Committed(committed) =
+            session.submit_stage3_bytes(insert.as_bytes())
+        else {
+            panic!("overfull insertion must commit")
+        };
+        assert_eq!(committed.document_version.get(), 1);
+        let report = session
+            .read_rule_warning_page(&document_id, committed.document_version, 0, 16)
+            .expect("overfull warning report");
+        assert_eq!(report.total, 1);
+        assert_eq!(report.warnings[0].measure_id.as_js_string(), "measure-1");
+        assert_eq!(report.warnings[0].voice_id.as_js_string(), "voice-1");
+        assert_eq!(report.warnings[0].overflow.numerator.get(), 1);
+        assert_eq!(report.warnings[0].overflow.denominator.get(), 4);
+
+        let KernelSessionReadResultV1::Ok(state) = session.read_state() else {
+            panic!("committed document read")
+        };
+        let events = &state.snapshot.document.parts[0].measure_contents[0].voices[0]
+            .sequence
+            .events;
+        assert_eq!(events.len(), 2);
+        assert_eq!(events[1].id.as_js_string(), "event-2");
+        let reopened = KernelSession::create(KernelSessionCreateRequestV1 {
+            api_version: 1,
+            document: state.snapshot.document.clone(),
+        })
+        .expect("reopen overfull document")
+        .session;
+        let reopened_report = reopened
+            .read_rule_warning_page(&document_id, DocumentVersionV1::initial(), 0, 16)
+            .expect("reopened warning report");
+        assert_eq!(reopened_report.warnings, report.warnings);
+
+        let undo = operate(
+            &mut session,
+            r#"{"apiVersion":1,"operation":{"kind":"undo"}}"#,
+        );
+        let KernelStage4OperationResultV1::Command(KernelStage4CommandResultV1::Committed {
+            value: undo_value,
+            ..
+        }) = undo
+        else {
+            panic!("undo overfull insertion")
+        };
+        assert_eq!(undo_value.document_version.get(), 2);
+        assert_eq!(
+            session
+                .read_rule_warning_page(&document_id, undo_value.document_version, 0, 16)
+                .unwrap()
+                .total,
+            0
+        );
+        assert_eq!(
+            session.read_rule_warning_page(&document_id, committed.document_version, 0, 16),
+            Err(KernelRuleWarningReadFailureV1::StaleVersion)
+        );
+
+        let redo = operate(
+            &mut session,
+            r#"{"apiVersion":1,"operation":{"kind":"redo"}}"#,
+        );
+        let KernelStage4OperationResultV1::Command(KernelStage4CommandResultV1::Committed {
+            value: redo_value,
+            ..
+        }) = redo
+        else {
+            panic!("redo overfull insertion")
+        };
+        assert_eq!(redo_value.document_version.get(), 3);
+        assert_eq!(
+            session
+                .read_rule_warning_page(&document_id, redo_value.document_version, 0, 16)
+                .unwrap()
+                .warnings,
+            report.warnings
         );
     }
 
