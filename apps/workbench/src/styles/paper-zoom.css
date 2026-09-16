@@ -1,0 +1,29 @@
+/* Quiet feature-owned controls: the percentage is the only visible text. */
+.paper-zoom-dock { width: 100%; height: 100%; min-width: 0; display: flex; align-items: center; justify-content: center; padding: 4px 12px; }
+.ui-component-host[data-component-slot="top"] .paper-zoom-dock,
+.ui-component-host[data-component-slot="bottom"] .paper-zoom-dock { justify-content: flex-end; padding-right: 48px; }
+.shared-dock-flyout .ui-component-host .paper-zoom-dock { justify-content: center; padding: 12px; align-items: center; }
+.paper-zoom-control { display: inline-flex; align-items: center; gap: 6px; flex: none; }
+.paper-zoom-steps { display: inline-flex; align-items: center; padding: 3px; border-radius: 10px; background: var(--color-surface); }
+.paper-zoom-button, .paper-zoom-fit { width: 30px; height: 30px; flex: none; display: grid; place-items: center; padding: 0; border: 0; border-radius: 7px;
+  background: transparent; color: var(--color-secondary); cursor: pointer; font: inherit; }
+.paper-zoom-button { font-size: 19px; line-height: 1; }
+.paper-zoom-value { min-width: 52px; text-align: center; color: var(--color-text); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.paper-zoom-fit svg { width: 19px; height: 19px; }
+.paper-zoom-button:hover:not(:disabled), .paper-zoom-fit:hover:not(:disabled) { color: var(--color-text); background: var(--color-hover); }
+.paper-zoom-button:active:not(:disabled), .paper-zoom-fit:active:not(:disabled) { background: var(--color-active); }
+.paper-zoom-button:focus-visible, .paper-zoom-fit:focus-visible { outline: 2px solid var(--color-focus); outline-offset: -2px; }
+.paper-zoom-button:disabled, .paper-zoom-fit:disabled { opacity: .4; cursor: default; }
+@container (max-width: 180px) {
+  .paper-zoom-control { flex-direction: column; }
+  .ui-component-host[data-component-slot="left"] .paper-zoom-dock,
+  .ui-component-host[data-component-slot="right"] .paper-zoom-dock { align-items: flex-start; padding-top: 44px; }
+}
+@container (max-width: 126px) {
+  .paper-zoom-steps { flex-direction: column; }
+  .paper-zoom-value { min-height: 30px; display: grid; place-items: center; }
+}
+@media (max-width: 560px) {
+  .ui-component-host[data-component-slot="top"] .paper-zoom-dock,
+  .ui-component-host[data-component-slot="bottom"] .paper-zoom-dock { padding-right: 42px; }
+}

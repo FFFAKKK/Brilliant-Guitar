@@ -1,0 +1,38 @@
+:root {
+  color-scheme: dark;
+  --color-background: #181818;
+  --color-workspace: #181818;
+  --color-navigation: #1e2024;
+  --color-surface: #2a2a2a;
+  --color-text: #f3f3f3;
+  --color-secondary: #a2a2a2;
+  --color-tertiary: #737478;
+  --color-disabled: #5f6064;
+  --color-border: rgb(255 255 255 / 8%);
+  --color-border-strong: #3a3b3f;
+  --color-hover: #303135;
+  --color-active: #173e76;
+  --color-accent: #2c67c5;
+  --color-focus: #2c67c5;
+  --color-danger: #ff747b;
+  --color-danger-surface: #3a2024;
+  --color-overlay: rgb(0 0 0 / 55%);
+  --color-score-paper: #f4f4f2;
+  --color-score-ink: #252525;
+  --color-score-muted: #737478;
+  --radius-control: 8px;
+  --radius-menu: 12px;
+  --radius-surface: 16px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --shadow-surface: 0 1px 2px rgb(0 0 0 / 18%);
+  --shadow-floating: 0 16px 40px rgb(0 0 0 / 42%), 0 2px 8px rgb(0 0 0 / 24%);
+  --font-ui: "Segoe UI Variable", "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+  font-family: var(--font-ui);
+  color: var(--color-text);
+  font-size: 14px;
+}

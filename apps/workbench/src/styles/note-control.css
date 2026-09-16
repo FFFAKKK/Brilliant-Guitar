@@ -1,0 +1,146 @@
+/* The note tool owns one compact surface. The host and docks supply no card chrome. */
+.note-input-dock {
+  width: 100%; height: 100%; min-width: 0; min-height: 0;
+  display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2);
+  padding: 36px var(--space-2) var(--space-2); overflow: auto; scrollbar-width: none;
+}
+.note-input-dock::-webkit-scrollbar { display: none; }
+.note-input-dock[data-slot="bottom"] { padding: var(--space-1) 40px var(--space-1) var(--space-3); }
+.note-input-dock[data-slot="top"] { padding: var(--space-1) 40px var(--space-1); }
+.note-entry-panel {
+  --note-motion-fast: 120ms;
+  --note-motion-ease: cubic-bezier(.23, 1, .32, 1);
+  position: relative; flex: none; width: min(208px, 100%); min-width: 0;
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 6px; border-radius: var(--radius-menu); background: var(--color-surface);
+}
+.shared-dock-flyout .note-entry-panel { box-shadow: var(--shadow-floating); }
+.note-entry-duration { display: grid; grid-template-columns: 32px minmax(0, 1fr) 32px; align-items: center; height: 54px; }
+.note-entry-step { font-size: 22px; line-height: 1; color: var(--color-secondary); }
+.note-entry-current { height: 50px; display: grid; place-items: center; color: var(--color-text); }
+.note-entry-symbol { width: 42px; height: 42px; display: grid; place-items: center; }
+.note-entry-symbol > .music-glyph { width: 42px; height: 42px; }
+.music-glyph { display: inline-flex; width: 32px; height: 32px; align-items: center; justify-content: center; }
+.music-glyph svg { display: block; width: 100%; height: 100%; }
+.music-glyph-fallback { font: 11px/1 var(--font-ui); }
+.note-entry-button {
+  width: 100%; height: 32px; padding: 0; border: 0; border-radius: 6px; background: transparent;
+  display: grid; place-items: center; color: var(--color-secondary); cursor: pointer;
+  transition: transform var(--note-motion-fast) var(--note-motion-ease), background var(--note-motion-fast) ease;
+}
+.note-entry-step.note-entry-button { height: 32px; }
+.note-entry-button:hover:not(:disabled) { background: var(--color-hover); }
+.note-entry-button:active:not(:disabled) { transform: scale(.97); }
+.note-entry-button[aria-pressed="true"] { background: var(--color-active); color: var(--color-text); }
+.note-entry-button:focus-visible { outline: 2px solid var(--color-focus); outline-offset: -2px; }
+.note-entry-button:disabled { color: var(--color-disabled); cursor: default; }
+.note-entry-options .music-glyph { width: 26px; height: 28px; }
+.note-entry-properties {
+  min-height: 30px; display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  padding: 0 var(--space-1);
+}
+.note-entry-pitch-static { min-width: 0; font-size: 20px; font-weight: 500; line-height: 27px; white-space: nowrap; }
+.note-entry-pitch-fields { display: flex; align-items: center; min-width: 0; gap: 1px; }
+.note-entry-field {
+  width: 25px; height: 27px; padding: 0; border: 0; border-radius: 5px; background: transparent;
+  color: var(--color-text); text-align: center; font-size: 19px; font-weight: 500;
+  cursor: text; transition: background var(--note-motion-fast) ease;
+}
+.note-entry-field[data-field="alter"] { color: var(--color-secondary); }
+.note-entry-field:hover { background: var(--color-hover); }
+.note-entry-field:focus { background: var(--color-active); color: var(--color-text); }
+.note-entry-field:focus-visible { outline: 2px solid var(--color-focus); outline-offset: -2px; }
+.note-entry-field[readonly] { cursor: wait; }
+.note-entry-share { flex: none; display: flex; align-items: baseline; gap: 4px; color: var(--color-tertiary); white-space: nowrap; }
+.note-entry-share-label { font-size: 9px; letter-spacing: .01em; }
+.note-entry-value { color: var(--color-secondary); font-size: 13px; text-align: right; font-variant-numeric: tabular-nums; }
+.note-entry-options { display: flex; justify-content: space-between; gap: var(--space-1); padding-top: 1px; }
+.note-entry-rhythm, .note-entry-accidentals { display: flex; gap: 2px; }
+.note-entry-rhythm .note-entry-button { width: 32px; }
+.note-entry-accidentals .note-entry-button { width: 34px; }
+.note-entry-source { position: absolute; top: 3px; right: 3px; width: 16px; height: 16px; color: var(--color-secondary); display: grid; place-items: center; pointer-events: none; }
+.note-entry-source svg { display: block; width: 12px; height: 12px; }
+.note-entry-source[data-source="selection"] { color: var(--color-text); }
+.note-entry-source[data-pending="true"] svg { animation: note-control-busy 1s linear infinite; }
+.note-entry-symbol .music-glyph svg { animation: note-control-symbol 100ms var(--note-motion-ease); }
+.note-entry-location {
+  min-width: 0; margin-top: 2px; padding: 5px 3px 0; border-top: 1px solid var(--color-border);
+  display: flex; align-items: center; gap: 6px; color: var(--color-tertiary); font-size: 10px; line-height: 16px;
+}
+.note-entry-location-icon { flex: none; width: 12px; height: 12px; opacity: .72; }
+.note-entry-location-items { min-width: 0; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.note-entry-location-item { display: inline-flex; align-items: baseline; gap: 3px; }
+.note-entry-location-key { color: var(--color-tertiary); }
+.note-entry-location-value { color: var(--color-secondary); font-variant-numeric: tabular-nums; animation: note-control-location 120ms var(--note-motion-ease); }
+.note-entry-location-divider { width: 1px; height: 10px; background: var(--color-border); }
+.note-entry-live { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@keyframes note-control-busy { to { transform: rotate(360deg); } }
+@keyframes note-control-symbol { from { opacity: .65; } to { opacity: 1; } }
+@keyframes note-control-location { from { opacity: .45; transform: translateY(1px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Horizontal docks rearrange the same control without a second UI. */
+.note-input-dock:is([data-slot="top"], [data-slot="bottom"]) .note-entry-panel {
+  width: min(520px, 100%); height: 48px; padding: var(--space-1) var(--space-2);
+  display: grid; grid-template-columns: 104px 88px 176px minmax(120px, 1fr); align-items: center; gap: var(--space-2);
+}
+.note-input-dock:is([data-slot="top"], [data-slot="bottom"]) .note-entry-duration { height: 40px; grid-template-columns: 28px 40px 28px; justify-content: center; }
+.note-input-dock:is([data-slot="top"], [data-slot="bottom"]) .note-entry-current { height: 40px; }
+.note-input-dock:is([data-slot="top"], [data-slot="bottom"]) .note-entry-symbol,
+.note-input-dock:is([data-slot="top"], [data-slot="bottom"]) .note-entry-symbol > .music-glyph { width: 40px; height: 40px; }
+.note-input-dock:is([data-slot="top"], [data-slot="bottom"]) .note-entry-properties { min-height: 40px; gap: 2px; padding-inline: 0; }
+.note-input-dock:is([data-slot="top"], [data-slot="bottom"]) .note-entry-pitch-static { font-size: 18px; }
+.note-input-dock:is([data-slot="top"], [data-slot="bottom"]) .note-entry-field { width: 21px; font-size: 18px; }
+.note-input-dock:is([data-slot="top"], [data-slot="bottom"]) .note-entry-share { gap: 3px; }
+.note-input-dock:is([data-slot="top"], [data-slot="bottom"]) .note-entry-share-label { font-size: 9px; }
+.note-input-dock:is([data-slot="top"], [data-slot="bottom"]) .note-entry-value { font-size: 12px; }
+.note-input-dock:is([data-slot="top"], [data-slot="bottom"]) .note-entry-options { padding-top: 0; }
+.note-input-dock:is([data-slot="top"], [data-slot="bottom"]) .note-entry-source { display: none; }
+.note-input-dock:is([data-slot="top"], [data-slot="bottom"]) .note-entry-location {
+  margin-top: 0; padding: 0 0 0 var(--space-2); border-top: 0; border-left: 1px solid var(--color-border);
+}
+
+/* The component responds to its dock width, not the application's window width. */
+@container (max-width: 207px) {
+  .note-input-dock:is([data-slot="left"], [data-slot="right"]) .note-entry-panel { width: 100%; padding: 6px; }
+  .note-input-dock:is([data-slot="left"], [data-slot="right"]) .note-entry-duration {
+    height: 50px; grid-template-columns: 26px minmax(0, 1fr) 26px;
+  }
+  .note-input-dock:is([data-slot="left"], [data-slot="right"]) .note-entry-current { height: 46px; }
+  .note-input-dock:is([data-slot="left"], [data-slot="right"]) .note-entry-symbol,
+  .note-input-dock:is([data-slot="left"], [data-slot="right"]) .note-entry-symbol > .music-glyph { width: 38px; height: 38px; }
+  .note-input-dock:is([data-slot="left"], [data-slot="right"]) .note-entry-properties {
+    min-height: 28px; flex-wrap: nowrap; justify-content: space-between; gap: 4px; padding-inline: 2px;
+  }
+  .note-input-dock:is([data-slot="left"], [data-slot="right"]) .note-entry-field { width: 22px; }
+  .note-input-dock:is([data-slot="left"], [data-slot="right"]) .note-entry-share { min-width: 0; gap: 3px; }
+  .note-input-dock:is([data-slot="left"], [data-slot="right"]) .note-entry-options {
+    display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; padding-top: 0;
+  }
+  .note-input-dock:is([data-slot="left"], [data-slot="right"]) .note-entry-rhythm,
+  .note-input-dock:is([data-slot="left"], [data-slot="right"]) .note-entry-accidentals { display: contents; }
+  .note-input-dock:is([data-slot="left"], [data-slot="right"]) .note-entry-rhythm .note-entry-button,
+  .note-input-dock:is([data-slot="left"], [data-slot="right"]) .note-entry-accidentals .note-entry-button { width: 100%; }
+  .note-input-dock:is([data-slot="left"], [data-slot="right"]) .note-entry-location { gap: 5px; padding-inline: 2px; }
+  .note-input-dock:is([data-slot="left"], [data-slot="right"]) .note-entry-location-items { gap: 5px; }
+  .note-input-dock:is([data-slot="left"], [data-slot="right"]) .note-entry-location-item { gap: 3px; }
+}
+
+@container (max-width: 480px) {
+  .note-input-dock:is([data-slot="top"], [data-slot="bottom"]) .note-entry-panel {
+    width: 100%; grid-template-columns: 104px 80px minmax(148px, 1fr);
+  }
+  .note-input-dock:is([data-slot="top"], [data-slot="bottom"]) .note-entry-location { display: none; }
+}
+
+.workbench-shell[data-motion="off"] .note-entry-button, .workbench-shell[data-motion="off"] .note-entry-field { transition: none; }
+.workbench-shell[data-motion="off"] .note-entry-button:active:not(:disabled) { transform: none; }
+.workbench-shell[data-motion="off"] .note-entry-source[data-pending="true"] svg,
+.workbench-shell[data-motion="off"] .note-entry-symbol .music-glyph svg,
+.workbench-shell[data-motion="off"] .note-entry-location-value,
+.workbench-shell[data-motion="off"] .score-edit-focus,
+.workbench-shell[data-motion="off"] .staff-view[data-input-idle="true"] .score-edit-focus[data-kind="empty"] { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .note-entry-button, .note-entry-field { transition: none; }
+  .note-entry-button:active:not(:disabled) { transform: none; }
+  .note-entry-source[data-pending="true"] svg, .note-entry-symbol .music-glyph svg, .note-entry-location-value { animation: none; }
+}

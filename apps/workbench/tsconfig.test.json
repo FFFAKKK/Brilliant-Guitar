@@ -1,0 +1,4 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["test", "host", "src/contracts", "src/notation/staff-layout.ts"]
+}

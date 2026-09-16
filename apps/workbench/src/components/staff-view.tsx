@@ -1,0 +1,186 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties, KeyboardEventHandler, MouseEvent, RefObject } from "react";
+import type { InputPitch } from "../contracts/note-input";
+import type { NotationView, StaffView as StaffNotation } from "../contracts/notation";
+import type { EditAnchorGeometry, NotationInteractionGeometry, NotationRenderer } from "../notation/notation-renderer";
+import { fitScorePaper, layoutScorePages, SCORE_PAPER } from "../notation/score-page-layout";
+import { zoomFittedPaper } from "../notation/paper-zoom";
+import { usePaperViewport } from "../notation/use-paper-viewport";
+import type { StaffLayout } from "../notation/staff-layout";
+import { capacityUnits, pitchAtY, usedUnits, yForPitch } from "../notation/input-position";
+import { useHostedUiComponent } from "./ui-component-host";
+import type { ScoreEditPoint } from "../editor/score-navigation";
+import type { WorkbenchFeedback } from "../feedback/workbench-feedback";
+import { LatestWorkbenchTask } from "../workbench/latest-task.ts";
+
+interface StaffEditing {
+  readonly point: ScoreEditPoint | null;
+  readonly draftStep: InputPitch["step"] | null;
+  readonly viewportRef: RefObject<HTMLDivElement | null>;
+  readonly onKeyDown: KeyboardEventHandler<HTMLDivElement>;
+  readonly onLocate: (point: ScoreEditPoint, pitch: InputPitch, writeNow: boolean) => void;
+  readonly selectedEventId?: string | null;
+  readonly onSelectEvent?: (eventId: string) => void;
+  readonly busy?: boolean;
+  readonly feedback?: WorkbenchFeedback | null;
+}
+
+function pointFromAnchor(view: StaffNotation, geometry: EditAnchorGeometry, pitch: InputPitch): ScoreEditPoint | null {
+  const measure = view.measures.find((item) => item.id === geometry.measureId);
+  return measure ? { partId: view.partId, staffId: view.staffId, measureId: measure.id,
+    voiceId: measure.voiceId, anchor: geometry.anchor, offsetUnits: geometry.offsetUnits, preferredPitch: pitch } : null;
+}
+
+function anchorForPoint(geometry: NotationInteractionGeometry | null, point: ScoreEditPoint | null) {
+  if (!geometry || !point) return null;
+  return geometry.anchors.find((candidate) => candidate.measureId === point.measureId
+    && candidate.offsetUnits === point.offsetUnits) ?? null;
+}
+
+function EngravedPage({ layout, renderer, number, editing, view }: {
+  readonly layout: StaffLayout; readonly renderer: NotationRenderer; readonly number: number;
+  readonly editing: StaffEditing | undefined; readonly view: StaffNotation;
+}) {
+  const engraving = useRef<HTMLDivElement>(null);
+  const focusElement = useRef<SVGRectElement>(null);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [interaction, setInteraction] = useState<NotationInteractionGeometry | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const renderTask = useRef(new LatestWorkbenchTask());
+  useEffect(() => {
+    const root = engraving.current;
+    if (!root) return;
+    const signal = renderTask.current.start();
+    if (!root.firstChild) setStatus("loading");
+    const theme = getComputedStyle(root);
+    void renderer.render(layout, {
+      ink: theme.getPropertyValue("--color-score-ink").trim(),
+      muted: theme.getPropertyValue("--color-score-muted").trim(), fontFamily: "Academico",
+    }, signal).then((drawing) => {
+      if (signal.aborted) return;
+      const svg = drawing.svg;
+      svg.setAttribute("viewBox", `0 0 ${layout.width} ${layout.height}`);
+      svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+      svg.removeAttribute("width"); svg.removeAttribute("height");
+      svg.style.removeProperty("width"); svg.style.removeProperty("height");
+      root.replaceChildren(svg);
+      setInteraction(drawing.interaction);
+      setStatus("ready");
+    }).catch((error: unknown) => {
+      if (!signal.aborted && (!(error instanceof DOMException) || error.name !== "AbortError")) {
+        setInteraction(null); setStatus("error");
+      }
+    }).finally(() => renderTask.current.finish(signal));
+    return () => renderTask.current.cancel();
+  }, [attempt, layout, renderer]);
+  const cursor = anchorForPoint(interaction, editing?.point ?? null);
+  const selection = interaction?.events.find((event) => event.eventId === editing?.selectedEventId) ?? null;
+  const cursorMeasure = cursor && interaction?.measures.find((measure) => measure.measureId === cursor.measureId);
+  const feedbackMeasureId = editing?.feedback?.target.scope === "measure" || editing?.feedback?.target.scope === "event"
+    ? editing.feedback.target.measureId : null;
+  const feedbackMeasure = feedbackMeasureId && interaction?.measures.find((measure) => measure.measureId === feedbackMeasureId);
+  const feedbackEventId = editing?.feedback?.target.scope === "event" ? editing.feedback.target.eventId : null;
+  const focusRejected = feedbackEventId ? feedbackEventId === selection?.eventId
+    : feedbackMeasureId === (selection?.measureId ?? cursor?.measureId);
+  const focusSize = cursorMeasure ? cursorMeasure.lineSpacing * 1.45 : 0;
+  const focusCenterY = cursorMeasure && editing?.point?.preferredPitch
+    ? yForPitch(editing.point.preferredPitch, cursorMeasure.staffBottom, cursorMeasure.lineSpacing)
+    : cursor?.y ?? 0;
+  useEffect(() => {
+    focusElement.current?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [cursor?.x, focusCenterY, selection?.x, selection?.y]);
+  function locate(event: MouseEvent<HTMLDivElement>, writeNow: boolean) {
+    if (!editing || status !== "ready" || !interaction) return;
+    const element = event.target as Element;
+    const eventHit = element.closest<SVGRectElement>("[data-event-id]");
+    if (writeNow && eventHit) return;
+    if (eventHit?.dataset.eventId && editing.onSelectEvent) { editing.onSelectEvent(eventHit.dataset.eventId); return; }
+    const hit = eventHit ?? element.closest<SVGRectElement>("[data-measure-id]");
+    const svg = hit?.ownerSVGElement, matrix = svg?.getScreenCTM();
+    if (!hit || !matrix) return;
+    const measureId = eventHit
+      ? layout.measures.find((item) => item.measure.events.some((item) => item.id === eventHit.dataset.eventId))?.measure.id
+      : hit.dataset.measureId;
+    const measureHit = measureId && interaction.measures.find((item) => item.measureId === measureId);
+    if (!measureId || !measureHit) return;
+    const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
+    const pitch = pitchAtY(point.y, measureHit.staffBottom, measureHit.lineSpacing);
+    const measure = view.measures.find((item) => item.id === measureId);
+    if (!measure) return;
+    const eventTargets = interaction.events.filter((item) => item.measureId === measureId)
+      .map((item) => ({ kind: "event" as const, eventId: item.eventId, distance: Math.abs(item.x + item.width / 2 - point.x) }));
+    const hasFreeTail = measure.events.length === 0 || usedUnits(measure) < capacityUnits(measure);
+    const targets: ({ readonly kind: "event"; readonly eventId: string; readonly distance: number }
+      | { readonly kind: "empty"; readonly anchor: EditAnchorGeometry; readonly distance: number })[] = [...eventTargets];
+    if (hasFreeTail) interaction.anchors.filter((item) => item.measureId === measureId && item.offsetUnits >= usedUnits(measure))
+      .forEach((anchor) => targets.push({ kind: "empty", anchor, distance: Math.abs(anchor.x - point.x) }));
+    const nearest = targets.reduce<typeof targets[number] | null>((best, item) => !best || item.distance < best.distance ? item : best, null);
+    if (nearest?.kind === "event") { if (!writeNow) editing.onSelectEvent?.(nearest.eventId); return; }
+    const editPoint = nearest && pointFromAnchor(view, nearest.anchor, pitch);
+    if (editPoint) editing.onLocate(editPoint, pitch, writeNow);
+  }
+  return <div className="staff-paper" data-page-format={SCORE_PAPER.format} data-orientation={SCORE_PAPER.orientation}
+    data-render-state={status} aria-busy={status === "loading"}>
+    <div ref={engraving} className="staff-paper-engraving" onClick={(event) => locate(event, false)} onDoubleClick={(event) => locate(event, true)}
+      role={status === "ready" ? "img" : undefined}
+      aria-label={`第 ${number} 页，高音谱表，${layout.measures.length} 个小节`} />
+    {status === "ready" && interaction && <svg className="staff-interaction-overlay" viewBox={`0 0 ${layout.width} ${layout.height}`}
+      preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
+      {feedbackMeasure && <rect key={`feedback-${editing?.feedback?.sequence}`} className="score-edit-warning"
+        x={feedbackMeasure.x + 2} y={feedbackMeasure.staffBottom - feedbackMeasure.lineSpacing * 5.2}
+        width={Math.max(0, feedbackMeasure.width - 4)} height={feedbackMeasure.lineSpacing * 6.4}
+        rx={Math.max(3, feedbackMeasure.lineSpacing * .55)} />}
+      {selection && <rect key={`selection-${selection.eventId}-${focusRejected ? editing?.feedback?.sequence : "idle"}`}
+        ref={focusElement} className={`score-edit-focus${focusRejected ? " score-edit-focus-rejected" : ""}`} data-kind="event" x={selection.x} y={selection.y}
+        width={selection.width} height={selection.height} rx={Math.min(4, selection.width / 4)} />}
+      {!selection && cursor && <>
+        <rect key={`cursor-${cursor.measureId}-${focusRejected ? editing?.feedback?.sequence : "idle"}`}
+          ref={focusElement} className={`score-edit-focus${focusRejected ? " score-edit-focus-rejected" : ""}`} data-kind="empty"
+          x={cursor.x - focusSize / 2} y={focusCenterY - focusSize / 2} width={focusSize} height={focusSize} rx={Math.min(4, focusSize / 4)} />
+        {editing?.draftStep && <text className="pitch-draft" x={Math.min(cursor.x + focusSize / 2 + 3, layout.width - 24)}
+          y={focusCenterY - focusSize / 2 - 4}>{editing.draftStep}·</text>}
+      </>}
+    </svg>}
+    {status === "loading" && <div className="staff-paper-message" role="status">正在绘制谱面…</div>}
+    {status === "error" && <div className="staff-paper-message" role="alert">谱面显示失败
+      <button type="button" onClick={() => setAttempt((value) => value + 1)}>重新绘制</button>
+    </div>}
+  </div>;
+}
+
+interface StaffViewProps {
+  readonly notation: NotationView | null;
+  readonly renderer: NotationRenderer;
+  readonly loading: boolean;
+  readonly error: string;
+  readonly onRetry: () => void;
+  readonly zoom?: number;
+  readonly editing?: StaffEditing;
+}
+
+/** Paper is this view's own interface. The public host adds no visual chrome. */
+export function StaffView({ notation, renderer, loading, error, onRetry, editing, zoom = 100 }: StaffViewProps) {
+  const staffNotation = notation?.kind === "staff" ? notation : null;
+  const { size } = useHostedUiComponent();
+  const fit = fitScorePaper(size);
+  const paper = zoomFittedPaper(fit, zoom);
+  const { viewport, panning, ...panEvents } = usePaperViewport({ ...size, paperWidth: paper.paperWidth, scale: paper.scale, gutter: paper.gutter },
+    staffNotation?.staffId ?? null, editing?.viewportRef);
+  const pages = useMemo(() => staffNotation ? layoutScorePages(staffNotation) : [], [staffNotation]);
+  const activePoint = staffNotation ? editing?.point ?? null : null;
+  return <div className="staff-view" ref={viewport} tabIndex={0} aria-label="五线谱视图"
+    data-panning={panning} data-editable={Boolean(editing)} data-input-idle={Boolean(activePoint) && !editing?.busy}
+    {...panEvents} onKeyDown={editing?.onKeyDown}
+    onClick={(event) => {
+      if (!(event.target as Element).closest("button")) viewport.current?.focus({ preventScroll: true });
+    }}
+    style={{ "--score-display-width": `${paper.paperWidth}px`, "--score-display-height": `${paper.height}px`,
+      "--score-gutter": `${paper.gutter}px` } as CSSProperties}>
+    {error ? <div className="staff-view-message" role="alert">{error}<button type="button" onClick={onRetry}>重试连接</button></div>
+      : loading ? <div className="staff-view-message" role="status">正在加载乐谱…</div>
+      : notation?.kind === "unsupported" ? <div className="staff-view-message" role="status">{notation.message}</div>
+      : staffNotation ? <div className="staff-page-stack">{pages.map((page, index) =>
+        <EngravedPage key={index} layout={page} renderer={renderer} number={index + 1} editing={editing} view={staffNotation} />)}</div>
+      : null}
+  </div>;
+}
