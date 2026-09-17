@@ -177,6 +177,33 @@ button:focus-visible, a:focus-visible {
 .checkbox-label { display: flex; align-items: flex-start; gap: var(--space-2); line-height: 1.6; }
 .checkbox-label input { accent-color: var(--color-accent); margin: 3px 0 0; width: 16px; height: 16px; flex-shrink: 0; }
 .connection-feedback { position: fixed; bottom: var(--space-6); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: var(--space-4); max-width: calc(100vw - 32px); padding: var(--space-3) var(--space-4); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-menu); box-shadow: var(--shadow-floating); }
+.plugin-diagnostic-backdrop { position: fixed; z-index: 120; inset: 0; background: var(--color-overlay); }
+.plugin-diagnostic-dialog { position: fixed; z-index: 121; left: 50%; top: 50%; width: min(660px, calc(100vw - 40px)); max-height: min(760px, calc(100dvh - 40px)); overflow: auto; transform: translate(-50%, -50%); border: 1px solid var(--color-border-strong); border-radius: var(--radius-surface); background: var(--color-navigation); color: var(--color-text); box-shadow: var(--shadow-floating); }
+.plugin-diagnostic-header { display: grid; grid-template-columns: 38px minmax(0, 1fr) 34px; align-items: start; gap: var(--space-3); padding: var(--space-5); border-bottom: 1px solid var(--color-border); }
+.plugin-diagnostic-header h2 { margin: 1px 0 var(--space-1); font-size: 17px; font-weight: 620; letter-spacing: -.01em; }
+.plugin-diagnostic-header p { margin: 0; color: var(--color-secondary); font-size: 12px; line-height: 1.55; }
+.plugin-diagnostic-mark { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; background: var(--color-danger-surface); color: var(--color-danger); }
+.plugin-diagnostic-mark svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.plugin-diagnostic-close { width: 34px; height: 34px; display: grid; place-items: center; border: 0; border-radius: var(--radius-control); background: transparent; color: var(--color-secondary); cursor: pointer; }
+.plugin-diagnostic-close:hover { background: var(--color-hover); color: var(--color-text); }
+.plugin-diagnostic-close svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
+.plugin-diagnostic-tabs { display: flex; gap: var(--space-1); overflow-x: auto; padding: var(--space-2) var(--space-5) 0; }
+.plugin-diagnostic-tabs button { border: 0; border-radius: 7px; padding: 6px 9px; background: transparent; color: var(--color-tertiary); cursor: pointer; font-size: 11px; white-space: nowrap; }
+.plugin-diagnostic-tabs button[aria-selected="true"] { background: var(--color-hover); color: var(--color-text); }
+.plugin-diagnostic-body { padding: var(--space-5); }
+.plugin-diagnostic-summary { display: flex; flex-direction: column; gap: var(--space-1); margin-bottom: var(--space-4); }
+.plugin-diagnostic-summary strong { font-size: 14px; font-weight: 600; }
+.plugin-diagnostic-summary span { color: var(--color-secondary); font-family: ui-monospace, "Cascadia Code", monospace; font-size: 11px; }
+.plugin-diagnostic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; overflow: hidden; margin: 0; border: 1px solid var(--color-border); border-radius: var(--radius-menu); background: var(--color-border); }
+.plugin-diagnostic-grid div { min-width: 0; padding: 10px 12px; background: var(--color-surface); }
+.plugin-diagnostic-grid .plugin-diagnostic-wide { grid-column: 1 / -1; }
+.plugin-diagnostic-grid dt { margin-bottom: 4px; color: var(--color-tertiary); font-size: 10px; }
+.plugin-diagnostic-grid dd { margin: 0; overflow-wrap: anywhere; color: var(--color-text); font-family: ui-monospace, "Cascadia Code", monospace; font-size: 11px; line-height: 1.45; }
+.plugin-diagnostic-detail { margin-top: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-menu); background: var(--color-surface); }
+.plugin-diagnostic-detail summary { padding: 10px 12px; color: var(--color-secondary); cursor: pointer; font-size: 11px; }
+.plugin-diagnostic-detail pre { max-height: 180px; overflow: auto; margin: 0; padding: 0 12px 12px; color: var(--color-tertiary); font-family: ui-monospace, "Cascadia Code", monospace; font-size: 10px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+.plugin-diagnostic-actions { display: flex; justify-content: flex-end; gap: var(--space-2); padding: var(--space-4) var(--space-5); border-top: 1px solid var(--color-border); }
+@media (max-width: 560px) { .plugin-diagnostic-grid { grid-template-columns: 1fr; } .plugin-diagnostic-grid .plugin-diagnostic-wide { grid-column: auto; } .plugin-diagnostic-actions { flex-wrap: wrap; } }
 .skip-link { position: fixed; left: var(--space-4); top: var(--space-2); z-index: 30; transform: translateY(-200%); padding: var(--space-3); border-radius: var(--radius-control); background: var(--color-surface); color: var(--color-accent); }
 .skip-link:focus { transform: none; }
 @media (max-width: 920px) {
@@ -226,6 +253,16 @@ button:focus-visible, a:focus-visible {
   pointer-events: none; vector-effect: non-scaling-stroke; fill: color-mix(in srgb, var(--color-danger) 7%, transparent);
   stroke: color-mix(in srgb, var(--color-danger) 88%, transparent); stroke-width: 1.5;
   transform-box: fill-box; transform-origin: center; animation: score-edit-warning-pulse 720ms ease-out both;
+}
+.score-rule-warning { pointer-events: none; }
+.score-rule-warning circle {
+  fill: color-mix(in srgb, var(--color-danger) 13%, var(--color-surface));
+  stroke: color-mix(in srgb, var(--color-danger) 72%, var(--color-score-ink));
+  stroke-width: 1; vector-effect: non-scaling-stroke;
+}
+.score-rule-warning text {
+  fill: color-mix(in srgb, var(--color-danger) 82%, var(--color-score-ink));
+  stroke: none; font: 600 8px/1 var(--font-ui, "Segoe UI", sans-serif); text-anchor: middle;
 }
 .score-edit-focus-rejected { animation: score-edit-focus-rejected 220ms ease-out both; }
 /* The empty beat remains visible while focus moves through menus and tools. */

@@ -16,7 +16,7 @@ test("accidental display distinguishes blank, sharp, flat and required natural s
   const note = (id: string, alter: -1 | 0 | 1): StaffEvent => ({ id, duration: { base: 8, dots: 0 },
     content: { kind: "note", pitch: { step: "C", octave: 5, alter } } });
   const measure: StaffMeasure = { id: "m1", voiceId: "v1", meter: { numerator: 4, denominator: 4 },
-    events: [note("sharp", 1), note("inherited-sharp", 1), note("natural", 0), note("plain", 0), note("flat", -1)] };
+    events: [note("sharp", 1), note("inherited-sharp", 1), note("natural", 0), note("plain", 0), note("flat", -1)], ruleWarnings: [] };
   assert.equal(accidentalForEvent(measure, "sharp"), "sharp");
   assert.equal(accidentalForEvent(measure, "inherited-sharp"), "none");
   assert.equal(accidentalForEvent(measure, "natural"), "natural");

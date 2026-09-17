@@ -2,11 +2,19 @@ import { isEventProperties } from "./note-input.ts";
 import type { InputContent, EventDuration } from "./note-input.ts";
 /** A disposable read projection, never an editable document or a Core schema. */
 export interface StaffEvent { readonly id: string; readonly duration: EventDuration; readonly content: InputContent }
+export interface ExactFraction { readonly numerator: number; readonly denominator: number }
+export interface StaffRuleWarning {
+  readonly code: "rule.sequence-exceeds-measure";
+  readonly nominalDuration: ExactFraction;
+  readonly actualDuration: ExactFraction;
+  readonly overflow: ExactFraction;
+}
 export interface StaffMeasure {
   readonly events: readonly StaffEvent[];
   readonly id: string;
   readonly voiceId: string;
   readonly meter: { readonly numerator: number; readonly denominator: number };
+  readonly ruleWarnings: readonly StaffRuleWarning[];
 }
 
 export interface StaffView {
@@ -18,6 +26,22 @@ export interface StaffView {
 }
 
 export type NotationView = StaffView | { readonly kind: "unsupported"; readonly message: string };
+
+function isExactFraction(value: unknown): value is ExactFraction {
+  if (typeof value !== "object" || value === null) return false;
+  const fraction = value as Record<string, unknown>;
+  return typeof fraction.numerator === "number" && Number.isSafeInteger(fraction.numerator)
+    && typeof fraction.denominator === "number" && Number.isSafeInteger(fraction.denominator)
+    && fraction.denominator > 0;
+}
+
+function isStaffRuleWarning(value: unknown): value is StaffRuleWarning {
+  if (typeof value !== "object" || value === null) return false;
+  const warning = value as Record<string, unknown>;
+  return warning.code === "rule.sequence-exceeds-measure"
+    && isExactFraction(warning.nominalDuration) && isExactFraction(warning.actualDuration)
+    && isExactFraction(warning.overflow);
+}
 
 export function isNotationView(value: unknown): value is NotationView {
   if (typeof value !== "object" || value === null) return false;
@@ -34,7 +58,8 @@ export function isNotationView(value: unknown): value is NotationView {
       || ids.has(item.voiceId) || typeof item.meter !== "object" || item.meter === null) return false;
     ids.add(item.id);
     ids.add(item.voiceId);
-    if (!Array.isArray(item.events)) return false;
+    if (!Array.isArray(item.events) || !Array.isArray(item.ruleWarnings)
+      || !item.ruleWarnings.every(isStaffRuleWarning)) return false;
     for (const raw of item.events) {
       if (typeof raw !== "object" || raw === null) return false;
       const event = raw as Record<string, unknown>;

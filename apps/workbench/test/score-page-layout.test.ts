@@ -6,7 +6,7 @@ import { ENGRAVING, STAFF_SPACE, staffSpaces } from "../src/notation/engraving-m
 
 function emptyScore(count: number): StaffView {
   return { kind: "staff", clef: "treble", partId: "part", staffId: "staff",
-    measures: Array.from({ length: count }, (_, index) => ({ id: `measure-${index}`, voiceId: `voice-${index}`, events: [], meter: { numerator: 4, denominator: 4 } })) };
+    measures: Array.from({ length: count }, (_, index) => ({ id: `measure-${index}`, voiceId: `voice-${index}`, events: [], meter: { numerator: 4, denominator: 4 }, ruleWarnings: [] })) };
 }
 
 test("A4 fits both axes without distorting its ratio or overflowing the host", () => {

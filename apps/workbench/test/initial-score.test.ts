@@ -7,7 +7,7 @@ import { WorkbenchRequestError } from "../src/services/workbench-client.ts";
 const session: ScoreSessionRead = {
   documentId: "document", title: "", measureCount: 1, documentVersion: 0, undoDepth: 0, redoDepth: 0,
   notation: { kind: "staff", partId: "part", staffId: "staff", clef: "treble",
-    measures: [{ id: "measure", voiceId: "voice", events: [], meter: { numerator: 4, denominator: 4 } }] },
+    measures: [{ id: "measure", voiceId: "voice", events: [], meter: { numerator: 4, denominator: 4 }, ruleWarnings: [] }] },
 };
 
 test("entering a fresh workspace creates one bar, while an existing session is reused", async () => {

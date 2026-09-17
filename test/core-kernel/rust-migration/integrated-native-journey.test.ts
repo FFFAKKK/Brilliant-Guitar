@@ -41,7 +41,36 @@ function coreBatch(commands: readonly unknown[]) {
     target: { kind: "document", documentId: "score-1" }, payload: { commands } };
 }
 
-test("integrated Native Core admission matches the complete independent command-shape corpus", () => {
+/** Rust intentionally promotes overfull timing to a rule warning before the archived TS validator does. */
+function withoutRetiredOverfullDiagnostic<T>(result: T): T {
+  if (!result || typeof result !== "object") return result;
+  const value = result as { readonly status?: unknown; readonly failure?: { readonly code?: unknown; readonly diagnostics?: readonly unknown[] } };
+  if (value.status !== "rejected" || value.failure?.code !== "command.semantic-invalid"
+    || !Array.isArray(value.failure.diagnostics)) return result;
+  const diagnostics = value.failure.diagnostics.filter((diagnostic) => {
+    if (!diagnostic || typeof diagnostic !== "object") return true;
+    return (diagnostic as { readonly code?: unknown }).code !== "semantic.sequence-exceeds-measure";
+  });
+  if (diagnostics.length === value.failure.diagnostics.length || diagnostics.length === 0) return result;
+  return { ...result, failure: { ...value.failure, diagnostics } } as T;
+}
+
+function hasOnlyRetiredOverfullDiagnostic(result: unknown): boolean {
+  if (!result || typeof result !== "object") return false;
+  const value = result as { readonly status?: unknown; readonly failure?: { readonly code?: unknown; readonly diagnostics?: readonly unknown[] } };
+  return value.status === "rejected" && value.failure?.code === "command.semantic-invalid"
+    && Array.isArray(value.failure.diagnostics) && value.failure.diagnostics.length > 0
+    && value.failure.diagnostics.every((diagnostic) => diagnostic !== null && typeof diagnostic === "object"
+      && (diagnostic as { readonly code?: unknown }).code === "semantic.sequence-exceeds-measure");
+}
+
+function readWithoutTransitionVersion(result: unknown): unknown {
+  const copy = structuredClone(result) as { ok?: unknown; value?: { snapshot?: { documentVersion?: unknown } } };
+  if (copy.ok === true && copy.value?.snapshot) delete copy.value.snapshot.documentVersion;
+  return copy;
+}
+
+test("integrated Native Core admission matches the command-shape corpus after retired TS overfull diagnostics", () => {
   for (const entry of buildCommandAdmissionOracle().cases) {
     resetCvn6Callbacks();
     const oracle = create(false);
@@ -49,8 +78,18 @@ test("integrated Native Core admission matches the complete independent command-
     const events: unknown[][] = [[], []];
     oracle.subscribe((event: unknown) => events[0]!.push(event));
     native.subscribe((event: unknown) => events[1]!.push(event));
-    const expected = oracle.submit(entry.input);
-    assert.deepEqual(native.submit(entry.input), expected, entry.id);
+    const legacyExpected = oracle.submit(entry.input);
+    const actual = native.submit(entry.input);
+    if (hasOnlyRetiredOverfullDiagnostic(legacyExpected)) {
+      assert.equal(actual.status, "committed", entry.id);
+      const committed = native.read();
+      assert.equal(native.undo().status, "committed", `${entry.id}/undo`);
+      assert.equal(native.redo().status, "committed", `${entry.id}/redo`);
+      assert.deepEqual(readWithoutTransitionVersion(native.read()), readWithoutTransitionVersion(committed), `${entry.id}/redo/read`);
+      continue;
+    }
+    const expected = withoutRetiredOverfullDiagnostic(legacyExpected);
+    assert.deepEqual(actual, expected, entry.id);
     assert.deepEqual(native.read(), oracle.read(), `${entry.id}/read`);
     if (expected.status === "committed") {
       assert.deepEqual(native.undo(), oracle.undo(), `${entry.id}/undo`);
@@ -435,7 +474,7 @@ test("Native methods reject foreign receivers and reuse an immutable snapshot fo
   assert.equal(first.value.snapshot.documentVersion, 0);
 });
 
-test("Native mixed Batch uses genuine SDK commands with every independent Core admission shape", () => {
+test("Native mixed Batch uses genuine SDK commands across the command-shape corpus after retired TS overfull diagnostics", () => {
   for (const entry of buildCommandAdmissionOracle().cases) {
     resetCvn6Callbacks();
     const oracle = create(false);
@@ -444,8 +483,18 @@ test("Native mixed Batch uses genuine SDK commands with every independent Core a
     oracle.subscribe((event: unknown) => events[0]!.push(event));
     native.subscribe((event: unknown) => events[1]!.push(event));
     const input = coreBatch([command("score", "before-core"), entry.input]);
-    const expected = oracle.submit(input);
-    assert.deepEqual(native.submit(input), expected, entry.id);
+    const legacyExpected = oracle.submit(input);
+    const actual = native.submit(input);
+    if (hasOnlyRetiredOverfullDiagnostic(legacyExpected)) {
+      assert.equal(actual.status, "committed", entry.id);
+      const committed = native.read();
+      assert.equal(native.undo().status, "committed", `${entry.id}/undo`);
+      assert.equal(native.redo().status, "committed", `${entry.id}/redo`);
+      assert.deepEqual(readWithoutTransitionVersion(native.read()), readWithoutTransitionVersion(committed), `${entry.id}/redo/read`);
+      continue;
+    }
+    const expected = withoutRetiredOverfullDiagnostic(legacyExpected);
+    assert.deepEqual(actual, expected, entry.id);
     assert.deepEqual(native.read(), oracle.read(), `${entry.id}/read`);
     if (expected.status === "committed") {
       for (const operation of ["undo", "redo", "undo", "redo"] as const) {

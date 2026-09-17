@@ -12,7 +12,7 @@ function editIssue(code: string, message: string, measureId: string, eventId: st
   return { code, message, severity: "error", source: "editor", target: { scope: "event", measureId, eventId } };
 }
 
-/** Prepare public commands; preserve the start of every subsequent sounding event. */
+/** Prepare public commands; use adjacent silence first, then move later events into free bar space. */
 export function prepareEventProperties(document: ScoreDocument, eventId: string, properties: EventProperties): Prepared {
   const content = document.parts[0]!.measureContents.find((item) => item.voices[0]?.sequence.events.some((event) => event.id === eventId));
   const voice = content?.voices[0], index = voice?.sequence.events.findIndex((event) => event.id === eventId) ?? -1;
@@ -31,25 +31,9 @@ export function prepareEventProperties(document: ScoreDocument, eventId: string,
   const newUnits = durationUnits(properties.duration), oldUnits = durationUnits(event.duration);
   if (newUnits !== oldUnits) {
     const following = voice.sequence.events.slice(index + 1);
-    if (event.content.kind === "rest" && newUnits > oldUnits && following.length) {
-      const message = "延长该休止符会覆盖后面的节拍位置";
-      return { ok: false, status: 422, message,
-        issue: editIssue("editor.rest-would-overwrite-next", message, content.measureId, eventId) };
-    }
     const nextNoteIndex = following.findIndex((item) => item.content.kind === "notes");
     const rests = nextNoteIndex < 0 ? following : following.slice(0, nextNoteIndex);
     const restUnits = rests.reduce((sum, item) => sum + durationUnits(item.duration), 0);
-    const beforeUnits = voice.sequence.events.slice(0, index).reduce((sum, item) => sum + durationUnits(item.duration), 0);
-    const meter = document.measureDefinitions.find((measure) => measure.id === content.measureId)!.meter;
-    const limit = nextNoteIndex >= 0 ? oldUnits + restUnits : 64 * meter.numerator / meter.denominator - beforeUnits;
-    if (newUnits > limit) {
-      const message = nextNoteIndex >= 0
-        ? "延长后会覆盖后面的音符，请缩短时值或先调整紧随的休止符"
-        : "所选时值超出本小节剩余容量";
-      return { ok: false, status: 422, message,
-        issue: editIssue(nextNoteIndex >= 0 ? "editor.event-would-overwrite-note" : "editor.measure-capacity-exceeded",
-          message, content.measureId, eventId) };
-    }
     for (const rest of rests) commands.push({ commandVersion: 1, commandId: "core.event.remove", target: { kind: "event", eventId: rest.id }, payload: {} });
     commands.push({ commandVersion: 1, commandId: "core.event.set-note-value",
       target: { kind: "event", eventId }, payload: { noteValue: properties.duration } });

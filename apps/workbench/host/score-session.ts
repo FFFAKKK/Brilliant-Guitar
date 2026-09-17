@@ -8,7 +8,8 @@ import { projectNotation } from "./notation-projection.ts";
 import { prepareEventProperties } from "./event-properties-command.ts";
 import { decodeScoreDocument, encodeScoreDocumentJson } from "../.kernel/src/core-kernel/index.js";
 import type { CreateScoreDocumentInputV1, InsertMeasureCommand, IntegratedCommandBus, ScoreDocument, Voice } from "../.kernel/src/core-kernel/index.js";
-import type { IntegratedNativeAddonV2 } from "../.kernel/src/core-kernel/native/integrated-command-bus.js";
+import { readNativeRuleWarningPageV1 } from "../.kernel/src/core-kernel/native/integrated-command-bus.js";
+import type { IntegratedNativeAddonV2, KernelRuleWarningV1 } from "../.kernel/src/core-kernel/native/integrated-command-bus.js";
 
 import { durationUnits, isScoreEditRequest } from "../src/contracts/note-input.ts";
 import type { ScoreEditRequest } from "../src/contracts/note-input.ts";
@@ -46,6 +47,21 @@ function failureCode(failure: unknown): string {
   const value = failure as { readonly code?: unknown; readonly failure?: unknown };
   if (value.code === "command.batch-child-rejected" && value.failure) return failureCode(value.failure);
   return typeof value.code === "string" && value.code ? `core.${value.code}` : "core.command-rejected";
+}
+
+function readRuleWarnings(bus: IntegratedCommandBus, documentId: string, documentVersion: number): readonly KernelRuleWarningV1[] {
+  const warnings: KernelRuleWarningV1[] = [];
+  let offset = 0;
+  for (;;) {
+    const page = readNativeRuleWarningPageV1(bus, documentId, documentVersion, offset, 4_096);
+    if (!page.ok) throw new WorkbenchHostError("无法读取当前谱面规则状态", 503, page.failure);
+    if (page.value.documentId !== documentId || page.value.documentVersion !== documentVersion
+      || page.value.offset !== offset) throw new WorkbenchHostError("谱面规则状态与当前版本不一致", 503);
+    warnings.push(...page.value.warnings);
+    if (page.value.nextOffset === null) return warnings;
+    if (page.value.nextOffset <= offset) throw new WorkbenchHostError("谱面规则分页状态无效", 503);
+    offset = page.value.nextOffset;
+  }
 }
 
 /** Only public Core/SDK exports and the documented Native opt-in host adapter. */
@@ -131,8 +147,11 @@ export class ScoreSessionService {
     const read = entry.bus.read();
     if (!read.ok) throw new WorkbenchHostError("无法读取当前乐谱", 503);
     const document = read.value.snapshot.document;
+    const documentVersion = read.value.snapshot.documentVersion;
+    const warnings = readRuleWarnings(entry.bus, document.id, documentVersion);
     return { documentId: document.id, title: document.metadata.title, measureCount: document.measureDefinitions.length,
-      documentVersion: read.value.snapshot.documentVersion, undoDepth: read.value.history.undoDepth, redoDepth: read.value.history.redoDepth, notation: projectNotation(document) };
+      documentVersion, undoDepth: read.value.history.undoDepth, redoDepth: read.value.history.redoDepth,
+      notation: projectNotation(document, warnings) };
   }
 
   exportDocument(workspaceId: string): string {
@@ -203,12 +222,7 @@ export class ScoreSessionService {
           issue("editor.selection-stale", message, actionTarget(current, action)));
       }
       const remove: RemoveEventCommand = { commandVersion: 1, commandId: "core.event.remove", target: { kind: "event", eventId: event.id }, payload: {} };
-      if (event.content.kind === "rest") {
-        if (index !== voice.sequence.events.length - 1) {
-          const message = "中间休止符用于保留节拍，当前仅支持移除末尾休止符";
-          throw new WorkbenchHostError(message, 422, undefined,
-            issue("editor.required-rest-cannot-delete", message, actionTarget(current, action)));
-        }
+      if (event.content.kind === "rest" || action.timePolicy === "collapse") {
         result = entry.bus.submit(remove);
       } else {
         const previous = voice.sequence.events[index - 1];
@@ -248,17 +262,12 @@ export class ScoreSessionService {
       const requestedOffset = action.offsetUnits ?? anchorOffset;
       const capacity = 64 * measure.meter.numerator / measure.meter.denominator;
       const gap = requestedOffset - anchorOffset;
-      if (requestedOffset < anchorOffset || requestedOffset > capacity || (gap > 0 && anchorOffset !== used)) {
+      if (requestedOffset < anchorOffset || (gap > 0 && anchorOffset !== used)) {
         const message = "输入位置不再可用，请重新选择节拍位置";
         throw new WorkbenchHostError(message, 409, undefined,
           issue("editor.position-stale", message, { scope: "measure", measureId: action.measureId }));
       }
       const projectedUsed = used + gap + durationUnits(action.duration);
-      if (projectedUsed > capacity) {
-        const message = "当前小节剩余时值不足，请缩短时值或选择其他小节";
-        throw new WorkbenchHostError(message, 422, undefined,
-          issue("editor.measure-capacity-exceeded", message, { scope: "measure", measureId: action.measureId }));
-      }
       const commands: (InsertNotesEventCommand | InsertRestEventCommand | InsertMeasureCommand)[] = [];
       let insertionAnchor = action.anchor;
       for (const duration of restDurations(gap)) {

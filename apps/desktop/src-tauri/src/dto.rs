@@ -68,6 +68,14 @@ pub struct EventProperties {
     pub content: InputContent,
 }
 
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum DeleteTimePolicy {
+    #[default]
+    Preserve,
+    Collapse,
+}
+
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(
     tag = "kind",
@@ -80,6 +88,8 @@ pub enum ScoreEditAction {
     Redo,
     DeleteEvent {
         event_id: String,
+        #[serde(default)]
+        time_policy: DeleteTimePolicy,
     },
     SetEventProperties {
         event_id: String,
@@ -145,6 +155,22 @@ pub struct StaffMeasure {
     pub voice_id: String,
     pub meter: Meter,
     pub events: Vec<StaffEvent>,
+    pub rule_warnings: Vec<StaffRuleWarning>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+pub struct ExactFraction {
+    pub numerator: i64,
+    pub denominator: i64,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StaffRuleWarning {
+    pub code: &'static str,
+    pub nominal_duration: ExactFraction,
+    pub actual_duration: ExactFraction,
+    pub overflow: ExactFraction,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]

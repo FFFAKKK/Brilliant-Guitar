@@ -1,6 +1,6 @@
 # Brilliant Guitar 软件架构审计
 
-> 状态更新（2026-09-16）：本文主体记录迁移前的审计基线。Rust 生产宿主的代码链路已经接通，但真实桌面业务闭环和双宿主合同仍在验证，不能标记为迁移完成。当前目标生产路径为 `React -> Tauri invoke -> Rust application service -> Rust Kernel`，Vite/Node/N-API 只计划用于浏览器开发和合同回归。实施进度见 `docs/tauri-rust-host-migration-handoff.md` 和 `docs/desktop-host-plan.md`。
+> 状态更新（2026-09-16）：本文主体记录迁移前的审计基线。提交 `64e2c19` 已接通 Rust-native Tauri product host、原生文件、恢复、CSP 和生产 bundle；本文中“Tauri 只有 WebView 外壳”的描述已经过时。当前插件与组件状态见 `docs/plugin-development-readiness-audit-2026-09-16.md`。
 
 审计日期：2026-09-16
 

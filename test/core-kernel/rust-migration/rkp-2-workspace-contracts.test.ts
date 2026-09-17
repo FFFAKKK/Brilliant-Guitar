@@ -957,6 +957,7 @@ const EXPECTED_GRAPH: Readonly<Record<CrateName, readonly string[]>> = {
     "brilliant-kernel-contracts",
   ],
   "brilliant-kernel-session": [
+    "brilliant-core-types",
     "brilliant-kernel-runtime",
     "brilliant-kernel-contracts",
     "brilliant-extension-protocol",

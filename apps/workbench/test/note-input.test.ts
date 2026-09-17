@@ -17,7 +17,7 @@ function fixture(count = 2) {
 const quarter: ScoreEditAction = { kind: "append", measureId: "measure-1", anchor: { kind: "start" }, duration: { base: 4, dots: 0 },
   content: { kind: "note", pitch: { step: "C", octave: 4, alter: 1 } } };
 
-test("Native append, capacity boundary, undo and redo preserve real content and history", () => {
+test("Native append allows overfull measures, reports the rule warning, and preserves undo/redo", () => {
   const f = fixture();
   const first = f.edit(quarter);
   assert.equal(first.documentVersion, 1); assert.equal(first.undoDepth, 1); assert.equal(first.redoDepth, 0);
@@ -30,14 +30,19 @@ test("Native append, capacity boundary, undo and redo preserve real content and 
   assert.equal(full.notation.kind, "staff");
   if (full.notation.kind !== "staff") return;
   assert.equal(nextMeasure(full.notation, "measure-1"), "measure-2");
-  assert.throws(() => f.edit(quarter), (error: unknown) => error instanceof WorkbenchHostError && error.status === 422);
-  assert.deepEqual(f.service.read(f.workspace), full);
+  const overfull = f.edit(quarter);
+  assert.equal(overfull.notation.kind, "staff");
+  if (overfull.notation.kind !== "staff") return;
+  assert.equal(overfull.notation.measures[0]!.events.length, 5);
+  assert.equal(overfull.notation.measures[0]!.ruleWarnings.length, 1);
+  assert.deepEqual(overfull.notation.measures[0]!.ruleWarnings[0]!.overflow, { numerator: 1, denominator: 4 });
   const undone = f.edit({ kind: "undo" });
-  assert.equal(undone.undoDepth, 3); assert.equal(undone.redoDepth, 1);
-  assert.equal(undone.notation.kind === "staff" && undone.notation.measures[0]!.events.length, 3);
+  assert.equal(undone.undoDepth, 4); assert.equal(undone.redoDepth, 1);
+  assert.equal(undone.notation.kind === "staff" && undone.notation.measures[0]!.events.length, 4);
+  assert.equal(undone.notation.kind === "staff" && undone.notation.measures[0]!.ruleWarnings.length, 0);
   const redone = f.edit({ kind: "redo" });
-  assert.deepEqual(redone.notation, full.notation);
-  assert.equal(redone.documentVersion, 6); assert.equal(redone.redoDepth, 0);
+  assert.deepEqual(redone.notation, overfull.notation);
+  assert.equal(redone.documentVersion, 7); assert.equal(redone.redoDepth, 0);
 });
 
 test("dotted rests use exact capacity and new input after undo clears redo", () => {
@@ -50,11 +55,14 @@ test("dotted rests use exact capacity and new input after undo clears redo", () 
   if (result.notation.kind !== "staff") return;
   assert.deepEqual(result.notation.measures[0]!.events[0]!.duration, { base: 2, dots: 1 });
   assert.equal(result.notation.measures[0]!.events[0]!.content.kind, "rest");
-  assert.throws(() => f.edit(quarter), WorkbenchHostError);
+  const overfull = f.edit(quarter);
+  assert.equal(overfull.notation.kind === "staff" && overfull.notation.measures[0]!.ruleWarnings.length, 1);
   f.edit({ kind: "undo" });
   const branched = f.edit({ ...quarter, duration: { base: 8, dots: 1 } });
   assert.equal(branched.redoDepth, 0);
-  assert.throws(() => f.edit(quarter), WorkbenchHostError);
+  assert.equal(branched.notation.kind === "staff" && branched.notation.measures[0]!.ruleWarnings.length, 1);
+  const further = f.edit(quarter);
+  assert.equal(further.notation.kind === "staff" && further.notation.measures[0]!.ruleWarnings.length, 1);
 });
 
 test("filling the final measure appends one blank measure in the same undo step", () => {
@@ -100,6 +108,17 @@ test("input at a later empty beat materializes the silent gap and remains one un
   ]);
   const undone = f.edit({ kind: "undo" });
   assert.equal(undone.notation.kind === "staff" && undone.notation.measures[0]!.events.length, 0);
+});
+
+test("the host accepts a caret beyond nominal measure capacity and reports the result as a warning", () => {
+  const f = fixture(1);
+  const placed = f.edit({ ...quarter, offsetUnits: 80, content: { kind: "note", pitch: { step: "A", octave: 4, alter: 0 } } });
+  if (placed.notation.kind !== "staff") throw new Error("Expected staff");
+  const measure = placed.notation.measures[0]!;
+  assert.equal(measure.events.reduce((units, event) => units + 64 / event.duration.base * (event.duration.dots ? 1.5 : 1), 0), 96);
+  assert.equal(measure.events.at(-1)?.content.kind, "note");
+  assert.equal(measure.ruleWarnings.length, 1);
+  assert.deepEqual(measure.ruleWarnings[0]!.overflow, { numerator: 1, denominator: 2 });
 });
 
 test("retry is idempotent and stale or malformed edits never mutate the session", () => {

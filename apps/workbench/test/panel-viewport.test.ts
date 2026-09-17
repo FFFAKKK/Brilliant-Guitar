@@ -18,7 +18,7 @@ test("pointer resizing follows the grabbed edge and clamps to work area and mini
 
 test("zoom is bounded and changes engraving scale and wrapping, not the requested panel width", () => {
   const view: StaffView = { kind: "staff", partId: "p1", staffId: "s1", clef: "treble",
-    measures: Array.from({ length: 8 }, (_, index) => ({ id: `m${index}`, voiceId: `v${index}`, meter: { numerator: 4, denominator: 4 }, events: [] })),
+    measures: Array.from({ length: 8 }, (_, index) => ({ id: `m${index}`, voiceId: `v${index}`, meter: { numerator: 4, denominator: 4 }, events: [], ruleWarnings: [] })),
   };
   const before = structuredClone(view);
   const normal = layoutNotationViewport(view, 1000, 100);
@@ -36,7 +36,7 @@ test("zoom is bounded and changes engraving scale and wrapping, not the requeste
 
 test("narrow zoomed view keeps notation legible with bounded horizontal overflow instead of clipping", () => {
   const view: StaffView = { kind: "staff", partId: "p1", staffId: "s1", clef: "treble",
-    measures: [{ id: "m1", voiceId: "v1", meter: { numerator: 4, denominator: 4 }, events: [] }],
+    measures: [{ id: "m1", voiceId: "v1", meter: { numerator: 4, denominator: 4 }, events: [], ruleWarnings: [] }],
   };
   for (const zoom of [50, 75, 100, 125, 150, 175, 200]) {
     const viewport = layoutNotationViewport(view, 250, zoom);

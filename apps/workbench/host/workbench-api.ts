@@ -55,8 +55,11 @@ export function workbenchApi(): Plugin {
         const session = service.create(workspaceId, input.requestId, input.expectedDocumentId, { title: input.title, measureCount: input.measureCount });
         reply(response, 200, { session });
       } catch (error) {
-        if (error instanceof WorkbenchHostError) reply(response, error.status,
+        if (error instanceof WorkbenchHostError) {
+          if (error.cause !== undefined) console.error("Workbench host rejected:", error.message, error.cause);
+          reply(response, error.status,
           { message: error.message, ...(error.issue ? { issue: error.issue } : {}) });
+        }
         else if (error instanceof SyntaxError) reply(response, 400, { message: "创建信息格式不正确" });
         else {
           console.error("Workbench creation failed:", error);

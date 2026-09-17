@@ -58,7 +58,8 @@ export const vexflowRenderer: NotationRenderer = {
         for (const base of [1, 2, 4, 8, 16, 32, 64]) {
           while (remaining >= 64 / base) { ghosts.push(new GhostNote(String(base))); remaining -= 64 / base; }
         }
-        const voice = new Voice({ numBeats: item.measure.meter.numerator, beatValue: item.measure.meter.denominator }).addTickables([...notes, ...ghosts]);
+        const voice = new Voice({ numBeats: item.measure.meter.numerator, beatValue: item.measure.meter.denominator })
+          .setMode(Voice.Mode.SOFT).addTickables([...notes, ...ghosts]);
         const beams = Beam.generateBeams(notes, {
           groups: Beam.getDefaultBeamGroups(`${item.measure.meter.numerator}/${item.measure.meter.denominator}`),
         });

@@ -63,6 +63,9 @@ export type NoteChange = { readonly kind: "duration"; readonly value: EventDurat
   | { readonly kind: "pitch"; readonly value: InputPitch }
   | { readonly kind: "rest"; readonly value: boolean };
 
+export type NoteControlChange = Exclude<NoteChange, { readonly kind: "alter" }>
+  | { readonly kind: "accidental"; readonly value: AccidentalState };
+
 /** Preserve the selected event's identity, spelling and other properties. Core validates timing. */
 export function selectedNoteAction(event: StaffEvent, change: NoteChange): ScoreEditAction | null {
   if (change.kind === "rest") return event.content.kind === "note" && change.value

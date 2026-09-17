@@ -7,7 +7,10 @@ export interface InputPitch { readonly step: typeof PITCH_STEPS[number]; readonl
 export type InputSequenceAnchor = { readonly kind: "start" } | { readonly kind: "after-event"; readonly eventId: string };
 export type InputContent = { readonly kind: "rest" } | { readonly kind: "note"; readonly pitch: InputPitch };
 export interface EventProperties { readonly duration: EventDuration; readonly content: InputContent }
-export type ScoreEditAction = { readonly kind: "undo" } | { readonly kind: "redo" } | { readonly kind: "delete-event"; readonly eventId: string }
+export type DeleteTimePolicy = "preserve" | "collapse";
+export type ScoreEditAction = { readonly kind: "undo" } | { readonly kind: "redo" } | {
+  readonly kind: "delete-event"; readonly eventId: string; readonly timePolicy?: DeleteTimePolicy;
+}
   | { readonly kind: "set-event-properties"; readonly eventId: string; readonly properties: EventProperties }
   | { readonly kind: "set-title"; readonly title: string } | {
   readonly kind: "append"; readonly measureId: string; readonly anchor: InputSequenceAnchor;
@@ -35,7 +38,8 @@ export function isScoreEditRequest(v: unknown): v is ScoreEditRequest {
     || typeof v.documentId !== "string" || !v.documentId || typeof v.expectedVersion !== "number"
     || !Number.isSafeInteger(v.expectedVersion) || v.expectedVersion < 0 || !record(v.action)) return false;
   const a = v.action;
-  return a.kind === "undo" || a.kind === "redo" || (a.kind === "delete-event" && typeof a.eventId === "string" && !!a.eventId)
+  return a.kind === "undo" || a.kind === "redo" || (a.kind === "delete-event" && typeof a.eventId === "string" && !!a.eventId
+      && (a.timePolicy === undefined || a.timePolicy === "preserve" || a.timePolicy === "collapse"))
     || (a.kind === "set-event-properties" && typeof a.eventId === "string" && !!a.eventId && isEventProperties(a.properties))
     || (a.kind === "set-title" && typeof a.title === "string" && a.title.trim().length <= 120)
     || (a.kind === "append" && typeof a.measureId === "string" && !!a.measureId

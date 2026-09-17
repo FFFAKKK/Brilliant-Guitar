@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { RefObject } from "react";
 import { NavigationBar } from "./components/navigation-bar";
 import { PreferencesDialog } from "./components/preferences-dialog";
@@ -8,8 +8,6 @@ import { UnsavedChangesDialog } from "./components/unsaved-changes-dialog";
 import type { NavigationAction, NavigationGroup } from "./components/navigation-bar";
 import { UiComponentHost } from "./components/ui-component-host";
 import { SharedDock } from "./components/shared-dock";
-import { StaffView } from "./components/staff-view";
-import { NoteInputComponent } from "./components/note-input-component";
 import { useScoreInput } from "./editor/use-score-input";
 import { useNoteOverview } from "./editor/use-note-overview";
 import { WorkbenchShell } from "./components/workbench-shell";
@@ -22,16 +20,18 @@ import { useUiLayout } from "./ui/use-ui-layout";
 import { useSharedDockSelection } from "./ui/use-shared-dock-selection";
 import type { SharedDockSlot } from "./ui/shared-dock-selection";
 import { useAnimationPreference } from "./ui/use-animation-preference";
-import { workbenchPlugins } from "./ui/workbench-plugins";
-import { firstPartyPluginCommands } from "./ui/first-party-plugin-commands.ts";
+import { useEditingPreferences } from "./ui/use-editing-preferences.ts";
+import { workbenchPluginDiagnostics, workbenchPlugins } from "./ui/workbench-plugins";
 import { useDockLayout } from "./workbench/use-dock-layout";
 import { useWorkbenchSession } from "./workbench/use-workbench-session";
 import { useDocumentFiles } from "./workbench/use-document-files";
 import { WorkbenchFeedbackAnnouncer } from "./components/workbench-feedback-announcer.tsx";
+import { PluginDiagnosticDialog } from "./components/plugin-diagnostic-dialog.tsx";
 import { WorkbenchRuntimeProvider, useWorkbenchRuntime } from "./runtime/workbench-runtime.tsx";
 import { useWorkbenchCommands } from "./runtime/use-workbench-commands.ts";
 import type { WorkbenchCommand } from "./commands/workbench-command.ts";
-import { builtInViewContributions } from "./ui/built-in-view-contributions.tsx";
+import { bindUiProjection } from "./ui/projection-registry.ts";
+import { HISTORY_PROJECTION, NOTE_CONTROL_PROJECTION, PAPER_ZOOM_PROJECTION, STAFF_PROJECTION } from "./ui/first-party-plugin-projections.ts";
 
 const INSTALLED_COMPONENTS = workbenchPlugins.components.list();
 const SLOT_LABELS: Record<UiSlot, string> = {
@@ -96,11 +96,20 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
   const { selection: dockSelection, select: selectDockItem, reset: resetDockSelection } = useSharedDockSelection();
   const [inspectLayout, setInspectLayout] = useState(false);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
+  const pluginDiagnostics = useSyncExternalStore(workbenchPluginDiagnostics.subscribe,
+    workbenchPluginDiagnostics.list, workbenchPluginDiagnostics.list);
+  const [pluginDiagnosticsOpen, setPluginDiagnosticsOpen] = useState(pluginDiagnostics.length > 0);
+  const previousPluginDiagnosticCount = useRef(pluginDiagnostics.length);
+  useEffect(() => {
+    if (pluginDiagnostics.length > previousPluginDiagnosticCount.current) setPluginDiagnosticsOpen(true);
+    previousPluginDiagnosticCount.current = pluginDiagnostics.length;
+  }, [pluginDiagnostics.length]);
   const editMenuRef = useRef<HTMLButtonElement>(null);
   const fileMenuRef = useRef<HTMLButtonElement>(null);
   const { enabled: animationsEnabled, setEnabled: setAnimationsEnabled } = useAnimationPreference();
+  const { ruleWarningsVisible, setRuleWarningsVisible, deleteTimePolicy, setDeleteTimePolicy } = useEditingPreferences();
   const score = useWorkbenchSession(runtime);
-  const input = useScoreInput(score.session, score.client, score.setSession, scoreViewport, score.loadEpoch, runtime);
+  const input = useScoreInput(score.session, score.client, score.setSession, scoreViewport, score.loadEpoch, deleteTimePolicy, runtime);
   const files = useDocumentFiles(score.session, score.client, score.replaceSession, vexflowRenderer,
     score.loading || Boolean(score.error) || input.pending > 0 || input.retryable, runtime);
   const notation = score.session?.notation;
@@ -154,14 +163,40 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
     })),
     { id: "view.inspect-layout", label: inspectLayout ? "关闭组件边界预览" : "显示组件边界预览",
       scope: "global", enabled: true, run: () => setInspectLayout((value) => !value) },
-  ], [files, inspectLayout, resetLayout, score.session, toggleWorkbenchDock, visibility]);
-  const pluginCommandContributions = useMemo(() => workbenchPlugins.indexCommands(firstPartyPluginCommands({
-    history: { undoDepth: score.session?.undoDepth ?? 0, redoDepth: score.session?.redoDepth ?? 0,
-      blocked: historyBlocked, execute: dispatchHistory },
-    paperZoom: { zoom: paperZoom.zoom, enabled: inputAvailable, zoomIn: paperZoom.zoomIn,
-      zoomOut: paperZoom.zoomOut, fit: paperZoom.fit },
-  })), [dispatchHistory, historyBlocked, inputAvailable, paperZoom.fit, paperZoom.zoom, paperZoom.zoomIn, paperZoom.zoomOut,
-    score.session?.redoDepth, score.session?.undoDepth]);
+    ...(pluginDiagnostics.length > 0 ? [{ id: "help.plugin-diagnostics", label: `插件诊断 (${pluginDiagnostics.length})`,
+      scope: "global" as const, enabled: true, run: () => setPluginDiagnosticsOpen(true) }] : []),
+  ], [files, inspectLayout, pluginDiagnostics.length, resetLayout, score.session, toggleWorkbenchDock, visibility]);
+  const pluginProjections = useMemo(() => workbenchPlugins.projections.snapshot([
+    bindUiProjection(STAFF_PROJECTION, {
+      notation: score.session?.notation ?? null,
+      renderer: vexflowRenderer,
+      loading: score.loading,
+      error: score.error,
+      onRetry: score.retry,
+      zoom: paperZoom.zoom,
+      onZoomIn: paperZoom.zoomIn,
+      onZoomOut: paperZoom.zoomOut,
+      showRuleWarnings: ruleWarningsVisible,
+      editing: { point: inputAvailable && input.enabled ? input.point : null, draftStep: noteOverview.draftStep,
+        busy: blocked || input.pending > 0, selectedEventId: noteOverview.selectedEventId,
+        onSelectEvent: noteOverview.onSelectEvent, feedback: input.feedback, viewportRef: scoreViewport,
+        onKeyDown: noteOverview.onKeyDown, onLocate: noteOverview.onLocate },
+    }),
+    bindUiProjection(NOTE_CONTROL_PROJECTION, {
+      viewModel: { value: noteOverview.value, position: noteOverview.position, disabled: noteOverview.disabled,
+        pending: noteOverview.pending > 0, message: noteOverview.message ?? "" },
+      actions: { change: noteOverview.change },
+    }),
+    bindUiProjection(HISTORY_PROJECTION, { undoDepth: score.session?.undoDepth ?? 0, redoDepth: score.session?.redoDepth ?? 0,
+      blocked: historyBlocked, activity: historyActivity, execute: dispatchHistory }),
+    bindUiProjection(PAPER_ZOOM_PROJECTION, { zoom: paperZoom.zoom, enabled: inputAvailable,
+      zoomIn: paperZoom.zoomIn, zoomOut: paperZoom.zoomOut, fit: paperZoom.fit }),
+  ]), [blocked, dispatchHistory, historyActivity, historyBlocked, input.enabled, input.feedback, input.pending,
+    input.point, inputAvailable, noteOverview.change, noteOverview.disabled, noteOverview.message, noteOverview.onKeyDown,
+    noteOverview.draftStep, noteOverview.onLocate, noteOverview.onSelectEvent, noteOverview.pending, noteOverview.position, noteOverview.selectedEventId,
+    noteOverview.value, paperZoom.fit, paperZoom.zoom, paperZoom.zoomIn, paperZoom.zoomOut, score.error, score.loading,
+    ruleWarningsVisible, score.retry, score.session?.notation, score.session?.redoDepth, score.session?.undoDepth, scoreViewport]);
+  const pluginCommandContributions = useMemo(() => workbenchPlugins.resolveCommands(pluginProjections), [pluginProjections]);
   const commandContributions = useMemo<readonly WorkbenchCommand[]>(() =>
     [...hostCommandContributions, ...pluginCommandContributions], [hostCommandContributions, pluginCommandContributions]);
   useWorkbenchCommands(commandContributions);
@@ -173,17 +208,7 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
       ...(movesFocus ? { movesFocus: true } : {}),
       ...(command.enabled ? { onSelect: () => { runtime.commands.execute(id); } } : {}) };
   }, [commandsById, runtime.commands]);
-  const componentViews = workbenchPlugins.indexViews(builtInViewContributions({
-    staff: <StaffView notation={score.session?.notation ?? null} renderer={vexflowRenderer}
-      loading={score.loading} error={score.error} onRetry={score.retry} zoom={paperZoom.zoom}
-      editing={{ point: inputAvailable && input.enabled ? input.point : null, draftStep: input.draft, busy: blocked || input.pending > 0,
-        selectedEventId: noteOverview.selectedEventId, onSelectEvent: noteOverview.onSelectEvent,
-        feedback: input.feedback, viewportRef: scoreViewport, onKeyDown: noteOverview.onKeyDown, onLocate: noteOverview.onLocate }} />,
-    noteControl: <NoteInputComponent controller={noteOverview} />,
-    history: { undoDepth: score.session?.undoDepth ?? 0, redoDepth: score.session?.redoDepth ?? 0,
-      blocked: historyBlocked, activity: historyActivity },
-    paperZoom: { zoom: paperZoom.zoom, enabled: inputAvailable },
-  }));
+  const componentViews = useMemo(() => workbenchPlugins.resolveViews(pluginProjections), [pluginProjections]);
   const renderSlot = (slot: SharedDockSlot) => {
     // Unreviewed renderers stay registered without appearing in the normal workbench.
     const items = listUiComponentsInSlot(uiLayout, slot).flatMap((placement) => {
@@ -247,10 +272,12 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
     {
       id: "help",
       label: "帮助",
-      actions: [{ id: "help.disabled", label: "框架操作：拖动分隔线，方向键微调" }],
+      actions: pluginDiagnostics.length > 0
+        ? [navigationAction("help.plugin-diagnostics", true), { id: "help.disabled", label: "框架操作：拖动分隔线，方向键微调" }]
+        : [{ id: "help.disabled", label: "框架操作：拖动分隔线，方向键微调" }],
       description: "点击小节定位末尾；A–G 加组号落谱；选中音符后 A–G 加组号修改当前音符；＋／− 时值；. 附点；Backspace／Delete 删除；Esc 清除草稿或选择",
     },
-  ], [files.name, files.state, files.working, navigationAction]);
+  ], [files.name, files.state, files.working, navigationAction, pluginDiagnostics.length]);
 
   return <>
     <WorkbenchShell
@@ -259,7 +286,7 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
     onKeyDownCapture={(event) => {
       if (event.nativeEvent.isComposing || (event.target instanceof Element &&
         event.target.closest("input, textarea, select, [contenteditable='true']"))) return;
-      runtime.commands.handle(event, "score");
+      if (!runtime.commands.handle(event, "score")) noteOverview.onKeyDown(event);
     }}
     layout={layout}
     onLayoutChange={setLayout}
@@ -279,6 +306,8 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
     </WorkbenchShell>
     <PreferencesDialog open={preferencesOpen} onOpenChange={setPreferencesOpen}
       animationsEnabled={animationsEnabled} onAnimationsChange={setAnimationsEnabled}
+      ruleWarningsVisible={ruleWarningsVisible} onRuleWarningsVisibleChange={setRuleWarningsVisible}
+      deleteTimePolicy={deleteTimePolicy} onDeleteTimePolicyChange={setDeleteTimePolicy}
       returnFocusRef={editMenuRef} />
     <NewScoreDialog open={files.newScoreOpen} onOpenChange={files.setNewScoreOpen}
       onCreate={files.createScore} returnFocusRef={fileMenuRef} completionFocusRef={scoreViewport} />
@@ -296,5 +325,7 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
       <button type="button" className="button" onClick={files.clearError}>关闭</button>
     </div>}
     <WorkbenchFeedbackAnnouncer feedback={runtime.feedback.latest} />
+    <PluginDiagnosticDialog diagnostics={pluginDiagnostics} open={pluginDiagnosticsOpen}
+      onOpenChange={setPluginDiagnosticsOpen} />
   </>;
 }

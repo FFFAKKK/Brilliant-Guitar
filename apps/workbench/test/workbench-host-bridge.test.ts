@@ -20,7 +20,7 @@ const session: ScoreSessionRead = {
     partId: "part-1",
     staffId: "staff-1",
     clef: "treble",
-    measures: [{ id: "measure-1", voiceId: "voice-1", meter: { numerator: 4, denominator: 4 }, events: [] }],
+    measures: [{ id: "measure-1", voiceId: "voice-1", meter: { numerator: 4, denominator: 4 }, events: [], ruleWarnings: [] }],
   },
 };
 

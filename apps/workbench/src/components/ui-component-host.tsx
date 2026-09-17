@@ -2,9 +2,9 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState } from 
 import type { ReactNode } from "react";
 import type { UiComponentDefinition, UiPresentation, UiSlot } from "../ui/plugin-contract";
 import type { UiComponentPlacement } from "../ui/layout-state";
+import type { WorkbenchIssue } from "../contracts/workbench-issue.ts";
 import { UiComponentErrorBoundary } from "./ui-component-error-boundary.tsx";
 import { useWorkbenchRuntime } from "../runtime/workbench-runtime.tsx";
-import { authorizeUiComponentCommand } from "../ui/scoped-component-context.ts";
 
 export type UiLayoutMode = "normal" | "inspect";
 
@@ -24,6 +24,14 @@ export interface HostedUiComponentContext {
 }
 
 const ComponentHostContext = createContext<HostedUiComponentContext | null>(null);
+
+function authorizeCommand(definition: UiComponentDefinition, commandId: string,
+  report: (issue: WorkbenchIssue) => void): boolean {
+  if (definition.permissions.commands.includes(commandId)) return true;
+  report({ code: "component.command-permission-denied", message: `组件 ${definition.id} 没有执行 ${commandId} 的权限`,
+    severity: "error", source: "host", target: { scope: "component", componentId: definition.id } });
+  return false;
+}
 
 export function useHostedUiComponent(): HostedUiComponentContext {
   const context = useContext(ComponentHostContext);
@@ -71,7 +79,7 @@ export function UiComponentHost({ definition, placement, layoutMode = "normal", 
     hide: () => onHide(definition.id),
     setPresentation: (presentation) => onPresentationChange(definition.id, presentation),
     requestFocus: () => rootRef.current?.focus({ preventScroll: true }),
-    executeCommand: (commandId) => authorizeUiComponentCommand(definition, commandId, runtime.feedback.report)
+    executeCommand: (commandId) => authorizeCommand(definition, commandId, runtime.feedback.report)
       && runtime.commands.execute(commandId),
   }), [definition, layoutMode, onHide, onMove, onPresentationChange, placement.presentation, placement.slot,
     runtime.commands, runtime.feedback.report, size]);

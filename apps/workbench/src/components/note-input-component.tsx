@@ -1,8 +1,6 @@
-import type { useNoteOverview } from "../editor/use-note-overview";
 import { NoteInputPanel } from "./note-input-panel";
 import { useHostedUiComponent } from "./ui-component-host";
-
-interface Props { readonly controller: ReturnType<typeof useNoteOverview> }
+import type { NoteControlProjection } from "../ui/first-party-plugin-projections.ts";
 
 /** The dock owns placement; the note feature supplies only its recognizable mark. */
 export function NoteControlDockIcon() {
@@ -14,14 +12,15 @@ export function NoteControlDockIcon() {
 }
 
 /** This feature owns its interface and conditional feedback, without a persistent help row. */
-export function NoteInputComponent({ controller }: Props) {
+export function NoteInputComponent({ projection }: { readonly projection: NoteControlProjection }) {
   const { slot } = useHostedUiComponent();
+  const { viewModel, actions } = projection;
   return <div className="note-input-dock" data-slot={slot}>
-    <NoteInputPanel {...controller.value} position={controller.position} disabled={controller.disabled} pending={controller.pending > 0} feedback={controller.message ?? ""}
-      onDurationChange={(value) => controller.change({ kind: "duration", value })}
-      onAccidentalChange={(value, completionFocus) => controller.change({ kind: "accidental", value }, completionFocus)}
-      onPitchChange={(value, completionFocus) => controller.change({ kind: "pitch", value }, completionFocus)}
-      onRestChange={(value) => controller.change({ kind: "rest", value })} />
-    {controller.message && <span className="note-entry-live" role="alert">{controller.message}</span>}
+    <NoteInputPanel {...viewModel.value} position={viewModel.position} disabled={viewModel.disabled} pending={viewModel.pending} feedback={viewModel.message}
+      onDurationChange={(value) => actions.change({ kind: "duration", value })}
+      onAccidentalChange={(value, completionFocus) => actions.change({ kind: "accidental", value }, completionFocus)}
+      onPitchChange={(value, completionFocus) => actions.change({ kind: "pitch", value }, completionFocus)}
+      onRestChange={(value) => actions.change({ kind: "rest", value })} />
+    {viewModel.message && <span className="note-entry-live" role="alert">{viewModel.message}</span>}
   </div>;
 }

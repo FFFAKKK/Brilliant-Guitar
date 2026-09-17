@@ -28,6 +28,27 @@ test("项目乐谱可以保存、打开并继续编辑", () => {
   assert.equal(continued.notation.measures[0]?.events.length, 2);
 });
 
+test("超拍谱面保存和重开后保留内容，并从内核重新推导规则提示", () => {
+  const service = new ScoreSessionService();
+  const sourceWorkspace = randomUUID(), restoredWorkspace = randomUUID();
+  let current = service.create(sourceWorkspace, randomUUID(), null, { title: "超拍往返", measureCount: 1 });
+  for (let index = 0; index < 5; index++) {
+    const measure = current.notation.kind === "staff" ? current.notation.measures[0]! : null;
+    const last = measure?.events.at(-1);
+    current = service.edit(sourceWorkspace, { requestId: randomUUID(), documentId: current.documentId,
+      expectedVersion: current.documentVersion, action: { kind: "append", measureId: "measure-1",
+        anchor: last ? { kind: "after-event", eventId: last.id } : { kind: "start" },
+        duration: { base: 4, dots: 0 }, content: { kind: "note", pitch: { step: "C", octave: 4, alter: 0 } } } });
+  }
+  assert.equal(current.notation.kind === "staff" && current.notation.measures[0]!.ruleWarnings.length, 1);
+  const restored = service.importDocument(restoredWorkspace, JSON.parse(service.exportDocument(sourceWorkspace)));
+  assert.equal(restored.notation.kind, "staff");
+  if (restored.notation.kind !== "staff" || current.notation.kind !== "staff") return;
+  assert.deepEqual(restored.notation.measures[0]!.events, current.notation.measures[0]!.events);
+  assert.deepEqual(restored.notation.measures[0]!.ruleWarnings, current.notation.measures[0]!.ruleWarnings);
+  assert.equal(restored.undoDepth, 0);
+});
+
 test("打开无法识别的文件不会覆盖当前工作区", () => {
   const service = new ScoreSessionService();
   const workspace = randomUUID();

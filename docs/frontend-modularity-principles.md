@@ -50,35 +50,39 @@ WorkbenchRuntime（无固定外观）
   ├── commands：统一命令注册、启用状态和快捷键路由
   ├── operations：异步操作生命周期和恢复状态
   ├── feedback：结构化问题分发和内存诊断
-  ├── focus：布局变化后的焦点恢复
-  └── components：插件权限与生命周期隔离
+  └── focus：布局变化后的焦点恢复
 
 WorkbenchShell（几何外壳）
   └── 导航位置、中央工作区、共享停靠区和分隔线
 
 UIPluginHost（组件宿主）
-  └── 读取逻辑定义与视图贡献，将组件挂载到允许的插槽
+  ├── projections：向插件提供收窄后的应用状态
+  ├── commands：把插件命令工厂接入统一路由
+  └── views：把插件 React adapter 挂到允许的插槽
 ```
 
 `WorkbenchApp` 只负责应用装配：创建应用服务、声明内置命令和把已注册贡献交给外壳。菜单、快捷键和组件按钮必须执行同一个命令 ID；组件不能再自行安装全局键盘监听来复制保存、历史或缩放能力。
 
 ### 启动期 UI 插件装配
 
-分层固定的是宿主机制和依赖方向，不是功能清单。第一方功能也通过 `UiPluginManifest` 和 `UiPluginManager` 安装：
+分层固定的是宿主机制和依赖方向，不是功能清单。第一方功能也通过最终版 V2 `UiPluginManifest` 和 `UiPluginHost` 安装，不保留 V1 兼容层：
 
 ```text
 WorkbenchCapabilityRegistry
-  → UiPluginManager.install(manifest + compiled binding)
-  → UiComponentRegistry
+UiProjectionRegistry
+  → UiPluginHost.install(manifest + projections + commands + views)
+  → UiComponentRegistry / WorkbenchCommandRouter
   → UiComponentHost / SharedDock
 ```
 
-清单声明插件身份、API 版本、运行时、所需宿主能力以及贡献的组件、视图和命令。插件管理器在改变注册表之前完成能力、编译绑定、组件与命令唯一归属、视图声明校验，因此失败安装不会留下部分组件。编辑历史和谱面缩放的命令定义已经由各自插件贡献；`WorkbenchApp` 只合并宿主命令和经过校验的插件命令。当前只允许随应用编译发布的 `internal-module`，安装集合在工作台启动前确定；第三方代码加载、运行时热插拔、插件市场和授权界面后置。
+清单声明插件身份、API 版本、运行时、所需宿主能力和 Projection，以及贡献的视图和命令。宿主在改变注册表之前完成能力、Projection、组件与命令唯一归属和声明一致性校验，因此失败安装不会留下部分组件。编辑历史和谱面缩放的命令工厂由各自插件拥有；`WorkbenchApp` 只发布应用 Projection、合并宿主命令和经过校验的插件命令。当前只允许随应用编译发布的 `internal-module`，安装集合在工作台启动前确定；第三方代码加载、运行时热插拔、插件市场和授权界面后置。
 
 组件通过两类接口接入：
 
-- `UiComponentDefinition` 描述身份、职责、插槽、能力和权限，不携带具体视觉。
-- `UiComponentViewContribution` 提供标签、图标和 React 呈现；它必须对应一个已安装的逻辑定义。
+- `UiComponentDefinition` 描述身份、职责、插槽、能力和权限，不携带生命周期或具体视觉。
+- `UiProjection` 是宿主拥有的类型化只读状态合同；插件只能读取自己声明的 Projection。
+- `UiComponentViewContribution` 将逻辑定义、标签、图标和 React adapter 组合为插件拥有的视图贡献。
+- `UiCommandContribution` 根据当前 Projection 创建命令状态和处理器，命令仍由共享路由执行。
 
 React 视图只能通过 `UiComponentHost` 暴露的宿主上下文请求布局、焦点和命令。`executeCommand` 会先核对 `UiComponentDefinition.permissions.commands`，再进入 `WorkbenchCommandRouter`；因此菜单、快捷键和组件按钮共享命令实现，同时保留组件权限边界。
 
@@ -86,7 +90,7 @@ React 视图只能通过 `UiComponentHost` 暴露的宿主上下文请求布局�
 
 ## 最小接口
 
-`src/ui/plugin-contract.ts` 定义 `UiComponentDefinition`、`UiComponentContext`、`UiCommandDispatcher` 和 `UiComponentInstance`。组件声明自己的 `slots`、`presentation`、`capabilities` 和 `permissions`；工作台通过 `UiComponentRegistry` 负责注册、查询、卸载和生命周期更新。
+`src/ui/plugin-contract.ts` 只定义视觉无关的 `UiComponentDefinition`。`src/ui/projection-registry.ts` 定义类型化 Projection 合同和每次 React 渲染对应的只读快照；`src/ui/plugin-manager.ts` 定义由 `manifest`、`projections`、`commands`、`views` 组成的 `InternalUiPluginModule`。组件声明自己的 `slots`、`presentation`、`capabilities` 和 `permissions`；React 自身负责视图生命周期，不再保留空的 imperative `mount/update/dispose` 模型。
 
 内置组件使用与外部插件相同的注册合同，工作台通过共享注册器查询后装配实际渲染器：
 

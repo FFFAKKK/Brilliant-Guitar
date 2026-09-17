@@ -12,6 +12,9 @@ function events(read: ScoreSessionRead): readonly StaffEvent[] {
   if (read.notation.kind !== "staff") throw new Error("Expected supported projection");
   return read.notation.measures[0]!.events;
 }
+function ruleWarningCount(read: ScoreSessionRead): number {
+  return read.notation.kind === "staff" ? read.notation.measures[0]!.ruleWarnings.length : 0;
+}
 function fixture() {
   const service = new ScoreSessionService(), workspace = randomUUID();
   let read = service.create(workspace, randomUUID(), null, { title: "属性验证", measureCount: 2 });
@@ -43,7 +46,7 @@ test("pitch edits retain event identity and timing, apply atomically, and identi
   assert.deepEqual(f.edit({ kind: "redo" }).notation, changed.notation);
 });
 
-test("shortening fills the exact gap and extending consumes only adjacent rests without moving the next note", () => {
+test("shortening fills the gap; extension consumes adjacent rests before moving later notes", () => {
   const f = fixture();
   f.append("C"); f.append("D"); f.append("E");
   const before = f.read(), target = events(before)[1]!, last = events(before)[2]!;
@@ -55,10 +58,63 @@ test("shortening fills the exact gap and extending consumes only adjacent rests 
   const longer = f.set(events(shorter)[1]!, { duration: { base: 4, dots: 0 } });
   assert.deepEqual(longer.notation, before.notation);
   assert.deepEqual(f.edit({ kind: "undo" }).notation, shorter.notation);
-  const conflictBefore = f.read();
-  assert.throws(() => f.set(events(conflictBefore)[1]!, { duration: { base: 2, dots: 0 },
-    content: { kind: "note", pitch: { step: "F", octave: 6, alter: 1 } } }), (e: unknown) => e instanceof WorkbenchHostError && e.status === 422);
-  assert.deepEqual(f.service.read(f.workspace), conflictBefore);
+  const shortAgain = f.read();
+  const extended = f.set(events(shortAgain)[1]!, { duration: { base: 2, dots: 0 },
+    content: { kind: "note", pitch: { step: "F", octave: 6, alter: 1 } } });
+  assert.deepEqual(events(extended).map((event) => event.id), [events(shortAgain)[0]!.id, target.id, last.id]);
+  assert.equal(events(extended).reduce((sum, event) => sum + durationUnits(event.duration), 0), 64);
+  assert.deepEqual(f.edit({ kind: "undo" }).notation, shortAgain.notation);
+  const overfull = f.set(events(shortAgain)[1]!, { duration: { base: 1, dots: 0 } });
+  assert.equal(events(overfull).reduce((sum, event) => sum + durationUnits(event.duration), 0), 96);
+  assert.equal(ruleWarningCount(overfull), 1);
+  assert.deepEqual(f.edit({ kind: "undo" }).notation, shortAgain.notation);
+});
+
+test("extending a middle note moves later notes when the bar has enough unused time", () => {
+  const f = fixture();
+  f.append("C", { base: 8, dots: 0 });
+  f.append("B", { base: 8, dots: 0 });
+  f.append("A", { base: 2, dots: 0 });
+  const before = f.read(), [first, middle, last] = events(before);
+  assert.equal(events(before).reduce((sum, event) => sum + durationUnits(event.duration), 0), 48);
+  const changed = f.set(middle!, { duration: { base: 4, dots: 0 } });
+  assert.deepEqual(events(changed).map((event) => event.id), [first!.id, middle!.id, last!.id]);
+  assert.deepEqual(events(changed).map((event) => durationUnits(event.duration)), [8, 16, 32]);
+  assert.equal(changed.undoDepth, before.undoDepth + 1);
+  assert.deepEqual(f.edit({ kind: "undo" }).notation, before.notation);
+  assert.deepEqual(f.edit({ kind: "redo" }).notation, changed.notation);
+});
+
+test("first, middle and last note edits respect total bar capacity across common durations", () => {
+  const durations: InputDuration[] = [
+    { base: 16, dots: 0 }, { base: 8, dots: 0 }, { base: 8, dots: 1 },
+    { base: 4, dots: 0 }, { base: 4, dots: 1 }, { base: 2, dots: 0 },
+  ];
+  const sequences: InputDuration[][] = [
+    [durations[1]!, durations[1]!, durations[5]!],
+    [durations[3]!, durations[1]!, durations[3]!],
+    [durations[1]!, durations[3]!, durations[1]!],
+    [durations[3]!, durations[3]!, durations[5]!],
+    [durations[2]!, durations[2]!, durations[3]!],
+  ];
+  for (const sequence of sequences) for (const position of [0, 1, 2]) for (const next of durations) {
+    const f = fixture();
+    for (const [index, duration] of sequence.entries()) f.append((["C", "B", "A"] as const)[index]!, duration);
+    const before = f.read(), original = events(before), target = original[position]!;
+    const occupiedBefore = original.reduce((sum, event) => sum + durationUnits(event.duration), 0);
+    const expected = occupiedBefore
+      - durationUnits(target.duration) + durationUnits(next);
+    const occupiedAfter = durationUnits(next) < durationUnits(target.duration) && position < original.length - 1
+      ? occupiedBefore : expected;
+    const label = `${sequence.map((item) => durationUnits(item)).join("+")} at ${position} → ${durationUnits(next)}`;
+    const changed = f.set(target, { duration: next });
+    assert.deepEqual(events(changed).filter((event) => event.content.kind === "note").map((event) => event.id),
+      original.map((event) => event.id), label);
+    assert.equal(events(changed).reduce((sum, event) => sum + durationUnits(event.duration), 0), occupiedAfter, label);
+    assert.equal(ruleWarningCount(changed), occupiedAfter > 64 ? 1 : 0, label);
+    if (durationUnits(next) !== durationUnits(target.duration))
+      assert.deepEqual(f.edit({ kind: "undo" }).notation, before.notation, label);
+  }
 });
 
 test("a dotted sixteenth can be shortened without losing its thirty-second rest gap", () => {
@@ -83,12 +139,14 @@ test("rest properties preserve later notes; tail values use available capacity; 
   const last = events(split)[3]!;
   const tail = f.set(last, { duration: { base: 2, dots: 0 } });
   assert.equal(events(tail).reduce((sum, event) => sum + durationUnits(event.duration), 0), 64);
-  assert.throws(() => f.set(events(tail)[3]!, { duration: { base: 2, dots: 1 } }), WorkbenchHostError);
-  const released = f.set(events(tail)[3]!, { duration: { base: 8, dots: 0 } });
+  const overfull = f.set(events(tail)[3]!, { duration: { base: 2, dots: 1 } });
+  assert.equal(ruleWarningCount(overfull), 1);
+  const released = f.set(events(overfull)[3]!, { duration: { base: 8, dots: 0 } });
   assert.equal(events(released).length, 4);
+  assert.equal(ruleWarningCount(released), 0);
 });
 
-test("extending a rest never silently consumes the following rest", () => {
+test("extending a rest consumes adjacent silence atomically and can move later notes into free space", () => {
   const f = fixture();
   for (let index = 0; index < 4; index++) {
     const previous = events(f.read()).at(-1);
@@ -96,10 +154,51 @@ test("extending a rest never silently consumes the following rest", () => {
       duration: { base: 4, dots: 0 }, content: { kind: "rest" } });
   }
   const before = f.read(), third = events(before)[2]!;
-  assert.throws(() => f.set(third, { duration: { base: 2, dots: 0 } }), (error: unknown) =>
-    error instanceof WorkbenchHostError && error.status === 422 && error.issue?.code === "editor.rest-would-overwrite-next"
-      && error.issue.target.scope === "event" && error.issue.target.measureId === "measure-1");
-  assert.deepEqual(f.service.read(f.workspace), before);
+  const merged = f.set(third, { duration: { base: 2, dots: 0 } });
+  assert.deepEqual(events(merged).map((event) => event.id), events(before).slice(0, 3).map((event) => event.id));
+  assert.equal(events(merged)[2]!.content.kind, "rest");
+  assert.deepEqual(f.edit({ kind: "undo" }).notation, before.notation);
+
+  const g = fixture();
+  g.edit({ kind: "append", measureId: "measure-1", anchor: { kind: "start" },
+    duration: { base: 8, dots: 0 }, content: { kind: "rest" } });
+  g.append("C", { base: 8, dots: 0 });
+  g.append("A", { base: 2, dots: 0 });
+  const beforeShift = g.read(), [rest, firstNote, secondNote] = events(beforeShift);
+  const shifted = g.set(rest!, { duration: { base: 4, dots: 0 } });
+  assert.deepEqual(events(shifted).map((event) => event.id), [rest!.id, firstNote!.id, secondNote!.id]);
+  assert.equal(events(shifted).reduce((sum, event) => sum + durationUnits(event.duration), 0), 56);
+  assert.deepEqual(g.edit({ kind: "undo" }).notation, beforeShift.notation);
+});
+
+test("a rest at the beginning, middle or end can change duration without losing note order", () => {
+  for (const restAt of [0, 1, 2]) {
+    const f = fixture();
+    for (let index = 0; index < 3; index++) {
+      if (index !== restAt) { f.append(index === 0 ? "C" : "A", { base: 8, dots: 0 }); continue; }
+      const previous = events(f.read()).at(-1);
+      f.edit({ kind: "append", measureId: "measure-1",
+        anchor: previous ? { kind: "after-event", eventId: previous.id } : { kind: "start" },
+        duration: { base: 8, dots: 0 }, content: { kind: "rest" } });
+    }
+    const before = f.read(), original = events(before);
+    const changed = f.set(original[restAt]!, { duration: { base: 4, dots: 0 } });
+    assert.deepEqual(events(changed).map((event) => event.id), original.map((event) => event.id), `rest at ${restAt}`);
+    assert.equal(events(changed).reduce((sum, event) => sum + durationUnits(event.duration), 0), 32);
+    assert.deepEqual(f.edit({ kind: "undo" }).notation, before.notation);
+  }
+});
+
+test("an overfull edit stays in its measure, reports a warning and does not spill into the next measure", () => {
+  const f = fixture();
+  f.append("C", { base: 2, dots: 0 });
+  f.append("A", { base: 2, dots: 0 });
+  const before = f.read();
+  const changed = f.set(events(before)[0]!, { duration: { base: 1, dots: 0 } });
+  assert.equal(ruleWarningCount(changed), 1);
+  assert.equal(events(changed).reduce((sum, event) => sum + durationUnits(event.duration), 0), 96);
+  assert.equal(changed.notation.kind === "staff" && changed.notation.measures[1]!.events.length, 0);
+  assert.deepEqual(f.edit({ kind: "undo" }).notation, before.notation);
 });
 
 test("property retry, stale versions, rename history and transport validation use the existing session guarantees", () => {

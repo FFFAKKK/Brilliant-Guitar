@@ -6,7 +6,7 @@ export const capacityUnits = (measure: Pick<StaffMeasure, "meter">): number => 6
 export function nextMeasure(view: StaffView, measureId: string): string {
   const index = view.measures.findIndex((measure) => measure.id === measureId);
   const measure = view.measures[index];
-  return measure && usedUnits(measure) === capacityUnits(measure) ? view.measures[index + 1]?.id ?? measureId : measureId;
+  return measure && usedUnits(measure) >= capacityUnits(measure) ? view.measures[index + 1]?.id ?? measureId : measureId;
 }
 export function pitchAtY(y: number, staffBottom: number, spacing: number): InputPitch {
   const diatonic = Math.max(14, Math.min(48, 4 * 7 + 2 + Math.round((staffBottom - y) / (spacing / 2))));

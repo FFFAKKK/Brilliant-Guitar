@@ -13,7 +13,7 @@ import type { ScoreEditPoint } from "../editor/score-navigation";
 import type { WorkbenchFeedback } from "../feedback/workbench-feedback";
 import { LatestWorkbenchTask } from "../workbench/latest-task.ts";
 
-interface StaffEditing {
+export interface StaffEditing {
   readonly point: ScoreEditPoint | null;
   readonly draftStep: InputPitch["step"] | null;
   readonly viewportRef: RefObject<HTMLDivElement | null>;
@@ -37,9 +37,9 @@ function anchorForPoint(geometry: NotationInteractionGeometry | null, point: Sco
     && candidate.offsetUnits === point.offsetUnits) ?? null;
 }
 
-function EngravedPage({ layout, renderer, number, editing, view }: {
+function EngravedPage({ layout, renderer, number, editing, view, showRuleWarnings }: {
   readonly layout: StaffLayout; readonly renderer: NotationRenderer; readonly number: number;
-  readonly editing: StaffEditing | undefined; readonly view: StaffNotation;
+  readonly editing: StaffEditing | undefined; readonly view: StaffNotation; readonly showRuleWarnings: boolean;
 }) {
   const engraving = useRef<HTMLDivElement>(null);
   const focusElement = useRef<SVGRectElement>(null);
@@ -79,6 +79,10 @@ function EngravedPage({ layout, renderer, number, editing, view }: {
   const feedbackMeasureId = editing?.feedback?.target.scope === "measure" || editing?.feedback?.target.scope === "event"
     ? editing.feedback.target.measureId : null;
   const feedbackMeasure = feedbackMeasureId && interaction?.measures.find((measure) => measure.measureId === feedbackMeasureId);
+  const ruleWarningMeasures = showRuleWarnings ? (interaction?.measures.filter((geometry) =>
+    layout.measures.some((item) => item.measure.id === geometry.measureId && item.measure.ruleWarnings.length > 0)) ?? []) : [];
+  const ruleWarningCount = showRuleWarnings
+    ? layout.measures.reduce((total, item) => total + item.measure.ruleWarnings.length, 0) : 0;
   const feedbackEventId = editing?.feedback?.target.scope === "event" ? editing.feedback.target.eventId : null;
   const focusRejected = feedbackEventId ? feedbackEventId === selection?.eventId
     : feedbackMeasureId === (selection?.measureId ?? cursor?.measureId);
@@ -112,7 +116,8 @@ function EngravedPage({ layout, renderer, number, editing, view }: {
     const hasFreeTail = measure.events.length === 0 || usedUnits(measure) < capacityUnits(measure);
     const targets: ({ readonly kind: "event"; readonly eventId: string; readonly distance: number }
       | { readonly kind: "empty"; readonly anchor: EditAnchorGeometry; readonly distance: number })[] = [...eventTargets];
-    if (hasFreeTail) interaction.anchors.filter((item) => item.measureId === measureId && item.offsetUnits >= usedUnits(measure))
+    interaction.anchors.filter((item) => item.measureId === measureId
+      && (item.offsetUnits <= usedUnits(measure) || hasFreeTail))
       .forEach((anchor) => targets.push({ kind: "empty", anchor, distance: Math.abs(anchor.x - point.x) }));
     const nearest = targets.reduce<typeof targets[number] | null>((best, item) => !best || item.distance < best.distance ? item : best, null);
     if (nearest?.kind === "event") { if (!writeNow) editing.onSelectEvent?.(nearest.eventId); return; }
@@ -123,9 +128,19 @@ function EngravedPage({ layout, renderer, number, editing, view }: {
     data-render-state={status} aria-busy={status === "loading"}>
     <div ref={engraving} className="staff-paper-engraving" onClick={(event) => locate(event, false)} onDoubleClick={(event) => locate(event, true)}
       role={status === "ready" ? "img" : undefined}
-      aria-label={`第 ${number} 页，高音谱表，${layout.measures.length} 个小节`} />
+      aria-label={`第 ${number} 页，高音谱表，${layout.measures.length} 个小节${ruleWarningCount ? `，${ruleWarningCount} 个节拍提示` : ""}`} />
     {status === "ready" && interaction && <svg className="staff-interaction-overlay" viewBox={`0 0 ${layout.width} ${layout.height}`}
       preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
+      {ruleWarningMeasures.map((measure) => {
+        const radius = Math.max(4.5, measure.lineSpacing * .46);
+        const x = measure.x + measure.width - radius - 3;
+        const y = Math.max(measure.y + radius + 2, measure.staffBottom - measure.lineSpacing * 5.15);
+        return <g key={`rule-warning-${measure.measureId}`} className="score-rule-warning"
+          transform={`translate(${x} ${y})`}>
+          <circle r={radius} />
+          <text y={radius * .36}>!</text>
+        </g>;
+      })}
       {feedbackMeasure && <rect key={`feedback-${editing?.feedback?.sequence}`} className="score-edit-warning"
         x={feedbackMeasure.x + 2} y={feedbackMeasure.staffBottom - feedbackMeasure.lineSpacing * 5.2}
         width={Math.max(0, feedbackMeasure.width - 4)} height={feedbackMeasure.lineSpacing * 6.4}
@@ -148,18 +163,22 @@ function EngravedPage({ layout, renderer, number, editing, view }: {
   </div>;
 }
 
-interface StaffViewProps {
+export interface StaffViewProps {
   readonly notation: NotationView | null;
   readonly renderer: NotationRenderer;
   readonly loading: boolean;
   readonly error: string;
   readonly onRetry: () => void;
   readonly zoom?: number;
+  readonly onZoomIn?: () => void;
+  readonly onZoomOut?: () => void;
   readonly editing?: StaffEditing;
+  readonly showRuleWarnings?: boolean;
 }
 
 /** Paper is this view's own interface. The public host adds no visual chrome. */
-export function StaffView({ notation, renderer, loading, error, onRetry, editing, zoom = 100 }: StaffViewProps) {
+export function StaffView({ notation, renderer, loading, error, onRetry, editing, zoom = 100,
+  onZoomIn, onZoomOut, showRuleWarnings = true }: StaffViewProps) {
   const staffNotation = notation?.kind === "staff" ? notation : null;
   const { size } = useHostedUiComponent();
   const fit = fitScorePaper(size);
@@ -171,6 +190,11 @@ export function StaffView({ notation, renderer, loading, error, onRetry, editing
   return <div className="staff-view" ref={viewport} tabIndex={0} aria-label="五线谱视图"
     data-panning={panning} data-editable={Boolean(editing)} data-input-idle={Boolean(activePoint) && !editing?.busy}
     {...panEvents} onKeyDown={editing?.onKeyDown}
+    onWheel={(event) => {
+      if (!event.ctrlKey && !event.metaKey) return;
+      event.preventDefault();
+      if (event.deltaY < 0) onZoomIn?.(); else onZoomOut?.();
+    }}
     onClick={(event) => {
       if (!(event.target as Element).closest("button")) viewport.current?.focus({ preventScroll: true });
     }}
@@ -180,7 +204,8 @@ export function StaffView({ notation, renderer, loading, error, onRetry, editing
       : loading ? <div className="staff-view-message" role="status">正在加载乐谱…</div>
       : notation?.kind === "unsupported" ? <div className="staff-view-message" role="status">{notation.message}</div>
       : staffNotation ? <div className="staff-page-stack">{pages.map((page, index) =>
-        <EngravedPage key={index} layout={page} renderer={renderer} number={index + 1} editing={editing} view={staffNotation} />)}</div>
+        <EngravedPage key={index} layout={page} renderer={renderer} number={index + 1} editing={editing}
+          view={staffNotation} showRuleWarnings={showRuleWarnings} />)}</div>
       : null}
   </div>;
 }

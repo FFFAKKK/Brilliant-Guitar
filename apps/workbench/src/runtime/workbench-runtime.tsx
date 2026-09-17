@@ -1,9 +1,8 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useMemo, useState } from "react";
 import type { ReactNode, RefObject } from "react";
 import { WorkbenchCommandRouter } from "../commands/workbench-command.ts";
 import { useWorkbenchFeedback } from "../feedback/use-workbench-feedback.ts";
 import type { WorkbenchFeedbackCoordinator } from "../feedback/use-workbench-feedback.ts";
-import { UiComponentRuntime } from "../ui/component-runtime.ts";
 import { useWorkbenchFocus } from "../workbench/use-workbench-focus.ts";
 import type { WorkbenchFocusController } from "../workbench/use-workbench-focus.ts";
 import { useWorkbenchOperations } from "../workbench/operation-state.ts";
@@ -15,7 +14,6 @@ export interface WorkbenchRuntime {
   readonly operations: WorkbenchOperationController;
   readonly feedback: WorkbenchFeedbackCoordinator;
   readonly focus: WorkbenchFocusController;
-  readonly components: UiComponentRuntime;
 }
 
 export type WorkbenchTaskRuntime = Pick<WorkbenchRuntime, "feedback" | "operations">;
@@ -30,10 +28,8 @@ export function WorkbenchRuntimeProvider({ focusFallback, children }: {
   const operations = useWorkbenchOperations();
   const focus = useWorkbenchFocus(focusFallback);
   const [commands] = useState(() => new WorkbenchCommandRouter());
-  const [components] = useState(() => new UiComponentRuntime(feedback.report));
-  useEffect(() => () => components.dispose(), [components]);
-  const runtime = useMemo<WorkbenchRuntime>(() => ({ commands, operations, feedback, focus, components }),
-    [commands, components, feedback, focus, operations]);
+  const runtime = useMemo<WorkbenchRuntime>(() => ({ commands, operations, feedback, focus }),
+    [commands, feedback, focus, operations]);
   return <RuntimeContext.Provider value={runtime}>{children}</RuntimeContext.Provider>;
 }
 

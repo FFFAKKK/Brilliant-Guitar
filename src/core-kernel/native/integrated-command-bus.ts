@@ -26,6 +26,7 @@ type NativeReadState = Omit<KernelReadState, "snapshot"> & {
 interface WireResult {
   ok: boolean;
   failure?: Failure;
+  report?: unknown;
   documentVersion?: number;
   history?: KernelReadState["history"];
   state?: NativeReadState;
@@ -55,6 +56,56 @@ function pluginFailureRecord(value: unknown): { code: string; moduleId?: string;
   };
 }
 
+export interface KernelRuleWarningFractionV1 {
+  readonly numerator: number;
+  readonly denominator: number;
+}
+
+export interface KernelRuleWarningV1 {
+  readonly warningVersion: 1;
+  readonly code: "rule.sequence-exceeds-measure";
+  readonly messageKey: string;
+  readonly partId: string;
+  readonly measureId: string;
+  readonly voiceId: string;
+  readonly nominalDuration: KernelRuleWarningFractionV1;
+  readonly actualDuration: KernelRuleWarningFractionV1;
+  readonly overflow: KernelRuleWarningFractionV1;
+}
+
+export interface KernelRuleWarningPageV1 {
+  readonly reportVersion: 1;
+  readonly documentId: string;
+  readonly documentVersion: number;
+  readonly offset: number;
+  readonly total: number;
+  readonly warnings: readonly KernelRuleWarningV1[];
+  readonly nextOffset: number | null;
+}
+
+export type KernelRuleWarningPageReadResultV1 =
+  | { readonly ok: true; readonly value: KernelRuleWarningPageV1 }
+  | { readonly ok: false; readonly failure: { readonly code: string } };
+
+type RuleWarningReaderV1 = (
+  documentId: string,
+  documentVersion: number,
+  offset: number,
+  limit: number,
+) => KernelRuleWarningPageReadResultV1;
+
+// The workbench host can load the generated CommonJS kernel through both its
+// ESM bridge and `require()`. Keep this private capability registry on the
+// process global so those two module instances still see the same reader.
+const ruleWarningReaderRegistryKey = "__brilliant_rule_warning_readers_v1__";
+const globalRegistry = globalThis as typeof globalThis & { [key: string]: unknown };
+const ruleWarningReadersV1 = (globalRegistry[ruleWarningReaderRegistryKey] as WeakMap<IntegratedCommandBus, RuleWarningReaderV1> | undefined)
+  ?? (() => {
+    const registry = new WeakMap<IntegratedCommandBus, RuleWarningReaderV1>();
+    globalRegistry[ruleWarningReaderRegistryKey] = registry;
+    return registry;
+  })();
+
 function recordPluginFailure(value: unknown, operation: "create" | "prepare" | "transform" | "assess" | "read"): void {
   const failure = pluginFailureRecord(value);
   if (failure === undefined || !(
@@ -79,6 +130,61 @@ function freeze<T>(value: T): T {
     freezeObject(value);
   }
   return value;
+}
+
+function isSafeNonNegativeInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+}
+
+function decodeRuleWarningFractionV1(value: unknown): KernelRuleWarningFractionV1 | undefined {
+  if (value === null || typeof value !== "object") return undefined;
+  const record = value as Record<string, unknown>;
+  if (!Number.isSafeInteger(record.numerator) || !Number.isSafeInteger(record.denominator)
+    || (record.denominator as number) <= 0) return undefined;
+  return { numerator: record.numerator as number, denominator: record.denominator as number };
+}
+
+function decodeRuleWarningV1(value: unknown): KernelRuleWarningV1 | undefined {
+  if (value === null || typeof value !== "object") return undefined;
+  const record = value as Record<string, unknown>;
+  const nominalDuration = decodeRuleWarningFractionV1(record.nominalDuration);
+  const actualDuration = decodeRuleWarningFractionV1(record.actualDuration);
+  const overflow = decodeRuleWarningFractionV1(record.overflow);
+  if (record.warningVersion !== 1 || record.code !== "rule.sequence-exceeds-measure"
+    || typeof record.messageKey !== "string" || typeof record.partId !== "string"
+    || typeof record.measureId !== "string" || typeof record.voiceId !== "string"
+    || nominalDuration === undefined || actualDuration === undefined || overflow === undefined) return undefined;
+  return { warningVersion: 1, code: record.code, messageKey: record.messageKey,
+    partId: record.partId, measureId: record.measureId, voiceId: record.voiceId,
+    nominalDuration, actualDuration, overflow };
+}
+
+function decodeRuleWarningPageV1(value: unknown): KernelRuleWarningPageV1 | undefined {
+  if (value === null || typeof value !== "object") return undefined;
+  const record = value as Record<string, unknown>;
+  if (record.reportVersion !== 1 || typeof record.documentId !== "string"
+    || !isSafeNonNegativeInteger(record.documentVersion) || !isSafeNonNegativeInteger(record.offset)
+    || !isSafeNonNegativeInteger(record.total) || !Array.isArray(record.warnings)
+    || !(record.nextOffset === null || isSafeNonNegativeInteger(record.nextOffset))) return undefined;
+  const warnings = record.warnings.map(decodeRuleWarningV1);
+  if (warnings.some((warning) => warning === undefined)) return undefined;
+  return { reportVersion: 1, documentId: record.documentId, documentVersion: record.documentVersion,
+    offset: record.offset, total: record.total, warnings: warnings as KernelRuleWarningV1[],
+    nextOffset: record.nextOffset };
+}
+
+/** Private Native report bridge. Rule warnings remain derived kernel facts, not document state. */
+export function readNativeRuleWarningPageV1(
+  bus: IntegratedCommandBus,
+  documentId: string,
+  documentVersion: number,
+  offset: number,
+  limit: number,
+): KernelRuleWarningPageReadResultV1 {
+  const reader = ruleWarningReadersV1.get(bus);
+  return reader === undefined
+    ? freeze({ ok: false, failure: { code: "report.native-reader-unavailable" } })
+    : reader(documentId, documentVersion, offset, limit);
 }
 
 /** Opt-in embedding only. No public SDK exports or default backend are changed. */
@@ -257,6 +363,21 @@ export function createNativeIntegratedCommandBusV2(addon: IntegratedNativeAddonV
       let active = true;
       return freeze({ status: "subscribed" as const, unsubscribe: () => { if (active) { active = false; const index = subscribers.indexOf(fn); if (index !== -1) subscribers.splice(index, 1); } } });
     },
+  });
+  ruleWarningReadersV1.set(bus, (documentId, documentVersion, offset, limit) => {
+    if (typeof documentId !== "string" || !isSafeNonNegativeInteger(documentVersion)
+      || !isSafeNonNegativeInteger(offset) || !Number.isSafeInteger(limit) || limit < 1 || limit > 4_096) {
+      return freeze({ ok: false, failure: { code: "report.invalid-request" } });
+    }
+    const output = raw({ operation: "readRuleWarningPage", reportVersion: 1,
+      documentId, documentVersion, offset, limit });
+    if (!output.ok) return freeze({ ok: false, failure: {
+      code: typeof output.failure?.code === "string" ? output.failure.code : "report.internal-error",
+    } });
+    const report = decodeRuleWarningPageV1(output.report);
+    return report === undefined
+      ? freeze({ ok: false, failure: { code: "report.invalid-response" } })
+      : freeze({ ok: true, value: report });
   });
   bindNativeIntegratedAssemblyV2(bus, assembly.state);
   return freeze({ ok: true, value: bus });

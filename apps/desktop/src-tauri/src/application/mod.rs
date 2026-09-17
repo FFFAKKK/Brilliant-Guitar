@@ -3,23 +3,23 @@ use std::path::{Path, PathBuf};
 
 use brilliant_core_types::StableId;
 use brilliant_kernel_contracts::{
-    KernelSessionCreateRequestV1, KernelSessionReadResultV1, KernelStage4CommandResultV1,
-    KernelStage4MarkPersistedResultV1, KernelStage4OperationResultV1,
+    KernelRuleWarningReadFailureV1, KernelSessionCreateRequestV1, KernelSessionReadResultV1,
+    KernelStage4CommandResultV1, KernelStage4MarkPersistedResultV1, KernelStage4OperationResultV1,
 };
 use brilliant_kernel_session::KernelSession;
 use brilliant_score_foundation::{
-    LosslessEncode, NoteValueV1, PitchStepV1, RhythmicContentV1, ScoreDocumentV1,
-    decode_lossless_json, decode_lossless_score_document_value,
+    CoreRuleWarningV1, FractionV1, LosslessEncode, NoteValueV1, PitchStepV1, RhythmicContentV1,
+    ScoreDocumentV1, decode_lossless_json, decode_lossless_score_document_value,
 };
 use serde_json::{Value, json};
 use uuid::Uuid;
 
 use crate::{
     dto::{
-        CreateScoreRequest, EventDuration, InputContent, InputSequenceAnchor, Meter,
+        CreateScoreRequest, EventDuration, ExactFraction, InputContent, InputSequenceAnchor, Meter,
         NativeFileResult, NewScoreInput, NotationView, PitchStep, ScoreEditAction,
-        ScoreEditRequest, ScoreSessionRead, StaffEvent, StaffMeasure, WorkbenchIssueSource,
-        WorkbenchIssueTarget,
+        ScoreEditRequest, ScoreSessionRead, StaffEvent, StaffMeasure, StaffRuleWarning,
+        WorkbenchIssueSource, WorkbenchIssueTarget,
     },
     error::HostError,
 };
@@ -385,7 +385,7 @@ fn validate_edit(request: &ScoreEditRequest) -> Result<(), HostError> {
         } if !(2..=6).contains(&pitch.octave) || !(-1..=1).contains(&pitch.alter) => {
             Err(HostError::new("输入音高无效", 400))
         }
-        ScoreEditAction::DeleteEvent { event_id }
+        ScoreEditAction::DeleteEvent { event_id, .. }
         | ScoreEditAction::SetEventProperties { event_id, .. }
             if event_id.is_empty() =>
         {
@@ -475,6 +475,23 @@ fn read_state(
 fn session_read(session: &KernelSession) -> Result<ScoreSessionRead, HostError> {
     let state = read_state(session)?;
     let document = &state.snapshot.document;
+    let mut warnings = Vec::new();
+    let mut offset = 0;
+    loop {
+        let page = session
+            .read_rule_warning_page(&document.id, state.snapshot.document_version, offset, 4_096)
+            .map_err(|failure| match failure {
+                KernelRuleWarningReadFailureV1::DocumentMismatch
+                | KernelRuleWarningReadFailureV1::StaleVersion
+                | KernelRuleWarningReadFailureV1::InvalidPageSize { .. }
+                | KernelRuleWarningReadFailureV1::OffsetOutOfBounds { .. }
+                | KernelRuleWarningReadFailureV1::SemanticInvalid { .. }
+                | KernelRuleWarningReadFailureV1::Internal => HostError::internal(),
+            })?;
+        warnings.extend(page.warnings);
+        let Some(next) = page.next_offset else { break };
+        offset = next;
+    }
     Ok(ScoreSessionRead {
         document_id: id_text(&document.id)?,
         title: text(&document.metadata.title)?,
@@ -482,7 +499,7 @@ fn session_read(session: &KernelSession) -> Result<ScoreSessionRead, HostError> 
         document_version: state.snapshot.document_version.get(),
         undo_depth: state.history.undo_depth,
         redo_depth: state.history.redo_depth,
-        notation: project_notation(document),
+        notation: project_notation(document, &warnings),
     })
 }
 
@@ -534,7 +551,14 @@ fn unsupported(message: &str) -> NotationView {
     }
 }
 
-fn project_notation(document: &ScoreDocumentV1) -> NotationView {
+fn exact_fraction(value: &FractionV1) -> ExactFraction {
+    ExactFraction {
+        numerator: value.numerator.get(),
+        denominator: value.denominator.get(),
+    }
+}
+
+fn project_notation(document: &ScoreDocumentV1, warnings: &[CoreRuleWarningV1]) -> NotationView {
     let Some(part) = document.parts.first() else {
         return unsupported("当前视图暂只支持单谱表的高音五线谱，文档已保留。");
     };
@@ -579,7 +603,6 @@ fn project_notation(document: &ScoreDocumentV1) -> NotationView {
             return unsupported("当前视图暂只支持从小节起点开始的单声部，文档已保留。");
         }
         let mut events = Vec::with_capacity(voice.sequence.events.len());
-        let mut used = 0_u64;
         for event in &voice.sequence.events {
             if event
                 .staff_id
@@ -610,10 +633,6 @@ fn project_notation(document: &ScoreDocumentV1) -> NotationView {
                     return unsupported("暂只支持 C2–B6 单音、基础升降号和常用时值，文档已保留。");
                 }
             };
-            let Some(units) = duration_units(event_duration) else {
-                return unsupported("暂只支持 C2–B6 单音、基础升降号和常用时值，文档已保留。");
-            };
-            used += u64::from(units);
             let Ok(id) = id_text(&event.id) else {
                 return unsupported("文档包含当前界面无法显示的标识，文档已保留。");
             };
@@ -622,11 +641,6 @@ fn project_notation(document: &ScoreDocumentV1) -> NotationView {
                 duration: event_duration,
                 content,
             });
-        }
-        let capacity =
-            64_i64 * definition.meter.numerator.get() / definition.meter.denominator.get();
-        if used > capacity as u64 {
-            return unsupported("小节内容超出拍号容量，暂时无法显示。");
         }
         let (Ok(id), Ok(voice_id)) = (id_text(&definition.id), id_text(&voice.id)) else {
             return unsupported("文档包含当前界面无法显示的标识，文档已保留。");
@@ -639,6 +653,20 @@ fn project_notation(document: &ScoreDocumentV1) -> NotationView {
                 denominator: definition.meter.denominator.get(),
             },
             events,
+            rule_warnings: warnings
+                .iter()
+                .filter(|warning| {
+                    warning.part_id == part.id
+                        && warning.measure_id == definition.id
+                        && warning.voice_id == voice.id
+                })
+                .map(|warning| StaffRuleWarning {
+                    code: warning.code.as_str(),
+                    nominal_duration: exact_fraction(&warning.nominal_duration),
+                    actual_duration: exact_fraction(&warning.actual_duration),
+                    overflow: exact_fraction(&warning.overflow),
+                })
+                .collect(),
         });
     }
     let (Ok(part_id), Ok(staff_id)) = (id_text(&part.id), id_text(&staff.id)) else {
@@ -704,7 +732,10 @@ fn execute_edit(
                 }),
             )
         }
-        ScoreEditAction::DeleteEvent { event_id } => delete_event(session, current, event_id),
+        ScoreEditAction::DeleteEvent {
+            event_id,
+            time_policy,
+        } => delete_event(session, current, event_id, *time_policy),
         ScoreEditAction::SetEventProperties {
             event_id,
             properties,
@@ -776,7 +807,7 @@ fn action_target(current: &ScoreSessionRead, action: &ScoreEditAction) -> Workbe
             measure_id: measure_id.clone(),
             event_id: None,
         },
-        ScoreEditAction::DeleteEvent { event_id }
+        ScoreEditAction::DeleteEvent { event_id, .. }
         | ScoreEditAction::SetEventProperties { event_id, .. } => {
             if let NotationView::Staff { measures, .. } = &current.notation
                 && let Some(measure) = measures
@@ -823,9 +854,10 @@ fn delete_event(
     session: &mut KernelSession,
     current: &ScoreSessionRead,
     event_id: &str,
+    time_policy: crate::dto::DeleteTimePolicy,
 ) -> Result<(), HostError> {
     let document = read_state(session)?.snapshot.document;
-    let Some((content, voice, index)) = find_event(&document, event_id) else {
+    let Some((_content, voice, index)) = find_event(&document, event_id) else {
         return Err(HostError::issue(
             "editor.selection-stale",
             "选中内容已不存在，请重新选择",
@@ -835,6 +867,7 @@ fn delete_event(
                 current,
                 &ScoreEditAction::DeleteEvent {
                     event_id: event_id.into(),
+                    time_policy,
                 },
             ),
             None,
@@ -842,20 +875,9 @@ fn delete_event(
     };
     let event = &voice.sequence.events[index];
     let remove = json!({ "commandVersion": 1, "commandId": "core.event.remove", "target": { "kind": "event", "eventId": event_id }, "payload": {} });
-    if matches!(event.content, RhythmicContentV1::Rest) {
-        if index + 1 != voice.sequence.events.len() {
-            return Err(HostError::issue(
-                "editor.required-rest-cannot-delete",
-                "中间休止符用于保留节拍，当前仅支持移除末尾休止符",
-                422,
-                WorkbenchIssueSource::Editor,
-                WorkbenchIssueTarget::Event {
-                    measure_id: id_text(&content.measure_id)?,
-                    event_id: event_id.into(),
-                },
-                None,
-            ));
-        }
+    if matches!(event.content, RhythmicContentV1::Rest)
+        || time_policy == crate::dto::DeleteTimePolicy::Collapse
+    {
         return submit_command(session, remove);
     }
     let anchor = index.checked_sub(1).map_or_else(
@@ -916,17 +938,6 @@ fn set_event_properties(
     let new_units =
         duration_units(properties.duration).ok_or_else(|| HostError::new("输入时值无效", 400))?;
     let following = &voice.sequence.events[index + 1..];
-    if matches!(event.content, RhythmicContentV1::Rest)
-        && new_units > old_units
-        && !following.is_empty()
-    {
-        return Err(editor_event_error(
-            "editor.rest-would-overwrite-next",
-            "延长该休止符会覆盖后面的节拍位置",
-            measure_content,
-            event_id,
-        )?);
-    }
     let next_note = following
         .iter()
         .position(|item| matches!(item.content, RhythmicContentV1::Notes { .. }));
@@ -938,45 +949,6 @@ fn set_event_properties(
         .ok_or_else(|| HostError::new("当前时值暂不支持编辑", 422))?
         .into_iter()
         .sum::<u16>();
-    let before_units = voice.sequence.events[..index]
-        .iter()
-        .map(|item| duration(&item.duration).and_then(duration_units))
-        .collect::<Option<Vec<_>>>()
-        .ok_or_else(|| HostError::new("当前时值暂不支持编辑", 422))?
-        .into_iter()
-        .sum::<u16>();
-    let meter = document
-        .measure_definitions
-        .iter()
-        .find(|measure| measure.id == measure_content.measure_id)
-        .ok_or_else(HostError::internal)?;
-    let capacity =
-        u16::try_from(64_i64 * meter.meter.numerator.get() / meter.meter.denominator.get())
-            .map_err(|_| HostError::internal())?;
-    let limit = if next_note.is_some() {
-        old_units + rest_units
-    } else {
-        capacity.saturating_sub(before_units)
-    };
-    if new_units > limit {
-        let (code, message) = if next_note.is_some() {
-            (
-                "editor.event-would-overwrite-note",
-                "延长后会覆盖后面的音符，请缩短时值或先调整紧随的休止符",
-            )
-        } else {
-            (
-                "editor.measure-capacity-exceeded",
-                "所选时值超出本小节剩余容量",
-            )
-        };
-        return Err(editor_event_error(
-            code,
-            message,
-            measure_content,
-            event_id,
-        )?);
-    }
     let mut commands = Vec::new();
     for rest in rests {
         commands.push(json!({ "commandVersion": 1, "commandId": "core.event.remove", "target": { "kind": "event", "eventId": id_text(&rest.id)? }, "payload": {} }));
@@ -1114,10 +1086,7 @@ fn append_event(
         u16::try_from(64_i64 * measure.meter.numerator.get() / measure.meter.denominator.get())
             .map_err(|_| HostError::internal())?;
     let gap = requested_offset.saturating_sub(anchor_offset);
-    if requested_offset < anchor_offset
-        || requested_offset > capacity
-        || gap > 0 && anchor_offset != used
-    {
+    if requested_offset < anchor_offset || gap > 0 && anchor_offset != used {
         return Err(position_error(
             "editor.position-stale",
             "输入位置不再可用，请重新选择节拍位置",
@@ -1128,14 +1097,6 @@ fn append_event(
     let new_units =
         duration_units(event_duration).ok_or_else(|| HostError::new("输入时值无效", 400))?;
     let projected = used + gap + new_units;
-    if projected > capacity {
-        return Err(position_error(
-            "editor.measure-capacity-exceeded",
-            "当前小节剩余时值不足，请缩短时值或选择其他小节",
-            measure_id,
-            422,
-        ));
-    }
     let mut commands = Vec::new();
     let mut insertion_anchor = match anchor {
         InputSequenceAnchor::Start => json!({ "kind": "start" }),

@@ -6,11 +6,11 @@ import { resolveScorePosition } from "../src/editor/score-position.ts";
 const score: StaffView = {
   kind: "staff", partId: "part", staffId: "staff", clef: "treble",
   measures: [
-    { id: "measure-1", voiceId: "voice-1", meter: { numerator: 4, denominator: 4 }, events: [
+    { id: "measure-1", voiceId: "voice-1", meter: { numerator: 4, denominator: 4 }, ruleWarnings: [], events: [
       { id: "event-1", duration: { base: 4, dots: 0 }, content: { kind: "note", pitch: { step: "C", octave: 4, alter: 0 } } },
       { id: "event-2", duration: { base: 8, dots: 0 }, content: { kind: "note", pitch: { step: "D", octave: 4, alter: 0 } } },
     ] },
-    { id: "measure-2", voiceId: "voice-2", meter: { numerator: 3, denominator: 4 }, events: [
+    { id: "measure-2", voiceId: "voice-2", meter: { numerator: 3, denominator: 4 }, ruleWarnings: [], events: [
       { id: "event-3", duration: { base: 2, dots: 1 }, content: { kind: "rest" } },
     ] },
   ],

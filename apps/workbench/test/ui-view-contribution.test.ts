@@ -1,18 +1,25 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { workbenchPlugins } from "../src/ui/workbench-plugins.ts";
+import { UiPluginHost } from "../src/ui/plugin-manager.ts";
+import { WORKBENCH_PLUGIN_API_VERSION, WorkbenchCapabilityRegistry } from "../src/ui/plugin-manifest.ts";
+import { bindUiProjection, defineUiProjection, UiProjectionRegistry } from "../src/ui/projection-registry.ts";
 
-test("view contributions attach presentation to installed definitions without changing the logical contract", () => {
-  const views = workbenchPlugins.indexViews([
-    { componentId: "notation.staff-view", label: "五线谱", render: () => null },
-    { componentId: "notation.note-input", label: "音符控制", render: () => null },
-  ]);
-  assert.equal(views.get("notation.staff-view")?.label, "五线谱");
-  assert.equal(workbenchPlugins.components.get("notation.staff-view")?.kind, "view");
-  assert.throws(() => workbenchPlugins.indexViews(
-    [{ componentId: "unknown", label: "未知", render: () => null }]), /not declared/);
-  assert.throws(() => workbenchPlugins.indexViews([
-    { componentId: "notation.staff-view", label: "A", render: () => null },
-    { componentId: "notation.staff-view", label: "B", render: () => null },
-  ]), /Duplicate/);
+test("installed views resolve from typed projections without changing component layout contracts", () => {
+  const state = defineUiProjection<{ readonly label: string }>("test.view-state");
+  const host = new UiPluginHost(new WorkbenchCapabilityRegistry([]), new UiProjectionRegistry([state]));
+  host.install({
+    manifest: { id: "example.view", name: "示例", version: "1.0.0", apiVersion: WORKBENCH_PLUGIN_API_VERSION,
+      runtime: "internal-module", requires: { capabilities: [], projections: [state.id] },
+      contributes: { views: ["example.panel"], commands: [] } },
+    projections: [state], commands: [], views: [{
+      definition: { id: "example.panel", version: "1.0", kind: "view", domain: "example.view", slots: ["workspace"],
+        presentation: { allowed: ["inline"], default: "inline" }, capabilities: {},
+        permissions: { projections: [state.id], commands: [] } },
+      label: "示例视图", render: (reader) => reader.get(state).label,
+    }],
+  });
+  const views = host.resolveViews(host.projections.snapshot([bindUiProjection(state, { label: "当前投影" })]));
+  assert.equal(views.get("example.panel")?.label, "示例视图");
+  assert.equal(views.get("example.panel")?.render(), "当前投影");
+  assert.equal(host.components.get("example.panel")?.kind, "view");
 });

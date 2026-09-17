@@ -7,11 +7,11 @@ import { adjacentEventAtPoint, defaultScoreEditPoint, edgeScoreEditPoint, editPo
 const score: StaffView = {
   kind: "staff", partId: "part", staffId: "staff", clef: "treble",
   measures: [
-    { id: "measure-1", voiceId: "voice-1", meter: { numerator: 4, denominator: 4 }, events: [
+    { id: "measure-1", voiceId: "voice-1", meter: { numerator: 4, denominator: 4 }, ruleWarnings: [], events: [
       { id: "event-1", duration: { base: 4, dots: 0 }, content: { kind: "note", pitch: { step: "C", octave: 4, alter: 0 } } },
       { id: "event-2", duration: { base: 8, dots: 0 }, content: { kind: "note", pitch: { step: "D", octave: 4, alter: 0 } } },
     ] },
-    { id: "measure-2", voiceId: "voice-2", meter: { numerator: 3, denominator: 4 }, events: [
+    { id: "measure-2", voiceId: "voice-2", meter: { numerator: 3, denominator: 4 }, ruleWarnings: [], events: [
       { id: "event-3", duration: { base: 4, dots: 0 }, content: { kind: "note", pitch: { step: "E", octave: 4, alter: 0 } } },
     ] },
   ],
@@ -56,7 +56,7 @@ test("backspace lookup crosses measure boundaries and normalization repairs stal
 
 test("an empty 4/4 measure offers four editable beat positions without document events", () => {
   const empty: StaffView = { kind: "staff", partId: "part", staffId: "staff", clef: "treble",
-    measures: [{ id: "empty", voiceId: "voice", meter: { numerator: 4, denominator: 4 }, events: [] }] };
+    measures: [{ id: "empty", voiceId: "voice", meter: { numerator: 4, denominator: 4 }, events: [], ruleWarnings: [] }] };
   const points = scoreEditPoints(empty);
   assert.deepEqual(points.map((point) => point.offsetUnits), [0, 16, 32, 48]);
   assert.ok(points.every((point) => point.anchor.kind === "start"));

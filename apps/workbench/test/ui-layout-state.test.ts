@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { listUiComponentsInSlot, moveUiComponent, reconcileUiLayout, restoreUiLayout, setUiComponentPresentation, setUiComponentVisibility } from "../src/ui/layout-state.ts";
-import { workbenchPlugins } from "../src/ui/workbench-plugins.ts";
+import { FIRST_PARTY_UI_COMPONENTS } from "../src/ui/first-party-component-definitions.ts";
 
-const COMPONENTS = workbenchPlugins.components.list();
+const COMPONENTS = FIRST_PARTY_UI_COMPONENTS;
 
 test("layout reconciliation installs valid defaults and rejects unknown persisted components", () => {
   const state = reconcileUiLayout(COMPONENTS, {

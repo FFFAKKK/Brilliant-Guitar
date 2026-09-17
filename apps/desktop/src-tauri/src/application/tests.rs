@@ -198,7 +198,7 @@ fn property_failure_keeps_document_and_success_preserves_event_identity() {
         PitchStep::C,
     );
     let first_id = first_measure_events(&first)[0].id.clone();
-    let second = append_note(
+    let _second = append_note(
         &mut service,
         &workspace_id,
         &first,
@@ -208,7 +208,7 @@ fn property_failure_keeps_document_and_success_preserves_event_identity() {
         PitchStep::D,
     );
     let before = service.read(&workspace_id).expect("read").expect("session");
-    let rejected = ScoreEditRequest {
+    let overfull_request = ScoreEditRequest {
         workspace_id: workspace_id.clone(),
         request_id: id(),
         document_id: before.document_id.clone(),
@@ -227,19 +227,31 @@ fn property_failure_keeps_document_and_success_preserves_event_identity() {
             },
         },
     };
-    assert_eq!(
-        service.edit(rejected).expect_err("overlap rejected").status,
-        422
+    let overfull = service
+        .edit(overfull_request)
+        .expect("overfull edit accepted");
+    match &overfull.notation {
+        NotationView::Staff { measures, .. } => {
+            assert_eq!(measures[0].rule_warnings.len(), 1);
+            assert_eq!(
+                measures[0].rule_warnings[0].code,
+                "rule.sequence-exceeds-measure"
+            );
+        }
+        NotationView::Unsupported { message } => panic!("unsupported notation: {message}"),
+    }
+    let restored = edit(
+        &mut service,
+        &workspace_id,
+        &overfull,
+        ScoreEditAction::Undo,
     );
-    assert_eq!(
-        service.read(&workspace_id).expect("read"),
-        Some(before.clone())
-    );
+    assert_eq!(restored.notation, before.notation);
 
     let changed = edit(
         &mut service,
         &workspace_id,
-        &second,
+        &restored,
         ScoreEditAction::SetEventProperties {
             event_id: first_id.clone(),
             properties: crate::dto::EventProperties {
@@ -260,6 +272,150 @@ fn property_failure_keeps_document_and_success_preserves_event_identity() {
         first_measure_events(&changed).len() >= 3,
         "gap is represented by rests"
     );
+}
+
+#[test]
+fn delete_time_policy_preserves_or_collapses_rhythm_and_remains_undoable() {
+    let mut service = ScoreSessionService::default();
+    let (workspace_id, created) = create(&mut service);
+    let first = append_note(
+        &mut service,
+        &workspace_id,
+        &created,
+        InputSequenceAnchor::Start,
+        PitchStep::C,
+    );
+    let first_id = first_measure_events(&first)[0].id.clone();
+    let second = append_note(
+        &mut service,
+        &workspace_id,
+        &first,
+        InputSequenceAnchor::AfterEvent { event_id: first_id },
+        PitchStep::D,
+    );
+    let second_id = first_measure_events(&second)[1].id.clone();
+    let third = append_note(
+        &mut service,
+        &workspace_id,
+        &second,
+        InputSequenceAnchor::AfterEvent {
+            event_id: second_id.clone(),
+        },
+        PitchStep::E,
+    );
+    let third_id = first_measure_events(&third)[2].id.clone();
+
+    let preserved = edit(
+        &mut service,
+        &workspace_id,
+        &third,
+        ScoreEditAction::DeleteEvent {
+            event_id: second_id.clone(),
+            time_policy: crate::dto::DeleteTimePolicy::Preserve,
+        },
+    );
+    assert_eq!(first_measure_events(&preserved).len(), 3);
+    assert_eq!(
+        first_measure_events(&preserved)[1].content,
+        InputContent::Rest
+    );
+
+    let collapsed_rest = edit(
+        &mut service,
+        &workspace_id,
+        &preserved,
+        ScoreEditAction::DeleteEvent {
+            event_id: second_id.clone(),
+            time_policy: crate::dto::DeleteTimePolicy::Preserve,
+        },
+    );
+    assert_eq!(
+        first_measure_events(&collapsed_rest)
+            .iter()
+            .map(|event| event.id.as_str())
+            .collect::<Vec<_>>(),
+        vec![
+            first_measure_events(&third)[0].id.as_str(),
+            third_id.as_str()
+        ]
+    );
+    let restored = edit(
+        &mut service,
+        &workspace_id,
+        &collapsed_rest,
+        ScoreEditAction::Undo,
+    );
+    assert_eq!(restored.notation, preserved.notation);
+
+    let original = edit(
+        &mut service,
+        &workspace_id,
+        &restored,
+        ScoreEditAction::Undo,
+    );
+    assert_eq!(original.notation, third.notation);
+    let collapsed_note = edit(
+        &mut service,
+        &workspace_id,
+        &original,
+        ScoreEditAction::DeleteEvent {
+            event_id: second_id,
+            time_policy: crate::dto::DeleteTimePolicy::Collapse,
+        },
+    );
+    assert_eq!(
+        first_measure_events(&collapsed_note)
+            .iter()
+            .map(|event| event.id.as_str())
+            .collect::<Vec<_>>(),
+        vec![
+            first_measure_events(&third)[0].id.as_str(),
+            third_id.as_str()
+        ]
+    );
+    assert_eq!(
+        edit(
+            &mut service,
+            &workspace_id,
+            &collapsed_note,
+            ScoreEditAction::Undo
+        )
+        .notation,
+        third.notation
+    );
+}
+
+#[test]
+fn append_beyond_nominal_measure_capacity_is_accepted_with_a_rule_warning() {
+    let mut service = ScoreSessionService::default();
+    let (workspace_id, created) = create(&mut service);
+    let placed = edit(
+        &mut service,
+        &workspace_id,
+        &created,
+        ScoreEditAction::Append {
+            measure_id: "measure-1".into(),
+            anchor: InputSequenceAnchor::Start,
+            offset_units: Some(80),
+            duration: EventDuration { base: 4, dots: 0 },
+            content: InputContent::Note {
+                pitch: crate::dto::InputPitch {
+                    step: PitchStep::A,
+                    octave: 4,
+                    alter: 0,
+                },
+            },
+        },
+    );
+    match &placed.notation {
+        NotationView::Staff { measures, .. } => {
+            assert_eq!(measures[0].events.len(), 3);
+            assert_eq!(measures[0].rule_warnings.len(), 1);
+            assert_eq!(measures[0].rule_warnings[0].overflow.numerator, 1);
+            assert_eq!(measures[0].rule_warnings[0].overflow.denominator, 2);
+        }
+        NotationView::Unsupported { message } => panic!("unsupported notation: {message}"),
+    }
 }
 
 #[test]
@@ -302,6 +458,30 @@ fn malformed_edit_identifiers_are_rejected_before_session_state() {
         400
     );
     assert_eq!(service.read(&workspace_id).expect("read"), Some(created));
+}
+
+#[test]
+fn legacy_delete_requests_default_to_rhythm_preservation() {
+    let action: ScoreEditAction = serde_json::from_value(json!({
+        "kind": "delete-event",
+        "eventId": "event-1"
+    }))
+    .expect("legacy delete action");
+    assert_eq!(
+        action,
+        ScoreEditAction::DeleteEvent {
+            event_id: "event-1".into(),
+            time_policy: crate::dto::DeleteTimePolicy::Preserve,
+        }
+    );
+    assert!(
+        serde_json::from_value::<ScoreEditAction>(json!({
+            "kind": "delete-event",
+            "eventId": "event-1",
+            "timePolicy": "stretch"
+        }))
+        .is_err()
+    );
 }
 
 #[test]
