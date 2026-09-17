@@ -32,8 +32,12 @@ export interface MeasureGeometry {
   readonly y: number;
   readonly width: number;
   readonly height: number;
+  readonly staffTop?: number;
   readonly staffBottom: number;
   readonly lineSpacing: number;
+  /** Nominal rhythmic boundary and actual sequence tail, in rendered coordinates. */
+  readonly nominalEndX?: number;
+  readonly actualEndX?: number;
 }
 
 export interface NotationInteractionGeometry {

@@ -5,6 +5,7 @@ import type { NotationView, StaffView as StaffNotation } from "../contracts/nota
 import type { NotationInteractionGeometry, NotationRenderer } from "../notation/notation-renderer";
 import { fitScorePaper, layoutScorePages, SCORE_PAPER } from "../notation/score-page-layout";
 import { describeMeasureRuleWarnings } from "../notation/rule-warning-description.ts";
+import { resolveOverfullHighlights } from "../notation/overfull-highlight.ts";
 import { zoomFittedPaper } from "../notation/paper-zoom";
 import { usePaperViewport } from "../notation/use-paper-viewport";
 import type { StaffLayout } from "../notation/staff-layout";
@@ -75,8 +76,7 @@ function EngravedPage({ layout, renderer, number, editing, view, showRuleWarning
   const feedbackMeasureId = editing?.feedback?.target.scope === "measure" || editing?.feedback?.target.scope === "event"
     ? editing.feedback.target.measureId : null;
   const feedbackMeasure = feedbackMeasureId && interaction?.measures.find((measure) => measure.measureId === feedbackMeasureId);
-  const ruleWarningMeasures = showRuleWarnings ? (interaction?.measures.filter((geometry) =>
-    layout.measures.some((item) => item.measure.id === geometry.measureId && item.measure.ruleWarnings.length > 0)) ?? []) : [];
+  const overfullHighlights = showRuleWarnings && interaction ? resolveOverfullHighlights(layout, interaction) : [];
   const ruleWarningCount = showRuleWarnings
     ? layout.measures.reduce((total, item) => total + item.measure.ruleWarnings.length, 0) : 0;
   const ruleWarningDescription = showRuleWarnings ? layout.measures
@@ -109,24 +109,15 @@ function EngravedPage({ layout, renderer, number, editing, view, showRuleWarning
     if (target?.kind === "caret") editing.onLocate(target.point, target.pitch, writeNow);
   }
   return <div className="staff-paper" data-page-format={SCORE_PAPER.format} data-orientation={SCORE_PAPER.orientation}
-    data-render-state={status} aria-busy={status === "loading"}>
+    data-render-state={status} data-show-rule-warnings={showRuleWarnings} aria-busy={status === "loading"}>
     <div ref={engraving} className="staff-paper-engraving" onClick={(event) => locate(event, false)} onDoubleClick={(event) => locate(event, true)}
       role={status === "ready" ? "img" : undefined}
       aria-label={`第 ${number} 页，高音谱表，${layout.measures.length} 个小节${ruleWarningCount ? `，${ruleWarningCount} 个节拍提示，${ruleWarningDescription}` : ""}`} />
     {status === "ready" && interaction && <svg className="staff-interaction-overlay" viewBox={`0 0 ${layout.width} ${layout.height}`}
       preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
-      {ruleWarningMeasures.map((measure) => {
-        const radius = Math.max(4.5, measure.lineSpacing * .46);
-        const x = measure.x + measure.width - radius - 3;
-        const y = Math.max(measure.y + radius + 2, measure.staffBottom - measure.lineSpacing * 5.15);
-        return <g key={`rule-warning-${measure.measureId}`} className="score-rule-warning"
-          transform={`translate(${x} ${y})`}>
-          <title>{layout.measures.map((item) => item.measure.id === measure.measureId
-            ? describeMeasureRuleWarnings(item.number, item.measure) : null).find(Boolean)}</title>
-          <circle r={radius} />
-          <text y={radius * .36}>!</text>
-        </g>;
-      })}
+      {overfullHighlights.map((highlight) => <line key={`rule-warning-${highlight.measureId}`}
+        className="score-rule-warning-underline" x1={highlight.x} x2={highlight.x + highlight.width}
+        y1={highlight.y} y2={highlight.y} />)}
       {feedbackMeasure && <rect key={`feedback-${editing?.feedback?.sequence}`} className="score-edit-warning"
         x={feedbackMeasure.x + 2} y={feedbackMeasure.staffBottom - feedbackMeasure.lineSpacing * 5.2}
         width={Math.max(0, feedbackMeasure.width - 4)} height={feedbackMeasure.lineSpacing * 6.4}

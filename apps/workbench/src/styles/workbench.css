@@ -254,20 +254,17 @@ button:focus-visible, a:focus-visible {
   stroke: color-mix(in srgb, var(--color-danger) 88%, transparent); stroke-width: 1.5;
   transform-box: fill-box; transform-origin: center; animation: score-edit-warning-pulse 720ms ease-out both;
 }
-.score-rule-warning { pointer-events: none; }
-.score-rule-warning circle {
-  fill: color-mix(in srgb, var(--color-danger) 13%, var(--color-surface));
-  stroke: color-mix(in srgb, var(--color-danger) 72%, var(--color-score-ink));
-  stroke-width: 1; vector-effect: non-scaling-stroke;
-}
-.score-rule-warning text {
-  fill: color-mix(in srgb, var(--color-danger) 82%, var(--color-score-ink));
-  stroke: none; font: 600 8px/1 var(--font-ui, "Segoe UI", sans-serif); text-anchor: middle;
+.score-rule-warning-underline {
+  pointer-events: none; vector-effect: non-scaling-stroke;
+  stroke: var(--color-score-warning); stroke-width: 2; stroke-linecap: round;
+  transform-box: fill-box; transform-origin: center;
+  animation: score-rule-warning-arrive 180ms cubic-bezier(.23, 1, .32, 1) both;
 }
 .score-edit-focus-rejected { animation: score-edit-focus-rejected 220ms ease-out both; }
 /* The empty beat remains visible while focus moves through menus and tools. */
 .staff-view[data-input-idle="true"] .score-edit-focus[data-kind="empty"] { animation: score-edit-focus-arrive 140ms ease-out, score-empty-focus-breathe 1.5s ease-in-out 300ms infinite; }
 @keyframes score-edit-focus-arrive { from { opacity: .35; transform: scale(.82); } to { opacity: 1; transform: scale(1); } }
+@keyframes score-rule-warning-arrive { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: scale(1); } }
 @keyframes score-empty-focus-breathe { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
 @keyframes score-edit-warning-pulse {
   0% { opacity: 0; transform: scale(.994); }
@@ -282,7 +279,7 @@ button:focus-visible, a:focus-visible {
   68% { transform: translateX(2px); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .score-edit-focus, .staff-view[data-input-idle="true"] .score-edit-focus[data-kind="empty"] { animation: none; }
+  .score-edit-focus, .score-rule-warning-underline, .staff-view[data-input-idle="true"] .score-edit-focus[data-kind="empty"] { animation: none; }
   .score-edit-warning { display: none; }
 }
 .notation-engraving [data-measure-id] { cursor: crosshair; }
@@ -358,6 +355,11 @@ kbd { display: inline-block; border: 1px solid var(--color-border); border-radiu
 .staff-view[data-panning="true"] { cursor: grabbing; user-select: none; }
 .staff-page-stack { width: max(100%, calc(var(--score-display-width) + var(--score-gutter) * 2)); min-height: 100%; display: flex; flex-direction: column; align-items: center; gap: var(--space-6); }
 .staff-paper { position: relative; flex: none; width: var(--score-display-width); height: var(--score-display-height); overflow: hidden; border-radius: 7px; background: var(--color-score-paper); color: var(--color-score-ink); box-shadow: 0 3px 14px rgb(0 0 0 / 24%); }
+.staff-paper[data-show-rule-warnings="true"] [data-rule-warning="overfull"],
+.staff-paper[data-show-rule-warnings="true"] [data-rule-warning="overfull"] * {
+  fill: var(--color-score-warning) !important;
+  stroke: var(--color-score-warning) !important;
+}
 .staff-paper-engraving, .staff-paper-engraving > svg { display: block; width: 100%; height: 100%; }
 .staff-interaction-overlay { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .staff-paper-engraving > svg { pointer-events: none; }
