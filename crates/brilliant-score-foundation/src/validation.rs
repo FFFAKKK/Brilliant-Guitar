@@ -500,16 +500,6 @@ impl<'a> Validator<'a> {
                     path: duration_path,
                 }
             })?;
-            if current.checked_compare(measure_duration).map_err(|_| {
-                FoundationDecodeFailure::InvalidValue {
-                    path: nested_path(&event_prefix, &[PathPart::Field("duration")]),
-                }
-            })? == Ordering::Greater
-            {
-                return Err(FoundationDecodeFailure::InvalidValue {
-                    path: path(&event_prefix),
-                });
-            }
         }
         Ok(())
     }

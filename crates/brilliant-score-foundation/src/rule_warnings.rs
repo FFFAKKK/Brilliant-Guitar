@@ -224,7 +224,7 @@ mod tests {
     }
 
     #[test]
-    fn overfull_measure_has_no_one_beat_ceiling_and_reports_many_extra_beats() {
+    fn overfull_measure_uses_exact_arithmetic_without_a_business_ceiling() {
         let mut document = document();
         let event = document.parts[0].measure_contents[0].voices[0]
             .sequence
@@ -233,6 +233,7 @@ mod tests {
         let events = &mut document.parts[0].measure_contents[0].voices[0]
             .sequence
             .events;
+        // This finite fixture is a regression witness, not a product limit.
         for index in 2..=4 {
             let mut appended = event.clone();
             appended.id = StableId::new(format!("event-{index}")).unwrap();

@@ -232,6 +232,46 @@ mod tests {
     }
 
     #[test]
+    fn all_document_decoders_and_canonical_round_trip_accept_multi_measure_overflow() {
+        let mut value: Value = serde_json::from_str(SMOKE_DOCUMENT).expect("fixture JSON");
+        let first =
+            value["parts"][0]["measureContents"][0]["voices"][0]["sequence"]["events"][0].clone();
+        let events = value["parts"][0]["measureContents"][0]["voices"][0]["sequence"]["events"]
+            .as_array_mut()
+            .expect("events array");
+        for index in 2..=4 {
+            let mut event = first.clone();
+            event["id"] = Value::String(format!("event-{index}"));
+            events.push(event);
+        }
+
+        let ordinary =
+            decode_score_document_value(value.clone()).expect("ordinary overfull decode");
+        let lossless_value = crate::decode_js_value_json(
+            &serde_json::to_string(&value).expect("encode overfull fixture"),
+        )
+        .expect("lossless value");
+        let lossless =
+            decode_lossless_score_document_value(lossless_value).expect("lossless overfull decode");
+        assert_eq!(ordinary, lossless);
+
+        let canonical = canonical_score_bytes(&ordinary).expect("canonical overfull encode");
+        let reopened = decode_score_document_value(
+            serde_json::from_slice(&canonical).expect("canonical overfull JSON"),
+        )
+        .expect("canonical overfull reopen");
+        assert_eq!(ordinary, reopened);
+
+        let warning = crate::assess_score_rule_warning_page_v1(&reopened, 0, 16)
+            .expect("overfull warning")
+            .warnings
+            .pop()
+            .expect("one overfull voice");
+        assert_eq!(warning.overflow.numerator.get(), 3);
+        assert_eq!(warning.overflow.denominator.get(), 1);
+    }
+
+    #[test]
     fn future_schema_and_extra_fields_are_rejected() {
         let mut future: Value = serde_json::from_str(SMOKE_DOCUMENT).expect("fixture JSON");
         future["schemaVersion"] = Value::String("brilliant-score-2".to_owned());
