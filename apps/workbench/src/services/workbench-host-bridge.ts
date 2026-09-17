@@ -5,6 +5,8 @@ import type { ScoreEditRequest } from "../contracts/note-input";
 import type { NewScoreInput } from "../contracts/new-score";
 import { DEFAULT_APPLICATION_SETTINGS, isApplicationSettingsV1 } from "../contracts/application-settings.ts";
 import type { ApplicationSettingsV1 } from "../contracts/application-settings.ts";
+import { DEFAULT_WORKSPACE_CONFIGURATION, isWorkspaceConfigurationV1 } from "../contracts/workspace-configuration.ts";
+import type { WorkspaceConfigurationV1 } from "../contracts/workspace-configuration.ts";
 import { isWorkbenchIssue } from "../contracts/workbench-issue.ts";
 import type { WorkbenchIssue } from "../contracts/workbench-issue.ts";
 
@@ -38,6 +40,9 @@ export interface WorkbenchHostBridge {
   readApplicationSettings?(): Promise<unknown>;
   writeApplicationSettings?(settings: ApplicationSettingsV1): Promise<unknown>;
   resetApplicationSettings?(): Promise<unknown>;
+  readWorkspaceConfiguration?(workspaceId: string): Promise<unknown>;
+  writeWorkspaceConfiguration?(workspaceId: string, configuration: WorkspaceConfigurationV1): Promise<unknown>;
+  resetWorkspaceConfiguration?(workspaceId: string): Promise<unknown>;
 }
 
 export interface NativeFileResult {
@@ -144,6 +149,18 @@ export class TauriWorkbenchHostBridge implements WorkbenchHostBridge {
   resetApplicationSettings() {
     return this.call<unknown>("workbench_reset_settings_v1", {}, "无法恢复默认应用配置");
   }
+
+  readWorkspaceConfiguration(workspaceId: string) {
+    return this.call<unknown>("workbench_read_workspace_configuration_v1", { workspaceId }, "无法读取工作区配置");
+  }
+
+  writeWorkspaceConfiguration(workspaceId: string, configuration: WorkspaceConfigurationV1) {
+    return this.call<unknown>("workbench_write_workspace_configuration_v1", { workspaceId, configuration }, "无法保存工作区配置");
+  }
+
+  resetWorkspaceConfiguration(workspaceId: string) {
+    return this.call<unknown>("workbench_reset_workspace_configuration_v1", { workspaceId }, "无法恢复默认工作区配置");
+  }
 }
 
 export function createWorkbenchHostBridge(): WorkbenchHostBridge {
@@ -154,6 +171,8 @@ export function createWorkbenchHostBridge(): WorkbenchHostBridge {
 export class BrowserWorkbenchHostBridge implements WorkbenchHostBridge {
   private static readonly SETTINGS_KEY = "brilliant.workbench.application-settings.v1";
   private static readonly INVALID_SETTINGS_KEY = "brilliant.workbench.application-settings.invalid.v1";
+  private static readonly WORKSPACE_CONFIGURATION_PREFIX = "brilliant.workbench.workspace-configuration.v1.";
+  private static readonly INVALID_WORKSPACE_CONFIGURATION_PREFIX = "brilliant.workbench.workspace-configuration.invalid.v1.";
   private readonly settingsStorage: SettingsStorage | undefined;
 
   constructor(settingsStorage: SettingsStorage | undefined = browserSettingsStorage()) {
@@ -262,5 +281,31 @@ export class BrowserWorkbenchHostBridge implements WorkbenchHostBridge {
   async resetApplicationSettings(): Promise<unknown> {
     this.settingsStorage?.setItem(BrowserWorkbenchHostBridge.SETTINGS_KEY, JSON.stringify(DEFAULT_APPLICATION_SETTINGS));
     return DEFAULT_APPLICATION_SETTINGS;
+  }
+
+  async readWorkspaceConfiguration(workspaceId: string): Promise<unknown> {
+    const key = BrowserWorkbenchHostBridge.WORKSPACE_CONFIGURATION_PREFIX + workspaceId;
+    const value = this.settingsStorage?.getItem(key);
+    if (value === null || value === undefined) return {
+      configuration: DEFAULT_WORKSPACE_CONFIGURATION, persisted: false, recoveredFromInvalid: false,
+    };
+    try {
+      const configuration: unknown = JSON.parse(value);
+      if (!isWorkspaceConfigurationV1(configuration)) throw new Error("invalid workspace configuration");
+      return { configuration, persisted: true, recoveredFromInvalid: false };
+    } catch {
+      this.settingsStorage?.setItem(BrowserWorkbenchHostBridge.INVALID_WORKSPACE_CONFIGURATION_PREFIX + workspaceId, value);
+      return { configuration: DEFAULT_WORKSPACE_CONFIGURATION, persisted: false, recoveredFromInvalid: true };
+    }
+  }
+
+  async writeWorkspaceConfiguration(workspaceId: string, configuration: WorkspaceConfigurationV1): Promise<unknown> {
+    this.settingsStorage?.setItem(BrowserWorkbenchHostBridge.WORKSPACE_CONFIGURATION_PREFIX + workspaceId, JSON.stringify(configuration));
+    return configuration;
+  }
+
+  async resetWorkspaceConfiguration(workspaceId: string): Promise<unknown> {
+    this.settingsStorage?.setItem(BrowserWorkbenchHostBridge.WORKSPACE_CONFIGURATION_PREFIX + workspaceId, JSON.stringify(DEFAULT_WORKSPACE_CONFIGURATION));
+    return DEFAULT_WORKSPACE_CONFIGURATION;
   }
 }

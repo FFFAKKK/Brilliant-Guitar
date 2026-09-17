@@ -8,6 +8,7 @@ import { BrowserWorkbenchHostBridge, TauriWorkbenchHostBridge, WorkbenchRequestE
 import type { WorkbenchHostBridge } from "../src/services/workbench-host-bridge.ts";
 import type { CloseRequestedEvent, Window as TauriWindow } from "@tauri-apps/api/window";
 import { DEFAULT_APPLICATION_SETTINGS } from "../src/contracts/application-settings.ts";
+import { DEFAULT_WORKSPACE_CONFIGURATION } from "../src/contracts/workspace-configuration.ts";
 
 const session: ScoreSessionRead = {
   documentId: "score-host-bridge",
@@ -107,6 +108,30 @@ test("browser settings use one versioned document and preserve invalid source te
   assert.equal(values.get("brilliant.workbench.application-settings.invalid.v1"), "{broken-json");
 });
 
+test("browser workspace configuration is isolated by workspace identity and preserves invalid source text", async () => {
+  const values = new Map<string, string>();
+  const storage = {
+    getItem(key: string) { return values.get(key) ?? null; },
+    setItem(key: string, value: string) { values.set(key, value); },
+  };
+  const bridge = new BrowserWorkbenchHostBridge(storage);
+  const workspaceId = crypto.randomUUID();
+  assert.deepEqual(await bridge.readWorkspaceConfiguration(workspaceId), {
+    configuration: DEFAULT_WORKSPACE_CONFIGURATION, persisted: false, recoveredFromInvalid: false,
+  });
+  const changed = { ...DEFAULT_WORKSPACE_CONFIGURATION, inspectorWidth: 360 };
+  assert.deepEqual(await bridge.writeWorkspaceConfiguration(workspaceId, changed), changed);
+  assert.deepEqual(await bridge.readWorkspaceConfiguration(workspaceId), {
+    configuration: changed, persisted: true, recoveredFromInvalid: false,
+  });
+
+  values.set(`brilliant.workbench.workspace-configuration.v1.${workspaceId}`, "{broken-json");
+  assert.deepEqual(await bridge.readWorkspaceConfiguration(workspaceId), {
+    configuration: DEFAULT_WORKSPACE_CONFIGURATION, persisted: false, recoveredFromInvalid: true,
+  });
+  assert.equal(values.get(`brilliant.workbench.workspace-configuration.invalid.v1.${workspaceId}`), "{broken-json");
+});
+
 test("browser bridge preserves structured issue codes and targets", async () => {
   const previous = globalThis.fetch;
   globalThis.fetch = async () => new Response(JSON.stringify({ message: "容量不足", issue: {
@@ -184,6 +209,32 @@ test("tauri settings commands keep configuration outside score requests", async 
     { command: "workbench_read_settings_v1", args: {} },
     { command: "workbench_write_settings_v1", args: { settings: changed } },
     { command: "workbench_reset_settings_v1", args: {} },
+  ]);
+});
+
+test("tauri workspace configuration commands remain workspace-scoped", async () => {
+  const calls: Array<{ command: string; args?: Record<string, unknown> }> = [];
+  const changed = { ...DEFAULT_WORKSPACE_CONFIGURATION, inspectorWidth: 360 };
+  const invoke = async <T>(command: string, args?: Record<string, unknown>): Promise<T> => {
+    calls.push({ command, ...(args ? { args } : {}) });
+    if (command === "workbench_read_workspace_configuration_v1") return {
+      configuration: changed, persisted: true, recoveredFromInvalid: false,
+    } as T;
+    if (command === "workbench_write_workspace_configuration_v1") return changed as T;
+    if (command === "workbench_reset_workspace_configuration_v1") return DEFAULT_WORKSPACE_CONFIGURATION as T;
+    throw new Error("unexpected command");
+  };
+  const client = new WorkbenchClient(new TauriWorkbenchHostBridge(invoke));
+  assert.equal((await client.readWorkspaceConfiguration()).configuration.inspectorWidth, 360);
+  assert.deepEqual(await client.writeWorkspaceConfiguration(changed), changed);
+  assert.deepEqual(await client.resetWorkspaceConfiguration(), DEFAULT_WORKSPACE_CONFIGURATION);
+  assert.equal(calls.length, 3);
+  const workspaceId = calls[0]?.args?.workspaceId;
+  assert.equal(typeof workspaceId, "string");
+  assert.deepEqual(calls, [
+    { command: "workbench_read_workspace_configuration_v1", args: { workspaceId } },
+    { command: "workbench_write_workspace_configuration_v1", args: { workspaceId, configuration: changed } },
+    { command: "workbench_reset_workspace_configuration_v1", args: { workspaceId } },
   ]);
 });
 

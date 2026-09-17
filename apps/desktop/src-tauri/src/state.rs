@@ -5,12 +5,14 @@ use crate::application::ScoreSessionService;
 use crate::diagnostics::DiagnosticLog;
 use crate::document_io::RecoveryManager;
 use crate::settings::ApplicationSettingsStore;
+use crate::workspace_configuration::WorkspaceConfigurationStore;
 
 pub struct AppState {
     pub service: Mutex<ScoreSessionService>,
     pub recovery: RecoveryManager,
     pub diagnostics: DiagnosticLog,
     pub settings: ApplicationSettingsStore,
+    pub workspace_configuration: WorkspaceConfigurationStore,
     recovery_root: PathBuf,
 }
 
@@ -21,10 +23,18 @@ impl AppState {
             .parent()
             .map(|path| path.join("config").join("settings.v1.json"))
             .unwrap_or_else(|| PathBuf::from("config").join("settings.v1.json"));
-        Self::with_paths(recovery_root, settings_path)
+        let workspace_configuration_root = settings_path
+            .parent()
+            .unwrap_or_else(|| std::path::Path::new("config"))
+            .join("workspaces");
+        Self::with_paths(recovery_root, settings_path, workspace_configuration_root)
     }
 
-    pub fn with_paths(recovery_root: PathBuf, settings_path: PathBuf) -> Self {
+    pub fn with_paths(
+        recovery_root: PathBuf,
+        settings_path: PathBuf,
+        workspace_configuration_root: PathBuf,
+    ) -> Self {
         let diagnostics_root = recovery_root
             .parent()
             .map(|path| path.join("diagnostics"))
@@ -34,6 +44,7 @@ impl AppState {
             recovery: RecoveryManager::default(),
             diagnostics: DiagnosticLog::new(diagnostics_root),
             settings: ApplicationSettingsStore::new(settings_path),
+            workspace_configuration: WorkspaceConfigurationStore::new(workspace_configuration_root),
             recovery_root,
         }
     }

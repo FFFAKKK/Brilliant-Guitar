@@ -11,7 +11,82 @@ use crate::{
     error::HostError,
     settings::{ApplicationSettingsSnapshotV1, ApplicationSettingsV1},
     state::AppState,
+    workspace_configuration::{WorkspaceConfigurationSnapshotV1, WorkspaceConfigurationV1},
 };
+
+#[tauri::command]
+pub fn workbench_read_workspace_configuration_v1(
+    state: State<'_, AppState>,
+    workspace_id: String,
+) -> Result<WorkspaceConfigurationSnapshotV1, HostError> {
+    state
+        .workspace_configuration
+        .read(&workspace_id)
+        .map_err(|error| {
+            if error.kind() == std::io::ErrorKind::InvalidInput {
+                return settings_error(
+                    "workspace-config.invalid-workspace",
+                    "工作区标识无效",
+                    422,
+                    false,
+                );
+            }
+            settings_error(
+                "workspace-config.read-failed",
+                "无法读取工作区配置",
+                503,
+                true,
+            )
+        })
+}
+
+#[tauri::command]
+pub fn workbench_write_workspace_configuration_v1(
+    state: State<'_, AppState>,
+    workspace_id: String,
+    configuration: WorkspaceConfigurationV1,
+) -> Result<WorkspaceConfigurationV1, HostError> {
+    state
+        .workspace_configuration
+        .write(&workspace_id, configuration)
+        .map_err(|error| {
+            if matches!(
+                error.kind(),
+                std::io::ErrorKind::InvalidData | std::io::ErrorKind::InvalidInput
+            ) {
+                return settings_error(
+                    "workspace-config.invalid",
+                    "工作区配置格式无效",
+                    422,
+                    false,
+                );
+            }
+            settings_error(
+                "workspace-config.write-failed",
+                "无法保存工作区配置",
+                503,
+                true,
+            )
+        })
+}
+
+#[tauri::command]
+pub fn workbench_reset_workspace_configuration_v1(
+    state: State<'_, AppState>,
+    workspace_id: String,
+) -> Result<WorkspaceConfigurationV1, HostError> {
+    state
+        .workspace_configuration
+        .reset(&workspace_id)
+        .map_err(|_| {
+            settings_error(
+                "workspace-config.write-failed",
+                "无法恢复默认工作区配置",
+                503,
+                true,
+            )
+        })
+}
 
 #[tauri::command]
 pub fn workbench_read_settings_v1(

@@ -6,6 +6,7 @@ mod dto;
 mod error;
 mod settings;
 mod state;
+mod workspace_configuration;
 
 use tauri::Manager;
 
@@ -16,7 +17,12 @@ pub fn run() {
         .setup(|app| {
             let recovery_root = app.path().app_data_dir()?.join("recovery");
             let settings_path = app.path().app_config_dir()?.join("settings.v1.json");
-            app.manage(state::AppState::with_paths(recovery_root, settings_path));
+            let workspace_configuration_root = app.path().app_config_dir()?.join("workspaces");
+            app.manage(state::AppState::with_paths(
+                recovery_root,
+                settings_path,
+                workspace_configuration_root,
+            ));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -33,6 +39,9 @@ pub fn run() {
             commands::workbench_read_settings_v1,
             commands::workbench_write_settings_v1,
             commands::workbench_reset_settings_v1,
+            commands::workbench_read_workspace_configuration_v1,
+            commands::workbench_write_workspace_configuration_v1,
+            commands::workbench_reset_workspace_configuration_v1,
         ])
         .run(tauri::generate_context!())
         .expect("failed to run desktop workbench");

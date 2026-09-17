@@ -16,12 +16,10 @@ import { usePaperZoom } from "./notation/use-paper-zoom";
 import { listUiComponentsInSlot } from "./ui/layout-state";
 import type { UiLayoutState } from "./ui/layout-state";
 import type { UiComponentDefinition, UiPresentation, UiSlot } from "./ui/plugin-contract";
-import { useUiLayout } from "./ui/use-ui-layout";
-import { useSharedDockSelection } from "./ui/use-shared-dock-selection";
 import type { SharedDockSlot } from "./ui/shared-dock-selection";
 import { useApplicationSettings } from "./ui/use-application-settings.ts";
+import { useWorkspaceConfiguration } from "./ui/use-workspace-configuration.ts";
 import { workbenchPluginDiagnostics, workbenchPlugins } from "./ui/workbench-plugins";
-import { useDockLayout } from "./workbench/use-dock-layout";
 import { useWorkbenchSession } from "./workbench/use-workbench-session";
 import { useDocumentFiles } from "./workbench/use-document-files";
 import { WorkbenchFeedbackAnnouncer } from "./components/workbench-feedback-announcer.tsx";
@@ -90,9 +88,6 @@ export function WorkbenchApp() {
 function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefObject<HTMLDivElement | null> }) {
   const runtime = useWorkbenchRuntime();
   const { around: aroundLayoutMutation } = runtime.focus;
-  const { layout, setLayout, visibility, toggleDock, resetLayout: resetDockLayout } = useDockLayout();
-  const { state: uiLayout, move, hide, setPresentation, reset: resetUiLayout } = useUiLayout(INSTALLED_COMPONENTS);
-  const { selection: dockSelection, select: selectDockItem, reset: resetDockSelection } = useSharedDockSelection();
   const [inspectLayout, setInspectLayout] = useState(false);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
   const pluginDiagnostics = useSyncExternalStore(workbenchPluginDiagnostics.subscribe,
@@ -106,6 +101,9 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
   const editMenuRef = useRef<HTMLButtonElement>(null);
   const fileMenuRef = useRef<HTMLButtonElement>(null);
   const score = useWorkbenchSession(runtime);
+  const workspaceConfiguration = useWorkspaceConfiguration(score.client, INSTALLED_COMPONENTS, runtime);
+  const { layout, setLayout, visibility, toggleDock, uiLayout, move, hide, setPresentation,
+    dockSelection, selectDockItem } = workspaceConfiguration;
   const applicationSettings = useApplicationSettings(score.client, runtime);
   const { animationsEnabled, ruleWarningsVisible } = applicationSettings.settings.ui;
   const { deleteTimePolicy } = applicationSettings.settings.editing;
@@ -138,12 +136,8 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
   const toggleWorkbenchDock = useCallback((slot: Parameters<typeof toggleDock>[0]) =>
     aroundLayoutMutation(() => toggleDock(slot)), [aroundLayoutMutation, toggleDock]);
   const resetLayout = useCallback(() => {
-    aroundLayoutMutation(() => {
-      resetDockLayout();
-      resetUiLayout();
-      resetDockSelection();
-    });
-  }, [aroundLayoutMutation, resetDockLayout, resetUiLayout, resetDockSelection]);
+    aroundLayoutMutation(workspaceConfiguration.reset);
+  }, [aroundLayoutMutation, workspaceConfiguration.reset]);
   const hostCommandContributions = useMemo<readonly WorkbenchCommand[]>(() => [
     { id: "file.new", label: "新建乐谱…", shortcut: "Mod+N", shortcutLabel: "Ctrl/⌘ + N", scope: "global",
       enabled: files.available, run: files.requestNewScore },

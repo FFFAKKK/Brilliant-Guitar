@@ -2,6 +2,8 @@ import type { ScoreEditRequest } from "../contracts/note-input";
 import type { NewScoreInput } from "../contracts/new-score";
 import { DEFAULT_APPLICATION_SETTINGS, isApplicationSettingsSnapshotV1, isApplicationSettingsV1 } from "../contracts/application-settings.ts";
 import type { ApplicationSettingsSnapshotV1, ApplicationSettingsV1 } from "../contracts/application-settings.ts";
+import { DEFAULT_WORKSPACE_CONFIGURATION, isWorkspaceConfigurationSnapshotV1, isWorkspaceConfigurationV1 } from "../contracts/workspace-configuration.ts";
+import type { WorkspaceConfigurationSnapshotV1, WorkspaceConfigurationV1 } from "../contracts/workspace-configuration.ts";
 import { isScoreSessionRead } from "../contracts/score-session.ts";
 import type { ScoreSessionRead } from "../contracts/score-session";
 import { isWorkspaceId } from "../contracts/workspace-id.ts";
@@ -148,6 +150,30 @@ export class WorkbenchClient {
     if (!this.bridge.resetApplicationSettings) return DEFAULT_APPLICATION_SETTINGS;
     const value = await this.bridge.resetApplicationSettings();
     if (!isApplicationSettingsV1(value)) throw new Error("默认应用配置结果无效");
+    return value;
+  }
+
+  async readWorkspaceConfiguration(): Promise<WorkspaceConfigurationSnapshotV1> {
+    if (!this.bridge.readWorkspaceConfiguration) return {
+      configuration: DEFAULT_WORKSPACE_CONFIGURATION, persisted: false, recoveredFromInvalid: false,
+    };
+    const value = await this.bridge.readWorkspaceConfiguration(this.workspaceId);
+    if (!isWorkspaceConfigurationSnapshotV1(value)) throw new Error("工作区配置读取结果无效");
+    return value;
+  }
+
+  async writeWorkspaceConfiguration(configuration: WorkspaceConfigurationV1): Promise<WorkspaceConfigurationV1> {
+    if (!isWorkspaceConfigurationV1(configuration)) throw new Error("工作区配置格式无效");
+    if (!this.bridge.writeWorkspaceConfiguration) return configuration;
+    const value = await this.bridge.writeWorkspaceConfiguration(this.workspaceId, configuration);
+    if (!isWorkspaceConfigurationV1(value)) throw new Error("工作区配置保存结果无效");
+    return value;
+  }
+
+  async resetWorkspaceConfiguration(): Promise<WorkspaceConfigurationV1> {
+    if (!this.bridge.resetWorkspaceConfiguration) return DEFAULT_WORKSPACE_CONFIGURATION;
+    const value = await this.bridge.resetWorkspaceConfiguration(this.workspaceId);
+    if (!isWorkspaceConfigurationV1(value)) throw new Error("默认工作区配置结果无效");
     return value;
   }
 }

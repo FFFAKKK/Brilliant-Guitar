@@ -4,30 +4,28 @@ import type { CSSProperties, KeyboardEvent, PointerEvent, ReactNode } from "reac
 import { useCompactWorkbench } from "../workbench/use-compact-workbench";
 import { clampInspectorWidth, INSPECTOR_WIDTH, nextInspectorWidth } from "../workbench/inspector-layout";
 
-const STORAGE_KEY = "brilliant.workbench.inspector-width.v1";
-
-function initialWidth() {
-  try {
-    const stored = Number(localStorage.getItem(STORAGE_KEY));
-    return Number.isFinite(stored) ? clampInspectorWidth(stored, window.innerWidth) : INSPECTOR_WIDTH.default;
-  } catch { return INSPECTOR_WIDTH.default; }
-}
-
 /** Responsive placement stays independent of the property editor's content. */
-export function InspectorSlot({ children, onClose, onReturnFocus }: {
+export function InspectorSlot({ children, width: preferredWidth, onWidthChange, onClose, onReturnFocus }: {
   readonly children: ReactNode;
+  readonly width: number;
+  readonly onWidthChange: (width: number) => void;
   readonly onClose: () => void;
   readonly onReturnFocus: () => void;
 }) {
   const compact = useCompactWorkbench();
-  const [width, setWidth] = useState(initialWidth);
+  const [width, setWidth] = useState(() => clampInspectorWidth(preferredWidth, window.innerWidth));
   const gesture = useRef<{ pointerId: number; startX: number; startWidth: number; moved: boolean } | null>(null);
   const widthRef = useRef(width); widthRef.current = width;
   function commit(next: number) {
     const clamped = clampInspectorWidth(next, window.innerWidth);
     widthRef.current = clamped; setWidth(clamped);
-    try { localStorage.setItem(STORAGE_KEY, String(clamped)); } catch { /* Layout preference remains session-local. */ }
+    onWidthChange(clamped);
   }
+  useEffect(() => {
+    const next = clampInspectorWidth(preferredWidth, window.innerWidth);
+    widthRef.current = next;
+    setWidth(next);
+  }, [preferredWidth]);
   useEffect(() => {
     const resize = () => commit(widthRef.current);
     window.addEventListener("resize", resize);
@@ -35,7 +33,7 @@ export function InspectorSlot({ children, onClose, onReturnFocus }: {
       window.removeEventListener("resize", resize);
       document.body.style.userSelect = "";
     };
-  }, []);
+  }, [onWidthChange]);
   function beginResize(event: PointerEvent<HTMLDivElement>) {
     if (event.button !== 0 || !event.isPrimary || gesture.current) return;
     event.preventDefault();
