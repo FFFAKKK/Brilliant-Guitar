@@ -18,7 +18,7 @@ export function projectNotation(document: ScoreDocument, warnings: readonly Kern
   }
   const warningsByMeasure = new Map<string, KernelRuleWarningV1[]>();
   for (const warning of warnings) {
-    if (warning.partId !== part.id) continue;
+    if (warning.code !== "rule.sequence-exceeds-measure" || warning.partId !== part.id) continue;
     const bucket = warningsByMeasure.get(warning.measureId) ?? [];
     bucket.push(warning);
     warningsByMeasure.set(warning.measureId, bucket);
@@ -49,7 +49,7 @@ export function projectNotation(document: ScoreDocument, warnings: readonly Kern
       voiceId: projectedMeasures.get(measure.id)!.voiceId, events: projectedMeasures.get(measure.id)!.events,
       ruleWarnings: (warningsByMeasure.get(measure.id) ?? []).filter((warning) => warning.measureId === measure.id
         && warning.voiceId === projectedMeasures.get(measure.id)!.voiceId).map((warning) => ({
-          code: warning.code, nominalDuration: warning.nominalDuration,
+          code: "rule.sequence-exceeds-measure" as const, nominalDuration: warning.nominalDuration,
           actualDuration: warning.actualDuration, overflow: warning.overflow,
         })),
     })) };

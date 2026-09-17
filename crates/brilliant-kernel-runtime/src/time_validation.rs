@@ -240,21 +240,13 @@ impl Assessment<'_, '_> {
         }
         if let (Some(position), Ok(end)) = (current, bound) {
             self.work.rules_evaluated += 1;
-            match position.checked_compare(end) {
-                Err(_) => {
-                    self.diagnostics.add(
-                        Location::Start(route.clone()),
-                        Code::TimeArithmeticOverflow,
-                        None,
-                    )?;
-                    current = None;
-                }
-                Ok(Ordering::Greater) => self.diagnostics.add(
+            if position.checked_compare(end).is_err() {
+                self.diagnostics.add(
                     Location::Start(route.clone()),
-                    Code::SequenceStartOutOfBounds,
+                    Code::TimeArithmeticOverflow,
                     None,
-                )?,
-                _ => {}
+                )?;
+                current = None;
             }
         }
         // Walk the entire affected final voice, including the unchanged prefix.

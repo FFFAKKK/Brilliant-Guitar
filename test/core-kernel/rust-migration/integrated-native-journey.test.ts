@@ -41,27 +41,29 @@ function coreBatch(commands: readonly unknown[]) {
     target: { kind: "document", documentId: "score-1" }, payload: { commands } };
 }
 
-/** Rust intentionally promotes overfull timing to a rule warning before the archived TS validator does. */
-function withoutRetiredOverfullDiagnostic<T>(result: T): T {
+/** Rust promotes tolerable timing states to rule warnings before the archived TS validator does. */
+function withoutRetiredTimingDiagnostics<T>(result: T): T {
   if (!result || typeof result !== "object") return result;
   const value = result as { readonly status?: unknown; readonly failure?: { readonly code?: unknown; readonly diagnostics?: readonly unknown[] } };
   if (value.status !== "rejected" || value.failure?.code !== "command.semantic-invalid"
     || !Array.isArray(value.failure.diagnostics)) return result;
   const diagnostics = value.failure.diagnostics.filter((diagnostic) => {
     if (!diagnostic || typeof diagnostic !== "object") return true;
-    return (diagnostic as { readonly code?: unknown }).code !== "semantic.sequence-exceeds-measure";
+    return !["semantic.sequence-exceeds-measure", "semantic.sequence-start-out-of-bounds"]
+      .includes(String((diagnostic as { readonly code?: unknown }).code));
   });
   if (diagnostics.length === value.failure.diagnostics.length || diagnostics.length === 0) return result;
   return { ...result, failure: { ...value.failure, diagnostics } } as T;
 }
 
-function hasOnlyRetiredOverfullDiagnostic(result: unknown): boolean {
+function hasOnlyRetiredTimingDiagnostics(result: unknown): boolean {
   if (!result || typeof result !== "object") return false;
   const value = result as { readonly status?: unknown; readonly failure?: { readonly code?: unknown; readonly diagnostics?: readonly unknown[] } };
   return value.status === "rejected" && value.failure?.code === "command.semantic-invalid"
     && Array.isArray(value.failure.diagnostics) && value.failure.diagnostics.length > 0
     && value.failure.diagnostics.every((diagnostic) => diagnostic !== null && typeof diagnostic === "object"
-      && (diagnostic as { readonly code?: unknown }).code === "semantic.sequence-exceeds-measure");
+      && ["semantic.sequence-exceeds-measure", "semantic.sequence-start-out-of-bounds"]
+        .includes(String((diagnostic as { readonly code?: unknown }).code)));
 }
 
 function readWithoutTransitionVersion(result: unknown): unknown {
@@ -70,7 +72,7 @@ function readWithoutTransitionVersion(result: unknown): unknown {
   return copy;
 }
 
-test("integrated Native Core admission matches the command-shape corpus after retired TS overfull diagnostics", () => {
+test("integrated Native Core admission matches the command-shape corpus after retired TS timing diagnostics", () => {
   for (const entry of buildCommandAdmissionOracle().cases) {
     resetCvn6Callbacks();
     const oracle = create(false);
@@ -80,7 +82,7 @@ test("integrated Native Core admission matches the command-shape corpus after re
     native.subscribe((event: unknown) => events[1]!.push(event));
     const legacyExpected = oracle.submit(entry.input);
     const actual = native.submit(entry.input);
-    if (hasOnlyRetiredOverfullDiagnostic(legacyExpected)) {
+    if (hasOnlyRetiredTimingDiagnostics(legacyExpected)) {
       assert.equal(actual.status, "committed", entry.id);
       const committed = native.read();
       assert.equal(native.undo().status, "committed", `${entry.id}/undo`);
@@ -88,7 +90,7 @@ test("integrated Native Core admission matches the command-shape corpus after re
       assert.deepEqual(readWithoutTransitionVersion(native.read()), readWithoutTransitionVersion(committed), `${entry.id}/redo/read`);
       continue;
     }
-    const expected = withoutRetiredOverfullDiagnostic(legacyExpected);
+    const expected = withoutRetiredTimingDiagnostics(legacyExpected);
     assert.deepEqual(actual, expected, entry.id);
     assert.deepEqual(native.read(), oracle.read(), `${entry.id}/read`);
     if (expected.status === "committed") {
@@ -485,7 +487,7 @@ test("Native mixed Batch uses genuine SDK commands across the command-shape corp
     const input = coreBatch([command("score", "before-core"), entry.input]);
     const legacyExpected = oracle.submit(input);
     const actual = native.submit(input);
-    if (hasOnlyRetiredOverfullDiagnostic(legacyExpected)) {
+    if (hasOnlyRetiredTimingDiagnostics(legacyExpected)) {
       assert.equal(actual.status, "committed", entry.id);
       const committed = native.read();
       assert.equal(native.undo().status, "committed", `${entry.id}/undo`);
@@ -493,7 +495,7 @@ test("Native mixed Batch uses genuine SDK commands across the command-shape corp
       assert.deepEqual(readWithoutTransitionVersion(native.read()), readWithoutTransitionVersion(committed), `${entry.id}/redo/read`);
       continue;
     }
-    const expected = withoutRetiredOverfullDiagnostic(legacyExpected);
+    const expected = withoutRetiredTimingDiagnostics(legacyExpected);
     assert.deepEqual(actual, expected, entry.id);
     assert.deepEqual(native.read(), oracle.read(), `${entry.id}/read`);
     if (expected.status === "committed") {

@@ -26,34 +26,57 @@ function fixture(document = createCoreScoreFixture()) {
   return { document, session, ts: oracle.value, read };
 }
 
-test("event duration, sequence start and measure edits reject final out-of-bounds time", () => {
-  for (const command of [noteValue(1), start(1, 4), meter(3, 4)]) {
-    const { session, ts, read } = fixture();
-    const before = read();
-    const expected = ts.submit(command);
+const retiredTimingCodes = new Set([
+  "semantic.sequence-exceeds-measure",
+  "semantic.sequence-start-out-of-bounds",
+]);
+
+function withoutRetiredTimingDiagnostics<T>(result: T): T | null {
+  if (!result || typeof result !== "object") return result;
+  const value = result as { readonly status?: unknown; readonly failure?: {
+    readonly code?: unknown; readonly diagnostics?: readonly unknown[];
+  } };
+  if (value.status !== "rejected" || value.failure?.code !== "command.semantic-invalid"
+    || !Array.isArray(value.failure.diagnostics)) return result;
+  const diagnostics = value.failure.diagnostics.filter((diagnostic) => !(
+    diagnostic !== null && typeof diagnostic === "object"
+    && retiredTimingCodes.has(String((diagnostic as { readonly code?: unknown }).code))
+  ));
+  if (diagnostics.length === value.failure.diagnostics.length) return result;
+  if (diagnostics.length === 0) return null;
+  return { ...value, failure: { ...value.failure, diagnostics } } as T;
+}
+
+test("overfull endings and delayed voice starts commit through undo redo and replay", () => {
+  for (const command of [noteValue(1), start(1, 4), meter(3, 4), start(2, 1),
+    meter(4, 4, { kind: "duration", duration: { numerator: 1, denominator: 8 } })]) {
+    const { document, session, ts, read } = fixture();
+    assert.equal(withoutRetiredTimingDiagnostics(ts.submit(command)), null);
     const result = session.submit(command);
-    assert.equal(result.status, "command-rejected");
-    if (result.status !== "command-rejected" || expected.status !== "rejected") throw new Error("time rejection required");
-    assert.deepEqual(plain(result.failure), plain(expected.failure));
-    assert.deepEqual(result.events, []);
-    const after = read();
-    assert.strictEqual(after.snapshot, before.snapshot);
-    assert.deepEqual(after.history, before.history);
-    assert.equal(after.dirty, before.dirty);
+    assert.equal(result.status, "committed", JSON.stringify(command));
+    const final = read().snapshot.document;
+    assert.equal(session.undo().status, "committed");
+    assert.deepEqual(plain(read().snapshot.document), plain(document));
+    assert.equal(session.redo().status, "committed");
+    assert.deepEqual(plain(read().snapshot.document), plain(final));
+    const replayed = replayRustKernelStage4(addon, document, [command]);
+    if (replayed.status !== "replayed") throw new Error("tolerant timing replay required");
+    assert.deepEqual(plain(replayed.finalDocument), plain(final));
   }
 });
 
 test("time admission preserves fraction, meter and pickup diagnostic precedence", () => {
-  for (const command of [start(2, 4), start(0, 2), start(-1, 2), start(2, 1),
+  for (const command of [start(2, 4), start(0, 2), start(-1, 2),
     meter(0, 4), meter(-1, 4),
-    meter(4, 4, { kind: "duration", duration: { numerator: 1, denominator: 8 } }),
     meter(4, 4, { kind: "duration", duration: { numerator: 2, denominator: 4 } }),
     meter(4, 4, { kind: "duration", duration: { numerator: -1, denominator: 2 } }),
     meter(4, 4, { kind: "duration", duration: { numerator: 2, denominator: 1 } })]) {
     const { session, ts } = fixture();
     const expected = ts.submit(command);
     const result = session.submit(command);
-    if (result.status !== "command-rejected" || expected.status !== "rejected") throw new Error("fraction rejection required");
+    if (result.status !== "command-rejected" || expected.status !== "rejected") {
+      throw new Error(`fraction rejection required: ${JSON.stringify({ command, expected, result })}`);
+    }
     assert.deepEqual(plain(result.failure), plain(expected.failure), JSON.stringify(command));
   }
 });
@@ -87,8 +110,9 @@ test("batch final-state time repair and pitch/time diagnostic ordering match TS"
 function rejectLikeTs(command: unknown, document = createCoreScoreFixture()) {
   const { session, ts, read } = fixture(document);
   const before = read();
-  const expected = ts.submit(command);
+  const expected = withoutRetiredTimingDiagnostics(ts.submit(command));
   const result = session.submit(command);
+  if (expected === null) throw new Error(`non-timing rejection required: ${JSON.stringify(command)}`);
   if (result.status !== "command-rejected" || expected.status !== "rejected") throw new Error(`rejection required: ${JSON.stringify({ command, expected, result })}`);
   assert.deepEqual(plain(result.failure), plain(expected.failure), JSON.stringify(command));
   assert.equal(result.failure.code, "command.semantic-invalid", JSON.stringify({ command, failure: result.failure }));
@@ -157,9 +181,16 @@ test("measure dependencies include all final Parts and newly inserted voices but
     { commandVersion: 1, commandId: "core.voice.remove", target: { kind: "voice", voiceId: "voice-0-0" }, payload: {} },
     { commandVersion: 1, commandId: "core.part.remove", target: { kind: "part", partId: "part-1" }, payload: {} },
   ]);
-  const rejected = rejectLikeTs(command, document);
-  if (rejected.failure.code !== "command.semantic-invalid") throw new Error("semantic report required");
-  assert.equal((rejected.failure.diagnostics as readonly unknown[]).length, 3);
+  const { session, ts, read } = fixture(document);
+  assert.equal(withoutRetiredTimingDiagnostics(ts.submit(command)), null);
+  const committed = session.submit(command);
+  if (committed.status !== "committed") throw new Error("tolerated dependent voices must commit");
+  assert.ok(committed.value.metrics.semanticDependencyReads > 0);
+  const final = read().snapshot.document;
+  assert.equal(session.undo().status, "committed");
+  assert.deepEqual(plain(read().snapshot.document), plain(document));
+  assert.equal(session.redo().status, "committed");
+  assert.deepEqual(plain(read().snapshot.document), plain(final));
 });
 
 test("same-ID event and measure replacement use final times through undo redo and replay", () => {
@@ -195,7 +226,10 @@ test("same-ID event and measure replacement use final times through undo redo an
     if (replayed.status !== "replayed") throw new Error("replacement replay required");
     assert.deepEqual(plain(replayed.finalDocument), plain(final));
   }
-  rejectLikeTs(batch([removeEvent("event-1"), rest("event-1", { base: 1, dots: 0 })]));
+  const tolerant = batch([removeEvent("event-1"), rest("event-1", { base: 1, dots: 0 })]);
+  const { session, ts } = fixture(document);
+  assert.equal(withoutRetiredTimingDiagnostics(ts.submit(tolerant)), null);
+  assert.equal(session.submit(tolerant).status, "committed");
 });
 
 test("time work scales with affected voices and counts the full unchanged prefix", () => {
@@ -220,7 +254,7 @@ test("time work scales with affected voices and counts the full unchanged prefix
   assert.equal(last.value.metrics.semanticRulesEvaluated, 3 + 1024 * 3);
 });
 
-test("time and metadata share the inclusive diagnostic cap with no partial adoption", () => {
+test("tolerated timing warnings do not consume the blocking diagnostic budget", () => {
   for (const count of [4096, 4097]) {
     const document = scoreWithTime(1, count);
     const { session, read } = fixture(document);
@@ -228,16 +262,10 @@ test("time and metadata share the inclusive diagnostic cap with no partial adopt
     const command = batch([meter(1, 4), { commandVersion: 1, commandId: "core.document.set-metadata", target: { kind: "document", documentId: document.id }, payload: { metadata: { ...document.metadata, tempo: { bpm: 0 } } } }]);
     const result = session.submit(command);
     if (result.status !== "command-rejected") throw new Error("aggregate time rejection required");
-    if (count === 4096) {
-      assert.equal(result.failure.code, "command.semantic-invalid");
-      const diagnostics = result.failure.diagnostics as readonly { code: string }[];
-      assert.equal(diagnostics.length, 4096);
-      assert.equal(diagnostics[0]!.code, "semantic.tempo-invalid");
-      assert.equal(diagnostics[4095]!.code, "semantic.sequence-exceeds-measure");
-      assert.ok(result.value.metrics.semanticDependencyReads < count * 4 + 64);
-    } else {
-      assert.deepEqual(plain(result.failure), { code: "command.resource-limit-exceeded", limitKind: "diagnostics", limit: 4096, actual: 4097 });
-    }
+    assert.equal(result.failure.code, "command.semantic-invalid");
+    const diagnostics = result.failure.diagnostics as readonly { code: string }[];
+    assert.deepEqual(diagnostics.map((diagnostic) => diagnostic.code), ["semantic.tempo-invalid"]);
+    assert.ok(result.value.metrics.semanticDependencyReads < count * 4 + 64);
     assert.deepEqual(result.events, []);
     assert.strictEqual(read().snapshot, before.snapshot);
     assert.deepEqual(read().history, before.history);
@@ -263,8 +291,8 @@ test("pitch and time diagnostics interleave by final event order", () => {
   ]), document);
   if (rejected.failure.code !== "command.semantic-invalid") throw new Error("semantic report required");
   assert.deepEqual((rejected.failure.diagnostics as readonly { code: string }[]).map((diagnostic) => diagnostic.code), [
-    "semantic.sounding-pitch-invalid", "semantic.sounding-pitch-invalid", "semantic.sequence-exceeds-measure",
-    "semantic.sounding-pitch-invalid", "semantic.sequence-exceeds-measure", "semantic.sounding-pitch-invalid", "semantic.sequence-exceeds-measure",
+    "semantic.sounding-pitch-invalid", "semantic.sounding-pitch-invalid",
+    "semantic.sounding-pitch-invalid", "semantic.sounding-pitch-invalid",
   ]);
 });
 
@@ -276,6 +304,7 @@ test("seeded final time batches match the independent TS command runtime", () =>
   };
   let committed = 0;
   let rejected = 0;
+  let tolerated = 0;
   for (let index = 0; index < 160; index += 1) {
     const { document, session, ts, read } = fixture();
     const before = read();
@@ -288,9 +317,19 @@ test("seeded final time batches match the independent TS command runtime", () =>
       start(startValue[0], startValue[1]),
       ...(index % 8 === 0 ? [meter(8, 4), start(0, 1), noteValue(8)] : []),
     ]);
-    const expected = ts.submit(command);
+    const legacy = ts.submit(command);
+    const expected = withoutRetiredTimingDiagnostics(legacy);
     const result = session.submit(command);
-    if (expected.status === "rejected") {
+    if (expected === null) {
+      tolerated += 1;
+      if (result.status !== "committed") throw new Error(`seed ${index} required tolerant commit`);
+      const final = read().snapshot.document;
+      const replayed = replayRustKernelStage4(addon, document, [command]);
+      if (replayed.status !== "replayed") throw new Error("tolerant seed replay required");
+      assert.deepEqual(plain(replayed.finalDocument), plain(final), `seed ${index} tolerant replay`);
+      assert.equal(session.undo().status, "committed");
+      assert.deepEqual(plain(read().snapshot.document), plain(document));
+    } else if (expected.status === "rejected") {
       rejected += 1;
       if (result.status !== "command-rejected") throw new Error(`seed ${index} required rejection`);
       assert.deepEqual(plain(result.failure), plain(expected.failure), `seed ${index}`);
@@ -313,4 +352,5 @@ test("seeded final time batches match the independent TS command runtime", () =>
   }
   assert.ok(committed >= 20);
   assert.ok(rejected >= 20);
+  assert.ok(tolerated >= 1);
 });

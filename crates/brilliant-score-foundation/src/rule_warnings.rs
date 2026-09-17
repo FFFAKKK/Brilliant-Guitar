@@ -18,12 +18,15 @@ pub const CORE_RULE_WARNING_PAGE_LIMIT_V1: usize = 4_096;
 pub enum CoreRuleWarningCodeV1 {
     #[serde(rename = "rule.sequence-exceeds-measure")]
     SequenceExceedsMeasure,
+    #[serde(rename = "rule.sequence-start-after-measure")]
+    SequenceStartAfterMeasure,
 }
 
 impl CoreRuleWarningCodeV1 {
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::SequenceExceedsMeasure => "rule.sequence-exceeds-measure",
+            Self::SequenceStartAfterMeasure => "rule.sequence-start-after-measure",
         }
     }
 }
@@ -126,8 +129,9 @@ pub fn assess_score_rule_warning_page_v1(
             let nominal = assess_measure_duration(&measure.meter, measure.pickup_duration.as_ref())
                 .map_err(|_| AssessmentFailureV1::InternalCapacity)?;
             for voice in &content.voices {
-                let mut actual = ExactFraction::from_canonical(&voice.sequence.start)
+                let start = ExactFraction::from_canonical(&voice.sequence.start)
                     .map_err(|_| AssessmentFailureV1::InternalCapacity)?;
+                let mut actual = start;
                 for event in &voice.sequence.events {
                     actual = actual
                         .checked_add(
@@ -136,18 +140,25 @@ pub fn assess_score_rule_warning_page_v1(
                         )
                         .map_err(|_| AssessmentFailureV1::InternalCapacity)?;
                 }
-                if actual
+                let start_after_measure = start
                     .checked_compare(nominal)
                     .map_err(|_| AssessmentFailureV1::InternalCapacity)?
-                    != Ordering::Greater
-                {
+                    == Ordering::Greater;
+                let sequence_exceeds_measure = actual
+                    .checked_compare(nominal)
+                    .map_err(|_| AssessmentFailureV1::InternalCapacity)?
+                    == Ordering::Greater;
+                let (code, observed) = if start_after_measure {
+                    (CoreRuleWarningCodeV1::SequenceStartAfterMeasure, start)
+                } else if sequence_exceeds_measure {
+                    (CoreRuleWarningCodeV1::SequenceExceedsMeasure, actual)
+                } else {
                     continue;
-                }
+                };
                 if total >= offset && total - offset < page_size {
                     warnings
                         .try_reserve(1)
                         .map_err(|_| AssessmentFailureV1::InternalCapacity)?;
-                    let code = CoreRuleWarningCodeV1::SequenceExceedsMeasure;
                     warnings.push(CoreRuleWarningV1 {
                         warning_version: 1,
                         code,
@@ -156,8 +167,8 @@ pub fn assess_score_rule_warning_page_v1(
                         measure_id: content.measure_id.clone(),
                         voice_id: voice.id.clone(),
                         nominal_duration: nominal.to_fraction_v1(),
-                        actual_duration: actual.to_fraction_v1(),
-                        overflow: actual
+                        actual_duration: observed.to_fraction_v1(),
+                        overflow: observed
                             .checked_sub(nominal)
                             .map_err(|_| AssessmentFailureV1::InternalCapacity)?
                             .to_fraction_v1(),
@@ -252,6 +263,53 @@ mod tests {
         assert_eq!(warning.actual_duration.denominator.get(), 1);
         assert_eq!(warning.overflow.numerator.get(), 3);
         assert_eq!(warning.overflow.denominator.get(), 1);
+    }
+
+    #[test]
+    fn delayed_voice_start_is_valid_and_reports_exact_distance_after_measure() {
+        let mut document = document();
+        document.parts[0].measure_contents[0].voices[0]
+            .sequence
+            .start = FractionV1 {
+            numerator: SafeInteger::new(5).unwrap(),
+            denominator: SafeInteger::new(4).unwrap(),
+        };
+
+        let semantic =
+            crate::assess_score_semantics_node(DocumentAssessmentNodeV1::new(&document)).unwrap();
+        assert!(semantic.ok, "{semantic:?}");
+        let page = assess_score_rule_warning_page_v1(&document, 0, 16).unwrap();
+        assert_eq!(page.total, 1);
+        let warning = &page.warnings[0];
+        assert_eq!(
+            warning.code,
+            CoreRuleWarningCodeV1::SequenceStartAfterMeasure
+        );
+        assert_eq!(warning.nominal_duration.numerator.get(), 1);
+        assert_eq!(warning.nominal_duration.denominator.get(), 1);
+        assert_eq!(warning.actual_duration.numerator.get(), 5);
+        assert_eq!(warning.actual_duration.denominator.get(), 4);
+        assert_eq!(warning.overflow.numerator.get(), 1);
+        assert_eq!(warning.overflow.denominator.get(), 4);
+    }
+
+    #[test]
+    fn delayed_start_warning_precedes_the_implied_tail_overflow() {
+        let mut document = document();
+        document.parts[0].measure_contents[0].voices[0]
+            .sequence
+            .start = FractionV1 {
+            numerator: SafeInteger::new(2).unwrap(),
+            denominator: SafeInteger::new(1).unwrap(),
+        };
+
+        let page = assess_score_rule_warning_page_v1(&document, 0, 16).unwrap();
+        assert_eq!(page.total, 1);
+        assert_eq!(
+            page.warnings[0].code,
+            CoreRuleWarningCodeV1::SequenceStartAfterMeasure
+        );
+        assert_eq!(page.warnings[0].actual_duration.numerator.get(), 2);
     }
 
     #[test]

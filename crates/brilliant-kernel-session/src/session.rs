@@ -591,6 +591,83 @@ mod tests {
     }
 
     #[test]
+    fn delayed_voice_start_commits_and_warning_follows_history_and_reopen() {
+        let request = decode_create_request(SMOKE_REQUEST.as_bytes()).expect("request");
+        let mut session = KernelSession::create(request).expect("session").session;
+        let document_id = StableId::new("score-rkp1").unwrap();
+        let set_start = r#"{"apiVersion":1,"command":{"commandVersion":1,"commandId":"core.voice.set-sequence-start","target":{"kind":"voice","voiceId":"voice-1"},"payload":{"start":{"numerator":5,"denominator":4}}}}"#;
+
+        let KernelStage3SubmitResultV1::Committed(committed) =
+            session.submit_stage3_bytes(set_start.as_bytes())
+        else {
+            panic!("delayed voice start must commit")
+        };
+        let report = session
+            .read_rule_warning_page(&document_id, committed.document_version, 0, 16)
+            .expect("delayed-start warning report");
+        assert_eq!(report.total, 1);
+        let warning = &report.warnings[0];
+        assert_eq!(warning.code.as_str(), "rule.sequence-start-after-measure");
+        assert_eq!(warning.actual_duration.numerator.get(), 5);
+        assert_eq!(warning.actual_duration.denominator.get(), 4);
+        assert_eq!(warning.overflow.numerator.get(), 1);
+        assert_eq!(warning.overflow.denominator.get(), 4);
+
+        let KernelSessionReadResultV1::Ok(state) = session.read_state() else {
+            panic!("committed document read")
+        };
+        let reopened = KernelSession::create(KernelSessionCreateRequestV1 {
+            api_version: 1,
+            document: state.snapshot.document.clone(),
+        })
+        .expect("reopen delayed-start document")
+        .session;
+        assert_eq!(
+            reopened
+                .read_rule_warning_page(&document_id, DocumentVersionV1::initial(), 0, 16)
+                .unwrap()
+                .warnings,
+            report.warnings
+        );
+
+        let KernelStage4OperationResultV1::Command(KernelStage4CommandResultV1::Committed {
+            value: undo_value,
+            ..
+        }) = operate(
+            &mut session,
+            r#"{"apiVersion":1,"operation":{"kind":"undo"}}"#,
+        )
+        else {
+            panic!("undo delayed start")
+        };
+        assert_eq!(
+            session
+                .read_rule_warning_page(&document_id, undo_value.document_version, 0, 16)
+                .unwrap()
+                .total,
+            0
+        );
+
+        let KernelStage4OperationResultV1::Command(KernelStage4CommandResultV1::Committed {
+            value: redo_value,
+            ..
+        }) = operate(
+            &mut session,
+            r#"{"apiVersion":1,"operation":{"kind":"redo"}}"#,
+        )
+        else {
+            panic!("redo delayed start")
+        };
+        assert_eq!(
+            session
+                .read_rule_warning_page(&document_id, redo_value.document_version, 0, 16)
+                .unwrap()
+                .warnings,
+            report.warnings
+        );
+    }
+
+    #[test]
     fn decoded_input_is_detached_and_reads_are_repeatable() {
         let mut bytes = SMOKE_REQUEST.as_bytes().to_vec();
         let request = decode_create_request(&bytes).expect("request");

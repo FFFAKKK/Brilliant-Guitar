@@ -63,7 +63,7 @@ export interface KernelRuleWarningFractionV1 {
 
 export interface KernelRuleWarningV1 {
   readonly warningVersion: 1;
-  readonly code: "rule.sequence-exceeds-measure";
+  readonly code: "rule.sequence-exceeds-measure" | "rule.sequence-start-after-measure";
   readonly messageKey: string;
   readonly partId: string;
   readonly measureId: string;
@@ -150,7 +150,8 @@ function decodeRuleWarningV1(value: unknown): KernelRuleWarningV1 | undefined {
   const nominalDuration = decodeRuleWarningFractionV1(record.nominalDuration);
   const actualDuration = decodeRuleWarningFractionV1(record.actualDuration);
   const overflow = decodeRuleWarningFractionV1(record.overflow);
-  if (record.warningVersion !== 1 || record.code !== "rule.sequence-exceeds-measure"
+  if (record.warningVersion !== 1
+    || !(record.code === "rule.sequence-exceeds-measure" || record.code === "rule.sequence-start-after-measure")
     || typeof record.messageKey !== "string" || typeof record.partId !== "string"
     || typeof record.measureId !== "string" || typeof record.voiceId !== "string"
     || nominalDuration === undefined || actualDuration === undefined || overflow === undefined) return undefined;

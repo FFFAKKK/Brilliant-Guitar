@@ -315,13 +315,9 @@ impl<N: AssessmentNodeV1> Validator<'_, N> {
         }
         if let (Some(position), Some(Ok(end))) = (current, duration) {
             self.rule();
-            match position.checked_compare(end) {
-                Err(_) => {
-                    self.add(Code::TimeArithmeticOverflow, &start, None)?;
-                    current = None;
-                }
-                Ok(Ordering::Greater) => self.add(Code::SequenceStartOutOfBounds, &start, None)?,
-                _ => {}
+            if position.checked_compare(end).is_err() {
+                self.add(Code::TimeArithmeticOverflow, &start, None)?;
+                current = None;
             }
         }
         for event in sequence.field("events").items()? {
@@ -646,21 +642,27 @@ mod tests {
         document
     }
 
-    fn has_legacy_overfull_diagnostic(report: &Value) -> bool {
+    fn is_retired_tolerant_timing_diagnostic(diagnostic: &Value) -> bool {
+        matches!(
+            diagnostic["code"].as_str(),
+            Some("semantic.sequence-exceeds-measure" | "semantic.sequence-start-out-of-bounds")
+        )
+    }
+
+    fn has_retired_tolerant_timing_diagnostic(report: &Value) -> bool {
         report["diagnostics"].as_array().is_some_and(|diagnostics| {
             diagnostics
                 .iter()
-                .any(|diagnostic| diagnostic["code"] == "semantic.sequence-exceeds-measure")
+                .any(is_retired_tolerant_timing_diagnostic)
         })
     }
 
-    fn without_legacy_overfull_diagnostics(report: &Value) -> Value {
+    fn without_retired_tolerant_timing_diagnostics(report: &Value) -> Value {
         let mut expected = report.clone();
         let has_ok = expected.get("ok").is_some();
         let diagnostics_empty = {
             let diagnostics = expected["diagnostics"].as_array_mut().unwrap();
-            diagnostics
-                .retain(|diagnostic| diagnostic["code"] != "semantic.sequence-exceeds-measure");
+            diagnostics.retain(|diagnostic| !is_retired_tolerant_timing_diagnostic(diagnostic));
             diagnostics.is_empty()
         };
         if has_ok {
@@ -669,11 +671,11 @@ mod tests {
         expected
     }
 
-    fn support_without_legacy_overfull(report: &Value) -> Option<Value> {
-        if report["status"] != "invalid" || !has_legacy_overfull_diagnostic(report) {
+    fn support_without_retired_tolerant_timing(report: &Value) -> Option<Value> {
+        if report["status"] != "invalid" || !has_retired_tolerant_timing_diagnostic(report) {
             return Some(report.clone());
         }
-        let expected = without_legacy_overfull_diagnostics(report);
+        let expected = without_retired_tolerant_timing_diagnostics(report);
         (!expected["diagnostics"].as_array().unwrap().is_empty()).then_some(expected)
     }
 
@@ -699,12 +701,12 @@ mod tests {
                 let borrowed = DocumentAssessmentNodeV1::new(&document);
                 assert_eq!(
                     report_value(assess_score_semantics_node(borrowed.clone()).unwrap()).unwrap(),
-                    without_legacy_overfull_diagnostics(&case["expected"]["semantics"]),
+                    without_retired_tolerant_timing_diagnostics(&case["expected"]["semantics"]),
                     "{}",
                     case["id"]
                 );
                 if let Some(expected) =
-                    support_without_legacy_overfull(&case["expected"]["support"])
+                    support_without_retired_tolerant_timing(&case["expected"]["support"])
                 {
                     assert_eq!(
                         report_value(crate::assess_score_profile_node(borrowed, &profile).unwrap())
@@ -734,7 +736,7 @@ mod tests {
                 assess_score_semantics(&captured(&document)).expect("structural candidate");
             assert_eq!(
                 report_value(report).expect("report"),
-                without_legacy_overfull_diagnostics(&case["expected"]["semantics"]),
+                without_retired_tolerant_timing_diagnostics(&case["expected"]["semantics"]),
                 "case {}",
                 case["id"]
             );
@@ -752,7 +754,9 @@ mod tests {
                 .unwrap_or_else(crate::ScoreFeatureProfileV1::k1);
             let report =
                 crate::assess_score_profile(&captured(&document), &profile).expect("assessment");
-            if let Some(expected) = support_without_legacy_overfull(&case["expected"]["support"]) {
+            if let Some(expected) =
+                support_without_retired_tolerant_timing(&case["expected"]["support"])
+            {
                 assert_eq!(
                     report_value(report).expect("report"),
                     expected,
@@ -779,11 +783,13 @@ mod tests {
                     assess_score_semantics(&captured(&document)).expect("semantic assessment")
                 )
                 .expect("report"),
-                without_legacy_overfull_diagnostics(&case["expected"]["semantics"]),
+                without_retired_tolerant_timing_diagnostics(&case["expected"]["semantics"]),
                 "semantic case {}",
                 case["id"]
             );
-            if let Some(expected) = support_without_legacy_overfull(&case["expected"]["support"]) {
+            if let Some(expected) =
+                support_without_retired_tolerant_timing(&case["expected"]["support"])
+            {
                 assert_eq!(
                     report_value(
                         crate::assess_score_profile(&captured(&document), &profile)

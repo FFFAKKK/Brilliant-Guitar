@@ -16,6 +16,37 @@ const removeMeasure = () => command("core.measure.remove", { kind: "measure", me
 const voiceStaff = (staffId: string) => command("core.voice.set-default-staff", { kind: "voice", voiceId: "voice-1" }, { staffId });
 const eventStaff = (staffId: string) => command("core.event.set-staff-assignment", { kind: "event", eventId: "event-1" }, { assignment: { kind: "staff", staffId } });
 const insertPart = (part: Part) => command("core.part.insert", { kind: "document", documentId: "score-1" }, { anchor: { kind: "start" }, part });
+const retiredTimingCodes = new Set([
+  "semantic.sequence-exceeds-measure",
+  "semantic.sequence-start-out-of-bounds",
+]);
+
+function withoutRetiredTimingDiagnostics<T>(result: T): T | null {
+  if (!result || typeof result !== "object") return result;
+  const value = result as { readonly status?: unknown; readonly failure?: unknown };
+  if (value.status !== "rejected") return result;
+
+  const filterFailure = (failure: unknown): unknown | null => {
+    if (!failure || typeof failure !== "object") return failure;
+    const candidate = failure as { readonly code?: unknown; readonly diagnostics?: readonly unknown[]; readonly failure?: unknown };
+    if (candidate.code === "command.semantic-invalid" && Array.isArray(candidate.diagnostics)) {
+      const diagnostics = candidate.diagnostics.filter((diagnostic) => !(
+        diagnostic !== null && typeof diagnostic === "object"
+        && retiredTimingCodes.has(String((diagnostic as { readonly code?: unknown }).code))
+      ));
+      if (diagnostics.length === 0) return null;
+      return diagnostics.length === candidate.diagnostics.length ? failure : { ...candidate, diagnostics };
+    }
+    if (candidate.code === "command.batch-child-rejected") {
+      const child = filterFailure(candidate.failure);
+      return child === null ? null : { ...candidate, failure: child };
+    }
+    return failure;
+  };
+
+  const failure = filterFailure(value.failure);
+  return failure === null ? null : { ...value, failure } as T;
+}
 
 function fixture(document = createCoreScoreFixture()) {
   const created = createRustKernelSmokeSession(addon, document);
@@ -34,8 +65,9 @@ function fixture(document = createCoreScoreFixture()) {
 function rejectLikeTs(input: unknown, document = createCoreScoreFixture(), expectedCode = "command.semantic-invalid") {
   const { session, ts, read } = fixture(document);
   const before = read();
-  const expected = ts.submit(input);
+  const expected = withoutRetiredTimingDiagnostics(ts.submit(input));
   const result = session.submit(input);
+  if (expected === null) throw new Error(`non-timing rejection required: ${JSON.stringify(input)}`);
   if (result.status !== "command-rejected" || expected.status !== "rejected") throw new Error(`rejection required: ${JSON.stringify({ input, expected, result })}`);
   const leaf = expected.failure.code === "command.batch-child-rejected" ? expected.failure.failure : expected.failure;
   assert.equal(leaf.code, expectedCode, JSON.stringify(input));
