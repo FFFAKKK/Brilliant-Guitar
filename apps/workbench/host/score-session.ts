@@ -50,16 +50,18 @@ function failureCode(failure: unknown): string {
 }
 
 function readRuleWarnings(bus: IntegratedCommandBus, documentId: string, documentVersion: number): readonly KernelRuleWarningV1[] {
+  const unavailable = (message: string, cause?: unknown) => new WorkbenchHostError(message, 503, cause,
+    issue("host.rule-report-unavailable", message, { scope: "workbench" }, "host", true));
   const warnings: KernelRuleWarningV1[] = [];
   let offset = 0;
   for (;;) {
     const page = readNativeRuleWarningPageV1(bus, documentId, documentVersion, offset, 4_096);
-    if (!page.ok) throw new WorkbenchHostError("无法读取当前谱面规则状态", 503, page.failure);
+    if (!page.ok) throw unavailable("无法读取当前谱面规则状态", page.failure);
     if (page.value.documentId !== documentId || page.value.documentVersion !== documentVersion
-      || page.value.offset !== offset) throw new WorkbenchHostError("谱面规则状态与当前版本不一致", 503);
+      || page.value.offset !== offset) throw unavailable("谱面规则状态与当前版本不一致");
     warnings.push(...page.value.warnings);
     if (page.value.nextOffset === null) return warnings;
-    if (page.value.nextOffset <= offset) throw new WorkbenchHostError("谱面规则分页状态无效", 503);
+    if (page.value.nextOffset <= offset) throw unavailable("谱面规则分页状态无效");
     offset = page.value.nextOffset;
   }
 }

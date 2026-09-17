@@ -1,5 +1,7 @@
 import type { ScoreEditRequest } from "../contracts/note-input";
 import type { NewScoreInput } from "../contracts/new-score";
+import { DEFAULT_APPLICATION_SETTINGS, isApplicationSettingsSnapshotV1, isApplicationSettingsV1 } from "../contracts/application-settings.ts";
+import type { ApplicationSettingsSnapshotV1, ApplicationSettingsV1 } from "../contracts/application-settings.ts";
 import { isScoreSessionRead } from "../contracts/score-session.ts";
 import type { ScoreSessionRead } from "../contracts/score-session";
 import { isWorkspaceId } from "../contracts/workspace-id.ts";
@@ -123,5 +125,29 @@ export class WorkbenchClient {
   async closeNativeWindow(): Promise<void> {
     if (!this.bridge.closeNativeWindow) return;
     await this.bridge.closeNativeWindow(this.workspaceId);
+  }
+
+  async readApplicationSettings(): Promise<ApplicationSettingsSnapshotV1> {
+    if (!this.bridge.readApplicationSettings) return {
+      settings: DEFAULT_APPLICATION_SETTINGS, persisted: false, recoveredFromInvalid: false,
+    };
+    const value = await this.bridge.readApplicationSettings();
+    if (!isApplicationSettingsSnapshotV1(value)) throw new Error("应用配置读取结果无效");
+    return value;
+  }
+
+  async writeApplicationSettings(settings: ApplicationSettingsV1): Promise<ApplicationSettingsV1> {
+    if (!isApplicationSettingsV1(settings)) throw new Error("应用配置格式无效");
+    if (!this.bridge.writeApplicationSettings) return settings;
+    const value = await this.bridge.writeApplicationSettings(settings);
+    if (!isApplicationSettingsV1(value)) throw new Error("应用配置保存结果无效");
+    return value;
+  }
+
+  async resetApplicationSettings(): Promise<ApplicationSettingsV1> {
+    if (!this.bridge.resetApplicationSettings) return DEFAULT_APPLICATION_SETTINGS;
+    const value = await this.bridge.resetApplicationSettings();
+    if (!isApplicationSettingsV1(value)) throw new Error("默认应用配置结果无效");
+    return value;
   }
 }

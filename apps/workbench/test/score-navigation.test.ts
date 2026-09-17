@@ -62,3 +62,19 @@ test("an empty 4/4 measure offers four editable beat positions without document 
   assert.ok(points.every((point) => point.anchor.kind === "start"));
   assert.deepEqual(empty.measures[0]!.events, []);
 });
+
+test("full and overfull measure tails remain keyboard-addressable before navigation enters the next measure", () => {
+  const make = (events: StaffView["measures"][number]["events"]): StaffView => ({
+    kind: "staff", partId: "part", staffId: "staff", clef: "treble", measures: [
+      { id: "current", voiceId: "current-voice", meter: { numerator: 4, denominator: 4 }, events, ruleWarnings: [] },
+      { id: "next", voiceId: "next-voice", meter: { numerator: 4, denominator: 4 }, events: [], ruleWarnings: [] },
+    ],
+  });
+  const whole = { id: "whole", duration: { base: 1 as const, dots: 0 as const },
+    content: { kind: "note" as const, pitch: { step: "C" as const, octave: 5, alter: 0 as const } } };
+  for (const current of [make([whole]), make([whole, { ...whole, id: "extra", duration: { base: 4, dots: 0 } }])]) {
+    const tail = eventEndPoint(current, current.measures[0]!.events.at(-1)!.id)!;
+    assert.equal(tail.measureId, "current");
+    assert.equal(moveScoreEditPoint(current, tail, 1).measureId, "next");
+  }
+});

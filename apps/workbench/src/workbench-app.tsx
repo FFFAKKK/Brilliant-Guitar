@@ -19,8 +19,7 @@ import type { UiComponentDefinition, UiPresentation, UiSlot } from "./ui/plugin-
 import { useUiLayout } from "./ui/use-ui-layout";
 import { useSharedDockSelection } from "./ui/use-shared-dock-selection";
 import type { SharedDockSlot } from "./ui/shared-dock-selection";
-import { useAnimationPreference } from "./ui/use-animation-preference";
-import { useEditingPreferences } from "./ui/use-editing-preferences.ts";
+import { useApplicationSettings } from "./ui/use-application-settings.ts";
 import { workbenchPluginDiagnostics, workbenchPlugins } from "./ui/workbench-plugins";
 import { useDockLayout } from "./workbench/use-dock-layout";
 import { useWorkbenchSession } from "./workbench/use-workbench-session";
@@ -106,9 +105,10 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
   }, [pluginDiagnostics.length]);
   const editMenuRef = useRef<HTMLButtonElement>(null);
   const fileMenuRef = useRef<HTMLButtonElement>(null);
-  const { enabled: animationsEnabled, setEnabled: setAnimationsEnabled } = useAnimationPreference();
-  const { ruleWarningsVisible, setRuleWarningsVisible, deleteTimePolicy, setDeleteTimePolicy } = useEditingPreferences();
   const score = useWorkbenchSession(runtime);
+  const applicationSettings = useApplicationSettings(score.client, runtime);
+  const { animationsEnabled, ruleWarningsVisible } = applicationSettings.settings.ui;
+  const { deleteTimePolicy } = applicationSettings.settings.editing;
   const input = useScoreInput(score.session, score.client, score.setSession, scoreViewport, score.loadEpoch, deleteTimePolicy, runtime);
   const files = useDocumentFiles(score.session, score.client, score.replaceSession, vexflowRenderer,
     score.loading || Boolean(score.error) || input.pending > 0 || input.retryable, runtime);
@@ -172,6 +172,7 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
       renderer: vexflowRenderer,
       loading: score.loading,
       error: score.error,
+      retryLabel: score.retryLabel,
       onRetry: score.retry,
       zoom: paperZoom.zoom,
       onZoomIn: paperZoom.zoomIn,
@@ -305,9 +306,11 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
     </UiComponentHost>}
     </WorkbenchShell>
     <PreferencesDialog open={preferencesOpen} onOpenChange={setPreferencesOpen}
-      animationsEnabled={animationsEnabled} onAnimationsChange={setAnimationsEnabled}
-      ruleWarningsVisible={ruleWarningsVisible} onRuleWarningsVisibleChange={setRuleWarningsVisible}
-      deleteTimePolicy={deleteTimePolicy} onDeleteTimePolicyChange={setDeleteTimePolicy}
+      animationsEnabled={animationsEnabled} onAnimationsChange={applicationSettings.setAnimationsEnabled}
+      ruleWarningsVisible={ruleWarningsVisible} onRuleWarningsVisibleChange={applicationSettings.setRuleWarningsVisible}
+      deleteTimePolicy={deleteTimePolicy} onDeleteTimePolicyChange={applicationSettings.setDeleteTimePolicy}
+      settingsReady={applicationSettings.ready} settingsSaving={applicationSettings.saving}
+      settingsMessage={applicationSettings.message} onReset={applicationSettings.reset}
       returnFocusRef={editMenuRef} />
     <NewScoreDialog open={files.newScoreOpen} onOpenChange={files.setNewScoreOpen}
       onCreate={files.createScore} returnFocusRef={fileMenuRef} completionFocusRef={scoreViewport} />

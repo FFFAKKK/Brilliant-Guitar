@@ -3,6 +3,8 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { Window as TauriWindow } from "@tauri-apps/api/window";
 import type { ScoreEditRequest } from "../contracts/note-input";
 import type { NewScoreInput } from "../contracts/new-score";
+import { DEFAULT_APPLICATION_SETTINGS, isApplicationSettingsV1 } from "../contracts/application-settings.ts";
+import type { ApplicationSettingsV1 } from "../contracts/application-settings.ts";
 import { isWorkbenchIssue } from "../contracts/workbench-issue.ts";
 import type { WorkbenchIssue } from "../contracts/workbench-issue.ts";
 
@@ -33,6 +35,9 @@ export interface WorkbenchHostBridge {
   saveNativeDocument?(workspaceId: string, suggestedName: string, saveAs: boolean): Promise<NativeFileResult | null>;
   onNativeCloseRequested?(handler: () => boolean | Promise<boolean>): Promise<() => void>;
   closeNativeWindow?(workspaceId: string): Promise<void>;
+  readApplicationSettings?(): Promise<unknown>;
+  writeApplicationSettings?(settings: ApplicationSettingsV1): Promise<unknown>;
+  resetApplicationSettings?(): Promise<unknown>;
 }
 
 export interface NativeFileResult {
@@ -44,6 +49,11 @@ export interface NativeFileResult {
 type Invoke = <T>(command: string, args?: Record<string, unknown>) => Promise<T>;
 type DesktopWindow = Pick<TauriWindow, "onCloseRequested" | "close">;
 type CurrentWindow = () => DesktopWindow;
+type SettingsStorage = Pick<Storage, "getItem" | "setItem">;
+
+function browserSettingsStorage(): SettingsStorage | undefined {
+  try { return globalThis.localStorage; } catch { return undefined; }
+}
 
 function requestError(error: unknown, fallback: string): WorkbenchRequestError {
   if (typeof error === "object" && error !== null) {
@@ -122,6 +132,18 @@ export class TauriWorkbenchHostBridge implements WorkbenchHostBridge {
     this.forceClosing = true;
     await this.currentWindow().close();
   }
+
+  readApplicationSettings() {
+    return this.call<unknown>("workbench_read_settings_v1", {}, "无法读取应用配置");
+  }
+
+  writeApplicationSettings(settings: ApplicationSettingsV1) {
+    return this.call<unknown>("workbench_write_settings_v1", { settings }, "无法保存应用配置");
+  }
+
+  resetApplicationSettings() {
+    return this.call<unknown>("workbench_reset_settings_v1", {}, "无法恢复默认应用配置");
+  }
 }
 
 export function createWorkbenchHostBridge(): WorkbenchHostBridge {
@@ -130,6 +152,13 @@ export function createWorkbenchHostBridge(): WorkbenchHostBridge {
 }
 
 export class BrowserWorkbenchHostBridge implements WorkbenchHostBridge {
+  private static readonly SETTINGS_KEY = "brilliant.workbench.application-settings.v1";
+  private static readonly INVALID_SETTINGS_KEY = "brilliant.workbench.application-settings.invalid.v1";
+  private readonly settingsStorage: SettingsStorage | undefined;
+
+  constructor(settingsStorage: SettingsStorage | undefined = browserSettingsStorage()) {
+    this.settingsStorage = settingsStorage;
+  }
   private endpoint(workspaceId: string, resource: "session" | "document") {
     return `/api/workbench/${resource}?workspaceId=${encodeURIComponent(workspaceId)}`;
   }
@@ -142,7 +171,7 @@ export class BrowserWorkbenchHostBridge implements WorkbenchHostBridge {
         signal: AbortSignal.timeout(15000),
       });
     } catch {
-      const message = "连接中断，请重试以确认操作结果";
+      const message = "工作台服务暂时不可用，请重新加载";
       throw new WorkbenchRequestError(message, 503,
         { code: "bridge.unavailable", message, severity: "error", source: "bridge", target: { scope: "workbench" }, retryable: true });
     }
@@ -204,5 +233,34 @@ export class BrowserWorkbenchHostBridge implements WorkbenchHostBridge {
     const record = result as Record<string, unknown>;
     if (!response.ok) throw new Error(typeof record.message === "string" ? record.message : "无法打开乐谱文件");
     return record.session;
+  }
+
+  async readApplicationSettings(): Promise<unknown> {
+    const value = this.settingsStorage?.getItem(BrowserWorkbenchHostBridge.SETTINGS_KEY);
+    if (value === null || value === undefined) return {
+      settings: DEFAULT_APPLICATION_SETTINGS, persisted: false, recoveredFromInvalid: false,
+    };
+    try {
+      const settings: unknown = JSON.parse(value);
+      if (!isApplicationSettingsV1(settings)) throw new Error("invalid application settings");
+      return {
+        settings,
+        persisted: true,
+        recoveredFromInvalid: false,
+      };
+    } catch {
+      this.settingsStorage?.setItem(BrowserWorkbenchHostBridge.INVALID_SETTINGS_KEY, value);
+      return { settings: DEFAULT_APPLICATION_SETTINGS, persisted: false, recoveredFromInvalid: true };
+    }
+  }
+
+  async writeApplicationSettings(settings: ApplicationSettingsV1): Promise<unknown> {
+    this.settingsStorage?.setItem(BrowserWorkbenchHostBridge.SETTINGS_KEY, JSON.stringify(settings));
+    return settings;
+  }
+
+  async resetApplicationSettings(): Promise<unknown> {
+    this.settingsStorage?.setItem(BrowserWorkbenchHostBridge.SETTINGS_KEY, JSON.stringify(DEFAULT_APPLICATION_SETTINGS));
+    return DEFAULT_APPLICATION_SETTINGS;
   }
 }

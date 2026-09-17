@@ -131,12 +131,46 @@ pub fn normalize_save_path(mut path: PathBuf) -> PathBuf {
 }
 
 pub fn atomic_write(path: &Path, contents: &[u8]) -> Result<(), HostError> {
+    atomic_write_inner(path, contents).map_err(|stage| match stage {
+        AtomicWriteStage::InvalidPath => file_error("保存位置无效", false),
+        AtomicWriteStage::MissingDirectory => file_error("保存目录不存在", false),
+        AtomicWriteStage::Create => file_error("无法在保存目录创建临时文件", true),
+        AtomicWriteStage::Write => file_error("写入乐谱文件失败", true),
+        AtomicWriteStage::Sync => file_error("无法确认乐谱文件已写入磁盘", true),
+        AtomicWriteStage::Replace => file_error("无法原子替换目标文件", true),
+    })
+}
+
+pub(crate) fn atomic_write_raw(path: &Path, contents: &[u8]) -> std::io::Result<()> {
+    atomic_write_inner(path, contents).map_err(|stage| {
+        std::io::Error::other(match stage {
+            AtomicWriteStage::InvalidPath => "invalid save path",
+            AtomicWriteStage::MissingDirectory => "save directory does not exist",
+            AtomicWriteStage::Create => "cannot create temporary file",
+            AtomicWriteStage::Write => "cannot write temporary file",
+            AtomicWriteStage::Sync => "cannot sync temporary file",
+            AtomicWriteStage::Replace => "cannot atomically replace target",
+        })
+    })
+}
+
+#[derive(Clone, Copy)]
+enum AtomicWriteStage {
+    InvalidPath,
+    MissingDirectory,
+    Create,
+    Write,
+    Sync,
+    Replace,
+}
+
+fn atomic_write_inner(path: &Path, contents: &[u8]) -> Result<(), AtomicWriteStage> {
     let parent = path
         .parent()
         .filter(|value| !value.as_os_str().is_empty())
-        .ok_or_else(|| file_error("保存位置无效", false))?;
+        .ok_or(AtomicWriteStage::InvalidPath)?;
     if !parent.is_dir() {
-        return Err(file_error("保存目录不存在", false));
+        return Err(AtomicWriteStage::MissingDirectory);
     }
     let file_name = path
         .file_name()
@@ -148,13 +182,13 @@ pub fn atomic_write(path: &Path, contents: &[u8]) -> Result<(), HostError> {
             .create_new(true)
             .write(true)
             .open(&temp)
-            .map_err(|_| file_error("无法在保存目录创建临时文件", true))?;
+            .map_err(|_| AtomicWriteStage::Create)?;
         file.write_all(contents)
-            .map_err(|_| file_error("写入乐谱文件失败", true))?;
+            .map_err(|_| AtomicWriteStage::Write)?;
         file.flush()
             .and_then(|_| file.sync_all())
-            .map_err(|_| file_error("无法确认乐谱文件已写入磁盘", true))?;
-        replace_file(&temp, path).map_err(|_| file_error("无法原子替换目标文件", true))?;
+            .map_err(|_| AtomicWriteStage::Sync)?;
+        replace_file(&temp, path).map_err(|_| AtomicWriteStage::Replace)?;
         sync_parent(parent);
         Ok(())
     })();

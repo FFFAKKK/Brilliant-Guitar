@@ -8,7 +8,6 @@ import { resolveScoreSelection } from "./score-selection";
 import { resolveScorePosition } from "./score-position";
 import { adjacentEventAtPoint, eventEndPoint, eventStartPoint, measureStartPoint,
   moveScoreEditPoint, previousEventAtPoint } from "./score-navigation";
-import { capacityUnits, usedUnits } from "../notation/input-position";
 import { accidentalForEvent, alterForAccidental, inheritedAlterBeforeEvent } from "./accidental-state";
 
 /** Feature interaction shared by the score and its tool. The visual host remains headless. */
@@ -74,8 +73,8 @@ export function useNoteOverview(input: ReturnTypeOfScoreInput, session: ScoreSes
         const next = events[index + direction];
         const measure = selection.measure;
         const atMeasureEdge = measure && (direction > 0 ? measure.events.at(-1)?.id : measure.events[0]?.id) === selection.event.id;
-        const freeTail = direction > 0 && atMeasureEdge && measure && usedUnits(measure) < capacityUnits(measure);
-        if (freeTail) {
+        const enterMeasureTail = direction > 0 && atMeasureEdge && measure;
+        if (enterMeasureTail) {
           const point = eventEndPoint(view, selection.event.id, input.point?.preferredPitch ?? null);
           if (point) input.setEditPoint(point);
         } else if (next) selectEvent(next.id);

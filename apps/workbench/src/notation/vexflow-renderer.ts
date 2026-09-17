@@ -3,6 +3,7 @@ import type { NotationRenderer } from "./notation-renderer.ts";
 import type { EditAnchorGeometry, EventGeometry, MeasureGeometry } from "./notation-renderer.ts";
 import { eventNoteSpec } from "./vexflow-note-spec.ts";
 import { loadEngravingEngine } from "./engraving-engine.ts";
+import { describeMeasureRuleWarnings } from "./rule-warning-description.ts";
 
 export const vexflowRenderer: NotationRenderer = {
   async render(layout, theme, signal) {
@@ -98,6 +99,12 @@ export const vexflowRenderer: NotationRenderer = {
       hit.setAttribute("pointer-events", "all");
       hit.setAttribute("data-staff-bottom", String(stave.getYForLine(4) * scale));
       hit.setAttribute("data-line-spacing", String(stave.getSpacingBetweenLines() * scale));
+      const warningDescription = describeMeasureRuleWarnings(item.number, item.measure);
+      if (warningDescription) {
+        const title = document.createElementNS("http://www.w3.org/2000/svg", "title");
+        title.textContent = warningDescription;
+        hit.append(title);
+      }
       drawing.append(hit);
       measures.push({ measureId: item.measure.id, x: item.x * scale, y: item.y * scale,
         width: item.width * scale, height: 140 * scale, staffBottom: stave.getYForLine(4) * scale,

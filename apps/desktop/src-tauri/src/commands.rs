@@ -9,8 +9,60 @@ use crate::{
     },
     dto::{CreateScoreRequest, NativeFileResult, ScoreEditRequest, ScoreSessionRead},
     error::HostError,
+    settings::{ApplicationSettingsSnapshotV1, ApplicationSettingsV1},
     state::AppState,
 };
+
+#[tauri::command]
+pub fn workbench_read_settings_v1(
+    state: State<'_, AppState>,
+) -> Result<ApplicationSettingsSnapshotV1, HostError> {
+    state.settings.read().map_err(|_| {
+        settings_error(
+            "config.read-failed",
+            "无法读取应用配置，当前设置未更改",
+            503,
+            true,
+        )
+    })
+}
+
+#[tauri::command]
+pub fn workbench_write_settings_v1(
+    state: State<'_, AppState>,
+    settings: ApplicationSettingsV1,
+) -> Result<ApplicationSettingsV1, HostError> {
+    state.settings.write(settings).map_err(|error| {
+        if matches!(
+            error.kind(),
+            std::io::ErrorKind::InvalidData | std::io::ErrorKind::InvalidInput
+        ) {
+            return settings_error("config.invalid", "应用配置格式无效", 422, false);
+        }
+        settings_error("config.write-failed", "无法保存应用配置", 503, true)
+    })
+}
+
+#[tauri::command]
+pub fn workbench_reset_settings_v1(
+    state: State<'_, AppState>,
+) -> Result<ApplicationSettingsV1, HostError> {
+    state
+        .settings
+        .reset()
+        .map_err(|_| settings_error("config.write-failed", "无法恢复默认应用配置", 503, true))
+}
+
+fn settings_error(code: &str, message: &str, status: u16, retryable: bool) -> HostError {
+    HostError::issue(
+        code,
+        message,
+        status,
+        crate::dto::WorkbenchIssueSource::Host,
+        crate::dto::WorkbenchIssueTarget::Workbench,
+        Some(retryable),
+    )
+}
 
 #[tauri::command]
 pub fn workbench_plugin_diagnostic_v1(

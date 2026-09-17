@@ -2,14 +2,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, KeyboardEventHandler, MouseEvent, RefObject } from "react";
 import type { InputPitch } from "../contracts/note-input";
 import type { NotationView, StaffView as StaffNotation } from "../contracts/notation";
-import type { EditAnchorGeometry, NotationInteractionGeometry, NotationRenderer } from "../notation/notation-renderer";
+import type { NotationInteractionGeometry, NotationRenderer } from "../notation/notation-renderer";
 import { fitScorePaper, layoutScorePages, SCORE_PAPER } from "../notation/score-page-layout";
+import { describeMeasureRuleWarnings } from "../notation/rule-warning-description.ts";
 import { zoomFittedPaper } from "../notation/paper-zoom";
 import { usePaperViewport } from "../notation/use-paper-viewport";
 import type { StaffLayout } from "../notation/staff-layout";
-import { capacityUnits, pitchAtY, usedUnits, yForPitch } from "../notation/input-position";
+import { yForPitch } from "../notation/input-position";
 import { useHostedUiComponent } from "./ui-component-host";
 import type { ScoreEditPoint } from "../editor/score-navigation";
+import { resolveStaffPointerTarget } from "../editor/staff-pointer-target.ts";
 import type { WorkbenchFeedback } from "../feedback/workbench-feedback";
 import { LatestWorkbenchTask } from "../workbench/latest-task.ts";
 
@@ -23,12 +25,6 @@ export interface StaffEditing {
   readonly onSelectEvent?: (eventId: string) => void;
   readonly busy?: boolean;
   readonly feedback?: WorkbenchFeedback | null;
-}
-
-function pointFromAnchor(view: StaffNotation, geometry: EditAnchorGeometry, pitch: InputPitch): ScoreEditPoint | null {
-  const measure = view.measures.find((item) => item.id === geometry.measureId);
-  return measure ? { partId: view.partId, staffId: view.staffId, measureId: measure.id,
-    voiceId: measure.voiceId, anchor: geometry.anchor, offsetUnits: geometry.offsetUnits, preferredPitch: pitch } : null;
 }
 
 function anchorForPoint(geometry: NotationInteractionGeometry | null, point: ScoreEditPoint | null) {
@@ -83,6 +79,8 @@ function EngravedPage({ layout, renderer, number, editing, view, showRuleWarning
     layout.measures.some((item) => item.measure.id === geometry.measureId && item.measure.ruleWarnings.length > 0)) ?? []) : [];
   const ruleWarningCount = showRuleWarnings
     ? layout.measures.reduce((total, item) => total + item.measure.ruleWarnings.length, 0) : 0;
+  const ruleWarningDescription = showRuleWarnings ? layout.measures
+    .map((item) => describeMeasureRuleWarnings(item.number, item.measure)).filter(Boolean).join("，") : "";
   const feedbackEventId = editing?.feedback?.target.scope === "event" ? editing.feedback.target.eventId : null;
   const focusRejected = feedbackEventId ? feedbackEventId === selection?.eventId
     : feedbackMeasureId === (selection?.measureId ?? cursor?.measureId);
@@ -97,38 +95,24 @@ function EngravedPage({ layout, renderer, number, editing, view, showRuleWarning
     if (!editing || status !== "ready" || !interaction) return;
     const element = event.target as Element;
     const eventHit = element.closest<SVGRectElement>("[data-event-id]");
-    if (writeNow && eventHit) return;
-    if (eventHit?.dataset.eventId && editing.onSelectEvent) { editing.onSelectEvent(eventHit.dataset.eventId); return; }
     const hit = eventHit ?? element.closest<SVGRectElement>("[data-measure-id]");
     const svg = hit?.ownerSVGElement, matrix = svg?.getScreenCTM();
     if (!hit || !matrix) return;
     const measureId = eventHit
       ? layout.measures.find((item) => item.measure.events.some((item) => item.id === eventHit.dataset.eventId))?.measure.id
       : hit.dataset.measureId;
-    const measureHit = measureId && interaction.measures.find((item) => item.measureId === measureId);
-    if (!measureId || !measureHit) return;
+    if (!measureId) return;
     const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
-    const pitch = pitchAtY(point.y, measureHit.staffBottom, measureHit.lineSpacing);
-    const measure = view.measures.find((item) => item.id === measureId);
-    if (!measure) return;
-    const eventTargets = interaction.events.filter((item) => item.measureId === measureId)
-      .map((item) => ({ kind: "event" as const, eventId: item.eventId, distance: Math.abs(item.x + item.width / 2 - point.x) }));
-    const hasFreeTail = measure.events.length === 0 || usedUnits(measure) < capacityUnits(measure);
-    const targets: ({ readonly kind: "event"; readonly eventId: string; readonly distance: number }
-      | { readonly kind: "empty"; readonly anchor: EditAnchorGeometry; readonly distance: number })[] = [...eventTargets];
-    interaction.anchors.filter((item) => item.measureId === measureId
-      && (item.offsetUnits <= usedUnits(measure) || hasFreeTail))
-      .forEach((anchor) => targets.push({ kind: "empty", anchor, distance: Math.abs(anchor.x - point.x) }));
-    const nearest = targets.reduce<typeof targets[number] | null>((best, item) => !best || item.distance < best.distance ? item : best, null);
-    if (nearest?.kind === "event") { if (!writeNow) editing.onSelectEvent?.(nearest.eventId); return; }
-    const editPoint = nearest && pointFromAnchor(view, nearest.anchor, pitch);
-    if (editPoint) editing.onLocate(editPoint, pitch, writeNow);
+    const target = resolveStaffPointerTarget({ view, interaction, measureId,
+      eventId: eventHit?.dataset.eventId ?? null, x: point.x, y: point.y, writeNow });
+    if (target?.kind === "event") editing.onSelectEvent?.(target.eventId);
+    if (target?.kind === "caret") editing.onLocate(target.point, target.pitch, writeNow);
   }
   return <div className="staff-paper" data-page-format={SCORE_PAPER.format} data-orientation={SCORE_PAPER.orientation}
     data-render-state={status} aria-busy={status === "loading"}>
     <div ref={engraving} className="staff-paper-engraving" onClick={(event) => locate(event, false)} onDoubleClick={(event) => locate(event, true)}
       role={status === "ready" ? "img" : undefined}
-      aria-label={`第 ${number} 页，高音谱表，${layout.measures.length} 个小节${ruleWarningCount ? `，${ruleWarningCount} 个节拍提示` : ""}`} />
+      aria-label={`第 ${number} 页，高音谱表，${layout.measures.length} 个小节${ruleWarningCount ? `，${ruleWarningCount} 个节拍提示，${ruleWarningDescription}` : ""}`} />
     {status === "ready" && interaction && <svg className="staff-interaction-overlay" viewBox={`0 0 ${layout.width} ${layout.height}`}
       preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
       {ruleWarningMeasures.map((measure) => {
@@ -137,6 +121,8 @@ function EngravedPage({ layout, renderer, number, editing, view, showRuleWarning
         const y = Math.max(measure.y + radius + 2, measure.staffBottom - measure.lineSpacing * 5.15);
         return <g key={`rule-warning-${measure.measureId}`} className="score-rule-warning"
           transform={`translate(${x} ${y})`}>
+          <title>{layout.measures.map((item) => item.measure.id === measure.measureId
+            ? describeMeasureRuleWarnings(item.number, item.measure) : null).find(Boolean)}</title>
           <circle r={radius} />
           <text y={radius * .36}>!</text>
         </g>;
@@ -169,6 +155,7 @@ export interface StaffViewProps {
   readonly loading: boolean;
   readonly error: string;
   readonly onRetry: () => void;
+  readonly retryLabel?: string;
   readonly zoom?: number;
   readonly onZoomIn?: () => void;
   readonly onZoomOut?: () => void;
@@ -178,7 +165,7 @@ export interface StaffViewProps {
 
 /** Paper is this view's own interface. The public host adds no visual chrome. */
 export function StaffView({ notation, renderer, loading, error, onRetry, editing, zoom = 100,
-  onZoomIn, onZoomOut, showRuleWarnings = true }: StaffViewProps) {
+  onZoomIn, onZoomOut, retryLabel = "重新加载", showRuleWarnings = true }: StaffViewProps) {
   const staffNotation = notation?.kind === "staff" ? notation : null;
   const { size } = useHostedUiComponent();
   const fit = fitScorePaper(size);
@@ -200,7 +187,7 @@ export function StaffView({ notation, renderer, loading, error, onRetry, editing
     }}
     style={{ "--score-display-width": `${paper.paperWidth}px`, "--score-display-height": `${paper.height}px`,
       "--score-gutter": `${paper.gutter}px` } as CSSProperties}>
-    {error ? <div className="staff-view-message" role="alert">{error}<button type="button" onClick={onRetry}>重试连接</button></div>
+    {error ? <div className="staff-view-message" role="alert">{error}<button type="button" onClick={onRetry}>{retryLabel}</button></div>
       : loading ? <div className="staff-view-message" role="status">正在加载乐谱…</div>
       : notation?.kind === "unsupported" ? <div className="staff-view-message" role="status">{notation.message}</div>
       : staffNotation ? <div className="staff-page-stack">{pages.map((page, index) =>

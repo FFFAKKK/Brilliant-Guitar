@@ -7,6 +7,7 @@ import { WorkbenchClient, resolveWorkbenchWorkspaceId } from "../src/services/wo
 import { BrowserWorkbenchHostBridge, TauriWorkbenchHostBridge, WorkbenchRequestError } from "../src/services/workbench-host-bridge.ts";
 import type { WorkbenchHostBridge } from "../src/services/workbench-host-bridge.ts";
 import type { CloseRequestedEvent, Window as TauriWindow } from "@tauri-apps/api/window";
+import { DEFAULT_APPLICATION_SETTINGS } from "../src/contracts/application-settings.ts";
 
 const session: ScoreSessionRead = {
   documentId: "score-host-bridge",
@@ -82,6 +83,30 @@ test("workbench client can use a non-HTTP desktop host bridge", async () => {
   assert.deepEqual(calls, ["read", "create", "edit", "export", "import"]);
 });
 
+test("browser settings use one versioned document and preserve invalid source text", async () => {
+  const values = new Map<string, string>();
+  const storage = {
+    getItem(key: string) { return values.get(key) ?? null; },
+    setItem(key: string, value: string) { values.set(key, value); },
+  };
+  const bridge = new BrowserWorkbenchHostBridge(storage);
+  assert.deepEqual(await bridge.readApplicationSettings(), {
+    settings: DEFAULT_APPLICATION_SETTINGS, persisted: false, recoveredFromInvalid: false,
+  });
+  const changed = { ...DEFAULT_APPLICATION_SETTINGS,
+    ui: { ...DEFAULT_APPLICATION_SETTINGS.ui, animationsEnabled: false } };
+  assert.deepEqual(await bridge.writeApplicationSettings(changed), changed);
+  assert.deepEqual(await bridge.readApplicationSettings(), {
+    settings: changed, persisted: true, recoveredFromInvalid: false,
+  });
+
+  values.set("brilliant.workbench.application-settings.v1", "{broken-json");
+  assert.deepEqual(await bridge.readApplicationSettings(), {
+    settings: DEFAULT_APPLICATION_SETTINGS, persisted: false, recoveredFromInvalid: true,
+  });
+  assert.equal(values.get("brilliant.workbench.application-settings.invalid.v1"), "{broken-json");
+});
+
 test("browser bridge preserves structured issue codes and targets", async () => {
   const previous = globalThis.fetch;
   globalThis.fetch = async () => new Response(JSON.stringify({ message: "容量不足", issue: {
@@ -95,6 +120,19 @@ test("browser bridge preserves structured issue codes and targets", async () => 
       error instanceof WorkbenchRequestError && error.status === 422
         && error.issue?.code === "editor.measure-capacity-exceeded"
         && error.issue.target.scope === "measure" && error.issue.target.measureId === "measure-1");
+  } finally { globalThis.fetch = previous; }
+});
+
+test("browser preview describes a missing local host without implying Internet access", async () => {
+  const previous = globalThis.fetch;
+  globalThis.fetch = async () => { throw new TypeError("local host unavailable"); };
+  try {
+    const bridge = new BrowserWorkbenchHostBridge();
+    await assert.rejects(bridge.read(crypto.randomUUID()), (error: unknown) =>
+      error instanceof WorkbenchRequestError
+        && error.message === "工作台服务暂时不可用，请重新加载"
+        && error.issue?.code === "bridge.unavailable"
+        && error.issue.retryable === true);
   } finally { globalThis.fetch = previous; }
 });
 
@@ -123,6 +161,30 @@ test("tauri bridge sends versioned commands without HTTP and preserves structure
   assert.deepEqual(calls[0]?.args, { workspaceId });
   assert.equal(calls[1]?.command, "workbench_edit_v1");
   assert.deepEqual((calls[1]?.args?.request as Record<string, unknown>).workspaceId, workspaceId);
+});
+
+test("tauri settings commands keep configuration outside score requests", async () => {
+  const calls: Array<{ command: string; args?: Record<string, unknown> }> = [];
+  const changed = { ...DEFAULT_APPLICATION_SETTINGS,
+    editing: { deleteTimePolicy: "collapse" as const } };
+  const invoke = async <T>(command: string, args?: Record<string, unknown>): Promise<T> => {
+    calls.push({ command, ...(args ? { args } : {}) });
+    if (command === "workbench_read_settings_v1") return {
+      settings: changed, persisted: true, recoveredFromInvalid: false,
+    } as T;
+    if (command === "workbench_write_settings_v1") return changed as T;
+    if (command === "workbench_reset_settings_v1") return DEFAULT_APPLICATION_SETTINGS as T;
+    throw new Error("unexpected command");
+  };
+  const client = new WorkbenchClient(new TauriWorkbenchHostBridge(invoke));
+  assert.equal((await client.readApplicationSettings()).settings.editing.deleteTimePolicy, "collapse");
+  assert.deepEqual(await client.writeApplicationSettings(changed), changed);
+  assert.deepEqual(await client.resetApplicationSettings(), DEFAULT_APPLICATION_SETTINGS);
+  assert.deepEqual(calls, [
+    { command: "workbench_read_settings_v1", args: {} },
+    { command: "workbench_write_settings_v1", args: { settings: changed } },
+    { command: "workbench_reset_settings_v1", args: {} },
+  ]);
 });
 
 test("tauri native file commands return the persisted version and cancellation", async () => {
