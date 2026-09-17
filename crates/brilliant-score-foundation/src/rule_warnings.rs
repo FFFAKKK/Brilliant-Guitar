@@ -224,6 +224,36 @@ mod tests {
     }
 
     #[test]
+    fn overfull_measure_has_no_one_beat_ceiling_and_reports_many_extra_beats() {
+        let mut document = document();
+        let event = document.parts[0].measure_contents[0].voices[0]
+            .sequence
+            .events[0]
+            .clone();
+        let events = &mut document.parts[0].measure_contents[0].voices[0]
+            .sequence
+            .events;
+        for index in 2..=4 {
+            let mut appended = event.clone();
+            appended.id = StableId::new(format!("event-{index}")).unwrap();
+            events.push(appended);
+        }
+
+        let semantic =
+            crate::assess_score_semantics_node(DocumentAssessmentNodeV1::new(&document)).unwrap();
+        assert!(semantic.ok, "{semantic:?}");
+        let page = assess_score_rule_warning_page_v1(&document, 0, 16).unwrap();
+        assert_eq!(page.total, 1);
+        let warning = &page.warnings[0];
+        assert_eq!(warning.nominal_duration.numerator.get(), 1);
+        assert_eq!(warning.nominal_duration.denominator.get(), 1);
+        assert_eq!(warning.actual_duration.numerator.get(), 4);
+        assert_eq!(warning.actual_duration.denominator.get(), 1);
+        assert_eq!(warning.overflow.numerator.get(), 3);
+        assert_eq!(warning.overflow.denominator.get(), 1);
+    }
+
+    #[test]
     fn warning_disappears_when_duration_returns_to_capacity() {
         let mut document = document();
         document.parts[0].measure_contents[0].voices[0]
