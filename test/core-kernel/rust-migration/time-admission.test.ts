@@ -5,7 +5,9 @@ import { CommandBus, type ScoreDocument } from "../../../src/core-kernel/index";
 import { createRustKernelSmokeSession, createRustKernelStage4Session, replayRustKernelStage4, type RustKernelStage4CompleteNativeAddon } from "../../../src/core-kernel/native/rust-kernel-smoke";
 import { createCoreScoreFixture } from "../fixtures/core-score";
 
-const addon = require(resolve("target/rkp-1-node/brilliant_kernel_node.node")) as RustKernelStage4CompleteNativeAddon;
+const addonPath = process.env.BRILLIANT_CORE_ADDON_PATH
+  ?? "target/rkp-1-node/brilliant_kernel_node.node";
+const addon = require(resolve(addonPath)) as RustKernelStage4CompleteNativeAddon;
 const plain = (value: unknown): unknown => JSON.parse(JSON.stringify(value));
 const noteValue = (base: number, eventId = "event-1") => ({ commandVersion: 1, commandId: "core.event.set-note-value", target: { kind: "event", eventId }, payload: { noteValue: { base, dots: 0 } } });
 const start = (numerator: number, denominator: number) => ({ commandVersion: 1, commandId: "core.voice.set-sequence-start", target: { kind: "voice", voiceId: "voice-1" }, payload: { start: { numerator, denominator } } });
@@ -29,6 +31,7 @@ function fixture(document = createCoreScoreFixture()) {
 const retiredTimingCodes = new Set([
   "semantic.sequence-exceeds-measure",
   "semantic.sequence-start-out-of-bounds",
+  "semantic.sounding-pitch-invalid",
 ]);
 
 function withoutRetiredTimingDiagnostics<T>(result: T): T | null {
@@ -101,9 +104,9 @@ test("batch final-state time repair and pitch/time diagnostic ordering match TS"
     meter(0, 4),
     { commandVersion: 1, commandId: "core.document.set-metadata", target: { kind: "document", documentId: document.id }, payload: { metadata: { ...document.metadata, tempo: { bpm: 0 } } } },
   ]);
-  const expected = ts.submit(invalid);
+  const expected = withoutRetiredTimingDiagnostics(ts.submit(invalid));
   const result = session.submit(invalid);
-  if (result.status !== "command-rejected" || expected.status !== "rejected") throw new Error("mixed rejection required");
+  if (!expected || result.status !== "command-rejected" || expected.status !== "rejected") throw new Error("mixed rejection required");
   assert.deepEqual(plain(result.failure), plain(expected.failure));
 });
 
@@ -272,7 +275,7 @@ test("tolerated timing warnings do not consume the blocking diagnostic budget", 
   }
 });
 
-test("pitch and time diagnostics interleave by final event order", () => {
+test("derived-pitch and overfull rule states commit together", () => {
   const base = scoreWithTime(1);
   const document: ScoreDocument = { ...base, parts: base.parts.map((part) => ({ ...part,
     measureContents: part.measureContents.map((content) => ({ ...content,
@@ -281,19 +284,16 @@ test("pitch and time diagnostics interleave by final event order", () => {
       } })),
     })),
   })) };
-  const rejected = rejectLikeTs(batch([
+  const { session } = fixture(document);
+  const result = session.submit(batch([
     noteValue(1, "event-0-0-0"),
     removeEvent("event-0-0-3"),
     { commandVersion: 1, commandId: "core.voice.insert-notes-event", target: { kind: "voice", voiceId: "voice-0-0" }, payload: {
       anchor: { kind: "start" }, event: document.parts[0]!.measureContents[0]!.voices[0]!.sequence.events[3],
     } },
     { commandVersion: 1, commandId: "core.part.set-instrument", target: { kind: "part", partId: "part-0" }, payload: { instrument: { name: "Invalid", writtenToSounding: { diatonicSteps: 100, chromaticSemitones: 0 } } } },
-  ]), document);
-  if (rejected.failure.code !== "command.semantic-invalid") throw new Error("semantic report required");
-  assert.deepEqual((rejected.failure.diagnostics as readonly { code: string }[]).map((diagnostic) => diagnostic.code), [
-    "semantic.sounding-pitch-invalid", "semantic.sounding-pitch-invalid",
-    "semantic.sounding-pitch-invalid", "semantic.sounding-pitch-invalid",
-  ]);
+  ]));
+  assert.equal(result.status, "committed");
 });
 
 test("seeded final time batches match the independent TS command runtime", () => {

@@ -44,28 +44,30 @@ function coreBatch(commands: readonly unknown[]) {
     target: { kind: "document", documentId: "score-1" }, payload: { commands } };
 }
 
-/** Rust promotes tolerable timing states to rule warnings before the archived TS validator does. */
-function withoutRetiredTimingDiagnostics<T>(result: T): T {
+/** Rust promotes non-blocking score states to rule warnings before the archived TS validator does. */
+function withoutRetiredRuleDiagnostics<T>(result: T): T {
   if (!result || typeof result !== "object") return result;
   const value = result as { readonly status?: unknown; readonly failure?: { readonly code?: unknown; readonly diagnostics?: readonly unknown[] } };
   if (value.status !== "rejected" || value.failure?.code !== "command.semantic-invalid"
     || !Array.isArray(value.failure.diagnostics)) return result;
   const diagnostics = value.failure.diagnostics.filter((diagnostic) => {
     if (!diagnostic || typeof diagnostic !== "object") return true;
-    return !["semantic.sequence-exceeds-measure", "semantic.sequence-start-out-of-bounds"]
+    return !["semantic.sequence-exceeds-measure", "semantic.sequence-start-out-of-bounds",
+      "semantic.sounding-pitch-invalid"]
       .includes(String((diagnostic as { readonly code?: unknown }).code));
   });
   if (diagnostics.length === value.failure.diagnostics.length || diagnostics.length === 0) return result;
   return { ...result, failure: { ...value.failure, diagnostics } } as T;
 }
 
-function hasOnlyRetiredTimingDiagnostics(result: unknown): boolean {
+function hasOnlyRetiredRuleDiagnostics(result: unknown): boolean {
   if (!result || typeof result !== "object") return false;
   const value = result as { readonly status?: unknown; readonly failure?: { readonly code?: unknown; readonly diagnostics?: readonly unknown[] } };
   return value.status === "rejected" && value.failure?.code === "command.semantic-invalid"
     && Array.isArray(value.failure.diagnostics) && value.failure.diagnostics.length > 0
     && value.failure.diagnostics.every((diagnostic) => diagnostic !== null && typeof diagnostic === "object"
-      && ["semantic.sequence-exceeds-measure", "semantic.sequence-start-out-of-bounds"]
+      && ["semantic.sequence-exceeds-measure", "semantic.sequence-start-out-of-bounds",
+        "semantic.sounding-pitch-invalid"]
         .includes(String((diagnostic as { readonly code?: unknown }).code)));
 }
 
@@ -145,7 +147,60 @@ test("Native rule warning V2 rejects extra fields and mismatched union variants"
   }
 });
 
-test("integrated Native Core admission matches the command-shape corpus after retired TS timing diagnostics", () => {
+test("Native rule warning V2 reports tolerated sounding pitch through history and reopen", () => {
+  resetCvn6Callbacks();
+  const native = create(true);
+  const submitted = native.submit({
+    commandVersion: 1, commandId: "core.part.set-instrument",
+    target: { kind: "part", partId: "part-1" },
+    payload: { instrument: { name: "Extreme", writtenToSounding: {
+      diatonicSteps: 0, chromaticSemitones: Number.MAX_SAFE_INTEGER,
+    } } },
+  });
+  assert.equal(submitted.status, "committed");
+  const committed = native.read();
+  assert.ok(committed.ok);
+  const version = committed.value.snapshot.documentVersion;
+  const v1 = readNativeRuleWarningPageV1(native, "score-1", version, 0, 16);
+  const v2 = readNativeRuleWarningPageV2(native, "score-1", version, 0, 16);
+  assert.ok(v1.ok);
+  assert.ok(v2.ok);
+  assert.equal(v1.value.total, 0);
+  assert.deepEqual(v2.value.warnings, [{
+    warningVersion: 2,
+    code: "rule.sounding-pitch-out-of-playback-range",
+    messageKey: "core.rule.sounding-pitch-out-of-playback-range",
+    location: { kind: "note", partId: "part-1", measureId: "measure-1", voiceId: "voice-1",
+      eventId: "event-1", noteId: "note-1" },
+    details: { kind: "soundingPitch", reason: "playback-range", soundingSemitone: "9007199254741051" },
+  }]);
+
+  assert.equal(native.undo().status, "committed");
+  const undone = native.read();
+  assert.ok(undone.ok);
+  const undoneWarnings = readNativeRuleWarningPageV2(native, "score-1", undone.value.snapshot.documentVersion, 0, 16);
+  assert.ok(undoneWarnings.ok);
+  assert.equal(undoneWarnings.value.total, 0);
+  assert.deepEqual(readNativeRuleWarningPageV2(native, "score-1", version, 0, 16),
+    { ok: false, failure: { code: "report.stale-version" } });
+
+  assert.equal(native.redo().status, "committed");
+  const redone = native.read();
+  assert.ok(redone.ok);
+  const redoneWarnings = readNativeRuleWarningPageV2(native, "score-1", redone.value.snapshot.documentVersion, 0, 16);
+  assert.ok(redoneWarnings.ok);
+  assert.deepEqual(redoneWarnings.value.warnings, v2.value.warnings);
+
+  resetCvn6Callbacks();
+  const reopened = create(true, addon, redone.value.snapshot.document);
+  const reopenedRead = reopened.read();
+  assert.ok(reopenedRead.ok);
+  const reopenedWarnings = readNativeRuleWarningPageV2(reopened, "score-1", 0, 0, 16);
+  assert.ok(reopenedWarnings.ok);
+  assert.deepEqual(reopenedWarnings.value.warnings, v2.value.warnings);
+});
+
+test("integrated Native Core admission matches the command-shape corpus after retired TS rule diagnostics", () => {
   for (const entry of buildCommandAdmissionOracle().cases) {
     resetCvn6Callbacks();
     const oracle = create(false);
@@ -155,7 +210,7 @@ test("integrated Native Core admission matches the command-shape corpus after re
     native.subscribe((event: unknown) => events[1]!.push(event));
     const legacyExpected = oracle.submit(entry.input);
     const actual = native.submit(entry.input);
-    if (hasOnlyRetiredTimingDiagnostics(legacyExpected)) {
+    if (hasOnlyRetiredRuleDiagnostics(legacyExpected)) {
       assert.equal(actual.status, "committed", entry.id);
       const committed = native.read();
       assert.equal(native.undo().status, "committed", `${entry.id}/undo`);
@@ -163,7 +218,7 @@ test("integrated Native Core admission matches the command-shape corpus after re
       assert.deepEqual(readWithoutTransitionVersion(native.read()), readWithoutTransitionVersion(committed), `${entry.id}/redo/read`);
       continue;
     }
-    const expected = withoutRetiredTimingDiagnostics(legacyExpected);
+    const expected = withoutRetiredRuleDiagnostics(legacyExpected);
     assert.deepEqual(actual, expected, entry.id);
     assert.deepEqual(native.read(), oracle.read(), `${entry.id}/read`);
     if (expected.status === "committed") {
@@ -560,7 +615,7 @@ test("Native mixed Batch uses genuine SDK commands across the command-shape corp
     const input = coreBatch([command("score", "before-core"), entry.input]);
     const legacyExpected = oracle.submit(input);
     const actual = native.submit(input);
-    if (hasOnlyRetiredTimingDiagnostics(legacyExpected)) {
+    if (hasOnlyRetiredRuleDiagnostics(legacyExpected)) {
       assert.equal(actual.status, "committed", entry.id);
       const committed = native.read();
       assert.equal(native.undo().status, "committed", `${entry.id}/undo`);
@@ -568,7 +623,7 @@ test("Native mixed Batch uses genuine SDK commands across the command-shape corp
       assert.deepEqual(readWithoutTransitionVersion(native.read()), readWithoutTransitionVersion(committed), `${entry.id}/redo/read`);
       continue;
     }
-    const expected = withoutRetiredTimingDiagnostics(legacyExpected);
+    const expected = withoutRetiredRuleDiagnostics(legacyExpected);
     assert.deepEqual(actual, expected, entry.id);
     assert.deepEqual(native.read(), oracle.read(), `${entry.id}/read`);
     if (expected.status === "committed") {

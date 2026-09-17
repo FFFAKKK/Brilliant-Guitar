@@ -8,7 +8,7 @@ use brilliant_core_types::{JsString, StableId, StablePathSegmentV1, StablePathV1
 
 use crate::{
     ExactFraction, ExtensionOwnerV1, FoundationDecodeFailure, MeasureDefinitionV1, PartV1,
-    PitchStepV1, RhythmicContentV1, ScoreDocumentV1, WrittenPitchV1,
+    RhythmicContentV1, ScoreDocumentV1, WrittenPitchV1,
 };
 
 #[derive(Clone, Copy)]
@@ -386,7 +386,6 @@ impl<'a> Validator<'a> {
                     });
                 }
                 self.validate_voice(
-                    part,
                     &part_scratch.staff_ids,
                     voice,
                     &voice_prefix,
@@ -410,7 +409,6 @@ impl<'a> Validator<'a> {
 
     fn validate_voice(
         &mut self,
-        part: &PartV1,
         staff_ids: &HashSet<&JsString>,
         voice: &'a crate::VoiceV1,
         voice_prefix: &[PathPart],
@@ -473,16 +471,7 @@ impl<'a> Validator<'a> {
                         &note.id,
                         nested_path(&note_prefix, &[PathPart::Field("id")]),
                     )?;
-                    if !written_pitch_is_valid(&note.written_pitch)
-                        || !sounding_pitch_is_valid(
-                            &note.written_pitch,
-                            part.instrument.written_to_sounding.diatonic_steps.get(),
-                            part.instrument
-                                .written_to_sounding
-                                .chromatic_semitones
-                                .get(),
-                        )
-                    {
+                    if !written_pitch_is_valid(&note.written_pitch) {
                         return Err(FoundationDecodeFailure::InvalidValue {
                             path: nested_path(&note_prefix, &[PathPart::Field("writtenPitch")]),
                         });
@@ -579,63 +568,13 @@ fn written_pitch_is_valid(pitch: &WrittenPitchV1) -> bool {
     (-2..=2).contains(&pitch.alter.get()) && (0..=8).contains(&pitch.octave.get())
 }
 
-fn sounding_pitch_is_valid(
-    pitch: &WrittenPitchV1,
-    diatonic_steps: i64,
-    chromatic_semitones: i64,
-) -> bool {
-    let (step_index, source_natural) = match pitch.step {
-        PitchStepV1::C => (0_i128, 0_i128),
-        PitchStepV1::D => (1, 2),
-        PitchStepV1::E => (2, 4),
-        PitchStepV1::F => (3, 5),
-        PitchStepV1::G => (4, 7),
-        PitchStepV1::A => (5, 9),
-        PitchStepV1::B => (6, 11),
-    };
-    let source_octave = i128::from(pitch.octave.get());
-    let Some(source_diatonic) = source_octave
-        .checked_mul(7)
-        .and_then(|value| value.checked_add(step_index))
-    else {
-        return false;
-    };
-    let Some(target_diatonic) = source_diatonic.checked_add(i128::from(diatonic_steps)) else {
-        return false;
-    };
-    let target_octave = target_diatonic.div_euclid(7);
-    let target_step_index = target_diatonic.rem_euclid(7);
-    if !(0..=8).contains(&target_octave) {
-        return false;
-    }
-    let target_natural = [0_i128, 2, 4, 5, 7, 9, 11][target_step_index as usize];
-    let Some(source_chromatic) = source_octave
-        .checked_mul(12)
-        .and_then(|value| value.checked_add(source_natural))
-        .and_then(|value| value.checked_add(i128::from(pitch.alter.get())))
-    else {
-        return false;
-    };
-    let Some(target_chromatic) = source_chromatic.checked_add(i128::from(chromatic_semitones))
-    else {
-        return false;
-    };
-    let Some(target_natural_chromatic) = target_octave
-        .checked_mul(12)
-        .and_then(|value| value.checked_add(target_natural))
-    else {
-        return false;
-    };
-    (-2..=2).contains(&(target_chromatic - target_natural_chromatic))
-}
-
 #[cfg(test)]
 mod tests {
     use brilliant_core_types::{SafeInteger, StableId};
 
     use super::*;
     use crate::{
-        ExtensionBlockV1, FractionV1, NoteValueV1, RhythmicContentV1, ScoreNoteV1,
+        ExtensionBlockV1, FractionV1, NoteValueV1, PitchStepV1, RhythmicContentV1, ScoreNoteV1,
         TimeModificationV1, WrittenPitchV1, codec::SMOKE_DOCUMENT,
     };
 
@@ -1009,7 +948,7 @@ mod tests {
     }
 
     #[test]
-    fn written_and_sounding_pitch_are_validated_before_duration() {
+    fn derived_sounding_pitch_does_not_invalidate_a_valid_written_pitch() {
         let mut document = fixture();
         let event = &mut document.parts[0].measure_contents[0].voices[0]
             .sequence
@@ -1028,24 +967,7 @@ mod tests {
             .instrument
             .written_to_sounding
             .diatonic_steps = safe(1);
-        assert_eq!(
-            validate_score_document(&document),
-            expected_value(&[
-                PathPart::Field("parts"),
-                PathPart::Index(0),
-                PathPart::Field("measureContents"),
-                PathPart::Index(0),
-                PathPart::Field("voices"),
-                PathPart::Index(0),
-                PathPart::Field("sequence"),
-                PathPart::Field("events"),
-                PathPart::Index(0),
-                PathPart::Field("content"),
-                PathPart::Field("notes"),
-                PathPart::Index(0),
-                PathPart::Field("writtenPitch"),
-            ])
-        );
+        assert_eq!(validate_score_document(&document), Ok(()));
 
         let mut written = fixture();
         written.parts[0].measure_contents[0].voices[0]

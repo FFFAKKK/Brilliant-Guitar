@@ -52,8 +52,8 @@ pub use lossless_json::{
     decode_js_value_json, decode_lossless_json, write_lossless_json,
 };
 pub use music_rules::{
-    assess_measure_duration, assess_note_duration, assess_sounding_pitch,
-    meter_denominator_is_valid, tempo_is_valid, written_pitch_is_valid,
+    assess_measure_duration, assess_note_duration, meter_denominator_is_valid, tempo_is_valid,
+    written_pitch_is_valid,
 };
 pub use profile_pages::{
     CORE_PROFILE_PAGE_LIMIT_V2, ProfilePageFailureV2, ScoreSupportPageV2, ScoreSupportStatusV2,

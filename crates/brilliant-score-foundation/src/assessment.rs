@@ -264,12 +264,7 @@ impl<N: AssessmentNodeV1> Validator<'_, N> {
             }
             for voice in voices.items()? {
                 let voice = voice?;
-                self.check_voice(
-                    voice,
-                    measure.as_ref(),
-                    &staff_ids,
-                    transpose_valid.then_some((diatonic, chromatic)),
-                )?;
+                self.check_voice(voice, measure.as_ref(), &staff_ids)?;
             }
         }
         for index in 0..self.measure_order.len() {
@@ -291,7 +286,6 @@ impl<N: AssessmentNodeV1> Validator<'_, N> {
         voice: N,
         measure: Option<&N>,
         staff_ids: &HashSet<JsString>,
-        transposition: Option<(f64, f64)>,
     ) -> Outcome<()> {
         self.register_id(&voice.field("id"))?;
         let staff = voice.field("defaultStaffId");
@@ -322,7 +316,7 @@ impl<N: AssessmentNodeV1> Validator<'_, N> {
         }
         for event in sequence.field("events").items()? {
             let event = event?;
-            let event_duration = self.check_event(&event, staff_ids, transposition)?;
+            let event_duration = self.check_event(&event, staff_ids)?;
             let (Some(position), Some(event_duration)) = (current, event_duration) else {
                 continue;
             };
@@ -351,7 +345,6 @@ impl<N: AssessmentNodeV1> Validator<'_, N> {
         &mut self,
         event: &N,
         staff_ids: &HashSet<JsString>,
-        transposition: Option<(f64, f64)>,
     ) -> Outcome<Option<ExactFraction>> {
         self.register_id(&event.field("id"))?;
         self.rule();
@@ -379,21 +372,6 @@ impl<N: AssessmentNodeV1> Validator<'_, N> {
                     || !music_rules::written_pitch(step.code_units(), alter, octave)
                 {
                     self.add(Code::WrittenPitchInvalid, &pitch, None)?;
-                } else if let Some((diatonic, chromatic)) = transposition {
-                    self.rule();
-                    if let Err(reason) = music_rules::sounding_pitch(
-                        step.code_units(),
-                        alter,
-                        octave,
-                        diatonic,
-                        chromatic,
-                    ) {
-                        self.add(
-                            Code::SoundingPitchInvalid,
-                            &pitch,
-                            Some(("reason", &JsString::from(reason))),
-                        )?;
-                    }
                 }
             }
         }
@@ -642,27 +620,29 @@ mod tests {
         document
     }
 
-    fn is_retired_tolerant_timing_diagnostic(diagnostic: &Value) -> bool {
+    fn is_retired_non_blocking_diagnostic(diagnostic: &Value) -> bool {
         matches!(
             diagnostic["code"].as_str(),
-            Some("semantic.sequence-exceeds-measure" | "semantic.sequence-start-out-of-bounds")
+            Some(
+                "semantic.sequence-exceeds-measure"
+                    | "semantic.sequence-start-out-of-bounds"
+                    | "semantic.sounding-pitch-invalid"
+            )
         )
     }
 
-    fn has_retired_tolerant_timing_diagnostic(report: &Value) -> bool {
-        report["diagnostics"].as_array().is_some_and(|diagnostics| {
-            diagnostics
-                .iter()
-                .any(is_retired_tolerant_timing_diagnostic)
-        })
+    fn has_retired_non_blocking_diagnostic(report: &Value) -> bool {
+        report["diagnostics"]
+            .as_array()
+            .is_some_and(|diagnostics| diagnostics.iter().any(is_retired_non_blocking_diagnostic))
     }
 
-    fn without_retired_tolerant_timing_diagnostics(report: &Value) -> Value {
+    fn without_retired_non_blocking_diagnostics(report: &Value) -> Value {
         let mut expected = report.clone();
         let has_ok = expected.get("ok").is_some();
         let diagnostics_empty = {
             let diagnostics = expected["diagnostics"].as_array_mut().unwrap();
-            diagnostics.retain(|diagnostic| !is_retired_tolerant_timing_diagnostic(diagnostic));
+            diagnostics.retain(|diagnostic| !is_retired_non_blocking_diagnostic(diagnostic));
             diagnostics.is_empty()
         };
         if has_ok {
@@ -671,11 +651,11 @@ mod tests {
         expected
     }
 
-    fn support_without_retired_tolerant_timing(report: &Value) -> Option<Value> {
-        if report["status"] != "invalid" || !has_retired_tolerant_timing_diagnostic(report) {
+    fn support_without_retired_non_blocking_diagnostics(report: &Value) -> Option<Value> {
+        if report["status"] != "invalid" || !has_retired_non_blocking_diagnostic(report) {
             return Some(report.clone());
         }
-        let expected = without_retired_tolerant_timing_diagnostics(report);
+        let expected = without_retired_non_blocking_diagnostics(report);
         (!expected["diagnostics"].as_array().unwrap().is_empty()).then_some(expected)
     }
 
@@ -701,12 +681,12 @@ mod tests {
                 let borrowed = DocumentAssessmentNodeV1::new(&document);
                 assert_eq!(
                     report_value(assess_score_semantics_node(borrowed.clone()).unwrap()).unwrap(),
-                    without_retired_tolerant_timing_diagnostics(&case["expected"]["semantics"]),
+                    without_retired_non_blocking_diagnostics(&case["expected"]["semantics"]),
                     "{}",
                     case["id"]
                 );
                 if let Some(expected) =
-                    support_without_retired_tolerant_timing(&case["expected"]["support"])
+                    support_without_retired_non_blocking_diagnostics(&case["expected"]["support"])
                 {
                     assert_eq!(
                         report_value(crate::assess_score_profile_node(borrowed, &profile).unwrap())
@@ -736,7 +716,7 @@ mod tests {
                 assess_score_semantics(&captured(&document)).expect("structural candidate");
             assert_eq!(
                 report_value(report).expect("report"),
-                without_retired_tolerant_timing_diagnostics(&case["expected"]["semantics"]),
+                without_retired_non_blocking_diagnostics(&case["expected"]["semantics"]),
                 "case {}",
                 case["id"]
             );
@@ -755,7 +735,7 @@ mod tests {
             let report =
                 crate::assess_score_profile(&captured(&document), &profile).expect("assessment");
             if let Some(expected) =
-                support_without_retired_tolerant_timing(&case["expected"]["support"])
+                support_without_retired_non_blocking_diagnostics(&case["expected"]["support"])
             {
                 assert_eq!(
                     report_value(report).expect("report"),
@@ -783,12 +763,12 @@ mod tests {
                     assess_score_semantics(&captured(&document)).expect("semantic assessment")
                 )
                 .expect("report"),
-                without_retired_tolerant_timing_diagnostics(&case["expected"]["semantics"]),
+                without_retired_non_blocking_diagnostics(&case["expected"]["semantics"]),
                 "semantic case {}",
                 case["id"]
             );
             if let Some(expected) =
-                support_without_retired_tolerant_timing(&case["expected"]["support"])
+                support_without_retired_non_blocking_diagnostics(&case["expected"]["support"])
             {
                 assert_eq!(
                     report_value(

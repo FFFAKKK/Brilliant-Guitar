@@ -688,6 +688,91 @@ mod tests {
     }
 
     #[test]
+    fn sounding_pitch_warning_v2_follows_commit_history_and_reopen_while_v1_stays_empty() {
+        let mut session = local_session();
+        let document_id = StableId::new("score-local").unwrap();
+        let transpose = r#"{"apiVersion":1,"command":{"commandVersion":1,"commandId":"core.part.set-instrument","target":{"kind":"part","partId":"part-1"},"payload":{"instrument":{"name":"Extreme","writtenToSounding":{"diatonicSteps":0,"chromaticSemitones":9007199254740991}}}}}"#;
+
+        let KernelStage3SubmitResultV1::Committed(committed) =
+            session.submit_stage3_bytes(transpose.as_bytes())
+        else {
+            panic!("derived sounding-pitch capability must not block the edit")
+        };
+        assert_eq!(
+            session
+                .read_rule_warning_page(&document_id, committed.document_version, 0, 16)
+                .unwrap()
+                .total,
+            0
+        );
+        let report = session
+            .read_rule_warning_page_v2(&document_id, committed.document_version, 0, 16)
+            .expect("sounding-pitch warning report");
+        assert_eq!(report.total, 1);
+        assert_eq!(
+            serde_json::to_string(&report.warnings[0]).unwrap(),
+            r#"{"warningVersion":2,"code":"rule.sounding-pitch-out-of-playback-range","messageKey":"core.rule.sounding-pitch-out-of-playback-range","location":{"kind":"note","partId":"part-1","measureId":"measure-1","voiceId":"voice-1","eventId":"event-1","noteId":"note-1"},"details":{"kind":"soundingPitch","reason":"playback-range","soundingSemitone":"9007199254741051"}}"#
+        );
+
+        let KernelSessionReadResultV1::Ok(state) = session.read_state() else {
+            panic!("committed document read")
+        };
+        let reopened = KernelSession::create(KernelSessionCreateRequestV1 {
+            api_version: 1,
+            document: state.snapshot.document.clone(),
+        })
+        .expect("reopen sounding-pitch warning document")
+        .session;
+        assert_eq!(
+            reopened
+                .read_rule_warning_page_v2(&document_id, DocumentVersionV1::initial(), 0, 16,)
+                .unwrap()
+                .warnings,
+            report.warnings
+        );
+
+        let KernelStage4OperationResultV1::Command(KernelStage4CommandResultV1::Committed {
+            value: undo_value,
+            ..
+        }) = operate(
+            &mut session,
+            r#"{"apiVersion":1,"operation":{"kind":"undo"}}"#,
+        )
+        else {
+            panic!("undo sounding-pitch warning")
+        };
+        assert_eq!(
+            session
+                .read_rule_warning_page_v2(&document_id, undo_value.document_version, 0, 16)
+                .unwrap()
+                .total,
+            0
+        );
+        assert_eq!(
+            session.read_rule_warning_page_v2(&document_id, committed.document_version, 0, 16,),
+            Err(KernelRuleWarningReadFailureV1::StaleVersion)
+        );
+
+        let KernelStage4OperationResultV1::Command(KernelStage4CommandResultV1::Committed {
+            value: redo_value,
+            ..
+        }) = operate(
+            &mut session,
+            r#"{"apiVersion":1,"operation":{"kind":"redo"}}"#,
+        )
+        else {
+            panic!("redo sounding-pitch warning")
+        };
+        assert_eq!(
+            session
+                .read_rule_warning_page_v2(&document_id, redo_value.document_version, 0, 16)
+                .unwrap()
+                .warnings,
+            report.warnings
+        );
+    }
+
+    #[test]
     fn decoded_input_is_detached_and_reads_are_repeatable() {
         let mut bytes = SMOKE_REQUEST.as_bytes().to_vec();
         let request = decode_create_request(&bytes).expect("request");

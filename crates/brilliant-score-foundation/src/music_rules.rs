@@ -64,17 +64,60 @@ pub fn written_pitch_is_valid(pitch: &WrittenPitchV1) -> bool {
 
 /// The caller first checks `written_pitch_is_valid`. The typed transposition
 /// already guarantees safe-integer components, just as the full walker guards.
-pub fn assess_sounding_pitch(
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum SoundingPitchIssueV2 {
+    Playback,
+    Octave,
+    Alter,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) struct SoundingPitchAssessmentV2 {
+    pub(crate) sounding_semitone: i128,
+    pub(crate) issue: Option<SoundingPitchIssueV2>,
+}
+
+/// Classifies the derived sounding pitch without requiring it to fit either a
+/// JavaScript number or `WrittenPitchV1`. Typed inputs already guarantee valid
+/// stored pitch and safe-integer transposition components.
+pub(crate) fn assess_sounding_pitch_capability(
     pitch: &WrittenPitchV1,
     transposition: &TranspositionV1,
-) -> Result<(), &'static str> {
-    sounding_pitch(
-        pitch_step(pitch.step),
-        pitch.alter.get() as f64,
-        pitch.octave.get() as f64,
-        transposition.diatonic_steps.get() as f64,
-        transposition.chromatic_semitones.get() as f64,
-    )
+) -> SoundingPitchAssessmentV2 {
+    let (step_index, natural_semitone) = match pitch.step {
+        PitchStepV1::C => (0_i128, 0_i128),
+        PitchStepV1::D => (1, 2),
+        PitchStepV1::E => (2, 4),
+        PitchStepV1::F => (3, 5),
+        PitchStepV1::G => (4, 7),
+        PitchStepV1::A => (5, 9),
+        PitchStepV1::B => (6, 11),
+    };
+    let source_octave = i128::from(pitch.octave.get());
+    let target_diatonic =
+        source_octave * 7 + step_index + i128::from(transposition.diatonic_steps.get());
+    let target_octave = target_diatonic.div_euclid(7);
+    let target_step_index = target_diatonic.rem_euclid(7) as usize;
+    let sounding_semitone = (source_octave + 1) * 12
+        + natural_semitone
+        + i128::from(pitch.alter.get())
+        + i128::from(transposition.chromatic_semitones.get());
+    let target_natural_semitone =
+        (target_octave + 1) * 12 + [0_i128, 2, 4, 5, 7, 9, 11][target_step_index];
+    let target_alter = sounding_semitone - target_natural_semitone;
+    let issue = if !(0..=127).contains(&sounding_semitone) {
+        Some(SoundingPitchIssueV2::Playback)
+    } else if !(0..=8).contains(&target_octave) {
+        Some(SoundingPitchIssueV2::Octave)
+    } else if !(-2..=2).contains(&target_alter) {
+        Some(SoundingPitchIssueV2::Alter)
+    } else {
+        None
+    };
+    SoundingPitchAssessmentV2 {
+        sounding_semitone,
+        issue,
+    }
 }
 
 pub(crate) fn safe_integer(value: f64) -> bool {
@@ -151,40 +194,6 @@ pub(crate) fn written_pitch(step: &[u16], alter: f64, octave: f64) -> bool {
         && (-2.0..=2.0).contains(&alter)
         && octave.fract() == 0.0
         && (0.0..=8.0).contains(&octave)
-}
-
-/// Inputs have passed the written-pitch and transposition component guards.
-pub(crate) fn sounding_pitch(
-    step: &[u16],
-    alter: f64,
-    octave: f64,
-    diatonic: f64,
-    chromatic: f64,
-) -> Result<(), &'static str> {
-    let source_step = [67, 68, 69, 70, 71, 65, 66]
-        .iter()
-        .position(|candidate| step == [*candidate])
-        .ok_or("written-pitch-invalid")? as i64;
-    let target_diatonic = octave as i64 * 7 + source_step + diatonic as i64;
-    if !(-JS_SAFE_INTEGER_MAX..=JS_SAFE_INTEGER_MAX).contains(&target_diatonic) {
-        return Err("transposition-component-invalid");
-    }
-    let target_octave = target_diatonic.div_euclid(7);
-    if !(0..=8).contains(&target_octave) {
-        return Err("derived-pitch-octave-out-of-range");
-    }
-    let natural = [0_i64, 2, 4, 5, 7, 9, 11];
-    let target_chromatic =
-        octave as i64 * 12 + natural[source_step as usize] + alter as i64 + chromatic as i64;
-    if !(-JS_SAFE_INTEGER_MAX..=JS_SAFE_INTEGER_MAX).contains(&target_chromatic) {
-        return Err("transposition-component-invalid");
-    }
-    let target_alter =
-        target_chromatic - (target_octave * 12 + natural[target_diatonic.rem_euclid(7) as usize]);
-    if !(-2..=2).contains(&target_alter) {
-        return Err("derived-pitch-alter-out-of-range");
-    }
-    Ok(())
 }
 
 pub(crate) fn extension_namespace(value: &JsString) -> bool {

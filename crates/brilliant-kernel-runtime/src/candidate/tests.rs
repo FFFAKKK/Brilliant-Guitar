@@ -664,12 +664,6 @@ fn read_layer_never_detaches_base_aggregates_or_copies_base_order_arrays() {
         fn read_scalar(&self, value: &Scalar) -> Option<Value> {
             self.store.read_scalar(value)
         }
-        fn read_transposition(
-            &self,
-            value: &StableId,
-        ) -> Option<brilliant_score_foundation::TranspositionV1> {
-            self.store.read_transposition(value)
-        }
         fn detach_entity(&self, _: &Entity) -> Option<EntityBundleV1> {
             panic!("candidate read detached a base aggregate")
         }

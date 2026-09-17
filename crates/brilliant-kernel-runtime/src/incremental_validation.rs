@@ -3,8 +3,7 @@ use std::collections::{HashMap, HashSet};
 use brilliant_core_types::StableId;
 use brilliant_kernel_contracts::KernelStage3CommandFailureLeafV1 as Failure;
 use brilliant_score_foundation::{
-    CoreDiagnosticCodeV1 as Code, ScoreMetadataV1, TranspositionV1, assess_sounding_pitch,
-    tempo_is_valid, written_pitch_is_valid,
+    CoreDiagnosticCodeV1 as Code, ScoreMetadataV1, tempo_is_valid, written_pitch_is_valid,
 };
 
 use crate::{
@@ -50,7 +49,6 @@ struct Assessment<'view, 'base> {
     overlay: &'view mut TransactionOverlayV1<'base>,
     work: IncrementalValidationWorkV1,
     diagnostics: DiagnosticCollector,
-    instruments: HashMap<StableId, TranspositionV1>,
 }
 
 /// Schedule from final surviving records, never the original forward commands.
@@ -66,7 +64,6 @@ pub(crate) fn validate_final_semantics(
         overlay,
         work: IncrementalValidationWorkV1::default(),
         diagnostics: DiagnosticCollector::default(),
-        instruments: HashMap::new(),
     };
     let result = assessment.run(base, base_metadata, &delta);
     let result = result.and_then(|()| {
@@ -103,38 +100,9 @@ impl Assessment<'_, '_> {
             }
         }
         let mut notes = HashSet::new();
-        let mut parts = Vec::new();
         for record in delta.records.values() {
-            match record {
-                StableRecordV1::Note(note) => insert_id(&mut notes, &note.id)?,
-                StableRecordV1::Part(part) => {
-                    parts.try_reserve(1).map_err(|_| Failure::InternalError)?;
-                    parts.push(part);
-                }
-                _ => {}
-            }
-        }
-        parts.sort_unstable_by(|left, right| left.id.as_js_string().cmp(right.id.as_js_string()));
-        for part in parts {
-            self.work.dependency_reads += 1;
-            if base.read_transposition(&part.id).as_ref()
-                == Some(&part.instrument.written_to_sounding)
-            {
-                continue;
-            }
-            for measure_id in self.order(&Order::MeasureContents {
-                part_id: part.id.clone(),
-            })? {
-                for voice_id in self.order(&Order::Voices {
-                    part_id: part.id.clone(),
-                    measure_id,
-                })? {
-                    for event_id in self.order(&Order::Events { voice_id })? {
-                        for note in self.order(&Order::Notes { event_id })? {
-                            insert_id(&mut notes, &note)?;
-                        }
-                    }
-                }
+            if let StableRecordV1::Note(note) = record {
+                insert_id(&mut notes, &note.id)?;
             }
         }
         // Hash iteration must not select which work precedes a resource failure.
@@ -191,19 +159,6 @@ impl Assessment<'_, '_> {
     }
 
     fn check_note(&mut self, note: StableId) -> Result<(), Failure> {
-        let Owner::Event { event_id: event } = self.owner(&Entity::Note {
-            note_id: note.clone(),
-        })?
-        else {
-            return Err(Failure::InternalError);
-        };
-        let Owner::Voice { voice_id: voice } = self.owner(&Entity::Event {
-            event_id: event.clone(),
-        })?
-        else {
-            return Err(Failure::InternalError);
-        };
-        let route = self.voice_route(voice)?;
         self.work.dependency_reads += 1;
         let Some(Value::NoteWrittenPitch(pitch)) =
             self.overlay.read_scalar(&Scalar::NoteWrittenPitch {
@@ -213,33 +168,25 @@ impl Assessment<'_, '_> {
             return Err(Failure::InternalError);
         };
         self.work.rules_evaluated += 1;
-        let fault = if !written_pitch_is_valid(&pitch) {
-            Some((Code::WrittenPitchInvalid, None))
-        } else {
-            if !self.instruments.contains_key(&route.part) {
-                self.work.dependency_reads += 1;
-                let transposition = self
-                    .overlay
-                    .read_transposition(&route.part)
-                    .ok_or(Failure::InternalError)?;
-                self.instruments
-                    .try_reserve(1)
-                    .map_err(|_| Failure::InternalError)?;
-                self.instruments.insert(route.part.clone(), transposition);
-            }
-            self.work.rules_evaluated += 1;
-            assess_sounding_pitch(
-                &pitch,
-                self.instruments
-                    .get(&route.part)
-                    .ok_or(Failure::InternalError)?,
-            )
-            .err()
-            .map(|reason| (Code::SoundingPitchInvalid, Some(reason)))
-        };
-        if let Some((code, reason)) = fault {
-            self.diagnostics
-                .add(Location::Pitch { route, event, note }, code, reason)?;
+        if !written_pitch_is_valid(&pitch) {
+            let Owner::Event { event_id: event } = self.owner(&Entity::Note {
+                note_id: note.clone(),
+            })?
+            else {
+                return Err(Failure::InternalError);
+            };
+            let Owner::Voice { voice_id: voice } = self.owner(&Entity::Event {
+                event_id: event.clone(),
+            })?
+            else {
+                return Err(Failure::InternalError);
+            };
+            let route = self.voice_route(voice)?;
+            self.diagnostics.add(
+                Location::Pitch { route, event, note },
+                Code::WrittenPitchInvalid,
+                None,
+            )?;
         }
         Ok(())
     }

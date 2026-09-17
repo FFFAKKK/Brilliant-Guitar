@@ -7,9 +7,10 @@ use brilliant_core_types::StableId;
 use serde::Serialize;
 
 use crate::{
-    AssessmentFailureV1, CoreDiagnosticV1, ExactFraction, FractionV1, ScoreDocumentV1,
-    assess_measure_duration, assess_note_duration, assess_score_semantics_node,
+    AssessmentFailureV1, CoreDiagnosticV1, ExactFraction, FractionV1, RhythmicContentV1,
+    ScoreDocumentV1, assess_measure_duration, assess_note_duration, assess_score_semantics_node,
     dto_assessment::DocumentAssessmentNodeV1,
+    music_rules::{SoundingPitchIssueV2, assess_sounding_pitch_capability},
 };
 
 pub const CORE_RULE_WARNING_PAGE_LIMIT_V1: usize = 4_096;
@@ -425,8 +426,8 @@ pub fn assess_score_rule_warning_page_v1(
     })
 }
 
-/// V2 keeps the V1 time-warning behavior while exposing a closed union that can
-/// add note-scoped warning details without changing the V1 wire contract.
+/// V2 keeps the V1 time-warning behavior and adds note-scoped sounding-pitch
+/// capability warnings without changing the V1 wire contract.
 pub fn assess_score_rule_warning_page_v2(
     document: &ScoreDocumentV1,
     offset: usize,
@@ -437,48 +438,158 @@ pub fn assess_score_rule_warning_page_v2(
             maximum: CORE_RULE_WARNING_PAGE_LIMIT_V2,
         });
     }
-    let page = assess_score_rule_warning_page_v1(document, offset, page_size)?;
-    let mut warnings = Vec::new();
-    warnings
-        .try_reserve(page.warnings.len())
-        .map_err(|_| AssessmentFailureV1::InternalCapacity)?;
-    for warning in page.warnings {
-        let code = match warning.code {
-            CoreRuleWarningCodeV1::SequenceExceedsMeasure => {
-                CoreRuleWarningCodeV2::SequenceExceedsMeasure
-            }
-            CoreRuleWarningCodeV1::SequenceStartAfterMeasure => {
-                CoreRuleWarningCodeV2::SequenceStartAfterMeasure
-            }
-        };
-        warnings.push(CoreRuleWarningV2 {
-            warning_version: 2,
-            code,
-            message_key: format!("core.{}", code.as_str()),
-            location: CoreRuleWarningLocationV2::Voice {
-                part_id: warning.part_id,
-                measure_id: warning.measure_id,
-                voice_id: warning.voice_id,
-            },
-            details: CoreRuleWarningDetailsV2::Timing {
-                nominal_duration: warning.nominal_duration,
-                actual_duration: warning.actual_duration,
-                overflow: warning.overflow,
-            },
+    let semantic = assess_score_semantics_node(DocumentAssessmentNodeV1::new(document))?;
+    if !semantic.ok {
+        return Err(RuleWarningPageFailureV2::SemanticInvalid {
+            diagnostics: semantic.diagnostics,
         });
     }
+
+    let measures: HashMap<_, _> = document
+        .measure_definitions
+        .iter()
+        .map(|measure| (&measure.id, measure))
+        .collect();
+    let mut warnings = Vec::new();
+    let mut total = 0_usize;
+    for part in &document.parts {
+        for content in &part.measure_contents {
+            let Some(measure) = measures.get(&content.measure_id) else {
+                unreachable!("semantic assessment accepted a missing measure reference")
+            };
+            let nominal = assess_measure_duration(&measure.meter, measure.pickup_duration.as_ref())
+                .map_err(|_| AssessmentFailureV1::InternalCapacity)?;
+            for voice in &content.voices {
+                let start = ExactFraction::from_canonical(&voice.sequence.start)
+                    .map_err(|_| AssessmentFailureV1::InternalCapacity)?;
+                let mut actual = start;
+                for event in &voice.sequence.events {
+                    actual = actual
+                        .checked_add(
+                            assess_note_duration(&event.duration)
+                                .map_err(|_| AssessmentFailureV1::InternalCapacity)?,
+                        )
+                        .map_err(|_| AssessmentFailureV1::InternalCapacity)?;
+                }
+                let start_after_measure = start
+                    .checked_compare(nominal)
+                    .map_err(|_| AssessmentFailureV1::InternalCapacity)?
+                    == Ordering::Greater;
+                let sequence_exceeds_measure = actual
+                    .checked_compare(nominal)
+                    .map_err(|_| AssessmentFailureV1::InternalCapacity)?
+                    == Ordering::Greater;
+                let time_warning = if start_after_measure {
+                    Some((CoreRuleWarningCodeV2::SequenceStartAfterMeasure, start))
+                } else if sequence_exceeds_measure {
+                    Some((CoreRuleWarningCodeV2::SequenceExceedsMeasure, actual))
+                } else {
+                    None
+                };
+                if let Some((code, observed)) = time_warning {
+                    if total >= offset && total - offset < page_size {
+                        warnings
+                            .try_reserve(1)
+                            .map_err(|_| AssessmentFailureV1::InternalCapacity)?;
+                        warnings.push(CoreRuleWarningV2 {
+                            warning_version: 2,
+                            code,
+                            message_key: format!("core.{}", code.as_str()),
+                            location: CoreRuleWarningLocationV2::Voice {
+                                part_id: part.id.clone(),
+                                measure_id: content.measure_id.clone(),
+                                voice_id: voice.id.clone(),
+                            },
+                            details: CoreRuleWarningDetailsV2::Timing {
+                                nominal_duration: nominal.to_fraction_v1(),
+                                actual_duration: observed.to_fraction_v1(),
+                                overflow: observed
+                                    .checked_sub(nominal)
+                                    .map_err(|_| AssessmentFailureV1::InternalCapacity)?
+                                    .to_fraction_v1(),
+                            },
+                        });
+                    }
+                    total = total
+                        .checked_add(1)
+                        .ok_or(AssessmentFailureV1::InternalCapacity)?;
+                }
+
+                for event in &voice.sequence.events {
+                    let RhythmicContentV1::Notes { notes } = &event.content else {
+                        continue;
+                    };
+                    for note in notes {
+                        let assessment = assess_sounding_pitch_capability(
+                            &note.written_pitch,
+                            &part.instrument.written_to_sounding,
+                        );
+                        let Some(issue) = assessment.issue else {
+                            continue;
+                        };
+                        let (code, reason) = match issue {
+                            SoundingPitchIssueV2::Playback => (
+                                CoreRuleWarningCodeV2::SoundingPitchOutOfPlaybackRange,
+                                CoreSoundingPitchWarningReasonV2::PlaybackRange,
+                            ),
+                            SoundingPitchIssueV2::Octave => (
+                                CoreRuleWarningCodeV2::SoundingPitchSpellingUnrepresentable,
+                                CoreSoundingPitchWarningReasonV2::DerivedPitchOctaveOutOfRange,
+                            ),
+                            SoundingPitchIssueV2::Alter => (
+                                CoreRuleWarningCodeV2::SoundingPitchSpellingUnrepresentable,
+                                CoreSoundingPitchWarningReasonV2::DerivedPitchAlterOutOfRange,
+                            ),
+                        };
+                        if total >= offset && total - offset < page_size {
+                            warnings
+                                .try_reserve(1)
+                                .map_err(|_| AssessmentFailureV1::InternalCapacity)?;
+                            warnings.push(CoreRuleWarningV2 {
+                                warning_version: 2,
+                                code,
+                                message_key: format!("core.{}", code.as_str()),
+                                location: CoreRuleWarningLocationV2::Note {
+                                    part_id: part.id.clone(),
+                                    measure_id: content.measure_id.clone(),
+                                    voice_id: voice.id.clone(),
+                                    event_id: event.id.clone(),
+                                    note_id: note.id.clone(),
+                                },
+                                details: CoreRuleWarningDetailsV2::SoundingPitch {
+                                    reason,
+                                    sounding_semitone: Some(
+                                        assessment.sounding_semitone.to_string(),
+                                    ),
+                                },
+                            });
+                        }
+                        total = total
+                            .checked_add(1)
+                            .ok_or(AssessmentFailureV1::InternalCapacity)?;
+                    }
+                }
+            }
+        }
+    }
+    if offset > total {
+        return Err(RuleWarningPageFailureV2::OffsetOutOfBounds { total });
+    }
+    let end = offset + warnings.len();
     Ok(ScoreRuleWarningPageV2 {
-        offset: page.offset,
-        total: page.total,
+        offset,
+        total,
         warnings,
-        next_offset: page.next_offset,
+        next_offset: (end < total).then_some(end),
     })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{LosslessDecode, LosslessEncode, NoteValueV1};
+    use crate::{
+        LosslessDecode, LosslessEncode, NoteValueV1, PitchStepV1, ScoreNoteV1, WrittenPitchV1,
+    };
     use brilliant_core_types::SafeInteger;
 
     fn document() -> ScoreDocumentV1 {
@@ -655,6 +766,150 @@ mod tests {
             String::from_utf8(bytes).unwrap(),
             r#"{"warningVersion":2,"code":"rule.sounding-pitch-out-of-playback-range","messageKey":"core.rule.sounding-pitch-out-of-playback-range","location":{"kind":"note","partId":"part-1","measureId":"measure-1","voiceId":"voice-1","eventId":"event-1","noteId":"note-1"},"details":{"kind":"soundingPitch","reason":"playback-range","soundingSemitone":"9007199254741112"}}"#
         );
+    }
+
+    #[test]
+    fn v2_derives_note_scoped_pitch_warnings_while_v1_remains_time_only() {
+        let cases = [
+            (
+                PitchStepV1::B,
+                8,
+                1,
+                1,
+                CoreRuleWarningCodeV2::SoundingPitchSpellingUnrepresentable,
+                CoreSoundingPitchWarningReasonV2::DerivedPitchOctaveOutOfRange,
+                "120",
+            ),
+            (
+                PitchStepV1::C,
+                4,
+                0,
+                3,
+                CoreRuleWarningCodeV2::SoundingPitchSpellingUnrepresentable,
+                CoreSoundingPitchWarningReasonV2::DerivedPitchAlterOutOfRange,
+                "63",
+            ),
+            (
+                PitchStepV1::C,
+                4,
+                0,
+                100,
+                CoreRuleWarningCodeV2::SoundingPitchOutOfPlaybackRange,
+                CoreSoundingPitchWarningReasonV2::PlaybackRange,
+                "160",
+            ),
+        ];
+        for (step, octave, diatonic, chromatic, code, reason, semitone) in cases {
+            let mut document = document();
+            document.parts[0].measure_contents[0].voices[0]
+                .sequence
+                .events[0]
+                .content = RhythmicContentV1::Notes {
+                notes: vec![ScoreNoteV1 {
+                    id: StableId::new("note-1").unwrap(),
+                    written_pitch: WrittenPitchV1 {
+                        step: PitchStepV1::C,
+                        alter: SafeInteger::new(0).unwrap(),
+                        octave: SafeInteger::new(4).unwrap(),
+                    },
+                }],
+            };
+            let RhythmicContentV1::Notes { notes } = &mut document.parts[0].measure_contents[0]
+                .voices[0]
+                .sequence
+                .events[0]
+                .content
+            else {
+                panic!("fixture note event")
+            };
+            notes[0].written_pitch.step = step;
+            notes[0].written_pitch.octave = SafeInteger::new(octave).unwrap();
+            document.parts[0]
+                .instrument
+                .written_to_sounding
+                .diatonic_steps = SafeInteger::new(diatonic).unwrap();
+            document.parts[0]
+                .instrument
+                .written_to_sounding
+                .chromatic_semitones = SafeInteger::new(chromatic).unwrap();
+
+            let semantic =
+                crate::assess_score_semantics_node(DocumentAssessmentNodeV1::new(&document))
+                    .unwrap();
+            assert!(semantic.ok, "{semantic:?}");
+            assert_eq!(
+                assess_score_rule_warning_page_v1(&document, 0, 16)
+                    .unwrap()
+                    .total,
+                0
+            );
+            let page = assess_score_rule_warning_page_v2(&document, 0, 16).unwrap();
+            assert_eq!(page.total, 1);
+            assert_eq!(page.warnings[0].code, code);
+            assert!(matches!(
+                &page.warnings[0].location,
+                CoreRuleWarningLocationV2::Note { part_id, measure_id, voice_id, event_id, note_id }
+                    if part_id.as_js_string() == "part-1"
+                        && measure_id.as_js_string() == "measure-1"
+                        && voice_id.as_js_string() == "voice-1"
+                        && event_id.as_js_string() == "event-1"
+                        && note_id.as_js_string() == "note-1"
+            ));
+            assert!(matches!(
+                &page.warnings[0].details,
+                CoreRuleWarningDetailsV2::SoundingPitch { reason: actual_reason, sounding_semitone }
+                    if *actual_reason == reason && sounding_semitone.as_deref() == Some(semitone)
+            ));
+        }
+    }
+
+    #[test]
+    fn v2_pitch_warning_uses_exact_decimal_string_and_pages_with_time_warnings() {
+        let mut document = document();
+        document.parts[0].measure_contents[0].voices[0]
+            .sequence
+            .events[0]
+            .content = RhythmicContentV1::Notes {
+            notes: vec![ScoreNoteV1 {
+                id: StableId::new("note-1").unwrap(),
+                written_pitch: WrittenPitchV1 {
+                    step: PitchStepV1::C,
+                    alter: SafeInteger::new(0).unwrap(),
+                    octave: SafeInteger::new(4).unwrap(),
+                },
+            }],
+        };
+        document.parts[0].measure_contents[0].voices[0]
+            .sequence
+            .start = FractionV1 {
+            numerator: SafeInteger::new(5).unwrap(),
+            denominator: SafeInteger::new(4).unwrap(),
+        };
+        document.parts[0]
+            .instrument
+            .written_to_sounding
+            .chromatic_semitones =
+            SafeInteger::new(brilliant_core_types::JS_SAFE_INTEGER_MAX).unwrap();
+
+        let first = assess_score_rule_warning_page_v2(&document, 0, 1).unwrap();
+        assert_eq!(first.total, 2);
+        assert_eq!(first.next_offset, Some(1));
+        assert_eq!(
+            first.warnings[0].code,
+            CoreRuleWarningCodeV2::SequenceStartAfterMeasure
+        );
+        let second = assess_score_rule_warning_page_v2(&document, 1, 1).unwrap();
+        assert_eq!(second.total, 2);
+        assert_eq!(second.next_offset, None);
+        assert_eq!(
+            second.warnings[0].code,
+            CoreRuleWarningCodeV2::SoundingPitchOutOfPlaybackRange
+        );
+        assert!(matches!(
+            &second.warnings[0].details,
+            CoreRuleWarningDetailsV2::SoundingPitch { sounding_semitone, .. }
+                if sounding_semitone.as_deref() == Some("9007199254741051")
+        ));
     }
 
     #[test]

@@ -10,7 +10,9 @@ interface Addon {
   migrateKernelExtensionV2(input: Buffer, callback: Callback, readProtocol?: number): Buffer;
 }
 // Use the freshly built Wasm artifact; the shared bridge also exists in V2.
-const addon = require(resolve("target/wasm-v1/brilliant_kernel_node.node")) as Addon;
+const addon = require(resolve(
+  process.env.BRILLIANT_WASM_ADDON_PATH ?? "target/wasm-v1/brilliant_kernel_node.node",
+)) as Addon;
 const fixture = JSON.parse(readFileSync("crates/brilliant-kernel-session/src/wasm/fixtures/session.json", "utf8"));
 const queryPrefix = Buffer.from("BGCR2Q\0");
 const replyPrefix = Buffer.from("BGCR2R\0");

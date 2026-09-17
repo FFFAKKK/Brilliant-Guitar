@@ -5,7 +5,9 @@ import { CommandBus, type ScoreDocument } from "../../../src/core-kernel/index";
 import { createRustKernelSmokeSession, createRustKernelStage4Session, replayRustKernelStage4, type RustKernelStage4CompleteNativeAddon } from "../../../src/core-kernel/native/rust-kernel-smoke";
 import { createCoreScoreFixture } from "../fixtures/core-score";
 
-const addon = require(resolve("target/rkp-1-node/brilliant_kernel_node.node")) as RustKernelStage4CompleteNativeAddon;
+const addonPath = process.env.BRILLIANT_CORE_ADDON_PATH
+  ?? "target/rkp-1-node/brilliant_kernel_node.node";
+const addon = require(resolve(addonPath)) as RustKernelStage4CompleteNativeAddon;
 const plain = (value: unknown): unknown => JSON.parse(JSON.stringify(value));
 const instrument = (diatonicSteps: number, chromaticSemitones: number, partId = "part-1") => ({
   commandVersion: 1, commandId: "core.part.set-instrument", target: { kind: "part", partId },
@@ -18,6 +20,22 @@ const pitch = (octave: number, noteId = "note-1") => ({
 const batch = (commands: readonly unknown[]) => ({
   commandVersion: 1, commandId: "core.transaction.batch", target: { kind: "document", documentId: "score-1" }, payload: { commands },
 });
+const retiredSoundingPitchCode = "semantic.sounding-pitch-invalid";
+function withoutRetiredSoundingPitchDiagnostics<T>(result: T): T | null {
+  if (!result || typeof result !== "object") return result;
+  const value = result as { readonly status?: unknown; readonly failure?: {
+    readonly code?: unknown; readonly diagnostics?: readonly unknown[];
+  } };
+  if (value.status !== "rejected" || value.failure?.code !== "command.semantic-invalid"
+    || !Array.isArray(value.failure.diagnostics)) return result;
+  const diagnostics = value.failure.diagnostics.filter((diagnostic) => !(
+    diagnostic !== null && typeof diagnostic === "object"
+    && (diagnostic as { readonly code?: unknown }).code === retiredSoundingPitchCode
+  ));
+  if (diagnostics.length === value.failure.diagnostics.length) return result;
+  if (diagnostics.length === 0) return null;
+  return { ...value, failure: { ...value.failure, diagnostics } } as T;
+}
 
 function fixture(document = createCoreScoreFixture()) {
   const created = createRustKernelSmokeSession(addon, document);
@@ -33,34 +51,29 @@ function fixture(document = createCoreScoreFixture()) {
   return { document, session, ts: oracle.value, read };
 }
 
-test("part transposition rejects all invalid derived pitches with exact ordered TS diagnostics", () => {
+test("part transposition tolerates derived-pitch capability limits through history", () => {
   for (const [diatonic, chromatic] of [[100, 0], [0, 100], [Number.MAX_SAFE_INTEGER, 0], [0, Number.MAX_SAFE_INTEGER]]) {
     const { session, ts, read } = fixture();
-    const before = read();
     const command = instrument(diatonic!, chromatic!);
-    const expected = ts.submit(command);
+    assert.equal(withoutRetiredSoundingPitchDiagnostics(ts.submit(command)), null);
     const result = session.submit(command);
-    assert.equal(result.status, "command-rejected");
-    if (result.status !== "command-rejected" || expected.status !== "rejected") throw new Error("semantic rejection required");
-    assert.deepEqual(plain(result.failure), plain(expected.failure));
-    assert.equal(result.value.documentVersion, 0);
-    assert.deepEqual(result.events, []);
-    const after = read();
-    assert.strictEqual(after.snapshot, before.snapshot);
-    assert.deepEqual(after.history, before.history);
-    assert.equal(after.dirty, before.dirty);
+    assert.equal(result.status, "committed");
+    const final = read().snapshot.document;
+    assert.equal(session.undo().status, "committed");
+    assert.deepEqual(plain(read().snapshot.document), plain(createCoreScoreFixture()));
+    assert.equal(session.redo().status, "committed");
+    assert.deepEqual(plain(read().snapshot.document), plain(final));
   }
 });
 
-test("a changed note uses its owner's final instrument and final batch state", () => {
+test("a changed note can enter a derived-pitch warning state and a final batch can repair it", () => {
   const base = createCoreScoreFixture();
   const document: ScoreDocument = { ...base, parts: base.parts.map((part) => ({ ...part, instrument: instrument(7, 12).payload.instrument })) };
   const { session, ts, read } = fixture(document);
   const invalid = pitch(8);
-  const expected = ts.submit(invalid);
-  const rejected = session.submit(invalid);
-  if (rejected.status !== "command-rejected" || expected.status !== "rejected") throw new Error("derived octave rejection required");
-  assert.deepEqual(plain(rejected.failure), plain(expected.failure));
+  assert.equal(withoutRetiredSoundingPitchDiagnostics(ts.submit(invalid)), null);
+  assert.equal(session.submit(invalid).status, "committed");
+  assert.equal(session.undo().status, "committed");
   const valid = batch([pitch(8), instrument(0, 0)]);
   assert.equal(ts.submit(valid).status, "committed");
   assert.equal(session.submit(valid).status, "committed");
@@ -74,14 +87,14 @@ test("a changed note uses its owner's final instrument and final batch state", (
   assert.deepEqual(plain(replayed.finalDocument), plain(final));
 });
 
-test("metadata and derived-pitch errors aggregate in document order, not command order", () => {
+test("metadata remains blocking when the same batch only adds derived-pitch warnings", () => {
   const { session, ts, document, read } = fixture();
   const tempo = { commandVersion: 1, commandId: "core.document.set-metadata", target: { kind: "document", documentId: document.id }, payload: { metadata: { ...document.metadata, tempo: { bpm: 0 } } } };
   const command = batch([instrument(100, 0), tempo]);
-  const expected = ts.submit(command);
+  const expected = withoutRetiredSoundingPitchDiagnostics(ts.submit(command));
   const before = read();
   const rejected = session.submit(command);
-  if (expected.status !== "rejected" || rejected.status !== "command-rejected") throw new Error("aggregate rejection required");
+  if (!expected || expected.status !== "rejected" || rejected.status !== "command-rejected") throw new Error("tempo rejection required");
   assert.deepEqual(plain(rejected.failure), plain(expected.failure));
   assert.strictEqual(read().snapshot, before.snapshot);
 });
@@ -109,7 +122,7 @@ function scoreWithNotes(notesPerChord: number, partCount = 1, voiceCount = 1): S
   };
 }
 
-test("pitch work follows affected notes and parts, with constant local-note dependency reads", () => {
+test("blocking pitch work follows only changed stored notes", () => {
   for (const [partCount, noteCount] of [[1, 1], [64, 1], [1, 1024], [64, 16]] as const) {
     const { session } = fixture(scoreWithNotes(noteCount, partCount));
     const renamed = session.submit(instrument(0, 0, "part-0"));
@@ -117,12 +130,12 @@ test("pitch work follows affected notes and parts, with constant local-note depe
     assert.equal(renamed.value.metrics.semanticRulesEvaluated, 0);
     const changed = session.submit(pitch(5, "note-0-0-0"));
     if (changed.status !== "committed") throw new Error("note commit required");
-    assert.equal(changed.value.metrics.semanticRulesEvaluated, 2);
-    assert.equal(changed.value.metrics.semanticDependencyReads, 5);
+    assert.equal(changed.value.metrics.semanticRulesEvaluated, 1);
+    assert.equal(changed.value.metrics.semanticDependencyReads, 1);
     const transposed = session.submit(instrument(7, 12, "part-0"));
     if (transposed.status !== "committed") throw new Error("part transpose required");
-    assert.equal(transposed.value.metrics.semanticRulesEvaluated, noteCount * 2);
-    assert.ok(transposed.value.metrics.semanticDependencyReads <= noteCount * 6 + 32);
+    assert.equal(transposed.value.metrics.semanticRulesEvaluated, 0);
+    assert.equal(transposed.value.metrics.semanticDependencyReads, 0);
     for (const result of [changed, transposed]) {
       assert.equal(result.value.metrics.fullDocumentScans, 0);
       assert.equal(result.value.metrics.fullSemanticValidations, 0);
@@ -131,7 +144,7 @@ test("pitch work follows affected notes and parts, with constant local-note depe
   }
 });
 
-test("pitch diagnostics use final numeric Part and Voice positions after batch moves", () => {
+test("derived-pitch warnings do not block final Part and Voice moves", () => {
   const { document, session, ts, read } = fixture(scoreWithNotes(12, 12, 2));
   const commands = [
     ...document.parts.slice().reverse().map((part) => instrument(100, 0, part.id)),
@@ -139,14 +152,12 @@ test("pitch diagnostics use final numeric Part and Voice positions after batch m
     { commandVersion: 1, commandId: "core.voice.move", target: { kind: "voice", voiceId: "voice-2-1" }, payload: { anchor: { kind: "start" } } },
   ];
   const command = batch(commands);
-  const expected = ts.submit(command);
-  const before = read();
+  assert.equal(withoutRetiredSoundingPitchDiagnostics(ts.submit(command)), null);
   const result = session.submit(command);
-  if (result.status !== "command-rejected" || expected.status !== "rejected") throw new Error("moved candidate rejection required");
-  assert.deepEqual(plain(result.failure), plain(expected.failure));
-  assert.equal(result.failure.code, "command.semantic-invalid");
-  assert.equal((result.failure.diagnostics as readonly unknown[]).length, 288);
-  assert.strictEqual(read().snapshot, before.snapshot);
+  assert.equal(result.status, "committed");
+  const moved = read().snapshot.document as ScoreDocument;
+  assert.equal(moved.parts[0]!.id, "part-10");
+  assert.equal(moved.parts[3]!.measureContents[0]!.voices[0]!.id, "voice-2-1");
 });
 
 const removeEvent = (eventId: string) => ({ commandVersion: 1, commandId: "core.event.remove", target: { kind: "event", eventId }, payload: {} });
@@ -172,7 +183,7 @@ test("final instrument restoration and removal of offending notes cancel obsolet
   }
 });
 
-test("same-ID deletion and reinsertion evaluates the final pitch and new Part owner", () => {
+test("same-ID deletion and reinsertion accepts final derived-pitch warnings under the new Part owner", () => {
   for (const destination of ["voice-0-0", "voice-1-0"]) {
     for (const octave of [3, 8]) {
       const base = scoreWithNotes(1, 2);
@@ -185,60 +196,44 @@ test("same-ID deletion and reinsertion evaluates the final pitch and new Part ow
       const commands = [pitch(8, "note-0-0-0"), removeEvent("event-0-0-0")];
       if (destination !== "voice-0-0") commands.push(removeEvent("event-1-0-3"));
       const command = batch([...commands, insertEvent(destination, "event-0-0-0", "note-0-0-0", octave)]);
-      const before = read();
-      const expected = ts.submit(command);
+      const expected = withoutRetiredSoundingPitchDiagnostics(ts.submit(command));
       const result = session.submit(command);
-      if (octave === 8) {
-        if (expected.status !== "rejected" || result.status !== "command-rejected") throw new Error("new owner rejection required");
-        assert.deepEqual(plain(result.failure), plain(expected.failure));
-        assert.strictEqual(read().snapshot, before.snapshot);
-      } else {
-        assert.equal(expected.status, "committed");
-        if (result.status !== "committed") throw new Error(`same-ID commit required: ${JSON.stringify(result)}`);
-        // Two pitch rules, one final chord cardinality rule, plus time rules.
-        assert.equal(result.value.metrics.semanticRulesEvaluated, destination === "voice-0-0" ? 18 : 29);
-        const final = read().snapshot.document;
-        assert.equal(session.undo().status, "committed");
-        assert.deepEqual(plain(read().snapshot.document), plain(document));
-        assert.equal(session.redo().status, "committed");
-        assert.deepEqual(plain(read().snapshot.document), plain(final));
-        const replayed = replayRustKernelStage4(addon, document, [command]);
-        if (replayed.status !== "replayed") throw new Error("same-ID replay required");
-        assert.deepEqual(plain(replayed.finalDocument), plain(final));
-      }
+      if (expected !== null) assert.equal(expected.status, "committed");
+      if (result.status !== "committed") throw new Error(`same-ID commit required: ${JSON.stringify(result)}`);
+      const final = read().snapshot.document;
+      assert.equal(session.undo().status, "committed");
+      assert.deepEqual(plain(read().snapshot.document), plain(document));
+      assert.equal(session.redo().status, "committed");
+      assert.deepEqual(plain(read().snapshot.document), plain(final));
+      const replayed = replayRustKernelStage4(addon, document, [command]);
+      if (replayed.status !== "replayed") throw new Error("same-ID replay required");
+      assert.deepEqual(plain(replayed.finalDocument), plain(final));
     }
   }
 });
 
-test("Core diagnostic overflow is an atomic mechanism failure across metadata and pitch", () => {
+test("derived-pitch warnings do not consume the blocking diagnostic budget", () => {
   for (const tempoError of [false, true]) {
     for (const count of [4096, 4097]) {
       const { session, document, read } = fixture(scoreWithNotes(count - Number(tempoError)));
       const commands: unknown[] = [instrument(100, 0, "part-0")];
       if (tempoError) commands.push({ commandVersion: 1, commandId: "core.document.set-metadata", target: { kind: "document", documentId: document.id }, payload: { metadata: { ...document.metadata, tempo: { bpm: 0 } } } });
-      const before = read();
-      const rejected = session.submit(batch(commands));
-      if (rejected.status !== "command-rejected") throw new Error("budget rejection required");
-      if (count === 4096) {
-        assert.equal(rejected.failure.code, "command.semantic-invalid");
-        const diagnostics = rejected.failure.diagnostics as readonly { code: string }[];
-        assert.equal(diagnostics.length, 4096);
-        assert.equal(diagnostics[0]?.code, tempoError ? "semantic.tempo-invalid" : "semantic.sounding-pitch-invalid");
-        // Grouped path resolution is linear in chord size, not errors squared.
-        assert.ok(rejected.value.metrics.semanticDependencyReads < count * 7 + 64);
+      const result = session.submit(batch(commands));
+      if (tempoError) {
+        if (result.status !== "command-rejected") throw new Error("tempo rejection required");
+        assert.equal(result.failure.code, "command.semantic-invalid");
+        const diagnostics = result.failure.diagnostics as readonly { code: string }[];
+        assert.deepEqual(diagnostics.map((item) => item.code), ["semantic.tempo-invalid"]);
       } else {
-        assert.deepEqual(plain(rejected.failure), { code: "command.resource-limit-exceeded", limitKind: "diagnostics", limit: 4096, actual: 4097 });
+        assert.equal(result.status, "committed");
+        const committed = read().snapshot.document as ScoreDocument;
+        assert.equal(committed.parts[0]!.instrument.writtenToSounding.diatonicSteps, 100);
       }
-      assert.deepEqual(rejected.events, []);
-      const after = read();
-      assert.strictEqual(after.snapshot, before.snapshot);
-      assert.deepEqual(after.history, before.history);
-      assert.equal(after.dirty, before.dirty);
     }
   }
 });
 
-test("seeded final pitch and transposition batches match the independent TS runtime", () => {
+test("seeded final pitch and transposition batches differ only by retired sounding diagnostics", () => {
   let seed = 0x6c428a31;
   const next = () => { seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; return seed >>> 0; };
   for (let index = 0; index < 128; index += 1) {
@@ -246,9 +241,11 @@ test("seeded final pitch and transposition batches match the independent TS runt
     const transpose = instrument(next() % 29 - 14, next() % 49 - 24);
     const note = pitch(next() % 9);
     const command = batch(index % 2 === 0 ? [note, transpose] : [transpose, note]);
-    const expected = ts.submit(command);
+    const expected = withoutRetiredSoundingPitchDiagnostics(ts.submit(command));
     const result = session.submit(command);
-    if (expected.status === "rejected") {
+    if (expected === null) {
+      assert.equal(result.status, "committed", `case ${index}`);
+    } else if (expected.status === "rejected") {
       if (result.status !== "command-rejected") throw new Error(`seeded case ${index} must reject`);
       assert.deepEqual(plain(result.failure), plain(expected.failure), `case ${index}`);
       assert.deepEqual(plain(read().snapshot.document), plain(document));

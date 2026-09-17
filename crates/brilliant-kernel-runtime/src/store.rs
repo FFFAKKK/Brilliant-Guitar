@@ -452,16 +452,6 @@ impl CoreBaseReadV1 for LiveScoreStore {
         }
     }
 
-    fn read_transposition(
-        &self,
-        part_id: &StableId,
-    ) -> Option<brilliant_score_foundation::TranspositionV1> {
-        let RuntimeEntityRef::Part(part) = self.lookup_exact_id(part_id)? else {
-            return None;
-        };
-        Some(self.parts.get(part)?.instrument.written_to_sounding.clone())
-    }
-
     fn read_scalar(&self, address: &ScalarAddressV1) -> Option<ScalarValueV1> {
         match address {
             ScalarAddressV1::DocumentMetadata { document_id } if document_id == &self.header.id => {
