@@ -61,6 +61,9 @@ pub use profile_pages::{
     classify_valid_score_profile_summary_v2,
 };
 pub use rule_warnings::{
-    CORE_RULE_WARNING_PAGE_LIMIT_V1, CoreRuleWarningCodeV1, CoreRuleWarningV1,
-    RuleWarningPageFailureV1, ScoreRuleWarningPageV1, assess_score_rule_warning_page_v1,
+    CORE_RULE_WARNING_PAGE_LIMIT_V1, CORE_RULE_WARNING_PAGE_LIMIT_V2, CoreRuleWarningCodeV1,
+    CoreRuleWarningCodeV2, CoreRuleWarningDetailsV2, CoreRuleWarningLocationV2, CoreRuleWarningV1,
+    CoreRuleWarningV2, CoreSoundingPitchWarningReasonV2, RuleWarningPageFailureV1,
+    RuleWarningPageFailureV2, ScoreRuleWarningPageV1, ScoreRuleWarningPageV2,
+    assess_score_rule_warning_page_v1, assess_score_rule_warning_page_v2,
 };

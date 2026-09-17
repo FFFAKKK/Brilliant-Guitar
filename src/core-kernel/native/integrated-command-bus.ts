@@ -87,12 +87,94 @@ export type KernelRuleWarningPageReadResultV1 =
   | { readonly ok: true; readonly value: KernelRuleWarningPageV1 }
   | { readonly ok: false; readonly failure: { readonly code: string } };
 
+export type KernelRuleWarningCodeV2 =
+  | "rule.sequence-exceeds-measure"
+  | "rule.sequence-start-after-measure"
+  | "rule.sounding-pitch-out-of-playback-range"
+  | "rule.sounding-pitch-spelling-unrepresentable";
+
+export interface KernelVoiceRuleWarningLocationV2 {
+  readonly kind: "voice";
+  readonly partId: string;
+  readonly measureId: string;
+  readonly voiceId: string;
+}
+
+export interface KernelNoteRuleWarningLocationV2 {
+  readonly kind: "note";
+  readonly partId: string;
+  readonly measureId: string;
+  readonly voiceId: string;
+  readonly eventId: string;
+  readonly noteId: string;
+}
+
+export interface KernelTimingRuleWarningDetailsV2 {
+  readonly kind: "timing";
+  readonly nominalDuration: KernelRuleWarningFractionV1;
+  readonly actualDuration: KernelRuleWarningFractionV1;
+  readonly overflow: KernelRuleWarningFractionV1;
+}
+
+export interface KernelSoundingPitchRuleWarningDetailsV2 {
+  readonly kind: "soundingPitch";
+  readonly reason: "playback-range" | "derived-pitch-octave-out-of-range" | "derived-pitch-alter-out-of-range";
+  readonly soundingSemitone?: string;
+}
+
+export type KernelRuleWarningLocationV2 = KernelVoiceRuleWarningLocationV2 | KernelNoteRuleWarningLocationV2;
+export type KernelRuleWarningDetailsV2 = KernelTimingRuleWarningDetailsV2 | KernelSoundingPitchRuleWarningDetailsV2;
+
+interface KernelRuleWarningCommonV2 {
+  readonly warningVersion: 2;
+  readonly messageKey: string;
+}
+
+export type KernelRuleWarningV2 =
+  | (KernelRuleWarningCommonV2 & {
+      readonly code: "rule.sequence-exceeds-measure" | "rule.sequence-start-after-measure";
+      readonly location: KernelVoiceRuleWarningLocationV2;
+      readonly details: KernelTimingRuleWarningDetailsV2;
+    })
+  | (KernelRuleWarningCommonV2 & {
+      readonly code: "rule.sounding-pitch-out-of-playback-range";
+      readonly location: KernelNoteRuleWarningLocationV2;
+      readonly details: KernelSoundingPitchRuleWarningDetailsV2 & { readonly reason: "playback-range" };
+    })
+  | (KernelRuleWarningCommonV2 & {
+      readonly code: "rule.sounding-pitch-spelling-unrepresentable";
+      readonly location: KernelNoteRuleWarningLocationV2;
+      readonly details: KernelSoundingPitchRuleWarningDetailsV2 & {
+        readonly reason: "derived-pitch-octave-out-of-range" | "derived-pitch-alter-out-of-range";
+      };
+    });
+
+export interface KernelRuleWarningPageV2 {
+  readonly reportVersion: 2;
+  readonly documentId: string;
+  readonly documentVersion: number;
+  readonly offset: number;
+  readonly total: number;
+  readonly warnings: readonly KernelRuleWarningV2[];
+  readonly nextOffset: number | null;
+}
+
+export type KernelRuleWarningPageReadResultV2 =
+  | { readonly ok: true; readonly value: KernelRuleWarningPageV2 }
+  | { readonly ok: false; readonly failure: { readonly code: string } };
+
 type RuleWarningReaderV1 = (
   documentId: string,
   documentVersion: number,
   offset: number,
   limit: number,
 ) => KernelRuleWarningPageReadResultV1;
+type RuleWarningReaderV2 = (
+  documentId: string,
+  documentVersion: number,
+  offset: number,
+  limit: number,
+) => KernelRuleWarningPageReadResultV2;
 
 // The workbench host can load the generated CommonJS kernel through both its
 // ESM bridge and `require()`. Keep this private capability registry on the
@@ -103,6 +185,13 @@ const ruleWarningReadersV1 = (globalRegistry[ruleWarningReaderRegistryKey] as We
   ?? (() => {
     const registry = new WeakMap<IntegratedCommandBus, RuleWarningReaderV1>();
     globalRegistry[ruleWarningReaderRegistryKey] = registry;
+    return registry;
+  })();
+const ruleWarningReaderRegistryKeyV2 = "__brilliant_rule_warning_readers_v2__";
+const ruleWarningReadersV2 = (globalRegistry[ruleWarningReaderRegistryKeyV2] as WeakMap<IntegratedCommandBus, RuleWarningReaderV2> | undefined)
+  ?? (() => {
+    const registry = new WeakMap<IntegratedCommandBus, RuleWarningReaderV2>();
+    globalRegistry[ruleWarningReaderRegistryKeyV2] = registry;
     return registry;
   })();
 
@@ -134,6 +223,23 @@ function freeze<T>(value: T): T {
 
 function isSafeNonNegativeInteger(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+}
+
+function hasExactKeys(record: Record<string, unknown>, expected: readonly string[]): boolean {
+  const keys = objectKeys(record);
+  return keys.length === expected.length && expected.every((key) => keys.includes(key));
+}
+
+function isCanonicalDecimalInteger(value: unknown): value is string {
+  if (typeof value !== "string" || value.length === 0) return false;
+  let index = value[0] === "-" ? 1 : 0;
+  if (index === value.length) return false;
+  if (value[index] === "0") return index + 1 === value.length;
+  if (value[index]! < "1" || value[index]! > "9") return false;
+  for (index += 1; index < value.length; index += 1) {
+    if (value[index]! < "0" || value[index]! > "9") return false;
+  }
+  return true;
 }
 
 function decodeRuleWarningFractionV1(value: unknown): KernelRuleWarningFractionV1 | undefined {
@@ -174,6 +280,90 @@ function decodeRuleWarningPageV1(value: unknown): KernelRuleWarningPageV1 | unde
     nextOffset: record.nextOffset };
 }
 
+function decodeRuleWarningLocationV2(value: unknown): KernelRuleWarningLocationV2 | undefined {
+  if (value === null || typeof value !== "object") return undefined;
+  const record = value as Record<string, unknown>;
+  if (typeof record.partId !== "string" || typeof record.measureId !== "string"
+    || typeof record.voiceId !== "string") return undefined;
+  if (record.kind === "voice" && hasExactKeys(record, ["kind", "partId", "measureId", "voiceId"])) {
+    return { kind: "voice", partId: record.partId, measureId: record.measureId, voiceId: record.voiceId };
+  }
+  if (record.kind === "note" && hasExactKeys(record, ["kind", "partId", "measureId", "voiceId", "eventId", "noteId"])
+    && typeof record.eventId === "string" && typeof record.noteId === "string") {
+    return { kind: "note", partId: record.partId, measureId: record.measureId,
+      voiceId: record.voiceId, eventId: record.eventId, noteId: record.noteId };
+  }
+  return undefined;
+}
+
+function decodeRuleWarningDetailsV2(value: unknown): KernelRuleWarningDetailsV2 | undefined {
+  if (value === null || typeof value !== "object") return undefined;
+  const record = value as Record<string, unknown>;
+  if (record.kind === "timing" && hasExactKeys(record,
+    ["kind", "nominalDuration", "actualDuration", "overflow"])) {
+    const nominalDuration = decodeRuleWarningFractionV1(record.nominalDuration);
+    const actualDuration = decodeRuleWarningFractionV1(record.actualDuration);
+    const overflow = decodeRuleWarningFractionV1(record.overflow);
+    return nominalDuration === undefined || actualDuration === undefined || overflow === undefined
+      ? undefined : { kind: "timing", nominalDuration, actualDuration, overflow };
+  }
+  const soundingSemitone = record.soundingSemitone;
+  if (record.kind === "soundingPitch"
+    && (record.reason === "playback-range" || record.reason === "derived-pitch-octave-out-of-range"
+      || record.reason === "derived-pitch-alter-out-of-range")
+    && (hasExactKeys(record, ["kind", "reason"])
+      || (hasExactKeys(record, ["kind", "reason", "soundingSemitone"])
+        && isCanonicalDecimalInteger(soundingSemitone)))) {
+    return soundingSemitone === undefined
+      ? { kind: "soundingPitch", reason: record.reason }
+      : { kind: "soundingPitch", reason: record.reason, soundingSemitone: soundingSemitone as string };
+  }
+  return undefined;
+}
+
+function decodeRuleWarningV2(value: unknown): KernelRuleWarningV2 | undefined {
+  if (value === null || typeof value !== "object") return undefined;
+  const record = value as Record<string, unknown>;
+  const location = decodeRuleWarningLocationV2(record.location);
+  const details = decodeRuleWarningDetailsV2(record.details);
+  if (!hasExactKeys(record, ["warningVersion", "code", "messageKey", "location", "details"])
+    || record.warningVersion !== 2 || typeof record.messageKey !== "string"
+    || location === undefined || details === undefined) return undefined;
+  const code = record.code;
+  if ((code === "rule.sequence-exceeds-measure" || code === "rule.sequence-start-after-measure")
+    && location.kind === "voice" && details.kind === "timing") {
+    return { warningVersion: 2, code, messageKey: record.messageKey, location, details };
+  }
+  if (code === "rule.sounding-pitch-out-of-playback-range" && location.kind === "note"
+    && details.kind === "soundingPitch" && details.reason === "playback-range") {
+    return { warningVersion: 2, code, messageKey: record.messageKey, location,
+      details: { ...details, reason: "playback-range" } };
+  }
+  const spellingReason = details.kind === "soundingPitch" ? details.reason : undefined;
+  if (code === "rule.sounding-pitch-spelling-unrepresentable" && location.kind === "note"
+    && details.kind === "soundingPitch" && (spellingReason === "derived-pitch-octave-out-of-range"
+      || spellingReason === "derived-pitch-alter-out-of-range")) {
+    return { warningVersion: 2, code, messageKey: record.messageKey, location,
+      details: { ...details, reason: spellingReason } };
+  }
+  return undefined;
+}
+
+function decodeRuleWarningPageV2(value: unknown): KernelRuleWarningPageV2 | undefined {
+  if (value === null || typeof value !== "object") return undefined;
+  const record = value as Record<string, unknown>;
+  if (!hasExactKeys(record, ["reportVersion", "documentId", "documentVersion", "offset", "total", "warnings", "nextOffset"])
+    || record.reportVersion !== 2 || typeof record.documentId !== "string"
+    || !isSafeNonNegativeInteger(record.documentVersion) || !isSafeNonNegativeInteger(record.offset)
+    || !isSafeNonNegativeInteger(record.total) || !Array.isArray(record.warnings)
+    || !(record.nextOffset === null || isSafeNonNegativeInteger(record.nextOffset))) return undefined;
+  const warnings = record.warnings.map(decodeRuleWarningV2);
+  if (warnings.some((warning) => warning === undefined)) return undefined;
+  return { reportVersion: 2, documentId: record.documentId, documentVersion: record.documentVersion,
+    offset: record.offset, total: record.total, warnings: warnings as KernelRuleWarningV2[],
+    nextOffset: record.nextOffset };
+}
+
 /** Private Native report bridge. Rule warnings remain derived kernel facts, not document state. */
 export function readNativeRuleWarningPageV1(
   bus: IntegratedCommandBus,
@@ -183,6 +373,20 @@ export function readNativeRuleWarningPageV1(
   limit: number,
 ): KernelRuleWarningPageReadResultV1 {
   const reader = ruleWarningReadersV1.get(bus);
+  return reader === undefined
+    ? freeze({ ok: false, failure: { code: "report.native-reader-unavailable" } })
+    : reader(documentId, documentVersion, offset, limit);
+}
+
+/** V2 exposes the closed warning union while preserving the V1 time-only reader. */
+export function readNativeRuleWarningPageV2(
+  bus: IntegratedCommandBus,
+  documentId: string,
+  documentVersion: number,
+  offset: number,
+  limit: number,
+): KernelRuleWarningPageReadResultV2 {
+  const reader = ruleWarningReadersV2.get(bus);
   return reader === undefined
     ? freeze({ ok: false, failure: { code: "report.native-reader-unavailable" } })
     : reader(documentId, documentVersion, offset, limit);
@@ -376,6 +580,21 @@ export function createNativeIntegratedCommandBusV2(addon: IntegratedNativeAddonV
       code: typeof output.failure?.code === "string" ? output.failure.code : "report.internal-error",
     } });
     const report = decodeRuleWarningPageV1(output.report);
+    return report === undefined
+      ? freeze({ ok: false, failure: { code: "report.invalid-response" } })
+      : freeze({ ok: true, value: report });
+  });
+  ruleWarningReadersV2.set(bus, (documentId, documentVersion, offset, limit) => {
+    if (typeof documentId !== "string" || !isSafeNonNegativeInteger(documentVersion)
+      || !isSafeNonNegativeInteger(offset) || !Number.isSafeInteger(limit) || limit < 1 || limit > 4_096) {
+      return freeze({ ok: false, failure: { code: "report.invalid-request" } });
+    }
+    const output = raw({ operation: "readRuleWarningPage", reportVersion: 2,
+      documentId, documentVersion, offset, limit });
+    if (!output.ok) return freeze({ ok: false, failure: {
+      code: typeof output.failure?.code === "string" ? output.failure.code : "report.internal-error",
+    } });
+    const report = decodeRuleWarningPageV2(output.report);
     return report === undefined
       ? freeze({ ok: false, failure: { code: "report.invalid-response" } })
       : freeze({ ok: true, value: report });

@@ -13,7 +13,7 @@ use brilliant_core_types::{
 use brilliant_kernel_contracts::{
     AffectedEntityAddressV1, CoreCommandEnvelopeV1, EventStaffAssignmentV1,
     InsertMeasurePartContentV1, KernelCommandIdentityV1, KernelEventCauseV1, KernelEventV1,
-    KernelHistoryStateV1, KernelReadStateV1, KernelRuleWarningPageV1,
+    KernelHistoryStateV1, KernelReadStateV1, KernelRuleWarningPageV1, KernelRuleWarningPageV2,
     KernelRuleWarningReadFailureV1, KernelSelectorResultV1, KernelSelectorValueV1,
     KernelStage3CommandFailureLeafV1, KernelStage3MetricsV1, KernelStage3ResourceLimitKindV1,
     KernelStage4CommandResultV1, KernelStage4FailureV1, KernelStage4MarkPersistedResultV1,
@@ -27,8 +27,9 @@ use brilliant_kernel_contracts::{
 use brilliant_score_foundation::{
     ClefV1, CoreDiagnosticCodeV1, CoreDiagnosticV1, FractionV1, InstrumentDescriptorV1,
     MeasureDefinitionV1, MeterV1, NoteValueV1, PartV1, PitchStepV1, RhythmicContentV1,
-    RhythmicEventV1, RuleWarningPageFailureV1, ScoreDocumentV1, ScoreMetadataV1, StaffDefinitionV1,
-    TranspositionV1, VoiceV1, WrittenPitchV1, assess_score_rule_warning_page_v1,
+    RhythmicEventV1, RuleWarningPageFailureV1, RuleWarningPageFailureV2, ScoreDocumentV1,
+    ScoreMetadataV1, StaffDefinitionV1, TranspositionV1, VoiceV1, WrittenPitchV1,
+    assess_score_rule_warning_page_v1,
 };
 
 use crate::{
@@ -232,6 +233,50 @@ impl KernelRuntime {
             })?;
         Ok(KernelRuleWarningPageV1 {
             report_version: 1,
+            document_id: self.document_id().clone(),
+            document_version: self.document_version,
+            offset: page.offset,
+            total: page.total,
+            warnings: page.warnings,
+            next_offset: page.next_offset,
+        })
+    }
+
+    pub fn read_rule_warning_page_v2(
+        &self,
+        document_id: &StableId,
+        document_version: DocumentVersionV1,
+        offset: usize,
+        limit: usize,
+    ) -> Result<KernelRuleWarningPageV2, KernelRuleWarningReadFailureV1> {
+        if document_id != self.document_id() {
+            return Err(KernelRuleWarningReadFailureV1::DocumentMismatch);
+        }
+        if document_version != self.document_version {
+            return Err(KernelRuleWarningReadFailureV1::StaleVersion);
+        }
+        let document = self
+            .store
+            .export_document()
+            .map_err(|_| KernelRuleWarningReadFailureV1::Internal)?;
+        let page =
+            brilliant_score_foundation::assess_score_rule_warning_page_v2(&document, offset, limit)
+                .map_err(|failure| match failure {
+                    RuleWarningPageFailureV2::InvalidPageSize { maximum } => {
+                        KernelRuleWarningReadFailureV1::InvalidPageSize { maximum }
+                    }
+                    RuleWarningPageFailureV2::OffsetOutOfBounds { total } => {
+                        KernelRuleWarningReadFailureV1::OffsetOutOfBounds { total }
+                    }
+                    RuleWarningPageFailureV2::SemanticInvalid { diagnostics } => {
+                        KernelRuleWarningReadFailureV1::SemanticInvalid { diagnostics }
+                    }
+                    RuleWarningPageFailureV2::Assessment(_) => {
+                        KernelRuleWarningReadFailureV1::Internal
+                    }
+                })?;
+        Ok(KernelRuleWarningPageV2 {
+            report_version: 2,
             document_id: self.document_id().clone(),
             document_version: self.document_version,
             offset: page.offset,

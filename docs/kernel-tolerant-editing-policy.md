@@ -39,7 +39,7 @@
 
 1. **移调后的派生发声音高超出表示或播放范围**
 
-   当前 `semantic.sounding-pitch-invalid` 混合了派生拼写超出 `WrittenPitchV1` 与实际 MIDI 播放越界。按 [派生发声音高边界审计](kernel-sounding-pitch-boundary-audit.md) 拆成 `rule.sounding-pitch-spelling-unrepresentable` 和 `rule.sounding-pitch-out-of-playback-range`。书面音高本身仍然完整，记谱和编辑可以继续；播放层对 MIDI 越界音输出 `null` 并静音，不能截断或夹值。迁移前先增加非时间型规则告警 V2 联合合同。
+   当前 `semantic.sounding-pitch-invalid` 混合了派生拼写超出 `WrittenPitchV1` 与实际 MIDI 播放越界。按 [派生发声音高边界审计](kernel-sounding-pitch-boundary-audit.md) 拆成 `rule.sounding-pitch-spelling-unrepresentable` 和 `rule.sounding-pitch-out-of-playback-range`。书面音高本身仍然完整，记谱和编辑可以继续；播放层对 MIDI 越界音输出 `null` 并静音，不能截断或夹值。非时间型规则告警 V2 联合合同已经完成，下一步迁移阻塞判定并生成音符级告警。
 
 2. **小节未填满**
 
@@ -78,5 +78,5 @@
 2. 完成工作台超拍布局、警告开关和任意尾部插入，不再把容量当成位置冲突。**已完成。**
 3. 验证并迁移“延迟声部起点”。**已完成。** 整谱准入、增量事务、撤销／重做、保存重开和版本绑定警告页使用同一规则。
 4. 引入“保持节奏／收拢时间”编辑模式，解除中间休止符和音符删除的单一策略。**已完成。**
-5. 按已完成的边界审计增加规则告警 V2，然后迁移“派生发声音高超出表示或播放范围”；在工作台确定隐式休止显示与提示密度后，增加“已有内容但小节未满”警告。两者不阻塞当前单谱表编辑。
+5. 规则告警 V2 已完成；下一步迁移“派生发声音高超出表示或播放范围”。在工作台确定隐式休止显示与提示密度后，增加“已有内容但小节未满”警告。两者不阻塞当前单谱表编辑。
 6. 由插件扩展音域舒适度、指法、和声、排版和演奏建议；这些不进入微内核阻断规则。

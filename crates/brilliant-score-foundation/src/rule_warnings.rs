@@ -13,6 +13,7 @@ use crate::{
 };
 
 pub const CORE_RULE_WARNING_PAGE_LIMIT_V1: usize = 4_096;
+pub const CORE_RULE_WARNING_PAGE_LIMIT_V2: usize = 4_096;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
 pub enum CoreRuleWarningCodeV1 {
@@ -73,6 +74,228 @@ impl crate::LosslessEncode for CoreRuleWarningV1 {
     }
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+pub enum CoreRuleWarningCodeV2 {
+    #[serde(rename = "rule.sequence-exceeds-measure")]
+    SequenceExceedsMeasure,
+    #[serde(rename = "rule.sequence-start-after-measure")]
+    SequenceStartAfterMeasure,
+    #[serde(rename = "rule.sounding-pitch-out-of-playback-range")]
+    SoundingPitchOutOfPlaybackRange,
+    #[serde(rename = "rule.sounding-pitch-spelling-unrepresentable")]
+    SoundingPitchSpellingUnrepresentable,
+}
+
+impl CoreRuleWarningCodeV2 {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::SequenceExceedsMeasure => "rule.sequence-exceeds-measure",
+            Self::SequenceStartAfterMeasure => "rule.sequence-start-after-measure",
+            Self::SoundingPitchOutOfPlaybackRange => "rule.sounding-pitch-out-of-playback-range",
+            Self::SoundingPitchSpellingUnrepresentable => {
+                "rule.sounding-pitch-spelling-unrepresentable"
+            }
+        }
+    }
+}
+
+impl crate::LosslessEncode for CoreRuleWarningCodeV2 {
+    fn write_lossless<W: std::io::Write + ?Sized>(
+        &self,
+        writer: &mut W,
+    ) -> Result<(), crate::LosslessJsonError> {
+        self.as_str().write_lossless(writer)
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(tag = "kind")]
+pub enum CoreRuleWarningLocationV2 {
+    #[serde(rename = "voice")]
+    Voice {
+        #[serde(rename = "partId")]
+        part_id: StableId,
+        #[serde(rename = "measureId")]
+        measure_id: StableId,
+        #[serde(rename = "voiceId")]
+        voice_id: StableId,
+    },
+    #[serde(rename = "note")]
+    Note {
+        #[serde(rename = "partId")]
+        part_id: StableId,
+        #[serde(rename = "measureId")]
+        measure_id: StableId,
+        #[serde(rename = "voiceId")]
+        voice_id: StableId,
+        #[serde(rename = "eventId")]
+        event_id: StableId,
+        #[serde(rename = "noteId")]
+        note_id: StableId,
+    },
+}
+
+impl crate::LosslessEncode for CoreRuleWarningLocationV2 {
+    fn write_lossless<W: std::io::Write + ?Sized>(
+        &self,
+        writer: &mut W,
+    ) -> Result<(), crate::LosslessJsonError> {
+        let mut object = crate::LosslessObjectWriter::new(writer)?;
+        match self {
+            Self::Voice {
+                part_id,
+                measure_id,
+                voice_id,
+            } => {
+                object.field("kind", "voice")?;
+                object.field("partId", part_id)?;
+                object.field("measureId", measure_id)?;
+                object.field("voiceId", voice_id)?;
+            }
+            Self::Note {
+                part_id,
+                measure_id,
+                voice_id,
+                event_id,
+                note_id,
+            } => {
+                object.field("kind", "note")?;
+                object.field("partId", part_id)?;
+                object.field("measureId", measure_id)?;
+                object.field("voiceId", voice_id)?;
+                object.field("eventId", event_id)?;
+                object.field("noteId", note_id)?;
+            }
+        }
+        object.end()
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+pub enum CoreSoundingPitchWarningReasonV2 {
+    #[serde(rename = "playback-range")]
+    PlaybackRange,
+    #[serde(rename = "derived-pitch-octave-out-of-range")]
+    DerivedPitchOctaveOutOfRange,
+    #[serde(rename = "derived-pitch-alter-out-of-range")]
+    DerivedPitchAlterOutOfRange,
+}
+
+impl CoreSoundingPitchWarningReasonV2 {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::PlaybackRange => "playback-range",
+            Self::DerivedPitchOctaveOutOfRange => "derived-pitch-octave-out-of-range",
+            Self::DerivedPitchAlterOutOfRange => "derived-pitch-alter-out-of-range",
+        }
+    }
+}
+
+impl crate::LosslessEncode for CoreSoundingPitchWarningReasonV2 {
+    fn write_lossless<W: std::io::Write + ?Sized>(
+        &self,
+        writer: &mut W,
+    ) -> Result<(), crate::LosslessJsonError> {
+        self.as_str().write_lossless(writer)
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(tag = "kind")]
+pub enum CoreRuleWarningDetailsV2 {
+    #[serde(rename = "timing", rename_all = "camelCase")]
+    Timing {
+        nominal_duration: FractionV1,
+        actual_duration: FractionV1,
+        overflow: FractionV1,
+    },
+    #[serde(rename = "soundingPitch", rename_all = "camelCase")]
+    SoundingPitch {
+        reason: CoreSoundingPitchWarningReasonV2,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        sounding_semitone: Option<String>,
+    },
+}
+
+impl crate::LosslessEncode for CoreRuleWarningDetailsV2 {
+    fn write_lossless<W: std::io::Write + ?Sized>(
+        &self,
+        writer: &mut W,
+    ) -> Result<(), crate::LosslessJsonError> {
+        let mut object = crate::LosslessObjectWriter::new(writer)?;
+        match self {
+            Self::Timing {
+                nominal_duration,
+                actual_duration,
+                overflow,
+            } => {
+                object.field("kind", "timing")?;
+                object.field("nominalDuration", nominal_duration)?;
+                object.field("actualDuration", actual_duration)?;
+                object.field("overflow", overflow)?;
+            }
+            Self::SoundingPitch {
+                reason,
+                sounding_semitone,
+            } => {
+                object.field("kind", "soundingPitch")?;
+                object.field("reason", reason)?;
+                if let Some(value) = sounding_semitone {
+                    object.field("soundingSemitone", value)?;
+                }
+            }
+        }
+        object.end()
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CoreRuleWarningV2 {
+    warning_version: u64,
+    code: CoreRuleWarningCodeV2,
+    message_key: String,
+    location: CoreRuleWarningLocationV2,
+    details: CoreRuleWarningDetailsV2,
+}
+
+impl CoreRuleWarningV2 {
+    pub const fn warning_version(&self) -> u64 {
+        self.warning_version
+    }
+
+    pub const fn code(&self) -> CoreRuleWarningCodeV2 {
+        self.code
+    }
+
+    pub fn message_key(&self) -> &str {
+        &self.message_key
+    }
+
+    pub const fn location(&self) -> &CoreRuleWarningLocationV2 {
+        &self.location
+    }
+
+    pub const fn details(&self) -> &CoreRuleWarningDetailsV2 {
+        &self.details
+    }
+}
+
+impl crate::LosslessEncode for CoreRuleWarningV2 {
+    fn write_lossless<W: std::io::Write + ?Sized>(
+        &self,
+        writer: &mut W,
+    ) -> Result<(), crate::LosslessJsonError> {
+        let mut object = crate::LosslessObjectWriter::new(writer)?;
+        object.field("warningVersion", &self.warning_version)?;
+        object.field("code", &self.code)?;
+        object.field("messageKey", &self.message_key)?;
+        object.field("location", &self.location)?;
+        object.field("details", &self.details)?;
+        object.end()
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ScoreRuleWarningPageV1 {
     pub offset: usize,
@@ -80,6 +303,16 @@ pub struct ScoreRuleWarningPageV1 {
     pub warnings: Vec<CoreRuleWarningV1>,
     pub next_offset: Option<usize>,
 }
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ScoreRuleWarningPageV2 {
+    pub offset: usize,
+    pub total: usize,
+    pub warnings: Vec<CoreRuleWarningV2>,
+    pub next_offset: Option<usize>,
+}
+
+pub type RuleWarningPageFailureV2 = RuleWarningPageFailureV1;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum RuleWarningPageFailureV1 {
@@ -192,10 +425,60 @@ pub fn assess_score_rule_warning_page_v1(
     })
 }
 
+/// V2 keeps the V1 time-warning behavior while exposing a closed union that can
+/// add note-scoped warning details without changing the V1 wire contract.
+pub fn assess_score_rule_warning_page_v2(
+    document: &ScoreDocumentV1,
+    offset: usize,
+    page_size: usize,
+) -> Result<ScoreRuleWarningPageV2, RuleWarningPageFailureV2> {
+    if !(1..=CORE_RULE_WARNING_PAGE_LIMIT_V2).contains(&page_size) {
+        return Err(RuleWarningPageFailureV2::InvalidPageSize {
+            maximum: CORE_RULE_WARNING_PAGE_LIMIT_V2,
+        });
+    }
+    let page = assess_score_rule_warning_page_v1(document, offset, page_size)?;
+    let mut warnings = Vec::new();
+    warnings
+        .try_reserve(page.warnings.len())
+        .map_err(|_| AssessmentFailureV1::InternalCapacity)?;
+    for warning in page.warnings {
+        let code = match warning.code {
+            CoreRuleWarningCodeV1::SequenceExceedsMeasure => {
+                CoreRuleWarningCodeV2::SequenceExceedsMeasure
+            }
+            CoreRuleWarningCodeV1::SequenceStartAfterMeasure => {
+                CoreRuleWarningCodeV2::SequenceStartAfterMeasure
+            }
+        };
+        warnings.push(CoreRuleWarningV2 {
+            warning_version: 2,
+            code,
+            message_key: format!("core.{}", code.as_str()),
+            location: CoreRuleWarningLocationV2::Voice {
+                part_id: warning.part_id,
+                measure_id: warning.measure_id,
+                voice_id: warning.voice_id,
+            },
+            details: CoreRuleWarningDetailsV2::Timing {
+                nominal_duration: warning.nominal_duration,
+                actual_duration: warning.actual_duration,
+                overflow: warning.overflow,
+            },
+        });
+    }
+    Ok(ScoreRuleWarningPageV2 {
+        offset: page.offset,
+        total: page.total,
+        warnings,
+        next_offset: page.next_offset,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{LosslessDecode, NoteValueV1};
+    use crate::{LosslessDecode, LosslessEncode, NoteValueV1};
     use brilliant_core_types::SafeInteger;
 
     fn document() -> ScoreDocumentV1 {
@@ -310,6 +593,68 @@ mod tests {
             CoreRuleWarningCodeV1::SequenceStartAfterMeasure
         );
         assert_eq!(page.warnings[0].actual_duration.numerator.get(), 2);
+    }
+
+    #[test]
+    fn v2_projects_time_warnings_without_changing_v1() {
+        let mut document = document();
+        document.parts[0].measure_contents[0].voices[0]
+            .sequence
+            .start = FractionV1 {
+            numerator: SafeInteger::new(5).unwrap(),
+            denominator: SafeInteger::new(4).unwrap(),
+        };
+
+        let v1 = assess_score_rule_warning_page_v1(&document, 0, 16).unwrap();
+        let v2 = assess_score_rule_warning_page_v2(&document, 0, 16).unwrap();
+        assert_eq!(v1.total, v2.total);
+        assert_eq!(v2.warnings.len(), 1);
+        assert_eq!(
+            v2.warnings[0].code,
+            CoreRuleWarningCodeV2::SequenceStartAfterMeasure
+        );
+        assert!(matches!(
+            &v2.warnings[0].location,
+            CoreRuleWarningLocationV2::Voice { part_id, measure_id, voice_id }
+                if part_id.as_js_string() == "part-1"
+                    && measure_id.as_js_string() == "measure-1"
+                    && voice_id.as_js_string() == "voice-1"
+        ));
+        assert!(matches!(
+            &v2.warnings[0].details,
+            CoreRuleWarningDetailsV2::Timing { nominal_duration, actual_duration, overflow }
+                if nominal_duration.numerator.get() == 1
+                    && actual_duration.numerator.get() == 5
+                    && actual_duration.denominator.get() == 4
+                    && overflow.numerator.get() == 1
+                    && overflow.denominator.get() == 4
+        ));
+    }
+
+    #[test]
+    fn v2_pitch_union_has_exact_note_location_and_optional_decimal_semitone() {
+        let warning = CoreRuleWarningV2 {
+            warning_version: 2,
+            code: CoreRuleWarningCodeV2::SoundingPitchOutOfPlaybackRange,
+            message_key: "core.rule.sounding-pitch-out-of-playback-range".into(),
+            location: CoreRuleWarningLocationV2::Note {
+                part_id: StableId::new("part-1").unwrap(),
+                measure_id: StableId::new("measure-1").unwrap(),
+                voice_id: StableId::new("voice-1").unwrap(),
+                event_id: StableId::new("event-1").unwrap(),
+                note_id: StableId::new("note-1").unwrap(),
+            },
+            details: CoreRuleWarningDetailsV2::SoundingPitch {
+                reason: CoreSoundingPitchWarningReasonV2::PlaybackRange,
+                sounding_semitone: Some("9007199254741112".into()),
+            },
+        };
+        let mut bytes = Vec::new();
+        warning.write_lossless(&mut bytes).unwrap();
+        assert_eq!(
+            String::from_utf8(bytes).unwrap(),
+            r#"{"warningVersion":2,"code":"rule.sounding-pitch-out-of-playback-range","messageKey":"core.rule.sounding-pitch-out-of-playback-range","location":{"kind":"note","partId":"part-1","measureId":"measure-1","voiceId":"voice-1","eventId":"event-1","noteId":"note-1"},"details":{"kind":"soundingPitch","reason":"playback-range","soundingSemitone":"9007199254741112"}}"#
+        );
     }
 
     #[test]

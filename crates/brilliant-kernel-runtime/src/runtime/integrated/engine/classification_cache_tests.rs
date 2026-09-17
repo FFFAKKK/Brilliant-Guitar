@@ -56,6 +56,22 @@ fn overfull_admission_exposes_version_bound_rule_warning_page() {
     assert_eq!(integer(at(warning, &["overflow", "numerator"])), Some(1));
     assert_eq!(integer(at(warning, &["overflow", "denominator"])), Some(4));
 
+    let request_v2 = br#"{"operation":"readRuleWarningPage","reportVersion":2,"documentId":"score-1","documentVersion":0,"offset":0,"limit":16}"#;
+    let report_v2 = decode(&state.operate(request_v2, &mut host, |_, _| unreachable!())).unwrap();
+    assert_eq!(
+        integer(at(&report_v2, &["report", "reportVersion"])),
+        Some(2)
+    );
+    let warnings_v2 = array(at(&report_v2, &["report", "warnings"])).unwrap();
+    let warning_v2 = &warnings_v2[0];
+    assert!(tag(warning_v2, "code", "rule.sequence-exceeds-measure"));
+    assert!(tag(at(warning_v2, &["location"]), "kind", "voice"));
+    assert!(tag(at(warning_v2, &["details"]), "kind", "timing"));
+    assert_eq!(
+        integer(at(warning_v2, &["details", "overflow", "numerator"])),
+        Some(1)
+    );
+
     let stale = br#"{"operation":"readRuleWarningPage","reportVersion":1,"documentId":"score-1","documentVersion":1,"offset":0,"limit":16}"#;
     let stale = decode(&state.operate(stale, &mut host, |_, _| unreachable!())).unwrap();
     assert!(tag(

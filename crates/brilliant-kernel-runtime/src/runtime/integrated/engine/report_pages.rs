@@ -2,9 +2,10 @@
 //! document. No plugin callbacks, history adoption or retained report cursors.
 use super::*;
 use brilliant_score_foundation::{
-    CORE_PROFILE_PAGE_LIMIT_V2, CORE_RULE_WARNING_PAGE_LIMIT_V1, ProfilePageFailureV2,
-    RuleWarningPageFailureV1, ScoreSupportStatusV2, ScoreSupportSummaryV2,
+    CORE_PROFILE_PAGE_LIMIT_V2, CORE_RULE_WARNING_PAGE_LIMIT_V1, CORE_RULE_WARNING_PAGE_LIMIT_V2,
+    ProfilePageFailureV2, RuleWarningPageFailureV1, ScoreSupportStatusV2, ScoreSupportSummaryV2,
     assess_score_profile_page_v2, assess_score_rule_warning_page_v1,
+    assess_score_rule_warning_page_v2,
 };
 
 fn core_report_summary_value(summary: ScoreSupportSummaryV2) -> Result<Value> {
@@ -41,8 +42,11 @@ impl IntegratedKernelRuntimeV2 {
                 "offset",
                 "limit",
             ],
-        ) || integer(field(request, "reportVersion")?) != Some(1)
-        {
+        ) {
+            return Err(invalid());
+        }
+        let report_version = integer(field(request, "reportVersion")?).ok_or_else(invalid)?;
+        if !matches!(report_version, 1 | 2) {
             return Err(invalid());
         }
         let document_id = string(field(request, "documentId")?).map_err(|_| invalid())?;
@@ -52,7 +56,14 @@ impl IntegratedKernelRuntimeV2 {
             .ok_or_else(invalid)?;
         let limit = integer(field(request, "limit")?)
             .and_then(|n| usize::try_from(n).ok())
-            .filter(|n| (1..=CORE_RULE_WARNING_PAGE_LIMIT_V1).contains(n))
+            .filter(|n| {
+                let maximum = if report_version == 1 {
+                    CORE_RULE_WARNING_PAGE_LIMIT_V1
+                } else {
+                    CORE_RULE_WARNING_PAGE_LIMIT_V2
+                };
+                (1..=maximum).contains(n)
+            })
             .ok_or_else(invalid)?;
         DocumentVersionV1::try_from(version).map_err(|_| invalid())?;
         if document_id != self.runtime.document_id().as_js_string() {
@@ -66,38 +77,54 @@ impl IntegratedKernelRuntimeV2 {
             .store
             .export_document()
             .map_err(|_| internal())?;
-        let page = assess_score_rule_warning_page_v1(&document, offset, limit).map_err(
-            |error| match error {
-                RuleWarningPageFailureV1::InvalidPageSize { .. } => invalid(),
-                RuleWarningPageFailureV1::OffsetOutOfBounds { total } => object([
-                    ("code", text("report.offset-out-of-bounds")),
-                    ("total", number(total as u64)),
-                ]),
-                RuleWarningPageFailureV1::SemanticInvalid { diagnostics } => object([
-                    ("code", text("command.semantic-invalid")),
-                    (
-                        "diagnostics",
-                        value(&diagnostics).unwrap_or(JsonValue::Array(vec![])),
-                    ),
-                ]),
-                RuleWarningPageFailureV1::Assessment(error) => assessment_failure(error),
-            },
-        )?;
+        let map_error = |error| match error {
+            RuleWarningPageFailureV1::InvalidPageSize { .. } => invalid(),
+            RuleWarningPageFailureV1::OffsetOutOfBounds { total } => object([
+                ("code", text("report.offset-out-of-bounds")),
+                ("total", number(total as u64)),
+            ]),
+            RuleWarningPageFailureV1::SemanticInvalid { diagnostics } => object([
+                ("code", text("command.semantic-invalid")),
+                (
+                    "diagnostics",
+                    value(&diagnostics).unwrap_or(JsonValue::Array(vec![])),
+                ),
+            ]),
+            RuleWarningPageFailureV1::Assessment(error) => assessment_failure(error),
+        };
+        let (page_offset, page_total, page_warnings, page_next_offset) = if report_version == 1 {
+            let page =
+                assess_score_rule_warning_page_v1(&document, offset, limit).map_err(map_error)?;
+            (
+                page.offset,
+                page.total,
+                value(&page.warnings)?,
+                page.next_offset,
+            )
+        } else {
+            let page =
+                assess_score_rule_warning_page_v2(&document, offset, limit).map_err(map_error)?;
+            (
+                page.offset,
+                page.total,
+                value(&page.warnings)?,
+                page.next_offset,
+            )
+        };
         Ok(object([
             ("ok", JsonValue::Bool(true)),
             (
                 "report",
                 object([
-                    ("reportVersion", number(1)),
+                    ("reportVersion", number(report_version)),
                     ("documentId", value(self.runtime.document_id())?),
                     ("documentVersion", number(version)),
-                    ("offset", number(page.offset as u64)),
-                    ("total", number(page.total as u64)),
-                    ("warnings", value(&page.warnings)?),
+                    ("offset", number(page_offset as u64)),
+                    ("total", number(page_total as u64)),
+                    ("warnings", page_warnings),
                     (
                         "nextOffset",
-                        page.next_offset
-                            .map_or(JsonValue::Null, |offset| number(offset as u64)),
+                        page_next_offset.map_or(JsonValue::Null, |offset| number(offset as u64)),
                     ),
                 ]),
             ),

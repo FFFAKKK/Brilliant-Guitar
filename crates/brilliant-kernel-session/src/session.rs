@@ -1,6 +1,6 @@
 use brilliant_core_types::{DocumentVersionV1, StableId};
 use brilliant_kernel_contracts::{
-    CoreCommandEnvelopeV1, KernelReadStateV1, KernelRuleWarningPageV1,
+    CoreCommandEnvelopeV1, KernelReadStateV1, KernelRuleWarningPageV1, KernelRuleWarningPageV2,
     KernelRuleWarningReadFailureV1, KernelSessionCreateRequestV1, KernelSessionCreateResultV1,
     KernelSessionCreateSuccessValueV1, KernelSessionReadResultV1, KernelStage3CommandFailureLeafV1,
     KernelStage3CommandFailureV1, KernelStage3MetricsV1, KernelStage3SubmitDecodeFailureV1,
@@ -85,6 +85,17 @@ impl KernelSession {
     ) -> Result<KernelRuleWarningPageV1, KernelRuleWarningReadFailureV1> {
         self.runtime
             .read_rule_warning_page(document_id, document_version, offset, limit)
+    }
+
+    pub fn read_rule_warning_page_v2(
+        &self,
+        document_id: &StableId,
+        document_version: DocumentVersionV1,
+        offset: usize,
+        limit: usize,
+    ) -> Result<KernelRuleWarningPageV2, KernelRuleWarningReadFailureV1> {
+        self.runtime
+            .read_rule_warning_page_v2(document_id, document_version, offset, limit)
     }
 
     /// Availability for a fixed host assembly. Integrated write enforcement and
@@ -612,6 +623,15 @@ mod tests {
         assert_eq!(warning.actual_duration.denominator.get(), 4);
         assert_eq!(warning.overflow.numerator.get(), 1);
         assert_eq!(warning.overflow.denominator.get(), 4);
+        let report_v2 = session
+            .read_rule_warning_page_v2(&document_id, committed.document_version, 0, 16)
+            .expect("delayed-start V2 warning report");
+        assert_eq!(report_v2.report_version, 2);
+        assert_eq!(report_v2.total, report.total);
+        assert_eq!(
+            report_v2.warnings[0].code().as_str(),
+            "rule.sequence-start-after-measure"
+        );
 
         let KernelSessionReadResultV1::Ok(state) = session.read_state() else {
             panic!("committed document read")

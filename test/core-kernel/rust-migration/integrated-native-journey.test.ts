@@ -3,14 +3,17 @@ import assert = require("node:assert/strict");
 import { resolve } from "node:path";
 import { CommandBus, createKernelRegistry, replayKernelCommands, type IntegratedKernelEvent } from "../../../src/core-kernel/index";
 import { compileOfficialModuleCatalogV1 } from "../../../src/core-kernel/module-sdk/index";
-import { installNativeIntegratedBackendV2, type IntegratedNativeAddonV2 } from "../../../src/core-kernel/native/integrated-command-bus";
+import { installNativeIntegratedBackendV2, readNativeRuleWarningPageV1, readNativeRuleWarningPageV2,
+  type IntegratedNativeAddonV2 } from "../../../src/core-kernel/native/integrated-command-bus";
 import { createCoreScoreFixture } from "../fixtures/core-score";
 import { captureHostInstalledContributionsV1 } from "../../../src/core-kernel/native/integrated-catalog-capture";
 import type { IntegratedCommandBusCreationResult } from "../../../src/core-kernel/registry/integrated-contracts";
 import { CVN6_MANIFEST, CVN6_REGISTRATION_ENTRIES, cvn6CallbackBehavior, cvn6CallbackCounts, resetCvn6Callbacks } from "../fixtures/cvn-6-synthetic-official-modules";
 import { buildCommandAdmissionOracle } from "./command-admission-oracle";
 
-const addon = require(resolve("target/integrated-v2/brilliant_kernel_node.node")) as IntegratedNativeAddonV2;
+const integratedAddonPath = process.env.BRILLIANT_INTEGRATED_ADDON_PATH
+  ?? "target/integrated-v2/brilliant_kernel_node.node";
+const addon = require(resolve(integratedAddonPath)) as IntegratedNativeAddonV2;
 test("The private successor exposes session and detached migration while the old addon keeps five", () => {
   const legacy = require(resolve("target/rkp-1-node/brilliant_kernel_node.node"));
   const names = ["createKernelSessionV1", "readKernelSessionV1", "submitKernelStage3V1", "operateKernelStage4V1", "replayKernelStage4V1"].sort();
@@ -71,6 +74,76 @@ function readWithoutTransitionVersion(result: unknown): unknown {
   if (copy.ok === true && copy.value?.snapshot) delete copy.value.snapshot.documentVersion;
   return copy;
 }
+
+test("Native rule warning V2 preserves V1 and exposes the closed timing union", () => {
+  resetCvn6Callbacks();
+  const native = create(true);
+  const inserted = native.submit({
+    commandVersion: 1,
+    commandId: "core.voice.insert-rest-event",
+    target: { kind: "voice", voiceId: "voice-1" },
+    payload: { anchor: { kind: "after-event", eventId: "event-1" },
+      event: { id: "event-v2-warning", duration: { base: 4, dots: 0 }, content: { kind: "rest" } } },
+  });
+  assert.equal(inserted.status, "committed");
+  const read = native.read();
+  assert.ok(read.ok);
+  const version = read.value.snapshot.documentVersion;
+  const v1 = readNativeRuleWarningPageV1(native, "score-1", version, 0, 16);
+  const v2 = readNativeRuleWarningPageV2(native, "score-1", version, 0, 16);
+  assert.ok(v1.ok);
+  assert.ok(v2.ok);
+  assert.equal(v1.value.total, 1);
+  assert.deepEqual(v2.value, {
+    reportVersion: 2,
+    documentId: "score-1",
+    documentVersion: version,
+    offset: 0,
+    total: 1,
+    warnings: [{
+      warningVersion: 2,
+      code: "rule.sequence-exceeds-measure",
+      messageKey: "core.rule.sequence-exceeds-measure",
+      location: { kind: "voice", partId: "part-1", measureId: "measure-1", voiceId: "voice-1" },
+      details: { kind: "timing", nominalDuration: { numerator: 1, denominator: 1 },
+        actualDuration: { numerator: 5, denominator: 4 }, overflow: { numerator: 1, denominator: 4 } },
+    }],
+    nextOffset: null,
+  });
+});
+
+test("Native rule warning V2 rejects extra fields and mismatched union variants", () => {
+  for (const mutate of [
+    (warning: Record<string, unknown>) => { warning.extra = true; },
+    (warning: Record<string, unknown>) => { warning.code = "rule.sounding-pitch-out-of-playback-range"; },
+  ]) {
+    const transport: IntegratedNativeAddonV2 = {
+      ...addon,
+      createIntegratedKernelSessionV2(bytes, executor) {
+        const raw = addon.createIntegratedKernelSessionV2(bytes, executor);
+        return (request) => {
+          const input = JSON.parse(request.toString("utf8")) as { operation?: unknown; reportVersion?: unknown };
+          const output = raw(request);
+          if (input.operation !== "readRuleWarningPage" || input.reportVersion !== 2) return output;
+          const value = JSON.parse(output.toString("utf8")) as { report?: { warnings?: Record<string, unknown>[] } };
+          mutate(value.report!.warnings![0]!);
+          return Buffer.from(JSON.stringify(value));
+        };
+      },
+    };
+    resetCvn6Callbacks();
+    const native = create(true, transport);
+    assert.equal(native.submit({ commandVersion: 1, commandId: "core.voice.insert-rest-event",
+      target: { kind: "voice", voiceId: "voice-1" }, payload: {
+        anchor: { kind: "after-event", eventId: "event-1" },
+        event: { id: "event-v2-invalid", duration: { base: 4, dots: 0 }, content: { kind: "rest" } },
+      } }).status, "committed");
+    const read = native.read();
+    assert.ok(read.ok);
+    assert.deepEqual(readNativeRuleWarningPageV2(native, "score-1", read.value.snapshot.documentVersion, 0, 16),
+      { ok: false, failure: { code: "report.invalid-response" } });
+  }
+});
 
 test("integrated Native Core admission matches the command-shape corpus after retired TS timing diagnostics", () => {
   for (const entry of buildCommandAdmissionOracle().cases) {
