@@ -909,3 +909,36 @@ Completed private Stage-4 vector history, atomic undo/redo, cached immutable rea
 
 - Await explicit owner acceptance-or-return instruction. Acceptance/archive and
   all later gates remain unauthorized.
+
+
+## Session 25: F11 范围选择与剪贴编辑
+
+**Date**: 2026-09-18
+**Task**: F11 范围选择与剪贴编辑
+**Branch**: `master`
+
+### Summary
+
+完成单小节连续范围选择、复制剪切和插入式粘贴；接入 Core 原子删除与批量插入，增加独立范围带、剪贴板回退、规格文档和回归测试。独立暂存版本通过类型检查、生产构建与 10 项针对性测试。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `bc8cb4a` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

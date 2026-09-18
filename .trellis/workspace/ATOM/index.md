@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 24
-- **Last Active**: 2026-09-05
+- **Total Sessions**: 25
+- **Last Active**: 2026-09-18
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~887 | Active |
+| `journal-1.md` | ~944 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 25 | 2026-09-18 | F11 范围选择与剪贴编辑 | `bc8cb4a` | `master` |
 | 24 | 2026-09-05 | RKP-4 C0-C8 implementation candidate | `9d17807`, `6b1f835`, `9ed639a`, `a7bbbfd`, `d22362c`, `e98922f`, `70f8264`, `bc7449a` | `codex/rkp-4-history-snapshots-events-replay-planning` |
 | 23 | 2026-09-04 | RKP-3 owner acceptance and archive closeout | `3ca82f1fcf68070e6c775d0848839864dbc87c71`, `88d96574e4b6f58d92bef8f849176e72667fdb3b`, `560fd89d32026cdc41c3cf0df65285e99e015456` | `codex/rkp-3-transaction-overlay-changeset-planning` |
 | 22 | 2026-09-04 | Close RKP-2 post-archive path compatibility | `3bcba71a2944f66149facf53bdf802cf57bb1cd2`, `c152143fe88bc872ebbf2f249b9b3dc43a181458`, `39595906d3799ed2b506315377000e5ba1c9100b`, `af4c0d1a1191b7154bc8534a54a0a45f5030e1aa`, `765fa5321f8618e2cce9b6d9c895b070fc34ea2b`, `da607c892b96e1b71adac292d150c25acc74ce84`, `2da959352898d4843954cbbdfb12cfd8e92a9910` | `codex/rkp-2-indexed-live-score-store-implementation` |
