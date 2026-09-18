@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { KeyboardEvent, RefObject } from "react";
 import type { ScoreSessionRead } from "../contracts/score-session";
-import type { DeleteTimePolicy, InputDuration, InputPitch, ScoreEditAction, ScoreEditRequest } from "../contracts/note-input";
+import type { DeleteTimePolicy, InputDuration, InputPitch, ScoreEditAction, ScoreEditRequest, ScoreEventRange } from "../contracts/note-input";
+import type { ScoreClipboardFragmentV1 } from "../contracts/score-clipboard.ts";
 import type { PitchDraft } from "./pitch-entry";
 import type { WorkbenchClient } from "../services/workbench-client";
 import { nextMeasure } from "../notation/input-position";
@@ -29,6 +30,8 @@ function feedbackContext(session: ScoreSessionRead, point: ScoreEditPoint | null
       ? session.notation.measures.find((item) => item.events.some((event) => event.id === intent.eventId)) : null;
     return { ...(measure ? { measureId: measure.id } : {}), eventId: intent.eventId, componentId: "note-control" };
   }
+  if (intent.kind === "delete-range") return { measureId: intent.range.measureId, componentId: "score" };
+  if (intent.kind === "paste") return { measureId: intent.measureId, componentId: "score" };
   return { componentId: intent.kind === "document" ? "document" : "score" };
 }
 export function useScoreInput(session: ScoreSessionRead | null, client: WorkbenchClient, onSession: (session: ScoreSessionRead) => void,
@@ -123,8 +126,19 @@ export function useScoreInput(session: ScoreSessionRead | null, client: Workbenc
                 nextPoint = eventEndPoint(result.notation, inserted.id, currentPoint()?.preferredPitch ?? null) ?? nextPoint;
               }
             }
+            if (action.kind === "paste-fragment") {
+              const before = previous.kind === "staff" ? previous.measures.find((measure) => measure.id === action.measureId) : undefined;
+              const after = result.notation.measures.find((measure) => measure.id === action.measureId);
+              const beforeIds = new Set(before?.events.map((event) => event.id) ?? []);
+              const inserted = after?.events.filter((event) => !beforeIds.has(event.id));
+              const lastInserted = inserted?.at(-1);
+              if (lastInserted) nextPoint = eventEndPoint(result.notation, lastInserted.id,
+                currentPoint()?.preferredPitch ?? null) ?? nextPoint;
+            }
             const selectedId = editor.current.current.target.kind === "event" ? editor.current.current.target.eventId : null;
-            const selectedPoint = selectedId && action.kind !== "delete-event"
+            const retainSelection = action.kind !== "delete-event" && action.kind !== "delete-range"
+              && action.kind !== "paste-fragment";
+            const selectedPoint = selectedId && retainSelection
               ? eventStartPoint(result.notation, selectedId, nextPoint.preferredPitch) : null;
             editor.send({ type: "commit", requestId: item.request.requestId,
               target: selectedId && selectedPoint ? { kind: "event", eventId: selectedId, point: selectedPoint }
@@ -272,6 +286,17 @@ export function useScoreInput(session: ScoreSessionRead | null, client: Workbenc
     },
     cancelComposition: clearDraft,
     deleteEvent: (eventId: string) => { clearDraft(); enqueue({ kind: "delete", eventId }); focus(); },
+    deleteRange: (range: ScoreEventRange) => { clearDraft(); enqueue({ kind: "delete-range", range }); focus(); },
+    pasteFragment: (fragment: ScoreClipboardFragmentV1) => {
+      const target = editor.current.current.target;
+      const editPoint = currentPoint();
+      if (!editPoint) return;
+      const anchor = target.kind === "event" ? { kind: "after-event" as const, eventId: target.eventId } : editPoint.anchor;
+      clearDraft();
+      enqueue({ kind: "paste", measureId: editPoint.measureId, voiceId: editPoint.voiceId, anchor,
+        ...(target.kind === "caret" ? { offsetUnits: editPoint.offsetUnits } : {}), fragment });
+      focus();
+    },
     setDuration: (value: InputDuration) => { setDuration(value); focus(); },
     setAlter: (value: -1 | 0 | 1, completionFocus?: HTMLElement) => {
       setAlter(value);

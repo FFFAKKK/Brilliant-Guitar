@@ -8,9 +8,19 @@ export type InputSequenceAnchor = { readonly kind: "start" } | { readonly kind: 
 export type InputContent = { readonly kind: "rest" } | { readonly kind: "note"; readonly pitch: InputPitch };
 export interface EventProperties { readonly duration: EventDuration; readonly content: InputContent }
 export type DeleteTimePolicy = "preserve" | "collapse";
+export interface ScoreEventRange {
+  readonly measureId: string;
+  readonly voiceId: string;
+  readonly startEventId: string;
+  readonly endEventId: string;
+}
 export type ScoreEditAction = { readonly kind: "undo" } | { readonly kind: "redo" } | {
   readonly kind: "delete-event"; readonly eventId: string; readonly timePolicy?: DeleteTimePolicy;
 }
+  | { readonly kind: "delete-range"; readonly range: ScoreEventRange }
+  | { readonly kind: "paste-fragment"; readonly measureId: string; readonly voiceId: string;
+      readonly anchor: InputSequenceAnchor; readonly offsetUnits?: number;
+      readonly fragment: import("./score-clipboard.ts").ScoreClipboardFragmentV1 }
   | { readonly kind: "set-event-properties"; readonly eventId: string; readonly properties: EventProperties }
   | { readonly kind: "set-title"; readonly title: string } | {
   readonly kind: "append"; readonly measureId: string; readonly anchor: InputSequenceAnchor;
@@ -40,12 +50,28 @@ export function isScoreEditRequest(v: unknown): v is ScoreEditRequest {
   const a = v.action;
   return a.kind === "undo" || a.kind === "redo" || (a.kind === "delete-event" && typeof a.eventId === "string" && !!a.eventId
       && (a.timePolicy === undefined || a.timePolicy === "preserve" || a.timePolicy === "collapse"))
+    || (a.kind === "delete-range" && isScoreEventRange(a.range))
+    || (a.kind === "paste-fragment" && typeof a.measureId === "string" && !!a.measureId
+      && typeof a.voiceId === "string" && !!a.voiceId && isInputSequenceAnchor(a.anchor)
+      && (a.offsetUnits === undefined || (typeof a.offsetUnits === "number" && Number.isSafeInteger(a.offsetUnits) && a.offsetUnits >= 0))
+      && isScoreClipboardFragment(a.fragment))
     || (a.kind === "set-event-properties" && typeof a.eventId === "string" && !!a.eventId && isEventProperties(a.properties))
     || (a.kind === "set-title" && typeof a.title === "string" && a.title.trim().length <= 120)
     || (a.kind === "append" && typeof a.measureId === "string" && !!a.measureId
       && isInputSequenceAnchor(a.anchor)
       && (a.offsetUnits === undefined || (typeof a.offsetUnits === "number" && Number.isSafeInteger(a.offsetUnits) && a.offsetUnits >= 0))
       && isInputDuration(a.duration) && isInputContent(a.content));
+}
+function isScoreClipboardFragment(value: unknown): boolean {
+  if (!record(value) || value.format !== "brilliant-guitar.score-events" || value.version !== 1
+    || !Array.isArray(value.events) || value.events.length === 0 || value.events.length > 100) return false;
+  return value.events.every(isEventProperties);
+}
+export function isScoreEventRange(value: unknown): value is ScoreEventRange {
+  return record(value) && typeof value.measureId === "string" && !!value.measureId
+    && typeof value.voiceId === "string" && !!value.voiceId
+    && typeof value.startEventId === "string" && !!value.startEventId
+    && typeof value.endEventId === "string" && !!value.endEventId;
 }
 export function isInputSequenceAnchor(value: unknown): value is InputSequenceAnchor {
   if (!record(value)) return false;

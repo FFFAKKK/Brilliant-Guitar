@@ -7,7 +7,7 @@ export type EditComposition<Draft> =
   | { readonly kind: "idle" }
   | { readonly kind: "composing"; readonly methodId: string; readonly draft: Draft };
 
-export type EditOperationKind = "insert" | "update" | "delete" | "history" | "document";
+export type EditOperationKind = "insert" | "update" | "delete" | "delete-range" | "paste" | "history" | "document";
 
 export type EditTransaction =
   | { readonly kind: "idle" }

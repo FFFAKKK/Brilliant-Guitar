@@ -174,6 +174,7 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
       showRuleWarnings: ruleWarningsVisible,
       editing: { point: inputAvailable && input.enabled ? input.point : null, draftStep: noteOverview.draftStep,
         busy: blocked || input.pending > 0, selectedEventId: noteOverview.selectedEventId,
+        selectedRange: noteOverview.selectedRange,
         onSelectEvent: noteOverview.onSelectEvent, feedback: input.feedback, viewportRef: scoreViewport,
         onKeyDown: noteOverview.onKeyDown, onLocate: noteOverview.onLocate },
     }),
@@ -189,6 +190,7 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
   ]), [blocked, dispatchHistory, historyActivity, historyBlocked, input.enabled, input.feedback, input.pending,
     input.point, inputAvailable, noteOverview.change, noteOverview.disabled, noteOverview.message, noteOverview.onKeyDown,
     noteOverview.draftStep, noteOverview.onLocate, noteOverview.onSelectEvent, noteOverview.pending, noteOverview.position, noteOverview.selectedEventId,
+    noteOverview.selectedRange,
     noteOverview.value, paperZoom.fit, paperZoom.zoom, paperZoom.zoomIn, paperZoom.zoomOut, score.error, score.loading,
     ruleWarningsVisible, score.retry, score.session?.notation, score.session?.redoDepth, score.session?.undoDepth, scoreViewport]);
   const pluginCommandContributions = useMemo(() => workbenchPlugins.resolveCommands(pluginProjections), [pluginProjections]);
@@ -270,7 +272,7 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
       actions: pluginDiagnostics.length > 0
         ? [navigationAction("help.plugin-diagnostics", true), { id: "help.disabled", label: "框架操作：拖动分隔线，方向键微调" }]
         : [{ id: "help.disabled", label: "框架操作：拖动分隔线，方向键微调" }],
-      description: "点击小节定位末尾；A–G 加组号落谱；选中音符后 A–G 加组号修改当前音符；＋／− 时值；. 附点；Backspace／Delete 删除；Esc 清除草稿或选择",
+      description: "点击小节定位末尾；Shift 扩展连续选择；Ctrl/⌘ + C/X/V 剪贴；A–G 加组号输入或修改；＋／− 时值；Backspace／Delete 删除；Esc 清除草稿或选择",
     },
   ], [files.name, files.state, files.working, navigationAction, pluginDiagnostics.length]);
 

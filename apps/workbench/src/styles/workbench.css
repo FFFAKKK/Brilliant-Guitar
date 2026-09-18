@@ -249,6 +249,12 @@ button:focus-visible, a:focus-visible {
 .score-edit-focus { pointer-events: none; vector-effect: non-scaling-stroke; stroke-width: 1; transform-box: fill-box; transform-origin: center; animation: score-edit-focus-arrive 140ms ease-out; }
 .score-edit-focus[data-kind="event"] { fill: color-mix(in srgb, var(--color-accent) 9%, transparent); stroke: color-mix(in srgb, var(--color-focus) 82%, transparent); }
 .score-edit-focus[data-kind="empty"] { fill: color-mix(in srgb, var(--color-accent) 4%, transparent); stroke: color-mix(in srgb, var(--color-focus) 68%, transparent); }
+.score-range-selection {
+  pointer-events: none; vector-effect: non-scaling-stroke;
+  fill: color-mix(in srgb, var(--color-accent) 8%, transparent);
+  stroke: color-mix(in srgb, var(--color-focus) 58%, transparent);
+  stroke-width: 1;
+}
 .score-edit-warning {
   pointer-events: none; vector-effect: non-scaling-stroke; fill: color-mix(in srgb, var(--color-danger) 7%, transparent);
   stroke: color-mix(in srgb, var(--color-danger) 88%, transparent); stroke-width: 1.5;

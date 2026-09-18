@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import type { KeyboardEvent, RefObject } from "react";
 import type { ScoreSessionRead } from "../contracts/score-session";
 import type { InputPitch } from "../contracts/note-input";
@@ -9,10 +10,17 @@ import { resolveScorePosition } from "./score-position";
 import { adjacentEventAtPoint, eventEndPoint, eventStartPoint, measureStartPoint,
   moveScoreEditPoint, previousEventAtPoint } from "./score-navigation";
 import { accidentalForEvent, alterForAccidental, inheritedAlterBeforeEvent } from "./accidental-state";
+import { createScoreClipboardFragment } from "../contracts/score-clipboard.ts";
+import { ScoreClipboard } from "./score-clipboard.ts";
+import { resolveScoreEventRange, selectScoreEventRange, singleEventRange, stepScoreEventRange } from "./range-selection.ts";
+import type { ScoreEventRangeSelection } from "./range-selection.ts";
 
 /** Feature interaction shared by the score and its tool. The visual host remains headless. */
 export function useNoteOverview(input: ReturnTypeOfScoreInput, session: ScoreSessionRead | null,
   blocked: boolean, focusRef: RefObject<HTMLDivElement | null>, _loadEpoch = 0) {
+  const view = session?.notation.kind === "staff" ? session.notation : null;
+  const [rangeSelection, setRangeSelection] = useState<ScoreEventRangeSelection | null>(null);
+  const clipboard = useRef(new ScoreClipboard());
   const selection = resolveScoreSelection(session, input.selectedEventId);
   const inputMeasure = session?.notation.kind === "staff" ? session.notation.measures.find((measure) => measure.id === input.measureId) : undefined;
   const selectedAccidental = selection.event && selection.measure ? accidentalForEvent(selection.measure, selection.event.id) : "none";
@@ -24,11 +32,36 @@ export function useNoteOverview(input: ReturnTypeOfScoreInput, session: ScoreSes
     pitch: { ...resolved.pitch, step: activeStep, octave: null } } : resolved;
   const position = session?.notation.kind === "staff"
     ? resolveScorePosition(session.notation, input.point, selection.id) : null;
+  const selectedRange = view ? resolveScoreEventRange(view, rangeSelection) : null;
+  useEffect(() => { setRangeSelection(null); }, [session?.documentId, _loadEpoch]);
+  useEffect(() => {
+    if (rangeSelection && (!selectedRange || !input.selectedEventId)) setRangeSelection(null);
+  }, [input.selectedEventId, rangeSelection, selectedRange]);
   const focus = () => focusRef.current?.focus({ preventScroll: true });
-  function selectEvent(id: string) {
-    if (session?.notation.kind !== "staff") return;
-    const point = eventStartPoint(session.notation, id, input.point?.preferredPitch ?? null);
+  function focusEvent(id: string) {
+    if (!view) return;
+    const point = eventStartPoint(view, id, input.point?.preferredPitch ?? null);
     if (point) input.selectEvent(id, point);
+  }
+  function selectEvent(id: string, extend = false) {
+    if (!view) return;
+    setRangeSelection(extend ? selectScoreEventRange(view, rangeSelection, selection.id, id) : null);
+    focusEvent(id);
+  }
+  function clipboardRange() {
+    return selectedRange ?? (view ? singleEventRange(view, selection.id) : null);
+  }
+  async function copySelection(cut = false) {
+    const range = clipboardRange();
+    if (!range) return;
+    await clipboard.current.write(createScoreClipboardFragment(range.events));
+    if (cut && !blocked && !input.pending) input.deleteRange({ measureId: range.measure.id,
+      voiceId: range.measure.voiceId, startEventId: range.events[0]!.id, endEventId: range.events.at(-1)!.id });
+  }
+  async function pasteSelection() {
+    if (blocked || input.pending) return;
+    const fragment = await clipboard.current.read();
+    if (fragment) input.pasteFragment(fragment);
   }
   function change(change: NoteControlChange, completionFocus?: HTMLElement) {
     if (blocked) return;
@@ -51,13 +84,29 @@ export function useNoteOverview(input: ReturnTypeOfScoreInput, session: ScoreSes
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (event.defaultPrevented) return;
     if ((event.target as HTMLElement).closest("input, select, textarea, button") || event.nativeEvent.isComposing) return;
+    const modifier = event.ctrlKey || event.metaKey;
+    const key = event.key.toLowerCase();
+    if (modifier && !event.altKey && (key === "c" || key === "x" || key === "v")) {
+      event.preventDefault();
+      if (key === "c") void copySelection();
+      if (key === "x") void copySelection(true);
+      if (key === "v") void pasteSelection();
+      return;
+    }
     if (blocked) return;
-    const view = session?.notation.kind === "staff" ? session.notation : null;
     if (view && (event.key === "ArrowLeft" || event.key === "ArrowRight") && !event.altKey) {
       event.preventDefault();
       if (input.pending) return;
       input.cancelComposition();
       const direction = event.key === "ArrowLeft" ? -1 : 1;
+      if (event.shiftKey && !event.ctrlKey && !event.metaKey) {
+        const next = stepScoreEventRange(view, rangeSelection, selection.id, direction);
+        if (next) {
+          setRangeSelection(next);
+          focusEvent(next.focusEventId);
+        }
+        return;
+      }
       if (event.ctrlKey || event.metaKey) {
         const currentMeasureId = selection.measure?.id ?? input.point?.measureId;
         const index = view.measures.findIndex((measure) => measure.id === currentMeasureId);
@@ -88,6 +137,12 @@ export function useNoteOverview(input: ReturnTypeOfScoreInput, session: ScoreSes
         if (adjacent) selectEvent(adjacent);
         else input.setEditPoint(moveScoreEditPoint(view, input.point, direction));
       }
+      return;
+    }
+    if (event.key === "Escape" && selectedRange) {
+      event.preventDefault();
+      setRangeSelection(null);
+      focus();
       return;
     }
     if (view && (event.key === "Home" || event.key === "End") && !event.altKey) {
@@ -160,13 +215,16 @@ export function useNoteOverview(input: ReturnTypeOfScoreInput, session: ScoreSes
   }
   return { value, position, disabled: blocked || (!!selection.event && input.pending > 0), pending: input.pending,
     message: input.message || input.draftMessage, retryable: input.retryable, retry: input.retry,
-    change, draftStep: activeStep ?? input.draft, selectedEventId: selection.id, onKeyDown,
-    onSelectEvent: (id: string) => {
+    change, draftStep: activeStep ?? input.draft, selectedEventId: selection.id,
+    selectedRange: selectedRange ? { measureId: selectedRange.measure.id, eventIds: selectedRange.eventIds } : null,
+    onKeyDown,
+    onSelectEvent: (id: string, extend = false) => {
       if (blocked || input.pending) return;
-      selectEvent(id); focus();
+      selectEvent(id, extend); focus();
     },
     onLocate: (point: Parameters<typeof input.locate>[0], pitch: InputPitch, writeNow: boolean) => {
       if (blocked || input.pending) return;
+      setRangeSelection(null);
       input.locate(point, pitch, writeNow);
     },
   };

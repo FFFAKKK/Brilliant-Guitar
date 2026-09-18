@@ -13,7 +13,7 @@ import type { IntegratedNativeAddonV2, KernelRuleWarningV1 } from "../.kernel/sr
 
 import { durationUnits, isScoreEditRequest } from "../src/contracts/note-input.ts";
 import type { ScoreEditRequest } from "../src/contracts/note-input.ts";
-import type { BatchCommand, RemoveEventCommand, InsertNotesEventCommand, InsertRestEventCommand } from "../.kernel/src/core-kernel/index.js";
+import type { BatchCommand, DeleteRangeCommand, RemoveEventCommand, InsertNotesEventCommand, InsertRestEventCommand } from "../.kernel/src/core-kernel/index.js";
 import type { WorkbenchIssue, WorkbenchIssueTarget } from "../src/contracts/workbench-issue.ts";
 import { restDurations } from "./rest-durations.ts";
 const require = createRequire(import.meta.url);
@@ -33,6 +33,8 @@ function issue(code: string, message: string, target: WorkbenchIssueTarget,
 
 function actionTarget(current: ScoreSessionRead, action: ScoreEditRequest["action"]): WorkbenchIssueTarget {
   if (action.kind === "append") return { scope: "measure", measureId: action.measureId };
+  if (action.kind === "delete-range") return { scope: "measure", measureId: action.range.measureId };
+  if (action.kind === "paste-fragment") return { scope: "measure", measureId: action.measureId };
   if (action.kind === "delete-event" || action.kind === "set-event-properties") {
     if (current.notation.kind === "staff") {
       const measure = current.notation.measures.find((item) => item.events.some((event) => event.id === action.eventId));
@@ -237,6 +239,76 @@ export class ScoreSessionService {
         result = entry.bus.submit({ commandVersion: 1, commandId: "core.transaction.batch",
           target: { kind: "document", documentId: doc.id }, payload: { commands: [remove, insert] } } satisfies BatchCommand);
       }
+    }
+    else if (action.kind === "delete-range") {
+      const read = entry.bus.read();
+      if (!read.ok) throw new WorkbenchHostError("暂时无法读取乐谱", 503);
+      const doc = read.value.snapshot.document;
+      const content = doc.parts[0]?.measureContents.find((item) => item.measureId === action.range.measureId);
+      const voice = content?.voices.find((item) => item.id === action.range.voiceId);
+      const ids = new Set(voice?.sequence.events.map((event) => event.id) ?? []);
+      if (!voice || !ids.has(action.range.startEventId) || !ids.has(action.range.endEventId)) {
+        const message = "选择范围已改变，请重新选择";
+        throw new WorkbenchHostError(message, 409, undefined,
+          issue("editor.selection-stale", message, actionTarget(current, action)));
+      }
+      const command: DeleteRangeCommand = { commandVersion: 1, commandId: "core.range.delete",
+        target: { kind: "document", documentId: doc.id }, payload: { range: {
+          kind: "voice-event-range",
+          start: { kind: "voice-event", voiceId: voice.id, eventId: action.range.startEventId },
+          end: { kind: "voice-event", voiceId: voice.id, eventId: action.range.endEventId },
+        } } };
+      result = entry.bus.submit(command);
+    }
+    else if (action.kind === "paste-fragment") {
+      const read = entry.bus.read();
+      if (!read.ok) throw new WorkbenchHostError("暂时无法读取乐谱", 503);
+      const doc = read.value.snapshot.document;
+      const content = doc.parts[0]?.measureContents.find((item) => item.measureId === action.measureId);
+      const voice = content?.voices.find((item) => item.id === action.voiceId);
+      const anchorEventId = action.anchor.kind === "after-event" ? action.anchor.eventId : null;
+      const anchorIndex = anchorEventId === null ? -1
+        : voice?.sequence.events.findIndex((event) => event.id === anchorEventId) ?? -1;
+      if (!voice || (anchorEventId !== null && anchorIndex < 0)) {
+        const message = "粘贴位置已改变，请重新定位";
+        throw new WorkbenchHostError(message, 409, undefined,
+          issue("editor.position-stale", message, actionTarget(current, action)));
+      }
+      const used = voice.sequence.events.reduce((sum, event) => sum + durationUnits(event.duration), 0);
+      const anchorOffset = voice.sequence.events.slice(0, anchorIndex + 1)
+        .reduce((sum, event) => sum + durationUnits(event.duration), 0);
+      const requestedOffset = action.offsetUnits ?? anchorOffset;
+      const gap = requestedOffset - anchorOffset;
+      if (requestedOffset < anchorOffset || (gap > 0 && anchorOffset !== used)) {
+        const message = "粘贴位置已改变，请重新定位";
+        throw new WorkbenchHostError(message, 409, undefined,
+          issue("editor.position-stale", message, actionTarget(current, action)));
+      }
+      const commands: (InsertNotesEventCommand | InsertRestEventCommand)[] = [];
+      let anchor = action.anchor;
+      for (const duration of restDurations(gap)) {
+        const eventId = randomUUID();
+        commands.push({ commandVersion: 1, commandId: "core.voice.insert-rest-event",
+          target: { kind: "voice", voiceId: voice.id },
+          payload: { anchor, event: { id: eventId, duration, content: { kind: "rest" } } } });
+        anchor = { kind: "after-event", eventId };
+      }
+      for (const copied of action.fragment.events) {
+        const eventId = randomUUID();
+        const command: InsertNotesEventCommand | InsertRestEventCommand = copied.content.kind === "rest"
+          ? { commandVersion: 1, commandId: "core.voice.insert-rest-event", target: { kind: "voice", voiceId: voice.id },
+            payload: { anchor, event: { id: eventId, duration: copied.duration, content: { kind: "rest" } } } }
+          : { commandVersion: 1, commandId: "core.voice.insert-notes-event", target: { kind: "voice", voiceId: voice.id },
+            payload: { anchor, event: { id: eventId, duration: copied.duration, content: { kind: "notes",
+              notes: [{ id: randomUUID(), writtenPitch: copied.content.pitch }] } } } };
+        commands.push(command);
+        anchor = { kind: "after-event", eventId };
+      }
+      const first = commands[0];
+      if (!first) throw new WorkbenchHostError("剪贴内容为空", 422);
+      result = entry.bus.submit({ commandVersion: 1, commandId: "core.transaction.batch",
+        target: { kind: "document", documentId: doc.id },
+        payload: { commands: [first, ...commands.slice(1)] } } satisfies BatchCommand);
     }
     else {
       const read = entry.bus.read();

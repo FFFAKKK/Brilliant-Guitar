@@ -13,6 +13,7 @@ import { yForPitch } from "../notation/input-position";
 import { useHostedUiComponent } from "./ui-component-host";
 import type { ScoreEditPoint } from "../editor/score-navigation";
 import { resolveStaffPointerTarget } from "../editor/staff-pointer-target.ts";
+import { resolveStaffRangeGeometry } from "../editor/staff-range-geometry.ts";
 import type { WorkbenchFeedback } from "../feedback/workbench-feedback";
 import { LatestWorkbenchTask } from "../workbench/latest-task.ts";
 
@@ -23,7 +24,8 @@ export interface StaffEditing {
   readonly onKeyDown: KeyboardEventHandler<HTMLDivElement>;
   readonly onLocate: (point: ScoreEditPoint, pitch: InputPitch, writeNow: boolean) => void;
   readonly selectedEventId?: string | null;
-  readonly onSelectEvent?: (eventId: string) => void;
+  readonly selectedRange?: { readonly measureId: string; readonly eventIds: readonly string[] } | null;
+  readonly onSelectEvent?: (eventId: string, extend?: boolean) => void;
   readonly busy?: boolean;
   readonly feedback?: WorkbenchFeedback | null;
 }
@@ -72,6 +74,8 @@ function EngravedPage({ layout, renderer, number, editing, view, showRuleWarning
   }, [attempt, layout, renderer]);
   const cursor = anchorForPoint(interaction, editing?.point ?? null);
   const selection = interaction?.events.find((event) => event.eventId === editing?.selectedEventId) ?? null;
+  const range = resolveStaffRangeGeometry(interaction, editing?.selectedRange?.measureId ?? null,
+    editing?.selectedRange?.eventIds ?? []);
   const cursorMeasure = cursor && interaction?.measures.find((measure) => measure.measureId === cursor.measureId);
   const feedbackMeasureId = editing?.feedback?.target.scope === "measure" || editing?.feedback?.target.scope === "event"
     ? editing.feedback.target.measureId : null;
@@ -90,7 +94,7 @@ function EngravedPage({ layout, renderer, number, editing, view, showRuleWarning
     : cursor?.y ?? 0;
   useEffect(() => {
     focusElement.current?.scrollIntoView({ block: "nearest", inline: "nearest" });
-  }, [cursor?.x, focusCenterY, selection?.x, selection?.y]);
+  }, [cursor?.x, focusCenterY, range?.x, selection?.x, selection?.y]);
   function locate(event: MouseEvent<HTMLDivElement>, writeNow: boolean) {
     if (!editing || status !== "ready" || !interaction) return;
     const element = event.target as Element;
@@ -105,7 +109,7 @@ function EngravedPage({ layout, renderer, number, editing, view, showRuleWarning
     const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
     const target = resolveStaffPointerTarget({ view, interaction, measureId,
       eventId: eventHit?.dataset.eventId ?? null, x: point.x, y: point.y, writeNow });
-    if (target?.kind === "event") editing.onSelectEvent?.(target.eventId);
+    if (target?.kind === "event") editing.onSelectEvent?.(target.eventId, event.shiftKey);
     if (target?.kind === "caret") editing.onLocate(target.point, target.pitch, writeNow);
   }
   return <div className="staff-paper" data-page-format={SCORE_PAPER.format} data-orientation={SCORE_PAPER.orientation}
@@ -115,6 +119,8 @@ function EngravedPage({ layout, renderer, number, editing, view, showRuleWarning
       aria-label={`第 ${number} 页，高音谱表，${layout.measures.length} 个小节${ruleWarningCount ? `，${ruleWarningCount} 个节拍提示，${ruleWarningDescription}` : ""}`} />
     {status === "ready" && interaction && <svg className="staff-interaction-overlay" viewBox={`0 0 ${layout.width} ${layout.height}`}
       preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
+      {range && <rect className="score-range-selection" x={range.x} y={range.y}
+        width={range.width} height={range.height} rx={Math.max(3, range.height * .06)} />}
       {overfullHighlights.map((highlight) => <line key={`rule-warning-${highlight.measureId}`}
         className="score-rule-warning-underline" x1={highlight.x} x2={highlight.x + highlight.width}
         y1={highlight.y} y2={highlight.y} />)}
@@ -133,6 +139,9 @@ function EngravedPage({ layout, renderer, number, editing, view, showRuleWarning
           y={focusCenterY - focusSize / 2 - 4}>{editing.draftStep}·</text>}
       </>}
     </svg>}
+    {editing?.selectedRange && <span className="visually-hidden" role="status" aria-live="polite">
+      已选择 {editing.selectedRange.eventIds.length} 个谱面事件
+    </span>}
     {status === "loading" && <div className="staff-paper-message" role="status">正在绘制谱面…</div>}
     {status === "error" && <div className="staff-paper-message" role="alert">谱面显示失败
       <button type="button" onClick={() => setAttempt((value) => value + 1)}>重新绘制</button>
