@@ -2,10 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { checkpointMatches, fileStem, hasUnsavedDocument } from "../src/services/document-file.ts";
 import type { ScoreSessionRead } from "../src/contracts/score-session.ts";
+import { unsupportedPlaybackSource } from "./playback-fixture.ts";
 
 const score = (documentVersion: number, title = "未命名乐谱", measureCount = 1): ScoreSessionRead => ({
   documentId: "score-a", documentVersion, title, measureCount, undoDepth: 0, redoDepth: 0,
   notation: { kind: "unsupported", message: "仅测试文件状态" },
+  playbackSource: unsupportedPlaybackSource("score-a", documentVersion),
 });
 
 test("保存检查点仅匹配同一文档的实际版本；再次编辑与同 ID 重新打开不会混淆", () => {

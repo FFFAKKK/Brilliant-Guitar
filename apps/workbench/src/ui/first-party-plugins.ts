@@ -2,13 +2,15 @@ import { HistoryControlComponent, HistoryDockIcon } from "../components/history-
 import { NoteControlDockIcon, NoteInputComponent } from "../components/note-input-component.tsx";
 import { PaperZoomControl, PaperZoomDockIcon } from "../components/paper-zoom-control.tsx";
 import { StaffView } from "../components/staff-view.tsx";
+import { PlaybackTransport, PlaybackTransportDockIcon } from "../components/playback-transport.tsx";
+import { PlaybackOutput, PlaybackOutputDockIcon } from "../components/playback-output.tsx";
 import { useHostedUiComponent } from "../components/ui-component-host.tsx";
 import { PAPER_ZOOM } from "../notation/paper-zoom.ts";
 import type { InternalUiPluginModule, UiCommandContribution } from "./plugin-manager.ts";
 import { WORKBENCH_PLUGIN_API_VERSION } from "./plugin-manifest.ts";
 import type { AnyUiProjection, UiProjectionReader } from "./projection-registry.ts";
-import { HISTORY_PROJECTION, NOTE_CONTROL_PROJECTION, PAPER_ZOOM_PROJECTION, STAFF_PROJECTION } from "./first-party-plugin-projections.ts";
-import { HISTORY_COMPONENT, NOTE_CONTROL_COMPONENT, PAPER_ZOOM_COMPONENT, STAFF_COMPONENT } from "./first-party-component-definitions.ts";
+import { HISTORY_PROJECTION, NOTE_CONTROL_PROJECTION, PAPER_ZOOM_PROJECTION, PLAYBACK_OUTPUT_PROJECTION, PLAYBACK_PROJECTION, STAFF_PROJECTION } from "./first-party-plugin-projections.ts";
+import { HISTORY_COMPONENT, NOTE_CONTROL_COMPONENT, PAPER_ZOOM_COMPONENT, PLAYBACK_COMPONENT, PLAYBACK_OUTPUT_COMPONENT, STAFF_COMPONENT } from "./first-party-component-definitions.ts";
 
 function HistoryPluginView({ projections }: { readonly projections: UiProjectionReader }) {
   const component = useHostedUiComponent();
@@ -61,6 +63,35 @@ const zoomCommands: readonly UiCommandContribution[] = [
   } },
 ];
 
+const playbackCommands: readonly UiCommandContribution[] = [
+  { id: "playback.previous", create: (projections) => {
+    const projection = projections.get(PLAYBACK_PROJECTION);
+    return { id: "playback.previous", label: "上一个音符", scope: "score",
+      enabled: projection.snapshot.state !== "unavailable" && !projection.snapshot.pending && projection.canPrevious,
+      run: projection.previous };
+  } },
+  { id: "playback.toggle", create: (projections) => {
+    const projection = projections.get(PLAYBACK_PROJECTION);
+    return { id: "playback.toggle", label: projection.snapshot.state === "playing" ? "暂停" : "播放",
+      shortcut: "Space", shortcutLabel: "Space", scope: "score",
+      enabled: projection.snapshot.state !== "unavailable" && !projection.snapshot.pending,
+      run: projection.toggle };
+  } },
+  { id: "playback.stop", create: (projections) => {
+    const projection = projections.get(PLAYBACK_PROJECTION);
+    return { id: "playback.stop", label: "停止", scope: "score",
+      enabled: projection.snapshot.state !== "unavailable" && !projection.snapshot.pending
+        && (projection.snapshot.state !== "stopped" || projection.snapshot.positionSeconds > 0),
+      run: projection.stop };
+  } },
+  { id: "playback.next", create: (projections) => {
+    const projection = projections.get(PLAYBACK_PROJECTION);
+    return { id: "playback.next", label: "下一个音符", scope: "score",
+      enabled: projection.snapshot.state !== "unavailable" && !projection.snapshot.pending && projection.canNext,
+      run: projection.next };
+  } },
+];
+
 function plugin(input: Readonly<{
   id: string;
   name: string;
@@ -96,5 +127,15 @@ export const FIRST_PARTY_UI_PLUGINS: readonly InternalUiPluginModule[] = [
     projections: [PAPER_ZOOM_PROJECTION], commands: zoomCommands, views: [{ definition: PAPER_ZOOM_COMPONENT, label: "谱面缩放",
       icon: createElement(PaperZoomDockIcon), inlineZone: "trailing",
       render: (projections) => createElement(PaperZoomPluginView, { projections }) }] }),
+  plugin({ id: "brilliant.playback.transport", name: "播放控制",
+    capabilities: ["workbench.layout", "workbench.commands", "playback.transport"],
+    projections: [PLAYBACK_PROJECTION], commands: playbackCommands,
+    views: [{ definition: PLAYBACK_COMPONENT, label: "播放控制", icon: createElement(PlaybackTransportDockIcon), inlineZone: "center",
+      render: (projections) => createElement(PlaybackTransport, { projection: projections.get(PLAYBACK_PROJECTION) }) }] }),
+  plugin({ id: "brilliant.playback.output", name: "播放输出",
+    capabilities: ["workbench.layout", "playback.output"],
+    projections: [PLAYBACK_OUTPUT_PROJECTION],
+    views: [{ definition: PLAYBACK_OUTPUT_COMPONENT, label: "播放输出", icon: createElement(PlaybackOutputDockIcon),
+      render: (projections) => createElement(PlaybackOutput, { projection: projections.get(PLAYBACK_OUTPUT_PROJECTION) }) }] }),
 ];
 import { createElement } from "react";

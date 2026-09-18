@@ -211,6 +211,14 @@ export function useNoteOverview(input: ReturnTypeOfScoreInput, session: ScoreSes
       }
       return;
     }
+    if (view && !selection.event && event.key === "Delete") {
+      event.preventDefault();
+      if (!event.repeat && !input.pending && input.point) {
+        const next = adjacentEventAtPoint(view, input.point, 1);
+        if (next) input.deleteEvent(next);
+      }
+      return;
+    }
     input.keyboard(event, !input.enabled && !event.ctrlKey && !event.metaKey && !event.altKey && /^[a-gr]$/i.test(event.key));
   }
   return { value, position, disabled: blocked || (!!selection.event && input.pending > 0), pending: input.pending,
@@ -218,6 +226,7 @@ export function useNoteOverview(input: ReturnTypeOfScoreInput, session: ScoreSes
     change, draftStep: activeStep ?? input.draft, selectedEventId: selection.id,
     selectedRange: selectedRange ? { measureId: selectedRange.measure.id, eventIds: selectedRange.eventIds } : null,
     onKeyDown,
+    focusScore: input.activate,
     onSelectEvent: (id: string, extend = false) => {
       if (blocked || input.pending) return;
       selectEvent(id, extend); focus();

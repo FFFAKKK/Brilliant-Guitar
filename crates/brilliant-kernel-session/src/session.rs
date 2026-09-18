@@ -9,9 +9,9 @@ use brilliant_kernel_contracts::{
     KernelStage4FailureV1, KernelStage4OperationDecodeFailureV1, KernelStage4OperationRequestV1,
     KernelStage4OperationResultV1, KernelStage4OperationV1, KernelStage4ReadResultV1,
     KernelStage4ReplayCommandResultV1, KernelStage4ReplayRequestV1, KernelStage4ReplayResultV1,
-    KernelStage4SelectResultV1, StableFailureV1, decode_admission_stage4_operation_request,
-    decode_admission_submit_request, decode_captured_admission_replay_command,
-    decode_stage4_replay_request,
+    KernelStage4SelectResultV1, KernelStage4SelectValueV1, SelectorRequestV1, StableFailureV1,
+    decode_admission_stage4_operation_request, decode_admission_submit_request,
+    decode_captured_admission_replay_command, decode_stage4_replay_request,
 };
 use brilliant_kernel_runtime::{KernelRuntime, KernelRuntimeCreateFailure};
 
@@ -147,6 +147,10 @@ impl KernelSession {
         self.submit_admission_command(command.into_admission())
     }
 
+    pub fn select_stage4(&self, selector: SelectorRequestV1) -> KernelStage4SelectValueV1 {
+        self.runtime.select_stage4(selector)
+    }
+
     fn submit_admission_command(
         &mut self,
         command: brilliant_kernel_contracts::CoreAdmissionCommandV1,
@@ -220,7 +224,7 @@ impl KernelSession {
             },
             KernelStage4OperationV1::Select { selector } => {
                 KernelStage4OperationResultV1::Select(KernelStage4SelectResultV1 {
-                    value: self.runtime.select_stage4(selector),
+                    value: self.select_stage4(selector),
                 })
             }
         }
@@ -380,12 +384,14 @@ mod admission_tests;
 
 #[cfg(test)]
 mod tests {
+    use brilliant_core_types::JsString;
     use brilliant_kernel_contracts::{
         KernelEventCauseV1, KernelEventV1, KernelSelectorResultV1, KernelSelectorValueV1,
         KernelSessionCreateRequestV1, KernelStage3CommandFailureV1,
-        KernelStage4MarkPersistedResultV1, ScoreEntityTargetV1, ScoreRangeSelectionV1,
-        ScoreStructureViolationV1, SelectedScoreEntityV1, decode_create_request,
-        decode_stage3_submit_request, encode_create_result, encode_read_result,
+        KernelStage4MarkPersistedResultV1, KernelStage4MetricsV1, ScoreEntityTargetV1,
+        ScoreOverviewV1, ScoreRangeSelectionV1, ScoreStructureViolationV1, SelectedScoreEntityV1,
+        decode_create_request, decode_stage3_submit_request, encode_create_result,
+        encode_read_result,
     };
 
     use super::*;
@@ -469,6 +475,41 @@ mod tests {
 
     fn operate(session: &mut KernelSession, request: &str) -> KernelStage4OperationResultV1 {
         session.operate_stage4_bytes(request.as_bytes())
+    }
+
+    fn score_overview(
+        session: &mut KernelSession,
+    ) -> (u64, ScoreOverviewV1, KernelStage4MetricsV1) {
+        let request = r#"{"apiVersion":1,"operation":{"kind":"select","selector":{"selectorId":"core.selector.score-overview"}}}"#;
+        let KernelStage4OperationResultV1::Select(result) = operate(session, request) else {
+            panic!("overview selector result");
+        };
+        let KernelSelectorResultV1::Ok(KernelSelectorValueV1::Overview(overview)) =
+            result.value.selection
+        else {
+            panic!("overview selector must succeed");
+        };
+        (
+            result.value.document_version.get(),
+            overview,
+            result.value.stage4_metrics,
+        )
+    }
+
+    fn assert_overview(
+        session: &mut KernelSession,
+        expected_version: u64,
+        expected_title: &str,
+        expected_measure_count: i64,
+    ) {
+        let (version, overview, metrics) = score_overview(session);
+        assert_eq!(version, expected_version);
+        assert_eq!(overview.document_id.as_js_string(), "score-local");
+        assert_eq!(overview.title, JsString::from(expected_title));
+        assert_eq!(overview.measure_count.get(), expected_measure_count);
+        assert_eq!(metrics.full_snapshot_materializations, 0);
+        assert_eq!(metrics.selector_records_visited, 1);
+        assert_eq!(metrics.selector_records_returned, 1);
     }
 
     fn replay_bytes(commands: &str) -> Vec<u8> {
@@ -1253,8 +1294,30 @@ mod tests {
     }
 
     #[test]
-    fn all_six_stage4_selector_families_are_version_coherent_and_index_backed() {
+    fn all_seven_stage4_selector_families_are_version_coherent_and_index_backed() {
         let mut session = local_session();
+        let overview = r#"{"apiVersion":1,"operation":{"kind":"select","selector":{"selectorId":"core.selector.score-overview"}}}"#;
+        let KernelStage4OperationResultV1::Select(result) = operate(&mut session, overview) else {
+            panic!("overview selector result");
+        };
+        assert_eq!(result.value.document_version.get(), 0);
+        assert_eq!(
+            result.value.stage4_metrics.full_snapshot_materializations,
+            0
+        );
+        assert_eq!(result.value.stage4_metrics.selector_records_visited, 1);
+        assert_eq!(result.value.stage4_metrics.selector_records_returned, 1);
+        assert!(matches!(
+            result.value.selection,
+            KernelSelectorResultV1::Ok(KernelSelectorValueV1::Overview(ScoreOverviewV1 {
+                document_id,
+                title,
+                measure_count,
+            })) if document_id.as_js_string() == "score-local"
+                && title == "Local"
+                && measure_count.get() == 1
+        ));
+
         let metadata = r#"{"apiVersion":1,"operation":{"kind":"select","selector":{"selectorId":"core.selector.score-metadata"}}}"#;
         let KernelStage4OperationResultV1::Select(result) = operate(&mut session, metadata) else {
             panic!("metadata selector result");
@@ -1352,6 +1415,94 @@ mod tests {
             result.value.selection,
             KernelSelectorResultV1::Rejected(KernelStage4FailureV1::ReadEntityNotFound)
         ));
+    }
+
+    #[test]
+    fn score_overview_tracks_mutations_history_and_snapshot_isolation() {
+        let mut session = local_session();
+        assert_overview(&mut session, 0, "Local", 1);
+
+        let set_title = r#"{"apiVersion":1,"operation":{"kind":"submit","command":{"commandVersion":1,"commandId":"core.document.set-metadata","target":{"kind":"document","documentId":"score-local"},"payload":{"metadata":{"title":"Changed","authors":["Brilliant"],"tempo":{"bpm":120}}}}}}"#;
+        assert!(matches!(
+            operate(&mut session, set_title),
+            KernelStage4OperationResultV1::Command(KernelStage4CommandResultV1::Committed { .. })
+        ));
+        assert_overview(&mut session, 1, "Changed", 1);
+
+        assert!(matches!(
+            operate(
+                &mut session,
+                r#"{"apiVersion":1,"operation":{"kind":"undo"}}"#
+            ),
+            KernelStage4OperationResultV1::Command(KernelStage4CommandResultV1::Committed { .. })
+        ));
+        assert_overview(&mut session, 2, "Local", 1);
+
+        assert!(matches!(
+            operate(
+                &mut session,
+                r#"{"apiVersion":1,"operation":{"kind":"redo"}}"#
+            ),
+            KernelStage4OperationResultV1::Command(KernelStage4CommandResultV1::Committed { .. })
+        ));
+        assert_overview(&mut session, 3, "Changed", 1);
+
+        let insert_measure = r#"{"apiVersion":1,"operation":{"kind":"submit","command":{"commandVersion":1,"commandId":"core.measure.insert","target":{"kind":"document","documentId":"score-local"},"payload":{"anchor":{"kind":"start"},"definition":{"id":"measure-2","meter":{"numerator":4,"denominator":4}},"contents":[{"partId":"part-1","voices":[{"id":"voice-3","defaultStaffId":"staff-1","sequence":{"start":{"numerator":0,"denominator":1},"events":[]}}]}]}}}}"#;
+        assert!(matches!(
+            operate(&mut session, insert_measure),
+            KernelStage4OperationResultV1::Command(KernelStage4CommandResultV1::Committed { .. })
+        ));
+        assert_overview(&mut session, 4, "Changed", 2);
+
+        let remove_measure = r#"{"apiVersion":1,"operation":{"kind":"submit","command":{"commandVersion":1,"commandId":"core.measure.remove","target":{"kind":"measure","measureId":"measure-2"},"payload":{}}}}"#;
+        assert!(matches!(
+            operate(&mut session, remove_measure),
+            KernelStage4OperationResultV1::Command(KernelStage4CommandResultV1::Committed { .. })
+        ));
+        assert_overview(&mut session, 5, "Changed", 1);
+
+        assert!(matches!(
+            operate(
+                &mut session,
+                r#"{"apiVersion":1,"operation":{"kind":"undo"}}"#
+            ),
+            KernelStage4OperationResultV1::Command(KernelStage4CommandResultV1::Committed { .. })
+        ));
+        assert_overview(&mut session, 6, "Changed", 2);
+
+        assert!(matches!(
+            operate(
+                &mut session,
+                r#"{"apiVersion":1,"operation":{"kind":"redo"}}"#
+            ),
+            KernelStage4OperationResultV1::Command(KernelStage4CommandResultV1::Committed { .. })
+        ));
+        assert_overview(&mut session, 7, "Changed", 1);
+
+        let KernelStage4OperationResultV1::Read(KernelStage4ReadResultV1::Ok(read)) = operate(
+            &mut session,
+            r#"{"apiVersion":1,"operation":{"kind":"read","knownSnapshotVersion":null}}"#,
+        ) else {
+            panic!("first full read must succeed");
+        };
+        assert_eq!(read.stage4_metrics.full_snapshot_materializations, 1);
+    }
+
+    #[test]
+    fn score_overview_remains_constant_work_for_a_large_score() {
+        let mut session = local_session();
+        for index in 0..128 {
+            let request = format!(
+                r#"{{"apiVersion":1,"operation":{{"kind":"submit","command":{{"commandVersion":1,"commandId":"core.measure.insert","target":{{"kind":"document","documentId":"score-local"}},"payload":{{"anchor":{{"kind":"start"}},"definition":{{"id":"measure-large-{index}","meter":{{"numerator":4,"denominator":4}}}},"contents":[{{"partId":"part-1","voices":[{{"id":"voice-large-{index}","defaultStaffId":"staff-1","sequence":{{"start":{{"numerator":0,"denominator":1}},"events":[]}}}}]}}]}}}}}}}}"#,
+            );
+            assert!(matches!(
+                operate(&mut session, &request),
+                KernelStage4OperationResultV1::Command(
+                    KernelStage4CommandResultV1::Committed { .. }
+                )
+            ));
+        }
+        assert_overview(&mut session, 128, "Local", 129);
     }
 
     #[test]

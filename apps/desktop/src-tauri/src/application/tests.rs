@@ -29,6 +29,19 @@ fn create_read_and_close_session() {
     assert_eq!(created.title, "测试乐谱");
     assert_eq!(created.measure_count, 2);
     assert_eq!(created.document_version, 0);
+    match &created.playback_source {
+        PlaybackSourceProjection::Ready { projection_version, document_id, document_version, bpm,
+            written_to_sounding, measures } => {
+            assert_eq!(*projection_version, 1);
+            assert_eq!(document_id, &created.document_id);
+            assert_eq!(*document_version, created.document_version);
+            assert_eq!(*bpm, 96.0);
+            assert_eq!(*written_to_sounding, PlaybackTransposition { diatonic_steps: 0, chromatic_semitones: 0 });
+            assert_eq!(measures.len(), 2);
+            assert!(measures.iter().all(|measure| measure.events.is_empty()));
+        }
+        PlaybackSourceProjection::Unsupported { code, .. } => panic!("unexpected playback projection: {code}"),
+    }
     assert!(service.read(&workspace_id).expect("read").is_some());
     assert!(service.close(&workspace_id).expect("close"));
     assert!(service.read(&workspace_id).expect("read closed").is_none());
@@ -121,6 +134,15 @@ fn edit_retry_version_conflict_and_history_match_host_contract() {
     assert_eq!(service.edit(request).expect("idempotent retry"), changed);
     assert_eq!(first_measure_events(&changed).len(), 1);
     assert_eq!(changed.undo_depth, 1);
+    match &changed.playback_source {
+        PlaybackSourceProjection::Ready { document_version, measures, .. } => {
+            assert_eq!(*document_version, changed.document_version);
+            assert_eq!(measures[0].events.len(), 1);
+            assert_eq!(measures[0].events[0].duration, ExactFraction { numerator: 1, denominator: 4 });
+            assert!(matches!(measures[0].events[0].content, PlaybackSourceContent::Note { .. }));
+        }
+        PlaybackSourceProjection::Unsupported { code, .. } => panic!("unexpected playback projection: {code}"),
+    }
 
     let stale = ScoreEditRequest {
         workspace_id: workspace_id.clone(),
@@ -144,9 +166,19 @@ fn edit_retry_version_conflict_and_history_match_host_contract() {
 
     let undone = edit(&mut service, &workspace_id, &changed, ScoreEditAction::Undo);
     assert!(first_measure_events(&undone).is_empty());
+    assert!(matches!(&undone.playback_source, PlaybackSourceProjection::Ready { measures, .. }
+        if measures[0].events.is_empty()));
     assert_eq!(undone.redo_depth, 1);
     let redone = edit(&mut service, &workspace_id, &undone, ScoreEditAction::Redo);
     assert_eq!(redone.notation, changed.notation);
+    match (&redone.playback_source, &changed.playback_source) {
+        (PlaybackSourceProjection::Ready { document_version: redone_version, measures: redone_measures, .. },
+         PlaybackSourceProjection::Ready { measures: changed_measures, .. }) => {
+            assert_eq!(*redone_version, redone.document_version);
+            assert_eq!(redone_measures, changed_measures);
+        }
+        _ => panic!("redo must preserve a ready playback projection"),
+    }
 }
 
 #[test]

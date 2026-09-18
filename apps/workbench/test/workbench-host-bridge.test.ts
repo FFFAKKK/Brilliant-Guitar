@@ -9,6 +9,7 @@ import type { WorkbenchHostBridge } from "../src/services/workbench-host-bridge.
 import type { CloseRequestedEvent, Window as TauriWindow } from "@tauri-apps/api/window";
 import { DEFAULT_APPLICATION_SETTINGS } from "../src/contracts/application-settings.ts";
 import { DEFAULT_WORKSPACE_CONFIGURATION } from "../src/contracts/workspace-configuration.ts";
+import { readyPlaybackSource } from "./playback-fixture.ts";
 
 const session: ScoreSessionRead = {
   documentId: "score-host-bridge",
@@ -24,6 +25,7 @@ const session: ScoreSessionRead = {
     clef: "treble",
     measures: [{ id: "measure-1", voiceId: "voice-1", meter: { numerator: 4, denominator: 4 }, events: [], ruleWarnings: [] }],
   },
+  playbackSource: readyPlaybackSource("score-host-bridge", 0, ["measure-1"]),
 };
 
 function memoryStorage() {
@@ -67,6 +69,10 @@ test("browser workspace identity remains isolated to its tab session", () => {
 test("workbench client can use a non-HTTP desktop host bridge", async () => {
   const calls: string[] = [];
   const bridge: WorkbenchHostBridge = {
+    async invokeCapability(request) { calls.push("capability"); return {
+      status: "unavailable", invocationId: request.invocationId, capabilityId: request.capabilityId,
+      contractVersion: request.contractVersion, code: "capability.test-unavailable", message: "not used",
+    }; },
     async read() { calls.push("read"); return null; },
     async create(_workspaceId: string, _input: NewScoreInput) { calls.push("create"); return session; },
     async edit(_workspaceId: string, _input: ScoreEditRequest) { calls.push("edit"); return session; },

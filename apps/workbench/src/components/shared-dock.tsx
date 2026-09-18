@@ -40,7 +40,12 @@ export function SharedDock({ slot, items, preferredId, onSelect, motionEnabled }
   const rail = space.width > 0 && (isSide ? space.width < 80 || space.height < 196 : space.width < 480 || space.height < 52);
   const pairedItems = pairedDockItems(slot, items);
   const inlineItems = !rail && space.width >= 480 && space.height >= 52 ? pairedItems : null;
-  const railItems = pairedItems ?? items;
+  const compactCenter = rail && (slot === "top" || slot === "bottom")
+    ? pairedItems?.find((item) => item.inlineZone === "center") : null;
+  const compactLeading = compactCenter ? pairedItems?.find((item) => item.inlineZone === "leading") : null;
+  const compactTrailing = compactCenter ? pairedItems?.find((item) => item.inlineZone === "trailing") : null;
+  const railItems = compactCenter ? [compactLeading, compactTrailing].filter((item): item is SharedDockItem => Boolean(item))
+    : pairedItems ?? items;
   const flyoutOpen = rail && open && !!active;
 
   useEffect(() => {
@@ -91,7 +96,18 @@ export function SharedDock({ slot, items, preferredId, onSelect, motionEnabled }
 
   return <div className="shared-dock" data-slot={slot} data-rail={rail}
     data-inline={Boolean(inlineItems)} data-has-tabs={!rail && !inlineItems && items.length > 1} ref={rootRef}>
-    {rail ? <div className="shared-dock-icons" role="toolbar" aria-label={`${SLOT_LABELS[slot]}的组件`}>
+    {compactCenter ? <div className="shared-dock-compact" role="toolbar" aria-label={`${SLOT_LABELS[slot]}的组件`}>
+      {railItems.map((item, index) => <button key={item.id} type="button" className="shared-dock-icon"
+        data-zone={item.inlineZone} ref={(node) => { buttonRefs.current[item.id] = node; }}
+        aria-label={`${flyoutOpen && item.id === activeId ? "关闭" : "打开"}${item.label}`} title={item.label}
+        aria-expanded={flyoutOpen && item.id === activeId} aria-controls={`shared-dock-${slot}-flyout`}
+        aria-pressed={flyoutOpen && item.id === activeId} onKeyDown={(event) => navigate(event, index, false, railItems)}
+        onClick={(event) => {
+          outsideRef.current = false; updatePosition(event.currentTarget);
+          if (item.id !== activeId) { onSelect(item.id, ids); setOpen(true); } else setOpen((previous) => !previous);
+        }}>{item.icon}</button>)}
+      <div className="shared-dock-compact-primary">{compactCenter.content}</div>
+    </div> : rail ? <div className="shared-dock-icons" role="toolbar" aria-label={`${SLOT_LABELS[slot]}的组件`}>
       {railItems.map((item, index) => <button key={item.id} type="button" className="shared-dock-icon"
         ref={(node) => { buttonRefs.current[item.id] = node; }}
         aria-label={`${flyoutOpen && item.id === activeId ? "关闭" : "打开"}${item.label}`}

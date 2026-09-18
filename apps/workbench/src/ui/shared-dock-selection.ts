@@ -17,13 +17,15 @@ export function selectDockItem(state: SharedDockSelection, slot: SharedDockSlot,
   return !availableIds.includes(id) || state[slot] === id ? state : { ...state, [slot]: id };
 }
 
-export type InlineDockZone = "leading" | "trailing";
+export type InlineDockZone = "leading" | "center" | "trailing";
 
-/** Two explicitly paired tools may share a horizontal band without taking over tabs. */
+/** Explicitly zoned tools may share a horizontal band without taking over tabs. */
 export function pairedDockItems<T extends Readonly<{ id: string; inlineZone?: InlineDockZone }>>(
   slot: SharedDockSlot, items: readonly T[]): readonly T[] | null {
-  if ((slot !== "top" && slot !== "bottom") || items.length !== 2) return null;
+  if ((slot !== "top" && slot !== "bottom") || items.length < 2 || items.length > 3) return null;
   const leading = items.find((item) => item.inlineZone === "leading");
+  const center = items.find((item) => item.inlineZone === "center");
   const trailing = items.find((item) => item.inlineZone === "trailing");
-  return leading && trailing ? [leading, trailing] : null;
+  if (!leading || !trailing || (items.length === 3 && !center)) return null;
+  return center ? [leading, center, trailing] : [leading, trailing];
 }

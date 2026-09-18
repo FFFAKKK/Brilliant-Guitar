@@ -1,8 +1,9 @@
+use brilliant_core_types::SafeInteger;
 use brilliant_core_types::StableId;
 use brilliant_kernel_contracts::{
     KernelSelectorResultV1, KernelSelectorValueV1, KernelStage4FailureV1, ScoreEntityOwnershipV1,
-    ScoreEntityTargetV1, ScoreRangeSelectionV1, ScoreRangeV1, SelectedScoreEntityV1,
-    SelectorRequestV1,
+    ScoreEntityTargetV1, ScoreOverviewV1, ScoreRangeSelectionV1, ScoreRangeV1,
+    SelectedScoreEntityV1, SelectorRequestV1,
 };
 use brilliant_score_foundation::{
     MeasureDefinitionV1, MusicSequenceV1, PartMeasureContentV1, PartV1, RhythmicContentV1,
@@ -102,6 +103,20 @@ impl<'a> SelectorContextV1<'a> {
         };
         self.returned(1);
         Ok(selected)
+    }
+
+    fn overview(&mut self) -> Result<ScoreOverviewV1, KernelStage4FailureV1> {
+        let measure_count = i64::try_from(self.store.topology.measure_order.len())
+            .ok()
+            .and_then(|value| SafeInteger::new(value).ok())
+            .ok_or(KernelStage4FailureV1::ReadInvariantViolation)?;
+        self.visit();
+        self.returned(1);
+        Ok(ScoreOverviewV1 {
+            document_id: self.store.header.id.clone(),
+            title: self.store.header.metadata.title.clone(),
+            measure_count,
+        })
     }
 
     fn ownership(
@@ -644,6 +659,7 @@ pub(crate) fn select_from_store(
 ) -> SelectorEvaluationV1 {
     let mut context = SelectorContextV1::new(store);
     let result = match selector {
+        SelectorRequestV1::ScoreOverview => context.overview().map(KernelSelectorValueV1::Overview),
         SelectorRequestV1::ScoreMetadata => {
             context.visit();
             context.returned(1);

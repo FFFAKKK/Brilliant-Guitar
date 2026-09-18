@@ -20,7 +20,7 @@ mod transaction;
 mod validation_diagnostics;
 
 pub use runtime::{
-    DomainAvailabilityAssessmentV1, IntegratedKernelRuntimeV2, KernelRuntime,
+    DomainAvailabilityAssessmentV1, IntegratedKernelRuntimeV2, KernelEffectV1, KernelRuntime,
     KernelRuntimeCreateFailure, KernelRuntimeReadFailure, KernelStage3PreparedV1,
     KernelStage3TransactionV1,
 };

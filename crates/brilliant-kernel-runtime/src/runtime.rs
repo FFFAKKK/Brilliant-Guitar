@@ -1,8 +1,10 @@
 use brilliant_core_types::JsString;
 mod admission;
 mod domain_availability;
+pub(crate) mod effect;
 mod integrated;
 pub use domain_availability::DomainAvailabilityAssessmentV1;
+pub use effect::KernelEffectV1;
 pub use integrated::IntegratedKernelRuntimeV2;
 use std::{collections::HashMap, sync::Arc};
 

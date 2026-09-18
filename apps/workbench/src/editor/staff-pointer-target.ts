@@ -43,6 +43,10 @@ export function resolveStaffPointerTarget(input: StaffPointerInput): StaffPointe
   const targets: ({ readonly kind: "event"; readonly eventId: string; readonly distance: number }
     | { readonly kind: "empty"; readonly anchor: EditAnchorGeometry; readonly distance: number })[] = [...eventTargets];
   interaction.anchors.filter((item) => item.measureId === measureId
+    // The sequence start remains keyboard-addressable, but once a first event
+    // occupies beat one it is no longer an empty pointer target. Clicking that
+    // area should select the event instead of drawing a caret before it.
+    && (measure.events.length === 0 || item.anchor.kind !== "start")
     && (item.offsetUnits <= usedUnits(measure) || hasFreeTail))
     .forEach((anchor) => targets.push({ kind: "empty", anchor, distance: Math.abs(anchor.x - x) }));
   const nearest = targets.reduce<typeof targets[number] | null>((best, item) =>

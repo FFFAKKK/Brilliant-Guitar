@@ -3,8 +3,9 @@ use std::path::{Path, PathBuf};
 
 use brilliant_core_types::StableId;
 use brilliant_kernel_contracts::{
-    KernelRuleWarningReadFailureV1, KernelSessionCreateRequestV1, KernelSessionReadResultV1,
-    KernelStage4CommandResultV1, KernelStage4MarkPersistedResultV1, KernelStage4OperationResultV1,
+    KernelRuleWarningReadFailureV1, KernelSelectorResultV1, KernelSelectorValueV1,
+    KernelSessionCreateRequestV1, KernelSessionReadResultV1, KernelStage4CommandResultV1,
+    KernelStage4MarkPersistedResultV1, KernelStage4OperationResultV1, SelectorRequestV1,
 };
 use brilliant_kernel_session::KernelSession;
 use brilliant_score_foundation::{
@@ -17,8 +18,10 @@ use uuid::Uuid;
 use crate::{
     dto::{
         CreateScoreRequest, EventDuration, ExactFraction, InputContent, InputSequenceAnchor, Meter,
-        NativeFileResult, NewScoreInput, NotationView, PitchStep, ScoreEditAction,
-        ScoreEditRequest, ScoreSessionRead, StaffEvent, StaffMeasure, StaffRuleWarning,
+        NativeFileResult, NewScoreInput, NotationView, PitchStep, PlaybackSourceContent,
+        PlaybackSourceEvent, PlaybackSourceMeasure, PlaybackSourceProjection, PlaybackTransposition, ScoreEditAction,
+        ScoreEditRequest, ScoreSessionRead, ScoreSummaryV1, StaffEvent, StaffMeasure,
+        StaffRuleWarning,
         WorkbenchIssueSource, WorkbenchIssueTarget,
     },
     error::HostError,
@@ -43,6 +46,28 @@ pub struct ScoreSessionService {
 }
 
 impl ScoreSessionService {
+    pub fn read_summary(&self, workspace_id: &str) -> Result<Option<ScoreSummaryV1>, HostError> {
+        validate_workspace_id(workspace_id)?;
+        let Some(entry) = self.sessions.get(workspace_id) else {
+            return Ok(None);
+        };
+        let selected = entry
+            .session
+            .select_stage4(SelectorRequestV1::ScoreOverview);
+        match selected.selection {
+            KernelSelectorResultV1::Ok(KernelSelectorValueV1::Overview(overview)) => {
+                Ok(Some(ScoreSummaryV1 {
+                    document_id: id_text(&overview.document_id)?,
+                    document_version: selected.document_version.get(),
+                    title: text(&overview.title)?,
+                    measure_count: usize::try_from(overview.measure_count.get())
+                        .map_err(|_| HostError::internal())?,
+                }))
+            }
+            _ => Err(HostError::internal()),
+        }
+    }
+
     pub fn read(&self, workspace_id: &str) -> Result<Option<ScoreSessionRead>, HostError> {
         validate_workspace_id(workspace_id)?;
         self.sessions
@@ -500,6 +525,7 @@ fn session_read(session: &KernelSession) -> Result<ScoreSessionRead, HostError> 
         undo_depth: state.history.undo_depth,
         redo_depth: state.history.redo_depth,
         notation: project_notation(document, &warnings),
+        playback_source: project_playback_source(document, state.snapshot.document_version.get()),
     })
 }
 
@@ -555,6 +581,107 @@ fn exact_fraction(value: &FractionV1) -> ExactFraction {
     ExactFraction {
         numerator: value.numerator.get(),
         denominator: value.denominator.get(),
+    }
+}
+
+fn playback_unsupported(
+    document: &ScoreDocumentV1,
+    document_version: u64,
+    code: &'static str,
+    message: &str,
+) -> PlaybackSourceProjection {
+    PlaybackSourceProjection::Unsupported {
+        projection_version: 1,
+        document_id: id_text(&document.id).unwrap_or_else(|_| "unavailable".into()),
+        document_version,
+        code,
+        message: message.into(),
+    }
+}
+
+fn playback_duration(value: &NoteValueV1) -> Option<ExactFraction> {
+    if value.time_modification.is_some() {
+        return None;
+    }
+    let base = value.base.get();
+    let dots = value.dots.get();
+    if base <= 0 || !(0..=1).contains(&dots) {
+        return None;
+    }
+    Some(if dots == 0 {
+        ExactFraction { numerator: 1, denominator: base }
+    } else {
+        ExactFraction { numerator: 3, denominator: base.checked_mul(2)? }
+    })
+}
+
+fn project_playback_source(document: &ScoreDocumentV1, document_version: u64) -> PlaybackSourceProjection {
+    let Some(part) = document.parts.first() else {
+        return playback_unsupported(document, document_version, "playback.structure-unsupported", "第一版播放暂只支持单声部乐谱");
+    };
+    if document.parts.len() != 1 {
+        return playback_unsupported(document, document_version, "playback.structure-unsupported", "第一版播放暂只支持单声部乐谱");
+    }
+    if !document.extensions.is_empty() || document.measure_definitions.iter().any(|measure| measure.pickup_duration.is_some()) {
+        return playback_unsupported(document, document_version, "playback.structure-unsupported", "当前乐谱结构暂不支持播放");
+    }
+    if part.measure_contents.len() != document.measure_definitions.len() {
+        return playback_unsupported(document, document_version, "playback.measure-content-invalid", "小节内容不完整，暂时无法播放");
+    }
+    let mut measures = Vec::with_capacity(document.measure_definitions.len());
+    for definition in &document.measure_definitions {
+        let Some(content) = part.measure_contents.iter().find(|content| content.measure_id == definition.id) else {
+            return playback_unsupported(document, document_version, "playback.measure-content-invalid", "小节内容不完整，暂时无法播放");
+        };
+        let Some(voice) = content.voices.first() else {
+            return playback_unsupported(document, document_version, "playback.voice-unsupported", "第一版播放暂只支持每小节一个声部");
+        };
+        if content.voices.len() != 1 {
+            return playback_unsupported(document, document_version, "playback.voice-unsupported", "第一版播放暂只支持每小节一个声部");
+        }
+        let mut events = Vec::with_capacity(voice.sequence.events.len());
+        for event in &voice.sequence.events {
+            let Some(event_duration) = playback_duration(&event.duration) else {
+                return playback_unsupported(document, document_version, "playback.rhythm-unsupported", "当前节奏暂不支持播放");
+            };
+            let content = match &event.content {
+                RhythmicContentV1::Rest => PlaybackSourceContent::Rest,
+                RhythmicContentV1::Notes { notes } if notes.len() == 1 => {
+                    let Some(written_pitch) = pitch(notes[0].written_pitch.clone()) else {
+                        return playback_unsupported(document, document_version, "playback.pitch-invalid", "乐谱包含无法播放的音高");
+                    };
+                    PlaybackSourceContent::Note { written_pitch }
+                }
+                _ => return playback_unsupported(document, document_version, "playback.chord-unsupported", "第一版播放暂不支持和弦"),
+            };
+            let Ok(id) = id_text(&event.id) else {
+                return playback_unsupported(document, document_version, "playback.identifier-invalid", "乐谱包含无法读取的事件标识");
+            };
+            events.push(PlaybackSourceEvent { id, duration: event_duration, content });
+        }
+        let Ok(id) = id_text(&definition.id) else {
+            return playback_unsupported(document, document_version, "playback.identifier-invalid", "乐谱包含无法读取的小节标识");
+        };
+        measures.push(PlaybackSourceMeasure {
+            id,
+            meter: Meter { numerator: definition.meter.numerator.get(), denominator: definition.meter.denominator.get() },
+            voice_start: exact_fraction(&voice.sequence.start),
+            events,
+        });
+    }
+    let Ok(document_id) = id_text(&document.id) else {
+        return playback_unsupported(document, document_version, "playback.identifier-invalid", "乐谱包含无法读取的文档标识");
+    };
+    PlaybackSourceProjection::Ready {
+        projection_version: 1,
+        document_id,
+        document_version,
+        bpm: document.metadata.tempo.bpm.get(),
+        written_to_sounding: PlaybackTransposition {
+            diatonic_steps: part.instrument.written_to_sounding.diatonic_steps.get(),
+            chromatic_semitones: part.instrument.written_to_sounding.chromatic_semitones.get(),
+        },
+        measures,
     }
 }
 

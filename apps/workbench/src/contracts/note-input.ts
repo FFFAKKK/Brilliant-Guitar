@@ -7,6 +7,11 @@ export interface InputPitch { readonly step: typeof PITCH_STEPS[number]; readonl
 export type InputSequenceAnchor = { readonly kind: "start" } | { readonly kind: "after-event"; readonly eventId: string };
 export type InputContent = { readonly kind: "rest" } | { readonly kind: "note"; readonly pitch: InputPitch };
 export interface EventProperties { readonly duration: EventDuration; readonly content: InputContent }
+export interface DocumentMetadataInput {
+  readonly title: string;
+  readonly authors: readonly string[];
+  readonly tempoBpm: number;
+}
 export type DeleteTimePolicy = "preserve" | "collapse";
 export interface ScoreEventRange {
   readonly measureId: string;
@@ -14,6 +19,7 @@ export interface ScoreEventRange {
   readonly startEventId: string;
   readonly endEventId: string;
 }
+export type MeasureInsertPosition = "before" | "after";
 export type ScoreEditAction = { readonly kind: "undo" } | { readonly kind: "redo" } | {
   readonly kind: "delete-event"; readonly eventId: string; readonly timePolicy?: DeleteTimePolicy;
 }
@@ -21,7 +27,10 @@ export type ScoreEditAction = { readonly kind: "undo" } | { readonly kind: "redo
   | { readonly kind: "paste-fragment"; readonly measureId: string; readonly voiceId: string;
       readonly anchor: InputSequenceAnchor; readonly offsetUnits?: number;
       readonly fragment: import("./score-clipboard.ts").ScoreClipboardFragmentV1 }
+  | { readonly kind: "insert-measure"; readonly measureId: string; readonly position: MeasureInsertPosition }
+  | { readonly kind: "remove-measure"; readonly measureId: string }
   | { readonly kind: "set-event-properties"; readonly eventId: string; readonly properties: EventProperties }
+  | { readonly kind: "set-document-metadata"; readonly metadata: DocumentMetadataInput }
   | { readonly kind: "set-title"; readonly title: string } | {
   readonly kind: "append"; readonly measureId: string; readonly anchor: InputSequenceAnchor;
   readonly offsetUnits?: number;
@@ -55,12 +64,22 @@ export function isScoreEditRequest(v: unknown): v is ScoreEditRequest {
       && typeof a.voiceId === "string" && !!a.voiceId && isInputSequenceAnchor(a.anchor)
       && (a.offsetUnits === undefined || (typeof a.offsetUnits === "number" && Number.isSafeInteger(a.offsetUnits) && a.offsetUnits >= 0))
       && isScoreClipboardFragment(a.fragment))
+    || (a.kind === "insert-measure" && typeof a.measureId === "string" && !!a.measureId
+      && (a.position === "before" || a.position === "after"))
+    || (a.kind === "remove-measure" && typeof a.measureId === "string" && !!a.measureId)
     || (a.kind === "set-event-properties" && typeof a.eventId === "string" && !!a.eventId && isEventProperties(a.properties))
+    || (a.kind === "set-document-metadata" && isDocumentMetadataInput(a.metadata))
     || (a.kind === "set-title" && typeof a.title === "string" && a.title.trim().length <= 120)
     || (a.kind === "append" && typeof a.measureId === "string" && !!a.measureId
       && isInputSequenceAnchor(a.anchor)
       && (a.offsetUnits === undefined || (typeof a.offsetUnits === "number" && Number.isSafeInteger(a.offsetUnits) && a.offsetUnits >= 0))
       && isInputDuration(a.duration) && isInputContent(a.content));
+}
+export function isDocumentMetadataInput(value: unknown): value is DocumentMetadataInput {
+  if (!record(value) || typeof value.title !== "string" || value.title.trim().length > 120
+    || !Array.isArray(value.authors) || value.authors.length > 16
+    || typeof value.tempoBpm !== "number" || !Number.isFinite(value.tempoBpm) || value.tempoBpm <= 0) return false;
+  return value.authors.every((author) => typeof author === "string" && !!author.trim() && author.trim().length <= 120);
 }
 function isScoreClipboardFragment(value: unknown): boolean {
   if (!record(value) || value.format !== "brilliant-guitar.score-events" || value.version !== 1

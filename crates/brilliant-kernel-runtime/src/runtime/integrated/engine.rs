@@ -18,6 +18,7 @@ mod batch;
 mod classification_cache_tests;
 mod core;
 mod core_reads;
+mod effect;
 mod migration;
 mod module;
 mod report_pages;

@@ -2,17 +2,95 @@ use tauri::{AppHandle, State};
 use tauri_plugin_dialog::DialogExt;
 
 use crate::{
+    agent_store::{
+        AgentRunRecoverySummaryV1, AgentRunStoreCommitInputV1, AgentRunStoreCommitResultV1,
+        AgentRunStoreEntryV1,
+    },
+    capability::{CapabilityCaller, CapabilityInvocation, CapabilityResult},
     diagnostics::{PluginDiagnosticInput, PluginDiagnosticRecord},
     document_io::{
         atomic_write, normalize_save_path, prepare_recovery_path, quarantine_recovery,
         read_document, read_recovery,
     },
-    dto::{CreateScoreRequest, NativeFileResult, ScoreEditRequest, ScoreSessionRead},
+    dto::{
+        CapabilityTransportRequest, CreateScoreRequest, NativeFileResult, ScoreEditRequest,
+        ScoreSessionRead,
+    },
     error::HostError,
     settings::{ApplicationSettingsSnapshotV1, ApplicationSettingsV1},
     state::AppState,
     workspace_configuration::{WorkspaceConfigurationSnapshotV1, WorkspaceConfigurationV1},
 };
+
+#[tauri::command]
+pub fn workbench_agent_run_load_v1(
+    state: State<'_, AppState>,
+    run_id: String,
+) -> Result<Option<AgentRunStoreEntryV1>, HostError> {
+    state.agent_runs.load(&run_id).map_err(agent_store_error)
+}
+
+#[tauri::command]
+pub fn workbench_agent_run_commit_v1(
+    state: State<'_, AppState>,
+    input: AgentRunStoreCommitInputV1,
+) -> Result<AgentRunStoreCommitResultV1, HostError> {
+    state.agent_runs.commit(input).map_err(agent_store_error)
+}
+
+#[tauri::command]
+pub fn workbench_agent_run_list_recoverable_v1(
+    state: State<'_, AppState>,
+) -> Result<Vec<AgentRunRecoverySummaryV1>, HostError> {
+    state
+        .agent_runs
+        .list_recoverable()
+        .map_err(agent_store_error)
+}
+
+#[tauri::command]
+pub fn workbench_agent_run_quarantine_v1(
+    state: State<'_, AppState>,
+    run_id: String,
+) -> Result<bool, HostError> {
+    state
+        .agent_runs
+        .quarantine(&run_id)
+        .map_err(agent_store_error)
+}
+
+fn agent_store_error(error: std::io::Error) -> HostError {
+    match error.kind() {
+        std::io::ErrorKind::InvalidInput => settings_error(
+            "agent-store.invalid-run-id",
+            "Agent Run 标识无效",
+            422,
+            false,
+        ),
+        std::io::ErrorKind::InvalidData => settings_error(
+            "agent-store.corrupt-record",
+            "Agent Run 记录损坏，已安全隔离",
+            409,
+            false,
+        ),
+        _ => settings_error(
+            "agent-store.unavailable",
+            "暂时无法访问 Agent Run 记录",
+            503,
+            true,
+        ),
+    }
+}
+
+#[tauri::command]
+pub fn workbench_invoke_capability_v1(
+    state: State<'_, AppState>,
+    request: CapabilityTransportRequest,
+) -> Result<CapabilityResult, HostError> {
+    let invocation = CapabilityInvocation::from_transport(request, CapabilityCaller::Ui);
+    let service = locked(state.inner())?;
+    Ok(crate::capability::invoke(&service, invocation))
+}
 
 #[tauri::command]
 pub fn workbench_read_workspace_configuration_v1(

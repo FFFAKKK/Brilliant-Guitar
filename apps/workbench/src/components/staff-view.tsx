@@ -1,31 +1,38 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { CSSProperties, KeyboardEventHandler, MouseEvent, RefObject } from "react";
-import type { InputPitch } from "../contracts/note-input";
+import type { CSSProperties, MouseEvent, PointerEvent, RefObject } from "react";
+import type { EventDuration, InputPitch } from "../contracts/note-input";
 import type { NotationView, StaffView as StaffNotation } from "../contracts/notation";
+import { rhythmCaretCenterY } from "../notation/notation-renderer";
 import type { NotationInteractionGeometry, NotationRenderer } from "../notation/notation-renderer";
 import { fitScorePaper, layoutScorePages, SCORE_PAPER } from "../notation/score-page-layout";
 import { describeMeasureRuleWarnings } from "../notation/rule-warning-description.ts";
-import { resolveOverfullHighlights } from "../notation/overfull-highlight.ts";
 import { zoomFittedPaper } from "../notation/paper-zoom";
 import { usePaperViewport } from "../notation/use-paper-viewport";
 import type { StaffLayout } from "../notation/staff-layout";
 import { yForPitch } from "../notation/input-position";
+import { noteheadSymbol } from "../notation/music-symbols.ts";
 import { useHostedUiComponent } from "./ui-component-host";
 import type { ScoreEditPoint } from "../editor/score-navigation";
 import { resolveStaffPointerTarget } from "../editor/staff-pointer-target.ts";
 import { resolveStaffRangeGeometry } from "../editor/staff-range-geometry.ts";
 import type { WorkbenchFeedback } from "../feedback/workbench-feedback";
 import { LatestWorkbenchTask } from "../workbench/latest-task.ts";
+import type { PlaybackSnapshot } from "../playback/playback-session.ts";
+import { MeasureContextMenu } from "./measure-context-menu.tsx";
 
 export interface StaffEditing {
   readonly point: ScoreEditPoint | null;
   readonly draftStep: InputPitch["step"] | null;
+  readonly previewDuration: EventDuration;
+  readonly previewRest: boolean;
   readonly viewportRef: RefObject<HTMLDivElement | null>;
-  readonly onKeyDown: KeyboardEventHandler<HTMLDivElement>;
   readonly onLocate: (point: ScoreEditPoint, pitch: InputPitch, writeNow: boolean) => void;
   readonly selectedEventId?: string | null;
   readonly selectedRange?: { readonly measureId: string; readonly eventIds: readonly string[] } | null;
   readonly onSelectEvent?: (eventId: string, extend?: boolean) => void;
+  readonly measureCount: number;
+  readonly onInsertMeasure?: (measureId: string, position: "before" | "after") => void;
+  readonly onRemoveMeasure?: (measureId: string) => void;
   readonly busy?: boolean;
   readonly feedback?: WorkbenchFeedback | null;
 }
@@ -36,14 +43,42 @@ function anchorForPoint(geometry: NotationInteractionGeometry | null, point: Sco
     && candidate.offsetUnits === point.offsetUnits) ?? null;
 }
 
-function EngravedPage({ layout, renderer, number, editing, view, showRuleWarnings }: {
+type StaffHover = { readonly kind: "caret"; readonly x: number; readonly y: number; readonly spacing: number;
+  readonly pitch: InputPitch } | { readonly kind: "event"; readonly eventId: string; readonly x: number; readonly y: number;
+  readonly width: number; readonly height: number };
+
+function playbackHeadGeometry(geometry: NotationInteractionGeometry | null, layout: StaffLayout,
+  playback: PlaybackSnapshot | undefined) {
+  const location = playback?.location;
+  if (!geometry || !location || (playback.state !== "playing" && playback.state !== "paused")) return null;
+  const measure = geometry.measures.find((item) => item.measureId === location.measureId);
+  if (!measure || !layout.measures.some((item) => item.measure.id === location.measureId)) return null;
+  const event = location.eventId ? geometry.events.find((item) => item.eventId === location.eventId) : null;
+  const measureEvents = layout.measures.find((item) => item.measure.id === location.measureId)?.measure.events ?? [];
+  const index = location.eventId ? measureEvents.findIndex((item) => item.id === location.eventId) : -1;
+  const nextId = index >= 0 ? measureEvents[index + 1]?.id : null;
+  const next = nextId ? geometry.events.find((item) => item.eventId === nextId) : null;
+  const left = measure.x + Math.min(measure.width * .12, 34);
+  const right = measure.x + measure.width - Math.min(measure.width * .06, 12);
+  const start = event ? event.x + event.width / 2 : left + (right - left) * location.measureProgress;
+  const end = next ? next.x + next.width / 2 : right;
+  return { x: event ? start + (end - start) * location.eventProgress : start,
+    y1: measure.staffBottom - measure.lineSpacing * 4.85, y2: measure.staffBottom + measure.lineSpacing * .72 };
+}
+
+function EngravedPage({ layout, renderer, number, editing, view, showRuleWarnings, playback }: {
   readonly layout: StaffLayout; readonly renderer: NotationRenderer; readonly number: number;
   readonly editing: StaffEditing | undefined; readonly view: StaffNotation; readonly showRuleWarnings: boolean;
+  readonly playback: PlaybackSnapshot | undefined;
 }) {
   const engraving = useRef<HTMLDivElement>(null);
   const focusElement = useRef<SVGRectElement>(null);
+  const playbackElement = useRef<SVGLineElement>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [interaction, setInteraction] = useState<NotationInteractionGeometry | null>(null);
+  const [hover, setHover] = useState<StaffHover | null>(null);
+  const [measureMenu, setMeasureMenu] = useState<Readonly<{ measureId: string; measureNumber: number;
+    x: number; y: number }> | null>(null);
   const [attempt, setAttempt] = useState(0);
   const renderTask = useRef(new LatestWorkbenchTask());
   useEffect(() => {
@@ -80,7 +115,6 @@ function EngravedPage({ layout, renderer, number, editing, view, showRuleWarning
   const feedbackMeasureId = editing?.feedback?.target.scope === "measure" || editing?.feedback?.target.scope === "event"
     ? editing.feedback.target.measureId : null;
   const feedbackMeasure = feedbackMeasureId && interaction?.measures.find((measure) => measure.measureId === feedbackMeasureId);
-  const overfullHighlights = showRuleWarnings && interaction ? resolveOverfullHighlights(layout, interaction) : [];
   const ruleWarningCount = showRuleWarnings
     ? layout.measures.reduce((total, item) => total + item.measure.ruleWarnings.length, 0) : 0;
   const ruleWarningDescription = showRuleWarnings ? layout.measures
@@ -89,45 +123,96 @@ function EngravedPage({ layout, renderer, number, editing, view, showRuleWarning
   const focusRejected = feedbackEventId ? feedbackEventId === selection?.eventId
     : feedbackMeasureId === (selection?.measureId ?? cursor?.measureId);
   const focusSize = cursorMeasure ? cursorMeasure.lineSpacing * 1.45 : 0;
-  const focusCenterY = cursorMeasure && editing?.point?.preferredPitch
-    ? yForPitch(editing.point.preferredPitch, cursorMeasure.staffBottom, cursorMeasure.lineSpacing)
-    : cursor?.y ?? 0;
+  // The caret identifies a rhythmic insertion boundary. Pointer pitch belongs to
+  // the ghost note preview and must not drag this focus marker above/below the staff.
+  const focusCenterY = cursor ? rhythmCaretCenterY(cursor) : 0;
+  const playbackHead = playbackHeadGeometry(interaction, layout, playback);
   useEffect(() => {
     focusElement.current?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }, [cursor?.x, focusCenterY, range?.x, selection?.x, selection?.y]);
-  function locate(event: MouseEvent<HTMLDivElement>, writeNow: boolean) {
+  useEffect(() => {
+    playbackElement.current?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [playback?.location?.eventId, playback?.location?.measureId]);
+  function pointerTarget(event: MouseEvent<HTMLDivElement> | PointerEvent<HTMLDivElement>, writeNow: boolean) {
     if (!editing || status !== "ready" || !interaction) return;
     const element = event.target as Element;
     const eventHit = element.closest<SVGRectElement>("[data-event-id]");
     const hit = eventHit ?? element.closest<SVGRectElement>("[data-measure-id]");
     const svg = hit?.ownerSVGElement, matrix = svg?.getScreenCTM();
-    if (!hit || !matrix) return;
+    if (!hit || !matrix) return null;
     const measureId = eventHit
       ? layout.measures.find((item) => item.measure.events.some((item) => item.id === eventHit.dataset.eventId))?.measure.id
       : hit.dataset.measureId;
-    if (!measureId) return;
+    if (!measureId) return null;
     const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
-    const target = resolveStaffPointerTarget({ view, interaction, measureId,
+    return resolveStaffPointerTarget({ view, interaction, measureId,
       eventId: eventHit?.dataset.eventId ?? null, x: point.x, y: point.y, writeNow });
+  }
+  function locate(event: MouseEvent<HTMLDivElement>, writeNow: boolean) {
+    if (!editing) return;
+    const target = pointerTarget(event, writeNow);
     if (target?.kind === "event") editing.onSelectEvent?.(target.eventId, event.shiftKey);
     if (target?.kind === "caret") editing.onLocate(target.point, target.pitch, writeNow);
   }
+  function openMeasureMenu(event: MouseEvent<HTMLDivElement>) {
+    if (!editing || editing.busy) return;
+    const element = event.target as Element;
+    const eventHit = element.closest<SVGRectElement>("[data-event-id]");
+    const measureHit = eventHit ?? element.closest<SVGRectElement>("[data-measure-id]");
+    const measureId = eventHit
+      ? layout.measures.find((item) => item.measure.events.some((item) => item.id === eventHit.dataset.eventId))?.measure.id
+      : measureHit?.dataset.measureId;
+    if (!measureId) return;
+    const measureNumber = view.measures.findIndex((measure) => measure.id === measureId) + 1;
+    if (measureNumber < 1) return;
+    event.preventDefault();
+    setHover(null);
+    setMeasureMenu({ measureId, measureNumber, x: event.clientX, y: event.clientY });
+  }
+  function preview(event: PointerEvent<HTMLDivElement>) {
+    if (editing?.busy) { setHover(null); return; }
+    const target = pointerTarget(event, false);
+    if (target?.kind === "event") {
+      const geometry = interaction?.events.find((item) => item.eventId === target.eventId);
+      if (!geometry || selection?.eventId === target.eventId) { setHover(null); return; }
+      const next: StaffHover = { kind: "event", eventId: target.eventId, x: geometry.x, y: geometry.y,
+        width: geometry.width, height: geometry.height };
+      setHover((current) => current?.kind === "event" && current.eventId === next.eventId ? current : next);
+      return;
+    }
+    if (target?.kind !== "caret" || editing?.previewRest) { setHover(null); return; }
+    const anchor = anchorForPoint(interaction, target.point);
+    const measure = interaction?.measures.find((item) => item.measureId === target.point.measureId);
+    if (!anchor || !measure) { setHover(null); return; }
+    const next: StaffHover = { kind: "caret", x: anchor.x,
+      y: yForPitch(target.pitch, measure.staffBottom, measure.lineSpacing), spacing: measure.lineSpacing, pitch: target.pitch };
+    setHover((current) => current?.kind === "caret" && current.x === next.x && current.y === next.y
+      && current.pitch.step === next.pitch.step && current.pitch.octave === next.pitch.octave ? current : next);
+  }
   return <div className="staff-paper" data-page-format={SCORE_PAPER.format} data-orientation={SCORE_PAPER.orientation}
     data-render-state={status} data-show-rule-warnings={showRuleWarnings} aria-busy={status === "loading"}>
-    <div ref={engraving} className="staff-paper-engraving" onClick={(event) => locate(event, false)} onDoubleClick={(event) => locate(event, true)}
+    <div ref={engraving} className="staff-paper-engraving" onPointerMove={preview} onPointerLeave={() => setHover(null)}
+      onClick={(event) => locate(event, false)} onDoubleClick={(event) => locate(event, true)}
+      onContextMenu={openMeasureMenu}
       role={status === "ready" ? "img" : undefined}
       aria-label={`第 ${number} 页，高音谱表，${layout.measures.length} 个小节${ruleWarningCount ? `，${ruleWarningCount} 个节拍提示，${ruleWarningDescription}` : ""}`} />
     {status === "ready" && interaction && <svg className="staff-interaction-overlay" viewBox={`0 0 ${layout.width} ${layout.height}`}
       preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
       {range && <rect className="score-range-selection" x={range.x} y={range.y}
         width={range.width} height={range.height} rx={Math.max(3, range.height * .06)} />}
-      {overfullHighlights.map((highlight) => <line key={`rule-warning-${highlight.measureId}`}
-        className="score-rule-warning-underline" x1={highlight.x} x2={highlight.x + highlight.width}
-        y1={highlight.y} y2={highlight.y} />)}
+      {hover?.kind === "event" && <rect className="score-hover-event" x={hover.x} y={hover.y}
+        width={hover.width} height={hover.height} rx={Math.min(4, hover.width / 4)} />}
+      {hover?.kind === "caret" && editing && !editing.busy && !editing.previewRest && <text className="score-hover-notehead"
+        x={hover.x} y={hover.y} fontSize={hover.spacing * 4}
+        textAnchor="middle">{noteheadSymbol(editing.previewDuration)}</text>}
       {feedbackMeasure && <rect key={`feedback-${editing?.feedback?.sequence}`} className="score-edit-warning"
         x={feedbackMeasure.x + 2} y={feedbackMeasure.staffBottom - feedbackMeasure.lineSpacing * 5.2}
         width={Math.max(0, feedbackMeasure.width - 4)} height={feedbackMeasure.lineSpacing * 6.4}
         rx={Math.max(3, feedbackMeasure.lineSpacing * .55)} />}
+      {playbackHead && <g className="score-playback-head" data-state={playback?.state}>
+        <line ref={playbackElement} x1={playbackHead.x} y1={playbackHead.y1} x2={playbackHead.x} y2={playbackHead.y2} />
+        <path d={`M ${playbackHead.x - 3.5} ${playbackHead.y1 - 5} L ${playbackHead.x + 3.5} ${playbackHead.y1 - 5} L ${playbackHead.x} ${playbackHead.y1} Z`} />
+      </g>}
       {selection && <rect key={`selection-${selection.eventId}-${focusRejected ? editing?.feedback?.sequence : "idle"}`}
         ref={focusElement} className={`score-edit-focus${focusRejected ? " score-edit-focus-rejected" : ""}`} data-kind="event" x={selection.x} y={selection.y}
         width={selection.width} height={selection.height} rx={Math.min(4, selection.width / 4)} />}
@@ -142,6 +227,12 @@ function EngravedPage({ layout, renderer, number, editing, view, showRuleWarning
     {editing?.selectedRange && <span className="visually-hidden" role="status" aria-live="polite">
       已选择 {editing.selectedRange.eventIds.length} 个谱面事件
     </span>}
+    {measureMenu && editing && <MeasureContextMenu x={measureMenu.x} y={measureMenu.y}
+      measureNumber={measureMenu.measureNumber} canRemove={editing.measureCount > 1}
+      onInsertBefore={() => editing.onInsertMeasure?.(measureMenu.measureId, "before")}
+      onInsertAfter={() => editing.onInsertMeasure?.(measureMenu.measureId, "after")}
+      onRemove={() => editing.onRemoveMeasure?.(measureMenu.measureId)}
+      onClose={() => setMeasureMenu(null)} />}
     {status === "loading" && <div className="staff-paper-message" role="status">正在绘制谱面…</div>}
     {status === "error" && <div className="staff-paper-message" role="alert">谱面显示失败
       <button type="button" onClick={() => setAttempt((value) => value + 1)}>重新绘制</button>
@@ -160,12 +251,13 @@ export interface StaffViewProps {
   readonly onZoomIn?: () => void;
   readonly onZoomOut?: () => void;
   readonly editing?: StaffEditing;
+  readonly playback?: PlaybackSnapshot;
   readonly showRuleWarnings?: boolean;
 }
 
 /** Paper is this view's own interface. The public host adds no visual chrome. */
 export function StaffView({ notation, renderer, loading, error, onRetry, editing, zoom = 100,
-  onZoomIn, onZoomOut, retryLabel = "重新加载", showRuleWarnings = true }: StaffViewProps) {
+  onZoomIn, onZoomOut, retryLabel = "重新加载", showRuleWarnings = true, playback }: StaffViewProps) {
   const staffNotation = notation?.kind === "staff" ? notation : null;
   const { size } = useHostedUiComponent();
   const fit = fitScorePaper(size);
@@ -176,7 +268,7 @@ export function StaffView({ notation, renderer, loading, error, onRetry, editing
   const activePoint = staffNotation ? editing?.point ?? null : null;
   return <div className="staff-view" ref={viewport} tabIndex={0} aria-label="五线谱视图"
     data-panning={panning} data-editable={Boolean(editing)} data-input-idle={Boolean(activePoint) && !editing?.busy}
-    {...panEvents} onKeyDown={editing?.onKeyDown}
+    {...panEvents}
     onWheel={(event) => {
       if (!event.ctrlKey && !event.metaKey) return;
       event.preventDefault();
@@ -192,7 +284,7 @@ export function StaffView({ notation, renderer, loading, error, onRetry, editing
       : notation?.kind === "unsupported" ? <div className="staff-view-message" role="status">{notation.message}</div>
       : staffNotation ? <div className="staff-page-stack">{pages.map((page, index) =>
         <EngravedPage key={index} layout={page} renderer={renderer} number={index + 1} editing={editing}
-          view={staffNotation} showRuleWarnings={showRuleWarnings} />)}</div>
+          view={staffNotation} showRuleWarnings={showRuleWarnings} playback={playback} />)}</div>
       : null}
   </div>;
 }

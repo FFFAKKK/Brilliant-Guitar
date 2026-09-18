@@ -32,18 +32,19 @@ export interface MeasureGeometry {
   readonly y: number;
   readonly width: number;
   readonly height: number;
-  readonly staffTop?: number;
   readonly staffBottom: number;
   readonly lineSpacing: number;
-  /** Nominal rhythmic boundary and actual sequence tail, in rendered coordinates. */
-  readonly nominalEndX?: number;
-  readonly actualEndX?: number;
 }
 
 export interface NotationInteractionGeometry {
   readonly anchors: readonly EditAnchorGeometry[];
   readonly events: readonly EventGeometry[];
   readonly measures: readonly MeasureGeometry[];
+}
+
+/** The rhythm caret stays on the staff; pitch is previewed by a separate ghost note. */
+export function rhythmCaretCenterY(anchor: Pick<EditAnchorGeometry, "y1" | "y2">): number {
+  return (anchor.y1 + anchor.y2) / 2;
 }
 
 export interface RenderedNotation {

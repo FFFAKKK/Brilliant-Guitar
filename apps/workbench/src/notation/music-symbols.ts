@@ -6,3 +6,10 @@ const RESTS = { 1: "\uE4E3", 2: "\uE4E4", 4: "\uE4E5", 8: "\uE4E6", 16: "\uE4E7"
 export const MUSIC_SYMBOLS = { dot: "\uE1E7", flat: "\uE260", natural: "\uE261", sharp: "\uE262" } as const;
 export const DURATION_NAMES = { 1: "全", 2: "二分", 4: "四分", 8: "八分", 16: "十六分", 32: "三十二分" } as const;
 export const durationSymbol = (duration: EventDuration, rest = false) => duration.base === 32 ? RESTS[32] : (rest ? RESTS : NOTES)[duration.base];
+
+/** SMuFL noteheads used by the non-committing staff hover preview. */
+export function noteheadSymbol(duration: EventDuration): string {
+  if (duration.base === 1) return "\uE0A2";
+  if (duration.base === 2) return "\uE0A3";
+  return "\uE0A4";
+}

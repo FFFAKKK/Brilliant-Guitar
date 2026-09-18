@@ -24,10 +24,12 @@ interface Props {
   readonly feedback: string;
   readonly onAccidentalChange: (value: AccidentalState, completionFocus?: HTMLElement) => void;
   readonly onPitchChange?: (value: InputPitch, completionFocus: HTMLElement) => void;
+  readonly onExitEditing?: () => void;
 }
 
 /** In-flight characters are UI feedback; confirmed pitch always comes from the session read. */
-export function NotePitchFields({ pitch, accidental, source, rest, pending, disabled, feedback, onAccidentalChange, onPitchChange }: Props) {
+export function NotePitchFields({ pitch, accidental, source, rest, pending, disabled, feedback, onAccidentalChange, onPitchChange,
+  onExitEditing }: Props) {
   const complete = pitch?.octave !== null && pitch?.octave !== undefined && !rest;
   const editable = complete && onPitchChange !== undefined;
   const canonical = { step: pitch?.step ?? "", alter: accidental, octave: pitch?.octave ?? 4 };
@@ -111,7 +113,10 @@ export function NotePitchFields({ pitch, accidental, source, rest, pending, disa
           event.preventDefault(); if (!event.repeat) changeBy(field, event.key === "ArrowUp" ? 1 : -1, event.currentTarget);
         } else if (event.key === "Home" || event.key === "End") {
           event.preventDefault(); changeBy(field, 0, event.currentTarget, event.key === "Home" ? "first" : "last");
-        } else if (event.key === "Escape" || event.key === "Enter") { event.preventDefault(); event.currentTarget.blur(); }
+        } else if (event.key === "Escape" || event.key === "Enter") {
+          event.preventDefault();
+          if (onExitEditing) onExitEditing(); else event.currentTarget.blur();
+        }
         else if (event.key === "Backspace" || event.key === "Delete") {
           event.preventDefault();
           if (field === "alter") apply(field, "none", event.currentTarget); else event.currentTarget.select();

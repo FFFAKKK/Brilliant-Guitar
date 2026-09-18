@@ -16,6 +16,8 @@ test("only an explicit horizontal pair is displayed together; other items keep t
   const zoom = { id: "zoom", inlineZone: "trailing" as const };
   const history = { id: "history", inlineZone: "leading" as const };
   assert.deepEqual(pairedDockItems("top", [zoom, history]), [history, zoom]);
+  const transport = { id: "transport", inlineZone: "center" as const };
+  assert.deepEqual(pairedDockItems("top", [zoom, transport, history]), [history, transport, zoom]);
   assert.equal(pairedDockItems("left", [zoom, history]), null);
   assert.equal(pairedDockItems("top", [zoom, history, { id: "note" }]), null);
   assert.equal(pairedDockItems("bottom", [zoom, { id: "note" }]), null);

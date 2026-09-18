@@ -32,6 +32,9 @@ function feedbackContext(session: ScoreSessionRead, point: ScoreEditPoint | null
   }
   if (intent.kind === "delete-range") return { measureId: intent.range.measureId, componentId: "score" };
   if (intent.kind === "paste") return { measureId: intent.measureId, componentId: "score" };
+  if (intent.kind === "insert-measure" || intent.kind === "remove-measure") {
+    return { measureId: intent.measureId, componentId: "score" };
+  }
   return { componentId: intent.kind === "document" ? "document" : "score" };
 }
 export function useScoreInput(session: ScoreSessionRead | null, client: WorkbenchClient, onSession: (session: ScoreSessionRead) => void,
@@ -103,7 +106,7 @@ export function useScoreInput(session: ScoreSessionRead | null, client: Workbenc
           const result = await client.edit(item.request);
           if (!mounted.current || snapshot.current?.documentId !== result.documentId) return;
           snapshot.current = result; onSession(result);
-          if (action.kind === "set-event-properties" || action.kind === "set-title") {
+          if (action.kind === "set-event-properties" || action.kind === "set-title" || action.kind === "set-document-metadata") {
             const destination = item.completionFocus?.isConnected ? item.completionFocus : focusRef.current;
             destination?.focus({ preventScroll: true });
           }
@@ -135,9 +138,21 @@ export function useScoreInput(session: ScoreSessionRead | null, client: Workbenc
               if (lastInserted) nextPoint = eventEndPoint(result.notation, lastInserted.id,
                 currentPoint()?.preferredPitch ?? null) ?? nextPoint;
             }
+            if (action.kind === "insert-measure") {
+              const beforeIds = new Set(previous.kind === "staff" ? previous.measures.map((measure) => measure.id) : []);
+              const inserted = result.notation.measures.find((measure) => !beforeIds.has(measure.id));
+              if (inserted) nextPoint = measureStartPoint(result.notation, inserted, currentPoint()?.preferredPitch ?? null);
+            }
+            if (action.kind === "remove-measure") {
+              const previousIndex = previous.kind === "staff"
+                ? previous.measures.findIndex((measure) => measure.id === action.measureId) : 0;
+              const fallbackIndex = Math.max(0, Math.min(result.notation.measures.length - 1, previousIndex));
+              const destination = result.notation.measures[fallbackIndex] ?? result.notation.measures.at(-1);
+              if (destination) nextPoint = measureStartPoint(result.notation, destination, currentPoint()?.preferredPitch ?? null);
+            }
             const selectedId = editor.current.current.target.kind === "event" ? editor.current.current.target.eventId : null;
             const retainSelection = action.kind !== "delete-event" && action.kind !== "delete-range"
-              && action.kind !== "paste-fragment";
+              && action.kind !== "paste-fragment" && action.kind !== "insert-measure" && action.kind !== "remove-measure";
             const selectedPoint = selectedId && retainSelection
               ? eventStartPoint(result.notation, selectedId, nextPoint.preferredPitch) : null;
             editor.send({ type: "commit", requestId: item.request.requestId,
@@ -150,7 +165,8 @@ export function useScoreInput(session: ScoreSessionRead | null, client: Workbenc
           queue.current.shift(); setPending(queue.current.length);
         } catch (error) {
           if (!mounted.current) return;
-          const propertyEdit = action.kind === "set-event-properties" || action.kind === "set-title";
+          const propertyEdit = action.kind === "set-event-properties" || action.kind === "set-title"
+            || action.kind === "set-document-metadata";
           setFeedbackTarget(propertyEdit ? "properties" : "score");
           const requestIssue = error instanceof Error && "issue" in error && isWorkbenchIssue(error.issue) ? error.issue : null;
           const errorMessage = error instanceof Error ? error.message : "操作失败，请重试";
@@ -187,9 +203,10 @@ export function useScoreInput(session: ScoreSessionRead | null, client: Workbenc
   function enqueue(intent: ScoreEditIntent, completionFocus?: HTMLElement) {
     const point = currentPoint();
     if (!snapshot.current || snapshot.current.notation.kind !== "staff" || (intent.kind === "insert" && !point)
-      || blocked.current) return;
+      || blocked.current) return false;
     const context = feedbackContext(snapshot.current, point, intent);
     setMessage(""); setFeedback(null); queue.current.push({ intent, context, ...(completionFocus ? { completionFocus } : {}) }); setPending(queue.current.length); void drain();
+    return true;
   }
   function write(pitch: Pick<InputPitch, "step" | "octave">, asRest = rest) {
     const view = snapshot.current?.notation;
@@ -267,12 +284,14 @@ export function useScoreInput(session: ScoreSessionRead | null, client: Workbenc
     edgeEditPoint: (edge: "measure-start" | "measure-end" | "score-start" | "score-end") =>
       withView((view, current) => edgeScoreEditPoint(view, current, edge)),
     activate: () => { if (currentPoint()) editor.send({ type: "locate", point: currentPoint()! }); focus(); },
-    applyProperties: (action: Extract<ScoreEditAction, { kind: "set-event-properties" | "set-title" }>, completionFocus?: HTMLElement) => {
-      if (queue.current.length || blocked.current) return;
+    applyProperties: (action: Extract<ScoreEditAction, {
+      kind: "set-event-properties" | "set-title" | "set-document-metadata";
+    }>, completionFocus?: HTMLElement) => {
+      if (queue.current.length || blocked.current) return false;
       // Capture before disabling the form; modal edits must not focus the score behind it.
       const dialog = document.activeElement?.closest<HTMLElement>('[role="dialog"]');
       clearDraft();
-      enqueue(action.kind === "set-title" ? { kind: "document", title: action.title }
+      return enqueue(action.kind === "set-title" || action.kind === "set-document-metadata" ? { kind: "document", action }
         : { kind: "update", eventId: action.eventId, properties: action.properties }, dialog ?? completionFocus);
     },
     exit: clearDraft,
@@ -287,6 +306,10 @@ export function useScoreInput(session: ScoreSessionRead | null, client: Workbenc
     cancelComposition: clearDraft,
     deleteEvent: (eventId: string) => { clearDraft(); enqueue({ kind: "delete", eventId }); focus(); },
     deleteRange: (range: ScoreEventRange) => { clearDraft(); enqueue({ kind: "delete-range", range }); focus(); },
+    insertMeasure: (measureId: string, position: "before" | "after") => {
+      clearDraft(); enqueue({ kind: "insert-measure", measureId, position }); focus();
+    },
+    removeMeasure: (measureId: string) => { clearDraft(); enqueue({ kind: "remove-measure", measureId }); focus(); },
     pasteFragment: (fragment: ScoreClipboardFragmentV1) => {
       const target = editor.current.current.target;
       const editPoint = currentPoint();

@@ -2078,6 +2078,43 @@ mod tests {
                 .expect("valid undo request");
         assert!(matches!(undo.operation, KernelStage4OperationV1::Undo));
 
+        let overview = decode_stage4_operation_request(
+            br#"{"apiVersion":1,"operation":{"kind":"select","selector":{"selectorId":"core.selector.score-overview"}}}"#,
+        )
+        .expect("valid overview selector");
+        assert!(matches!(
+            overview.operation,
+            KernelStage4OperationV1::Select {
+                selector: SelectorRequestV1::ScoreOverview
+            }
+        ));
+
+        let overview_extra = decode_stage4_operation_request(
+            br#"{"apiVersion":1,"operation":{"kind":"select","selector":{"selectorId":"core.selector.score-overview","extra":true}}}"#,
+        );
+        assert!(matches!(
+            overview_extra,
+            Err(KernelStage4OperationDecodeFailureV1::Boundary(
+                StableFailureV1::CodecInvalidShape {
+                    violation: ShapeViolationV1::WrongType,
+                    ..
+                }
+            ))
+        ));
+
+        let overview_unknown = decode_stage4_operation_request(
+            br#"{"apiVersion":1,"operation":{"kind":"select","selector":{"selectorId":"core.selector.unknown"}}}"#,
+        );
+        assert!(matches!(
+            overview_unknown,
+            Err(KernelStage4OperationDecodeFailureV1::Boundary(
+                StableFailureV1::CodecInvalidShape {
+                    violation: ShapeViolationV1::WrongType,
+                    ..
+                }
+            ))
+        ));
+
         let extra = decode_stage4_operation_request(
             br#"{"apiVersion":1,"operation":{"kind":"undo","extra":true}}"#,
         );

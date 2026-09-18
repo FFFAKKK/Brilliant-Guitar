@@ -6,6 +6,12 @@ import { DEFAULT_WORKSPACE_CONFIGURATION, isWorkspaceConfigurationSnapshotV1, is
 
 test("workspace configuration accepts the versioned default document", () => {
   assert.equal(isWorkspaceConfigurationV1(DEFAULT_WORKSPACE_CONFIGURATION), true);
+  assert.deepEqual(DEFAULT_WORKSPACE_CONFIGURATION.uiLayout.placements
+    .filter((placement) => placement.slot === "top")
+    .map((placement) => placement.componentId),
+  ["notation.history-control", "playback.transport", "notation.paper-zoom"]);
+  assert.equal(DEFAULT_WORKSPACE_CONFIGURATION.uiLayout.placements
+    .find((placement) => placement.componentId === "playback.output")?.slot, "right");
   assert.equal(isWorkspaceConfigurationSnapshotV1({
     configuration: DEFAULT_WORKSPACE_CONFIGURATION, persisted: true, recoveredFromInvalid: false,
   }), true);

@@ -9,6 +9,8 @@ import type { ScoreSessionRead } from "../contracts/score-session";
 import { isWorkspaceId } from "../contracts/workspace-id.ts";
 import { createWorkbenchHostBridge } from "./workbench-host-bridge.ts";
 import type { WorkbenchHostBridge } from "./workbench-host-bridge.ts";
+import { ScoreCapabilityClient } from "./score-capability-client.ts";
+import type { CapabilityResult, ScoreSummaryV1 } from "../contracts/capability.ts";
 export { WorkbenchRequestError } from "./workbench-host-bridge.ts";
 
 const SESSION_WORKSPACE_KEY = "brilliant.workbench.session.v1";
@@ -54,10 +56,16 @@ export function resolveWorkbenchWorkspaceId(
 export class WorkbenchClient {
   private readonly bridge: WorkbenchHostBridge;
   private readonly workspaceId: string;
+  private readonly scoreCapabilities: ScoreCapabilityClient;
 
   constructor(bridge: WorkbenchHostBridge = createWorkbenchHostBridge()) {
     this.bridge = bridge;
     this.workspaceId = resolveWorkbenchWorkspaceId(bridge.nativeFiles === true);
+    this.scoreCapabilities = new ScoreCapabilityClient(bridge, this.workspaceId);
+  }
+
+  readScoreSummary(): Promise<CapabilityResult<ScoreSummaryV1>> {
+    return this.scoreCapabilities.readSummary();
   }
 
   private session(value: unknown | null, requiredMessage?: string): ScoreSessionRead | null {

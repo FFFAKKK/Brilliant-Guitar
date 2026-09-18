@@ -23,6 +23,7 @@ export interface NoteInputPanelProps {
   readonly onAccidentalChange: (value: AccidentalState, completionFocus?: HTMLElement) => void;
   readonly onPitchChange?: (value: InputPitch, completionFocus: HTMLElement) => void;
   readonly onRestChange: (value: boolean) => void;
+  readonly onExitFieldEditing?: () => void;
 }
 
 function SourceIcon({ source, pending }: { readonly source: NoteOverview["source"]; readonly pending: boolean }) {
@@ -38,7 +39,8 @@ function SourceIcon({ source, pending }: { readonly source: NoteOverview["source
 
 /** One compact surface; the common host only supplies placement and size. */
 export function NoteInputPanel({ duration, accidental, rest, pitch = null, source = "input", measureShare = null, position = null, pending = false,
-  disabled = false, feedback = "", onDurationChange, onAccidentalChange, onPitchChange, onRestChange }: NoteInputPanelProps) {
+  disabled = false, feedback = "", onDurationChange, onAccidentalChange, onPitchChange, onRestChange,
+  onExitFieldEditing }: NoteInputPanelProps) {
   const name = `${duration.dots ? "附点" : ""}${DURATION_NAMES[duration.base]}${rest ? "休止符" : "音符"}`;
   const pitchName = pitch && !rest ? `${pitch.step}${pitch.alter === 1 ? "♯" : pitch.alter === -1 ? "♭" : ""}${pitch.octave ?? "_"}` : rest ? "休止符" : "尚未输入音名";
   const allowShortRest = source === "selection" && rest;
@@ -59,7 +61,8 @@ export function NoteInputPanel({ duration, accidental, rest, pitch = null, sourc
     </div>
     <div className="note-entry-properties">
       <NotePitchFields pitch={pitch} accidental={accidental} source={source} rest={rest} pending={pending} disabled={disabled} feedback={feedback}
-        onAccidentalChange={onAccidentalChange} {...(onPitchChange === undefined ? {} : { onPitchChange })} />
+        onAccidentalChange={onAccidentalChange} {...(onExitFieldEditing === undefined ? {} : { onExitEditing: onExitFieldEditing })}
+        {...(onPitchChange === undefined ? {} : { onPitchChange })} />
       <span className="note-entry-share" aria-label={measureShare ? `占本小节的 ${measureShare}` : "暂无小节比例"}
         title={measureShare ? `${name}，占本小节的 ${measureShare}` : "等待小节拍号"}>
         <span className="note-entry-share-label" aria-hidden="true">占小节</span>

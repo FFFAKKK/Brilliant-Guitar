@@ -5,6 +5,7 @@ import { validateNewScoreInput } from "../src/contracts/new-score.ts";
 import type { NewScoreInput } from "../src/contracts/new-score.ts";
 import type { ScoreSessionRead } from "../src/contracts/score-session.ts";
 import { projectNotation } from "./notation-projection.ts";
+import { projectPlaybackSource } from "./playback-projection.ts";
 import { prepareEventProperties } from "./event-properties-command.ts";
 import { decodeScoreDocument, encodeScoreDocumentJson } from "../.kernel/src/core-kernel/index.js";
 import type { CreateScoreDocumentInputV1, InsertMeasureCommand, IntegratedCommandBus, ScoreDocument, Voice } from "../.kernel/src/core-kernel/index.js";
@@ -13,7 +14,7 @@ import type { IntegratedNativeAddonV2, KernelRuleWarningV1 } from "../.kernel/sr
 
 import { durationUnits, isScoreEditRequest } from "../src/contracts/note-input.ts";
 import type { ScoreEditRequest } from "../src/contracts/note-input.ts";
-import type { BatchCommand, DeleteRangeCommand, RemoveEventCommand, InsertNotesEventCommand, InsertRestEventCommand } from "../.kernel/src/core-kernel/index.js";
+import type { BatchCommand, DeleteRangeCommand, RemoveEventCommand, RemoveMeasureCommand, InsertNotesEventCommand, InsertRestEventCommand } from "../.kernel/src/core-kernel/index.js";
 import type { WorkbenchIssue, WorkbenchIssueTarget } from "../src/contracts/workbench-issue.ts";
 import { restDurations } from "./rest-durations.ts";
 const require = createRequire(import.meta.url);
@@ -35,6 +36,9 @@ function actionTarget(current: ScoreSessionRead, action: ScoreEditRequest["actio
   if (action.kind === "append") return { scope: "measure", measureId: action.measureId };
   if (action.kind === "delete-range") return { scope: "measure", measureId: action.range.measureId };
   if (action.kind === "paste-fragment") return { scope: "measure", measureId: action.measureId };
+  if (action.kind === "insert-measure" || action.kind === "remove-measure") {
+    return { scope: "measure", measureId: action.measureId };
+  }
   if (action.kind === "delete-event" || action.kind === "set-event-properties") {
     if (current.notation.kind === "staff") {
       const measure = current.notation.measures.find((item) => item.events.some((event) => event.id === action.eventId));
@@ -155,7 +159,8 @@ export class ScoreSessionService {
     const warnings = readRuleWarnings(entry.bus, document.id, documentVersion);
     return { documentId: document.id, title: document.metadata.title, measureCount: document.measureDefinitions.length,
       documentVersion, undoDepth: read.value.history.undoDepth, redoDepth: read.value.history.redoDepth,
-      notation: projectNotation(document, warnings) };
+      notation: projectNotation(document, warnings), playbackSource: projectPlaybackSource(document, documentVersion),
+      metadata: { title: document.metadata.title, authors: [...document.metadata.authors], tempoBpm: document.metadata.tempo.bpm } };
   }
 
   exportDocument(workspaceId: string): string {
@@ -199,13 +204,17 @@ export class ScoreSessionService {
     let result;
     if (action.kind === "undo") result = entry.bus.undo();
     else if (action.kind === "redo") result = entry.bus.redo();
-    else if (action.kind === "set-event-properties" || action.kind === "set-title") {
+    else if (action.kind === "set-event-properties" || action.kind === "set-title" || action.kind === "set-document-metadata") {
       const read = entry.bus.read();
       if (!read.ok) throw new WorkbenchHostError("暂时无法读取乐谱", 503);
       const document = read.value.snapshot.document;
       if (action.kind === "set-title") {
         result = entry.bus.submit({ commandVersion: 1, commandId: "core.document.set-metadata", target: { kind: "document", documentId: document.id },
           payload: { metadata: { ...document.metadata, title: action.title.trim() || "未命名乐谱" } } });
+      } else if (action.kind === "set-document-metadata") {
+        result = entry.bus.submit({ commandVersion: 1, commandId: "core.document.set-metadata", target: { kind: "document", documentId: document.id },
+          payload: { metadata: { title: action.metadata.title.trim() || "未命名乐谱",
+            authors: action.metadata.authors.map((author) => author.trim()), tempo: { bpm: action.metadata.tempoBpm } } } });
       } else {
         const prepared = prepareEventProperties(document, action.eventId, action.properties);
         if (!prepared.ok) throw new WorkbenchHostError(prepared.message, prepared.status, undefined, prepared.issue);
@@ -258,6 +267,60 @@ export class ScoreSessionService {
           start: { kind: "voice-event", voiceId: voice.id, eventId: action.range.startEventId },
           end: { kind: "voice-event", voiceId: voice.id, eventId: action.range.endEventId },
         } } };
+      result = entry.bus.submit(command);
+    }
+    else if (action.kind === "insert-measure") {
+      const read = entry.bus.read();
+      if (!read.ok) throw new WorkbenchHostError("暂时无法读取乐谱", 503);
+      const doc = read.value.snapshot.document;
+      const targetIndex = doc.measureDefinitions.findIndex((measure) => measure.id === action.measureId);
+      const target = doc.measureDefinitions[targetIndex];
+      if (!target) {
+        const message = "目标小节已改变，请重新选择";
+        throw new WorkbenchHostError(message, 409, undefined,
+          issue("editor.measure-stale", message, actionTarget(current, action)));
+      }
+      const entries = doc.parts.map((part) => {
+        const source = part.measureContents.find((content) => content.measureId === target.id);
+        const voices = source?.voices.map((voice): Voice => ({ id: randomUUID(), defaultStaffId: voice.defaultStaffId,
+          sequence: { start: { numerator: 0, denominator: 1 }, events: [] } })) ?? [];
+        const firstVoice = voices[0];
+        if (!firstVoice) return null;
+        return { partId: part.id, voices: [firstVoice, ...voices.slice(1)] as [Voice, ...Voice[]] };
+      });
+      const firstEntry = entries[0];
+      if (!firstEntry || entries.some((item) => item === null)) {
+        const message = "当前乐谱结构无法创建完整小节";
+        throw new WorkbenchHostError(message, 422, undefined,
+          issue("editor.measure-structure-unsupported", message, actionTarget(current, action)));
+      }
+      const previous = doc.measureDefinitions[targetIndex - 1];
+      const anchor = action.position === "after" ? { kind: "after-measure" as const, measureId: target.id }
+        : previous ? { kind: "after-measure" as const, measureId: previous.id } : { kind: "start" as const };
+      const command: InsertMeasureCommand = { commandVersion: 1, commandId: "core.measure.insert",
+        target: { kind: "document", documentId: doc.id }, payload: {
+          anchor,
+          definition: { id: randomUUID(), meter: { ...target.meter } },
+          contents: [firstEntry, ...entries.slice(1) as Exclude<typeof entries[number], null>[]],
+        } };
+      result = entry.bus.submit(command);
+    }
+    else if (action.kind === "remove-measure") {
+      const read = entry.bus.read();
+      if (!read.ok) throw new WorkbenchHostError("暂时无法读取乐谱", 503);
+      const doc = read.value.snapshot.document;
+      if (!doc.measureDefinitions.some((measure) => measure.id === action.measureId)) {
+        const message = "目标小节已改变，请重新选择";
+        throw new WorkbenchHostError(message, 409, undefined,
+          issue("editor.measure-stale", message, actionTarget(current, action)));
+      }
+      if (doc.measureDefinitions.length <= 1) {
+        const message = "乐谱至少需要保留一个小节";
+        throw new WorkbenchHostError(message, 422, undefined,
+          issue("editor.measure-required", message, actionTarget(current, action)));
+      }
+      const command: RemoveMeasureCommand = { commandVersion: 1, commandId: "core.measure.remove",
+        target: { kind: "measure", measureId: action.measureId }, payload: {} };
       result = entry.bus.submit(command);
     }
     else if (action.kind === "paste-fragment") {

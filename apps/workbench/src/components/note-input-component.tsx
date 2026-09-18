@@ -20,7 +20,8 @@ export function NoteInputComponent({ projection }: { readonly projection: NoteCo
       onDurationChange={(value) => actions.change({ kind: "duration", value })}
       onAccidentalChange={(value, completionFocus) => actions.change({ kind: "accidental", value }, completionFocus)}
       onPitchChange={(value, completionFocus) => actions.change({ kind: "pitch", value }, completionFocus)}
-      onRestChange={(value) => actions.change({ kind: "rest", value })} />
+      onRestChange={(value) => actions.change({ kind: "rest", value })}
+      onExitFieldEditing={actions.focusScore} />
     {viewModel.message && <span className="note-entry-live" role="alert">{viewModel.message}</span>}
   </div>;
 }

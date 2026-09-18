@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -118,7 +119,7 @@ pub struct ScoreEditRequest {
     pub action: ScoreEditAction,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ScoreSessionRead {
     pub document_id: String,
@@ -128,6 +129,84 @@ pub struct ScoreSessionRead {
     pub undo_depth: u64,
     pub redo_depth: u64,
     pub notation: NotationView,
+    pub playback_source: PlaybackSourceProjection,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScoreSummaryV1 {
+    pub document_id: String,
+    pub document_version: u64,
+    pub title: String,
+    pub measure_count: usize,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct CapabilityTransportRequest {
+    pub invocation_id: String,
+    pub capability_id: String,
+    pub contract_version: u64,
+    pub workspace_id: String,
+    pub input: Value,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(
+    tag = "kind",
+    rename_all = "kebab-case",
+    rename_all_fields = "camelCase"
+)]
+pub enum PlaybackSourceProjection {
+    Ready {
+        projection_version: u8,
+        document_id: String,
+        document_version: u64,
+        bpm: f64,
+        written_to_sounding: PlaybackTransposition,
+        measures: Vec<PlaybackSourceMeasure>,
+    },
+    Unsupported {
+        projection_version: u8,
+        document_id: String,
+        document_version: u64,
+        code: &'static str,
+        message: String,
+    },
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PlaybackTransposition {
+    pub diatonic_steps: i64,
+    pub chromatic_semitones: i64,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PlaybackSourceMeasure {
+    pub id: String,
+    pub meter: Meter,
+    pub voice_start: ExactFraction,
+    pub events: Vec<PlaybackSourceEvent>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct PlaybackSourceEvent {
+    pub id: String,
+    pub duration: ExactFraction,
+    pub content: PlaybackSourceContent,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(
+    tag = "kind",
+    rename_all = "kebab-case",
+    rename_all_fields = "camelCase"
+)]
+pub enum PlaybackSourceContent {
+    Rest,
+    Note { written_pitch: InputPitch },
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]

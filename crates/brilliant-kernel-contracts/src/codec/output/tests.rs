@@ -1,5 +1,5 @@
 use super::*;
-use brilliant_core_types::{DocumentVersionV1, JsString, StableId, StablePathV1};
+use brilliant_core_types::{DocumentVersionV1, JsString, SafeInteger, StableId, StablePathV1};
 use brilliant_score_foundation::{CoreDiagnosticCodeV1, CoreDiagnosticV1, ScoreDocumentV1};
 use serde::Serialize;
 
@@ -282,6 +282,11 @@ fn response_statuses_events_snapshot_null_and_replay_omission_match_serde() {
 #[test]
 fn selectors_preserve_tags_flattening_and_range_field_order() {
     for selection in [
+        KernelSelectorValueV1::Overview(ScoreOverviewV1 {
+            document_id: StableId::new("score/overview").unwrap(),
+            title: "Overview".into(),
+            measure_count: SafeInteger::new(2).unwrap(),
+        }),
         KernelSelectorValueV1::Metadata(document().metadata),
         KernelSelectorValueV1::Entity(SelectedScoreEntityV1::Document(document())),
         KernelSelectorValueV1::Ownership(ScoreEntityOwnershipV1::Note {
@@ -325,6 +330,20 @@ fn selectors_preserve_tags_flattening_and_range_field_order() {
     scalar_parity(&KernelSelectorResultV1::Rejected(
         KernelStage4FailureV1::ReadEntityNotFound,
     ));
+}
+
+#[test]
+fn score_overview_preserves_utf16_titles_losslessly() {
+    let overview = KernelSelectorValueV1::Overview(ScoreOverviewV1 {
+        document_id: StableId::new("score/overview").unwrap(),
+        title: JsString::from_utf16(vec![0xd800, b'/' as u16, 0xdc00]),
+        measure_count: SafeInteger::new(2).unwrap(),
+    });
+
+    assert_eq!(
+        String::from_utf8(encoded(&overview)).unwrap(),
+        r#"{"documentId":"score/overview","title":"\ud800/\udc00","measureCount":2}"#
+    );
 }
 
 #[test]

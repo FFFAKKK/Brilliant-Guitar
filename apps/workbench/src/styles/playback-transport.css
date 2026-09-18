@@ -1,0 +1,31 @@
+/* Quiet transport hardware: compact, neutral and subordinate to the score. */
+.playback-transport-dock { width: 100%; height: 100%; min-width: 250px; display: flex; align-items: center; justify-content: center; padding: 4px 8px; }
+.playback-transport { position: relative; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 3px 5px; border: 1px solid color-mix(in srgb, var(--color-border-strong) 66%, transparent); border-radius: 10px; background: linear-gradient(180deg, color-mix(in srgb, var(--color-panel) 76%, #fff 2%), color-mix(in srgb, var(--color-workspace) 86%, #000 4%)); box-shadow: inset 0 1px rgb(255 255 255 / 4%), 0 1px 2px rgb(0 0 0 / 16%); }
+.playback-transport-controls { display: flex; align-items: center; gap: 2px; }
+.playback-transport button { border: 0; padding: 0; display: grid; place-items: center; cursor: pointer; }
+.playback-transport-button { width: 28px; height: 28px; border-radius: 7px; background: transparent; color: var(--color-secondary); transition: color 120ms ease, background-color 120ms ease, transform 100ms ease; }
+.playback-transport-button svg { width: 17px; height: 17px; }
+.playback-transport-stop { color: var(--color-tertiary); }
+.playback-transport-primary { position: relative; width: 34px; height: 34px; margin-inline: 2px; border-radius: 9px; color: #eef4ff; background: linear-gradient(180deg, color-mix(in srgb, var(--color-accent) 86%, white 8%), var(--color-accent)); box-shadow: 0 1px 4px rgb(0 0 0 / 24%), inset 0 1px rgb(255 255 255 / 22%); transition: transform 120ms cubic-bezier(.2,.8,.2,1), filter 120ms ease, box-shadow 160ms ease; }
+.playback-transport[data-state="playing"] .playback-transport-primary { color: #f5f8ff; box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 24%, transparent), 0 2px 7px rgb(0 0 0 / 28%); }
+.playback-transport-primary-glyph, .playback-transport-primary svg { width: 20px; height: 20px; display: grid; place-items: center; }
+.playback-transport-time { min-width: 67px; display: flex; align-items: baseline; justify-content: center; gap: 4px; color: var(--color-secondary); font-size: 11px; font-variant-numeric: tabular-nums; letter-spacing: .01em; }
+.playback-transport-time span:first-child { color: var(--color-text); }
+.playback-transport-time i { color: var(--color-tertiary); font-style: normal; }
+.playback-transport-button:hover:not(:disabled) { color: var(--color-text); background: var(--color-hover); }
+.playback-transport-primary:hover:not(:disabled) { filter: brightness(1.08); }
+.playback-transport button:active:not(:disabled) { transform: scale(.94); }
+.playback-transport button:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 1px; }
+.playback-transport button:disabled { cursor: default; opacity: .25; }
+.playback-transport[data-pending] .playback-transport-primary-glyph { opacity: .35; }
+.playback-transport[data-pending] .playback-transport-primary::after { content: ''; position: absolute; inset: 8px; border: 1.5px solid transparent; border-top-color: currentColor; border-radius: 50%; animation: playback-activate 650ms linear infinite; }
+.shared-dock-inline-body[data-zone="center"] { min-width: 250px; }
+.shared-dock-compact { grid-template-columns: 40px minmax(250px, 1fr) 40px; }
+.shared-dock-compact-primary { min-width: 250px; }
+.shared-dock-flyout .playback-transport-dock { min-width: 0; min-height: 72px; }
+.ui-component-host[data-component-id="playback.transport"][data-component-slot="left"] .playback-transport-dock, .ui-component-host[data-component-id="playback.transport"][data-component-slot="right"] .playback-transport-dock { min-width: 0; padding: 10px; align-items: flex-start; }
+.ui-component-host[data-component-id="playback.transport"][data-component-slot="left"] .playback-transport, .ui-component-host[data-component-id="playback.transport"][data-component-slot="right"] .playback-transport { width: 100%; flex-wrap: wrap; justify-content: center; padding: 8px; }
+.ui-component-host[data-component-id="playback.transport"][data-component-slot="left"] .playback-transport-controls, .ui-component-host[data-component-id="playback.transport"][data-component-slot="right"] .playback-transport-controls { width: 100%; justify-content: center; }
+.ui-component-host[data-component-id="playback.transport"][data-component-slot="left"] .playback-transport-time, .ui-component-host[data-component-id="playback.transport"][data-component-slot="right"] .playback-transport-time { flex: 1; }
+@container (max-width: 250px) { .playback-transport-time { display: none; } .playback-transport-dock { min-width: 178px; } }
+@keyframes playback-activate { to { transform: rotate(360deg); } }

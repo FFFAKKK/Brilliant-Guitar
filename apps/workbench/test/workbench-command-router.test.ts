@@ -22,6 +22,7 @@ function keyboardEvent(key: string, options: Partial<Pick<KeyboardEvent,
 test("shortcut normalization gives desktop commands a platform-neutral identity", () => {
   assert.equal(normalizedShortcut({ key: "s", ctrlKey: true, metaKey: false, altKey: false, shiftKey: true }), "Mod+Shift+S");
   assert.equal(normalizedShortcut({ key: "=", ctrlKey: true, metaKey: false, altKey: false, shiftKey: false }), "Mod+Plus");
+  assert.equal(normalizedShortcut({ key: " ", ctrlKey: false, metaKey: false, altKey: false, shiftKey: false }), "Space");
 });
 
 test("the command router enforces scope, enabled state and duplicate identities without owning menu UI", () => {
@@ -56,6 +57,7 @@ test("history and zoom shortcuts are resolved by the shared router without consu
     { id: "view.zoom-in", label: "放大", shortcut: "Mod+Plus", scope: "score", enabled: true, run: () => { calls.push("in"); } },
     { id: "view.zoom-out", label: "缩小", shortcut: "Mod+Minus", scope: "score", enabled: true, run: () => { calls.push("out"); } },
     { id: "view.zoom-fit", label: "适合页面", shortcut: "Mod+0", scope: "score", enabled: true, run: () => { calls.push("fit"); } },
+    { id: "playback.toggle", label: "播放", shortcut: "Space", scope: "score", enabled: true, run: () => { calls.push("play"); } },
   ]);
 
   assert.equal(router.handle(keyboardEvent("z"), "score"), false);
@@ -66,6 +68,7 @@ test("history and zoom shortcuts are resolved by the shared router without consu
   assert.equal(router.handle(keyboardEvent("=", { ctrlKey: true }), "score"), true);
   assert.equal(router.handle(keyboardEvent("-", { metaKey: true }), "score"), true);
   assert.equal(router.handle(keyboardEvent("0", { ctrlKey: true }), "score"), true);
+  assert.equal(router.handle(keyboardEvent(" "), "score"), true);
   assert.equal(router.handle(keyboardEvent("z", { ctrlKey: true, altKey: true }), "score"), false);
-  assert.deepEqual(calls, ["undo", "redo", "in", "out", "fit"]);
+  assert.deepEqual(calls, ["undo", "redo", "in", "out", "fit", "play"]);
 });

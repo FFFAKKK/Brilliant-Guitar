@@ -131,6 +131,7 @@ impl LosslessEncode for SelectedScoreEntityV1 {
 impl LosslessEncode for KernelSelectorValueV1 {
     fn write_lossless<W: Write + ?Sized>(&self, writer: &mut W) -> Result<(), LosslessJsonError> {
         match self {
+            Self::Overview(value) => value.write_lossless(writer),
             Self::Metadata(value) => value.write_lossless(writer),
             Self::Entity(value) => value.write_lossless(writer),
             Self::Ownership(value) => value.write_lossless(writer),
@@ -338,6 +339,16 @@ impl LosslessEncode for KernelStage4MarkPersistedResultV1 {
 impl LosslessEncode for SharedScoreDocumentV1 {
     fn write_lossless<W: Write + ?Sized>(&self, writer: &mut W) -> Result<(), LosslessJsonError> {
         brilliant_score_foundation::write_canonical_score_document(self.as_document(), writer)
+    }
+}
+
+impl LosslessEncode for ScoreOverviewV1 {
+    fn write_lossless<W: Write + ?Sized>(&self, writer: &mut W) -> Result<(), LosslessJsonError> {
+        let mut state = LosslessObjectWriter::new(writer)?;
+        state.field("documentId", &self.document_id)?;
+        state.field("title", &self.title)?;
+        state.field("measureCount", &self.measure_count)?;
+        state.end()
     }
 }
 

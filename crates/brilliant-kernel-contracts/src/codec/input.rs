@@ -91,6 +91,7 @@ decode_tagged!([] ScoreRangeV1, "kind" {
     "voice-event-range" => VoiceEventRange { start => "start", end => "end" },
 });
 decode_tagged!([] SelectorRequestV1, "selectorId" {
+    "core.selector.score-overview" => ScoreOverview,
     "core.selector.score-metadata" => ScoreMetadata,
     "core.selector.score-entity" => ScoreEntity { address => "address" },
     "core.selector.score-entity-ownership" => ScoreEntityOwnership { address => "address" },

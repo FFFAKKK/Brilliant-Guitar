@@ -100,6 +100,41 @@ create one owner for:
 
 Rendering code may format fields, but it must not redefine the payload contract.
 
+### Mistake 5: One UI Value Owns Several Interaction Meanings
+
+**Bad**: Reusing a pointer-derived pitch as both the next note's musical input
+and the vertical position of a rhythmic caret. A low pointer position then moves
+an insertion marker away from the staff even though its rhythmic location is
+correct.
+
+**Good**: Keep independent projections for independent meanings:
+
+- semantic edit point: document-relative rhythm location
+- preferred pitch: temporary input intent
+- engraving geometry: current rendered coordinates
+- hover preview: pointer-only visual state
+- DOM focus: current keyboard recipient
+
+Components may display these together, but no field should silently become the
+source of truth for another concern.
+
+### Mistake 6: Components Blur Without A Focus Handoff
+
+**Bad**: A dock input calls `blur()` on Enter and assumes keyboard editing will
+resume elsewhere. Focus can land on `body`, outside the workbench keyboard
+router, so note input appears broken while the editing session is still valid.
+
+**Good**: The application projection exposes an explicit focus action such as
+`focusScore()`. The component reports that field editing ended; the application
+service restores the score recipient. Keep one keyboard routing entry point and
+let leaf components consume keys only while they own focus.
+
+For score, canvas, timeline, and similar interactive views, regression checks
+must cover both contracts:
+
+- visual coordinates remain correct at extreme input values and zoom levels
+- keyboard control resumes after leaving every editable child control
+
 ---
 
 ## Checklist for Cross-Layer Features
@@ -120,6 +155,12 @@ After implementation:
       casting payload fields locally
 - [ ] Checked that derived state points back to the source event identifier
       (`seq`, `id`, `version`) instead of inventing a second cursor
+- [ ] Checked that semantic selection, pointer preview, rendered geometry, and
+      DOM focus have separate owners
+- [ ] Checked that leaving a child input explicitly hands keyboard focus to the
+      intended application surface
+- [ ] Checked that the same keyboard command is not registered in both a shell
+      capture handler and a child view bubble handler
 
 ---
 

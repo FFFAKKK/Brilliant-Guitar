@@ -132,10 +132,22 @@ impl Default for UiLayoutV1 {
                     0,
                 ),
                 placement(
-                    "notation.paper-zoom",
+                    "playback.transport",
                     UiSlotV1::Top,
                     UiPresentationV1::Panel,
                     1,
+                ),
+                placement(
+                    "notation.paper-zoom",
+                    UiSlotV1::Top,
+                    UiPresentationV1::Panel,
+                    2,
+                ),
+                placement(
+                    "playback.output",
+                    UiSlotV1::Right,
+                    UiPresentationV1::Panel,
+                    0,
                 ),
             ],
         }

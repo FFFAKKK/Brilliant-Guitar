@@ -1,7 +1,7 @@
 use brilliant_kernel_contracts::{
     CoreCommandEnvelopeV1, KernelStage3CommandFailureLeafV1, ScoreEntityTargetV1,
 };
-use brilliant_kernel_runtime::KernelStage3TransactionV1;
+use brilliant_kernel_runtime::{KernelEffectV1, KernelStage3TransactionV1};
 
 pub(crate) fn dispatch(
     transaction: &mut KernelStage3TransactionV1<'_>,
@@ -11,11 +11,19 @@ pub(crate) fn dispatch(
         CoreCommandEnvelopeV1::DocumentSetMetadata {
             target: ScoreEntityTargetV1::Document { document_id },
             metadata,
-        } => transaction.set_document_metadata(document_id, metadata),
+        } => KernelEffectV1::SetDocumentMetadata {
+            document_id,
+            metadata,
+        }
+        .apply(transaction),
         CoreCommandEnvelopeV1::NoteSetWrittenPitch {
             target: ScoreEntityTargetV1::Note { note_id },
             written_pitch,
-        } => transaction.set_note_written_pitch(note_id, written_pitch),
+        } => KernelEffectV1::ReplaceWrittenPitch {
+            note_id,
+            pitch: written_pitch,
+        }
+        .apply(transaction),
         CoreCommandEnvelopeV1::EventSetNoteValue {
             target: ScoreEntityTargetV1::Event { event_id },
             note_value,

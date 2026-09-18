@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 use std::sync::Mutex;
 
+use crate::agent_store::AgentRunStore;
 use crate::application::ScoreSessionService;
 use crate::diagnostics::DiagnosticLog;
 use crate::document_io::RecoveryManager;
@@ -13,6 +14,7 @@ pub struct AppState {
     pub diagnostics: DiagnosticLog,
     pub settings: ApplicationSettingsStore,
     pub workspace_configuration: WorkspaceConfigurationStore,
+    pub agent_runs: AgentRunStore,
     recovery_root: PathBuf,
 }
 
@@ -27,13 +29,23 @@ impl AppState {
             .parent()
             .unwrap_or_else(|| std::path::Path::new("config"))
             .join("workspaces");
-        Self::with_paths(recovery_root, settings_path, workspace_configuration_root)
+        let agent_run_root = recovery_root
+            .parent()
+            .map(|path| path.join("agent").join("runs"))
+            .unwrap_or_else(|| PathBuf::from("agent").join("runs"));
+        Self::with_paths(
+            recovery_root,
+            settings_path,
+            workspace_configuration_root,
+            agent_run_root,
+        )
     }
 
     pub fn with_paths(
         recovery_root: PathBuf,
         settings_path: PathBuf,
         workspace_configuration_root: PathBuf,
+        agent_run_root: PathBuf,
     ) -> Self {
         let diagnostics_root = recovery_root
             .parent()
@@ -45,6 +57,7 @@ impl AppState {
             diagnostics: DiagnosticLog::new(diagnostics_root),
             settings: ApplicationSettingsStore::new(settings_path),
             workspace_configuration: WorkspaceConfigurationStore::new(workspace_configuration_root),
+            agent_runs: AgentRunStore::new(agent_run_root),
             recovery_root,
         }
     }

@@ -4,6 +4,7 @@ import { Beam, Stave, StaveNote } from "vexflow";
 import { eventNoteSpec } from "../src/notation/vexflow-note-spec.ts";
 import { recenterPaperViewport } from "../src/notation/paper-viewport.ts";
 import { fitScorePaper } from "../src/notation/score-page-layout.ts";
+import { rhythmCaretCenterY } from "../src/notation/notation-renderer.ts";
 
 test("real whole rests hang from line four; half rests sit on line three", () => {
   const stave = new Stave(60, 50, 200);
@@ -44,4 +45,9 @@ test("refitting a previously oversized page clears horizontal drift as docks res
     assert.deepEqual(scroll, { left: 0, top: 0 });
     previous = next;
   }
+});
+
+test("the rhythm caret stays centered on the staff independently of pointer pitch", () => {
+  assert.equal(rhythmCaretCenterY({ y1: 42, y2: 58 }), 50);
+  assert.equal(rhythmCaretCenterY({ y1: -10, y2: 10 }), 0);
 });

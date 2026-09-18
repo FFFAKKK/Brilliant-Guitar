@@ -1,22 +1,12 @@
 //! Shared SDK preparation contract for typed standalone and occurrence Batch writes.
 use super::*;
 use crate::candidate::{CandidateExecution, ModuleSegmentSource};
+use crate::runtime::effect::KernelEffectTransaction;
 
-pub(super) trait ModuleTransaction {
+pub(super) trait ModuleTransaction: KernelEffectTransaction {
     fn projection(&mut self, id: &StableId) -> Result<Value>;
     fn contribution_context(&mut self, id: &StableId) -> Result<Value>;
     fn contains(&mut self, entity: &StableEntityAddressV1, id: &StableId) -> bool;
-    fn pitch(
-        &mut self,
-        id: StableId,
-        pitch: WrittenPitchV1,
-    ) -> std::result::Result<(), KernelStage3CommandFailureLeafV1>;
-    fn extension(
-        &mut self,
-        namespace: brilliant_core_types::JsString,
-        owner: ExtensionOwnerV1,
-        block: Option<ExtensionBlockV1>,
-    ) -> std::result::Result<(), KernelStage3CommandFailureLeafV1>;
 }
 impl ModuleTransaction for KernelStage3TransactionV1<'_> {
     fn contribution_context(&mut self, id: &StableId) -> Result<Value> {
@@ -36,20 +26,30 @@ impl ModuleTransaction for KernelStage3TransactionV1<'_> {
             self.overlay.read_entity(entity).is_some()
         }
     }
-    fn pitch(
+}
+impl KernelEffectTransaction for CandidateExecution<'_> {
+    fn set_document_metadata(
+        &mut self,
+        id: StableId,
+        metadata: ScoreMetadataV1,
+    ) -> std::result::Result<(), KernelStage3CommandFailureLeafV1> {
+        self.module_metadata(&id, metadata)
+    }
+
+    fn replace_written_pitch(
         &mut self,
         id: StableId,
         pitch: WrittenPitchV1,
     ) -> std::result::Result<(), KernelStage3CommandFailureLeafV1> {
-        self.set_note_written_pitch(id, pitch)
+        self.module_pitch(&id, pitch)
     }
-    fn extension(
+    fn set_extension(
         &mut self,
         namespace: brilliant_core_types::JsString,
         owner: ExtensionOwnerV1,
         block: Option<ExtensionBlockV1>,
     ) -> std::result::Result<(), KernelStage3CommandFailureLeafV1> {
-        self.set_integrated_extension(namespace, owner, block)
+        self.module_extension(namespace, owner, block)
     }
 }
 impl ModuleTransaction for CandidateExecution<'_> {
@@ -65,21 +65,6 @@ impl ModuleTransaction for CandidateExecution<'_> {
     }
     fn contains(&mut self, entity: &StableEntityAddressV1, _: &StableId) -> bool {
         self.contains_entity(entity)
-    }
-    fn pitch(
-        &mut self,
-        id: StableId,
-        pitch: WrittenPitchV1,
-    ) -> std::result::Result<(), KernelStage3CommandFailureLeafV1> {
-        self.module_pitch(&id, pitch)
-    }
-    fn extension(
-        &mut self,
-        namespace: brilliant_core_types::JsString,
-        owner: ExtensionOwnerV1,
-        block: Option<ExtensionBlockV1>,
-    ) -> std::result::Result<(), KernelStage3CommandFailureLeafV1> {
-        self.module_extension(namespace, owner, block)
     }
 }
 
@@ -178,27 +163,10 @@ impl ModuleEnvironment<'_> {
             }
             for request in requests {
                 if tag(request, "requestKind", "core.note.replace-written-pitch") {
-                    if !exact(
-                        request,
-                        &["requestVersion", "requestKind", "target", "writtenPitch"],
-                    ) || integer(field(request, "requestVersion")?) != Some(1)
-                    {
-                        return Err(contract());
-                    }
-                    let target = field(request, "target")?;
-                    if !exact(target, &["kind", "noteId"]) || !tag(target, "kind", "note") {
-                        return Err(contract());
-                    }
-                    let note_id =
-                        StableId::new(string(field(target, "noteId")?)?).map_err(|_| contract())?;
-                    let pitch = WrittenPitchV1::from_lossless_value(
-                        field(request, "writtenPitch")?.clone(),
-                    )
-                    .map_err(|_| contract())?;
-                    if !brilliant_score_foundation::written_pitch_is_valid(&pitch) {
-                        return Err(contract());
-                    }
-                    transaction.pitch(note_id, pitch).map_err(|_| contract())?;
+                    let effect = crate::runtime::effect::KernelEffectV1::decode_written_pitch(
+                        request, contract,
+                    )?;
+                    effect.apply_to(transaction).map_err(|_| contract())?;
                     continue;
                 }
                 if !exact(
@@ -271,38 +239,14 @@ impl ModuleEnvironment<'_> {
                 let transformed =
                     field(&transformed_reply, "transformed").map_err(|_| contract())?;
                 let namespace = string(field(request, "namespace")?)?.clone();
-                let block =
-                    if tag(transformed, "status", "remove") && exact(transformed, &["status"]) {
-                        None
-                    } else if tag(transformed, "status", "replace")
-                        && exact(transformed, &["status", "schemaVersion", "payload"])
-                    {
-                        let version =
-                            integer(field(transformed, "schemaVersion")?).ok_or_else(contract)?;
-                        if !array(field(effect, "supportedSchemaVersions")?)?
-                            .iter()
-                            .any(|value| integer(value) == Some(version))
-                        {
-                            return Err(contract());
-                        }
-                        Some(
-                            ExtensionBlockV1::from_lossless_value(object([
-                                ("namespace", JsonValue::String(namespace.clone())),
-                                ("owner", value(&owner)?),
-                                (
-                                    "schemaVersion",
-                                    field(transformed, "schemaVersion")?.clone(),
-                                ),
-                                ("payload", field(transformed, "payload")?.clone()),
-                            ]))
-                            .map_err(|_| contract())?,
-                        )
-                    } else {
-                        return Err(contract());
-                    };
-                transaction
-                    .extension(namespace, owner, block)
-                    .map_err(|_| contract())?;
+                let effect = crate::runtime::effect::KernelEffectV1::decode_extension(
+                    namespace,
+                    owner,
+                    field(effect, "supportedSchemaVersions")?,
+                    transformed,
+                    contract,
+                )?;
+                effect.apply_to(transaction).map_err(|_| contract())?;
             }
             let addresses = array(field(prepared, "affected")?)?;
             let mut normalized = std::collections::BTreeMap::new();

@@ -1,0 +1,12 @@
+.component-placement { position: relative; display: grid; place-items: center; }
+.component-placement-trigger { width: 28px; height: 28px; border: 0; padding: 0; display: grid; place-items: center; border-radius: 7px; color: var(--color-secondary); background: transparent; cursor: pointer; transition: color 120ms ease, background-color 120ms ease, transform 100ms ease; }
+.component-placement-trigger svg { width: 17px; height: 17px; }
+.component-placement-trigger:hover:not(:disabled) { color: var(--color-text); background: var(--color-hover); }
+.component-placement-trigger:active:not(:disabled) { transform: scale(.94); }
+.component-placement-trigger:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 1px; }
+.component-placement-menu { position: absolute; z-index: 30; top: calc(100% + 8px); right: 0; width: 124px; padding: 5px; border: 1px solid var(--color-border-strong); border-radius: 9px; background: var(--color-panel); box-shadow: 0 9px 28px rgb(0 0 0 / 34%); display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
+.component-placement-menu button { min-height: 30px; border: 0; border-radius: 6px; color: var(--color-secondary); background: transparent; font-size: 12px; cursor: pointer; }
+.component-placement-menu button:hover:not(:disabled) { color: var(--color-text); background: var(--color-hover); }
+.component-placement-menu button[aria-checked="true"] { color: var(--color-text); background: var(--color-active); opacity: 1; }
+.component-placement-menu button:disabled { cursor: default; opacity: .42; }
+.component-placement-menu button:focus-visible { outline: 2px solid var(--color-focus); outline-offset: -1px; }

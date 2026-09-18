@@ -16,7 +16,9 @@ test("layout reconciliation installs valid defaults and rejects unknown persiste
   assert.deepEqual(state.placements.map((placement) => [placement.componentId, placement.slot]), [
     ["notation.staff-view", "workspace"],
     ["notation.history-control", "top"],
+    ["playback.transport", "top"],
     ["notation.paper-zoom", "top"],
+    ["playback.output", "right"],
     ["notation.note-input", "left"],
   ]);
 });
@@ -27,7 +29,7 @@ test("an older saved layout gains horizontal history and zoom tools without movi
     { componentId: "notation.note-input", slot: "left", presentation: "panel", order: 0, visible: true },
   ] });
   assert.deepEqual(listUiComponentsInSlot(older, "top").map((item) => item.componentId),
-    ["notation.history-control", "notation.paper-zoom"]);
+    ["notation.history-control", "playback.transport", "notation.paper-zoom"]);
   assert.equal(listUiComponentsInSlot(older, "left")[0]?.componentId, "notation.note-input");
 });
 
@@ -62,7 +64,8 @@ test("two registered components share one dock without losing their saved order"
 test("visibility and presentation are logical state, independent of component markup", () => {
   const initial = reconcileUiLayout(COMPONENTS, null);
   const hidden = setUiComponentVisibility(initial, "notation.paper-zoom", false);
-  assert.deepEqual(listUiComponentsInSlot(hidden, "top").map((item) => item.componentId), ["notation.history-control"]);
+  assert.deepEqual(listUiComponentsInSlot(hidden, "top").map((item) => item.componentId),
+    ["notation.history-control", "playback.transport"]);
   const popover = setUiComponentPresentation(initial, COMPONENTS, "notation.paper-zoom", "popover");
   assert.equal(popover.placements.find((item) => item.componentId === "notation.paper-zoom")?.presentation, "popover");
   assert.equal(setUiComponentPresentation(initial, COMPONENTS, "notation.staff-view", "dialog"), initial);

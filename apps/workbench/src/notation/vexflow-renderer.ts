@@ -90,19 +90,12 @@ export const vexflowRenderer: NotationRenderer = {
       });
       anchors.push(scaledAnchor({ kind: "start" }, 0, startX, notes[0]?.getYs()[0] ?? tailY));
       let eventOffset = 0;
-      let previousOffset = 0, previousAnchorX = startX, nominalEndX = tailX;
       notes.forEach((note, index) => {
         eventOffset += durationUnits(item.measure.events[index]!.duration);
         const nextX = noteXs[index + 1];
         const x = nextX === undefined ? tailX : (noteXs[index]! + nextX) / 2;
         const y = nextX === undefined ? tailY : notes[index + 1]?.getYs()[0] ?? note.getYs()[0] ?? cursorY;
-        if (previousOffset < capacity && eventOffset >= capacity) {
-          const share = (capacity - previousOffset) / (eventOffset - previousOffset);
-          nominalEndX = previousAnchorX + (x - previousAnchorX) * share;
-        }
         anchors.push(scaledAnchor({ kind: "after-event", eventId: item.measure.events[index]!.id }, eventOffset, x, y));
-        previousOffset = eventOffset;
-        previousAnchorX = x;
       });
       const beat = 64 / item.measure.meter.denominator;
       const tailAnchor = item.measure.events.at(-1)
@@ -126,8 +119,7 @@ export const vexflowRenderer: NotationRenderer = {
       drawing.append(hit);
       measures.push({ measureId: item.measure.id, x: item.x * scale, y: item.y * scale,
         width: item.width * scale, height: 140 * scale, staffBottom: stave.getYForLine(4) * scale,
-        staffTop: stave.getYForLine(0) * scale, lineSpacing: stave.getSpacingBetweenLines() * scale,
-        nominalEndX: nominalEndX * scale, actualEndX: tailX * scale });
+        lineSpacing: stave.getSpacingBetweenLines() * scale });
       notes.forEach((note, index) => {
         const box = note.getBoundingBox(), event = item.measure.events[index]!;
         const eventHit = document.createElementNS("http://www.w3.org/2000/svg", "rect");

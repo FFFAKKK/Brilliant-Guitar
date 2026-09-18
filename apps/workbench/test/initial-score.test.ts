@@ -3,11 +3,13 @@ import test from "node:test";
 import type { ScoreSessionRead } from "../src/contracts/score-session.ts";
 import { readOrCreateInitialScore } from "../src/services/initial-score.ts";
 import { WorkbenchRequestError } from "../src/services/workbench-client.ts";
+import { readyPlaybackSource } from "./playback-fixture.ts";
 
 const session: ScoreSessionRead = {
   documentId: "document", title: "", measureCount: 1, documentVersion: 0, undoDepth: 0, redoDepth: 0,
   notation: { kind: "staff", partId: "part", staffId: "staff", clef: "treble",
     measures: [{ id: "measure", voiceId: "voice", events: [], meter: { numerator: 4, denominator: 4 }, ruleWarnings: [] }] },
+  playbackSource: readyPlaybackSource("document", 0),
 };
 
 test("entering a fresh workspace creates one bar, while an existing session is reused", async () => {

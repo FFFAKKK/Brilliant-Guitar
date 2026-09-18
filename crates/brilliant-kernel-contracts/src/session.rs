@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use brilliant_core_types::{
-    API_VERSION_V1, DocumentVersionV1, ScoreSchemaVersionV1, StableId, StablePathV1,
+    API_VERSION_V1, DocumentVersionV1, JsString, SafeInteger, ScoreSchemaVersionV1, StableId,
+    StablePathV1,
 };
 use brilliant_score_foundation::{
     CoreDiagnosticV1, CoreRuleWarningV1, CoreRuleWarningV2, MeasureDefinitionV1,
@@ -380,6 +381,8 @@ pub enum KernelStage4OperationV1<Id = StableId> {
 #[derive(Clone, Debug, Eq, PartialEq, Deserialize)]
 #[serde(tag = "selectorId", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum SelectorRequestV1 {
+    #[serde(rename = "core.selector.score-overview")]
+    ScoreOverview,
     #[serde(rename = "core.selector.score-metadata")]
     ScoreMetadata,
     #[serde(rename = "core.selector.score-entity")]
@@ -858,8 +861,17 @@ pub enum ScoreRangeSelectionV1 {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScoreOverviewV1 {
+    pub document_id: StableId,
+    pub title: JsString,
+    pub measure_count: SafeInteger,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 #[serde(untagged)]
 pub enum KernelSelectorValueV1 {
+    Overview(ScoreOverviewV1),
     Metadata(ScoreMetadataV1),
     Entity(SelectedScoreEntityV1),
     Ownership(ScoreEntityOwnershipV1),

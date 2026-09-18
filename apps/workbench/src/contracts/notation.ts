@@ -27,7 +27,7 @@ export interface StaffView {
 
 export type NotationView = StaffView | { readonly kind: "unsupported"; readonly message: string };
 
-function isExactFraction(value: unknown): value is ExactFraction {
+export function isExactFraction(value: unknown): value is ExactFraction {
   if (typeof value !== "object" || value === null) return false;
   const fraction = value as Record<string, unknown>;
   return typeof fraction.numerator === "number" && Number.isSafeInteger(fraction.numerator)

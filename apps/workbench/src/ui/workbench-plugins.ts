@@ -16,6 +16,8 @@ export const workbenchCapabilities = new WorkbenchCapabilityRegistry([
   "score.input",
   "score.history",
   "view.paper",
+  "playback.transport",
+  "playback.output",
 ]);
 
 /** Static composition root. Third-party code loading remains deliberately unsupported. */

@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { RefObject } from "react";
 import { NavigationBar } from "./components/navigation-bar";
+import { AboutDialog } from "./components/about-dialog";
 import { PreferencesDialog } from "./components/preferences-dialog";
 import { NewScoreDialog } from "./components/new-score-dialog";
 import { SaveAsDialog } from "./components/save-as-dialog";
+import { ScorePropertiesDialog } from "./components/score-properties-dialog";
+import { ShortcutsDialog } from "./components/shortcuts-dialog";
 import { UnsavedChangesDialog } from "./components/unsaved-changes-dialog";
 import type { NavigationAction, NavigationGroup } from "./components/navigation-bar";
 import { UiComponentHost } from "./components/ui-component-host";
@@ -28,7 +31,8 @@ import { WorkbenchRuntimeProvider, useWorkbenchRuntime } from "./runtime/workben
 import { useWorkbenchCommands } from "./runtime/use-workbench-commands.ts";
 import type { WorkbenchCommand } from "./commands/workbench-command.ts";
 import { bindUiProjection } from "./ui/projection-registry.ts";
-import { HISTORY_PROJECTION, NOTE_CONTROL_PROJECTION, PAPER_ZOOM_PROJECTION, STAFF_PROJECTION } from "./ui/first-party-plugin-projections.ts";
+import { HISTORY_PROJECTION, NOTE_CONTROL_PROJECTION, PAPER_ZOOM_PROJECTION, PLAYBACK_OUTPUT_PROJECTION, PLAYBACK_PROJECTION, STAFF_PROJECTION } from "./ui/first-party-plugin-projections.ts";
+import { usePlaybackSession } from "./playback/use-playback-session.ts";
 
 const INSTALLED_COMPONENTS = workbenchPlugins.components.list();
 const SLOT_LABELS: Record<UiSlot, string> = {
@@ -90,6 +94,9 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
   const { around: aroundLayoutMutation } = runtime.focus;
   const [inspectLayout, setInspectLayout] = useState(false);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
+  const [scorePropertiesOpen, setScorePropertiesOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
   const pluginDiagnostics = useSyncExternalStore(workbenchPluginDiagnostics.subscribe,
     workbenchPluginDiagnostics.list, workbenchPluginDiagnostics.list);
   const [pluginDiagnosticsOpen, setPluginDiagnosticsOpen] = useState(pluginDiagnostics.length > 0);
@@ -100,6 +107,7 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
   }, [pluginDiagnostics.length]);
   const editMenuRef = useRef<HTMLButtonElement>(null);
   const fileMenuRef = useRef<HTMLButtonElement>(null);
+  const helpMenuRef = useRef<HTMLButtonElement>(null);
   const score = useWorkbenchSession(runtime);
   const workspaceConfiguration = useWorkspaceConfiguration(score.client, INSTALLED_COMPONENTS, runtime);
   const { layout, setLayout, visibility, toggleDock, uiLayout, move, hide, setPresentation,
@@ -113,7 +121,16 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
   const notation = score.session?.notation;
   const inputAvailable = !score.loading && !score.error && notation?.kind === "staff";
   const paperZoom = usePaperZoom();
+  const playback = usePlaybackSession(score.session?.playbackSource ?? null);
+  const scoreMetadata = useMemo(() => score.session?.metadata ?? {
+    title: score.session?.title ?? "未命名乐谱",
+    authors: [] as readonly string[],
+    tempoBpm: score.session?.playbackSource.kind === "ready" ? score.session.playbackSource.bpm : 96,
+  }, [score.session?.metadata, score.session?.playbackSource, score.session?.title]);
   const blocked = !inputAvailable || input.retryable || files.working !== null;
+  const staffMeasureCount = notation?.kind === "staff" ? notation.measures.length : 0;
+  const activeMeasureId = input.point?.measureId ?? null;
+  const measureStructureEnabled = !blocked && input.pending === 0 && activeMeasureId !== null;
   const historyBlocked = blocked || input.pending > 0;
   const historySequence = useRef(0);
   const [historyActivity, setHistoryActivity] = useState<Readonly<{ kind: "undo" | "redo"; sequence: number }>>();
@@ -147,8 +164,20 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
       enabled: files.available && Boolean(score.session), run: async () => { await files.saveDocument(); } },
     { id: "file.save-as", label: "另存为…", shortcut: "Mod+Shift+S", shortcutLabel: "Ctrl/⌘ + Shift + S", scope: "global",
       enabled: files.available && Boolean(score.session), run: files.requestSaveAs },
+    { id: "file.score-properties", label: "乐谱属性…", scope: "global",
+      enabled: Boolean(score.session) && input.pending === 0 && !input.retryable && files.working === null,
+      run: () => { input.clearFeedback(); setScorePropertiesOpen(true); } },
     { id: "file.export-svg", label: "导出五线谱 SVG", scope: "global",
       enabled: files.available && score.session?.notation.kind === "staff", run: files.exportSvg },
+    { id: "edit.insert-measure-before", label: "在当前小节前插入小节", scope: "score",
+      enabled: measureStructureEnabled,
+      run: () => { if (activeMeasureId) input.insertMeasure(activeMeasureId, "before"); } },
+    { id: "edit.insert-measure-after", label: "在当前小节后插入小节", scope: "score",
+      enabled: measureStructureEnabled,
+      run: () => { if (activeMeasureId) input.insertMeasure(activeMeasureId, "after"); } },
+    { id: "edit.remove-measure", label: "删除当前小节", scope: "score",
+      enabled: measureStructureEnabled && staffMeasureCount > 1,
+      run: () => { if (activeMeasureId) input.removeMeasure(activeMeasureId); } },
     { id: "edit.preferences", label: "界面设置…", scope: "global", enabled: true, run: () => setPreferencesOpen(true) },
     { id: "view.reset-layout", label: "恢复默认布局", scope: "global", enabled: true, run: resetLayout },
     ...(["left", "right", "top", "bottom"] as const).map((side): WorkbenchCommand => ({
@@ -157,9 +186,12 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
     })),
     { id: "view.inspect-layout", label: inspectLayout ? "关闭组件边界预览" : "显示组件边界预览",
       scope: "global", enabled: true, run: () => setInspectLayout((value) => !value) },
+    { id: "help.shortcuts", label: "键盘操作…", scope: "global", enabled: true, run: () => setShortcutsOpen(true) },
+    { id: "help.about", label: "关于 Brilliant Guitar…", scope: "global", enabled: true, run: () => setAboutOpen(true) },
     ...(pluginDiagnostics.length > 0 ? [{ id: "help.plugin-diagnostics", label: `插件诊断 (${pluginDiagnostics.length})`,
       scope: "global" as const, enabled: true, run: () => setPluginDiagnosticsOpen(true) }] : []),
-  ], [files, inspectLayout, pluginDiagnostics.length, resetLayout, score.session, toggleWorkbenchDock, visibility]);
+  ], [activeMeasureId, files, input, inspectLayout, measureStructureEnabled, pluginDiagnostics.length, resetLayout,
+    score.session, staffMeasureCount, toggleWorkbenchDock, visibility]);
   const pluginProjections = useMemo(() => workbenchPlugins.projections.snapshot([
     bindUiProjection(STAFF_PROJECTION, {
       notation: score.session?.notation ?? null,
@@ -172,26 +204,44 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
       onZoomIn: paperZoom.zoomIn,
       onZoomOut: paperZoom.zoomOut,
       showRuleWarnings: ruleWarningsVisible,
+      playback: playback.snapshot,
       editing: { point: inputAvailable && input.enabled ? input.point : null, draftStep: noteOverview.draftStep,
+        previewDuration: input.duration, previewRest: input.rest,
         busy: blocked || input.pending > 0, selectedEventId: noteOverview.selectedEventId,
         selectedRange: noteOverview.selectedRange,
+        measureCount: staffMeasureCount,
         onSelectEvent: noteOverview.onSelectEvent, feedback: input.feedback, viewportRef: scoreViewport,
-        onKeyDown: noteOverview.onKeyDown, onLocate: noteOverview.onLocate },
+        onLocate: noteOverview.onLocate, onInsertMeasure: input.insertMeasure, onRemoveMeasure: input.removeMeasure },
     }),
     bindUiProjection(NOTE_CONTROL_PROJECTION, {
       viewModel: { value: noteOverview.value, position: noteOverview.position, disabled: noteOverview.disabled,
         pending: noteOverview.pending > 0, message: noteOverview.message ?? "" },
-      actions: { change: noteOverview.change },
+      actions: { change: noteOverview.change, focusScore: noteOverview.focusScore },
     }),
     bindUiProjection(HISTORY_PROJECTION, { undoDepth: score.session?.undoDepth ?? 0, redoDepth: score.session?.redoDepth ?? 0,
       blocked: historyBlocked, activity: historyActivity, execute: dispatchHistory }),
     bindUiProjection(PAPER_ZOOM_PROJECTION, { zoom: paperZoom.zoom, enabled: inputAvailable,
       zoomIn: paperZoom.zoomIn, zoomOut: paperZoom.zoomOut, fit: paperZoom.fit }),
-  ]), [blocked, dispatchHistory, historyActivity, historyBlocked, input.enabled, input.feedback, input.pending,
-    input.point, inputAvailable, noteOverview.change, noteOverview.disabled, noteOverview.message, noteOverview.onKeyDown,
-    noteOverview.draftStep, noteOverview.onLocate, noteOverview.onSelectEvent, noteOverview.pending, noteOverview.position, noteOverview.selectedEventId,
-    noteOverview.selectedRange,
-    noteOverview.value, paperZoom.fit, paperZoom.zoom, paperZoom.zoomIn, paperZoom.zoomOut, score.error, score.loading,
+    bindUiProjection(PLAYBACK_PROJECTION, { snapshot: playback.snapshot,
+      canPrevious: playback.session.canSeekEvent(-1), canNext: playback.session.canSeekEvent(1),
+      toggle: () => {
+        const point = input.point;
+        playback.session.prepareStart(point ? noteOverview.selectedEventId
+          ? { measureId: point.measureId, eventId: noteOverview.selectedEventId }
+          : { measureId: point.measureId, offsetUnits: point.offsetUnits } : null);
+        return playback.session.toggle();
+      }, stop: () => playback.session.stop(), previous: () => playback.session.seekEvent(-1),
+      next: () => playback.session.seekEvent(1) }),
+    bindUiProjection(PLAYBACK_OUTPUT_PROJECTION, { snapshot: playback.outputSnapshot,
+      select: async (id) => { await playback.outputs.select(id); },
+      importSoundFont: async (file) => { await playback.outputs.importSoundFont(file); },
+      removeSampleBank: (id) => playback.outputs.removeSampleBank(id) }),
+  ]), [blocked, dispatchHistory, historyActivity, historyBlocked, input.duration, input.enabled, input.feedback, input.pending,
+    input.point, input.rest, inputAvailable, noteOverview.change, noteOverview.disabled, noteOverview.focusScore, noteOverview.message,
+    noteOverview.draftStep, noteOverview.onLocate, noteOverview.onSelectEvent, noteOverview.pending, noteOverview.position,
+    noteOverview.selectedEventId, noteOverview.selectedRange,
+    noteOverview.value, paperZoom.fit, paperZoom.zoom, paperZoom.zoomIn, paperZoom.zoomOut, playback.outputSnapshot, playback.outputs,
+    playback.session, playback.snapshot, score.error, score.loading, staffMeasureCount,
     ruleWarningsVisible, score.retry, score.session?.notation, score.session?.redoDepth, score.session?.undoDepth, scoreViewport]);
   const pluginCommandContributions = useMemo(() => workbenchPlugins.resolveCommands(pluginProjections), [pluginProjections]);
   const commandContributions = useMemo<readonly WorkbenchCommand[]>(() =>
@@ -234,6 +284,7 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
         navigationAction("file.open", true),
         navigationAction("file.save", true),
         navigationAction("file.save-as", true),
+        navigationAction("file.score-properties", true),
         navigationAction("file.export-svg", true),
       ],
       description: files.working ? "正在处理文件…" : files.state === "saved"
@@ -246,6 +297,9 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
       actions: [
         navigationAction("edit.undo", true),
         navigationAction("edit.redo", true),
+        navigationAction("edit.insert-measure-before", true),
+        navigationAction("edit.insert-measure-after", true),
+        navigationAction("edit.remove-measure", true),
         navigationAction("edit.preferences", true),
       ],
       description: "选中音符时修改当前音符；输入预览时设置接下来的音符",
@@ -269,20 +323,20 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
     {
       id: "help",
       label: "帮助",
-      actions: pluginDiagnostics.length > 0
-        ? [navigationAction("help.plugin-diagnostics", true), { id: "help.disabled", label: "框架操作：拖动分隔线，方向键微调" }]
-        : [{ id: "help.disabled", label: "框架操作：拖动分隔线，方向键微调" }],
+      actions: [navigationAction("help.shortcuts", true),
+        ...(pluginDiagnostics.length > 0 ? [navigationAction("help.plugin-diagnostics", true)] : []),
+        navigationAction("help.about", true)],
       description: "点击小节定位末尾；Shift 扩展连续选择；Ctrl/⌘ + C/X/V 剪贴；A–G 加组号输入或修改；＋／− 时值；Backspace／Delete 删除；Esc 清除草稿或选择",
     },
   ], [files.name, files.state, files.working, navigationAction, pluginDiagnostics.length]);
 
   return <>
     <WorkbenchShell
-    navigation={<NavigationBar groups={groups} triggerRefs={{ edit: editMenuRef, file: fileMenuRef }} />}
+    navigation={<NavigationBar groups={groups} triggerRefs={{ edit: editMenuRef, file: fileMenuRef, help: helpMenuRef }} />}
     motionEnabled={animationsEnabled}
     onKeyDownCapture={(event) => {
       if (event.nativeEvent.isComposing || (event.target instanceof Element &&
-        event.target.closest("input, textarea, select, [contenteditable='true']"))) return;
+        event.target.closest("button, input, textarea, select, [contenteditable='true'], [role='menu'], [role='dialog']"))) return;
       if (!runtime.commands.handle(event, "score")) noteOverview.onKeyDown(event);
     }}
     layout={layout}
@@ -312,6 +366,11 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
       onCreate={files.createScore} returnFocusRef={fileMenuRef} completionFocusRef={scoreViewport} />
     <SaveAsDialog open={files.saveAsOpen} onOpenChange={files.setSaveAsOpen}
       initialName={files.name} onSave={(name) => files.saveDocument(name)} returnFocusRef={fileMenuRef} />
+    {score.session && <ScorePropertiesDialog open={scorePropertiesOpen} onOpenChange={setScorePropertiesOpen}
+      metadata={scoreMetadata} measureCount={score.session.measureCount} saving={input.pending > 0 && !input.retryable}
+      failure={input.feedbackTarget === "properties" ? input.feedback?.issue.message ?? input.message : ""}
+      onSave={(metadata) => input.applyProperties({ kind: "set-document-metadata", metadata }, scoreViewport.current ?? undefined)}
+      returnFocusRef={fileMenuRef} completionFocusRef={scoreViewport} />}
     <UnsavedChangesDialog action={files.pendingAction} saving={files.working === "save"}
       onOpenChange={(open) => { if (!open && files.working !== "save") files.setPendingAction(null); }}
       onDiscard={files.discardPending} onSaveAndContinue={() => { void files.saveAndContinue(); }} />
@@ -326,5 +385,7 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
     <WorkbenchFeedbackAnnouncer feedback={runtime.feedback.latest} />
     <PluginDiagnosticDialog diagnostics={pluginDiagnostics} open={pluginDiagnosticsOpen}
       onOpenChange={setPluginDiagnosticsOpen} />
+    <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} returnFocusRef={helpMenuRef} />
+    <AboutDialog open={aboutOpen} onOpenChange={setAboutOpen} returnFocusRef={helpMenuRef} />
   </>;
 }

@@ -52,7 +52,8 @@ test("staff input translates a completed pitch into the existing kernel edit pat
   if (read.notation.kind !== "staff") throw new Error("Expected staff notation");
   const point = defaultScoreEditPoint(read.notation);
   assert.deepEqual(scoreIntentToAction({ kind: "history", direction: "undo" }, null), { kind: "undo" });
-  assert.deepEqual(scoreIntentToAction({ kind: "document", title: "Test" }, null), { kind: "set-title", title: "Test" });
+  assert.deepEqual(scoreIntentToAction({ kind: "document", action: { kind: "set-title", title: "Test" } }, null),
+    { kind: "set-title", title: "Test" });
   const draft = resolveStaffKey(null, "C");
   const completed = resolveStaffKey(draft.draft, "5");
   assert.deepEqual(completed.pitch, { step: "C", octave: 5 });

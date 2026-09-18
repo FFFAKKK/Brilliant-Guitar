@@ -1,7 +1,7 @@
 //! Module effects share the candidate journal, but retain module segment facts.
 use super::*;
 use brilliant_score_foundation::{
-    ExtensionBlockV1, ExtensionOwnerV1, ScoreDocumentV1, WrittenPitchV1,
+    ExtensionBlockV1, ExtensionOwnerV1, ScoreDocumentV1, ScoreMetadataV1, WrittenPitchV1,
 };
 #[cfg(test)]
 mod tests;
@@ -60,6 +60,26 @@ impl CandidateExecution<'_> {
                 .resolve(Kind::Note, note_id.as_js_string())?;
             self.recorder
                 .replace_scalar(&owner, Value::NoteWrittenPitch(pitch))?;
+            Ok(())
+        })();
+        if result.is_err() {
+            self.recorder.candidate.reservation.abort();
+        }
+        result
+    }
+
+    pub(crate) fn module_metadata(
+        &mut self,
+        document_id: &StableId,
+        metadata: ScoreMetadataV1,
+    ) -> Result<(), Failure> {
+        let result = (|| {
+            let owner = self
+                .recorder
+                .candidate
+                .resolve(Kind::Document, document_id.as_js_string())?;
+            self.recorder
+                .replace_scalar(&owner, Value::DocumentMetadata(metadata))?;
             Ok(())
         })();
         if result.is_err() {

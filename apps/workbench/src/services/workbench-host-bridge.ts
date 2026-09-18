@@ -3,6 +3,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { Window as TauriWindow } from "@tauri-apps/api/window";
 import type { ScoreEditRequest } from "../contracts/note-input";
 import type { NewScoreInput } from "../contracts/new-score";
+import type { CapabilityTransportRequest } from "../contracts/capability.ts";
 import { DEFAULT_APPLICATION_SETTINGS, isApplicationSettingsV1 } from "../contracts/application-settings.ts";
 import type { ApplicationSettingsV1 } from "../contracts/application-settings.ts";
 import { DEFAULT_WORKSPACE_CONFIGURATION, isWorkspaceConfigurationV1 } from "../contracts/workspace-configuration.ts";
@@ -27,6 +28,7 @@ export class WorkbenchRequestError extends Error {
  * the production Tauri adapter implements the same contract with Rust commands.
  */
 export interface WorkbenchHostBridge {
+  invokeCapability(request: CapabilityTransportRequest): Promise<unknown>;
   read(workspaceId: string): Promise<unknown | null>;
   create(workspaceId: string, input: NewScoreInput, requestId: string, expectedDocumentId: string | null): Promise<unknown>;
   edit(workspaceId: string, input: ScoreEditRequest): Promise<unknown>;
@@ -88,6 +90,10 @@ export class TauriWorkbenchHostBridge implements WorkbenchHostBridge {
   private async call<T>(command: string, args: Record<string, unknown>, fallback: string): Promise<T> {
     try { return await this.invoke<T>(command, args); }
     catch (error) { throw requestError(error, fallback); }
+  }
+
+  invokeCapability(request: CapabilityTransportRequest) {
+    return this.call<unknown>("workbench_invoke_capability_v1", { request }, "无法调用应用能力");
   }
 
   read(workspaceId: string) {
@@ -178,6 +184,18 @@ export class BrowserWorkbenchHostBridge implements WorkbenchHostBridge {
   constructor(settingsStorage: SettingsStorage | undefined = browserSettingsStorage()) {
     this.settingsStorage = settingsStorage;
   }
+
+  async invokeCapability(request: CapabilityTransportRequest): Promise<unknown> {
+    return {
+      status: "unavailable",
+      invocationId: request.invocationId,
+      capabilityId: request.capabilityId,
+      contractVersion: request.contractVersion,
+      code: "capability.host-unsupported",
+      message: "浏览器开发宿主尚未提供该应用能力",
+    };
+  }
+
   private endpoint(workspaceId: string, resource: "session" | "document") {
     return `/api/workbench/${resource}?workspaceId=${encodeURIComponent(workspaceId)}`;
   }

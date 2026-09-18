@@ -41,6 +41,13 @@ test("direct event hits win over nearby anchors and double-click never overwrite
     x: 33, y: 40, writeNow: true }), null);
 });
 
+test("an occupied first beat does not expose the measure-start boundary as an empty pointer target", () => {
+  const score = view(measure("m1", [note("e1")]));
+  const interaction = geometry("m1", [0, 16], [{ id: "e1", x: 28 }]);
+  assert.deepEqual(resolveStaffPointerTarget({ view: score, interaction, measureId: "m1",
+    x: 10, y: 40, writeNow: false }), { kind: "event", eventId: "e1" });
+});
+
 test("full and overfull measures keep their explicit tail caret inside the same measure", () => {
   for (const [events, tail] of [[[note("full", 1)], 64], [[note("whole", 1), note("extra", 4)], 80]] as const) {
     const score = view(measure("m1", events), measure("m2", []));
