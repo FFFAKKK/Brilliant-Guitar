@@ -1,8 +1,0 @@
-{"file":".trellis/tasks/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair/prd.md","reason":"Consume accepted E3 law and archive-closeout requirements from the stable parent."}
-{"file":".trellis/tasks/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair/design.md","reason":"Consume the archive-aware lifecycle design from the stable parent."}
-{"file":".trellis/tasks/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair/task.json","reason":"Use the audited E3 law candidate and its current pending lifecycle as the transition owner."}
-{"file":".trellis/tasks/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair/research/final-state-projection-contract.md","reason":"Preserve the exact historical 8+1+12 projection and protocol identity."}
-{"file":".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/task.json","reason":"Project the Stage 6 review result while keeping S6.2/S6.3 and later gates false."}
-{"file":".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json","reason":"Keep RKP-2 paused before S6.2 and TypeScript default."}
-{"file":".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json","reason":"Preserve Rust-parent cutover, qualification, push and RKP-3 gates."}
-{"file":"test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts","reason":"Implement the exact historical candidate and audit-bound acceptance-state law."}

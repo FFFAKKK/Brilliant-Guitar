@@ -1,6 +1,0 @@
-{"file":".trellis/spec/core-kernel/index.md","reason":"Check that closeout does not authorize a default-runtime cutover."}
-{"file":".trellis/spec/core-kernel/backend/rust-runtime-transition.md","reason":"Check staged migration and qualification boundaries."}
-{"file":".trellis/scripts/task.py","reason":"Check native archive behavior rather than planning a manual copy."}
-{"file":".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json","reason":"Check parent-child uniqueness and next-gate projection."}
-{"file":".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json","reason":"Check RKP-2 remains sole active implementation child."}
-{"file":".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/task.json","reason":"Check Stage6 source, E2/E3 and TypeScript-default facts."}

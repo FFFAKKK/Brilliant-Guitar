@@ -1,5 +1,0 @@
-{"file":".trellis/tasks/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair/task.json","reason":"Check the stable parent owns the exact child archive projection and next gate."}
-{"file":".trellis/tasks/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair/operator-handoff.md","reason":"Check the stable parent handoff preserves acceptance and archive boundaries."}
-{"file":".trellis/tasks/08-31-rkp-2-stage-6-e3-workspace-law-final-state-projection-repair/review-candidate.md","reason":"Check the stable parent review record keeps all later gates separate."}
-{"file":".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/task.json","reason":"Check Stage 6 remains active with S6.2 and S6.3 false."}
-{"file":".trellis/spec/core-kernel/backend/rust-runtime-transition.md","reason":"Check qualification, cutover, push and RKP-3 remain outside this closeout."}

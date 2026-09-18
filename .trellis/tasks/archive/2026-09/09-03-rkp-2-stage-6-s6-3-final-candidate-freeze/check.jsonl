@@ -1,2 +1,0 @@
-{"file":".trellis/spec/core-kernel/backend/rust-runtime-transition.md","reason":"Verify RKP-2 candidate readiness does not silently authorize qualification, cutover, RKP-3, archive, or push."}
-{"file":".trellis/spec/core-kernel/backend/quality-guidelines.md","reason":"Verify exact allowlists, hostile negative fixtures, error-path preservation, and final complete gates."}

@@ -1,9 +1,0 @@
-{"file":".trellis/spec/core-kernel/backend/rust-runtime-transition.md","reason":"Check the TypeScript-default, no-cutover, no-qualification boundary."}
-{"file":".trellis/tasks/archive/2026-09/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/task.json","reason":"Check parent child uniqueness, E2/E3 false, and original nine immutable hashes."}
-{"file":".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json","reason":"Check sole active RKP-2 implementation ownership and paused Stage 6 projection."}
-{"file":".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json","reason":"Check Rust parent current planning child and no second implementation owner."}
-{"file":".trellis/tasks/archive/2026-08/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/review-candidate.md","reason":"Check accepted property-cap candidate and canonical-role evidence remain historical authority."}
-{"file":".trellis/tasks/archive/2026-08/08-26-rkp-1a-public-json-property-cap-scale-compatibility-repair/research/implementation-evidence.md","reason":"Check frozen raw/canonical SHA role evidence without making a qualification claim."}
-{"file":".trellis/tasks/archive/2026-08/08-28-rkp-1a-acceptance-archive-stage6-integration-closeout/implement.md","reason":"Check C5 closeout completion and successor planning order."}
-{"file":"crates/brilliant-kernel-runtime/src/indices.rs","reason":"Check planned one-export/two-decode/two-canonical call-count amendment and raw-byte removal target."}
-{"file":"test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts","reason":"Check future two-path literal law and fail-closed E2/P4 gates."}

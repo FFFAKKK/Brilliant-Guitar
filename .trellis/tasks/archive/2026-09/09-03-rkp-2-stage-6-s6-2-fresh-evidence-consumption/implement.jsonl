@@ -1,6 +1,0 @@
-{"file": ".trellis/spec/core-kernel/backend/rust-runtime-transition.md", "reason": "Preserve the Rust migration, compatibility, evidence and cutover boundaries."}
-{"file": ".trellis/spec/core-kernel/backend/quality-guidelines.md", "reason": "Apply Core kernel test, failure and review requirements."}
-{"file": ".trellis/spec/guides/long-term-maintenance-guide.md", "reason": "Keep evidence ownership and rollback maintainable."}
-{"file": ".trellis/tasks/09-03-rkp-2-stage-6-s6-2-fresh-evidence-consumption/research/current-state-and-authority-audit.md", "reason": "Use the current integrated base, hashes and non-reuse findings."}
-{"file": ".trellis/tasks/archive/2026-09/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/research/file-test-ownership-and-reentry.md", "reason": "Carry forward the accepted source-before-evidence successor constraints."}
-{"file": ".trellis/tasks/archive/2026-09/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/research/tracked-byte-eol-matrix.md", "reason": "Preserve the accepted LF and dual-autocrlf contract."}

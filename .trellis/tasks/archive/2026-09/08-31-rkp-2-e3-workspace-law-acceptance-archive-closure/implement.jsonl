@@ -1,8 +1,0 @@
-{"file":".trellis/spec/core-kernel/backend/rust-runtime-transition.md","reason":"Preserve the RKP stage order, TypeScript default and qualification/cutover exclusions."}
-{"file":".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/design.md","reason":"Consume the stable Stage 6 owner boundary and keep S6.2/S6.3 outside this closeout."}
-{"file":".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/implement.md","reason":"Preserve the accepted Stage 6 sequence and later-gate separation."}
-{"file":".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/design.md","reason":"Preserve RKP-2 store scope and keep this work limited to lifecycle law."}
-{"file":".trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-archive-closure/design.md","reason":"Reuse the accepted finite archive-aware transition pattern without recursive children."}
-{"file":".trellis/tasks/archive/2026-08/08-31-rkp-2-e3-acceptance-archive-closure/implement.md","reason":"Reuse the accepted native archive, audit and rollback ordering."}
-{"file":".trellis/scripts/common/task_store.py","reason":"Implement the Q4 sequence against the real native archive status, move and single-parent auto-commit behavior."}
-{"file":".trellis/scripts/common/safe_commit.py","reason":"Account for archive-root staging by rejecting all untracked or extra worktree paths before archive and validating exact commit-local membership afterward."}

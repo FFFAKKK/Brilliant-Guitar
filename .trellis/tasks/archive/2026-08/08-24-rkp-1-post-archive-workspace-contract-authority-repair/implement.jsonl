@@ -1,7 +1,0 @@
-{"file":".trellis/spec/core-kernel/backend/rust-runtime-transition.md","reason":"Preserve the staged Rust transition and TypeScript-default boundary."}
-{"file":".trellis/spec/core-kernel/backend/quality-guidelines.md","reason":"Apply Core regression, full-suite and protected-surface gates."}
-{"file":".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/design.md","reason":"Consume the accepted bridge and historical implementation boundary."}
-{"file":".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/research/file-test-and-rollback-matrix.md","reason":"Preserve the exact forty-path historical allowlist."}
-{"file":".trellis/tasks/archive/2026-08/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/research/implementation-evidence.md","reason":"Preserve audited head and accepted evidence."}
-{"file":".trellis/tasks/archive/2026-08/08-24-rkp-1-post-archive-workspace-contract-authority-repair/research/baseline-regression-evidence.md","reason":"Use the exact failure reproduction and moving-HEAD defect."}
-{"file":".trellis/tasks/archive/2026-08/08-24-rkp-1-post-archive-workspace-contract-authority-repair/research/bounded-planning-repair-r1.md","reason":"Apply the three bounded planning repairs without widening scope."}

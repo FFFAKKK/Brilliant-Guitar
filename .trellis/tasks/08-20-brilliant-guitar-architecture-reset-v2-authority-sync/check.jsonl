@@ -1,5 +1,0 @@
-{"file":".trellis/spec/core-kernel/index.md","reason":"Check current spec/oracle wording and absence of runtime cutover authorization."}
-{"file":".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/prd.md","reason":"Check acceptance scope, protected paths, lifecycle and exact evidence pointers."}
-{"file":".trellis/tasks/08-20-brilliant-guitar-architecture-reset-v2-authority-sync/research/authority-sync-matrix.md","reason":"Check every authority file has a disposition, owner, retention and rollback action."}
-{"file":".trellis/tasks/08-15-core-rust-runtime-performance-remediation/design.md","reason":"Check exact seven-crate graph, unique Kernel Runtime/Session ownership and no privileged Guitar provider."}
-{"file":".trellis/tasks/08-11-post-core-official-plugin-product-roadmap/design.md","reason":"Check Core Platform/Product Host/Product Extension Host and separate identity boundaries."}

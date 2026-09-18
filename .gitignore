@@ -11,3 +11,9 @@ target/
 /tmp/
 __pycache__/
 *.pyc
+
+# Local AI and project workflow metadata
+/.agents/
+/.codex/
+/.trellis/
+/openspec/

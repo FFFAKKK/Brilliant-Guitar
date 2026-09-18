@@ -1,6 +1,0 @@
-{"file": ".trellis/spec/core-kernel/backend/quality-guidelines.md", "reason": "Check technical, compatibility and regression gates."}
-{"file": ".trellis/spec/core-kernel/backend/integration-gate.md", "reason": "Keep implementation PASS separate from integration and cutover."}
-{"file": ".trellis/tasks/09-03-rkp-2-stage-6-s6-2-fresh-evidence-consumption/research/file-test-and-rollback-matrix.md", "reason": "Verify exact file ownership, tests and rollback points."}
-{"file": ".trellis/tasks/09-03-rkp-2-stage-6-s6-2-fresh-evidence-consumption/research/planning-self-audit.md", "reason": "Recheck the author self-audit without treating it as independent review."}
-{"file": ".trellis/tasks/archive/2026-09/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/research/planning-self-audit.md", "reason": "Verify all six accepted successor repairs remain present."}
-{"file": ".trellis/tasks/archive/2026-09/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/research/scale-worker-and-failure-matrix.md", "reason": "Check the immutable process protocol and failure precedence."}

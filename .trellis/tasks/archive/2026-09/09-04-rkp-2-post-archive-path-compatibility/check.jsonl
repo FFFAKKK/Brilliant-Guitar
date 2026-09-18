@@ -1,4 +1,0 @@
-{"file":".trellis/tasks/09-04-rkp-2-post-archive-path-compatibility/prd.md","reason":"Audit exact requirements, exclusions and measurable acceptance gates."}
-{"file":".trellis/tasks/09-04-rkp-2-post-archive-path-compatibility/design.md","reason":"Audit historical/current path separation and narrow validator mapping."}
-{"file":".trellis/tasks/09-04-rkp-2-post-archive-path-compatibility/implement.md","reason":"Audit ordered implementation, one-run gates and rollback boundaries."}
-{"file":".trellis/tasks/09-04-rkp-2-post-archive-path-compatibility/research/bug-analysis.md","reason":"Check five-dimension cause and systemic prevention evidence."}

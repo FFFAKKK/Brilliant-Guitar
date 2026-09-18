@@ -1,9 +1,0 @@
-{"file": ".trellis/spec/core-kernel/backend/pure-kernel-boundary.md", "reason": "Preserve the pure Core boundary, accepted CVN-0 unknown-data rules, one runtime owner, and forbidden dependencies."}
-{"file": ".trellis/spec/core-kernel/backend/score-document-model.md", "reason": "Use the authoritative brilliant-score-1 Measure, PartMeasureContent, Voice, semantic, extension, and profile model."}
-{"file": ".trellis/spec/core-kernel/backend/command-transaction.md", "reason": "Preserve the accepted command envelope, candidate, inverse, history, replay, no-op, failure, and atomic state contracts."}
-{"file": ".trellis/spec/core-kernel/backend/snapshot-events.md", "reason": "Preserve read, checkpoint, dirty, committed-event ordering, affected-address facts, and subscriber isolation."}
-{"file": ".trellis/spec/core-kernel/backend/registry-capability.md", "reason": "Extend the frozen built-in command descriptors and gateway path without adding runtime registration or changing capability behavior."}
-{"file": ".trellis/spec/core-kernel/backend/errors-reports.md", "reason": "Extend closed failure and Issue mapping allowlists with deterministic privacy-safe values."}
-{"file": ".trellis/spec/core-kernel/backend/quality-guidelines.md", "reason": "Apply required hostile-input, public-surface, dependency, regression, and full-scope verification rules."}
-{"file": ".trellis/tasks/archive/2026-08/08-04-cvn-3-document-factory-measure-lifecycle/research/current-measure-evidence.md", "reason": "Use the live CVN-1 source/test anchors, contract gaps, baseline counts, and fixed operator conclusions."}
-{"file": ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/research/cvn-roadmap-and-stage-plan.md", "reason": "Preserve CVN-3's place in the full dependency graph, its exact stage boundary, successor conditions, global invariants and recovery reading order."}

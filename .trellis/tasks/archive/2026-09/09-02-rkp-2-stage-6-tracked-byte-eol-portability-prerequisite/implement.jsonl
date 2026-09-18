@@ -1,7 +1,0 @@
-{"file":".trellis/spec/core-kernel/backend/index.md","reason":"Load the Core/Rust transition pre-development and quality-check boundaries."}
-{"file":".trellis/spec/core-kernel/backend/rust-runtime-transition.md","reason":"Preserve the Rust migration, toolchain, bridge and TypeScript-default authority while adding a narrow tracked-byte rule."}
-{"file":".trellis/spec/core-kernel/backend/quality-guidelines.md","reason":"Apply regression, determinism and forbidden-shortcut requirements to the test-only repair."}
-{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"Avoid a new production helper or duplicated cross-layer mechanism for five test-only source inspections."}
-{"file":".trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/research/e2-blocker-and-audit-evidence.md","reason":"Use the reproduced E2 failure and dedicated audit classification as the repair input."}
-{"file":".trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/research/tracked-byte-eol-matrix.md","reason":"Implement the exact seven-path LF and dual-checkout raw-byte contract."}
-{"file":".trellis/tasks/09-02-rkp-2-stage-6-tracked-byte-eol-portability-prerequisite/research/file-test-ownership-and-reentry.md","reason":"Respect technical ownership, protected paths, test expectations and S6.2 re-entry gates."}
