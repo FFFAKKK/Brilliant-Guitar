@@ -100,9 +100,6 @@ export function createPluginKernelAssemblyPlanV1(
     if (tier === "system" && plugin.activation !== "always") {
       throw new Error(`System plugin must always be active: ${plugin.id}`);
     }
-    if (contributions.length > 0 && plugin.activation !== "always") {
-      throw new Error(`Kernel plugin must use fixed activation: ${plugin.id}`);
-    }
     for (const contribution of contributions) {
       if (!isPluginKernelModuleManifestV1(contribution)) {
         throw new Error(`Invalid kernel module manifest: ${plugin.id}`);

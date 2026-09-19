@@ -413,20 +413,37 @@ test("one plugin package publishes a canonical fixed-session kernel assembly pla
   assert.equal(Object.isFrozen(plugin.kernelModules[0]), true);
 });
 
-test("kernel-bearing packages reject dynamic activation and untrusted internal execution", () => {
+test("kernel-bearing packages are configurable before launch and fixed within the running session", () => {
   const module = {
     moduleId: "test.kernel.module",
     apiVersion: 1 as const,
     runtime: "internal-module" as const,
     activation: "session-fixed" as const,
   };
-  assert.throws(() => definePlugin({
-    id: "test.dynamic.kernel",
-    name: "动态内核插件",
+  const configurable = definePlugin({
+    id: "test.configurable.kernel",
+    name: "可配置内核插件",
     version: "1.0.0",
     activation: "user",
     kernelModules: [module],
-  }), /fixed activation/);
+  });
+  const platform = new PluginPlatform({ capabilities: new WorkbenchCapabilityRegistry([]), projections: [] });
+  platform.register(configurable);
+  assert.deepEqual(platform.kernelAssemblyPlan().modules, []);
+  assert.equal(platform.activate(configurable.id).effect, "configured");
+  const session = platform.start();
+  assert.deepEqual(session.kernelAssembly.modules.map((entry) => entry.moduleId), ["test.kernel.module"]);
+  assert.equal(platform.deactivate(configurable.id).effect, "restart-required");
+  assert.deepEqual(platform.sessionPlan().kernelAssembly.modules.map((entry) => entry.moduleId), ["test.kernel.module"]);
+});
+
+test("kernel package validation rejects untrusted execution and mutable system activation", () => {
+  const module = {
+    moduleId: "test.kernel.module",
+    apiVersion: 1 as const,
+    runtime: "internal-module" as const,
+    activation: "session-fixed" as const,
+  };
   assert.throws(() => definePlugin({
     id: "test.third-party.kernel",
     name: "第三方内核插件",

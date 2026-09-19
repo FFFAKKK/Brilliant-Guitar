@@ -39,7 +39,7 @@ PluginPackage
   └─ kernelModules             → immutable assembly plan → trusted Kernel adapter
 ```
 
-插件等级固定为 `system`、`product` 和 `third-party`。Kernel 模块固定使用 `session-fixed` 生命周期；包含 Kernel 模块的插件不能使用运行时用户启停。第三方 Kernel 模块只能声明 `wasm` runtime，不能伪装成受信任的内部模块。模块 ID 在整个平台内只能有一个所有者。
+插件等级固定为 `system`、`product` 和 `third-party`。Kernel 模块固定使用 `session-fixed` 生命周期；非系统插件可以在启动中心选择是否进入下一次会话，但进入会话后不能启停、替换或卸载。第三方 Kernel 模块只能声明 `wasm` runtime，不能伪装成受信任的内部模块。模块 ID 在整个平台内只能有一个所有者。
 
 平台生成的 assembly plan 是排序、冻结且与调用方数据隔离的纯数据。可信宿主以后根据该计划绑定真实内部模块或经过验证的 Wasm 产物；UI Host 不导入 Kernel 实现，Kernel 也不读取 UI 清单、React 组件或插件设置。
 
@@ -70,7 +70,7 @@ configuring
 
 `always` 表示强制随产品装配，`user` 表示用户可以在启动前配置。`user` 不表示允许运行时激活。应用仍可修改普通业务设置，但设置不得借机改变组件拓扑或加载新的可执行代码。
 
-未进入本次启动计划的 `user` 插件只保留经过校验的 Manifest、安装状态和下一次启动意图，不安装到应用宿主，也不注册组件、View、Command、交互、服务、乐器描述或播放输出。这样，禁用插件的可执行对象不会参与本次进程，也不会与已启用插件产生注册冲突。启动后的启用请求仍只改变下一次启动计划。
+未进入本次启动计划的 `user` 插件只保留经过校验的 Manifest、安装状态和下一次启动意图，不安装到应用宿主，不注册组件、View、Command、交互、服务、乐器描述或播放输出，也不进入 Kernel assembly plan。这样，禁用插件的可执行对象不会参与本次进程，也不会与已启用插件产生注册冲突。启动后的启用请求仍只改变下一次启动计划。
 
 平台不再向应用代码暴露可变的 `UiPluginHost`、`UiPluginCatalog`、组件注册表、Projection 注册表或交互注册表。应用只能获得冻结的只读目录，无法绕过平台在运行中注册或删除贡献。
 

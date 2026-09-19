@@ -292,7 +292,9 @@ export class PluginPlatform {
   /** Data-only fixed-session plan. The trusted host resolves implementations in a separate execution adapter. */
   kernelAssemblyPlan(): PluginKernelAssemblyPlanV1 {
     return createPluginKernelAssemblyPlanV1(
-      [...this.#records.values()].map((record) => kernelPackageSource(record.manifest)),
+      [...this.#records.values()]
+        .filter((record) => this.#started ? record.active : record.nextLaunchActive)
+        .map((record) => kernelPackageSource(record.manifest)),
     );
   }
 
